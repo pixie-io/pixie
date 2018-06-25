@@ -1,0 +1,110 @@
+{
+  "exclude": [
+    "(^linters/cpplint.py)",
+    "(\\.pb\\.gw\\.go$)",
+    "(\\.pb\\.go$)",
+    "(\\.pbtxt$)",
+    "(mocks/.*\\.go$)",
+    "(^third_party)",
+    "(\\.idea/.*$)"
+  ],
+  "linters": {
+    "cpplint": {
+      "type": "cpplint",
+      "include": ["(\\.cc$)", "(\\.h$)"],
+      "exclude": ["(_objc\\.h)"],
+      "bin": "./linters/cpplint.py",
+      "flags": [
+        "--filter=-build/c++11",
+        "--filter=-legal/copyright",
+        "--linelength=100"
+      ]
+    },
+    "clang-format": {
+      "type": "clang-format",
+      "include": "(\\.(m|h|mm|cc)$)"
+    },
+    "filename": {
+      "type": "filename"
+    },
+    "gofmt": {
+      "include": [
+          "(\\.go$)"
+      ],
+      "type": "gofmt"
+    },
+    "golint": {
+      "include": [
+          "(\\.go$)"
+      ],
+      "type": "golint"
+    },
+    "govet": {
+      "include": [
+        "(\\.go$)"
+      ],
+      "type": "govet"
+    },
+    "jshint-ui": {
+      "type": "jshint",
+      "jshint.jshintrc": "./ui/.jshintrc",
+      "include": [
+        "(\\.js)"
+      ]
+    },
+    "json": {
+      "type": "json",
+      "exclude": [
+        "(\\.vscode/.*)"
+      ],
+      "include": [
+        "(^\\.arcconfig$)",
+        "(^\\.arclint$)",
+        "(\\.json$)"
+      ]
+    },
+    "merge-conflict": {
+      "type": "merge-conflict"
+    },
+    "nolint": {
+      "type": "nolint",
+      "include": [
+        "(ui/dist/.*$)"
+      ]
+    },
+    "flake8": {
+      "type": "flake8",
+      "flags": [
+        "--config=.flake8rc"
+      ],
+      "include": [
+        "(\\.py$)"
+      ],
+      "exclude": [
+        "(migrations/versions/.*\\.py$)"
+      ]
+    },
+    "spelling": {
+      "type": "spelling"
+    },
+    "text": {
+      "type": "text",
+      "text.max-line-length": 120,
+      "exclude": [
+        "(ui/yarn.lock)",
+        "(__snapshots__/.*)",
+        "(\\.go$)"
+      ]
+    },
+    "tslint-ui": {
+      "type": "tslint",
+      "tslint.config": "./ui/tslint.json",
+      "tslint.project": "./ui/tsconfig.json",
+      "include": [
+        "(ui/.*\\.(tsx)$)",
+        "(ui/.*\\.(ts)$)",
+        "(ui/.*\\.(js)$)"
+      ]
+    }
+  }
+}
