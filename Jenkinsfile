@@ -61,19 +61,31 @@ def addBuildInfo = {
     url: url,
     validResponseCodes: '200'
 
-  def revisonId = "D${REVISION}"
-  addShortText(text: revisonId,
+  def text = ""
+  def link = ""
+  // Either a revision of a commit to master.
+  if (params.REVISION) {
+    def revisionId = "D${REVISION}"
+    text = revisionId
+    link = "${PHAB_URL}/${revisionId}"
+  } else {
+    text = params.PHAB_COMMIT.substring(0, 5)
+    link = "${PHAB_URL}/rPLM${env.PHAB_COMMIT}"
+  }
+  addShortText(text: text,
     background: "transparent",
     border: 0,
     borderColor: "transparent",
     color: "#1FBAD6",
-    link: "${PHAB_URL}/${revisonId}")
+    link: link)
+
 }
 
 /**
- * @brief Returns true if it's a code review build.
+ * @brief Returns true if it's a phabricator triggered build.
+ *  This could either be code review build or master commit.
  */
-def isCodeReviewBuild() {
+def isPhabricatorTriggeredBuild() {
   return params.PHID != null && params.PHID != ""
 }
 
@@ -94,7 +106,7 @@ def codeReviewPostBuild = {
 /********************************************
  * The build script starts here.
  ********************************************/
-if (isCodeReviewBuild()) {
+if (isPhabricatorTriggeredBuild()) {
   codeReviewPreBuild()
 }
 
@@ -112,7 +124,7 @@ node {
     currentBuild.result = 'FAILURE'
   }
   finally {
-    if (isCodeReviewBuild()) {
+    if (isPhabricatorTriggeredBuild()) {
       codeReviewPostBuild()
     }
   }
