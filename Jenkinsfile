@@ -69,7 +69,7 @@ def addBuildInfo = {
     text = revisionId
     link = "${PHAB_URL}/${revisionId}"
   } else {
-    text = params.PHAB_COMMIT.substring(0, 5)
+    text = params.PHAB_COMMIT.substring(0, 7)
     link = "${PHAB_URL}/rPLM${env.PHAB_COMMIT}"
   }
   addShortText(text: text,
