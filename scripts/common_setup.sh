@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 # Contains shared code between Linux/OSX setups.
 
 arc_install_path=${HOME}/pixie-dev-setup
