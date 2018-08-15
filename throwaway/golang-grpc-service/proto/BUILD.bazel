@@ -18,12 +18,6 @@ go_proto_library(
     visibility = ["//visibility:public"],
 )
 
-cc_proto_library(
-    name = "greet_cc_proto",
-    deps = [":greet_proto"],
-    visibility = ["//visibility:public"],
-)
-
 cc_grpc_library(
     name = "greet_cc_grpc",
     srcs = ["greet.proto"],
