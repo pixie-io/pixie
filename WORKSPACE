@@ -23,3 +23,25 @@ go_rules_dependencies()
 go_register_toolchains()
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 gazelle_dependencies()
+
+
+##########################################################
+# Bazel CC setup.
+##########################################################
+# Google test related rules.
+new_http_archive(
+    name = "googletest",
+    build_file = "third_party/gtest.BUILD",
+    strip_prefix = "googletest-release-1.8.0",
+    url = "https://github.com/google/googletest/archive/release-1.8.0.zip",
+)
+
+bind(
+    name = "gtest",
+    actual = "@googletest//:gtest",
+)
+
+bind(
+    name = "gtest-main",
+    actual = "@googletest//:gtest-main",
+)
