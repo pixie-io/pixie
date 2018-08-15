@@ -1,0 +1,6 @@
+licenses(["restricted"])
+
+load("@bazel_gazelle//:def.bzl", "gazelle")
+
+# gazelle:prefix github.com/pixie-labs/pixielabs
+gazelle(name = "gazelle")

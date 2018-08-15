@@ -40,6 +40,8 @@ install_go_deps () {
     gazelle_github=github.com/bazelbuild/bazel-gazelle/cmd/gazelle
     go get ${gazelle_github}
     go install ${gazelle_github}
+
+    go get github.com/golang/lint/golint
   fi
   echo "All done!"
 }
