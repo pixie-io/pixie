@@ -6,7 +6,8 @@
     "(\\.pbtxt$)",
     "(mocks/.*\\.go$)",
     "(^third_party)",
-    "(\\.idea/.*$)"
+    "(\\.idea/.*$)",
+    "(\\.sublime-project$)"
   ],
   "linters": {
     "cpplint": {
