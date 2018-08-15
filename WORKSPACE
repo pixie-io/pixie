@@ -52,6 +52,17 @@ bind(
     actual = "@googletest//:gtest-main",
 )
 
+# GRPC.
+git_repository(
+    name = "com_github_grpc_grpc",
+    remote = "https://github.com/grpc/grpc.git",
+    commit = "d8020cb6daa87f1a3bb3b0c299bc081c4a3de1e8",
+)
+
+load("@com_github_grpc_grpc//:bazel/grpc_deps.bzl", "grpc_deps")
+grpc_deps()
+
+
 ##########################################################
 # Auto-generated GO dependencies (DO NOT EDIT).
 ##########################################################

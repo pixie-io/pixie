@@ -2,6 +2,7 @@
 
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("@com_github_grpc_grpc//bazel:cc_grpc_library.bzl", "cc_grpc_library")
 
 proto_library(
     name = "greet_proto",
@@ -15,4 +16,20 @@ go_proto_library(
     importpath = "pixielabs.ai/pixielabs/throwaway/golang-grpc-service/proto",
     proto = ":greet_proto",
     visibility = ["//visibility:public"],
+)
+
+cc_proto_library(
+    name = "greet_cc_proto",
+    deps = [":greet_proto"],
+    visibility = ["//visibility:public"],
+)
+
+cc_grpc_library(
+    name = "greet_cc_grpc",
+    srcs = ["greet.proto"],
+    proto_only = False,
+    use_external = True,
+    visibility = ["//visibility:public"],
+    well_known_protos = True,
+    deps = [],
 )
