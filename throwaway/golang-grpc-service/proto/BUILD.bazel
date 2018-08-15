@@ -1,0 +1,18 @@
+# gazelle:ignore
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+
+proto_library(
+    name = "greet_proto",
+    srcs = ["greet.proto"],
+    visibility = ["//visibility:public"],
+)
+
+go_proto_library(
+    name = "greet_go_proto",
+    compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
+    importpath = "pixielabs.ai/pixielabs/throwaway/golang-grpc-service/proto",
+    proto = ":greet_proto",
+    visibility = ["//visibility:public"],
+)

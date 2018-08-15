@@ -94,6 +94,7 @@
       "exclude": [
         "(ui/yarn.lock)",
         "(__snapshots__/.*)",
+        "(Makefile)",
         "(\\.go$)"
       ]
     },

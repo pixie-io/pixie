@@ -10,7 +10,7 @@ source ${my_dir}/common_setup.sh
 
 brew_packages="node python python3 docker docker-compose
 docker-machine bazel go postgresql pyenv-virtualenv
-clang-format"
+clang-format dep"
 
 echo "Checking to see if GO is setup correctly."
 if [ -z ${GOPATH} ]; then

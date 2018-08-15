@@ -2,5 +2,16 @@ licenses(["restricted"])
 
 load("@bazel_gazelle//:def.bzl", "gazelle")
 
-# gazelle:prefix github.com/pixie-labs/pixielabs
-gazelle(name = "gazelle")
+gazelle(
+    name = "gazelle",
+    mode = "fix",
+    prefix = "pixielabs.ai/pixielabs",
+)
+
+# This line is necessary to keep Gazelle from using the vendored gRPC for Go library:
+# gazelle:exclude vendor
+
+# Make gazelle not generate proto files. We need to use gogo proto and this does
+# not seem to work automatically right now. Keep an eye out on issue:
+# https://github.com/bazelbuild/bazel-gazelle/issues/181 for updates.
+# gazelle:proto disable
