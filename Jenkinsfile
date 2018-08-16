@@ -102,7 +102,15 @@ def codeReviewPostBuild = {
   }
 }
 
-
+def writeBazelRCFile() {
+  def bazelRcFile = [
+    'build --remote_http_cache=http://bazel-cache.internal.pixielabs.ai:9090',
+    'build --announce_rc',
+    'build --verbose_failures',
+    'build --jobs=64',
+  ].join('\n')
+  writeFile file: ".bazelrc", text: "${bazelRcFile}"
+}
 /********************************************
  * The build script starts here.
  ********************************************/
@@ -119,8 +127,20 @@ node {
         printenv
       '''
     }
+
+    stage('Build') {
+      writeBazelRCFile()
+      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
+        docker.image('pl-dev-infra/dev_image:201808211622').inside {
+          sh 'make build'
+        }
+      }
+    }
   }
   catch(err) {
+    echo "Exception thrown:\n ${err}"
+    echo "Stacktrace:"
+    err.printStackTrace()
     currentBuild.result = 'FAILURE'
   }
   finally {

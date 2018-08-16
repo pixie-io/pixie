@@ -17,7 +17,7 @@ pristine:
 	$(BAZEL) clean --expunge
 
 .PHONY: build
-build: gazelle ## Run the full build.
+build: ## Run the full build.
 	$(BAZEL) build //...
 
 .PHONY: dep-ensure
