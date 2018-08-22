@@ -15,6 +15,7 @@ import groovy.json.JsonBuilder
 final String PHAB_URL = 'https://phab.pixielabs.ai'
 final String PHAB_API_URL = "${PHAB_URL}/api"
 
+final String DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image:201808211822'
 /**
   * @brief Generates URL for harbormaster.
   */
@@ -111,6 +112,8 @@ def writeBazelRCFile() {
   ].join('\n')
   writeFile file: ".bazelrc", text: "${bazelRcFile}"
 }
+
+
 /********************************************
  * The build script starts here.
  ********************************************/
@@ -126,22 +129,28 @@ node {
       sh '''
         printenv
       '''
-    }
-
-    stage('Build') {
       writeBazelRCFile()
+    }
+    stage('Lint') {
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image('pl-dev-infra/dev_image:201808211622').inside {
+        docker.image(DEV_DOCKER_IMAGE).inside {
+          sh 'arc lint --everything'
+        }
+      }
+    }
+    stage('Build') {
+      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
+        docker.image(DEV_DOCKER_IMAGE).inside {
           sh 'make build'
         }
       }
     }
   }
   catch(err) {
+    currentBuild.result = 'FAILURE'
     echo "Exception thrown:\n ${err}"
     echo "Stacktrace:"
     err.printStackTrace()
-    currentBuild.result = 'FAILURE'
   }
   finally {
     if (isPhabricatorTriggeredBuild()) {

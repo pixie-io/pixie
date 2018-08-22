@@ -11,6 +11,7 @@ RUN \
       bash-completion \
       build-essential \
       clang \
+      clang-format \
       curl \
       git \
       golang-1.10-go \
@@ -24,7 +25,7 @@ RUN \
       virtualenvwrapper \
       zlib1g-dev \
   # Install python virtual env utils.
-  && pip3 install flake8 flake8-mypy \
+  && pip3 install flake8 flake8-mypy setuptools \
   # Install Java.
   && apt-add-repository ppa:webupd8team/java -y \
   && echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections \
