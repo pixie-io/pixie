@@ -85,5 +85,9 @@
     "material-components-web": "^0.38.2",
     "react": "^16.4.2",
     "react-dom": "^16.4.2"
+  },
+  "scripts": {
+    "build_dev": "./node_modules/.bin/webpack",
+    "dev": "./node_modules/.bin/webpack-dev-server"
   }
 }

@@ -15,7 +15,7 @@ genrule(
     cmd = """
       export PATH=/usr/local/bin:$$PATH &&
       pushd ui && yarn install --prefer_offline && \
-      ./node_modules/.bin/webpack && popd && \
+      yarn build_dev && popd && \
       cp ui/dist/bundle.tar.gz $@
     """,
     local = 1,  # disable sandboxing for yarn cache.
