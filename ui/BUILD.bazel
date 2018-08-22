@@ -1,0 +1,23 @@
+package(default_visibility = ["//visibility:public"])
+
+# This is a simple wrapper around webpack. Hopefully, when native Bazel webpack
+# builds become more stable we can use that.
+genrule(
+    name = "ui-bundle",
+    srcs = [
+        "package.json",
+        "tsconfig.json",
+        "webpack.config.js",
+        "yarn.lock",
+        ".yarnrc",
+    ] + glob(["src/**"]),
+    outs = ["bundle.tar.gz"],
+    cmd = """
+      export PATH=/usr/local/bin:$$PATH &&
+      pushd ui && yarn install --prefer_offline && \
+      ./node_modules/.bin/webpack && popd && \
+      cp ui/dist/bundle.tar.gz $@
+    """,
+    local = 1,  # disable sandboxing for yarn cache.
+    output_to_bindir = 1,  # We treat "outputs" as binaries.
+)

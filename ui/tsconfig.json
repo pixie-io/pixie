@@ -17,6 +17,8 @@
     "experimentalDecorators": true
   },
   "include": [
-    "./src/**/*"
+    "./src/**/*",
+    "__mocks__/**/*",
+    "*.js"
   ]
 }

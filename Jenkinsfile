@@ -145,6 +145,34 @@ node {
         }
       }
     }
+    stage('Build & Test UI') {
+      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
+        docker.image(DEV_DOCKER_IMAGE).inside {
+          sh '''
+            cd ui
+            yarn install --prefer_offline
+            jest
+          '''
+        }
+      }
+    }
+    stage('Archive') {
+      step([
+        $class: 'XUnitBuilder',
+        thresholds: [
+          [
+            $class: 'FailedThreshold',
+            unstableThreshold: '1'
+          ]
+        ],
+        tools: [
+          [
+            $class: 'JUnitType',
+            pattern: "ui/junit.xml"
+          ]
+        ]
+      ])
+    }
   }
   catch(err) {
     currentBuild.result = 'FAILURE'

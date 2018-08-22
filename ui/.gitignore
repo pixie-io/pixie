@@ -1,0 +1,9 @@
+# For produced assets.
+dist/*
+
+# For Jenkins test results.
+junit.xml
+
+# Yarn/npm files.
+node_modules
+yarn-error.log
