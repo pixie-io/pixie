@@ -140,8 +140,9 @@ node {
     }
     stage('Build') {
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(DEV_DOCKER_IMAGE).inside {
-          sh 'make build'
+        // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
+        docker.image(DEV_DOCKER_IMAGE).inside('-v /root/.cache:/root/.cache') {
+          sh 'make test'
         }
       }
     }
@@ -157,6 +158,22 @@ node {
       }
     }
     stage('Archive') {
+      step([
+        $class: 'XUnitBuilder',
+        thresholds: [
+          [
+            $class: 'FailedThreshold',
+            unstableThreshold: '1'
+          ]
+        ],
+        tools: [
+          [
+            $class: 'GoogleTestType',
+            pattern: "bazel-testlogs/**/*.xml"
+          ]
+        ]
+      ])
+
       step([
         $class: 'XUnitBuilder',
         thresholds: [

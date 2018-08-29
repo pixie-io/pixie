@@ -17,8 +17,12 @@ pristine:
 	$(BAZEL) clean --expunge
 
 .PHONY: build
-build: ## Run the full build.
+build: ## Run the full build (except UI).
 	$(BAZEL) build //...
+
+.PHONY: test
+test: ## Run all the tests (except UI).
+	$(BAZEL) test //...
 
 .PHONY: dep-ensure
 dep-ensure: ## Ensure that go dependencies exist.
