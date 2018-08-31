@@ -6,6 +6,11 @@ go_library(
     name = "go_default_library",
     srcs = ["controller.go"],
     importpath = "pixielabs.ai/pixielabs/primitive-agent/controller",
+    deps = [
+        "//primitive-agent/controller/proto:controller_go_proto",
+        "//primitive-agent/controller/server:go_default_library",
+        "@org_golang_google_grpc//:go_default_library",
+    ],
 )
 
 go_binary(

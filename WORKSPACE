@@ -101,3 +101,33 @@ go_repository(
     commit = "f21a4dfb5e38f5895301dc265a8def02365cc3d0",
     importpath = "golang.org/x/text",
 )
+
+go_repository(
+    name = "com_github_google_uuid",
+    commit = "d460ce9f8df2e77fb1ba55ca87fafed96c607494",
+    importpath = "github.com/google/uuid",
+)
+
+go_repository(
+    name = "org_golang_x_sync",
+    commit = "1d60e4601c6fd243af51cc01ddf169918a5407ca",
+    importpath = "golang.org/x/sync",
+)
+
+go_repository(
+    name = "com_github_davecgh_go_spew",
+    commit = "8991bc29aa16c548c550c7ff78260e27b9ab7c73",
+    importpath = "github.com/davecgh/go-spew",
+)
+
+go_repository(
+    name = "com_github_pmezard_go_difflib",
+    commit = "792786c7400a136282c1664665ae0a8db921c6c2",
+    importpath = "github.com/pmezard/go-difflib",
+)
+
+go_repository(
+    name = "com_github_stretchr_testify",
+    commit = "f35b8ab0b5a2cef36673838d662e249dd9c94686",
+    importpath = "github.com/stretchr/testify",
+)
