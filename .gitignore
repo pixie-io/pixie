@@ -36,3 +36,9 @@ __pycache__
 **/*.sublime-workspace
 
 vendor/*
+
+# Used for user specific workspace config.
+.bazelrc
+
+# A cache directory to be use by Bazel.
+.bazel-cache
