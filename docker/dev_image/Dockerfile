@@ -4,4 +4,7 @@
 # be moved to the base image.
 FROM gcr.io/pl-dev-infra/base_dev_image:201808211816
 
+RUN cd / \
+  && curl https://storage.googleapis.com/boot2docker-custom-artifacts/linux-headers-4.15.1.tar.gz | tar zxv
+
 CMD ["/bin/bash"]
