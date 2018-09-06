@@ -17,6 +17,13 @@ type ControllerProcessDataServer struct {
 	calledOnce bool
 }
 
+// Implement the interface for Controller_MetadataRelayServer.
+type ControllerMetadataRelayServer struct {
+	pb.Controller_MetadataRelayServer
+	calledOnce   bool
+	lastReceived *pb.ControllerMetadataStream
+}
+
 type fakeFileWriter struct {
 	contents []byte
 }
@@ -36,6 +43,19 @@ func (s *ControllerProcessDataServer) Recv() (*pb.AgentDataStream, error) {
 }
 
 func (s *ControllerProcessDataServer) SendAndClose(resp *pb.AgentDataStreamResponse) error {
+	return nil
+}
+
+func (s *ControllerMetadataRelayServer) Recv() (*pb.AgentMetadataStream, error) {
+	if s.calledOnce == false {
+		s.calledOnce = true
+		return &pb.AgentMetadataStream{Status: pb.OK}, nil
+	}
+	return nil, io.EOF
+}
+
+func (s *ControllerMetadataRelayServer) Send(resp *pb.ControllerMetadataStream) error {
+	s.lastReceived = resp
 	return nil
 }
 
@@ -71,4 +91,15 @@ func TestProcessData(t *testing.T) {
 	// ProcessData should not throw an error.
 	assert.Nil(err)
 	assert.Equal(string(filewriter.contents), "test data", "ProcessData should write correct data to file.")
+}
+
+func TestMetadataRelay(t *testing.T) {
+	assert := assert.New(t)
+
+	s := New(&fakeFileWriter{})
+	stream := &ControllerMetadataRelayServer{}
+	err := s.MetadataRelay(stream)
+
+	assert.Nil(err)
+	assert.Equal(stream.lastReceived.Status, pb.OK, "MetadataRelay should send OK status.")
 }

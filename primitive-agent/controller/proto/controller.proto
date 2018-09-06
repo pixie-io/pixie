@@ -14,6 +14,8 @@ service Controller {
   // Agent sends its data to the controller through a stream. The controller saves this data in a file
   // named using the agent's id.
   rpc ProcessData (stream AgentDataStream) returns (AgentDataStreamResponse) {}
+  // Agent opens up a bi-directional stream with the controller so they can relay metadata.
+  rpc MetadataRelay(stream AgentMetadataStream) returns (stream ControllerMetadataStream) {}
 }
 
 // OS describes the host operating system.
@@ -125,4 +127,12 @@ message AgentDataStream {
 
 message AgentDataStreamResponse {
   ResponseCode response = 1;
+}
+
+message AgentMetadataStream {
+  ResponseCode status = 1;
+}
+
+message ControllerMetadataStream  {
+  ResponseCode status = 1;
 }

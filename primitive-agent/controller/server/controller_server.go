@@ -49,3 +49,17 @@ func (s *ControllerServer) ProcessData(stream pb.Controller_ProcessDataServer) e
 		mutex.Unlock()
 	}
 }
+
+// MetadataRelay receives metadata from the agent and sends back metadata about the controller.
+func (s *ControllerServer) MetadataRelay(stream pb.Controller_MetadataRelayServer) error {
+	for {
+		_, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		} else if err != nil {
+			return err
+		}
+
+		stream.Send(&pb.ControllerMetadataStream{Status: pb.OK})
+	}
+}
