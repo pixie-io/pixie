@@ -2,7 +2,7 @@ workspace(name = "pl")
 
 load("//:workspace.bzl", "check_min_bazel_version")
 
-check_min_bazel_version("0.15.0")
+check_min_bazel_version("0.17.1")
 
 ##########################################################
 # Bazel Go setup.
