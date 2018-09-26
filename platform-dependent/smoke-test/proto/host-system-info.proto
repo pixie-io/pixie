@@ -1,0 +1,137 @@
+syntax = "proto3";
+
+package host_system_info;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option go_package = "pixielabs.ai/platform-dependent/smoke-test;host_system_info";
+
+// Host Processor information.
+// This message is identical to the Processor struct defined here:
+// https://godoc.org/github.com/c9s/goprocinfo/linux#Processor.
+message Processor {
+  int64    id            = 1 [
+    (gogoproto.customname) = "ID"
+  ];
+  string   vendor_id     = 2 [
+    (gogoproto.customname) = "VendorID"
+  ];
+  int64    model         = 3;
+  string   model_name    = 4;
+  repeated string flags  = 5;
+  int64    cores         = 6;
+  double   mhz           = 7 [
+    (gogoproto.customname) = "MHz"
+  ];
+  int64    cache_size    = 8;  // KB
+  int64    physical_id   = 9 [
+    (gogoproto.customname) = "PhysicalID"
+  ];
+  int64    core_id       = 10 [
+    (gogoproto.customname) = "CoreID"
+  ];
+}
+
+// Host CPU Information.
+message CPUInfo {
+  repeated Processor processors = 1;
+}
+
+// Host Memory Information.
+// This message is identical to the MemInfo struct defined here:
+// https://godoc.org/github.com/c9s/goprocinfo/linux#MemInfo.
+// All memory units are in KB.
+message MemInfo {
+  uint64 mem_total          = 1;
+  uint64 mem_free           = 2;
+  uint64 mem_available      = 3;
+  uint64 buffers            = 4;
+  uint64 cached             = 5;
+  uint64 swap_cached        = 6;
+  uint64 active             = 7;
+}
+
+// Host System Information.
+message SystemInfo {
+  CPUInfo cpu_info = 1;
+  MemInfo mem_info = 2;
+}
+
+
+// OS describes the host operating system.
+enum OS {
+  UNKNOWN_OS  = 0;
+  LINUX       = 1;
+  WINDOWS     = 2;
+  DARWIN      = 3;
+  IOS         = 4;
+  ANDROID     = 5;
+}
+
+enum OSArchitecture {
+  UNKNOWN_ARCHITECTURE  = 0;
+  x86_64                = 1;
+  i386                  = 2;
+  i586                  = 3;
+}
+
+message LinuxOSInfo {
+  string name                       = 1;
+  string pretty_name                = 2;
+  string version                    = 3;
+  string id                         = 4 [
+    (gogoproto.customname) = "ID"
+  ];
+  string version_id                 = 5 [
+    (gogoproto.customname) = "VersionID"
+  ];
+  string version_codename           = 6;
+  string build_id                   = 7 [
+    (gogoproto.customname) = "BuildID"
+  ];
+  repeated string id_like           = 8 [
+    (gogoproto.customname) = "IDLike"
+  ];
+  string cpe_name                   = 9;
+  string home_url                   = 10;
+  string support_url                = 11;
+  string bug_report_url             = 12;
+}
+
+message KernelInfo {
+  string kernel_version  = 1;
+  uint32 version         = 2;
+  uint32 major_revision  = 3;
+  uint32 minor_revision  = 4;
+  uint32 patch_number    = 5;
+}
+
+// HostInfo contains the details for the Host OS, architecture, and other details.
+message HostInfo {
+  OS os                       = 1;
+  KernelInfo kernel_version   = 2;
+  OSArchitecture os_arch      = 3;
+  // The operating system details based on the specific type of OS as specified in the ENUM.
+  // For example, linux systems will use the message.
+  oneof os_details {
+    LinuxOSInfo linux_os_info = 4;
+  }
+  string host_name            = 5;
+  // Host environment variables.
+  string host_env             = 6;
+}
+
+enum TestStatus {
+  UNKNOWN       = 0;
+  FAIL          = 1;
+  PASS          = 2;
+  FAILED_TO_RUN = 3;
+}
+
+// CheckInfo contains information on whether the host system passes certain checks.
+message CheckInfo {
+  // List of tests that indicate whether a check has failed, passed, or failed to run.
+  // TODO(kgandhi): Add more tests for K8s version compatibility and dependency checks.
+  TestStatus test_kernel_version = 1;
+  TestStatus test_os             = 2;
+}
