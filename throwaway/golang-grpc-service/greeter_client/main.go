@@ -1,24 +1,7 @@
-/*
- *
- * Copyright 2015 gRPC authors.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
-
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -29,11 +12,11 @@ import (
 )
 
 const (
-	address     = "localhost:50051"
+	address     = "greeter-server:50051"
 	defaultName = "world"
 )
 
-func main() {
+func connectAndGreet() {
 	// Set up a connection to the server.
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
 	if err != nil {
@@ -52,6 +35,32 @@ func main() {
 	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
+	} else {
+		log.Printf("Greeting: %s", r.Message)
 	}
-	log.Printf("Greeting: %s", r.Message)
+}
+
+func schedule(what func(), delay time.Duration) chan bool {
+	stop := make(chan bool)
+
+	go func() {
+		for {
+			what()
+			select {
+			case <-time.After(delay):
+			case <-stop:
+				return
+			}
+		}
+	}()
+
+	return stop
+}
+
+func main() {
+	stop := schedule(connectAndGreet, 500*time.Millisecond)
+	time.Sleep(60 * time.Second)
+	stop <- true
+	time.Sleep(1 * time.Second)
+	fmt.Println("Test Done")
 }

@@ -1,0 +1,18 @@
+apiVersion: skaffold/v1alpha2
+kind: Config
+build:
+  local:
+    skipPush: true
+  artifacts:
+    - imageName: greeter_server_image
+      workspace: .
+      bazel:
+        target: //throwaway/golang-grpc-service/greeter_server:greeter_server_image.tar
+    - imageName: greeter_client_image
+      workspace: .
+      bazel:
+        target: //throwaway/golang-grpc-service/greeter_client:greeter_client_image.tar
+deploy:
+  kubectl:
+    manifests:
+      - throwaway/golang-grpc-service/*/service.yaml

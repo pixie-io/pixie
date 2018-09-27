@@ -41,6 +41,7 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 }
 
 func main() {
+	log.Printf("Starting server on port : %s", port)
 	_ = pb.HelloRequest{}
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
