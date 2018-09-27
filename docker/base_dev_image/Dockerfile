@@ -65,8 +65,13 @@ RUN mkdir -p src bin \
   && rm -rf ~/.cache
 
 # Install Bazel.
-RUN curl -LO "https://github.com/bazelbuild/bazel/releases/download/0.16.1/bazel_0.16.1-linux-x86_64.deb" \
+RUN curl -LO "https://github.com/bazelbuild/bazel/releases/download/0.17.2/bazel_0.17.2-linux-x86_64.deb" \
   && dpkg -i bazel_*.deb \
   && rm -f bazel_*.deb
+
+# Install Skaffold
+RUN curl -Lo skaffold https://github.com/GoogleContainerTools/skaffold/releases/download/v0.14.0/skaffold-linux-amd64 \
+    && chmod +x skaffold \
+    && mv skaffold /usr/local/bin
 
 CMD ["/bin/bash"]
