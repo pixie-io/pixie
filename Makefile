@@ -8,6 +8,9 @@ BAZEL     := bazel
 ## Dep command to use.
 DEP       := dep
 
+## Minikube command to use.
+MINIKUBE  := minikube
+
 .PHONY: clean
 clean:
 	$(BAZEL) clean
@@ -35,6 +38,19 @@ gazelle: gazelle-repos ## Run gazelle to update go build rules.
 	$(BAZEL) run //:gazelle
 
 go-setup: dep-ensure gazelle
+
+dev-env-start: ## Start dev environment.
+	$(MINIKUBE) start --cpus 6 --memory 8192
+
+dev-docker-start:
+	@eval $$(minikube docker-env); ./scripts/run_docker.sh --extra_args="$(DEV_DOCKER_EXTRA_ARGS)"
+
+dev-env-stop: ## Stop dev environment.
+	$(MINIKUBE) stop
+
+dev-env-teardown: ## Clean up dev environment.
+	$(MINIKUBE) stop
+	$(MINIKUBE) delete
 
 help: ## Print help for targets with comments.
 	@echo "Usage:"
