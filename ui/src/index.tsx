@@ -6,7 +6,10 @@ import {App} from 'containers/App';
 import './index.scss';
 
 function startApp() {
-  ReactDOM.render(<App name='Pixie Labs UI'/>,
+  ReactDOM.render(
+    <App
+      name='Pixie Labs UI'
+    />,
     document.getElementById('root'),
   );
 }

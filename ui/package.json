@@ -32,7 +32,7 @@
     "sass-loader": "^7.1.0",
     "style-loader": "^0.22.1",
     "ts-jest": "^23.1.4",
-    "typescript": "^3.0.1",
+    "typescript": "^3.1.1",
     "url-loader": "^1.1.1",
     "webpack": "^4.17.0",
     "webpack-archive-plugin": "^3.0.0",
@@ -82,9 +82,11 @@
     "usePathForSuiteName": "true"
   },
   "dependencies": {
+    "auth0-js": "^9.8.0",
     "material-components-web": "^0.38.2",
     "react": "^16.4.2",
-    "react-dom": "^16.4.2"
+    "react-dom": "^16.4.2",
+    "react-router-dom": "^4.3.1"
   },
   "scripts": {
     "build_dev": "./node_modules/.bin/webpack",
