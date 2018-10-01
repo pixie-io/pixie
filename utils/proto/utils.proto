@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package pl.utils;
+
+option go_package = "utilspb";
+
+message UUID {
+  // The UUID stored as bytes (no-hyphens).
+  bytes data = 1;
+}

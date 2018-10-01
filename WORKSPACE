@@ -63,7 +63,6 @@ load("@com_github_grpc_grpc//:bazel/grpc_deps.bzl", "grpc_deps")
 
 grpc_deps()
 
-
 ##########################################################
 # Docker setup.
 ##########################################################
@@ -88,7 +87,6 @@ load(
 )
 
 _cc_image_repos()
-
 
 ##########################################################
 # Auto-generated GO dependencies (DO NOT EDIT).
@@ -235,4 +233,16 @@ go_repository(
     name = "in_gopkg_yaml_v2",
     commit = "5420a8b6744d3b0345ab293f6fcba19c978f1183",
     importpath = "gopkg.in/yaml.v2",
+)
+
+go_repository(
+    name = "com_github_gogo_protobuf",
+    commit = "636bf0302bc95575d69441b25a2603156ffdddf1",
+    importpath = "github.com/gogo/protobuf",
+)
+
+go_repository(
+    name = "com_github_satori_go_uuid",
+    commit = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3",
+    importpath = "github.com/satori/go.uuid",
 )
