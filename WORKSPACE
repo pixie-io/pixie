@@ -196,7 +196,7 @@ go_repository(
 
 go_repository(
     name = "com_github_mitchellh_mapstructure",
-    commit = "fa473d140ef3c6adf42d6b391fe76707f1f243c8",
+    commit = "fe40af7a9c397fa3ddba203c38a5042c5d0475ad",
     importpath = "github.com/mitchellh/mapstructure",
 )
 
@@ -208,7 +208,7 @@ go_repository(
 
 go_repository(
     name = "com_github_spf13_afero",
-    commit = "787d034dfe70e44075ccc060d346146ef53270ad",
+    commit = "d40851caa0d747393da1ffb28f7f9d8b4eeffebd",
     importpath = "github.com/spf13/afero",
 )
 
@@ -226,7 +226,7 @@ go_repository(
 
 go_repository(
     name = "com_github_spf13_jwalterweatherman",
-    commit = "14d3d4c518341bea657dd8a226f5121c0ff8c9f2",
+    commit = "4a4406e478ca629068e7768fc33f3f044173c0a6",
     importpath = "github.com/spf13/jwalterweatherman",
 )
 
@@ -238,7 +238,7 @@ go_repository(
 
 go_repository(
     name = "com_github_spf13_viper",
-    commit = "907c19d40d9a6c9bb55f040ff4ae45271a4754b9",
+    commit = "2c12c60302a5a0e62ee102ca9bc996277c2f64f5",
     importpath = "github.com/spf13/viper",
 )
 
@@ -258,4 +258,22 @@ go_repository(
     name = "com_github_satori_go_uuid",
     commit = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3",
     importpath = "github.com/satori/go.uuid",
+)
+
+go_repository(
+    name = "com_github_konsorten_go_windows_terminal_sequences",
+    commit = "b729f2633dfe35f4d1d8a32385f6685610ce1cb5",
+    importpath = "github.com/konsorten/go-windows-terminal-sequences",
+)
+
+go_repository(
+    name = "com_github_sirupsen_logrus",
+    commit = "a67f783a3814b8729bd2dac5780b5f78f8dbd64d",
+    importpath = "github.com/sirupsen/logrus",
+)
+
+go_repository(
+    name = "org_golang_x_crypto",
+    commit = "e3636079e1a4c1f337f212cc5cd2aca108f6c900",
+    importpath = "golang.org/x/crypto",
 )
