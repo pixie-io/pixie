@@ -3,6 +3,7 @@
     "(^linters/cpplint.py)",
     "(\\.pb\\.gw\\.go$)",
     "(\\.pb\\.go$)",
+    "(\\.gen\\.go$)",
     "(\\.pbtxt$)",
     "(mocks/.*\\.go$)",
     "(^third_party)",
