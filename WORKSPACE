@@ -277,3 +277,33 @@ go_repository(
     commit = "e3636079e1a4c1f337f212cc5cd2aca108f6c900",
     importpath = "golang.org/x/crypto",
 )
+
+go_repository(
+    name = "com_github_graph_gophers_graphql_go",
+    commit = "151d104e709e7a9f8d4f363dabd58ca2e262a08a",
+    importpath = "github.com/graph-gophers/graphql-go",
+)
+
+go_repository(
+    name = "com_github_opentracing_opentracing_go",
+    commit = "1949ddbfd147afd4d964a9f00b24eb291e0e7c38",
+    importpath = "github.com/opentracing/opentracing-go",
+)
+
+go_repository(
+    name = "com_github_konsorten_go_windows_terminal_sequences",
+    commit = "b729f2633dfe35f4d1d8a32385f6685610ce1cb5",
+    importpath = "github.com/konsorten/go-windows-terminal-sequences",
+)
+
+go_repository(
+    name = "com_github_sirupsen_logrus",
+    commit = "a67f783a3814b8729bd2dac5780b5f78f8dbd64d",
+    importpath = "github.com/sirupsen/logrus",
+)
+
+go_repository(
+    name = "org_golang_x_crypto",
+    commit = "e3636079e1a4c1f337f212cc5cd2aca108f6c900",
+    importpath = "golang.org/x/crypto",
+)

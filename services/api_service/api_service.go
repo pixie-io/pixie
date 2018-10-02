@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
+	"pixielabs.ai/pixielabs/services/api_service/controller"
 	"pixielabs.ai/pixielabs/services/common"
 )
 
@@ -21,6 +22,7 @@ func main() {
 		fmt.Fprintf(w, "Hi there @ path : %s!", r.URL.Path[1:])
 	}
 	mux.Handle("/", http.HandlerFunc(handler))
+	mux.Handle("/gql", controller.GraphQLHandler())
 
 	common.CreateAndRunTLSServer(mux)
 }
