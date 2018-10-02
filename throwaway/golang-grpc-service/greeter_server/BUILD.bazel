@@ -23,6 +23,6 @@ go_binary(
 go_image(
     name = "greeter_server_image",
     binary = ":greeter_server",
-    ports = ["50051:50051/tcp"],
     importpath = "pixielabs.ai/pixielabs",
+    ports = ["50051:50051/tcp"],
 )

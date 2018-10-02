@@ -10,6 +10,16 @@
     "(\\.sublime-project$)"
   ],
   "linters": {
+    "build-linter": {
+      "type": "script-and-regex",
+      "include": [
+        "(WORKSPACE$)",
+        "(BUILD$)",
+        "(\\.bzl$)"
+      ],
+      "script-and-regex.script": "./linters/buildifier.sh",
+      "script-and-regex.regex": "/^(?P<filename>.*) # (?P<autofix>reformat) (?P<message>.*)$/m"
+    },
     "cpplint": {
       "type": "cpplint",
       "include": ["(\\.cc$)", "(\\.h$)"],

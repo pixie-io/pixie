@@ -15,3 +15,9 @@ gazelle(
 # not seem to work automatically right now. Keep an eye out on issue:
 # https://github.com/bazelbuild/bazel-gazelle/issues/181 for updates.
 # gazelle:proto disable
+
+load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
+
+buildifier(
+    name = "buildifier",
+)
