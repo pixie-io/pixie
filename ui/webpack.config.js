@@ -41,7 +41,10 @@ module.exports = {
     publicPath: '/',
     historyApiFallback: true,
     proxy: {
-      // TODO(zasgar) : Route to the api service.
+      '/api': {
+        target: 'https://api-service:30010',
+        secure: false,
+      },
     },
   },
   entry: [require.resolve('react-dev-utils/webpackHotDevClient'), 'index.tsx'],

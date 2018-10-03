@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
 
 go_library(
     name = "go_default_library",
@@ -13,7 +14,13 @@ go_library(
 )
 
 go_binary(
-    name = "api_service",
+    name = "api_server",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+)
+
+go_image(
+    name = "api_server_image",
+    binary = ":api_server",
+    importpath = "pixielabs.ai/pixielabs",
 )
