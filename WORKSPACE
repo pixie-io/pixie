@@ -249,39 +249,33 @@ go_repository(
 )
 
 go_repository(
+    name = "com_github_blang_semver",
+    commit = "2ee87856327ba09384cabd113bc6b5d174e9ec0f",
+    importpath = "github.com/blang/semver",
+)
+
+go_repository(
+    name = "com_github_c9s_goprocinfo",
+    commit = "0010a05ce49fde7f50669bc7ecda7d41dd6ab824",
+    importpath = "github.com/c9s/goprocinfo",
+)
+
+go_repository(
     name = "com_github_gogo_protobuf",
     commit = "636bf0302bc95575d69441b25a2603156ffdddf1",
     importpath = "github.com/gogo/protobuf",
 )
 
 go_repository(
-    name = "com_github_satori_go_uuid",
-    commit = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3",
-    importpath = "github.com/satori/go.uuid",
+    name = "com_github_graph_gophers_graphql_go",
+    commit = "25d6d94fa7a7f2b0ce10fd509e54e85f7a2f866b",
+    importpath = "github.com/graph-gophers/graphql-go",
 )
 
 go_repository(
     name = "com_github_konsorten_go_windows_terminal_sequences",
     commit = "b729f2633dfe35f4d1d8a32385f6685610ce1cb5",
     importpath = "github.com/konsorten/go-windows-terminal-sequences",
-)
-
-go_repository(
-    name = "com_github_sirupsen_logrus",
-    commit = "a67f783a3814b8729bd2dac5780b5f78f8dbd64d",
-    importpath = "github.com/sirupsen/logrus",
-)
-
-go_repository(
-    name = "org_golang_x_crypto",
-    commit = "e3636079e1a4c1f337f212cc5cd2aca108f6c900",
-    importpath = "golang.org/x/crypto",
-)
-
-go_repository(
-    name = "com_github_graph_gophers_graphql_go",
-    commit = "151d104e709e7a9f8d4f363dabd58ca2e262a08a",
-    importpath = "github.com/graph-gophers/graphql-go",
 )
 
 go_repository(
@@ -291,9 +285,9 @@ go_repository(
 )
 
 go_repository(
-    name = "com_github_konsorten_go_windows_terminal_sequences",
-    commit = "b729f2633dfe35f4d1d8a32385f6685610ce1cb5",
-    importpath = "github.com/konsorten/go-windows-terminal-sequences",
+    name = "com_github_satori_go_uuid",
+    commit = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3",
+    importpath = "github.com/satori/go.uuid",
 )
 
 go_repository(

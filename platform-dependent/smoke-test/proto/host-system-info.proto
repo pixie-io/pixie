@@ -35,6 +35,9 @@ message Processor {
 // Host CPU Information.
 message CPUInfo {
   repeated Processor processors = 1;
+  string  error                 = 2 [
+    (gogoproto.customname) = "Error"
+  ];
 }
 
 // Host Memory Information.
@@ -49,6 +52,9 @@ message MemInfo {
   uint64 cached             = 5;
   uint64 swap_cached        = 6;
   uint64 active             = 7;
+  string error              = 8 [
+    (gogoproto.customname) = "Error"
+  ];
 }
 
 // Host System Information.
@@ -99,26 +105,34 @@ message LinuxOSInfo {
 }
 
 message KernelInfo {
-  string kernel_version  = 1;
-  uint32 version         = 2;
-  uint32 major_revision  = 3;
-  uint32 minor_revision  = 4;
-  uint32 patch_number    = 5;
+  string kernel_version = 1;
+  uint64 major_version  = 2;
+  uint64 minor_version  = 3;
+  uint64 patch_number   = 4;
+  string pre_release    = 5;
+  string build          = 6;
 }
 
 // HostInfo contains the details for the Host OS, architecture, and other details.
 message HostInfo {
-  OS os                       = 1;
+  OS os                       = 1 [
+    (gogoproto.customname) = "OS"
+  ];
   KernelInfo kernel_version   = 2;
   OSArchitecture os_arch      = 3;
   // The operating system details based on the specific type of OS as specified in the ENUM.
   // For example, linux systems will use the message.
-  oneof os_details {
-    LinuxOSInfo linux_os_info = 4;
+  oneof OSDetails {
+    LinuxOSInfo linux_os_info = 4 [
+      (gogoproto.customname) = "LinuxOSInfo"
+    ];
   }
   string host_name            = 5;
   // Host environment variables.
   string host_env             = 6;
+  string error                = 7 [
+    (gogoproto.customname) = "Error"
+  ];
 }
 
 enum TestStatus {
