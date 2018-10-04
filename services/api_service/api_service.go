@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/services/api_service/controller"
 	"pixielabs.ai/pixielabs/services/common"
+	"pixielabs.ai/pixielabs/services/common/healthz"
 )
 
 func main() {
@@ -23,6 +24,7 @@ func main() {
 	}
 	mux.Handle("/", http.HandlerFunc(handler))
 	mux.Handle("/gql", controller.GraphQLHandler())
+	healthz.RegisterDefaultChecks(mux)
 
 	common.CreateAndRunTLSServer(mux)
 }
