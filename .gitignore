@@ -42,3 +42,6 @@ vendor/*
 
 # A cache directory to be use by Bazel.
 .bazel-cache
+
+# Arc unit test cache
+linters/.phutil_module-cache
