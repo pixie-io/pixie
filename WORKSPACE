@@ -101,6 +101,20 @@ load(
 
 _cc_image_repos()
 
+# Import NGINX repo.
+load(
+    "@io_bazel_rules_docker//container:container.bzl",
+    "container_pull",
+    container_repositories = "repositories",
+)
+
+container_pull(
+    name = "nginx_base",
+    digest = "sha256:9ad0746d8f2ea6df3a17ba89eca40b48c47066dfab55a75e08e2b70fc80d929e",
+    registry = "index.docker.io",
+    repository = "library/nginx",
+)
+
 ##########################################################
 # Auto-generated GO dependencies (DO NOT EDIT).
 ##########################################################
