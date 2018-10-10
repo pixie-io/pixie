@@ -40,7 +40,7 @@ gazelle: gazelle-repos ## Run gazelle to update go build rules.
 go-setup: dep-ensure gazelle
 
 dev-env-start: ## Start dev environment.
-	$(MINIKUBE) start --cpus 6 --memory 8192 --mount-string="$(GO_PATH)/src/pixielabs.ai/pixielabs/services/certs:/certs" --mount
+	$(MINIKUBE) start --cpus 6 --memory 8192 --mount-string="$(GOPATH)/src/pixielabs.ai/pixielabs/services/certs:/certs" --mount
 
 dev-docker-start:
 	@eval $$(minikube docker-env); ./scripts/run_docker.sh --extra_args="$(DEV_DOCKER_EXTRA_ARGS)"
