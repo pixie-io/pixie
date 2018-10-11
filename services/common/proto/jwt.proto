@@ -2,7 +2,9 @@ syntax = "proto3";
 
 package pl.common;
 
-option go_package = "pixielabs.ai/pixielabs/services/common;jwt";
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option go_package = "pixielabs.ai/pixielabs/services/common/proto;jwt";
 
 // Store the basic JWT claim information.
 message JWTClaims {
@@ -10,11 +12,16 @@ message JWTClaims {
   // https://tools.ietf.org/html/rfc7519#section-4.1
   string audience     = 1;
   int64 expires_at    = 2;
-  string id           = 3;
+  string id           = 3 [(gogoproto.customname) = "ID"];
   int64 issued_at     = 4;
   string issuer       = 5;
   int64 not_before    = 6;
   string subject      = 7;
 
-  // TODO(zasgar): Add custom claims.
+  // Custom claims.
+  string user_id = 8 [
+          (gogoproto.customname) = "UserID",
+          (gogoproto.jsontag) = "userID"
+  ];
+  string email   = 9;
 }

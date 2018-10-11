@@ -7,6 +7,9 @@ proto_library(
     name = "jwt_proto",
     srcs = ["jwt.proto"],
     visibility = ["//visibility:public"],
+    deps = [
+        "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
+    ],
 )
 
 go_proto_library(
@@ -15,4 +18,7 @@ go_proto_library(
     importpath = "pixielabs.ai/pixielabs/services/common/proto",
     proto = ":jwt_proto",
     visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_gogo_protobuf//gogoproto:go_default_library",
+    ],
 )

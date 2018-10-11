@@ -315,3 +315,15 @@ go_repository(
     commit = "e3636079e1a4c1f337f212cc5cd2aca108f6c900",
     importpath = "golang.org/x/crypto",
 )
+
+go_repository(
+    name = "com_github_dgrijalva_jwt_go",
+    commit = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e",
+    importpath = "github.com/dgrijalva/jwt-go",
+)
+
+go_repository(
+    name = "com_github_golang_mock",
+    commit = "c34cdb4725f4c3844d095133c6e40e448b86589b",
+    importpath = "github.com/golang/mock",
+)

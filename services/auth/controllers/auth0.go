@@ -1,22 +1,24 @@
+//go:generate mockgen -source=auth0.go -destination=mock/auth0_mock.gen.go
+
 package controllers
 
 import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
+	pflag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
 func init() {
-	flag.String("auth0_host", "https://pixie-labs.auth0.com", "The auth0 hostname")
-	flag.String("auth0_client_id", "", "Auth0 client ID")
-	flag.String("auth0_client_secret", "", "Auth0 client secret")
+	pflag.String("auth0_host", "https://pixie-labs.auth0.com", "The auth0 hostname")
+	pflag.String("auth0_client_id", "", "Auth0 client ID")
+	pflag.String("auth0_client_secret", "", "Auth0 client secret")
 }
 
 // UserMetadata is a part of the Auth0 response.
@@ -96,6 +98,7 @@ func (a *auth0ConnectorImpl) GetUserIDFromToken(token string) (string, error) {
 	}
 	req.Header.Set("Authorization",
 		fmt.Sprintf("Bearer %s", token))
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {

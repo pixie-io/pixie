@@ -26,6 +26,14 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:76dc72490af7174349349838f2fe118996381b31ea83243812a97e5a0fd5ed55"
+  name = "github.com/dgrijalva/jwt-go"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
+
+[[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -43,6 +51,14 @@
   ]
   pruneopts = "UT"
   revision = "636bf0302bc95575d69441b25a2603156ffdddf1"
+  version = "v1.1.1"
+
+[[projects]]
+  digest = "1:bc38c7c481812e178d85160472e231c5e1c9a7f5845d67e23ee4e706933c10d8"
+  name = "github.com/golang/mock"
+  packages = ["gomock"]
+  pruneopts = "UT"
+  revision = "c34cdb4725f4c3844d095133c6e40e448b86589b"
   version = "v1.1.1"
 
 [[projects]]
@@ -362,8 +378,10 @@
   input-imports = [
     "github.com/blang/semver",
     "github.com/c9s/goprocinfo/linux",
+    "github.com/dgrijalva/jwt-go",
     "github.com/gogo/protobuf/gogoproto",
     "github.com/gogo/protobuf/proto",
+    "github.com/golang/mock/gomock",
     "github.com/golang/protobuf/proto",
     "github.com/google/uuid",
     "github.com/graph-gophers/graphql-go",
