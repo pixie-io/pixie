@@ -147,5 +147,7 @@ message CheckInfo {
   // List of tests that indicate whether a check has failed, passed, or failed to run.
   // TODO(kgandhi): Add more tests for K8s version compatibility and dependency checks.
   TestStatus test_kernel_version = 1;
-  TestStatus test_os             = 2;
+  TestStatus test_os             = 2 [
+    (gogoproto.customname) = "TestOS"
+  ];
 }

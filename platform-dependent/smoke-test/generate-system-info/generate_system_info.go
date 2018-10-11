@@ -1,32 +1,32 @@
 package generatesysteminfo
 
 import (
+	"os"
+	"runtime"
+
 	"github.com/golang/protobuf/proto"
 	log "github.com/sirupsen/logrus"
-	"os"
 	"pixielabs.ai/pixielabs/platform-dependent/smoke-test/generate-system-info/linux-info"
 	pb "pixielabs.ai/pixielabs/platform-dependent/smoke-test/proto"
-	"runtime"
 )
 
 // InfoForOS gets the system information for the identified operating system and writes protobuf messages to a file.
-func InfoForOS(outputFileHandle *os.File) {
+func InfoForOS(outputFileHandle *os.File) (*pb.SystemInfo, *pb.HostInfo) {
 	switch runtime.GOOS {
 	case "linux":
-		getLinuxInfo(outputFileHandle)
+		pbSystemInfo, pbHostInfo := getLinuxInfo(outputFileHandle)
+		return pbSystemInfo, pbHostInfo
 	default:
 		unsupportedOs := "Unsupported OS: " + runtime.GOOS
 		if _, err := outputFileHandle.WriteString(unsupportedOs); err != nil {
 			log.WithError(err).Fatalf("Cannot write to output file")
 		}
-		if err := outputFileHandle.Close(); err != nil {
-			log.WithError(err).Fatalf("Cannot close output file")
-		}
+		return nil, nil
 	}
 }
 
 // Generate system information for a host that runs linux.
-func getLinuxInfo(outFH *os.File) {
+func getLinuxInfo(outFH *os.File) (*pb.SystemInfo, *pb.HostInfo) {
 	pbCPUInfoMessage := linuxinfo.GetLinuxCPUInfo()
 	pbMemInfoMessage := linuxinfo.GetLinuxMemInfo()
 	pbHostInfoMessage := linuxinfo.GetLinuxHostInfo()
@@ -42,7 +42,5 @@ func getLinuxInfo(outFH *os.File) {
 		log.WithError(err).Fatalf("Cannot write to output file")
 	}
 
-	if err := outFH.Close(); err != nil {
-		log.WithError(err).Fatalf("Cannot close output file")
-	}
+	return pbSystemInfoMessage, pbHostInfoMessage
 }

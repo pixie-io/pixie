@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["expectations.go"],
+    importpath = "pixielabs.ai/pixielabs/platform-dependent/smoke-test/system-checks/linux-checker/expectations",
+    visibility = ["//visibility:public"],
+    deps = ["//platform-dependent/smoke-test/proto:host_system_info_go_proto"],
+)

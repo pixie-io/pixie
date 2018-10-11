@@ -1,11 +1,15 @@
 package commands
 
 import (
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	"os"
 	"path"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/platform-dependent/smoke-test/generate-system-info"
+	"pixielabs.ai/pixielabs/platform-dependent/smoke-test/system-checks"
 )
 
 // PixieCmd is a cobra CLI utility to run smoke-tests on client machines to determine validity for agents.
@@ -44,8 +48,12 @@ func init() {
 		"Output file (absolute path with file name) to store host system information")
 	PixieCmd.Flags().BoolVarP(&check, "check", "c", false,
 		"Run checks on host system to validate Pixie agent compatibility")
-	PixieCmd.Flags().BoolVarP(&genInfo, "genInfo", "g", false,
+	PixieCmd.Flags().BoolVarP(&genInfo, "gen_info", "g", false,
 		"Generate host system information and write a protobuf text file")
+
+	viper.AutomaticEnv()
+	viper.SetEnvPrefix("PL")
+	viper.BindPFlags(pflag.CommandLine)
 }
 
 func executeCommand() {
@@ -67,18 +75,31 @@ func executeCommand() {
 		if fileHandle, err := os.Create(outputFileName); err != nil {
 			log.WithError(err).Fatalf("Cannot write to specified output file: %s", outputFileName)
 		} else {
-			log.Println("Output file created: ", outputFileName)
-			log.Println("Generating system information\n")
-			generatesysteminfo.InfoForOS(fileHandle)
-			log.Println("Done generating system information\n")
-			// TODO(kgandhi): Call the function to run the checker.
+			log.Info("Output file created: ", outputFileName)
+			log.Info("Generating system information\n")
+			pbSystemInfo, pbHostInfo := generatesysteminfo.InfoForOS(fileHandle)
+			log.Info("Done generating system information\n")
+
+			if check {
+				// Run the checks.
+				systemchecks.RunChecker(fileHandle, pbSystemInfo, pbHostInfo)
+			}
+
+			// Close the output file
+			if err := fileHandle.Close(); err != nil {
+				log.WithError(err).Fatalf("Cannot close file")
+			}
 		}
 	}
 
 }
 
 func checkCommandFlags(args []string) {
-	if output != "" && genInfo == false {
-		log.Fatalf("Need to specify --info option to generate host system information")
+	if output != "" && !genInfo {
+		log.Fatalf("Need to specify --gen_info (-g) option to generate host system information")
+	}
+
+	if check && !genInfo {
+		log.Fatalf("Need to specify --gen_info (-g) option along with --check (-c)")
 	}
 }
