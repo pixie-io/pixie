@@ -3,6 +3,10 @@
 final class FileCheckerTestEngine extends ArcanistUnitTestEngine {
     private $project_root;
     private $files;
+    private $go_generate_map = array(
+        'go-bindata' => '/(?<=-o=)(.*)(?=\.gen\.go)/',
+        'mockgen' => '/(?<=-destination=)(.*)(?=\.gen\.go)/'
+    );
 
     private function checkFile($file, $fileToCheck, $res) {
         # Check that $fileToCheck exists.
@@ -16,7 +20,7 @@ final class FileCheckerTestEngine extends ArcanistUnitTestEngine {
             # Check that .pb.go is up-to-date.
             $updatedRes = new ArcanistUnitTestResult();
             $updatedRes->setName($fileToCheck . ' up-to-date');
-            if (filemtime($this->project_root . '/' . $fileToCheck) > filemtime($this->project_root . '/' . $file)) {
+            if (filemtime($this->project_root . '/' . $fileToCheck) >= filemtime($this->project_root . '/' . $file)) {
                 $updatedRes->setResult(ArcanistUnitTestResult::RESULT_PASS);
             } else {
                 $updatedRes->setResult(ArcanistUnitTestResult::RESULT_FAIL);
@@ -58,13 +62,21 @@ final class FileCheckerTestEngine extends ArcanistUnitTestEngine {
             # Find if the .go file contains //go:generate.
             foreach(file($this->project_root . '/' . $file) as $fli=>$fl) {
                 if(strpos($fl, '//go:generate') !== false) {
-                    $genGoFile = true;
-
-                    # Find the name of the .gen.go output file.
-                    $matches = array();
-                    preg_match('/(?<=-o=)(.*)(?=\.gen\.go)/', $fl, $matches);
-                    $genGoFilename = substr($file, 0, strrpos($file, '/') + 1) . $matches[0] . '.gen.go';
-                    break;
+                    $command = preg_split('/\s+/', $fl)[1];
+                    if (array_key_exists($command, $this->go_generate_map)) {
+                        $genGoFile = true;
+                        # Find the name of the .gen.go output file.
+                        $matches = array();
+                        preg_match($this->go_generate_map[$command], $fl, $matches);
+                        $genGoFilename = substr($file, 0, strrpos($file, '/') + 1) . $matches[0] . '.gen.go';
+                        break;
+                    } else {
+                        print('go:generate command ' . $command . ' has not been added to go_generate_map. Please add' .
+                            ' an entry in $go_generate_map in linters/engine/FileCheckerTestEngine.php, ' .
+                            'where the key is ' . $command . ' and the value is a regex for the name of the' .
+                            ' generated output file.');
+                        break;
+                    }
                 }
             }
             if ($genGoFile) {
