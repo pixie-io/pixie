@@ -40,12 +40,11 @@ module.exports = {
     hot: true,
     publicPath: '/',
     historyApiFallback: true,
-    proxy: {
-      '/api': {
-        target: 'https://api-service:30010',
-        secure: false,
-      },
-    },
+    proxy: [{
+      context: ['/auth', '/gql'],
+      target: 'https://proxy-service:30011',
+      secure: false,
+    }],
   },
   entry: [require.resolve('react-dev-utils/webpackHotDevClient'), 'index.tsx'],
   mode: isDevServer ? 'development' : 'production',
