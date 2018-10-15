@@ -38,10 +38,12 @@ install_go_deps () {
   if ! command_exists gazelle; then
     echo "Installing gazelle."
     gazelle_github=github.com/bazelbuild/bazel-gazelle/cmd/gazelle
+    echo "Get gazelle"
     go get ${gazelle_github}
+    echo "Install gazelle"
     go install ${gazelle_github}
-
-    go get github.com/golang/lint/golint
+    echo "Get golint"
+    go get -u golang.org/x/lint/golint
   fi
-  echo "All done!"
+  echo "All done with installing go dependencies!"
 }

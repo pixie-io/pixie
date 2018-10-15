@@ -10,7 +10,8 @@ source ${my_dir}/common_setup.sh
 
 brew_packages="node python python3 docker docker-compose
 docker-machine bazel go postgresql pyenv-virtualenv
-clang-format dep minikube"
+clang-format dep"
+brew_cask_packages="minikube"
 
 echo "Checking to see if GO is setup correctly."
 if [ -z ${GOPATH} ]; then
@@ -28,20 +29,10 @@ if ! command_exists brew; then
   exit 1
 fi
 
-echo "Checking if Java exists."
-if ! command_exists java; then
-  echo "Please install java > 1.8."
-  exit 1
-else
-  java_version=$(java -version 2>&1 | sed -n ';s/.* version "\(.*\)\.\(.*\)\..*"/\1\2/p;')
-  if [ "${java_version}" -lt 18 ]; then
-    echo "Java is too old. Please install Java > 1.8."
-    exit 1
-  fi
-fi
-
 echo "Updating Homebrew."
 brew update
+
+brew cask install homebrew/cask-versions/java8
 
 for pkg in ${brew_packages}; do
   if brew list -1 | grep -q "^${pkg}\$"; then
@@ -53,6 +44,12 @@ for pkg in ${brew_packages}; do
     echo "Installing '$pkg'"
     brew install $pkg
   fi
+done
+
+brew cask upgrade
+for pkg in ${brew_cask_packages}; do
+  echo "Installing '$pkg'"
+  brew cask install $pkg
 done
 
 echo "Installing/updating npm dependencies"
@@ -71,6 +68,7 @@ fi
 sleep 10
 
 if ! psql -U pixieuser postgres -c ""; then
+  echo "Create postgresql user \"pixieuser\""
   psql postgres -c "CREATE USER pixieuser WITH PASSWORD 'pixieuser';"
 fi
 
