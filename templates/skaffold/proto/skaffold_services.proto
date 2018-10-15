@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package skaffold_services;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option go_package = "pixielabs.ai/pixielabs/templates/skaffold;skaffold_services";
+
+// ServiceConfig defines all the template params required to generate skaffold service yamls.
+message ServiceConfig {
+    // [dev, prod, staging] Define the type of deployment.
+    string deployment                  = 1;
+    // Determine whether to push code to production env.
+    bool   skip_push                   = 2;
+    // bazel generated target name.
+    string bazel_services_proxy_target = 3;
+    // External address to be used for deployment.
+    string external_address            = 4;
+}

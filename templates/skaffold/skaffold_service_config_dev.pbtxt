@@ -1,0 +1,4 @@
+deployment: "dev"
+skip_push: true
+bazel_services_proxy_target: "//services/proxy:proxy_dev.tar"
+external_address: "https://dev.pixielabs.ai:8080"
