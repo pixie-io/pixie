@@ -12,7 +12,9 @@ export class App extends React.Component<AppProps, any> {
     return (
       <Router>
         <div>
-          <Route exact path='/' render={(props) => <Home name={this.props.name} {...props} />} />
+          Pixie Labs UI!
+          <Route exact path='/' component={Home} />
+          <Route path='/login' component={Auth} />
         </div>
       </Router>
     );

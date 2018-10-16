@@ -82,7 +82,8 @@
     "usePathForSuiteName": "true"
   },
   "dependencies": {
-    "auth0-js": "^9.8.0",
+    "@types/auth0-lock": "^11.4.7",
+    "auth0-lock": "^11.10.0",
     "material-components-web": "^0.38.2",
     "react": "^16.4.2",
     "react-dom": "^16.4.2",
