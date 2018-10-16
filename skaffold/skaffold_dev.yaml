@@ -9,7 +9,7 @@ build:
     - imageName: api_server_image
       workspace: .
       bazel:
-        target: //services/api_service:api_server_image.tar
+        target: //services/api:api_server_image.tar
     - imageName: proxy
       workspace: .
       bazel:
@@ -17,5 +17,5 @@ build:
 deploy:
   kubectl:
     manifests:
-      - services/api_service/service.yaml
+      - services/api/service.yaml
       - services/proxy/service_dev.yaml
