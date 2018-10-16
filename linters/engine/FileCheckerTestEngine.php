@@ -42,6 +42,11 @@ final class FileCheckerTestEngine extends ArcanistUnitTestEngine {
 
         $this->files = $this->getPaths();
 
+        // Filter out deleted files.
+        $this->files = array_filter($this->files, function($f) {
+            return file_exists($this->project_root . '/' . $f);
+        });
+
         # Check that .proto files have corresponding .pb.go files.
         $protoFiles = array_filter($this->files, function($f) {
             return substr($f, -6) == '.proto';
