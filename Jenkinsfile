@@ -15,7 +15,7 @@ import groovy.json.JsonBuilder
 final String PHAB_URL = 'https://phab.pixielabs.ai'
 final String PHAB_API_URL = "${PHAB_URL}/api"
 
-final String DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image:201809261551'
+final String DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image:201810152350'
 /**
   * @brief Generates URL for harbormaster.
   */
@@ -105,6 +105,7 @@ def codeReviewPostBuild = {
 
 def writeBazelRCFile() {
   def bazelRcFile = [
+    'build --remote_local_fallback_strategy=local',
     'build --remote_http_cache=http://bazel-cache.internal.pixielabs.ai:9090',
     'build --announce_rc',
     'build --verbose_failures',

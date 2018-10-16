@@ -65,7 +65,7 @@ RUN mkdir -p src bin \
   && rm -rf ~/.cache
 
 # Install Bazel.
-RUN curl -LO "https://github.com/bazelbuild/bazel/releases/download/0.17.2/bazel_0.17.2-linux-x86_64.deb" \
+RUN curl -LO "https://github.com/bazelbuild/bazel/releases/download/0.18.0/bazel_0.18.0-linux-x86_64.deb" \
   && dpkg -i bazel_*.deb \
   && rm -f bazel_*.deb
 
