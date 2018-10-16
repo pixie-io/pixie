@@ -111,7 +111,7 @@ def writeBazelRCFile() {
     'build --verbose_failures',
     'build --jobs=64',
   ].join('\n')
-  writeFile file: ".bazelrc", text: "${bazelRcFile}"
+  writeFile file: "jenkins.bazelrc", text: "${bazelRcFile}"
 }
 
 

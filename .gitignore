@@ -38,7 +38,7 @@ __pycache__
 vendor/*
 
 # Used for user specific workspace config.
-.bazelrc
+user.bazelrc
 
 # A cache directory to be use by Bazel.
 .bazel-cache
