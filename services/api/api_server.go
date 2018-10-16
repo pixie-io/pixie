@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
-	"pixielabs.ai/pixielabs/services/api_service/controller"
+	"pixielabs.ai/pixielabs/services/api/controller"
 	"pixielabs.ai/pixielabs/services/common"
 	"pixielabs.ai/pixielabs/services/common/healthz"
 )

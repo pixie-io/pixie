@@ -5,7 +5,7 @@ import (
 
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
-	"pixielabs.ai/pixielabs/services/api_service/controller/schema"
+	"pixielabs.ai/pixielabs/services/api/controller/schema"
 )
 
 type query struct{}
