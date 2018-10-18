@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	address     = "greeter-server:50051"
+	address     = "localhost:50051"
 	defaultName = "world"
 )
 
