@@ -1,5 +1,0 @@
-# Enabled C++17 builds by default.
-build --cxxopt --std=c++17
-
-try-import user.bazelrc
-try-import jenkins.bazelrc

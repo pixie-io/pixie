@@ -14,10 +14,18 @@ container_layer(
 )
 
 container_image(
-    name = "proxy",
+    name = "proxy_prod",
     base = "@nginx_base//image",
     layers = [
         ":conf",
         ":ui_assets",
+    ],
+)
+
+container_image(
+    name = "proxy_dev",
+    base = "@nginx_base//image",
+    layers = [
+        ":conf",
     ],
 )

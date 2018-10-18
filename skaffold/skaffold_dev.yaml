@@ -1,21 +1,21 @@
 # Generated file: bazel run //templates/skaffold:skaffoldtemplate
 # DO NOT EDIT
-apiVersion: skaffold/v1alpha2
+apiVersion: skaffold/v1alpha4
 kind: Config
 build:
   local:
-    skipPush: true
+    push: true
   artifacts:
-    - imageName: api_server_image
-      workspace: .
-      bazel:
-        target: //services/api:api_server_image.tar
-    - imageName: proxy
-      workspace: .
-      bazel:
-        target: //services/proxy:proxy_dev.tar
+  - image: api_server_image
+    context: .
+    bazel:
+      target: //services/api:api_server_image.tar
+  - image: proxy
+    context: .
+    bazel:
+      target: //services/proxy:proxy_dev.tar
 deploy:
   kubectl:
     manifests:
-      - services/api/service.yaml
-      - services/proxy/service_dev.yaml
+    - services/api/service.yaml
+    - services/proxy/service_dev.yaml

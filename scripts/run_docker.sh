@@ -28,5 +28,5 @@ docker run --rm -it \
        -v "$HOME/.minikube:$HOME/.minikube" \
        -v "$GOPATH/src/pixielabs.ai:/pl/src/pixielabs.ai" \
        ${extra_args} \
-       gcr.io/pl-dev-infra/dev_image_with_extras:201809261551 \
+       gcr.io/pl-dev-infra/dev_image_with_extras:201810171659 \
        bash
