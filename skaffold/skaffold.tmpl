@@ -6,11 +6,11 @@ build:
   local:
     push: {{.SkipPush}}
   artifacts:
-  - image: api_server_image
+  - image: gcr.io/pl-dev-infra/api_server_image
     context: .
     bazel:
       target: //services/api:api_server_image.tar
-  - image: proxy
+  - image: gcr.io/pl-dev-infra/proxy
     context: .
     bazel:
       target: {{.BazelServicesProxyTarget}}

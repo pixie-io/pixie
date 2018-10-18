@@ -5,4 +5,4 @@ metadata:
 spec:
   containers:
   - name: greeter-client
-    image: greeter_client_image
+    image: gcr.io/pl-dev-infra/greeter_client_image

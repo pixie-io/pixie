@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
   - name: greeter-server
-    image: greeter_server_image
+    image: gcr.io/pl-dev-infra/greeter_server_image
     ports:
       - containerPort: 50051
         hostPort: 50051
