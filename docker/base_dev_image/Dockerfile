@@ -70,7 +70,7 @@ RUN curl -LO "https://github.com/bazelbuild/bazel/releases/download/0.18.0/bazel
   && rm -f bazel_*.deb
 
 # Install Skaffold
-RUN curl -Lo skaffold https://github.com/GoogleContainerTools/skaffold/releases/download/v0.14.0/skaffold-linux-amd64 \
+RUN curl -Lo skaffold https://github.com/GoogleContainerTools/skaffold/releases/download/v0.16.0/skaffold-linux-amd64 \
     && chmod +x skaffold \
     && mv skaffold /usr/local/bin
 

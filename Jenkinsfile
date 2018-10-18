@@ -15,7 +15,7 @@ import groovy.json.JsonBuilder
 final String PHAB_URL = 'https://phab.pixielabs.ai'
 final String PHAB_API_URL = "${PHAB_URL}/api"
 
-final String DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image:201810152350'
+final String DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image:201810171659'
 /**
   * @brief Generates URL for harbormaster.
   */
