@@ -4,7 +4,7 @@ apiVersion: skaffold/v1alpha4
 kind: Config
 build:
   local:
-    push: false
+    push: true
   artifacts:
   - image: gcr.io/pl-dev-infra/api_server_image
     context: .
