@@ -40,37 +40,6 @@
     "webpack-dev-server": "^3.1.5"
   },
   "license": "SEE LICENSE IN LICENSE.txt",
-  "jest": {
-    "globals": {
-      "window": true
-    },
-    "setupFiles": [
-      "<rootDir>/enzyme-setup.js"
-    ],
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js",
-      "jsx"
-    ],
-    "moduleDirectories": [
-      "node_modules",
-      "<rootDir>/src"
-    ],
-    "moduleNameMapper": {
-      "^.+\\.(jpg|jpeg|png|gif|svg)$": "<rootDir>/config/jest/file-mock.js",
-      "(\\.css|scss$)|(normalize.css/normalize)|(^exports-loader)": "identity-obj-proxy"
-    },
-    "transform": {
-      "^.+\\.tsx?$": "ts-jest",
-      "^.+\\.jsx?$": "babel-jest"
-    },
-    "testRegex": ".*-test\\.(ts|tsx|js)$",
-    "reporters": [
-      "default",
-      "jest-junit"
-    ]
-  },
   "jest-junit": {
     "suiteName": "Jest tests",
     "output": "./junit.xml",
