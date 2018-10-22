@@ -10,6 +10,10 @@ build:
     context: .
     bazel:
       target: //services/api:api_server_image.tar
+  - image: gcr.io/pl-dev-infra/auth_server_image
+    context: .
+    bazel:
+      target: //services/auth:auth_server_image.tar
   - image: gcr.io/pl-dev-infra/proxy
     context: .
     bazel:
@@ -17,5 +21,6 @@ build:
 deploy:
   kubectl:
     manifests:
-    - services/api/service.yaml
+    - services/api/service_prod.yaml
+    - services/auth/service_prod.yaml
     - services/proxy/service_prod.yaml

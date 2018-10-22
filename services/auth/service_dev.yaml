@@ -1,16 +1,18 @@
+# Generated file: bazel run //templates/skaffold:skaffoldtemplate
+# DO NOT EDIT
 apiVersion: v1
 kind: Pod
 metadata:
-  name: api-server
+  name: auth-server
   labels:
-    name: api-server
+    name: auth-server
 spec:
   containers:
-  - name: api-server
-    image: gcr.io/pl-dev-infra/api_server_image
+  - name: auth-server
+    image: gcr.io/pl-dev-infra/auth_server_image
     ports:
-      - containerPort: 50050
-        hostPort: 50050
+      - containerPort: 50060
+        hostPort: 50060
     env:
       - name: PL_JWT_SIGNING_KEY
         value: ABC
@@ -20,6 +22,10 @@ spec:
         value: /certs/server.crt
       - name: PL_TLS_KEY
         value: /certs/server.key
+      - name: PL_AUTH0_CLIENT_ID
+        value: qaAfEHQT7mRt6W0gMd9mcQwNANz9kRup
+      - name: PL_AUTH0_CLIENT_SECRET
+        value: _rY9isTWtKgx2saBXNKZmzAf1y9pnKvlm-WdmSVZOFHb9OQtWHEX4Nrh3nWE5NNt
     volumeMounts:
         - name: certs
           mountPath: /certs
@@ -31,13 +37,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: api-service
+  name: auth-service
 spec:
   type: NodePort
   ports:
-    - port: 50050
+    - port: 50060
       protocol: TCP
-      targetPort: 50050
-      nodePort: 30010
+      targetPort: 50060
+      nodePort: 30040
   selector:
-    name: api-server
+    name: auth-server
