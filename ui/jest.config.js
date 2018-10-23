@@ -6,13 +6,15 @@ module.exports = {
     '<rootDir>/enzyme-setup.js',
   ],
   moduleFileExtensions: [
+    'js',
+    'json',
+    'jsx',
+    'mjs',
     'ts',
     'tsx',
-    'js',
-    'jsx',
   ],
   moduleDirectories: [
-    'node_modules',
+    '<rootDir>/node_modules',
     '<rootDir>/src',
   ],
   moduleNameMapper: {
@@ -20,8 +22,8 @@ module.exports = {
     '(\\.css|scss$)|(normalize.css/normalize)|(^exports-loader)': 'identity-obj-proxy',
   },
   transform: {
-    '^.+\\.tsx?$': 'ts-jest',
     '^.+\\.jsx?$': 'babel-jest',
+    '^.+\\.tsx?$': 'ts-jest',
   },
   testRegex: '.*-test\\.(ts|tsx|js|jsx)$',
   reporters: [
