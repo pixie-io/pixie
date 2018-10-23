@@ -4,6 +4,19 @@ function usage() {
   echo "run_docker.sh [--extra_args=<DEV_DOCKER_EXTRA_ARGS>]"
 }
 
+# Read variables from docker.properties file.
+dockerPropertiesFile="$GOPATH/src/pixielabs.ai/pixielabs/docker.properties"
+if [ -f "$dockerPropertiesFile" ]
+then
+  while IFS='=' read -r key value
+  do
+    eval ${key}=\${value}
+  done < "$dockerPropertiesFile"
+else
+  echo "$dockerPropertiesFile not found."
+fi
+
+# Parse arguments.
 while [ "$1" != "" ]; do
     PARAM=`echo "$1" | awk -F= '{print $1}'`
     VALUE=`echo "$1" | awk -F= '{print $2}'`
@@ -28,5 +41,5 @@ docker run --rm -it \
        -v "$HOME/.minikube:$HOME/.minikube" \
        -v "$GOPATH/src/pixielabs.ai:/pl/src/pixielabs.ai" \
        ${extra_args} \
-       gcr.io/pl-dev-infra/dev_image_with_extras:201810171659 \
+       "gcr.io/pl-dev-infra/dev_image_with_extras:$DOCKER_IMAGE_TAG" \
        bash

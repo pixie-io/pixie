@@ -15,7 +15,7 @@ import groovy.json.JsonBuilder
 final String PHAB_URL = 'https://phab.pixielabs.ai'
 final String PHAB_API_URL = "${PHAB_URL}/api"
 
-final String DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image:201810171659'
+final String DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image'
 /**
   * @brief Generates URL for harbormaster.
   */
@@ -124,6 +124,7 @@ if (isPhabricatorTriggeredBuild()) {
 
 node {
   currentBuild.result = 'SUCCESS'
+  String devDockerImageWithTag = '';
   try {
     stage('Checkout code') {
       checkout scm
@@ -131,10 +132,14 @@ node {
         printenv
       '''
       writeBazelRCFile()
+
+      // Get docker image tag.
+      properties = readProperties file: 'docker.properties'
+      devDockerImageWithTag = DEV_DOCKER_IMAGE + ":${properties.DOCKER_IMAGE_TAG}"
     }
     stage('Lint') {
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(DEV_DOCKER_IMAGE).inside {
+        docker.image(devDockerImageWithTag).inside {
           sh 'arc lint --everything'
         }
       }
@@ -142,14 +147,14 @@ node {
     stage('Build') {
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
         // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
-        docker.image(DEV_DOCKER_IMAGE).inside('-v /root/.cache:/root/.cache') {
+        docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache') {
           sh 'make test'
         }
       }
     }
     stage('Build & Test UI') {
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(DEV_DOCKER_IMAGE).inside {
+        docker.image(devDockerImageWithTag).inside {
           sh '''
             cd ui
             yarn install --prefer_offline
