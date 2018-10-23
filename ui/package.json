@@ -53,6 +53,7 @@
     "apollo-client": "^2.4.2",
     "apollo-link-http": "^1.5.5",
     "auth0-lock": "^11.10.0",
+    "axios": "^0.18.0",
     "graphql": "^14.0.2",
     "immutable-tuple": "^0.4.8",
     "material-components-web": "^0.38.2",

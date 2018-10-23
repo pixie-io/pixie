@@ -1,4 +1,5 @@
 import Auth0Lock from 'auth0-lock';
+import Axios from 'axios';
 import * as React from 'react';
 
 const AUTH0_DOMAIN = 'pixie-labs.auth0.com';
@@ -18,8 +19,7 @@ export class Auth extends React.Component<AuthProps, any>  {
   componentDidMount() {
     this._lock = new Auth0Lock(AUTH0_CLIENT_ID, AUTH0_DOMAIN, {
       auth: {
-        redirectUrl: window.location.origin + '/auth/login',
-        responseMode: 'form_post',
+        redirectUrl: window.location.origin + '/login',
         responseType: 'token',
         params: {
           scope: 'openid profile user_metadata email',
@@ -38,7 +38,18 @@ export class Auth extends React.Component<AuthProps, any>  {
     this._lock.show();
     this._lock.on('authenticated', (authResult) => {
       this._lock.hide();
-      this.setSession(authResult);
+      const formData = new FormData();
+      formData.set('access_token', authResult.accessToken);
+      Axios({
+        method: 'post',
+        url: '/auth/login',
+        data: formData,
+      }).then((response) => {
+        this.setSession({
+          idToken: response.data.Token,
+          expiresAt: response.data.ExpiresAt,
+        });
+      });
     });
   }
 
