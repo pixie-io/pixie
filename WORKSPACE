@@ -327,3 +327,33 @@ go_repository(
     commit = "c34cdb4725f4c3844d095133c6e40e448b86589b",
     importpath = "github.com/golang/mock",
 )
+
+go_repository(
+    name = "com_github_zenazn_goji",
+    commit = "64eb34159fe53473206c2b3e70fe396a639452f2",
+    importpath = "github.com/zenazn/goji",
+)
+
+go_repository(
+    name = "com_github_mattn_go_colorable",
+    commit = "167de6bfdfba052fa6b2d3664c8f5272e23c9072",
+    importpath = "github.com/mattn/go-colorable",
+)
+
+go_repository(
+    name = "com_github_mattn_go_isatty",
+    commit = "6ca4dbf54d38eea1a992b3c722a76a5d1c4cb25c",
+    importpath = "github.com/mattn/go-isatty",
+)
+
+go_repository(
+    name = "com_github_mgutz_ansi",
+    commit = "9520e82c474b0a04dd04f8a40959027271bab992",
+    importpath = "github.com/mgutz/ansi",
+)
+
+go_repository(
+    name = "com_github_x_cray_logrus_prefixed_formatter",
+    commit = "bb2702d423886830dee131692131d35648c382e2",
+    importpath = "github.com/x-cray/logrus-prefixed-formatter",
+)

@@ -29,7 +29,7 @@ func GrpcHandlerFunc(grpcServer *grpc.Server, otherHandler http.Handler) http.Ha
 func CreateAndRunTLSServer(handler http.Handler) {
 	tlsCert := viper.GetString("tls_cert")
 	tlsKey := viper.GetString("tls_key")
-
+	loggedHandler := HTTPLoggingMiddleware(handler)
 	log.WithFields(log.Fields{
 		"tlsCertFile": tlsCert,
 		"tlsKeyFile":  tlsKey,
@@ -45,7 +45,7 @@ func CreateAndRunTLSServer(handler http.Handler) {
 
 	s := &http.Server{
 		Addr:    serverAddr,
-		Handler: handler,
+		Handler: loggedHandler,
 		TLSConfig: &tls.Config{
 			Certificates: []tls.Certificate{pair},
 			NextProtos:   []string{"h2"},

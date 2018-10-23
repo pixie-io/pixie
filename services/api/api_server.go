@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
@@ -19,10 +18,6 @@ func main() {
 	common.SetupServiceLogging()
 
 	mux := http.NewServeMux()
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hi there @ path : %s!", r.URL.Path[1:])
-	}
-	mux.Handle("/", http.HandlerFunc(handler))
 	mux.Handle("/gql", controller.GraphQLHandler())
 	healthz.RegisterDefaultChecks(mux)
 
