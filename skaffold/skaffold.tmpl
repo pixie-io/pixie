@@ -18,9 +18,14 @@ build:
     context: .
     bazel:
       target: {{.BazelServicesProxyTarget}}
+  - image: gcr.io/pl-dev-infra/gateway_server_image
+    context: .
+    bazel:
+      target: //services/gateway:gateway_server_image.tar
 deploy:
   kubectl:
     manifests:
     - services/api/service_{{.Deployment}}.yaml
     - services/auth/service_{{.Deployment}}.yaml
     - services/proxy/service_{{.Deployment}}.yaml
+    - services/gateway/service_{{.Deployment}}.yaml

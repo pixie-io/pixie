@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gateway-server
+  labels:
+    name: gateway-server
+spec:
+  containers:
+  - name: gateway-server
+    image: gcr.io/pl-dev-infra/gateway_server_image
+    ports:
+      - containerPort: 50070
+        hostPort: 50070
+    env:
+      - name: PL_JWT_SIGNING_KEY
+        value: ABC
+      - name: PL_EXTERNAL_ADDR
+        value: {{.ExternalAddress}}
+      - name: PL_TLS_CERT
+        value: /certs/server.crt
+      - name: PL_TLS_KEY
+        value: /certs/server.key
+    volumeMounts:
+        - name: certs
+          mountPath: /certs
+  volumes:
+    - name: certs
+      hostPath:
+          path: /certs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+spec:
+  type: NodePort
+  ports:
+    - port: 50070
+      protocol: TCP
+      targetPort: 50070
+      nodePort: 30040
+  selector:
+    name: gateway-server
