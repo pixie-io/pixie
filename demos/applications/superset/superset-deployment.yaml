@@ -1,0 +1,63 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.16.0 ()
+  creationTimestamp: null
+  labels:
+    io.kompose.service: superset
+  name: superset
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        io.kompose.service: superset
+    spec:
+      containers:
+      - args:
+        - tail
+        - -f
+        - /dev/null
+        env:
+        - name: POSTGRES_DB
+          value: superset
+        - name: POSTGRES_HOST
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: superset
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: POSTGRES_USER
+          value: superset
+        - name: REDIS_HOST
+          value: redis
+        - name: REDIS_PORT
+          value: "6379"
+        - name: SUPERSET_ENV
+          value: local
+        image: gcr.io/pl-dev-infra/demos/superset:0.28.1
+        name: superset
+        command: ["/bin/bash"]
+        args: ["-c", "superset db upgrade;superset load_examples;superset init;superset runserver -d"]
+        ports:
+        - containerPort: 8088
+        resources: {}
+        volumeMounts:
+        - mountPath: /home/work/incubator-superset
+          name: superset-claim0
+        - mountPath: /home/work/incubator-superset/superset/assets/node_modules
+          name: superset-node-modules
+      restartPolicy: Always
+      volumes:
+      - name: superset-claim0
+        persistentVolumeClaim:
+          claimName: superset-claim0
+      - name: superset-node-modules
+        persistentVolumeClaim:
+          claimName: superset-node-modules
+status: {}
