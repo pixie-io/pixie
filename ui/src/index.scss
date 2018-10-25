@@ -1,5 +1,5 @@
-$mdc-theme-primary: #424242;
-$mdc-theme-accent: #f9a825;
-$mdc-theme-background: #fff;
+$theme-colors: (
+  "primary": #5362E9
+);
 
-@import "~material-components-web/material-components-web.scss";
+@import "~bootstrap/scss/bootstrap";
