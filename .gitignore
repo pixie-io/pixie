@@ -45,3 +45,6 @@ user.bazelrc
 
 # Arc unit test cache
 linters/.phutil_module-cache
+
+# Ignore Skaffold Build Directory
+skaffold_build/

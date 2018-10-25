@@ -11,9 +11,14 @@ DEP       := dep
 ## Minikube command to use.
 MINIKUBE  := minikube
 
+
+## The directory to write template files to for skaffold (with respect to bazel info workspace).
+SKAFFOLD_DIR := $$(bazel info workspace)/skaffold_build
+
 .PHONY: clean
 clean:
-	$(BAZEL) clean
+	$(BAZEL) clean 
+	rm -rf $(SKAFFOLD_DIR)
 
 .PHONY: pristine
 pristine:
@@ -51,6 +56,15 @@ dev-env-stop: ## Stop dev environment.
 dev-env-teardown: ## Clean up dev environment.
 	$(MINIKUBE) stop
 	$(MINIKUBE) delete
+
+skaffold-dev: ## Run Skaffold in the dev environment.
+	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR)
+
+skaffold-prod: ## Run Skaffold in the prod environment.
+	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --prod
+
+skaffold-staging: ## Run Skaffold in the staging environment.
+	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --staging
 
 help: ## Print help for targets with comments.
 	@echo "Usage:"
