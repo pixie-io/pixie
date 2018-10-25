@@ -1,12 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
+	"github.com/gorilla/context"
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/services/common"
 	"pixielabs.ai/pixielabs/services/common/healthz"
+	"pixielabs.ai/pixielabs/services/gateway/controllers"
 )
 
 func main() {
@@ -18,11 +19,9 @@ func main() {
 	common.SetupServiceLogging()
 
 	mux := http.NewServeMux()
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "gateway-service : %s!", r.URL.Path[1:])
-	}
-	mux.Handle("/", http.HandlerFunc(handler))
+	mux.Handle("/api/auth/login", http.HandlerFunc(controllers.AuthLoginHandler))
+	mux.Handle("/api/auth/logout", http.HandlerFunc(controllers.AuthLogoutHandler))
 
 	healthz.RegisterDefaultChecks(mux)
-	common.CreateAndRunTLSServer(mux)
+	common.CreateAndRunTLSServer(context.ClearHandler(WithEnvMiddleware(mux)))
 }

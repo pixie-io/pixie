@@ -357,3 +357,21 @@ go_repository(
     commit = "bb2702d423886830dee131692131d35648c382e2",
     importpath = "github.com/x-cray/logrus-prefixed-formatter",
 )
+
+go_repository(
+    name = "com_github_gorilla_context",
+    commit = "08b5f424b9271eedf6f9f0ce86cb9396ed337a42",
+    importpath = "github.com/gorilla/context",
+)
+
+go_repository(
+    name = "com_github_gorilla_securecookie",
+    commit = "e59506cc896acb7f7bf732d4fdf5e25f7ccd8983",
+    importpath = "github.com/gorilla/securecookie",
+)
+
+go_repository(
+    name = "com_github_gorilla_sessions",
+    commit = "f57b7e2d29c6211d16ffa52a0998272f75799030",
+    importpath = "github.com/gorilla/sessions",
+)

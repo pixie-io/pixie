@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "auth.go",
+        "env.go",
+        "session.go",
+    ],
+    importpath = "pixielabs.ai/pixielabs/services/gateway/controllers",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//services/common:go_default_library",
+        "@com_github_gorilla_sessions//:go_default_library",
+    ],
+)
