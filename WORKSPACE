@@ -120,7 +120,7 @@ container_pull(
 ##########################################################
 go_repository(
     name = "com_github_golang_protobuf",
-    commit = "b4deda0973fb4c70b50d226b1af49f3da59f5265",
+    commit = "d7fc20193620986259ffb1f9b9da752114ee14a4",
     importpath = "github.com/golang/protobuf",
 )
 
@@ -374,4 +374,10 @@ go_repository(
     name = "com_github_gorilla_sessions",
     commit = "f57b7e2d29c6211d16ffa52a0998272f75799030",
     importpath = "github.com/gorilla/sessions",
+)
+
+go_repository(
+    name = "com_github_grpc_ecosystem_go_grpc_middleware",
+    commit = "c250d6563d4d4c20252cd865923440e829844f4e",
+    importpath = "github.com/grpc-ecosystem/go-grpc-middleware",
 )

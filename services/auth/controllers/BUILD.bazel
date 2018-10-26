@@ -4,11 +4,14 @@ go_library(
     name = "go_default_library",
     srcs = [
         "auth0.go",
+        "env.go",
         "login.go",
+        "server.go",
     ],
     importpath = "pixielabs.ai/pixielabs/services/auth/controllers",
     visibility = ["//visibility:public"],
     deps = [
+        "//services/common:go_default_library",
         "//services/common/proto:jwt_go_proto",
         "//services/common/utils:go_default_library",
         "@com_github_dgrijalva_jwt_go//:go_default_library",

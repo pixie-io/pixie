@@ -18,6 +18,10 @@ func main() {
 	common.CheckServiceFlags()
 	common.SetupServiceLogging()
 
+	env := &controllers.AuthEnv{}
+
+	common.CreateGrpcServer(env)
+
 	mux := http.NewServeMux()
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hi there @ path : %s!", r.URL.Path[1:])

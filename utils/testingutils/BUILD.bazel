@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["jwt.go"],
+    importpath = "pixielabs.ai/pixielabs/utils/testingutils",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//services/common/proto:jwt_go_proto",
+        "//services/common/utils:go_default_library",
+        "@com_github_dgrijalva_jwt_go//:go_default_library",
+    ],
+)
