@@ -2,24 +2,17 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"net/http"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/satori/go.uuid"
-	"github.com/spf13/viper"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	pb "pixielabs.ai/pixielabs/services/auth/proto"
+	"pixielabs.ai/pixielabs/services/common"
 	jwtpb "pixielabs.ai/pixielabs/services/common/proto"
 	"pixielabs.ai/pixielabs/services/common/utils"
 )
-
-// LoginResponse is the returned response from HTTP handler on successful login.
-type LoginResponse struct {
-	Token     string
-	ExpiresAt int64
-}
 
 const (
 	// TokenValidDuration is duration that the token is valid from current time.
@@ -27,90 +20,65 @@ const (
 )
 
 // Login uses auth0 to authenticate and login the user.
-func (s *Server) Login(ctx context.Context, request *pb.LoginRequest) (*pb.LoginReply, error) {
-	return nil, nil
+func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply, error) {
+	env := ctx.Value(common.EnvKey).(*AuthEnv)
+	accessToken := in.AccessToken
+	if accessToken == "" {
+		return nil, status.Error(codes.Unauthenticated, "missing access token")
+	}
+
+	userID, err := s.a.GetUserIDFromToken(accessToken)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "failed to get user ID")
+	}
+
+	// Make request to get user info.
+	userInfo, err := s.a.GetUserInfo(userID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get user info")
+	}
+
+	// If it's a new user, then "register" by assigning a new
+	// UUID.
+	if userInfo.AppMetadata == nil || userInfo.AppMetadata.PLUserID == "" {
+		userUUID := uuid.NewV4()
+		err = s.a.SetPLUserID(userID, userUUID.String())
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to set user ID")
+		}
+
+		// Read updated user info.
+		userInfo, err = s.a.GetUserInfo(userID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to read updated user info")
+		}
+	}
+
+	expiresAt := time.Now().Add(TokenValidDuration)
+	claims := generateJWTClaimsForUser(userInfo, expiresAt)
+	token, err := signJWTClaims(claims, env.SigningKey)
+
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate token")
+	}
+
+	return &pb.LoginReply{
+		Token:     token,
+		ExpiresAt: expiresAt.Unix(),
+	}, nil
 }
 
 // GetAugmentedToken produces augmented tokens for the user based on passed in credentials.
 func (s *Server) GetAugmentedToken(
-	ctx context.Context, request *pb.GetAugmentedAuthTokenRequest) (
+	ctx context.Context, in *pb.GetAugmentedAuthTokenRequest) (
 	*pb.GetAugmentedAuthTokenResponse, error) {
-	return nil, nil
-}
-
-// NewHandleLoginFunc creates a login handler and initializes auth backend.
-func NewHandleLoginFunc() (http.HandlerFunc, error) {
-	jwtSigningKey := viper.GetString("jwt_signing_key")
-
-	cfg := NewAuth0Config()
-	auth0Connector := NewAuth0Connector(cfg)
-	if err := auth0Connector.Init(); err != nil {
-		return nil, errors.New("failed to initialize Auth0")
+	// TODO(zasgar): This should actually do ACL's, etc. at some point.
+	env := ctx.Value(common.EnvKey).(*AuthEnv)
+	resp := &pb.GetAugmentedAuthTokenResponse{
+		Token:  in.Token,
+		Claims: env.Claims,
 	}
-
-	return MakeHandleLoginFunc(auth0Connector, jwtSigningKey), nil
-}
-
-// MakeHandleLoginFunc creates an HTTP handler and injects the auth connector.
-func MakeHandleLoginFunc(a Auth0Connector, jwtSigningKey string) http.HandlerFunc {
-
-	return func(w http.ResponseWriter, r *http.Request) {
-		accessToken := r.FormValue("access_token")
-		if accessToken == "" {
-			http.Error(w, "missing access token", http.StatusUnauthorized)
-			return
-		}
-
-		userID, err := a.GetUserIDFromToken(accessToken)
-		if err != nil {
-			http.Error(w, "failed to get user ID", http.StatusUnauthorized)
-			return
-		}
-
-		// Make request to get user info.
-		userInfo, err := a.GetUserInfo(userID)
-		if err != nil {
-			http.Error(w, "failed to get user info", http.StatusInternalServerError)
-			return
-		}
-
-		// If it's a new user, then "register" by assigning a new
-		// UUID.
-		if userInfo.AppMetadata == nil || userInfo.AppMetadata.PLUserID == "" {
-			userUUID := uuid.NewV4()
-			err = a.SetPLUserID(userID, userUUID.String())
-			if err != nil {
-				http.Error(w, "failed to set user ID", http.StatusInternalServerError)
-				return
-			}
-
-			// Read updated user info.
-			userInfo, err = a.GetUserInfo(userID)
-			if err != nil {
-				http.Error(w, "failed to read updated user info", http.StatusInternalServerError)
-				return
-			}
-		}
-
-		expiresAt := time.Now().Add(TokenValidDuration)
-		claims := generateJWTClaimsForUser(userInfo, expiresAt)
-		token, err := signJWTClaims(claims, jwtSigningKey)
-
-		if err != nil {
-			http.Error(w, "failed to generate token", http.StatusInternalServerError)
-		}
-
-		resp := LoginResponse{
-			Token:     token,
-			ExpiresAt: expiresAt.Unix(),
-		}
-
-		json, err := json.Marshal(resp)
-		if err != nil {
-			http.Error(w, "failed to generate JSON response", http.StatusInternalServerError)
-		}
-		w.Write(json)
-	}
+	return resp, nil
 }
 
 func generateJWTClaimsForUser(userInfo *UserInfo, expiresAt time.Time) *jwtpb.JWTClaims {

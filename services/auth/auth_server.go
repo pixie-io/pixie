@@ -20,11 +20,6 @@ func main() {
 	common.SetupServiceLogging()
 
 	mux := http.NewServeMux()
-	loginHandler, err := controllers.NewHandleLoginFunc()
-	if err != nil {
-		log.WithError(err).Panic("could not initialize login function")
-	}
-	mux.Handle("/auth/login", loginHandler)
 	healthz.RegisterDefaultChecks(mux)
 
 	env := &controllers.AuthEnv{
@@ -33,8 +28,20 @@ func main() {
 			SigningKey:      viper.GetString("jwt_signing_key"),
 		},
 	}
+	cfg := controllers.NewAuth0Config()
+
+	a := controllers.NewAuth0Connector(cfg)
+	if err := a.Init(); err != nil {
+		log.WithError(err).Fatal("Failed to initialize Auth0")
+	}
+	server, err := controllers.NewServer(a)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
+
+	}
+
 	s := common.NewPLServer(env, mux)
-	auth.RegisterAuthServiceServer(s.GRPCServer(), &controllers.Server{})
+	auth.RegisterAuthServiceServer(s.GRPCServer(), server)
 	s.Start()
 	s.StopOnInterrupt()
 }

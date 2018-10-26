@@ -1,24 +1,38 @@
 package controllers_test
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/services/auth/controllers"
 	"pixielabs.ai/pixielabs/services/auth/controllers/mock"
+	pb "pixielabs.ai/pixielabs/services/auth/proto"
+	"pixielabs.ai/pixielabs/services/common"
+	jwtpb "pixielabs.ai/pixielabs/services/common/proto"
+	"pixielabs.ai/pixielabs/utils/testingutils"
 )
 
-func TestPostLogin(t *testing.T) {
+func getTestContext() context.Context {
+	env := controllers.AuthEnv{
+		Env: &common.Env{
+			SigningKey: "jwtkey",
+			Claims: &jwtpb.JWTClaims{
+				Email: "test@test.com",
+			},
+		},
+	}
+	return context.WithValue(context.Background(), common.EnvKey, &env)
+}
+
+func TestServer_Login(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -41,44 +55,40 @@ func TestPostLogin(t *testing.T) {
 	}).Return(nil)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
 
-	loginHandler := controllers.MakeHandleLoginFunc(a, "jwtkey")
-	rr := doLoginRequest(t, loginHandler)
-
-	// Check the response data.
-	assert.Equal(t, http.StatusOK, rr.Code)
-	body, err := ioutil.ReadAll(rr.Body)
+	s, err := controllers.NewServer(a)
 	assert.Nil(t, err)
 
-	var parsedResponse controllers.LoginResponse
-	err = json.Unmarshal(body, &parsedResponse)
+	resp, err := doLoginRequest(getTestContext(), t, s)
 	assert.Nil(t, err)
 
 	// Make sure expiry time is in the future.
 	currentTime := time.Now().Unix()
 	maxExpiryTime := time.Now().Add(7 * 24 * time.Hour).Unix()
-	assert.True(t, parsedResponse.ExpiresAt > currentTime && parsedResponse.ExpiresAt < maxExpiryTime)
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 
-	verifyToken(t, parsedResponse.Token, fakeUserInfoSecondRequest.AppMetadata.PLUserID, parsedResponse.ExpiresAt, "jwtkey")
+	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata.PLUserID, resp.ExpiresAt, "jwtkey")
 }
 
-func TestPostLogin_BadToken(t *testing.T) {
+func TestServer_Login_BadToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("", errors.New("bad token"))
 
-	loginHandler := controllers.MakeHandleLoginFunc(a, "jwtkey")
-	rr := doLoginRequest(t, loginHandler)
-
-	// Check the response data.
-	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-	body, err := ioutil.ReadAll(rr.Body)
+	s, err := controllers.NewServer(a)
 	assert.Nil(t, err)
-	assert.Contains(t, string(body), "failed to get user")
+
+	resp, err := doLoginRequest(getTestContext(), t, s)
+	assert.NotNil(t, err)
+	// Check the response data.
+	stat, ok := status.FromError(err)
+	assert.True(t, ok)
+	assert.Equal(t, codes.Unauthenticated, stat.Code())
+	assert.Nil(t, resp)
 }
 
-func TestPostLogin_HasPLUserID(t *testing.T) {
+func TestServer_Login_HasPLUserID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -93,24 +103,39 @@ func TestPostLogin_HasPLUserID(t *testing.T) {
 	}
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
 
-	loginHandler := controllers.MakeHandleLoginFunc(a, "jwtkey")
-	rr := doLoginRequest(t, loginHandler)
-
-	// Check the response data.
-	assert.Equal(t, http.StatusOK, rr.Code)
-	body, err := ioutil.ReadAll(rr.Body)
+	s, err := controllers.NewServer(a)
 	assert.Nil(t, err)
 
-	var parsedResponse controllers.LoginResponse
-	err = json.Unmarshal(body, &parsedResponse)
+	resp, err := doLoginRequest(getTestContext(), t, s)
 	assert.Nil(t, err)
+	assert.NotNil(t, resp)
 
 	// Make sure expiry time is in the future.
 	currentTime := time.Now().Unix()
 	maxExpiryTime := time.Now().Add(7 * 24 * time.Hour).Unix()
-	assert.True(t, parsedResponse.ExpiresAt > currentTime && parsedResponse.ExpiresAt < maxExpiryTime)
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 
-	verifyToken(t, parsedResponse.Token, "pluserid", parsedResponse.ExpiresAt, "jwtkey")
+	verifyToken(t, resp.Token, "pluserid", resp.ExpiresAt, "jwtkey")
+}
+
+func TestServer_GetAugmentedToken(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	s, err := controllers.NewServer(a)
+	assert.Nil(t, err)
+
+	token := testingutils.GenerateTestJWTToken(t, "jwtkey")
+	req := &pb.GetAugmentedAuthTokenRequest{
+		Token: token,
+	}
+	resp, err := s.GetAugmentedToken(getTestContext(), req)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+
+	assert.Equal(t, token, resp.Token)
+	fmt.Printf("resp: %v", resp)
+	assert.Equal(t, "test@test.com", resp.Claims.Email)
 }
 
 func verifyToken(t *testing.T, token, expectedUserID string, expectedExpiry int64, key string) {
@@ -123,16 +148,9 @@ func verifyToken(t *testing.T, token, expectedUserID string, expectedExpiry int6
 	assert.Equal(t, expectedExpiry, int64(claims["exp"].(float64)))
 }
 
-func doLoginRequest(t *testing.T, loginHandler http.HandlerFunc) *httptest.ResponseRecorder {
-	data := url.Values{}
-	data.Set("access_token", "tokenabc")
-	// Create the request and serve.
-	req, err := http.NewRequest("POST", "/login", bytes.NewBufferString(data.Encode()))
-	assert.Nil(t, err)
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
-	rr := httptest.NewRecorder()
-	loginHandler.ServeHTTP(rr, req)
-
-	return rr
+func doLoginRequest(ctx context.Context, t *testing.T, server *controllers.Server) (*pb.LoginReply, error) {
+	req := &pb.LoginRequest{
+		AccessToken: "tokenabc",
+	}
+	return server.Login(ctx, req)
 }
