@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/spf13/viper"
 	pb "pixielabs.ai/pixielabs/services/common/proto"
 	"pixielabs.ai/pixielabs/services/common/utils"
 )
@@ -19,6 +20,14 @@ type Env struct {
 	ExternalAddress string
 	SigningKey      string
 	Claims          *pb.JWTClaims
+}
+
+// NewEnv creates a new base environment use by all our services.
+func NewEnv() *Env {
+	return &Env{
+		ExternalAddress: viper.GetString("external_address"),
+		SigningKey:      viper.GetString("jwt_signing_key"),
+	}
 }
 
 // BaseEnver is the interface that all sub-environments should implement.
