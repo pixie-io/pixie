@@ -3,16 +3,38 @@ Location: gcr.io/pl-dev-infra/demos/superset:0.28.1
 This docker container was built from apache incubator-superset
 https://github.com/apache/incubator-superset
 
+# Generating Docker Images
+The superset application has a Dockerfile that is included in the github
+repo and also has a shell script to build the docker image.
+Run the following commands to generate the docker image for
+the application and store in our container registry.
+
+```
+bash -x docker-build.sh
+docker images
+docker tag apache/incubator-superset:latest gcr.io/pl-dev-infra/demos/superset:<version>
+docker push gcr.io/pl-dev-infra/demos/superset:<version>
+```
+
+Note: You want to tag the image with the latest version of the application.
+
+If you clone the latest git repo for the application, then you will need to update the
+tag for the kubernetes manifest yaml files as well. This can be achieved as follows
+(in the application's kubernetes_manifests directory):
+```
+sed -i'.original' -e 's/<old-version>/<new-version>/g' *yaml
+```
+You should commit these changes into the repo after testing out the changes
+on GKE.
+
 # How to Run the Application on GKE
 The k8s manifest files are included in the folder for the application:
-`//pixielabs.ai/pixielabs/demos/applications/superset/*.yaml`
+`//pixielabs.ai/pixielabs/demos/applications/superset/kubernetes_manifests/*.yaml`
 
 Run the following command after setting the kubectl context for a cluster
 
-```kubectl create -f postgres-deployment.yaml,postgres-persistentvolumeclaim.yaml,
-postgres-service.yaml,redis-deployment.yaml,redis-persistentvolumeclaim.yaml,
-redis-service.yaml,superset-claim0-persistentvolumeclaim.yaml,superset-deployment.yaml,
-superset-node-modules-persistentvolumeclaim.yaml,superset-service.yaml
+```
+kubectl create -f ./kubernetes_manifests
 ```
 
 # Create the admin user
