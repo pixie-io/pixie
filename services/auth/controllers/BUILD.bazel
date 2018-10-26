@@ -11,6 +11,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/services/auth/controllers",
     visibility = ["//visibility:public"],
     deps = [
+        "//services/auth/proto:auth_go_proto",
         "//services/common:go_default_library",
         "//services/common/proto:jwt_go_proto",
         "//services/common/utils:go_default_library",

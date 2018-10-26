@@ -20,7 +20,7 @@ func main() {
 
 	env := &controllers.AuthEnv{}
 
-	common.CreateGrpcServer(env)
+	grpcServer := common.CreateGrpcServer(env)
 
 	mux := http.NewServeMux()
 	handler := func(w http.ResponseWriter, r *http.Request) {
@@ -37,5 +37,5 @@ func main() {
 	mux.Handle("/auth/login", loginHandler)
 	healthz.RegisterDefaultChecks(mux)
 
-	common.CreateAndRunTLSServer(mux)
+	common.CreateAndRunTLSServer(common.GrpcHandlerFunc(grpcServer, mux))
 }

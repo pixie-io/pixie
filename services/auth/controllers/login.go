@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -9,9 +10,9 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/satori/go.uuid"
 	"github.com/spf13/viper"
+	pb "pixielabs.ai/pixielabs/services/auth/proto"
+	jwtpb "pixielabs.ai/pixielabs/services/common/proto"
 	"pixielabs.ai/pixielabs/services/common/utils"
-
-	pb "pixielabs.ai/pixielabs/services/common/proto"
 )
 
 // LoginResponse is the returned response from HTTP handler on successful login.
@@ -24,6 +25,18 @@ const (
 	// TokenValidDuration is duration that the token is valid from current time.
 	TokenValidDuration = 5 * 24 * time.Hour
 )
+
+// Login uses auth0 to authenticate and login the user.
+func (s *Server) Login(ctx context.Context, request *pb.LoginRequest) (*pb.LoginReply, error) {
+	return nil, nil
+}
+
+// GetAugmentedToken produces augmented tokens for the user based on passed in credentials.
+func (s *Server) GetAugmentedToken(
+	ctx context.Context, request *pb.GetAugmentedAuthTokenRequest) (
+	*pb.GetAugmentedAuthTokenResponse, error) {
+	return nil, nil
+}
 
 // NewHandleLoginFunc creates a login handler and initializes auth backend.
 func NewHandleLoginFunc() (http.HandlerFunc, error) {
@@ -100,8 +113,8 @@ func MakeHandleLoginFunc(a Auth0Connector, jwtSigningKey string) http.HandlerFun
 	}
 }
 
-func generateJWTClaimsForUser(userInfo *UserInfo, expiresAt time.Time) *pb.JWTClaims {
-	claims := pb.JWTClaims{
+func generateJWTClaimsForUser(userInfo *UserInfo, expiresAt time.Time) *jwtpb.JWTClaims {
+	claims := jwtpb.JWTClaims{
 		UserID: userInfo.AppMetadata.PLUserID,
 		Email:  userInfo.Email,
 		// Standard claims.
@@ -112,7 +125,7 @@ func generateJWTClaimsForUser(userInfo *UserInfo, expiresAt time.Time) *pb.JWTCl
 	return &claims
 }
 
-func signJWTClaims(claims *pb.JWTClaims, signingKey string) (string, error) {
+func signJWTClaims(claims *jwtpb.JWTClaims, signingKey string) (string, error) {
 	mc := utils.PBToMapClaims(claims)
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, mc).SignedString([]byte(signingKey))
 }
