@@ -12,7 +12,7 @@ import (
 func main() {
 	log.WithField("service", "api-service").Info("Starting service")
 
-	common.SetupService("api-service", 50050)
+	common.SetupService("api-service", 50200)
 	common.PostFlagSetupAndParse()
 	common.CheckServiceFlags()
 	common.SetupServiceLogging()
@@ -21,5 +21,7 @@ func main() {
 	mux.Handle("/gql", controller.GraphQLHandler())
 	healthz.RegisterDefaultChecks(mux)
 
-	common.CreateAndRunTLSServer(mux)
+	s := common.NewPLServer(nil, mux)
+	s.Start()
+	s.StopOnInterrupt()
 }

@@ -9,8 +9,10 @@ spec:
   - name: gateway-server
     image: gcr.io/pl-dev-infra/gateway_server_image
     ports:
-      - containerPort: 50070
-        hostPort: 50070
+      - containerPort: 50000
+        hostPort: 50000
+      - containerPort: 50001
+        hostPort: 50001
     env:
       - name: PL_JWT_SIGNING_KEY
         value: ABC
@@ -35,9 +37,13 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - port: 50070
+    - port: 50000
       protocol: TCP
-      targetPort: 50070
-      nodePort: 30041
+      targetPort: 50000
+      nodePort: 30000
+    - port: 50001
+      protocol: TCP
+      targetPort: 50001
+      nodePort: 30001
   selector:
     name: gateway-server

@@ -9,8 +9,10 @@ import (
 )
 
 // SetupService configures basic flags and defaults required by all services.
-func SetupService(serviceName string, defaultPort uint) {
-	pflag.Uint("port", defaultPort, fmt.Sprintf("The port to run the %s server", serviceName))
+func SetupService(serviceName string, servicePortBase uint) {
+	pflag.Uint("grpc_port", servicePortBase, fmt.Sprintf("The port to run the %s GRPC server", serviceName))
+	pflag.Uint("http_port", servicePortBase+1, fmt.Sprintf("The port to run the %s HTTP server", serviceName))
+	pflag.Bool("disable_ssl", false, "Disable SSL on the server")
 	pflag.String("tls_key", "../certs/server.key", "The TLS key to use.")
 	pflag.String("tls_cert", "../certs/server.crt", "The TLS certificate to use.")
 	pflag.String("jwt_signing_key", "", "The signing key used for JWTs")
@@ -35,5 +37,13 @@ func CheckServiceFlags() {
 
 	if len(viper.GetString("external_addr")) == 0 {
 		log.Panic("Flag --external_addr or ENV PL_EXTERNAL_ADDR is required")
+	}
+
+	if !viper.GetBool("disable_ssl") && len(viper.GetString("tls_key")) == 0 {
+		log.Panic("Flag --tls_key or ENV PL_TLS_KEY is required when ssl is enabled")
+	}
+
+	if !viper.GetBool("disable_ssl") && len(viper.GetString("tls_cert")) == 0 {
+		log.Panic("Flag --tls_cert or ENV PL_TLS_CERT is required when ssl is enabled")
 	}
 }

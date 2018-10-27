@@ -9,8 +9,10 @@ spec:
   - name: api-server
     image: gcr.io/pl-dev-infra/api_server_image
     ports:
-      - containerPort: 50050
-        hostPort: 50050
+      - containerPort: 50200
+        hostPort: 50200
+      - containerPort: 50201
+        hostPort: 50201
     env:
       - name: PL_JWT_SIGNING_KEY
         value: ABC
@@ -35,9 +37,13 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - port: 50050
+    - port: 50200
       protocol: TCP
-      targetPort: 50050
-      nodePort: 30010
+      targetPort: 50200
+      nodePort: 30200
+    - port: 50201
+      protocol: TCP
+      targetPort: 50201
+      nodePort: 30201
   selector:
     name: api-server

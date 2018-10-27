@@ -5,6 +5,7 @@ import (
 	"net"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -16,18 +17,23 @@ import (
 	"pixielabs.ai/pixielabs/utils/testingutils"
 )
 
+func init() {
+	// Test will fail with SSL enabled since we don't expose certs to the tests.
+	viper.Set("disable_ssl", true)
+}
+
 type server struct{}
 
 func (s *server) Ping(ctx context.Context, in *pb.PingRequest) (*pb.PingReply, error) {
 	return &pb.PingReply{Reply: "test reply"}, nil
 }
 
-func startTestGrpcServer(t *testing.T) (int, func()) {
+func startTestGRPCServer(t *testing.T) (int, func()) {
 	env := common.Env{
 		ExternalAddress: "https://testing.com",
 		SigningKey:      "abc",
 	}
-	s := common.CreateGrpcServer(&env)
+	s := common.CreateGRPCServer(&env)
 	pb.RegisterPingServiceServer(s, &server{})
 	lis, err := net.Listen("tcp", ":0")
 
@@ -57,8 +63,8 @@ func makeTestRequest(ctx context.Context, t *testing.T, port int) (*pb.PingReply
 	return c.Ping(ctx, &pb.PingRequest{Req: "hello"})
 }
 
-func TestCreateGrpcServer(t *testing.T) {
-	port, cleanup := startTestGrpcServer(t)
+func TestCreateGRPCServer(t *testing.T) {
+	port, cleanup := startTestGRPCServer(t)
 	defer cleanup()
 
 	token := testingutils.GenerateTestJWTToken(t, "abc")
@@ -70,8 +76,8 @@ func TestCreateGrpcServer(t *testing.T) {
 	assert.Equal(t, "test reply", resp.Reply)
 }
 
-func TestCreateGrpcServer_BadToken(t *testing.T) {
-	port, cleanup := startTestGrpcServer(t)
+func TestCreateGRPCServer_BadToken(t *testing.T) {
+	port, cleanup := startTestGRPCServer(t)
 	defer cleanup()
 
 	token := "bad.jwt.token"
@@ -86,8 +92,8 @@ func TestCreateGrpcServer_BadToken(t *testing.T) {
 	assert.Nil(t, resp)
 }
 
-func TestCreateGrpcServer_MissingAuth(t *testing.T) {
-	port, cleanup := startTestGrpcServer(t)
+func TestCreateGRPCServer_MissingAuth(t *testing.T) {
+	port, cleanup := startTestGRPCServer(t)
 	defer cleanup()
 
 	resp, err := makeTestRequest(context.Background(), t, port)

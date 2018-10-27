@@ -9,8 +9,10 @@ spec:
   - name: auth-server
     image: gcr.io/pl-dev-infra/auth_server_image
     ports:
-      - containerPort: 50060
-        hostPort: 50060
+      - containerPort: 50100
+        hostPort: 50100
+      - containerPort: 50101
+        hostPort: 50101
     env:
       - name: PL_JWT_SIGNING_KEY
         value: ABC
@@ -39,9 +41,13 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - port: 50060
+    - port: 50100
       protocol: TCP
-      targetPort: 50060
-      nodePort: 30040
+      targetPort: 50100
+      nodePort: 30100
+    - port: 50101
+      protocol: TCP
+      targetPort: 50101
+      nodePort: 30101
   selector:
     name: auth-server

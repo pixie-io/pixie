@@ -1,11 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/services/auth/controllers"
+	"pixielabs.ai/pixielabs/services/auth/proto"
 	"pixielabs.ai/pixielabs/services/common"
 	"pixielabs.ai/pixielabs/services/common/healthz"
 )
@@ -13,29 +14,27 @@ import (
 func main() {
 	log.WithField("service", "auth-service").Info("Starting service")
 
-	common.SetupService("auth-service", 50060)
+	common.SetupService("auth-service", 50100)
 	common.PostFlagSetupAndParse()
 	common.CheckServiceFlags()
 	common.SetupServiceLogging()
 
-	env := &controllers.AuthEnv{}
-
-	grpcServer := common.CreateGrpcServer(env)
-
 	mux := http.NewServeMux()
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hi there @ path : %s!", r.URL.Path[1:])
-	}
-	mux.Handle("/", http.HandlerFunc(handler))
-
 	loginHandler, err := controllers.NewHandleLoginFunc()
-
 	if err != nil {
 		log.WithError(err).Panic("could not initialize login function")
 	}
-
 	mux.Handle("/auth/login", loginHandler)
 	healthz.RegisterDefaultChecks(mux)
 
-	common.CreateAndRunTLSServer(common.GrpcHandlerFunc(grpcServer, mux))
+	env := &controllers.AuthEnv{
+		Env: &common.Env{
+			ExternalAddress: viper.GetString("external_addr"),
+			SigningKey:      viper.GetString("jwt_signing_key"),
+		},
+	}
+	s := common.NewPLServer(env, mux)
+	auth.RegisterAuthServiceServer(s.GRPCServer(), &controllers.Server{})
+	s.Start()
+	s.StopOnInterrupt()
 }
