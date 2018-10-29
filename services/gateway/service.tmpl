@@ -9,13 +9,15 @@ spec:
   - name: gateway-server
     image: gcr.io/pl-dev-infra/gateway_server_image
     ports:
-      - containerPort: 50000
-        hostPort: 50000
-      - containerPort: 50001
-        hostPort: 50001
+      - containerPort: 51000
+        hostPort: 51000
+      - containerPort: 51001
+        hostPort: 51001
     env:
       - name: PL_JWT_SIGNING_KEY
         value: ABC
+      - name: PL_SESSION_KEY
+        value: ABC_SESSION
       - name: PL_EXTERNAL_ADDR
         value: {{.ExternalAddress}}
       - name: PL_TLS_CERT
@@ -37,13 +39,15 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - port: 50000
+    - port: 51000
       protocol: TCP
-      targetPort: 50000
-      nodePort: 30000
-    - port: 50001
+      targetPort: 51000
+      nodePort: 31000
+      name: tcp-31000
+    - port: 51001
       protocol: TCP
-      targetPort: 50001
-      nodePort: 30001
+      targetPort: 51001
+      nodePort: 31001
+      name: tcp-31001
   selector:
     name: gateway-server
