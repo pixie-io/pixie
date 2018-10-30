@@ -16,6 +16,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: loadgenerator
+
 spec:
   replicas: 1
   template:
@@ -23,6 +24,13 @@ spec:
       labels:
         app: loadgenerator
     spec:
+      nodeSelector:
+        dedicatednode: load
+      tolerations:
+      - key: "dedicated"
+        operator: "Equal"
+        value: "load"
+        effect: "NoSchedule"
       terminationGracePeriodSeconds: 5
       restartPolicy: Always
       initContainers:
