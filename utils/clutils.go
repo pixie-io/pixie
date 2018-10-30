@@ -7,7 +7,6 @@ package utils
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -40,14 +39,10 @@ func ScanStream(stream io.ReadCloser, write func(...interface{})) {
 
 // addSignalInterruptCatch adds a catch for keyboard interrupt. Useful if you want to interrupt another process before exiting a script.
 func addSignalInterruptCatch(action func()) {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	go func() {
-		for range c {
-			// sig is a ^C, handle it
-			action()
-		}
-	}()
+	ch := make(chan os.Signal)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+	<-ch
+	action()
 }
 
 // RunCmd runs command and add stdout/stderr buffers that pass to the go output.
@@ -68,9 +63,9 @@ func RunCmd(cmd *exec.Cmd) error {
 	if err != nil {
 		return err
 	}
+
 	addSignalInterruptCatch(func() {
-		fmt.Println("Sending SIGINT")
-		cmd.Process.Signal(syscall.SIGINT)
+		cmd.Process.Kill()
 	})
 
 	err = cmd.Wait()
