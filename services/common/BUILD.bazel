@@ -3,9 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
-        "env.go",
         "grpc_server.go",
-        "http_middleware.go",
         "logging.go",
         "server.go",
         "service_flags.go",
@@ -13,9 +11,8 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/services/common",
     visibility = ["//visibility:public"],
     deps = [
-        "//services/common/proto:jwt_go_proto",
-        "//services/common/utils:go_default_library",
-        "@com_github_dgrijalva_jwt_go//:go_default_library",
+        "//services/common/env:go_default_library",
+        "//services/common/sessioncontext:go_default_library",
         "@com_github_grpc_ecosystem_go_grpc_middleware//:go_default_library",
         "@com_github_grpc_ecosystem_go_grpc_middleware//auth:go_default_library",
         "@com_github_grpc_ecosystem_go_grpc_middleware//logging/logrus:go_default_library",
@@ -36,12 +33,10 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = [
-        "env_test.go",
-        "grpc_server_test.go",
-    ],
+    srcs = ["grpc_server_test.go"],
     embed = [":go_default_library"],
     deps = [
+        "//services/common/env:go_default_library",
         "//services/common/testproto:ping_go_proto",
         "//utils/testingutils:go_default_library",
         "@com_github_spf13_viper//:go_default_library",

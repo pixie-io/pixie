@@ -4,15 +4,14 @@ go_library(
     name = "go_default_library",
     srcs = [
         "auth.go",
-        "env.go",
         "session.go",
     ],
     importpath = "pixielabs.ai/pixielabs/services/gateway/controllers",
     visibility = ["//visibility:public"],
     deps = [
-        "//services/common:go_default_library",
+        "//services/common/env:go_default_library",
+        "//services/common/handler:go_default_library",
+        "//services/gateway/gwenv:go_default_library",
         "@com_github_gorilla_sessions//:go_default_library",
-        "@com_github_spf13_pflag//:go_default_library",
-        "@com_github_spf13_viper//:go_default_library",
     ],
 )

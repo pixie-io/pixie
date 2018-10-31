@@ -2,34 +2,26 @@ package controllers_test
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/golang/mock/gomock"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"pixielabs.ai/pixielabs/services/auth/authenv"
 	"pixielabs.ai/pixielabs/services/auth/controllers"
 	"pixielabs.ai/pixielabs/services/auth/controllers/mock"
 	pb "pixielabs.ai/pixielabs/services/auth/proto"
-	"pixielabs.ai/pixielabs/services/common"
-	jwtpb "pixielabs.ai/pixielabs/services/common/proto"
+	"pixielabs.ai/pixielabs/services/common/sessioncontext"
 	"pixielabs.ai/pixielabs/utils/testingutils"
 )
 
 func getTestContext() context.Context {
-	env := controllers.AuthEnv{
-		Env: &common.Env{
-			SigningKey: "jwtkey",
-			Claims: &jwtpb.JWTClaims{
-				Email: "test@test.com",
-			},
-		},
-	}
-	return context.WithValue(context.Background(), common.EnvKey, &env)
+	return sessioncontext.NewContext(context.Background(), sessioncontext.New())
 }
 
 func TestServer_Login(t *testing.T) {
@@ -55,7 +47,10 @@ func TestServer_Login(t *testing.T) {
 	}).Return(nil)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
 
-	s, err := controllers.NewServer(a)
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New()
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s)
@@ -76,7 +71,10 @@ func TestServer_Login_BadToken(t *testing.T) {
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("", errors.New("bad token"))
 
-	s, err := controllers.NewServer(a)
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New()
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s)
@@ -103,7 +101,10 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	}
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
 
-	s, err := controllers.NewServer(a)
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New()
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
 
 	resp, err := doLoginRequest(getTestContext(), t, s)
@@ -121,20 +122,29 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 func TestServer_GetAugmentedToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
-	s, err := controllers.NewServer(a)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New()
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
 
-	token := testingutils.GenerateTestJWTToken(t, "jwtkey")
+	claims := testingutils.GenerateTestClaims(t)
+	token := testingutils.SignPBClaims(t, claims, "jwtkey")
 	req := &pb.GetAugmentedAuthTokenRequest{
 		Token: token,
 	}
-	resp, err := s.GetAugmentedToken(getTestContext(), req)
+	sCtx := sessioncontext.New()
+	sCtx.Claims = claims
+	resp, err := s.GetAugmentedToken(
+		sessioncontext.NewContext(context.Background(), sCtx),
+		req)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 
 	assert.Equal(t, token, resp.Token)
-	fmt.Printf("resp: %v", resp)
+	assert.NotNil(t, resp.Claims)
 	assert.Equal(t, "test@test.com", resp.Claims.Email)
 }
 

@@ -15,7 +15,7 @@ func init() {
 	log.SetFormatter(formatter)
 }
 
-// SetupServiceLogging sets up a consistent logging environment for all services.
+// SetupServiceLogging sets up a consistent logging env for all services.
 func SetupServiceLogging() {
 	// Setup logging.
 	log.SetOutput(os.Stdout)

@@ -3,26 +3,34 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+
+	"pixielabs.ai/pixielabs/services/common/env"
+	"pixielabs.ai/pixielabs/services/common/handler"
+	"pixielabs.ai/pixielabs/services/gateway/gwenv"
 )
 
 // AuthLoginHandler make requests to the auth service and sets session cookies.
 // Request-type: application/json.
 // Params: accessToken (auth0 idtoken), state.
-func AuthLoginHandler(w http.ResponseWriter, r *http.Request) {
+func AuthLoginHandler(env env.Env, w http.ResponseWriter, r *http.Request) error {
+	gwEnv, ok := env.(gwenv.GatewayEnv)
+	if !ok {
+		return handler.NewStatusError(http.StatusInternalServerError, "failed to get environment")
+	}
 	if r.Method != http.MethodPost {
-		http.Error(w, "not a post request", http.StatusMethodNotAllowed)
-		return
+		return handler.NewStatusError(http.StatusMethodNotAllowed, "not a post request")
 	}
 
-	session, err := GetDefaultSession(r)
+	session, err := GetDefaultSession(gwEnv, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return &handler.StatusError{http.StatusInternalServerError, err}
 	}
 
 	// Bail early if the session is valid.
 	if session.Values["token"] != nil {
 		w.WriteHeader(http.StatusOK)
-		return
+		return nil
 	}
 	// Extract params.
 	var params struct {
@@ -31,8 +39,8 @@ func AuthLoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		http.Error(w, "failed to decode json request", http.StatusBadRequest)
-		return
+		return handler.NewStatusError(http.StatusBadRequest,
+			"failed to decode json request")
 	}
 	// TODO(zasgar): Make GRPC request to auth service.
 	token := "ThisWillBeTheTokenFromRPCRequest"
@@ -43,24 +51,29 @@ func AuthLoginHandler(w http.ResponseWriter, r *http.Request) {
 	session.Options.Secure = true
 	session.Save(r, w)
 	w.WriteHeader(http.StatusOK)
+	return nil
 }
 
 // AuthLogoutHandler deletes existing sessions.
 // Request-type: application/json.
 // Params: accessToken (auth0 idtoken), state.
-func AuthLogoutHandler(w http.ResponseWriter, r *http.Request) {
+func AuthLogoutHandler(env env.Env, w http.ResponseWriter, r *http.Request) error {
+	gwEnv, ok := env.(gwenv.GatewayEnv)
+	if !ok {
+		return handler.NewStatusError(http.StatusInternalServerError, "failed to get environment")
+	}
 	if r.Method != http.MethodPost {
-		http.Error(w, "not a post request", http.StatusMethodNotAllowed)
-		return
+		return handler.NewStatusError(http.StatusMethodNotAllowed, "not a post request")
 	}
 
-	session, err := GetDefaultSession(r)
+	session, err := GetDefaultSession(gwEnv, r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return &handler.StatusError{http.StatusInternalServerError, err}
 	}
 	// Delete the cookie.
 	session.Values["token"] = ""
 	session.Options.MaxAge = -1
 	session.Save(r, w)
 	w.WriteHeader(http.StatusOK)
+	return nil
 }

@@ -5,18 +5,12 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
-	"pixielabs.ai/pixielabs/services/common"
+	"pixielabs.ai/pixielabs/services/gateway/gwenv"
 )
 
 // GetDefaultSession loads the default session from the request.
-func GetDefaultSession(r *http.Request) (*sessions.Session, error) {
-	env := r.Context().Value(common.EnvKey)
-	gatewayEnv, ok := env.(*GatewayEnv)
-	if !ok {
-		return nil, errors.New("internal environment error")
-	}
-
-	store := gatewayEnv.CookieStore
+func GetDefaultSession(env gwenv.GatewayEnv, r *http.Request) (*sessions.Session, error) {
+	store := env.CookieStore()
 	session, err := store.Get(r, "default-session")
 	if err != nil {
 		return nil, errors.New("error fetching session info")

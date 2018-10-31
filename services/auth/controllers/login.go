@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	pb "pixielabs.ai/pixielabs/services/auth/proto"
-	"pixielabs.ai/pixielabs/services/common"
 	jwtpb "pixielabs.ai/pixielabs/services/common/proto"
+	"pixielabs.ai/pixielabs/services/common/sessioncontext"
 	"pixielabs.ai/pixielabs/services/common/utils"
 )
 
@@ -21,7 +21,6 @@ const (
 
 // Login uses auth0 to authenticate and login the user.
 func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply, error) {
-	env := ctx.Value(common.EnvKey).(*AuthEnv)
 	accessToken := in.AccessToken
 	if accessToken == "" {
 		return nil, status.Error(codes.Unauthenticated, "missing access token")
@@ -56,7 +55,7 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 
 	expiresAt := time.Now().Add(TokenValidDuration)
 	claims := generateJWTClaimsForUser(userInfo, expiresAt)
-	token, err := signJWTClaims(claims, env.SigningKey)
+	token, err := signJWTClaims(claims, s.env.JWTSigningKey())
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
@@ -72,11 +71,14 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 func (s *Server) GetAugmentedToken(
 	ctx context.Context, in *pb.GetAugmentedAuthTokenRequest) (
 	*pb.GetAugmentedAuthTokenResponse, error) {
+	sessionCtx, err := sessioncontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// TODO(zasgar): This should actually do ACL's, etc. at some point.
-	env := ctx.Value(common.EnvKey).(*AuthEnv)
 	resp := &pb.GetAugmentedAuthTokenResponse{
 		Token:  in.Token,
-		Claims: env.Claims,
+		Claims: sessionCtx.Claims,
 	}
 	return resp, nil
 }

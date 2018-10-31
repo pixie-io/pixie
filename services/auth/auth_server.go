@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
+	"pixielabs.ai/pixielabs/services/auth/authenv"
 	"pixielabs.ai/pixielabs/services/auth/controllers"
 	"pixielabs.ai/pixielabs/services/auth/proto"
 	"pixielabs.ai/pixielabs/services/common"
@@ -27,14 +28,14 @@ func main() {
 		log.WithError(err).Fatal("Failed to initialize Auth0")
 	}
 
-	server, err := controllers.NewServer(a)
+	env, err := authenv.New()
 	if err != nil {
-		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
+		log.WithError(err).Fatal("Failed to initialize auth gwenv")
 	}
 
-	env, err := controllers.NewAuthEnv()
+	server, err := controllers.NewServer(env, a)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to initilaize auth environment")
+		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}
 
 	s := common.NewPLServer(env, mux)

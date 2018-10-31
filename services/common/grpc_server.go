@@ -14,31 +14,38 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
+	"pixielabs.ai/pixielabs/services/common/env"
+	"pixielabs.ai/pixielabs/services/common/sessioncontext"
 )
 
-func grpcInjectEnv(env BaseEnver) grpc.UnaryServerInterceptor {
+func grpcInjectSession() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		newCtx := context.WithValue(ctx, EnvKey, env)
+		sessionCtx := sessioncontext.New()
+		newCtx := sessioncontext.NewContext(ctx, sessionCtx)
 		return handler(newCtx, req)
 	}
 }
 
-func grpcAuthFunc(ctx context.Context) (context.Context, error) {
-	token, err := grpc_auth.AuthFromMD(ctx, "bearer")
-	if err != nil {
-		return nil, err
+func createGrpcAuthFunc(e env.Env) func(context.Context) (context.Context, error) {
+	return func(ctx context.Context) (context.Context, error) {
+		token, err := grpc_auth.AuthFromMD(ctx, "bearer")
+		if err != nil {
+			return nil, err
+		}
+		sCtx, err := sessioncontext.FromContext(ctx)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "missing session context: %v", err)
+		}
+		err = sCtx.UseJWTAuth(e.JWTSigningKey(), token)
+		if err != nil {
+			return nil, status.Errorf(codes.Unauthenticated, "invalid auth token: %v", err)
+		}
+		return ctx, nil
 	}
-	env := ctx.Value(EnvKey).(BaseEnver)
-	claims, err := env.GetBaseEnv().ParseJWTClaims(token)
-	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "invalid auth token: %v", err)
-	}
-	env.SetClaims(claims)
-	return ctx, nil
 }
 
 // CreateGRPCServer creates a GRPC server with default middleware for our services.
-func CreateGRPCServer(env BaseEnver) *grpc.Server {
+func CreateGRPCServer(env env.Env) *grpc.Server {
 	var tlsOpts grpc.ServerOption
 	if !viper.GetBool("disable_ssl") {
 		// Create the TLS credentials
@@ -67,9 +74,9 @@ func CreateGRPCServer(env BaseEnver) *grpc.Server {
 	opts := []grpc.ServerOption{
 		grpc_middleware.WithUnaryServerChain(
 			grpc_ctxtags.UnaryServerInterceptor(),
-			grpcInjectEnv(env),
+			grpcInjectSession(),
 			grpc_logrus.UnaryServerInterceptor(logrusEntry, logrusOpts...),
-			grpc_auth.UnaryServerInterceptor(grpcAuthFunc),
+			grpc_auth.UnaryServerInterceptor(createGrpcAuthFunc(env)),
 		)}
 	if !viper.GetBool("disable_ssl") {
 		opts = append(opts, tlsOpts)

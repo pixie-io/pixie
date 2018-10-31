@@ -16,21 +16,21 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"pixielabs.ai/pixielabs/services/common/env"
 )
 
 // PLServer is the common server component used across all Pixie Labs services.
-// It starts both an HTTP and a GRPC server and handles middelware and environment injection.
+// It starts both an HTTP and a GRPC server and handles middelware and env injection.
 type PLServer struct {
 	ch          chan bool
 	wg          *sync.WaitGroup
-	env         BaseEnver
 	grpcServer  *grpc.Server
 	httpHandler http.Handler
 	httpServer  *http.Server
 }
 
 // NewPLServer creates a new PLServer.
-func NewPLServer(env BaseEnver, httpHandler http.Handler) *PLServer {
+func NewPLServer(env env.Env, httpHandler http.Handler) *PLServer {
 	s := &PLServer{
 		ch:          make(chan bool),
 		wg:          &sync.WaitGroup{},
@@ -85,7 +85,7 @@ func (s *PLServer) serveHTTP() {
 		}
 	}
 
-	wrappedHandler := WithEnvMiddleware(s.env, HTTPLoggingMiddleware(s.httpHandler))
+	wrappedHandler := HTTPLoggingMiddleware(s.httpHandler)
 	serverAddr := fmt.Sprintf(":%d", viper.GetInt("http_port"))
 	log.WithField("addr", serverAddr).Print("Starting HTTP server")
 	server := &http.Server{
@@ -101,7 +101,10 @@ func (s *PLServer) serveHTTP() {
 		log.WithError(err).Fatal("Failed to listen")
 	}
 	s.httpServer = server
-	if err := server.Serve(tls.NewListener(lis, server.TLSConfig)); err != nil {
+	if !viper.GetBool("disable_ssl") {
+		lis = tls.NewListener(lis, server.TLSConfig)
+	}
+	if err := server.Serve(lis); err != nil {
 		// Check for graceful termination.
 		if err != http.ErrServerClosed {
 			log.WithError(err).Fatal("Failed to run HTTP server")

@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/services/common"
+	commonenv "pixielabs.ai/pixielabs/services/common/env"
 	pb "pixielabs.ai/pixielabs/services/common/testproto"
 	"pixielabs.ai/pixielabs/utils/testingutils"
 )
@@ -29,11 +30,9 @@ func (s *server) Ping(ctx context.Context, in *pb.PingRequest) (*pb.PingReply, e
 }
 
 func startTestGRPCServer(t *testing.T) (int, func()) {
-	env := common.Env{
-		ExternalAddress: "https://testing.com",
-		SigningKey:      "abc",
-	}
-	s := common.CreateGRPCServer(&env)
+	viper.Set("jwt_signing_key", "abc")
+	env := commonenv.New()
+	s := common.CreateGRPCServer(env)
 	pb.RegisterPingServiceServer(s, &server{})
 	lis, err := net.Listen("tcp", ":0")
 

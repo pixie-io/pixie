@@ -1,13 +1,17 @@
 package controllers
 
+import "pixielabs.ai/pixielabs/services/auth/authenv"
+
 // Server defines an gRPC server type.
 type Server struct {
-	a Auth0Connector
+	env authenv.AuthEnv
+	a   Auth0Connector
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(a Auth0Connector) (*Server, error) {
+func NewServer(env authenv.AuthEnv, a Auth0Connector) (*Server, error) {
 	return &Server{
-		a: a,
+		env: env,
+		a:   a,
 	}, nil
 }
