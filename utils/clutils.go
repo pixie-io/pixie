@@ -64,8 +64,15 @@ func RunCmd(cmd *exec.Cmd) error {
 		return err
 	}
 
+	counter := 0
 	addSignalInterruptCatch(func() {
-		cmd.Process.Kill()
+		// special kill switch in case keyboard interrupt is hit 3 times.
+		// otherwise, allow for graceful cleanup of command
+		// via keyboard interrupt
+		if counter > 3 {
+			cmd.Process.Kill()
+		}
+		counter++
 	})
 
 	err = cmd.Wait()

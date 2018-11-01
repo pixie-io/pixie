@@ -17,13 +17,16 @@ import (
 	"pixielabs.ai/pixielabs/utils"
 )
 
-// parseArgs parses the arguments into specified variables.
-func parseArgs() {
+// init defines the args.
+func init() {
 	pflag.String("build_dir", "", "The build_dir in which to build the project")
 	pflag.Bool("staging", false, "Flag to turn on staging. Do not use with --prod.")
 	pflag.Bool("prod", false, "Flag to turn on prod. Do not use with --staging.")
-	pflag.Parse()
+}
 
+// parseArgs parses the arguments into specified variables.
+func parseArgs() {
+	pflag.Parse()
 	// Must call after all flags are setup.
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("PL")
@@ -61,7 +64,7 @@ func getConfirmationForPush(env string) bool {
 }
 
 // findTemplateFiles searches for template files.
-func findTemplateFiles(pathsToSearch []string) []string {
+func findTemplateFiles(pathsToSearch []string, ext string) []string {
 	var templateFiles = []string{}
 	for _, curPath := range pathsToSearch {
 		log.Infof("Searching %s", curPath)
@@ -70,12 +73,11 @@ func findTemplateFiles(pathsToSearch []string) []string {
 				if err != nil {
 					return err
 				}
-				if info.IsDir() && info.Name() == "vendor" {
-					return filepath.SkipDir
-				}
-				if filepath.Ext(path) == ".tmpl" {
+				// Check whether path has the extension, which
+				// might contain several "." delineated pieces.
+				if strings.HasSuffix(path, ext) {
+					log.Infof("Found template: %s\n", path)
 					templateFiles = append(templateFiles, path)
-
 				}
 				return nil
 			})
@@ -129,10 +131,10 @@ func loadConfig(configFile, buildDir string) serviceConfigExt {
 }
 
 // generateServiceConfigs takes the template files and substitutes the config details into the fields.
-func generateServiceConfigs(templateFiles []string, buildDir, totPath string, config serviceConfigExt) {
+func generateServiceConfigs(templateFiles []string, buildDir, totPath, ext string, config serviceConfigExt) {
 	for _, templateFile := range templateFiles {
-		ext := path.Ext(templateFile)
-		yamlOutputFile := fmt.Sprintf("%s_%s.yaml", templateFile[0:len(templateFile)-len(ext)], config.Deployment)
+		fileNoExt := strings.Replace(templateFile, ext, "", -1)
+		yamlOutputFile := fmt.Sprintf("%s_%s.yaml", fileNoExt, config.Deployment)
 		yamlOutputFile = path.Join(buildDir, strings.Replace(yamlOutputFile, totPath, "", -1))
 		outputPath := path.Dir(yamlOutputFile)
 
@@ -209,7 +211,9 @@ func main() {
 	skaffoldDir := path.Join(totPath, "skaffold")
 	dirsToTemplate := []string{skaffoldDir, servicesDir}
 
-	templateFiles := findTemplateFiles(dirsToTemplate)
+	// Extension
+	ext := ".skfld.tmpl"
+	templateFiles := findTemplateFiles(dirsToTemplate, ext)
 
 	// Get the config file.
 	// TODO(philkuz) Fix this quick hack to get around not having any config for staging at the moment.
@@ -223,7 +227,7 @@ func main() {
 	config := loadConfig(configFile, buildDir)
 
 	// Generate all the service config from templateFiles.
-	generateServiceConfigs(templateFiles, buildDir, totPath, config)
+	generateServiceConfigs(templateFiles, buildDir, totPath, ext, config)
 
 	// Get the skaffold YAML template.
 	startSkaffold(buildDir, totPath)

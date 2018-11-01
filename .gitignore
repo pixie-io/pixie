@@ -31,6 +31,7 @@ bazel-*
 # Python cache files.
 .cache
 __pycache__
+venv/
 
 # Sublime setup.
 **/*.sublime-workspace
