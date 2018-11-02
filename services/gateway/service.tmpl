@@ -45,11 +45,11 @@ spec:
       protocol: TCP
       targetPort: 51000
       nodePort: 31000
-      name: tcp-31000
+      name: tcp-grpc
     - port: 51001
       protocol: TCP
       targetPort: 51001
       nodePort: 31001
-      name: tcp-31001
+      name: tcp-rest
   selector:
     name: gateway-server

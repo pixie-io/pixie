@@ -45,11 +45,11 @@ spec:
       protocol: TCP
       targetPort: 50100
       nodePort: 30100
-      name: tcp-30100
+      name: tcp-grpc
     - port: 50101
       protocol: TCP
       targetPort: 50101
       nodePort: 30101
-      name: tcp-30101
+      name: tcp-rest
   selector:
     name: auth-server

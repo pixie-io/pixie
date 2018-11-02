@@ -41,11 +41,11 @@ spec:
       protocol: TCP
       targetPort: 50200
       nodePort: 30200
-      name: tcp-30200
+      name: tcp-grpc
     - port: 50201
       protocol: TCP
       targetPort: 50201
       nodePort: 30201
-      name: tcp-30201
+      name: tcp-rest
   selector:
     name: api-server
