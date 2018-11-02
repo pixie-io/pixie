@@ -41,8 +41,8 @@ module.exports = {
     publicPath: '/',
     historyApiFallback: true,
     proxy: [{
-      context: ['/auth', '/gql'],
-      target: 'https://proxy-service:30011',
+      context: ['/api'],
+      target: 'http://gateway-service:31001',
       secure: false,
     }],
   },

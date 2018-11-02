@@ -62,11 +62,12 @@ func (s *PLServer) serveGRPC() {
 }
 
 func (s *PLServer) serveHTTP() {
+	sslEnabled := !viper.GetBool("disable_ssl")
 	s.wg.Add(1)
 	defer s.wg.Done()
 	var tlsConfig *tls.Config
 
-	if !viper.GetBool("disable_ssl") {
+	if sslEnabled {
 		tlsCert := viper.GetString("tls_cert")
 		tlsKey := viper.GetString("tls_key")
 		log.WithFields(log.Fields{
@@ -101,7 +102,7 @@ func (s *PLServer) serveHTTP() {
 		log.WithError(err).Fatal("Failed to listen")
 	}
 	s.httpServer = server
-	if !viper.GetBool("disable_ssl") {
+	if sslEnabled {
 		lis = tls.NewListener(lis, server.TLSConfig)
 	}
 	if err := server.Serve(lis); err != nil {

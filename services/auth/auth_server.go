@@ -30,7 +30,7 @@ func main() {
 
 	env, err := authenv.New()
 	if err != nil {
-		log.WithError(err).Fatal("Failed to initialize auth gwenv")
+		log.WithError(err).Fatal("Failed to initialize auth env")
 	}
 
 	server, err := controllers.NewServer(env, a)

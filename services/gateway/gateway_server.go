@@ -7,6 +7,7 @@ import (
 	"pixielabs.ai/pixielabs/services/common"
 	"pixielabs.ai/pixielabs/services/common/handler"
 	"pixielabs.ai/pixielabs/services/common/healthz"
+	"pixielabs.ai/pixielabs/services/common/httpmiddleware"
 	"pixielabs.ai/pixielabs/services/gateway/controllers"
 	"pixielabs.ai/pixielabs/services/gateway/gwenv"
 )
@@ -19,14 +20,24 @@ func main() {
 	common.CheckServiceFlags()
 	common.SetupServiceLogging()
 
-	gwEnv, err := gwenv.New()
+	ac, err := controllers.NewAuthClient()
 	if err != nil {
-		log.WithError(err).Fatal("Failed to initialize gateway error")
+		log.WithError(err).Fatal("Failed to init auth client")
+	}
+	gwEnv, err := gwenv.New(ac)
+	if err != nil {
+		log.WithError(err).Fatal(
+			"Failed to initialize gateway error")
 	}
 
 	mux := http.NewServeMux()
 	mux.Handle("/api/auth/login", handler.New(gwEnv, controllers.AuthLoginHandler))
 	mux.Handle("/api/auth/logout", handler.New(gwEnv, controllers.AuthLogoutHandler))
+	mux.Handle("/api/graphql",
+		httpmiddleware.WithNewSessionMiddleware(
+			controllers.WithSessionAuthMiddleware(gwEnv,
+				controllers.WithAugmentedAuthMiddleware(gwEnv,
+					handler.New(gwEnv, controllers.GraphQLHandler)))))
 
 	healthz.RegisterDefaultChecks(mux)
 	s := common.NewPLServer(gwEnv, mux)

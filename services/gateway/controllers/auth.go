@@ -2,17 +2,40 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"time"
 
-	"pixielabs.ai/pixielabs/services/common/env"
+	"github.com/dgrijalva/jwt-go"
+	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+	authpb "pixielabs.ai/pixielabs/services/auth/proto"
+	commonenv "pixielabs.ai/pixielabs/services/common/env"
 	"pixielabs.ai/pixielabs/services/common/handler"
+	pbjwt "pixielabs.ai/pixielabs/services/common/proto"
+	"pixielabs.ai/pixielabs/services/common/utils"
 	"pixielabs.ai/pixielabs/services/gateway/gwenv"
 )
 
-// AuthLoginHandler make requests to the auth service and sets session cookies.
+// GetServiceCredentials returns JWT credentials for inter-service requests.
+func GetServiceCredentials(signingKey string) (string, error) {
+	pbClaims := pbjwt.JWTClaims{
+		Subject:   "AuthService",
+		Issuer:    "PL",
+		ExpiresAt: time.Now().Add(time.Minute * 10).Unix(),
+	}
+	claims := utils.PBToMapClaims(&pbClaims)
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(signingKey))
+
+}
+
+// AuthLoginHandler make requests to the authpb service and sets session cookies.
 // Request-type: application/json.
 // Params: accessToken (auth0 idtoken), state.
-func AuthLoginHandler(env env.Env, w http.ResponseWriter, r *http.Request) error {
+func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request) error {
 	gwEnv, ok := env.(gwenv.GatewayEnv)
 	if !ok {
 		return handler.NewStatusError(http.StatusInternalServerError, "failed to get environment")
@@ -28,7 +51,7 @@ func AuthLoginHandler(env env.Env, w http.ResponseWriter, r *http.Request) error
 	}
 
 	// Bail early if the session is valid.
-	if session.Values["token"] != nil {
+	if len(session.Values) != 0 && session.Values["_at"] != nil {
 		w.WriteHeader(http.StatusOK)
 		return nil
 	}
@@ -42,14 +65,46 @@ func AuthLoginHandler(env env.Env, w http.ResponseWriter, r *http.Request) error
 		return handler.NewStatusError(http.StatusBadRequest,
 			"failed to decode json request")
 	}
-	// TODO(zasgar): Make GRPC request to auth service.
-	token := "ThisWillBeTheTokenFromRPCRequest"
+
+	serviceAuthToken, err := GetServiceCredentials(env.JWTSigningKey())
+	if err != nil {
+		log.WithError(err).Error("Service authpb failure")
+		return handler.NewStatusError(http.StatusInternalServerError,
+			"failed to get service authpb")
+	}
+
+	rpcReq := &authpb.LoginRequest{
+		AccessToken: params.AccessToken,
+	}
+	ctxWithCreds := metadata.AppendToOutgoingContext(r.Context(), "authorization",
+		fmt.Sprintf("bearer %s", serviceAuthToken))
+	resp, err := gwEnv.AuthClient().Login(ctxWithCreds, rpcReq)
+	if err != nil {
+		log.WithError(err).Errorf("RPC request to authpb service failed")
+		s, ok := status.FromError(err)
+		if ok {
+			if s.Code() == codes.Unauthenticated {
+				return handler.NewStatusError(http.StatusUnauthorized, s.Message())
+			}
+		}
+		return handler.NewStatusError(http.StatusInternalServerError, "failed to login")
+	}
 
 	// Set session cookie.
-	session.Values["token"] = token
+	session.Values["_at"] = resp.Token
 	session.Options.HttpOnly = true
 	session.Options.Secure = true
 	session.Save(r, w)
+
+	var payload struct {
+		Token     string `json:"token"`
+		ExpiresAt int64  `json:"expiresAt"`
+	}
+	payload.Token = resp.Token
+	payload.ExpiresAt = resp.ExpiresAt
+
+	json.NewEncoder(w).Encode(payload)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	return nil
 }
@@ -57,7 +112,7 @@ func AuthLoginHandler(env env.Env, w http.ResponseWriter, r *http.Request) error
 // AuthLogoutHandler deletes existing sessions.
 // Request-type: application/json.
 // Params: accessToken (auth0 idtoken), state.
-func AuthLogoutHandler(env env.Env, w http.ResponseWriter, r *http.Request) error {
+func AuthLogoutHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request) error {
 	gwEnv, ok := env.(gwenv.GatewayEnv)
 	if !ok {
 		return handler.NewStatusError(http.StatusInternalServerError, "failed to get environment")
@@ -71,7 +126,7 @@ func AuthLogoutHandler(env env.Env, w http.ResponseWriter, r *http.Request) erro
 		return &handler.StatusError{http.StatusInternalServerError, err}
 	}
 	// Delete the cookie.
-	session.Values["token"] = ""
+	session.Values["_at"] = ""
 	session.Options.MaxAge = -1
 	session.Save(r, w)
 	w.WriteHeader(http.StatusOK)

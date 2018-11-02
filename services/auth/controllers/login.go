@@ -85,8 +85,9 @@ func (s *Server) GetAugmentedToken(
 
 func generateJWTClaimsForUser(userInfo *UserInfo, expiresAt time.Time) *jwtpb.JWTClaims {
 	claims := jwtpb.JWTClaims{
-		UserID: userInfo.AppMetadata.PLUserID,
-		Email:  userInfo.Email,
+		Subject: userInfo.AppMetadata.PLUserID,
+		UserID:  userInfo.AppMetadata.PLUserID,
+		Email:   userInfo.Email,
 		// Standard claims.
 		ExpiresAt: expiresAt.Unix(),
 		IssuedAt:  time.Now().Unix(),

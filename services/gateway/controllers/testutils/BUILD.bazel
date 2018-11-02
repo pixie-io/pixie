@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["testutils.go"],
+    importpath = "pixielabs.ai/pixielabs/services/gateway/controllers/testutils",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//services/auth/proto/mock:go_default_library",
+        "//services/gateway/gwenv:go_default_library",
+        "@com_github_golang_mock//gomock:go_default_library",
+        "@com_github_spf13_viper//:go_default_library",
+    ],
+)

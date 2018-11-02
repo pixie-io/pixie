@@ -15,7 +15,8 @@ type sessionContextKey struct{}
 
 // SessionContext stores sessions specific information.
 type SessionContext struct {
-	Claims *pb.JWTClaims
+	AuthToken string
+	Claims    *pb.JWTClaims
 }
 
 // New creates a new sesion context.
@@ -39,7 +40,8 @@ func (s *SessionContext) UseJWTAuth(signingKey string, tokenString string) error
 
 	claims := token.Claims.(*jwt.MapClaims)
 	s.Claims = utils.MapClaimsToPB(*claims)
-	return err
+	s.AuthToken = tokenString
+	return nil
 }
 
 // ValidUser returns true if the user is logged in and valid.

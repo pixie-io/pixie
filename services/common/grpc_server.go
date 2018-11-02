@@ -14,29 +14,29 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
-	"pixielabs.ai/pixielabs/services/common/env"
+	commonenv "pixielabs.ai/pixielabs/services/common/env"
 	"pixielabs.ai/pixielabs/services/common/sessioncontext"
 )
 
 func grpcInjectSession() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		sessionCtx := sessioncontext.New()
-		newCtx := sessioncontext.NewContext(ctx, sessionCtx)
-		return handler(newCtx, req)
+		sCtx := sessioncontext.New()
+		return handler(sessioncontext.NewContext(ctx, sCtx), req)
 	}
 }
 
-func createGrpcAuthFunc(e env.Env) func(context.Context) (context.Context, error) {
+func createGRPCAuthFunc(env commonenv.Env) func(context.Context) (context.Context, error) {
 	return func(ctx context.Context) (context.Context, error) {
 		token, err := grpc_auth.AuthFromMD(ctx, "bearer")
 		if err != nil {
 			return nil, err
 		}
+
 		sCtx, err := sessioncontext.FromContext(ctx)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "missing session context: %v", err)
 		}
-		err = sCtx.UseJWTAuth(e.JWTSigningKey(), token)
+		err = sCtx.UseJWTAuth(env.JWTSigningKey(), token)
 		if err != nil {
 			return nil, status.Errorf(codes.Unauthenticated, "invalid auth token: %v", err)
 		}
@@ -45,7 +45,7 @@ func createGrpcAuthFunc(e env.Env) func(context.Context) (context.Context, error
 }
 
 // CreateGRPCServer creates a GRPC server with default middleware for our services.
-func CreateGRPCServer(env env.Env) *grpc.Server {
+func CreateGRPCServer(env commonenv.Env) *grpc.Server {
 	var tlsOpts grpc.ServerOption
 	if !viper.GetBool("disable_ssl") {
 		// Create the TLS credentials
@@ -76,7 +76,7 @@ func CreateGRPCServer(env env.Env) *grpc.Server {
 			grpc_ctxtags.UnaryServerInterceptor(),
 			grpcInjectSession(),
 			grpc_logrus.UnaryServerInterceptor(logrusEntry, logrusOpts...),
-			grpc_auth.UnaryServerInterceptor(createGrpcAuthFunc(env)),
+			grpc_auth.UnaryServerInterceptor(createGRPCAuthFunc(env)),
 		)}
 	if !viper.GetBool("disable_ssl") {
 		opts = append(opts, tlsOpts)

@@ -39,11 +39,12 @@ export class Auth extends React.Component<AuthProps, any>  {
     this._lock.on('authenticated', (authResult) => {
       this._lock.hide();
       const formData = new FormData();
-      formData.set('access_token', authResult.accessToken);
       Axios({
         method: 'post',
-        url: '/auth/login',
-        data: formData,
+        url: '/api/auth/login',
+        data: {
+          accessToken: authResult.accessToken,
+        },
       }).then((response) => {
         this.setSession({
           idToken: response.data.Token,
