@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	pflag.String("auth_service", "auth-service:50100", "The auth service url (load balancer/list is ok)")
+	pflag.String("auth_service", "auth-service.local:50100", "The auth service url (load balancer/list is ok)")
 }
 
 // NewAuthClient creates a new auth RPC client stub.

@@ -15,7 +15,7 @@ import (
 func main() {
 	log.WithField("service", "gateway-service").Info("Starting service")
 
-	common.SetupService("gateway-service", 50000)
+	common.SetupService("gateway-service", 51000)
 	common.PostFlagSetupAndParse()
 	common.CheckServiceFlags()
 	common.SetupServiceLogging()

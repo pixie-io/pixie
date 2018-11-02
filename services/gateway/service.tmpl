@@ -24,6 +24,8 @@ spec:
         value: /certs/server.crt
       - name: PL_TLS_KEY
         value: /certs/server.key
+      - name: PL_AUTH_SERVICE
+        value: "auth-service.default.svc.cluster.local:50100"
     volumeMounts:
         - name: certs
           mountPath: /certs

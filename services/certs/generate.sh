@@ -10,10 +10,11 @@ openssl req -new -x509 -days 365 -key ca.key -out ca.crt
 openssl genrsa -des3 -out server.key 4096
 
 # Generate server signing request:
-openssl req -new -key server.key -out server.csr
+openssl req -new -key server.key -out server.csr -config ssl.conf
 
 # Self-sign server certificate:
-openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 -out server.crt
+openssl x509 -req -days 365 -in server.csr -CA ca.crt -CAkey ca.key -set_serial 01 \
+    -out server.crt -extensions req_ext -extfile ssl.conf
 
 # Remove passphrase from the server key:
 openssl rsa -in server.key -out server.key
@@ -22,10 +23,11 @@ openssl rsa -in server.key -out server.key
 openssl genrsa -des3 -out client.key 4096
 
 # Generate client signing request:
-openssl req -new -key client.key -out client.csr
+openssl req -new -key client.key -out client.csr -config ssl.conf
 
 # Self-sign client certificate:
-openssl x509 -req -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 01 -out client.crt
+openssl x509 -req -days 365 -in client.csr -CA ca.crt -CAkey ca.key -set_serial 01 \
+    -out client.crt -extensions req_ext -extfile ssl.conf
 
 # Remove passphrase from the client key:
 openssl rsa -in client.key -out client.key
