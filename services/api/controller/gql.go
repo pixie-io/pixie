@@ -8,14 +8,19 @@ import (
 	"github.com/graph-gophers/graphql-go/relay"
 	"pixielabs.ai/pixielabs/services/api/apienv"
 	"pixielabs.ai/pixielabs/services/api/controller/schema"
+	"pixielabs.ai/pixielabs/services/common/sessioncontext"
 )
 
 type query struct {
 	env apienv.APIEnv
 }
 
-func (*query) Dummy(ctx context.Context) string {
-	return "Hello, world!"
+func (*query) User(ctx context.Context) (*UserInfoResolver, error) {
+	sCtx, err := sessioncontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &UserInfoResolver{sCtx}, nil
 }
 
 // GraphQLHandler is the hTTP handler used for handling GraphQL requests.

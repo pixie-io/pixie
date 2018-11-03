@@ -1,6 +1,14 @@
 schema {
         query: Query
 }
+
+type UserInfo {
+        id: ID!
+        name: String!
+        email: String!
+        picture: String!
+}
+
 type Query {
-        Dummy: String!
+        user: UserInfo!
 }
