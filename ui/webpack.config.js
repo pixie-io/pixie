@@ -6,6 +6,7 @@ const ArchivePlugin = require('webpack-archive-plugin');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
 const HtmlWebpackHarddiskPlugin = require('html-webpack-harddisk-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const utils = require('./webpack-utils');
 
 const isDevServer = process.argv.find(v => v.includes('webpack-dev-server'));
 
@@ -31,7 +32,7 @@ if (!isDevServer) {
     }));
 }
 
-module.exports = {
+var webpackConfig = {
   context: resolve(__dirname, 'src'),
   devtool: 'source-map',
   devServer: {
@@ -40,11 +41,7 @@ module.exports = {
     hot: true,
     publicPath: '/',
     historyApiFallback: true,
-    proxy: [{
-      context: ['/api'],
-      target: 'http://gateway-service:31001',
-      secure: false,
-    }],
+    proxy: [],
   },
   entry: [require.resolve('react-dev-utils/webpackHotDevClient'), 'index.tsx'],
   mode: isDevServer ? 'development' : 'production',
@@ -130,4 +127,27 @@ module.exports = {
       },
     },
   },
+};
+
+module.exports = (env) => {
+  if (!isDevServer) {
+    return webpackConfig;
+  }
+
+  const sslDisabled = env && env.hasOwnProperty('disable_ssl') && env.disable_ssl;
+  // Add the Gateway to the proxy config.
+  let gatewayPath = process.env.PL_GATEWAY_URL;
+  if (!gatewayPath) {
+    gatewayPath =
+        'http' + (sslDisabled ? '' : 's') + '://' + utils.findGatewayProxyPath();
+  }
+
+  var proxyEntry = {
+    context: ['/api'],
+    target: gatewayPath,
+    secure: false,
+  };
+
+  webpackConfig.devServer.proxy.push(proxyEntry);
+  return webpackConfig;
 };
