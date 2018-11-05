@@ -1,4 +1,3 @@
-locust_file_tmpl: "src/pixielabs.ai/pixielabs/demos/applications/hipster_shop/load_generation/locustfile.loadgen.tmpl"
 phases {
   user_types {
     name: "Normal"

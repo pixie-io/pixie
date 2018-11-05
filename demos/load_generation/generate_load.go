@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
 	"text/template"
 
 	"github.com/golang/protobuf/proto"
@@ -67,13 +66,14 @@ func mustLoadConfig() *pb.LocustConfigFile {
 
 // mustMakeLocustFile creates the locustFile for a given phase. The user class definitions in the locustFile can differ
 // between every phase.
-func mustMakeLocustFile(locustFileTmpl string, phase pb.LocustPhaseConfig) string {
+func mustMakeLocustFile(phase pb.LocustPhaseConfig) string {
 	// Location where the generated locustFile should be saved. This file is ephemeral.
 	locustFilePath := "locustfile.py"
 
-	totPath, err := utils.FindBazelWorkspaceRoot()
+	// Location of the locust file template.
+	locustFileTmpl := "locustfile.loadgen.tmpl"
 	// Location of the locust user class definition template.
-	userTmplPath := path.Join(totPath, "demos/load_generation/locustuser.tmpl")
+	userTmplPath := "locustuser.tmpl"
 
 	// Create class definitions for each locust user in the phase.
 	var userClasses bytes.Buffer
@@ -108,6 +108,7 @@ func mustMakeLocustFile(locustFileTmpl string, phase pb.LocustPhaseConfig) strin
 func createLocustCmd(host, locustFile string, phase pb.LocustPhaseConfig) *exec.Cmd {
 	locustCmd := fmt.Sprintf("locust --host=%s --no-web -c %v -r %v -t %vs -f %s", host, phase.NumUsers,
 		phase.HatchRatePerS, phase.Duration, locustFile)
+	log.WithField("locust_cmd", locustCmd).Info("Running locust command.")
 	return utils.MakeCommand(locustCmd)
 }
 
@@ -116,14 +117,13 @@ func main() {
 
 	loadConfig := mustLoadConfig()
 	host := viper.GetString("host")
-	locustFileTmpl := path.Join(os.Getenv("GOPATH"), loadConfig.LocustFileTmpl)
 
 	for {
 		for i, phase := range loadConfig.Phases {
 			log.WithField("phase", i).Info("Running locust phase.")
 
 			// Create locust file for the phase.
-			locustFile := mustMakeLocustFile(locustFileTmpl, *phase)
+			locustFile := mustMakeLocustFile(*phase)
 
 			// Run locust command.
 			cmd := createLocustCmd(host, locustFile, *phase)

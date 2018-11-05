@@ -8,10 +8,8 @@ option go_package = "pixielabs.ai/pixielabs/demos/load_generation/proto/;load_ge
 
 // LocustConfigFile defines the config for a load.
 message LocustConfigFile {
-  // The locust file template to use.
-  string locust_file_tmpl = 1;
   // The phases in the load.
-  repeated LocustPhaseConfig phases = 2;
+  repeated LocustPhaseConfig phases = 1;
 }
 
 // PhaseConfig defines the config for a phase.

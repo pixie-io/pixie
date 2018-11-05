@@ -39,12 +39,19 @@ For an example config, see:
 /demos/applications/hipster_shop/load_generation/load.pbtxt
 ```
 In general, for consistency, your locustfile template should be saved in
-`demos/applications/<application_name>/load_generation/loadpbtxt`.
+`demos/applications/<application_name>/load_generation/load.pbtxt`.
 
-# Running a Load Locally
-You may want to run your load locally, perhaps for testing purposes. To do so, run the following command:
+# Creating the Docker Image
+You'll first need to build the Locust wrapper binary that will be included in the our Docker image.
+Run `bazel build //demos/applications/hipstershop/load_generation:generate_load` in a _Linux_ environment,
+not your Mac environment and move the generated binary to `demos/load_generation`.
+From the demos directory, run the following command to generate the Docker image:
 ```
-bazel run //demos/load_generation:load_generation --
---config_file ~/go/src/pixielabs.ai/pixielabs/demos/applications/<application_name>/load_generation/load.pbtxt
---host <demo-host>
+docker build -f load_generation/Dockerfile -t <image-name> \
+ --build-arg configDir=applications/<application-name>/load_generation .
+```
+You can push this image to our container registry using docker push.
+Update the application's loadgenerator manifest with the new image tag and run the following to push the image to GKE.
+```
+kubectl create -f kubernetes_manifests/loadgenerator.yaml
 ```
