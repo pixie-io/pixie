@@ -41,23 +41,12 @@ spec:
         - name: SUPERSET_ENV
           value: local
         image: gcr.io/pl-dev-infra/demos/superset:0.28.1
+        imagePullPolicy: Always
         name: superset
         command: ["/bin/bash"]
-        args: ["-c", "superset db upgrade;superset load_examples;superset init;superset runserver -d"]
+        args: ["docker-init.sh"]
         ports:
-        - containerPort: 8088
+        - containerPort: 8080
         resources: {}
-        volumeMounts:
-        - mountPath: /home/work/incubator-superset
-          name: superset-claim0
-        - mountPath: /home/work/incubator-superset/superset/assets/node_modules
-          name: superset-node-modules
       restartPolicy: Always
-      volumes:
-      - name: superset-claim0
-        persistentVolumeClaim:
-          claimName: superset-claim0
-      - name: superset-node-modules
-        persistentVolumeClaim:
-          claimName: superset-node-modules
 status: {}

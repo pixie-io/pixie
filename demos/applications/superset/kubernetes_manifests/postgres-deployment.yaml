@@ -34,6 +34,7 @@ spec:
         volumeMounts:
         - mountPath: /var/lib/postgresql/data
           name: postgres
+          subPath: db-files
       restartPolicy: Always
       volumes:
       - name: postgres
