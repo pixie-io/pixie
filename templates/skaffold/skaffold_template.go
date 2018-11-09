@@ -43,26 +43,6 @@ func parseArgs() {
 	}
 }
 
-// getConfirmationForPush runs a confirmation loop to limit unintended consequences.
-func getConfirmationForPush(env string) bool {
-	if env == "dev" {
-		return true
-	}
-	for {
-		confirmation, err := utils.GetStdinInput(fmt.Sprintf("Are you sure you want to push to %s? [Y/n] ", env))
-		if err != nil {
-			log.WithError(err).Fatal("Reading StdIn failed")
-		}
-		confirmation = strings.ToLower(confirmation)
-		if confirmation == "y" {
-			return true
-		} else if confirmation == "n" {
-			return false
-		}
-		fmt.Printf("Entered \"%v\". Please only use \"y\" or \"n\".\n", confirmation)
-	}
-}
-
 // findTemplateFiles searches for template files.
 func findTemplateFiles(pathsToSearch []string, ext string) []string {
 	var templateFiles = []string{}
@@ -86,23 +66,6 @@ func findTemplateFiles(pathsToSearch []string, ext string) []string {
 		}
 	}
 	return templateFiles
-}
-
-// checkEnvironment checks the environ and adds a warning in case of prod or staging.
-func checkEnvironment() bool {
-	environ := "dev"
-	if viper.GetBool("prod") {
-		environ = "prod"
-		// TODO(philkuz) PL-64 make a script that emails everyone upon push to prod.
-	} else if viper.GetBool("staging") {
-		environ = "staging"
-	}
-	confirmed := getConfirmationForPush(environ)
-	if !confirmed {
-		log.Errorf("Not confirmed for %s. Exiting.", environ)
-		return false
-	}
-	return true
 }
 
 // loadConfig loads the config from protobuf and adds another field, the BuildDir.
@@ -195,12 +158,6 @@ func main() {
 	totPath, err := utils.FindBazelWorkspaceRoot()
 	if err != nil {
 		log.WithError(err).Fatalf("WORKSPACE directory could not be found")
-	}
-
-	// verify that the environment entered is valid and also runs confirmation for prod/staging.
-	environValid := checkEnvironment()
-	if !environValid {
-		return
 	}
 
 	// make the buildDir.
