@@ -41,8 +41,12 @@ func ScanStream(stream io.ReadCloser, write func(...interface{})) {
 func addSignalInterruptCatch(action func()) {
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-	<-ch
-	action()
+	go func() {
+		for range ch {
+			action()
+		}
+
+	}()
 }
 
 // RunCmd runs command and add stdout/stderr buffers that pass to the go output.
@@ -69,6 +73,7 @@ func RunCmd(cmd *exec.Cmd) error {
 		// special kill switch in case keyboard interrupt is hit 3 times.
 		// otherwise, allow for graceful cleanup of command
 		// via keyboard interrupt
+		cmd.Process.Signal(syscall.SIGINT)
 		if counter > 3 {
 			cmd.Process.Kill()
 		}

@@ -200,7 +200,7 @@ def create_random_chart(l):
     '''
 
     name, form_data = random.choice(list(CHART_DATA.items()))
-    _create_chart(l.client, form_data, name)
+    _create_chart(l.client, form_data, name, l.csrf)
 
 
 def see_charts(l):
