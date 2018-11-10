@@ -25,7 +25,8 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/recommendationservice:a815e02
+        # Image built from https://github.com/pixie-labs/microservices-demo/src/recommendationservice.
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/recommendationservice:991feaf
         ports:
         - containerPort: 8080
         readinessProbe:

@@ -25,7 +25,8 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/currencyservice:a815e02
+        # Image built from https://github.com/pixie-labs/microservices-demo/src/currencyservice.
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/currencyservice:991feaf
         ports:
         - name: grpc
           containerPort: 7000

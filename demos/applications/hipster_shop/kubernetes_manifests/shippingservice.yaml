@@ -24,7 +24,8 @@ spec:
     spec:
       containers:
       - name: server
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/shippingservice:a815e02
+        # Image built from https://github.com/pixie-labs/microservices-demo/src/shippingservice.
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/shippingservice:991feaf
         ports:
         - containerPort: 50051
         readinessProbe:

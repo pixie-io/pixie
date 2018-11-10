@@ -25,7 +25,8 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/paymentservice:a815e02
+        # Image built from https://github.com/pixie-labs/microservices-demo/src/paymentservice.
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/paymentservice:991feaf
         ports:
         - containerPort: 50051
         readinessProbe:

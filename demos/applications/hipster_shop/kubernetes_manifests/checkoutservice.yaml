@@ -24,7 +24,8 @@ spec:
     spec:
       containers:
         - name: server
-          image: gcr.io/pl-dev-infra/demos/microservices-demo-app/checkoutservice:a815e02
+          # Image built from https://github.com/pixie-labs/microservices-demo/src/checkoutservice.
+          image: gcr.io/pl-dev-infra/demos/microservices-demo-app/checkoutservice:991feaf
           ports:
           - containerPort: 5050
           readinessProbe:

@@ -25,7 +25,8 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: server
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/emailservice:a815e02
+        # Image built from https://github.com/pixie-labs/microservices-demo/src/emailservice.
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/emailservice:991feaf
         ports:
         - containerPort: 8080
         readinessProbe:

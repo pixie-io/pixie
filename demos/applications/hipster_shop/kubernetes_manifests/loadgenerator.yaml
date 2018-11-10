@@ -46,7 +46,8 @@ spec:
           value: "frontend:80"
       containers:
       - name: main
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/loadgenerator:v6
+        # See demos/load_generation/README.md for information on how this dockerfile is built.
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/loadgenerator:v9
         env:
         - name: FRONTEND_ADDR
           value: "frontend:80"
