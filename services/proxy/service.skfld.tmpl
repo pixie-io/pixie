@@ -11,34 +11,58 @@ spec:
     ports:
       - containerPort: 443
         hostPort: 443
+    readinessProbe:
+      httpGet:
+        scheme: HTTPS
+        path: /healthz
+        port: 443
     env:
       - name: PL_JWT_SIGNING_KEY
-        value: ABC
+        valueFrom:
+          secretKeyRef:
+            name: pl-app-secrets
+            key: jwt-signing-key
       - name: PL_EXTERNAL_ADDR
         value: {{.ExternalAddress}}
       - name: PL_TLS_CERT
-        value: /certs/server.crt
+        value: /certs/tls.crt
       - name: PL_TLS_KEY
-        value: /certs/server.key
+        value: /certs/tls.key
     volumeMounts:
         - name: certs
           mountPath: /certs
   volumes:
     - name: certs
-      hostPath:
-          path: /certs
+      secret:
+        secretName: custom-tls-cert
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: proxy-service
+  annotations:
+    service.alpha.kubernetes.io/app-protocols: '{"tcp-https":"HTTPS"}'
 spec:
   type: NodePort
   ports:
     - port: 443
       protocol: TCP
       targetPort: 443
-      nodePort: 30011
       name: tcp-https
   selector:
     name: proxy-server
+---
+{{ if .HasCloudIngress }}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: proxy
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "app-staging-https"
+spec:
+  tls:
+  - secretName: ssl-app-staging
+  backend:
+    serviceName: proxy-service
+    servicePort: 443
+{{ end }}

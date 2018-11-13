@@ -15,20 +15,23 @@ spec:
         hostPort: 50201
     env:
       - name: PL_JWT_SIGNING_KEY
-        value: ABC
+        valueFrom:
+          secretKeyRef:
+            name: pl-app-secrets
+            key: jwt-signing-key
       - name: PL_EXTERNAL_ADDR
         value: {{.ExternalAddress}}
       - name: PL_TLS_CERT
-        value: /certs/server.crt
+        value: /certs/tls.crt
       - name: PL_TLS_KEY
-        value: /certs/server.key
+        value: /certs/tls.key
     volumeMounts:
         - name: certs
           mountPath: /certs
   volumes:
     - name: certs
-      hostPath:
-          path: /certs
+      secret:
+        secretName: custom-tls-cert
 ---
 apiVersion: v1
 kind: Service

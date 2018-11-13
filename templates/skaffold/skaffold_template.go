@@ -43,6 +43,18 @@ func parseArgs() {
 	}
 }
 
+// getEnviron returns the environment string based on the current flags.
+func getEnviron() string {
+	environ := "dev"
+	if viper.GetBool("prod") {
+		environ = "prod"
+		// TODO(philkuz) PL-64 make a script that emails everyone upon push to prod.
+	} else if viper.GetBool("staging") {
+		environ = "staging"
+	}
+	return environ
+}
+
 // findTemplateFiles searches for template files.
 func findTemplateFiles(pathsToSearch []string, ext string) []string {
 	var templateFiles = []string{}
@@ -125,14 +137,11 @@ func startSkaffold(buildDir, workspaceDir string) {
 	if viper.GetBool("prod") || viper.GetBool("staging") {
 		skaffoldSubCmd = "run"
 	}
-	environ := "dev"
-	// TODO(philkuz) add catch to set to "staging" if staging is ever setup.
-	if viper.GetBool("prod") {
-		environ = "prod"
-	}
+	environ := getEnviron()
 	skaffoldFile := path.Join(buildDir, fmt.Sprintf("skaffold/skaffold_%s.yaml", environ))
 	if utils.FileExists(skaffoldFile) {
 		skaffoldCmd := fmt.Sprintf("skaffold %s -f %s", skaffoldSubCmd, skaffoldFile)
+		log.WithField("cmd", skaffoldCmd).Info("Starting Skaffold")
 		cmd := utils.MakeCommand(skaffoldCmd)
 		os.Chdir(workspaceDir)
 		err := utils.RunCmd(cmd)
@@ -173,13 +182,7 @@ func main() {
 	templateFiles := findTemplateFiles(dirsToTemplate, ext)
 
 	// Get the config file.
-	// TODO(philkuz) Fix this quick hack to get around not having any config for staging at the moment.
-	configEnviron := "dev"
-
-	if viper.GetBool("prod") {
-		configEnviron = "prod"
-	}
-
+	configEnviron := getEnviron()
 	configFile := path.Join(totPath, fmt.Sprintf("templates/skaffold/skaffold_service_config_%s.pbtxt", configEnviron))
 	config := loadConfig(configFile, buildDir)
 

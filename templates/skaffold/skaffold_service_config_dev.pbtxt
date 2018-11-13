@@ -2,3 +2,4 @@ deployment: "dev"
 push_artifacts: false
 bazel_services_proxy_target: "//services/proxy:proxy_dev.tar"
 external_address: "https://dev.pixielabs.ai:8080"
+has_cloud_ingress: false

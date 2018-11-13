@@ -16,4 +16,6 @@ message ServiceConfig {
     string bazel_services_proxy_target = 3;
     // External address to be used for deployment.
     string external_address            = 4;
+    // Requires an external cloud load balancer resource.
+    bool has_cloud_ingress             = 5;
 }

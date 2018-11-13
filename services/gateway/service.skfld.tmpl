@@ -15,15 +15,21 @@ spec:
         hostPort: 51001
     env:
       - name: PL_JWT_SIGNING_KEY
-        value: ABC
+        valueFrom:
+          secretKeyRef:
+            name: pl-app-secrets
+            key: jwt-signing-key
       - name: PL_SESSION_KEY
-        value: ABC_SESSION
+        valueFrom:
+          secretKeyRef:
+            name: pl-app-secrets
+            key: session-key
       - name: PL_EXTERNAL_ADDR
         value: {{.ExternalAddress}}
       - name: PL_TLS_CERT
-        value: /certs/server.crt
+        value: /certs/tls.crt
       - name: PL_TLS_KEY
-        value: /certs/server.key
+        value: /certs/tls.key
       - name: PL_AUTH_SERVICE
         value: "auth-service.default.svc.cluster.local:50100"
     volumeMounts:
@@ -31,8 +37,8 @@ spec:
           mountPath: /certs
   volumes:
     - name: certs
-      hostPath:
-          path: /certs
+      secret:
+        secretName: custom-tls-cert
 ---
 apiVersion: v1
 kind: Service

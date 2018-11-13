@@ -11,6 +11,8 @@ DEP       := dep
 ## Minikube command to use.
 MINIKUBE  := minikube
 
+## Kubectl command to use.
+KUBECTL := kubectl
 
 ## The directory to write template files to for skaffold (with respect to bazel info workspace).
 SKAFFOLD_DIR := $$(bazel info workspace)/skaffold_build
@@ -44,8 +46,22 @@ gazelle: gazelle-repos ## Run gazelle to update go build rules.
 
 go-setup: dep-ensure gazelle
 
+k8s-load-certs:
+	-$(KUBECTL) delete secret custom-tls-cert
+	$(KUBECTL) create secret tls custom-tls-cert --key services/certs/server.key --cert services/certs/server.crt
+
+k8s-load-dev-secrets: #Loads the secrets used by the dev environment. At some point it might makse sense to move this into a dev setup script somewhere.
+	-$(KUBECTL) delete secret pl-app-secrets
+	$(KUBECTL) create secret generic pl-app-secrets \
+		--from-literal=jwt-signing-key=ABCDEFG \
+		--from-literal=session-key=test-session-key \
+		--from-literal=auth0-client-id=qaAfEHQT7mRt6W0gMd9mcQwNANz9kRup \
+		--from-literal=auth0-client-secret=_rY9isTWtKgx2saBXNKZmzAf1y9pnKvlm-WdmSVZOFHb9OQtWHEX4Nrh3nWE5NNt
+
 dev-env-start: ## Start dev environment.
-	$(MINIKUBE) start --cpus 6 --memory 8192 --mount-string="$(GOPATH)/src/pixielabs.ai/pixielabs/services/certs:/certs" --mount
+	$(MINIKUBE) start --cpus 6 --memory 8192 --vm-driver hyperkit --mount-string="$(HOME):$(HOME)" --mount
+	$(MAKE) k8s-load-certs
+	$(MAKE) k8s-load-dev-secrets
 
 dev-docker-start:
 	@eval $$(minikube docker-env); ./scripts/run_docker.sh --extra_args="$(DEV_DOCKER_EXTRA_ARGS)"
@@ -53,8 +69,7 @@ dev-docker-start:
 dev-env-stop: ## Stop dev environment.
 	$(MINIKUBE) stop
 
-dev-env-teardown: ## Clean up dev environment.
-	$(MINIKUBE) stop
+dev-env-teardown: dev-env-stop ## Clean up dev environment.
 	$(MINIKUBE) delete
 
 skaffold-dev: ## Run Skaffold in the dev environment.

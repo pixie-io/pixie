@@ -1,10 +1,8 @@
 # Generated file: bazel run //templates/skaffold:skaffoldtemplate
 # DO NOT EDIT
-apiVersion: skaffold/v1alpha4
+apiVersion: skaffold/v1alpha5
 kind: Config
 build:
-  local:
-    push: {{.PushArtifacts}}
   artifacts:
   - image: gcr.io/pl-dev-infra/api_server_image
     context: .
@@ -22,6 +20,8 @@ build:
     context: .
     bazel:
       target: //services/gateway:gateway_server_image.tar
+  local:
+    push: {{.PushArtifacts}}
 deploy:
   kubectl:
     manifests:

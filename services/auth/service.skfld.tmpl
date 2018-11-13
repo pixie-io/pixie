@@ -15,24 +15,33 @@ spec:
         hostPort: 50101
     env:
       - name: PL_JWT_SIGNING_KEY
-        value: ABC
+        valueFrom:
+          secretKeyRef:
+            name: pl-app-secrets
+            key: jwt-signing-key
       - name: PL_EXTERNAL_ADDR
         value: {{.ExternalAddress}}
       - name: PL_TLS_CERT
-        value: /certs/server.crt
+        value: /certs/tls.crt
       - name: PL_TLS_KEY
-        value: /certs/server.key
+        value: /certs/tls.key
       - name: PL_AUTH0_CLIENT_ID
-        value: qaAfEHQT7mRt6W0gMd9mcQwNANz9kRup
+        valueFrom:
+          secretKeyRef:
+            name: pl-app-secrets
+            key: auth0-client-id
       - name: PL_AUTH0_CLIENT_SECRET
-        value: _rY9isTWtKgx2saBXNKZmzAf1y9pnKvlm-WdmSVZOFHb9OQtWHEX4Nrh3nWE5NNt
+        valueFrom:
+          secretKeyRef:
+            name: pl-app-secrets
+            key: auth0-client-secret
     volumeMounts:
         - name: certs
           mountPath: /certs
   volumes:
     - name: certs
-      hostPath:
-          path: /certs
+      secret:
+        secretName: custom-tls-cert
 ---
 apiVersion: v1
 kind: Service
