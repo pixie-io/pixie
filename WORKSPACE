@@ -76,6 +76,13 @@ load("@com_github_grpc_grpc//:bazel/grpc_deps.bzl", "grpc_deps")
 
 grpc_deps()
 
+# Google Benchmark.
+git_repository(
+    name = "com_google_benchmark",
+    commit = "a9b31c51b1ee7ec7b31438c647123c2cbac5d956",
+    remote = "https://github.com/google/benchmark.git",
+)
+
 ##########################################################
 # Docker setup.
 ##########################################################

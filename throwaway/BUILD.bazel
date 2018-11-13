@@ -26,6 +26,12 @@ cc_library(
     ],
 )
 
+cc_binary(
+    name = "sample-benchmark",
+    srcs = ["sample-benchmark.cc"],
+    deps = ["@com_google_benchmark//:benchmark_main"],
+)
+
 cc_test(
     name = "adder-test",
     srcs = ["adder-test.cc"],
