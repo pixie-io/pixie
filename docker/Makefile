@@ -8,10 +8,22 @@ BASE_IMAGE_VERSION := $(shell date "+%Y%m%d%H%M")
 ## The base dev image version, defaults to the datestamp.
 DEV_IMAGE_VERSION := $(shell date "+%Y%m%d%H%M")
 
+## The BCC deb image version, defaults to the datestamp
+BCC_DEB_IMAGE_VERSION := 1.0
+
+## The BCC deb namee
+bcc_deb_fname := "bcc-pixie-$(BCC_DEB_IMAGE_VERSION).deb"
+
+## SSH private key 
+SSH_PRIVATE_KEY_FILE := ${HOME}/.ssh/id_rsa
+SSH_PRIVATE_KEY := `cat $(SSH_PRIVATE_KEY_FILE)`
+
 base_image_tag := "gcr.io/pl-dev-infra/base_image:$(BASE_IMAGE_VERSION)"
 base_dev_image_tag := "gcr.io/pl-dev-infra/base_dev_image:$(BASE_IMAGE_VERSION)"
 dev_image_tag="gcr.io/pl-dev-infra/dev_image:$(DEV_IMAGE_VERSION)"
 dev_image_with_extras_tag="gcr.io/pl-dev-infra/dev_image_with_extras:$(DEV_IMAGE_VERSION)"
+
+bcc_deb_image_tag := "gcr.io/pl-dev-infra/bcc_deb_image:$(BCC_DEB_IMAGE_VERSION)"
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
@@ -60,6 +72,25 @@ push_dev_image_with_extras: build_dev_image_with_extras
 .PHONY: dev
 dev: push_dev_image_with_extras push_dev_image ## Build and push the dev images.
 	@echo "Build/push of dev images version $(DEV_IMAGE_VERSION) completed"
+
+# BCC DEB Image configuration
+.PHONY: build_bcc_deb_image
+build_bcc_deb_image:  
+	cd $(mkfile_dir)/bcc_deb_image && \
+	$(DOCKER) build . --build-arg SSH_PRIVATE_KEY="${SSH_PRIVATE_KEY}" -t $(bcc_deb_image_tag)
+
+.PHONY: push_bcc_deb_image
+push_bcc_deb_image: build_bcc_deb_image
+	$(DOCKER) push $(bcc_deb_image_tag)
+
+.PHONY: build_bcc_deb
+build_bcc_deb:
+	$(DOCKER) run --rm -e deb_name=$(bcc_deb_fname) -v ${PWD}:/image $(bcc_deb_image_tag)
+
+# .PHONY: upload_bcc_deb
+upload_bcc_deb: build_bcc_deb
+	gsutil cp $(bcc_deb_fname)  gs://pl-infra-dev-artifacts/$(bcc_deb_fname)
+
 
 
 help: ## Print help for targets with comments.
