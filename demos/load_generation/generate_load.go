@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"text/template"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	log "github.com/sirupsen/logrus"
@@ -25,6 +26,7 @@ func init() {
 	// Configure flags and defaults.
 	pflag.String("config_file", "", "The load config file.")
 	pflag.String("host", "", "The host that should be load tested.")
+	pflag.String("run_time", "", "Duration in seconds to run locust load generation.")
 }
 
 // parseArgs parses the arguments into specified variables.
@@ -43,6 +45,10 @@ func parseArgs() {
 
 	if viper.GetString("host") == "" {
 		log.Fatal("Flag --host is required. Please specify hsot as an argument. Refer to the usage menu (-h) for more help.")
+	}
+
+	if viper.GetString("run_time") == "" {
+		log.Fatal("Flag --run_time is required. Specify it as a positive integer followed by units. For example, 100s")
 	}
 }
 
@@ -117,9 +123,20 @@ func main() {
 
 	loadConfig := mustLoadConfig()
 	host := viper.GetString("host")
+	runTime := viper.GetString("run_time")
+	testDuration, err := time.ParseDuration(runTime)
+	if err != nil {
+		log.WithError(err).WithField("run_time", runTime).Fatal("Cannot parse test duration.")
+	}
 
-	for {
+	startTime := time.Now()
+	stopTime := startTime.Add(testDuration)
+
+	for stopTime.Sub(time.Now()).Seconds() > 0 {
 		for i, phase := range loadConfig.Phases {
+			if stopTime.Sub(time.Now()).Seconds() < 0 {
+				break
+			}
 			log.WithField("phase", i).Info("Running locust phase.")
 
 			// Create locust file for the phase.

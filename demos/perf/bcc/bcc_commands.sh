@@ -35,7 +35,7 @@ done
 mount -t debugfs none /sys/kernel/debug
 mkdir -p $outdir
 
-timeout -s SIGINT $capture_secs ./cachestat -T $interval_secs > ./data/cachestat.txt &
+timeout -s SIGINT $capture_secs ./cachestat -T $interval_secs > ./$outdir/cachestat.txt &
 timeout -s SIGINT $capture_secs ./execsnoop > ./$outdir/execsnoop.txt &
 ./opensnoop -d $capture_secs > ./$outdir/opensnoop.txt &
 timeout -s SIGINT $capture_secs ./ext4slower > ./$outdir/ext4slower.txt &

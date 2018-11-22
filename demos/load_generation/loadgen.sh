@@ -23,5 +23,11 @@ if [[ -z "${FRONTEND_ADDR}" ]]; then
     exit 1
 fi
 
+if [[ -z "${LOCUST_RUN_DURATION}" ]]; then
+    echo >&2 "LOCUST_RUN_DURATION not specified"
+    exit 1
+fi
+
 set -x
-./load_generation --config_file load.pbtxt --host "http://${FRONTEND_ADDR}"
+./load_generation --config_file load.pbtxt --host "http://${FRONTEND_ADDR}" --run_time "${LOCUST_RUN_DURATION}"
+tail -f /dev/null

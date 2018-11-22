@@ -1,0 +1,22 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: bcc-agent
+spec:
+  template:
+    metadata:
+      labels:
+        app: bcc-agent
+      name: bcc-agent
+    spec:
+      hostPID: true
+      containers:
+      - image: gcr.io/pl-dev-infra/demos/tools/bcc-deploy:201811211531
+        name: bcc-agent
+        imagePullPolicy: Always
+        command: ["/bin/sh"]
+        args: ["-c", "/usr/share/bcc/tools/bcc_commands.sh -i 2 -t 120; tail -f /dev/null"]
+        securityContext:
+          privileged: true
+          runAsNonRoot: false
+          allowPrivilegeEscalation: true

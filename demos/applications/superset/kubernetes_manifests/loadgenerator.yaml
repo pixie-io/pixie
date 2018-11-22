@@ -51,6 +51,9 @@ spec:
         env:
         - name: FRONTEND_ADDR
           value: "superset:8080"
+        # Set a value for how long the locust load generation should run for in seconds
+        - name: LOCUST_RUN_DURATION
+          value: "600s"
         - name: USERS
           value: "10"
         resources:

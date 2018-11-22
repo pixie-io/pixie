@@ -26,7 +26,7 @@ spec:
       containers:
       - name: server
         # Image built from https://github.com/pixie-labs/microservices-demo/src/adservice.
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/adservice:991feaf
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/adservice:a815e02
         ports:
         - containerPort: 9555
         env:

@@ -25,7 +25,7 @@ spec:
       containers:
         - name: server
           # Image built from https://github.com/pixie-labs/microservices-demo/src/frontend.
-          image: gcr.io/pl-dev-infra/demos/microservices-demo-app/frontend:991feaf
+          image: gcr.io/pl-dev-infra/demos/microservices-demo-app/frontend:a815e02
           ports:
           - containerPort: 8080
           readinessProbe:

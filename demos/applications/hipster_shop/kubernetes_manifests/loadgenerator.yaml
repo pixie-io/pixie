@@ -47,10 +47,14 @@ spec:
       containers:
       - name: main
         # See demos/load_generation/README.md for information on how this dockerfile is built.
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/loadgenerator:v9
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/loadgenerator:201811211531
+        imagePullPolicy: Always
         env:
         - name: FRONTEND_ADDR
           value: "frontend:80"
+        # Set a value for how long the locust load generation should run for in seconds
+        - name: LOCUST_RUN_DURATION
+          value: "120s"
         - name: USERS
           value: "10"
         resources:

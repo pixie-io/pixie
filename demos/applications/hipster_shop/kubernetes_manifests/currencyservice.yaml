@@ -26,7 +26,7 @@ spec:
       containers:
       - name: server
         # Image built from https://github.com/pixie-labs/microservices-demo/src/currencyservice.
-        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/currencyservice:991feaf
+        image: gcr.io/pl-dev-infra/demos/microservices-demo-app/currencyservice:a815e02
         ports:
         - name: grpc
           containerPort: 7000
