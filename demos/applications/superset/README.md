@@ -35,6 +35,24 @@ sed -i'.original' -e 's/<old-version>/<new-version>/g' *yaml
 You should commit these changes into the repo after testing out the changes
 on GKE.
 
+# How to set up a cluster on GKE to run the application
+Note that the data collection works with an ubuntu image and the cluster needs to be able to write to gcs buckets.
+```
+gcloud auth login
+gcloud config set project pl-dev-infra
+gcloud services enable container.googleapis.com
+gcloud container clusters create <name for the cluster> --enable-autoupgrade \
+    --enable-autoscaling --min-nodes=3 --max-nodes=10 --num-nodes=5 --zone=us-west1-a \
+    --image-type=ubuntu  --cluster-version 1.10.9-gke.5 --scopes=storage-rw
+gcloud container clusters get-credentials <name of the cluster> --zone=us-west1-a
+```
+The gcloud commands above will create a new cluster on which you can run the application.
+You will also need to set the context for kubectl. You can do that with the following commands:
+```
+kubectl config view
+kubectl config use-context gke_pl-dev-infra_us-west1-a_<name of the cluster>
+```
+
 # Load generation on GKE
 We plan to use locust to generate variable loads on the application. We also want to isolate load
 generation from affecting the system under test. Therefore, we need to restrict the deployment of

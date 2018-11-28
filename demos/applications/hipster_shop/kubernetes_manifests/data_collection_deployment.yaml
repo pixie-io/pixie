@@ -11,12 +11,45 @@ spec:
     spec:
       hostPID: true
       containers:
-      - image: gcr.io/pl-dev-infra/demos/tools/bcc-deploy:201811211531
+      - image: gcr.io/pl-dev-infra/demos/tools/bcc-deploy:201811281105
         name: bcc-agent
         imagePullPolicy: Always
         command: ["/bin/sh"]
-        args: ["-c", "/usr/share/bcc/tools/bcc_commands.sh -i 2 -t 120; tail -f /dev/null"]
+        args: ["-c", "/usr/share/bcc/tools/bcc_commands.sh -i 2 -t 120 -o hipster_shop; tail -f /dev/null"]
         securityContext:
           privileged: true
+          capabilities:
+            add:
+              - SYS_ADMIN
           runAsNonRoot: false
           allowPrivilegeEscalation: true
+        lifecycle:
+          postStart:
+            # Mount gcs bucket to the container for copying out performance data
+            exec:
+              command: ["gcsfuse", "-o", "nonempty", "pl-tmp", "/usr/share/bcc/tools/bcc_data"]
+          preStop:
+            # Unmount the gcs bucket
+            exec:
+              command: ["fusermount", "-u", "/usr/share/bcc/tools/bcc_data"]
+        env:
+          - name: MY_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: MY_POD_SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName

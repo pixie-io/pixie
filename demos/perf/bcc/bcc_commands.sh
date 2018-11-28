@@ -2,11 +2,11 @@
 
 interval_secs=2
 capture_secs=10
-outdir="bcc_data"
+outdir="output"
 usage()
 {
   echo "Usage: $0 [-i interval in secs to store data] [-t time for capture in seconds] \
-  [-o output directory under /usr/share/bcc/tools]"
+  [-o output directory under /usr/share/bcc/tools (will be extended with a timestamp)]"
   exit 2
 }
 
@@ -25,7 +25,7 @@ do
         t) capture_secs=$OPTARG
             echo "Script will collect data for $capture_secs secs. before exiting"
            ;;
-        o) outdir=$OPTARG
+        o) outdir=${OPTARG}_$(date +%Y_%m_%d_%H_%M_%S)
             echo "Results will be stored in /usr/share/bcc/tools/$outdir"
            ;;
         :) usage ;;
@@ -33,8 +33,10 @@ do
 done
 
 mount -t debugfs none /sys/kernel/debug
+mkdir -p bcc_data
 mkdir -p $outdir
 
+env > ./$outdir/env.txt
 timeout -s SIGINT $capture_secs ./cachestat -T $interval_secs > ./$outdir/cachestat.txt &
 timeout -s SIGINT $capture_secs ./execsnoop > ./$outdir/execsnoop.txt &
 ./opensnoop -d $capture_secs > ./$outdir/opensnoop.txt &
@@ -48,3 +50,10 @@ timeout -s SIGINT $capture_secs ./runqlat > ./$outdir/runqlat.txt &
 timeout -s SIGINT $capture_secs ./profile > ./$outdir/profile.txt &
 timeout -s SIGINT $capture_secs ./funccount 'vfs_*' > ./$outdir/funccount_vfs.txt &
 timeout -s SIGINT $capture_secs ./funccount 'c:malloc_*' > ./$outdir/funccount_malloc.txt &
+
+sleep `expr $capture_secs + 30`
+mkdir -p bcc_data/$outdir
+# gcsfuse takes its sweet time to create a directory
+sleep 10
+cp -rf $outdir/*.txt bcc_data/$outdir/
+sync -f bcc_data/$outdir/*.txt
