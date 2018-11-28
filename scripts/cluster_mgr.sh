@@ -33,7 +33,7 @@ function downscale() {
     NODEPOOL=$3
     gcloud container clusters update $CLUSTER --no-enable-autoscaling \
         --zone $ZONE --node-pool $NODEPOOL
-    gcloud container clusters resize $CLUSTER --node-pool $NODEPOOL --size=0 $ZONE -q
+    gcloud container clusters resize $CLUSTER --node-pool $NODEPOOL --size=0 --zone $ZONE -q
 }
 
 unset NODEPOOLS CLUSTER ACTION ZONE HELP
