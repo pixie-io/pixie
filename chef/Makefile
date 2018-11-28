@@ -1,0 +1,64 @@
+
+TOT		       := $$(git rev-parse --show-toplevel)
+DOCKER_PROPERTIES_FILE := $(TOT)/docker.properties
+
+# Commands.
+DOCKER := docker
+PACKER := packer
+
+## The base image version, defaults to the datestamp.
+BASE_DEV_IMAGE_VERSION := $(shell date "+%Y%m%d%H%M")
+
+BASE_DEV_IMAGE_VERSION_FILE := base_image_version.txt
+LATEST_BASE_DEV_IMAGE 	    := $(shell cat $(BASE_DEV_IMAGE_VERSION_FILE))
+
+## The base dev image version, defaults to the datestamp.
+DEV_IMAGE_VERSION := $(shell date "+%Y%m%d%H%M")
+
+## The repository where the images are stored.
+REPOSITORY := gcr.io/pl-dev-infra
+
+.PHONY: build_and_push_base_dev_image
+build_and_push_base_dev_image:
+	$(PACKER) build \
+		-var "base_image_and_tag=ubuntu:18.04" \
+		-var "generated_image_repository=$(REPOSITORY)/base_dev_image" \
+		-var "generated_image_tag=$(BASE_DEV_IMAGE_VERSION)" \
+		packer_docker_dev.json
+	echo $(BASE_DEV_IMAGE_VERSION) > $(BASE_DEV_IMAGE_VERSION_FILE)
+
+.PHONY: build_and_push_dev_image
+build_and_push_dev_images:
+	$(PACKER) build \
+		-var "base_image_and_tag=$(REPOSITORY)/base_dev_image:$(LATEST_BASE_DEV_IMAGE)" \
+		-var "generated_image_repository=$(REPOSITORY)/dev_image" \
+		-var "generated_image_tag=$(DEV_IMAGE_VERSION)" \
+		packer_docker_dev.json
+
+	$(PACKER) build \
+		-var "base_image_and_tag=$(REPOSITORY)/dev_image:$(DEV_IMAGE_VERSION)" \
+		-var "generated_image_repository=$(REPOSITORY)/dev_image_with_extras" \
+		-var "generated_image_tag=$(DEV_IMAGE_VERSION)" \
+		packer_docker_dev_extras.json
+
+	echo "DOCKER_IMAGE_TAG=$(DEV_IMAGE_VERSION)" > $(DOCKER_PROPERTIES_FILE)
+
+help: ## Print help for targets with comments.
+	@echo "Usage:"
+	@echo "  make [target...] [VAR=foo VAR2=bar...]"
+	@echo "  Do make base first, edit Dockerfile for dev image."
+	@echo "  Then run make dev"
+	@echo ""
+	@echo "Useful commands:"
+# Grab the comment prefixed with "##" after every rule.
+	@grep -Eh '^[a-zA-Z._-]+:.*?## .*$$' $(MAKEFILE_LIST) |\
+		sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(cyan)%-30s$(term-reset) %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Useful variables:"
+# Grab the comment prefixed with "##" before every variable.
+	@awk 'BEGIN { FS = ":=" } /^## /{x = substr($$0, 4); \
+    getline; if (NF >= 2) printf "  $(cyan)%-30s$(term-reset) %s\n", $$1, x}' $(MAKEFILE_LIST) | sort
+	@echo ""
+	@echo "Typical usage:"
+	@printf "  $(cyan)%s$(term-reset)\n    %s\n\n" \
+		"make base" "Build and push the base images." \

@@ -1,0 +1,4 @@
+#!/bin/bash
+# This defines a script that returns the "Top of Tree".
+# It can be used like cd $(tot)/docker, etc.
+echo $(git rev-parse --show-toplevel)

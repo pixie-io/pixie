@@ -1,0 +1,20 @@
+# DO NOT EDIT! This is an automatically generated file by Chef and may be changed.
+export PATH=/opt/pixielabs/bin:$PATH
+export PATH=/opt/google-cloud-sdk/bin:$PATH
+export PATH=/opt/node/bin:$PATH
+export PATH=/opt/phab/arcanist/bin:$PATH
+export PATH=/usr/lib/go-1.10/bin/:$PATH
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
+
+export CC=clang
+export CXX=clang++
+
+if [ -n "`$SHELL -c 'echo $ZSH_VERSION'`" ]; then
+   # Assume Zsh.
+   source /opt/google-cloud-sdk/path.zsh.inc
+   source /opt/google-cloud-sdk/completion.zsh.inc
+elif [ -n "`$SHELL -c 'echo $BASH_VERSION'`" ]; then
+   # Assume Bash.
+   source /opt/google-cloud-sdk/path.bash.inc
+   source /opt/google-cloud-sdk/completion.bash.inc
+fi

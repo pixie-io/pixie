@@ -1,0 +1,60 @@
+{
+  "variables": {
+    "base_image_and_tag": "",
+    "generated_image_repository": "",
+    "generated_image_tag": ""
+  },
+  "builders": [
+    {
+      "type": "docker",
+      "image": "{{ user `base_image_and_tag` }}",
+      "commit": true,
+      "changes": [
+        "ENV PATH /pl/bin:/opt/google-cloud-sdk/bin:/opt/node/bin:/opt/phab/arcanist/bin:/usr/lib/go-1.10/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "ENV GOPATH /pl",
+        "ENV CC clang",
+        "ENV CXX clang++"
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "apt-get -y update; apt-get install -y curl"
+      ]
+    },
+    {
+      "type": "chef-solo",
+      "cookbook_paths": [
+        "cookbooks",
+        "site-cookbooks"
+      ],
+      "roles_path": "roles",
+      "run_list": [
+        "role[pl_base_dev]",
+        "recipe[pixielabs::docker_extras]"
+      ],
+      "prevent_sudo": true,
+      "version": "14.7.17"
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "rm -rf /tmp/*",
+        "rm -rf /root/.npm",
+        "rm -rf /var/lib/apt/lists/*"
+      ]
+    }
+  ],
+  "post-processors": [
+    [
+      {
+        "type": "docker-tag",
+        "repository": "{{ user `generated_image_repository` }}",
+        "tag": "{{ user `generated_image_tag` }}"
+      },
+      "docker-push"
+    ]
+  ]
+}
