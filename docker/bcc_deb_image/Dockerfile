@@ -41,4 +41,4 @@ WORKDIR /bcc
 VOLUME /image
 ENV deb_name bcc-pixie-0.1.deb
 CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n bcc-pixie --prefix /usr/ ."]
+        -s dir -t deb -n bcc-pixie --prefix /opt/bcc ."]

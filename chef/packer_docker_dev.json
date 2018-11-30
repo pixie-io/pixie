@@ -13,7 +13,8 @@
         "ENV PATH /pl/bin:/opt/google-cloud-sdk/bin:/opt/node/bin:/opt/phab/arcanist/bin:/usr/lib/go-1.10/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
         "ENV GOPATH /pl",
         "ENV CC clang",
-        "ENV CXX clang++"
+        "ENV CXX clang++",
+        "WORKDIR /pl/src/pixielabs.ai/pixielabs"
       ]
     }
   ],

@@ -1,6 +1,8 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("//tools:cc_resource.bzl", "cc_resource")
 
 go_library(
     name = "go_default_library",
@@ -38,5 +40,27 @@ cc_test(
     deps = [
         ":adder",
         "//external:gtest-main",
+    ],
+)
+
+cc_binary(
+    name = "hello_bcc",
+    srcs = ["hello_bcc.cc"],
+    deps = [
+        "@com_iovisor_bcc//:bcc",
+        "@com_llvm_lib//:llvm",
+    ],
+)
+
+cc_resource(
+    name = "saying",
+    srcs = ["saying.txt"],
+)
+
+cc_binary(
+    name = "resource",
+    srcs = ["resource.cc"],
+    deps = [
+        ":saying",
     ],
 )

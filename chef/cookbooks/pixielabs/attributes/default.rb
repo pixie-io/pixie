@@ -4,6 +4,12 @@ default['bazel']['deb']        =
 default['bazel']['deb_sha256'] =
   '5d22686faa59a5c0bba65c593c3f955a871f2712d306dd607f284cabd2b32c1f'
 
+default['bcc']               = {}
+default['bcc']['deb']        =
+  'https://storage.googleapis.com/pl-infra-dev-artifacts/bcc-pixie-1.0.deb'
+default['bcc']['deb_sha256'] =
+  'd2a95ea6dae3758b26056147257adb3c851498fd1a63fc0f318c90722545ea36'
+
 default['skaffold']                  = {}
 
 if node[:platform] == 'ubuntu'

@@ -1,0 +1,18 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//tools:cc_resource.bzl", "cc_resource")
+
+cc_resource(
+    name = "CPUDistribution_bpf",
+    srcs = ["CPUDistribution_bpf.c"],
+)
+
+cc_binary(
+    name = "CPUDistribution_bcc",
+    srcs = ["CPUDistribution.cc"],
+    deps = [
+        ":CPUDistribution_bpf",
+        "@com_iovisor_bcc//:bcc",
+        "@com_llvm_lib//:llvm",
+    ],
+)

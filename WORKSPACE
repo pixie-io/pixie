@@ -83,6 +83,18 @@ git_repository(
     remote = "https://github.com/google/benchmark.git",
 )
 
+new_local_repository(
+    name = "com_llvm_lib",
+    build_file = "third_party/llvm.BUILD",
+    path = "/usr/lib/llvm-6.0",
+)
+
+new_local_repository(
+    name = "com_iovisor_bcc",
+    build_file = "third_party/bcc.BUILD",
+    path = "/opt/bcc",
+)
+
 ##########################################################
 # Docker setup.
 ##########################################################

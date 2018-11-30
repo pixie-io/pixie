@@ -17,6 +17,15 @@ apt_pkg_list = [
   'unzip',
   'virtualenvwrapper',
   'zlib1g-dev',
+
+  'bison',
+  'cmake',
+  'flex',
+  'libedit-dev',
+  'libllvm6.0',
+  'llvm-6.0-dev',
+  'libclang-6.0-dev',
+  'libelf-dev'
 ]
 
 apt_package apt_pkg_list do
@@ -25,3 +34,4 @@ end
 
 include_recipe 'pixielabs::linux_java'
 include_recipe 'pixielabs::linux_bazel'
+include_recipe 'pixielabs::linux_bcc'
