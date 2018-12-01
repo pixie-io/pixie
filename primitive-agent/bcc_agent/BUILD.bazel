@@ -5,11 +5,13 @@ load("//tools:cc_resource.bzl", "cc_resource")
 cc_resource(
     name = "CPUDistribution_bpf",
     srcs = ["CPUDistribution_bpf.c"],
+    tags = ["linux_only"],
 )
 
 cc_binary(
     name = "CPUDistribution_bcc",
     srcs = ["CPUDistribution.cc"],
+    tags = ["linux_only"],
     deps = [
         ":CPUDistribution_bpf",
         "@com_iovisor_bcc//:bcc",

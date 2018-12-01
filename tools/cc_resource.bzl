@@ -15,6 +15,7 @@ def cc_resource(
                   " --output elf64-x86-64" +
                   " --binary-architecture i386:x86-64" +
                   " $(location {0}) $(location {1});".format(src, object_file),
+            **kwargs
         )
         object_files.append(object_file)
 
