@@ -35,12 +35,16 @@ test: ## Run all the tests (except UI).
 	$(BAZEL) test //...
 
 .PHONY: test-opt
-test-opt: ## Run all the tests (except UI).
+test-opt: ## Run all the tests (except UI), optimized build.
 	$(BAZEL) test -c opt //...
 
 .PHONY: test-asan
-test-asan: ## Run all the tests (except UI).
+test-asan: ## Run all the tests (except UI), with address sanitizer.
 	$(BAZEL) test --config=asan //...
+
+.PHONY: test-tsan
+test-tsan: ## Run all the tests (except UI),  with thread sanitizer.
+	$(BAZEL) test --config=tsan //...
 
 .PHONY: dep-ensure
 dep-ensure: ## Ensure that go dependencies exist.

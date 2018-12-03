@@ -23,3 +23,10 @@ build:msan --linkopt -fsanitize=memory
 build:msan --define tcmalloc=disabled
 build:msan --copt -fsanitize-memory-track-origins=2
 build:msan --linkopt -fuse-ld=lld
+
+# bazel build --config tsan
+build:tsan --define PL_CONFIG_TSAN=1
+build:tsan --copt -fsanitize=thread
+build:tsan --linkopt -fsanitize=thread
+build:tsan --define tcmalloc=disabled
+build:tsan --linkopt -fuse-ld=lld

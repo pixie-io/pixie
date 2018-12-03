@@ -155,6 +155,19 @@ builders['Build & Test (asan)'] = {
   }
 }
 
+builders['Build & Test (tsan)'] = {
+  node {
+    unstash 'src'
+    docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
+      // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
+      docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache --cap-add=SYS_PTRACE') {
+        sh 'make test-tsan'
+        stash name: 'build-tsan-testlogs', includes: "bazel-testlogs/**"
+      }
+    }
+  }
+}
+
 /********************************************
  * The build script starts here.
  ********************************************/
@@ -207,6 +220,9 @@ node {
       }
       dir ('build-asan-testlogs') {
         unstash 'build-asan-testlogs'
+      }
+      dir ('build-tsan-testlogs') {
+        unstash 'build-tsan-testlogs'
       }
       step([
         $class: 'XUnitBuilder',

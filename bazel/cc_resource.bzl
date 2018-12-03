@@ -1,4 +1,4 @@
-def cc_resource(
+def pl_cc_resource(
         name,
         srcs,
         **kwargs):

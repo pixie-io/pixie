@@ -2,7 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("//tools:cc_resource.bzl", "cc_resource")
+load("//bazel:cc_resource.bzl", "pl_cc_resource")
 
 go_library(
     name = "go_default_library",
@@ -53,7 +53,7 @@ cc_binary(
     ],
 )
 
-cc_resource(
+pl_cc_resource(
     name = "saying",
     srcs = ["saying.txt"],
     tags = ["linux_only"],
