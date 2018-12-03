@@ -39,7 +39,7 @@ cc_test(
     srcs = ["adder-test.cc"],
     deps = [
         ":adder",
-        "//external:gtest-main",
+        "@com_google_googletest//:gtest_main",
     ],
 )
 
