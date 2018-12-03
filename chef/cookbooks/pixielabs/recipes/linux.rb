@@ -3,8 +3,6 @@ apt_update 'update'
 apt_pkg_list = [
   'bash-completion',
   'build-essential',
-  'clang',
-  'clang-format',
   'curl',
   'git',
   'golang',
@@ -35,3 +33,4 @@ end
 include_recipe 'pixielabs::linux_java'
 include_recipe 'pixielabs::linux_bazel'
 include_recipe 'pixielabs::linux_bcc'
+include_recipe 'pixielabs::linux_clang'

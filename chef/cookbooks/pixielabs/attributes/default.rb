@@ -10,6 +10,13 @@ default['bcc']['deb']        =
 default['bcc']['deb_sha256'] =
   'd2a95ea6dae3758b26056147257adb3c851498fd1a63fc0f318c90722545ea36'
 
+default['clang']               = {}
+default['clang']['deb']        =
+  'https://storage.googleapis.com/pl-infra-dev-artifacts/clang-7.0-pl.deb'
+default['clang']['deb_sha256'] =
+  '525c46eb403847152234fde9e204488bb2fe31d687fd6da8679b00ca23531b7a'
+
+
 default['skaffold']                  = {}
 
 if node[:platform] == 'ubuntu'
