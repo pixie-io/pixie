@@ -23,12 +23,8 @@ build_bcc_deb_image:
 	cd $(mkfile_dir)/bcc_deb_image && \
 	$(DOCKER) build . --build-arg SSH_PRIVATE_KEY="${SSH_PRIVATE_KEY}" -t $(bcc_deb_image_tag)
 
-.PHONY: push_bcc_deb_image
-push_bcc_deb_image: build_bcc_deb_image
-	$(DOCKER) push $(bcc_deb_image_tag)
-
 .PHONY: build_bcc_deb
-build_bcc_deb:
+build_bcc_deb: build_bcc_deb_image
 	$(DOCKER) run --rm -e deb_name=$(bcc_deb_fname) -v ${PWD}:/image $(bcc_deb_image_tag)
 
 .PHONY: upload_bcc_deb

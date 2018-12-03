@@ -2,7 +2,7 @@
 FROM ubuntu as intermediate
 
 # install git
-RUN apt-get update
+RUN apt-get update --fix-missing
 RUN apt-get install -y git
 
 # add credentials on build
@@ -20,13 +20,18 @@ RUN git clone git@github.com:pixie-labs/bcc.git
 
 FROM cdrx/fpm-ubuntu:18.04
 
-RUN apt-get update
+RUN apt-get update --fix-missing
 RUN apt install -y bison build-essential cmake flex git libedit-dev \
-  clang libclang-dev llvm llvm-dev\
-  python zlib1g-dev libelf-dev
+  python zlib1g-dev libelf-dev wget
 
+RUN wget https://storage.googleapis.com/pl-infra-dev-artifacts/clang-7.0-pl.deb \
+    && dpkg -i clang-7.0-pl.deb
+
+ENV PATH=/opt/clang-7.0/bin:$PATH
+ENV LD_LIBRARY_PATH=/opt/clang-7.0/lib:$LD_LIBRARY_PATH
 ENV CC=clang
 ENV CXX=clang++
+ENV LLVM_DIR=/opt/clang-7.0/lib/cmake/llvm/
 
 WORKDIR /src/
 COPY --from=intermediate /bcc/ /src/bcc

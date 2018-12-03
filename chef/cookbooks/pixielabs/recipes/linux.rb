@@ -20,9 +20,6 @@ apt_pkg_list = [
   'cmake',
   'flex',
   'libedit-dev',
-  'libllvm6.0',
-  'llvm-6.0-dev',
-  'libclang-6.0-dev',
   'libelf-dev'
 ]
 

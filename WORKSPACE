@@ -86,7 +86,7 @@ git_repository(
 new_local_repository(
     name = "com_llvm_lib",
     build_file = "third_party/llvm.BUILD",
-    path = "/usr/lib/llvm-6.0",
+    path = "/opt/clang-7.0",
 )
 
 new_local_repository(
