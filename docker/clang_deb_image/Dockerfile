@@ -22,9 +22,10 @@ RUN svn co http://llvm.org/svn/llvm-project/polly/tags/RELEASE_700/final polly
 RUN svn co http://llvm.org/svn/llvm-project/lld/tags/RELEASE_700/final lld
 RUN svn co http://llvm.org/svn/llvm-project/openmp/tags/RELEASE_700/final openmp
 RUN svn co http://llvm.org/svn/llvm-project/libunwind/tags/RELEASE_700/final libunwind
-    
+
 WORKDIR /llvm_all/build
-RUN cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DLLVM_BUILD_DOCS=OFF -DCMAKE_INSTALL_PREFIX=/opt/clang-7.0 ../llvm
+RUN cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
+    -DLLVM_BUILD_DOCS=OFF -DCMAKE_INSTALL_PREFIX=/opt/clang-7.0 ../llvm
 
 RUN make -j ${nproc}
 RUN make install

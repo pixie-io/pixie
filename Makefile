@@ -34,6 +34,14 @@ build: ## Run the full build (except UI).
 test: ## Run all the tests (except UI).
 	$(BAZEL) test //...
 
+.PHONY: test-opt
+test-opt: ## Run all the tests (except UI).
+	$(BAZEL) test -c opt //...
+
+.PHONY: test-asan
+test-asan: ## Run all the tests (except UI).
+	$(BAZEL) test --config=asan //...
+
 .PHONY: dep-ensure
 dep-ensure: ## Ensure that go dependencies exist.
 	$(DEP) ensure

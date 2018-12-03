@@ -13,6 +13,8 @@ export LD_LIBRARY_PATH=${CLANG_PATH}/lib:${LD_LIBRARY_PATH}
 export CC=clang
 export CXX=clang++
 
+export ASAN_SYMBOLIZER_PATH=/opt/clang-7.0/bin/llvm-symbolizer
+
 if [ -n "`$SHELL -c 'echo $ZSH_VERSION'`" ]; then
    # Assume Zsh.
    source /opt/google-cloud-sdk/path.zsh.inc

@@ -15,6 +15,7 @@
         "ENV GOPATH /pl",
         "ENV CC clang",
         "ENV CXX clang++",
+        "ENV ASAN_SYMBOLIZER_PATH /opt/clang-7.0/bin/llvm-symbolizer",
         "WORKDIR /pl/src/pixielabs.ai/pixielabs"
       ]
     }

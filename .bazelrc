@@ -1,1 +1,3 @@
+import %workspace%/tools/bazelrc
+try-import jenkins.bazelrc
 try-import user.bazelrc
