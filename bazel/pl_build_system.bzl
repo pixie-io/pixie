@@ -43,6 +43,13 @@ def pl_test_linkopts():
         ],
     })
 
+
+def _default_external_deps():
+    return [
+        "@com_github_gflags_gflags//:gflags",
+    ]
+
+
 # PL C++ library targets should be specified with this function.
 def pl_cc_library(
         name,
@@ -63,7 +70,7 @@ def pl_cc_library(
         copts = pl_copts(repository) + copts,
         visibility = visibility,
         tags = tags,
-        deps = deps,
+        deps = deps + _default_external_deps(),
         alwayslink = 1,
         linkstatic = 1,
         linkstamp = linkstamp,
@@ -97,7 +104,7 @@ def pl_cc_binary(
         visibility = visibility,
         stamp = 1,
         tags = tags,
-        deps = deps,
+        deps = deps + _default_external_deps(),
     )
 
 # PL C++ test targets should be specified with this function.
@@ -130,7 +137,7 @@ def pl_cc_test(
         deps = [
             ":" + name + "_lib",
             repository + "//test:main",
-        ],
+        ] + _default_external_deps(),
         # from https://github.com/google/googletest/blob/
         #6e1970e2376c14bf658eb88f655a054030353f9f/googlemock/src/gmock.cc#L51
         # 2 - by default, mocks act as StrictMocks.
@@ -159,7 +166,7 @@ def pl_cc_test_library(
         testonly = 1,
         deps = deps + [
             "@com_google_googletest//:gtest",
-        ],
+        ] + _default_external_deps(),
         tags = tags,
         alwayslink = 1,
         linkstatic = 1,

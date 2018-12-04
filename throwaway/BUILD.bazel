@@ -53,6 +53,11 @@ pl_cc_binary(
     ],
 )
 
+pl_cc_binary(
+    name = "flags",
+    srcs = ["flags.cc"],
+)
+
 pl_cc_resource(
     name = "saying",
     srcs = ["saying.txt"],

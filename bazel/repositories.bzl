@@ -44,6 +44,7 @@ def _cc_deps():
     _repository_impl(
         name = "com_google_googletest",
     )
+    _repository_impl(name = "com_github_gflags_gflags")
 
 def _go_deps():
     # Add go specific imports here when necessary.

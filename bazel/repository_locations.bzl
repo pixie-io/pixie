@@ -32,4 +32,9 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "grpc-d8020cb6daa87f1a3bb3b0c299bc081c4a3de1e8",
         urls = ["https://github.com/grpc/grpc/archive/d8020cb6daa87f1a3bb3b0c299bc081c4a3de1e8.tar.gz"],
     ),
+    com_github_gflags_gflags = dict(
+        sha256 = "9e1a38e2dcbb20bb10891b5a171de2e5da70e0a50fff34dd4b0c2c6d75043909",
+        strip_prefix = "gflags-524b83d0264cb9f1b2d134c564ef1aa23f207a41",
+        urls = ["https://github.com/gflags/gflags/archive/524b83d0264cb9f1b2d134c564ef1aa23f207a41.tar.gz"],
+    ),
 )
