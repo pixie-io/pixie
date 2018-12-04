@@ -56,6 +56,9 @@ pl_cc_binary(
 pl_cc_binary(
     name = "flags",
     srcs = ["flags.cc"],
+    deps = [
+        "@com_intel_tbb//:tbb",
+    ],
 )
 
 pl_cc_resource(
