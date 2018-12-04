@@ -2,8 +2,11 @@ workspace(name = "pl")
 
 load("//bazel:repositories.bzl", "pl_deps")
 load("//:workspace.bzl", "check_min_bazel_version")
+load("//bazel:cc_configure.bzl", "cc_configure")
 
 check_min_bazel_version("0.17.1")
+
+cc_configure()
 
 # Install Pixie Labs Dependencies.
 pl_deps()

@@ -3,6 +3,7 @@ package(default_visibility = ["//visibility:public"])
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("//bazel:cc_resource.bzl", "pl_cc_resource")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 go_library(
     name = "go_default_library",
@@ -20,7 +21,7 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
-cc_library(
+pl_cc_library(
     name = "adder",
     srcs = [
         "adder.cc",
@@ -28,22 +29,21 @@ cc_library(
     ],
 )
 
-cc_binary(
+pl_cc_binary(
     name = "sample-benchmark",
     srcs = ["sample-benchmark.cc"],
     deps = ["@com_google_benchmark//:benchmark_main"],
 )
 
-cc_test(
+pl_cc_test(
     name = "adder-test",
     srcs = ["adder-test.cc"],
     deps = [
         ":adder",
-        "@com_google_googletest//:gtest_main",
     ],
 )
 
-cc_binary(
+pl_cc_binary(
     name = "hello_bcc",
     srcs = ["hello_bcc.cc"],
     tags = ["linux_only"],
@@ -59,7 +59,7 @@ pl_cc_resource(
     tags = ["linux_only"],
 )
 
-cc_binary(
+pl_cc_binary(
     name = "resource",
     srcs = ["resource.cc"],
     tags = ["linux_only"],
