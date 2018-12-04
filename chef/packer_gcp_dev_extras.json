@@ -1,0 +1,34 @@
+{
+  "builders": [
+    {
+      "type": "googlecompute",
+      "project_id": "pl-dev-infra",
+      "source_image": "ubuntu-1804-bionic-v20181120",
+      "ssh_username": "packer",
+      "zone": "us-west1-a",
+      "image_name": "pl-dev-with-extras-{{ timestamp }}",
+      "image_family": "pl-dev-with-extras"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "sudo apt-get -y update; sudo apt-get install -y curl"
+      ]
+    },
+    {
+      "type": "chef-solo",
+      "cookbook_paths": [
+        "cookbooks",
+        "site-cookbooks"
+      ],
+      "roles_path": "roles",
+      "run_list": [
+        "role[pl_workstation]",
+        "recipe[pixielabs::docker_extras]"
+      ],
+      "version": "14.7.17"
+    }
+  ]
+}

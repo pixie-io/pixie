@@ -43,6 +43,10 @@ build_and_push_dev_images:
 
 	echo "DOCKER_IMAGE_TAG=$(DEV_IMAGE_VERSION)" > $(DOCKER_PROPERTIES_FILE)
 
+.PHONY: build_gcp_image
+build_gcp_image: ## Build the dev image for GCP.
+	$(PACKER) build packer_gcp_dev_extras.json
+
 help: ## Print help for targets with comments.
 	@echo "Usage:"
 	@echo "  make [target...] [VAR=foo VAR2=bar...]"
