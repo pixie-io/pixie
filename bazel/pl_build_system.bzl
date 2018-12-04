@@ -43,12 +43,12 @@ def pl_test_linkopts():
         ],
     })
 
-
 def _default_external_deps():
     return [
         "@com_github_gflags_gflags//:gflags",
-    ]
+        "@com_github_google_glog//:glog",
 
+    ]
 
 # PL C++ library targets should be specified with this function.
 def pl_cc_library(

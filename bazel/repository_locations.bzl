@@ -37,4 +37,9 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "gflags-524b83d0264cb9f1b2d134c564ef1aa23f207a41",
         urls = ["https://github.com/gflags/gflags/archive/524b83d0264cb9f1b2d134c564ef1aa23f207a41.tar.gz"],
     ),
+    com_github_google_glog = dict(
+        sha256 = "eaabbfc16ecfacb36960ca9c8977f40172c51e4b03234331a1f84040a77ab12c",
+        strip_prefix = "glog-781096619d3dd368cfebd33889e417a168493ce7",
+        urls = ["https://github.com/google/glog/archive/781096619d3dd368cfebd33889e417a168493ce7.tar.gz"],
+    ),
 )
