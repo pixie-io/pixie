@@ -9,14 +9,13 @@
  * Copyright (c) Facebook, Inc.
  * Licensed under the Apache License, Version 2.0 (the "License")
  */
+#include <bcc/BPF.h>
 
 #include <unistd.h>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <string>
-
-#include "include/bcc/BPF.h"
 
 extern char _binary_primitive_agent_bcc_agent_CPUDistribution_bpf_c_start;
 extern int _binary_primitive_agent_bcc_agent_CPUDistribution_bpf_c_size;

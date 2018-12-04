@@ -3,12 +3,12 @@
  * Licensed under the Apache License, Version 2.0 (the "License")
  */
 
+#include <bcc/BPF.h>
+
 #include <unistd.h>
 #include <fstream>
 #include <iostream>
 #include <string>
-
-#include "include/bcc/BPF.h"
 
 const char BPF_PROGRAM[] = R"(
 int on_sys_clone(void *ctx) {

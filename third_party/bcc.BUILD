@@ -15,6 +15,10 @@ cc_library(
     deps = [
       "@com_llvm_lib//:llvm",
     ],
+    includes = [
+        # TODO(zasgar): Ideally this should be in a directory called bcc or something.
+        "include",
+    ],
     visibility = ["//visibility:public"],
     linkopts = ["-lz", "-lrt", "-ldl", "-lelf", "-lpthread", "-ltinfo"],
 )
