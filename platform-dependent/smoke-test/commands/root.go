@@ -8,8 +8,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"pixielabs.ai/pixielabs/platform-dependent/smoke-test/generate-system-info"
-	"pixielabs.ai/pixielabs/platform-dependent/smoke-test/system-checks"
+
+	generatesysteminfo "pixielabs.ai/pixielabs/platform-dependent/smoke-test/generate-system-info"
+	systemchecks "pixielabs.ai/pixielabs/platform-dependent/smoke-test/system-checks"
 )
 
 // PixieCmd is a cobra CLI utility to run smoke-tests on client machines to determine validity for agents.
@@ -34,7 +35,6 @@ var (
 			checkCommandFlags(args)
 		},
 		Run: func(cmd *cobra.Command, args []string) {
-			cmd.HelpFunc()(cmd, args)
 			executeCommand()
 		},
 	}

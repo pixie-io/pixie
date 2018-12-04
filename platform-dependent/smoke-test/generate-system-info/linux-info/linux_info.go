@@ -2,12 +2,14 @@ package linuxinfo
 
 import (
 	"fmt"
-	"github.com/blang/semver"
-	linuxproc "github.com/c9s/goprocinfo/linux"
 	"os"
 	"os/exec"
-	pb "pixielabs.ai/pixielabs/platform-dependent/smoke-test/proto"
 	"strings"
+
+	"github.com/blang/semver"
+
+	linuxproc "github.com/c9s/goprocinfo/linux"
+	pb "pixielabs.ai/pixielabs/platform-dependent/smoke-test/proto"
 )
 
 // GetLinuxCPUInfo gets the CPU information for the host system and generates a protobuf message.
@@ -125,10 +127,11 @@ func GetLinuxHostInfo() *pb.HostInfo {
 // Helper function to get the kernel version and parse it.
 func getLinuxKernelInfo(kernelString string) (*pb.KernelInfo, string) {
 	errString := ""
+	kernelString = strings.TrimSpace(kernelString)
 	// Add kernel information to the protobuf.
 	pbKernelInfo := new(pb.KernelInfo)
 	pbKernelInfo.KernelVersion = kernelString
-	if ver, err := semver.Make(kernelString); err != nil {
+	if ver, err := semver.New(kernelString); err != nil {
 		errString += "Could not parse kernel version: " + err.Error()
 	} else {
 		pbKernelInfo.MajorVersion = ver.Major
