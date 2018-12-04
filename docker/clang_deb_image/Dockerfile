@@ -25,7 +25,13 @@ RUN svn co http://llvm.org/svn/llvm-project/libunwind/tags/RELEASE_700/final lib
 
 WORKDIR /llvm_all/build
 RUN cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
-    -DLLVM_BUILD_DOCS=OFF -DCMAKE_INSTALL_PREFIX=/opt/clang-7.0 ../llvm
+    -DLLVM_BUILD_DOCS=OFF -DCMAKE_INSTALL_PREFIX=/opt/clang-7.0 \
+    -DLLVM_TARGETS_TO_BUILD="BPF;X86" \
+    -DLLVM_ENABLE_SPHINX=Off \
+    -DLLVM_ENABLE_DOXYGEN=OFF \
+    -DCLANG_INCLUDE_TESTS=OFF \
+    -DLLVM_INCLUDE_TESTS=OFF \
+    ../llvm
 
 RUN make -j ${nproc}
 RUN make install
@@ -34,4 +40,4 @@ WORKDIR /opt/clang-7.0
 VOLUME /image
 ENV deb_name clang-7.0-pl.deb
 CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n clang-7.0 --prefix /opt/clang-7.0 ."]
+        -s dir -t deb -n clang-7.0 -v 1.3 --prefix /opt/clang-7.0 ."]

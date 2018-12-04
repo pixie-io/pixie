@@ -8,13 +8,13 @@ default['bcc']               = {}
 default['bcc']['deb']        =
   'https://storage.googleapis.com/pl-infra-dev-artifacts/bcc-pixie-1.0.deb'
 default['bcc']['deb_sha256'] =
-  'c64528adaf9f76eeadd0f9c39da4a8c74ec3ab8f0f381efadd915953239a4777'
+  '5eac3b7e29aeaa0a70ceb2f20f61ec54a44e1882bcedd89ce22f3f6b41e107b9'
 
 default['clang']               = {}
 default['clang']['deb']        =
   'https://storage.googleapis.com/pl-infra-dev-artifacts/clang-7.0-pl.deb'
 default['clang']['deb_sha256'] =
-  '525c46eb403847152234fde9e204488bb2fe31d687fd6da8679b00ca23531b7a'
+  '00a552c14cc70d806f2106d48da5a3f975fe551761200ed2d9f0352648852d96'
 
 
 default['skaffold']                  = {}

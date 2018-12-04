@@ -14,6 +14,13 @@ SSH_PRIVATE_KEY := `cat $(SSH_PRIVATE_KEY_FILE)`
 
 bcc_deb_image_tag := "gcr.io/pl-dev-infra/bcc_deb_image:$(BCC_DEB_IMAGE_VERSION)"
 
+
+
+CLANG_DEB_IMAGE_VERSION := 1.0
+clang_deb_fname := "clang-7.0-pl.deb"
+clang_deb_image_tag := "gcr.io/pl-dev-infra/clang_deb_image:$(CLANG_DEB_IMAGE_VERSION)"
+
+
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
 
@@ -23,13 +30,23 @@ build_bcc_deb_image:
 	cd $(mkfile_dir)/bcc_deb_image && \
 	$(DOCKER) build . --build-arg SSH_PRIVATE_KEY="${SSH_PRIVATE_KEY}" -t $(bcc_deb_image_tag)
 
-.PHONY: build_bcc_deb
-build_bcc_deb: build_bcc_deb_image
-	$(DOCKER) run --rm -e deb_name=$(bcc_deb_fname) -v ${PWD}:/image $(bcc_deb_image_tag)
-
 .PHONY: upload_bcc_deb
-upload_bcc_deb: build_bcc_deb
+upload_bcc_deb: build_bcc_deb_image
+	$(DOCKER) run --rm -e deb_name=$(bcc_deb_fname) -v ${PWD}:/image $(bcc_deb_image_tag)
 	gsutil cp $(bcc_deb_fname)  gs://pl-infra-dev-artifacts/$(bcc_deb_fname)
+	rm -f $(bcc_deb_fname)
+
+# BCC DEB Image configuration.
+.PHONY: build_clang_deb_image
+build_clang_deb_image:
+	cd $(mkfile_dir)/clang_deb_image && \
+	$(DOCKER) build . -t $(clang_deb_image_tag)
+
+.PHONY: upload_clang_deb
+upload_clang_deb: build_clang_deb_image
+	$(DOCKER) run --rm -e deb_name=$(clang_deb_fname) -v ${PWD}:/image $(clang_deb_image_tag)
+	gsutil cp $(clang_deb_fname)  gs://pl-infra-dev-artifacts/$(clang_deb_fname)
+	rm -f $(clang_deb_fname)
 
 help: ## Print help for targets with comments.
 	@echo "Usage:"
