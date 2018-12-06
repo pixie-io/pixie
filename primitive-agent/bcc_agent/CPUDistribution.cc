@@ -18,14 +18,11 @@
 #include <string>
 
 extern char _binary_primitive_agent_bcc_agent_CPUDistribution_bpf_c_start;
-extern int _binary_primitive_agent_bcc_agent_CPUDistribution_bpf_c_size;
 
 int main(int argc, char** argv) {
   ebpf::BPF bpf;
   char* bpf_prog_ptr = &_binary_primitive_agent_bcc_agent_CPUDistribution_bpf_c_start;
-  int prog_len = _binary_primitive_agent_bcc_agent_CPUDistribution_bpf_c_size;
-
-  std::string bpf_program = std::string(bpf_prog_ptr, 0, prog_len);
+  std::string bpf_program = std::string(bpf_prog_ptr);
 
   auto init_res = bpf.init(bpf_program);
   if (init_res.code() != 0) {

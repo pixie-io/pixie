@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
+	bccinfo "pixielabs.ai/pixielabs/platform-dependent/smoke-test/bccinfo"
 	generatesysteminfo "pixielabs.ai/pixielabs/platform-dependent/smoke-test/generate-system-info"
 	systemchecks "pixielabs.ai/pixielabs/platform-dependent/smoke-test/system-checks"
 )
@@ -18,9 +19,13 @@ var (
 	// output location to store the host info as a protobuf text file.
 	output string
 	// check host system viability for Pixie agents by running targeted tests.
-	check bool
+	hostCheck bool
 	// gather information about the host system.
 	genInfo bool
+	// check output of the test bcc script, CPUDistribution
+	bccCheck bool
+	// the location of the bcc script output
+	bccOutput string
 	// Default output filename
 	defaultOutputFilename = "host-system-info.pbtxt"
 
@@ -46,10 +51,14 @@ func init() {
 	// Flags with default values.
 	PixieCmd.Flags().StringVarP(&output, "out", "o", "",
 		"Output file (absolute path with file name) to store host system information")
-	PixieCmd.Flags().BoolVarP(&check, "check", "c", false,
+	PixieCmd.Flags().BoolVarP(&hostCheck, "hostCheck", "c", false,
 		"Run checks on host system to validate Pixie agent compatibility")
 	PixieCmd.Flags().BoolVarP(&genInfo, "gen_info", "g", false,
 		"Generate host system information and write a protobuf text file")
+	PixieCmd.Flags().BoolVarP(&bccCheck, "bcc_check", "b", false,
+		"Generate host system information and write a protobuf text file")
+	PixieCmd.Flags().StringVarP(&bccOutput, "bcc_output", "f", "",
+		"Read in the output file at this path")
 
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("PL")
@@ -80,9 +89,13 @@ func executeCommand() {
 			pbSystemInfo, pbHostInfo := generatesysteminfo.InfoForOS(fileHandle)
 			log.Info("Done generating system information\n")
 
-			if check {
-				// Run the checks.
+			if hostCheck {
+				// Run the host checks.
 				systemchecks.RunChecker(fileHandle, pbSystemInfo, pbHostInfo)
+			}
+
+			if bccCheck {
+				bccinfo.RunChecker(fileHandle, bccOutput)
 			}
 
 			// Close the output file
@@ -99,7 +112,11 @@ func checkCommandFlags(args []string) {
 		log.Fatalf("Need to specify --gen_info (-g) option to generate host system information")
 	}
 
-	if check && !genInfo {
-		log.Fatalf("Need to specify --gen_info (-g) option along with --check (-c)")
+	if hostCheck && !genInfo {
+		log.Fatalf("Need to specify --gen_info (-g) option along with --host_check (-c)")
+	}
+
+	if bccCheck && bccOutput == "" {
+		log.Fatalf("If specifying --bcc_check (-b) you must specify --bcc_output (-f)")
 	}
 }

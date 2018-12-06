@@ -7,7 +7,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 	pb "pixielabs.ai/pixielabs/platform-dependent/smoke-test/proto"
-	"pixielabs.ai/pixielabs/platform-dependent/smoke-test/system-checks/linux-checker"
+	linuxchecker "pixielabs.ai/pixielabs/platform-dependent/smoke-test/system-checks/linux-checker"
 )
 
 // RunChecker runs all the checks for the generated system and host information.

@@ -10,5 +10,7 @@ RUN cd /usr/lib && ln -s /opt/bcc/lib/libbcc.so.0 && \
     ln -s /opt/bcc/lib/libbpf.so.0 && \
     ln -s /opt/bcc/lib/python2.7/dist-packages/bcc/ /usr/lib/python2.7/dist-packages/
 WORKDIR /opt/usr/local/pl/
+RUN mkdir -p /pl_mount/
+COPY CPUDistribution_bcc /opt/usr/local/pl/
 COPY run_smoke_test.sh /opt/usr/local/pl/
-CMD ["./run_smoke_test.sh"]
+CMD ["/bin/bash", "-c", "./run_smoke_test.sh > /pl_mount/smoke-test.log 2>&1"]
