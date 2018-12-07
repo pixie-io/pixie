@@ -8,7 +8,7 @@ default['bcc']               = {}
 default['bcc']['deb']        =
   'https://storage.googleapis.com/pl-infra-dev-artifacts/bcc-pixie-1.0.deb'
 default['bcc']['deb_sha256'] =
-  '5eac3b7e29aeaa0a70ceb2f20f61ec54a44e1882bcedd89ce22f3f6b41e107b9'
+  'e87e76be7040a762dbf06cce83475a14f9903a4383f8d5329c0b9f8fcbfde452'
 
 default['clang']               = {}
 default['clang']['deb']        =
