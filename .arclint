@@ -1,7 +1,7 @@
 {
   "exclude": [
     "(chef/site-cookbooks/.*$)",
-    "(^linters/cpplint.py)",
+    "(^linters/cpplint)",
     "(\\.pb\\.gw\\.go$)",
     "(\\.pb\\.go$)",
     "(\\.gen\\.go$)",
@@ -27,9 +27,10 @@
       "type": "cpplint",
       "include": ["(\\.cc$)", "(\\.h$)"],
       "exclude": ["(_objc\\.h)"],
-      "bin": "./linters/cpplint.py",
+      "bin": "./linters/cpplint/cpplint.py",
       "flags": [
         "--filter=-build/c++11",
+        "--filter=-build/c++14",
         "--filter=-legal/copyright",
         "--linelength=100"
       ]

@@ -22,3 +22,6 @@
 [submodule "chef/site-cookbooks/seven_zip"]
 	path = chef/site-cookbooks/seven_zip
 	url = https://github.com/windowschefcookbooks/seven_zip.git
+[submodule "linters/cpplint"]
+	path = linters/cpplint
+	url = https://github.com/cpplint/cpplint.git
