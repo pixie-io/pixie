@@ -109,7 +109,7 @@ def writeBazelRCFile() {
     'build --remote_http_cache=http://bazel-cache.internal.pixielabs.ai:9090',
     'build --announce_rc',
     'build --verbose_failures',
-    'build --jobs=64',
+    'build --jobs=16',
   ].join('\n')
   writeFile file: "jenkins.bazelrc", text: "${bazelRcFile}"
 }
