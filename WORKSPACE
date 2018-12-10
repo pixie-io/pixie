@@ -17,6 +17,7 @@ pl_workspace_setup()
 
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 
+# gazelle:repo bazel_gazelle
 ##########################################################
 # Auto-generated GO dependencies (DO NOT EDIT).
 ##########################################################

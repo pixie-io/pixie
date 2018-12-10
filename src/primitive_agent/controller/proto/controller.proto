@@ -1,0 +1,138 @@
+syntax = "proto3";
+
+package controller;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/primitive_agent/controller;controller";
+
+// Controller service defines the rpc messages that agents will send to the controller.
+service Controller {
+  // Agent sends a request with some config info to register itself with the controller.
+  // This config info is stored and the agent is assigned a unique id.
+  rpc RegisterAgent (RegisterAgentRequest) returns (RegisterAgentResponse) {}
+  // Agent sends its data to the controller through a stream. The controller saves this data in a file
+  // named using the agent's id.
+  rpc ProcessData (stream AgentDataStream) returns (AgentDataStreamResponse) {}
+  // Agent opens up a bi-directional stream with the controller so they can relay metadata.
+  rpc MetadataRelay(stream AgentMetadataStream) returns (stream ControllerMetadataStream) {}
+}
+
+// OS describes the host operating system.
+enum OS {
+  UNKNOWN_OS = 0;
+  Linux = 1;
+  Windows = 2;
+  Darwin = 3;
+  iOS = 4;
+  Android = 5;
+}
+
+enum CPUVendorId {
+  UNKNOWN_VENDOR = 0;
+  Intel = 1;
+  AMD = 2;
+  Qualcomm = 3;
+  NVIDIA = 4;
+  IBM = 5;
+  Samsung = 6;
+  Motorola = 7;
+  HP = 8;
+  Dell = 9;
+  Acer = 10;
+}
+
+enum OSArchitecture {
+  UNKNOWN_ARCHITECTURE = 0;
+  x86_64 = 1;
+  i386 = 2;
+  i586 = 3;
+}
+
+message CpuInfo {
+  // The processor number as assigned by the kernel.
+  int32 processor_num = 1;
+  CPUVendorId vendor_id = 2 [
+    (gogoproto.customname) = "VendorID"
+  ];
+  // The version family of the CPU.
+  int32 cpu_family = 3;
+  // The model number of the CPU.
+  int32 model_number = 4;
+  // The model name of the CPU, "Intel(R) Core(TM) i9-8950HK CPU @ 2.90GHz".
+  string model_name = 5;
+  // The CPU frequency in MHz.
+  float freq_mhz = 6;
+  // The list of CPU feature flags, for example: sse4_1 sse4_2
+  repeated string flags = 7;
+}
+
+message LinuxOSInfo {
+  string distribution_id = 1 [
+    (gogoproto.customname) = "DistributionID"
+  ];
+  string description = 2;
+  string release = 3;
+  string codename = 4;
+}
+
+// HostConfig is the configuration of a host machine that an agent reports when registering.
+message HostConfig {
+  OS os = 1;
+  // This stores the verbatim kernel version string,
+  // for example: "4.9.93-linuxkit-aufs", "Microsoft Windows [Version 6.1.7601]".
+  string kernel_version = 2;
+  repeated CpuInfo cpu_info = 3;
+  // The system ram size in MBs.
+  int32 ram_size_mb = 4;
+  OSArchitecture os_arch = 5;
+  // This store the operating system details based on the specific type of OS as specified in the ENUM.
+  // For example, linux systems will use the message.
+  oneof os_details {
+    LinuxOSInfo linux_os_info = 6;
+  }
+}
+
+// TODO (michelle): Move to shared proto file.
+message UUID {
+  string value = 1;
+}
+
+// Agent requests the controller to register itself.
+message RegisterAgentRequest {
+  HostConfig agent_host_config = 2;
+}
+
+// TODO (michelle): Move to shared proto file.
+enum ResponseCode {
+  UNKNOWN_RESPONSE = 0;
+  OK = 1;
+  ERROR = 2;
+}
+
+// RegisterAgentResponse is the response sent by a controller upon registering an agent.
+message RegisterAgentResponse {
+  UUID agent_id = 1 [
+    (gogoproto.customname) = "AgentID"
+  ];
+  ResponseCode response = 2;
+}
+
+message AgentDataStream {
+  UUID agent_id = 1 [
+    (gogoproto.customname) = "AgentID"
+  ];
+  string data = 2;
+}
+
+message AgentDataStreamResponse {
+  ResponseCode response = 1;
+}
+
+message AgentMetadataStream {
+  ResponseCode status = 1;
+}
+
+message ControllerMetadataStream  {
+  ResponseCode status = 1;
+}

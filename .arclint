@@ -61,7 +61,7 @@
     },
     "jshint-ui": {
       "type": "jshint",
-      "jshint.jshintrc": "./ui/.jshintrc",
+      "jshint.jshintrc": "./src/ui/.jshintrc",
       "include": [
         "(\\.js)"
       ]
@@ -83,7 +83,7 @@
     "nolint": {
       "type": "nolint",
       "include": [
-        "(ui/dist/.*$)"
+        "(src/ui/dist/.*$)"
       ]
     },
     "flake8": {
@@ -106,7 +106,7 @@
       "text.max-line-length": 120,
       "exclude": [
         "(chef/.*\\.json$)",
-        "(ui/yarn.lock)",
+        "(src/ui/yarn.lock)",
         "(__snapshots__/.*)",
         "(Makefile)",
         "(\\.go$)"
@@ -114,12 +114,12 @@
     },
     "tslint-ui": {
       "type": "tslint",
-      "tslint.config": "./ui/tslint.json",
-      "tslint.project": "./ui/tsconfig.json",
+      "tslint.config": "./src/ui/tslint.json",
+      "tslint.project": "./src/ui/tsconfig.json",
       "include": [
-        "(ui/.*\\.(tsx)$)",
-        "(ui/.*\\.(ts)$)",
-        "(ui/.*\\.(js)$)"
+        "(src/ui/.*\\.(tsx)$)",
+        "(src/ui/.*\\.(ts)$)",
+        "(src/ui/.*\\.(js)$)"
       ]
     }
   }

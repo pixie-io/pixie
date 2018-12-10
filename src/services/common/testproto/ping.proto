@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package pl.common;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/services/common/testproto;ping";
+
+message PingRequest {
+  string req = 1;
+}
+
+message PingReply {
+  string reply = 1;
+}
+
+service PingService {
+  // Sends a greeting
+  rpc Ping (PingRequest) returns (PingReply) {}
+}

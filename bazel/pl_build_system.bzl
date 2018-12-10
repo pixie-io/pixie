@@ -140,7 +140,7 @@ def pl_cc_test(
         linkstatic = 1,
         deps = [
             ":" + name + "_lib",
-            repository + "//test:main",
+            repository + "//src/test-utils:main",
         ] + _default_external_deps(),
         # from https://github.com/google/googletest/blob/
         #6e1970e2376c14bf658eb88f655a054030353f9f/googlemock/src/gmock.cc#L51

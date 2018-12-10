@@ -13,8 +13,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"pixielabs.ai/pixielabs/src/utils"
 	pb "pixielabs.ai/pixielabs/templates/skaffold/proto"
-	"pixielabs.ai/pixielabs/utils"
 )
 
 // init defines the args.

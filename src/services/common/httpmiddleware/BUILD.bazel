@@ -1,0 +1,25 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["middleware.go"],
+    importpath = "pixielabs.ai/pixielabs/src/services/common/httpmiddleware",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/services/common/env:go_default_library",
+        "//src/services/common/sessioncontext:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["middleware_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//src/services/common/env:go_default_library",
+        "//src/services/common/sessioncontext:go_default_library",
+        "//src/utils/testingutils:go_default_library",
+        "@com_github_spf13_viper//:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+    ],
+)

@@ -204,7 +204,7 @@ node {
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
         docker.image(devDockerImageWithTag).inside {
           sh '''
-            cd ui
+            cd src/ui
             yarn install --prefer_offline
             jest
           '''
@@ -251,7 +251,7 @@ node {
         tools: [
           [
             $class: 'JUnitType',
-            pattern: "ui/junit.xml"
+            pattern: "src/ui/junit.xml"
           ]
         ]
       ])

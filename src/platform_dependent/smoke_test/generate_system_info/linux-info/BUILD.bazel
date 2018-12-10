@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["linux_info.go"],
+    importpath = "pixielabs.ai/pixielabs/src/platform_dependent/smoke_test/generate_system_info/linux-info",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/platform_dependent/smoke_test/proto:host_system_info_go_proto",
+        "@com_github_blang_semver//:go_default_library",
+        "@com_github_c9s_goprocinfo//linux:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["linux_info_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//src/platform_dependent/smoke_test/proto:host_system_info_go_proto",
+        "@com_github_c9s_goprocinfo//linux:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+    ],
+)
