@@ -9,6 +9,11 @@
     "@babel/preset-env": "^7.0.0-rc.2",
     "@babel/preset-react": "^7.0.0-rc.2",
     "@babel/preset-typescript": "^7.0.0-rc.2",
+    "@storybook/addon-actions": "^4.1.2",
+    "@storybook/addon-info": "^4.1.2",
+    "@storybook/addon-notes": "^4.1.2",
+    "@storybook/addons": "^4.1.2",
+    "@storybook/react": "^4.1.2",
     "@types/enzyme": "^3.1.13",
     "@types/jest": "^23.3.1",
     "@types/node": "^10.7.1",
@@ -28,6 +33,7 @@
     "jest-junit": "^5.1.0",
     "node-sass": "^4.9.3",
     "react-dev-utils": "^5.0.1",
+    "react-docgen-typescript-webpack-plugin": "^1.1.0",
     "react-hot-loader": "^4.3.4",
     "sass-loader": "^7.1.0",
     "shelljs": "^0.8.2",
@@ -68,6 +74,7 @@
   },
   "scripts": {
     "build_dev": "./node_modules/.bin/webpack",
-    "dev": "./node_modules/.bin/webpack-dev-server"
+    "dev": "./node_modules/.bin/webpack-dev-server",
+    "storybook": "start-storybook -p 9001 -c .storybook"
   }
 }

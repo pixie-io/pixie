@@ -19,6 +19,8 @@
   "include": [
     "./src/**/*",
     "__mocks__/**/*",
-    "*.js"
+    "*.js",
+    "./stories/**/*",
+    "./.storybook/**/*"
   ]
 }
