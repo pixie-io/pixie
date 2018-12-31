@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_test", "pl_cc_library")
 
 go_library(
     name = "go_default_library",
@@ -24,5 +25,32 @@ go_test(
         "//src/utils/proto:utils_go_proto",
         "@com_github_satori_go_uuid//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
-    ],
+   ],
+)
+
+pl_cc_library(
+    name = "utils",
+    hdrs = glob(["*.h"]),
+    srcs = glob(["*.cc"], exclude = ["**/*_test.cc"]),
+    deps = ["//src/utils/codes:error_codes_cc_proto"],
+    visibility = ["//visibility:public"],
+)
+
+pl_cc_test(
+    name = "status_test",
+    srcs = ["status_test.cc"],
+    deps = [":utils",
+            "//src/utils/codes:error_codes_cc_proto"],
+)
+
+pl_cc_test(
+    name = "statusor_test",
+    srcs = ["statusor_test.cc"],
+    deps = [":utils"],
+)
+
+pl_cc_test(
+    name = "error_test",
+    srcs = ["error_test.cc"],
+    deps = [":utils"],
 )
