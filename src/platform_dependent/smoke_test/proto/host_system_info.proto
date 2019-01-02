@@ -151,11 +151,10 @@ message CheckInfo {
     (gogoproto.customname) = "TestOS"
   ];
 }
-// add bcc check info
-message BccCheckInfo {
+// Add BCC check info.
+message BCCCheckInfo {
   TestStatus test_cpu_distribution            = 1[
     (gogoproto.customname) = "TestCPUDistribution"
   ];
-
-
+  TestStatus status = 2;
 }

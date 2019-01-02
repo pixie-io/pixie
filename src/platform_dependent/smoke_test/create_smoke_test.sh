@@ -1,11 +1,11 @@
-#!/bin/bash -x
+#!/bin/bash -ex
 # create the CPUDistribution
-bazel build //primitive-agent/bcc_agent:CPUDistribution_bcc
-bazel build //platform-dependent/smoke-test:smoke-test
+bazel build //src/primitive_agent/bcc_agent:CPUDistribution_bcc
+bazel build //src/platform_dependent/smoke_test:smoke_test
 
 # copy over to the current directory
-cp `bazel info workspace`/bazel-bin/primitive-agent/bcc_agent/CPUDistribution_bcc .
-cp `bazel info workspace`/bazel-bin/platform-dependent/smoke-test/linux_amd64_static_pure_stripped/smoke-test .
+cp `bazel info workspace`/bazel-bin/src/primitive_agent/bcc_agent/CPUDistribution_bcc .
+cp `bazel info workspace`/bazel-bin/src/platform_dependent/smoke_test/linux_amd64_static_pure_stripped/smoke_test .
 
 # copy over bcc deb
 gsutil cp gs://pl-infra-dev-artifacts/bcc-pixie-1.0.deb bcc-pixie-1.0.deb
@@ -18,4 +18,5 @@ echo "docker build"
 docker build -t pl-smoke-test:v1.0 .
 
 rm -f CPUDistribution_bcc
-rm -f smoke-test
+rm -f smoke_test
+rm -f bcc-pixie-1.0.deb

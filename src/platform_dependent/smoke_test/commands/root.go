@@ -96,6 +96,8 @@ func executeCommand() {
 
 			if bccCheck {
 				bccinfo.RunChecker(fileHandle, bccOutput)
+			} else {
+				bccinfo.DefaultChecker(fileHandle)
 			}
 
 			// Close the output file
