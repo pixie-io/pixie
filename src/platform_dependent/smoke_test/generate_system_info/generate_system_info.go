@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	log "github.com/sirupsen/logrus"
-	"pixielabs.ai/pixielabs/src/platform_dependent/smoke_test/generate_system_info/linux-info"
+	"pixielabs.ai/pixielabs/src/platform_dependent/smoke_test/generate_system_info/linux_info"
 	pb "pixielabs.ai/pixielabs/src/platform_dependent/smoke_test/proto"
 )
 
