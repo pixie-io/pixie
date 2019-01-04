@@ -25,6 +25,9 @@ bazel-*
 **/.idea/dynamic.xml
 **/.idea/uiDesigner.xml
 
+# CLion Bazel files.
+.clwb
+
 # VScode files
 **/.vscode/tags
 
