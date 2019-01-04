@@ -19,6 +19,6 @@ go_proto_library(
 
 cc_proto_library(
     name = "error_codes_cc_proto",
-    deps = [":error_codes_proto"],
     visibility = ["//visibility:public"],
+    deps = [":error_codes_proto"],
 )

@@ -1,6 +1,10 @@
 #include <gtest/gtest.h>
+#include "src/common/env.h"
 
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
+  pl::InitEnvironmentOrDie(&argc, argv);
+  int retval = RUN_ALL_TESTS();
+  pl::ShutdownEnvironmentOrDie();
+  return retval;
 }

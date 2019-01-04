@@ -142,10 +142,7 @@ def pl_cc_test(
             ":" + name + "_lib",
             repository + "//src/test_utils:main",
         ] + _default_external_deps(),
-        # from https://github.com/google/googletest/blob/
-        #6e1970e2376c14bf658eb88f655a054030353f9f/googlemock/src/gmock.cc#L51
-        # 2 - by default, mocks act as StrictMocks.
-        args = args + ["--gmock_default_mock_behavior=2"],
+        args = args,
         tags = tags + ["coverage_test"],
         local = local,
     )
