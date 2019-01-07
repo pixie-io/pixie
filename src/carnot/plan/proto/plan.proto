@@ -1,0 +1,154 @@
+syntax = "proto3";
+import "google/protobuf/wrappers.proto";
+
+package pl.carnot.planpb;
+
+option go_package = "planpb";
+
+// The plan is composed of multiple fragments which each
+// define a part of the plan that needs to be executed sequentially
+// in order to resolve dependencies (ex. Blocking Join).
+message Plan {
+  repeated PlanFragment fragments = 1;
+}
+
+// Each plan fragment is a DAG represented in a format similar to an adjacency
+// list: a list of nodes and interconnections between nodes.
+message PlanFragment {
+  // The DAG which stores the connection information.
+  DAG dag                 = 1;
+  // List of nodes referenced by the DAG.
+  repeated PlanNode nodes = 2;
+}
+
+// The DAG simply stores the dependencies for each node.
+message DAG {
+  // DAG node stores information about each node and it's dependencies.
+  message DAGNode {
+    // The ID of the node. This is the same as the ID used for PlanNode.
+    uint64 id                   = 1;
+    // The dependencies of this DAG node stored as the PlanNode IDs.
+    repeated uint64 sorted_deps = 2;
+  }
+  // List of dependencies.
+  repeated DAGNode nodes = 1;
+}
+
+// A execution node used by the query plan.
+message PlanNode {
+  // A unique ID used to reference this node.
+  uint64 id   = 1;
+  // The operation that this node performs.
+  Operator op = 2;
+}
+
+// The list of data types supported by our execution engine.
+enum DataTypes {
+  UNKNOWN = 0;
+  BOOLEAN = 1;
+  INT64   = 2;
+  FLOAT64 = 3;
+  STRING  = 4;
+}
+
+// The Logical operation performed. Each operator needs and entry in this
+// message.
+message Operator {
+  oneof op {
+    // Fetches data from in memory storage.
+    MemorySourceOperator mem_source_op        = 1;
+    // Performs a simple Map operation.
+    MapOperator map_op                        = 2;
+    // Performs a blocking aggregate (instead of streaming/non-blocking aggregate).
+    BlockingAggregateOperator blocking_agg_op = 3;
+    // Operator that stores data to memory.
+    MemorySinkOperator mem_sink_op            = 4;
+  }
+}
+
+// Fetches data from in-memory source.
+message MemorySourceOperator {
+  // Name of the table.
+  string name                     = 1;
+  // The column indexes to fetch.
+  repeated int64 column_idxs      = 2;
+  // The types of the columns.
+  repeated DataTypes column_types = 3;
+  // The start time (can be omitted if not time series).
+  google.protobuf.Int64Value start_time                = 4;
+  // The stop time (can be omitted if not time series).
+  google.protobuf.Int64Value stop_time                 = 5;
+}
+
+// Writes to in-memory storage.
+message MemorySinkOperator {
+  // Storage is organized as tables, this specifies the name of the table.
+  string name                     = 1;
+  // The types of the columns.
+  repeated DataTypes column_types = 2;
+  // The names of the columns.
+  repeated string column_names    = 3;
+}
+
+// Performs map operation.
+message MapOperator {
+  // Each scalar operator defines an output column.
+  // In order for columns to be copied they must be references by
+  // the scalar expression.
+  repeated ScalarExpression expressions = 1;
+}
+
+// Aggregate does a group by the "group" Columns and computes
+// the aggregates based on aggregate expression. Number of
+// output columns is equal to the len(values).
+message BlockingAggregateOperator {
+  // The functions to execute for this aggregate.
+  // Note that only agg funcs are valid here.
+  repeated ScalarFunc values = 1;
+  // The columns to use for grouping. For grouping involving a function
+  // a map operation will need to be performed first.
+  repeated Column groups     = 2;
+}
+
+// Scalar expression is any single valued expression.
+message ScalarExpression {
+  oneof value {
+    // A constant value.
+    ScalarValue constant = 1;
+    // A value that is a column reference.
+    Column column        = 2;
+    // A value that is a function applied on a set of columns.
+    ScalarFunc func      = 3;
+  }
+}
+
+// ScalarValues reference a single constant value.
+message ScalarValue {
+  oneof value {
+    google.protobuf.BoolValue bool_value      = 1;
+    google.protobuf.Int64Value int64_value    = 2;
+    google.protobuf.DoubleValue float64_value = 3;
+    google.protobuf.StringValue string_value  = 4;
+  }
+}
+
+// ScalarFuncs perform an operator on a set of arguments and produce a single
+// valued output.
+// TODO(zasgar). What do to about multi value output?
+// Should they produce a list that is flattened, or a struct?
+message ScalarFunc {
+  // The name of the function. Should exist in UDF/UDAF registry.
+  string name = 1;
+  // The constructor arguments.
+  repeated ScalarValue init_args = 2;
+  // The arguments used during evaluation.
+  repeated ScalarExpression args = 3;
+}
+
+// A column reference.
+message Column {
+  // The node that produces the output.
+  uint64 node  = 1;
+  // The index of the column.
+  uint64 index = 2;
+}
