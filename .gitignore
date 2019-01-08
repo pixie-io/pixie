@@ -30,6 +30,9 @@ bazel-*
 
 # VScode files
 **/.vscode/tags
+**/.vscode/launch.json
+**/.vscode/tasks.json
+**/.vscode/.vs_code_bazel_build/**
 
 # Python cache files.
 .cache
