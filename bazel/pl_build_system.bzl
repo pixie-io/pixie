@@ -2,12 +2,14 @@
 # Compute the final copts based on various options.
 def pl_copts(repository, test = False):
     posix_options = [
+        # Warnings setup.
         "-Wall",
-        "-Wno-old-style-cast",
+        "-Werror",
         "-Wextra",
         "-Wnon-virtual-dtor",
         "-Woverloaded-virtual",
         "-Wold-style-cast",
+        # Language flags.
         "-std=c++17",
     ]
 
