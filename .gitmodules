@@ -25,3 +25,6 @@
 [submodule "linters/cpplint"]
 	path = linters/cpplint
 	url = https://github.com/cpplint/cpplint.git
+[submodule "third_party/arrow"]
+	path = third_party/arrow
+	url = git@github.com:pixie-labs/arrow.git

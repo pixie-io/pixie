@@ -22,6 +22,14 @@ pl_cc_binary(
 )
 
 pl_cc_binary(
+    name = "hello_arrow",
+    srcs = ["hello_arrow.cc"],
+    deps = [
+        "//third_party:arrow",
+    ],
+)
+
+pl_cc_binary(
     name = "flags",
     srcs = ["flags.cc"],
     deps = [
