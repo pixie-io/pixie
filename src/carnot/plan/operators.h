@@ -12,11 +12,6 @@ namespace carnot {
 namespace plan {
 
 /**
- * ToString converts the operator enum to a string.
- */
-std::string ToString(planpb::OperatorType op);
-
-/**
  * Operator is the pure virtual base class for logical plan nodes that perform
  * operations on data/metadata.
  */

@@ -24,3 +24,21 @@ pl_cc_test(
     srcs = ["operators_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "relation_test",
+    srcs = ["relation_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "schema_test",
+    srcs = ["schema_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "utils_test",
+    srcs = ["utils_test.cc"],
+    deps = [":cc_library"],
+)

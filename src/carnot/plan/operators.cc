@@ -3,28 +3,13 @@
 #include "absl/strings/str_format.h"
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/plan/proto/plan.pb.h"
+#include "src/carnot/plan/utils.h"
 
 namespace pl {
 namespace carnot {
 namespace plan {
 
 using pl::Status;
-
-std::string ToString(planpb::OperatorType op) {
-  switch (op) {
-    case planpb::MEMORY_SOURCE_OPERATOR:
-      return "MemorySourceOperator";
-    case planpb::MAP_OPERATOR:
-      return "MapOperator";
-    case planpb::BLOCKING_AGGREGATE_OPERATOR:
-      return "BlockingAggregateOperator";
-    case planpb::MEMORY_SINK_OPERATOR:
-      return "MemorySinkOperator";
-    default:
-      LOG(WARNING) << "Unknown operator in ToString function";
-      return "UnknownOperator";
-  }
-}
 
 template <typename TOp, typename TProto>
 std::unique_ptr<Operator> CreateOperator(int64_t id, const TProto& pb) {
