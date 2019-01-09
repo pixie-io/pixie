@@ -43,26 +43,39 @@ message PlanNode {
 }
 
 // The list of data types supported by our execution engine.
-enum DataTypes {
-  UNKNOWN = 0;
+enum DataType {
+  DATA_TYPE_UNKNOWN = 0;
   BOOLEAN = 1;
   INT64   = 2;
   FLOAT64 = 3;
   STRING  = 4;
 }
 
+enum OperatorType {
+  OPERATOR_TYPE_UNKNOWN = 0;
+  // Source operators are rangs 1000 - 2000.
+  MEMORY_SOURCE_OPERATOR = 1000;
+  // Regular operators are range 2000 - 10000.
+  MAP_OPERATOR                = 2000;
+  BLOCKING_AGGREGATE_OPERATOR = 2100;
+  // Sink operators are range 9000-10000.
+  MEMORY_SINK_OPERATOR = 9000;
+}
+
+
 // The Logical operation performed. Each operator needs and entry in this
 // message.
 message Operator {
+    OperatorType op_type = 1;
   oneof op {
     // Fetches data from in memory storage.
-    MemorySourceOperator mem_source_op        = 1;
+    MemorySourceOperator mem_source_op        = 2;
     // Performs a simple Map operation.
-    MapOperator map_op                        = 2;
+    MapOperator map_op                        = 3;
     // Performs a blocking aggregate (instead of streaming/non-blocking aggregate).
-    BlockingAggregateOperator blocking_agg_op = 3;
+    BlockingAggregateOperator blocking_agg_op = 4;
     // Operator that stores data to memory.
-    MemorySinkOperator mem_sink_op            = 4;
+    MemorySinkOperator mem_sink_op            = 5;
   }
 }
 
@@ -73,7 +86,7 @@ message MemorySourceOperator {
   // The column indexes to fetch.
   repeated int64 column_idxs      = 2;
   // The types of the columns.
-  repeated DataTypes column_types = 3;
+  repeated DataType column_types  = 3;
   // The start time (can be omitted if not time series).
   google.protobuf.Int64Value start_time                = 4;
   // The stop time (can be omitted if not time series).
@@ -85,7 +98,7 @@ message MemorySinkOperator {
   // Storage is organized as tables, this specifies the name of the table.
   string name                     = 1;
   // The types of the columns.
-  repeated DataTypes column_types = 2;
+  repeated DataType column_types  = 2;
   // The names of the columns.
   repeated string column_names    = 3;
 }
