@@ -15,7 +15,7 @@ using std::begin;
 using std::end;
 using std::vector;
 
-void DAG::AddNode(int node) {
+void DAG::AddNode(int64_t node) {
   DCHECK(!HasNode(node)) << absl::StrFormat("Node: %d already exists", node);
   nodes_.insert(node);
 
@@ -23,9 +23,9 @@ void DAG::AddNode(int node) {
   reverse_edges_by_node_[node] = {};
 }
 
-bool DAG::HasNode(int node) { return nodes_.find(node) != end(nodes_); }
+bool DAG::HasNode(int64_t node) { return nodes_.find(node) != end(nodes_); }
 
-void DAG::DeleteNode(int node) {
+void DAG::DeleteNode(int64_t node) {
   if (!HasNode(node)) {
     LOG(WARNING) << absl::StrCat("Node does not exist: ", node);
   }
@@ -39,7 +39,7 @@ void DAG::DeleteNode(int node) {
   nodes_.erase(node);
 }
 
-void DAG::AddEdge(int from_node, int to_node) {
+void DAG::AddEdge(int64_t from_node, int64_t to_node) {
   CHECK(HasNode(from_node)) << "from_node does not exist";
   CHECK(HasNode(to_node)) << "to_node does not exist";
 
@@ -47,7 +47,7 @@ void DAG::AddEdge(int from_node, int to_node) {
   reverse_edges_by_node_[to_node].push_back(from_node);
 }
 
-void DAG::DeleteEdge(int from_node, int to_node) {
+void DAG::DeleteEdge(int64_t from_node, int64_t to_node) {
   // If there is a dependency we need to delete both the forward and backwards dependency.
   auto& forward_edges = forward_edges_by_node_[from_node];
   const auto& node = std::find(begin(forward_edges), end(forward_edges), to_node);
@@ -62,15 +62,15 @@ void DAG::DeleteEdge(int from_node, int to_node) {
   }
 }
 
-std::unordered_set<int> DAG::TransitiveDepsFrom(int node) {
+std::unordered_set<int64_t> DAG::TransitiveDepsFrom(int64_t node) {
   enum VisitStatus { kVisitStarted, kVisitComplete };
   enum NodeColor { kWhite = 0, kGray, kBlack };
 
   // The visit status related to if we started or completed the visit,
   // the int tracks the node id.
-  std::stack<std::tuple<VisitStatus, int>> s;
-  std::unordered_set<int> dep_list;
-  std::unordered_map<int, NodeColor> colors;
+  std::stack<std::tuple<VisitStatus, int64_t>> s;
+  std::unordered_set<int64_t> dep_list;
+  std::unordered_map<int64_t, NodeColor> colors;
 
   s.emplace(std::tuple(kVisitStarted, node));
 
@@ -95,8 +95,8 @@ std::unordered_set<int> DAG::TransitiveDepsFrom(int node) {
   return dep_list;
 }
 
-std::unordered_set<int> DAG::Orphans() {
-  std::unordered_set<int> orphans;
+std::unordered_set<int64_t> DAG::Orphans() {
+  std::unordered_set<int64_t> orphans;
   for (const auto& node : nodes_) {
     if (forward_edges_by_node_[node].empty() && reverse_edges_by_node_[node].empty()) {
       orphans.insert(node);
@@ -105,13 +105,13 @@ std::unordered_set<int> DAG::Orphans() {
   return orphans;
 }
 
-std::vector<int> DAG::TopologicalSort() {
+vector<int64_t> DAG::TopologicalSort() {
   // Implements Kahn's algorithm:
   // https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm;
-  std::vector<int> ordered;
+  std::vector<int64_t> ordered;
   ordered.reserve(nodes_.size());
-  std::queue<int> q;
-  std::unordered_map<int, unsigned int> visited_count;
+  std::queue<int64_t> q;
+  std::unordered_map<int64_t, unsigned int> visited_count;
 
   // Find nodes that don't have any incoming edges.
   for (auto node : nodes_) {

@@ -24,24 +24,24 @@ class DAGTest : public ::testing::Test {
 };
 
 TEST_F(DAGTest, basic_test) {
-  EXPECT_EQ(std::unordered_set<int>({5, 8, 3, 6, 20}), dag_.nodes());
-  EXPECT_EQ(std::vector<int>({8, 3}), dag_.DependenciesOf(5));
-  EXPECT_EQ(std::vector<int>({}), dag_.DependenciesOf(1));
+  EXPECT_EQ(std::unordered_set<int64_t>({5, 8, 3, 6, 20}), dag_.nodes());
+  EXPECT_EQ(std::vector<int64_t>({8, 3}), dag_.DependenciesOf(5));
+  EXPECT_EQ(std::vector<int64_t>({}), dag_.DependenciesOf(1));
   EXPECT_TRUE(dag_.HasNode(5));
   EXPECT_FALSE(dag_.HasNode(36));
 }
 
 TEST_F(DAGTest, check_delete) {
   dag_.DeleteEdge(5, 8);
-  EXPECT_EQ(std::vector<int>({3}), dag_.DependenciesOf(5));
+  EXPECT_EQ(std::vector<int64_t>({3}), dag_.DependenciesOf(5));
 }
 
-TEST_F(DAGTest, orphans) { EXPECT_EQ(std::unordered_set<int>({20}), dag_.Orphans()); }
+TEST_F(DAGTest, orphans) { EXPECT_EQ(std::unordered_set<int64_t>({20}), dag_.Orphans()); }
 
 TEST_F(DAGTest, delete_node) {
   dag_.DeleteNode(8);
-  EXPECT_EQ(std::vector<int>({}), dag_.DependenciesOf(8));
-  EXPECT_EQ(std::vector<int>({3}), dag_.DependenciesOf(5));
+  EXPECT_EQ(std::vector<int64_t>({}), dag_.DependenciesOf(8));
+  EXPECT_EQ(std::vector<int64_t>({3}), dag_.DependenciesOf(5));
 }
 TEST_F(DAGTest, check_delete_add) {
   dag_.DeleteNode(8);
@@ -51,19 +51,19 @@ TEST_F(DAGTest, check_delete_add) {
 }
 
 TEST_F(DAGTest, transitive_deps) {
-  EXPECT_EQ(std::unordered_set<int>({8, 3, 6}), dag_.TransitiveDepsFrom(5));
-  EXPECT_EQ(std::unordered_set<int>({6}), dag_.TransitiveDepsFrom(3));
-  EXPECT_EQ(std::unordered_set<int>({}), dag_.TransitiveDepsFrom(6));
+  EXPECT_EQ(std::unordered_set<int64_t>({8, 3, 6}), dag_.TransitiveDepsFrom(5));
+  EXPECT_EQ(std::unordered_set<int64_t>({6}), dag_.TransitiveDepsFrom(3));
+  EXPECT_EQ(std::unordered_set<int64_t>({}), dag_.TransitiveDepsFrom(6));
 }
 
 TEST_F(DAGTest, topological_sort) {
-  EXPECT_EQ(std::vector<int>({20, 5, 8, 3, 6}), dag_.TopologicalSort());
+  EXPECT_EQ(std::vector<int64_t>({20, 5, 8, 3, 6}), dag_.TopologicalSort());
 
   dag_.DeleteNode(20);
-  EXPECT_EQ(std::vector<int>({5, 8, 3, 6}), dag_.TopologicalSort());
+  EXPECT_EQ(std::vector<int64_t>({5, 8, 3, 6}), dag_.TopologicalSort());
 
   dag_.DeleteNode(8);
-  EXPECT_EQ(std::vector<int>({5, 3, 6}), dag_.TopologicalSort());
+  EXPECT_EQ(std::vector<int64_t>({5, 3, 6}), dag_.TopologicalSort());
 }
 
 using DAGDeathTest = DAGTest;
