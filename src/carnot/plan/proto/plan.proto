@@ -9,25 +9,30 @@ option go_package = "planpb";
 // define a part of the plan that needs to be executed sequentially
 // in order to resolve dependencies (ex. Blocking Join).
 message Plan {
-  repeated PlanFragment fragments = 1;
+  // The DAG which stores the connection information of the plan fragments.
+  DAG dag                         = 1;
+  // List of plan fragments referenced by the DAG.
+  repeated PlanFragment fragments = 2;
 }
 
 // Each plan fragment is a DAG represented in a format similar to an adjacency
 // list: a list of nodes and interconnections between nodes.
 message PlanFragment {
+  // The ID of the plan fragment.
+  uint64 id               = 1;
   // The DAG which stores the connection information.
-  DAG dag                 = 1;
+  DAG dag                 = 2;
   // List of nodes referenced by the DAG.
-  repeated PlanNode nodes = 2;
+  repeated PlanNode nodes = 3;
 }
 
 // The DAG simply stores the dependencies for each node.
 message DAG {
   // DAG node stores information about each node and it's dependencies.
   message DAGNode {
-    // The ID of the node. This is the same as the ID used for PlanNode.
+    // The ID of the node. This is the same as the ID used for PlanNode or PlanFragment.
     uint64 id                   = 1;
-    // The dependencies of this DAG node stored as the PlanNode IDs.
+    // The dependencies of this DAG node stored as the PlanNode/PlanFragment IDs.
     repeated uint64 sorted_deps = 2;
   }
   // List of dependencies.
