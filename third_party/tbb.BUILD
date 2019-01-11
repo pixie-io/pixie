@@ -20,6 +20,8 @@ genrule(
         WORK_DIR=$$PWD
         DEST_DIR=$$PWD/$(@D)
         export PATH=$$(dirname $(AR)):$$PATH
+        export CC=$(CC)
+        export CXX=$(CC)
         export CXXFLAGS=$(CC_FLAGS)
         export NM=$(NM)
         export AR=$(AR)
