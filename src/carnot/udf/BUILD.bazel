@@ -19,6 +19,12 @@ pl_cc_test(
     deps = [":cc_library"],
 )
 
+pl_cc_test(
+    name = "registry_test",
+    srcs = ["registry_test.cc"],
+    deps = [":cc_library"],
+)
+
 pl_cc_binary(
     name = "wrapper_benchmark",
     srcs = ["wrapper_benchmark.cc"],
