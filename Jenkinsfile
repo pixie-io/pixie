@@ -16,6 +16,7 @@ final String PHAB_URL = 'https://phab.pixielabs.ai'
 final String PHAB_API_URL = "${PHAB_URL}/api"
 
 final String DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image'
+final String SRC_STASH_NAME = "${BUILD_TAG}_src"
 /**
   * @brief Generates URL for harbormaster.
   */
@@ -118,7 +119,7 @@ String devDockerImageWithTag = '';
 def builders = [:]
 builders['Build & Test (dbg)'] = {
   node {
-    unstash 'src'
+    unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
       // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache') {
@@ -131,7 +132,7 @@ builders['Build & Test (dbg)'] = {
 
 builders['Build & Test (opt)'] = {
   node {
-    unstash 'src'
+    unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
       // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache') {
@@ -144,7 +145,7 @@ builders['Build & Test (opt)'] = {
 
 builders['Build & Test (asan)'] = {
   node {
-    unstash 'src'
+    unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
       // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache --cap-add=SYS_PTRACE') {
@@ -157,7 +158,7 @@ builders['Build & Test (asan)'] = {
 
 builders['Build & Test (tsan)'] = {
   node {
-    unstash 'src'
+    unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
       // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache --cap-add=SYS_PTRACE') {
@@ -188,7 +189,7 @@ node {
       // Get docker image tag.
       properties = readProperties file: 'docker.properties'
       devDockerImageWithTag = DEV_DOCKER_IMAGE + ":${properties.DOCKER_IMAGE_TAG}"
-      stash name: 'src'
+      stash name: SRC_STASH_NAME
     }
     stage('Lint') {
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
