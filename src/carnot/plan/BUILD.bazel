@@ -48,3 +48,9 @@ pl_cc_test(
     srcs = ["plan_fragment_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "plan_test",
+    srcs = ["plan_test.cc"],
+    deps = [":cc_library"],
+)
