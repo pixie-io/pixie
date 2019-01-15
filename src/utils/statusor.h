@@ -82,7 +82,7 @@ class StatusOr {
   struct IsNull {
     // For non-pointer U, a reference can never be NULL.
     static inline bool IsValueNull(const U& t) {
-      auto _ = t;
+      PL_UNUSED(t);
       return false;
     }
   };

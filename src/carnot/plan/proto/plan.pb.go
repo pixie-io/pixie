@@ -1067,28 +1067,28 @@ func (m *ScalarValue) GetValue() isScalarValue_Value {
 	return nil
 }
 
-func (m *ScalarValue) GetBoolValue() *types.BoolValue {
+func (m *ScalarValue) BoolValue() *types.BoolValue {
 	if x, ok := m.GetValue().(*ScalarValue_BoolValue); ok {
 		return x.BoolValue
 	}
 	return nil
 }
 
-func (m *ScalarValue) GetInt64Value() *types.Int64Value {
+func (m *ScalarValue) Int64Value() *types.Int64Value {
 	if x, ok := m.GetValue().(*ScalarValue_Int64Value); ok {
 		return x.Int64Value
 	}
 	return nil
 }
 
-func (m *ScalarValue) GetFloat64Value() *types.DoubleValue {
+func (m *ScalarValue) Float64Value() *types.DoubleValue {
 	if x, ok := m.GetValue().(*ScalarValue_Float64Value); ok {
 		return x.Float64Value
 	}
 	return nil
 }
 
-func (m *ScalarValue) GetStringValue() *types.StringValue {
+func (m *ScalarValue) StringValue() *types.StringValue {
 	if x, ok := m.GetValue().(*ScalarValue_StringValue); ok {
 		return x.StringValue
 	}

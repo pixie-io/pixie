@@ -142,11 +142,15 @@ message ScalarExpression {
 
 // ScalarValues reference a single constant value.
 message ScalarValue {
+  // We need to store the type to handle the null case and make sure we have the
+  // "correct" null value. This type takes precedence on the one of value below.
+  // If they mismatch a null value will be used.
+  DataType data_type = 1;
   oneof value {
-    google.protobuf.BoolValue bool_value      = 1;
-    google.protobuf.Int64Value int64_value    = 2;
-    google.protobuf.DoubleValue float64_value = 3;
-    google.protobuf.StringValue string_value  = 4;
+    bool bool_value      = 2;
+    int64 int64_value    = 3;
+    double float64_value = 4;
+    string string_value  = 5;
   }
 }
 

@@ -4,6 +4,7 @@
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/plan/schema.h"
+#include "src/utils/error.h"
 
 namespace pl {
 namespace carnot {
@@ -32,6 +33,13 @@ std::string Schema::DebugString() const {
     debug_string += absl::StrFormat("  {%d} : %s\n", pair.first, pair.second.DebugString());
   }
   return debug_string;
+}
+
+StatusOr<const Relation> Schema::GetRelation(int64_t id) const {
+  if (!HasRelation(id)) {
+    return error::NotFound("no such relation: %d", id);
+  }
+  return relations_.at(id);
 }
 
 }  // namespace plan

@@ -13,3 +13,5 @@
 
 // Warn if a result is unused.
 #define PL_MUST_USE_RESULT __attribute__((warn_unused_result))
+
+#define PL_UNUSED(x) (void)(x)

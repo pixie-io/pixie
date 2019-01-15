@@ -20,6 +20,9 @@ class PL_MUST_USE_RESULT Status {
   /// Returns true if the status indicates success.
   bool ok() const { return (state_ == NULL); }
 
+  // Return self, this makes it compatible with StatusOr<>.
+  const Status& status() const { return *this; }
+
   pl::error::Code code() const { return ok() ? pl::error::OK : state_->code; }
 
   const std::string& msg() const { return ok() ? empty_string() : state_->msg; }
@@ -74,7 +77,7 @@ inline bool Status::operator!=(const Status& x) const { return !(*this == x); }
 // The argument expression is guaranteed to be evaluated exactly once.
 #define PL_RETURN_IF_ERROR(__status) \
   do {                               \
-    auto status = __status;          \
+    auto status = __status.status(); \
     if (!status.ok()) {              \
       return status;                 \
     }                                \

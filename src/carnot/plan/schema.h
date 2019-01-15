@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "src/carnot/plan/relation.h"
+#include "src/utils/statusor.h"
 
 namespace pl {
 namespace carnot {
@@ -23,6 +24,10 @@ class Schema {
   // Adds a new relation to the schema. Writing to the same ID again
   // will override the relation at the entry.
   void AddRelation(int64_t id, const Relation& relation);
+
+  // Get's the relation by id, if not found returns a status.
+  StatusOr<const Relation> GetRelation(int64_t id) const;
+
   // Get the debug string of the schema.
   std::string DebugString() const;
 
