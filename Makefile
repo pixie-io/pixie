@@ -17,6 +17,15 @@ KUBECTL := kubectl
 ## The directory to write template files to for skaffold (with respect to bazel info workspace).
 SKAFFOLD_DIR := $$(bazel info workspace)/skaffold_build
 
+## Active operating system (Linux vs MacOS).
+UNAME_S := $(shell uname -s)
+
+# Minikube flags to select vm-driver under MacOS
+ifeq ($(UNAME_S),Darwin)
+    MINIKUBE_START_FLAGS += --vm-driver hyperkit
+endif
+
+
 .PHONY: clean
 clean:
 	$(BAZEL) clean 
@@ -60,7 +69,7 @@ go-setup: dep-ensure gazelle
 
 k8s-load-certs:
 	-$(KUBECTL) delete secret custom-tls-cert
-	$(KUBECTL) create secret tls custom-tls-cert --key services/certs/server.key --cert services/certs/server.crt
+	$(KUBECTL) create secret tls custom-tls-cert --key src/services/certs/server.key --cert src/services/certs/server.crt
 
 k8s-load-dev-secrets: #Loads the secrets used by the dev environment. At some point it might makse sense to move this into a dev setup script somewhere.
 	-$(KUBECTL) delete secret pl-app-secrets
@@ -71,7 +80,7 @@ k8s-load-dev-secrets: #Loads the secrets used by the dev environment. At some po
 		--from-literal=auth0-client-secret=_rY9isTWtKgx2saBXNKZmzAf1y9pnKvlm-WdmSVZOFHb9OQtWHEX4Nrh3nWE5NNt
 
 dev-env-start: ## Start dev environment.
-	$(MINIKUBE) start --cpus 6 --memory 8192 --vm-driver hyperkit --mount-string="$(HOME):$(HOME)" --mount
+	$(MINIKUBE) start $(MINIKUBE_START_FLAGS) --cpus 6 --memory 8192 --mount-string="$(HOME):$(HOME)" --mount
 	$(MAKE) k8s-load-certs
 	$(MAKE) k8s-load-dev-secrets
 
