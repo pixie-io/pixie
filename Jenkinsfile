@@ -108,6 +108,7 @@ def writeBazelRCFile() {
   def bazelRcFile = [
     'build --remote_local_fallback_strategy=local',
     'build --remote_http_cache=http://bazel-cache.internal.pixielabs.ai:9090',
+    'build --remote_timeout=10',
     'build --announce_rc',
     'build --verbose_failures',
     'build --jobs=16',
