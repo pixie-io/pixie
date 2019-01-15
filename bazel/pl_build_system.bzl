@@ -67,6 +67,7 @@ def pl_cc_library(
         external_deps = [],
         repository = "",
         linkstamp = None,
+        linkopts = [],
         tags = [],
         deps = [],
         strip_include_prefix = None):
@@ -82,6 +83,7 @@ def pl_cc_library(
         alwayslink = 1,
         linkstatic = 1,
         linkstamp = linkstamp,
+        linkopts = linkopts,
         strip_include_prefix = strip_include_prefix,
     )
 

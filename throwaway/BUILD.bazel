@@ -4,7 +4,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("//bazel:cc_resource.bzl", "pl_cc_resource")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
-
 pl_cc_binary(
     name = "sample-benchmark",
     srcs = ["sample-benchmark.cc"],
@@ -49,5 +48,13 @@ pl_cc_binary(
     tags = ["linux_only"],
     deps = [
         ":saying",
+    ],
+)
+
+pl_cc_binary(
+    name = "pypa_demo",
+    srcs = ["pypa_demo.cc"],
+    deps = [
+        "//third_party:libpypa",
     ],
 )

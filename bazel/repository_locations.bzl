@@ -47,6 +47,11 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "abseil-cpp-cc8dcd307b76a575d2e3e0958a4fe4c7193c2f68",
         urls = ["https://github.com/abseil/abseil-cpp/archive/cc8dcd307b76a575d2e3e0958a4fe4c7193c2f68.tar.gz"],
     ),
+    com_google_double_conversion = dict(
+        sha256 = "2d589cbdcde9c8e611ecfb8cc570715a618d3c2503fa983f87ac88afac68d1bf",
+        strip_prefix = "double-conversion-4199ef3d456ed0549e5665cf4186f0ee6210db3b",
+        urls = ["https://github.com/google/double-conversion/archive/4199ef3d456ed0549e5665cf4186f0ee6210db3b.tar.gz"],
+    ),
     com_intel_tbb = dict(
         sha256 = "5a05cf61d773edbed326a4635d31e84876c46f6f9ed00c9ee709f126904030d6",
         strip_prefix = "tbb-8ff3697f544c5a8728146b70ae3a978025be1f3e",

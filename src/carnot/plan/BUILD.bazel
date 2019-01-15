@@ -9,8 +9,10 @@ pl_cc_library(
         exclude = ["**/*_test.cc"],
     ),
     hdrs = glob(["*.h"]),
-    deps = ["//src/utils:utils",
-            "//src/carnot/plan/proto:plan_cc_proto"],
+    deps = [
+        "//src/carnot/plan/proto:plan_cc_proto",
+        "//src/utils",
+    ],
 )
 
 pl_cc_test(

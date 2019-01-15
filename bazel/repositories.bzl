@@ -25,6 +25,17 @@ def _repository_impl(name, **kwargs):
         **kwargs
     )
 
+def _com_google_double_conversion():
+    name = "com_google_double_conversion"
+    location = REPOSITORY_LOCATIONS[name]
+    native.new_http_archive(
+        name = name,
+        urls = location["urls"],
+        sha256 = location["sha256"],
+        strip_prefix = location.get("strip_prefix", ""),
+        build_file = "third_party/double_conversion.BUILD",
+    )
+
 def _com_llvm_lib():
     native.new_local_repository(
         name = "com_llvm_lib",
@@ -47,6 +58,7 @@ def _cc_deps():
     _repository_impl(name = "com_github_gflags_gflags")
     _repository_impl(name = "com_github_google_glog")
     _repository_impl(name = "com_google_absl")
+    _com_google_double_conversion()
 
 def _go_deps():
     # Add go specific imports here when necessary.
