@@ -41,19 +41,19 @@ build: ## Run the full build (except UI).
 
 .PHONY: test
 test: ## Run all the tests (except UI).
-	$(BAZEL) test //...
+	$(BAZEL) test //... ${BAZEL_TEST_EXTRA_ARGS}
 
 .PHONY: test-opt
 test-opt: ## Run all the tests (except UI), optimized build.
-	$(BAZEL) test -c opt //...
+	$(BAZEL) test -c opt //... ${BAZEL_TEST_EXTRA_ARGS}
 
 .PHONY: test-asan
 test-asan: ## Run all the tests (except UI), with address sanitizer.
-	$(BAZEL) test --config=asan //...
+	$(BAZEL) test --config=asan //... ${BAZEL_TEST_EXTRA_ARGS}
 
 .PHONY: test-tsan
 test-tsan: ## Run all the tests (except UI),  with thread sanitizer.
-	$(BAZEL) test --config=tsan //...
+	$(BAZEL) test --config=tsan //... ${BAZEL_TEST_EXTRA_ARGS}
 
 .PHONY: dep-ensure
 dep-ensure: ## Ensure that go dependencies exist.

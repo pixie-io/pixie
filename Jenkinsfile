@@ -124,7 +124,7 @@ builders['Build & Test (dbg)'] = {
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
       // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache') {
-        sh 'make test'
+        sh 'make test BAZEL_TEST_EXTRA_ARGS="-- -//src/ui/..."'
         stash name: 'build-dbg-testlogs', includes: "bazel-testlogs/**"
       }
     }
@@ -137,7 +137,7 @@ builders['Build & Test (opt)'] = {
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
       // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache') {
-        sh 'make test-opt'
+        sh 'make test-opt BAZEL_TEST_EXTRA_ARGS="-- -//src/ui/..."'
         stash name: 'build-opt-testlogs', includes: "bazel-testlogs/**"
       }
     }
@@ -150,7 +150,7 @@ builders['Build & Test (asan)'] = {
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
       // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache --cap-add=SYS_PTRACE') {
-        sh 'make test-asan'
+        sh 'make test-asan BAZEL_TEST_EXTRA_ARGS="-- -//src/ui/..."'
         stash name: 'build-asan-testlogs', includes: "bazel-testlogs/**"
       }
     }
@@ -163,8 +163,21 @@ builders['Build & Test (tsan)'] = {
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
       // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache --cap-add=SYS_PTRACE') {
-        sh 'make test-tsan'
+        sh 'make test-tsan BAZEL_TEST_EXTRA_ARGS="-- -//src/ui/..."'
         stash name: 'build-tsan-testlogs', includes: "bazel-testlogs/**"
+      }
+    }
+  }
+}
+
+builders['Build & Test (bazel-ui)'] = {
+  node {
+    unstash SRC_STASH_NAME
+    docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
+      // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
+      docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache --cap-add=SYS_PTRACE') {
+        sh 'bazel build //src/ui/...'
+        stash name: 'build-ui-testlogs', includes: "bazel-testlogs/**"
       }
     }
   }
@@ -225,6 +238,9 @@ node {
       }
       dir ('build-tsan-testlogs') {
         unstash 'build-tsan-testlogs'
+      }
+      dir ('build-ui-testlogs') {
+        unstash 'build-ui-testlogs'
       }
       step([
         $class: 'XUnitBuilder',
