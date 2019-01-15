@@ -20,7 +20,7 @@ TEST(CodeToString, strings) {
   EXPECT_EQ("Permission Denied", CodeToString(pl::error::PERMISSION_DENIED));
   EXPECT_EQ("Unauthenticated", CodeToString(pl::error::UNAUTHENTICATED));
   EXPECT_EQ("Internal", CodeToString(pl::error::INTERNAL));
-  EXPECT_EQ("Unimplmented", CodeToString(pl::error::UNIMPLMENTED));
+  EXPECT_EQ("Unimplemented", CodeToString(pl::error::UNIMPLEMENTED));
 }
 
 TEST(CodeToString, UNKNOWN_ERROR) {

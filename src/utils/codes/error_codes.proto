@@ -25,7 +25,7 @@ enum Code {
   UNAUTHENTICATED = 8;
   INTERNAL = 9;
   // Operation specified is not implemented.
-  UNIMPLMENTED = 10;
+  UNIMPLEMENTED = 10;
 
   // Use default instead of specifying all entries here. Otherwise, code might get
   // hard to maintain.

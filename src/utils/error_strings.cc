@@ -25,8 +25,8 @@ std::string CodeToString(pl::error::Code code) {
       return "Unauthenticated";
     case pl::error::INTERNAL:
       return "Internal";
-    case pl::error::UNIMPLMENTED:
-      return "Unimplmented";
+    case pl::error::UNIMPLEMENTED:
+      return "Unimplemented";
     default: { return absl::Substitute("Unknown error_code($0)", static_cast<int>(code)); }
   }
 }
