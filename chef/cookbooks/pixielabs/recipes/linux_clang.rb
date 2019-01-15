@@ -7,6 +7,7 @@ end
 dpkg_package 'clang' do
   source '/tmp/clang.deb'
   action :install
+  version node['clang']['version']
 end
 
 file '/tmp/clang.deb' do

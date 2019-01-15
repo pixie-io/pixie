@@ -6,6 +6,7 @@ end
 
 dpkg_package 'bcc' do
   source '/tmp/bcc.deb'
+  version node['bcc']['version']
   action :install
 end
 

@@ -24,8 +24,8 @@ RUN apt-get update --fix-missing
 RUN apt install -y bison build-essential cmake flex git libedit-dev \
   python zlib1g-dev libelf-dev wget
 
-RUN wget https://storage.googleapis.com/pl-infra-dev-artifacts/clang-7.0-pl.deb \
-    && dpkg -i clang-7.0-pl.deb
+RUN wget https://storage.googleapis.com/pl-infra-dev-artifacts/clang-7.0-pl4.deb \
+    && dpkg -i clang-7.0-pl4.deb
 
 ENV PATH=/opt/clang-7.0/bin:$PATH
 ENV LD_LIBRARY_PATH=/opt/clang-7.0/lib:$LD_LIBRARY_PATH
@@ -44,6 +44,7 @@ RUN cd bcc/build \
 
 WORKDIR /bcc
 VOLUME /image
-ENV deb_name bcc-pixie-0.1.deb
+ENV deb_name bcc-pixie-1.1.deb
+ENV deb_version 1.1
 CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n bcc-pixie --prefix /opt/bcc ."]
+        -s dir -t deb -n bcc-pixie -v ${deb_version} --prefix /opt/bcc ."]

@@ -3,7 +3,7 @@
 DOCKER := docker
 
 ## The BCC deb image version, defaults to the datestamp.
-BCC_DEB_IMAGE_VERSION := 1.0
+BCC_DEB_IMAGE_VERSION := 1.1
 
 ## The BCC deb name.
 bcc_deb_fname := "bcc-pixie-$(BCC_DEB_IMAGE_VERSION).deb"
@@ -16,8 +16,8 @@ bcc_deb_image_tag := "gcr.io/pl-dev-infra/bcc_deb_image:$(BCC_DEB_IMAGE_VERSION)
 
 
 
-CLANG_DEB_IMAGE_VERSION := 1.0
-clang_deb_fname := "clang-7.0-pl.deb"
+CLANG_DEB_IMAGE_VERSION := 7.0-pl4
+clang_deb_fname := "clang-7.0-pl4.deb"
 clang_deb_image_tag := "gcr.io/pl-dev-infra/clang_deb_image:$(CLANG_DEB_IMAGE_VERSION)"
 
 
@@ -32,7 +32,7 @@ build_bcc_deb_image:
 
 .PHONY: upload_bcc_deb
 upload_bcc_deb: build_bcc_deb_image
-	$(DOCKER) run --rm -e deb_name=$(bcc_deb_fname) -v ${PWD}:/image $(bcc_deb_image_tag)
+	$(DOCKER) run --rm -e deb_name=$(bcc_deb_fname) -e deb_version=$(BCC_DEB_IMAGE_VERSION) -v ${PWD}:/image $(bcc_deb_image_tag)
 	gsutil cp $(bcc_deb_fname)  gs://pl-infra-dev-artifacts/$(bcc_deb_fname)
 	rm -f $(bcc_deb_fname)
 

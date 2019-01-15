@@ -6,15 +6,17 @@ default['bazel']['deb_sha256'] =
 
 default['bcc']               = {}
 default['bcc']['deb']        =
-  'https://storage.googleapis.com/pl-infra-dev-artifacts/bcc-pixie-1.0.deb'
+  'https://storage.googleapis.com/pl-infra-dev-artifacts/bcc-pixie-1.1.deb'
 default['bcc']['deb_sha256'] =
-  'e87e76be7040a762dbf06cce83475a14f9903a4383f8d5329c0b9f8fcbfde452'
+  '9e4846adc6da8f042a3a846810145c2025cb08a1d412be91cd34c40912566e56'
+default['bcc']['version'] = "1.1"
 
 default['clang']               = {}
 default['clang']['deb']        =
-  'https://storage.googleapis.com/pl-infra-dev-artifacts/clang-7.0-pl.deb'
+  'https://storage.googleapis.com/pl-infra-dev-artifacts/clang-7.0-pl4.deb'
 default['clang']['deb_sha256'] =
-  '00a552c14cc70d806f2106d48da5a3f975fe551761200ed2d9f0352648852d96'
+  '8d2720b1c5eb454324caf0463bb358fe6c8398f5e45ad092f14cac993a549e89'
+default['clang']['version'] = "7.0-pl4"
 
 
 default['skaffold']                  = {}

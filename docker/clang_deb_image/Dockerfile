@@ -3,7 +3,7 @@ FROM cdrx/fpm-ubuntu:18.04
 RUN apt-get update --fix-missing
 RUN apt-get install -y bison build-essential cmake flex git libedit-dev \
   clang libclang-dev llvm llvm-dev\
-  python zlib1g-dev libelf-dev subversion
+  python2.7-dev swig libncurses5-dev zlib1g-dev libelf-dev subversion
 
 ENV CC=clang
 ENV CXX=clang++
@@ -13,6 +13,7 @@ RUN svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_700/final llvm
 
 WORKDIR /llvm_all/llvm/tools
 RUN svn co http://llvm.org/svn/llvm-project/cfe/tags/RELEASE_700/final clang
+RUN svn co http://llvm.org/svn/llvm-project/lldb/tags/RELEASE_700/final lldb
 
 WORKDIR /llvm_all/llvm/projects
 RUN svn co http://llvm.org/svn/llvm-project/compiler-rt/tags/RELEASE_700/final compiler-rt
@@ -33,11 +34,11 @@ RUN cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
     -DLLVM_INCLUDE_TESTS=OFF \
     ../llvm
 
-RUN make -j ${nproc}
+RUN make -j $(nproc)
 RUN make install
 
 WORKDIR /opt/clang-7.0
 VOLUME /image
-ENV deb_name clang-7.0-pl.deb
+ENV deb_name clang-7.0-pl4.deb
 CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n clang-7.0 -v 1.3 --prefix /opt/clang-7.0 ."]
+        -s dir -t deb -n clang-7.0 -v 7.0-pl4 --prefix /opt/clang-7.0 ."]
