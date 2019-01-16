@@ -16,25 +16,31 @@ genrule(
         "libtbbmalloc.a",
     ],
     cmd = """
-        set -e
+        # Checks to see if second arg is absolute, if so returns that. If not
+        # prepends the first arg to it.
+        FixPath() {
+            pwd=$$1
+            tool_path=$$2
+            if [[ "$$tool_path" = /* ]]
+            then
+                echo "$$tool_path"
+            else
+                echo "$$pwd/$$tool_path"
+            fi
+        }
+        set -ex
+        printenv
         WORK_DIR=$$PWD
         DEST_DIR=$$PWD/$(@D)
         export PATH=$$(dirname $(AR)):$$PATH
-        export CC=$(CC)
-        export CXX=$(CC)
-        export CXXFLAGS=$(CC_FLAGS)
-        export NM=$(NM)
-        export AR=$(AR)
+        export CC=$$(FixPath $$PWD $(CC))
+        export CXX=$$(FixPath $$PWD $(CC))
+        export CXXFLAGS=$$(CC_FLAGS)
+        export NM=$$(FixPath $$PWD $(NM))
+        export AR=$$(FixPath $$PWD $(AR))
         cd $$(dirname $(location :Makefile))
-        #TBB's build needs some help to figure out what compiler it's using
-        if $$CXX --version | grep clang &> /dev/null; then
-           COMPILER_OPT="compiler=clang"
-        else
-       COMPILER_OPT="compiler=gcc"
-          #  # Workaround for TBB bug
-          #  # See https://github.com/01org/tbb/issues/59
-          #  CXXFLAGS="$$CXXFLAGS -flifetime-dse=1"
-        fi
+        COMPILER_OPT="compiler=clang"
+
         # uses extra_inc=big_iron.inc to specify that static libraries are
         # built. See https://software.intel.com/en-us/forums/intel-threading-building-blocks/topic/297792
         make -j10 tbb_build_prefix="build" \
