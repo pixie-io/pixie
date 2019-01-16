@@ -6,6 +6,7 @@ end
 
 dpkg_package 'bazel' do
   source '/tmp/bazel.deb'
+  version node['bazel']['version']
   action :install
 end
 

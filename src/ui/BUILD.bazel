@@ -13,11 +13,15 @@ genrule(
     ] + glob(["src/**"]),
     outs = ["bundle.tar.gz"],
     cmd = """
-      export PATH=/usr/local/bin:$$PATH &&
-      pushd src/ui && yarn install --prefer_offline && \
-      yarn build_dev && popd && \
+      export PATH=/usr/local/bin:/opt/node/bin:$$PATH;
+      pushd src/ui;
+      yarn install --prefer_offline
+      yarn build_dev;
+      popd;
       cp src/ui/dist/bundle.tar.gz $@
     """,
-    local = 1,  # disable sandboxing for yarn cache.
     output_to_bindir = 1,  # We treat "outputs" as binaries.
+    tags = [
+        "no-sandbox",
+    ],
 )

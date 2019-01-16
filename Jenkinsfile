@@ -106,12 +106,22 @@ def codeReviewPostBuild = {
 
 def writeBazelRCFile() {
   def bazelRcFile = [
-    'build --remote_local_fallback_strategy=local',
-    'build --remote_http_cache=http://bazel-cache.internal.pixielabs.ai:9090',
-    'build --remote_timeout=10',
+    'common --color=yes',
+    // Build arguments.
     'build --announce_rc',
     'build --verbose_failures',
     'build --jobs=16',
+    // Build remote jobs setup.
+    'build --remote_http_cache=http://bazel-cache.internal.pixielabs.ai:9090',
+    'build --remote_local_fallback=true',
+    'build --remote_local_fallback_strategy=local',
+    'build --remote_timeout=10',
+    // Test remote jobs setup.
+    'test  --remote_timeout=10',
+    'test --remote_local_fallback=true',
+    'test --remote_local_fallback_strategy=local',
+    // Other test args.
+    'test --verbose_failures',
   ].join('\n')
   writeFile file: "jenkins.bazelrc", text: "${bazelRcFile}"
 }
@@ -120,11 +130,11 @@ String devDockerImageWithTag = '';
 def builders = [:]
 builders['Build & Test (dbg)'] = {
   node {
+    deleteDir()
     unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-      // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache') {
-        sh 'make test BAZEL_TEST_EXTRA_ARGS="-- -//src/ui/..."'
+        sh 'bazel test -c dbg //...'
         stash name: 'build-dbg-testlogs', includes: "bazel-testlogs/**"
       }
     }
@@ -133,24 +143,30 @@ builders['Build & Test (dbg)'] = {
 
 builders['Build & Test (opt)'] = {
   node {
+    deleteDir()
     unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-      // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache') {
-        sh 'make test-opt BAZEL_TEST_EXTRA_ARGS="-- -//src/ui/..."'
+        sh 'bazel test -c opt //...'
         stash name: 'build-opt-testlogs', includes: "bazel-testlogs/**"
       }
     }
   }
 }
 
+
+/********************************************
+ * For now restrict the ASAN and TSAN builds to carnot. There is a bug in go(or llvm) preventing linking:
+ * https://github.com/golang/go/issues/27110
+ * TODO(zasgar): Fix after above is resolved.
+ ********************************************/
 builders['Build & Test (asan)'] = {
   node {
+    deleteDir()
     unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-      // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache --cap-add=SYS_PTRACE') {
-        sh 'make test-asan BAZEL_TEST_EXTRA_ARGS="-- -//src/ui/..."'
+        sh 'bazel test --config=asan //src/carnot/...'
         stash name: 'build-asan-testlogs', includes: "bazel-testlogs/**"
       }
     }
@@ -159,25 +175,12 @@ builders['Build & Test (asan)'] = {
 
 builders['Build & Test (tsan)'] = {
   node {
+    deleteDir()
     unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-      // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache --cap-add=SYS_PTRACE') {
-        sh 'make test-tsan BAZEL_TEST_EXTRA_ARGS="-- -//src/ui/..."'
+        sh 'bazel test --config=tsan //src/carnot/...'
         stash name: 'build-tsan-testlogs', includes: "bazel-testlogs/**"
-      }
-    }
-  }
-}
-
-builders['Build & Test (bazel-ui)'] = {
-  node {
-    unstash SRC_STASH_NAME
-    docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-      // Mount the Bazel cache which is on .cache to make sure artifacts are saved.
-      docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache --cap-add=SYS_PTRACE') {
-        sh 'bazel build //src/ui/...'
-        stash name: 'build-ui-testlogs', includes: "bazel-testlogs/**"
       }
     }
   }
@@ -206,6 +209,7 @@ node {
       stash name: SRC_STASH_NAME
     }
     stage('Lint') {
+      unstash SRC_STASH_NAME
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
         docker.image(devDockerImageWithTag).inside {
           sh 'arc lint --everything'
@@ -238,9 +242,6 @@ node {
       }
       dir ('build-tsan-testlogs') {
         unstash 'build-tsan-testlogs'
-      }
-      dir ('build-ui-testlogs') {
-        unstash 'build-ui-testlogs'
       }
       step([
         $class: 'XUnitBuilder',

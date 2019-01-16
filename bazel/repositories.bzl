@@ -28,12 +28,12 @@ def _repository_impl(name, **kwargs):
 def _com_google_double_conversion():
     name = "com_google_double_conversion"
     location = REPOSITORY_LOCATIONS[name]
-    native.new_http_archive(
+    http_archive(
         name = name,
         urls = location["urls"],
         sha256 = location["sha256"],
         strip_prefix = location.get("strip_prefix", ""),
-        build_file = "third_party/double_conversion.BUILD",
+        build_file = "//third_party:double_conversion.BUILD",
     )
 
 def _com_llvm_lib():

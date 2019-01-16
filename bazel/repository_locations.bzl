@@ -4,8 +4,8 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/0.14.0/bazel-gazelle-0.14.0.tar.gz"],
     ),
     io_bazel_rules_go = dict(
-        sha256 = "97cf62bdef33519412167fd1e4b0810a318a7c234f5f8dc4f53e2da86241c492",
-        urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.15.3/rules_go-0.15.3.tar.gz"],
+        sha256 = "7be7dc01f1e0afdba6c8eb2b43d2fa01c743be1b9273ab1eaf6c233df078d705",
+        urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.16.5/rules_go-0.16.5.tar.gz"],
     ),
     com_github_bazelbuild_buildtools = dict(
         sha256 = "82ce8e14772b42cfdcfa46075e6fb7e1c7363b8fb8dadc74caa30cff56d6646f",
@@ -28,9 +28,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/googletest/archive/release-1.8.1.tar.gz"],
     ),
     com_github_grpc_grpc = dict(
-        sha256 = "2925dcdea4595a62e439355823984df061e085485d7c2208802ed944ded62b5b",
-        strip_prefix = "grpc-d8020cb6daa87f1a3bb3b0c299bc081c4a3de1e8",
-        urls = ["https://github.com/grpc/grpc/archive/d8020cb6daa87f1a3bb3b0c299bc081c4a3de1e8.tar.gz"],
+        sha256 = "069a52a166382dd7b99bf8e7e805f6af40d797cfcee5f80e530ca3fc75fd06e2",
+        strip_prefix = "grpc-1.18.0",
+        urls = ["https://github.com/grpc/grpc/archive/v1.18.0.tar.gz"],
     ),
     com_github_gflags_gflags = dict(
         sha256 = "9e1a38e2dcbb20bb10891b5a171de2e5da70e0a50fff34dd4b0c2c6d75043909",
