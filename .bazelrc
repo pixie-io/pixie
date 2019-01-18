@@ -40,5 +40,5 @@ build:tsan --cxxopt -std=c++17
 build --cxxopt -std=c++17
 
 # Import other bazelrc files
-try-import jenkins.bazelrc
-try-import user.bazelrc
+try-import %workspace%/jenkins.bazelrc
+try-import %workspace%/user.bazelrc
