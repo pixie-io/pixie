@@ -116,8 +116,9 @@ def writeBazelRCFile() {
     'build --remote_local_fallback=true',
     'build --remote_local_fallback_strategy=local',
     'build --remote_timeout=10',
+    'build --experimental_remote_retry',
     // Test remote jobs setup.
-    'test  --remote_timeout=10',
+    'test --remote_timeout=10',
     'test --remote_local_fallback=true',
     'test --remote_local_fallback_strategy=local',
     // Other test args.
@@ -134,6 +135,7 @@ builders['Build & Test (dbg)'] = {
     unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache') {
+        sh 'scripts/bazel_fetch_retry.sh'
         sh 'bazel test -c dbg //...'
         stash name: 'build-dbg-testlogs', includes: "bazel-testlogs/**"
       }
@@ -147,6 +149,7 @@ builders['Build & Test (opt)'] = {
     unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache') {
+        sh 'scripts/bazel_fetch_retry.sh'
         sh 'bazel test -c opt //...'
         stash name: 'build-opt-testlogs', includes: "bazel-testlogs/**"
       }
@@ -166,6 +169,7 @@ builders['Build & Test (asan)'] = {
     unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache --cap-add=SYS_PTRACE') {
+        sh 'scripts/bazel_fetch_retry.sh'
         sh 'bazel test --config=asan //src/carnot/...'
         stash name: 'build-asan-testlogs', includes: "bazel-testlogs/**"
       }
@@ -179,6 +183,7 @@ builders['Build & Test (tsan)'] = {
     unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
       docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache --cap-add=SYS_PTRACE') {
+        sh 'scripts/bazel_fetch_retry.sh'
         sh 'bazel test --config=tsan //src/carnot/...'
         stash name: 'build-tsan-testlogs', includes: "bazel-testlogs/**"
       }
