@@ -4,7 +4,11 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
+#include "absl/strings/str_join.h"
+#include "src/carnot/plan/compiler_state.h"
 #include "src/carnot/plan/scalar_expression.h"
+#include "src/carnot/plan/utils.h"
+#include "src/carnot/udf/udf.h"
 #include "src/utils/error.h"
 #include "src/utils/statusor.h"
 
@@ -78,20 +82,23 @@ std::string ScalarValue::DebugString() const {
   }
 }
 
-StatusOr<planpb::DataType> ScalarValue::OutputDataType(const Schema &input_schema) const {
+StatusOr<planpb::DataType> ScalarValue::OutputDataType(const CompilerState &,
+                                                       const Schema &) const {
   DCHECK(is_initialized_) << "Not initialized";
-  PL_UNUSED(input_schema);
   return DataType();
 }
 
-std::vector<Column *> ScalarValue::ColumnDeps() {
+std::vector<const Column *> ScalarValue::ColumnDeps() {
   DCHECK(is_initialized_) << "Not initialized";
   return {};
 }
 
-std::vector<ScalarExpression *> ScalarValue::Deps() {
+std::vector<ScalarExpression *> ScalarValue::Deps() const {
   DCHECK(is_initialized_) << "Not initialized";
   return {};
+}
+planpb::ScalarExpression::ValueCase ScalarValue::ExpressionType() const {
+  return planpb::ScalarExpression::kConstant;
 }
 
 Status Column::Init(const planpb::Column &pb) {
@@ -113,7 +120,8 @@ std::string Column::DebugString() const {
   return absl::StrFormat("node<%d>::col[%d]", NodeID(), Index());
 }
 
-StatusOr<planpb::DataType> Column::OutputDataType(const Schema &input_schema) const {
+StatusOr<planpb::DataType> Column::OutputDataType(const CompilerState &,
+                                                  const Schema &input_schema) const {
   DCHECK(is_initialized_) << "Not initialized";
   StatusOr<const Relation> s = input_schema.GetRelation(NodeID());
 
@@ -123,11 +131,16 @@ StatusOr<planpb::DataType> Column::OutputDataType(const Schema &input_schema) co
   return dt;
 }
 
-std::vector<Column *> Column::ColumnDeps() {
+std::vector<const Column *> Column::ColumnDeps() {
   DCHECK(is_initialized_) << "Not initialized";
   return {this};
 }
-std::vector<ScalarExpression *> Column::Deps() {
+
+planpb::ScalarExpression::ValueCase Column::ExpressionType() const {
+  return planpb::ScalarExpression::kColumn;
+}
+
+std::vector<ScalarExpression *> Column::Deps() const {
   DCHECK(is_initialized_) << "Not initialized";
   return {};
 }
@@ -147,9 +160,88 @@ StatusOr<std::unique_ptr<ScalarExpression>> ScalarExpression::FromProto(
       return MakeExprHelper<Column>(pb.column());
     case planpb::ScalarExpression::kConstant:
       return MakeExprHelper<ScalarValue>(pb.constant());
+    case planpb::ScalarExpression::kFunc:
+      return MakeExprHelper<ScalarFunc>(pb.func());
     default:
       return error::Unimplemented("Expression type: %d", pb.value_case());
   }
+}
+
+Status ScalarFunc::Init(const planpb::ScalarFunc &pb) {
+  name_ = pb.name();
+  for (const auto arg : pb.args()) {
+    auto s = ScalarExpression::FromProto(arg);
+    if (!s.ok()) {
+      return s.status();
+    }
+    arg_deps_.emplace_back(s.ConsumeValueOrDie());
+  }
+  return Status::OK();
+}
+
+std::vector<ScalarExpression *> ScalarFunc::Deps() const {
+  std::vector<ScalarExpression *> deps;
+  for (const auto &arg : arg_deps_) {
+    // No ownership transfer.
+    deps.emplace_back(arg.get());
+  }
+  return deps;
+}
+
+planpb::ScalarExpression::ValueCase ScalarFunc::ExpressionType() const {
+  return planpb::ScalarExpression::kFunc;
+}
+
+std::vector<const Column *> ScalarFunc::ColumnDeps() {
+  std::vector<const Column *> cols;
+  ScalarExpressionWalker<int>()
+      .OnColumn([&](const auto &col, const auto &) {
+        cols.push_back(&col);
+        return 0;
+      })
+      .Walk(*this);
+  return cols;
+}
+
+StatusOr<planpb::DataType> ScalarFunc::OutputDataType(const CompilerState &state,
+                                                      const Schema &input_schema) const {
+  // The output data type of a function is based on the computed types of the children
+  // followed by the looking up the function in the registry and getting the output
+  // data type of the function.
+  auto res = ScalarExpressionWalker<StatusOr<planpb::DataType>>()
+                 .OnScalarValue([&](auto &val, auto &) -> StatusOr<planpb::DataType> {
+                   return val.OutputDataType(state, input_schema);
+                 })
+                 .OnColumn([&](auto &col, auto &) -> StatusOr<planpb::DataType> {
+                   return col.OutputDataType(state, input_schema);
+                 })
+                 .OnScalarFunc([&](auto &func, auto &child_results) -> StatusOr<planpb::DataType> {
+                   std::vector<planpb::DataType> child_args;
+                   child_args.reserve(child_results.size());
+                   for (const auto &child_result : child_results) {
+                     PL_RETURN_IF_ERROR(child_result);
+                     child_args.push_back(child_result.ValueOrDie());
+                   }
+                   auto s = state.udf_registry()->GetDefinition(func.name(), child_args);
+                   PL_RETURN_IF_ERROR(s);
+                   return s.ValueOrDie()->exec_return_type();
+                 })
+                 .Walk(*this);
+
+  // TODO(zasgar): Why is this necessary? For some reason the proper constructor is
+  // not getting invoked.
+  PL_RETURN_IF_ERROR(res);
+  return res.ValueOrDie();
+}
+
+std::string ScalarFunc::DebugString() const {
+  std::string debug_string;
+  std::vector<std::string> arg_strings;
+  for (const auto &arg : arg_deps_) {
+    arg_strings.push_back(arg->DebugString());
+  }
+  debug_string += absl::StrFormat("fn:%s(%s)", name_, absl::StrJoin(arg_strings, ","));
+  return debug_string;
 }
 
 }  // namespace plan
