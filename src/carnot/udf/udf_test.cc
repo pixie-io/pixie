@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <type_traits>
 
+#include "src/carnot/plan/proto/plan.pb.h"
 #include "src/carnot/udf/udf.h"
 #include "src/utils/macros.h"
 #include "src/utils/status.h"
@@ -11,23 +12,13 @@ namespace udf {
 
 class ScalarUDF1 : ScalarUDF {
  public:
-  Int64Value Exec(FunctionContext *ctx, BoolValue b1, Int64Value b2) {
-    PL_UNUSED(ctx);
-    return b1.val && b2.val ? 3 : 0;
-  }
+  Int64Value Exec(FunctionContext *, BoolValue, Int64Value) { return 0; }
 };
 
 class ScalarUDF1WithInit : ScalarUDF {
  public:
-  Status Init(FunctionContext *ctx, Int64Value v1) {
-    PL_UNUSED(ctx);
-    PL_UNUSED(v1);
-    return Status::OK();
-  }
-  Int64Value Exec(FunctionContext *ctx, BoolValue b1, BoolValue b2) {
-    PL_UNUSED(ctx);
-    return b1.val && b2.val ? 3 : 0;
-  }
+  Status Init(FunctionContext *, Int64Value) { return Status::OK(); }
+  Int64Value Exec(FunctionContext *, BoolValue, BoolValue) { return 0; }
 };
 
 TEST(ScalarUDF, basic_tests) {
@@ -43,6 +34,103 @@ TEST(UDFDataTypes, valid_tests) {
   EXPECT_TRUE((true == IsValidUDFDataType<Int64Value>::value));
   EXPECT_TRUE((true == IsValidUDFDataType<Float64Value>::value));
   EXPECT_TRUE((true == IsValidUDFDataType<StringValue>::value));
+}
+
+class UDA1 : UDA {
+ public:
+  Status Init(FunctionContext *) { return Status::OK(); }
+  void Update(FunctionContext *, Int64Value) {}
+  void Merge(FunctionContext *, const UDA1 &) {}
+  Int64Value Finalize(FunctionContext *) { return 0; }
+};
+
+class UDA1WithInit : UDA {
+ public:
+  Status Init(FunctionContext *, Int64Value) { return Status::OK(); }
+  void Update(FunctionContext *, Int64Value, Float64Value) {}
+  void Merge(FunctionContext *, const UDA1WithInit &) {}
+  Int64Value Finalize(FunctionContext *) { return 0; }
+};
+
+class UDAWithBadMerge1 : UDA {
+ public:
+  Status Init(FunctionContext *, Int64Value) { return Status::OK(); }
+  void Update(FunctionContext *, Int64Value, Float64Value) {}
+  void Merge(const UDAWithBadMerge1 &) {}
+  Int64Value Finalize(FunctionContext *) { return 0; }
+};
+
+class UDAWithBadMerge2 : UDA {
+ public:
+  Status Init(FunctionContext *, Int64Value) { return Status::OK(); }
+  void Update(FunctionContext *, Int64Value, Float64Value) {}
+  int Merge(FunctionContext *, const UDAWithBadMerge2 &) { return 0; }
+  Int64Value Finalize(FunctionContext *) { return 0; }
+};
+
+class UDAWithBadMerge3 : UDA {
+ public:
+  Status Init(FunctionContext *, Int64Value) { return Status::OK(); }
+  void Update(FunctionContext *, Int64Value, Float64Value) {}
+  void Merge(FunctionContext *, const UDA &) {}
+  Int64Value Finalize(FunctionContext *) { return 0; }
+};
+
+class UDAWithBadUpdate1 : UDA {
+ public:
+  Status Init(FunctionContext *) { return Status::OK(); }
+  int Update(FunctionContext *, Int64Value) { return 0; }
+  void Merge(FunctionContext *, const UDAWithBadUpdate1 &) {}
+  Int64Value Finalize(FunctionContext *) { return 0; }
+};
+
+class UDAWithBadUpdate2 : UDA {
+ public:
+  Status Init(FunctionContext *) { return Status::OK(); }
+  void Update(Int64Value) {}
+  void Merge(FunctionContext *, const UDAWithBadUpdate2 &) {}
+  Int64Value Finalize(FunctionContext *) { return 0; }
+};
+
+class UDAWithBadFinalize1 : UDA {
+ public:
+  Status Init(FunctionContext *) { return Status::OK(); }
+  void Update(FunctionContext *, Int64Value) {}
+  void Merge(FunctionContext *, const UDAWithBadFinalize1 &) {}
+  void Finalize(FunctionContext *) {}
+};
+
+class UDAWithBadFinalize2 : UDA {
+ public:
+  Status Init(FunctionContext *) { return Status::OK(); }
+  void Update(FunctionContext *, Int64Value) {}
+  void Merge(FunctionContext *, const UDAWithBadFinalize2 &) {}
+  Int64Value Finalize() { return 0; }
+};
+
+TEST(UDA, bad_merge_fn) {
+  EXPECT_TRUE((false == IsValidMergeFn(&UDAWithBadMerge1::Merge)));
+  EXPECT_TRUE((false == IsValidMergeFn(&UDAWithBadMerge2::Merge)));
+  EXPECT_TRUE((false == IsValidMergeFn(&UDAWithBadMerge3::Merge)));
+}
+
+TEST(UDA, bad_update_fn) {
+  EXPECT_TRUE((false == IsValidUpdateFn(&UDAWithBadUpdate1::Update)));
+  EXPECT_TRUE((false == IsValidUpdateFn(&UDAWithBadUpdate2::Update)));
+}
+
+TEST(UDA, bad_finalize_fn) {
+  EXPECT_TRUE((false == IsValidFinalizeFn(&UDAWithBadFinalize1::Finalize)));
+  EXPECT_TRUE((false == IsValidFinalizeFn(&UDAWithBadFinalize2::Finalize)));
+}
+
+TEST(UDA, valid_uda) {
+  EXPECT_EQ(UDFDataType::INT64, UDATraits<UDA1>::FinalizeReturnType());
+  EXPECT_EQ(std::vector<UDFDataType>({UDFDataType::INT64}), UDATraits<UDA1>::UpdateArgumentTypes());
+
+  EXPECT_EQ(UDFDataType::INT64, UDATraits<UDA1WithInit>::FinalizeReturnType());
+  EXPECT_EQ(std::vector<UDFDataType>({UDFDataType::INT64, UDFDataType::FLOAT64}),
+            UDATraits<UDA1WithInit>::UpdateArgumentTypes());
 }
 
 TEST(BoolValue, value_tests) {
