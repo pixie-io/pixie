@@ -4,12 +4,13 @@
 #include <vector>
 
 #include "src/carnot/plan/proto/plan.pb.h"
+#include "src/carnot/proto/types.pb.h"
 
 namespace pl {
 namespace carnot {
 namespace plan {
 
-using ColTypeArray = std::vector<planpb::DataType>;
+using ColTypeArray = std::vector<carnotpb::DataType>;
 using ColNameArray = std::vector<std::string>;
 
 /**
@@ -30,12 +31,12 @@ class Relation {
   size_t NumColumns() const;
 
   // Add a column to the relation.
-  void AddColumn(const planpb::DataType &col_type, const std::string &col_name);
+  void AddColumn(const carnotpb::DataType &col_type, const std::string &col_name);
 
   // Check if the column at idx exists.
   bool HasColumn(size_t idx) const;
 
-  planpb::DataType GetColumnType(size_t idx) const;
+  carnotpb::DataType GetColumnType(size_t idx) const;
   std::string GetColumnName(size_t idx) const;
 
   // Get the debug string of this relation.

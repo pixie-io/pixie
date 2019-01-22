@@ -4,26 +4,21 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
 
 proto_library(
-    name = "plan_proto",
-    srcs = ["plan.proto"],
+    name = "types_proto",
+    srcs = ["types.proto"],
     visibility = ["//visibility:public"],
-    deps = [
-    "@com_google_protobuf//:wrappers_proto",
-    "//src/carnot/proto:types_proto",
-    ],
 )
 
 go_proto_library(
-    name = "plan_go_proto",
+    name = "types_go_proto",
     compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
-    importpath = "pixielabs.ai/pixielabs/src/carnot/plan/proto",
-    proto = ":plan_proto",
+    importpath = "pixielabs.ai/pixielabs/src/carnot/proto",
+    proto = ":types_proto",
     visibility = ["//visibility:public"],
-    deps = ["//src/carnot/proto:types_go_proto"],
 )
 
 cc_proto_library(
-    name = "plan_cc_proto",
+    name = "types_cc_proto",
     visibility = ["//visibility:public"],
-    deps = [":plan_proto"],
+    deps = [":types_proto"],
 )

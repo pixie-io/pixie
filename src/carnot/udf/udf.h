@@ -9,6 +9,7 @@
 #include <functional>
 
 #include "src/carnot/plan/proto/plan.pb.h"
+#include "src/carnot/proto/types.pb.h"
 #include "src/utils/status.h"
 
 namespace pl {
@@ -19,7 +20,7 @@ namespace udf {
  * The enum of different UDF data types.
  * TODO(zasgar): move this data type to a higher lvl than plan.
  */
-using UDFDataType = planpb::DataType;
+using UDFDataType = carnotpb::DataType;
 
 /**
  * This is the base value type that all UDFs inherit from.
@@ -87,22 +88,22 @@ struct UDFValueTraits {
 
 template <>
 struct UDFValueTraits<BoolValue> {
-  static constexpr UDFDataType data_type = planpb::BOOLEAN;
+  static constexpr UDFDataType data_type = carnotpb::BOOLEAN;
 };
 
 template <>
 struct UDFValueTraits<Int64Value> {
-  static constexpr UDFDataType data_type = planpb::INT64;
+  static constexpr UDFDataType data_type = carnotpb::INT64;
 };
 
 template <>
 struct UDFValueTraits<Float64Value> {
-  static constexpr UDFDataType data_type = planpb::FLOAT64;
+  static constexpr UDFDataType data_type = carnotpb::FLOAT64;
 };
 
 template <>
 struct UDFValueTraits<StringValue> {
-  static constexpr UDFDataType data_type = planpb::STRING;
+  static constexpr UDFDataType data_type = carnotpb::STRING;
 };
 
 /**

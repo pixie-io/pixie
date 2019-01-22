@@ -24,15 +24,15 @@ std::string ToString(planpb::OperatorType op) {
   }
 }
 
-std::string ToString(planpb::DataType dt) {
+std::string ToString(carnotpb::DataType dt) {
   switch (dt) {
-    case planpb::BOOLEAN:
+    case carnotpb::BOOLEAN:
       return "bool";
-    case planpb::INT64:
+    case carnotpb::INT64:
       return "int64";
-    case planpb::FLOAT64:
+    case carnotpb::FLOAT64:
       return "float64";
-    case planpb::STRING:
+    case carnotpb::STRING:
       return "string";
     default:
       LOG(WARNING) << "Unknown datatype in ToStringFunction";

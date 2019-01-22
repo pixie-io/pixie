@@ -2,6 +2,7 @@
 #include <string>
 
 #include "src/carnot/plan/proto/plan.pb.h"
+#include "src/carnot/proto/types.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -15,7 +16,7 @@ std::string ToString(planpb::OperatorType op);
 /**
  * ToString converts the datatype enum to a string.
  */
-std::string ToString(planpb::DataType dt);
+std::string ToString(carnotpb::DataType dt);
 
 }  // namespace plan
 }  // namespace carnot

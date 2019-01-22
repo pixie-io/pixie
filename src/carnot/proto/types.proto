@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package pl.carnot.carnotpb;
+
+option go_package = "carnotpb";
+
+// The list of data types supported by our execution engine.
+enum DataType {
+  DATA_TYPE_UNKNOWN = 0;
+  BOOLEAN = 1;
+  INT64   = 2;
+  FLOAT64 = 3;
+  STRING  = 4;
+}

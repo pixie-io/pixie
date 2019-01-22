@@ -14,10 +14,10 @@ TEST(OpToString, basic_tests) {
 }
 
 TEST(DataTypeToString, basic_tests) {
-  EXPECT_EQ("bool", ToString(planpb::BOOLEAN));
-  EXPECT_EQ("int64", ToString(planpb::INT64));
-  EXPECT_EQ("float64", ToString(planpb::FLOAT64));
-  EXPECT_EQ("string", ToString(planpb::STRING));
+  EXPECT_EQ("bool", ToString(carnotpb::BOOLEAN));
+  EXPECT_EQ("int64", ToString(carnotpb::INT64));
+  EXPECT_EQ("float64", ToString(carnotpb::FLOAT64));
+  EXPECT_EQ("string", ToString(carnotpb::STRING));
 }
 
 }  // namespace plan

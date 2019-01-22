@@ -18,8 +18,8 @@ namespace plan {
 
 pl::Status ScalarValue::Init(const pl::carnot::planpb::ScalarValue &pb) {
   DCHECK(!is_initialized_) << "Already initialized";
-  CHECK(pb.data_type() != planpb::DATA_TYPE_UNKNOWN);
-  CHECK(planpb::DataType_IsValid(pb.data_type()));
+  CHECK(pb.data_type() != carnotpb::DATA_TYPE_UNKNOWN);
+  CHECK(carnotpb::DataType_IsValid(pb.data_type()));
   // TODO(zasgar): We should probably add a check to make sure that when a given
   // DataType is set, the wrong field value is not set.
 
@@ -69,21 +69,21 @@ std::string ScalarValue::DebugString() const {
     return "<null>";
   }
   switch (DataType()) {
-    case planpb::BOOLEAN:
+    case carnotpb::BOOLEAN:
       return BoolValue() ? "true" : "false";
-    case planpb::INT64:
+    case carnotpb::INT64:
       return absl::StrFormat("%d", Int64Value());
-    case planpb::FLOAT64:
+    case carnotpb::FLOAT64:
       return absl::StrFormat("%ff", Float64Value());
-    case planpb::STRING:
+    case carnotpb::STRING:
       return absl::StrFormat("\"%s\"", StringValue());
     default:
       return "<Unknown>";
   }
 }
 
-StatusOr<planpb::DataType> ScalarValue::OutputDataType(const CompilerState &,
-                                                       const Schema &) const {
+StatusOr<carnotpb::DataType> ScalarValue::OutputDataType(const CompilerState &,
+                                                         const Schema &) const {
   DCHECK(is_initialized_) << "Not initialized";
   return DataType();
 }
@@ -120,14 +120,14 @@ std::string Column::DebugString() const {
   return absl::StrFormat("node<%d>::col[%d]", NodeID(), Index());
 }
 
-StatusOr<planpb::DataType> Column::OutputDataType(const CompilerState &,
-                                                  const Schema &input_schema) const {
+StatusOr<carnotpb::DataType> Column::OutputDataType(const CompilerState &,
+                                                    const Schema &input_schema) const {
   DCHECK(is_initialized_) << "Not initialized";
   StatusOr<const Relation> s = input_schema.GetRelation(NodeID());
 
   PL_RETURN_IF_ERROR(s);
   const auto &relation = s.ValueOrDie();
-  planpb::DataType dt = relation.GetColumnType(Index());
+  carnotpb::DataType dt = relation.GetColumnType(Index());
   return dt;
 }
 
@@ -203,30 +203,31 @@ std::vector<const Column *> ScalarFunc::ColumnDeps() {
   return cols;
 }
 
-StatusOr<planpb::DataType> ScalarFunc::OutputDataType(const CompilerState &state,
-                                                      const Schema &input_schema) const {
+StatusOr<carnotpb::DataType> ScalarFunc::OutputDataType(const CompilerState &state,
+                                                        const Schema &input_schema) const {
   // The output data type of a function is based on the computed types of the children
   // followed by the looking up the function in the registry and getting the output
   // data type of the function.
-  auto res = ScalarExpressionWalker<StatusOr<planpb::DataType>>()
-                 .OnScalarValue([&](auto &val, auto &) -> StatusOr<planpb::DataType> {
-                   return val.OutputDataType(state, input_schema);
-                 })
-                 .OnColumn([&](auto &col, auto &) -> StatusOr<planpb::DataType> {
-                   return col.OutputDataType(state, input_schema);
-                 })
-                 .OnScalarFunc([&](auto &func, auto &child_results) -> StatusOr<planpb::DataType> {
-                   std::vector<planpb::DataType> child_args;
-                   child_args.reserve(child_results.size());
-                   for (const auto &child_result : child_results) {
-                     PL_RETURN_IF_ERROR(child_result);
-                     child_args.push_back(child_result.ValueOrDie());
-                   }
-                   auto s = state.udf_registry()->GetDefinition(func.name(), child_args);
-                   PL_RETURN_IF_ERROR(s);
-                   return s.ValueOrDie()->exec_return_type();
-                 })
-                 .Walk(*this);
+  auto res =
+      ScalarExpressionWalker<StatusOr<carnotpb::DataType>>()
+          .OnScalarValue([&](auto &val, auto &) -> StatusOr<carnotpb::DataType> {
+            return val.OutputDataType(state, input_schema);
+          })
+          .OnColumn([&](auto &col, auto &) -> StatusOr<carnotpb::DataType> {
+            return col.OutputDataType(state, input_schema);
+          })
+          .OnScalarFunc([&](auto &func, auto &child_results) -> StatusOr<carnotpb::DataType> {
+            std::vector<carnotpb::DataType> child_args;
+            child_args.reserve(child_results.size());
+            for (const auto &child_result : child_results) {
+              PL_RETURN_IF_ERROR(child_result);
+              child_args.push_back(child_result.ValueOrDie());
+            }
+            auto s = state.udf_registry()->GetDefinition(func.name(), child_args);
+            PL_RETURN_IF_ERROR(s);
+            return s.ValueOrDie()->exec_return_type();
+          })
+          .Walk(*this);
 
   // TODO(zasgar): Why is this necessary? For some reason the proper constructor is
   // not getting invoked.

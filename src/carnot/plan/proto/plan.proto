@@ -1,5 +1,6 @@
 syntax = "proto3";
 import "google/protobuf/wrappers.proto";
+import "src/carnot/proto/types.proto";
 
 package pl.carnot.planpb;
 
@@ -47,15 +48,6 @@ message PlanNode {
   Operator op = 2;
 }
 
-// The list of data types supported by our execution engine.
-enum DataType {
-  DATA_TYPE_UNKNOWN = 0;
-  BOOLEAN = 1;
-  INT64   = 2;
-  FLOAT64 = 3;
-  STRING  = 4;
-}
-
 enum OperatorType {
   OPERATOR_TYPE_UNKNOWN = 0;
   // Source operators are rangs 1000 - 2000.
@@ -93,7 +85,7 @@ message MemorySourceOperator {
   // The names for the columns.
   repeated string column_names    = 3;
   // The types of the columns.
-  repeated DataType column_types  = 4;
+  repeated carnotpb.DataType column_types  = 4;
   // The start time (can be omitted if not time series).
   google.protobuf.Int64Value start_time                = 5;
   // The stop time (can be omitted if not time series).
@@ -105,7 +97,7 @@ message MemorySinkOperator {
   // Storage is organized as tables, this specifies the name of the table.
   string name                     = 1;
   // The types of the columns.
-  repeated DataType column_types  = 2;
+  repeated carnotpb.DataType column_types  = 2;
   // The names of the columns.
   repeated string column_names    = 3;
 }
@@ -152,7 +144,7 @@ message ScalarValue {
   // We need to store the type to handle the null case and make sure we have the
   // "correct" null value. This type takes precedence on the one of value below.
   // If they mismatch a null value will be used.
-  DataType data_type = 1;
+  carnotpb.DataType data_type = 1;
   oneof value {
     bool bool_value      = 2;
     int64 int64_value    = 3;
