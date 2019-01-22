@@ -6,9 +6,7 @@
 namespace pl {
 namespace carnot {
 namespace plan {
-
-// TODO(zasgar): Add tests for the nodes after adding test fixtures and class implementations.
-
+// TODO(zasgar): PL-215 Add tests after we do the test fixtures.
 }  // namespace plan
 }  // namespace carnot
 }  // namespace pl

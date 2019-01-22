@@ -90,12 +90,14 @@ message MemorySourceOperator {
   string name                     = 1;
   // The column indexes to fetch.
   repeated int64 column_idxs      = 2;
+  // The names for the columns.
+  repeated string column_names    = 3;
   // The types of the columns.
-  repeated DataType column_types  = 3;
+  repeated DataType column_types  = 4;
   // The start time (can be omitted if not time series).
-  google.protobuf.Int64Value start_time                = 4;
+  google.protobuf.Int64Value start_time                = 5;
   // The stop time (can be omitted if not time series).
-  google.protobuf.Int64Value stop_time                 = 5;
+  google.protobuf.Int64Value stop_time                 = 6;
 }
 
 // Writes to in-memory storage.
@@ -114,6 +116,7 @@ message MapOperator {
   // In order for columns to be copied they must be references by
   // the scalar expression.
   repeated ScalarExpression expressions = 1;
+  repeated string column_names          = 2;
 }
 
 // Aggregate does a group by the "group" Columns and computes
@@ -122,10 +125,14 @@ message MapOperator {
 message BlockingAggregateOperator {
   // The functions to execute for this aggregate.
   // Note that only agg funcs are valid here.
-  repeated ScalarFunc values = 1;
+  repeated ScalarFunc values  = 1;
   // The columns to use for grouping. For grouping involving a function
   // a map operation will need to be performed first.
-  repeated Column groups     = 2;
+  repeated Column groups      = 2;
+  // The names of the output groups.
+  repeated string group_names = 3;
+  // The names of values.
+  repeated string value_names = 4;
 }
 
 // Scalar expression is any single valued expression.

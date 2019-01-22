@@ -3,13 +3,21 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "src/carnot/plan/proto/plan.pb.h"
+#include "src/carnot/plan/scalar_expression.h"
 #include "src/utils/status.h"
+#include "src/utils/statusor.h"
 
 namespace pl {
 namespace carnot {
 namespace plan {
+
+// Forward declare to break deps.
+class CompilerState;
+class Schema;
+class Relation;
 
 /**
  * Operator is the pure virtual base class for logical plan nodes that perform
@@ -36,6 +44,9 @@ class Operator {
   // Prints out the debug to INFO log.
   void Debug() { LOG(INFO) << DebugString(); }
 
+  virtual StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
+                                            const std::vector<uint64_t> &input_ids) = 0;
+
  protected:
   Operator(int64_t id, planpb::OperatorType op_type) : id_(id), op_type_(op_type) {}
 
@@ -48,38 +59,57 @@ class Operator {
 class MemorySourceOperator : public Operator {
  public:
   explicit MemorySourceOperator(int64_t id) : Operator(id, planpb::MEMORY_SOURCE_OPERATOR) {}
-  virtual ~MemorySourceOperator() {}
-
+  ~MemorySourceOperator() override = default;
+  StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
+                                    const std::vector<uint64_t> &input_ids) override;
   Status Init(const planpb::MemorySourceOperator &pb);
   std::string DebugString() override;
+
+ private:
+  planpb::MemorySourceOperator pb_;
 };
 
 class MapOperator : public Operator {
  public:
   explicit MapOperator(int64_t id) : Operator(id, planpb::MAP_OPERATOR) {}
-  virtual ~MapOperator() {}
-
+  ~MapOperator() override = default;
+  StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
+                                    const std::vector<uint64_t> &input_ids) override;
   Status Init(const planpb::MapOperator &pb);
   std::string DebugString() override;
+
+ private:
+  std::vector<std::unique_ptr<ScalarExpression>> expressions_;
+  std::vector<std::string> column_names_;
+
+  planpb::MapOperator pb_;
 };
 
 class BlockingAggregateOperator : public Operator {
  public:
   explicit BlockingAggregateOperator(int64_t id)
       : Operator(id, planpb::BLOCKING_AGGREGATE_OPERATOR) {}
-  virtual ~BlockingAggregateOperator() {}
-
+  ~BlockingAggregateOperator() override = default;
+  StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
+                                    const std::vector<uint64_t> &input_ids) override;
   Status Init(const planpb::BlockingAggregateOperator &pb);
   std::string DebugString() override;
+
+ private:
+  planpb::BlockingAggregateOperator pb_;
 };
 
 class MemorySinkOperator : public Operator {
  public:
   explicit MemorySinkOperator(int64_t id) : Operator(id, planpb::MEMORY_SINK_OPERATOR) {}
-  virtual ~MemorySinkOperator() {}
-
+  ~MemorySinkOperator() override = default;
+  StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
+                                    const std::vector<uint64_t> &input_ids) override;
   Status Init(const planpb::MemorySinkOperator &pb);
   std::string DebugString() override;
+
+ private:
+  planpb::MemorySinkOperator pb_;
 };
 
 }  // namespace plan

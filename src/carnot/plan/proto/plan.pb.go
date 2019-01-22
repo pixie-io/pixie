@@ -13,6 +13,8 @@ import strconv "strconv"
 import strings "strings"
 import reflect "reflect"
 
+import encoding_binary "encoding/binary"
+
 import io "io"
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -52,7 +54,7 @@ var DataType_value = map[string]int32{
 }
 
 func (DataType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{0}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{0}
 }
 
 type OperatorType int32
@@ -81,7 +83,7 @@ var OperatorType_value = map[string]int32{
 }
 
 func (OperatorType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{1}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{1}
 }
 
 type Plan struct {
@@ -94,7 +96,7 @@ type Plan struct {
 func (m *Plan) Reset()      { *m = Plan{} }
 func (*Plan) ProtoMessage() {}
 func (*Plan) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{0}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{0}
 }
 func (m *Plan) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -148,7 +150,7 @@ type PlanFragment struct {
 func (m *PlanFragment) Reset()      { *m = PlanFragment{} }
 func (*PlanFragment) ProtoMessage() {}
 func (*PlanFragment) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{1}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{1}
 }
 func (m *PlanFragment) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -207,7 +209,7 @@ type DAG struct {
 func (m *DAG) Reset()      { *m = DAG{} }
 func (*DAG) ProtoMessage() {}
 func (*DAG) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{2}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{2}
 }
 func (m *DAG) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -253,7 +255,7 @@ type DAG_DAGNode struct {
 func (m *DAG_DAGNode) Reset()      { *m = DAG_DAGNode{} }
 func (*DAG_DAGNode) ProtoMessage() {}
 func (*DAG_DAGNode) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{2, 0}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{2, 0}
 }
 func (m *DAG_DAGNode) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -306,7 +308,7 @@ type PlanNode struct {
 func (m *PlanNode) Reset()      { *m = PlanNode{} }
 func (*PlanNode) ProtoMessage() {}
 func (*PlanNode) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{3}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{3}
 }
 func (m *PlanNode) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -364,7 +366,7 @@ type Operator struct {
 func (m *Operator) Reset()      { *m = Operator{} }
 func (*Operator) ProtoMessage() {}
 func (*Operator) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{4}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{4}
 }
 func (m *Operator) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -575,9 +577,10 @@ func _Operator_OneofSizer(msg proto.Message) (n int) {
 type MemorySourceOperator struct {
 	Name                 string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	ColumnIdxs           []int64           `protobuf:"varint,2,rep,packed,name=column_idxs,json=columnIdxs" json:"column_idxs,omitempty"`
-	ColumnTypes          []DataType        `protobuf:"varint,3,rep,packed,name=column_types,json=columnTypes,enum=pl.carnot.planpb.DataType" json:"column_types,omitempty"`
-	StartTime            *types.Int64Value `protobuf:"bytes,4,opt,name=start_time,json=startTime" json:"start_time,omitempty"`
-	StopTime             *types.Int64Value `protobuf:"bytes,5,opt,name=stop_time,json=stopTime" json:"stop_time,omitempty"`
+	ColumnNames          []string          `protobuf:"bytes,3,rep,name=column_names,json=columnNames" json:"column_names,omitempty"`
+	ColumnTypes          []DataType        `protobuf:"varint,4,rep,packed,name=column_types,json=columnTypes,enum=pl.carnot.planpb.DataType" json:"column_types,omitempty"`
+	StartTime            *types.Int64Value `protobuf:"bytes,5,opt,name=start_time,json=startTime" json:"start_time,omitempty"`
+	StopTime             *types.Int64Value `protobuf:"bytes,6,opt,name=stop_time,json=stopTime" json:"stop_time,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
 }
@@ -585,7 +588,7 @@ type MemorySourceOperator struct {
 func (m *MemorySourceOperator) Reset()      { *m = MemorySourceOperator{} }
 func (*MemorySourceOperator) ProtoMessage() {}
 func (*MemorySourceOperator) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{5}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{5}
 }
 func (m *MemorySourceOperator) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -628,6 +631,13 @@ func (m *MemorySourceOperator) GetColumnIdxs() []int64 {
 	return nil
 }
 
+func (m *MemorySourceOperator) GetColumnNames() []string {
+	if m != nil {
+		return m.ColumnNames
+	}
+	return nil
+}
+
 func (m *MemorySourceOperator) GetColumnTypes() []DataType {
 	if m != nil {
 		return m.ColumnTypes
@@ -660,7 +670,7 @@ type MemorySinkOperator struct {
 func (m *MemorySinkOperator) Reset()      { *m = MemorySinkOperator{} }
 func (*MemorySinkOperator) ProtoMessage() {}
 func (*MemorySinkOperator) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{6}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{6}
 }
 func (m *MemorySinkOperator) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -712,6 +722,7 @@ func (m *MemorySinkOperator) GetColumnNames() []string {
 
 type MapOperator struct {
 	Expressions          []*ScalarExpression `protobuf:"bytes,1,rep,name=expressions" json:"expressions,omitempty"`
+	ColumnNames          []string            `protobuf:"bytes,2,rep,name=column_names,json=columnNames" json:"column_names,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
 }
@@ -719,7 +730,7 @@ type MapOperator struct {
 func (m *MapOperator) Reset()      { *m = MapOperator{} }
 func (*MapOperator) ProtoMessage() {}
 func (*MapOperator) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{7}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{7}
 }
 func (m *MapOperator) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -755,9 +766,18 @@ func (m *MapOperator) GetExpressions() []*ScalarExpression {
 	return nil
 }
 
+func (m *MapOperator) GetColumnNames() []string {
+	if m != nil {
+		return m.ColumnNames
+	}
+	return nil
+}
+
 type BlockingAggregateOperator struct {
 	Values               []*ScalarFunc `protobuf:"bytes,1,rep,name=values" json:"values,omitempty"`
 	Groups               []*Column     `protobuf:"bytes,2,rep,name=groups" json:"groups,omitempty"`
+	GroupNames           []string      `protobuf:"bytes,3,rep,name=group_names,json=groupNames" json:"group_names,omitempty"`
+	ValueNames           []string      `protobuf:"bytes,4,rep,name=value_names,json=valueNames" json:"value_names,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
 }
@@ -765,7 +785,7 @@ type BlockingAggregateOperator struct {
 func (m *BlockingAggregateOperator) Reset()      { *m = BlockingAggregateOperator{} }
 func (*BlockingAggregateOperator) ProtoMessage() {}
 func (*BlockingAggregateOperator) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{8}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{8}
 }
 func (m *BlockingAggregateOperator) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -808,6 +828,20 @@ func (m *BlockingAggregateOperator) GetGroups() []*Column {
 	return nil
 }
 
+func (m *BlockingAggregateOperator) GetGroupNames() []string {
+	if m != nil {
+		return m.GroupNames
+	}
+	return nil
+}
+
+func (m *BlockingAggregateOperator) GetValueNames() []string {
+	if m != nil {
+		return m.ValueNames
+	}
+	return nil
+}
+
 type ScalarExpression struct {
 	// Types that are valid to be assigned to Value:
 	//	*ScalarExpression_Constant
@@ -821,7 +855,7 @@ type ScalarExpression struct {
 func (m *ScalarExpression) Reset()      { *m = ScalarExpression{} }
 func (*ScalarExpression) ProtoMessage() {}
 func (*ScalarExpression) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{9}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{9}
 }
 func (m *ScalarExpression) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -993,6 +1027,7 @@ func _ScalarExpression_OneofSizer(msg proto.Message) (n int) {
 }
 
 type ScalarValue struct {
+	DataType DataType `protobuf:"varint,1,opt,name=data_type,json=dataType,proto3,enum=pl.carnot.planpb.DataType" json:"data_type,omitempty"`
 	// Types that are valid to be assigned to Value:
 	//	*ScalarValue_BoolValue
 	//	*ScalarValue_Int64Value
@@ -1006,7 +1041,7 @@ type ScalarValue struct {
 func (m *ScalarValue) Reset()      { *m = ScalarValue{} }
 func (*ScalarValue) ProtoMessage() {}
 func (*ScalarValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{10}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{10}
 }
 func (m *ScalarValue) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1043,16 +1078,16 @@ type isScalarValue_Value interface {
 }
 
 type ScalarValue_BoolValue struct {
-	BoolValue *types.BoolValue `protobuf:"bytes,1,opt,name=bool_value,json=boolValue,oneof"`
+	BoolValue bool `protobuf:"varint,2,opt,name=bool_value,json=boolValue,proto3,oneof"`
 }
 type ScalarValue_Int64Value struct {
-	Int64Value *types.Int64Value `protobuf:"bytes,2,opt,name=int64_value,json=int64Value,oneof"`
+	Int64Value int64 `protobuf:"varint,3,opt,name=int64_value,json=int64Value,proto3,oneof"`
 }
 type ScalarValue_Float64Value struct {
-	Float64Value *types.DoubleValue `protobuf:"bytes,3,opt,name=float64_value,json=float64Value,oneof"`
+	Float64Value float64 `protobuf:"fixed64,4,opt,name=float64_value,json=float64Value,proto3,oneof"`
 }
 type ScalarValue_StringValue struct {
-	StringValue *types.StringValue `protobuf:"bytes,4,opt,name=string_value,json=stringValue,oneof"`
+	StringValue string `protobuf:"bytes,5,opt,name=string_value,json=stringValue,proto3,oneof"`
 }
 
 func (*ScalarValue_BoolValue) isScalarValue_Value()    {}
@@ -1067,32 +1102,39 @@ func (m *ScalarValue) GetValue() isScalarValue_Value {
 	return nil
 }
 
-func (m *ScalarValue) BoolValue() *types.BoolValue {
+func (m *ScalarValue) GetDataType() DataType {
+	if m != nil {
+		return m.DataType
+	}
+	return DATA_TYPE_UNKNOWN
+}
+
+func (m *ScalarValue) GetBoolValue() bool {
 	if x, ok := m.GetValue().(*ScalarValue_BoolValue); ok {
 		return x.BoolValue
 	}
-	return nil
+	return false
 }
 
-func (m *ScalarValue) Int64Value() *types.Int64Value {
+func (m *ScalarValue) GetInt64Value() int64 {
 	if x, ok := m.GetValue().(*ScalarValue_Int64Value); ok {
 		return x.Int64Value
 	}
-	return nil
+	return 0
 }
 
-func (m *ScalarValue) Float64Value() *types.DoubleValue {
+func (m *ScalarValue) GetFloat64Value() float64 {
 	if x, ok := m.GetValue().(*ScalarValue_Float64Value); ok {
 		return x.Float64Value
 	}
-	return nil
+	return 0
 }
 
-func (m *ScalarValue) StringValue() *types.StringValue {
+func (m *ScalarValue) GetStringValue() string {
 	if x, ok := m.GetValue().(*ScalarValue_StringValue); ok {
 		return x.StringValue
 	}
-	return nil
+	return ""
 }
 
 // XXX_OneofFuncs is for the internal use of the proto package.
@@ -1110,25 +1152,21 @@ func _ScalarValue_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 	// value
 	switch x := m.Value.(type) {
 	case *ScalarValue_BoolValue:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.BoolValue); err != nil {
-			return err
+		t := uint64(0)
+		if x.BoolValue {
+			t = 1
 		}
+		_ = b.EncodeVarint(2<<3 | proto.WireVarint)
+		_ = b.EncodeVarint(t)
 	case *ScalarValue_Int64Value:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Int64Value); err != nil {
-			return err
-		}
+		_ = b.EncodeVarint(3<<3 | proto.WireVarint)
+		_ = b.EncodeVarint(uint64(x.Int64Value))
 	case *ScalarValue_Float64Value:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Float64Value); err != nil {
-			return err
-		}
+		_ = b.EncodeVarint(4<<3 | proto.WireFixed64)
+		_ = b.EncodeFixed64(math.Float64bits(x.Float64Value))
 	case *ScalarValue_StringValue:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.StringValue); err != nil {
-			return err
-		}
+		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
+		_ = b.EncodeStringBytes(x.StringValue)
 	case nil:
 	default:
 		return fmt.Errorf("ScalarValue.Value has unexpected type %T", x)
@@ -1139,37 +1177,33 @@ func _ScalarValue_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 func _ScalarValue_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
 	m := msg.(*ScalarValue)
 	switch tag {
-	case 1: // value.bool_value
-		if wire != proto.WireBytes {
+	case 2: // value.bool_value
+		if wire != proto.WireVarint {
 			return true, proto.ErrInternalBadWireType
 		}
-		msg := new(types.BoolValue)
-		err := b.DecodeMessage(msg)
-		m.Value = &ScalarValue_BoolValue{msg}
+		x, err := b.DecodeVarint()
+		m.Value = &ScalarValue_BoolValue{x != 0}
 		return true, err
-	case 2: // value.int64_value
-		if wire != proto.WireBytes {
+	case 3: // value.int64_value
+		if wire != proto.WireVarint {
 			return true, proto.ErrInternalBadWireType
 		}
-		msg := new(types.Int64Value)
-		err := b.DecodeMessage(msg)
-		m.Value = &ScalarValue_Int64Value{msg}
+		x, err := b.DecodeVarint()
+		m.Value = &ScalarValue_Int64Value{int64(x)}
 		return true, err
-	case 3: // value.float64_value
-		if wire != proto.WireBytes {
+	case 4: // value.float64_value
+		if wire != proto.WireFixed64 {
 			return true, proto.ErrInternalBadWireType
 		}
-		msg := new(types.DoubleValue)
-		err := b.DecodeMessage(msg)
-		m.Value = &ScalarValue_Float64Value{msg}
+		x, err := b.DecodeFixed64()
+		m.Value = &ScalarValue_Float64Value{math.Float64frombits(x)}
 		return true, err
-	case 4: // value.string_value
+	case 5: // value.string_value
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
-		msg := new(types.StringValue)
-		err := b.DecodeMessage(msg)
-		m.Value = &ScalarValue_StringValue{msg}
+		x, err := b.DecodeStringBytes()
+		m.Value = &ScalarValue_StringValue{x}
 		return true, err
 	default:
 		return false, nil
@@ -1181,25 +1215,18 @@ func _ScalarValue_OneofSizer(msg proto.Message) (n int) {
 	// value
 	switch x := m.Value.(type) {
 	case *ScalarValue_BoolValue:
-		s := proto.Size(x.BoolValue)
 		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
+		n += 1
 	case *ScalarValue_Int64Value:
-		s := proto.Size(x.Int64Value)
 		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
+		n += proto.SizeVarint(uint64(x.Int64Value))
 	case *ScalarValue_Float64Value:
-		s := proto.Size(x.Float64Value)
 		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
+		n += 8
 	case *ScalarValue_StringValue:
-		s := proto.Size(x.StringValue)
 		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
+		n += proto.SizeVarint(uint64(len(x.StringValue)))
+		n += len(x.StringValue)
 	case nil:
 	default:
 		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
@@ -1218,7 +1245,7 @@ type ScalarFunc struct {
 func (m *ScalarFunc) Reset()      { *m = ScalarFunc{} }
 func (*ScalarFunc) ProtoMessage() {}
 func (*ScalarFunc) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{11}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{11}
 }
 func (m *ScalarFunc) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1278,7 +1305,7 @@ type Column struct {
 func (m *Column) Reset()      { *m = Column{} }
 func (*Column) ProtoMessage() {}
 func (*Column) Descriptor() ([]byte, []int) {
-	return fileDescriptor_plan_76e48aa18807f2d6, []int{12}
+	return fileDescriptor_plan_a17b21f46346fa61, []int{12}
 }
 func (m *Column) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1667,6 +1694,14 @@ func (this *MemorySourceOperator) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if len(this.ColumnNames) != len(that1.ColumnNames) {
+		return false
+	}
+	for i := range this.ColumnNames {
+		if this.ColumnNames[i] != that1.ColumnNames[i] {
+			return false
+		}
+	}
 	if len(this.ColumnTypes) != len(that1.ColumnTypes) {
 		return false
 	}
@@ -1750,6 +1785,14 @@ func (this *MapOperator) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if len(this.ColumnNames) != len(that1.ColumnNames) {
+		return false
+	}
+	for i := range this.ColumnNames {
+		if this.ColumnNames[i] != that1.ColumnNames[i] {
+			return false
+		}
+	}
 	return true
 }
 func (this *BlockingAggregateOperator) Equal(that interface{}) bool {
@@ -1784,6 +1827,22 @@ func (this *BlockingAggregateOperator) Equal(that interface{}) bool {
 	}
 	for i := range this.Groups {
 		if !this.Groups[i].Equal(that1.Groups[i]) {
+			return false
+		}
+	}
+	if len(this.GroupNames) != len(that1.GroupNames) {
+		return false
+	}
+	for i := range this.GroupNames {
+		if this.GroupNames[i] != that1.GroupNames[i] {
+			return false
+		}
+	}
+	if len(this.ValueNames) != len(that1.ValueNames) {
+		return false
+	}
+	for i := range this.ValueNames {
+		if this.ValueNames[i] != that1.ValueNames[i] {
 			return false
 		}
 	}
@@ -1910,6 +1969,9 @@ func (this *ScalarValue) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
+	if this.DataType != that1.DataType {
+		return false
+	}
 	if that1.Value == nil {
 		if this.Value != nil {
 			return false
@@ -1940,7 +2002,7 @@ func (this *ScalarValue_BoolValue) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.BoolValue.Equal(that1.BoolValue) {
+	if this.BoolValue != that1.BoolValue {
 		return false
 	}
 	return true
@@ -1964,7 +2026,7 @@ func (this *ScalarValue_Int64Value) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.Int64Value.Equal(that1.Int64Value) {
+	if this.Int64Value != that1.Int64Value {
 		return false
 	}
 	return true
@@ -1988,7 +2050,7 @@ func (this *ScalarValue_Float64Value) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.Float64Value.Equal(that1.Float64Value) {
+	if this.Float64Value != that1.Float64Value {
 		return false
 	}
 	return true
@@ -2012,7 +2074,7 @@ func (this *ScalarValue_StringValue) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.StringValue.Equal(that1.StringValue) {
+	if this.StringValue != that1.StringValue {
 		return false
 	}
 	return true
@@ -2200,10 +2262,11 @@ func (this *MemorySourceOperator) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 9)
+	s := make([]string, 0, 10)
 	s = append(s, "&planpb.MemorySourceOperator{")
 	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
 	s = append(s, "ColumnIdxs: "+fmt.Sprintf("%#v", this.ColumnIdxs)+",\n")
+	s = append(s, "ColumnNames: "+fmt.Sprintf("%#v", this.ColumnNames)+",\n")
 	s = append(s, "ColumnTypes: "+fmt.Sprintf("%#v", this.ColumnTypes)+",\n")
 	if this.StartTime != nil {
 		s = append(s, "StartTime: "+fmt.Sprintf("%#v", this.StartTime)+",\n")
@@ -2230,11 +2293,12 @@ func (this *MapOperator) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 5)
+	s := make([]string, 0, 6)
 	s = append(s, "&planpb.MapOperator{")
 	if this.Expressions != nil {
 		s = append(s, "Expressions: "+fmt.Sprintf("%#v", this.Expressions)+",\n")
 	}
+	s = append(s, "ColumnNames: "+fmt.Sprintf("%#v", this.ColumnNames)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2242,7 +2306,7 @@ func (this *BlockingAggregateOperator) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 8)
 	s = append(s, "&planpb.BlockingAggregateOperator{")
 	if this.Values != nil {
 		s = append(s, "Values: "+fmt.Sprintf("%#v", this.Values)+",\n")
@@ -2250,6 +2314,8 @@ func (this *BlockingAggregateOperator) GoString() string {
 	if this.Groups != nil {
 		s = append(s, "Groups: "+fmt.Sprintf("%#v", this.Groups)+",\n")
 	}
+	s = append(s, "GroupNames: "+fmt.Sprintf("%#v", this.GroupNames)+",\n")
+	s = append(s, "ValueNames: "+fmt.Sprintf("%#v", this.ValueNames)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2293,8 +2359,9 @@ func (this *ScalarValue) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 8)
+	s := make([]string, 0, 9)
 	s = append(s, "&planpb.ScalarValue{")
+	s = append(s, "DataType: "+fmt.Sprintf("%#v", this.DataType)+",\n")
 	if this.Value != nil {
 		s = append(s, "Value: "+fmt.Sprintf("%#v", this.Value)+",\n")
 	}
@@ -2681,6 +2748,21 @@ func (m *MemorySourceOperator) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintPlan(dAtA, i, uint64(j11))
 		i += copy(dAtA[i:], dAtA12[:j11])
 	}
+	if len(m.ColumnNames) > 0 {
+		for _, s := range m.ColumnNames {
+			dAtA[i] = 0x1a
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
+	}
 	if len(m.ColumnTypes) > 0 {
 		dAtA14 := make([]byte, len(m.ColumnTypes)*10)
 		var j13 int
@@ -2693,13 +2775,13 @@ func (m *MemorySourceOperator) MarshalTo(dAtA []byte) (int, error) {
 			dAtA14[j13] = uint8(num)
 			j13++
 		}
-		dAtA[i] = 0x1a
+		dAtA[i] = 0x22
 		i++
 		i = encodeVarintPlan(dAtA, i, uint64(j13))
 		i += copy(dAtA[i:], dAtA14[:j13])
 	}
 	if m.StartTime != nil {
-		dAtA[i] = 0x22
+		dAtA[i] = 0x2a
 		i++
 		i = encodeVarintPlan(dAtA, i, uint64(m.StartTime.Size()))
 		n15, err := m.StartTime.MarshalTo(dAtA[i:])
@@ -2709,7 +2791,7 @@ func (m *MemorySourceOperator) MarshalTo(dAtA []byte) (int, error) {
 		i += n15
 	}
 	if m.StopTime != nil {
-		dAtA[i] = 0x2a
+		dAtA[i] = 0x32
 		i++
 		i = encodeVarintPlan(dAtA, i, uint64(m.StopTime.Size()))
 		n16, err := m.StopTime.MarshalTo(dAtA[i:])
@@ -2804,6 +2886,21 @@ func (m *MapOperator) MarshalTo(dAtA []byte) (int, error) {
 			i += n
 		}
 	}
+	if len(m.ColumnNames) > 0 {
+		for _, s := range m.ColumnNames {
+			dAtA[i] = 0x12
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
+	}
 	return i, nil
 }
 
@@ -2844,6 +2941,36 @@ func (m *BlockingAggregateOperator) MarshalTo(dAtA []byte) (int, error) {
 				return 0, err
 			}
 			i += n
+		}
+	}
+	if len(m.GroupNames) > 0 {
+		for _, s := range m.GroupNames {
+			dAtA[i] = 0x1a
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
+		}
+	}
+	if len(m.ValueNames) > 0 {
+		for _, s := range m.ValueNames {
+			dAtA[i] = 0x22
+			i++
+			l = len(s)
+			for l >= 1<<7 {
+				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
+				l >>= 7
+				i++
+			}
+			dAtA[i] = uint8(l)
+			i++
+			i += copy(dAtA[i:], s)
 		}
 	}
 	return i, nil
@@ -2931,6 +3058,11 @@ func (m *ScalarValue) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if m.DataType != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintPlan(dAtA, i, uint64(m.DataType))
+	}
 	if m.Value != nil {
 		nn23, err := m.Value.MarshalTo(dAtA[i:])
 		if err != nil {
@@ -2943,58 +3075,37 @@ func (m *ScalarValue) MarshalTo(dAtA []byte) (int, error) {
 
 func (m *ScalarValue_BoolValue) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
-	if m.BoolValue != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.BoolValue.Size()))
-		n24, err := m.BoolValue.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n24
+	dAtA[i] = 0x10
+	i++
+	if m.BoolValue {
+		dAtA[i] = 1
+	} else {
+		dAtA[i] = 0
 	}
+	i++
 	return i, nil
 }
 func (m *ScalarValue_Int64Value) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
-	if m.Int64Value != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Int64Value.Size()))
-		n25, err := m.Int64Value.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n25
-	}
+	dAtA[i] = 0x18
+	i++
+	i = encodeVarintPlan(dAtA, i, uint64(m.Int64Value))
 	return i, nil
 }
 func (m *ScalarValue_Float64Value) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
-	if m.Float64Value != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.Float64Value.Size()))
-		n26, err := m.Float64Value.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n26
-	}
+	dAtA[i] = 0x21
+	i++
+	encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(math.Float64bits(float64(m.Float64Value))))
+	i += 8
 	return i, nil
 }
 func (m *ScalarValue_StringValue) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
-	if m.StringValue != nil {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintPlan(dAtA, i, uint64(m.StringValue.Size()))
-		n27, err := m.StringValue.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n27
-	}
+	dAtA[i] = 0x2a
+	i++
+	i = encodeVarintPlan(dAtA, i, uint64(len(m.StringValue)))
+	i += copy(dAtA[i:], m.StringValue)
 	return i, nil
 }
 func (m *ScalarFunc) Marshal() (dAtA []byte, err error) {
@@ -3220,6 +3331,12 @@ func (m *MemorySourceOperator) Size() (n int) {
 		}
 		n += 1 + sovPlan(uint64(l)) + l
 	}
+	if len(m.ColumnNames) > 0 {
+		for _, s := range m.ColumnNames {
+			l = len(s)
+			n += 1 + l + sovPlan(uint64(l))
+		}
+	}
 	if len(m.ColumnTypes) > 0 {
 		l = 0
 		for _, e := range m.ColumnTypes {
@@ -3270,6 +3387,12 @@ func (m *MapOperator) Size() (n int) {
 			n += 1 + l + sovPlan(uint64(l))
 		}
 	}
+	if len(m.ColumnNames) > 0 {
+		for _, s := range m.ColumnNames {
+			l = len(s)
+			n += 1 + l + sovPlan(uint64(l))
+		}
+	}
 	return n
 }
 
@@ -3285,6 +3408,18 @@ func (m *BlockingAggregateOperator) Size() (n int) {
 	if len(m.Groups) > 0 {
 		for _, e := range m.Groups {
 			l = e.Size()
+			n += 1 + l + sovPlan(uint64(l))
+		}
+	}
+	if len(m.GroupNames) > 0 {
+		for _, s := range m.GroupNames {
+			l = len(s)
+			n += 1 + l + sovPlan(uint64(l))
+		}
+	}
+	if len(m.ValueNames) > 0 {
+		for _, s := range m.ValueNames {
+			l = len(s)
 			n += 1 + l + sovPlan(uint64(l))
 		}
 	}
@@ -3330,6 +3465,9 @@ func (m *ScalarExpression_Func) Size() (n int) {
 func (m *ScalarValue) Size() (n int) {
 	var l int
 	_ = l
+	if m.DataType != 0 {
+		n += 1 + sovPlan(uint64(m.DataType))
+	}
 	if m.Value != nil {
 		n += m.Value.Size()
 	}
@@ -3339,37 +3477,26 @@ func (m *ScalarValue) Size() (n int) {
 func (m *ScalarValue_BoolValue) Size() (n int) {
 	var l int
 	_ = l
-	if m.BoolValue != nil {
-		l = m.BoolValue.Size()
-		n += 1 + l + sovPlan(uint64(l))
-	}
+	n += 2
 	return n
 }
 func (m *ScalarValue_Int64Value) Size() (n int) {
 	var l int
 	_ = l
-	if m.Int64Value != nil {
-		l = m.Int64Value.Size()
-		n += 1 + l + sovPlan(uint64(l))
-	}
+	n += 1 + sovPlan(uint64(m.Int64Value))
 	return n
 }
 func (m *ScalarValue_Float64Value) Size() (n int) {
 	var l int
 	_ = l
-	if m.Float64Value != nil {
-		l = m.Float64Value.Size()
-		n += 1 + l + sovPlan(uint64(l))
-	}
+	n += 9
 	return n
 }
 func (m *ScalarValue_StringValue) Size() (n int) {
 	var l int
 	_ = l
-	if m.StringValue != nil {
-		l = m.StringValue.Size()
-		n += 1 + l + sovPlan(uint64(l))
-	}
+	l = len(m.StringValue)
+	n += 1 + l + sovPlan(uint64(l))
 	return n
 }
 func (m *ScalarFunc) Size() (n int) {
@@ -3532,6 +3659,7 @@ func (this *MemorySourceOperator) String() string {
 	s := strings.Join([]string{`&MemorySourceOperator{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`ColumnIdxs:` + fmt.Sprintf("%v", this.ColumnIdxs) + `,`,
+		`ColumnNames:` + fmt.Sprintf("%v", this.ColumnNames) + `,`,
 		`ColumnTypes:` + fmt.Sprintf("%v", this.ColumnTypes) + `,`,
 		`StartTime:` + strings.Replace(fmt.Sprintf("%v", this.StartTime), "Int64Value", "types.Int64Value", 1) + `,`,
 		`StopTime:` + strings.Replace(fmt.Sprintf("%v", this.StopTime), "Int64Value", "types.Int64Value", 1) + `,`,
@@ -3557,6 +3685,7 @@ func (this *MapOperator) String() string {
 	}
 	s := strings.Join([]string{`&MapOperator{`,
 		`Expressions:` + strings.Replace(fmt.Sprintf("%v", this.Expressions), "ScalarExpression", "ScalarExpression", 1) + `,`,
+		`ColumnNames:` + fmt.Sprintf("%v", this.ColumnNames) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3568,6 +3697,8 @@ func (this *BlockingAggregateOperator) String() string {
 	s := strings.Join([]string{`&BlockingAggregateOperator{`,
 		`Values:` + strings.Replace(fmt.Sprintf("%v", this.Values), "ScalarFunc", "ScalarFunc", 1) + `,`,
 		`Groups:` + strings.Replace(fmt.Sprintf("%v", this.Groups), "Column", "Column", 1) + `,`,
+		`GroupNames:` + fmt.Sprintf("%v", this.GroupNames) + `,`,
+		`ValueNames:` + fmt.Sprintf("%v", this.ValueNames) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3617,6 +3748,7 @@ func (this *ScalarValue) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&ScalarValue{`,
+		`DataType:` + fmt.Sprintf("%v", this.DataType) + `,`,
 		`Value:` + fmt.Sprintf("%v", this.Value) + `,`,
 		`}`,
 	}, "")
@@ -3627,7 +3759,7 @@ func (this *ScalarValue_BoolValue) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&ScalarValue_BoolValue{`,
-		`BoolValue:` + strings.Replace(fmt.Sprintf("%v", this.BoolValue), "BoolValue", "types.BoolValue", 1) + `,`,
+		`BoolValue:` + fmt.Sprintf("%v", this.BoolValue) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3637,7 +3769,7 @@ func (this *ScalarValue_Int64Value) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&ScalarValue_Int64Value{`,
-		`Int64Value:` + strings.Replace(fmt.Sprintf("%v", this.Int64Value), "Int64Value", "types.Int64Value", 1) + `,`,
+		`Int64Value:` + fmt.Sprintf("%v", this.Int64Value) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3647,7 +3779,7 @@ func (this *ScalarValue_Float64Value) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&ScalarValue_Float64Value{`,
-		`Float64Value:` + strings.Replace(fmt.Sprintf("%v", this.Float64Value), "DoubleValue", "types.DoubleValue", 1) + `,`,
+		`Float64Value:` + fmt.Sprintf("%v", this.Float64Value) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3657,7 +3789,7 @@ func (this *ScalarValue_StringValue) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&ScalarValue_StringValue{`,
-		`StringValue:` + strings.Replace(fmt.Sprintf("%v", this.StringValue), "StringValue", "types.StringValue", 1) + `,`,
+		`StringValue:` + fmt.Sprintf("%v", this.StringValue) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4572,6 +4704,35 @@ func (m *MemorySourceOperator) Unmarshal(dAtA []byte) error {
 				return fmt.Errorf("proto: wrong wireType = %d for field ColumnIdxs", wireType)
 			}
 		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ColumnNames", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ColumnNames = append(m.ColumnNames, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 4:
 			if wireType == 0 {
 				var v DataType
 				for shift := uint(0); ; shift += 7 {
@@ -4633,7 +4794,7 @@ func (m *MemorySourceOperator) Unmarshal(dAtA []byte) error {
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field ColumnTypes", wireType)
 			}
-		case 4:
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field StartTime", wireType)
 			}
@@ -4666,7 +4827,7 @@ func (m *MemorySourceOperator) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 5:
+		case 6:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field StopTime", wireType)
 			}
@@ -4950,6 +5111,35 @@ func (m *MapOperator) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ColumnNames", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ColumnNames = append(m.ColumnNames, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipPlan(dAtA[iNdEx:])
@@ -5061,6 +5251,64 @@ func (m *BlockingAggregateOperator) Unmarshal(dAtA []byte) error {
 			if err := m.Groups[len(m.Groups)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field GroupNames", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.GroupNames = append(m.GroupNames, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValueNames", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPlan
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ValueNames = append(m.ValueNames, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -5259,10 +5507,29 @@ func (m *ScalarValue) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 2 {
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DataType", wireType)
+			}
+			m.DataType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPlan
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DataType |= (DataType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field BoolValue", wireType)
 			}
-			var msglen int
+			var v int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowPlan
@@ -5272,29 +5539,18 @@ func (m *ScalarValue) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				v |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
-				return ErrInvalidLengthPlan
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &types.BoolValue{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Value = &ScalarValue_BoolValue{v}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
+			b := bool(v != 0)
+			m.Value = &ScalarValue_BoolValue{b}
+		case 3:
+			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Int64Value", wireType)
 			}
-			var msglen int
+			var v int64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowPlan
@@ -5304,61 +5560,28 @@ func (m *ScalarValue) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				v |= (int64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthPlan
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &types.Int64Value{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
 			}
 			m.Value = &ScalarValue_Int64Value{v}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
+		case 4:
+			if wireType != 1 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Float64Value", wireType)
 			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPlan
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthPlan
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
+			var v uint64
+			if (iNdEx + 8) > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &types.DoubleValue{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Value = &ScalarValue_Float64Value{v}
-			iNdEx = postIndex
-		case 4:
+			v = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
+			iNdEx += 8
+			m.Value = &ScalarValue_Float64Value{float64(math.Float64frombits(v))}
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field StringValue", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowPlan
@@ -5368,23 +5591,20 @@ func (m *ScalarValue) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				stringLen |= (uint64(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthPlan
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &types.StringValue{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Value = &ScalarValue_StringValue{v}
+			m.Value = &ScalarValue_StringValue{string(dAtA[iNdEx:postIndex])}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -5742,77 +5962,80 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("src/carnot/plan/proto/plan.proto", fileDescriptor_plan_76e48aa18807f2d6)
+	proto.RegisterFile("src/carnot/plan/proto/plan.proto", fileDescriptor_plan_a17b21f46346fa61)
 }
 
-var fileDescriptor_plan_76e48aa18807f2d6 = []byte{
-	// 1088 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x55, 0xcd, 0x6e, 0xdb, 0x46,
-	0x17, 0x15, 0x29, 0x4a, 0x96, 0x2e, 0x95, 0x44, 0x19, 0xd8, 0x1f, 0xfc, 0xf3, 0x85, 0x75, 0x89,
-	0xa2, 0x0d, 0x5c, 0x40, 0x0e, 0x1c, 0xc3, 0x2d, 0x9c, 0xb6, 0x00, 0x65, 0xfd, 0x58, 0xb0, 0x2d,
-	0x1a, 0x23, 0xb9, 0x45, 0xba, 0x21, 0x28, 0x71, 0x4c, 0x10, 0x26, 0x39, 0x04, 0x49, 0xa5, 0xf6,
-	0x2e, 0x40, 0x77, 0x5d, 0x75, 0x51, 0x74, 0xd3, 0x17, 0xc8, 0x03, 0xf4, 0x01, 0xba, 0xec, 0xd2,
-	0xcb, 0x2e, 0x6b, 0x75, 0x93, 0x55, 0x91, 0x47, 0x28, 0x66, 0x48, 0x5a, 0x82, 0x25, 0xc5, 0xed,
-	0xc2, 0xf0, 0xcc, 0x9d, 0x73, 0xce, 0xdc, 0x7b, 0xe6, 0x5e, 0x0a, 0x36, 0xa3, 0x70, 0xb8, 0x3d,
-	0x34, 0x43, 0x9f, 0xc6, 0xdb, 0x81, 0x6b, 0xfa, 0xdb, 0x41, 0x48, 0x63, 0xca, 0x97, 0x35, 0xbe,
-	0x44, 0xd5, 0xc0, 0xad, 0x25, 0x80, 0x1a, 0x8b, 0x06, 0x83, 0x75, 0xc5, 0xa6, 0xd4, 0x76, 0x49,
-	0x02, 0x1d, 0x8c, 0xce, 0xb7, 0xbf, 0x0b, 0xcd, 0x20, 0x20, 0x61, 0x94, 0x30, 0x54, 0x0f, 0xa4,
-	0x53, 0xd7, 0xf4, 0xd1, 0x27, 0x90, 0xb7, 0x4c, 0x7b, 0x55, 0xd8, 0x14, 0x9e, 0xca, 0x3b, 0x2b,
-	0xb5, 0xbb, 0x3a, 0xb5, 0x86, 0xd6, 0xc6, 0x0c, 0x81, 0xbe, 0x80, 0xf2, 0x79, 0x68, 0xda, 0x1e,
-	0xf1, 0xe3, 0x68, 0x55, 0xdc, 0xcc, 0x3f, 0x95, 0x77, 0x94, 0x59, 0x38, 0xd3, 0x6c, 0xa5, 0x30,
-	0x3c, 0x21, 0xa8, 0x57, 0x50, 0x99, 0x3e, 0x42, 0x0f, 0x41, 0x74, 0x2c, 0x7e, 0xab, 0x84, 0x45,
-	0xc7, 0xca, 0xd2, 0x10, 0xef, 0x4d, 0xe3, 0x19, 0x14, 0x7c, 0x6a, 0x91, 0x68, 0x35, 0xcf, 0x53,
-	0x58, 0x9f, 0x9f, 0x42, 0x97, 0x5a, 0x04, 0x27, 0x40, 0xf5, 0x15, 0xe4, 0x1b, 0x5a, 0x1b, 0x3d,
-	0xcf, 0x88, 0x02, 0x27, 0x3e, 0x99, 0x7b, 0x07, 0xfb, 0x9b, 0xe2, 0xae, 0xef, 0xc3, 0x52, 0x1a,
-	0x99, 0xc9, 0xf8, 0x03, 0x90, 0x23, 0x1a, 0xc6, 0xc4, 0x32, 0x2c, 0x12, 0x24, 0x8e, 0x48, 0x18,
-	0x92, 0x50, 0x83, 0x04, 0x91, 0xda, 0x82, 0x52, 0x96, 0xca, 0x0c, 0x79, 0x0b, 0x44, 0x1a, 0xa4,
-	0xd5, 0xce, 0x29, 0x41, 0x0f, 0x48, 0x68, 0xc6, 0x34, 0xc4, 0x22, 0x0d, 0xd4, 0xbf, 0x45, 0x28,
-	0x65, 0x01, 0xf4, 0x19, 0x2c, 0xd1, 0xc0, 0x88, 0xaf, 0x02, 0xc2, 0xd5, 0x1e, 0xce, 0x7b, 0x83,
-	0x0c, 0xdc, 0xbf, 0x0a, 0x08, 0x2e, 0xd2, 0x80, 0xfd, 0x47, 0xc7, 0xf0, 0xc0, 0x23, 0x9e, 0x11,
-	0xd1, 0x51, 0x38, 0x24, 0xc6, 0xed, 0xe5, 0x1f, 0xcf, 0xd2, 0x4f, 0x88, 0x47, 0xc3, 0xab, 0x1e,
-	0x07, 0x66, 0x52, 0x87, 0x39, 0x2c, 0x7b, 0xc4, 0xcb, 0x82, 0x68, 0x0f, 0x8a, 0x9e, 0x19, 0x30,
-	0x99, 0x3c, 0x97, 0x99, 0xe3, 0xe6, 0x89, 0x19, 0x4c, 0xb1, 0x0b, 0x1e, 0xdb, 0xa2, 0x33, 0x78,
-	0x34, 0x70, 0xe9, 0xf0, 0xc2, 0xf1, 0x6d, 0xc3, 0xb4, 0x6d, 0x26, 0x20, 0x71, 0x81, 0x4f, 0x67,
-	0x05, 0xea, 0x29, 0x50, 0xb3, 0xed, 0x90, 0xd8, 0x66, 0x3c, 0x9d, 0xcc, 0x83, 0xc1, 0xe4, 0x50,
-	0x0f, 0x50, 0x0b, 0x64, 0x5e, 0x9c, 0xe3, 0x5f, 0x30, 0xc9, 0x02, 0x97, 0xfc, 0x68, 0x61, 0x69,
-	0x8e, 0x7f, 0x31, 0xa5, 0x55, 0x66, 0x85, 0xf1, 0x50, 0x5d, 0x62, 0xcf, 0xa2, 0xbe, 0x16, 0x61,
-	0x79, 0x9e, 0x09, 0x08, 0x81, 0xe4, 0x9b, 0x5e, 0xe2, 0x7c, 0x19, 0xf3, 0x35, 0x6b, 0x83, 0x21,
-	0x75, 0x47, 0x9e, 0x6f, 0x38, 0xd6, 0x65, 0xd2, 0x06, 0x79, 0x0c, 0x49, 0xa8, 0x63, 0x5d, 0x46,
-	0xe8, 0x4b, 0xa8, 0xa4, 0x00, 0xf6, 0x6a, 0x49, 0xdf, 0x3e, 0x9c, 0xf7, 0xe8, 0x0d, 0x33, 0x36,
-	0xf9, 0x93, 0xa5, 0x82, 0x6c, 0x1d, 0xa1, 0x7d, 0x80, 0x28, 0x36, 0xc3, 0xd8, 0x88, 0x1d, 0x8f,
-	0xa4, 0x66, 0x6d, 0xd4, 0x92, 0xe1, 0xae, 0x65, 0xc3, 0x5d, 0xeb, 0xf8, 0xf1, 0xde, 0xee, 0xd7,
-	0xa6, 0x3b, 0x22, 0xb8, 0xcc, 0xe1, 0x7d, 0xc7, 0x23, 0xe8, 0x73, 0x28, 0x47, 0x31, 0x6b, 0x17,
-	0x46, 0x2d, 0xdc, 0x4f, 0x2d, 0x31, 0x34, 0x63, 0xaa, 0x3f, 0x08, 0x80, 0x66, 0xcd, 0x9a, 0x6b,
-	0xc0, 0xdd, 0xfa, 0xc4, 0xff, 0x56, 0xdf, 0x87, 0xb7, 0x74, 0xa6, 0x96, 0xd8, 0x53, 0xce, 0x20,
-	0x5d, 0x16, 0x52, 0x7b, 0x20, 0x4f, 0x35, 0x13, 0x6a, 0x80, 0x4c, 0x2e, 0x83, 0x90, 0x44, 0x91,
-	0x43, 0xfd, 0x6c, 0x9c, 0xd5, 0xd9, 0xfb, 0x7a, 0x43, 0xd3, 0x35, 0xc3, 0xe6, 0x2d, 0x14, 0x4f,
-	0xd3, 0xd4, 0xef, 0x05, 0x58, 0x5b, 0xd8, 0x61, 0x68, 0x17, 0x8a, 0xaf, 0x98, 0x25, 0x99, 0xfc,
-	0xff, 0x17, 0xc9, 0xb7, 0x46, 0xfe, 0x10, 0xa7, 0x58, 0xf4, 0x0c, 0x8a, 0x76, 0x48, 0x47, 0x41,
-	0xf6, 0x7d, 0x5c, 0x9d, 0x65, 0x1d, 0xf0, 0xba, 0x70, 0x8a, 0x53, 0x7f, 0x13, 0xa0, 0x7a, 0x37,
-	0x4f, 0xf4, 0x02, 0x4a, 0x43, 0xea, 0x47, 0xb1, 0xe9, 0xc7, 0xe9, 0x77, 0xf9, 0xc9, 0xa2, 0xeb,
-	0xf9, 0xbb, 0x1d, 0xe6, 0xf0, 0x2d, 0x01, 0xed, 0x40, 0x31, 0xf1, 0x2e, 0x1d, 0xf0, 0x85, 0x39,
-	0x1c, 0xe6, 0x70, 0x8a, 0x44, 0x3b, 0x20, 0x9d, 0x8f, 0xfc, 0x61, 0x3a, 0xcb, 0xef, 0xad, 0xf5,
-	0x30, 0x87, 0x39, 0xb6, 0xbe, 0x04, 0x05, 0x5e, 0xb5, 0xfa, 0x8b, 0x08, 0xf2, 0x54, 0x32, 0xe8,
-	0x05, 0xc0, 0x80, 0x52, 0xd7, 0xe0, 0xa7, 0x69, 0xfe, 0xeb, 0x33, 0x5d, 0x57, 0xa7, 0xd4, 0xcd,
-	0x92, 0x2f, 0x0f, 0xb2, 0x0d, 0xfa, 0x0a, 0x64, 0x87, 0xf5, 0x63, 0xca, 0x16, 0xef, 0xed, 0xd9,
-	0xc3, 0x1c, 0x06, 0xe7, 0x76, 0x87, 0x0e, 0xe0, 0xc1, 0xb9, 0x4b, 0xcd, 0x89, 0x42, 0x56, 0xd2,
-	0x5d, 0x85, 0x06, 0x1d, 0x0d, 0x5c, 0x92, 0x49, 0x54, 0x52, 0x52, 0x22, 0xa2, 0x41, 0x25, 0x8a,
-	0x43, 0xf6, 0x89, 0x4a, 0x34, 0xa4, 0x05, 0x1a, 0x3d, 0x0e, 0xca, 0x34, 0xe4, 0x68, 0xb2, 0x9d,
-	0xb8, 0xf3, 0x93, 0x00, 0x30, 0x71, 0x6f, 0xee, 0x00, 0xed, 0x43, 0xd9, 0xf1, 0x9d, 0xd8, 0x30,
-	0x43, 0x3b, 0x6b, 0x9c, 0xf7, 0xbf, 0x37, 0x2e, 0x31, 0xbc, 0x16, 0xda, 0x11, 0xda, 0x03, 0x89,
-	0xd3, 0xf2, 0xff, 0x7a, 0x08, 0x38, 0x5e, 0xdd, 0x81, 0x62, 0xd2, 0x05, 0x3c, 0x23, 0x6a, 0x91,
-	0xf4, 0xb7, 0x89, 0xaf, 0xd1, 0x32, 0x14, 0x1c, 0xdf, 0x22, 0x97, 0xdc, 0x7f, 0x09, 0x27, 0x9b,
-	0x2d, 0x0c, 0xa5, 0x6c, 0x84, 0xd1, 0x0a, 0x3c, 0x6e, 0x68, 0x7d, 0xcd, 0xe8, 0xbf, 0x3c, 0x6d,
-	0x1a, 0x67, 0xdd, 0xa3, 0xae, 0xfe, 0x4d, 0xb7, 0x9a, 0x43, 0x32, 0x2c, 0xd5, 0x75, 0xfd, 0xb8,
-	0xa9, 0x75, 0xab, 0x02, 0x2a, 0x43, 0xa1, 0xd3, 0xed, 0xef, 0xed, 0x56, 0x45, 0x16, 0x6f, 0x1d,
-	0xeb, 0x1a, 0xdb, 0xe4, 0x11, 0x40, 0xb1, 0xd7, 0xc7, 0x9d, 0x6e, 0xbb, 0x2a, 0x6d, 0xfd, 0x2c,
-	0x40, 0x65, 0xfa, 0xe7, 0x0a, 0xad, 0xc1, 0x8a, 0x7e, 0xda, 0xc4, 0x5a, 0x5f, 0xc7, 0x77, 0xc5,
-	0x37, 0xe0, 0x7f, 0x27, 0xcd, 0x13, 0x1d, 0xbf, 0x34, 0x7a, 0xfa, 0x19, 0x3e, 0x68, 0x1a, 0x19,
-	0xb0, 0xfa, 0x76, 0x09, 0x3d, 0x86, 0xca, 0x89, 0x76, 0x3a, 0x09, 0x5d, 0x3f, 0x42, 0x9b, 0xb0,
-	0x51, 0x3f, 0xd6, 0x0f, 0x8e, 0x3a, 0xdd, 0xb6, 0xa1, 0xb5, 0xdb, 0xb8, 0xd9, 0xd6, 0xfa, 0x53,
-	0xa4, 0x5f, 0xab, 0x68, 0x0d, 0x96, 0x33, 0xc5, 0x4e, 0xf7, 0x68, 0x72, 0xf4, 0xa6, 0x55, 0xdf,
-	0xbd, 0xbe, 0x51, 0x72, 0x7f, 0xdc, 0x28, 0xb9, 0x77, 0x37, 0x8a, 0xf0, 0x7a, 0xac, 0x08, 0x6f,
-	0xc6, 0x8a, 0xf0, 0xfb, 0x58, 0x11, 0xae, 0xc7, 0x8a, 0xf0, 0xe7, 0x58, 0x11, 0xde, 0x8e, 0x95,
-	0xdc, 0xbb, 0xb1, 0x22, 0xfc, 0xf8, 0x97, 0x92, 0xfb, 0xb6, 0x98, 0xb8, 0x3d, 0x28, 0xf2, 0xde,
-	0x78, 0xfe, 0x4f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xee, 0x32, 0x03, 0xd9, 0xb1, 0x09, 0x00, 0x00,
+var fileDescriptor_plan_a17b21f46346fa61 = []byte{
+	// 1123 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x55, 0xbd, 0x6e, 0xe3, 0x46,
+	0x17, 0x15, 0x25, 0x4a, 0x96, 0xae, 0xb4, 0xbb, 0xda, 0x81, 0xfd, 0xc1, 0x3f, 0xdf, 0xd2, 0x5e,
+	0xe5, 0xcf, 0x70, 0x00, 0x79, 0xe1, 0x35, 0xbc, 0x81, 0x93, 0x14, 0x94, 0xf5, 0x0b, 0xdb, 0x92,
+	0x31, 0x96, 0x13, 0x6c, 0x1a, 0x62, 0x24, 0x8e, 0x09, 0xc2, 0x22, 0x87, 0x20, 0x29, 0xc7, 0xee,
+	0x52, 0xa7, 0x4a, 0x11, 0xe4, 0x05, 0xd2, 0xec, 0x03, 0xe4, 0x01, 0xd2, 0x04, 0x48, 0xe9, 0x32,
+	0x5d, 0x62, 0xa5, 0xd9, 0x2a, 0xd8, 0x47, 0x08, 0x66, 0x86, 0xb4, 0x14, 0x4b, 0xb6, 0x93, 0x42,
+	0xd0, 0xf0, 0xf2, 0x9c, 0x33, 0xf7, 0x9e, 0xb9, 0x73, 0x09, 0x6b, 0x81, 0xdf, 0xdf, 0xec, 0x13,
+	0xdf, 0x65, 0xe1, 0xa6, 0x37, 0x20, 0xee, 0xa6, 0xe7, 0xb3, 0x90, 0x89, 0x65, 0x59, 0x2c, 0x51,
+	0xd1, 0x1b, 0x94, 0x25, 0xa0, 0xcc, 0xa3, 0x5e, 0x6f, 0x59, 0xb3, 0x18, 0xb3, 0x06, 0x54, 0x42,
+	0x7b, 0xc3, 0xd3, 0xcd, 0xaf, 0x7d, 0xe2, 0x79, 0xd4, 0x0f, 0x24, 0xa3, 0xe4, 0x80, 0x7a, 0x34,
+	0x20, 0x2e, 0xfa, 0x08, 0x52, 0x26, 0xb1, 0x16, 0x95, 0x35, 0x65, 0x3d, 0xbf, 0xb5, 0x50, 0xbe,
+	0xad, 0x53, 0xae, 0xea, 0x0d, 0xcc, 0x11, 0xe8, 0x33, 0xc8, 0x9d, 0xfa, 0xc4, 0x72, 0xa8, 0x1b,
+	0x06, 0x8b, 0xc9, 0xb5, 0xd4, 0x7a, 0x7e, 0x4b, 0x9b, 0x86, 0x73, 0xcd, 0x7a, 0x04, 0xc3, 0x63,
+	0x42, 0xe9, 0x12, 0x0a, 0x93, 0xaf, 0xd0, 0x63, 0x48, 0xda, 0xa6, 0xd8, 0x55, 0xc5, 0x49, 0xdb,
+	0x8c, 0xd3, 0x48, 0x3e, 0x98, 0xc6, 0x0b, 0x48, 0xbb, 0xcc, 0xa4, 0xc1, 0x62, 0x4a, 0xa4, 0xb0,
+	0x3c, 0x3b, 0x85, 0x36, 0x33, 0x29, 0x96, 0xc0, 0xd2, 0x39, 0xa4, 0xaa, 0x7a, 0x03, 0xbd, 0x8c,
+	0x89, 0x8a, 0x20, 0x3e, 0x9b, 0xb9, 0x07, 0xff, 0x4d, 0x70, 0x97, 0x77, 0x61, 0x2e, 0x8a, 0x4c,
+	0x65, 0xbc, 0x0a, 0xf9, 0x80, 0xf9, 0x21, 0x35, 0x0d, 0x93, 0x7a, 0xd2, 0x11, 0x15, 0x83, 0x0c,
+	0x55, 0xa9, 0x17, 0x94, 0xea, 0x90, 0x8d, 0x53, 0x99, 0x22, 0x6f, 0x40, 0x92, 0x79, 0x51, 0xb5,
+	0x33, 0x4a, 0xe8, 0x78, 0xd4, 0x27, 0x21, 0xf3, 0x71, 0x92, 0x79, 0xa5, 0xbf, 0x92, 0x90, 0x8d,
+	0x03, 0xe8, 0x15, 0xcc, 0x31, 0xcf, 0x08, 0x2f, 0x3d, 0x2a, 0xd4, 0x1e, 0xcf, 0x3a, 0x83, 0x18,
+	0xdc, 0xbd, 0xf4, 0x28, 0xce, 0x30, 0x8f, 0xff, 0xa3, 0x03, 0x78, 0xe4, 0x50, 0xc7, 0x08, 0xd8,
+	0xd0, 0xef, 0x53, 0xe3, 0x66, 0xf3, 0x0f, 0xa7, 0xe9, 0x87, 0xd4, 0x61, 0xfe, 0xe5, 0xb1, 0x00,
+	0xc6, 0x52, 0xcd, 0x04, 0xce, 0x3b, 0xd4, 0x89, 0x83, 0x68, 0x07, 0x32, 0x0e, 0xf1, 0xb8, 0x4c,
+	0x4a, 0xc8, 0xcc, 0x70, 0xf3, 0x90, 0x78, 0x13, 0xec, 0xb4, 0xc3, 0x1f, 0xd1, 0x09, 0x3c, 0xe9,
+	0x0d, 0x58, 0xff, 0xcc, 0x76, 0x2d, 0x83, 0x58, 0x16, 0x17, 0x50, 0x85, 0xc0, 0xc7, 0xd3, 0x02,
+	0x95, 0x08, 0xa8, 0x5b, 0x96, 0x4f, 0x2d, 0x12, 0x4e, 0x26, 0xf3, 0xa8, 0x37, 0x7e, 0xd9, 0xf1,
+	0x50, 0x1d, 0xf2, 0xa2, 0x38, 0xdb, 0x3d, 0xe3, 0x92, 0x69, 0x21, 0xf9, 0xfe, 0x9d, 0xa5, 0xd9,
+	0xee, 0xd9, 0x84, 0x56, 0x8e, 0x17, 0x26, 0x42, 0x15, 0x95, 0x1f, 0x4b, 0xe9, 0xc7, 0x24, 0xcc,
+	0xcf, 0x32, 0x01, 0x21, 0x50, 0x5d, 0xe2, 0x48, 0xe7, 0x73, 0x58, 0xac, 0x79, 0x1b, 0xf4, 0xd9,
+	0x60, 0xe8, 0xb8, 0x86, 0x6d, 0x5e, 0xc8, 0x36, 0x48, 0x61, 0x90, 0xa1, 0x96, 0x79, 0x11, 0xa0,
+	0xe7, 0x50, 0x88, 0x00, 0x1c, 0x2f, 0xfb, 0x36, 0x87, 0x23, 0x52, 0x9b, 0x87, 0xd0, 0xe7, 0x37,
+	0x10, 0x7e, 0xb0, 0xc1, 0xa2, 0xba, 0x96, 0x5a, 0x7f, 0x3c, 0xab, 0x2f, 0xaa, 0x24, 0x24, 0xe2,
+	0x54, 0x23, 0x3a, 0x5f, 0x07, 0x68, 0x17, 0x20, 0x08, 0x89, 0x1f, 0x1a, 0xa1, 0xed, 0xd0, 0xa8,
+	0xf8, 0x95, 0xb2, 0xbc, 0xff, 0xe5, 0xf8, 0xfe, 0x97, 0x5b, 0x6e, 0xb8, 0xb3, 0xfd, 0x05, 0x19,
+	0x0c, 0x29, 0xce, 0x09, 0x78, 0xd7, 0x76, 0x28, 0xfa, 0x04, 0x72, 0x41, 0xc8, 0x3b, 0x8a, 0x53,
+	0x33, 0x0f, 0x53, 0xb3, 0x1c, 0xcd, 0x99, 0xa5, 0x6f, 0x15, 0x40, 0xd3, 0x7e, 0xce, 0xf4, 0xe8,
+	0x76, 0x7d, 0xc9, 0xff, 0x56, 0xdf, 0xc3, 0x0e, 0x96, 0xce, 0x21, 0x3f, 0xd1, 0x6f, 0xa8, 0x0a,
+	0x79, 0x7a, 0xe1, 0xf9, 0x34, 0x08, 0x6c, 0xe6, 0xc6, 0x37, 0xbe, 0x34, 0xbd, 0xdf, 0x71, 0x9f,
+	0x0c, 0x88, 0x5f, 0xbb, 0x81, 0xe2, 0x49, 0xda, 0xd4, 0xbe, 0xc9, 0xe9, 0x7d, 0x7f, 0x51, 0x60,
+	0xe9, 0xce, 0x3e, 0x45, 0xdb, 0x90, 0x39, 0xe7, 0xae, 0xc5, 0x19, 0xfc, 0xff, 0xae, 0x0c, 0xea,
+	0x43, 0xb7, 0x8f, 0x23, 0x2c, 0x7a, 0x01, 0x19, 0xcb, 0x67, 0x43, 0x2f, 0x9e, 0xb2, 0x8b, 0xd3,
+	0xac, 0x3d, 0x91, 0x02, 0x8e, 0x70, 0xbc, 0x07, 0xc5, 0xea, 0x1f, 0xfe, 0x80, 0x08, 0xc9, 0x06,
+	0x5b, 0x85, 0xbc, 0x10, 0x8f, 0x00, 0xaa, 0x04, 0x88, 0x90, 0xac, 0xe3, 0x67, 0x05, 0x8a, 0xb7,
+	0xcd, 0x40, 0x9f, 0x42, 0xb6, 0xcf, 0xdc, 0x20, 0x24, 0x6e, 0x18, 0x7d, 0x1f, 0x9e, 0xdd, 0x55,
+	0x80, 0x68, 0x8e, 0x66, 0x02, 0xdf, 0x10, 0xd0, 0x16, 0x64, 0xa4, 0x51, 0xd1, 0xa0, 0xb9, 0xb3,
+	0x8a, 0x66, 0x02, 0x47, 0x48, 0xb4, 0x05, 0xea, 0xe9, 0xd0, 0xed, 0x47, 0x33, 0xe5, 0x5e, 0xb7,
+	0x9a, 0x09, 0x2c, 0xb0, 0x95, 0x39, 0x48, 0x8b, 0x3a, 0x4a, 0xbf, 0x2b, 0x90, 0x9f, 0x48, 0x06,
+	0xbd, 0x82, 0x9c, 0x49, 0x42, 0x32, 0x39, 0x2b, 0xef, 0xeb, 0xb8, 0xac, 0x19, 0xad, 0xd0, 0x2a,
+	0x40, 0x8f, 0xb1, 0x81, 0x21, 0x64, 0x45, 0xf6, 0x59, 0x3e, 0x25, 0x78, 0x4c, 0x2a, 0x3f, 0x87,
+	0xbc, 0xcd, 0x6f, 0x44, 0x84, 0xe0, 0xd9, 0xa6, 0x9a, 0x09, 0x0c, 0xf6, 0xcd, 0x35, 0x41, 0x1f,
+	0xc0, 0xa3, 0xd3, 0x01, 0x23, 0x63, 0x10, 0x9f, 0x72, 0x4a, 0x33, 0x81, 0x0b, 0x51, 0x58, 0xc2,
+	0xde, 0x83, 0x42, 0x10, 0xfa, 0x7c, 0x18, 0x4a, 0x14, 0xbf, 0xbb, 0x39, 0x3e, 0x6b, 0x65, 0x54,
+	0x80, 0xc6, 0x15, 0x7e, 0xaf, 0x00, 0x8c, 0x1d, 0x98, 0x79, 0xd3, 0x76, 0x21, 0x67, 0xbb, 0x76,
+	0x68, 0x10, 0xdf, 0x8a, 0xdb, 0xe7, 0xfe, 0x33, 0xc3, 0x59, 0x8e, 0xd7, 0x7d, 0x2b, 0x40, 0x3b,
+	0xa0, 0x0a, 0x5a, 0xea, 0x5f, 0xdf, 0x16, 0x81, 0x2f, 0x6d, 0x41, 0x46, 0x9e, 0xa4, 0xc8, 0x88,
+	0x99, 0x34, 0xfa, 0xce, 0x89, 0x35, 0x9a, 0x87, 0xb4, 0xed, 0x9a, 0xf4, 0x42, 0x18, 0xa9, 0x62,
+	0xf9, 0xb0, 0x81, 0x21, 0x1b, 0x3b, 0x8f, 0x16, 0xe0, 0x69, 0x55, 0xef, 0xea, 0x46, 0xf7, 0xf5,
+	0x51, 0xcd, 0x38, 0x69, 0xef, 0xb7, 0x3b, 0x5f, 0xb6, 0x8b, 0x09, 0x94, 0x87, 0xb9, 0x4a, 0xa7,
+	0x73, 0x50, 0xd3, 0xdb, 0x45, 0x05, 0xe5, 0x20, 0xdd, 0x6a, 0x77, 0x77, 0xb6, 0x8b, 0x49, 0x1e,
+	0xaf, 0x1f, 0x74, 0x74, 0xfe, 0x90, 0x42, 0x00, 0x99, 0xe3, 0x2e, 0x6e, 0xb5, 0x1b, 0x45, 0x75,
+	0xe3, 0x07, 0x05, 0x0a, 0x93, 0x9f, 0x3e, 0xb4, 0x04, 0x0b, 0x9d, 0xa3, 0x1a, 0xd6, 0xbb, 0x1d,
+	0x7c, 0x5b, 0x7c, 0x05, 0xfe, 0x77, 0x58, 0x3b, 0xec, 0xe0, 0xd7, 0xc6, 0x71, 0xe7, 0x04, 0xef,
+	0xd5, 0x8c, 0x18, 0x58, 0x7c, 0x3b, 0x87, 0x9e, 0x42, 0xe1, 0x50, 0x3f, 0x1a, 0x87, 0xae, 0x9e,
+	0xa0, 0x35, 0x58, 0xa9, 0x1c, 0x74, 0xf6, 0xf6, 0x5b, 0xed, 0x86, 0xa1, 0x37, 0x1a, 0xb8, 0xd6,
+	0xd0, 0xbb, 0x13, 0xa4, 0x9f, 0x8a, 0x68, 0x09, 0xe6, 0x63, 0xc5, 0x56, 0x7b, 0x7f, 0xfc, 0xea,
+	0x4d, 0xbd, 0xb2, 0x7d, 0x75, 0xad, 0x25, 0x7e, 0xbb, 0xd6, 0x12, 0xef, 0xae, 0x35, 0xe5, 0x9b,
+	0x91, 0xa6, 0xbc, 0x19, 0x69, 0xca, 0xaf, 0x23, 0x4d, 0xb9, 0x1a, 0x69, 0xca, 0x1f, 0x23, 0x4d,
+	0x79, 0x3b, 0xd2, 0x12, 0xef, 0x46, 0x9a, 0xf2, 0xdd, 0x9f, 0x5a, 0xe2, 0xab, 0x8c, 0x74, 0xbb,
+	0x97, 0x11, 0xe3, 0xf7, 0xe5, 0xdf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x9d, 0x54, 0x56, 0x7e, 0xfd,
+	0x09, 0x00, 0x00,
 }
