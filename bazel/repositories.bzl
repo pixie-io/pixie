@@ -58,6 +58,7 @@ def _cc_deps():
     _repository_impl(name = "com_github_gflags_gflags")
     _repository_impl(name = "com_github_google_glog")
     _repository_impl(name = "com_google_absl")
+    _repository_impl(name = "com_google_flatbuffers")
     _com_google_double_conversion()
 
 def _go_deps():

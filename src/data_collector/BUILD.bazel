@@ -6,7 +6,8 @@ pl_cc_binary(
     name = "data_collector_benchmark",
     srcs = ["data_collector_benchmark.cc"],
     deps = [
-        "@com_google_benchmark//:benchmark_main",
         "//src/data_collector/proto:canonical_cc_proto",
+        "//third_party:arrow",
+        "@com_google_benchmark//:benchmark_main",
     ],
 )

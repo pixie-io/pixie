@@ -20,5 +20,5 @@ go_proto_library(
 cc_proto_library(
     name = "canonical_cc_proto",
     visibility = ["//visibility:public"],
-    deps = [":canonical_proto"]
+    deps = [":canonical_proto"],
 )

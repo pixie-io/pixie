@@ -36,7 +36,7 @@ type Canonical struct {
 func (m *Canonical) Reset()      { *m = Canonical{} }
 func (*Canonical) ProtoMessage() {}
 func (*Canonical) Descriptor() ([]byte, []int) {
-	return fileDescriptor_canonical_message_ce31c3f2b8165f6a, []int{0}
+	return fileDescriptor_canonical_message_02becf2730df53c6, []int{0}
 }
 func (m *Canonical) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -97,7 +97,7 @@ type CanonicalRepeatedColumn struct {
 func (m *CanonicalRepeatedColumn) Reset()      { *m = CanonicalRepeatedColumn{} }
 func (*CanonicalRepeatedColumn) ProtoMessage() {}
 func (*CanonicalRepeatedColumn) Descriptor() ([]byte, []int) {
-	return fileDescriptor_canonical_message_ce31c3f2b8165f6a, []int{1}
+	return fileDescriptor_canonical_message_02becf2730df53c6, []int{1}
 }
 func (m *CanonicalRepeatedColumn) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -147,23 +147,23 @@ func (m *CanonicalRepeatedColumn) GetData2() []int64 {
 	return nil
 }
 
-type CanonincalStream struct {
+type CanonicalStream struct {
 	DataStream           []*Canonical `protobuf:"bytes,1,rep,name=data_stream,json=dataStream" json:"data_stream,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}     `json:"-"`
 	XXX_sizecache        int32        `json:"-"`
 }
 
-func (m *CanonincalStream) Reset()      { *m = CanonincalStream{} }
-func (*CanonincalStream) ProtoMessage() {}
-func (*CanonincalStream) Descriptor() ([]byte, []int) {
-	return fileDescriptor_canonical_message_ce31c3f2b8165f6a, []int{2}
+func (m *CanonicalStream) Reset()      { *m = CanonicalStream{} }
+func (*CanonicalStream) ProtoMessage() {}
+func (*CanonicalStream) Descriptor() ([]byte, []int) {
+	return fileDescriptor_canonical_message_02becf2730df53c6, []int{2}
 }
-func (m *CanonincalStream) XXX_Unmarshal(b []byte) error {
+func (m *CanonicalStream) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *CanonincalStream) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *CanonicalStream) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_CanonincalStream.Marshal(b, m, deterministic)
+		return xxx_messageInfo_CanonicalStream.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalTo(b)
@@ -173,19 +173,19 @@ func (m *CanonincalStream) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return b[:n], nil
 	}
 }
-func (dst *CanonincalStream) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CanonincalStream.Merge(dst, src)
+func (dst *CanonicalStream) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CanonicalStream.Merge(dst, src)
 }
-func (m *CanonincalStream) XXX_Size() int {
+func (m *CanonicalStream) XXX_Size() int {
 	return m.Size()
 }
-func (m *CanonincalStream) XXX_DiscardUnknown() {
-	xxx_messageInfo_CanonincalStream.DiscardUnknown(m)
+func (m *CanonicalStream) XXX_DiscardUnknown() {
+	xxx_messageInfo_CanonicalStream.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_CanonincalStream proto.InternalMessageInfo
+var xxx_messageInfo_CanonicalStream proto.InternalMessageInfo
 
-func (m *CanonincalStream) GetDataStream() []*Canonical {
+func (m *CanonicalStream) GetDataStream() []*Canonical {
 	if m != nil {
 		return m.DataStream
 	}
@@ -195,7 +195,7 @@ func (m *CanonincalStream) GetDataStream() []*Canonical {
 func init() {
 	proto.RegisterType((*Canonical)(nil), "pl.canonical_message.Canonical")
 	proto.RegisterType((*CanonicalRepeatedColumn)(nil), "pl.canonical_message.CanonicalRepeatedColumn")
-	proto.RegisterType((*CanonincalStream)(nil), "pl.canonical_message.CanonincalStream")
+	proto.RegisterType((*CanonicalStream)(nil), "pl.canonical_message.CanonicalStream")
 }
 func (this *Canonical) Equal(that interface{}) bool {
 	if that == nil {
@@ -272,14 +272,14 @@ func (this *CanonicalRepeatedColumn) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *CanonincalStream) Equal(that interface{}) bool {
+func (this *CanonicalStream) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*CanonincalStream)
+	that1, ok := that.(*CanonicalStream)
 	if !ok {
-		that2, ok := that.(CanonincalStream)
+		that2, ok := that.(CanonicalStream)
 		if ok {
 			that1 = &that2
 		} else {
@@ -325,12 +325,12 @@ func (this *CanonicalRepeatedColumn) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *CanonincalStream) GoString() string {
+func (this *CanonicalStream) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 5)
-	s = append(s, "&canonical.CanonincalStream{")
+	s = append(s, "&canonical.CanonicalStream{")
 	if this.DataStream != nil {
 		s = append(s, "DataStream: "+fmt.Sprintf("%#v", this.DataStream)+",\n")
 	}
@@ -443,7 +443,7 @@ func (m *CanonicalRepeatedColumn) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
-func (m *CanonincalStream) Marshal() (dAtA []byte, err error) {
+func (m *CanonicalStream) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalTo(dAtA)
@@ -453,7 +453,7 @@ func (m *CanonincalStream) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *CanonincalStream) MarshalTo(dAtA []byte) (int, error) {
+func (m *CanonicalStream) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
@@ -520,7 +520,7 @@ func (m *CanonicalRepeatedColumn) Size() (n int) {
 	return n
 }
 
-func (m *CanonincalStream) Size() (n int) {
+func (m *CanonicalStream) Size() (n int) {
 	var l int
 	_ = l
 	if len(m.DataStream) > 0 {
@@ -569,11 +569,11 @@ func (this *CanonicalRepeatedColumn) String() string {
 	}, "")
 	return s
 }
-func (this *CanonincalStream) String() string {
+func (this *CanonicalStream) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&CanonincalStream{`,
+	s := strings.Join([]string{`&CanonicalStream{`,
 		`DataStream:` + strings.Replace(fmt.Sprintf("%v", this.DataStream), "Canonical", "Canonical", 1) + `,`,
 		`}`,
 	}, "")
@@ -906,7 +906,7 @@ func (m *CanonicalRepeatedColumn) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *CanonincalStream) Unmarshal(dAtA []byte) error {
+func (m *CanonicalStream) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -929,10 +929,10 @@ func (m *CanonincalStream) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: CanonincalStream: wiretype end group for non-group")
+			return fmt.Errorf("proto: CanonicalStream: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CanonincalStream: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: CanonicalStream: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1093,11 +1093,11 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("src/data_collector/proto/canonical_message.proto", fileDescriptor_canonical_message_ce31c3f2b8165f6a)
+	proto.RegisterFile("src/data_collector/proto/canonical_message.proto", fileDescriptor_canonical_message_02becf2730df53c6)
 }
 
-var fileDescriptor_canonical_message_ce31c3f2b8165f6a = []byte{
-	// 268 bytes of a gzipped FileDescriptorProto
+var fileDescriptor_canonical_message_02becf2730df53c6 = []byte{
+	// 264 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x32, 0x28, 0x2e, 0x4a, 0xd6,
 	0x4f, 0x49, 0x2c, 0x49, 0x8c, 0x4f, 0xce, 0xcf, 0xc9, 0x49, 0x4d, 0x2e, 0xc9, 0x2f, 0xd2, 0x2f,
 	0x28, 0xca, 0x2f, 0xc9, 0xd7, 0x4f, 0x4e, 0xcc, 0xcb, 0xcf, 0xcb, 0x4c, 0x4e, 0xcc, 0x89, 0xcf,
@@ -1107,12 +1107,12 @@ var fileDescriptor_canonical_message_ce31c3f2b8165f6a = []byte{
 	0x20, 0x01, 0x21, 0x11, 0x2e, 0x56, 0x90, 0x8d, 0x86, 0x12, 0x4c, 0x0a, 0x8c, 0x1a, 0x8c, 0x41,
 	0x10, 0x0e, 0x4c, 0xd4, 0x48, 0x82, 0x19, 0xac, 0x1e, 0xc2, 0x51, 0x4a, 0xe1, 0x12, 0x87, 0x9b,
 	0x1b, 0x94, 0x5a, 0x90, 0x9a, 0x58, 0x92, 0x9a, 0xe2, 0x9c, 0x9f, 0x53, 0x9a, 0x9b, 0x87, 0x61,
-	0x0b, 0x33, 0x4e, 0x5b, 0x98, 0xb1, 0xda, 0xc2, 0x8c, 0xb0, 0x25, 0x84, 0x4b, 0x00, 0x62, 0x4b,
-	0x5e, 0x72, 0x62, 0x4e, 0x70, 0x49, 0x51, 0x6a, 0x62, 0xae, 0x90, 0x03, 0x17, 0x37, 0x38, 0x5c,
-	0x8a, 0xc1, 0x5c, 0xb0, 0xf9, 0xdc, 0x46, 0xf2, 0x7a, 0xd8, 0x7c, 0xaf, 0x87, 0x70, 0x22, 0x17,
-	0x48, 0x0f, 0xc4, 0x04, 0x27, 0xf3, 0x0b, 0x0f, 0xe5, 0x18, 0x6e, 0x3c, 0x94, 0x63, 0xf8, 0xf0,
-	0x50, 0x8e, 0xb1, 0xe1, 0x91, 0x1c, 0xe3, 0x8a, 0x47, 0x72, 0x8c, 0x27, 0x1e, 0xc9, 0x31, 0x5e,
-	0x78, 0x24, 0xc7, 0xf8, 0xe0, 0x91, 0x1c, 0xe3, 0x8b, 0x47, 0x72, 0x0c, 0x1f, 0x1e, 0xc9, 0x31,
-	0x4e, 0x78, 0x2c, 0xc7, 0x10, 0xc5, 0x09, 0x37, 0x36, 0x89, 0x0d, 0x1c, 0xd2, 0xc6, 0x80, 0x00,
-	0x00, 0x00, 0xff, 0xff, 0x90, 0xfa, 0x64, 0xf0, 0x9d, 0x01, 0x00, 0x00,
+	0x0b, 0x33, 0x4e, 0x5b, 0x98, 0xb1, 0xda, 0xc2, 0x8c, 0xb0, 0x25, 0x98, 0x8b, 0x1f, 0x6e, 0x4b,
+	0x70, 0x49, 0x51, 0x6a, 0x62, 0xae, 0x90, 0x03, 0x17, 0x37, 0x38, 0x58, 0x8a, 0xc1, 0x5c, 0xb0,
+	0xf1, 0xdc, 0x46, 0xf2, 0x7a, 0xd8, 0x3c, 0xaf, 0x87, 0x70, 0x21, 0x17, 0x48, 0x0f, 0xc4, 0x04,
+	0x27, 0xf3, 0x0b, 0x0f, 0xe5, 0x18, 0x6e, 0x3c, 0x94, 0x63, 0xf8, 0xf0, 0x50, 0x8e, 0xb1, 0xe1,
+	0x91, 0x1c, 0xe3, 0x8a, 0x47, 0x72, 0x8c, 0x27, 0x1e, 0xc9, 0x31, 0x5e, 0x78, 0x24, 0xc7, 0xf8,
+	0xe0, 0x91, 0x1c, 0xe3, 0x8b, 0x47, 0x72, 0x0c, 0x1f, 0x1e, 0xc9, 0x31, 0x4e, 0x78, 0x2c, 0xc7,
+	0x10, 0xc5, 0x09, 0x37, 0x36, 0x89, 0x0d, 0x1c, 0xd0, 0xc6, 0x80, 0x00, 0x00, 0x00, 0xff, 0xff,
+	0x38, 0x8e, 0x9c, 0xfb, 0x9c, 0x01, 0x00, 0x00,
 }

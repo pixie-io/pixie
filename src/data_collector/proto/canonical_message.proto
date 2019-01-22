@@ -16,6 +16,6 @@ message CanonicalRepeatedColumn {
   repeated int64 data2 = 3;
 }
 
-message CanonincalStream {
+message CanonicalStream {
   repeated Canonical data_stream = 1;
 }

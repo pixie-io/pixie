@@ -7,6 +7,15 @@ pl_cc_library(
     # This list is copied from ARROW_SRCS in
     # https://github.com/apache/arrow/blob/master/cpp/src/arrow/CMakeLists.txt.
     # When updating Arrow, make sure to update this list to ensure that any new files are included.
+    #
+    # Also make sure to re-generate the following generated files, and include them in the repo.
+    #    cpp/src/arrow/ipc/File_generated.h
+    #    cpp/src/arrow/ipc/Message_generated.h
+    #    cpp/src/arrow/ipc/Schema_generated.h
+    #    cpp/src/arrow/ipc/Tensor_generated.h
+    #    cpp/src/arrow/ipc/feather_generated.h
+    # Try "cmake .; make arrow_dependencies" to do this.
+    # Apologies for the hack!
     srcs = [
         "arrow/cpp/src/arrow/array.cc",
         "arrow/cpp/src/arrow/array/builder_adaptive.cc",
@@ -25,6 +34,12 @@ pl_cc_library(
         "arrow/cpp/src/arrow/io/interfaces.cc",
         "arrow/cpp/src/arrow/io/memory.cc",
         "arrow/cpp/src/arrow/io/readahead.cc",
+        "arrow/cpp/src/arrow/ipc/dictionary.cc",
+        "arrow/cpp/src/arrow/ipc/feather.cc",
+        "arrow/cpp/src/arrow/ipc/message.cc",
+        "arrow/cpp/src/arrow/ipc/metadata-internal.cc",
+        "arrow/cpp/src/arrow/ipc/reader.cc",
+        "arrow/cpp/src/arrow/ipc/writer.cc",
         "arrow/cpp/src/arrow/memory_pool.cc",
         "arrow/cpp/src/arrow/pretty_print.cc",
         "arrow/cpp/src/arrow/record_batch.cc",
@@ -61,6 +76,7 @@ pl_cc_library(
         "arrow/cpp/src",
     ],
     visibility = ["//visibility:public"],
+    deps = ["@com_google_flatbuffers//:flatbuffers"],
 )
 
 pl_cc_library(
