@@ -2,11 +2,10 @@
 
 #include <glog/logging.h>
 #include <memory>
-#include <unordered_set>
+#include <unordered_map>
 
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/operators.h"
-#include "src/carnot/plan/plan_fragment.h"
 #include "src/carnot/plan/proto/plan.pb.h"
 #include "src/utils/status.h"
 
@@ -19,8 +18,8 @@ class PlanGraph {
  public:
   virtual ~PlanGraph() = default;
   int64_t id() const { return id_; }
-  const DAG& dag() const { return dag_; }
-  std::unordered_set<std::unique_ptr<TNode>> nodes() const { return nodes_; }
+  DAG& dag() { return dag_; }
+  std::unordered_map<int64_t, std::unique_ptr<TNode>>& nodes() { return nodes_; }
 
   bool is_initialized() const { return is_initialized_; }
   Status Init(const TProto& pb) {
@@ -37,7 +36,7 @@ class PlanGraph {
     }
 
     for (const auto& node : pb.nodes()) {
-      nodes_.emplace(PlanGraph::ProtoToNode(node, node.id()));
+      nodes_.emplace(node.id(), PlanGraph::ProtoToNode(node, node.id()));
     }
 
     is_initialized_ = true;
@@ -54,7 +53,7 @@ class PlanGraph {
 
  protected:
   DAG dag_;
-  std::unordered_set<std::unique_ptr<TNode>> nodes_;
+  std::unordered_map<int64_t, std::unique_ptr<TNode>> nodes_;
 
   int64_t id_;
   bool is_initialized_ = false;
