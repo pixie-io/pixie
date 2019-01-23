@@ -154,4 +154,18 @@ void StatusOr<T>::CheckValueNotNull(const T& value) {
   }
 }
 
+// Internal helper for concatenating macro values.
+#define PL_STATUS_MACROS_CONCAT_NAME_INNER(x, y) x##y
+#define PL_STATUS_MACROS_CONCAT_NAME(x, y) PL_STATUS_MACROS_CONCAT_NAME_INNER(x, y)
+
+#define PL_ASSIGN_OR_RETURN_IMPL(statusor, lhs, rexpr) \
+  auto statusor = (rexpr);                             \
+  if (!statusor.ok()) {                                \
+    return statusor.status();                          \
+  }                                                    \
+  lhs = std::move(statusor.ValueOrDie())
+
+#define PL_ASSIGN_OR_RETURN(lhs, rexpr) \
+  PL_ASSIGN_OR_RETURN_IMPL(PL_CONCAT_NAME(__status_or_value__, __COUNTER__), lhs, rexpr)
+
 }  // namespace pl

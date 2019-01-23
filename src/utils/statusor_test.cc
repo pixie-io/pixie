@@ -48,4 +48,24 @@ TEST(StatusOr, DefaultCtorValue) {
   EXPECT_DEATH(s.ConsumeValueOrDie(), "");
 }
 
+StatusOr<int> StatusOrTestFunc(int x) {
+  if (x == 0) {
+    return Status(pl::error::INTERNAL, "badness");
+  }
+  return x + 1;
+}
+
+Status TestCheckCall(int x) {
+  PL_ASSIGN_OR_RETURN(auto y, StatusOrTestFunc(x));
+  EXPECT_EQ(y, x + 1);
+  return Status::OK();
+}
+
+TEST(StatusOr, Macros) {
+  EXPECT_TRUE(TestCheckCall(3).ok());
+  Status s = TestCheckCall(0);
+  EXPECT_FALSE(s.ok());
+  EXPECT_EQ(pl::error::INTERNAL, s.code());
+}
+
 }  // namespace pl
