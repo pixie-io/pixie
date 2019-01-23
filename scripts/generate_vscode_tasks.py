@@ -29,30 +29,33 @@ def getPathFromTestTarget(target):
 
 
 # Generate task segment based on compilation and exec modes.
-def generateTaskSegment(target, exec_mode, comp_mode):
+def generateTaskSegment(target, exec_mode, comp_mode, output_std):
     if exec_mode not in ['build', 'test']:
         raise ValueError('exec_mode must be either build or test')
     if comp_mode not in ['dbg', 'opt']:
         raise ValueError('comp_mode must be either dbg or opt')
+    args = []
+    args.append('{0}'.format(exec_mode))
+    args.append('--compilation_mode={0}'.format(comp_mode))
+    if output_std:
+        args.append("--test_output=all")
+        args.append("--action_env=\"GTEST_COLOR=1\"")
+    args.append(target)
 
     return {
         'label': '(bazel:{0}:{1}) {2}'.format(comp_mode, exec_mode, target),
         'type': 'shell',
         'command': 'bazel',
-        'args': [
-            '{0}'.format(exec_mode),
-            '--compilation_mode={0}'.format(comp_mode),
-            target,
-        ],
+        'args': args,
         'group': '{0}'.format(exec_mode),
     }
 
 
-def generateTaskSegments(target):
+def generateTaskSegments(target, output_std):
     tasks = []
     for exec_mode in ['build', 'test']:
         for comp_mode in ['dbg', 'opt']:
-            tasks += [generateTaskSegment(target, exec_mode, comp_mode)]
+            tasks += [generateTaskSegment(target, exec_mode, comp_mode, output_std)]
 
     return tasks
 
@@ -94,6 +97,8 @@ def main():
     parser = argparse.ArgumentParser(description='Generate files for vscode.')
     parser.add_argument('--lldb', action='store_true',
                         help='Generate for LLDB (defaults to vscode mode)', default=False)
+    parser.add_argument('--all_output', action='store_true',
+                        help='Output all of the output', default=False)
     parsed = parser.parse_args(sys.argv[1:])
     if parsed.lldb:
         print('In LLDB mode')
@@ -105,7 +110,7 @@ def main():
     launch_list = []
     for target in targets.split('\n'):
         if target != '':
-            task_list += generateTaskSegments(target)
+            task_list += generateTaskSegments(target, parsed.all_output)
             launch_list += generateLaunchSegments(
                 parsed.lldb, target, output_base)
 
@@ -128,6 +133,17 @@ def main():
         'args': [
             '${workspaceFolder}/scripts/generate_vscode_tasks.py',
             '--lldb'
+        ],
+        'group': 'build'
+    }]
+
+    task_list += [{
+        'label': 'generate tasks/launch json files with output',
+        'type': 'shell',
+        'command': 'python',
+        'args': [
+            '${workspaceFolder}/scripts/generate_vscode_tasks.py',
+            '--all_output'
         ],
         'group': 'build'
     }]
