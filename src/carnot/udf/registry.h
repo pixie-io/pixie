@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
+#include "src/carnot/udf/proto/udfs.pb.h"
 #include "src/carnot/udf/udf.h"
 #include "src/utils/error.h"
 #include "src/utils/statusor.h"
@@ -170,6 +171,7 @@ class BaseUDFRegistry {
    */
   virtual RegistryType Type() = 0;
   virtual std::string DebugString() = 0;
+  virtual udfspb::UDFInfo SpecToProto() const = 0;
 };
 
 /**
@@ -249,12 +251,35 @@ class ScalarUDFRegistry : public Registry<ScalarUDFDefinition> {
  public:
   using Registry<ScalarUDFDefinition>::Registry;
   RegistryType Type() override { return kScalarUDF; };
+  udfspb::UDFInfo SpecToProto() const override;
 };
 
 class UDARegistry : public Registry<UDADefinition> {
  public:
   using Registry<UDADefinition>::Registry;
   RegistryType Type() override { return kUDA; };
+  udfspb::UDFInfo SpecToProto() const override;
+};
+
+/**
+ * RegistryInfoExporter is a helper class used to export info from various
+ * registries. Usage:
+ *   RegistryInfoExporter()
+ *     .Registry(registry1)
+ *     .Registry(registry2)
+ *     .ToProto()
+ */
+class RegistryInfoExporter {
+ public:
+  RegistryInfoExporter& Registry(const BaseUDFRegistry& registry) {
+    auto info = registry.SpecToProto();
+    info_.MergeFrom(info);
+    return *this;
+  }
+  udfspb::UDFInfo ToProto() { return info_; }
+
+ private:
+  udfspb::UDFInfo info_;
 };
 
 }  // namespace udf

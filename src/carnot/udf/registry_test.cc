@@ -1,8 +1,9 @@
+#include <google/protobuf/text_format.h>
+#include <google/protobuf/util/message_differencer.h>
 #include <gtest/gtest.h>
 #include <type_traits>
 
 #include "absl/strings/match.h"
-#include "src/carnot/plan/proto/plan.pb.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/utils/error.h"
@@ -172,6 +173,39 @@ TEST(UDARegistryDeathTest, double_register) {
   auto registry = UDARegistry("test registry");
   registry.RegisterOrDie<UDA1>("uda1");
   EXPECT_DEATH(registry.RegisterOrDie<UDA1>("uda1"), ".*already exists.*");
+}
+
+const char *kExpectedUDFInfo = R"(
+udas {
+  update_arg_types: INT64
+  finalize_type: INT64
+}
+scalar_udfs {
+  exec_arg_types: FLOAT64
+  exec_arg_types: FLOAT64
+  return_type: FLOAT64
+}
+scalar_udfs {
+  exec_arg_types: BOOLEAN
+  exec_arg_types: INT64
+  return_type: INT64
+}
+)";
+
+TEST(RegistryInfoExporter, export_uda_and_udf) {
+  auto uda_registry = UDARegistry("test registry");
+  uda_registry.RegisterOrDie<UDA1>("uda1");
+
+  auto scalar_udf_registry = ScalarUDFRegistry("test registry");
+  scalar_udf_registry.RegisterOrDie<ScalarUDF1>("scalar1");
+  scalar_udf_registry.RegisterOrDie<AddUDF<Float64Value, Float64Value, Float64Value>>("add");
+
+  auto udf_info =
+      RegistryInfoExporter().Registry(uda_registry).Registry(scalar_udf_registry).ToProto();
+
+  udfspb::UDFInfo expected_udf_info;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &expected_udf_info));
+  EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_udf_info, udf_info));
 }
 
 }  // namespace udf

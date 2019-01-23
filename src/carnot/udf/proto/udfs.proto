@@ -1,0 +1,40 @@
+syntax = "proto3";
+import "src/carnot/proto/types.proto";
+
+package pl.carnot.udfspb;
+
+option go_package = "udfspb";
+
+// UDASpec stores the specification of a single UDA.
+message UDASpec {
+  // The name of the function.
+  string name = 1;
+  // Will be an empty list if there is no init function.
+  repeated carnotpb.DataType init_arg_types   = 2;
+  // The argument types of the update function. UDAs are allowed to overload based on
+  // these types.
+  repeated carnotpb.DataType update_arg_types = 3;
+  // The argument types of the finalize return.
+  carnotpb.DataType finalize_type             = 4;
+}
+
+// ScalarUDFSpec stores the specification of a single UDF.
+message ScalarUDFSpec {
+  // The name of the function.
+  string name = 1;
+  // Will be an empty list if there is no init function.
+  repeated carnotpb.DataType init_arg_types = 2;
+  // The argument types of the exec args. UDFs are allowed to overload based on
+  // these types.
+  repeated carnotpb.DataType exec_arg_types = 3;
+  // The return type of the exec function.
+  carnotpb.DataType return_type             = 4;
+}
+
+// UDFInfo stores all the registered UDF/UDAs in the system.
+message UDFInfo {
+  // A list of the UDAs.
+  repeated UDASpec udas = 1;
+  // A list of the ScalarUDFs.
+  repeated ScalarUDFSpec scalar_udfs = 2;
+}

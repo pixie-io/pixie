@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <type_traits>
 
-#include "src/carnot/plan/proto/plan.pb.h"
 #include "src/carnot/udf/udf.h"
 #include "src/utils/macros.h"
 #include "src/utils/status.h"

@@ -8,7 +8,6 @@
 
 #include <functional>
 
-#include "src/carnot/plan/proto/plan.pb.h"
 #include "src/carnot/proto/types.pb.h"
 #include "src/utils/status.h"
 

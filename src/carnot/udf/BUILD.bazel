@@ -12,10 +12,9 @@ pl_cc_library(
         ],
     ),
     hdrs = glob(["*.h"]),
-    deps = [
-        "//src/carnot/plan/proto:plan_cc_proto",
-        "//src/utils",
-    ],
+    deps = ["//src/utils:utils",
+            "//src/carnot/proto:types_cc_proto",
+            "//src/carnot/udf/proto:udfs_cc_proto"],
 )
 
 pl_cc_test(
