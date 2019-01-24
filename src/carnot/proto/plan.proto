@@ -2,9 +2,9 @@ syntax = "proto3";
 import "google/protobuf/wrappers.proto";
 import "src/carnot/proto/types.proto";
 
-package pl.carnot.planpb;
+package pl.carnot.carnotpb;
 
-option go_package = "planpb";
+option go_package = "carnotpb";
 
 // The plan is composed of multiple fragments which each
 // define a part of the plan that needs to be executed sequentially

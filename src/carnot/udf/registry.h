@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
-#include "src/carnot/udf/proto/udfs.pb.h"
+#include "src/carnot/proto/udfs.pb.h"
 #include "src/carnot/udf/udf.h"
 #include "src/utils/error.h"
 #include "src/utils/statusor.h"
@@ -171,7 +171,7 @@ class BaseUDFRegistry {
    */
   virtual RegistryType Type() = 0;
   virtual std::string DebugString() = 0;
-  virtual udfspb::UDFInfo SpecToProto() const = 0;
+  virtual carnotpb::UDFInfo SpecToProto() const = 0;
 };
 
 /**
@@ -251,14 +251,14 @@ class ScalarUDFRegistry : public Registry<ScalarUDFDefinition> {
  public:
   using Registry<ScalarUDFDefinition>::Registry;
   RegistryType Type() override { return kScalarUDF; };
-  udfspb::UDFInfo SpecToProto() const override;
+  carnotpb::UDFInfo SpecToProto() const override;
 };
 
 class UDARegistry : public Registry<UDADefinition> {
  public:
   using Registry<UDADefinition>::Registry;
   RegistryType Type() override { return kUDA; };
-  udfspb::UDFInfo SpecToProto() const override;
+  carnotpb::UDFInfo SpecToProto() const override;
 };
 
 /**
@@ -276,10 +276,10 @@ class RegistryInfoExporter {
     info_.MergeFrom(info);
     return *this;
   }
-  udfspb::UDFInfo ToProto() { return info_; }
+  carnotpb::UDFInfo ToProto() { return info_; }
 
  private:
-  udfspb::UDFInfo info_;
+  carnotpb::UDFInfo info_;
 };
 
 }  // namespace udf

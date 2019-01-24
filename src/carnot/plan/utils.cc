@@ -8,15 +8,15 @@ namespace pl {
 namespace carnot {
 namespace plan {
 
-std::string ToString(planpb::OperatorType op) {
+std::string ToString(carnotpb::OperatorType op) {
   switch (op) {
-    case planpb::MEMORY_SOURCE_OPERATOR:
+    case carnotpb::MEMORY_SOURCE_OPERATOR:
       return "MemorySourceOperator";
-    case planpb::MAP_OPERATOR:
+    case carnotpb::MAP_OPERATOR:
       return "MapOperator";
-    case planpb::BLOCKING_AGGREGATE_OPERATOR:
+    case carnotpb::BLOCKING_AGGREGATE_OPERATOR:
       return "BlockingAggregateOperator";
-    case planpb::MEMORY_SINK_OPERATOR:
+    case carnotpb::MEMORY_SINK_OPERATOR:
       return "MemorySinkOperator";
     default:
       LOG(WARNING) << "Unknown operator in ToString function";

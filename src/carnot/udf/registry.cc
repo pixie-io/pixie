@@ -4,8 +4,8 @@ namespace pl {
 namespace carnot {
 namespace udf {
 
-udfspb::UDFInfo ScalarUDFRegistry::SpecToProto() const {
-  udfspb::UDFInfo info;
+carnotpb::UDFInfo ScalarUDFRegistry::SpecToProto() const {
+  carnotpb::UDFInfo info;
   for (const auto& kv : map_) {
     auto* udf_spec_pb = info.add_scalar_udfs();
     const auto& udf_def = kv.second;
@@ -16,8 +16,8 @@ udfspb::UDFInfo ScalarUDFRegistry::SpecToProto() const {
   return info;
 }
 
-udfspb::UDFInfo UDARegistry::SpecToProto() const {
-  udfspb::UDFInfo info;
+carnotpb::UDFInfo UDARegistry::SpecToProto() const {
+  carnotpb::UDFInfo info;
   for (const auto& kv : map_) {
     auto* udf_spec_pb = info.add_udas();
     const auto& udf_def = kv.second;

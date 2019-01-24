@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "src/carnot/plan/plan.h"
-#include "src/carnot/plan/proto/plan.pb.h"
+#include "src/carnot/proto/plan.pb.h"
 
 namespace pl {
 namespace carnot {

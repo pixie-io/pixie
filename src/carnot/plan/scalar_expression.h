@@ -8,8 +8,8 @@
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/plan/compiler_state.h"
-#include "src/carnot/plan/proto/plan.pb.h"
 #include "src/carnot/plan/schema.h"
+#include "src/carnot/proto/plan.pb.h"
 #include "src/utils/error.h"
 #include "src/utils/status.h"
 #include "src/utils/statusor.h"
@@ -21,13 +21,13 @@ namespace plan {
 // Forward declare columns since we need it for some functions in ScalarExpression.
 class Column;
 
-inline std::string ToString(const planpb::ScalarExpression::ValueCase &exp) {
+inline std::string ToString(const carnotpb::ScalarExpression::ValueCase &exp) {
   switch (exp) {
-    case planpb::ScalarExpression::kFunc:
+    case carnotpb::ScalarExpression::kFunc:
       return "Function";
-    case planpb::ScalarExpression::kColumn:
+    case carnotpb::ScalarExpression::kColumn:
       return "Column";
-    case planpb::ScalarExpression::kConstant:
+    case carnotpb::ScalarExpression::kConstant:
       return "Value";
     default:
       std::string err_msg = absl::StrFormat("Unknown expression type: %d", static_cast<int>(exp));
@@ -42,7 +42,8 @@ inline std::string ToString(const planpb::ScalarExpression::ValueCase &exp) {
  */
 class ScalarExpression {
  public:
-  static StatusOr<std::unique_ptr<ScalarExpression>> FromProto(const planpb::ScalarExpression &pb);
+  static StatusOr<std::unique_ptr<ScalarExpression>> FromProto(
+      const carnotpb::ScalarExpression &pb);
 
   virtual ~ScalarExpression() = default;
   bool is_initialized() const { return is_initialized_; }
@@ -77,7 +78,7 @@ class ScalarExpression {
    * ExpressionType gets the column type from the proto.
    * @return Expression ValueCase.
    */
-  virtual planpb::ScalarExpression::ValueCase ExpressionType() const = 0;
+  virtual carnotpb::ScalarExpression::ValueCase ExpressionType() const = 0;
 
   /**
    * Generate a debug string.
@@ -102,14 +103,14 @@ class Column : public ScalarExpression {
   virtual ~Column() = default;
 
   /// Initializes the column value based on the passed in protobuf msg.
-  Status Init(const planpb::Column &pb);
+  Status Init(const carnotpb::Column &pb);
 
   // Implementation of base class methods.
   StatusOr<carnotpb::DataType> OutputDataType(const CompilerState &state,
                                               const Schema &input_schema) const override;
   std::vector<const Column *> ColumnDeps() override;
   std::vector<ScalarExpression *> Deps() const override;
-  planpb::ScalarExpression::ValueCase ExpressionType() const override;
+  carnotpb::ScalarExpression::ValueCase ExpressionType() const override;
   std::string DebugString() const override;
 
   /// The index of the column in the operator that is referenced.
@@ -119,7 +120,7 @@ class Column : public ScalarExpression {
   int64_t NodeID() const;
 
  private:
-  planpb::Column pb_;
+  carnotpb::Column pb_;
 };
 
 /**
@@ -131,14 +132,14 @@ class ScalarValue : public ScalarExpression {
   virtual ~ScalarValue() = default;
 
   /// Initializes the constant scalar value based on the passed in protobuf msg.
-  Status Init(const planpb::ScalarValue &pb);
+  Status Init(const carnotpb::ScalarValue &pb);
 
   // Override base class methods.
   std::vector<const Column *> ColumnDeps() override;
   StatusOr<carnotpb::DataType> OutputDataType(const CompilerState &state,
                                               const Schema &input_schema) const override;
   std::vector<ScalarExpression *> Deps() const override;
-  planpb::ScalarExpression::ValueCase ExpressionType() const override;
+  carnotpb::ScalarExpression::ValueCase ExpressionType() const override;
   std::string DebugString() const override;
 
   /// Returns the data type of the constant value.
@@ -152,7 +153,7 @@ class ScalarValue : public ScalarExpression {
   bool IsNull() const;
 
  private:
-  planpb::ScalarValue pb_;
+  carnotpb::ScalarValue pb_;
 };
 
 class ScalarFunc : public ScalarExpression {
@@ -160,13 +161,13 @@ class ScalarFunc : public ScalarExpression {
   ScalarFunc() : ScalarExpression() {}
   virtual ~ScalarFunc() = default;
 
-  Status Init(const planpb::ScalarFunc &pb);
+  Status Init(const carnotpb::ScalarFunc &pb);
   // Override base class methods.
   std::vector<const Column *> ColumnDeps() override;
   StatusOr<carnotpb::DataType> OutputDataType(const CompilerState &state,
                                               const Schema &input_schema) const override;
   std::vector<ScalarExpression *> Deps() const override;
-  planpb::ScalarExpression::ValueCase ExpressionType() const override;
+  carnotpb::ScalarExpression::ValueCase ExpressionType() const override;
   std::string DebugString() const override;
 
   std::string name() const { return name_; }
@@ -273,11 +274,11 @@ class ScalarExpressionWalker {
                                std::vector<TReturn> child_values) {
     const auto expression_type = expression.ExpressionType();
     switch (expression_type) {
-      case planpb::ScalarExpression::kColumn:
+      case carnotpb::ScalarExpression::kColumn:
         return CallAs<Column>(column_walk_fn_, expression, child_values);
-      case planpb::ScalarExpression::kConstant:
+      case carnotpb::ScalarExpression::kConstant:
         return CallAs<ScalarValue>(scalar_value_walk_fn_, expression, child_values);
-      case planpb::ScalarExpression::kFunc:
+      case carnotpb::ScalarExpression::kFunc:
         return CallAs<ScalarFunc>(scalar_func_walk_fn_, expression, child_values);
       default:
         return error::InvalidArgument("Expression type: $0 is invalid", expression_type);

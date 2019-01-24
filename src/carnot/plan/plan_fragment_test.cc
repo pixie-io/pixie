@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "src/carnot/plan/plan_fragment.h"
-#include "src/carnot/plan/proto/plan.pb.h"
+#include "src/carnot/proto/plan.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -100,7 +100,7 @@ const char* kPlanFragmentWithFiveNodes = R"(
 class PlanFragmentWalkerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    planpb::PlanFragment pf_pb;
+    carnotpb::PlanFragment pf_pb;
     ASSERT_TRUE(TextFormat::MergeFromString(kPlanFragmentWithFiveNodes, &pf_pb));
     ASSERT_TRUE(plan_fragment_.Init(pf_pb).ok());
   }

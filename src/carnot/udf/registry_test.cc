@@ -203,7 +203,7 @@ TEST(RegistryInfoExporter, export_uda_and_udf) {
   auto udf_info =
       RegistryInfoExporter().Registry(uda_registry).Registry(scalar_udf_registry).ToProto();
 
-  udfspb::UDFInfo expected_udf_info;
+  carnotpb::UDFInfo expected_udf_info;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &expected_udf_info));
   EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_udf_info, udf_info));
 }

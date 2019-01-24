@@ -10,7 +10,7 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/carnot/plan/proto:plan_cc_proto",
+        "//src/carnot/proto:plan_cc_proto",
         "//src/carnot/udf:cc_library",
         "//src/utils",
     ],

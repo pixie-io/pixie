@@ -7,10 +7,10 @@ namespace carnot {
 namespace plan {
 
 TEST(OpToString, basic_tests) {
-  EXPECT_EQ("MemorySourceOperator", ToString(planpb::MEMORY_SOURCE_OPERATOR));
-  EXPECT_EQ("MapOperator", ToString(planpb::MAP_OPERATOR));
-  EXPECT_EQ("BlockingAggregateOperator", ToString(planpb::BLOCKING_AGGREGATE_OPERATOR));
-  EXPECT_EQ("MemorySinkOperator", ToString(planpb::MEMORY_SINK_OPERATOR));
+  EXPECT_EQ("MemorySourceOperator", ToString(carnotpb::MEMORY_SOURCE_OPERATOR));
+  EXPECT_EQ("MapOperator", ToString(carnotpb::MAP_OPERATOR));
+  EXPECT_EQ("BlockingAggregateOperator", ToString(carnotpb::BLOCKING_AGGREGATE_OPERATOR));
+  EXPECT_EQ("MemorySinkOperator", ToString(carnotpb::MEMORY_SINK_OPERATOR));
 }
 
 TEST(DataTypeToString, basic_tests) {

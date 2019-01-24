@@ -4,11 +4,11 @@
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/plan/operators.h"
-#include "src/carnot/plan/proto/plan.pb.h"
 #include "src/carnot/plan/relation.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/plan/schema.h"
 #include "src/carnot/plan/utils.h"
+#include "src/carnot/proto/plan.pb.h"
 #include "src/utils/error.h"
 
 namespace pl {
@@ -29,15 +29,15 @@ std::unique_ptr<Operator> CreateOperator(int64_t id, const TProto& pb) {
   return op;
 }
 
-std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_t id) {
+std::unique_ptr<Operator> Operator::FromProto(const carnotpb::Operator& pb, int64_t id) {
   switch (pb.op_type()) {
-    case planpb::MEMORY_SOURCE_OPERATOR:
+    case carnotpb::MEMORY_SOURCE_OPERATOR:
       return CreateOperator<MemorySourceOperator>(id, pb.mem_source_op());
-    case planpb::MAP_OPERATOR:
+    case carnotpb::MAP_OPERATOR:
       return CreateOperator<MapOperator>(id, pb.map_op());
-    case planpb::BLOCKING_AGGREGATE_OPERATOR:
+    case carnotpb::BLOCKING_AGGREGATE_OPERATOR:
       return CreateOperator<BlockingAggregateOperator>(id, pb.blocking_agg_op());
-    case planpb::MEMORY_SINK_OPERATOR:
+    case carnotpb::MEMORY_SINK_OPERATOR:
       return CreateOperator<MemorySinkOperator>(id, pb.mem_sink_op());
     default:
       LOG(FATAL) << absl::StrFormat("Unknown operator type: %s", ToString(pb.op_type()));
@@ -50,7 +50,7 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_
 
 std::string MemorySourceOperator::DebugString() { return "Operator: MemorySource"; }
 
-Status MemorySourceOperator::Init(const planpb::MemorySourceOperator& pb) {
+Status MemorySourceOperator::Init(const carnotpb::MemorySourceOperator& pb) {
   pb_ = pb;
   is_initialized_ = true;
   return Status::OK();
@@ -87,7 +87,7 @@ std::string MapOperator::DebugString() {
   return "Op:Map" + debug_string;
 }
 
-Status MapOperator::Init(const planpb::MapOperator& pb) {
+Status MapOperator::Init(const carnotpb::MapOperator& pb) {
   pb_ = pb;
   // Some sanity tests.
   if (pb_.column_names_size() != pb_.expressions_size()) {
@@ -131,7 +131,7 @@ StatusOr<Relation> MapOperator::OutputRelation(const Schema& schema, const Compi
 
 std::string BlockingAggregateOperator::DebugString() { return "Operator: BlockingAggregate"; }
 
-Status BlockingAggregateOperator::Init(const planpb::BlockingAggregateOperator& pb) {
+Status BlockingAggregateOperator::Init(const carnotpb::BlockingAggregateOperator& pb) {
   pb_ = pb;
   if (pb_.groups_size() != pb_.group_names_size()) {
     return error::InvalidArgument("group names/exp size mismatch");
@@ -163,7 +163,7 @@ StatusOr<Relation> BlockingAggregateOperator::OutputRelation(
 
 std::string MemorySinkOperator::DebugString() { return "Operator: MemorySink"; }
 
-Status MemorySinkOperator::Init(const planpb::MemorySinkOperator& pb) {
+Status MemorySinkOperator::Init(const carnotpb::MemorySinkOperator& pb) {
   pb_ = pb;
   is_initialized_ = true;
   return Status::OK();

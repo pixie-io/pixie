@@ -16,7 +16,7 @@ namespace pl {
 namespace carnot {
 namespace plan {
 
-pl::Status ScalarValue::Init(const pl::carnot::planpb::ScalarValue &pb) {
+pl::Status ScalarValue::Init(const pl::carnot::carnotpb::ScalarValue &pb) {
   DCHECK(!is_initialized_) << "Already initialized";
   CHECK(pb.data_type() != carnotpb::DATA_TYPE_UNKNOWN);
   CHECK(carnotpb::DataType_IsValid(pb.data_type()));
@@ -31,7 +31,7 @@ pl::Status ScalarValue::Init(const pl::carnot::planpb::ScalarValue &pb) {
 
 int64_t ScalarValue::Int64Value() const {
   DCHECK(is_initialized_) << "Not initialized";
-  VLOG_IF(1, pb_.value_case() != planpb::ScalarValue::kInt64Value)
+  VLOG_IF(1, pb_.value_case() != carnotpb::ScalarValue::kInt64Value)
 
       << "Calling accessor on null/invalid value";
   return pb_.int64_value();
@@ -39,28 +39,28 @@ int64_t ScalarValue::Int64Value() const {
 
 double ScalarValue::Float64Value() const {
   DCHECK(is_initialized_) << "Not initialized";
-  VLOG_IF(1, pb_.value_case() != planpb::ScalarValue::kFloat64Value)
+  VLOG_IF(1, pb_.value_case() != carnotpb::ScalarValue::kFloat64Value)
       << "Calling accessor on null/invalid value";
   return pb_.float64_value();
 }
 
 std::string ScalarValue::StringValue() const {
   DCHECK(is_initialized_) << "Not initialized";
-  VLOG_IF(1, pb_.value_case() != planpb::ScalarValue::kStringValue)
+  VLOG_IF(1, pb_.value_case() != carnotpb::ScalarValue::kStringValue)
       << "Calling accessor on null/invalid value";
   return pb_.string_value();
 }
 
 bool ScalarValue::BoolValue() const {
   DCHECK(is_initialized_) << "Not initialized";
-  VLOG_IF(1, pb_.value_case() != planpb::ScalarValue::kBoolValue)
+  VLOG_IF(1, pb_.value_case() != carnotpb::ScalarValue::kBoolValue)
       << "Calling accessor on null/invalid value";
   return pb_.bool_value();
 }
 
 bool ScalarValue::IsNull() const {
   DCHECK(is_initialized_) << "Not initialized";
-  return pb_.value_case() == planpb::ScalarValue::VALUE_NOT_SET;
+  return pb_.value_case() == carnotpb::ScalarValue::VALUE_NOT_SET;
 }
 
 std::string ScalarValue::DebugString() const {
@@ -97,11 +97,11 @@ std::vector<ScalarExpression *> ScalarValue::Deps() const {
   DCHECK(is_initialized_) << "Not initialized";
   return {};
 }
-planpb::ScalarExpression::ValueCase ScalarValue::ExpressionType() const {
-  return planpb::ScalarExpression::kConstant;
+carnotpb::ScalarExpression::ValueCase ScalarValue::ExpressionType() const {
+  return carnotpb::ScalarExpression::kConstant;
 }
 
-Status Column::Init(const planpb::Column &pb) {
+Status Column::Init(const carnotpb::Column &pb) {
   DCHECK(!is_initialized_) << "Already initialized";
   pb_ = pb;
   is_initialized_ = true;
@@ -136,8 +136,8 @@ std::vector<const Column *> Column::ColumnDeps() {
   return {this};
 }
 
-planpb::ScalarExpression::ValueCase Column::ExpressionType() const {
-  return planpb::ScalarExpression::kColumn;
+carnotpb::ScalarExpression::ValueCase Column::ExpressionType() const {
+  return carnotpb::ScalarExpression::kColumn;
 }
 
 std::vector<ScalarExpression *> Column::Deps() const {
@@ -154,20 +154,20 @@ StatusOr<std::unique_ptr<ScalarExpression>> MakeExprHelper(const TProto &pb) {
 }
 
 StatusOr<std::unique_ptr<ScalarExpression>> ScalarExpression::FromProto(
-    const planpb::ScalarExpression &pb) {
+    const carnotpb::ScalarExpression &pb) {
   switch (pb.value_case()) {
-    case planpb::ScalarExpression::kColumn:
+    case carnotpb::ScalarExpression::kColumn:
       return MakeExprHelper<Column>(pb.column());
-    case planpb::ScalarExpression::kConstant:
+    case carnotpb::ScalarExpression::kConstant:
       return MakeExprHelper<ScalarValue>(pb.constant());
-    case planpb::ScalarExpression::kFunc:
+    case carnotpb::ScalarExpression::kFunc:
       return MakeExprHelper<ScalarFunc>(pb.func());
     default:
       return error::Unimplemented("Expression type: %d", pb.value_case());
   }
 }
 
-Status ScalarFunc::Init(const planpb::ScalarFunc &pb) {
+Status ScalarFunc::Init(const carnotpb::ScalarFunc &pb) {
   name_ = pb.name();
   for (const auto arg : pb.args()) {
     auto s = ScalarExpression::FromProto(arg);
@@ -188,8 +188,8 @@ std::vector<ScalarExpression *> ScalarFunc::Deps() const {
   return deps;
 }
 
-planpb::ScalarExpression::ValueCase ScalarFunc::ExpressionType() const {
-  return planpb::ScalarExpression::kFunc;
+carnotpb::ScalarExpression::ValueCase ScalarFunc::ExpressionType() const {
+  return carnotpb::ScalarExpression::kFunc;
 }
 
 std::vector<const Column *> ScalarFunc::ColumnDeps() {

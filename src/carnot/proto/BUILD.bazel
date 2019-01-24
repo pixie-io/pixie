@@ -22,3 +22,51 @@ cc_proto_library(
     visibility = ["//visibility:public"],
     deps = [":types_proto"],
 )
+
+
+proto_library(
+    name = "plan_proto",
+    srcs = ["plan.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_google_protobuf//:wrappers_proto",
+        "//src/carnot/proto:types_proto",
+    ],
+)
+
+go_proto_library(
+    name = "plan_go_proto",
+    compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
+    importpath = "pixielabs.ai/pixielabs/src/carnot/plan/proto",
+    proto = ":plan_proto",
+    visibility = ["//visibility:public"],
+    deps = ["//src/carnot/proto:types_go_proto"],
+)
+
+cc_proto_library(
+    name = "plan_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":plan_proto"],
+)
+
+proto_library(
+    name = "udfs_proto",
+    srcs = ["udfs.proto"],
+    visibility = ["//visibility:public"],
+    deps = ["//src/carnot/proto:types_proto"],
+)
+
+go_proto_library(
+    name = "udfs_go_proto",
+    compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
+    importpath = "pixielabs.ai/pixielabs/src/carnot/udf/proto",
+    proto = ":udfs_proto",
+    visibility = ["//visibility:public"],
+    deps = ["//src/carnot/proto:types_go_proto"],
+)
+
+cc_proto_library(
+    name = "udfs_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":udfs_proto"],
+)

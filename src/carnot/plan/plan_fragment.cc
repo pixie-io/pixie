@@ -3,13 +3,14 @@
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/plan_fragment.h"
 #include "src/carnot/plan/plan_graph.h"
-#include "src/carnot/plan/proto/plan.pb.h"
+#include "src/carnot/proto/plan.pb.h"
 
 namespace pl {
 namespace carnot {
 namespace plan {
 
-std::unique_ptr<PlanFragment> PlanFragment::FromProto(const planpb::PlanFragment &pb, int64_t id) {
+std::unique_ptr<PlanFragment> PlanFragment::FromProto(const carnotpb::PlanFragment &pb,
+                                                      int64_t id) {
   auto pf = std::make_unique<PlanFragment>(id);
   auto s = pf->Init(pb);
   // On init failure, return null;
@@ -31,16 +32,16 @@ void PlanFragmentWalker::CallAs(const TWalkFunc &fn, const Operator &op) {
 void PlanFragmentWalker::CallWalkFn(const Operator &op) {
   const auto op_type = op.op_type();
   switch (op_type) {
-    case planpb::OperatorType::MEMORY_SOURCE_OPERATOR:
+    case carnotpb::OperatorType::MEMORY_SOURCE_OPERATOR:
       CallAs<MemorySourceOperator>(on_memory_source_walk_fn_, op);
       break;
-    case planpb::OperatorType::MAP_OPERATOR:
+    case carnotpb::OperatorType::MAP_OPERATOR:
       CallAs<MapOperator>(on_map_walk_fn_, op);
       break;
-    case planpb::OperatorType::BLOCKING_AGGREGATE_OPERATOR:
+    case carnotpb::OperatorType::BLOCKING_AGGREGATE_OPERATOR:
       CallAs<BlockingAggregateOperator>(on_blocking_aggregate_walk_fn_, op);
       break;
-    case planpb::OperatorType::MEMORY_SINK_OPERATOR:
+    case carnotpb::OperatorType::MEMORY_SINK_OPERATOR:
       CallAs<MemorySinkOperator>(on_memory_sink_walk_fn_, op);
       break;
     default:

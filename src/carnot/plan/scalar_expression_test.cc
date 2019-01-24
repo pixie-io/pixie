@@ -15,9 +15,9 @@ namespace plan {
 using google::protobuf::TextFormat;
 
 TEST(ToString, values) {
-  EXPECT_EQ("Function", ToString(planpb::ScalarExpression::kFunc));
-  EXPECT_EQ("Column", ToString(planpb::ScalarExpression::kColumn));
-  EXPECT_EQ("Value", ToString(planpb::ScalarExpression::kConstant));
+  EXPECT_EQ("Function", ToString(carnotpb::ScalarExpression::kFunc));
+  EXPECT_EQ("Column", ToString(carnotpb::ScalarExpression::kColumn));
+  EXPECT_EQ("Value", ToString(carnotpb::ScalarExpression::kConstant));
 }
 
 class DummyTestUDF : udf::ScalarUDF {
@@ -52,7 +52,7 @@ class ScalarExpressionTest : public ::testing::Test {
 
 TEST(ColumnTest, basic_tests) {
   Column col;
-  planpb::Column colpb;
+  carnotpb::Column colpb;
   colpb.set_node(1);
   colpb.set_index(36);
 
@@ -72,7 +72,7 @@ TEST(ColumnDeathTest, no_init) {
 
 TEST(ColumnDeathTest, double_init) {
   Column col;
-  planpb::Column colpb;
+  carnotpb::Column colpb;
   colpb.set_node(1);
   colpb.set_index(36);
 
@@ -82,7 +82,7 @@ TEST(ColumnDeathTest, double_init) {
 
 TEST(ScalarValueTest, basic_tests_bool) {
   ScalarValue sv;
-  planpb::ScalarValue sv_pb;
+  carnotpb::ScalarValue sv_pb;
   sv_pb.set_data_type(carnotpb::BOOLEAN);
   sv_pb.set_bool_value(true);
 
@@ -99,7 +99,7 @@ TEST(ScalarValueTest, basic_tests_bool) {
 
 TEST(ScalarValueTest, basic_tests_bool_null) {
   ScalarValue sv;
-  planpb::ScalarValue sv_pb;
+  carnotpb::ScalarValue sv_pb;
   sv_pb.set_data_type(carnotpb::BOOLEAN);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
@@ -113,7 +113,7 @@ TEST(ScalarValueTest, basic_tests_bool_null) {
 
 TEST(ScalarValueTest, basic_tests_int64) {
   ScalarValue sv;
-  planpb::ScalarValue sv_pb;
+  carnotpb::ScalarValue sv_pb;
   sv_pb.set_data_type(carnotpb::INT64);
   sv_pb.set_int64_value(63);
 
@@ -128,7 +128,7 @@ TEST(ScalarValueTest, basic_tests_int64) {
 
 TEST(ScalarValueTest, basic_tests_int64_null) {
   ScalarValue sv;
-  planpb::ScalarValue sv_pb;
+  carnotpb::ScalarValue sv_pb;
   sv_pb.set_data_type(carnotpb::INT64);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
@@ -141,7 +141,7 @@ TEST(ScalarValueTest, basic_tests_int64_null) {
 
 TEST(ScalarValueTest, basic_tests_float64) {
   ScalarValue sv;
-  planpb::ScalarValue sv_pb;
+  carnotpb::ScalarValue sv_pb;
   sv_pb.set_data_type(carnotpb::FLOAT64);
   sv_pb.set_float64_value(3.14159);
 
@@ -158,7 +158,7 @@ TEST(ScalarValueTest, basic_tests_float64) {
 
 TEST(ScalarValueTest, basic_tests_float64_null) {
   ScalarValue sv;
-  planpb::ScalarValue sv_pb;
+  carnotpb::ScalarValue sv_pb;
   sv_pb.set_data_type(carnotpb::FLOAT64);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
@@ -171,7 +171,7 @@ TEST(ScalarValueTest, basic_tests_float64_null) {
 
 TEST(ScalarValueTest, basic_tests_string) {
   ScalarValue sv;
-  planpb::ScalarValue sv_pb;
+  carnotpb::ScalarValue sv_pb;
   sv_pb.set_data_type(carnotpb::STRING);
   sv_pb.set_string_value("test string");
 
@@ -186,7 +186,7 @@ TEST(ScalarValueTest, basic_tests_string) {
 
 TEST(ScalarValueTest, basic_tests_string_null) {
   ScalarValue sv;
-  planpb::ScalarValue sv_pb;
+  carnotpb::ScalarValue sv_pb;
   sv_pb.set_data_type(carnotpb::STRING);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
@@ -199,7 +199,7 @@ TEST(ScalarValueTest, basic_tests_string_null) {
 
 TEST(ScalarValueDeathTest, double_init) {
   ScalarValue sv;
-  planpb::ScalarValue sv_pb;
+  carnotpb::ScalarValue sv_pb;
   sv_pb.set_data_type(carnotpb::STRING);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
@@ -216,7 +216,7 @@ TEST(ScalarValueDeathTest, not_initialized) {
 }
 
 TEST_F(ScalarExpressionTest, col_tests) {
-  planpb::ScalarExpression se_pb;
+  carnotpb::ScalarExpression se_pb;
   auto const_pb = se_pb.mutable_constant();
   const_pb->set_string_value("testing");
   const_pb->set_data_type(carnotpb::STRING);
@@ -255,7 +255,7 @@ class ScalarFuncTest : public ScalarExpressionTest {
  public:
   ~ScalarFuncTest() override = default;
   void SetUp() override {
-    planpb::ScalarFunc func_pb;
+    carnotpb::ScalarFunc func_pb;
     ASSERT_TRUE(TextFormat::MergeFromString(kFuncWithTwoColsProtoTxt, &func_pb));
     ASSERT_TRUE(sf_.Init(func_pb).ok());
   }
@@ -278,15 +278,15 @@ TEST_F(ScalarFuncTest, output_type) {
 }
 
 TEST_F(ScalarFuncTest, expression_type) {
-  EXPECT_EQ(planpb::ScalarExpression::kFunc, sf_.ExpressionType());
+  EXPECT_EQ(carnotpb::ScalarExpression::kFunc, sf_.ExpressionType());
 }
 
 TEST_F(ScalarFuncTest, deps) {
   const auto deps = sf_.Deps();
   ASSERT_EQ(3, deps.size());
-  EXPECT_EQ(planpb::ScalarExpression::kColumn, deps[0]->ExpressionType());
-  EXPECT_EQ(planpb::ScalarExpression::kColumn, deps[1]->ExpressionType());
-  EXPECT_EQ(planpb::ScalarExpression::kConstant, deps[2]->ExpressionType());
+  EXPECT_EQ(carnotpb::ScalarExpression::kColumn, deps[0]->ExpressionType());
+  EXPECT_EQ(carnotpb::ScalarExpression::kColumn, deps[1]->ExpressionType());
+  EXPECT_EQ(carnotpb::ScalarExpression::kConstant, deps[2]->ExpressionType());
 }
 
 TEST_F(ScalarFuncTest, debug_string) {
@@ -294,9 +294,9 @@ TEST_F(ScalarFuncTest, debug_string) {
 }
 
 TEST(ScalarExpressionWalker, walk_node_graph) {
-  planpb::ScalarExpression se_pb;
+  carnotpb::ScalarExpression se_pb;
   EXPECT_TRUE(TextFormat::MergeFromString(kFuncWithTwoColsProtoTxt, se_pb.mutable_func()));
-  EXPECT_EQ(planpb::ScalarExpression::kFunc, se_pb.value_case());
+  EXPECT_EQ(carnotpb::ScalarExpression::kFunc, se_pb.value_case());
   auto se = ScalarExpression::FromProto(se_pb);
   std::vector<int64_t> col_node_ids;
   int val_func_call_count = 0;
