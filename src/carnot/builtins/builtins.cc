@@ -7,6 +7,7 @@ namespace carnot {
 namespace builtins {
 
 void RegisterBuiltinsOrDie(udf::ScalarUDFRegistry* registry) { RegisterMathOpsOrDie(registry); }
+void RegisterBuiltinsOrDie(udf::UDARegistry* registry) { RegisterMathOpsOrDie(registry); }
 
 }  // namespace builtins
 }  // namespace carnot

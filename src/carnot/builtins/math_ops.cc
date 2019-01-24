@@ -15,6 +15,12 @@ void RegisterMathOpsOrDie(udf::ScalarUDFRegistry* registry) {
   registry->RegisterOrDie<AddUDF<udf::Float64Value, udf::Float64Value, udf::Float64Value>>("add");
 }
 
+void RegisterMathOpsOrDie(udf::UDARegistry* registry) {
+  CHECK(registry != nullptr);
+  registry->RegisterOrDie<MeanUDA<udf::Float64Value>>("mean");
+  registry->RegisterOrDie<MeanUDA<udf::Int64Value>>("mean");
+}
+
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace pl
