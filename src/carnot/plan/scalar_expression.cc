@@ -97,9 +97,8 @@ std::vector<ScalarExpression *> ScalarValue::Deps() const {
   DCHECK(is_initialized_) << "Not initialized";
   return {};
 }
-carnotpb::ScalarExpression::ValueCase ScalarValue::ExpressionType() const {
-  return carnotpb::ScalarExpression::kConstant;
-}
+
+Expression ScalarValue::ExpressionType() const { return Expression::kConstant; }
 
 Status Column::Init(const carnotpb::Column &pb) {
   DCHECK(!is_initialized_) << "Already initialized";
@@ -136,9 +135,7 @@ std::vector<const Column *> Column::ColumnDeps() {
   return {this};
 }
 
-carnotpb::ScalarExpression::ValueCase Column::ExpressionType() const {
-  return carnotpb::ScalarExpression::kColumn;
-}
+Expression Column::ExpressionType() const { return Expression::kColumn; }
 
 std::vector<ScalarExpression *> Column::Deps() const {
   DCHECK(is_initialized_) << "Not initialized";
@@ -188,9 +185,7 @@ std::vector<ScalarExpression *> ScalarFunc::Deps() const {
   return deps;
 }
 
-carnotpb::ScalarExpression::ValueCase ScalarFunc::ExpressionType() const {
-  return carnotpb::ScalarExpression::kFunc;
-}
+Expression ScalarFunc::ExpressionType() const { return Expression::kFunc; }
 
 std::vector<const Column *> ScalarFunc::ColumnDeps() {
   std::vector<const Column *> cols;
@@ -242,6 +237,70 @@ std::string ScalarFunc::DebugString() const {
     arg_strings.push_back(arg->DebugString());
   }
   debug_string += absl::StrFormat("fn:%s(%s)", name_, absl::StrJoin(arg_strings, ","));
+  return debug_string;
+}
+
+Status AggregateExpression::Init(const carnotpb::AggregateExpression &pb) {
+  name_ = pb.name();
+  for (const auto arg : pb.args()) {
+    // arg is of message type AggregateExpression.Arg. Needs to be casted to a ScalarExpression.
+    carnotpb::ScalarExpression se;
+
+    se.ParseFromString(arg.SerializeAsString());
+    auto s = ScalarExpression::FromProto(se);
+    if (!s.ok()) {
+      return s.status();
+    }
+    arg_deps_.emplace_back(s.ConsumeValueOrDie());
+  }
+  return Status::OK();
+}
+
+Expression AggregateExpression::ExpressionType() const { return Expression::kAgg; }
+
+std::vector<ScalarExpression *> AggregateExpression::Deps() const {
+  std::vector<ScalarExpression *> deps;
+  for (const auto &arg : arg_deps_) {
+    // No ownership transfer.
+    deps.emplace_back(arg.get());
+  }
+  return deps;
+}
+
+std::vector<const Column *> AggregateExpression::ColumnDeps() {
+  std::vector<const Column *> cols;
+  for (const auto &arg : arg_deps_) {
+    auto dep = arg.get();
+    if (dep->ExpressionType() == Expression::kColumn) {
+      const Column *col = static_cast<const Column *>(dep);
+      cols.push_back(col);
+    }
+  }
+  return cols;
+}
+
+StatusOr<carnotpb::DataType> AggregateExpression::OutputDataType(const CompilerState &state,
+                                                                 const Schema &input_schema) const {
+  // The output data type of a function is based on the computed types of the args
+  // followed by the looking up the function in the registry and getting the output
+  // data type of the function.
+  std::vector<carnotpb::DataType> child_args;
+  child_args.reserve(arg_deps_.size());
+  for (const auto &arg : arg_deps_) {
+    child_args.push_back(arg.get()->OutputDataType(state, input_schema).ValueOrDie());
+  }
+  PL_ASSIGN_OR_RETURN(auto s, state.uda_registry()->GetDefinition(name_, child_args));
+  return s->finalize_return_type();
+}
+
+std::string AggregateExpression::DebugString() const {
+  std::string debug_string;
+  std::vector<std::string> arg_strings;
+  for (const auto &arg : arg_deps_) {
+    arg_strings.push_back(arg->DebugString());
+  }
+  debug_string +=
+      absl::StrFormat("aggregate expression:%s(%s)", name_, absl::StrJoin(arg_strings, ","));
   return debug_string;
 }
 

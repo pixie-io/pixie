@@ -28,10 +28,21 @@ class DummyTestUDF : udf::ScalarUDF {
   }
 };
 
+class DummyTestUDA : udf::UDA {
+ public:
+  Status Init(udf::FunctionContext*) { return Status::OK(); }
+  void Update(udf::FunctionContext*, udf::Float64Value, udf::Float64Value, udf::Int64Value) {}
+  void Merge(udf::FunctionContext*, const DummyTestUDA&) {}
+  udf::Int64Value Finalize(udf::FunctionContext*) { return 0; }
+};
+
 class ScalarExpressionTest : public ::testing::Test {
  public:
-  ScalarExpressionTest() : state_(std::make_shared<udf::ScalarUDFRegistry>("test")) {
+  ScalarExpressionTest()
+      : state_(std::make_shared<udf::ScalarUDFRegistry>("test"),
+               std::make_shared<udf::UDARegistry>("testUDA")) {
     state_.udf_registry()->RegisterOrDie<DummyTestUDF>("foobar");
+    state_.uda_registry()->RegisterOrDie<DummyTestUDA>("testAgg");
     Relation rel0;
     rel0.AddColumn(carnotpb::INT64, "col0");
     rel0.AddColumn(carnotpb::FLOAT64, "col1");
@@ -277,16 +288,14 @@ TEST_F(ScalarFuncTest, output_type) {
   EXPECT_EQ(carnotpb::INT64, res.ConsumeValueOrDie());
 }
 
-TEST_F(ScalarFuncTest, expression_type) {
-  EXPECT_EQ(carnotpb::ScalarExpression::kFunc, sf_.ExpressionType());
-}
+TEST_F(ScalarFuncTest, expression_type) { EXPECT_EQ(Expression::kFunc, sf_.ExpressionType()); }
 
 TEST_F(ScalarFuncTest, deps) {
   const auto deps = sf_.Deps();
   ASSERT_EQ(3, deps.size());
-  EXPECT_EQ(carnotpb::ScalarExpression::kColumn, deps[0]->ExpressionType());
-  EXPECT_EQ(carnotpb::ScalarExpression::kColumn, deps[1]->ExpressionType());
-  EXPECT_EQ(carnotpb::ScalarExpression::kConstant, deps[2]->ExpressionType());
+  EXPECT_EQ(Expression::kColumn, deps[0]->ExpressionType());
+  EXPECT_EQ(Expression::kColumn, deps[1]->ExpressionType());
+  EXPECT_EQ(Expression::kConstant, deps[2]->ExpressionType());
 }
 
 TEST_F(ScalarFuncTest, debug_string) {
@@ -325,6 +334,70 @@ TEST(ScalarExpressionWalker, walk_node_graph) {
   EXPECT_EQ(2, col_count.ValueOrDie());
   EXPECT_EQ(1, val_func_call_count);
   EXPECT_EQ(std::vector<int64_t>({0, 1}), col_node_ids);
+}
+
+// TODO(michelle): Use our fixtures for this.
+const char* kAggregateExpression = R"(
+name: "testAgg"
+args {
+  column {
+    node: 0
+    index: 1
+  }
+}
+args {
+  column {
+    node: 1
+    index: 1
+  }
+}
+args {
+  constant {
+    data_type: INT64
+    int64_value: 36
+  }
+})";
+
+class AggregateExpressionTest : public ScalarExpressionTest {
+ public:
+  ~AggregateExpressionTest() override = default;
+  void SetUp() override {
+    carnotpb::AggregateExpression agg_pb;
+    ASSERT_TRUE(TextFormat::MergeFromString(kAggregateExpression, &agg_pb));
+    ASSERT_TRUE(ae_.Init(agg_pb).ok());
+  }
+  AggregateExpression ae_;
+};
+
+TEST_F(AggregateExpressionTest, deps) {
+  const auto deps = ae_.Deps();
+  ASSERT_EQ(3, deps.size());
+  EXPECT_EQ(Expression::kColumn, deps[0]->ExpressionType());
+  EXPECT_EQ(Expression::kColumn, deps[1]->ExpressionType());
+  EXPECT_EQ(Expression::kConstant, deps[2]->ExpressionType());
+}
+
+TEST_F(AggregateExpressionTest, ColDeps) {
+  const auto& cols = ae_.ColumnDeps();
+  ASSERT_EQ(2, cols.size());
+  EXPECT_EQ(0, cols[0]->NodeID());
+  EXPECT_EQ(1, cols[0]->Index());
+  EXPECT_EQ(1, cols[1]->NodeID());
+  EXPECT_EQ(1, cols[1]->Index());
+}
+
+TEST_F(AggregateExpressionTest, output_type) {
+  auto res = ae_.OutputDataType(state_, schema_);
+  ASSERT_TRUE(res.ok());
+  EXPECT_EQ(carnotpb::INT64, res.ConsumeValueOrDie());
+}
+
+TEST_F(AggregateExpressionTest, expression_type) {
+  EXPECT_EQ(Expression::kAgg, ae_.ExpressionType());
+}
+
+TEST_F(AggregateExpressionTest, debug_string) {
+  EXPECT_EQ("aggregate expression:testAgg(node<0>::col[1],node<1>::col[1],36)", ae_.DebugString());
 }
 
 }  // namespace plan

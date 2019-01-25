@@ -21,6 +21,8 @@ namespace plan {
 // Forward declare columns since we need it for some functions in ScalarExpression.
 class Column;
 
+enum Expression { kFunc, kColumn, kConstant, kAgg };
+
 inline std::string ToString(const carnotpb::ScalarExpression::ValueCase &exp) {
   switch (exp) {
     case carnotpb::ScalarExpression::kFunc:
@@ -78,7 +80,7 @@ class ScalarExpression {
    * ExpressionType gets the column type from the proto.
    * @return Expression ValueCase.
    */
-  virtual carnotpb::ScalarExpression::ValueCase ExpressionType() const = 0;
+  virtual Expression ExpressionType() const = 0;
 
   /**
    * Generate a debug string.
@@ -110,7 +112,7 @@ class Column : public ScalarExpression {
                                               const Schema &input_schema) const override;
   std::vector<const Column *> ColumnDeps() override;
   std::vector<ScalarExpression *> Deps() const override;
-  carnotpb::ScalarExpression::ValueCase ExpressionType() const override;
+  Expression ExpressionType() const override;
   std::string DebugString() const override;
 
   /// The index of the column in the operator that is referenced.
@@ -139,7 +141,7 @@ class ScalarValue : public ScalarExpression {
   StatusOr<carnotpb::DataType> OutputDataType(const CompilerState &state,
                                               const Schema &input_schema) const override;
   std::vector<ScalarExpression *> Deps() const override;
-  carnotpb::ScalarExpression::ValueCase ExpressionType() const override;
+  Expression ExpressionType() const override;
   std::string DebugString() const override;
 
   /// Returns the data type of the constant value.
@@ -167,7 +169,7 @@ class ScalarFunc : public ScalarExpression {
   StatusOr<carnotpb::DataType> OutputDataType(const CompilerState &state,
                                               const Schema &input_schema) const override;
   std::vector<ScalarExpression *> Deps() const override;
-  carnotpb::ScalarExpression::ValueCase ExpressionType() const override;
+  Expression ExpressionType() const override;
   std::string DebugString() const override;
 
   std::string name() const { return name_; }
@@ -176,6 +178,28 @@ class ScalarFunc : public ScalarExpression {
  private:
   std::string name_;
   ScalarExpressionPtrVector arg_deps_;
+};
+
+class AggregateExpression : public ScalarExpression {
+ public:
+  AggregateExpression() : ScalarExpression() {}
+  virtual ~AggregateExpression() = default;
+
+  Status Init(const carnotpb::AggregateExpression &pb);
+  // Override base class methods.
+  std::vector<const Column *> ColumnDeps() override;
+  StatusOr<carnotpb::DataType> OutputDataType(const CompilerState &state,
+                                              const Schema &input_schema) const override;
+  std::vector<ScalarExpression *> Deps() const override;
+  Expression ExpressionType() const override;
+  std::string DebugString() const override;
+
+  std::string name() const { return name_; }
+  const ScalarExpressionPtrVector &arg_deps() const { return arg_deps_; }
+
+ private:
+  std::string name_;
+  ScalarExpressionPtrVector arg_deps_;  // Args can be ScalarValue or Column.
 };
 
 /**
@@ -274,11 +298,11 @@ class ScalarExpressionWalker {
                                std::vector<TReturn> child_values) {
     const auto expression_type = expression.ExpressionType();
     switch (expression_type) {
-      case carnotpb::ScalarExpression::kColumn:
+      case Expression::kColumn:
         return CallAs<Column>(column_walk_fn_, expression, child_values);
-      case carnotpb::ScalarExpression::kConstant:
+      case Expression::kConstant:
         return CallAs<ScalarValue>(scalar_value_walk_fn_, expression, child_values);
-      case carnotpb::ScalarExpression::kFunc:
+      case Expression::kFunc:
         return CallAs<ScalarFunc>(scalar_func_walk_fn_, expression, child_values);
       default:
         return error::InvalidArgument("Expression type: $0 is invalid", expression_type);

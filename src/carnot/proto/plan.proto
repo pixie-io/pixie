@@ -117,7 +117,7 @@ message MapOperator {
 message BlockingAggregateOperator {
   // The functions to execute for this aggregate.
   // Note that only agg funcs are valid here.
-  repeated ScalarFunc values  = 1;
+  repeated AggregateExpression values  = 1;
   // The columns to use for grouping. For grouping involving a function
   // a map operation will need to be performed first.
   repeated Column groups      = 2;
@@ -164,6 +164,24 @@ message ScalarFunc {
   repeated ScalarValue init_args = 2;
   // The arguments used during evaluation.
   repeated ScalarExpression args = 3;
+}
+
+// AggregateExpressions perform an operator on a set of arguments and produce a single
+// valued output.
+message AggregateExpression {
+  message Arg {
+    oneof value {
+      // A constant value.
+      ScalarValue constant = 1;
+      // A value that is a column reference.
+      Column column = 2;
+    }
+  }
+  // The name of the function. Should exist in UDA registry.
+  string name = 3;
+  // The constructor arguments.
+  repeated ScalarValue init_args = 4;
+  repeated Arg args = 5;
 }
 
 // A column reference.

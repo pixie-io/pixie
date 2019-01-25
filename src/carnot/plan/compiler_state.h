@@ -14,13 +14,16 @@ class CompilerState {
    *
    * @param udf_registry the passed in UDF registry.
    */
-  explicit CompilerState(std::shared_ptr<udf::ScalarUDFRegistry> udf_registry)
-      : udf_registry_(udf_registry) {}
+  explicit CompilerState(std::shared_ptr<udf::ScalarUDFRegistry> udf_registry,
+                         std::shared_ptr<udf::UDARegistry> uda_registry)
+      : udf_registry_(udf_registry), uda_registry_(uda_registry) {}
 
   std::shared_ptr<udf::ScalarUDFRegistry> udf_registry() const { return udf_registry_; }
+  std::shared_ptr<udf::UDARegistry> uda_registry() const { return uda_registry_; }
 
  private:
   std::shared_ptr<udf::ScalarUDFRegistry> udf_registry_;
+  std::shared_ptr<udf::UDARegistry> uda_registry_;
 };
 
 }  // namespace plan
