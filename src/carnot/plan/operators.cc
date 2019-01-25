@@ -1,5 +1,6 @@
 #include <glog/logging.h>
 #include <memory>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_format.h"
@@ -18,7 +19,7 @@ namespace plan {
 using pl::Status;
 
 template <typename TOp, typename TProto>
-std::unique_ptr<Operator> CreateOperator(int64_t id, const TProto& pb) {
+std::unique_ptr<Operator> CreateOperator(int64_t id, const TProto &pb) {
   auto op = std::make_unique<TOp>(id);
   auto s = op->Init(pb);
   // On init failure, return null;
@@ -29,7 +30,7 @@ std::unique_ptr<Operator> CreateOperator(int64_t id, const TProto& pb) {
   return op;
 }
 
-std::unique_ptr<Operator> Operator::FromProto(const carnotpb::Operator& pb, int64_t id) {
+std::unique_ptr<Operator> Operator::FromProto(const carnotpb::Operator &pb, int64_t id) {
   switch (pb.op_type()) {
     case carnotpb::MEMORY_SOURCE_OPERATOR:
       return CreateOperator<MemorySourceOperator>(id, pb.mem_source_op());
@@ -50,13 +51,13 @@ std::unique_ptr<Operator> Operator::FromProto(const carnotpb::Operator& pb, int6
 
 std::string MemorySourceOperator::DebugString() { return "Operator: MemorySource"; }
 
-Status MemorySourceOperator::Init(const carnotpb::MemorySourceOperator& pb) {
+Status MemorySourceOperator::Init(const carnotpb::MemorySourceOperator &pb) {
   pb_ = pb;
   is_initialized_ = true;
   return Status::OK();
 }
-StatusOr<Relation> MemorySourceOperator::OutputRelation(const Schema&, const CompilerState&,
-                                                        const std::vector<uint64_t>& input_ids) {
+StatusOr<Relation> MemorySourceOperator::OutputRelation(const Schema &, const CompilerState &,
+                                                        const std::vector<int64_t> &input_ids) {
   DCHECK(is_initialized_) << "Not initialized";
   if (input_ids.size() != 0) {
     // TODO(zasgar): We should figure out if we need to treat the "source table" as
@@ -87,7 +88,7 @@ std::string MapOperator::DebugString() {
   return "Op:Map" + debug_string;
 }
 
-Status MapOperator::Init(const carnotpb::MapOperator& pb) {
+Status MapOperator::Init(const carnotpb::MapOperator &pb) {
   pb_ = pb;
   // Some sanity tests.
   if (pb_.column_names_size() != pb_.expressions_size()) {
@@ -107,8 +108,8 @@ Status MapOperator::Init(const carnotpb::MapOperator& pb) {
   return Status::OK();
 }
 
-StatusOr<Relation> MapOperator::OutputRelation(const Schema& schema, const CompilerState& state,
-                                               const std::vector<uint64_t>& input_ids) {
+StatusOr<Relation> MapOperator::OutputRelation(const Schema &schema, const CompilerState &state,
+                                               const std::vector<int64_t> &input_ids) {
   DCHECK(is_initialized_) << "Not initialized";
   if (input_ids.size() != 1) {
     return error::InvalidArgument("Map operator must have exactly one input");
@@ -131,7 +132,7 @@ StatusOr<Relation> MapOperator::OutputRelation(const Schema& schema, const Compi
 
 std::string BlockingAggregateOperator::DebugString() { return "Operator: BlockingAggregate"; }
 
-Status BlockingAggregateOperator::Init(const carnotpb::BlockingAggregateOperator& pb) {
+Status BlockingAggregateOperator::Init(const carnotpb::BlockingAggregateOperator &pb) {
   pb_ = pb;
   if (pb_.groups_size() != pb_.group_names_size()) {
     return error::InvalidArgument("group names/exp size mismatch");
@@ -139,12 +140,20 @@ Status BlockingAggregateOperator::Init(const carnotpb::BlockingAggregateOperator
   if (pb_.values_size() != pb_.value_names_size()) {
     return error::InvalidArgument("values names/exp size mismatch");
   }
+  values_.reserve(static_cast<size_t>(pb_.values_size()));
+  for (int i = 0; i < pb_.values_size(); ++i) {
+    auto ae = std::make_unique<AggregateExpression>();
+    auto s = ae->Init(pb_.values(i));
+    PL_RETURN_IF_ERROR(s);
+    values_.emplace_back(std::unique_ptr<AggregateExpression>(std::move(ae)));
+  }
+
   is_initialized_ = true;
   return Status::OK();
 }
 
 StatusOr<Relation> BlockingAggregateOperator::OutputRelation(
-    const Schema& schema, const CompilerState&, const std::vector<uint64_t>& input_ids) {
+    const Schema &schema, const CompilerState &state, const std::vector<int64_t> &input_ids) {
   DCHECK(is_initialized_) << "Not initialized";
   if (input_ids.size() != 1) {
     return error::InvalidArgument("BlockingAgg operator must have exactly one input");
@@ -154,7 +163,29 @@ StatusOr<Relation> BlockingAggregateOperator::OutputRelation(
                            input_ids[0]);
   }
 
-  return error::Unimplemented("Not implemented yet");
+  auto input_relation_s = schema.GetRelation(input_ids[0]);
+  PL_RETURN_IF_ERROR(input_relation_s);
+  const auto input_relation = input_relation_s.ConsumeValueOrDie();
+  Relation output_relation;
+
+  for (int idx = 0; idx < pb_.groups_size(); ++idx) {
+    int64_t node_id = pb_.groups(idx).node();
+    int64_t col_idx = pb_.groups(idx).index();
+    if (node_id != input_ids[0]) {
+      return error::InvalidArgument("Column does not belong to the correct input node");
+    }
+    if (col_idx > static_cast<int64_t>(input_relation.NumColumns())) {
+      return error::InvalidArgument("Column index is out of bounds");
+    }
+    output_relation.AddColumn(input_relation.GetColumnType(col_idx), pb_.group_names(idx));
+  }
+
+  for (const auto &value : values_) {
+    auto s = value->OutputDataType(state, schema);
+    PL_RETURN_IF_ERROR(s);
+    output_relation.AddColumn(s.ConsumeValueOrDie(), value->name());
+  }
+  return output_relation;
 }
 
 /**
@@ -163,13 +194,13 @@ StatusOr<Relation> BlockingAggregateOperator::OutputRelation(
 
 std::string MemorySinkOperator::DebugString() { return "Operator: MemorySink"; }
 
-Status MemorySinkOperator::Init(const carnotpb::MemorySinkOperator& pb) {
+Status MemorySinkOperator::Init(const carnotpb::MemorySinkOperator &pb) {
   pb_ = pb;
   is_initialized_ = true;
   return Status::OK();
 }
-StatusOr<Relation> MemorySinkOperator::OutputRelation(const Schema&, const CompilerState&,
-                                                      const std::vector<uint64_t>&) {
+StatusOr<Relation> MemorySinkOperator::OutputRelation(const Schema &, const CompilerState &,
+                                                      const std::vector<int64_t> &) {
   DCHECK(is_initialized_) << "Not initialized";
   // There are no outputs.
   return Relation();

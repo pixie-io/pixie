@@ -45,7 +45,7 @@ class Operator {
   void Debug() { LOG(INFO) << DebugString(); }
 
   virtual StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
-                                            const std::vector<uint64_t> &input_ids) = 0;
+                                            const std::vector<int64_t> &input_ids) = 0;
 
  protected:
   Operator(int64_t id, carnotpb::OperatorType op_type) : id_(id), op_type_(op_type) {}
@@ -61,7 +61,7 @@ class MemorySourceOperator : public Operator {
   explicit MemorySourceOperator(int64_t id) : Operator(id, carnotpb::MEMORY_SOURCE_OPERATOR) {}
   ~MemorySourceOperator() override = default;
   StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
-                                    const std::vector<uint64_t> &input_ids) override;
+                                    const std::vector<int64_t> &input_ids) override;
   Status Init(const carnotpb::MemorySourceOperator &pb);
   std::string DebugString() override;
 
@@ -74,7 +74,7 @@ class MapOperator : public Operator {
   explicit MapOperator(int64_t id) : Operator(id, carnotpb::MAP_OPERATOR) {}
   ~MapOperator() override = default;
   StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
-                                    const std::vector<uint64_t> &input_ids) override;
+                                    const std::vector<int64_t> &input_ids) override;
   Status Init(const carnotpb::MapOperator &pb);
   std::string DebugString() override;
 
@@ -91,11 +91,12 @@ class BlockingAggregateOperator : public Operator {
       : Operator(id, carnotpb::BLOCKING_AGGREGATE_OPERATOR) {}
   ~BlockingAggregateOperator() override = default;
   StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
-                                    const std::vector<uint64_t> &input_ids) override;
+                                    const std::vector<int64_t> &input_ids) override;
   Status Init(const carnotpb::BlockingAggregateOperator &pb);
   std::string DebugString() override;
 
  private:
+  std::vector<std::unique_ptr<AggregateExpression>> values_;
   carnotpb::BlockingAggregateOperator pb_;
 };
 
@@ -104,7 +105,7 @@ class MemorySinkOperator : public Operator {
   explicit MemorySinkOperator(int64_t id) : Operator(id, carnotpb::MEMORY_SINK_OPERATOR) {}
   ~MemorySinkOperator() override = default;
   StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
-                                    const std::vector<uint64_t> &input_ids) override;
+                                    const std::vector<int64_t> &input_ids) override;
   Status Init(const carnotpb::MemorySinkOperator &pb);
   std::string DebugString() override;
 
