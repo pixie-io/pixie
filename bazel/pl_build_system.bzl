@@ -69,6 +69,7 @@ def pl_cc_library(
         linkstamp = None,
         linkopts = [],
         tags = [],
+        testonly = 0,
         deps = [],
         strip_include_prefix = None):
     native.cc_library(
@@ -84,6 +85,7 @@ def pl_cc_library(
         linkstatic = 1,
         linkstamp = linkstamp,
         linkopts = linkopts,
+        testonly = testonly,
         strip_include_prefix = strip_include_prefix,
     )
 

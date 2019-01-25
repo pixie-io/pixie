@@ -7,6 +7,7 @@
 #include "absl/strings/match.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/plan/utils.h"
+#include "src/carnot/proto/test_proto.h"
 
 namespace pl {
 namespace carnot {
@@ -266,8 +267,7 @@ class ScalarFuncTest : public ScalarExpressionTest {
  public:
   ~ScalarFuncTest() override = default;
   void SetUp() override {
-    carnotpb::ScalarFunc func_pb;
-    ASSERT_TRUE(TextFormat::MergeFromString(kFuncWithTwoColsProtoTxt, &func_pb));
+    carnotpb::ScalarFunc func_pb = carnotpb::testutils::CreateTestFuncWithTwoColsPB();
     ASSERT_TRUE(sf_.Init(func_pb).ok());
   }
   ScalarFunc sf_;
@@ -303,8 +303,7 @@ TEST_F(ScalarFuncTest, debug_string) {
 }
 
 TEST(ScalarExpressionWalker, walk_node_graph) {
-  carnotpb::ScalarExpression se_pb;
-  EXPECT_TRUE(TextFormat::MergeFromString(kFuncWithTwoColsProtoTxt, se_pb.mutable_func()));
+  carnotpb::ScalarExpression se_pb = carnotpb::testutils::CreateTestScalarExpressionWithFunc1PB();
   EXPECT_EQ(carnotpb::ScalarExpression::kFunc, se_pb.value_case());
   auto se = ScalarExpression::FromProto(se_pb);
   std::vector<int64_t> col_node_ids;

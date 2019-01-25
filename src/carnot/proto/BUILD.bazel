@@ -2,6 +2,7 @@
 
 load("@io_bazel_rules_go//go:def.bzl", "go_library")
 load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
 proto_library(
     name = "types_proto",
@@ -23,14 +24,13 @@ cc_proto_library(
     deps = [":types_proto"],
 )
 
-
 proto_library(
     name = "plan_proto",
     srcs = ["plan.proto"],
     visibility = ["//visibility:public"],
     deps = [
-        "@com_google_protobuf//:wrappers_proto",
         "//src/carnot/proto:types_proto",
+        "@com_google_protobuf//:wrappers_proto",
     ],
 )
 
@@ -69,4 +69,12 @@ cc_proto_library(
     name = "udfs_cc_proto",
     visibility = ["//visibility:public"],
     deps = [":udfs_proto"],
+)
+
+pl_cc_library(
+    name = "plan_testutils",
+    testonly = 1,
+    hdrs = ["test_proto.h"],
+    visibility = ["//visibility:public"],
+    deps = [":plan_cc_proto"],
 )

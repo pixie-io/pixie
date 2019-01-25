@@ -68,7 +68,7 @@ StatusOr<Relation> MemorySourceOperator::OutputRelation(const Schema &, const Co
   for (int i = 0; i < pb_.column_idxs_size(); ++i) {
     r.AddColumn(pb_.column_types(i), pb_.column_names(i));
   }
-  return StatusOr<Relation>();
+  return r;
 }
 
 /**

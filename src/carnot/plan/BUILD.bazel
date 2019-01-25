@@ -25,7 +25,10 @@ pl_cc_test(
 pl_cc_test(
     name = "operators_test",
     srcs = ["operators_test.cc"],
-    deps = [":cc_library"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/proto:plan_testutils",
+    ],
 )
 
 pl_cc_test(
@@ -61,5 +64,8 @@ pl_cc_test(
 pl_cc_test(
     name = "scalar_expression_test",
     srcs = ["scalar_expression_test.cc"],
-    deps = [":cc_library"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/proto:plan_testutils",
+    ],
 )
