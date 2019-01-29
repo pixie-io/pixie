@@ -38,6 +38,11 @@ pl_cc_test(
     deps = [":cc_library"],
 )
 
+pl_cc_test(
+    name = "column_wrapper_test",
+    srcs = ["column_wrapper_test.cc"],
+    deps = [":cc_library"],
+)
 
 pl_cc_binary(
     name = "wrapper_benchmark",

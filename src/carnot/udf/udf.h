@@ -160,7 +160,7 @@ struct UDFDataTypeTraits<udf::UDFDataType::FLOAT64> {
   using arrow_type = arrow::DoubleType;
   using arrow_builder_type = arrow::DoubleBuilder;
   using arrow_array_type = arrow::DoubleArray;
-  static constexpr arrow::Type::type arrow_type_id = arrow::Type::FLOAT;
+  static constexpr arrow::Type::type arrow_type_id = arrow::Type::DOUBLE;
 };
 
 template <>

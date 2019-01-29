@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "src/carnot/udf/column_wrapper.h"
 #include "src/carnot/udf/udf_wrapper.h"
 #include "src/utils/status.h"
 
@@ -80,7 +81,7 @@ class ScalarUDFDefinition : public UDFDefinition {
   std::unique_ptr<ScalarUDF> Make() { return make_fn_(); }
 
   Status ExecBatch(ScalarUDF* udf, FunctionContext* ctx,
-                   const std::vector<const UDFBaseValue*>& inputs, UDFBaseValue* output,
+                   const std::vector<const ColumnWrapper*>& inputs, ColumnWrapper* output,
                    int count) {
     return exec_wrapper_fn_(udf, ctx, inputs, output, count);
   }
@@ -107,7 +108,7 @@ class ScalarUDFDefinition : public UDFDefinition {
   UDFDataType exec_return_type_;
   std::function<std::unique_ptr<ScalarUDF>()> make_fn_;
   std::function<Status(ScalarUDF*, FunctionContext* ctx,
-                       const std::vector<const UDFBaseValue*>& inputs, UDFBaseValue* output,
+                       const std::vector<const ColumnWrapper*>& inputs, ColumnWrapper* output,
                        int count)>
       exec_wrapper_fn_;
 

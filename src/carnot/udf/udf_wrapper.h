@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "src/carnot/udf/arrow_adapter.h"
+#include "src/carnot/udf/column_wrapper.h"
 #include "src/carnot/udf/udf.h"
 #include "src/utils/error.h"
 #include "src/utils/statusor.h"
@@ -184,7 +185,7 @@ struct ScalarUDFWrapper {
    * @return Status of execution.
    */
   static Status ExecBatch(ScalarUDF *udf, FunctionContext *ctx,
-                          const std::vector<const UDFBaseValue *> &inputs, UDFBaseValue *output,
+                          const std::vector<const ColumnWrapper *> &inputs, ColumnWrapper *output,
                           int count) {
     // Check that output is allocated.
     DCHECK(output != nullptr);
@@ -192,15 +193,28 @@ struct ScalarUDFWrapper {
     DCHECK(inputs.size() == ScalarUDFTraits<TUDF>::ExecArguments().size());
 
     constexpr carnotpb::DataType return_type = ScalarUDFTraits<TUDF>::ReturnType();
-    auto exec_arguments_array = ScalarUDFTraits<TUDF>::ExecArguments();
+    auto exec_argument_types = ScalarUDFTraits<TUDF>::ExecArguments();
 
+#ifndef NDEBUG
+    // Check argument types in debug mode.
+    for (size_t idx = 0; idx < inputs.size(); ++idx) {
+      CHECK(inputs[idx]->DataType() == exec_argument_types[idx]);
+    }
+#endif
+
+    std::vector<const UDFBaseValue *> input_as_base_value;
+    for (const auto *col : inputs) {
+      input_as_base_value.push_back(col->UnsafeRawData());
+    }
+
+    using output_type = typename UDFDataTypeTraits<return_type>::udf_value_type;
+    auto *casted_output = reinterpret_cast<output_type *>(output->UnsafeRawData());
     // The outer wrapper just casts the output type and UDF type. We then pass in
     // the inputs with a sequence based on the number of arguments to iterate through and
     // cast the inputs.
-    return ExecWrapper<TUDF>(
-        reinterpret_cast<TUDF *>(udf), ctx, count,
-        reinterpret_cast<typename UDFDataTypeTraits<return_type>::udf_value_type *>(output), inputs,
-        std::make_index_sequence<exec_arguments_array.size()>{});
+    return ExecWrapper<TUDF>(reinterpret_cast<TUDF *>(udf), ctx, count, casted_output,
+                             input_as_base_value,
+                             std::make_index_sequence<exec_argument_types.size()>{});
   }
 };
 
