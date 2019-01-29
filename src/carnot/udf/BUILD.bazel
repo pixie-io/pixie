@@ -52,3 +52,14 @@ pl_cc_binary(
         "@com_google_benchmark//:benchmark_main",
     ],
 )
+
+pl_cc_binary(
+    name = "udf_eval_benchmark",
+    srcs = ["udf_eval_benchmark.cc"],
+    deps = [
+        ":cc_library",
+        "//src/utils/benchmark:cc_library",
+        "//third_party:arrow",
+        "@com_google_benchmark//:benchmark_main",
+    ],
+)
