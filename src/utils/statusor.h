@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "src/utils/codes/error_codes.pb.h"
+#include "src/utils/error_strings.h"
 #include "src/utils/macros.h"
 #include "src/utils/status.h"
 
@@ -77,6 +78,13 @@ class StatusOr {
 
   // Moves the current value.
   T ConsumeValueOrDie();
+
+  std::string ToString() const {
+    if (ok()) {
+      return "OK";
+    }
+    return pl::error::CodeToString(code()) + " : " + msg();
+  }
 
   template <typename U>
   struct IsNull {
@@ -153,6 +161,11 @@ void StatusOr<T>::CheckValueNotNull(const T& value) {
         Status(pl::error::INTERNAL, "NULL is not a valid constructor argument to StatusOr<T*>");
   }
 }
+
+template <typename T>
+inline Status StatusAdapter(const StatusOr<T>& s) noexcept {
+  return Status(s.status());
+};
 
 // Internal helper for concatenating macro values.
 #define PL_STATUS_MACROS_CONCAT_NAME_INNER(x, y) x##y

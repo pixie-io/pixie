@@ -1,9 +1,13 @@
 #pragma once
+#include <arrow/builder.h>
+#include <arrow/type.h>
 #include <glog/logging.h>
 
+#include <array>
 #include <cstdint>
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <functional>
@@ -88,21 +92,80 @@ struct UDFValueTraits {
 template <>
 struct UDFValueTraits<BoolValue> {
   static constexpr UDFDataType data_type = carnotpb::BOOLEAN;
+  using arrow_type = arrow::BooleanType;
+  using arrow_builder_type = arrow::BooleanBuilder;
+  using arrow_array_type = arrow::BooleanArray;
+  using native_type = bool;
 };
 
 template <>
 struct UDFValueTraits<Int64Value> {
   static constexpr UDFDataType data_type = carnotpb::INT64;
+  using arrow_type = arrow::Int64Type;
+  using arrow_builder_type = arrow::Int64Builder;
+  using arrow_array_type = arrow::Int64Array;
+  using native_type = int64_t;
 };
 
 template <>
 struct UDFValueTraits<Float64Value> {
   static constexpr UDFDataType data_type = carnotpb::FLOAT64;
+  using arrow_type = arrow::DoubleType;
+  using arrow_builder_type = arrow::DoubleBuilder;
+  using arrow_array_type = arrow::DoubleArray;
+  using native_type = double;
 };
 
 template <>
 struct UDFValueTraits<StringValue> {
   static constexpr UDFDataType data_type = carnotpb::STRING;
+  using arrow_type = arrow::StringType;
+  using arrow_builder_type = arrow::StringBuilder;
+  using arrow_array_type = arrow::StringArray;
+  using native_type = std::string;
+};
+
+/**
+ * Store traits based on the native UDF type.
+ * @tparam T THe UDFDataType.
+ */
+template <udf::UDFDataType T>
+struct UDFDataTypeTraits {};
+
+template <>
+struct UDFDataTypeTraits<udf::UDFDataType::BOOLEAN> {
+  typedef BoolValue udf_value_type;
+  using arrow_type = arrow::BooleanType;
+  using arrow_builder_type = arrow::BooleanBuilder;
+  using arrow_array_type = arrow::BooleanArray;
+  static constexpr arrow::Type::type arrow_type_id = arrow::Type::BOOL;
+};
+
+template <>
+struct UDFDataTypeTraits<udf::UDFDataType::INT64> {
+  typedef Int64Value udf_value_type;
+  using arrow_type = arrow::Int64Type;
+  using arrow_builder_type = arrow::Int64Builder;
+  using arrow_array_type = arrow::Int64Array;
+  static constexpr arrow::Type::type arrow_type_id = arrow::Type::INT64;
+};
+
+template <>
+struct UDFDataTypeTraits<udf::UDFDataType::FLOAT64> {
+  typedef Float64Value udf_value_type;
+  using arrow_type = arrow::DoubleType;
+  using arrow_builder_type = arrow::DoubleBuilder;
+  using arrow_array_type = arrow::DoubleArray;
+  static constexpr arrow::Type::type arrow_type_id = arrow::Type::FLOAT;
+};
+
+template <>
+struct UDFDataTypeTraits<udf::UDFDataType::STRING> {
+  typedef StringValue udf_value_type;
+  using arrow_type = arrow::StringType;
+  using arrow_builder_type = arrow::StringBuilder;
+  using arrow_array_type = arrow::StringArray;
+  static constexpr arrow::Type::type arrow_type_id = arrow::Type::STRING;
 };
 
 /**

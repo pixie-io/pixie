@@ -70,15 +70,32 @@ inline bool Status::operator==(const Status& x) const {
 
 inline bool Status::operator!=(const Status& x) const { return !(*this == x); }
 
+inline Status StatusAdapter(const Status& s) noexcept { return Status(s); };
+
 }  // namespace pl
 
 // Early-returns the status if it is in error; otherwise, proceeds.
-//
 // The argument expression is guaranteed to be evaluated exactly once.
-#define PL_RETURN_IF_ERROR(__status) \
-  do {                               \
-    auto status = __status.status(); \
-    if (!status.ok()) {              \
-      return status;                 \
-    }                                \
+#define PL_RETURN_IF_ERROR(__status)                     \
+  do {                                                   \
+    ::pl::Status status = ::pl::StatusAdapter(__status); \
+    if (!status.ok()) {                                  \
+      return status;                                     \
+    }                                                    \
   } while (false)
+
+#define EXPECT_OK(value) EXPECT_TRUE((value).status().ok())
+
+#define PL_CHECK_OK_PREPEND(to_call, msg)             \
+  do {                                                \
+    auto _s = (to_call);                              \
+    CHECK(_s.ok()) << (msg) << ": " << _s.ToString(); \
+  } while (false)
+
+#ifdef NDEBUG
+#define PL_DCHECK_OK(val) PL_UNUSED(val);
+#else
+#define PL_DCHECK_OK(val) PL_CHECK_OK_PREPEND(val, "Bad Status");
+#endif
+
+#define PL_CHECK_OK(val) PL_CHECK_OK_PREPEND(val, "Bad Status")
