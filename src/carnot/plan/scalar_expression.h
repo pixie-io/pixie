@@ -315,6 +315,9 @@ class ScalarExpressionWalker {
   ColumnWalkFn column_walk_fn_;
 };
 
+using ScalarExpressionVector = std::vector<std::shared_ptr<ScalarExpression>>;
+using ConstScalarExpressionVector = std::vector<std::shared_ptr<const ScalarExpression>>;
+
 }  // namespace plan
 }  // namespace carnot
 }  // namespace pl

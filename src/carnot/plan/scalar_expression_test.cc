@@ -21,7 +21,7 @@ TEST(ToString, values) {
   EXPECT_EQ("Value", ToString(carnotpb::ScalarExpression::kConstant));
 }
 
-class DummyTestUDF : udf::ScalarUDF {
+class DummyTestUDF : public udf::ScalarUDF {
  public:
   udf::Int64Value Exec(udf::FunctionContext*, udf::Float64Value, udf::Float64Value,
                        udf::Int64Value) {
@@ -29,7 +29,7 @@ class DummyTestUDF : udf::ScalarUDF {
   }
 };
 
-class DummyTestUDA : udf::UDA {
+class DummyTestUDA : public udf::UDA {
  public:
   Status Init(udf::FunctionContext*) { return Status::OK(); }
   void Update(udf::FunctionContext*, udf::Float64Value, udf::Float64Value, udf::Int64Value) {}

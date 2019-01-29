@@ -8,13 +8,13 @@ namespace carnot {
 namespace builtins {
 
 template <typename TReturn, typename TArg1, typename TArg2>
-class AddUDF : udf::ScalarUDF {
+class AddUDF : public udf::ScalarUDF {
  public:
   TReturn Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1.val + b2.val; }
 };
 
 template <typename TArg>
-class MeanUDA : udf::UDA {
+class MeanUDA : public udf::UDA {
  public:
   void Update(udf::FunctionContext *, TArg arg) {
     size_++;

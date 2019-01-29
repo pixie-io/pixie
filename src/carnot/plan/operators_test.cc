@@ -9,7 +9,7 @@ namespace pl {
 namespace carnot {
 namespace plan {
 
-class DummyTestUDF : udf::ScalarUDF {
+class DummyTestUDF : public udf::ScalarUDF {
  public:
   udf::Int64Value Exec(udf::FunctionContext*, udf::BoolValue, udf::Float64Value) { return 0; }
 };
