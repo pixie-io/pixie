@@ -8,6 +8,7 @@
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/plan/compiler_state.h"
+#include "src/carnot/plan/plan_node.h"
 #include "src/carnot/plan/schema.h"
 #include "src/carnot/proto/plan.pb.h"
 #include "src/utils/error.h"
@@ -42,7 +43,7 @@ inline std::string ToString(const carnotpb::ScalarExpression::ValueCase &exp) {
  * ScalarExpression is a pure-virtual interface class that defines an expression that can
  * have at most one output value. A ScalarExpression may contain other ScalarExpressions.
  */
-class ScalarExpression {
+class ScalarExpression : public PlanNode {
  public:
   static StatusOr<std::unique_ptr<ScalarExpression>> FromProto(
       const carnotpb::ScalarExpression &pb);

@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "src/carnot/plan/plan_node.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/proto/plan.pb.h"
 #include "src/utils/status.h"
@@ -23,7 +24,7 @@ class Relation;
  * Operator is the pure virtual base class for logical plan nodes that perform
  * operations on data/metadata.
  */
-class Operator {
+class Operator : public PlanNode {
  public:
   virtual ~Operator() = default;
 
@@ -39,7 +40,7 @@ class Operator {
   bool is_initialized() const { return is_initialized_; }
 
   // Generate a string that will help debug operators.
-  virtual std::string DebugString() = 0;
+  virtual std::string DebugString() const = 0;
 
   // Prints out the debug to INFO log.
   void Debug() { LOG(INFO) << DebugString(); }
@@ -63,7 +64,7 @@ class MemorySourceOperator : public Operator {
   StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
                                     const std::vector<int64_t> &input_ids) override;
   Status Init(const carnotpb::MemorySourceOperator &pb);
-  std::string DebugString() override;
+  std::string DebugString() const override;
 
  private:
   carnotpb::MemorySourceOperator pb_;
@@ -76,7 +77,7 @@ class MapOperator : public Operator {
   StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
                                     const std::vector<int64_t> &input_ids) override;
   Status Init(const carnotpb::MapOperator &pb);
-  std::string DebugString() override;
+  std::string DebugString() const override;
 
  private:
   std::vector<std::unique_ptr<ScalarExpression>> expressions_;
@@ -93,7 +94,7 @@ class BlockingAggregateOperator : public Operator {
   StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
                                     const std::vector<int64_t> &input_ids) override;
   Status Init(const carnotpb::BlockingAggregateOperator &pb);
-  std::string DebugString() override;
+  std::string DebugString() const override;
 
  private:
   std::vector<std::unique_ptr<AggregateExpression>> values_;
@@ -107,7 +108,7 @@ class MemorySinkOperator : public Operator {
   StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
                                     const std::vector<int64_t> &input_ids) override;
   Status Init(const carnotpb::MemorySinkOperator &pb);
-  std::string DebugString() override;
+  std::string DebugString() const override;
 
  private:
   carnotpb::MemorySinkOperator pb_;

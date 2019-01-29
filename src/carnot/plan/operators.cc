@@ -49,7 +49,7 @@ std::unique_ptr<Operator> Operator::FromProto(const carnotpb::Operator &pb, int6
  * Memory Source Operator Implementation.
  */
 
-std::string MemorySourceOperator::DebugString() { return "Operator: MemorySource"; }
+std::string MemorySourceOperator::DebugString() const { return "Operator: MemorySource"; }
 
 Status MemorySourceOperator::Init(const carnotpb::MemorySourceOperator &pb) {
   pb_ = pb;
@@ -75,7 +75,7 @@ StatusOr<Relation> MemorySourceOperator::OutputRelation(const Schema &, const Co
  * Map Operator Implementation.
  */
 
-std::string MapOperator::DebugString() {
+std::string MapOperator::DebugString() const {
   std::string debug_string;
   debug_string += "(";
   for (size_t i = 0; i < expressions_.size(); ++i) {
@@ -130,7 +130,7 @@ StatusOr<Relation> MapOperator::OutputRelation(const Schema &schema, const Compi
  * Blocking Aggregate Operator Implementation.
  */
 
-std::string BlockingAggregateOperator::DebugString() { return "Operator: BlockingAggregate"; }
+std::string BlockingAggregateOperator::DebugString() const { return "Operator: BlockingAggregate"; }
 
 Status BlockingAggregateOperator::Init(const carnotpb::BlockingAggregateOperator &pb) {
   pb_ = pb;
@@ -192,7 +192,7 @@ StatusOr<Relation> BlockingAggregateOperator::OutputRelation(
  * Memory Sink Operator Implementation.
  */
 
-std::string MemorySinkOperator::DebugString() { return "Operator: MemorySink"; }
+std::string MemorySinkOperator::DebugString() const { return "Operator: MemorySink"; }
 
 Status MemorySinkOperator::Init(const carnotpb::MemorySinkOperator &pb) {
   pb_ = pb;
