@@ -36,3 +36,16 @@ pl_cc_test(
          "//src/carnot/proto:plan_testutils",
     ],
 )
+
+pl_cc_binary(
+    name = "expression_evaluator_benchmark",
+    srcs = ["expression_evaluator_benchmark.cc"],
+    testonly = 1,
+    deps = [
+        ":cc_library",
+        "//src/utils/benchmark:cc_library",
+        "//third_party:arrow",
+        "@com_google_benchmark//:benchmark_main",
+         "//src/carnot/proto:plan_testutils",
+    ],
+)

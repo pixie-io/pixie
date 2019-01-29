@@ -25,6 +25,12 @@ namespace testutils {
  * error case testing.
  */
 
+const char* kColumnReferencePbtxt = R"(
+column {
+  node: 0,
+  index: 0,
+})";
+
 const char* kScalarBooleanValue = R"(
   type: BOOLEAN,
   value {
