@@ -32,12 +32,11 @@ const char* kScalarBooleanValue = R"(
   }
 )";
 
-const char* kScalarInt64Value = R"(
-  type: INT64,
-  value {
+const char* kScalarInt64ValuePbtxt = R"(
+constant {
+    data_type: INT64,
     int64_value: 1337
-  }
-)";
+})";
 
 /*
  * Template for a ScalarFunc.
@@ -147,6 +146,68 @@ const char* kScalarExpressionTmpl = R"(
   }
 )";
 
+const char* kAddScalarFuncPbtxt = R"(
+func {
+  name: "add"
+  args {
+    column {
+      node: 0
+      index: 0
+    }
+  }
+  args {
+    column {
+      node: 0
+      index: 1
+    }
+  }
+})";
+
+const char* kAddScalarFuncConstPbtxt = R"(
+func {
+  name: "add"
+  args {
+    column {
+      node: 0
+      index: 0
+    }
+  }
+  args {
+    constant {
+      data_type: INT64,
+      int64_value: 1337
+    }
+  }
+})";
+
+const char* kAddScalarFuncNestedPbtxt = R"(
+func {
+  name: "add"
+  args {
+    column {
+      node: 0
+      index: 0
+    }
+  }
+  args {
+    func {
+      name: "add"
+      args {
+        column {
+          node: 0
+          index: 1
+        }
+      }
+      args {
+        constant {
+          data_type: INT64,
+          int64_value: 1337
+        }
+      }
+    }
+  }
+})";
+
 carnotpb::Operator CreateTestMap1PB() {
   carnotpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MAP_OPERATOR", "map_op", kMapOperator1);
@@ -194,8 +255,8 @@ carnotpb::ScalarExpression CreateTestScalarExpressionWithConstBooleanPB() {
 
 carnotpb::ScalarExpression CreateTestScalarExpressionWithConstInt64PB() {
   carnotpb::ScalarExpression exp;
-  auto exp_proto = absl::Substitute(kScalarExpressionTmpl, "constant", kScalarInt64Value);
-  CHECK(google::protobuf::TextFormat::MergeFromString(exp_proto, &exp)) << "Failed to parse proto";
+  CHECK(google::protobuf::TextFormat::MergeFromString(kScalarInt64ValuePbtxt, &exp))
+      << "Failed to parse proto";
   return exp;
 }
 
