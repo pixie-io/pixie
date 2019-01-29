@@ -15,8 +15,8 @@ pl_cc_library(
     deps = [
         "//src/carnot/proto:types_cc_proto",
         "//src/carnot/proto:udfs_cc_proto",
-        "//third_party:arrow",
         "//src/utils",
+        "//third_party:arrow",
     ],
 )
 
@@ -27,10 +27,17 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "udf_definition_test",
+    srcs = ["udf_definition_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "registry_test",
     srcs = ["registry_test.cc"],
     deps = [":cc_library"],
 )
+
 
 pl_cc_binary(
     name = "wrapper_benchmark",

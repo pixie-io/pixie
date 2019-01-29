@@ -66,6 +66,10 @@ using Float64Value = FixedSizedUDFValue<double>;
  */
 struct StringValue : UDFBaseValue, std::string {
   using std::string::string;
+  // Allow implicit construction to make it easier/more natural to return values
+  // from functions.
+  // NOLINTNEXTLINE(runtime/explicit)
+  StringValue(std::string&& str) : std::string(std::move(str)) {}
 };
 
 /**
@@ -177,12 +181,18 @@ class FunctionContext {};
 /**
  * AnyUDF is the base class for all UDFs in carnot.
  */
-class AnyUDF {};
+class AnyUDF {
+ public:
+  virtual ~AnyUDF() = default;
+};
 
 /**
  * Any UDA is a base class for all UDAs in carnot.
  */
-class AnyUDA {};
+class AnyUDA {
+ public:
+  virtual ~AnyUDA() = default;
+};
 
 /**
  * ScalarUDF is a wrapper around a stateless function that can take one more more UDF values
@@ -201,7 +211,10 @@ class AnyUDA {};
  *  This function is called once during initialization of each instance (many instances
  *  may exists in a given query). The arguments are as provided by the query.
  */
-class ScalarUDF : AnyUDF {};
+class ScalarUDF : public AnyUDF {
+ public:
+  ~ScalarUDF() override = default;
+};
 
 /**
  * UDA is a stateful function that updates internal state bases on the input
@@ -220,7 +233,10 @@ class ScalarUDF : AnyUDF {};
  *
  * All argument types must me valid UDFValueTypes.
  */
-class UDA : AnyUDA {};
+class UDA : AnyUDA {
+ public:
+  ~UDA() override = default;
+};
 
 // SFINAE test for init fn.
 // TODO(zasgar): We really want to also test the argument/return types.
@@ -261,13 +277,13 @@ static constexpr bool IsValidExecFunc(ReturnType (TUDF::*)(FunctionContext*, Typ
 }
 
 template <typename ReturnType, typename TUDF, typename... Types>
-static std::vector<UDFDataType> GetArgumentTypesHelper(ReturnType (TUDF::*)(FunctionContext*,
-                                                                            Types...)) {
-  return {UDFValueTraits<Types>::data_type...};
+static constexpr std::array<UDFDataType, sizeof...(Types)> GetArgumentTypesHelper(
+    ReturnType (TUDF::*)(FunctionContext*, Types...)) {
+  return std::array<UDFDataType, sizeof...(Types)>({UDFValueTraits<Types>::data_type...});
 }
 
 template <typename ReturnType, typename TUDF, typename... Types>
-static UDFDataType ReturnTypeHelper(ReturnType (TUDF::*)(Types...)) {
+static constexpr UDFDataType ReturnTypeHelper(ReturnType (TUDF::*)(Types...)) {
   return UDFValueTraits<ReturnType>::data_type;
 }
 
@@ -292,13 +308,13 @@ class ScalarUDFTraits {
    * Arguments types of Exec.
    * @return a vector of UDF data types.
    */
-  static std::vector<UDFDataType> ExecArguments() { return GetArgumentTypesHelper(&T::Exec); }
+  static constexpr auto ExecArguments() { return GetArgumentTypesHelper(&T::Exec); }
 
   /**
    * Return types of the Exec function
    * @return A UDFDataType which is the return type of the Exec function.
    */
-  static UDFDataType ReturnType() { return ReturnTypeHelper(&T::Exec); }
+  static constexpr UDFDataType ReturnType() { return ReturnTypeHelper(&T::Exec); }
 
   /**
    * Checks if the UDF has an Init function.
@@ -371,10 +387,8 @@ static constexpr bool IsValidFinalizeFn(ReturnType (TUDA::*)(FunctionContext*)) 
 template <typename T>
 class UDATraits {
  public:
-  static std::vector<UDFDataType> UpdateArgumentTypes() {
-    return GetArgumentTypesHelper<void>(&T::Update);
-  }
-  static UDFDataType FinalizeReturnType() { return ReturnTypeHelper(&T::Finalize); }
+  static constexpr auto UpdateArgumentTypes() { return GetArgumentTypesHelper<void>(&T::Update); }
+  static constexpr UDFDataType FinalizeReturnType() { return ReturnTypeHelper(&T::Finalize); }
 
   /**
    * Checks if the UDA has an Init function.
@@ -397,6 +411,7 @@ class UDATraits {
     static constexpr check_init_fn<T> check_init_;
   } check_;
 };
+
 }  // namespace udf
 }  // namespace carnot
 }  // namespace pl

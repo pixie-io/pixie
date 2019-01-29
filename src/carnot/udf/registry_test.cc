@@ -14,7 +14,7 @@ namespace pl {
 namespace carnot {
 namespace udf {
 
-class ScalarUDF1 : ScalarUDF {
+class ScalarUDF1 : public ScalarUDF {
  public:
   Int64Value Exec(FunctionContext *ctx, BoolValue b1, Int64Value b2) {
     PL_UNUSED(ctx);
@@ -22,7 +22,7 @@ class ScalarUDF1 : ScalarUDF {
   }
 };
 
-class ScalarUDF1WithInit : ScalarUDF {
+class ScalarUDF1WithInit : public ScalarUDF {
  public:
   Status Init(FunctionContext *ctx, Int64Value v1) {
     PL_UNUSED(ctx);
@@ -36,7 +36,7 @@ class ScalarUDF1WithInit : ScalarUDF {
 };
 
 template <typename TOutput, typename TInput1, typename TInput2>
-class AddUDF : ScalarUDF {
+class AddUDF : public ScalarUDF {
  public:
   TOutput Exec(FunctionContext *ctx, TInput1 v1, TInput2 v2) {
     PL_UNUSED(ctx);

@@ -1,4 +1,6 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <iostream>
 #include <type_traits>
 
 #include "src/carnot/udf/udf.h"
@@ -8,6 +10,8 @@
 namespace pl {
 namespace carnot {
 namespace udf {
+
+using testing::ElementsAre;
 
 class ScalarUDF1 : ScalarUDF {
  public:
@@ -22,8 +26,8 @@ class ScalarUDF1WithInit : ScalarUDF {
 
 TEST(ScalarUDF, basic_tests) {
   EXPECT_EQ(UDFDataType::INT64, ScalarUDFTraits<ScalarUDF1>::ReturnType());
-  EXPECT_EQ(std::vector<UDFDataType>({UDFDataType::BOOLEAN, UDFDataType::INT64}),
-            ScalarUDFTraits<ScalarUDF1>::ExecArguments());
+  EXPECT_THAT(ScalarUDFTraits<ScalarUDF1>::ExecArguments(),
+              ElementsAre(UDFDataType::BOOLEAN, UDFDataType::INT64));
   EXPECT_FALSE(ScalarUDFTraits<ScalarUDF1>::HasInit());
   EXPECT_TRUE(ScalarUDFTraits<ScalarUDF1WithInit>::HasInit());
 }
@@ -125,11 +129,11 @@ TEST(UDA, bad_finalize_fn) {
 
 TEST(UDA, valid_uda) {
   EXPECT_EQ(UDFDataType::INT64, UDATraits<UDA1>::FinalizeReturnType());
-  EXPECT_EQ(std::vector<UDFDataType>({UDFDataType::INT64}), UDATraits<UDA1>::UpdateArgumentTypes());
+  EXPECT_THAT(UDATraits<UDA1>::UpdateArgumentTypes(), ElementsAre(UDFDataType::INT64));
 
   EXPECT_EQ(UDFDataType::INT64, UDATraits<UDA1WithInit>::FinalizeReturnType());
-  EXPECT_EQ(std::vector<UDFDataType>({UDFDataType::INT64, UDFDataType::FLOAT64}),
-            UDATraits<UDA1WithInit>::UpdateArgumentTypes());
+  EXPECT_THAT(UDATraits<UDA1WithInit>::UpdateArgumentTypes(),
+              ElementsAre(UDFDataType::INT64, UDFDataType::FLOAT64));
 }
 
 TEST(BoolValue, value_tests) {

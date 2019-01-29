@@ -10,6 +10,8 @@
 #include "absl/strings/str_format.h"
 #include "src/carnot/proto/udfs.pb.h"
 #include "src/carnot/udf/udf.h"
+#include "src/carnot/udf/udf_definition.h"
+
 #include "src/utils/error.h"
 #include "src/utils/statusor.h"
 
@@ -29,97 +31,6 @@ inline std::string ToString(const RegistryType& registry_type) {
       return "UnknownRegistry";
   }
 }
-
-class UDFDefinition {
- public:
-  UDFDefinition() = default;
-  virtual ~UDFDefinition() = default;
-
-  /**
-   * @return The overload dependent arguments that the registry uses to resolves UDFs.
-   */
-  virtual const std::vector<UDFDataType>& RegistryArgTypes() = 0;
-
-  /**
-   * Access internal variable name.
-   * @return Returns the name of the UDF.
-   */
-  std::string name() { return name_; }
-
- protected:
-  std::string name_;
-};
-
-/**
- * Store the information for a single ScalarUDF.
- * TODO(zasgar): Also needs to store information like exec ptrs, etc.
- */
-class ScalarUDFDefinition : public UDFDefinition {
- public:
-  ScalarUDFDefinition() = default;
-  ~ScalarUDFDefinition() override = default;
-
-  /**
-   * Init a UDF definition with the given name and type.
-   *
-   * @tparam T the UDF class. Must be a ScalarUDF.
-   * @param name The name of the UDF.
-   * @return Status success/error.
-   */
-  template <typename T>
-  Status Init(const std::string& name) {
-    name_ = name;
-    exec_return_type_ = ScalarUDFTraits<T>::ReturnType();
-    exec_arguments_ = ScalarUDFTraits<T>::ExecArguments();
-    return Status::OK();
-  }
-
-  /**
-   * Access internal variable exec_return_type.
-   * @return the stored return types of the exec function.
-   */
-  UDFDataType exec_return_type() const { return exec_return_type_; }
-  const std::vector<UDFDataType>& exec_arguments() const { return exec_arguments_; }
-
-  const std::vector<UDFDataType>& RegistryArgTypes() override { return exec_arguments_; }
-
- private:
-  std::vector<UDFDataType> exec_arguments_;
-  UDFDataType exec_return_type_;
-};
-
-/**
- * Store the information for a single UDA.
- * TODO(zasgar): Also, needs to store ptrs to exec funcs.
- */
-class UDADefinition : public UDFDefinition {
- public:
-  UDADefinition() = default;
-  ~UDADefinition() override = default;
-  /**
-   * Init a UDA definition with the given name and type.
-   *
-   * @tparam T the UDA class. Must be derived from UDA.
-   * @param name The name of the UDA.
-   * @return Status success/error.
-   */
-  template <typename T>
-  Status Init(const std::string& name) {
-    name_ = name;
-    update_arguments_ = UDATraits<T>::UpdateArgumentTypes();
-    finalize_return_type_ = UDATraits<T>::FinalizeReturnType();
-    return Status::OK();
-  }
-
-  const std::vector<UDFDataType>& RegistryArgTypes() override { return update_arguments_; }
-
-  const std::vector<UDFDataType> update_arguments() { return update_arguments_; }
-  UDFDataType finalize_return_type() const { return finalize_return_type_; }
-
- private:
-  std::vector<UDFDataType> update_arguments_;
-  UDFDataType finalize_return_type_;
-};
 
 /**
  * RegistryKey is the class used to uniquely refer to UDFs/UDAs in the registry.
