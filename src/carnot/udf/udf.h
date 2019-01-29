@@ -36,7 +36,9 @@ struct UDFBaseValue {};
  */
 template <typename T>
 struct FixedSizedUDFValue : UDFBaseValue {
-  T val;
+  // We need this to make UBSAN happy since otherwise it's un-initialized.
+  // TODO(zasgar): Understand if this impacts performance.
+  T val = 0;
   FixedSizedUDFValue() : UDFBaseValue() {}
 
   // Allow implicit construction to make it easier/more natural to return values
