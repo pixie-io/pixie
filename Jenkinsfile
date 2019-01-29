@@ -131,6 +131,7 @@ String devDockerImageWithTag = '';
 def builders = [:]
 builders['Build & Test (dbg)'] = {
   node {
+    sh 'rm -rf /root/.cache/bazel'
     deleteDir()
     unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
@@ -145,6 +146,7 @@ builders['Build & Test (dbg)'] = {
 
 builders['Build & Test (opt)'] = {
   node {
+    sh 'rm -rf /root/.cache/bazel'
     deleteDir()
     unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
@@ -165,6 +167,7 @@ builders['Build & Test (opt)'] = {
  ********************************************/
 builders['Build & Test (asan)'] = {
   node {
+    sh 'rm -rf /root/.cache/bazel'
     deleteDir()
     unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
@@ -179,6 +182,7 @@ builders['Build & Test (asan)'] = {
 
 builders['Build & Test (tsan)'] = {
   node {
+    sh 'rm -rf /root/.cache/bazel'
     deleteDir()
     unstash SRC_STASH_NAME
     docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
