@@ -200,6 +200,7 @@ if (isPhabricatorTriggeredBuild()) {
 
 node {
   currentBuild.result = 'SUCCESS'
+  deleteDir()
   try {
     stage('Checkout code') {
       checkout scm
