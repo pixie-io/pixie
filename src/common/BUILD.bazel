@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
     name = "common",
@@ -9,4 +9,11 @@ pl_cc_library(
         exclude = ["**/*_test.cc"],
     ),
     hdrs = glob(["*.h"]),
+    deps = ["//src/utils:utils"],
+)
+
+pl_cc_test(
+    name = "object_pool_test",
+    srcs = ["object_pool_test.cc"],
+    deps = [":common"],
 )
