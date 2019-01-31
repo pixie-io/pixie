@@ -183,7 +183,7 @@ TEST(StringValue, value_tests) {
 
   // Test == overload.
   // NOLINTNEXTLINE(readability/check).
-  EXPECT_TRUE(sv == "abcd");
+  EXPECT_TRUE("abcd" == sv);
   // Test assignment.
   sv = "def";
   EXPECT_EQ("def", sv);

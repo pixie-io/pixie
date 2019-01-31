@@ -20,6 +20,14 @@ pl_cc_library(
     ],
 )
 
+pl_cc_library(
+    name = "udf_testutils",
+    testonly = 1,
+    hdrs = ["test_utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [":cc_library"],
+)
+
 pl_cc_test(
     name = "udf_test",
     srcs = ["udf_test.cc"],

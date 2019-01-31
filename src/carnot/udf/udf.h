@@ -48,6 +48,7 @@ struct FixedSizedUDFValue : UDFBaseValue {
   // Overload the equality to make it easier to write code with value types.
   bool operator==(const FixedSizedUDFValue<T>& lhs) { return val == lhs.val; }
   bool operator==(const T& lhs) { return val == lhs; }
+
   // Overload assignment to make it easier to write code with value types.
   FixedSizedUDFValue<T>& operator=(FixedSizedUDFValue<T> lhs) {
     val = lhs.val;
@@ -66,7 +67,7 @@ using Float64Value = FixedSizedUDFValue<double>;
 /**
  * The value type for string values.
  */
-struct StringValue : UDFBaseValue, std::string {
+struct StringValue : UDFBaseValue, public std::string {
   using std::string::string;
   // Allow implicit construction to make it easier/more natural to return values
   // from functions.
