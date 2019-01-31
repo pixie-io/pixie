@@ -1,5 +1,7 @@
 #pragma once
 
+#include <limits>
+
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 
@@ -29,6 +31,66 @@ class MeanUDA : public udf::UDA {
  protected:
   uint64_t size_ = 0;
   double count_ = 0;
+};
+
+template <typename TArg>
+class SumUDA : public udf::UDA {
+ public:
+  void Update(udf::FunctionContext *, TArg arg) { sum_ = sum_.val + arg.val; }
+  void Merge(udf::FunctionContext *, const SumUDA &other) { sum_ = sum_.val + other.sum_.val; }
+  TArg Finalize(udf::FunctionContext *) { return sum_; }
+
+ protected:
+  TArg sum_ = 0;
+};
+
+template <typename TArg>
+class MaxUDA : public udf::UDA {
+ public:
+  void Update(udf::FunctionContext *, TArg arg) {
+    if (max_.val < arg.val) {
+      max_ = arg;
+    }
+  }
+  void Merge(udf::FunctionContext *, const MaxUDA &other) {
+    if (other.max_.val > max_.val) {
+      max_ = other.max_;
+    }
+  }
+  TArg Finalize(udf::FunctionContext *) { return max_; }
+
+ protected:
+  TArg max_ = std::numeric_limits<typename udf::UDFValueTraits<TArg>::native_type>::min();
+};
+
+template <typename TArg>
+class MinUDA : public udf::UDA {
+ public:
+  void Update(udf::FunctionContext *, TArg arg) {
+    if (min_.val > arg.val) {
+      min_ = arg;
+    }
+  }
+  void Merge(udf::FunctionContext *, const MinUDA &other) {
+    if (other.min_.val < min_.val) {
+      min_ = other.min_;
+    }
+  }
+  TArg Finalize(udf::FunctionContext *) { return min_; }
+
+ protected:
+  TArg min_ = std::numeric_limits<typename udf::UDFValueTraits<TArg>::native_type>::max();
+};
+
+template <typename TArg>
+class CountUDA : public udf::UDA {
+ public:
+  void Update(udf::FunctionContext *, TArg) { count_++; }
+  void Merge(udf::FunctionContext *, const CountUDA &other) { count_ += other.count_; }
+  udf::Int64Value Finalize(udf::FunctionContext *) { return count_; }
+
+ protected:
+  uint64_t count_ = 0;
 };
 
 void RegisterMathOpsOrDie(udf::ScalarUDFRegistry *registry);
