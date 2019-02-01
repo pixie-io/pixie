@@ -2,15 +2,6 @@
 
 #pragma once
 
-// Disallow copy and assign constructors. This can be used to prevent
-// implicit copying of objects. Should be added to the public: section
-// of a class.
-#ifndef PL_DISALLOW_COPY_AND_ASSIGN
-#define PL_DISALLOW_COPY_AND_ASSIGN(TypeName) \
-  TypeName(const TypeName&) = delete;         \
-  void operator=(const TypeName&) = delete
-#endif
-
 // Warn if a result is unused.
 #define PL_MUST_USE_RESULT __attribute__((warn_unused_result))
 

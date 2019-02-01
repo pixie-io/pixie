@@ -4,6 +4,7 @@
  * importing them everywhere.
  */
 
+#include "src/common/base.h"
 #include "src/common/env.h"
 #include "src/common/error.h"
 #include "src/common/error_strings.h"

@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "absl/base/internal/spinlock.h"
+#include "src/common/base.h"
 #include "src/common/macros.h"
 
 namespace pl {
@@ -12,7 +13,7 @@ namespace pl {
  *
  * Concepts and some code similar to Impala.
  */
-class ObjectPool final {
+class ObjectPool final : public pl::NotCopyable {
  public:
   ObjectPool() = default;
   ~ObjectPool() { Clear(); }
@@ -37,8 +38,6 @@ class ObjectPool final {
   }
 
  private:
-  PL_DISALLOW_COPY_AND_ASSIGN(ObjectPool);
-
   // A generic deletion function pointer. Deletes its first argument.
   typedef void (*DeleteFn)(void *);
 
