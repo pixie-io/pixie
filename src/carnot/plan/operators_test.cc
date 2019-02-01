@@ -21,12 +21,12 @@ class OperatorTest : public ::testing::Test {
                std::make_shared<udf::UDARegistry>("udaTest")) {
     state_.udf_registry()->RegisterOrDie<DummyTestUDF>("testUdf");
     Relation rel0;
-    rel0.AddColumn(carnotpb::INT64, "col0");
-    rel0.AddColumn(carnotpb::FLOAT64, "col1");
+    rel0.AddColumn(types::INT64, "col0");
+    rel0.AddColumn(types::FLOAT64, "col1");
 
     Relation rel1;
-    rel1.AddColumn(carnotpb::INT64, "col0");
-    rel1.AddColumn(carnotpb::FLOAT64, "col1");
+    rel1.AddColumn(types::INT64, "col0");
+    rel1.AddColumn(types::FLOAT64, "col1");
 
     schema_.AddRelation(0, rel0);
     schema_.AddRelation(1, rel1);
@@ -76,7 +76,7 @@ TEST_F(OperatorTest, output_relation_source) {
 
   auto rel = src_op->OutputRelation(schema_, state_, std::vector<int64_t>());
   EXPECT_EQ(1, rel.ValueOrDie().NumColumns());
-  EXPECT_EQ(carnotpb::DataType::FLOAT64, rel.ValueOrDie().GetColumnType(0));
+  EXPECT_EQ(types::DataType::FLOAT64, rel.ValueOrDie().GetColumnType(0));
   EXPECT_EQ("usage", rel.ValueOrDie().GetColumnName(0));
 }
 
@@ -101,7 +101,7 @@ TEST_F(OperatorTest, output_relation_map) {
   auto map_op = Operator::FromProto(map_pb, 1);
   auto rel = map_op->OutputRelation(schema_, state_, std::vector<int64_t>({1}));
   EXPECT_EQ(1, rel.ValueOrDie().NumColumns());
-  EXPECT_EQ(carnotpb::DataType::INT64, rel.ValueOrDie().GetColumnType(0));
+  EXPECT_EQ(types::DataType::INT64, rel.ValueOrDie().GetColumnType(0));
 }
 
 TEST_F(OperatorTest, output_relation_map_no_input) {

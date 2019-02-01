@@ -76,7 +76,7 @@ using Int64ValueColumnWrapper = ColumnWrapperTmpl<Int64Value>;
 using Float64ValueColumnWrapper = ColumnWrapperTmpl<Float64Value>;
 using StringValueColumnWrapper = ColumnWrapperTmpl<StringValue>;
 
-template <typename TColumnWrapper, carnotpb::DataType DType>
+template <typename TColumnWrapper, types::DataType DType>
 inline SharedColumnWrapper FromArrowImpl(const std::shared_ptr<arrow::Array> &arr) {
   CHECK_EQ(arr->type_id(), UDFDataTypeTraits<DType>::arrow_type_id);
   size_t size = arr->length();
@@ -94,9 +94,9 @@ inline SharedColumnWrapper FromArrowImpl(const std::shared_ptr<arrow::Array> &ar
 template <>
 inline SharedColumnWrapper FromArrowImpl<StringValueColumnWrapper, UDFDataType::STRING>(
     const std::shared_ptr<arrow::Array> &arr) {
-  CHECK_EQ(arr->type_id(), UDFDataTypeTraits<carnotpb::STRING>::arrow_type_id);
+  CHECK_EQ(arr->type_id(), UDFDataTypeTraits<types::STRING>::arrow_type_id);
   size_t size = arr->length();
-  auto wrapper = StringValueColumnWrapper::Make(carnotpb::STRING, size);
+  auto wrapper = StringValueColumnWrapper::Make(types::STRING, size);
   auto arr_casted = reinterpret_cast<arrow::StringArray *>(arr.get());
   StringValue *out_data =
       reinterpret_cast<StringValueColumnWrapper *>(wrapper.get())->UnsafeRawData();

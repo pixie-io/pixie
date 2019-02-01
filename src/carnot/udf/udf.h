@@ -12,8 +12,8 @@
 
 #include <functional>
 
-#include "src/carnot/proto/types.pb.h"
 #include "src/common/status.h"
+#include "src/common/types/types.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -23,7 +23,7 @@ namespace udf {
  * The enum of different UDF data types.
  * TODO(zasgar): move this data type to a higher lvl than plan.
  */
-using UDFDataType = carnotpb::DataType;
+using UDFDataType = types::DataType;
 
 /**
  * This is the base value type that all UDFs inherit from.
@@ -98,7 +98,7 @@ struct UDFValueTraits {
 
 template <>
 struct UDFValueTraits<BoolValue> {
-  static constexpr UDFDataType data_type = carnotpb::BOOLEAN;
+  static constexpr UDFDataType data_type = types::BOOLEAN;
   using arrow_type = arrow::BooleanType;
   using arrow_builder_type = arrow::BooleanBuilder;
   using arrow_array_type = arrow::BooleanArray;
@@ -107,7 +107,7 @@ struct UDFValueTraits<BoolValue> {
 
 template <>
 struct UDFValueTraits<Int64Value> {
-  static constexpr UDFDataType data_type = carnotpb::INT64;
+  static constexpr UDFDataType data_type = types::INT64;
   using arrow_type = arrow::Int64Type;
   using arrow_builder_type = arrow::Int64Builder;
   using arrow_array_type = arrow::Int64Array;
@@ -116,7 +116,7 @@ struct UDFValueTraits<Int64Value> {
 
 template <>
 struct UDFValueTraits<Float64Value> {
-  static constexpr UDFDataType data_type = carnotpb::FLOAT64;
+  static constexpr UDFDataType data_type = types::FLOAT64;
   using arrow_type = arrow::DoubleType;
   using arrow_builder_type = arrow::DoubleBuilder;
   using arrow_array_type = arrow::DoubleArray;
@@ -125,7 +125,7 @@ struct UDFValueTraits<Float64Value> {
 
 template <>
 struct UDFValueTraits<StringValue> {
-  static constexpr UDFDataType data_type = carnotpb::STRING;
+  static constexpr UDFDataType data_type = types::STRING;
   using arrow_type = arrow::StringType;
   using arrow_builder_type = arrow::StringBuilder;
   using arrow_array_type = arrow::StringArray;

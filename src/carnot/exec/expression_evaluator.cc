@@ -73,16 +73,16 @@ std::shared_ptr<arrow::Array> EvalScalarToArrow(ExecState *exec_state, const pla
                                                 size_t count) {
   auto mem_pool = exec_state->exec_mem_pool();
   switch (val.DataType()) {
-    case carnotpb::BOOLEAN:
+    case types::BOOLEAN:
       return EvalScalarFixedImpl<arrow::BooleanBuilder, arrow::BooleanArray>(
           mem_pool, val.BoolValue(), count);
-    case carnotpb::INT64:
+    case types::INT64:
       return EvalScalarFixedImpl<arrow::Int64Builder, arrow::Int64Array>(mem_pool, val.Int64Value(),
                                                                          count);
-    case carnotpb::FLOAT64:
+    case types::FLOAT64:
       return EvalScalarFixedImpl<arrow::DoubleBuilder, arrow::DoubleArray>(
           mem_pool, val.Float64Value(), count);
-    case carnotpb::STRING:
+    case types::STRING:
       return EvalScalarBinaryImpl<arrow::StringBuilder, arrow::StringArray>(
           mem_pool, val.StringValue(), count);
     default:
@@ -95,13 +95,13 @@ std::shared_ptr<arrow::Array> EvalScalarToArrow(ExecState *exec_state, const pla
 std::shared_ptr<ColumnWrapper> EvalScalarToColumnWrapper(ExecState *, const plan::ScalarValue &val,
                                                          size_t count) {
   switch (val.DataType()) {
-    case carnotpb::BOOLEAN:
+    case types::BOOLEAN:
       return std::make_shared<BoolValueColumnWrapper>(count, val.BoolValue());
-    case carnotpb::INT64:
+    case types::INT64:
       return std::make_shared<Int64ValueColumnWrapper>(count, val.Int64Value());
-    case carnotpb::FLOAT64:
+    case types::FLOAT64:
       return std::make_shared<Float64ValueColumnWrapper>(count, val.Float64Value());
-    case carnotpb::STRING:
+    case types::STRING:
       return std::make_shared<StringValueColumnWrapper>(count, val.StringValue());
     default:
       CHECK(0) << "Unknown data type";

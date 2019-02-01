@@ -22,14 +22,14 @@ Relation::Relation(const ColTypeArray &col_types, const ColNameArray &col_names)
 
 size_t Relation::NumColumns() const { return col_types_.size(); }
 
-void Relation::AddColumn(const carnotpb::DataType &col_type, const std::string &col_name) {
+void Relation::AddColumn(const types::DataType &col_type, const std::string &col_name) {
   col_types_.push_back(col_type);
   col_names_.push_back(col_name);
 }
 
 bool Relation::HasColumn(size_t idx) const { return idx < col_types_.size(); }
 
-carnotpb::DataType Relation::GetColumnType(size_t idx) const {
+types::DataType Relation::GetColumnType(size_t idx) const {
   CHECK(HasColumn(idx)) << "Column does not exist";
   return col_types_[idx];
 }

@@ -45,12 +45,12 @@ class ScalarExpressionTest : public ::testing::Test {
     state_.udf_registry()->RegisterOrDie<DummyTestUDF>("foobar");
     state_.uda_registry()->RegisterOrDie<DummyTestUDA>("testAgg");
     Relation rel0;
-    rel0.AddColumn(carnotpb::INT64, "col0");
-    rel0.AddColumn(carnotpb::FLOAT64, "col1");
+    rel0.AddColumn(types::INT64, "col0");
+    rel0.AddColumn(types::FLOAT64, "col1");
 
     Relation rel1;
-    rel1.AddColumn(carnotpb::INT64, "col0");
-    rel1.AddColumn(carnotpb::FLOAT64, "col1");
+    rel1.AddColumn(types::INT64, "col0");
+    rel1.AddColumn(types::FLOAT64, "col1");
 
     schema_.AddRelation(0, rel0);
     schema_.AddRelation(1, rel1);
@@ -95,14 +95,14 @@ TEST(ColumnDeathTest, double_init) {
 TEST(ScalarValueTest, basic_tests_bool) {
   ScalarValue sv;
   carnotpb::ScalarValue sv_pb;
-  sv_pb.set_data_type(carnotpb::BOOLEAN);
+  sv_pb.set_data_type(types::BOOLEAN);
   sv_pb.set_bool_value(true);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
   EXPECT_TRUE(sv.is_initialized());
 
   EXPECT_FALSE(sv.IsNull());
-  EXPECT_EQ(carnotpb::BOOLEAN, sv.DataType());
+  EXPECT_EQ(types::BOOLEAN, sv.DataType());
   EXPECT_EQ(true, sv.BoolValue());
   EXPECT_EQ("true", sv.DebugString());
   EXPECT_EQ(std::vector<const Column*>{}, sv.ColumnDeps());
@@ -112,13 +112,13 @@ TEST(ScalarValueTest, basic_tests_bool) {
 TEST(ScalarValueTest, basic_tests_bool_null) {
   ScalarValue sv;
   carnotpb::ScalarValue sv_pb;
-  sv_pb.set_data_type(carnotpb::BOOLEAN);
+  sv_pb.set_data_type(types::BOOLEAN);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
   EXPECT_TRUE(sv.is_initialized());
 
   EXPECT_TRUE(sv.IsNull());
-  EXPECT_EQ(carnotpb::BOOLEAN, sv.DataType());
+  EXPECT_EQ(types::BOOLEAN, sv.DataType());
   EXPECT_EQ("<null>", sv.DebugString());
   EXPECT_EQ(std::vector<const Column*>{}, sv.ColumnDeps());
 }
@@ -126,14 +126,14 @@ TEST(ScalarValueTest, basic_tests_bool_null) {
 TEST(ScalarValueTest, basic_tests_int64) {
   ScalarValue sv;
   carnotpb::ScalarValue sv_pb;
-  sv_pb.set_data_type(carnotpb::INT64);
+  sv_pb.set_data_type(types::INT64);
   sv_pb.set_int64_value(63);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
   EXPECT_TRUE(sv.is_initialized());
 
   EXPECT_FALSE(sv.IsNull());
-  EXPECT_EQ(carnotpb::INT64, sv.DataType());
+  EXPECT_EQ(types::INT64, sv.DataType());
   EXPECT_EQ(63, sv.Int64Value());
   EXPECT_EQ("63", sv.DebugString());
 }
@@ -141,27 +141,27 @@ TEST(ScalarValueTest, basic_tests_int64) {
 TEST(ScalarValueTest, basic_tests_int64_null) {
   ScalarValue sv;
   carnotpb::ScalarValue sv_pb;
-  sv_pb.set_data_type(carnotpb::INT64);
+  sv_pb.set_data_type(types::INT64);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
   EXPECT_TRUE(sv.is_initialized());
 
   EXPECT_TRUE(sv.IsNull());
-  EXPECT_EQ(carnotpb::INT64, sv.DataType());
+  EXPECT_EQ(types::INT64, sv.DataType());
   EXPECT_EQ("<null>", sv.DebugString());
 }
 
 TEST(ScalarValueTest, basic_tests_float64) {
   ScalarValue sv;
   carnotpb::ScalarValue sv_pb;
-  sv_pb.set_data_type(carnotpb::FLOAT64);
+  sv_pb.set_data_type(types::FLOAT64);
   sv_pb.set_float64_value(3.14159);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
   EXPECT_TRUE(sv.is_initialized());
 
   EXPECT_FALSE(sv.IsNull());
-  EXPECT_EQ(carnotpb::FLOAT64, sv.DataType());
+  EXPECT_EQ(types::FLOAT64, sv.DataType());
   EXPECT_DOUBLE_EQ(3.14159, sv.Float64Value());
   const std::string debug_string = sv.DebugString();
   EXPECT_TRUE(absl::StartsWith(debug_string, "3.14"));
@@ -171,27 +171,27 @@ TEST(ScalarValueTest, basic_tests_float64) {
 TEST(ScalarValueTest, basic_tests_float64_null) {
   ScalarValue sv;
   carnotpb::ScalarValue sv_pb;
-  sv_pb.set_data_type(carnotpb::FLOAT64);
+  sv_pb.set_data_type(types::FLOAT64);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
   EXPECT_TRUE(sv.is_initialized());
 
   EXPECT_TRUE(sv.IsNull());
-  EXPECT_EQ(carnotpb::FLOAT64, sv.DataType());
+  EXPECT_EQ(types::FLOAT64, sv.DataType());
   EXPECT_EQ("<null>", sv.DebugString());
 }
 
 TEST(ScalarValueTest, basic_tests_string) {
   ScalarValue sv;
   carnotpb::ScalarValue sv_pb;
-  sv_pb.set_data_type(carnotpb::STRING);
+  sv_pb.set_data_type(types::STRING);
   sv_pb.set_string_value("test string");
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
   EXPECT_TRUE(sv.is_initialized());
 
   EXPECT_FALSE(sv.IsNull());
-  EXPECT_EQ(carnotpb::STRING, sv.DataType());
+  EXPECT_EQ(types::STRING, sv.DataType());
   EXPECT_EQ("test string", sv.StringValue());
   EXPECT_EQ("\"test string\"", sv.DebugString());
 }
@@ -199,20 +199,20 @@ TEST(ScalarValueTest, basic_tests_string) {
 TEST(ScalarValueTest, basic_tests_string_null) {
   ScalarValue sv;
   carnotpb::ScalarValue sv_pb;
-  sv_pb.set_data_type(carnotpb::STRING);
+  sv_pb.set_data_type(types::STRING);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
   EXPECT_TRUE(sv.is_initialized());
 
   EXPECT_TRUE(sv.IsNull());
-  EXPECT_EQ(carnotpb::STRING, sv.DataType());
+  EXPECT_EQ(types::STRING, sv.DataType());
   EXPECT_EQ("<null>", sv.DebugString());
 }
 
 TEST(ScalarValueDeathTest, double_init) {
   ScalarValue sv;
   carnotpb::ScalarValue sv_pb;
-  sv_pb.set_data_type(carnotpb::STRING);
+  sv_pb.set_data_type(types::STRING);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
   EXPECT_DEBUG_DEATH(sv.Init(sv_pb).ok(), "Already initialized");
@@ -231,7 +231,7 @@ TEST_F(ScalarExpressionTest, col_tests) {
   carnotpb::ScalarExpression se_pb;
   auto const_pb = se_pb.mutable_constant();
   const_pb->set_string_value("testing");
-  const_pb->set_data_type(carnotpb::STRING);
+  const_pb->set_data_type(types::STRING);
 
   auto se_or_status = ScalarExpression::FromProto(se_pb);
 
@@ -239,7 +239,7 @@ TEST_F(ScalarExpressionTest, col_tests) {
   auto se = se_or_status.ConsumeValueOrDie();
   auto status = se->OutputDataType(state_, schema_);
   ASSERT_TRUE(status.ok());
-  EXPECT_EQ(carnotpb::STRING, status.ValueOrDie());
+  EXPECT_EQ(types::STRING, status.ValueOrDie());
 }
 
 const char* kFuncWithTwoColsProtoTxt = R"(
@@ -285,7 +285,7 @@ TEST_F(ScalarFuncTest, ColDeps) {
 TEST_F(ScalarFuncTest, output_type) {
   auto res = sf_.OutputDataType(state_, schema_);
   ASSERT_TRUE(res.ok());
-  EXPECT_EQ(carnotpb::INT64, res.ConsumeValueOrDie());
+  EXPECT_EQ(types::INT64, res.ConsumeValueOrDie());
 }
 
 TEST_F(ScalarFuncTest, expression_type) { EXPECT_EQ(Expression::kFunc, sf_.ExpressionType()); }
@@ -322,7 +322,7 @@ TEST(ScalarExpressionWalker, walk_node_graph) {
                          return sum;
                        })
                        .OnScalarValue([&](const auto& val, auto&) -> int {
-                         EXPECT_EQ(carnotpb::INT64, val.DataType());
+                         EXPECT_EQ(types::INT64, val.DataType());
                          EXPECT_EQ(36, val.Int64Value());
 
                          ++val_func_call_count;
@@ -388,7 +388,7 @@ TEST_F(AggregateExpressionTest, ColDeps) {
 TEST_F(AggregateExpressionTest, output_type) {
   auto res = ae_.OutputDataType(state_, schema_);
   ASSERT_TRUE(res.ok());
-  EXPECT_EQ(carnotpb::INT64, res.ConsumeValueOrDie());
+  EXPECT_EQ(types::INT64, res.ConsumeValueOrDie());
 }
 
 TEST_F(AggregateExpressionTest, expression_type) {

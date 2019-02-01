@@ -11,8 +11,8 @@ class SchemaTest : public ::testing::Test {
   void SetUp() override {
     Test::SetUp();
 
-    rel1_.AddColumn(carnotpb::INT64, "abc");
-    rel2_.AddColumn(carnotpb::STRING, "def");
+    rel1_.AddColumn(types::INT64, "abc");
+    rel2_.AddColumn(types::STRING, "def");
   }
 
   Relation rel1_;

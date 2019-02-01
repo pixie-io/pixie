@@ -6,7 +6,7 @@ package carnotpb
 import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import proto1 "pixielabs.ai/pixielabs/src/carnot/proto"
+import types "pixielabs.ai/pixielabs/src/common/types"
 
 import strings "strings"
 import reflect "reflect"
@@ -25,18 +25,18 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type UDASpec struct {
-	Name                 string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	InitArgTypes         []proto1.DataType `protobuf:"varint,2,rep,packed,name=init_arg_types,json=initArgTypes,enum=pl.carnot.carnotpb.DataType" json:"init_arg_types,omitempty"`
-	UpdateArgTypes       []proto1.DataType `protobuf:"varint,3,rep,packed,name=update_arg_types,json=updateArgTypes,enum=pl.carnot.carnotpb.DataType" json:"update_arg_types,omitempty"`
-	FinalizeType         proto1.DataType   `protobuf:"varint,4,opt,name=finalize_type,json=finalizeType,proto3,enum=pl.carnot.carnotpb.DataType" json:"finalize_type,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
+	Name                 string           `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	InitArgTypes         []types.DataType `protobuf:"varint,2,rep,packed,name=init_arg_types,json=initArgTypes,enum=pl.types.DataType" json:"init_arg_types,omitempty"`
+	UpdateArgTypes       []types.DataType `protobuf:"varint,3,rep,packed,name=update_arg_types,json=updateArgTypes,enum=pl.types.DataType" json:"update_arg_types,omitempty"`
+	FinalizeType         types.DataType   `protobuf:"varint,4,opt,name=finalize_type,json=finalizeType,proto3,enum=pl.types.DataType" json:"finalize_type,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
 func (m *UDASpec) Reset()      { *m = UDASpec{} }
 func (*UDASpec) ProtoMessage() {}
 func (*UDASpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_udfs_61ddd779d402f111, []int{0}
+	return fileDescriptor_udfs_777d493717c4adfc, []int{0}
 }
 func (m *UDASpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -72,40 +72,40 @@ func (m *UDASpec) GetName() string {
 	return ""
 }
 
-func (m *UDASpec) GetInitArgTypes() []proto1.DataType {
+func (m *UDASpec) GetInitArgTypes() []types.DataType {
 	if m != nil {
 		return m.InitArgTypes
 	}
 	return nil
 }
 
-func (m *UDASpec) GetUpdateArgTypes() []proto1.DataType {
+func (m *UDASpec) GetUpdateArgTypes() []types.DataType {
 	if m != nil {
 		return m.UpdateArgTypes
 	}
 	return nil
 }
 
-func (m *UDASpec) GetFinalizeType() proto1.DataType {
+func (m *UDASpec) GetFinalizeType() types.DataType {
 	if m != nil {
 		return m.FinalizeType
 	}
-	return proto1.DATA_TYPE_UNKNOWN
+	return types.DATA_TYPE_UNKNOWN
 }
 
 type ScalarUDFSpec struct {
-	Name                 string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	InitArgTypes         []proto1.DataType `protobuf:"varint,2,rep,packed,name=init_arg_types,json=initArgTypes,enum=pl.carnot.carnotpb.DataType" json:"init_arg_types,omitempty"`
-	ExecArgTypes         []proto1.DataType `protobuf:"varint,3,rep,packed,name=exec_arg_types,json=execArgTypes,enum=pl.carnot.carnotpb.DataType" json:"exec_arg_types,omitempty"`
-	ReturnType           proto1.DataType   `protobuf:"varint,4,opt,name=return_type,json=returnType,proto3,enum=pl.carnot.carnotpb.DataType" json:"return_type,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
-	XXX_sizecache        int32             `json:"-"`
+	Name                 string           `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	InitArgTypes         []types.DataType `protobuf:"varint,2,rep,packed,name=init_arg_types,json=initArgTypes,enum=pl.types.DataType" json:"init_arg_types,omitempty"`
+	ExecArgTypes         []types.DataType `protobuf:"varint,3,rep,packed,name=exec_arg_types,json=execArgTypes,enum=pl.types.DataType" json:"exec_arg_types,omitempty"`
+	ReturnType           types.DataType   `protobuf:"varint,4,opt,name=return_type,json=returnType,proto3,enum=pl.types.DataType" json:"return_type,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
 func (m *ScalarUDFSpec) Reset()      { *m = ScalarUDFSpec{} }
 func (*ScalarUDFSpec) ProtoMessage() {}
 func (*ScalarUDFSpec) Descriptor() ([]byte, []int) {
-	return fileDescriptor_udfs_61ddd779d402f111, []int{1}
+	return fileDescriptor_udfs_777d493717c4adfc, []int{1}
 }
 func (m *ScalarUDFSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -141,25 +141,25 @@ func (m *ScalarUDFSpec) GetName() string {
 	return ""
 }
 
-func (m *ScalarUDFSpec) GetInitArgTypes() []proto1.DataType {
+func (m *ScalarUDFSpec) GetInitArgTypes() []types.DataType {
 	if m != nil {
 		return m.InitArgTypes
 	}
 	return nil
 }
 
-func (m *ScalarUDFSpec) GetExecArgTypes() []proto1.DataType {
+func (m *ScalarUDFSpec) GetExecArgTypes() []types.DataType {
 	if m != nil {
 		return m.ExecArgTypes
 	}
 	return nil
 }
 
-func (m *ScalarUDFSpec) GetReturnType() proto1.DataType {
+func (m *ScalarUDFSpec) GetReturnType() types.DataType {
 	if m != nil {
 		return m.ReturnType
 	}
-	return proto1.DATA_TYPE_UNKNOWN
+	return types.DATA_TYPE_UNKNOWN
 }
 
 type UDFInfo struct {
@@ -172,7 +172,7 @@ type UDFInfo struct {
 func (m *UDFInfo) Reset()      { *m = UDFInfo{} }
 func (*UDFInfo) ProtoMessage() {}
 func (*UDFInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_udfs_61ddd779d402f111, []int{2}
+	return fileDescriptor_udfs_777d493717c4adfc, []int{2}
 }
 func (m *UDFInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -759,7 +759,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType == 0 {
-				var v proto1.DataType
+				var v types.DataType
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return ErrIntOverflowUdfs
@@ -769,7 +769,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (proto1.DataType(b) & 0x7F) << shift
+					v |= (types.DataType(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -799,7 +799,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 					return io.ErrUnexpectedEOF
 				}
 				for iNdEx < postIndex {
-					var v proto1.DataType
+					var v types.DataType
 					for shift := uint(0); ; shift += 7 {
 						if shift >= 64 {
 							return ErrIntOverflowUdfs
@@ -809,7 +809,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (proto1.DataType(b) & 0x7F) << shift
+						v |= (types.DataType(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -821,7 +821,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 			}
 		case 3:
 			if wireType == 0 {
-				var v proto1.DataType
+				var v types.DataType
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return ErrIntOverflowUdfs
@@ -831,7 +831,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (proto1.DataType(b) & 0x7F) << shift
+					v |= (types.DataType(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -861,7 +861,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 					return io.ErrUnexpectedEOF
 				}
 				for iNdEx < postIndex {
-					var v proto1.DataType
+					var v types.DataType
 					for shift := uint(0); ; shift += 7 {
 						if shift >= 64 {
 							return ErrIntOverflowUdfs
@@ -871,7 +871,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (proto1.DataType(b) & 0x7F) << shift
+						v |= (types.DataType(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -895,7 +895,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FinalizeType |= (proto1.DataType(b) & 0x7F) << shift
+				m.FinalizeType |= (types.DataType(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -981,7 +981,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType == 0 {
-				var v proto1.DataType
+				var v types.DataType
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return ErrIntOverflowUdfs
@@ -991,7 +991,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (proto1.DataType(b) & 0x7F) << shift
+					v |= (types.DataType(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -1021,7 +1021,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 					return io.ErrUnexpectedEOF
 				}
 				for iNdEx < postIndex {
-					var v proto1.DataType
+					var v types.DataType
 					for shift := uint(0); ; shift += 7 {
 						if shift >= 64 {
 							return ErrIntOverflowUdfs
@@ -1031,7 +1031,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (proto1.DataType(b) & 0x7F) << shift
+						v |= (types.DataType(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -1043,7 +1043,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 			}
 		case 3:
 			if wireType == 0 {
-				var v proto1.DataType
+				var v types.DataType
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return ErrIntOverflowUdfs
@@ -1053,7 +1053,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (proto1.DataType(b) & 0x7F) << shift
+					v |= (types.DataType(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -1083,7 +1083,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 					return io.ErrUnexpectedEOF
 				}
 				for iNdEx < postIndex {
-					var v proto1.DataType
+					var v types.DataType
 					for shift := uint(0); ; shift += 7 {
 						if shift >= 64 {
 							return ErrIntOverflowUdfs
@@ -1093,7 +1093,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (proto1.DataType(b) & 0x7F) << shift
+						v |= (types.DataType(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -1117,7 +1117,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ReturnType |= (proto1.DataType(b) & 0x7F) << shift
+				m.ReturnType |= (types.DataType(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -1360,31 +1360,31 @@ var (
 	ErrIntOverflowUdfs   = fmt.Errorf("proto: integer overflow")
 )
 
-func init() { proto.RegisterFile("src/carnot/proto/udfs.proto", fileDescriptor_udfs_61ddd779d402f111) }
+func init() { proto.RegisterFile("src/carnot/proto/udfs.proto", fileDescriptor_udfs_777d493717c4adfc) }
 
-var fileDescriptor_udfs_61ddd779d402f111 = []byte{
-	// 356 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x92, 0x3f, 0x4b, 0xc3, 0x40,
-	0x18, 0x87, 0x73, 0xb6, 0xf8, 0xe7, 0xd2, 0x06, 0xb9, 0x29, 0xd8, 0x72, 0xc4, 0x4e, 0x9d, 0x12,
-	0xa8, 0xe0, 0xe6, 0xd0, 0x50, 0x0a, 0xae, 0xa9, 0x5d, 0x5c, 0xca, 0x35, 0xb9, 0x94, 0x40, 0x4d,
-	0x8e, 0xcb, 0x05, 0xac, 0x83, 0xf8, 0x11, 0xfc, 0x18, 0x7e, 0x14, 0xc7, 0x8e, 0x8e, 0xf6, 0x5c,
-	0x44, 0x1c, 0xfa, 0x11, 0x24, 0x97, 0xb4, 0x28, 0x2d, 0x58, 0x07, 0xa7, 0xbc, 0x2f, 0xc9, 0xf3,
-	0xe4, 0x7e, 0xef, 0xbd, 0xb0, 0x91, 0x72, 0xdf, 0xf1, 0x09, 0x8f, 0x13, 0xe1, 0x30, 0x9e, 0x88,
-	0xc4, 0xc9, 0x82, 0x30, 0xb5, 0x55, 0x89, 0x10, 0x9b, 0xda, 0xc5, 0xbb, 0xf2, 0xc1, 0xc6, 0x27,
-	0xcd, 0x0d, 0x40, 0xcc, 0x18, 0x2d, 0x89, 0xd6, 0x27, 0x80, 0x07, 0xc3, 0x5e, 0x77, 0xc0, 0xa8,
-	0x8f, 0x10, 0xac, 0xc6, 0xe4, 0x86, 0x9a, 0xc0, 0x02, 0xed, 0x23, 0x4f, 0xd5, 0xc8, 0x85, 0x46,
-	0x14, 0x47, 0x62, 0x44, 0xf8, 0x64, 0xa4, 0x38, 0x73, 0xcf, 0xaa, 0xb4, 0x8d, 0x4e, 0xd3, 0xde,
-	0xfc, 0x95, 0xdd, 0x23, 0x82, 0x5c, 0xcd, 0x18, 0xf5, 0x6a, 0x39, 0xd3, 0xe5, 0x93, 0xbc, 0x49,
-	0x51, 0x1f, 0x1e, 0x67, 0x2c, 0x20, 0x82, 0x7e, 0xb3, 0x54, 0x76, 0xb0, 0x18, 0x05, 0xb5, 0xf6,
-	0x74, 0x61, 0x3d, 0x8c, 0x62, 0x32, 0x8d, 0xee, 0xa8, 0xb2, 0x98, 0x55, 0x0b, 0xfc, 0x7e, 0x94,
-	0x15, 0x92, 0x77, 0xad, 0x0f, 0x00, 0xeb, 0x03, 0x9f, 0x4c, 0x09, 0x1f, 0xf6, 0xfa, 0xff, 0x1a,
-	0xda, 0x85, 0x06, 0xbd, 0xa5, 0xfe, 0x1f, 0x23, 0xd7, 0x72, 0x66, 0xed, 0xb8, 0x80, 0x3a, 0xa7,
-	0x22, 0xe3, 0xf1, 0xee, 0x71, 0x61, 0x01, 0xa8, 0xb0, 0xf7, 0xf9, 0xd5, 0xf6, 0x2f, 0xe3, 0x30,
-	0x41, 0x0e, 0xac, 0x66, 0x01, 0x49, 0x4d, 0x60, 0x55, 0xda, 0x7a, 0xa7, 0xb1, 0x4d, 0x51, 0x6e,
-	0x81, 0xa7, 0x3e, 0x44, 0x2e, 0xd4, 0x53, 0x35, 0xa7, 0x51, 0xbe, 0x5e, 0x2a, 0xbf, 0xde, 0x39,
-	0xdd, 0xc6, 0xfd, 0x18, 0xa7, 0x07, 0x0b, 0x6a, 0x18, 0x84, 0xa9, 0x7b, 0x3e, 0x5f, 0x60, 0xed,
-	0x65, 0x81, 0xb5, 0xe5, 0x02, 0x83, 0x07, 0x89, 0xc1, 0x93, 0xc4, 0xe0, 0x59, 0x62, 0x30, 0x97,
-	0x18, 0xbc, 0x4a, 0x0c, 0xde, 0x25, 0xd6, 0x96, 0x12, 0x83, 0xc7, 0x37, 0xac, 0x5d, 0x1f, 0xae,
-	0x8c, 0xe3, 0x7d, 0xb5, 0x9a, 0x67, 0x5f, 0x01, 0x00, 0x00, 0xff, 0xff, 0xce, 0xe3, 0x45, 0xd5,
-	0xeb, 0x02, 0x00, 0x00,
+var fileDescriptor_udfs_777d493717c4adfc = []byte{
+	// 366 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x92, 0xbf, 0x4e, 0xc3, 0x30,
+	0x10, 0xc6, 0x63, 0x5a, 0xf1, 0xc7, 0x69, 0x23, 0xe4, 0x29, 0xa2, 0xc8, 0x0a, 0x9d, 0x3a, 0x25,
+	0x52, 0x2b, 0x41, 0x07, 0x96, 0x56, 0x55, 0x25, 0xd6, 0x94, 0x2e, 0x2c, 0x95, 0x9b, 0x38, 0x55,
+	0xa4, 0x34, 0xb1, 0x9c, 0x44, 0xa2, 0x0c, 0x88, 0x47, 0xe0, 0x31, 0x78, 0x14, 0x06, 0x84, 0x3a,
+	0x32, 0x52, 0xb3, 0x30, 0xf6, 0x11, 0x50, 0xec, 0xb6, 0x02, 0x41, 0x05, 0x0b, 0x8b, 0x7d, 0x27,
+	0x7f, 0xbf, 0xb3, 0xbe, 0xbb, 0x83, 0xb5, 0x94, 0x7b, 0x8e, 0x47, 0x78, 0x9c, 0x64, 0x0e, 0xe3,
+	0x49, 0x96, 0x38, 0xb9, 0x1f, 0xa4, 0xb6, 0x0c, 0x11, 0x62, 0x91, 0xad, 0xde, 0x56, 0x17, 0x1b,
+	0x1f, 0x1d, 0x4b, 0x20, 0x99, 0x4e, 0x93, 0xd8, 0xc9, 0x66, 0x8c, 0xa6, 0xea, 0x54, 0x44, 0xfd,
+	0x19, 0xc0, 0xbd, 0x61, 0xaf, 0x33, 0x60, 0xd4, 0x43, 0x08, 0x96, 0x63, 0x32, 0xa5, 0x26, 0xb0,
+	0x40, 0xe3, 0xc0, 0x95, 0x31, 0x6a, 0x43, 0x23, 0x8c, 0xc3, 0x6c, 0x44, 0xf8, 0x64, 0x24, 0x39,
+	0x73, 0xc7, 0x2a, 0x35, 0x8c, 0x26, 0xb2, 0x59, 0x64, 0xab, 0x42, 0x3d, 0x92, 0x91, 0xcb, 0x19,
+	0xa3, 0x6e, 0xa5, 0x50, 0x76, 0xf8, 0xa4, 0x48, 0x52, 0x74, 0x0e, 0x0f, 0x73, 0xe6, 0x93, 0x8c,
+	0x7e, 0x62, 0x4b, 0x5b, 0x59, 0x43, 0x69, 0x37, 0xf4, 0x19, 0xac, 0x06, 0x61, 0x4c, 0xa2, 0xf0,
+	0x86, 0x4a, 0xd6, 0x2c, 0x5b, 0x60, 0xdb, 0xb7, 0x6b, 0x61, 0x91, 0xd5, 0x9f, 0x00, 0xac, 0x0e,
+	0x3c, 0x12, 0x11, 0x3e, 0xec, 0xf5, 0xff, 0xc1, 0x56, 0x1b, 0x1a, 0xf4, 0x9a, 0x7a, 0x7f, 0x32,
+	0x55, 0x29, 0x94, 0x1b, 0xb2, 0x05, 0x75, 0x4e, 0xb3, 0x9c, 0xc7, 0xbf, 0x19, 0x82, 0x4a, 0x26,
+	0xed, 0xdc, 0x16, 0xe3, 0xe9, 0x5f, 0xc4, 0x41, 0x82, 0x1c, 0x58, 0xce, 0x7d, 0x92, 0x9a, 0xc0,
+	0x2a, 0x35, 0xf4, 0x66, 0xcd, 0xfe, 0x3e, 0x6b, 0x7b, 0x35, 0x49, 0x57, 0x0a, 0x51, 0x17, 0xea,
+	0xa9, 0xec, 0xc4, 0xa8, 0x58, 0x11, 0xe9, 0x50, 0x6f, 0x9e, 0xfc, 0xc4, 0x7d, 0x69, 0x98, 0x0b,
+	0x15, 0x35, 0xf4, 0x83, 0xb4, 0x7b, 0x3a, 0x5f, 0x60, 0xed, 0x65, 0x81, 0xb5, 0xe5, 0x02, 0x83,
+	0x3b, 0x81, 0xc1, 0x83, 0xc0, 0xe0, 0x51, 0x60, 0x30, 0x17, 0x18, 0xbc, 0x0a, 0x0c, 0xde, 0x05,
+	0xd6, 0x96, 0x02, 0x83, 0xfb, 0x37, 0xac, 0x5d, 0xed, 0xaf, 0x2b, 0x8e, 0x77, 0xe5, 0x7a, 0xb5,
+	0x3e, 0x02, 0x00, 0x00, 0xff, 0xff, 0x54, 0x91, 0x0a, 0x75, 0xaf, 0x02, 0x00, 0x00,
 }

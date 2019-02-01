@@ -4,9 +4,9 @@
 
 #include "src/carnot/exec/row_batch.h"
 #include "src/carnot/exec/row_descriptor.h"
-#include "src/carnot/proto/types.pb.h"
 #include "src/carnot/udf/arrow_adapter.h"
 #include "src/carnot/udf/udf.h"
+#include "src/common/types/types.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -25,7 +25,7 @@ class RowBatchTest : public ::testing::Test {
  protected:
   void SetUp() override {
     auto descriptor = std::vector<udf::UDFDataType>(
-        {carnotpb::DataType::BOOLEAN, carnotpb::DataType::INT64, carnotpb::DataType::FLOAT64});
+        {types::DataType::BOOLEAN, types::DataType::INT64, types::DataType::FLOAT64});
 
     RowDescriptor rd = RowDescriptor(descriptor);
     rb_ = std::make_unique<RowBatch>(rd, 3);

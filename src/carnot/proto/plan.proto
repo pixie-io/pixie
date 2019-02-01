@@ -1,6 +1,6 @@
 syntax = "proto3";
 import "google/protobuf/wrappers.proto";
-import "src/carnot/proto/types.proto";
+import "src/common/types/types.proto";
 
 package pl.carnot.carnotpb;
 
@@ -11,7 +11,7 @@ option go_package = "carnotpb";
 // in order to resolve dependencies (ex. Blocking Join).
 message Plan {
   // The DAG which stores the connection information of the plan fragments.
-  DAG dag                         = 1;
+  DAG dag = 1;
   // List of plan fragments referenced by the DAG.
   repeated PlanFragment fragments = 2;
 }
@@ -20,9 +20,9 @@ message Plan {
 // list: a list of nodes and interconnections between nodes.
 message PlanFragment {
   // The ID of the plan fragment.
-  uint64 id               = 1;
+  uint64 id = 1;
   // The DAG which stores the connection information.
-  DAG dag                 = 2;
+  DAG dag = 2;
   // List of nodes referenced by the DAG.
   repeated PlanNode nodes = 3;
 }
@@ -32,7 +32,7 @@ message DAG {
   // DAG node stores information about each node and it's dependencies.
   message DAGNode {
     // The ID of the node. This is the same as the ID used for PlanNode or PlanFragment.
-    uint64 id                   = 1;
+    uint64 id = 1;
     // The dependencies of this DAG node stored as the PlanNode/PlanFragment IDs.
     repeated uint64 sorted_deps = 2;
   }
@@ -43,7 +43,7 @@ message DAG {
 // A execution node used by the query plan.
 message PlanNode {
   // A unique ID used to reference this node.
-  uint64 id   = 1;
+  uint64 id = 1;
   // The operation that this node performs.
   Operator op = 2;
 }
@@ -53,53 +53,52 @@ enum OperatorType {
   // Source operators are rangs 1000 - 2000.
   MEMORY_SOURCE_OPERATOR = 1000;
   // Regular operators are range 2000 - 10000.
-  MAP_OPERATOR                = 2000;
+  MAP_OPERATOR = 2000;
   BLOCKING_AGGREGATE_OPERATOR = 2100;
   // Sink operators are range 9000-10000.
   MEMORY_SINK_OPERATOR = 9000;
 }
 
-
 // The Logical operation performed. Each operator needs and entry in this
 // message.
 message Operator {
-    OperatorType op_type = 1;
+  OperatorType op_type = 1;
   oneof op {
     // Fetches data from in memory storage.
-    MemorySourceOperator mem_source_op        = 2;
+    MemorySourceOperator mem_source_op = 2;
     // Performs a simple Map operation.
-    MapOperator map_op                        = 3;
+    MapOperator map_op = 3;
     // Performs a blocking aggregate (instead of streaming/non-blocking aggregate).
     BlockingAggregateOperator blocking_agg_op = 4;
     // Operator that stores data to memory.
-    MemorySinkOperator mem_sink_op            = 5;
+    MemorySinkOperator mem_sink_op = 5;
   }
 }
 
 // Fetches data from in-memory source.
 message MemorySourceOperator {
   // Name of the table.
-  string name                     = 1;
+  string name = 1;
   // The column indexes to fetch.
-  repeated int64 column_idxs      = 2;
+  repeated int64 column_idxs = 2;
   // The names for the columns.
-  repeated string column_names    = 3;
+  repeated string column_names = 3;
   // The types of the columns.
-  repeated carnotpb.DataType column_types  = 4;
+  repeated pl.types.DataType column_types = 4;
   // The start time (can be omitted if not time series).
-  google.protobuf.Int64Value start_time                = 5;
+  google.protobuf.Int64Value start_time = 5;
   // The stop time (can be omitted if not time series).
-  google.protobuf.Int64Value stop_time                 = 6;
+  google.protobuf.Int64Value stop_time = 6;
 }
 
 // Writes to in-memory storage.
 message MemorySinkOperator {
   // Storage is organized as tables, this specifies the name of the table.
-  string name                     = 1;
+  string name = 1;
   // The types of the columns.
-  repeated carnotpb.DataType column_types  = 2;
+  repeated pl.types.DataType column_types = 2;
   // The names of the columns.
-  repeated string column_names    = 3;
+  repeated string column_names = 3;
 }
 
 // Performs map operation.
@@ -108,7 +107,7 @@ message MapOperator {
   // In order for columns to be copied they must be references by
   // the scalar expression.
   repeated ScalarExpression expressions = 1;
-  repeated string column_names          = 2;
+  repeated string column_names = 2;
 }
 
 // Aggregate does a group by the "group" Columns and computes
@@ -117,10 +116,10 @@ message MapOperator {
 message BlockingAggregateOperator {
   // The functions to execute for this aggregate.
   // Note that only agg funcs are valid here.
-  repeated AggregateExpression values  = 1;
+  repeated AggregateExpression values = 1;
   // The columns to use for grouping. For grouping involving a function
   // a map operation will need to be performed first.
-  repeated Column groups      = 2;
+  repeated Column groups = 2;
   // The names of the output groups.
   repeated string group_names = 3;
   // The names of values.
@@ -133,9 +132,9 @@ message ScalarExpression {
     // A constant value.
     ScalarValue constant = 1;
     // A value that is a column reference.
-    Column column        = 2;
+    Column column = 2;
     // A value that is a function applied on a set of columns.
-    ScalarFunc func      = 3;
+    ScalarFunc func = 3;
   }
 }
 
@@ -144,12 +143,12 @@ message ScalarValue {
   // We need to store the type to handle the null case and make sure we have the
   // "correct" null value. This type takes precedence on the one of value below.
   // If they mismatch a null value will be used.
-  carnotpb.DataType data_type = 1;
+  pl.types.DataType data_type = 1;
   oneof value {
-    bool bool_value      = 2;
-    int64 int64_value    = 3;
+    bool bool_value = 2;
+    int64 int64_value = 3;
     double float64_value = 4;
-    string string_value  = 5;
+    string string_value = 5;
   }
 }
 
@@ -187,7 +186,7 @@ message AggregateExpression {
 // A column reference.
 message Column {
   // The node that produces the output.
-  uint64 node  = 1;
+  uint64 node = 1;
   // The index of the column.
   uint64 index = 2;
 }

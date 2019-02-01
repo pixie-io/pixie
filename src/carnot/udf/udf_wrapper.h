@@ -150,7 +150,7 @@ struct ScalarUDFWrapper {
   static Status ExecBatchArrow(ScalarUDF *udf, FunctionContext *ctx,
                                const std::vector<arrow::Array *> &inputs,
                                arrow::ArrayBuilder *output, int count) {
-    constexpr carnotpb::DataType return_type = ScalarUDFTraits<TUDF>::ReturnType();
+    constexpr types::DataType return_type = ScalarUDFTraits<TUDF>::ReturnType();
     auto exec_argument_types = ScalarUDFTraits<TUDF>::ExecArguments();
 
     // Check that output is allocated.
@@ -192,7 +192,7 @@ struct ScalarUDFWrapper {
     // Check that the arity is correct.
     DCHECK(inputs.size() == ScalarUDFTraits<TUDF>::ExecArguments().size());
 
-    constexpr carnotpb::DataType return_type = ScalarUDFTraits<TUDF>::ReturnType();
+    constexpr types::DataType return_type = ScalarUDFTraits<TUDF>::ReturnType();
     auto exec_argument_types = ScalarUDFTraits<TUDF>::ExecArguments();
 
 #ifndef NDEBUG

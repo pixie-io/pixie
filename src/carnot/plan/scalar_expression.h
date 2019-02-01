@@ -57,8 +57,8 @@ class ScalarExpression : public PlanNode {
    * @param input_schema The input schema which is used to look up potential dependencies.
    * @return Either an Status or the compute data type.
    */
-  virtual StatusOr<carnotpb::DataType> OutputDataType(const CompilerState &state,
-                                                      const Schema &input_schema) const = 0;
+  virtual StatusOr<types::DataType> OutputDataType(const CompilerState &state,
+                                                   const Schema &input_schema) const = 0;
 
   /**
    * Computes the column dependencies and returns a reference to all of them. No
@@ -109,8 +109,8 @@ class Column : public ScalarExpression {
   Status Init(const carnotpb::Column &pb);
 
   // Implementation of base class methods.
-  StatusOr<carnotpb::DataType> OutputDataType(const CompilerState &state,
-                                              const Schema &input_schema) const override;
+  StatusOr<types::DataType> OutputDataType(const CompilerState &state,
+                                           const Schema &input_schema) const override;
   std::vector<const Column *> ColumnDeps() override;
   std::vector<ScalarExpression *> Deps() const override;
   Expression ExpressionType() const override;
@@ -139,14 +139,14 @@ class ScalarValue : public ScalarExpression {
 
   // Override base class methods.
   std::vector<const Column *> ColumnDeps() override;
-  StatusOr<carnotpb::DataType> OutputDataType(const CompilerState &state,
-                                              const Schema &input_schema) const override;
+  StatusOr<types::DataType> OutputDataType(const CompilerState &state,
+                                           const Schema &input_schema) const override;
   std::vector<ScalarExpression *> Deps() const override;
   Expression ExpressionType() const override;
   std::string DebugString() const override;
 
   /// Returns the data type of the constant value.
-  carnotpb::DataType DataType() const { return pb_.data_type(); }
+  types::DataType DataType() const { return pb_.data_type(); }
   // Accessor functions that return the value based on type.
   // If the wrong function is called then an invalid value may be returned.
   bool BoolValue() const;
@@ -167,8 +167,8 @@ class ScalarFunc : public ScalarExpression {
   Status Init(const carnotpb::ScalarFunc &pb);
   // Override base class methods.
   std::vector<const Column *> ColumnDeps() override;
-  StatusOr<carnotpb::DataType> OutputDataType(const CompilerState &state,
-                                              const Schema &input_schema) const override;
+  StatusOr<types::DataType> OutputDataType(const CompilerState &state,
+                                           const Schema &input_schema) const override;
   std::vector<ScalarExpression *> Deps() const override;
   Expression ExpressionType() const override;
   std::string DebugString() const override;
@@ -189,8 +189,8 @@ class AggregateExpression : public ScalarExpression {
   Status Init(const carnotpb::AggregateExpression &pb);
   // Override base class methods.
   std::vector<const Column *> ColumnDeps() override;
-  StatusOr<carnotpb::DataType> OutputDataType(const CompilerState &state,
-                                              const Schema &input_schema) const override;
+  StatusOr<types::DataType> OutputDataType(const CompilerState &state,
+                                           const Schema &input_schema) const override;
   std::vector<ScalarExpression *> Deps() const override;
   Expression ExpressionType() const override;
   std::string DebugString() const override;
