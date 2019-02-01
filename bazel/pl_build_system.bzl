@@ -57,7 +57,7 @@ def _default_external_deps():
     ]
 
 # PL C++ library targets should be specified with this function.
-def pl_cc_library(
+def pl_cc_library_internal(
         name,
         srcs = [],
         hdrs = [],
@@ -88,6 +88,13 @@ def pl_cc_library(
         testonly = testonly,
         strip_include_prefix = strip_include_prefix,
     )
+
+def pl_cc_library(**kwargs):
+    if "deps" in kwargs:
+        kwargs["deps"] = kwargs["deps"] + ["//src/common:common"]
+    else:
+        kwargs["deps"] = ["//src/common:common"]
+    pl_cc_library_internal(**kwargs)
 
 # PL C++ binary targets should be specified with this function.
 def pl_cc_binary(

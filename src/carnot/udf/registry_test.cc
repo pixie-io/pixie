@@ -6,9 +6,9 @@
 #include "absl/strings/match.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
-#include "src/utils/error.h"
-#include "src/utils/macros.h"
-#include "src/utils/status.h"
+#include "src/common/error.h"
+#include "src/common/macros.h"
+#include "src/common/status.h"
 
 namespace pl {
 namespace carnot {

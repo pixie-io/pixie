@@ -13,7 +13,7 @@
 #include <functional>
 
 #include "src/carnot/proto/types.pb.h"
-#include "src/utils/status.h"
+#include "src/common/status.h"
 
 namespace pl {
 namespace carnot {

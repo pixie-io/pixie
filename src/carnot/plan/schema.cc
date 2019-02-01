@@ -4,7 +4,7 @@
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/plan/schema.h"
-#include "src/utils/error.h"
+#include "src/common/error.h"
 
 namespace pl {
 namespace carnot {

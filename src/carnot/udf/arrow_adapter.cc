@@ -11,8 +11,8 @@
 
 #include "src/carnot/udf/arrow_adapter.h"
 #include "src/carnot/udf/udf.h"
-#include "src/utils/error.h"
-#include "src/utils/status.h"
+#include "src/common/error.h"
+#include "src/common/status.h"
 
 namespace pl {
 namespace carnot {

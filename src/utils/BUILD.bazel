@@ -27,35 +27,3 @@ go_test(
         "@com_github_stretchr_testify//assert:go_default_library",
     ],
 )
-
-pl_cc_library(
-    name = "utils",
-    srcs = glob(
-        ["*.cc"],
-        exclude = ["**/*_test.cc"],
-    ),
-    hdrs = glob(["*.h"]),
-    visibility = ["//visibility:public"],
-    deps = ["//src/utils/codes:error_codes_cc_proto"],
-)
-
-pl_cc_test(
-    name = "status_test",
-    srcs = ["status_test.cc"],
-    deps = [
-        ":utils",
-        "//src/utils/codes:error_codes_cc_proto",
-    ],
-)
-
-pl_cc_test(
-    name = "statusor_test",
-    srcs = ["statusor_test.cc"],
-    deps = [":utils"],
-)
-
-pl_cc_test(
-    name = "error_test",
-    srcs = ["error_test.cc"],
-    deps = [":utils"],
-)

@@ -2,9 +2,9 @@
 #include <iostream>
 #include "absl/strings/match.h"
 
-#include "src/utils/codes/error_codes.pb.h"
-#include "src/utils/error.h"
-#include "src/utils/error_strings.h"
+#include "src/common/codes/error_codes.pb.h"
+#include "src/common/error.h"
+#include "src/common/error_strings.h"
 
 namespace pl {
 namespace error {

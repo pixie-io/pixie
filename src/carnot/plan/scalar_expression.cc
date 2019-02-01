@@ -9,8 +9,8 @@
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/plan/utils.h"
 #include "src/carnot/udf/udf.h"
-#include "src/utils/error.h"
-#include "src/utils/statusor.h"
+#include "src/common/error.h"
+#include "src/common/statusor.h"
 
 namespace pl {
 namespace carnot {

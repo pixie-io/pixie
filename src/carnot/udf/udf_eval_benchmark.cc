@@ -8,8 +8,8 @@
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/carnot/udf/udf_wrapper.h"
+#include "src/common/status.h"
 #include "src/utils/benchmark/utils.h"
-#include "src/utils/status.h"
 
 using pl::Status;
 using pl::carnot::udf::FunctionContext;

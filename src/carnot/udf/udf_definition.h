@@ -6,7 +6,7 @@
 
 #include "src/carnot/udf/column_wrapper.h"
 #include "src/carnot/udf/udf_wrapper.h"
-#include "src/utils/status.h"
+#include "src/common/status.h"
 
 namespace pl {
 namespace carnot {

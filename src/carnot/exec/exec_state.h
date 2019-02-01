@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "src/carnot/udf/registry.h"
-#include "src/utils/status.h"
+#include "src/common/status.h"
 
 namespace pl {
 namespace carnot {

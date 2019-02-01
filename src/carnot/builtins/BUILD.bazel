@@ -15,6 +15,8 @@ pl_cc_library(
 pl_cc_test(
     name = "math_ops_test",
     srcs = ["math_ops_test.cc"],
-    deps = [":cc_library",
-            "//src/carnot/udf:udf_testutils"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf:udf_testutils",
+    ],
 )

@@ -9,8 +9,8 @@
 #include "src/carnot/exec/row_batch.h"
 #include "src/carnot/exec/row_descriptor.h"
 #include "src/carnot/plan/operators.h"
-#include "src/utils/error.h"
-#include "src/utils/status.h"
+#include "src/common/error.h"
+#include "src/common/status.h"
 
 namespace pl {
 namespace carnot {

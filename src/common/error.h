@@ -2,8 +2,8 @@
 
 #include "absl/strings/substitute.h"
 
-#include "src/utils/codes/error_codes.pb.h"
-#include "src/utils/status.h"
+#include "src/common/codes/error_codes.pb.h"
+#include "src/common/status.h"
 
 namespace pl {
 namespace error {

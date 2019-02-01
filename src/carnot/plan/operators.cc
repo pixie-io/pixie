@@ -10,7 +10,7 @@
 #include "src/carnot/plan/schema.h"
 #include "src/carnot/plan/utils.h"
 #include "src/carnot/proto/plan.pb.h"
-#include "src/utils/error.h"
+#include "src/common/error.h"
 
 namespace pl {
 namespace carnot {

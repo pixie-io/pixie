@@ -10,8 +10,8 @@
 #include "src/carnot/udf/arrow_adapter.h"
 #include "src/carnot/udf/column_wrapper.h"
 #include "src/carnot/udf/udf.h"
-#include "src/utils/error.h"
-#include "src/utils/statusor.h"
+#include "src/common/error.h"
+#include "src/common/statusor.h"
 
 namespace pl {
 namespace carnot {

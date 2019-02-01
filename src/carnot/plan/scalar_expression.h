@@ -11,9 +11,9 @@
 #include "src/carnot/plan/plan_node.h"
 #include "src/carnot/plan/schema.h"
 #include "src/carnot/proto/plan.pb.h"
-#include "src/utils/error.h"
-#include "src/utils/status.h"
-#include "src/utils/statusor.h"
+#include "src/common/error.h"
+#include "src/common/status.h"
+#include "src/common/statusor.h"
 
 namespace pl {
 namespace carnot {

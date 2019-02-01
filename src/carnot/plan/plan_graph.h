@@ -7,7 +7,7 @@
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/proto/plan.pb.h"
-#include "src/utils/status.h"
+#include "src/common/status.h"
 
 namespace pl {
 namespace carnot {

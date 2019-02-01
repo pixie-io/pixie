@@ -1,19 +1,40 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_library_internal", "pl_cc_test")
 
-pl_cc_library(
+pl_cc_library_internal(
     name = "common",
     srcs = glob(
         ["*.cc"],
         exclude = ["**/*_test.cc"],
     ),
     hdrs = glob(["*.h"]),
-    deps = ["//src/utils:utils"],
+    deps = ["//src/common/codes:error_codes_cc_proto"],
 )
 
 pl_cc_test(
     name = "object_pool_test",
     srcs = ["object_pool_test.cc"],
+    deps = [":common"],
+)
+
+pl_cc_test(
+    name = "status_test",
+    srcs = ["status_test.cc"],
+    deps = [
+        ":common",
+        "//src/common/codes:error_codes_cc_proto",
+    ],
+)
+
+pl_cc_test(
+    name = "statusor_test",
+    srcs = ["statusor_test.cc"],
+    deps = [":common"],
+)
+
+pl_cc_test(
+    name = "error_test",
+    srcs = ["error_test.cc"],
     deps = [":common"],
 )

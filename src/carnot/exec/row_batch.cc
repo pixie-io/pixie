@@ -8,7 +8,7 @@
 #include "absl/strings/str_format.h"
 #include "src/carnot/exec/row_batch.h"
 #include "src/carnot/udf/arrow_adapter.h"
-#include "src/utils/error.h"
+#include "src/common/error.h"
 
 namespace pl {
 namespace carnot {

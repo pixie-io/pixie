@@ -1,19 +1,21 @@
 package(default_visibility = ["//visibility:public"])
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_binary")
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
     name = "cc_library",
     srcs = glob(
         ["*.cc"],
-        exclude = ["**/*_test.cc",
-                   "**/*_benchmark.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
     ),
     hdrs = glob(["*.h"]),
     deps = [
+        "//src/carnot/plan:cc_library",
         "//src/carnot/proto:plan_cc_proto",
         "//src/carnot/udf:cc_library",
-        "//src/carnot/plan:cc_library",
-        "//src/utils",
         "//third_party:arrow",
     ],
 )
@@ -23,7 +25,7 @@ pl_cc_test(
     srcs = ["row_batch_test.cc"],
     deps = [
         ":cc_library",
-         "//third_party:arrow",
+        "//third_party:arrow",
     ],
 )
 
@@ -32,20 +34,20 @@ pl_cc_test(
     srcs = ["expression_evaluator_test.cc"],
     deps = [
         ":cc_library",
-         "//third_party:arrow",
-         "//src/carnot/proto:plan_testutils",
+        "//src/carnot/proto:plan_testutils",
+        "//third_party:arrow",
     ],
 )
 
 pl_cc_binary(
     name = "expression_evaluator_benchmark",
-    srcs = ["expression_evaluator_benchmark.cc"],
     testonly = 1,
+    srcs = ["expression_evaluator_benchmark.cc"],
     deps = [
         ":cc_library",
+        "//src/carnot/proto:plan_testutils",
         "//src/utils/benchmark:cc_library",
         "//third_party:arrow",
         "@com_google_benchmark//:benchmark_main",
-         "//src/carnot/proto:plan_testutils",
     ],
 )

@@ -4,10 +4,10 @@
 #include <string>
 #include <utility>
 
-#include "src/utils/codes/error_codes.pb.h"
-#include "src/utils/error_strings.h"
-#include "src/utils/macros.h"
-#include "src/utils/status.h"
+#include "src/common/codes/error_codes.pb.h"
+#include "src/common/error_strings.h"
+#include "src/common/macros.h"
+#include "src/common/status.h"
 
 namespace pl {
 

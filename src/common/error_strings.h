@@ -5,7 +5,7 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/substitute.h"
 
-#include "src/utils/codes/error_codes.pb.h"
+#include "src/common/codes/error_codes.pb.h"
 
 namespace pl {
 namespace error {

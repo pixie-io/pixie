@@ -4,8 +4,8 @@
 #include <memory>
 #include <string>
 
-#include "src/utils/codes/error_codes.pb.h"
-#include "src/utils/macros.h"
+#include "src/common/codes/error_codes.pb.h"
+#include "src/common/macros.h"
 
 namespace pl {
 

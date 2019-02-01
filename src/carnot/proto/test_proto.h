@@ -9,7 +9,7 @@
 #include "src/carnot/plan/plan_fragment.h"
 #include "src/carnot/plan/plan_graph.h"
 #include "src/carnot/proto/plan.pb.h"
-#include "src/utils/status.h"
+#include "src/common/status.h"
 
 namespace pl {
 namespace carnot {
