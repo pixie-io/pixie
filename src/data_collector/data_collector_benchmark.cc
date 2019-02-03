@@ -16,6 +16,9 @@
 
 using arrow::DoubleBuilder;
 using arrow::Int64Builder;
+using pl::datacollector::datacollectorpb::Canonical;
+using pl::datacollector::datacollectorpb::CanonicalRepeatedColumn;
+using pl::datacollector::datacollectorpb::CanonicalStream;
 
 // Copied from third_party/arrow/cpp/src/arrow/test-util.h
 // Including test-util.h causes unnecessary dependencies
@@ -137,7 +140,7 @@ auto RawStructProcessDataDynamicArray(
 auto CanonicalProtoProcessData(
     const std::vector<std::tuple<int64_t, double, int64_t>>& collector_data) {
   // Create a  canonical proto message
-  ::pl::canonical_message::CanonicalStream canonical_stream;
+  CanonicalStream canonical_stream;
   size_t data_size = collector_data.size();
   for (size_t i = 0; i < data_size; ++i) {
     auto* canonical_data = canonical_stream.add_data_stream();
@@ -152,7 +155,7 @@ auto CanonicalProtoProcessData(
   canonical_stream.SerializeToArray(serialized_message.get(), message_size);
 
   // Deserialize proto message
-  ::pl::canonical_message::CanonicalStream recvd_stream;
+  CanonicalStream recvd_stream;
   recvd_stream.ParseFromArray(serialized_message.get(), message_size);
 
   // Extract data from canonical message to table format for engine.
@@ -163,7 +166,7 @@ auto CanonicalProtoProcessData(
   int num_items = recvd_stream.data_stream_size();
 
   for (int i = 0; i < num_items; ++i) {
-    ::pl::canonical_message::Canonical datum = recvd_stream.data_stream(i);
+    Canonical datum = recvd_stream.data_stream(i);
     time_stamp[i] = datum.time_stamp();
     data_0[i] = datum.data1();
     data_1[i] = datum.data2();
@@ -179,7 +182,7 @@ auto CanonicalProtoProcessData(
 auto CanonicalProtoProcessDataRepeatedColumn(
     const std::vector<std::tuple<int64_t, double, int64_t>>& collector_data) {
   // Create a  canonical other proto message
-  ::pl::canonical_message::CanonicalRepeatedColumn canonical_stream;
+  CanonicalRepeatedColumn canonical_stream;
   size_t data_size = collector_data.size();
   for (size_t i = 0; i < data_size; ++i) {
     canonical_stream.add_time_stamp(std::get<0>(collector_data[i]));
@@ -193,7 +196,7 @@ auto CanonicalProtoProcessDataRepeatedColumn(
   canonical_stream.SerializeToArray(serialized_message.get(), message_size);
 
   // Deserialize proto message
-  ::pl::canonical_message::CanonicalRepeatedColumn recvd_stream;
+  CanonicalRepeatedColumn recvd_stream;
   recvd_stream.ParseFromArray(serialized_message.get(), message_size);
 
   // Extract data from canonical message to table format for engine.

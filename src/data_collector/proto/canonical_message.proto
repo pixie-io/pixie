@@ -1,7 +1,7 @@
 syntax = "proto3";
-package pl.canonical_message;
+package pl.datacollector.datacollectorpb;
 
-option go_package = "canonical";
+option go_package = "datacollectorpb";
 // Try sending the message as a completely defined canonical message
 
 message Canonical {

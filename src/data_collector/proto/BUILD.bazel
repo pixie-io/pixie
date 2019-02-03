@@ -9,6 +9,15 @@ proto_library(
     visibility = ["//visibility:public"],
 )
 
+proto_library(
+    name = "collector_config_proto",
+    srcs = ["collector_config.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/common/types:types_proto",
+    ],
+)
+
 go_proto_library(
     name = "canonical_go_proto",
     compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
@@ -17,8 +26,23 @@ go_proto_library(
     visibility = ["//visibility:public"],
 )
 
+go_proto_library(
+    name = "collector_config_go_proto",
+    compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
+    importpath = "pixielabs.ai/pixielabs/src/data_collector/proto",
+    proto = ":collector_config_proto",
+    visibility = ["//visibility:public"],
+    deps = ["//src/common/types:types_go_proto"],
+)
+
 cc_proto_library(
     name = "canonical_cc_proto",
     visibility = ["//visibility:public"],
     deps = [":canonical_proto"],
+)
+
+cc_proto_library(
+    name = "collector_config_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":collector_config_proto"],
 )
