@@ -1,6 +1,7 @@
 #include <arrow/array.h>
 #include <arrow/buffer.h>
 #include <arrow/builder.h>
+#include <algorithm>
 #include <memory>
 
 #include "src/carnot/exec/exec_state.h"
@@ -120,6 +121,12 @@ Status ScalarExpressionEvaluator::Evaluate(ExecState *exec_state, const RowBatch
     PL_RETURN_IF_ERROR(EvaluateSingleExpression(exec_state, input, *expression, output));
   }
   return Status::OK();
+}
+std::string ScalarExpressionEvaluator::DebugString() {
+  std::vector<std::string> debug_strs(expressions_.size());
+  std::transform(begin(expressions_), end(expressions_), begin(debug_strs),
+                 [](auto val) { return val->DebugString(); });
+  return absl::StrFormat("ExpressionEvaluator<%s>", absl::StrJoin(debug_strs, ","));
 }
 
 Status VectorNativeScalarExpressionEvaluator::Open(ExecState *) {

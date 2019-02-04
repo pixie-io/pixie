@@ -47,6 +47,8 @@ class ExpressionEvaluator {
    * @return Status of closing.
    */
   virtual Status Close(ExecState* exec_state) = 0;
+
+  virtual std::string DebugString() = 0;
 };
 
 /**
@@ -77,6 +79,7 @@ class ScalarExpressionEvaluator : public ExpressionEvaluator {
       const ScalarExpressionEvaluatorType& type);
 
   Status Evaluate(ExecState* exec_state, const RowBatch& input, RowBatch* output) override;
+  std::string DebugString() override;
 
  protected:
   // Function called for each individual expression in expressions_.

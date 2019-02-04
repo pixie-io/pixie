@@ -141,6 +141,17 @@ expressions {
 column_names: "col1"
 )";
 
+/**
+ * Template for Map Operator.
+ *   $0 : the expressions
+ */
+const char* kMapOperatorTmpl = R"(
+expressions {
+  $0
+}
+column_names: "col1"
+)";
+
 /*
  * Template for a ScalarExpression.
  * $0: The type of ScalarExpression. (constant|func|column)
@@ -217,6 +228,14 @@ func {
 carnotpb::Operator CreateTestMap1PB() {
   carnotpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MAP_OPERATOR", "map_op", kMapOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+carnotpb::Operator CreateTestMapAddTwoCols() {
+  carnotpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MAP_OPERATOR", "map_op",
+                                   absl::Substitute(kMapOperatorTmpl, kAddScalarFuncPbtxt));
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

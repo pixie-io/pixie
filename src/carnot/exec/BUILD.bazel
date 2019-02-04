@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test", "pl_cc_test_library")
 
 pl_cc_library(
     name = "cc_library",
@@ -9,6 +9,7 @@ pl_cc_library(
         exclude = [
             "**/*_test.cc",
             "**/*_benchmark.cc",
+            "**/*_mock.h",
         ],
     ),
     hdrs = glob(["*.h"]),
@@ -49,5 +50,24 @@ pl_cc_binary(
         "//src/utils/benchmark:cc_library",
         "//third_party:arrow",
         "@com_google_benchmark//:benchmark_main",
+    ],
+)
+
+pl_cc_test_library(
+    name = "exec_node_test_helpers",
+    hdrs = glob(["*_mock.h"]),
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "map_node_test",
+    srcs = ["map_node_test.cc"] + glob(["*_mock.h"]),
+    deps = [
+        ":cc_library",
+        ":exec_node_test_helpers",
+        "//src/carnot/proto:plan_testutils",
+        "//third_party:arrow",
     ],
 )

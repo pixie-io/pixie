@@ -28,7 +28,6 @@ enum class ExecNodeType : int8_t {
 class ExecNode {
  public:
   ExecNode() = delete;
-  explicit ExecNode(ExecNodeType type) : type_(type) {}
   virtual ~ExecNode() = default;
 
   /**
@@ -44,21 +43,27 @@ class ExecNode {
   }
 
   /**
-   * Prepare should be used to allocate memory and prepare the node for execution.
-   * Consume/Generate will not be called before Prepare.
+   * Setup internal data structures, perform validation, etc.
    * @param exec_state The execution state.
    * @return The status of the prepare.
    */
   Status Prepare(ExecState* exec_state) { return PrepareImpl(exec_state); }
 
   /**
-   * Finalize is where cleanup should take place. This includes cleaning up objects.
+   * Acquire memory resources, etc.
+   * @param exec_state The execution state.
+   * @return
+   */
+  Status Open(ExecState* exec_state) { return OpenImpl(exec_state); }
+
+  /**
+   * Close is where cleanup should take place. This includes cleaning up objects.
    * It is highly recomended that a default destructor be used and cleanup peformed here,
    * since at the end a query the data is batch deleted and ordering is not guaranteed.
    * @param exec_state The execution state.
    * @return The status of the Finalize.axs
    */
-  Status Finalize(ExecState* exec_state) { return FinalizeImpl(exec_state); }
+  Status Close(ExecState* exec_state) { return CloseImpl(exec_state); }
 
   /**
    * GenerateNext is called to produce the next row batch. This is only valid
@@ -137,27 +142,43 @@ class ExecNode {
     return Status::OK();
   }
 
- private:
+ protected:
+  explicit ExecNode(ExecNodeType type) : type_(type) {}
+
   // Defines the protected implementations of the non-virtual interface functions
   // defined above.
   virtual std::string DebugStringImpl() = 0;
   virtual Status InitImpl(const plan::Operator& plan_node, const RowDescriptor& output_descriptor,
-                          std::vector<RowDescriptor> input_descriptors) = 0;
+                          const std::vector<RowDescriptor>& input_descriptors) = 0;
   virtual Status PrepareImpl(ExecState* exec_state) = 0;
-  virtual Status FinalizeImpl(ExecState* exec_state) = 0;
+  virtual Status OpenImpl(ExecState* exec_state) = 0;
+  virtual Status CloseImpl(ExecState* exec_state) = 0;
 
-  Status GenerateNextImpl(ExecState*) {
+  virtual Status GenerateNextImpl(ExecState*) {
     return error::Unimplemented("Implement in derived class (if source)");
   }
 
-  Status ConsumeNextImpl(ExecState*, const RowBatch&) {
+  virtual Status ConsumeNextImpl(ExecState*, const RowBatch&) {
     return error::Unimplemented("Implement in derived class (if sink or processing)");
   }
 
+  bool is_closed() { return is_closed_; }
+
+ private:
   // Unowned reference to the children. Must remain valid for the duration of query.
   std::vector<ExecNode*> children_;
+  bool is_closed_ = false;
   // The type of execution node.
   ExecNodeType type_;
+};
+
+/**
+ * Processing node is the base class for anything that computes
+ * producing 1:1 or N:M records. For example: Agg, Map, etc.
+ */
+class ProcessingNode : public ExecNode {
+ public:
+  ProcessingNode() : ExecNode(ExecNodeType::kProcessingNode) {}
 };
 
 }  // namespace exec

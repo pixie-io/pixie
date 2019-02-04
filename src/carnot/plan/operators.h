@@ -79,8 +79,12 @@ class MapOperator : public Operator {
   Status Init(const carnotpb::MapOperator &pb);
   std::string DebugString() const override;
 
+  const std::vector<std::shared_ptr<const ScalarExpression>> &expressions() const {
+    return expressions_;
+  }
+
  private:
-  std::vector<std::unique_ptr<ScalarExpression>> expressions_;
+  std::vector<std::shared_ptr<const ScalarExpression>> expressions_;
   std::vector<std::string> column_names_;
 
   carnotpb::MapOperator pb_;
