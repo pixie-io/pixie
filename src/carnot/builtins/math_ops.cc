@@ -9,10 +9,51 @@ namespace builtins {
 
 void RegisterMathOpsOrDie(udf::ScalarUDFRegistry* registry) {
   CHECK(registry != nullptr);
+  // Addition
   registry->RegisterOrDie<AddUDF<udf::Int64Value, udf::Int64Value, udf::Int64Value>>("add");
   registry->RegisterOrDie<AddUDF<udf::Float64Value, udf::Float64Value, udf::Int64Value>>("add");
   registry->RegisterOrDie<AddUDF<udf::Float64Value, udf::Int64Value, udf::Float64Value>>("add");
   registry->RegisterOrDie<AddUDF<udf::Float64Value, udf::Float64Value, udf::Float64Value>>("add");
+  // Subtraction
+  registry->RegisterOrDie<SubtractUDF<udf::Int64Value, udf::Int64Value, udf::Int64Value>>(
+      "subtract");
+  registry->RegisterOrDie<SubtractUDF<udf::Float64Value, udf::Float64Value, udf::Int64Value>>(
+      "subtract");
+  registry->RegisterOrDie<SubtractUDF<udf::Float64Value, udf::Int64Value, udf::Float64Value>>(
+      "subtract");
+  registry->RegisterOrDie<SubtractUDF<udf::Float64Value, udf::Float64Value, udf::Float64Value>>(
+      "subtract");
+  // Division
+  registry->RegisterOrDie<DivideUDF<udf::Int64Value, udf::Int64Value, udf::Int64Value>>("divide");
+  registry->RegisterOrDie<DivideUDF<udf::Float64Value, udf::Float64Value, udf::Int64Value>>(
+      "divide");
+  registry->RegisterOrDie<DivideUDF<udf::Float64Value, udf::Int64Value, udf::Float64Value>>(
+      "divide");
+  registry->RegisterOrDie<DivideUDF<udf::Float64Value, udf::Float64Value, udf::Float64Value>>(
+      "divide");
+  // Multiplication
+  registry->RegisterOrDie<MultiplyUDF<udf::Int64Value, udf::Int64Value, udf::Int64Value>>(
+      "multiply");
+  registry->RegisterOrDie<MultiplyUDF<udf::Float64Value, udf::Float64Value, udf::Int64Value>>(
+      "multiply");
+  registry->RegisterOrDie<MultiplyUDF<udf::Float64Value, udf::Int64Value, udf::Float64Value>>(
+      "multiply");
+  registry->RegisterOrDie<MultiplyUDF<udf::Float64Value, udf::Float64Value, udf::Float64Value>>(
+      "multiply");
+  // Modulo
+  registry->RegisterOrDie<ModuloUDF>("modulo");
+  // Or (||)
+  registry->RegisterOrDie<LogicalOrUDF<udf::Int64Value, udf::Int64Value>>("logicalOr");
+  registry->RegisterOrDie<LogicalOrUDF<udf::BoolValue, udf::BoolValue>>("logicalOr");
+  // And (&&)
+  registry->RegisterOrDie<LogicalAndUDF<udf::Int64Value, udf::Int64Value>>("logicalAnd");
+  registry->RegisterOrDie<LogicalAndUDF<udf::BoolValue, udf::BoolValue>>("logicalAnd");
+  // Not (!)
+  registry->RegisterOrDie<LogicalNotUDF<udf::Int64Value>>("logicalNot");
+  registry->RegisterOrDie<LogicalNotUDF<udf::BoolValue>>("logicalNot");
+  // Negate (-)
+  registry->RegisterOrDie<NegateUDF<udf::Int64Value>>("negate");
+  registry->RegisterOrDie<NegateUDF<udf::Float64Value>>("negate");
 }
 
 void RegisterMathOpsOrDie(udf::UDARegistry* registry) {

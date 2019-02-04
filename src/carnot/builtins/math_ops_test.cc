@@ -23,6 +23,114 @@ TEST(MathOps, basic_float64_add_test) {
   udf_tester.ForInput(1.5, 2.6).Expect(4.1);
 }
 
+TEST(MathOps, basic_mixed_add_test) {
+  auto udf_tester = udf::UDFTester<AddUDF<udf::Float64Value, udf::Int64Value, udf::Float64Value>>();
+  udf_tester.ForInput(1, 2.6).Expect(3.6);
+}
+
+TEST(MathOps, basic_int64_subtract_test) {
+  auto udf_tester =
+      udf::UDFTester<SubtractUDF<udf::Int64Value, udf::Int64Value, udf::Int64Value>>();
+  udf_tester.ForInput(1, 2).Expect(-1);
+}
+
+TEST(MathOps, basic_float64_subtract_test) {
+  auto udf_tester =
+      udf::UDFTester<SubtractUDF<udf::Float64Value, udf::Float64Value, udf::Float64Value>>();
+  udf_tester.ForInput(1.5, 2.6).Expect(-1.1);
+}
+
+TEST(MathOps, basic_mixed_subtract_test) {
+  auto udf_tester =
+      udf::UDFTester<SubtractUDF<udf::Float64Value, udf::Float64Value, udf::Int64Value>>();
+  udf_tester.ForInput(1.5, 2).Expect(-0.5);
+}
+
+TEST(MathOps, basic_int64_divide_test) {
+  auto udf_tester = udf::UDFTester<DivideUDF<udf::Int64Value, udf::Int64Value, udf::Int64Value>>();
+  udf_tester.ForInput(1, 2).Expect(0);
+}
+
+TEST(MathOps, basic_float64_divide_test) {
+  auto udf_tester =
+      udf::UDFTester<DivideUDF<udf::Float64Value, udf::Float64Value, udf::Float64Value>>();
+  udf_tester.ForInput(1.5, 5).Expect(0.3);
+}
+
+TEST(MathOps, basic_mixed_divide_test) {
+  auto udf_tester =
+      udf::UDFTester<DivideUDF<udf::Float64Value, udf::Float64Value, udf::Int64Value>>();
+  udf_tester.ForInput(1.5, 5).Expect(0.3);
+}
+
+TEST(MathOps, basic_int64_multiply_test) {
+  auto udf_tester =
+      udf::UDFTester<MultiplyUDF<udf::Int64Value, udf::Int64Value, udf::Int64Value>>();
+  udf_tester.ForInput(1, 2).Expect(2);
+}
+
+TEST(MathOps, basic_float64_multiply_test) {
+  auto udf_tester =
+      udf::UDFTester<MultiplyUDF<udf::Float64Value, udf::Float64Value, udf::Float64Value>>();
+  udf_tester.ForInput(1.5, 5).Expect(7.5);
+}
+
+TEST(MathOps, basic_mixed_multiply_test) {
+  auto udf_tester =
+      udf::UDFTester<MultiplyUDF<udf::Float64Value, udf::Float64Value, udf::Int64Value>>();
+  udf_tester.ForInput(1.5, 5).Expect(7.5);
+}
+
+TEST(MathOps, basic_modulo_test) {
+  auto udf_tester = udf::UDFTester<ModuloUDF>();
+  udf_tester.ForInput(10, 7).Expect(3);
+}
+
+TEST(MathOps, basic_bool_or_test) {
+  auto udf_tester = udf::UDFTester<LogicalOrUDF<udf::BoolValue, udf::BoolValue>>();
+  udf_tester.ForInput(true, false).Expect(true);
+  udf_tester.ForInput(false, false).Expect(false);
+}
+
+TEST(MathOps, basic_int64_or_test) {
+  auto udf_tester = udf::UDFTester<LogicalOrUDF<udf::Int64Value, udf::Int64Value>>();
+  udf_tester.ForInput(4, 0).Expect(true);
+  udf_tester.ForInput(0, 0).Expect(false);
+}
+
+TEST(MathOps, basic_bool_and_test) {
+  auto udf_tester = udf::UDFTester<LogicalAndUDF<udf::BoolValue, udf::BoolValue>>();
+  udf_tester.ForInput(true, false).Expect(false);
+  udf_tester.ForInput(false, false).Expect(false);
+  udf_tester.ForInput(true, true).Expect(true);
+}
+
+TEST(MathOps, basic_int64_and_test) {
+  auto udf_tester = udf::UDFTester<LogicalAndUDF<udf::Int64Value, udf::Int64Value>>();
+  udf_tester.ForInput(4, 0).Expect(false);
+  udf_tester.ForInput(0, 0).Expect(false);
+  udf_tester.ForInput(5, 3).Expect(true);
+}
+
+TEST(MathOps, basic_bool_not_test) {
+  auto udf_tester = udf::UDFTester<LogicalNotUDF<udf::BoolValue>>();
+  udf_tester.ForInput(true).Expect(false);
+  udf_tester.ForInput(false).Expect(true);
+}
+
+TEST(MathOps, basic_int64_not_test) {
+  auto udf_tester = udf::UDFTester<LogicalNotUDF<udf::Int64Value>>();
+  udf_tester.ForInput(4).Expect(false);
+  udf_tester.ForInput(0).Expect(true);
+}
+
+TEST(MathOps, basic_int64_negate_test) {
+  auto udf_tester = udf::UDFTester<NegateUDF<udf::Int64Value>>();
+  udf_tester.ForInput(-4).Expect(4);
+  udf_tester.ForInput(0).Expect(0);
+  udf_tester.ForInput(4).Expect(-4);
+}
+
 TEST(MathOps, basic_float64_mean_uda_test) {
   auto inputs = std::vector<double>({1.234, 2.442, 1.04, 5.322, 6.333});
   uint64_t size = inputs.size();

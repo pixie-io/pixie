@@ -15,6 +15,55 @@ class AddUDF : public udf::ScalarUDF {
   TReturn Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1.val + b2.val; }
 };
 
+template <typename TReturn, typename TArg1, typename TArg2>
+class SubtractUDF : public udf::ScalarUDF {
+ public:
+  TReturn Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1.val - b2.val; }
+};
+
+template <typename TReturn, typename TArg1, typename TArg2>
+class DivideUDF : public udf::ScalarUDF {
+ public:
+  TReturn Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1.val / b2.val; }
+};
+
+template <typename TReturn, typename TArg1, typename TArg2>
+class MultiplyUDF : public udf::ScalarUDF {
+ public:
+  TReturn Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1.val * b2.val; }
+};
+
+class ModuloUDF : public udf::ScalarUDF {
+ public:
+  udf::Int64Value Exec(udf::FunctionContext *, udf::Int64Value b1, udf::Int64Value b2) {
+    return b1.val % b2.val;
+  }
+};
+
+template <typename TArg1, typename TArg2>
+class LogicalOrUDF : public udf::ScalarUDF {
+ public:
+  udf::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1.val || b2.val; }
+};
+
+template <typename TArg1, typename TArg2>
+class LogicalAndUDF : public udf::ScalarUDF {
+ public:
+  udf::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1.val && b2.val; }
+};
+
+template <typename TArg1>
+class LogicalNotUDF : public udf::ScalarUDF {
+ public:
+  udf::BoolValue Exec(udf::FunctionContext *, TArg1 b1) { return !b1.val; }
+};
+
+template <typename TArg1>
+class NegateUDF : public udf::ScalarUDF {
+ public:
+  TArg1 Exec(udf::FunctionContext *, TArg1 b1) { return -b1.val; }
+};
+
 template <typename TArg>
 class MeanUDA : public udf::UDA {
  public:
