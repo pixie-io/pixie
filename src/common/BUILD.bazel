@@ -38,3 +38,9 @@ pl_cc_test(
     srcs = ["error_test.cc"],
     deps = [":common"],
 )
+
+pl_cc_test(
+    name = "scoped_timer_test",
+    srcs = ["scoped_timer_test.cc"],
+    deps = [":common"],
+)
