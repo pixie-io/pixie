@@ -62,4 +62,9 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "tbb-8ff3697f544c5a8728146b70ae3a978025be1f3e",
         urls = ["https://github.com/01org/tbb/archive/8ff3697f544c5a8728146b70ae3a978025be1f3e.tar.gz"],
     ),
+    com_efficient_libcuckoo = dict(
+        sha256 = "a159d52272d7f60d15d60da2887e764b92c32554750a3ba7ff75c1be8bacd61b",
+        strip_prefix = "libcuckoo-f3138045810b2c2e9b59dbede296b4a5194af4f9",
+        urls = ["https://github.com/efficient/libcuckoo/archive/f3138045810b2c2e9b59dbede296b4a5194af4f9.zip"],
+    ),
 )

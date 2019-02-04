@@ -58,3 +58,11 @@ pl_cc_binary(
         "//third_party:libpypa",
     ],
 )
+
+pl_cc_test(
+    name = "libcuckoo_test",
+    srcs = ["libcuckoo_test.cc"],
+    deps = [
+        "@com_efficient_libcuckoo//:libcuckoo",
+    ],
+)
