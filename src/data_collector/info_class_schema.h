@@ -4,25 +4,50 @@
 #include <glog/logging.h>
 
 #include <atomic>
+#include <chrono>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "src/common/status.h"
 #include "src/common/types/types.pb.h"
+#include "src/data_collector/data_collector_table.h"
 #include "src/data_collector/proto/collector_config.pb.h"
 #include "src/data_collector/source_connector.h"
+#include "third_party/arrow/cpp/src/arrow/api.h"
 
 namespace pl {
 namespace datacollector {
 
+class SourceConnector;
+class DataTable;
+
 using datacollectorpb::Element_State;
 using types::DataType;
 
+/**
+ * InfoClassElement is a basic structure that holds a single available data element from a source,
+ * its type and a state.
+ *
+ * The state defines whether the data element is:
+ *  (0) not collected.
+ *  (1) collected but not subscribed.
+ *  (2) collected and subscribed.
+ */
 class InfoClassElement {
  public:
-  InfoClassElement(const std::string& name, const DataType& type, const Element_State& state)
-      : name_(name), data_type_(type), state_(state) {}
+  InfoClassElement() = delete;
   virtual ~InfoClassElement() = default;
+  explicit InfoClassElement(const std::string& name, const DataType& type,
+                            const Element_State& state)
+      : name_(name), type_(type), state_(state) {}
+
+  void SetState(const Element_State& state) { state_ = state; }
+
+  const std::string& name() const { return name_; }
+  const DataType& type() const { return type_; }
+  const Element_State& state() const { return state_; }
+  size_t WidthBytes() const;
 
   /**
    * @brief Generate a proto message based on the InfoClassElement.
@@ -30,19 +55,26 @@ class InfoClassElement {
    * @return datacollectorpb::Element
    */
   datacollectorpb::Element ToProto() const;
-  void SetState(const Element_State& state) { state_ = state; }
-  const std::string& name() const { return name_; }
-  const DataType& data_type() const { return data_type_; }
-  const Element_State& state() const { return state_; }
 
  private:
   std::string name_;
-  DataType data_type_;
+  DataType type_;
   Element_State state_;
 };
 
+/**
+ * InfoClassSchema consists af a collection of related InfoClassElements, that are sampled together.
+ * By definition, the elements should be collected together (with a common timestamp).
+ *
+ * The InfoClassSchema also serves as the State Manager for the entire data collector.
+ *  - The Config unit uses the Schemas to publish available data to the Agent.
+ *  - The Config unit changes the state of elements based on the Publish call from the Agent.
+ *  - There is a 1:1 relationship with the Data Tables.
+ *  - Each InfoClassSchema points back to its SourceConnector.
+ */
 class InfoClassSchema {
  public:
+  InfoClassSchema() = delete;
   /**
    * @brief Construct a new Info Class Schema object
    * SourceConnector constructs InfoClassSchema objects with and adds Elements to it
@@ -52,27 +84,45 @@ class InfoClassSchema {
    * This is required to identify an InfoClassSchema parent source and also to generate
    * the publish proto.
    */
-  InfoClassSchema(const std::string& name, const SourceConnector& source)
-      : name_(name), source_(source) {
-    id_ = global_id_++;
-  }
+  explicit InfoClassSchema(const std::string& name) : name_(name) { id_ = global_id_++; }
   virtual ~InfoClassSchema() = default;
 
   /**
+   * @brief Source connector connected to this Info Class.
+   *
+   * @param source Pointer to source connector instance.
+   */
+  void SetSourceConnector(SourceConnector* source) { source_ = source; }
+
+  /**
+   * @brief Data table connected to this Info Class.
+   *
+   * @param Pointer to data table instance.
+   */
+  void SetDataTable(DataTable* data_table) { data_table_ = data_table; }
+
+  /**
    * @brief Add an Element to the InfoClassSchema
+   *
+   * @param element InfoClassElement object
+   */
+  void AddElement(const InfoClassElement& element) { elements_.push_back(element); }
+
+  /**
+   * @brief Add an element to the InfoClassSchema.
    *
    * @param name Name of the Element
    * @param type Data type of the element
    * @param state Subscription state for the Element
    */
-  void AddElement(const InfoClassElement& element) { elements_.push_back(element); }
+  Status AddElement(const std::string& name, DataType type, Element_State state);
 
   /**
    * @brief Get number of elements in the InfoClassSchema
    *
    * @return size_t Number of elements
    */
-  size_t NumElements() const { return elements_.size(); }
+  uint32_t NumElements() const { return elements_.size(); }
 
   /**
    * @brief Set the subscription state of an Element
@@ -85,6 +135,28 @@ class InfoClassSchema {
     DCHECK(index < elements_.size());
     elements_[index].SetState(state);
   }
+
+  /**
+   * @brief Source Connector accessor.
+   *
+   * @return Pointer to source connector for this InfoClassSchema.
+   */
+  SourceConnector* GetSourceConnector() { return source_; }
+
+  /**
+   * @brief Data Table accessor.
+   *
+   * @return DataTable* Pointer to the data table for this InfoClassSchema.
+   */
+  DataTable* GetDataTable() { return data_table_; }
+
+  /**
+   * @breif Generate the table schema for this InfoClassSchema, including only the relevant
+   * elements/fields.
+   *
+   * @return Unique pointer to schema, in arrow format.
+   */
+  std::unique_ptr<arrow::Schema> CreateDataTableSchema() const;
 
   /**
    * @brief Get an Element object
@@ -104,17 +176,82 @@ class InfoClassSchema {
    */
   datacollectorpb::InfoClass ToProto() const;
 
-  const std::string& name() const { return name_; }
-  const SourceConnector& source() const { return source_; }
+  /**
+   * @brief Configure sampling period.
+   *
+   * @param period Sampling period in ms.
+   */
+  void SetSamplingPeriod(uint32_t period) {
+    std::chrono::milliseconds x(period);
+    sampling_period_ = x;
+  }
 
+  /**
+   * @brief Returns the next time the source needs to be sampled, according to the sampling period.
+   *
+   * @return std::chrono::milliseconds
+   */
+  std::chrono::milliseconds NextSamplingTime() const { return last_sampled_ + sampling_period_; }
+
+  /**
+   * @brief Get a pointer to collected data from the collector
+   *
+   * @return void* Raw pointer to data.
+   */
+  void* GetData();
+
+  /**
+   * @brief Notify function to update state after making changes to the schema.
+   * This will make sure changes are pushed to the Source Connector and Data Tables accordingly.
+   */
+  void Notify() {}
+
+  const std::string& name() const { return name_; }
+  const SourceConnector* source() const { return source_; }
   uint64_t id() { return id_; }
 
  private:
   static std::atomic<uint64_t> global_id_;
-  std::vector<InfoClassElement> elements_;
-  std::string name_;
-  const SourceConnector& source_;
+
+  /**
+   * Unique ID of the InfoClassSchema instance. ID must never repeat, even after destruction.
+   */
   uint64_t id_;
+
+  /**
+   * Name of the Info Class.
+   */
+  std::string name_;
+
+  /**
+   * Vector of all the elements provided by this Info Class.
+   */
+  std::vector<InfoClassElement> elements_;
+
+  /**
+   * Pointer back to the source connector providing the data.
+   */
+  SourceConnector* source_;
+
+  /**
+   * Pointer to the data table where the data is stored.
+   */
+  DataTable* data_table_;
+
+  /**
+   * Sampling period.
+   */
+  std::chrono::milliseconds sampling_period_;
+
+  /**
+   * Keep track of when the source was last sampled.
+   */
+  std::chrono::milliseconds last_sampled_;
+
+  /**
+   * Statistics: count number of samples.
+   */
+  uint32_t sampling_count_;
 };
 
 }  // namespace datacollector

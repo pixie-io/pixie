@@ -9,12 +9,14 @@ pl_cc_library(
         exclude = [
             "**/*_test.cc",
             "**/*_benchmark.cc",
+            "**/*_wrapper.cc",
         ],
     ),
     hdrs = glob(["*.h"]),
     deps = [
         "//src/common/types:types_cc_proto",
         "//src/data_collector/proto:collector_config_cc_proto",
+        "//third_party:arrow",
     ],
 )
 
@@ -26,6 +28,12 @@ pl_cc_binary(
         "//third_party:arrow",
         "@com_google_benchmark//:benchmark_main",
     ],
+)
+
+pl_cc_binary(
+    name = "data_collector_wrapper",
+    srcs = ["data_collector_wrapper.cc"],
+    deps = [":cc_library"],
 )
 
 pl_cc_test(

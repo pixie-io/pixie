@@ -14,7 +14,7 @@ TEST(InfoClassElementTest, basic_test) {
                            Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED);
 
   EXPECT_EQ("user_percentage", element.name());
-  EXPECT_EQ(DataType::FLOAT64, element.data_type());
+  EXPECT_EQ(DataType::FLOAT64, element.type());
   EXPECT_EQ(Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED, element.state());
 
   datacollectorpb::Element element_pb;
@@ -25,8 +25,9 @@ TEST(InfoClassElementTest, basic_test) {
 }
 
 TEST(InfoClassInfoSchemaTest, basic_test) {
-  SourceConnector source("eBPF_CPU_USAGE");
-  InfoClassSchema info_class_schema("cpu_usage", source);
+  EBPFConnector source("eBPF_CPU_USAGE", "", "", "");
+  InfoClassSchema info_class_schema("cpu_usage");
+  info_class_schema.SetSourceConnector(&source);
   InfoClassElement element_1("user_percentage", DataType::FLOAT64,
                              Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED);
   InfoClassElement element_2("system_percentage", DataType::FLOAT64,
