@@ -14,9 +14,12 @@ std::atomic<uint64_t> InfoClassSchema::global_id_ = 0;
 // TODO(oazizi): Move this into the DataType class?
 size_t InfoClassElement::WidthBytes() const {
   switch (type_) {
-    case DataType::FLOAT64: return (sizeof(double));
-    case DataType::INT64: return (sizeof(int64_t));
-    default: CHECK(0) << "Unknown data type";
+    case DataType::FLOAT64:
+      return (sizeof(double));
+    case DataType::INT64:
+      return (sizeof(int64_t));
+    default:
+      CHECK(0) << "Unknown data type";
   }
 }
 
