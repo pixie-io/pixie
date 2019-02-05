@@ -41,3 +41,9 @@ pl_cc_test(
     srcs = ["info_class_schema_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "pub_sub_manager_test",
+    srcs = ["pub_sub_manager_test.cc"],
+    deps = [":cc_library"],
+)
