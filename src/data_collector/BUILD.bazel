@@ -1,6 +1,22 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/common/types:types_cc_proto",
+        "//src/data_collector/proto:collector_config_cc_proto",
+    ],
+)
 
 pl_cc_binary(
     name = "data_collector_benchmark",
@@ -10,4 +26,10 @@ pl_cc_binary(
         "//third_party:arrow",
         "@com_google_benchmark//:benchmark_main",
     ],
+)
+
+pl_cc_test(
+    name = "info_class_schema_test",
+    srcs = ["info_class_schema_test.cc"],
+    deps = [":cc_library"],
 )
