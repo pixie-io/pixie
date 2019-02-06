@@ -1,7 +1,8 @@
 #include <arrow/builder.h>
 #include <arrow/pretty_print.h>
 #include <gtest/gtest.h>
-#include <iostream>
+
+#include <algorithm>
 
 #include "src/carnot/udf/column_wrapper.h"
 #include "src/carnot/udf/udf_definition.h"
@@ -96,6 +97,74 @@ TEST(UDFDefinition, arrow_write) {
   arrow::Int64Array *resArr = static_cast<arrow::Int64Array *>(res.get());
   EXPECT_EQ(4, resArr->Value(0));
   EXPECT_EQ(6, resArr->Value(1));
+}
+
+// Test UDA, takes the min of two arguments and then sums them.
+class MinSumUDA : public udf::UDA {
+ public:
+  void Update(udf::FunctionContext *, Int64Value arg1, Int64Value arg2) {
+    sum_ = sum_.val + std::min(arg1.val, arg2.val);
+  }
+  void Merge(udf::FunctionContext *, const MinSumUDA &other) { sum_ = sum_.val + other.sum_.val; }
+  Int64Value Finalize(udf::FunctionContext *) { return sum_; }
+
+ protected:
+  Int64Value sum_ = 0;
+};
+
+TEST(UDADefinition, without_merge) {
+  FunctionContext ctx;
+  UDADefinition def;
+  EXPECT_OK(def.Init<MinSumUDA>("minsum"));
+
+  Int64ValueColumnWrapper v1({1, 2, 3});
+  Int64ValueColumnWrapper v2({5, 1, 3});
+
+  Int64Value out;
+  auto u = def.Make();
+  EXPECT_OK(def.ExecBatchUpdate(u.get(), &ctx, {&v1, &v2}));
+  EXPECT_OK(def.FinalizeValue(u.get(), &ctx, &out));
+  EXPECT_EQ(5, out.val);
+}
+
+TEST(UDADefinition, with_merge) {
+  FunctionContext ctx;
+  UDADefinition def;
+  EXPECT_OK(def.Init<MinSumUDA>("minsum"));
+
+  Int64ValueColumnWrapper v1({1, 2, 3});
+  Int64ValueColumnWrapper v2({5, 1, 3});
+
+  Int64Value out;
+  // Create two uda instances. Send v1, v2 to first and just v1, v1 to second.
+  // Then merge.
+  auto u1 = def.Make();
+  EXPECT_OK(def.ExecBatchUpdate(u1.get(), &ctx, {&v1, &v2}));
+  auto u2 = def.Make();
+  EXPECT_OK(def.ExecBatchUpdate(u2.get(), &ctx, {&v1, &v1}));
+  EXPECT_OK(def.Merge(u1.get(), u2.get(), &ctx));
+  EXPECT_OK(def.FinalizeValue(u1.get(), &ctx, &out));
+  EXPECT_EQ(11, out.val);
+}
+
+TEST(UDADefinition, arrow_output) {
+  FunctionContext ctx;
+  UDADefinition def;
+  EXPECT_OK(def.Init<MinSumUDA>("minsum"));
+
+  Int64ValueColumnWrapper v1({1, 2, 3});
+  Int64ValueColumnWrapper v2({5, 1, 3});
+
+  auto output_builder = std::make_shared<arrow::Int64Builder>();
+  auto u = def.Make();
+  EXPECT_OK(def.ExecBatchUpdate(u.get(), &ctx, {&v1, &v2}));
+  EXPECT_OK(def.FinalizeArrow(u.get(), &ctx, output_builder.get()));
+
+  std::shared_ptr<arrow::Array> res;
+  EXPECT_TRUE(output_builder->Finish(&res).ok());
+  EXPECT_EQ(1, res->length());
+  auto casted = reinterpret_cast<arrow::Int64Array *>(res.get());
+  EXPECT_EQ(5, casted->Value(0));
 }
 
 }  // namespace udf

@@ -121,6 +121,33 @@ Status ExecWrapperArrow(TUDF *udf, FunctionContext *ctx, size_t count, TOutput *
 }
 
 /**
+ * Checks types between column wrapper and array of UDFDataTypes.
+ * @return true if all types match.
+ */
+template <std::size_t SIZE>
+inline bool CheckTypes(const std::vector<const ColumnWrapper *> &args,
+                       const std::array<UDFDataType, SIZE> &types) {
+  if (args.size() != SIZE) {
+    return false;
+  }
+  for (size_t idx = 0; idx < args.size(); ++idx) {
+    if (args[idx]->DataType() != types[idx]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+inline std::vector<const UDFBaseValue *> ConvertToBaseValue(
+    const std::vector<const ColumnWrapper *> &args) {
+  std::vector<const UDFBaseValue *> retval;
+  for (const auto *col : args) {
+    retval.push_back(col->UnsafeRawData());
+  }
+  return retval;
+}
+
+/**
  * This struct is used to provide a set of static methods that wrap the init, and
  * exec methods of ScalarUDFs.
  *
@@ -194,18 +221,8 @@ struct ScalarUDFWrapper {
 
     constexpr types::DataType return_type = ScalarUDFTraits<TUDF>::ReturnType();
     auto exec_argument_types = ScalarUDFTraits<TUDF>::ExecArguments();
-
-#ifndef NDEBUG
-    // Check argument types in debug mode.
-    for (size_t idx = 0; idx < inputs.size(); ++idx) {
-      CHECK(inputs[idx]->DataType() == exec_argument_types[idx]);
-    }
-#endif
-
-    std::vector<const UDFBaseValue *> input_as_base_value;
-    for (const auto *col : inputs) {
-      input_as_base_value.push_back(col->UnsafeRawData());
-    }
+    DCHECK(CheckTypes(inputs, exec_argument_types));
+    auto input_as_base_value = ConvertToBaseValue(inputs);
 
     using output_type = typename UDFDataTypeTraits<return_type>::udf_value_type;
     auto *casted_output = reinterpret_cast<output_type *>(output->UnsafeRawData());
@@ -215,6 +232,95 @@ struct ScalarUDFWrapper {
     return ExecWrapper<TUDF>(reinterpret_cast<TUDF *>(udf), ctx, count, casted_output,
                              input_as_base_value,
                              std::make_index_sequence<exec_argument_types.size()>{});
+  }
+};
+
+/**
+ * Performs an update on a batch of records.
+ * This is similar to the ExecBatch, except it does not store a return value.
+ */
+template <typename TUDA, std::size_t... I>
+Status UpdateWrapper(TUDA *uda, FunctionContext *ctx, size_t count,
+                     const std::vector<const UDFBaseValue *> &args, std::index_sequence<I...>) {
+  constexpr auto update_argument_types = UDATraits<TUDA>::UpdateArgumentTypes();
+  for (size_t idx = 0; idx < count; ++idx) {
+    uda->Update(ctx, CastToUDFValueType<update_argument_types[I]>(args[I])[idx]...);
+  }
+  return Status::OK();
+}
+
+/**
+ * Provides a set of static methods that wrap UDAs and allow vectorized execution (for update).
+ * @tparam TUDA The UDA class.
+ */
+template <typename TUDA>
+struct UDAWrapper {
+  static constexpr types::DataType return_type = UDATraits<TUDA>::FinalizeReturnType();
+
+  /**
+   * Create a new UDA.
+   * @return A unique_ptr to the UDA instance.
+   */
+  static std::unique_ptr<UDA> Make() { return std::make_unique<TUDA>(); }
+
+  /**
+   * Perform a batch update of the passed in UDA based in the inputs.
+   * @param uda The UDA instances.
+   * @param ctx The function context.
+   * @param inputs A vector of pointers to ColumnWrappers.
+   * @return Status of update.
+   */
+  static Status ExecBatchUpdate(UDA *uda, FunctionContext *ctx,
+                                const std::vector<const ColumnWrapper *> &inputs) {
+    constexpr auto update_argument_types = UDATraits<TUDA>::UpdateArgumentTypes();
+    DCHECK(CheckTypes(inputs, update_argument_types));
+    auto input_as_base_value = ConvertToBaseValue(inputs);
+
+    size_t num_records = inputs[0]->Size();
+    return UpdateWrapper<TUDA>(reinterpret_cast<TUDA *>(uda), ctx, num_records, input_as_base_value,
+                               std::make_index_sequence<update_argument_types.size()>{});
+  }
+
+  /**
+   * Merges uda2 into uda1 based on the UDA merge function.
+   * Both UDAs must be the same time, undefined behavior (or crash) if they are different types
+   * or not the same type as the templated UDA.
+   * @return Status of Merge.
+   */
+  static Status Merge(UDA *uda1, UDA *uda2, FunctionContext *ctx) {
+    reinterpret_cast<TUDA *>(uda1)->Merge(ctx, *reinterpret_cast<TUDA *>(uda2));
+    return Status::OK();
+  }
+
+  /**
+   * Finalize the UDA into an arrow builder. The arrow builder needs to be correct type
+   * for the finalize return type.
+   * @return Status of the finalize.
+   */
+  static Status FinalizeArrow(UDA *uda, FunctionContext *ctx, arrow::ArrayBuilder *output) {
+    DCHECK(output != nullptr);
+    auto *casted_builder =
+        reinterpret_cast<typename UDFDataTypeTraits<return_type>::arrow_builder_type *>(output);
+    auto *casted_uda = reinterpret_cast<TUDA *>(uda);
+    PL_RETURN_IF_ERROR(casted_builder->Append(UnWrap(casted_uda->Finalize(ctx))));
+    return Status::OK();
+  }
+
+  /**
+   * Finalize the UDA into an UDA value type.
+   * Unsafe casts are performed, so the passed in output UDA value must be of the correct
+   * finalize return type.
+   *
+   * @return Status of the Finalize.
+   */
+  static Status FinalizeValue(UDA *uda, FunctionContext *ctx, UDFBaseValue *output) {
+    using output_type = typename UDFDataTypeTraits<return_type>::udf_value_type;
+
+    DCHECK(output != nullptr);
+    auto *casted_output = reinterpret_cast<output_type *>(output);
+    auto *casted_uda = reinterpret_cast<TUDA *>(uda);
+    *casted_output = casted_uda->Finalize(ctx);
+    return Status::OK();
   }
 };
 

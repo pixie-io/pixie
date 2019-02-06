@@ -114,7 +114,7 @@ TEST(ScalarUDFRegistryDeathTest, double_register) {
   EXPECT_DEATH(registry.RegisterOrDie<ScalarUDF1>("scalar1"), ".*already exists.*");
 }
 
-class UDA1 : UDA {
+class UDA1 : public UDA {
  public:
   Status Init(FunctionContext *) { return Status::OK(); }
   void Update(FunctionContext *, Int64Value) {}
@@ -122,7 +122,7 @@ class UDA1 : UDA {
   Int64Value Finalize(FunctionContext *) { return 0; }
 };
 
-class UDA1Overload : UDA {
+class UDA1Overload : public UDA {
  public:
   Status Init(FunctionContext *) { return Status::OK(); }
   void Update(FunctionContext *, Int64Value, Float64Value) {}

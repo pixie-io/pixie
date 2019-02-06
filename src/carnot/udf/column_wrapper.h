@@ -51,7 +51,6 @@ class ColumnWrapperTmpl : public ColumnWrapper {
 
   T *UnsafeRawData() override { return data_.data(); }
   const T *UnsafeRawData() const override { return data_.data(); }
-
   UDFDataType DataType() const override { return UDFValueTraits<T>::data_type; }
 
   size_t Size() const override { return data_.size(); }

@@ -139,6 +139,11 @@ class UDADefinition : public UDFDefinition {
     auto update_arguments_array = UDATraits<T>::UpdateArgumentTypes();
     update_arguments_ = {update_arguments_array.begin(), update_arguments_array.end()};
     finalize_return_type_ = UDATraits<T>::FinalizeReturnType();
+    make_fn_ = UDAWrapper<T>::Make;
+    exec_batch_update_fn_ = UDAWrapper<T>::ExecBatchUpdate;
+    merge_fn_ = UDAWrapper<T>::Merge;
+    finalize_arrow_fn_ = UDAWrapper<T>::FinalizeArrow;
+    finalize_value_fn = UDAWrapper<T>::FinalizeValue;
     return Status::OK();
   }
 
@@ -149,9 +154,32 @@ class UDADefinition : public UDFDefinition {
   const std::vector<UDFDataType> update_arguments() { return update_arguments_; }
   UDFDataType finalize_return_type() const { return finalize_return_type_; }
 
+  std::unique_ptr<UDA> Make() { return make_fn_(); }
+  Status ExecBatchUpdate(UDA* uda, FunctionContext* ctx,
+                         const std::vector<const ColumnWrapper*>& inputs) {
+    return exec_batch_update_fn_(uda, ctx, inputs);
+  }
+  Status Merge(UDA* uda1, UDA* uda2, FunctionContext* ctx) { return merge_fn_(uda1, uda2, ctx); }
+  Status FinalizeValue(UDA* uda, FunctionContext* ctx, UDFBaseValue* output) {
+    return finalize_value_fn(uda, ctx, output);
+  }
+  Status FinalizeArrow(UDA* uda, FunctionContext* ctx, arrow::ArrayBuilder* output) {
+    return finalize_arrow_fn_(uda, ctx, output);
+  }
+
  private:
   std::vector<UDFDataType> update_arguments_;
   UDFDataType finalize_return_type_;
+
+  std::function<std::unique_ptr<UDA>()> make_fn_;
+  std::function<Status(UDA* uda, FunctionContext* ctx,
+                       const std::vector<const ColumnWrapper*>& inputs)>
+      exec_batch_update_fn_;
+
+  std::function<Status(UDA* uda, FunctionContext* ctx, arrow::ArrayBuilder* output)>
+      finalize_arrow_fn_;
+  std::function<Status(UDA* uda, FunctionContext* ctx, UDFBaseValue* output)> finalize_value_fn;
+  std::function<Status(UDA* uda1, UDA* uda2, FunctionContext* ctx)> merge_fn_;
 };
 
 }  // namespace udf

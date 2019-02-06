@@ -236,7 +236,7 @@ class ScalarUDF : public AnyUDF {
  *
  * All argument types must me valid UDFValueTypes.
  */
-class UDA : AnyUDA {
+class UDA : public AnyUDA {
  public:
   ~UDA() override = default;
 };

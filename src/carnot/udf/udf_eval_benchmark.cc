@@ -3,6 +3,7 @@
 
 #include <random>
 #include <vector>
+
 #include "src/carnot/udf/arrow_adapter.h"
 #include "src/carnot/udf/column_wrapper.h"
 #include "src/carnot/udf/registry.h"
@@ -177,13 +178,14 @@ static void BM_AddInt64ValueToArrow(benchmark::State &state) {  // NOLINT
   CHECK(def.template Init<AddUDF>("add").ok());
   auto u = def.Make();
   for (auto _ : state) {
+    out.clear();
     out.resize(vec2.size());
-    auto res = def.ExecBatch(u.get(), nullptr, {&wrapped_vec1, &wrapped_vec1}, &out, vec1.size());
+    auto res = def.ExecBatch(u.get(), nullptr, {&wrapped_vec1, &wrapped_vec2}, &out, vec1.size());
     CHECK(res.ok());
     auto arrow_res = out.ConvertToArrow(arrow::default_memory_pool());
-    out.clear();
     benchmark::DoNotOptimize(arrow_res);
   }
+
   // Check results.
   for (size_t idx = 0; idx < vec2.size(); ++idx) {
     CHECK((vec1[idx].val + vec2[idx].val) == out[idx].val);
@@ -219,6 +221,7 @@ static void BM_SubStrArrow(benchmark::State &state) {  // NOLINT
   state.SetBytesProcessed(int64_t(state.iterations()) * width * data.size());
 }
 
+BENCHMARK(BM_AddInt64ValueToArrow)->RangeMultiplier(2)->Range(1, 1 << 16);
 BENCHMARK(BM_AddTwoInt64sArrow)->RangeMultiplier(2)->Range(1, 1 << 16);
 BENCHMARK(BM_AddInt64Values)->RangeMultiplier(2)->Range(1, 1 << 16);
 
@@ -227,5 +230,3 @@ BENCHMARK(BM_ConvertToArrowInt64)->RangeMultiplier(2)->Range(1, 1 << 16);
 
 BENCHMARK(BM_SubStrArrow)->RangeMultiplier(2)->Range(1, 1 << 16);
 BENCHMARK(BM_SubStr)->RangeMultiplier(2)->Range(1, 1 << 16);
-
-BENCHMARK(BM_AddInt64ValueToArrow)->RangeMultiplier(2)->Range(1, 1 << 16);
