@@ -54,6 +54,19 @@ void RegisterMathOpsOrDie(udf::ScalarUDFRegistry* registry) {
   // Negate (-)
   registry->RegisterOrDie<NegateUDF<udf::Int64Value>>("negate");
   registry->RegisterOrDie<NegateUDF<udf::Float64Value>>("negate");
+  // ==
+  registry->RegisterOrDie<EqualUDF<udf::Int64Value, udf::Int64Value>>("equal");
+  registry->RegisterOrDie<EqualUDF<udf::StringValue, udf::StringValue>>("equal");
+  // ~=
+  registry->RegisterOrDie<ApproxEqualUDF<udf::Float64Value, udf::Float64Value>>("approxEqual");
+  // >
+  registry->RegisterOrDie<GreaterThanUDF<udf::Int64Value, udf::Int64Value>>("greaterThan");
+  registry->RegisterOrDie<GreaterThanUDF<udf::Float64Value, udf::Float64Value>>("greaterThan");
+  registry->RegisterOrDie<GreaterThanUDF<udf::StringValue, udf::StringValue>>("greaterThan");
+  // <
+  registry->RegisterOrDie<LessThanUDF<udf::Int64Value, udf::Int64Value>>("lessThan");
+  registry->RegisterOrDie<LessThanUDF<udf::Float64Value, udf::Float64Value>>("lessThan");
+  registry->RegisterOrDie<LessThanUDF<udf::StringValue, udf::StringValue>>("lessThan");
 }
 
 void RegisterMathOpsOrDie(udf::UDARegistry* registry) {

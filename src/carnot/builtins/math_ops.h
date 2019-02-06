@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <limits>
 
 #include "src/carnot/udf/registry.h"
@@ -62,6 +63,32 @@ template <typename TArg1>
 class NegateUDF : public udf::ScalarUDF {
  public:
   TArg1 Exec(udf::FunctionContext *, TArg1 b1) { return -b1.val; }
+};
+
+template <typename TArg1, typename TArg2>
+class EqualUDF : public udf::ScalarUDF {
+ public:
+  udf::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1 == b2; }
+};
+
+template <typename TArg1, typename TArg2>
+class ApproxEqualUDF : public udf::ScalarUDF {
+ public:
+  udf::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) {
+    return std::abs(b1.val - b2.val) < std::numeric_limits<double>::epsilon();
+  }
+};
+
+template <typename TArg1, typename TArg2>
+class GreaterThanUDF : public udf::ScalarUDF {
+ public:
+  udf::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1 > b2; }
+};
+
+template <typename TArg1, typename TArg2>
+class LessThanUDF : public udf::ScalarUDF {
+ public:
+  udf::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1 < b2; }
 };
 
 template <typename TArg>

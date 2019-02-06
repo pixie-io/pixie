@@ -45,9 +45,34 @@ struct FixedSizedUDFValue : UDFBaseValue {
   // from functions.
   // NOLINTNEXTLINE(runtime/explicit)
   FixedSizedUDFValue(T new_val) : val(new_val) {}
+
+  template <class T2>
   // Overload the equality to make it easier to write code with value types.
-  bool operator==(const FixedSizedUDFValue<T>& lhs) { return val == lhs.val; }
-  bool operator==(const T& lhs) { return val == lhs; }
+  bool operator==(const FixedSizedUDFValue<T2>& lhs) {
+    return val == lhs.val;
+  }
+  template <class T2>
+  bool operator==(const T2& lhs) {
+    return val == lhs;
+  }
+
+  // Overload > and < to make it easier to write code with value types.
+  template <class T2>
+  bool operator<(const FixedSizedUDFValue<T2>& lhs) {
+    return val < lhs.val;
+  }
+  template <class T2>
+  bool operator<(const T2& lhs) {
+    return val < lhs;
+  }
+  template <class T2>
+  bool operator>(const FixedSizedUDFValue<T2>& lhs) {
+    return val > lhs.val;
+  }
+  template <class T2>
+  bool operator>(const T2& lhs) {
+    return val > lhs;
+  }
 
   // Overload assignment to make it easier to write code with value types.
   FixedSizedUDFValue<T>& operator=(FixedSizedUDFValue<T> lhs) {
