@@ -31,6 +31,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "table_test",
+    srcs = ["table_test.cc"],
+    deps = [
+        ":cc_library",
+        "//third_party:arrow",
+    ],
+)
+
+pl_cc_test(
     name = "expression_evaluator_test",
     srcs = ["expression_evaluator_test.cc"],
     deps = [
