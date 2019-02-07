@@ -11,9 +11,7 @@
 
 #include "src/common/status.h"
 #include "src/common/types/types.pb.h"
-#include "src/data_collector/data_collector_table.h"
 #include "src/data_collector/proto/collector_config.pb.h"
-#include "src/data_collector/source_connector.h"
 #include "third_party/arrow/cpp/src/arrow/api.h"
 
 namespace pl {
@@ -149,14 +147,6 @@ class InfoClassSchema {
    * @return DataTable* Pointer to the data table for this InfoClassSchema.
    */
   DataTable* GetDataTable() { return data_table_; }
-
-  /**
-   * @breif Generate the table schema for this InfoClassSchema, including only the relevant
-   * elements/fields.
-   *
-   * @return Unique pointer to schema, in arrow format.
-   */
-  std::unique_ptr<arrow::Schema> CreateDataTableSchema() const;
 
   /**
    * @brief Get an Element object

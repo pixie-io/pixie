@@ -4,7 +4,9 @@
 
 #include "src/common/macros.h"
 
+#include "src/data_collector/data_collector_table.h"
 #include "src/data_collector/info_class_schema.h"
+#include "src/data_collector/source_connector.h"
 
 namespace pl {
 namespace datacollector {
@@ -36,32 +38,6 @@ Status InfoClassSchema::AddElement(const std::string& name, DataType type, Eleme
   elements_.push_back(InfoClassElement(name, type, state));
 
   return Status::OK();
-}
-
-// Generate the appropriate data table schema from the InfoClassSchema.
-std::unique_ptr<arrow::Schema> InfoClassSchema::CreateDataTableSchema() const {
-  std::vector<std::shared_ptr<arrow::Field>> fields;
-
-  for (const auto& element : elements_) {
-    std::shared_ptr<arrow::DataType> arrow_type;
-
-    // TODO(oazizi): Move into own function.
-    switch (element.type()) {
-      case DataType::INT64:
-        arrow_type = arrow::int64();
-        break;
-      case DataType::FLOAT64:
-        arrow_type = arrow::float64();
-        break;
-      default:
-        arrow_type = arrow::null();
-        CHECK(0) << "Unimplemented data type";
-    }
-
-    fields.push_back(arrow::field(element.name(), arrow_type));
-  }
-
-  return std::make_unique<arrow::Schema>(fields);
 }
 
 void* InfoClassSchema::GetData() {

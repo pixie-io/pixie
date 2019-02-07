@@ -10,8 +10,6 @@
 namespace pl {
 namespace datacollector {
 
-class InfoClassSchema;
-
 /**
  * Abstract Base class defining a Data Source Connector.
  * Currently assumes the Data Source Connector will poll the source.

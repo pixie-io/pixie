@@ -11,18 +11,14 @@ DataTable::DataTable(const InfoClassSchema& schema) { RegisterTable(schema); }
 
 // Given an InfoClassSchema, generate the appropriate table.
 void DataTable::RegisterTable(const InfoClassSchema& schema) {
-  table_schema_ = schema.CreateDataTableSchema();
+  table_schema_ = std::make_unique<DataTableSchema>(schema);
 
   size_t current_offset = 0;
-  for (uint32_t i = 0; i < schema.NumElements(); ++i) {
-    auto elementInfo = schema.GetElement(i);
-
-    if (elementInfo.state() == Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED ||
-        elementInfo.state() == Element_State::Element_State_COLLECTED_AND_SUBSCRIBED) {
-      offsets_.push_back(current_offset);
-
-      current_offset += elementInfo.WidthBytes();
-    }
+  for (uint32_t i = 0; i < table_schema_->NumFields(); ++i) {
+    auto& elementInfo = (*table_schema_)[i];
+    elementInfo.SetOffset(current_offset);
+    offsets_.push_back(current_offset);
+    current_offset += elementInfo.WidthBytes();
   }
 
   row_size_ = current_offset;
@@ -30,21 +26,19 @@ void DataTable::RegisterTable(const InfoClassSchema& schema) {
 
 // Given raw data and a schema, append the data to the existing Data Tables.
 void DataTable::AppendData(char* data, uint64_t num_rows) {
-  std::vector<uint64_t> column_uint64(num_rows);
-  std::vector<float> column_float(num_rows);
-
+  // TODO(oazizi): Implement this function. Current implementation is a placeholder.
   for (uint32_t row = 0; row < num_rows; ++row) {
-    for (int32_t i = 0; i < table_schema_->num_fields(); ++i) {
+    for (uint32_t i = 0; i < table_schema_->NumFields(); ++i) {
       char* element_ptr = static_cast<char*>(data + (row * row_size_) + offsets_[i]);
       PL_UNUSED(element_ptr);
-      switch (table_schema_->field(i)->type()->id()) {
-        case arrow::Type::type::INT64: {
+      switch ((*table_schema_)[i].type()) {
+        case DataType::INT64: {
           auto* val_ptr = reinterpret_cast<uint64_t*>(element_ptr);
-          column_uint64.push_back(*val_ptr);
+          PL_UNUSED(val_ptr);
         } break;
-        case arrow::Type::type::DOUBLE: {
-          auto* val_ptr = reinterpret_cast<float*>(element_ptr);
-          column_float.push_back(*val_ptr);
+        case DataType::FLOAT64: {
+          auto* val_ptr = reinterpret_cast<double*>(element_ptr);
+          PL_UNUSED(val_ptr);
         } break;
         default:
           CHECK(0) << "Unimplemented data type";

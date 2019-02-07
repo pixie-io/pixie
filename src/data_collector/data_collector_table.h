@@ -3,13 +3,12 @@
 #include <memory>
 #include <vector>
 
+#include "src/data_collector/data_table_schema.h"
 #include "src/data_collector/info_class_schema.h"
 #include "third_party/arrow/cpp/src/arrow/type.h"
 
 namespace pl {
 namespace datacollector {
-
-class InfoClassSchema;
 
 class DataTable {
  public:
@@ -28,7 +27,7 @@ class DataTable {
   void AppendData(char* data, uint64_t num_rows);
 
  private:
-  std::unique_ptr<arrow::Schema> table_schema_;
+  std::unique_ptr<DataTableSchema> table_schema_;
   std::vector<uint32_t> offsets_;
   uint32_t row_size_;
 };

@@ -10,8 +10,6 @@
 namespace pl {
 namespace datacollector {
 
-class DataCollector;
-
 /*
  * Placeholder DataCollectorConfig class.
  * Primary functions are publish and subscribe.
