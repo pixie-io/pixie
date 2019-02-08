@@ -26,20 +26,24 @@ namespace exec {
 class ExecState {
  public:
   explicit ExecState(std::shared_ptr<udf::ScalarUDFRegistry> scalar_udf_registry,
+                     std::shared_ptr<udf::UDARegistry> uda_registry,
                      std::shared_ptr<TableStore> table_store)
       : scalar_udf_registry_(std::move(scalar_udf_registry)),
-        table_store_(std::move(table_store)) {}
+        uda_registry_(uda_registry),
+        table_store_(table_store) {}
   arrow::MemoryPool* exec_mem_pool() {
     // TOOD(zasgar): Make this the correct pool.
     return arrow::default_memory_pool();
   }
 
   udf::ScalarUDFRegistry* scalar_udf_registry() { return scalar_udf_registry_.get(); }
+  udf::UDARegistry* uda_registry() { return uda_registry_.get(); }
 
   TableStore* table_store() { return table_store_.get(); }
 
  private:
   std::shared_ptr<udf::ScalarUDFRegistry> scalar_udf_registry_;
+  std::shared_ptr<udf::UDARegistry> uda_registry_;
   std::shared_ptr<TableStore> table_store_;
 };
 

@@ -29,6 +29,7 @@ using pl::carnot::udf::Int64Value;
 using pl::carnot::udf::ScalarUDF;
 using pl::carnot::udf::ScalarUDFRegistry;
 using pl::carnot::udf::ToArrow;
+using pl::carnot::udf::UDARegistry;
 using pl::carnot::udf::UDFDataType;
 
 class AddUDF : public ScalarUDF {
@@ -47,11 +48,11 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
   CHECK(s_or_se.ok());
   std::shared_ptr<ScalarExpression> se = s_or_se.ConsumeValueOrDie();
 
-  auto registry = std::make_shared<ScalarUDFRegistry>("test_registry");
-  PL_CHECK_OK(registry->Register<AddUDF>("add"));
-  std::shared_ptr<pl::carnot::exec::TableStore> table_store =
-      std::make_shared<pl::carnot::exec::TableStore>();
-  auto exec_state = std::make_unique<ExecState>(registry, table_store);
+  auto udf_registry = std::make_shared<ScalarUDFRegistry>("test_registry");
+  auto uda_registry = std::make_shared<UDARegistry>("test_registry");
+  auto table_store = std::make_shared<pl::carnot::exec::TableStore>();
+  PL_CHECK_OK(udf_registry->Register<AddUDF>("add"));
+  auto exec_state = std::make_unique<ExecState>(udf_registry, uda_registry, table_store);
 
   auto in1 = pl::bmutils::CreateLargeData<Int64Value>(data_size);
   auto in2 = pl::bmutils::CreateLargeData<Int64Value>(data_size);

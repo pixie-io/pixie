@@ -145,12 +145,17 @@ Status BlockingAggregateOperator::Init(const carnotpb::BlockingAggregateOperator
   if (pb_.values_size() != pb_.value_names_size()) {
     return error::InvalidArgument("values names/exp size mismatch");
   }
+  LOG(ERROR) << pb_.DebugString();
   values_.reserve(static_cast<size_t>(pb_.values_size()));
   for (int i = 0; i < pb_.values_size(); ++i) {
     auto ae = std::make_unique<AggregateExpression>();
     auto s = ae->Init(pb_.values(i));
     PL_RETURN_IF_ERROR(s);
     values_.emplace_back(std::unique_ptr<AggregateExpression>(std::move(ae)));
+  }
+  groups_.reserve(pb_.groups_size());
+  for (int idx = 0; idx < pb_.groups_size(); ++idx) {
+    groups_.emplace_back(GroupInfo{pb_.group_names(idx), pb_.groups(0).index()});
   }
 
   is_initialized_ = true;

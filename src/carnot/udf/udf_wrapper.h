@@ -250,6 +250,21 @@ Status UpdateWrapper(TUDA *uda, FunctionContext *ctx, size_t count,
 }
 
 /**
+ * Performs an update on a batch of records (arrow).
+ * This is similar to the ExecBatch, except it does not store a return value.
+ */
+template <typename TUDA, std::size_t... I>
+Status UpdateWrapperArrow(TUDA *uda, FunctionContext *ctx, size_t count,
+                          const std::vector<const arrow::Array *> &args,
+                          std::index_sequence<I...>) {
+  constexpr auto update_argument_types = UDATraits<TUDA>::UpdateArgumentTypes();
+  for (size_t idx = 0; idx < count; ++idx) {
+    uda->Update(ctx, GetValueFromArrowArray<update_argument_types[I]>(args[I], idx)...);
+  }
+  return Status::OK();
+}
+
+/**
  * Provides a set of static methods that wrap UDAs and allow vectorized execution (for update).
  * @tparam TUDA The UDA class.
  */
@@ -274,11 +289,30 @@ struct UDAWrapper {
                                 const std::vector<const ColumnWrapper *> &inputs) {
     constexpr auto update_argument_types = UDATraits<TUDA>::UpdateArgumentTypes();
     DCHECK(CheckTypes(inputs, update_argument_types));
+    DCHECK(inputs.size() == update_argument_types.size());
+
     auto input_as_base_value = ConvertToBaseValue(inputs);
 
     size_t num_records = inputs[0]->Size();
     return UpdateWrapper<TUDA>(reinterpret_cast<TUDA *>(uda), ctx, num_records, input_as_base_value,
                                std::make_index_sequence<update_argument_types.size()>{});
+  }
+
+  /**
+   * Perform a batch update of the passed in UDA based in the inputs.
+   * @param uda The UDA instances.
+   * @param ctx The function context.
+   * @param inputs A vector of pointers to ColumnWrappers.
+   * @return Status of update.
+   */
+  static Status ExecBatchUpdateArrow(UDA *uda, FunctionContext *ctx,
+                                     const std::vector<const arrow::Array *> &inputs) {
+    constexpr auto update_argument_types = UDATraits<TUDA>::UpdateArgumentTypes();
+    DCHECK(inputs.size() == update_argument_types.size());
+
+    size_t num_records = inputs[0]->length();
+    return UpdateWrapperArrow<TUDA>(reinterpret_cast<TUDA *>(uda), ctx, num_records, inputs,
+                                    std::make_index_sequence<update_argument_types.size()>{});
   }
 
   /**

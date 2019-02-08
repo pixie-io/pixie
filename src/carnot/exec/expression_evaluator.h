@@ -15,6 +15,13 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
+std::shared_ptr<arrow::Array> EvalScalarToArrow(ExecState* exec_state, const plan::ScalarValue& val,
+                                                size_t count);
+
+std::shared_ptr<udf::ColumnWrapper> EvalScalarToColumnWrapper(ExecState*,
+                                                              const plan::ScalarValue& val,
+                                                              size_t count);
+
 /**
  * Base expression evaluator class.
  */

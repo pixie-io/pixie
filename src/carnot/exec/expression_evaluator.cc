@@ -68,6 +68,8 @@ std::shared_ptr<arrow::Array> EvalScalarBinaryImpl(arrow::MemoryPool *mem_pool, 
   return arr;
 }
 
+}  // namespace
+
 // Evaluate Scalar to arrow.
 // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
 std::shared_ptr<arrow::Array> EvalScalarToArrow(ExecState *exec_state, const plan::ScalarValue &val,
@@ -108,8 +110,6 @@ std::shared_ptr<ColumnWrapper> EvalScalarToColumnWrapper(ExecState *, const plan
       CHECK(0) << "Unknown data type";
   }
 }
-
-}  // namespace
 
 Status ScalarExpressionEvaluator::Evaluate(ExecState *exec_state, const RowBatch &input,
                                            RowBatch *output) {
@@ -169,7 +169,7 @@ Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
   // Path for scalar funcs an their dependencies to get evaluated.
   // The Arrow arrays are converted to type erased column wrappers
   // and then evaluated.
-  plan::ScalarExpressionWalker<SharedColumnWrapper> walker;
+  plan::ExpressionWalker<SharedColumnWrapper> walker;
   walker.OnScalarValue(
       [&](const plan::ScalarValue &val,
           const std::vector<SharedColumnWrapper> &children) -> SharedColumnWrapper {
@@ -229,7 +229,7 @@ Status exec::ArrowNativeScalarExpressionEvaluator::EvaluateSingleExpression(
     exec::ExecState *exec_state, const exec::RowBatch &input, const plan::ScalarExpression &expr,
     exec::RowBatch *output) {
   size_t num_rows = input.num_rows();
-  plan::ScalarExpressionWalker<std::shared_ptr<arrow::Array>> walker;
+  plan::ExpressionWalker<std::shared_ptr<arrow::Array>> walker;
   walker.OnScalarValue(
       [&](const plan::ScalarValue &val, const std::vector<std::shared_ptr<arrow::Array>> &children)
           -> std::shared_ptr<arrow::Array> {

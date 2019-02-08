@@ -59,10 +59,12 @@ std::shared_ptr<plan::ScalarExpression> ScalarExpressionOf(const std::string& pb
 class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEvaluatorType> {
  public:
   virtual void SetUp() {
-    auto registry = std::make_shared<udf::ScalarUDFRegistry>("test_registry");
-    EXPECT_TRUE(registry->Register<AddUDF>("add").ok());
+    auto uda_registry = std::make_shared<udf::UDARegistry>("test_registry");
+    auto udf_registry = std::make_shared<udf::ScalarUDFRegistry>("test_registry");
     auto table_store = std::make_shared<TableStore>();
-    exec_state_ = std::make_unique<ExecState>(registry, table_store);
+
+    EXPECT_TRUE(udf_registry->Register<AddUDF>("add").ok());
+    exec_state_ = std::make_unique<ExecState>(udf_registry, uda_registry, table_store);
 
     std::vector<udf::Int64Value> in1 = {1, 2, 3};
     std::vector<udf::Int64Value> in2 = {3, 4, 5};

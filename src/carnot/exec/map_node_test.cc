@@ -30,10 +30,12 @@ class MapNodeTest : public ::testing::Test {
     auto op_proto = carnotpb::testutils::CreateTestMapAddTwoCols();
     plan_node_ = plan::MapOperator::FromProto(op_proto, 1);
 
-    auto registry = std::make_shared<udf::ScalarUDFRegistry>("test_registry");
-    EXPECT_TRUE(registry->Register<AddUDF>("add").ok());
+    auto udf_registry = std::make_shared<udf::ScalarUDFRegistry>("test_registry");
+    auto uda_registry = std::make_shared<udf::UDARegistry>("test_registry");
     auto table_store = std::make_shared<TableStore>();
-    exec_state_ = std::make_unique<ExecState>(registry, table_store);
+
+    EXPECT_TRUE(udf_registry->Register<AddUDF>("add").ok());
+    exec_state_ = std::make_unique<ExecState>(udf_registry, uda_registry, table_store);
   }
   RowBatch CreateInputRowBatch(const std::vector<udf::Int64Value>& in1,
                                const std::vector<udf::Int64Value>& in2) {

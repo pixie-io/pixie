@@ -308,7 +308,7 @@ TEST(ScalarExpressionWalker, walk_node_graph) {
   auto se = ScalarExpression::FromProto(se_pb);
   std::vector<int64_t> col_node_ids;
   int val_func_call_count = 0;
-  auto col_count = ScalarExpressionWalker<int>()
+  auto col_count = ExpressionWalker<int>()
                        .OnColumn([&](auto& col, auto&) {
                          col_node_ids.push_back(col.NodeID());
                          return 1;

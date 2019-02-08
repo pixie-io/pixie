@@ -188,7 +188,7 @@ Expression ScalarFunc::ExpressionType() const { return Expression::kFunc; }
 
 std::vector<const Column *> ScalarFunc::ColumnDeps() {
   std::vector<const Column *> cols;
-  ScalarExpressionWalker<int>()
+  ExpressionWalker<int>()
       .OnColumn([&](const auto &col, const auto &) {
         cols.push_back(&col);
         return 0;
@@ -202,7 +202,7 @@ StatusOr<types::DataType> ScalarFunc::OutputDataType(const CompilerState &state,
   // The output data type of a function is based on the computed types of the children
   // followed by the looking up the function in the registry and getting the output
   // data type of the function.
-  auto res = ScalarExpressionWalker<StatusOr<types::DataType>>()
+  auto res = ExpressionWalker<StatusOr<types::DataType>>()
                  .OnScalarValue([&](auto &val, auto &) -> StatusOr<types::DataType> {
                    return val.OutputDataType(state, input_schema);
                  })

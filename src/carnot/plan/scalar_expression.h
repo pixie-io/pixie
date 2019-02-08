@@ -24,6 +24,19 @@ class Column;
 
 enum Expression { kFunc, kColumn, kConstant, kAgg };
 
+inline std::string ToString(Expression expr) {
+  switch (expr) {
+    case Expression::kFunc:
+      return "Function";
+    case Expression::kColumn:
+      return "Column";
+    case Expression ::kConstant:
+      return "Constant";
+    case Expression::kAgg:
+      return "Agg";
+  }
+}
+
 inline std::string ToString(const carnotpb::ScalarExpression::ValueCase &exp) {
   switch (exp) {
     case carnotpb::ScalarExpression::kFunc:
@@ -221,7 +234,7 @@ class AggregateExpression : public ScalarExpression {
  * @tparam TReturn The return type of individual walk functions.
  */
 template <typename TReturn>
-class ScalarExpressionWalker {
+class ExpressionWalker {
  public:
   /**
    * ScalarExpression Walker functions are just functions that get called whenever
@@ -229,19 +242,19 @@ class ScalarExpressionWalker {
    * and they get a list of all the children values.
    */
   template <typename TExpression>
-  using ScalarExpressionWalkFn =
+  using ExpressionWalkFn =
       std::function<TReturn(const TExpression &, const std::vector<TReturn> &)>;
 
-  using ScalarFuncWalkFn = ScalarExpressionWalkFn<ScalarFunc>;
-  using ScalarValueWalkFn = ScalarExpressionWalkFn<ScalarValue>;
-  using ColumnWalkFn = ScalarExpressionWalkFn<Column>;
-
+  using ScalarFuncWalkFn = ExpressionWalkFn<ScalarFunc>;
+  using ScalarValueWalkFn = ExpressionWalkFn<ScalarValue>;
+  using ColumnWalkFn = ExpressionWalkFn<Column>;
+  using AggregateFuncWalkFn = ExpressionWalkFn<AggregateExpression>;
   /**
    * Register callback for when a scalar func is encountered.
    * @param fn The function to call when a ScalarFunc is encountered.
    * @return self to allow chaining
    */
-  ScalarExpressionWalker &OnScalarFunc(const ScalarFuncWalkFn &fn) {
+  ExpressionWalker &OnScalarFunc(const ScalarFuncWalkFn &fn) {
     scalar_func_walk_fn_ = fn;
     return *this;
   }
@@ -251,7 +264,7 @@ class ScalarExpressionWalker {
    * @param fn The function to call when a ScalarValue is encountered.
    * @return self to allow chaining.
    */
-  ScalarExpressionWalker &OnScalarValue(const ScalarValueWalkFn &fn) {
+  ExpressionWalker &OnScalarValue(const ScalarValueWalkFn &fn) {
     scalar_value_walk_fn_ = fn;
     return *this;
   }
@@ -261,8 +274,18 @@ class ScalarExpressionWalker {
    * @param fn The function to call when a Column is encountered.
    * @return self to allow chaining.
    */
-  ScalarExpressionWalker &OnColumn(const ColumnWalkFn &fn) {
+  ExpressionWalker &OnColumn(const ColumnWalkFn &fn) {
     column_walk_fn_ = fn;
+    return *this;
+  }
+
+  /**
+   * Register callback for when a Aggregate expression is encountered.
+   * @param fn The function to call.
+   * @return self to allow chaining.
+   */
+  ExpressionWalker &OnAggregateExpression(const AggregateFuncWalkFn &fn) {
+    aggregate_func_walk_fn_ = fn;
     return *this;
   }
 
@@ -305,6 +328,8 @@ class ScalarExpressionWalker {
         return CallAs<ScalarValue>(scalar_value_walk_fn_, expression, child_values);
       case Expression::kFunc:
         return CallAs<ScalarFunc>(scalar_func_walk_fn_, expression, child_values);
+      case Expression::kAgg:
+        return CallAs<AggregateExpression>(aggregate_func_walk_fn_, expression, child_values);
       default:
         return error::InvalidArgument("Expression type: $0 is invalid", expression_type);
     }
@@ -313,6 +338,7 @@ class ScalarExpressionWalker {
   ScalarFuncWalkFn scalar_func_walk_fn_;
   ScalarValueWalkFn scalar_value_walk_fn_;
   ColumnWalkFn column_walk_fn_;
+  AggregateFuncWalkFn aggregate_func_walk_fn_;
 };
 
 using ScalarExpressionVector = std::vector<std::shared_ptr<ScalarExpression>>;

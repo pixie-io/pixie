@@ -141,6 +141,8 @@ class UDADefinition : public UDFDefinition {
     finalize_return_type_ = UDATraits<T>::FinalizeReturnType();
     make_fn_ = UDAWrapper<T>::Make;
     exec_batch_update_fn_ = UDAWrapper<T>::ExecBatchUpdate;
+    exec_batch_update_arrow_fn_ = UDAWrapper<T>::ExecBatchUpdateArrow;
+
     merge_fn_ = UDAWrapper<T>::Merge;
     finalize_arrow_fn_ = UDAWrapper<T>::FinalizeArrow;
     finalize_value_fn = UDAWrapper<T>::FinalizeValue;
@@ -155,10 +157,16 @@ class UDADefinition : public UDFDefinition {
   UDFDataType finalize_return_type() const { return finalize_return_type_; }
 
   std::unique_ptr<UDA> Make() { return make_fn_(); }
+
   Status ExecBatchUpdate(UDA* uda, FunctionContext* ctx,
                          const std::vector<const ColumnWrapper*>& inputs) {
     return exec_batch_update_fn_(uda, ctx, inputs);
   }
+  Status ExecBatchUpdateArrow(UDA* uda, FunctionContext* ctx,
+                              const std::vector<const arrow::Array*>& inputs) {
+    return exec_batch_update_arrow_fn_(uda, ctx, inputs);
+  }
+
   Status Merge(UDA* uda1, UDA* uda2, FunctionContext* ctx) { return merge_fn_(uda1, uda2, ctx); }
   Status FinalizeValue(UDA* uda, FunctionContext* ctx, UDFBaseValue* output) {
     return finalize_value_fn(uda, ctx, output);
@@ -175,6 +183,10 @@ class UDADefinition : public UDFDefinition {
   std::function<Status(UDA* uda, FunctionContext* ctx,
                        const std::vector<const ColumnWrapper*>& inputs)>
       exec_batch_update_fn_;
+
+  std::function<Status(UDA* uda, FunctionContext* ctx,
+                       const std::vector<const arrow::Array*>& inputs)>
+      exec_batch_update_arrow_fn_;
 
   std::function<Status(UDA* uda, FunctionContext* ctx, arrow::ArrayBuilder* output)>
       finalize_arrow_fn_;

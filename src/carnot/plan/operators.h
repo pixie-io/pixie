@@ -105,8 +105,17 @@ class BlockingAggregateOperator : public Operator {
   Status Init(const carnotpb::BlockingAggregateOperator &pb);
   std::string DebugString() const override;
 
+  struct GroupInfo {
+    std::string name;
+    uint64_t idx;
+  };
+
+  const std::vector<GroupInfo> &groups() const { return groups_; }
+  const std::vector<std::shared_ptr<AggregateExpression>> &values() const { return values_; }
+
  private:
-  std::vector<std::unique_ptr<AggregateExpression>> values_;
+  std::vector<std::shared_ptr<AggregateExpression>> values_;
+  std::vector<GroupInfo> groups_;
   carnotpb::BlockingAggregateOperator pb_;
 };
 
