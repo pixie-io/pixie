@@ -1,0 +1,24 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = ["**/*_test.cc"],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/carnot/proto:plan_cc_proto",
+        "//src/carnot/plan:cc_library",
+        "//src/carnot/udf:cc_library",
+        "//third_party:libpypa"
+    ],
+)
+
+pl_cc_test(
+    name = "ir_nodes_test",
+    srcs = ["ir_nodes_test.cc"],
+    deps = [":cc_library"],
+)
