@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/carnot/exec/table_store.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/status.h"
 
@@ -24,8 +25,10 @@ namespace exec {
  */
 class ExecState {
  public:
-  explicit ExecState(std::shared_ptr<udf::ScalarUDFRegistry> scalar_udf_registry)
-      : scalar_udf_registry_(std::move(scalar_udf_registry)) {}
+  explicit ExecState(std::shared_ptr<udf::ScalarUDFRegistry> scalar_udf_registry,
+                     std::shared_ptr<TableStore> table_store)
+      : scalar_udf_registry_(std::move(scalar_udf_registry)),
+        table_store_(std::move(table_store)) {}
   arrow::MemoryPool* exec_mem_pool() {
     // TOOD(zasgar): Make this the correct pool.
     return arrow::default_memory_pool();
@@ -33,8 +36,11 @@ class ExecState {
 
   udf::ScalarUDFRegistry* scalar_udf_registry() { return scalar_udf_registry_.get(); }
 
+  TableStore* table_store() { return table_store_.get(); }
+
  private:
   std::shared_ptr<udf::ScalarUDFRegistry> scalar_udf_registry_;
+  std::shared_ptr<TableStore> table_store_;
 };
 
 }  // namespace exec

@@ -55,11 +55,11 @@ TEST(TableTest, basic_test) {
   EXPECT_TRUE(table.AddColumn(col2).ok());
   EXPECT_EQ(table.numBatches(), 2);
 
-  auto rb1 = table.GetRowBatch(0).ConsumeValueOrDie();
+  auto rb1 = table.GetRowBatch(0, std::vector<int64_t>({0, 1})).ConsumeValueOrDie();
   EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1->ColumnAt(1)->Equals(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
 
-  auto rb2 = table.GetRowBatch(1).ConsumeValueOrDie();
+  auto rb2 = table.GetRowBatch(1, std::vector<int64_t>({0, 1})).ConsumeValueOrDie();
   EXPECT_TRUE(rb2->ColumnAt(0)->Equals(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
   EXPECT_TRUE(rb2->ColumnAt(1)->Equals(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
 }

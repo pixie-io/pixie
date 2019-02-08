@@ -65,9 +65,14 @@ class MemorySourceOperator : public Operator {
                                     const std::vector<int64_t> &input_ids) override;
   Status Init(const carnotpb::MemorySourceOperator &pb);
   std::string DebugString() const override;
+  std::string TableName() const { return table_name_; }
+  std::vector<int64_t> Columns() const { return column_idxs_; }
 
  private:
   carnotpb::MemorySourceOperator pb_;
+
+  std::string table_name_;
+  std::vector<int64_t> column_idxs_;
 };
 
 class MapOperator : public Operator {

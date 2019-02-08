@@ -1,6 +1,7 @@
 #include <arrow/array.h>
 #include <glog/logging.h>
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <string>
 #include <vector>
@@ -58,16 +59,22 @@ Status Table::AddColumn(std::shared_ptr<Column> col) {
   return Status::OK();
 }
 
-StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatch(int64_t i) {
+StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatch(int64_t i, std::vector<int64_t> cols) {
   DCHECK(columns_.size() > 0) << "RowBatch does not have any columns.";
   DCHECK(columns_[0]->numChunks() > i) << absl::StrFormat(
       "Table has %d chunks, but requesting chunk %d", columns_[0]->numChunks(), i);
 
-  auto output_rb = std::make_unique<RowBatch>(desc_, columns_[0]->chunk(i)->length());
-  for (size_t col_idx = 0; col_idx < desc_.size(); col_idx++) {
+  std::vector<udf::UDFDataType> rb_types;
+  for (auto col_idx : cols) {
+    rb_types.push_back(desc_.type(col_idx));
+  }
+  auto output_rb =
+      std::make_unique<RowBatch>(RowDescriptor(rb_types), columns_[0]->chunk(i)->length());
+  for (auto col_idx : cols) {
     auto s = output_rb->AddColumn(columns_[col_idx]->chunk(i));
     PL_RETURN_IF_ERROR(s);
   }
+
   return output_rb;
 }
 

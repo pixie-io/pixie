@@ -53,6 +53,11 @@ std::string MemorySourceOperator::DebugString() const { return "Operator: Memory
 
 Status MemorySourceOperator::Init(const carnotpb::MemorySourceOperator &pb) {
   pb_ = pb;
+  table_name_ = pb.name();
+  column_idxs_.reserve(static_cast<size_t>(pb_.column_idxs_size()));
+  for (int i = 0; i < pb_.column_idxs_size(); ++i) {
+    column_idxs_.emplace_back(pb_.column_idxs(i));
+  }
   is_initialized_ = true;
   return Status::OK();
 }

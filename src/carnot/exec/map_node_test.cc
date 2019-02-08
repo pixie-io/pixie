@@ -32,7 +32,8 @@ class MapNodeTest : public ::testing::Test {
 
     auto registry = std::make_shared<udf::ScalarUDFRegistry>("test_registry");
     EXPECT_TRUE(registry->Register<AddUDF>("add").ok());
-    exec_state_ = std::make_unique<ExecState>(registry);
+    auto table_store = std::make_shared<TableStore>();
+    exec_state_ = std::make_unique<ExecState>(registry, table_store);
   }
   RowBatch CreateInputRowBatch(const std::vector<udf::Int64Value>& in1,
                                const std::vector<udf::Int64Value>& in2) {

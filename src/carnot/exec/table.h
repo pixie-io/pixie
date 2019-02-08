@@ -90,8 +90,9 @@ class Table {
 
   /**
    * @ param i the index of the RowBatch to get.
+   * @ param cols the indices of the columns to get
    */
-  StatusOr<std::unique_ptr<RowBatch>> GetRowBatch(int64_t i);
+  StatusOr<std::unique_ptr<RowBatch>> GetRowBatch(int64_t i, std::vector<int64_t> cols);
 
   /**
    * @return number of column batches.

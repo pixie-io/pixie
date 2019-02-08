@@ -3,6 +3,7 @@
 #include <google/protobuf/text_format.h>
 
 #include "src/carnot/exec/expression_evaluator.h"
+#include "src/carnot/exec/table_store.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/proto/plan.pb.h"
 #include "src/carnot/proto/test_proto.h"
@@ -48,7 +49,9 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
 
   auto registry = std::make_shared<ScalarUDFRegistry>("test_registry");
   PL_CHECK_OK(registry->Register<AddUDF>("add"));
-  auto exec_state = std::make_unique<ExecState>(registry);
+  std::shared_ptr<pl::carnot::exec::TableStore> table_store =
+      std::make_shared<pl::carnot::exec::TableStore>();
+  auto exec_state = std::make_unique<ExecState>(registry, table_store);
 
   auto in1 = pl::bmutils::CreateLargeData<Int64Value>(data_size);
   auto in2 = pl::bmutils::CreateLargeData<Int64Value>(data_size);
