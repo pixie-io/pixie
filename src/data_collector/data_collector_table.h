@@ -24,7 +24,7 @@ class DataTable {
   /**
    * Given raw data and a schema, append the data to the existing Data Tables.
    */
-  void AppendData(char* data, uint64_t num_rows);
+  void AppendData(uint8_t* data, uint64_t num_rows);
 
  private:
   std::unique_ptr<DataTableSchema> table_schema_;

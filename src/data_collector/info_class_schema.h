@@ -1,5 +1,6 @@
 #pragma once
 
+#include <arrow/api.h>
 #include <gflags/gflags.h>
 #include <glog/logging.h>
 
@@ -12,13 +13,13 @@
 #include "src/common/status.h"
 #include "src/common/types/types.pb.h"
 #include "src/data_collector/proto/collector_config.pb.h"
-#include "third_party/arrow/cpp/src/arrow/api.h"
 
 namespace pl {
 namespace datacollector {
 
 class SourceConnector;
 class DataTable;
+struct RawDataBuf;
 
 using datacollectorpb::Element_State;
 using types::DataType;
@@ -186,9 +187,9 @@ class InfoClassSchema {
   /**
    * @brief Get a pointer to collected data from the collector
    *
-   * @return void* Raw pointer to data.
+   * @return RawDataRecords Number of records, and raw pointer to data.
    */
-  void* GetData();
+  RawDataBuf GetData();
 
   /**
    * @brief Notify function to update state after making changes to the schema.

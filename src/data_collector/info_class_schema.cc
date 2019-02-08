@@ -40,7 +40,7 @@ Status InfoClassSchema::AddElement(const std::string& name, DataType type, Eleme
   return Status::OK();
 }
 
-void* InfoClassSchema::GetData() {
+RawDataBuf InfoClassSchema::GetData() {
   sampling_count_++;
   last_sampled_ = std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::system_clock::now().time_since_epoch());

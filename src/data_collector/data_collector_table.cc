@@ -25,11 +25,11 @@ void DataTable::RegisterTable(const InfoClassSchema& schema) {
 }
 
 // Given raw data and a schema, append the data to the existing Data Tables.
-void DataTable::AppendData(char* data, uint64_t num_rows) {
+void DataTable::AppendData(uint8_t* data, uint64_t num_rows) {
   // TODO(oazizi): Implement this function. Current implementation is a placeholder.
   for (uint32_t row = 0; row < num_rows; ++row) {
     for (uint32_t i = 0; i < table_schema_->NumFields(); ++i) {
-      char* element_ptr = static_cast<char*>(data + (row * row_size_) + offsets_[i]);
+      uint8_t* element_ptr = static_cast<uint8_t*>(data + (row * row_size_) + offsets_[i]);
       PL_UNUSED(element_ptr);
       switch ((*table_schema_)[i].type()) {
         case DataType::INT64: {

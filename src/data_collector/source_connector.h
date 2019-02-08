@@ -3,12 +3,20 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "src/common/status.h"
 #include "src/data_collector/info_class_schema.h"
 
 namespace pl {
 namespace datacollector {
+
+struct RawDataBuf {
+ public:
+  RawDataBuf(uint32_t num_records, uint8_t* buf) : num_records(num_records), buf(buf) {}
+  uint64_t num_records;
+  uint8_t* buf;
+};
 
 /**
  * Abstract Base class defining a Data Source Connector.
@@ -30,13 +38,13 @@ class SourceConnector {
 
   /**
    * Main function that returns data.
-   * Data is void*, because the schema is only known at run-time, and can change.
+   * Data is uint8_t*, because the schema is only known at run-time, and can change.
    * This data will be reorganized into Arrow tables.
    * Note: this function should be final, because it contains some time-keeping stats.
    * But can't declare it final, without also declaring it virtual, which then causes lint errors.
    * Derived classes should override GetDataCore().
    */
-  void* GetData();
+  RawDataBuf GetData();
 
   /**
    * Any initialization code that may be required.
@@ -48,8 +56,10 @@ class SourceConnector {
 
   /**
    * Main function that returns a pointer to the raw data collected by the Source Connector.
+   *
+   * @return number of records, pointer to raw data
    */
-  virtual void* GetDataImpl() = 0;
+  virtual RawDataBuf GetDataImpl() = 0;
 };
 
 /**
@@ -65,12 +75,12 @@ class EBPFConnector : public SourceConnector {
    */
   explicit EBPFConnector(const std::string& name, const std::string& bpf_program,
                          const std::string& kernel_event, const std::string& fn_name);
-  virtual ~EBPFConnector();
+  virtual ~EBPFConnector() = default;
 
   /**
    * Main function that returns data for this Source/InfoClass.
    */
-  void* GetDataImpl() override;
+  RawDataBuf GetDataImpl() override;
 
   /**
    * Populate the InfoClassSchema with this this SourceConnector's available data.
@@ -78,7 +88,7 @@ class EBPFConnector : public SourceConnector {
   Status PopulateSchema(InfoClassSchema* schema) override;
 
  private:
-  void* data_buf_;
+  std::vector<uint8_t> data_buf_;
 };
 
 /**
@@ -86,13 +96,14 @@ class EBPFConnector : public SourceConnector {
  */
 class OpenTracingConnector : public SourceConnector {
  public:
+  OpenTracingConnector() = delete;
   explicit OpenTracingConnector(const std::string& name);
-  virtual ~OpenTracingConnector();
+  virtual ~OpenTracingConnector() = default;
 
   /**
    * Main function that returns data for this Source/InfoClass.
    */
-  void* GetDataImpl() override;
+  RawDataBuf GetDataImpl() override;
 
   /**
    * Populate the InfoClassSchema with this this SourceConnector's available data.
@@ -100,7 +111,7 @@ class OpenTracingConnector : public SourceConnector {
   Status PopulateSchema(InfoClassSchema* schema) override;
 
  private:
-  void* data_buf_;
+  std::vector<uint8_t> data_buf_;
 };
 
 }  // namespace datacollector

@@ -75,9 +75,11 @@ void DataCollector::RunThread() {
         // For example, EBPFConnector may want to copy data to user-space,
         // and then provide a pointer to the data.
         // The complexity of re-using same memory buffer then falls to the Data Source.
-        auto* data = reinterpret_cast<char*>(source->GetData());
+        auto source_data = source->GetData();
+        auto num_records = source_data.num_records;
+        auto* data_buf = reinterpret_cast<uint8_t*>(source_data.buf);
 
-        data_table->AppendData(data, 1);
+        data_table->AppendData(data_buf, num_records);
 
         // TODO(oazizi): Tell source how much data was consumed, so it can release the memory.
 

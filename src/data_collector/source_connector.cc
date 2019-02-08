@@ -10,7 +10,7 @@ namespace datacollector {
 //------------------------------------------------------
 
 // Get the data from the collector, but also keep track of some basic stats.
-void* SourceConnector::GetData() { return GetDataImpl(); }
+RawDataBuf SourceConnector::GetData() { return GetDataImpl(); }
 
 //------------------------------------------------------
 // EBPFConnector
@@ -26,7 +26,8 @@ EBPFConnector::EBPFConnector(const std::string& name, const std::string& bpf_pro
   PL_UNUSED(fn_name);
 
   // FIXME(oazizi): Placeholder to avoid seg-fault for now.
-  data_buf_ = malloc(10 * (sizeof(uint64_t) + sizeof(double) + sizeof(uint32_t)));
+  uint32_t record_size = sizeof(uint64_t) + sizeof(double) + sizeof(uint32_t);
+  data_buf_.resize(1000 * record_size);
 }
 
 Status EBPFConnector::PopulateSchema(InfoClassSchema* schema) {
@@ -43,11 +44,10 @@ Status EBPFConnector::PopulateSchema(InfoClassSchema* schema) {
 
 // Placeholder for an EBPFConnector.
 // Change as needed.
-EBPFConnector::~EBPFConnector() { free(data_buf_); }
-
-// Placeholder for an EBPFConnector.
-// Change as needed.
-void* EBPFConnector::GetDataImpl() { return data_buf_; }
+RawDataBuf EBPFConnector::GetDataImpl() {
+  uint64_t num_records = 1;
+  return RawDataBuf(num_records, data_buf_.data());
+}
 
 //------------------------------------------------------
 // OpenTracingConnector
@@ -56,7 +56,9 @@ void* EBPFConnector::GetDataImpl() { return data_buf_; }
 // Placeholder for an OpenTracingConnector.
 // Change as needed.
 OpenTracingConnector::OpenTracingConnector(const std::string& name) : SourceConnector(name) {
-  data_buf_ = malloc(10 * (sizeof(double) + sizeof(double) + sizeof(float) + sizeof(float)));
+  // FIXME(oazizi): Placeholder to avoid seg-fault for now.
+  uint32_t record_size = sizeof(double) + sizeof(double) + sizeof(float) + sizeof(float);
+  data_buf_.resize(1000 * record_size);
 }
 
 Status OpenTracingConnector::PopulateSchema(InfoClassSchema* schema) {
@@ -75,11 +77,10 @@ Status OpenTracingConnector::PopulateSchema(InfoClassSchema* schema) {
 
 // Placeholder for an OpenTracingConnector.
 // Change as needed.
-OpenTracingConnector::~OpenTracingConnector() { free(data_buf_); }
-
-// Placeholder for an OpenTracingConnector.
-// Change as needed.
-void* OpenTracingConnector::GetDataImpl() { return data_buf_; }
+RawDataBuf OpenTracingConnector::GetDataImpl() {
+  uint32_t num_records = 1;
+  return RawDataBuf(num_records, data_buf_.data());
+}
 
 }  // namespace datacollector
 }  // namespace pl
