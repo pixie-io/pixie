@@ -178,11 +178,19 @@ class InfoClassSchema {
   }
 
   /**
-   * @brief Returns the next time the source needs to be sampled, according to the sampling period.
+   * @brief Returns true if sampling is required, for whatever reason (elapsed time, etc.).
    *
-   * @return std::chrono::milliseconds
+   * @return bool
    */
-  std::chrono::milliseconds NextSamplingTime() const { return last_sampled_ + sampling_period_; }
+  bool SamplingRequired() const;
+
+  /**
+   * @brief Returns true if a data push is required, for whatever reason (elapsed time, occupancy,
+   * etc.).
+   *
+   * @return bool
+   */
+  bool PushRequired() const;
 
   /**
    * @brief Get a pointer to collected data from the collector
@@ -243,6 +251,53 @@ class InfoClassSchema {
    * Statistics: count number of samples.
    */
   uint32_t sampling_count_;
+
+  /**
+   * Sampling period.
+   */
+  std::chrono::milliseconds push_period_;
+
+  /**
+   * Keep track of when the source was last sampled.
+   */
+  std::chrono::milliseconds last_pushed_;
+
+  /**
+   * Data push threshold, based number of records after which a push.
+   */
+  uint32_t occupancy_threshold_;
+
+  /**
+   * Data push threshold, based on percentage of buffer that is filled.
+   */
+  uint32_t occupancy_pct_threshold_;
+
+  /**
+   * Statistics: count number of pushes.
+   */
+  // TODO(oazizi): Bring this back, and use it.
+  // uint32_t push_count_;
+
+  /**
+   * @brief Returns the next time the source needs to be sampled, according to the sampling period.
+   *
+   * @return std::chrono::milliseconds
+   */
+  std::chrono::milliseconds NextSamplingTime() const { return last_sampled_ + sampling_period_; }
+
+  /**
+   * @brief Returns the next time the data table needs to be pushed upstream, according to the push
+   * period.
+   *
+   * @return std::chrono::milliseconds
+   */
+  std::chrono::milliseconds NextPushTime() const { return last_pushed_ + push_period_; }
+
+  // Convenience function
+  static std::chrono::milliseconds CurrentTime() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch());
+  }
 };
 
 }  // namespace datacollector

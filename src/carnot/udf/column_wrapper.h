@@ -61,6 +61,10 @@ class ColumnWrapperTmpl : public ColumnWrapper {
 
   T operator[](size_t idx) const { return data_[idx]; }
 
+  T &operator[](size_t idx) { return data_[idx]; }
+
+  void append(T val) { data_.push_back(val); }
+
   void resize(size_t size) { data_.resize(size); }
 
   void clear() { data_.clear(); }

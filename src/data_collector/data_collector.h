@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <functional>
 #include <memory>
 #include <string>
 #include <thread>
@@ -10,7 +11,7 @@
 #include "src/common/error.h"
 #include "src/common/status.h"
 #include "src/data_collector/data_collector_config.h"
-#include "src/data_collector/data_collector_table.h"
+#include "src/data_collector/data_table.h"
 #include "src/data_collector/source_connector.h"
 
 namespace pl {
@@ -38,6 +39,15 @@ class DataCollector {
    * Add OpenTracing data source. Not yet implemented, and lower priority.
    */
   Status AddOpenTracingSource(const std::string& name);
+
+  /**
+   * Register call-back from Agent. Used to periodically send data.
+   *
+   * Function signature is:
+   *   uint64_t table_id
+   *   std::unique_ptr<ColumnWrapperRecordBatch> data
+   */
+  void RegisterCallback(std::function<void(uint64_t, std::unique_ptr<ColumnWrapperRecordBatch>)> f);
 
   /**
    * Main data collection call, that is spawned off as an independent thread.
@@ -89,6 +99,14 @@ class DataCollector {
    * Pointer the config unit that handles sub/pub with agent.
    */
   std::unique_ptr<DataCollectorConfig> config_;
+
+  /**
+   * Function to call to push data to the agent.
+   * Function signature is:
+   *   uint64_t table_id
+   *   std::unique_ptr<ColumnWrapperRecordBatch> data
+   */
+  std::function<void(uint64_t, std::unique_ptr<ColumnWrapperRecordBatch>)> agent_callback_;
 };
 
 }  // namespace datacollector

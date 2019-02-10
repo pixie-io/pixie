@@ -4,7 +4,7 @@
 
 #include "src/common/macros.h"
 
-#include "src/data_collector/data_collector_table.h"
+#include "src/data_collector/data_table.h"
 #include "src/data_collector/info_class_schema.h"
 #include "src/data_collector/source_connector.h"
 
@@ -38,6 +38,24 @@ Status InfoClassSchema::AddElement(const std::string& name, DataType type, Eleme
   elements_.push_back(InfoClassElement(name, type, state));
 
   return Status::OK();
+}
+
+bool InfoClassSchema::SamplingRequired() const { return (CurrentTime() > NextSamplingTime()); }
+
+bool InfoClassSchema::PushRequired() const {
+  if (CurrentTime() > NextPushTime()) {
+    return true;
+  }
+
+  if (data_table_->OccupancyPct() > occupancy_pct_threshold_) {
+    return true;
+  }
+
+  if (data_table_->Occupancy() > occupancy_threshold_) {
+    return true;
+  }
+
+  return false;
 }
 
 RawDataBuf InfoClassSchema::GetData() {

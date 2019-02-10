@@ -34,7 +34,7 @@ Status DataCollector::AddSource(const std::string& name, std::unique_ptr<SourceC
   PL_RETURN_IF_ERROR(source->PopulateSchema(schema.get()));
 
   // Step 3: Make the corresponding Data Table.
-  auto data_table = std::make_unique<DataTable>(*schema);
+  auto data_table = std::make_unique<ColumnWrapperDataTable>(*schema);
 
   // Step 4: Connect this Info Class to its related objects.
   schema->SetSourceConnector(source.get());
@@ -46,6 +46,16 @@ Status DataCollector::AddSource(const std::string& name, std::unique_ptr<SourceC
   schemas_.push_back(std::move(schema));
 
   return Status::OK();
+}
+
+/**
+ * Register call-back.
+ */
+void DataCollector::RegisterCallback(
+    std::function<void(uint64_t,
+                       std::unique_ptr<std::vector<std::shared_ptr<carnot::udf::ColumnWrapper>>>)>
+        f) {
+  agent_callback_ = f;
 }
 
 // Main call to start the data collection.
@@ -60,13 +70,12 @@ void DataCollector::Wait() { run_thread_.join(); }
 // Poll on Data Source Through connectors, when appropriate, then go to sleep.
 // Must run as a thread, so only call from Run() as a thread.
 void DataCollector::RunThread() {
-  while (true) {
-    std::chrono::milliseconds current_time = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch());
-
-    // Probe each source for its data, and push upstream.
+  bool run = true;
+  while (run) {
+    // Run through every InfoClass being managed.
     for (const auto& schema : schemas_) {
-      if (current_time > schema->NextSamplingTime()) {
+      // Phase 1: Probe each source for its data.
+      if (schema->SamplingRequired()) {
         auto source = schema->GetSourceConnector();
         auto data_table = schema->GetDataTable();
 
@@ -79,12 +88,26 @@ void DataCollector::RunThread() {
         auto num_records = source_data.num_records;
         auto* data_buf = reinterpret_cast<uint8_t*>(source_data.buf);
 
-        data_table->AppendData(data_buf, num_records);
-
-        // TODO(oazizi): Tell source how much data was consumed, so it can release the memory.
-
-        // Optional: Update sampling periods if we are dropping data
+        Status s;
+        s = data_table->AppendData(data_buf, num_records);
+        CHECK(s.ok());
       }
+
+      // Phase 2: Push Data upstream.
+      if (schema->PushRequired()) {
+        auto data_table = schema->GetDataTable();
+
+        // auto arrow_table = data_table->SealTableArrow();
+        // PL_UNUSED(arrow_table);
+
+        auto columns = data_table->SealTableColumnWrapper();
+        PL_UNUSED(columns);
+
+        // TODO(oazizi): Hook this up.
+        // agent_callback_(schema->id(), std::move(columns));
+      }
+
+      // Optional: Update sampling periods if we are dropping data.
     }
 
     // Figure out how long to sleep.
@@ -97,9 +120,9 @@ void DataCollector::RunThread() {
 
 // Helper function: Figure out when to wake up next.
 void DataCollector::SleepUntilNextTick() {
-  // This is bogus.
+  // FIXME(oazizi): This is bogus.
   // The amount to sleep depends on when the earliest Source needs to be sampled again.
-  std::this_thread::sleep_for(std::chrono::seconds(1));  // FIXME
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 }
 
 }  // namespace datacollector

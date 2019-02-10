@@ -16,6 +16,7 @@ pl_cc_library(
     deps = [
         "//src/common/types:types_cc_proto",
         "//src/data_collector/proto:collector_config_cc_proto",
+        "//src/carnot/udf:cc_library",
         "//third_party:arrow",
     ],
 )
@@ -39,6 +40,12 @@ pl_cc_binary(
 pl_cc_test(
     name = "info_class_schema_test",
     srcs = ["info_class_schema_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "data_table_test",
+    srcs = ["data_table_test.cc"],
     deps = [":cc_library"],
 )
 

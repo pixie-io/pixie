@@ -28,6 +28,17 @@ class DataTableElement : public InfoClassElement {
   size_t offset() { return offset_; }
   void SetOffset(size_t offset) { offset_ = offset; }
 
+  std::shared_ptr<arrow::DataType> arrow_type() {
+    switch (type()) {
+      case DataType::INT64:
+        return arrow::int64();
+      case DataType::FLOAT64:
+        return arrow::float64();
+      default:
+        CHECK(0) << "Unknown data type";
+    }
+  }
+
  private:
   size_t offset_ = 0;
 };
