@@ -2,19 +2,21 @@
 #include <utility>
 
 #include "src/data_collector/data_collector.h"
-#include "src/data_collector/data_collector_config.h"
+#include "src/data_collector/pub_sub_manager.h"
 #include "src/data_collector/source_connector.h"
 
 namespace pl {
 namespace datacollector {
 
-DataCollector::DataCollector() { config_ = std::make_unique<DataCollectorConfig>(schemas_); }
+DataCollector::DataCollector() { config_ = std::make_unique<PubSubManager>(schemas_); }
 
 // Add an EBPF source to the Data Collector.
 Status DataCollector::AddEBPFSource(const std::string& name, const std::string& ebpf_src,
                                     const std::string& kernel_event, const std::string& fn_name) {
   // Step 1: Create the Connector (with EBPF program attached).
-  auto source = std::make_unique<EBPFConnector>(name, ebpf_src, kernel_event, fn_name);
+  // TODO(kgandhi): This will come from the registry.
+  std::vector<InfoClassElement> elements = {};
+  auto source = std::make_unique<EBPFConnector>(name, elements, kernel_event, fn_name, ebpf_src);
 
   return AddSource(name, std::move(source));
 }
@@ -22,7 +24,9 @@ Status DataCollector::AddEBPFSource(const std::string& name, const std::string& 
 // Add an OpenTracing source to the Data Collector.
 Status DataCollector::AddOpenTracingSource(const std::string& name) {
   // Step 1: Create the Connector
-  auto source = std::make_unique<OpenTracingConnector>(name);
+  // TODO(kgandhi): This will come from the registry.
+  std::vector<InfoClassElement> elements = {};
+  auto source = std::make_unique<OpenTracingConnector>(name, elements);
 
   return AddSource(name, std::move(source));
 }

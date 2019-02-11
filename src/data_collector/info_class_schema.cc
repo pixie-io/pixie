@@ -79,7 +79,7 @@ datacollectorpb::InfoClass InfoClassSchema::ToProto() const {
   // from the SourceConnector.
   auto metadata_map = info_class_proto.mutable_metadata();
   std::string key = "source";
-  std::string value = source_->name();
+  std::string value = source_->source_name();
   (*metadata_map)[key] = value;
 
   // Add all the other fields for the proto.

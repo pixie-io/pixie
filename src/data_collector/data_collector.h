@@ -10,8 +10,8 @@
 
 #include "src/common/error.h"
 #include "src/common/status.h"
-#include "src/data_collector/data_collector_config.h"
 #include "src/data_collector/data_table.h"
+#include "src/data_collector/pub_sub_manager.h"
 #include "src/data_collector/source_connector.h"
 
 namespace pl {
@@ -98,7 +98,7 @@ class DataCollector {
   /**
    * Pointer the config unit that handles sub/pub with agent.
    */
-  std::unique_ptr<DataCollectorConfig> config_;
+  std::unique_ptr<PubSubManager> config_;
 
   /**
    * Function to call to push data to the agent.

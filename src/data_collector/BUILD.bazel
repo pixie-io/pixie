@@ -34,7 +34,9 @@ pl_cc_binary(
 pl_cc_binary(
     name = "data_collector_wrapper",
     srcs = ["data_collector_wrapper.cc"],
-    deps = [":cc_library"],
+    deps = [
+        ":cc_library",
+    ],
 )
 
 pl_cc_test(
@@ -52,5 +54,17 @@ pl_cc_test(
 pl_cc_test(
     name = "pub_sub_manager_test",
     srcs = ["pub_sub_manager_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "source_registry_test",
+    srcs = ["source_registry_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "source_connector_test",
+    srcs = ["source_connector_test.cc"],
     deps = [":cc_library"],
 )

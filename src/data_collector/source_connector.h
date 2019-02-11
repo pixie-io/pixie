@@ -1,15 +1,16 @@
 #pragma once
 
-#include <chrono>
-#include <memory>
 #include <string>
 #include <vector>
 
-#include "src/common/status.h"
+#include "src/common/base.h"
 #include "src/data_collector/info_class_schema.h"
 
 namespace pl {
 namespace datacollector {
+
+class InfoClassElement;
+class InfoClassSchema;
 
 struct RawDataBuf {
  public:
@@ -18,97 +19,94 @@ struct RawDataBuf {
   uint8_t* buf;
 };
 
-/**
- * Abstract Base class defining a Data Source Connector.
- * Currently assumes the Data Source Connector will poll the source.
- */
-class SourceConnector {
+enum class SourceType : uint8_t { kEBPF = 1, kOpenTracing, kPrometheus };
+
+class SourceConnector : public NotCopyable {
  public:
   SourceConnector() = delete;
-  explicit SourceConnector(const std::string& name) : name_(name) {}
   virtual ~SourceConnector() = default;
 
-  const std::string& name() const { return name_; }
+  Status Init() { return InitImpl(); }
+  RawDataBuf GetData() { return GetDataImpl(); }
+  Status Stop() { return StopImpl(); }
+  Status PopulateSchema(InfoClassSchema* schema);
 
-  /**
-   * Given a pointer to an InfoClassSchema, add the InfoClassElements supported by this
-   * SourceConnector. The InfoClassSchema should be empty.
-   */
-  virtual Status PopulateSchema(InfoClassSchema* schema) = 0;
+  SourceType type() { return type_; }
+  const std::string& source_name() { return source_name_; }
+  const std::vector<InfoClassElement>& elements() { return elements_; }
 
-  /**
-   * Main function that returns data.
-   * Data is uint8_t*, because the schema is only known at run-time, and can change.
-   * This data will be reorganized into Arrow tables.
-   * Note: this function should be final, because it contains some time-keeping stats.
-   * But can't declare it final, without also declaring it virtual, which then causes lint errors.
-   * Derived classes should override GetDataCore().
-   */
-  RawDataBuf GetData();
+ protected:
+  explicit SourceConnector(SourceType type, const std::string& source_name,
+                           const std::vector<InfoClassElement> elements)
+      : type_(type), source_name_(source_name), elements_(elements) {}
 
-  /**
-   * Any initialization code that may be required.
-   */
-  // virtual Status Init();
+  virtual Status InitImpl() = 0;
+  virtual RawDataBuf GetDataImpl() = 0;
+  virtual Status StopImpl() = 0;
 
  private:
-  const std::string name_;
-
-  /**
-   * Main function that returns a pointer to the raw data collected by the Source Connector.
-   *
-   * @return number of records, pointer to raw data
-   */
-  virtual RawDataBuf GetDataImpl() = 0;
+  SourceType type_;
+  std::string source_name_;
+  std::vector<InfoClassElement> elements_;
 };
 
-/**
- * Placeholder for an EBPF Data Source Connector
- */
 class EBPFConnector : public SourceConnector {
  public:
   EBPFConnector() = delete;
-
-  /**
-   * Constructor needs the BPF source code, the kernel event to attach to, and the function in the
-   * BPF source that the kernel should call.
-   */
-  explicit EBPFConnector(const std::string& name, const std::string& bpf_program,
-                         const std::string& kernel_event, const std::string& fn_name);
+  explicit EBPFConnector(const std::string& source_name,
+                         const std::vector<InfoClassElement> elements,
+                         const std::string& kernel_event, const std::string& fn_name,
+                         const std::string& bpf_program)
+      : SourceConnector(SourceType::kEBPF, source_name, elements),
+        kernel_event_(kernel_event),
+        fn_name_(fn_name),
+        bpf_program_(bpf_program) {}
   virtual ~EBPFConnector() = default;
 
-  /**
-   * Main function that returns data for this Source/InfoClass.
-   */
+ protected:
+  Status InitImpl() override {
+    // TODO(kgandhi): Launch the EBPF program.
+    return Status::OK();
+  }
+
+  // TODO(kgandhi): Get data records from EBPF program.
   RawDataBuf GetDataImpl() override;
 
-  /**
-   * Populate the InfoClassSchema with this this SourceConnector's available data.
-   */
-  Status PopulateSchema(InfoClassSchema* schema) override;
+  // TODO(kgandhi): Stop the running EBPF program.
+  Status StopImpl() override { return Status::OK(); }
+
+  const std::string& kernel_event() { return kernel_event_; }
+  const std::string& fn_name() { return fn_name_; }
+  const std::string& bpf_program() { return bpf_program_; }
 
  private:
+  std::string kernel_event_, fn_name_, bpf_program_;
   std::vector<uint8_t> data_buf_;
 };
 
 /**
- * Placeholder for an OpenTracing Data Source Connector.
+ * @brief Placeholder for Open tracing sources.
+ *
  */
 class OpenTracingConnector : public SourceConnector {
  public:
   OpenTracingConnector() = delete;
-  explicit OpenTracingConnector(const std::string& name);
+  explicit OpenTracingConnector(const std::string& source_name,
+                                const std::vector<InfoClassElement> elements)
+      : SourceConnector(SourceType::kEBPF, source_name, elements) {}
   virtual ~OpenTracingConnector() = default;
 
-  /**
-   * Main function that returns data for this Source/InfoClass.
-   */
+ protected:
+  Status InitImpl() override {
+    // TODO(kgandhi): Launch open tracing collection methods.
+    return Status::OK();
+  }
+
+  // TODO(kgandhi): Get data records from open tracing source.
   RawDataBuf GetDataImpl() override;
 
-  /**
-   * Populate the InfoClassSchema with this this SourceConnector's available data.
-   */
-  Status PopulateSchema(InfoClassSchema* schema) override;
+  // TODO(kgandhi): Stop the collection of data from the source.
+  Status StopImpl() override { return Status::OK(); }
 
  private:
   std::vector<uint8_t> data_buf_;

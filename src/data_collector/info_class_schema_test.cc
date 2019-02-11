@@ -25,7 +25,8 @@ TEST(InfoClassElementTest, basic_test) {
 }
 
 TEST(InfoClassInfoSchemaTest, basic_test) {
-  EBPFConnector source("eBPF_CPU_USAGE", "", "", "");
+  std::vector<InfoClassElement> elements = {};
+  EBPFConnector source("eBPF_CPU_USAGE", elements, "", "", "");
   InfoClassSchema info_class_schema("cpu_usage");
   info_class_schema.SetSourceConnector(&source);
   InfoClassElement element_1("user_percentage", DataType::FLOAT64,
@@ -41,7 +42,7 @@ TEST(InfoClassInfoSchemaTest, basic_test) {
 
   EXPECT_EQ(3, info_class_schema.NumElements());
   EXPECT_EQ("cpu_usage", info_class_schema.name());
-  EXPECT_EQ("eBPF_CPU_USAGE", source.name());
+  EXPECT_EQ("eBPF_CPU_USAGE", source.source_name());
 
   datacollectorpb::InfoClass info_class_pb;
   info_class_pb = info_class_schema.ToProto();

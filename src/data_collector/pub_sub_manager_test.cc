@@ -41,7 +41,7 @@ const char* kInfoClassSchema = R"(
 class PubSubManagerTest : public ::testing::Test {
  protected:
   PubSubManagerTest()
-      : source_("eBPF_CPU_USAGE", "", "", ""),
+      : source_("eBPF_CPU_USAGE", {}, "", "", ""),
         element_1("user_percentage", DataType::FLOAT64,
                   Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
         element_2("system_percentage", DataType::FLOAT64,
