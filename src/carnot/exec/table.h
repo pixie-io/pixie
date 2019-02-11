@@ -95,6 +95,11 @@ class Table {
   StatusOr<std::unique_ptr<RowBatch>> GetRowBatch(int64_t i, std::vector<int64_t> cols);
 
   /**
+   * @ param rb Rowbatch to write to the table.
+   */
+  Status WriteRowBatch(RowBatch rb);
+
+  /**
    * @return number of column batches.
    */
   int64_t numBatches() {

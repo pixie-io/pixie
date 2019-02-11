@@ -11,9 +11,9 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
-class SourceNode : public ExecNode {
+class MemorySinkNode : public SinkNode {
  public:
-  SourceNode() : ExecNode(ExecNodeType::kSourceNode) {}
+  MemorySinkNode() : SinkNode() {}
 
  protected:
   std::string DebugStringImpl() override;
@@ -22,13 +22,12 @@ class SourceNode : public ExecNode {
   Status PrepareImpl(ExecState *exec_state) override;
   Status OpenImpl(ExecState *exec_state) override;
   Status CloseImpl(ExecState *exec_state) override;
-  Status GenerateNextImpl(ExecState *exec_state) override;
+  Status ConsumeNextImpl(ExecState *exec_state, const RowBatch &rb) override;
 
  private:
-  int64_t current_chunk_ = 0;
-  std::unique_ptr<plan::MemorySourceOperator> plan_node_;
+  std::unique_ptr<plan::MemorySinkOperator> plan_node_;
   std::unique_ptr<RowDescriptor> output_descriptor_;
-  Table *table_ = nullptr;
+  std::shared_ptr<Table> table_;
 };
 
 }  // namespace exec

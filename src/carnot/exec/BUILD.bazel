@@ -93,8 +93,19 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "source_node_test",
-    srcs = ["source_node_test.cc"] + glob(["*_mock.h"]),
+    name = "memory_source_node_test",
+    srcs = ["memory_source_node_test.cc"] + glob(["*_mock.h"]),
+    deps = [
+        ":cc_library",
+        ":exec_node_test_helpers",
+        "//src/carnot/proto:plan_testutils",
+        "//third_party:arrow",
+    ],
+)
+
+pl_cc_test(
+    name = "memory_sink_node_test",
+    srcs = ["memory_sink_node_test.cc"] + glob(["*_mock.h"]),
     deps = [
         ":cc_library",
         ":exec_node_test_helpers",

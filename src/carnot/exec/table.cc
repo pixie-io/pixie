@@ -78,6 +78,25 @@ StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatch(int64_t i, std::vector<in
   return output_rb;
 }
 
+Status Table::WriteRowBatch(RowBatch rb) {
+  if (rb.desc().size() != desc_.size()) {
+    return error::InvalidArgument(
+        "RowBatch's row descriptor length does not match table's row descriptor length.");
+  }
+  for (size_t i = 0; i < rb.desc().size(); i++) {
+    if (rb.desc().type(i) != desc_.type(i)) {
+      return error::InvalidArgument(
+          "RowBatch's row descriptor does not match table's row descriptor.");
+    }
+  }
+
+  for (int64_t i = 0; i < rb.num_columns(); i++) {
+    auto s = columns_[i]->AddChunk(rb.ColumnAt(i));
+    PL_RETURN_IF_ERROR(s);
+  }
+  return Status::OK();
+}
+
 }  // namespace exec
 }  // namespace carnot
 }  // namespace pl

@@ -120,6 +120,14 @@ column_names: "winagg_cpu0"
 column_types: FLOAT64
 )";
 
+const char* kMemSinkOperator2 = R"(
+name: "cpu_15s"
+column_names: "test_col1"
+column_types: INT64
+column_names: "test_col2"
+column_types: BOOLEAN
+)";
+
 const char* kMapOperator1 = R"(
 expressions {
   func {
@@ -252,6 +260,14 @@ carnotpb::Operator CreateTestSink1PB() {
   carnotpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SINK_OPERATOR", "mem_sink_op",
                                    kMemSinkOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+carnotpb::Operator CreateTestSink2PB() {
+  carnotpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SINK_OPERATOR", "mem_sink_op",
+                                   kMemSinkOperator2);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

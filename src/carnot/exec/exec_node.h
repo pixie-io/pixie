@@ -128,6 +128,11 @@ class ExecNode {
    */
   ExecNodeType type() { return type_; }
 
+  /**
+   * @ return the children of the execution node.
+   */
+  std::vector<ExecNode*> children() { return children_; }
+
  protected:
   /**
    * Send data to children row batches.
@@ -179,6 +184,24 @@ class ExecNode {
 class ProcessingNode : public ExecNode {
  public:
   ProcessingNode() : ExecNode(ExecNodeType::kProcessingNode) {}
+};
+
+/**
+ * Source node is the base class for anything that produces records from some source.
+ * For example: MemorySource.
+ */
+class SourceNode : public ExecNode {
+ public:
+  SourceNode() : ExecNode(ExecNodeType::kSourceNode) {}
+};
+
+/**
+ * Sink node is the base class for anything that consumes records and writes to some sink.
+ * For example: MemorySink.
+ */
+class SinkNode : public ExecNode {
+ public:
+  SinkNode() : ExecNode(ExecNodeType::kSinkNode) {}
 };
 
 }  // namespace exec

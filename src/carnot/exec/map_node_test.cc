@@ -32,17 +32,17 @@ class MapNodeTest : public ::testing::Test {
 
     auto udf_registry = std::make_shared<udf::ScalarUDFRegistry>("test_registry");
     auto uda_registry = std::make_shared<udf::UDARegistry>("test_registry");
+    EXPECT_OK(udf_registry->Register<AddUDF>("add"));
     auto table_store = std::make_shared<TableStore>();
 
-    EXPECT_TRUE(udf_registry->Register<AddUDF>("add").ok());
     exec_state_ = std::make_unique<ExecState>(udf_registry, uda_registry, table_store);
   }
   RowBatch CreateInputRowBatch(const std::vector<udf::Int64Value>& in1,
                                const std::vector<udf::Int64Value>& in2) {
     RowDescriptor rd({udf::UDFDataType::INT64, udf::UDFDataType::INT64});
     RowBatch rb(rd, in1.size());
-    PL_CHECK_OK(rb.AddColumn(ToArrow(in1, arrow::default_memory_pool())));
-    PL_CHECK_OK(rb.AddColumn(ToArrow(in2, arrow::default_memory_pool())));
+    EXPECT_OK(rb.AddColumn(ToArrow(in1, arrow::default_memory_pool())));
+    EXPECT_OK(rb.AddColumn(ToArrow(in2, arrow::default_memory_pool())));
     return rb;
   }
 
@@ -56,9 +56,9 @@ TEST_F(MapNodeTest, basic) {
   MapNode mn;
   MockExecNode mock_child_;
   mn.AddChild(&mock_child_);
-  PL_CHECK_OK(mn.Init(*plan_node_, output_rd, {}));
-  PL_CHECK_OK(mn.Prepare(exec_state_.get()));
-  PL_CHECK_OK(mn.Open(exec_state_.get()));
+  EXPECT_OK(mn.Init(*plan_node_, output_rd, {}));
+  EXPECT_OK(mn.Prepare(exec_state_.get()));
+  EXPECT_OK(mn.Open(exec_state_.get()));
   auto rb1 = CreateInputRowBatch({1, 2, 3, 4}, {1, 3, 6, 9});
 
   auto check_result_batch1 = [&](ExecState* exec_state, const RowBatch& child_rb) {
@@ -76,7 +76,7 @@ TEST_F(MapNodeTest, basic) {
       .Times(1)
       .WillOnce(testing::DoAll(testing::Invoke(check_result_batch1), testing::Return(Status::OK())))
       .RetiresOnSaturation();
-  PL_CHECK_OK(mn.ConsumeNext(exec_state_.get(), rb1));
+  EXPECT_OK(mn.ConsumeNext(exec_state_.get(), rb1));
 
   auto rb2 = CreateInputRowBatch({1, 2, 3}, {1, 4, 6});
 
@@ -95,8 +95,8 @@ TEST_F(MapNodeTest, basic) {
       .Times(1)
       .WillOnce(
           testing::DoAll(testing::Invoke(check_result_batch2), testing::Return(Status::OK())));
-  PL_CHECK_OK(mn.ConsumeNext(exec_state_.get(), rb2));
-  PL_CHECK_OK(mn.Close(exec_state_.get()));
+  EXPECT_OK(mn.ConsumeNext(exec_state_.get(), rb2));
+  EXPECT_OK(mn.Close(exec_state_.get()));
 }
 
 TEST_F(MapNodeTest, child_fail) {
@@ -104,9 +104,9 @@ TEST_F(MapNodeTest, child_fail) {
   MapNode mn;
   MockExecNode mock_child_;
   mn.AddChild(&mock_child_);
-  PL_CHECK_OK(mn.Init(*plan_node_, output_rd, {}));
-  PL_CHECK_OK(mn.Prepare(exec_state_.get()));
-  PL_CHECK_OK(mn.Open(exec_state_.get()));
+  EXPECT_OK(mn.Init(*plan_node_, output_rd, {}));
+  EXPECT_OK(mn.Prepare(exec_state_.get()));
+  EXPECT_OK(mn.Open(exec_state_.get()));
 
   auto rb1 = CreateInputRowBatch({1, 2, 3, 4}, {1, 3, 6, 9});
   EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))

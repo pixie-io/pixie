@@ -1,7 +1,9 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "src/carnot/udf/udf.h"
 
 namespace pl {
@@ -31,6 +33,17 @@ class RowDescriptor {
    * @ return the number of columns that the row descriptor is describing.
    */
   size_t size() const { return types_.size(); }
+
+  /**
+   * @return the debug string for the row descriptor.
+   */
+  std::string DebugString() const {
+    std::string debug_string = "RowDescriptor:\n";
+    for (const auto& type : types_) {
+      debug_string += absl::StrFormat("  %d\n", type);
+    }
+    return debug_string;
+  }
 
  private:
   std::vector<udf::UDFDataType> types_;

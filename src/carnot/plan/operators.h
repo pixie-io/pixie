@@ -65,13 +65,12 @@ class MemorySourceOperator : public Operator {
                                     const std::vector<int64_t> &input_ids) override;
   Status Init(const carnotpb::MemorySourceOperator &pb);
   std::string DebugString() const override;
-  std::string TableName() const { return table_name_; }
+  std::string TableName() const { return pb_.name(); }
   std::vector<int64_t> Columns() const { return column_idxs_; }
 
  private:
   carnotpb::MemorySourceOperator pb_;
 
-  std::string table_name_;
   std::vector<int64_t> column_idxs_;
 };
 
@@ -126,6 +125,7 @@ class MemorySinkOperator : public Operator {
   StatusOr<Relation> OutputRelation(const Schema &schema, const CompilerState &state,
                                     const std::vector<int64_t> &input_ids) override;
   Status Init(const carnotpb::MemorySinkOperator &pb);
+  std::string TableName() const { return pb_.name(); }
   std::string DebugString() const override;
 
  private:
