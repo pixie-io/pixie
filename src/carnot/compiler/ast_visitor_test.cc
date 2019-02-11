@@ -1,4 +1,5 @@
 #include "src/carnot/compiler/ast_visitor.h"
+#include <glog/logging.h>
 #include <gtest/gtest.h>
 #include <pypa/ast/tree_walker.hh>
 #include <pypa/parser/parser.hh>
@@ -90,8 +91,8 @@ StatusOr<std::shared_ptr<IR>> parseFile(std::string filename) {
     result = error::InvalidArgument("Parsing was unsuccessful, likely because of broken argument.");
   }
   PL_RETURN_IF_ERROR(result);
-  std::cout << ir->dag().DebugString() << std::endl;
-  std::cout << ir->Get(0)->DebugString(0) << std::endl;
+  LOG(INFO) << ir->dag().DebugString() << std::endl;
+  LOG(INFO) << ir->DebugString() << std::endl;
   return ir;
 }
 /**
@@ -112,7 +113,7 @@ StatusOr<std::shared_ptr<IR>> parseQuery(const std::string& query_str) {
   // clean up
   std::remove(filename.c_str());
   // TODO(philkuz) figure out how to change log verbosity.
-  std::cout << status.status().ToString() << std::endl;
+  LOG(INFO) << status.status().ToString() << std::endl;
   return status;
 }
 
@@ -164,6 +165,28 @@ Drom(table="cpu", select=["cpu0"]).Range(time="-2m");
 From(table="cpu", select=["cpu0"]).BRange(time="-2m");
 )";
   EXPECT_FALSE(parseQuery(wrong_range_op_name).ok());
+}
+TEST(ASTVisitor, assign_functionality) {
+  std::string simple_assign = R"(
+queryDF = From(table="cpu", select=["cpu0", "cpu1"])
+)";
+  EXPECT_OK(parseQuery(simple_assign));
+  std::string assign_and_use = R"(
+queryDF = From(table="cpu", select=["cpu0", "cpu1"])
+queryDF.Range(time="-2m")
+)";
+  EXPECT_OK(parseQuery(assign_and_use));
+}
+TEST(ASTVisitor, assign_error_checking) {
+  std::string bad_assign_mult_values = R"(
+queryDF,haha = From(table="cpu", select=["cpu0", "cpu1"])
+queryDF.Range(time="-2m")
+)";
+  EXPECT_FALSE(parseQuery(bad_assign_mult_values).ok());
+  std::string bad_assign_str = R"(
+queryDF = "str"
+)";
+  EXPECT_FALSE(parseQuery(bad_assign_str).ok());
 }
 
 }  // namespace compiler

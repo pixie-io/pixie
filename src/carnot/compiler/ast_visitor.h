@@ -157,6 +157,15 @@ class ASTWalker {
    */
   StatusOr<IRNode*> ProcessDataNode(pypa::AstPtr ast);
 
+  /**
+   * @brief Gets the name string contained within the Name ast node and returns the IRNode
+   * referenced by that name, or errors out with an undefined variable.
+   *
+   * @param name
+   * @return StatusOr<IRNode*> - IRNode ptr that was created and handled by the IR
+   */
+  StatusOr<IRNode*> LookupName(pypa::AstNamePtr name);
+
   std::shared_ptr<IR> ir_graph_;
   VarTable var_table_;
 };

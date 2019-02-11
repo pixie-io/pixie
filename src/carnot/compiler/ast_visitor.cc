@@ -32,7 +32,7 @@ std::string astTypeErrorMsg(pypa::AstPtr ap) {
  * @param ast
  * @return Status
  */
-Status createAstError(const std::string& err_msg, pypa::AstPtr ast) {
+Status CreateAstError(const std::string& err_msg, pypa::AstPtr ast) {
   return error::InvalidArgument("Line $0 Col $1 : $2", ast->line, ast->column, err_msg);
 }
 
@@ -46,7 +46,7 @@ Status ASTWalker::ProcessExprStmtNode(pypa::AstExpressionStatementPtr e) {
     case AstType::Call:
       return ProcessCallNode(PYPA_PTR_CAST(Call, e->expr)).status();
     default:
-      return createAstError("Expression node not defined", e);
+      return CreateAstError("Expression node not defined", e);
   }
 }
 
@@ -65,16 +65,32 @@ Status ASTWalker::ProcessModuleNode(pypa::AstModulePtr m) {
         PL_RETURN_IF_ERROR(result);
         break;
       default:
-        std::string err_msg = "Can't use the " + astTypeErrorMsg(stmt);
-        return createAstError(err_msg, m);
+        std::string err_msg = absl::StrFormat("Can't use the %s", astTypeErrorMsg(stmt));
+        return CreateAstError(err_msg, m);
     }
   }
   return Status::OK();
 }
-
 Status ASTWalker::ProcessAssignNode(pypa::AstAssignPtr node) {
-  PL_UNUSED(node);
-  // TODO(philkuz) implement the assign node.
+  // Check # nodes to assign.
+  if (node->targets.size() != 1) {
+    return CreateAstError("AssignNodes are only supported with one target.", node);
+  }
+  // Get the name that we are targeting.
+  auto expr_node = node->targets[0];
+  if (expr_node->type != AstType::Name) {
+    return CreateAstError("Assign target must be a Name node.", expr_node);
+  }
+  std::string assign_name = PYPA_PTR_CAST(Name, expr_node)->id;
+
+  // Get the object that we want to assign.
+  if (node->value->type != AstType::Call) {
+    return CreateAstError("Assign value must be a function call.", node->value);
+  }
+  StatusOr<IRNode*> value = ProcessCallNode(PYPA_PTR_CAST(Call, node->value));
+  PL_RETURN_IF_ERROR(value);
+
+  var_table_[assign_name] = value.ValueOrDie();
   return Status::OK();
 }
 
@@ -111,7 +127,7 @@ StatusOr<ArgMap> ASTWalker::GetArgs(pypa::AstCallPtr call_ast,
     pypa::AstKeywordPtr kw_ptr = PYPA_PTR_CAST(Keyword, k);
     std::string key = PYPA_PTR_CAST(Name, kw_ptr->name)->id;
     if (missing_args.find(key) == missing_args.end()) {
-      return createAstError(absl::Substitute("Keyword '$0' not expected in function.", key),
+      return CreateAstError(absl::Substitute("Keyword '$0' not expected in function.", key),
                             call_ast);
     }
     missing_args.erase(missing_args.find(key));
@@ -119,13 +135,24 @@ StatusOr<ArgMap> ASTWalker::GetArgs(pypa::AstCallPtr call_ast,
     arg_map[key] = value;
   }
   if (missing_args.size() > 0) {
-    return createAstError(
+    return CreateAstError(
         absl::Substitute("Didn't find keywords '[$0]' in function. Please add them.",
                          absl::StrJoin(missing_args, ",")),
         call_ast);
   }
 
   return arg_map;
+}
+StatusOr<IRNode*> ASTWalker::LookupName(pypa::AstNamePtr name_node) {
+  // if doesn't exist, then
+  auto find_name = var_table_.find(name_node->id);
+  if (find_name == var_table_.end()) {
+    std::string err_msg = absl::StrFormat("Can't find variable \"%s\".", name_node->id);
+    return CreateAstError(err_msg, name_node);
+  }
+  IRNode* node = find_name->second;
+
+  return node;
 }
 
 StatusOr<IRNode*> ASTWalker::ProcessFromOp(pypa::AstCallPtr node) {
@@ -140,11 +167,19 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeOp(pypa::AstCallPtr node) {
   PL_ASSIGN_OR_RETURN(ArgMap args, GetArgs(node, {"time"}, true));
   // TODO(philkuz) this is under the assumption that the Range is always called as an attribute.
   // (MS3) fix.
-  PL_ASSIGN_OR_RETURN(
-      IRNode * call_node,
-      ProcessCallNode(PYPA_PTR_CAST(Call, PYPA_PTR_CAST(Attribute, node->function)->value)));
+  // Will have to change after Milestone 2.
+  pypa::AstAttributePtr attr = PYPA_PTR_CAST(Attribute, node->function);
+  StatusOr<IRNode*> call_result;
+  if (attr->value->type == AstType::Call) {
+    call_result = ProcessCallNode(PYPA_PTR_CAST(Call, attr->value));
+  } else if (attr->value->type == AstType::Name) {
+    call_result = LookupName(PYPA_PTR_CAST(Name, attr->value));
+  } else {
+    return CreateAstError("Can't handle the attribute of this type", attr->value);
+  }
 
-  PL_RETURN_IF_ERROR(ir_node->Init(call_node, args["time"]));
+  PL_RETURN_IF_ERROR(call_result);
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result.ValueOrDie(), args["time"]));
   return ir_node;
 }
 
@@ -156,7 +191,7 @@ StatusOr<IRNode*> ASTWalker::ProcessFunc(const std::string func_name, pypa::AstC
     PL_ASSIGN_OR_RETURN(ir_node, ProcessRangeOp(node));
   } else {
     std::string err_msg = absl::Substitute("No function named '$0'", func_name);
-    return createAstError(err_msg, node);
+    return CreateAstError(err_msg, node);
   }
   ir_node->SetLineCol(node->line, node->column);
   return ir_node;
@@ -191,7 +226,7 @@ StatusOr<IRNode*> ASTWalker::ProcessDataNode(pypa::AstPtr ast) {
     default: {
       std::string err_msg =
           absl::Substitute("Coudln't find $0 in ProcessDataNode", astTypeErrorMsg(ast));
-      return createAstError(err_msg, ast);
+      return CreateAstError(err_msg, ast);
     }
   }
   ir_node->SetLineCol(ast->line, ast->column);
