@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <fstream>
 
+#include "src/carnot/compiler/ir_test_utils.h"
+
 namespace pl {
 namespace carnot {
 namespace compiler {
@@ -119,7 +121,11 @@ TEST(ASTVisitor, compilation_test) {
   std::string from_expr = R"(
 From(table="cpu", select=["cpu0", "cpu1"])
 )";
-  EXPECT_OK(parseQuery(from_expr));
+  auto ig_status = parseQuery(from_expr);
+  EXPECT_OK(ig_status);
+  auto ig = ig_status.ValueOrDie();
+  VerifyGraphConnections(ig.get());
+  // check the connection of ig
   std::string from_range_expr = R"(
 From(table="cpu", select=["cpu0"]).Range(time="-2m");
 )";

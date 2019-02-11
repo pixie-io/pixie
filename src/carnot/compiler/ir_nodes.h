@@ -43,7 +43,6 @@ class IR {
     node->SetGraphPtr(this);
     TOperator* raw = node.get();
     id_node_map_.emplace(node->id(), std::move(node));
-    nodes_.push_back(raw);
     return raw;
   }
 
@@ -51,15 +50,14 @@ class IR {
   Status AddEdge(IRNode* parent, IRNode* child);
   plan::DAG& dag() { return dag_; }
   std::string DebugString();
-  std::vector<IRNode*> Nodes() const { return nodes_; }
   IRNode* Get(int64_t id) const { return id_node_map_.at(id).get(); }
 
  private:
   plan::DAG dag_;
   std::unordered_map<int64_t, IRNodePtr> id_node_map_;
-  std::vector<IRNode*> nodes_;
 };
 
+enum IRNodeType { MemorySourceType, RangeType, StringType, ListType, LambdaType };
 /**
  * @brief Node class for the IR.
  *
@@ -69,7 +67,7 @@ class IR {
 class IRNode {
  public:
   IRNode() = delete;
-  explicit IRNode(int64_t id) : id_(id) {}
+  explicit IRNode(int64_t id, IRNodeType type) : id_(id), type_(type) {}
   virtual ~IRNode() = default;
   /**
    * @return whether or not the node has a logical representation.
@@ -77,6 +75,7 @@ class IRNode {
   virtual bool HasLogicalRepr() const = 0;
   void SetLineCol(int64_t line, int64_t col);
   virtual std::string DebugString(int64_t depth) const = 0;
+  IRNodeType type() { return type_; }
   /**
    * @brief Set the pointer to the graph.
    * The pointer is passed in by the Node factory of the graph
@@ -97,6 +96,7 @@ class IRNode {
   int64_t line_;
   int64_t col_;
   IR* graph_ptr_;
+  IRNodeType type_;
 };
 
 /**
@@ -111,7 +111,7 @@ class IRNode {
 class MemorySourceIR : public IRNode {
  public:
   MemorySourceIR() = delete;
-  explicit MemorySourceIR(int64_t id) : IRNode(id) {}
+  explicit MemorySourceIR(int64_t id) : IRNode(id, MemorySourceType) {}
   Status Init(IRNode* table_node, IRNode* select);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -132,7 +132,7 @@ class MemorySourceIR : public IRNode {
 class RangeIR : public IRNode {
  public:
   RangeIR() = delete;
-  explicit RangeIR(int64_t id) : IRNode(id) {}
+  explicit RangeIR(int64_t id) : IRNode(id, RangeType) {}
   Status Init(IRNode* parent, IRNode* time_repr);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -152,7 +152,7 @@ class RangeIR : public IRNode {
 class StringIR : public IRNode {
  public:
   StringIR() = delete;
-  explicit StringIR(int64_t id) : IRNode(id) {}
+  explicit StringIR(int64_t id) : IRNode(id, StringType) {}
   Status Init(const std::string str);
   bool HasLogicalRepr() const override;
   std::string str() const { return str_; }
@@ -171,7 +171,7 @@ class StringIR : public IRNode {
 class ListIR : public IRNode {
  public:
   ListIR() = delete;
-  explicit ListIR(int64_t id) : IRNode(id) {}
+  explicit ListIR(int64_t id) : IRNode(id, ListType) {}
   bool HasLogicalRepr() const override;
   Status AddListItem(IRNode* node);
   std::string DebugString(int64_t depth) const override;
@@ -193,7 +193,7 @@ class ListIR : public IRNode {
 class LambdaIR : public IRNode {
  public:
   LambdaIR() = delete;
-  explicit LambdaIR(int64_t id) : IRNode(id) {}
+  explicit LambdaIR(int64_t id) : IRNode(id, LambdaType) {}
   Status Init();
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;

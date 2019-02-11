@@ -16,8 +16,8 @@ Status IR::AddEdge(IRNode* from_node, IRNode* to_node) {
 std::string IR::DebugString() {
   std::string debug_string;
   debug_string += dag().DebugString() + "\n";
-  for (auto& a : nodes_) {
-    debug_string += a->DebugString(0) + "\n";
+  for (auto const& a : id_node_map_) {
+    debug_string += a.second->DebugString(0) + "\n";
   }
   return debug_string;
 }

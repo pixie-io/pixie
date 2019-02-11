@@ -2,6 +2,8 @@
 #include <gtest/gtest.h>
 
 #include "src/carnot/compiler/ir_nodes.h"
+#include "src/carnot/compiler/ir_test_utils.h"
+
 namespace pl {
 namespace carnot {
 namespace compiler {
@@ -31,6 +33,7 @@ TEST(IRTest, check_connection) {
   EXPECT_EQ(src->select(), select_list);
   EXPECT_EQ(select_list->children()[0], select_col);
   EXPECT_EQ(select_col->str(), "testCol");
+  VerifyGraphConnections(ig.get());
 }
 
 }  // namespace compiler
