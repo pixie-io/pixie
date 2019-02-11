@@ -140,8 +140,7 @@ Status ColumnWrapperDataTable::AppendData(uint8_t* const data, uint64_t num_rows
 
   for (uint32_t row = 0; row < num_rows; ++row) {
     for (uint32_t field_idx = 0; field_idx < table_schema_->NumFields(); ++field_idx) {
-      uint8_t* element_ptr =
-          reinterpret_cast<uint8_t*>(data + (row * row_size_) + offsets_[field_idx]);
+      uint8_t* element_ptr = data + (row * row_size_) + offsets_[field_idx];
 
       DataType type = (*table_schema_)[field_idx].type();
       switch (type) {
@@ -172,19 +171,18 @@ Status ColumnWrapperDataTable::AppendData(uint8_t* const data, uint64_t num_rows
 Status ArrowDataTable::AppendData(uint8_t* const data, uint64_t num_rows) {
   for (uint32_t row = 0; row < num_rows; ++row) {
     for (uint32_t field_idx = 0; field_idx < table_schema_->NumFields(); ++field_idx) {
-      uint8_t* element_ptr =
-          reinterpret_cast<uint8_t*>(data + (row * row_size_) + offsets_[field_idx]);
+      uint8_t* element_ptr = data + (row * row_size_) + offsets_[field_idx];
 
       DataType type = (*table_schema_)[field_idx].type();
       switch (type) {
         case DataType::INT64: {
           auto* val_ptr = reinterpret_cast<int64_t*>(element_ptr);
-          auto* array = reinterpret_cast<arrow::Int64Builder*>((*arrow_arrays_)[field_idx].get());
+          auto* array = static_cast<arrow::Int64Builder*>((*arrow_arrays_)[field_idx].get());
           PL_RETURN_IF_ERROR(array->Append(*val_ptr));
         } break;
         case DataType::FLOAT64: {
           auto* val_ptr = reinterpret_cast<double*>(element_ptr);
-          auto* array = reinterpret_cast<arrow::DoubleBuilder*>((*arrow_arrays_)[field_idx].get());
+          auto* array = static_cast<arrow::DoubleBuilder*>((*arrow_arrays_)[field_idx].get());
           PL_RETURN_IF_ERROR(array->Append(*val_ptr));
         } break;
         default:
