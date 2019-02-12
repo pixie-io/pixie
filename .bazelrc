@@ -1,3 +1,8 @@
+# TODO(zasgar): remove, this is temporary until we upgrade gazelle.
+fetch --incompatible_disallow_data_transition=false
+build --incompatible_disallow_data_transition=false
+test --incompatible_disallow_data_transition=false
+
 # bazel build --config asan ...
 build:asan --define PL_CONFIG_ASAN=1
 build:asan --copt -D__SANITIZE_ADDRESS__
