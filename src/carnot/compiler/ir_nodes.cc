@@ -1,7 +1,5 @@
 #include "src/carnot/compiler/ir_nodes.h"
 
-#include <map>
-
 namespace pl {
 namespace carnot {
 namespace compiler {
@@ -89,14 +87,14 @@ std::string StringIR::DebugString(int64_t depth) const {
 bool ListIR::HasLogicalRepr() const { return false; }
 
 Status ListIR::AddListItem(IRNode* node) {
-  children.push_back(node);
+  children_.push_back(node);
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, node));
   return Status::OK();
 }
 std::string ListIR::DebugString(int64_t depth) const {
   std::map<std::string, std::string> childMap;
-  for (size_t i = 0; i < children.size(); i++) {
-    childMap[absl::StrFormat("child%d", i)] = children[i]->DebugString(depth + 1);
+  for (size_t i = 0; i < children_.size(); i++) {
+    childMap[absl::StrFormat("child%d", i)] = children_[i]->DebugString(depth + 1);
   }
   return debugString(depth, absl::StrFormat("%d:ListIR", id()), childMap);
 }

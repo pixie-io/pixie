@@ -1,6 +1,7 @@
 #pragma once
 #include <pypa/ast/ast.hh>
 
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -114,6 +115,8 @@ class MemorySourceIR : public IRNode {
   Status Init(IRNode* table_node, IRNode* select);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
+  IRNode* table_node() { return table_node_; }
+  IRNode* select() { return select_; }
 
  private:
   IRNode* table_node_;
@@ -133,6 +136,8 @@ class RangeIR : public IRNode {
   Status Init(IRNode* parent, IRNode* time_repr);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
+  IRNode* parent() { return parent_; }
+  IRNode* time_repr() { return time_repr_; }
 
  private:
   IRNode* time_repr_;
@@ -170,9 +175,10 @@ class ListIR : public IRNode {
   bool HasLogicalRepr() const override;
   Status AddListItem(IRNode* node);
   std::string DebugString(int64_t depth) const override;
+  std::vector<IRNode*> children() { return children_; }
 
  private:
-  std::vector<IRNode*> children;
+  std::vector<IRNode*> children_;
 };
 
 /**

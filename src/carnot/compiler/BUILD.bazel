@@ -22,3 +22,9 @@ pl_cc_test(
     srcs = ["ir_nodes_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "ast_visitor_test",
+    srcs = ["ast_visitor_test.cc"],
+    deps = [":cc_library"],
+)
