@@ -33,6 +33,8 @@ std::unique_ptr<ScalarExpressionEvaluator> ScalarExpressionEvaluator::Create(
       return std::make_unique<VectorNativeScalarExpressionEvaluator>(expressions);
     case ScalarExpressionEvaluatorType::kArrowNative:
       return std::make_unique<ArrowNativeScalarExpressionEvaluator>(expressions);
+    default:
+      CHECK(0) << "Unknown expression type";
   }
 }
 

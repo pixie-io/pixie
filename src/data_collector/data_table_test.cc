@@ -211,7 +211,7 @@ class DataTableTest : public ::testing::Test {
 
       // Periodically consume the data
       if ((probability_dist(rng) < push_probability_) || last_pass) {
-        switch (data_table_->TableType()) {
+        switch (data_table_->table_type()) {
           case TableType::ColumnWrapper: {
             auto sealed_data = data_table_->SealTableColumnWrapper();
             CheckColumnWrapperResult(sealed_data.ValueOrDie().get(), check_record, current_record);

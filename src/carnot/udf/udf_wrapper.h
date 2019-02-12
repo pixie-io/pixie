@@ -43,7 +43,7 @@ constexpr auto CastToUDFValueType(const UDFBaseValue *arg) {
 template <typename TUDF, typename TOutput, std::size_t... I>
 Status ExecWrapper(TUDF *udf, FunctionContext *ctx, size_t count, TOutput *out,
                    const std::vector<const UDFBaseValue *> &args, std::index_sequence<I...>) {
-  constexpr auto exec_argument_types = ScalarUDFTraits<TUDF>::ExecArguments();
+  [[maybe_unused]] constexpr auto exec_argument_types = ScalarUDFTraits<TUDF>::ExecArguments();
   for (size_t idx = 0; idx < count; ++idx) {
     out[idx] = udf->Exec(ctx, CastToUDFValueType<exec_argument_types[I]>(args[I])[idx]...);
   }
@@ -91,7 +91,8 @@ constexpr auto GetValueFromArrowArray(const arrow::Array *arg, int64_t idx) {
 template <typename TUDF, typename TOutput, std::size_t... I>
 Status ExecWrapperArrow(TUDF *udf, FunctionContext *ctx, size_t count, TOutput *out,
                         const std::vector<arrow::Array *> &args, std::index_sequence<I...>) {
-  constexpr auto exec_argument_types = ScalarUDFTraits<TUDF>::ExecArguments();
+  [[maybe_unused]] static constexpr auto exec_argument_types =
+      ScalarUDFTraits<TUDF>::ExecArguments();
   CHECK(out->Reserve(count).ok());
   size_t reserved = count * kStringAssumedSizeHeuristic;
   size_t total_size = 0;

@@ -34,6 +34,8 @@ inline std::string ToString(Expression expr) {
       return "Constant";
     case Expression::kAgg:
       return "Agg";
+    default:
+      return "UnknownExpression";
   }
 }
 

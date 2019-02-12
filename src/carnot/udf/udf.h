@@ -357,7 +357,7 @@ class ScalarUDFTraits {
                   "must have a valid Exec fn, in form: UDFValue Exec(FunctionContext*, ...)");
 
    private:
-    static constexpr check_init_fn<T> check_init_;
+    static constexpr check_init_fn<T> check_init_{};
   } check_;
 };
 
@@ -436,7 +436,7 @@ class UDATraits {
                   "must have a valid Merge fn, in form: void Merge(FunctionContext*, const UDA&)");
     static_assert(IsValidFinalizeFn(&T::Finalize),
                   "must have a valid Finalize fn, in form: ReturnType Finalize(FunctionContext*)");
-    static constexpr check_init_fn<T> check_init_;
+    static constexpr check_init_fn<T> check_init_{};
   } check_;
 };
 

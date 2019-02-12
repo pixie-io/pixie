@@ -3,7 +3,11 @@
 #pragma once
 
 // Warn if a result is unused.
+#ifdef __clang__
 #define PL_MUST_USE_RESULT __attribute__((warn_unused_result))
+#else
+#define PL_MUST_USE_RESULT
+#endif
 
 #define PL_UNUSED(x) (void)(x)
 

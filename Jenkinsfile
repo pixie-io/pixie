@@ -160,6 +160,22 @@ builders['Build & Test (opt)'] = {
 }
 
 
+builders['Build & Test (gcc:opt)'] = {
+  node {
+    sh 'rm -rf /root/.cache/bazel'
+    deleteDir()
+    unstash SRC_STASH_NAME
+    docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
+      docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache') {
+        sh 'scripts/bazel_fetch_retry.sh'
+        sh 'CC=gcc CXX=g++ bazel test -c opt //...'
+        stash name: 'build-gcc-opt-testlogs', includes: "bazel-testlogs/**"
+      }
+    }
+  }
+}
+
+
 /********************************************
  * For now restrict the ASAN and TSAN builds to carnot. There is a bug in go(or llvm) preventing linking:
  * https://github.com/golang/go/issues/27110
@@ -243,6 +259,9 @@ node {
     stage('Archive') {
       dir ('build-opt-testlogs') {
         unstash 'build-opt-testlogs'
+      }
+      dir ('build-gcc-opt-testlogs') {
+        unstash 'build-gcc-opt-testlogs'
       }
       dir ('build-dbg-testlogs') {
         unstash 'build-dbg-testlogs'

@@ -76,7 +76,7 @@ class DataTable {
    *
    * @return TableType enum that defines the table type.
    */
-  TableType TableType() { return table_type_; }
+  TableType table_type() { return table_type_; }
 
  protected:
   // Given an InfoClassSchema, generate the appropriate table. Helper for constructor.
