@@ -1,5 +1,7 @@
 licenses(["notice"])  # 3-Clause BSD
+
 exports_files(["LICENSE"])
+
 # Taken from: https://github.com/rnburn/satyr/blob/master/bazel/tbb.BUILD
 # License for this BUILD file: MIT
 # See: https://github.com/rnburn/satyr/blob/master/LICENSE

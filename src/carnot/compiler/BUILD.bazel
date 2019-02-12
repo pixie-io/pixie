@@ -10,10 +10,10 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/carnot/proto:plan_cc_proto",
         "//src/carnot/plan:cc_library",
+        "//src/carnot/proto:plan_cc_proto",
         "//src/carnot/udf:cc_library",
-        "//third_party:libpypa"
+        "//third_party:libpypa",
     ],
 )
 

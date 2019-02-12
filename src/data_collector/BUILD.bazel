@@ -14,9 +14,9 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
+        "//src/carnot/udf:cc_library",
         "//src/common/types:types_cc_proto",
         "//src/data_collector/proto:collector_config_cc_proto",
-        "//src/carnot/udf:cc_library",
         "//third_party:arrow",
     ],
 )

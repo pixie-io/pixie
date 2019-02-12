@@ -81,7 +81,6 @@ pl_cc_test(
     ],
 )
 
-
 pl_cc_test(
     name = "blocking_agg_node_test",
     srcs = ["blocking_agg_node_test.cc"] + glob(["*_mock.h"]),

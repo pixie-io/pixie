@@ -21,6 +21,10 @@
         "(BUILD$)",
         "(\\.bzl$)"
       ],
+      "exclude": [
+        "(third_party\/bcc\\.BUILD)",
+        "(third_party\/llvm\\.BUILD)"
+      ],
       "script-and-regex.script": "./linters/buildifier.sh",
       "script-and-regex.regex": "/^(?P<filename>.*) # (?P<autofix>reformat) (?P<message>.*)$/m"
     },
