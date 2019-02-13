@@ -177,15 +177,18 @@ TEST(UDARegistryDeathTest, double_register) {
 
 const char *kExpectedUDFInfo = R"(
 udas {
+  name: "uda1"
   update_arg_types: INT64
   finalize_type: INT64
 }
 scalar_udfs {
+  name: "add"
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64
   return_type: FLOAT64
 }
 scalar_udfs {
+  name: "scalar1"
   exec_arg_types: BOOLEAN
   exec_arg_types: INT64
   return_type: INT64

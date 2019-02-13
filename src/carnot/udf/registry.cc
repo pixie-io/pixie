@@ -12,6 +12,7 @@ carnotpb::UDFInfo ScalarUDFRegistry::SpecToProto() const {
     const auto& exec_arguments = udf_def->exec_arguments();
     *udf_spec_pb->mutable_exec_arg_types() = {exec_arguments.begin(), exec_arguments.end()};
     udf_spec_pb->set_return_type(udf_def->exec_return_type());
+    udf_spec_pb->set_name(udf_def->name());
   }
   return info;
 }
@@ -24,6 +25,7 @@ carnotpb::UDFInfo UDARegistry::SpecToProto() const {
     const auto& update_argument = udf_def->update_arguments();
     *udf_spec_pb->mutable_update_arg_types() = {update_argument.begin(), update_argument.end()};
     udf_spec_pb->set_finalize_type(udf_def->finalize_return_type());
+    udf_spec_pb->set_name(udf_def->name());
   }
   return info;
 }
