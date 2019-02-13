@@ -28,3 +28,9 @@ pl_cc_test(
     srcs = ["ast_visitor_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "string_reader_test",
+    srcs = ["string_reader_test.cc"],
+    deps = [":cc_library"],
+)
