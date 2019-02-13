@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -18,6 +19,7 @@ namespace compiler {
 
 class IRNode;
 using IRNodePtr = std::unique_ptr<IRNode>;
+using ColExprMap = std::unordered_map<std::string, IRNode*>;
 
 /**
  * IR contains the intermediate representation of the query
@@ -57,7 +59,19 @@ class IR {
   std::unordered_map<int64_t, IRNodePtr> id_node_map_;
 };
 
-enum IRNodeType { MemorySourceType, RangeType, StringType, ListType, LambdaType };
+enum IRNodeType {
+  MemorySourceType,
+  RangeType,
+  MapType,
+  StringType,
+  FloatType,
+  IntType,
+  BoolType,
+  BinFuncType,
+  ListType,
+  LambdaType,
+  ColumnType
+};
 /**
  * @brief Node class for the IR.
  *
@@ -145,6 +159,25 @@ class RangeIR : public IRNode {
 };
 
 /**
+ * @brief The RangeIR describe the range()
+ * operator, which is combined with a Source
+ * when converted to the Logical Plan.
+ *
+ */
+class MapIR : public IRNode {
+ public:
+  MapIR() = delete;
+  explicit MapIR(int64_t id) : IRNode(id, MapType) {}
+  Status Init(IRNode* parent, IRNode* lambda_func);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+
+ private:
+  IRNode* lambda_func_;
+  IRNode* parent_;
+};
+
+/**
  * @brief StringIR wraps around the String AST node
  * and only contains the value of that string.
  *
@@ -160,6 +193,22 @@ class StringIR : public IRNode {
 
  private:
   std::string str_;
+};
+/**
+ * @brief ColumnIR wraps around columns found in the lambda functions.
+ *
+ */
+class ColumnIR : public IRNode {
+ public:
+  ColumnIR() = delete;
+  explicit ColumnIR(int64_t id) : IRNode(id, ColumnType) {}
+  Status Init(const std::string col_name);
+  bool HasLogicalRepr() const override;
+  std::string col_name() const { return col_name_; }
+  std::string DebugString(int64_t depth) const override;
+
+ private:
+  std::string col_name_;
 };
 
 /**
@@ -187,22 +236,81 @@ class ListIR : public IRNode {
  * Relation based on which columns are called
  * within the contained relation.
  *
- * TODO(philkuz) maybe we move the Relation dependency
- * into a map or agg node?
  */
 class LambdaIR : public IRNode {
  public:
   LambdaIR() = delete;
   explicit LambdaIR(int64_t id) : IRNode(id, LambdaType) {}
-  Status Init();
+  Status Init(std::unordered_set<std::string> column_names, ColExprMap expr_map);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
 
  private:
-  plan::Relation expected_relation_;
-  IRNode* body;
+  std::unordered_set<std::string> expected_column_names_;
+  ColExprMap col_expr_map_;
 };
 
+/**
+ * @brief Represents Binary Expressions that are later converted into proper function calls.
+ */
+class BinFuncIR : public IRNode {
+ public:
+  BinFuncIR() = delete;
+  explicit BinFuncIR(int64_t id) : IRNode(id, BinFuncType) {}
+  Status Init(std::string func_name, IRNode* left, IRNode* right);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+  std::string func_name() { return func_name_; }
+  IRNode* left() { return left_; }
+  IRNode* right() { return right_; }
+
+ private:
+  std::string func_name_;
+  IRNode* left_;
+  IRNode* right_;
+};
+
+/**
+ * @brief Primitive values.
+ */
+class FloatIR : public IRNode {
+ public:
+  FloatIR() = delete;
+  explicit FloatIR(int64_t id) : IRNode(id, FloatType) {}
+  Status Init(double val);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+  double val() const { return val_; }
+
+ private:
+  double val_;
+};
+
+class IntIR : public IRNode {
+ public:
+  IntIR() = delete;
+  explicit IntIR(int64_t id) : IRNode(id, IntType) {}
+  Status Init(int64_t val);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+  int64_t val() const { return val_; }
+
+ private:
+  int64_t val_;
+};
+
+class BoolIR : public IRNode {
+ public:
+  BoolIR() = delete;
+  explicit BoolIR(int64_t id) : IRNode(id, BoolType) {}
+  Status Init(bool val);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+  bool val() const { return val_; }
+
+ private:
+  bool val_;
+};
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

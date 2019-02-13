@@ -188,7 +188,63 @@ queryDF = "str"
 )";
   EXPECT_FALSE(parseQuery(bad_assign_str).ok());
 }
+// Map Tests
+TEST(MapTest, single_col_map) {
+  std::string single_col_map_sum = R"(
+queryDF = From(table="cpu", select=["cpu0", "cpu1"]).Range(time="-2m")
+rangeDF = queryDF.Map(fn=lambda r : {"sum" : r.cpu0 + r.cpu1})
+)";
+  EXPECT_OK(parseQuery(single_col_map_sum));
+  std::string single_col_div_map_query = R"(
+queryDF = From(table="cpu", select=["cpu0", "cpu1"]).Range(time="-2m")
+rangeDF = queryDF.Map(fn=lambda r : {"sum" : pl.div(r.cpu0,r.cpu1)})
+)";
+  EXPECT_OK(parseQuery(single_col_div_map_query));
+}
 
+TEST(MapTest, multi_col_map) {
+  std::string multi_col = R"(
+queryDF = From(table="cpu", select=["cpu0", "cpu1"]).Range(time="-2m")
+rangeDF = queryDF.Map(fn=lambda r : {"sum" : r.cpu0 + r.cpu1, "copy" : r.cpu2})
+)";
+  EXPECT_OK(parseQuery(multi_col));
+}
+
+TEST(MapTest, bin_op_test) {
+  std::string single_col_map_sum = R"(
+queryDF = From(table="cpu", select=["cpu0", "cpu1"]).Range(time="-2m")
+rangeDF = queryDF.Map(fn=lambda r : {"sum" : r.cpu0 + r.cpu1})
+)";
+  EXPECT_OK(parseQuery(single_col_map_sum));
+  std::string single_col_map_sub = R"(
+queryDF = From(table="cpu", select=["cpu0", "cpu1"]).Range(time="-2m")
+rangeDF = queryDF.Map(fn=lambda r : {"sub" : r.cpu0 - r.cpu1})
+)";
+  EXPECT_OK(parseQuery(single_col_map_sub));
+  std::string single_col_map_product = R"(
+queryDF = From(table="cpu", select=["cpu0", "cpu1"]).Range(time="-2m")
+rangeDF = queryDF.Map(fn=lambda r : {"product" : r.cpu0 * r.cpu1})
+)";
+  EXPECT_OK(parseQuery(single_col_map_product));
+  std::string single_col_map_quotient = R"(
+queryDF = From(table="cpu", select=["cpu0", "cpu1"]).Range(time="-2m")
+rangeDF = queryDF.Map(fn=lambda r : {"quotient" : r.cpu0 / r.cpu1})
+)";
+  EXPECT_OK(parseQuery(single_col_map_quotient));
+}
+
+TEST(MapTest, nested_expr_map) {
+  std::string nested_expr = R"(
+queryDF = From(table="cpu", select=["cpu0", "cpu1"]).Range(time="-2m")
+rangeDF = queryDF.Map(fn=lambda r : {"sum" : r.cpu0 + r.cpu1 + r.cpu2})
+)";
+  EXPECT_OK(parseQuery(nested_expr));
+  std::string nested_fn = R"(
+queryDF = From(table="cpu", select=["cpu0", "cpu1"]).Range(time="-2m")
+rangeDF = queryDF.Map(fn=lambda r : {"sum" : pl.div(r.cpu0 + r.cpu1, r.cpu2)})
+)";
+  EXPECT_OK(parseQuery(nested_fn));
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

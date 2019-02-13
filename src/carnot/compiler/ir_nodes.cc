@@ -38,8 +38,8 @@ Status MemorySourceIR::Init(IRNode* table_node, IRNode* select) {
   return Status::OK();
 }
 
-std::string debugString(int64_t depth, std::string name,
-                        std::map<std::string, std::string> property_value_map) {
+std::string DebugStringFmt(int64_t depth, std::string name,
+                           std::map<std::string, std::string> property_value_map) {
   std::vector<std::string> property_strings;
   std::map<std::string, std::string>::iterator it;
   std::string depth_string = std::string(depth, '\t');
@@ -52,7 +52,7 @@ std::string debugString(int64_t depth, std::string name,
   return absl::StrJoin(property_strings, "\n");
 }
 std::string MemorySourceIR::DebugString(int64_t depth) const {
-  return debugString(
+  return DebugStringFmt(
       depth, absl::StrFormat("%d:MemorySourceIR", id()),
       {{"From", table_node_->DebugString(depth + 1)}, {"Select", select_->DebugString(depth + 1)}});
 }
@@ -69,15 +69,42 @@ Status RangeIR::Init(IRNode* parent, IRNode* time_repr) {
 bool RangeIR::HasLogicalRepr() const { return false; }
 
 std::string RangeIR::DebugString(int64_t depth) const {
-  return debugString(
+  return DebugStringFmt(
       depth, absl::StrFormat("%d:RangeIR", id()),
       {{"Parent", parent_->DebugString(depth + 1)}, {"Time", time_repr_->DebugString(depth + 1)}});
+}
+
+Status MapIR::Init(IRNode* parent, IRNode* lambda_func) {
+  // TODO(philkuz) implement string to ms (int) conversion.
+  lambda_func_ = lambda_func;
+  parent_ = parent;
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, lambda_func_));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent_, this));
+  return Status::OK();
+}
+
+bool MapIR::HasLogicalRepr() const { return false; }
+
+std::string MapIR::DebugString(int64_t depth) const {
+  return DebugStringFmt(depth, absl::StrFormat("%d:MapIR", id()),
+                        {{"Parent", parent_->DebugString(depth + 1)},
+                         {"Lambda", lambda_func_->DebugString(depth + 1)}});
+}
+
+bool ColumnIR::HasLogicalRepr() const { return false; }
+Status ColumnIR::Init(std::string col_name) {
+  col_name_ = col_name;
+  return Status::OK();
+}
+
+std::string ColumnIR::DebugString(int64_t depth) const {
+  return absl::StrFormat("%s%d:%s\t-\t%s", std::string(depth, '\t'), id(), "Column", col_name());
 }
 
 bool StringIR::HasLogicalRepr() const { return false; }
 Status StringIR::Init(std::string str) {
   str_ = str;
-  return Status();
+  return Status::OK();
 }
 
 std::string StringIR::DebugString(int64_t depth) const {
@@ -96,9 +123,72 @@ std::string ListIR::DebugString(int64_t depth) const {
   for (size_t i = 0; i < children_.size(); i++) {
     childMap[absl::StrFormat("child%d", i)] = children_[i]->DebugString(depth + 1);
   }
-  return debugString(depth, absl::StrFormat("%d:ListIR", id()), childMap);
+  return DebugStringFmt(depth, absl::StrFormat("%d:ListIR", id()), childMap);
 }
 
+bool LambdaIR::HasLogicalRepr() const { return false; }
+Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names,
+                      ColExprMap col_expr_map) {
+  // TODO(philkuz) create the relation.
+  expected_column_names_ = expected_column_names;
+  col_expr_map_ = col_expr_map;
+  return Status::OK();
+}
+
+std::string LambdaIR::DebugString(int64_t depth) const {
+  std::map<std::string, std::string> childMap;
+  // TODO(philkuz) figure out expected relation.
+  childMap["ExpectedRelation"] =
+      absl::StrFormat("[%s]", absl::StrJoin(expected_column_names_, ","));
+  for (auto const& x : col_expr_map_) {
+    childMap[absl::StrFormat("ExprMap[\"%s\"]", x.first)] = x.second->DebugString(depth + 1);
+  }
+  return DebugStringFmt(depth, absl::StrFormat("%d:LambdaIR", id()), childMap);
+}
+
+bool BinFuncIR::HasLogicalRepr() const { return false; }
+Status BinFuncIR::Init(std::string func_name, IRNode* left, IRNode* right) {
+  func_name_ = func_name;
+  left_ = left;
+  right_ = right;
+  return Status::OK();
+}
+
+std::string BinFuncIR::DebugString(int64_t depth) const {
+  return DebugStringFmt(
+      depth, absl::StrFormat("%d:BinFuncIR (%s)", id(), func_name_),
+      {{"left", left_->DebugString(depth + 1)}, {"right", right_->DebugString(depth + 1)}});
+}
+
+/* Float IR */
+bool FloatIR::HasLogicalRepr() const { return false; }
+Status FloatIR::Init(double val) {
+  val_ = val;
+  return Status::OK();
+}
+std::string FloatIR::DebugString(int64_t depth) const {
+  return absl::StrFormat("%s%d:%s\t-\t%f", std::string(depth, '\t'), id(), "Float", val());
+}
+
+/* Int IR */
+bool IntIR::HasLogicalRepr() const { return false; }
+Status IntIR::Init(int64_t val) {
+  val_ = val;
+  return Status::OK();
+}
+std::string IntIR::DebugString(int64_t depth) const {
+  return absl::StrFormat("%s%d:%s\t-\t%d", std::string(depth, '\t'), id(), "Int", val());
+}
+
+/* Bool IR */
+bool BoolIR::HasLogicalRepr() const { return false; }
+Status BoolIR::Init(bool val) {
+  val_ = val;
+  return Status::OK();
+}
+std::string BoolIR::DebugString(int64_t depth) const {
+  return absl::StrFormat("%s%d:%s\t-\t%d", std::string(depth, '\t'), id(), "Bool", val());
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
