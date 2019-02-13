@@ -16,6 +16,7 @@ pl_cc_library(
         "//src/carnot/proto:udfs_cc_proto",
         "//src/common/types:types_cc_proto",
         "//third_party:arrow",
+        "@com_google_farmhash//:farmhash",
     ],
 )
 
@@ -48,6 +49,12 @@ pl_cc_test(
 pl_cc_test(
     name = "column_wrapper_test",
     srcs = ["column_wrapper_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "hash_utils_test",
+    srcs = ["hash_utils_test.cc"],
     deps = [":cc_library"],
 )
 
