@@ -66,3 +66,11 @@ pl_cc_test(
         "@com_efficient_libcuckoo//:libcuckoo",
     ],
 )
+
+pl_cc_test(
+    name = "farmhash_test",
+    srcs = ["farmhash_test.cc"],
+    deps = [
+        "@com_google_farmhash//:farmhash",
+    ],
+)
