@@ -41,6 +41,13 @@ class DAG {
     return {};
   }
 
+  std::vector<int64_t> ParentsOf(int64_t node) {
+    if (nodes_.find(node) != std::end(nodes_)) {
+      return reverse_edges_by_node_[node];
+    }
+    return {};
+  }
+
   const std::unordered_set<int64_t>& nodes() { return nodes_; }
 
  private:

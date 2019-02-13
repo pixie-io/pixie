@@ -233,6 +233,80 @@ func {
   }
 })";
 
+const char* kPlanFragmentWithFourNodes = R"(
+  id: 1,
+  dag {
+    nodes {
+      id: 1
+      sorted_deps: 2
+      sorted_deps: 3
+    }
+    nodes {
+      id: 2
+      sorted_deps: 5
+    }
+    nodes {
+      id: 3
+      sorted_deps: 5
+    }
+    nodes {
+      id: 5
+    }
+  }
+  nodes {
+    id: 1
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "mem_source"
+        column_types: INT64
+        column_names: "test"
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          constant {
+            data_type: INT64
+            int64_value: 1
+          }
+        }
+        column_names: "test"
+      }
+    }
+  }
+  nodes {
+    id: 3
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          constant {
+            data_type: INT64
+            int64_value: 1
+          }
+        }
+        column_names: "test2"
+      }
+    }
+  }
+  nodes {
+    id: 5
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "mem_sink"
+        column_types: INT64
+        column_names: "test3"
+      }
+    }
+  }
+)";
+
 carnotpb::Operator CreateTestMap1PB() {
   carnotpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MAP_OPERATOR", "map_op", kMapOperator1);
