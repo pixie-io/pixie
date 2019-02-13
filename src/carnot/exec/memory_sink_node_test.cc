@@ -37,9 +37,10 @@ class MemorySinkNodeTest : public ::testing::Test {
 };
 
 TEST_F(MemorySinkNodeTest, basic) {
-  RowDescriptor output_rd({types::DataType::INT64, types::DataType::BOOLEAN});
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::BOOLEAN});
+  RowDescriptor output_rd({});
 
-  auto rb1 = RowBatch(output_rd, 2);
+  auto rb1 = RowBatch(input_rd, 2);
   std::vector<udf::Int64Value> col1_rb1 = {1, 2};
   std::vector<udf::BoolValue> col2_rb1 = {true, false};
   auto col1_rb1_arrow = udf::ToArrow(col1_rb1, arrow::default_memory_pool());
@@ -48,7 +49,7 @@ TEST_F(MemorySinkNodeTest, basic) {
   EXPECT_OK(rb1.AddColumn(col2_rb1_arrow));
 
   MemorySinkNode sink;
-  EXPECT_OK(sink.Init(*plan_node_, output_rd, {}));
+  EXPECT_OK(sink.Init(*plan_node_, output_rd, std::vector<RowDescriptor>({input_rd})));
   EXPECT_OK(sink.Prepare(exec_state_.get()));
   EXPECT_OK(sink.Open(exec_state_.get()));
 
@@ -65,7 +66,7 @@ TEST_F(MemorySinkNodeTest, basic) {
   EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(1)->chunk(0)->Equals(
       col2_rb1_arrow));
 
-  auto rb2 = RowBatch(output_rd, 2);
+  auto rb2 = RowBatch(input_rd, 2);
   std::vector<udf::Int64Value> col1_rb2 = {3, 4};
   std::vector<udf::BoolValue> col2_rb2 = {false, true};
   auto col1_rb2_arrow = udf::ToArrow(col1_rb1, arrow::default_memory_pool());

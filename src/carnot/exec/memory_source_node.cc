@@ -44,6 +44,10 @@ Status MemorySourceNode::GenerateNextImpl(ExecState *exec_state) {
   return Status::OK();
 }
 
+bool MemorySourceNode::ChunksRemaining() { return current_chunk_ < table_->numBatches(); }
+
+bool MemorySourceNode::NextChunkReady() { return true; }
+
 }  // namespace exec
 }  // namespace carnot
 }  // namespace pl

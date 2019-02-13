@@ -307,6 +307,108 @@ const char* kPlanFragmentWithFourNodes = R"(
   }
 )";
 
+const char* kLinearPlanFragment = R"(
+  id: 1,
+  dag {
+    nodes {
+      id: 1
+      sorted_deps: 2
+    }
+    nodes {
+      id: 2
+      sorted_deps: 3
+    }
+    nodes {
+      id: 3
+      sorted_deps: 4
+    }
+    nodes {
+      id: 4
+    }
+  }
+  nodes {
+    id: 1
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "numbers"
+        column_idxs: 0
+        column_types: INT64
+        column_names: "a"
+        column_idxs: 1
+        column_types: BOOLEAN
+        column_names: "b"
+        column_idxs: 2
+        column_types: FLOAT64
+        column_names: "c"
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          func {
+            name: "add"
+            args {
+              column {
+                node: 1
+                index: 0
+              }
+            }
+            args {
+              column {
+                node: 1
+                index: 2
+              }
+            }
+          }
+        }
+        column_names: "summed"
+      }
+    }
+  }
+  nodes {
+    id: 3
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          func {
+            name: "multiply"
+            args {
+              column {
+                node: 2
+                index: 0
+              }
+            }
+            args {
+              constant {
+                data_type: INT64
+                int64_value: 2
+              }
+            }
+          }
+        }
+        column_names: "mult"
+      }
+    }
+  }
+  nodes {
+    id: 4
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "output"
+        column_types: FLOAT64
+        column_names: "res"
+      }
+    }
+  }
+)";
+
 carnotpb::Operator CreateTestMap1PB() {
   carnotpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MAP_OPERATOR", "map_op", kMapOperator1);

@@ -81,7 +81,8 @@ StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatch(int64_t i, std::vector<in
 Status Table::WriteRowBatch(RowBatch rb) {
   if (rb.desc().size() != desc_.size()) {
     return error::InvalidArgument(
-        "RowBatch's row descriptor length does not match table's row descriptor length.");
+        "RowBatch's row descriptor length ($0) does not match table's row descriptor length ($1).",
+        rb.desc().size(), desc_.size());
   }
   for (size_t i = 0; i < rb.desc().size(); i++) {
     if (rb.desc().type(i) != desc_.type(i)) {

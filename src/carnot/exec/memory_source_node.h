@@ -14,6 +14,8 @@ namespace exec {
 class MemorySourceNode : public SourceNode {
  public:
   MemorySourceNode() : SourceNode() {}
+  bool ChunksRemaining() override;
+  bool NextChunkReady() override;
 
  protected:
   std::string DebugStringImpl() override;

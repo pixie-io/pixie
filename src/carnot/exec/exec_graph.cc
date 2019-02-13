@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <memory>
 #include <unordered_map>
 
@@ -18,10 +19,12 @@ namespace exec {
 
 Status ExecutionGraph::Init(std::shared_ptr<plan::Schema> schema,
                             std::shared_ptr<plan::CompilerState> compiler_state,
+                            std::shared_ptr<ExecState> exec_state,
                             std::shared_ptr<plan::PlanFragment> pf) {
   compiler_state_ = compiler_state;
   schema_ = schema;
   pf_ = pf;
+  exec_state_ = exec_state;
 
   std::unordered_map<int64_t, ExecNode*> nodes;
   std::unordered_map<int64_t, RowDescriptor> descriptors;
@@ -40,6 +43,43 @@ Status ExecutionGraph::Init(std::shared_ptr<plan::Schema> schema,
         return OnOperatorImpl<plan::MemorySourceOperator, MemorySourceNode>(node, &descriptors);
       })
       .Walk(pf.get());
+  return Status::OK();
+}
+
+/**
+ * Execute the graph starting at all of the sources.
+ * @return a status of whether execution succeeded.
+ */
+Status ExecutionGraph::Execute() {
+  // Get vector of nodes.
+  std::vector<ExecNode*> nodes(nodes_.size());
+  transform(nodes_.begin(), nodes_.end(), nodes.begin(), [](auto pair) { return pair.second; });
+
+  for (auto node : nodes) {
+    PL_RETURN_IF_ERROR(node->Prepare(exec_state_.get()));
+  }
+
+  for (auto node : nodes) {
+    PL_RETURN_IF_ERROR(node->Open(exec_state_.get()));
+  }
+
+  // For each source, generate rowbatches until none are remaining.
+  for (auto node_id : sources_) {
+    auto node = nodes_.find(node_id);
+    if (node == nodes_.end()) {
+      return error::NotFound("Could not find SourceNode.");
+    } else {
+      do {
+        // TODO(michelle): Determine if there are ways that this can hit deadlock.
+        PL_RETURN_IF_ERROR(node->second->GenerateNext(exec_state_.get()));
+      } while (static_cast<SourceNode*>(node->second)->ChunksRemaining());
+    }
+  }
+
+  for (auto node : nodes) {
+    PL_RETURN_IF_ERROR(node->Close(exec_state_.get()));
+  }
+
   return Status::OK();
 }
 

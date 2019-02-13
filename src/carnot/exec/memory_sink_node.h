@@ -26,7 +26,7 @@ class MemorySinkNode : public SinkNode {
 
  private:
   std::unique_ptr<plan::MemorySinkOperator> plan_node_;
-  std::unique_ptr<RowDescriptor> output_descriptor_;
+  std::unique_ptr<RowDescriptor> input_descriptor_;
   std::shared_ptr<Table> table_;
 };
 

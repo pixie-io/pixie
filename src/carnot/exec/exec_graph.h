@@ -23,12 +23,13 @@ class ExecutionGraph {
    * Initializes the Execution Graph by initializing the execution nodes and their children.
    * @param schema The schema of available relations.
    * @param compilerState The compiler state.
+   * @param execState The execution state.
    * @param pf The plan fragment to create the execution graph from.
    * @return The status of whether initialization succeeded.
    */
   Status Init(std::shared_ptr<plan::Schema> schema,
               std::shared_ptr<plan::CompilerState> compilerState,
-              std::shared_ptr<plan::PlanFragment> pf);
+              std::shared_ptr<ExecState> execState, std::shared_ptr<plan::PlanFragment> pf);
   std::vector<int64_t> sources() { return sources_; }
   StatusOr<ExecNode *> node(int64_t id) {
     auto node = nodes_.find(id);
@@ -38,6 +39,7 @@ class ExecutionGraph {
       return node->second;
     }
   }
+  Status Execute();
 
  private:
   /**
@@ -64,8 +66,9 @@ class ExecutionGraph {
       }
     }
     // Get output descriptor.
-    auto output_descriptor = RowDescriptor(
-        node.OutputRelation(*schema_, *compiler_state_, parents).ConsumeValueOrDie().col_types());
+    auto output_rel = node.OutputRelation(*schema_, *compiler_state_, parents).ConsumeValueOrDie();
+    auto output_descriptor = RowDescriptor(output_rel.col_types());
+    schema_->AddRelation(node.id(), output_rel);
     descriptors->insert({node.id(), output_descriptor});
 
     // Create ExecNode.
@@ -86,6 +89,7 @@ class ExecutionGraph {
     return Status::OK();
   }
 
+  std::shared_ptr<ExecState> exec_state_;
   ObjectPool pool_;
   std::shared_ptr<plan::Schema> schema_;
   std::shared_ptr<plan::CompilerState> compiler_state_;
