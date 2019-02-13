@@ -52,16 +52,6 @@ Status DataCollector::AddSource(const std::string& name, std::unique_ptr<SourceC
   return Status::OK();
 }
 
-/**
- * Register call-back.
- */
-void DataCollector::RegisterCallback(
-    std::function<void(uint64_t,
-                       std::unique_ptr<std::vector<std::shared_ptr<carnot::udf::ColumnWrapper>>>)>
-        f) {
-  agent_callback_ = f;
-}
-
 // Main call to start the data collection.
 void DataCollector::Run() {
   run_thread_ = std::thread(&DataCollector::RunThread, this);
@@ -104,11 +94,12 @@ void DataCollector::RunThread() {
         // auto arrow_table = data_table->SealTableArrow();
         // PL_UNUSED(arrow_table);
 
-        auto columns = data_table->SealTableColumnWrapper();
-        PL_UNUSED(columns);
+        auto record_batches = data_table->GetColumnWrapperRecordBatches();
+        PL_UNUSED(record_batches);
 
         // TODO(oazizi): Hook this up.
-        // agent_callback_(schema->id(), std::move(columns));
+        // for each record batch:
+        //     agent_callback_(schema->id(), std::move(columns));
       }
 
       // Optional: Update sampling periods if we are dropping data.

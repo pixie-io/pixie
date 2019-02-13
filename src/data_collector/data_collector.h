@@ -47,7 +47,10 @@ class DataCollector {
    *   uint64_t table_id
    *   std::unique_ptr<ColumnWrapperRecordBatch> data
    */
-  void RegisterCallback(std::function<void(uint64_t, std::unique_ptr<ColumnWrapperRecordBatch>)> f);
+  void RegisterCallback(
+      std::function<void(uint64_t, std::unique_ptr<ColumnWrapperRecordBatch>)> f) {
+    agent_callback_ = f;
+  }
 
   /**
    * Main data collection call, that is spawned off as an independent thread.

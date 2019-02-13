@@ -11,7 +11,7 @@ using types::DataType;
 
 class DataTableTest : public ::testing::Test {
  private:
-  std::default_random_engine rng;
+  std::default_random_engine rng_;
 
   // The test uses a pre-defined schema.
   InfoClassSchema schema_;
@@ -21,6 +21,9 @@ class DataTableTest : public ::testing::Test {
 
   // Test parameter: number of records to write.
   uint64_t num_records_ = 0;
+
+  // Test parameter: max number of records per append.
+  uint64_t max_append_size_;
 
   // Test parameter: probability of a push.
   double push_probability_ = 0.1;
@@ -61,7 +64,7 @@ class DataTableTest : public ::testing::Test {
   /**
    * @brief Change the random seed of the RNG.
    */
-  void SetSeed(uint64_t seed) { rng.seed(seed); }
+  void SetSeed(uint64_t seed) { rng_.seed(seed); }
 
   void InitRawData(uint64_t num_records) {
     num_records_ = num_records;
@@ -69,6 +72,8 @@ class DataTableTest : public ::testing::Test {
   }
 
   void SetPushProbability(double push_probability) { push_probability_ = push_probability; }
+
+  void SetMaxAppendSize(uint64_t max_append_size) { max_append_size_ = max_append_size; }
 
   void RunAndCheck() { RunAndCheckImpl(); }
 
@@ -173,7 +178,7 @@ class DataTableTest : public ::testing::Test {
    * generated.
    */
   void RunAndCheckImpl() {
-    std::uniform_int_distribution<uint32_t> num_rows_dist(0, 9);
+    std::uniform_int_distribution<uint32_t> append_num_rows_dist(0, max_append_size_);
     std::uniform_real_distribution<double> probability_dist(0, 1.0);
 
     uint8_t* source_buffer = buffer_vector_.data();
@@ -183,7 +188,7 @@ class DataTableTest : public ::testing::Test {
     uint32_t check_record = 0;    // Position to which the data has been compared/checked
 
     while (current_record < num_records_) {
-      uint32_t num_rows = num_rows_dist(rng);
+      uint32_t num_rows = append_num_rows_dist(rng_);
       bool last_pass = false;
 
       // If we would go out of bounds of the source buffer
@@ -208,15 +213,21 @@ class DataTableTest : public ::testing::Test {
       EXPECT_OK(s);
 
       // Periodically consume the data
-      if ((probability_dist(rng) < push_probability_) || last_pass) {
+      if ((probability_dist(rng_) < push_probability_) || last_pass) {
         switch (data_table_->table_type()) {
           case TableType::ColumnWrapper: {
-            auto sealed_data = data_table_->SealTableColumnWrapper();
-            CheckColumnWrapperResult(sealed_data.ValueOrDie().get(), check_record, current_record);
+            auto data_batches_ptr = data_table_->GetColumnWrapperRecordBatches();
+            auto data_batches_ptr_raw = data_batches_ptr.ValueOrDie().get();
+            for (const auto& data_batch : *data_batches_ptr_raw) {
+              CheckColumnWrapperResult(data_batch.get(), check_record, current_record);
+            }
           } break;
           case TableType::Arrow: {
-            auto sealed_data = data_table_->SealTableArrow();
-            CheckArrowResult(sealed_data.ValueOrDie(), check_record, current_record);
+            auto data_batches_ptr = data_table_->GetArrowRecordBatches();
+            auto data_batches_ptr_raw = data_batches_ptr.ValueOrDie().get();
+            for (const auto& data_batch_i : *data_batches_ptr_raw) {
+              CheckArrowResult(data_batch_i, check_record, current_record);
+            }
           } break;
           default:
             CHECK(false) << "No test for this type of Data table";
@@ -227,9 +238,10 @@ class DataTableTest : public ::testing::Test {
   }
 };
 
-constexpr uint32_t kNumRecords = 1 << 20;
+constexpr uint32_t kNumRecords = 1 << 21;
 constexpr uint64_t kRNGSeed = 37;
-constexpr double kPushProbability = 0.1;
+constexpr std::array<double, 3> kPushProbability = {0.01, 0.1, 0.5};
+constexpr std::array<uint64_t, 3> kMaxAppendSize = {20, 200, 2000};
 
 /**
  * Test Data Tables.
@@ -241,36 +253,48 @@ constexpr double kPushProbability = 0.1;
  * generated.
  */
 TEST_F(DataTableTest, column_wrapper_read_write) {
-  SetUpTable(TableType::ColumnWrapper);
-
   SetSeed(kRNGSeed);
 
-  SetPushProbability(kPushProbability);
+  for (auto push_probability : kPushProbability) {
+    for (auto max_append_size : kMaxAppendSize) {
+      SetUpTable(TableType::ColumnWrapper);
 
-  InitRawData(kNumRecords);
+      SetPushProbability(push_probability);
 
-  // Test appends the data into the data table in batches.
-  // Between certain batches, the data is consumed from the data table,
-  // and inspected for consistency with expected data pattern.
-  RunAndCheck();
+      SetMaxAppendSize(max_append_size);
+
+      InitRawData(kNumRecords);
+
+      // Test appends the data into the data table in batches.
+      // Between certain batches, the data is consumed from the data table,
+      // and inspected for consistency with expected data pattern.
+      RunAndCheck();
+    }
+  }
 }
 
 /**
  * Same as above, but with Arrow Tables
  */
 TEST_F(DataTableTest, arrow_read_write) {
-  SetUpTable(TableType::Arrow);
-
   SetSeed(kRNGSeed);
 
-  SetPushProbability(kPushProbability);
+  for (auto push_probability : kPushProbability) {
+    for (auto max_append_size : kMaxAppendSize) {
+      SetUpTable(TableType::Arrow);
 
-  InitRawData(kNumRecords);
+      SetPushProbability(push_probability);
 
-  // Test appends the data into the data table in batches.
-  // Between certain batches, the data is consumed from the data table,
-  // and inspected for consistency with expected data pattern.
-  RunAndCheck();
+      SetMaxAppendSize(max_append_size);
+
+      InitRawData(kNumRecords);
+
+      // Test appends the data into the data table in batches.
+      // Between certain batches, the data is consumed from the data table,
+      // and inspected for consistency with expected data pattern.
+      RunAndCheck();
+    }
+  }
 }
 
 }  // namespace datacollector

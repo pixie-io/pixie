@@ -33,6 +33,8 @@ class ColumnWrapper {
   virtual const UDFBaseValue *UnsafeRawData() const = 0;
   virtual UDFDataType DataType() const = 0;
   virtual size_t Size() const = 0;
+  virtual void Reserve(size_t size) = 0;
+  virtual void ShrinkToFit() = 0;
   virtual std::shared_ptr<arrow::Array> ConvertToArrow(arrow::MemoryPool *mem_pool) = 0;
 };
 
@@ -63,7 +65,11 @@ class ColumnWrapperTmpl : public ColumnWrapper {
 
   T &operator[](size_t idx) { return data_[idx]; }
 
-  void append(T val) { data_.push_back(val); }
+  void Append(T val) { data_.push_back(val); }
+
+  void Reserve(size_t size) override { data_.reserve(size); }
+
+  void ShrinkToFit() override { data_.shrink_to_fit(); }
 
   void resize(size_t size) { data_.resize(size); }
 

@@ -13,6 +13,10 @@ namespace pl {
 namespace datacollector {
 
 using ColumnWrapperRecordBatch = std::vector<carnot::udf::SharedColumnWrapper>;
+using ColumnWrapperRecordBatchVector = std::vector<std::unique_ptr<ColumnWrapperRecordBatch>>;
+
+using ArrowRecordBatch = std::vector<std::unique_ptr<arrow::ArrayBuilder>>;
+using ArrowRecordBatchVector = std::vector<std::shared_ptr<arrow::RecordBatch>>;
 
 enum class TableType { Null, ColumnWrapper, Arrow };
 
@@ -40,20 +44,21 @@ class DataTable {
   virtual Status AppendData(uint8_t* const data, uint64_t num_rows) = 0;
 
   /**
-   * @brief Seal the data collected so far and relinquish ownership.
+   * @brief Get the data collected so far and relinquish ownership.
    *
-   * @return pointer to a vector of data columns in ColumnWrapper format.
+   * @return pointer to a vector of ColumnWrapperRecordBatch pointers.
    */
-  virtual StatusOr<std::unique_ptr<ColumnWrapperRecordBatch>> SealTableColumnWrapper() {
+  virtual StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVector>>
+  GetColumnWrapperRecordBatches() {
     return error::Unimplemented("Ensure you are using the right type of Data Table");
   }
 
   /**
-   * @brief Seal the data collected so far and relinquish ownership.
+   * @brief Get the data collected so far and relinquish ownership.
    *
-   * @return pointer to an Arrow RecordBatch.
+   * @return pointer to a vector of Arrow RecordBatch pointers.
    */
-  virtual StatusOr<std::shared_ptr<arrow::RecordBatch>> SealTableArrow() {
+  virtual StatusOr<std::unique_ptr<ArrowRecordBatchVector>> GetArrowRecordBatches() {
     return error::Unimplemented("Ensure you are using the right type of Data Table");
   }
 
@@ -69,7 +74,7 @@ class DataTable {
    *
    * @return double percent occupancy
    */
-  double OccupancyPct() { return 1.0 * current_row_ / max_num_rows_; }
+  double OccupancyPct() { return 1.0 * current_row_ / target_capacity_; }
 
   /**
    * @brief Type of table used under the hood.
@@ -81,9 +86,6 @@ class DataTable {
  protected:
   // Given an InfoClassSchema, generate the appropriate table. Helper for constructor.
   Status RegisterSchema(const InfoClassSchema& schema);
-
-  // Create table buffers, based on the registered schema.
-  virtual Status InitBuffers() = 0;
 
   // Table schema
   std::unique_ptr<DataTableSchema> table_schema_;
@@ -98,7 +100,7 @@ class DataTable {
   uint64_t current_row_;
 
   // ColumnWrapper specific members
-  static constexpr uint64_t max_num_rows_ = 1024;
+  static constexpr uint64_t target_capacity_ = 1024;
 
  private:
   // Type of table used under the hood.
@@ -110,11 +112,21 @@ class ColumnWrapperDataTable : public DataTable {
   ColumnWrapperDataTable() = delete;
   explicit ColumnWrapperDataTable(const InfoClassSchema& schema);
   Status AppendData(uint8_t* const data, uint64_t num_rows) override;
-  StatusOr<std::unique_ptr<ColumnWrapperRecordBatch>> SealTableColumnWrapper() override;
+  StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVector>> GetColumnWrapperRecordBatches()
+      override;
 
  private:
-  Status InitBuffers() override;
-  std::unique_ptr<ColumnWrapperRecordBatch> columns_;
+  // Initialize a new Active record batch.
+  Status InitBuffers();
+
+  // Close the active record batch, and call InitBuffers to set up new active record batch.
+  Status SealActiveRecordBatch();
+
+  // Active record batch.
+  std::unique_ptr<ColumnWrapperRecordBatch> record_batch_;
+
+  // Sealed record batches that have been collected, but need to be pushed upstream.
+  std::unique_ptr<ColumnWrapperRecordBatchVector> sealed_batches_;
 };
 
 class ArrowDataTable : public DataTable {
@@ -122,11 +134,20 @@ class ArrowDataTable : public DataTable {
   ArrowDataTable() = delete;
   explicit ArrowDataTable(const InfoClassSchema& schema);
   Status AppendData(uint8_t* const data, uint64_t num_rows) override;
-  StatusOr<std::shared_ptr<arrow::RecordBatch>> SealTableArrow() override;
+  StatusOr<std::unique_ptr<ArrowRecordBatchVector>> GetArrowRecordBatches() override;
 
  private:
-  Status InitBuffers() override;
-  std::unique_ptr<std::vector<std::unique_ptr<arrow::ArrayBuilder>>> arrow_arrays_;
+  // Initialize a new Active record batch.
+  Status InitBuffers();
+
+  // Close the active record batch, and call InitBuffers to set up new active record batch.
+  Status SealActiveRecordBatch();
+
+  // Active record batch.
+  std::unique_ptr<ArrowRecordBatch> arrow_arrays_;
+
+  // Sealed record batches that have been collected, but need to be pushed upstream.
+  std::unique_ptr<ArrowRecordBatchVector> sealed_batches_;
 };
 
 }  // namespace datacollector
