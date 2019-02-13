@@ -27,8 +27,7 @@ class ExecutionGraph {
    * @param pf The plan fragment to create the execution graph from.
    * @return The status of whether initialization succeeded.
    */
-  Status Init(std::shared_ptr<plan::Schema> schema,
-              std::shared_ptr<plan::CompilerState> compilerState,
+  Status Init(std::shared_ptr<plan::Schema> schema, std::shared_ptr<plan::PlanState> PlanState,
               std::shared_ptr<ExecState> execState, std::shared_ptr<plan::PlanFragment> pf);
   std::vector<int64_t> sources() { return sources_; }
   StatusOr<ExecNode *> node(int64_t id) {
@@ -66,7 +65,7 @@ class ExecutionGraph {
       }
     }
     // Get output descriptor.
-    auto output_rel = node.OutputRelation(*schema_, *compiler_state_, parents).ConsumeValueOrDie();
+    auto output_rel = node.OutputRelation(*schema_, *plan_state_, parents).ConsumeValueOrDie();
     auto output_descriptor = RowDescriptor(output_rel.col_types());
     schema_->AddRelation(node.id(), output_rel);
     descriptors->insert({node.id(), output_descriptor});
@@ -92,7 +91,7 @@ class ExecutionGraph {
   std::shared_ptr<ExecState> exec_state_;
   ObjectPool pool_;
   std::shared_ptr<plan::Schema> schema_;
-  std::shared_ptr<plan::CompilerState> compiler_state_;
+  std::shared_ptr<plan::PlanState> plan_state_;
   std::shared_ptr<plan::PlanFragment> pf_;
   std::vector<int64_t> sources_;
   std::unordered_map<int64_t, ExecNode *> nodes_;

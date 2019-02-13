@@ -8,7 +8,7 @@
 #include "src/carnot/exec/map_node.h"
 #include "src/carnot/exec/memory_sink_node.h"
 #include "src/carnot/exec/memory_source_node.h"
-#include "src/carnot/plan/compiler_state.h"
+#include "src/carnot/plan/plan_state.h"
 #include "src/carnot/plan/relation.h"
 #include "src/carnot/plan/schema.h"
 #include "src/common/object_pool.h"
@@ -18,10 +18,10 @@ namespace carnot {
 namespace exec {
 
 Status ExecutionGraph::Init(std::shared_ptr<plan::Schema> schema,
-                            std::shared_ptr<plan::CompilerState> compiler_state,
+                            std::shared_ptr<plan::PlanState> plan_state,
                             std::shared_ptr<ExecState> exec_state,
                             std::shared_ptr<plan::PlanFragment> pf) {
-  compiler_state_ = compiler_state;
+  plan_state_ = plan_state;
   schema_ = schema;
   pf_ = pf;
   exec_state_ = exec_state;

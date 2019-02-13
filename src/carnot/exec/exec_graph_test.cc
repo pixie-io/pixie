@@ -6,8 +6,8 @@
 #include <vector>
 
 #include "src/carnot/exec/exec_graph.h"
-#include "src/carnot/plan/compiler_state.h"
 #include "src/carnot/plan/plan_fragment.h"
+#include "src/carnot/plan/plan_state.h"
 #include "src/carnot/plan/schema.h"
 #include "src/carnot/proto/plan.pb.h"
 #include "src/carnot/proto/test_proto.h"
@@ -54,8 +54,8 @@ class ExecGraphTest : public ::testing::Test {
 
 TEST_F(ExecGraphTest, basic) {
   ExecutionGraph e;
-  auto c = std::make_shared<plan::CompilerState>(std::make_shared<udf::ScalarUDFRegistry>("test"),
-                                                 std::make_shared<udf::UDARegistry>("testUDA"));
+  auto c = std::make_shared<plan::PlanState>(std::make_shared<udf::ScalarUDFRegistry>("test"),
+                                             std::make_shared<udf::UDARegistry>("testUDA"));
 
   auto schema = std::make_shared<plan::Schema>();
   plan::Relation relation(std::vector<udf::UDFDataType>({udf::UDFDataType::INT64}),
@@ -93,7 +93,7 @@ TEST_F(ExecGraphTest, execute) {
   EXPECT_OK(udf_registry->Register<MultiplyUDF>("multiply"));
   auto uda_registry = std::make_shared<udf::UDARegistry>("testUDA");
 
-  auto c = std::make_shared<plan::CompilerState>(udf_registry, uda_registry);
+  auto c = std::make_shared<plan::PlanState>(udf_registry, uda_registry);
 
   auto schema = std::make_shared<plan::Schema>();
   schema->AddRelation(1, plan::Relation(std::vector<udf::UDFDataType>({udf::UDFDataType::INT64,

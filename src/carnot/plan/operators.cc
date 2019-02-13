@@ -60,8 +60,9 @@ Status MemorySourceOperator::Init(const carnotpb::MemorySourceOperator &pb) {
   is_initialized_ = true;
   return Status::OK();
 }
+
 StatusOr<Relation> MemorySourceOperator::OutputRelation(
-    const Schema &, const CompilerState &, const std::vector<int64_t> &input_ids) const {
+    const Schema &, const PlanState &, const std::vector<int64_t> &input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
   if (input_ids.size() != 0) {
     // TODO(zasgar): We should figure out if we need to treat the "source table" as
@@ -112,7 +113,7 @@ Status MapOperator::Init(const carnotpb::MapOperator &pb) {
   return Status::OK();
 }
 
-StatusOr<Relation> MapOperator::OutputRelation(const Schema &schema, const CompilerState &state,
+StatusOr<Relation> MapOperator::OutputRelation(const Schema &schema, const PlanState &state,
                                                const std::vector<int64_t> &input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
   if (input_ids.size() != 1) {
@@ -162,7 +163,7 @@ Status BlockingAggregateOperator::Init(const carnotpb::BlockingAggregateOperator
 }
 
 StatusOr<Relation> BlockingAggregateOperator::OutputRelation(
-    const Schema &schema, const CompilerState &state, const std::vector<int64_t> &input_ids) const {
+    const Schema &schema, const PlanState &state, const std::vector<int64_t> &input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
   if (input_ids.size() != 1) {
     return error::InvalidArgument("BlockingAgg operator must have exactly one input");
@@ -208,7 +209,8 @@ Status MemorySinkOperator::Init(const carnotpb::MemorySinkOperator &pb) {
   is_initialized_ = true;
   return Status::OK();
 }
-StatusOr<Relation> MemorySinkOperator::OutputRelation(const Schema &, const CompilerState &,
+
+StatusOr<Relation> MemorySinkOperator::OutputRelation(const Schema &, const PlanState &,
                                                       const std::vector<int64_t> &) const {
   DCHECK(is_initialized_) << "Not initialized";
   // There are no outputs.

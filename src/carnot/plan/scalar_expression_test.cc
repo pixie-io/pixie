@@ -59,7 +59,7 @@ class ScalarExpressionTest : public ::testing::Test {
 
  protected:
   Schema schema_;
-  CompilerState state_;
+  PlanState state_;
 };
 
 TEST(ColumnTest, basic_tests) {

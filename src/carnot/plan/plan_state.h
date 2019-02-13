@@ -7,15 +7,15 @@ namespace pl {
 namespace carnot {
 namespace plan {
 
-class CompilerState {
+class PlanState {
  public:
   /**
    * Init with a UDF registry and hold a shared pointer for it.
    *
    * @param udf_registry the passed in UDF registry.
    */
-  explicit CompilerState(std::shared_ptr<udf::ScalarUDFRegistry> udf_registry,
-                         std::shared_ptr<udf::UDARegistry> uda_registry)
+  explicit PlanState(std::shared_ptr<udf::ScalarUDFRegistry> udf_registry,
+                     std::shared_ptr<udf::UDARegistry> uda_registry)
       : udf_registry_(udf_registry), uda_registry_(uda_registry) {}
 
   std::shared_ptr<udf::ScalarUDFRegistry> udf_registry() const { return udf_registry_; }

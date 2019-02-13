@@ -5,7 +5,7 @@
 
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
-#include "src/carnot/plan/compiler_state.h"
+#include "src/carnot/plan/plan_state.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/plan/utils.h"
 #include "src/carnot/udf/udf.h"
@@ -82,7 +82,7 @@ std::string ScalarValue::DebugString() const {
   }
 }
 
-StatusOr<types::DataType> ScalarValue::OutputDataType(const CompilerState &, const Schema &) const {
+StatusOr<types::DataType> ScalarValue::OutputDataType(const PlanState &, const Schema &) const {
   DCHECK(is_initialized_) << "Not initialized";
   return DataType();
 }
@@ -118,7 +118,7 @@ std::string Column::DebugString() const {
   return absl::StrFormat("node<%d>::col[%d]", NodeID(), Index());
 }
 
-StatusOr<types::DataType> Column::OutputDataType(const CompilerState &,
+StatusOr<types::DataType> Column::OutputDataType(const PlanState &,
                                                  const Schema &input_schema) const {
   DCHECK(is_initialized_) << "Not initialized";
   StatusOr<const Relation> s = input_schema.GetRelation(NodeID());
@@ -197,7 +197,7 @@ std::vector<const Column *> ScalarFunc::ColumnDeps() {
   return cols;
 }
 
-StatusOr<types::DataType> ScalarFunc::OutputDataType(const CompilerState &state,
+StatusOr<types::DataType> ScalarFunc::OutputDataType(const PlanState &state,
                                                      const Schema &input_schema) const {
   // The output data type of a function is based on the computed types of the children
   // followed by the looking up the function in the registry and getting the output
@@ -277,7 +277,7 @@ std::vector<const Column *> AggregateExpression::ColumnDeps() {
   return cols;
 }
 
-StatusOr<types::DataType> AggregateExpression::OutputDataType(const CompilerState &state,
+StatusOr<types::DataType> AggregateExpression::OutputDataType(const PlanState &state,
                                                               const Schema &input_schema) const {
   // The output data type of a function is based on the computed types of the args
   // followed by the looking up the function in the registry and getting the output

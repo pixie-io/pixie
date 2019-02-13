@@ -35,7 +35,7 @@ class OperatorTest : public ::testing::Test {
 
  protected:
   Schema schema_;
-  CompilerState state_;
+  PlanState state_;
 };
 
 TEST_F(OperatorTest, from_proto_map) {
