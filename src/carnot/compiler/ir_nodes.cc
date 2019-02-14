@@ -83,12 +83,34 @@ Status MapIR::Init(IRNode* parent, IRNode* lambda_func) {
   return Status::OK();
 }
 
-bool MapIR::HasLogicalRepr() const { return false; }
+bool MapIR::HasLogicalRepr() const { return true; }
 
 std::string MapIR::DebugString(int64_t depth) const {
   return DebugStringFmt(depth, absl::StrFormat("%d:MapIR", id()),
                         {{"Parent", parent_->DebugString(depth + 1)},
                          {"Lambda", lambda_func_->DebugString(depth + 1)}});
+}
+
+Status AggIR::Init(IRNode* parent, IRNode* by_func, IRNode* agg_func) {
+  // TODO(philkuz) expect by_func to be a lambda node once the types diff is in.
+  by_func_ = by_func;
+
+  // TODO(philkuz) expect by_func to be a lambda node or funcname node once the types diff is in.
+  agg_func_ = agg_func;
+  parent_ = parent;
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, agg_func_));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, by_func_));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent_, this));
+  return Status();
+}
+
+bool AggIR::HasLogicalRepr() const { return true; }
+
+std::string AggIR::DebugString(int64_t depth) const {
+  return DebugStringFmt(depth, absl::StrFormat("%d:AggIR", id()),
+                        {{"Parent", parent_->DebugString(depth + 1)},
+                         {"ByFn", by_func_->DebugString(depth + 1)},
+                         {"AggFn", agg_func_->DebugString(depth + 1)}});
 }
 
 bool ColumnIR::HasLogicalRepr() const { return false; }
@@ -111,6 +133,16 @@ std::string StringIR::DebugString(int64_t depth) const {
   return absl::StrFormat("%s%d:%s\t-\t%s", std::string(depth, '\t'), id(), "Str", str());
 }
 
+bool FuncNameIR::HasLogicalRepr() const { return false; }
+Status FuncNameIR::Init(std::string func_name) {
+  func_name_ = func_name;
+  return Status::OK();
+}
+
+std::string FuncNameIR::DebugString(int64_t depth) const {
+  return absl::StrFormat("%s%d:%s\t-\t%s", std::string(depth, '\t'), id(), "Str", func_name());
+}
+
 bool ListIR::HasLogicalRepr() const { return false; }
 
 Status ListIR::AddListItem(IRNode* node) {
@@ -127,12 +159,29 @@ std::string ListIR::DebugString(int64_t depth) const {
 }
 
 bool LambdaIR::HasLogicalRepr() const { return false; }
+bool LambdaIR::HasDictBody() const { return has_dict_body_; }
+
 Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names,
                       ColExprMap col_expr_map) {
-  // TODO(philkuz) create the relation.
   expected_column_names_ = expected_column_names;
   col_expr_map_ = col_expr_map;
+  has_dict_body_ = true;
   return Status::OK();
+}
+
+Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names, IRNode* node) {
+  expected_column_names_ = expected_column_names;
+  col_expr_map_[default_key] = node;
+  has_dict_body_ = false;
+  return Status::OK();
+}
+
+StatusOr<IRNode*> LambdaIR::GetExpr() {
+  if (has_dict_body_) {
+    return error::InvalidArgument(
+        "Couldn't return the default expression, Lambda initialized as dict.");
+  }
+  return col_expr_map_[default_key];
 }
 
 std::string LambdaIR::DebugString(int64_t depth) const {
@@ -146,18 +195,19 @@ std::string LambdaIR::DebugString(int64_t depth) const {
   return DebugStringFmt(depth, absl::StrFormat("%d:LambdaIR", id()), childMap);
 }
 
-bool BinFuncIR::HasLogicalRepr() const { return false; }
-Status BinFuncIR::Init(std::string func_name, IRNode* left, IRNode* right) {
+bool FuncIR::HasLogicalRepr() const { return false; }
+Status FuncIR::Init(std::string func_name, std::vector<IRNode*> args) {
   func_name_ = func_name;
-  left_ = left;
-  right_ = right;
+  args_ = args;
   return Status::OK();
 }
 
-std::string BinFuncIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(
-      depth, absl::StrFormat("%d:BinFuncIR (%s)", id(), func_name_),
-      {{"left", left_->DebugString(depth + 1)}, {"right", right_->DebugString(depth + 1)}});
+std::string FuncIR::DebugString(int64_t depth) const {
+  std::map<std::string, std::string> childMap;
+  for (size_t i = 0; i < args_.size(); i++) {
+    childMap[absl::StrFormat("arg%d", i)] = args_[i]->DebugString(depth + 1);
+  }
+  return DebugStringFmt(depth, absl::StrFormat("%d:FuncIR", id()), childMap);
 }
 
 /* Float IR */

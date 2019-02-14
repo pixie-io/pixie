@@ -23,6 +23,7 @@ constexpr const char* kUDFPrefix = "pl";
 constexpr const char* kFromOpId = "From";
 constexpr const char* kRangeOpId = "Range";
 constexpr const char* kMapOpId = "Map";
+constexpr const char* kAggOpId = "Agg";
 
 using VarTable = std::unordered_map<std::string, IRNode*>;
 using ArgMap = std::unordered_map<std::string, IRNode*>;
@@ -51,13 +52,16 @@ struct LambdaExprReturn {
    * Does manipulate this unordered_set, but assuming that we don't need LambdaExprReturn to stay
    * constant after it's returned
    *
-   * @param ret
-   * @return std::unordered_unordered_set<std::string>
+   * @param set of column strings to merge.
+   * @return a set that contains this object's columns merged with the arg.
    */
-  const std::unordered_set<std::string>& MergeColumns(const LambdaExprReturn& ret) {
-    input_relation_columns_.insert(ret.input_relation_columns_.begin(),
-                                   ret.input_relation_columns_.end());
+  const std::unordered_set<std::string>& MergeColumns(
+      const std::unordered_set<std::string>& input_columns) {
+    input_relation_columns_.insert(input_columns.begin(), input_columns.end());
     return input_relation_columns_;
+  }
+  const std::unordered_set<std::string>& MergeColumns(const LambdaExprReturn& ret) {
+    return MergeColumns(ret.input_relation_columns_);
   }
 
   // The columns we expect to find in the lambda function.
@@ -158,14 +162,14 @@ class ASTWalker {
    *
    *
    * @param node
-   * @return StatusOr<IRNode*>
+   * @return StatusOr<IRNode*> the op contained by the call ast.
    */
   StatusOr<IRNode*> ProcessOpCallNode(const pypa::AstCallPtr& node);
   /**
    * @brief Processes the From operator.
    *
    * @param node
-   * @return StatusOr<IRNode*>
+   * @return StatusOr<IRNode*> the from op.
    */
   StatusOr<IRNode*> ProcessFromOp(const pypa::AstCallPtr& node);
 
@@ -173,7 +177,7 @@ class ASTWalker {
    * @brief Processes the Range operator.
    *
    * @param node
-   * @return StatusOr<IRNode*>
+   * @return StatusOr<IRNode*> the range op.
    */
   StatusOr<IRNode*> ProcessRangeOp(const pypa::AstCallPtr& node);
 
@@ -181,9 +185,17 @@ class ASTWalker {
    * @brief Processes the Map operator.
    *
    * @param node
-   * @return StatusOr<IRNode*>
+   * @return StatusOr<IRNode*> the map op.
    */
   StatusOr<IRNode*> ProcessMapOp(const pypa::AstCallPtr& node);
+
+  /**
+   * @brief Processes the Agg operator.
+   *
+   * @param node
+   * @return StatusOr<IRNode*> the agg op.
+   */
+  StatusOr<IRNode*> ProcessAggOp(const pypa::AstCallPtr& node);
 
   /**
    * @brief ProcessFunc handles functions that have already been determined with a name.
@@ -226,6 +238,8 @@ class ASTWalker {
    * @return StatusOr<IRNode*>
    */
   StatusOr<IRNode*> ProcessStrDataNode(const pypa::AstStrPtr& ast);
+
+  StatusOr<IRNode*> ProcessAttrDataNode(const pypa::AstAttributePtr& node);
 
   /**
    * @brief ProcessDataNode takes in what are typically function arguments and returns the
@@ -293,12 +307,15 @@ class ASTWalker {
   StatusOr<LambdaExprReturn> ProcessLambdaAttribute(const std::string& arg_name,
                                                     const pypa::AstAttributePtr& node);
 
+  StatusOr<LambdaExprReturn> MakeLambdaFunc(const std::string& fn_name,
+                                            const std::vector<LambdaExprReturn>& children_ret_expr,
+                                            const pypa::AstPtr& parent_node);
   /**
-   * @brief Processes a call node with the lambda context (arg_name) that helps identify and return
-   * the column names we want, and notifies us when there is a column name being used
+   * @brief Processes a call node with the lambda context (arg_name) that helps identify and
+   * return the column names we want, and notifies us when there is a column name being used
    *
-   * @param arg_name the name of the argument of the lambda function which represents a record. Used
-   * to identify column names.
+   * @param arg_name the name of the argument of the lambda function which represents a record.
+   * Used to identify column names.
    * @param node the node we call.
    * @return StatusOr<LambdaExprReturn>
    */

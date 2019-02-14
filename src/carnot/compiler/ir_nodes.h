@@ -63,15 +63,19 @@ enum IRNodeType {
   MemorySourceType,
   RangeType,
   MapType,
+  AggType,
   StringType,
   FloatType,
   IntType,
   BoolType,
   BinFuncType,
+  FuncType,
   ListType,
   LambdaType,
-  ColumnType
+  ColumnType,
+  FuncNameType
 };
+
 /**
  * @brief Node class for the IR.
  *
@@ -178,6 +182,26 @@ class MapIR : public IRNode {
 };
 
 /**
+ * @brief The RangeIR describe the range()
+ * operator, which is combined with a Source
+ * when converted to the Logical Plan.
+ *
+ */
+class AggIR : public IRNode {
+ public:
+  AggIR() = delete;
+  explicit AggIR(int64_t id) : IRNode(id, AggType) {}
+  Status Init(IRNode* parent, IRNode* by_func, IRNode* agg_func);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+
+ private:
+  IRNode* by_func_;
+  IRNode* agg_func_;
+  IRNode* parent_;
+};
+
+/**
  * @brief StringIR wraps around the String AST node
  * and only contains the value of that string.
  *
@@ -194,6 +218,26 @@ class StringIR : public IRNode {
  private:
   std::string str_;
 };
+
+/**
+ * @brief ColumnIR wraps around columns found in the lambda functions.
+ * @brief StringIR wraps around the String AST node
+ * and only contains the value of that string.
+ *
+ */
+class FuncNameIR : public IRNode {
+ public:
+  FuncNameIR() = delete;
+  explicit FuncNameIR(int64_t id) : IRNode(id, FuncNameType) {}
+  Status Init(const std::string func_name);
+  bool HasLogicalRepr() const override;
+  std::string func_name() const { return func_name_; }
+  std::string DebugString(int64_t depth) const override;
+
+ private:
+  std::string func_name_;
+};
+
 /**
  * @brief ColumnIR wraps around columns found in the lambda functions.
  *
@@ -242,32 +286,45 @@ class LambdaIR : public IRNode {
   LambdaIR() = delete;
   explicit LambdaIR(int64_t id) : IRNode(id, LambdaType) {}
   Status Init(std::unordered_set<std::string> column_names, ColExprMap expr_map);
+  /**
+   * @brief Init for the Lambda called elsewhere. Uses a default value for the key to the expression
+   * map.
+   */
+  Status Init(std::unordered_set<std::string> expected_column_names, IRNode* node);
+  /**
+   * @brief Returns the one_expr_ if it has only one expr in the col_expr_map, otherwise returns an
+   * error.
+   *
+   * @return StatusOr<IRNode*>
+   */
+  StatusOr<IRNode*> GetExpr();
   bool HasLogicalRepr() const override;
+  bool HasDictBody() const;
   std::string DebugString(int64_t depth) const override;
 
  private:
+  static constexpr const char* default_key = "_default";
   std::unordered_set<std::string> expected_column_names_;
   ColExprMap col_expr_map_;
+  bool has_dict_body_;
 };
 
 /**
- * @brief Represents Binary Expressions that are later converted into proper function calls.
+ * @brief Represents functions with arbitrary number of values
  */
-class BinFuncIR : public IRNode {
+class FuncIR : public IRNode {
  public:
-  BinFuncIR() = delete;
-  explicit BinFuncIR(int64_t id) : IRNode(id, BinFuncType) {}
-  Status Init(std::string func_name, IRNode* left, IRNode* right);
+  FuncIR() = delete;
+  explicit FuncIR(int64_t id) : IRNode(id, FuncType) {}
+  Status Init(std::string func_name, std::vector<IRNode*> args);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  std::string func_name() { return func_name_; }
-  IRNode* left() { return left_; }
-  IRNode* right() { return right_; }
+  std::string func_name() const { return func_name_; }
+  const std::vector<IRNode*>& args() { return args_; }
 
  private:
   std::string func_name_;
-  IRNode* left_;
-  IRNode* right_;
+  std::vector<IRNode*> args_;
 };
 
 /**

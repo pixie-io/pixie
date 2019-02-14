@@ -42,7 +42,7 @@ Status CreateAstError(const std::string& err_msg, const pypa::AstPtr& ast) {
  * @param type
  * @return std::string
  */
-std::string GetAstTypeName(const AstType& type) {
+std::string GetAstTypeName(AstType type) {
   // TODO(philkuz) (PL-335) impl.
   return absl::StrFormat("%d", type);
 }
@@ -53,7 +53,7 @@ std::string GetAstTypeName(const AstType& type) {
  * @param node
  * @return std::string
  */
-std::string GetNameID(const pypa::AstPtr& node) { return PYPA_PTR_CAST(Name, node)->id; }
+std::string GetNameID(pypa::AstPtr node) { return PYPA_PTR_CAST(Name, node)->id; }
 
 /**
  * @brief Gets the string out of what is suspected to be a strAst. Errors out if ast is not of type
@@ -123,6 +123,7 @@ Status ASTWalker::ProcessAssignNode(const pypa::AstAssignPtr& node) {
     return CreateAstError("Assign value must be a function call.", node->value);
   }
   StatusOr<IRNode*> value = ProcessOpCallNode(PYPA_PTR_CAST(Call, node->value));
+
   PL_RETURN_IF_ERROR(value);
 
   var_table_[assign_name] = value.ValueOrDie();
@@ -189,7 +190,6 @@ StatusOr<IRNode*> ASTWalker::LookupName(const pypa::AstNamePtr& name_node) {
     return CreateAstError(err_msg, name_node);
   }
   IRNode* node = find_name->second;
-
   return node;
 }
 
@@ -250,6 +250,20 @@ StatusOr<IRNode*> ASTWalker::ProcessMapOp(const pypa::AstCallPtr& node) {
   }
 }
 
+StatusOr<IRNode*> ASTWalker::ProcessAggOp(const pypa::AstCallPtr& node) {
+  PL_ASSIGN_OR_RETURN(AggIR * ir_node, ir_graph_->MakeNode<AggIR>());
+  // Get arguments.
+  PL_ASSIGN_OR_RETURN(ArgMap args, GetArgs(node, {"by", "fn"}, true));
+  // TODO(philkuz) this is under the assumption that Agg is always called as an attribute.
+  // Will have to change later on.
+  PL_ASSIGN_OR_RETURN(IRNode * call_result,
+                      ProcessAttrFunc(PYPA_PTR_CAST(Attribute, node->function)));
+
+  // TODO(philkuz) refactor the other op handlers to do the same.
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["by"], args["fn"]));
+  return ir_node;
+}
+
 StatusOr<IRNode*> ASTWalker::ProcessFunc(const std::string& func_name,
                                          const pypa::AstCallPtr& node) {
   IRNode* ir_node;
@@ -259,6 +273,8 @@ StatusOr<IRNode*> ASTWalker::ProcessFunc(const std::string& func_name,
     PL_ASSIGN_OR_RETURN(ir_node, ProcessRangeOp(node));
   } else if (func_name == kMapOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessMapOp(node));
+  } else if (func_name == kAggOpId) {
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessAggOp(node));
   } else {
     std::string err_msg = absl::Substitute("No function named '$0'", func_name);
     return CreateAstError(err_msg, node);
@@ -307,10 +323,33 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const std::string& 
     PL_RETURN_IF_ERROR(expr->Init(attribute));
     return LambdaExprReturn(expr, column_names);
   } else if (value == kUDFPrefix) {
-    // TODO(philkuz) make the pl comparison less hard coded.
     return LambdaExprReturn(absl::StrFormat("%s.%s", value, attribute));
   }
   return CreateAstError(absl::StrFormat("Couldn't find value %s", value), node);
+}
+
+StatusOr<IRNode*> ASTWalker::ProcessAttrDataNode(const pypa::AstAttributePtr& node) {
+  // make sure that the attribute values are of type name.
+  if (node->attribute->type != AstType::Name) {
+    return CreateAstError(absl::StrFormat("Attribute must be a variable, not a %s",
+                                          GetAstTypeName(node->attribute->type)),
+                          node->attribute);
+  }
+  if (node->value->type != AstType::Name) {
+    return CreateAstError(absl::StrFormat("Attribute value must be a variable, not a %s",
+                                          GetAstTypeName(node->value->type)),
+                          node->value);
+  }
+  auto value = GetNameID(node->value);
+  auto attribute = GetNameID(node->attribute);
+
+  if (value == kUDFPrefix) {
+    PL_ASSIGN_OR_RETURN(FuncNameIR * func_node, ir_graph_->MakeNode<FuncNameIR>());
+    PL_RETURN_IF_ERROR(func_node->Init(absl::StrFormat("%s.%s", value, attribute)));
+    return func_node;
+  }
+  return CreateAstError(
+      absl::StrFormat("Couldn't find value %s. Expected prefix of '%s.", value, kUDFPrefix), node);
 }
 
 StatusOr<IRNode*> ASTWalker::ProcessNumberNode(const pypa::AstNumberPtr& node) {
@@ -331,23 +370,39 @@ StatusOr<IRNode*> ASTWalker::ProcessNumberNode(const pypa::AstNumberPtr& node) {
   }
 }
 
+StatusOr<LambdaExprReturn> ASTWalker::MakeLambdaFunc(
+    const std::string& fn_name, const std::vector<LambdaExprReturn>& children_ret_expr,
+    const pypa::AstPtr& parent_node) {
+  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->MakeNode<FuncIR>());
+  std::vector<IRNode*> expressions;
+  auto ret = LambdaExprReturn(ir_node);
+  for (auto expr_ret : children_ret_expr) {
+    if (expr_ret.StringOnly()) {
+      return CreateAstError("Expected real expressions, not strings", parent_node);
+    }
+    expressions.push_back(expr_ret.expr_);
+    ret.MergeColumns(expr_ret);
+  }
+  PL_RETURN_IF_ERROR(ir_node->Init(fn_name, expressions));
+  return ret;
+}
+
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaBinOp(const std::string& arg_name,
                                                          const pypa::AstBinOpPtr& node) {
-  // TODO(philkuz) determine if this is the right place to store this.
-  // map the operator to a string
   std::string op_str = pypa::to_string(node->op);
+  // map the operator to a string
   auto op_find = kOP_TO_UDF_MAP.find(op_str);
   if (op_find == kOP_TO_UDF_MAP.end()) {
     return CreateAstError(absl::StrFormat("Operator '%s' not handled", op_str), node);
   }
 
-  PL_ASSIGN_OR_RETURN(BinFuncIR * name, ir_graph_->MakeNode<BinFuncIR>());
-
   std::string fn_name = op_find->second;
+  std::vector<LambdaExprReturn> children_ret_expr;
   PL_ASSIGN_OR_RETURN(auto left_expr_ret, ProcessLambdaExpr(arg_name, node->left));
   PL_ASSIGN_OR_RETURN(auto right_expr_ret, ProcessLambdaExpr(arg_name, node->right));
-  PL_RETURN_IF_ERROR(name->Init(fn_name, left_expr_ret.expr_, right_expr_ret.expr_));
-  return LambdaExprReturn(name, left_expr_ret, right_expr_ret);
+  children_ret_expr.push_back(left_expr_ret);
+  children_ret_expr.push_back(right_expr_ret);
+  return MakeLambdaFunc(fn_name, children_ret_expr, node);
 }
 
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCall(const std::string& arg_name,
@@ -361,20 +416,15 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCall(const std::string& arg_n
   if (arglist.defaults.size() != 0 || arglist.keywords.size() != 0) {
     return CreateAstError("Only non-default and non-keyword args allowed.", node);
   }
-  auto num_args = arglist.arguments.size();
-  if (num_args != 2) {
-    return CreateAstError(absl::StrFormat("Expected only two arguments, got %d", num_args), node);
-  }
+
   std::string fn_name = attr_result.str_;
-  PL_ASSIGN_OR_RETURN(BinFuncIR * ir_node, ir_graph_->MakeNode<BinFuncIR>());
-  PL_ASSIGN_OR_RETURN(LambdaExprReturn left_return,
-                      ProcessLambdaExpr(arg_name, arglist.arguments[0]));
-  PL_ASSIGN_OR_RETURN(LambdaExprReturn right_return,
-                      ProcessLambdaExpr(arg_name, arglist.arguments[1]));
+  std::vector<LambdaExprReturn> children_ret_expr;
+  for (auto arg_ast : arglist.arguments) {
+    PL_ASSIGN_OR_RETURN(auto rt, ProcessLambdaExpr(arg_name, arg_ast));
+    children_ret_expr.push_back(rt);
+  }
 
-  PL_RETURN_IF_ERROR(ir_node->Init(fn_name, left_return.expr_, right_return.expr_));
-
-  return LambdaExprReturn(ir_node, left_return, right_return);
+  return MakeLambdaFunc(fn_name, children_ret_expr, node);
 }
 
 /**
@@ -465,9 +515,11 @@ StatusOr<IRNode*> ASTWalker::ProcessLambda(const pypa::AstLambdaPtr& ast) {
           ir_node->Init(return_struct.input_relation_columns_, return_struct.col_expr_map_));
       return ir_node;
     }
+
     default: {
-      // for now only allow dictionary
-      return CreateAstError(absl::StrFormat("Lambda body must be a dictionary"), ast->body);
+      PL_ASSIGN_OR_RETURN(LambdaExprReturn return_val, ProcessLambdaExpr(arg_name, ast->body));
+      PL_RETURN_IF_ERROR(ir_node->Init(return_val.input_relation_columns_, return_val.expr_));
+      return ir_node;
     }
   }
 }
