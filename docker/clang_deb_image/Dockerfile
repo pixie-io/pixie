@@ -32,14 +32,18 @@ RUN cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
     -DLLVM_ENABLE_DOXYGEN=OFF \
     -DLLVM_ENABLE_RTTI=ON \
     -DCLANG_INCLUDE_TESTS=OFF \
+    -DLIBCLANG_BUILD_STATIC=ON \
     -DLLVM_INCLUDE_TESTS=OFF \
     ../llvm
 
 RUN make -j $(nproc)
 RUN make install
 
+# We need libclang.a, but the clang build system excludes it during make install.
+RUN cp -a /llvm_all/build/lib/libclang.a /opt/clang-7.0/lib
+
 WORKDIR /opt/clang-7.0
 VOLUME /image
-ENV deb_name clang-7.0-pl5.deb
+ENV deb_name clang-7.0-pl7.deb
 CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n clang-7.0 -v 7.0-pl5 --prefix /opt/clang-7.0 ."]
+        -s dir -t deb -n clang-7.0 -v 7.0-pl7 --prefix /opt/clang-7.0 ."]

@@ -13,7 +13,7 @@ bcc_deb_gs_path :=  gs://pl-infra-dev-artifacts/$(bcc_deb_fname)
 bcc_deb_image_tag := "gcr.io/pl-dev-infra/bcc_deb_image:$(BCC_DEB_IMAGE_VERSION)"
 
 ## Clang deb parameters
-CLANG_DEB_IMAGE_VERSION := 7.0-pl5
+CLANG_DEB_IMAGE_VERSION := 7.0-pl7
 clang_deb_fname := "clang-$(CLANG_DEB_IMAGE_VERSION).deb"
 clang_deb_gs_path :=  gs://pl-infra-dev-artifacts/$(clang_deb_fname)
 clang_deb_image_tag := "gcr.io/pl-dev-infra/clang_deb_image:$(CLANG_DEB_IMAGE_VERSION)"
