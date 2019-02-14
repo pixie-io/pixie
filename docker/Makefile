@@ -2,22 +2,20 @@
 # Commands.
 DOCKER := docker
 
-## The BCC deb image version, defaults to the datestamp.
-BCC_DEB_IMAGE_VERSION := 1.1
-
-## The BCC deb name.
-bcc_deb_fname := "bcc-pixie-$(BCC_DEB_IMAGE_VERSION).deb"
-
 ## SSH private key.
 SSH_PRIVATE_KEY_FILE := ${HOME}/.ssh/id_rsa
 SSH_PRIVATE_KEY := `cat $(SSH_PRIVATE_KEY_FILE)`
 
+## BCC deb parameters
+BCC_DEB_IMAGE_VERSION := 1.1
+bcc_deb_fname := "bcc-pixie-$(BCC_DEB_IMAGE_VERSION).deb"
+bcc_deb_gs_path :=  gs://pl-infra-dev-artifacts/$(bcc_deb_fname)
 bcc_deb_image_tag := "gcr.io/pl-dev-infra/bcc_deb_image:$(BCC_DEB_IMAGE_VERSION)"
 
-
-
-CLANG_DEB_IMAGE_VERSION := 7.0-pl4
-clang_deb_fname := "clang-7.0-pl4.deb"
+## Clang deb parameters
+CLANG_DEB_IMAGE_VERSION := 7.0-pl5
+clang_deb_fname := "clang-$(CLANG_DEB_IMAGE_VERSION).deb"
+clang_deb_gs_path :=  gs://pl-infra-dev-artifacts/$(clang_deb_fname)
 clang_deb_image_tag := "gcr.io/pl-dev-infra/clang_deb_image:$(CLANG_DEB_IMAGE_VERSION)"
 
 
@@ -31,9 +29,11 @@ build_bcc_deb_image:
 	$(DOCKER) build . --build-arg SSH_PRIVATE_KEY="${SSH_PRIVATE_KEY}" -t $(bcc_deb_image_tag)
 
 .PHONY: upload_bcc_deb
-upload_bcc_deb: build_bcc_deb_image
+upload_bcc_deb: build_bcc_deb_image  ## Target to build and upload BCC deb image
 	$(DOCKER) run --rm -e deb_name=$(bcc_deb_fname) -e deb_version=$(BCC_DEB_IMAGE_VERSION) -v ${PWD}:/image $(bcc_deb_image_tag)
 	gsutil cp $(bcc_deb_fname)  gs://pl-infra-dev-artifacts/$(bcc_deb_fname)
+	gsutil acl ch -u allUsers:READER ${bcc_deb_gs_path}
+	@echo "SHA: $(shell sha256sum ${bcc_deb_fname})"
 	rm -f $(bcc_deb_fname)
 
 # BCC DEB Image configuration.
@@ -43,9 +43,12 @@ build_clang_deb_image:
 	$(DOCKER) build . -t $(clang_deb_image_tag)
 
 .PHONY: upload_clang_deb
-upload_clang_deb: build_clang_deb_image
+upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb image
 	$(DOCKER) run --rm -e deb_name=$(clang_deb_fname) -v ${PWD}:/image $(clang_deb_image_tag)
-	gsutil cp $(clang_deb_fname)  gs://pl-infra-dev-artifacts/$(clang_deb_fname)
+	gsutil cp $(clang_deb_fname)  ${clang_deb_gs_path}
+	gsutil acl ch -u allUsers:READER ${clang_deb_gs_path}
+	@echo "SHA: "
+	sha256sum $(clang_deb_fname)
 	rm -f $(clang_deb_fname)
 
 help: ## Print help for targets with comments.

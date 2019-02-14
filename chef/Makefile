@@ -27,7 +27,7 @@ build_and_push_base_dev_image:
 		packer_docker_dev.json
 	echo $(BASE_DEV_IMAGE_VERSION) > $(BASE_DEV_IMAGE_VERSION_FILE)
 
-.PHONY: build_and_push_dev_image
+.PHONY: build_and_push_dev_images
 build_and_push_dev_images:
 	$(PACKER) build \
 		-var "base_image_and_tag=$(REPOSITORY)/base_dev_image:$(LATEST_BASE_DEV_IMAGE)" \

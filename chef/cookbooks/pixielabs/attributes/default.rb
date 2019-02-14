@@ -14,10 +14,10 @@ default['bcc']['version'] = "1.1"
 
 default['clang']               = {}
 default['clang']['deb']        =
-  'https://storage.googleapis.com/pl-infra-dev-artifacts/clang-7.0-pl4.deb'
+  'https://storage.googleapis.com/pl-infra-dev-artifacts/clang-7.0-pl5.deb'
 default['clang']['deb_sha256'] =
-  '8d2720b1c5eb454324caf0463bb358fe6c8398f5e45ad092f14cac993a549e89'
-default['clang']['version'] = "7.0-pl4"
+  '673b9cb6053b578843fe1c7cb4011757c14dfb9555d4db8b10a5db28e337d86d'
+default['clang']['version'] = "7.0-pl5"
 
 
 default['skaffold']                  = {}

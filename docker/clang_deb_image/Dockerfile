@@ -30,6 +30,7 @@ RUN cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
     -DLLVM_TARGETS_TO_BUILD="BPF;X86" \
     -DLLVM_ENABLE_SPHINX=Off \
     -DLLVM_ENABLE_DOXYGEN=OFF \
+    -DLLVM_ENABLE_RTTI=ON \
     -DCLANG_INCLUDE_TESTS=OFF \
     -DLLVM_INCLUDE_TESTS=OFF \
     ../llvm
@@ -39,6 +40,6 @@ RUN make install
 
 WORKDIR /opt/clang-7.0
 VOLUME /image
-ENV deb_name clang-7.0-pl4.deb
+ENV deb_name clang-7.0-pl5.deb
 CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n clang-7.0 -v 7.0-pl4 --prefix /opt/clang-7.0 ."]
+        -s dir -t deb -n clang-7.0 -v 7.0-pl5 --prefix /opt/clang-7.0 ."]
