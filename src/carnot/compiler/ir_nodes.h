@@ -137,7 +137,6 @@ class IRNode {
 class OperatorIR : public IRNode {
  public:
   OperatorIR() = delete;
-  explicit OperatorIR(int64_t id, IRNodeType type) : IRNode(id, type) {}
   bool IsOp() const { return true; }
   plan::Relation relation() const { return relation_; }
   Status SetRelation(plan::Relation relation) {
@@ -145,25 +144,66 @@ class OperatorIR : public IRNode {
     return Status::OK();
   }
   bool IsRelationInit() const { return relation_init_; }
+  bool HasParent() const { return has_parent_; }
+  OperatorIR* parent() const { return parent_; }
+  Status SetParent(IRNode* parent);
+
+ protected:
+  explicit OperatorIR(int64_t id, IRNodeType type, bool has_parent)
+      : IRNode(id, type), has_parent_(has_parent) {}
 
  private:
   plan::Relation relation_;
   bool relation_init_ = false;
+  bool has_parent_;
+  OperatorIR* parent_;
+};
+
+/**
+ * @brief ColumnIR wraps around columns found in the lambda functions.
+ *
+ */
+class ColumnIR : public IRNode {
+ public:
+  ColumnIR() = delete;
+  explicit ColumnIR(int64_t id) : IRNode(id, ColumnType) {}
+  Status Init(const std::string col_name);
+  bool HasLogicalRepr() const override;
+  std::string col_name() const { return col_name_; }
+  std::string DebugString(int64_t depth) const override;
+  bool IsOp() const override { return false; }
+  void SetColumnIdx(int64_t col_idx) {
+    col_idx_ = col_idx;
+    col_idx_set_ = true;
+  }
+  bool col_idx_set() const { return col_idx_set_; }
+  int64_t col_idx() const { return col_idx_; }
+
+  void SetColumnType(types::DataType type) {
+    type_ = type;
+    col_type_set_ = true;
+  }
+  bool col_type_set() const { return col_type_set_; }
+  types::DataType type() const { return type_; }
+
+ private:
+  std::string col_name_;
+  // The column index in the relation.
+  int64_t col_idx_;
+  // The data type in the relation.
+  types::DataType type_;
+  bool col_idx_set_ = false;
+  bool col_type_set_ = false;
 };
 
 /**
  * @brief The MemorySourceIR is a dual logical plan
  * and IR node operator. It inherits from both classes
- *
- * TODO(philkuz) Do we make the IR operators that do have a logical representation
- * inherit from those logical operators? There's not too
- * much added value to do so and we could just make a method that returns the Logical Plan
- * node.
  */
 class MemorySourceIR : public OperatorIR {
  public:
   MemorySourceIR() = delete;
-  explicit MemorySourceIR(int64_t id) : OperatorIR(id, MemorySourceType) {}
+  explicit MemorySourceIR(int64_t id) : OperatorIR(id, MemorySourceType, false) {}
   Status Init(IRNode* table_node, IRNode* select);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -175,6 +215,11 @@ class MemorySourceIR : public OperatorIR {
     time_set_ = true;
   }
   bool IsTimeSet() const { return time_set_; }
+  bool columns_set() const { return columns_set_; }
+  void SetColumns(std::vector<ColumnIR*> columns) {
+    columns_set_ = true;
+    columns_ = columns;
+  }
 
  private:
   IRNode* table_node_;
@@ -182,6 +227,9 @@ class MemorySourceIR : public OperatorIR {
   bool time_set_;
   int64_t time_start_ms_;
   int64_t time_stop_ms_;
+  // in conjunction with the relation, we can get the idx, names, and types of this column.
+  std::vector<ColumnIR*> columns_;
+  bool columns_set_ = false;
 };
 
 /**
@@ -190,14 +238,22 @@ class MemorySourceIR : public OperatorIR {
 class MemorySinkIR : public OperatorIR {
  public:
   MemorySinkIR() = delete;
-  explicit MemorySinkIR(int64_t id) : OperatorIR(id, MemorySinkType) {}
+  explicit MemorySinkIR(int64_t id) : OperatorIR(id, MemorySinkType, false) {}
   Status Init(IRNode* parent);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   IRNode* parent() { return parent_; }
+  void SetName(std::string name) {
+    name_ = name;
+    name_set_ = true;
+  }
+  bool name_set() const { return name_set_; }
+  std::string name() const { return name_; }
 
  private:
   IRNode* parent_;
+  std::string name_;
+  bool name_set_ = false;
 };
 
 /**
@@ -209,16 +265,14 @@ class MemorySinkIR : public OperatorIR {
 class RangeIR : public OperatorIR {
  public:
   RangeIR() = delete;
-  explicit RangeIR(int64_t id) : OperatorIR(id, RangeType) {}
+  explicit RangeIR(int64_t id) : OperatorIR(id, RangeType, false) {}
   Status Init(IRNode* parent, IRNode* time_repr);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  IRNode* parent() { return parent_; }
   IRNode* time_repr() { return time_repr_; }
 
  private:
   IRNode* time_repr_;
-  IRNode* parent_;
 };
 
 /**
@@ -230,16 +284,22 @@ class RangeIR : public OperatorIR {
 class MapIR : public OperatorIR {
  public:
   MapIR() = delete;
-  explicit MapIR(int64_t id) : OperatorIR(id, MapType) {}
+  explicit MapIR(int64_t id) : OperatorIR(id, MapType, false) {}
   Status Init(IRNode* parent, IRNode* lambda_func);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   IRNode* lambda_func() const { return lambda_func_; }
-  IRNode* parent() const { return parent_; }
+  void SetColExprMap(ColExprMap col_expr_map) {
+    col_expr_map_ = col_expr_map;
+    col_expr_map_set_ = true;
+  }
+  bool col_expr_map_set() const { return col_expr_map_set_; }
 
  private:
   IRNode* lambda_func_;
-  IRNode* parent_;
+  // The map from new column_names to expressions.
+  ColExprMap col_expr_map_;
+  bool col_expr_map_set_ = false;
 };
 
 /**
@@ -251,18 +311,32 @@ class MapIR : public OperatorIR {
 class AggIR : public OperatorIR {
  public:
   AggIR() = delete;
-  explicit AggIR(int64_t id) : OperatorIR(id, AggType) {}
+  explicit AggIR(int64_t id) : OperatorIR(id, AggType, false) {}
   Status Init(IRNode* parent, IRNode* by_func, IRNode* agg_func);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  IRNode* parent() const { return parent_; }
   IRNode* by_func() const { return by_func_; }
   IRNode* agg_func() const { return agg_func_; }
+  void SetGroups(std::vector<ColumnIR*> groups) {
+    groups_ = groups;
+    groups_set_ = true;
+  }
+  bool groups_set() const { return groups_set_; }
+  void SetAggValMap(ColExprMap agg_val_map) {
+    agg_val_map_ = agg_val_map;
+    agg_val_map_set_ = true;
+  }
+  bool agg_val_map_set() const { return agg_val_map_set_; }
 
  private:
   IRNode* by_func_;
   IRNode* agg_func_;
-  IRNode* parent_;
+  // contains group_names and groups columns.
+  std::vector<ColumnIR*> groups_;
+  bool groups_set_ = false;
+  // The map from value_names to values
+  ColExprMap agg_val_map_;
+  bool agg_val_map_set_ = false;
 };
 
 /**
@@ -302,24 +376,6 @@ class FuncNameIR : public IRNode {
 
  private:
   std::string func_name_;
-};
-
-/**
- * @brief ColumnIR wraps around columns found in the lambda functions.
- *
- */
-class ColumnIR : public IRNode {
- public:
-  ColumnIR() = delete;
-  explicit ColumnIR(int64_t id) : IRNode(id, ColumnType) {}
-  Status Init(const std::string col_name);
-  bool HasLogicalRepr() const override;
-  std::string col_name() const { return col_name_; }
-  std::string DebugString(int64_t depth) const override;
-  bool IsOp() const override { return false; }
-
- private:
-  std::string col_name_;
 };
 
 /**

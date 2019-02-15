@@ -27,6 +27,14 @@ void IRNode::SetLineCol(int64_t line, int64_t col) {
   line_col_set_ = true;
 }
 
+Status OperatorIR::SetParent(IRNode* node) {
+  if (!node->IsOp()) {
+    return error::InvalidArgument("Expected Op, got $0 instead", node->type_string());
+  }
+  parent_ = static_cast<OperatorIR*>(node);
+  return Status::OK();
+}
+
 bool MemorySourceIR::HasLogicalRepr() const { return true; }
 
 Status MemorySourceIR::Init(IRNode* table_node, IRNode* select) {
@@ -71,12 +79,12 @@ std::string MemorySinkIR::DebugString(int64_t depth) const {
                         {{"Parent", parent_->DebugString(depth + 1)}});
 }
 
-Status RangeIR::Init(IRNode* parent, IRNode* time_repr) {
+Status RangeIR::Init(IRNode* parent_node, IRNode* time_repr) {
   // TODO(philkuz) implement string to ms (int) conversion.
   time_repr_ = time_repr;
-  parent_ = parent;
+  PL_RETURN_IF_ERROR(SetParent(parent_node));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, time_repr_));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent_, this));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
   return Status::OK();
 }
 
@@ -85,15 +93,15 @@ bool RangeIR::HasLogicalRepr() const { return false; }
 std::string RangeIR::DebugString(int64_t depth) const {
   return DebugStringFmt(
       depth, absl::StrFormat("%d:RangeIR", id()),
-      {{"Parent", parent_->DebugString(depth + 1)}, {"Time", time_repr_->DebugString(depth + 1)}});
+      {{"Parent", parent()->DebugString(depth + 1)}, {"Time", time_repr_->DebugString(depth + 1)}});
 }
 
-Status MapIR::Init(IRNode* parent, IRNode* lambda_func) {
+Status MapIR::Init(IRNode* parent_node, IRNode* lambda_func) {
   // TODO(philkuz) implement string to ms (int) conversion.
   lambda_func_ = lambda_func;
-  parent_ = parent;
+  PL_RETURN_IF_ERROR(SetParent(parent_node));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, lambda_func_));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent_, this));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
   return Status::OK();
 }
 
@@ -101,20 +109,20 @@ bool MapIR::HasLogicalRepr() const { return true; }
 
 std::string MapIR::DebugString(int64_t depth) const {
   return DebugStringFmt(depth, absl::StrFormat("%d:MapIR", id()),
-                        {{"Parent", parent_->DebugString(depth + 1)},
+                        {{"Parent", parent()->DebugString(depth + 1)},
                          {"Lambda", lambda_func_->DebugString(depth + 1)}});
 }
 
-Status AggIR::Init(IRNode* parent, IRNode* by_func, IRNode* agg_func) {
+Status AggIR::Init(IRNode* parent_node, IRNode* by_func, IRNode* agg_func) {
   // TODO(philkuz) expect by_func to be a lambda node once the types diff is in.
   by_func_ = by_func;
 
   // TODO(philkuz) expect by_func to be a lambda node or funcname node once the types diff is in.
   agg_func_ = agg_func;
-  parent_ = parent;
+  PL_RETURN_IF_ERROR(SetParent(parent_node));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, agg_func_));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, by_func_));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent_, this));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
   return Status();
 }
 
@@ -122,7 +130,7 @@ bool AggIR::HasLogicalRepr() const { return true; }
 
 std::string AggIR::DebugString(int64_t depth) const {
   return DebugStringFmt(depth, absl::StrFormat("%d:AggIR", id()),
-                        {{"Parent", parent_->DebugString(depth + 1)},
+                        {{"Parent", parent()->DebugString(depth + 1)},
                          {"ByFn", by_func_->DebugString(depth + 1)},
                          {"AggFn", agg_func_->DebugString(depth + 1)}});
 }
