@@ -1,3 +1,4 @@
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -10,22 +11,6 @@ namespace datacollector {
 
 using datacollectorpb::Element_State;
 using pl::types::DataType;
-
-/**
- * @brief Register all data sources. Top level data collector is expected
- * to create the appropriate registry and then call this function. The top
- * level can determine the SourceRegistryType. So it could just pass a registry
- * for Metrics and only the supported metrics sources (EBPF, other sources as
- * controlled by ifdefs) would be registered.
- *
- * @param registry
- * @return Status
- */
-
-void RegisterSourcesOrDie(SourceRegistry* registry) {
-  CHECK(registry != nullptr);
-  RegisterMetricsSourcesOrDie(registry);
-}
 
 /**
  * These are the steps to follow to add a new data source.
@@ -71,17 +56,54 @@ std::unique_ptr<SourceConnector> CreateEBPFCPUMetricsSource() {
 }
 
 /**
+ * @brief Create a Proc Stat Source
+ *
+ * @return std::unique_ptr<SourceConnector>
+ */
+std::unique_ptr<SourceConnector> CreateProcStatSource() {
+  std::vector<InfoClassElement> elements = {
+      InfoClassElement("_time", DataType::INT64,
+                       Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+      InfoClassElement("system_percent", DataType::FLOAT64,
+                       Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+      InfoClassElement("user_percent", DataType::FLOAT64,
+                       Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+      InfoClassElement("idle_percent", DataType::FLOAT64,
+                       Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED)};
+  std::unique_ptr<SourceConnector> source_ptr =
+      std::make_unique<ProcStatConnector>("proc_stat", elements);
+  return source_ptr;
+}
+
+/**
  * @brief Register only metrics sources. All data sources that capture metrics
  * will be registered in this function. There will be similar functions for other
  * source types (logs and traces) in the future.
+ * To exclude sources from certain builds, wrap the appropriate registration below
+ * with ifdef statements and related build flags.
  *
  * @param registry
  */
-void RegisterMetricsSourcesOrDie(SourceRegistry* registry) {
+void RegisterMetricsSources(SourceRegistry* registry) {
   CHECK(registry != nullptr);
-  registry->RegisterOrDie("ebpf_cpu_source", CreateEBPFCPUMetricsSource());
+  // Create a RegistryElement that has the source type and a function
+  // to create a SourceConnector. Register source with name and RegistryElement
+  // for an EBPF CPU Metrics source.
+  SourceRegistry::RegistryElement ebpf_cpu_source_element(SourceType::kEBPF,
+                                                          CreateEBPFCPUMetricsSource);
+  registry->RegisterOrDie("ebpf_cpu_source", ebpf_cpu_source_element);
+
+  // Register a proc stat data source.
+  SourceRegistry::RegistryElement proc_stat_source_element(SourceType::kFile, CreateProcStatSource);
+  registry->RegisterOrDie("proc_stat_source", proc_stat_source_element);
+
   // Can add all other metrics sources here.
   // We can also ifdef them out as needed: based on bazel configuration.
+}
+
+void RegisterSources(SourceRegistry* registry) {
+  CHECK(registry != nullptr);
+  RegisterMetricsSources(registry);
 }
 
 }  // namespace datacollector

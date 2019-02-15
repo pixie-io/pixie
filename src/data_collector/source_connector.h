@@ -20,7 +20,7 @@ struct RawDataBuf {
   uint8_t* buf;
 };
 
-enum class SourceType : uint8_t { kEBPF = 1, kOpenTracing, kPrometheus, kFile };
+enum class SourceType : uint8_t { kEBPF = 1, kOpenTracing, kPrometheus, kFile, kUnknown };
 
 class SourceConnector : public NotCopyable {
  public:
