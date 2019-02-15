@@ -168,10 +168,19 @@ class MemorySourceIR : public OperatorIR {
   std::string DebugString(int64_t depth) const override;
   IRNode* table_node() { return table_node_; }
   IRNode* select() { return select_; }
+  void SetTime(int64_t time_start_ms, int64_t time_stop_ms) {
+    time_start_ms_ = time_start_ms;
+    time_stop_ms_ = time_stop_ms;
+    time_set_ = true;
+  }
+  bool IsTimeSet() const { return time_set_; }
 
  private:
   IRNode* table_node_;
   IRNode* select_;
+  bool time_set_;
+  int64_t time_start_ms_;
+  int64_t time_stop_ms_;
 };
 
 /**
