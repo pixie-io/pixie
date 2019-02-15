@@ -76,6 +76,26 @@ std::unique_ptr<SourceConnector> CreateProcStatSource() {
 }
 
 /**
+ * @brief Function to create a Fake Proc Stat SourceConnector object
+ *
+ * @return std::unique_ptr<SourceConnector>
+ */
+std::unique_ptr<SourceConnector> CreateFakeProcStatSource() {
+  std::vector<InfoClassElement> elements = {
+      InfoClassElement("_time", DataType::INT64,
+                       Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+      InfoClassElement("system_percent", DataType::FLOAT64,
+                       Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+      InfoClassElement("user_percent", DataType::FLOAT64,
+                       Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+      InfoClassElement("idle_percent", DataType::FLOAT64,
+                       Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED)};
+  std::unique_ptr<SourceConnector> source_ptr =
+      std::make_unique<FakeProcStatConnector>("fake_proc_stat", elements);
+  return source_ptr;
+}
+
+/**
  * @brief Register only metrics sources. All data sources that capture metrics
  * will be registered in this function. There will be similar functions for other
  * source types (logs and traces) in the future.
@@ -104,6 +124,14 @@ void RegisterMetricsSources(SourceRegistry* registry) {
 void RegisterSources(SourceRegistry* registry) {
   CHECK(registry != nullptr);
   RegisterMetricsSources(registry);
+}
+
+// Fake registry for testing in data collector wrapper
+
+void RegisterFakeSources(SourceRegistry* registry) {
+  SourceRegistry::RegistryElement fake_proc_stat_source_element(SourceType::kFile,
+                                                                CreateFakeProcStatSource);
+  registry->RegisterOrDie("fake_proc_stat_source", fake_proc_stat_source_element);
 }
 
 }  // namespace datacollector

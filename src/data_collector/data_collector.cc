@@ -8,30 +8,21 @@
 namespace pl {
 namespace datacollector {
 
-DataCollector::DataCollector() { config_ = std::make_unique<PubSubManager>(schemas_); }
-
-// Add an EBPF source to the Data Collector.
-Status DataCollector::AddEBPFSource(const std::string& name, const std::string& ebpf_src,
-                                    const std::string& kernel_event, const std::string& fn_name) {
-  // Step 1: Create the Connector (with EBPF program attached).
-  // TODO(kgandhi): This will come from the registry.
-  std::vector<InfoClassElement> elements = {};
-  auto source = std::make_unique<EBPFConnector>(name, elements, kernel_event, fn_name, ebpf_src);
-
-  return AddSource(name, std::move(source));
-}
-
-// Add an OpenTracing source to the Data Collector.
-Status DataCollector::AddOpenTracingSource(const std::string& name) {
-  // Step 1: Create the Connector
-  // TODO(kgandhi): This will come from the registry.
-  std::vector<InfoClassElement> elements = {};
-  auto source = std::make_unique<OpenTracingConnector>(name, elements);
-
-  return AddSource(name, std::move(source));
+Status DataCollector::CreateSourceConnectors() {
+  if (!registry_) {
+    return error::NotFound("Source registry doesn't exist");
+  }
+  auto sources_map = registry_->sources_map();
+  for (auto const& [name, registry_element] : sources_map) {
+    PL_CHECK_OK(AddSource(name, registry_element.create_source_fn()));
+  }
+  return Status::OK();
 }
 
 Status DataCollector::AddSource(const std::string& name, std::unique_ptr<SourceConnector> source) {
+  // Step 1: Init the source.
+  PL_CHECK_OK(source->Init());
+
   // Step 2: Ask the Connector for the Schema.
   // Eventually, should return a vector of Schemas.
   auto schema = std::make_unique<InfoClassSchema>(name);
@@ -43,6 +34,7 @@ Status DataCollector::AddSource(const std::string& name, std::unique_ptr<SourceC
   // Step 4: Connect this Info Class to its related objects.
   schema->SetSourceConnector(source.get());
   schema->SetDataTable(data_table.get());
+  schema->SetSamplingPeriod(kDefaultSamplingPeriod);
 
   // Step 5: Keep pointers to all the objects
   sources_.push_back(std::move(source));
@@ -81,19 +73,12 @@ void DataCollector::RunThread() {
         auto source_data = source->GetData();
         auto num_records = source_data.num_records;
         auto* data_buf = reinterpret_cast<uint8_t*>(source_data.buf);
-
-        Status s;
-        s = data_table->AppendData(data_buf, num_records);
-        CHECK(s.ok());
+        PL_CHECK_OK(data_table->AppendData(data_buf, num_records));
       }
 
       // Phase 2: Push Data upstream.
       if (schema->PushRequired()) {
         auto data_table = schema->GetDataTable();
-
-        // auto arrow_table = data_table->SealTableArrow();
-        // PL_UNUSED(arrow_table);
-
         auto record_batches = data_table->GetColumnWrapperRecordBatches();
         PL_UNUSED(record_batches);
 

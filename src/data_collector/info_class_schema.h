@@ -83,7 +83,13 @@ class InfoClassSchema {
    * This is required to identify an InfoClassSchema parent source and also to generate
    * the publish proto.
    */
-  explicit InfoClassSchema(const std::string& name) : name_(name) { id_ = global_id_++; }
+  explicit InfoClassSchema(const std::string& name) : name_(name) {
+    id_ = global_id_++;
+    last_sampled_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch());
+    last_pushed_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch());
+  }
   virtual ~InfoClassSchema() = default;
 
   /**
@@ -172,10 +178,7 @@ class InfoClassSchema {
    *
    * @param period Sampling period in ms.
    */
-  void SetSamplingPeriod(uint32_t period) {
-    std::chrono::milliseconds x(period);
-    sampling_period_ = x;
-  }
+  void SetSamplingPeriod(std::chrono::milliseconds period) { sampling_period_ = period; }
 
   /**
    * @brief Returns true if sampling is required, for whatever reason (elapsed time, etc.).
@@ -250,7 +253,7 @@ class InfoClassSchema {
   /**
    * Statistics: count number of samples.
    */
-  uint32_t sampling_count_;
+  uint32_t sampling_count_ = 0;
 
   /**
    * Sampling period.

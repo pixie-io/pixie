@@ -6,33 +6,34 @@
 namespace pl {
 namespace datacollector {
 
-std::unique_ptr<SourceConnector> CreateFakeEBPFSource() {
+std::unique_ptr<SourceConnector> CreateFakeTestEBPFSource() {
   std::vector<InfoClassElement> elements = {};
   std::unique_ptr<SourceConnector> source_ptr =
       std::make_unique<EBPFConnector>("fake_ebpf", elements, "", "", "");
   return source_ptr;
 }
 
-std::unique_ptr<SourceConnector> CreateFakeProcStatSource() {
+std::unique_ptr<SourceConnector> CreateFakeTestProcStatSource() {
   std::vector<InfoClassElement> elements = {};
   std::unique_ptr<SourceConnector> source_ptr =
       std::make_unique<ProcStatConnector>("fake_proc_stat", elements);
   return source_ptr;
 }
 
-void RegisterFakeSources(SourceRegistry* registry) {
-  SourceRegistry::RegistryElement ebpf_cpu_source_element(SourceType::kEBPF, CreateFakeEBPFSource);
+void RegisterFakeTestSources(SourceRegistry* registry) {
+  SourceRegistry::RegistryElement ebpf_cpu_source_element(SourceType::kEBPF,
+                                                          CreateFakeTestEBPFSource);
   registry->RegisterOrDie("fake_ebpf_cpu_source", ebpf_cpu_source_element);
 
   SourceRegistry::RegistryElement proc_stat_source_element(SourceType::kFile,
-                                                           CreateFakeProcStatSource);
+                                                           CreateFakeTestProcStatSource);
   registry->RegisterOrDie("fake_proc_stat_source", proc_stat_source_element);
 }
 
 class SourceRegistryTest : public ::testing::Test {
  protected:
   SourceRegistryTest() : registry_("metrics") {}
-  void SetUp() override { RegisterFakeSources(&registry_); }
+  void SetUp() override { RegisterFakeTestSources(&registry_); }
   SourceRegistry registry_;
 };
 

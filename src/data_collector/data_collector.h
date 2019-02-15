@@ -6,6 +6,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "src/common/error.h"
@@ -13,6 +14,7 @@
 #include "src/data_collector/data_table.h"
 #include "src/data_collector/pub_sub_manager.h"
 #include "src/data_collector/source_connector.h"
+#include "src/data_collector/source_registry.h"
 
 namespace pl {
 namespace datacollector {
@@ -25,20 +27,19 @@ namespace datacollector {
  */
 class DataCollector {
  public:
-  DataCollector();
+  DataCollector() = delete;
+  explicit DataCollector(std::unique_ptr<SourceRegistry> registry)
+      : registry_(std::move(registry)) {
+    config_ = std::make_unique<PubSubManager>(schemas_);
+  }
   ~DataCollector() = default;
 
   /**
-   * Add an EBPF data source.
-   * There should be a different source for each EBPF program.
+   * @brief Create data source connectors from the registered sources.
+   *
+   * @return Status
    */
-  Status AddEBPFSource(const std::string& name, const std::string& ebpf_src,
-                       const std::string& kernel_event, const std::string& fn_name);
-
-  /**
-   * Add OpenTracing data source. Not yet implemented, and lower priority.
-   */
-  Status AddOpenTracingSource(const std::string& name);
+  Status CreateSourceConnectors();
 
   /**
    * Register call-back from Agent. Used to periodically send data.
@@ -102,6 +103,15 @@ class DataCollector {
    * Pointer the config unit that handles sub/pub with agent.
    */
   std::unique_ptr<PubSubManager> config_;
+
+  /**
+   * @brief Pointer to data source registry
+   *
+   */
+  std::unique_ptr<SourceRegistry> registry_;
+
+  // Defining a constant for data collector wrapper testing.
+  const std::chrono::milliseconds kDefaultSamplingPeriod{100};
 
   /**
    * Function to call to push data to the agent.

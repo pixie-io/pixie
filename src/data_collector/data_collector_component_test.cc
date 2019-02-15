@@ -8,33 +8,9 @@
 namespace pl {
 namespace datacollector {
 
-class FakeProcStatConnector : public ProcStatConnector {
- public:
-  FakeProcStatConnector() = delete;
-  explicit FakeProcStatConnector(const std::string& source_name,
-                                 const std::vector<InfoClassElement> elements)
-      : ProcStatConnector(source_name, elements) {}
-  ~FakeProcStatConnector() = default;
-
+class SourceToTableTest : public ::testing::Test {
  protected:
-  std::vector<std::string> GetProcParams() override {
-    std::string stats = "cpu  ";
-    std::vector<std::string> parsed_str;
-    for (int i = 0; i < kNumCPUStatFields; ++i) {
-      stats += std::to_string(fake_stat_ + i) + " ";
-    }
-    fake_stat_++;
-    parsed_str = absl::StrSplit(stats, ' ', absl::SkipWhitespace());
-    return parsed_str;
-  }
-
- private:
-  int fake_stat_ = 0;
-};
-
-class SourceConnectorTest : public ::testing::Test {
- protected:
-  SourceConnectorTest()
+  SourceToTableTest()
       : elements_({InfoClassElement("_time", DataType::INT64,
                                     Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
                    InfoClassElement("system_percent", DataType::FLOAT64,
@@ -60,7 +36,7 @@ class SourceConnectorTest : public ::testing::Test {
   std::unique_ptr<DataTable> table_;
 };
 
-TEST_F(SourceConnectorTest, source_to_table) {
+TEST_F(SourceToTableTest, source_to_table) {
   EXPECT_OK(fake_proc_stat_.Init());
   RawDataBuf r = fake_proc_stat_.GetData();
 

@@ -73,5 +73,8 @@ class SourceRegistry : public NotCopyable {
   std::unordered_map<std::string, RegistryElement> sources_map_;
 };
 
+void RegisterSources(SourceRegistry* registry);
+void RegisterFakeSources(SourceRegistry* registry);
+
 }  // namespace datacollector
 }  // namespace pl
