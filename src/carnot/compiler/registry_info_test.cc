@@ -38,18 +38,17 @@ TEST(RegistryInfo, basic) {
   carnotpb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
   EXPECT_OK(info.Init(info_pb));
-  EXPECT_TRUE(info.UDAExists("uda1", std::vector<types::DataType>({types::INT64}), types::INT64));
-  EXPECT_FALSE(info.UDAExists("uda2", std::vector<types::DataType>({types::INT64}), types::INT64));
-  EXPECT_TRUE(info.UDFExists(
-      "scalar1", std::vector<types::DataType>({types::BOOLEAN, types::INT64}), types::INT64));
-  EXPECT_FALSE(info.UDFExists(
-      "scalar1", std::vector<types::DataType>({types::BOOLEAN, types::INT64}), types::BOOLEAN));
-  EXPECT_FALSE(info.UDFExists(
-      "scalar1", std::vector<types::DataType>({types::BOOLEAN, types::FLOAT64}), types::INT64));
-  EXPECT_TRUE(info.UDFExists("add", std::vector<types::DataType>({types::FLOAT64, types::FLOAT64}),
-                             types::FLOAT64));
-  EXPECT_FALSE(info.UDFExists("add", std::vector<types::DataType>({types::FLOAT64, types::FLOAT64}),
-                              types::INT64));
+  EXPECT_EQ(types::INT64,
+            info.GetUDA("uda1", std::vector<types::DataType>({types::INT64})).ConsumeValueOrDie());
+  EXPECT_FALSE(info.GetUDA("uda2", std::vector<types::DataType>({types::INT64})).ok());
+  EXPECT_EQ(types::INT64,
+            info.GetUDF("scalar1", std::vector<types::DataType>({types::BOOLEAN, types::INT64}))
+                .ConsumeValueOrDie());
+  EXPECT_FALSE(
+      info.GetUDF("scalar1", std::vector<types::DataType>({types::BOOLEAN, types::FLOAT64})).ok());
+  EXPECT_EQ(types::FLOAT64,
+            info.GetUDF("add", std::vector<types::DataType>({types::FLOAT64, types::FLOAT64}))
+                .ConsumeValueOrDie());
 }
 
 }  // namespace compiler

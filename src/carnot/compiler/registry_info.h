@@ -29,11 +29,9 @@ class RegistryKey {
    *
    * @param name the name of the UDF/UDA.
    * @param registry_arg_types the types used for registry resolution (except FunctionContext).
-   * @ param return_type the return type of the UDF/UDA
    */
-  RegistryKey(const std::string& name, const std::vector<types::DataType> registry_arg_types,
-              const types::DataType return_type)
-      : name_(name), registry_arg_types_(registry_arg_types), return_type_(return_type) {}
+  RegistryKey(const std::string& name, const std::vector<types::DataType> registry_arg_types)
+      : name_(name), registry_arg_types_(registry_arg_types) {}
 
   /**
    * Access name of the UDF/UDA.
@@ -43,8 +41,6 @@ class RegistryKey {
 
   const std::vector<types::DataType>& registry_arg_types() { return registry_arg_types_; }
 
-  types::DataType return_type() { return return_type_; }
-
   /**
    * LessThan operator overload so we can use this in maps.
    * @param lhs is the other RegistryKey.
@@ -52,9 +48,6 @@ class RegistryKey {
    */
   bool operator<(const RegistryKey& lhs) const {
     if (name_ == lhs.name_) {
-      if (registry_arg_types_ == lhs.registry_arg_types_) {
-        return return_type_ < lhs.return_type_;
-      }
       return registry_arg_types_ < lhs.registry_arg_types_;
     }
     return name_ < lhs.name_;
@@ -63,20 +56,17 @@ class RegistryKey {
  protected:
   std::string name_;
   std::vector<types::DataType> registry_arg_types_;
-  types::DataType return_type_;
 };
 
 class RegistryInfo {
  public:
   Status Init(const carnotpb::UDFInfo info);
-  bool UDFExists(std::string name, std::vector<types::DataType> update_arg_types,
-                 types::DataType return_type);
-  bool UDAExists(std::string name, std::vector<types::DataType> exec_arg_types,
-                 types::DataType return_type);
+  StatusOr<types::DataType> GetUDA(std::string name, std::vector<types::DataType> update_arg_types);
+  StatusOr<types::DataType> GetUDF(std::string name, std::vector<types::DataType> exec_arg_types);
 
  protected:
-  std::map<RegistryKey, bool> udf_map_;
-  std::map<RegistryKey, bool> uda_map_;
+  std::map<RegistryKey, types::DataType> udf_map_;
+  std::map<RegistryKey, types::DataType> uda_map_;
 };
 
 }  // namespace compiler

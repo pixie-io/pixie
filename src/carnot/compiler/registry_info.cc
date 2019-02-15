@@ -25,8 +25,8 @@ Status RegistryInfo::Init(const carnotpb::UDFInfo info) {
     for (int64_t i = 0; i < uda.update_arg_types_size(); i++) {
       arg_types.push_back(uda.update_arg_types(i));
     }
-    auto key = RegistryKey(uda.name(), arg_types, uda.finalize_type());
-    uda_map_[key] = true;
+    auto key = RegistryKey(uda.name(), arg_types);
+    uda_map_[key] = uda.finalize_type();
   }
 
   for (auto udf : info.scalar_udfs()) {
@@ -36,23 +36,29 @@ Status RegistryInfo::Init(const carnotpb::UDFInfo info) {
     for (int64_t i = 0; i < udf.exec_arg_types_size(); i++) {
       arg_types.push_back(udf.exec_arg_types(i));
     }
-    auto key = RegistryKey(udf.name(), arg_types, udf.return_type());
-    udf_map_[key] = true;
+    auto key = RegistryKey(udf.name(), arg_types);
+    udf_map_[key] = udf.return_type();
   }
 
   return Status::OK();
 }
 
-bool RegistryInfo::UDAExists(std::string name, std::vector<types::DataType> update_arg_types,
-                             types::DataType return_type) {
-  auto uda = uda_map_.find(RegistryKey(name, update_arg_types, return_type));
-  return uda != uda_map_.end();
+StatusOr<types::DataType> RegistryInfo::GetUDA(std::string name,
+                                               std::vector<types::DataType> update_arg_types) {
+  auto uda = uda_map_.find(RegistryKey(name, update_arg_types));
+  if (uda == uda_map_.end()) {
+    return error::InvalidArgument("Could not find UDA");
+  }
+  return uda->second;
 }
 
-bool RegistryInfo::UDFExists(std::string name, std::vector<types::DataType> exec_arg_types,
-                             types::DataType return_type) {
-  auto udf = udf_map_.find(RegistryKey(name, exec_arg_types, return_type));
-  return udf != udf_map_.end();
+StatusOr<types::DataType> RegistryInfo::GetUDF(std::string name,
+                                               std::vector<types::DataType> exec_arg_types) {
+  auto udf = udf_map_.find(RegistryKey(name, exec_arg_types));
+  if (udf == udf_map_.end()) {
+    return error::InvalidArgument("Could not find UDF");
+  }
+  return udf->second;
 }
 
 }  // namespace compiler
