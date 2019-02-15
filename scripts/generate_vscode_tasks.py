@@ -40,6 +40,10 @@ def generateTaskSegment(target, exec_mode, comp_mode, output_std):
     if output_std:
         args.append("--test_output=all")
         args.append("--action_env=\"GTEST_COLOR=1\"")
+        args.append("--action_env=\"GLOG_logtostderr=1\"")
+        args.append("--action_env=\"GLOG_colorlogtostderr=1\"")
+        args.append("--action_env=\"GLOG_log_prefix=0\"")
+        args.append("--action_env=\"GLOG_v=1\"")
     args.append(target)
 
     return {
