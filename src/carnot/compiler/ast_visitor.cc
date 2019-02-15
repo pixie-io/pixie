@@ -366,7 +366,7 @@ StatusOr<IRNode*> ASTWalker::ProcessNumberNode(const pypa::AstNumberPtr& node) {
       return ir_node;
     }
     default:
-      return CreateAstError(absl::StrFormat("Coudln't find number type %d", node->num_type), node);
+      return CreateAstError(absl::StrFormat("Couldn't find number type %d", node->num_type), node);
   }
 }
 
@@ -440,23 +440,30 @@ StatusOr<LambdaExprReturn> WrapLambdaExprReturn(StatusOr<IRNode*> node) {
 
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaExpr(const std::string& arg_name,
                                                         const pypa::AstPtr& node) {
+  LambdaExprReturn expr_return;
   switch (node->type) {
     case AstType::BinOp: {
-      return ProcessLambdaBinOp(arg_name, PYPA_PTR_CAST(BinOp, node));
+      PL_ASSIGN_OR_RETURN(expr_return, ProcessLambdaBinOp(arg_name, PYPA_PTR_CAST(BinOp, node)));
+      break;
     }
     case AstType::Attribute: {
-      return ProcessLambdaAttribute(arg_name, PYPA_PTR_CAST(Attribute, node));
+      PL_ASSIGN_OR_RETURN(expr_return,
+                          ProcessLambdaAttribute(arg_name, PYPA_PTR_CAST(Attribute, node)));
+      break;
     }
     case AstType::Number: {
       auto number_result = ProcessNumberNode(PYPA_PTR_CAST(Number, node));
-      return WrapLambdaExprReturn(number_result);
+      PL_ASSIGN_OR_RETURN(expr_return, WrapLambdaExprReturn(number_result));
+      break;
     }
     case AstType::Str: {
       auto str_result = ProcessStrDataNode(PYPA_PTR_CAST(Str, node));
-      return WrapLambdaExprReturn(str_result);
+      PL_ASSIGN_OR_RETURN(expr_return, WrapLambdaExprReturn(str_result));
+      break;
     }
     case AstType::Call: {
-      return ProcessLambdaCall(arg_name, PYPA_PTR_CAST(Call, node));
+      PL_ASSIGN_OR_RETURN(expr_return, ProcessLambdaCall(arg_name, PYPA_PTR_CAST(Call, node)));
+      break;
     }
     default: {
       return CreateAstError(
@@ -465,7 +472,10 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaExpr(const std::string& arg_n
           node);
     }
   }
-  return Status::OK();
+  if (!expr_return.StringOnly()) {
+    expr_return.expr_->SetLineCol(node->line, node->column);
+  }
+  return expr_return;
 }
 
 StatusOr<std::string> ASTWalker::ProcessLambdaArgs(const pypa::AstLambdaPtr& node) {
@@ -541,7 +551,7 @@ StatusOr<IRNode*> ASTWalker::ProcessDataNode(const pypa::AstPtr& ast) {
     }
     default: {
       std::string err_msg =
-          absl::StrFormat("Coudln't find %s in ProcessDataNode", GetAstTypeName(ast->type));
+          absl::StrFormat("Couldn't find %s in ProcessDataNode", GetAstTypeName(ast->type));
       return CreateAstError(err_msg, ast);
     }
   }

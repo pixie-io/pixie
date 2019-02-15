@@ -1,69 +1,81 @@
-#include "src/carnot/compiler/ast_visitor.h"
+#include "src/carnot/compiler/ir_verifier.h"
+
 #include <glog/logging.h>
 #include <gtest/gtest.h>
 #include <pypa/ast/tree_walker.hh>
 #include <pypa/parser/parser.hh>
 
-#include "src/carnot/compiler/ir_test_utils.h"
 #include "src/carnot/compiler/test_utils.h"
-
 namespace pl {
 namespace carnot {
 namespace compiler {
-
 // Checks whether we can actually compile into a graph.
+void CheckStatusVector(const std::vector<Status>& status_vec, bool should_fail) {
+  if (should_fail) {
+    EXPECT_NE(status_vec.size(), 0);
+  } else {
+    EXPECT_EQ(status_vec.size(), 0);
+  }
+  for (const Status& s : status_vec) {
+    VLOG(1) << s.msg();
+  }
+}
+
+/**
+ * @brief Verifies that the graph has the corrected connected components. Expects each query to be
+ * properly compiled into the IRGraph, otherwise the entire test fails.
+ *
+ * @param query
+ * @param should_fail
+ */
+void GraphVerify(const std::string& query, bool should_fail) {
+  auto ir_graph_status = ParseQuery(query);
+  auto verifier = IRVerifier();
+  EXPECT_OK(ir_graph_status);
+  // this only should run if the ir_graph is completed. Basically, ParseQuery should run
+  // successfullly for it to actually verify properly.
+  if (ir_graph_status.ok()) {
+    auto ir_graph = ir_graph_status.ValueOrDie();
+    CheckStatusVector(verifier.VerifyGraphConnections(ir_graph.get()), should_fail);
+    // Line Col should be set no matter what - this is independent of whether the query is written
+    // incorrectly or not.
+    CheckStatusVector(verifier.VerifyLineColGraph(ir_graph.get()), false);
+  }
+}
+
 TEST(ASTVisitor, compilation_test) {
   std::string from_expr = "From(table='cpu', select=['cpu0', 'cpu1'])";
-  auto ig_status = ParseQuery(from_expr);
-  EXPECT_OK(ig_status);
-  auto ig = ig_status.ValueOrDie();
-  VerifyGraphConnections(ig.get());
+  GraphVerify(from_expr, false);
   // check the connection of ig
   std::string from_range_expr = "From(table='cpu', select=['cpu0']).Range(time='-2m')";
-  EXPECT_OK(ParseQuery(from_range_expr));
+  GraphVerify(from_range_expr, false);
 }
 
-// Checks whether the IR graph constructor can identify bads args.
-TEST(ASTVisitor, bad_arguments) {
-  std::string extra_from_args =
-      "From(table='cpu', select=['cpu0'], fakeArg='hahaha').Range(time='-2m')";
-  EXPECT_FALSE(ParseQuery(extra_from_args).ok());
-  std::string missing_from_args = "From(table='cpu').Range(time='-2m')";
-  EXPECT_FALSE(ParseQuery(missing_from_args).ok());
-  std::string no_from_args = "From().Range(time='-2m')";
-  EXPECT_FALSE(ParseQuery(no_from_args).ok());
-}
-// Checks to make sure the parser identifies bad syntax
-TEST(ASTVisitor, bad_syntax) {
-  std::string early_paranetheses_close = "From";
-  EXPECT_FALSE(ParseQuery(early_paranetheses_close).ok());
-}
-// Checks to make sure the compiler can catch operators that don't exist.
-TEST(ASTVisitor, nonexistant_operator_names) {
-  std::string wrong_from_op_name = "Drom(table='cpu', select=['cpu0']).Range(time='-2m')";
-  EXPECT_FALSE(ParseQuery(wrong_from_op_name).ok());
-  std::string wrong_range_op_name = "From(table='cpu', select=['cpu0']).BRange(time='-2m')";
-  EXPECT_FALSE(ParseQuery(wrong_range_op_name).ok());
-}
 TEST(ASTVisitor, assign_functionality) {
   std::string simple_assign = "queryDF = From(table='cpu', select=['cpu0', 'cpu1'])";
-  EXPECT_OK(ParseQuery(simple_assign));
+  GraphVerify(simple_assign, false);
   std::string assign_and_use = absl::StrJoin(
       {"queryDF = From(table = 'cpu', select = [ 'cpu0', 'cpu1' ])", "queryDF.Range(time = '-2m')"},
       "\n");
-  EXPECT_OK(ParseQuery(assign_and_use));
+  GraphVerify(assign_and_use, false);
 }
-TEST(ASTVisitor, assign_error_checking) {
-  std::string bad_assign_mult_values = absl::StrJoin(
-      {
-          "queryDF,haha = From(table='cpu', select=['cpu0', 'cpu1'])",
-          "queryDF.Range(time='-2m')",
-      },
+
+// Range can only be after From, not after any other ops.
+TEST(RangeTest, order_test) {
+  std::string range_order_fail_map =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
+                     "mapDF = queryDF.Map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1})",
+                     "rangeDF = mapDF.Range(time='-2m')"},
+                    "\n");
+  GraphVerify(range_order_fail_map, true);
+  std::string range_order_fail_agg = absl::StrJoin(
+      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
+       "mapDF = queryDF.Agg(fn=lambda r : {'sum' : pl.mean(r.cpu0)}, by=lambda r: r.cpu0)",
+       "rangeDF = mapDF.Range(time='-2m')"},
       "\n");
-  EXPECT_FALSE(ParseQuery(bad_assign_mult_values).ok());
-  std::string bad_assign_str = "queryDF = 'str'";
-  EXPECT_FALSE(ParseQuery(bad_assign_str).ok());
+  GraphVerify(range_order_fail_agg, true);
 }
+
 // Map Tests
 TEST(MapTest, single_col_map) {
   std::string single_col_map_sum = absl::StrJoin(
@@ -72,14 +84,14 @@ TEST(MapTest, single_col_map) {
           "rangeDF = queryDF.Map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1})",
       },
       "\n");
-  EXPECT_OK(ParseQuery(single_col_map_sum));
+  GraphVerify(single_col_map_sum, false);
   std::string single_col_div_map_query = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
           "rangeDF = queryDF.Map(fn=lambda r : {'sum' : pl.div(r.cpu0,r.cpu1)})",
       },
       "\n");
-  EXPECT_OK(ParseQuery(single_col_div_map_query));
+  GraphVerify(single_col_div_map_query, false);
 }
 
 TEST(MapTest, multi_col_map) {
@@ -89,7 +101,7 @@ TEST(MapTest, multi_col_map) {
           "rangeDF = queryDF.Map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1, 'copy' : r.cpu2})",
       },
       "\n");
-  EXPECT_OK(ParseQuery(multi_col));
+  GraphVerify(multi_col, false);
 }
 
 TEST(MapTest, bin_op_test) {
@@ -99,28 +111,28 @@ TEST(MapTest, bin_op_test) {
           "rangeDF = queryDF.Map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1})",
       },
       "\n");
-  EXPECT_OK(ParseQuery(single_col_map_sum));
   std::string single_col_map_sub = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
           "rangeDF = queryDF.Map(fn=lambda r : {'sub' : r.cpu0 - r.cpu1})",
       },
       "\n");
-  EXPECT_OK(ParseQuery(single_col_map_sub));
   std::string single_col_map_product = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
           "rangeDF = queryDF.Map(fn=lambda r : {'product' : r.cpu0 * r.cpu1})",
       },
       "\n");
-  EXPECT_OK(ParseQuery(single_col_map_product));
   std::string single_col_map_quotient = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
           "rangeDF = queryDF.Map(fn=lambda r : {'quotient' : r.cpu0 / r.cpu1})",
       },
       "\n");
-  EXPECT_OK(ParseQuery(single_col_map_quotient));
+  GraphVerify(single_col_map_sum, false);
+  GraphVerify(single_col_map_sub, false);
+  GraphVerify(single_col_map_product, false);
+  GraphVerify(single_col_map_quotient, false);
 }
 
 TEST(MapTest, nested_expr_map) {
@@ -130,85 +142,55 @@ TEST(MapTest, nested_expr_map) {
           "rangeDF = queryDF.Map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1 + r.cpu2})",
       },
       "\n");
-  EXPECT_OK(ParseQuery(nested_expr));
+  GraphVerify(nested_expr, false);
   std::string nested_fn = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
           "rangeDF = queryDF.Map(fn=lambda r : {'sum' : pl.div(r.cpu0 + r.cpu1, r.cpu2)})",
       },
       "\n");
-  EXPECT_OK(ParseQuery(nested_fn));
+  GraphVerify(nested_fn, false);
 }
 
 TEST(AggTest, single_col_agg) {
   std::string single_col_agg = absl::StrJoin(
       {
-          "queryDF = From(table='cpu', select=['cpu0', "
-          "'cpu1']).Range(time='-2m')",
-          "rangeDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : "
-          "{'cpu_count' : "
+          "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
+          "rangeDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
           "pl.count(r.cpu1)})",
       },
       "\n");
-  EXPECT_OK(ParseQuery(single_col_agg));
+  GraphVerify(single_col_agg, false);
   std::string multi_output_col_agg =
       absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
                      "rangeDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
                      "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)})"},
                     "\n");
-  EXPECT_OK(ParseQuery(multi_output_col_agg));
+  GraphVerify(multi_output_col_agg, false);
   std::string multi_input_col_agg = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
        "rangeDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_sum' : pl.sum(r.cpu1), "
        "'cpu2_mean' : pl.mean(r.cpu2)})"},
       "\n");
-  EXPECT_OK(ParseQuery(multi_input_col_agg));
+  GraphVerify(multi_input_col_agg, false);
 }
-
 TEST(AggTest, not_allowed_by) {
-  std::string single_col_bad_by_fn = absl::StrJoin(
+  std::string single_col_bad_by_fn_expr = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
-          "rangeDF = queryDF.Agg(by=lambda r : r, fn=lambda r :  {'cpu_count' : "
+          "rangeDF = queryDF.Agg(by=lambda r : 1+2, fn=lambda r: {'cpu_count' : pl.count(r.cpu0)})",
+      },
+      "\n");
+  GraphVerify(single_col_bad_by_fn_expr, true);
+
+  std::string single_col_dict_by_fn = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
+          "rangeDF = queryDF.Agg(by=lambda r : {'cpu' : r.cpu0}, fn=lambda r : {'cpu_count' : "
           "pl.count(r.cpu0)})",
       },
       "\n");
-  EXPECT_FALSE(ParseQuery(single_col_bad_by_fn).ok());
-  std::string single_col_bad_by_attr = absl::StrJoin(
-      {
-          "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
-          "rangeDF = queryDF.Agg(by=pl.mean, fn={'cpu_count' : pl.count(r.cpu0)})",
-      },
-      "\n");
-  EXPECT_FALSE(ParseQuery(single_col_bad_by_attr).ok());
-}
-TEST(AggTest, not_allowed_agg_fn) {
-  std::string single_col_bad_agg_fn = absl::StrJoin(
-      {
-          "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
-          "rangeDF = queryDF.Agg(by=lambda r : r.cpu0, fn=1+2)",
-      },
-      "\n");
-  EXPECT_FALSE(ParseQuery(single_col_bad_agg_fn).ok());
-  std::string single_col_dict_by_not_pl = absl::StrJoin(
-      {
-          "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
-          "rangeDF = queryDF.Agg(by=lambda r : r.cpu0, fn=notpl.count)",
-      },
-      "\n");
-  EXPECT_FALSE(ParseQuery(single_col_dict_by_not_pl).ok());
-  std::string single_col_dict_by_no_attr_fn = absl::StrJoin(
-      {
-          "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
-          "rangeDF = queryDF.Agg(by=lambda r :r.cpu0, fn=count)",
-      },
-      "\n");
-  EXPECT_FALSE(ParseQuery(single_col_dict_by_no_attr_fn).ok());
-  std::string valid_fn_not_valid_call = absl::StrJoin(
-      {"queryDF = From(table = 'cpu', select = [ 'cpu0', 'cpu1' ]).Range(time = '-2m')",
-       "rangeDF =queryDF.Agg(by = lambda r: r.cpu0, fn = pl.count) "},
-      "\n");
-  EXPECT_FALSE(ParseQuery(valid_fn_not_valid_call).ok());
+  GraphVerify(single_col_dict_by_fn, true);
 }
 }  // namespace compiler
 }  // namespace carnot

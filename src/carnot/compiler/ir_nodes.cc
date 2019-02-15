@@ -14,10 +14,9 @@ Status IR::AddEdge(IRNode* from_node, IRNode* to_node) {
 }
 
 std::string IR::DebugString() {
-  std::string debug_string;
-  debug_string += dag().DebugString() + "\n";
+  std::string debug_string = absl::StrFormat("%s\n", dag().DebugString());
   for (auto const& a : id_node_map_) {
-    debug_string += a.second->DebugString(0) + "\n";
+    debug_string += absl::StrFormat("%s\n", a.second->DebugString(0));
   }
   return debug_string;
 }
@@ -25,6 +24,7 @@ std::string IR::DebugString() {
 void IRNode::SetLineCol(int64_t line, int64_t col) {
   line_ = line;
   col_ = col;
+  line_col_set_ = true;
 }
 
 bool MemorySourceIR::HasLogicalRepr() const { return true; }
@@ -176,8 +176,8 @@ Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names, IRN
   return Status::OK();
 }
 
-StatusOr<IRNode*> LambdaIR::GetExpr() {
-  if (has_dict_body_) {
+StatusOr<IRNode*> LambdaIR::GetDefaultExpr() {
+  if (HasDictBody()) {
     return error::InvalidArgument(
         "Couldn't return the default expression, Lambda initialized as dict.");
   }

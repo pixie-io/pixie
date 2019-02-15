@@ -11,6 +11,7 @@
 
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/operators.h"
+#include "src/carnot/plan/relation.h"
 #include "src/common/statusor.h"
 
 namespace pl {
@@ -53,6 +54,7 @@ class IR {
   plan::DAG& dag() { return dag_; }
   std::string DebugString();
   IRNode* Get(int64_t id) const { return id_node_map_.at(id).get(); }
+  size_t size() const { return id_node_map_.size(); }
 
  private:
   plan::DAG dag_;
@@ -75,6 +77,10 @@ enum IRNodeType {
   ColumnType,
   FuncNameType
 };
+static constexpr const char* IRNodeString[] = {
+    "MemorySourceType", "RangeType",  "MapType",    "AggType",     "StringType",
+    "FloatType",        "IntType",    "BoolType",   "BinFuncType", "FuncType",
+    "ListType",         "LambdaType", "ColumnType", "FuncNameType"};
 
 /**
  * @brief Node class for the IR.
@@ -92,8 +98,13 @@ class IRNode {
    */
   virtual bool HasLogicalRepr() const = 0;
   void SetLineCol(int64_t line, int64_t col);
+  int64_t line() const { return line_; }
+  int64_t col() const { return col_; }
+  bool line_col_set() const { return line_col_set_; }
   virtual std::string DebugString(int64_t depth) const = 0;
-  IRNodeType type() { return type_; }
+  virtual bool IsOp() const = 0;
+  IRNodeType type() const { return type_; }
+  std::string type_string() const { return IRNodeString[type()]; }
   /**
    * @brief Set the pointer to the graph.
    * The pointer is passed in by the Node factory of the graph
@@ -115,6 +126,28 @@ class IRNode {
   int64_t col_;
   IR* graph_ptr_;
   IRNodeType type_;
+  bool line_col_set_ = false;
+};
+
+/**
+ * @brief Node class for the operator
+ *
+ */
+class OperatorIR : public IRNode {
+ public:
+  OperatorIR() = delete;
+  explicit OperatorIR(int64_t id, IRNodeType type) : IRNode(id, type) {}
+  bool IsOp() const { return true; }
+  plan::Relation relation() const { return relation_; }
+  Status SetRelation(plan::Relation relation) {
+    relation_ = relation;
+    return Status::OK();
+  }
+  bool IsRelationInit() const { return relation_init_; }
+
+ private:
+  plan::Relation relation_;
+  bool relation_init_ = false;
 };
 
 /**
@@ -126,10 +159,10 @@ class IRNode {
  * much added value to do so and we could just make a method that returns the Logical Plan
  * node.
  */
-class MemorySourceIR : public IRNode {
+class MemorySourceIR : public OperatorIR {
  public:
   MemorySourceIR() = delete;
-  explicit MemorySourceIR(int64_t id) : IRNode(id, MemorySourceType) {}
+  explicit MemorySourceIR(int64_t id) : OperatorIR(id, MemorySourceType) {}
   Status Init(IRNode* table_node, IRNode* select);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -147,10 +180,10 @@ class MemorySourceIR : public IRNode {
  * when converted to the Logical Plan.
  *
  */
-class RangeIR : public IRNode {
+class RangeIR : public OperatorIR {
  public:
   RangeIR() = delete;
-  explicit RangeIR(int64_t id) : IRNode(id, RangeType) {}
+  explicit RangeIR(int64_t id) : OperatorIR(id, RangeType) {}
   Status Init(IRNode* parent, IRNode* time_repr);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -168,13 +201,15 @@ class RangeIR : public IRNode {
  * when converted to the Logical Plan.
  *
  */
-class MapIR : public IRNode {
+class MapIR : public OperatorIR {
  public:
   MapIR() = delete;
-  explicit MapIR(int64_t id) : IRNode(id, MapType) {}
+  explicit MapIR(int64_t id) : OperatorIR(id, MapType) {}
   Status Init(IRNode* parent, IRNode* lambda_func);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
+  IRNode* lambda_func() const { return lambda_func_; }
+  IRNode* parent() const { return parent_; }
 
  private:
   IRNode* lambda_func_;
@@ -187,13 +222,16 @@ class MapIR : public IRNode {
  * when converted to the Logical Plan.
  *
  */
-class AggIR : public IRNode {
+class AggIR : public OperatorIR {
  public:
   AggIR() = delete;
-  explicit AggIR(int64_t id) : IRNode(id, AggType) {}
+  explicit AggIR(int64_t id) : OperatorIR(id, AggType) {}
   Status Init(IRNode* parent, IRNode* by_func, IRNode* agg_func);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
+  IRNode* parent() const { return parent_; }
+  IRNode* by_func() const { return by_func_; }
+  IRNode* agg_func() const { return agg_func_; }
 
  private:
   IRNode* by_func_;
@@ -214,6 +252,7 @@ class StringIR : public IRNode {
   bool HasLogicalRepr() const override;
   std::string str() const { return str_; }
   std::string DebugString(int64_t depth) const override;
+  bool IsOp() const override { return false; }
 
  private:
   std::string str_;
@@ -233,6 +272,7 @@ class FuncNameIR : public IRNode {
   bool HasLogicalRepr() const override;
   std::string func_name() const { return func_name_; }
   std::string DebugString(int64_t depth) const override;
+  bool IsOp() const override { return false; }
 
  private:
   std::string func_name_;
@@ -250,6 +290,7 @@ class ColumnIR : public IRNode {
   bool HasLogicalRepr() const override;
   std::string col_name() const { return col_name_; }
   std::string DebugString(int64_t depth) const override;
+  bool IsOp() const override { return false; }
 
  private:
   std::string col_name_;
@@ -269,6 +310,7 @@ class ListIR : public IRNode {
   Status AddListItem(IRNode* node);
   std::string DebugString(int64_t depth) const override;
   std::vector<IRNode*> children() { return children_; }
+  bool IsOp() const override { return false; }
 
  private:
   std::vector<IRNode*> children_;
@@ -297,10 +339,11 @@ class LambdaIR : public IRNode {
    *
    * @return StatusOr<IRNode*>
    */
-  StatusOr<IRNode*> GetExpr();
+  StatusOr<IRNode*> GetDefaultExpr();
   bool HasLogicalRepr() const override;
   bool HasDictBody() const;
   std::string DebugString(int64_t depth) const override;
+  bool IsOp() const override { return false; }
 
  private:
   static constexpr const char* default_key = "_default";
@@ -322,6 +365,8 @@ class FuncIR : public IRNode {
   std::string func_name() const { return func_name_; }
   const std::vector<IRNode*>& args() { return args_; }
 
+  bool IsOp() const override { return false; }
+
  private:
   std::string func_name_;
   std::vector<IRNode*> args_;
@@ -338,6 +383,7 @@ class FloatIR : public IRNode {
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   double val() const { return val_; }
+  bool IsOp() const override { return false; }
 
  private:
   double val_;
@@ -351,6 +397,7 @@ class IntIR : public IRNode {
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   int64_t val() const { return val_; }
+  bool IsOp() const override { return false; }
 
  private:
   int64_t val_;
@@ -364,6 +411,7 @@ class BoolIR : public IRNode {
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   bool val() const { return val_; }
+  bool IsOp() const override { return false; }
 
  private:
   bool val_;
