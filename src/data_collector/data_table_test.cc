@@ -238,7 +238,7 @@ class DataTableTest : public ::testing::Test {
   }
 };
 
-constexpr uint32_t kNumRecords = 1 << 21;
+constexpr uint32_t kNumRecords = 1 << 16;
 constexpr uint64_t kRNGSeed = 37;
 constexpr std::array<double, 3> kPushProbability = {0.01, 0.1, 0.5};
 constexpr std::array<uint64_t, 3> kMaxAppendSize = {20, 200, 2000};
