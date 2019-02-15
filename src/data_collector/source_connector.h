@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "src/common/base.h"
+#include "src/common/statusor.h"
 #include "src/data_collector/info_class_schema.h"
 
 namespace pl {
@@ -19,7 +20,7 @@ struct RawDataBuf {
   uint8_t* buf;
 };
 
-enum class SourceType : uint8_t { kEBPF = 1, kOpenTracing, kPrometheus };
+enum class SourceType : uint8_t { kEBPF = 1, kOpenTracing, kPrometheus, kFile };
 
 class SourceConnector : public NotCopyable {
  public:

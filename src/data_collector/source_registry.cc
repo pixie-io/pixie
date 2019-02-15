@@ -2,8 +2,8 @@
 #include <string>
 #include <vector>
 
-#include "src/data_collector/ebpf_sources.h"
 #include "src/data_collector/proto/collector_config.pb.h"
+#include "src/data_collector/source_registry.h"
 
 namespace pl {
 namespace datacollector {

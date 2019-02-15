@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 
 #include "src/common/types/types.pb.h"
-#include "src/data_collector/ebpf_sources.h"
 #include "src/data_collector/source_registry.h"
 
 namespace pl {

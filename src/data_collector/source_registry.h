@@ -49,5 +49,9 @@ class SourceRegistry {
   std::unordered_map<std::string, std::unique_ptr<SourceConnector>> map_;
 };
 
+void RegisterSourcesOrDie(SourceRegistry* registry);
+void RegisterMetricsSourcesOrDie(SourceRegistry* registry);
+std::unique_ptr<SourceConnector> CreateEBPFCPUMetricsSource();
+
 }  // namespace datacollector
 }  // namespace pl

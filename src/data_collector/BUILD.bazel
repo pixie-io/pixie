@@ -68,3 +68,9 @@ pl_cc_test(
     srcs = ["source_connector_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "data_collector_component_test",
+    srcs = ["data_collector_component_test.cc"],
+    deps = [":cc_library"],
+)
