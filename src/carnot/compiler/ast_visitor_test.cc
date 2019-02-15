@@ -210,6 +210,15 @@ TEST(AggTest, not_allowed_agg_fn) {
       "\n");
   EXPECT_FALSE(ParseQuery(valid_fn_not_valid_call).ok());
 }
+
+TEST(ResultTest, basic) {
+  std::string single_col_map_sub =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
+                     "rangeDF = queryDF.Map(fn=lambda r : {'sub' : r.cpu0 - r.cpu1})",
+                     "result = rangeDF.Result()"},
+                    "\n");
+  EXPECT_OK(ParseQuery(single_col_map_sub));
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

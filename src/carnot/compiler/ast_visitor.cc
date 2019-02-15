@@ -1,4 +1,5 @@
 #include "src/carnot/compiler/ast_visitor.h"
+#include "src/carnot/compiler/ir_nodes.h"
 
 namespace pl {
 namespace carnot {
@@ -213,6 +214,15 @@ StatusOr<IRNode*> ASTWalker::ProcessAttrFunc(const pypa::AstAttributePtr& node) 
   }
 }
 
+StatusOr<IRNode*> ASTWalker::ProcessSinkOp(const pypa::AstCallPtr& node) {
+  PL_ASSIGN_OR_RETURN(MemorySinkIR * ir_node, ir_graph_->MakeNode<MemorySinkIR>());
+
+  PL_ASSIGN_OR_RETURN(IRNode * call_result,
+                      ProcessAttrFunc(PYPA_PTR_CAST(Attribute, node->function)));
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result));
+  return ir_node;
+}
+
 StatusOr<IRNode*> ASTWalker::ProcessRangeOp(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(RangeIR * ir_node, ir_graph_->MakeNode<RangeIR>());
   PL_ASSIGN_OR_RETURN(ArgMap args, GetArgs(node, {"time"}, true));
@@ -275,6 +285,8 @@ StatusOr<IRNode*> ASTWalker::ProcessFunc(const std::string& func_name,
     PL_ASSIGN_OR_RETURN(ir_node, ProcessMapOp(node));
   } else if (func_name == kAggOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessAggOp(node));
+  } else if (func_name == kSinkOpId) {
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessSinkOp(node));
   } else {
     std::string err_msg = absl::Substitute("No function named '$0'", func_name);
     return CreateAstError(err_msg, node);

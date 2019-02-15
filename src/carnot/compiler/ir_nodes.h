@@ -63,6 +63,7 @@ class IR {
 
 enum IRNodeType {
   MemorySourceType,
+  MemorySinkType,
   RangeType,
   MapType,
   AggType,
@@ -78,9 +79,9 @@ enum IRNodeType {
   FuncNameType
 };
 static constexpr const char* IRNodeString[] = {
-    "MemorySourceType", "RangeType",  "MapType",    "AggType",     "StringType",
-    "FloatType",        "IntType",    "BoolType",   "BinFuncType", "FuncType",
-    "ListType",         "LambdaType", "ColumnType", "FuncNameType"};
+    "MemorySourceType", "MemorySinkType", "RangeType",  "MapType",    "AggType",
+    "StringType",       "FloatType",      "IntType",    "BoolType",   "BinFuncType",
+    "FuncType",         "ListType",       "LambdaType", "ColumnType", "FuncNameType"};
 
 /**
  * @brief Node class for the IR.
@@ -181,6 +182,22 @@ class MemorySourceIR : public OperatorIR {
   bool time_set_;
   int64_t time_start_ms_;
   int64_t time_stop_ms_;
+};
+
+/**
+ * The MemorySinkIR describes the MemorySink operator.
+ */
+class MemorySinkIR : public OperatorIR {
+ public:
+  MemorySinkIR() = delete;
+  explicit MemorySinkIR(int64_t id) : OperatorIR(id, MemorySinkType) {}
+  Status Init(IRNode* parent);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+  IRNode* parent() { return parent_; }
+
+ private:
+  IRNode* parent_;
 };
 
 /**

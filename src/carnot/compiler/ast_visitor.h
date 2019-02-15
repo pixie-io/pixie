@@ -24,6 +24,7 @@ constexpr const char* kFromOpId = "From";
 constexpr const char* kRangeOpId = "Range";
 constexpr const char* kMapOpId = "Map";
 constexpr const char* kAggOpId = "Agg";
+constexpr const char* kSinkOpId = "Result";
 
 using VarTable = std::unordered_map<std::string, IRNode*>;
 using ArgMap = std::unordered_map<std::string, IRNode*>;
@@ -172,6 +173,14 @@ class ASTWalker {
    * @return StatusOr<IRNode*> the from op.
    */
   StatusOr<IRNode*> ProcessFromOp(const pypa::AstCallPtr& node);
+
+  /**
+   * @brief Processes the Result operator.
+   *
+   * @param node
+   * @return StatusOr<IRNode*> the sink op.
+   */
+  StatusOr<IRNode*> ProcessSinkOp(const pypa::AstCallPtr& node);
 
   /**
    * @brief Processes the Range operator.

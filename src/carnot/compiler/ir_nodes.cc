@@ -57,6 +57,20 @@ std::string MemorySourceIR::DebugString(int64_t depth) const {
       {{"From", table_node_->DebugString(depth + 1)}, {"Select", select_->DebugString(depth + 1)}});
 }
 
+bool MemorySinkIR::HasLogicalRepr() const { return true; }
+
+Status MemorySinkIR::Init(IRNode* parent) {
+  parent_ = parent;
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent_, this));
+
+  return Status::OK();
+}
+
+std::string MemorySinkIR::DebugString(int64_t depth) const {
+  return DebugStringFmt(depth, absl::StrFormat("%d:MemorySinkIR", id()),
+                        {{"Parent", parent_->DebugString(depth + 1)}});
+}
+
 Status RangeIR::Init(IRNode* parent, IRNode* time_repr) {
   // TODO(philkuz) implement string to ms (int) conversion.
   time_repr_ = time_repr;
