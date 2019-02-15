@@ -111,6 +111,7 @@
       "type": "text",
       "text.max-line-length": 120,
       "exclude": [
+        "(LICENSE.txt)",
         "(chef/.*\\.json$)",
         "(src/ui/yarn.lock)",
         "(__snapshots__/.*)",

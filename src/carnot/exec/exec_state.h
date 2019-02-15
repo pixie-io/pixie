@@ -22,7 +22,7 @@ namespace exec {
  *
  * The purpose of this class is to keep track of resources required for the query
  * and provide common resources (UDFs, UDA, etc) the operators within the query.
- */
+ */u
 class ExecState {
  public:
   explicit ExecState(std::shared_ptr<udf::ScalarUDFRegistry> scalar_udf_registry,
