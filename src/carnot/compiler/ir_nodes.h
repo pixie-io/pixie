@@ -498,6 +498,107 @@ class BoolIR : public IRNode {
  private:
   bool val_;
 };
+
+/**
+ * A walker for an IR Graph.
+ *
+ * The walker walks through the operators of the graph in a topologically sorted order.
+ */
+class IRWalker {
+ public:
+  template <typename TOp>
+  using NodeWalkFn = std::function<void(const TOp*)>;
+
+  using MemorySourceWalkFn = NodeWalkFn<MemorySourceIR>;
+  using MapWalkFn = NodeWalkFn<MapIR>;
+  using AggWalkFn = NodeWalkFn<AggIR>;
+  using MemorySinkWalkFn = NodeWalkFn<MemorySinkIR>;
+
+  /**
+   * Register callback for when a memory source IR node is encountered.
+   * @param fn The function to call when a memory source IR node is encountered.
+   * @return self to allow chaining
+   */
+  IRWalker& OnMemorySource(const MemorySourceWalkFn fn) {
+    memory_source_walk_fn_ = fn;
+    return *this;
+  }
+
+  /**
+   * Register callback for when a map IR node is encountered.
+   * @param fn The function to call when a map IR node is encountered.
+   * @return self to allow chaining.
+   */
+  IRWalker& OnMap(const MapWalkFn& fn) {
+    map_walk_fn_ = fn;
+    return *this;
+  }
+
+  /**
+   * Register callback for when an agg IR node is encountered.
+   * @param fn The function to call when an agg IR node is encountered.
+   * @return self to allow chaining.
+   */
+  IRWalker& OnAgg(const AggWalkFn& fn) {
+    agg_walk_fn_ = fn;
+    return *this;
+  }
+
+  /**
+   * Register callback for when a memory sink IR node is encountered.
+   * @param fn The function to call.
+   * @return self to allow chaining.
+   */
+  IRWalker& OnMemorySink(const MemorySinkWalkFn& fn) {
+    memory_sink_walk_fn_ = fn;
+    return *this;
+  }
+
+  /**
+   * Perform a walk of the operators in the IR graph in a topologically-sorted order.
+   * @param ir_graph The IR graph to walk.
+   */
+  void Walk(IR* ir_graph) {
+    auto operators = ir_graph->dag().TopologicalSort();
+    for (const auto& node_id : operators) {
+      auto node = ir_graph->Get(node_id);
+      if (node->IsOp()) {
+        CallWalkFn(node);
+      }
+    }
+  }
+
+ private:
+  template <typename T, typename TWalkFunc>
+  void CallAs(const TWalkFunc& fn, IRNode* node) {
+    if (!fn) {
+      VLOG(google::WARNING) << "fn does not exist";
+    }
+    return fn(static_cast<const T*>(node));
+  }
+
+  void CallWalkFn(IRNode* node) {
+    const auto op_type = node->type();
+    switch (op_type) {
+      case IRNodeType::MemorySourceType:
+        return CallAs<MemorySourceIR>(memory_source_walk_fn_, node);
+      case IRNodeType::MapType:
+        return CallAs<MapIR>(map_walk_fn_, node);
+      case IRNodeType::AggType:
+        return CallAs<AggIR>(agg_walk_fn_, node);
+      case IRNodeType::MemorySinkType:
+        return CallAs<MemorySinkIR>(memory_sink_walk_fn_, node);
+      default:
+        LOG(WARNING) << absl::StrCat("IRNode type does not exist.");
+    }
+  }
+
+  MemorySourceWalkFn memory_source_walk_fn_;
+  MapWalkFn map_walk_fn_;
+  AggWalkFn agg_walk_fn_;
+  MemorySinkWalkFn memory_sink_walk_fn_;
+};
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

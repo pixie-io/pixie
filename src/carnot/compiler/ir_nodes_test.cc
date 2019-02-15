@@ -36,6 +36,33 @@ TEST(IRTest, check_connection) {
   VerifyGraphConnections(ig.get());
 }
 
+TEST(IRWalker, basic_tests) {
+  // Construct example IR Graph.
+  auto graph = std::make_shared<IR>();
+
+  // Create nodes.
+  auto src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  auto select_list = graph->MakeNode<ListIR>().ValueOrDie();
+  auto map = graph->MakeNode<MapIR>().ValueOrDie();
+  auto agg = graph->MakeNode<AggIR>().ValueOrDie();
+  auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
+
+  // Add dependencies.
+  EXPECT_OK(graph->AddEdge(src, select_list));
+  EXPECT_OK(graph->AddEdge(src, map));
+  EXPECT_OK(graph->AddEdge(map, agg));
+  EXPECT_OK(graph->AddEdge(agg, sink));
+
+  std::vector<int64_t> call_order;
+  IRWalker()
+      .OnMemorySink([&](auto* mem_sink) { call_order.push_back(mem_sink->id()); })
+      .OnMemorySource([&](auto* mem_src) { call_order.push_back(mem_src->id()); })
+      .OnMap([&](auto* map) { call_order.push_back(map->id()); })
+      .OnAgg([&](auto* agg) { call_order.push_back(agg->id()); })
+      .Walk(graph.get());
+  EXPECT_EQ(std::vector<int64_t>({0, 2, 3, 4}), call_order);
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
