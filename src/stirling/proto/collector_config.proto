@@ -1,0 +1,61 @@
+syntax = "proto3";
+import "src/common/types/types.proto";
+
+package pl.stirling.stirlingpb;
+
+option go_package = "stirlingpb";
+
+// Element stores a datum belonging to an InfoClass. For example,
+// number_of_hits, number_of_misses, buffered, free_bytes
+// in a file_system_cache would be elements in an
+// InfoClass file_system_cache.
+message Element {
+  // name referes to the name of the Element such as user_percentage (Element)
+  // for cpu usage (InfoClass).
+  string name = 1;
+  types.DataType type = 2;
+  // Enum describing an Element's state. It can either be
+  // collected (due to configuration of a Source) or it can
+  // be collected. If it is collectod, then it can either be
+  // subscribed or not by an agent.
+  enum State {
+    NOT_COLLECTED = 0;
+    COLLECTED_NOT_SUBSCRIBED = 1;
+    COLLECTED_AND_SUBSCRIBED = 2;
+  }
+  // Default profiles can be published
+  // by setting an element's state to COLLECTED_AND_SUBSCRIBED.
+  // However, an agent can modify it in a subscribe message.
+  State state = 3;
+}
+
+// InfoClass stores a set of Elements that share common timestamps (i.e., they are
+// typically collected together). For example, cpu_usage which could comprise of
+// Elements such as user%, system%, io%, that are collected together in the same
+// BPF program.
+message InfoClass {
+  string name = 1;
+  // Unique identifier to be used for an Arrow Table in both data collector and agent.
+  // This id will be assigned by the data collector's config block when creating a Publish
+  // message.
+  uint64 id = 2;
+  repeated Element elements = 3;
+  // Metadata contains information about the data source that provided data (eBPF,
+  // opentracing, prometheus, etc.), the host on which the data source was running (
+  // k8s node, aws node, etc.), pods on the host node, services running on a node, etc.
+  map<string, string> metadata = 4;
+}
+
+// Publish message contains information on
+// all the InfoClasses available
+// to the Data Collector. Data Collector sends this
+// message to an Agent so that an Agent can know what
+// data is being collected.
+message Publish { repeated InfoClass published_info_classes = 1; }
+
+// Subscribe message is sent by an agent in response to
+// a Publish message from the Data Collector,
+// An agent updates the ElementState in each Element of an
+// InfoClass so that the Data Collector is aware of
+// the data that the Agent wants.
+message Subscribe { repeated InfoClass subscribed_info_classes = 1; }

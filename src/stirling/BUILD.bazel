@@ -1,0 +1,76 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+            "**/*_wrapper.cc",
+        ],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/carnot/udf:cc_library",
+        "//src/common/types:types_cc_proto",
+        "//src/stirling/proto:collector_config_cc_proto",
+        "//third_party:arrow",
+    ],
+)
+
+pl_cc_binary(
+    name = "data_collector_benchmark",
+    srcs = ["data_collector_benchmark.cc"],
+    deps = [
+        "//src/stirling/proto:canonical_cc_proto",
+        "//third_party:arrow",
+        "@com_google_benchmark//:benchmark_main",
+    ],
+)
+
+pl_cc_binary(
+    name = "stirling_wrapper",
+    srcs = ["stirling_wrapper.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "info_class_schema_test",
+    srcs = ["info_class_schema_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "data_table_test",
+    srcs = ["data_table_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "pub_sub_manager_test",
+    srcs = ["pub_sub_manager_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "source_registry_test",
+    srcs = ["source_registry_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "source_connector_test",
+    srcs = ["source_connector_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "stirling_component_test",
+    srcs = ["stirling_component_test.cc"],
+    deps = [":cc_library"],
+)
