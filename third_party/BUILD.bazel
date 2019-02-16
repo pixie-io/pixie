@@ -1,4 +1,5 @@
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("//bazel:flex_bison.bzl", "genbison", "genflex")
 
 licenses(["notice"])
 
@@ -106,4 +107,109 @@ pl_cc_library(
     deps = [
         "@com_google_double_conversion//:double-conversion",
     ],
+)
+
+# See README.md for special instructions on re-building bpftrace.
+pl_cc_library(
+    name = "bpftrace",
+    srcs = glob(
+        ["bpftrace/src/*.cpp"],
+        exclude = ["bpftrace/src/main.cpp"],
+    ),
+    hdrs = glob([
+        "bpftrace/src/*.h",
+    ]),
+    copts = [
+        "-w",
+        "-Ithird_party/bpftrace/src/arch",
+        "-Ithird_party/bpftrace/src/ast",
+        "-Ithird_party/bpftrace/src",
+    ],
+    includes = [
+        "bpftrace/src",
+        "bpftrace/src/arch",
+        "bpftrace/src/ast",
+    ],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":bpftrace-arch",
+        ":bpftrace-ast",
+    ],
+)
+
+pl_cc_library(
+    name = "bpftrace-arch",
+    srcs = [
+        "bpftrace/src/arch/x86_64.cpp",
+    ],
+    hdrs = glob([
+        "bpftrace/src/arch/*.h",
+    ]),
+    copts = [
+        "-w",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+pl_cc_library(
+    name = "bpftrace-ast",
+    srcs = glob([
+        "bpftrace/src/ast/*.cpp",
+    ]),
+    hdrs = glob([
+        "bpftrace/src/*.h",
+        "bpftrace/src/ast/*.h",
+        "bpftrace/src/arch/*.h",
+    ]),
+    copts = [
+        "-w",
+        "-Ithird_party/bpftrace/src/ast",
+        "-Ithird_party/bpftrace/src",
+    ],
+    visibility = ["//visibility:private"],
+    deps = [
+        ":bpftrace-parser",
+        "@com_iovisor_bcc//:bcc",
+        "@com_llvm_lib//:llvm",
+    ],
+)
+
+pl_cc_library(
+    name = "bpftrace-parser",
+    srcs = [
+        ":bpftrace-bison",
+        ":bpftrace-flex",
+    ],
+    hdrs = glob([
+        "bpftrace/src/*.h",
+        "bpftrace/src/ast/*.h",
+        ":bpftrace-bison",
+    ]),
+    copts = [
+        "-w",
+        "-Ithird_party/bpftrace/src",
+        "-Ithird_party/bpftrace/src/ast",
+        "-I.",
+    ],
+    #Hacky, but otherwise can't find parser.tab.hh.
+    includes = ["."],
+)
+
+genbison(
+    name = "bpftrace-bison",
+    src = "bpftrace/src/parser.yy",
+    extra_outs = [
+        "stack.hh",
+        "location.hh",
+        "position.hh",
+    ],
+    header_out = "parser.tab.hh",
+    source_out = "parser.tab.cc",
+)
+
+genflex(
+    name = "bpftrace-flex",
+    src = "bpftrace/src/lexer.l",
+    out = "lex.yy.cc",
+    includes = [":bpftrace-bison"],
 )

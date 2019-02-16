@@ -119,7 +119,7 @@ pl_cc_test(
     srcs = ["exec_graph_test.cc"],
     deps = [
         ":cc_library",
-        "//third_party:arrow",
         "//src/carnot/proto:plan_testutils",
+        "//third_party:arrow",
     ],
 )

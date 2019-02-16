@@ -1,0 +1,11 @@
+## bpftrace notes
+
+When building bpftrace, it automatically generates the following file:
+<build_dir>/resources/headers.cpp
+
+Due to build issues, this file was copied directly into bpftrace/src, and checked in to our fork of bpftrace.
+
+If at any time, bpftrace is updated from the origin, AND there are changes to the bpftrace/resources directory,
+then the updated headers.cpp should be copied and checked in to bpftrace/src.
+
+If there are no changes to files in the bpftrace/resources directory (which is the likely case), then no special steps are required.

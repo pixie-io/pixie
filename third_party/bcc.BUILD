@@ -16,6 +16,7 @@ cc_library(
     includes = [
         # TODO(zasgar): Ideally this should be in a directory called bcc or something.
         "include",
+        "include/bcc",
     ],
     linkopts = [
         "-lz",
