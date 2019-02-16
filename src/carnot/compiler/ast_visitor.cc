@@ -45,8 +45,16 @@ Status CreateAstError(const std::string& err_msg, const pypa::AstPtr& ast) {
  */
 std::string GetAstTypeName(AstType type) {
   // TODO(philkuz) (PL-335) impl.
-  return absl::StrFormat("%d", type);
-}
+  std::vector<std::string> type_names = {
+#undef PYPA_AST_TYPE
+#define PYPA_AST_TYPE(X) #X,
+// NOLINTNEXTLINE(build/include_order).
+#include <pypa/ast/ast_type.inl>
+#undef PYPA_AST_TYPE
+  };
+  DCHECK(type_names.size() > static_cast<size_t>(type));
+  return absl::StrFormat("%s", type_names[static_cast<int>(type)]);
+}  // namespace compiler
 
 /**
  * @brief Get the Id from the NameAST.
