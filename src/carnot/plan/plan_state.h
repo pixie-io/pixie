@@ -14,16 +14,15 @@ class PlanState {
    *
    * @param udf_registry the passed in UDF registry.
    */
-  explicit PlanState(std::shared_ptr<udf::ScalarUDFRegistry> udf_registry,
-                     std::shared_ptr<udf::UDARegistry> uda_registry)
+  explicit PlanState(udf::ScalarUDFRegistry* udf_registry, udf::UDARegistry* uda_registry)
       : udf_registry_(udf_registry), uda_registry_(uda_registry) {}
 
-  std::shared_ptr<udf::ScalarUDFRegistry> udf_registry() const { return udf_registry_; }
-  std::shared_ptr<udf::UDARegistry> uda_registry() const { return uda_registry_; }
+  udf::ScalarUDFRegistry* udf_registry() const { return udf_registry_; }
+  udf::UDARegistry* uda_registry() const { return uda_registry_; }
 
  private:
-  std::shared_ptr<udf::ScalarUDFRegistry> udf_registry_;
-  std::shared_ptr<udf::UDARegistry> uda_registry_;
+  udf::ScalarUDFRegistry* udf_registry_;
+  udf::UDARegistry* uda_registry_;
 };
 
 }  // namespace plan

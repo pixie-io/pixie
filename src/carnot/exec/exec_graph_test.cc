@@ -42,27 +42,28 @@ class ExecGraphTest : public ::testing::Test {
         TextFormat::MergeFromString(carnotpb::testutils::kPlanFragmentWithFourNodes, &pf_pb));
     ASSERT_TRUE(plan_fragment_->Init(pf_pb).ok());
 
-    auto udf_registry = std::make_shared<udf::ScalarUDFRegistry>("test_registry");
-    auto uda_registry = std::make_shared<udf::UDARegistry>("test_registry");
+    auto udf_registry = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
+    auto uda_registry = std::make_unique<udf::UDARegistry>("test_registry");
     auto table_store = std::make_shared<TableStore>();
 
-    exec_state_ = std::make_shared<ExecState>(udf_registry, uda_registry, table_store);
+    exec_state_ = std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), table_store);
   }
   std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
-  std::shared_ptr<ExecState> exec_state_ = nullptr;
+  std::unique_ptr<ExecState> exec_state_ = nullptr;
 };
 
 TEST_F(ExecGraphTest, basic) {
   ExecutionGraph e;
-  auto c = std::make_shared<plan::PlanState>(std::make_shared<udf::ScalarUDFRegistry>("test"),
-                                             std::make_shared<udf::UDARegistry>("testUDA"));
+  auto udf_registry = std::make_unique<udf::ScalarUDFRegistry>("test");
+  auto uda_registry = std::make_unique<udf::UDARegistry>("testUDA");
+  auto plan_state = std::make_unique<plan::PlanState>(udf_registry.get(), uda_registry.get());
 
   auto schema = std::make_shared<plan::Schema>();
   plan::Relation relation(std::vector<udf::UDFDataType>({udf::UDFDataType::INT64}),
                           std::vector<std::string>({"test"}));
   schema->AddRelation(1, relation);
 
-  auto s = e.Init(schema, c, exec_state_, plan_fragment_);
+  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get());
 
   // Check that the structure of the exec graph is correct.
   auto sources = e.sources();
@@ -88,12 +89,12 @@ TEST_F(ExecGraphTest, execute) {
   std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
   ASSERT_TRUE(plan_fragment_->Init(pf_pb).ok());
 
-  auto udf_registry = std::make_shared<udf::ScalarUDFRegistry>("testUDF");
+  auto udf_registry = std::make_unique<udf::ScalarUDFRegistry>("testUDF");
   EXPECT_OK(udf_registry->Register<AddUDF>("add"));
   EXPECT_OK(udf_registry->Register<MultiplyUDF>("multiply"));
-  auto uda_registry = std::make_shared<udf::UDARegistry>("testUDA");
+  auto uda_registry = std::make_unique<udf::UDARegistry>("testUDA");
 
-  auto c = std::make_shared<plan::PlanState>(udf_registry, uda_registry);
+  auto plan_state = std::make_unique<plan::PlanState>(udf_registry.get(), uda_registry.get());
 
   auto schema = std::make_shared<plan::Schema>();
   schema->AddRelation(1, plan::Relation(std::vector<udf::UDFDataType>({udf::UDFDataType::INT64,
@@ -132,9 +133,10 @@ TEST_F(ExecGraphTest, execute) {
   auto table_store = std::make_shared<TableStore>();
   table_store->AddTable("numbers", table);
 
-  auto exec_state_ = std::make_shared<ExecState>(udf_registry, uda_registry, table_store);
+  auto exec_state_ =
+      std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), table_store);
 
-  auto s = e.Init(schema, c, exec_state_, plan_fragment_);
+  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get());
 
   EXPECT_OK(e.Execute());
 

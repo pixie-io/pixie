@@ -15,15 +15,15 @@ class CompilerState {
    * be constructed for every query compiled in Carnot and it will not be reused.
    */
   explicit CompilerState(std::shared_ptr<plan::Schema> schema,
-                         std::shared_ptr<compiler::RegistryInfo> registry_info)
+                         compiler::RegistryInfo* registry_info)
       : schema_(schema), registry_info_(registry_info) {}
 
   std::shared_ptr<plan::Schema> schema() const { return schema_; }
-  std::shared_ptr<compiler::RegistryInfo> registry_info() const { return registry_info_; }
+  compiler::RegistryInfo* registry_info() const { return registry_info_; }
 
  private:
   std::shared_ptr<plan::Schema> schema_;
-  std::shared_ptr<compiler::RegistryInfo> registry_info_;
+  compiler::RegistryInfo* registry_info_;
 };
 
 }  // namespace compiler

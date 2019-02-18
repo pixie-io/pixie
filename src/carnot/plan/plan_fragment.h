@@ -17,6 +17,7 @@ class PlanFragment final : public PlanGraph<carnotpb::PlanFragment, Operator, ca
  public:
   explicit PlanFragment(int64_t id) : id_(id) {}
   static std::unique_ptr<PlanFragment> FromProto(const carnotpb::PlanFragment &pb, int64_t id);
+  int64_t id() const { return id_; }
 
  protected:
   int64_t id_;

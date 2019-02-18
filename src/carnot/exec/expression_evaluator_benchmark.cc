@@ -48,11 +48,12 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
   CHECK(s_or_se.ok());
   std::shared_ptr<ScalarExpression> se = s_or_se.ConsumeValueOrDie();
 
-  auto udf_registry = std::make_shared<ScalarUDFRegistry>("test_registry");
-  auto uda_registry = std::make_shared<UDARegistry>("test_registry");
+  auto udf_registry = std::make_unique<ScalarUDFRegistry>("test_registry");
+  auto uda_registry = std::make_unique<UDARegistry>("test_registry");
   auto table_store = std::make_shared<pl::carnot::exec::TableStore>();
   PL_CHECK_OK(udf_registry->Register<AddUDF>("add"));
-  auto exec_state = std::make_unique<ExecState>(udf_registry, uda_registry, table_store);
+  auto exec_state =
+      std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), table_store);
 
   auto in1 = pl::bmutils::CreateLargeData<Int64Value>(data_size);
   auto in2 = pl::bmutils::CreateLargeData<Int64Value>(data_size);

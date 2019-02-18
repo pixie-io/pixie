@@ -17,10 +17,8 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
-Status ExecutionGraph::Init(std::shared_ptr<plan::Schema> schema,
-                            std::shared_ptr<plan::PlanState> plan_state,
-                            std::shared_ptr<ExecState> exec_state,
-                            std::shared_ptr<plan::PlanFragment> pf) {
+Status ExecutionGraph::Init(std::shared_ptr<plan::Schema> schema, plan::PlanState* plan_state,
+                            ExecState* exec_state, plan::PlanFragment* pf) {
   plan_state_ = plan_state;
   schema_ = schema;
   pf_ = pf;
@@ -42,7 +40,7 @@ Status ExecutionGraph::Init(std::shared_ptr<plan::Schema> schema,
         sources_.push_back(node.id());
         return OnOperatorImpl<plan::MemorySourceOperator, MemorySourceNode>(node, &descriptors);
       })
-      .Walk(pf.get());
+      .Walk(pf_);
   return Status::OK();
 }
 
@@ -56,11 +54,11 @@ Status ExecutionGraph::Execute() {
   transform(nodes_.begin(), nodes_.end(), nodes.begin(), [](auto pair) { return pair.second; });
 
   for (auto node : nodes) {
-    PL_RETURN_IF_ERROR(node->Prepare(exec_state_.get()));
+    PL_RETURN_IF_ERROR(node->Prepare(exec_state_));
   }
 
   for (auto node : nodes) {
-    PL_RETURN_IF_ERROR(node->Open(exec_state_.get()));
+    PL_RETURN_IF_ERROR(node->Open(exec_state_));
   }
 
   // For each source, generate rowbatches until none are remaining.
@@ -71,13 +69,13 @@ Status ExecutionGraph::Execute() {
     } else {
       do {
         // TODO(michelle): Determine if there are ways that this can hit deadlock.
-        PL_RETURN_IF_ERROR(node->second->GenerateNext(exec_state_.get()));
+        PL_RETURN_IF_ERROR(node->second->GenerateNext(exec_state_));
       } while (static_cast<SourceNode*>(node->second)->ChunksRemaining());
     }
   }
 
   for (auto node : nodes) {
-    PL_RETURN_IF_ERROR(node->Close(exec_state_.get()));
+    PL_RETURN_IF_ERROR(node->Close(exec_state_));
   }
 
   return Status::OK();

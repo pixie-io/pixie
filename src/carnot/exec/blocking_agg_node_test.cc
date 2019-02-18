@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "../udf/registry.h"
 #include "src/carnot/exec/blocking_agg_node.h"
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/proto/test_proto.h"
@@ -50,11 +51,9 @@ blocking_agg_op {
   value_names: "value1"
 })";
 
-std::unique_ptr<ExecState> MakeTestExecState() {
-  auto udf_registry = std::make_shared<udf::ScalarUDFRegistry>("test_registry");
-  auto uda_registry = std::make_shared<udf::UDARegistry>("test_registry");
+std::unique_ptr<ExecState> MakeTestExecState(udf::ScalarUDFRegistry* udf_registry,
+                                             udf::UDARegistry* uda_registry) {
   auto table_store = std::make_shared<TableStore>();
-  EXPECT_TRUE(uda_registry->Register<MinSumUDA>("minsum").ok());
   return std::make_unique<ExecState>(udf_registry, uda_registry, table_store);
 }
 
@@ -66,7 +65,13 @@ std::unique_ptr<plan::Operator> PlanNodeFromPbtxt(const std::string& pbtxt) {
 
 class BlockingAggNodeTest : public ::testing::Test {
  public:
-  BlockingAggNodeTest() { exec_state_ = MakeTestExecState(); }
+  BlockingAggNodeTest() {
+    udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test");
+    uda_registry_ = std::make_unique<udf::UDARegistry>("test_uda");
+    EXPECT_TRUE(uda_registry_->Register<MinSumUDA>("minsum").ok());
+
+    exec_state_ = MakeTestExecState(udf_registry_.get(), uda_registry_.get());
+  }
   RowBatch CreateInputRowBatch(const std::vector<udf::Int64Value>& in1,
                                const std::vector<udf::Int64Value>& in2) {
     RowDescriptor rd({udf::UDFDataType::INT64, udf::UDFDataType::INT64});
@@ -78,6 +83,8 @@ class BlockingAggNodeTest : public ::testing::Test {
 
  protected:
   std::unique_ptr<ExecState> exec_state_;
+  std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
+  std::unique_ptr<udf::UDARegistry> uda_registry_;
 };
 
 TEST_F(BlockingAggNodeTest, no_groups) {

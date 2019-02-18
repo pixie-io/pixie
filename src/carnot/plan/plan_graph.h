@@ -17,7 +17,6 @@ template <typename TProto, typename TNode, typename TPbNode>
 class PlanGraph {
  public:
   virtual ~PlanGraph() = default;
-  int64_t id() const { return id_; }
   DAG& dag() { return dag_; }
   std::unordered_map<int64_t, std::unique_ptr<TNode>>& nodes() { return nodes_; }
 
@@ -55,7 +54,6 @@ class PlanGraph {
   DAG dag_;
   std::unordered_map<int64_t, std::unique_ptr<TNode>> nodes_;
 
-  int64_t id_;
   bool is_initialized_ = false;
 };
 }  // namespace plan

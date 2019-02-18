@@ -19,24 +19,15 @@ namespace compiler {
 class Compiler {
  public:
   /**
-   * Constructor for the compiler.
-   * @param compiler_state which manages state needed for compilation.
-   */
-  explicit Compiler(std::shared_ptr<CompilerState> compiler_state)
-      : compiler_state_(compiler_state) {}
-
-  /**
    * Compile the query into a logical plan.
    * @param query the query to compile.
    * @return the logical plan in the form of a plan protobuf message.
    */
-  StatusOr<carnotpb::Plan> Compile(const std::string& query);
+  StatusOr<carnotpb::Plan> Compile(const std::string& query, CompilerState* compiler_state);
 
  private:
   StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query);
   StatusOr<carnotpb::Plan> IRToLogicalPlan(std::shared_ptr<IR> ir);
-
-  std::shared_ptr<CompilerState> compiler_state_;
 };
 
 }  // namespace compiler

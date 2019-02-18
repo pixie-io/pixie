@@ -39,11 +39,13 @@ class DummyTestUDA : public udf::UDA {
 
 class ScalarExpressionTest : public ::testing::Test {
  public:
-  ScalarExpressionTest()
-      : state_(std::make_shared<udf::ScalarUDFRegistry>("test"),
-               std::make_shared<udf::UDARegistry>("testUDA")) {
-    state_.udf_registry()->RegisterOrDie<DummyTestUDF>("foobar");
-    state_.uda_registry()->RegisterOrDie<DummyTestUDA>("testAgg");
+  ScalarExpressionTest() {
+    udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test");
+    uda_registry_ = std::make_unique<udf::UDARegistry>("testUDA");
+    state_ = std::make_unique<PlanState>(udf_registry_.get(), uda_registry_.get());
+
+    state_->udf_registry()->RegisterOrDie<DummyTestUDF>("foobar");
+    state_->uda_registry()->RegisterOrDie<DummyTestUDA>("testAgg");
     Relation rel0;
     rel0.AddColumn(types::INT64, "col0");
     rel0.AddColumn(types::FLOAT64, "col1");
@@ -59,7 +61,9 @@ class ScalarExpressionTest : public ::testing::Test {
 
  protected:
   Schema schema_;
-  PlanState state_;
+  std::unique_ptr<PlanState> state_;
+  std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
+  std::unique_ptr<udf::UDARegistry> uda_registry_;
 };
 
 TEST(ColumnTest, basic_tests) {
@@ -237,7 +241,7 @@ TEST_F(ScalarExpressionTest, col_tests) {
 
   ASSERT_TRUE(se_or_status.ok());
   auto se = se_or_status.ConsumeValueOrDie();
-  auto status = se->OutputDataType(state_, schema_);
+  auto status = se->OutputDataType(*state_, schema_);
   ASSERT_TRUE(status.ok());
   EXPECT_EQ(types::STRING, status.ValueOrDie());
 }
@@ -283,7 +287,7 @@ TEST_F(ScalarFuncTest, ColDeps) {
 }
 
 TEST_F(ScalarFuncTest, output_type) {
-  auto res = sf_.OutputDataType(state_, schema_);
+  auto res = sf_.OutputDataType(*state_, schema_);
   ASSERT_TRUE(res.ok());
   EXPECT_EQ(types::INT64, res.ConsumeValueOrDie());
 }
@@ -386,7 +390,7 @@ TEST_F(AggregateExpressionTest, ColDeps) {
 }
 
 TEST_F(AggregateExpressionTest, output_type) {
-  auto res = ae_.OutputDataType(state_, schema_);
+  auto res = ae_.OutputDataType(*state_, schema_);
   ASSERT_TRUE(res.ok());
   EXPECT_EQ(types::INT64, res.ConsumeValueOrDie());
 }

@@ -59,12 +59,13 @@ std::shared_ptr<plan::ScalarExpression> ScalarExpressionOf(const std::string& pb
 class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEvaluatorType> {
  public:
   virtual void SetUp() {
-    auto uda_registry = std::make_shared<udf::UDARegistry>("test_registry");
-    auto udf_registry = std::make_shared<udf::ScalarUDFRegistry>("test_registry");
+    uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
+    udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
     auto table_store = std::make_shared<TableStore>();
 
-    EXPECT_TRUE(udf_registry->Register<AddUDF>("add").ok());
-    exec_state_ = std::make_unique<ExecState>(udf_registry, uda_registry, table_store);
+    EXPECT_TRUE(udf_registry_->Register<AddUDF>("add").ok());
+    exec_state_ =
+        std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store);
 
     std::vector<udf::Int64Value> in1 = {1, 2, 3};
     std::vector<udf::Int64Value> in2 = {3, 4, 5};
@@ -90,6 +91,8 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
   std::shared_ptr<plan::ScalarExpression> se_;
   std::unique_ptr<ExecState> exec_state_;
   std::unique_ptr<RowBatch> input_rb_;
+  std::unique_ptr<udf::UDARegistry> uda_registry_;
+  std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
 };
 
 INSTANTIATE_TEST_CASE_P(TestVecAndArrow, ScalarExpressionTest,

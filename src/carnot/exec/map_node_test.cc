@@ -30,12 +30,13 @@ class MapNodeTest : public ::testing::Test {
     auto op_proto = carnotpb::testutils::CreateTestMapAddTwoCols();
     plan_node_ = plan::MapOperator::FromProto(op_proto, 1);
 
-    auto udf_registry = std::make_shared<udf::ScalarUDFRegistry>("test_registry");
-    auto uda_registry = std::make_shared<udf::UDARegistry>("test_registry");
-    EXPECT_OK(udf_registry->Register<AddUDF>("add"));
+    udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
+    uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
+    EXPECT_OK(udf_registry_->Register<AddUDF>("add"));
     auto table_store = std::make_shared<TableStore>();
 
-    exec_state_ = std::make_unique<ExecState>(udf_registry, uda_registry, table_store);
+    exec_state_ =
+        std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store);
   }
   RowBatch CreateInputRowBatch(const std::vector<udf::Int64Value>& in1,
                                const std::vector<udf::Int64Value>& in2) {
@@ -49,6 +50,8 @@ class MapNodeTest : public ::testing::Test {
  protected:
   std::unique_ptr<plan::Operator> plan_node_;
   std::unique_ptr<ExecState> exec_state_;
+  std::unique_ptr<udf::UDARegistry> uda_registry_;
+  std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
 };
 
 TEST_F(MapNodeTest, basic) {

@@ -23,10 +23,11 @@ class MemorySourceNodeTest : public ::testing::Test {
     auto op_proto = carnotpb::testutils::CreateTestSource1PB();
     plan_node_ = plan::MemorySourceOperator::FromProto(op_proto, 1);
 
-    auto udf_registry = std::make_shared<udf::ScalarUDFRegistry>("test_registry");
-    auto uda_registry = std::make_shared<udf::UDARegistry>("test_registry");
+    udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
+    uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
     auto table_store = std::make_shared<TableStore>();
-    exec_state_ = std::make_unique<ExecState>(udf_registry, uda_registry, table_store);
+    exec_state_ =
+        std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store);
 
     auto descriptor =
         std::vector<udf::UDFDataType>({types::DataType::BOOLEAN, types::DataType::INT64});
@@ -54,6 +55,8 @@ class MemorySourceNodeTest : public ::testing::Test {
  protected:
   std::unique_ptr<plan::Operator> plan_node_;
   std::unique_ptr<ExecState> exec_state_;
+  std::unique_ptr<udf::UDARegistry> uda_registry_;
+  std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
 };
 
 TEST_F(MemorySourceNodeTest, basic) {

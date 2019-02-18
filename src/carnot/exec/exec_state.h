@@ -25,10 +25,9 @@ namespace exec {
  */
 class ExecState {
  public:
-  explicit ExecState(std::shared_ptr<udf::ScalarUDFRegistry> scalar_udf_registry,
-                     std::shared_ptr<udf::UDARegistry> uda_registry,
+  explicit ExecState(udf::ScalarUDFRegistry* scalar_udf_registry, udf::UDARegistry* uda_registry,
                      std::shared_ptr<TableStore> table_store)
-      : scalar_udf_registry_(std::move(scalar_udf_registry)),
+      : scalar_udf_registry_(scalar_udf_registry),
         uda_registry_(uda_registry),
         table_store_(table_store) {}
   arrow::MemoryPool* exec_mem_pool() {
@@ -36,14 +35,14 @@ class ExecState {
     return arrow::default_memory_pool();
   }
 
-  udf::ScalarUDFRegistry* scalar_udf_registry() { return scalar_udf_registry_.get(); }
-  udf::UDARegistry* uda_registry() { return uda_registry_.get(); }
+  udf::ScalarUDFRegistry* scalar_udf_registry() { return scalar_udf_registry_; }
+  udf::UDARegistry* uda_registry() { return uda_registry_; }
 
   TableStore* table_store() { return table_store_.get(); }
 
  private:
-  std::shared_ptr<udf::ScalarUDFRegistry> scalar_udf_registry_;
-  std::shared_ptr<udf::UDARegistry> uda_registry_;
+  udf::ScalarUDFRegistry* scalar_udf_registry_;
+  udf::UDARegistry* uda_registry_;
   std::shared_ptr<TableStore> table_store_;
 };
 

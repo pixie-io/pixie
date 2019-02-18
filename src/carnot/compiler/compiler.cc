@@ -15,9 +15,11 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-StatusOr<carnotpb::Plan> Compiler::Compile(const std::string& query) {
-  auto ir = QueryToIR(query);
-  return IRToLogicalPlan(ir.ConsumeValueOrDie());
+StatusOr<carnotpb::Plan> Compiler::Compile(const std::string& query,
+                                           CompilerState* compiler_state) {
+  PL_UNUSED(compiler_state);
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query));
+  return IRToLogicalPlan(ir);
 }
 
 StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query) {

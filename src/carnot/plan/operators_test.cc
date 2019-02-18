@@ -16,10 +16,12 @@ class DummyTestUDF : public udf::ScalarUDF {
 
 class OperatorTest : public ::testing::Test {
  public:
-  OperatorTest()
-      : state_(std::make_shared<udf::ScalarUDFRegistry>("test"),
-               std::make_shared<udf::UDARegistry>("udaTest")) {
-    state_.udf_registry()->RegisterOrDie<DummyTestUDF>("testUdf");
+  OperatorTest() {
+    udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test");
+    uda_registry_ = std::make_unique<udf::UDARegistry>("testUDA");
+    state_ = std::make_unique<PlanState>(udf_registry_.get(), uda_registry_.get());
+
+    state_->udf_registry()->RegisterOrDie<DummyTestUDF>("testUdf");
     Relation rel0;
     rel0.AddColumn(types::INT64, "col0");
     rel0.AddColumn(types::FLOAT64, "col1");
@@ -35,7 +37,9 @@ class OperatorTest : public ::testing::Test {
 
  protected:
   Schema schema_;
-  PlanState state_;
+  std::unique_ptr<PlanState> state_;
+  std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
+  std::unique_ptr<udf::UDARegistry> uda_registry_;
 };
 
 TEST_F(OperatorTest, from_proto_map) {
@@ -74,7 +78,7 @@ TEST_F(OperatorTest, output_relation_source) {
   auto src_pb = carnotpb::testutils::CreateTestSource1PB();
   auto src_op = Operator::FromProto(src_pb, 1);
 
-  auto rel = src_op->OutputRelation(schema_, state_, std::vector<int64_t>());
+  auto rel = src_op->OutputRelation(schema_, *state_, std::vector<int64_t>());
   EXPECT_EQ(1, rel.ValueOrDie().NumColumns());
   EXPECT_EQ(types::DataType::FLOAT64, rel.ValueOrDie().GetColumnType(0));
   EXPECT_EQ("usage", rel.ValueOrDie().GetColumnName(0));
@@ -84,7 +88,7 @@ TEST_F(OperatorTest, output_relation_source_inputs) {
   auto src_pb = carnotpb::testutils::CreateTestSource1PB();
   auto src_op = Operator::FromProto(src_pb, 1);
 
-  auto rel = src_op->OutputRelation(schema_, state_, std::vector<int64_t>({1}));
+  auto rel = src_op->OutputRelation(schema_, *state_, std::vector<int64_t>({1}));
   EXPECT_FALSE(rel.ok());
   EXPECT_EQ(rel.msg(), "Source operator cannot have any inputs");
 }
@@ -92,14 +96,14 @@ TEST_F(OperatorTest, output_relation_source_inputs) {
 TEST_F(OperatorTest, output_relation_sink) {
   auto sink_pb = carnotpb::testutils::CreateTestSink1PB();
   auto sink_op = Operator::FromProto(sink_pb, 1);
-  auto rel = sink_op->OutputRelation(schema_, state_, std::vector<int64_t>());
+  auto rel = sink_op->OutputRelation(schema_, *state_, std::vector<int64_t>());
   EXPECT_EQ(0, rel.ValueOrDie().NumColumns());
 }
 
 TEST_F(OperatorTest, output_relation_map) {
   auto map_pb = carnotpb::testutils::CreateTestMap1PB();
   auto map_op = Operator::FromProto(map_pb, 1);
-  auto rel = map_op->OutputRelation(schema_, state_, std::vector<int64_t>({1}));
+  auto rel = map_op->OutputRelation(schema_, *state_, std::vector<int64_t>({1}));
   EXPECT_EQ(1, rel.ValueOrDie().NumColumns());
   EXPECT_EQ(types::DataType::INT64, rel.ValueOrDie().GetColumnType(0));
 }
@@ -107,7 +111,7 @@ TEST_F(OperatorTest, output_relation_map) {
 TEST_F(OperatorTest, output_relation_map_no_input) {
   auto map_pb = carnotpb::testutils::CreateTestMap1PB();
   auto map_op = Operator::FromProto(map_pb, 1);
-  auto rel = map_op->OutputRelation(schema_, state_, std::vector<int64_t>({}));
+  auto rel = map_op->OutputRelation(schema_, *state_, std::vector<int64_t>({}));
   EXPECT_FALSE(rel.ok());
   EXPECT_EQ(rel.msg(), "Map operator must have exactly one input");
 }
@@ -115,7 +119,7 @@ TEST_F(OperatorTest, output_relation_map_no_input) {
 TEST_F(OperatorTest, output_relation_map_missing_rel) {
   auto map_pb = carnotpb::testutils::CreateTestMap1PB();
   auto map_op = Operator::FromProto(map_pb, 1);
-  auto rel = map_op->OutputRelation(schema_, state_, std::vector<int64_t>({3}));
+  auto rel = map_op->OutputRelation(schema_, *state_, std::vector<int64_t>({3}));
   EXPECT_FALSE(rel.ok());
   EXPECT_EQ(rel.msg(), "Missing relation (3) for input of Map");
 }
@@ -123,7 +127,7 @@ TEST_F(OperatorTest, output_relation_map_missing_rel) {
 TEST_F(OperatorTest, output_relation_blocking_agg_no_input) {
   auto agg_pb = carnotpb::testutils::CreateTestBlockingAgg1PB();
   auto agg_op = Operator::FromProto(agg_pb, 1);
-  auto rel = agg_op->OutputRelation(schema_, state_, std::vector<int64_t>({}));
+  auto rel = agg_op->OutputRelation(schema_, *state_, std::vector<int64_t>({}));
   EXPECT_FALSE(rel.ok());
   EXPECT_EQ(rel.msg(), "BlockingAgg operator must have exactly one input");
 }
@@ -131,7 +135,7 @@ TEST_F(OperatorTest, output_relation_blocking_agg_no_input) {
 TEST_F(OperatorTest, output_relation_blocking_agg_missing_rel) {
   auto agg_pb = carnotpb::testutils::CreateTestBlockingAgg1PB();
   auto agg_op = Operator::FromProto(agg_pb, 1);
-  auto rel = agg_op->OutputRelation(schema_, state_, std::vector<int64_t>({3}));
+  auto rel = agg_op->OutputRelation(schema_, *state_, std::vector<int64_t>({3}));
   EXPECT_FALSE(rel.ok());
   EXPECT_EQ(rel.msg(), "Missing relation (3) for input of BlockingAggregateOperator");
 }

@@ -13,7 +13,7 @@ message Plan {
   // The DAG which stores the connection information of the plan fragments.
   DAG dag = 1;
   // List of plan fragments referenced by the DAG.
-  repeated PlanFragment fragments = 2;
+  repeated PlanFragment nodes = 2;
 }
 
 // Each plan fragment is a DAG represented in a format similar to an adjacency

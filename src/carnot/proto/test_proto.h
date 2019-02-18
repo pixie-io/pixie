@@ -409,6 +409,46 @@ const char* kLinearPlanFragment = R"(
   }
 )";
 
+const char* kPlanWithFiveNodes = R"(
+  dag {
+    nodes {
+      id: 1
+      sorted_deps: 2
+      sorted_deps: 3
+    }
+    nodes {
+      id: 2
+      sorted_deps: 4
+    }
+    nodes {
+      id: 3
+      sorted_deps: 4
+    }
+    nodes {
+      id: 4
+      sorted_deps: 5
+    }
+    nodes {
+      id: 5
+    }
+  }
+  nodes {
+    id: 1
+  }
+  nodes {
+    id: 2
+  }
+  nodes {
+    id: 3
+  }
+  nodes {
+    id: 4
+  }
+  nodes {
+    id: 5
+  }
+)";
+
 carnotpb::Operator CreateTestMap1PB() {
   carnotpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MAP_OPERATOR", "map_op", kMapOperator1);
