@@ -8,12 +8,12 @@
 namespace pl {
 namespace stirling {
 
-class ProcStatConnector : public SourceConnector {
+class ProcStatConnector : public LinuxOnlySourceConnector {
  public:
   ProcStatConnector() = delete;
   explicit ProcStatConnector(const std::string& source_name,
                              const std::vector<InfoClassElement> elements)
-      : SourceConnector(SourceType::kFile, source_name, elements) {}
+      : LinuxOnlySourceConnector(SourceType::kFile, source_name, elements) {}
   virtual ~ProcStatConnector() = default;
 
  protected:
@@ -76,6 +76,10 @@ class FakeProcStatConnector : public ProcStatConnector {
   ~FakeProcStatConnector() = default;
 
  protected:
+  // TODO(kgandhi): Refactor this into a FakeSourceConnector which doesn't depend on
+  // ProcStatConnector which just generates data for testing. For now, override AvailableImpl().
+  bool AvailableImpl() override { return true; }
+
   std::vector<std::string> GetProcParams() override {
     std::string stats = "cpu  ";
     std::vector<std::string> parsed_str;

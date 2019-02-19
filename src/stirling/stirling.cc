@@ -20,27 +20,28 @@ Status Stirling::CreateSourceConnectors() {
 }
 
 Status Stirling::AddSource(const std::string& name, std::unique_ptr<SourceConnector> source) {
-  // Step 1: Init the source.
-  PL_CHECK_OK(source->Init());
+  if (source->Available()) {
+    // Step 1: Init the source.
+    PL_CHECK_OK(source->Init());
 
-  // Step 2: Ask the Connector for the Schema.
-  // Eventually, should return a vector of Schemas.
-  auto schema = std::make_unique<InfoClassSchema>(name);
-  PL_RETURN_IF_ERROR(source->PopulateSchema(schema.get()));
+    // Step 2: Ask the Connector for the Schema.
+    // Eventually, should return a vector of Schemas.
+    auto schema = std::make_unique<InfoClassSchema>(name);
+    PL_RETURN_IF_ERROR(source->PopulateSchema(schema.get()));
 
-  // Step 3: Make the corresponding Data Table.
-  auto data_table = std::make_unique<ColumnWrapperDataTable>(*schema);
+    // Step 3: Make the corresponding Data Table.
+    auto data_table = std::make_unique<ColumnWrapperDataTable>(*schema);
 
-  // Step 4: Connect this Info Class to its related objects.
-  schema->SetSourceConnector(source.get());
-  schema->SetDataTable(data_table.get());
-  schema->SetSamplingPeriod(kDefaultSamplingPeriod);
+    // Step 4: Connect this Info Class to its related objects.
+    schema->SetSourceConnector(source.get());
+    schema->SetDataTable(data_table.get());
+    schema->SetSamplingPeriod(kDefaultSamplingPeriod);
 
-  // Step 5: Keep pointers to all the objects
-  sources_.push_back(std::move(source));
-  tables_.push_back(std::move(data_table));
-  schemas_.push_back(std::move(schema));
-
+    // Step 5: Keep pointers to all the objects
+    sources_.push_back(std::move(source));
+    tables_.push_back(std::move(data_table));
+    schemas_.push_back(std::move(schema));
+  }
   return Status::OK();
 }
 

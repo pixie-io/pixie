@@ -30,6 +30,13 @@ class SourceConnector : public NotCopyable {
   Status Init() { return InitImpl(); }
   RawDataBuf GetData() { return GetDataImpl(); }
   Status Stop() { return StopImpl(); }
+  /**
+   * @brief Determines if a source connector is available to be used.
+   * Only source connectors that are available and in the registry will
+   * be added to Stirling for gathering data.
+   *
+   */
+  bool Available() { return AvailableImpl(); }
   Status PopulateSchema(InfoClassSchema* schema);
 
   SourceType type() { return type_; }
@@ -44,6 +51,11 @@ class SourceConnector : public NotCopyable {
   virtual Status InitImpl() = 0;
   virtual RawDataBuf GetDataImpl() = 0;
   virtual Status StopImpl() = 0;
+  /**
+   * @brief Return true as default. Override in derived classes based on system specifics.
+   *
+   */
+  virtual bool AvailableImpl() { return true; }
 
  private:
   SourceType type_;
@@ -51,14 +63,26 @@ class SourceConnector : public NotCopyable {
   std::vector<InfoClassElement> elements_;
 };
 
-class EBPFConnector : public SourceConnector {
+class LinuxOnlySourceConnector : public SourceConnector {
+ protected:
+  explicit LinuxOnlySourceConnector(SourceType type, const std::string& source_name,
+                                    const std::vector<InfoClassElement> elements)
+      : SourceConnector(type, source_name, elements) {}
+// TODO(kgandhi): Make this final once FakeProcStatConnector has been refactored
+// and doesn't depend on implementation in ProcStatConnector.
+#ifndef __linux
+  bool AvailableImpl() override { return false; }
+#endif
+};
+
+class EBPFConnector : public LinuxOnlySourceConnector {
  public:
   EBPFConnector() = delete;
   explicit EBPFConnector(const std::string& source_name,
                          const std::vector<InfoClassElement> elements,
                          const std::string& kernel_event, const std::string& fn_name,
                          const std::string& bpf_program)
-      : SourceConnector(SourceType::kEBPF, source_name, elements),
+      : LinuxOnlySourceConnector(SourceType::kEBPF, source_name, elements),
         kernel_event_(kernel_event),
         fn_name_(fn_name),
         bpf_program_(bpf_program) {}
