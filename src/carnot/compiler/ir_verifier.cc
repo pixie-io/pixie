@@ -42,6 +42,12 @@ Status IRVerifier::VerifyMemorySource(IRNode* node) {
                                 ExpString("MemorySourceIR", node->id(), "table")));
   PL_RETURN_IF_ERROR(
       ExpectType(ListType, mem_node->select(), ExpString("MemorySourceIR", node->id(), "select")));
+
+  auto select_node = static_cast<ListIR*>(mem_node->select());
+  for (auto& c : select_node->children()) {
+    PL_RETURN_IF_ERROR(
+        ExpectType(StringType, c, ExpString("MemorySourceIR select", select_node->id(), "child")));
+  }
   return Status::OK();
 }
 

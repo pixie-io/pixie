@@ -178,7 +178,8 @@ TEST(AggTest, not_allowed_by) {
   std::string single_col_bad_by_fn_expr = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
-          "rangeDF = queryDF.Agg(by=lambda r : 1+2, fn=lambda r: {'cpu_count' : pl.count(r.cpu0)})",
+          "rangeDF = queryDF.Agg(by=lambda r : 1+2, fn=lambda r: {'cpu_count' : "
+          "pl.count(r.cpu0)})",
       },
       "\n");
   GraphVerify(single_col_bad_by_fn_expr, true);
