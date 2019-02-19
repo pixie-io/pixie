@@ -33,13 +33,13 @@ class MemorySourceNodeTest : public ::testing::Test {
         std::vector<udf::UDFDataType>({types::DataType::BOOLEAN, types::DataType::INT64});
     RowDescriptor rd = RowDescriptor(descriptor);
 
-    auto col1 = std::make_shared<Column>(Column(udf::UDFDataType::BOOLEAN));
+    auto col1 = std::make_shared<Column>(Column(udf::UDFDataType::BOOLEAN, "col1"));
     std::vector<udf::BoolValue> col1_in1 = {true, false, true};
     std::vector<udf::BoolValue> col1_in2 = {false, false};
     EXPECT_OK(col1->AddChunk(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
     EXPECT_OK(col1->AddChunk(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
 
-    auto col2 = std::make_shared<Column>(Column(udf::UDFDataType::INT64));
+    auto col2 = std::make_shared<Column>(Column(udf::UDFDataType::INT64, "col2"));
     std::vector<udf::Int64Value> col2_in1 = {1, 2, 3};
     std::vector<udf::Int64Value> col2_in2 = {5, 6};
     EXPECT_OK(col2->AddChunk(udf::ToArrow(col2_in1, arrow::default_memory_pool())));

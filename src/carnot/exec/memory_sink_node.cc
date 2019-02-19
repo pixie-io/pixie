@@ -31,7 +31,8 @@ Status MemorySinkNode::PrepareImpl(ExecState *exec_state_) {
   exec_state_->table_store()->AddTable(plan_node_->TableName(), table_);
   for (size_t i = 0; i < input_descriptor_->size(); i++) {
     auto type = input_descriptor_->type(i);
-    PL_RETURN_IF_ERROR(table_->AddColumn(std::make_shared<Column>(type)));
+    PL_RETURN_IF_ERROR(
+        table_->AddColumn(std::make_shared<Column>(type, plan_node_->ColumnName(i))));
   }
 
   return Status::OK();

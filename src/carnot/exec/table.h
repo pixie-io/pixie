@@ -27,7 +27,8 @@ class Column {
    *
    * @ param data_type the type of the column.
    */
-  explicit Column(udf::UDFDataType data_type) : data_type_(data_type) {}
+  explicit Column(udf::UDFDataType data_type, const std::string& name)
+      : name_(name), data_type_(data_type) {}
 
   /**
    * @ return the data type for the column.
@@ -55,7 +56,10 @@ class Column {
     return chunks_[i];
   }
 
+  std::string name() { return name_; }
+
  private:
+  std::string name_;
   udf::UDFDataType data_type_;
 
   std::vector<std::shared_ptr<arrow::Array>> chunks_;
@@ -109,9 +113,18 @@ class Table {
     return 0;
   }
 
+  std::unordered_map<std::string, udf::UDFDataType> ColumnNameToTypeMap() {
+    std::unordered_map<std::string, udf::UDFDataType> map;
+    for (auto col : name_to_column_map_) {
+      map.emplace(col.first, col.second->data_type());
+    }
+    return map;
+  }
+
  private:
   RowDescriptor desc_;
   std::vector<std::shared_ptr<Column>> columns_;
+  std::unordered_map<std::string, std::shared_ptr<Column>> name_to_column_map_;
 };
 
 }  // namespace exec

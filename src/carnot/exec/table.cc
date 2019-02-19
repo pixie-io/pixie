@@ -56,6 +56,7 @@ Status Table::AddColumn(std::shared_ptr<Column> col) {
   }
 
   columns_.emplace_back(col);
+  name_to_column_map_.emplace(col->name(), col);
   return Status::OK();
 }
 

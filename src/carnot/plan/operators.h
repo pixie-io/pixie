@@ -129,6 +129,7 @@ class MemorySinkOperator : public Operator {
                                     const std::vector<int64_t> &input_ids) const override;
   Status Init(const carnotpb::MemorySinkOperator &pb);
   std::string TableName() const { return pb_.name(); }
+  std::string ColumnName(int64_t i) const { return pb_.column_names(i); }
   std::string DebugString() const override;
 
  private:

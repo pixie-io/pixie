@@ -108,19 +108,19 @@ TEST_F(ExecGraphTest, execute) {
 
   auto table = std::make_shared<Table>(rd);
 
-  auto col1 = std::make_shared<Column>(udf::UDFDataType::INT64);
+  auto col1 = std::make_shared<Column>(udf::UDFDataType::INT64, "col1");
   std::vector<udf::Int64Value> col1_in1 = {1, 2, 3};
   std::vector<udf::Int64Value> col1_in2 = {4, 5};
   EXPECT_OK(col1->AddChunk(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_OK(col1->AddChunk(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
 
-  auto col2 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN);
+  auto col2 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN, "col2");
   std::vector<udf::BoolValue> col2_in1 = {true, false, true};
   std::vector<udf::BoolValue> col2_in2 = {false, false};
   EXPECT_OK(col2->AddChunk(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
   EXPECT_OK(col2->AddChunk(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
 
-  auto col3 = std::make_shared<Column>(udf::UDFDataType::FLOAT64);
+  auto col3 = std::make_shared<Column>(udf::UDFDataType::FLOAT64, "col3");
   std::vector<udf::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
   std::vector<udf::Float64Value> col3_in2 = {3.4, 1.2};
   EXPECT_OK(col3->AddChunk(udf::ToArrow(col3_in1, arrow::default_memory_pool())));

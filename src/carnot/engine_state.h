@@ -63,7 +63,8 @@ class EngineState : public NotCopyable {
   }
 
   std::unique_ptr<compiler::CompilerState> CreateCompilerState() {
-    return std::make_unique<compiler::CompilerState>(schema_, registry_info_);
+    return std::make_unique<compiler::CompilerState>(table_store_->GetTableTypesLookup(),
+                                                     registry_info_);
   }
 
  private:

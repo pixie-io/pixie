@@ -10,7 +10,7 @@ namespace carnot {
 namespace exec {
 
 TEST(ColumnTest, basic_test) {
-  auto col = Column(udf::UDFDataType::INT64);
+  auto col = Column(udf::UDFDataType::INT64, "col");
   EXPECT_EQ(col.data_type(), udf::UDFDataType::INT64);
   EXPECT_EQ(col.numChunks(), 0);
 
@@ -24,7 +24,7 @@ TEST(ColumnTest, basic_test) {
 }
 
 TEST(ColumnTest, wrong_chunk_type_test) {
-  auto col = Column(udf::UDFDataType::INT64);
+  auto col = Column(udf::UDFDataType::INT64, "col");
 
   std::vector<udf::BoolValue> in1 = {true, false, true};
 
@@ -39,13 +39,13 @@ TEST(TableTest, basic_test) {
 
   Table table = Table(rd);
 
-  auto col1 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN);
+  auto col1 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN, "col1");
   std::vector<udf::BoolValue> col1_in1 = {true, false, true};
   std::vector<udf::BoolValue> col1_in2 = {false, false};
   EXPECT_OK(col1->AddChunk(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_OK(col1->AddChunk(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
 
-  auto col2 = std::make_shared<Column>(udf::UDFDataType::INT64);
+  auto col2 = std::make_shared<Column>(udf::UDFDataType::INT64, "col2");
   std::vector<udf::Int64Value> col2_in1 = {1, 2, 3};
   std::vector<udf::Int64Value> col2_in2 = {5, 6};
   EXPECT_OK(col2->AddChunk(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
@@ -71,8 +71,8 @@ TEST(TableTest, wrong_schema_test) {
 
   Table table = Table(rd);
 
-  auto col1 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN);
-  auto col2 = std::make_shared<Column>(udf::UDFDataType::INT64);
+  auto col1 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN, "col1");
+  auto col2 = std::make_shared<Column>(udf::UDFDataType::INT64, "col2");
 
   EXPECT_OK(table.AddColumn(col1));
   EXPECT_FALSE(table.AddColumn(col2).ok());
@@ -85,12 +85,12 @@ TEST(TableTest, wrong_batch_size_test) {
 
   Table table = Table(rd);
 
-  auto col1 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN);
+  auto col1 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN, "col1");
   std::vector<udf::BoolValue> col1_in1 = {true, false, true};
   std::vector<udf::BoolValue> col1_in2 = {false, false};
   EXPECT_OK(col1->AddChunk(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_OK(col1->AddChunk(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
-  auto col2 = std::make_shared<Column>(Column(udf::UDFDataType::INT64));
+  auto col2 = std::make_shared<Column>(Column(udf::UDFDataType::INT64, "col2"));
   std::vector<udf::Int64Value> col2_in1 = {1, 2, 3};
   std::vector<udf::Int64Value> col2_in2 = {5, 6, 7};
   EXPECT_OK(col2->AddChunk(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
@@ -106,8 +106,8 @@ TEST(TableTest, wrong_col_number_test) {
 
   Table table = Table(rd);
 
-  auto col1 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN);
-  auto col2 = std::make_shared<Column>(udf::UDFDataType::INT64);
+  auto col1 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN, "col1");
+  auto col2 = std::make_shared<Column>(udf::UDFDataType::INT64, "col2");
 
   EXPECT_OK(table.AddColumn(col1));
   EXPECT_FALSE(table.AddColumn(col2).ok());
@@ -120,8 +120,8 @@ TEST(TableTest, write_row_batch) {
 
   Table table = Table(rd);
 
-  auto col1 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN);
-  auto col2 = std::make_shared<Column>(udf::UDFDataType::INT64);
+  auto col1 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN, "col1");
+  auto col2 = std::make_shared<Column>(udf::UDFDataType::INT64, "col2");
 
   EXPECT_OK(table.AddColumn(col1));
   EXPECT_OK(table.AddColumn(col2));
