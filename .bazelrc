@@ -39,6 +39,10 @@ build:tsan --cxxopt -std=c++17
 # have different behavior with C++17.
 build --cxxopt -std=c++17
 
+coverage --cxxopt -fprofile-arcs
+coverage --cxxopt -ftest-coverage
+coverage --instrument_test_targets
+
 # Import other bazelrc files
 try-import %workspace%/jenkins.bazelrc
 try-import %workspace%/user.bazelrc

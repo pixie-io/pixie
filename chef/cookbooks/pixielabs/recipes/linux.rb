@@ -6,6 +6,7 @@ apt_pkg_list = [
   'curl',
   'git',
   'golang',
+  'lcov',
   'php',
   'php-curl',
   'python',

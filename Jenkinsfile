@@ -175,6 +175,23 @@ builders['Build & Test (gcc:opt)'] = {
   }
 }
 
+// Only run coverage on master test.
+if (env.JOB_NAME == "pixielabs-master") {
+  builders['Build & Test (gcc:coverage)'] = {
+    node {
+      sh 'rm -rf /root/.cache/bazel'
+      deleteDir()
+      unstash SRC_STASH_NAME
+      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
+        docker.image(devDockerImageWithTag).inside('-v /root/.cache:/root/.cache') {
+          sh 'scripts/bazel_fetch_retry.sh'
+          sh 'scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b master -c `cat GIT_COMMIT`'
+          stash name: 'build-gcc-coverage-testlogs', includes: "bazel-testlogs/**"
+        }
+      }
+    }
+  }
+}
 
 /********************************************
  * For now restrict the ASAN and TSAN builds to carnot. There is a bug in go(or llvm) preventing linking:
@@ -226,6 +243,9 @@ node {
       checkout scm
       sh '''
         printenv
+        # Store the GIT commit in a file, since the git plugin has issues with
+        # the Jenkins pipeline system.
+        git rev-parse HEAD > GIT_COMMIT
       '''
       writeBazelRCFile()
 
@@ -271,6 +291,11 @@ node {
       }
       dir ('build-tsan-testlogs') {
         unstash 'build-tsan-testlogs'
+      }
+      if (env.JOB_NAME == "pixielabs-master") {
+        dir ('build-gcc-coverage-testlogs') {
+          unstash 'build-gcc-coverage-testlogs'
+        }
       }
       step([
         $class: 'XUnitBuilder',
