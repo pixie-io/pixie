@@ -47,7 +47,8 @@ StatusOr<types::DataType> RegistryInfo::GetUDA(std::string name,
                                                std::vector<types::DataType> update_arg_types) {
   auto uda = uda_map_.find(RegistryKey(name, update_arg_types));
   if (uda == uda_map_.end()) {
-    return error::InvalidArgument("Could not find UDA");
+    return error::InvalidArgument("Could not find UDA '$0' with update arg types [$1].", name,
+                                  absl::StrJoin(update_arg_types, ","));
   }
   return uda->second;
 }
@@ -56,7 +57,8 @@ StatusOr<types::DataType> RegistryInfo::GetUDF(std::string name,
                                                std::vector<types::DataType> exec_arg_types) {
   auto udf = udf_map_.find(RegistryKey(name, exec_arg_types));
   if (udf == udf_map_.end()) {
-    return error::InvalidArgument("Could not find UDF");
+    return error::InvalidArgument("Could not find UDF '$0' with exec arg types [$1].", name,
+                                  absl::StrJoin(exec_arg_types, ","));
   }
   return udf->second;
 }

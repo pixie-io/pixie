@@ -28,12 +28,27 @@ void Relation::AddColumn(const types::DataType &col_type, const std::string &col
 }
 
 bool Relation::HasColumn(size_t idx) const { return idx < col_types_.size(); }
+int64_t Relation::GetColumnIndex(const std::string &col_name) const {
+  auto it = std::find(col_names_.begin(), col_names_.end(), col_name);
+  if (it == col_names_.end()) {
+    return -1;
+  }
+  auto col_idx = std::distance(col_names_.begin(), it);
+  return col_idx;
+}
+
+bool Relation::HasColumn(const std::string &col_name) const {
+  return HasColumn(GetColumnIndex(col_name));
+}
 
 types::DataType Relation::GetColumnType(size_t idx) const {
   CHECK(HasColumn(idx)) << "Column does not exist";
   return col_types_[idx];
 }
 
+types::DataType Relation::GetColumnType(const std::string &col_name) const {
+  return GetColumnType(GetColumnIndex(col_name));
+}
 std::string Relation::GetColumnName(size_t idx) const {
   CHECK(HasColumn(idx)) << "Column does not exist";
   return col_names_[idx];

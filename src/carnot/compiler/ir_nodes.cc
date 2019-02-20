@@ -96,16 +96,16 @@ std::string MemorySourceIR::DebugString(int64_t depth) const {
 
 bool MemorySinkIR::HasLogicalRepr() const { return true; }
 
-Status MemorySinkIR::Init(IRNode* parent) {
-  parent_ = parent;
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent_, this));
+Status MemorySinkIR::Init(IRNode* parent_node) {
+  PL_RETURN_IF_ERROR(SetParent(parent_node));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
 
   return Status::OK();
 }
 
 std::string MemorySinkIR::DebugString(int64_t depth) const {
   return DebugStringFmt(depth, absl::StrFormat("%d:MemorySinkIR", id()),
-                        {{"Parent", parent_->DebugString(depth + 1)}});
+                        {{"Parent", parent()->DebugString(depth + 1)}});
 }
 
 Status MemorySinkIR::ToProto(carnotpb::Operator* op) const {
@@ -343,16 +343,6 @@ Status StringIR::Init(std::string str) {
 
 std::string StringIR::DebugString(int64_t depth) const {
   return absl::StrFormat("%s%d:%s\t-\t%s", std::string(depth, '\t'), id(), "Str", str());
-}
-
-bool FuncNameIR::HasLogicalRepr() const { return false; }
-Status FuncNameIR::Init(std::string func_name) {
-  func_name_ = func_name;
-  return Status::OK();
-}
-
-std::string FuncNameIR::DebugString(int64_t depth) const {
-  return absl::StrFormat("%s%d:%s\t-\t%s", std::string(depth, '\t'), id(), "Str", func_name());
 }
 
 bool ListIR::HasLogicalRepr() const { return false; }

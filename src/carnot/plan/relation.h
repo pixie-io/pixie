@@ -33,10 +33,14 @@ class Relation {
   // Add a column to the relation.
   void AddColumn(const types::DataType &col_type, const std::string &col_name);
 
+  int64_t GetColumnIndex(const std::string &col_name) const;
+
   // Check if the column at idx exists.
   bool HasColumn(size_t idx) const;
+  bool HasColumn(const std::string &col_name) const;
 
   types::DataType GetColumnType(size_t idx) const;
+  types::DataType GetColumnType(const std::string &col_name) const;
   std::string GetColumnName(size_t idx) const;
 
   // Get the debug string of this relation.

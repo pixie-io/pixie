@@ -23,6 +23,13 @@ TEST(RelationTest, basic_tests) {
   EXPECT_TRUE(r.HasColumn(0));
   EXPECT_TRUE(r.HasColumn(1));
   EXPECT_FALSE(r.HasColumn(2));
+  EXPECT_EQ(0, r.GetColumnIndex("abc"));
+  EXPECT_EQ(1, r.GetColumnIndex("def"));
+  EXPECT_TRUE(r.HasColumn("abc"));
+  EXPECT_TRUE(r.HasColumn("def"));
+  EXPECT_FALSE(r.HasColumn("abcde"));
+  EXPECT_EQ(r.GetColumnType("abc"), types::INT64);
+  EXPECT_EQ(r.GetColumnType("def"), types::STRING);
 }
 
 TEST(RelationTest, mutate_relation) {
@@ -35,6 +42,13 @@ TEST(RelationTest, mutate_relation) {
   EXPECT_TRUE(r.HasColumn(0));
   EXPECT_TRUE(r.HasColumn(2));
   EXPECT_FALSE(r.HasColumn(3));
+  EXPECT_TRUE(r.HasColumn("abc"));
+  EXPECT_TRUE(r.HasColumn("def"));
+  EXPECT_TRUE(r.HasColumn("abcd"));
+  EXPECT_FALSE(r.HasColumn("abcde"));
+  EXPECT_EQ(r.GetColumnType("abc"), types::INT64);
+  EXPECT_EQ(r.GetColumnType("def"), types::STRING);
+  EXPECT_EQ(r.GetColumnType("abcd"), types::BOOLEAN);
 }
 
 TEST(RelationDeathTest, out_of_bounds_col_type) {

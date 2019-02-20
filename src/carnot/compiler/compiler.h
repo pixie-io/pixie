@@ -59,6 +59,7 @@ class Compiler {
    * @return a status of whether optimization was successful.
    */
   Status OptimizeIR(IR* ir);
+  Status UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_state);
 };
 
 }  // namespace compiler

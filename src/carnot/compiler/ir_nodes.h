@@ -18,9 +18,84 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
+class IR;
 class IRNode;
 using IRNodePtr = std::unique_ptr<IRNode>;
 using ColExprMap = std::unordered_map<std::string, IRNode*>;
+
+enum IRNodeType {
+  MemorySourceType,
+  MemorySinkType,
+  RangeType,
+  MapType,
+  AggType,
+  StringType,
+  FloatType,
+  IntType,
+  BoolType,
+  BinFuncType,
+  FuncType,
+  ListType,
+  LambdaType,
+  ColumnType,
+  FuncNameType
+};
+static constexpr const char* IRNodeString[] = {
+    "MemorySourceType", "MemorySinkType", "RangeType",  "MapType",    "AggType",
+    "StringType",       "FloatType",      "IntType",    "BoolType",   "BinFuncType",
+    "FuncType",         "ListType",       "LambdaType", "ColumnType", "FuncNameType"};
+
+/**
+ * @brief Node class for the IR.
+ *
+ * Each Operator that overlaps IR and LogicalPlan can notify the compiler by returning true in the
+ * overloaded HasLogicalRepr method.
+ */
+class IRNode {
+ public:
+  IRNode() = delete;
+  virtual ~IRNode() = default;
+  /**
+   * @return whether or not the node has a logical representation.
+   */
+  virtual bool HasLogicalRepr() const = 0;
+  void SetLineCol(int64_t line, int64_t col);
+  int64_t line() const { return line_; }
+  int64_t col() const { return col_; }
+  bool line_col_set() const { return line_col_set_; }
+  virtual std::string DebugString(int64_t depth) const = 0;
+  virtual bool IsOp() const = 0;
+  bool is_source() const { return is_source_; }
+  IRNodeType type() const { return type_; }
+  std::string type_string() const { return IRNodeString[type()]; }
+  /**
+   * @brief Set the pointer to the graph.
+   * The pointer is passed in by the Node factory of the graph
+   * (see IR::MakeNode) so that we can add edges between this
+   * object and any other objects created later on.
+   *
+   * @param graph_ptr : pointer to the graph object.
+   */
+  void SetGraphPtr(IR* graph_ptr) { graph_ptr_ = graph_ptr; }
+  // Returns the ID of the operator.
+  int64_t id() const { return id_; }
+  IR* graph_ptr() { return graph_ptr_; }
+
+ protected:
+  explicit IRNode(int64_t id, IRNodeType type, bool is_source)
+      : id_(id), type_(type), is_source_(is_source) {}
+
+ private:
+  int64_t id_;
+  // line and column where the parser read the data for this node.
+  // used for highlighting errors in queries.
+  int64_t line_;
+  int64_t col_;
+  IR* graph_ptr_;
+  IRNodeType type_;
+  bool line_col_set_ = false;
+  bool is_source_ = false;
+};
 
 /**
  * IR contains the intermediate representation of the query
@@ -58,79 +133,20 @@ class IR {
   std::string DebugString();
   IRNode* Get(int64_t id) const { return id_node_map_.at(id).get(); }
   size_t size() const { return id_node_map_.size(); }
+  StatusOr<IRNode*> GetSink() {
+    IRNode* node;
+    for (auto& i : dag().TopologicalSort()) {
+      node = Get(i);
+      if (node->type() == MemorySinkType) {
+        return node;
+      }
+    }
+    return error::InvalidArgument("No sink node found for this graph.");
+  }
 
  private:
   plan::DAG dag_;
   std::unordered_map<int64_t, IRNodePtr> id_node_map_;
-};
-
-enum IRNodeType {
-  MemorySourceType,
-  MemorySinkType,
-  RangeType,
-  MapType,
-  AggType,
-  StringType,
-  FloatType,
-  IntType,
-  BoolType,
-  BinFuncType,
-  FuncType,
-  ListType,
-  LambdaType,
-  ColumnType,
-  FuncNameType
-};
-static constexpr const char* IRNodeString[] = {
-    "MemorySourceType", "MemorySinkType", "RangeType",  "MapType",    "AggType",
-    "StringType",       "FloatType",      "IntType",    "BoolType",   "BinFuncType",
-    "FuncType",         "ListType",       "LambdaType", "ColumnType", "FuncNameType"};
-
-/**
- * @brief Node class for the IR.
- *
- * Each Operator that overlaps IR and LogicalPlan can notify the compiler by returning true in the
- * overloaded HasLogicalRepr method.
- */
-class IRNode {
- public:
-  IRNode() = delete;
-  explicit IRNode(int64_t id, IRNodeType type) : id_(id), type_(type) {}
-  virtual ~IRNode() = default;
-  /**
-   * @return whether or not the node has a logical representation.
-   */
-  virtual bool HasLogicalRepr() const = 0;
-  void SetLineCol(int64_t line, int64_t col);
-  int64_t line() const { return line_; }
-  int64_t col() const { return col_; }
-  bool line_col_set() const { return line_col_set_; }
-  virtual std::string DebugString(int64_t depth) const = 0;
-  virtual bool IsOp() const = 0;
-  IRNodeType type() const { return type_; }
-  std::string type_string() const { return IRNodeString[type()]; }
-  /**
-   * @brief Set the pointer to the graph.
-   * The pointer is passed in by the Node factory of the graph
-   * (see IR::MakeNode) so that we can add edges between this
-   * object and any other objects created later on.
-   *
-   * @param graph_ptr : pointer to the graph object.
-   */
-  void SetGraphPtr(IR* graph_ptr) { graph_ptr_ = graph_ptr; }
-  // Returns the ID of the operator.
-  int64_t id() const { return id_; }
-  IR* graph_ptr() { return graph_ptr_; }
-
- private:
-  int64_t id_;
-  // line and column where the parser read the data for this node.
-  // used for highlighting errors in queries.
-  int64_t line_;
-  int64_t col_;
-  IR* graph_ptr_;
-  IRNodeType type_;
-  bool line_col_set_ = false;
 };
 
 /**
@@ -143,6 +159,7 @@ class OperatorIR : public IRNode {
   bool IsOp() const { return true; }
   plan::Relation relation() const { return relation_; }
   Status SetRelation(plan::Relation relation) {
+    relation_init_ = true;
     relation_ = relation;
     return Status::OK();
   }
@@ -153,8 +170,8 @@ class OperatorIR : public IRNode {
   virtual Status ToProto(carnotpb::Operator*) const = 0;
 
  protected:
-  explicit OperatorIR(int64_t id, IRNodeType type, bool has_parent)
-      : IRNode(id, type), has_parent_(has_parent) {}
+  explicit OperatorIR(int64_t id, IRNodeType type, bool has_parent, bool is_source)
+      : IRNode(id, type, is_source), has_parent_(has_parent) {}
 
  private:
   plan::Relation relation_;
@@ -170,7 +187,7 @@ class OperatorIR : public IRNode {
 class ColumnIR : public IRNode {
  public:
   ColumnIR() = delete;
-  explicit ColumnIR(int64_t id) : IRNode(id, ColumnType) {}
+  explicit ColumnIR(int64_t id) : IRNode(id, ColumnType, false) {}
   Status Init(const std::string col_name);
   bool HasLogicalRepr() const override;
   std::string col_name() const { return col_name_; }
@@ -208,7 +225,7 @@ class ColumnIR : public IRNode {
 class StringIR : public IRNode {
  public:
   StringIR() = delete;
-  explicit StringIR(int64_t id) : IRNode(id, StringType) {}
+  explicit StringIR(int64_t id) : IRNode(id, StringType, false) {}
   Status Init(const std::string str);
   bool HasLogicalRepr() const override;
   std::string str() const { return str_; }
@@ -220,26 +237,6 @@ class StringIR : public IRNode {
 };
 
 /**
- * @brief ColumnIR wraps around columns found in the lambda functions.
- * @brief StringIR wraps around the String AST node
- * and only contains the value of that string.
- *
- */
-class FuncNameIR : public IRNode {
- public:
-  FuncNameIR() = delete;
-  explicit FuncNameIR(int64_t id) : IRNode(id, FuncNameType) {}
-  Status Init(const std::string func_name);
-  bool HasLogicalRepr() const override;
-  std::string func_name() const { return func_name_; }
-  std::string DebugString(int64_t depth) const override;
-  bool IsOp() const override { return false; }
-
- private:
-  std::string func_name_;
-};
-
-/**
  * @brief ListIR wraps around lists. Will maintain a
  * vector of pointers to the contained nodes in the
  * list.
@@ -248,7 +245,7 @@ class FuncNameIR : public IRNode {
 class ListIR : public IRNode {
  public:
   ListIR() = delete;
-  explicit ListIR(int64_t id) : IRNode(id, ListType) {}
+  explicit ListIR(int64_t id) : IRNode(id, ListType, false) {}
   bool HasLogicalRepr() const override;
   Status AddListItem(IRNode* node);
   std::string DebugString(int64_t depth) const override;
@@ -269,7 +266,7 @@ class ListIR : public IRNode {
 class LambdaIR : public IRNode {
  public:
   LambdaIR() = delete;
-  explicit LambdaIR(int64_t id) : IRNode(id, LambdaType) {}
+  explicit LambdaIR(int64_t id) : IRNode(id, LambdaType, false) {}
   Status Init(std::unordered_set<std::string> column_names, ColExprMap expr_map);
   /**
    * @brief Init for the Lambda called elsewhere. Uses a default value for the key to the expression
@@ -287,6 +284,8 @@ class LambdaIR : public IRNode {
   bool HasDictBody() const;
   std::string DebugString(int64_t depth) const override;
   bool IsOp() const override { return false; }
+  std::unordered_set<std::string> expected_column_names() const { return expected_column_names_; }
+  ColExprMap col_expr_map() const { return col_expr_map_; }
 
  private:
   static constexpr const char* default_key = "_default";
@@ -301,7 +300,7 @@ class LambdaIR : public IRNode {
 class FuncIR : public IRNode {
  public:
   FuncIR() = delete;
-  explicit FuncIR(int64_t id) : IRNode(id, FuncType) {}
+  explicit FuncIR(int64_t id) : IRNode(id, FuncType, false) {}
   Status Init(std::string func_name, std::vector<IRNode*> args);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -321,7 +320,7 @@ class FuncIR : public IRNode {
 class FloatIR : public IRNode {
  public:
   FloatIR() = delete;
-  explicit FloatIR(int64_t id) : IRNode(id, FloatType) {}
+  explicit FloatIR(int64_t id) : IRNode(id, FloatType, false) {}
   Status Init(double val);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -335,7 +334,7 @@ class FloatIR : public IRNode {
 class IntIR : public IRNode {
  public:
   IntIR() = delete;
-  explicit IntIR(int64_t id) : IRNode(id, IntType) {}
+  explicit IntIR(int64_t id) : IRNode(id, IntType, false) {}
   Status Init(int64_t val);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -349,7 +348,7 @@ class IntIR : public IRNode {
 class BoolIR : public IRNode {
  public:
   BoolIR() = delete;
-  explicit BoolIR(int64_t id) : IRNode(id, BoolType) {}
+  explicit BoolIR(int64_t id) : IRNode(id, BoolType, false) {}
   Status Init(bool val);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -367,7 +366,7 @@ class BoolIR : public IRNode {
 class MemorySourceIR : public OperatorIR {
  public:
   MemorySourceIR() = delete;
-  explicit MemorySourceIR(int64_t id) : OperatorIR(id, MemorySourceType, false) {}
+  explicit MemorySourceIR(int64_t id) : OperatorIR(id, MemorySourceType, false, true) {}
   Status Init(IRNode* table_node, IRNode* select);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -403,11 +402,10 @@ class MemorySourceIR : public OperatorIR {
 class MemorySinkIR : public OperatorIR {
  public:
   MemorySinkIR() = delete;
-  explicit MemorySinkIR(int64_t id) : OperatorIR(id, MemorySinkType, false) {}
+  explicit MemorySinkIR(int64_t id) : OperatorIR(id, MemorySinkType, true, false) {}
   Status Init(IRNode* parent);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  IRNode* parent() { return parent_; }
   void SetName(std::string name) {
     name_ = name;
     name_set_ = true;
@@ -417,7 +415,6 @@ class MemorySinkIR : public OperatorIR {
   Status ToProto(carnotpb::Operator*) const override;
 
  private:
-  IRNode* parent_;
   std::string name_;
   bool name_set_ = false;
 };
@@ -431,7 +428,7 @@ class MemorySinkIR : public OperatorIR {
 class RangeIR : public OperatorIR {
  public:
   RangeIR() = delete;
-  explicit RangeIR(int64_t id) : OperatorIR(id, RangeType, false) {}
+  explicit RangeIR(int64_t id) : OperatorIR(id, RangeType, true, false) {}
   Status Init(IRNode* parent, IRNode* time_repr);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -451,7 +448,7 @@ class RangeIR : public OperatorIR {
 class MapIR : public OperatorIR {
  public:
   MapIR() = delete;
-  explicit MapIR(int64_t id) : OperatorIR(id, MapType, false) {}
+  explicit MapIR(int64_t id) : OperatorIR(id, MapType, true, false) {}
   Status Init(IRNode* parent, IRNode* lambda_func);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -480,7 +477,7 @@ class MapIR : public OperatorIR {
 class AggIR : public OperatorIR {
  public:
   AggIR() = delete;
-  explicit AggIR(int64_t id) : OperatorIR(id, AggType, false) {}
+  explicit AggIR(int64_t id) : OperatorIR(id, AggType, true, false) {}
   Status Init(IRNode* parent, IRNode* by_func, IRNode* agg_func);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;

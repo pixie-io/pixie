@@ -11,6 +11,8 @@
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/ir_nodes.h"
+#include "src/carnot/compiler/ir_relation_handler.h"
+#include "src/carnot/compiler/ir_verifier.h"
 #include "src/carnot/compiler/string_reader.h"
 #include "src/carnot/proto/plan.pb.h"
 
@@ -19,9 +21,20 @@ namespace carnot {
 namespace compiler {
 StatusOr<carnotpb::Plan> Compiler::Compile(const std::string& query,
                                            CompilerState* compiler_state) {
-  PL_UNUSED(compiler_state);
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query));
+  PL_RETURN_IF_ERROR(UpdateColumnsAndVerifyUDFs(ir.get(), compiler_state));
   return IRToLogicalPlan(*ir);
+}
+
+Status Compiler::UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_state) {
+  // TODO(philkuz) fix the compiler state schema or IRelationHandler to uncomment the following
+  // lines.
+  // auto relation_handler =
+  //     IRRelationHandler(compiler_state_->schema, compiler_state_->registry_info);
+  // return relation_handler.UpdateRelationsAndCheckFunctions(ir)
+  PL_UNUSED(ir);
+  PL_UNUSED(compiler_state);
+  return Status::OK();
 }
 
 StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query) {
@@ -45,8 +58,8 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query) {
 
 StatusOr<carnotpb::Plan> Compiler::IRToLogicalPlan(const IR& ir) {
   auto plan = carnotpb::Plan();
-  // TODO(michelle) For M1.5 , we'll only handle plans with a single plan fragment. In the future we
-  // will need to update this to loop through all plan fragments.
+  // TODO(michelle) For M1.5 , we'll only handle plans with a single plan fragment. In the future
+  // we will need to update this to loop through all plan fragments.
   auto plan_dag = plan.mutable_dag();
   auto plan_dag_node = plan_dag->add_nodes();
   plan_dag_node->set_id(1);

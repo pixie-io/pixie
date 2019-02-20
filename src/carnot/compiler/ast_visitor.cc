@@ -237,18 +237,9 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeOp(const pypa::AstCallPtr& node) {
   // TODO(philkuz) this is under the assumption that the Range is always called as an attribute.
   // (MS3) fix.
   // Will have to change after Milestone 2.
-  pypa::AstAttributePtr attr = PYPA_PTR_CAST(Attribute, node->function);
-  StatusOr<IRNode*> call_result;
-  if (attr->value->type == AstType::Call) {
-    call_result = ProcessOpCallNode(PYPA_PTR_CAST(Call, attr->value));
-  } else if (attr->value->type == AstType::Name) {
-    call_result = LookupName(PYPA_PTR_CAST(Name, attr->value));
-  } else {
-    return CreateAstError("Can't handle the attribute of this type", attr->value);
-  }
-
-  PL_RETURN_IF_ERROR(call_result);
-  PL_RETURN_IF_ERROR(ir_node->Init(call_result.ValueOrDie(), args["time"]));
+  PL_ASSIGN_OR_RETURN(IRNode * call_result,
+                      ProcessAttrFunc(PYPA_PTR_CAST(Attribute, node->function)));
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["time"]));
   return ir_node;
 }
 
@@ -346,30 +337,6 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const std::string& 
     return LambdaExprReturn(absl::StrFormat("%s.%s", value, attribute));
   }
   return CreateAstError(absl::StrFormat("Couldn't find value %s", value), node);
-}
-
-StatusOr<IRNode*> ASTWalker::ProcessAttrDataNode(const pypa::AstAttributePtr& node) {
-  // make sure that the attribute values are of type name.
-  if (node->attribute->type != AstType::Name) {
-    return CreateAstError(absl::StrFormat("Attribute must be a variable, not a %s",
-                                          GetAstTypeName(node->attribute->type)),
-                          node->attribute);
-  }
-  if (node->value->type != AstType::Name) {
-    return CreateAstError(absl::StrFormat("Attribute value must be a variable, not a %s",
-                                          GetAstTypeName(node->value->type)),
-                          node->value);
-  }
-  auto value = GetNameID(node->value);
-  auto attribute = GetNameID(node->attribute);
-
-  if (value == kUDFPrefix) {
-    PL_ASSIGN_OR_RETURN(FuncNameIR * func_node, ir_graph_->MakeNode<FuncNameIR>());
-    PL_RETURN_IF_ERROR(func_node->Init(absl::StrFormat("%s.%s", value, attribute)));
-    return func_node;
-  }
-  return CreateAstError(
-      absl::StrFormat("Couldn't find value %s. Expected prefix of '%s.", value, kUDFPrefix), node);
 }
 
 StatusOr<IRNode*> ASTWalker::ProcessNumberNode(const pypa::AstNumberPtr& node) {
