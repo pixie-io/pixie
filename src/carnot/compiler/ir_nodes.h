@@ -460,6 +460,7 @@ class MapIR : public OperatorIR {
   }
   bool col_expr_map_set() const { return col_expr_map_set_; }
   Status ToProto(carnotpb::Operator*) const override;
+  Status EvaluateExpression(carnotpb::ScalarExpression* expr, const IRNode& ir_node) const;
 
  private:
   IRNode* lambda_func_;
@@ -494,6 +495,8 @@ class AggIR : public OperatorIR {
   }
   bool agg_val_map_set() const { return agg_val_map_set_; }
   Status ToProto(carnotpb::Operator*) const override;
+  Status EvaluateAggregateExpression(carnotpb::AggregateExpression* expr,
+                                     const IRNode& ir_node) const;
 
  private:
   IRNode* by_func_;

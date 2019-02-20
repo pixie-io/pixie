@@ -51,14 +51,19 @@ Status MemorySourceIR::ToProto(carnotpb::Operator* op) const {
   DCHECK(table_node_->type() == IRNodeType::StringType);
   pb->set_name(static_cast<StringIR*>(table_node_)->str());
 
-  for (auto col : columns_) {
+  for (const auto& col : columns_) {
     pb->add_column_idxs(col->col_idx());
     pb->add_column_names(col->col_name());
     pb->add_column_types(col->type());
   }
 
   if (IsTimeSet()) {
-    // TODO(michelle): handle time start/end.
+    auto start_time = new ::google::protobuf::Int64Value();
+    start_time->set_value(time_start_ms_);
+    pb->set_allocated_start_time(start_time);
+    auto stop_time = new ::google::protobuf::Int64Value();
+    stop_time->set_value(time_stop_ms_);
+    pb->set_allocated_stop_time(stop_time);
   }
 
   op->set_op_type(carnotpb::MEMORY_SOURCE_OPERATOR);
@@ -101,8 +106,15 @@ std::string MemorySinkIR::DebugString(int64_t depth) const {
 
 Status MemorySinkIR::ToProto(carnotpb::Operator* op) const {
   auto pb = new carnotpb::MemorySinkOperator();
-  // TODO(michelle):  Populate MemorySinkOperator fields and add name to Result() call.
   pb->set_name(name_);
+
+  auto types = relation().col_types();
+  auto names = relation().col_names();
+
+  for (size_t i = 0; i < relation().NumColumns(); i++) {
+    pb->add_column_types(types[i]);
+    pb->add_column_names(names[i]);
+  }
 
   op->set_op_type(carnotpb::MEMORY_SINK_OPERATOR);
   op->set_allocated_mem_sink_op(pb);
@@ -147,9 +159,68 @@ std::string MapIR::DebugString(int64_t depth) const {
                          {"Lambda", lambda_func_->DebugString(depth + 1)}});
 }
 
+Status MapIR::EvaluateExpression(carnotpb::ScalarExpression* expr, const IRNode& ir_node) const {
+  switch (ir_node.type()) {
+    case IRNodeType::ColumnType: {
+      auto col = expr->mutable_column();
+      col->set_node(parent()->id());
+      col->set_index(static_cast<const ColumnIR&>(ir_node).col_idx());
+      break;
+    }
+    case IRNodeType::FuncType: {
+      auto func = expr->mutable_func();
+      auto casted_ir = static_cast<const FuncIR&>(ir_node);
+      func->set_name(casted_ir.func_name());
+      for (const auto& arg : casted_ir.args()) {
+        auto func_arg = func->add_args();
+        PL_RETURN_IF_ERROR(EvaluateExpression(func_arg, *arg));
+      }
+      break;
+    }
+    case IRNodeType::IntType: {
+      auto value = expr->mutable_constant();
+      auto casted_ir = static_cast<const IntIR&>(ir_node);
+      value->set_data_type(types::DataType::INT64);
+      value->set_int64_value(casted_ir.val());
+      break;
+    }
+    case IRNodeType::StringType: {
+      auto value = expr->mutable_constant();
+      auto casted_ir = static_cast<const StringIR&>(ir_node);
+      value->set_data_type(types::DataType::STRING);
+      value->set_string_value(casted_ir.str());
+      break;
+    }
+    case IRNodeType::FloatType: {
+      auto value = expr->mutable_constant();
+      auto casted_ir = static_cast<const FloatIR&>(ir_node);
+      value->set_data_type(types::DataType::FLOAT64);
+      value->set_float64_value(casted_ir.val());
+      break;
+    }
+    case IRNodeType::BoolType: {
+      auto value = expr->mutable_constant();
+      auto casted_ir = static_cast<const BoolIR&>(ir_node);
+      value->set_data_type(types::DataType::BOOLEAN);
+      value->set_bool_value(casted_ir.val());
+      break;
+    }
+    default: {
+      return error::InvalidArgument("Didn't expect node of type $0 in expression evaluator.",
+                                    ir_node.type_string());
+    }
+  }
+  return Status::OK();
+}
+
 Status MapIR::ToProto(carnotpb::Operator* op) const {
   auto pb = new carnotpb::MapOperator();
-  // TODO(michelle): Populate MapOperator fields.
+
+  for (const auto& kv : col_expr_map_) {
+    auto expr = pb->add_expressions();
+    PL_RETURN_IF_ERROR(EvaluateExpression(expr, *kv.second));
+    pb->add_column_names(kv.first);
+  }
 
   op->set_op_type(carnotpb::MAP_OPERATOR);
   op->set_allocated_map_op(pb);
@@ -178,9 +249,72 @@ std::string AggIR::DebugString(int64_t depth) const {
                          {"AggFn", agg_func_->DebugString(depth + 1)}});
 }
 
+Status AggIR::EvaluateAggregateExpression(carnotpb::AggregateExpression* expr,
+                                          const IRNode& ir_node) const {
+  DCHECK(ir_node.type() == IRNodeType::FuncType);
+  auto casted_ir = static_cast<const FuncIR&>(ir_node);
+  expr->set_name(casted_ir.func_name());
+  for (auto ir_arg : casted_ir.args()) {
+    auto arg_pb = expr->add_args();
+    switch (ir_arg->type()) {
+      case IRNodeType::ColumnType: {
+        auto col = arg_pb->mutable_column();
+        col->set_node(parent()->id());
+        col->set_index(static_cast<ColumnIR*>(ir_arg)->col_idx());
+        break;
+      }
+      case IRNodeType::IntType: {
+        auto value = arg_pb->mutable_constant();
+        auto casted_ir = static_cast<IntIR*>(ir_arg);
+        value->set_data_type(types::DataType::INT64);
+        value->set_int64_value(casted_ir->val());
+        break;
+      }
+      case IRNodeType::StringType: {
+        auto value = arg_pb->mutable_constant();
+        auto casted_ir = static_cast<StringIR*>(ir_arg);
+        value->set_data_type(types::DataType::STRING);
+        value->set_string_value(casted_ir->str());
+        break;
+      }
+      case IRNodeType::FloatType: {
+        auto value = arg_pb->mutable_constant();
+        auto casted_ir = static_cast<FloatIR*>(ir_arg);
+        value->set_data_type(types::DataType::FLOAT64);
+        value->set_float64_value(casted_ir->val());
+        break;
+      }
+      case IRNodeType::BoolType: {
+        auto value = arg_pb->mutable_constant();
+        auto casted_ir = static_cast<BoolIR*>(ir_arg);
+        value->set_data_type(types::DataType::BOOLEAN);
+        value->set_bool_value(casted_ir->val());
+        break;
+      }
+      default: {
+        return error::InvalidArgument("Didn't expect node of type $0 in expression evaluator.",
+                                      ir_node.type_string());
+      }
+    }
+  }
+  return Status::OK();
+}
+
 Status AggIR::ToProto(carnotpb::Operator* op) const {
   auto pb = new carnotpb::BlockingAggregateOperator();
-  // TODO(michelle): Populate MapOperator fields.
+
+  for (const auto& kv : agg_val_map_) {
+    auto expr = pb->add_values();
+    PL_RETURN_IF_ERROR(EvaluateAggregateExpression(expr, *kv.second));
+    pb->add_value_names(kv.first);
+  }
+
+  for (const auto& group : groups_) {
+    auto group_pb = pb->add_groups();
+    group_pb->set_node(parent()->id());
+    group_pb->set_index(group->col_idx());
+    pb->add_group_names(group->col_name());
+  }
 
   op->set_op_type(carnotpb::BLOCKING_AGGREGATE_OPERATOR);
   op->set_allocated_blocking_agg_op(pb);
