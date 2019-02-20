@@ -105,7 +105,7 @@ std::unordered_set<int64_t> DAG::Orphans() {
   return orphans;
 }
 
-vector<int64_t> DAG::TopologicalSort() {
+vector<int64_t> DAG::TopologicalSort() const {
   // Implements Kahn's algorithm:
   // https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm;
   std::vector<int64_t> ordered;
@@ -115,7 +115,7 @@ vector<int64_t> DAG::TopologicalSort() {
 
   // Find nodes that don't have any incoming edges.
   for (auto node : nodes_) {
-    if (reverse_edges_by_node_[node].empty()) {
+    if (reverse_edges_by_node_.at(node).empty()) {
       q.push(node);
     }
   }
@@ -127,9 +127,9 @@ vector<int64_t> DAG::TopologicalSort() {
     q.pop();
     ordered.push_back(front_val);
 
-    for (auto dep : forward_edges_by_node_[front_val]) {
+    for (auto dep : forward_edges_by_node_.at(front_val)) {
       visited_count[dep]++;
-      if (visited_count[dep] == reverse_edges_by_node_[dep].size()) {
+      if (visited_count.at(dep) == reverse_edges_by_node_.at(dep).size()) {
         q.push(dep);
       }
     }

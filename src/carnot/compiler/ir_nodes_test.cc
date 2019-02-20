@@ -55,11 +55,11 @@ TEST(IRWalker, basic_tests) {
 
   std::vector<int64_t> call_order;
   IRWalker()
-      .OnMemorySink([&](auto* mem_sink) { call_order.push_back(mem_sink->id()); })
-      .OnMemorySource([&](auto* mem_src) { call_order.push_back(mem_src->id()); })
-      .OnMap([&](auto* map) { call_order.push_back(map->id()); })
-      .OnAgg([&](auto* agg) { call_order.push_back(agg->id()); })
-      .Walk(graph.get());
+      .OnMemorySink([&](auto& mem_sink) { call_order.push_back(mem_sink.id()); })
+      .OnMemorySource([&](auto& mem_src) { call_order.push_back(mem_src.id()); })
+      .OnMap([&](auto& map) { call_order.push_back(map.id()); })
+      .OnAgg([&](auto& agg) { call_order.push_back(agg.id()); })
+      .Walk(*graph);
   EXPECT_EQ(std::vector<int64_t>({0, 2, 3, 4}), call_order);
 }
 

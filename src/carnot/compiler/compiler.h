@@ -25,9 +25,31 @@ class Compiler {
    */
   StatusOr<carnotpb::Plan> Compile(const std::string& query, CompilerState* compiler_state);
 
+  StatusOr<carnotpb::Plan> IRToLogicalPlan(const IR& ir);
+
  private:
   StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query);
-  StatusOr<carnotpb::Plan> IRToLogicalPlan(std::shared_ptr<IR> ir);
+
+  template <typename TIRNode>
+  Status IRNodeToPlanNode(carnotpb::PlanFragment* pf, carnotpb::DAG* pf_dag, const IR& ir_graph,
+                          const TIRNode& ir_node) {
+    // Add PlanNode.
+    auto plan_node = pf->add_nodes();
+    plan_node->set_id(ir_node.id());
+    auto op_pb = plan_node->mutable_op();
+    PL_RETURN_IF_ERROR(ir_node.ToProto(op_pb));
+
+    // Add DAGNode.
+    auto dag_node = pf_dag->add_nodes();
+    dag_node->set_id(ir_node.id());
+    for (const auto& dep : ir_graph.dag().DependenciesOf(ir_node.id())) {
+      // Only add dependencies for operator IR nodes.
+      if (ir_graph.Get(dep)->IsOp()) {
+        dag_node->add_sorted_deps(dep);
+      }
+    }
+    return Status::OK();
+  }
 };
 
 }  // namespace compiler

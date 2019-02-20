@@ -46,6 +46,26 @@ Status MemorySourceIR::Init(IRNode* table_node, IRNode* select) {
   return Status::OK();
 }
 
+Status MemorySourceIR::ToProto(carnotpb::Operator* op) const {
+  auto pb = new carnotpb::MemorySourceOperator();
+  DCHECK(table_node_->type() == IRNodeType::StringType);
+  pb->set_name(static_cast<StringIR*>(table_node_)->str());
+
+  for (auto col : columns_) {
+    pb->add_column_idxs(col->col_idx());
+    pb->add_column_names(col->col_name());
+    pb->add_column_types(col->type());
+  }
+
+  if (IsTimeSet()) {
+    // TODO(michelle): handle time start/end.
+  }
+
+  op->set_op_type(carnotpb::MEMORY_SOURCE_OPERATOR);
+  op->set_allocated_mem_source_op(pb);
+  return Status::OK();
+}
+
 std::string DebugStringFmt(int64_t depth, std::string name,
                            std::map<std::string, std::string> property_value_map) {
   std::vector<std::string> property_strings;
@@ -79,6 +99,16 @@ std::string MemorySinkIR::DebugString(int64_t depth) const {
                         {{"Parent", parent_->DebugString(depth + 1)}});
 }
 
+Status MemorySinkIR::ToProto(carnotpb::Operator* op) const {
+  auto pb = new carnotpb::MemorySinkOperator();
+  // TODO(michelle):  Populate MemorySinkOperator fields and add name to Result() call.
+  pb->set_name(name_);
+
+  op->set_op_type(carnotpb::MEMORY_SINK_OPERATOR);
+  op->set_allocated_mem_sink_op(pb);
+  return Status::OK();
+}
+
 Status RangeIR::Init(IRNode* parent_node, IRNode* time_repr) {
   // TODO(philkuz) implement string to ms (int) conversion.
   time_repr_ = time_repr;
@@ -96,6 +126,10 @@ std::string RangeIR::DebugString(int64_t depth) const {
       {{"Parent", parent()->DebugString(depth + 1)}, {"Time", time_repr_->DebugString(depth + 1)}});
 }
 
+Status RangeIR::ToProto(carnotpb::Operator*) const {
+  return error::InvalidArgument("RangeIR has no protobuf representation.");
+}
+
 Status MapIR::Init(IRNode* parent_node, IRNode* lambda_func) {
   // TODO(philkuz) implement string to ms (int) conversion.
   lambda_func_ = lambda_func;
@@ -111,6 +145,15 @@ std::string MapIR::DebugString(int64_t depth) const {
   return DebugStringFmt(depth, absl::StrFormat("%d:MapIR", id()),
                         {{"Parent", parent()->DebugString(depth + 1)},
                          {"Lambda", lambda_func_->DebugString(depth + 1)}});
+}
+
+Status MapIR::ToProto(carnotpb::Operator* op) const {
+  auto pb = new carnotpb::MapOperator();
+  // TODO(michelle): Populate MapOperator fields.
+
+  op->set_op_type(carnotpb::MAP_OPERATOR);
+  op->set_allocated_map_op(pb);
+  return Status::OK();
 }
 
 Status AggIR::Init(IRNode* parent_node, IRNode* by_func, IRNode* agg_func) {
@@ -133,6 +176,15 @@ std::string AggIR::DebugString(int64_t depth) const {
                         {{"Parent", parent()->DebugString(depth + 1)},
                          {"ByFn", by_func_->DebugString(depth + 1)},
                          {"AggFn", agg_func_->DebugString(depth + 1)}});
+}
+
+Status AggIR::ToProto(carnotpb::Operator* op) const {
+  auto pb = new carnotpb::BlockingAggregateOperator();
+  // TODO(michelle): Populate MapOperator fields.
+
+  op->set_op_type(carnotpb::BLOCKING_AGGREGATE_OPERATOR);
+  op->set_allocated_blocking_agg_op(pb);
+  return Status::OK();
 }
 
 bool ColumnIR::HasLogicalRepr() const { return false; }

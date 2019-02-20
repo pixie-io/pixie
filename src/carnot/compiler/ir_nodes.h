@@ -52,6 +52,7 @@ class IR {
   Status AddEdge(int64_t parent, int64_t child);
   Status AddEdge(IRNode* parent, IRNode* child);
   plan::DAG& dag() { return dag_; }
+  const plan::DAG& dag() const { return dag_; }
   std::string DebugString();
   IRNode* Get(int64_t id) const { return id_node_map_.at(id).get(); }
   size_t size() const { return id_node_map_.size(); }
@@ -147,6 +148,7 @@ class OperatorIR : public IRNode {
   bool HasParent() const { return has_parent_; }
   OperatorIR* parent() const { return parent_; }
   Status SetParent(IRNode* parent);
+  virtual Status ToProto(carnotpb::Operator*) const = 0;
 
  protected:
   explicit OperatorIR(int64_t id, IRNodeType type, bool has_parent)
@@ -194,149 +196,6 @@ class ColumnIR : public IRNode {
   types::DataType type_;
   bool col_idx_set_ = false;
   bool col_type_set_ = false;
-};
-
-/**
- * @brief The MemorySourceIR is a dual logical plan
- * and IR node operator. It inherits from both classes
- */
-class MemorySourceIR : public OperatorIR {
- public:
-  MemorySourceIR() = delete;
-  explicit MemorySourceIR(int64_t id) : OperatorIR(id, MemorySourceType, false) {}
-  Status Init(IRNode* table_node, IRNode* select);
-  bool HasLogicalRepr() const override;
-  std::string DebugString(int64_t depth) const override;
-  IRNode* table_node() { return table_node_; }
-  IRNode* select() { return select_; }
-  void SetTime(int64_t time_start_ms, int64_t time_stop_ms) {
-    time_start_ms_ = time_start_ms;
-    time_stop_ms_ = time_stop_ms;
-    time_set_ = true;
-  }
-  bool IsTimeSet() const { return time_set_; }
-  bool columns_set() const { return columns_set_; }
-  void SetColumns(std::vector<ColumnIR*> columns) {
-    columns_set_ = true;
-    columns_ = columns;
-  }
-
- private:
-  IRNode* table_node_;
-  IRNode* select_;
-  bool time_set_;
-  int64_t time_start_ms_;
-  int64_t time_stop_ms_;
-  // in conjunction with the relation, we can get the idx, names, and types of this column.
-  std::vector<ColumnIR*> columns_;
-  bool columns_set_ = false;
-};
-
-/**
- * The MemorySinkIR describes the MemorySink operator.
- */
-class MemorySinkIR : public OperatorIR {
- public:
-  MemorySinkIR() = delete;
-  explicit MemorySinkIR(int64_t id) : OperatorIR(id, MemorySinkType, false) {}
-  Status Init(IRNode* parent);
-  bool HasLogicalRepr() const override;
-  std::string DebugString(int64_t depth) const override;
-  IRNode* parent() { return parent_; }
-  void SetName(std::string name) {
-    name_ = name;
-    name_set_ = true;
-  }
-  bool name_set() const { return name_set_; }
-  std::string name() const { return name_; }
-
- private:
-  IRNode* parent_;
-  std::string name_;
-  bool name_set_ = false;
-};
-
-/**
- * @brief The RangeIR describe the range()
- * operator, which is combined with a Source
- * when converted to the Logical Plan.
- *
- */
-class RangeIR : public OperatorIR {
- public:
-  RangeIR() = delete;
-  explicit RangeIR(int64_t id) : OperatorIR(id, RangeType, false) {}
-  Status Init(IRNode* parent, IRNode* time_repr);
-  bool HasLogicalRepr() const override;
-  std::string DebugString(int64_t depth) const override;
-  IRNode* time_repr() { return time_repr_; }
-
- private:
-  IRNode* time_repr_;
-};
-
-/**
- * @brief The RangeIR describe the range()
- * operator, which is combined with a Source
- * when converted to the Logical Plan.
- *
- */
-class MapIR : public OperatorIR {
- public:
-  MapIR() = delete;
-  explicit MapIR(int64_t id) : OperatorIR(id, MapType, false) {}
-  Status Init(IRNode* parent, IRNode* lambda_func);
-  bool HasLogicalRepr() const override;
-  std::string DebugString(int64_t depth) const override;
-  IRNode* lambda_func() const { return lambda_func_; }
-  void SetColExprMap(ColExprMap col_expr_map) {
-    col_expr_map_ = col_expr_map;
-    col_expr_map_set_ = true;
-  }
-  bool col_expr_map_set() const { return col_expr_map_set_; }
-
- private:
-  IRNode* lambda_func_;
-  // The map from new column_names to expressions.
-  ColExprMap col_expr_map_;
-  bool col_expr_map_set_ = false;
-};
-
-/**
- * @brief The RangeIR describe the range()
- * operator, which is combined with a Source
- * when converted to the Logical Plan.
- *
- */
-class AggIR : public OperatorIR {
- public:
-  AggIR() = delete;
-  explicit AggIR(int64_t id) : OperatorIR(id, AggType, false) {}
-  Status Init(IRNode* parent, IRNode* by_func, IRNode* agg_func);
-  bool HasLogicalRepr() const override;
-  std::string DebugString(int64_t depth) const override;
-  IRNode* by_func() const { return by_func_; }
-  IRNode* agg_func() const { return agg_func_; }
-  void SetGroups(std::vector<ColumnIR*> groups) {
-    groups_ = groups;
-    groups_set_ = true;
-  }
-  bool groups_set() const { return groups_set_; }
-  void SetAggValMap(ColExprMap agg_val_map) {
-    agg_val_map_ = agg_val_map;
-    agg_val_map_set_ = true;
-  }
-  bool agg_val_map_set() const { return agg_val_map_set_; }
-
- private:
-  IRNode* by_func_;
-  IRNode* agg_func_;
-  // contains group_names and groups columns.
-  std::vector<ColumnIR*> groups_;
-  bool groups_set_ = false;
-  // The map from value_names to values
-  ColExprMap agg_val_map_;
-  bool agg_val_map_set_ = false;
 };
 
 /**
@@ -500,6 +359,154 @@ class BoolIR : public IRNode {
 };
 
 /**
+ * @brief The MemorySourceIR is a dual logical plan
+ * and IR node operator. It inherits from both classes
+ */
+class MemorySourceIR : public OperatorIR {
+ public:
+  MemorySourceIR() = delete;
+  explicit MemorySourceIR(int64_t id) : OperatorIR(id, MemorySourceType, false) {}
+  Status Init(IRNode* table_node, IRNode* select);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+  IRNode* table_node() { return table_node_; }
+  IRNode* select() { return select_; }
+  void SetTime(int64_t time_start_ms, int64_t time_stop_ms) {
+    time_start_ms_ = time_start_ms;
+    time_stop_ms_ = time_stop_ms;
+    time_set_ = true;
+  }
+  bool IsTimeSet() const { return time_set_; }
+  bool columns_set() const { return columns_set_; }
+  void SetColumns(std::vector<ColumnIR*> columns) {
+    columns_set_ = true;
+    columns_ = columns;
+  }
+  Status ToProto(carnotpb::Operator*) const override;
+
+ private:
+  IRNode* table_node_;
+  IRNode* select_;
+  bool time_set_ = false;
+  int64_t time_start_ms_;
+  int64_t time_stop_ms_;
+  // in conjunction with the relation, we can get the idx, names, and types of this column.
+  std::vector<ColumnIR*> columns_;
+  bool columns_set_ = false;
+};
+
+/**
+ * The MemorySinkIR describes the MemorySink operator.
+ */
+class MemorySinkIR : public OperatorIR {
+ public:
+  MemorySinkIR() = delete;
+  explicit MemorySinkIR(int64_t id) : OperatorIR(id, MemorySinkType, false) {}
+  Status Init(IRNode* parent);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+  IRNode* parent() { return parent_; }
+  void SetName(std::string name) {
+    name_ = name;
+    name_set_ = true;
+  }
+  bool name_set() const { return name_set_; }
+  std::string name() const { return name_; }
+  Status ToProto(carnotpb::Operator*) const override;
+
+ private:
+  IRNode* parent_;
+  std::string name_;
+  bool name_set_ = false;
+};
+
+/**
+ * @brief The RangeIR describe the range()
+ * operator, which is combined with a Source
+ * when converted to the Logical Plan.
+ *
+ */
+class RangeIR : public OperatorIR {
+ public:
+  RangeIR() = delete;
+  explicit RangeIR(int64_t id) : OperatorIR(id, RangeType, false) {}
+  Status Init(IRNode* parent, IRNode* time_repr);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+  IRNode* time_repr() { return time_repr_; }
+  Status ToProto(carnotpb::Operator*) const override;
+
+ private:
+  IRNode* time_repr_;
+};
+
+/**
+ * @brief The RangeIR describe the range()
+ * operator, which is combined with a Source
+ * when converted to the Logical Plan.
+ *
+ */
+class MapIR : public OperatorIR {
+ public:
+  MapIR() = delete;
+  explicit MapIR(int64_t id) : OperatorIR(id, MapType, false) {}
+  Status Init(IRNode* parent, IRNode* lambda_func);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+  IRNode* lambda_func() const { return lambda_func_; }
+  void SetColExprMap(ColExprMap col_expr_map) {
+    col_expr_map_ = col_expr_map;
+    col_expr_map_set_ = true;
+  }
+  bool col_expr_map_set() const { return col_expr_map_set_; }
+  Status ToProto(carnotpb::Operator*) const override;
+
+ private:
+  IRNode* lambda_func_;
+  // The map from new column_names to expressions.
+  ColExprMap col_expr_map_;
+  bool col_expr_map_set_ = false;
+};
+
+/**
+ * @brief The RangeIR describe the range()
+ * operator, which is combined with a Source
+ * when converted to the Logical Plan.
+ *
+ */
+class AggIR : public OperatorIR {
+ public:
+  AggIR() = delete;
+  explicit AggIR(int64_t id) : OperatorIR(id, AggType, false) {}
+  Status Init(IRNode* parent, IRNode* by_func, IRNode* agg_func);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+  IRNode* by_func() const { return by_func_; }
+  IRNode* agg_func() const { return agg_func_; }
+  void SetGroups(std::vector<ColumnIR*> groups) {
+    groups_ = groups;
+    groups_set_ = true;
+  }
+  bool groups_set() const { return groups_set_; }
+  void SetAggValMap(ColExprMap agg_val_map) {
+    agg_val_map_ = agg_val_map;
+    agg_val_map_set_ = true;
+  }
+  bool agg_val_map_set() const { return agg_val_map_set_; }
+  Status ToProto(carnotpb::Operator*) const override;
+
+ private:
+  IRNode* by_func_;
+  IRNode* agg_func_;
+  // contains group_names and groups columns.
+  std::vector<ColumnIR*> groups_;
+  bool groups_set_ = false;
+  // The map from value_names to values
+  ColExprMap agg_val_map_;
+  bool agg_val_map_set_ = false;
+};
+
+/**
  * A walker for an IR Graph.
  *
  * The walker walks through the operators of the graph in a topologically sorted order.
@@ -507,7 +514,7 @@ class BoolIR : public IRNode {
 class IRWalker {
  public:
   template <typename TOp>
-  using NodeWalkFn = std::function<void(const TOp*)>;
+  using NodeWalkFn = std::function<void(const TOp&)>;
 
   using MemorySourceWalkFn = NodeWalkFn<MemorySourceIR>;
   using MapWalkFn = NodeWalkFn<MapIR>;
@@ -558,27 +565,27 @@ class IRWalker {
    * Perform a walk of the operators in the IR graph in a topologically-sorted order.
    * @param ir_graph The IR graph to walk.
    */
-  void Walk(IR* ir_graph) {
-    auto operators = ir_graph->dag().TopologicalSort();
+  void Walk(const IR& ir_graph) {
+    auto operators = ir_graph.dag().TopologicalSort();
     for (const auto& node_id : operators) {
-      auto node = ir_graph->Get(node_id);
+      auto node = ir_graph.Get(node_id);
       if (node->IsOp()) {
-        CallWalkFn(node);
+        CallWalkFn(*node);
       }
     }
   }
 
  private:
   template <typename T, typename TWalkFunc>
-  void CallAs(const TWalkFunc& fn, IRNode* node) {
+  void CallAs(const TWalkFunc& fn, const IRNode& node) {
     if (!fn) {
       VLOG(google::WARNING) << "fn does not exist";
     }
-    return fn(static_cast<const T*>(node));
+    return fn(static_cast<const T&>(node));
   }
 
-  void CallWalkFn(IRNode* node) {
-    const auto op_type = node->type();
+  void CallWalkFn(const IRNode& node) {
+    const auto op_type = node.type();
     switch (op_type) {
       case IRNodeType::MemorySourceType:
         return CallAs<MemorySourceIR>(memory_source_walk_fn_, node);

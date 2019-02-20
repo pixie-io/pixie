@@ -1,5 +1,6 @@
 #include <gmock/gmock.h>
 #include <google/protobuf/text_format.h>
+#include <google/protobuf/util/message_differencer.h>
 #include <gtest/gtest.h>
 #include <pypa/parser/parser.hh>
 #include <unordered_map>
@@ -7,6 +8,7 @@
 
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/compiler_state.h"
+#include "src/carnot/proto/plan.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -46,6 +48,76 @@ TEST(CompilerTest, basic) {
       },
       "\n");
   EXPECT_OK(compiler.Compile(query, compiler_state.get()));
+}
+
+const char *kExpectedLogicalPlan = R"(
+dag {
+  nodes { id: 1 }
+}
+nodes {
+  id: 1
+  dag {
+    nodes { sorted_deps: 3 }
+    nodes { id: 3 sorted_deps: 5 }
+    nodes { id: 5 sorted_deps: 8 }
+    nodes { id: 8 }
+  }
+  nodes {
+    id: 0
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op { name: "test_table" }
+    }
+  }
+  nodes {
+    id: 3
+    op {
+      op_type: MAP_OPERATOR map_op { }
+    }
+  }
+  nodes {
+    id: 5
+    op {
+      op_type: BLOCKING_AGGREGATE_OPERATOR blocking_agg_op { }
+    }
+  }
+  nodes {
+    id: 8
+    op {
+      op_type: MEMORY_SINK_OPERATOR mem_sink_op { }
+    }
+  }
+}
+)";
+
+TEST(CompilerTest, to_logical_plan) {
+  // Construct example IR Graph.
+  auto graph = std::make_shared<IR>();
+
+  // Create nodes.
+  auto src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  auto table_node = graph->MakeNode<StringIR>().ValueOrDie();
+  auto select = graph->MakeNode<ListIR>().ValueOrDie();
+  EXPECT_OK(table_node->Init("test_table"));
+  EXPECT_OK(src->Init(table_node, select));
+  auto map = graph->MakeNode<MapIR>().ValueOrDie();
+  auto map_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+  EXPECT_OK(map->Init(src, map_lambda));
+  auto agg = graph->MakeNode<AggIR>().ValueOrDie();
+  auto agg_by = graph->MakeNode<LambdaIR>().ValueOrDie();
+  auto agg_func = graph->MakeNode<LambdaIR>().ValueOrDie();
+  EXPECT_OK(agg->Init(map, agg_by, agg_func));
+  auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
+  EXPECT_OK(sink->Init(agg));
+
+  auto compiler = Compiler();
+  carnotpb::Plan logical_plan = compiler.IRToLogicalPlan(*graph).ValueOrDie();
+
+  carnotpb::Plan expected_logical_plan;
+  ASSERT_TRUE(
+      google::protobuf::TextFormat::MergeFromString(kExpectedLogicalPlan, &expected_logical_plan));
+  EXPECT_TRUE(
+      google::protobuf::util::MessageDifferencer::Equals(expected_logical_plan, logical_plan));
 }
 
 }  // namespace compiler

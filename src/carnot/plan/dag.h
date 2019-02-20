@@ -32,18 +32,18 @@ class DAG {
 
   std::unordered_set<int64_t> Orphans();
   std::unordered_set<int64_t> TransitiveDepsFrom(int64_t node);
-  std::vector<int64_t> TopologicalSort();
+  std::vector<int64_t> TopologicalSort() const;
 
-  std::vector<int64_t> DependenciesOf(int64_t node) {
+  std::vector<int64_t> DependenciesOf(int64_t node) const {
     if (nodes_.find(node) != std::end(nodes_)) {
-      return forward_edges_by_node_[node];
+      return forward_edges_by_node_.at(node);
     }
     return {};
   }
 
-  std::vector<int64_t> ParentsOf(int64_t node) {
+  std::vector<int64_t> ParentsOf(int64_t node) const {
     if (nodes_.find(node) != std::end(nodes_)) {
-      return reverse_edges_by_node_[node];
+      return reverse_edges_by_node_.at(node);
     }
     return {};
   }
