@@ -44,7 +44,7 @@ TEST(CompilerTest, basic) {
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
-          ".Map(fn=lambda r : {'quotient' : r.cpu0 / r.cpu1}).Result()",
+          "queryDF.Map(fn=lambda r : {'quotient' : r.cpu0 / r.cpu1}).Result()",
       },
       "\n");
   EXPECT_OK(compiler.Compile(query, compiler_state.get()));

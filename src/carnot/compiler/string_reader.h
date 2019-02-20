@@ -1,12 +1,15 @@
 #pragma once
 
+#include <glog/logging.h>
 #include <pypa/reader.hh>
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "absl/strings/str_split.h"
 
 namespace pl {
@@ -32,12 +35,23 @@ class StringReader : public pypa::Reader {
       current_line_++;
     }
 
-    return line;
+    if (current_line_ == lines_.size()) {
+      return line;
+    }
+    // Libpypa expects a newline after every line not at the eof.
+    return line + "\n";
   }
 
-  std::string get_line(size_t idx) override { return lines_[idx]; }
+  std::string get_line(size_t idx) override {
+    // Libpypa calls get_line() with 1 indexed values, this maps to the correct value.
+    return lines_[idx - 1];
+  }
 
-  unsigned get_line_number() const override { return current_line_; }
+  unsigned get_line_number() const override {
+    // This is to make sure that the line number returned is 1-indexed and within the lines vector.
+    auto value = std::min(std::max<size_t>(1, current_line_), lines_.size());
+    return value;
+  }
 
   std::string get_filename() const override { return ""; }
 
