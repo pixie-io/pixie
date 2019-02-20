@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "src/stirling/bcc_connector.h"
 #include "src/stirling/info_class_schema.h"
 #include "src/stirling/source_connector.h"
 
@@ -26,9 +27,9 @@ TEST(InfoClassElementTest, basic_test) {
 
 TEST(InfoClassInfoSchemaTest, basic_test) {
   std::vector<InfoClassElement> elements = {};
-  EBPFConnector source("eBPF_CPU_USAGE", elements, "", "", "");
+  auto source = BCCCPUMetricsConnector::Create();
   InfoClassSchema info_class_schema("cpu_usage");
-  info_class_schema.SetSourceConnector(&source);
+  info_class_schema.SetSourceConnector(source.get());
   InfoClassElement element_1("user_percentage", DataType::FLOAT64,
                              Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED);
   InfoClassElement element_2("system_percentage", DataType::FLOAT64,
@@ -42,7 +43,7 @@ TEST(InfoClassInfoSchemaTest, basic_test) {
 
   EXPECT_EQ(3, info_class_schema.NumElements());
   EXPECT_EQ("cpu_usage", info_class_schema.name());
-  EXPECT_EQ("eBPF_CPU_USAGE", source.source_name());
+  EXPECT_EQ("ebpf_cpu_metrics", source->source_name());
 
   stirlingpb::InfoClass info_class_pb;
   info_class_pb = info_class_schema.ToProto();
@@ -52,7 +53,7 @@ TEST(InfoClassInfoSchemaTest, basic_test) {
   EXPECT_EQ(DataType::FLOAT64, info_class_pb.elements(0).type());
   EXPECT_EQ(0, info_class_pb.id());
   auto metadata = info_class_pb.metadata();
-  EXPECT_EQ("eBPF_CPU_USAGE", metadata["source"]);
+  EXPECT_EQ("ebpf_cpu_metrics", metadata["source"]);
 
   info_class_schema.UpdateElementSubscription(
       0, Element_State::Element_State_COLLECTED_AND_SUBSCRIBED);

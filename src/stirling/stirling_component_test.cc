@@ -19,26 +19,25 @@ class SourceToTableTest : public ::testing::Test {
                                     Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
                    InfoClassElement("idle_percent", DataType::FLOAT64,
                                     Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED)}),
-        fake_proc_stat_("proc_stats", elements_),
         schema_("proc_stats_schema") {}
 
   void SetUp() override {
-    source_ptr_ = &fake_proc_stat_;
-    schema_.SetSourceConnector(source_ptr_);
-    EXPECT_OK(fake_proc_stat_.PopulateSchema(&schema_));
+    fake_proc_stat_ = FakeProcStatConnector::Create();
+    schema_.SetSourceConnector(fake_proc_stat_.get());
+    EXPECT_OK(fake_proc_stat_->PopulateSchema(&schema_));
     table_ = std::make_unique<ColumnWrapperDataTable>(schema_);
   }
 
   std::vector<InfoClassElement> elements_;
-  FakeProcStatConnector fake_proc_stat_;
+  std::unique_ptr<SourceConnector> fake_proc_stat_;
   InfoClassSchema schema_;
   SourceConnector* source_ptr_;
   std::unique_ptr<DataTable> table_;
 };
 
 TEST_F(SourceToTableTest, source_to_table) {
-  EXPECT_OK(fake_proc_stat_.Init());
-  RawDataBuf r = fake_proc_stat_.GetData();
+  EXPECT_OK(fake_proc_stat_->Init());
+  RawDataBuf r = fake_proc_stat_->GetData();
 
   EXPECT_EQ(1, r.num_records);
   EXPECT_OK(table_->AppendData(r.buf, r.num_records));

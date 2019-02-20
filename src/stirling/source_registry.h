@@ -42,12 +42,17 @@ class SourceRegistry : public NotCopyable {
   const std::unordered_map<std::string, RegistryElement>& sources_map() { return sources_map_; }
 
   /**
-   * @brief Register a source. Each source provides a name and a RegistryElement to register itself.
-   * @param name
-   * @param element
+   * @brief Register a source in the registry.
+   *
+   * @tparam TSourceConnector SourceConnector Class for a data source
+   * @param name  Name of the data source
    * @return Status
    */
-  Status Register(const std::string& name, RegistryElement element) {
+  template <typename TSourceConnector>
+  Status Register(const std::string& name) {
+    // Create registry element from template
+    SourceRegistry::RegistryElement element(TSourceConnector::source_type,
+                                            TSourceConnector::Create);
     if (sources_map_.find(name) != sources_map_.end()) {
       return error::AlreadyExists("The data source with name \"$0\" already exists", name);
     }
@@ -55,8 +60,9 @@ class SourceRegistry : public NotCopyable {
     return Status::OK();
   }
 
-  void RegisterOrDie(const std::string& name, RegistryElement element) {
-    auto status = Register(name, element);
+  template <typename TSourceConnector>
+  void RegisterOrDie(const std::string& name) {
+    auto status = Register<TSourceConnector>(name);
     PL_CHECK_OK(status);
   }
 

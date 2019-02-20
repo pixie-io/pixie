@@ -5,6 +5,7 @@
 #include <cstring>
 #include <vector>
 
+#include "src/stirling/bcc_connector.h"
 #include "src/stirling/info_class_schema.h"
 #include "src/stirling/pub_sub_manager.h"
 #include "src/stirling/source_connector.h"
@@ -34,23 +35,23 @@ const char* kInfoClassSchema = R"(
   }
   metadata {
     key: "source"
-    value: "eBPF_CPU_USAGE"
+    value: "ebpf_cpu_metrics"
   }
 )";
 
 class PubSubManagerTest : public ::testing::Test {
  protected:
   PubSubManagerTest()
-      : source_("eBPF_CPU_USAGE", {}, "", "", ""),
-        element_1("user_percentage", DataType::FLOAT64,
+      : element_1("user_percentage", DataType::FLOAT64,
                   Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
         element_2("system_percentage", DataType::FLOAT64,
                   Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
         element_3("io_percentage", DataType::FLOAT64,
                   Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED) {}
   void SetUp() override {
+    source_ = BCCCPUMetricsConnector::Create();
     pub_sub_manager_schemas_.push_back(std::make_unique<InfoClassSchema>("cpu_usage"));
-    pub_sub_manager_schemas_[0]->SetSourceConnector(&source_);
+    pub_sub_manager_schemas_[0]->SetSourceConnector(source_.get());
 
     pub_sub_manager_schemas_[0]->AddElement(element_1);
     pub_sub_manager_schemas_[0]->AddElement(element_2);
@@ -59,7 +60,7 @@ class PubSubManagerTest : public ::testing::Test {
     pub_sub_manager_ = std::make_unique<PubSubManager>(pub_sub_manager_schemas_);
   }
 
-  EBPFConnector source_;
+  std::unique_ptr<SourceConnector> source_;
   std::unique_ptr<PubSubManager> pub_sub_manager_;
   std::vector<std::unique_ptr<InfoClassSchema>> pub_sub_manager_schemas_;
   InfoClassElement element_1, element_2, element_3;

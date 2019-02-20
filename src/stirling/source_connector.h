@@ -1,11 +1,21 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "src/common/base.h"
 #include "src/common/statusor.h"
 #include "src/stirling/info_class_schema.h"
+
+/**
+ * These are the steps to follow to add a new data source connector.
+ * 1. If required, create a new SourceConnector class.
+ * 2. Add a new Create function with the following signature:
+ *    static std::unique_ptr<SourceConnector> Create().
+ *    In this function create a schema (vector of InfoClassElement)
+ * 3. Register the data source in the appropriate registry.
+ */
 
 namespace pl {
 namespace stirling {
@@ -37,7 +47,13 @@ class SourceConnector : public NotCopyable {
    *
    */
   bool Available() { return AvailableImpl(); }
-  Status PopulateSchema(InfoClassSchema* schema);
+
+  Status PopulateSchema(InfoClassSchema* schema) {
+    for (auto element : elements_) {
+      schema->AddElement(element);
+    }
+    return Status::OK();
+  }
 
   SourceType type() { return type_; }
   const std::string& source_name() { return source_name_; }
@@ -75,40 +91,6 @@ class LinuxOnlySourceConnector : public SourceConnector {
 #endif
 };
 
-class EBPFConnector : public LinuxOnlySourceConnector {
- public:
-  EBPFConnector() = delete;
-  explicit EBPFConnector(const std::string& source_name,
-                         const std::vector<InfoClassElement> elements,
-                         const std::string& kernel_event, const std::string& fn_name,
-                         const std::string& bpf_program)
-      : LinuxOnlySourceConnector(SourceType::kEBPF, source_name, elements),
-        kernel_event_(kernel_event),
-        fn_name_(fn_name),
-        bpf_program_(bpf_program) {}
-  virtual ~EBPFConnector() = default;
-
- protected:
-  Status InitImpl() override {
-    // TODO(kgandhi): Launch the EBPF program.
-    return Status::OK();
-  }
-
-  // TODO(kgandhi): Get data records from EBPF program.
-  RawDataBuf GetDataImpl() override;
-
-  // TODO(kgandhi): Stop the running EBPF program.
-  Status StopImpl() override { return Status::OK(); }
-
-  const std::string& kernel_event() { return kernel_event_; }
-  const std::string& fn_name() { return fn_name_; }
-  const std::string& bpf_program() { return bpf_program_; }
-
- private:
-  std::string kernel_event_, fn_name_, bpf_program_;
-  std::vector<uint8_t> data_buf_;
-};
-
 /**
  * @brief Placeholder for Open tracing sources.
  *
@@ -116,19 +98,28 @@ class EBPFConnector : public LinuxOnlySourceConnector {
 class OpenTracingConnector : public SourceConnector {
  public:
   OpenTracingConnector() = delete;
-  explicit OpenTracingConnector(const std::string& source_name,
-                                const std::vector<InfoClassElement> elements)
-      : SourceConnector(SourceType::kEBPF, source_name, elements) {}
+  static constexpr SourceType source_type = SourceType::kOpenTracing;
   virtual ~OpenTracingConnector() = default;
+  static std::unique_ptr<SourceConnector> Create() {
+    std::vector<InfoClassElement> elements = {};
+    return std::unique_ptr<SourceConnector>(
+        new OpenTracingConnector("open_tracing_connector", elements));
+  }
 
  protected:
+  explicit OpenTracingConnector(const std::string& source_name,
+                                const std::vector<InfoClassElement> elements)
+      : SourceConnector(source_type, source_name, elements) {}
   Status InitImpl() override {
     // TODO(kgandhi): Launch open tracing collection methods.
     return Status::OK();
   }
 
   // TODO(kgandhi): Get data records from open tracing source.
-  RawDataBuf GetDataImpl() override;
+  RawDataBuf GetDataImpl() override {
+    uint32_t num_records = 1;
+    return RawDataBuf(num_records, data_buf_.data());
+  };
 
   // TODO(kgandhi): Stop the collection of data from the source.
   Status StopImpl() override { return Status::OK(); }

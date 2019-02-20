@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -10,13 +11,26 @@ namespace stirling {
 
 class ProcStatConnector : public LinuxOnlySourceConnector {
  public:
+  static constexpr SourceType source_type = SourceType::kFile;
   ProcStatConnector() = delete;
-  explicit ProcStatConnector(const std::string& source_name,
-                             const std::vector<InfoClassElement> elements)
-      : LinuxOnlySourceConnector(SourceType::kFile, source_name, elements) {}
   virtual ~ProcStatConnector() = default;
+  static std::unique_ptr<SourceConnector> Create() {
+    std::vector<InfoClassElement> elements = {
+        InfoClassElement("_time", DataType::INT64,
+                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+        InfoClassElement("system_percent", DataType::FLOAT64,
+                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+        InfoClassElement("user_percent", DataType::FLOAT64,
+                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+        InfoClassElement("idle_percent", DataType::FLOAT64,
+                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED)};
+    return std::unique_ptr<SourceConnector>(new ProcStatConnector("proc_stat", elements));
+  }
 
  protected:
+  explicit ProcStatConnector(const std::string& source_name,
+                             const std::vector<InfoClassElement> elements)
+      : LinuxOnlySourceConnector(source_type, source_name, elements) {}
   Status InitImpl() override;
   RawDataBuf GetDataImpl() override;
   Status StopImpl() override { return Status::OK(); }
@@ -70,12 +84,24 @@ class ProcStatConnector : public LinuxOnlySourceConnector {
 class FakeProcStatConnector : public ProcStatConnector {
  public:
   FakeProcStatConnector() = delete;
+  ~FakeProcStatConnector() = default;
+  static std::unique_ptr<SourceConnector> Create() {
+    std::vector<InfoClassElement> elements = {
+        InfoClassElement("_time", DataType::INT64,
+                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+        InfoClassElement("system_percent", DataType::FLOAT64,
+                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+        InfoClassElement("user_percent", DataType::FLOAT64,
+                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+        InfoClassElement("idle_percent", DataType::FLOAT64,
+                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED)};
+    return std::unique_ptr<SourceConnector>(new FakeProcStatConnector("fake_proc_stat", elements));
+  }
+
+ protected:
   explicit FakeProcStatConnector(const std::string& source_name,
                                  const std::vector<InfoClassElement> elements)
       : ProcStatConnector(source_name, elements) {}
-  ~FakeProcStatConnector() = default;
-
- protected:
   // TODO(kgandhi): Refactor this into a FakeSourceConnector which doesn't depend on
   // ProcStatConnector which just generates data for testing. For now, override AvailableImpl().
   bool AvailableImpl() override { return true; }
