@@ -8,6 +8,7 @@
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/exec/table.h"
+#include "src/carnot/plan/relation.h"
 #include "src/carnot/udf/arrow_adapter.h"
 #include "src/common/error.h"
 #include "src/common/statusor.h"
@@ -99,6 +100,19 @@ Status Table::WriteRowBatch(RowBatch rb) {
   return Status::OK();
 }
 
+plan::Relation Table::GetRelation() {
+  std::vector<udf::UDFDataType> types;
+  std::vector<std::string> names;
+  types.reserve(columns_.size());
+  names.reserve(columns_.size());
+
+  for (const auto& col : columns_) {
+    types.push_back(col->data_type());
+    names.push_back(col->name());
+  }
+
+  return plan::Relation(types, names);
+}
 }  // namespace exec
 }  // namespace carnot
 }  // namespace pl

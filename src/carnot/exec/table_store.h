@@ -37,13 +37,13 @@ class TableStore {
 
   using ColNameToTypeMap = std::unordered_map<std::string, udf::UDFDataType>;
   /**
-   * @return A map of table name to a map of column name to column type.
+   * @return A map of table name to relation representing the table's structure.
    */
-  std::unordered_map<std::string, ColNameToTypeMap> GetTableTypesLookup() {
-    std::unordered_map<std::string, ColNameToTypeMap> map;
-    map.reserve(table_name_to_table_map_.size());
+  std::shared_ptr<std::unordered_map<std::string, plan::Relation>> GetRelationMap() {
+    auto map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
+    map->reserve(table_name_to_table_map_.size());
     for (const auto& table : table_name_to_table_map_) {
-      map.emplace(table.first, table.second->ColumnNameToTypeMap());
+      map->emplace(table.first, table.second->GetRelation());
     }
     return map;
   }

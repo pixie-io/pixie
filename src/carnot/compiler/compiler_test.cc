@@ -32,14 +32,12 @@ TEST(CompilerTest, basic) {
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
   EXPECT_OK(info->Init(info_pb));
 
-  auto lookup_map =
-      std::unordered_map<std::string, std::unordered_map<std::string, types::DataType>>();
-  auto cpu_lookup = std::unordered_map<std::string, types::DataType>();
-  cpu_lookup.emplace("cpu0", types::DataType::FLOAT64);
-  cpu_lookup.emplace("cpu1", types::DataType::FLOAT64);
-  lookup_map.emplace("cpu", cpu_lookup);
+  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
+  rel_map->emplace("cpu", plan::Relation(std::vector<types::DataType>(
+                                             {types::DataType::FLOAT64, types::DataType::FLOAT64}),
+                                         std::vector<std::string>({"cpu0", "cpu1"})));
 
-  auto compiler_state = std::make_unique<CompilerState>(lookup_map, info.get());
+  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
 
   auto compiler = Compiler();
   auto query = absl::StrJoin(

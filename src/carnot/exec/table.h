@@ -9,6 +9,7 @@
 #include "absl/strings/str_format.h"
 #include "src/carnot/exec/row_batch.h"
 #include "src/carnot/exec/row_descriptor.h"
+#include "src/carnot/plan/relation.h"
 #include "src/carnot/udf/udf.h"
 #include "src/common/status.h"
 #include "src/common/statusor.h"
@@ -113,13 +114,7 @@ class Table {
     return 0;
   }
 
-  std::unordered_map<std::string, udf::UDFDataType> ColumnNameToTypeMap() {
-    std::unordered_map<std::string, udf::UDFDataType> map;
-    for (auto col : name_to_column_map_) {
-      map.emplace(col.first, col.second->data_type());
-    }
-    return map;
-  }
+  plan::Relation GetRelation();
 
  private:
   RowDescriptor desc_;

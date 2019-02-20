@@ -28,13 +28,18 @@ TEST(TableStoreTest, basic) {
   table_store.AddTable("a", table1);
   table_store.AddTable("b", table2);
 
-  auto lookup = table_store.GetTableTypesLookup();
-  EXPECT_EQ(2, lookup.size());
-  EXPECT_EQ(types::DataType::BOOLEAN, lookup.at("a").at("table1col1"));
-  EXPECT_EQ(types::DataType::FLOAT64, lookup.at("a").at("table1col2"));
-  EXPECT_EQ(types::DataType::INT64, lookup.at("b").at("table2col1"));
-  EXPECT_EQ(types::DataType::FLOAT64, lookup.at("b").at("table2col2"));
-  EXPECT_EQ(types::DataType::INT64, lookup.at("b").at("table2col3"));
+  auto lookup = table_store.GetRelationMap();
+  EXPECT_EQ(2, lookup->size());
+  EXPECT_EQ(types::DataType::BOOLEAN, lookup->at("a").GetColumnType(0));
+  EXPECT_EQ("table1col1", lookup->at("a").GetColumnName(0));
+  EXPECT_EQ(types::DataType::FLOAT64, lookup->at("a").GetColumnType(1));
+  EXPECT_EQ("table1col2", lookup->at("a").GetColumnName(1));
+  EXPECT_EQ(types::DataType::INT64, lookup->at("b").GetColumnType(0));
+  EXPECT_EQ("table2col1", lookup->at("b").GetColumnName(0));
+  EXPECT_EQ(types::DataType::FLOAT64, lookup->at("b").GetColumnType(1));
+  EXPECT_EQ("table2col2", lookup->at("b").GetColumnName(1));
+  EXPECT_EQ(types::DataType::INT64, lookup->at("b").GetColumnType(2));
+  EXPECT_EQ("table2col3", lookup->at("b").GetColumnName(2));
 }
 
 }  // namespace exec
