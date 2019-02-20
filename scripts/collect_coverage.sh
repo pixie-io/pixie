@@ -128,7 +128,7 @@ print_config
 cd $(bazel info workspace)
 
 # Get coverage from bazel targets.
-bazel coverage --cache_test_results=no //...
+bazel coverage --cache_test_results=no //src/...
 
 # This finds all the valid coverage files and then creates a list of them
 # prefixed by -a, which allows up to add them to the lcov output.
