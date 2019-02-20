@@ -13,6 +13,10 @@ Status IR::AddEdge(IRNode* from_node, IRNode* to_node) {
   return AddEdge(from_node->id(), to_node->id());
 }
 
+void IR::DeleteEdge(int64_t from_node, int64_t to_node) { dag_.DeleteEdge(from_node, to_node); }
+
+void IR::DeleteNode(int64_t node) { dag_.DeleteNode(node); }
+
 std::string IR::DebugString() {
   std::string debug_string = absl::StrFormat("%s\n", dag().DebugString());
   for (auto const& a : id_node_map_) {

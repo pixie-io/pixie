@@ -27,6 +27,8 @@ class Compiler {
 
   StatusOr<carnotpb::Plan> IRToLogicalPlan(const IR& ir);
 
+  static Status CollapseRange(IR* ir);
+
  private:
   StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query);
 
@@ -50,6 +52,13 @@ class Compiler {
     }
     return Status::OK();
   }
+  /**
+   * Optimize the query by updating the IR. This may mutate the IR, such as updating nodes,
+   * removing nodes or adding/removing edges.
+   * @param ir the ir to optimize
+   * @return a status of whether optimization was successful.
+   */
+  Status OptimizeIR(IR* ir);
 };
 
 }  // namespace compiler

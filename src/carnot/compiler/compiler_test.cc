@@ -3,6 +3,7 @@
 #include <google/protobuf/util/message_differencer.h>
 #include <gtest/gtest.h>
 #include <pypa/parser/parser.hh>
+
 #include <unordered_map>
 #include <vector>
 
@@ -44,10 +45,38 @@ TEST(CompilerTest, basic) {
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
-          "queryDF.Map(fn=lambda r : {'quotient' : r.cpu0 / r.cpu1}).Result()",
+          "mapDF = queryDF.Map(fn=lambda r : {'quotient' : r.cpu0 / r.cpu1}).Result()",
       },
       "\n");
   EXPECT_OK(compiler.Compile(query, compiler_state.get()));
+}
+
+TEST(CompilerTest, remove_range) {
+  // Construct example IR Graph.
+  auto graph = std::make_shared<IR>();
+
+  // Create nodes.
+  auto src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  auto range = graph->MakeNode<RangeIR>().ValueOrDie();
+  auto time = graph->MakeNode<StringIR>().ValueOrDie();
+  auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
+
+  EXPECT_OK(time->Init("-2h"));
+  EXPECT_OK(range->Init(src, time));
+  EXPECT_OK(sink->Init(range));
+  EXPECT_FALSE(src->IsTimeSet());
+
+  EXPECT_EQ(std::vector<int64_t>({0, 1, 2, 3}), graph->dag().TopologicalSort());
+
+  // Add dependencies.
+  EXPECT_OK(graph->AddEdge(src, range));
+  EXPECT_OK(graph->AddEdge(range, sink));
+  EXPECT_OK(graph->AddEdge(range, time));
+
+  EXPECT_OK(Compiler::CollapseRange(graph.get()));
+
+  EXPECT_EQ(std::vector<int64_t>({0, 3}), graph->dag().TopologicalSort());
+  EXPECT_TRUE(src->IsTimeSet());
 }
 
 const char *kExpectedLogicalPlan = R"(

@@ -51,6 +51,8 @@ class IR {
 
   Status AddEdge(int64_t parent, int64_t child);
   Status AddEdge(IRNode* parent, IRNode* child);
+  void DeleteEdge(int64_t parent, int64_t child);
+  void DeleteNode(int64_t node);
   plan::DAG& dag() { return dag_; }
   const plan::DAG& dag() const { return dag_; }
   std::string DebugString();
