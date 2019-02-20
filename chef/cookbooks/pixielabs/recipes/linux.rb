@@ -4,6 +4,7 @@ apt_pkg_list = [
   'bash-completion',
   'build-essential',
   'curl',
+  'doxygen',
   'git',
   'golang',
   'lcov',
