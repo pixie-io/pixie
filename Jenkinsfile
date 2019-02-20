@@ -44,11 +44,12 @@ def harborMasterUrl = {
  */
 def sendBuildStatus = {
   build_status ->
-    def url = harborMasterUrl("harbormaster.sendmessage") + "&type=${build_status}"
+    def url = harborMasterUrl("harbormaster.sendmessage")
+    def body = "type=${build_status}"
     httpRequest consoleLogResponseBody: true,
-      contentType: 'APPLICATION_JSON',
+      contentType: 'APPLICATION_FORM',
       httpMode: 'POST',
-      requestBody:'',
+      requestBody: body,
       responseHandle: 'NONE',
       url: url,
       validResponseCodes: '200'
@@ -60,17 +61,18 @@ def sendBuildStatus = {
 def addBuildInfo = {
   def encodedDisplayUrl = URLEncoder.encode(env.RUN_DISPLAY_URL, 'UTF-8')
   def url = harborMasterUrl("harbormaster.createartifact")
-  url += "&buildTargetPHID=${params.PHID}"
-  url += '&artifactKey=jenkins.uri'
-  url += '&artifactType=uri'
-  url += "&artifactData[uri]=${encodedDisplayUrl}"
-  url += '&artifactData[name]=Jenkins'
-  url += '&artifactData[ui.external]=true'
+  def body = ""
+  body += "&buildTargetPHID=${params.PHID}"
+  body += '&artifactKey=jenkins.uri'
+  body += '&artifactType=uri'
+  body += "&artifactData[uri]=${encodedDisplayUrl}"
+  body += '&artifactData[name]=Jenkins'
+  body += '&artifactData[ui.external]=true'
 
   httpRequest consoleLogResponseBody: true,
-    contentType: 'APPLICATION_JSON',
+    contentType: 'APPLICATION_FORM',
     httpMode: 'POST',
-    requestBody: '',
+    requestBody: body,
     responseHandle: 'NONE',
     url: url,
     validResponseCodes: '200'
@@ -217,26 +219,6 @@ if (env.JOB_NAME == "pixielabs-master") {
   }
 }
 
-// Only run coverage on master test.
-if (env.JOB_NAME == "pixielabs-master") {
-  builders['Build & Test (gcc:coverage)'] = {
-    retry(JENKINS_RETRIES) {
-      node {
-        deleteDir()
-        unstash SRC_STASH_NAME
-        docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-          docker.image(devDockerImageWithTag).inside {
-            sh 'scripts/bazel_fetch_retry.sh'
-            sh 'scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b master -c `cat GIT_COMMIT`'
-            sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-            stash name: 'build-gcc-coverage-testlogs', includes: "bazel-testlogs-archive/**"
-          }
-        }
-      }
-    }
-  }
-}
-
 /********************************************
  * For now restrict the ASAN and TSAN builds to carnot. There is a bug in go(or llvm) preventing linking:
  * https://github.com/golang/go/issues/27110
@@ -316,6 +298,7 @@ node {
       parallel(builders)
     }
     stage('Build & Test UI') {
+      unstash SRC_STASH_NAME
       retry(JENKINS_RETRIES) {
         docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
           docker.image(devDockerImageWithTag).inside {
