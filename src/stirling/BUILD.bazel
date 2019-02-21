@@ -23,6 +23,7 @@ pl_cc_library(
         "//third_party:arrow",
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": ["//third_party:bpftrace"],
+        "//conditions:default": [],
     }),
 )
 

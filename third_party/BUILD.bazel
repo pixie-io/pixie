@@ -135,6 +135,7 @@ pl_cc_library(
         ":bpftrace-arch",
         ":bpftrace-ast",
     ],
+    tags = ["linux_only"],
 )
 
 pl_cc_library(
@@ -172,6 +173,7 @@ pl_cc_library(
         "@com_iovisor_bcc//:bcc",
         "@com_llvm_lib//:llvm",
     ],
+    tags = ["linux_only"],    
 )
 
 pl_cc_library(
@@ -193,6 +195,7 @@ pl_cc_library(
     ],
     #Hacky, but otherwise can't find parser.tab.hh.
     includes = ["."],
+    tags = ["linux_only"],    
 )
 
 genbison(
