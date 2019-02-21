@@ -84,11 +84,9 @@ class InfoClassSchema {
    * the publish proto.
    */
   explicit InfoClassSchema(const std::string& name) : name_(name) {
+    last_sampled_ = std::chrono::milliseconds::zero();
+    last_pushed_ = std::chrono::milliseconds::zero();
     id_ = global_id_++;
-    last_sampled_ = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch());
-    last_pushed_ = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch());
   }
   virtual ~InfoClassSchema() = default;
 

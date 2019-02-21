@@ -10,6 +10,7 @@
 #include "src/common/status.h"
 #include "src/common/statusor.h"
 #include "src/common/types/types.pb.h"
+#include "src/stirling/bpftrace_connector.h"
 #include "src/stirling/proc_stat_connector.h"
 #include "src/stirling/source_connector.h"
 
@@ -79,8 +80,7 @@ class SourceRegistry : public NotCopyable {
   std::unordered_map<std::string, RegistryElement> sources_map_;
 };
 
-void RegisterSources(SourceRegistry* registry);
-void RegisterFakeSources(SourceRegistry* registry);
+void RegisterAllSources(SourceRegistry* registry);
 
 }  // namespace stirling
 }  // namespace pl

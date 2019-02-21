@@ -1,3 +1,6 @@
+# For all builds, exclude tests that require root or BPF privileges
+build --test_tag_filters=-requires_root,-requires_bpf
+
 # bazel build --config asan ...
 build:asan --define PL_CONFIG_ASAN=1
 build:asan --copt -D__SANITIZE_ADDRESS__
@@ -9,7 +12,7 @@ build:asan --copt -fno-sanitize-recover=all
 build:asan --linkopt -ldl
 build:asan --define tcmalloc=disabled
 build:asan --build_tag_filters=-no_asan
-build:asan --test_tag_filters=-no_asan
+build:asan --test_tag_filters=-no_asan,-requires_root,-requires_bpf
 build:asan --define signal_trace=disabled
 build:asan --copt -DADDRESS_SANITIZER=1
 build:asan --test_env=ASAN_SYMBOLIZER_PATH
@@ -22,6 +25,7 @@ build:msan --define PL_CONFIG_MSAN=1
 build:msan --copt -fsanitize=memory
 build:msan --linkopt -fsanitize=memory
 build:msan --define tcmalloc=disabled
+build:msan --test_tag_filters=-no_msan,-requires_root,-requires_bpf
 build:msan --copt -fsanitize-memory-track-origins=2
 build:msan --linkopt -fuse-ld=lld
 build:msan --cxxopt -std=c++17
@@ -31,6 +35,7 @@ build:tsan --define PL_CONFIG_TSAN=1
 build:tsan --copt -fsanitize=thread
 build:tsan --linkopt -fsanitize=thread
 build:tsan --define tcmalloc=disabled
+build:tsan --test_tag_filters=-no_tsan,-requires_root,-requires_bpf
 build:tsan --linkopt -fuse-ld=lld
 build:tsan --cxxopt -std=c++17
 

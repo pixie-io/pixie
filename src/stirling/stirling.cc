@@ -1,6 +1,7 @@
-#include <iostream>
+#include <chrono>
 #include <utility>
 
+#include "src/stirling/bpftrace_connector.h"
 #include "src/stirling/pub_sub_manager.h"
 #include "src/stirling/source_connector.h"
 #include "src/stirling/stirling.h"
@@ -57,6 +58,9 @@ void Stirling::Wait() { run_thread_.join(); }
 // Poll on Data Source Through connectors, when appropriate, then go to sleep.
 // Must run as a thread, so only call from Run() as a thread.
 void Stirling::RunThread() {
+  // TODO(oazizi): Remove this. Done to make sure first sample is collected.
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+
   bool run = true;
   while (run) {
     // Run through every InfoClass being managed.
@@ -80,12 +84,19 @@ void Stirling::RunThread() {
       // Phase 2: Push Data upstream.
       if (schema->PushRequired()) {
         auto data_table = schema->GetDataTable();
-        auto record_batches = data_table->GetColumnWrapperRecordBatches();
-        PL_UNUSED(record_batches);
 
-        // TODO(oazizi): Hook this up.
-        // for each record batch:
-        //     agent_callback_(schema->id(), std::move(columns));
+        auto record_batches = data_table->GetColumnWrapperRecordBatches();
+        auto record_batches_ptr_raw = record_batches.ValueOrDie().get();
+        for (auto& record_batch : *record_batches_ptr_raw) {
+          if (record_batch->size() > 0) {
+            // Get num_records
+            // Note: Implicit assumption (not checked here) is that all columns have the same size
+            auto col0 = (*record_batch)[0];
+            uint64_t num_records = col0->Size();
+
+            agent_callback_(num_records, std::move(record_batch));
+          }
+        }
       }
 
       // Optional: Update sampling periods if we are dropping data.
@@ -93,9 +104,6 @@ void Stirling::RunThread() {
 
     // Figure out how long to sleep.
     SleepUntilNextTick();
-
-    // FIXME(oazizi): Remove this.
-    std::cout << "." << std::flush;
   }
 }
 

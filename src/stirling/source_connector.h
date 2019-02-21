@@ -4,7 +4,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/strings/str_format.h"
 #include "src/common/base.h"
+#include "src/common/error.h"
 #include "src/common/statusor.h"
 #include "src/stirling/info_class_schema.h"
 
@@ -30,7 +32,14 @@ struct RawDataBuf {
   uint8_t* buf;
 };
 
-enum class SourceType : uint8_t { kEBPF = 1, kOpenTracing, kPrometheus, kFile, kUnknown };
+enum class SourceType : uint8_t {
+  kEBPF = 1,
+  kOpenTracing,
+  kPrometheus,
+  kFile,
+  kUnknown,
+  kUnavailable
+};
 
 class SourceConnector : public NotCopyable {
  public:
@@ -62,7 +71,7 @@ class SourceConnector : public NotCopyable {
  protected:
   explicit SourceConnector(SourceType type, const std::string& source_name,
                            const std::vector<InfoClassElement> elements)
-      : type_(type), source_name_(source_name), elements_(elements) {}
+      : elements_(elements), type_(type), source_name_(source_name) {}
 
   virtual Status InitImpl() = 0;
   virtual RawDataBuf GetDataImpl() = 0;
@@ -73,10 +82,36 @@ class SourceConnector : public NotCopyable {
    */
   virtual bool AvailableImpl() { return true; }
 
+ protected:
+  std::vector<InfoClassElement> elements_;
+
  private:
   SourceType type_;
   std::string source_name_;
-  std::vector<InfoClassElement> elements_;
+};
+
+class NotImplementedSourceConnector : public SourceConnector {
+ public:
+  NotImplementedSourceConnector(SourceType type, const std::string& source_name,
+                                const std::vector<InfoClassElement> elements)
+      : SourceConnector(type, source_name, elements) {}
+
+ protected:
+  Status InitImpl() final {
+    return error::Unimplemented(
+        absl::StrFormat("Source connector (name=%s) is not available.", source_name()));
+  }
+
+  RawDataBuf GetDataImpl() final {
+    CHECK(false) << absl::StrFormat("Source connector (name=%s) is not available.", source_name());
+  }
+
+  Status StopImpl() final {
+    return error::Unimplemented(
+        absl::StrFormat("Source connector (name=%s) is not available.", source_name()));
+  }
+
+  bool AvailableImpl() final { return false; }
 };
 
 class LinuxOnlySourceConnector : public SourceConnector {

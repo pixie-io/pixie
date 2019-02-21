@@ -12,13 +12,18 @@ pl_cc_library(
             "**/*_wrapper.cc",
         ],
     ),
-    hdrs = glob(["*.h"]),
+    hdrs = glob([
+        "*.h",
+        "*.bt",
+    ]),
     deps = [
         "//src/carnot/udf:cc_library",
         "//src/common/types:types_cc_proto",
         "//src/stirling/proto:collector_config_cc_proto",
         "//third_party:arrow",
-    ],
+    ] + select({
+        "@bazel_tools//src/conditions:linux_x86_64": ["//third_party:bpftrace"],
+    }),
 )
 
 pl_cc_binary(
@@ -66,6 +71,17 @@ pl_cc_test(
 pl_cc_test(
     name = "source_connector_test",
     srcs = ["source_connector_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "bpftrace_connector_test",
+    srcs = ["bpftrace_connector_test.cc"],
+    tags = [
+        "linux_only",
+        "requires_root",
+        "requires_bpf",
+    ],
     deps = [":cc_library"],
 )
 

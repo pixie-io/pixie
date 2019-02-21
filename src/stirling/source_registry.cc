@@ -13,15 +13,11 @@ namespace stirling {
 using pl::types::DataType;
 using stirlingpb::Element_State;
 
-void RegisterSources(SourceRegistry* registry) {
+void RegisterAllSources(SourceRegistry* registry) {
   CHECK(registry != nullptr);
   registry->RegisterOrDie<BCCCPUMetricsConnector>("ebpf_cpu_source");
   registry->RegisterOrDie<ProcStatConnector>("proc_stat_source");
-}
-
-// Fake registry for testing in data collector wrapper.
-void RegisterFakeSources(SourceRegistry* registry) {
-  registry->RegisterOrDie<FakeProcStatConnector>("fake_proc_stat_source");
+  registry->RegisterOrDie<CPUStatBPFTraceConnector>("CPU stats bpftrace source");
 }
 
 }  // namespace stirling
