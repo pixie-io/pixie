@@ -405,13 +405,9 @@ class MemorySinkIR : public OperatorIR {
  public:
   MemorySinkIR() = delete;
   explicit MemorySinkIR(int64_t id) : OperatorIR(id, MemorySinkType, true, false) {}
-  Status Init(IRNode* parent);
+  Status Init(IRNode* parent, const std::string& name);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  void SetName(std::string name) {
-    name_ = name;
-    name_set_ = true;
-  }
   bool name_set() const { return name_set_; }
   std::string name() const { return name_; }
   Status ToProto(carnotpb::Operator*) const override;

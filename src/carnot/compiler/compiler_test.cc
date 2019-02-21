@@ -43,7 +43,7 @@ TEST(CompilerTest, basic) {
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
-          "mapDF = queryDF.Map(fn=lambda r : {'quotient' : r.cpu0 / r.cpu1}).Result()",
+          "mapDF = queryDF.Map(fn=lambda r : {'quotient' : r.cpu0 / r.cpu1}).Result(name='cpu2')",
       },
       "\n");
   EXPECT_OK(compiler.Compile(query, compiler_state.get()));
@@ -83,7 +83,7 @@ nodes {
   nodes {
     id: 8
     op {
-      op_type: MEMORY_SINK_OPERATOR mem_sink_op { }
+      op_type: MEMORY_SINK_OPERATOR mem_sink_op { name: "sink" }
     }
   }
 }
@@ -107,7 +107,7 @@ TEST(CompilerTest, to_logical_plan) {
   auto agg_func = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(agg->Init(map, agg_by, agg_func));
   auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
-  EXPECT_OK(sink->Init(agg));
+  EXPECT_OK(sink->Init(agg, "sink"));
 
   auto compiler = Compiler();
   carnotpb::Plan logical_plan = compiler.IRToLogicalPlan(*graph).ValueOrDie();
@@ -131,7 +131,7 @@ TEST(CompilerTest, remove_range) {
 
   EXPECT_OK(time->Init("-2h"));
   EXPECT_OK(range->Init(src, time));
-  EXPECT_OK(sink->Init(range));
+  EXPECT_OK(sink->Init(range, "sink"));
   EXPECT_FALSE(src->IsTimeSet());
 
   EXPECT_EQ(std::vector<int64_t>({0, 1, 2, 3}), graph->dag().TopologicalSort());

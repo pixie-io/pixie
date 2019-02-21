@@ -76,6 +76,17 @@ Status IRVerifier::VerifyMap(IRNode* node) {
   return Status::OK();
 }
 
+Status IRVerifier::VerifySink(IRNode* node) {
+  auto sink_node = static_cast<MemorySinkIR*>(node);
+  PL_RETURN_IF_ERROR(
+      ExpectOp(sink_node->parent(), ExpString("MemorySinkIR", node->id(), "parent")));
+
+  if (!sink_node->name_set()) {
+    return FormatErrorMsg("Expected sink to have name set.", sink_node);
+  }
+  return Status::OK();
+}
+
 Status IRVerifier::VerifyAgg(IRNode* node) {
   auto agg_node = static_cast<AggIR*>(node);
   PL_RETURN_IF_ERROR(
@@ -119,6 +130,9 @@ Status IRVerifier::VerifyNodeConnections(IRNode* node) {
     case IRNodeType::AggType: {
       return VerifyAgg(node);
     }
+    case IRNodeType::MemorySinkType: {
+      return VerifySink(node);
+    }
     default: { return Status::OK(); }
   }
 }
@@ -157,12 +171,21 @@ std::vector<Status> IRVerifier::VerifyLineColGraph(IR* ir_graph) {
  */
 std::vector<Status> IRVerifier::VerifyGraphConnections(IR* ir_graph) {
   std::vector<Status> statuses;
+  bool has_sink = false;
   for (auto& i : ir_graph->dag().TopologicalSort()) {
     auto node = ir_graph->Get(i);
     Status cur_status = VerifyNodeConnections(node);
     if (!cur_status.ok()) {
       statuses.push_back(cur_status);
     }
+    if (node->type() == IRNodeType::MemorySinkType) {
+      has_sink = true;
+    }
+  }
+  if (!has_sink) {
+    statuses.push_back(
+        error::InvalidArgument("No Result() call found in the query. You must end the query with a "
+                               "Result call to save something out."));
   }
   return statuses;
 }

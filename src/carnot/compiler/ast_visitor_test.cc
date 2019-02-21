@@ -215,7 +215,7 @@ TEST(ResultTest, basic) {
   std::string single_col_map_sub =
       absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
                      "rangeDF = queryDF.Map(fn=lambda r : {'sub' : r.cpu0 - r.cpu1})",
-                     "result = rangeDF.Result()"},
+                     "result = rangeDF.Result(name='mapped')"},
                     "\n");
   EXPECT_OK(ParseQuery(single_col_map_sub));
 }

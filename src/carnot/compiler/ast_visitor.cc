@@ -35,6 +35,9 @@ const std::unordered_map<std::string, std::string> kOP_TO_UDF_MAP = {
 Status CreateAstError(const std::string& err_msg, const pypa::AstPtr& ast) {
   return error::InvalidArgument("Line $0 Col $1 : $2", ast->line, ast->column, err_msg);
 }
+Status CreateIRNodeError(const std::string& err_msg, const IRNode& node) {
+  return error::InvalidArgument("Line $0 Col $1 : $2", node.line(), node.col(), err_msg);
+}
 
 /**
  * @brief Returns the string repr of an Ast Type.
@@ -72,11 +75,19 @@ std::string GetNameID(pypa::AstPtr node) { return PYPA_PTR_CAST(Name, node)->id;
  * @return StatusOr<std::string>
  */
 StatusOr<std::string> GetStrAstValue(const pypa::AstPtr& ast) {
-  if (ast->type == AstType::Str) {
-    return PYPA_PTR_CAST(Str, ast)->value;
+  if (ast->type != AstType::Str) {
+    return CreateAstError(
+        absl::StrFormat("Expected string type. Got %s", GetAstTypeName(ast->type)), ast);
   }
-  return CreateAstError(absl::StrFormat("Expected string type. Got %s", GetAstTypeName(ast->type)),
-                        ast);
+  return PYPA_PTR_CAST(Str, ast)->value;
+}
+
+StatusOr<std::string> GetStrIRValue(const IRNode& node) {
+  if (node.type() != IRNodeType::StringType) {
+    return CreateIRNodeError(
+        absl::StrFormat("Expected string IRNode type. Got %s", node.type_string()), node);
+  }
+  return static_cast<const StringIR&>(node).str();
 }
 
 ASTWalker::ASTWalker(std::shared_ptr<IR> ir_graph) {
@@ -227,7 +238,9 @@ StatusOr<IRNode*> ASTWalker::ProcessSinkOp(const pypa::AstCallPtr& node) {
 
   PL_ASSIGN_OR_RETURN(IRNode * call_result,
                       ProcessAttrFunc(PYPA_PTR_CAST(Attribute, node->function)));
-  PL_RETURN_IF_ERROR(ir_node->Init(call_result));
+  PL_ASSIGN_OR_RETURN(ArgMap args, GetArgs(node, {"name"}, true));
+  PL_ASSIGN_OR_RETURN(std::string name_str, GetStrIRValue(*args["name"]));
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result, name_str));
   return ir_node;
 }
 

@@ -48,6 +48,8 @@ class IRVerifier {
 
   Status VerifyAgg(IRNode* node);
 
+  Status VerifySink(IRNode* node);
+
   Status VerifyNodeConnections(IRNode* node);
   Status VerifyLineCol(IRNode* node);
 };

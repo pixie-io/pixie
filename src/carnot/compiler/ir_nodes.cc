@@ -96,9 +96,11 @@ std::string MemorySourceIR::DebugString(int64_t depth) const {
 
 bool MemorySinkIR::HasLogicalRepr() const { return true; }
 
-Status MemorySinkIR::Init(IRNode* parent_node) {
+Status MemorySinkIR::Init(IRNode* parent_node, const std::string& name) {
   PL_RETURN_IF_ERROR(SetParent(parent_node));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
+  name_ = name;
+  name_set_ = true;
 
   return Status::OK();
 }

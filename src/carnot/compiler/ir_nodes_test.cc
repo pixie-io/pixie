@@ -129,12 +129,13 @@ TEST(ToProto, memory_sink_ir) {
   auto graph = std::make_shared<IR>();
 
   auto mem_sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
+  auto mem_source = graph->MakeNode<MemorySourceIR>().ValueOrDie();
 
-  mem_sink->SetName("output_table");
   auto rel = plan::Relation(
       std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64}),
       std::vector<std::string>({"output1", "output2"}));
   EXPECT_OK(mem_sink->SetRelation(rel));
+  EXPECT_OK(mem_sink->Init(mem_source, "output_table"));
 
   carnotpb::Operator pb;
   EXPECT_OK(mem_sink->ToProto(&pb));
