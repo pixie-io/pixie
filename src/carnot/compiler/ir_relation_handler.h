@@ -9,14 +9,21 @@
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/registry_info.h"
 #include "src/carnot/plan/schema.h"
+
 namespace pl {
 namespace carnot {
 namespace compiler {
 class IRRelationHandler {
  public:
   IRRelationHandler() = delete;
-  explicit IRRelationHandler(std::unordered_map<std::string, plan::Relation> relation_map,
-                             RegistryInfo* registry_info);
+  explicit IRRelationHandler(const RelationMap& relation_map, const RegistryInfo& registry_info);
+  /**
+   * @brief Wrapper for all of the update functionality of the IRRelationHandler.
+   *
+   * @param ir_graph -> ptr to ir memorythat is managed by the caller of the IRRelationHandler. Will
+   * be updated by this constructor.
+   * @return Status
+   */
   Status UpdateRelationsAndCheckFunctions(IR* ir_graph);
 
  private:
@@ -101,8 +108,8 @@ class IRRelationHandler {
                                                      const plan::Relation& relation);
 
   /** Variables **/
-  RegistryInfo* registry_info_;
-  std::unordered_map<std::string, plan::Relation> relation_map_;
+  RegistryInfo registry_info_;
+  RelationMap relation_map_;
 };
 }  // namespace compiler
 }  // namespace carnot

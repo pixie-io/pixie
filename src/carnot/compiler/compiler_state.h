@@ -14,9 +14,8 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
+using RelationMap = std::unordered_map<std::string, plan::Relation>;
 class CompilerState : public NotCopyable {
-  using RelationMap = std::unordered_map<std::string, plan::Relation>;
-
  public:
   /**
    * CompilerState manages the state needed to compile a single query. A new one will

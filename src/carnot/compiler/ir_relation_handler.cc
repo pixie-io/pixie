@@ -6,8 +6,8 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-IRRelationHandler::IRRelationHandler(std::unordered_map<std::string, plan::Relation> relation_map,
-                                     RegistryInfo* registry_info) {
+IRRelationHandler::IRRelationHandler(const RelationMap& relation_map,
+                                     const RegistryInfo& registry_info) {
   registry_info_ = registry_info;
   relation_map_ = relation_map;
 }
@@ -74,10 +74,10 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateFuncExpr(FuncIR* expr,
   types::DataType data_type;
   // set the type of the function in the UDF.
   if (is_map) {
-    PL_ASSIGN_OR_RETURN(data_type, registry_info_->GetUDF(expr->func_name(), args_types));
+    PL_ASSIGN_OR_RETURN(data_type, registry_info_.GetUDF(expr->func_name(), args_types));
   } else {
     // Check in UDA instead.
-    PL_ASSIGN_OR_RETURN(data_type, registry_info_->GetUDA(expr->func_name(), args_types));
+    PL_ASSIGN_OR_RETURN(data_type, registry_info_.GetUDA(expr->func_name(), args_types));
   }
 
   return data_type;

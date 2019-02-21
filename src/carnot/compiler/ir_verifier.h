@@ -21,7 +21,7 @@ class IRVerifier {
    * @param ir_graph
    * @return const std::vector<Status>&
    */
-  std::vector<Status> VerifyLineColGraph(IR* ir_graph);
+  std::vector<Status> VerifyLineColGraph(const IR& ir_graph);
 
   /**
    * @brief Verifies that each node in the graph has their connections properly initialized.
@@ -29,7 +29,7 @@ class IRVerifier {
    * @param ir_graph
    * @return const std::vector<Status>&
    */
-  std::vector<Status> VerifyGraphConnections(IR* ir_graph);
+  std::vector<Status> VerifyGraphConnections(const IR& ir_graph);
 
  private:
   bool TypeIsOp(IRNodeType type);

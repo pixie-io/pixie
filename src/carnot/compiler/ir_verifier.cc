@@ -151,10 +151,10 @@ Status IRVerifier::VerifyLineCol(IRNode* node) {
  * @param ir_graph
  * @return const std::vector<Status>&
  */
-std::vector<Status> IRVerifier::VerifyLineColGraph(IR* ir_graph) {
+std::vector<Status> IRVerifier::VerifyLineColGraph(const IR& ir_graph) {
   std::vector<Status> statuses;
-  for (auto& i : ir_graph->dag().TopologicalSort()) {
-    auto node = ir_graph->Get(i);
+  for (auto& i : ir_graph.dag().TopologicalSort()) {
+    auto node = ir_graph.Get(i);
     Status line_col_status = VerifyLineCol(node);
     if (!line_col_status.ok()) {
       statuses.push_back(line_col_status);
@@ -169,11 +169,11 @@ std::vector<Status> IRVerifier::VerifyLineColGraph(IR* ir_graph) {
  * @param ir_graph
  * @return const std::vector<Status>&
  */
-std::vector<Status> IRVerifier::VerifyGraphConnections(IR* ir_graph) {
+std::vector<Status> IRVerifier::VerifyGraphConnections(const IR& ir_graph) {
   std::vector<Status> statuses;
   bool has_sink = false;
-  for (auto& i : ir_graph->dag().TopologicalSort()) {
-    auto node = ir_graph->Get(i);
+  for (auto& i : ir_graph.dag().TopologicalSort()) {
+    auto node = ir_graph.Get(i);
     Status cur_status = VerifyNodeConnections(node);
     if (!cur_status.ok()) {
       statuses.push_back(cur_status);

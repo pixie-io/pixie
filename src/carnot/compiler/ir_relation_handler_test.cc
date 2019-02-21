@@ -101,7 +101,7 @@ class RelationHandlerTest : public ::testing::Test {
     return result;
   }
   Status HandleRelation(std::shared_ptr<IR> ir_graph) {
-    auto relation_handler = IRRelationHandler(relation_map_, registry_info_.get());
+    auto relation_handler = IRRelationHandler(relation_map_, *registry_info_);
     return relation_handler.UpdateRelationsAndCheckFunctions(ir_graph.get());
   }
   bool RelationEquality(const plan::Relation& r1, const plan::Relation& r2) {

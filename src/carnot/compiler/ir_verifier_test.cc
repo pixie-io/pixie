@@ -36,10 +36,10 @@ void GraphVerify(const std::string& query, bool should_fail) {
   // successfullly for it to actually verify properly.
   if (ir_graph_status.ok()) {
     auto ir_graph = ir_graph_status.ValueOrDie();
-    CheckStatusVector(verifier.VerifyGraphConnections(ir_graph.get()), should_fail);
+    CheckStatusVector(verifier.VerifyGraphConnections(*ir_graph), should_fail);
     // Line Col should be set no matter what - this is independent of whether the query is written
     // incorrectly or not.
-    CheckStatusVector(verifier.VerifyLineColGraph(ir_graph.get()), false);
+    CheckStatusVector(verifier.VerifyLineColGraph(*ir_graph), false);
   }
 }
 

@@ -595,8 +595,13 @@ class IRWalker {
         return CallAs<AggIR>(agg_walk_fn_, node);
       case IRNodeType::MemorySinkType:
         return CallAs<MemorySinkIR>(memory_sink_walk_fn_, node);
+      case IRNodeType::RangeType:
+        // Don't do anything with Range because we should have already combined Range with
+        // MemorySource
+        break;
       default:
-        LOG(WARNING) << absl::StrCat("IRNode type does not exist.");
+        LOG(WARNING) << absl::StrFormat("IRNode %s does not exist for CallWalkFn",
+                                        node.type_string());
     }
   }
 

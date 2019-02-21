@@ -23,19 +23,31 @@ namespace compiler {
 StatusOr<carnotpb::Plan> Compiler::Compile(const std::string& query,
                                            CompilerState* compiler_state) {
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query));
+  PL_RETURN_IF_ERROR(VerifyIRConnections(*ir));
   PL_RETURN_IF_ERROR(UpdateColumnsAndVerifyUDFs(ir.get(), compiler_state));
   return IRToLogicalPlan(*ir);
 }
+Status Compiler::VerifyIRConnections(const IR& ir) {
+  auto verifier = IRVerifier();
+  std::vector<Status> result = verifier.VerifyGraphConnections(ir);
+  if (result.size() != 0) {
+    std::vector<std::string> msgs;
+    error::Code code = error::Code::OK;
 
+    for (const auto& err : result) {
+      msgs.push_back(err.ToString());
+      code = err.code();
+    }
+    return Status(code, absl::StrJoin(msgs, "\n"));
+  }
+  return Status::OK();
+}
 Status Compiler::UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_state) {
   // TODO(philkuz) fix the compiler state schema or IRelationHandler to uncomment the following
   // lines.
-  // auto relation_handler =
-  //     IRRelationHandler(compiler_state_->schema, compiler_state_->registry_info);
-  // return relation_handler.UpdateRelationsAndCheckFunctions(ir)
-  PL_UNUSED(ir);
-  PL_UNUSED(compiler_state);
-  return Status::OK();
+  auto relation_handler =
+      IRRelationHandler(*compiler_state->relation_map(), *compiler_state->registry_info());
+  return relation_handler.UpdateRelationsAndCheckFunctions(ir);
 }
 
 StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query) {
