@@ -51,34 +51,6 @@ TEST(CompilerTest, basic) {
   EXPECT_OK(compiler.Compile(query, compiler_state.get()));
 }
 
-TEST(CompilerTest, remove_range) {
-  // Construct example IR Graph.
-  auto graph = std::make_shared<IR>();
-
-  // Create nodes.
-  auto src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  auto range = graph->MakeNode<RangeIR>().ValueOrDie();
-  auto time = graph->MakeNode<StringIR>().ValueOrDie();
-  auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
-
-  EXPECT_OK(time->Init("-2h"));
-  EXPECT_OK(range->Init(src, time));
-  EXPECT_OK(sink->Init(range));
-  EXPECT_FALSE(src->IsTimeSet());
-
-  EXPECT_EQ(std::vector<int64_t>({0, 1, 2, 3}), graph->dag().TopologicalSort());
-
-  // Add dependencies.
-  EXPECT_OK(graph->AddEdge(src, range));
-  EXPECT_OK(graph->AddEdge(range, sink));
-  EXPECT_OK(graph->AddEdge(range, time));
-
-  EXPECT_OK(Compiler::CollapseRange(graph.get()));
-
-  EXPECT_EQ(std::vector<int64_t>({0, 3}), graph->dag().TopologicalSort());
-  EXPECT_TRUE(src->IsTimeSet());
-}
-
 const char *kExpectedLogicalPlan = R"(
 dag {
   nodes { id: 1 }
@@ -149,6 +121,34 @@ TEST(CompilerTest, to_logical_plan) {
       google::protobuf::util::MessageDifferencer::Equals(expected_logical_plan, logical_plan));
 }
 
+TEST(CompilerTest, remove_range) {
+  // Construct example IR Graph.
+  auto graph = std::make_shared<IR>();
+
+  // Create nodes.
+  auto src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  auto range = graph->MakeNode<RangeIR>().ValueOrDie();
+  auto time = graph->MakeNode<StringIR>().ValueOrDie();
+  auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
+
+  EXPECT_OK(time->Init("-2h"));
+  EXPECT_OK(range->Init(src, time));
+  EXPECT_OK(sink->Init(range));
+  EXPECT_FALSE(src->IsTimeSet());
+
+  EXPECT_EQ(std::vector<int64_t>({0, 1, 2, 3}), graph->dag().TopologicalSort());
+
+  // Add dependencies.
+  EXPECT_OK(graph->AddEdge(src, range));
+  EXPECT_OK(graph->AddEdge(range, sink));
+  EXPECT_OK(graph->AddEdge(range, time));
+
+  EXPECT_OK(Compiler::CollapseRange(graph.get()));
+
+  EXPECT_EQ(std::vector<int64_t>({0, 3}), graph->dag().TopologicalSort());
+  EXPECT_TRUE(src->IsTimeSet());
+  EXPECT_EQ(7200000, src->time_stop_ms() - src->time_start_ms());
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

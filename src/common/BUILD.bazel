@@ -44,3 +44,9 @@ pl_cc_test(
     srcs = ["scoped_timer_test.cc"],
     deps = [":common"],
 )
+
+pl_cc_test(
+    name = "time_test",
+    srcs = ["time_test.cc"],
+    deps = [":common"],
+)

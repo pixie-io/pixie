@@ -377,6 +377,8 @@ class MemorySourceIR : public OperatorIR {
     time_stop_ms_ = time_stop_ms;
     time_set_ = true;
   }
+  int64_t time_start_ms() const { return time_start_ms_; }
+  int64_t time_stop_ms() const { return time_stop_ms_; }
   bool IsTimeSet() const { return time_set_; }
   bool columns_set() const { return columns_set_; }
   void SetColumns(std::vector<ColumnIR*> columns) {

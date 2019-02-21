@@ -15,6 +15,7 @@
 #include "src/carnot/compiler/ir_verifier.h"
 #include "src/carnot/compiler/string_reader.h"
 #include "src/carnot/proto/plan.pb.h"
+#include "src/common/time.h"
 
 namespace pl {
 namespace carnot {
@@ -98,7 +99,7 @@ Status Compiler::CollapseRange(IR* ir) {
   // This assumes there is only one Range in the query.
   RangeIR* rangeIR = nullptr;
   MemorySourceIR* srcIR;
-  IRNode* timeIR;
+  StringIR* timeIR;
   for (const auto& node_id : sorted_dag) {
     auto node = ir->Get(node_id);
     if (node->type() == IRNodeType::RangeType) {
@@ -108,12 +109,12 @@ Status Compiler::CollapseRange(IR* ir) {
       srcIR = static_cast<MemorySourceIR*>(rangeIR->parent());
       ir->DeleteEdge(srcIR->id(), rangeIR->id());
 
-      timeIR = rangeIR->time_repr();
+      timeIR = static_cast<StringIR*>(rangeIR->time_repr());
       auto now = std::chrono::high_resolution_clock::now();
       auto now_ms =
           std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
-      // TODO(michelle): Add util to covert str time to ms. Using hard-coded value for now.
-      srcIR->SetTime(now_ms, now_ms + 3600);
+      PL_ASSIGN_OR_RETURN(auto time_difference, StringToTimeInt(timeIR->str()));
+      srcIR->SetTime(now_ms + time_difference, now_ms);
       ir->DeleteNode(timeIR->id());
 
       // Update all of range's dependencies to point to src.
