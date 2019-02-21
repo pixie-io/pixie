@@ -10,11 +10,7 @@
 namespace pl {
 namespace stirling {
 
-class CPUStatBPFTraceConnector : public NotImplementedSourceConnector {
- public:
-  static constexpr SourceType source_type = SourceType::kUnavailable;
-  static std::unique_ptr<SourceConnector> Create() { return nullptr; }
-};
+DUMMY_SOURCE_CONNECTOR(CPUStatBPFTraceConnector);
 
 }  // namespace stirling
 }  // namespace pl

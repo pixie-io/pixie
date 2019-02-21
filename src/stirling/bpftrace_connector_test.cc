@@ -27,7 +27,6 @@ TEST(BPFTraceConnectorTest, bpftrace_connector_all) {
   Status s;
 
   ASSERT_TRUE(IsRoot());
-  ASSERT_TRUE(bpftrace_connector->Available());
 
   EXPECT_OK(bpftrace_connector->Init());
 

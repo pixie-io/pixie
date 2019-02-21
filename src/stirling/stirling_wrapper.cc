@@ -1,6 +1,8 @@
+#include <glog/logging.h>
 #include <ctime>
 #include <iomanip>
 
+#include "src/common/env.h"
 #include "src/common/error.h"
 #include "src/common/macros.h"
 #include "src/common/status.h"
@@ -47,7 +49,14 @@ std::unique_ptr<SourceRegistry> CreateRegistry() {
 
   // bpftrace source
   registry->RegisterOrDie<CPUStatBPFTraceConnector>("CPU stats bpftrace source");
-  // registry->RegisterOrDie<FakeProcStatConnector>("fake_proc_stat_source");
+
+  // RegisterAllSources(registry.get());
+
+  std::cout << "Registered sources: " << std::endl;
+  auto registered_sources = registry->sources_map();
+  for (auto registered_source : registered_sources) {
+    std::cout << "    " << registered_source.first << std::endl;
+  }
 
   return registry;
 }
@@ -55,8 +64,8 @@ std::unique_ptr<SourceRegistry> CreateRegistry() {
 // A simple wrapper that shows how the data collector is to be hooked up
 // In this case, agent and sources are fake.
 int main(int argc, char** argv) {
-  PL_UNUSED(argc);
-  PL_UNUSED(argv);
+  pl::InitEnvironmentOrDie(&argc, argv);
+  LOG(INFO) << "Stirling Wrapper";
 
   // Create a registry of relevant sources.
   std::unique_ptr<SourceRegistry> registry = CreateRegistry();
@@ -76,6 +85,8 @@ int main(int argc, char** argv) {
   // Wait for the thread to return. This should never happen in this example.
   // But don't want the program to terminate.
   data_collector.Wait();
+
+  pl::ShutdownEnvironmentOrDie();
 
   return 0;
 }

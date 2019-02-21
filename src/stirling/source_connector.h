@@ -25,6 +25,14 @@ namespace stirling {
 class InfoClassElement;
 class InfoClassSchema;
 
+#define DUMMY_SOURCE_CONNECTOR(NAME)                                       \
+  class NAME : public SourceConnector {                                    \
+   public:                                                                 \
+    static constexpr bool kAvailable = false;                              \
+    static constexpr SourceType source_type = SourceType::kNotImplemented; \
+    static std::unique_ptr<SourceConnector> Create() { return nullptr; }   \
+  }
+
 struct RawDataBuf {
  public:
   RawDataBuf(uint32_t num_records, uint8_t* buf) : num_records(num_records), buf(buf) {}
@@ -38,24 +46,28 @@ enum class SourceType : uint8_t {
   kPrometheus,
   kFile,
   kUnknown,
-  kUnavailable
+  kNotImplemented
 };
 
 class SourceConnector : public NotCopyable {
  public:
+  /**
+   * @brief Defines whether the SourceConnector has an implementation.
+   *
+   * Default in the base class is true, and normally should not be changed in the derived class.
+   *
+   * However, a dervived class may want to redefine to false in certain special circumstances:
+   * 1) a SourceConnector that is just a placeholder (not yet implemented).
+   * 2) a SourceConnector that is not compilable (e.g. on Mac). See DUMMY_SOURCE_CONNECTOR macro.
+   */
+  static constexpr bool kAvailable = true;
+
   SourceConnector() = delete;
   virtual ~SourceConnector() = default;
 
   Status Init() { return InitImpl(); }
   RawDataBuf GetData() { return GetDataImpl(); }
   Status Stop() { return StopImpl(); }
-  /**
-   * @brief Determines if a source connector is available to be used.
-   * Only source connectors that are available and in the registry will
-   * be added to Stirling for gathering data.
-   *
-   */
-  bool Available() { return AvailableImpl(); }
 
   Status PopulateSchema(InfoClassSchema* schema) {
     for (auto element : elements_) {
@@ -76,11 +88,6 @@ class SourceConnector : public NotCopyable {
   virtual Status InitImpl() = 0;
   virtual RawDataBuf GetDataImpl() = 0;
   virtual Status StopImpl() = 0;
-  /**
-   * @brief Return true as default. Override in derived classes based on system specifics.
-   *
-   */
-  virtual bool AvailableImpl() { return true; }
 
  protected:
   std::vector<InfoClassElement> elements_;
@@ -88,42 +95,6 @@ class SourceConnector : public NotCopyable {
  private:
   SourceType type_;
   std::string source_name_;
-};
-
-class NotImplementedSourceConnector : public SourceConnector {
- public:
-  NotImplementedSourceConnector(SourceType type, const std::string& source_name,
-                                const std::vector<InfoClassElement> elements)
-      : SourceConnector(type, source_name, elements) {}
-
- protected:
-  Status InitImpl() final {
-    return error::Unimplemented(
-        absl::StrFormat("Source connector (name=%s) is not available.", source_name()));
-  }
-
-  RawDataBuf GetDataImpl() final {
-    CHECK(false) << absl::StrFormat("Source connector (name=%s) is not available.", source_name());
-  }
-
-  Status StopImpl() final {
-    return error::Unimplemented(
-        absl::StrFormat("Source connector (name=%s) is not available.", source_name()));
-  }
-
-  bool AvailableImpl() final { return false; }
-};
-
-class LinuxOnlySourceConnector : public SourceConnector {
- protected:
-  explicit LinuxOnlySourceConnector(SourceType type, const std::string& source_name,
-                                    const std::vector<InfoClassElement> elements)
-      : SourceConnector(type, source_name, elements) {}
-// TODO(kgandhi): Make this final once FakeProcStatConnector has been refactored
-// and doesn't depend on implementation in ProcStatConnector.
-#ifndef __linux
-  bool AvailableImpl() override { return false; }
-#endif
 };
 
 /**

@@ -9,7 +9,7 @@
 namespace pl {
 namespace stirling {
 
-class ProcStatConnector : public LinuxOnlySourceConnector {
+class ProcStatConnector : public SourceConnector {
  public:
   static constexpr SourceType source_type = SourceType::kFile;
   ProcStatConnector() = delete;
@@ -30,7 +30,7 @@ class ProcStatConnector : public LinuxOnlySourceConnector {
  protected:
   explicit ProcStatConnector(const std::string& source_name,
                              const std::vector<InfoClassElement> elements)
-      : LinuxOnlySourceConnector(source_type, source_name, elements) {}
+      : SourceConnector(source_type, source_name, elements) {}
   Status InitImpl() override;
   RawDataBuf GetDataImpl() override;
   Status StopImpl() override { return Status::OK(); }
@@ -102,9 +102,8 @@ class FakeProcStatConnector : public ProcStatConnector {
   explicit FakeProcStatConnector(const std::string& source_name,
                                  const std::vector<InfoClassElement> elements)
       : ProcStatConnector(source_name, elements) {}
-  // TODO(kgandhi): Refactor this into a FakeSourceConnector which doesn't depend on
-  // ProcStatConnector which just generates data for testing. For now, override AvailableImpl().
-  bool AvailableImpl() override { return true; }
+
+  Status InitImpl() override;
 
   std::vector<std::string> GetProcParams() override {
     std::string stats = "cpu  ";

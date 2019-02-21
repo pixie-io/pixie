@@ -18,6 +18,7 @@ void RegisterAllSources(SourceRegistry* registry) {
   registry->RegisterOrDie<BCCCPUMetricsConnector>("ebpf_cpu_source");
   registry->RegisterOrDie<ProcStatConnector>("proc_stat_source");
   registry->RegisterOrDie<CPUStatBPFTraceConnector>("CPU stats bpftrace source");
+  registry->RegisterOrDie<FakeProcStatConnector>("Fake source");
 }
 
 }  // namespace stirling

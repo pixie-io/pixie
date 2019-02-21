@@ -8,9 +8,12 @@
 namespace pl {
 namespace stirling {
 
+DUMMY_SOURCE_CONNECTOR(DummyUnavailableConnector);
+
 void RegisterTestSources(SourceRegistry* registry) {
-  registry->RegisterOrDie<BCCCPUMetricsConnector>("test_ebpf_cpu_source");
+  registry->RegisterOrDie<FakeProcStatConnector>("test_fake_proc_cpu_source");
   registry->RegisterOrDie<ProcStatConnector>("test_proc_stat_source");
+  registry->RegisterOrDie<DummyUnavailableConnector>("unavailable_source");
 }
 
 class SourceRegistryTest : public ::testing::Test {
@@ -23,14 +26,14 @@ class SourceRegistryTest : public ::testing::Test {
 TEST_F(SourceRegistryTest, validate_registry) { EXPECT_EQ("metrics", registry_.name()); }
 
 TEST_F(SourceRegistryTest, register_sources) {
-  auto s = registry_.GetRegistryElement("test_ebpf_cpu_source");
+  auto s = registry_.GetRegistryElement("test_fake_proc_cpu_source");
   EXPECT_OK(s);
   auto element = s.ValueOrDie();
-  EXPECT_EQ(SourceType::kEBPF, element.type);
+  EXPECT_EQ(SourceType::kFile, element.type);
   auto source_fn = element.create_source_fn;
   auto source = source_fn();
-  EXPECT_EQ("ebpf_cpu_metrics", source->source_name());
-  EXPECT_EQ(SourceType::kEBPF, source->type());
+  EXPECT_EQ("fake_proc_stat", source->source_name());
+  EXPECT_EQ(SourceType::kFile, source->type());
 
   s = registry_.GetRegistryElement("test_proc_stat_source");
   EXPECT_OK(s);
@@ -40,6 +43,10 @@ TEST_F(SourceRegistryTest, register_sources) {
   source = source_fn();
   EXPECT_EQ("proc_stat", source->source_name());
   EXPECT_EQ(SourceType::kFile, source->type());
+
+  // Unavailable source connectors should not make their way into the registry.
+  s = registry_.GetRegistryElement("unavailable_source");
+  EXPECT_FALSE(s.ok());
 
   auto all_sources = registry_.sources_map();
   EXPECT_EQ(2, all_sources.size());

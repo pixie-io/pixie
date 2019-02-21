@@ -1,3 +1,4 @@
+#include <glog/logging.h>
 #include <chrono>
 #include <utility>
 
@@ -15,34 +16,38 @@ Status Stirling::CreateSourceConnectors() {
   }
   auto sources_map = registry_->sources_map();
   for (auto const& [name, registry_element] : sources_map) {
-    PL_CHECK_OK(AddSource(name, registry_element.create_source_fn()));
+    Status s = AddSource(name, registry_element.create_source_fn());
+
+    if (!s.ok()) {
+      LOG(WARNING) << absl::StrFormat("Source Connector (registry name=%s) not instantiated", name);
+      LOG(WARNING) << s.status().ToString();
+    }
   }
   return Status::OK();
 }
 
 Status Stirling::AddSource(const std::string& name, std::unique_ptr<SourceConnector> source) {
-  if (source->Available()) {
-    // Step 1: Init the source.
-    PL_CHECK_OK(source->Init());
+  // Step 1: Init the source.
+  PL_RETURN_IF_ERROR(source->Init());
 
-    // Step 2: Ask the Connector for the Schema.
-    // Eventually, should return a vector of Schemas.
-    auto schema = std::make_unique<InfoClassSchema>(name);
-    PL_RETURN_IF_ERROR(source->PopulateSchema(schema.get()));
+  // Step 2: Ask the Connector for the Schema.
+  // Eventually, should return a vector of Schemas.
+  auto schema = std::make_unique<InfoClassSchema>(name);
+  PL_RETURN_IF_ERROR(source->PopulateSchema(schema.get()));
 
-    // Step 3: Make the corresponding Data Table.
-    auto data_table = std::make_unique<ColumnWrapperDataTable>(*schema);
+  // Step 3: Make the corresponding Data Table.
+  auto data_table = std::make_unique<ColumnWrapperDataTable>(*schema);
 
-    // Step 4: Connect this Info Class to its related objects.
-    schema->SetSourceConnector(source.get());
-    schema->SetDataTable(data_table.get());
-    schema->SetSamplingPeriod(kDefaultSamplingPeriod);
+  // Step 4: Connect this Info Class to its related objects.
+  schema->SetSourceConnector(source.get());
+  schema->SetDataTable(data_table.get());
+  schema->SetSamplingPeriod(kDefaultSamplingPeriod);
 
-    // Step 5: Keep pointers to all the objects
-    sources_.push_back(std::move(source));
-    tables_.push_back(std::move(data_table));
-    schemas_.push_back(std::move(schema));
-  }
+  // Step 5: Keep pointers to all the objects
+  sources_.push_back(std::move(source));
+  tables_.push_back(std::move(data_table));
+  schemas_.push_back(std::move(schema));
+
   return Status::OK();
 }
 

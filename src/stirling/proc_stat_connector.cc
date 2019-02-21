@@ -6,10 +6,21 @@
 namespace pl {
 namespace stirling {
 
-// Fake data source for M2. We plan to remove this data source
+// Temporary data source for M2. We plan to remove this data source
 // once the ebpf version is available.
 // Using data from /proc/stat
 Status ProcStatConnector::InitImpl() {
+  std::ifstream input_file(kProcStatFileName);
+  if (!input_file.good()) {
+    return error::NotFound("[$0] Unable to access $1", source_name(), kProcStatFileName);
+  }
+
+  auto parsed_str = GetProcParams();
+  return GetProcStat(parsed_str);
+}
+
+// Version of InitImpl for FakeProcStatConnector
+Status FakeProcStatConnector::InitImpl() {
   auto parsed_str = GetProcParams();
   return GetProcStat(parsed_str);
 }

@@ -9,7 +9,7 @@
 namespace pl {
 namespace stirling {
 
-class BCCConnector : public LinuxOnlySourceConnector {
+class BCCConnector : public SourceConnector {
  public:
   static constexpr SourceType source_type = SourceType::kEBPF;
   BCCConnector() = delete;
@@ -20,7 +20,7 @@ class BCCConnector : public LinuxOnlySourceConnector {
                         const std::vector<InfoClassElement> elements,
                         const std::string& kernel_event, const std::string& fn_name,
                         const std::string& bpf_program)
-      : LinuxOnlySourceConnector(source_type, source_name, elements),
+      : SourceConnector(source_type, source_name, elements),
         kernel_event_(kernel_event),
         fn_name_(fn_name),
         bpf_program_(bpf_program) {}
@@ -49,6 +49,9 @@ class BCCConnector : public LinuxOnlySourceConnector {
 
 class BCCCPUMetricsConnector : public BCCConnector {
  public:
+  // TODO(kgandhi): Remove next line once this SourceConnector is functional.
+  static constexpr bool kAvailable = false;
+
   virtual ~BCCCPUMetricsConnector() = default;
 
   static std::unique_ptr<SourceConnector> Create() {

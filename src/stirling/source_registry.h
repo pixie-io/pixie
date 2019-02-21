@@ -51,6 +51,14 @@ class SourceRegistry : public NotCopyable {
    */
   template <typename TSourceConnector>
   Status Register(const std::string& name) {
+    if (!TSourceConnector::kAvailable) {
+      LOG(INFO) << absl::StrFormat(
+          "SourceConnector [%s] not registered because it is not available (not "
+          "compiled/implemented)",
+          name);
+      return Status::OK();
+    }
+
     // Create registry element from template
     SourceRegistry::RegistryElement element(TSourceConnector::source_type,
                                             TSourceConnector::Create);
@@ -58,6 +66,7 @@ class SourceRegistry : public NotCopyable {
       return error::AlreadyExists("The data source with name \"$0\" already exists", name);
     }
     sources_map_.insert({name, element});
+
     return Status::OK();
   }
 
