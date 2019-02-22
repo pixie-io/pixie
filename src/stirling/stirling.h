@@ -52,7 +52,7 @@ class Stirling {
     agent_callback_ = f;
   }
 
-  //TODO(oazizi): Get rid of this eventually?
+  // TODO(oazizi): Get rid of this eventually?
   /**
    * @brief Return a map of table ID to schema names.
    */
