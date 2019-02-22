@@ -35,7 +35,7 @@ class DataTableTest : public ::testing::Test {
   std::unique_ptr<DataTable> data_table_;
 
  public:
-  DataTableTest() : schema_("test_schema") {}
+  DataTableTest() {}
 
   /**
    * @brief Sets up the test environment, by initializing the Schema for the test.
@@ -91,10 +91,12 @@ class DataTableTest : public ::testing::Test {
    * Schema for our test table
    */
   void SetUpSchema() {
-    PL_CHECK_OK(schema_.AddElement("f0", DataType::INT64, Element_State::Element_State_SUBSCRIBED));
-    PL_CHECK_OK(
-        schema_.AddElement("f1", DataType::FLOAT64, Element_State::Element_State_SUBSCRIBED));
-    PL_CHECK_OK(schema_.AddElement("f2", DataType::INT64, Element_State::Element_State_SUBSCRIBED));
+    schema_.push_back(
+        InfoClassElement("f0", DataType::INT64, Element_State::Element_State_SUBSCRIBED));
+    schema_.push_back(
+        InfoClassElement("f1", DataType::FLOAT64, Element_State::Element_State_SUBSCRIBED));
+    schema_.push_back(
+        InfoClassElement("f2", DataType::INT64, Element_State::Element_State_SUBSCRIBED));
 
     record_size_ = sizeof(int64_t) + sizeof(double) + sizeof(int64_t);
   }

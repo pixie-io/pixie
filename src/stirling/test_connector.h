@@ -19,11 +19,8 @@ using types::DataType;
  */
 class TestSourceConnector : public SourceConnector {
  public:
-  explicit TestSourceConnector(const std::string& name, std::vector<InfoClassElement> elements)
-      : SourceConnector(SourceType::kUnknown, name, elements) {}
-
   static std::unique_ptr<SourceConnector> Create() {
-    std::vector<InfoClassElement> elements = {
+    InfoClassSchema elements = {
         InfoClassElement("field_0", DataType::TIME64NS,
                          Element_State::Element_State_NOT_SUBSCRIBED),
         InfoClassElement("field_1", DataType::FLOAT64, Element_State::Element_State_NOT_SUBSCRIBED),
@@ -42,6 +39,10 @@ class TestSourceConnector : public SourceConnector {
     uint64_t num_records = 1;
     return RawDataBuf(num_records, data_buf_.data());
   }
+
+ protected:
+  explicit TestSourceConnector(const std::string& name, const InfoClassSchema& elements)
+      : SourceConnector(SourceType::kUnknown, name, elements) {}
 
  private:
   std::vector<uint8_t> data_buf_;

@@ -11,7 +11,7 @@
 namespace pl {
 namespace stirling {
 
-std::atomic<uint64_t> InfoClassSchema::global_id_ = 0;
+std::atomic<uint64_t> InfoClassManager::global_id_ = 0;
 
 stirlingpb::Element InfoClassElement::ToProto() const {
   stirlingpb::Element element_proto;
@@ -21,16 +21,9 @@ stirlingpb::Element InfoClassElement::ToProto() const {
   return element_proto;
 }
 
-// Add an element to the Info Class.
-Status InfoClassSchema::AddElement(const std::string& name, DataType type, Element_State state) {
-  elements_.push_back(InfoClassElement(name, type, state));
+bool InfoClassManager::SamplingRequired() const { return (CurrentTime() > NextSamplingTime()); }
 
-  return Status::OK();
-}
-
-bool InfoClassSchema::SamplingRequired() const { return (CurrentTime() > NextSamplingTime()); }
-
-bool InfoClassSchema::PushRequired() const {
+bool InfoClassManager::PushRequired() const {
   if (CurrentTime() > NextPushTime()) {
     return true;
   }
@@ -46,7 +39,7 @@ bool InfoClassSchema::PushRequired() const {
   return false;
 }
 
-RawDataBuf InfoClassSchema::GetData() {
+RawDataBuf InfoClassManager::GetData() {
   sampling_count_++;
   last_sampled_ = std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::system_clock::now().time_since_epoch());
@@ -54,7 +47,7 @@ RawDataBuf InfoClassSchema::GetData() {
   return source_->GetData();
 }
 
-stirlingpb::InfoClass InfoClassSchema::ToProto() const {
+stirlingpb::InfoClass InfoClassManager::ToProto() const {
   stirlingpb::InfoClass info_class_proto;
   // Populate the proto with Elements.
   for (auto element : elements_) {

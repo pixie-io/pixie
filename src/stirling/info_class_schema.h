@@ -63,33 +63,40 @@ class InfoClassElement {
 };
 
 /**
- * InfoClassSchema consists af a collection of related InfoClassElements, that are sampled together.
- * By definition, the elements should be collected together (with a common timestamp).
+ * @brief InfoClassSchema is simply a vector of InfoClassElements.
  *
- * The InfoClassSchema also serves as the State Manager for the entire data collector.
+ * Each element in the vector represents a column in the schema.
+ */
+using InfoClassSchema = std::vector<InfoClassElement>;
+
+/**
+ * InfoClassManager consists af a collection of related InfoClassElements, that are sampled
+ * together. By definition, the elements should be collected together (with a common timestamp).
+ *
+ * The InfoClassManager also serves as the State Manager for the entire data collector.
  *  - The Config unit uses the Schemas to publish available data to the Agent.
  *  - The Config unit changes the state of elements based on the Publish call from the Agent.
  *  - There is a 1:1 relationship with the Data Tables.
- *  - Each InfoClassSchema points back to its SourceConnector.
+ *  - Each InfoClassManager points back to its SourceConnector.
  */
-class InfoClassSchema {
+class InfoClassManager {
  public:
-  InfoClassSchema() = delete;
+  InfoClassManager() = delete;
   /**
-   * @brief Construct a new Info Class Schema object
-   * SourceConnector constructs InfoClassSchema objects with and adds Elements to it
+   * @brief Construct a new Info Class Manager object
+   * SourceConnector constructs InfoClassManager objects with and adds Elements to it
    *
    * @param name Name of the InfoClass
-   * @param source Pointer to the SourceConnector that created the InfoClassSchema object.
-   * This is required to identify an InfoClassSchema parent source and also to generate
+   * @param source Pointer to the SourceConnector that created the InfoClassManager object.
+   * This is required to identify an InfoClassManager parent source and also to generate
    * the publish proto.
    */
-  explicit InfoClassSchema(const std::string& name) : name_(name) {
+  explicit InfoClassManager(const std::string& name) : name_(name) {
     last_sampled_ = std::chrono::milliseconds::zero();
     last_pushed_ = std::chrono::milliseconds::zero();
     id_ = global_id_++;
   }
-  virtual ~InfoClassSchema() = default;
+  virtual ~InfoClassManager() = default;
 
   /**
    * @brief Source connector connected to this Info Class.
@@ -106,32 +113,16 @@ class InfoClassSchema {
   void SetDataTable(DataTable* data_table) { data_table_ = data_table; }
 
   /**
-   * @brief Add an Element to the InfoClassSchema
+   * @brief Get the schema of the InfoClass.
    *
-   * @param element InfoClassElement object
+   * @return InfoClassSchema schema
    */
-  void AddElement(const InfoClassElement& element) { elements_.push_back(element); }
-
-  /**
-   * @brief Add an element to the InfoClassSchema.
-   *
-   * @param name Name of the Element
-   * @param type Data type of the element
-   * @param state Subscription state for the Element
-   */
-  Status AddElement(const std::string& name, DataType type, Element_State state);
-
-  /**
-   * @brief Get number of elements in the InfoClassSchema
-   *
-   * @return size_t Number of elements
-   */
-  uint32_t NumElements() const { return elements_.size(); }
+  InfoClassSchema& Schema() { return elements_; }
 
   /**
    * @brief Set the subscription state of an Element
    *
-   * @param index Element to update in the InfoClassSchema
+   * @param index Element to update in the InfoClassManager
    * @param state Subscription state
    * @return Status
    */
@@ -143,14 +134,14 @@ class InfoClassSchema {
   /**
    * @brief Source Connector accessor.
    *
-   * @return Pointer to source connector for this InfoClassSchema.
+   * @return Pointer to source connector for this InfoClassManager.
    */
   SourceConnector* GetSourceConnector() { return source_; }
 
   /**
    * @brief Data Table accessor.
    *
-   * @return DataTable* Pointer to the data table for this InfoClassSchema.
+   * @return DataTable* Pointer to the data table for this InfoClassManager.
    */
   DataTable* GetDataTable() { return data_table_; }
 
@@ -166,7 +157,7 @@ class InfoClassSchema {
   }
 
   /**
-   * @brief Generate a proto message based on the InfoClassSchema.
+   * @brief Generate a proto message based on the InfoClassManager.
    *
    * @return stirlingpb::InfoClass
    */
@@ -215,7 +206,7 @@ class InfoClassSchema {
   static std::atomic<uint64_t> global_id_;
 
   /**
-   * Unique ID of the InfoClassSchema instance. ID must never repeat, even after destruction.
+   * Unique ID of the InfoClassManager instance. ID must never repeat, even after destruction.
    */
   uint64_t id_;
 
@@ -227,7 +218,7 @@ class InfoClassSchema {
   /**
    * Vector of all the elements provided by this Info Class.
    */
-  std::vector<InfoClassElement> elements_;
+  InfoClassSchema elements_;
 
   /**
    * Pointer back to the source connector providing the data.

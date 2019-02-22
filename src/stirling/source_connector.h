@@ -15,7 +15,7 @@
  * 1. If required, create a new SourceConnector class.
  * 2. Add a new Create function with the following signature:
  *    static std::unique_ptr<SourceConnector> Create().
- *    In this function create a schema (vector of InfoClassElement)
+ *    In this function create an InfoClassSchema (vector of InfoClassElement)
  * 3. Register the data source in the appropriate registry.
  */
 
@@ -23,7 +23,7 @@ namespace pl {
 namespace stirling {
 
 class InfoClassElement;
-class InfoClassSchema;
+class InfoClassManager;
 
 #define DUMMY_SOURCE_CONNECTOR(NAME)                                       \
   class NAME : public SourceConnector {                                    \
@@ -69,20 +69,20 @@ class SourceConnector : public NotCopyable {
   RawDataBuf GetData() { return GetDataImpl(); }
   Status Stop() { return StopImpl(); }
 
-  Status PopulateSchema(InfoClassSchema* schema) {
-    for (auto element : elements_) {
-      schema->AddElement(element);
+  Status PopulateSchema(InfoClassManager* mgr) const {
+    for (const auto& element : elements_) {
+      mgr->Schema().push_back(element);
     }
     return Status::OK();
   }
 
   SourceType type() { return type_; }
   const std::string& source_name() { return source_name_; }
-  const std::vector<InfoClassElement>& elements() { return elements_; }
+  const InfoClassSchema& elements() { return elements_; }
 
  protected:
   explicit SourceConnector(SourceType type, const std::string& source_name,
-                           const std::vector<InfoClassElement>& elements)
+                           const InfoClassSchema& elements)
       : elements_(elements), type_(type), source_name_(source_name) {}
 
   virtual Status InitImpl() = 0;
@@ -90,7 +90,7 @@ class SourceConnector : public NotCopyable {
   virtual Status StopImpl() = 0;
 
  protected:
-  std::vector<InfoClassElement> elements_;
+  InfoClassSchema elements_;
 
  private:
   SourceType type_;
@@ -107,14 +107,13 @@ class OpenTracingConnector : public SourceConnector {
   static constexpr SourceType source_type = SourceType::kOpenTracing;
   virtual ~OpenTracingConnector() = default;
   static std::unique_ptr<SourceConnector> Create() {
-    std::vector<InfoClassElement> elements = {};
+    InfoClassSchema elements = {};
     return std::unique_ptr<SourceConnector>(
         new OpenTracingConnector("open_tracing_connector", elements));
   }
 
  protected:
-  explicit OpenTracingConnector(const std::string& source_name,
-                                const std::vector<InfoClassElement> elements)
+  explicit OpenTracingConnector(const std::string& source_name, const InfoClassSchema& elements)
       : SourceConnector(source_type, source_name, elements) {}
   Status InitImpl() override {
     // TODO(kgandhi): Launch open tracing collection methods.

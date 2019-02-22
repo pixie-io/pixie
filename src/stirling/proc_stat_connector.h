@@ -15,7 +15,7 @@ class ProcStatConnector : public SourceConnector {
   ProcStatConnector() = delete;
   virtual ~ProcStatConnector() = default;
   static std::unique_ptr<SourceConnector> Create() {
-    std::vector<InfoClassElement> elements = {
+    InfoClassSchema elements = {
         InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_SUBSCRIBED),
         InfoClassElement("system_percent", DataType::FLOAT64,
                          Element_State::Element_State_SUBSCRIBED),
@@ -27,8 +27,7 @@ class ProcStatConnector : public SourceConnector {
   }
 
  protected:
-  explicit ProcStatConnector(const std::string& source_name,
-                             const std::vector<InfoClassElement> elements)
+  explicit ProcStatConnector(const std::string& source_name, const InfoClassSchema& elements)
       : SourceConnector(source_type, source_name, elements) {}
   Status InitImpl() override;
   RawDataBuf GetDataImpl() override;
@@ -85,7 +84,7 @@ class FakeProcStatConnector : public ProcStatConnector {
   FakeProcStatConnector() = delete;
   ~FakeProcStatConnector() = default;
   static std::unique_ptr<SourceConnector> Create() {
-    std::vector<InfoClassElement> elements = {
+    InfoClassSchema elements = {
         InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_NOT_SUBSCRIBED),
         InfoClassElement("system_percent", DataType::FLOAT64,
                          Element_State::Element_State_NOT_SUBSCRIBED),
@@ -97,8 +96,7 @@ class FakeProcStatConnector : public ProcStatConnector {
   }
 
  protected:
-  explicit FakeProcStatConnector(const std::string& source_name,
-                                 const std::vector<InfoClassElement> elements)
+  explicit FakeProcStatConnector(const std::string& source_name, const InfoClassSchema& elements)
       : ProcStatConnector(source_name, elements) {}
 
   Status InitImpl() override;

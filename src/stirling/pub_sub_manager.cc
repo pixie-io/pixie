@@ -11,9 +11,9 @@ using stirlingpb::Publish;
 using stirlingpb::Subscribe;
 
 Publish PubSubManager::GeneratePublishProto() {
-  // For each InfoClassSchema get its proto and update publish_message.
+  // For each InfoClassManager get its proto and update publish_message.
   Publish publish_message;
-  for (auto& schema : config_schemas_) {
+  for (auto& schema : info_class_mgrs_) {
     InfoClass* info_class_proto = publish_message.add_published_info_classes();
     info_class_proto->MergeFrom(schema->ToProto());
   }
@@ -26,21 +26,21 @@ Status PubSubManager::UpdateSchemaFromSubscribe(const Subscribe& subscribe_proto
     auto info_class_proto = subscribe_proto.subscribed_info_classes(info_class_idx);
     uint64_t id = info_class_proto.id();
 
-    auto it = std::find_if(config_schemas_.begin(), config_schemas_.end(),
-                           [&id](const std::unique_ptr<InfoClassSchema>& info_class_ptr) {
+    auto it = std::find_if(info_class_mgrs_.begin(), info_class_mgrs_.end(),
+                           [&id](const std::unique_ptr<InfoClassManager>& info_class_ptr) {
                              return info_class_ptr->id() == id;
                            });
 
     // Check that the InfoClass exists in the map.
-    if (it == config_schemas_.end()) {
+    if (it == info_class_mgrs_.end()) {
       return Status(pl::error::NOT_FOUND, "Info Class Schema not found in Config map");
     }
 
     // Check that the number or elements are the same between the proto
-    // and the InfoClassSchema object.
+    // and the InfoClassManager object.
     size_t num_elements = info_class_proto.elements_size();
-    if (num_elements != (*it)->NumElements()) {
-      return Status(pl::error::INTERNAL, "Number of elements in InfoClassSchema does not match");
+    if (num_elements != (*it)->Schema().size()) {
+      return Status(pl::error::INTERNAL, "Number of elements in InfoClassManager does not match");
     }
 
     // Update the subscription for the elements based on subscription.

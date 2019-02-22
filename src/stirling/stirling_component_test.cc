@@ -41,23 +41,22 @@ TEST_F(StirlingComponentTest, registry_to_subscribe_test) {
 
 class SourceToTableTest : public ::testing::Test {
  protected:
-  SourceToTableTest() : schema_("proc_stats_schema") {}
+  SourceToTableTest() : info_class_mgr_("proc_stats_mgr") {}
   void SetUp() override {
     fake_proc_stat_ = FakeProcStatConnector::Create();
-    schema_.SetSourceConnector(fake_proc_stat_.get());
-    EXPECT_OK(fake_proc_stat_->PopulateSchema(&schema_));
+    info_class_mgr_.SetSourceConnector(fake_proc_stat_.get());
+    EXPECT_OK(fake_proc_stat_->PopulateSchema(&info_class_mgr_));
     // Need to set all the Element states to subscribe manually here
     // since we are not doing a pub sub here.
-    for (size_t i = 0; i < schema_.NumElements(); ++i) {
-      schema_.UpdateElementSubscription(i, Element_State::Element_State_SUBSCRIBED);
+    for (size_t i = 0; i < info_class_mgr_.Schema().size(); ++i) {
+      info_class_mgr_.UpdateElementSubscription(i, Element_State::Element_State_SUBSCRIBED);
     }
-    table_ = std::make_unique<ColumnWrapperDataTable>(schema_);
+    table_ = std::make_unique<ColumnWrapperDataTable>(info_class_mgr_.Schema());
   }
 
-  std::vector<InfoClassElement> elements_;
+  InfoClassSchema elements_;
   std::unique_ptr<SourceConnector> fake_proc_stat_;
-  InfoClassSchema schema_;
-  SourceConnector* source_ptr_;
+  InfoClassManager info_class_mgr_;
   std::unique_ptr<DataTable> table_;
 };
 

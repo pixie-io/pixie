@@ -40,7 +40,7 @@ class Stirling {
  public:
   Stirling() = delete;
   explicit Stirling(std::unique_ptr<SourceRegistry> registry) : registry_(std::move(registry)) {
-    config_ = std::make_unique<PubSubManager>(schemas_);
+    config_ = std::make_unique<PubSubManager>(info_class_mgrs_);
   }
   ~Stirling() = default;
 
@@ -86,13 +86,13 @@ class Stirling {
 
   // TODO(oazizi): Get rid of this eventually?
   /**
-   * @brief Return a map of table ID to schema names.
+   * @brief Return a map of table ID to InfoClassManager names.
    */
   std::unordered_map<uint64_t, std::string> TableIDToNameMap() {
     std::unordered_map<uint64_t, std::string> map;
 
-    for (auto& schema : schemas_) {
-      map.insert({schema->id(), schema->name()});
+    for (auto& mgr : info_class_mgrs_) {
+      map.insert({mgr->id(), mgr->name()});
     }
 
     return map;
@@ -140,9 +140,9 @@ class Stirling {
   std::vector<std::unique_ptr<DataTable>> tables_;
 
   /**
-   * Vector of all the Schemas.
+   * Vector of all the InfoClassManagers.
    */
-  std::vector<std::unique_ptr<InfoClassSchema>> schemas_;
+  std::vector<std::unique_ptr<InfoClassManager>> info_class_mgrs_;
 
   /**
    * Pointer the config unit that handles sub/pub with agent.

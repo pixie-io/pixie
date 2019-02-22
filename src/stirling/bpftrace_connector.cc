@@ -27,8 +27,7 @@ uint64_t BPFTraceConnector::ClockRealTimeOffset() {
 }
 
 BPFTraceConnector::BPFTraceConnector(const std::string& source_name,
-                                     const std::vector<InfoClassElement> elements,
-                                     const char* script)
+                                     const InfoClassSchema& elements, const char* script)
     : SourceConnector(SourceType::kEBPF, source_name, elements) {
   script_ = script;
 

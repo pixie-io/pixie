@@ -44,13 +44,17 @@ Status Stirling::AddSource(const std::string& name, std::unique_ptr<SourceConnec
   // Step 1: Init the source.
   PL_RETURN_IF_ERROR(source->Init());
 
-  // Step 2: Ask the Connector to populate the Schema.
-  auto schema = std::make_unique<InfoClassSchema>(name);
-  PL_CHECK_OK(source->PopulateSchema(schema.get()));
-  schema->SetSourceConnector(source.get());
-  schemas_.push_back(std::move(schema));
+  // TODO(oazizi): What if a Source has multiple InfoClasses?
+  auto mgr = std::make_unique<InfoClassManager>(name);
 
+  // Step 3: Ask the Connector to populate the Schema.
+  PL_CHECK_OK(source->PopulateSchema(mgr.get()));
+  mgr->SetSourceConnector(source.get());
+
+  // Step 5: Keep pointers to all the objects
   sources_.push_back(std::move(source));
+  info_class_mgrs_.push_back(std::move(mgr));
+
   return Status::OK();
 }
 
@@ -59,18 +63,19 @@ stirlingpb::Publish Stirling::GetPublishProto() { return config_->GeneratePublis
 Status Stirling::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
   // Update schemas based on the subscribe_proto.
   // TODO(kgandhi/oazizi) : Rethink implicit schemas_ update. May be move the update
-  // function into InfoClassSchema
+  // function into InfoClassManager
   PL_CHECK_OK(config_->UpdateSchemaFromSubscribe(subscribe_proto));
 
   // TODO(kgandhi/oazizi): Clear the tables based on new subscription.
 
   // Generate the tables required based on subscribed Elements.
-  for (const auto& schema : schemas_) {
-    auto data_table = std::make_unique<ColumnWrapperDataTable>(*schema);
-    schema->SetDataTable(data_table.get());
-    schema->SetSamplingPeriod(kDefaultSamplingPeriod);
+  for (const auto& mgr : info_class_mgrs_) {
+    auto data_table = std::make_unique<ColumnWrapperDataTable>(mgr->Schema());
+    mgr->SetDataTable(data_table.get());
+    mgr->SetSamplingPeriod(kDefaultSamplingPeriod);
     tables_.push_back(std::move(data_table));
   }
+
   return Status::OK();
 }
 
@@ -92,11 +97,11 @@ void Stirling::RunThread() {
   bool run = true;
   while (run) {
     // Run through every InfoClass being managed.
-    for (const auto& schema : schemas_) {
+    for (const auto& mgr : info_class_mgrs_) {
       // Phase 1: Probe each source for its data.
-      if (schema->SamplingRequired()) {
-        auto source = schema->GetSourceConnector();
-        auto data_table = schema->GetDataTable();
+      if (mgr->SamplingRequired()) {
+        auto source = mgr->GetSourceConnector();
+        auto data_table = mgr->GetDataTable();
 
         // Get pointer to data.
         // Source manages its own buffer as appropriate.
@@ -110,14 +115,14 @@ void Stirling::RunThread() {
       }
 
       // Phase 2: Push Data upstream.
-      if (schema->PushRequired()) {
-        auto data_table = schema->GetDataTable();
+      if (mgr->PushRequired()) {
+        auto data_table = mgr->GetDataTable();
 
         auto record_batches = data_table->GetColumnWrapperRecordBatches();
         auto record_batches_ptr_raw = record_batches.ValueOrDie().get();
         for (auto& record_batch : *record_batches_ptr_raw) {
           if (record_batch->size() > 0) {
-            agent_callback_(schema->id(), std::move(record_batch));
+            agent_callback_(mgr->id(), std::move(record_batch));
           }
         }
       }

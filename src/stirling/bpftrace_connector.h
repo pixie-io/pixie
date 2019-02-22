@@ -32,8 +32,8 @@ class BPFTraceConnector : public SourceConnector {
   virtual ~BPFTraceConnector() = default;
 
  protected:
-  explicit BPFTraceConnector(const std::string& source_name,
-                             const std::vector<InfoClassElement> elements, const char* script);
+  explicit BPFTraceConnector(const std::string& source_name, const InfoClassSchema& elements,
+                             const char* script);
 
   Status InitImpl() override;
 
@@ -64,7 +64,7 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
   static constexpr char kName[] = "CPU Stat Bpftrace connector";
 
   static std::unique_ptr<SourceConnector> Create() {
-    std::vector<InfoClassElement> elements = {
+    InfoClassSchema elements = {
         InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_SUBSCRIBED),
         InfoClassElement("cpustat_user", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
         InfoClassElement("cpustat_nice", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
@@ -81,8 +81,7 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
   }
 
  protected:
-  CPUStatBPFTraceConnector(const std::string& source_name,
-                           const std::vector<InfoClassElement> elements)
+  CPUStatBPFTraceConnector(const std::string& source_name, const InfoClassSchema& elements)
       : BPFTraceConnector(source_name, elements, kCPUStatBTScript) {}
 
  private:
