@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "src/carnot/plan/utils.h"
+#include "src/common/type_utils.h"
 
 namespace pl {
 namespace carnot {
@@ -14,10 +15,10 @@ TEST(OpToString, basic_tests) {
 }
 
 TEST(DataTypeToString, basic_tests) {
-  EXPECT_EQ("bool", ToString(types::BOOLEAN));
-  EXPECT_EQ("int64", ToString(types::INT64));
-  EXPECT_EQ("float64", ToString(types::FLOAT64));
-  EXPECT_EQ("string", ToString(types::STRING));
+  EXPECT_EQ("bool", types::ToString(types::BOOLEAN));
+  EXPECT_EQ("int64", types::ToString(types::INT64));
+  EXPECT_EQ("float64", types::ToString(types::FLOAT64));
+  EXPECT_EQ("string", types::ToString(types::STRING));
 }
 
 }  // namespace plan

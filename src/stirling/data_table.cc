@@ -6,6 +6,7 @@
 
 #include "src/common/error.h"
 #include "src/common/macros.h"
+#include "src/common/type_utils.h"
 #include "src/stirling/data_table.h"
 
 namespace pl {
@@ -13,22 +14,6 @@ namespace stirling {
 
 using carnot::udf::ColumnWrapper;
 using types::DataType;
-
-std::string DataTypeToString(DataType type) {
-  switch (type) {
-    case DataType::BOOLEAN:
-      return "BOOLEAN";
-    case DataType::INT64:
-      return "INT64";
-    case DataType::FLOAT64:
-      return "FLOAT64";
-    case DataType::STRING:
-      return "STRING";
-    default:
-      DCHECK(false) << "No ToString() for this DataType";
-      return "UNKNOWN";
-  }
-}
 
 DataTable::DataTable(enum TableType table_type, const InfoClassSchema& schema)
     : table_type_(table_type) {
@@ -89,6 +74,12 @@ Status ColumnWrapperDataTable::InitBuffers() {
   for (uint32_t field_idx = 0; field_idx < table_schema_->NumFields(); ++field_idx) {
     DataType type = (*table_schema_)[field_idx].type();
     switch (type) {
+      case DataType::TIME64NS: {
+        // TODO(oazizi): Convert this to TIME64NS when ColumnWrapper support is available.
+        auto col = ColumnWrapper::Make(DataType::INT64, 0);
+        col->Reserve(target_capacity_);
+        record_batch_->push_back(col);
+      } break;
       case DataType::INT64: {
         auto col = ColumnWrapper::Make(DataType::INT64, 0);
         col->Reserve(target_capacity_);
@@ -100,7 +91,7 @@ Status ColumnWrapperDataTable::InitBuffers() {
         record_batch_->push_back(col);
       } break;
       default:
-        return error::Unimplemented("Unrecognized type: $0", DataTypeToString(type));
+        return error::Unimplemented("Unrecognized type: $0", ToString(type));
     }
   }
 
@@ -119,6 +110,12 @@ Status ArrowDataTable::InitBuffers() {
   for (uint32_t field_idx = 0; field_idx < table_schema_->NumFields(); ++field_idx) {
     DataType type = (*table_schema_)[field_idx].type();
     switch (type) {
+      case DataType::TIME64NS: {
+        std::unique_ptr<arrow::ArrayBuilder> col = std::make_unique<arrow::Int64Builder>();
+        PL_RETURN_IF_ERROR(
+            arrow::MakeBuilder(mem_pool, arrow::time64(arrow::TimeUnit::NANO), &col));
+        arrow_arrays_->push_back(std::move(col));
+      } break;
       case DataType::INT64: {
         std::unique_ptr<arrow::ArrayBuilder> col = std::make_unique<arrow::Int64Builder>();
         PL_RETURN_IF_ERROR(arrow::MakeBuilder(mem_pool, arrow::int64(), &col));
@@ -130,7 +127,7 @@ Status ArrowDataTable::InitBuffers() {
         arrow_arrays_->push_back(std::move(col));
       } break;
       default:
-        return error::Unimplemented("Unrecognized type: $0", DataTypeToString(type));
+        return error::Unimplemented("Unrecognized type: $0", ToString(type));
     }
   }
 
@@ -153,6 +150,13 @@ Status ColumnWrapperDataTable::AppendData(uint8_t* const data, uint64_t num_rows
 
       DataType type = (*table_schema_)[field_idx].type();
       switch (type) {
+        case DataType::TIME64NS: {
+          auto* val_ptr = reinterpret_cast<int64_t*>(element_ptr);
+          // TODO(oazizi): Convert this to Time64ColumnWrapper support when available.
+          auto column = std::static_pointer_cast<carnot::udf::Int64ValueColumnWrapper>(
+              (*record_batch_)[field_idx]);
+          column->Append(*val_ptr);
+        } break;
         case DataType::INT64: {
           auto* val_ptr = reinterpret_cast<int64_t*>(element_ptr);
           auto column = std::static_pointer_cast<carnot::udf::Int64ValueColumnWrapper>(
@@ -166,7 +170,7 @@ Status ColumnWrapperDataTable::AppendData(uint8_t* const data, uint64_t num_rows
           column->Append(*val_ptr);
         } break;
         default:
-          return error::Unimplemented("Unrecognized type: $0", DataTypeToString(type));
+          return error::Unimplemented("Unrecognized type: $0", ToString(type));
       }
     }
 
@@ -188,6 +192,11 @@ Status ArrowDataTable::AppendData(uint8_t* const data, uint64_t num_rows) {
 
       DataType type = (*table_schema_)[field_idx].type();
       switch (type) {
+        case DataType::TIME64NS: {
+          auto* val_ptr = reinterpret_cast<int64_t*>(element_ptr);
+          auto* array = static_cast<arrow::Int64Builder*>((*arrow_arrays_)[field_idx].get());
+          PL_RETURN_IF_ERROR(array->Append(*val_ptr));
+        } break;
         case DataType::INT64: {
           auto* val_ptr = reinterpret_cast<int64_t*>(element_ptr);
           auto* array = static_cast<arrow::Int64Builder*>((*arrow_arrays_)[field_idx].get());
@@ -199,7 +208,7 @@ Status ArrowDataTable::AppendData(uint8_t* const data, uint64_t num_rows) {
           PL_RETURN_IF_ERROR(array->Append(*val_ptr));
         } break;
         default:
-          return error::Unimplemented("Unrecognized type: $0", DataTypeToString(type));
+          return error::Unimplemented("Unrecognized type: $0", ToString(type));
       }
     }
   }

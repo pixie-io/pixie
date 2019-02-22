@@ -65,7 +65,7 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
 
   static std::unique_ptr<SourceConnector> Create() {
     std::vector<InfoClassElement> elements = {
-        InfoClassElement("_time", DataType::INT64,
+        InfoClassElement("_time", DataType::TIME64NS,
                          Element_State::Element_State_COLLECTED_AND_SUBSCRIBED),
         InfoClassElement("cpustat_user", DataType::INT64,
                          Element_State::Element_State_COLLECTED_AND_SUBSCRIBED),

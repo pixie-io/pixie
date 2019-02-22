@@ -68,7 +68,7 @@ class BCCCPUMetricsConnector : public BCCConnector {
 
     // Create a vector of InfoClassElements.
     std::vector<InfoClassElement> elements = {
-        InfoClassElement("_time", DataType::INT64,
+        InfoClassElement("_time", DataType::TIME64NS,
                          Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
         InfoClassElement("cpu_id", DataType::INT64,
                          Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),

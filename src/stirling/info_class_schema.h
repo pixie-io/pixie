@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "src/common/status.h"
+#include "src/common/type_utils.h"
 #include "src/common/types/types.pb.h"
 #include "src/stirling/proto/collector_config.pb.h"
 
@@ -46,7 +47,7 @@ class InfoClassElement {
   const std::string& name() const { return name_; }
   const DataType& type() const { return type_; }
   const Element_State& state() const { return state_; }
-  size_t WidthBytes() const;
+  size_t WidthBytes() const { return pl::types::DataTypeWidthBytes(type_); }
 
   /**
    * @brief Generate a proto message based on the InfoClassElement.

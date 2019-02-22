@@ -11,7 +11,7 @@ namespace stirling {
 class SourceToTableTest : public ::testing::Test {
  protected:
   SourceToTableTest()
-      : elements_({InfoClassElement("_time", DataType::INT64,
+      : elements_({InfoClassElement("_time", DataType::TIME64NS,
                                     Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
                    InfoClassElement("system_percent", DataType::FLOAT64,
                                     Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),

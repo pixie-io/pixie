@@ -110,8 +110,7 @@ RawDataBuf BPFTraceConnector::GetDataImpl() {
     auto value_map = result_map.second;
 
     for (uint32_t i = 0; i < elements_.size(); ++i) {
-      // TODO(oazizi): Can we make this more robust? Perhaps if there was DataType::DATETIME.
-      if (elements_[i].name() == "_time") {
+      if (elements_[i].type() == DataType::TIME64NS) {
         data_buf_ptr[i] = value_map[i] + real_time_offset_;
       } else {
         data_buf_ptr[i] = value_map[i];

@@ -6,6 +6,7 @@
 
 #include "src/carnot/plan/relation.h"
 #include "src/carnot/plan/utils.h"
+#include "src/common/type_utils.h"
 
 namespace pl {
 namespace carnot {
@@ -58,7 +59,7 @@ std::string Relation::DebugString() const {
   CHECK(col_types_.size() == col_names_.size()) << "Mismatched col names/sizes";
   std::vector<string> col_info_as_str;
   for (size_t i = 0; i < col_types_.size(); ++i) {
-    col_info_as_str.push_back(col_names_[i] + ":" + ToString(col_types_[i]));
+    col_info_as_str.push_back(col_names_[i] + ":" + types::ToString(col_types_[i]));
   }
   return "[" + absl::StrJoin(col_info_as_str, ", ") + "]";
 }

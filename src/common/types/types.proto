@@ -11,4 +11,5 @@ enum DataType {
   INT64 = 2;
   FLOAT64 = 3;
   STRING = 4;
+  TIME64NS = 5;
 }

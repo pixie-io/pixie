@@ -16,7 +16,7 @@ class ProcStatConnector : public SourceConnector {
   virtual ~ProcStatConnector() = default;
   static std::unique_ptr<SourceConnector> Create() {
     std::vector<InfoClassElement> elements = {
-        InfoClassElement("_time", DataType::INT64,
+        InfoClassElement("_time", DataType::TIME64NS,
                          Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
         InfoClassElement("system_percent", DataType::FLOAT64,
                          Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
@@ -87,7 +87,7 @@ class FakeProcStatConnector : public ProcStatConnector {
   ~FakeProcStatConnector() = default;
   static std::unique_ptr<SourceConnector> Create() {
     std::vector<InfoClassElement> elements = {
-        InfoClassElement("_time", DataType::INT64,
+        InfoClassElement("_time", DataType::TIME64NS,
                          Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
         InfoClassElement("system_percent", DataType::FLOAT64,
                          Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
