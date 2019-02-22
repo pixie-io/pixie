@@ -81,20 +81,21 @@ StatusOr<carnotpb::Plan> Compiler::IRToLogicalPlan(const IR& ir) {
   plan_fragment->set_id(1);
   auto plan_fragment_dag = plan_fragment->mutable_dag();
 
-  IRWalker()
-      .OnMemorySink([&](const auto& mem_sink) {
-        return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, mem_sink);
-      })
-      .OnMemorySource([&](const auto& mem_src) {
-        return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, mem_src);
-      })
-      .OnMap([&](const auto& map) {
-        return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, map);
-      })
-      .OnAgg([&](const auto& agg) {
-        return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, agg);
-      })
-      .Walk(ir);
+  auto s = IRWalker()
+               .OnMemorySink([&](const auto& mem_sink) {
+                 return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, mem_sink);
+               })
+               .OnMemorySource([&](const auto& mem_src) {
+                 return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, mem_src);
+               })
+               .OnMap([&](const auto& map) {
+                 return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, map);
+               })
+               .OnAgg([&](const auto& agg) {
+                 return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, agg);
+               })
+               .Walk(ir);
+  PL_RETURN_IF_ERROR(s);
   return plan;
 }
 

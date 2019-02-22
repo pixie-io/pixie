@@ -55,6 +55,10 @@ Status MemorySourceIR::ToProto(carnotpb::Operator* op) const {
   DCHECK(table_node_->type() == IRNodeType::StringType);
   pb->set_name(static_cast<StringIR*>(table_node_)->str());
 
+  if (!columns_set()) {
+    return error::InvalidArgument("MemorySource columns are not set.");
+  }
+
   for (const auto& col : columns_) {
     pb->add_column_idxs(col->col_idx());
     pb->add_column_names(col->col_name());

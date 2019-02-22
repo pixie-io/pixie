@@ -56,12 +56,25 @@ TEST(IRWalker, basic_tests) {
   EXPECT_OK(graph->AddEdge(agg, sink));
 
   std::vector<int64_t> call_order;
-  IRWalker()
-      .OnMemorySink([&](auto& mem_sink) { call_order.push_back(mem_sink.id()); })
-      .OnMemorySource([&](auto& mem_src) { call_order.push_back(mem_src.id()); })
-      .OnMap([&](auto& map) { call_order.push_back(map.id()); })
-      .OnAgg([&](auto& agg) { call_order.push_back(agg.id()); })
-      .Walk(*graph);
+  auto s = IRWalker()
+               .OnMemorySink([&](auto& mem_sink) {
+                 call_order.push_back(mem_sink.id());
+                 return Status::OK();
+               })
+               .OnMemorySource([&](auto& mem_src) {
+                 call_order.push_back(mem_src.id());
+                 return Status::OK();
+               })
+               .OnMap([&](auto& map) {
+                 call_order.push_back(map.id());
+                 return Status::OK();
+               })
+               .OnAgg([&](auto& agg) {
+                 call_order.push_back(agg.id());
+                 return Status::OK();
+               })
+               .Walk(*graph);
+  EXPECT_OK(s);
   EXPECT_EQ(std::vector<int64_t>({0, 2, 3, 4}), call_order);
 }
 

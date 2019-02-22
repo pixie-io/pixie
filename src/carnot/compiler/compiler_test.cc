@@ -56,32 +56,37 @@ dag {
 nodes {
   id: 1
   dag {
-    nodes { sorted_deps: 3 }
-    nodes { id: 3 sorted_deps: 5 }
-    nodes { id: 5 sorted_deps: 8 }
-    nodes { id: 8 }
+    nodes { sorted_deps: 4 }
+    nodes { id: 4 sorted_deps: 6 }
+    nodes { id: 6 sorted_deps: 9 }
+    nodes { id: 9 }
   }
   nodes {
     id: 0
     op {
       op_type: MEMORY_SOURCE_OPERATOR
-      mem_source_op { name: "test_table" }
+      mem_source_op {
+        name: "test_table"
+        column_idxs: 0
+        column_names: "test_col"
+        column_types: FLOAT64
+      }
     }
   }
   nodes {
-    id: 3
+    id: 4
     op {
       op_type: MAP_OPERATOR map_op { }
     }
   }
   nodes {
-    id: 5
+    id: 6
     op {
       op_type: BLOCKING_AGGREGATE_OPERATOR blocking_agg_op { }
     }
   }
   nodes {
-    id: 8
+    id: 9
     op {
       op_type: MEMORY_SINK_OPERATOR mem_sink_op { name: "sink" }
     }
@@ -99,6 +104,11 @@ TEST(CompilerTest, to_logical_plan) {
   auto select = graph->MakeNode<ListIR>().ValueOrDie();
   EXPECT_OK(table_node->Init("test_table"));
   EXPECT_OK(src->Init(table_node, select));
+  auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
+  EXPECT_OK(col->Init("test_col"));
+  col->SetColumnIdx(0);
+  col->SetColumnType(types::DataType::FLOAT64);
+  src->SetColumns(std::vector<ColumnIR *>({col}));
   auto map = graph->MakeNode<MapIR>().ValueOrDie();
   auto map_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(map->Init(src, map_lambda));

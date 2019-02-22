@@ -23,7 +23,13 @@ class PlanWalkerTest : public ::testing::Test {
 TEST_F(PlanWalkerTest, basic_tests) {
   EXPECT_EQ(plan_.nodes().at(1)->id(), 1);
   std::vector<int64_t> pf_order;
-  PlanWalker().OnPlanFragment([&](auto* pf) { pf_order.push_back(pf->id()); }).Walk(&plan_);
+  auto s = PlanWalker()
+               .OnPlanFragment([&](auto* pf) {
+                 pf_order.push_back(pf->id());
+                 return Status::OK();
+               })
+               .Walk(&plan_);
+  EXPECT_OK(s);
   EXPECT_EQ(std::vector<int64_t>({1, 2, 3, 4, 5}), pf_order);
 }
 

@@ -10,18 +10,19 @@ namespace pl {
 namespace carnot {
 namespace plan {
 
-void PlanWalker::CallWalkFn(PlanFragment *pf) { on_plan_fragment_walk_fn_(pf); }
+Status PlanWalker::CallWalkFn(PlanFragment *pf) { return on_plan_fragment_walk_fn_(pf); }
 
-void PlanWalker::Walk(Plan *plan) {
+Status PlanWalker::Walk(Plan *plan) {
   auto plan_fragments = plan->dag().TopologicalSort();
   for (const auto &node_id : plan_fragments) {
     auto node = plan->nodes().find(node_id);
     if (node == plan->nodes().end()) {
       LOG(WARNING) << absl::StrCat("Could not find node in plan.");
     } else {
-      CallWalkFn(node->second.get());
+      PL_RETURN_IF_ERROR(CallWalkFn(node->second.get()));
     }
   }
+  return Status::OK();
 }
 
 }  // namespace plan

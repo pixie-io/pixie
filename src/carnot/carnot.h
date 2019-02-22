@@ -37,6 +37,8 @@ class Carnot : public NotCopyable {
    */
   void AddTable(const std::string& table_name, std::shared_ptr<exec::Table> table);
 
+  exec::Table* GetTable(const std::string& table_name);
+
   /**
    * Executes the given query.
    *

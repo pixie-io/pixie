@@ -514,7 +514,7 @@ class AggIR : public OperatorIR {
 class IRWalker {
  public:
   template <typename TOp>
-  using NodeWalkFn = std::function<void(const TOp&)>;
+  using NodeWalkFn = std::function<Status(const TOp&)>;
 
   using MemorySourceWalkFn = NodeWalkFn<MemorySourceIR>;
   using MapWalkFn = NodeWalkFn<MapIR>;
@@ -565,26 +565,27 @@ class IRWalker {
    * Perform a walk of the operators in the IR graph in a topologically-sorted order.
    * @param ir_graph The IR graph to walk.
    */
-  void Walk(const IR& ir_graph) {
+  Status Walk(const IR& ir_graph) {
     auto operators = ir_graph.dag().TopologicalSort();
     for (const auto& node_id : operators) {
       auto node = ir_graph.Get(node_id);
       if (node->IsOp()) {
-        CallWalkFn(*node);
+        PL_RETURN_IF_ERROR(CallWalkFn(*node));
       }
     }
+    return Status::OK();
   }
 
  private:
   template <typename T, typename TWalkFunc>
-  void CallAs(const TWalkFunc& fn, const IRNode& node) {
+  Status CallAs(const TWalkFunc& fn, const IRNode& node) {
     if (!fn) {
       VLOG(google::WARNING) << "fn does not exist";
     }
     return fn(static_cast<const T&>(node));
   }
 
-  void CallWalkFn(const IRNode& node) {
+  Status CallWalkFn(const IRNode& node) {
     const auto op_type = node.type();
     switch (op_type) {
       case IRNodeType::MemorySourceType:
@@ -603,6 +604,7 @@ class IRWalker {
         LOG(WARNING) << absl::StrFormat("IRNode %s does not exist for CallWalkFn",
                                         node.type_string());
     }
+    return Status::OK();
   }
 
   MemorySourceWalkFn memory_source_walk_fn_;

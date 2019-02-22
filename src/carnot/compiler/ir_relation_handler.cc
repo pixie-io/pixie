@@ -283,8 +283,27 @@ Status IRRelationHandler::SetSourceRelation(IRNode* node) {
   }
   PL_ASSIGN_OR_RETURN(auto select_relation, SelectColumnsFromRelation(columns, table_relation));
 
+  PL_ASSIGN_OR_RETURN(auto cols, GetColumnsFromRelation(node, columns, table_relation));
+  mem_node->SetColumns(cols);
   return mem_node->SetRelation(select_relation);
 }
+
+StatusOr<std::vector<ColumnIR*>> IRRelationHandler::GetColumnsFromRelation(
+    IRNode* node, std::vector<std::string> cols, const plan::Relation& relation) {
+  auto graph = node->graph_ptr();
+  auto result = std::vector<ColumnIR*>();
+  for (size_t i = 0; i < relation.NumColumns(); i++) {
+    if (std::find(cols.begin(), cols.end(), relation.GetColumnName(i)) != cols.end()) {
+      PL_ASSIGN_OR_RETURN(auto col_node, graph->MakeNode<ColumnIR>());
+      PL_RETURN_IF_ERROR(col_node->Init(relation.GetColumnName(i)));
+      col_node->SetColumnIdx(i);
+      col_node->SetColumnType(relation.GetColumnType(i));
+      result.push_back(col_node);
+    }
+  }
+  return result;
+}
+
 Status IRRelationHandler::SetAllSourceRelations(IR* ir_graph) {
   for (auto& i : ir_graph->dag().TopologicalSort()) {
     auto node = ir_graph->Get(i);

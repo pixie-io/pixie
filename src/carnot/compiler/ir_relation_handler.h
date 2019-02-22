@@ -106,6 +106,9 @@ class IRRelationHandler {
   Status SetAllSourceRelations(IR* ir_graph);
   StatusOr<plan::Relation> SelectColumnsFromRelation(const std::vector<std::string>& columns,
                                                      const plan::Relation& relation);
+  StatusOr<std::vector<ColumnIR*>> GetColumnsFromRelation(IRNode* node,
+                                                          std::vector<std::string> cols,
+                                                          const plan::Relation& relation);
 
   /** Variables **/
   RegistryInfo registry_info_;

@@ -36,6 +36,7 @@ Status RegistryInfo::Init(const carnotpb::UDFInfo info) {
     for (int64_t i = 0; i < udf.exec_arg_types_size(); i++) {
       arg_types.push_back(udf.exec_arg_types(i));
     }
+
     auto key = RegistryKey(udf.name(), arg_types);
     udf_map_[key] = udf.return_type();
   }
