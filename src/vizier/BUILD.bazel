@@ -1,0 +1,14 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary")
+
+pl_cc_binary(
+    name = "vizier",
+    srcs = glob(
+        ["*.cc"],
+        exclude = ["**/*_test.cc"],
+    ),
+    deps = [
+        "//src/common:common"
+    ]
+)

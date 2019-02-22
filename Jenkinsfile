@@ -23,7 +23,7 @@ final String BAZEL_SRC_FILES_PATH = "//src/... //throwaway/..."
 // ASAN/TSAN only work for CC code.
 // TODO(zasgar): We should fix this after GO ASAN/TSAN works to include that
 // and remove the directory restriction.
-final String BAZEL_CC_SRC_FILES_PATH = "//src/carnot/... //src/stirling/..."
+final String BAZEL_CC_SRC_FILES_PATH = "//src/carnot/... //src/stirling/... //src/agent/... //src/vizier/..."
 
 // Sometimes docker fetches fail, so we just do a retry. This can be optimized to just
 // retry on docker failues, but not worth it now.
