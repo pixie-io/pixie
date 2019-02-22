@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package pl.statuspb;
+import "src/common/codes/error_codes.proto";
+
+option go_package = "statuspb";
+
+
+// This is the proto representation of a status.
+message Status {
+  pl.error.Code err_code = 1;
+  string msg = 2;
+}

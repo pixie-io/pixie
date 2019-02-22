@@ -30,7 +30,7 @@ Status MacroTestFn(const Status& s) {
   return Status::OK();
 }
 
-TEST(status, pl_return_if_error_test) {
+TEST(Status, pl_return_if_error_test) {
   EXPECT_EQ(Status::OK(), MacroTestFn(Status::OK()));
 
   auto err_status = Status(pl::error::UNKNOWN, "an error");
@@ -48,6 +48,24 @@ TEST(status, pl_return_if_error_test) {
   };
   EXPECT_OK(test_fn());
   EXPECT_EQ(1, call_count);
+}
+
+TEST(Status, to_proto) {
+  Status s1(pl::error::UNKNOWN, "error 1");
+  auto pb1 = s1.ToProto();
+  EXPECT_EQ(pl::error::UNKNOWN, pb1.err_code());
+  EXPECT_EQ("error 1", pb1.msg());
+
+  Status s2(pl::error::INVALID_ARGUMENT, "error 2");
+  auto pb2 = s2.ToProto();
+  EXPECT_EQ(pl::error::INVALID_ARGUMENT, pb2.err_code());
+  EXPECT_EQ("error 2", pb2.msg());
+}
+
+TEST(StatusAdapter, from_proto) {
+  Status s1(pl::error::UNKNOWN, "error 1");
+  auto pb1 = s1.ToProto();
+  EXPECT_EQ(s1, StatusAdapter(pb1));
 }
 
 }  // namespace pl

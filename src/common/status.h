@@ -6,6 +6,7 @@
 
 #include "src/common/codes/error_codes.pb.h"
 #include "src/common/macros.h"
+#include "src/common/proto/status.pb.h"
 
 namespace pl {
 
@@ -34,6 +35,8 @@ class PL_MUST_USE_RESULT Status {
   std::string ToString() const;
 
   static Status OK() { return Status(); }
+
+  pl::statuspb::Status ToProto();
 
  private:
   struct State {
@@ -81,6 +84,12 @@ template <>
 inline Status StatusAdapter<Status>(const Status& s) noexcept {
   return s;
 }
+
+// Conversion of proto status message.
+template <>
+inline Status StatusAdapter<pl::statuspb::Status>(const pl::statuspb::Status& s) noexcept {
+  return Status(s.err_code(), s.msg());
+};
 
 }  // namespace pl
 

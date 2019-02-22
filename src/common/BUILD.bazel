@@ -9,7 +9,10 @@ pl_cc_library_internal(
         exclude = ["**/*_test.cc"],
     ),
     hdrs = glob(["*.h"]),
-    deps = ["//src/common/codes:error_codes_cc_proto"],
+    deps = [
+        "//src/common/codes:error_codes_cc_proto",
+        "//src/common/proto:status_cc_proto",
+    ],
 )
 
 pl_cc_test(

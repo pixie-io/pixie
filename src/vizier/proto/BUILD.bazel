@@ -1,0 +1,37 @@
+# gazelle:ignore
+
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+
+proto_library(
+    name = "service_proto",
+    srcs = ["service.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
+        "//src/utils/proto:utils_proto",
+        "//src/common/codes:error_codes_proto",
+        "//src/common/proto:status_proto",
+    ],
+)
+
+go_proto_library(
+    name = "service_go_proto",
+    compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
+    importpath = "pixielabs.ai/pixielabs/src/vizier/proto",
+    proto = ":service_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_gogo_protobuf//gogoproto:go_default_library",
+        "//src/utils/proto:utils_go_proto",
+        "//src/common/codes:error_codes_go_proto",
+        "//src/common/proto:status_go_proto",
+
+    ],
+)
+
+cc_proto_library(
+    name = "service_cc_proto",
+    visibility = ["//visibility:public"],
+    deps = [":service_proto"],
+)

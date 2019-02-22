@@ -21,4 +21,15 @@ std::string Status::ToString() const {
   return pl::error::CodeToString(code()) + " : " + state_->msg;
 }
 
+pl::statuspb::Status Status::ToProto() {
+  pl::statuspb::Status spb;
+  if (state_ == nullptr) {
+    spb.set_err_code(error::Code::OK);
+    return spb;
+  }
+  spb.set_msg(state_->msg);
+  spb.set_err_code(state_->code);
+  return spb;
+}
+
 }  // namespace pl
