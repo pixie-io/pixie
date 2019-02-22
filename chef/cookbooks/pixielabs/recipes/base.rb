@@ -11,6 +11,11 @@ execute 'install_python_packages' do
   command 'pip3 install flake8 flake8-mypy setuptools'
 end
 
+# pyyaml is needed by clang-tidy
+execute 'install_python2_packages' do
+  command 'pip install pyyaml'
+end
+
 include_recipe 'pixielabs::phabricator'
 include_recipe 'pixielabs::nodejs'
 

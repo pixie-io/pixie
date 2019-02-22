@@ -14,6 +14,7 @@ RUN svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_700/final llvm
 WORKDIR /llvm_all/llvm/tools
 RUN svn co http://llvm.org/svn/llvm-project/cfe/tags/RELEASE_700/final clang
 RUN svn co http://llvm.org/svn/llvm-project/lldb/tags/RELEASE_700/final lldb
+RUN svn co http://llvm.org/svn/llvm-project/clang-tools-extra/tags/RELEASE_700/final clang/tools/extra
 
 WORKDIR /llvm_all/llvm/projects
 RUN svn co http://llvm.org/svn/llvm-project/compiler-rt/tags/RELEASE_700/final compiler-rt
@@ -44,6 +45,6 @@ RUN cp -a /llvm_all/build/lib/libclang.a /opt/clang-7.0/lib
 
 WORKDIR /opt/clang-7.0
 VOLUME /image
-ENV deb_name clang-7.0-pl7.deb
+ENV deb_name clang-7.0-pl8.deb
 CMD ["sh", "-c",  "fpm -p /image/${deb_name} \
-        -s dir -t deb -n clang-7.0 -v 7.0-pl7 --prefix /opt/clang-7.0 ."]
+        -s dir -t deb -n clang-7.0 -v 7.0-pl8 --prefix /opt/clang-7.0 ."]

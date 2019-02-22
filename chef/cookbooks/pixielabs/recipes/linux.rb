@@ -11,6 +11,7 @@ apt_pkg_list = [
   'php',
   'php-curl',
   'python',
+  'python-pip',
   'python3-pip',
   'python3.6',
   'python3.6-dev',
