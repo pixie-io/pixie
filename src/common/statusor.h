@@ -162,11 +162,6 @@ void StatusOr<T>::CheckValueNotNull(const T& value) {
   }
 }
 
-template <typename T>
-inline Status StatusAdapter(const StatusOr<T>& s) noexcept {
-  return Status(s.status());
-};
-
 // Internal helper for concatenating macro values.
 #define PL_STATUS_MACROS_CONCAT_NAME_INNER(x, y) x##y
 #define PL_STATUS_MACROS_CONCAT_NAME(x, y) PL_STATUS_MACROS_CONCAT_NAME_INNER(x, y)
@@ -180,5 +175,11 @@ inline Status StatusAdapter(const StatusOr<T>& s) noexcept {
 
 #define PL_ASSIGN_OR_RETURN(lhs, rexpr) \
   PL_ASSIGN_OR_RETURN_IMPL(PL_CONCAT_NAME(__status_or_value__, __COUNTER__), lhs, rexpr)
+
+// Adapter for status.
+template <typename T>
+inline Status StatusAdapter(const StatusOr<T>& s) noexcept {
+  return s.status();
+}
 
 }  // namespace pl

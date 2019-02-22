@@ -71,19 +71,31 @@ inline bool Status::operator==(const Status& x) const {
 
 inline bool Status::operator!=(const Status& x) const { return !(*this == x); }
 
-inline Status StatusAdapter(const Status& s) noexcept { return Status(s); };
+template <typename T>
+inline Status StatusAdapter(const T&) noexcept {
+  static_assert(sizeof(T) == 0, "Implement custom status adapter, or include correct .h file.");
+  return Status(error::UNIMPLEMENTED, "Should never get here");
+}
+
+template <>
+inline Status StatusAdapter<Status>(const Status& s) noexcept {
+  return s;
+}
 
 }  // namespace pl
 
+#define PL_RETURN_IF_ERROR_IMPL(__status_name__, __status) \
+  do {                                                     \
+    const auto& __status_name__ = (__status);              \
+    if (!__status_name__.ok()) {                           \
+      return StatusAdapter(__status_name__);               \
+    }                                                      \
+  } while (false)
+
 // Early-returns the status if it is in error; otherwise, proceeds.
 // The argument expression is guaranteed to be evaluated exactly once.
-#define PL_RETURN_IF_ERROR(__status)                     \
-  do {                                                   \
-    ::pl::Status status = ::pl::StatusAdapter(__status); \
-    if (!status.ok()) {                                  \
-      return status;                                     \
-    }                                                    \
-  } while (false)
+#define PL_RETURN_IF_ERROR(__status) \
+  PL_RETURN_IF_ERROR_IMPL(PL_CONCAT_NAME(__status__, __COUNTER__), __status)
 
 #define EXPECT_OK(value) EXPECT_TRUE((value).status().ok())
 

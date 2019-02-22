@@ -16,17 +16,12 @@
 
 namespace pl {
 
-/**
- * This functions adapts arrow Status and converts it to pl::Status.
- * TODO(zasgar): PL-276 - We should make this part of the status constructor defined
- * out-of-line.
+/*
+ * Status adapter for arrow.
  */
-inline Status StatusAdapter(const arrow::Status& s) {
-  if (s.ok()) {
-    return Status::OK();
-  }
-  // TODO(zasgar): PL-276 - Finish mapping.
-  return error::Unknown(s.message());
+template <>
+inline Status StatusAdapter<arrow::Status>(const arrow::Status& s) noexcept {
+  return Status(error::UNKNOWN, s.message());
 }
 
 namespace carnot {
