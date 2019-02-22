@@ -79,7 +79,7 @@ def generateLaunchSegments(lldb_mode, target, output_base):
         }]
     else:
         return [{
-            'name': '(lldb) Launch {0}'.format(target),
+            'name': '(lldb-mi) Launch {0}'.format(target),
             'type': 'cppdbg',
             'request': 'launch',
             'program': '{0}/bazel-bin/{1}'.format('${workspaceFolder}',
@@ -136,7 +136,6 @@ def main():
         'command': 'python',
         'args': [
             '${workspaceFolder}/scripts/generate_vscode_tasks.py',
-            '--lldb'
         ],
         'group': 'build'
     }]
