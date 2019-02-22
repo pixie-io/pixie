@@ -61,6 +61,7 @@ class BPFTraceConnector : public SourceConnector {
 class CPUStatBPFTraceConnector : public BPFTraceConnector {
  public:
   static constexpr SourceType source_type = SourceType::kEBPF;
+  static constexpr char kName[] = "CPU Stat Bpftrace connector";
 
   static std::unique_ptr<SourceConnector> Create() {
     std::vector<InfoClassElement> elements = {
@@ -81,8 +82,7 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
         InfoClassElement("cpustat_softirq", DataType::INT64,
                          Element_State::Element_State_COLLECTED_AND_SUBSCRIBED)};
 
-    return std::unique_ptr<SourceConnector>(
-        new CPUStatBPFTraceConnector("CPU Stat Bpftrace connector", elements));
+    return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(kName, elements));
   }
 
  protected:

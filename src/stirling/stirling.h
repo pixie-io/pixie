@@ -41,7 +41,7 @@ class Stirling {
   Status CreateSourceConnectors();
 
   /**
-   * Register call-back from Agent. Used to periodically send data.
+   * @brief Register call-back from Agent. Used to periodically send data.
    *
    * Function signature is:
    *   uint64_t table_id
@@ -50,6 +50,20 @@ class Stirling {
   void RegisterCallback(
       std::function<void(uint64_t, std::unique_ptr<ColumnWrapperRecordBatch>)> f) {
     agent_callback_ = f;
+  }
+
+  //TODO(oazizi): Get rid of this eventually?
+  /**
+   * @brief Return a map of table ID to schema names.
+   */
+  std::unordered_map<uint64_t, std::string> TableIDToNameMap() {
+    std::unordered_map<uint64_t, std::string> map;
+
+    for (auto& schema : schemas_) {
+      map.insert({schema->id(), schema->name()});
+    }
+
+    return map;
   }
 
   /**

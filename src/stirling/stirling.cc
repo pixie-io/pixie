@@ -94,12 +94,7 @@ void Stirling::RunThread() {
         auto record_batches_ptr_raw = record_batches.ValueOrDie().get();
         for (auto& record_batch : *record_batches_ptr_raw) {
           if (record_batch->size() > 0) {
-            // Get num_records
-            // Note: Implicit assumption (not checked here) is that all columns have the same size
-            auto col0 = (*record_batch)[0];
-            uint64_t num_records = col0->Size();
-
-            agent_callback_(num_records, std::move(record_batch));
+            agent_callback_(schema->id(), std::move(record_batch));
           }
         }
       }

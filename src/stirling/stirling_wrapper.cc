@@ -22,9 +22,13 @@ using pl::stirling::ColumnWrapperRecordBatch;
 using pl::stirling::CPUStatBPFTraceConnector;
 using pl::stirling::FakeProcStatConnector;
 
-void StirlingWrapperCallback(uint64_t num_records,
-                             std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
+std::unordered_map<uint64_t, std::string> table_id_to_name_map;
+
+void PrintCPUStatBPFTraceRecordBatch(uint64_t num_records,
+                                     std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
   for (uint32_t i = 0; i < num_records; ++i) {
+    std::cout << "[CPUStatsBPFTrace] ";
+
     uint32_t j = 0;
     for (SharedColumnWrapper col : *record_batch) {
       auto typedCol = std::static_pointer_cast<Int64ValueColumnWrapper>(col);
@@ -43,14 +47,29 @@ void StirlingWrapperCallback(uint64_t num_records,
   std::cout << std::endl;
 }
 
+void StirlingWrapperCallback(uint64_t table_id,
+                             std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
+  // Note: Implicit assumption (not checked here) is that all columns have the same size
+  uint64_t num_records = (*record_batch)[0]->Size();
+
+  std::string name = table_id_to_name_map[table_id];
+
+  // Uses InfoClassSchema names, which come from Registry.
+  // So use Registry names here.
+  if (name == "CPU stats bpftrace source") {
+    PrintCPUStatBPFTraceRecordBatch(num_records, std::move(record_batch));
+  }
+  // TODO(oazizi): May want to implement this at some point.
+  // else {
+  //  std::cout << "[" << name << "] <TODO: print out data>" << std::endl;
+  //}
+}
+
 std::unique_ptr<SourceRegistry> CreateRegistry() {
   // Create a registry of sources;
   std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>("fake_news");
 
-  // bpftrace source
-  registry->RegisterOrDie<CPUStatBPFTraceConnector>("CPU stats bpftrace source");
-
-  // RegisterAllSources(registry.get());
+  RegisterAllSources(registry.get());
 
   std::cout << "Registered sources: " << std::endl;
   auto registered_sources = registry->sources_map();
@@ -75,6 +94,9 @@ int main(int argc, char** argv) {
 
   // TODO(oazizi): Should this automatically be done by the constructor?
   PL_CHECK_OK(data_collector.CreateSourceConnectors());
+
+  // Get a map from InfoClassSchema names to Table IDs
+  table_id_to_name_map = data_collector.TableIDToNameMap();
 
   // Set a dummy callback function (normally this would be in the agent).
   data_collector.RegisterCallback(StirlingWrapperCallback);
