@@ -74,3 +74,11 @@ pl_cc_test(
         "@com_google_farmhash//:farmhash",
     ],
 )
+
+pl_cc_test(
+    name = "sole_test",
+    srcs = ["sole_test.cc"],
+    deps = [
+        "@com_github_rlyeh_sole//:sole",
+    ],
+)

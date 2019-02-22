@@ -124,7 +124,6 @@ pl_cc_test(
     ],
 )
 
-
 pl_cc_test(
     name = "table_store_test",
     srcs = ["table_store_test.cc"],

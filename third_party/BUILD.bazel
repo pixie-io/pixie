@@ -130,12 +130,12 @@ pl_cc_library(
         "bpftrace/src/arch",
         "bpftrace/src/ast",
     ],
+    tags = ["linux_only"],
     visibility = ["//visibility:public"],
     deps = [
         ":bpftrace-arch",
         ":bpftrace-ast",
     ],
-    tags = ["linux_only"],
 )
 
 pl_cc_library(
@@ -167,13 +167,13 @@ pl_cc_library(
         "-Ithird_party/bpftrace/src/ast",
         "-Ithird_party/bpftrace/src",
     ],
+    tags = ["linux_only"],
     visibility = ["//visibility:private"],
     deps = [
         ":bpftrace-parser",
         "@com_iovisor_bcc//:bcc",
         "@com_llvm_lib//:llvm",
     ],
-    tags = ["linux_only"],    
 )
 
 pl_cc_library(
@@ -195,7 +195,7 @@ pl_cc_library(
     ],
     #Hacky, but otherwise can't find parser.tab.hh.
     includes = ["."],
-    tags = ["linux_only"],    
+    tags = ["linux_only"],
 )
 
 genbison(

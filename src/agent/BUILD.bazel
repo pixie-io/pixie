@@ -9,6 +9,6 @@ pl_cc_binary(
         exclude = ["**/*_test.cc"],
     ),
     deps = [
-        "//src/common:common"
-    ]
+        "//src/common",
+    ],
 )

@@ -12,8 +12,8 @@ pl_cc_library(
     deps = [
         "//src/carnot/builtins:cc_library",
         "//src/carnot/compiler:cc_library",
-        "//src/carnot/plan:cc_library",
         "//src/carnot/exec:cc_library",
+        "//src/carnot/plan:cc_library",
         "//src/carnot/proto:plan_cc_proto",
         "//src/carnot/proto:udfs_cc_proto",
         "//src/carnot/udf:cc_library",

@@ -42,6 +42,11 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "glog-781096619d3dd368cfebd33889e417a168493ce7",
         urls = ["https://github.com/google/glog/archive/781096619d3dd368cfebd33889e417a168493ce7.tar.gz"],
     ),
+    com_github_rlyeh_sole = dict(
+        sha256 = "0e2d2d280e6847b3301c7302b7924e2841f517985cb189ce0fb94aa9fb5a17c7",
+        strip_prefix = "sole-653a25ad03775d7e0a2d50142160795723915ba6",
+        urls = ["https://github.com/r-lyeh-archived/sole/archive/653a25ad03775d7e0a2d50142160795723915ba6.tar.gz"],
+    ),
     com_google_absl = dict(
         sha256 = "e35082e88b9da04f4d68094c05ba112502a5063712f3021adfa465306d238c76",
         strip_prefix = "abseil-cpp-cc8dcd307b76a575d2e3e0958a4fe4c7193c2f68",

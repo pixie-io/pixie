@@ -80,8 +80,8 @@ pl_cc_test(
     srcs = ["bpftrace_connector_test.cc"],
     tags = [
         "linux_only",
-        "requires_root",
         "requires_bpf",
+        "requires_root",
     ],
     deps = [":cc_library"],
 )

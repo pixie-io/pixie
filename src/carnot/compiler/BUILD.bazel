@@ -10,8 +10,8 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/carnot/plan:cc_library",
         "//src/carnot/exec:cc_library",
+        "//src/carnot/plan:cc_library",
         "//src/carnot/proto:plan_cc_proto",
         "//src/carnot/udf:cc_library",
         "//third_party:libpypa",
@@ -51,8 +51,10 @@ pl_cc_test(
 pl_cc_test(
     name = "compiler_test",
     srcs = ["compiler_test.cc"],
-    deps = [":cc_library",
-            "//src/carnot/proto:plan_cc_proto",],
+    deps = [
+        ":cc_library",
+        "//src/carnot/proto:plan_cc_proto",
+    ],
 )
 
 pl_cc_test(
