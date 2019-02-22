@@ -16,14 +16,13 @@ class ProcStatConnector : public SourceConnector {
   virtual ~ProcStatConnector() = default;
   static std::unique_ptr<SourceConnector> Create() {
     std::vector<InfoClassElement> elements = {
-        InfoClassElement("_time", DataType::TIME64NS,
-                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+        InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_SUBSCRIBED),
         InfoClassElement("system_percent", DataType::FLOAT64,
-                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+                         Element_State::Element_State_SUBSCRIBED),
         InfoClassElement("user_percent", DataType::FLOAT64,
-                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+                         Element_State::Element_State_SUBSCRIBED),
         InfoClassElement("idle_percent", DataType::FLOAT64,
-                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED)};
+                         Element_State::Element_State_SUBSCRIBED)};
     return std::unique_ptr<SourceConnector>(new ProcStatConnector("proc_stat", elements));
   }
 
@@ -87,14 +86,13 @@ class FakeProcStatConnector : public ProcStatConnector {
   ~FakeProcStatConnector() = default;
   static std::unique_ptr<SourceConnector> Create() {
     std::vector<InfoClassElement> elements = {
-        InfoClassElement("_time", DataType::TIME64NS,
-                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+        InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_NOT_SUBSCRIBED),
         InfoClassElement("system_percent", DataType::FLOAT64,
-                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+                         Element_State::Element_State_NOT_SUBSCRIBED),
         InfoClassElement("user_percent", DataType::FLOAT64,
-                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+                         Element_State::Element_State_NOT_SUBSCRIBED),
         InfoClassElement("idle_percent", DataType::FLOAT64,
-                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED)};
+                         Element_State::Element_State_NOT_SUBSCRIBED)};
     return std::unique_ptr<SourceConnector>(new FakeProcStatConnector("fake_proc_stat", elements));
   }
 

@@ -65,22 +65,17 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
 
   static std::unique_ptr<SourceConnector> Create() {
     std::vector<InfoClassElement> elements = {
-        InfoClassElement("_time", DataType::TIME64NS,
-                         Element_State::Element_State_COLLECTED_AND_SUBSCRIBED),
-        InfoClassElement("cpustat_user", DataType::INT64,
-                         Element_State::Element_State_COLLECTED_AND_SUBSCRIBED),
-        InfoClassElement("cpustat_nice", DataType::INT64,
-                         Element_State::Element_State_COLLECTED_AND_SUBSCRIBED),
+        InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_SUBSCRIBED),
+        InfoClassElement("cpustat_user", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
+        InfoClassElement("cpustat_nice", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
         InfoClassElement("cpustat_system", DataType::INT64,
-                         Element_State::Element_State_COLLECTED_AND_SUBSCRIBED),
-        InfoClassElement("cpustat_idle", DataType::INT64,
-                         Element_State::Element_State_COLLECTED_AND_SUBSCRIBED),
+                         Element_State::Element_State_SUBSCRIBED),
+        InfoClassElement("cpustat_idle", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
         InfoClassElement("cpustat_iowait", DataType::INT64,
-                         Element_State::Element_State_COLLECTED_AND_SUBSCRIBED),
-        InfoClassElement("cpustat_irq", DataType::INT64,
-                         Element_State::Element_State_COLLECTED_AND_SUBSCRIBED),
+                         Element_State::Element_State_SUBSCRIBED),
+        InfoClassElement("cpustat_irq", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
         InfoClassElement("cpustat_softirq", DataType::INT64,
-                         Element_State::Element_State_COLLECTED_AND_SUBSCRIBED)};
+                         Element_State::Element_State_SUBSCRIBED)};
 
     return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(kName, elements));
   }

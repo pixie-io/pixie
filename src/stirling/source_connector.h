@@ -82,7 +82,7 @@ class SourceConnector : public NotCopyable {
 
  protected:
   explicit SourceConnector(SourceType type, const std::string& source_name,
-                           const std::vector<InfoClassElement> elements)
+                           const std::vector<InfoClassElement>& elements)
       : elements_(elements), type_(type), source_name_(source_name) {}
 
   virtual Status InitImpl() = 0;

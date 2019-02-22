@@ -10,6 +10,20 @@
 namespace pl {
 namespace stirling {
 
+stirlingpb::Subscribe SubscribeToAllElements(const stirlingpb::Publish& publish_proto) {
+  stirlingpb::Subscribe subscribe_proto;
+
+  for (int i = 0; i < publish_proto.published_info_classes_size(); ++i) {
+    auto sub_info_class = subscribe_proto.add_subscribed_info_classes();
+    sub_info_class->MergeFrom(publish_proto.published_info_classes(i));
+    for (int j = 0; j < sub_info_class->elements_size(); ++j) {
+      auto element = sub_info_class->mutable_elements(j);
+      element->set_state(stirlingpb::Element_State::Element_State_SUBSCRIBED);
+    }
+  }
+  return subscribe_proto;
+}
+
 Status Stirling::CreateSourceConnectors() {
   if (!registry_) {
     return error::NotFound("Source registry doesn't exist");
@@ -30,24 +44,33 @@ Status Stirling::AddSource(const std::string& name, std::unique_ptr<SourceConnec
   // Step 1: Init the source.
   PL_RETURN_IF_ERROR(source->Init());
 
-  // Step 2: Ask the Connector for the Schema.
-  // Eventually, should return a vector of Schemas.
+  // Step 2: Ask the Connector to populate the Schema.
   auto schema = std::make_unique<InfoClassSchema>(name);
-  PL_RETURN_IF_ERROR(source->PopulateSchema(schema.get()));
-
-  // Step 3: Make the corresponding Data Table.
-  auto data_table = std::make_unique<ColumnWrapperDataTable>(*schema);
-
-  // Step 4: Connect this Info Class to its related objects.
+  PL_CHECK_OK(source->PopulateSchema(schema.get()));
   schema->SetSourceConnector(source.get());
-  schema->SetDataTable(data_table.get());
-  schema->SetSamplingPeriod(kDefaultSamplingPeriod);
-
-  // Step 5: Keep pointers to all the objects
-  sources_.push_back(std::move(source));
-  tables_.push_back(std::move(data_table));
   schemas_.push_back(std::move(schema));
 
+  sources_.push_back(std::move(source));
+  return Status::OK();
+}
+
+stirlingpb::Publish Stirling::GetPublishProto() { return config_->GeneratePublishProto(); }
+
+Status Stirling::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
+  // Update schemas based on the subscribe_proto.
+  // TODO(kgandhi/oazizi) : Rethink implicit schemas_ update. May be move the update
+  // function into InfoClassSchema
+  PL_CHECK_OK(config_->UpdateSchemaFromSubscribe(subscribe_proto));
+
+  // TODO(kgandhi/oazizi): Clear the tables based on new subscription.
+
+  // Generate the tables required based on subscribed Elements.
+  for (const auto& schema : schemas_) {
+    auto data_table = std::make_unique<ColumnWrapperDataTable>(*schema);
+    schema->SetDataTable(data_table.get());
+    schema->SetSamplingPeriod(kDefaultSamplingPeriod);
+    tables_.push_back(std::move(data_table));
+  }
   return Status::OK();
 }
 

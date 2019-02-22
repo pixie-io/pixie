@@ -12,17 +12,17 @@ using types::DataType;
 
 TEST(InfoClassElementTest, basic_test) {
   InfoClassElement element("user_percentage", DataType::FLOAT64,
-                           Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED);
+                           Element_State::Element_State_NOT_SUBSCRIBED);
 
   EXPECT_EQ("user_percentage", element.name());
   EXPECT_EQ(DataType::FLOAT64, element.type());
-  EXPECT_EQ(Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED, element.state());
+  EXPECT_EQ(Element_State::Element_State_NOT_SUBSCRIBED, element.state());
 
   stirlingpb::Element element_pb;
   element_pb = element.ToProto();
   EXPECT_EQ("user_percentage", element_pb.name());
   EXPECT_EQ(DataType::FLOAT64, element_pb.type());
-  EXPECT_EQ(Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED, element_pb.state());
+  EXPECT_EQ(Element_State::Element_State_NOT_SUBSCRIBED, element_pb.state());
 }
 
 TEST(InfoClassInfoSchemaTest, basic_test) {
@@ -31,11 +31,11 @@ TEST(InfoClassInfoSchemaTest, basic_test) {
   InfoClassSchema info_class_schema("cpu_usage");
   info_class_schema.SetSourceConnector(source.get());
   InfoClassElement element_1("user_percentage", DataType::FLOAT64,
-                             Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED);
+                             Element_State::Element_State_NOT_SUBSCRIBED);
   InfoClassElement element_2("system_percentage", DataType::FLOAT64,
-                             Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED);
+                             Element_State::Element_State_NOT_SUBSCRIBED);
   InfoClassElement element_3("io_percentage", DataType::FLOAT64,
-                             Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED);
+                             Element_State::Element_State_NOT_SUBSCRIBED);
 
   info_class_schema.AddElement(element_1);
   info_class_schema.AddElement(element_2);
@@ -55,15 +55,12 @@ TEST(InfoClassInfoSchemaTest, basic_test) {
   auto metadata = info_class_pb.metadata();
   EXPECT_EQ("ebpf_cpu_metrics", metadata["source"]);
 
-  info_class_schema.UpdateElementSubscription(
-      0, Element_State::Element_State_COLLECTED_AND_SUBSCRIBED);
-  EXPECT_EQ(Element_State::Element_State_COLLECTED_AND_SUBSCRIBED,
-            info_class_schema.GetElement(0).state());
+  info_class_schema.UpdateElementSubscription(0, Element_State::Element_State_SUBSCRIBED);
+  EXPECT_EQ(Element_State::Element_State_SUBSCRIBED, info_class_schema.GetElement(0).state());
 
   stirlingpb::InfoClass subscribe_pb;
   subscribe_pb = info_class_schema.ToProto();
-  EXPECT_EQ(Element_State::Element_State_COLLECTED_AND_SUBSCRIBED,
-            subscribe_pb.elements(0).state());
+  EXPECT_EQ(Element_State::Element_State_SUBSCRIBED, subscribe_pb.elements(0).state());
 }
 
 }  // namespace stirling

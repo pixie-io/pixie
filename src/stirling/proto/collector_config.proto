@@ -14,14 +14,14 @@ message Element {
   // for cpu usage (InfoClass).
   string name = 1;
   types.DataType type = 2;
-  // Enum describing an Element's state. It can either be
-  // collected (due to configuration of a Source) or it can
-  // be collected. If it is collectod, then it can either be
-  // subscribed or not by an agent.
+  // Enum describing an Element's state. It can either be subscribed
+  // to or not.
+  // TODO(kgandhi): We could change this to a boolean. But leaving as
+  // an enum if we think that there may be other states such as detailed
+  // debug collection for root cause or something along those lines.
   enum State {
-    NOT_COLLECTED = 0;
-    COLLECTED_NOT_SUBSCRIBED = 1;
-    COLLECTED_AND_SUBSCRIBED = 2;
+    NOT_SUBSCRIBED = 0;
+    SUBSCRIBED = 1;
   }
   // Default profiles can be published
   // by setting an element's state to COLLECTED_AND_SUBSCRIBED.

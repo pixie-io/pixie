@@ -91,12 +91,10 @@ class DataTableTest : public ::testing::Test {
    * Schema for our test table
    */
   void SetUpSchema() {
-    PL_CHECK_OK(schema_.AddElement("f0", DataType::INT64,
-                                   Element_State::Element_State_COLLECTED_AND_SUBSCRIBED));
-    PL_CHECK_OK(schema_.AddElement("f1", DataType::FLOAT64,
-                                   Element_State::Element_State_COLLECTED_AND_SUBSCRIBED));
-    PL_CHECK_OK(schema_.AddElement("f2", DataType::INT64,
-                                   Element_State::Element_State_COLLECTED_AND_SUBSCRIBED));
+    PL_CHECK_OK(schema_.AddElement("f0", DataType::INT64, Element_State::Element_State_SUBSCRIBED));
+    PL_CHECK_OK(
+        schema_.AddElement("f1", DataType::FLOAT64, Element_State::Element_State_SUBSCRIBED));
+    PL_CHECK_OK(schema_.AddElement("f2", DataType::INT64, Element_State::Element_State_SUBSCRIBED));
 
     record_size_ = sizeof(int64_t) + sizeof(double) + sizeof(int64_t);
   }

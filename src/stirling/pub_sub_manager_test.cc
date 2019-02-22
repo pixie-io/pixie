@@ -43,11 +43,11 @@ class PubSubManagerTest : public ::testing::Test {
  protected:
   PubSubManagerTest()
       : element_1("user_percentage", DataType::FLOAT64,
-                  Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+                  Element_State::Element_State_NOT_SUBSCRIBED),
         element_2("system_percentage", DataType::FLOAT64,
-                  Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
-        element_3("io_percentage", DataType::FLOAT64,
-                  Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED) {}
+                  Element_State::Element_State_NOT_SUBSCRIBED),
+        element_3("io_percentage", DataType::FLOAT64, Element_State::Element_State_NOT_SUBSCRIBED) {
+  }
   void SetUp() override {
     source_ = BCCCPUMetricsConnector::Create();
     pub_sub_manager_schemas_.push_back(std::make_unique<InfoClassSchema>("cpu_usage"));
@@ -81,7 +81,7 @@ TEST_F(PubSubManagerTest, publish_test) {
   expected_info_class->set_id(0);
   for (int element_idx = 0; element_idx < expected_info_class->elements_size(); ++element_idx) {
     expected_info_class->mutable_elements(element_idx)
-        ->set_state(Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED);
+        ->set_state(Element_State::Element_State_NOT_SUBSCRIBED);
   }
 
   EXPECT_EQ(1, expected_publish_pb.published_info_classes_size());
@@ -108,8 +108,7 @@ TEST_F(PubSubManagerTest, subscribe_test) {
   size_t id = publish_pb.published_info_classes(0).id();
   info_class->set_id(id);
   for (int element_idx = 0; element_idx < info_class->elements_size(); ++element_idx) {
-    info_class->mutable_elements(element_idx)
-        ->set_state(Element_State::Element_State_COLLECTED_AND_SUBSCRIBED);
+    info_class->mutable_elements(element_idx)->set_state(Element_State::Element_State_SUBSCRIBED);
   }
 
   // Update the InfoClassSchema objects with the subscribe message.
@@ -118,7 +117,7 @@ TEST_F(PubSubManagerTest, subscribe_test) {
   for (auto& info_class_schema : pub_sub_manager_->config_schemas()) {
     for (size_t idx = 0; idx < info_class_schema->NumElements(); ++idx) {
       auto element = info_class_schema->GetElement(idx);
-      EXPECT_EQ(element.state(), Element_State::Element_State_COLLECTED_AND_SUBSCRIBED);
+      EXPECT_EQ(element.state(), Element_State::Element_State_SUBSCRIBED);
     }
   }
 }

@@ -95,6 +95,14 @@ int main(int argc, char** argv) {
   // TODO(oazizi): Should this automatically be done by the constructor?
   PL_CHECK_OK(data_collector.CreateSourceConnectors());
 
+  // Get a publish proto message to subscribe from.
+  auto publish_proto = data_collector.GetPublishProto();
+
+  auto subscribe_proto = pl::stirling::SubscribeToAllElements(publish_proto);
+
+  // Get subscription and then data collector updates its schemas and sets
+  // up the data tables.
+  PL_CHECK_OK(data_collector.SetSubscription(subscribe_proto));
   // Get a map from InfoClassSchema names to Table IDs
   table_id_to_name_map = data_collector.TableIDToNameMap();
 

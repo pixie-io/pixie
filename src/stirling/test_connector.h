@@ -25,13 +25,11 @@ class TestSourceConnector : public SourceConnector {
   static std::unique_ptr<SourceConnector> Create() {
     std::vector<InfoClassElement> elements = {
         InfoClassElement("field_0", DataType::TIME64NS,
-                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
-        InfoClassElement("field_1", DataType::INT64,
-                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
-        InfoClassElement("field_2", DataType::FLOAT64,
-                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED),
+                         Element_State::Element_State_NOT_SUBSCRIBED),
+        InfoClassElement("field_1", DataType::FLOAT64, Element_State::Element_State_NOT_SUBSCRIBED),
+        InfoClassElement("field_2", DataType::FLOAT64, Element_State::Element_State_NOT_SUBSCRIBED),
         InfoClassElement("field_3", DataType::FLOAT64,
-                         Element_State::Element_State_COLLECTED_NOT_SUBSCRIBED)};
+                         Element_State::Element_State_NOT_SUBSCRIBED)};
     return std::unique_ptr<SourceConnector>(new TestSourceConnector("dummy_connector", elements));
   }
 
