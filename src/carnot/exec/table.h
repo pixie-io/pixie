@@ -108,7 +108,25 @@ class Table {
 
   Status WriteColumnWrapperRecordBatch(
       std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch> record_batch) {
+    // Check for matching types
+    auto received_num_columns = record_batch->size();
+    auto expected_num_columns = desc_.size();
+    CHECK_EQ(expected_num_columns, received_num_columns)
+        << absl::StrFormat("Table schema mismatch: expected=%u received=%u)", expected_num_columns,
+                           received_num_columns);
+
+    uint32_t i = 0;
+    for (const auto& col : *record_batch) {
+      auto received_type = col->DataType();
+      auto expected_type = desc_.type(i);
+      DCHECK_EQ(expected_type, received_type)
+          << absl::StrFormat("Type mismatch [column=%u]: expected=%s received=%s", i,
+                             ToString(expected_type), ToString(received_type));
+      ++i;
+    }
+
     hot_columns_.push_back(std::move(record_batch));
+
     return Status::OK();
   }
 
