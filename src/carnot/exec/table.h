@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_format.h"
@@ -13,6 +14,7 @@
 #include "src/carnot/udf/udf.h"
 #include "src/common/status.h"
 #include "src/common/statusor.h"
+#include "src/stirling/data_table.h"
 
 namespace pl {
 namespace carnot {
@@ -104,6 +106,12 @@ class Table {
    */
   Status WriteRowBatch(RowBatch rb);
 
+  Status WriteColumnWrapperRecordBatch(
+      std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch> record_batch) {
+    hot_columns_.push_back(std::move(record_batch));
+    return Status::OK();
+  }
+
   /**
    * @return number of column batches.
    */
@@ -119,6 +127,7 @@ class Table {
  private:
   RowDescriptor desc_;
   std::vector<std::shared_ptr<Column>> columns_;
+  std::vector<std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch>> hot_columns_;
   std::unordered_map<std::string, std::shared_ptr<Column>> name_to_column_map_;
 };
 

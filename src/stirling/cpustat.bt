@@ -13,6 +13,8 @@ R"(
 
 interval:ms:500
 {
+    $cpu_id = $1;
+
     //sudo cat /proc/kallsyms | less
     $cpustat_offset = kaddr("kernel_cpustat");
     $per_cpu_offsets = kaddr("__per_cpu_offset");
@@ -28,7 +30,7 @@ interval:ms:500
     $nsec_per_sec = 1000000000;
     $user_hz = 100;
 
-    $cpu = 0;
+    $cpu = $cpu_id;
     unroll(1) {
         $cpu_base = *($per_cpu_offsets+($cpu*8));
         $cpustat  = $cpu_base + $cpustat_offset;

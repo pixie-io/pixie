@@ -6,6 +6,7 @@
 
 #include "src/carnot/exec/table.h"
 #include "src/common/status.h"
+#include "src/stirling/data_table.h"
 
 namespace pl {
 namespace carnot {
@@ -39,17 +40,14 @@ class TableStore {
   /**
    * @return A map of table name to relation representing the table's structure.
    */
-  std::shared_ptr<std::unordered_map<std::string, plan::Relation>> GetRelationMap() {
-    auto map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
-    map->reserve(table_name_to_table_map_.size());
-    for (const auto& table : table_name_to_table_map_) {
-      map->emplace(table.first, table.second->GetRelation());
-    }
-    return map;
-  }
+  std::shared_ptr<std::unordered_map<std::string, plan::Relation>> GetRelationMap();
+
+  Status AppendData(uint64_t table_id,
+                    std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch> record_batch);
 
  private:
   std::unordered_map<std::string, std::shared_ptr<Table>> table_name_to_table_map_;
+  std::unordered_map<uint64_t, std::shared_ptr<Table>> table_id_to_table_map_;
 };
 
 }  // namespace exec

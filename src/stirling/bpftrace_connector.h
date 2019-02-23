@@ -33,7 +33,7 @@ class BPFTraceConnector : public SourceConnector {
 
  protected:
   explicit BPFTraceConnector(const std::string& source_name, const InfoClassSchema& elements,
-                             const char* script);
+                             const char* script, const std::vector<std::string> params);
 
   Status InitImpl() override;
 
@@ -56,6 +56,7 @@ class BPFTraceConnector : public SourceConnector {
 
   // This is the script that will run with this Bpftrace Connector.
   const char* script_;
+  std::vector<std::string> params_;
 };
 
 class CPUStatBPFTraceConnector : public BPFTraceConnector {
@@ -77,17 +78,22 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
         InfoClassElement("cpustat_softirq", DataType::INT64,
                          Element_State::Element_State_SUBSCRIBED)};
 
-    return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(kName, elements));
+    return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(kName, elements, cpu_id_));
   }
 
  protected:
-  CPUStatBPFTraceConnector(const std::string& source_name, const InfoClassSchema& elements)
-      : BPFTraceConnector(source_name, elements, kCPUStatBTScript) {}
+  CPUStatBPFTraceConnector(const std::string& source_name, const InfoClassSchema& elements,
+                           uint64_t cpu_id)
+      : BPFTraceConnector(source_name, elements, kCPUStatBTScript,
+                          std::vector<std::string>({std::to_string(cpu_id)})) {}
 
  private:
   static constexpr char kCPUStatBTScript[] =
 #include "cpustat.bt"
       ;  // NOLINT
+
+  // TODO(oazizi): Make this controllable through Create.
+  static constexpr uint64_t cpu_id_ = 0;
 };
 
 }  // namespace stirling
