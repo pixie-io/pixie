@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["cli.go"],
+    importpath = "pixielabs.ai/pixielabs/src/vizier_cli/cli",
+    visibility = ["//visibility:public"],
+    deps = ["@com_github_abiosoft_ishell//:go_default_library"],
+)

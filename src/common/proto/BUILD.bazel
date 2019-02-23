@@ -7,7 +7,7 @@ proto_library(
     name = "status_proto",
     srcs = ["status.proto"],
     visibility = ["//visibility:public"],
-    deps = ["//src/common/codes:error_codes_proto"]
+    deps = ["//src/common/codes:error_codes_proto"],
 )
 
 go_proto_library(
@@ -16,7 +16,7 @@ go_proto_library(
     importpath = "pixielabs.ai/pixielabs/src/common/proto",
     proto = ":status_proto",
     visibility = ["//visibility:public"],
-    deps = ["//src/common/codes:error_codes_go_proto"]
+    deps = ["//src/common/codes:error_codes_go_proto"],
 )
 
 cc_proto_library(

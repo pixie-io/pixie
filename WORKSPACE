@@ -284,3 +284,45 @@ go_repository(
     commit = "c250d6563d4d4c20252cd865923440e829844f4e",
     importpath = "github.com/grpc-ecosystem/go-grpc-middleware",
 )
+
+go_repository(
+    name = "com_github_abiosoft_ishell",
+    commit = "0a6b1640e32638dd433ee7e57ec325a7bdd79561",
+    importpath = "github.com/abiosoft/ishell",
+)
+
+go_repository(
+    name = "com_github_abiosoft_readline",
+    commit = "155bce2042db95a783081fab225e74dd879055b0",
+    importpath = "github.com/abiosoft/readline",
+)
+
+go_repository(
+    name = "com_github_apache_arrow",
+    commit = "48f7b360b138d7152e418021864e7b574f02458c",
+    importpath = "github.com/apache/arrow",
+)
+
+go_repository(
+    name = "com_github_fatih_color",
+    commit = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4",
+    importpath = "github.com/fatih/color",
+)
+
+go_repository(
+    name = "com_github_flynn_archive_go_shlex",
+    commit = "3f9db97f856818214da2e1057f8ad84803971cff",
+    importpath = "github.com/flynn-archive/go-shlex",
+)
+
+go_repository(
+    name = "com_github_mattn_go_runewidth",
+    commit = "3ee7d812e62a0804a7d0a324e0249ca2db3476d3",
+    importpath = "github.com/mattn/go-runewidth",
+)
+
+go_repository(
+    name = "com_github_olekukonko_tablewriter",
+    commit = "e6d60cf7ba1f42d86d54cdf5508611c4aafb3970",
+    importpath = "github.com/olekukonko/tablewriter",
+)

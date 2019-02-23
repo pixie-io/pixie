@@ -8,10 +8,10 @@ proto_library(
     srcs = ["service.proto"],
     visibility = ["//visibility:public"],
     deps = [
-        "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
-        "//src/utils/proto:utils_proto",
         "//src/common/codes:error_codes_proto",
         "//src/common/proto:status_proto",
+        "//src/utils/proto:utils_proto",
+        "@gogo_special_proto//github.com/gogo/protobuf/gogoproto",
     ],
 )
 
@@ -22,11 +22,10 @@ go_proto_library(
     proto = ":service_proto",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_gogo_protobuf//gogoproto:go_default_library",
-        "//src/utils/proto:utils_go_proto",
         "//src/common/codes:error_codes_go_proto",
         "//src/common/proto:status_go_proto",
-
+        "//src/utils/proto:utils_go_proto",
+        "@com_github_gogo_protobuf//gogoproto:go_default_library",
     ],
 )
 

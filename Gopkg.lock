@@ -2,6 +2,41 @@
 
 
 [[projects]]
+  digest = "1:d19cfbbf2e7dad7c6faba60dc7700d6b7d6ff3d3c9477a8e44c32a9eaf3cd907"
+  name = "github.com/abiosoft/ishell"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0a6b1640e32638dd433ee7e57ec325a7bdd79561"
+  version = "v2.0.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:454adc7f974228ff789428b6dc098638c57a64aa0718f0bd61e53d3cd39d7a75"
+  name = "github.com/abiosoft/readline"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "155bce2042db95a783081fab225e74dd879055b0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:14a59654126005cdbdac3341e4314e44c7cf09ff70b9d3c7163ed799b834b836"
+  name = "github.com/apache/arrow"
+  packages = [
+    "go/arrow",
+    "go/arrow/array",
+    "go/arrow/csv",
+    "go/arrow/internal/bitutil",
+    "go/arrow/internal/cpu",
+    "go/arrow/internal/debug",
+    "go/arrow/internal/testing/tools",
+    "go/arrow/math",
+    "go/arrow/memory",
+    "go/arrow/tensor",
+  ]
+  pruneopts = "UT"
+  revision = "48f7b360b138d7152e418021864e7b574f02458c"
+
+[[projects]]
   digest = "1:705c40022f5c03bf96ffeb6477858d88565064485a513abcd0f11a0911546cb6"
   name = "github.com/blang/semver"
   packages = ["."]
@@ -34,6 +69,22 @@
   version = "v3.2.0"
 
 [[projects]]
+  digest = "1:865079840386857c809b72ce300be7580cb50d3d3129ce11bf9aa6ca2bc1934a"
+  name = "github.com/fatih/color"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "5b77d2a35fb0ede96d138fc9a99f5c9b6aef11b4"
+  version = "v1.7.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:50a46ab1d5edbbdd55125b4d37f1bf503d0807c26461f9ad7b358d6006641d09"
+  name = "github.com/flynn-archive/go-shlex"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "3f9db97f856818214da2e1057f8ad84803971cff"
+
+[[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -42,12 +93,14 @@
   version = "v1.4.7"
 
 [[projects]]
-  digest = "1:bfc758d5a03d57d97226fac6934551c01bd76612adb119c177395b057a0a46db"
+  digest = "1:3f7c586d2fd571c4f2e3d313c0638b33b999055de507d5f11fafe27e5adc30db"
   name = "github.com/gogo/protobuf"
   packages = [
     "gogoproto",
     "proto",
     "protoc-gen-gogo/descriptor",
+    "sortkeys",
+    "types",
   ]
   pruneopts = "UT"
   revision = "636bf0302bc95575d69441b25a2603156ffdddf1"
@@ -210,6 +263,14 @@
   version = "v0.0.4"
 
 [[projects]]
+  digest = "1:0356f3312c9bd1cbeda81505b7fd437501d8e778ab66998ef69f00d7f9b3a0d7"
+  name = "github.com/mattn/go-runewidth"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "3ee7d812e62a0804a7d0a324e0249ca2db3476d3"
+  version = "v0.0.4"
+
+[[projects]]
   branch = "master"
   digest = "1:2b32af4d2a529083275afc192d1067d8126b578c7a9613b26600e4df9c735155"
   name = "github.com/mgutz/ansi"
@@ -224,6 +285,14 @@
   pruneopts = "UT"
   revision = "fe40af7a9c397fa3ddba203c38a5042c5d0475ad"
   version = "v1.1.1"
+
+[[projects]]
+  digest = "1:abcdbf03ca6ca13d3697e2186edc1f33863bbdac2b3a44dfa39015e8903f7409"
+  name = "github.com/olekukonko/tablewriter"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "e6d60cf7ba1f42d86d54cdf5508611c4aafb3970"
+  version = "v0.0.1"
 
 [[projects]]
   digest = "1:450b7623b185031f3a456801155c8320209f75d0d4c4e633c6b1e59d44d6e392"
@@ -459,11 +528,25 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/abiosoft/ishell",
+    "github.com/apache/arrow/go/arrow",
+    "github.com/apache/arrow/go/arrow/array",
+    "github.com/apache/arrow/go/arrow/csv",
+    "github.com/apache/arrow/go/arrow/internal/bitutil",
+    "github.com/apache/arrow/go/arrow/internal/cpu",
+    "github.com/apache/arrow/go/arrow/internal/debug",
+    "github.com/apache/arrow/go/arrow/internal/testing/tools",
+    "github.com/apache/arrow/go/arrow/math",
+    "github.com/apache/arrow/go/arrow/memory",
+    "github.com/apache/arrow/go/arrow/tensor",
     "github.com/blang/semver",
     "github.com/c9s/goprocinfo/linux",
     "github.com/dgrijalva/jwt-go",
+    "github.com/fatih/color",
     "github.com/gogo/protobuf/gogoproto",
     "github.com/gogo/protobuf/proto",
+    "github.com/gogo/protobuf/sortkeys",
+    "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
     "github.com/golang/protobuf/proto",
     "github.com/google/uuid",
@@ -474,6 +557,7 @@
     "github.com/grpc-ecosystem/go-grpc-middleware/auth",
     "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus",
     "github.com/grpc-ecosystem/go-grpc-middleware/tags",
+    "github.com/olekukonko/tablewriter",
     "github.com/satori/go.uuid",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
