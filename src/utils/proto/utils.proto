@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package pl.utils;
 
-option go_package = "utilspb";
+option go_package = "pixielabs.ai/pixielabs/src/utils/proto;utilspb";
 
 message UUID {
   // The UUID stored as bytes (no-hyphens).

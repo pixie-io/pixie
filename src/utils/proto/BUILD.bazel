@@ -1,18 +1,23 @@
 # gazelle:ignore
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
 
-proto_library(
-    name = "utils_proto",
+pl_proto_library(
+    name = "utils_pl_proto",
     srcs = ["utils.proto"],
+    visibility = ["//visibility:public"],
+    deps = [],
+)
+
+pl_cc_proto_library(
+    name = "utils_pl_cc_proto",
+    proto = ":utils_pl_proto",
     visibility = ["//visibility:public"],
 )
 
-go_proto_library(
-    name = "utils_go_proto",
-    compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
+pl_go_proto_library(
+    name = "utils_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/utils/proto",
-    proto = ":utils_proto",
+    proto = ":utils_pl_proto",
     visibility = ["//visibility:public"],
 )

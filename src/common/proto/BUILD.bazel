@@ -1,26 +1,30 @@
 # gazelle:ignore
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
-
-proto_library(
-    name = "status_proto",
+pl_proto_library(
+    name = "status_pl_proto",
     srcs = ["status.proto"],
     visibility = ["//visibility:public"],
-    deps = ["//src/common/codes:error_codes_proto"],
+    deps = [
+        "//src/common/codes:error_codes_pl_proto",
+    ],
 )
 
-go_proto_library(
-    name = "status_go_proto",
-    compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
+pl_cc_proto_library(
+    name = "status_pl_cc_proto",
+    proto = ":status_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/common/codes:error_codes_pl_cc_proto",
+    ],
+)
+
+pl_go_proto_library(
+    name = "status_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/common/proto",
-    proto = ":status_proto",
+    proto = ":status_pl_proto",
     visibility = ["//visibility:public"],
-    deps = ["//src/common/codes:error_codes_go_proto"],
-)
-
-cc_proto_library(
-    name = "status_cc_proto",
-    visibility = ["//visibility:public"],
-    deps = [":status_proto"],
+    deps = [
+        "//src/common/codes:error_codes_pl_go_proto",
+    ],
 )

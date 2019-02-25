@@ -3,6 +3,7 @@ workspace(name = "pl")
 load("//bazel:repositories.bzl", "pl_deps")
 load("//:workspace.bzl", "check_min_bazel_version")
 load("//bazel:cc_configure.bzl", "cc_configure")
+load("//bazel:gogo.bzl", "gogo_grpc_proto")
 
 check_min_bazel_version("0.17.1")
 
@@ -16,6 +17,8 @@ load("//bazel:pl_workspace.bzl", "pl_workspace_setup")
 pl_workspace_setup()
 
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
+
+gogo_grpc_proto(name = "gogo_grpc_proto")
 
 # gazelle:repo bazel_gazelle
 ##########################################################

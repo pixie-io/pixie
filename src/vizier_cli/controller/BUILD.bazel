@@ -6,7 +6,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/vizier_cli/controller",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/vizier/proto:service_go_proto",
+        "//src/vizier/proto:service_pl_go_proto",
         "@com_github_google_uuid//:go_default_library",
         "@com_github_olekukonko_tablewriter//:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
