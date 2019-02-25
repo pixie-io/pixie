@@ -81,6 +81,7 @@ class DataTableTest : public ::testing::Test {
   /**
    *  A set of pre-defined sequences. Useful, because they are easy to check.
    */
+  // TODO(oazizi): Use Sequences in seqgen_connector.h (and perhaps refactor).
   int64_t f0(uint32_t x) { return x + 100; }
 
   double f1(uint32_t x) { return 3.14 * (x + 1); }

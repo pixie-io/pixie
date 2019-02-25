@@ -62,29 +62,27 @@ class BPFTraceConnector : public SourceConnector {
 class CPUStatBPFTraceConnector : public BPFTraceConnector {
  public:
   static constexpr SourceType source_type = SourceType::kEBPF;
-  static constexpr char kName[] = "CPU Stat Bpftrace connector";
+
+  static constexpr char kName[] = "bpftrace_cpu_stats";
+
+  inline static const InfoClassSchema kElements = {
+      InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_SUBSCRIBED),
+      InfoClassElement("cpustat_user", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
+      InfoClassElement("cpustat_nice", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
+      InfoClassElement("cpustat_system", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
+      InfoClassElement("cpustat_idle", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
+      InfoClassElement("cpustat_iowait", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
+      InfoClassElement("cpustat_irq", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
+      InfoClassElement("cpustat_softirq", DataType::INT64,
+                       Element_State::Element_State_SUBSCRIBED)};
 
   static std::unique_ptr<SourceConnector> Create() {
-    InfoClassSchema elements = {
-        InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_SUBSCRIBED),
-        InfoClassElement("cpustat_user", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
-        InfoClassElement("cpustat_nice", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
-        InfoClassElement("cpustat_system", DataType::INT64,
-                         Element_State::Element_State_SUBSCRIBED),
-        InfoClassElement("cpustat_idle", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
-        InfoClassElement("cpustat_iowait", DataType::INT64,
-                         Element_State::Element_State_SUBSCRIBED),
-        InfoClassElement("cpustat_irq", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
-        InfoClassElement("cpustat_softirq", DataType::INT64,
-                         Element_State::Element_State_SUBSCRIBED)};
-
-    return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(kName, elements, cpu_id_));
+    return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(cpu_id_));
   }
 
  protected:
-  CPUStatBPFTraceConnector(const std::string& source_name, const InfoClassSchema& elements,
-                           uint64_t cpu_id)
-      : BPFTraceConnector(source_name, elements, kCPUStatBTScript,
+  explicit CPUStatBPFTraceConnector(uint64_t cpu_id)
+      : BPFTraceConnector(kName, kElements, kCPUStatBTScript,
                           std::vector<std::string>({std::to_string(cpu_id)})) {}
 
  private:

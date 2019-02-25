@@ -24,6 +24,11 @@ stirlingpb::Subscribe SubscribeToAllElements(const stirlingpb::Publish& publish_
   return subscribe_proto;
 }
 
+Status Stirling::Init() {
+  PL_RETURN_IF_ERROR(CreateSourceConnectors());
+  return Status::OK();
+}
+
 Status Stirling::CreateSourceConnectors() {
   if (!registry_) {
     return error::NotFound("Source registry doesn't exist");

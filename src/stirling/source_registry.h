@@ -10,8 +10,6 @@
 #include "src/common/status.h"
 #include "src/common/statusor.h"
 #include "src/common/types/types.pb.h"
-#include "src/stirling/bpftrace_connector.h"
-#include "src/stirling/proc_stat_connector.h"
 #include "src/stirling/source_connector.h"
 
 namespace pl {

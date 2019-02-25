@@ -24,7 +24,7 @@ class StirlingComponentTest : public ::testing::Test {
 };
 
 TEST_F(StirlingComponentTest, registry_to_subscribe_test) {
-  EXPECT_OK(data_collector_->CreateSourceConnectors());
+  EXPECT_OK(data_collector_->Init());
   auto publish_proto = data_collector_->GetPublishProto();
   EXPECT_EQ(1, publish_proto.published_info_classes_size());
   auto subscribe_proto = SubscribeToAllElements(publish_proto);

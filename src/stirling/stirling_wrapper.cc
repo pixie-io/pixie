@@ -7,7 +7,8 @@
 #include "src/common/macros.h"
 #include "src/common/status.h"
 #include "src/stirling/bpftrace_connector.h"
-#include "src/stirling/proc_stat_connector.h"
+#include "src/stirling/info_class_schema.h"
+#include "src/stirling/seq_gen_connector.h"
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
 
@@ -15,36 +16,53 @@ using pl::stirling::SourceRegistry;
 using pl::stirling::SourceType;
 using pl::stirling::Stirling;
 
+using pl::carnot::udf::Float64ValueColumnWrapper;
 using pl::carnot::udf::Int64ValueColumnWrapper;
 using pl::carnot::udf::SharedColumnWrapper;
 using pl::stirling::ColumnWrapperRecordBatch;
 
 using pl::stirling::CPUStatBPFTraceConnector;
-using pl::stirling::FakeProcStatConnector;
+using pl::stirling::InfoClassSchema;
+using pl::stirling::SeqGenConnector;
+
+using pl::types::DataType;
 
 std::unordered_map<uint64_t, std::string> table_id_to_name_map;
 
-void PrintCPUStatBPFTraceRecordBatch(uint64_t num_records,
-                                     std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
+void PrintRecordBatch(std::string prefix, InfoClassSchema schema, uint64_t num_records,
+                      const ColumnWrapperRecordBatch& record_batch) {
   for (uint32_t i = 0; i < num_records; ++i) {
-    std::cout << "[CPUStatsBPFTrace] ";
+    std::cout << "[" << prefix << "] ";
 
     uint32_t j = 0;
-    for (SharedColumnWrapper col : *record_batch) {
-      auto typedCol = std::static_pointer_cast<Int64ValueColumnWrapper>(col);
-      if (j == 0) {
-        auto ns_count = (*typedCol)[i].val;
-        std::time_t time = ns_count / 1000000000ULL;
-        std::cout << std::put_time(std::localtime(&time), "%Y-%m-%d %X") << " | ";
-      } else {
-        int64_t val = (*typedCol)[i].val;
-        std::cout << val << " ";
+    for (SharedColumnWrapper col : record_batch) {
+      switch (schema[j].type()) {
+        case DataType::TIME64NS: {
+          auto typedCol = std::static_pointer_cast<Int64ValueColumnWrapper>(col);
+          auto ns_count = (*typedCol)[i].val;
+          std::time_t time = ns_count / 1000000000ULL;
+          std::cout << std::put_time(std::localtime(&time), "%Y-%m-%d %X") << " | ";
+        } break;
+        case DataType::INT64: {
+          auto typedCol = std::static_pointer_cast<Int64ValueColumnWrapper>(col);
+          int64_t val = (*typedCol)[i].val;
+          std::cout << val << " ";
+        } break;
+        case DataType::FLOAT64: {
+          auto typedCol = std::static_pointer_cast<Float64ValueColumnWrapper>(col);
+          double val = (*typedCol)[i].val;
+          // TODO(oazizi): Incorrectly setting the above to int64_t doesn't cause any compiler
+          // errors/warnings!!!
+          std::cout << val << " ";
+        } break;
+        default:
+          CHECK(false) << absl::StrFormat("Unrecognized type: $%s", ToString(schema[j].type()));
       }
 
       j++;
     }
+    std::cout << std::endl;
   }
-  std::cout << std::endl;
 }
 
 void StirlingWrapperCallback(uint64_t table_id,
@@ -56,13 +74,13 @@ void StirlingWrapperCallback(uint64_t table_id,
 
   // Uses InfoClassSchema names, which come from Registry.
   // So use Registry names here.
-  if (name == "CPU stats bpftrace source") {
-    PrintCPUStatBPFTraceRecordBatch(num_records, std::move(record_batch));
+  if (name == "bpftrace_cpu_stats") {
+    PrintRecordBatch("CPUStatBPFTrace", CPUStatBPFTraceConnector::kElements, num_records,
+                     *record_batch);
+  } else if (name == "sequences") {
+    PrintRecordBatch("SeqGen", SeqGenConnector::kElements, num_records, *record_batch);
   }
-  // TODO(oazizi): May want to implement this at some point.
-  // else {
-  //  std::cout << "[" << name << "] <TODO: print out data>" << std::endl;
-  //}
+  // TODO(oazizi): Can add other connectors, if desired.
 }
 
 std::unique_ptr<SourceRegistry> CreateRegistry() {
@@ -92,17 +110,17 @@ int main(int argc, char** argv) {
   // Make Stirling.
   Stirling data_collector(std::move(registry));
 
-  // TODO(oazizi): Should this automatically be done by the constructor?
-  PL_CHECK_OK(data_collector.CreateSourceConnectors());
+  // Initialize Stirling (brings-up all source connectors)
+  PL_CHECK_OK(data_collector.Init());
 
   // Get a publish proto message to subscribe from.
   auto publish_proto = data_collector.GetPublishProto();
 
+  // Subscribe to all elements.
+  // Stirling will update its schemas and sets up the data tables.
   auto subscribe_proto = pl::stirling::SubscribeToAllElements(publish_proto);
-
-  // Get subscription and then data collector updates its schemas and sets
-  // up the data tables.
   PL_CHECK_OK(data_collector.SetSubscription(subscribe_proto));
+
   // Get a map from InfoClassSchema names to Table IDs
   table_id_to_name_map = data_collector.TableIDToNameMap();
 

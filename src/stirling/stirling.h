@@ -45,11 +45,11 @@ class Stirling {
   ~Stirling() = default;
 
   /**
-   * @brief Create data source connectors from the registered sources.
+   * @brief Initializes Stirling, including bring-up of all the SourceConnectors.
    *
    * @return Status
    */
-  Status CreateSourceConnectors();
+  Status Init();
 
   /**
    * @brief Get the Publish Proto object. Agent calls this function to get the Publish
@@ -115,7 +115,12 @@ class Stirling {
   void RunThread();
 
   /**
-   * Main data source polling loop.
+   * Create data source connectors from the registered sources.
+   */
+  Status CreateSourceConnectors();
+
+  /**
+   * Adds a source to Stirling, and updates all state accordingly.
    */
   Status AddSource(const std::string& name, std::unique_ptr<SourceConnector> source);
 
