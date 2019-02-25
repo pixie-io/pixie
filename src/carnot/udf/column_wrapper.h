@@ -84,6 +84,7 @@ using BoolValueColumnWrapper = ColumnWrapperTmpl<BoolValue>;
 using Int64ValueColumnWrapper = ColumnWrapperTmpl<Int64Value>;
 using Float64ValueColumnWrapper = ColumnWrapperTmpl<Float64Value>;
 using StringValueColumnWrapper = ColumnWrapperTmpl<StringValue>;
+using Time64NSValueColumnWrapper = ColumnWrapperTmpl<Time64NSValue>;
 
 template <typename TColumnWrapper, types::DataType DType>
 inline SharedColumnWrapper FromArrowImpl(const std::shared_ptr<arrow::Array> &arr) {
@@ -132,6 +133,8 @@ inline SharedColumnWrapper ColumnWrapper::FromArrow(const std::shared_ptr<arrow:
       return FromArrowImpl<Float64ValueColumnWrapper, UDFDataType::FLOAT64>(arr);
     case arrow::Type::STRING:
       return FromArrowImpl<StringValueColumnWrapper, UDFDataType::STRING>(arr);
+    case arrow::Type::TIME64:
+      return FromArrowImpl<Time64NSValueColumnWrapper, UDFDataType::TIME64NS>(arr);
     default:
       CHECK(0) << "Unknown arrow type: " << type_id;
   }
@@ -154,6 +157,8 @@ inline SharedColumnWrapper ColumnWrapper::Make(UDFDataType data_type, size_t siz
       return std::make_shared<Float64ValueColumnWrapper>(size);
     case UDFDataType::STRING:
       return std::make_shared<StringValueColumnWrapper>(size);
+    case UDFDataType::TIME64NS:
+      return std::make_shared<Time64NSValueColumnWrapper>(size);
     default:
       CHECK(0) << "Unknown data type";
   }

@@ -23,7 +23,7 @@ Status RowBatch::AddColumn(const std::shared_ptr<arrow::Array>& col) {
   if (col->length() != num_rows_) {
     return error::InvalidArgument("Schema only allows %d rows", num_rows_);
   }
-  if (udf::ArrowToCarnotType(col->type_id()) != desc_.type(columns_.size())) {
+  if (col->type_id() != udf::CarnotToArrowType(desc_.type(columns_.size()))) {
     return error::InvalidArgument("Column[%d] was given incorrect type", columns_.size());
   }
   columns_.emplace_back(col);

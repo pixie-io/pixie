@@ -29,6 +29,8 @@ pl::Status ScalarValue::Init(const pl::carnot::carnotpb::ScalarValue &pb) {
   return Status::OK();
 }
 
+// PL_CARNOT_UPDATE_FOR_NEW_TYPES
+
 int64_t ScalarValue::Int64Value() const {
   DCHECK(is_initialized_) << "Not initialized";
   VLOG_IF(1, pb_.value_case() != carnotpb::ScalarValue::kInt64Value)
@@ -58,11 +60,20 @@ bool ScalarValue::BoolValue() const {
   return pb_.bool_value();
 }
 
+int64_t ScalarValue::Time64NSValue() const {
+  DCHECK(is_initialized_) << "Not initialized";
+  VLOG_IF(1, pb_.value_case() != carnotpb::ScalarValue::kTime64NsValue)
+
+      << "Calling accessor on null/invalid value";
+  return pb_.time64_ns_value();
+}
+
 bool ScalarValue::IsNull() const {
   DCHECK(is_initialized_) << "Not initialized";
   return pb_.value_case() == carnotpb::ScalarValue::VALUE_NOT_SET;
 }
 
+// PL_CARNOT_UPDATE_FOR_NEW_TYPES
 std::string ScalarValue::DebugString() const {
   DCHECK(is_initialized_) << "Not initialized";
   if (IsNull()) {
@@ -77,6 +88,8 @@ std::string ScalarValue::DebugString() const {
       return absl::StrFormat("%ff", Float64Value());
     case types::STRING:
       return absl::StrFormat("\"%s\"", StringValue());
+    case types::TIME64NS:
+      return absl::StrFormat("%d", Time64NSValue());
     default:
       return "<Unknown>";
   }

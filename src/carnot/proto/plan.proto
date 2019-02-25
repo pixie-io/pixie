@@ -149,6 +149,7 @@ message ScalarValue {
     int64 int64_value = 3;
     double float64_value = 4;
     string string_value = 5;
+    int64 time64_ns_value = 6;
   }
 }
 

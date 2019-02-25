@@ -20,6 +20,7 @@ namespace udf {
 
 using arrow::Type;
 udf::UDFDataType ArrowToCarnotType(const arrow::Type::type& arrow_type) {
+  // PL_CARNOT_UPDATE_FOR_NEW_TYPES
   switch (arrow_type) {
     case Type::BOOL:
       return udf::UDFDataType::BOOLEAN;
@@ -29,8 +30,28 @@ udf::UDFDataType ArrowToCarnotType(const arrow::Type::type& arrow_type) {
       return udf::UDFDataType::FLOAT64;
     case Type::STRING:
       return udf::UDFDataType::STRING;
+    case Type::TIME64:
+      return udf::UDFDataType::TIME64NS;
     default:
       CHECK(0) << "Unknown arrow data type: " << arrow_type;
+  }
+}
+
+arrow::Type::type CarnotToArrowType(const udf::UDFDataType& udf_type) {
+  // PL_CARNOT_UPDATE_FOR_NEW_TYPES
+  switch (udf_type) {
+    case udf::UDFDataType::BOOLEAN:
+      return Type::BOOL;
+    case udf::UDFDataType::INT64:
+      return Type::INT64;
+    case udf::UDFDataType::FLOAT64:
+      return Type::DOUBLE;
+    case udf::UDFDataType::STRING:
+      return Type::STRING;
+    case udf::UDFDataType::TIME64NS:
+      return Type::INT64;
+    default:
+      CHECK(0) << "Unknown udf data type: " << udf_type;
   }
 }
 
@@ -41,10 +62,12 @@ udf::UDFDataType ArrowToCarnotType(const arrow::Type::type& arrow_type) {
 std::unique_ptr<arrow::ArrayBuilder> MakeArrowBuilder(const udf::UDFDataType& data_type,
                                                       arrow::MemoryPool* mem_pool) {
   switch (data_type) {
+    // PL_CARNOT_UPDATE_FOR_NEW_TYPES
     BUILDER_CASE(udf::UDFDataType::BOOLEAN, mem_pool);
     BUILDER_CASE(udf::UDFDataType::INT64, mem_pool);
     BUILDER_CASE(udf::UDFDataType::FLOAT64, mem_pool);
     BUILDER_CASE(udf::UDFDataType::STRING, mem_pool);
+    BUILDER_CASE(udf::UDFDataType::TIME64NS, mem_pool);
     default:
       CHECK(0) << "Unknown data type: " << static_cast<int>(data_type);
   }

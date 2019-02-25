@@ -88,6 +88,7 @@ struct FixedSizedUDFValue : UDFBaseValue {
 using BoolValue = FixedSizedUDFValue<bool>;
 using Int64Value = FixedSizedUDFValue<int64_t>;
 using Float64Value = FixedSizedUDFValue<double>;
+using Time64NSValue = Int64Value;
 
 /**
  * The value type for string values.
@@ -103,12 +104,15 @@ struct StringValue : UDFBaseValue, public std::string {
 /**
  * Checks to see if a valid UDF data type is being used.
  * @tparam T The type to check.
+ * PL_CARNOT_UPDATE_FOR_NEW_TYPES
  */
 template <typename T>
 struct IsValidUDFDataType {
-  static constexpr bool value = std::is_base_of_v<UDFBaseValue, T> &&
-                                (std::is_same_v<T, BoolValue> || std::is_same_v<T, Int64Value> ||
-                                 std::is_same_v<T, Float64Value> || std::is_same_v<T, StringValue>);
+  static constexpr bool value =
+      std::is_base_of_v<UDFBaseValue, T> &&
+      (std::is_same_v<T, BoolValue> || std::is_same_v<T, Int64Value> ||
+       std::is_same_v<T, Float64Value> || std::is_same_v<T, StringValue> ||
+       std::is_same_v<T, Time64NSValue>);
 };
 
 /**
@@ -198,6 +202,15 @@ struct UDFDataTypeTraits<udf::UDFDataType::STRING> {
   using arrow_builder_type = arrow::StringBuilder;
   using arrow_array_type = arrow::StringArray;
   static constexpr arrow::Type::type arrow_type_id = arrow::Type::STRING;
+};
+
+template <>
+struct UDFDataTypeTraits<udf::UDFDataType::TIME64NS> {
+  typedef Time64NSValue udf_value_type;
+  using arrow_type = arrow::Int64Type;
+  using arrow_builder_type = arrow::Int64Builder;
+  using arrow_array_type = arrow::Int64Array;
+  static constexpr arrow::Type::type arrow_type_id = arrow::Type::INT64;
 };
 
 /**

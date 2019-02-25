@@ -19,7 +19,7 @@ namespace exec {
 
 Status Column::AddChunk(const std::shared_ptr<arrow::Array>& chunk) {
   // Check type and check size.
-  if (udf::ArrowToCarnotType(chunk->type_id()) != data_type_) {
+  if (udf::CarnotToArrowType(data_type_) != chunk->type_id()) {
     return error::InvalidArgument("Column is of type $0, but needs to be type $1.",
                                   chunk->type_id(), data_type_);
   }

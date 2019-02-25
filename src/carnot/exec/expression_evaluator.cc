@@ -13,6 +13,7 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
+// PL_CARNOT_UPDATE_FOR_NEW_TYPES
 using udf::ArrowToCarnotType;
 using udf::BoolValueColumnWrapper;
 using udf::ColumnWrapper;
@@ -21,6 +22,7 @@ using udf::Int64ValueColumnWrapper;
 using udf::MakeArrowBuilder;
 using udf::SharedColumnWrapper;
 using udf::StringValueColumnWrapper;
+using udf::Time64NSValueColumnWrapper;
 using udf::UDFBaseValue;
 using udf::UDFDataType;
 using udf::UDFDataTypeTraits;
@@ -90,6 +92,9 @@ std::shared_ptr<arrow::Array> EvalScalarToArrow(ExecState *exec_state, const pla
     case types::STRING:
       return EvalScalarBinaryImpl<arrow::StringBuilder, arrow::StringArray>(
           mem_pool, val.StringValue(), count);
+    case types::TIME64NS:
+      return EvalScalarFixedImpl<arrow::Int64Builder, arrow::Int64Array>(
+          mem_pool, val.Time64NSValue(), count);
     default:
       CHECK(0) << "Unknown data type";
   }
@@ -108,6 +113,8 @@ std::shared_ptr<ColumnWrapper> EvalScalarToColumnWrapper(ExecState *, const plan
       return std::make_shared<Float64ValueColumnWrapper>(count, val.Float64Value());
     case types::STRING:
       return std::make_shared<StringValueColumnWrapper>(count, val.StringValue());
+    case types::TIME64NS:
+      return std::make_shared<Time64NSValueColumnWrapper>(count, val.Time64NSValue());
     default:
       CHECK(0) << "Unknown data type";
   }

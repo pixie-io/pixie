@@ -24,6 +24,7 @@ std::string ToString(carnotpb::OperatorType op) {
   }
 }
 
+// PL_CARNOT_UPDATE_FOR_NEW_TYPES
 std::string ToString(types::DataType dt) {
   switch (dt) {
     case types::BOOLEAN:
@@ -34,6 +35,8 @@ std::string ToString(types::DataType dt) {
       return "float64";
     case types::STRING:
       return "string";
+    case types::TIME64NS:
+      return "time64ns";
     default:
       LOG(WARNING) << "Unknown datatype in ToStringFunction";
       return absl::StrFormat("(UnknownDatatype:%d)", static_cast<int>(dt));

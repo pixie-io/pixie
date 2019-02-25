@@ -72,6 +72,8 @@ inline std::shared_ptr<arrow::Array> ToArrow<StringValue>(const std::vector<Stri
  */
 udf::UDFDataType ArrowToCarnotType(const arrow::Type::type& arrow_type);
 
+arrow::Type::type CarnotToArrowType(const udf::UDFDataType& udf_type);
+
 /**
  * Make an arrow builder based on carnot UDFDataType and usng the passed in MemoryPool.
  * @param data_type The carnot UDFDataType.

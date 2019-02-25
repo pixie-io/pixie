@@ -38,6 +38,13 @@ TEST(HashUtils, StringValue) {
   EXPECT_NE(hash<StringValue>{}(v1), hash<StringValue>{}(v2));
 }
 
+TEST(HashUtils, Time64NSValue) {
+  Time64NSValue v1(0);
+  Time64NSValue v2(1);
+
+  EXPECT_NE(hash<Time64NSValue>{}(v1), hash<Time64NSValue>{}(v2));
+}
+
 }  // namespace utils
 }  // namespace udf
 }  // namespace carnot

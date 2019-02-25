@@ -27,6 +27,7 @@ static uint64_t HashCombine(uint64_t h1, uint64_t h2) {
   return b;
 }
 
+// PL_CARNOT_UPDATE_FOR_NEW_TYPES
 template <typename T>
 struct hash {};
 
