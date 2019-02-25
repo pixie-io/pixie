@@ -60,6 +60,8 @@ class EngineState : public NotCopyable {
 
   std::shared_ptr<plan::Schema> schema() { return schema_; }
 
+  exec::TableStore* table_store() { return table_store_.get(); }
+
   std::unique_ptr<exec::ExecState> CreateExecState() {
     return std::make_unique<exec::ExecState>(scalar_udf_registry_.get(), uda_registry_.get(),
                                              table_store_);

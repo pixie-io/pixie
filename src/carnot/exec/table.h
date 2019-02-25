@@ -81,6 +81,21 @@ class Table {
   explicit Table(RowDescriptor desc) : desc_(desc) { columns_.reserve(desc_.size()); }
 
   /**
+   * @brief Construct a new Table object along with its columns. Can be used to create
+   * a table (along with columns) based on a subscription message from Stirling.
+   *
+   * @param relation the relation for the table.
+   */
+  explicit Table(const plan::Relation& relation) : desc_(relation.col_types()) {
+    uint64_t num_cols = desc_.size();
+    columns_.reserve(num_cols);
+    for (uint64_t i = 0; i < num_cols; ++i) {
+      PL_CHECK_OK(AddColumn(
+          std::make_shared<Column>(relation.GetColumnType(i), relation.GetColumnName(i))));
+    }
+  }
+
+  /**
    * Adds a column to the table. The column must be the correct type and be the same size as the
    * other columns.
    */
@@ -106,8 +121,7 @@ class Table {
    */
   Status WriteRowBatch(RowBatch rb);
 
-  Status WriteColumnWrapperRecordBatch(
-      std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch> record_batch) {
+  Status TransferRecordBatch(std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch> record_batch) {
     // Check for matching types
     auto received_num_columns = record_batch->size();
     auto expected_num_columns = desc_.size();

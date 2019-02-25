@@ -38,17 +38,5 @@ Status Carnot::ExecuteQuery(const std::string& query) {
   return Status::OK();
 }
 
-void Carnot::AddTable(const std::string& table_name, std::shared_ptr<exec::Table> table) {
-  auto exec_state = engine_state_->CreateExecState();
-  auto table_store = exec_state->table_store();
-  table_store->AddTable(table_name, table);
-}
-
-exec::Table* Carnot::GetTable(const std::string& table_name) {
-  auto exec_state = engine_state_->CreateExecState();
-  auto table_store = exec_state->table_store();
-  return table_store->GetTable(table_name);
-}
-
 }  // namespace carnot
 }  // namespace pl

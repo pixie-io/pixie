@@ -24,7 +24,9 @@ class TableStore {
    * @ param table_name the name of the table to get
    * @ returns the associated table
    */
-  Table* GetTable(std::string table_name) { return table_name_to_table_map_[table_name].get(); }
+  Table* GetTable(const std::string& table_name) {
+    return table_name_to_table_map_[table_name].get();
+  }
 
   /*
    * Add a table under the given name.
@@ -32,9 +34,33 @@ class TableStore {
    * @ param table_name the name of the table to create.
    * @ param table the table to store.
    */
-  void AddTable(std::string table_name, std::shared_ptr<Table> table) {
+  void AddTable(const std::string& table_name, std::shared_ptr<Table> table) {
     table_name_to_table_map_.emplace(table_name, table);
   }
+
+  /*
+   * Add a table under the given name, with an assigned ID.
+   *
+   * @ param table_name the name of the table to create.
+   * @ param table_id the unique ID of the table.
+   * @ param table the table to store.
+   */
+  Status AddTable(const std::string& table_name, uint64_t table_id, std::shared_ptr<Table> table) {
+    auto ok = table_id_to_table_map_.insert({table_id, table}).second;
+    if (!ok) {
+      return error::AlreadyExists("table_id=$0 is already in use");
+    }
+
+    AddTable(table_name, table);
+
+    return Status::OK();
+  }
+
+  /**
+   * Add a default table, for testing purposes.
+   */
+  // TODO(oazizi/anyone): Remove once pub-sub with Stirling is fleshed out.
+  void AddDefaultTable();
 
   using ColNameToTypeMap = std::unordered_map<std::string, udf::UDFDataType>;
   /**

@@ -3,6 +3,7 @@
 
 #include "src/carnot/exec/table.h"
 #include "src/carnot/exec/table_store.h"
+#include "src/stirling/bpftrace_connector.h"
 
 namespace pl {
 namespace carnot {
@@ -40,6 +41,21 @@ TEST(TableStoreTest, basic) {
   EXPECT_EQ("table2col2", lookup->at("b").GetColumnName(1));
   EXPECT_EQ(types::DataType::INT64, lookup->at("b").GetColumnType(2));
   EXPECT_EQ("table2col3", lookup->at("b").GetColumnName(2));
+}
+
+TEST(TableStoreTest, throwaway_default_table) {
+  auto table_store = TableStore();
+  table_store.AddDefaultTable();
+
+  auto lookup = table_store.GetRelationMap();
+  EXPECT_EQ(1, lookup->size());
+
+  auto table = lookup->at(stirling::CPUStatBPFTraceConnector::kName);
+  EXPECT_EQ(stirling::CPUStatBPFTraceConnector::kElements.size(), table.NumColumns());
+  for (uint32_t i = 0; i < stirling::CPUStatBPFTraceConnector::kElements.size(); ++i) {
+    EXPECT_EQ(stirling::CPUStatBPFTraceConnector::kElements[i].type(), table.GetColumnType(i));
+    EXPECT_EQ(stirling::CPUStatBPFTraceConnector::kElements[i].name(), table.GetColumnName(i));
+  }
 }
 
 }  // namespace exec

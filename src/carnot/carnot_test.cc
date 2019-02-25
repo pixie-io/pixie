@@ -40,7 +40,8 @@ class CarnotTest : public ::testing::Test {
     EXPECT_OK(table->AddColumn(col1));
     EXPECT_OK(table->AddColumn(col2));
 
-    carnot_.AddTable("test_table", table);
+    auto table_store = carnot_.table_store();
+    table_store->AddTable("test_table", table);
   }
 
   Carnot carnot_;
@@ -59,7 +60,9 @@ TEST_F(CarnotTest, basic) {
       "\n");
   auto s = carnot_.ExecuteQuery(query);
   ASSERT_TRUE(s.ok());
-  auto output_table = carnot_.GetTable("test_output");
+
+  auto table_store = carnot_.table_store();
+  auto output_table = table_store->GetTable("test_output");
   EXPECT_EQ(2, output_table->numBatches());
 
   auto rb1 = output_table->GetRowBatch(0, std::vector<int64_t>({0, 1})).ConsumeValueOrDie();
@@ -84,7 +87,9 @@ TEST_F(CarnotTest, map_test) {
 
   auto s = carnot_.ExecuteQuery(query);
   ASSERT_TRUE(s.ok());
-  auto output_table = carnot_.GetTable("test_output");
+
+  auto table_store = carnot_.table_store();
+  auto output_table = table_store->GetTable("test_output");
   EXPECT_EQ(2, output_table->numBatches());
   //
   auto rb1 = output_table->GetRowBatch(0, std::vector<int64_t>({0})).ConsumeValueOrDie();

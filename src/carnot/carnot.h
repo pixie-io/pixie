@@ -29,15 +29,10 @@ class Carnot : public NotCopyable {
   Status Init();
 
   /**
-   * Adds a table to the table store in the engine state.
+   * Returns the Table Store.
    * This method is for testing purposes.
-   *
-   * @param table_name the name of the table to add.
-   * @param table the table to add.
    */
-  void AddTable(const std::string& table_name, std::shared_ptr<exec::Table> table);
-
-  exec::Table* GetTable(const std::string& table_name);
+  exec::TableStore* table_store() { return engine_state_->table_store(); }
 
   /**
    * Executes the given query.
