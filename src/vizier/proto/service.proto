@@ -58,10 +58,28 @@ message SchemaResponse {
   repeated SchemaByAgent schema_by_agent = 1;
 }
 
+enum AgentStatus {
+  // The default state if nothing is known.
+  AGENT_STATUS_UNKNOWN = 0;
+  // The state is healthy if heartbeats are received on regular intervals and the
+  // agent is responding to requests.
+  AGENT_STATUS_HEALTHY = 1;
+  // The state will go to unresponsive if the agent hasn't sent a heartbeat for a while
+  // or is unresponsive to messages from Vizier.
+  AGENT_STATUS_UNRESPONSIVE = 2;
+  // The state will go to disconnected if the GRPC connection breaks. The hope is that the agent
+  // will come back online and resume in HEALTHY state.
+  AGENT_STATUS_DISCONNECTED = 3;
+}
+
 message AgentInfoRequest {}
 
 message AgentInfoResponse {
   repeated AgentInfo info = 1;
+  // Time in nanoseconds since the last heartbeat from the agent.
+  int64 last_heartbeat_ns = 2;
+  // The status of the Agent.
+  AgentStatus status = 3;
 }
 
 // AgentInfo contains information about hosts and agent running on a given machine.
