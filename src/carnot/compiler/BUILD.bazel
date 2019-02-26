@@ -12,7 +12,7 @@ pl_cc_library(
     deps = [
         "//src/carnot/exec:cc_library",
         "//src/carnot/plan:cc_library",
-        "//src/carnot/proto:plan_cc_proto",
+        "//src/carnot/proto:plan_pl_cc_proto",
         "//src/carnot/udf:cc_library",
         "//third_party:libpypa",
     ],
@@ -53,7 +53,7 @@ pl_cc_test(
     srcs = ["compiler_test.cc"],
     deps = [
         ":cc_library",
-        "//src/carnot/proto:plan_cc_proto",
+        "//src/carnot/proto:plan_pl_cc_proto",
     ],
 )
 

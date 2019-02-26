@@ -1,54 +1,66 @@
 # gazelle:ignore
-
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
 
-proto_library(
-    name = "plan_proto",
+pl_proto_library(
+    name = "plan_pl_proto",
     srcs = ["plan.proto"],
     visibility = ["//visibility:public"],
     deps = [
-        "//src/common/types:types_proto",
-        "@com_google_protobuf//:wrappers_proto",
+        "//src/common/types:types_pl_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
 )
 
-go_proto_library(
-    name = "plan_go_proto",
-    compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
-    importpath = "pixielabs.ai/pixielabs/src/carnot/plan/proto",
-    proto = ":plan_proto",
+pl_cc_proto_library(
+    name = "plan_pl_cc_proto",
+    proto = ":plan_pl_proto",
     visibility = ["//visibility:public"],
-    deps = ["//src/common/types:types_go_proto"],
+    deps = [
+        "//src/common/types:types_pl_cc_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+    ],
 )
 
-cc_proto_library(
-    name = "plan_cc_proto",
+pl_go_proto_library(
+    name = "plan_pl_go_proto",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/proto",
+    proto = ":plan_pl_proto",
     visibility = ["//visibility:public"],
-    deps = [":plan_proto"],
+    deps = [
+        "//src/common/types:types_pl_go_proto",
+    ],
 )
 
-proto_library(
-    name = "udfs_proto",
+
+pl_proto_library(
+    name = "udfs_pl_proto",
     srcs = ["udfs.proto"],
     visibility = ["//visibility:public"],
-    deps = ["//src/common/types:types_proto"],
+    deps = [
+        "//src/common/types:types_pl_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
+    ],
 )
 
-go_proto_library(
-    name = "udfs_go_proto",
-    compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
-    importpath = "pixielabs.ai/pixielabs/src/carnot/udf/proto",
-    proto = ":udfs_proto",
+pl_cc_proto_library(
+    name = "udfs_pl_cc_proto",
+    proto = ":udfs_pl_proto",
     visibility = ["//visibility:public"],
-    deps = ["//src/common/types:types_go_proto"],
+    deps = [
+        "//src/common/types:types_pl_cc_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+    ],
 )
 
-cc_proto_library(
-    name = "udfs_cc_proto",
+pl_go_proto_library(
+    name = "udfs_pl_go_proto",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/proto",
+    proto = ":udfs_pl_proto",
     visibility = ["//visibility:public"],
-    deps = [":udfs_proto"],
+    deps = [
+        "//src/common/types:types_pl_go_proto",
+    ],
 )
 
 pl_cc_library(
@@ -56,5 +68,5 @@ pl_cc_library(
     testonly = 1,
     hdrs = ["test_proto.h"],
     visibility = ["//visibility:public"],
-    deps = [":plan_cc_proto"],
+    deps = [":plan_pl_cc_proto"],
 )

@@ -5,6 +5,7 @@ package pl.vizier;
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/utils/proto/utils.proto";
 import "src/common/proto/status.proto";
+import "src/common/types/types.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/proto;service";
 /**
@@ -35,8 +36,27 @@ service VizierService {
   rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
   // This is an incoming request to Vizier to execute queries.
   rpc ExecuteQuery(QueryRequest) returns (QueryResponse) {}
+  rpc GetSchemas(SchemaRequest) returns (SchemaResponse) {}
 }
 
+// The schema information per agent.
+message Schema {
+  repeated Relation relations = 1;
+}
+
+// The schema request.
+message SchemaRequest {}
+
+// The schema response from Vizier.
+message SchemaResponse {
+  message SchemaByAgent {
+    utils.UUID agent_id      = 1 [
+      (gogoproto.customname) = "AgentID"
+    ];
+    Schema schema = 2;
+  }
+  repeated SchemaByAgent schema_by_agent = 1;
+}
 
 message AgentInfoRequest {}
 
@@ -90,7 +110,7 @@ message RegisterAgentResponse {
 
 message QueryRequest {
   // The ID of the query (will be returned in response).
-  int64 query_id = 1 [
+  utils.UUID query_id = 1 [
     (gogoproto.customname) = "QueryID"
   ];
   // The query string (either this or proto will be set).
@@ -98,12 +118,58 @@ message QueryRequest {
   // TODO(zasgar): Add proto query.
 }
 
+// RowBatchData is a temporary data type that will remove when proper serialization
+// is implemented.
+message RowBatchData {
+  // The data stored as a string (on Vizier) or as a serialized arrow:RowBatch on
+  // the agent.
+  bytes data = 1;
+}
+
+message Relation {
+  message ColumnInfo {
+    string column_names = 1;
+    pl.types.DataType column_types = 2;
+  }
+  string name = 1;
+  repeated ColumnInfo columns = 2;
+  // Total number of bytes processed (sum of all input tables).
+  int64 table_size_bytes = 3;
+  // Total number of records processed (sum of all input tables).
+  int64 num_records = 4;
+}
+
+// Tracks information about query execution time.
+message QueryTimingInfo {
+  // The total execution time for the query in nanoseconds.
+  int64 execution_time_ns = 1;
+  // The time in ns spent compiling the query.
+  int64 compilation_time_ns = 2;
+}
+
+// QueryExecutionStats contains information about the time/data processed by the query.
+message QueryExecutionStats {
+  QueryTimingInfo timing  = 1;
+  // The number of input bytes.
+  int64 bytes_processed = 2;
+}
+
+// QueryResponse is returned for each execution of a query.
 message QueryResponse {
+  pl.statuspb.Status status = 1;
+
   // The ID of the returned query.
-  int64 query_id = 1 [
+  utils.UUID query_id = 2 [
     (gogoproto.customname) = "QueryID"
   ];
+
+  // Stats about the query execution.
+  QueryExecutionStats stats = 3;
+
+  // Information about the output relation. We can only have one right now.
+  Relation output_relation = 4;
   // The data as a serialized flat_buffer.
   // TODO(zasgar): Make it send flat_buffer directly from grpc.
-  bytes data = 2;
+  repeated RowBatchData data = 5;
+
 }

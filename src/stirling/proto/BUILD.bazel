@@ -1,48 +1,60 @@
 # gazelle:ignore
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
 
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
-load("@io_bazel_rules_go//proto:def.bzl", "go_proto_library")
-
-proto_library(
-    name = "canonical_proto",
+pl_proto_library(
+    name = "canonical_pl_proto",
     srcs = ["canonical_message.proto"],
     visibility = ["//visibility:public"],
-)
-
-proto_library(
-    name = "collector_config_proto",
-    srcs = ["collector_config.proto"],
-    visibility = ["//visibility:public"],
     deps = [
-        "//src/common/types:types_proto",
+       "//src/common/types:types_pl_proto",
     ],
 )
 
-go_proto_library(
-    name = "canonical_go_proto",
-    compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
+pl_cc_proto_library(
+    name = "canonical_pl_cc_proto",
+    proto = ":canonical_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/common/types:types_pl_cc_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+    ],
+)
+
+pl_go_proto_library(
+    name = "canonical_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/stirling/proto",
-    proto = ":canonical_proto",
+    proto = ":canonical_pl_proto",
     visibility = ["//visibility:public"],
+    deps = [
+        "//src/common/types:types_pl_go_proto",
+    ],
 )
 
-go_proto_library(
-    name = "collector_config_go_proto",
-    compilers = ["@io_bazel_rules_go//proto:gogoslick_grpc"],
+pl_proto_library(
+    name = "collector_config_pl_proto",
+    srcs = ["collector_config.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+       "//src/common/types:types_pl_proto",
+    ],
+)
+
+pl_cc_proto_library(
+    name = "collector_config_pl_cc_proto",
+    proto = ":collector_config_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/common/types:types_pl_cc_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+    ],
+)
+
+pl_go_proto_library(
+    name = "collector_config_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/stirling/proto",
-    proto = ":collector_config_proto",
+    proto = ":collector_config_pl_proto",
     visibility = ["//visibility:public"],
-    deps = ["//src/common/types:types_go_proto"],
-)
-
-cc_proto_library(
-    name = "canonical_cc_proto",
-    visibility = ["//visibility:public"],
-    deps = [":canonical_proto"],
-)
-
-cc_proto_library(
-    name = "collector_config_cc_proto",
-    visibility = ["//visibility:public"],
-    deps = [":collector_config_proto"],
+    deps = [
+        "//src/common/types:types_pl_go_proto",
+    ],
 )

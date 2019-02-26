@@ -219,6 +219,7 @@ if (env.JOB_NAME == "pixielabs-master") {
   }
 }
 
+
 /********************************************
  * For now restrict the ASAN and TSAN builds to carnot. There is a bug in go(or llvm) preventing linking:
  * https://github.com/golang/go/issues/27110
@@ -307,6 +308,22 @@ node {
               yarn install --prefer_offline
               jest
             '''
+          }
+        }
+      }
+    }
+    // Only build docs on master.
+    if (env.JOB_NAME == "pixielabs-master") {
+      stage('Build Docs') {
+        retry(JENKINS_RETRIES) {
+          node {
+            deleteDir()
+            unstash SRC_STASH_NAME
+            docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
+              docker.image(devDockerImageWithTag).inside {
+                sh 'doxygen'
+              }
+            }
           }
         }
       }

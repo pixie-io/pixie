@@ -13,8 +13,8 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/carnot/proto:udfs_cc_proto",
-        "//src/common/types:types_cc_proto",
+        "//src/carnot/proto:udfs_pl_cc_proto",
+        "//src/common/types:types_pl_cc_proto",
         "//third_party:arrow",
         "@com_google_farmhash//:farmhash",
     ],
