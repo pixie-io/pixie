@@ -1,13 +1,12 @@
 #pragma once
 
-#include <glog/logging.h>
-
 #include <chrono>
 #include <memory>
 #include <random>
 #include <string>
 #include <vector>
 
+#include "src/common/common.h"
 #include "src/stirling/source_connector.h"
 
 namespace pl {

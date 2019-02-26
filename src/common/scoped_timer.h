@@ -1,11 +1,11 @@
 #pragma once
 
-#include <glog/logging.h>
 #include <string>
 
 #include "absl/strings/str_format.h"
 #include "src/common/base.h"
 #include "src/common/elapsed_timer.h"
+#include "src/common/logging.h"
 
 namespace pl {
 

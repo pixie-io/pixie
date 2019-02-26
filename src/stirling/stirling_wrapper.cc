@@ -1,11 +1,7 @@
-#include <glog/logging.h>
 #include <ctime>
 #include <iomanip>
 
-#include "src/common/env.h"
-#include "src/common/error.h"
-#include "src/common/macros.h"
-#include "src/common/status.h"
+#include "src/common/common.h"
 #include "src/stirling/bpftrace_connector.h"
 #include "src/stirling/info_class_schema.h"
 #include "src/stirling/seq_gen_connector.h"

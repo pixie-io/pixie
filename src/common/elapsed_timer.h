@@ -1,9 +1,9 @@
 #pragma once
-#include <glog/logging.h>
 #include <chrono>
 #include <iostream>
 
 #include "src/common/base.h"
+#include "src/common/logging.h"
 
 namespace pl {
 

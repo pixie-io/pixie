@@ -1,7 +1,6 @@
 #pragma once
 
 #include <arrow/memory_pool.h>
-#include <glog/logging.h>
 #include <memory>
 #include <string>
 
@@ -13,8 +12,7 @@
 #include "src/carnot/plan/plan.h"
 #include "src/carnot/plan/schema.h"
 #include "src/carnot/udf/registry.h"
-#include "src/common/base.h"
-#include "src/common/status.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {

@@ -1,7 +1,7 @@
-#include <glog/logging.h>
 #include <chrono>
 #include <utility>
 
+#include "src/common/common.h"
 #include "src/stirling/bpftrace_connector.h"
 #include "src/stirling/pub_sub_manager.h"
 #include "src/stirling/source_connector.h"

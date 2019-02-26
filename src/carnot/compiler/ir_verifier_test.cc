@@ -1,11 +1,11 @@
-#include "src/carnot/compiler/ir_verifier.h"
-
-#include <glog/logging.h>
 #include <gtest/gtest.h>
 #include <pypa/ast/tree_walker.hh>
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/compiler/ir_verifier.h"
 #include "src/carnot/compiler/test_utils.h"
+#include "src/common/common.h"
+
 namespace pl {
 namespace carnot {
 namespace compiler {

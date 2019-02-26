@@ -8,6 +8,7 @@
 #include "src/common/env.h"
 #include "src/common/error.h"
 #include "src/common/error_strings.h"
+#include "src/common/logging.h"
 #include "src/common/macros.h"
 #include "src/common/object_pool.h"
 #include "src/common/status.h"

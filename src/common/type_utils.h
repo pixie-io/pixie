@@ -1,12 +1,12 @@
 #pragma once
 
 #include <arrow/type.h>
-#include <glog/logging.h>
 
 #include <memory>
 #include <string>
 
 #include "absl/strings/str_format.h"
+#include "src/common/common.h"
 #include "src/common/types/types.pb.h"
 
 namespace pl {

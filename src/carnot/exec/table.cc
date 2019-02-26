@@ -1,5 +1,4 @@
 #include <arrow/array.h>
-#include <glog/logging.h>
 #include <algorithm>
 #include <cmath>
 #include <memory>
@@ -10,8 +9,7 @@
 #include "src/carnot/exec/table.h"
 #include "src/carnot/plan/relation.h"
 #include "src/carnot/udf/arrow_adapter.h"
-#include "src/common/error.h"
-#include "src/common/statusor.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {

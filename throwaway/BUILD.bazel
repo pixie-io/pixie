@@ -33,6 +33,7 @@ pl_cc_binary(
     srcs = ["flags.cc"],
     deps = [
         "@com_intel_tbb//:tbb",
+        "//src/common:common",
     ],
 )
 

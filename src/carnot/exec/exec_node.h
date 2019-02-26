@@ -1,7 +1,5 @@
 #pragma once
 
-#include <glog/logging.h>
-
 #include <string>
 #include <vector>
 
@@ -9,8 +7,7 @@
 #include "src/carnot/exec/row_batch.h"
 #include "src/carnot/exec/row_descriptor.h"
 #include "src/carnot/plan/operators.h"
-#include "src/common/error.h"
-#include "src/common/status.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {

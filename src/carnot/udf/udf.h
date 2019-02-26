@@ -1,7 +1,6 @@
 #pragma once
 #include <arrow/builder.h>
 #include <arrow/type.h>
-#include <glog/logging.h>
 
 #include <array>
 #include <cstdint>
@@ -12,7 +11,7 @@
 
 #include <functional>
 
-#include "src/common/status.h"
+#include "src/common/common.h"
 #include "src/common/types/types.pb.h"
 
 namespace pl {

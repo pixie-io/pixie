@@ -1,10 +1,9 @@
-#include <glog/logging.h>
-
 #include "src/carnot/exec/blocking_agg_node.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/plan/utils.h"
 #include "src/carnot/proto/plan.pb.h"
 #include "src/carnot/udf/arrow_adapter.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {

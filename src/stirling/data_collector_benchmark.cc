@@ -5,13 +5,12 @@
 #include <arrow/ipc/reader.h>
 #include <arrow/ipc/writer.h>
 
-#include <glog/logging.h>
-
 #include <algorithm>
 #include <memory>
 #include <random>
 #include <vector>
 
+#include "src/common/common.h"
 #include "src/stirling/proto/canonical_message.pb.h"
 
 using arrow::DoubleBuilder;

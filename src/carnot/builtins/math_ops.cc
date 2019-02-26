@@ -1,7 +1,6 @@
-#include <glog/logging.h>
-
 #include "src/carnot/builtins/math_ops.h"
 #include "src/carnot/udf/registry.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {

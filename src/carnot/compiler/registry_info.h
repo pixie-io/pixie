@@ -1,6 +1,5 @@
 #pragma once
 
-#include <glog/logging.h>
 #include <map>
 #include <memory>
 #include <string>
@@ -9,10 +8,8 @@
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/proto/udfs.pb.h"
+#include "src/common/common.h"
 #include "src/common/types/types.pb.h"
-
-#include "src/common/error.h"
-#include "src/common/statusor.h"
 
 namespace pl {
 namespace carnot {

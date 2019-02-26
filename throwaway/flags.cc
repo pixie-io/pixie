@@ -1,11 +1,10 @@
-#include <gflags/gflags.h>
-#include <glog/logging.h>
 #include <tbb/task_group.h>
 
 #include <iostream>
 #include "absl/debugging/failure_signal_handler.h"
 #include "absl/debugging/symbolize.h"
 #include "absl/strings/str_format.h"
+#include "src/common/common.h"
 
 DEFINE_string(message, "", "The message to print");
 

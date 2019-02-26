@@ -1,13 +1,12 @@
 #pragma once
 
-#include <glog/logging.h>
 #include <memory>
 #include <unordered_map>
 
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/proto/plan.pb.h"
-#include "src/common/status.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {

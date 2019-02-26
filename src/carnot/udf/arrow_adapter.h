@@ -2,7 +2,6 @@
 
 #include <arrow/array.h>
 #include <arrow/memory_pool.h>
-#include <glog/logging.h>
 #include <algorithm>
 #include <numeric>
 #include <string>
@@ -11,8 +10,7 @@
 #include <vector>
 
 #include "src/carnot/udf/udf.h"
-#include "src/common/error.h"
-#include "src/common/status.h"
+#include "src/common/common.h"
 
 namespace pl {
 

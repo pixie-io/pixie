@@ -1,4 +1,3 @@
-#include <glog/logging.h>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -10,7 +9,7 @@
 #include "src/carnot/plan/schema.h"
 #include "src/carnot/plan/utils.h"
 #include "src/carnot/proto/plan.pb.h"
-#include "src/common/error.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {

@@ -1,11 +1,9 @@
-#include <glog/logging.h>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "src/common/error.h"
-#include "src/common/macros.h"
+#include "src/common/common.h"
 #include "src/common/type_utils.h"
 #include "src/stirling/data_table.h"
 

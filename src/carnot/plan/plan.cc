@@ -1,10 +1,9 @@
-#include <glog/logging.h>
-
-#include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/plan.h"
+#include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/plan_fragment.h"
 #include "src/carnot/plan/plan_graph.h"
 #include "src/carnot/proto/plan.pb.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {

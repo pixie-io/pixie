@@ -1,4 +1,3 @@
-#include <glog/logging.h>
 #include <algorithm>
 #include <string>
 
@@ -6,6 +5,7 @@
 
 #include "src/carnot/plan/relation.h"
 #include "src/carnot/plan/utils.h"
+#include "src/common/common.h"
 #include "src/common/type_utils.h"
 
 namespace pl {

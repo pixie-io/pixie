@@ -1,6 +1,5 @@
 #include <arrow/array.h>
 #include <arrow/builder.h>
-#include <glog/logging.h>
 
 #include <algorithm>
 #include <numeric>
@@ -11,8 +10,7 @@
 
 #include "src/carnot/udf/arrow_adapter.h"
 #include "src/carnot/udf/udf.h"
-#include "src/common/error.h"
-#include "src/common/status.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {

@@ -1,10 +1,9 @@
-#include <glog/logging.h>
 #include <algorithm>
 #include <vector>
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/plan/schema.h"
-#include "src/common/error.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {

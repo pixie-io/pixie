@@ -1,10 +1,10 @@
 #pragma once
-#include <glog/logging.h>
 #include <memory>
 #include <vector>
 
 #include "absl/base/internal/spinlock.h"
 #include "src/common/base.h"
+#include "src/common/logging.h"
 #include "src/common/macros.h"
 
 namespace pl {

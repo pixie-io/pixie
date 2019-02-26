@@ -1,7 +1,6 @@
 #pragma once
 
 #include <arrow/array.h>
-#include <glog/logging.h>
 
 #include <memory>
 #include <string>
@@ -10,8 +9,7 @@
 #include "src/carnot/udf/arrow_adapter.h"
 #include "src/carnot/udf/column_wrapper.h"
 #include "src/carnot/udf/udf.h"
-#include "src/common/error.h"
-#include "src/common/statusor.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {

@@ -1,5 +1,4 @@
 #include <benchmark/benchmark.h>
-#include <glog/logging.h>
 #include <google/protobuf/text_format.h>
 
 #include "src/carnot/exec/expression_evaluator.h"
@@ -9,8 +8,7 @@
 #include "src/carnot/proto/test_proto.h"
 #include "src/carnot/udf/arrow_adapter.h"
 #include "src/carnot/udf/udf.h"
-#include "src/common/macros.h"
-#include "src/common/status.h"
+#include "src/common/common.h"
 #include "src/utils/benchmark/utils.h"
 
 using ScalarExpression = pl::carnot::plan::ScalarExpression;

@@ -1,5 +1,4 @@
 #pragma once
-#include <glog/logging.h>
 
 #include <memory>
 #include <string>
@@ -8,8 +7,7 @@
 #include "src/carnot/plan/plan_node.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/proto/plan.pb.h"
-#include "src/common/status.h"
-#include "src/common/statusor.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {

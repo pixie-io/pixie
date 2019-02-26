@@ -1,8 +1,6 @@
 #pragma once
 
 #include <arrow/api.h>
-#include <gflags/gflags.h>
-#include <glog/logging.h>
 
 #include <atomic>
 #include <chrono>
@@ -10,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "src/common/status.h"
+#include "src/common/common.h"
 #include "src/common/type_utils.h"
 #include "src/common/types/types.pb.h"
 #include "src/stirling/proto/collector_config.pb.h"

@@ -1,5 +1,4 @@
 #include <benchmark/benchmark.h>
-#include <glog/logging.h>
 
 #include <random>
 #include <vector>
@@ -9,7 +8,7 @@
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/carnot/udf/udf_wrapper.h"
-#include "src/common/status.h"
+#include "src/common/common.h"
 #include "src/utils/benchmark/utils.h"
 
 using pl::Status;

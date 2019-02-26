@@ -1,6 +1,5 @@
 #pragma once
 
-#include <glog/logging.h>
 #include <map>
 #include <memory>
 #include <string>
@@ -11,9 +10,7 @@
 #include "src/carnot/proto/udfs.pb.h"
 #include "src/carnot/udf/udf.h"
 #include "src/carnot/udf/udf_definition.h"
-
-#include "src/common/error.h"
-#include "src/common/statusor.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <glog/logging.h>
 #include <memory>
 #include <string>
 
 #include "src/common/codes/error_codes.pb.h"
+#include "src/common/logging.h"
 #include "src/common/macros.h"
 #include "src/common/proto/status.pb.h"
 

@@ -1,8 +1,7 @@
 // Defines basic execution environment related stuff.
 #pragma once
 
-#include <gflags/gflags.h>
-#include <glog/logging.h>
+#include "src/common/logging.h"
 
 namespace pl {
 

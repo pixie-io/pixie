@@ -3,8 +3,6 @@
 // If needed the DAG implementation can be made generic.
 #pragma once
 
-#include <glog/logging.h>
-
 #include <algorithm>
 #include <string>
 #include <unordered_map>
@@ -13,6 +11,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {
