@@ -208,6 +208,7 @@ genbison(
     ],
     header_out = "parser.tab.hh",
     source_out = "parser.tab.cc",
+    tags = ["linux_only"],
 )
 
 genflex(
@@ -215,4 +216,5 @@ genflex(
     src = "bpftrace/src/lexer.l",
     out = "lex.yy.cc",
     includes = [":bpftrace-bison"],
+    tags = ["linux_only"],
 )

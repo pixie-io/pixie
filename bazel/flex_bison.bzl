@@ -1,6 +1,6 @@
 # Taken from: https://github.com/kythe/kythe/blob/master/tools/build_rules/lexyacc.bzl
 
-def genflex(name, src, out, includes = []):
+def genflex(name, src, out, includes = [], **kwargs):
     """Generate a C++ lexer from a lex file using Flex.
     Args:
       name: The name of the rule.
@@ -14,9 +14,10 @@ def genflex(name, src, out, includes = []):
         outs = [out],
         srcs = [src] + includes,
         cmd = cmd,
+        **kwargs
     )
 
-def genbison(name, src, header_out, source_out, extra_outs = []):
+def genbison(name, src, header_out, source_out, extra_outs = [], **kwargs):
     """Generate a C++ parser from a Yacc file using Bison.
     Args:
       name: The name of the rule.
@@ -32,4 +33,5 @@ def genbison(name, src, header_out, source_out, extra_outs = []):
         outs = [source_out, header_out] + extra_outs,
         srcs = [src],
         cmd = cmd,
+        **kwargs
     )
