@@ -14,8 +14,8 @@ namespace exec {
 class MemorySourceNode : public SourceNode {
  public:
   MemorySourceNode() : SourceNode() {}
-  bool ChunksRemaining() override;
-  bool NextChunkReady() override;
+  bool BatchesRemaining() override;
+  bool NextBatchReady() override;
 
  protected:
   std::string DebugStringImpl() override;
@@ -27,7 +27,7 @@ class MemorySourceNode : public SourceNode {
   Status GenerateNextImpl(ExecState *exec_state) override;
 
  private:
-  int64_t current_chunk_ = 0;
+  int64_t current_batch_ = 0;
   std::unique_ptr<plan::MemorySourceOperator> plan_node_;
   std::unique_ptr<RowDescriptor> output_descriptor_;
   Table *table_ = nullptr;

@@ -37,16 +37,17 @@ Status MemorySourceNode::CloseImpl(ExecState *) { return Status::OK(); }
 Status MemorySourceNode::GenerateNextImpl(ExecState *exec_state) {
   DCHECK(table_ != nullptr);
 
-  PL_ASSIGN_OR_RETURN(const auto &row_batch,
-                      table_->GetRowBatch(current_chunk_, plan_node_->Columns()));
+  PL_ASSIGN_OR_RETURN(
+      const auto &row_batch,
+      table_->GetRowBatch(current_batch_, plan_node_->Columns(), exec_state->exec_mem_pool()));
   PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *row_batch));
-  current_chunk_++;
+  current_batch_++;
   return Status::OK();
 }
 
-bool MemorySourceNode::ChunksRemaining() { return current_chunk_ < table_->numBatches(); }
+bool MemorySourceNode::BatchesRemaining() { return current_batch_ < table_->NumBatches(); }
 
-bool MemorySourceNode::NextChunkReady() { return true; }
+bool MemorySourceNode::NextBatchReady() { return true; }
 
 }  // namespace exec
 }  // namespace carnot

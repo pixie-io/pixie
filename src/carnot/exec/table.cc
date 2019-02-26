@@ -15,14 +15,14 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
-Status Column::AddChunk(const std::shared_ptr<arrow::Array>& chunk) {
+Status Column::AddBatch(const std::shared_ptr<arrow::Array>& batch) {
   // Check type and check size.
-  if (udf::CarnotToArrowType(data_type_) != chunk->type_id()) {
+  if (udf::CarnotToArrowType(data_type_) != batch->type_id()) {
     return error::InvalidArgument("Column is of type $0, but needs to be type $1.",
-                                  chunk->type_id(), data_type_);
+                                  batch->type_id(), data_type_);
   }
 
-  chunks_.emplace_back(chunk);
+  batches_.emplace_back(batch);
   return Status::OK();
 }
 
@@ -39,17 +39,17 @@ Status Table::AddColumn(std::shared_ptr<Column> col) {
   }
 
   if (columns_.size() > 0) {
-    // Check number of chunks.
-    if (columns_[0]->numChunks() != col->numChunks()) {
-      return error::InvalidArgument("Column has $0 chunks, but should have $1.", col->numChunks(),
-                                    columns_[0]->numChunks());
+    // Check number of batches.
+    if (columns_[0]->numBatches() != col->numBatches()) {
+      return error::InvalidArgument("Column has $0 batches, but should have $1.", col->numBatches(),
+                                    columns_[0]->numBatches());
     }
-    // Check size of chunks.
-    for (int64_t chunk_idx = 0; chunk_idx < columns_[0]->numChunks(); chunk_idx++) {
-      if (columns_[0]->chunk(chunk_idx)->length() != col->chunk(chunk_idx)->length()) {
-        return error::InvalidArgument("Column has chunk of size $0, but should have size $1.",
-                                      col->chunk(chunk_idx)->length(),
-                                      columns_[0]->chunk(chunk_idx)->length());
+    // Check size of batches.
+    for (int64_t batch_idx = 0; batch_idx < columns_[0]->numBatches(); batch_idx++) {
+      if (columns_[0]->batch(batch_idx)->length() != col->batch(batch_idx)->length()) {
+        return error::InvalidArgument("Column has batch of size $0, but should have size $1.",
+                                      col->batch(batch_idx)->length(),
+                                      columns_[0]->batch(batch_idx)->length());
       }
     }
   }
@@ -59,19 +59,48 @@ Status Table::AddColumn(std::shared_ptr<Column> col) {
   return Status::OK();
 }
 
-StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatch(int64_t i, std::vector<int64_t> cols) {
+StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatch(int64_t row_batch_idx,
+                                                       std::vector<int64_t> cols,
+                                                       arrow::MemoryPool* mem_pool) {
   DCHECK(columns_.size() > 0) << "RowBatch does not have any columns.";
-  DCHECK(columns_[0]->numChunks() > i) << absl::StrFormat(
-      "Table has %d chunks, but requesting chunk %d", columns_[0]->numChunks(), i);
+  DCHECK(NumBatches() > row_batch_idx) << absl::StrFormat(
+      "Table has %d batches, but requesting batch %d", NumBatches(), row_batch_idx);
 
+  // Get column types for row descriptor.
   std::vector<udf::UDFDataType> rb_types;
   for (auto col_idx : cols) {
     rb_types.push_back(desc_.type(col_idx));
   }
-  auto output_rb =
-      std::make_unique<RowBatch>(RowDescriptor(rb_types), columns_[0]->chunk(i)->length());
+
+  auto num_cold_batches = columns_.size() > 0 ? columns_[0]->numBatches() : 0;
+  // If i > num_cold_batches, hot_idx is the index of the batch that we want from the hot columns.
+  auto hot_idx = row_batch_idx - num_cold_batches;
+
+  if (hot_idx >= 0) {
+    DCHECK(hot_columns_.size() > static_cast<size_t>(hot_idx));
+    // Move hot column batches 0 to hot_idx into cold storage.
+    // TODO(michelle): (PL-388) We're currently converting hot data to row batches on a 1:1 basis.
+    // This should be updated so that multiple hot column batches are merged into a single row
+    // batch.
+    auto batch_idx = 0;
+    while (batch_idx <= hot_idx) {
+      for (size_t col_idx = 0; col_idx < columns_.size(); col_idx++) {
+        DCHECK(hot_columns_[batch_idx]->size() > col_idx);
+        auto hot_batch_sptr = hot_columns_[batch_idx]->at(col_idx)->ConvertToArrow(mem_pool);
+        PL_RETURN_IF_ERROR(columns_.at(col_idx)->AddBatch(hot_batch_sptr));
+      }
+      batch_idx++;
+    }
+    // Remove hot column batches 0 to hot_idx from hot columns.
+    hot_columns_.erase(hot_columns_.begin(), hot_columns_.begin() + hot_idx + 1);
+  }
+
+  DCHECK(columns_.size() > 0 && columns_[0]->numBatches() > row_batch_idx);
+
+  auto output_rb = std::make_unique<RowBatch>(RowDescriptor(rb_types),
+                                              columns_[0]->batch(row_batch_idx)->length());
   for (auto col_idx : cols) {
-    auto s = output_rb->AddColumn(columns_[col_idx]->chunk(i));
+    auto s = output_rb->AddColumn(columns_[col_idx]->batch(row_batch_idx));
     PL_RETURN_IF_ERROR(s);
   }
 
@@ -92,10 +121,19 @@ Status Table::WriteRowBatch(RowBatch rb) {
   }
 
   for (int64_t i = 0; i < rb.num_columns(); i++) {
-    auto s = columns_[i]->AddChunk(rb.ColumnAt(i));
+    auto s = columns_[i]->AddBatch(rb.ColumnAt(i));
     PL_RETURN_IF_ERROR(s);
   }
   return Status::OK();
+}
+
+int64_t Table::NumBatches() {
+  auto num_batches = 0;
+  if (columns_.size() > 0) {
+    num_batches += columns_[0]->numBatches();
+  }
+  num_batches += hot_columns_.size();
+  return num_batches;
 }
 
 plan::Relation Table::GetRelation() {

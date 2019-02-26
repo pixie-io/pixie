@@ -190,8 +190,8 @@ class ProcessingNode : public ExecNode {
 class SourceNode : public ExecNode {
  public:
   SourceNode() : ExecNode(ExecNodeType::kSourceNode) {}
-  virtual bool ChunksRemaining() = 0;
-  virtual bool NextChunkReady() = 0;
+  virtual bool BatchesRemaining() = 0;
+  virtual bool NextBatchReady() = 0;
 };
 
 /**

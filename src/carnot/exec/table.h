@@ -21,7 +21,7 @@ namespace carnot {
 namespace exec {
 
 /**
- * A Column is chunked into equally-sized Arrow Arrays.
+ * A Column is batched into equally-sized Arrow Arrays.
  */
 class Column {
  public:
@@ -39,24 +39,24 @@ class Column {
   udf::UDFDataType data_type() const { return data_type_; }
 
   /**
-   * @ return the number of chunks in the column.
+   * @ return the number of batches in the column.
    */
-  int64_t numChunks() const { return chunks_.size(); }
+  int64_t numBatches() const { return batches_.size(); }
 
   /**
-   * Add a new chunk to the column. The chunk must be the correct Arrow datatype.
+   * Add a new batch to the column. The batch must be the correct Arrow datatype.
    *
-   * @ param chunk the chunk to add to the column.
+   * @ param batch the batch to add to the column.
    */
-  Status AddChunk(const std::shared_ptr<arrow::Array>& chunk);
+  Status AddBatch(const std::shared_ptr<arrow::Array>& batch);
 
   /**
-   * @ param i the index to get the chunk from.
+   * @ param i the index to get the batch from.
    */
-  std::shared_ptr<arrow::Array> chunk(size_t i) {
-    DCHECK(i < chunks_.size()) << absl::StrFormat("chunks_[%d] does not exist, chunks_ is size %d",
-                                                  i, chunks_.size());
-    return chunks_[i];
+  std::shared_ptr<arrow::Array> batch(size_t i) {
+    DCHECK(i < batches_.size()) << absl::StrFormat(
+        "batches_[%d] does not exist, batches_ is size %d", i, batches_.size());
+    return batches_[i];
   }
 
   std::string name() { return name_; }
@@ -65,7 +65,7 @@ class Column {
   std::string name_;
   udf::UDFDataType data_type_;
 
-  std::vector<std::shared_ptr<arrow::Array>> chunks_;
+  std::vector<std::shared_ptr<arrow::Array>> batches_;
 };
 
 /**
@@ -114,7 +114,8 @@ class Table {
    * @ param i the index of the RowBatch to get.
    * @ param cols the indices of the columns to get
    */
-  StatusOr<std::unique_ptr<RowBatch>> GetRowBatch(int64_t i, std::vector<int64_t> cols);
+  StatusOr<std::unique_ptr<RowBatch>> GetRowBatch(int64_t row_batch_idx, std::vector<int64_t> cols,
+                                                  arrow::MemoryPool* mem_pool);
 
   /**
    * @ param rb Rowbatch to write to the table.
@@ -147,18 +148,14 @@ class Table {
   /**
    * @return number of column batches.
    */
-  int64_t numBatches() {
-    if (columns_.size() > 0) {
-      return columns_[0]->numChunks();
-    }
-    return 0;
-  }
+  int64_t NumBatches();
 
   plan::Relation GetRelation();
 
  private:
   RowDescriptor desc_;
   std::vector<std::shared_ptr<Column>> columns_;
+  // TODO(michelle): (PL-388) Change hot_columns_ to a list-based queue.
   std::vector<std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch>> hot_columns_;
   std::unordered_map<std::string, std::shared_ptr<Column>> name_to_column_map_;
 };

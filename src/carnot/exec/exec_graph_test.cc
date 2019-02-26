@@ -112,20 +112,20 @@ TEST_F(ExecGraphTest, execute) {
   std::vector<udf::Int64Value> col1_in1 = {1, 2, 3};
   std::vector<udf::Int64Value> col1_in2 = {4, 5};
 
-  EXPECT_OK(col1->AddChunk(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col1->AddChunk(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
 
   auto col2 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN, "col2");
   std::vector<udf::BoolValue> col2_in1 = {true, false, true};
   std::vector<udf::BoolValue> col2_in2 = {false, false};
-  EXPECT_OK(col2->AddChunk(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col2->AddChunk(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
+  EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
 
   auto col3 = std::make_shared<Column>(udf::UDFDataType::FLOAT64, "col3");
   std::vector<udf::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
   std::vector<udf::Float64Value> col3_in2 = {3.4, 1.2};
-  EXPECT_OK(col3->AddChunk(udf::ToArrow(col3_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col3->AddChunk(udf::ToArrow(col3_in2, arrow::default_memory_pool())));
+  EXPECT_OK(col3->AddBatch(udf::ToArrow(col3_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col3->AddBatch(udf::ToArrow(col3_in2, arrow::default_memory_pool())));
 
   EXPECT_OK(table->AddColumn(col1));
   EXPECT_OK(table->AddColumn(col2));
@@ -144,12 +144,12 @@ TEST_F(ExecGraphTest, execute) {
   auto output_table = exec_state_->table_store()->GetTable("output");
   std::vector<udf::Float64Value> out_in1 = {4.8, 16.4, 26.4};
   std::vector<udf::Float64Value> out_in2 = {14.8, 12.4};
-  EXPECT_EQ(2, output_table->numBatches());
-  EXPECT_TRUE(output_table->GetRowBatch(0, std::vector<int64_t>({0}))
+  EXPECT_EQ(2, output_table->NumBatches());
+  EXPECT_TRUE(output_table->GetRowBatch(0, std::vector<int64_t>({0}), arrow::default_memory_pool())
                   .ConsumeValueOrDie()
                   ->ColumnAt(0)
                   ->Equals(udf::ToArrow(out_in1, arrow::default_memory_pool())));
-  EXPECT_TRUE(output_table->GetRowBatch(1, std::vector<int64_t>({0}))
+  EXPECT_TRUE(output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
                   .ConsumeValueOrDie()
                   ->ColumnAt(0)
                   ->Equals(udf::ToArrow(out_in2, arrow::default_memory_pool())));
@@ -186,20 +186,20 @@ TEST_F(ExecGraphTest, execute_time) {
   std::vector<udf::Time64NSValue> col1_in1 = {1, 2, 3};
   std::vector<udf::Time64NSValue> col1_in2 = {4, 5};
 
-  EXPECT_OK(col1->AddChunk(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col1->AddChunk(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
 
   auto col2 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN, "col2");
   std::vector<udf::BoolValue> col2_in1 = {true, false, true};
   std::vector<udf::BoolValue> col2_in2 = {false, false};
-  EXPECT_OK(col2->AddChunk(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col2->AddChunk(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
+  EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
 
   auto col3 = std::make_shared<Column>(udf::UDFDataType::FLOAT64, "col3");
   std::vector<udf::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
   std::vector<udf::Float64Value> col3_in2 = {3.4, 1.2};
-  EXPECT_OK(col3->AddChunk(udf::ToArrow(col3_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col3->AddChunk(udf::ToArrow(col3_in2, arrow::default_memory_pool())));
+  EXPECT_OK(col3->AddBatch(udf::ToArrow(col3_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col3->AddBatch(udf::ToArrow(col3_in2, arrow::default_memory_pool())));
 
   EXPECT_OK(table->AddColumn(col1));
   EXPECT_OK(table->AddColumn(col2));
@@ -218,12 +218,12 @@ TEST_F(ExecGraphTest, execute_time) {
   auto output_table = exec_state_->table_store()->GetTable("output");
   std::vector<udf::Float64Value> out_in1 = {4.8, 16.4, 26.4};
   std::vector<udf::Float64Value> out_in2 = {14.8, 12.4};
-  EXPECT_EQ(2, output_table->numBatches());
-  EXPECT_TRUE(output_table->GetRowBatch(0, std::vector<int64_t>({0}))
+  EXPECT_EQ(2, output_table->NumBatches());
+  EXPECT_TRUE(output_table->GetRowBatch(0, std::vector<int64_t>({0}), arrow::default_memory_pool())
                   .ConsumeValueOrDie()
                   ->ColumnAt(0)
                   ->Equals(udf::ToArrow(out_in1, arrow::default_memory_pool())));
-  EXPECT_TRUE(output_table->GetRowBatch(1, std::vector<int64_t>({0}))
+  EXPECT_TRUE(output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
                   .ConsumeValueOrDie()
                   ->ColumnAt(0)
                   ->Equals(udf::ToArrow(out_in2, arrow::default_memory_pool())));

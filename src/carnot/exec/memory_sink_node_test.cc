@@ -58,15 +58,15 @@ TEST_F(MemorySinkNodeTest, basic) {
 
   EXPECT_OK(sink.ConsumeNext(exec_state_.get(), rb1));
 
-  EXPECT_EQ(1, exec_state_->table_store()->GetTable("cpu_15s")->numBatches());
+  EXPECT_EQ(1, exec_state_->table_store()->GetTable("cpu_15s")->NumBatches());
   EXPECT_EQ(types::DataType::INT64,
             exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(0)->data_type());
   EXPECT_EQ(types::DataType::BOOLEAN,
             exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(1)->data_type());
 
-  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(0)->chunk(0)->Equals(
+  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(0)->batch(0)->Equals(
       col1_rb1_arrow));
-  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(1)->chunk(0)->Equals(
+  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(1)->batch(0)->Equals(
       col2_rb1_arrow));
 
   auto rb2 = RowBatch(input_rd, 2);
@@ -80,10 +80,10 @@ TEST_F(MemorySinkNodeTest, basic) {
   EXPECT_OK(sink.ConsumeNext(exec_state_.get(), rb2));
   EXPECT_OK(sink.Close(exec_state_.get()));
 
-  EXPECT_EQ(2, exec_state_->table_store()->GetTable("cpu_15s")->numBatches());
-  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(0)->chunk(1)->Equals(
+  EXPECT_EQ(2, exec_state_->table_store()->GetTable("cpu_15s")->NumBatches());
+  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(0)->batch(1)->Equals(
       col1_rb2_arrow));
-  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(1)->chunk(1)->Equals(
+  EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(1)->batch(1)->Equals(
       col2_rb2_arrow));
 }
 }  // namespace exec

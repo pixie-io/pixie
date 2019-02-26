@@ -28,14 +28,14 @@ class CarnotTest : public ::testing::Test {
     auto col1 = std::make_shared<exec::Column>(udf::UDFDataType::FLOAT64, "col1");
     std::vector<udf::Float64Value> col1_in1 = {0.5, 1.2, 5.3};
     std::vector<udf::Float64Value> col1_in2 = {0.1, 5.1};
-    EXPECT_OK(col1->AddChunk(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
-    EXPECT_OK(col1->AddChunk(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
+    EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
+    EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
 
     auto col2 = std::make_shared<exec::Column>(udf::UDFDataType::INT64, "col2");
     std::vector<udf::Int64Value> col2_in1 = {1, 2, 3};
     std::vector<udf::Int64Value> col2_in2 = {5, 6};
-    EXPECT_OK(col2->AddChunk(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
-    EXPECT_OK(col2->AddChunk(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
+    EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
+    EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
 
     EXPECT_OK(table->AddColumn(col1));
     EXPECT_OK(table->AddColumn(col2));
@@ -63,13 +63,17 @@ TEST_F(CarnotTest, basic) {
 
   auto table_store = carnot_.table_store();
   auto output_table = table_store->GetTable("test_output");
-  EXPECT_EQ(2, output_table->numBatches());
+  EXPECT_EQ(2, output_table->NumBatches());
 
-  auto rb1 = output_table->GetRowBatch(0, std::vector<int64_t>({0, 1})).ConsumeValueOrDie();
+  auto rb1 =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
   EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1->ColumnAt(1)->Equals(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
 
-  auto rb2 = output_table->GetRowBatch(1, std::vector<int64_t>({0, 1})).ConsumeValueOrDie();
+  auto rb2 =
+      output_table->GetRowBatch(1, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
   EXPECT_TRUE(rb2->ColumnAt(0)->Equals(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
   EXPECT_TRUE(rb2->ColumnAt(1)->Equals(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
 }
@@ -90,12 +94,14 @@ TEST_F(CarnotTest, map_test) {
 
   auto table_store = carnot_.table_store();
   auto output_table = table_store->GetTable("test_output");
-  EXPECT_EQ(2, output_table->numBatches());
+  EXPECT_EQ(2, output_table->NumBatches());
   //
-  auto rb1 = output_table->GetRowBatch(0, std::vector<int64_t>({0})).ConsumeValueOrDie();
+  auto rb1 = output_table->GetRowBatch(0, std::vector<int64_t>({0}), arrow::default_memory_pool())
+                 .ConsumeValueOrDie();
   EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
 
-  auto rb2 = output_table->GetRowBatch(1, std::vector<int64_t>({0})).ConsumeValueOrDie();
+  auto rb2 = output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
+                 .ConsumeValueOrDie();
   EXPECT_TRUE(rb2->ColumnAt(0)->Equals(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
 }
 
