@@ -50,11 +50,11 @@ TEST(TableStoreTest, throwaway_default_table) {
   auto lookup = table_store.GetRelationMap();
   EXPECT_EQ(1, lookup->size());
 
-  auto table = lookup->at(stirling::CPUStatBPFTraceConnector::kName);
-  EXPECT_EQ(stirling::CPUStatBPFTraceConnector::kElements.size(), table.NumColumns());
-  for (uint32_t i = 0; i < stirling::CPUStatBPFTraceConnector::kElements.size(); ++i) {
-    EXPECT_EQ(stirling::CPUStatBPFTraceConnector::kElements[i].type(), table.GetColumnType(i));
-    EXPECT_EQ(stirling::CPUStatBPFTraceConnector::kElements[i].name(), table.GetColumnName(i));
+  auto table = lookup->at(DefaultTableSchema::kName);
+  EXPECT_EQ(DefaultTableSchema::kElements.size(), table.NumColumns());
+  for (uint32_t i = 0; i < DefaultTableSchema::kElements.size(); ++i) {
+    EXPECT_EQ(DefaultTableSchema::kElements[i].type(), table.GetColumnType(i));
+    EXPECT_EQ(DefaultTableSchema::kElements[i].name(), table.GetColumnName(i));
   }
 }
 

@@ -7,10 +7,13 @@
 #include "src/carnot/exec/table.h"
 #include "src/common/status.h"
 #include "src/stirling/data_table.h"
+#include "src/stirling/seq_gen_connector.h"
 
 namespace pl {
 namespace carnot {
 namespace exec {
+
+using DefaultTableSchema = stirling::SeqGenConnector;
 
 /**
  * TableStore keeps track of the tables in our system.

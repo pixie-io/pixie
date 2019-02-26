@@ -30,6 +30,8 @@ class InfoClassManager;
    public:                                                                 \
     static constexpr bool kAvailable = false;                              \
     static constexpr SourceType source_type = SourceType::kNotImplemented; \
+    static constexpr char kName[] = "dummy";                               \
+    inline static const InfoClassSchema kElements = {};                    \
     static std::unique_ptr<SourceConnector> Create() { return nullptr; }   \
   }
 

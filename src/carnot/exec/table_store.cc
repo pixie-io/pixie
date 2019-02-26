@@ -2,7 +2,6 @@
 #include <vector>
 
 #include "src/carnot/exec/table_store.h"
-#include "src/stirling/bpftrace_connector.h"
 
 namespace pl {
 namespace carnot {
@@ -30,7 +29,7 @@ void TableStore::AddDefaultTable() {
   // Create RowDescriptor by copying schema from CPUStatBPFTraceConnector
   std::vector<udf::UDFDataType> col_types;
   std::vector<std::string> col_names;
-  for (const auto& e : stirling::CPUStatBPFTraceConnector::kElements) {
+  for (const auto& e : DefaultTableSchema::kElements) {
     col_types.push_back(e.type());
     col_names.push_back(e.name());
   }
@@ -41,7 +40,7 @@ void TableStore::AddDefaultTable() {
   // Table_id: use any number (remember, this is throwaway code).
   uint64_t table_id = 314159;
 
-  PL_CHECK_OK(AddTable(stirling::CPUStatBPFTraceConnector::kName, table_id, table));
+  PL_CHECK_OK(AddTable(DefaultTableSchema::kName, table_id, table));
 }
 
 }  // namespace exec
