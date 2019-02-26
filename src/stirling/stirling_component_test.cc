@@ -14,7 +14,7 @@ namespace stirling {
 class StirlingComponentTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    registry_ = std::make_unique<SourceRegistry>("ComponentTestRegistry");
+    registry_ = std::make_unique<SourceRegistry>();
     registry_->RegisterOrDie<FakeProcStatConnector>("test_connector");
     data_collector_ = std::make_unique<Stirling>(std::move(registry_));
   }
@@ -43,7 +43,7 @@ class SourceToTableTest : public ::testing::Test {
  protected:
   SourceToTableTest() : info_class_mgr_("proc_stats_mgr") {}
   void SetUp() override {
-    fake_proc_stat_ = FakeProcStatConnector::Create();
+    fake_proc_stat_ = FakeProcStatConnector::Create("fake_proc_stat_source");
     info_class_mgr_.SetSourceConnector(fake_proc_stat_.get());
     EXPECT_OK(fake_proc_stat_->PopulateSchema(&info_class_mgr_));
     // Need to set all the Element states to subscribe manually here

@@ -27,7 +27,7 @@ TEST(InfoClassElementTest, basic_test) {
 
 TEST(InfoClassInfoSchemaTest, basic_test) {
   InfoClassSchema elements = {};
-  auto source = BCCCPUMetricsConnector::Create();
+  auto source = BCCCPUMetricsConnector::Create("ebpf_cpu_metrics");
   InfoClassManager info_class_mgr("cpu_usage");
   info_class_mgr.SetSourceConnector(source.get());
   InfoClassElement element_1("user_percentage", DataType::FLOAT64,

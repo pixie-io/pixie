@@ -19,7 +19,7 @@ using types::DataType;
  */
 class TestSourceConnector : public SourceConnector {
  public:
-  static std::unique_ptr<SourceConnector> Create() {
+  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     InfoClassSchema elements = {
         InfoClassElement("field_0", DataType::TIME64NS,
                          Element_State::Element_State_NOT_SUBSCRIBED),
@@ -27,7 +27,7 @@ class TestSourceConnector : public SourceConnector {
         InfoClassElement("field_2", DataType::FLOAT64, Element_State::Element_State_NOT_SUBSCRIBED),
         InfoClassElement("field_3", DataType::FLOAT64,
                          Element_State::Element_State_NOT_SUBSCRIBED)};
-    return std::unique_ptr<SourceConnector>(new TestSourceConnector("dummy_connector", elements));
+    return std::unique_ptr<SourceConnector>(new TestSourceConnector(name, elements));
   }
 
   Status InitImpl() override { return Status::OK(); }

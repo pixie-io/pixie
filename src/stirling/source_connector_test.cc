@@ -12,8 +12,10 @@ using stirlingpb::Element_State;
 using types::DataType;
 
 TEST(SourceConnectorTest, create_ebpf_source) {
-  auto ebpf_source = TestSourceConnector::Create();
-  EXPECT_EQ("dummy_connector", ebpf_source->source_name());
+  std::string name = "dummy_connector";
+
+  auto ebpf_source = TestSourceConnector::Create(name);
+  EXPECT_EQ(name, ebpf_source->source_name());
   EXPECT_EQ(DataType::FLOAT64, ebpf_source->elements()[2].type());
 }
 

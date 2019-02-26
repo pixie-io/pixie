@@ -12,23 +12,25 @@ namespace stirling {
 class ProcStatConnector : public SourceConnector {
  public:
   static constexpr SourceType source_type = SourceType::kFile;
+
+  static constexpr char kName[] = "proc_stat";
+
+  inline static InfoClassSchema kElements = {
+      InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_SUBSCRIBED),
+      InfoClassElement("system_percent", DataType::FLOAT64,
+                       Element_State::Element_State_SUBSCRIBED),
+      InfoClassElement("user_percent", DataType::FLOAT64, Element_State::Element_State_SUBSCRIBED),
+      InfoClassElement("idle_percent", DataType::FLOAT64, Element_State::Element_State_SUBSCRIBED)};
+
   ProcStatConnector() = delete;
   virtual ~ProcStatConnector() = default;
-  static std::unique_ptr<SourceConnector> Create() {
-    InfoClassSchema elements = {
-        InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_SUBSCRIBED),
-        InfoClassElement("system_percent", DataType::FLOAT64,
-                         Element_State::Element_State_SUBSCRIBED),
-        InfoClassElement("user_percent", DataType::FLOAT64,
-                         Element_State::Element_State_SUBSCRIBED),
-        InfoClassElement("idle_percent", DataType::FLOAT64,
-                         Element_State::Element_State_SUBSCRIBED)};
-    return std::unique_ptr<SourceConnector>(new ProcStatConnector("proc_stat", elements));
+  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
+    return std::unique_ptr<SourceConnector>(new ProcStatConnector(name, kElements));
   }
 
  protected:
-  explicit ProcStatConnector(const std::string& source_name, const InfoClassSchema& elements)
-      : SourceConnector(source_type, source_name, elements) {}
+  explicit ProcStatConnector(const std::string& name, const InfoClassSchema& elements)
+      : SourceConnector(source_type, name, elements) {}
   Status InitImpl() override;
   RawDataBuf GetDataImpl() override;
   Status StopImpl() override { return Status::OK(); }
@@ -83,21 +85,25 @@ class FakeProcStatConnector : public ProcStatConnector {
  public:
   FakeProcStatConnector() = delete;
   ~FakeProcStatConnector() = default;
-  static std::unique_ptr<SourceConnector> Create() {
-    InfoClassSchema elements = {
-        InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_NOT_SUBSCRIBED),
-        InfoClassElement("system_percent", DataType::FLOAT64,
-                         Element_State::Element_State_NOT_SUBSCRIBED),
-        InfoClassElement("user_percent", DataType::FLOAT64,
-                         Element_State::Element_State_NOT_SUBSCRIBED),
-        InfoClassElement("idle_percent", DataType::FLOAT64,
-                         Element_State::Element_State_NOT_SUBSCRIBED)};
-    return std::unique_ptr<SourceConnector>(new FakeProcStatConnector("fake_proc_stat", elements));
+
+  static constexpr char kName[] = "fake_proc_stat";
+
+  inline static InfoClassSchema kElements = {
+      InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_NOT_SUBSCRIBED),
+      InfoClassElement("system_percent", DataType::FLOAT64,
+                       Element_State::Element_State_NOT_SUBSCRIBED),
+      InfoClassElement("user_percent", DataType::FLOAT64,
+                       Element_State::Element_State_NOT_SUBSCRIBED),
+      InfoClassElement("idle_percent", DataType::FLOAT64,
+                       Element_State::Element_State_NOT_SUBSCRIBED)};
+
+  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
+    return std::unique_ptr<SourceConnector>(new FakeProcStatConnector(name, kElements));
   }
 
  protected:
-  explicit FakeProcStatConnector(const std::string& source_name, const InfoClassSchema& elements)
-      : ProcStatConnector(source_name, elements) {}
+  explicit FakeProcStatConnector(const std::string& name, const InfoClassSchema& elements)
+      : ProcStatConnector(name, elements) {}
 
   Status InitImpl() override;
 

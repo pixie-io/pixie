@@ -81,12 +81,12 @@ void StirlingWrapperCallback(uint64_t table_id,
 
 std::unique_ptr<SourceRegistry> CreateRegistry() {
   // Create a registry of sources;
-  std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>("fake_news");
+  std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
 
   RegisterAllSources(registry.get());
 
   std::cout << "Registered sources: " << std::endl;
-  auto registered_sources = registry->sources_map();
+  auto registered_sources = registry->sources();
   for (auto registered_source : registered_sources) {
     std::cout << "    " << registered_source.first << std::endl;
   }

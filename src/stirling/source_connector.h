@@ -25,14 +25,17 @@ namespace stirling {
 class InfoClassElement;
 class InfoClassManager;
 
-#define DUMMY_SOURCE_CONNECTOR(NAME)                                       \
-  class NAME : public SourceConnector {                                    \
-   public:                                                                 \
-    static constexpr bool kAvailable = false;                              \
-    static constexpr SourceType source_type = SourceType::kNotImplemented; \
-    static constexpr char kName[] = "dummy";                               \
-    inline static const InfoClassSchema kElements = {};                    \
-    static std::unique_ptr<SourceConnector> Create() { return nullptr; }   \
+#define DUMMY_SOURCE_CONNECTOR(NAME)                                          \
+  class NAME : public SourceConnector {                                       \
+   public:                                                                    \
+    static constexpr bool kAvailable = false;                                 \
+    static constexpr SourceType source_type = SourceType::kNotImplemented;    \
+    static constexpr char kName[] = "dummy";                                  \
+    inline static const InfoClassSchema kElements = {};                       \
+    static std::unique_ptr<SourceConnector> Create(const std::string& name) { \
+      PL_UNUSED(name);                                                        \
+      return nullptr;                                                         \
+    }                                                                         \
   }
 
 struct RawDataBuf {
@@ -97,42 +100,6 @@ class SourceConnector : public NotCopyable {
  private:
   SourceType type_;
   std::string source_name_;
-};
-
-/**
- * @brief Placeholder for Open tracing sources.
- *
- */
-class OpenTracingConnector : public SourceConnector {
- public:
-  OpenTracingConnector() = delete;
-  static constexpr SourceType source_type = SourceType::kOpenTracing;
-  virtual ~OpenTracingConnector() = default;
-  static std::unique_ptr<SourceConnector> Create() {
-    InfoClassSchema elements = {};
-    return std::unique_ptr<SourceConnector>(
-        new OpenTracingConnector("open_tracing_connector", elements));
-  }
-
- protected:
-  explicit OpenTracingConnector(const std::string& source_name, const InfoClassSchema& elements)
-      : SourceConnector(source_type, source_name, elements) {}
-  Status InitImpl() override {
-    // TODO(kgandhi): Launch open tracing collection methods.
-    return Status::OK();
-  }
-
-  // TODO(kgandhi): Get data records from open tracing source.
-  RawDataBuf GetDataImpl() override {
-    uint32_t num_records = 1;
-    return RawDataBuf(num_records, data_buf_.data());
-  };
-
-  // TODO(kgandhi): Stop the collection of data from the source.
-  Status StopImpl() override { return Status::OK(); }
-
- private:
-  std::vector<uint8_t> data_buf_;
 };
 
 }  // namespace stirling

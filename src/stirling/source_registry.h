@@ -24,21 +24,20 @@ namespace stirling {
  */
 class SourceRegistry : public NotCopyable {
  public:
-  SourceRegistry() = delete;
-  explicit SourceRegistry(const std::string& name) : name_(name) {}
+  SourceRegistry() {}
   virtual ~SourceRegistry() = default;
 
   struct RegistryElement {
     RegistryElement() : type(SourceType::kUnknown), create_source_fn(nullptr) {}
-    explicit RegistryElement(SourceType type,
-                             std::function<std::unique_ptr<SourceConnector>()> create_source_fn)
+    explicit RegistryElement(
+        SourceType type,
+        std::function<std::unique_ptr<SourceConnector>(const std::string&)> create_source_fn)
         : type(type), create_source_fn(create_source_fn) {}
     SourceType type;
-    std::function<std::unique_ptr<SourceConnector>()> create_source_fn;
+    std::function<std::unique_ptr<SourceConnector>(const std::string&)> create_source_fn;
   };
 
-  const std::string& name() { return name_; }
-  const std::unordered_map<std::string, RegistryElement>& sources_map() { return sources_map_; }
+  const auto& sources() { return sources_map_; }
 
   /**
    * @brief Register a source in the registry.
@@ -83,7 +82,6 @@ class SourceRegistry : public NotCopyable {
   }
 
  protected:
-  std::string name_;
   std::unordered_map<std::string, RegistryElement> sources_map_;
 };
 

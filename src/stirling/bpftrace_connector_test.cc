@@ -22,7 +22,8 @@ using types::DataType;
 // TODO(oazizi): Pick this up at a future point in time, if deemed valuable.
 
 TEST(BPFTraceConnectorTest, bpftrace_connector_all) {
-  std::unique_ptr<SourceConnector> bpftrace_connector = CPUStatBPFTraceConnector::Create();
+  std::unique_ptr<SourceConnector> bpftrace_connector =
+      CPUStatBPFTraceConnector::Create(CPUStatBPFTraceConnector::kName);
 
   Status s;
 

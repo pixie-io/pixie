@@ -33,9 +33,9 @@ Status Stirling::CreateSourceConnectors() {
   if (!registry_) {
     return error::NotFound("Source registry doesn't exist");
   }
-  auto sources_map = registry_->sources_map();
-  for (auto const& [name, registry_element] : sources_map) {
-    Status s = AddSource(name, registry_element.create_source_fn());
+  auto sources = registry_->sources();
+  for (auto const& [name, registry_element] : sources) {
+    Status s = AddSource(name, registry_element.create_source_fn(name));
 
     if (!s.ok()) {
       LOG(WARNING) << absl::StrFormat("Source Connector (registry name=%s) not instantiated", name);

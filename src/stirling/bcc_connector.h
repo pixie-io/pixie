@@ -51,9 +51,18 @@ class BCCCPUMetricsConnector : public BCCConnector {
   // TODO(kgandhi): Remove next line once this SourceConnector is functional.
   static constexpr bool kAvailable = false;
 
+  static constexpr char kName[] = "bcc_cpu_stats";
+
+  inline static const InfoClassSchema kElements = {
+      InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_NOT_SUBSCRIBED),
+      InfoClassElement("cpu_id", DataType::INT64, Element_State::Element_State_NOT_SUBSCRIBED),
+      InfoClassElement("cpu_percentage", DataType::FLOAT64,
+                       Element_State::Element_State_NOT_SUBSCRIBED),
+  };
+
   virtual ~BCCCPUMetricsConnector() = default;
 
-  static std::unique_ptr<SourceConnector> Create() {
+  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     // EBPF CPU Data Source.
     // TODO(kgandhi): Coming in a future diff. Adding a bpf program to the end of an object file
     // currently only works on linux builds. We plan to add ifdefs around that to prevent breaking
@@ -65,16 +74,8 @@ class BCCCPUMetricsConnector : public BCCConnector {
     int bpf_prog_len = 0;
     const std::string bpf_program = std::string(bpf_prog_ptr, bpf_prog_len);
 
-    // Create a vector of InfoClassElements.
-    InfoClassSchema elements = {
-        InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_NOT_SUBSCRIBED),
-        InfoClassElement("cpu_id", DataType::INT64, Element_State::Element_State_NOT_SUBSCRIBED),
-        InfoClassElement("cpu_percentage", DataType::FLOAT64,
-                         Element_State::Element_State_NOT_SUBSCRIBED),
-    };
-
     return std::unique_ptr<SourceConnector>(new BCCCPUMetricsConnector(
-        "ebpf_cpu_metrics", elements, "finish_task_switch", "task_switch_event", bpf_program));
+        name, kElements, "finish_task_switch", "task_switch_event", bpf_program));
   }
 
  protected:

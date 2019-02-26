@@ -76,13 +76,13 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
       InfoClassElement("cpustat_softirq", DataType::INT64,
                        Element_State::Element_State_SUBSCRIBED)};
 
-  static std::unique_ptr<SourceConnector> Create() {
-    return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(cpu_id_));
+  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
+    return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(name, cpu_id_));
   }
 
  protected:
-  explicit CPUStatBPFTraceConnector(uint64_t cpu_id)
-      : BPFTraceConnector(kName, kElements, kCPUStatBTScript,
+  CPUStatBPFTraceConnector(const std::string& name, uint64_t cpu_id)
+      : BPFTraceConnector(name, kElements, kCPUStatBTScript,
                           std::vector<std::string>({std::to_string(cpu_id)})) {}
 
  private:

@@ -224,8 +224,8 @@ class SeqGenConnector : public SourceConnector {
       InfoClassElement("Fib(x)", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
       InfoClassElement("PI*x", DataType::FLOAT64, Element_State::Element_State_SUBSCRIBED)};
 
-  static std::unique_ptr<SourceConnector> Create() {
-    return std::unique_ptr<SourceConnector>(new SeqGenConnector());
+  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
+    return std::unique_ptr<SourceConnector>(new SeqGenConnector(name));
   }
 
   void SetSeed(uint32_t seed) { rng_.seed(seed); }
@@ -238,8 +238,8 @@ class SeqGenConnector : public SourceConnector {
   void ConfigureNumRowsPerGet(uint32_t num_rows) { ConfigureNumRowsPerGet(num_rows, num_rows); }
 
  protected:
-  SeqGenConnector()
-      : SourceConnector(source_type, kName, kElements),
+  explicit SeqGenConnector(const std::string& name)
+      : SourceConnector(source_type, name, kElements),
         time_seq_(),
         lin_seq_(1, 1),
         mod10_seq_(10),

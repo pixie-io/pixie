@@ -35,7 +35,7 @@ const char* kInfoClassManager = R"(
   }
   metadata {
     key: "source"
-    value: "ebpf_cpu_metrics"
+    value: "cpu_usage"
   }
 )";
 
@@ -49,8 +49,9 @@ class PubSubManagerTest : public ::testing::Test {
         element_3("io_percentage", DataType::FLOAT64, Element_State::Element_State_NOT_SUBSCRIBED) {
   }
   void SetUp() override {
-    source_ = BCCCPUMetricsConnector::Create();
-    pub_sub_manager_info_classes_.push_back(std::make_unique<InfoClassManager>("cpu_usage"));
+    std::string name = "cpu_usage";
+    source_ = BCCCPUMetricsConnector::Create(name);
+    pub_sub_manager_info_classes_.push_back(std::make_unique<InfoClassManager>(name));
     pub_sub_manager_info_classes_[0]->SetSourceConnector(source_.get());
 
     pub_sub_manager_info_classes_[0]->Schema().push_back(element_1);
