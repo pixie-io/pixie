@@ -17,14 +17,12 @@ cc_library(
         "googletest",
         "googletest/include",
     ],
-    linkopts = ["-pthread"],
     visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "gtest-main",
     srcs = ["googlemock/src/gmock_main.cc"],
-    linkopts = ["-pthread"],
     visibility = ["//visibility:public"],
     deps = [":gtest"],
 )

@@ -23,7 +23,6 @@ cc_library(
         "-lrt",
         "-ldl",
         "-lelf",
-        "-lpthread",
         "-ltinfo",
     ],
     visibility = ["//visibility:public"],
