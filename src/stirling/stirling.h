@@ -36,7 +36,7 @@ stirlingpb::Subscribe SubscribeToAllElements(const stirlingpb::Publish& publish_
  * needed (by Pixie or others). Its function is to unify various, disparate sources of data into a
  * common, structured data format.
  */
-class Stirling {
+class Stirling : public NotCopyable {
  public:
   Stirling() = delete;
   explicit Stirling(std::unique_ptr<SourceRegistry> registry) : registry_(std::move(registry)) {
