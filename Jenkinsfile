@@ -312,22 +312,6 @@ node {
         }
       }
     }
-    // Only build docs on master.
-    if (env.JOB_NAME == "pixielabs-master") {
-      stage('Build Docs') {
-        retry(JENKINS_RETRIES) {
-          node {
-            deleteDir()
-            unstash SRC_STASH_NAME
-            docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-              docker.image(devDockerImageWithTag).inside {
-                sh 'doxygen'
-              }
-            }
-          }
-        }
-      }
-    }
     stage('Archive') {
       dir ('build-opt-testlogs') {
         unstash 'build-opt-testlogs'
