@@ -14,18 +14,14 @@
 namespace pl {
 namespace stirling {
 
-using stirlingpb::Element_State;
-using types::DataType;
-
-// TODO(oazizi): Using InfoClassElement as base class, because we want name and type.
-// But we actually don't need State. Could consider refactoring with a common abstract base class.
-class DataTableElement : public InfoClassElement {
+class DataTableElement : public DataElement {
  public:
-  explicit DataTableElement(InfoClassElement e) : InfoClassElement(e) {}
+  // Conversion constructor: Construct a DataTableElement from an InfoClassElement
+  // Since they both have the same DataElement ancestor, we can simply call the
+  // copy constructor DataElement.
+  explicit DataTableElement(const InfoClassElement& e) : DataElement(e) {}
   size_t offset() { return offset_; }
   void SetOffset(size_t offset) { offset_ = offset; }
-
-  std::shared_ptr<arrow::DataType> arrow_type() { return types::DataTypeToArrowType(type()); }
 
  private:
   size_t offset_ = 0;
@@ -41,7 +37,7 @@ class DataTableSchema {
    * @brief Construct a new DataTableSchema from an existing InfoClassSchema.
    * Picks only elements in the correct state.
    */
-  explicit DataTableSchema(const InfoClassSchema& info_class_schema);
+  explicit DataTableSchema(const InfoClassSchema& schema);
 
   /**
    * @brief Return the element at the specified index. Typically used to get the type or name.

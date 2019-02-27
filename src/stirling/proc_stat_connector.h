@@ -15,12 +15,10 @@ class ProcStatConnector : public SourceConnector {
 
   static constexpr char kName[] = "proc_stat";
 
-  inline static InfoClassSchema kElements = {
-      InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("system_percent", DataType::FLOAT64,
-                       Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("user_percent", DataType::FLOAT64, Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("idle_percent", DataType::FLOAT64, Element_State::Element_State_SUBSCRIBED)};
+  inline static DataElements kElements = {DataElement("_time", DataType::TIME64NS),
+                                          DataElement("system_percent", DataType::FLOAT64),
+                                          DataElement("user_percent", DataType::FLOAT64),
+                                          DataElement("idle_percent", DataType::FLOAT64)};
 
   ProcStatConnector() = delete;
   virtual ~ProcStatConnector() = default;
@@ -29,7 +27,7 @@ class ProcStatConnector : public SourceConnector {
   }
 
  protected:
-  explicit ProcStatConnector(const std::string& name, const InfoClassSchema& elements)
+  explicit ProcStatConnector(const std::string& name, const DataElements& elements)
       : SourceConnector(source_type, name, elements) {}
   Status InitImpl() override;
   RawDataBuf GetDataImpl() override;
@@ -88,21 +86,17 @@ class FakeProcStatConnector : public ProcStatConnector {
 
   static constexpr char kName[] = "fake_proc_stat";
 
-  inline static InfoClassSchema kElements = {
-      InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_NOT_SUBSCRIBED),
-      InfoClassElement("system_percent", DataType::FLOAT64,
-                       Element_State::Element_State_NOT_SUBSCRIBED),
-      InfoClassElement("user_percent", DataType::FLOAT64,
-                       Element_State::Element_State_NOT_SUBSCRIBED),
-      InfoClassElement("idle_percent", DataType::FLOAT64,
-                       Element_State::Element_State_NOT_SUBSCRIBED)};
+  inline static DataElements kElements = {DataElement("_time", DataType::TIME64NS),
+                                          DataElement("system_percent", DataType::FLOAT64),
+                                          DataElement("user_percent", DataType::FLOAT64),
+                                          DataElement("idle_percent", DataType::FLOAT64)};
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new FakeProcStatConnector(name, kElements));
   }
 
  protected:
-  explicit FakeProcStatConnector(const std::string& name, const InfoClassSchema& elements)
+  explicit FakeProcStatConnector(const std::string& name, const DataElements& elements)
       : ProcStatConnector(name, elements) {}
 
   Status InitImpl() override;

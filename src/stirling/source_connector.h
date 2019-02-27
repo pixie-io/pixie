@@ -31,7 +31,7 @@ class InfoClassManager;
     static constexpr bool kAvailable = false;                                 \
     static constexpr SourceType source_type = SourceType::kNotImplemented;    \
     static constexpr char kName[] = "dummy";                                  \
-    inline static const InfoClassSchema kElements = {};                       \
+    inline static const DataElements kElements = {};                          \
     static std::unique_ptr<SourceConnector> Create(const std::string& name) { \
       PL_UNUSED(name);                                                        \
       return nullptr;                                                         \
@@ -76,18 +76,18 @@ class SourceConnector : public NotCopyable {
 
   Status PopulateSchema(InfoClassManager* mgr) const {
     for (const auto& element : elements_) {
-      mgr->Schema().push_back(element);
+      mgr->Schema().emplace_back(InfoClassElement(element));
     }
     return Status::OK();
   }
 
   SourceType type() { return type_; }
   const std::string& source_name() { return source_name_; }
-  const InfoClassSchema& elements() { return elements_; }
+  const DataElements& elements() { return elements_; }
 
  protected:
   explicit SourceConnector(SourceType type, const std::string& source_name,
-                           const InfoClassSchema& elements)
+                           const DataElements& elements)
       : elements_(elements), type_(type), source_name_(source_name) {}
 
   virtual Status InitImpl() = 0;
@@ -95,7 +95,7 @@ class SourceConnector : public NotCopyable {
   virtual Status StopImpl() = 0;
 
  protected:
-  InfoClassSchema elements_;
+  DataElements elements_;
 
  private:
   SourceType type_;

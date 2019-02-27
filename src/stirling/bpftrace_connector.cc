@@ -26,9 +26,8 @@ uint64_t BPFTraceConnector::ClockRealTimeOffset() {
   return offset;
 }
 
-BPFTraceConnector::BPFTraceConnector(const std::string& source_name,
-                                     const InfoClassSchema& elements, const char* script,
-                                     const std::vector<std::string> params)
+BPFTraceConnector::BPFTraceConnector(const std::string& source_name, const DataElements& elements,
+                                     const char* script, const std::vector<std::string> params)
     : SourceConnector(SourceType::kEBPF, source_name, elements), script_(script), params_(params) {
   // Create a data buffer that can hold one record only
   data_buf_.resize(sizeof(uint64_t) * elements_.size());

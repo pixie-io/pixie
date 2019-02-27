@@ -216,13 +216,10 @@ class SeqGenConnector : public SourceConnector {
 
   static constexpr char kName[] = "sequence_generator";
 
-  inline static const InfoClassSchema kElements = {
-      InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("x", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("x%10", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("x^2", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("Fib(x)", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("PI*x", DataType::FLOAT64, Element_State::Element_State_SUBSCRIBED)};
+  inline static const DataElements kElements = {
+      DataElement("_time", DataType::TIME64NS), DataElement("x", DataType::INT64),
+      DataElement("x%10", DataType::INT64),     DataElement("x^2", DataType::INT64),
+      DataElement("Fib(x)", DataType::INT64),   DataElement("PI*x", DataType::FLOAT64)};
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new SeqGenConnector(name));

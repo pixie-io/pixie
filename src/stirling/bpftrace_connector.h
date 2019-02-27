@@ -32,7 +32,7 @@ class BPFTraceConnector : public SourceConnector {
   virtual ~BPFTraceConnector() = default;
 
  protected:
-  explicit BPFTraceConnector(const std::string& source_name, const InfoClassSchema& elements,
+  explicit BPFTraceConnector(const std::string& source_name, const DataElements& elements,
                              const char* script, const std::vector<std::string> params);
 
   Status InitImpl() override;
@@ -65,16 +65,14 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
 
   static constexpr char kName[] = "bpftrace_cpu_stats";
 
-  inline static const InfoClassSchema kElements = {
-      InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("cpustat_user", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("cpustat_nice", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("cpustat_system", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("cpustat_idle", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("cpustat_iowait", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("cpustat_irq", DataType::INT64, Element_State::Element_State_SUBSCRIBED),
-      InfoClassElement("cpustat_softirq", DataType::INT64,
-                       Element_State::Element_State_SUBSCRIBED)};
+  inline static const DataElements kElements = {DataElement("_time", DataType::TIME64NS),
+                                                DataElement("cpustat_user", DataType::INT64),
+                                                DataElement("cpustat_nice", DataType::INT64),
+                                                DataElement("cpustat_system", DataType::INT64),
+                                                DataElement("cpustat_idle", DataType::INT64),
+                                                DataElement("cpustat_iowait", DataType::INT64),
+                                                DataElement("cpustat_irq", DataType::INT64),
+                                                DataElement("cpustat_softirq", DataType::INT64)};
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(name, cpu_id_));

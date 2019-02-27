@@ -16,7 +16,7 @@ class BCCConnector : public SourceConnector {
   virtual ~BCCConnector() = default;
 
  protected:
-  explicit BCCConnector(const std::string& source_name, const InfoClassSchema& elements,
+  explicit BCCConnector(const std::string& source_name, const DataElements& elements,
                         const std::string& kernel_event, const std::string& fn_name,
                         const std::string& bpf_program)
       : SourceConnector(source_type, source_name, elements),
@@ -53,12 +53,9 @@ class BCCCPUMetricsConnector : public BCCConnector {
 
   static constexpr char kName[] = "bcc_cpu_stats";
 
-  inline static const InfoClassSchema kElements = {
-      InfoClassElement("_time", DataType::TIME64NS, Element_State::Element_State_NOT_SUBSCRIBED),
-      InfoClassElement("cpu_id", DataType::INT64, Element_State::Element_State_NOT_SUBSCRIBED),
-      InfoClassElement("cpu_percentage", DataType::FLOAT64,
-                       Element_State::Element_State_NOT_SUBSCRIBED),
-  };
+  inline static const DataElements kElements = {DataElement("_time", DataType::TIME64NS),
+                                                DataElement("cpu_id", DataType::INT64),
+                                                DataElement("cpu_percentage", DataType::FLOAT64)};
 
   virtual ~BCCCPUMetricsConnector() = default;
 
@@ -79,7 +76,7 @@ class BCCCPUMetricsConnector : public BCCConnector {
   }
 
  protected:
-  explicit BCCCPUMetricsConnector(const std::string& source_name, const InfoClassSchema& elements,
+  explicit BCCCPUMetricsConnector(const std::string& source_name, const DataElements& elements,
                                   const std::string& kernel_event, const std::string& fn_name,
                                   const std::string& bpf_program)
       : BCCConnector(source_name, elements, kernel_event, fn_name, bpf_program) {}

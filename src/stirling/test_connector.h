@@ -20,13 +20,9 @@ using types::DataType;
 class TestSourceConnector : public SourceConnector {
  public:
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
-    InfoClassSchema elements = {
-        InfoClassElement("field_0", DataType::TIME64NS,
-                         Element_State::Element_State_NOT_SUBSCRIBED),
-        InfoClassElement("field_1", DataType::FLOAT64, Element_State::Element_State_NOT_SUBSCRIBED),
-        InfoClassElement("field_2", DataType::FLOAT64, Element_State::Element_State_NOT_SUBSCRIBED),
-        InfoClassElement("field_3", DataType::FLOAT64,
-                         Element_State::Element_State_NOT_SUBSCRIBED)};
+    DataElements elements = {
+        DataElement("field_0", DataType::TIME64NS), DataElement("field_1", DataType::FLOAT64),
+        DataElement("field_2", DataType::FLOAT64), DataElement("field_3", DataType::FLOAT64)};
     return std::unique_ptr<SourceConnector>(new TestSourceConnector(name, elements));
   }
 
@@ -41,7 +37,7 @@ class TestSourceConnector : public SourceConnector {
   }
 
  protected:
-  explicit TestSourceConnector(const std::string& name, const InfoClassSchema& elements)
+  explicit TestSourceConnector(const std::string& name, const DataElements& elements)
       : SourceConnector(SourceType::kUnknown, name, elements) {}
 
  private:

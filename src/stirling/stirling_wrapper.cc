@@ -7,6 +7,7 @@
 #include "src/stirling/seq_gen_connector.h"
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
+#include "src/stirling/types.h"
 
 using pl::stirling::SourceRegistry;
 using pl::stirling::SourceType;
@@ -18,14 +19,15 @@ using pl::carnot::udf::SharedColumnWrapper;
 using pl::stirling::ColumnWrapperRecordBatch;
 
 using pl::stirling::CPUStatBPFTraceConnector;
-using pl::stirling::InfoClassSchema;
 using pl::stirling::SeqGenConnector;
+
+using pl::stirling::DataElements;
 
 using pl::types::DataType;
 
 std::unordered_map<uint64_t, std::string> table_id_to_name_map;
 
-void PrintRecordBatch(std::string prefix, InfoClassSchema schema, uint64_t num_records,
+void PrintRecordBatch(std::string prefix, DataElements schema, uint64_t num_records,
                       const ColumnWrapperRecordBatch& record_batch) {
   for (uint32_t i = 0; i < num_records; ++i) {
     std::cout << "[" << prefix << "] ";
@@ -117,7 +119,7 @@ int main(int argc, char** argv) {
   auto subscribe_proto = pl::stirling::SubscribeToAllElements(publish_proto);
   PL_CHECK_OK(data_collector.SetSubscription(subscribe_proto));
 
-  // Get a map from InfoClassSchema names to Table IDs
+  // Get a map from InfoClassManager names to Table IDs
   table_id_to_name_map = data_collector.TableIDToNameMap();
 
   // Set a dummy callback function (normally this would be in the agent).

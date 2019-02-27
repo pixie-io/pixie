@@ -33,20 +33,18 @@ using types::DataType;
  *  (1) collected but not subscribed.
  *  (2) collected and subscribed.
  */
-class InfoClassElement {
+class InfoClassElement : public DataElement {
  public:
   InfoClassElement() = delete;
   virtual ~InfoClassElement() = default;
+  explicit InfoClassElement(const DataElement& element)
+      : DataElement(element), state_(Element_State::Element_State_NOT_SUBSCRIBED) {}
   explicit InfoClassElement(const std::string& name, const DataType& type,
                             const Element_State& state)
-      : name_(name), type_(type), state_(state) {}
+      : DataElement(name, type), state_(state) {}
 
   void SetState(const Element_State& state) { state_ = state; }
-
-  const std::string& name() const { return name_; }
-  const DataType& type() const { return type_; }
   const Element_State& state() const { return state_; }
-  size_t WidthBytes() const { return pl::types::DataTypeWidthBytes(type_); }
 
   /**
    * @brief Generate a proto message based on the InfoClassElement.
@@ -56,8 +54,6 @@ class InfoClassElement {
   stirlingpb::Element ToProto() const;
 
  private:
-  std::string name_;
-  DataType type_;
   Element_State state_;
 };
 
