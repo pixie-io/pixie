@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -96,21 +97,26 @@ class Stirling : public NotCopyable {
   }
 
   /**
-   * Main data collection call, that is spawned off as an independent thread.
+   * Main data collection call. This version will block, so make sure to wrap a thread around it.
    */
   void Run();
 
   /**
-   * Wait the running thread to terminate.
+   * Stop the running thread.
    */
-  void Wait();
+  void Stop();
+
+  /**
+   * Main data collection call. This version spawns off as an independent thread.
+   */
+  void RunAsThread();
+
+  /**
+   * Wait for the running thread to terminate. Assuming you ran RunThread().
+   */
+  void WaitForThreadJoin();
 
  private:
-  /**
-   * Main data source polling loop.
-   */
-  void RunThread();
-
   /**
    * Create data source connectors from the registered sources.
    */
@@ -130,6 +136,11 @@ class Stirling : public NotCopyable {
    * Main thread used to spawn off RunThread().
    */
   std::thread run_thread_;
+
+  /**
+   * Whether thread should be running.
+   */
+  std::atomic<bool> run_enable_;
 
   /**
    * Vector of all Source Connectors.

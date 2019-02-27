@@ -85,22 +85,24 @@ Status Stirling::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
 }
 
 // Main call to start the data collection.
-void Stirling::Run() {
-  run_thread_ = std::thread(&Stirling::RunThread, this);
+void Stirling::RunAsThread() {
+  run_thread_ = std::thread(&Stirling::Run, this);
   // TODO(oazizi): Make sure this is not called multiple times...don't want thread proliferation.
 }
 
-void Stirling::Wait() { run_thread_.join(); }
+void Stirling::WaitForThreadJoin() { run_thread_.join(); }
+
+void Stirling::Stop() { run_enable_ = false; }
 
 // Main Data Collector loop.
 // Poll on Data Source Through connectors, when appropriate, then go to sleep.
 // Must run as a thread, so only call from Run() as a thread.
-void Stirling::RunThread() {
+void Stirling::Run() {
   // TODO(oazizi): Remove this. Done to make sure first sample is collected.
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  bool run = true;
-  while (run) {
+  run_enable_ = true;
+  while (run_enable_) {
     // Run through every InfoClass being managed.
     for (const auto& mgr : info_class_mgrs_) {
       // Phase 1: Probe each source for its data.

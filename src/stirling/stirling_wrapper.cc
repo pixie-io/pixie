@@ -124,11 +124,15 @@ int main(int argc, char** argv) {
   data_collector.RegisterCallback(StirlingWrapperCallback);
 
   // Run Data Collector.
-  data_collector.Run();
+  std::thread run_thread = std::thread(&Stirling::Run, &data_collector);
 
   // Wait for the thread to return. This should never happen in this example.
   // But don't want the program to terminate.
-  data_collector.Wait();
+  run_thread.join();
+
+  // Another model of how to run the Data Collector:
+  // data_collector.RunAsThread();
+  // data_collector.WaitForThreadJoin();
 
   pl::ShutdownEnvironmentOrDie();
 
