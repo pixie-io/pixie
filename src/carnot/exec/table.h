@@ -7,11 +7,13 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/internal/spinlock.h"
 #include "absl/strings/str_format.h"
 #include "src/carnot/exec/row_batch.h"
 #include "src/carnot/exec/row_descriptor.h"
 #include "src/carnot/plan/relation.h"
 #include "src/carnot/udf/udf.h"
+#include "src/common/base.h"
 #include "src/common/status.h"
 #include "src/common/statusor.h"
 #include "src/stirling/data_table.h"
@@ -71,7 +73,7 @@ class Column {
 /**
  * A Table consists of columns that follow a given row descriptor.
  */
-class Table {
+class Table : public NotCopyable {
  public:
   /**
    * Creates a Table.
@@ -86,14 +88,7 @@ class Table {
    *
    * @param relation the relation for the table.
    */
-  explicit Table(const plan::Relation& relation) : desc_(relation.col_types()) {
-    uint64_t num_cols = desc_.size();
-    columns_.reserve(num_cols);
-    for (uint64_t i = 0; i < num_cols; ++i) {
-      PL_CHECK_OK(AddColumn(
-          std::make_shared<Column>(relation.GetColumnType(i), relation.GetColumnName(i))));
-    }
-  }
+  explicit Table(const plan::Relation& relation);
 
   /**
    * Adds a column to the table. The column must be the correct type and be the same size as the
@@ -122,28 +117,13 @@ class Table {
    */
   Status WriteRowBatch(RowBatch rb);
 
-  Status TransferRecordBatch(std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch> record_batch) {
-    // Check for matching types
-    auto received_num_columns = record_batch->size();
-    auto expected_num_columns = desc_.size();
-    CHECK_EQ(expected_num_columns, received_num_columns)
-        << absl::StrFormat("Table schema mismatch: expected=%u received=%u)", expected_num_columns,
-                           received_num_columns);
-
-    uint32_t i = 0;
-    for (const auto& col : *record_batch) {
-      auto received_type = col->DataType();
-      auto expected_type = desc_.type(i);
-      DCHECK_EQ(expected_type, received_type)
-          << absl::StrFormat("Type mismatch [column=%u]: expected=%s received=%s", i,
-                             ToString(expected_type), ToString(received_type));
-      ++i;
-    }
-
-    hot_columns_.push_back(std::move(record_batch));
-
-    return Status::OK();
-  }
+  /**
+   * Transfers the given record batch (from Stirling) into the Table.
+   *
+   * @param record_batch the record batch to be appended to the Table.
+   * @return status
+   */
+  Status TransferRecordBatch(std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch> record_batch);
 
   /**
    * @return number of column batches.
@@ -158,6 +138,8 @@ class Table {
   // TODO(michelle): (PL-388) Change hot_columns_ to a list-based queue.
   std::vector<std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch>> hot_columns_;
   std::unordered_map<std::string, std::shared_ptr<Column>> name_to_column_map_;
+
+  absl::base_internal::SpinLock hot_columns_lock_;
 };
 
 }  // namespace exec

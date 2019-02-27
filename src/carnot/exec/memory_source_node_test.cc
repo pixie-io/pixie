@@ -45,7 +45,7 @@ class MemorySourceNodeTest : public ::testing::Test {
     EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
     EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
 
-    std::shared_ptr<Table> table = std::make_shared<Table>(Table(rd));
+    std::shared_ptr<Table> table = std::make_shared<Table>(rd);
     exec_state_->table_store()->AddTable("cpu", table);
 
     EXPECT_OK(table->AddColumn(col1));

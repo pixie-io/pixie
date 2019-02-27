@@ -27,6 +27,7 @@ class MemorySourceNode : public SourceNode {
   Status GenerateNextImpl(ExecState *exec_state) override;
 
  private:
+  int64_t num_batches_;
   int64_t current_batch_ = 0;
   std::unique_ptr<plan::MemorySourceOperator> plan_node_;
   std::unique_ptr<RowDescriptor> output_descriptor_;

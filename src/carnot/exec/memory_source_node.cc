@@ -29,6 +29,10 @@ Status MemorySourceNode::PrepareImpl(ExecState *) { return Status::OK(); }
 
 Status MemorySourceNode::OpenImpl(ExecState *exec_state) {
   table_ = exec_state->table_store()->GetTable(plan_node_->TableName());
+
+  // Determine number of chunks at Open() time
+  // because Stirling may be pushing to the table
+  num_batches_ = table_->NumBatches();
   return Status::OK();
 }
 
@@ -45,7 +49,7 @@ Status MemorySourceNode::GenerateNextImpl(ExecState *exec_state) {
   return Status::OK();
 }
 
-bool MemorySourceNode::BatchesRemaining() { return current_batch_ < table_->NumBatches(); }
+bool MemorySourceNode::BatchesRemaining() { return current_batch_ < num_batches_; }
 
 bool MemorySourceNode::NextBatchReady() { return true; }
 

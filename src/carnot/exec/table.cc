@@ -15,6 +15,15 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
+Table::Table(const plan::Relation& relation) : desc_(relation.col_types()) {
+  uint64_t num_cols = desc_.size();
+  columns_.reserve(num_cols);
+  for (uint64_t i = 0; i < num_cols; ++i) {
+    PL_CHECK_OK(
+        AddColumn(std::make_shared<Column>(relation.GetColumnType(i), relation.GetColumnName(i))));
+  }
+}
+
 Status Column::AddBatch(const std::shared_ptr<arrow::Array>& batch) {
   // Check type and check size.
   if (udf::CarnotToArrowType(data_type_) != batch->type_id()) {
@@ -76,23 +85,27 @@ StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatch(int64_t row_batch_idx,
   // If i > num_cold_batches, hot_idx is the index of the batch that we want from the hot columns.
   auto hot_idx = row_batch_idx - num_cold_batches;
 
-  if (hot_idx >= 0) {
-    DCHECK(hot_columns_.size() > static_cast<size_t>(hot_idx));
-    // Move hot column batches 0 to hot_idx into cold storage.
-    // TODO(michelle): (PL-388) We're currently converting hot data to row batches on a 1:1 basis.
-    // This should be updated so that multiple hot column batches are merged into a single row
-    // batch.
-    auto batch_idx = 0;
-    while (batch_idx <= hot_idx) {
-      for (size_t col_idx = 0; col_idx < columns_.size(); col_idx++) {
-        DCHECK(hot_columns_[batch_idx]->size() > col_idx);
-        auto hot_batch_sptr = hot_columns_[batch_idx]->at(col_idx)->ConvertToArrow(mem_pool);
-        PL_RETURN_IF_ERROR(columns_.at(col_idx)->AddBatch(hot_batch_sptr));
+  {
+    absl::base_internal::SpinLockHolder lock(&hot_columns_lock_);
+
+    if (hot_idx >= 0) {
+      DCHECK(hot_columns_.size() > static_cast<size_t>(hot_idx));
+      // Move hot column batches 0 to hot_idx into cold storage.
+      // TODO(michelle): (PL-388) We're currently converting hot data to row batches on a 1:1 basis.
+      // This should be updated so that multiple hot column batches are merged into a single row
+      // batch.
+      auto batch_idx = 0;
+      while (batch_idx <= hot_idx) {
+        for (size_t col_idx = 0; col_idx < columns_.size(); col_idx++) {
+          DCHECK(hot_columns_[batch_idx]->size() > col_idx);
+          auto hot_batch_sptr = hot_columns_[batch_idx]->at(col_idx)->ConvertToArrow(mem_pool);
+          PL_RETURN_IF_ERROR(columns_.at(col_idx)->AddBatch(hot_batch_sptr));
+        }
+        batch_idx++;
       }
-      batch_idx++;
+      // Remove hot column batches 0 to hot_idx from hot columns.
+      hot_columns_.erase(hot_columns_.begin(), hot_columns_.begin() + hot_idx + 1);
     }
-    // Remove hot column batches 0 to hot_idx from hot columns.
-    hot_columns_.erase(hot_columns_.begin(), hot_columns_.begin() + hot_idx + 1);
   }
 
   DCHECK(columns_.size() > 0 && columns_[0]->numBatches() > row_batch_idx);
@@ -127,12 +140,40 @@ Status Table::WriteRowBatch(RowBatch rb) {
   return Status::OK();
 }
 
+Status Table::TransferRecordBatch(
+    std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch> record_batch) {
+  // Check for matching types
+  auto received_num_columns = record_batch->size();
+  auto expected_num_columns = desc_.size();
+  CHECK_EQ(expected_num_columns, received_num_columns)
+      << absl::StrFormat("Table schema mismatch: expected=%u received=%u)", expected_num_columns,
+                         received_num_columns);
+
+  uint32_t i = 0;
+  for (const auto& col : *record_batch) {
+    auto received_type = col->DataType();
+    auto expected_type = desc_.type(i);
+    DCHECK_EQ(expected_type, received_type)
+        << absl::StrFormat("Type mismatch [column=%u]: expected=%s received=%s", i,
+                           ToString(expected_type), ToString(received_type));
+    ++i;
+  }
+
+  absl::base_internal::SpinLockHolder lock(&hot_columns_lock_);
+  hot_columns_.push_back(std::move(record_batch));
+
+  return Status::OK();
+}
+
 int64_t Table::NumBatches() {
   auto num_batches = 0;
   if (columns_.size() > 0) {
     num_batches += columns_[0]->numBatches();
   }
+
+  absl::base_internal::SpinLockHolder lock(&hot_columns_lock_);
   num_batches += hot_columns_.size();
+
   return num_batches;
 }
 
