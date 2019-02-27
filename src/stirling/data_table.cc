@@ -149,8 +149,7 @@ Status ColumnWrapperDataTable::AppendData(uint8_t* const data, uint64_t num_rows
       switch (type) {
         case DataType::TIME64NS: {
           auto* val_ptr = reinterpret_cast<int64_t*>(element_ptr);
-          // TODO(oazizi): Convert this to Time64ColumnWrapper support when available.
-          auto column = std::static_pointer_cast<carnot::udf::Int64ValueColumnWrapper>(
+          auto column = std::static_pointer_cast<carnot::udf::Time64NSValueColumnWrapper>(
               (*record_batch_)[field_idx]);
           column->Append(*val_ptr);
         } break;
