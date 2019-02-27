@@ -12,6 +12,8 @@ pl_cc_library_internal(
     deps = [
         "//src/common/codes:error_codes_pl_cc_proto",
         "//src/common/proto:status_pl_cc_proto",
+        "//src/utils/proto:utils_pl_cc_proto",
+        "@com_github_rlyeh_sole//:sole",
     ],
 )
 
@@ -27,6 +29,15 @@ pl_cc_test(
     deps = [
         ":common",
         "//src/common/codes:error_codes_pl_cc_proto",
+    ],
+)
+
+pl_cc_test(
+    name = "uuid_utils_test",
+    srcs = ["uuid_utils_test.cc"],
+    deps = [
+        ":common",
+        "//src/utils/proto:utils_pl_cc_proto",
     ],
 )
 
