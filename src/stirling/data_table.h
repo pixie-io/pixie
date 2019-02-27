@@ -1,22 +1,15 @@
 #pragma once
 
-#include <arrow/type.h>
 #include <memory>
 #include <vector>
 
-#include "src/carnot/udf/column_wrapper.h"
 #include "src/common/statusor.h"
 #include "src/stirling/data_table_schema.h"
 #include "src/stirling/info_class_schema.h"
+#include "src/stirling/types.h"
 
 namespace pl {
 namespace stirling {
-
-using ColumnWrapperRecordBatch = std::vector<carnot::udf::SharedColumnWrapper>;
-using ColumnWrapperRecordBatchVector = std::vector<std::unique_ptr<ColumnWrapperRecordBatch>>;
-
-using ArrowRecordBatch = std::vector<std::unique_ptr<arrow::ArrayBuilder>>;
-using ArrowRecordBatchVector = std::vector<std::shared_ptr<arrow::RecordBatch>>;
 
 enum class TableType { Null, ColumnWrapper, Arrow };
 
@@ -48,8 +41,7 @@ class DataTable {
    *
    * @return pointer to a vector of ColumnWrapperRecordBatch pointers.
    */
-  virtual StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVector>>
-  GetColumnWrapperRecordBatches() {
+  virtual StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVec>> GetColumnWrapperRecordBatches() {
     return error::Unimplemented("Ensure you are using the right type of Data Table");
   }
 
@@ -58,7 +50,7 @@ class DataTable {
    *
    * @return pointer to a vector of Arrow RecordBatch pointers.
    */
-  virtual StatusOr<std::unique_ptr<ArrowRecordBatchVector>> GetArrowRecordBatches() {
+  virtual StatusOr<std::unique_ptr<ArrowRecordBatchSPtrVec>> GetArrowRecordBatches() {
     return error::Unimplemented("Ensure you are using the right type of Data Table");
   }
 
@@ -112,8 +104,7 @@ class ColumnWrapperDataTable : public DataTable {
   ColumnWrapperDataTable() = delete;
   explicit ColumnWrapperDataTable(const InfoClassSchema& schema);
   Status AppendData(uint8_t* const data, uint64_t num_rows) override;
-  StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVector>> GetColumnWrapperRecordBatches()
-      override;
+  StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVec>> GetColumnWrapperRecordBatches() override;
 
  private:
   // Initialize a new Active record batch.
@@ -126,7 +117,7 @@ class ColumnWrapperDataTable : public DataTable {
   std::unique_ptr<ColumnWrapperRecordBatch> record_batch_;
 
   // Sealed record batches that have been collected, but need to be pushed upstream.
-  std::unique_ptr<ColumnWrapperRecordBatchVector> sealed_batches_;
+  std::unique_ptr<ColumnWrapperRecordBatchVec> sealed_batches_;
 };
 
 class ArrowDataTable : public DataTable {
@@ -134,7 +125,7 @@ class ArrowDataTable : public DataTable {
   ArrowDataTable() = delete;
   explicit ArrowDataTable(const InfoClassSchema& schema);
   Status AppendData(uint8_t* const data, uint64_t num_rows) override;
-  StatusOr<std::unique_ptr<ArrowRecordBatchVector>> GetArrowRecordBatches() override;
+  StatusOr<std::unique_ptr<ArrowRecordBatchSPtrVec>> GetArrowRecordBatches() override;
 
  private:
   // Initialize a new Active record batch.
@@ -144,10 +135,10 @@ class ArrowDataTable : public DataTable {
   Status SealActiveRecordBatch();
 
   // Active record batch.
-  std::unique_ptr<ArrowRecordBatch> arrow_arrays_;
+  std::unique_ptr<ArrowArrayBuilderUPtrVec> arrow_arrays_;
 
   // Sealed record batches that have been collected, but need to be pushed upstream.
-  std::unique_ptr<ArrowRecordBatchVector> sealed_batches_;
+  std::unique_ptr<ArrowRecordBatchSPtrVec> sealed_batches_;
 };
 
 }  // namespace stirling

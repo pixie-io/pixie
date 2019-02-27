@@ -39,12 +39,35 @@ bool InfoClassManager::PushRequired() const {
   return false;
 }
 
-RawDataBuf InfoClassManager::GetData() {
-  sampling_count_++;
+Status InfoClassManager::SampleData() {
+  // Get data from the Source.
+  // Source manages its own buffer as appropriate.
+  // The complexity of re-using same memory buffer then falls to the Data Source.
+  auto data = source_->GetData();
+  auto num_records = data.num_records;
+  auto* data_buf = reinterpret_cast<uint8_t*>(data.buf);
+  PL_CHECK_OK(data_table_->AppendData(data_buf, num_records));
+
+  // Update the last sampling time.
   last_sampled_ = std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::system_clock::now().time_since_epoch());
 
-  return source_->GetData();
+  sampling_count_++;
+
+  return Status::OK();
+}
+
+Status InfoClassManager::PushData(PushDataCallback agent_callback) {
+  PL_ASSIGN_OR_RETURN(auto record_batches, data_table_->GetColumnWrapperRecordBatches());
+  for (auto& record_batch : *record_batches) {
+    if (record_batch->size() > 0) {
+      agent_callback(id(), std::move(record_batch));
+    }
+  }
+
+  push_count_++;
+
+  return Status::OK();
 }
 
 stirlingpb::InfoClass InfoClassManager::ToProto() const {

@@ -105,31 +105,12 @@ void Stirling::RunThread() {
     for (const auto& mgr : info_class_mgrs_) {
       // Phase 1: Probe each source for its data.
       if (mgr->SamplingRequired()) {
-        auto source = mgr->GetSourceConnector();
-        auto data_table = mgr->GetDataTable();
-
-        // Get pointer to data.
-        // Source manages its own buffer as appropriate.
-        // For example, EBPFConnector may want to copy data to user-space,
-        // and then provide a pointer to the data.
-        // The complexity of re-using same memory buffer then falls to the Data Source.
-        auto source_data = source->GetData();
-        auto num_records = source_data.num_records;
-        auto* data_buf = reinterpret_cast<uint8_t*>(source_data.buf);
-        PL_CHECK_OK(data_table->AppendData(data_buf, num_records));
+        PL_CHECK_OK(mgr->SampleData());
       }
 
       // Phase 2: Push Data upstream.
       if (mgr->PushRequired()) {
-        auto data_table = mgr->GetDataTable();
-
-        auto record_batches = data_table->GetColumnWrapperRecordBatches();
-        auto record_batches_ptr_raw = record_batches.ValueOrDie().get();
-        for (auto& record_batch : *record_batches_ptr_raw) {
-          if (record_batch->size() > 0) {
-            agent_callback_(mgr->id(), std::move(record_batch));
-          }
-        }
+        PL_CHECK_OK(mgr->PushData(agent_callback_));
       }
 
       // Optional: Update sampling periods if we are dropping data.

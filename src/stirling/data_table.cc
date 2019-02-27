@@ -73,8 +73,7 @@ Status ColumnWrapperDataTable::InitBuffers() {
     DataType type = (*table_schema_)[field_idx].type();
     switch (type) {
       case DataType::TIME64NS: {
-        // TODO(oazizi): Convert this to TIME64NS when ColumnWrapper support is available.
-        auto col = ColumnWrapper::Make(DataType::INT64, 0);
+        auto col = ColumnWrapper::Make(DataType::TIME64NS, 0);
         col->Reserve(target_capacity_);
         record_batch_->push_back(col);
       } break;
@@ -101,7 +100,7 @@ Status ColumnWrapperDataTable::InitBuffers() {
 Status ArrowDataTable::InitBuffers() {
   DCHECK(arrow_arrays_ == nullptr);
 
-  arrow_arrays_ = std::make_unique<ArrowRecordBatch>();
+  arrow_arrays_ = std::make_unique<ArrowArrayBuilderUPtrVec>();
 
   auto mem_pool = arrow::default_memory_pool();
 
@@ -214,25 +213,25 @@ Status ArrowDataTable::AppendData(uint8_t* const data, uint64_t num_rows) {
   return Status::OK();
 }
 
-StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVector>>
+StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVec>>
 ColumnWrapperDataTable::GetColumnWrapperRecordBatches() {
   Status s = SealActiveRecordBatch();
   PL_RETURN_IF_ERROR(s);
 
   auto sealed_batches_ptr = std::move(sealed_batches_);
 
-  sealed_batches_ = std::make_unique<ColumnWrapperRecordBatchVector>();
+  sealed_batches_ = std::make_unique<ColumnWrapperRecordBatchVec>();
 
   return std::move(sealed_batches_ptr);
 }
 
-StatusOr<std::unique_ptr<ArrowRecordBatchVector>> ArrowDataTable::GetArrowRecordBatches() {
+StatusOr<std::unique_ptr<ArrowRecordBatchSPtrVec>> ArrowDataTable::GetArrowRecordBatches() {
   Status s = SealActiveRecordBatch();
   PL_RETURN_IF_ERROR(s);
 
   auto sealed_batches_ptr = std::move(sealed_batches_);
 
-  sealed_batches_ = std::make_unique<ArrowRecordBatchVector>();
+  sealed_batches_ = std::make_unique<ArrowRecordBatchSPtrVec>();
 
   return std::move(sealed_batches_ptr);
 }

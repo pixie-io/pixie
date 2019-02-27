@@ -12,6 +12,7 @@
 #include "src/common/type_utils.h"
 #include "src/common/types/types.pb.h"
 #include "src/stirling/proto/collector_config.pb.h"
+#include "src/stirling/types.h"
 
 namespace pl {
 namespace stirling {
@@ -130,20 +131,6 @@ class InfoClassManager {
   }
 
   /**
-   * @brief Source Connector accessor.
-   *
-   * @return Pointer to source connector for this InfoClassManager.
-   */
-  SourceConnector* GetSourceConnector() { return source_; }
-
-  /**
-   * @brief Data Table accessor.
-   *
-   * @return DataTable* Pointer to the data table for this InfoClassManager.
-   */
-  DataTable* GetDataTable() { return data_table_; }
-
-  /**
    * @brief Get an Element object
    *
    * @param index
@@ -184,11 +171,18 @@ class InfoClassManager {
   bool PushRequired() const;
 
   /**
-   * @brief Get a pointer to collected data from the collector
+   * @brief Samples the data from the Source and copies into local buffers.
    *
-   * @return RawDataRecords Number of records, and raw pointer to data.
+   * @return Status
    */
-  RawDataBuf GetData();
+  Status SampleData();
+
+  /**
+   * @brief Push data by using the callback.
+   *
+   * @return Status.
+   */
+  Status PushData(PushDataCallback agent_callback);
 
   /**
    * @brief Notify function to update state after making changes to the schema.
@@ -266,8 +260,7 @@ class InfoClassManager {
   /**
    * Statistics: count number of pushes.
    */
-  // TODO(oazizi): Bring this back, and use it.
-  // uint32_t push_count_;
+  uint32_t push_count_ = 0;
 
   /**
    * @brief Returns the next time the source needs to be sampled, according to the sampling period.

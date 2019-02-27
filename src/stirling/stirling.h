@@ -79,10 +79,7 @@ class Stirling : public NotCopyable {
    *   uint64_t table_id
    *   std::unique_ptr<ColumnWrapperRecordBatch> data
    */
-  void RegisterCallback(
-      std::function<void(uint64_t, std::unique_ptr<ColumnWrapperRecordBatch>)> f) {
-    agent_callback_ = f;
-  }
+  void RegisterCallback(PushDataCallback f) { agent_callback_ = f; }
 
   // TODO(oazizi): Get rid of this eventually?
   /**
@@ -169,7 +166,7 @@ class Stirling : public NotCopyable {
    *   uint64_t table_id
    *   std::unique_ptr<ColumnWrapperRecordBatch> data
    */
-  std::function<void(uint64_t, std::unique_ptr<ColumnWrapperRecordBatch>)> agent_callback_;
+  PushDataCallback agent_callback_;
 };
 
 }  // namespace stirling
