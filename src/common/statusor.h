@@ -112,35 +112,25 @@ StatusOr<T>::StatusOr(const T& value) : status_(), value_(value) {
 
 template <typename T>
 const T& StatusOr<T>::ValueOrDie() const {
-  // TODO(zasgar): replace with CHECK.
-  assert(status_.ok());
+  PL_CHECK_OK(status_);
   return value_;
 }
 
 template <typename T>
 T& StatusOr<T>::ValueOrDie() {
-  // TODO(zasgar): replace with CHECK.
-  if (!status_.ok()) {
-    abort();
-  }
+  PL_CHECK_OK(status_);
   return value_;
 }
 
 template <typename T>
 T StatusOr<T>::ConsumeValueOrDie() {
-  // TODO(zasgar): replace with CHECK.
-  if (!status_.ok()) {
-    abort();
-  }
+  PL_CHECK_OK(status_);
   return std::move(value_);
 }
 
 template <typename T>
 StatusOr<T>::StatusOr(const Status& status) : status_(status) {
-  // TODO(zasgar): replace with CHECK.
-  if (status.ok()) {
-    abort();
-  }
+  DCHECK(!status_.ok()) << "Should not pass OK status to constructor";
   if (status.ok()) {
     status_ = Status(pl::error::INTERNAL,
                      "Status::OK is not a valid constructor argument to StatusOr<T>");
