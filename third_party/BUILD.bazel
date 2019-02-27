@@ -3,6 +3,12 @@ load("//bazel:flex_bison.bzl", "genbison", "genflex")
 
 licenses(["notice"])
 
+cc_library(
+    name = "clang_tidy_stub",
+    srcs = ["clang_tidy_stub.cc"],
+    visibility = ["//visibility:public"],
+)
+
 pl_cc_library(
     name = "arrow",
     # This list is copied from ARROW_SRCS in

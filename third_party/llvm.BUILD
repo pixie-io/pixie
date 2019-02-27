@@ -73,6 +73,13 @@ cc_library(
         "lib/libLLVMBinaryFormat.a",
         "lib/libLLVMSupport.a",
         "lib/libLLVMDemangle.a",
+
+        # WARNING HACK: This adds a stub so that we don't have to include all of
+        # clang-tidy with the LLVM build. We don't need to use clang-tidy since we don't
+        # do any auto cleanup/formatting during our compile process. If this ever changes,
+        # this stub will need to be removed.
+        # Refer to: https://reviews.llvm.org/D55415
+        "@pl//third_party:clang_tidy_stub",
     ],
     hdrs = glob([
         "include/**/*.h",
