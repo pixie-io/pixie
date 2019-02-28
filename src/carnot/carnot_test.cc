@@ -141,5 +141,10 @@ TEST_F(CarnotTest, no_columns) {
   EXPECT_OK(no_columns_status);
 }
 
+TEST_F(CarnotTest, empty_query_test) {
+  auto s = carnot_.ExecuteQuery("");
+  EXPECT_FALSE(s.ok());
+}
+
 }  // namespace carnot
 }  // namespace pl

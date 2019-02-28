@@ -51,6 +51,10 @@ Status Compiler::UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_stat
 }
 
 StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query) {
+  if (query.empty()) {
+    return error::InvalidArgument("Query should not be empty.");
+  }
+
   std::shared_ptr<IR> ir = std::make_shared<IR>();
   ASTWalker ast_walker(ir);
 
