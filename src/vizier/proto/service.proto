@@ -35,7 +35,7 @@ service VizierService {
   // Returns information about registered agents.
   rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
   // This is an incoming request to Vizier to execute queries.
-  rpc ExecuteQuery(QueryRequest) returns (QueryResponse) {}
+  rpc ExecuteQuery(QueryRequest) returns (VizierQueryResponse) {}
   rpc GetSchemas(SchemaRequest) returns (SchemaResponse) {}
 }
 
@@ -100,7 +100,9 @@ message HostInfo {
 message AgentToVizierMessage {
   oneof msg {
     RegisterAgentRequest register_request = 1;
-    QueryResponse query_response          = 2;
+    AgentQueryResponse query_response     = 2;
+    // This tracks the agent heart beat. Also serves as a keep alive on the connection.
+    HeartBeat heartbeat                   = 3;
   }
 }
 
@@ -110,7 +112,21 @@ message VizierToAgentMessage {
   oneof msg {
     RegisterAgentResponse agent_response = 1;
     QueryRequest query_request           = 2;
+    HeartBeatAck  heart_beat_ack         = 3;
   }
+}
+
+
+// The heart beat signal.
+message HeartBeat {
+  // The current unix time in ns on the machine.
+  int64 time = 1;
+}
+
+// Response sent for a heart beat.
+message HeartBeatAck {
+  // The current unix time in ns on the machine.
+  int64 time = 1;
 }
 
 // RegisterAgentRequest is the first message sent from the agent to register the agent.
@@ -172,8 +188,8 @@ message QueryExecutionStats {
   int64 bytes_processed = 2;
 }
 
-// QueryResponse is returned for each execution of a query.
-message QueryResponse {
+// AgentQueryResponse is returned for each execution of a query by the agent.
+message AgentQueryResponse {
   pl.statuspb.Status status = 1;
 
   // The ID of the returned query.
@@ -189,5 +205,16 @@ message QueryResponse {
   // The data as a serialized flat_buffer.
   // TODO(zasgar): Make it send flat_buffer directly from grpc.
   repeated RowBatchData data = 5;
+}
 
+// QueryResponse is returned by Vizier in response to a query.
+message VizierQueryResponse {
+  message ResponseByAgent {
+    utils.UUID agent_id      = 1 [
+      (gogoproto.customname) = "AgentID"
+    ];
+
+    AgentQueryResponse response = 2;
+  }
+  ResponseByAgent responses = 1;
 }
