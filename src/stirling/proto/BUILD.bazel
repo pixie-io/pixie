@@ -6,7 +6,7 @@ pl_proto_library(
     srcs = ["canonical_message.proto"],
     visibility = ["//visibility:public"],
     deps = [
-       "//src/common/types:types_pl_proto",
+        "//src/common/types:types_pl_proto",
     ],
 )
 
@@ -35,7 +35,7 @@ pl_proto_library(
     srcs = ["collector_config.proto"],
     visibility = ["//visibility:public"],
     deps = [
-       "//src/common/types:types_pl_proto",
+        "//src/common/types:types_pl_proto",
     ],
 )
 

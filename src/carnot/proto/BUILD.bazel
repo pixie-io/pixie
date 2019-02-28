@@ -32,7 +32,6 @@ pl_go_proto_library(
     ],
 )
 
-
 pl_proto_library(
     name = "udfs_pl_proto",
     srcs = ["udfs.proto"],

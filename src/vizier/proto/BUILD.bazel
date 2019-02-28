@@ -35,7 +35,7 @@ pl_go_proto_library(
     deps = [
         "//src/common/codes:error_codes_pl_go_proto",
         "//src/common/proto:status_pl_go_proto",
-        "//src/utils/proto:utils_pl_go_proto",
         "//src/common/types:types_pl_go_proto",
+        "//src/utils/proto:utils_pl_go_proto",
     ],
 )

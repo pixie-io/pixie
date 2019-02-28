@@ -61,6 +61,17 @@ def _com_github_rlyeh_sole():
         build_file = "//third_party:sole.BUILD",
     )
 
+def _com_github_cpp_taskflow():
+    name = "com_github_cpp_taskflow"
+    location = REPOSITORY_LOCATIONS[name]
+    http_archive(
+        name = name,
+        urls = location["urls"],
+        sha256 = location["sha256"],
+        strip_prefix = location.get("strip_prefix", ""),
+        build_file = "//third_party:cpp_taskflow.BUILD",
+    )
+
 def _cc_deps():
     _repository_impl(name = "com_google_benchmark")
     _repository_impl(
@@ -72,6 +83,7 @@ def _cc_deps():
     _repository_impl(name = "com_google_flatbuffers")
     _com_github_rlyeh_sole()
     _com_google_double_conversion()
+    _com_github_cpp_taskflow()
 
 def _go_deps():
     # Add go specific imports here when necessary.

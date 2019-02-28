@@ -32,8 +32,8 @@ pl_cc_binary(
     name = "flags",
     srcs = ["flags.cc"],
     deps = [
+        "//src/common",
         "@com_intel_tbb//:tbb",
-        "//src/common:common",
     ],
 )
 
@@ -81,5 +81,13 @@ pl_cc_test(
     srcs = ["sole_test.cc"],
     deps = [
         "@com_github_rlyeh_sole//:sole",
+    ],
+)
+
+pl_cc_test(
+    name = "cpp_taskflow_test",
+    srcs = ["cpp_taskflow_test.cc"],
+    deps = [
+        "@com_github_cpp_taskflow//:cpp_taskflow",
     ],
 )
