@@ -1,9 +1,41 @@
-#include <functional>
-
 #include "src/agent/controller/executor.h"
+
+#include <arrow/pretty_print.h>
+
+#include <functional>
+#include <sstream>
 
 namespace pl {
 namespace agent {
+using carnot::exec::Column;
+using carnot::exec::Table;
+
+// Temporary and to be replaced by data table from Stirling and Executor
+Status Executor::AddDummyTable(const std::string& name,
+                               std::shared_ptr<carnot::exec::Table> table) {
+  carnot_->table_store()->AddTable(name, table);
+  return Status::OK();
+}
+
+std::string Executor::RecordBatchToStr(RecordBatchSPtr ptr) {
+  std::stringstream ss;
+  PL_CHECK_OK(arrow::PrettyPrint(*ptr, 0, &ss));
+  return ss.str();
+}
+
+StatusOr<std::vector<std::string>> Executor::ServiceQueryAsString(const std::string& query) {
+  PL_ASSIGN_OR_RETURN(carnot::CarnotQueryResult ret, carnot_->ExecuteQuery(query));
+  // Currently ignore many output tables until it's necessary.
+  CHECK_EQ(ret.NumTables(), 1ULL);
+
+  PL_ASSIGN_OR_RETURN(auto record_batches, ret.GetTableAsRecordBatches(0));
+
+  std::vector<std::string> batches_as_string;
+  for (const auto rb : record_batches) {
+    batches_as_string.push_back(RecordBatchToStr(rb));
+  }
+  return batches_as_string;
+}
 
 Status Executor::Init() {
   PL_RETURN_IF_ERROR(carnot_->Init());
@@ -13,7 +45,6 @@ Status Executor::Init() {
                                         std::placeholders::_2));
   return Status::OK();
 }
-
 Publish Executor::GeneratePublishMessage() { return stirling_->GetPublishProto(); }
 
 Subscribe Executor::SubscribeToEverything(const Publish& publish_proto) {

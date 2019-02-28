@@ -14,6 +14,7 @@ namespace exec {
 class MemorySinkNode : public SinkNode {
  public:
   MemorySinkNode() : SinkNode() {}
+  std::string TableName() const { return plan_node_->TableName(); }
 
  protected:
   std::string DebugStringImpl() override;

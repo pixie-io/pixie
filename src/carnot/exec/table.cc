@@ -190,6 +190,30 @@ plan::Relation Table::GetRelation() {
 
   return plan::Relation(types, names);
 }
+
+StatusOr<std::vector<RecordBatchSPtr>> Table::GetTableAsRecordBatches() {
+  std::vector<int64_t> col_selector;
+  // Set up the schema.
+  std::vector<std::shared_ptr<arrow::Field>> schema_vector = {};
+  for (int64_t i = 0; i < NumColumns(); i++) {
+    auto col = GetColumn(i);
+    col_selector.push_back(i);
+    schema_vector.push_back(arrow::field(col->name(), col->batch(0)->type()));
+  }
+  auto schema = std::make_shared<arrow::Schema>(schema_vector);
+
+  // Setup the records.
+  std::vector<RecordBatchSPtr> record_batches;
+  for (int64_t i = 0; i < NumBatches(); i++) {
+    // Get the row batch.
+    // Get;
+    PL_ASSIGN_OR_RETURN(auto cur_rb, GetRowBatch(i, col_selector, arrow::default_memory_pool()));
+    // Break apart the row batch to get the columns.
+    auto record_batch = arrow::RecordBatch::Make(schema, cur_rb->num_rows(), cur_rb->columns());
+    record_batches.push_back(record_batch);
+  }
+  return record_batches;
+}
 }  // namespace exec
 }  // namespace carnot
 }  // namespace pl

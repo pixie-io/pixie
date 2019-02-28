@@ -19,7 +19,7 @@ std::vector<int64_t> Schema::GetIDs() const {
 }
 
 void Schema::AddRelation(int64_t id, const Relation& relation) {
-  VLOG_IF(1, HasRelation(id)) << "WARNING: Relation already exists";
+  VLOG_IF(1, HasRelation(id)) << absl::StrFormat("WARNING: Relation %d already exists", id);
   relations_[id] = relation;
 }
 

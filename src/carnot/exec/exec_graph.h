@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -39,6 +40,7 @@ class ExecutionGraph {
     }
   }
   Status Execute();
+  std::vector<std::string> OutputTables() const;
 
  private:
   /**
@@ -94,6 +96,7 @@ class ExecutionGraph {
   plan::PlanState *plan_state_;
   plan::PlanFragment *pf_;
   std::vector<int64_t> sources_;
+  std::vector<int64_t> sinks_;
   std::unordered_map<int64_t, ExecNode *> nodes_;
 };
 

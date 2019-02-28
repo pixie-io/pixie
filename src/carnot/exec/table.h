@@ -22,6 +22,7 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
+using RecordBatchSPtr = std::shared_ptr<arrow::RecordBatch>;
 /**
  * A Column is batched into equally-sized Arrow Arrays.
  */
@@ -130,7 +131,13 @@ class Table : public NotCopyable {
    */
   int64_t NumBatches();
 
+  /**
+   * @return number of columns.
+   */
+  int64_t NumColumns() { return columns_.size(); }
+
   plan::Relation GetRelation();
+  StatusOr<std::vector<RecordBatchSPtr>> GetTableAsRecordBatches();
 
  private:
   RowDescriptor desc_;

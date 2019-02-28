@@ -17,3 +17,9 @@ pl_cc_library(
         "@com_github_rlyeh_sole//:sole",
     ],
 )
+
+pl_cc_test(
+    name = "executor_test",
+    srcs = ["executor_test.cc"],
+    deps = [":cc_library"],
+)

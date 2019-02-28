@@ -1,4 +1,5 @@
 #pragma once
+#include <arrow/api.h>
 
 #include <memory>
 #include <string>
@@ -14,6 +15,7 @@ namespace pl {
 namespace agent {
 
 using carnot::Carnot;
+using carnot::exec::RecordBatchSPtr;
 using stirling::Stirling;
 using stirling::stirlingpb::Publish;
 using stirling::stirlingpb::Subscribe;
@@ -64,12 +66,30 @@ class Executor {
    */
   Status CreateTablesFromSubscription(const Subscribe& subscribe_proto);
 
+  /**
+   * @brief Add a Dummy Table in the executor for testing.
+   * Remove this when we don't need dummy tables.
+   *
+   * @return Status
+   */
+  Status AddDummyTable(const std::string& name, std::shared_ptr<carnot::exec::Table> table);
+
+  /**
+   * @brief Pass query to the executor, and return a vector of strings that represent
+   * the data as pretty-printed from arrow::RecordBatches
+   *
+   * @param query : the query to call
+   * @return vector of strings representing the batches from the query, or status error.
+   */
+  StatusOr<std::vector<std::string>> ServiceQueryAsString(const std::string& query);
+
   Carnot* carnot() { return carnot_.get(); }
   Stirling* stirling() { return stirling_.get(); }
 
  private:
-  std::unique_ptr<Carnot> carnot_;
-  std::unique_ptr<Stirling> stirling_;
+  std::unique_ptr<carnot::Carnot> carnot_;
+  std::unique_ptr<stirling::Stirling> stirling_;
+  std::string RecordBatchToStr(RecordBatchSPtr ptr);
 };
 
 }  // namespace agent

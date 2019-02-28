@@ -65,6 +65,7 @@ class RowBatch {
   RowDescriptor desc() const { return desc_; }
 
   std::string DebugString() const;
+  std::vector<std::shared_ptr<arrow::Array>> columns() const { return columns_; }
 
  private:
   RowDescriptor desc_;

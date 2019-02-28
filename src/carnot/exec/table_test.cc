@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "src/carnot/exec/table.h"
+#include "src/carnot/exec/test_utils.h"
 #include "src/carnot/udf/arrow_adapter.h"
 #include "src/stirling/data_table.h"
 
@@ -189,6 +190,22 @@ TEST(TableTest, hot_columns_test) {
                  .ConsumeValueOrDie();
   EXPECT_TRUE(rb2->ColumnAt(0)->Equals(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
   EXPECT_TRUE(rb2->ColumnAt(1)->Equals(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
+}
+
+TEST(TableTest, arrow_batches_test) {
+  auto table = CarnotTestUtils::TestTable();
+
+  auto record_batches_status = table->GetTableAsRecordBatches();
+  ASSERT_TRUE(record_batches_status.ok());
+  auto record_batches = record_batches_status.ConsumeValueOrDie();
+
+  auto record_batch = record_batches[0];
+  std::vector<udf::Float64Value> col1_exp1 = {0.5, 1.2, 5.3};
+  std::vector<udf::Int64Value> col2_exp1 = {1, 2, 3};
+  auto col1_batch = record_batch->column(0);
+  auto col2_batch = record_batch->column(1);
+  EXPECT_TRUE(col1_batch->Equals(udf::ToArrow(col1_exp1, arrow::default_memory_pool())));
+  EXPECT_TRUE(col2_batch->Equals(udf::ToArrow(col2_exp1, arrow::default_memory_pool())));
 }
 
 }  // namespace exec
