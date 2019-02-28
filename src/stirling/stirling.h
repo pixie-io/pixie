@@ -40,10 +40,31 @@ stirlingpb::Subscribe SubscribeToAllElements(const stirlingpb::Publish& publish_
 class Stirling : public NotCopyable {
  public:
   Stirling() = delete;
-  explicit Stirling(std::unique_ptr<SourceRegistry> registry) : registry_(std::move(registry)) {
-    config_ = std::make_unique<PubSubManager>(info_class_mgrs_);
-  }
   ~Stirling() = default;
+
+  /**
+   * @brief Create a Stirling object
+   * Factory method to create Stirling with a default registry containing
+   * all sources
+   *
+   * @return std::unique_ptr<Stirling>
+   */
+  static std::unique_ptr<Stirling> Create() {
+    auto registry = std::make_unique<SourceRegistry>();
+    RegisterAllSources(registry.get());
+    return Create(std::move(registry));
+  }
+  /**
+   * @brief Create a Stirling object
+   * Factory method to create Stirling with a source registry.
+   *
+   * @param registry
+   * @return std::unique_ptr<Stirling>
+   */
+  static std::unique_ptr<Stirling> Create(std::unique_ptr<SourceRegistry> registry) {
+    auto stirling = std::unique_ptr<Stirling>(new Stirling(std::move(registry)));
+    return stirling;
+  }
 
   /**
    * @brief Initializes Stirling, including bring-up of all the SourceConnectors.
@@ -115,6 +136,11 @@ class Stirling : public NotCopyable {
    * Wait for the running thread to terminate. Assuming you ran RunThread().
    */
   void WaitForThreadJoin();
+
+ protected:
+  explicit Stirling(std::unique_ptr<SourceRegistry> registry)
+      : config_(std::make_unique<PubSubManager>(info_class_mgrs_)),
+        registry_(std::move(registry)) {}
 
  private:
   /**

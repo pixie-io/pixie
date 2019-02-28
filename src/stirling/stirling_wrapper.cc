@@ -106,35 +106,35 @@ int main(int argc, char** argv) {
   std::unique_ptr<SourceRegistry> registry = CreateRegistry();
 
   // Make Stirling.
-  Stirling data_collector(std::move(registry));
+  auto data_collector = Stirling::Create(std::move(registry));
 
   // Initialize Stirling (brings-up all source connectors)
-  PL_CHECK_OK(data_collector.Init());
+  PL_CHECK_OK(data_collector->Init());
 
   // Get a publish proto message to subscribe from.
-  auto publish_proto = data_collector.GetPublishProto();
+  auto publish_proto = data_collector->GetPublishProto();
 
   // Subscribe to all elements.
   // Stirling will update its schemas and sets up the data tables.
   auto subscribe_proto = pl::stirling::SubscribeToAllElements(publish_proto);
-  PL_CHECK_OK(data_collector.SetSubscription(subscribe_proto));
+  PL_CHECK_OK(data_collector->SetSubscription(subscribe_proto));
 
   // Get a map from InfoClassManager names to Table IDs
-  table_id_to_name_map = data_collector.TableIDToNameMap();
+  table_id_to_name_map = data_collector->TableIDToNameMap();
 
   // Set a dummy callback function (normally this would be in the agent).
-  data_collector.RegisterCallback(StirlingWrapperCallback);
+  data_collector->RegisterCallback(StirlingWrapperCallback);
 
   // Run Data Collector.
-  std::thread run_thread = std::thread(&Stirling::Run, &data_collector);
+  std::thread run_thread = std::thread(&Stirling::Run, data_collector.get());
 
   // Wait for the thread to return. This should never happen in this example.
   // But don't want the program to terminate.
   run_thread.join();
 
   // Another model of how to run the Data Collector:
-  // data_collector.RunAsThread();
-  // data_collector.WaitForThreadJoin();
+  // data_collector->RunAsThread();
+  // data_collector->WaitForThreadJoin();
 
   pl::ShutdownEnvironmentOrDie();
 

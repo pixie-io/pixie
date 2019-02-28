@@ -16,7 +16,7 @@ class StirlingComponentTest : public ::testing::Test {
   void SetUp() override {
     registry_ = std::make_unique<SourceRegistry>();
     registry_->RegisterOrDie<FakeProcStatConnector>("test_connector");
-    data_collector_ = std::make_unique<Stirling>(std::move(registry_));
+    data_collector_ = Stirling::Create(std::move(registry_));
   }
 
   std::unique_ptr<Stirling> data_collector_;
