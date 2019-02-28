@@ -3,6 +3,7 @@
 
 #include "src/stirling/data_table.h"
 #include "src/stirling/info_class_schema.h"
+#include "src/stirling/sequence_generator.h"
 
 namespace pl {
 namespace stirling {
@@ -35,7 +36,7 @@ class DataTableTest : public ::testing::Test {
   std::unique_ptr<DataTable> data_table_;
 
  public:
-  DataTableTest() {}
+  DataTableTest() : f0_seq_(1, 100), f1_seq_(3.14159, 3.14159), f2_seq_(10) {}
 
   /**
    * @brief Sets up the test environment, by initializing the Schema for the test.
@@ -81,12 +82,9 @@ class DataTableTest : public ::testing::Test {
   /**
    *  A set of pre-defined sequences. Useful, because they are easy to check.
    */
-  // TODO(oazizi): Use Sequences in seqgen_connector.h (and perhaps refactor).
-  int64_t f0(uint32_t x) { return x + 100; }
-
-  double f1(uint32_t x) { return 3.14 * (x + 1); }
-
-  int64_t f2(uint32_t x) { return x % 10; }
+  LinearSequence<int64_t> f0_seq_;
+  LinearSequence<double> f1_seq_;
+  ModuloSequence<int64_t> f2_seq_;
 
   /**
    * Schema for our test table
@@ -108,18 +106,22 @@ class DataTableTest : public ::testing::Test {
    * Where f0, f1 and f2 are simple functions to generate data.
    */
   void InitRawData() {
+    f0_seq_.Reset();
+    f1_seq_.Reset();
+    f2_seq_.Reset();
+
     buffer_vector_.resize(num_records_ * record_size_);
     uint8_t* buf = buffer_vector_.data();
 
     size_t offset = 0;
     for (uint32_t i = 0; i < num_records_; ++i) {
-      reinterpret_cast<int64_t*>(buf)[offset / sizeof(int64_t)] = f0(i);
+      reinterpret_cast<int64_t*>(buf)[offset / sizeof(int64_t)] = f0_seq_();
       offset += sizeof(int64_t);
 
-      reinterpret_cast<double*>(buf)[offset / sizeof(double)] = f1(i);
+      reinterpret_cast<double*>(buf)[offset / sizeof(double)] = f1_seq_();
       offset += sizeof(double);
 
-      reinterpret_cast<int64_t*>(buf)[offset / sizeof(int64_t)] = f2(i);
+      reinterpret_cast<int64_t*>(buf)[offset / sizeof(int64_t)] = f2_seq_();
       offset += sizeof(int64_t);
     }
   }
@@ -141,9 +143,9 @@ class DataTableTest : public ::testing::Test {
       auto col1_val = (*col1)[i].val;
       auto col2_val = (*col2)[i].val;
 
-      EXPECT_EQ(col0_val, f0(f_idx));
-      EXPECT_DOUBLE_EQ(col1_val, f1(f_idx));
-      EXPECT_EQ(col2_val, f2(f_idx));
+      EXPECT_EQ(col0_val, f0_seq_());
+      EXPECT_DOUBLE_EQ(col1_val, f1_seq_());
+      EXPECT_EQ(col2_val, f2_seq_());
     }
   }
 
@@ -163,9 +165,9 @@ class DataTableTest : public ::testing::Test {
       auto col1_val = col1->Value(i);
       auto col2_val = col2->Value(i);
 
-      EXPECT_EQ(col0_val, f0(f_idx));
-      EXPECT_DOUBLE_EQ(col1_val, f1(f_idx));
-      EXPECT_EQ(col2_val, f2(f_idx));
+      EXPECT_EQ(col0_val, f0_seq_());
+      EXPECT_DOUBLE_EQ(col1_val, f1_seq_());
+      EXPECT_EQ(col2_val, f2_seq_());
     }
   }
 
@@ -179,6 +181,10 @@ class DataTableTest : public ::testing::Test {
    * generated.
    */
   void RunAndCheckImpl() {
+    f0_seq_.Reset();
+    f1_seq_.Reset();
+    f2_seq_.Reset();
+
     std::uniform_int_distribution<uint32_t> append_num_rows_dist(0, max_append_size_);
     std::uniform_real_distribution<double> probability_dist(0, 1.0);
 
