@@ -7,48 +7,19 @@ namespace compiler {
 using pypa::AstType;
 using pypa::walk_tree;
 
-#define PYPA_PTR_CAST(TYPE, VAL) \
-  std::static_pointer_cast<typename pypa::AstTypeByID<AstType::TYPE>::Type>(VAL)
-
-#define PYPA_CAST(TYPE, VAL) static_cast<AstTypeByID<AstType::TYPE>::Type&>(VAL)
-
-// TODO(philkuz) (PL-399) Move this to somewhere better.
 const std::unordered_map<std::string, std::string> kOP_TO_UDF_MAP = {
     {"*", "pl.multiply"}, {"+", "pl.add"}, {"-", "pl.subtract"}, {"/", "pl.divide"}};
 
-/**
- * @brief Temporary error msg for debugging.
- * Requires people to look in ast_type to find the
- * meaning of the macro.
- *
- * TODO(philkuz) (PL-335) maybe use the weird macro setup to create a
- * dictionary that would return the ast_type.inl from an enum value.
- *
- * @param ap the ptr to the ast.
- */
-/**
- * @brief Create an error that incorporates line, column of node into the error message.
- *
- * @param err_msg
- * @param ast
- * @return Status
- */
-Status CreateAstError(const std::string& err_msg, const pypa::AstPtr& ast) {
-  return error::InvalidArgument("Line $0 Col $1 : $2", ast->line, ast->column, err_msg);
-}
-Status CreateIRNodeError(const std::string& err_msg, const IRNode& node) {
-  return error::InvalidArgument("Line $0 Col $1 : $2", node.line(), node.col(), err_msg);
+ASTWalker::ASTWalker(std::shared_ptr<IR> ir_graph) {
+  ir_graph_ = ir_graph;
+  var_table_ = VarTable();
 }
 
-/**
- * @brief Returns the string repr of an Ast Type.
- * TODO(philkuz) maybe use the weird macro setup to create a
- * dictionary that would return the ast_type.inl from an enum value.
- * @param type
- * @return std::string
- */
-std::string GetAstTypeName(AstType type) {
-  // TODO(philkuz) (PL-335) impl.
+Status ASTWalker::CreateAstError(const std::string& err_msg, const pypa::AstPtr& ast) {
+  return error::InvalidArgument("Line $0 Col $1 : $2", ast->line, ast->column, err_msg);
+}
+
+std::string ASTWalker::GetAstTypeName(pypa::AstType type) {
   std::vector<std::string> type_names = {
 #undef PYPA_AST_TYPE
 #define PYPA_AST_TYPE(X) #X,
@@ -58,42 +29,6 @@ std::string GetAstTypeName(AstType type) {
   };
   DCHECK(type_names.size() > static_cast<size_t>(type));
   return absl::StrFormat("%s", type_names[static_cast<int>(type)]);
-}  // namespace compiler
-
-/**
- * @brief Get the Id from the NameAST.
- *
- * @param node
- * @return std::string
- */
-std::string GetNameID(pypa::AstPtr node) { return PYPA_PTR_CAST(Name, node)->id; }
-
-/**
- * @brief Gets the string out of what is suspected to be a strAst. Errors out if ast is not of type
- * str.
- *
- * @param ast
- * @return StatusOr<std::string>
- */
-StatusOr<std::string> GetStrAstValue(const pypa::AstPtr& ast) {
-  if (ast->type != AstType::Str) {
-    return CreateAstError(
-        absl::StrFormat("Expected string type. Got %s", GetAstTypeName(ast->type)), ast);
-  }
-  return PYPA_PTR_CAST(Str, ast)->value;
-}
-
-StatusOr<std::string> GetStrIRValue(const IRNode& node) {
-  if (node.type() != IRNodeType::StringType) {
-    return CreateIRNodeError(
-        absl::StrFormat("Expected string IRNode type. Got %s", node.type_string()), node);
-  }
-  return static_cast<const StringIR&>(node).str();
-}
-
-ASTWalker::ASTWalker(std::shared_ptr<IR> ir_graph) {
-  ir_graph_ = ir_graph;
-  var_table_ = VarTable();
 }
 
 Status ASTWalker::ProcessExprStmtNode(const pypa::AstExpressionStatementPtr& e) {
@@ -150,32 +85,40 @@ Status ASTWalker::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   var_table_[assign_name] = value.ValueOrDie();
   return Status::OK();
 }
-StatusOr<IRNode*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
+
+StatusOr<std::string> ASTWalker::GetFuncName(const pypa::AstCallPtr& node) {
   std::string func_name;
   switch (node->function->type) {
-    case AstType::Name:
+    case AstType::Name: {
       func_name = GetNameID(node->function);
-      return ProcessFunc(func_name, node);
-    case AstType::Attribute:
-      func_name = GetNameID(PYPA_PTR_CAST(Attribute, node->function)->attribute);
-      return ProcessFunc(func_name, node);
-    default:
-      return CreateAstError(absl::StrFormat("Call function of type %s not allowed.",
+      break;
+    }
+    case AstType::Attribute: {
+      auto attr = PYPA_PTR_CAST(Attribute, node->function);
+      if (attr->attribute->type != AstType::Name) {
+        return CreateAstError(absl::StrFormat("Couldn't get string name out of node of type %s.",
+                                              GetAstTypeName(attr->attribute->type)),
+                              attr->attribute);
+      }
+      func_name = GetNameID(attr->attribute);
+      break;
+    }
+    default: {
+      return CreateAstError(absl::StrFormat("Couldn't get string name out of node of type %s.",
                                             GetAstTypeName(node->function->type)),
                             node->function);
+    }
   }
+  return func_name;
 }
 
-StatusOr<ArgMap> ASTWalker::GetArgs(const pypa::AstCallPtr& call_ast,
-                                    const std::vector<std::string>& expected_args,
-                                    bool kwargs_only) {
+StatusOr<ArgMap> ASTWalker::ProcessArgs(const pypa::AstCallPtr& call_ast,
+                                        const std::vector<std::string>& expected_args,
+                                        bool kwargs_only) {
   auto arg_ast = call_ast->arglist;
   if (!kwargs_only) {
-    // TODO(philkuz) implement non-kwargs setup. (MS3).
     return error::Unimplemented("Only supporting kwargs for now.");
   }
-  // TODO(philkuz) check that non-kw args match the number of expected args. (MS3).
-  // TODO(philkuz) check that args aren't defined twice in the unnamed args and the kwargs. (MS3).
   ArgMap arg_map;
   // Set to keep track of args that are not yet found.
   std::unordered_set<std::string> missing_args;
@@ -190,7 +133,7 @@ StatusOr<ArgMap> ASTWalker::GetArgs(const pypa::AstCallPtr& call_ast,
                             call_ast);
     }
     missing_args.erase(missing_args.find(key));
-    PL_ASSIGN_OR_RETURN(IRNode * value, ProcessDataNode(kw_ptr->value));
+    PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(kw_ptr->value));
     arg_map[key] = value;
   }
   if (missing_args.size() > 0) {
@@ -214,81 +157,8 @@ StatusOr<IRNode*> ASTWalker::LookupName(const pypa::AstNamePtr& name_node) {
   return node;
 }
 
-StatusOr<IRNode*> ASTWalker::ProcessFromOp(const pypa::AstCallPtr& node) {
-  PL_ASSIGN_OR_RETURN(MemorySourceIR * ir_node, ir_graph_->MakeNode<MemorySourceIR>());
-  // Get the arguments in the node.
-  PL_ASSIGN_OR_RETURN(ArgMap args, GetArgs(node, {"table", "select"}, true));
-  PL_RETURN_IF_ERROR(ir_node->Init(args["table"], args["select"]));
-  return ir_node;
-}
-
-StatusOr<IRNode*> ASTWalker::ProcessAttrFunc(const pypa::AstAttributePtr& node) {
-  switch (node->value->type) {
-    case AstType::Call: {
-      return ProcessOpCallNode(PYPA_PTR_CAST(Call, node->value));
-    }
-    case AstType::Name: {
-      return LookupName(PYPA_PTR_CAST(Name, node->value));
-    }
-    default: { return CreateAstError("Can't handle the attribute of this type", node->value); }
-  }
-}
-
-StatusOr<IRNode*> ASTWalker::ProcessSinkOp(const pypa::AstCallPtr& node) {
-  PL_ASSIGN_OR_RETURN(MemorySinkIR * ir_node, ir_graph_->MakeNode<MemorySinkIR>());
-
-  PL_ASSIGN_OR_RETURN(IRNode * call_result,
-                      ProcessAttrFunc(PYPA_PTR_CAST(Attribute, node->function)));
-  PL_ASSIGN_OR_RETURN(ArgMap args, GetArgs(node, {"name"}, true));
-  PL_ASSIGN_OR_RETURN(std::string name_str, GetStrIRValue(*args["name"]));
-  PL_RETURN_IF_ERROR(ir_node->Init(call_result, name_str));
-  return ir_node;
-}
-
-StatusOr<IRNode*> ASTWalker::ProcessRangeOp(const pypa::AstCallPtr& node) {
-  PL_ASSIGN_OR_RETURN(RangeIR * ir_node, ir_graph_->MakeNode<RangeIR>());
-  PL_ASSIGN_OR_RETURN(ArgMap args, GetArgs(node, {"time"}, true));
-  // TODO(philkuz) this is under the assumption that the Range is always called as an attribute.
-  // (MS3) fix.
-  // Will have to change after Milestone 2.
-  PL_ASSIGN_OR_RETURN(IRNode * call_result,
-                      ProcessAttrFunc(PYPA_PTR_CAST(Attribute, node->function)));
-  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["time"]));
-  return ir_node;
-}
-
-StatusOr<IRNode*> ASTWalker::ProcessMapOp(const pypa::AstCallPtr& node) {
-  PL_ASSIGN_OR_RETURN(MapIR * ir_node, ir_graph_->MakeNode<MapIR>());
-  // Get arguments.
-  PL_ASSIGN_OR_RETURN(ArgMap args, GetArgs(node, {"fn"}, true));
-  // TODO(philkuz) this is under the assumption that Map is always called as an attribute.
-  // Will have to change later on.
-  PL_ASSIGN_OR_RETURN(IRNode * call_result,
-                      ProcessAttrFunc(PYPA_PTR_CAST(Attribute, node->function)));
-  Status status = ir_node->Init(call_result, args["fn"]);
-  if (status.ok()) {
-    return ir_node;
-  } else {
-    return status;
-  }
-}
-
-StatusOr<IRNode*> ASTWalker::ProcessAggOp(const pypa::AstCallPtr& node) {
-  PL_ASSIGN_OR_RETURN(AggIR * ir_node, ir_graph_->MakeNode<AggIR>());
-  // Get arguments.
-  PL_ASSIGN_OR_RETURN(ArgMap args, GetArgs(node, {"by", "fn"}, true));
-  // TODO(philkuz) this is under the assumption that Agg is always called as an attribute.
-  // Will have to change later on.
-  PL_ASSIGN_OR_RETURN(IRNode * call_result,
-                      ProcessAttrFunc(PYPA_PTR_CAST(Attribute, node->function)));
-
-  // TODO(philkuz) refactor the other op handlers to do the same.
-  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["by"], args["fn"]));
-  return ir_node;
-}
-
-StatusOr<IRNode*> ASTWalker::ProcessFunc(const std::string& func_name,
-                                         const pypa::AstCallPtr& node) {
+StatusOr<IRNode*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
+  PL_ASSIGN_OR_RETURN(std::string func_name, GetFuncName(node));
   IRNode* ir_node;
   if (func_name == kFromOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessFromOp(node));
@@ -308,17 +178,97 @@ StatusOr<IRNode*> ASTWalker::ProcessFunc(const std::string& func_name,
   return ir_node;
 }
 
-StatusOr<IRNode*> ASTWalker::ProcessStrDataNode(const pypa::AstStrPtr& ast) {
+StatusOr<IRNode*> ASTWalker::ProcessFromOp(const pypa::AstCallPtr& node) {
+  PL_ASSIGN_OR_RETURN(MemorySourceIR * ir_node, ir_graph_->MakeNode<MemorySourceIR>());
+  // Get the arguments in the node.
+  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"table", "select"}, true));
+  PL_RETURN_IF_ERROR(ir_node->Init(args["table"], args["select"]));
+  return ir_node;
+}
+
+StatusOr<IRNode*> ASTWalker::ProcessAttribute(const pypa::AstAttributePtr& node) {
+  switch (node->value->type) {
+    case AstType::Call: {
+      return ProcessOpCallNode(PYPA_PTR_CAST(Call, node->value));
+    }
+    case AstType::Name: {
+      return LookupName(PYPA_PTR_CAST(Name, node->value));
+    }
+    default: { return CreateAstError("Can't handle the attribute of this type", node->value); }
+  }
+}
+
+StatusOr<IRNode*> ASTWalker::ProcessSinkOp(const pypa::AstCallPtr& node) {
+  PL_ASSIGN_OR_RETURN(MemorySinkIR * ir_node, ir_graph_->MakeNode<MemorySinkIR>());
+
+  PL_ASSIGN_OR_RETURN(IRNode * call_result,
+                      ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
+  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"name"}, true));
+  PL_ASSIGN_OR_RETURN(std::string name_str, IRUtils::GetStrIRValue(*args["name"]));
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result, name_str));
+  return ir_node;
+}
+
+StatusOr<IRNode*> ASTWalker::ProcessRangeOp(const pypa::AstCallPtr& node) {
+  if (node->function->type != AstType::Attribute) {
+    return CreateAstError(absl::StrFormat("Expected Range to be an attribute, not a %s",
+                                          GetAstTypeName(node->function->type)),
+                          node->function);
+  }
+  PL_ASSIGN_OR_RETURN(RangeIR * ir_node, ir_graph_->MakeNode<RangeIR>());
+  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"time"}, true));
+  PL_ASSIGN_OR_RETURN(IRNode * call_result,
+                      ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["time"]));
+  return ir_node;
+}
+
+StatusOr<IRNode*> ASTWalker::ProcessMapOp(const pypa::AstCallPtr& node) {
+  if (node->function->type != AstType::Attribute) {
+    return CreateAstError(absl::StrFormat("Expected Map to be an attribute, not a %s",
+                                          GetAstTypeName(node->function->type)),
+                          node->function);
+  }
+  PL_ASSIGN_OR_RETURN(MapIR * ir_node, ir_graph_->MakeNode<MapIR>());
+  // Get arguments.
+  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"fn"}, true));
+  PL_ASSIGN_OR_RETURN(IRNode * call_result,
+                      ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
+  Status status = ir_node->Init(call_result, args["fn"]);
+  if (status.ok()) {
+    return ir_node;
+  } else {
+    return status;
+  }
+}
+
+StatusOr<IRNode*> ASTWalker::ProcessAggOp(const pypa::AstCallPtr& node) {
+  if (node->function->type != AstType::Attribute) {
+    return CreateAstError(absl::StrFormat("Expected Agg to be an attribute, not a %s",
+                                          GetAstTypeName(node->function->type)),
+                          node->function);
+  }
+  PL_ASSIGN_OR_RETURN(AggIR * ir_node, ir_graph_->MakeNode<AggIR>());
+  // Get arguments.
+  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"by", "fn"}, true));
+  PL_ASSIGN_OR_RETURN(IRNode * call_result,
+                      ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
+
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["by"], args["fn"]));
+  return ir_node;
+}
+
+StatusOr<IRNode*> ASTWalker::ProcessStr(const pypa::AstStrPtr& ast) {
   PL_ASSIGN_OR_RETURN(StringIR * ir_node, ir_graph_->MakeNode<StringIR>());
   PL_ASSIGN_OR_RETURN(auto str_value, GetStrAstValue(ast));
   PL_RETURN_IF_ERROR(ir_node->Init(str_value));
   return ir_node;
 }
 
-StatusOr<IRNode*> ASTWalker::ProcessListDataNode(const pypa::AstListPtr& ast) {
+StatusOr<IRNode*> ASTWalker::ProcessList(const pypa::AstListPtr& ast) {
   ListIR* ir_node = ir_graph_->MakeNode<ListIR>().ValueOrDie();
   for (auto& child : ast->elements) {
-    PL_ASSIGN_OR_RETURN(IRNode * child_node, ProcessDataNode(child));
+    PL_ASSIGN_OR_RETURN(IRNode * child_node, ProcessData(child));
     PL_RETURN_IF_ERROR(ir_node->AddListItem(child_node));
   }
   return ir_node;
@@ -353,7 +303,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const std::string& 
   return CreateAstError(absl::StrFormat("Couldn't find value %s", value), node);
 }
 
-StatusOr<IRNode*> ASTWalker::ProcessNumberNode(const pypa::AstNumberPtr& node) {
+StatusOr<IRNode*> ASTWalker::ProcessNumber(const pypa::AstNumberPtr& node) {
   switch (node->num_type) {
     case pypa::AstNumber::Type::Float: {
       PL_ASSIGN_OR_RETURN(FloatIR * ir_node, ir_graph_->MakeNode<FloatIR>());
@@ -371,7 +321,7 @@ StatusOr<IRNode*> ASTWalker::ProcessNumberNode(const pypa::AstNumberPtr& node) {
   }
 }
 
-StatusOr<LambdaExprReturn> ASTWalker::MakeLambdaFunc(
+StatusOr<LambdaExprReturn> ASTWalker::BuildLambdaFunc(
     const std::string& fn_name, const std::vector<LambdaExprReturn>& children_ret_expr,
     const pypa::AstPtr& parent_node) {
   PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->MakeNode<FuncIR>());
@@ -403,13 +353,12 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaBinOp(const std::string& arg_
   PL_ASSIGN_OR_RETURN(auto right_expr_ret, ProcessLambdaExpr(arg_name, node->right));
   children_ret_expr.push_back(left_expr_ret);
   children_ret_expr.push_back(right_expr_ret);
-  return MakeLambdaFunc(fn_name, children_ret_expr, node);
+  return BuildLambdaFunc(fn_name, children_ret_expr, node);
 }
 
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCall(const std::string& arg_name,
                                                         const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(auto attr_result, ProcessLambdaExpr(arg_name, node->function));
-  // TODO(philkuz) add check to make sure that type is valid (use parallel diff result).
   if (!attr_result.StringOnly()) {
     return CreateAstError("Expected a string for the return", node);
   }
@@ -425,7 +374,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCall(const std::string& arg_n
     children_ret_expr.push_back(rt);
   }
 
-  return MakeLambdaFunc(fn_name, children_ret_expr, node);
+  return BuildLambdaFunc(fn_name, children_ret_expr, node);
 }
 
 /**
@@ -453,12 +402,12 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaExpr(const std::string& arg_n
       break;
     }
     case AstType::Number: {
-      auto number_result = ProcessNumberNode(PYPA_PTR_CAST(Number, node));
+      auto number_result = ProcessNumber(PYPA_PTR_CAST(Number, node));
       PL_ASSIGN_OR_RETURN(expr_return, WrapLambdaExprReturn(number_result));
       break;
     }
     case AstType::Str: {
-      auto str_result = ProcessStrDataNode(PYPA_PTR_CAST(Str, node));
+      auto str_result = ProcessStr(PYPA_PTR_CAST(Str, node));
       PL_ASSIGN_OR_RETURN(expr_return, WrapLambdaExprReturn(str_result));
       break;
     }
@@ -493,7 +442,6 @@ StatusOr<std::string> ASTWalker::ProcessLambdaArgs(const pypa::AstLambdaPtr& nod
   if (arg_ast.keywords.size() != 0) {
     return CreateAstError("No keyword arguments allowed for lambdas.", node);
   }
-  // TODO(philkuz) check kwargs attribute of arg_ast.
   auto arg_node = arg_ast.arguments[0];
   if (arg_node->type != AstType::Name) {
     return CreateAstError("Argument must be a Name.", node);
@@ -535,15 +483,15 @@ StatusOr<IRNode*> ASTWalker::ProcessLambda(const pypa::AstLambdaPtr& ast) {
   }
 }
 
-StatusOr<IRNode*> ASTWalker::ProcessDataNode(const pypa::AstPtr& ast) {
+StatusOr<IRNode*> ASTWalker::ProcessData(const pypa::AstPtr& ast) {
   IRNode* ir_node;
   switch (ast->type) {
     case AstType::Str: {
-      PL_ASSIGN_OR_RETURN(ir_node, ProcessStrDataNode(PYPA_PTR_CAST(Str, ast)));
+      PL_ASSIGN_OR_RETURN(ir_node, ProcessStr(PYPA_PTR_CAST(Str, ast)));
       break;
     }
     case AstType::List: {
-      PL_ASSIGN_OR_RETURN(ir_node, ProcessListDataNode(PYPA_PTR_CAST(List, ast)));
+      PL_ASSIGN_OR_RETURN(ir_node, ProcessList(PYPA_PTR_CAST(List, ast)));
       break;
     }
     case AstType::Lambda: {
@@ -552,7 +500,7 @@ StatusOr<IRNode*> ASTWalker::ProcessDataNode(const pypa::AstPtr& ast) {
     }
     default: {
       std::string err_msg =
-          absl::StrFormat("Couldn't find %s in ProcessDataNode", GetAstTypeName(ast->type));
+          absl::StrFormat("Couldn't find %s in ProcessData", GetAstTypeName(ast->type));
       return CreateAstError(err_msg, ast);
     }
   }

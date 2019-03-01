@@ -28,9 +28,14 @@ constexpr const char* kSinkOpId = "Result";
 
 using VarTable = std::unordered_map<std::string, IRNode*>;
 using ArgMap = std::unordered_map<std::string, IRNode*>;
+
+#define PYPA_PTR_CAST(TYPE, VAL) \
+  std::static_pointer_cast<typename pypa::AstTypeByID<pypa::AstType::TYPE>::Type>(VAL)
+
+#define PYPA_CAST(TYPE, VAL) static_cast<AstTypeByID<AstType::TYPE>::Type&>(VAL)
+
 /**
  * @brief Struct that packages the column names and the expr within the function.
- *
  */
 struct LambdaExprReturn {
   LambdaExprReturn() {}
@@ -112,7 +117,7 @@ class ASTWalker {
 
  private:
   /**
-   * @brief GetArgs traverses an arg_ast tree, confirms that the expected_args are found in that
+   * @brief ProcessArgs traverses an arg_ast tree, confirms that the expected_args are found in that
    * tree, and then returns a map of those expected args to the nodes they point to.
    *
    * @param arg_ast The arglist ast
@@ -120,8 +125,8 @@ class ASTWalker {
    * @param kwargs_only Whether to only allow keyword args.
    * @return StatusOr<ArgMap>
    */
-  StatusOr<ArgMap> GetArgs(const pypa::AstCallPtr& arg_ast,
-                           const std::vector<std::string>& expected_args, bool kwargs_only);
+  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& arg_ast,
+                               const std::vector<std::string>& expected_args, bool kwargs_only);
 
   /**
    * @brief ProcessExprStmtNode handles full lines that are expression statements.
@@ -154,6 +159,14 @@ class ASTWalker {
   Status ProcessAssignNode(const pypa::AstAssignPtr& node);
 
   /**
+   * @brief Gets the function name out of the call node into a string.
+   *
+   * @param call ptr ast node.
+   * @return StatusOr<std::string> the string
+   */
+  StatusOr<std::string> GetFuncName(const pypa::AstCallPtr& node);
+
+  /**
    * @brief ProcessOpCallNode handles call nodes which are created for any function call
    * ie
    *  Range(...)
@@ -166,6 +179,7 @@ class ASTWalker {
    * @return StatusOr<IRNode*> the op contained by the call ast.
    */
   StatusOr<IRNode*> ProcessOpCallNode(const pypa::AstCallPtr& node);
+
   /**
    * @brief Processes the From operator.
    *
@@ -206,23 +220,22 @@ class ASTWalker {
    */
   StatusOr<IRNode*> ProcessAggOp(const pypa::AstCallPtr& node);
 
-  /**
-   * @brief ProcessFunc handles functions that have already been determined with a name.
-   *
-   * @param name the name of the function to run.
-   * @param node
-   * @return StatusOr<IRNode*>
-   */
-  StatusOr<IRNode*> ProcessFunc(const std::string& name, const pypa::AstCallPtr& node);
+  // /**
+  //  * @brief ProcessFunc handles functions that have already been determined with a name.
+  //  *
+  //  * @param name the name of the function to run.
+  //  * @param node
+  //  * @return StatusOr<IRNode*>
+  //  */
+  // StatusOr<IRNode*> ProcessFunc(const std::string& name, const pypa::AstCallPtr& node);
 
   /**
-   * @brief Processes an Attribute ast that is supposed to point to a function.
+   * @brief Processes an Attribute ast at the top level.
    *
-   * TODO(philkuz) figure out if we can use this in conjunction with the other Attribute parser.
    * @param node attribute node that is known to be a function.
    * @return StatusOr<IRNode*>
    */
-  StatusOr<IRNode*> ProcessAttrFunc(const pypa::AstAttributePtr& node);
+  StatusOr<IRNode*> ProcessAttribute(const pypa::AstAttributePtr& node);
 
   /**
    * @brief Processes a list ptr into an IR node.
@@ -230,7 +243,7 @@ class ASTWalker {
    * @param ast
    * @return StatusOr<IRNode*>
    */
-  StatusOr<IRNode*> ProcessListDataNode(const pypa::AstListPtr& ast);
+  StatusOr<IRNode*> ProcessList(const pypa::AstListPtr& ast);
 
   /**
    * @brief Processes a number into an IR Node.
@@ -238,7 +251,7 @@ class ASTWalker {
    * @param node
    * @return StatusOr<LambdaExprReturn>
    */
-  StatusOr<IRNode*> ProcessNumberNode(const pypa::AstNumberPtr& node);
+  StatusOr<IRNode*> ProcessNumber(const pypa::AstNumberPtr& node);
 
   /**
    * @brief Processes a str ast ptr into an IR node.
@@ -246,23 +259,19 @@ class ASTWalker {
    * @param ast
    * @return StatusOr<IRNode*>
    */
-  StatusOr<IRNode*> ProcessStrDataNode(const pypa::AstStrPtr& ast);
-
-  StatusOr<IRNode*> ProcessAttrDataNode(const pypa::AstAttributePtr& node);
+  StatusOr<IRNode*> ProcessStr(const pypa::AstStrPtr& ast);
 
   /**
-   * @brief ProcessDataNode takes in what are typically function arguments and returns the
+   * @brief ProcessData takes in what are typically function arguments and returns the
    * approriate data representation.
    *
    * Ie it might take in an AST tree that represents a list of strings, and convert that into a
    * ListIR node.
    *
-   * TODO(philkuz) maybe a rename is in order?
-   *
    * @param ast
    * @return StatusOr<IRNode*>
    */
-  StatusOr<IRNode*> ProcessDataNode(const pypa::AstPtr& ast);
+  StatusOr<IRNode*> ProcessData(const pypa::AstPtr& ast);
 
   /**
    * @brief Gets the name string contained within the Name ast node and returns the IRNode
@@ -296,16 +305,6 @@ class ASTWalker {
                                                const pypa::AstDictPtr& node);
 
   /**
-   * @brief Takes a binary operation node and translates it to an IRNode expression.
-   *
-   * @param arg_name
-   * @param node
-   * @return StatusOr<LambdaExprReturn>
-   */
-  StatusOr<LambdaExprReturn> ProcessLambdaBinOp(const std::string& arg_name,
-                                                const pypa::AstBinOpPtr& node);
-
-  /**
    * @brief Takes in an attribute contained within a lambda and maps it to either a column or a
    * function call.
    *
@@ -316,9 +315,30 @@ class ASTWalker {
   StatusOr<LambdaExprReturn> ProcessLambdaAttribute(const std::string& arg_name,
                                                     const pypa::AstAttributePtr& node);
 
-  StatusOr<LambdaExprReturn> MakeLambdaFunc(const std::string& fn_name,
-                                            const std::vector<LambdaExprReturn>& children_ret_expr,
-                                            const pypa::AstPtr& parent_node);
+  /**
+   * @brief Helper that assembles functions made within a Lambda.
+   * ie the node containing `pl.mean` within
+   * >>> lambda r : pl.mean(r.cpu0)
+   *
+   * @param fn_name
+   * @param children_ret_expr
+   * @param parent_node
+   * @return StatusOr<LambdaExprReturn>
+   */
+  StatusOr<LambdaExprReturn> BuildLambdaFunc(const std::string& fn_name,
+                                             const std::vector<LambdaExprReturn>& children_ret_expr,
+                                             const pypa::AstPtr& parent_node);
+
+  /**
+   * @brief Takes a binary operation node and translates it to an IRNode expression.
+   *
+   * @param arg_name
+   * @param node
+   * @return StatusOr<LambdaExprReturn>
+   */
+  StatusOr<LambdaExprReturn> ProcessLambdaBinOp(const std::string& arg_name,
+                                                const pypa::AstBinOpPtr& node);
+
   /**
    * @brief Processes a call node with the lambda context (arg_name) that helps identify and
    * return the column names we want, and notifies us when there is a column name being used
@@ -349,6 +369,47 @@ class ASTWalker {
    * @return StatusOr<IRNode*>
    */
   StatusOr<IRNode*> ProcessLambda(const pypa::AstLambdaPtr& ast);
+
+  /**
+   * @brief Create an error that incorporates line, column of ast node into the error message.
+   *
+   * @param err_msg
+   * @param ast
+   * @return Status
+   */
+  static Status CreateAstError(const std::string& err_msg, const pypa::AstPtr& ast);
+
+  /**
+   * @brief Returns the string repr of an Ast Type.
+   * @param The AstType type.
+   * @return std::string representation of the type.
+   */
+  static std::string GetAstTypeName(pypa::AstType type);
+
+  /**
+   * @brief Get the Id from the NameAST.
+   *
+   * @param node
+   * @return std::string
+   */
+  static const std::string GetNameID(const pypa::AstPtr& node) {
+    return PYPA_PTR_CAST(Name, node)->id;
+  }
+
+  /**
+   * @brief Gets the string out of what is suspected to be a strAst. Errors out if ast is not of
+   * type str.
+   *
+   * @param ast
+   * @return StatusOr<std::string>
+   */
+  static StatusOr<std::string> GetStrAstValue(const pypa::AstPtr& ast) {
+    if (ast->type != pypa::AstType::Str) {
+      return CreateAstError(
+          absl::StrFormat("Expected string type. Got %s", GetAstTypeName(ast->type)), ast);
+    }
+    return PYPA_PTR_CAST(Str, ast)->value;
+  }
 
   std::shared_ptr<IR> ir_graph_;
   VarTable var_table_;

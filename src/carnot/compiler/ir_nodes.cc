@@ -4,6 +4,10 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
+Status IRUtils::CreateIRNodeError(const std::string& err_msg, const IRNode& node) {
+  return error::InvalidArgument("Line $0 Col $1 : $2", node.line(), node.col(), err_msg);
+}
+
 Status IR::AddEdge(int64_t from_node, int64_t to_node) {
   dag_.AddEdge(from_node, to_node);
   return Status::OK();
@@ -132,7 +136,6 @@ Status MemorySinkIR::ToProto(carnotpb::Operator* op) const {
 }
 
 Status RangeIR::Init(IRNode* parent_node, IRNode* time_repr) {
-  // TODO(philkuz) implement string to ms (int) conversion.
   time_repr_ = time_repr;
   PL_RETURN_IF_ERROR(SetParent(parent_node));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, time_repr_));
@@ -153,7 +156,6 @@ Status RangeIR::ToProto(carnotpb::Operator*) const {
 }
 
 Status MapIR::Init(IRNode* parent_node, IRNode* lambda_func) {
-  // TODO(philkuz) implement string to ms (int) conversion.
   lambda_func_ = lambda_func;
   PL_RETURN_IF_ERROR(SetParent(parent_node));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, lambda_func_));
@@ -238,11 +240,22 @@ Status MapIR::ToProto(carnotpb::Operator* op) const {
 }
 
 Status AggIR::Init(IRNode* parent_node, IRNode* by_func, IRNode* agg_func) {
-  // TODO(philkuz) expect by_func to be a lambda node once the types diff is in.
-  by_func_ = by_func;
+  if (by_func->type() != IRNodeType::LambdaType) {
+    return IRUtils::CreateIRNodeError(
+        absl::StrFormat("Expected 'by' argument of AggIR to be 'Lambda', got '%s'",
+                        by_func->type_string()),
+        *by_func);
+  }
+  if (agg_func->type() != IRNodeType::LambdaType) {
+    return IRUtils::CreateIRNodeError(
+        absl::StrFormat("Expected 'agg' argument of AggIR to be 'Lambda', got '%s'",
+                        agg_func->type_string()),
+        *agg_func);
+  }
 
-  // TODO(philkuz) expect by_func to be a lambda node or funcname node once the types diff is in.
+  by_func_ = by_func;
   agg_func_ = agg_func;
+
   PL_RETURN_IF_ERROR(SetParent(parent_node));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, agg_func_));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, by_func_));
@@ -394,7 +407,6 @@ StatusOr<IRNode*> LambdaIR::GetDefaultExpr() {
 
 std::string LambdaIR::DebugString(int64_t depth) const {
   std::map<std::string, std::string> childMap;
-  // TODO(philkuz) figure out expected relation.
   childMap["ExpectedRelation"] =
       absl::StrFormat("[%s]", absl::StrJoin(expected_column_names_, ","));
   for (auto const& x : col_expr_map_) {

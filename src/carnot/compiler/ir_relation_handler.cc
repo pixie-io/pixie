@@ -140,12 +140,14 @@ StatusOr<plan::Relation> IRRelationHandler::AggHandler(OperatorIR* node,
   PL_RETURN_IF_ERROR(HasExpectedColumns(by_expected, parent_rel));
   PL_RETURN_IF_ERROR(HasExpectedColumns(agg_expected, parent_rel));
 
-  // Get the columns to group by.
-  // TODO(philkuz) add support for multiple group bys (MS3)
+  // Get the column to group by.
   PL_ASSIGN_OR_RETURN(IRNode * expr, by_func->GetDefaultExpr());
+  // Only allow one columns type.
   if (expr->type() != IRNodeType::ColumnType) {
-    return error::InvalidArgument("Expected a 'ColumnType' for the by function body, got '$0",
-                                  expr->type_string());
+    return IRUtils::CreateIRNodeError(
+        absl::StrFormat("Expected a 'ColumnType' for the by function body, got '%s",
+                        expr->type_string()),
+        *node);
   }
   ColumnIR* col_expr = static_cast<ColumnIR*>(expr);
   // Make sure that the column is setup.
@@ -318,8 +320,7 @@ Status IRRelationHandler::SetAllSourceRelations(IR* ir_graph) {
 Status IRRelationHandler::UpdateRelationsAndCheckFunctions(IR* ir_graph) {
   // Get the source relations.
   PL_RETURN_IF_ERROR(SetAllSourceRelations(ir_graph));
-  // TODO(philkuz) (MS3) make this work with multiple sink_nodes
-  // Set all the source node relations.
+  // Currently only
   PL_ASSIGN_OR_RETURN(auto node, ir_graph->GetSink());
   DCHECK(node->IsOp());
   // Get the sink node

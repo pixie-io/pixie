@@ -9,6 +9,14 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
+
+TEST(IRTypes, types_enum_test) {
+  // quick test to make sure the enums test is inline with the type strings.
+  // TODO(philkuz) on merge with time branch, switch lines.
+  // sizeof hack to make things work :(
+  EXPECT_EQ(IRNodeType::number_of_types, sizeof(IRNodeString) / sizeof(*IRNodeString));
+  // EXPECT_EQ(IRNodeType::number_of_types, sizeof(kIRNodeStrings));
+}
 /**
  * Creates IR Graph that is the following query compiled
  *
@@ -209,7 +217,7 @@ const char* kExpectedAggPb = R"(
   op_type: BLOCKING_AGGREGATE_OPERATOR
   blocking_agg_op {
     values {
-      name: "mean"
+      name: "pl.mean"
       args {
         constant {
           data_type: INT64
@@ -241,21 +249,23 @@ TEST(ToProto, agg_ir) {
   auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
   col->SetColumnIdx(4);
 
-  auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-  auto by_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(func->Init("mean", std::vector<IRNode*>({constant, col})));
-  EXPECT_OK(agg->Init(mem_src, by_func, func));
-  auto expr_map = std::unordered_map<std::string, IRNode*>();
-  expr_map.emplace("value1", func);
-  agg->SetAggValMap(expr_map);
+  auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+  auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
+  EXPECT_OK(agg_func->Init("pl.mean", std::vector<IRNode*>({constant, col})));
+  EXPECT_OK(agg_func_lambda->Init({"meaned_column"}, {{"mean", agg_func}}));
 
+  auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   auto group1 = graph->MakeNode<ColumnIR>().ValueOrDie();
   EXPECT_OK(group1->Init("group1"));
   group1->SetColumnIdx(1);
+  EXPECT_OK(by_func_lambda->Init({"group1"}, group1));
+
+  ASSERT_TRUE(agg->Init(mem_src, by_func_lambda, agg_func_lambda).ok());
+  agg->SetAggValMap({{"value1", agg_func}});
   agg->SetGroups(std::vector<ColumnIR*>({group1}));
 
   carnotpb::Operator pb;
-  EXPECT_OK(agg->ToProto(&pb));
+  ASSERT_TRUE(agg->ToProto(&pb).ok());
 
   carnotpb::Operator expected_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedAggPb, &expected_pb));

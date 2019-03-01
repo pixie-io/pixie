@@ -6,7 +6,6 @@ if apt-get install -y linux-headers-`uname -r` ; then
     # Run smoke_test with bcc functionality
     mount -t debugfs none /sys/kernel/debug/
     BCC_OUTPUT_FILE=$OUTDIR/smoke_test.bcc
-    # TODO(philkuz): Add bcc run option to smoke_test
     ./CPUDistribution_bcc 1 > $BCC_OUTPUT_FILE
     ./smoke_test -g -c -o $SMOKETEST_PB -b -f $BCC_OUTPUT_FILE
 else

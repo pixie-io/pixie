@@ -56,7 +56,6 @@ Status IRVerifier::VerifyRange(IRNode* node) {
   PL_RETURN_IF_ERROR(ExpectType(StringType, range_node->time_repr(),
                                 ExpString("RangeIR", range_node->id(), "time_repr")));
 
-  // TODO(philkuz) Allow the range_node to have any arbitrary op parent (MS3)
   PL_RETURN_IF_ERROR(ExpectType(MemorySourceType, range_node->parent(),
                                 ExpString("RangeIR", range_node->id(), "parent")));
   return Status::OK();

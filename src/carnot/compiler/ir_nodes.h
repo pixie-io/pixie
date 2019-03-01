@@ -33,17 +33,17 @@ enum IRNodeType {
   FloatType,
   IntType,
   BoolType,
-  BinFuncType,
   FuncType,
   ListType,
   LambdaType,
   ColumnType,
-  FuncNameType
+  number_of_types  // This is not a real type, but is used to verify strings are inline with enums.
 };
-static constexpr const char* IRNodeString[] = {
-    "MemorySourceType", "MemorySinkType", "RangeType",  "MapType",    "AggType",
-    "StringType",       "FloatType",      "IntType",    "BoolType",   "BinFuncType",
-    "FuncType",         "ListType",       "LambdaType", "ColumnType", "FuncNameType"};
+
+static constexpr const char* IRNodeString[13] = {
+    "MemorySourceType", "MemorySinkType", "RangeType", "MapType",  "AggType",
+    "StringType",       "FloatType",      "IntType",   "BoolType", "FuncType",
+    "ListType",         "LambdaType",     "ColumnType"};
 
 /**
  * @brief Node class for the IR.
@@ -612,7 +612,32 @@ class IRWalker {
   AggWalkFn agg_walk_fn_;
   MemorySinkWalkFn memory_sink_walk_fn_;
 };
+class IRUtils {
+ public:
+  /**
+   * @brief Create an error that incorporates line, column of ir node into the error message.
+   *
+   * @param err_msg
+   * @param ast
+   * @return Status
+   */
+  static Status CreateIRNodeError(const std::string& err_msg, const IRNode& node);
 
+  /**
+   * @brief Helper to get string out of a suspected node object. Fails if the node is not a
+   * StringIR.
+   *
+   * @param node
+   * @return StatusOr<std::string>
+   */
+  static StatusOr<std::string> GetStrIRValue(const IRNode& node) {
+    if (node.type() != IRNodeType::StringType) {
+      return CreateIRNodeError(
+          absl::StrFormat("Expected string IRNode type. Got %s", node.type_string()), node);
+    }
+    return static_cast<const StringIR&>(node).str();
+  }
+};
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

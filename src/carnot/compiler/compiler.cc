@@ -43,8 +43,6 @@ Status Compiler::VerifyIRConnections(const IR& ir) {
   return Status::OK();
 }
 Status Compiler::UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_state) {
-  // TODO(philkuz) fix the compiler state schema or IRelationHandler to uncomment the following
-  // lines.
   auto relation_handler =
       IRRelationHandler(*compiler_state->relation_map(), *compiler_state->registry_info());
   return relation_handler.UpdateRelationsAndCheckFunctions(ir);
