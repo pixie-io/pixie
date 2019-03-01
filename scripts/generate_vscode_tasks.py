@@ -55,11 +55,16 @@ def generateTaskSegment(target, exec_mode, comp_mode, output_std):
     }
 
 
-def generateTaskSegments(target, output_std):
+def generateTaskSegments(target, output_std, only_tests):
     tasks = []
-    for exec_mode in ['build', 'test']:
+    if only_tests:
+        exec_mode_list = ['test']
+    else:
+        exec_mode_list = ['build', 'test']
+    for exec_mode in exec_mode_list:
         for comp_mode in ['dbg', 'opt']:
-            tasks += [generateTaskSegment(target, exec_mode, comp_mode, output_std)]
+            tasks += [generateTaskSegment(target,
+                                          exec_mode, comp_mode, output_std)]
 
     return tasks
 
@@ -103,6 +108,8 @@ def main():
                         help='Generate for LLDB (defaults to vscode mode)', default=False)
     parser.add_argument('--all_output', action='store_true',
                         help='Output all of the output', default=False)
+    parser.add_argument('--only_tests', action='store_true',
+                        help='Only build the tests.', default=False)
     parsed = parser.parse_args(sys.argv[1:])
     if parsed.lldb:
         print('In LLDB mode')
@@ -114,7 +121,8 @@ def main():
     launch_list = []
     for target in targets.split('\n'):
         if target != '':
-            task_list += generateTaskSegments(target, parsed.all_output)
+            task_list += generateTaskSegments(target,
+                                              parsed.all_output, parsed.only_tests)
             launch_list += generateLaunchSegments(
                 parsed.lldb, target, output_base)
 
@@ -147,6 +155,19 @@ def main():
         'args': [
             '${workspaceFolder}/scripts/generate_vscode_tasks.py',
             '--all_output'
+        ],
+        'group': 'build'
+    }]
+
+    task_list += [{
+        'label': 'generate only tests tasks/launch json files with output',
+        'type': 'shell',
+        'command': 'python',
+        'args': [
+            '${workspaceFolder}/scripts/generate_vscode_tasks.py',
+            '--all_output',
+            '--only_tests'
+
         ],
         'group': 'build'
     }]
