@@ -22,14 +22,16 @@ TEST(ParseUUID, bad_input) {
 
 TEST(ToProto, uuid_basic) {
   auto uuid = sole::rebuild("ea8aa095-697f-49f1-b127-d50e5b6e2645");
-  auto uuid_proto = ToProto(uuid);
+  pl::utils::UUID uuid_proto;
+  ToProto(uuid, &uuid_proto);
   EXPECT_EQ("ea8aa095-697f-49f1-b127-d50e5b6e2645", uuid_proto.data());
 }
 
 TEST(UUIDUtils, regression_test) {
   for (int i = 0; i < 1000; i++) {
     auto uuid = sole::uuid4();
-    auto uuid_proto = ToProto(uuid);
+    pl::utils::UUID uuid_proto;
+    ToProto(uuid, &uuid_proto);
     auto res = ParseUUID(uuid_proto);
     ASSERT_TRUE(res.ok());
     EXPECT_EQ(res.ConsumeValueOrDie().str(), uuid.str());

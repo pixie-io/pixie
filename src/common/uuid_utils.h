@@ -21,14 +21,12 @@ StatusOr<sole::uuid> ParseUUID(const pl::utils::UUID& uuid_proto) {
 }
 
 /**
- * Converts a sole::uuid into a UUID proto.
+ * Converts sole::uuid into a UUID proto.
  * @param uuid
- * @return the uuid proto.
+ * @param uuid_proto
  */
-pl::utils::UUID ToProto(const sole::uuid& uuid) {
-  pl::utils::UUID uuid_proto;
-  *(uuid_proto.mutable_data()) = uuid.str();
-  return uuid_proto;
+void ToProto(const sole::uuid& uuid, pl::utils::UUID* uuid_proto) {
+  *(uuid_proto->mutable_data()) = uuid.str();
 }
 
 }  // namespace pl
