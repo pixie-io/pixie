@@ -13,7 +13,7 @@ namespace pl {
  * @param uuid_proto
  * @return proto message
  */
-StatusOr<sole::uuid> ParseUUID(const pl::utils::UUID& uuid_proto) {
+inline StatusOr<sole::uuid> ParseUUID(const pl::utils::UUID& uuid_proto) {
   if (uuid_proto.data().size() != 36) {
     return error::InvalidArgument("Malformed UUID: $0", uuid_proto.data());
   }
@@ -25,7 +25,7 @@ StatusOr<sole::uuid> ParseUUID(const pl::utils::UUID& uuid_proto) {
  * @param uuid
  * @param uuid_proto
  */
-void ToProto(const sole::uuid& uuid, pl::utils::UUID* uuid_proto) {
+inline void ToProto(const sole::uuid& uuid, pl::utils::UUID* uuid_proto) {
   *(uuid_proto->mutable_data()) = uuid.str();
 }
 
