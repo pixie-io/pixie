@@ -217,6 +217,13 @@ Status MapIR::EvaluateExpression(carnotpb::ScalarExpression* expr, const IRNode&
       value->set_bool_value(casted_ir.val());
       break;
     }
+    case IRNodeType::TimeType: {
+      auto value = expr->mutable_constant();
+      auto casted_ir = static_cast<const TimeIR&>(ir_node);
+      value->set_data_type(types::DataType::TIME64NS);
+      value->set_time64_ns_value(casted_ir.val());
+      break;
+    }
     default: {
       return error::InvalidArgument("Didn't expect node of type $0 in expression evaluator.",
                                     ir_node.type_string());
@@ -318,6 +325,13 @@ Status AggIR::EvaluateAggregateExpression(carnotpb::AggregateExpression* expr,
         auto casted_ir = static_cast<BoolIR*>(ir_arg);
         value->set_data_type(types::DataType::BOOLEAN);
         value->set_bool_value(casted_ir->val());
+        break;
+      }
+      case IRNodeType::TimeType: {
+        auto value = arg_pb->mutable_constant();
+        auto casted_ir = static_cast<const TimeIR&>(ir_node);
+        value->set_data_type(types::DataType::TIME64NS);
+        value->set_time64_ns_value(casted_ir.val());
         break;
       }
       default: {
@@ -435,13 +449,18 @@ bool FuncIR::HasLogicalRepr() const { return false; }
 Status FuncIR::Init(std::string func_name, std::vector<IRNode*> args) {
   func_name_ = func_name;
   args_ = args;
+  for (auto a : args_) {
+    if (a == nullptr) {
+      return error::Internal("Argument for FuncIR is null.");
+    }
+  }
   return Status::OK();
 }
 
 std::string FuncIR::DebugString(int64_t depth) const {
   std::map<std::string, std::string> childMap;
   for (size_t i = 0; i < args_.size(); i++) {
-    childMap[absl::StrFormat("arg%d", i)] = args_[i]->DebugString(depth + 1);
+    childMap.emplace(absl::StrFormat("arg%d", i), args_[i]->DebugString(depth + 1));
   }
   return DebugStringFmt(depth, absl::StrFormat("%d:FuncIR", id()), childMap);
 }
@@ -474,6 +493,15 @@ Status BoolIR::Init(bool val) {
 }
 std::string BoolIR::DebugString(int64_t depth) const {
   return absl::StrFormat("%s%d:%s\t-\t%d", std::string(depth, '\t'), id(), "Bool", val());
+}
+/* Time IR */
+bool TimeIR::HasLogicalRepr() const { return false; }
+Status TimeIR::Init(int64_t val) {
+  val_ = val;
+  return Status::OK();
+}
+std::string TimeIR::DebugString(int64_t depth) const {
+  return absl::StrFormat("%s%d:%s\t-\t%d", std::string(depth, '\t'), id(), "Time", val());
 }
 }  // namespace compiler
 }  // namespace carnot

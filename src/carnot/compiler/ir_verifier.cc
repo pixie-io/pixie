@@ -16,8 +16,9 @@ Status IRVerifier::ExpectType(IRNodeType exp_type, const IRNode* test_node,
                               const std::string& err_msg_prefix) {
   auto actual_type = test_node->type();
   if (exp_type != actual_type) {
-    auto msg = absl::Substitute("$0: For node with id $3, Expected $1 Got $2.", err_msg_prefix,
-                                IRNodeString[exp_type], test_node->type_string(), test_node->id());
+    auto msg =
+        absl::Substitute("$0: For node with id $3, Expected $1 Got $2.", err_msg_prefix,
+                         kIRNodeStrings[exp_type], test_node->type_string(), test_node->id());
     return FormatErrorMsg(msg, test_node);
   }
   return Status::OK();
@@ -147,7 +148,7 @@ Status IRVerifier::VerifyNodeConnections(IRNode* node) {
 
 Status IRVerifier::VerifyLineCol(IRNode* node) {
   if (!node->line_col_set()) {
-    std::string err_msg = "Line and column not set for $0 with id $1";
+    std::string err_msg = "Line and column not set for $0 with id $1.";
     return error::InvalidArgument(err_msg, node->type_string(), node->id());
   }
   return Status::OK();

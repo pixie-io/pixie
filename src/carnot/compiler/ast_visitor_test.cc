@@ -220,6 +220,20 @@ TEST(ResultTest, basic) {
                     "\n");
   EXPECT_OK(ParseQuery(single_col_map_sub));
 }
+TEST(TimeValueTest, basic) {
+  std::string time_add_test =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
+                     "rangeDF = queryDF.Map(fn=lambda r : {'time_add' : r.cpu0 + pl.second})",
+                     "result = rangeDF.Result(name='mapped')"},
+                    "\n");
+  EXPECT_OK(ParseQuery(time_add_test));
+  std::string bad_attribute_value =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
+                     "rangeDF = queryDF.Map(fn=lambda r : {'time_add' : r.cpu0 + pl.notsecond})",
+                     "result = rangeDF.Result(name='mapped')"},
+                    "\n");
+  EXPECT_FALSE(ParseQuery(bad_attribute_value).ok());
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

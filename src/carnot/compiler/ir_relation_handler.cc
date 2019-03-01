@@ -115,6 +115,10 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateExpression(IRNode* expr,
       data_type = types::DataType::BOOLEAN;
       break;
     }
+    case IRNodeType::TimeType: {
+      data_type = types::DataType::TIME64NS;
+      break;
+    }
     default: {
       return error::InvalidArgument("Didn't expect node of type $0 in expression evaluator.",
                                     expr->type_string());

@@ -149,7 +149,7 @@ class RelationHandlerTest : public ::testing::Test {
         return node;
       }
     }
-    return error::NotFound("Couldn't find node of type $0 in ir_graph.", IRNodeString[type]);
+    return error::NotFound("Couldn't find node of type $0 in ir_graph.", kIRNodeStrings[type]);
   }
 
   // std::unique_ptr<CompilerState> compiler_state_;

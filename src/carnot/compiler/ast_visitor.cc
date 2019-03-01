@@ -10,6 +10,9 @@ using pypa::walk_tree;
 const std::unordered_map<std::string, std::string> kOP_TO_UDF_MAP = {
     {"*", "pl.multiply"}, {"+", "pl.add"}, {"-", "pl.subtract"}, {"/", "pl.divide"}};
 
+const std::unordered_map<std::string, int64_t> kTimeMapNS = {
+    {"pl.second", 1e9}, {"pl.minute", 6e10}, {"pl.hour", 3.6e11}};
+
 ASTWalker::ASTWalker(std::shared_ptr<IR> ir_graph) {
   ir_graph_ = ir_graph;
   var_table_ = VarTable();
@@ -330,7 +333,18 @@ StatusOr<IRNode*> ASTWalker::ProcessList(const pypa::AstListPtr& ast) {
   }
   return ir_node;
 }
-
+StatusOr<LambdaExprReturn> ASTWalker::LookupPLTimeAttribute(const std::string& attribute_name,
+                                                            const pypa::AstPtr& parent_node) {
+  auto time_idx = kTimeMapNS.find(attribute_name);
+  if (time_idx == kTimeMapNS.end()) {
+    return CreateAstError(absl::Substitute("Couldn't find attribute $0", attribute_name),
+                          parent_node);
+  }
+  PL_ASSIGN_OR_RETURN(TimeIR * time_node, ir_graph_->MakeNode<TimeIR>());
+  PL_RETURN_IF_ERROR(time_node->Init(time_idx->second));
+  time_node->SetLineCol(parent_node->line, parent_node->column);
+  return LambdaExprReturn(time_node);
+}
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const std::string& arg_name,
                                                              const pypa::AstAttributePtr& node) {
   // make sure that the attribute values are of type name.
@@ -386,10 +400,12 @@ StatusOr<LambdaExprReturn> ASTWalker::BuildLambdaFunc(
   auto ret = LambdaExprReturn(ir_node);
   for (auto expr_ret : children_ret_expr) {
     if (expr_ret.StringOnly()) {
-      return CreateAstError("Expected real expressions, not strings", parent_node);
+      PL_ASSIGN_OR_RETURN(auto attr_expr, LookupPLTimeAttribute(expr_ret.str_, parent_node));
+      expressions.push_back(attr_expr.expr_);
+    } else {
+      expressions.push_back(expr_ret.expr_);
+      ret.MergeColumns(expr_ret);
     }
-    expressions.push_back(expr_ret.expr_);
-    ret.MergeColumns(expr_ret);
   }
   PL_RETURN_IF_ERROR(ir_node->Init(fn_name, expressions));
   return ret;

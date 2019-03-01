@@ -11,12 +11,10 @@ namespace carnot {
 namespace compiler {
 
 TEST(IRTypes, types_enum_test) {
-  // quick test to make sure the enums test is inline with the type strings.
-  // TODO(philkuz) on merge with time branch, switch lines.
-  // sizeof hack to make things work :(
-  EXPECT_EQ(IRNodeType::number_of_types, sizeof(IRNodeString) / sizeof(*IRNodeString));
-  // EXPECT_EQ(IRNodeType::number_of_types, sizeof(kIRNodeStrings));
+  // Quick test to make sure the enums test is inline with the type strings.
+  EXPECT_EQ(IRNodeType::number_of_types, sizeof(kIRNodeStrings) / sizeof(*kIRNodeStrings));
 }
+
 /**
  * Creates IR Graph that is the following query compiled
  *
@@ -272,6 +270,42 @@ TEST(ToProto, agg_ir) {
   carnotpb::Operator expected_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedAggPb, &expected_pb));
   EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_pb, pb));
+}
+
+class DebugStringFunctionality : public ::testing::Test {
+ public:
+  void SetUp() {
+    graph_ = std::make_shared<IR>();
+    time_node_ = graph_->MakeNode<TimeIR>().ValueOrDie();
+    EXPECT_OK(time_node_->Init(12345));
+
+    col_node_ = graph_->MakeNode<ColumnIR>().ValueOrDie();
+    EXPECT_OK(col_node_->Init("test_col"));
+
+    func_node_ = graph_->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(func_node_->Init("test_fn", {time_node_, col_node_}));
+
+    lambda_node_ = graph_->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(lambda_node_->Init({"test_col"}, {{"time", func_node_}}));
+  }
+  std::shared_ptr<IR> graph_;
+  TimeIR* time_node_;
+  ColumnIR* col_node_;
+  FuncIR* func_node_;
+  LambdaIR* lambda_node_;
+};
+
+TEST_F(DebugStringFunctionality, debug_string_time_test) {
+  ASSERT_EXIT((time_node_->DebugString(0), exit(0)), ::testing::ExitedWithCode(0), ".*");
+}
+TEST_F(DebugStringFunctionality, debug_string_column_test) {
+  ASSERT_EXIT((col_node_->DebugString(0), exit(0)), ::testing::ExitedWithCode(0), ".*");
+}
+TEST_F(DebugStringFunctionality, debug_string_func_test) {
+  ASSERT_EXIT((func_node_->DebugString(0), exit(0)), ::testing::ExitedWithCode(0), ".*");
+}
+TEST_F(DebugStringFunctionality, debug_string_lambda_test) {
+  ASSERT_EXIT((lambda_node_->DebugString(0), exit(0)), ::testing::ExitedWithCode(0), ".*");
 }
 
 }  // namespace compiler

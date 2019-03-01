@@ -439,7 +439,8 @@ class ASTWalker {
     }
     return PYPA_PTR_CAST(Str, ast)->value;
   }
-
+  StatusOr<LambdaExprReturn> LookupPLTimeAttribute(const std::string& attribute_name,
+                                                   const pypa::AstPtr& parent_node);
   std::shared_ptr<IR> ir_graph_;
   VarTable var_table_;
 };

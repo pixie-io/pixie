@@ -41,13 +41,14 @@ enum IRNodeType {
   ListType,
   LambdaType,
   ColumnType,
-  number_of_types  // This is not a real type, but is used to verify strings are inline with enums.
+  TimeType,
+  number_of_types  // This is not a real type, but is used to verify strings are inline
+                   // with enums.
 };
-
-static constexpr const char* IRNodeString[13] = {
-    "MemorySourceType", "MemorySinkType", "RangeType", "MapType",  "AggType",
-    "StringType",       "FloatType",      "IntType",   "BoolType", "FuncType",
-    "ListType",         "LambdaType",     "ColumnType"};
+static constexpr const char* kIRNodeStrings[] = {
+    "MemorySourceType", "MemorySinkType", "RangeType",  "MapType",  "AggType",
+    "StringType",       "FloatType",      "IntType",    "BoolType", "FuncType",
+    "ListType",         "LambdaType",     "ColumnType", "TimeType"};
 
 /**
  * @brief Node class for the IR.
@@ -71,7 +72,7 @@ class IRNode {
   virtual bool IsOp() const = 0;
   bool is_source() const { return is_source_; }
   IRNodeType type() const { return type_; }
-  std::string type_string() const { return IRNodeString[type()]; }
+  std::string type_string() const { return kIRNodeStrings[type()]; }
   /**
    * @brief Set the pointer to the graph.
    * The pointer is passed in by the Node factory of the graph
@@ -361,6 +362,20 @@ class BoolIR : public IRNode {
 
  private:
   bool val_;
+};
+
+class TimeIR : public IRNode {
+ public:
+  TimeIR() = delete;
+  explicit TimeIR(int64_t id) : IRNode(id, TimeType, false) {}
+  Status Init(int64_t val);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+  bool val() const { return val_; }
+  bool IsOp() const override { return false; }
+
+ private:
+  int64_t val_;
 };
 
 /**

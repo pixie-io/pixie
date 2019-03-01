@@ -32,6 +32,7 @@ void CheckStatusVector(const std::vector<Status>& status_vec, bool should_fail) 
 void GraphVerify(const std::string& query, bool should_fail) {
   auto ir_graph_status = ParseQuery(query);
   auto verifier = IRVerifier();
+  VLOG(2) << ir_graph_status.ToString();
   EXPECT_OK(ir_graph_status);
   // this only should run if the ir_graph is completed. Basically, ParseQuery should run
   // successfullly for it to actually verify properly.
@@ -200,6 +201,16 @@ TEST(AggTest, not_allowed_by) {
       },
       "\n");
   GraphVerify(single_col_dict_by_fn, true);
+}
+
+TEST(TimeTest, basic) {
+  std::string add_test = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
+          "rangeDF = queryDF.Map(fn=lambda r : {'time' : r.cpu + pl.second}).Result(name='cpu2')",
+      },
+      "\n");
+  GraphVerify(add_test, false);
 }
 }  // namespace compiler
 }  // namespace carnot
