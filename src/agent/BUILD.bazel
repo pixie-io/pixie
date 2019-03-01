@@ -1,4 +1,5 @@
 package(default_visibility = ["//visibility:public"])
+
 load("//bazel:pl_build_system.bzl", "pl_cc_binary")
 
 pl_cc_binary(

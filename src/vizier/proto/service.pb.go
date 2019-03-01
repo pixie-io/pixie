@@ -8,7 +8,10 @@ import fmt "fmt"
 import math "math"
 import _ "github.com/gogo/protobuf/gogoproto"
 import proto2 "pixielabs.ai/pixielabs/src/common/proto"
+import types "pixielabs.ai/pixielabs/src/common/types"
 import proto1 "pixielabs.ai/pixielabs/src/utils/proto"
+
+import strconv "strconv"
 
 import bytes "bytes"
 
@@ -33,13 +36,211 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
+type AgentState int32
+
+const (
+	AGENT_STATE_UNKNOWN      AgentState = 0
+	AGENT_STATE_HEALTHY      AgentState = 1
+	AGENT_STATE_UNRESPONSIVE AgentState = 2
+	AGENT_STATE_DISCONNECTED AgentState = 3
+)
+
+var AgentState_name = map[int32]string{
+	0: "AGENT_STATE_UNKNOWN",
+	1: "AGENT_STATE_HEALTHY",
+	2: "AGENT_STATE_UNRESPONSIVE",
+	3: "AGENT_STATE_DISCONNECTED",
+}
+var AgentState_value = map[string]int32{
+	"AGENT_STATE_UNKNOWN":      0,
+	"AGENT_STATE_HEALTHY":      1,
+	"AGENT_STATE_UNRESPONSIVE": 2,
+	"AGENT_STATE_DISCONNECTED": 3,
+}
+
+func (AgentState) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{0}
+}
+
+type Schema struct {
+	Relations []*Relation `protobuf:"bytes,1,rep,name=relations,proto3" json:"relations,omitempty"`
+}
+
+func (m *Schema) Reset()      { *m = Schema{} }
+func (*Schema) ProtoMessage() {}
+func (*Schema) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{0}
+}
+func (m *Schema) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Schema) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Schema.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *Schema) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Schema.Merge(dst, src)
+}
+func (m *Schema) XXX_Size() int {
+	return m.Size()
+}
+func (m *Schema) XXX_DiscardUnknown() {
+	xxx_messageInfo_Schema.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Schema proto.InternalMessageInfo
+
+func (m *Schema) GetRelations() []*Relation {
+	if m != nil {
+		return m.Relations
+	}
+	return nil
+}
+
+type SchemaRequest struct {
+}
+
+func (m *SchemaRequest) Reset()      { *m = SchemaRequest{} }
+func (*SchemaRequest) ProtoMessage() {}
+func (*SchemaRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{1}
+}
+func (m *SchemaRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *SchemaRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_SchemaRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *SchemaRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SchemaRequest.Merge(dst, src)
+}
+func (m *SchemaRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *SchemaRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_SchemaRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SchemaRequest proto.InternalMessageInfo
+
+type SchemaResponse struct {
+	SchemaByAgent []*SchemaResponse_SchemaByAgent `protobuf:"bytes,1,rep,name=schema_by_agent,json=schemaByAgent,proto3" json:"schema_by_agent,omitempty"`
+}
+
+func (m *SchemaResponse) Reset()      { *m = SchemaResponse{} }
+func (*SchemaResponse) ProtoMessage() {}
+func (*SchemaResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{2}
+}
+func (m *SchemaResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *SchemaResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_SchemaResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *SchemaResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SchemaResponse.Merge(dst, src)
+}
+func (m *SchemaResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *SchemaResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_SchemaResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SchemaResponse proto.InternalMessageInfo
+
+func (m *SchemaResponse) GetSchemaByAgent() []*SchemaResponse_SchemaByAgent {
+	if m != nil {
+		return m.SchemaByAgent
+	}
+	return nil
+}
+
+type SchemaResponse_SchemaByAgent struct {
+	AgentID *proto1.UUID `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	Schema  *Schema      `protobuf:"bytes,2,opt,name=schema,proto3" json:"schema,omitempty"`
+}
+
+func (m *SchemaResponse_SchemaByAgent) Reset()      { *m = SchemaResponse_SchemaByAgent{} }
+func (*SchemaResponse_SchemaByAgent) ProtoMessage() {}
+func (*SchemaResponse_SchemaByAgent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{2, 0}
+}
+func (m *SchemaResponse_SchemaByAgent) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *SchemaResponse_SchemaByAgent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_SchemaResponse_SchemaByAgent.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *SchemaResponse_SchemaByAgent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SchemaResponse_SchemaByAgent.Merge(dst, src)
+}
+func (m *SchemaResponse_SchemaByAgent) XXX_Size() int {
+	return m.Size()
+}
+func (m *SchemaResponse_SchemaByAgent) XXX_DiscardUnknown() {
+	xxx_messageInfo_SchemaResponse_SchemaByAgent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_SchemaResponse_SchemaByAgent proto.InternalMessageInfo
+
+func (m *SchemaResponse_SchemaByAgent) GetAgentID() *proto1.UUID {
+	if m != nil {
+		return m.AgentID
+	}
+	return nil
+}
+
+func (m *SchemaResponse_SchemaByAgent) GetSchema() *Schema {
+	if m != nil {
+		return m.Schema
+	}
+	return nil
+}
+
 type AgentInfoRequest struct {
 }
 
 func (m *AgentInfoRequest) Reset()      { *m = AgentInfoRequest{} }
 func (*AgentInfoRequest) ProtoMessage() {}
 func (*AgentInfoRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_e2d71f3ee90e6c37, []int{0}
+	return fileDescriptor_service_0bc71610fa183e39, []int{3}
 }
 func (m *AgentInfoRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -69,13 +270,13 @@ func (m *AgentInfoRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_AgentInfoRequest proto.InternalMessageInfo
 
 type AgentInfoResponse struct {
-	Info []*AgentInfo `protobuf:"bytes,1,rep,name=info,proto3" json:"info,omitempty"`
+	Info []*AgentStatus `protobuf:"bytes,1,rep,name=info,proto3" json:"info,omitempty"`
 }
 
 func (m *AgentInfoResponse) Reset()      { *m = AgentInfoResponse{} }
 func (*AgentInfoResponse) ProtoMessage() {}
 func (*AgentInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_e2d71f3ee90e6c37, []int{1}
+	return fileDescriptor_service_0bc71610fa183e39, []int{4}
 }
 func (m *AgentInfoResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -104,11 +305,70 @@ func (m *AgentInfoResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_AgentInfoResponse proto.InternalMessageInfo
 
-func (m *AgentInfoResponse) GetInfo() []*AgentInfo {
+func (m *AgentInfoResponse) GetInfo() []*AgentStatus {
 	if m != nil {
 		return m.Info
 	}
 	return nil
+}
+
+type AgentStatus struct {
+	Info            *AgentInfo `protobuf:"bytes,1,opt,name=info,proto3" json:"info,omitempty"`
+	LastHeartbeatNs int64      `protobuf:"varint,2,opt,name=last_heartbeat_ns,json=lastHeartbeatNs,proto3" json:"last_heartbeat_ns,omitempty"`
+	State           AgentState `protobuf:"varint,3,opt,name=state,proto3,enum=pl.vizier.AgentState" json:"state,omitempty"`
+}
+
+func (m *AgentStatus) Reset()      { *m = AgentStatus{} }
+func (*AgentStatus) ProtoMessage() {}
+func (*AgentStatus) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{5}
+}
+func (m *AgentStatus) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *AgentStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_AgentStatus.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *AgentStatus) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AgentStatus.Merge(dst, src)
+}
+func (m *AgentStatus) XXX_Size() int {
+	return m.Size()
+}
+func (m *AgentStatus) XXX_DiscardUnknown() {
+	xxx_messageInfo_AgentStatus.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AgentStatus proto.InternalMessageInfo
+
+func (m *AgentStatus) GetInfo() *AgentInfo {
+	if m != nil {
+		return m.Info
+	}
+	return nil
+}
+
+func (m *AgentStatus) GetLastHeartbeatNs() int64 {
+	if m != nil {
+		return m.LastHeartbeatNs
+	}
+	return 0
+}
+
+func (m *AgentStatus) GetState() AgentState {
+	if m != nil {
+		return m.State
+	}
+	return AGENT_STATE_UNKNOWN
 }
 
 type AgentInfo struct {
@@ -119,7 +379,7 @@ type AgentInfo struct {
 func (m *AgentInfo) Reset()      { *m = AgentInfo{} }
 func (*AgentInfo) ProtoMessage() {}
 func (*AgentInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_e2d71f3ee90e6c37, []int{2}
+	return fileDescriptor_service_0bc71610fa183e39, []int{6}
 }
 func (m *AgentInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -169,7 +429,7 @@ type HostInfo struct {
 func (m *HostInfo) Reset()      { *m = HostInfo{} }
 func (*HostInfo) ProtoMessage() {}
 func (*HostInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_e2d71f3ee90e6c37, []int{3}
+	return fileDescriptor_service_0bc71610fa183e39, []int{7}
 }
 func (m *HostInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -209,13 +469,14 @@ type AgentToVizierMessage struct {
 	// Types that are valid to be assigned to Msg:
 	//	*AgentToVizierMessage_RegisterRequest
 	//	*AgentToVizierMessage_QueryResponse
+	//	*AgentToVizierMessage_Heartbeat
 	Msg isAgentToVizierMessage_Msg `protobuf_oneof:"msg"`
 }
 
 func (m *AgentToVizierMessage) Reset()      { *m = AgentToVizierMessage{} }
 func (*AgentToVizierMessage) ProtoMessage() {}
 func (*AgentToVizierMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_e2d71f3ee90e6c37, []int{4}
+	return fileDescriptor_service_0bc71610fa183e39, []int{8}
 }
 func (m *AgentToVizierMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -255,11 +516,15 @@ type AgentToVizierMessage_RegisterRequest struct {
 	RegisterRequest *RegisterAgentRequest `protobuf:"bytes,1,opt,name=register_request,json=registerRequest,proto3,oneof"`
 }
 type AgentToVizierMessage_QueryResponse struct {
-	QueryResponse *QueryResponse `protobuf:"bytes,2,opt,name=query_response,json=queryResponse,proto3,oneof"`
+	QueryResponse *AgentQueryResponse `protobuf:"bytes,2,opt,name=query_response,json=queryResponse,proto3,oneof"`
+}
+type AgentToVizierMessage_Heartbeat struct {
+	Heartbeat *HeartBeat `protobuf:"bytes,3,opt,name=heartbeat,proto3,oneof"`
 }
 
 func (*AgentToVizierMessage_RegisterRequest) isAgentToVizierMessage_Msg() {}
 func (*AgentToVizierMessage_QueryResponse) isAgentToVizierMessage_Msg()   {}
+func (*AgentToVizierMessage_Heartbeat) isAgentToVizierMessage_Msg()       {}
 
 func (m *AgentToVizierMessage) GetMsg() isAgentToVizierMessage_Msg {
 	if m != nil {
@@ -275,9 +540,16 @@ func (m *AgentToVizierMessage) GetRegisterRequest() *RegisterAgentRequest {
 	return nil
 }
 
-func (m *AgentToVizierMessage) GetQueryResponse() *QueryResponse {
+func (m *AgentToVizierMessage) GetQueryResponse() *AgentQueryResponse {
 	if x, ok := m.GetMsg().(*AgentToVizierMessage_QueryResponse); ok {
 		return x.QueryResponse
+	}
+	return nil
+}
+
+func (m *AgentToVizierMessage) GetHeartbeat() *HeartBeat {
+	if x, ok := m.GetMsg().(*AgentToVizierMessage_Heartbeat); ok {
+		return x.Heartbeat
 	}
 	return nil
 }
@@ -287,6 +559,7 @@ func (*AgentToVizierMessage) XXX_OneofFuncs() (func(msg proto.Message, b *proto.
 	return _AgentToVizierMessage_OneofMarshaler, _AgentToVizierMessage_OneofUnmarshaler, _AgentToVizierMessage_OneofSizer, []interface{}{
 		(*AgentToVizierMessage_RegisterRequest)(nil),
 		(*AgentToVizierMessage_QueryResponse)(nil),
+		(*AgentToVizierMessage_Heartbeat)(nil),
 	}
 }
 
@@ -302,6 +575,11 @@ func _AgentToVizierMessage_OneofMarshaler(msg proto.Message, b *proto.Buffer) er
 	case *AgentToVizierMessage_QueryResponse:
 		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.QueryResponse); err != nil {
+			return err
+		}
+	case *AgentToVizierMessage_Heartbeat:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Heartbeat); err != nil {
 			return err
 		}
 	case nil:
@@ -326,9 +604,17 @@ func _AgentToVizierMessage_OneofUnmarshaler(msg proto.Message, tag, wire int, b 
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
-		msg := new(QueryResponse)
+		msg := new(AgentQueryResponse)
 		err := b.DecodeMessage(msg)
 		m.Msg = &AgentToVizierMessage_QueryResponse{msg}
+		return true, err
+	case 3: // msg.heartbeat
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(HeartBeat)
+		err := b.DecodeMessage(msg)
+		m.Msg = &AgentToVizierMessage_Heartbeat{msg}
 		return true, err
 	default:
 		return false, nil
@@ -349,6 +635,11 @@ func _AgentToVizierMessage_OneofSizer(msg proto.Message) (n int) {
 		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
+	case *AgentToVizierMessage_Heartbeat:
+		s := proto.Size(x.Heartbeat)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
 	case nil:
 	default:
 		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
@@ -360,13 +651,14 @@ type VizierToAgentMessage struct {
 	// Types that are valid to be assigned to Msg:
 	//	*VizierToAgentMessage_AgentResponse
 	//	*VizierToAgentMessage_QueryRequest
+	//	*VizierToAgentMessage_HeartBeatAck
 	Msg isVizierToAgentMessage_Msg `protobuf_oneof:"msg"`
 }
 
 func (m *VizierToAgentMessage) Reset()      { *m = VizierToAgentMessage{} }
 func (*VizierToAgentMessage) ProtoMessage() {}
 func (*VizierToAgentMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_e2d71f3ee90e6c37, []int{5}
+	return fileDescriptor_service_0bc71610fa183e39, []int{9}
 }
 func (m *VizierToAgentMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -408,9 +700,13 @@ type VizierToAgentMessage_AgentResponse struct {
 type VizierToAgentMessage_QueryRequest struct {
 	QueryRequest *QueryRequest `protobuf:"bytes,2,opt,name=query_request,json=queryRequest,proto3,oneof"`
 }
+type VizierToAgentMessage_HeartBeatAck struct {
+	HeartBeatAck *HeartBeatAck `protobuf:"bytes,3,opt,name=heart_beat_ack,json=heartBeatAck,proto3,oneof"`
+}
 
 func (*VizierToAgentMessage_AgentResponse) isVizierToAgentMessage_Msg() {}
 func (*VizierToAgentMessage_QueryRequest) isVizierToAgentMessage_Msg()  {}
+func (*VizierToAgentMessage_HeartBeatAck) isVizierToAgentMessage_Msg()  {}
 
 func (m *VizierToAgentMessage) GetMsg() isVizierToAgentMessage_Msg {
 	if m != nil {
@@ -433,11 +729,19 @@ func (m *VizierToAgentMessage) GetQueryRequest() *QueryRequest {
 	return nil
 }
 
+func (m *VizierToAgentMessage) GetHeartBeatAck() *HeartBeatAck {
+	if x, ok := m.GetMsg().(*VizierToAgentMessage_HeartBeatAck); ok {
+		return x.HeartBeatAck
+	}
+	return nil
+}
+
 // XXX_OneofFuncs is for the internal use of the proto package.
 func (*VizierToAgentMessage) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
 	return _VizierToAgentMessage_OneofMarshaler, _VizierToAgentMessage_OneofUnmarshaler, _VizierToAgentMessage_OneofSizer, []interface{}{
 		(*VizierToAgentMessage_AgentResponse)(nil),
 		(*VizierToAgentMessage_QueryRequest)(nil),
+		(*VizierToAgentMessage_HeartBeatAck)(nil),
 	}
 }
 
@@ -453,6 +757,11 @@ func _VizierToAgentMessage_OneofMarshaler(msg proto.Message, b *proto.Buffer) er
 	case *VizierToAgentMessage_QueryRequest:
 		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.QueryRequest); err != nil {
+			return err
+		}
+	case *VizierToAgentMessage_HeartBeatAck:
+		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.HeartBeatAck); err != nil {
 			return err
 		}
 	case nil:
@@ -481,6 +790,14 @@ func _VizierToAgentMessage_OneofUnmarshaler(msg proto.Message, tag, wire int, b 
 		err := b.DecodeMessage(msg)
 		m.Msg = &VizierToAgentMessage_QueryRequest{msg}
 		return true, err
+	case 3: // msg.heart_beat_ack
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(HeartBeatAck)
+		err := b.DecodeMessage(msg)
+		m.Msg = &VizierToAgentMessage_HeartBeatAck{msg}
+		return true, err
 	default:
 		return false, nil
 	}
@@ -500,11 +817,102 @@ func _VizierToAgentMessage_OneofSizer(msg proto.Message) (n int) {
 		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
+	case *VizierToAgentMessage_HeartBeatAck:
+		s := proto.Size(x.HeartBeatAck)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
 	case nil:
 	default:
 		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
 	}
 	return n
+}
+
+type HeartBeat struct {
+	Time int64 `protobuf:"varint,1,opt,name=time,proto3" json:"time,omitempty"`
+}
+
+func (m *HeartBeat) Reset()      { *m = HeartBeat{} }
+func (*HeartBeat) ProtoMessage() {}
+func (*HeartBeat) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{10}
+}
+func (m *HeartBeat) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *HeartBeat) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_HeartBeat.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *HeartBeat) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HeartBeat.Merge(dst, src)
+}
+func (m *HeartBeat) XXX_Size() int {
+	return m.Size()
+}
+func (m *HeartBeat) XXX_DiscardUnknown() {
+	xxx_messageInfo_HeartBeat.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_HeartBeat proto.InternalMessageInfo
+
+func (m *HeartBeat) GetTime() int64 {
+	if m != nil {
+		return m.Time
+	}
+	return 0
+}
+
+type HeartBeatAck struct {
+	Time int64 `protobuf:"varint,1,opt,name=time,proto3" json:"time,omitempty"`
+}
+
+func (m *HeartBeatAck) Reset()      { *m = HeartBeatAck{} }
+func (*HeartBeatAck) ProtoMessage() {}
+func (*HeartBeatAck) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{11}
+}
+func (m *HeartBeatAck) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *HeartBeatAck) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_HeartBeatAck.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *HeartBeatAck) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_HeartBeatAck.Merge(dst, src)
+}
+func (m *HeartBeatAck) XXX_Size() int {
+	return m.Size()
+}
+func (m *HeartBeatAck) XXX_DiscardUnknown() {
+	xxx_messageInfo_HeartBeatAck.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_HeartBeatAck proto.InternalMessageInfo
+
+func (m *HeartBeatAck) GetTime() int64 {
+	if m != nil {
+		return m.Time
+	}
+	return 0
 }
 
 type RegisterAgentRequest struct {
@@ -515,7 +923,7 @@ type RegisterAgentRequest struct {
 func (m *RegisterAgentRequest) Reset()      { *m = RegisterAgentRequest{} }
 func (*RegisterAgentRequest) ProtoMessage() {}
 func (*RegisterAgentRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_e2d71f3ee90e6c37, []int{6}
+	return fileDescriptor_service_0bc71610fa183e39, []int{12}
 }
 func (m *RegisterAgentRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -565,7 +973,7 @@ type RegisterAgentResponse struct {
 func (m *RegisterAgentResponse) Reset()      { *m = RegisterAgentResponse{} }
 func (*RegisterAgentResponse) ProtoMessage() {}
 func (*RegisterAgentResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_e2d71f3ee90e6c37, []int{7}
+	return fileDescriptor_service_0bc71610fa183e39, []int{13}
 }
 func (m *RegisterAgentResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -602,14 +1010,14 @@ func (m *RegisterAgentResponse) GetStatus() *proto2.Status {
 }
 
 type QueryRequest struct {
-	QueryID  int64  `protobuf:"varint,1,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
-	QueryStr string `protobuf:"bytes,2,opt,name=query_str,json=queryStr,proto3" json:"query_str,omitempty"`
+	QueryID  *proto1.UUID `protobuf:"bytes,1,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
+	QueryStr string       `protobuf:"bytes,2,opt,name=query_str,json=queryStr,proto3" json:"query_str,omitempty"`
 }
 
 func (m *QueryRequest) Reset()      { *m = QueryRequest{} }
 func (*QueryRequest) ProtoMessage() {}
 func (*QueryRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_e2d71f3ee90e6c37, []int{8}
+	return fileDescriptor_service_0bc71610fa183e39, []int{14}
 }
 func (m *QueryRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -638,11 +1046,11 @@ func (m *QueryRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryRequest proto.InternalMessageInfo
 
-func (m *QueryRequest) GetQueryID() int64 {
+func (m *QueryRequest) GetQueryID() *proto1.UUID {
 	if m != nil {
 		return m.QueryID
 	}
-	return 0
+	return nil
 }
 
 func (m *QueryRequest) GetQueryStr() string {
@@ -652,22 +1060,21 @@ func (m *QueryRequest) GetQueryStr() string {
 	return ""
 }
 
-type QueryResponse struct {
-	QueryID int64  `protobuf:"varint,1,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
-	Data    []byte `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+type RowBatchData struct {
+	Data []byte `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
 }
 
-func (m *QueryResponse) Reset()      { *m = QueryResponse{} }
-func (*QueryResponse) ProtoMessage() {}
-func (*QueryResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_e2d71f3ee90e6c37, []int{9}
+func (m *RowBatchData) Reset()      { *m = RowBatchData{} }
+func (*RowBatchData) ProtoMessage() {}
+func (*RowBatchData) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{15}
 }
-func (m *QueryResponse) XXX_Unmarshal(b []byte) error {
+func (m *RowBatchData) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *QueryResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *RowBatchData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_QueryResponse.Marshal(b, m, deterministic)
+		return xxx_messageInfo_RowBatchData.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalTo(b)
@@ -677,43 +1084,553 @@ func (m *QueryResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return b[:n], nil
 	}
 }
-func (dst *QueryResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryResponse.Merge(dst, src)
+func (dst *RowBatchData) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RowBatchData.Merge(dst, src)
 }
-func (m *QueryResponse) XXX_Size() int {
+func (m *RowBatchData) XXX_Size() int {
 	return m.Size()
 }
-func (m *QueryResponse) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryResponse.DiscardUnknown(m)
+func (m *RowBatchData) XXX_DiscardUnknown() {
+	xxx_messageInfo_RowBatchData.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_QueryResponse proto.InternalMessageInfo
+var xxx_messageInfo_RowBatchData proto.InternalMessageInfo
 
-func (m *QueryResponse) GetQueryID() int64 {
-	if m != nil {
-		return m.QueryID
-	}
-	return 0
-}
-
-func (m *QueryResponse) GetData() []byte {
+func (m *RowBatchData) GetData() []byte {
 	if m != nil {
 		return m.Data
 	}
 	return nil
 }
 
+type Relation struct {
+	Name           string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Columns        []*Relation_ColumnInfo `protobuf:"bytes,2,rep,name=columns,proto3" json:"columns,omitempty"`
+	TableSizeBytes int64                  `protobuf:"varint,3,opt,name=table_size_bytes,json=tableSizeBytes,proto3" json:"table_size_bytes,omitempty"`
+	NumRecords     int64                  `protobuf:"varint,4,opt,name=num_records,json=numRecords,proto3" json:"num_records,omitempty"`
+}
+
+func (m *Relation) Reset()      { *m = Relation{} }
+func (*Relation) ProtoMessage() {}
+func (*Relation) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{16}
+}
+func (m *Relation) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Relation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Relation.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *Relation) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Relation.Merge(dst, src)
+}
+func (m *Relation) XXX_Size() int {
+	return m.Size()
+}
+func (m *Relation) XXX_DiscardUnknown() {
+	xxx_messageInfo_Relation.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Relation proto.InternalMessageInfo
+
+func (m *Relation) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Relation) GetColumns() []*Relation_ColumnInfo {
+	if m != nil {
+		return m.Columns
+	}
+	return nil
+}
+
+func (m *Relation) GetTableSizeBytes() int64 {
+	if m != nil {
+		return m.TableSizeBytes
+	}
+	return 0
+}
+
+func (m *Relation) GetNumRecords() int64 {
+	if m != nil {
+		return m.NumRecords
+	}
+	return 0
+}
+
+type Relation_ColumnInfo struct {
+	ColumnNames string         `protobuf:"bytes,1,opt,name=column_names,json=columnNames,proto3" json:"column_names,omitempty"`
+	ColumnTypes types.DataType `protobuf:"varint,2,opt,name=column_types,json=columnTypes,proto3,enum=pl.types.DataType" json:"column_types,omitempty"`
+}
+
+func (m *Relation_ColumnInfo) Reset()      { *m = Relation_ColumnInfo{} }
+func (*Relation_ColumnInfo) ProtoMessage() {}
+func (*Relation_ColumnInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{16, 0}
+}
+func (m *Relation_ColumnInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Relation_ColumnInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Relation_ColumnInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *Relation_ColumnInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Relation_ColumnInfo.Merge(dst, src)
+}
+func (m *Relation_ColumnInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *Relation_ColumnInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_Relation_ColumnInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Relation_ColumnInfo proto.InternalMessageInfo
+
+func (m *Relation_ColumnInfo) GetColumnNames() string {
+	if m != nil {
+		return m.ColumnNames
+	}
+	return ""
+}
+
+func (m *Relation_ColumnInfo) GetColumnTypes() types.DataType {
+	if m != nil {
+		return m.ColumnTypes
+	}
+	return types.DATA_TYPE_UNKNOWN
+}
+
+type QueryTimingInfo struct {
+	ExecutionTimeNs   int64 `protobuf:"varint,1,opt,name=execution_time_ns,json=executionTimeNs,proto3" json:"execution_time_ns,omitempty"`
+	CompilationTimeNs int64 `protobuf:"varint,2,opt,name=compilation_time_ns,json=compilationTimeNs,proto3" json:"compilation_time_ns,omitempty"`
+}
+
+func (m *QueryTimingInfo) Reset()      { *m = QueryTimingInfo{} }
+func (*QueryTimingInfo) ProtoMessage() {}
+func (*QueryTimingInfo) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{17}
+}
+func (m *QueryTimingInfo) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryTimingInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryTimingInfo.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *QueryTimingInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryTimingInfo.Merge(dst, src)
+}
+func (m *QueryTimingInfo) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryTimingInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryTimingInfo.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryTimingInfo proto.InternalMessageInfo
+
+func (m *QueryTimingInfo) GetExecutionTimeNs() int64 {
+	if m != nil {
+		return m.ExecutionTimeNs
+	}
+	return 0
+}
+
+func (m *QueryTimingInfo) GetCompilationTimeNs() int64 {
+	if m != nil {
+		return m.CompilationTimeNs
+	}
+	return 0
+}
+
+type QueryExecutionStats struct {
+	Timing         *QueryTimingInfo `protobuf:"bytes,1,opt,name=timing,proto3" json:"timing,omitempty"`
+	BytesProcessed int64            `protobuf:"varint,2,opt,name=bytes_processed,json=bytesProcessed,proto3" json:"bytes_processed,omitempty"`
+}
+
+func (m *QueryExecutionStats) Reset()      { *m = QueryExecutionStats{} }
+func (*QueryExecutionStats) ProtoMessage() {}
+func (*QueryExecutionStats) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{18}
+}
+func (m *QueryExecutionStats) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *QueryExecutionStats) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_QueryExecutionStats.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *QueryExecutionStats) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_QueryExecutionStats.Merge(dst, src)
+}
+func (m *QueryExecutionStats) XXX_Size() int {
+	return m.Size()
+}
+func (m *QueryExecutionStats) XXX_DiscardUnknown() {
+	xxx_messageInfo_QueryExecutionStats.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_QueryExecutionStats proto.InternalMessageInfo
+
+func (m *QueryExecutionStats) GetTiming() *QueryTimingInfo {
+	if m != nil {
+		return m.Timing
+	}
+	return nil
+}
+
+func (m *QueryExecutionStats) GetBytesProcessed() int64 {
+	if m != nil {
+		return m.BytesProcessed
+	}
+	return 0
+}
+
+type AgentQueryResponse struct {
+	Status         *proto2.Status       `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	QueryID        *proto1.UUID         `protobuf:"bytes,2,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
+	Stats          *QueryExecutionStats `protobuf:"bytes,3,opt,name=stats,proto3" json:"stats,omitempty"`
+	OutputRelation *Relation            `protobuf:"bytes,4,opt,name=output_relation,json=outputRelation,proto3" json:"output_relation,omitempty"`
+	Data           []*RowBatchData      `protobuf:"bytes,5,rep,name=data,proto3" json:"data,omitempty"`
+}
+
+func (m *AgentQueryResponse) Reset()      { *m = AgentQueryResponse{} }
+func (*AgentQueryResponse) ProtoMessage() {}
+func (*AgentQueryResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{19}
+}
+func (m *AgentQueryResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *AgentQueryResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_AgentQueryResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *AgentQueryResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AgentQueryResponse.Merge(dst, src)
+}
+func (m *AgentQueryResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *AgentQueryResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_AgentQueryResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AgentQueryResponse proto.InternalMessageInfo
+
+func (m *AgentQueryResponse) GetStatus() *proto2.Status {
+	if m != nil {
+		return m.Status
+	}
+	return nil
+}
+
+func (m *AgentQueryResponse) GetQueryID() *proto1.UUID {
+	if m != nil {
+		return m.QueryID
+	}
+	return nil
+}
+
+func (m *AgentQueryResponse) GetStats() *QueryExecutionStats {
+	if m != nil {
+		return m.Stats
+	}
+	return nil
+}
+
+func (m *AgentQueryResponse) GetOutputRelation() *Relation {
+	if m != nil {
+		return m.OutputRelation
+	}
+	return nil
+}
+
+func (m *AgentQueryResponse) GetData() []*RowBatchData {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
+type VizierQueryResponse struct {
+	Responses []*VizierQueryResponse_ResponseByAgent `protobuf:"bytes,1,rep,name=responses,proto3" json:"responses,omitempty"`
+}
+
+func (m *VizierQueryResponse) Reset()      { *m = VizierQueryResponse{} }
+func (*VizierQueryResponse) ProtoMessage() {}
+func (*VizierQueryResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{20}
+}
+func (m *VizierQueryResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *VizierQueryResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_VizierQueryResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *VizierQueryResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VizierQueryResponse.Merge(dst, src)
+}
+func (m *VizierQueryResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *VizierQueryResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_VizierQueryResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_VizierQueryResponse proto.InternalMessageInfo
+
+func (m *VizierQueryResponse) GetResponses() []*VizierQueryResponse_ResponseByAgent {
+	if m != nil {
+		return m.Responses
+	}
+	return nil
+}
+
+type VizierQueryResponse_ResponseByAgent struct {
+	AgentID  *proto1.UUID        `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	Response *AgentQueryResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"`
+}
+
+func (m *VizierQueryResponse_ResponseByAgent) Reset()      { *m = VizierQueryResponse_ResponseByAgent{} }
+func (*VizierQueryResponse_ResponseByAgent) ProtoMessage() {}
+func (*VizierQueryResponse_ResponseByAgent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_0bc71610fa183e39, []int{20, 0}
+}
+func (m *VizierQueryResponse_ResponseByAgent) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *VizierQueryResponse_ResponseByAgent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_VizierQueryResponse_ResponseByAgent.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *VizierQueryResponse_ResponseByAgent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VizierQueryResponse_ResponseByAgent.Merge(dst, src)
+}
+func (m *VizierQueryResponse_ResponseByAgent) XXX_Size() int {
+	return m.Size()
+}
+func (m *VizierQueryResponse_ResponseByAgent) XXX_DiscardUnknown() {
+	xxx_messageInfo_VizierQueryResponse_ResponseByAgent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_VizierQueryResponse_ResponseByAgent proto.InternalMessageInfo
+
+func (m *VizierQueryResponse_ResponseByAgent) GetAgentID() *proto1.UUID {
+	if m != nil {
+		return m.AgentID
+	}
+	return nil
+}
+
+func (m *VizierQueryResponse_ResponseByAgent) GetResponse() *AgentQueryResponse {
+	if m != nil {
+		return m.Response
+	}
+	return nil
+}
+
 func init() {
+	proto.RegisterType((*Schema)(nil), "pl.vizier.Schema")
+	proto.RegisterType((*SchemaRequest)(nil), "pl.vizier.SchemaRequest")
+	proto.RegisterType((*SchemaResponse)(nil), "pl.vizier.SchemaResponse")
+	proto.RegisterType((*SchemaResponse_SchemaByAgent)(nil), "pl.vizier.SchemaResponse.SchemaByAgent")
 	proto.RegisterType((*AgentInfoRequest)(nil), "pl.vizier.AgentInfoRequest")
 	proto.RegisterType((*AgentInfoResponse)(nil), "pl.vizier.AgentInfoResponse")
+	proto.RegisterType((*AgentStatus)(nil), "pl.vizier.AgentStatus")
 	proto.RegisterType((*AgentInfo)(nil), "pl.vizier.AgentInfo")
 	proto.RegisterType((*HostInfo)(nil), "pl.vizier.HostInfo")
 	proto.RegisterType((*AgentToVizierMessage)(nil), "pl.vizier.AgentToVizierMessage")
 	proto.RegisterType((*VizierToAgentMessage)(nil), "pl.vizier.VizierToAgentMessage")
+	proto.RegisterType((*HeartBeat)(nil), "pl.vizier.HeartBeat")
+	proto.RegisterType((*HeartBeatAck)(nil), "pl.vizier.HeartBeatAck")
 	proto.RegisterType((*RegisterAgentRequest)(nil), "pl.vizier.RegisterAgentRequest")
 	proto.RegisterType((*RegisterAgentResponse)(nil), "pl.vizier.RegisterAgentResponse")
 	proto.RegisterType((*QueryRequest)(nil), "pl.vizier.QueryRequest")
-	proto.RegisterType((*QueryResponse)(nil), "pl.vizier.QueryResponse")
+	proto.RegisterType((*RowBatchData)(nil), "pl.vizier.RowBatchData")
+	proto.RegisterType((*Relation)(nil), "pl.vizier.Relation")
+	proto.RegisterType((*Relation_ColumnInfo)(nil), "pl.vizier.Relation.ColumnInfo")
+	proto.RegisterType((*QueryTimingInfo)(nil), "pl.vizier.QueryTimingInfo")
+	proto.RegisterType((*QueryExecutionStats)(nil), "pl.vizier.QueryExecutionStats")
+	proto.RegisterType((*AgentQueryResponse)(nil), "pl.vizier.AgentQueryResponse")
+	proto.RegisterType((*VizierQueryResponse)(nil), "pl.vizier.VizierQueryResponse")
+	proto.RegisterType((*VizierQueryResponse_ResponseByAgent)(nil), "pl.vizier.VizierQueryResponse.ResponseByAgent")
+	proto.RegisterEnum("pl.vizier.AgentState", AgentState_name, AgentState_value)
+}
+func (x AgentState) String() string {
+	s, ok := AgentState_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (this *Schema) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Schema)
+	if !ok {
+		that2, ok := that.(Schema)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Relations) != len(that1.Relations) {
+		return false
+	}
+	for i := range this.Relations {
+		if !this.Relations[i].Equal(that1.Relations[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *SchemaRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*SchemaRequest)
+	if !ok {
+		that2, ok := that.(SchemaRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *SchemaResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*SchemaResponse)
+	if !ok {
+		that2, ok := that.(SchemaResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.SchemaByAgent) != len(that1.SchemaByAgent) {
+		return false
+	}
+	for i := range this.SchemaByAgent {
+		if !this.SchemaByAgent[i].Equal(that1.SchemaByAgent[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *SchemaResponse_SchemaByAgent) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*SchemaResponse_SchemaByAgent)
+	if !ok {
+		that2, ok := that.(SchemaResponse_SchemaByAgent)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.AgentID.Equal(that1.AgentID) {
+		return false
+	}
+	if !this.Schema.Equal(that1.Schema) {
+		return false
+	}
+	return true
 }
 func (this *AgentInfoRequest) Equal(that interface{}) bool {
 	if that == nil {
@@ -762,6 +1679,36 @@ func (this *AgentInfoResponse) Equal(that interface{}) bool {
 		if !this.Info[i].Equal(that1.Info[i]) {
 			return false
 		}
+	}
+	return true
+}
+func (this *AgentStatus) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*AgentStatus)
+	if !ok {
+		that2, ok := that.(AgentStatus)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Info.Equal(that1.Info) {
+		return false
+	}
+	if this.LastHeartbeatNs != that1.LastHeartbeatNs {
+		return false
+	}
+	if this.State != that1.State {
+		return false
 	}
 	return true
 }
@@ -894,6 +1841,30 @@ func (this *AgentToVizierMessage_QueryResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *AgentToVizierMessage_Heartbeat) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*AgentToVizierMessage_Heartbeat)
+	if !ok {
+		that2, ok := that.(AgentToVizierMessage_Heartbeat)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Heartbeat.Equal(that1.Heartbeat) {
+		return false
+	}
+	return true
+}
 func (this *VizierToAgentMessage) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -972,6 +1943,78 @@ func (this *VizierToAgentMessage_QueryRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *VizierToAgentMessage_HeartBeatAck) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*VizierToAgentMessage_HeartBeatAck)
+	if !ok {
+		that2, ok := that.(VizierToAgentMessage_HeartBeatAck)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.HeartBeatAck.Equal(that1.HeartBeatAck) {
+		return false
+	}
+	return true
+}
+func (this *HeartBeat) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*HeartBeat)
+	if !ok {
+		that2, ok := that.(HeartBeat)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Time != that1.Time {
+		return false
+	}
+	return true
+}
+func (this *HeartBeatAck) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*HeartBeatAck)
+	if !ok {
+		that2, ok := that.(HeartBeatAck)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Time != that1.Time {
+		return false
+	}
+	return true
+}
 func (this *RegisterAgentRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1042,7 +2085,7 @@ func (this *QueryRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.QueryID != that1.QueryID {
+	if !this.QueryID.Equal(that1.QueryID) {
 		return false
 	}
 	if this.QueryStr != that1.QueryStr {
@@ -1050,14 +2093,14 @@ func (this *QueryRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *QueryResponse) Equal(that interface{}) bool {
+func (this *RowBatchData) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*QueryResponse)
+	that1, ok := that.(*RowBatchData)
 	if !ok {
-		that2, ok := that.(QueryResponse)
+		that2, ok := that.(RowBatchData)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1069,13 +2112,274 @@ func (this *QueryResponse) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.QueryID != that1.QueryID {
-		return false
-	}
 	if !bytes.Equal(this.Data, that1.Data) {
 		return false
 	}
 	return true
+}
+func (this *Relation) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Relation)
+	if !ok {
+		that2, ok := that.(Relation)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if len(this.Columns) != len(that1.Columns) {
+		return false
+	}
+	for i := range this.Columns {
+		if !this.Columns[i].Equal(that1.Columns[i]) {
+			return false
+		}
+	}
+	if this.TableSizeBytes != that1.TableSizeBytes {
+		return false
+	}
+	if this.NumRecords != that1.NumRecords {
+		return false
+	}
+	return true
+}
+func (this *Relation_ColumnInfo) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Relation_ColumnInfo)
+	if !ok {
+		that2, ok := that.(Relation_ColumnInfo)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.ColumnNames != that1.ColumnNames {
+		return false
+	}
+	if this.ColumnTypes != that1.ColumnTypes {
+		return false
+	}
+	return true
+}
+func (this *QueryTimingInfo) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*QueryTimingInfo)
+	if !ok {
+		that2, ok := that.(QueryTimingInfo)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.ExecutionTimeNs != that1.ExecutionTimeNs {
+		return false
+	}
+	if this.CompilationTimeNs != that1.CompilationTimeNs {
+		return false
+	}
+	return true
+}
+func (this *QueryExecutionStats) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*QueryExecutionStats)
+	if !ok {
+		that2, ok := that.(QueryExecutionStats)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Timing.Equal(that1.Timing) {
+		return false
+	}
+	if this.BytesProcessed != that1.BytesProcessed {
+		return false
+	}
+	return true
+}
+func (this *AgentQueryResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*AgentQueryResponse)
+	if !ok {
+		that2, ok := that.(AgentQueryResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Status.Equal(that1.Status) {
+		return false
+	}
+	if !this.QueryID.Equal(that1.QueryID) {
+		return false
+	}
+	if !this.Stats.Equal(that1.Stats) {
+		return false
+	}
+	if !this.OutputRelation.Equal(that1.OutputRelation) {
+		return false
+	}
+	if len(this.Data) != len(that1.Data) {
+		return false
+	}
+	for i := range this.Data {
+		if !this.Data[i].Equal(that1.Data[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *VizierQueryResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*VizierQueryResponse)
+	if !ok {
+		that2, ok := that.(VizierQueryResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Responses) != len(that1.Responses) {
+		return false
+	}
+	for i := range this.Responses {
+		if !this.Responses[i].Equal(that1.Responses[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *VizierQueryResponse_ResponseByAgent) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*VizierQueryResponse_ResponseByAgent)
+	if !ok {
+		that2, ok := that.(VizierQueryResponse_ResponseByAgent)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.AgentID.Equal(that1.AgentID) {
+		return false
+	}
+	if !this.Response.Equal(that1.Response) {
+		return false
+	}
+	return true
+}
+func (this *Schema) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&service.Schema{")
+	if this.Relations != nil {
+		s = append(s, "Relations: "+fmt.Sprintf("%#v", this.Relations)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SchemaRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&service.SchemaRequest{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SchemaResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&service.SchemaResponse{")
+	if this.SchemaByAgent != nil {
+		s = append(s, "SchemaByAgent: "+fmt.Sprintf("%#v", this.SchemaByAgent)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *SchemaResponse_SchemaByAgent) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&service.SchemaResponse_SchemaByAgent{")
+	if this.AgentID != nil {
+		s = append(s, "AgentID: "+fmt.Sprintf("%#v", this.AgentID)+",\n")
+	}
+	if this.Schema != nil {
+		s = append(s, "Schema: "+fmt.Sprintf("%#v", this.Schema)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
 }
 func (this *AgentInfoRequest) GoString() string {
 	if this == nil {
@@ -1095,6 +2399,20 @@ func (this *AgentInfoResponse) GoString() string {
 	if this.Info != nil {
 		s = append(s, "Info: "+fmt.Sprintf("%#v", this.Info)+",\n")
 	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *AgentStatus) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&service.AgentStatus{")
+	if this.Info != nil {
+		s = append(s, "Info: "+fmt.Sprintf("%#v", this.Info)+",\n")
+	}
+	s = append(s, "LastHeartbeatNs: "+fmt.Sprintf("%#v", this.LastHeartbeatNs)+",\n")
+	s = append(s, "State: "+fmt.Sprintf("%#v", this.State)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1127,7 +2445,7 @@ func (this *AgentToVizierMessage) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 7)
 	s = append(s, "&service.AgentToVizierMessage{")
 	if this.Msg != nil {
 		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
@@ -1151,11 +2469,19 @@ func (this *AgentToVizierMessage_QueryResponse) GoString() string {
 		`QueryResponse:` + fmt.Sprintf("%#v", this.QueryResponse) + `}`}, ", ")
 	return s
 }
+func (this *AgentToVizierMessage_Heartbeat) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&service.AgentToVizierMessage_Heartbeat{` +
+		`Heartbeat:` + fmt.Sprintf("%#v", this.Heartbeat) + `}`}, ", ")
+	return s
+}
 func (this *VizierToAgentMessage) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 7)
 	s = append(s, "&service.VizierToAgentMessage{")
 	if this.Msg != nil {
 		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
@@ -1178,6 +2504,34 @@ func (this *VizierToAgentMessage_QueryRequest) GoString() string {
 	s := strings.Join([]string{`&service.VizierToAgentMessage_QueryRequest{` +
 		`QueryRequest:` + fmt.Sprintf("%#v", this.QueryRequest) + `}`}, ", ")
 	return s
+}
+func (this *VizierToAgentMessage_HeartBeatAck) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&service.VizierToAgentMessage_HeartBeatAck{` +
+		`HeartBeatAck:` + fmt.Sprintf("%#v", this.HeartBeatAck) + `}`}, ", ")
+	return s
+}
+func (this *HeartBeat) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&service.HeartBeat{")
+	s = append(s, "Time: "+fmt.Sprintf("%#v", this.Time)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *HeartBeatAck) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&service.HeartBeatAck{")
+	s = append(s, "Time: "+fmt.Sprintf("%#v", this.Time)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
 }
 func (this *RegisterAgentRequest) GoString() string {
 	if this == nil {
@@ -1212,19 +2566,121 @@ func (this *QueryRequest) GoString() string {
 	}
 	s := make([]string, 0, 6)
 	s = append(s, "&service.QueryRequest{")
-	s = append(s, "QueryID: "+fmt.Sprintf("%#v", this.QueryID)+",\n")
+	if this.QueryID != nil {
+		s = append(s, "QueryID: "+fmt.Sprintf("%#v", this.QueryID)+",\n")
+	}
 	s = append(s, "QueryStr: "+fmt.Sprintf("%#v", this.QueryStr)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *QueryResponse) GoString() string {
+func (this *RowBatchData) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&service.RowBatchData{")
+	s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *Relation) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&service.Relation{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	if this.Columns != nil {
+		s = append(s, "Columns: "+fmt.Sprintf("%#v", this.Columns)+",\n")
+	}
+	s = append(s, "TableSizeBytes: "+fmt.Sprintf("%#v", this.TableSizeBytes)+",\n")
+	s = append(s, "NumRecords: "+fmt.Sprintf("%#v", this.NumRecords)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *Relation_ColumnInfo) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
-	s = append(s, "&service.QueryResponse{")
-	s = append(s, "QueryID: "+fmt.Sprintf("%#v", this.QueryID)+",\n")
-	s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
+	s = append(s, "&service.Relation_ColumnInfo{")
+	s = append(s, "ColumnNames: "+fmt.Sprintf("%#v", this.ColumnNames)+",\n")
+	s = append(s, "ColumnTypes: "+fmt.Sprintf("%#v", this.ColumnTypes)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *QueryTimingInfo) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&service.QueryTimingInfo{")
+	s = append(s, "ExecutionTimeNs: "+fmt.Sprintf("%#v", this.ExecutionTimeNs)+",\n")
+	s = append(s, "CompilationTimeNs: "+fmt.Sprintf("%#v", this.CompilationTimeNs)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *QueryExecutionStats) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&service.QueryExecutionStats{")
+	if this.Timing != nil {
+		s = append(s, "Timing: "+fmt.Sprintf("%#v", this.Timing)+",\n")
+	}
+	s = append(s, "BytesProcessed: "+fmt.Sprintf("%#v", this.BytesProcessed)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *AgentQueryResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 9)
+	s = append(s, "&service.AgentQueryResponse{")
+	if this.Status != nil {
+		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
+	}
+	if this.QueryID != nil {
+		s = append(s, "QueryID: "+fmt.Sprintf("%#v", this.QueryID)+",\n")
+	}
+	if this.Stats != nil {
+		s = append(s, "Stats: "+fmt.Sprintf("%#v", this.Stats)+",\n")
+	}
+	if this.OutputRelation != nil {
+		s = append(s, "OutputRelation: "+fmt.Sprintf("%#v", this.OutputRelation)+",\n")
+	}
+	if this.Data != nil {
+		s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VizierQueryResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&service.VizierQueryResponse{")
+	if this.Responses != nil {
+		s = append(s, "Responses: "+fmt.Sprintf("%#v", this.Responses)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VizierQueryResponse_ResponseByAgent) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&service.VizierQueryResponse_ResponseByAgent{")
+	if this.AgentID != nil {
+		s = append(s, "AgentID: "+fmt.Sprintf("%#v", this.AgentID)+",\n")
+	}
+	if this.Response != nil {
+		s = append(s, "Response: "+fmt.Sprintf("%#v", this.Response)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1251,7 +2707,8 @@ const _ = grpc.SupportPackageIsVersion4
 type VizierServiceClient interface {
 	ServeAgent(ctx context.Context, opts ...grpc.CallOption) (VizierService_ServeAgentClient, error)
 	GetAgentInfo(ctx context.Context, in *AgentInfoRequest, opts ...grpc.CallOption) (*AgentInfoResponse, error)
-	ExecuteQuery(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error)
+	ExecuteQuery(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*VizierQueryResponse, error)
+	GetSchemas(ctx context.Context, in *SchemaRequest, opts ...grpc.CallOption) (*SchemaResponse, error)
 }
 
 type vizierServiceClient struct {
@@ -1302,9 +2759,18 @@ func (c *vizierServiceClient) GetAgentInfo(ctx context.Context, in *AgentInfoReq
 	return out, nil
 }
 
-func (c *vizierServiceClient) ExecuteQuery(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*QueryResponse, error) {
-	out := new(QueryResponse)
+func (c *vizierServiceClient) ExecuteQuery(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*VizierQueryResponse, error) {
+	out := new(VizierQueryResponse)
 	err := c.cc.Invoke(ctx, "/pl.vizier.VizierService/ExecuteQuery", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vizierServiceClient) GetSchemas(ctx context.Context, in *SchemaRequest, opts ...grpc.CallOption) (*SchemaResponse, error) {
+	out := new(SchemaResponse)
+	err := c.cc.Invoke(ctx, "/pl.vizier.VizierService/GetSchemas", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1315,7 +2781,8 @@ func (c *vizierServiceClient) ExecuteQuery(ctx context.Context, in *QueryRequest
 type VizierServiceServer interface {
 	ServeAgent(VizierService_ServeAgentServer) error
 	GetAgentInfo(context.Context, *AgentInfoRequest) (*AgentInfoResponse, error)
-	ExecuteQuery(context.Context, *QueryRequest) (*QueryResponse, error)
+	ExecuteQuery(context.Context, *QueryRequest) (*VizierQueryResponse, error)
+	GetSchemas(context.Context, *SchemaRequest) (*SchemaResponse, error)
 }
 
 func RegisterVizierServiceServer(s *grpc.Server, srv VizierServiceServer) {
@@ -1384,6 +2851,24 @@ func _VizierService_ExecuteQuery_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _VizierService_GetSchemas_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SchemaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VizierServiceServer).GetSchemas(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.vizier.VizierService/GetSchemas",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VizierServiceServer).GetSchemas(ctx, req.(*SchemaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _VizierService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "pl.vizier.VizierService",
 	HandlerType: (*VizierServiceServer)(nil),
@@ -1396,6 +2881,10 @@ var _VizierService_serviceDesc = grpc.ServiceDesc{
 			MethodName: "ExecuteQuery",
 			Handler:    _VizierService_ExecuteQuery_Handler,
 		},
+		{
+			MethodName: "GetSchemas",
+			Handler:    _VizierService_GetSchemas_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -1406,6 +2895,122 @@ var _VizierService_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Metadata: "src/vizier/proto/service.proto",
+}
+
+func (m *Schema) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Schema) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Relations) > 0 {
+		for _, msg := range m.Relations {
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *SchemaRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SchemaRequest) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	return i, nil
+}
+
+func (m *SchemaResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SchemaResponse) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.SchemaByAgent) > 0 {
+		for _, msg := range m.SchemaByAgent {
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *SchemaResponse_SchemaByAgent) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *SchemaResponse_SchemaByAgent) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.AgentID != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.AgentID.Size()))
+		n1, err := m.AgentID.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n1
+	}
+	if m.Schema != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.Schema.Size()))
+		n2, err := m.Schema.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n2
+	}
+	return i, nil
 }
 
 func (m *AgentInfoRequest) Marshal() (dAtA []byte, err error) {
@@ -1456,6 +3061,44 @@ func (m *AgentInfoResponse) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *AgentStatus) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AgentStatus) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Info != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.Info.Size()))
+		n3, err := m.Info.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n3
+	}
+	if m.LastHeartbeatNs != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.LastHeartbeatNs))
+	}
+	if m.State != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.State))
+	}
+	return i, nil
+}
+
 func (m *AgentInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1475,21 +3118,21 @@ func (m *AgentInfo) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.AgentID.Size()))
-		n1, err := m.AgentID.MarshalTo(dAtA[i:])
+		n4, err := m.AgentID.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n1
+		i += n4
 	}
 	if m.HostInfo != nil {
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.HostInfo.Size()))
-		n2, err := m.HostInfo.MarshalTo(dAtA[i:])
+		n5, err := m.HostInfo.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n2
+		i += n5
 	}
 	return i, nil
 }
@@ -1534,11 +3177,11 @@ func (m *AgentToVizierMessage) MarshalTo(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if m.Msg != nil {
-		nn3, err := m.Msg.MarshalTo(dAtA[i:])
+		nn6, err := m.Msg.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn3
+		i += nn6
 	}
 	return i, nil
 }
@@ -1549,11 +3192,11 @@ func (m *AgentToVizierMessage_RegisterRequest) MarshalTo(dAtA []byte) (int, erro
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.RegisterRequest.Size()))
-		n4, err := m.RegisterRequest.MarshalTo(dAtA[i:])
+		n7, err := m.RegisterRequest.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n4
+		i += n7
 	}
 	return i, nil
 }
@@ -1563,11 +3206,25 @@ func (m *AgentToVizierMessage_QueryResponse) MarshalTo(dAtA []byte) (int, error)
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.QueryResponse.Size()))
-		n5, err := m.QueryResponse.MarshalTo(dAtA[i:])
+		n8, err := m.QueryResponse.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n5
+		i += n8
+	}
+	return i, nil
+}
+func (m *AgentToVizierMessage_Heartbeat) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.Heartbeat != nil {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.Heartbeat.Size()))
+		n9, err := m.Heartbeat.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n9
 	}
 	return i, nil
 }
@@ -1587,11 +3244,11 @@ func (m *VizierToAgentMessage) MarshalTo(dAtA []byte) (int, error) {
 	var l int
 	_ = l
 	if m.Msg != nil {
-		nn6, err := m.Msg.MarshalTo(dAtA[i:])
+		nn10, err := m.Msg.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += nn6
+		i += nn10
 	}
 	return i, nil
 }
@@ -1602,11 +3259,11 @@ func (m *VizierToAgentMessage_AgentResponse) MarshalTo(dAtA []byte) (int, error)
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.AgentResponse.Size()))
-		n7, err := m.AgentResponse.MarshalTo(dAtA[i:])
+		n11, err := m.AgentResponse.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n11
 	}
 	return i, nil
 }
@@ -1616,14 +3273,74 @@ func (m *VizierToAgentMessage_QueryRequest) MarshalTo(dAtA []byte) (int, error) 
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.QueryRequest.Size()))
-		n8, err := m.QueryRequest.MarshalTo(dAtA[i:])
+		n12, err := m.QueryRequest.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n8
+		i += n12
 	}
 	return i, nil
 }
+func (m *VizierToAgentMessage_HeartBeatAck) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.HeartBeatAck != nil {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.HeartBeatAck.Size()))
+		n13, err := m.HeartBeatAck.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n13
+	}
+	return i, nil
+}
+func (m *HeartBeat) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *HeartBeat) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Time != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.Time))
+	}
+	return i, nil
+}
+
+func (m *HeartBeatAck) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *HeartBeatAck) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Time != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.Time))
+	}
+	return i, nil
+}
+
 func (m *RegisterAgentRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1643,21 +3360,21 @@ func (m *RegisterAgentRequest) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.AgentID.Size()))
-		n9, err := m.AgentID.MarshalTo(dAtA[i:])
+		n14, err := m.AgentID.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n9
+		i += n14
 	}
 	if m.AgentInfo != nil {
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.AgentInfo.Size()))
-		n10, err := m.AgentInfo.MarshalTo(dAtA[i:])
+		n15, err := m.AgentInfo.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n10
+		i += n15
 	}
 	return i, nil
 }
@@ -1681,11 +3398,11 @@ func (m *RegisterAgentResponse) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.Status.Size()))
-		n11, err := m.Status.MarshalTo(dAtA[i:])
+		n16, err := m.Status.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n11
+		i += n16
 	}
 	return i, nil
 }
@@ -1705,10 +3422,15 @@ func (m *QueryRequest) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.QueryID != 0 {
-		dAtA[i] = 0x8
+	if m.QueryID != nil {
+		dAtA[i] = 0xa
 		i++
-		i = encodeVarintService(dAtA, i, uint64(m.QueryID))
+		i = encodeVarintService(dAtA, i, uint64(m.QueryID.Size()))
+		n17, err := m.QueryID.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n17
 	}
 	if len(m.QueryStr) > 0 {
 		dAtA[i] = 0x12
@@ -1719,7 +3441,7 @@ func (m *QueryRequest) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
-func (m *QueryResponse) Marshal() (dAtA []byte, err error) {
+func (m *RowBatchData) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalTo(dAtA)
@@ -1729,21 +3451,290 @@ func (m *QueryResponse) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *QueryResponse) MarshalTo(dAtA []byte) (int, error) {
+func (m *RowBatchData) MarshalTo(dAtA []byte) (int, error) {
 	var i int
 	_ = i
 	var l int
 	_ = l
-	if m.QueryID != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.QueryID))
-	}
 	if len(m.Data) > 0 {
-		dAtA[i] = 0x12
+		dAtA[i] = 0xa
 		i++
 		i = encodeVarintService(dAtA, i, uint64(len(m.Data)))
 		i += copy(dAtA[i:], m.Data)
+	}
+	return i, nil
+}
+
+func (m *Relation) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Relation) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintService(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
+	}
+	if len(m.Columns) > 0 {
+		for _, msg := range m.Columns {
+			dAtA[i] = 0x12
+			i++
+			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.TableSizeBytes != 0 {
+		dAtA[i] = 0x18
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.TableSizeBytes))
+	}
+	if m.NumRecords != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.NumRecords))
+	}
+	return i, nil
+}
+
+func (m *Relation_ColumnInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Relation_ColumnInfo) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.ColumnNames) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintService(dAtA, i, uint64(len(m.ColumnNames)))
+		i += copy(dAtA[i:], m.ColumnNames)
+	}
+	if m.ColumnTypes != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.ColumnTypes))
+	}
+	return i, nil
+}
+
+func (m *QueryTimingInfo) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryTimingInfo) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.ExecutionTimeNs != 0 {
+		dAtA[i] = 0x8
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.ExecutionTimeNs))
+	}
+	if m.CompilationTimeNs != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.CompilationTimeNs))
+	}
+	return i, nil
+}
+
+func (m *QueryExecutionStats) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *QueryExecutionStats) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Timing != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.Timing.Size()))
+		n18, err := m.Timing.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n18
+	}
+	if m.BytesProcessed != 0 {
+		dAtA[i] = 0x10
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.BytesProcessed))
+	}
+	return i, nil
+}
+
+func (m *AgentQueryResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AgentQueryResponse) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.Status != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.Status.Size()))
+		n19, err := m.Status.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n19
+	}
+	if m.QueryID != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.QueryID.Size()))
+		n20, err := m.QueryID.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n20
+	}
+	if m.Stats != nil {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.Stats.Size()))
+		n21, err := m.Stats.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n21
+	}
+	if m.OutputRelation != nil {
+		dAtA[i] = 0x22
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.OutputRelation.Size()))
+		n22, err := m.OutputRelation.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n22
+	}
+	if len(m.Data) > 0 {
+		for _, msg := range m.Data {
+			dAtA[i] = 0x2a
+			i++
+			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *VizierQueryResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *VizierQueryResponse) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Responses) > 0 {
+		for _, msg := range m.Responses {
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
+func (m *VizierQueryResponse_ResponseByAgent) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *VizierQueryResponse_ResponseByAgent) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.AgentID != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.AgentID.Size()))
+		n23, err := m.AgentID.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n23
+	}
+	if m.Response != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.Response.Size()))
+		n24, err := m.Response.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n24
 	}
 	return i, nil
 }
@@ -1757,6 +3748,62 @@ func encodeVarintService(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return offset + 1
 }
+func (m *Schema) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Relations) > 0 {
+		for _, e := range m.Relations {
+			l = e.Size()
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *SchemaRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *SchemaResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.SchemaByAgent) > 0 {
+		for _, e := range m.SchemaByAgent {
+			l = e.Size()
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *SchemaResponse_SchemaByAgent) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.AgentID != nil {
+		l = m.AgentID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.Schema != nil {
+		l = m.Schema.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
 func (m *AgentInfoRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1777,6 +3824,25 @@ func (m *AgentInfoResponse) Size() (n int) {
 			l = e.Size()
 			n += 1 + l + sovService(uint64(l))
 		}
+	}
+	return n
+}
+
+func (m *AgentStatus) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Info != nil {
+		l = m.Info.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.LastHeartbeatNs != 0 {
+		n += 1 + sovService(uint64(m.LastHeartbeatNs))
+	}
+	if m.State != 0 {
+		n += 1 + sovService(uint64(m.State))
 	}
 	return n
 }
@@ -1847,6 +3913,18 @@ func (m *AgentToVizierMessage_QueryResponse) Size() (n int) {
 	}
 	return n
 }
+func (m *AgentToVizierMessage_Heartbeat) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Heartbeat != nil {
+		l = m.Heartbeat.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
 func (m *VizierToAgentMessage) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1883,6 +3961,42 @@ func (m *VizierToAgentMessage_QueryRequest) Size() (n int) {
 	}
 	return n
 }
+func (m *VizierToAgentMessage_HeartBeatAck) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.HeartBeatAck != nil {
+		l = m.HeartBeatAck.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+func (m *HeartBeat) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Time != 0 {
+		n += 1 + sovService(uint64(m.Time))
+	}
+	return n
+}
+
+func (m *HeartBeatAck) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Time != 0 {
+		n += 1 + sovService(uint64(m.Time))
+	}
+	return n
+}
+
 func (m *RegisterAgentRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -1919,8 +4033,9 @@ func (m *QueryRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.QueryID != 0 {
-		n += 1 + sovService(uint64(m.QueryID))
+	if m.QueryID != nil {
+		l = m.QueryID.Size()
+		n += 1 + l + sovService(uint64(l))
 	}
 	l = len(m.QueryStr)
 	if l > 0 {
@@ -1929,17 +4044,149 @@ func (m *QueryRequest) Size() (n int) {
 	return n
 }
 
-func (m *QueryResponse) Size() (n int) {
+func (m *RowBatchData) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.QueryID != 0 {
-		n += 1 + sovService(uint64(m.QueryID))
-	}
 	l = len(m.Data)
 	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *Relation) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	if len(m.Columns) > 0 {
+		for _, e := range m.Columns {
+			l = e.Size()
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	if m.TableSizeBytes != 0 {
+		n += 1 + sovService(uint64(m.TableSizeBytes))
+	}
+	if m.NumRecords != 0 {
+		n += 1 + sovService(uint64(m.NumRecords))
+	}
+	return n
+}
+
+func (m *Relation_ColumnInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ColumnNames)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.ColumnTypes != 0 {
+		n += 1 + sovService(uint64(m.ColumnTypes))
+	}
+	return n
+}
+
+func (m *QueryTimingInfo) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ExecutionTimeNs != 0 {
+		n += 1 + sovService(uint64(m.ExecutionTimeNs))
+	}
+	if m.CompilationTimeNs != 0 {
+		n += 1 + sovService(uint64(m.CompilationTimeNs))
+	}
+	return n
+}
+
+func (m *QueryExecutionStats) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Timing != nil {
+		l = m.Timing.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.BytesProcessed != 0 {
+		n += 1 + sovService(uint64(m.BytesProcessed))
+	}
+	return n
+}
+
+func (m *AgentQueryResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Status != nil {
+		l = m.Status.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.QueryID != nil {
+		l = m.QueryID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.Stats != nil {
+		l = m.Stats.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.OutputRelation != nil {
+		l = m.OutputRelation.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if len(m.Data) > 0 {
+		for _, e := range m.Data {
+			l = e.Size()
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *VizierQueryResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Responses) > 0 {
+		for _, e := range m.Responses {
+			l = e.Size()
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *VizierQueryResponse_ResponseByAgent) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.AgentID != nil {
+		l = m.AgentID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.Response != nil {
+		l = m.Response.Size()
 		n += 1 + l + sovService(uint64(l))
 	}
 	return n
@@ -1958,6 +4205,46 @@ func sovService(x uint64) (n int) {
 func sozService(x uint64) (n int) {
 	return sovService(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
+func (this *Schema) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Schema{`,
+		`Relations:` + strings.Replace(fmt.Sprintf("%v", this.Relations), "Relation", "Relation", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SchemaRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SchemaRequest{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SchemaResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SchemaResponse{`,
+		`SchemaByAgent:` + strings.Replace(fmt.Sprintf("%v", this.SchemaByAgent), "SchemaResponse_SchemaByAgent", "SchemaResponse_SchemaByAgent", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *SchemaResponse_SchemaByAgent) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&SchemaResponse_SchemaByAgent{`,
+		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
+		`Schema:` + strings.Replace(fmt.Sprintf("%v", this.Schema), "Schema", "Schema", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *AgentInfoRequest) String() string {
 	if this == nil {
 		return "nil"
@@ -1972,7 +4259,19 @@ func (this *AgentInfoResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&AgentInfoResponse{`,
+		`Info:` + strings.Replace(fmt.Sprintf("%v", this.Info), "AgentStatus", "AgentStatus", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AgentStatus) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AgentStatus{`,
 		`Info:` + strings.Replace(fmt.Sprintf("%v", this.Info), "AgentInfo", "AgentInfo", 1) + `,`,
+		`LastHeartbeatNs:` + fmt.Sprintf("%v", this.LastHeartbeatNs) + `,`,
+		`State:` + fmt.Sprintf("%v", this.State) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2023,7 +4322,17 @@ func (this *AgentToVizierMessage_QueryResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&AgentToVizierMessage_QueryResponse{`,
-		`QueryResponse:` + strings.Replace(fmt.Sprintf("%v", this.QueryResponse), "QueryResponse", "QueryResponse", 1) + `,`,
+		`QueryResponse:` + strings.Replace(fmt.Sprintf("%v", this.QueryResponse), "AgentQueryResponse", "AgentQueryResponse", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AgentToVizierMessage_Heartbeat) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AgentToVizierMessage_Heartbeat{`,
+		`Heartbeat:` + strings.Replace(fmt.Sprintf("%v", this.Heartbeat), "HeartBeat", "HeartBeat", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2058,6 +4367,36 @@ func (this *VizierToAgentMessage_QueryRequest) String() string {
 	}, "")
 	return s
 }
+func (this *VizierToAgentMessage_HeartBeatAck) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VizierToAgentMessage_HeartBeatAck{`,
+		`HeartBeatAck:` + strings.Replace(fmt.Sprintf("%v", this.HeartBeatAck), "HeartBeatAck", "HeartBeatAck", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *HeartBeat) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&HeartBeat{`,
+		`Time:` + fmt.Sprintf("%v", this.Time) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *HeartBeatAck) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&HeartBeatAck{`,
+		`Time:` + fmt.Sprintf("%v", this.Time) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *RegisterAgentRequest) String() string {
 	if this == nil {
 		return "nil"
@@ -2084,19 +4423,99 @@ func (this *QueryRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&QueryRequest{`,
-		`QueryID:` + fmt.Sprintf("%v", this.QueryID) + `,`,
+		`QueryID:` + strings.Replace(fmt.Sprintf("%v", this.QueryID), "UUID", "proto1.UUID", 1) + `,`,
 		`QueryStr:` + fmt.Sprintf("%v", this.QueryStr) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *QueryResponse) String() string {
+func (this *RowBatchData) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&QueryResponse{`,
-		`QueryID:` + fmt.Sprintf("%v", this.QueryID) + `,`,
+	s := strings.Join([]string{`&RowBatchData{`,
 		`Data:` + fmt.Sprintf("%v", this.Data) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Relation) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Relation{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Columns:` + strings.Replace(fmt.Sprintf("%v", this.Columns), "Relation_ColumnInfo", "Relation_ColumnInfo", 1) + `,`,
+		`TableSizeBytes:` + fmt.Sprintf("%v", this.TableSizeBytes) + `,`,
+		`NumRecords:` + fmt.Sprintf("%v", this.NumRecords) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Relation_ColumnInfo) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Relation_ColumnInfo{`,
+		`ColumnNames:` + fmt.Sprintf("%v", this.ColumnNames) + `,`,
+		`ColumnTypes:` + fmt.Sprintf("%v", this.ColumnTypes) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *QueryTimingInfo) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&QueryTimingInfo{`,
+		`ExecutionTimeNs:` + fmt.Sprintf("%v", this.ExecutionTimeNs) + `,`,
+		`CompilationTimeNs:` + fmt.Sprintf("%v", this.CompilationTimeNs) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *QueryExecutionStats) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&QueryExecutionStats{`,
+		`Timing:` + strings.Replace(fmt.Sprintf("%v", this.Timing), "QueryTimingInfo", "QueryTimingInfo", 1) + `,`,
+		`BytesProcessed:` + fmt.Sprintf("%v", this.BytesProcessed) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AgentQueryResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AgentQueryResponse{`,
+		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto2.Status", 1) + `,`,
+		`QueryID:` + strings.Replace(fmt.Sprintf("%v", this.QueryID), "UUID", "proto1.UUID", 1) + `,`,
+		`Stats:` + strings.Replace(fmt.Sprintf("%v", this.Stats), "QueryExecutionStats", "QueryExecutionStats", 1) + `,`,
+		`OutputRelation:` + strings.Replace(fmt.Sprintf("%v", this.OutputRelation), "Relation", "Relation", 1) + `,`,
+		`Data:` + strings.Replace(fmt.Sprintf("%v", this.Data), "RowBatchData", "RowBatchData", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VizierQueryResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VizierQueryResponse{`,
+		`Responses:` + strings.Replace(fmt.Sprintf("%v", this.Responses), "VizierQueryResponse_ResponseByAgent", "VizierQueryResponse_ResponseByAgent", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VizierQueryResponse_ResponseByAgent) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VizierQueryResponse_ResponseByAgent{`,
+		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
+		`Response:` + strings.Replace(fmt.Sprintf("%v", this.Response), "AgentQueryResponse", "AgentQueryResponse", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2108,6 +4527,334 @@ func valueToStringService(v interface{}) string {
 	}
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
+}
+func (m *Schema) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Schema: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Schema: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Relations", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Relations = append(m.Relations, &Relation{})
+			if err := m.Relations[len(m.Relations)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SchemaRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SchemaRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SchemaRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SchemaResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SchemaResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SchemaResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SchemaByAgent", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SchemaByAgent = append(m.SchemaByAgent, &SchemaResponse_SchemaByAgent{})
+			if err := m.SchemaByAgent[len(m.SchemaByAgent)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *SchemaResponse_SchemaByAgent) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: SchemaByAgent: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: SchemaByAgent: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AgentID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.AgentID == nil {
+				m.AgentID = &proto1.UUID{}
+			}
+			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Schema", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Schema == nil {
+				m.Schema = &Schema{}
+			}
+			if err := m.Schema.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *AgentInfoRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -2214,11 +4961,132 @@ func (m *AgentInfoResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Info = append(m.Info, &AgentInfo{})
+			m.Info = append(m.Info, &AgentStatus{})
 			if err := m.Info[len(m.Info)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AgentStatus) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AgentStatus: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AgentStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Info", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Info == nil {
+				m.Info = &AgentInfo{}
+			}
+			if err := m.Info.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LastHeartbeatNs", wireType)
+			}
+			m.LastHeartbeatNs = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.LastHeartbeatNs |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field State", wireType)
+			}
+			m.State = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.State |= (AgentState(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipService(dAtA[iNdEx:])
@@ -2522,11 +5390,43 @@ func (m *AgentToVizierMessage) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &QueryResponse{}
+			v := &AgentQueryResponse{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			m.Msg = &AgentToVizierMessage_QueryResponse{v}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Heartbeat", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &HeartBeat{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Msg = &AgentToVizierMessage_Heartbeat{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -2642,6 +5542,176 @@ func (m *VizierToAgentMessage) Unmarshal(dAtA []byte) error {
 			}
 			m.Msg = &VizierToAgentMessage_QueryRequest{v}
 			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HeartBeatAck", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &HeartBeatAck{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Msg = &VizierToAgentMessage_HeartBeatAck{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *HeartBeat) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: HeartBeat: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: HeartBeat: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Time", wireType)
+			}
+			m.Time = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Time |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *HeartBeatAck) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: HeartBeatAck: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: HeartBeatAck: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Time", wireType)
+			}
+			m.Time = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Time |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipService(dAtA[iNdEx:])
@@ -2892,10 +5962,10 @@ func (m *QueryRequest) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field QueryID", wireType)
 			}
-			m.QueryID = 0
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowService
@@ -2905,11 +5975,25 @@ func (m *QueryRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.QueryID |= (int64(b) & 0x7F) << shift
+				msglen |= (int(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.QueryID == nil {
+				m.QueryID = &proto1.UUID{}
+			}
+			if err := m.QueryID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field QueryStr", wireType)
@@ -2960,7 +6044,7 @@ func (m *QueryRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *QueryResponse) Unmarshal(dAtA []byte) error {
+func (m *RowBatchData) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2983,32 +6067,13 @@ func (m *QueryResponse) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: QueryResponse: wiretype end group for non-group")
+			return fmt.Errorf("proto: RowBatchData: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: RowBatchData: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field QueryID", wireType)
-			}
-			m.QueryID = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.QueryID |= (int64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
 			}
@@ -3037,6 +6102,852 @@ func (m *QueryResponse) Unmarshal(dAtA []byte) error {
 			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
 			if m.Data == nil {
 				m.Data = []byte{}
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Relation) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Relation: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Relation: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Columns", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Columns = append(m.Columns, &Relation_ColumnInfo{})
+			if err := m.Columns[len(m.Columns)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TableSizeBytes", wireType)
+			}
+			m.TableSizeBytes = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TableSizeBytes |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NumRecords", wireType)
+			}
+			m.NumRecords = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.NumRecords |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Relation_ColumnInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ColumnInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ColumnInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ColumnNames", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= (uint64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ColumnNames = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ColumnTypes", wireType)
+			}
+			m.ColumnTypes = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ColumnTypes |= (types.DataType(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryTimingInfo) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryTimingInfo: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryTimingInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExecutionTimeNs", wireType)
+			}
+			m.ExecutionTimeNs = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ExecutionTimeNs |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CompilationTimeNs", wireType)
+			}
+			m.CompilationTimeNs = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.CompilationTimeNs |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *QueryExecutionStats) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: QueryExecutionStats: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: QueryExecutionStats: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Timing", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Timing == nil {
+				m.Timing = &QueryTimingInfo{}
+			}
+			if err := m.Timing.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BytesProcessed", wireType)
+			}
+			m.BytesProcessed = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BytesProcessed |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AgentQueryResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AgentQueryResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AgentQueryResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Status == nil {
+				m.Status = &proto2.Status{}
+			}
+			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field QueryID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.QueryID == nil {
+				m.QueryID = &proto1.UUID{}
+			}
+			if err := m.QueryID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Stats", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Stats == nil {
+				m.Stats = &QueryExecutionStats{}
+			}
+			if err := m.Stats.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OutputRelation", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.OutputRelation == nil {
+				m.OutputRelation = &Relation{}
+			}
+			if err := m.OutputRelation.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Data = append(m.Data, &RowBatchData{})
+			if err := m.Data[len(m.Data)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VizierQueryResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VizierQueryResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VizierQueryResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Responses", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Responses = append(m.Responses, &VizierQueryResponse_ResponseByAgent{})
+			if err := m.Responses[len(m.Responses)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VizierQueryResponse_ResponseByAgent) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ResponseByAgent: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ResponseByAgent: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AgentID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.AgentID == nil {
+				m.AgentID = &proto1.UUID{}
+			}
+			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Response", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Response == nil {
+				m.Response = &AgentQueryResponse{}
+			}
+			if err := m.Response.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
 			}
 			iNdEx = postIndex
 		default:
@@ -3166,51 +7077,93 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("src/vizier/proto/service.proto", fileDescriptor_service_e2d71f3ee90e6c37)
+	proto.RegisterFile("src/vizier/proto/service.proto", fileDescriptor_service_0bc71610fa183e39)
 }
 
-var fileDescriptor_service_e2d71f3ee90e6c37 = []byte{
-	// 666 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x54, 0xcf, 0x4f, 0xd4, 0x4e,
-	0x14, 0xef, 0x7c, 0xe1, 0x0b, 0xdb, 0xc7, 0x2e, 0xe2, 0xb8, 0x46, 0xb2, 0xe8, 0x40, 0xe6, 0x40,
-	0x36, 0x31, 0xb6, 0x04, 0x12, 0x2f, 0x46, 0x13, 0x10, 0x23, 0x1b, 0xf4, 0x60, 0x17, 0x3c, 0x78,
-	0xd9, 0x74, 0x77, 0x87, 0xd2, 0x84, 0xed, 0xec, 0x76, 0xa6, 0x04, 0x3d, 0x99, 0xf8, 0x0f, 0xf8,
-	0x67, 0x70, 0xf2, 0xef, 0xf0, 0xc8, 0x91, 0x93, 0x91, 0x72, 0xf1, 0xc8, 0xcd, 0xab, 0xe9, 0xcc,
-	0x74, 0xb7, 0x62, 0x49, 0x8c, 0xb7, 0xf7, 0xe3, 0xf3, 0xde, 0xe7, 0xf3, 0x5e, 0x5f, 0x07, 0x88,
-	0x88, 0x7b, 0xee, 0x71, 0xf8, 0x21, 0x64, 0xb1, 0x3b, 0x8c, 0xb9, 0xe4, 0xae, 0x60, 0xf1, 0x71,
-	0xd8, 0x63, 0x8e, 0xf2, 0xb0, 0x3d, 0x3c, 0x72, 0x74, 0xba, 0xf1, 0x28, 0x08, 0xe5, 0x61, 0xd2,
-	0x75, 0x7a, 0x7c, 0xe0, 0x06, 0x3c, 0xe0, 0x1a, 0xdf, 0x4d, 0x0e, 0x94, 0xa7, 0x8b, 0x33, 0x4b,
-	0x57, 0x36, 0x96, 0xb2, 0xce, 0x89, 0x0c, 0x8f, 0x84, 0x69, 0xac, 0x6c, 0x93, 0x7c, 0x90, 0x25,
-	0x7b, 0x7c, 0x30, 0xe0, 0x51, 0x4e, 0x2b, 0x7d, 0x99, 0x98, 0x34, 0xc5, 0xb0, 0xb0, 0x19, 0xb0,
-	0x48, 0xb6, 0xa2, 0x03, 0xee, 0xb1, 0x51, 0xc2, 0x84, 0xa4, 0x4f, 0xe1, 0x76, 0x21, 0x26, 0x86,
-	0x3c, 0x12, 0x0c, 0x37, 0x61, 0x3a, 0x8c, 0x0e, 0xf8, 0x22, 0x5a, 0x99, 0x6a, 0xce, 0xad, 0xd7,
-	0x9d, 0xb1, 0x5a, 0x67, 0x82, 0x55, 0x08, 0x9a, 0x80, 0x3d, 0x0e, 0xe1, 0xc7, 0x50, 0xf1, 0x33,
-	0xa7, 0x13, 0xf6, 0x17, 0xd1, 0x0a, 0x6a, 0xce, 0xad, 0xcf, 0x67, 0xa5, 0x5a, 0xe1, 0xfe, 0x7e,
-	0x6b, 0x7b, 0x6b, 0x2e, 0xfd, 0xb6, 0x3c, 0xab, 0x0b, 0xb6, 0xbd, 0x59, 0x05, 0x6e, 0xf5, 0xf1,
-	0x1a, 0xd8, 0x87, 0x5c, 0xc8, 0x8e, 0xe2, 0xfc, 0x4f, 0x15, 0xde, 0x29, 0x70, 0xee, 0x70, 0xa1,
-	0x29, 0x2b, 0x87, 0xc6, 0xa2, 0xab, 0x50, 0xc9, 0xa3, 0xb8, 0x01, 0x2a, 0x1e, 0xf9, 0x03, 0xa6,
-	0x58, 0x6d, 0x6f, 0xec, 0xd3, 0x2f, 0x08, 0xea, 0x8a, 0x6e, 0x8f, 0xbf, 0x55, 0xcd, 0x5e, 0x33,
-	0x21, 0xfc, 0x80, 0xe1, 0x57, 0xb0, 0x10, 0xb3, 0x20, 0x14, 0x92, 0xc5, 0x9d, 0x58, 0xaf, 0xc2,
-	0x48, 0x5e, 0x2e, 0x30, 0x7b, 0x06, 0xa2, 0x5a, 0x98, 0x8d, 0xed, 0x58, 0xde, 0xad, 0xbc, 0xd4,
-	0x84, 0xf0, 0x26, 0xcc, 0x8f, 0x12, 0x16, 0xbf, 0xef, 0xc4, 0x66, 0x83, 0x66, 0x8a, 0xc5, 0x42,
-	0xaf, 0x37, 0x19, 0x20, 0xdf, 0xf0, 0x8e, 0xe5, 0xd5, 0x46, 0xc5, 0xc0, 0xd6, 0xff, 0x30, 0x35,
-	0x10, 0x01, 0x3d, 0x45, 0x50, 0xd7, 0x4a, 0xf7, 0xb8, 0x62, 0xcd, 0x05, 0xb7, 0x60, 0x5e, 0xef,
-	0x76, 0x4c, 0xa1, 0xe5, 0xae, 0xdc, 0x2c, 0x77, 0x42, 0xe5, 0x17, 0x03, 0xf8, 0x19, 0xd4, 0x72,
-	0xb5, 0x7a, 0x70, 0x2d, 0xf6, 0xde, 0x9f, 0x62, 0xf3, 0x81, 0xab, 0xa3, 0x82, 0x9f, 0x4b, 0xfd,
-	0x84, 0xa0, 0x5e, 0xb6, 0xa0, 0x7f, 0x3e, 0x83, 0x0d, 0x00, 0x53, 0x37, 0xb9, 0x83, 0xf2, 0xdb,
-	0xb3, 0xfd, 0xdc, 0xa4, 0xdb, 0x70, 0xb7, 0x74, 0x6c, 0xfc, 0x10, 0x66, 0xf4, 0xf1, 0x1b, 0x0d,
-	0xea, 0xa2, 0x74, 0x64, 0xd8, 0x75, 0xda, 0xca, 0xf0, 0x0c, 0x84, 0xb6, 0xa1, 0x5a, 0x1c, 0x19,
-	0xaf, 0x42, 0x45, 0xaf, 0xc8, 0x8c, 0x30, 0xa5, 0x25, 0x2b, 0x4c, 0x26, 0x59, 0x25, 0x5b, 0x7d,
-	0xbc, 0x04, 0xb6, 0xc6, 0x09, 0x19, 0x2b, 0xc5, 0xb6, 0xa7, 0x0b, 0xdb, 0x32, 0xa6, 0xbb, 0x50,
-	0xfb, 0xed, 0xa3, 0xff, 0x75, 0x57, 0x0c, 0xd3, 0x7d, 0x5f, 0xfa, 0xaa, 0x61, 0xd5, 0x53, 0xf6,
-	0xfa, 0x4f, 0x04, 0x35, 0x7d, 0x18, 0x6d, 0xfd, 0x92, 0xe0, 0x3d, 0x80, 0xcc, 0x64, 0x6a, 0x6c,
-	0xbc, 0x7c, 0x7d, 0x51, 0xd7, 0x2e, 0xbe, 0x51, 0x04, 0x94, 0x5d, 0x18, 0xb5, 0x9a, 0x68, 0x0d,
-	0xe1, 0x5d, 0xa8, 0xbe, 0x64, 0x72, 0xf2, 0x4f, 0x2f, 0x95, 0x7e, 0x00, 0xbd, 0xa6, 0xc6, 0xfd,
-	0xf2, 0xa4, 0x1e, 0x97, 0x5a, 0xf8, 0x39, 0x54, 0x5f, 0x9c, 0xb0, 0x5e, 0x22, 0x99, 0x9a, 0x11,
-	0xdf, 0x74, 0x62, 0x8d, 0x1b, 0x7f, 0x14, 0x6a, 0x6d, 0xb1, 0xb3, 0x0b, 0x62, 0x9d, 0x5f, 0x10,
-	0xeb, 0xea, 0x82, 0xa0, 0x8f, 0x29, 0x41, 0xa7, 0x29, 0x41, 0x5f, 0x53, 0x82, 0xce, 0x52, 0x82,
-	0xbe, 0xa7, 0x04, 0xfd, 0x48, 0x89, 0x75, 0x95, 0x12, 0xf4, 0xf9, 0x92, 0x58, 0x67, 0x97, 0xc4,
-	0x3a, 0xbf, 0x24, 0xd6, 0x3b, 0x77, 0x18, 0x9e, 0x84, 0xec, 0xc8, 0xef, 0x0a, 0xc7, 0x0f, 0x27,
-	0x8e, 0x7b, 0xfd, 0x61, 0x7e, 0x62, 0x1e, 0xe6, 0xee, 0x8c, 0x72, 0x37, 0x7e, 0x05, 0x00, 0x00,
-	0xff, 0xff, 0x1e, 0xb1, 0xcc, 0x84, 0xbb, 0x05, 0x00, 0x00,
+var fileDescriptor_service_0bc71610fa183e39 = []byte{
+	// 1335 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x57, 0xcf, 0x73, 0xd3, 0xc6,
+	0x17, 0x97, 0x62, 0x08, 0xf1, 0x8b, 0x63, 0x3b, 0x1b, 0xf8, 0xe2, 0xaf, 0x01, 0x25, 0xd5, 0xa1,
+	0xa4, 0x30, 0x75, 0x68, 0xa0, 0x9d, 0x76, 0xe8, 0x94, 0x89, 0x13, 0x97, 0x78, 0xa0, 0x0e, 0x95,
+	0x0d, 0x9d, 0xf6, 0xa2, 0x91, 0x95, 0x8d, 0xad, 0xc1, 0x92, 0x1c, 0xed, 0x8a, 0x92, 0x9c, 0x3a,
+	0xd3, 0xde, 0x7a, 0xe1, 0xdc, 0xbf, 0xa0, 0x7f, 0x47, 0x4f, 0x3d, 0x72, 0xe9, 0x0c, 0xa7, 0x4e,
+	0x31, 0x97, 0xb6, 0x27, 0xfe, 0x84, 0xce, 0xbe, 0x5d, 0xc9, 0xb2, 0x71, 0x98, 0x21, 0x17, 0xcf,
+	0xee, 0x7b, 0x9f, 0xf7, 0xeb, 0xb3, 0x4f, 0x6f, 0xd7, 0x60, 0xb0, 0xc8, 0xdd, 0x78, 0xe2, 0x1d,
+	0x7b, 0x34, 0xda, 0x18, 0x46, 0x21, 0x0f, 0x37, 0x18, 0x8d, 0x9e, 0x78, 0x2e, 0xad, 0xe1, 0x8e,
+	0xe4, 0x87, 0x83, 0x9a, 0x54, 0x57, 0x3f, 0xec, 0x79, 0xbc, 0x1f, 0x77, 0x6b, 0x6e, 0xe8, 0x6f,
+	0xf4, 0xc2, 0x5e, 0x28, 0xf1, 0xdd, 0xf8, 0x00, 0x77, 0xd2, 0x58, 0xac, 0xa4, 0x65, 0xf5, 0x92,
+	0xf0, 0x1c, 0x73, 0x6f, 0xc0, 0x94, 0x63, 0x5c, 0x2b, 0xe5, 0x15, 0xa1, 0x74, 0x43, 0xdf, 0x0f,
+	0x83, 0x24, 0x2c, 0x77, 0x78, 0x9c, 0xa8, 0x2f, 0x67, 0xd4, 0xfc, 0x68, 0x48, 0x99, 0xfc, 0x95,
+	0x5a, 0xf3, 0x36, 0xcc, 0xb7, 0xdd, 0x3e, 0xf5, 0x1d, 0xf2, 0x11, 0xe4, 0x23, 0x3a, 0x70, 0xb8,
+	0x17, 0x06, 0xac, 0xa2, 0xaf, 0xe5, 0xd6, 0x17, 0x37, 0x57, 0x6a, 0x69, 0xc6, 0x35, 0x4b, 0xe9,
+	0xac, 0x31, 0xca, 0x2c, 0xc1, 0x92, 0x34, 0xb6, 0xe8, 0x61, 0x4c, 0x19, 0x37, 0xff, 0xd0, 0xa1,
+	0x98, 0x48, 0xd8, 0x30, 0x0c, 0x18, 0x25, 0x7b, 0x50, 0x62, 0x28, 0xb1, 0xbb, 0x47, 0xb6, 0xd3,
+	0xa3, 0x01, 0x57, 0xce, 0xaf, 0x66, 0x9c, 0x4f, 0xda, 0xa8, 0x6d, 0xfd, 0x68, 0x4b, 0xc0, 0xad,
+	0x25, 0x96, 0xdd, 0x56, 0xa3, 0x24, 0xa8, 0x12, 0x90, 0x4f, 0x60, 0x01, 0xfd, 0xda, 0xde, 0x7e,
+	0x45, 0x5f, 0xd3, 0xd7, 0x17, 0x37, 0x8b, 0xc2, 0xb5, 0xa4, 0xe8, 0xe1, 0xc3, 0xe6, 0x4e, 0x7d,
+	0x71, 0xf4, 0xe7, 0xea, 0x39, 0x04, 0x37, 0x77, 0xac, 0x73, 0x08, 0x6e, 0xee, 0x93, 0x0f, 0x60,
+	0x5e, 0x7a, 0xae, 0xcc, 0xa1, 0xd5, 0xf2, 0x9b, 0x09, 0x29, 0x80, 0x49, 0xa0, 0x2c, 0xcd, 0x83,
+	0x83, 0x30, 0xa9, 0xf5, 0x0e, 0x2c, 0x67, 0x64, 0xaa, 0xda, 0x6b, 0x70, 0xc6, 0x0b, 0x0e, 0x42,
+	0x55, 0xe2, 0xff, 0x32, 0x1e, 0x11, 0xdb, 0xc6, 0x83, 0xb1, 0x10, 0x63, 0x3e, 0xd3, 0x61, 0x31,
+	0x23, 0x25, 0xeb, 0xa9, 0xad, 0xc8, 0xe6, 0xfc, 0xb4, 0x2d, 0xc6, 0x41, 0x04, 0xb9, 0x06, 0xcb,
+	0x03, 0x87, 0x71, 0xbb, 0x4f, 0x9d, 0x88, 0x77, 0xa9, 0xc3, 0xed, 0x80, 0x61, 0x11, 0x39, 0xab,
+	0x24, 0x14, 0xbb, 0x89, 0xbc, 0xc5, 0xc8, 0x75, 0x38, 0x2b, 0xda, 0x81, 0x56, 0x72, 0x6b, 0xfa,
+	0x7a, 0x71, 0xf3, 0xc2, 0xac, 0x94, 0xa8, 0x25, 0x31, 0x66, 0x0c, 0xf9, 0x34, 0xd6, 0xa9, 0x79,
+	0xbd, 0x01, 0xf9, 0x7e, 0xc8, 0xb8, 0x8d, 0xc5, 0x48, 0x6a, 0xb3, 0x8d, 0xb4, 0x1b, 0x32, 0x59,
+	0xcb, 0x42, 0x5f, 0xad, 0xcc, 0xf7, 0x61, 0x21, 0x91, 0x92, 0x2a, 0xa0, 0x3c, 0x70, 0x7c, 0x8a,
+	0x51, 0xf3, 0x56, 0xba, 0x37, 0xff, 0xd1, 0xe1, 0x3c, 0x86, 0xeb, 0x84, 0x8f, 0xd0, 0xd9, 0x57,
+	0x94, 0x31, 0xa7, 0x47, 0xc9, 0x7d, 0x28, 0x47, 0xb4, 0xe7, 0x31, 0x4e, 0x23, 0x3b, 0x92, 0xe7,
+	0xa3, 0x52, 0x5e, 0x9d, 0x68, 0x61, 0x09, 0x91, 0x6d, 0x25, 0x61, 0xbb, 0x9a, 0x55, 0x4a, 0x4c,
+	0x95, 0x88, 0x7c, 0x09, 0xc5, 0xc3, 0x98, 0x46, 0x47, 0x76, 0xa4, 0x8e, 0x55, 0x55, 0x71, 0x65,
+	0x9a, 0xbb, 0xaf, 0x05, 0x2a, 0x39, 0xfb, 0x5d, 0xcd, 0x5a, 0x3a, 0xcc, 0x0a, 0xc8, 0x2d, 0xc8,
+	0xa7, 0x27, 0x84, 0xf4, 0x4f, 0x9e, 0x2a, 0x9e, 0x52, 0x9d, 0x3a, 0x22, 0x87, 0x31, 0xb0, 0x7e,
+	0x16, 0x72, 0x3e, 0xeb, 0x61, 0xad, 0xb2, 0xc8, 0x4e, 0x88, 0xc1, 0x92, 0x5a, 0x9b, 0x50, 0x94,
+	0xc7, 0x92, 0x66, 0x27, 0x2b, 0x5d, 0x3b, 0xb9, 0xd2, 0x71, 0x82, 0x4e, 0x56, 0x40, 0xbe, 0x80,
+	0xa5, 0xa4, 0x50, 0xc9, 0x99, 0xac, 0xf3, 0x62, 0xc6, 0x93, 0x2a, 0x31, 0xe1, 0xaa, 0x70, 0x98,
+	0xd9, 0x93, 0x3b, 0x50, 0xc4, 0xbc, 0x6d, 0xec, 0x41, 0xc7, 0x7d, 0xac, 0xaa, 0xbc, 0x38, 0xab,
+	0xca, 0x2d, 0xf7, 0xb1, 0x70, 0xd0, 0xcf, 0xec, 0x93, 0x5a, 0x57, 0x21, 0x9f, 0xc2, 0x08, 0x81,
+	0x33, 0xdc, 0x53, 0x87, 0x9f, 0xb3, 0x70, 0x6d, 0x9a, 0x50, 0xc8, 0xfa, 0x99, 0x89, 0xf9, 0x51,
+	0x87, 0xf3, 0xb3, 0x4e, 0xf8, 0xd4, 0x7d, 0x7c, 0x13, 0x40, 0xd9, 0x8d, 0x1b, 0x79, 0xf6, 0x57,
+	0x99, 0x77, 0x92, 0xa5, 0xb9, 0x03, 0x17, 0x66, 0x92, 0x4f, 0xae, 0xc3, 0xbc, 0x1c, 0xcb, 0x2a,
+	0x07, 0xfc, 0x24, 0xa4, 0x64, 0xd8, 0xad, 0xa9, 0xc1, 0xa0, 0x20, 0xa6, 0x0b, 0x85, 0x2c, 0xf1,
+	0xa2, 0x04, 0x79, 0x50, 0x6f, 0x2f, 0x01, 0x6d, 0x44, 0x09, 0x08, 0x6e, 0xee, 0x93, 0x4b, 0x90,
+	0x97, 0x76, 0x8c, 0x47, 0x58, 0x41, 0xde, 0x92, 0x8e, 0xda, 0x3c, 0x12, 0xa4, 0x5a, 0xe1, 0xf7,
+	0x75, 0x87, 0xbb, 0xfd, 0x1d, 0x87, 0x3b, 0x82, 0xd4, 0x7d, 0x87, 0x3b, 0x18, 0xa0, 0x60, 0xe1,
+	0xda, 0xfc, 0x79, 0x0e, 0x16, 0x92, 0xc9, 0x2f, 0x00, 0x99, 0xcf, 0x12, 0xd7, 0xe4, 0x53, 0x38,
+	0xe7, 0x86, 0x83, 0xd8, 0xc7, 0x01, 0x24, 0x66, 0x9e, 0x31, 0xe3, 0xce, 0xa8, 0x6d, 0x23, 0x04,
+	0xb9, 0x4a, 0xe0, 0x64, 0x1d, 0xca, 0xdc, 0xe9, 0x0e, 0xa8, 0xcd, 0xbc, 0x63, 0x6a, 0x77, 0x8f,
+	0x38, 0x65, 0xd8, 0x3e, 0x39, 0xab, 0x88, 0xf2, 0xb6, 0x77, 0x4c, 0xeb, 0x42, 0x4a, 0x56, 0x61,
+	0x31, 0x88, 0x7d, 0x3b, 0xa2, 0x6e, 0x18, 0xed, 0xb3, 0xca, 0x19, 0x04, 0x41, 0x10, 0xfb, 0x96,
+	0x94, 0x54, 0x0f, 0x00, 0xc6, 0x11, 0xc8, 0x7b, 0x50, 0x90, 0x31, 0x6c, 0x91, 0x21, 0x53, 0xe9,
+	0x2e, 0x4a, 0x59, 0x4b, 0x88, 0xc8, 0xc7, 0x29, 0x04, 0xef, 0x42, 0xa4, 0xa6, 0xb8, 0x49, 0x44,
+	0xea, 0xf2, 0x72, 0x14, 0x84, 0x74, 0x8e, 0x86, 0x34, 0x31, 0x13, 0x6b, 0x66, 0xfa, 0x50, 0x42,
+	0x8a, 0x3b, 0x9e, 0xef, 0x05, 0xbd, 0xa6, 0x1a, 0xc5, 0xf4, 0x29, 0x75, 0x63, 0x51, 0xa6, 0x2d,
+	0xfa, 0xd0, 0x0e, 0x98, 0x6a, 0xcb, 0x52, 0xaa, 0xe8, 0x78, 0x3e, 0x6d, 0x31, 0x52, 0x83, 0x15,
+	0x37, 0xf4, 0x87, 0x9e, 0x24, 0x25, 0x45, 0xcb, 0xc1, 0xbd, 0x9c, 0x51, 0x49, 0xbc, 0x19, 0xc1,
+	0x0a, 0x86, 0x6b, 0x24, 0x7e, 0x44, 0x97, 0x30, 0xb2, 0x09, 0xf3, 0x1c, 0x13, 0x50, 0xad, 0x50,
+	0x9d, 0xfe, 0x5c, 0xc7, 0xe9, 0x59, 0x0a, 0x49, 0xae, 0x42, 0x09, 0x19, 0xb6, 0x87, 0x51, 0xe8,
+	0x52, 0xc6, 0xe8, 0xbe, 0x0a, 0x5b, 0x44, 0xf1, 0x83, 0x44, 0x6a, 0xfe, 0x32, 0x07, 0xe4, 0xcd,
+	0xd9, 0xf6, 0x4e, 0xdd, 0x3b, 0xd1, 0xad, 0x73, 0xef, 0xd0, 0xad, 0xb7, 0xe4, 0x55, 0xc5, 0xd4,
+	0x14, 0x31, 0xa6, 0xeb, 0x9a, 0xe4, 0x41, 0xde, 0x59, 0x8c, 0x7c, 0x0e, 0xa5, 0x30, 0xe6, 0xc3,
+	0x58, 0x0c, 0x44, 0x49, 0x1f, 0x76, 0xc8, 0x09, 0xaf, 0x97, 0xa2, 0xc4, 0xa6, 0x3d, 0x7d, 0x5d,
+	0x35, 0xfd, 0x59, 0x6c, 0xde, 0xec, 0xe0, 0xca, 0x7e, 0x1b, 0xea, 0x6b, 0xf8, 0x57, 0x87, 0x15,
+	0x39, 0x93, 0x27, 0xd9, 0xb9, 0x2f, 0x9e, 0x4e, 0x72, 0x9d, 0x3c, 0x9d, 0x6a, 0x19, 0x4f, 0x33,
+	0x4c, 0x6a, 0xc9, 0x22, 0x79, 0xe4, 0x8c, 0x1d, 0x54, 0x7f, 0xd2, 0xa1, 0x34, 0xa5, 0x3e, 0xf5,
+	0x0c, 0xfb, 0x0c, 0x16, 0xde, 0xe9, 0x12, 0xb3, 0x52, 0xf8, 0xb5, 0x63, 0x80, 0xf1, 0x03, 0x81,
+	0x5c, 0x84, 0x95, 0xad, 0xbb, 0x8d, 0x56, 0xc7, 0x6e, 0x77, 0xb6, 0x3a, 0x0d, 0xfb, 0x61, 0xeb,
+	0x5e, 0x6b, 0xef, 0x9b, 0x56, 0x59, 0x9b, 0x56, 0xec, 0x36, 0xb6, 0xee, 0x77, 0x76, 0xbf, 0x2d,
+	0xeb, 0xe4, 0x32, 0x54, 0x26, 0x2d, 0xac, 0x46, 0xfb, 0xc1, 0x5e, 0xab, 0xdd, 0x7c, 0xd4, 0x28,
+	0xcf, 0x4d, 0x6b, 0x77, 0x9a, 0xed, 0xed, 0xbd, 0x56, 0xab, 0xb1, 0xdd, 0x69, 0xec, 0x94, 0x73,
+	0x9b, 0xbf, 0xcd, 0xc1, 0x92, 0x64, 0xad, 0x2d, 0x5f, 0xd0, 0xa4, 0x03, 0x20, 0x96, 0x54, 0xd2,
+	0xb1, 0x3a, 0x5d, 0xc4, 0xd4, 0x83, 0xa0, 0xba, 0xfa, 0x06, 0xfd, 0x93, 0xb7, 0xa8, 0xa9, 0xad,
+	0xeb, 0x37, 0x74, 0x72, 0x0f, 0x0a, 0x77, 0x29, 0x1f, 0x3f, 0x79, 0x2e, 0xcd, 0x1c, 0xef, 0x72,
+	0x08, 0x57, 0x2f, 0xcf, 0x56, 0x4a, 0xba, 0x4c, 0x8d, 0x34, 0xa1, 0x20, 0x3b, 0x94, 0x22, 0xa5,
+	0xe4, 0xa4, 0x6b, 0xb4, 0x6a, 0xbc, 0xbd, 0x37, 0x4c, 0x8d, 0x6c, 0x03, 0xdc, 0xa5, 0x5c, 0x3e,
+	0x42, 0x19, 0xa9, 0xcc, 0x78, 0x29, 0x4b, 0x4f, 0xff, 0x3f, 0xf1, 0x0d, 0x6d, 0x6a, 0x75, 0xfa,
+	0xfc, 0xa5, 0xa1, 0xbd, 0x78, 0x69, 0x68, 0xaf, 0x5f, 0x1a, 0xfa, 0x0f, 0x23, 0x43, 0xff, 0x75,
+	0x64, 0xe8, 0xbf, 0x8f, 0x0c, 0xfd, 0xf9, 0xc8, 0xd0, 0xff, 0x1a, 0x19, 0xfa, 0xdf, 0x23, 0x43,
+	0x7b, 0x3d, 0x32, 0xf4, 0x67, 0xaf, 0x0c, 0xed, 0xf9, 0x2b, 0x43, 0x7b, 0xf1, 0xca, 0xd0, 0xbe,
+	0xdb, 0x18, 0x7a, 0x4f, 0x3d, 0x3a, 0x70, 0xba, 0xac, 0xe6, 0x78, 0xe3, 0xcd, 0xc6, 0xf4, 0x7f,
+	0x9b, 0xdb, 0xea, 0xbf, 0x4d, 0x77, 0x1e, 0xb7, 0x37, 0xff, 0x0b, 0x00, 0x00, 0xff, 0xff, 0xa9,
+	0xd8, 0x82, 0xc8, 0xfe, 0x0c, 0x00, 0x00,
 }

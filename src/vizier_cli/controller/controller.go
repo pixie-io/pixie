@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/olekukonko/tablewriter"
+	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc"
 	pb "pixielabs.ai/pixielabs/src/vizier/proto"
 )
@@ -94,11 +94,11 @@ func (c *Controller) PrintAgentInfo() error {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"AgentID", "Hostname"})
 	for _, agentInfo := range respPb.Info {
-		id, err := uuid.ParseBytes(agentInfo.AgentID.Data)
+		id, err := uuid.FromString(string(agentInfo.Info.AgentID.Data))
 		if err != nil {
 			return err
 		}
-		table.Append([]string{id.String(), agentInfo.HostInfo.Hostname})
+		table.Append([]string{id.String(), agentInfo.Info.HostInfo.Hostname})
 	}
 	table.Render()
 	return nil
