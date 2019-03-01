@@ -21,13 +21,13 @@ std::string Status::ToString() const {
   return pl::error::CodeToString(code()) + " : " + state_->msg;
 }
 
-pl::statuspb::Status Status::ToProto() {
+pl::statuspb::Status Status::ToProto() const {
   pl::statuspb::Status spb;
   ToProto(&spb);
   return spb;
 }
 
-void Status::ToProto(pl::statuspb::Status* status_pb) {
+void Status::ToProto(pl::statuspb::Status* status_pb) const {
   CHECK(status_pb != nullptr);
   if (state_ == nullptr) {
     status_pb->set_err_code(error::Code::OK);

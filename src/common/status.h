@@ -38,8 +38,8 @@ class PL_MUST_USE_RESULT Status {
 
   static Status OK() { return Status(); }
 
-  pl::statuspb::Status ToProto();
-  void ToProto(pl::statuspb::Status* status_pb);
+  pl::statuspb::Status ToProto() const;
+  void ToProto(pl::statuspb::Status* status_pb) const;
 
  private:
   struct State {
