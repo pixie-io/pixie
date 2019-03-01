@@ -146,5 +146,37 @@ TEST_F(CarnotTest, empty_query_test) {
   EXPECT_FALSE(s.ok());
 }
 
+TEST_F(CarnotTest, map_op_udf_add) {
+  auto add_query = absl::StrJoin({"queryDF = From(table='test_table', select=['col1', 'col2'])",
+                                  "mapOutput = queryDF.Map(fn=lambda r : {'sum' : r.col1 + "
+                                  "r.col2}).Result(name='test_output')"},
+                                 "\n");
+  EXPECT_OK(carnot_.ExecuteQuery(add_query));
+}
+
+TEST_F(CarnotTest, map_op_udf_mult) {
+  auto mult_query = absl::StrJoin({"queryDF = From(table='test_table', select=['col1', 'col2'])",
+                                   "mapOutput = queryDF.Map(fn=lambda r : {'mult' : r.col1 * "
+                                   "r.col2}).Result(name='test_output')"},
+                                  "\n");
+  EXPECT_OK(carnot_.ExecuteQuery(mult_query));
+}
+
+TEST_F(CarnotTest, map_op_udf_sub) {
+  auto sub_query = absl::StrJoin({"queryDF = From(table='test_table', select=['col1', 'col2'])",
+                                  "mapOutput = queryDF.Map(fn=lambda r : {'sub' : r.col1 - "
+                                  "r.col2}).Result(name='test_output')"},
+                                 "\n");
+  EXPECT_OK(carnot_.ExecuteQuery(sub_query));
+}
+
+TEST_F(CarnotTest, map_op_udf_div) {
+  auto div_query = absl::StrJoin({"queryDF = From(table='test_table', select=['col1', 'col2'])",
+                                  "mapOutput = queryDF.Map(fn=lambda r : {'div' : r.col1 / "
+                                  "r.col2}).Result(name='test_output')"},
+                                 "\n");
+  EXPECT_OK(carnot_.ExecuteQuery(div_query));
+}
+
 }  // namespace carnot
 }  // namespace pl

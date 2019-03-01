@@ -12,8 +12,9 @@ using pypa::walk_tree;
 
 #define PYPA_CAST(TYPE, VAL) static_cast<AstTypeByID<AstType::TYPE>::Type&>(VAL)
 
+// TODO(philkuz) (PL-399) Move this to somewhere better.
 const std::unordered_map<std::string, std::string> kOP_TO_UDF_MAP = {
-    {"*", "pl.mult"}, {"+", "pl.add"}, {"-", "pl.sub"}, {"/", "pl.div"}};
+    {"*", "pl.multiply"}, {"+", "pl.add"}, {"-", "pl.subtract"}, {"/", "pl.divide"}};
 
 /**
  * @brief Temporary error msg for debugging.

@@ -19,7 +19,7 @@ using testing::_;
 
 const char *kExpectedUDFInfo = R"(
 scalar_udfs {
-  name: "pl.div"
+  name: "pl.divide"
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64
   return_type: INT64

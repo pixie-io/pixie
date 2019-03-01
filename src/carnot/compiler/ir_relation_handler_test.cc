@@ -18,7 +18,7 @@ using testing::_;
 
 const char* kExpectedUDFInfo = R"(
 scalar_udfs {
-  name: "pl.div"
+  name: "pl.divide"
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64
   return_type:FLOAT64
@@ -30,13 +30,13 @@ scalar_udfs {
   return_type:  FLOAT64
 }
 scalar_udfs {
-  name: "pl.mult"
+  name: "pl.multiply"
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64
   return_type:  FLOAT64
 }
 scalar_udfs {
-  name: "pl.sub"
+  name: "pl.subtract"
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64
   return_type:  FLOAT64
@@ -213,7 +213,7 @@ TEST_F(RelationHandlerTest, single_col_map) {
 
   std::string single_col_div_map_query =
       absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
-                     "mapDF = queryDF.Map(fn=lambda r : {'sum' : pl.div(r.cpu0,r.cpu1)})",
+                     "mapDF = queryDF.Map(fn=lambda r : {'sum' : pl.divide(r.cpu0,r.cpu1)})",
                      "mapDF.Result(name='cpu_out')"},
                     "\n");
   ir_graph_status = CompileGraph(single_col_div_map_query);
