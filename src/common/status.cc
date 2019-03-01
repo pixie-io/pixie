@@ -23,13 +23,18 @@ std::string Status::ToString() const {
 
 pl::statuspb::Status Status::ToProto() {
   pl::statuspb::Status spb;
-  if (state_ == nullptr) {
-    spb.set_err_code(error::Code::OK);
-    return spb;
-  }
-  spb.set_msg(state_->msg);
-  spb.set_err_code(state_->code);
+  ToProto(&spb);
   return spb;
+}
+
+void Status::ToProto(pl::statuspb::Status* status_pb) {
+  CHECK(status_pb != nullptr);
+  if (state_ == nullptr) {
+    status_pb->set_err_code(error::Code::OK);
+    return;
+  }
+  status_pb->set_msg(state_->msg);
+  status_pb->set_err_code(state_->code);
 }
 
 }  // namespace pl

@@ -16,6 +16,8 @@ class PL_MUST_USE_RESULT Status {
   Status() {}
   Status(const Status& s) noexcept;
   Status(pl::error::Code code, const std::string& msg);
+  // NOLINTNEXTLINE to make it easier to return status.
+  Status(const pl::statuspb::Status& status_pb) : Status(status_pb.err_code(), status_pb.msg()) {}
 
   void operator=(const Status& s) noexcept;
 
@@ -37,6 +39,7 @@ class PL_MUST_USE_RESULT Status {
   static Status OK() { return Status(); }
 
   pl::statuspb::Status ToProto();
+  void ToProto(pl::statuspb::Status* status_pb);
 
  private:
   struct State {
@@ -88,7 +91,7 @@ inline Status StatusAdapter<Status>(const Status& s) noexcept {
 // Conversion of proto status message.
 template <>
 inline Status StatusAdapter<pl::statuspb::Status>(const pl::statuspb::Status& s) noexcept {
-  return Status(s.err_code(), s.msg());
+  return Status(s);
 };
 
 }  // namespace pl

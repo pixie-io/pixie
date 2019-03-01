@@ -60,6 +60,10 @@ TEST(Status, to_proto) {
   auto pb2 = s2.ToProto();
   EXPECT_EQ(pl::error::INVALID_ARGUMENT, pb2.err_code());
   EXPECT_EQ("error 2", pb2.msg());
+
+  pl::statuspb::Status status_proto;
+  s2.ToProto(&status_proto);
+  EXPECT_EQ(s2, Status(status_proto));
 }
 
 TEST(StatusAdapter, from_proto) {
