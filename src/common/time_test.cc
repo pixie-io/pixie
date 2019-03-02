@@ -15,4 +15,10 @@ TEST(StringToTime, basic) {
 
 TEST(StringToTime, invalid_format) { EXPECT_FALSE(StringToTimeInt("hello").ok()); }
 
+TEST(PrettyDuration, strings) {
+  EXPECT_EQ("1.23 \u03BCs", PrettyDuration(1230));
+  EXPECT_EQ("14.56 ms", PrettyDuration(14561230));
+  EXPECT_EQ("14.56 s", PrettyDuration(14561230000));
+}
+
 }  // namespace pl
