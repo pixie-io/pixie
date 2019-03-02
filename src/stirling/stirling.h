@@ -194,8 +194,11 @@ class Stirling : public NotCopyable {
    */
   std::unique_ptr<SourceRegistry> registry_;
 
-  // Defining a constant for data collector wrapper testing.
+  // Default sampling period.
   const std::chrono::milliseconds kDefaultSamplingPeriod{100};
+
+  // Default push period.
+  const std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   /**
    * Function to call to push data to the agent.

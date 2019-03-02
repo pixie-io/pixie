@@ -78,6 +78,7 @@ Status Stirling::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
     auto data_table = std::make_unique<ColumnWrapperDataTable>(mgr->Schema());
     mgr->SetDataTable(data_table.get());
     mgr->SetSamplingPeriod(kDefaultSamplingPeriod);
+    mgr->SetPushPeriod(kDefaultPushPeriod);
     tables_.push_back(std::move(data_table));
   }
 
@@ -125,9 +126,9 @@ void Stirling::Run() {
 
 // Helper function: Figure out when to wake up next.
 void Stirling::SleepUntilNextTick() {
-  // FIXME(oazizi): This is bogus.
+  // TODO(oazizi): This is bogus. Add this to avoid spinning and burning CPU cycles unnecessarily.
   // The amount to sleep depends on when the earliest Source needs to be sampled again.
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  // std::this_thread::sleep_for(wakeup_time - now);
 }
 
 }  // namespace stirling

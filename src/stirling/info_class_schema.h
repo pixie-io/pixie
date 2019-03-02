@@ -152,6 +152,13 @@ class InfoClassManager {
   void SetSamplingPeriod(std::chrono::milliseconds period) { sampling_period_ = period; }
 
   /**
+   * @brief Configure sampling period.
+   *
+   * @param period Sampling period in ms.
+   */
+  void SetPushPeriod(std::chrono::milliseconds period) { push_period_ = period; }
+
+  /**
    * @brief Returns true if sampling is required, for whatever reason (elapsed time, etc.).
    *
    * @return bool
@@ -246,12 +253,12 @@ class InfoClassManager {
   /**
    * Data push threshold, based number of records after which a push.
    */
-  uint32_t occupancy_threshold_;
+  uint32_t occupancy_threshold_ = kDefaultOccupancyThreshold;
 
   /**
    * Data push threshold, based on percentage of buffer that is filled.
    */
-  uint32_t occupancy_pct_threshold_;
+  uint32_t occupancy_pct_threshold_ = kDefaultOccupancyPctThreshold;
 
   /**
    * Statistics: count number of pushes.
@@ -278,6 +285,9 @@ class InfoClassManager {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch());
   }
+
+  static constexpr uint32_t kDefaultOccupancyThreshold = 1024;
+  static constexpr uint32_t kDefaultOccupancyPctThreshold = 100;
 };
 
 }  // namespace stirling

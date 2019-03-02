@@ -21,7 +21,13 @@ stirlingpb::Element InfoClassElement::ToProto() const {
   return element_proto;
 }
 
-bool InfoClassManager::SamplingRequired() const { return (CurrentTime() > NextSamplingTime()); }
+bool InfoClassManager::SamplingRequired() const {
+  if (CurrentTime() > NextSamplingTime()) {
+    return true;
+  }
+
+  return false;
+}
 
 bool InfoClassManager::PushRequired() const {
   if (CurrentTime() > NextPushTime()) {
@@ -64,6 +70,10 @@ Status InfoClassManager::PushData(PushDataCallback agent_callback) {
       agent_callback(id(), std::move(record_batch));
     }
   }
+
+  // Update the last pushed time.
+  last_pushed_ = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::system_clock::now().time_since_epoch());
 
   push_count_++;
 
