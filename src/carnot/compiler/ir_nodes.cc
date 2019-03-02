@@ -240,7 +240,8 @@ Status MapIR::ToProto(carnotpb::Operator* op) const {
 }
 
 Status AggIR::Init(IRNode* parent_node, IRNode* by_func, IRNode* agg_func) {
-  if (by_func->type() != IRNodeType::LambdaType) {
+  // TODO(philkuz) remove this upon unhacking.
+  if (by_func->type() != IRNodeType::LambdaType && by_func->type() != IRNodeType::BoolType) {
     return IRUtils::CreateIRNodeError(
         absl::StrFormat("Expected 'by' argument of AggIR to be 'Lambda', got '%s'",
                         by_func->type_string()),
@@ -251,6 +252,11 @@ Status AggIR::Init(IRNode* parent_node, IRNode* by_func, IRNode* agg_func) {
         absl::StrFormat("Expected 'agg' argument of AggIR to be 'Lambda', got '%s'",
                         agg_func->type_string()),
         *agg_func);
+  }
+
+  // TODO(philkuz) (PL-402) remove this upon unhacking.
+  if (by_func->type() == IRNodeType::BoolType) {
+    LOG(WARNING) << "WARNING: you are currently using a hack to allow bool type for by_func";
   }
 
   by_func_ = by_func;
@@ -331,12 +337,16 @@ Status AggIR::ToProto(carnotpb::Operator* op) const {
     PL_RETURN_IF_ERROR(EvaluateAggregateExpression(expr, *kv.second));
     pb->add_value_names(kv.first);
   }
-
-  for (const auto& group : groups_) {
-    auto group_pb = pb->add_groups();
-    group_pb->set_node(parent()->id());
-    group_pb->set_index(group->col_idx());
-    pb->add_group_names(group->col_name());
+  // TODO(philkuz) (PL-402) remove this upon unhacking.
+  if (by_func_->type() == BoolType) {
+    LOG(WARNING) << "WARNING: you are currently using a hack to allow bool type for by_func";
+  } else {
+    for (const auto& group : groups_) {
+      auto group_pb = pb->add_groups();
+      group_pb->set_node(parent()->id());
+      group_pb->set_index(group->col_idx());
+      pb->add_group_names(group->col_name());
+    }
   }
 
   op->set_op_type(carnotpb::BLOCKING_AGGREGATE_OPERATOR);

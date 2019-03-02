@@ -24,6 +24,11 @@ scalar_udfs {
   exec_arg_types: FLOAT64
   return_type: INT64
 }
+udas {
+  name: "pl.mean"
+  update_arg_types: FLOAT64
+  finalize_type:  FLOAT64
+}
 )";
 TEST(CompilerTest, basic) {
   auto info = std::make_shared<RegistryInfo>();
@@ -233,6 +238,93 @@ TEST(CompilerTest, select_order_test) {
   VLOG(1) << plan.ValueOrDie().DebugString();
   EXPECT_TRUE(
       google::protobuf::util::MessageDifferencer::Equals(plan_pb, plan.ConsumeValueOrDie()));
+}
+
+const char *kGroupByAllPlan = R"(
+dag {
+  nodes { id: 1 }
+}
+nodes {
+  id: 1
+  dag {
+    nodes { id: 2 sorted_deps: 0 }
+    nodes { id: 8 sorted_deps: 7 }
+    nodes { id: 7 }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 1
+        column_idxs: 0
+        column_names: "cpu1"
+        column_names: "cpu0"
+        column_types: FLOAT64
+        column_types: FLOAT64
+      }
+    }
+  }
+  nodes {
+    id: 8
+    op {
+      op_type: BLOCKING_AGGREGATE_OPERATOR
+      blocking_agg_op {
+        values {
+          name: "pl.mean"
+          args {
+            column {
+              index: 1
+            }
+          }
+        }
+        value_names: "mean"
+      }
+    }
+  }
+  nodes {
+    id: 7
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "cpu_out"
+        column_types: FLOAT64
+        column_names: "mean"
+      }
+    }
+  }
+}
+)";
+TEST(CompilerTest, group_by_all) {
+  auto info = std::make_shared<RegistryInfo>();
+  carnotpb::UDFInfo info_pb;
+  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
+  EXPECT_OK(info->Init(info_pb));
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu1', 'cpu0']).Range(time='-2m')",
+          "aggDF = queryDF.Agg(by=None, fn=lambda r : {'mean' : "
+          "pl.mean(r.cpu0)}).Result(name='cpu_out')",
+      },
+      "\n");
+  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
+  rel_map->emplace("cpu", plan::Relation(std::vector<types::DataType>(
+                                             {types::DataType::FLOAT64, types::DataType::FLOAT64}),
+                                         std::vector<std::string>({"cpu0", "cpu1"})));
+  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
+  auto compiler = Compiler();
+  auto plan_status = compiler.Compile(query, compiler_state.get());
+  VLOG(1) << plan_status.ToString();
+  // EXPECT_OK(plan_status);
+  ASSERT_TRUE(plan_status.ok());
+  auto logical_plan = plan_status.ConsumeValueOrDie();
+  VLOG(1) << logical_plan.DebugString();
+  carnotpb::Plan expected_logical_plan;
+  ASSERT_TRUE(
+      google::protobuf::TextFormat::MergeFromString(kGroupByAllPlan, &expected_logical_plan));
+  EXPECT_TRUE(
+      google::protobuf::util::MessageDifferencer::Equals(expected_logical_plan, logical_plan));
 }
 }  // namespace compiler
 }  // namespace carnot

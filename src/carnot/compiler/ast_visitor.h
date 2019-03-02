@@ -371,6 +371,16 @@ class ASTWalker {
   StatusOr<IRNode*> ProcessLambda(const pypa::AstLambdaPtr& ast);
 
   /**
+   * @brief Special handler for data that comes up as Name, just for group by alls.
+   *
+   * TODO(philkuz) unhack this and allow for optional kwargs in the ProcessArgs function.
+   *
+   * @param ast
+   * @return StatusOr<IRNode*>
+   */
+  StatusOr<IRNode*> ProcessNameData(const pypa::AstNamePtr& ast);
+
+  /**
    * @brief Create an error that incorporates line, column of ast node into the error message.
    *
    * @param err_msg

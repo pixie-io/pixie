@@ -483,6 +483,17 @@ StatusOr<IRNode*> ASTWalker::ProcessLambda(const pypa::AstLambdaPtr& ast) {
   }
 }
 
+// TODO(philkuz) (PL-402) remove this and allow for optional kwargs in the ProcessArgs function.
+StatusOr<IRNode*> ASTWalker::ProcessNameData(const pypa::AstNamePtr& ast) {
+  auto name_str = ast->id;
+  if (name_str != "None") {
+    return CreateAstError(absl::StrFormat("Couldn't process '%s'.", name_str), ast);
+  }
+  PL_ASSIGN_OR_RETURN(auto node, ir_graph_->MakeNode<BoolIR>());
+  PL_RETURN_IF_ERROR(node->Init(true));
+  return node;
+}
+
 StatusOr<IRNode*> ASTWalker::ProcessData(const pypa::AstPtr& ast) {
   IRNode* ir_node;
   switch (ast->type) {
@@ -496,6 +507,11 @@ StatusOr<IRNode*> ASTWalker::ProcessData(const pypa::AstPtr& ast) {
     }
     case AstType::Lambda: {
       PL_ASSIGN_OR_RETURN(ir_node, ProcessLambda(PYPA_PTR_CAST(Lambda, ast)));
+      break;
+    }
+    // TODO(philkuz) (PL-402) hack to make group all work.
+    case AstType::Name: {
+      PL_ASSIGN_OR_RETURN(ir_node, ProcessNameData(PYPA_PTR_CAST(Name, ast)));
       break;
     }
     default: {

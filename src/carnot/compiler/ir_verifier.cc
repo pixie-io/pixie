@@ -89,20 +89,23 @@ Status IRVerifier::VerifySink(IRNode* node) {
 Status IRVerifier::VerifyAgg(IRNode* node) {
   auto agg_node = static_cast<AggIR*>(node);
   PL_RETURN_IF_ERROR(
-      ExpectType(LambdaType, agg_node->by_func(), ExpString("AggIR", node->id(), "by_func")));
-  PL_RETURN_IF_ERROR(
       ExpectType(LambdaType, agg_node->agg_func(), ExpString("AggIR", node->id(), "agg_func")));
   PL_RETURN_IF_ERROR(ExpectOp(agg_node->parent(), ExpString("AggIR", node->id(), "parent")));
+  // TODO(philkuz) (PL-402) unhack this
+  if (agg_node->by_func()->type() != IRNodeType::BoolType) {
+    PL_RETURN_IF_ERROR(
+        ExpectType(LambdaType, agg_node->by_func(), ExpString("AggIR", node->id(), "by_func")));
+    // Check whether the `by` function is just a column
+    auto by_func = static_cast<LambdaIR*>(agg_node->by_func());
+    if (by_func->HasDictBody()) {
+      return FormatErrorMsg("Expected by function to only have a column.", by_func);
+    }
+    PL_ASSIGN_OR_RETURN(IRNode * by_body, by_func->GetDefaultExpr());
 
-  // Check whether the `by` function is just a column
-  auto by_func = static_cast<LambdaIR*>(agg_node->by_func());
-  if (by_func->HasDictBody()) {
-    return FormatErrorMsg("Expected by function to only have a column.", by_func);
+    PL_RETURN_IF_ERROR(ExpectType(ColumnType, by_body, "AggIR 'by_func' body"));
+  } else {
+    LOG(WARNING) << "WARNING: you are currently using a hack to allow bool type for by_func";
   }
-  PL_ASSIGN_OR_RETURN(IRNode * by_body, by_func->GetDefaultExpr());
-
-  PL_RETURN_IF_ERROR(ExpectType(ColumnType, by_body, "AggIR 'by_func' body"));
-
   // Check whether the `agg` fn is a dict body
   auto agg_func = static_cast<LambdaIR*>(agg_node->agg_func());
   if (!agg_func->HasDictBody()) {

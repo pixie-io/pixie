@@ -129,30 +129,42 @@ StatusOr<plan::Relation> IRRelationHandler::AggHandler(OperatorIR* node,
                                                        plan::Relation parent_rel) {
   DCHECK_EQ(node->type(), IRNodeType::AggType);
   auto agg_node = static_cast<AggIR*>(node);
-  DCHECK_EQ(agg_node->by_func()->type(), IRNodeType::LambdaType);
-  LambdaIR* by_func = static_cast<LambdaIR*>(agg_node->by_func());
+  auto by_func_ir_node = agg_node->by_func();
+  if (by_func_ir_node->type() != IRNodeType::LambdaType &&
+      by_func_ir_node->type() != IRNodeType::BoolType) {
+    return IRUtils::CreateIRNodeError(
+        absl::StrFormat("Expected a 'LambdaType' for the by by function, got '%s",
+                        by_func_ir_node->type_string()),
+        *node);
+  }
   DCHECK_EQ(agg_node->agg_func()->type(), IRNodeType::LambdaType);
   LambdaIR* agg_func = static_cast<LambdaIR*>(agg_node->agg_func());
 
   // Make sure that the expected columns exist in the parent_relation.
-  auto by_expected = by_func->expected_column_names();
   auto agg_expected = agg_func->expected_column_names();
-  PL_RETURN_IF_ERROR(HasExpectedColumns(by_expected, parent_rel));
   PL_RETURN_IF_ERROR(HasExpectedColumns(agg_expected, parent_rel));
 
-  // Get the column to group by.
-  PL_ASSIGN_OR_RETURN(IRNode * expr, by_func->GetDefaultExpr());
-  // Only allow one columns type.
-  if (expr->type() != IRNodeType::ColumnType) {
-    return IRUtils::CreateIRNodeError(
-        absl::StrFormat("Expected a 'ColumnType' for the by function body, got '%s",
-                        expr->type_string()),
-        *node);
+  // TODO(philkuz) (PL-402) fix this hack.
+  if (by_func_ir_node->type() == IRNodeType::BoolType) {
+    agg_node->SetGroups({});
+  } else {
+    LambdaIR* by_func = static_cast<LambdaIR*>(agg_node->by_func());
+    auto by_expected = by_func->expected_column_names();
+    PL_RETURN_IF_ERROR(HasExpectedColumns(by_expected, parent_rel));
+    // Get the column to group by.
+    PL_ASSIGN_OR_RETURN(IRNode * expr, by_func->GetDefaultExpr());
+    // Only allow one columns type.
+    if (expr->type() != IRNodeType::ColumnType) {
+      return IRUtils::CreateIRNodeError(
+          absl::StrFormat("Expected a 'ColumnType' for the by function body, got '%s",
+                          expr->type_string()),
+          *node);
+    }
+    ColumnIR* col_expr = static_cast<ColumnIR*>(expr);
+    // Make sure that the column is setup.
+    PL_RETURN_IF_ERROR(EvaluateColExpr(col_expr, parent_rel));
+    agg_node->SetGroups({col_expr});
   }
-  ColumnIR* col_expr = static_cast<ColumnIR*>(expr);
-  // Make sure that the column is setup.
-  PL_RETURN_IF_ERROR(EvaluateColExpr(col_expr, parent_rel));
-  agg_node->SetGroups({col_expr});
 
   // Make a new relation with each of the expression key, type pairs.
   ColExprMap col_expr_map = agg_func->col_expr_map();
