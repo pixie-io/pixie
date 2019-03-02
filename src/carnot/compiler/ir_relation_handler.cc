@@ -167,15 +167,15 @@ StatusOr<plan::Relation> IRRelationHandler::AggHandler(OperatorIR* node,
   }
 
   // Make a new relation with each of the expression key, type pairs.
-  ColExprMap col_expr_map = agg_func->col_expr_map();
+  ColExpressionVector col_exprs = agg_func->col_exprs();
   plan::Relation agg_rel;
-  for (auto& entry : col_expr_map) {
-    std::string col_name = entry.first;
+  for (auto& entry : col_exprs) {
+    std::string col_name = entry.name;
     PL_ASSIGN_OR_RETURN(types::DataType col_type,
-                        EvaluateExpression(entry.second, parent_rel, false));
+                        EvaluateExpression(entry.node, parent_rel, false));
     agg_rel.AddColumn(col_type, col_name);
   }
-  agg_node->SetAggValMap(col_expr_map);
+  agg_node->SetAggValMap(col_exprs);
 
   PL_RETURN_IF_ERROR(agg_node->SetRelation(agg_rel));
   return agg_rel;
@@ -192,14 +192,13 @@ StatusOr<plan::Relation> IRRelationHandler::MapHandler(OperatorIR* node,
   auto lambda_expected = lambda_func->expected_column_names();
   PL_RETURN_IF_ERROR(HasExpectedColumns(lambda_expected, parent_rel));
   // Make a new relation with each of the expression key, type pairs.
-  ColExprMap col_expr_map = lambda_func->col_expr_map();
-  for (auto& entry : col_expr_map) {
-    std::string col_name = entry.first;
-    PL_ASSIGN_OR_RETURN(types::DataType col_type,
-                        EvaluateExpression(entry.second, parent_rel, true));
+  ColExpressionVector col_exprs = lambda_func->col_exprs();
+  for (auto& entry : col_exprs) {
+    std::string col_name = entry.name;
+    PL_ASSIGN_OR_RETURN(types::DataType col_type, EvaluateExpression(entry.node, parent_rel, true));
     parent_rel.AddColumn(col_type, col_name);
   }
-  map_node->SetColExprMap(col_expr_map);
+  map_node->SetColExprs(col_exprs);
 
   PL_RETURN_IF_ERROR(map_node->SetRelation(parent_rel));
   return parent_rel;

@@ -228,10 +228,10 @@ Status MapIR::EvaluateExpression(carnotpb::ScalarExpression* expr, const IRNode&
 Status MapIR::ToProto(carnotpb::Operator* op) const {
   auto pb = new carnotpb::MapOperator();
 
-  for (const auto& kv : col_expr_map_) {
+  for (const auto& col_expr : col_exprs_) {
     auto expr = pb->add_expressions();
-    PL_RETURN_IF_ERROR(EvaluateExpression(expr, *kv.second));
-    pb->add_column_names(kv.first);
+    PL_RETURN_IF_ERROR(EvaluateExpression(expr, *col_expr.node));
+    pb->add_column_names(col_expr.name);
   }
 
   op->set_op_type(carnotpb::MAP_OPERATOR);
@@ -332,10 +332,10 @@ Status AggIR::EvaluateAggregateExpression(carnotpb::AggregateExpression* expr,
 Status AggIR::ToProto(carnotpb::Operator* op) const {
   auto pb = new carnotpb::BlockingAggregateOperator();
 
-  for (const auto& kv : agg_val_map_) {
+  for (const auto& agg_expr : agg_val_vector_) {
     auto expr = pb->add_values();
-    PL_RETURN_IF_ERROR(EvaluateAggregateExpression(expr, *kv.second));
-    pb->add_value_names(kv.first);
+    PL_RETURN_IF_ERROR(EvaluateAggregateExpression(expr, *agg_expr.node));
+    pb->add_value_names(agg_expr.name);
   }
   // TODO(philkuz) (PL-402) remove this upon unhacking.
   if (by_func_->type() == BoolType) {
@@ -393,16 +393,16 @@ bool LambdaIR::HasLogicalRepr() const { return false; }
 bool LambdaIR::HasDictBody() const { return has_dict_body_; }
 
 Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names,
-                      ColExprMap col_expr_map) {
+                      ColExpressionVector col_exprs) {
   expected_column_names_ = expected_column_names;
-  col_expr_map_ = col_expr_map;
+  col_exprs_ = col_exprs;
   has_dict_body_ = true;
   return Status::OK();
 }
 
 Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names, IRNode* node) {
   expected_column_names_ = expected_column_names;
-  col_expr_map_[default_key] = node;
+  col_exprs_.push_back(ColumnExpression{"default_key", node});
   has_dict_body_ = false;
   return Status::OK();
 }
@@ -412,15 +412,21 @@ StatusOr<IRNode*> LambdaIR::GetDefaultExpr() {
     return error::InvalidArgument(
         "Couldn't return the default expression, Lambda initialized as dict.");
   }
-  return col_expr_map_[default_key];
+  for (const auto& col_expr : col_exprs_) {
+    if (col_expr.name == "default_key") {
+      return col_expr.node;
+    }
+  }
+  return error::InvalidArgument(
+      "Couldn't return the default expression, no default expression in column expression vector.");
 }
 
 std::string LambdaIR::DebugString(int64_t depth) const {
   std::map<std::string, std::string> childMap;
   childMap["ExpectedRelation"] =
       absl::StrFormat("[%s]", absl::StrJoin(expected_column_names_, ","));
-  for (auto const& x : col_expr_map_) {
-    childMap[absl::StrFormat("ExprMap[\"%s\"]", x.first)] = x.second->DebugString(depth + 1);
+  for (auto const& x : col_exprs_) {
+    childMap[absl::StrFormat("ExprMap[\"%s\"]", x.name)] = x.node->DebugString(depth + 1);
   }
   return DebugStringFmt(depth, absl::StrFormat("%d:LambdaIR", id()), childMap);
 }

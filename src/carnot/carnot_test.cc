@@ -178,5 +178,47 @@ TEST_F(CarnotTest, map_op_udf_div) {
   EXPECT_OK(carnot_.ExecuteQuery(div_query));
 }
 
+TEST_F(CarnotTest, order_test) {
+  auto table = CarnotTestUtils::BigTestTable();
+
+  auto table_store = carnot_.table_store();
+  table_store->AddTable("big_test_table", table);
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='big_test_table', select=['time_', 'col2', 'col3']).Map(fn=lambda "
+          "r : {'res' : "
+          "pl.add(r.col3,r.col2), 'a': 1, 'b': 2}).Result(name='test_output')",
+      },
+      "\n");
+  auto s = carnot_.ExecuteQuery(query);
+  ASSERT_TRUE(s.ok());
+
+  auto output_table = table_store->GetTable("test_output");
+  EXPECT_EQ(3, output_table->NumBatches());
+  EXPECT_EQ(3, output_table->NumColumns());
+
+  std::vector<udf::Float64Value> col1_out1 = {6.5, 3.2, 17.3};
+  std::vector<udf::Float64Value> col1_out2 = {5.1, 65.1};
+  std::vector<udf::Float64Value> col1_out3 = {61.2, 12.1, 20.3};
+  std::vector<udf::Int64Value> col2_out1 = {1, 1, 1};
+  std::vector<udf::Int64Value> col3_out1 = {2, 2, 2};
+
+  auto rb1 =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(col1_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(udf::ToArrow(col2_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(udf::ToArrow(col3_out1, arrow::default_memory_pool())));
+
+  auto rb2 = output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
+                 .ConsumeValueOrDie();
+  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(udf::ToArrow(col1_out2, arrow::default_memory_pool())));
+
+  auto rb3 = output_table->GetRowBatch(2, std::vector<int64_t>({0}), arrow::default_memory_pool())
+                 .ConsumeValueOrDie();
+  EXPECT_TRUE(rb3->ColumnAt(0)->Equals(udf::ToArrow(col1_out3, arrow::default_memory_pool())));
+}
+
 }  // namespace carnot
 }  // namespace pl

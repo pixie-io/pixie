@@ -79,7 +79,7 @@ struct LambdaExprReturn {
 
 struct LambdaBodyReturn {
   Status AddExpr(const std::string& name, IRNode* expr) {
-    col_expr_map_[name] = expr;
+    col_exprs_.push_back(ColumnExpression{name, expr});
     return Status::OK();
   }
   Status AddColumns(const std::unordered_set<std::string>& new_columns_) {
@@ -92,7 +92,7 @@ struct LambdaBodyReturn {
     return Status::OK();
   }
   std::unordered_set<std::string> input_relation_columns_;
-  ColExprMap col_expr_map_;
+  ColExpressionVector col_exprs_;
 };
 
 class ASTWalker {

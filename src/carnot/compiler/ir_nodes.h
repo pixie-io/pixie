@@ -21,7 +21,11 @@ namespace compiler {
 class IR;
 class IRNode;
 using IRNodePtr = std::unique_ptr<IRNode>;
-using ColExprMap = std::unordered_map<std::string, IRNode*>;
+struct ColumnExpression {
+  std::string name;
+  IRNode* node;
+};
+using ColExpressionVector = std::vector<ColumnExpression>;
 
 enum IRNodeType {
   MemorySourceType,
@@ -267,7 +271,7 @@ class LambdaIR : public IRNode {
  public:
   LambdaIR() = delete;
   explicit LambdaIR(int64_t id) : IRNode(id, LambdaType, false) {}
-  Status Init(std::unordered_set<std::string> column_names, ColExprMap expr_map);
+  Status Init(std::unordered_set<std::string> column_names, ColExpressionVector col_exprs);
   /**
    * @brief Init for the Lambda called elsewhere. Uses a default value for the key to the expression
    * map.
@@ -285,12 +289,12 @@ class LambdaIR : public IRNode {
   std::string DebugString(int64_t depth) const override;
   bool IsOp() const override { return false; }
   std::unordered_set<std::string> expected_column_names() const { return expected_column_names_; }
-  ColExprMap col_expr_map() const { return col_expr_map_; }
+  ColExpressionVector col_exprs() const { return col_exprs_; }
 
  private:
   static constexpr const char* default_key = "_default";
   std::unordered_set<std::string> expected_column_names_;
-  ColExprMap col_expr_map_;
+  ColExpressionVector col_exprs_;
   bool has_dict_body_;
 };
 
@@ -451,19 +455,19 @@ class MapIR : public OperatorIR {
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   IRNode* lambda_func() const { return lambda_func_; }
-  void SetColExprMap(ColExprMap col_expr_map) {
-    col_expr_map_ = col_expr_map;
-    col_expr_map_set_ = true;
+  void SetColExprs(ColExpressionVector col_exprs) {
+    col_exprs_ = col_exprs;
+    col_exprs_set_ = true;
   }
-  bool col_expr_map_set() const { return col_expr_map_set_; }
+  bool col_exprs_set() const { return col_exprs_set_; }
   Status ToProto(carnotpb::Operator*) const override;
   Status EvaluateExpression(carnotpb::ScalarExpression* expr, const IRNode& ir_node) const;
 
  private:
   IRNode* lambda_func_;
   // The map from new column_names to expressions.
-  ColExprMap col_expr_map_;
-  bool col_expr_map_set_ = false;
+  ColExpressionVector col_exprs_;
+  bool col_exprs_set_ = false;
 };
 
 /**
@@ -486,11 +490,11 @@ class AggIR : public OperatorIR {
     groups_set_ = true;
   }
   bool groups_set() const { return groups_set_; }
-  void SetAggValMap(ColExprMap agg_val_map) {
-    agg_val_map_ = agg_val_map;
-    agg_val_map_set_ = true;
+  void SetAggValMap(ColExpressionVector agg_val_vec) {
+    agg_val_vector_ = agg_val_vec;
+    agg_val_vector_set_ = true;
   }
-  bool agg_val_map_set() const { return agg_val_map_set_; }
+  bool agg_val_vector_set() const { return agg_val_vector_set_; }
   Status ToProto(carnotpb::Operator*) const override;
   Status EvaluateAggregateExpression(carnotpb::AggregateExpression* expr,
                                      const IRNode& ir_node) const;
@@ -502,8 +506,8 @@ class AggIR : public OperatorIR {
   std::vector<ColumnIR*> groups_;
   bool groups_set_ = false;
   // The map from value_names to values
-  ColExprMap agg_val_map_;
-  bool agg_val_map_set_ = false;
+  ColExpressionVector agg_val_vector_;
+  bool agg_val_vector_set_ = false;
 };
 
 /**

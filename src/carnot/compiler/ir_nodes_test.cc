@@ -202,8 +202,8 @@ TEST(ToProto, map_ir) {
   EXPECT_OK(func->Init("add", std::vector<IRNode*>({constant, col})));
   EXPECT_OK(map->Init(mem_src, func));
   auto expr_map = std::unordered_map<std::string, IRNode*>();
-  expr_map.emplace("col_name", func);
-  map->SetColExprMap(expr_map);
+  auto exprs = std::vector<ColumnExpression>({ColumnExpression({"col_name", func})});
+  map->SetColExprs(exprs);
 
   carnotpb::Operator pb;
   EXPECT_OK(map->ToProto(&pb));
@@ -261,7 +261,9 @@ TEST(ToProto, agg_ir) {
   EXPECT_OK(by_func_lambda->Init({"group1"}, group1));
 
   ASSERT_TRUE(agg->Init(mem_src, by_func_lambda, agg_func_lambda).ok());
-  agg->SetAggValMap({{"value1", agg_func}});
+  ColExpressionVector exprs;
+  exprs.push_back(ColumnExpression({"value1", agg_func}));
+  agg->SetAggValMap(exprs);
   agg->SetGroups(std::vector<ColumnIR*>({group1}));
 
   carnotpb::Operator pb;

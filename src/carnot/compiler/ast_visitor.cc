@@ -471,7 +471,7 @@ StatusOr<IRNode*> ASTWalker::ProcessLambda(const pypa::AstLambdaPtr& ast) {
       PL_ASSIGN_OR_RETURN(return_struct,
                           ProcessLambdaDict(arg_name, PYPA_PTR_CAST(Dict, ast->body)));
       PL_RETURN_IF_ERROR(
-          ir_node->Init(return_struct.input_relation_columns_, return_struct.col_expr_map_));
+          ir_node->Init(return_struct.input_relation_columns_, return_struct.col_exprs_));
       return ir_node;
     }
 
