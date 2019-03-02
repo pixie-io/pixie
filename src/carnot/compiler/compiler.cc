@@ -102,7 +102,7 @@ StatusOr<carnotpb::Plan> Compiler::IRToLogicalPlan(const IR& ir) {
   PL_RETURN_IF_ERROR(s);
   return plan;
 }
-
+// TODO(philkuz) actually add this to compile.
 Status Compiler::OptimizeIR(IR* ir) {
   // Collapse Range into From.
   PL_RETURN_IF_ERROR(CollapseRange(ir));

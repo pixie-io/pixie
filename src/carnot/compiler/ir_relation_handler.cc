@@ -289,17 +289,18 @@ Status IRRelationHandler::SetSourceRelation(IRNode* node) {
 }
 
 StatusOr<std::vector<ColumnIR*>> IRRelationHandler::GetColumnsFromRelation(
-    IRNode* node, std::vector<std::string> cols, const plan::Relation& relation) {
+    IRNode* node, std::vector<std::string> col_names, const plan::Relation& relation) {
   auto graph = node->graph_ptr();
   auto result = std::vector<ColumnIR*>();
-  for (size_t i = 0; i < relation.NumColumns(); i++) {
-    if (std::find(cols.begin(), cols.end(), relation.GetColumnName(i)) != cols.end()) {
-      PL_ASSIGN_OR_RETURN(auto col_node, graph->MakeNode<ColumnIR>());
-      PL_RETURN_IF_ERROR(col_node->Init(relation.GetColumnName(i)));
-      col_node->SetColumnIdx(i);
-      col_node->SetColumnType(relation.GetColumnType(i));
-      result.push_back(col_node);
-    }
+  // iterates through the columns, finds their relation position,
+  // then create columns with index and type.
+  for (const auto& col_name : col_names) {
+    int64_t i = relation.GetColumnIndex(col_name);
+    PL_ASSIGN_OR_RETURN(auto col_node, graph->MakeNode<ColumnIR>());
+    PL_RETURN_IF_ERROR(col_node->Init(col_name));
+    col_node->SetColumnIdx(i);
+    col_node->SetColumnType(relation.GetColumnType(i));
+    result.push_back(col_node);
   }
   return result;
 }

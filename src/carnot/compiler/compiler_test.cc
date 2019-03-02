@@ -25,7 +25,6 @@ scalar_udfs {
   return_type: INT64
 }
 )";
-
 TEST(CompilerTest, basic) {
   auto info = std::make_shared<RegistryInfo>();
   carnotpb::UDFInfo info_pb;
@@ -156,6 +155,84 @@ TEST(CompilerTest, remove_range) {
   EXPECT_EQ(std::vector<int64_t>({0, 3}), graph->dag().TopologicalSort());
   EXPECT_TRUE(src->IsTimeSet());
   EXPECT_EQ(7200000, src->time_stop_ms() - src->time_start_ms());
+}
+
+// Test for select order that is different than the schema.
+const char *kSelectOrderLogicalPlan = R"(
+dag {
+  nodes { id: 1 }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      id: 1
+      sorted_deps: 0
+    }
+    nodes {
+      id: 0
+    }
+  }
+  nodes {
+    id: 1
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 2
+        column_idxs: 0
+        column_idxs: 1
+        column_names: "cpu2"
+        column_names: "count"
+        column_names: "cpu1"
+        column_types: FLOAT64
+        column_types: INT64
+        column_types: FLOAT64
+      }
+    }
+  }
+  nodes {
+    id: 0
+    op {
+      op_type: MEMORY_SINK_OPERATOR mem_sink_op {
+        name: "cpu_out"
+        column_types: FLOAT64
+        column_types: INT64
+        column_types: FLOAT64
+        column_names: "cpu2"
+        column_names: "count"
+        column_names: "cpu1"
+      }
+    }
+  }
+}
+)";
+TEST(CompilerTest, select_order_test) {
+  auto info = std::make_shared<RegistryInfo>();
+  carnotpb::UDFInfo info_pb;
+  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
+  EXPECT_OK(info->Init(info_pb));
+
+  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
+  rel_map->emplace("cpu", plan::Relation(std::vector<types::DataType>({types::DataType::INT64,
+                                                                       types::DataType::FLOAT64,
+                                                                       types::DataType::FLOAT64}),
+                                         std::vector<std::string>({"count", "cpu1", "cpu2"})));
+
+  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu2', 'count', 'cpu1']).Result(name='cpu_out')",
+      },
+      "\n");
+  auto compiler = Compiler();
+  auto plan = compiler.Compile(query, compiler_state.get());
+  EXPECT_OK(plan);
+  carnotpb::Plan plan_pb;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kSelectOrderLogicalPlan, &plan_pb));
+  VLOG(1) << plan.ValueOrDie().DebugString();
+  EXPECT_TRUE(
+      google::protobuf::util::MessageDifferencer::Equals(plan_pb, plan.ConsumeValueOrDie()));
 }
 }  // namespace compiler
 }  // namespace carnot
