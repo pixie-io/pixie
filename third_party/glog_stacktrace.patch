@@ -1,0 +1,20 @@
+--- bazel/glog.bzl	2018-11-20 18:14:38.000000000 -0800
++++ bazel/glog.bzl	2019-03-03 02:22:36.000000000 -0800
+@@ -73,7 +73,16 @@
+ 
+             # Include generated header files.
+             '-I%s/glog_internal' % gendir,
+-        ] + ([
++        ] + select({
++            # For stacktrace.
++            '@bazel_tools//src/conditions:darwin': [
++                '-DHAVE_UNWIND_H',
++                '-DHAVE_DLADDR',
++            ],
++            '//conditions:default': [
++                '-DHAVE_UNWIND_H',
++            ],
++        }) + ([
+             # Use gflags to parse CLI arguments.
+             '-DHAVE_LIB_GFLAGS',
+         ] if with_gflags else []),

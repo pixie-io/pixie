@@ -72,13 +72,26 @@ def _com_github_cpp_taskflow():
         build_file = "//third_party:cpp_taskflow.BUILD",
     )
 
+def _com_github_google_glog():
+    name = "com_github_google_glog"
+    location = REPOSITORY_LOCATIONS[name]
+    http_archive(
+        name = name,
+        urls = location["urls"],
+        sha256 = location["sha256"],
+        strip_prefix = location.get("strip_prefix", ""),
+        # TODO(zasgar): We can consider removing the stack trace patch when this lands:
+        # https://github.com/google/glog/pull/347
+        patches = ["//third_party:glog_stacktrace.patch"],
+    )
+
 def _cc_deps():
     _repository_impl(name = "com_google_benchmark")
     _repository_impl(
         name = "com_google_googletest",
     )
     _repository_impl(name = "com_github_gflags_gflags")
-    _repository_impl(name = "com_github_google_glog")
+    _com_github_google_glog()
     _repository_impl(name = "com_google_absl")
     _repository_impl(name = "com_google_flatbuffers")
     _com_github_rlyeh_sole()
