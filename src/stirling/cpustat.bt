@@ -11,7 +11,7 @@ R"(
 // 5) There is a sampling time by the source (this file), and another
 //    sampling time by the connector. Think about best way of managing both.
 
-interval:ms:500
+interval:ms:100
 {
     $cpu_id = $1;
 

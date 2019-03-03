@@ -61,7 +61,7 @@ class BPFTraceConnector : public SourceConnector {
 
 class CPUStatBPFTraceConnector : public BPFTraceConnector {
  public:
-  static constexpr SourceType source_type = SourceType::kEBPF;
+  static constexpr SourceType kSourceType = SourceType::kEBPF;
 
   static constexpr char kName[] = "bpftrace_cpu_stats";
 
@@ -73,6 +73,9 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
                                                 DataElement("cpustat_iowait", DataType::INT64),
                                                 DataElement("cpustat_irq", DataType::INT64),
                                                 DataElement("cpustat_softirq", DataType::INT64)};
+
+  inline static const std::chrono::milliseconds kDefaultSamplingPeriod{10};
+  inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(name, cpu_id_));

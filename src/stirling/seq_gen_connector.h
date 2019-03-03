@@ -19,9 +19,12 @@ class SeqGenConnector : public SourceConnector {
  public:
   virtual ~SeqGenConnector() = default;
 
-  static constexpr SourceType source_type = SourceType::kUnknown;
+  static constexpr SourceType kSourceType = SourceType::kUnknown;
 
   static constexpr char kName[] = "sequence_generator";
+
+  inline static const std::chrono::milliseconds kDefaultSamplingPeriod{500};
+  inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   inline static const DataElements kElements = {
       DataElement("_time", DataType::TIME64NS), DataElement("x", DataType::INT64),
@@ -43,7 +46,7 @@ class SeqGenConnector : public SourceConnector {
 
  protected:
   explicit SeqGenConnector(const std::string& name)
-      : SourceConnector(source_type, name, kElements),
+      : SourceConnector(kSourceType, name, kElements),
         time_seq_(),
         lin_seq_(1, 1),
         mod10_seq_(10),

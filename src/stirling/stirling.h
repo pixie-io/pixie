@@ -150,7 +150,8 @@ class Stirling : public NotCopyable {
   /**
    * Adds a source to Stirling, and updates all state accordingly.
    */
-  Status AddSource(const std::string& name, std::unique_ptr<SourceConnector> source);
+  StatusOr<InfoClassManager*> AddSource(const std::string& name,
+                                        std::unique_ptr<SourceConnector> source);
 
   /**
    * Helper function to figure out how much to sleep between polling iterations.
@@ -192,12 +193,6 @@ class Stirling : public NotCopyable {
    *
    */
   std::unique_ptr<SourceRegistry> registry_;
-
-  // Default sampling period.
-  const std::chrono::milliseconds kDefaultSamplingPeriod{100};
-
-  // Default push period.
-  const std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   const std::chrono::milliseconds kMinSleepDuration{1};
 

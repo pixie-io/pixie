@@ -11,7 +11,7 @@ namespace stirling {
 
 class ProcStatConnector : public SourceConnector {
  public:
-  static constexpr SourceType source_type = SourceType::kFile;
+  static constexpr SourceType kSourceType = SourceType::kFile;
 
   static constexpr char kName[] = "proc_stat";
 
@@ -19,6 +19,9 @@ class ProcStatConnector : public SourceConnector {
                                           DataElement("system_percent", DataType::FLOAT64),
                                           DataElement("user_percent", DataType::FLOAT64),
                                           DataElement("idle_percent", DataType::FLOAT64)};
+
+  inline static const std::chrono::milliseconds kDefaultSamplingPeriod{100};
+  inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   ProcStatConnector() = delete;
   virtual ~ProcStatConnector() = default;
@@ -28,7 +31,7 @@ class ProcStatConnector : public SourceConnector {
 
  protected:
   explicit ProcStatConnector(const std::string& name, const DataElements& elements)
-      : SourceConnector(source_type, name, elements) {}
+      : SourceConnector(kSourceType, name, elements) {}
   Status InitImpl() override;
   RawDataBuf GetDataImpl() override;
   Status StopImpl() override { return Status::OK(); }

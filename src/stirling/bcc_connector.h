@@ -11,7 +11,7 @@ namespace stirling {
 
 class BCCConnector : public SourceConnector {
  public:
-  static constexpr SourceType source_type = SourceType::kEBPF;
+  static constexpr SourceType kSourceType = SourceType::kEBPF;
   BCCConnector() = delete;
   virtual ~BCCConnector() = default;
 
@@ -19,7 +19,7 @@ class BCCConnector : public SourceConnector {
   explicit BCCConnector(const std::string& source_name, const DataElements& elements,
                         const std::string& kernel_event, const std::string& fn_name,
                         const std::string& bpf_program)
-      : SourceConnector(source_type, source_name, elements),
+      : SourceConnector(kSourceType, source_name, elements),
         kernel_event_(kernel_event),
         fn_name_(fn_name),
         bpf_program_(bpf_program) {}
@@ -56,6 +56,9 @@ class BCCCPUMetricsConnector : public BCCConnector {
   inline static const DataElements kElements = {DataElement("_time", DataType::TIME64NS),
                                                 DataElement("cpu_id", DataType::INT64),
                                                 DataElement("cpu_percentage", DataType::FLOAT64)};
+
+  inline static const std::chrono::milliseconds kDefaultSamplingPeriod{10};
+  inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   virtual ~BCCCPUMetricsConnector() = default;
 

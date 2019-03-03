@@ -36,9 +36,14 @@ Status Stirling::CreateSourceConnectors() {
   }
   auto sources = registry_->sources();
   for (auto const& [name, registry_element] : sources) {
-    Status s = AddSource(name, registry_element.create_source_fn(name));
+    auto s = AddSource(name, registry_element.create_source_fn(name));
 
-    if (!s.ok()) {
+    if (s.ok()) {
+      auto mgr_ptr = s.ValueOrDie();
+      std::cout << registry_element.sampling_period.count() << std::endl;
+      mgr_ptr->SetSamplingPeriod(registry_element.sampling_period);
+      mgr_ptr->SetPushPeriod(registry_element.push_period);
+    } else {
       LOG(WARNING) << absl::StrFormat("Source Connector (registry name=%s) not instantiated", name);
       LOG(WARNING) << s.status().ToString();
     }
@@ -46,12 +51,14 @@ Status Stirling::CreateSourceConnectors() {
   return Status::OK();
 }
 
-Status Stirling::AddSource(const std::string& name, std::unique_ptr<SourceConnector> source) {
+StatusOr<InfoClassManager*> Stirling::AddSource(const std::string& name,
+                                                std::unique_ptr<SourceConnector> source) {
   // Step 1: Init the source.
   PL_RETURN_IF_ERROR(source->Init());
 
   // TODO(oazizi): What if a Source has multiple InfoClasses?
   auto mgr = std::make_unique<InfoClassManager>(name);
+  auto mgr_ptr = mgr.get();
 
   // Step 3: Ask the Connector to populate the Schema.
   PL_CHECK_OK(source->PopulateSchema(mgr.get()));
@@ -61,7 +68,7 @@ Status Stirling::AddSource(const std::string& name, std::unique_ptr<SourceConnec
   sources_.push_back(std::move(source));
   info_class_mgrs_.push_back(std::move(mgr));
 
-  return Status::OK();
+  return mgr_ptr;
 }
 
 void Stirling::GetPublishProto(stirlingpb::Publish* publish_pb) {
@@ -80,8 +87,11 @@ Status Stirling::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
   for (const auto& mgr : info_class_mgrs_) {
     auto data_table = std::make_unique<ColumnWrapperDataTable>(mgr->Schema());
     mgr->SetDataTable(data_table.get());
-    mgr->SetSamplingPeriod(kDefaultSamplingPeriod);
-    mgr->SetPushPeriod(kDefaultPushPeriod);
+
+    // Proto could override sampling periods:
+    // mgr->SetSamplingPeriod(XXXX);
+    // mgr->SetPushPeriod(XXXX);
+
     tables_.push_back(std::move(data_table));
   }
 

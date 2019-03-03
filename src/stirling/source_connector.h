@@ -29,7 +29,7 @@ class InfoClassManager;
   class NAME : public SourceConnector {                                       \
    public:                                                                    \
     static constexpr bool kAvailable = false;                                 \
-    static constexpr SourceType source_type = SourceType::kNotImplemented;    \
+    static constexpr SourceType kSourceType = SourceType::kNotImplemented;    \
     static constexpr char kName[] = "dummy";                                  \
     inline static const DataElements kElements = {};                          \
     static std::unique_ptr<SourceConnector> Create(const std::string& name) { \
@@ -66,6 +66,9 @@ class SourceConnector : public NotCopyable {
    * 2) a SourceConnector that is not compilable (e.g. on Mac). See DUMMY_SOURCE_CONNECTOR macro.
    */
   static constexpr bool kAvailable = true;
+
+  inline static const std::chrono::milliseconds kDefaultSamplingPeriod{100};
+  inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   SourceConnector() = delete;
   virtual ~SourceConnector() = default;
