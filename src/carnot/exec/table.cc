@@ -206,7 +206,6 @@ StatusOr<std::vector<RecordBatchSPtr>> Table::GetTableAsRecordBatches() {
   std::vector<RecordBatchSPtr> record_batches;
   for (int64_t i = 0; i < NumBatches(); i++) {
     // Get the row batch.
-    // Get;
     PL_ASSIGN_OR_RETURN(auto cur_rb, GetRowBatch(i, col_selector, arrow::default_memory_pool()));
     // Break apart the row batch to get the columns.
     auto record_batch = arrow::RecordBatch::Make(schema, cur_rb->num_rows(), cur_rb->columns());

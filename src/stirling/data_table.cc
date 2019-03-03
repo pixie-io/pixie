@@ -151,7 +151,7 @@ Status ColumnWrapperDataTable::AppendData(uint8_t* const data, uint64_t num_rows
           auto* val_ptr = reinterpret_cast<int64_t*>(element_ptr);
           auto column = std::static_pointer_cast<carnot::udf::Time64NSValueColumnWrapper>(
               (*record_batch_)[field_idx]);
-          column->Append(*val_ptr);
+          column->Append(carnot::udf::Time64NSValue(*val_ptr));
         } break;
         case DataType::INT64: {
           auto* val_ptr = reinterpret_cast<int64_t*>(element_ptr);

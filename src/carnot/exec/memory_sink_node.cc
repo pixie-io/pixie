@@ -44,7 +44,6 @@ Status MemorySinkNode::CloseImpl(ExecState *) { return Status::OK(); }
 
 Status MemorySinkNode::ConsumeNextImpl(ExecState *, const RowBatch &rb) {
   DCHECK_EQ(static_cast<size_t>(0), children().size());
-  RowBatch output_rb(*input_descriptor_, rb.num_rows());
   PL_RETURN_IF_ERROR(table_->WriteRowBatch(rb));
   return Status::OK();
 }

@@ -183,8 +183,9 @@ TEST_F(ExecGraphTest, execute_time) {
   auto table = std::make_shared<Table>(rd);
 
   auto col1 = std::make_shared<Column>(udf::UDFDataType::TIME64NS, "col1");
-  std::vector<udf::Time64NSValue> col1_in1 = {1, 2, 3};
-  std::vector<udf::Time64NSValue> col1_in2 = {4, 5};
+  std::vector<udf::Time64NSValue> col1_in1 = {udf::Time64NSValue(1), udf::Time64NSValue(2),
+                                              udf::Time64NSValue(3)};
+  std::vector<udf::Time64NSValue> col1_in2 = {udf::Time64NSValue(4), udf::Time64NSValue(5)};
 
   EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in2, arrow::default_memory_pool())));

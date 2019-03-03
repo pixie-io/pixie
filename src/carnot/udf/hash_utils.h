@@ -55,6 +55,13 @@ struct hash<StringValue> {
   uint64_t operator()(StringValue val) { return ::util::Hash64(val); }
 };
 
+template <>
+struct hash<Time64NSValue> {
+  uint64_t operator()(Time64NSValue val) {
+    return ::util::Hash64(reinterpret_cast<const char*>(&(val.val)), sizeof(int64_t));
+  }
+};
+
 }  // namespace utils
 }  // namespace udf
 }  // namespace carnot

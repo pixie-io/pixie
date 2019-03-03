@@ -71,7 +71,7 @@ TEST_F(SourceToTableTest, source_to_table) {
   for (const auto& record_batch : *record_batches_ptr) {
     auto col_arrays = record_batch.get();
     ASSERT_TRUE(col_arrays != nullptr);
-    ASSERT_EQ(DataType::INT64, (*col_arrays)[0]->DataType());
+    ASSERT_EQ(DataType::TIME64NS, (*col_arrays)[0]->DataType());
     auto col0 = std::static_pointer_cast<carnot::udf::Int64ValueColumnWrapper>((*col_arrays)[0]);
     auto col0_val = (*col0)[0].val;
     PL_UNUSED(col0_val);

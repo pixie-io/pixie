@@ -97,6 +97,22 @@ inline SharedColumnWrapper FromArrowImpl(const std::shared_ptr<arrow::Array> &ar
       reinterpret_cast<TColumnWrapper *>(wrapper.get())->UnsafeRawData();
   for (size_t i = 0; i < size; ++i) {
     out_data[i] = arr_casted->Value(i);
+    // <Time64NSValue> = <int64_t>
+  }
+  return wrapper;
+}
+
+template <>
+inline SharedColumnWrapper FromArrowImpl<Time64NSValueColumnWrapper, UDFDataType::TIME64NS>(
+    const std::shared_ptr<arrow::Array> &arr) {
+  CHECK_EQ(arr->type_id(), UDFDataTypeTraits<types::TIME64NS>::arrow_type_id);
+  size_t size = arr->length();
+  auto wrapper = StringValueColumnWrapper::Make(types::TIME64NS, size);
+  auto arr_casted = reinterpret_cast<arrow::Int64Array *>(arr.get());
+  Time64NSValue *out_data =
+      reinterpret_cast<Time64NSValueColumnWrapper *>(wrapper.get())->UnsafeRawData();
+  for (size_t i = 0; i < size; ++i) {
+    out_data[i] = Time64NSValue(arr_casted->Value(i));
   }
   return wrapper;
 }

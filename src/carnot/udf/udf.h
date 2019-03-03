@@ -87,7 +87,10 @@ struct FixedSizedUDFValue : UDFBaseValue {
 using BoolValue = FixedSizedUDFValue<bool>;
 using Int64Value = FixedSizedUDFValue<int64_t>;
 using Float64Value = FixedSizedUDFValue<double>;
-using Time64NSValue = Int64Value;
+
+struct Time64NSValue : public Int64Value {
+  using Int64Value::Int64Value;
+};
 
 /**
  * The value type for string values.
@@ -149,6 +152,15 @@ struct UDFValueTraits<Float64Value> {
   using arrow_builder_type = arrow::DoubleBuilder;
   using arrow_array_type = arrow::DoubleArray;
   using native_type = double;
+};
+
+template <>
+struct UDFValueTraits<Time64NSValue> {
+  static constexpr UDFDataType data_type = types::TIME64NS;
+  using arrow_type = arrow::Int64Type;
+  using arrow_builder_type = arrow::Int64Builder;
+  using arrow_array_type = arrow::Int64Array;
+  using native_type = int64_t;
 };
 
 template <>

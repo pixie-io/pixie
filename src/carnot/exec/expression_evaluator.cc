@@ -114,7 +114,8 @@ std::shared_ptr<ColumnWrapper> EvalScalarToColumnWrapper(ExecState *, const plan
     case types::STRING:
       return std::make_shared<StringValueColumnWrapper>(count, val.StringValue());
     case types::TIME64NS:
-      return std::make_shared<Time64NSValueColumnWrapper>(count, val.Time64NSValue());
+      return std::make_shared<Time64NSValueColumnWrapper>(count,
+                                                          udf::Time64NSValue(val.Time64NSValue()));
     default:
       CHECK(0) << "Unknown data type";
   }
