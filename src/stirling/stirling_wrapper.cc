@@ -12,6 +12,8 @@
 using pl::stirling::SourceRegistry;
 using pl::stirling::SourceType;
 using pl::stirling::Stirling;
+using pl::stirling::stirlingpb::Publish;
+using pl::stirling::stirlingpb::Subscribe;
 
 using pl::carnot::udf::Float64ValueColumnWrapper;
 using pl::carnot::udf::Int64ValueColumnWrapper;
@@ -112,7 +114,8 @@ int main(int argc, char** argv) {
   PL_CHECK_OK(data_collector->Init());
 
   // Get a publish proto message to subscribe from.
-  auto publish_proto = data_collector->GetPublishProto();
+  Publish publish_proto;
+  data_collector->GetPublishProto(&publish_proto);
 
   // Subscribe to all elements.
   // Stirling will update its schemas and sets up the data tables.

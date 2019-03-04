@@ -73,7 +73,7 @@ class PubSubManagerTest : public ::testing::Test {
 TEST_F(PubSubManagerTest, publish_test) {
   // Publish info classes using proto message.
   stirlingpb::Publish actual_publish_pb;
-  actual_publish_pb = pub_sub_manager_->GeneratePublishProto();
+  pub_sub_manager_->GeneratePublishProto(&actual_publish_pb);
 
   // Set expectations for the publish message.
   stirlingpb::Publish expected_publish_pb;
@@ -97,7 +97,7 @@ TEST_F(PubSubManagerTest, publish_test) {
 TEST_F(PubSubManagerTest, subscribe_test) {
   // Do the publish.
   stirlingpb::Publish publish_pb;
-  publish_pb = pub_sub_manager_->GeneratePublishProto();
+  pub_sub_manager_->GeneratePublishProto(&publish_pb);
 
   // Get a subscription from an upstream agent.
   stirlingpb::Subscribe subscribe_pb;

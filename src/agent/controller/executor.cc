@@ -45,33 +45,39 @@ Status Executor::Init() {
                                         std::placeholders::_2));
   return Status::OK();
 }
-Publish Executor::GeneratePublishMessage() { return stirling_->GetPublishProto(); }
+
+void Executor::GeneratePublishMessage(Publish* publish_pb) {
+  stirling_->GetPublishProto(publish_pb);
+}
 
 Subscribe Executor::SubscribeToEverything(const Publish& publish_proto) {
   return stirling::SubscribeToAllElements(publish_proto);
 }
 
-Status Executor::CreateTablesFromSubscription(
-    const stirling::stirlingpb::Subscribe& subscribe_proto) {
+Status Executor::CreateTablesFromSubscription(const Subscribe& subscribe_proto) {
   // Set up the data tables in Stirling based on subscription
   PL_RETURN_IF_ERROR(stirling_->SetSubscription(subscribe_proto));
   // Create tables in Carnot based on subscription message. Only create tables
   // from info schemas that have elements.
+  auto table_store = carnot_->table_store();
   for (const auto& info_class : subscribe_proto.subscribed_info_classes()) {
-    std::vector<types::DataType> col_types;
-    std::vector<std::string> col_names;
     if (info_class.elements_size() > 0) {
-      for (const auto& element : info_class.elements()) {
-        col_types.push_back(element.type());
-        col_names.push_back(element.name());
-      }
-      carnot::plan::Relation relation(col_types, col_names);
-      auto table_store = carnot_->table_store();
+      auto relation = InfoClassProtoToRelation(info_class);
       PL_RETURN_IF_ERROR(table_store->AddTable(info_class.name(), info_class.id(),
                                                std::make_shared<carnot::exec::Table>(relation)));
     }
   }
   return Status::OK();
+}
+
+Relation Executor::InfoClassProtoToRelation(const InfoClass& info_class_proto) {
+  std::vector<types::DataType> col_types;
+  std::vector<std::string> col_names;
+  for (const auto& element : info_class_proto.elements()) {
+    col_types.push_back(element.type());
+    col_names.push_back(element.name());
+  }
+  return carnot::plan::Relation(col_types, col_names);
 }
 
 }  // namespace agent

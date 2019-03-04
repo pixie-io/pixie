@@ -74,15 +74,14 @@ class Stirling : public NotCopyable {
   Status Init();
 
   /**
-   * @brief Get the Publish Proto object. Agent calls this function to get the Publish
+   * @brief Populate the Publish Proto object. Agent calls this function to get the Publish
    * proto message. The proto publish message contains information (InfoClassSchema) on
    * all the Source Connectors that can be run to gather data and information on the types
    * for the data. The agent can then subscribe to a subset of the published message. The proto
    * is defined in //src/stirling/proto/collector_config.proto.
    *
-   * @return stirlingpb::Publish
    */
-  stirlingpb::Publish GetPublishProto();
+  void GetPublishProto(stirlingpb::Publish* publish_pb);
 
   /**
    * @brief Get the Subscription object. Receive a Subscribe proto message from the agent.

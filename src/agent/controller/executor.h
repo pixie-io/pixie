@@ -16,7 +16,9 @@ namespace agent {
 
 using carnot::Carnot;
 using carnot::exec::RecordBatchSPtr;
+using carnot::plan::Relation;
 using stirling::Stirling;
+using stirling::stirlingpb::InfoClass;
 using stirling::stirlingpb::Publish;
 using stirling::stirlingpb::Subscribe;
 
@@ -43,9 +45,9 @@ class Executor {
   /**
    * @brief Generate a publish message from Stirling.
    *
-   * @return Publish
+   * @param publish_pb Pointer to a publish proto
    */
-  Publish GeneratePublishMessage();
+  void GeneratePublishMessage(Publish* publish_pb);
 
   /**
    * @brief Subscribe to all elements in all info classes of a publish message.
@@ -87,9 +89,10 @@ class Executor {
   Stirling* stirling() { return stirling_.get(); }
 
  private:
-  std::unique_ptr<carnot::Carnot> carnot_;
-  std::unique_ptr<stirling::Stirling> stirling_;
   std::string RecordBatchToStr(RecordBatchSPtr ptr);
+  std::unique_ptr<Carnot> carnot_;
+  std::unique_ptr<Stirling> stirling_;
+  Relation InfoClassProtoToRelation(const InfoClass& info_class_proto);
 };
 
 }  // namespace agent

@@ -10,14 +10,13 @@ using stirlingpb::InfoClass;
 using stirlingpb::Publish;
 using stirlingpb::Subscribe;
 
-Publish PubSubManager::GeneratePublishProto() {
+void PubSubManager::GeneratePublishProto(Publish* publish_pb) {
+  CHECK(publish_pb != nullptr);
   // For each InfoClassManager get its proto and update publish_message.
-  Publish publish_message;
   for (auto& schema : info_class_mgrs_) {
-    InfoClass* info_class_proto = publish_message.add_published_info_classes();
+    InfoClass* info_class_proto = publish_pb->add_published_info_classes();
     info_class_proto->MergeFrom(schema->ToProto());
   }
-  return publish_message;
 }
 
 Status PubSubManager::UpdateSchemaFromSubscribe(const Subscribe& subscribe_proto) {

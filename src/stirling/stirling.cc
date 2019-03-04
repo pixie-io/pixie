@@ -64,7 +64,9 @@ Status Stirling::AddSource(const std::string& name, std::unique_ptr<SourceConnec
   return Status::OK();
 }
 
-stirlingpb::Publish Stirling::GetPublishProto() { return config_->GeneratePublishProto(); }
+void Stirling::GetPublishProto(stirlingpb::Publish* publish_pb) {
+  config_->GeneratePublishProto(publish_pb);
+}
 
 Status Stirling::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
   // Update schemas based on the subscribe_proto.

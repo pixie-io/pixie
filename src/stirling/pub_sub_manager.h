@@ -28,11 +28,10 @@ class PubSubManager {
   virtual ~PubSubManager() = default;
 
   /**
-   * @brief Create a proto message from InfoClassManagers (which each have a schema).
+   * @brief Create a proto message from InfoClassManagers (where each have a schema).
    *
-   * @return stirlingpb::PubSub Initial publish message to be sent to agent
    */
-  stirlingpb::Publish GeneratePublishProto();
+  void GeneratePublishProto(stirlingpb::Publish* publish_pb);
 
   /**
    * @brief Update the ElementState for each InfoElement in the InfoClassManager
