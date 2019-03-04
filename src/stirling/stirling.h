@@ -200,6 +200,8 @@ class Stirling : public NotCopyable {
   // Default push period.
   const std::chrono::milliseconds kDefaultPushPeriod{1000};
 
+  const std::chrono::milliseconds kMinSleepDuration{1};
+
   /**
    * Function to call to push data to the agent.
    * Function signature is:

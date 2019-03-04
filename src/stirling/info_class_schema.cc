@@ -55,8 +55,7 @@ Status InfoClassManager::SampleData() {
   PL_CHECK_OK(data_table_->AppendData(data_buf, num_records));
 
   // Update the last sampling time.
-  last_sampled_ = std::chrono::duration_cast<std::chrono::milliseconds>(
-      std::chrono::system_clock::now().time_since_epoch());
+  last_sampled_ = CurrentTime();
 
   sampling_count_++;
 
@@ -72,8 +71,7 @@ Status InfoClassManager::PushData(PushDataCallback agent_callback) {
   }
 
   // Update the last pushed time.
-  last_pushed_ = std::chrono::duration_cast<std::chrono::milliseconds>(
-      std::chrono::system_clock::now().time_since_epoch());
+  last_pushed_ = CurrentTime();
 
   push_count_++;
 

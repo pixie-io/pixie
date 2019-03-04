@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <chrono>
 #include <utility>
 
@@ -126,9 +127,25 @@ void Stirling::Run() {
 
 // Helper function: Figure out when to wake up next.
 void Stirling::SleepUntilNextTick() {
-  // TODO(oazizi): This is bogus. Add this to avoid spinning and burning CPU cycles unnecessarily.
   // The amount to sleep depends on when the earliest Source needs to be sampled again.
-  // std::this_thread::sleep_for(wakeup_time - now);
+  // Do this to avoid burning CPU cycles unnecessarily
+
+  auto now = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::high_resolution_clock::now().time_since_epoch());
+
+  auto wakeup_time = std::chrono::milliseconds::max();
+
+  for (const auto& mgr : info_class_mgrs_) {
+    // TODO(oazizi): Make implementation of NextPushTime/NextSamplingTime low cost.
+    wakeup_time = std::min(wakeup_time, mgr->NextPushTime());
+    wakeup_time = std::min(wakeup_time, mgr->NextSamplingTime());
+  }
+
+  auto sleep_duration = wakeup_time - now;
+
+  if (sleep_duration > kMinSleepDuration) {
+    std::this_thread::sleep_for(sleep_duration);
+  }
 }
 
 }  // namespace stirling

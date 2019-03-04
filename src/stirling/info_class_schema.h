@@ -193,6 +193,31 @@ class InfoClassManager {
    */
   void Notify() {}
 
+  /**
+   * @brief Returns the next time the source needs to be sampled, according to the sampling period.
+   *
+   * @return std::chrono::milliseconds
+   */
+  std::chrono::milliseconds NextSamplingTime() const { return last_sampled_ + sampling_period_; }
+
+  /**
+   * @brief Returns the next time the data table needs to be pushed upstream, according to the push
+   * period.
+   *
+   * @return std::chrono::milliseconds
+   */
+  std::chrono::milliseconds NextPushTime() const { return last_pushed_ + push_period_; }
+
+  /**
+   * @brief Convenience function to return current time in Milliseconds.
+   *
+   * @return milliseconds
+   */
+  static std::chrono::milliseconds CurrentTime() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::high_resolution_clock::now().time_since_epoch());
+  }
+
   const std::string& name() const { return name_; }
   const SourceConnector* source() const { return source_; }
   uint64_t id() { return id_; }
@@ -264,27 +289,6 @@ class InfoClassManager {
    * Statistics: count number of pushes.
    */
   uint32_t push_count_ = 0;
-
-  /**
-   * @brief Returns the next time the source needs to be sampled, according to the sampling period.
-   *
-   * @return std::chrono::milliseconds
-   */
-  std::chrono::milliseconds NextSamplingTime() const { return last_sampled_ + sampling_period_; }
-
-  /**
-   * @brief Returns the next time the data table needs to be pushed upstream, according to the push
-   * period.
-   *
-   * @return std::chrono::milliseconds
-   */
-  std::chrono::milliseconds NextPushTime() const { return last_pushed_ + push_period_; }
-
-  // Convenience function
-  static std::chrono::milliseconds CurrentTime() {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now().time_since_epoch());
-  }
 
   static constexpr uint32_t kDefaultOccupancyThreshold = 1024;
   static constexpr uint32_t kDefaultOccupancyPctThreshold = 100;
