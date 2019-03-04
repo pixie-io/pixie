@@ -13,6 +13,7 @@
 #include "src/carnot/exec/row_descriptor.h"
 #include "src/carnot/plan/relation.h"
 #include "src/carnot/udf/udf.h"
+#include "src/carnot/udf/udf_wrapper.h"
 #include "src/common/base.h"
 #include "src/common/status.h"
 #include "src/common/statusor.h"
@@ -23,6 +24,13 @@ namespace carnot {
 namespace exec {
 
 using RecordBatchSPtr = std::shared_ptr<arrow::RecordBatch>;
+
+struct BatchPosition {
+  int64_t batch_idx = 0;
+  int64_t row_idx = 0;
+  bool FoundValidBatches() { return batch_idx != -1; }
+};
+
 /**
  * A Column is batched into equally-sized Arrow Arrays.
  */
@@ -112,6 +120,17 @@ class Table : public NotCopyable {
    */
   StatusOr<std::unique_ptr<RowBatch>> GetRowBatch(int64_t row_batch_idx, std::vector<int64_t> cols,
                                                   arrow::MemoryPool* mem_pool);
+  /**
+   * Get a slice of the row batch at the given index.
+   * @ param i the index of the RowBatch to get.
+   * @ param cols the indices of the columns to get.
+   * @ param mem_pool the arrow memory pool.
+   * @ param offset the first index of the slice of the RowBatch.
+   * @ param end the ending index of the slice of the RowBatch (not inclusive).
+   */
+  StatusOr<std::unique_ptr<RowBatch>> GetRowBatchSlice(int64_t i, std::vector<int64_t> cols,
+                                                       arrow::MemoryPool* mem_pool, int64_t offset,
+                                                       int64_t end);
 
   /**
    * @ param rb Rowbatch to write to the table.
@@ -139,7 +158,25 @@ class Table : public NotCopyable {
   plan::Relation GetRelation();
   StatusOr<std::vector<RecordBatchSPtr>> GetTableAsRecordBatches();
 
+  /**
+   * @param the timestamp to search for.
+   * @param mem_pool the arrow memory pool to use.
+   * @return the batch position (batch number and row number in that batch) of the row with the
+   * first timestamp greater than or equal to the given time.
+   */
+  BatchPosition FindBatchPositionGreaterThanOrEqual(int64_t time, arrow::MemoryPool* mem_pool);
+
+  // TODO(michelle) (PL-404): Time should always be column 0.
+  int64_t FindTimeColumn();
+
  private:
+  int64_t FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
+                                      arrow::MemoryPool* mem_pool);
+  int64_t FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
+                                      arrow::MemoryPool* mem_pool, int64_t start, int64_t end);
+  std::shared_ptr<arrow::Array> GetColumnBatch(int64_t col, int64_t batch,
+                                               arrow::MemoryPool* mem_pool);
+
   RowDescriptor desc_;
   std::vector<std::shared_ptr<Column>> columns_;
   // TODO(michelle): (PL-388) Change hot_columns_ to a list-based queue.

@@ -95,6 +95,45 @@ column_types: FLOAT64
 column_names: "usage"
 )";
 
+const char* kMemSourceOperatorRange = R"(
+name: "cpu"
+start_time: {
+ value: 3
+}
+stop_time: {
+ value: 6
+}
+column_idxs: 1
+column_types: FLOAT64
+column_names: "usage"
+)";
+
+const char* kMemSourceOperatorEmptyRange = R"(
+name: "cpu"
+start_time: {
+ value: 10
+}
+stop_time: {
+ value: 20
+}
+column_idxs: 1
+column_types: FLOAT64
+column_names: "usage"
+)";
+
+const char* kMemSourceOperatorAllRange = R"(
+name: "cpu"
+start_time: {
+ value: 3
+}
+stop_time: {
+ value: 20
+}
+column_idxs: 1
+column_types: FLOAT64
+column_names: "usage"
+)";
+
 const char* kBlockingAggOperator1 = R"(
 values {
   name: "testUdf"
@@ -467,6 +506,30 @@ carnotpb::Operator CreateTestSource1PB() {
   carnotpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SOURCE_OPERATOR", "mem_source_op",
                                    kMemSourceOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+carnotpb::Operator CreateTestSourceRangePB() {
+  carnotpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SOURCE_OPERATOR", "mem_source_op",
+                                   kMemSourceOperatorRange);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+carnotpb::Operator CreateTestSourceEmptyRangePB() {
+  carnotpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SOURCE_OPERATOR", "mem_source_op",
+                                   kMemSourceOperatorEmptyRange);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+carnotpb::Operator CreateTestSourceAllRangePB() {
+  carnotpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SOURCE_OPERATOR", "mem_source_op",
+                                   kMemSourceOperatorAllRange);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

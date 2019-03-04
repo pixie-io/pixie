@@ -190,7 +190,7 @@ class ProcessingNode : public ExecNode {
 class SourceNode : public ExecNode {
  public:
   SourceNode() : ExecNode(ExecNodeType::kSourceNode) {}
-  virtual bool BatchesRemaining() = 0;
+  virtual bool HasBatchesRemaining() = 0;
   virtual bool NextBatchReady() = 0;
   int64_t BytesProcessed() const { return bytes_processed_; }
   int64_t RowsProcessed() const { return rows_processed_; }

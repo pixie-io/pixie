@@ -71,7 +71,7 @@ Status ExecutionGraph::Execute() {
       do {
         // TODO(michelle): Determine if there are ways that this can hit deadlock.
         PL_RETURN_IF_ERROR(node->second->GenerateNext(exec_state_));
-      } while (static_cast<SourceNode*>(node->second)->BatchesRemaining());
+      } while (static_cast<SourceNode*>(node->second)->HasBatchesRemaining());
     }
   }
 

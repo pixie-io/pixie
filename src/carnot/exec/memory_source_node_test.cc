@@ -20,9 +20,6 @@ using testing::_;
 class MemorySourceNodeTest : public ::testing::Test {
  public:
   MemorySourceNodeTest() {
-    auto op_proto = carnotpb::testutils::CreateTestSource1PB();
-    plan_node_ = plan::MemorySourceOperator::FromProto(op_proto, 1);
-
     udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
     uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
     auto table_store = std::make_shared<TableStore>();
@@ -39,7 +36,7 @@ class MemorySourceNodeTest : public ::testing::Test {
     EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
     EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
 
-    auto col2 = std::make_shared<Column>(Column(udf::UDFDataType::INT64, "col2"));
+    auto col2 = std::make_shared<Column>(Column(udf::UDFDataType::INT64, "time_"));
     std::vector<udf::Int64Value> col2_in1 = {1, 2, 3};
     std::vector<udf::Int64Value> col2_in2 = {5, 6};
     EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
@@ -53,18 +50,19 @@ class MemorySourceNodeTest : public ::testing::Test {
   }
 
  protected:
-  std::unique_ptr<plan::Operator> plan_node_;
   std::unique_ptr<ExecState> exec_state_;
   std::unique_ptr<udf::UDARegistry> uda_registry_;
   std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
 };
 
 TEST_F(MemorySourceNodeTest, basic) {
+  auto op_proto = carnotpb::testutils::CreateTestSource1PB();
+  std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
   RowDescriptor output_rd({udf::UDFDataType::FLOAT64});
   MemorySourceNode src;
   MockExecNode mock_child_;
   src.AddChild(&mock_child_);
-  EXPECT_OK(src.Init(*plan_node_, output_rd, {}));
+  EXPECT_OK(src.Init(*plan_node, output_rd, {}));
   EXPECT_OK(src.Prepare(exec_state_.get()));
   EXPECT_OK(src.Open(exec_state_.get()));
 
@@ -84,7 +82,122 @@ TEST_F(MemorySourceNodeTest, basic) {
       .Times(1)
       .WillOnce(testing::DoAll(testing::Invoke(check_result_batch1), testing::Return(Status::OK())))
       .RetiresOnSaturation();
+  EXPECT_TRUE(src.HasBatchesRemaining());
+  EXPECT_OK(src.GenerateNext(exec_state_.get()));
 
+  auto check_result_batch2 = [&](ExecState* exec_state, const RowBatch& child_rb) {
+    EXPECT_EQ(exec_state, exec_state_.get());
+    EXPECT_EQ(child_rb.num_rows(), 2);
+    EXPECT_EQ(child_rb.num_columns(), 1);
+    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::INT64);
+    auto output_col = child_rb.ColumnAt(0);
+    auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
+    EXPECT_EQ(5, casted->Value(0));
+    EXPECT_EQ(6, casted->Value(1));
+  };
+
+  EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
+      .Times(1)
+      .WillOnce(
+          testing::DoAll(testing::Invoke(check_result_batch2), testing::Return(Status::OK())));
+  EXPECT_TRUE(src.HasBatchesRemaining());
+  EXPECT_OK(src.GenerateNext(exec_state_.get()));
+  EXPECT_FALSE(src.HasBatchesRemaining());
+  EXPECT_OK(src.Close(exec_state_.get()));
+  EXPECT_EQ(5, src.RowsProcessed());
+  EXPECT_EQ(sizeof(int64_t) * 5, src.BytesProcessed());
+}
+
+TEST_F(MemorySourceNodeTest, range) {
+  auto op_proto = carnotpb::testutils::CreateTestSourceRangePB();
+  std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
+  RowDescriptor output_rd({udf::UDFDataType::FLOAT64});
+  MemorySourceNode src;
+  MockExecNode mock_child_;
+  src.AddChild(&mock_child_);
+  EXPECT_OK(src.Init(*plan_node, output_rd, {}));
+  EXPECT_OK(src.Prepare(exec_state_.get()));
+  EXPECT_OK(src.Open(exec_state_.get()));
+
+  auto check_result_batch1 = [&](ExecState* exec_state, const RowBatch& child_rb) {
+    EXPECT_EQ(exec_state, exec_state_.get());
+    EXPECT_EQ(child_rb.num_rows(), 1);
+    EXPECT_EQ(child_rb.num_columns(), 1);
+    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::INT64);
+    auto output_col = child_rb.ColumnAt(0);
+    auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
+    EXPECT_EQ(3, casted->Value(0));
+  };
+
+  EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
+      .Times(1)
+      .WillOnce(testing::DoAll(testing::Invoke(check_result_batch1), testing::Return(Status::OK())))
+      .RetiresOnSaturation();
+  EXPECT_TRUE(src.HasBatchesRemaining());
+  EXPECT_OK(src.GenerateNext(exec_state_.get()));
+
+  auto check_result_batch2 = [&](ExecState* exec_state, const RowBatch& child_rb) {
+    EXPECT_EQ(exec_state, exec_state_.get());
+    EXPECT_EQ(child_rb.num_rows(), 1);
+    EXPECT_EQ(child_rb.num_columns(), 1);
+    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::INT64);
+    auto output_col = child_rb.ColumnAt(0);
+    auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
+    EXPECT_EQ(5, casted->Value(0));
+  };
+
+  EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
+      .Times(1)
+      .WillOnce(
+          testing::DoAll(testing::Invoke(check_result_batch2), testing::Return(Status::OK())));
+  EXPECT_TRUE(src.HasBatchesRemaining());
+  EXPECT_OK(src.GenerateNext(exec_state_.get()));
+  EXPECT_FALSE(src.HasBatchesRemaining());
+  EXPECT_OK(src.Close(exec_state_.get()));
+}
+
+TEST_F(MemorySourceNodeTest, empty_range) {
+  auto op_proto = carnotpb::testutils::CreateTestSourceEmptyRangePB();
+  std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
+  RowDescriptor output_rd({udf::UDFDataType::FLOAT64});
+  MemorySourceNode src;
+  MockExecNode mock_child_;
+  src.AddChild(&mock_child_);
+  EXPECT_OK(src.Init(*plan_node, output_rd, {}));
+  EXPECT_OK(src.Prepare(exec_state_.get()));
+  EXPECT_OK(src.Open(exec_state_.get()));
+
+  EXPECT_FALSE(src.HasBatchesRemaining());
+  EXPECT_OK(src.Close(exec_state_.get()));
+}
+
+TEST_F(MemorySourceNodeTest, all_range) {
+  auto op_proto = carnotpb::testutils::CreateTestSourceAllRangePB();
+  std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
+  RowDescriptor output_rd({udf::UDFDataType::FLOAT64});
+  MemorySourceNode src;
+  MockExecNode mock_child_;
+  src.AddChild(&mock_child_);
+  EXPECT_OK(src.Init(*plan_node, output_rd, {}));
+  EXPECT_OK(src.Prepare(exec_state_.get()));
+  EXPECT_OK(src.Open(exec_state_.get()));
+
+  auto check_result_batch1 = [&](ExecState* exec_state, const RowBatch& child_rb) {
+    EXPECT_EQ(exec_state, exec_state_.get());
+    EXPECT_EQ(child_rb.num_rows(), 1);
+    EXPECT_EQ(child_rb.num_columns(), 1);
+    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::INT64);
+    auto output_col = child_rb.ColumnAt(0);
+    auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
+    EXPECT_EQ(3, casted->Value(0));
+  };
+
+  EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
+      .Times(1)
+      .WillOnce(testing::DoAll(testing::Invoke(check_result_batch1), testing::Return(Status::OK())))
+      .RetiresOnSaturation();
+
+  EXPECT_TRUE(src.HasBatchesRemaining());
   EXPECT_OK(src.GenerateNext(exec_state_.get()));
 
   auto check_result_batch2 = [&](ExecState* exec_state, const RowBatch& child_rb) {
@@ -104,9 +217,8 @@ TEST_F(MemorySourceNodeTest, basic) {
           testing::DoAll(testing::Invoke(check_result_batch2), testing::Return(Status::OK())));
 
   EXPECT_OK(src.GenerateNext(exec_state_.get()));
+  EXPECT_FALSE(src.HasBatchesRemaining());
   EXPECT_OK(src.Close(exec_state_.get()));
-  EXPECT_EQ(5, src.RowsProcessed());
-  EXPECT_EQ(sizeof(int64_t) * 5, src.BytesProcessed());
 }
 
 }  // namespace exec

@@ -62,6 +62,14 @@ TEST(TableTest, basic_test) {
   EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1->ColumnAt(1)->Equals(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
 
+  auto rb1_sliced =
+      table.GetRowBatchSlice(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool(), 1, 3)
+          .ConsumeValueOrDie();
+  EXPECT_TRUE(rb1_sliced->ColumnAt(0)->Equals(
+      udf::ToArrow(std::vector<udf::BoolValue>({false, true}), arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1_sliced->ColumnAt(1)->Equals(
+      udf::ToArrow(std::vector<udf::Int64Value>({2, 3}), arrow::default_memory_pool())));
+
   auto rb2 = table.GetRowBatch(1, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
                  .ConsumeValueOrDie();
   EXPECT_TRUE(rb2->ColumnAt(0)->Equals(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
@@ -206,6 +214,97 @@ TEST(TableTest, arrow_batches_test) {
   auto col2_batch = record_batch->column(1);
   EXPECT_TRUE(col1_batch->Equals(udf::ToArrow(col1_exp1, arrow::default_memory_pool())));
   EXPECT_TRUE(col2_batch->Equals(udf::ToArrow(col2_exp1, arrow::default_memory_pool())));
+}
+
+TEST(TableTest, greater_than_eq_eq) {
+  auto descriptor =
+      std::vector<udf::UDFDataType>({types::DataType::BOOLEAN, types::DataType::INT64});
+  RowDescriptor rd = RowDescriptor(descriptor);
+
+  Table table = Table(rd);
+
+  auto col1 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN, "col1");
+  auto col2 = std::make_shared<Column>(udf::UDFDataType::INT64, "col2");
+
+  EXPECT_OK(table.AddColumn(col1));
+  EXPECT_OK(table.AddColumn(col2));
+
+  auto rb1 = RowBatch(rd, 2);
+  std::vector<udf::BoolValue> col1_rb1 = {true, false};
+  std::vector<udf::Int64Value> col2_rb1 = {1, 2};
+  auto col1_rb1_arrow = udf::ToArrow(col1_rb1, arrow::default_memory_pool());
+  auto col2_rb1_arrow = udf::ToArrow(col2_rb1, arrow::default_memory_pool());
+  EXPECT_OK(rb1.AddColumn(col1_rb1_arrow));
+  EXPECT_OK(rb1.AddColumn(col2_rb1_arrow));
+
+  EXPECT_OK(table.WriteRowBatch(rb1));
+  EXPECT_EQ(table.NumBatches(), 1);
+}
+
+TEST(TableTest, find_batch_position_greater_or_eq) {
+  auto relation = plan::Relation(std::vector<types::DataType>({types::DataType::INT64}),
+                                 std::vector<std::string>({"time_"}));
+  Table table = Table(relation);
+  std::vector<udf::Int64Value> time_cold_col1 = {2, 3, 4, 6};
+  std::vector<udf::Int64Value> time_cold_col2 = {8, 8, 8};
+  std::vector<udf::Int64Value> time_cold_col3 = {8, 9, 11};
+  EXPECT_OK(
+      table.GetColumn(0)->AddBatch(udf::ToArrow(time_cold_col1, arrow::default_memory_pool())));
+  EXPECT_OK(
+      table.GetColumn(0)->AddBatch(udf::ToArrow(time_cold_col2, arrow::default_memory_pool())));
+  EXPECT_OK(
+      table.GetColumn(0)->AddBatch(udf::ToArrow(time_cold_col3, arrow::default_memory_pool())));
+
+  std::vector<udf::Int64Value> time_hot_col1 = {15, 16, 19};
+  std::vector<udf::Int64Value> time_hot_col2 = {21, 21, 21};
+  std::vector<udf::Int64Value> time_hot_col3 = {21, 23};
+  auto wrapper_batch_1 = std::make_unique<pl::stirling::ColumnWrapperRecordBatch>();
+  auto col_wrapper_1 =
+      udf::ColumnWrapper::FromArrow(udf::ToArrow(time_hot_col1, arrow::default_memory_pool()));
+  wrapper_batch_1->push_back(col_wrapper_1);
+  EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_1)));
+  auto wrapper_batch_2 = std::make_unique<pl::stirling::ColumnWrapperRecordBatch>();
+  auto col_wrapper_2 =
+      udf::ColumnWrapper::FromArrow(udf::ToArrow(time_hot_col2, arrow::default_memory_pool()));
+  wrapper_batch_2->push_back(col_wrapper_2);
+  EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_2)));
+  auto wrapper_batch_3 = std::make_unique<pl::stirling::ColumnWrapperRecordBatch>();
+  auto col_wrapper_3 =
+      udf::ColumnWrapper::FromArrow(udf::ToArrow(time_hot_col3, arrow::default_memory_pool()));
+  wrapper_batch_3->push_back(col_wrapper_3);
+  EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_3)));
+
+  auto batch_pos = table.FindBatchPositionGreaterThanOrEqual(0, arrow::default_memory_pool());
+  EXPECT_EQ(0, batch_pos.batch_idx);
+  EXPECT_EQ(0, batch_pos.row_idx);
+
+  batch_pos = table.FindBatchPositionGreaterThanOrEqual(5, arrow::default_memory_pool());
+  EXPECT_EQ(0, batch_pos.batch_idx);
+  EXPECT_EQ(3, batch_pos.row_idx);
+
+  batch_pos = table.FindBatchPositionGreaterThanOrEqual(6, arrow::default_memory_pool());
+  EXPECT_EQ(0, batch_pos.batch_idx);
+  EXPECT_EQ(3, batch_pos.row_idx);
+
+  batch_pos = table.FindBatchPositionGreaterThanOrEqual(8, arrow::default_memory_pool());
+  EXPECT_EQ(1, batch_pos.batch_idx);
+  EXPECT_EQ(0, batch_pos.row_idx);
+
+  batch_pos = table.FindBatchPositionGreaterThanOrEqual(10, arrow::default_memory_pool());
+  EXPECT_EQ(2, batch_pos.batch_idx);
+  EXPECT_EQ(2, batch_pos.row_idx);
+
+  batch_pos = table.FindBatchPositionGreaterThanOrEqual(13, arrow::default_memory_pool());
+  EXPECT_EQ(3, batch_pos.batch_idx);
+  EXPECT_EQ(0, batch_pos.row_idx);
+
+  batch_pos = table.FindBatchPositionGreaterThanOrEqual(21, arrow::default_memory_pool());
+  EXPECT_EQ(4, batch_pos.batch_idx);
+  EXPECT_EQ(0, batch_pos.row_idx);
+
+  batch_pos = table.FindBatchPositionGreaterThanOrEqual(24, arrow::default_memory_pool());
+  EXPECT_EQ(-1, batch_pos.batch_idx);
+  EXPECT_EQ(-1, batch_pos.row_idx);
 }
 
 }  // namespace exec

@@ -4,6 +4,7 @@
 #include <type_traits>
 
 #include "src/carnot/udf/udf.h"
+#include "src/carnot/udf/udf_wrapper.h"
 #include "src/common/macros.h"
 #include "src/common/status.h"
 
@@ -190,6 +191,26 @@ TEST(StringValue, value_tests) {
   // Check type base type.
   bool base_type_check = (true == std::is_base_of_v<UDFBaseValue, StringValue>);
   EXPECT_TRUE(base_type_check);
+}
+
+TEST(BinarySearchTest, find_index_greater_or_eq) {
+  std::vector<udf::Int64Value> col_rb1 = {1, 2, 5, 6, 9, 11};
+  auto col_rb1_arrow = ToArrow(col_rb1, arrow::default_memory_pool());
+
+  EXPECT_EQ(1, SearchArrowArrayGreaterThanOrEqual<udf::UDFDataType::INT64>(col_rb1_arrow.get(), 2));
+  EXPECT_EQ(-1,
+            SearchArrowArrayGreaterThanOrEqual<udf::UDFDataType::INT64>(col_rb1_arrow.get(), 12));
+  EXPECT_EQ(2, SearchArrowArrayGreaterThanOrEqual<udf::UDFDataType::INT64>(col_rb1_arrow.get(), 4));
+}
+
+TEST(BinarySearchTest, find_index_lower_or_eq) {
+  std::vector<udf::Int64Value> col_rb1 = {1, 2, 5, 6, 6, 6, 9, 11};
+  auto col_rb1_arrow = udf::ToArrow(col_rb1, arrow::default_memory_pool());
+
+  EXPECT_EQ(0, SearchArrowArrayLessThan<udf::UDFDataType::INT64>(col_rb1_arrow.get(), 2));
+  EXPECT_EQ(-1, SearchArrowArrayLessThan<udf::UDFDataType::INT64>(col_rb1_arrow.get(), 0));
+  EXPECT_EQ(-1, SearchArrowArrayLessThan<udf::UDFDataType::INT64>(col_rb1_arrow.get(), 1));
+  EXPECT_EQ(3, SearchArrowArrayLessThan<udf::UDFDataType::INT64>(col_rb1_arrow.get(), 8));
 }
 
 }  // namespace udf

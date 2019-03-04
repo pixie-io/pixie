@@ -82,6 +82,107 @@ constexpr auto GetValueFromArrowArray(const arrow::Array *arg, int64_t idx) {
   return GetValue(reinterpret_cast<const arrow_array_type *>(arg), idx);
 }
 
+template <udf::UDFDataType T>
+class ArrowArrayIterator
+    : public std::iterator<std::forward_iterator_tag,
+                           typename udf::UDFValueTraits<
+                               typename udf::UDFDataTypeTraits<T>::udf_value_type>::native_type> {
+  using ReturnType =
+      typename udf::UDFValueTraits<typename udf::UDFDataTypeTraits<T>::udf_value_type>::native_type;
+
+ public:
+  ArrowArrayIterator();
+
+  explicit ArrowArrayIterator(arrow::Array *array) : array_(array) {}
+
+  ArrowArrayIterator(arrow::Array *array, int64_t idx) : array_(array), curr_idx_(idx) {}
+
+  bool operator==(const ArrowArrayIterator<T> &iterator) const {
+    return this->array_ == iterator.array_ && this->curr_idx_ == iterator.curr_idx_;
+  }
+
+  bool operator!=(const ArrowArrayIterator<T> &iterator) const {
+    return this->array_ != iterator.array_ || this->curr_idx_ != iterator.curr_idx_;
+  }
+
+  ReturnType operator*() const { return (GetValueFromArrowArray<T>(array_, curr_idx_)); }
+
+  ReturnType *operator->() const { return (GetValueFromArrowArray<T>(array_, curr_idx_)); }
+
+  ArrowArrayIterator<T> &operator++() {
+    curr_idx_++;
+
+    return *this;
+  }
+
+  ArrowArrayIterator<T> begin() { return ArrowArrayIterator<T>(array_, 0); }
+
+  ArrowArrayIterator<T> end() { return ArrowArrayIterator<T>(array_, array_->length()); }
+
+  ArrowArrayIterator<T> operator++(int) {
+    auto ret = *this;
+    ++*this;
+    return ret;
+  }
+  ArrowArrayIterator<T> operator+(int i) const {
+    auto ret = ArrowArrayIterator<T>(array_, curr_idx_ + i);
+    return ret;
+  }
+
+ private:
+  arrow::Array *array_;
+  int64_t curr_idx_ = 0;
+};
+
+/**
+ * Search through the arrow array for the index of the first item equal or greater than the given
+ * value.
+ * @tparam T UDF datatype of the arrow array.
+ * @param arr the arrow array to search through.
+ * @param val the value to search for in the arrow array.
+ * @return the index of the first item in the array equal to or greater than val.
+ */
+template <udf::UDFDataType T>
+int64_t SearchArrowArrayGreaterThanOrEqual(
+    arrow::Array *arr,
+    typename udf::UDFValueTraits<typename udf::UDFDataTypeTraits<T>::udf_value_type>::native_type
+        val) {
+  auto arr_iterator = udf::ArrowArrayIterator<T>(arr);
+  auto res = std::lower_bound(arr_iterator, arr_iterator.end(), val);
+  if (res != arr_iterator.end()) {
+    return std::distance(arr_iterator.begin(), res);
+  }
+  return -1;
+}
+
+/**
+ * Search through the arrow array for the index of the first item less than the given value.
+ * @tparam T UDF datatype of the arrow array.
+ * @param arr the arrow array to search through.
+ * @param val the value to search for in the arrow array.
+ * @return the index of the first item in the array less than val.
+ */
+template <udf::UDFDataType T>
+int64_t SearchArrowArrayLessThan(
+    arrow::Array *arr,
+    typename udf::UDFValueTraits<typename udf::UDFDataTypeTraits<T>::udf_value_type>::native_type
+        val) {
+  auto res = SearchArrowArrayGreaterThanOrEqual<T>(arr, val);
+  if (res == -1) {
+    // Everything in the array is less than val.
+    return arr->length();
+  } else if (res == 0) {
+    // Nothing in the array is less than val.
+    return -1;
+  } else {
+    // res points to an index that is geq than val. res - 1 should be the largest item less than
+    // val. However, arr[res-1] may be a duplicate value, so we need to find the first instance of
+    // arr[res-1] in the array.
+    auto next_smallest = udf::GetValueFromArrowArray<T>(arr, res - 1);
+    return SearchArrowArrayGreaterThanOrEqual<T>(arr, next_smallest);
+  }
+}
+
 /**
  * This is the inner wrapper for the arrow type.
  * This performs type casting and storing the data in the output builder.

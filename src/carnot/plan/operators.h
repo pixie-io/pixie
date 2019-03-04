@@ -64,6 +64,10 @@ class MemorySourceOperator : public Operator {
   Status Init(const carnotpb::MemorySourceOperator &pb);
   std::string DebugString() const override;
   std::string TableName() const { return pb_.name(); }
+  bool HasStartTime() const { return pb_.has_start_time(); }
+  bool HasStopTime() const { return pb_.has_stop_time(); }
+  int64_t start_time() const { return pb_.start_time().value(); }
+  int64_t stop_time() const { return pb_.stop_time().value(); }
   std::vector<int64_t> Columns() const { return column_idxs_; }
 
  private:

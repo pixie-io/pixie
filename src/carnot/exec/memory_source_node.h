@@ -14,7 +14,7 @@ namespace exec {
 class MemorySourceNode : public SourceNode {
  public:
   MemorySourceNode() : SourceNode() {}
-  bool BatchesRemaining() override;
+  bool HasBatchesRemaining() override;
   bool NextBatchReady() override;
 
  protected:
@@ -29,6 +29,8 @@ class MemorySourceNode : public SourceNode {
  private:
   int64_t num_batches_;
   int64_t current_batch_ = 0;
+  BatchPosition start_batch_info_;
+
   std::unique_ptr<plan::MemorySourceOperator> plan_node_;
   std::unique_ptr<RowDescriptor> output_descriptor_;
   Table *table_ = nullptr;
