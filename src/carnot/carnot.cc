@@ -34,7 +34,6 @@ StatusOr<CarnotQueryResult> Carnot::ExecuteQuery(const std::string& query) {
   auto plan_state = engine_state_->CreatePlanState();
   int64_t bytes_processed = 0;
   int64_t rows_processed = 0;
-  timer.Reset();
   timer.Start();
   auto s =
       plan::PlanWalker()

@@ -18,9 +18,8 @@ class ElapsedTimer : public NotCopyable {
    * Start the timer.
    */
   void Start() {
-    DCHECK(!timer_running_) << "Timer already running";
-    timer_running_ = true;
-    start_time_ = std::chrono::high_resolution_clock::now();
+    Reset();
+    Resume();
   }
 
   /**
@@ -30,6 +29,15 @@ class ElapsedTimer : public NotCopyable {
     DCHECK(timer_running_) << "Stop called when timer is not running";
     timer_running_ = false;
     elapsed_time_us_ += TimeDiff();
+  }
+
+  /**
+   * Resume the timer.
+   */
+  void Resume() {
+    DCHECK(!timer_running_) << "Timer already running";
+    timer_running_ = true;
+    start_time_ = std::chrono::high_resolution_clock::now();
   }
 
   /**
