@@ -67,6 +67,8 @@ class RowBatch {
   std::string DebugString() const;
   std::vector<std::shared_ptr<arrow::Array>> columns() const { return columns_; }
 
+  int64_t NumBytes() const;
+
  private:
   RowDescriptor desc_;
   int64_t num_rows_;

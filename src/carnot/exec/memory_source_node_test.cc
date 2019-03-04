@@ -105,6 +105,8 @@ TEST_F(MemorySourceNodeTest, basic) {
 
   EXPECT_OK(src.GenerateNext(exec_state_.get()));
   EXPECT_OK(src.Close(exec_state_.get()));
+  EXPECT_EQ(5, src.RowsProcessed());
+  EXPECT_EQ(sizeof(int64_t) * 5, src.BytesProcessed());
 }
 
 }  // namespace exec

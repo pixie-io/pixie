@@ -19,14 +19,23 @@ namespace pl {
 namespace carnot {
 struct CarnotQueryResult {
   CarnotQueryResult() {}
-  explicit CarnotQueryResult(std::vector<exec::Table*> output_tables)
-      : output_tables_(output_tables) {}
+  explicit CarnotQueryResult(std::vector<exec::Table*> output_tables, int64_t rows_processed,
+                             int64_t bytes_processed, int64_t compile_time_ns, int64_t exec_time_ns)
+      : output_tables_(output_tables),
+        rows_processed(rows_processed),
+        bytes_processed(bytes_processed),
+        compile_time_ns(compile_time_ns),
+        exec_time_ns(exec_time_ns) {}
   size_t NumTables() const { return output_tables_.size(); }
   exec::Table* GetTable(int64_t i) const { return output_tables_[i]; }
   StatusOr<std::vector<exec::RecordBatchSPtr>> GetTableAsRecordBatches(int64_t i) const {
     return GetTable(i)->GetTableAsRecordBatches();
   }
   std::vector<exec::Table*> output_tables_;
+  int64_t rows_processed = 0;
+  int64_t bytes_processed = 0;
+  int64_t compile_time_ns = 0;
+  int64_t exec_time_ns = 0;
 };
 class Carnot : public NotCopyable {
  public:

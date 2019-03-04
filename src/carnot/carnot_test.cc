@@ -44,6 +44,11 @@ TEST_F(CarnotTest, basic) {
       "\n");
   auto s = carnot_.ExecuteQuery(query);
   ASSERT_TRUE(s.ok());
+  auto res = s.ConsumeValueOrDie();
+  EXPECT_EQ(5, res.rows_processed);
+  EXPECT_EQ(5 * sizeof(double) + 5 * sizeof(int64_t), res.bytes_processed);
+  EXPECT_GT(res.compile_time_ns, 0);
+  EXPECT_GT(res.exec_time_ns, 0);
 
   auto table_store = carnot_.table_store();
   auto output_table = table_store->GetTable("test_output");

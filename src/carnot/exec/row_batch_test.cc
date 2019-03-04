@@ -77,6 +77,29 @@ TEST_F(RowBatchTest, incorrect_type_test) {
   EXPECT_FALSE(rb_->AddColumn(udf::ToArrow(in1, arrow::default_memory_pool())).ok());
 }
 
+TEST_F(RowBatchTest, num_bytes) {
+  auto descriptor =
+      std::vector<udf::UDFDataType>({types::DataType::BOOLEAN, types::DataType::INT64,
+                                     types::DataType::FLOAT64, types::DataType::STRING});
+
+  RowDescriptor rd = RowDescriptor(descriptor);
+  auto rb_ = std::make_unique<RowBatch>(rd, 3);
+
+  std::vector<udf::BoolValue> in1 = {true, false, true};
+  std::vector<udf::Int64Value> in2 = {3, 4, 5};
+  std::vector<udf::Float64Value> in3 = {3.3, 4.1, 5.6};
+  std::vector<udf::StringValue> in4 = {"hello", "thisIs", "aString"};
+
+  EXPECT_TRUE(rb_->AddColumn(udf::ToArrow(in1, arrow::default_memory_pool())).ok());
+  EXPECT_TRUE(rb_->AddColumn(udf::ToArrow(in2, arrow::default_memory_pool())).ok());
+  EXPECT_TRUE(rb_->AddColumn(udf::ToArrow(in3, arrow::default_memory_pool())).ok());
+  EXPECT_TRUE(rb_->AddColumn(udf::ToArrow(in4, arrow::default_memory_pool())).ok());
+
+  auto expected_bytes =
+      3 * sizeof(bool) + 3 * sizeof(int64_t) + 3 * sizeof(double) + sizeof(char) * 18;
+  EXPECT_EQ(expected_bytes, rb_->NumBytes());
+}
+
 }  // namespace exec
 }  // namespace carnot
 }  // namespace pl

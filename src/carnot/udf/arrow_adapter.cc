@@ -53,6 +53,23 @@ arrow::Type::type CarnotToArrowType(const udf::UDFDataType& udf_type) {
   }
 }
 
+int64_t ArrowTypeToBytes(const arrow::Type::type& arrow_type) {
+  switch (arrow_type) {
+    case Type::BOOL:
+      return sizeof(bool);
+    case Type::INT64:
+      return sizeof(int64_t);
+    case Type::FLOAT:
+      return sizeof(float);
+    case Type::TIME64:
+      return sizeof(int64_t);
+    case Type::DOUBLE:
+      return sizeof(double);
+    default:
+      CHECK(0) << "Unknown arrow data type: " << arrow_type;
+  }
+}
+
 #define BUILDER_CASE(__data_type__, __pool__) \
   case __data_type__:                         \
     return std::make_unique<udf::UDFDataTypeTraits<__data_type__>::arrow_builder_type>(__pool__)

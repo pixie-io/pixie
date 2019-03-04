@@ -15,6 +15,11 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
+struct ExecutionStats {
+  int64_t bytes_processed;
+  int64_t rows_processed;
+};
+
 /**
  * An Execution Graph defines the structure of execution nodes for a given plan fragment.
  */
@@ -41,6 +46,7 @@ class ExecutionGraph {
   }
   Status Execute();
   std::vector<std::string> OutputTables() const;
+  ExecutionStats GetStats() const;
 
  private:
   /**

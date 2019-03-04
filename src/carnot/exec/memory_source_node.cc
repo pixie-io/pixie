@@ -44,6 +44,8 @@ Status MemorySourceNode::GenerateNextImpl(ExecState *exec_state) {
   PL_ASSIGN_OR_RETURN(
       const auto &row_batch,
       table_->GetRowBatch(current_batch_, plan_node_->Columns(), exec_state->exec_mem_pool()));
+  rows_processed_ += row_batch->num_rows();
+  bytes_processed_ += row_batch->NumBytes();
   PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *row_batch));
   current_batch_++;
   return Status::OK();

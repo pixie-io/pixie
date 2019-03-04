@@ -97,6 +97,22 @@ std::vector<std::string> ExecutionGraph::OutputTables() const {
   return output_tables;
 }
 
+ExecutionStats ExecutionGraph::GetStats() const {
+  int64_t bytes_processed = 0;
+  int64_t rows_processed = 0;
+  for (int64_t src_id : sources_) {
+    // Grab the nodes.
+    auto res = nodes_.find(src_id);
+    CHECK(res != nodes_.end());
+    ExecNode* node = res->second;
+    CHECK(node->type() == ExecNodeType::kSourceNode);
+    auto source_node = static_cast<MemorySourceNode*>(node);
+    bytes_processed += source_node->BytesProcessed();
+    rows_processed += source_node->RowsProcessed();
+  }
+  return ExecutionStats({bytes_processed, rows_processed});
+}
+
 }  // namespace exec
 }  // namespace carnot
 }  // namespace pl

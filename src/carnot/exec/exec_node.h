@@ -192,6 +192,12 @@ class SourceNode : public ExecNode {
   SourceNode() : ExecNode(ExecNodeType::kSourceNode) {}
   virtual bool BatchesRemaining() = 0;
   virtual bool NextBatchReady() = 0;
+  int64_t BytesProcessed() const { return bytes_processed_; }
+  int64_t RowsProcessed() const { return rows_processed_; }
+
+ protected:
+  int64_t rows_processed_ = 0;
+  int64_t bytes_processed_ = 0;
 };
 
 /**
