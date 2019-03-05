@@ -170,6 +170,8 @@ StatusOr<IRNode*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessAggOp(node));
   } else if (func_name == kSinkOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessSinkOp(node));
+  } else if (func_name == kRangeAggOpId) {
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessRangeAggOp(node));
   } else {
     std::string err_msg = absl::Substitute("No function named '$0'", func_name);
     return CreateAstError(err_msg, node);
@@ -256,6 +258,61 @@ StatusOr<IRNode*> ASTWalker::ProcessAggOp(const pypa::AstCallPtr& node) {
 
   PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["by"], args["fn"]));
   return ir_node;
+}
+
+StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
+  if (node->function->type != AstType::Attribute) {
+    return CreateAstError(absl::StrFormat("Expected RangeAgg to be an attribute, not a %s",
+                                          GetAstTypeName(node->function->type)),
+                          node->function);
+  }
+
+  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"fn", "by", "size"}, true));
+  PL_ASSIGN_OR_RETURN(IRNode * call_result,
+                      ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
+
+  // Create Map IR.
+  PL_ASSIGN_OR_RETURN(MapIR * map_ir_node, ir_graph_->MakeNode<MapIR>());
+
+  // pl.mod(by_col, size).
+  DCHECK(args["by"]->type() == IRNodeType::LambdaType);
+  auto by_col_ir_node = static_cast<LambdaIR*>(args["by"])->col_exprs()[0].node;
+  PL_ASSIGN_OR_RETURN(FuncIR * mod_ir_node, ir_graph_->MakeNode<FuncIR>());
+  PL_RETURN_IF_ERROR(
+      mod_ir_node->Init("pl.modulo", std::vector<IRNode*>({by_col_ir_node, args["size"]})));
+
+  // pl.subtract(by_col, pl.mod(by_col, size)).
+  PL_ASSIGN_OR_RETURN(FuncIR * sub_ir_node, ir_graph_->MakeNode<FuncIR>());
+  PL_RETURN_IF_ERROR(
+      sub_ir_node->Init("pl.subtract", std::vector<IRNode*>({by_col_ir_node, mod_ir_node})));
+
+  // Map(lambda r: {'group': pl.subtract(by_col, pl.modulo(by_col, size))}.
+  PL_ASSIGN_OR_RETURN(LambdaIR * map_lambda_ir_node, ir_graph_->MakeNode<LambdaIR>());
+  // Pull in all columns needed in fn.
+  ColExpressionVector map_exprs = ColExpressionVector({ColumnExpression{"group", sub_ir_node}});
+  for (const auto& name : static_cast<LambdaIR*>(args["fn"])->expected_column_names()) {
+    PL_ASSIGN_OR_RETURN(ColumnIR * col_node, ir_graph_->MakeNode<ColumnIR>());
+    PL_RETURN_IF_ERROR(col_node->Init(name));
+    map_exprs.push_back(ColumnExpression{name, col_node});
+  }
+  PL_RETURN_IF_ERROR(map_lambda_ir_node->Init(
+      std::unordered_set<std::string>({static_cast<ColumnIR*>(by_col_ir_node)->col_name()}),
+      map_exprs));
+  PL_RETURN_IF_ERROR(map_ir_node->Init(call_result, map_lambda_ir_node));
+
+  // Create AggIR.
+  PL_ASSIGN_OR_RETURN(AggIR * agg_ir_node, ir_graph_->MakeNode<AggIR>());
+
+  // by = lambda r: r.group.
+  PL_ASSIGN_OR_RETURN(ColumnIR * agg_col_ir_node, ir_graph_->MakeNode<ColumnIR>());
+  PL_RETURN_IF_ERROR(agg_col_ir_node->Init("group"));
+  PL_ASSIGN_OR_RETURN(LambdaIR * agg_by_ir_node, ir_graph_->MakeNode<LambdaIR>());
+  PL_RETURN_IF_ERROR(
+      agg_by_ir_node->Init(std::unordered_set<std::string>({"group"}), agg_col_ir_node));
+
+  // Agg(fn = fn, by = lambda r: r.group).
+  PL_RETURN_IF_ERROR(agg_ir_node->Init(map_ir_node, agg_by_ir_node, args["fn"]));
+  return agg_ir_node;
 }
 
 StatusOr<IRNode*> ASTWalker::ProcessStr(const pypa::AstStrPtr& ast) {
@@ -525,6 +582,10 @@ StatusOr<IRNode*> ASTWalker::ProcessData(const pypa::AstPtr& ast) {
   switch (ast->type) {
     case AstType::Str: {
       PL_ASSIGN_OR_RETURN(ir_node, ProcessStr(PYPA_PTR_CAST(Str, ast)));
+      break;
+    }
+    case AstType::Number: {
+      PL_ASSIGN_OR_RETURN(ir_node, ProcessNumber(PYPA_PTR_CAST(Number, ast)));
       break;
     }
     case AstType::List: {

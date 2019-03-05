@@ -69,6 +69,7 @@ Status IRVerifier::VerifyMap(IRNode* node) {
 
   // verify properties of the lambda_func
   auto lambda_func = static_cast<LambdaIR*>(map_node->lambda_func());
+
   if (!lambda_func->HasDictBody()) {
     return FormatErrorMsg("Expected lambda func to have dictionary body.", lambda_func);
   }
@@ -114,7 +115,6 @@ Status IRVerifier::VerifyAgg(IRNode* node) {
         "them.",
         agg_func);
   }
-
   return Status::OK();
 }
 
