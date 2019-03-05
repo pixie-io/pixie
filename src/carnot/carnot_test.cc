@@ -2,6 +2,8 @@
 #include <google/protobuf/text_format.h>
 #include <gtest/gtest.h>
 #include <pypa/parser/parser.hh>
+
+#include <algorithm>
 #include <unordered_map>
 #include <vector>
 
@@ -246,6 +248,69 @@ TEST_F(CarnotTest, empty_range_test) {
   EXPECT_EQ(0, output_table->NumBatches());
   EXPECT_EQ(3, output_table->NumColumns());
 }
+
+TEST_F(CarnotTest, group_by_all_agg_test) {
+  auto table = CarnotTestUtils::BigTestTable();
+
+  auto table_store = carnot_.table_store();
+  table_store->AddTable("big_test_table", table);
+  auto agg_dict =
+      absl::StrJoin({"'mean' : pl.mean(r.col2)", "'count' : pl.count(r.col3)",
+                     "'min' : pl.min(r.col2)", "'max' : pl.max(r.col3)", "'sum' : pl.sum(r.col3)"},
+                    ",");
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='big_test_table', select=['time_', 'col2', 'col3'])",
+          "aggDF = queryDF.Agg(by=None, fn=lambda r : {$0})",
+          "aggDF.Result(name='test_output')",
+      },
+      "\n");
+  query = absl::Substitute(query, agg_dict);
+  auto s = carnot_.ExecuteQuery(query);
+  auto output_table = table_store->GetTable("test_output");
+  EXPECT_EQ(1, output_table->NumBatches());
+  EXPECT_EQ(5, output_table->NumColumns());
+
+  auto rb1 =
+      output_table
+          ->GetRowBatch(0, std::vector<int64_t>({0, 1, 2, 3, 4}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+
+  auto test_col2 = CarnotTestUtils::big_test_col2;
+  auto test_col3 = CarnotTestUtils::big_test_col3;
+
+  double col2_expected_sum = std::accumulate(test_col2.begin(), test_col2.end(), 0.0);
+  double col2_expected_mean = col2_expected_sum / test_col2.size();
+
+  int64_t col3_expected_count = test_col3.size();
+  double col2_expected_min = *std::min_element(test_col2.begin(), test_col2.end());
+  int64_t col3_expected_max = *std::max_element(test_col3.begin(), test_col3.end());
+
+  int64_t col3_expected_sum = std::accumulate(CarnotTestUtils::big_test_col3.begin(),
+                                              CarnotTestUtils::big_test_col3.end(), 0);
+
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(
+      udf::ToArrow(std::vector<udf::Float64Value>({udf::Float64Value(col2_expected_mean)}),
+                   arrow::default_memory_pool())));
+
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(
+      udf::ToArrow(std::vector<udf::Int64Value>({udf::Int64Value(col3_expected_count)}),
+                   arrow::default_memory_pool())));
+
+  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(
+      udf::ToArrow(std::vector<udf::Float64Value>({udf::Float64Value(col2_expected_min)}),
+                   arrow::default_memory_pool())));
+
+  EXPECT_TRUE(rb1->ColumnAt(3)->Equals(
+      udf::ToArrow(std::vector<udf::Int64Value>({udf::Int64Value(col3_expected_max)}),
+                   arrow::default_memory_pool())));
+
+  EXPECT_TRUE(rb1->ColumnAt(4)->Equals(
+      udf::ToArrow(std::vector<udf::Int64Value>({udf::Int64Value(col3_expected_sum)}),
+                   arrow::default_memory_pool())));
+}  // namespace carnot
+// TODO(philkuz)
+TEST_F(CarnotTest, group_by_col_agg_test) {}
 
 }  // namespace carnot
 }  // namespace pl

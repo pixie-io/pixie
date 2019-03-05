@@ -94,6 +94,8 @@ TEST_F(MemorySourceNodeTest, basic) {
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(5, casted->Value(0));
     EXPECT_EQ(6, casted->Value(1));
+    // check to make sure eos is set on last batch.
+    EXPECT_TRUE(child_rb.eos());
   };
 
   EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
@@ -144,6 +146,8 @@ TEST_F(MemorySourceNodeTest, range) {
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(5, casted->Value(0));
+    // check to make sure eos is set on last batch.
+    EXPECT_TRUE(child_rb.eos());
   };
 
   EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
@@ -209,6 +213,8 @@ TEST_F(MemorySourceNodeTest, all_range) {
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(5, casted->Value(0));
     EXPECT_EQ(6, casted->Value(1));
+    // check to make sure eos is set on last batch.
+    EXPECT_TRUE(child_rb.eos());
   };
 
   EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
