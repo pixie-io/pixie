@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <limits>
 
 namespace pl {
 namespace stirling {
@@ -131,6 +132,9 @@ class FibonacciSequence : public Sequence<T> {
     fib_ = fibm1_ + fibm2_;
     fibm2_ = fibm1_;
     fibm1_ = fib_;
+    if (val > std::numeric_limits<T>::max() / 4) {
+      Reset();
+    }
     return val;
   }
 

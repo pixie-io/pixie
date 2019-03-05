@@ -1,0 +1,26 @@
+R"(
+
+#include <linux/sched.h>
+
+tracepoint:sched:sched_switch
+{
+  // Calculate run-time of previously running process.
+  $descheculed_pid_start_time = @start_time[args->prev_pid];
+  if ($descheculed_pid_start_time) {
+    delete(@start_time[args->prev_pid]);
+    $runtime = nsecs - $descheculed_pid_start_time;
+    @total_time[args->prev_pid] = @total_time[args->prev_pid] + $runtime;
+  }
+
+  // Record start time (and name) of the newly scheduled process.
+  $schedule_pid_start_time = nsecs;
+  @start_time[args->next_pid] = $schedule_pid_start_time;
+
+  // TODO(oazizi): Enable the line below to get the command of the PID.
+  //@names[args->next_pid] = args->next_comm;
+
+  // Also record the current time as a timestamp.
+  @time[0] = nsecs;
+}
+
+)"

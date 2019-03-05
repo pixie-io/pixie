@@ -40,7 +40,6 @@ Status Stirling::CreateSourceConnectors() {
 
     if (s.ok()) {
       auto mgr_ptr = s.ValueOrDie();
-      std::cout << registry_element.sampling_period.count() << std::endl;
       mgr_ptr->SetSamplingPeriod(registry_element.sampling_period);
       mgr_ptr->SetPushPeriod(registry_element.push_period);
     } else {

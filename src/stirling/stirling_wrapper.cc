@@ -21,6 +21,7 @@ using pl::carnot::udf::SharedColumnWrapper;
 using pl::stirling::ColumnWrapperRecordBatch;
 
 using pl::stirling::CPUStatBPFTraceConnector;
+using pl::stirling::PIDCPUUseBPFTraceConnector;
 using pl::stirling::SeqGenConnector;
 
 using pl::stirling::DataElements;
@@ -72,15 +73,17 @@ void StirlingWrapperCallback(uint64_t table_id,
 
   std::string name = table_id_to_name_map[table_id];
 
-  // Uses InfoClassSchema names, which come from Registry.
-  // So use Registry names here.
+  // Use assigned names, from registry.
   if (name == "bpftrace_cpu_stats") {
     PrintRecordBatch("CPUStatBPFTrace", CPUStatBPFTraceConnector::kElements, num_records,
                      *record_batch);
   } else if (name == "sequences") {
     PrintRecordBatch("SeqGen", SeqGenConnector::kElements, num_records, *record_batch);
+  } else if (name == PIDCPUUseBPFTraceConnector::kName) {
+    PrintRecordBatch("PIDBPFTrace", PIDCPUUseBPFTraceConnector::kElements, num_records,
+                     *record_batch);
   }
-  // TODO(oazizi): Can add other connectors, if desired.
+  // Can add other connectors, if desired, here.
 }
 
 std::unique_ptr<SourceRegistry> CreateRegistry() {

@@ -11,6 +11,7 @@ namespace pl {
 namespace stirling {
 
 DUMMY_SOURCE_CONNECTOR(CPUStatBPFTraceConnector);
+DUMMY_SOURCE_CONNECTOR(PIDCPUUseBPFTraceConnector);
 
 }  // namespace stirling
 }  // namespace pl
@@ -37,26 +38,29 @@ class BPFTraceConnector : public SourceConnector {
 
   Status InitImpl() override;
 
-  RawDataBuf GetDataImpl() override;
-
   Status StopImpl() override;
 
+  auto GetResultMaps() { return bpftrace_.return_maps(); }
+
+ protected:
   /**
-   * @brief If recording nsecs in your bt file, this function can be used to fine the offset for
+   * @brief If recording nsecs in your bt file, this function can be used to find the offset for
    * convert the result into realtime.
    */
   uint64_t ClockRealTimeOffset();
 
  private:
-  bpftrace::BPFtrace bpftrace_;
-  std::unique_ptr<bpftrace::BpfOrc> bpforc_;
-  std::vector<uint8_t> data_buf_;
-
-  uint64_t real_time_offset_;
-
   // This is the script that will run with this Bpftrace Connector.
   const char* script_;
   std::vector<std::string> params_;
+
+  bpftrace::BPFtrace bpftrace_;
+  std::unique_ptr<bpftrace::BpfOrc> bpforc_;
+
+  uint64_t real_time_offset_;
+
+  // Init Helper function: calculates monotonic clock to real time clock offset.
+  void InitClockRealTimeOffset();
 };
 
 class CPUStatBPFTraceConnector : public BPFTraceConnector {
@@ -74,25 +78,58 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
                                                 DataElement("cpustat_irq", DataType::INT64),
                                                 DataElement("cpustat_softirq", DataType::INT64)};
 
-  inline static const std::chrono::milliseconds kDefaultSamplingPeriod{10};
+  inline static const std::chrono::milliseconds kDefaultSamplingPeriod{100};
   inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(name, cpu_id_));
   }
 
+  RawDataBuf GetDataImpl() override;
+
  protected:
-  CPUStatBPFTraceConnector(const std::string& name, uint64_t cpu_id)
-      : BPFTraceConnector(name, kElements, kCPUStatBTScript,
-                          std::vector<std::string>({std::to_string(cpu_id)})) {}
+  explicit CPUStatBPFTraceConnector(const std::string& name, uint64_t cpu_id);
 
  private:
   static constexpr char kCPUStatBTScript[] =
-#include "cpustat.bt"
+#include "bt/cpustat.bt"
       ;  // NOLINT
 
   // TODO(oazizi): Make this controllable through Create.
   static constexpr uint64_t cpu_id_ = 0;
+
+  std::vector<uint64_t> data_buf_;
+};
+
+class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
+ public:
+  static constexpr SourceType kSourceType = SourceType::kEBPF;
+
+  static constexpr char kName[] = "bpftrace_pid_cpu_usage";
+
+  inline static const DataElements kElements = {DataElement("_time", DataType::TIME64NS),
+                                                DataElement("pid", DataType::INT64),
+                                                DataElement("nsecs_runtime", DataType::INT64)};
+
+  inline static const std::chrono::milliseconds kDefaultSamplingPeriod{1000};
+  inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
+
+  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
+    return std::unique_ptr<SourceConnector>(new PIDCPUUseBPFTraceConnector(name));
+  }
+
+  RawDataBuf GetDataImpl() override;
+
+ protected:
+  explicit PIDCPUUseBPFTraceConnector(const std::string& name)
+      : BPFTraceConnector(name, kElements, kBTScript, std::vector<std::string>({})) {}
+
+ private:
+  static constexpr char kBTScript[] =
+#include "bt/pidruntime.bt"
+      ;  // NOLINT
+
+  std::vector<uint64_t> data_buf_;
 };
 
 }  // namespace stirling
