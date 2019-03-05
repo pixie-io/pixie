@@ -225,5 +225,27 @@ TEST_F(CarnotTest, order_test) {
   EXPECT_TRUE(rb3->ColumnAt(0)->Equals(udf::ToArrow(col1_out3, arrow::default_memory_pool())));
 }
 
+TEST_F(CarnotTest, empty_range_test) {
+  // Tests that a table that has no rows that fall within the query's range returns an empty
+  // rowbatch.
+  auto table = CarnotTestUtils::BigTestTable();
+
+  auto table_store = carnot_.table_store();
+  table_store->AddTable("big_test_table", table);
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='big_test_table', select=['time_', 'col2', "
+          "'col3']).Range(time='-2m').Result(name='rng_output')",
+      },
+      "\n");
+  auto s = carnot_.ExecuteQuery(query);
+  std::cout << s.msg();
+  ASSERT_TRUE(s.ok());
+
+  auto output_table = table_store->GetTable("rng_output");
+  EXPECT_EQ(0, output_table->NumBatches());
+  EXPECT_EQ(3, output_table->NumColumns());
+}
+
 }  // namespace carnot
 }  // namespace pl

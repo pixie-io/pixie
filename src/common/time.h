@@ -18,18 +18,19 @@ inline StatusOr<int64_t> StringToTimeInt(const std::string& str_time) {
     auto unit = matches[2];
 
     if (unit == "h") {
-      return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::hours(amount))
+      return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::hours(amount))
           .count();
     } else if (unit == "m") {
-      return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::minutes(amount))
+      return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::minutes(amount))
           .count();
     } else if (unit == "ms") {
-      return std::chrono::milliseconds(amount).count();
+      return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::milliseconds(amount))
+          .count();
     } else if (unit == "s") {
-      return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds(amount))
+      return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(amount))
           .count();
     } else if (unit == "d") {
-      return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::hours(amount * 24))
+      return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::hours(amount * 24))
           .count();
     } else {
       return error::InvalidArgument("Unsupported unit.");

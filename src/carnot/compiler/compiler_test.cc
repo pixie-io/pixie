@@ -159,7 +159,7 @@ TEST(CompilerTest, remove_range) {
 
   EXPECT_EQ(std::vector<int64_t>({0, 3}), graph->dag().TopologicalSort());
   EXPECT_TRUE(src->IsTimeSet());
-  EXPECT_EQ(7200000, src->time_stop_ms() - src->time_start_ms());
+  EXPECT_EQ(7200000000000, src->time_stop_ns() - src->time_start_ns());
 }
 
 // Test for select order that is different than the schema.
@@ -247,12 +247,12 @@ dag {
 nodes {
   id: 1
   dag {
-    nodes { id: 2 sorted_deps: 0 }
-    nodes { id: 8 sorted_deps: 7 }
-    nodes { id: 7 }
+    nodes { id: 0 sorted_deps: 6 }
+    nodes { id: 6 sorted_deps: 5 }
+    nodes { id: 5 }
   }
   nodes {
-    id: 2
+    id: 0
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -267,7 +267,7 @@ nodes {
     }
   }
   nodes {
-    id: 8
+    id: 6
     op {
       op_type: BLOCKING_AGGREGATE_OPERATOR
       blocking_agg_op {
@@ -284,7 +284,7 @@ nodes {
     }
   }
   nodes {
-    id: 7
+    id: 5
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -303,7 +303,7 @@ TEST(CompilerTest, group_by_all) {
   EXPECT_OK(info->Init(info_pb));
   auto query = absl::StrJoin(
       {
-          "queryDF = From(table='cpu', select=['cpu1', 'cpu0']).Range(time='-2m')",
+          "queryDF = From(table='cpu', select=['cpu1', 'cpu0'])",
           "aggDF = queryDF.Agg(by=None, fn=lambda r : {'mean' : "
           "pl.mean(r.cpu0)}).Result(name='cpu_out')",
       },

@@ -27,7 +27,7 @@ class MemorySourceNodeTest : public ::testing::Test {
         std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store);
 
     auto descriptor =
-        std::vector<udf::UDFDataType>({types::DataType::BOOLEAN, types::DataType::INT64});
+        std::vector<udf::UDFDataType>({types::DataType::BOOLEAN, types::DataType::TIME64NS});
     RowDescriptor rd = RowDescriptor(descriptor);
 
     auto col1 = std::make_shared<Column>(Column(udf::UDFDataType::BOOLEAN, "col1"));
@@ -36,7 +36,7 @@ class MemorySourceNodeTest : public ::testing::Test {
     EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
     EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
 
-    auto col2 = std::make_shared<Column>(Column(udf::UDFDataType::INT64, "time_"));
+    auto col2 = std::make_shared<Column>(Column(udf::UDFDataType::TIME64NS, "time_"));
     std::vector<udf::Int64Value> col2_in1 = {1, 2, 3};
     std::vector<udf::Int64Value> col2_in2 = {5, 6};
     EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
@@ -70,7 +70,7 @@ TEST_F(MemorySourceNodeTest, basic) {
     EXPECT_EQ(exec_state, exec_state_.get());
     EXPECT_EQ(child_rb.num_rows(), 3);
     EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::INT64);
+    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::TIME64NS);
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(1, casted->Value(0));
@@ -89,7 +89,7 @@ TEST_F(MemorySourceNodeTest, basic) {
     EXPECT_EQ(exec_state, exec_state_.get());
     EXPECT_EQ(child_rb.num_rows(), 2);
     EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::INT64);
+    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::TIME64NS);
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(5, casted->Value(0));
@@ -123,7 +123,7 @@ TEST_F(MemorySourceNodeTest, range) {
     EXPECT_EQ(exec_state, exec_state_.get());
     EXPECT_EQ(child_rb.num_rows(), 1);
     EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::INT64);
+    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::TIME64NS);
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(3, casted->Value(0));
@@ -140,7 +140,7 @@ TEST_F(MemorySourceNodeTest, range) {
     EXPECT_EQ(exec_state, exec_state_.get());
     EXPECT_EQ(child_rb.num_rows(), 1);
     EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::INT64);
+    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::TIME64NS);
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(5, casted->Value(0));
@@ -186,7 +186,7 @@ TEST_F(MemorySourceNodeTest, all_range) {
     EXPECT_EQ(exec_state, exec_state_.get());
     EXPECT_EQ(child_rb.num_rows(), 1);
     EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::INT64);
+    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::TIME64NS);
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(3, casted->Value(0));
@@ -204,7 +204,7 @@ TEST_F(MemorySourceNodeTest, all_range) {
     EXPECT_EQ(exec_state, exec_state_.get());
     EXPECT_EQ(child_rb.num_rows(), 2);
     EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::INT64);
+    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::TIME64NS);
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(5, casted->Value(0));

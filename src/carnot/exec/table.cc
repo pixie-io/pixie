@@ -212,7 +212,7 @@ std::shared_ptr<arrow::Array> Table::GetColumnBatch(int64_t col, int64_t batch,
 
 int64_t Table::FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
                                            arrow::MemoryPool* mem_pool) {
-  DCHECK(columns_[time_col_idx]->data_type() == types::DataType::INT64);
+  DCHECK(columns_[time_col_idx]->data_type() == types::DataType::TIME64NS);
   return FindBatchGreaterThanOrEqual(time_col_idx, time, mem_pool, 0, NumBatches() - 1);
 }
 
@@ -247,7 +247,6 @@ int64_t Table::FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
   auto start_val = udf::GetValueFromArrowArray<udf::UDFDataType::INT64>(batch.get(), 0);
   auto stop_val =
       udf::GetValueFromArrowArray<udf::UDFDataType::INT64>(batch.get(), batch->length() - 1);
-
   if (time > start_val && time <= stop_val) {
     return mid;
   } else if (time > stop_val) {

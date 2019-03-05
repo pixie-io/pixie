@@ -25,6 +25,7 @@ StatusOr<carnotpb::Plan> Compiler::Compile(const std::string& query,
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query));
   PL_RETURN_IF_ERROR(VerifyIRConnections(*ir));
   PL_RETURN_IF_ERROR(UpdateColumnsAndVerifyUDFs(ir.get(), compiler_state));
+  PL_RETURN_IF_ERROR(OptimizeIR(ir.get()));
   return IRToLogicalPlan(*ir);
 }
 Status Compiler::VerifyIRConnections(const IR& ir) {
@@ -126,10 +127,11 @@ Status Compiler::CollapseRange(IR* ir) {
 
       timeIR = static_cast<StringIR*>(rangeIR->time_repr());
       auto now = std::chrono::high_resolution_clock::now();
-      auto now_ms =
-          std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
+
+      auto now_ns =
+          std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
       PL_ASSIGN_OR_RETURN(auto time_difference, StringToTimeInt(timeIR->str()));
-      srcIR->SetTime(now_ms + time_difference, now_ms);
+      srcIR->SetTime(now_ns + time_difference, now_ns);
       ir->DeleteNode(timeIR->id());
 
       // Update all of range's dependencies to point to src.

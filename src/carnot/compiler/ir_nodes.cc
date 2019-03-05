@@ -71,10 +71,10 @@ Status MemorySourceIR::ToProto(carnotpb::Operator* op) const {
 
   if (IsTimeSet()) {
     auto start_time = new ::google::protobuf::Int64Value();
-    start_time->set_value(time_start_ms_);
+    start_time->set_value(time_start_ns_);
     pb->set_allocated_start_time(start_time);
     auto stop_time = new ::google::protobuf::Int64Value();
-    stop_time->set_value(time_stop_ms_);
+    stop_time->set_value(time_stop_ns_);
     pb->set_allocated_stop_time(stop_time);
   }
 

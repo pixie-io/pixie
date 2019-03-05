@@ -242,12 +242,13 @@ TEST(TableTest, greater_than_eq_eq) {
 }
 
 TEST(TableTest, find_batch_position_greater_or_eq) {
-  auto relation = plan::Relation(std::vector<types::DataType>({types::DataType::INT64}),
+  auto relation = plan::Relation(std::vector<types::DataType>({types::DataType::TIME64NS}),
                                  std::vector<std::string>({"time_"}));
   Table table = Table(relation);
-  std::vector<udf::Int64Value> time_cold_col1 = {2, 3, 4, 6};
-  std::vector<udf::Int64Value> time_cold_col2 = {8, 8, 8};
-  std::vector<udf::Int64Value> time_cold_col3 = {8, 9, 11};
+  std::vector<udf::Time64NSValue> time_cold_col1 = {2, 3, 4, 6};
+  std::vector<udf::Time64NSValue> time_cold_col2 = {8, 8, 8};
+  std::vector<udf::Time64NSValue> time_cold_col3 = {8, 9, 11};
+
   EXPECT_OK(
       table.GetColumn(0)->AddBatch(udf::ToArrow(time_cold_col1, arrow::default_memory_pool())));
   EXPECT_OK(
@@ -255,23 +256,33 @@ TEST(TableTest, find_batch_position_greater_or_eq) {
   EXPECT_OK(
       table.GetColumn(0)->AddBatch(udf::ToArrow(time_cold_col3, arrow::default_memory_pool())));
 
-  std::vector<udf::Int64Value> time_hot_col1 = {15, 16, 19};
-  std::vector<udf::Int64Value> time_hot_col2 = {21, 21, 21};
-  std::vector<udf::Int64Value> time_hot_col3 = {21, 23};
+  std::vector<udf::Time64NSValue> time_hot_col1 = {15, 16, 19};
+  std::vector<udf::Time64NSValue> time_hot_col2 = {21, 21, 21};
+  std::vector<udf::Time64NSValue> time_hot_col3 = {21, 23};
   auto wrapper_batch_1 = std::make_unique<pl::stirling::ColumnWrapperRecordBatch>();
-  auto col_wrapper_1 =
-      udf::ColumnWrapper::FromArrow(udf::ToArrow(time_hot_col1, arrow::default_memory_pool()));
+  auto col_wrapper_1 = std::make_shared<udf::Time64NSValueColumnWrapper>(3);
+  col_wrapper_1->clear();
+  for (const auto& num : time_hot_col1) {
+    col_wrapper_1->Append(num);
+  }
   wrapper_batch_1->push_back(col_wrapper_1);
   EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_1)));
   auto wrapper_batch_2 = std::make_unique<pl::stirling::ColumnWrapperRecordBatch>();
-  auto col_wrapper_2 =
-      udf::ColumnWrapper::FromArrow(udf::ToArrow(time_hot_col2, arrow::default_memory_pool()));
+  auto col_wrapper_2 = std::make_shared<udf::Time64NSValueColumnWrapper>(3);
+  col_wrapper_2->clear();
+  for (const auto& num : time_hot_col2) {
+    col_wrapper_2->Append(num);
+  }
   wrapper_batch_2->push_back(col_wrapper_2);
   EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_2)));
   auto wrapper_batch_3 = std::make_unique<pl::stirling::ColumnWrapperRecordBatch>();
-  auto col_wrapper_3 =
-      udf::ColumnWrapper::FromArrow(udf::ToArrow(time_hot_col3, arrow::default_memory_pool()));
+  auto col_wrapper_3 = std::make_shared<udf::Time64NSValueColumnWrapper>(2);
+  col_wrapper_3->clear();
+  for (const auto& num : time_hot_col3) {
+    col_wrapper_3->Append(num);
+  }
   wrapper_batch_3->push_back(col_wrapper_3);
+
   EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_3)));
 
   auto batch_pos = table.FindBatchPositionGreaterThanOrEqual(0, arrow::default_memory_pool());
