@@ -90,6 +90,10 @@ using Float64Value = FixedSizedUDFValue<double>;
 
 struct Time64NSValue : public Int64Value {
   using Int64Value::Int64Value;
+  // Allow implicit construction to make it easier/more natural to return values
+  // from functions and also in other code using int's for time.
+  // NOLINTNEXTLINE(runtime/explicit)
+  Time64NSValue(int64_t lhs) : Int64Value(lhs) {}
 };
 
 /**
