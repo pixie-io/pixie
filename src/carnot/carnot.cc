@@ -25,7 +25,6 @@ StatusOr<CarnotQueryResult> Carnot::ExecuteQuery(const std::string& query) {
   PL_ASSIGN_OR_RETURN(auto logical_plan, compiler_.Compile(query, compiler_state.get()));
   timer.Stop();
   int64_t compile_time_ns = timer.ElapsedTime_us() * 1000;
-
   plan::Plan plan;
   PL_RETURN_IF_ERROR(plan.Init(logical_plan));
   // For each of the plan fragments in the plan, execute the query.

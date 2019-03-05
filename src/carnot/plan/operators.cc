@@ -144,7 +144,6 @@ Status BlockingAggregateOperator::Init(const carnotpb::BlockingAggregateOperator
   if (pb_.values_size() != pb_.value_names_size()) {
     return error::InvalidArgument("values names/exp size mismatch");
   }
-  LOG(ERROR) << pb_.DebugString();
   values_.reserve(static_cast<size_t>(pb_.values_size()));
   for (int i = 0; i < pb_.values_size(); ++i) {
     auto ae = std::make_unique<AggregateExpression>();

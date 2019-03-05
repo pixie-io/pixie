@@ -350,7 +350,17 @@ class ASTWalker {
    */
   StatusOr<LambdaExprReturn> ProcessLambdaCall(const std::string& arg_name,
                                                const pypa::AstCallPtr& node);
-
+  /**
+   * @brief Takes in a list and converts it to what's expected in the lambda.
+   *
+   * Currently restricted to only allow columns in there.
+   *
+   * @param arg_name
+   * @param node
+   * @return StatusOr<LambdaExprReturn>
+   */
+  StatusOr<LambdaExprReturn> ProcessLambdaList(const std::string& arg_name,
+                                               const pypa::AstListPtr& node);
   /**
    * @brief Takes an expression and the lambda arg name, processses the expression into an
    * IRNode, and extracts any expected relation values.

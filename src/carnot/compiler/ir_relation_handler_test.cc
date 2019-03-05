@@ -355,6 +355,7 @@ TEST_F(RelationHandlerTest, test_relation_results) {
   plan::Relation test_agg_relation;
   test_agg_relation.AddColumn(types::INT64, "cpu_count");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu_mean");
+  test_agg_relation.AddColumn(types::FLOAT64, "cpu0");
   EXPECT_TRUE(RelationEquality(agg_node->relation(), test_agg_relation));
 
   // Sink should have the same relation as before and be equivalent to its parent.
@@ -390,6 +391,29 @@ TEST_F(RelationHandlerTest, test_relation_fails) {
   plan::Relation test_map_relation;
   test_map_relation.AddColumn(types::FLOAT64, "cpu_sum");
   EXPECT_TRUE(RelationEquality(map_node->relation(), test_map_relation));
+}
+
+TEST_F(RelationHandlerTest, test_relation_multi_col_agg) {
+  std::string chain_operators = absl::StrJoin(
+      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
+       "aggDF = queryDF.Agg(by=lambda r : [r.cpu0, r.cpu2], fn=lambda r : {'cpu_count' : "
+       "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).Result(name='cpu_out')"},
+      "\n");
+  auto ir_graph_status = CompileGraph(chain_operators);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto handle_status = HandleRelation(ir_graph);
+  VLOG(1) << handle_status.ToString();
+  ASSERT_TRUE(handle_status.ok());
+
+  auto agg_node_status = FindNodeType(ir_graph, AggType);
+  EXPECT_OK(agg_node_status);
+  auto agg_node = static_cast<AggIR*>(agg_node_status.ConsumeValueOrDie());
+  plan::Relation test_agg_relation;
+  test_agg_relation.AddColumn(types::INT64, "cpu_count");
+  test_agg_relation.AddColumn(types::FLOAT64, "cpu_mean");
+  test_agg_relation.AddColumn(types::FLOAT64, "cpu0");
+  test_agg_relation.AddColumn(types::FLOAT64, "cpu2");
+  EXPECT_TRUE(RelationEquality(agg_node->relation(), test_agg_relation));
 }
 
 TEST_F(RelationHandlerTest, test_from_select) {
@@ -509,7 +533,8 @@ TEST_F(RelationHandlerTest, created_columns) {
   std::string map_use_agg_col = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
-          "aggDF = queryDF.Agg(by=lambda r : r.cpu1, fn=lambda r : {'cpu0_mean' : pl.mean(r.cpu0), "
+          "aggDF = queryDF.Agg(by=lambda r : r.cpu1, fn=lambda r : {'cpu0_mean' : "
+          "pl.mean(r.cpu0), "
           "'cpu1_mean' : pl.mean(r.cpu1)})",
           "mapDF = aggDF.Map(fn=lambda r : {'cpu_sum' : "
           "r.cpu1_mean+r.cpu1_mean}).Result(name='cpu_out')",

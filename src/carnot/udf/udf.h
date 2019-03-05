@@ -47,29 +47,29 @@ struct FixedSizedUDFValue : UDFBaseValue {
 
   template <class T2>
   // Overload the equality to make it easier to write code with value types.
-  bool operator==(const FixedSizedUDFValue<T2>& lhs) {
+  bool operator==(const FixedSizedUDFValue<T2>& lhs) const {
     return val == lhs.val;
   }
   template <class T2>
-  bool operator==(const T2& lhs) {
+  bool operator==(const T2& lhs) const {
     return val == lhs;
   }
 
   // Overload > and < to make it easier to write code with value types.
   template <class T2>
-  bool operator<(const FixedSizedUDFValue<T2>& lhs) {
+  bool operator<(const FixedSizedUDFValue<T2>& lhs) const {
     return val < lhs.val;
   }
   template <class T2>
-  bool operator<(const T2& lhs) {
+  bool operator<(const T2& lhs) const {
     return val < lhs;
   }
   template <class T2>
-  bool operator>(const FixedSizedUDFValue<T2>& lhs) {
+  bool operator>(const FixedSizedUDFValue<T2>& lhs) const {
     return val > lhs.val;
   }
   template <class T2>
-  bool operator>(const T2& lhs) {
+  bool operator>(const T2& lhs) const {
     return val > lhs;
   }
 

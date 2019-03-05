@@ -4,6 +4,7 @@
 #include <pypa/parser/parser.hh>
 
 #include <algorithm>
+#include <map>
 #include <unordered_map>
 #include <vector>
 
@@ -279,15 +280,19 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
   auto test_col2 = CarnotTestUtils::big_test_col2;
   auto test_col3 = CarnotTestUtils::big_test_col3;
 
-  double col2_expected_sum = std::accumulate(test_col2.begin(), test_col2.end(), 0.0);
-  double col2_expected_mean = col2_expected_sum / test_col2.size();
+  auto int64_sum_lambda = [](udf::Int64Value a, udf::Int64Value b) { return a.val + b.val; };
+  auto float64_sum_lambda = [](udf::Float64Value a, udf::Float64Value b) { return a.val + b.val; };
+  udf::Float64Value col2_expected_sum =
+      std::accumulate(test_col2.begin(), test_col2.end(), 0.0, float64_sum_lambda);
+  udf::Float64Value col2_expected_mean = col2_expected_sum.val / test_col2.size();
 
-  int64_t col3_expected_count = test_col3.size();
-  double col2_expected_min = *std::min_element(test_col2.begin(), test_col2.end());
-  int64_t col3_expected_max = *std::max_element(test_col3.begin(), test_col3.end());
+  udf::Int64Value col3_expected_count = test_col3.size();
+  udf::Float64Value col2_expected_min = *std::min_element(test_col2.begin(), test_col2.end());
+  udf::Int64Value col3_expected_max = *std::max_element(test_col3.begin(), test_col3.end());
 
-  int64_t col3_expected_sum = std::accumulate(CarnotTestUtils::big_test_col3.begin(),
-                                              CarnotTestUtils::big_test_col3.end(), 0);
+  udf::Int64Value col3_expected_sum =
+      std::accumulate(CarnotTestUtils::big_test_col3.begin(), CarnotTestUtils::big_test_col3.end(),
+                      0, int64_sum_lambda);
 
   EXPECT_TRUE(rb1->ColumnAt(0)->Equals(
       udf::ToArrow(std::vector<udf::Float64Value>({udf::Float64Value(col2_expected_mean)}),
@@ -308,9 +313,104 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
   EXPECT_TRUE(rb1->ColumnAt(4)->Equals(
       udf::ToArrow(std::vector<udf::Int64Value>({udf::Int64Value(col3_expected_sum)}),
                    arrow::default_memory_pool())));
-}  // namespace carnot
-// TODO(philkuz)
-TEST_F(CarnotTest, group_by_col_agg_test) {}
+}
+
+TEST_F(CarnotTest, DISABLED_group_by_col_agg_test) {
+  auto table = CarnotTestUtils::BigTestTable();
+
+  auto table_store = carnot_.table_store();
+  table_store->AddTable("big_test_table", table);
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='big_test_table', select=['time_', 'col3', 'num_groups'])",
+          "aggDF = queryDF.Agg(by=lambda r : r.num_groups, fn=lambda r : {'sum' : pl.sum(r.col3)})",
+          "aggDF.Result(name='test_output')",
+      },
+      "\n");
+  auto s = carnot_.ExecuteQuery(query);
+  VLOG(1) << s.ToString();
+  ASSERT_TRUE(s.ok());
+
+  auto output_table = table_store->GetTable("test_output");
+  EXPECT_EQ(1, output_table->NumBatches());
+  EXPECT_EQ(2, output_table->NumColumns());
+  auto rb1 =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+
+  std::vector<udf::Int64Value> expected_groups = {1, 2, 3};
+  std::vector<udf::Int64Value> expected_sum = {13, 129, 24};
+  std::unordered_map<int64_t, int64_t> expected = {{1, 13}, {2, 129}, {3, 24}};
+  std::unordered_map<int64_t, int64_t> actual;
+
+  for (int i = 0; i < rb1->num_rows(); ++i) {
+    auto output_col_grp = rb1->ColumnAt(0);
+    auto output_col_agg = rb1->ColumnAt(1);
+    auto casted_grp = reinterpret_cast<arrow::Int64Array *>(output_col_grp.get());
+    auto casted_agg = reinterpret_cast<arrow::Int64Array *>(output_col_agg.get());
+
+    actual[casted_grp->Value(i)] = casted_agg->Value(i);
+  }
+  EXPECT_EQ(expected, actual);
+}
+
+// TEST_F(CarnotTest, multiple_group_by_test) {
+TEST_F(CarnotTest, DISABLED_multiple_group_by_test) {
+  auto table = CarnotTestUtils::BigTestTable();
+
+  auto table_store = carnot_.table_store();
+  table_store->AddTable("big_test_table", table);
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='big_test_table', select=['time_', 'col3', 'num_groups', "
+          "'string_groups'])",
+          "aggDF = queryDF.Agg(by=lambda r : [r.num_groups, r.string_groups], fn=lambda r : {'sum' "
+          ": pl.sum(r.col3)})",
+          "aggDF.Result(name='test_output')",
+      },
+      "\n");
+  auto s = carnot_.ExecuteQuery(query);
+  VLOG(1) << s.ToString();
+  ASSERT_TRUE(s.ok());
+
+  auto output_table = table_store->GetTable("test_output");
+  EXPECT_EQ(1, output_table->NumBatches());
+  EXPECT_EQ(3, output_table->NumColumns());
+  auto rb1 =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  struct Key {
+    int64_t num_group;
+    std::string string_group;
+
+    bool operator<(const Key &other) const {
+      return num_group < other.num_group ||
+             (num_group == other.num_group && string_group < other.string_group);
+    }
+    bool operator==(const Key &other) const {
+      return (num_group == other.num_group) && string_group == other.string_group;
+    }
+  };
+
+  std::map<Key, int64_t> expected = {
+      {Key{1, "sum"}, 6},  {Key{1, "mean"}, 7},  {Key{3, "sum"}, 24},
+      {Key{2, "sum"}, 60}, {Key{2, "mean"}, 69},
+  };
+  std::map<Key, int64_t> actual;
+  for (int i = 0; i < rb1->num_rows(); ++i) {
+    auto output_col_num_grp = rb1->ColumnAt(0);
+    auto output_col_str_grp = rb1->ColumnAt(1);
+    auto output_col_agg = rb1->ColumnAt(2);
+    auto casted_num_grp = reinterpret_cast<arrow::Int64Array *>(output_col_num_grp.get());
+    auto casted_str_grp = reinterpret_cast<arrow::StringArray *>(output_col_str_grp.get());
+
+    auto casted_agg = reinterpret_cast<arrow::Int64Array *>(output_col_agg.get());
+    auto key = Key{casted_num_grp->Value(i), casted_str_grp->GetString(i)};
+
+    actual[key] = casted_agg->Value(i);
+  }
+  EXPECT_EQ(expected, actual);
+}
 
 }  // namespace carnot
 }  // namespace pl

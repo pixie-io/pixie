@@ -124,7 +124,6 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateExpression(IRNode* expr,
 }
 // Get the types of the children
 // Check the registry for function names
-
 StatusOr<plan::Relation> IRRelationHandler::AggHandler(OperatorIR* node,
                                                        plan::Relation parent_rel) {
   DCHECK_EQ(node->type(), IRNodeType::AggType);
@@ -144,6 +143,7 @@ StatusOr<plan::Relation> IRRelationHandler::AggHandler(OperatorIR* node,
   auto agg_expected = agg_func->expected_column_names();
   PL_RETURN_IF_ERROR(HasExpectedColumns(agg_expected, parent_rel));
 
+  plan::Relation agg_rel;
   // TODO(philkuz) (PL-402) fix this hack.
   if (by_func_ir_node->type() == IRNodeType::BoolType) {
     agg_node->SetGroups({});
@@ -153,22 +153,34 @@ StatusOr<plan::Relation> IRRelationHandler::AggHandler(OperatorIR* node,
     PL_RETURN_IF_ERROR(HasExpectedColumns(by_expected, parent_rel));
     // Get the column to group by.
     PL_ASSIGN_OR_RETURN(IRNode * expr, by_func->GetDefaultExpr());
-    // Only allow one columns type.
-    if (expr->type() != IRNodeType::ColumnType) {
+    if (expr->type() == IRNodeType::ColumnType) {
+      ColumnIR* col_expr = static_cast<ColumnIR*>(expr);
+      // Make sure that the column is setup.
+      PL_RETURN_IF_ERROR(EvaluateColExpr(col_expr, parent_rel));
+      agg_node->SetGroups({col_expr});
+      agg_rel.AddColumn(col_expr->type(), col_expr->col_name());
+    } else if (expr->type() == IRNodeType::ListType) {
+      ListIR* list_expr = static_cast<ListIR*>(expr);
+      std::vector<ColumnIR*> columns;
+      for (auto ch : list_expr->children()) {
+        ColumnIR* col_expr = static_cast<ColumnIR*>(ch);
+        PL_RETURN_IF_ERROR(EvaluateColExpr(col_expr, parent_rel));
+        columns.push_back(col_expr);
+      }
+      agg_node->SetGroups(columns);
+      for (auto c : columns) {
+        agg_rel.AddColumn(c->type(), c->col_name());
+      }
+    } else {
       return IRUtils::CreateIRNodeError(
-          absl::StrFormat("Expected a 'ColumnType' for the by function body, got '%s",
+          absl::StrFormat("Expected a 'Column' or 'List' for the by function body, got '%s",
                           expr->type_string()),
           *node);
     }
-    ColumnIR* col_expr = static_cast<ColumnIR*>(expr);
-    // Make sure that the column is setup.
-    PL_RETURN_IF_ERROR(EvaluateColExpr(col_expr, parent_rel));
-    agg_node->SetGroups({col_expr});
   }
 
   // Make a new relation with each of the expression key, type pairs.
   ColExpressionVector col_exprs = agg_func->col_exprs();
-  plan::Relation agg_rel;
   for (auto& entry : col_exprs) {
     std::string col_name = entry.name;
     PL_ASSIGN_OR_RETURN(types::DataType col_type,

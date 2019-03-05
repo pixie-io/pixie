@@ -388,6 +388,28 @@ StatusOr<LambdaExprReturn> WrapLambdaExprReturn(StatusOr<IRNode*> node) {
   return LambdaExprReturn(node.ValueOrDie());
 }
 
+StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaList(const std::string& arg_name,
+                                                        const pypa::AstListPtr& node) {
+  ListIR* ir_node = ir_graph_->MakeNode<ListIR>().ValueOrDie();
+  LambdaExprReturn expr_return(ir_node);
+  for (auto& child : node->elements) {
+    if (child->type != AstType::Attribute) {
+      return CreateAstError(
+          absl::StrFormat("Expect Lambda list to only contain column names, not %s",
+                          GetAstTypeName(node->type)),
+          node);
+    }
+    PL_ASSIGN_OR_RETURN(auto child_attr,
+                        ProcessLambdaAttribute(arg_name, PYPA_PTR_CAST(Attribute, child)));
+    if (child_attr.StringOnly()) {
+      return CreateAstError("Expect Lambda list to only contain column names.", node);
+    }
+    expr_return.MergeColumns(child_attr);
+    PL_RETURN_IF_ERROR(ir_node->AddListItem(child_attr.expr_));
+  }
+  return expr_return;
+}
+
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaExpr(const std::string& arg_name,
                                                         const pypa::AstPtr& node) {
   LambdaExprReturn expr_return;
@@ -413,6 +435,10 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaExpr(const std::string& arg_n
     }
     case AstType::Call: {
       PL_ASSIGN_OR_RETURN(expr_return, ProcessLambdaCall(arg_name, PYPA_PTR_CAST(Call, node)));
+      break;
+    }
+    case AstType::List: {
+      PL_ASSIGN_OR_RETURN(expr_return, ProcessLambdaList(arg_name, PYPA_PTR_CAST(List, node)));
       break;
     }
     default: {
