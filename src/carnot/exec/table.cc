@@ -94,10 +94,10 @@ StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatchSlice(int64_t row_batch_id
   auto hot_idx = row_batch_idx - num_cold_batches;
 
   {
-    absl::base_internal::SpinLockHolder lock(&hot_columns_lock_);
+    absl::base_internal::SpinLockHolder lock(&hot_batches_lock_);
 
     if (hot_idx >= 0) {
-      DCHECK(hot_columns_.size() > static_cast<size_t>(hot_idx));
+      DCHECK(hot_batches_.size() > static_cast<size_t>(hot_idx));
       // Move hot column batches 0 to hot_idx into cold storage.
       // TODO(michelle): (PL-388) We're currently converting hot data to row batches on a 1:1 basis.
       // This should be updated so that multiple hot column batches are merged into a single row
@@ -105,14 +105,14 @@ StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatchSlice(int64_t row_batch_id
       auto batch_idx = 0;
       while (batch_idx <= hot_idx) {
         for (size_t col_idx = 0; col_idx < columns_.size(); col_idx++) {
-          DCHECK(hot_columns_[batch_idx]->size() > col_idx);
-          auto hot_batch_sptr = hot_columns_[batch_idx]->at(col_idx)->ConvertToArrow(mem_pool);
+          DCHECK(hot_batches_[batch_idx]->size() > col_idx);
+          auto hot_batch_sptr = hot_batches_[batch_idx]->at(col_idx)->ConvertToArrow(mem_pool);
           PL_RETURN_IF_ERROR(columns_.at(col_idx)->AddBatch(hot_batch_sptr));
         }
         batch_idx++;
       }
       // Remove hot column batches 0 to hot_idx from hot columns.
-      hot_columns_.erase(hot_columns_.begin(), hot_columns_.begin() + hot_idx + 1);
+      hot_batches_.erase(hot_batches_.begin(), hot_batches_.begin() + hot_idx + 1);
     }
   }
 
@@ -168,8 +168,8 @@ Status Table::TransferRecordBatch(
     ++i;
   }
 
-  absl::base_internal::SpinLockHolder lock(&hot_columns_lock_);
-  hot_columns_.push_back(std::move(record_batch));
+  absl::base_internal::SpinLockHolder lock(&hot_batches_lock_);
+  hot_batches_.push_back(std::move(record_batch));
 
   return Status::OK();
 }
@@ -180,8 +180,8 @@ int64_t Table::NumBatches() {
     num_batches += columns_[0]->numBatches();
   }
 
-  absl::base_internal::SpinLockHolder lock(&hot_columns_lock_);
-  num_batches += hot_columns_.size();
+  absl::base_internal::SpinLockHolder lock(&hot_batches_lock_);
+  num_batches += hot_batches_.size();
 
   return num_batches;
 }
@@ -204,7 +204,7 @@ std::shared_ptr<arrow::Array> Table::GetColumnBatch(int64_t col, int64_t batch,
 
   if (batch >= columns_[col]->numBatches()) {
     auto hot_col_idx = batch - columns_[col]->numBatches();
-    return hot_columns_.at(hot_col_idx)->at(col)->ConvertToArrow(mem_pool);
+    return hot_batches_.at(hot_col_idx)->at(col)->ConvertToArrow(mem_pool);
   } else {
     return columns_[col]->batch(batch);
   }

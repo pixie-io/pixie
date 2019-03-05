@@ -179,11 +179,11 @@ class Table : public NotCopyable {
 
   RowDescriptor desc_;
   std::vector<std::shared_ptr<Column>> columns_;
-  // TODO(michelle): (PL-388) Change hot_columns_ to a list-based queue.
-  std::vector<std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch>> hot_columns_;
+  // TODO(michelle): (PL-388) Change hot_batches_ to a list-based queue.
+  std::vector<std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch>> hot_batches_;
   std::unordered_map<std::string, std::shared_ptr<Column>> name_to_column_map_;
 
-  absl::base_internal::SpinLock hot_columns_lock_;
+  absl::base_internal::SpinLock hot_batches_lock_;
 };
 
 }  // namespace exec

@@ -153,7 +153,7 @@ TEST(TableTest, write_row_batch) {
   EXPECT_TRUE(table.GetColumn(1)->batch(0)->Equals(col2_rb1_arrow));
 }
 
-TEST(TableTest, hot_columns_test) {
+TEST(TableTest, hot_batches_test) {
   auto descriptor =
       std::vector<udf::UDFDataType>({types::DataType::BOOLEAN, types::DataType::INT64});
   RowDescriptor rd = RowDescriptor(descriptor);
