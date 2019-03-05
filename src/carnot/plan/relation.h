@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "src/carnot/proto/plan.pb.h"
+#include "src/common/statusor.h"
 #include "src/common/types/types.pb.h"
 
 namespace pl {
@@ -45,6 +46,11 @@ class Relation {
 
   // Get the debug string of this relation.
   std::string DebugString() const;
+
+  /**
+   * @brief Makes a new relation that has the specified columns.
+   */
+  StatusOr<Relation> MakeSubRelation(const std::vector<std::string> &columns) const;
 
  private:
   ColTypeArray col_types_;

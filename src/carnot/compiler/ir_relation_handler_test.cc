@@ -321,7 +321,8 @@ TEST_F(RelationHandlerTest, test_relation_results) {
   // operators don't use generated columns, are just chained.
   std::string chain_operators = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
-       "mapDF = queryDF.Map(fn=lambda r : {'cpu_sum' : r.cpu0+r.cpu1})",
+       "mapDF = queryDF.Map(fn=lambda r : {'cpu0' : r.cpu0, 'cpu1' : r.cpu1, 'cpu_sum' : "
+       "r.cpu0+r.cpu1})",
        "aggDF = mapDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
        "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).Result(name='cpu_out')"},
       "\n");
@@ -337,15 +338,15 @@ TEST_F(RelationHandlerTest, test_relation_results) {
   EXPECT_TRUE(RelationEquality(source_node->relation(), relation_map_["cpu"]));
   auto mem_node_status = FindNodeType(ir_graph, MemorySinkType);
 
-  // Map should be the same as the original relation + a column.
+  // Map relation should be contain cpu0, cpu1, and cpu_sum.
   auto map_node_status = FindNodeType(ir_graph, MapType);
   EXPECT_OK(map_node_status);
   auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
-  plan::Relation test_map_relation = plan::Relation(relation_map_["cpu"]);
+  auto test_map_relation_s = relation_map_["cpu"].MakeSubRelation({"cpu0", "cpu1"});
+  EXPECT_OK(test_map_relation_s);
+  plan::Relation test_map_relation = test_map_relation_s.ConsumeValueOrDie();
   test_map_relation.AddColumn(types::FLOAT64, "cpu_sum");
   EXPECT_TRUE(RelationEquality(map_node->relation(), test_map_relation));
-  VLOG(1) << absl::StrJoin(map_node->relation().col_names(), ",");
-  VLOG(1) << absl::StrJoin(test_map_relation.col_names(), ",");
 
   // Agg should be a new relation with one column.
   auto agg_node_status = FindNodeType(ir_graph, AggType);
@@ -362,6 +363,33 @@ TEST_F(RelationHandlerTest, test_relation_results) {
   auto sink_node = static_cast<MemorySinkIR*>(sink_node_status.ConsumeValueOrDie());
   EXPECT_TRUE(RelationEquality(sink_node->relation(), test_agg_relation));
   EXPECT_TRUE(RelationEquality(sink_node->relation(), sink_node->parent()->relation()));
+}  // namespace compiler
+
+// Make sure the compiler exits when calling columns that aren't explicitly called.
+TEST_F(RelationHandlerTest, test_relation_fails) {
+  // operators don't use generated columns, are just chained.
+  std::string chain_operators = absl::StrJoin(
+      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
+       "mapDF = queryDF.Map(fn=lambda r : {'cpu_sum' : r.cpu0+r.cpu1})",
+       "aggDF = mapDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
+       "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).Result(name='cpu_out')"},
+      "\n");
+  auto ir_graph_status = CompileGraph(chain_operators);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+
+  // This query assumes implicit copying of Input relation into Map. The relation handler should
+  // fail.
+  auto handle_status = HandleRelation(ir_graph);
+  VLOG(1) << handle_status.ToString();
+  EXPECT_FALSE(handle_status.ok());
+
+  // Map should result just be the cpu_sum column.
+  auto map_node_status = FindNodeType(ir_graph, MapType);
+  EXPECT_OK(map_node_status);
+  auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
+  plan::Relation test_map_relation;
+  test_map_relation.AddColumn(types::FLOAT64, "cpu_sum");
+  EXPECT_TRUE(RelationEquality(map_node->relation(), test_map_relation));
 }
 
 TEST_F(RelationHandlerTest, test_from_select) {
@@ -450,10 +478,11 @@ TEST_F(RelationHandlerTest, nonexistant_cols) {
   VLOG(1) << handle_status.status().ToString();
 }
 
+// Use results of created columns in later parts of the pipeline.
 TEST_F(RelationHandlerTest, created_columns) {
   std::string agg_use_map_col_fn = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
-       "mapDF = queryDF.Map(fn=lambda r : {'cpu_sum' : r.cpu0+r.cpu1})",
+       "mapDF = queryDF.Map(fn=lambda r : {'cpu2' : r.cpu2, 'cpu_sum' : r.cpu0+r.cpu1})",
        "aggDF = mapDF.Agg(by=lambda r : r.cpu2, fn=lambda r : {'cpu_count' : "
        "pl.count(r.cpu_sum)}).Result(name='cpu_out')"},
       "\n");
@@ -466,7 +495,7 @@ TEST_F(RelationHandlerTest, created_columns) {
 
   std::string agg_use_map_col_by = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
-       "mapDF = queryDF.Map(fn=lambda r : {'cpu_sum' : r.cpu0+r.cpu1})",
+       "mapDF = queryDF.Map(fn=lambda r : {'cpu2' : r.cpu2, 'cpu_sum' : r.cpu0+r.cpu1})",
        "aggDF = mapDF.Agg(by=lambda r : r.cpu_sum, fn=lambda r : {'cpu_count' : "
        "pl.count(r.cpu2)}).Result(name='cpu_out')"},
       "\n");
@@ -495,7 +524,7 @@ TEST_F(RelationHandlerTest, created_columns) {
 
   std::string map_use_map_col = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
-       "mapDF = queryDF.Map(fn=lambda r : {'cpu_sum' : r.cpu0+r.cpu1})",
+       "mapDF = queryDF.Map(fn=lambda r : {'cpu2': r.cpu2, 'cpu_sum' : r.cpu0+r.cpu1})",
        "map2Df = mapDF.Map(fn=lambda r : {'cpu_sum2' : r.cpu2+r.cpu_sum}).Result(name='cpu_out')"},
       "\n");
   ir_graph_status = CompileGraph(map_use_map_col);

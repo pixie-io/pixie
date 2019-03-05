@@ -63,6 +63,17 @@ std::string Relation::DebugString() const {
   }
   return "[" + absl::StrJoin(col_info_as_str, ", ") + "]";
 }
+StatusOr<Relation> Relation::MakeSubRelation(const std::vector<std::string> &columns) const {
+  Relation new_relation;
+  for (auto &c : columns) {
+    if (!HasColumn(c)) {
+      return error::InvalidArgument("Column $0 is missing in relation", c);
+    }
+    auto col_type = GetColumnType(c);
+    new_relation.AddColumn(col_type, c);
+  }
+  return new_relation;
+}
 
 }  // namespace plan
 }  // namespace carnot

@@ -193,15 +193,17 @@ StatusOr<plan::Relation> IRRelationHandler::MapHandler(OperatorIR* node,
   PL_RETURN_IF_ERROR(HasExpectedColumns(lambda_expected, parent_rel));
   // Make a new relation with each of the expression key, type pairs.
   ColExpressionVector col_exprs = lambda_func->col_exprs();
+
+  plan::Relation map_rel;
   for (auto& entry : col_exprs) {
     std::string col_name = entry.name;
     PL_ASSIGN_OR_RETURN(types::DataType col_type, EvaluateExpression(entry.node, parent_rel, true));
-    parent_rel.AddColumn(col_type, col_name);
+    map_rel.AddColumn(col_type, col_name);
   }
   map_node->SetColExprs(col_exprs);
 
-  PL_RETURN_IF_ERROR(map_node->SetRelation(parent_rel));
-  return parent_rel;
+  PL_RETURN_IF_ERROR(map_node->SetRelation(map_rel));
+  return map_rel;
 }
 
 StatusOr<plan::Relation> IRRelationHandler::SinkHandler(OperatorIR*, plan::Relation parent_rel) {
@@ -250,19 +252,6 @@ Status IRRelationHandler::RelationUpdate(OperatorIR* node) {
   return node->SetRelation(rel);
 }
 
-StatusOr<plan::Relation> IRRelationHandler::SelectColumnsFromRelation(
-    const std::vector<std::string>& columns, const plan::Relation& relation) {
-  plan::Relation new_relation;
-  for (auto& c : columns) {
-    if (!relation.HasColumn(c)) {
-      return error::InvalidArgument("Column $0 is missing in relation", c);
-    }
-    auto col_type = relation.GetColumnType(c);
-    new_relation.AddColumn(col_type, c);
-  }
-  return new_relation;
-}
-
 Status IRRelationHandler::SetSourceRelation(IRNode* node) {
   if (node->type() != MemorySourceType) {
     return error::InvalidArgument("Only implemented MemorySourceType, can't handle $0",
@@ -294,7 +283,7 @@ Status IRRelationHandler::SetSourceRelation(IRNode* node) {
     }
     columns.push_back(static_cast<StringIR*>(col_string_node)->str());
   }
-  PL_ASSIGN_OR_RETURN(auto select_relation, SelectColumnsFromRelation(columns, table_relation));
+  PL_ASSIGN_OR_RETURN(auto select_relation, table_relation.MakeSubRelation(columns));
 
   PL_ASSIGN_OR_RETURN(auto cols, GetColumnsFromRelation(node, columns, table_relation));
   mem_node->SetColumns(cols);
