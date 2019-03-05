@@ -17,6 +17,11 @@ gazelle(
 # https://github.com/bazelbuild/bazel-gazelle/issues/181 for updates.
 # gazelle:proto disable
 
+# TODO(zasgar): We should keep an eye on fixes to gazelle that make this automatic
+# Make gazelle resolve the proto paths correctly.
+# gazelle:resolve go pixielabs.ai/pixielabs/src/utils/proto //src/utils/proto:utils_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/proto //src/vizier/proto:service_pl_go_proto
+
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 
 buildifier(

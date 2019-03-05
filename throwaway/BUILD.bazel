@@ -91,3 +91,14 @@ pl_cc_test(
         "@com_github_cpp_taskflow//:cpp_taskflow",
     ],
 )
+
+go_library(
+    name = "go_default_library",
+    srcs = ["hello.go"],
+    importpath = "pixielabs.ai/pixielabs/throwaway",
+)
+
+go_binary(
+    name = "throwaway",
+    embed = [":go_default_library"],
+)
