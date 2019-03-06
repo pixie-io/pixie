@@ -126,7 +126,7 @@ Status Compiler::CollapseRange(IR* ir) {
       ir->DeleteEdge(srcIR->id(), rangeIR->id());
 
       timeIR = static_cast<StringIR*>(rangeIR->time_repr());
-      auto now = std::chrono::high_resolution_clock::now();
+      auto now = std::chrono::system_clock::now();
 
       auto now_ns =
           std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
