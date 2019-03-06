@@ -109,14 +109,14 @@ CPUStatBPFTraceConnector::CPUStatBPFTraceConnector(const std::string& name, uint
 }
 
 RawDataBuf CPUStatBPFTraceConnector::GetDataImpl() {
-  auto result_maps = GetResultMaps();
-  auto cpustat_map = result_maps["@retval"];
+  auto cpustat_map = GetBPFMap("@retval");
 
   for (uint32_t i = 0; i < elements_.size(); ++i) {
     if (elements_[i].type() == DataType::TIME64NS) {
-      data_buf_[i] = cpustat_map[i] + ClockRealTimeOffset();
+      data_buf_[i] =
+          *(reinterpret_cast<int64_t*>(cpustat_map[i].second.data())) + ClockRealTimeOffset();
     } else {
-      data_buf_[i] = cpustat_map[i];
+      data_buf_[i] = *(reinterpret_cast<int64_t*>(cpustat_map[i].second.data()));
     }
   }
 
@@ -124,26 +124,29 @@ RawDataBuf CPUStatBPFTraceConnector::GetDataImpl() {
 }
 
 RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
-  auto result_maps = GetResultMaps();
-
-  auto pid_to_time_map = result_maps["@total_time"];
+  auto pid_to_time_map = GetBPFMap("@total_time");
   auto num_pids = pid_to_time_map.size();
 
   // TODO(oazizi): Get PID process names, like below.
-  // auto pid_to_name_map = result_maps["@names"];
+  // auto pid_to_name_map = GetBPFMap("@names");
 
   // This is a special map with only one entry at location 0.
-  auto sampling_time_map = result_maps["@time"];
+  auto sampling_time_map = GetBPFMap("@time");
   CHECK_EQ(1ULL, sampling_time_map.size());
-  auto timestamp = sampling_time_map[0];
+  auto timestamp = *(reinterpret_cast<uint64_t*>(sampling_time_map[0].second.data()));
 
   // TODO(oazizi): Optimize this. Likely need a way of removing old PIDs in the bt file.
-  data_buf_.resize(std::max<uint64_t>(num_pids * elements_.size(), data_buf_.size()));
+  data_buf_.resize(std::max<uint64_t>(num_pids * (elements_.size()), data_buf_.size()));
 
   uint32_t idx = 0;
-  for (auto pid_time_pair : pid_to_time_map) {
-    auto pid = pid_time_pair.first;
-    auto cputime = pid_time_pair.second;
+  for (auto& pid_time_pair : pid_to_time_map) {
+    auto key = pid_time_pair.first;
+    auto value = pid_time_pair.second;
+
+    uint64_t cputime = *(reinterpret_cast<uint64_t*>(value.data()));
+
+    DCHECK_EQ(4ULL, key.size()) << "Expected uint32_t key";
+    uint64_t pid = *(reinterpret_cast<uint32_t*>(key.data()));
 
     data_buf_[idx++] = timestamp + ClockRealTimeOffset();
     data_buf_[idx++] = pid;

@@ -15,9 +15,7 @@ tracepoint:sched:sched_switch
   // Record start time (and name) of the newly scheduled process.
   $schedule_pid_start_time = nsecs;
   @start_time[args->next_pid] = $schedule_pid_start_time;
-
-  // TODO(oazizi): Enable the line below to get the command of the PID.
-  //@names[args->next_pid] = args->next_comm;
+  @names[args->next_pid] = args->next_comm;
 
   // Also record the current time as a timestamp.
   @time[0] = nsecs;

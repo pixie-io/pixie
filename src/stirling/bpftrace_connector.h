@@ -40,7 +40,7 @@ class BPFTraceConnector : public SourceConnector {
 
   Status StopImpl() override;
 
-  auto GetResultMaps() { return bpftrace_.return_maps(); }
+  auto GetBPFMap(const std::string& name) { return bpftrace_.get_map(name); }
 
  protected:
   /**
