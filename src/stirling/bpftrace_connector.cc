@@ -147,8 +147,10 @@ RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
 
     data_buf_[idx++] = timestamp + ClockRealTimeOffset();
     data_buf_[idx++] = pid;
-    data_buf_[idx++] = cputime;
+    data_buf_[idx++] = cputime - last_result_[pid];
   }
+
+  last_result_ = pid_to_time_map;
 
   return RawDataBuf(num_pids, reinterpret_cast<uint8_t*>(data_buf_.data()));
 }

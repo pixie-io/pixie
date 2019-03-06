@@ -5,10 +5,10 @@ R"(
 tracepoint:sched:sched_switch
 {
   // Calculate run-time of previously running process.
-  $descheculed_pid_start_time = @start_time[args->prev_pid];
-  if ($descheculed_pid_start_time) {
+  $descheduled_pid_start_time = @start_time[args->prev_pid];
+  if ($descheduled_pid_start_time) {
     delete(@start_time[args->prev_pid]);
-    $runtime = nsecs - $descheculed_pid_start_time;
+    $runtime = nsecs - $descheduled_pid_start_time;
     @total_time[args->prev_pid] = @total_time[args->prev_pid] + $runtime;
   }
 

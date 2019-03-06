@@ -130,6 +130,8 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
       ;  // NOLINT
 
   std::vector<uint64_t> data_buf_;
+
+  bpftrace::RetMap last_result_;
 };
 
 }  // namespace stirling
