@@ -4,6 +4,19 @@
 
 namespace pl {
 
+TEST(StringToRange, basic) {
+  auto res = StringToTimeRange("5,20");
+  EXPECT_OK(res);
+  auto output_pair = res.ConsumeValueOrDie();
+  EXPECT_EQ(5, output_pair.first);
+  EXPECT_EQ(20, output_pair.second);
+}
+
+TEST(StringToRange, invalid_format) {
+  auto res = StringToTimeRange("hi");
+  EXPECT_FALSE(res.ok());
+}
+
 TEST(StringToTime, basic) {
   EXPECT_EQ(-120000000000, StringToTimeInt("-2m").ConsumeValueOrDie());
   EXPECT_EQ(120000000000, StringToTimeInt("2m").ConsumeValueOrDie());

@@ -186,6 +186,36 @@ TEST(CompilerTest, remove_range) {
   EXPECT_EQ(7200000000000, src->time_stop_ns() - src->time_start_ns());
 }
 
+TEST(CompilerTest, remove_range_start_end) {
+  // Construct example IR Graph.
+  auto graph = std::make_shared<IR>();
+
+  // Create nodes.
+  auto src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  auto range = graph->MakeNode<RangeIR>().ValueOrDie();
+  auto time = graph->MakeNode<StringIR>().ValueOrDie();
+  auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
+
+  EXPECT_OK(time->Init("20,50"));
+  EXPECT_OK(range->Init(src, time));
+  EXPECT_OK(sink->Init(range, "sink"));
+  EXPECT_FALSE(src->IsTimeSet());
+
+  EXPECT_EQ(std::vector<int64_t>({0, 1, 2, 3}), graph->dag().TopologicalSort());
+
+  // Add dependencies.
+  EXPECT_OK(graph->AddEdge(src, range));
+  EXPECT_OK(graph->AddEdge(range, sink));
+  EXPECT_OK(graph->AddEdge(range, time));
+
+  EXPECT_OK(Compiler::CollapseRange(graph.get()));
+
+  EXPECT_EQ(std::vector<int64_t>({0, 3}), graph->dag().TopologicalSort());
+  EXPECT_TRUE(src->IsTimeSet());
+  EXPECT_EQ(50, src->time_stop_ns());
+  EXPECT_EQ(20, src->time_start_ns());
+}
+
 // Test for select order that is different than the schema.
 const char *kSelectOrderLogicalPlan = R"(
 dag {

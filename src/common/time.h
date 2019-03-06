@@ -2,6 +2,7 @@
 
 #include <regex>
 #include <string>
+#include <utility>
 
 #include "absl/strings/str_format.h"
 #include "src/common/error.h"
@@ -9,11 +10,24 @@
 
 namespace pl {
 
+inline StatusOr<std::pair<int64_t, int64_t>> StringToTimeRange(const std::string& str_time) {
+  std::regex rgx("([0-9]+),([0-9]+)");
+  std::smatch matches;
+  if (std::regex_search(str_time, matches, rgx) && matches.size() == 3) {
+    return std::make_pair(static_cast<int64_t>(std::stoi(matches[1])),
+                          static_cast<int64_t>(std::stoi(matches[2])));
+  } else {
+    return error::InvalidArgument("String provided for Range is in incorrect format.");
+  }
+}
+
 inline StatusOr<int64_t> StringToTimeInt(const std::string& str_time) {
   std::regex rgx("([-]?[0-9]+)(ms|m|s|h|d)");
   std::smatch matches;
   if (std::regex_search(str_time, matches, rgx)) {
-    // TODO(michelle): PL-403 - Fix potential buffer overflow here when matches < 2.
+    if (matches.size() != 3) {
+      return error::InvalidArgument("Time string is in wrong format.");
+    }
     auto amount = std::stoi(matches[1]);
     auto unit = matches[2];
 

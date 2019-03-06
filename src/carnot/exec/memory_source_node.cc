@@ -56,7 +56,8 @@ Status MemorySourceNode::GenerateNextImpl(ExecState *exec_state) {
   auto end = -1;
   if (plan_node_->HasStartTime() && current_batch_ == start_batch_info_.batch_idx) {
     offset = start_batch_info_.row_idx;
-  } else if (plan_node_->HasStopTime()) {
+  }
+  if (plan_node_->HasStopTime()) {
     auto time_col = table_->FindTimeColumn();
     DCHECK_NE(time_col, -1);
     auto batch = table_->GetColumn(time_col)->batch(current_batch_);

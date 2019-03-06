@@ -206,27 +206,123 @@ TEST_F(CarnotTest, order_test) {
   EXPECT_EQ(3, output_table->NumBatches());
   EXPECT_EQ(3, output_table->NumColumns());
 
-  std::vector<udf::Float64Value> col1_out1 = {6.5, 3.2, 17.3};
-  std::vector<udf::Float64Value> col1_out2 = {5.1, 65.1};
+  std::vector<udf::Float64Value> col0_out1 = {6.5, 3.2, 17.3};
+  std::vector<udf::Float64Value> col0_out2 = {5.1, 65.1};
   std::vector<udf::Float64Value> col1_out3 = {61.2, 12.1, 20.3};
-  std::vector<udf::Int64Value> col2_out1 = {1, 1, 1};
-  std::vector<udf::Int64Value> col3_out1 = {2, 2, 2};
+  std::vector<udf::Int64Value> col1_out1 = {1, 1, 1};
+  std::vector<udf::Int64Value> col2_out1 = {2, 2, 2};
 
   auto rb1 =
       output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
           .ConsumeValueOrDie();
 
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(col1_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(udf::ToArrow(col2_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(udf::ToArrow(col3_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(col0_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(udf::ToArrow(col1_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(udf::ToArrow(col2_out1, arrow::default_memory_pool())));
 
   auto rb2 = output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
                  .ConsumeValueOrDie();
-  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(udf::ToArrow(col1_out2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(udf::ToArrow(col0_out2, arrow::default_memory_pool())));
 
   auto rb3 = output_table->GetRowBatch(2, std::vector<int64_t>({0}), arrow::default_memory_pool())
                  .ConsumeValueOrDie();
   EXPECT_TRUE(rb3->ColumnAt(0)->Equals(udf::ToArrow(col1_out3, arrow::default_memory_pool())));
+}
+
+TEST_F(CarnotTest, range_test_multiple_rbs) {
+  auto table = CarnotTestUtils::BigTestTable();
+
+  auto table_store = carnot_.table_store();
+  table_store->AddTable("big_test_table", table);
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='big_test_table', select=['time_', 'col2', "
+          "'col3']).Range(time='2,6').Result(name='rng_output')",
+      },
+      "\n");
+  auto s = carnot_.ExecuteQuery(query);
+  std::cout << s.msg();
+  ASSERT_TRUE(s.ok());
+
+  auto output_table = table_store->GetTable("rng_output");
+  EXPECT_EQ(2, output_table->NumBatches());
+  EXPECT_EQ(3, output_table->NumColumns());
+
+  auto rb1 =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+
+  std::vector<udf::Time64NSValue> col0_out1;
+  std::vector<udf::Float64Value> col1_out1;
+  std::vector<udf::Int64Value> col2_out1;
+  for (int64_t i = 0; i < table->GetColumn(0)->batch(0)->length(); i++) {
+    if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 6) {
+      col0_out1.push_back(CarnotTestUtils::big_test_col1[i].val);
+      col1_out1.push_back(CarnotTestUtils::big_test_col2[i].val);
+      col2_out1.push_back(CarnotTestUtils::big_test_col3[i].val);
+    }
+  }
+
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(col0_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(udf::ToArrow(col1_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(udf::ToArrow(col2_out1, arrow::default_memory_pool())));
+
+  auto rb2 =
+      output_table->GetRowBatch(1, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+
+  std::vector<udf::Time64NSValue> col0_out2;
+  std::vector<udf::Float64Value> col1_out2;
+  std::vector<udf::Int64Value> col2_out2;
+  for (int64_t i = table->GetColumn(0)->batch(0)->length();
+       i < table->GetColumn(0)->batch(0)->length() + table->GetColumn(0)->batch(1)->length(); i++) {
+    if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 6) {
+      col0_out2.push_back(CarnotTestUtils::big_test_col1[i].val);
+      col1_out2.push_back(CarnotTestUtils::big_test_col2[i].val);
+      col2_out2.push_back(CarnotTestUtils::big_test_col3[i].val);
+    }
+  }
+
+  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(udf::ToArrow(col0_out2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb2->ColumnAt(1)->Equals(udf::ToArrow(col1_out2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb2->ColumnAt(2)->Equals(udf::ToArrow(col2_out2, arrow::default_memory_pool())));
+}
+
+TEST_F(CarnotTest, range_test_single_rb) {
+  auto table = CarnotTestUtils::BigTestTable();
+
+  auto table_store = carnot_.table_store();
+  table_store->AddTable("big_test_table", table);
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='big_test_table', select=['time_', 'col2', "
+          "'col3']).Range(time='2,3').Result(name='rng_output')",
+      },
+      "\n");
+  auto s = carnot_.ExecuteQuery(query);
+  ASSERT_TRUE(s.ok());
+
+  auto output_table = table_store->GetTable("rng_output");
+  EXPECT_EQ(1, output_table->NumBatches());
+  EXPECT_EQ(3, output_table->NumColumns());
+
+  std::vector<udf::Time64NSValue> col0_out1;
+  std::vector<udf::Float64Value> col1_out1;
+  std::vector<udf::Int64Value> col2_out1;
+  for (size_t i = 0; i < CarnotTestUtils::big_test_col1.size(); i++) {
+    if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 3) {
+      col0_out1.push_back(CarnotTestUtils::big_test_col1[i].val);
+      col1_out1.push_back(CarnotTestUtils::big_test_col2[i].val);
+      col2_out1.push_back(CarnotTestUtils::big_test_col3[i].val);
+    }
+  }
+
+  auto rb1 =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(col0_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(udf::ToArrow(col1_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(udf::ToArrow(col2_out1, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, empty_range_test) {

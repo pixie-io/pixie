@@ -1,5 +1,6 @@
 #include <chrono>
 #include <memory>
+#include <regex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -130,8 +131,19 @@ Status Compiler::CollapseRange(IR* ir) {
 
       auto now_ns =
           std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-      PL_ASSIGN_OR_RETURN(auto time_difference, StringToTimeInt(timeIR->str()));
-      srcIR->SetTime(now_ns + time_difference, now_ns);
+      auto time_str = timeIR->str();
+      auto s = StringToTimeInt(time_str);
+      // TODO(michelle) (PL-406): Update when we add kwargs to the compiler.
+      if (!s.ok()) {
+        // Time string is in format "1,20".
+        PL_ASSIGN_OR_RETURN(auto range, StringToTimeRange(time_str));
+        srcIR->SetTime(range.first, range.second);
+      } else {
+        // Time string is in format "-2m".
+        auto time_difference = s.ConsumeValueOrDie();
+        srcIR->SetTime(now_ns + time_difference, now_ns);
+      }
+
       ir->DeleteNode(timeIR->id());
 
       // Update all of range's dependencies to point to src.
