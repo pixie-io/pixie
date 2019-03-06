@@ -103,7 +103,13 @@ Status IRVerifier::VerifyAgg(IRNode* node) {
     }
     PL_ASSIGN_OR_RETURN(IRNode * by_body, by_func->GetDefaultExpr());
 
-    PL_RETURN_IF_ERROR(ExpectType(ColumnType, by_body, "AggIR 'by_func' body"));
+    auto actual_type = by_body->type();
+    if (ColumnType != actual_type && actual_type != ListType) {
+      auto msg =
+          absl::Substitute("AggIR: For node with id $1, Expected ColumnType or ListType Got $0.",
+                           by_body->type_string(), by_body->id());
+      return FormatErrorMsg(msg, node);
+    }
   } else {
     LOG(WARNING) << "WARNING: you are currently using a hack to allow bool type for by_func";
   }

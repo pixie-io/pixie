@@ -25,6 +25,12 @@ scalar_udfs {
   return_type: INT64
 }
 scalar_udfs {
+  name: "pl.add"
+  exec_arg_types: FLOAT64
+  exec_arg_types: FLOAT64
+  return_type: FLOAT64
+}
+scalar_udfs {
   name: "pl.modulo"
   exec_arg_types: INT64
   exec_arg_types: INT64
@@ -40,6 +46,11 @@ udas {
   name: "pl.mean"
   update_arg_types: FLOAT64
   finalize_type:  FLOAT64
+}
+udas {
+  name: "pl.count"
+  update_arg_types: FLOAT64
+  finalize_type:  INT64
 }
 )";
 TEST(CompilerTest, basic) {
@@ -452,7 +463,9 @@ nodes {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
         name: "cpu_out"
+        column_types: INT64
         column_types: FLOAT64
+        column_names: "group"
         column_names: "mean"
       }
     }
@@ -487,6 +500,83 @@ TEST(CompilerTest, range_agg_test) {
   EXPECT_TRUE(
       google::protobuf::util::MessageDifferencer::Equals(plan_pb, plan.ConsumeValueOrDie()));
 }
+
+TEST(CompilerTest, multiple_group_by_agg_test) {
+  auto info = std::make_shared<RegistryInfo>();
+  carnotpb::UDFInfo info_pb;
+  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
+  EXPECT_OK(info->Init(info_pb));
+
+  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
+  rel_map->emplace(
+      "cpu", plan::Relation(
+                 std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
+                                               types::DataType::FLOAT64, types::DataType::FLOAT64}),
+                 std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
+  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
+  std::string query = absl::StrJoin(
+      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
+       "aggDF = queryDF.Agg(by=lambda r : [r.cpu0, r.cpu2], fn=lambda r : {'cpu_count' : "
+       "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).Result(name='cpu_out')"},
+      "\n");
+  auto compiler = Compiler();
+  auto plan = compiler.Compile(query, compiler_state.get());
+  VLOG(1) << plan.ToString();
+  EXPECT_OK(plan);
+}
+
+TEST(CompilerTest, multiple_group_by_map_then_agg) {
+  auto info = std::make_shared<RegistryInfo>();
+  carnotpb::UDFInfo info_pb;
+  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
+  EXPECT_OK(info->Init(info_pb));
+
+  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
+  rel_map->emplace(
+      "cpu", plan::Relation(
+                 std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
+                                               types::DataType::FLOAT64, types::DataType::FLOAT64}),
+                 std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
+  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
+  std::string query = absl::StrJoin(
+      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
+       "mapDF =  queryDF.Map(fn = lambda r : {'cpu0' : r.cpu0, 'cpu1' : r.cpu1, 'cpu2' : r.cpu2, "
+       "'cpu_sum' : r.cpu0+r.cpu1+r.cpu2})",
+       "aggDF = mapDF.Agg(by=lambda r : [r.cpu0, r.cpu2], fn=lambda r : {'cpu_count' : "
+       "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).Result(name='cpu_out')"},
+      "\n");
+  auto compiler = Compiler();
+  auto plan = compiler.Compile(query, compiler_state.get());
+  VLOG(1) << plan.ToString();
+  EXPECT_OK(plan);
+}
+TEST(CompilerTest, rename_then_group_by_test) {
+  auto info = std::make_shared<RegistryInfo>();
+  carnotpb::UDFInfo info_pb;
+  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
+  EXPECT_OK(info->Init(info_pb));
+
+  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
+  rel_map->emplace("sequences",
+                   plan::Relation(std::vector<types::DataType>({
+                                      types::DataType::TIME64NS,
+                                      types::DataType::FLOAT64,
+                                      types::DataType::FLOAT64,
+                                  }),
+                                  std::vector<std::string>({"_time", "xmod10", "PIx"})));
+  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
+  auto query = absl::StrJoin(
+      {"queryDF = From(table='sequences', select=['_time', 'xmod10', 'PIx'])",
+       "map_out = queryDF.Map(fn=lambda r : {'res': r.PIx, 'c1': r.xmod10})",
+       "agg_out = map_out.Agg(by=lambda r: [r.res, r.c1], fn=lambda r: {'count': pl.count(r.c1)})",
+       "agg_out.Result(name='t15')"},
+      "\n");
+  auto compiler = Compiler();
+  auto plan = compiler.Compile(query, compiler_state.get());
+  VLOG(1) << plan.ToString();
+  EXPECT_OK(plan);
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
