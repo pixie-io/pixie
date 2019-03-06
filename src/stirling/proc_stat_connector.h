@@ -15,7 +15,7 @@ class ProcStatConnector : public SourceConnector {
 
   static constexpr char kName[] = "proc_stat";
 
-  inline static DataElements kElements = {DataElement("_time", DataType::TIME64NS),
+  inline static DataElements kElements = {DataElement("time_", DataType::TIME64NS),
                                           DataElement("system_percent", DataType::FLOAT64),
                                           DataElement("user_percent", DataType::FLOAT64),
                                           DataElement("idle_percent", DataType::FLOAT64)};
@@ -89,7 +89,7 @@ class FakeProcStatConnector : public ProcStatConnector {
 
   static constexpr char kName[] = "fake_proc_stat";
 
-  inline static DataElements kElements = {DataElement("_time", DataType::TIME64NS),
+  inline static DataElements kElements = {DataElement("time_", DataType::TIME64NS),
                                           DataElement("system_percent", DataType::FLOAT64),
                                           DataElement("user_percent", DataType::FLOAT64),
                                           DataElement("idle_percent", DataType::FLOAT64)};

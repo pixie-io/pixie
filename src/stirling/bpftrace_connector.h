@@ -69,7 +69,7 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
 
   static constexpr char kName[] = "bpftrace_cpu_stats";
 
-  inline static const DataElements kElements = {DataElement("_time", DataType::TIME64NS),
+  inline static const DataElements kElements = {DataElement("time_", DataType::TIME64NS),
                                                 DataElement("cpustat_user", DataType::INT64),
                                                 DataElement("cpustat_nice", DataType::INT64),
                                                 DataElement("cpustat_system", DataType::INT64),
@@ -107,7 +107,7 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
 
   static constexpr char kName[] = "bpftrace_pid_cpu_usage";
 
-  inline static const DataElements kElements = {DataElement("_time", DataType::TIME64NS),
+  inline static const DataElements kElements = {DataElement("time_", DataType::TIME64NS),
                                                 DataElement("pid", DataType::INT64),
                                                 DataElement("nsecs_runtime", DataType::INT64)};
 

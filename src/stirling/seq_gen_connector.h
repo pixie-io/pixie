@@ -27,7 +27,7 @@ class SeqGenConnector : public SourceConnector {
   inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   inline static const DataElements kElements = {
-      DataElement("_time", DataType::TIME64NS), DataElement("x", DataType::INT64),
+      DataElement("time_", DataType::TIME64NS), DataElement("x", DataType::INT64),
       DataElement("x%10", DataType::INT64),     DataElement("x^2", DataType::INT64),
       DataElement("Fib(x)", DataType::INT64),   DataElement("PI*x", DataType::FLOAT64)};
 

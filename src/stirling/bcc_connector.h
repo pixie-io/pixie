@@ -53,7 +53,7 @@ class BCCCPUMetricsConnector : public BCCConnector {
 
   static constexpr char kName[] = "bcc_cpu_stats";
 
-  inline static const DataElements kElements = {DataElement("_time", DataType::TIME64NS),
+  inline static const DataElements kElements = {DataElement("time_", DataType::TIME64NS),
                                                 DataElement("cpu_id", DataType::INT64),
                                                 DataElement("cpu_percentage", DataType::FLOAT64)};
 
