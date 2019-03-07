@@ -32,6 +32,36 @@ scalar_udfs {
   return_type: FLOAT64
 }
 scalar_udfs {
+  name: "pl.greaterThan"
+  exec_arg_types: FLOAT64
+  exec_arg_types: FLOAT64
+  return_type: BOOLEAN
+}
+scalar_udfs {
+  name: "pl.lessThan"
+  exec_arg_types: FLOAT64
+  exec_arg_types: FLOAT64
+  return_type: BOOLEAN
+}
+scalar_udfs {
+  name: "pl.greaterThanEqual"
+  exec_arg_types: FLOAT64
+  exec_arg_types: FLOAT64
+  return_type: BOOLEAN
+}
+scalar_udfs {
+  name: "pl.lessThanEqual"
+  exec_arg_types: FLOAT64
+  exec_arg_types: FLOAT64
+  return_type: BOOLEAN
+}
+scalar_udfs {
+  name: "pl.equal"
+  exec_arg_types: FLOAT64
+  exec_arg_types: FLOAT64
+  return_type: BOOLEAN
+}
+scalar_udfs {
   name: "pl.modulo"
   exec_arg_types: INT64
   exec_arg_types: INT64
@@ -608,6 +638,35 @@ TEST(CompilerTest, rename_then_group_by_test) {
   EXPECT_OK(plan);
 }
 
+// Test to see whether comparisons work.
+TEST(CompilerTest, comparison_test) {
+  auto info = std::make_shared<RegistryInfo>();
+  carnotpb::UDFInfo info_pb;
+  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
+  EXPECT_OK(info->Init(info_pb));
+
+  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
+  rel_map->emplace("sequences",
+                   plan::Relation(std::vector<types::DataType>({
+                                      types::DataType::TIME64NS,
+                                      types::DataType::FLOAT64,
+                                      types::DataType::FLOAT64,
+                                  }),
+                                  std::vector<std::string>({"_time", "xmod10", "PIx"})));
+
+  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
+  auto query =
+      absl::StrJoin({"queryDF = From(table='sequences', select=['_time', 'xmod10', 'PIx'])",
+                     "map_out = queryDF.Map(fn=lambda r : {'res': r.PIx, "
+                     "'c1': r.xmod10, 'gt' : r.xmod10 > 10.0,'lt' : r.xmod10 < 10.0,",
+                     "'gte' : r.PIx >= 1.0, 'lte' : r.PIx <= 1.0,", "'eq' : r.PIx == 1.0})",
+                     "map_out.Result(name='t15')"},
+                    "\n");
+  auto compiler = Compiler();
+  auto plan = compiler.Compile(query, compiler_state.get());
+  VLOG(1) << plan.ToString();
+  EXPECT_OK(plan);
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

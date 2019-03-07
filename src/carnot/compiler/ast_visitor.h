@@ -349,6 +349,15 @@ class ASTWalker {
                                                 const pypa::AstBinOpPtr& node);
 
   /**
+   * @brief Takes a comparison (<,=,<=,>=,>) node and translates it to an IRNode expression.
+   *
+   * @param arg_name
+   * @param node
+   * @return StatusOr<LambdaExprReturn>
+   */
+  StatusOr<LambdaExprReturn> ProcessLambdaCompare(const std::string& arg_name,
+                                                  const pypa::AstComparePtr& node);
+  /**
    * @brief Processes a call node with the lambda context (arg_name) that helps identify and
    * return the column names we want, and notifies us when there is a column name being used
    *

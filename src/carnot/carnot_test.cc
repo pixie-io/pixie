@@ -451,7 +451,6 @@ TEST_F(CarnotTest, DISABLED_group_by_col_agg_test) {
   EXPECT_EQ(expected, actual);
 }
 
-// TEST_F(CarnotTest, multiple_group_by_test) {
 TEST_F(CarnotTest, DISABLED_multiple_group_by_test) {
   auto table = CarnotTestUtils::BigTestTable();
 
@@ -505,6 +504,94 @@ TEST_F(CarnotTest, DISABLED_multiple_group_by_test) {
     auto key = Key{casted_num_grp->Value(i), casted_str_grp->GetString(i)};
 
     actual[key] = casted_agg->Value(i);
+  }
+  EXPECT_EQ(expected, actual);
+}
+
+TEST_F(CarnotTest, comparison_tests) {
+  auto table = CarnotTestUtils::BigTestTable();
+
+  auto table_store = carnot_.table_store();
+  table_store->AddTable("big_test_table", table);
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='big_test_table', select=['time_', 'col3', 'num_groups', "
+          "'string_groups'])",
+          "aggDF = queryDF.Map(fn=lambda r : {'lt' : r.col3 < $0, 'gt' : r.num_groups > $1 })",
+          "aggDF.Result(name='test_output')",
+      },
+      "\n");
+  // Values to test on.
+  int64_t col3_lt_val = 12;
+  int64_t num_groups_gt_val = 1;
+  query = absl::Substitute(query, col3_lt_val, num_groups_gt_val);
+  auto s = carnot_.ExecuteQuery(query);
+  VLOG(1) << s.ToString();
+  ASSERT_TRUE(s.ok());
+  auto output_table = table_store->GetTable("test_output");
+  EXPECT_EQ(3, output_table->NumBatches());
+  EXPECT_EQ(2, output_table->NumColumns());
+  auto rb1 =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  auto col3 = CarnotTestUtils::big_test_col3;
+  auto col_num_groups = CarnotTestUtils::big_test_groups;
+  std::vector<udf::BoolValue> lt_exp;
+  std::vector<udf::BoolValue> gt_exp;
+
+  for (int64_t i = 0; i < rb1->num_rows(); i++) {
+    lt_exp.push_back(col3[i] < col3_lt_val);
+    gt_exp.push_back(col_num_groups[i] > num_groups_gt_val);
+  }
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(lt_exp, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(udf::ToArrow(gt_exp, arrow::default_memory_pool())));
+}
+
+TEST_F(CarnotTest, DISABLED_comparison_to_agg_tests) {
+  auto table = CarnotTestUtils::BigTestTable();
+
+  auto table_store = carnot_.table_store();
+  table_store->AddTable("big_test_table", table);
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='big_test_table', select=['time_', 'col3', 'num_groups', "
+          "'string_groups'])",
+          "mapDF = queryDF.Map(fn=lambda r : {'is_large' : r.col3 > $0, 'num_groups' : "
+          "r.num_groups})",
+          "aggDF = mapDF.Agg(by=lambda r : r.is_large, fn=lambda r : {'count' : "
+          "pl.count(r.num_groups)})",
+          "aggDF.Result(name='test_output')",
+      },
+      "\n");
+  // Value to test on.
+  int64_t col3_gt_val = 30;
+  query = absl::Substitute(query, col3_gt_val);
+  auto s = carnot_.ExecuteQuery(query);
+  VLOG(1) << s.ToString();
+  ASSERT_TRUE(s.ok());
+  auto output_table = table_store->GetTable("test_output");
+  EXPECT_EQ(1, output_table->NumBatches());
+  EXPECT_EQ(2, output_table->NumColumns());
+  auto rb1 =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  auto col3 = CarnotTestUtils::big_test_col3;
+  int64_t gt_count = 0;
+  for (size_t i = 0; i < col3.size(); i++) {
+    if (col3[i] > col3_gt_val) {
+      gt_count += 1;
+    }
+  }
+  std::unordered_map<bool, int64_t> expected = {{true, gt_count}, {false, col3.size() - gt_count}};
+  std::unordered_map<bool, int64_t> actual;
+
+  for (int i = 0; i < rb1->num_rows(); ++i) {
+    auto output_col_grp = rb1->ColumnAt(0);
+    auto output_col_agg = rb1->ColumnAt(1);
+    auto casted_grp = reinterpret_cast<arrow::BooleanArray *>(output_col_grp.get());
+    auto casted_agg = reinterpret_cast<arrow::Int64Array *>(output_col_agg.get());
+
+    actual[casted_grp->Value(i)] = casted_agg->Value(i);
   }
   EXPECT_EQ(expected, actual);
 }

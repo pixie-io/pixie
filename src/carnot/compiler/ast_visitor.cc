@@ -8,7 +8,11 @@ using pypa::AstType;
 using pypa::walk_tree;
 
 const std::unordered_map<std::string, std::string> kOP_TO_UDF_MAP = {
-    {"*", "pl.multiply"}, {"+", "pl.add"}, {"-", "pl.subtract"}, {"/", "pl.divide"}};
+    {"*", "pl.multiply"},         {"+", "pl.add"},
+    {"-", "pl.subtract"},         {"/", "pl.divide"},
+    {">", "pl.greaterThan"},      {"<", "pl.lessThan"},
+    {"==", "pl.equal"},           {"<=", "pl.lessThanEqual"},
+    {">=", "pl.greaterThanEqual"}};
 
 const std::unordered_map<std::string, int64_t> kTimeMapNS = {
     {"pl.second", 1e9}, {"pl.minute", 6e10}, {"pl.hour", 3.6e11}};
@@ -429,6 +433,29 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaBinOp(const std::string& arg_
   return BuildLambdaFunc(fn_name, children_ret_expr, node);
 }
 
+StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCompare(const std::string& arg_name,
+                                                           const pypa::AstComparePtr& node) {
+  DCHECK_EQ(node->operators.size(), 1ULL);
+  std::string op_str = pypa::to_string(node->operators[0]);
+  auto op_find = kOP_TO_UDF_MAP.find(op_str);
+  if (op_find == kOP_TO_UDF_MAP.end()) {
+    return CreateAstError(absl::StrFormat("Operator '%s' not handled", op_str), node);
+  }
+  std::string fn_name = op_find->second;
+  std::vector<LambdaExprReturn> children_ret_expr;
+  if (node->comparators.size() != 1) {
+    return CreateAstError(
+        absl::StrFormat("Only expected one argument to the right of '%s'.", op_str), node);
+  }
+  PL_ASSIGN_OR_RETURN(auto rt, ProcessLambdaExpr(arg_name, node->left));
+  children_ret_expr.push_back(rt);
+  for (auto comp : node->comparators) {
+    PL_ASSIGN_OR_RETURN(auto rt, ProcessLambdaExpr(arg_name, comp));
+    children_ret_expr.push_back(rt);
+  }
+  return BuildLambdaFunc(fn_name, children_ret_expr, node);
+}
+
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCall(const std::string& arg_name,
                                                         const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(auto attr_result, ProcessLambdaExpr(arg_name, node->function));
@@ -512,6 +539,11 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaExpr(const std::string& arg_n
     }
     case AstType::List: {
       PL_ASSIGN_OR_RETURN(expr_return, ProcessLambdaList(arg_name, PYPA_PTR_CAST(List, node)));
+      break;
+    }
+    case AstType::Compare: {
+      PL_ASSIGN_OR_RETURN(expr_return,
+                          ProcessLambdaCompare(arg_name, PYPA_PTR_CAST(Compare, node)));
       break;
     }
     default: {
