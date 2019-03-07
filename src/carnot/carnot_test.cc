@@ -1,12 +1,13 @@
 #include <gmock/gmock.h>
 #include <google/protobuf/text_format.h>
 #include <gtest/gtest.h>
-#include <pypa/parser/parser.hh>
 
 #include <algorithm>
 #include <map>
 #include <unordered_map>
 #include <vector>
+
+#include <pypa/parser/parser.hh>
 
 #include "src/carnot/carnot.h"
 #include "src/carnot/exec/row_descriptor.h"

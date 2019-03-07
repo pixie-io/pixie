@@ -2,10 +2,11 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/message_differencer.h>
 #include <gtest/gtest.h>
-#include <pypa/parser/parser.hh>
 
 #include <unordered_map>
 #include <vector>
+
+#include <pypa/parser/parser.hh>
 
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/compiler_state.h"

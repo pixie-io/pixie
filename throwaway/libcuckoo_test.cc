@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
-#include <libcuckoo/cuckoohash_map.hh>
 
 #include <string>
+
+#include <libcuckoo/cuckoohash_map.hh>
 
 TEST(libcuckoo, basic) {
   cuckoohash_map<int, std::string> table;

@@ -1,8 +1,5 @@
 #pragma once
 
-#include <pypa/ast/ast.hh>
-#include <pypa/ast/tree_walker.hh>
-
 #include <algorithm>
 #include <iostream>
 #include <memory>
@@ -11,6 +8,9 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include <pypa/ast/ast.hh>
+#include <pypa/ast/tree_walker.hh>
 
 #include "src/carnot/compiler/ir_nodes.h"
 

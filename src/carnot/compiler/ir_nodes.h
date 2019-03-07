@@ -1,6 +1,4 @@
 #pragma once
-#include <pypa/ast/ast.hh>
-
 #include <map>
 #include <memory>
 #include <string>
@@ -8,6 +6,8 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include <pypa/ast/ast.hh>
 
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/operators.h"

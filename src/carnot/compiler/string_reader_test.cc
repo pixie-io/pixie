@@ -1,7 +1,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <pypa/parser/parser.hh>
+
 #include <vector>
+
+#include <pypa/parser/parser.hh>
 
 #include "absl/strings/str_join.h"
 #include "src/carnot/compiler/string_reader.h"

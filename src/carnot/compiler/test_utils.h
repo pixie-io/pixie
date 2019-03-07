@@ -1,11 +1,12 @@
 #pragma once
-#include <pypa/ast/tree_walker.hh>
-#include <pypa/parser/parser.hh>
 
 #include <cstdio>
 #include <fstream>
 #include <memory>
 #include <string>
+
+#include <pypa/ast/tree_walker.hh>
+#include <pypa/parser/parser.hh>
 
 #include "src/carnot/compiler/ast_visitor.h"
 #include "src/carnot/compiler/string_reader.h"
