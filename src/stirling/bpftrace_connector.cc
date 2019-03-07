@@ -2,6 +2,7 @@
 #include <time.h>
 #include <algorithm>
 #include <thread>
+#include <utility>
 
 #include "src/common/utils.h"
 #include "src/stirling/bpftrace_connector.h"
@@ -148,9 +149,19 @@ RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
     DCHECK_EQ(4ULL, key.size()) << "Expected uint32_t key";
     uint64_t pid = *(reinterpret_cast<uint32_t*>(key.data()));
 
+    // The ugliness below finds the last cputime for the current PID.
+    uint64_t last_cputime = 0;
+    auto it = std::find_if(last_result_.begin(), last_result_.end(),
+                           [&pid](const std::pair<std::vector<uint8_t>, std::vector<uint8_t>>& x) {
+                             return *(reinterpret_cast<const uint32_t*>(x.first.data())) == pid;
+                           });
+    if (it != last_result_.end()) {
+      last_cputime = *(reinterpret_cast<uint64_t*>(it->second.data()));
+    }
+
     data_buf_[idx++] = timestamp + ClockRealTimeOffset();
     data_buf_[idx++] = pid;
-    data_buf_[idx++] = cputime - last_result_[pid];
+    data_buf_[idx++] = cputime - last_cputime;
   }
 
   last_result_ = pid_to_time_map;
