@@ -124,6 +124,19 @@ RawDataBuf CPUStatBPFTraceConnector::GetDataImpl() {
   return RawDataBuf(1, reinterpret_cast<uint8_t*>(data_buf_.data()));
 }
 
+// Helper function for searching through a BPFTraceMap vector of key-value pairs.
+// Note that the vector is sorted by keys.
+// This function enables resumed searching, by taking the start iterator as an input.
+bpftrace::BPFTraceMap::iterator PIDCPUUseBPFTraceConnector::BPFTraceMapSearch(
+    const bpftrace::BPFTraceMap& vector, bpftrace::BPFTraceMap::iterator it, uint64_t search_key) {
+  auto next_it =
+      std::find_if(it, const_cast<bpftrace::BPFTraceMap&>(vector).end(),
+                   [&search_key](const std::pair<std::vector<uint8_t>, std::vector<uint8_t>>& x) {
+                     return *(reinterpret_cast<const uint32_t*>(x.first.data())) == search_key;
+                   });
+  return next_it;
+}
+
 RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
   auto pid_to_time_map = GetBPFMap("@total_time");
   auto num_pids = pid_to_time_map.size();
@@ -139,6 +152,8 @@ RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
   // TODO(oazizi): Optimize this. Likely need a way of removing old PIDs in the bt file.
   data_buf_.resize(std::max<uint64_t>(num_pids * (elements_.size()), data_buf_.size()));
 
+  auto it = last_result_.begin();
+
   uint32_t idx = 0;
   for (auto& pid_time_pair : pid_to_time_map) {
     auto key = pid_time_pair.first;
@@ -149,15 +164,9 @@ RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
     DCHECK_EQ(4ULL, key.size()) << "Expected uint32_t key";
     uint64_t pid = *(reinterpret_cast<uint32_t*>(key.data()));
 
-    // The ugliness below finds the last cputime for the current PID.
-    uint64_t last_cputime = 0;
-    auto it = std::find_if(last_result_.begin(), last_result_.end(),
-                           [&pid](const std::pair<std::vector<uint8_t>, std::vector<uint8_t>>& x) {
-                             return *(reinterpret_cast<const uint32_t*>(x.first.data())) == pid;
-                           });
-    if (it != last_result_.end()) {
-      last_cputime = *(reinterpret_cast<uint64_t*>(it->second.data()));
-    }
+    it = BPFTraceMapSearch(last_result_, it, pid);
+    uint64_t last_cputime =
+        (it == last_result_.end()) ? 0 : *(reinterpret_cast<uint64_t*>(it->second.data()));
 
     data_buf_[idx++] = timestamp + ClockRealTimeOffset();
     data_buf_[idx++] = pid;

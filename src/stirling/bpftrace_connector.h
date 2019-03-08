@@ -132,6 +132,10 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
   std::vector<uint64_t> data_buf_;
 
   bpftrace::BPFTraceMap last_result_;
+
+  bpftrace::BPFTraceMap::iterator BPFTraceMapSearch(const bpftrace::BPFTraceMap& vector,
+                                                    bpftrace::BPFTraceMap::iterator it,
+                                                    uint64_t search_key);
 };
 
 }  // namespace stirling
