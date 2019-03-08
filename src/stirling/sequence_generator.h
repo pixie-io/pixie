@@ -2,6 +2,10 @@
 
 #include <chrono>
 #include <limits>
+#include <string>
+#include <vector>
+
+#include "absl/strings/str_format.h"
 
 namespace pl {
 namespace stirling {
@@ -201,6 +205,99 @@ class TimeSequence : public Sequence<T> {
   }
 
   void Reset() override {}
+};
+
+/**
+ * A Constant Compile-Time String
+ *
+ * Inspired from https://gist.github.com/creative-quant/6aa863e1cb415cbb9056f3d86f23b2c4
+ */
+class str_const {
+ private:
+  const char* const p_;
+
+ public:
+  template <std::size_t N>
+  constexpr str_const(const char (&a)[N]) : p_(a) {}
+  constexpr const char* get() const { return p_; }
+};
+
+/**
+ * A String Sequence Generator.
+ */
+class StringSequence : public Sequence<std::string> {
+ public:
+  /**
+   * Constructor for String Sequence.
+   */
+  StringSequence() {
+    // Add line numbers to the lines.
+    uint32_t line_number = 0;
+    for (auto& line : text) {
+      tokens.push_back(absl::StrFormat("%3d %s", line_number, line.get()));
+      line_number++;
+    }
+    Reset();
+  }
+
+  /**
+   * Return next value in the sequence.
+   *
+   * @return next value in the sequence.
+   */
+  std::string operator()(void) override {
+    std::string str = tokens[x_];
+
+    x_ = (x_ + 1) % tokens.size();
+
+    return str;
+  }
+
+  /**
+   * Reset the sequence.
+   */
+  void Reset() override { x_ = 0; }
+
+ private:
+  uint32_t x_ = 0;
+
+  std::vector<std::string> tokens;
+
+  static constexpr str_const text[] = {
+      "To be, or not to be, that is the question:  ",
+      "Whether 'tis nobler in the mind to suffer  ",
+      "The slings and arrows of outrageous fortune,  ",
+      "Or to take arms against a sea of troubles  ",
+      "And by opposing end them. To die-to sleep,  ",
+      "No more; and by a sleep to say we end  ",
+      "The heart-ache and the thousand natural shocks  ",
+      "That flesh is heir to: 'tis a consummation  ",
+      "Devoutly to be wish'd. To die, to sleep;  ",
+      "To sleep, perchance to dream-ay, there's the rub:  ",
+      "For in that sleep of death what dreams may come,  ",
+      "When we have shuffled off this mortal coil,  ",
+      "Must give us pause-there's the respect  ",
+      "That makes calamity of so long life.  ",
+      "For who would bear the whips and scorns of time,  ",
+      "Th'oppressor's wrong, the proud man's contumely,  ",
+      "The pangs of dispriz'd love, the law's delay,  ",
+      "The insolence of office, and the spurns  ",
+      "That patient merit of th'unworthy takes,  ",
+      "When he himself might his quietus make  ",
+      "With a bare bodkin? Who would fardels bear,  ",
+      "To grunt and sweat under a weary life,  ",
+      "But that the dread of something after death,  ",
+      "The undiscovere'd country, from whose bourn  ",
+      "No traveller returns, puzzles the will,  ",
+      "And makes us rather bear those ills we have  ",
+      "Than fly to others that we know not of?  ",
+      "Thus conscience does make cowards of us all,  ",
+      "And thus the native hue of resolution  ",
+      "Is sicklied o'er with the pale cast of thought,  ",
+      "And enterprises of great pitch and moment  ",
+      "With this regard their currents turn awry  ",
+      "And lose the name of action. ",
+  };
 };
 
 }  // namespace stirling
