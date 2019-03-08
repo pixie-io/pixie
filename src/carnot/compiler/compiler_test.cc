@@ -18,12 +18,28 @@ namespace compiler {
 
 using testing::_;
 
-const char *kExpectedUDFInfo = R"(
+class CompilerTest : public ::testing::Test {
+ public:
+  const google::protobuf::FieldDescriptor* GetFieldDescriptor(
+      const google::protobuf::Message& message, const std::string& field_name) {
+    std::vector<std::string> field_path = absl::StrSplit(field_name, ".");
+    const google::protobuf::Descriptor* descriptor = message.GetDescriptor();
+    const google::protobuf::FieldDescriptor* field = NULL;
+    for (size_t i = 0; i < field_path.size(); i++) {
+      field = descriptor->FindFieldByName(field_path[i]);
+      if (field) {
+        descriptor = field->message_type();
+      }
+    }
+    return field;
+  }
+};
+const char* kExpectedUDFInfo = R"(
 scalar_udfs {
   name: "pl.divide"
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64
-  return_type: INT64
+  return_type: FLOAT64
 }
 scalar_udfs {
   name: "pl.add"
@@ -84,7 +100,135 @@ udas {
   finalize_type:  INT64
 }
 )";
-TEST(CompilerTest, basic) {
+const char* kExpectedLogicalPlan = R"(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      sorted_deps: 5
+    }
+    nodes {
+      id: 5
+      sorted_deps: 13
+    }
+    nodes {
+      id: 13
+      sorted_deps: 12
+    }
+    nodes {
+      id: 12
+    }
+  }
+  nodes {
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 0
+        column_idxs: 1
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_types: FLOAT64
+        column_types: FLOAT64
+      }
+    }
+  }
+  nodes {
+    id: 5
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          column {
+            node: 0
+            index: 0
+          }
+        }
+        expressions {
+          column {
+            node: 0
+            index: 1
+          }
+        }
+        expressions {
+          func {
+            name: "pl.divide"
+            args {
+              column {
+                node: 0
+                index: 1
+              }
+            }
+            args {
+              column {
+                node: 0
+                index: 0
+              }
+            }
+          }
+        }
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "quotient"
+      }
+    }
+  }
+  nodes {
+    id: 13
+    op {
+      op_type: BLOCKING_AGGREGATE_OPERATOR
+      blocking_agg_op {
+        values {
+          name: "pl.mean"
+          args {
+            column {
+              node: 5
+              index: 2
+            }
+          }
+        }
+        values {
+          name: "pl.mean"
+          args {
+            column {
+              node: 5
+              index: 1
+            }
+          }
+        }
+        groups {
+          node: 5
+        }
+        group_names: "cpu0"
+        value_names: "quotient_mean"
+        value_names: "cpu1_mean"
+      }
+    }
+  }
+  nodes {
+    id: 12
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "cpu2"
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_names: "cpu0"
+        column_names: "quotient_mean"
+        column_names: "cpu1_mean"
+      }
+    }
+  }
+}
+)";
+
+TEST_F(CompilerTest, basic) {
   auto info = std::make_shared<RegistryInfo>();
   carnotpb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
@@ -100,154 +244,32 @@ TEST(CompilerTest, basic) {
   auto compiler = Compiler();
   auto query = absl::StrJoin(
       {
-          "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
-          "mapDF = queryDF.Map(fn=lambda r : {'quotient' : r.cpu0 / r.cpu1}).Result(name='cpu2')",
+          "queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
+          "mapDF = queryDF.Map(fn=lambda r : {'cpu0' : r.cpu0, 'cpu1' : r.cpu1, 'quotient' : "
+          "r.cpu1 / r.cpu0})",
+          "aggDF = mapDF.Agg(by=lambda r: r.cpu0, fn=lambda r : {'quotient_mean' : "
+          "pl.mean(r.quotient), 'cpu1_mean' : pl.mean(r.cpu1)}"
+          ").Result(name='cpu2')",
       },
       "\n");
-  EXPECT_OK(compiler.Compile(query, compiler_state.get()));
-}
+  auto plan_status = compiler.Compile(query, compiler_state.get());
+  VLOG(1) << plan_status.ToString();
+  ASSERT_TRUE(plan_status.ok());
 
-const char *kExpectedLogicalPlan = R"(
-dag {
-  nodes { id: 1 }
-}
-nodes {
-  id: 1
-  dag {
-    nodes { sorted_deps: 4 }
-    nodes { id: 4 sorted_deps: 6 }
-    nodes { id: 6 sorted_deps: 9 }
-    nodes { id: 9 }
-  }
-  nodes {
-    id: 0
-    op {
-      op_type: MEMORY_SOURCE_OPERATOR
-      mem_source_op {
-        name: "test_table"
-        column_idxs: 0
-        column_names: "test_col"
-        column_types: FLOAT64
-      }
-    }
-  }
-  nodes {
-    id: 4
-    op {
-      op_type: MAP_OPERATOR map_op { }
-    }
-  }
-  nodes {
-    id: 6
-    op {
-      op_type: BLOCKING_AGGREGATE_OPERATOR blocking_agg_op { }
-    }
-  }
-  nodes {
-    id: 9
-    op {
-      op_type: MEMORY_SINK_OPERATOR mem_sink_op { name: "sink" }
-    }
-  }
-}
-)";
-
-TEST(CompilerTest, to_logical_plan) {
-  // Construct example IR Graph.
-  auto graph = std::make_shared<IR>();
-
-  // Create nodes.
-  auto src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  auto table_node = graph->MakeNode<StringIR>().ValueOrDie();
-  auto select = graph->MakeNode<ListIR>().ValueOrDie();
-  EXPECT_OK(table_node->Init("test_table"));
-  EXPECT_OK(src->Init(table_node, select));
-  auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col->Init("test_col"));
-  col->SetColumnIdx(0);
-  col->SetColumnType(types::DataType::FLOAT64);
-  src->SetColumns(std::vector<ColumnIR *>({col}));
-  auto map = graph->MakeNode<MapIR>().ValueOrDie();
-  auto map_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-  EXPECT_OK(map->Init(src, map_lambda));
-  auto agg = graph->MakeNode<AggIR>().ValueOrDie();
-  auto agg_by = graph->MakeNode<LambdaIR>().ValueOrDie();
-  auto agg_func = graph->MakeNode<LambdaIR>().ValueOrDie();
-  EXPECT_OK(agg->Init(map, agg_by, agg_func));
-  auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
-  EXPECT_OK(sink->Init(agg, "sink"));
-
-  auto compiler = Compiler();
-  carnotpb::Plan logical_plan = compiler.IRToLogicalPlan(*graph).ValueOrDie();
+  carnotpb::Plan logical_plan = plan_status.ValueOrDie();
+  VLOG(1) << logical_plan.DebugString();
 
   carnotpb::Plan expected_logical_plan;
+  google::protobuf::util::MessageDifferencer differ;
+  differ.IgnoreField(GetFieldDescriptor(logical_plan, "dag"));
+
   ASSERT_TRUE(
       google::protobuf::TextFormat::MergeFromString(kExpectedLogicalPlan, &expected_logical_plan));
-  EXPECT_TRUE(
-      google::protobuf::util::MessageDifferencer::Equals(expected_logical_plan, logical_plan));
-}
-
-TEST(CompilerTest, remove_range) {
-  // Construct example IR Graph.
-  auto graph = std::make_shared<IR>();
-
-  // Create nodes.
-  auto src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  auto range = graph->MakeNode<RangeIR>().ValueOrDie();
-  auto time = graph->MakeNode<StringIR>().ValueOrDie();
-  auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
-
-  EXPECT_OK(time->Init("-2h"));
-  EXPECT_OK(range->Init(src, time));
-  EXPECT_OK(sink->Init(range, "sink"));
-  EXPECT_FALSE(src->IsTimeSet());
-
-  EXPECT_EQ(std::vector<int64_t>({0, 1, 2, 3}), graph->dag().TopologicalSort());
-
-  // Add dependencies.
-  EXPECT_OK(graph->AddEdge(src, range));
-  EXPECT_OK(graph->AddEdge(range, sink));
-  EXPECT_OK(graph->AddEdge(range, time));
-
-  EXPECT_OK(Compiler::CollapseRange(graph.get()));
-
-  EXPECT_EQ(std::vector<int64_t>({0, 3}), graph->dag().TopologicalSort());
-  EXPECT_TRUE(src->IsTimeSet());
-  EXPECT_EQ(7200000000000, src->time_stop_ns() - src->time_start_ns());
-}
-
-TEST(CompilerTest, remove_range_start_end) {
-  // Construct example IR Graph.
-  auto graph = std::make_shared<IR>();
-
-  // Create nodes.
-  auto src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  auto range = graph->MakeNode<RangeIR>().ValueOrDie();
-  auto time = graph->MakeNode<StringIR>().ValueOrDie();
-  auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
-
-  EXPECT_OK(time->Init("20,50"));
-  EXPECT_OK(range->Init(src, time));
-  EXPECT_OK(sink->Init(range, "sink"));
-  EXPECT_FALSE(src->IsTimeSet());
-
-  EXPECT_EQ(std::vector<int64_t>({0, 1, 2, 3}), graph->dag().TopologicalSort());
-
-  // Add dependencies.
-  EXPECT_OK(graph->AddEdge(src, range));
-  EXPECT_OK(graph->AddEdge(range, sink));
-  EXPECT_OK(graph->AddEdge(range, time));
-
-  EXPECT_OK(Compiler::CollapseRange(graph.get()));
-
-  EXPECT_EQ(std::vector<int64_t>({0, 3}), graph->dag().TopologicalSort());
-  EXPECT_TRUE(src->IsTimeSet());
-  EXPECT_EQ(50, src->time_stop_ns());
-  EXPECT_EQ(20, src->time_start_ns());
+  EXPECT_TRUE(differ.Compare(expected_logical_plan, logical_plan));
 }
 
 // Test for select order that is different than the schema.
-const char *kSelectOrderLogicalPlan = R"(
+const char* kSelectOrderLogicalPlan = R"(
 dag {
   nodes { id: 1 }
 }
@@ -296,7 +318,8 @@ nodes {
   }
 }
 )";
-TEST(CompilerTest, select_order_test) {
+
+TEST_F(CompilerTest, select_order_test) {
   auto info = std::make_shared<RegistryInfo>();
   carnotpb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
@@ -324,7 +347,7 @@ TEST(CompilerTest, select_order_test) {
       google::protobuf::util::MessageDifferencer::Equals(plan_pb, plan.ConsumeValueOrDie()));
 }
 
-const char *kGroupByAllPlan = R"(
+const char* kGroupByAllPlan = R"(
 dag {
   nodes { id: 1 }
 }
@@ -380,7 +403,7 @@ nodes {
   }
 }
 )";
-TEST(CompilerTest, group_by_all) {
+TEST_F(CompilerTest, group_by_all) {
   auto info = std::make_shared<RegistryInfo>();
   carnotpb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
@@ -405,13 +428,14 @@ TEST(CompilerTest, group_by_all) {
   auto logical_plan = plan_status.ConsumeValueOrDie();
   VLOG(1) << logical_plan.DebugString();
   carnotpb::Plan expected_logical_plan;
+  // google::protobuf::util::MessageDifferencer differ();
   ASSERT_TRUE(
       google::protobuf::TextFormat::MergeFromString(kGroupByAllPlan, &expected_logical_plan));
   EXPECT_TRUE(
       google::protobuf::util::MessageDifferencer::Equals(expected_logical_plan, logical_plan));
 }
 
-const char *kRangeAggPlan = R"(
+const char* kRangeAggPlan = R"(
 dag {
   nodes {
     id: 1
@@ -533,7 +557,7 @@ nodes {
   }
 }
 )";
-TEST(CompilerTest, range_agg_test) {
+TEST_F(CompilerTest, range_agg_test) {
   auto info = std::make_shared<RegistryInfo>();
   carnotpb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
@@ -562,7 +586,7 @@ TEST(CompilerTest, range_agg_test) {
       google::protobuf::util::MessageDifferencer::Equals(plan_pb, plan.ConsumeValueOrDie()));
 }
 
-TEST(CompilerTest, multiple_group_by_agg_test) {
+TEST_F(CompilerTest, multiple_group_by_agg_test) {
   auto info = std::make_shared<RegistryInfo>();
   carnotpb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
@@ -586,7 +610,7 @@ TEST(CompilerTest, multiple_group_by_agg_test) {
   EXPECT_OK(plan);
 }
 
-TEST(CompilerTest, multiple_group_by_map_then_agg) {
+TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
   auto info = std::make_shared<RegistryInfo>();
   carnotpb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
@@ -611,7 +635,7 @@ TEST(CompilerTest, multiple_group_by_map_then_agg) {
   VLOG(1) << plan.ToString();
   EXPECT_OK(plan);
 }
-TEST(CompilerTest, rename_then_group_by_test) {
+TEST_F(CompilerTest, rename_then_group_by_test) {
   auto info = std::make_shared<RegistryInfo>();
   carnotpb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
@@ -639,7 +663,7 @@ TEST(CompilerTest, rename_then_group_by_test) {
 }
 
 // Test to see whether comparisons work.
-TEST(CompilerTest, comparison_test) {
+TEST_F(CompilerTest, comparison_test) {
   auto info = std::make_shared<RegistryInfo>();
   carnotpb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);

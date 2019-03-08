@@ -14,9 +14,9 @@
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/ir_relation_handler.h"
 #include "src/carnot/compiler/ir_verifier.h"
+#include "src/carnot/compiler/optimize_ir.h"
 #include "src/carnot/compiler/string_reader.h"
 #include "src/carnot/proto/plan.pb.h"
-#include "src/common/time.h"
 
 namespace pl {
 namespace carnot {
@@ -25,6 +25,7 @@ StatusOr<carnotpb::Plan> Compiler::Compile(const std::string& query,
                                            CompilerState* compiler_state) {
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query));
   PL_RETURN_IF_ERROR(VerifyIRConnections(*ir));
+  PL_RETURN_IF_ERROR(OptimizeIR(ir.get()));
   PL_RETURN_IF_ERROR(UpdateColumnsAndVerifyUDFs(ir.get(), compiler_state));
   PL_RETURN_IF_ERROR(OptimizeIR(ir.get()));
   return IRToLogicalPlan(*ir);
@@ -102,67 +103,10 @@ StatusOr<carnotpb::Plan> Compiler::IRToLogicalPlan(const IR& ir) {
   PL_RETURN_IF_ERROR(s);
   return plan;
 }
-// TODO(philkuz) actually add this to compile.
+
 Status Compiler::OptimizeIR(IR* ir) {
-  // Collapse Range into From.
-  PL_RETURN_IF_ERROR(CollapseRange(ir));
-  return Status::OK();
-}
-
-Status Compiler::CollapseRange(IR* ir) {
-  auto dag = ir->dag();
-  auto sorted_dag = dag.TopologicalSort();
-
-  // This assumes there is only one Range in the query.
-  RangeIR* rangeIR = nullptr;
-  MemorySourceIR* srcIR;
-  StringIR* timeIR;
-  for (const auto& node_id : sorted_dag) {
-    auto node = ir->Get(node_id);
-    if (node->type() == IRNodeType::RangeType) {
-      rangeIR = static_cast<RangeIR*>(node);
-
-      // Assumes that range directly follows memory source.
-      srcIR = static_cast<MemorySourceIR*>(rangeIR->parent());
-      ir->DeleteEdge(srcIR->id(), rangeIR->id());
-
-      timeIR = static_cast<StringIR*>(rangeIR->time_repr());
-      auto now = std::chrono::system_clock::now();
-
-      auto now_ns =
-          std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
-      auto time_str = timeIR->str();
-      auto s = StringToTimeInt(time_str);
-      // TODO(michelle) (PL-406): Update when we add kwargs to the compiler.
-      if (!s.ok()) {
-        // Time string is in format "1,20".
-        PL_ASSIGN_OR_RETURN(auto range, StringToTimeRange(time_str));
-        srcIR->SetTime(range.first, range.second);
-      } else {
-        // Time string is in format "-2m".
-        auto time_difference = s.ConsumeValueOrDie();
-        srcIR->SetTime(now_ns + time_difference, now_ns);
-      }
-
-      ir->DeleteNode(timeIR->id());
-
-      // Update all of range's dependencies to point to src.
-      for (const auto& dep_id : ir->dag().DependenciesOf(rangeIR->id())) {
-        auto dep = ir->Get(dep_id);
-        ir->DeleteEdge(rangeIR->id(), dep_id);
-        PL_RETURN_IF_ERROR(ir->AddEdge(srcIR->id(), dep_id));
-        if (dep->IsOp()) {
-          auto casted_node = static_cast<OperatorIR*>(dep);
-          PL_RETURN_IF_ERROR(casted_node->SetParent(dynamic_cast<IRNode*>(srcIR)));
-        }
-      }
-
-      break;
-    }
-  }
-  if (rangeIR) {
-    ir->DeleteNode(rangeIR->id());
-  }
+  IROptimizer optimizer;
+  PL_RETURN_IF_ERROR(optimizer.Optimize(ir));
   return Status::OK();
 }
 

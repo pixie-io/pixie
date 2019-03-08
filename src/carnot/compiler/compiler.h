@@ -26,8 +26,6 @@ class Compiler {
   StatusOr<carnotpb::Plan> Compile(const std::string& query, CompilerState* compiler_state);
   // TODO(philkuz) make irtologicalplan private.
   StatusOr<carnotpb::Plan> IRToLogicalPlan(const IR& ir);
-  // TODO(philkuz) make collapseRange private.
-  static Status CollapseRange(IR* ir);
 
  private:
   StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query);

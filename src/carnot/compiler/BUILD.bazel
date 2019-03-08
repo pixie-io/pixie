@@ -49,6 +49,12 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "optimize_ir_test",
+    srcs = ["optimize_ir_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "compiler_test",
     srcs = ["compiler_test.cc"],
     deps = [
