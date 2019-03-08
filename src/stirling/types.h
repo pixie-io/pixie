@@ -11,6 +11,8 @@
 namespace pl {
 namespace stirling {
 
+class InfoClassManager;
+
 using ArrowArrayBuilderUPtrVec = std::vector<std::unique_ptr<arrow::ArrayBuilder>>;
 using ArrowRecordBatchSPtrVec = std::vector<std::shared_ptr<arrow::RecordBatch>>;
 
@@ -18,6 +20,7 @@ using ColumnWrapperRecordBatch = std::vector<carnot::udf::SharedColumnWrapper>;
 using ColumnWrapperRecordBatchVec = std::vector<std::unique_ptr<ColumnWrapperRecordBatch>>;
 
 using PushDataCallback = std::function<void(uint64_t, std::unique_ptr<ColumnWrapperRecordBatch>)>;
+using InfoClassManagerVec = std::vector<std::unique_ptr<InfoClassManager>>;
 
 class DataElement {
  public:

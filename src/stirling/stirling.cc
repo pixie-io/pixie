@@ -71,14 +71,14 @@ StatusOr<InfoClassManager*> Stirling::AddSource(const std::string& name,
 }
 
 void Stirling::GetPublishProto(stirlingpb::Publish* publish_pb) {
-  config_->GeneratePublishProto(publish_pb);
+  config_->GeneratePublishProto(publish_pb, info_class_mgrs_);
 }
 
 Status Stirling::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
   // Update schemas based on the subscribe_proto.
   // TODO(kgandhi/oazizi) : Rethink implicit schemas_ update. May be move the update
   // function into InfoClassManager
-  PL_CHECK_OK(config_->UpdateSchemaFromSubscribe(subscribe_proto));
+  PL_CHECK_OK(config_->UpdateSchemaFromSubscribe(subscribe_proto, info_class_mgrs_));
 
   // TODO(kgandhi/oazizi): Clear the tables based on new subscription.
 

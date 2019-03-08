@@ -138,8 +138,7 @@ class Stirling : public NotCopyable {
 
  protected:
   explicit Stirling(std::unique_ptr<SourceRegistry> registry)
-      : config_(std::make_unique<PubSubManager>(info_class_mgrs_)),
-        registry_(std::move(registry)) {}
+      : config_(std::make_unique<PubSubManager>()), registry_(std::move(registry)) {}
 
  private:
   /**
@@ -181,7 +180,7 @@ class Stirling : public NotCopyable {
   /**
    * Vector of all the InfoClassManagers.
    */
-  std::vector<std::unique_ptr<InfoClassManager>> info_class_mgrs_;
+  InfoClassManagerVec info_class_mgrs_;
 
   /**
    * Pointer the config unit that handles sub/pub with agent.

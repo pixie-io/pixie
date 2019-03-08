@@ -51,19 +51,19 @@ class PubSubManagerTest : public ::testing::Test {
   void SetUp() override {
     std::string name = "cpu_usage";
     source_ = BCCCPUMetricsConnector::Create(name);
-    pub_sub_manager_info_classes_.push_back(std::make_unique<InfoClassManager>(name));
-    pub_sub_manager_info_classes_[0]->SetSourceConnector(source_.get());
+    info_class_mgrs_.push_back(std::make_unique<InfoClassManager>(name));
+    info_class_mgrs_[0]->SetSourceConnector(source_.get());
 
-    pub_sub_manager_info_classes_[0]->Schema().push_back(element_1);
-    pub_sub_manager_info_classes_[0]->Schema().push_back(element_2);
-    pub_sub_manager_info_classes_[0]->Schema().push_back(element_3);
+    info_class_mgrs_[0]->Schema().push_back(element_1);
+    info_class_mgrs_[0]->Schema().push_back(element_2);
+    info_class_mgrs_[0]->Schema().push_back(element_3);
 
-    pub_sub_manager_ = std::make_unique<PubSubManager>(pub_sub_manager_info_classes_);
+    pub_sub_manager_ = std::make_unique<PubSubManager>();
   }
 
   std::unique_ptr<SourceConnector> source_;
   std::unique_ptr<PubSubManager> pub_sub_manager_;
-  std::vector<std::unique_ptr<InfoClassManager>> pub_sub_manager_info_classes_;
+  InfoClassManagerVec info_class_mgrs_;
   InfoClassElement element_1, element_2, element_3;
 };
 
@@ -73,7 +73,7 @@ class PubSubManagerTest : public ::testing::Test {
 TEST_F(PubSubManagerTest, publish_test) {
   // Publish info classes using proto message.
   stirlingpb::Publish actual_publish_pb;
-  pub_sub_manager_->GeneratePublishProto(&actual_publish_pb);
+  pub_sub_manager_->GeneratePublishProto(&actual_publish_pb, info_class_mgrs_);
 
   // Set expectations for the publish message.
   stirlingpb::Publish expected_publish_pb;
@@ -97,7 +97,7 @@ TEST_F(PubSubManagerTest, publish_test) {
 TEST_F(PubSubManagerTest, subscribe_test) {
   // Do the publish.
   stirlingpb::Publish publish_pb;
-  pub_sub_manager_->GeneratePublishProto(&publish_pb);
+  pub_sub_manager_->GeneratePublishProto(&publish_pb, info_class_mgrs_);
 
   // Get a subscription from an upstream agent.
   stirlingpb::Subscribe subscribe_pb;
@@ -113,9 +113,10 @@ TEST_F(PubSubManagerTest, subscribe_test) {
   }
 
   // Update the InfoClassManager objects with the subscribe message.
-  EXPECT_EQ(Status::OK(), pub_sub_manager_->UpdateSchemaFromSubscribe(subscribe_pb));
+  EXPECT_EQ(Status::OK(),
+            pub_sub_manager_->UpdateSchemaFromSubscribe(subscribe_pb, info_class_mgrs_));
   // Verify updated subscriptions.
-  for (auto& info_class_mgr : pub_sub_manager_->info_class_managers()) {
+  for (auto& info_class_mgr : info_class_mgrs_) {
     for (size_t idx = 0; idx < info_class_mgr->Schema().size(); ++idx) {
       auto element = info_class_mgr->GetElement(idx);
       EXPECT_EQ(element.state(), Element_State::Element_State_SUBSCRIBED);
