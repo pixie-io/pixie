@@ -157,25 +157,67 @@ message QueryRequest {
   // TODO(zasgar): Add proto query.
 }
 
+// Boolean data column.
+message BooleanColumn {
+  repeated bool data = 1;
+}
+
+// Int64 column data.
+message Int64Column {
+  repeated int64 data = 1;
+}
+
+// Float64 column data.
+message Float64Column {
+  repeated double data = 1;
+}
+
+// Time64 column data.
+message Time64NSColumn {
+  repeated int64 data = 1;
+}
+
+// String data column.
+message StringColumn {
+  repeated string data = 1;
+}
+
+// A single column of data.
+message Column {
+  oneof col_data {
+    BooleanColumn boolean_data = 1;
+    Int64Column int64_data = 2;
+    Time64NSColumn time64ns_data = 3;
+    Float64Column float64_data = 4;
+    StringColumn string_data = 5;
+  }
+}
+
 // RowBatchData is a temporary data type that will remove when proper serialization
 // is implemented.
 message RowBatchData {
   // The data stored as a string (on Vizier) or as a serialized arrow:RowBatch on
   // the agent.
   bytes data = 1;
+  repeated Column cols = 2;
 }
 
 message Relation {
   message ColumnInfo {
-    string column_names = 1;
-    pl.types.DataType column_types = 2;
+    string column_name = 1;
+    pl.types.DataType column_type = 2;
   }
   string name = 1;
   repeated ColumnInfo columns = 2;
-  // Total number of bytes processed (sum of all input tables).
-  int64 table_size_bytes = 3;
-  // Total number of records processed (sum of all input tables).
-  int64 num_records = 4;
+}
+
+// A table serialized as proto.
+message Table {
+  // Information about the relation in this table. All row batches *must* follow,
+  // this schema.
+  Relation relation = 4;
+  // A row batch of data.
+  repeated RowBatchData data = 5;
 }
 
 // Tracks information about query execution time.
@@ -191,6 +233,9 @@ message QueryExecutionStats {
   QueryTimingInfo timing  = 1;
   // The number of input bytes.
   int64 bytes_processed = 2;
+  // The number of input records.
+  int64 records_processed = 3;
+
 }
 
 // AgentQueryResponse is returned for each execution of a query by the agent.
@@ -205,11 +250,10 @@ message AgentQueryResponse {
   // Stats about the query execution.
   QueryExecutionStats stats = 3;
 
-  // Information about the output relation. We can only have one right now.
-  Relation output_relation = 4;
+  // The output tables from executing the query.
   // The data as a serialized flat_buffer.
   // TODO(zasgar): Make it send flat_buffer directly from grpc.
-  repeated RowBatchData data = 5;
+  repeated Table tables = 4;
 }
 
 // QueryResponse is returned by Vizier in response to a query.
