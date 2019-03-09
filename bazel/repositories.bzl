@@ -85,6 +85,17 @@ def _com_github_google_glog():
         patches = ["//third_party:glog_stacktrace.patch"],
     )
 
+def _com_github_tencent_rapidjson():
+    name = "com_github_tencent_rapidjson"
+    location = REPOSITORY_LOCATIONS[name]
+    http_archive(
+        name = name,
+        urls = location["urls"],
+        sha256 = location["sha256"],
+        strip_prefix = location.get("strip_prefix", ""),
+        build_file = "//third_party:rapidjson.BUILD",
+    )
+
 def _cc_deps():
     _repository_impl(name = "com_google_benchmark")
     _repository_impl(
@@ -97,6 +108,7 @@ def _cc_deps():
     _com_github_rlyeh_sole()
     _com_google_double_conversion()
     _com_github_cpp_taskflow()
+    _com_github_tencent_rapidjson()
 
 def _go_deps():
     # Add go specific imports here when necessary.
