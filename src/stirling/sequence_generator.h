@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
+#include "src/common/const_str.h"
 
 namespace pl {
 namespace stirling {
@@ -208,21 +209,6 @@ class TimeSequence : public Sequence<T> {
 };
 
 /**
- * A Constant Compile-Time String
- *
- * Inspired from https://gist.github.com/creative-quant/6aa863e1cb415cbb9056f3d86f23b2c4
- */
-class str_const {
- private:
-  const char* const p_;
-
- public:
-  template <std::size_t N>
-  constexpr str_const(const char (&a)[N]) : p_(a) {}
-  constexpr const char* get() const { return p_; }
-};
-
-/**
  * A String Sequence Generator.
  */
 class StringSequence : public Sequence<std::string> {
@@ -263,7 +249,7 @@ class StringSequence : public Sequence<std::string> {
 
   std::vector<std::string> tokens;
 
-  static constexpr str_const text[] = {
+  static constexpr ConstString text[] = {
       "To be, or not to be, that is the question:  ",
       "Whether 'tis nobler in the mind to suffer  ",
       "The slings and arrows of outrageous fortune,  ",
