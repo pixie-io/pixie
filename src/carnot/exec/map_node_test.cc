@@ -84,6 +84,7 @@ TEST_F(MapNodeTest, basic) {
   EXPECT_OK(mn.ConsumeNext(exec_state_.get(), rb1));
 
   auto rb2 = CreateInputRowBatch({1, 2, 3}, {1, 4, 6});
+  rb2.set_eos(true);
 
   auto check_result_batch2 = [&](ExecState* exec_state, const RowBatch& child_rb) {
     EXPECT_EQ(exec_state, exec_state_.get());
@@ -94,6 +95,7 @@ TEST_F(MapNodeTest, basic) {
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(2, casted->Value(0));
     EXPECT_EQ(6, casted->Value(1));
+    EXPECT_TRUE(child_rb.eos());
   };
 
   EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
