@@ -17,8 +17,8 @@ pl_cc_library(
         "bt/*.bt",
     ]),
     deps = [
-        "//src/carnot/udf:cc_library",
-        "//src/common/types:types_pl_cc_proto",
+        "//src/shared/types:cc_library",
+        "//src/shared/types/proto:types_pl_cc_proto",
         "//src/stirling/proto:collector_config_pl_cc_proto",
         "//third_party:arrow",
     ] + select({

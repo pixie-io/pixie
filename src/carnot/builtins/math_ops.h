@@ -4,7 +4,7 @@
 #include <limits>
 
 #include "src/carnot/udf/registry.h"
-#include "src/carnot/udf/udf.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
 namespace carnot {
@@ -36,7 +36,7 @@ class MultiplyUDF : public udf::ScalarUDF {
 
 class ModuloUDF : public udf::ScalarUDF {
  public:
-  udf::Int64Value Exec(udf::FunctionContext *, udf::Int64Value b1, udf::Int64Value b2) {
+  types::Int64Value Exec(udf::FunctionContext *, types::Int64Value b1, types::Int64Value b2) {
     return b1.val % b2.val;
   }
 };
@@ -44,19 +44,19 @@ class ModuloUDF : public udf::ScalarUDF {
 template <typename TArg1, typename TArg2>
 class LogicalOrUDF : public udf::ScalarUDF {
  public:
-  udf::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1.val || b2.val; }
+  types::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1.val || b2.val; }
 };
 
 template <typename TArg1, typename TArg2>
 class LogicalAndUDF : public udf::ScalarUDF {
  public:
-  udf::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1.val && b2.val; }
+  types::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1.val && b2.val; }
 };
 
 template <typename TArg1>
 class LogicalNotUDF : public udf::ScalarUDF {
  public:
-  udf::BoolValue Exec(udf::FunctionContext *, TArg1 b1) { return !b1.val; }
+  types::BoolValue Exec(udf::FunctionContext *, TArg1 b1) { return !b1.val; }
 };
 
 template <typename TArg1>
@@ -68,13 +68,13 @@ class NegateUDF : public udf::ScalarUDF {
 template <typename TArg1, typename TArg2>
 class EqualUDF : public udf::ScalarUDF {
  public:
-  udf::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1 == b2; }
+  types::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1 == b2; }
 };
 
 template <typename TArg1, typename TArg2>
 class ApproxEqualUDF : public udf::ScalarUDF {
  public:
-  udf::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) {
+  types::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) {
     return std::abs(b1.val - b2.val) < std::numeric_limits<double>::epsilon();
   }
 };
@@ -82,13 +82,13 @@ class ApproxEqualUDF : public udf::ScalarUDF {
 template <typename TArg1, typename TArg2>
 class GreaterThanUDF : public udf::ScalarUDF {
  public:
-  udf::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1 > b2; }
+  types::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1 > b2; }
 };
 
 template <typename TArg1, typename TArg2>
 class LessThanUDF : public udf::ScalarUDF {
  public:
-  udf::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1 < b2; }
+  types::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1 < b2; }
 };
 
 template <typename TArg>
@@ -102,7 +102,7 @@ class MeanUDA : public udf::UDA {
     size_ += other.size_;
     count_ += other.count_;
   }
-  udf::Float64Value Finalize(udf::FunctionContext *) { return count_ / size_; }
+  types::Float64Value Finalize(udf::FunctionContext *) { return count_ / size_; }
 
  protected:
   uint64_t size_ = 0;
@@ -136,7 +136,7 @@ class MaxUDA : public udf::UDA {
   TArg Finalize(udf::FunctionContext *) { return max_; }
 
  protected:
-  TArg max_ = std::numeric_limits<typename udf::UDFValueTraits<TArg>::native_type>::min();
+  TArg max_ = std::numeric_limits<typename types::ValueTypeTraits<TArg>::native_type>::min();
 };
 
 template <typename TArg>
@@ -155,7 +155,7 @@ class MinUDA : public udf::UDA {
   TArg Finalize(udf::FunctionContext *) { return min_; }
 
  protected:
-  TArg min_ = std::numeric_limits<typename udf::UDFValueTraits<TArg>::native_type>::max();
+  TArg min_ = std::numeric_limits<typename types::ValueTypeTraits<TArg>::native_type>::max();
 };
 
 template <typename TArg>
@@ -163,7 +163,7 @@ class CountUDA : public udf::UDA {
  public:
   void Update(udf::FunctionContext *, TArg) { count_++; }
   void Merge(udf::FunctionContext *, const CountUDA &other) { count_ += other.count_; }
-  udf::Int64Value Finalize(udf::FunctionContext *) { return count_; }
+  types::Int64Value Finalize(udf::FunctionContext *) { return count_; }
 
  protected:
   uint64_t count_ = 0;

@@ -1,5 +1,5 @@
 syntax = "proto3";
-import "src/common/types/types.proto";
+import "src/shared/types/proto/types.proto";
 
 package pl.stirling.stirlingpb;
 

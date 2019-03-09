@@ -12,11 +12,11 @@
 #include "src/carnot/exec/row_batch.h"
 #include "src/carnot/exec/row_descriptor.h"
 #include "src/carnot/plan/relation.h"
-#include "src/carnot/udf/udf.h"
 #include "src/carnot/udf/udf_wrapper.h"
 #include "src/common/base.h"
 #include "src/common/status.h"
 #include "src/common/statusor.h"
+#include "src/shared/types/types.h"
 #include "src/stirling/data_table.h"
 
 namespace pl {
@@ -41,13 +41,13 @@ class Column {
    *
    * @ param data_type the type of the column.
    */
-  explicit Column(udf::UDFDataType data_type, const std::string& name)
+  explicit Column(types::DataType data_type, const std::string& name)
       : name_(name), data_type_(data_type) {}
 
   /**
    * @ return the data type for the column.
    */
-  udf::UDFDataType data_type() const { return data_type_; }
+  types::DataType data_type() const { return data_type_; }
 
   /**
    * @ return the number of batches in the column.
@@ -74,7 +74,7 @@ class Column {
 
  private:
   std::string name_;
-  udf::UDFDataType data_type_;
+  types::DataType data_type_;
 
   std::vector<std::shared_ptr<arrow::Array>> batches_;
 };

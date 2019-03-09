@@ -6,7 +6,7 @@
 #include "src/carnot/plan/relation.h"
 #include "src/carnot/plan/utils.h"
 #include "src/common/common.h"
-#include "src/common/type_utils.h"
+#include "src/shared/types/type_utils.h"
 
 namespace pl {
 namespace carnot {

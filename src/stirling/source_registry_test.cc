@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "src/common/types/types.pb.h"
+#include "src/shared/types/proto/types.pb.h"
 #include "src/stirling/bcc_connector.h"
 #include "src/stirling/proc_stat_connector.h"
 #include "src/stirling/source_registry.h"

@@ -11,8 +11,8 @@
 #include "src/carnot/plan/schema.h"
 #include "src/carnot/proto/plan.pb.h"
 #include "src/carnot/proto/test_proto.h"
-#include "src/carnot/udf/arrow_adapter.h"
 #include "src/common/object_pool.h"
+#include "src/shared/types/arrow_adapter.h"
 
 namespace pl {
 namespace carnot {
@@ -22,14 +22,14 @@ using google::protobuf::TextFormat;
 
 class AddUDF : public udf::ScalarUDF {
  public:
-  udf::Float64Value Exec(udf::FunctionContext*, udf::Int64Value v1, udf::Float64Value v2) {
+  types::Float64Value Exec(udf::FunctionContext*, types::Int64Value v1, types::Float64Value v2) {
     return v1.val + v2.val;
   }
 };
 
 class MultiplyUDF : public udf::ScalarUDF {
  public:
-  udf::Float64Value Exec(udf::FunctionContext*, udf::Float64Value v1, udf::Int64Value v2) {
+  types::Float64Value Exec(udf::FunctionContext*, types::Float64Value v1, types::Int64Value v2) {
     return v1.val * v2.val;
   }
 };
@@ -59,7 +59,7 @@ TEST_F(ExecGraphTest, basic) {
   auto plan_state = std::make_unique<plan::PlanState>(udf_registry.get(), uda_registry.get());
 
   auto schema = std::make_shared<plan::Schema>();
-  plan::Relation relation(std::vector<udf::UDFDataType>({udf::UDFDataType::INT64}),
+  plan::Relation relation(std::vector<types::DataType>({types::DataType::INT64}),
                           std::vector<std::string>({"test"}));
   schema->AddRelation(1, relation);
 
@@ -97,35 +97,35 @@ TEST_F(ExecGraphTest, execute) {
   auto plan_state = std::make_unique<plan::PlanState>(udf_registry.get(), uda_registry.get());
 
   auto schema = std::make_shared<plan::Schema>();
-  schema->AddRelation(1, plan::Relation(std::vector<udf::UDFDataType>({udf::UDFDataType::INT64,
-                                                                       udf::UDFDataType::BOOLEAN,
-                                                                       udf::UDFDataType::FLOAT64}),
+  schema->AddRelation(1, plan::Relation(std::vector<types::DataType>({types::DataType::INT64,
+                                                                      types::DataType::BOOLEAN,
+                                                                      types::DataType::FLOAT64}),
                                         std::vector<std::string>({"a", "b", "c"})));
 
-  auto descriptor = std::vector<udf::UDFDataType>(
+  auto descriptor = std::vector<types::DataType>(
       {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64});
   RowDescriptor rd = RowDescriptor(descriptor);
 
   auto table = std::make_shared<Table>(rd);
 
-  auto col1 = std::make_shared<Column>(udf::UDFDataType::INT64, "col1");
-  std::vector<udf::Int64Value> col1_in1 = {1, 2, 3};
-  std::vector<udf::Int64Value> col1_in2 = {4, 5};
+  auto col1 = std::make_shared<Column>(types::DataType::INT64, "col1");
+  std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
+  std::vector<types::Int64Value> col1_in2 = {4, 5};
 
-  EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
 
-  auto col2 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN, "col2");
-  std::vector<udf::BoolValue> col2_in1 = {true, false, true};
-  std::vector<udf::BoolValue> col2_in2 = {false, false};
-  EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
+  auto col2 = std::make_shared<Column>(types::DataType::BOOLEAN, "col2");
+  std::vector<types::BoolValue> col2_in1 = {true, false, true};
+  std::vector<types::BoolValue> col2_in2 = {false, false};
+  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 
-  auto col3 = std::make_shared<Column>(udf::UDFDataType::FLOAT64, "col3");
-  std::vector<udf::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
-  std::vector<udf::Float64Value> col3_in2 = {3.4, 1.2};
-  EXPECT_OK(col3->AddBatch(udf::ToArrow(col3_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col3->AddBatch(udf::ToArrow(col3_in2, arrow::default_memory_pool())));
+  auto col3 = std::make_shared<Column>(types::DataType::FLOAT64, "col3");
+  std::vector<types::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
+  std::vector<types::Float64Value> col3_in2 = {3.4, 1.2};
+  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in2, arrow::default_memory_pool())));
 
   EXPECT_OK(table->AddColumn(col1));
   EXPECT_OK(table->AddColumn(col2));
@@ -142,17 +142,17 @@ TEST_F(ExecGraphTest, execute) {
   EXPECT_OK(e.Execute());
 
   auto output_table = exec_state_->table_store()->GetTable("output");
-  std::vector<udf::Float64Value> out_in1 = {4.8, 16.4, 26.4};
-  std::vector<udf::Float64Value> out_in2 = {14.8, 12.4};
+  std::vector<types::Float64Value> out_in1 = {4.8, 16.4, 26.4};
+  std::vector<types::Float64Value> out_in2 = {14.8, 12.4};
   EXPECT_EQ(2, output_table->NumBatches());
   EXPECT_TRUE(output_table->GetRowBatch(0, std::vector<int64_t>({0}), arrow::default_memory_pool())
                   .ConsumeValueOrDie()
                   ->ColumnAt(0)
-                  ->Equals(udf::ToArrow(out_in1, arrow::default_memory_pool())));
+                  ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
   EXPECT_TRUE(output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
                   .ConsumeValueOrDie()
                   ->ColumnAt(0)
-                  ->Equals(udf::ToArrow(out_in2, arrow::default_memory_pool())));
+                  ->Equals(types::ToArrow(out_in2, arrow::default_memory_pool())));
 }
 
 TEST_F(ExecGraphTest, execute_time) {
@@ -171,36 +171,36 @@ TEST_F(ExecGraphTest, execute_time) {
   auto plan_state = std::make_unique<plan::PlanState>(udf_registry.get(), uda_registry.get());
 
   auto schema = std::make_shared<plan::Schema>();
-  schema->AddRelation(1, plan::Relation(std::vector<udf::UDFDataType>({udf::UDFDataType::TIME64NS,
-                                                                       udf::UDFDataType::BOOLEAN,
-                                                                       udf::UDFDataType::FLOAT64}),
+  schema->AddRelation(1, plan::Relation(std::vector<types::DataType>({types::DataType::TIME64NS,
+                                                                      types::DataType::BOOLEAN,
+                                                                      types::DataType::FLOAT64}),
                                         std::vector<std::string>({"a", "b", "c"})));
 
-  auto descriptor = std::vector<udf::UDFDataType>(
+  auto descriptor = std::vector<types::DataType>(
       {types::DataType::TIME64NS, types::DataType::BOOLEAN, types::DataType::FLOAT64});
   RowDescriptor rd = RowDescriptor(descriptor);
 
   auto table = std::make_shared<Table>(rd);
 
-  auto col1 = std::make_shared<Column>(udf::UDFDataType::TIME64NS, "col1");
-  std::vector<udf::Time64NSValue> col1_in1 = {udf::Time64NSValue(1), udf::Time64NSValue(2),
-                                              udf::Time64NSValue(3)};
-  std::vector<udf::Time64NSValue> col1_in2 = {udf::Time64NSValue(4), udf::Time64NSValue(5)};
+  auto col1 = std::make_shared<Column>(types::DataType::TIME64NS, "col1");
+  std::vector<types::Time64NSValue> col1_in1 = {types::Time64NSValue(1), types::Time64NSValue(2),
+                                                types::Time64NSValue(3)};
+  std::vector<types::Time64NSValue> col1_in2 = {types::Time64NSValue(4), types::Time64NSValue(5)};
 
-  EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
 
-  auto col2 = std::make_shared<Column>(udf::UDFDataType::BOOLEAN, "col2");
-  std::vector<udf::BoolValue> col2_in1 = {true, false, true};
-  std::vector<udf::BoolValue> col2_in2 = {false, false};
-  EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
+  auto col2 = std::make_shared<Column>(types::DataType::BOOLEAN, "col2");
+  std::vector<types::BoolValue> col2_in1 = {true, false, true};
+  std::vector<types::BoolValue> col2_in2 = {false, false};
+  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 
-  auto col3 = std::make_shared<Column>(udf::UDFDataType::FLOAT64, "col3");
-  std::vector<udf::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
-  std::vector<udf::Float64Value> col3_in2 = {3.4, 1.2};
-  EXPECT_OK(col3->AddBatch(udf::ToArrow(col3_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col3->AddBatch(udf::ToArrow(col3_in2, arrow::default_memory_pool())));
+  auto col3 = std::make_shared<Column>(types::DataType::FLOAT64, "col3");
+  std::vector<types::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
+  std::vector<types::Float64Value> col3_in2 = {3.4, 1.2};
+  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in1, arrow::default_memory_pool())));
+  EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in2, arrow::default_memory_pool())));
 
   EXPECT_OK(table->AddColumn(col1));
   EXPECT_OK(table->AddColumn(col2));
@@ -217,17 +217,17 @@ TEST_F(ExecGraphTest, execute_time) {
   EXPECT_OK(e.Execute());
 
   auto output_table = exec_state_->table_store()->GetTable("output");
-  std::vector<udf::Float64Value> out_in1 = {4.8, 16.4, 26.4};
-  std::vector<udf::Float64Value> out_in2 = {14.8, 12.4};
+  std::vector<types::Float64Value> out_in1 = {4.8, 16.4, 26.4};
+  std::vector<types::Float64Value> out_in2 = {14.8, 12.4};
   EXPECT_EQ(2, output_table->NumBatches());
   EXPECT_TRUE(output_table->GetRowBatch(0, std::vector<int64_t>({0}), arrow::default_memory_pool())
                   .ConsumeValueOrDie()
                   ->ColumnAt(0)
-                  ->Equals(udf::ToArrow(out_in1, arrow::default_memory_pool())));
+                  ->Equals(types::ToArrow(out_in1, arrow::default_memory_pool())));
   EXPECT_TRUE(output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
                   .ConsumeValueOrDie()
                   ->ColumnAt(0)
-                  ->Equals(udf::ToArrow(out_in2, arrow::default_memory_pool())));
+                  ->Equals(types::ToArrow(out_in2, arrow::default_memory_pool())));
 }
 
 }  // namespace exec

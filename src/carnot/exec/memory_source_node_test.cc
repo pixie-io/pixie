@@ -9,7 +9,7 @@
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/memory_source_node.h"
 #include "src/carnot/proto/test_proto.h"
-#include "src/carnot/udf/arrow_adapter.h"
+#include "src/shared/types/arrow_adapter.h"
 
 namespace pl {
 namespace carnot {
@@ -27,20 +27,20 @@ class MemorySourceNodeTest : public ::testing::Test {
         std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store);
 
     auto descriptor =
-        std::vector<udf::UDFDataType>({types::DataType::BOOLEAN, types::DataType::TIME64NS});
+        std::vector<types::DataType>({types::DataType::BOOLEAN, types::DataType::TIME64NS});
     RowDescriptor rd = RowDescriptor(descriptor);
 
-    auto col1 = std::make_shared<Column>(Column(udf::UDFDataType::BOOLEAN, "col1"));
-    std::vector<udf::BoolValue> col1_in1 = {true, false, true};
-    std::vector<udf::BoolValue> col1_in2 = {false, false};
-    EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
-    EXPECT_OK(col1->AddBatch(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
+    auto col1 = std::make_shared<Column>(Column(types::DataType::BOOLEAN, "col1"));
+    std::vector<types::BoolValue> col1_in1 = {true, false, true};
+    std::vector<types::BoolValue> col1_in2 = {false, false};
+    EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+    EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
 
-    auto col2 = std::make_shared<Column>(Column(udf::UDFDataType::TIME64NS, "time_"));
-    std::vector<udf::Int64Value> col2_in1 = {1, 2, 3};
-    std::vector<udf::Int64Value> col2_in2 = {5, 6};
-    EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
-    EXPECT_OK(col2->AddBatch(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
+    auto col2 = std::make_shared<Column>(Column(types::DataType::TIME64NS, "time_"));
+    std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
+    std::vector<types::Int64Value> col2_in2 = {5, 6};
+    EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+    EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 
     std::shared_ptr<Table> table = std::make_shared<Table>(rd);
     exec_state_->table_store()->AddTable("cpu", table);
@@ -58,7 +58,7 @@ class MemorySourceNodeTest : public ::testing::Test {
 TEST_F(MemorySourceNodeTest, basic) {
   auto op_proto = carnotpb::testutils::CreateTestSource1PB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
-  RowDescriptor output_rd({udf::UDFDataType::FLOAT64});
+  RowDescriptor output_rd({types::DataType::FLOAT64});
   MemorySourceNode src;
   MockExecNode mock_child_;
   src.AddChild(&mock_child_);
@@ -70,7 +70,7 @@ TEST_F(MemorySourceNodeTest, basic) {
     EXPECT_EQ(exec_state, exec_state_.get());
     EXPECT_EQ(child_rb.num_rows(), 3);
     EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::TIME64NS);
+    EXPECT_EQ(child_rb.desc().type(0), types::DataType::TIME64NS);
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(1, casted->Value(0));
@@ -89,7 +89,7 @@ TEST_F(MemorySourceNodeTest, basic) {
     EXPECT_EQ(exec_state, exec_state_.get());
     EXPECT_EQ(child_rb.num_rows(), 2);
     EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::TIME64NS);
+    EXPECT_EQ(child_rb.desc().type(0), types::DataType::TIME64NS);
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(5, casted->Value(0));
@@ -113,7 +113,7 @@ TEST_F(MemorySourceNodeTest, basic) {
 TEST_F(MemorySourceNodeTest, range) {
   auto op_proto = carnotpb::testutils::CreateTestSourceRangePB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
-  RowDescriptor output_rd({udf::UDFDataType::FLOAT64});
+  RowDescriptor output_rd({types::DataType::FLOAT64});
   MemorySourceNode src;
   MockExecNode mock_child_;
   src.AddChild(&mock_child_);
@@ -125,7 +125,7 @@ TEST_F(MemorySourceNodeTest, range) {
     EXPECT_EQ(exec_state, exec_state_.get());
     EXPECT_EQ(child_rb.num_rows(), 1);
     EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::TIME64NS);
+    EXPECT_EQ(child_rb.desc().type(0), types::DataType::TIME64NS);
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(3, casted->Value(0));
@@ -142,7 +142,7 @@ TEST_F(MemorySourceNodeTest, range) {
     EXPECT_EQ(exec_state, exec_state_.get());
     EXPECT_EQ(child_rb.num_rows(), 1);
     EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::TIME64NS);
+    EXPECT_EQ(child_rb.desc().type(0), types::DataType::TIME64NS);
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(5, casted->Value(0));
@@ -163,7 +163,7 @@ TEST_F(MemorySourceNodeTest, range) {
 TEST_F(MemorySourceNodeTest, empty_range) {
   auto op_proto = carnotpb::testutils::CreateTestSourceEmptyRangePB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
-  RowDescriptor output_rd({udf::UDFDataType::FLOAT64});
+  RowDescriptor output_rd({types::DataType::FLOAT64});
   MemorySourceNode src;
   MockExecNode mock_child_;
   src.AddChild(&mock_child_);
@@ -178,7 +178,7 @@ TEST_F(MemorySourceNodeTest, empty_range) {
 TEST_F(MemorySourceNodeTest, all_range) {
   auto op_proto = carnotpb::testutils::CreateTestSourceAllRangePB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
-  RowDescriptor output_rd({udf::UDFDataType::FLOAT64});
+  RowDescriptor output_rd({types::DataType::FLOAT64});
   MemorySourceNode src;
   MockExecNode mock_child_;
   src.AddChild(&mock_child_);
@@ -190,7 +190,7 @@ TEST_F(MemorySourceNodeTest, all_range) {
     EXPECT_EQ(exec_state, exec_state_.get());
     EXPECT_EQ(child_rb.num_rows(), 1);
     EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::TIME64NS);
+    EXPECT_EQ(child_rb.desc().type(0), types::DataType::TIME64NS);
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(3, casted->Value(0));
@@ -208,7 +208,7 @@ TEST_F(MemorySourceNodeTest, all_range) {
     EXPECT_EQ(exec_state, exec_state_.get());
     EXPECT_EQ(child_rb.num_rows(), 2);
     EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::TIME64NS);
+    EXPECT_EQ(child_rb.desc().type(0), types::DataType::TIME64NS);
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(5, casted->Value(0));

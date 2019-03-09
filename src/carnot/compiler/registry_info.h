@@ -9,7 +9,7 @@
 #include "absl/strings/str_format.h"
 #include "src/carnot/proto/udfs.pb.h"
 #include "src/common/common.h"
-#include "src/common/types/types.pb.h"
+#include "src/shared/types/proto/types.pb.h"
 
 namespace pl {
 namespace carnot {

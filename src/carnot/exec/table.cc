@@ -9,8 +9,8 @@
 #include "absl/strings/str_format.h"
 #include "src/carnot/exec/table.h"
 #include "src/carnot/plan/relation.h"
-#include "src/carnot/udf/arrow_adapter.h"
 #include "src/common/common.h"
+#include "src/shared/types/arrow_adapter.h"
 
 namespace pl {
 namespace carnot {
@@ -27,7 +27,7 @@ Table::Table(const plan::Relation& relation) : desc_(relation.col_types()) {
 
 Status Column::AddBatch(const std::shared_ptr<arrow::Array>& batch) {
   // Check type and check size.
-  if (udf::CarnotToArrowType(data_type_) != batch->type_id()) {
+  if (types::ToArrowType(data_type_) != batch->type_id()) {
     return error::InvalidArgument("Column is of type $0, but needs to be type $1.",
                                   batch->type_id(), data_type_);
   }
@@ -84,7 +84,7 @@ StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatchSlice(int64_t row_batch_id
       "Table has %d batches, but requesting batch %d", NumBatches(), row_batch_idx);
 
   // Get column types for row descriptor.
-  std::vector<udf::UDFDataType> rb_types;
+  std::vector<types::DataType> rb_types;
   for (auto col_idx : cols) {
     rb_types.push_back(desc_.type(col_idx));
   }
@@ -160,7 +160,7 @@ Status Table::TransferRecordBatch(
 
   uint32_t i = 0;
   for (const auto& col : *record_batch) {
-    auto received_type = col->DataType();
+    auto received_type = col->data_type();
     auto expected_type = desc_.type(i);
     DCHECK_EQ(expected_type, received_type)
         << absl::StrFormat("Type mismatch [column=%u]: expected=%s received=%s", i,
@@ -230,7 +230,7 @@ BatchPosition Table::FindBatchPositionGreaterThanOrEqual(int64_t time,
     std::shared_ptr<arrow::Array> batch =
         GetColumnBatch(time_col_idx, batch_pos.batch_idx, mem_pool);
     batch_pos.row_idx =
-        udf::SearchArrowArrayGreaterThanOrEqual<udf::UDFDataType::INT64>(batch.get(), time);
+        udf::SearchArrowArrayGreaterThanOrEqual<types::DataType::INT64>(batch.get(), time);
   }
   return batch_pos;
 }
@@ -244,9 +244,9 @@ int64_t Table::FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
 
   int64_t mid = (start + end) / 2;
   auto batch = GetColumnBatch(time_col_idx, mid, mem_pool);
-  auto start_val = udf::GetValueFromArrowArray<udf::UDFDataType::INT64>(batch.get(), 0);
+  auto start_val = udf::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), 0);
   auto stop_val =
-      udf::GetValueFromArrowArray<udf::UDFDataType::INT64>(batch.get(), batch->length() - 1);
+      udf::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), batch->length() - 1);
   if (time > start_val && time <= stop_val) {
     return mid;
   } else if (time > stop_val) {
@@ -262,7 +262,7 @@ int64_t Table::FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
 }
 
 plan::Relation Table::GetRelation() {
-  std::vector<udf::UDFDataType> types;
+  std::vector<types::DataType> types;
   std::vector<std::string> names;
   types.reserve(columns_.size());
   names.reserve(columns_.size());

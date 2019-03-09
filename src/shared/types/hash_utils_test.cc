@@ -1,11 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "src/carnot/udf/hash_utils.h"
-#include "src/carnot/udf/udf.h"
+#include "src/shared/types/hash_utils.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
-namespace carnot {
-namespace udf {
+namespace types {
 namespace utils {
 
 TEST(HashUtils, HashCombine) { EXPECT_EQ(0xf4ff80ec63c103d4ULL, HashCombine(0, 1)); }
@@ -46,6 +45,5 @@ TEST(HashUtils, Time64NSValue) {
 }
 
 }  // namespace utils
-}  // namespace udf
-}  // namespace carnot
+}  // namespace types
 }  // namespace pl

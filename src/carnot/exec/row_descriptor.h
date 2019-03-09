@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
-#include "src/carnot/udf/udf.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
 namespace carnot {
@@ -15,19 +15,19 @@ namespace exec {
  */
 class RowDescriptor {
  public:
-  explicit RowDescriptor(const std::vector<udf::UDFDataType>& types) : types_(types) {}
+  explicit RowDescriptor(const std::vector<types::DataType>& types) : types_(types) {}
 
   /**
    * Gets all the datatypes in the row descriptor.
    * @ return Vector of datatypes.
    */
-  const std::vector<udf::UDFDataType>& types() const { return types_; }
+  const std::vector<types::DataType>& types() const { return types_; }
 
   /**
    *  Gets the datatype for a specific column index.
    *  @ return the UDFDataType for the given column index.
    */
-  udf::UDFDataType type(int64_t i) const { return types_[i]; }
+  types::DataType type(int64_t i) const { return types_[i]; }
 
   /**
    * @ return the number of columns that the row descriptor is describing.
@@ -46,7 +46,7 @@ class RowDescriptor {
   }
 
  private:
-  std::vector<udf::UDFDataType> types_;
+  std::vector<types::DataType> types_;
 };
 
 }  // namespace exec

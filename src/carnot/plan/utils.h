@@ -2,7 +2,7 @@
 #include <string>
 
 #include "src/carnot/proto/plan.pb.h"
-#include "src/common/types/types.pb.h"
+#include "src/shared/types/proto/types.pb.h"
 
 namespace pl {
 namespace carnot {

@@ -15,10 +15,10 @@ using pl::stirling::Stirling;
 using pl::stirling::stirlingpb::Publish;
 using pl::stirling::stirlingpb::Subscribe;
 
-using pl::carnot::udf::Float64ValueColumnWrapper;
-using pl::carnot::udf::Int64ValueColumnWrapper;
-using pl::carnot::udf::SharedColumnWrapper;
 using pl::stirling::ColumnWrapperRecordBatch;
+using pl::types::Float64ValueColumnWrapper;
+using pl::types::Int64ValueColumnWrapper;
+using pl::types::SharedColumnWrapper;
 
 using pl::stirling::CPUStatBPFTraceConnector;
 using pl::stirling::PIDCPUUseBPFTraceConnector;

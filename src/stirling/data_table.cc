@@ -4,13 +4,13 @@
 #include <vector>
 
 #include "src/common/common.h"
-#include "src/common/type_utils.h"
+#include "src/shared/types/type_utils.h"
 #include "src/stirling/data_table.h"
 
 namespace pl {
 namespace stirling {
 
-using carnot::udf::ColumnWrapper;
+using types::ColumnWrapper;
 using types::DataType;
 
 DataTable::DataTable(enum TableType table_type, const InfoClassSchema& schema)
@@ -149,19 +149,19 @@ Status ColumnWrapperDataTable::AppendData(uint8_t* const data, uint64_t num_rows
       switch (type) {
         case DataType::TIME64NS: {
           auto* val_ptr = reinterpret_cast<int64_t*>(element_ptr);
-          auto column = std::static_pointer_cast<carnot::udf::Time64NSValueColumnWrapper>(
+          auto column = std::static_pointer_cast<types::Time64NSValueColumnWrapper>(
               (*record_batch_)[field_idx]);
-          column->Append(carnot::udf::Time64NSValue(*val_ptr));
+          column->Append(types::Time64NSValue(*val_ptr));
         } break;
         case DataType::INT64: {
           auto* val_ptr = reinterpret_cast<int64_t*>(element_ptr);
-          auto column = std::static_pointer_cast<carnot::udf::Int64ValueColumnWrapper>(
-              (*record_batch_)[field_idx]);
+          auto column =
+              std::static_pointer_cast<types::Int64ValueColumnWrapper>((*record_batch_)[field_idx]);
           column->Append(*val_ptr);
         } break;
         case DataType::FLOAT64: {
           auto* val_ptr = reinterpret_cast<double*>(element_ptr);
-          auto column = std::static_pointer_cast<carnot::udf::Float64ValueColumnWrapper>(
+          auto column = std::static_pointer_cast<types::Float64ValueColumnWrapper>(
               (*record_batch_)[field_idx]);
           column->Append(*val_ptr);
         } break;

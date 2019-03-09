@@ -3,25 +3,25 @@
 #include <random>
 #include <vector>
 
-#include "src/carnot/udf/arrow_adapter.h"
-#include "src/carnot/udf/column_wrapper.h"
 #include "src/carnot/udf/registry.h"
-#include "src/carnot/udf/udf.h"
 #include "src/carnot/udf/udf_wrapper.h"
 #include "src/common/common.h"
+#include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/column_wrapper.h"
+#include "src/shared/types/types.h"
 #include "src/utils/benchmark/utils.h"
 
 using pl::Status;
 using pl::carnot::udf::FunctionContext;
-using pl::carnot::udf::Int64Value;
-using pl::carnot::udf::Int64ValueColumnWrapper;
 using pl::carnot::udf::ScalarUDF;
 using pl::carnot::udf::ScalarUDFDefinition;
 using pl::carnot::udf::ScalarUDFWrapper;
-using pl::carnot::udf::StringValue;
-using pl::carnot::udf::StringValueColumnWrapper;
-using pl::carnot::udf::ToArrow;
-using pl::carnot::udf::UDFBaseValue;
+using pl::types::BaseValueType;
+using pl::types::Int64Value;
+using pl::types::Int64ValueColumnWrapper;
+using pl::types::StringValue;
+using pl::types::StringValueColumnWrapper;
+using pl::types::ToArrow;
 
 using pl::bmutils::CreateLargeData;
 using pl::bmutils::RandomString;
@@ -61,11 +61,11 @@ static void BM_AddInt64Values(benchmark::State &state) {
 
   // Loop the test.
   for (auto _ : state) {
-    out.resize(vec2.size());
+    out.Resize(vec2.size());
     auto res = def.ExecBatch(u.get(), nullptr, {&wrapped_vec1, &wrapped_vec2}, &out, vec1.size());
     CHECK(res.ok());
     benchmark::DoNotOptimize(out);
-    out.clear();
+    out.Clear();
   }
 
   // Check results.
@@ -177,8 +177,8 @@ static void BM_AddInt64ValueToArrow(benchmark::State &state) {  // NOLINT
   CHECK(def.template Init<AddUDF>("add").ok());
   auto u = def.Make();
   for (auto _ : state) {
-    out.clear();
-    out.resize(vec2.size());
+    out.Clear();
+    out.Resize(vec2.size());
     auto res = def.ExecBatch(u.get(), nullptr, {&wrapped_vec1, &wrapped_vec2}, &out, vec1.size());
     CHECK(res.ok());
     auto arrow_res = out.ConvertToArrow(arrow::default_memory_pool());

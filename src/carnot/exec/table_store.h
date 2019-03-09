@@ -65,7 +65,7 @@ class TableStore {
   // TODO(oazizi/anyone): Remove once pub-sub with Stirling is fleshed out.
   void AddDefaultTable();
 
-  using ColNameToTypeMap = std::unordered_map<std::string, udf::UDFDataType>;
+  using ColNameToTypeMap = std::unordered_map<std::string, types::DataType>;
   /**
    * @return A map of table name to relation representing the table's structure.
    */

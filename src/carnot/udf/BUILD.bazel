@@ -14,9 +14,8 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/carnot/proto:udfs_pl_cc_proto",
-        "//src/common/types:types_pl_cc_proto",
-        "//third_party:arrow",
-        "@com_google_farmhash//:farmhash",
+        "//src/shared/types:cc_library",
+        "//src/shared/types/proto:types_pl_cc_proto",
     ],
 )
 
@@ -44,27 +43,6 @@ pl_cc_test(
     name = "registry_test",
     srcs = ["registry_test.cc"],
     deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "column_wrapper_test",
-    srcs = ["column_wrapper_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "hash_utils_test",
-    srcs = ["hash_utils_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_binary(
-    name = "wrapper_benchmark",
-    srcs = ["wrapper_benchmark.cc"],
-    deps = [
-        ":cc_library",
-        "@com_google_benchmark//:benchmark_main",
-    ],
 )
 
 pl_cc_binary(

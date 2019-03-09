@@ -8,20 +8,22 @@
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/map_node.h"
 #include "src/carnot/proto/test_proto.h"
-#include "src/carnot/udf/arrow_adapter.h"
+#include "src/shared/types/arrow_adapter.h"
 
 namespace pl {
 namespace carnot {
 namespace exec {
 
 using testing::_;
+using types::Int64Value;
 using udf::FunctionContext;
-using udf::Int64Value;
 
 // TOOD(zasgar): refactor these into test udfs.
 class AddUDF : public udf::ScalarUDF {
  public:
-  Int64Value Exec(FunctionContext*, Int64Value v1, Int64Value v2) { return v1.val + v2.val; }
+  types::Int64Value Exec(FunctionContext*, types::Int64Value v1, types::Int64Value v2) {
+    return v1.val + v2.val;
+  }
 };
 
 class MapNodeTest : public ::testing::Test {
@@ -38,9 +40,9 @@ class MapNodeTest : public ::testing::Test {
     exec_state_ =
         std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store);
   }
-  RowBatch CreateInputRowBatch(const std::vector<udf::Int64Value>& in1,
-                               const std::vector<udf::Int64Value>& in2) {
-    RowDescriptor rd({udf::UDFDataType::INT64, udf::UDFDataType::INT64});
+  RowBatch CreateInputRowBatch(const std::vector<types::Int64Value>& in1,
+                               const std::vector<types::Int64Value>& in2) {
+    RowDescriptor rd({types::DataType::INT64, types::DataType::INT64});
     RowBatch rb(rd, in1.size());
     EXPECT_OK(rb.AddColumn(ToArrow(in1, arrow::default_memory_pool())));
     EXPECT_OK(rb.AddColumn(ToArrow(in2, arrow::default_memory_pool())));
@@ -55,7 +57,7 @@ class MapNodeTest : public ::testing::Test {
 };
 
 TEST_F(MapNodeTest, basic) {
-  RowDescriptor output_rd({udf::UDFDataType::INT64});
+  RowDescriptor output_rd({types::DataType::INT64});
   MapNode mn;
   MockExecNode mock_child_;
   mn.AddChild(&mock_child_);
@@ -68,7 +70,7 @@ TEST_F(MapNodeTest, basic) {
     EXPECT_EQ(exec_state, exec_state_.get());
     EXPECT_EQ(child_rb.num_rows(), rb1.num_rows());
     EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::INT64);
+    EXPECT_EQ(child_rb.desc().type(0), types::DataType::INT64);
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(2, casted->Value(0));
@@ -87,7 +89,7 @@ TEST_F(MapNodeTest, basic) {
     EXPECT_EQ(exec_state, exec_state_.get());
     EXPECT_EQ(child_rb.num_rows(), rb2.num_rows());
     EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), udf::UDFDataType::INT64);
+    EXPECT_EQ(child_rb.desc().type(0), types::DataType::INT64);
     auto output_col = child_rb.ColumnAt(0);
     auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
     EXPECT_EQ(2, casted->Value(0));
@@ -103,7 +105,7 @@ TEST_F(MapNodeTest, basic) {
 }
 
 TEST_F(MapNodeTest, child_fail) {
-  RowDescriptor output_rd({udf::UDFDataType::INT64});
+  RowDescriptor output_rd({types::DataType::INT64});
   MapNode mn;
   MockExecNode mock_child_;
   mn.AddChild(&mock_child_);

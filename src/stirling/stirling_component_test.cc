@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "absl/strings/str_split.h"
-#include "src/common/types/types.pb.h"
+#include "src/shared/types/proto/types.pb.h"
 #include "src/stirling/data_table.h"
 #include "src/stirling/proc_stat_connector.h"
 #include "src/stirling/proto/collector_config.pb.h"
@@ -72,23 +72,23 @@ TEST_F(SourceToTableTest, source_to_table) {
   for (const auto& record_batch : *record_batches_ptr) {
     auto col_arrays = record_batch.get();
     ASSERT_TRUE(col_arrays != nullptr);
-    ASSERT_EQ(DataType::TIME64NS, (*col_arrays)[0]->DataType());
-    auto col0 = std::static_pointer_cast<carnot::udf::Int64ValueColumnWrapper>((*col_arrays)[0]);
+    ASSERT_EQ(DataType::TIME64NS, (*col_arrays)[0]->data_type());
+    auto col0 = std::static_pointer_cast<types::Int64ValueColumnWrapper>((*col_arrays)[0]);
     auto col0_val = (*col0)[0].val;
     PL_UNUSED(col0_val);
 
-    ASSERT_EQ(DataType::FLOAT64, (*col_arrays)[1]->DataType());
-    auto col1 = std::static_pointer_cast<carnot::udf::Float64ValueColumnWrapper>((*col_arrays)[1]);
+    ASSERT_EQ(DataType::FLOAT64, (*col_arrays)[1]->data_type());
+    auto col1 = std::static_pointer_cast<types::Float64ValueColumnWrapper>((*col_arrays)[1]);
     auto col1_val = (*col1)[0].val;
     EXPECT_DOUBLE_EQ(70.0, col1_val);
 
-    ASSERT_EQ(DataType::FLOAT64, (*col_arrays)[2]->DataType());
-    auto col2 = std::static_pointer_cast<carnot::udf::Float64ValueColumnWrapper>((*col_arrays)[2]);
+    ASSERT_EQ(DataType::FLOAT64, (*col_arrays)[2]->data_type());
+    auto col2 = std::static_pointer_cast<types::Float64ValueColumnWrapper>((*col_arrays)[2]);
     auto col2_val = (*col2)[0].val;
     EXPECT_DOUBLE_EQ(10.0, col2_val);
 
-    ASSERT_EQ(DataType::FLOAT64, (*col_arrays)[3]->DataType());
-    auto col3 = std::static_pointer_cast<carnot::udf::Float64ValueColumnWrapper>((*col_arrays)[3]);
+    ASSERT_EQ(DataType::FLOAT64, (*col_arrays)[3]->data_type());
+    auto col3 = std::static_pointer_cast<types::Float64ValueColumnWrapper>((*col_arrays)[3]);
     auto col3_val = (*col3)[0].val;
     EXPECT_DOUBLE_EQ(20.0, col3_val);
   }

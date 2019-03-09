@@ -9,8 +9,7 @@
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/memory_sink_node.h"
 #include "src/carnot/proto/test_proto.h"
-#include "src/carnot/udf/arrow_adapter.h"
-#include "third_party/arrow/cpp/src/arrow/array.h"
+#include "src/shared/types/arrow_adapter.h"
 
 namespace pl {
 namespace carnot {
@@ -44,10 +43,10 @@ TEST_F(MemorySinkNodeTest, basic) {
   RowDescriptor output_rd({});
 
   auto rb1 = RowBatch(input_rd, 2);
-  std::vector<udf::Int64Value> col1_rb1 = {1, 2};
-  std::vector<udf::BoolValue> col2_rb1 = {true, false};
-  auto col1_rb1_arrow = udf::ToArrow(col1_rb1, arrow::default_memory_pool());
-  auto col2_rb1_arrow = udf::ToArrow(col2_rb1, arrow::default_memory_pool());
+  std::vector<types::Int64Value> col1_rb1 = {1, 2};
+  std::vector<types::BoolValue> col2_rb1 = {true, false};
+  auto col1_rb1_arrow = types::ToArrow(col1_rb1, arrow::default_memory_pool());
+  auto col2_rb1_arrow = types::ToArrow(col2_rb1, arrow::default_memory_pool());
   EXPECT_OK(rb1.AddColumn(col1_rb1_arrow));
   EXPECT_OK(rb1.AddColumn(col2_rb1_arrow));
 
@@ -70,10 +69,10 @@ TEST_F(MemorySinkNodeTest, basic) {
       col2_rb1_arrow));
 
   auto rb2 = RowBatch(input_rd, 2);
-  std::vector<udf::Int64Value> col1_rb2 = {3, 4};
-  std::vector<udf::BoolValue> col2_rb2 = {false, true};
-  auto col1_rb2_arrow = udf::ToArrow(col1_rb1, arrow::default_memory_pool());
-  auto col2_rb2_arrow = udf::ToArrow(col2_rb1, arrow::default_memory_pool());
+  std::vector<types::Int64Value> col1_rb2 = {3, 4};
+  std::vector<types::BoolValue> col2_rb2 = {false, true};
+  auto col1_rb2_arrow = types::ToArrow(col1_rb1, arrow::default_memory_pool());
+  auto col2_rb2_arrow = types::ToArrow(col2_rb1, arrow::default_memory_pool());
   EXPECT_TRUE(rb2.AddColumn(col1_rb2_arrow).ok());
   EXPECT_TRUE(rb2.AddColumn(col2_rb2_arrow).ok());
 

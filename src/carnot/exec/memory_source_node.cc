@@ -61,10 +61,10 @@ Status MemorySourceNode::GenerateNextImpl(ExecState *exec_state) {
     auto time_col = table_->FindTimeColumn();
     DCHECK_NE(time_col, -1);
     auto batch = table_->GetColumn(time_col)->batch(current_batch_);
-    if (udf::GetValueFromArrowArray<udf::UDFDataType::INT64>(batch.get(), batch->length() - 1) >=
+    if (udf::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), batch->length() - 1) >=
         plan_node_->stop_time()) {
-      end = udf::SearchArrowArrayLessThan<udf::UDFDataType::INT64>(batch.get(),
-                                                                   plan_node_->stop_time()) +
+      end = udf::SearchArrowArrayLessThan<types::DataType::INT64>(batch.get(),
+                                                                  plan_node_->stop_time()) +
             1;
     }
   }
@@ -88,7 +88,7 @@ bool MemorySourceNode::HasBatchesRemaining() {
     auto time_col = table_->FindTimeColumn();
     DCHECK_NE(time_col, -1);
     auto batch = table_->GetColumn(time_col)->batch(current_batch_);
-    return udf::GetValueFromArrowArray<udf::UDFDataType::INT64>(batch.get(), 0) <
+    return udf::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), 0) <
            plan_node_->stop_time();
   }
 

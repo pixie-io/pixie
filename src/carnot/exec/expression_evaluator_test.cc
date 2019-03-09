@@ -11,9 +11,9 @@
 #include "src/carnot/exec/expression_evaluator.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/proto/test_proto.h"
-#include "src/carnot/udf/arrow_adapter.h"
 #include "src/carnot/udf/registry.h"
-#include "src/carnot/udf/udf.h"
+#include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
 namespace carnot {
@@ -23,13 +23,15 @@ using pl::carnot::carnotpb::testutils::kAddScalarFuncConstPbtxt;
 using pl::carnot::carnotpb::testutils::kAddScalarFuncNestedPbtxt;
 using pl::carnot::carnotpb::testutils::kAddScalarFuncPbtxt;
 using pl::carnot::carnotpb::testutils::kScalarInt64ValuePbtxt;
+using types::Int64Value;
+using types::ToArrow;
 using udf::FunctionContext;
-using udf::Int64Value;
-using udf::ToArrow;
 
 class AddUDF : public udf::ScalarUDF {
  public:
-  Int64Value Exec(FunctionContext*, Int64Value v1, Int64Value v2) { return v1.val + v2.val; }
+  types::Int64Value Exec(FunctionContext*, types::Int64Value v1, types::Int64Value v2) {
+    return v1.val + v2.val;
+  }
 };
 
 std::shared_ptr<plan::ScalarExpression> AddScalarExpr() {
@@ -67,10 +69,10 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
     exec_state_ =
         std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store);
 
-    std::vector<udf::Int64Value> in1 = {1, 2, 3};
-    std::vector<udf::Int64Value> in2 = {3, 4, 5};
+    std::vector<types::Int64Value> in1 = {1, 2, 3};
+    std::vector<types::Int64Value> in2 = {3, 4, 5};
 
-    RowDescriptor rd({udf::UDFDataType::INT64, udf::UDFDataType::INT64});
+    RowDescriptor rd({types::DataType::INT64, types::DataType::INT64});
     input_rb_ = std::make_unique<RowBatch>(rd, in1.size());
 
     EXPECT_TRUE(input_rb_->AddColumn(ToArrow(in1, arrow::default_memory_pool())).ok());
@@ -100,7 +102,7 @@ INSTANTIATE_TEST_CASE_P(TestVecAndArrow, ScalarExpressionTest,
                                           ScalarExpressionEvaluatorType::kArrowNative));
 
 TEST_P(ScalarExpressionTest, basic_tests) {
-  RowDescriptor rd_output({udf::UDFDataType::INT64});
+  RowDescriptor rd_output({types::DataType::INT64});
   RowBatch output_rb(rd_output, input_rb_->num_rows());
 
   auto se = AddScalarExpr();
@@ -113,7 +115,7 @@ TEST_P(ScalarExpressionTest, basic_tests) {
 }
 
 TEST_P(ScalarExpressionTest, eval_constant) {
-  RowDescriptor rd_output({udf::UDFDataType::INT64});
+  RowDescriptor rd_output({types::DataType::INT64});
   RowBatch output_rb(rd_output, input_rb_->num_rows());
 
   auto se = ConstScalarExpr();
@@ -128,7 +130,7 @@ TEST_P(ScalarExpressionTest, eval_constant) {
 }
 
 TEST_P(ScalarExpressionTest, eval_col_const) {
-  RowDescriptor rd_output({udf::UDFDataType::INT64});
+  RowDescriptor rd_output({types::DataType::INT64});
   RowBatch output_rb(rd_output, input_rb_->num_rows());
 
   auto se = ScalarExpressionOf(kAddScalarFuncConstPbtxt);
@@ -143,7 +145,7 @@ TEST_P(ScalarExpressionTest, eval_col_const) {
 }
 
 TEST_P(ScalarExpressionTest, eval_add_nested) {
-  RowDescriptor rd_output({udf::UDFDataType::INT64});
+  RowDescriptor rd_output({types::DataType::INT64});
   RowBatch output_rb(rd_output, input_rb_->num_rows());
 
   auto se = ScalarExpressionOf(kAddScalarFuncNestedPbtxt);

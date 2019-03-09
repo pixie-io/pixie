@@ -8,9 +8,9 @@
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/proto/udfs.pb.h"
-#include "src/carnot/udf/udf.h"
 #include "src/carnot/udf/udf_definition.h"
 #include "src/common/common.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
 namespace carnot {
@@ -41,7 +41,7 @@ class RegistryKey {
    * @param name the name of the UDF/UDA.
    * @param registry_arg_types the types used for registry resolution (except FunctionContext).
    */
-  RegistryKey(const std::string& name, const std::vector<UDFDataType> registry_arg_types)
+  RegistryKey(const std::string& name, const std::vector<types::DataType> registry_arg_types)
       : name_(name), registry_arg_types_(registry_arg_types) {}
 
   /**
@@ -50,7 +50,7 @@ class RegistryKey {
    */
   const std::string& name() const { return name_; }
 
-  const std::vector<UDFDataType> registry_arg_types() { return registry_arg_types_; }
+  const std::vector<types::DataType> registry_arg_types() { return registry_arg_types_; }
 
   /**
    * LessThan operator overload so we can use this in maps.
@@ -66,7 +66,7 @@ class RegistryKey {
 
  protected:
   std::string name_;
-  std::vector<UDFDataType> registry_arg_types_;
+  std::vector<types::DataType> registry_arg_types_;
 };
 
 class BaseUDFRegistry {
@@ -131,7 +131,7 @@ class Registry : public BaseUDFRegistry {
    * @return
    */
   StatusOr<TUDFDef*> GetDefinition(const std::string& name,
-                                   const std::vector<UDFDataType>& registry_arg_types) {
+                                   const std::vector<types::DataType>& registry_arg_types) {
     auto key = RegistryKey(name, registry_arg_types);
     auto it = map_.find(key);
     if (it == map_.end()) {

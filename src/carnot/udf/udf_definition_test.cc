@@ -4,8 +4,8 @@
 
 #include <algorithm>
 
-#include "src/carnot/udf/column_wrapper.h"
 #include "src/carnot/udf/udf_definition.h"
+#include "src/shared/types/column_wrapper.h"
 
 namespace pl {
 namespace carnot {
@@ -13,7 +13,7 @@ namespace udf {
 
 class NoArgUDF : public ScalarUDF {
  public:
-  Int64Value Exec(FunctionContext *) { return invoke_count++; }
+  types::Int64Value Exec(FunctionContext *) { return invoke_count++; }
 
  private:
   int invoke_count = 0;
@@ -21,12 +21,14 @@ class NoArgUDF : public ScalarUDF {
 
 class SubStrUDF : public ScalarUDF {
  public:
-  StringValue Exec(FunctionContext *, StringValue str) { return str.substr(1, 2); }
+  types::StringValue Exec(FunctionContext *, types::StringValue str) { return str.substr(1, 2); }
 };
 
 class AddUDF : public ScalarUDF {
  public:
-  Int64Value Exec(FunctionContext *, Int64Value v1, Int64Value v2) { return v1.val + v2.val; }
+  types::Int64Value Exec(FunctionContext *, types::Int64Value v1, types::Int64Value v2) {
+    return v1.val + v2.val;
+  }
 };
 
 TEST(UDFDefinition, no_args) {
@@ -35,7 +37,7 @@ TEST(UDFDefinition, no_args) {
   EXPECT_OK(def.Init<NoArgUDF>("noargudf"));
 
   size_t size = 10;
-  Int64ValueColumnWrapper out(size);
+  types::Int64ValueColumnWrapper out(size);
   auto u = def.Make();
   EXPECT_TRUE(def.ExecBatch(u.get(), &ctx, {}, &out, size).ok());
 
@@ -50,10 +52,10 @@ TEST(UDFDefinition, two_args) {
   ScalarUDFDefinition def;
   EXPECT_OK(def.Init<AddUDF>("add"));
 
-  Int64ValueColumnWrapper v1({1, 2, 3});
-  Int64ValueColumnWrapper v2({3, 4, 5});
+  types::Int64ValueColumnWrapper v1({1, 2, 3});
+  types::Int64ValueColumnWrapper v2({3, 4, 5});
 
-  Int64ValueColumnWrapper out(v1.Size());
+  types::Int64ValueColumnWrapper out(v1.Size());
   auto u = def.Make();
   EXPECT_TRUE(def.ExecBatch(u.get(), &ctx, {&v1, &v2}, &out, v1.Size()).ok());
   EXPECT_EQ(4, out[0].val);
@@ -66,9 +68,9 @@ TEST(UDFDefinition, str_args) {
   ScalarUDFDefinition def;
   EXPECT_OK(def.Init<SubStrUDF>("substr"));
 
-  StringValueColumnWrapper v1({"abcd", "defg", "hello"});
+  types::StringValueColumnWrapper v1({"abcd", "defg", "hello"});
 
-  StringValueColumnWrapper out(v1.Size());
+  types::StringValueColumnWrapper out(v1.Size());
   auto u = def.Make();
   EXPECT_TRUE(def.ExecBatch(u.get(), &ctx, {&v1}, &out, v1.Size()).ok());
 
@@ -80,8 +82,8 @@ TEST(UDFDefinition, str_args) {
 TEST(UDFDefinition, arrow_write) {
   FunctionContext ctx;
   ScalarUDFDefinition def;
-  std::vector<Int64Value> v1 = {1, 2, 3};
-  std::vector<Int64Value> v2 = {3, 4, 5};
+  std::vector<types::Int64Value> v1 = {1, 2, 3};
+  std::vector<types::Int64Value> v2 = {3, 4, 5};
 
   auto v1a = ToArrow(v1, arrow::default_memory_pool());
   auto v2a = ToArrow(v2, arrow::default_memory_pool());
@@ -102,14 +104,14 @@ TEST(UDFDefinition, arrow_write) {
 // Test UDA, takes the min of two arguments and then sums them.
 class MinSumUDA : public udf::UDA {
  public:
-  void Update(udf::FunctionContext *, Int64Value arg1, Int64Value arg2) {
+  void Update(udf::FunctionContext *, types::Int64Value arg1, types::Int64Value arg2) {
     sum_ = sum_.val + std::min(arg1.val, arg2.val);
   }
   void Merge(udf::FunctionContext *, const MinSumUDA &other) { sum_ = sum_.val + other.sum_.val; }
-  Int64Value Finalize(udf::FunctionContext *) { return sum_; }
+  types::Int64Value Finalize(udf::FunctionContext *) { return sum_; }
 
  protected:
-  Int64Value sum_ = 0;
+  types::Int64Value sum_ = 0;
 };
 
 TEST(UDADefinition, without_merge) {
@@ -117,10 +119,10 @@ TEST(UDADefinition, without_merge) {
   UDADefinition def;
   EXPECT_OK(def.Init<MinSumUDA>("minsum"));
 
-  Int64ValueColumnWrapper v1({1, 2, 3});
-  Int64ValueColumnWrapper v2({5, 1, 3});
+  types::Int64ValueColumnWrapper v1({1, 2, 3});
+  types::Int64ValueColumnWrapper v2({5, 1, 3});
 
-  Int64Value out;
+  types::Int64Value out;
   auto u = def.Make();
   EXPECT_OK(def.ExecBatchUpdate(u.get(), &ctx, {&v1, &v2}));
   EXPECT_OK(def.FinalizeValue(u.get(), &ctx, &out));
@@ -132,10 +134,10 @@ TEST(UDADefinition, with_merge) {
   UDADefinition def;
   EXPECT_OK(def.Init<MinSumUDA>("minsum"));
 
-  Int64ValueColumnWrapper v1({1, 2, 3});
-  Int64ValueColumnWrapper v2({5, 1, 3});
+  types::Int64ValueColumnWrapper v1({1, 2, 3});
+  types::Int64ValueColumnWrapper v2({5, 1, 3});
 
-  Int64Value out;
+  types::Int64Value out;
   // Create two uda instances. Send v1, v2 to first and just v1, v1 to second.
   // Then merge.
   auto u1 = def.Make();
@@ -152,8 +154,8 @@ TEST(UDADefinition, arrow_output) {
   UDADefinition def;
   EXPECT_OK(def.Init<MinSumUDA>("minsum"));
 
-  Int64ValueColumnWrapper v1({1, 2, 3});
-  Int64ValueColumnWrapper v2({5, 1, 3});
+  types::Int64ValueColumnWrapper v1({1, 2, 3});
+  types::Int64ValueColumnWrapper v2({5, 1, 3});
 
   auto output_builder = std::make_shared<arrow::Int64Builder>();
   auto u = def.Make();

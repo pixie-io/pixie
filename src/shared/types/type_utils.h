@@ -1,13 +1,13 @@
 #pragma once
 
-#include <arrow/type.h>
+#include "third_party/arrow/cpp/src/arrow/type.h"
 
 #include <memory>
 #include <string>
 
 #include "absl/strings/str_format.h"
 #include "src/common/common.h"
-#include "src/common/types/types.pb.h"
+#include "src/shared/types/proto/types.pb.h"
 
 namespace pl {
 namespace types {

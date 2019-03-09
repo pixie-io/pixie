@@ -12,7 +12,6 @@
 #include "src/carnot/plan/schema.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/common.h"
-#include "udf/registry.h"
 
 namespace pl {
 namespace carnot {

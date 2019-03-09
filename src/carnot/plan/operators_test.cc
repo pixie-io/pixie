@@ -11,7 +11,7 @@ namespace plan {
 
 class DummyTestUDF : public udf::ScalarUDF {
  public:
-  udf::Int64Value Exec(udf::FunctionContext*, udf::BoolValue, udf::Float64Value) { return 0; }
+  types::Int64Value Exec(udf::FunctionContext*, types::BoolValue, types::Float64Value) { return 0; }
 };
 
 class OperatorTest : public ::testing::Test {

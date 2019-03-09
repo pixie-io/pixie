@@ -23,8 +23,8 @@ TEST(ToString, values) {
 
 class DummyTestUDF : public udf::ScalarUDF {
  public:
-  udf::Int64Value Exec(udf::FunctionContext*, udf::Float64Value, udf::Float64Value,
-                       udf::Int64Value) {
+  types::Int64Value Exec(udf::FunctionContext*, types::Float64Value, types::Float64Value,
+                         types::Int64Value) {
     return 0;
   }
 };
@@ -32,9 +32,9 @@ class DummyTestUDF : public udf::ScalarUDF {
 class DummyTestUDA : public udf::UDA {
  public:
   Status Init(udf::FunctionContext*) { return Status::OK(); }
-  void Update(udf::FunctionContext*, udf::Float64Value, udf::Float64Value, udf::Int64Value) {}
+  void Update(udf::FunctionContext*, types::Float64Value, types::Float64Value, types::Int64Value) {}
   void Merge(udf::FunctionContext*, const DummyTestUDA&) {}
-  udf::Int64Value Finalize(udf::FunctionContext*) { return 0; }
+  types::Int64Value Finalize(udf::FunctionContext*) { return 0; }
 };
 
 class ScalarExpressionTest : public ::testing::Test {

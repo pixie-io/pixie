@@ -6,9 +6,9 @@
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/proto/plan.pb.h"
 #include "src/carnot/proto/test_proto.h"
-#include "src/carnot/udf/arrow_adapter.h"
-#include "src/carnot/udf/udf.h"
 #include "src/common/common.h"
+#include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/types.h"
 #include "src/utils/benchmark/utils.h"
 
 using ScalarExpression = pl::carnot::plan::ScalarExpression;
@@ -23,12 +23,12 @@ using pl::carnot::exec::RowDescriptor;
 using pl::carnot::exec::ScalarExpressionEvaluator;
 using pl::carnot::exec::ScalarExpressionEvaluatorType;
 using pl::carnot::udf::FunctionContext;
-using pl::carnot::udf::Int64Value;
 using pl::carnot::udf::ScalarUDF;
 using pl::carnot::udf::ScalarUDFRegistry;
-using pl::carnot::udf::ToArrow;
 using pl::carnot::udf::UDARegistry;
-using pl::carnot::udf::UDFDataType;
+using pl::types::DataType;
+using pl::types::Int64Value;
+using pl::types::ToArrow;
 
 class AddUDF : public ScalarUDF {
  public:
@@ -56,14 +56,14 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
   auto in1 = pl::bmutils::CreateLargeData<Int64Value>(data_size);
   auto in2 = pl::bmutils::CreateLargeData<Int64Value>(data_size);
 
-  RowDescriptor rd({UDFDataType::INT64, UDFDataType::INT64});
+  RowDescriptor rd({DataType::INT64, DataType::INT64});
   auto input_rb = std::make_unique<RowBatch>(rd, in1.size());
 
   PL_CHECK_OK(input_rb->AddColumn(ToArrow(in1, arrow::default_memory_pool())));
   PL_CHECK_OK(input_rb->AddColumn(ToArrow(in2, arrow::default_memory_pool())));
 
   for (auto _ : state) {
-    RowDescriptor rd_output({UDFDataType::INT64});
+    RowDescriptor rd_output({DataType::INT64});
     RowBatch output_rb(rd_output, input_rb->num_rows());
 
     auto evaluator = ScalarExpressionEvaluator::Create({se}, eval_type);

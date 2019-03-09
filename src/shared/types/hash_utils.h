@@ -1,13 +1,12 @@
 #pragma once
 
-#include <farmhash.h>
 #include <cstdint>
+#include "src/farmhash.h"
 
-#include "src/carnot/udf/udf.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
-namespace carnot {
-namespace udf {
+namespace types {
 namespace utils {
 /**
  * Combines two 64-bit hash values (borrowed from CityHash).
@@ -63,6 +62,5 @@ struct hash<Time64NSValue> {
 };
 
 }  // namespace utils
-}  // namespace udf
-}  // namespace carnot
+}  // namespace types
 }  // namespace pl

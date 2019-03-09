@@ -6,10 +6,10 @@
 #include <string>
 #include <vector>
 
-#include "src/carnot/udf/arrow_adapter.h"
-#include "src/carnot/udf/column_wrapper.h"
 #include "src/carnot/udf/udf.h"
 #include "src/common/common.h"
+#include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/column_wrapper.h"
 
 namespace pl {
 namespace carnot {
@@ -20,14 +20,14 @@ namespace udf {
 // it's better to keep this number small.
 const int kStringAssumedSizeHeuristic = 10;
 
-// This function takes in a generic UDFBaseValue and then converts it to actual
+// This function takes in a generic types::BaseValueType and then converts it to actual
 // UDFValue type. This function is unsafe and will produce wrong results (or crash)
 // if used incorrectly.
-template <udf::UDFDataType TExecArgType>
-constexpr auto CastToUDFValueType(const UDFBaseValue *arg) {
-  // A sample transformation (for TExecArgType = UDFDataType::INT64) is:
-  // return reinterpret_cast<Int64Value*>(arg);
-  return reinterpret_cast<const typename UDFDataTypeTraits<TExecArgType>::udf_value_type *>(arg);
+template <types::DataType TExecArgType>
+constexpr auto CastToUDFValueType(const types::BaseValueType *arg) {
+  // A sample transformation (for TExecArgType = types::DataType::INT64) is:
+  // return reinterpret_cast<types::Int64Value*>(arg);
+  return reinterpret_cast<const typename types::DataTypeTraits<TExecArgType>::value_type *>(arg);
 }
 /**
  * This is the inner wrapper which expands the arguments an performs type casts
@@ -40,7 +40,8 @@ constexpr auto CastToUDFValueType(const UDFBaseValue *arg) {
  */
 template <typename TUDF, typename TOutput, std::size_t... I>
 Status ExecWrapper(TUDF *udf, FunctionContext *ctx, size_t count, TOutput *out,
-                   const std::vector<const UDFBaseValue *> &args, std::index_sequence<I...>) {
+                   const std::vector<const types::BaseValueType *> &args,
+                   std::index_sequence<I...>) {
   [[maybe_unused]] constexpr auto exec_argument_types = ScalarUDFTraits<TUDF>::ExecArguments();
   for (size_t idx = 0; idx < count; ++idx) {
     out[idx] = udf->Exec(ctx, CastToUDFValueType<exec_argument_types[I]>(args[I])[idx]...);
@@ -67,28 +68,28 @@ inline auto UnWrap(const T &v) {
 }
 
 template <>
-inline auto UnWrap<StringValue>(const StringValue &s) {
+inline auto UnWrap<types::StringValue>(const types::StringValue &s) {
   return s;
 }
 
 // This function takes in a generic arrow::Array and then converts it to actual
 // specific arrow::Array subtype. This function is unsafe and will produce wrong results (or crash)
 // if used incorrectly.
-template <udf::UDFDataType TExecArgType>
+template <types::DataType TExecArgType>
 constexpr auto GetValueFromArrowArray(const arrow::Array *arg, int64_t idx) {
-  // A sample transformation (for TExecArgType = UDFDataType::INT64) is:
+  // A sample transformation (for TExecArgType = types::DataType::INT64) is:
   // return GetValue(reinterpret_cast<arrow::Int64Array*>(arg), idx);
-  using arrow_array_type = typename UDFDataTypeTraits<TExecArgType>::arrow_array_type;
+  using arrow_array_type = typename types::DataTypeTraits<TExecArgType>::arrow_array_type;
   return GetValue(reinterpret_cast<const arrow_array_type *>(arg), idx);
 }
 
-template <udf::UDFDataType T>
+template <types::DataType T>
 class ArrowArrayIterator
     : public std::iterator<std::forward_iterator_tag,
-                           typename udf::UDFValueTraits<
-                               typename udf::UDFDataTypeTraits<T>::udf_value_type>::native_type> {
+                           typename types::ValueTypeTraits<
+                               typename types::DataTypeTraits<T>::value_type>::native_type> {
   using ReturnType =
-      typename udf::UDFValueTraits<typename udf::UDFDataTypeTraits<T>::udf_value_type>::native_type;
+      typename types::ValueTypeTraits<typename types::DataTypeTraits<T>::value_type>::native_type;
 
  public:
   ArrowArrayIterator();
@@ -142,10 +143,10 @@ class ArrowArrayIterator
  * @param val the value to search for in the arrow array.
  * @return the index of the first item in the array equal to or greater than val.
  */
-template <udf::UDFDataType T>
+template <types::DataType T>
 int64_t SearchArrowArrayGreaterThanOrEqual(
     arrow::Array *arr,
-    typename udf::UDFValueTraits<typename udf::UDFDataTypeTraits<T>::udf_value_type>::native_type
+    typename types::ValueTypeTraits<typename types::DataTypeTraits<T>::value_type>::native_type
         val) {
   auto arr_iterator = udf::ArrowArrayIterator<T>(arr);
   auto res = std::lower_bound(arr_iterator, arr_iterator.end(), val);
@@ -162,10 +163,10 @@ int64_t SearchArrowArrayGreaterThanOrEqual(
  * @param val the value to search for in the arrow array.
  * @return the index of the first item in the array less than val.
  */
-template <udf::UDFDataType T>
+template <types::DataType T>
 int64_t SearchArrowArrayLessThan(
     arrow::Array *arr,
-    typename udf::UDFValueTraits<typename udf::UDFDataTypeTraits<T>::udf_value_type>::native_type
+    typename types::ValueTypeTraits<typename types::DataTypeTraits<T>::value_type>::native_type
         val) {
   auto res = SearchArrowArrayGreaterThanOrEqual<T>(arr, val);
   if (res == -1) {
@@ -221,26 +222,26 @@ Status ExecWrapperArrow(TUDF *udf, FunctionContext *ctx, size_t count, TOutput *
 }
 
 /**
- * Checks types between column wrapper and array of UDFDataTypes.
+ * Checks types between column wrapper and array of types::UDFDataTypes.
  * @return true if all types match.
  */
 template <std::size_t SIZE>
-inline bool CheckTypes(const std::vector<const ColumnWrapper *> &args,
-                       const std::array<UDFDataType, SIZE> &types) {
+inline bool CheckTypes(const std::vector<const types::ColumnWrapper *> &args,
+                       const std::array<types::DataType, SIZE> &types) {
   if (args.size() != SIZE) {
     return false;
   }
   for (size_t idx = 0; idx < args.size(); ++idx) {
-    if (args[idx]->DataType() != types[idx]) {
+    if (args[idx]->data_type() != types[idx]) {
       return false;
     }
   }
   return true;
 }
 
-inline std::vector<const UDFBaseValue *> ConvertToBaseValue(
-    const std::vector<const ColumnWrapper *> &args) {
-  std::vector<const UDFBaseValue *> retval;
+inline std::vector<const types::BaseValueType *> ConvertToBaseValue(
+    const std::vector<const types::ColumnWrapper *> &args) {
+  std::vector<const types::BaseValueType *> retval;
   for (const auto *col : args) {
     retval.push_back(col->UnsafeRawData());
   }
@@ -290,7 +291,7 @@ struct ScalarUDFWrapper {
     // cast the inputs.
     return ExecWrapperArrow<TUDF>(
         reinterpret_cast<TUDF *>(udf), ctx, count,
-        reinterpret_cast<typename UDFDataTypeTraits<return_type>::arrow_builder_type *>(output),
+        reinterpret_cast<typename types::DataTypeTraits<return_type>::arrow_builder_type *>(output),
         inputs, std::make_index_sequence<exec_argument_types.size()>{});
   }
 
@@ -312,8 +313,8 @@ struct ScalarUDFWrapper {
    * @return Status of execution.
    */
   static Status ExecBatch(ScalarUDF *udf, FunctionContext *ctx,
-                          const std::vector<const ColumnWrapper *> &inputs, ColumnWrapper *output,
-                          int count) {
+                          const std::vector<const types::ColumnWrapper *> &inputs,
+                          types::ColumnWrapper *output, int count) {
     // Check that output is allocated.
     DCHECK(output != nullptr);
     // Check that the arity is correct.
@@ -324,7 +325,7 @@ struct ScalarUDFWrapper {
     DCHECK(CheckTypes(inputs, exec_argument_types));
     auto input_as_base_value = ConvertToBaseValue(inputs);
 
-    using output_type = typename UDFDataTypeTraits<return_type>::udf_value_type;
+    using output_type = typename types::DataTypeTraits<return_type>::value_type;
     auto *casted_output = reinterpret_cast<output_type *>(output->UnsafeRawData());
     // The outer wrapper just casts the output type and UDF type. We then pass in
     // the inputs with a sequence based on the number of arguments to iterate through and
@@ -341,7 +342,8 @@ struct ScalarUDFWrapper {
  */
 template <typename TUDA, std::size_t... I>
 Status UpdateWrapper(TUDA *uda, FunctionContext *ctx, size_t count,
-                     const std::vector<const UDFBaseValue *> &args, std::index_sequence<I...>) {
+                     const std::vector<const types::BaseValueType *> &args,
+                     std::index_sequence<I...>) {
   constexpr auto update_argument_types = UDATraits<TUDA>::UpdateArgumentTypes();
   for (size_t idx = 0; idx < count; ++idx) {
     uda->Update(ctx, CastToUDFValueType<update_argument_types[I]>(args[I])[idx]...);
@@ -382,11 +384,11 @@ struct UDAWrapper {
    * Perform a batch update of the passed in UDA based in the inputs.
    * @param uda The UDA instances.
    * @param ctx The function context.
-   * @param inputs A vector of pointers to ColumnWrappers.
+   * @param inputs A vector of pointers to types::ColumnWrappers.
    * @return Status of update.
    */
   static Status ExecBatchUpdate(UDA *uda, FunctionContext *ctx,
-                                const std::vector<const ColumnWrapper *> &inputs) {
+                                const std::vector<const types::ColumnWrapper *> &inputs) {
     constexpr auto update_argument_types = UDATraits<TUDA>::UpdateArgumentTypes();
     DCHECK(CheckTypes(inputs, update_argument_types));
     DCHECK(inputs.size() == update_argument_types.size());
@@ -402,7 +404,7 @@ struct UDAWrapper {
    * Perform a batch update of the passed in UDA based in the inputs.
    * @param uda The UDA instances.
    * @param ctx The function context.
-   * @param inputs A vector of pointers to ColumnWrappers.
+   * @param inputs A vector of pointers to types::ColumnWrappers.
    * @return Status of update.
    */
   static Status ExecBatchUpdateArrow(UDA *uda, FunctionContext *ctx,
@@ -434,7 +436,7 @@ struct UDAWrapper {
   static Status FinalizeArrow(UDA *uda, FunctionContext *ctx, arrow::ArrayBuilder *output) {
     DCHECK(output != nullptr);
     auto *casted_builder =
-        reinterpret_cast<typename UDFDataTypeTraits<return_type>::arrow_builder_type *>(output);
+        reinterpret_cast<typename types::DataTypeTraits<return_type>::arrow_builder_type *>(output);
     auto *casted_uda = reinterpret_cast<TUDA *>(uda);
     PL_RETURN_IF_ERROR(casted_builder->Append(UnWrap(casted_uda->Finalize(ctx))));
     return Status::OK();
@@ -447,8 +449,8 @@ struct UDAWrapper {
    *
    * @return Status of the Finalize.
    */
-  static Status FinalizeValue(UDA *uda, FunctionContext *ctx, UDFBaseValue *output) {
-    using output_type = typename UDFDataTypeTraits<return_type>::udf_value_type;
+  static Status FinalizeValue(UDA *uda, FunctionContext *ctx, types::BaseValueType *output) {
+    using output_type = typename types::DataTypeTraits<return_type>::value_type;
 
     DCHECK(output != nullptr);
     auto *casted_output = reinterpret_cast<output_type *>(output);

@@ -6,51 +6,50 @@
 #include <iostream>
 #include <memory>
 
-#include "src/carnot/udf/column_wrapper.h"
-#include "src/carnot/udf/udf.h"
+#include "src/shared/types/column_wrapper.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
-namespace carnot {
-namespace udf {
+namespace types {
 
 TEST(ColumnWrapperTest, make_test_bool) {
-  auto wrapper = ColumnWrapper::Make(UDFDataType::BOOLEAN, 10);
+  auto wrapper = ColumnWrapper::Make(DataType::BOOLEAN, 10);
   EXPECT_EQ(10, wrapper->Size());
-  EXPECT_EQ(UDFDataType::BOOLEAN, wrapper->DataType());
+  EXPECT_EQ(DataType::BOOLEAN, wrapper->data_type());
   EXPECT_NE(nullptr, wrapper->UnsafeRawData());
 
   auto arrow_arr = wrapper->ConvertToArrow(arrow::default_memory_pool());
-  EXPECT_EQ(UDFDataTypeTraits<UDFDataType::BOOLEAN>::arrow_type_id, arrow_arr->type_id());
+  EXPECT_EQ(DataTypeTraits<DataType::BOOLEAN>::arrow_type_id, arrow_arr->type_id());
 }
 
 TEST(ColumnWrapperTest, make_test_int64) {
-  auto wrapper = ColumnWrapper::Make(UDFDataType::INT64, 10);
+  auto wrapper = ColumnWrapper::Make(DataType::INT64, 10);
   EXPECT_EQ(10, wrapper->Size());
-  EXPECT_EQ(UDFDataType::INT64, wrapper->DataType());
+  EXPECT_EQ(DataType::INT64, wrapper->data_type());
   EXPECT_NE(nullptr, wrapper->UnsafeRawData());
 
   auto arrow_arr = wrapper->ConvertToArrow(arrow::default_memory_pool());
-  EXPECT_EQ(UDFDataTypeTraits<UDFDataType::INT64>::arrow_type_id, arrow_arr->type_id());
+  EXPECT_EQ(DataTypeTraits<DataType::INT64>::arrow_type_id, arrow_arr->type_id());
 }
 
 TEST(ColumnWrapperTest, make_test_float64) {
-  auto wrapper = ColumnWrapper::Make(UDFDataType::FLOAT64, 10);
+  auto wrapper = ColumnWrapper::Make(DataType::FLOAT64, 10);
   EXPECT_EQ(10, wrapper->Size());
-  EXPECT_EQ(UDFDataType::FLOAT64, wrapper->DataType());
+  EXPECT_EQ(DataType::FLOAT64, wrapper->data_type());
   EXPECT_NE(nullptr, wrapper->UnsafeRawData());
 
   auto arrow_arr = wrapper->ConvertToArrow(arrow::default_memory_pool());
-  EXPECT_EQ(UDFDataTypeTraits<UDFDataType::FLOAT64>::arrow_type_id, arrow_arr->type_id());
+  EXPECT_EQ(DataTypeTraits<DataType::FLOAT64>::arrow_type_id, arrow_arr->type_id());
 }
 
 TEST(ColumnWrapperTest, make_test_string) {
-  auto wrapper = ColumnWrapper::Make(UDFDataType::STRING, 10);
+  auto wrapper = ColumnWrapper::Make(DataType::STRING, 10);
   EXPECT_EQ(10, wrapper->Size());
-  EXPECT_EQ(UDFDataType::STRING, wrapper->DataType());
+  EXPECT_EQ(DataType::STRING, wrapper->data_type());
   EXPECT_NE(nullptr, wrapper->UnsafeRawData());
 
   auto arrow_arr = wrapper->ConvertToArrow(arrow::default_memory_pool());
-  EXPECT_EQ(UDFDataTypeTraits<UDFDataType::STRING>::arrow_type_id, arrow_arr->type_id());
+  EXPECT_EQ(DataTypeTraits<DataType::STRING>::arrow_type_id, arrow_arr->type_id());
 }
 
 TEST(ColumnWrapper, FromArrowBool) {
@@ -109,6 +108,5 @@ TEST(ColumnWrapper, FromArrowString) {
   EXPECT_TRUE(converted_to_arrow->Equals(arr));
 }
 
-}  // namespace udf
-}  // namespace carnot
+}  // namespace types
 }  // namespace pl

@@ -40,7 +40,7 @@ class BlockingAggNode : public ProcessingNode {
 
   Status EvaluateSingleExpressionNoGroups(ExecState *exec_state, const UDAInfo &uda_info,
                                           plan::AggregateExpression *expr, const RowBatch &rb);
-  StatusOr<udf::UDFDataType> GetTypeOfDep(const plan::ScalarExpression &expr) const;
+  StatusOr<types::DataType> GetTypeOfDep(const plan::ScalarExpression &expr) const;
   std::unique_ptr<plan::BlockingAggregateOperator> plan_node_;
   std::unique_ptr<RowDescriptor> output_descriptor_;
   std::unique_ptr<RowDescriptor> input_descriptor_;

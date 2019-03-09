@@ -5,10 +5,10 @@
 
 #include "absl/strings/match.h"
 #include "src/carnot/udf/registry.h"
-#include "src/carnot/udf/udf.h"
 #include "src/common/error.h"
 #include "src/common/macros.h"
 #include "src/common/status.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
 namespace carnot {
@@ -16,7 +16,7 @@ namespace udf {
 
 class ScalarUDF1 : public ScalarUDF {
  public:
-  Int64Value Exec(FunctionContext *ctx, BoolValue b1, Int64Value b2) {
+  types::Int64Value Exec(FunctionContext *ctx, types::BoolValue b1, types::Int64Value b2) {
     PL_UNUSED(ctx);
     return b1.val && b2.val ? 3 : 0;
   }
@@ -24,12 +24,12 @@ class ScalarUDF1 : public ScalarUDF {
 
 class ScalarUDF1WithInit : public ScalarUDF {
  public:
-  Status Init(FunctionContext *ctx, Int64Value v1) {
+  Status Init(FunctionContext *ctx, types::Int64Value v1) {
     PL_UNUSED(ctx);
     PL_UNUSED(v1);
     return Status::OK();
   }
-  Int64Value Exec(FunctionContext *ctx, BoolValue b1, BoolValue b2) {
+  types::Int64Value Exec(FunctionContext *ctx, types::BoolValue b1, types::BoolValue b2) {
     PL_UNUSED(ctx);
     return b1.val && b2.val ? 3 : 0;
   }
@@ -51,13 +51,13 @@ TEST(ScalarUDFRegistry, init_with_udfs) {
   EXPECT_EQ(kScalarUDF, registry.Type());
 
   auto statusor = registry.GetDefinition(
-      "scalar1", std::vector<UDFDataType>({UDFDataType::BOOLEAN, UDFDataType::INT64}));
+      "scalar1", std::vector<types::DataType>({types::DataType::BOOLEAN, types::DataType::INT64}));
   ASSERT_TRUE(statusor.ok());
   auto def = statusor.ConsumeValueOrDie();
   ASSERT_NE(nullptr, def);
   EXPECT_EQ("scalar1", def->name());
-  EXPECT_EQ(UDFDataType::INT64, def->exec_return_type());
-  EXPECT_EQ(std::vector<UDFDataType>({UDFDataType::BOOLEAN, UDFDataType::INT64}),
+  EXPECT_EQ(types::DataType::INT64, def->exec_return_type());
+  EXPECT_EQ(std::vector<types::DataType>({types::DataType::BOOLEAN, types::DataType::INT64}),
             def->exec_arguments());
 
   const char *expected_debug_str =
@@ -69,21 +69,23 @@ TEST(ScalarUDFRegistry, init_with_udfs) {
 
 TEST(ScalarUDFRegistry, templated_udfs) {
   auto registry = ScalarUDFRegistry("test registry");
-  registry.RegisterOrDie<AddUDF<Float64Value, Int64Value, Float64Value>>("add");
-  registry.RegisterOrDie<AddUDF<Float64Value, Float64Value, Float64Value>>("add");
+  registry.RegisterOrDie<AddUDF<types::Float64Value, types::Int64Value, types::Float64Value>>(
+      "add");
+  registry.RegisterOrDie<AddUDF<types::Float64Value, types::Float64Value, types::Float64Value>>(
+      "add");
 
   auto statusor = registry.GetDefinition(
-      "add", std::vector<UDFDataType>({UDFDataType::INT64, UDFDataType::FLOAT64}));
+      "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64}));
   ASSERT_TRUE(statusor.ok());
   EXPECT_NE(nullptr, statusor.ConsumeValueOrDie());
 
   statusor = registry.GetDefinition(
-      "add", std::vector<UDFDataType>({UDFDataType::FLOAT64, UDFDataType::FLOAT64}));
+      "add", std::vector<types::DataType>({types::DataType::FLOAT64, types::DataType::FLOAT64}));
   ASSERT_TRUE(statusor.ok());
   EXPECT_NE(nullptr, statusor.ConsumeValueOrDie());
 
   statusor = registry.GetDefinition(
-      "add", std::vector<UDFDataType>({UDFDataType::INT64, UDFDataType::INT64}));
+      "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::INT64}));
   ASSERT_FALSE(statusor.ok());
   EXPECT_TRUE(error::IsNotFound(statusor.status()));
 }
@@ -102,7 +104,8 @@ TEST(ScalarUDFRegistry, double_register) {
 TEST(ScalarUDFRegistry, no_such_udf) {
   auto registry = ScalarUDFRegistry("test registry");
   registry.RegisterOrDie<ScalarUDF1>("scalar1");
-  auto statusor = registry.GetDefinition("scalar1", std::vector<UDFDataType>({UDFDataType::INT64}));
+  auto statusor =
+      registry.GetDefinition("scalar1", std::vector<types::DataType>({types::DataType::INT64}));
   EXPECT_FALSE(statusor.ok());
 }
 
@@ -117,17 +120,17 @@ TEST(ScalarUDFRegistryDeathTest, double_register) {
 class UDA1 : public UDA {
  public:
   Status Init(FunctionContext *) { return Status::OK(); }
-  void Update(FunctionContext *, Int64Value) {}
+  void Update(FunctionContext *, types::Int64Value) {}
   void Merge(FunctionContext *, const UDA1 &) {}
-  Int64Value Finalize(FunctionContext *) { return 0; }
+  types::Int64Value Finalize(FunctionContext *) { return 0; }
 };
 
 class UDA1Overload : public UDA {
  public:
   Status Init(FunctionContext *) { return Status::OK(); }
-  void Update(FunctionContext *, Int64Value, Float64Value) {}
+  void Update(FunctionContext *, types::Int64Value, types::Float64Value) {}
   void Merge(FunctionContext *, const UDA1Overload &) {}
-  Float64Value Finalize(FunctionContext *) { return 0; }
+  types::Float64Value Finalize(FunctionContext *) { return 0; }
 };
 
 TEST(UDARegistry, init_with_udas) {
@@ -136,13 +139,14 @@ TEST(UDARegistry, init_with_udas) {
   registry.RegisterOrDie<UDA1Overload>("uda1");
 
   EXPECT_EQ(kUDA, registry.Type());
-  auto statusor = registry.GetDefinition("uda1", std::vector<UDFDataType>({UDFDataType::INT64}));
+  auto statusor =
+      registry.GetDefinition("uda1", std::vector<types::DataType>({types::DataType::INT64}));
   ASSERT_TRUE(statusor.ok());
   auto def = statusor.ConsumeValueOrDie();
   ASSERT_NE(nullptr, def);
   EXPECT_EQ("uda1", def->name());
-  EXPECT_EQ(std::vector<UDFDataType>({UDFDataType::INT64}), def->update_arguments());
-  EXPECT_EQ(UDFDataType::INT64, def->finalize_return_type());
+  EXPECT_EQ(std::vector<types::DataType>({types::DataType::INT64}), def->update_arguments());
+  EXPECT_EQ(types::DataType::INT64, def->finalize_return_type());
 
   const char *expected_debug_str =
       "Registry(UDARegistry): test registry\n"
@@ -165,7 +169,8 @@ TEST(UDARegistry, double_register) {
 TEST(UDARegistry, no_such_uda) {
   auto registry = UDARegistry("test registry");
   registry.RegisterOrDie<UDA1>("uda1");
-  auto statusor = registry.GetDefinition("uda1", std::vector<UDFDataType>({UDFDataType::FLOAT64}));
+  auto statusor =
+      registry.GetDefinition("uda1", std::vector<types::DataType>({types::DataType::FLOAT64}));
   EXPECT_FALSE(statusor.ok());
 }
 
@@ -201,7 +206,8 @@ TEST(RegistryInfoExporter, export_uda_and_udf) {
 
   auto scalar_udf_registry = ScalarUDFRegistry("test registry");
   scalar_udf_registry.RegisterOrDie<ScalarUDF1>("scalar1");
-  scalar_udf_registry.RegisterOrDie<AddUDF<Float64Value, Float64Value, Float64Value>>("add");
+  scalar_udf_registry
+      .RegisterOrDie<AddUDF<types::Float64Value, types::Float64Value, types::Float64Value>>("add");
 
   auto udf_info =
       RegistryInfoExporter().Registry(uda_registry).Registry(scalar_udf_registry).ToProto();

@@ -3,10 +3,10 @@
 #include <iostream>
 #include <type_traits>
 
-#include "src/carnot/udf/udf.h"
 #include "src/carnot/udf/udf_wrapper.h"
 #include "src/common/macros.h"
 #include "src/common/status.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
 namespace carnot {
@@ -16,90 +16,90 @@ using testing::ElementsAre;
 
 class ScalarUDF1 : ScalarUDF {
  public:
-  Int64Value Exec(FunctionContext *, BoolValue, Int64Value) { return 0; }
+  types::Int64Value Exec(FunctionContext *, types::BoolValue, types::Int64Value) { return 0; }
 };
 
 class ScalarUDF1WithInit : ScalarUDF {
  public:
-  Status Init(FunctionContext *, Int64Value) { return Status::OK(); }
-  Int64Value Exec(FunctionContext *, BoolValue, BoolValue) { return 0; }
+  Status Init(FunctionContext *, types::Int64Value) { return Status::OK(); }
+  types::Int64Value Exec(FunctionContext *, types::BoolValue, types::BoolValue) { return 0; }
 };
 
 TEST(ScalarUDF, basic_tests) {
-  EXPECT_EQ(UDFDataType::INT64, ScalarUDFTraits<ScalarUDF1>::ReturnType());
+  EXPECT_EQ(types::DataType::INT64, ScalarUDFTraits<ScalarUDF1>::ReturnType());
   EXPECT_THAT(ScalarUDFTraits<ScalarUDF1>::ExecArguments(),
-              ElementsAre(UDFDataType::BOOLEAN, UDFDataType::INT64));
+              ElementsAre(types::DataType::BOOLEAN, types::DataType::INT64));
   EXPECT_FALSE(ScalarUDFTraits<ScalarUDF1>::HasInit());
   EXPECT_TRUE(ScalarUDFTraits<ScalarUDF1WithInit>::HasInit());
 }
 
 TEST(UDFDataTypes, valid_tests) {
-  EXPECT_TRUE((true == IsValidUDFDataType<BoolValue>::value));
-  EXPECT_TRUE((true == IsValidUDFDataType<Int64Value>::value));
-  EXPECT_TRUE((true == IsValidUDFDataType<Float64Value>::value));
-  EXPECT_TRUE((true == IsValidUDFDataType<StringValue>::value));
+  EXPECT_TRUE((true == types::IsValidValueType<types::BoolValue>::value));
+  EXPECT_TRUE((true == types::IsValidValueType<types::Int64Value>::value));
+  EXPECT_TRUE((true == types::IsValidValueType<types::Float64Value>::value));
+  EXPECT_TRUE((true == types::IsValidValueType<types::StringValue>::value));
 }
 
 class UDA1 : UDA {
  public:
   Status Init(FunctionContext *) { return Status::OK(); }
-  void Update(FunctionContext *, Int64Value) {}
+  void Update(FunctionContext *, types::Int64Value) {}
   void Merge(FunctionContext *, const UDA1 &) {}
-  Int64Value Finalize(FunctionContext *) { return 0; }
+  types::Int64Value Finalize(FunctionContext *) { return 0; }
 };
 
 class UDA1WithInit : UDA {
  public:
-  Status Init(FunctionContext *, Int64Value) { return Status::OK(); }
-  void Update(FunctionContext *, Int64Value, Float64Value) {}
+  Status Init(FunctionContext *, types::Int64Value) { return Status::OK(); }
+  void Update(FunctionContext *, types::Int64Value, types::Float64Value) {}
   void Merge(FunctionContext *, const UDA1WithInit &) {}
-  Int64Value Finalize(FunctionContext *) { return 0; }
+  types::Int64Value Finalize(FunctionContext *) { return 0; }
 };
 
 class UDAWithBadMerge1 : UDA {
  public:
-  Status Init(FunctionContext *, Int64Value) { return Status::OK(); }
-  void Update(FunctionContext *, Int64Value, Float64Value) {}
+  Status Init(FunctionContext *, types::Int64Value) { return Status::OK(); }
+  void Update(FunctionContext *, types::Int64Value, types::Float64Value) {}
   void Merge(const UDAWithBadMerge1 &) {}
-  Int64Value Finalize(FunctionContext *) { return 0; }
+  types::Int64Value Finalize(FunctionContext *) { return 0; }
 };
 
 class UDAWithBadMerge2 : UDA {
  public:
-  Status Init(FunctionContext *, Int64Value) { return Status::OK(); }
-  void Update(FunctionContext *, Int64Value, Float64Value) {}
+  Status Init(FunctionContext *, types::Int64Value) { return Status::OK(); }
+  void Update(FunctionContext *, types::Int64Value, types::Float64Value) {}
   int Merge(FunctionContext *, const UDAWithBadMerge2 &) { return 0; }
-  Int64Value Finalize(FunctionContext *) { return 0; }
+  types::Int64Value Finalize(FunctionContext *) { return 0; }
 };
 
 class UDAWithBadMerge3 : UDA {
  public:
-  Status Init(FunctionContext *, Int64Value) { return Status::OK(); }
-  void Update(FunctionContext *, Int64Value, Float64Value) {}
+  Status Init(FunctionContext *, types::Int64Value) { return Status::OK(); }
+  void Update(FunctionContext *, types::Int64Value, types::Float64Value) {}
   void Merge(FunctionContext *, const UDA &) {}
-  Int64Value Finalize(FunctionContext *) { return 0; }
+  types::Int64Value Finalize(FunctionContext *) { return 0; }
 };
 
 class UDAWithBadUpdate1 : UDA {
  public:
   Status Init(FunctionContext *) { return Status::OK(); }
-  int Update(FunctionContext *, Int64Value) { return 0; }
+  int Update(FunctionContext *, types::Int64Value) { return 0; }
   void Merge(FunctionContext *, const UDAWithBadUpdate1 &) {}
-  Int64Value Finalize(FunctionContext *) { return 0; }
+  types::Int64Value Finalize(FunctionContext *) { return 0; }
 };
 
 class UDAWithBadUpdate2 : UDA {
  public:
   Status Init(FunctionContext *) { return Status::OK(); }
-  void Update(Int64Value) {}
+  void Update(types::Int64Value) {}
   void Merge(FunctionContext *, const UDAWithBadUpdate2 &) {}
-  Int64Value Finalize(FunctionContext *) { return 0; }
+  types::Int64Value Finalize(FunctionContext *) { return 0; }
 };
 
 class UDAWithBadFinalize1 : UDA {
  public:
   Status Init(FunctionContext *) { return Status::OK(); }
-  void Update(FunctionContext *, Int64Value) {}
+  void Update(FunctionContext *, types::Int64Value) {}
   void Merge(FunctionContext *, const UDAWithBadFinalize1 &) {}
   void Finalize(FunctionContext *) {}
 };
@@ -107,9 +107,9 @@ class UDAWithBadFinalize1 : UDA {
 class UDAWithBadFinalize2 : UDA {
  public:
   Status Init(FunctionContext *) { return Status::OK(); }
-  void Update(FunctionContext *, Int64Value) {}
+  void Update(FunctionContext *, types::Int64Value) {}
   void Merge(FunctionContext *, const UDAWithBadFinalize2 &) {}
-  Int64Value Finalize() { return 0; }
+  types::Int64Value Finalize() { return 0; }
 };
 
 TEST(UDA, bad_merge_fn) {
@@ -129,17 +129,17 @@ TEST(UDA, bad_finalize_fn) {
 }
 
 TEST(UDA, valid_uda) {
-  EXPECT_EQ(UDFDataType::INT64, UDATraits<UDA1>::FinalizeReturnType());
-  EXPECT_THAT(UDATraits<UDA1>::UpdateArgumentTypes(), ElementsAre(UDFDataType::INT64));
+  EXPECT_EQ(types::DataType::INT64, UDATraits<UDA1>::FinalizeReturnType());
+  EXPECT_THAT(UDATraits<UDA1>::UpdateArgumentTypes(), ElementsAre(types::DataType::INT64));
 
-  EXPECT_EQ(UDFDataType::INT64, UDATraits<UDA1WithInit>::FinalizeReturnType());
+  EXPECT_EQ(types::DataType::INT64, UDATraits<UDA1WithInit>::FinalizeReturnType());
   EXPECT_THAT(UDATraits<UDA1WithInit>::UpdateArgumentTypes(),
-              ElementsAre(UDFDataType::INT64, UDFDataType::FLOAT64));
+              ElementsAre(types::DataType::INT64, types::DataType::FLOAT64));
 }
 
 TEST(BoolValue, value_tests) {
   // Test constructor init.
-  BoolValue v(false);
+  types::BoolValue v(false);
   // Test == overload.
   // NOLINTNEXTLINE(readability/check).
   EXPECT_TRUE(v == false);
@@ -147,13 +147,13 @@ TEST(BoolValue, value_tests) {
   v = true;
   EXPECT_EQ(true, v.val);
   // Check type base type.
-  bool base_type_check = (true == std::is_base_of_v<UDFBaseValue, BoolValue>);
+  bool base_type_check = (true == std::is_base_of_v<types::BaseValueType, types::BoolValue>);
   EXPECT_TRUE(base_type_check);
 }
 
 TEST(Int64Value, value_tests) {
   // Test constructor init.
-  Int64Value v(12);
+  types::Int64Value v(12);
   // Test == overload.
   // NOLINTNEXTLINE(readability/check).
   EXPECT_TRUE(v == 12);
@@ -161,13 +161,13 @@ TEST(Int64Value, value_tests) {
   v = 24;
   EXPECT_EQ(24, v.val);
   // Check type base type.
-  bool base_type_check = (true == std::is_base_of_v<UDFBaseValue, Int64Value>);
+  bool base_type_check = (true == std::is_base_of_v<types::BaseValueType, types::Int64Value>);
   EXPECT_TRUE(base_type_check);
 }
 
 TEST(Float64Value, value_tests) {
   // Test constructor init.
-  Float64Value v(12.5);
+  types::Float64Value v(12.5);
   // Test == overload.
   // NOLINTNEXTLINE(readability/check).
   EXPECT_TRUE(v == 12.5);
@@ -175,12 +175,12 @@ TEST(Float64Value, value_tests) {
   v = 24.2;
   EXPECT_DOUBLE_EQ(24.2, v.val);
   // Check type base type.
-  bool base_type_check = (true == std::is_base_of_v<UDFBaseValue, Float64Value>);
+  bool base_type_check = (true == std::is_base_of_v<types::BaseValueType, types::Float64Value>);
   EXPECT_TRUE(base_type_check);
 }
 
 TEST(StringValue, value_tests) {
-  StringValue sv("abcd");
+  types::StringValue sv("abcd");
 
   // Test == overload.
   // NOLINTNEXTLINE(readability/check).
@@ -189,28 +189,28 @@ TEST(StringValue, value_tests) {
   sv = "def";
   EXPECT_EQ("def", sv);
   // Check type base type.
-  bool base_type_check = (true == std::is_base_of_v<UDFBaseValue, StringValue>);
+  bool base_type_check = (true == std::is_base_of_v<types::BaseValueType, types::StringValue>);
   EXPECT_TRUE(base_type_check);
 }
 
 TEST(BinarySearchTest, find_index_greater_or_eq) {
-  std::vector<udf::Int64Value> col_rb1 = {1, 2, 5, 6, 9, 11};
+  std::vector<types::Int64Value> col_rb1 = {1, 2, 5, 6, 9, 11};
   auto col_rb1_arrow = ToArrow(col_rb1, arrow::default_memory_pool());
 
-  EXPECT_EQ(1, SearchArrowArrayGreaterThanOrEqual<udf::UDFDataType::INT64>(col_rb1_arrow.get(), 2));
+  EXPECT_EQ(1, SearchArrowArrayGreaterThanOrEqual<types::DataType::INT64>(col_rb1_arrow.get(), 2));
   EXPECT_EQ(-1,
-            SearchArrowArrayGreaterThanOrEqual<udf::UDFDataType::INT64>(col_rb1_arrow.get(), 12));
-  EXPECT_EQ(2, SearchArrowArrayGreaterThanOrEqual<udf::UDFDataType::INT64>(col_rb1_arrow.get(), 4));
+            SearchArrowArrayGreaterThanOrEqual<types::DataType::INT64>(col_rb1_arrow.get(), 12));
+  EXPECT_EQ(2, SearchArrowArrayGreaterThanOrEqual<types::DataType::INT64>(col_rb1_arrow.get(), 4));
 }
 
 TEST(BinarySearchTest, find_index_lower_or_eq) {
-  std::vector<udf::Int64Value> col_rb1 = {1, 2, 5, 6, 6, 6, 9, 11};
-  auto col_rb1_arrow = udf::ToArrow(col_rb1, arrow::default_memory_pool());
+  std::vector<types::Int64Value> col_rb1 = {1, 2, 5, 6, 6, 6, 9, 11};
+  auto col_rb1_arrow = types::ToArrow(col_rb1, arrow::default_memory_pool());
 
-  EXPECT_EQ(0, SearchArrowArrayLessThan<udf::UDFDataType::INT64>(col_rb1_arrow.get(), 2));
-  EXPECT_EQ(-1, SearchArrowArrayLessThan<udf::UDFDataType::INT64>(col_rb1_arrow.get(), 0));
-  EXPECT_EQ(-1, SearchArrowArrayLessThan<udf::UDFDataType::INT64>(col_rb1_arrow.get(), 1));
-  EXPECT_EQ(3, SearchArrowArrayLessThan<udf::UDFDataType::INT64>(col_rb1_arrow.get(), 8));
+  EXPECT_EQ(0, SearchArrowArrayLessThan<types::DataType::INT64>(col_rb1_arrow.get(), 2));
+  EXPECT_EQ(-1, SearchArrowArrayLessThan<types::DataType::INT64>(col_rb1_arrow.get(), 0));
+  EXPECT_EQ(-1, SearchArrowArrayLessThan<types::DataType::INT64>(col_rb1_arrow.get(), 1));
+  EXPECT_EQ(3, SearchArrowArrayLessThan<types::DataType::INT64>(col_rb1_arrow.get(), 8));
 }
 
 }  // namespace udf

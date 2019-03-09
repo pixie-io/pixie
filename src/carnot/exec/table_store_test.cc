@@ -11,9 +11,9 @@ namespace exec {
 
 TEST(TableStoreTest, basic) {
   auto descriptor1 =
-      std::vector<udf::UDFDataType>({types::DataType::BOOLEAN, types::DataType::FLOAT64});
+      std::vector<types::DataType>({types::DataType::BOOLEAN, types::DataType::FLOAT64});
   RowDescriptor rd1 = RowDescriptor(descriptor1);
-  auto descriptor2 = std::vector<udf::UDFDataType>(
+  auto descriptor2 = std::vector<types::DataType>(
       {types::DataType::INT64, types::DataType::FLOAT64, types::DataType::INT64});
   RowDescriptor rd2 = RowDescriptor(descriptor2);
 

@@ -12,221 +12,13 @@
 #include <functional>
 
 #include "src/common/common.h"
-#include "src/common/types/types.pb.h"
+#include "src/shared/types/column_wrapper.h"
+#include "src/shared/types/proto/types.pb.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
 namespace carnot {
 namespace udf {
-
-/**
- * The enum of different UDF data types.
- * TODO(zasgar): move this data type to a higher lvl than plan.
- */
-using UDFDataType = types::DataType;
-
-/**
- * This is the base value type that all UDFs inherit from.
- */
-struct UDFBaseValue {};
-
-/**
- * Defines the value tyoe for all UDF Values that have a fixed size in memory.
- * @tparam T The underlying data type.
- */
-template <typename T>
-struct FixedSizedUDFValue : UDFBaseValue {
-  // We need this to make UBSAN happy since otherwise it's un-initialized.
-  // TODO(zasgar): Understand if this impacts performance.
-  T val = 0;
-  FixedSizedUDFValue() : UDFBaseValue() {}
-
-  // Allow implicit construction to make it easier/more natural to return values
-  // from functions.
-  // NOLINTNEXTLINE(runtime/explicit)
-  FixedSizedUDFValue(T new_val) : val(new_val) {}
-
-  template <class T2>
-  // Overload the equality to make it easier to write code with value types.
-  bool operator==(const FixedSizedUDFValue<T2>& lhs) const {
-    return val == lhs.val;
-  }
-  template <class T2>
-  bool operator==(const T2& lhs) const {
-    return val == lhs;
-  }
-
-  // Overload > and < to make it easier to write code with value types.
-  template <class T2>
-  bool operator<(const FixedSizedUDFValue<T2>& lhs) const {
-    return val < lhs.val;
-  }
-  template <class T2>
-  bool operator<(const T2& lhs) const {
-    return val < lhs;
-  }
-  template <class T2>
-  bool operator>(const FixedSizedUDFValue<T2>& lhs) const {
-    return val > lhs.val;
-  }
-  template <class T2>
-  bool operator>(const T2& lhs) const {
-    return val > lhs;
-  }
-
-  // Overload assignment to make it easier to write code with value types.
-  FixedSizedUDFValue<T>& operator=(FixedSizedUDFValue<T> lhs) {
-    val = lhs.val;
-    return *this;
-  }
-  FixedSizedUDFValue<T>& operator=(T lhs) {
-    val = lhs;
-    return *this;
-  }
-};
-
-using BoolValue = FixedSizedUDFValue<bool>;
-using Int64Value = FixedSizedUDFValue<int64_t>;
-using Float64Value = FixedSizedUDFValue<double>;
-
-struct Time64NSValue : public Int64Value {
-  using Int64Value::Int64Value;
-  // Allow implicit construction to make it easier/more natural to return values
-  // from functions and also in other code using int's for time.
-  // NOLINTNEXTLINE(runtime/explicit)
-  Time64NSValue(int64_t lhs) : Int64Value(lhs) {}
-};
-
-/**
- * The value type for string values.
- */
-struct StringValue : UDFBaseValue, public std::string {
-  using std::string::string;
-  // Allow implicit construction to make it easier/more natural to return values
-  // from functions.
-  // NOLINTNEXTLINE(runtime/explicit)
-  StringValue(std::string&& str) : std::string(std::move(str)) {}
-};
-
-/**
- * Checks to see if a valid UDF data type is being used.
- * @tparam T The type to check.
- * PL_CARNOT_UPDATE_FOR_NEW_TYPES
- */
-template <typename T>
-struct IsValidUDFDataType {
-  static constexpr bool value =
-      std::is_base_of_v<UDFBaseValue, T> &&
-      (std::is_same_v<T, BoolValue> || std::is_same_v<T, Int64Value> ||
-       std::is_same_v<T, Float64Value> || std::is_same_v<T, StringValue> ||
-       std::is_same_v<T, Time64NSValue>);
-};
-
-/**
- * Get information about a particular UDF value. For example: mapping back to the
- * enum type.
- * @tparam T the UDF value.
- */
-template <typename T>
-struct UDFValueTraits {
-  static_assert(!IsValidUDFDataType<T>::value, "Invalid UDF data type.");
-};
-
-template <>
-struct UDFValueTraits<BoolValue> {
-  static constexpr UDFDataType data_type = types::BOOLEAN;
-  using arrow_type = arrow::BooleanType;
-  using arrow_builder_type = arrow::BooleanBuilder;
-  using arrow_array_type = arrow::BooleanArray;
-  using native_type = bool;
-};
-
-template <>
-struct UDFValueTraits<Int64Value> {
-  static constexpr UDFDataType data_type = types::INT64;
-  using arrow_type = arrow::Int64Type;
-  using arrow_builder_type = arrow::Int64Builder;
-  using arrow_array_type = arrow::Int64Array;
-  using native_type = int64_t;
-};
-
-template <>
-struct UDFValueTraits<Float64Value> {
-  static constexpr UDFDataType data_type = types::FLOAT64;
-  using arrow_type = arrow::DoubleType;
-  using arrow_builder_type = arrow::DoubleBuilder;
-  using arrow_array_type = arrow::DoubleArray;
-  using native_type = double;
-};
-
-template <>
-struct UDFValueTraits<Time64NSValue> {
-  static constexpr UDFDataType data_type = types::TIME64NS;
-  using arrow_type = arrow::Int64Type;
-  using arrow_builder_type = arrow::Int64Builder;
-  using arrow_array_type = arrow::Int64Array;
-  using native_type = int64_t;
-};
-
-template <>
-struct UDFValueTraits<StringValue> {
-  static constexpr UDFDataType data_type = types::STRING;
-  using arrow_type = arrow::StringType;
-  using arrow_builder_type = arrow::StringBuilder;
-  using arrow_array_type = arrow::StringArray;
-  using native_type = std::string;
-};
-
-/**
- * Store traits based on the native UDF type.
- * @tparam T THe UDFDataType.
- */
-template <udf::UDFDataType T>
-struct UDFDataTypeTraits {};
-
-template <>
-struct UDFDataTypeTraits<udf::UDFDataType::BOOLEAN> {
-  typedef BoolValue udf_value_type;
-  using arrow_type = arrow::BooleanType;
-  using arrow_builder_type = arrow::BooleanBuilder;
-  using arrow_array_type = arrow::BooleanArray;
-  static constexpr arrow::Type::type arrow_type_id = arrow::Type::BOOL;
-};
-
-template <>
-struct UDFDataTypeTraits<udf::UDFDataType::INT64> {
-  typedef Int64Value udf_value_type;
-  using arrow_type = arrow::Int64Type;
-  using arrow_builder_type = arrow::Int64Builder;
-  using arrow_array_type = arrow::Int64Array;
-  static constexpr arrow::Type::type arrow_type_id = arrow::Type::INT64;
-};
-
-template <>
-struct UDFDataTypeTraits<udf::UDFDataType::FLOAT64> {
-  typedef Float64Value udf_value_type;
-  using arrow_type = arrow::DoubleType;
-  using arrow_builder_type = arrow::DoubleBuilder;
-  using arrow_array_type = arrow::DoubleArray;
-  static constexpr arrow::Type::type arrow_type_id = arrow::Type::DOUBLE;
-};
-
-template <>
-struct UDFDataTypeTraits<udf::UDFDataType::STRING> {
-  typedef StringValue udf_value_type;
-  using arrow_type = arrow::StringType;
-  using arrow_builder_type = arrow::StringBuilder;
-  using arrow_array_type = arrow::StringArray;
-  static constexpr arrow::Type::type arrow_type_id = arrow::Type::STRING;
-};
-
-template <>
-struct UDFDataTypeTraits<udf::UDFDataType::TIME64NS> {
-  typedef Time64NSValue udf_value_type;
-  using arrow_type = arrow::Int64Type;
-  using arrow_builder_type = arrow::Int64Builder;
-  using arrow_array_type = arrow::Int64Array;
-  static constexpr arrow::Type::type arrow_type_id = arrow::Type::INT64;
-};
 
 /**
  * Function context contains contextual resources such as mempools that functions
@@ -333,14 +125,15 @@ static constexpr bool IsValidExecFunc(ReturnType (TUDF::*)(FunctionContext*, Typ
 }
 
 template <typename ReturnType, typename TUDF, typename... Types>
-static constexpr std::array<UDFDataType, sizeof...(Types)> GetArgumentTypesHelper(
+static constexpr std::array<types::DataType, sizeof...(Types)> GetArgumentTypesHelper(
     ReturnType (TUDF::*)(FunctionContext*, Types...)) {
-  return std::array<UDFDataType, sizeof...(Types)>({UDFValueTraits<Types>::data_type...});
+  return std::array<types::DataType, sizeof...(Types)>(
+      {types::ValueTypeTraits<Types>::data_type...});
 }
 
 template <typename ReturnType, typename TUDF, typename... Types>
-static constexpr UDFDataType ReturnTypeHelper(ReturnType (TUDF::*)(Types...)) {
-  return UDFValueTraits<ReturnType>::data_type;
+static constexpr types::DataType ReturnTypeHelper(ReturnType (TUDF::*)(Types...)) {
+  return types::ValueTypeTraits<ReturnType>::data_type;
 }
 
 template <typename T, typename = void>
@@ -368,9 +161,9 @@ class ScalarUDFTraits {
 
   /**
    * Return types of the Exec function
-   * @return A UDFDataType which is the return type of the Exec function.
+   * @return A types::UDFDataType which is the return type of the Exec function.
    */
-  static constexpr UDFDataType ReturnType() { return ReturnTypeHelper(&T::Exec); }
+  static constexpr types::DataType ReturnType() { return ReturnTypeHelper(&T::Exec); }
 
   /**
    * Checks if the UDF has an Init function.
@@ -430,7 +223,7 @@ static constexpr bool IsValidFinalizeFn(ReturnType (TUDA::*)(Types...)) {
 
 template <typename ReturnType, typename TUDA, typename... Types>
 static constexpr bool IsValidFinalizeFn(ReturnType (TUDA::*)(FunctionContext*)) {
-  if (IsValidUDFDataType<ReturnType>::value) {
+  if (types::IsValidValueType<ReturnType>::value) {
     return true;
   }
   return false;
@@ -444,7 +237,7 @@ template <typename T>
 class UDATraits {
  public:
   static constexpr auto UpdateArgumentTypes() { return GetArgumentTypesHelper<void>(&T::Update); }
-  static constexpr UDFDataType FinalizeReturnType() { return ReturnTypeHelper(&T::Finalize); }
+  static constexpr types::DataType FinalizeReturnType() { return ReturnTypeHelper(&T::Finalize); }
 
   /**
    * Checks if the UDA has an Init function.

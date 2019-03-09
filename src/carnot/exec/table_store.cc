@@ -27,7 +27,7 @@ Status TableStore::AppendData(
 // TODO(oazizi/anyone): Remove once pub-sub with Stirling is fleshed out.
 void TableStore::AddDefaultTable() {
   // Create RowDescriptor by copying schema from SourceConnector
-  std::vector<udf::UDFDataType> col_types;
+  std::vector<types::DataType> col_types;
   std::vector<std::string> col_names;
   for (const auto& e : DefaultTableSchema::kElements) {
     col_types.push_back(e.type());

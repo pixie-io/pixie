@@ -4,7 +4,7 @@
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/udf/test_utils.h"
-#include "src/carnot/udf/udf.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
 namespace carnot {
@@ -17,12 +17,14 @@ void ExpectEquality(const T& v1, const T& v2) {
 }
 
 template <>
-void ExpectEquality<Float64Value>(const Float64Value& v1, const Float64Value& v2) {
+void ExpectEquality<types::Float64Value>(const types::Float64Value& v1,
+                                         const types::Float64Value& v2) {
   EXPECT_DOUBLE_EQ(v1.val, v2.val);
 }
 
 template <>
-void ExpectEquality<StringValue>(const StringValue& v1, const StringValue& v2) {
+void ExpectEquality<types::StringValue>(const types::StringValue& v1,
+                                        const types::StringValue& v2) {
   EXPECT_EQ(std::string(v1), std::string(v2));
 }
 }  // namespace internal
@@ -30,8 +32,8 @@ void ExpectEquality<StringValue>(const StringValue& v1, const StringValue& v2) {
 /*
  * Test wrapper for testing UDF execution.
  * Example usage:
- *   auto udf_tester = udf::UDFTester<AddUDF<udf::Int64Value, udf::Int64Value, udf::Int64Value>>();
- *   udf_tester.ForInput(1, 2).Expect(3);
+ *   auto udf_tester = udf::UDFTester<AddUDF<types::Int64Value, types::Int64Value,
+ *   types::Int64Value>>(); udf_tester.ForInput(1, 2).Expect(3);
  */
 template <typename TUDF>
 class UDFTester {
@@ -54,7 +56,7 @@ class UDFTester {
    * Assert that last executed result is equal to the given value.
    * ForInput must be called at least once before Expect is called.
    */
-  UDFTester& Expect(typename UDFDataTypeTraits<udf_data_type>::udf_value_type arg) {
+  UDFTester& Expect(typename types::DataTypeTraits<udf_data_type>::value_type arg) {
     internal::ExpectEquality(res_, arg);
 
     return *this;
@@ -62,7 +64,7 @@ class UDFTester {
 
  private:
   TUDF udf_;
-  typename UDFDataTypeTraits<udf_data_type>::udf_value_type res_;
+  typename types::DataTypeTraits<udf_data_type>::value_type res_;
 };
 
 /*
@@ -92,7 +94,7 @@ class UDATester {
   /*
    * Assert that the finalized result, computed on the UDA's inputs, is equal to the given value.
    */
-  UDATester& Expect(typename UDFDataTypeTraits<uda_data_type>::udf_value_type arg) {
+  UDATester& Expect(typename types::DataTypeTraits<uda_data_type>::value_type arg) {
     internal::ExpectEquality(uda_.Finalize(nullptr), arg);
     return *this;
   }

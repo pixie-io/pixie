@@ -5,7 +5,7 @@ package pl.vizier;
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/utils/proto/utils.proto";
 import "src/common/proto/status.proto";
-import "src/common/types/types.proto";
+import "src/shared/types/proto/types.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/proto;service";
 /**

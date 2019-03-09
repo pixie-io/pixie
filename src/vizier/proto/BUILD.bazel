@@ -8,7 +8,7 @@ pl_proto_library(
     deps = [
         "//src/common/codes:error_codes_pl_proto",
         "//src/common/proto:status_pl_proto",
-        "//src/common/types:types_pl_proto",
+        "//src/shared/types/proto:types_pl_proto",
         "//src/utils/proto:utils_pl_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
@@ -21,7 +21,7 @@ pl_cc_proto_library(
     deps = [
         "//src/common/codes:error_codes_pl_cc_proto",
         "//src/common/proto:status_pl_cc_proto",
-        "//src/common/types:types_pl_cc_proto",
+        "//src/shared/types/proto:types_pl_cc_proto",
         "//src/utils/proto:utils_pl_cc_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
@@ -35,7 +35,7 @@ pl_go_proto_library(
     deps = [
         "//src/common/codes:error_codes_pl_go_proto",
         "//src/common/proto:status_pl_go_proto",
-        "//src/common/types:types_pl_go_proto",
+        "//src/shared/types/proto:types_pl_go_proto",
         "//src/utils/proto:utils_pl_go_proto",
     ],
 )

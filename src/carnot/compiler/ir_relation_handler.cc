@@ -1,7 +1,7 @@
 #include "src/carnot/compiler/ir_relation_handler.h"
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/ir_nodes.h"
-#include "src/common/types/types.pb.h"
+#include "src/shared/types/proto/types.pb.h"
 
 namespace pl {
 namespace carnot {

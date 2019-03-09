@@ -36,10 +36,10 @@ class CarnotTest : public ::testing::Test {
 };
 
 TEST_F(CarnotTest, basic) {
-  std::vector<udf::Float64Value> col1_in1 = {0.5, 1.2, 5.3};
-  std::vector<udf::Float64Value> col1_in2 = {0.1, 5.1};
-  std::vector<udf::Int64Value> col2_in1 = {1, 2, 3};
-  std::vector<udf::Int64Value> col2_in2 = {5, 6};
+  std::vector<types::Float64Value> col1_in1 = {0.5, 1.2, 5.3};
+  std::vector<types::Float64Value> col1_in2 = {0.1, 5.1};
+  std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
+  std::vector<types::Int64Value> col2_in2 = {5, 6};
 
   auto query = absl::StrJoin(
       {
@@ -61,19 +61,19 @@ TEST_F(CarnotTest, basic) {
   auto rb1 =
       output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
           .ConsumeValueOrDie();
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(udf::ToArrow(col2_in1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(col2_in1, arrow::default_memory_pool())));
 
   auto rb2 =
       output_table->GetRowBatch(1, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
           .ConsumeValueOrDie();
-  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb2->ColumnAt(1)->Equals(udf::ToArrow(col2_in2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb2->ColumnAt(1)->Equals(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, map_test) {
-  std::vector<udf::Float64Value> col1_in1 = {1.5, 3.2, 8.3};
-  std::vector<udf::Float64Value> col1_in2 = {5.1, 11.1};
+  std::vector<types::Float64Value> col1_in1 = {1.5, 3.2, 8.3};
+  std::vector<types::Float64Value> col1_in2 = {5.1, 11.1};
 
   auto query = absl::StrJoin(
       {
@@ -91,11 +91,11 @@ TEST_F(CarnotTest, map_test) {
   //
   auto rb1 = output_table->GetRowBatch(0, std::vector<int64_t>({0}), arrow::default_memory_pool())
                  .ConsumeValueOrDie();
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(col1_in1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col1_in1, arrow::default_memory_pool())));
 
   auto rb2 = output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
                  .ConsumeValueOrDie();
-  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(udf::ToArrow(col1_in2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(types::ToArrow(col1_in2, arrow::default_memory_pool())));
 }
 // Test whether the compiler will handle issues nicely
 TEST_F(CarnotTest, bad_syntax) {
@@ -206,27 +206,27 @@ TEST_F(CarnotTest, order_test) {
   EXPECT_EQ(3, output_table->NumBatches());
   EXPECT_EQ(3, output_table->NumColumns());
 
-  std::vector<udf::Float64Value> col0_out1 = {6.5, 3.2, 17.3};
-  std::vector<udf::Float64Value> col0_out2 = {5.1, 65.1};
-  std::vector<udf::Float64Value> col1_out3 = {61.2, 12.1, 20.3};
-  std::vector<udf::Int64Value> col1_out1 = {1, 1, 1};
-  std::vector<udf::Int64Value> col2_out1 = {2, 2, 2};
+  std::vector<types::Float64Value> col0_out1 = {6.5, 3.2, 17.3};
+  std::vector<types::Float64Value> col0_out2 = {5.1, 65.1};
+  std::vector<types::Float64Value> col1_out3 = {61.2, 12.1, 20.3};
+  std::vector<types::Int64Value> col1_out1 = {1, 1, 1};
+  std::vector<types::Int64Value> col2_out1 = {2, 2, 2};
 
   auto rb1 =
       output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
           .ConsumeValueOrDie();
 
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(col0_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(udf::ToArrow(col1_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(udf::ToArrow(col2_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
 
   auto rb2 = output_table->GetRowBatch(1, std::vector<int64_t>({0}), arrow::default_memory_pool())
                  .ConsumeValueOrDie();
-  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(udf::ToArrow(col0_out2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(types::ToArrow(col0_out2, arrow::default_memory_pool())));
 
   auto rb3 = output_table->GetRowBatch(2, std::vector<int64_t>({0}), arrow::default_memory_pool())
                  .ConsumeValueOrDie();
-  EXPECT_TRUE(rb3->ColumnAt(0)->Equals(udf::ToArrow(col1_out3, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb3->ColumnAt(0)->Equals(types::ToArrow(col1_out3, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, range_test_multiple_rbs) {
@@ -252,9 +252,9 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
       output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
           .ConsumeValueOrDie();
 
-  std::vector<udf::Time64NSValue> col0_out1;
-  std::vector<udf::Float64Value> col1_out1;
-  std::vector<udf::Int64Value> col2_out1;
+  std::vector<types::Time64NSValue> col0_out1;
+  std::vector<types::Float64Value> col1_out1;
+  std::vector<types::Int64Value> col2_out1;
   for (int64_t i = 0; i < table->GetColumn(0)->batch(0)->length(); i++) {
     if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 6) {
       col0_out1.push_back(CarnotTestUtils::big_test_col1[i].val);
@@ -263,17 +263,17 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
     }
   }
 
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(col0_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(udf::ToArrow(col1_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(udf::ToArrow(col2_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
 
   auto rb2 =
       output_table->GetRowBatch(1, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
           .ConsumeValueOrDie();
 
-  std::vector<udf::Time64NSValue> col0_out2;
-  std::vector<udf::Float64Value> col1_out2;
-  std::vector<udf::Int64Value> col2_out2;
+  std::vector<types::Time64NSValue> col0_out2;
+  std::vector<types::Float64Value> col1_out2;
+  std::vector<types::Int64Value> col2_out2;
   for (int64_t i = table->GetColumn(0)->batch(0)->length();
        i < table->GetColumn(0)->batch(0)->length() + table->GetColumn(0)->batch(1)->length(); i++) {
     if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 6) {
@@ -283,9 +283,9 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
     }
   }
 
-  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(udf::ToArrow(col0_out2, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb2->ColumnAt(1)->Equals(udf::ToArrow(col1_out2, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb2->ColumnAt(2)->Equals(udf::ToArrow(col2_out2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb2->ColumnAt(0)->Equals(types::ToArrow(col0_out2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb2->ColumnAt(1)->Equals(types::ToArrow(col1_out2, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb2->ColumnAt(2)->Equals(types::ToArrow(col2_out2, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, range_test_single_rb) {
@@ -306,9 +306,9 @@ TEST_F(CarnotTest, range_test_single_rb) {
   EXPECT_EQ(1, output_table->NumBatches());
   EXPECT_EQ(3, output_table->NumColumns());
 
-  std::vector<udf::Time64NSValue> col0_out1;
-  std::vector<udf::Float64Value> col1_out1;
-  std::vector<udf::Int64Value> col2_out1;
+  std::vector<types::Time64NSValue> col0_out1;
+  std::vector<types::Float64Value> col1_out1;
+  std::vector<types::Int64Value> col2_out1;
   for (size_t i = 0; i < CarnotTestUtils::big_test_col1.size(); i++) {
     if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 3) {
       col0_out1.push_back(CarnotTestUtils::big_test_col1[i].val);
@@ -320,9 +320,9 @@ TEST_F(CarnotTest, range_test_single_rb) {
   auto rb1 =
       output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
           .ConsumeValueOrDie();
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(col0_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(udf::ToArrow(col1_out1, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(udf::ToArrow(col2_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(col0_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(col1_out1, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(2)->Equals(types::ToArrow(col2_out1, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, empty_range_test) {
@@ -377,39 +377,41 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
   auto test_col2 = CarnotTestUtils::big_test_col2;
   auto test_col3 = CarnotTestUtils::big_test_col3;
 
-  auto int64_sum_lambda = [](udf::Int64Value a, udf::Int64Value b) { return a.val + b.val; };
-  auto float64_sum_lambda = [](udf::Float64Value a, udf::Float64Value b) { return a.val + b.val; };
-  udf::Float64Value col2_expected_sum =
+  auto int64_sum_lambda = [](types::Int64Value a, types::Int64Value b) { return a.val + b.val; };
+  auto float64_sum_lambda = [](types::Float64Value a, types::Float64Value b) {
+    return a.val + b.val;
+  };
+  types::Float64Value col2_expected_sum =
       std::accumulate(test_col2.begin(), test_col2.end(), 0.0, float64_sum_lambda);
-  udf::Float64Value col2_expected_mean = col2_expected_sum.val / test_col2.size();
+  types::Float64Value col2_expected_mean = col2_expected_sum.val / test_col2.size();
 
-  udf::Int64Value col3_expected_count = test_col3.size();
-  udf::Float64Value col2_expected_min = *std::min_element(test_col2.begin(), test_col2.end());
-  udf::Int64Value col3_expected_max = *std::max_element(test_col3.begin(), test_col3.end());
+  types::Int64Value col3_expected_count = test_col3.size();
+  types::Float64Value col2_expected_min = *std::min_element(test_col2.begin(), test_col2.end());
+  types::Int64Value col3_expected_max = *std::max_element(test_col3.begin(), test_col3.end());
 
-  udf::Int64Value col3_expected_sum =
+  types::Int64Value col3_expected_sum =
       std::accumulate(CarnotTestUtils::big_test_col3.begin(), CarnotTestUtils::big_test_col3.end(),
                       0, int64_sum_lambda);
 
   EXPECT_TRUE(rb1->ColumnAt(0)->Equals(
-      udf::ToArrow(std::vector<udf::Float64Value>({udf::Float64Value(col2_expected_mean)}),
-                   arrow::default_memory_pool())));
+      types::ToArrow(std::vector<types::Float64Value>({types::Float64Value(col2_expected_mean)}),
+                     arrow::default_memory_pool())));
 
   EXPECT_TRUE(rb1->ColumnAt(1)->Equals(
-      udf::ToArrow(std::vector<udf::Int64Value>({udf::Int64Value(col3_expected_count)}),
-                   arrow::default_memory_pool())));
+      types::ToArrow(std::vector<types::Int64Value>({types::Int64Value(col3_expected_count)}),
+                     arrow::default_memory_pool())));
 
   EXPECT_TRUE(rb1->ColumnAt(2)->Equals(
-      udf::ToArrow(std::vector<udf::Float64Value>({udf::Float64Value(col2_expected_min)}),
-                   arrow::default_memory_pool())));
+      types::ToArrow(std::vector<types::Float64Value>({types::Float64Value(col2_expected_min)}),
+                     arrow::default_memory_pool())));
 
   EXPECT_TRUE(rb1->ColumnAt(3)->Equals(
-      udf::ToArrow(std::vector<udf::Int64Value>({udf::Int64Value(col3_expected_max)}),
-                   arrow::default_memory_pool())));
+      types::ToArrow(std::vector<types::Int64Value>({types::Int64Value(col3_expected_max)}),
+                     arrow::default_memory_pool())));
 
   EXPECT_TRUE(rb1->ColumnAt(4)->Equals(
-      udf::ToArrow(std::vector<udf::Int64Value>({udf::Int64Value(col3_expected_sum)}),
-                   arrow::default_memory_pool())));
+      types::ToArrow(std::vector<types::Int64Value>({types::Int64Value(col3_expected_sum)}),
+                     arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, DISABLED_group_by_col_agg_test) {
@@ -435,8 +437,8 @@ TEST_F(CarnotTest, DISABLED_group_by_col_agg_test) {
       output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
           .ConsumeValueOrDie();
 
-  std::vector<udf::Int64Value> expected_groups = {1, 2, 3};
-  std::vector<udf::Int64Value> expected_sum = {13, 129, 24};
+  std::vector<types::Int64Value> expected_groups = {1, 2, 3};
+  std::vector<types::Int64Value> expected_sum = {13, 129, 24};
   std::unordered_map<int64_t, int64_t> expected = {{1, 13}, {2, 129}, {3, 24}};
   std::unordered_map<int64_t, int64_t> actual;
 
@@ -536,15 +538,15 @@ TEST_F(CarnotTest, comparison_tests) {
           .ConsumeValueOrDie();
   auto col3 = CarnotTestUtils::big_test_col3;
   auto col_num_groups = CarnotTestUtils::big_test_groups;
-  std::vector<udf::BoolValue> lt_exp;
-  std::vector<udf::BoolValue> gt_exp;
+  std::vector<types::BoolValue> lt_exp;
+  std::vector<types::BoolValue> gt_exp;
 
   for (int64_t i = 0; i < rb1->num_rows(); i++) {
     lt_exp.push_back(col3[i] < col3_lt_val);
     gt_exp.push_back(col_num_groups[i] > num_groups_gt_val);
   }
-  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(udf::ToArrow(lt_exp, arrow::default_memory_pool())));
-  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(udf::ToArrow(gt_exp, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(lt_exp, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(gt_exp, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, DISABLED_comparison_to_agg_tests) {

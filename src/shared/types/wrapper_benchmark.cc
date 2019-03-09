@@ -2,9 +2,9 @@
 
 #include <random>
 #include <vector>
-#include "src/carnot/udf/udf.h"
+#include "src/shared/types/types.h"
 
-using pl::carnot::udf::Int64Value;
+using pl::types::Int64Value;
 
 template <typename T>
 std::vector<T> CreateLargeData(int size) {

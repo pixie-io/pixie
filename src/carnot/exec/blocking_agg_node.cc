@@ -2,8 +2,8 @@
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/plan/utils.h"
 #include "src/carnot/proto/plan.pb.h"
-#include "src/carnot/udf/arrow_adapter.h"
 #include "src/common/common.h"
+#include "src/shared/types/arrow_adapter.h"
 
 namespace pl {
 namespace carnot {
@@ -52,7 +52,7 @@ Status BlockingAggNode::OpenImpl(ExecState *exec_state) {
     // Find the correct UDA in registry and store the definition and instance.
     auto *uda_registry = exec_state->uda_registry();
     for (const auto &value : plan_node_->values()) {
-      std::vector<udf::UDFDataType> types;
+      std::vector<types::DataType> types;
       types.reserve(value->Deps().size());
       for (auto *dep : value->Deps()) {
         PL_ASSIGN_OR_RETURN(auto type, GetTypeOfDep(*dep));
@@ -82,8 +82,8 @@ Status BlockingAggNode::ConsumeNextImpl(ExecState *exec_state, const RowBatch &r
       RowBatch output_rb(*output_descriptor_, 1);
       for (size_t i = 0; i < values.size(); ++i) {
         const auto &uda_info = udas_no_groups_[i];
-        auto builder = udf::MakeArrowBuilder(uda_info.def->finalize_return_type(),
-                                             exec_state->exec_mem_pool());
+        auto builder = types::MakeArrowBuilder(uda_info.def->finalize_return_type(),
+                                               exec_state->exec_mem_pool());
         PL_RETURN_IF_ERROR(
             uda_info.def->FinalizeArrow(uda_info.uda.get(), nullptr /*ctx*/, builder.get()));
         SharedArray out_col;
@@ -96,7 +96,7 @@ Status BlockingAggNode::ConsumeNextImpl(ExecState *exec_state, const RowBatch &r
   }
   return Status::OK();
 }
-StatusOr<udf::UDFDataType> BlockingAggNode::GetTypeOfDep(const plan::ScalarExpression &expr) const {
+StatusOr<types::DataType> BlockingAggNode::GetTypeOfDep(const plan::ScalarExpression &expr) const {
   // Agg exprs can only be of type col, or  const.
   switch (expr.ExpressionType()) {
     case plan::Expression::kColumn: {

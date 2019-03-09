@@ -2,32 +2,32 @@
 
 #include <algorithm>
 
-#include "../udf/registry.h"
 #include "src/carnot/exec/blocking_agg_node.h"
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/proto/test_proto.h"
-#include "src/carnot/udf/arrow_adapter.h"
+#include "src/carnot/udf/registry.h"
+#include "src/shared/types/arrow_adapter.h"
 
 namespace pl {
 namespace carnot {
 namespace exec {
 
 using testing::_;
+using types::Int64Value;
 using udf::FunctionContext;
-using udf::Int64Value;
 
 // Test UDA, takes the min of two arguments and then sums them.
 // TODO(zasgar): move these all to a common file.
 class MinSumUDA : public udf::UDA {
  public:
-  void Update(udf::FunctionContext*, Int64Value arg1, Int64Value arg2) {
+  void Update(udf::FunctionContext*, types::Int64Value arg1, types::Int64Value arg2) {
     sum_ = sum_.val + std::min(arg1.val, arg2.val);
   }
   void Merge(udf::FunctionContext*, const MinSumUDA& other) { sum_ = sum_.val + other.sum_.val; }
-  Int64Value Finalize(udf::FunctionContext*) { return sum_; }
+  types::Int64Value Finalize(udf::FunctionContext*) { return sum_; }
 
  protected:
-  Int64Value sum_ = 0;
+  types::Int64Value sum_ = 0;
 };
 
 const char* kBlockingNoGroupAgg = R"(
@@ -72,9 +72,9 @@ class BlockingAggNodeTest : public ::testing::Test {
 
     exec_state_ = MakeTestExecState(udf_registry_.get(), uda_registry_.get());
   }
-  RowBatch CreateInputRowBatch(const std::vector<udf::Int64Value>& in1,
-                               const std::vector<udf::Int64Value>& in2) {
-    RowDescriptor rd({udf::UDFDataType::INT64, udf::UDFDataType::INT64});
+  RowBatch CreateInputRowBatch(const std::vector<types::Int64Value>& in1,
+                               const std::vector<types::Int64Value>& in2) {
+    RowDescriptor rd({types::DataType::INT64, types::DataType::INT64});
     RowBatch rb(rd, in1.size());
     PL_CHECK_OK(rb.AddColumn(ToArrow(in1, arrow::default_memory_pool())));
     PL_CHECK_OK(rb.AddColumn(ToArrow(in2, arrow::default_memory_pool())));
@@ -89,9 +89,9 @@ class BlockingAggNodeTest : public ::testing::Test {
 
 TEST_F(BlockingAggNodeTest, no_groups) {
   auto plan_node = PlanNodeFromPbtxt(kBlockingNoGroupAgg);
-  RowDescriptor input_rd({udf::UDFDataType::INT64, udf::UDFDataType::INT64});
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
 
-  RowDescriptor output_rd({udf::UDFDataType::INT64});
+  RowDescriptor output_rd({types::DataType::INT64});
   BlockingAggNode aggn;
   MockExecNode mock_child_;
   aggn.AddChild(&mock_child_);

@@ -5,8 +5,8 @@
 #include <string>
 #include <vector>
 
-#include "src/carnot/udf/column_wrapper.h"
-#include "src/common/type_utils.h"
+#include "src/shared/types/column_wrapper.h"
+#include "src/shared/types/type_utils.h"
 
 namespace pl {
 namespace stirling {
@@ -16,7 +16,7 @@ class InfoClassManager;
 using ArrowArrayBuilderUPtrVec = std::vector<std::unique_ptr<arrow::ArrayBuilder>>;
 using ArrowRecordBatchSPtrVec = std::vector<std::shared_ptr<arrow::RecordBatch>>;
 
-using ColumnWrapperRecordBatch = std::vector<carnot::udf::SharedColumnWrapper>;
+using ColumnWrapperRecordBatch = std::vector<types::SharedColumnWrapper>;
 using ColumnWrapperRecordBatchVec = std::vector<std::unique_ptr<ColumnWrapperRecordBatch>>;
 
 using PushDataCallback = std::function<void(uint64_t, std::unique_ptr<ColumnWrapperRecordBatch>)>;

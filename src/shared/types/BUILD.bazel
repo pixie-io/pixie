@@ -1,0 +1,41 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/shared/types/proto:types_pl_cc_proto",
+        "//third_party:arrow",
+        "@com_google_farmhash//:farmhash",
+    ],
+)
+
+pl_cc_test(
+    name = "column_wrapper_test",
+    srcs = ["column_wrapper_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "hash_utils_test",
+    srcs = ["hash_utils_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_binary(
+    name = "wrapper_benchmark",
+    srcs = ["wrapper_benchmark.cc"],
+    deps = [
+        ":cc_library",
+        "@com_google_benchmark//:benchmark_main",
+    ],
+)

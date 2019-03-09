@@ -7,9 +7,9 @@ namespace pl {
 namespace agent {
 
 using carnot::exec::CarnotTestUtils;
-using carnot::udf::Float64Value;
-using carnot::udf::Int64Value;
-using carnot::udf::ToArrow;
+using types::Float64Value;
+using types::Int64Value;
+using types::ToArrow;
 
 class ExecutorTest : public ::testing::Test {
  protected:

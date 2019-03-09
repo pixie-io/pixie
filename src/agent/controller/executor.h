@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "src/carnot/carnot.h"
-#include "src/common/types/types.pb.h"
+#include "src/shared/types/proto/types.pb.h"
 #include "src/stirling/proto/collector_config.pb.h"
 #include "src/stirling/stirling.h"
 

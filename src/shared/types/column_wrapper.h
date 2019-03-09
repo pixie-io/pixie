@@ -7,12 +7,11 @@
 #include <memory>
 #include <vector>
 
-#include "src/carnot/udf/arrow_adapter.h"
-#include "src/carnot/udf/udf.h"
+#include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
-namespace carnot {
-namespace udf {
+namespace types {
 
 class ColumnWrapper;
 using SharedColumnWrapper = std::shared_ptr<ColumnWrapper>;
@@ -26,12 +25,12 @@ class ColumnWrapper {
   ColumnWrapper() = default;
   virtual ~ColumnWrapper() = default;
 
-  static SharedColumnWrapper Make(UDFDataType data_type, size_t size);
+  static SharedColumnWrapper Make(DataType data_type, size_t size);
   static SharedColumnWrapper FromArrow(const std::shared_ptr<arrow::Array> &arr);
 
-  virtual UDFBaseValue *UnsafeRawData() = 0;
-  virtual const UDFBaseValue *UnsafeRawData() const = 0;
-  virtual UDFDataType DataType() const = 0;
+  virtual BaseValueType *UnsafeRawData() = 0;
+  virtual const BaseValueType *UnsafeRawData() const = 0;
+  virtual DataType data_type() const = 0;
   virtual size_t Size() const = 0;
   virtual void Reserve(size_t size) = 0;
   virtual void ShrinkToFit() = 0;
@@ -53,7 +52,7 @@ class ColumnWrapperTmpl : public ColumnWrapper {
 
   T *UnsafeRawData() override { return data_.data(); }
   const T *UnsafeRawData() const override { return data_.data(); }
-  UDFDataType DataType() const override { return UDFValueTraits<T>::data_type; }
+  DataType data_type() const override { return ValueTypeTraits<T>::data_type; }
 
   size_t Size() const override { return data_.size(); }
 
@@ -71,9 +70,9 @@ class ColumnWrapperTmpl : public ColumnWrapper {
 
   void ShrinkToFit() override { data_.shrink_to_fit(); }
 
-  void resize(size_t size) { data_.resize(size); }
+  void Resize(size_t size) { data_.resize(size); }
 
-  void clear() { data_.clear(); }
+  void Clear() { data_.clear(); }
 
  private:
   std::vector<T> data_;
@@ -88,12 +87,11 @@ using Time64NSValueColumnWrapper = ColumnWrapperTmpl<Time64NSValue>;
 
 template <typename TColumnWrapper, types::DataType DType>
 inline SharedColumnWrapper FromArrowImpl(const std::shared_ptr<arrow::Array> &arr) {
-  CHECK_EQ(arr->type_id(), UDFDataTypeTraits<DType>::arrow_type_id);
+  CHECK_EQ(arr->type_id(), DataTypeTraits<DType>::arrow_type_id);
   size_t size = arr->length();
   auto wrapper = TColumnWrapper::Make(DType, size);
-  auto arr_casted =
-      reinterpret_cast<typename UDFDataTypeTraits<DType>::arrow_array_type *>(arr.get());
-  typename UDFDataTypeTraits<DType>::udf_value_type *out_data =
+  auto arr_casted = reinterpret_cast<typename DataTypeTraits<DType>::arrow_array_type *>(arr.get());
+  typename DataTypeTraits<DType>::value_type *out_data =
       reinterpret_cast<TColumnWrapper *>(wrapper.get())->UnsafeRawData();
   for (size_t i = 0; i < size; ++i) {
     out_data[i] = arr_casted->Value(i);
@@ -103,9 +101,9 @@ inline SharedColumnWrapper FromArrowImpl(const std::shared_ptr<arrow::Array> &ar
 }
 
 template <>
-inline SharedColumnWrapper FromArrowImpl<Time64NSValueColumnWrapper, UDFDataType::TIME64NS>(
+inline SharedColumnWrapper FromArrowImpl<Time64NSValueColumnWrapper, DataType::TIME64NS>(
     const std::shared_ptr<arrow::Array> &arr) {
-  CHECK_EQ(arr->type_id(), UDFDataTypeTraits<types::TIME64NS>::arrow_type_id);
+  CHECK_EQ(arr->type_id(), DataTypeTraits<types::TIME64NS>::arrow_type_id);
   size_t size = arr->length();
   auto wrapper = StringValueColumnWrapper::Make(types::TIME64NS, size);
   auto arr_casted = reinterpret_cast<arrow::Int64Array *>(arr.get());
@@ -118,9 +116,9 @@ inline SharedColumnWrapper FromArrowImpl<Time64NSValueColumnWrapper, UDFDataType
 }
 
 template <>
-inline SharedColumnWrapper FromArrowImpl<StringValueColumnWrapper, UDFDataType::STRING>(
+inline SharedColumnWrapper FromArrowImpl<StringValueColumnWrapper, DataType::STRING>(
     const std::shared_ptr<arrow::Array> &arr) {
-  CHECK_EQ(arr->type_id(), UDFDataTypeTraits<types::STRING>::arrow_type_id);
+  CHECK_EQ(arr->type_id(), DataTypeTraits<types::STRING>::arrow_type_id);
   size_t size = arr->length();
   auto wrapper = StringValueColumnWrapper::Make(types::STRING, size);
   auto arr_casted = reinterpret_cast<arrow::StringArray *>(arr.get());
@@ -142,15 +140,15 @@ inline SharedColumnWrapper ColumnWrapper::FromArrow(const std::shared_ptr<arrow:
   auto type_id = arr->type_id();
   switch (type_id) {
     case arrow::Type::BOOL:
-      return FromArrowImpl<BoolValueColumnWrapper, UDFDataType::BOOLEAN>(arr);
+      return FromArrowImpl<BoolValueColumnWrapper, DataType::BOOLEAN>(arr);
     case arrow::Type::INT64:
-      return FromArrowImpl<Int64ValueColumnWrapper, UDFDataType::INT64>(arr);
+      return FromArrowImpl<Int64ValueColumnWrapper, DataType::INT64>(arr);
     case arrow::Type::DOUBLE:
-      return FromArrowImpl<Float64ValueColumnWrapper, UDFDataType::FLOAT64>(arr);
+      return FromArrowImpl<Float64ValueColumnWrapper, DataType::FLOAT64>(arr);
     case arrow::Type::STRING:
-      return FromArrowImpl<StringValueColumnWrapper, UDFDataType::STRING>(arr);
+      return FromArrowImpl<StringValueColumnWrapper, DataType::STRING>(arr);
     case arrow::Type::TIME64:
-      return FromArrowImpl<Time64NSValueColumnWrapper, UDFDataType::TIME64NS>(arr);
+      return FromArrowImpl<Time64NSValueColumnWrapper, DataType::TIME64NS>(arr);
     default:
       CHECK(0) << "Unknown arrow type: " << type_id;
   }
@@ -163,23 +161,22 @@ inline SharedColumnWrapper ColumnWrapper::FromArrow(const std::shared_ptr<arrow:
  * @return A shared_ptr to the ColumnWrapper.
  * PL_CARNOT_UPDATE_FOR_NEW_TYPES.
  */
-inline SharedColumnWrapper ColumnWrapper::Make(UDFDataType data_type, size_t size) {
+inline SharedColumnWrapper ColumnWrapper::Make(DataType data_type, size_t size) {
   switch (data_type) {
-    case UDFDataType::BOOLEAN:
+    case DataType::BOOLEAN:
       return std::make_shared<BoolValueColumnWrapper>(size);
-    case UDFDataType::INT64:
+    case DataType::INT64:
       return std::make_shared<Int64ValueColumnWrapper>(size);
-    case UDFDataType::FLOAT64:
+    case DataType::FLOAT64:
       return std::make_shared<Float64ValueColumnWrapper>(size);
-    case UDFDataType::STRING:
+    case DataType::STRING:
       return std::make_shared<StringValueColumnWrapper>(size);
-    case UDFDataType::TIME64NS:
+    case DataType::TIME64NS:
       return std::make_shared<Time64NSValueColumnWrapper>(size);
     default:
       CHECK(0) << "Unknown data type";
   }
 }
 
-}  // namespace udf
-}  // namespace carnot
+}  // namespace types
 }  // namespace pl

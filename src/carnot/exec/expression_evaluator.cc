@@ -6,26 +6,26 @@
 
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/expression_evaluator.h"
-#include "src/carnot/udf/arrow_adapter.h"
-#include "src/carnot/udf/udf.h"
+#include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
 namespace carnot {
 namespace exec {
 
 // PL_CARNOT_UPDATE_FOR_NEW_TYPES
-using udf::ArrowToCarnotType;
-using udf::BoolValueColumnWrapper;
-using udf::ColumnWrapper;
-using udf::Float64ValueColumnWrapper;
-using udf::Int64ValueColumnWrapper;
-using udf::MakeArrowBuilder;
-using udf::SharedColumnWrapper;
-using udf::StringValueColumnWrapper;
-using udf::Time64NSValueColumnWrapper;
-using udf::UDFBaseValue;
-using udf::UDFDataType;
-using udf::UDFDataTypeTraits;
+using types::ArrowToDataType;
+using types::BaseValueType;
+using types::BoolValueColumnWrapper;
+using types::ColumnWrapper;
+using types::DataType;
+using types::DataTypeTraits;
+using types::Float64ValueColumnWrapper;
+using types::Int64ValueColumnWrapper;
+using types::MakeArrowBuilder;
+using types::SharedColumnWrapper;
+using types::StringValueColumnWrapper;
+using types::Time64NSValueColumnWrapper;
 
 std::unique_ptr<ScalarExpressionEvaluator> ScalarExpressionEvaluator::Create(
     const plan::ConstScalarExpressionVector &expressions,
@@ -108,14 +108,14 @@ std::shared_ptr<ColumnWrapper> EvalScalarToColumnWrapper(ExecState *, const plan
     case types::BOOLEAN:
       return std::make_shared<BoolValueColumnWrapper>(count, val.BoolValue());
     case types::INT64:
-      return std::make_shared<Int64ValueColumnWrapper>(count, val.Int64Value());
+      return std::make_shared<types::Int64ValueColumnWrapper>(count, val.Int64Value());
     case types::FLOAT64:
-      return std::make_shared<Float64ValueColumnWrapper>(count, val.Float64Value());
+      return std::make_shared<types::Float64ValueColumnWrapper>(count, val.Float64Value());
     case types::STRING:
-      return std::make_shared<StringValueColumnWrapper>(count, val.StringValue());
+      return std::make_shared<types::StringValueColumnWrapper>(count, val.StringValue());
     case types::TIME64NS:
-      return std::make_shared<Time64NSValueColumnWrapper>(count,
-                                                          udf::Time64NSValue(val.Time64NSValue()));
+      return std::make_shared<Time64NSValueColumnWrapper>(
+          count, types::Time64NSValue(val.Time64NSValue()));
     default:
       CHECK(0) << "Unknown data type";
   }
@@ -179,47 +179,50 @@ Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
   // Path for scalar funcs an their dependencies to get evaluated.
   // The Arrow arrays are converted to type erased column wrappers
   // and then evaluated.
-  plan::ExpressionWalker<SharedColumnWrapper> walker;
+  plan::ExpressionWalker<types::SharedColumnWrapper> walker;
   walker.OnScalarValue(
       [&](const plan::ScalarValue &val,
-          const std::vector<SharedColumnWrapper> &children) -> SharedColumnWrapper {
+          const std::vector<types::SharedColumnWrapper> &children) -> types::SharedColumnWrapper {
         DCHECK_EQ(children.size(), 0ULL);
         return EvalScalarToColumnWrapper(exec_state, val, num_rows);
       });
 
-  walker.OnColumn([&](const plan::Column &col,
-                      const std::vector<SharedColumnWrapper> &children) -> SharedColumnWrapper {
-    DCHECK_EQ(children.size(), 0ULL);
-    return ColumnWrapper::FromArrow(input.ColumnAt(col.Index()));
-  });
+  walker.OnColumn(
+      [&](const plan::Column &col,
+          const std::vector<types::SharedColumnWrapper> &children) -> types::SharedColumnWrapper {
+        DCHECK_EQ(children.size(), 0ULL);
+        return ColumnWrapper::FromArrow(input.ColumnAt(col.Index()));
+      });
 
-  walker.OnScalarFunc([&](const plan::ScalarFunc &fn,
-                          const std::vector<SharedColumnWrapper> &children) -> SharedColumnWrapper {
-    auto registry = exec_state->scalar_udf_registry();
-    std::vector<udf::UDFDataType> arg_types;
-    arg_types.reserve(children.size());
-    for (const auto child : children) {
-      arg_types.emplace_back(child->DataType());
-    }
+  walker.OnScalarFunc(
+      [&](const plan::ScalarFunc &fn,
+          const std::vector<types::SharedColumnWrapper> &children) -> types::SharedColumnWrapper {
+        auto registry = exec_state->scalar_udf_registry();
+        std::vector<types::DataType> arg_types;
+        arg_types.reserve(children.size());
+        for (const auto child : children) {
+          arg_types.emplace_back(child->data_type());
+        }
 
-    // TODO(zasgar): PL-253 - We should move this into the Open function,
-    // but it's a bit complicated because we might have functions with different
-    // init_args (when supported).
-    auto s_or_def = registry->GetDefinition(fn.name(), arg_types);
-    PL_CHECK_OK(s_or_def);
-    auto def = s_or_def.ConsumeValueOrDie();
-    auto udf = def->Make();
+        // TODO(zasgar): PL-253 - We should move this into the Open function,
+        // but it's a bit complicated because we might have functions with different
+        // init_args (when supported).
+        auto s_or_def = registry->GetDefinition(fn.name(), arg_types);
+        PL_CHECK_OK(s_or_def);
+        auto def = s_or_def.ConsumeValueOrDie();
+        auto udf = def->Make();
 
-    std::vector<const udf::ColumnWrapper *> raw_children;
-    raw_children.reserve(children.size());
-    for (const auto child : children) {
-      raw_children.emplace_back(child.get());
-    }
-    auto output = udf::ColumnWrapper::Make(def->exec_return_type(), num_rows);
-    // TODO(zasgar): need a better way to handle errors.
-    PL_CHECK_OK(def->ExecBatch(udf.get(), nullptr /*ctx*/, raw_children, output.get(), num_rows));
-    return output;
-  });
+        std::vector<const types::ColumnWrapper *> raw_children;
+        raw_children.reserve(children.size());
+        for (const auto child : children) {
+          raw_children.emplace_back(child.get());
+        }
+        auto output = types::ColumnWrapper::Make(def->exec_return_type(), num_rows);
+        // TODO(zasgar): need a better way to handle errors.
+        PL_CHECK_OK(
+            def->ExecBatch(udf.get(), nullptr /*ctx*/, raw_children, output.get(), num_rows));
+        return output;
+      });
 
   PL_ASSIGN_OR_RETURN(auto result, walker.Walk(expr));
   PL_RETURN_IF_ERROR(output->AddColumn(result->ConvertToArrow(exec_state->exec_mem_pool())));
@@ -258,10 +261,10 @@ Status exec::ArrowNativeScalarExpressionEvaluator::EvaluateSingleExpression(
       [&](const plan::ScalarFunc &fn, const std::vector<std::shared_ptr<arrow::Array>> &children)
           -> std::shared_ptr<arrow::Array> {
         auto registry = exec_state->scalar_udf_registry();
-        std::vector<udf::UDFDataType> arg_types;
+        std::vector<types::DataType> arg_types;
         arg_types.reserve(children.size());
         for (const auto child : children) {
-          arg_types.emplace_back(ArrowToCarnotType(child->type_id()));
+          arg_types.emplace_back(ArrowToDataType(child->type_id()));
         }
         // TODO(zasgar): PL-253 - We should move this into the Open function,
         // but it's a bit complicated because we might have functions with different

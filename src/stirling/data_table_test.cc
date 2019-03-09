@@ -134,10 +134,9 @@ class DataTableTest : public ::testing::Test {
     uint32_t f_idx;
     uint32_t i;
     for (f_idx = start_record, i = 0; f_idx < end_record; ++f_idx, ++i) {
-      auto col0 = std::static_pointer_cast<carnot::udf::Int64ValueColumnWrapper>((*col_arrays)[0]);
-      auto col1 =
-          std::static_pointer_cast<carnot::udf::Float64ValueColumnWrapper>((*col_arrays)[1]);
-      auto col2 = std::static_pointer_cast<carnot::udf::Int64ValueColumnWrapper>((*col_arrays)[2]);
+      auto col0 = std::static_pointer_cast<types::Int64ValueColumnWrapper>((*col_arrays)[0]);
+      auto col1 = std::static_pointer_cast<types::Float64ValueColumnWrapper>((*col_arrays)[1]);
+      auto col2 = std::static_pointer_cast<types::Int64ValueColumnWrapper>((*col_arrays)[2]);
 
       auto col0_val = (*col0)[i].val;
       auto col1_val = (*col1)[i].val;

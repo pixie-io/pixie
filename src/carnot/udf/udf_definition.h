@@ -4,9 +4,9 @@
 #include <string>
 #include <vector>
 
-#include "src/carnot/udf/column_wrapper.h"
 #include "src/carnot/udf/udf_wrapper.h"
 #include "src/common/status.h"
+#include "src/shared/types/column_wrapper.h"
 
 namespace pl {
 namespace carnot {
@@ -28,7 +28,7 @@ class UDFDefinition {
   /**
    * @return The overload dependent arguments that the registry uses to resolves UDFs.
    */
-  virtual const std::vector<UDFDataType>& RegistryArgTypes() = 0;
+  virtual const std::vector<types::DataType>& RegistryArgTypes() = 0;
 
   /**
    * Gets an unowned pointer to definition.
@@ -81,8 +81,8 @@ class ScalarUDFDefinition : public UDFDefinition {
   std::unique_ptr<ScalarUDF> Make() { return make_fn_(); }
 
   Status ExecBatch(ScalarUDF* udf, FunctionContext* ctx,
-                   const std::vector<const ColumnWrapper*>& inputs, ColumnWrapper* output,
-                   int count) {
+                   const std::vector<const types::ColumnWrapper*>& inputs,
+                   types::ColumnWrapper* output, int count) {
     return exec_wrapper_fn_(udf, ctx, inputs, output, count);
   }
 
@@ -96,20 +96,20 @@ class ScalarUDFDefinition : public UDFDefinition {
    * Access internal variable exec_return_type.
    * @return the stored return types of the exec function.
    */
-  UDFDataType exec_return_type() const { return exec_return_type_; }
-  const std::vector<UDFDataType>& exec_arguments() const { return exec_arguments_; }
+  types::DataType exec_return_type() const { return exec_return_type_; }
+  const std::vector<types::DataType>& exec_arguments() const { return exec_arguments_; }
 
-  const std::vector<UDFDataType>& RegistryArgTypes() override { return exec_arguments_; }
+  const std::vector<types::DataType>& RegistryArgTypes() override { return exec_arguments_; }
   size_t Arity() const { return exec_arguments_.size(); }
   const auto& exec_wrapper() const { return exec_wrapper_fn_; }
 
  private:
-  std::vector<UDFDataType> exec_arguments_;
-  UDFDataType exec_return_type_;
+  std::vector<types::DataType> exec_arguments_;
+  types::DataType exec_return_type_;
   std::function<std::unique_ptr<ScalarUDF>()> make_fn_;
   std::function<Status(ScalarUDF*, FunctionContext* ctx,
-                       const std::vector<const ColumnWrapper*>& inputs, ColumnWrapper* output,
-                       int count)>
+                       const std::vector<const types::ColumnWrapper*>& inputs,
+                       types::ColumnWrapper* output, int count)>
       exec_wrapper_fn_;
 
   std::function<Status(ScalarUDF* udf, FunctionContext* ctx,
@@ -151,15 +151,15 @@ class UDADefinition : public UDFDefinition {
 
   UDADefinition* GetDefinition() override { return this; }
 
-  const std::vector<UDFDataType>& RegistryArgTypes() override { return update_arguments_; }
+  const std::vector<types::DataType>& RegistryArgTypes() override { return update_arguments_; }
 
-  const std::vector<UDFDataType> update_arguments() { return update_arguments_; }
-  UDFDataType finalize_return_type() const { return finalize_return_type_; }
+  const std::vector<types::DataType> update_arguments() { return update_arguments_; }
+  types::DataType finalize_return_type() const { return finalize_return_type_; }
 
   std::unique_ptr<UDA> Make() { return make_fn_(); }
 
   Status ExecBatchUpdate(UDA* uda, FunctionContext* ctx,
-                         const std::vector<const ColumnWrapper*>& inputs) {
+                         const std::vector<const types::ColumnWrapper*>& inputs) {
     return exec_batch_update_fn_(uda, ctx, inputs);
   }
   Status ExecBatchUpdateArrow(UDA* uda, FunctionContext* ctx,
@@ -168,7 +168,7 @@ class UDADefinition : public UDFDefinition {
   }
 
   Status Merge(UDA* uda1, UDA* uda2, FunctionContext* ctx) { return merge_fn_(uda1, uda2, ctx); }
-  Status FinalizeValue(UDA* uda, FunctionContext* ctx, UDFBaseValue* output) {
+  Status FinalizeValue(UDA* uda, FunctionContext* ctx, types::BaseValueType* output) {
     return finalize_value_fn(uda, ctx, output);
   }
   Status FinalizeArrow(UDA* uda, FunctionContext* ctx, arrow::ArrayBuilder* output) {
@@ -176,12 +176,12 @@ class UDADefinition : public UDFDefinition {
   }
 
  private:
-  std::vector<UDFDataType> update_arguments_;
-  UDFDataType finalize_return_type_;
+  std::vector<types::DataType> update_arguments_;
+  types::DataType finalize_return_type_;
 
   std::function<std::unique_ptr<UDA>()> make_fn_;
   std::function<Status(UDA* uda, FunctionContext* ctx,
-                       const std::vector<const ColumnWrapper*>& inputs)>
+                       const std::vector<const types::ColumnWrapper*>& inputs)>
       exec_batch_update_fn_;
 
   std::function<Status(UDA* uda, FunctionContext* ctx,
@@ -190,7 +190,8 @@ class UDADefinition : public UDFDefinition {
 
   std::function<Status(UDA* uda, FunctionContext* ctx, arrow::ArrayBuilder* output)>
       finalize_arrow_fn_;
-  std::function<Status(UDA* uda, FunctionContext* ctx, UDFBaseValue* output)> finalize_value_fn;
+  std::function<Status(UDA* uda, FunctionContext* ctx, types::BaseValueType* output)>
+      finalize_value_fn;
   std::function<Status(UDA* uda1, UDA* uda2, FunctionContext* ctx)> merge_fn_;
 };
 
