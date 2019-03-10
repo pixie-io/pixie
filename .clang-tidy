@@ -1,0 +1,4 @@
+Checks: "clang-diagnostic-*,clang-analyzer-*,abseil-*,bugprone-*,modernize-*,performance-*"
+Checks: "readability-redundant-*,readability-braces-around-statements,google-*,cppcoreguidelines-*"
+Checks: "-clang-analyzer-cplusplus.NewDelete"
+Checks: "-clang-analyzer-cplusplus.NewDeleteLeaks"

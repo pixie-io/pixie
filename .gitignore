@@ -63,3 +63,5 @@ demos/load_generation/load_generation
 
 # Hide generated .deb files
 *.deb
+
+compile_commands.json
