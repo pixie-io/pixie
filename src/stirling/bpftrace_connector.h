@@ -40,7 +40,7 @@ class BPFTraceConnector : public SourceConnector {
 
   Status StopImpl() override;
 
-  auto GetBPFMap(const std::string& name) { return bpftrace_.get_map(name); }
+  bpftrace::BPFTraceMap GetBPFMap(const std::string& name) { return bpftrace_.get_map(name); }
 
  protected:
   /**
@@ -107,9 +107,9 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
 
   static constexpr char kName[] = "bpftrace_pid_cpu_usage";
 
-  inline static const DataElements kElements = {DataElement("time_", DataType::TIME64NS),
-                                                DataElement("pid", DataType::INT64),
-                                                DataElement("nsecs_runtime", DataType::INT64)};
+  inline static const DataElements kElements = {
+      DataElement("time_", DataType::TIME64NS), DataElement("pid", DataType::INT64),
+      DataElement("runtime_ns", DataType::INT64), DataElement("cmd", DataType::STRING)};
 
   inline static const std::chrono::milliseconds kDefaultSamplingPeriod{1000};
   inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
@@ -130,6 +130,7 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
       ;  // NOLINT
 
   std::vector<uint64_t> data_buf_;
+  std::vector<std::unique_ptr<std::string> > string_mem_;
 
   bpftrace::BPFTraceMap last_result_;
 

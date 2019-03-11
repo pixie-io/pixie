@@ -19,6 +19,7 @@ using pl::stirling::ColumnWrapperRecordBatch;
 using pl::types::Float64ValueColumnWrapper;
 using pl::types::Int64ValueColumnWrapper;
 using pl::types::SharedColumnWrapper;
+using pl::types::StringValueColumnWrapper;
 
 using pl::stirling::CPUStatBPFTraceConnector;
 using pl::stirling::PIDCPUUseBPFTraceConnector;
@@ -54,6 +55,11 @@ void PrintRecordBatch(std::string prefix, DataElements schema, uint64_t num_reco
           double val = (*typedCol)[i].val;
           // TODO(oazizi): Incorrectly setting the above to int64_t doesn't cause any compiler
           // errors/warnings!!!
+          std::cout << val << " ";
+        } break;
+        case DataType::STRING: {
+          auto typedCol = std::static_pointer_cast<StringValueColumnWrapper>(col);
+          std::string& val = (*typedCol)[i];
           std::cout << val << " ";
         } break;
         default:

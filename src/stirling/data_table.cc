@@ -87,6 +87,11 @@ Status ColumnWrapperDataTable::InitBuffers() {
         col->Reserve(target_capacity_);
         record_batch_->push_back(col);
       } break;
+      case DataType::STRING: {
+        auto col = ColumnWrapper::Make(DataType::STRING, 0);
+        col->Reserve(target_capacity_);
+        record_batch_->push_back(col);
+      } break;
       default:
         return error::Unimplemented("Unrecognized type: $0", ToString(type));
     }
@@ -121,6 +126,11 @@ Status ArrowDataTable::InitBuffers() {
       case DataType::FLOAT64: {
         std::unique_ptr<arrow::ArrayBuilder> col = std::make_unique<arrow::DoubleBuilder>();
         PL_RETURN_IF_ERROR(arrow::MakeBuilder(mem_pool, arrow::float64(), &col));
+        arrow_arrays_->push_back(std::move(col));
+      } break;
+      case DataType::STRING: {
+        std::unique_ptr<arrow::ArrayBuilder> col = std::make_unique<arrow::StringBuilder>();
+        PL_RETURN_IF_ERROR(arrow::MakeBuilder(mem_pool, arrow::utf8(), &col));
         arrow_arrays_->push_back(std::move(col));
       } break;
       default:
@@ -165,6 +175,13 @@ Status ColumnWrapperDataTable::AppendData(uint8_t* const data, uint64_t num_rows
               (*record_batch_)[field_idx]);
           column->Append(*val_ptr);
         } break;
+        case DataType::STRING: {
+          auto* val_ptr = reinterpret_cast<uint64_t*>(element_ptr);
+          auto str_ptr = reinterpret_cast<std::string*>(*val_ptr);
+          auto column = std::static_pointer_cast<types::StringValueColumnWrapper>(
+              (*record_batch_)[field_idx]);
+          column->Append(str_ptr->data());
+        } break;
         default:
           return error::Unimplemented("Unrecognized type: $0", ToString(type));
       }
@@ -202,6 +219,12 @@ Status ArrowDataTable::AppendData(uint8_t* const data, uint64_t num_rows) {
           auto* val_ptr = reinterpret_cast<double*>(element_ptr);
           auto* array = static_cast<arrow::DoubleBuilder*>((*arrow_arrays_)[field_idx].get());
           PL_RETURN_IF_ERROR(array->Append(*val_ptr));
+        } break;
+        case DataType::STRING: {
+          auto* val_ptr = reinterpret_cast<uint64_t*>(element_ptr);
+          auto str_ptr = reinterpret_cast<std::string*>(*val_ptr);
+          auto* array = static_cast<arrow::StringBuilder*>((*arrow_arrays_)[field_idx].get());
+          PL_RETURN_IF_ERROR(array->Append(*str_ptr));
         } break;
         default:
           return error::Unimplemented("Unrecognized type: $0", ToString(type));

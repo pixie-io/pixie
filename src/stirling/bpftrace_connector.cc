@@ -1,4 +1,5 @@
 #ifdef __linux__
+#include <string.h>
 #include <time.h>
 #include <algorithm>
 #include <thread>
@@ -125,37 +126,46 @@ RawDataBuf CPUStatBPFTraceConnector::GetDataImpl() {
 }
 
 // Helper function for searching through a BPFTraceMap vector of key-value pairs.
-// Note that the vector is sorted by keys.
-// This function enables resumed searching, by taking the start iterator as an input.
+// Note that the vector is sorted by keys, and the search is performed sequentially.
+// The search will stop as soon as a key >= the search key is found (not just ==).
+// This serves two purposes:
+// (1) It enables a quicker return.
+// (2) It enables resumed searching, when the next search key is >= the previous search key.
+// The latter is significant when iteratively comparing elements between two sorted vectors,
+// which is the main use case for this function.
+// To enable the resumed searching, this function takes the start iterator as an input.
 bpftrace::BPFTraceMap::iterator PIDCPUUseBPFTraceConnector::BPFTraceMapSearch(
     const bpftrace::BPFTraceMap& vector, bpftrace::BPFTraceMap::iterator it, uint64_t search_key) {
   auto next_it =
       std::find_if(it, const_cast<bpftrace::BPFTraceMap&>(vector).end(),
                    [&search_key](const std::pair<std::vector<uint8_t>, std::vector<uint8_t>>& x) {
-                     return *(reinterpret_cast<const uint32_t*>(x.first.data())) == search_key;
+                     return *(reinterpret_cast<const uint32_t*>(x.first.data())) >= search_key;
                    });
   return next_it;
 }
 
 RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
-  auto pid_to_time_map = GetBPFMap("@total_time");
-  auto num_pids = pid_to_time_map.size();
+  auto pid_time_pairs = GetBPFMap("@total_time");
+  auto num_pids = pid_time_pairs.size();
 
-  // TODO(oazizi): Get PID process names, like below.
-  // auto pid_to_name_map = GetBPFMap("@names");
+  auto pid_name_pairs = GetBPFMap("@names");
 
   // This is a special map with only one entry at location 0.
-  auto sampling_time_map = GetBPFMap("@time");
-  CHECK_EQ(1ULL, sampling_time_map.size());
-  auto timestamp = *(reinterpret_cast<uint64_t*>(sampling_time_map[0].second.data()));
+  auto sampling_time = GetBPFMap("@time");
+  CHECK_EQ(1ULL, sampling_time.size());
+  auto timestamp = *(reinterpret_cast<int64_t*>(sampling_time[0].second.data()));
 
   // TODO(oazizi): Optimize this. Likely need a way of removing old PIDs in the bt file.
   data_buf_.resize(std::max<uint64_t>(num_pids * (elements_.size()), data_buf_.size()));
+  string_mem_.clear();
 
-  auto it = last_result_.begin();
+  auto last_result_it = last_result_.begin();
+  auto pid_name_it = pid_name_pairs.begin();
+
+  RawDataBuf raw_data_buf(num_pids, reinterpret_cast<uint8_t*>(data_buf_.data()));
 
   uint32_t idx = 0;
-  for (auto& pid_time_pair : pid_to_time_map) {
+  for (auto& pid_time_pair : pid_time_pairs) {
     auto key = pid_time_pair.first;
     auto value = pid_time_pair.second;
 
@@ -164,16 +174,44 @@ RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
     DCHECK_EQ(4ULL, key.size()) << "Expected uint32_t key";
     uint64_t pid = *(reinterpret_cast<uint32_t*>(key.data()));
 
-    it = BPFTraceMapSearch(last_result_, it, pid);
-    uint64_t last_cputime =
-        (it == last_result_.end()) ? 0 : *(reinterpret_cast<uint64_t*>(it->second.data()));
+    // Get the name from the auxiliary BPFTraceMap for names.
+    char* name = nullptr;
+    pid_name_it = BPFTraceMapSearch(pid_name_pairs, pid_name_it, pid);
+    if (pid_name_it != pid_name_pairs.end()) {
+      uint32_t found_pid = *(reinterpret_cast<uint32_t*>(pid_name_it->first.data()));
+      if (found_pid == pid) {
+        name = reinterpret_cast<char*>(pid_name_it->second.data());
+      } else {
+        // Couldn't find the name for the PID.
+        // May happen in practice due to a race with how the kernel populates the BPF maps.
+        LOG(WARNING) << absl::StrFormat("Could not find a name for the PID %d", pid);
+      }
+    }
+
+    // Get the last cpu time from the BPFTraceMap from previous call to this function.
+    uint64_t last_cputime = 0;
+    last_result_it = BPFTraceMapSearch(last_result_, last_result_it, pid);
+    if (last_result_it != last_result_.end()) {
+      uint32_t found_pid = *(reinterpret_cast<uint32_t*>(last_result_it->first.data()));
+      if (found_pid == pid) {
+        last_cputime = *(reinterpret_cast<uint64_t*>(last_result_it->second.data()));
+      }
+    }
+
+    // Copy the string into the string_mem.
+    // This is required because the BPFTraceMap will be destroyed once it falls out of scope.
+    // TODO(oazizi): Optimize this copy away, by keeping the memory.
+    auto name_str = std::make_unique<std::string>(name);
+    std::string* name_str_ptr = name_str.get();
+    string_mem_.push_back(std::move(name_str));
 
     data_buf_[idx++] = timestamp + ClockRealTimeOffset();
     data_buf_[idx++] = pid;
     data_buf_[idx++] = cputime - last_cputime;
+    data_buf_[idx++] = reinterpret_cast<uint64_t>(name_str_ptr);
   }
 
-  last_result_ = pid_to_time_map;
+  last_result_ = pid_time_pairs;
 
   return RawDataBuf(num_pids, reinterpret_cast<uint8_t*>(data_buf_.data()));
 }

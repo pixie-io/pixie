@@ -20,10 +20,10 @@ inline std::string ToString(DataType type) {
       return "int64";
     case DataType::FLOAT64:
       return "float64";
-    case DataType::STRING:
-      return "string";
     case DataType::TIME64NS:
       return "time64ns";
+    case DataType::STRING:
+      return "string";
     default:
       DCHECK(false) << "No ToString() for this DataType";
       return "UNKNOWN";
@@ -38,6 +38,8 @@ inline size_t DataTypeWidthBytes(DataType type) {
       return (sizeof(int64_t));
     case DataType::TIME64NS:
       return (sizeof(int64_t));
+    case DataType::STRING:
+      return (sizeof(char*));
     default:
       DCHECK(false) << absl::StrFormat("Unknown data type %s", ToString(type));
       return 0;
@@ -52,6 +54,8 @@ inline std::shared_ptr<arrow::DataType> DataTypeToArrowType(DataType type) {
       return arrow::float64();
     case DataType::TIME64NS:
       return arrow::time64(arrow::TimeUnit::NANO);
+    case DataType::STRING:
+      return arrow::utf8();
     default:
       DCHECK(false) << absl::StrFormat("Unknown data type %s", ToString(type));
       return 0;
