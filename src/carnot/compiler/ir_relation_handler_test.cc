@@ -612,6 +612,20 @@ TEST_F(RelationHandlerTest, non_float_columns) {
   VLOG(1) << handle_status.status().ToString();
 }
 
+TEST_F(RelationHandlerTest, add_pl_time_type_fail) {
+  std::string time_fail_float_time_add =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
+                     "mapDF = queryDF.Map(fn=lambda r : {'sub' : r.cpu0 + pl.second})",
+                     "mapDF.Result(name='cpu_out')"},
+                    "\n");
+  auto ir_graph_status = CompileGraph(time_fail_float_time_add);
+  EXPECT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto handle_status = HandleRelation(ir_graph);
+  EXPECT_FALSE(handle_status.ok());
+  VLOG(1) << handle_status.status().ToString();
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
