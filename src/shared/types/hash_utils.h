@@ -38,14 +38,14 @@ struct hash<BoolValue> {
 template <>
 struct hash<Int64Value> {
   uint64_t operator()(Int64Value val) {
-    return ::util::Hash64(reinterpret_cast<const char*>(&(val.val)), sizeof(int64_t));
+    return ::util::Hash64(reinterpret_cast<const char *>(&(val.val)), sizeof(int64_t));
   }
 };
 
 template <>
 struct hash<Float64Value> {
   uint64_t operator()(Float64Value val) {
-    return ::util::Hash64(reinterpret_cast<const char*>(&(val.val)), sizeof(double));
+    return ::util::Hash64(reinterpret_cast<const char *>(&(val.val)), sizeof(double));
   }
 };
 
@@ -57,7 +57,7 @@ struct hash<StringValue> {
 template <>
 struct hash<Time64NSValue> {
   uint64_t operator()(Time64NSValue val) {
-    return ::util::Hash64(reinterpret_cast<const char*>(&(val.val)), sizeof(int64_t));
+    return ::util::Hash64(reinterpret_cast<const char *>(&(val)), sizeof(Time64NSValue));
   }
 };
 
