@@ -22,7 +22,7 @@ class PL_MUST_USE_RESULT Status {
   void operator=(const Status& s) noexcept;
 
   /// Returns true if the status indicates success.
-  bool ok() const { return (state_ == NULL); }
+  bool ok() const { return (state_ == nullptr); }
 
   // Return self, this makes it compatible with StatusOr<>.
   const Status& status() const { return *this; }
