@@ -3,7 +3,7 @@
 #include <string>
 
 #include "absl/strings/str_format.h"
-#include "src/carnot/udf/test_utils.h"
+#include "src/carnot/udf/udf.h"
 #include "src/shared/types/types.h"
 
 namespace pl {
@@ -97,6 +97,14 @@ class UDATester {
   UDATester& Expect(typename types::DataTypeTraits<uda_data_type>::value_type arg) {
     internal::ExpectEquality(uda_.Finalize(nullptr), arg);
     return *this;
+  }
+
+  /**
+   * Returns the result value. Cannot be called after Expect.
+   * @return the result value.
+   */
+  typename types::DataTypeTraits<uda_data_type>::value_type Result() {
+    return uda_.Finalize(nullptr);
   }
 
   /*
