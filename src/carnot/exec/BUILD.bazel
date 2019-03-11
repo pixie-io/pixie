@@ -12,7 +12,10 @@ pl_cc_library(
             "**/*_mock.h",
         ],
     ),
-    hdrs = glob(["*.h"], exclude = ["**/*_mock.h"]),
+    hdrs = glob(
+        ["*.h"],
+        exclude = ["**/*_mock.h"],
+    ),
     deps = [
         "//src/carnot/plan:cc_library",
         "//src/carnot/proto:plan_pl_cc_proto",

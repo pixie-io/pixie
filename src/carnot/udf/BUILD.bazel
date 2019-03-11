@@ -16,6 +16,7 @@ pl_cc_library(
         "//src/carnot/proto:udfs_pl_cc_proto",
         "//src/shared/types:cc_library",
         "//src/shared/types/proto:types_pl_cc_proto",
+        "//third_party:arrow",
     ],
 )
 
