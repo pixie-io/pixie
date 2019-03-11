@@ -128,7 +128,7 @@ int main(int argc, char** argv) {
 
   // Subscribe to all elements.
   // Stirling will update its schemas and sets up the data tables.
-  auto subscribe_proto = pl::stirling::SubscribeToAllElements(publish_proto);
+  auto subscribe_proto = pl::stirling::SubscribeToAllInfoClasses(publish_proto);
   PL_CHECK_OK(data_collector->SetSubscription(subscribe_proto));
 
   // Get a map from InfoClassManager names to Table IDs

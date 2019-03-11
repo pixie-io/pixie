@@ -24,30 +24,31 @@ const char* kInfoClassManager = R"(
   elements {
     name: "user_percentage",
     type: FLOAT64,
+    state: SUBSCRIBED,
   }
   elements {
     name: "system_percentage",
     type: FLOAT64,
+    state: SUBSCRIBED,
   }
   elements {
     name: "io_percentage",
     type: FLOAT64,
+    state: SUBSCRIBED,
   }
   metadata {
     key: "source"
     value: "cpu_usage"
   }
+  subscribed: false
 )";
 
 class PubSubManagerTest : public ::testing::Test {
  protected:
   PubSubManagerTest()
-      : element_1("user_percentage", DataType::FLOAT64,
-                  Element_State::Element_State_NOT_SUBSCRIBED),
-        element_2("system_percentage", DataType::FLOAT64,
-                  Element_State::Element_State_NOT_SUBSCRIBED),
-        element_3("io_percentage", DataType::FLOAT64, Element_State::Element_State_NOT_SUBSCRIBED) {
-  }
+      : element_1("user_percentage", DataType::FLOAT64, Element_State::Element_State_SUBSCRIBED),
+        element_2("system_percentage", DataType::FLOAT64, Element_State::Element_State_SUBSCRIBED),
+        element_3("io_percentage", DataType::FLOAT64, Element_State::Element_State_SUBSCRIBED) {}
   void SetUp() override {
     std::string name = "cpu_usage";
     source_ = BCCCPUMetricsConnector::Create(name);
@@ -80,13 +81,11 @@ TEST_F(PubSubManagerTest, publish_test) {
   auto expected_info_class = expected_publish_pb.add_published_info_classes();
   EXPECT_TRUE(TextFormat::MergeFromString(kInfoClassManager, expected_info_class));
   expected_info_class->set_id(0);
-  for (int element_idx = 0; element_idx < expected_info_class->elements_size(); ++element_idx) {
-    expected_info_class->mutable_elements(element_idx)
-        ->set_state(Element_State::Element_State_NOT_SUBSCRIBED);
-  }
 
+  EXPECT_FALSE(actual_publish_pb.published_info_classes(0).subscribed());
   EXPECT_EQ(1, expected_publish_pb.published_info_classes_size());
   EXPECT_EQ(0, actual_publish_pb.published_info_classes(0).id());
+
   EXPECT_TRUE(MessageDifferencer::Equals(actual_publish_pb, expected_publish_pb));
 }
 
@@ -105,22 +104,17 @@ TEST_F(PubSubManagerTest, subscribe_test) {
   EXPECT_TRUE(TextFormat::MergeFromString(kInfoClassManager, info_class));
 
   // The subscribe message needs ids from the publish message and also
-  // update the subscriptions for elements.
+  // update the subscription.
   size_t id = publish_pb.published_info_classes(0).id();
   info_class->set_id(id);
-  for (int element_idx = 0; element_idx < info_class->elements_size(); ++element_idx) {
-    info_class->mutable_elements(element_idx)->set_state(Element_State::Element_State_SUBSCRIBED);
-  }
+  info_class->set_subscribed(true);
 
   // Update the InfoClassManager objects with the subscribe message.
   EXPECT_EQ(Status::OK(),
             pub_sub_manager_->UpdateSchemaFromSubscribe(subscribe_pb, info_class_mgrs_));
   // Verify updated subscriptions.
   for (auto& info_class_mgr : info_class_mgrs_) {
-    for (size_t idx = 0; idx < info_class_mgr->Schema().size(); ++idx) {
-      auto element = info_class_mgr->GetElement(idx);
-      EXPECT_EQ(element.state(), Element_State::Element_State_SUBSCRIBED);
-    }
+    EXPECT_TRUE(info_class_mgr->subscribed());
   }
 }
 

@@ -51,7 +51,7 @@ void Executor::GeneratePublishMessage(Publish* publish_pb) {
 }
 
 Subscribe Executor::SubscribeToEverything(const Publish& publish_proto) {
-  return stirling::SubscribeToAllElements(publish_proto);
+  return stirling::SubscribeToAllInfoClasses(publish_proto);
 }
 
 Status Executor::CreateTablesFromSubscription(const Subscribe& subscribe_proto) {

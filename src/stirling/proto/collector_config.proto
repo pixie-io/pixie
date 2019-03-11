@@ -44,6 +44,7 @@ message InfoClass {
   // opentracing, prometheus, etc.), the host on which the data source was running (
   // k8s node, aws node, etc.), pods on the host node, services running on a node, etc.
   map<string, string> metadata = 4;
+  bool subscribed = 5;
 }
 
 // Publish message contains information on

@@ -7,6 +7,7 @@
 #include "src/stirling/proto/collector_config.pb.h"
 #include "src/stirling/pub_sub_manager.h"
 #include "src/stirling/stirling.h"
+#include "src/stirling/types.h"
 
 namespace pl {
 namespace stirling {
@@ -25,18 +26,20 @@ class StirlingComponentTest : public ::testing::Test {
 
 TEST_F(StirlingComponentTest, registry_to_subscribe_test) {
   EXPECT_OK(data_collector_->Init());
+  // Generate the Publish message.
   stirlingpb::Publish publish_proto;
   data_collector_->GetPublishProto(&publish_proto);
+  EXPECT_FALSE(publish_proto.published_info_classes(0).subscribed());
   EXPECT_EQ(1, publish_proto.published_info_classes_size());
-  auto subscribe_proto = SubscribeToAllElements(publish_proto);
+
+  // Subscribe to all Info Classes in the publish message.
+  auto subscribe_proto = SubscribeToAllInfoClasses(publish_proto);
   EXPECT_EQ(1, subscribe_proto.subscribed_info_classes_size());
+  EXPECT_TRUE(subscribe_proto.subscribed_info_classes(0).subscribed());
   EXPECT_OK(data_collector_->SetSubscription(subscribe_proto));
   for (int i = 0; i < subscribe_proto.subscribed_info_classes_size(); ++i) {
     auto info_class = subscribe_proto.subscribed_info_classes(i);
-    for (int j = 0; j < info_class.elements_size(); ++j) {
-      auto element = info_class.elements(j);
-      EXPECT_EQ(Element_State::Element_State_SUBSCRIBED, element.state());
-    }
+    EXPECT_TRUE(info_class.subscribed());
   }
 }
 

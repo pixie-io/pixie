@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/internal/spinlock.h"
 #include "src/common/error.h"
 #include "src/common/status.h"
 #include "src/stirling/data_table.h"
@@ -22,14 +23,14 @@ namespace pl {
 namespace stirling {
 
 /**
- * @brief Convenience function to subscribe to all elements in all schemas of
+ * @brief Convenience function to subscribe to all info classes of
  * a published proto message. This should actually be in an agent.
  * TODO(kgandhi): Move to agent or common utils for agent when available.
  *
  * @param publish_proto
  * @return stirlingpb::Subscribe
  */
-stirlingpb::Subscribe SubscribeToAllElements(const stirlingpb::Publish& publish_proto);
+stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto);
 
 /**
  * The data collector collects data from various different 'sources',
@@ -181,6 +182,11 @@ class Stirling : public NotCopyable {
    * Vector of all the InfoClassManagers.
    */
   InfoClassManagerVec info_class_mgrs_;
+  /**
+   * Spin lock to lock updates to info_class_mgrs_.
+   *
+   */
+  absl::base_internal::SpinLock info_class_mgrs_lock_;
 
   /**
    * Pointer the config unit that handles sub/pub with agent.

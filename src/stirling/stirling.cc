@@ -11,16 +11,13 @@
 namespace pl {
 namespace stirling {
 
-stirlingpb::Subscribe SubscribeToAllElements(const stirlingpb::Publish& publish_proto) {
+stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto) {
   stirlingpb::Subscribe subscribe_proto;
 
   for (int i = 0; i < publish_proto.published_info_classes_size(); ++i) {
     auto sub_info_class = subscribe_proto.add_subscribed_info_classes();
     sub_info_class->MergeFrom(publish_proto.published_info_classes(i));
-    for (int j = 0; j < sub_info_class->elements_size(); ++j) {
-      auto element = sub_info_class->mutable_elements(j);
-      element->set_state(stirlingpb::Element_State::Element_State_SUBSCRIBED);
-    }
+    sub_info_class->set_subscribed(true);
   }
   return subscribe_proto;
 }
@@ -75,23 +72,28 @@ void Stirling::GetPublishProto(stirlingpb::Publish* publish_pb) {
 }
 
 Status Stirling::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
+  // Acquire lock to update info_class_mgrs_.
+  absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
+
+  // Last append before clearing tables from old subscriptions.
+  for (const auto& mgr : info_class_mgrs_) {
+    if (mgr->subscribed() && mgr->PushRequired()) {
+      PL_CHECK_OK(mgr->PushData(agent_callback_));
+    }
+  }
+
   // Update schemas based on the subscribe_proto.
-  // TODO(kgandhi/oazizi) : Rethink implicit schemas_ update. May be move the update
-  // function into InfoClassManager
   PL_CHECK_OK(config_->UpdateSchemaFromSubscribe(subscribe_proto, info_class_mgrs_));
 
-  // TODO(kgandhi/oazizi): Clear the tables based on new subscription.
-
-  // Generate the tables required based on subscribed Elements.
+  // Generate the tables required based on subscribed Info Classes.
   for (const auto& mgr : info_class_mgrs_) {
-    auto data_table = std::make_unique<ColumnWrapperDataTable>(mgr->Schema());
-    mgr->SetDataTable(data_table.get());
-
-    // Proto could override sampling periods:
-    // mgr->SetSamplingPeriod(XXXX);
-    // mgr->SetPushPeriod(XXXX);
-
-    tables_.push_back(std::move(data_table));
+    if (mgr->subscribed()) {
+      auto data_table = std::make_unique<ColumnWrapperDataTable>(mgr->Schema());
+      mgr->SetDataTable(data_table.get());
+      // TODO(kgandhi): PL-426
+      // Set sampling frequency based on input from Vizer.
+      tables_.push_back(std::move(data_table));
+    }
   }
 
   return Status::OK();
@@ -116,21 +118,28 @@ void Stirling::Run() {
 
   run_enable_ = true;
   while (run_enable_) {
-    // Run through every InfoClass being managed.
-    for (const auto& mgr : info_class_mgrs_) {
-      // Phase 1: Probe each source for its data.
-      if (mgr->SamplingRequired()) {
-        PL_CHECK_OK(mgr->SampleData());
-      }
+    {
+      // Acquire spin lock to go through one iteration of sampling and pushing data.
+      // Needed to avoid race with main thread update info_class_mgrs_ on new subscription.
+      absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
 
-      // Phase 2: Push Data upstream.
-      if (mgr->PushRequired()) {
-        PL_CHECK_OK(mgr->PushData(agent_callback_));
-      }
+      // Run through every InfoClass being managed.
+      for (const auto& mgr : info_class_mgrs_) {
+        if (mgr->subscribed()) {
+          // Phase 1: Probe each source for its data.
+          if (mgr->SamplingRequired()) {
+            PL_CHECK_OK(mgr->SampleData());
+          }
 
-      // Optional: Update sampling periods if we are dropping data.
+          // Phase 2: Push Data upstream.
+          if (mgr->PushRequired()) {
+            PL_CHECK_OK(mgr->PushData(agent_callback_));
+          }
+
+          // Optional: Update sampling periods if we are dropping data.
+        }
+      }
     }
-
     // Figure out how long to sleep.
     SleepUntilNextTick();
   }

@@ -84,9 +84,9 @@ class SourceConnector : public NotCopyable {
     return Status::OK();
   }
 
-  SourceType type() { return type_; }
-  const std::string& source_name() { return source_name_; }
-  const DataElements& elements() { return elements_; }
+  SourceType type() const { return type_; }
+  const std::string& source_name() const { return source_name_; }
+  const DataElements& elements() const { return elements_; }
 
  protected:
   explicit SourceConnector(SourceType type, const std::string& source_name,

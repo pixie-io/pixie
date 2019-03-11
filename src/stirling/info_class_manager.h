@@ -28,17 +28,15 @@ using types::DataType;
  * InfoClassElement is a basic structure that holds a single available data element from a source,
  * its type and a state.
  *
- * The state defines whether the data element is:
- *  (0) not collected.
- *  (1) collected but not subscribed.
- *  (2) collected and subscribed.
+ * The state defines whether the data element is subscribed or not.
+ *
  */
 class InfoClassElement : public DataElement {
  public:
   InfoClassElement() = delete;
   virtual ~InfoClassElement() = default;
   explicit InfoClassElement(const DataElement& element)
-      : DataElement(element), state_(Element_State::Element_State_NOT_SUBSCRIBED) {}
+      : DataElement(element), state_(Element_State::Element_State_SUBSCRIBED) {}
   explicit InfoClassElement(const std::string& name, const DataType& type,
                             const Element_State& state)
       : DataElement(name, type), state_(state) {}
@@ -218,9 +216,17 @@ class InfoClassManager {
         std::chrono::high_resolution_clock::now().time_since_epoch());
   }
 
+  /**
+   * @brief Set the Subscription for the InfoClass.
+   *
+   * @param subscription
+   */
+  void SetSubscription(bool subscribed) { subscribed_ = subscribed; }
+
   const std::string& name() const { return name_; }
   const SourceConnector* source() const { return source_; }
   uint64_t id() { return id_; }
+  bool subscribed() const { return subscribed_; }
 
  private:
   static std::atomic<uint64_t> global_id_;
@@ -239,6 +245,11 @@ class InfoClassManager {
    * Vector of all the elements provided by this Info Class.
    */
   InfoClassSchema elements_;
+
+  /**
+   * Boolean indicating whether an agent has subscribed to the Info Class.
+   */
+  bool subscribed_ = false;
 
   /**
    * Pointer back to the source connector providing the data.

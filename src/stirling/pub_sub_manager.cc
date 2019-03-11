@@ -39,15 +39,13 @@ Status PubSubManager::UpdateSchemaFromSubscribe(const Subscribe& subscribe_proto
 
     // Check that the number or elements are the same between the proto
     // and the InfoClassManager object.
+
     size_t num_elements = info_class_proto.elements_size();
     if (num_elements != (*it)->Schema().size()) {
       return Status(pl::error::INTERNAL, "Number of elements in InfoClassManager does not match");
     }
 
-    // Update the subscription for the elements based on subscription.
-    for (size_t element_idx = 0; element_idx < num_elements; ++element_idx) {
-      (*it)->UpdateElementSubscription(element_idx, info_class_proto.elements(element_idx).state());
-    }
+    (*it)->SetSubscription(info_class_proto.subscribed());
   }
   return Status::OK();
 }

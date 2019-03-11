@@ -97,6 +97,7 @@ stirlingpb::InfoClass InfoClassManager::ToProto() const {
   // Add all the other fields for the proto.
   info_class_proto.set_name(name_);
   info_class_proto.set_id(id_);
+  info_class_proto.set_subscribed(subscribed_);
 
   return info_class_proto;
 }
