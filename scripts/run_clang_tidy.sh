@@ -17,7 +17,7 @@ do
 done
 
 if [ -z "${clang_tidy_script}" ]; then
-    echo "Failed to find a valid clang tidy script runner (check LLVM/Clang install"
+    echo "Failed to find a valid clang tidy script runner (check LLVM/Clang install)"
     exit 1
 fi
 
