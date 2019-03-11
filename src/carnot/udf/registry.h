@@ -131,7 +131,7 @@ class Registry : public BaseUDFRegistry {
    * @return
    */
   StatusOr<TUDFDef*> GetDefinition(const std::string& name,
-                                   const std::vector<types::DataType>& registry_arg_types) {
+                                   const std::vector<types::DataType>& registry_arg_types) const {
     auto key = RegistryKey(name, registry_arg_types);
     auto it = map_.find(key);
     if (it == map_.end()) {
