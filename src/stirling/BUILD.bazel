@@ -46,8 +46,8 @@ pl_cc_binary(
 )
 
 pl_cc_test(
-    name = "info_class_schema_test",
-    srcs = ["info_class_schema_test.cc"],
+    name = "info_class_manager_test",
+    srcs = ["info_class_manager_test.cc"],
     deps = [":cc_library"],
 )
 

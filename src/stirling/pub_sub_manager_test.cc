@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "src/stirling/bcc_connector.h"
-#include "src/stirling/info_class_schema.h"
+#include "src/stirling/info_class_manager.h"
 #include "src/stirling/pub_sub_manager.h"
 #include "src/stirling/source_connector.h"
 

@@ -7,7 +7,7 @@
 
 #include "src/common/status.h"
 #include "src/shared/types/proto/types.pb.h"
-#include "src/stirling/info_class_schema.h"
+#include "src/stirling/info_class_manager.h"
 #include "src/stirling/proto/collector_config.pb.h"
 
 using pl::Status;

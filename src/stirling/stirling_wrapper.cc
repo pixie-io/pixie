@@ -3,7 +3,7 @@
 
 #include "src/common/common.h"
 #include "src/stirling/bpftrace_connector.h"
-#include "src/stirling/info_class_schema.h"
+#include "src/stirling/info_class_manager.h"
 #include "src/stirling/seq_gen_connector.h"
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"

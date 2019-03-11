@@ -5,7 +5,7 @@
 #include "src/common/macros.h"
 
 #include "src/stirling/data_table.h"
-#include "src/stirling/info_class_schema.h"
+#include "src/stirling/info_class_manager.h"
 #include "src/stirling/source_connector.h"
 
 namespace pl {

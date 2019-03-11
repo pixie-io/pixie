@@ -5,7 +5,7 @@
 
 #include "src/common/statusor.h"
 #include "src/stirling/data_table_schema.h"
-#include "src/stirling/info_class_schema.h"
+#include "src/stirling/info_class_manager.h"
 #include "src/stirling/types.h"
 
 namespace pl {

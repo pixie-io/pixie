@@ -2,7 +2,7 @@
 #include <random>
 
 #include "src/stirling/data_table.h"
-#include "src/stirling/info_class_schema.h"
+#include "src/stirling/info_class_manager.h"
 #include "src/stirling/sequence_generator.h"
 
 namespace pl {

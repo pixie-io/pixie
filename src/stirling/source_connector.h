@@ -8,7 +8,7 @@
 #include "src/common/base.h"
 #include "src/common/error.h"
 #include "src/common/statusor.h"
-#include "src/stirling/info_class_schema.h"
+#include "src/stirling/info_class_manager.h"
 
 /**
  * These are the steps to follow to add a new data source connector.
