@@ -70,4 +70,14 @@ inline std::string PrettyDuration(double duration_ns) {
   return absl::StrFormat("%.2f s", duration_ns / 1E9);
 }
 
+/**
+ * Helper to get the current time in nanoseconds.
+ * @return the current time in ns.
+ */
+inline int64_t CurrentTimeNS() {
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(
+             std::chrono::system_clock::now().time_since_epoch())
+      .count();
+}
+
 }  // namespace pl
