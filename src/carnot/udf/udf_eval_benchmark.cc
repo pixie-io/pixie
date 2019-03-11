@@ -44,7 +44,7 @@ class SubStrUDF : public ScalarUDF {
 };
 
 // This benchmark add two columns using Int64ValueVectors.
-// NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE : runtime/references.
 static void BM_AddInt64Values(benchmark::State &state) {
   auto vec1 = CreateLargeData<Int64Value>(state.range(0));
   auto vec2 = CreateLargeData<Int64Value>(state.range(0));
@@ -60,6 +60,7 @@ static void BM_AddInt64Values(benchmark::State &state) {
   auto u = def.Make();
 
   // Loop the test.
+  // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     out.Resize(vec2.size());
     auto res = def.ExecBatch(u.get(), nullptr, {&wrapped_vec1, &wrapped_vec2}, &out, vec1.size());
@@ -78,8 +79,8 @@ static void BM_AddInt64Values(benchmark::State &state) {
 
 // This benchmark performs a substring on 10 char wide strings,
 // selects two characters.
-// NOLINTNEXTLINE(runtime/references).
-static void BM_SubStr(benchmark::State &state) {  // NOLINT
+// NOLINTNEXTLINE : runtime/references.
+static void BM_SubStr(benchmark::State &state) {
   int width = 10;
   auto vec1 = GenerateStringValueVector(state.range(0), width);
   StringValueColumnWrapper out(vec1.size());
@@ -91,6 +92,7 @@ static void BM_SubStr(benchmark::State &state) {  // NOLINT
   auto u = def.Make();
 
   // Run the test.
+  // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     auto res = def.ExecBatch(u.get(), nullptr, {&wrapped_vec1}, &out, vec1.size());
     PL_CHECK_OK(res);
@@ -106,7 +108,7 @@ static void BM_SubStr(benchmark::State &state) {  // NOLINT
 }
 
 // Benchmark adding two integers using arrow as the interface.
-// NOLINTNEXTLINE(runtime/references).
+// NOLINTNEXTLINE : runtime/references.
 static void BM_AddTwoInt64sArrow(benchmark::State &state) {
   size_t size = state.range(0);
   auto arr1 = ToArrow(CreateLargeData<Int64Value>(size), arrow::default_memory_pool());
@@ -114,6 +116,7 @@ static void BM_AddTwoInt64sArrow(benchmark::State &state) {
 
   auto u = std::make_shared<AddUDF>();
   std::shared_ptr<arrow::Array> out;
+  // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     if (out) {
       out.reset();
@@ -138,10 +141,11 @@ static void BM_AddTwoInt64sArrow(benchmark::State &state) {
 }
 
 // Benchmark converting Int64 to Arrow.
-// NOLINTNEXTLINE(runtime/references).
+// NOLINTNEXTLINE : runtime/references.
 static void BM_ConvertToArrowInt64(benchmark::State &state) {
   size_t size = state.range(0);
   auto data = CreateLargeData<Int64Value>(size);
+  // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     auto arrow_array = ToArrow(data, arrow::default_memory_pool());
     benchmark::DoNotOptimize(arrow_array);
@@ -150,11 +154,11 @@ static void BM_ConvertToArrowInt64(benchmark::State &state) {
 }
 
 // Benchmark converting strings to Arrow.
-// NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE : runtime/references.
 static void BM_ConvertToArrowString(benchmark::State &state) {
   int width = 10;
   auto data = GenerateStringValueVector(state.range(0), width);
-
+  // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     auto arrow_array = ToArrow(data, arrow::default_memory_pool());
     benchmark::DoNotOptimize(arrow_array);
@@ -164,8 +168,8 @@ static void BM_ConvertToArrowString(benchmark::State &state) {
 }
 
 // Benchmark adding two Int64 values and producing an arrow result.
-// NOLINTNEXTLINE(runtime/references)
-static void BM_AddInt64ValueToArrow(benchmark::State &state) {  // NOLINT
+// NOLINTNEXTLINE : runtime/references.
+static void BM_AddInt64ValueToArrow(benchmark::State &state) {
   auto vec1 = CreateLargeData<Int64Value>(state.range(0));
   auto vec2 = CreateLargeData<Int64Value>(state.range(0));
   Int64ValueColumnWrapper out(vec2.size());
@@ -176,6 +180,7 @@ static void BM_AddInt64ValueToArrow(benchmark::State &state) {  // NOLINT
   ScalarUDFDefinition def;
   CHECK(def.template Init<AddUDF>("add").ok());
   auto u = def.Make();
+  // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     out.Clear();
     out.Resize(vec2.size());
@@ -194,8 +199,8 @@ static void BM_AddInt64ValueToArrow(benchmark::State &state) {  // NOLINT
 }
 
 // Benchmark doing substring on arrow.
-// NOLINTNEXTLINE(runtime/references)
-static void BM_SubStrArrow(benchmark::State &state) {  // NOLINT
+// NOLINTNEXTLINE : runtime/references.
+static void BM_SubStrArrow(benchmark::State &state) {
   int width = 10;
   auto data = GenerateStringValueVector(state.range(0), width);
   auto in_arr = ToArrow(data, arrow::default_memory_pool());
@@ -205,7 +210,7 @@ static void BM_SubStrArrow(benchmark::State &state) {  // NOLINT
   ScalarUDFDefinition def;
   CHECK(def.template Init<SubStrUDF>("substr").ok());
   auto u = def.Make();
-
+  // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     if (out) {
       out.reset();

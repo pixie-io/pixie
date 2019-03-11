@@ -13,6 +13,7 @@ class ConstString {
 
  public:
   template <std::size_t N>
+  // NOLINTNEXTLINE: implicit constructor.
   constexpr ConstString(const char (&a)[N]) : p_(a) {}
   constexpr const char* get() const { return p_; }
 };

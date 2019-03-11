@@ -35,7 +35,7 @@ class AddUDF : public ScalarUDF {
   Int64Value Exec(FunctionContext*, Int64Value v1, Int64Value v2) { return v1.val + v2.val; }
 };
 
-// NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE : runtime/references.
 void BM_ScalarExpressionTwoCols(benchmark::State& state,
                                 const ScalarExpressionEvaluatorType& eval_type, const char* pbtxt) {
   pl::carnot::carnotpb::ScalarExpression se_pb;
@@ -61,7 +61,7 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
 
   PL_CHECK_OK(input_rb->AddColumn(ToArrow(in1, arrow::default_memory_pool())));
   PL_CHECK_OK(input_rb->AddColumn(ToArrow(in2, arrow::default_memory_pool())));
-
+  // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     RowDescriptor rd_output({DataType::INT64});
     RowBatch output_rb(rd_output, input_rb->num_rows());

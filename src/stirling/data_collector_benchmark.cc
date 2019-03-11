@@ -268,9 +268,10 @@ auto ArrowProcessData(const std::vector<std::tuple<int64_t, double, int64_t>>& c
 
 // Benchmark to measure performance for converting data to
 // a column of std::vector<T> for each column.
-// NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE : runtime/references.
 static void BM_raw_struct_vector(benchmark::State& state) {
   const auto& collected_data = CreateData(state.range(0));
+  // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     auto res = RawStructProcessDataVector(collected_data);
     benchmark::DoNotOptimize(res);
@@ -281,9 +282,10 @@ static void BM_raw_struct_vector(benchmark::State& state) {
 
 // Benchmark to measure performance for converting data to
 // a column of arrays using dynamic memory allocation and unique pointers.
-// NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE : runtime/references.
 static void BM_raw_struct_dynamic_array(benchmark::State& state) {
   const auto& collected_data = CreateData(state.range(0));
+  // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     auto res = RawStructProcessDataDynamicArray(collected_data);
     benchmark::DoNotOptimize(res);
@@ -295,9 +297,10 @@ static void BM_raw_struct_dynamic_array(benchmark::State& state) {
 // Benchmark to measure performance for converting data to
 // a proto message with repeated tuples of data
 // and then converting that message to columnar vectors.
-// NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE : runtime/references.
 static void BM_proto(benchmark::State& state) {
   const auto& collected_data = CreateData(state.range(0));
+  // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     auto res = CanonicalProtoProcessData(collected_data);
     benchmark::DoNotOptimize(res);
@@ -309,9 +312,10 @@ static void BM_proto(benchmark::State& state) {
 // Benchmark to measure performance for converting data to
 // a proto message with repeated individual components of the data
 // and then converting that message to columnar vectors.
-// NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE : runtime/references.
 static void BM_proto_repeated_column(benchmark::State& state) {
   const auto& collected_data = CreateData(state.range(0));
+  // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     auto res = CanonicalProtoProcessDataRepeatedColumn(collected_data);
     benchmark::DoNotOptimize(res);
@@ -324,13 +328,13 @@ static void BM_proto_repeated_column(benchmark::State& state) {
 // Arrow record batch, and then serializing into a message and
 // then deserializing.
 // Performance sucks, because of the initial conversion.
-// NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE : runtime/references.
 static void BM_arrow(benchmark::State& state) {
   size_t size = state.range(0);
 
   // Create the raw data: a vector of tuples.
   const auto& collected_data = CreateData(size);
-
+  // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     auto res = ArrowProcessData(collected_data);
     benchmark::DoNotOptimize(res);
@@ -341,13 +345,13 @@ static void BM_arrow(benchmark::State& state) {
 
 // Benchmark to measure performance of serializing and deserializing
 // Arrow record batch.
-// NOLINTNEXTLINE(runtime/references)
+// NOLINTNEXTLINE : runtime/references.
 static void BM_arrow_record_batch(benchmark::State& state) {
   size_t size = state.range(0);
 
   // Create the raw data: an arrow record batch of arrow arrays.
   const auto& record_batch = CreateArrowRecordBatch(size);
-
+  // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
   for (auto _ : state) {
     auto res = ArrowProcessRecordBatch(record_batch);
     benchmark::DoNotOptimize(res);

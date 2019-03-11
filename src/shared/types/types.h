@@ -41,7 +41,7 @@ struct FixedSizedValueType : BaseValueType {
 
   // Allow implicit construction to make it easier/more natural to return values
   // from functions.
-  // NOLINTNEXTLINE(runtime/explicit)
+  // NOLINTNEXTLINE: implicit constructor.
   FixedSizedValueType(T new_val) : val(new_val) {}
 
   template <class T2>
@@ -91,7 +91,7 @@ struct Time64NSValue : public Int64Value {
   using Int64Value::Int64Value;
   // Allow implicit construction to make it easier/more natural to return values
   // from functions and also in other code using int's for time.
-  // NOLINTNEXTLINE(runtime/explicit)
+  // NOLINTNEXTLINE: implicit constructor.
   Time64NSValue(int64_t lhs) : Int64Value(lhs) {}
 };
 
@@ -102,7 +102,7 @@ struct StringValue : BaseValueType, public std::string {
   using std::string::string;
   // Allow implicit construction to make it easier/more natural to return values
   // from functions.
-  // NOLINTNEXTLINE(runtime/explicit)
+  // NOLINTNEXTLINE: implicit constructor.
   StringValue(std::string&& str) : std::string(std::move(str)) {}
 };
 
