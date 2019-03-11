@@ -9,12 +9,14 @@ pl_cc_library(
         exclude = [
             "**/*_test.cc",
             "**/*_benchmark.cc",
-            "**/*_mock.h",
         ],
     ),
     hdrs = glob(
         ["*.h"],
-        exclude = ["**/*_mock.h"],
+        exclude = [
+            "**/*_mock.h",
+            "**/*test_utils.h",
+        ],
     ),
     deps = [
         "//src/carnot/plan:cc_library",
@@ -24,6 +26,12 @@ pl_cc_library(
         "//src/stirling:cc_library",
         "//third_party:arrow",
     ],
+)
+
+pl_cc_test_library(
+    name = "test_utils",
+    hdrs = glob(["*test_utils.h"]),
+    deps = ["//third_party:arrow"],
 )
 
 pl_cc_test(
@@ -40,6 +48,7 @@ pl_cc_test(
     srcs = ["table_test.cc"],
     deps = [
         ":cc_library",
+        ":test_utils",
         "//third_party:arrow",
     ],
 )

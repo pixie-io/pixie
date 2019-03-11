@@ -24,5 +24,8 @@ pl_cc_library(
 pl_cc_test(
     name = "carnot_test",
     srcs = ["carnot_test.cc"],
-    deps = [":cc_library"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/exec:test_utils",
+    ],
 )

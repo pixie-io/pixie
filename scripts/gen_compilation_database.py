@@ -41,6 +41,11 @@ def isCompileTarget(target, args):
         if filename.startswith("third_party/"):
             return False
 
+    # TODO(oazizi): Remove this after you fix includes. Disable
+    # compilation database for bpftrace files.
+    if filename.endswith(".bt"):
+        return False
+
     return True
 
 

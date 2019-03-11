@@ -1,10 +1,14 @@
 #pragma once
 
 #include <memory>
-#include "src/carnot/udf/registry.h"
 
 namespace pl {
 namespace carnot {
+namespace udf {
+// Forward declare registries.
+class ScalarUDFRegistry;
+class UDARegistry;
+}  // namespace udf
 namespace plan {
 
 class PlanState {

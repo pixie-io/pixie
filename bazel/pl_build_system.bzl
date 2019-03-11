@@ -171,6 +171,7 @@ def pl_cc_test_library(
         data = [],
         external_deps = [],
         deps = [],
+        visibility = None,
         repository = "",
         tags = []):
     native.cc_library(
@@ -184,6 +185,7 @@ def pl_cc_test_library(
             "@com_google_googletest//:gtest",
         ] + _default_external_deps(),
         tags = tags,
+        visibility = visibility,
         alwayslink = 1,
         linkstatic = 1,
     )

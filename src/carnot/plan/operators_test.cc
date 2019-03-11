@@ -4,6 +4,8 @@
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/proto/plan.pb.h"
 #include "src/carnot/proto/test_proto.h"
+#include "src/carnot/udf/registry.h"
+#include "src/carnot/udf/udf.h"
 
 namespace pl {
 namespace carnot {
