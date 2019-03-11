@@ -41,8 +41,8 @@ class Column {
    *
    * @ param data_type the type of the column.
    */
-  explicit Column(types::DataType data_type, const std::string& name)
-      : name_(name), data_type_(data_type) {}
+  explicit Column(types::DataType data_type, std::string name)
+      : name_(std::move(name)), data_type_(data_type) {}
 
   /**
    * @ return the data type for the column.
@@ -89,7 +89,7 @@ class Table : public NotCopyable {
    *
    * @ param desc the descriptor which describes the schema of the row batch
    */
-  explicit Table(RowDescriptor desc) : desc_(desc) { columns_.reserve(desc_.size()); }
+  explicit Table(RowDescriptor desc) : desc_(std::move(desc)) { columns_.reserve(desc_.size()); }
 
   /**
    * @brief Construct a new Table object along with its columns. Can be used to create

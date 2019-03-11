@@ -28,7 +28,7 @@ class ExecState {
                      std::shared_ptr<TableStore> table_store)
       : scalar_udf_registry_(scalar_udf_registry),
         uda_registry_(uda_registry),
-        table_store_(table_store) {}
+        table_store_(std::move(table_store)) {}
   arrow::MemoryPool* exec_mem_pool() {
     // TOOD(zasgar): Make this the correct pool.
     return arrow::default_memory_pool();

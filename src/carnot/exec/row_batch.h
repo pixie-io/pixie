@@ -5,6 +5,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "src/carnot/exec/row_descriptor.h"
@@ -25,7 +26,7 @@ class RowBatch {
    * @ param desc the descriptor which describes the schema of the row batch
    * @ param num_rows the number of rows that the row batch should contain.
    */
-  RowBatch(RowDescriptor desc, int64_t num_rows) : desc_(desc), num_rows_(num_rows) {
+  RowBatch(RowDescriptor desc, int64_t num_rows) : desc_(std::move(desc)), num_rows_(num_rows) {
     columns_.reserve(desc_.size());
   }
 

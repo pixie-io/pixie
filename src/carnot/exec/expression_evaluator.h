@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "src/carnot/exec/exec_state.h"
@@ -70,8 +71,8 @@ enum class ScalarExpressionEvaluatorType : uint8_t {
  */
 class ScalarExpressionEvaluator : public ExpressionEvaluator {
  public:
-  explicit ScalarExpressionEvaluator(const plan::ConstScalarExpressionVector& expressions)
-      : ExpressionEvaluator(), expressions_(expressions) {}
+  explicit ScalarExpressionEvaluator(plan::ConstScalarExpressionVector expressions)
+      : ExpressionEvaluator(), expressions_(std::move(expressions)) {}
 
   /**
    * Creates a new Scalar expression evaluator.

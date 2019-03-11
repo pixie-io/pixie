@@ -3,6 +3,7 @@
 #include <arrow/memory_pool.h>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "src/carnot/compiler/compiler.h"
@@ -21,7 +22,7 @@ struct CarnotQueryResult {
   CarnotQueryResult() = default;
   explicit CarnotQueryResult(std::vector<exec::Table*> output_tables, int64_t rows_processed,
                              int64_t bytes_processed, int64_t compile_time_ns, int64_t exec_time_ns)
-      : output_tables_(output_tables),
+      : output_tables_(std::move(output_tables)),
         rows_processed(rows_processed),
         bytes_processed(bytes_processed),
         compile_time_ns(compile_time_ns),

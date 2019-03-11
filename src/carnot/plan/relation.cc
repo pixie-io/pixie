@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <string>
+#include <utility>
 
 #include "absl/strings/str_join.h"
 
@@ -16,8 +17,8 @@ using std::string;
 
 Relation::Relation() = default;
 
-Relation::Relation(const ColTypeArray &col_types, const ColNameArray &col_names)
-    : col_types_(col_types), col_names_(col_names) {
+Relation::Relation(ColTypeArray col_types, ColNameArray col_names)
+    : col_types_(std::move(col_types)), col_names_(std::move(col_names)) {
   CHECK(col_types_.size() == col_names_.size()) << "Initialized with mismatched col names/sizes";
 }
 

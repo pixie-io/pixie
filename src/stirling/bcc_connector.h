@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "src/stirling/source_connector.h"
@@ -16,13 +17,12 @@ class BCCConnector : public SourceConnector {
   virtual ~BCCConnector() = default;
 
  protected:
-  explicit BCCConnector(const std::string& source_name, const DataElements& elements,
-                        const std::string& kernel_event, const std::string& fn_name,
-                        const std::string& bpf_program)
-      : SourceConnector(kSourceType, source_name, elements),
-        kernel_event_(kernel_event),
-        fn_name_(fn_name),
-        bpf_program_(bpf_program) {}
+  explicit BCCConnector(std::string source_name, const DataElements& elements,
+                        std::string kernel_event, std::string fn_name, std::string bpf_program)
+      : SourceConnector(kSourceType, std::move(source_name), elements),
+        kernel_event_(std::move(kernel_event)),
+        fn_name_(std::move(fn_name)),
+        bpf_program_(std::move(bpf_program)) {}
   Status InitImpl() override {
     // TODO(kgandhi): Launch the EBPF program.
     return Status::OK();

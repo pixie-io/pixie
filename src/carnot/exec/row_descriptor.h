@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_format.h"
@@ -15,7 +16,7 @@ namespace exec {
  */
 class RowDescriptor {
  public:
-  explicit RowDescriptor(const std::vector<types::DataType>& types) : types_(types) {}
+  explicit RowDescriptor(std::vector<types::DataType> types) : types_(std::move(types)) {}
 
   /**
    * Gets all the datatypes in the row descriptor.

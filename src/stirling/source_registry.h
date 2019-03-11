@@ -36,7 +36,7 @@ class SourceRegistry : public NotCopyable {
         : type(type),
           sampling_period(sampling_period),
           push_period(push_period),
-          create_source_fn(create_source_fn) {}
+          create_source_fn(std::move(create_source_fn)) {}
     SourceType type;
     std::chrono::milliseconds sampling_period;
     std::chrono::milliseconds push_period;

@@ -30,8 +30,8 @@ class EngineState : public NotCopyable {
               std::unique_ptr<compiler::RegistryInfo> registry_info)
       : uda_registry_(std::move(uda_registry)),
         scalar_udf_registry_(std::move(udf_registry)),
-        table_store_(table_store),
-        schema_(schema),
+        table_store_(std::move(table_store)),
+        schema_(std::move(schema)),
         registry_info_(std::move(registry_info)) {}
 
   static StatusOr<std::unique_ptr<EngineState>> CreateDefault() {

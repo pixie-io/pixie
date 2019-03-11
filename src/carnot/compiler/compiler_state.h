@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 #include "src/carnot/compiler/registry_info.h"
 #include "src/carnot/exec/row_descriptor.h"
@@ -23,7 +24,7 @@ class CompilerState : public NotCopyable {
    */
   explicit CompilerState(std::shared_ptr<RelationMap> relation_map,
                          compiler::RegistryInfo* registry_info)
-      : relation_map_(relation_map), registry_info_(registry_info) {}
+      : relation_map_(std::move(relation_map)), registry_info_(registry_info) {}
 
   CompilerState() = delete;
 

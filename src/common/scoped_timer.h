@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <utility>
 
 #include "absl/strings/str_format.h"
 #include "src/common/base.h"
@@ -21,7 +22,7 @@ class ScopedTimer : public NotCopyable {
    * Creates a scoped timer with the given name.
    * @param name
    */
-  explicit ScopedTimer(const std::string& name) : name_(name) { timer_.Start(); }
+  explicit ScopedTimer(std::string name) : name_(std::move(name)) { timer_.Start(); }
 
   /**
    * Writes to the log the elapsed time.

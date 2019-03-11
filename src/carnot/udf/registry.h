@@ -41,8 +41,8 @@ class RegistryKey {
    * @param name the name of the UDF/UDA.
    * @param registry_arg_types the types used for registry resolution (except FunctionContext).
    */
-  RegistryKey(const std::string& name, const std::vector<types::DataType> registry_arg_types)
-      : name_(name), registry_arg_types_(registry_arg_types) {}
+  RegistryKey(std::string name, std::vector<types::DataType> registry_arg_types)
+      : name_(std::move(name)), registry_arg_types_(std::move(registry_arg_types)) {}
 
   /**
    * Access name of the UDF/UDA.
@@ -90,7 +90,7 @@ class BaseUDFRegistry {
 template <typename TUDFDef>
 class Registry : public BaseUDFRegistry {
  public:
-  explicit Registry(const std::string& name) : name_(name) {}
+  explicit Registry(std::string name) : name_(std::move(name)) {}
   ~Registry() override = default;
 
   /**

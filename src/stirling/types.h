@@ -3,6 +3,7 @@
 #include <arrow/type.h>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "src/shared/types/column_wrapper.h"
@@ -26,8 +27,8 @@ class DataElement {
  public:
   DataElement() = delete;
   virtual ~DataElement() = default;
-  explicit DataElement(const std::string& name, const types::DataType& type)
-      : name_(name), type_(type) {}
+  explicit DataElement(std::string name, const types::DataType& type)
+      : name_(std::move(name)), type_(type) {}
 
   const std::string& name() const { return name_; }
   const types::DataType& type() const { return type_; }

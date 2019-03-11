@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include <pypa/ast/ast.hh>
@@ -40,10 +41,10 @@ using ArgMap = std::unordered_map<std::string, IRNode*>;
  */
 struct LambdaExprReturn {
   LambdaExprReturn() = default;
-  explicit LambdaExprReturn(const std::string& str) : str_(str) {}
+  explicit LambdaExprReturn(std::string str) : str_(std::move(str)) {}
   explicit LambdaExprReturn(IRNode* expr) : expr_(expr) {}
   LambdaExprReturn(IRNode* expr, std::unordered_set<std::string> column_names)
-      : input_relation_columns_(column_names), expr_(expr) {}
+      : input_relation_columns_(std::move(column_names)), expr_(expr) {}
   LambdaExprReturn(IRNode* expr, const LambdaExprReturn& left_expr_ret,
                    const LambdaExprReturn& right_expr_ret)
       : expr_(expr) {

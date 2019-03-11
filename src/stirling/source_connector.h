@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_format.h"
@@ -25,17 +26,17 @@ namespace stirling {
 class InfoClassElement;
 class InfoClassManager;
 
-#define DUMMY_SOURCE_CONNECTOR(NAME)                                          \
-  class NAME : public SourceConnector {                                       \
-   public:                                                                    \
-    static constexpr bool kAvailable = false;                                 \
-    static constexpr SourceType kSourceType = SourceType::kNotImplemented;    \
-    static constexpr char kName[] = "dummy";                                  \
-    inline static const DataElements kElements = {};                          \
-    static std::unique_ptr<SourceConnector> Create(const std::string& name) { \
-      PL_UNUSED(name);                                                        \
-      return nullptr;                                                         \
-    }                                                                         \
+#define DUMMY_SOURCE_CONNECTOR(NAME)                                       \
+  class NAME : public SourceConnector {                                    \
+   public:                                                                 \
+    static constexpr bool kAvailable = false;                              \
+    static constexpr SourceType kSourceType = SourceType::kNotImplemented; \
+    static constexpr char kName[] = "dummy";                               \
+    inline static const DataElements kElements = {};                       \
+    static std::unique_ptr<SourceConnector> Create(std::string name) {     \
+      PL_UNUSED(name);                                                     \
+      return nullptr;                                                      \
+    }                                                                      \
   }
 
 struct RawDataBuf {
@@ -89,9 +90,8 @@ class SourceConnector : public NotCopyable {
   const DataElements& elements() const { return elements_; }
 
  protected:
-  explicit SourceConnector(SourceType type, const std::string& source_name,
-                           const DataElements& elements)
-      : elements_(elements), type_(type), source_name_(source_name) {}
+  explicit SourceConnector(SourceType type, std::string source_name, DataElements elements)
+      : elements_(std::move(elements)), type_(type), source_name_(std::move(source_name)) {}
 
   virtual Status InitImpl() = 0;
   virtual RawDataBuf GetDataImpl() = 0;

@@ -6,6 +6,7 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "src/common/common.h"
@@ -84,7 +85,7 @@ class InfoClassManager {
    * This is required to identify an InfoClassManager parent source and also to generate
    * the publish proto.
    */
-  explicit InfoClassManager(const std::string& name) : name_(name) {
+  explicit InfoClassManager(std::string name) : name_(std::move(name)) {
     last_sampled_ = std::chrono::milliseconds::zero();
     last_pushed_ = std::chrono::milliseconds::zero();
     id_ = global_id_++;

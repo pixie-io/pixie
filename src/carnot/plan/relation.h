@@ -21,7 +21,7 @@ class Relation {
  public:
   Relation();
   // Constructor for Relation that initializes with a list of column types.
-  explicit Relation(const ColTypeArray &col_types, const ColNameArray &col_names);
+  explicit Relation(ColTypeArray col_types, ColNameArray col_names);
 
   // Get the column types.
   const ColTypeArray &col_types() const { return col_types_; }
