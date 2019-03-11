@@ -20,7 +20,7 @@ using DefaultTableSchema = stirling::SeqGenConnector;
  */
 class TableStore {
  public:
-  TableStore() {}
+  TableStore() = default;
   /*
    * Gets the table associated with the given name.
    *

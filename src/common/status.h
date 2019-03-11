@@ -13,7 +13,7 @@ namespace pl {
 class PL_MUST_USE_RESULT Status {
  public:
   // Success status.
-  Status() {}
+  Status() = default;
   Status(const Status& s) noexcept;
   Status(pl::error::Code code, const std::string& msg);
   // NOLINTNEXTLINE to make it easier to return status.

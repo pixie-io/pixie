@@ -14,7 +14,7 @@ namespace plan {
 
 using std::string;
 
-Relation::Relation() {}
+Relation::Relation() = default;
 
 Relation::Relation(const ColTypeArray &col_types, const ColNameArray &col_names)
     : col_types_(col_types), col_names_(col_names) {

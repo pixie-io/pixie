@@ -12,7 +12,7 @@ namespace carnot {
 namespace compiler {
 class IROptimizer {
  public:
-  IROptimizer() {}
+  IROptimizer() = default;
   Status Optimize(IR* ir);
 
  private:

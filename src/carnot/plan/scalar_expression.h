@@ -102,7 +102,7 @@ class ScalarExpression : public PlanNode {
   virtual std::string DebugString() const = 0;
 
  protected:
-  ScalarExpression() {}
+  ScalarExpression() = default;
   bool is_initialized_ = false;
 };
 

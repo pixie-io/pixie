@@ -18,7 +18,7 @@
 namespace pl {
 namespace carnot {
 struct CarnotQueryResult {
-  CarnotQueryResult() {}
+  CarnotQueryResult() = default;
   explicit CarnotQueryResult(std::vector<exec::Table*> output_tables, int64_t rows_processed,
                              int64_t bytes_processed, int64_t compile_time_ns, int64_t exec_time_ns)
       : output_tables_(output_tables),

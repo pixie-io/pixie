@@ -24,7 +24,7 @@ namespace stirling {
  */
 class SourceRegistry : public NotCopyable {
  public:
-  SourceRegistry() {}
+  SourceRegistry() = default;
   virtual ~SourceRegistry() = default;
 
   struct RegistryElement {

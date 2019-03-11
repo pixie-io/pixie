@@ -39,7 +39,7 @@ using ArgMap = std::unordered_map<std::string, IRNode*>;
  * @brief Struct that packages the column names and the expr within the function.
  */
 struct LambdaExprReturn {
-  LambdaExprReturn() {}
+  LambdaExprReturn() = default;
   explicit LambdaExprReturn(const std::string& str) : str_(str) {}
   explicit LambdaExprReturn(IRNode* expr) : expr_(expr) {}
   LambdaExprReturn(IRNode* expr, std::unordered_set<std::string> column_names)

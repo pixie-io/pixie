@@ -19,7 +19,7 @@ namespace stirling {
 template <typename T>
 class Sequence {
  public:
-  Sequence() {}
+  Sequence() = default;
 
   virtual ~Sequence() = default;
 

@@ -17,7 +17,7 @@ namespace exec {
 
 class CarnotTestUtils {
  public:
-  CarnotTestUtils() {}
+  CarnotTestUtils() = default;
   static std::shared_ptr<exec::Table> TestTable() {
     auto descriptor =
         std::vector<types::DataType>({types::DataType::FLOAT64, types::DataType::INT64});

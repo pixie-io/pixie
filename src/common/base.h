@@ -9,7 +9,7 @@ class NotCopyable {
  public:
   NotCopyable(NotCopyable const &) = delete;
   NotCopyable &operator=(NotCopyable const &) = delete;
-  NotCopyable() {}
+  NotCopyable() = default;
 };
 
 }  // namespace pl
