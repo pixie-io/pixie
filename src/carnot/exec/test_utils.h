@@ -6,6 +6,7 @@
 
 #include "src/carnot/exec/row_descriptor.h"
 #include "src/carnot/exec/table.h"
+#include "src/common/common.h"
 
 namespace pl {
 namespace carnot {
@@ -59,6 +60,7 @@ class CarnotTestUtils {
     auto col3 = std::make_shared<exec::Column>(types::DataType::INT64, "col3");
     auto col4 = std::make_shared<exec::Column>(types::DataType::INT64, "num_groups");
     auto col5 = std::make_shared<exec::Column>(types::DataType::STRING, "string_groups");
+
     for (const auto& pair : split_idx) {
       std::vector<types::Int64Value> col1_batch(big_test_col1.begin() + pair.first,
                                                 big_test_col1.begin() + pair.second);
