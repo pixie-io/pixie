@@ -1,5 +1,7 @@
 #pragma once
 
+#include <utility>
+
 /**
  * A Constant Compile-Time String
  *
