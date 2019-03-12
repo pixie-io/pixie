@@ -177,10 +177,10 @@ Status ColumnWrapperDataTable::AppendData(uint8_t* const data, uint64_t num_rows
         } break;
         case DataType::STRING: {
           auto* val_ptr = reinterpret_cast<uint64_t*>(element_ptr);
-          auto str_ptr = reinterpret_cast<std::string*>(*val_ptr);
+          char* str_ptr = reinterpret_cast<char*>(*val_ptr);
           auto column = std::static_pointer_cast<types::StringValueColumnWrapper>(
               (*record_batch_)[field_idx]);
-          column->Append(str_ptr->data());
+          column->Append(str_ptr);
         } break;
         default:
           return error::Unimplemented("Unrecognized type: $0", ToString(type));
@@ -222,9 +222,10 @@ Status ArrowDataTable::AppendData(uint8_t* const data, uint64_t num_rows) {
         } break;
         case DataType::STRING: {
           auto* val_ptr = reinterpret_cast<uint64_t*>(element_ptr);
-          auto str_ptr = reinterpret_cast<std::string*>(*val_ptr);
+          char* str_ptr = reinterpret_cast<char*>(*val_ptr);
+          std::string str(str_ptr);
           auto* array = static_cast<arrow::StringBuilder*>((*arrow_arrays_)[field_idx].get());
-          PL_RETURN_IF_ERROR(array->Append(*str_ptr));
+          PL_RETURN_IF_ERROR(array->Append(str));
         } break;
         default:
           return error::Unimplemented("Unrecognized type: $0", ToString(type));

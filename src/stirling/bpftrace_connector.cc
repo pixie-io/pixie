@@ -148,7 +148,7 @@ RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
   auto pid_time_pairs = GetBPFMap("@total_time");
   auto num_pids = pid_time_pairs.size();
 
-  auto pid_name_pairs = GetBPFMap("@names");
+  pid_name_pairs_ = GetBPFMap("@names");
 
   // This is a special map with only one entry at location 0.
   auto sampling_time = GetBPFMap("@time");
@@ -157,10 +157,9 @@ RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
 
   // TODO(oazizi): Optimize this. Likely need a way of removing old PIDs in the bt file.
   data_buf_.resize(std::max<uint64_t>(num_pids * (elements_.size()), data_buf_.size()));
-  string_mem_.clear();
 
-  auto last_result_it = last_result_.begin();
-  auto pid_name_it = pid_name_pairs.begin();
+  auto last_result_it = last_result_times_.begin();
+  auto pid_name_it = pid_name_pairs_.begin();
 
   RawDataBuf raw_data_buf(num_pids, reinterpret_cast<uint8_t*>(data_buf_.data()));
 
@@ -176,8 +175,8 @@ RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
 
     // Get the name from the auxiliary BPFTraceMap for names.
     char* name = nullptr;
-    pid_name_it = BPFTraceMapSearch(pid_name_pairs, pid_name_it, pid);
-    if (pid_name_it != pid_name_pairs.end()) {
+    pid_name_it = BPFTraceMapSearch(pid_name_pairs_, pid_name_it, pid);
+    if (pid_name_it != pid_name_pairs_.end()) {
       uint32_t found_pid = *(reinterpret_cast<uint32_t*>(pid_name_it->first.data()));
       if (found_pid == pid) {
         name = reinterpret_cast<char*>(pid_name_it->second.data());
@@ -190,28 +189,22 @@ RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
 
     // Get the last cpu time from the BPFTraceMap from previous call to this function.
     uint64_t last_cputime = 0;
-    last_result_it = BPFTraceMapSearch(last_result_, last_result_it, pid);
-    if (last_result_it != last_result_.end()) {
+    last_result_it = BPFTraceMapSearch(last_result_times_, last_result_it, pid);
+    if (last_result_it != last_result_times_.end()) {
       uint32_t found_pid = *(reinterpret_cast<uint32_t*>(last_result_it->first.data()));
       if (found_pid == pid) {
         last_cputime = *(reinterpret_cast<uint64_t*>(last_result_it->second.data()));
       }
     }
 
-    // Copy the string into the string_mem.
-    // This is required because the BPFTraceMap will be destroyed once it falls out of scope.
-    // TODO(oazizi): Optimize this copy away, by keeping the memory.
-    auto name_str = std::make_unique<std::string>(name);
-    std::string* name_str_ptr = name_str.get();
-    string_mem_.push_back(std::move(name_str));
-
     data_buf_[idx++] = timestamp + ClockRealTimeOffset();
     data_buf_[idx++] = pid;
     data_buf_[idx++] = cputime - last_cputime;
-    data_buf_[idx++] = reinterpret_cast<uint64_t>(name_str_ptr);
+    data_buf_[idx++] = reinterpret_cast<uint64_t>(name);
   }
 
-  last_result_ = pid_time_pairs;
+  // Keep this, because we will want to compute deltas next time.
+  last_result_times_ = std::move(pid_time_pairs);
 
   return RawDataBuf(num_pids, reinterpret_cast<uint8_t*>(data_buf_.data()));
 }

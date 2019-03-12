@@ -130,9 +130,11 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
       ;  // NOLINT
 
   std::vector<uint64_t> data_buf_;
-  std::vector<std::unique_ptr<std::string> > string_mem_;
 
-  bpftrace::BPFTraceMap last_result_;
+  bpftrace::BPFTraceMap last_result_times_;
+
+  // This is a member variable to avoid copying the strings.
+  bpftrace::BPFTraceMap pid_name_pairs_;
 
   bpftrace::BPFTraceMap::iterator BPFTraceMapSearch(const bpftrace::BPFTraceMap& vector,
                                                     bpftrace::BPFTraceMap::iterator it,
