@@ -7,7 +7,6 @@ load("@io_bazel_rules_docker//cc:image.bzl", _cc_image_repos = "repositories")
 load(
     "@io_bazel_rules_docker//container:container.bzl",
     "container_pull",
-    container_repositories = "repositories",
 )
 
 def _go_setup():

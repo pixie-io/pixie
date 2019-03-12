@@ -17,10 +17,15 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "benchmark-eafa34a5e80c352b078307be312d3fafd0a5d13e",
         urls = ["https://github.com/google/benchmark/archive/eafa34a5e80c352b078307be312d3fafd0a5d13e.tar.gz"],
     ),
+    io_bazel_rules_skylib = dict(
+        sha256 = "2c62d8cd4ab1e65c08647eb4afe38f51591f43f7f0885e7769832fa137633dcb",
+        strip_prefix = "bazel-skylib-0.7.0",
+        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.7.0.tar.gz"],
+    ),
     io_bazel_rules_docker = dict(
-        sha256 = "29d109605e0d6f9c892584f07275b8c9260803bf0c6fcb7de2623b2bedc910bd",
-        strip_prefix = "rules_docker-0.5.1",
-        urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.5.1.tar.gz"],
+        sha256 = "aed1c249d4ec8f703edddf35cbe9dfaca0b5f5ea6e4cd9e83e99f3b0d1136c3d",
+        strip_prefix = "rules_docker-0.7.0",
+        urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.7.0.tar.gz"],
     ),
     com_google_googletest = dict(
         sha256 = "9bf1fe5182a604b4135edc1a425ae356c9ad15e9b23f9f12a02e80184c3a249c",

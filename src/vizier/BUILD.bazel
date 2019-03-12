@@ -1,6 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//bazel:pl_build_system.bzl", "pl_cc_binary")
+load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
 
 pl_cc_binary(
     name = "vizier",
@@ -11,4 +12,9 @@ pl_cc_binary(
     deps = [
         "//src/common",
     ],
+)
+
+cc_image(
+    name = "vizier_image",
+    binary = ":vizier",
 )

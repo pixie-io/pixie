@@ -120,6 +120,7 @@ def pl_deps():
 
     _repository_impl(name = "bazel_gazelle")
     _repository_impl(name = "com_github_bazelbuild_buildtools")
+    _repository_impl(name = "bazel_skylib", repository_key = "io_bazel_rules_skylib")
     _repository_impl(name = "io_bazel_rules_docker")
     _repository_impl(name = "io_bazel_rules_go")
     _repository_impl(name = "com_github_grpc_grpc")
