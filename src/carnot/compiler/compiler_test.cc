@@ -18,22 +18,6 @@ namespace compiler {
 
 using testing::_;
 
-class CompilerTest : public ::testing::Test {
- public:
-  const google::protobuf::FieldDescriptor* GetFieldDescriptor(
-      const google::protobuf::Message& message, const std::string& field_name) {
-    std::vector<std::string> field_path = absl::StrSplit(field_name, ".");
-    const google::protobuf::Descriptor* descriptor = message.GetDescriptor();
-    const google::protobuf::FieldDescriptor* field = NULL;
-    for (size_t i = 0; i < field_path.size(); i++) {
-      field = descriptor->FindFieldByName(field_path[i]);
-      if (field) {
-        descriptor = field->message_type();
-      }
-    }
-    return field;
-  }
-};
 const char* kExpectedUDFInfo = R"(
 scalar_udfs {
   name: "pl.divide"
@@ -100,6 +84,35 @@ udas {
   finalize_type:  INT64
 }
 )";
+
+class CompilerTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    info_ = std::make_shared<RegistryInfo>();
+    carnotpb::UDFInfo info_pb;
+    google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
+    EXPECT_OK(info_->Init(info_pb));
+
+    auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
+    rel_map->emplace("sequences",
+                     plan::Relation(std::vector<types::DataType>({
+                                        types::DataType::TIME64NS,
+                                        types::DataType::FLOAT64,
+                                        types::DataType::FLOAT64,
+                                    }),
+                                    std::vector<std::string>({"_time", "xmod10", "PIx"})));
+
+    rel_map->emplace("cpu",
+                     plan::Relation(std::vector<types::DataType>(
+                                        {types::DataType::INT64, types::DataType::FLOAT64,
+                                         types::DataType::FLOAT64, types::DataType::FLOAT64}),
+                                    std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
+    compiler_state_ = std::make_unique<CompilerState>(rel_map, info_.get());
+  }
+  std::unique_ptr<CompilerState> compiler_state_;
+  std::shared_ptr<RegistryInfo> info_;
+};
+
 const char* kExpectedLogicalPlan = R"(
 dag {
   nodes {
@@ -129,8 +142,8 @@ nodes {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
         name: "cpu"
-        column_idxs: 0
         column_idxs: 1
+        column_idxs: 2
         column_names: "cpu0"
         column_names: "cpu1"
         column_types: FLOAT64
@@ -228,19 +241,7 @@ nodes {
 }
 )";
 
-TEST_F(CompilerTest, basic) {
-  auto info = std::make_shared<RegistryInfo>();
-  carnotpb::UDFInfo info_pb;
-  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
-  EXPECT_OK(info->Init(info_pb));
-
-  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
-  rel_map->emplace("cpu", plan::Relation(std::vector<types::DataType>(
-                                             {types::DataType::FLOAT64, types::DataType::FLOAT64}),
-                                         std::vector<std::string>({"cpu0", "cpu1"})));
-
-  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
-
+TEST_F(CompilerTest, test_general_compilation) {
   auto compiler = Compiler();
   auto query = absl::StrJoin(
       {
@@ -252,7 +253,7 @@ TEST_F(CompilerTest, basic) {
           ").Result(name='cpu2')",
       },
       "\n");
-  auto plan_status = compiler.Compile(query, compiler_state.get());
+  auto plan_status = compiler.Compile(query, compiler_state_.get());
   VLOG(1) << plan_status.ToString();
   ASSERT_TRUE(plan_status.ok());
 
@@ -260,12 +261,11 @@ TEST_F(CompilerTest, basic) {
   VLOG(1) << logical_plan.DebugString();
 
   carnotpb::Plan expected_logical_plan;
-  google::protobuf::util::MessageDifferencer differ;
-  differ.IgnoreField(GetFieldDescriptor(logical_plan, "dag"));
 
   ASSERT_TRUE(
       google::protobuf::TextFormat::MergeFromString(kExpectedLogicalPlan, &expected_logical_plan));
-  EXPECT_TRUE(differ.Compare(expected_logical_plan, logical_plan));
+  EXPECT_TRUE(
+      google::protobuf::util::MessageDifferencer::Equals(expected_logical_plan, logical_plan));
 }
 
 // Test for select order that is different than the schema.
@@ -290,9 +290,9 @@ nodes {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
         name: "cpu"
-        column_idxs: 2
+        column_idxs: 3
         column_idxs: 0
-        column_idxs: 1
+        column_idxs: 2
         column_names: "cpu2"
         column_names: "count"
         column_names: "cpu1"
@@ -320,25 +320,13 @@ nodes {
 )";
 
 TEST_F(CompilerTest, select_order_test) {
-  auto info = std::make_shared<RegistryInfo>();
-  carnotpb::UDFInfo info_pb;
-  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
-  EXPECT_OK(info->Init(info_pb));
-
-  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
-  rel_map->emplace("cpu", plan::Relation(std::vector<types::DataType>({types::DataType::INT64,
-                                                                       types::DataType::FLOAT64,
-                                                                       types::DataType::FLOAT64}),
-                                         std::vector<std::string>({"count", "cpu1", "cpu2"})));
-
-  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu2', 'count', 'cpu1']).Result(name='cpu_out')",
       },
       "\n");
   auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state.get());
+  auto plan = compiler.Compile(query, compiler_state_.get());
   EXPECT_OK(plan);
   carnotpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kSelectOrderLogicalPlan, &plan_pb));
@@ -364,8 +352,8 @@ nodes {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
         name: "cpu"
+        column_idxs: 2
         column_idxs: 1
-        column_idxs: 0
         column_names: "cpu1"
         column_names: "cpu0"
         column_types: FLOAT64
@@ -403,11 +391,8 @@ nodes {
   }
 }
 )";
+
 TEST_F(CompilerTest, group_by_all) {
-  auto info = std::make_shared<RegistryInfo>();
-  carnotpb::UDFInfo info_pb;
-  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
-  EXPECT_OK(info->Init(info_pb));
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu1', 'cpu0'])",
@@ -415,13 +400,8 @@ TEST_F(CompilerTest, group_by_all) {
           "pl.mean(r.cpu0)}).Result(name='cpu_out')",
       },
       "\n");
-  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
-  rel_map->emplace("cpu", plan::Relation(std::vector<types::DataType>(
-                                             {types::DataType::FLOAT64, types::DataType::FLOAT64}),
-                                         std::vector<std::string>({"cpu0", "cpu1"})));
-  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
   auto compiler = Compiler();
-  auto plan_status = compiler.Compile(query, compiler_state.get());
+  auto plan_status = compiler.Compile(query, compiler_state_.get());
   VLOG(1) << plan_status.ToString();
   // EXPECT_OK(plan_status);
   ASSERT_TRUE(plan_status.ok());
@@ -465,9 +445,9 @@ nodes {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
         name: "cpu"
-        column_idxs: 2
+        column_idxs: 3
         column_idxs: 0
-        column_idxs: 1
+        column_idxs: 2
         column_names: "cpu2"
         column_names: "count"
         column_names: "cpu1"
@@ -558,18 +538,6 @@ nodes {
 }
 )";
 TEST_F(CompilerTest, range_agg_test) {
-  auto info = std::make_shared<RegistryInfo>();
-  carnotpb::UDFInfo info_pb;
-  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
-  EXPECT_OK(info->Init(info_pb));
-
-  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
-  rel_map->emplace("cpu", plan::Relation(std::vector<types::DataType>({types::DataType::INT64,
-                                                                       types::DataType::FLOAT64,
-                                                                       types::DataType::FLOAT64}),
-                                         std::vector<std::string>({"count", "cpu1", "cpu2"})));
-
-  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu2', 'count', 'cpu1']).RangeAgg(by=lambda r: "
@@ -577,7 +545,7 @@ TEST_F(CompilerTest, range_agg_test) {
       },
       "\n");
   auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state.get());
+  auto plan = compiler.Compile(query, compiler_state_.get());
   EXPECT_OK(plan);
   carnotpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kRangeAggPlan, &plan_pb));
@@ -587,42 +555,18 @@ TEST_F(CompilerTest, range_agg_test) {
 }
 
 TEST_F(CompilerTest, multiple_group_by_agg_test) {
-  auto info = std::make_shared<RegistryInfo>();
-  carnotpb::UDFInfo info_pb;
-  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
-  EXPECT_OK(info->Init(info_pb));
-
-  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
-  rel_map->emplace(
-      "cpu", plan::Relation(
-                 std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
-                                               types::DataType::FLOAT64, types::DataType::FLOAT64}),
-                 std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
-  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
   std::string query = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
        "aggDF = queryDF.Agg(by=lambda r : [r.cpu0, r.cpu2], fn=lambda r : {'cpu_count' : "
        "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).Result(name='cpu_out')"},
       "\n");
   auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state.get());
+  auto plan = compiler.Compile(query, compiler_state_.get());
   VLOG(1) << plan.ToString();
   EXPECT_OK(plan);
 }
 
 TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
-  auto info = std::make_shared<RegistryInfo>();
-  carnotpb::UDFInfo info_pb;
-  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
-  EXPECT_OK(info->Init(info_pb));
-
-  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
-  rel_map->emplace(
-      "cpu", plan::Relation(
-                 std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
-                                               types::DataType::FLOAT64, types::DataType::FLOAT64}),
-                 std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
-  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
   std::string query = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
        "mapDF =  queryDF.Map(fn = lambda r : {'cpu0' : r.cpu0, 'cpu1' : r.cpu1, 'cpu2' : r.cpu2, "
@@ -631,25 +575,11 @@ TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
        "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).Result(name='cpu_out')"},
       "\n");
   auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state.get());
+  auto plan = compiler.Compile(query, compiler_state_.get());
   VLOG(1) << plan.ToString();
   EXPECT_OK(plan);
 }
 TEST_F(CompilerTest, rename_then_group_by_test) {
-  auto info = std::make_shared<RegistryInfo>();
-  carnotpb::UDFInfo info_pb;
-  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
-  EXPECT_OK(info->Init(info_pb));
-
-  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
-  rel_map->emplace("sequences",
-                   plan::Relation(std::vector<types::DataType>({
-                                      types::DataType::TIME64NS,
-                                      types::DataType::FLOAT64,
-                                      types::DataType::FLOAT64,
-                                  }),
-                                  std::vector<std::string>({"_time", "xmod10", "PIx"})));
-  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
   auto query = absl::StrJoin(
       {"queryDF = From(table='sequences', select=['_time', 'xmod10', 'PIx'])",
        "map_out = queryDF.Map(fn=lambda r : {'res': r.PIx, 'c1': r.xmod10})",
@@ -657,28 +587,13 @@ TEST_F(CompilerTest, rename_then_group_by_test) {
        "agg_out.Result(name='t15')"},
       "\n");
   auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state.get());
+  auto plan = compiler.Compile(query, compiler_state_.get());
   VLOG(1) << plan.ToString();
   EXPECT_OK(plan);
 }
 
 // Test to see whether comparisons work.
 TEST_F(CompilerTest, comparison_test) {
-  auto info = std::make_shared<RegistryInfo>();
-  carnotpb::UDFInfo info_pb;
-  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
-  EXPECT_OK(info->Init(info_pb));
-
-  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
-  rel_map->emplace("sequences",
-                   plan::Relation(std::vector<types::DataType>({
-                                      types::DataType::TIME64NS,
-                                      types::DataType::FLOAT64,
-                                      types::DataType::FLOAT64,
-                                  }),
-                                  std::vector<std::string>({"_time", "xmod10", "PIx"})));
-
-  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
   auto query =
       absl::StrJoin({"queryDF = From(table='sequences', select=['_time', 'xmod10', 'PIx'])",
                      "map_out = queryDF.Map(fn=lambda r : {'res': r.PIx, "
@@ -687,7 +602,7 @@ TEST_F(CompilerTest, comparison_test) {
                      "map_out.Result(name='t15')"},
                     "\n");
   auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state.get());
+  auto plan = compiler.Compile(query, compiler_state_.get());
   VLOG(1) << plan.ToString();
   EXPECT_OK(plan);
 }
