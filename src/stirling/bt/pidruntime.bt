@@ -1,5 +1,3 @@
-R"(
-
 #include <linux/sched.h>
 
 tracepoint:sched:sched_switch
@@ -19,5 +17,3 @@ tracepoint:sched:sched_switch
   // Also record the current time as a timestamp.
   @time[0] = nsecs;
 }
-
-)"

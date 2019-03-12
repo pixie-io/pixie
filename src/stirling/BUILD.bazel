@@ -1,5 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
+load("//bazel:cc_resource.bzl", "pl_cc_resource")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
@@ -21,6 +22,7 @@ pl_cc_library(
         "//src/shared/types/proto:types_pl_cc_proto",
         "//src/stirling/proto:collector_config_pl_cc_proto",
         "//third_party:arrow",
+        ":bt_files",
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": ["//third_party:bpftrace"],
         "//conditions:default": [],
@@ -34,6 +36,14 @@ pl_cc_binary(
         "//src/stirling/proto:canonical_pl_cc_proto",
         "//third_party:arrow",
         "@com_google_benchmark//:benchmark_main",
+    ],
+)
+
+pl_cc_resource(
+    name = "bt_files",
+    srcs = [
+        "bt/cpustat.bt",
+        "bt/pidruntime.bt",
     ],
 )
 

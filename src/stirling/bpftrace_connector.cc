@@ -32,7 +32,8 @@ void BPFTraceConnector::InitClockRealTimeOffset() {
 uint64_t BPFTraceConnector::ClockRealTimeOffset() { return real_time_offset_; }
 
 BPFTraceConnector::BPFTraceConnector(const std::string& source_name, const DataElements& elements,
-                                     const char* script, const std::vector<std::string> params)
+                                     const std::string& script,
+                                     const std::vector<std::string> params)
     : SourceConnector(SourceType::kEBPF, source_name, elements), script_(script), params_(params) {
   // TODO(oazizi): if machine is ever suspended, this would have to be called again.
   InitClockRealTimeOffset();
@@ -143,6 +144,9 @@ bpftrace::BPFTraceMap::iterator PIDCPUUseBPFTraceConnector::BPFTraceMapSearch(
                    });
   return next_it;
 }
+
+PIDCPUUseBPFTraceConnector::PIDCPUUseBPFTraceConnector(const std::string& name)
+    : BPFTraceConnector(name, kElements, kBTScript, std::vector<std::string>({})) {}
 
 RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
   auto pid_time_pairs = GetBPFMap("@total_time");

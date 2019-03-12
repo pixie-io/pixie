@@ -1,5 +1,3 @@
-R"(
-
 // TODO
 // 1) idle and iowait are actually functions in proc/stat.c
 //    get_idle_time(), get_iowait_time()
@@ -65,4 +63,3 @@ interval:ms:100
     @retval[6] = $cputime_idle;
     @retval[7] = $cputime_iowait;
 }
-)"

@@ -20,6 +20,14 @@ DUMMY_SOURCE_CONNECTOR(PIDCPUUseBPFTraceConnector);
 #include "third_party/bpftrace/src/bpforc.h"
 #include "third_party/bpftrace/src/bpftrace.h"
 
+extern char _binary_src_stirling_bt_cpustat_bt_start;
+extern char _binary_src_stirling_bt_cpustat_bt_end;
+extern char _binary_src_stirling_bt_cpustat_bt_size;
+
+extern char _binary_src_stirling_bt_pidruntime_bt_start;
+extern char _binary_src_stirling_bt_pidruntime_bt_end;
+extern char _binary_src_stirling_bt_pidruntime_bt_size;
+
 namespace pl {
 namespace stirling {
 
@@ -34,7 +42,7 @@ class BPFTraceConnector : public SourceConnector {
 
  protected:
   explicit BPFTraceConnector(const std::string& source_name, const DataElements& elements,
-                             const char* script, const std::vector<std::string> params);
+                             const std::string& script, const std::vector<std::string> params);
 
   Status InitImpl() override;
 
@@ -51,7 +59,7 @@ class BPFTraceConnector : public SourceConnector {
 
  private:
   // This is the script that will run with this Bpftrace Connector.
-  const char* script_;
+  const std::string& script_;
   std::vector<std::string> params_;
 
   bpftrace::BPFtrace bpftrace_;
@@ -91,9 +99,9 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
   explicit CPUStatBPFTraceConnector(const std::string& name, uint64_t cpu_id);
 
  private:
-  static constexpr char kCPUStatBTScript[] =
-#include "bt/cpustat.bt"
-      ;  // NOLINT
+  inline static const std::string kCPUStatBTScript = std::string(
+      &_binary_src_stirling_bt_cpustat_bt_start,
+      &_binary_src_stirling_bt_cpustat_bt_end - &_binary_src_stirling_bt_cpustat_bt_start);
 
   // TODO(oazizi): Make this controllable through Create.
   static constexpr uint64_t cpu_id_ = 0;
@@ -121,13 +129,12 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
   RawDataBuf GetDataImpl() override;
 
  protected:
-  explicit PIDCPUUseBPFTraceConnector(const std::string& name)
-      : BPFTraceConnector(name, kElements, kBTScript, std::vector<std::string>({})) {}
+  explicit PIDCPUUseBPFTraceConnector(const std::string& name);
 
  private:
-  static constexpr char kBTScript[] =
-#include "bt/pidruntime.bt"
-      ;  // NOLINT
+  const std::string kBTScript = std::string(
+      &_binary_src_stirling_bt_pidruntime_bt_start,
+      &_binary_src_stirling_bt_pidruntime_bt_end - &_binary_src_stirling_bt_pidruntime_bt_start);
 
   std::vector<uint64_t> data_buf_;
 
