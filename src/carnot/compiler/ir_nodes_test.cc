@@ -52,7 +52,7 @@ TEST(IRWalker, basic_tests) {
   auto src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
   auto select_list = graph->MakeNode<ListIR>().ValueOrDie();
   auto map = graph->MakeNode<MapIR>().ValueOrDie();
-  auto agg = graph->MakeNode<AggIR>().ValueOrDie();
+  auto agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
   auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
 
   // Add dependencies.
@@ -75,7 +75,7 @@ TEST(IRWalker, basic_tests) {
                  call_order.push_back(map.id());
                  return Status::OK();
                })
-               .OnAgg([&](auto& agg) {
+               .OnBlockingAggregate([&](auto& agg) {
                  call_order.push_back(agg.id());
                  return Status::OK();
                })
@@ -241,7 +241,7 @@ const char* kExpectedAggPb = R"(
 TEST(ToProto, agg_ir) {
   auto graph = std::make_shared<IR>();
   auto mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  auto agg = graph->MakeNode<AggIR>().ValueOrDie();
+  auto agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
   auto constant = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(constant->Init(10));
   auto col = graph->MakeNode<ColumnIR>().ValueOrDie();

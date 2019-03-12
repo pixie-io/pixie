@@ -246,17 +246,17 @@ Status MapIR::ToProto(carnotpb::Operator* op) const {
   return Status::OK();
 }
 
-Status AggIR::Init(IRNode* parent_node, IRNode* by_func, IRNode* agg_func) {
+Status BlockingAggIR::Init(IRNode* parent_node, IRNode* by_func, IRNode* agg_func) {
   // TODO(philkuz) remove this upon unhacking.
   if (by_func->type() != IRNodeType::LambdaType && by_func->type() != IRNodeType::BoolType) {
     return IRUtils::CreateIRNodeError(
-        absl::StrFormat("Expected 'by' argument of AggIR to be 'Lambda', got '%s'",
+        absl::StrFormat("Expected 'by' argument of BlockingAggIR to be 'Lambda', got '%s'",
                         by_func->type_string()),
         *by_func);
   }
   if (agg_func->type() != IRNodeType::LambdaType) {
     return IRUtils::CreateIRNodeError(
-        absl::StrFormat("Expected 'agg' argument of AggIR to be 'Lambda', got '%s'",
+        absl::StrFormat("Expected 'agg' argument of BlockingAggIR to be 'Lambda', got '%s'",
                         agg_func->type_string()),
         *agg_func);
   }
@@ -276,17 +276,17 @@ Status AggIR::Init(IRNode* parent_node, IRNode* by_func, IRNode* agg_func) {
   return Status();
 }
 
-bool AggIR::HasLogicalRepr() const { return true; }
+bool BlockingAggIR::HasLogicalRepr() const { return true; }
 
-std::string AggIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(depth, absl::StrFormat("%d:AggIR", id()),
+std::string BlockingAggIR::DebugString(int64_t depth) const {
+  return DebugStringFmt(depth, absl::StrFormat("%d:BlockingAggIR", id()),
                         {{"Parent", parent()->DebugString(depth + 1)},
                          {"ByFn", by_func_->DebugString(depth + 1)},
                          {"AggFn", agg_func_->DebugString(depth + 1)}});
 }
 
-Status AggIR::EvaluateAggregateExpression(carnotpb::AggregateExpression* expr,
-                                          const IRNode& ir_node) const {
+Status BlockingAggIR::EvaluateAggregateExpression(carnotpb::AggregateExpression* expr,
+                                                  const IRNode& ir_node) const {
   DCHECK(ir_node.type() == IRNodeType::FuncType);
   auto casted_ir = static_cast<const FuncIR&>(ir_node);
   expr->set_name(casted_ir.func_name());
@@ -343,7 +343,7 @@ Status AggIR::EvaluateAggregateExpression(carnotpb::AggregateExpression* expr,
   return Status::OK();
 }
 
-Status AggIR::ToProto(carnotpb::Operator* op) const {
+Status BlockingAggIR::ToProto(carnotpb::Operator* op) const {
   auto pb = new carnotpb::BlockingAggregateOperator();
 
   for (const auto& agg_expr : agg_val_vector_) {

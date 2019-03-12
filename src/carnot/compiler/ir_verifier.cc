@@ -88,15 +88,16 @@ Status IRVerifier::VerifySink(IRNode* node) {
   return Status::OK();
 }
 
-Status IRVerifier::VerifyAgg(IRNode* node) {
-  auto agg_node = static_cast<AggIR*>(node);
+Status IRVerifier::VerifyBlockingAgg(IRNode* node) {
+  auto agg_node = static_cast<BlockingAggIR*>(node);
+  PL_RETURN_IF_ERROR(ExpectType(LambdaType, agg_node->agg_func(),
+                                ExpString("BlockingAggIR", node->id(), "agg_func")));
   PL_RETURN_IF_ERROR(
-      ExpectType(LambdaType, agg_node->agg_func(), ExpString("AggIR", node->id(), "agg_func")));
-  PL_RETURN_IF_ERROR(ExpectOp(agg_node->parent(), ExpString("AggIR", node->id(), "parent")));
+      ExpectOp(agg_node->parent(), ExpString("BlockingAggIR", node->id(), "parent")));
   // TODO(philkuz) (PL-402) unhack this
   if (agg_node->by_func()->type() != IRNodeType::BoolType) {
-    PL_RETURN_IF_ERROR(
-        ExpectType(LambdaType, agg_node->by_func(), ExpString("AggIR", node->id(), "by_func")));
+    PL_RETURN_IF_ERROR(ExpectType(LambdaType, agg_node->by_func(),
+                                  ExpString("BlockingAggIR", node->id(), "by_func")));
     // Check whether the `by` function is just a column
     auto by_func = static_cast<LambdaIR*>(agg_node->by_func());
     if (by_func->HasDictBody()) {
@@ -106,9 +107,9 @@ Status IRVerifier::VerifyAgg(IRNode* node) {
 
     auto actual_type = by_body->type();
     if (ColumnType != actual_type && actual_type != ListType) {
-      auto msg =
-          absl::Substitute("AggIR: For node with id $1, Expected ColumnType or ListType Got $0.",
-                           by_body->type_string(), by_body->id());
+      auto msg = absl::Substitute(
+          "BlockingAggIR: For node with id $1, Expected ColumnType or ListType Got $0.",
+          by_body->type_string(), by_body->id());
       return FormatErrorMsg(msg, node);
     }
   } else {
@@ -136,8 +137,8 @@ Status IRVerifier::VerifyNodeConnections(IRNode* node) {
     case IRNodeType::MapType: {
       return VerifyMap(node);
     }
-    case IRNodeType::AggType: {
-      return VerifyAgg(node);
+    case IRNodeType::BlockingAggType: {
+      return VerifyBlockingAgg(node);
     }
     case IRNodeType::MemorySinkType: {
       return VerifySink(node);

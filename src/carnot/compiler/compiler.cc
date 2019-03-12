@@ -96,7 +96,7 @@ StatusOr<carnotpb::Plan> Compiler::IRToLogicalPlan(const IR& ir) {
                .OnMap([&](const auto& map) {
                  return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, map);
                })
-               .OnAgg([&](const auto& agg) {
+               .OnBlockingAggregate([&](const auto& agg) {
                  return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, agg);
                })
                .Walk(ir);

@@ -128,10 +128,10 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateExpression(IRNode* expr,
 }
 // Get the types of the children
 // Check the registry for function names
-StatusOr<plan::Relation> IRRelationHandler::AggHandler(OperatorIR* node,
-                                                       plan::Relation parent_rel) {
-  DCHECK_EQ(node->type(), IRNodeType::AggType);
-  auto agg_node = static_cast<AggIR*>(node);
+StatusOr<plan::Relation> IRRelationHandler::BlockingAggHandler(OperatorIR* node,
+                                                               plan::Relation parent_rel) {
+  DCHECK_EQ(node->type(), IRNodeType::BlockingAggType);
+  auto agg_node = static_cast<BlockingAggIR*>(node);
   auto by_func_ir_node = agg_node->by_func();
   if (by_func_ir_node->type() != IRNodeType::LambdaType &&
       by_func_ir_node->type() != IRNodeType::BoolType) {
@@ -251,8 +251,8 @@ Status IRRelationHandler::RelationUpdate(OperatorIR* node) {
       PL_ASSIGN_OR_RETURN(rel, SinkHandler(node, parent_rel));
       break;
     }
-    case IRNodeType::AggType: {
-      PL_ASSIGN_OR_RETURN(rel, AggHandler(node, parent_rel));
+    case IRNodeType::BlockingAggType: {
+      PL_ASSIGN_OR_RETURN(rel, BlockingAggHandler(node, parent_rel));
       break;
     }
     case IRNodeType::MapType: {

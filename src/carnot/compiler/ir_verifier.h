@@ -46,7 +46,7 @@ class IRVerifier {
 
   Status VerifyMap(IRNode* node);
 
-  Status VerifyAgg(IRNode* node);
+  Status VerifyBlockingAgg(IRNode* node);
 
   Status VerifySink(IRNode* node);
 

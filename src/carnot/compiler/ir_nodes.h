@@ -32,7 +32,7 @@ enum IRNodeType {
   MemorySinkType,
   RangeType,
   MapType,
-  AggType,
+  BlockingAggType,
   StringType,
   FloatType,
   IntType,
@@ -46,7 +46,7 @@ enum IRNodeType {
                    // with enums.
 };
 static constexpr const char* kIRNodeStrings[] = {
-    "MemorySourceType", "MemorySinkType", "RangeType",  "MapType",  "AggType",
+    "MemorySourceType", "MemorySinkType", "RangeType",  "MapType",  "BlockingAggType",
     "StringType",       "FloatType",      "IntType",    "BoolType", "FuncType",
     "ListType",         "LambdaType",     "ColumnType", "TimeType"};
 
@@ -491,10 +491,10 @@ class MapIR : public OperatorIR {
  * when converted to the Logical Plan.
  *
  */
-class AggIR : public OperatorIR {
+class BlockingAggIR : public OperatorIR {
  public:
-  AggIR() = delete;
-  explicit AggIR(int64_t id) : OperatorIR(id, AggType, true, false) {}
+  BlockingAggIR() = delete;
+  explicit BlockingAggIR(int64_t id) : OperatorIR(id, BlockingAggType, true, false) {}
   Status Init(IRNode* parent, IRNode* by_func, IRNode* agg_func);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -537,7 +537,7 @@ class IRWalker {
 
   using MemorySourceWalkFn = NodeWalkFn<MemorySourceIR>;
   using MapWalkFn = NodeWalkFn<MapIR>;
-  using AggWalkFn = NodeWalkFn<AggIR>;
+  using AggWalkFn = NodeWalkFn<BlockingAggIR>;
   using MemorySinkWalkFn = NodeWalkFn<MemorySinkIR>;
 
   /**
@@ -565,7 +565,7 @@ class IRWalker {
    * @param fn The function to call when an agg IR node is encountered.
    * @return self to allow chaining.
    */
-  IRWalker& OnAgg(const AggWalkFn& fn) {
+  IRWalker& OnBlockingAggregate(const AggWalkFn& fn) {
     agg_walk_fn_ = fn;
     return *this;
   }
@@ -611,8 +611,8 @@ class IRWalker {
         return CallAs<MemorySourceIR>(memory_source_walk_fn_, node);
       case IRNodeType::MapType:
         return CallAs<MapIR>(map_walk_fn_, node);
-      case IRNodeType::AggType:
-        return CallAs<AggIR>(agg_walk_fn_, node);
+      case IRNodeType::BlockingAggType:
+        return CallAs<BlockingAggIR>(agg_walk_fn_, node);
       case IRNodeType::MemorySinkType:
         return CallAs<MemorySinkIR>(memory_sink_walk_fn_, node);
       case IRNodeType::RangeType:

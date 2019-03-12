@@ -24,7 +24,7 @@ constexpr const char* kUDFPrefix = "pl";
 constexpr const char* kFromOpId = "From";
 constexpr const char* kRangeOpId = "Range";
 constexpr const char* kMapOpId = "Map";
-constexpr const char* kAggOpId = "Agg";
+constexpr const char* kBlockingAggOpId = "Agg";
 constexpr const char* kRangeAggOpId = "RangeAgg";
 constexpr const char* kSinkOpId = "Result";
 

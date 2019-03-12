@@ -351,9 +351,9 @@ TEST_F(RelationHandlerTest, test_relation_results) {
   EXPECT_TRUE(RelationEquality(map_node->relation(), test_map_relation));
 
   // Agg should be a new relation with one column.
-  auto agg_node_status = FindNodeType(ir_graph, AggType);
+  auto agg_node_status = FindNodeType(ir_graph, BlockingAggType);
   EXPECT_OK(agg_node_status);
-  auto agg_node = static_cast<AggIR*>(agg_node_status.ConsumeValueOrDie());
+  auto agg_node = static_cast<BlockingAggIR*>(agg_node_status.ConsumeValueOrDie());
   plan::Relation test_agg_relation;
   test_agg_relation.AddColumn(types::INT64, "cpu_count");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu_mean");
@@ -407,9 +407,9 @@ TEST_F(RelationHandlerTest, test_relation_multi_col_agg) {
   VLOG(1) << handle_status.ToString();
   ASSERT_TRUE(handle_status.ok());
 
-  auto agg_node_status = FindNodeType(ir_graph, AggType);
+  auto agg_node_status = FindNodeType(ir_graph, BlockingAggType);
   EXPECT_OK(agg_node_status);
-  auto agg_node = static_cast<AggIR*>(agg_node_status.ConsumeValueOrDie());
+  auto agg_node = static_cast<BlockingAggIR*>(agg_node_status.ConsumeValueOrDie());
   plan::Relation test_agg_relation;
   test_agg_relation.AddColumn(types::INT64, "cpu_count");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu_mean");

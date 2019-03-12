@@ -65,7 +65,7 @@ class IRRelationHandler {
    * @param parent_rel - the parent relation of the node.
    * @return StatusOr<plan::Relation> the resultant relation.
    */
-  StatusOr<plan::Relation> AggHandler(OperatorIR* node, plan::Relation parent_rel);
+  StatusOr<plan::Relation> BlockingAggHandler(OperatorIR* node, plan::Relation parent_rel);
 
   /**
    * @brief Handle Map operator.

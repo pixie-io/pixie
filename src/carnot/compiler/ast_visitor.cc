@@ -173,7 +173,7 @@ StatusOr<IRNode*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessRangeOp(node));
   } else if (func_name == kMapOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessMapOp(node));
-  } else if (func_name == kAggOpId) {
+  } else if (func_name == kBlockingAggOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessAggOp(node));
   } else if (func_name == kSinkOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessSinkOp(node));
@@ -257,7 +257,7 @@ StatusOr<IRNode*> ASTWalker::ProcessAggOp(const pypa::AstCallPtr& node) {
                                           GetAstTypeName(node->function->type)),
                           node->function);
   }
-  PL_ASSIGN_OR_RETURN(AggIR * ir_node, ir_graph_->MakeNode<AggIR>());
+  PL_ASSIGN_OR_RETURN(BlockingAggIR * ir_node, ir_graph_->MakeNode<BlockingAggIR>());
   // Get arguments.
   PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"by", "fn"}, true));
   PL_ASSIGN_OR_RETURN(IRNode * call_result,
@@ -307,8 +307,8 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
       map_exprs));
   PL_RETURN_IF_ERROR(map_ir_node->Init(call_result, map_lambda_ir_node));
 
-  // Create AggIR.
-  PL_ASSIGN_OR_RETURN(AggIR * agg_ir_node, ir_graph_->MakeNode<AggIR>());
+  // Create BlockingAggIR.
+  PL_ASSIGN_OR_RETURN(BlockingAggIR * agg_ir_node, ir_graph_->MakeNode<BlockingAggIR>());
 
   // by = lambda r: r.group.
   PL_ASSIGN_OR_RETURN(ColumnIR * agg_col_ir_node, ir_graph_->MakeNode<ColumnIR>());
