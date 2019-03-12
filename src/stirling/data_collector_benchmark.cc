@@ -275,6 +275,7 @@ static void BM_raw_struct_vector(benchmark::State& state) {
   for (auto _ : state) {
     auto res = RawStructProcessDataVector(collected_data);
     benchmark::DoNotOptimize(res);
+    PL_UNUSED(_);
   }
   state.SetBytesProcessed(state.iterations() * ((2 * sizeof(int64_t)) + sizeof(double)) *
                           collected_data.size());
@@ -289,6 +290,7 @@ static void BM_raw_struct_dynamic_array(benchmark::State& state) {
   for (auto _ : state) {
     auto res = RawStructProcessDataDynamicArray(collected_data);
     benchmark::DoNotOptimize(res);
+    PL_UNUSED(_);
   }
   state.SetBytesProcessed(state.iterations() * ((2 * sizeof(int64_t)) + sizeof(double)) *
                           collected_data.size());
@@ -304,6 +306,7 @@ static void BM_proto(benchmark::State& state) {
   for (auto _ : state) {
     auto res = CanonicalProtoProcessData(collected_data);
     benchmark::DoNotOptimize(res);
+    PL_UNUSED(_);
   }
   state.SetBytesProcessed(state.iterations() * ((2 * sizeof(int64_t)) + sizeof(double)) *
                           collected_data.size());
@@ -319,6 +322,7 @@ static void BM_proto_repeated_column(benchmark::State& state) {
   for (auto _ : state) {
     auto res = CanonicalProtoProcessDataRepeatedColumn(collected_data);
     benchmark::DoNotOptimize(res);
+    PL_UNUSED(_);
   }
   state.SetBytesProcessed(state.iterations() * ((2 * sizeof(int64_t)) + sizeof(double)) *
                           collected_data.size());
@@ -338,6 +342,7 @@ static void BM_arrow(benchmark::State& state) {
   for (auto _ : state) {
     auto res = ArrowProcessData(collected_data);
     benchmark::DoNotOptimize(res);
+    PL_UNUSED(_);
   }
 
   state.SetBytesProcessed(state.iterations() * (2 * sizeof(int64_t) + sizeof(double)) * size);
@@ -355,6 +360,7 @@ static void BM_arrow_record_batch(benchmark::State& state) {
   for (auto _ : state) {
     auto res = ArrowProcessRecordBatch(record_batch);
     benchmark::DoNotOptimize(res);
+    PL_UNUSED(_);
   }
 
   state.SetBytesProcessed(state.iterations() * (2 * sizeof(int64_t) + sizeof(double)) * size);

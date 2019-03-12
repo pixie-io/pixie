@@ -33,7 +33,10 @@ class Sequence {
   /**
    * Resets sequence to its initial state.
    */
-  virtual void Reset() {}
+  virtual void Reset() { ResetImpl(); }
+
+ protected:
+  void ResetImpl() {}
 };
 
 /**
@@ -50,7 +53,7 @@ class LinearSequence : public Sequence<T> {
    * @param a linear equation slope.
    * @param b linear equation y-intercept.
    */
-  explicit LinearSequence(T a, T b) : a_(a), b_(b) { Reset(); }
+  explicit LinearSequence(T a, T b) : a_(a), b_(b) { ResetImpl(); }
 
   /**
    * Return next value in the sequence.
@@ -66,9 +69,15 @@ class LinearSequence : public Sequence<T> {
   /**
    * Reset the sequence.
    */
-  void Reset() override { x_ = 0; }
+  void Reset() override {
+    Sequence<T>::ResetImpl();
+    ResetImpl();
+  }
 
  private:
+  // Reset the sequence.
+  void ResetImpl() { x_ = 0; }
+
   T x_;
   T a_;
   T b_;
@@ -89,7 +98,7 @@ class QuadraticSequence : public Sequence<T> {
    * @param b quadratic co-efficient on x.
    * @param c y-intercept.
    */
-  explicit QuadraticSequence(T a, T b, T c) : a_(a), b_(b), c_(c) { Reset(); }
+  explicit QuadraticSequence(T a, T b, T c) : a_(a), b_(b), c_(c) { ResetImpl(); }
 
   /**
    * Return next value in the sequence.
@@ -105,9 +114,15 @@ class QuadraticSequence : public Sequence<T> {
   /**
    * Reset the sequence.
    */
-  void Reset() override { x_ = 0; }
+  void Reset() override {
+    Sequence<T>::ResetImpl();
+    ResetImpl();
+  }
 
  private:
+  // Reset the sequence.
+  void ResetImpl() { x_ = 0; }
+
   T x_;
   T a_;
   T b_;
@@ -125,7 +140,7 @@ class FibonacciSequence : public Sequence<T> {
   /**
    * Constructor for a Fibonacci Sequence.
    */
-  FibonacciSequence() { Reset(); }
+  FibonacciSequence() { ResetImpl(); }
 
   /**
    * Return next value in the sequence.
@@ -147,12 +162,18 @@ class FibonacciSequence : public Sequence<T> {
    * Reset the sequence.
    */
   void Reset() override {
+    Sequence<T>::ResetImpl();
+    ResetImpl();
+  }
+
+ private:
+  // Reset the sequence.
+  void ResetImpl() {
     fib_ = 1;
     fibm1_ = 1;
     fibm2_ = 0;
   }
 
- private:
   T fib_;
   T fibm1_;
   T fibm2_;
@@ -171,7 +192,7 @@ class ModuloSequence : public Sequence<T> {
    *
    * @param n the base of the modulo.
    */
-  explicit ModuloSequence(T n) : n_(n) { Reset(); }
+  explicit ModuloSequence(T n) : n_(n) { ResetImpl(); }
 
   /**
    * Return next value in the sequence.
@@ -187,9 +208,15 @@ class ModuloSequence : public Sequence<T> {
   /**
    * Reset the sequence.
    */
-  void Reset() override { x_ = 0; }
+  void Reset() override {
+    Sequence<T>::ResetImpl();
+    ResetImpl();
+  }
 
  private:
+  // Rest the sequence.
+  void ResetImpl() { x_ = 0; }
+
   T x_;
   T n_;
 };
@@ -197,7 +224,7 @@ class ModuloSequence : public Sequence<T> {
 template <typename T>
 class TimeSequence : public Sequence<T> {
  public:
-  TimeSequence() { Reset(); }
+  TimeSequence() { ResetImpl(); }
 
   T operator()() override {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -205,7 +232,14 @@ class TimeSequence : public Sequence<T> {
         .count();
   }
 
-  void Reset() override {}
+  void Reset() override {
+    Sequence<T>::ResetImpl();
+    ResetImpl();
+  }
+
+ private:
+  // Reset the sequence.
+  void ResetImpl() {}
 };
 
 /**
@@ -223,7 +257,7 @@ class StringSequence : public Sequence<std::string> {
       tokens.push_back(absl::StrFormat("%3d %s", line_number, line.get()));
       line_number++;
     }
-    Reset();
+    ResetImpl();
   }
 
   /**
@@ -242,9 +276,15 @@ class StringSequence : public Sequence<std::string> {
   /**
    * Reset the sequence.
    */
-  void Reset() override { x_ = 0; }
+  void Reset() override {
+    Sequence<std::string>::ResetImpl();
+    ResetImpl();
+  }
 
  private:
+  // Reset the sequence.
+  void ResetImpl() { x_ = 0; }
+
   uint32_t x_ = 0;
 
   std::vector<std::string> tokens;
