@@ -110,6 +110,7 @@ inline Status StatusAdapter<pl::statuspb::Status>(const pl::statuspb::Status& s)
   PL_RETURN_IF_ERROR_IMPL(PL_CONCAT_NAME(__status__, __COUNTER__), __status)
 
 #define EXPECT_OK(value) EXPECT_TRUE((value).status().ok())
+#define ASSERT_OK(value) ASSERT_TRUE((value).status().ok())
 
 #define PL_CHECK_OK_PREPEND(to_call, msg)             \
   do {                                                \

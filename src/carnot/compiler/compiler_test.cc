@@ -255,7 +255,7 @@ TEST_F(CompilerTest, test_general_compilation) {
       "\n");
   auto plan_status = compiler.Compile(query, compiler_state_.get());
   VLOG(1) << plan_status.ToString();
-  ASSERT_TRUE(plan_status.ok());
+  ASSERT_OK(plan_status);
 
   carnotpb::Plan logical_plan = plan_status.ValueOrDie();
   VLOG(1) << logical_plan.DebugString();
@@ -404,7 +404,7 @@ TEST_F(CompilerTest, group_by_all) {
   auto plan_status = compiler.Compile(query, compiler_state_.get());
   VLOG(1) << plan_status.ToString();
   // EXPECT_OK(plan_status);
-  ASSERT_TRUE(plan_status.ok());
+  ASSERT_OK(plan_status);
   auto logical_plan = plan_status.ConsumeValueOrDie();
   VLOG(1) << logical_plan.DebugString();
   carnotpb::Plan expected_logical_plan;

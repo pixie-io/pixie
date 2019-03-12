@@ -51,7 +51,7 @@ TEST_F(ExecutorTest, start_executor) {
       "queryDF = From(table='test_table', select=['col1', 'col2']).Result(name='test_output')";
 
   auto rb_str_status = executor_->ServiceQueryAsString(query);
-  ASSERT_TRUE(rb_str_status.ok());
+  ASSERT_OK(rb_str_status);
   auto rb_str = rb_str_status.ConsumeValueOrDie();
 
   VLOG(1) << absl::StrJoin(rb_str, "\n");

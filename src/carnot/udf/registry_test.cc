@@ -52,7 +52,7 @@ TEST(ScalarUDFRegistry, init_with_udfs) {
 
   auto statusor = registry.GetDefinition(
       "scalar1", std::vector<types::DataType>({types::DataType::BOOLEAN, types::DataType::INT64}));
-  ASSERT_TRUE(statusor.ok());
+  ASSERT_OK(statusor);
   auto def = statusor.ConsumeValueOrDie();
   ASSERT_NE(nullptr, def);
   EXPECT_EQ("scalar1", def->name());
@@ -76,12 +76,12 @@ TEST(ScalarUDFRegistry, templated_udfs) {
 
   auto statusor = registry.GetDefinition(
       "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64}));
-  ASSERT_TRUE(statusor.ok());
+  ASSERT_OK(statusor);
   EXPECT_NE(nullptr, statusor.ConsumeValueOrDie());
 
   statusor = registry.GetDefinition(
       "add", std::vector<types::DataType>({types::DataType::FLOAT64, types::DataType::FLOAT64}));
-  ASSERT_TRUE(statusor.ok());
+  ASSERT_OK(statusor);
   EXPECT_NE(nullptr, statusor.ConsumeValueOrDie());
 
   statusor = registry.GetDefinition(
@@ -141,7 +141,7 @@ TEST(UDARegistry, init_with_udas) {
   EXPECT_EQ(kUDA, registry.Type());
   auto statusor =
       registry.GetDefinition("uda1", std::vector<types::DataType>({types::DataType::INT64}));
-  ASSERT_TRUE(statusor.ok());
+  ASSERT_OK(statusor);
   auto def = statusor.ConsumeValueOrDie();
   ASSERT_NE(nullptr, def);
   EXPECT_EQ("uda1", def->name());

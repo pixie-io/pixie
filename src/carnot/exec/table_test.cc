@@ -204,7 +204,7 @@ TEST(TableTest, arrow_batches_test) {
   auto table = CarnotTestUtils::TestTable();
 
   auto record_batches_status = table->GetTableAsRecordBatches();
-  ASSERT_TRUE(record_batches_status.ok());
+  ASSERT_OK(record_batches_status);
   auto record_batches = record_batches_status.ConsumeValueOrDie();
 
   auto record_batch = record_batches[0];

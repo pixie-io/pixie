@@ -241,10 +241,10 @@ TEST_F(ScalarExpressionTest, col_tests) {
 
   auto se_or_status = ScalarExpression::FromProto(se_pb);
 
-  ASSERT_TRUE(se_or_status.ok());
+  ASSERT_OK(se_or_status);
   auto se = se_or_status.ConsumeValueOrDie();
   auto status = se->OutputDataType(*state_, schema_);
-  ASSERT_TRUE(status.ok());
+  ASSERT_OK(status);
   EXPECT_EQ(types::STRING, status.ValueOrDie());
 }
 
@@ -274,7 +274,7 @@ class ScalarFuncTest : public ScalarExpressionTest {
   ~ScalarFuncTest() override = default;
   void SetUp() override {
     carnotpb::ScalarFunc func_pb = carnotpb::testutils::CreateTestFuncWithTwoColsPB();
-    ASSERT_TRUE(sf_.Init(func_pb).ok());
+    ASSERT_OK(sf_.Init(func_pb));
   }
   ScalarFunc sf_;
 };
@@ -290,7 +290,7 @@ TEST_F(ScalarFuncTest, ColDeps) {
 
 TEST_F(ScalarFuncTest, output_type) {
   auto res = sf_.OutputDataType(*state_, schema_);
-  ASSERT_TRUE(res.ok());
+  ASSERT_OK(res);
   EXPECT_EQ(types::INT64, res.ConsumeValueOrDie());
 }
 
@@ -335,7 +335,7 @@ TEST(ScalarExpressionWalker, walk_node_graph) {
                          return 0;
                        })
                        .Walk(*(se.ConsumeValueOrDie().get()));
-  ASSERT_TRUE(col_count.ok());
+  ASSERT_OK(col_count);
   EXPECT_EQ(2, col_count.ValueOrDie());
   EXPECT_EQ(1, val_func_call_count);
   EXPECT_EQ(std::vector<int64_t>({0, 1}), col_node_ids);
@@ -369,7 +369,7 @@ class AggregateExpressionTest : public ScalarExpressionTest {
   void SetUp() override {
     carnotpb::AggregateExpression agg_pb;
     ASSERT_TRUE(TextFormat::MergeFromString(kAggregateExpression, &agg_pb));
-    ASSERT_TRUE(ae_.Init(agg_pb).ok());
+    ASSERT_OK(ae_.Init(agg_pb));
   }
   AggregateExpression ae_;
 };
@@ -393,7 +393,7 @@ TEST_F(AggregateExpressionTest, ColDeps) {
 
 TEST_F(AggregateExpressionTest, output_type) {
   auto res = ae_.OutputDataType(*state_, schema_);
-  ASSERT_TRUE(res.ok());
+  ASSERT_OK(res);
   EXPECT_EQ(types::INT64, res.ConsumeValueOrDie());
 }
 

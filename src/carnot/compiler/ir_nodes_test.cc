@@ -258,14 +258,14 @@ TEST(ToProto, agg_ir) {
   group1->SetColumnIdx(1);
   EXPECT_OK(by_func_lambda->Init({"group1"}, group1));
 
-  ASSERT_TRUE(agg->Init(mem_src, by_func_lambda, agg_func_lambda).ok());
+  ASSERT_OK(agg->Init(mem_src, by_func_lambda, agg_func_lambda));
   ColExpressionVector exprs;
   exprs.push_back(ColumnExpression({"value1", agg_func}));
   agg->SetAggValMap(exprs);
   agg->SetGroups(std::vector<ColumnIR*>({group1}));
 
   carnotpb::Operator pb;
-  ASSERT_TRUE(agg->ToProto(&pb).ok());
+  ASSERT_OK(agg->ToProto(&pb));
 
   carnotpb::Operator expected_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedAggPb, &expected_pb));

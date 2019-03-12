@@ -9,7 +9,7 @@ using std::string;
 TEST(StatusOr, ValueCopy) {
   string val = "abcd";
   StatusOr<string> s(val);
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(s);
   EXPECT_EQ(s.ValueOrDie(), "abcd");
   EXPECT_EQ(val, "abcd");
 }
@@ -17,18 +17,18 @@ TEST(StatusOr, ValueCopy) {
 TEST(StatusOr, ValueMove) {
   string val = "abcd";
   StatusOr<string> s(std::move(val));
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(s);
   EXPECT_EQ(s.ConsumeValueOrDie(), "abcd");
   EXPECT_NE(val, "abcd");
 }
 
 TEST(StatusOr, ValuesAndErrors) {
   StatusOr<string> s("testing string");
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(s);
   EXPECT_EQ(s.ValueOrDie(), "testing string");
 
   s = StatusOr<string>("another value");
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(s);
   EXPECT_EQ(s.ValueOrDie(), "another value");
 
   s = StatusOr<string>(Status(pl::error::UNKNOWN, "some error"));

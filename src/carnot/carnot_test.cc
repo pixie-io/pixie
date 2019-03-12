@@ -47,7 +47,7 @@ TEST_F(CarnotTest, basic) {
       },
       "\n");
   auto s = carnot_.ExecuteQuery(query);
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(s);
   auto res = s.ConsumeValueOrDie();
   EXPECT_EQ(5, res.rows_processed);
   EXPECT_EQ(5 * sizeof(double) + 5 * sizeof(int64_t), res.bytes_processed);
@@ -83,7 +83,7 @@ TEST_F(CarnotTest, map_test) {
       "\n");
 
   auto s = carnot_.ExecuteQuery(query);
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(s);
 
   auto table_store = carnot_.table_store();
   auto output_table = table_store->GetTable("test_output");
@@ -200,7 +200,7 @@ TEST_F(CarnotTest, order_test) {
       },
       "\n");
   auto s = carnot_.ExecuteQuery(query);
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(s);
 
   auto output_table = table_store->GetTable("test_output");
   EXPECT_EQ(3, output_table->NumBatches());
@@ -242,7 +242,7 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
       "\n");
   auto s = carnot_.ExecuteQuery(query);
   std::cout << s.msg();
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(s);
 
   auto output_table = table_store->GetTable("rng_output");
   EXPECT_EQ(2, output_table->NumBatches());
@@ -300,7 +300,7 @@ TEST_F(CarnotTest, range_test_single_rb) {
       },
       "\n");
   auto s = carnot_.ExecuteQuery(query);
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(s);
 
   auto output_table = table_store->GetTable("rng_output");
   EXPECT_EQ(1, output_table->NumBatches());
@@ -340,7 +340,7 @@ TEST_F(CarnotTest, empty_range_test) {
       "\n");
   auto s = carnot_.ExecuteQuery(query);
   std::cout << s.msg();
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(s);
 
   auto output_table = table_store->GetTable("rng_output");
   EXPECT_EQ(0, output_table->NumBatches());
@@ -428,7 +428,7 @@ TEST_F(CarnotTest, DISABLED_group_by_col_agg_test) {
       "\n");
   auto s = carnot_.ExecuteQuery(query);
   VLOG(1) << s.ToString();
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(s);
 
   auto output_table = table_store->GetTable("test_output");
   EXPECT_EQ(1, output_table->NumBatches());
@@ -469,7 +469,7 @@ TEST_F(CarnotTest, DISABLED_multiple_group_by_test) {
       "\n");
   auto s = carnot_.ExecuteQuery(query);
   VLOG(1) << s.ToString();
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(s);
 
   auto output_table = table_store->GetTable("test_output");
   EXPECT_EQ(1, output_table->NumBatches());
@@ -529,7 +529,7 @@ TEST_F(CarnotTest, comparison_tests) {
   query = absl::Substitute(query, col3_lt_val, num_groups_gt_val);
   auto s = carnot_.ExecuteQuery(query);
   VLOG(1) << s.ToString();
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(s);
   auto output_table = table_store->GetTable("test_output");
   EXPECT_EQ(3, output_table->NumBatches());
   EXPECT_EQ(2, output_table->NumColumns());
@@ -570,7 +570,7 @@ TEST_F(CarnotTest, DISABLED_comparison_to_agg_tests) {
   query = absl::Substitute(query, col3_gt_val);
   auto s = carnot_.ExecuteQuery(query);
   VLOG(1) << s.ToString();
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(s);
   auto output_table = table_store->GetTable("test_output");
   EXPECT_EQ(1, output_table->NumBatches());
   EXPECT_EQ(2, output_table->NumColumns());

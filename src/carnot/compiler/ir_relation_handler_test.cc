@@ -168,7 +168,7 @@ TEST_F(RelationHandlerTest, test_utils) {
 TEST_F(RelationHandlerTest, no_special_relation) {
   std::string from_expr = "From(table='cpu', select=['cpu0', 'cpu1']).Result(name='cpu')";
   auto ir_graph_status = CompileGraph(from_expr);
-  ASSERT_TRUE(ir_graph_status.ok());
+  ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   auto handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
@@ -178,7 +178,7 @@ TEST_F(RelationHandlerTest, no_special_relation) {
   std::string from_range_expr =
       "From(table='cpu', select=['cpu0']).Range(time='-2m').Result(name='cpu_out')";
   ir_graph_status = CompileGraph(from_expr);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
@@ -192,7 +192,7 @@ TEST_F(RelationHandlerTest, assign_functionality) {
                     "\n");
 
   auto ir_graph_status = CompileGraph(assign_and_use);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   auto handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
@@ -207,7 +207,7 @@ TEST_F(RelationHandlerTest, single_col_map) {
                      "mapDF.Result(name='cpu_out')"},
                     "\n");
   auto ir_graph_status = CompileGraph(single_col_map_sum);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   auto handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
@@ -219,7 +219,7 @@ TEST_F(RelationHandlerTest, single_col_map) {
                      "mapDF.Result(name='cpu_out')"},
                     "\n");
   ir_graph_status = CompileGraph(single_col_div_map_query);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
@@ -235,7 +235,7 @@ TEST_F(RelationHandlerTest, multi_col_map) {
       },
       "\n");
   auto ir_graph_status = CompileGraph(multi_col);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   auto handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
@@ -249,7 +249,7 @@ TEST_F(RelationHandlerTest, bin_op_test) {
                      "mapDF.Result(name='cpu_out')"},
                     "\n");
   auto ir_graph_status = CompileGraph(single_col_map_sum);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   auto handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
@@ -261,7 +261,7 @@ TEST_F(RelationHandlerTest, bin_op_test) {
                      "mapDF.Result(name='cpu_out')"},
                     "\n");
   ir_graph_status = CompileGraph(single_col_map_sub);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
@@ -273,7 +273,7 @@ TEST_F(RelationHandlerTest, bin_op_test) {
                      "mapDF.Result(name='cpu_out')"},
                     "\n");
   ir_graph_status = CompileGraph(single_col_map_product);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
@@ -285,7 +285,7 @@ TEST_F(RelationHandlerTest, bin_op_test) {
                      "mapDF.Result(name='cpu_out')"},
                     "\n");
   ir_graph_status = CompileGraph(single_col_map_quotient);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
@@ -299,7 +299,7 @@ TEST_F(RelationHandlerTest, single_col_agg) {
                      "pl.count(r.cpu1)}).Result(name='cpu_out')"},
                     "\n");
   auto ir_graph_status = CompileGraph(single_col_agg);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   auto handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
@@ -311,7 +311,7 @@ TEST_F(RelationHandlerTest, single_col_agg) {
                      "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).Result(name='cpu_out')"},
                     "\n");
   ir_graph_status = CompileGraph(multi_output_col_agg);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
@@ -405,7 +405,7 @@ TEST_F(RelationHandlerTest, test_relation_multi_col_agg) {
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
   VLOG(1) << handle_status.ToString();
-  ASSERT_TRUE(handle_status.ok());
+  ASSERT_OK(handle_status);
 
   auto agg_node_status = FindNodeType(ir_graph, BlockingAggType);
   EXPECT_OK(agg_node_status);
@@ -444,7 +444,7 @@ TEST_F(RelationHandlerTest, nonexistant_udfs) {
                     "\n");
 
   auto ir_graph_status = CompileGraph(missing_udf);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
   EXPECT_FALSE(handle_status.ok());
@@ -455,7 +455,7 @@ TEST_F(RelationHandlerTest, nonexistant_udfs) {
                     "\n");
 
   ir_graph_status = CompileGraph(missing_uda);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
   EXPECT_FALSE(handle_status.ok());
@@ -470,7 +470,7 @@ TEST_F(RelationHandlerTest, nonexistant_cols) {
                     "\n");
 
   auto ir_graph_status = CompileGraph(wrong_column_map_func);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
   EXPECT_FALSE(handle_status.ok());
@@ -484,7 +484,7 @@ TEST_F(RelationHandlerTest, nonexistant_cols) {
                      "pl.count(r.cpu1)}).Result(name='cpu_out')"},
                     "\n");
   ir_graph_status = CompileGraph(wrong_column_agg_by);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
   EXPECT_FALSE(handle_status.ok());
@@ -497,7 +497,7 @@ TEST_F(RelationHandlerTest, nonexistant_cols) {
                      "pl.count(r.cpu1)}).Result(name='cpu_out')"},
                     "\n");
   ir_graph_status = CompileGraph(not_selected_col);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
   EXPECT_FALSE(handle_status.ok());
@@ -513,7 +513,7 @@ TEST_F(RelationHandlerTest, created_columns) {
        "pl.count(r.cpu_sum)}).Result(name='cpu_out')"},
       "\n");
   auto ir_graph_status = CompileGraph(agg_use_map_col_fn);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
@@ -526,7 +526,7 @@ TEST_F(RelationHandlerTest, created_columns) {
        "pl.count(r.cpu2)}).Result(name='cpu_out')"},
       "\n");
   ir_graph_status = CompileGraph(agg_use_map_col_by);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
@@ -543,7 +543,7 @@ TEST_F(RelationHandlerTest, created_columns) {
       },
       "\n");
   ir_graph_status = CompileGraph(map_use_agg_col);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
@@ -555,7 +555,7 @@ TEST_F(RelationHandlerTest, created_columns) {
        "map2Df = mapDF.Map(fn=lambda r : {'cpu_sum2' : r.cpu2+r.cpu_sum}).Result(name='cpu_out')"},
       "\n");
   ir_graph_status = CompileGraph(map_use_map_col);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
@@ -569,7 +569,7 @@ TEST_F(RelationHandlerTest, created_columns) {
        "pl.mean(r.cpu0_mean)}).Result(name='cpu_out') "},
       "\n");
   ir_graph_status = CompileGraph(agg_use_agg_col);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
@@ -588,7 +588,7 @@ TEST_F(RelationHandlerTest, non_float_columns) {
       },
       "\n");
   auto ir_graph_status = CompileGraph(agg_fn_count_all);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
@@ -605,7 +605,7 @@ TEST_F(RelationHandlerTest, non_float_columns) {
       },
       "\n");
   ir_graph_status = CompileGraph(by_fn_count_all);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   ir_graph = ir_graph_status.ConsumeValueOrDie();
   handle_status = HandleRelation(ir_graph);
   EXPECT_OK(handle_status);
@@ -619,7 +619,7 @@ TEST_F(RelationHandlerTest, add_pl_time_type_fail) {
                      "mapDF.Result(name='cpu_out')"},
                     "\n");
   auto ir_graph_status = CompileGraph(time_fail_float_time_add);
-  EXPECT_OK(ir_graph_status);
+  ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
   EXPECT_FALSE(handle_status.ok());

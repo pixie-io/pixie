@@ -15,7 +15,7 @@ class PlanWalkerTest : public ::testing::Test {
     carnotpb::Plan plan_pb;
     ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(
         carnotpb::testutils::kPlanWithFiveNodes, &plan_pb));
-    ASSERT_TRUE(plan_.Init(plan_pb).ok());
+    ASSERT_OK(plan_.Init(plan_pb));
   }
   Plan plan_;
 };

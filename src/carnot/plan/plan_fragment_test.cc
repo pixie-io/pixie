@@ -102,7 +102,7 @@ class PlanFragmentWalkerTest : public ::testing::Test {
   void SetUp() override {
     carnotpb::PlanFragment pf_pb;
     ASSERT_TRUE(TextFormat::MergeFromString(kPlanFragmentWithFiveNodes, &pf_pb));
-    ASSERT_TRUE(plan_fragment_.Init(pf_pb).ok());
+    ASSERT_OK(plan_fragment_.Init(pf_pb));
   }
   PlanFragment plan_fragment_ = PlanFragment(1);
 };

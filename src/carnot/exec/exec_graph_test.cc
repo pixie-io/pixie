@@ -40,7 +40,7 @@ class ExecGraphTest : public ::testing::Test {
     carnotpb::PlanFragment pf_pb;
     ASSERT_TRUE(
         TextFormat::MergeFromString(carnotpb::testutils::kPlanFragmentWithFourNodes, &pf_pb));
-    ASSERT_TRUE(plan_fragment_->Init(pf_pb).ok());
+    ASSERT_OK(plan_fragment_->Init(pf_pb));
 
     auto udf_registry = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
     auto uda_registry = std::make_unique<udf::UDARegistry>("test_registry");
@@ -87,7 +87,7 @@ TEST_F(ExecGraphTest, execute) {
   carnotpb::PlanFragment pf_pb;
   ASSERT_TRUE(TextFormat::MergeFromString(carnotpb::testutils::kLinearPlanFragment, &pf_pb));
   std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
-  ASSERT_TRUE(plan_fragment_->Init(pf_pb).ok());
+  ASSERT_OK(plan_fragment_->Init(pf_pb));
 
   auto udf_registry = std::make_unique<udf::ScalarUDFRegistry>("testUDF");
   EXPECT_OK(udf_registry->Register<AddUDF>("add"));
@@ -161,7 +161,7 @@ TEST_F(ExecGraphTest, execute_time) {
   carnotpb::PlanFragment pf_pb;
   ASSERT_TRUE(TextFormat::MergeFromString(carnotpb::testutils::kLinearPlanFragment, &pf_pb));
   std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
-  ASSERT_TRUE(plan_fragment_->Init(pf_pb).ok());
+  ASSERT_OK(plan_fragment_->Init(pf_pb));
 
   auto udf_registry = std::make_unique<udf::ScalarUDFRegistry>("testUDF");
   EXPECT_OK(udf_registry->Register<AddUDF>("add"));
