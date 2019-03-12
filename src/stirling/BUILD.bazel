@@ -22,9 +22,11 @@ pl_cc_library(
         "//src/shared/types/proto:types_pl_cc_proto",
         "//src/stirling/proto:collector_config_pl_cc_proto",
         "//third_party:arrow",
-        ":bt_files",
     ] + select({
-        "@bazel_tools//src/conditions:linux_x86_64": ["//third_party:bpftrace"],
+        "@bazel_tools//src/conditions:linux_x86_64": [
+            "//third_party:bpftrace",
+            ":bt_files",
+        ],
         "//conditions:default": [],
     }),
 )
