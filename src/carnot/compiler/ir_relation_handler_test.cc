@@ -308,7 +308,6 @@ TEST_F(RelationHandlerTest, single_col_agg) {
   auto handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
   EXPECT_OK(handle_status);
   VLOG(1) << handle_status.status().ToString();
-  //   GraphVerify(single_col_agg, false);
   std::string multi_output_col_agg =
       absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0','cpu1']).Range(time='-2m')",
                      "aggDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count': "

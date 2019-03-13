@@ -101,7 +101,7 @@ Status IRVerifier::VerifyBlockingAgg(IRNode* node) {
     // Check whether the `by` function is just a column
     auto by_func = static_cast<LambdaIR*>(agg_node->by_func());
     if (by_func->HasDictBody()) {
-      return FormatErrorMsg("Expected by function to only have a column.", by_func);
+      return FormatErrorMsg("Expected by function to only contain a column.", by_func);
     }
     PL_ASSIGN_OR_RETURN(IRNode * by_body, by_func->GetDefaultExpr());
 
@@ -122,6 +122,23 @@ Status IRVerifier::VerifyBlockingAgg(IRNode* node) {
         "Expected agg function to map resulting column names to the expression that generates "
         "them.",
         agg_func);
+  }
+  ColExpressionVector col_exprs = agg_func->col_exprs();
+  for (const auto& entry : col_exprs) {
+    // check that the expression type is a function and that it only has leaf nodes as children.
+    if (entry.node->type() != IRNodeType::FuncType) {
+      return FormatErrorMsg(
+          absl::Substitute("Expected agg fns of the format \"udf(r.column_name)\". Object "
+                           "of type $0 not allowed.",
+                           entry.node->type_string()),
+          entry.node);
+    }
+    auto func = static_cast<FuncIR*>(entry.node);
+    for (const auto& fn_child : func->args()) {
+      if (fn_child->type() == IRNodeType::FuncType) {
+        return FormatErrorMsg("Nested aggregate expressions not allowed.", fn_child);
+      }
+    }
   }
   return Status::OK();
 }

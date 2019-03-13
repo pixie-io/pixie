@@ -47,22 +47,22 @@ void GraphVerify(const std::string& query, bool should_fail) {
 
 TEST(ASTVisitor, compilation_test) {
   std::string from_expr = "From(table='cpu', select=['cpu0', 'cpu1']).Result(name='cpu2')";
-  GraphVerify(from_expr, false);
+  GraphVerify(from_expr, false /*should_fail*/);
   // check the connection of ig
   std::string from_range_expr =
       "From(table='cpu', select=['cpu0']).Range(time='-2m').Result(name='cpu2')";
-  GraphVerify(from_range_expr, false);
+  GraphVerify(from_range_expr, false /*should_fail*/);
 }
 
 TEST(ASTVisitor, assign_functionality) {
   std::string simple_assign =
       "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Result(name='cpu2')";
-  GraphVerify(simple_assign, false);
+  GraphVerify(simple_assign, false /*should_fail*/);
   std::string assign_and_use =
       absl::StrJoin({"queryDF = From(table = 'cpu', select = [ 'cpu0', 'cpu1' ])",
                      "queryDF.Range(time = '-2m').Result(name='cpu2')"},
                     "\n");
-  GraphVerify(assign_and_use, false);
+  GraphVerify(assign_and_use, false /*should_fail*/);
 }
 
 // Range can only be after From, not after any other ops.
@@ -72,13 +72,13 @@ TEST(RangeTest, order_test) {
                      "mapDF = queryDF.Map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1})",
                      "rangeDF = mapDF.Range(time='-2m').Result(name='cpu2')"},
                     "\n");
-  GraphVerify(range_order_fail_map, true);
+  GraphVerify(range_order_fail_map, true /*should_fail*/);
   std::string range_order_fail_agg = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
        "mapDF = queryDF.Agg(fn=lambda r : {'sum' : pl.mean(r.cpu0)}, by=lambda r: r.cpu0)",
        "rangeDF = mapDF.Range(time='-2m').Result(name='cpu2')"},
       "\n");
-  GraphVerify(range_order_fail_agg, true);
+  GraphVerify(range_order_fail_agg, true /*should_fail*/);
 }
 
 // Map Tests
@@ -89,7 +89,7 @@ TEST(MapTest, single_col_map) {
           "rangeDF = queryDF.Map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1}).Result(name='cpu2')",
       },
       "\n");
-  GraphVerify(single_col_map_sum, false);
+  GraphVerify(single_col_map_sum, false /*should_fail*/);
   std::string single_col_div_map_query = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
@@ -97,7 +97,7 @@ TEST(MapTest, single_col_map) {
           "pl.div(r.cpu0,r.cpu1)}).Result(name='cpu2')",
       },
       "\n");
-  GraphVerify(single_col_div_map_query, false);
+  GraphVerify(single_col_div_map_query, false /*should_fail*/);
 }
 
 TEST(MapTest, multi_col_map) {
@@ -108,7 +108,7 @@ TEST(MapTest, multi_col_map) {
           "r.cpu2}).Result(name='cpu2')",
       },
       "\n");
-  GraphVerify(multi_col, false);
+  GraphVerify(multi_col, false /*should_fail*/);
 }
 
 TEST(MapTest, bin_op_test) {
@@ -136,10 +136,10 @@ TEST(MapTest, bin_op_test) {
           "rangeDF = queryDF.Map(fn=lambda r : {'quotient' : r.cpu0 / r.cpu1}).Result(name='cpu2')",
       },
       "\n");
-  GraphVerify(single_col_map_sum, false);
-  GraphVerify(single_col_map_sub, false);
-  GraphVerify(single_col_map_product, false);
-  GraphVerify(single_col_map_quotient, false);
+  GraphVerify(single_col_map_sum, false /*should_fail*/);
+  GraphVerify(single_col_map_sub, false /*should_fail*/);
+  GraphVerify(single_col_map_product, false /*should_fail*/);
+  GraphVerify(single_col_map_quotient, false /*should_fail*/);
 }
 
 TEST(MapTest, nested_expr_map) {
@@ -150,7 +150,7 @@ TEST(MapTest, nested_expr_map) {
           "r.cpu2}).Result(name='cpu2')",
       },
       "\n");
-  GraphVerify(nested_expr, false);
+  GraphVerify(nested_expr, false /*should_fail*/);
   std::string nested_fn = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
@@ -158,7 +158,7 @@ TEST(MapTest, nested_expr_map) {
           "r.cpu2)}).Result(name='cpu2')",
       },
       "\n");
-  GraphVerify(nested_fn, false);
+  GraphVerify(nested_fn, false /*should_fail*/);
 }
 
 TEST(AggTest, single_col_agg) {
@@ -169,19 +169,19 @@ TEST(AggTest, single_col_agg) {
           "pl.count(r.cpu1)}).Result(name='cpu2')",
       },
       "\n");
-  GraphVerify(single_col_agg, false);
+  GraphVerify(single_col_agg, false /*should_fail*/);
   std::string multi_output_col_agg =
       absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
                      "rangeDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
                      "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).Result(name='cpu2')"},
                     "\n");
-  GraphVerify(multi_output_col_agg, false);
+  GraphVerify(multi_output_col_agg, false /*should_fail*/);
   std::string multi_input_col_agg = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
        "rangeDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_sum' : pl.sum(r.cpu1), "
        "'cpu2_mean' : pl.mean(r.cpu2)}).Result(name='cpu2')"},
       "\n");
-  GraphVerify(multi_input_col_agg, false);
+  GraphVerify(multi_input_col_agg, false /*should_fail*/);
 }
 TEST(AggTest, not_allowed_by) {
   std::string single_col_bad_by_fn_expr = absl::StrJoin(
@@ -191,7 +191,7 @@ TEST(AggTest, not_allowed_by) {
           "pl.count(r.cpu0)}).Result(name='cpu2')",
       },
       "\n");
-  GraphVerify(single_col_bad_by_fn_expr, true);
+  GraphVerify(single_col_bad_by_fn_expr, true /*should_fail*/);
 
   std::string single_col_dict_by_fn = absl::StrJoin(
       {
@@ -200,7 +200,27 @@ TEST(AggTest, not_allowed_by) {
           "pl.count(r.cpu0)}).Result(name='cpu2')",
       },
       "\n");
-  GraphVerify(single_col_dict_by_fn, true);
+  GraphVerify(single_col_dict_by_fn, true /*should_fail*/);
+}
+
+TEST(AggTest, nested_agg_expression_should_fail) {
+  std::string nested_agg_fn = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
+          "rangeDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
+          "pl.sum(pl.mean(r.cpu0))}).Result(name='cpu2')",
+      },
+      "\n");
+  GraphVerify(nested_agg_fn, true /*should_fail*/);
+
+  std::string add_combination = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(time='-2m')",
+          "rangeDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
+          "pl.mean(r.cpu0)+2}).Result(name='cpu2')",
+      },
+      "\n");
+  GraphVerify(add_combination, true /*should_fail*/);
 }
 
 TEST(TimeTest, basic) {
@@ -210,7 +230,7 @@ TEST(TimeTest, basic) {
           "rangeDF = queryDF.Map(fn=lambda r : {'time' : r.cpu + pl.second}).Result(name='cpu2')",
       },
       "\n");
-  GraphVerify(add_test, false);
+  GraphVerify(add_test, false /*should_fail*/);
 }
 }  // namespace compiler
 }  // namespace carnot
