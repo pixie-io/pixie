@@ -31,6 +31,14 @@ pl_cc_library(
     }),
 )
 
+pl_cc_resource(
+    name = "bt_files",
+    srcs = [
+        "bt/cpustat.bt",
+        "bt/pidruntime.bt",
+    ],
+)
+
 pl_cc_binary(
     name = "data_collector_benchmark",
     srcs = ["data_collector_benchmark.cc"],
@@ -38,14 +46,6 @@ pl_cc_binary(
         "//src/stirling/proto:canonical_pl_cc_proto",
         "//third_party:arrow",
         "@com_google_benchmark//:benchmark_main",
-    ],
-)
-
-pl_cc_resource(
-    name = "bt_files",
-    srcs = [
-        "bt/cpustat.bt",
-        "bt/pidruntime.bt",
     ],
 )
 

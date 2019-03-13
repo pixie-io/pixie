@@ -123,14 +123,14 @@ class Stirling : public NotCopyable {
   void Run();
 
   /**
-   * Stop the running thread.
-   */
-  void Stop();
-
-  /**
    * Main data collection call. This version spawns off as an independent thread.
    */
-  void RunAsThread();
+  Status RunAsThread();
+
+  /**
+   * Stop the running thread. Return will not be immediate.
+   */
+  void Stop();
 
   /**
    * Wait for the running thread to terminate. Assuming you ran RunThread().
