@@ -24,6 +24,13 @@ void RegisterMathOpsOrDie(udf::ScalarUDFRegistry* registry) {
       "pl.subtract");
   registry->RegisterOrDie<SubtractUDF<types::Float64Value, types::Int64Value, types::Float64Value>>(
       "pl.subtract");
+  registry->RegisterOrDie<SubtractUDF<types::Int64Value, types::Time64NSValue, types::Int64Value>>(
+      "pl.subtract");
+  registry
+      ->RegisterOrDie<SubtractUDF<types::Int64Value, types::Time64NSValue, types::Time64NSValue>>(
+          "pl.subtract");
+  registry->RegisterOrDie<SubtractUDF<types::Int64Value, types::Int64Value, types::Time64NSValue>>(
+      "pl.subtract");
   registry
       ->RegisterOrDie<SubtractUDF<types::Float64Value, types::Float64Value, types::Float64Value>>(
           "pl.subtract");
@@ -47,7 +54,15 @@ void RegisterMathOpsOrDie(udf::ScalarUDFRegistry* registry) {
       ->RegisterOrDie<MultiplyUDF<types::Float64Value, types::Float64Value, types::Float64Value>>(
           "pl.multiply");
   // Modulo
-  registry->RegisterOrDie<ModuloUDF>("pl.modulo");
+  registry->RegisterOrDie<ModuloUDF<types::Int64Value, types::Time64NSValue, types::Int64Value>>(
+      "pl.modulo");
+  registry->RegisterOrDie<ModuloUDF<types::Int64Value, types::Time64NSValue, types::Time64NSValue>>(
+      "pl.modulo");
+  registry->RegisterOrDie<ModuloUDF<types::Int64Value, types::Int64Value, types::Time64NSValue>>(
+      "pl.modulo");
+  registry->RegisterOrDie<ModuloUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
+      "pl.modulo");
+
   // Or (||)
   registry->RegisterOrDie<LogicalOrUDF<types::Int64Value, types::Int64Value>>("pl.logicalOr");
   registry->RegisterOrDie<LogicalOrUDF<types::BoolValue, types::BoolValue>>("pl.logicalOr");

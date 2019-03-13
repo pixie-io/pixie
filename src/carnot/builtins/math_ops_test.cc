@@ -84,8 +84,15 @@ TEST(MathOps, basic_mixed_multiply_test) {
   udf_tester.ForInput(1.5, 5).Expect(7.5);
 }
 
-TEST(MathOps, basic_modulo_test) {
-  auto udf_tester = udf::UDFTester<ModuloUDF>();
+TEST(MathOps, basic_modulo_test_int64_int64) {
+  auto udf_tester =
+      udf::UDFTester<ModuloUDF<types::Int64Value, types::Int64Value, types::Int64Value>>();
+  udf_tester.ForInput(10, 7).Expect(3);
+}
+
+TEST(MathOps, basic_modulo_test_time64_int64) {
+  auto udf_tester =
+      udf::UDFTester<ModuloUDF<types::Int64Value, types::Time64NSValue, types::Int64Value>>();
   udf_tester.ForInput(10, 7).Expect(3);
 }
 

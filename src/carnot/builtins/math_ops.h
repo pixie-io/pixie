@@ -34,11 +34,10 @@ class MultiplyUDF : public udf::ScalarUDF {
   TReturn Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1.val * b2.val; }
 };
 
+template <typename TReturn, typename TArg1, typename TArg2>
 class ModuloUDF : public udf::ScalarUDF {
  public:
-  types::Int64Value Exec(udf::FunctionContext *, types::Int64Value b1, types::Int64Value b2) {
-    return b1.val % b2.val;
-  }
+  TReturn Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1.val % b2.val; }
 };
 
 template <typename TArg1, typename TArg2>
