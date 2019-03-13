@@ -1,15 +1,38 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library")
 load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = [
+            "agent.cc",
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
+    ),
+    hdrs = glob(
+        ["*.h"],
+    ),
+    deps = [
+        "//src/carnot/exec:cc_library",
+        "//src/shared/types:cc_library",
+    ],
+)
 
 pl_cc_binary(
     name = "agent",
     srcs = glob(
         ["*.cc"],
-        exclude = ["**/*_test.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/throwaway_dummy_data.cc",
+        ],
     ),
     deps = [
+        ":cc_library",
         "//src/common",
     ],
 )
