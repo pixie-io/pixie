@@ -2,6 +2,7 @@
   "exclude": [
     "(chef/site-cookbooks/.*$)",
     "(^linters/cpplint)",
+    "(^src/ui/offline_package_cache)",
     "(\\.pb\\.gw\\.go$)",
     "(\\.pb\\.go$)",
     "(\\.gen\\.go$)",
