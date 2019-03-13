@@ -259,6 +259,39 @@ builders['Build & Test (tsan)'] = {
   }
 }
 
+builders['Linting'] = {
+  retry(JENKINS_RETRIES) {
+    node {
+      deleteDir()
+      unstash SRC_STASH_NAME
+      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
+        docker.image(devDockerImageWithTag).inside('--cap-add=SYS_PTRACE') {
+          sh 'arc lint --everything'
+        }
+      }
+    }
+  }
+}
+
+builders['Build & Test UI'] = {
+  retry(JENKINS_RETRIES) {
+    node {
+      deleteDir()
+      unstash SRC_STASH_NAME
+      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
+        docker.image(devDockerImageWithTag).inside('--cap-add=SYS_PTRACE') {
+          sh '''
+            cd src/ui
+            yarn install --prefer_offline
+            jest
+          '''
+          stash name: 'build-ui-testlogs', includes: "src/ui/junit.xml"
+        }
+      }
+    }
+  }
+}
+
 /********************************************
  * The build script starts here.
  ********************************************/
@@ -283,34 +316,11 @@ node {
       // Get docker image tag.
       properties = readProperties file: 'docker.properties'
       devDockerImageWithTag = DEV_DOCKER_IMAGE + ":${properties.DOCKER_IMAGE_TAG}"
-      stash name: SRC_STASH_NAME
+      // Excluding default excludes also stashes the .git folder which downstream steps need.
+      stash name: SRC_STASH_NAME, useDefaultExcludes: false
     }
-    stage('Lint') {
-      unstash SRC_STASH_NAME
-      retry(JENKINS_RETRIES) {
-        docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-          docker.image(devDockerImageWithTag).inside {
-            sh 'arc lint --everything'
-          }
-        }
-      }
-    }
-    stage('Build') {
+    stage('Build Steps') {
       parallel(builders)
-    }
-    stage('Build & Test UI') {
-      unstash SRC_STASH_NAME
-      retry(JENKINS_RETRIES) {
-        docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-          docker.image(devDockerImageWithTag).inside {
-            sh '''
-              cd src/ui
-              yarn install --prefer_offline
-              jest
-            '''
-          }
-        }
-      }
     }
     stage('Archive') {
       dir ('build-opt-testlogs') {
@@ -327,6 +337,9 @@ node {
       }
       dir ('build-tsan-testlogs') {
         unstash 'build-tsan-testlogs'
+      }
+      dir ('build-ui-testlogs') {
+        unstash 'build-ui-testlogs'
       }
       if (env.JOB_NAME == "pixielabs-master") {
         dir ('build-gcc-coverage-testlogs') {
@@ -360,7 +373,7 @@ node {
         tools: [
           [
             $class: 'JUnitType',
-            pattern: "src/ui/junit.xml"
+            pattern: "build-ui-testlogs/src/ui/junit.xml"
           ]
         ]
       ])
