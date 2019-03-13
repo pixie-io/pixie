@@ -234,6 +234,30 @@ TEST(TimeValueTest, basic) {
                     "\n");
   EXPECT_FALSE(ParseQuery(bad_attribute_value).ok());
 }
+
+TEST(OptionalArgs, DISABLED_group_by_all) {
+  // TODO(philkuz) later diff impl this.
+  std::string agg_query =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
+                     "queryDF.Agg(fn=lambda r : {'sum' : pl.sum(r.cpu0)}).Result(name='agg')"},
+                    "\n");
+  auto status = ParseQuery(agg_query);
+  VLOG(1) << status.ToString();
+  EXPECT_OK(status);
+}
+
+TEST(OptionalArgs, DISABLED_map_copy_relation) {
+  // TODO(philkuz) later diff impl this.
+  // TODO(philkuz) make a relation handler test that confirms the relation is actually copied.
+
+  std::string map_query = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
+                                         "queryDF.Map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1}, "
+                                         "copy_source_cols=True).Result(name='map')"},
+                                        "\n");
+  auto status = ParseQuery(map_query);
+  VLOG(1) << status.ToString();
+  EXPECT_OK(status);
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

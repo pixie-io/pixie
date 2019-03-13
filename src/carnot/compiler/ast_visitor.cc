@@ -122,32 +122,57 @@ StatusOr<std::string> ASTWalker::GetFuncName(const pypa::AstCallPtr& node) {
 StatusOr<ArgMap> ASTWalker::ProcessArgs(const pypa::AstCallPtr& call_ast,
                                         const std::vector<std::string>& expected_args,
                                         bool kwargs_only) {
+  return ProcessArgs(call_ast, expected_args, kwargs_only, {{}});
+}
+StatusOr<ArgMap> ASTWalker::ProcessArgs(
+    const pypa::AstCallPtr& call_ast, const std::vector<std::string>& expected_args,
+    bool kwargs_only, const std::unordered_map<std::string, pypa::AstPtr> default_args) {
   auto arg_ast = call_ast->arglist;
   if (!kwargs_only) {
+    // TODO(philkuz) (PL-406) add support for kwargs
     return error::Unimplemented("Only supporting kwargs for now.");
   }
   ArgMap arg_map;
   // Set to keep track of args that are not yet found.
-  std::unordered_set<std::string> missing_args;
-  missing_args.insert(expected_args.begin(), expected_args.end());
+  std::unordered_set<std::string> missing_or_default_args;
+  missing_or_default_args.insert(expected_args.begin(), expected_args.end());
 
+  std::vector<Status> errors;
   // Iterate through the keywords
   for (auto& k : arg_ast.keywords) {
     pypa::AstKeywordPtr kw_ptr = PYPA_PTR_CAST(Keyword, k);
     std::string key = GetNameID(kw_ptr->name);
-    if (missing_args.find(key) == missing_args.end()) {
-      return CreateAstError(absl::Substitute("Keyword '$0' not expected in function.", key),
-                            call_ast);
+    if (missing_or_default_args.find(key) == missing_or_default_args.end()) {
+      // TODO(philkuz) make a string output version of CreateAstError.
+      errors.push_back(CreateAstError(
+          absl::Substitute("Keyword '$0' not expected in function.", key), call_ast));
+      continue;
     }
-    missing_args.erase(missing_args.find(key));
+    missing_or_default_args.erase(missing_or_default_args.find(key));
     PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(kw_ptr->value));
     arg_map[key] = value;
   }
-  if (!missing_args.empty()) {
-    return CreateAstError(
-        absl::Substitute("Didn't find keywords '[$0]' in function. Please add them.",
-                         absl::StrJoin(missing_args, ",")),
-        call_ast);
+
+  for (const auto& ma : missing_or_default_args) {
+    auto find_ma = default_args.find(ma);
+    if (find_ma == default_args.end()) {
+      // TODO(philkuz) look for places where ast error might exit prematurely in other parts of the
+      // code.
+      errors.push_back(CreateAstError(
+          absl::Substitute("You must set '$0' directly. No default value found.", ma), call_ast));
+      continue;
+    } else {
+      auto default_value = find_ma->second;
+      PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(default_value));
+      arg_map[ma] = value;
+    }
+  }
+  if (errors.size() != 0) {
+    std::vector<std::string> msg;
+    for (auto const& e : errors) {
+      msg.push_back(e.ToString());
+    }
+    return error::InvalidArgument(absl::StrJoin(msg, "\n"));
   }
 
   return arg_map;
@@ -225,6 +250,7 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeOp(const pypa::AstCallPtr& node) {
                           node->function);
   }
   PL_ASSIGN_OR_RETURN(RangeIR * ir_node, ir_graph_->MakeNode<RangeIR>());
+
   PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"time"}, true));
   PL_ASSIGN_OR_RETURN(IRNode * call_result,
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));

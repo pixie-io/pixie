@@ -127,9 +127,12 @@ class ASTWalker {
    * @param kwargs_only Whether to only allow keyword args.
    * @return StatusOr<ArgMap>
    */
-  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast,
-                               const std::vector<std::string>& expected_args, bool kwargs_only);
+  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& arg_ast,
+                               const std::vector<std::string>& expected_args, bool kwargs_only,
+                               const std::unordered_map<std::string, pypa::AstPtr> default_args);
 
+  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& arg_ast,
+                               const std::vector<std::string>& expected_args, bool kwargs_only);
   /**
    * @brief ProcessExprStmtNode handles full lines that are expression statements.
    * ie in the following lines

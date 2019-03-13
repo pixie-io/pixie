@@ -12,11 +12,6 @@ void VerifyMemorySource(IRNode* node) {
   EXPECT_EQ(mem_node->table_node()->type(), IRNodeType::StringType);
   EXPECT_EQ(mem_node->select()->type(), IRNodeType::ListType);
   EXPECT_TRUE(mem_node->HasLogicalRepr());
-  // TODO(oazizi or zasgar) - what do you think about doing checks using dependencies of?
-  // I'm not sure what we can accomplish, was wondering if you thoguth it might bet better than the
-  // tests above. They likely overlap in terms of coverage.
-  //
-  // node->graph_ptr()->dag().DependenciesOf(node->id());
 }
 
 void VerifyRange(IRNode* node) {
