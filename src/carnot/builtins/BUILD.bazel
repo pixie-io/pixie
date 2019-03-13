@@ -11,12 +11,22 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/carnot/udf:cc_library",
+        "@com_github_tencent_rapidjson//:rapidjson",
     ],
 )
 
 pl_cc_test(
-    name = "math_ops_test",
+    name = "math_ops",
     srcs = ["math_ops_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf:udf_testutils",
+    ],
+)
+
+pl_cc_test(
+    name = "json_ops",
+    srcs = ["json_ops_test.cc"],
     deps = [
         ":cc_library",
         "//src/carnot/udf:udf_testutils",
