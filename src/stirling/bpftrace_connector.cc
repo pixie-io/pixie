@@ -115,6 +115,11 @@ CPUStatBPFTraceConnector::CPUStatBPFTraceConnector(const std::string& name, uint
 RawDataBuf CPUStatBPFTraceConnector::GetDataImpl() {
   auto cpustat_map = GetBPFMap("@retval");
 
+  // If kernel hasn't populated BPF map yet, then we have no data to return.
+  if (cpustat_map.size() != elements_.size()) {
+    return RawDataBuf(0, nullptr);
+  }
+
   for (uint32_t i = 0; i < elements_.size(); ++i) {
     if (elements_[i].type() == DataType::TIME64NS) {
       data_buf_[i] =
