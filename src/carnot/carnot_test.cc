@@ -234,14 +234,17 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
 
   auto table_store = carnot_.table_store();
   table_store->AddTable("big_test_table", table);
+  int64_t start_time = 2;
+  int64_t stop_time = 6;
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col2', "
-          "'col3']).Range(time='2,6').Result(name='rng_output')",
+          "'col3']).Range(start=$0, stop=$1).Result(name='rng_output')",
       },
       "\n");
+  query = absl::Substitute(query, start_time, stop_time);
   auto s = carnot_.ExecuteQuery(query);
-  std::cout << s.msg();
+  VLOG(1) << s.ToString();
   ASSERT_OK(s);
 
   auto output_table = table_store->GetTable("rng_output");
@@ -276,7 +279,8 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   std::vector<types::Int64Value> col2_out2;
   for (int64_t i = table->GetColumn(0)->batch(0)->length();
        i < table->GetColumn(0)->batch(0)->length() + table->GetColumn(0)->batch(1)->length(); i++) {
-    if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 6) {
+    if (CarnotTestUtils::big_test_col1[i].val >= start_time &&
+        CarnotTestUtils::big_test_col1[i].val < stop_time) {
       col0_out2.emplace_back(CarnotTestUtils::big_test_col1[i].val);
       col1_out2.emplace_back(CarnotTestUtils::big_test_col2[i].val);
       col2_out2.emplace_back(CarnotTestUtils::big_test_col3[i].val);
@@ -296,9 +300,12 @@ TEST_F(CarnotTest, range_test_single_rb) {
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col2', "
-          "'col3']).Range(time='2,3').Result(name='rng_output')",
+          "'col3']).Range(start=$0, stop=$1).Result(name='rng_output')",
       },
       "\n");
+  int64_t start_time = 2;
+  int64_t stop_time = 3;
+  query = absl::Substitute(query, start_time, stop_time);
   auto s = carnot_.ExecuteQuery(query);
   ASSERT_OK(s);
 
@@ -310,7 +317,8 @@ TEST_F(CarnotTest, range_test_single_rb) {
   std::vector<types::Float64Value> col1_out1;
   std::vector<types::Int64Value> col2_out1;
   for (size_t i = 0; i < CarnotTestUtils::big_test_col1.size(); i++) {
-    if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 3) {
+    if (CarnotTestUtils::big_test_col1[i].val >= start_time &&
+        CarnotTestUtils::big_test_col1[i].val < stop_time) {
       col0_out1.emplace_back(CarnotTestUtils::big_test_col1[i].val);
       col1_out1.emplace_back(CarnotTestUtils::big_test_col2[i].val);
       col2_out1.emplace_back(CarnotTestUtils::big_test_col3[i].val);
@@ -335,11 +343,17 @@ TEST_F(CarnotTest, empty_range_test) {
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col2', "
-          "'col3']).Range(time='-2m').Result(name='rng_output')",
+          "'col3']).Range(start=$0, stop=$1).Result(name='rng_output')",
       },
       "\n");
+  auto time_col = CarnotTestUtils::big_test_col1;
+  auto max_time = std::max_element(time_col.begin(), time_col.end());
+
+  int64_t start_time = max_time->val + 1;
+  int64_t stop_time = start_time + 10000;
+  query = absl::Substitute(query, start_time, stop_time);
   auto s = carnot_.ExecuteQuery(query);
-  std::cout << s.msg();
+  VLOG(1) << s.ToString();
   ASSERT_OK(s);
 
   auto output_table = table_store->GetTable("rng_output");

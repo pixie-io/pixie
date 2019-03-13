@@ -251,10 +251,10 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeOp(const pypa::AstCallPtr& node) {
   }
   PL_ASSIGN_OR_RETURN(RangeIR * ir_node, ir_graph_->MakeNode<RangeIR>());
 
-  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"time"}, true));
+  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"start", "stop"}, true));
   PL_ASSIGN_OR_RETURN(IRNode * call_result,
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
-  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["time"]));
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["start"], args["stop"]));
   return ir_node;
 }
 

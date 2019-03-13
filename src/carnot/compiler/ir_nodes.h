@@ -446,14 +446,16 @@ class RangeIR : public OperatorIR {
  public:
   RangeIR() = delete;
   explicit RangeIR(int64_t id) : OperatorIR(id, RangeType, true, false) {}
-  Status Init(IRNode* parent, IRNode* time_repr);
+  Status Init(IRNode* parent, IRNode* start_repr, IRNode* stop_repr);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  IRNode* time_repr() { return time_repr_; }
+  IRNode* start_repr() { return start_repr_; }
+  IRNode* stop_repr() { return stop_repr_; }
   Status ToProto(carnotpb::Operator*) const override;
 
  private:
-  IRNode* time_repr_;
+  IRNode* start_repr_;
+  IRNode* stop_repr_;
 };
 
 /**

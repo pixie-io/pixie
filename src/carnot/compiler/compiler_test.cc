@@ -560,7 +560,7 @@ TEST_F(CompilerTest, range_agg_test) {
 
 TEST_F(CompilerTest, multiple_group_by_agg_test) {
   std::string query = absl::StrJoin(
-      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
+      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0,stop=10)",
        "aggDF = queryDF.Agg(by=lambda r : [r.cpu0, r.cpu2], fn=lambda r : {'cpu_count' : "
        "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).Result(name='cpu_out')"},
       "\n");
@@ -572,7 +572,7 @@ TEST_F(CompilerTest, multiple_group_by_agg_test) {
 
 TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
   std::string query = absl::StrJoin(
-      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
+      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0,stop=10)",
        "mapDF =  queryDF.Map(fn = lambda r : {'cpu0' : r.cpu0, 'cpu1' : r.cpu1, 'cpu2' : r.cpu2, "
        "'cpu_sum' : r.cpu0+r.cpu1+r.cpu2})",
        "aggDF = mapDF.Agg(by=lambda r : [r.cpu0, r.cpu2], fn=lambda r : {'cpu_count' : "
@@ -626,7 +626,7 @@ TEST_F(CompilerTest, no_arg_pl_count_test) {
                  std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
   auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
   std::string query = absl::StrJoin(
-      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
+      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0, stop=10)",
        "aggDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
        "pl.count}).Result(name='cpu_out')"},
       "\n");

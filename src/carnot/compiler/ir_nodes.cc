@@ -135,10 +135,12 @@ Status MemorySinkIR::ToProto(carnotpb::Operator* op) const {
   return Status::OK();
 }
 
-Status RangeIR::Init(IRNode* parent_node, IRNode* time_repr) {
-  time_repr_ = time_repr;
+Status RangeIR::Init(IRNode* parent_node, IRNode* start_repr, IRNode* stop_repr) {
+  start_repr_ = start_repr;
+  stop_repr_ = stop_repr;
   PL_RETURN_IF_ERROR(SetParent(parent_node));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, time_repr_));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, start_repr_));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, stop_repr_));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
   return Status::OK();
 }
@@ -146,9 +148,10 @@ Status RangeIR::Init(IRNode* parent_node, IRNode* time_repr) {
 bool RangeIR::HasLogicalRepr() const { return false; }
 
 std::string RangeIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(
-      depth, absl::StrFormat("%d:RangeIR", id()),
-      {{"Parent", parent()->DebugString(depth + 1)}, {"Time", time_repr_->DebugString(depth + 1)}});
+  return DebugStringFmt(depth, absl::StrFormat("%d:RangeIR", id()),
+                        {{"Parent", parent()->DebugString(depth + 1)},
+                         {"Start", start_repr_->DebugString(depth + 1)},
+                         {"Stop", stop_repr_->DebugString(depth + 1)}});
 }
 
 Status RangeIR::ToProto(carnotpb::Operator*) const {
