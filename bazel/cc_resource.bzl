@@ -1,8 +1,10 @@
 def pl_cc_resource(
         name,
         srcs,
+        tags = [],
         **kwargs):
     object_files = []
+    tags = ["linux_only"] + tags
 
     # Loop through srcs and run genrule to generate a .o file.
     for src in srcs:
@@ -11,6 +13,7 @@ def pl_cc_resource(
             name = src + "_genrule",
             outs = [object_file],
             srcs = [src],
+            tags = tags,
             cmd = " $(OBJCOPY) --input binary" +
                   " --output elf64-x86-64" +
                   " --binary-architecture i386:x86-64" +
@@ -20,4 +23,4 @@ def pl_cc_resource(
         object_files.append(object_file)
 
     # Create a cc_library with the .o files.
-    native.cc_library(name = name, srcs = object_files, **kwargs)
+    native.cc_library(name = name, srcs = object_files, tags = tags, **kwargs)
