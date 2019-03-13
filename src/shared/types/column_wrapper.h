@@ -48,7 +48,7 @@ class ColumnWrapperTmpl : public ColumnWrapper {
   explicit ColumnWrapperTmpl(size_t size, const T &val) : data_(size, val) {}
   explicit ColumnWrapperTmpl(const std::vector<T> &vals) : data_(vals) {}
 
-  ~ColumnWrapperTmpl() = default;
+  ~ColumnWrapperTmpl() override = default;
 
   T *UnsafeRawData() override { return data_.data(); }
   const T *UnsafeRawData() const override { return data_.data(); }

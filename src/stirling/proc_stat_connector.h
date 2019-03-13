@@ -24,7 +24,7 @@ class ProcStatConnector : public SourceConnector {
   inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   ProcStatConnector() = delete;
-  virtual ~ProcStatConnector() = default;
+  ~ProcStatConnector() override = default;
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new ProcStatConnector(name, kElements));
   }
@@ -85,7 +85,7 @@ class ProcStatConnector : public SourceConnector {
 class FakeProcStatConnector : public ProcStatConnector {
  public:
   FakeProcStatConnector() = delete;
-  ~FakeProcStatConnector() = default;
+  ~FakeProcStatConnector() override = default;
 
   static constexpr char kName[] = "fake_proc_stat";
 

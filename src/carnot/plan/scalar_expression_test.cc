@@ -59,7 +59,7 @@ class ScalarExpressionTest : public ::testing::Test {
     schema_.AddRelation(0, rel0);
     schema_.AddRelation(1, rel1);
   }
-  virtual ~ScalarExpressionTest() = default;
+  ~ScalarExpressionTest() override = default;
 
  protected:
   Schema schema_;

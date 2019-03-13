@@ -28,7 +28,7 @@ class Sequence {
    *
    * @return T next value in the sequence.
    */
-  virtual T operator()(void) = 0;
+  virtual T operator()() = 0;
 
   /**
    * Resets sequence to its initial state.
@@ -57,7 +57,7 @@ class LinearSequence : public Sequence<T> {
    *
    * @return next value in the sequence.
    */
-  T operator()(void) override {
+  T operator()() override {
     T val = a_ * x_ + b_;
     x_ += 1;
     return val;
@@ -96,7 +96,7 @@ class QuadraticSequence : public Sequence<T> {
    *
    * @return next value in the sequence.
    */
-  T operator()(void) override {
+  T operator()() override {
     T val = a_ * x_ * x_ + b_ * x_ + c_;
     x_ += 1;
     return val;
@@ -132,7 +132,7 @@ class FibonacciSequence : public Sequence<T> {
    *
    * @return next value in the sequence.
    */
-  T operator()(void) override {
+  T operator()() override {
     T val = fib_;
     fib_ = fibm1_ + fibm2_;
     fibm2_ = fibm1_;
@@ -178,7 +178,7 @@ class ModuloSequence : public Sequence<T> {
    *
    * @return next value in the sequence.
    */
-  T operator()(void) override {
+  T operator()() override {
     T val = x_ % n_;
     x_ += 1;
     return val;
@@ -199,7 +199,7 @@ class TimeSequence : public Sequence<T> {
  public:
   TimeSequence() { Reset(); }
 
-  T operator()(void) override {
+  T operator()() override {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(
                std::chrono::steady_clock::now().time_since_epoch())
         .count();
@@ -231,7 +231,7 @@ class StringSequence : public Sequence<std::string> {
    *
    * @return next value in the sequence.
    */
-  std::string operator()(void) override {
+  std::string operator()() override {
     std::string str = tokens[x_];
 
     x_ = (x_ + 1) % tokens.size();

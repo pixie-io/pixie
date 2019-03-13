@@ -38,7 +38,7 @@ namespace stirling {
 class BPFTraceConnector : public SourceConnector {
  public:
   BPFTraceConnector() = delete;
-  virtual ~BPFTraceConnector() = default;
+  ~BPFTraceConnector() override = default;
 
  protected:
   explicit BPFTraceConnector(const std::string& source_name, const DataElements& elements,

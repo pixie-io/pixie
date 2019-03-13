@@ -24,7 +24,7 @@ class Relation;
  */
 class Operator : public PlanNode {
  public:
-  virtual ~Operator() = default;
+  ~Operator() override = default;
 
   // Create a new operator using the Operator proto.
   static std::unique_ptr<Operator> FromProto(const carnotpb::Operator &pb, int64_t id);
@@ -38,7 +38,7 @@ class Operator : public PlanNode {
   bool is_initialized() const { return is_initialized_; }
 
   // Generate a string that will help debug operators.
-  virtual std::string DebugString() const = 0;
+  std::string DebugString() const override = 0;
 
   // Prints out the debug to INFO log.
   void Debug() { LOG(INFO) << DebugString(); }

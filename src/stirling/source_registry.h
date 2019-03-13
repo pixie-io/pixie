@@ -28,7 +28,7 @@ class SourceRegistry : public NotCopyable {
   virtual ~SourceRegistry() = default;
 
   struct RegistryElement {
-    RegistryElement() : type(SourceType::kUnknown), create_source_fn(nullptr) {}
+    RegistryElement() : create_source_fn(nullptr) {}
     explicit RegistryElement(
         SourceType type, std::chrono::milliseconds sampling_period,
         std::chrono::milliseconds push_period,
@@ -37,7 +37,7 @@ class SourceRegistry : public NotCopyable {
           sampling_period(sampling_period),
           push_period(push_period),
           create_source_fn(std::move(create_source_fn)) {}
-    SourceType type;
+    SourceType type{SourceType::kUnknown};
     std::chrono::milliseconds sampling_period;
     std::chrono::milliseconds push_period;
     std::function<std::unique_ptr<SourceConnector>(const std::string&)> create_source_fn;

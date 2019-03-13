@@ -60,7 +60,7 @@ class ScalarExpression : public PlanNode {
   static StatusOr<std::unique_ptr<ScalarExpression>> FromProto(
       const carnotpb::ScalarExpression &pb);
 
-  virtual ~ScalarExpression() = default;
+  ~ScalarExpression() override = default;
   bool is_initialized() const { return is_initialized_; }
 
   /**
@@ -99,7 +99,7 @@ class ScalarExpression : public PlanNode {
    * Generate a debug string.
    * @return information about the underlying expression.
    */
-  virtual std::string DebugString() const = 0;
+  std::string DebugString() const override = 0;
 
  protected:
   ScalarExpression() = default;
@@ -115,7 +115,7 @@ using ScalarExpressionPtrVector = std::vector<std::unique_ptr<ScalarExpression>>
 class Column : public ScalarExpression {
  public:
   Column() : ScalarExpression() {}
-  virtual ~Column() = default;
+  ~Column() override = default;
 
   /// Initializes the column value based on the passed in protobuf msg.
   Status Init(const carnotpb::Column &pb);
@@ -144,7 +144,7 @@ class Column : public ScalarExpression {
 class ScalarValue : public ScalarExpression {
  public:
   ScalarValue() : ScalarExpression() {}
-  virtual ~ScalarValue() = default;
+  ~ScalarValue() override = default;
 
   /// Initializes the constant scalar value based on the passed in protobuf msg.
   Status Init(const carnotpb::ScalarValue &pb);
@@ -175,7 +175,7 @@ class ScalarValue : public ScalarExpression {
 class ScalarFunc : public ScalarExpression {
  public:
   ScalarFunc() : ScalarExpression() {}
-  virtual ~ScalarFunc() = default;
+  ~ScalarFunc() override = default;
 
   Status Init(const carnotpb::ScalarFunc &pb);
   // Override base class methods.
@@ -197,7 +197,7 @@ class ScalarFunc : public ScalarExpression {
 class AggregateExpression : public ScalarExpression {
  public:
   AggregateExpression() : ScalarExpression() {}
-  virtual ~AggregateExpression() = default;
+  ~AggregateExpression() override = default;
 
   Status Init(const carnotpb::AggregateExpression &pb);
   // Override base class methods.

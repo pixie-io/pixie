@@ -29,7 +29,7 @@ using pl::bmutils::RandomString;
 std::vector<StringValue> GenerateStringValueVector(int size, int string_width) {
   std::vector<StringValue> data(size);
 
-  std::generate(begin(data), end(data), std::bind(RandomString, string_width));
+  std::generate(begin(data), end(data), [=] { return RandomString(string_width); });
   return data;
 }
 

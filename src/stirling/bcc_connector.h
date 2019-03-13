@@ -14,7 +14,7 @@ class BCCConnector : public SourceConnector {
  public:
   static constexpr SourceType kSourceType = SourceType::kEBPF;
   BCCConnector() = delete;
-  virtual ~BCCConnector() = default;
+  ~BCCConnector() override = default;
 
  protected:
   explicit BCCConnector(std::string source_name, const DataElements& elements,
@@ -60,7 +60,7 @@ class BCCCPUMetricsConnector : public BCCConnector {
   inline static const std::chrono::milliseconds kDefaultSamplingPeriod{10};
   inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
 
-  virtual ~BCCCPUMetricsConnector() = default;
+  ~BCCCPUMetricsConnector() override = default;
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     // EBPF CPU Data Source.

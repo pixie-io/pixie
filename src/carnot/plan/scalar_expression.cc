@@ -284,7 +284,7 @@ std::vector<const Column *> AggregateExpression::ColumnDeps() {
   for (const auto &arg : arg_deps_) {
     auto dep = arg.get();
     if (dep->ExpressionType() == Expression::kColumn) {
-      const Column *col = static_cast<const Column *>(dep);
+      const auto *col = static_cast<const Column *>(dep);
       cols.push_back(col);
     }
   }

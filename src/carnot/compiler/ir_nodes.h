@@ -161,7 +161,7 @@ class IR {
 class OperatorIR : public IRNode {
  public:
   OperatorIR() = delete;
-  bool IsOp() const { return true; }
+  bool IsOp() const override { return true; }
   plan::Relation relation() const { return relation_; }
   Status SetRelation(plan::Relation relation) {
     relation_init_ = true;

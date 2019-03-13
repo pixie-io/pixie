@@ -69,10 +69,10 @@ Status ProcStatConnector::GetProcStat(const std::vector<std::string>& parsed_str
       std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
 
   // Change in cpu stats since last poll.
-  double delta_total = static_cast<double>(total_cpu - prev_cpu_usage_.total);
-  double delta_system = static_cast<double>(system_cpu - prev_cpu_usage_.system);
-  double delta_user = static_cast<double>(user_cpu - prev_cpu_usage_.user);
-  double delta_idle = static_cast<double>(idle_cpu - prev_cpu_usage_.idle);
+  auto delta_total = static_cast<double>(total_cpu - prev_cpu_usage_.total);
+  auto delta_system = static_cast<double>(system_cpu - prev_cpu_usage_.system);
+  auto delta_user = static_cast<double>(user_cpu - prev_cpu_usage_.user);
+  auto delta_idle = static_cast<double>(idle_cpu - prev_cpu_usage_.idle);
 
   // Calculate percentage cpu stats between current and previous poll.
   cpu_usage_.system_percent = delta_system * 100.0 / delta_total;

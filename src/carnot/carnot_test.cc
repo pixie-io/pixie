@@ -257,9 +257,9 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   std::vector<types::Int64Value> col2_out1;
   for (int64_t i = 0; i < table->GetColumn(0)->batch(0)->length(); i++) {
     if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 6) {
-      col0_out1.push_back(CarnotTestUtils::big_test_col1[i].val);
-      col1_out1.push_back(CarnotTestUtils::big_test_col2[i].val);
-      col2_out1.push_back(CarnotTestUtils::big_test_col3[i].val);
+      col0_out1.emplace_back(CarnotTestUtils::big_test_col1[i].val);
+      col1_out1.emplace_back(CarnotTestUtils::big_test_col2[i].val);
+      col2_out1.emplace_back(CarnotTestUtils::big_test_col3[i].val);
     }
   }
 
@@ -277,9 +277,9 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   for (int64_t i = table->GetColumn(0)->batch(0)->length();
        i < table->GetColumn(0)->batch(0)->length() + table->GetColumn(0)->batch(1)->length(); i++) {
     if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 6) {
-      col0_out2.push_back(CarnotTestUtils::big_test_col1[i].val);
-      col1_out2.push_back(CarnotTestUtils::big_test_col2[i].val);
-      col2_out2.push_back(CarnotTestUtils::big_test_col3[i].val);
+      col0_out2.emplace_back(CarnotTestUtils::big_test_col1[i].val);
+      col1_out2.emplace_back(CarnotTestUtils::big_test_col2[i].val);
+      col2_out2.emplace_back(CarnotTestUtils::big_test_col3[i].val);
     }
   }
 
@@ -311,9 +311,9 @@ TEST_F(CarnotTest, range_test_single_rb) {
   std::vector<types::Int64Value> col2_out1;
   for (size_t i = 0; i < CarnotTestUtils::big_test_col1.size(); i++) {
     if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 3) {
-      col0_out1.push_back(CarnotTestUtils::big_test_col1[i].val);
-      col1_out1.push_back(CarnotTestUtils::big_test_col2[i].val);
-      col2_out1.push_back(CarnotTestUtils::big_test_col3[i].val);
+      col0_out1.emplace_back(CarnotTestUtils::big_test_col1[i].val);
+      col1_out1.emplace_back(CarnotTestUtils::big_test_col2[i].val);
+      col2_out1.emplace_back(CarnotTestUtils::big_test_col3[i].val);
     }
   }
 
@@ -542,8 +542,8 @@ TEST_F(CarnotTest, comparison_tests) {
   std::vector<types::BoolValue> gt_exp;
 
   for (int64_t i = 0; i < rb1->num_rows(); i++) {
-    lt_exp.push_back(col3[i] < col3_lt_val);
-    gt_exp.push_back(col_num_groups[i] > num_groups_gt_val);
+    lt_exp.emplace_back(col3[i] < col3_lt_val);
+    gt_exp.emplace_back(col_num_groups[i] > num_groups_gt_val);
   }
   EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(lt_exp, arrow::default_memory_pool())));
   EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(gt_exp, arrow::default_memory_pool())));
@@ -579,8 +579,8 @@ TEST_F(CarnotTest, DISABLED_comparison_to_agg_tests) {
           .ConsumeValueOrDie();
   auto col3 = CarnotTestUtils::big_test_col3;
   int64_t gt_count = 0;
-  for (size_t i = 0; i < col3.size(); i++) {
-    if (col3[i] > col3_gt_val) {
+  for (auto &i : col3) {
+    if (i > col3_gt_val) {
       gt_count += 1;
     }
   }

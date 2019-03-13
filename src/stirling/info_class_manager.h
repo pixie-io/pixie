@@ -35,7 +35,7 @@ using types::DataType;
 class InfoClassElement : public DataElement {
  public:
   InfoClassElement() = delete;
-  virtual ~InfoClassElement() = default;
+  ~InfoClassElement() override = default;
   explicit InfoClassElement(const DataElement& element)
       : DataElement(element), state_(Element_State::Element_State_SUBSCRIBED) {}
   explicit InfoClassElement(const std::string& name, const DataType& type,

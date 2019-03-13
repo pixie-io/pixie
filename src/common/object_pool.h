@@ -39,7 +39,7 @@ class ObjectPool final : public pl::NotCopyable {
 
  private:
   // A generic deletion function pointer. Deletes its first argument.
-  typedef void (*DeleteFn)(void *);
+  using DeleteFn = void (*)(void *);
 
   // For each object, a pointer to the object and a function that deletes it.
   struct Entity {

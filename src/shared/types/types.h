@@ -184,7 +184,7 @@ struct DataTypeTraits {};
 
 template <>
 struct DataTypeTraits<DataType::BOOLEAN> {
-  typedef BoolValue value_type;
+  using value_type = BoolValue;
   using arrow_type = arrow::BooleanType;
   using arrow_builder_type = arrow::BooleanBuilder;
   using arrow_array_type = arrow::BooleanArray;
@@ -193,7 +193,7 @@ struct DataTypeTraits<DataType::BOOLEAN> {
 
 template <>
 struct DataTypeTraits<DataType::INT64> {
-  typedef Int64Value value_type;
+  using value_type = Int64Value;
   using arrow_type = arrow::Int64Type;
   using arrow_builder_type = arrow::Int64Builder;
   using arrow_array_type = arrow::Int64Array;
@@ -202,7 +202,7 @@ struct DataTypeTraits<DataType::INT64> {
 
 template <>
 struct DataTypeTraits<DataType::FLOAT64> {
-  typedef Float64Value value_type;
+  using value_type = Float64Value;
   using arrow_type = arrow::DoubleType;
   using arrow_builder_type = arrow::DoubleBuilder;
   using arrow_array_type = arrow::DoubleArray;
@@ -211,7 +211,7 @@ struct DataTypeTraits<DataType::FLOAT64> {
 
 template <>
 struct DataTypeTraits<DataType::STRING> {
-  typedef StringValue value_type;
+  using value_type = StringValue;
   using arrow_type = arrow::StringType;
   using arrow_builder_type = arrow::StringBuilder;
   using arrow_array_type = arrow::StringArray;
@@ -220,7 +220,7 @@ struct DataTypeTraits<DataType::STRING> {
 
 template <>
 struct DataTypeTraits<DataType::TIME64NS> {
-  typedef Time64NSValue value_type;
+  using value_type = Time64NSValue;
   using arrow_type = arrow::Int64Type;
   using arrow_builder_type = arrow::Int64Builder;
   using arrow_array_type = arrow::Int64Array;

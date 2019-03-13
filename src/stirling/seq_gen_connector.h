@@ -17,7 +17,7 @@ namespace stirling {
  */
 class SeqGenConnector : public SourceConnector {
  public:
-  virtual ~SeqGenConnector() = default;
+  ~SeqGenConnector() override = default;
 
   static constexpr SourceType kSourceType = SourceType::kUnknown;
 

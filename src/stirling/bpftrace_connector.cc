@@ -1,7 +1,7 @@
 #ifdef __linux__
-#include <string.h>
-#include <time.h>
 #include <algorithm>
+#include <cstring>
+#include <ctime>
 #include <thread>
 #include <utility>
 

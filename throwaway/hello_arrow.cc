@@ -149,7 +149,7 @@ arrow::Status ColumnarTableToVector(const std::shared_ptr<arrow::Table>& table,
   // To enable zero-copy slices, the native values pointer might need to account
   // for this slicing offset. This is not needed for the higher level functions
   // like Value(...) that already account for this offset internally.
-  const double* ccv_ptr = cost_components_values->data()->GetValues<double>(1);
+  const auto* ccv_ptr = cost_components_values->data()->GetValues<double>(1);
 
   for (int64_t i = 0; i < table->num_rows(); i++) {
     // Another simplification in this example is that we assume that there are

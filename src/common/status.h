@@ -48,7 +48,7 @@ class PL_MUST_USE_RESULT Status {
   };
 
   static const std::string& empty_string() {
-    static std::string* empty = new std::string;
+    static auto* empty = new std::string;
     return *empty;
   }
 
@@ -57,7 +57,7 @@ class PL_MUST_USE_RESULT Status {
 };
 
 inline Status::Status(const Status& s) noexcept
-    : state_((s.state_ == NULL) ? NULL : new State(*s.state_)) {}
+    : state_((s.state_ == nullptr) ? nullptr : new State(*s.state_)) {}
 
 inline void Status::operator=(const Status& s) noexcept {
   // The following condition catches both aliasing (when this == &s),
@@ -66,7 +66,7 @@ inline void Status::operator=(const Status& s) noexcept {
     if (s.state_.get() == nullptr) {
       state_ = nullptr;
     } else {
-      state_ = std::unique_ptr<State>(new State(*s.state_));
+      state_ = std::make_unique<State>(*s.state_);
     }
   }
 }

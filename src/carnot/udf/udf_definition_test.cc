@@ -96,7 +96,7 @@ TEST(UDFDefinition, arrow_write) {
 
   std::shared_ptr<arrow::Array> res;
   EXPECT_TRUE(output_builder->Finish(&res).ok());
-  arrow::Int64Array *resArr = static_cast<arrow::Int64Array *>(res.get());
+  auto *resArr = static_cast<arrow::Int64Array *>(res.get());
   EXPECT_EQ(4, resArr->Value(0));
   EXPECT_EQ(6, resArr->Value(1));
 }

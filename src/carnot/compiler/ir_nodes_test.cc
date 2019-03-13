@@ -274,7 +274,7 @@ TEST(ToProto, agg_ir) {
 
 class DebugStringFunctionality : public ::testing::Test {
  public:
-  void SetUp() {
+  void SetUp() override {
     graph_ = std::make_shared<IR>();
     time_node_ = graph_->MakeNode<TimeIR>().ValueOrDie();
     EXPECT_OK(time_node_->Init(12345));

@@ -10,8 +10,8 @@ namespace utils {
 TEST(HashUtils, HashCombine) { EXPECT_EQ(0xf4ff80ec63c103d4ULL, HashCombine(0, 1)); }
 
 TEST(HashUtils, BoolValue) {
-  BoolValue v1(0);
-  BoolValue v2(1);
+  BoolValue v1(false);
+  BoolValue v2(true);
 
   EXPECT_NE(hash<BoolValue>{}(v1), hash<BoolValue>{}(v2));
 }

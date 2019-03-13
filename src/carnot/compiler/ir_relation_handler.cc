@@ -90,12 +90,12 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateExpression(IRNode* expr,
   switch (expr->type()) {
     case IRNodeType::ColumnType: {
       // Update the column properties from the parent_rel
-      ColumnIR* col_expr = static_cast<ColumnIR*>(expr);
+      auto* col_expr = static_cast<ColumnIR*>(expr);
       PL_ASSIGN_OR_RETURN(data_type, EvaluateColExpr(col_expr, parent_rel));
       break;
     }
     case IRNodeType::FuncType: {
-      FuncIR* func_expr = static_cast<FuncIR*>(expr);
+      auto* func_expr = static_cast<FuncIR*>(expr);
       PL_ASSIGN_OR_RETURN(data_type, EvaluateFuncExpr(func_expr, parent_rel, is_map));
       break;
     }
@@ -141,7 +141,7 @@ StatusOr<plan::Relation> IRRelationHandler::BlockingAggHandler(OperatorIR* node,
         *node);
   }
   DCHECK_EQ(agg_node->agg_func()->type(), IRNodeType::LambdaType);
-  LambdaIR* agg_func = static_cast<LambdaIR*>(agg_node->agg_func());
+  auto* agg_func = static_cast<LambdaIR*>(agg_node->agg_func());
 
   // Make sure that the expected columns exist in the parent_relation.
   auto agg_expected = agg_func->expected_column_names();
@@ -152,22 +152,22 @@ StatusOr<plan::Relation> IRRelationHandler::BlockingAggHandler(OperatorIR* node,
   if (by_func_ir_node->type() == IRNodeType::BoolType) {
     agg_node->SetGroups({});
   } else {
-    LambdaIR* by_func = static_cast<LambdaIR*>(agg_node->by_func());
+    auto* by_func = static_cast<LambdaIR*>(agg_node->by_func());
     auto by_expected = by_func->expected_column_names();
     PL_RETURN_IF_ERROR(HasExpectedColumns(by_expected, parent_rel));
     // Get the column to group by.
     PL_ASSIGN_OR_RETURN(IRNode * expr, by_func->GetDefaultExpr());
     if (expr->type() == IRNodeType::ColumnType) {
-      ColumnIR* col_expr = static_cast<ColumnIR*>(expr);
+      auto* col_expr = static_cast<ColumnIR*>(expr);
       // Make sure that the column is setup.
       PL_RETURN_IF_ERROR(EvaluateColExpr(col_expr, parent_rel));
       agg_node->SetGroups({col_expr});
       agg_rel.AddColumn(col_expr->type(), col_expr->col_name());
     } else if (expr->type() == IRNodeType::ListType) {
-      ListIR* list_expr = static_cast<ListIR*>(expr);
+      auto* list_expr = static_cast<ListIR*>(expr);
       std::vector<ColumnIR*> columns;
       for (auto ch : list_expr->children()) {
-        ColumnIR* col_expr = static_cast<ColumnIR*>(ch);
+        auto* col_expr = static_cast<ColumnIR*>(ch);
         PL_RETURN_IF_ERROR(EvaluateColExpr(col_expr, parent_rel));
         columns.push_back(col_expr);
       }
@@ -202,7 +202,7 @@ StatusOr<plan::Relation> IRRelationHandler::MapHandler(OperatorIR* node,
   DCHECK_EQ(node->type(), IRNodeType::MapType);
   auto map_node = static_cast<MapIR*>(node);
   DCHECK_EQ(map_node->lambda_func()->type(), IRNodeType::LambdaType);
-  LambdaIR* lambda_func = static_cast<LambdaIR*>(map_node->lambda_func());
+  auto* lambda_func = static_cast<LambdaIR*>(map_node->lambda_func());
 
   // Make sure that the expected columns exist in the parent_relation.
   auto lambda_expected = lambda_func->expected_column_names();

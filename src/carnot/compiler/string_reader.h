@@ -23,7 +23,7 @@ class StringReader : public pypa::Reader {
  public:
   explicit StringReader(std::string input) { lines_ = absl::StrSplit(input, '\n'); }
 
-  ~StringReader() = default;
+  ~StringReader() override = default;
 
   bool set_encoding(const std::string&) override { return true; }
 

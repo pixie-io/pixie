@@ -13,7 +13,7 @@ DataTableSchema::DataTableSchema(const InfoClassSchema& schema) {
   for (const auto& element : schema) {
     // Create DataTableElement for subscribed elements
     if (element.state() == Element_State::Element_State_SUBSCRIBED) {
-      fields_.push_back(DataTableElement(element));
+      fields_.emplace_back(element);
     }
   }
 }

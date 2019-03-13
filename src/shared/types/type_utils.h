@@ -58,7 +58,7 @@ inline std::shared_ptr<arrow::DataType> DataTypeToArrowType(DataType type) {
       return arrow::utf8();
     default:
       DCHECK(false) << absl::StrFormat("Unknown data type %s", ToString(type));
-      return 0;
+      return nullptr;
   }
 }
 
