@@ -83,6 +83,10 @@ udas {
   update_arg_types: FLOAT64
   finalize_type:  INT64
 }
+udas {
+  name: "pl.count"
+  finalize_type:  INT64
+}
 )";
 
 class CompilerTest : public ::testing::Test {
@@ -605,6 +609,32 @@ TEST_F(CompilerTest, comparison_test) {
   auto plan = compiler.Compile(query, compiler_state_.get());
   VLOG(1) << plan.ToString();
   EXPECT_OK(plan);
+}
+
+// Test to make sure that we can have no args to pl count.
+TEST_F(CompilerTest, no_arg_pl_count_test) {
+  auto info = std::make_shared<RegistryInfo>();
+  carnotpb::UDFInfo info_pb;
+  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
+  EXPECT_OK(info->Init(info_pb));
+
+  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
+  rel_map->emplace(
+      "cpu", plan::Relation(
+                 std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
+                                               types::DataType::FLOAT64, types::DataType::FLOAT64}),
+                 std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
+  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
+  std::string query = absl::StrJoin(
+      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(time='-2m')",
+       "aggDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
+       "pl.count}).Result(name='cpu_out')"},
+      "\n");
+  auto compiler = Compiler();
+  auto plan = compiler.Compile(query, compiler_state.get());
+  VLOG(1) << plan.ToString();
+  EXPECT_OK(plan);
+  VLOG(1) << plan.ValueOrDie().DebugString();
 }
 }  // namespace compiler
 }  // namespace carnot

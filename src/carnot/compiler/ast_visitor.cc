@@ -374,6 +374,7 @@ StatusOr<LambdaExprReturn> ASTWalker::LookupPLTimeAttribute(const std::string& a
   time_node->SetLineCol(parent_node->line, parent_node->column);
   return LambdaExprReturn(time_node);
 }
+
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const std::string& arg_name,
                                                              const pypa::AstAttributePtr& node) {
   // make sure that the attribute values are of type name.
@@ -397,9 +398,8 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const std::string& 
     PL_ASSIGN_OR_RETURN(ColumnIR * expr, ir_graph_->MakeNode<ColumnIR>());
     PL_RETURN_IF_ERROR(expr->Init(attribute));
     return LambdaExprReturn(expr, column_names);
-  }
-  if (value == kUDFPrefix) {
-    return LambdaExprReturn(absl::StrFormat("%s.%s", value, attribute));
+  } else if (value == kUDFPrefix) {
+    return LambdaExprReturn(absl::StrFormat("%s.%s", value, attribute), true /*is_pixie_attr*/);
   }
   return CreateAstError(absl::StrFormat("Couldn't find value %s", value), node);
 }
@@ -613,7 +613,9 @@ StatusOr<LambdaBodyReturn> ASTWalker::ProcessLambdaDict(const std::string& arg_n
     auto key_str_ast = body_dict->keys[i];
     PL_ASSIGN_OR_RETURN(auto key_string, GetStrAstValue(key_str_ast));
     PL_ASSIGN_OR_RETURN(auto expr_ret, ProcessLambdaExpr(arg_name, body_dict->values[i]));
-
+    if (expr_ret.is_pixie_attr_) {
+      PL_ASSIGN_OR_RETURN(expr_ret, BuildLambdaFunc(expr_ret.str_, {}, body_dict));
+    }
     PL_RETURN_IF_ERROR(return_val.AddExprResult(key_string, expr_ret));
   }
   return return_val;

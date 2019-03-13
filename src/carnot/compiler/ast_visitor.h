@@ -42,6 +42,8 @@ using ArgMap = std::unordered_map<std::string, IRNode*>;
 struct LambdaExprReturn {
   LambdaExprReturn() = default;
   explicit LambdaExprReturn(std::string str) : str_(std::move(str)) {}
+  LambdaExprReturn(std::string str, bool is_pixie_attr)
+      : str_(std::move(str)), is_pixie_attr_(is_pixie_attr) {}
   explicit LambdaExprReturn(IRNode* expr) : expr_(expr) {}
   LambdaExprReturn(IRNode* expr, std::unordered_set<std::string> column_names)
       : input_relation_columns_(std::move(column_names)), expr_(expr) {}
@@ -76,6 +78,7 @@ struct LambdaExprReturn {
   std::unordered_set<std::string> input_relation_columns_;
   IRNode* expr_ = nullptr;
   std::string str_;
+  bool is_pixie_attr_ = false;
   bool StringOnly() const { return expr_ == nullptr && !str_.empty(); }
 };
 
