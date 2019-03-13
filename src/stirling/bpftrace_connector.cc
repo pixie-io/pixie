@@ -32,9 +32,9 @@ void BPFTraceConnector::InitClockRealTimeOffset() {
 uint64_t BPFTraceConnector::ClockRealTimeOffset() { return real_time_offset_; }
 
 BPFTraceConnector::BPFTraceConnector(const std::string& source_name, const DataElements& elements,
-                                     std::string script, std::vector<std::string> params)
+                                     const std::string_view script, std::vector<std::string> params)
     : SourceConnector(SourceType::kEBPF, source_name, elements),
-      script_(std::move(script)),
+      script_(script),
       params_(std::move(params)) {
   // TODO(oazizi): if machine is ever suspended, this would have to be called again.
   InitClockRealTimeOffset();
@@ -56,7 +56,7 @@ Status BPFTraceConnector::InitImpl() {
   // err = driver.parse_file(script_filename_);
 
   // Script from string (command line argument)
-  err = driver.parse_str(script_);
+  err = driver.parse_str(std::string(script_));
   if (err != 0) {
     return error::Internal("Could not load bpftrace script.");
   }
@@ -106,7 +106,7 @@ Status BPFTraceConnector::InitImpl() {
 }
 
 CPUStatBPFTraceConnector::CPUStatBPFTraceConnector(const std::string& name, uint64_t cpu_id)
-    : BPFTraceConnector(name, kElements, kCPUStatBTScript,
+    : BPFTraceConnector(name, kElements, kBTScript,
                         std::vector<std::string>({std::to_string(cpu_id)})) {
   // Create a data buffer that can hold one record only
   data_buf_.resize(elements_.size());

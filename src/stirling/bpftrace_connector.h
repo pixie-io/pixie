@@ -17,16 +17,14 @@ DUMMY_SOURCE_CONNECTOR(PIDCPUUseBPFTraceConnector);
 }  // namespace pl
 #else
 
+#include "src/common/obj_tools.h"
 #include "third_party/bpftrace/src/bpforc.h"
 #include "third_party/bpftrace/src/bpftrace.h"
 
-extern char _binary_src_stirling_bt_cpustat_bt_start;
-extern char _binary_src_stirling_bt_cpustat_bt_end;
-extern char _binary_src_stirling_bt_cpustat_bt_size;
-
-extern char _binary_src_stirling_bt_pidruntime_bt_start;
-extern char _binary_src_stirling_bt_pidruntime_bt_end;
-extern char _binary_src_stirling_bt_pidruntime_bt_size;
+// The following are string_views into BT files that are included in the binary by the linker.
+// The BT files are permanently resident in memory, so the string view is permanent too.
+OBJ_STRVIEW(cpustat_bt_script, _binary_src_stirling_bt_cpustat_bt);
+OBJ_STRVIEW(pidruntime_bt_script, _binary_src_stirling_bt_pidruntime_bt);
 
 namespace pl {
 namespace stirling {
@@ -42,7 +40,7 @@ class BPFTraceConnector : public SourceConnector {
 
  protected:
   explicit BPFTraceConnector(const std::string& source_name, const DataElements& elements,
-                             std::string script, std::vector<std::string> params);
+                             std::string_view script, std::vector<std::string> params);
 
   Status InitImpl() override;
 
@@ -59,7 +57,9 @@ class BPFTraceConnector : public SourceConnector {
 
  private:
   // This is the script that will run with this Bpftrace Connector.
-  const std::string& script_;
+  std::string_view script_;
+
+  // List of params to the program (like argv).
   std::vector<std::string> params_;
 
   bpftrace::BPFtrace bpftrace_;
@@ -99,9 +99,7 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
   explicit CPUStatBPFTraceConnector(const std::string& name, uint64_t cpu_id);
 
  private:
-  inline static const std::string kCPUStatBTScript = std::string(
-      &_binary_src_stirling_bt_cpustat_bt_start,
-      &_binary_src_stirling_bt_cpustat_bt_end - &_binary_src_stirling_bt_cpustat_bt_start);
+  inline static const std::string_view kBTScript = cpustat_bt_script;
 
   // TODO(oazizi): Make this controllable through Create.
   static constexpr uint64_t cpu_id_ = 0;
@@ -132,9 +130,7 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
   explicit PIDCPUUseBPFTraceConnector(const std::string& name);
 
  private:
-  inline static const std::string kBTScript = std::string(
-      &_binary_src_stirling_bt_pidruntime_bt_start,
-      &_binary_src_stirling_bt_pidruntime_bt_end - &_binary_src_stirling_bt_pidruntime_bt_start);
+  inline static const std::string_view kBTScript = pidruntime_bt_script;
 
   std::vector<uint64_t> data_buf_;
 
