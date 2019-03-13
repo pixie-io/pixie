@@ -77,7 +77,7 @@ Status Stirling::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
 
   // Last append before clearing tables from old subscriptions.
   for (const auto& mgr : info_class_mgrs_) {
-    if (mgr->subscribed() && mgr->PushRequired()) {
+    if (mgr->subscribed()) {
       PL_CHECK_OK(mgr->PushData(agent_callback_));
     }
   }
