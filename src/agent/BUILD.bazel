@@ -8,7 +8,6 @@ pl_cc_library(
     srcs = glob(
         ["*.cc"],
         exclude = [
-            "agent.cc",
             "**/*_test.cc",
             "**/*_benchmark.cc",
         ],
@@ -17,23 +16,14 @@ pl_cc_library(
         ["*.h"],
     ),
     deps = [
-        "//src/carnot/exec:cc_library",
-        "//src/shared/types:cc_library",
+        "//src/agent/controller:cc_library",
     ],
 )
 
 pl_cc_binary(
     name = "agent",
-    srcs = glob(
-        ["*.cc"],
-        exclude = [
-            "**/*_test.cc",
-            "**/throwaway_dummy_data.cc",
-        ],
-    ),
     deps = [
         ":cc_library",
-        "//src/common",
     ],
 )
 
