@@ -29,4 +29,10 @@ inline void ToProto(const sole::uuid& uuid, pl::utils::UUID* uuid_proto) {
   *(uuid_proto->mutable_data()) = uuid.str();
 }
 
+inline void ClearUUID(sole::uuid* uuid) {
+  CHECK(uuid != nullptr);
+  uuid->ab = 0;
+  uuid->cd = 0;
+}
+
 }  // namespace pl

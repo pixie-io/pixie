@@ -38,4 +38,11 @@ TEST(UUIDUtils, regression_test) {
   }
 }
 
+TEST(UUIDUtils, clear_uuid_makes_uuid_zero) {
+  auto uuid = sole::uuid4();
+  ClearUUID(&uuid);
+  EXPECT_EQ(0, uuid.ab);
+  EXPECT_EQ(0, uuid.cd);
+}
+
 }  // namespace pl
