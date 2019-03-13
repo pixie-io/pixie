@@ -143,7 +143,7 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(const pypa::AstCallPtr& call_ast,
     PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(kw_ptr->value));
     arg_map[key] = value;
   }
-  if (missing_args.size() > 0) {
+  if (!missing_args.empty()) {
     return CreateAstError(
         absl::Substitute("Didn't find keywords '[$0]' in function. Please add them.",
                          absl::StrJoin(missing_args, ",")),
@@ -246,9 +246,8 @@ StatusOr<IRNode*> ASTWalker::ProcessMapOp(const pypa::AstCallPtr& node) {
   Status status = ir_node->Init(call_result, args["fn"]);
   if (status.ok()) {
     return ir_node;
-  } else {
-    return status;
   }
+  return status;
 }
 
 StatusOr<IRNode*> ASTWalker::ProcessAggOp(const pypa::AstCallPtr& node) {
@@ -372,7 +371,8 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const std::string& 
     PL_ASSIGN_OR_RETURN(ColumnIR * expr, ir_graph_->MakeNode<ColumnIR>());
     PL_RETURN_IF_ERROR(expr->Init(attribute));
     return LambdaExprReturn(expr, column_names);
-  } else if (value == kUDFPrefix) {
+  }
+  if (value == kUDFPrefix) {
     return LambdaExprReturn(absl::StrFormat("%s.%s", value, attribute));
   }
   return CreateAstError(absl::StrFormat("Couldn't find value %s", value), node);
@@ -463,7 +463,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCall(const std::string& arg_n
     return CreateAstError("Expected a string for the return", node);
   }
   auto arglist = node->arglist;
-  if (arglist.defaults.size() != 0 || arglist.keywords.size() != 0) {
+  if (!arglist.defaults.empty() || !arglist.keywords.empty()) {
     return CreateAstError("Only non-default and non-keyword args allowed.", node);
   }
 
@@ -564,13 +564,13 @@ StatusOr<std::string> ASTWalker::ProcessLambdaArgs(const pypa::AstLambdaPtr& nod
   if (arg_ast.arguments.size() != 1) {
     return CreateAstError("Only allow 1 arg for the lambda.", node);
   }
-  if (arg_ast.defaults.size() != 0 && arg_ast.defaults[0]) {
+  if (!arg_ast.defaults.empty() && arg_ast.defaults[0]) {
     return CreateAstError(
         absl::StrFormat("No default arguments allowed for lambdas. Found %d default args.",
                         arg_ast.defaults.size()),
         node);
   }
-  if (arg_ast.keywords.size() != 0) {
+  if (!arg_ast.keywords.empty()) {
     return CreateAstError("No keyword arguments allowed for lambdas.", node);
   }
   auto arg_node = arg_ast.arguments[0];

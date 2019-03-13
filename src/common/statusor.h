@@ -106,7 +106,7 @@ class StatusOr {
 };
 
 template <typename T>
-StatusOr<T>::StatusOr(const T& value) : status_(), value_(value) {
+StatusOr<T>::StatusOr(const T& value) : value_(value) {
   CheckValueNotNull(value);
 }
 
@@ -138,7 +138,7 @@ StatusOr<T>::StatusOr(const Status& status) : status_(status) {
 }
 
 template <typename T>
-StatusOr<T>::StatusOr(T&& value) : status_() {
+StatusOr<T>::StatusOr(T&& value) {
   CheckValueNotNull(value);
   value_ = std::move(value);
 }

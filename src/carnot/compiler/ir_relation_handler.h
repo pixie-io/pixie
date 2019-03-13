@@ -105,7 +105,7 @@ class IRRelationHandler {
   Status SetSourceRelation(IRNode* node);
   Status SetAllSourceRelations(IR* ir_graph);
   StatusOr<std::vector<ColumnIR*>> GetColumnsFromRelation(IRNode* node,
-                                                          std::vector<std::string> cols,
+                                                          std::vector<std::string> col_names,
                                                           const plan::Relation& relation);
 
   /** Variables **/

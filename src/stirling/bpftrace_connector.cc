@@ -32,9 +32,10 @@ void BPFTraceConnector::InitClockRealTimeOffset() {
 uint64_t BPFTraceConnector::ClockRealTimeOffset() { return real_time_offset_; }
 
 BPFTraceConnector::BPFTraceConnector(const std::string& source_name, const DataElements& elements,
-                                     const std::string& script,
-                                     const std::vector<std::string> params)
-    : SourceConnector(SourceType::kEBPF, source_name, elements), script_(script), params_(params) {
+                                     std::string script, std::vector<std::string> params)
+    : SourceConnector(SourceType::kEBPF, source_name, elements),
+      script_(std::move(script)),
+      params_(std::move(params)) {
   // TODO(oazizi): if machine is ever suspended, this would have to be called again.
   InitClockRealTimeOffset();
 }
@@ -56,7 +57,7 @@ Status BPFTraceConnector::InitImpl() {
 
   // Script from string (command line argument)
   err = driver.parse_str(script_);
-  if (err) {
+  if (err != 0) {
     return error::Internal("Could not load bpftrace script.");
   }
 
@@ -69,8 +70,8 @@ Status BPFTraceConnector::InitImpl() {
   bpftrace_.join_argnum_ = 16;
   bpftrace_.join_argsize_ = 1024;
 
-  err = !bpftrace::TracepointFormatParser::parse(driver.root_);
-  if (err) {
+  err = static_cast<int>(!bpftrace::TracepointFormatParser::parse(driver.root_));
+  if (err != 0) {
     return error::Internal("TracepointFormatParser failed.");
   }
 
@@ -79,12 +80,12 @@ Status BPFTraceConnector::InitImpl() {
 
   bpftrace::ast::SemanticAnalyser semantics(driver.root_, bpftrace_);
   err = semantics.analyse();
-  if (err) {
+  if (err != 0) {
     return error::Internal("Semantic analyser failed.");
   }
 
   err = semantics.create_maps(bpftrace::bt_debug != bpftrace::DebugLevel::kNone);
-  if (err) {
+  if (err != 0) {
     return error::Internal("Failed to create BPF maps");
   }
 
@@ -97,7 +98,7 @@ Status BPFTraceConnector::InitImpl() {
 
   bool nonblocking_run = true;
   err = bpftrace_.run(bpforc_.get(), nonblocking_run);
-  if (err) {
+  if (err != 0) {
     return error::Internal("Failed to run BPF code.");
   }
 

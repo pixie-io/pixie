@@ -40,7 +40,7 @@ std::vector<std::string> ProcStatConnector::GetProcParams() {
 }
 
 Status ProcStatConnector::GetProcStat(const std::vector<std::string>& parsed_str) {
-  if (parsed_str.size() == 0) {
+  if (parsed_str.empty()) {
     return error::InvalidArgument("Did not receive data from /proc/stat");
   }
 

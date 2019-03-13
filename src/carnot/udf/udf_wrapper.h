@@ -172,16 +172,16 @@ int64_t SearchArrowArrayLessThan(
   if (res == -1) {
     // Everything in the array is less than val.
     return arr->length();
-  } else if (res == 0) {
+  }
+  if (res == 0) {
     // Nothing in the array is less than val.
     return -1;
-  } else {
-    // res points to an index that is geq than val. res - 1 should be the largest item less than
-    // val. However, arr[res-1] may be a duplicate value, so we need to find the first instance of
-    // arr[res-1] in the array.
-    auto next_smallest = udf::GetValueFromArrowArray<T>(arr, res - 1);
-    return SearchArrowArrayGreaterThanOrEqual<T>(arr, next_smallest);
   }
+  // res points to an index that is geq than val. res - 1 should be the largest item less than
+  // val. However, arr[res-1] may be a duplicate value, so we need to find the first instance of
+  // arr[res-1] in the array.
+  auto next_smallest = udf::GetValueFromArrowArray<T>(arr, res - 1);
+  return SearchArrowArrayGreaterThanOrEqual<T>(arr, next_smallest);
 }
 
 /**

@@ -16,9 +16,8 @@ inline StatusOr<std::pair<int64_t, int64_t>> StringToTimeRange(const std::string
   if (std::regex_search(str_time, matches, rgx) && matches.size() == 3) {
     return std::make_pair(static_cast<int64_t>(std::stoi(matches[1])),
                           static_cast<int64_t>(std::stoi(matches[2])));
-  } else {
-    return error::InvalidArgument("String provided for Range is in incorrect format.");
   }
+  return error::InvalidArgument("String provided for Range is in incorrect format.");
 }
 
 inline StatusOr<int64_t> StringToTimeInt(const std::string& str_time) {
@@ -34,10 +33,12 @@ inline StatusOr<int64_t> StringToTimeInt(const std::string& str_time) {
     if (unit == "h") {
       return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::hours(amount))
           .count();
-    } else if (unit == "m") {
+    }
+    if (unit == "m") {
       return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::minutes(amount))
           .count();
-    } else if (unit == "ms") {
+    }
+    if (unit == "ms") {
       return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::milliseconds(amount))
           .count();
     } else if (unit == "s") {
@@ -64,7 +65,8 @@ inline StatusOr<int64_t> StringToTimeInt(const std::string& str_time) {
 inline std::string PrettyDuration(double duration_ns) {
   if (duration_ns < 500000) {
     return absl::StrFormat("%.2f \u03BCs", duration_ns / 1E3);
-  } else if (duration_ns < 1E9) {
+  }
+  if (duration_ns < 1E9) {
     return absl::StrFormat("%.2f ms", duration_ns / 1E6);
   }
   return absl::StrFormat("%.2f s", duration_ns / 1E9);

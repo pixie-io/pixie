@@ -221,7 +221,7 @@ Status MapIR::EvaluateExpression(carnotpb::ScalarExpression* expr, const IRNode&
       auto value = expr->mutable_constant();
       auto casted_ir = static_cast<const TimeIR&>(ir_node);
       value->set_data_type(types::DataType::TIME64NS);
-      value->set_time64_ns_value(casted_ir.val());
+      value->set_time64_ns_value(static_cast<::google::protobuf::int64>(casted_ir.val()));
       break;
     }
     default: {
@@ -331,7 +331,7 @@ Status BlockingAggIR::EvaluateAggregateExpression(carnotpb::AggregateExpression*
         auto value = arg_pb->mutable_constant();
         auto casted_ir = static_cast<const TimeIR&>(ir_node);
         value->set_data_type(types::DataType::TIME64NS);
-        value->set_time64_ns_value(casted_ir.val());
+        value->set_time64_ns_value(static_cast<::google::protobuf::int64>(casted_ir.val()));
         break;
       }
       default: {
@@ -369,7 +369,7 @@ Status BlockingAggIR::ToProto(carnotpb::Operator* op) const {
 }
 
 bool ColumnIR::HasLogicalRepr() const { return false; }
-Status ColumnIR::Init(std::string col_name) {
+Status ColumnIR::Init(const std::string& col_name) {
   col_name_ = col_name;
   return Status::OK();
 }

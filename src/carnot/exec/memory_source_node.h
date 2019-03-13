@@ -13,7 +13,7 @@ namespace exec {
 
 class MemorySourceNode : public SourceNode {
  public:
-  MemorySourceNode() : SourceNode() {}
+  MemorySourceNode() = default;
   bool HasBatchesRemaining() override;
   bool NextBatchReady() override;
 

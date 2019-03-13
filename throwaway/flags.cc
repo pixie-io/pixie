@@ -11,14 +11,13 @@ DEFINE_string(message, "", "The message to print");
 int Fib(int n) {
   if (n < 2) {
     return n;
-  } else {
-    int x, y;
-    tbb::task_group g;
-    g.run([&] { x = Fib(n - 1); });  // spawn a task
-    g.run([&] { y = Fib(n - 2); });  // spawn another task
-    g.wait();                        // wait for both tasks to complete
-    return x + y;
   }
+  int x, y;
+  tbb::task_group g;
+  g.run([&] { x = Fib(n - 1); });  // spawn a task
+  g.run([&] { y = Fib(n - 2); });  // spawn another task
+  g.wait();                        // wait for both tasks to complete
+  return x + y;
 }
 
 int main(int argc, char **argv) {

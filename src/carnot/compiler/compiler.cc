@@ -33,7 +33,7 @@ StatusOr<carnotpb::Plan> Compiler::Compile(const std::string& query,
 Status Compiler::VerifyIRConnections(const IR& ir) {
   auto verifier = IRVerifier();
   std::vector<Status> result = verifier.VerifyGraphConnections(ir);
-  if (result.size() != 0) {
+  if (!result.empty()) {
     std::vector<std::string> msgs;
     error::Code code = error::Code::OK;
 

@@ -128,7 +128,8 @@ class Table : public NotCopyable {
    * @ param offset the first index of the slice of the RowBatch.
    * @ param end the ending index of the slice of the RowBatch (not inclusive).
    */
-  StatusOr<std::unique_ptr<RowBatch>> GetRowBatchSlice(int64_t i, std::vector<int64_t> cols,
+  StatusOr<std::unique_ptr<RowBatch>> GetRowBatchSlice(int64_t row_batch_idx,
+                                                       std::vector<int64_t> cols,
                                                        arrow::MemoryPool* mem_pool, int64_t offset,
                                                        int64_t end);
 

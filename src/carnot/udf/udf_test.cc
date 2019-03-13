@@ -147,7 +147,7 @@ TEST(BoolValue, value_tests) {
   v = true;
   EXPECT_EQ(true, v.val);
   // Check type base type.
-  bool base_type_check = (true == std::is_base_of_v<types::BaseValueType, types::BoolValue>);
+  bool base_type_check = (std::is_base_of_v<types::BaseValueType, types::BoolValue>);
   EXPECT_TRUE(base_type_check);
 }
 
@@ -161,7 +161,7 @@ TEST(Int64Value, value_tests) {
   v = 24;
   EXPECT_EQ(24, v.val);
   // Check type base type.
-  bool base_type_check = (true == std::is_base_of_v<types::BaseValueType, types::Int64Value>);
+  bool base_type_check = (std::is_base_of_v<types::BaseValueType, types::Int64Value>);
   EXPECT_TRUE(base_type_check);
 }
 
@@ -175,7 +175,7 @@ TEST(Float64Value, value_tests) {
   v = 24.2;
   EXPECT_DOUBLE_EQ(24.2, v.val);
   // Check type base type.
-  bool base_type_check = (true == std::is_base_of_v<types::BaseValueType, types::Float64Value>);
+  bool base_type_check = (std::is_base_of_v<types::BaseValueType, types::Float64Value>);
   EXPECT_TRUE(base_type_check);
 }
 
@@ -189,7 +189,7 @@ TEST(StringValue, value_tests) {
   sv = "def";
   EXPECT_EQ("def", sv);
   // Check type base type.
-  bool base_type_check = (true == std::is_base_of_v<types::BaseValueType, types::StringValue>);
+  bool base_type_check = (std::is_base_of_v<types::BaseValueType, types::StringValue>);
   EXPECT_TRUE(base_type_check);
 }
 

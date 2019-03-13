@@ -65,7 +65,7 @@ Status IROptimizer::CollapseRange(IR* ir_graph) {
     }
     break;
   }
-  if (rangeIR) {
+  if (rangeIR != nullptr) {
     ir_graph->DeleteNode(rangeIR->id());
   }
   return Status::OK();

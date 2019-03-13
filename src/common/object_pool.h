@@ -33,7 +33,9 @@ class ObjectPool final : public pl::NotCopyable {
 
   void Clear() {
     absl::base_internal::SpinLockHolder lock(&lock_);
-    for (auto &obj : obj_list_) obj.delete_fn(obj.obj);
+    for (auto &obj : obj_list_) {
+      obj.delete_fn(obj.obj);
+    }
     obj_list_.clear();
   }
 

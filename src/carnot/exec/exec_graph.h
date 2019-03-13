@@ -33,16 +33,15 @@ class ExecutionGraph {
    * @param pf The plan fragment to create the execution graph from.
    * @return The status of whether initialization succeeded.
    */
-  Status Init(std::shared_ptr<plan::Schema> schema, plan::PlanState *PlanState,
-              ExecState *execState, plan::PlanFragment *pf);
+  Status Init(std::shared_ptr<plan::Schema> schema, plan::PlanState *plan_state,
+              ExecState *exec_state, plan::PlanFragment *pf);
   std::vector<int64_t> sources() { return sources_; }
   StatusOr<ExecNode *> node(int64_t id) {
     auto node = nodes_.find(id);
     if (node == nodes_.end()) {
       return error::NotFound("Could not find ExecNode.");
-    } else {
-      return node->second;
     }
+    return node->second;
   }
   Status Execute();
   std::vector<std::string> OutputTables() const;
@@ -68,9 +67,8 @@ class ExecutionGraph {
       auto input_desc = descriptors->find(parent_id);
       if (input_desc == descriptors->end()) {
         return error::NotFound("Could not find RowDescriptor.");
-      } else {
-        input_descriptors.push_back(input_desc->second);
       }
+      input_descriptors.push_back(input_desc->second);
     }
     // Get output descriptor.
     auto output_rel = node.OutputRelation(*schema_, *plan_state_, parents).ConsumeValueOrDie();
@@ -90,9 +88,8 @@ class ExecutionGraph {
       // Error if can't find parent in nodes.
       if (parent == nodes_.end()) {
         return error::NotFound("Could not find parent ExecNode.");
-      } else {
-        parent->second->AddChild(execNode);
       }
+      parent->second->AddChild(execNode);
     }
     return Status::OK();
   }

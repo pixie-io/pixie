@@ -72,7 +72,7 @@ enum class ScalarExpressionEvaluatorType : uint8_t {
 class ScalarExpressionEvaluator : public ExpressionEvaluator {
  public:
   explicit ScalarExpressionEvaluator(plan::ConstScalarExpressionVector expressions)
-      : ExpressionEvaluator(), expressions_(std::move(expressions)) {}
+      : expressions_(std::move(expressions)) {}
 
   /**
    * Creates a new Scalar expression evaluator.

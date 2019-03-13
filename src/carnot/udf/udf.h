@@ -223,10 +223,7 @@ static constexpr bool IsValidFinalizeFn(ReturnType (TUDA::*)(Types...)) {
 
 template <typename ReturnType, typename TUDA, typename... Types>
 static constexpr bool IsValidFinalizeFn(ReturnType (TUDA::*)(FunctionContext*)) {
-  if (types::IsValidValueType<ReturnType>::value) {
-    return true;
-  }
-  return false;
+  return static_cast<bool>(types::IsValidValueType<ReturnType>::value);
 }
 
 /**

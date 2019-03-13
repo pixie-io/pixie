@@ -115,7 +115,7 @@ class ASTWalker {
    * @param node: the ptr to the ast node.
    * @return Status
    */
-  Status ProcessModuleNode(const pypa::AstModulePtr& node);
+  Status ProcessModuleNode(const pypa::AstModulePtr& m);
 
  private:
   /**
@@ -127,7 +127,7 @@ class ASTWalker {
    * @param kwargs_only Whether to only allow keyword args.
    * @return StatusOr<ArgMap>
    */
-  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& arg_ast,
+  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast,
                                const std::vector<std::string>& expected_args, bool kwargs_only);
 
   /**
@@ -312,7 +312,7 @@ class ASTWalker {
    * @return StatusOr<ColExprMap> a map from new column name to expression.
    */
   StatusOr<LambdaBodyReturn> ProcessLambdaDict(const std::string& arg_name,
-                                               const pypa::AstDictPtr& node);
+                                               const pypa::AstDictPtr& body_dict);
 
   /**
    * @brief Takes in an attribute contained within a lambda and maps it to either a column or a

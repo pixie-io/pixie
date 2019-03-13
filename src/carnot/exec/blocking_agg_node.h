@@ -16,7 +16,7 @@ namespace exec {
 
 class BlockingAggNode : public ProcessingNode {
  public:
-  BlockingAggNode() : ProcessingNode() {}
+  BlockingAggNode() = default;
 
  protected:
   std::string DebugStringImpl() override;

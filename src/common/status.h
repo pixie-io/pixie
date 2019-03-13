@@ -63,7 +63,7 @@ inline void Status::operator=(const Status& s) noexcept {
   // The following condition catches both aliasing (when this == &s),
   // and the common case where both s and *this are ok.
   if (state_ != s.state_) {
-    if (s.state_.get() == nullptr) {
+    if (s.state_ == nullptr) {
       state_ = nullptr;
     } else {
       state_ = std::make_unique<State>(*s.state_);

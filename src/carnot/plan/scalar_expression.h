@@ -114,7 +114,7 @@ using ScalarExpressionPtrVector = std::vector<std::unique_ptr<ScalarExpression>>
  */
 class Column : public ScalarExpression {
  public:
-  Column() : ScalarExpression() {}
+  Column() = default;
   ~Column() override = default;
 
   /// Initializes the column value based on the passed in protobuf msg.
@@ -143,7 +143,7 @@ class Column : public ScalarExpression {
  */
 class ScalarValue : public ScalarExpression {
  public:
-  ScalarValue() : ScalarExpression() {}
+  ScalarValue() = default;
   ~ScalarValue() override = default;
 
   /// Initializes the constant scalar value based on the passed in protobuf msg.
@@ -174,7 +174,7 @@ class ScalarValue : public ScalarExpression {
 
 class ScalarFunc : public ScalarExpression {
  public:
-  ScalarFunc() : ScalarExpression() {}
+  ScalarFunc() = default;
   ~ScalarFunc() override = default;
 
   Status Init(const carnotpb::ScalarFunc &pb);
@@ -196,7 +196,7 @@ class ScalarFunc : public ScalarExpression {
 
 class AggregateExpression : public ScalarExpression {
  public:
-  AggregateExpression() : ScalarExpression() {}
+  AggregateExpression() = default;
   ~AggregateExpression() override = default;
 
   Status Init(const carnotpb::AggregateExpression &pb);

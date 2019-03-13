@@ -42,7 +42,7 @@ Status IRRelationHandler::HasExpectedColumns(
       missing_cols.push_back(c);
     }
   }
-  if (missing_cols.size() != 0) {
+  if (!missing_cols.empty()) {
     return error::InvalidArgument("Couldn't find [$0] in relation.",
                                   absl::StrJoin(missing_cols, "\n"));
   }

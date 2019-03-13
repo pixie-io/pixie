@@ -34,7 +34,7 @@ class DataTable {
    *
    * @return Status
    */
-  virtual Status AppendData(uint8_t* const data, uint64_t num_rows) = 0;
+  virtual Status AppendData(uint8_t* data, uint64_t num_rows) = 0;
 
   /**
    * @brief Get the data collected so far and relinquish ownership.
@@ -103,7 +103,7 @@ class ColumnWrapperDataTable : public DataTable {
  public:
   ColumnWrapperDataTable() = delete;
   explicit ColumnWrapperDataTable(const InfoClassSchema& schema);
-  Status AppendData(uint8_t* const data, uint64_t num_rows) override;
+  Status AppendData(uint8_t* data, uint64_t num_rows) override;
   StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVec>> GetColumnWrapperRecordBatches() override;
 
  private:
@@ -124,7 +124,7 @@ class ArrowDataTable : public DataTable {
  public:
   ArrowDataTable() = delete;
   explicit ArrowDataTable(const InfoClassSchema& schema);
-  Status AppendData(uint8_t* const data, uint64_t num_rows) override;
+  Status AppendData(uint8_t* data, uint64_t num_rows) override;
   StatusOr<std::unique_ptr<ArrowRecordBatchSPtrVec>> GetArrowRecordBatches() override;
 
  private:

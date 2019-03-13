@@ -299,7 +299,7 @@ StatusOr<types::DataType> AggregateExpression::OutputDataType(const PlanState &s
   std::vector<types::DataType> child_args;
   child_args.reserve(arg_deps_.size());
   for (const auto &arg : arg_deps_) {
-    child_args.push_back(arg.get()->OutputDataType(state, input_schema).ValueOrDie());
+    child_args.push_back(arg->OutputDataType(state, input_schema).ValueOrDie());
   }
   PL_ASSIGN_OR_RETURN(auto s, state.uda_registry()->GetDefinition(name_, child_args));
   return s->finalize_return_type();

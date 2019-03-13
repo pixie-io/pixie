@@ -42,7 +42,7 @@ class BPFTraceConnector : public SourceConnector {
 
  protected:
   explicit BPFTraceConnector(const std::string& source_name, const DataElements& elements,
-                             const std::string& script, const std::vector<std::string> params);
+                             std::string script, std::vector<std::string> params);
 
   Status InitImpl() override;
 
@@ -132,7 +132,7 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
   explicit PIDCPUUseBPFTraceConnector(const std::string& name);
 
  private:
-  const std::string kBTScript = std::string(
+  inline static const std::string kBTScript = std::string(
       &_binary_src_stirling_bt_pidruntime_bt_start,
       &_binary_src_stirling_bt_pidruntime_bt_end - &_binary_src_stirling_bt_pidruntime_bt_start);
 

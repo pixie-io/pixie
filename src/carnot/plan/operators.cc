@@ -63,7 +63,7 @@ Status MemorySourceOperator::Init(const carnotpb::MemorySourceOperator &pb) {
 StatusOr<Relation> MemorySourceOperator::OutputRelation(
     const Schema &, const PlanState &, const std::vector<int64_t> &input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
-  if (input_ids.size() != 0) {
+  if (!input_ids.empty()) {
     // TODO(zasgar): We should figure out if we need to treat the "source table" as
     // an input relation.
     return error::InvalidArgument("Source operator cannot have any inputs");
@@ -83,7 +83,7 @@ std::string MapOperator::DebugString() const {
   std::string debug_string;
   debug_string += "(";
   for (size_t i = 0; i < expressions_.size(); ++i) {
-    if (i) {
+    if (i != 0u) {
       debug_string += ",";
     }
     debug_string += absl::StrFormat("%s:%s", column_names_[i], expressions_[i]->DebugString());

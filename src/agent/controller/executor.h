@@ -55,7 +55,7 @@ class Executor {
    * @param publish_message
    * @return Subscribe
    */
-  Subscribe SubscribeToEverything(const Publish& publish_message);
+  Subscribe SubscribeToEverything(const Publish& publish_proto);
 
   /**
    * @brief Create Tables from Subscription proto.

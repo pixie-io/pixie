@@ -129,9 +129,9 @@ class IR {
     return raw;
   }
 
-  Status AddEdge(int64_t parent, int64_t child);
-  Status AddEdge(IRNode* parent, IRNode* child);
-  void DeleteEdge(int64_t parent, int64_t child);
+  Status AddEdge(int64_t from_node, int64_t to_node);
+  Status AddEdge(IRNode* from_node, IRNode* to_node);
+  void DeleteEdge(int64_t from_node, int64_t to_node);
   void DeleteNode(int64_t node);
   plan::DAG& dag() { return dag_; }
   const plan::DAG& dag() const { return dag_; }
@@ -171,7 +171,7 @@ class OperatorIR : public IRNode {
   bool IsRelationInit() const { return relation_init_; }
   bool HasParent() const { return has_parent_; }
   OperatorIR* parent() const { return parent_; }
-  Status SetParent(IRNode* parent);
+  Status SetParent(IRNode* node);
   virtual Status ToProto(carnotpb::Operator*) const = 0;
 
  protected:
@@ -193,7 +193,7 @@ class ColumnIR : public IRNode {
  public:
   ColumnIR() = delete;
   explicit ColumnIR(int64_t id) : IRNode(id, ColumnType, false) {}
-  Status Init(const std::string col_name);
+  Status Init(const std::string& col_name);
   bool HasLogicalRepr() const override;
   std::string col_name() const { return col_name_; }
   std::string DebugString(int64_t depth) const override;
@@ -231,7 +231,7 @@ class StringIR : public IRNode {
  public:
   StringIR() = delete;
   explicit StringIR(int64_t id) : IRNode(id, StringType, false) {}
-  Status Init(const std::string str);
+  Status Init(std::string str);
   bool HasLogicalRepr() const override;
   std::string str() const { return str_; }
   std::string DebugString(int64_t depth) const override;
@@ -371,7 +371,7 @@ class TimeIR : public IRNode {
   Status Init(int64_t val);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  bool val() const { return val_; }
+  bool val() const { return val_ != 0; }
   bool IsOp() const override { return false; }
 
  private:

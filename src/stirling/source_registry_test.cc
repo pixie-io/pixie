@@ -18,7 +18,7 @@ void RegisterTestSources(SourceRegistry* registry) {
 
 class SourceRegistryTest : public ::testing::Test {
  protected:
-  SourceRegistryTest() : registry_() {}
+  SourceRegistryTest() = default;
   void SetUp() override { RegisterTestSources(&registry_); }
   SourceRegistry registry_;
 };

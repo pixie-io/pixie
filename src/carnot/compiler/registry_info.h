@@ -57,7 +57,7 @@ class RegistryKey {
 
 class RegistryInfo {
  public:
-  Status Init(const carnotpb::UDFInfo info);
+  Status Init(carnotpb::UDFInfo info);
   StatusOr<types::DataType> GetUDA(std::string name, std::vector<types::DataType> update_arg_types);
   StatusOr<types::DataType> GetUDF(std::string name, std::vector<types::DataType> exec_arg_types);
 

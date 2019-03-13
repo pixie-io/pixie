@@ -127,9 +127,13 @@ class RelationHandlerTest : public ::testing::Test {
       auto type1 = r1_types[i];
       auto r2_iter = std::find(r2_names.begin(), r2_names.end(), col1);
       // if we can't find name in the second relation, then
-      if (r2_iter == r2_names.end()) return false;
+      if (r2_iter == r2_names.end()) {
+        return false;
+      }
       int64_t r2_idx = std::distance(r2_names.begin(), r2_iter);
-      if (r2_types[r2_idx] != type1) return false;
+      if (r2_types[r2_idx] != type1) {
+        return false;
+      }
     }
     return true;
   }

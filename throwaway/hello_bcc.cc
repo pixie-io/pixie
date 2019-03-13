@@ -45,10 +45,9 @@ int main() {
         return 1;
       }
       break;
-    } else {
-      std::cout << "Waiting for a sys_clone event" << std::endl;
-      sleep(1);
     }
+    std::cout << "Waiting for a sys_clone event" << std::endl;
+    sleep(1);
   }
 
   return 0;

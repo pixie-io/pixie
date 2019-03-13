@@ -18,7 +18,7 @@ class ScalarUDF1 : public ScalarUDF {
  public:
   types::Int64Value Exec(FunctionContext *ctx, types::BoolValue b1, types::Int64Value b2) {
     PL_UNUSED(ctx);
-    return b1.val && b2.val ? 3 : 0;
+    return b1.val && (b2.val != 0) ? 3 : 0;
   }
 };
 

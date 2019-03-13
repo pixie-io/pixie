@@ -21,13 +21,7 @@ stirlingpb::Element InfoClassElement::ToProto() const {
   return element_proto;
 }
 
-bool InfoClassManager::SamplingRequired() const {
-  if (CurrentTime() > NextSamplingTime()) {
-    return true;
-  }
-
-  return false;
-}
+bool InfoClassManager::SamplingRequired() const { return CurrentTime() > NextSamplingTime(); }
 
 bool InfoClassManager::PushRequired() const {
   if (CurrentTime() > NextPushTime()) {
@@ -65,7 +59,7 @@ Status InfoClassManager::SampleData() {
 Status InfoClassManager::PushData(PushDataCallback agent_callback) {
   PL_ASSIGN_OR_RETURN(auto record_batches, data_table_->GetColumnWrapperRecordBatches());
   for (auto& record_batch : *record_batches) {
-    if (record_batch->size() > 0) {
+    if (!record_batch->empty()) {
       agent_callback(id(), std::move(record_batch));
     }
   }

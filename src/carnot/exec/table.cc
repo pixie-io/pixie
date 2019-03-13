@@ -48,7 +48,7 @@ Status Table::AddColumn(std::shared_ptr<Column> col) {
                                   col->data_type(), desc_.type(columns_.size()));
   }
 
-  if (columns_.size() > 0) {
+  if (!columns_.empty()) {
     // Check number of batches.
     if (columns_[0]->numBatches() != col->numBatches()) {
       return error::InvalidArgument("Column has $0 batches, but should have $1.", col->numBatches(),
@@ -79,7 +79,7 @@ StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatchSlice(int64_t row_batch_id
                                                             std::vector<int64_t> cols,
                                                             arrow::MemoryPool* mem_pool,
                                                             int64_t offset, int64_t end) {
-  DCHECK(columns_.size() > 0) << "RowBatch does not have any columns.";
+  DCHECK(!columns_.empty()) << "RowBatch does not have any columns.";
   DCHECK(NumBatches() > row_batch_idx) << absl::StrFormat(
       "Table has %d batches, but requesting batch %d", NumBatches(), row_batch_idx);
 
@@ -89,7 +89,7 @@ StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatchSlice(int64_t row_batch_id
     rb_types.push_back(desc_.type(col_idx));
   }
 
-  auto num_cold_batches = columns_.size() > 0 ? columns_[0]->numBatches() : 0;
+  auto num_cold_batches = !columns_.empty() ? columns_[0]->numBatches() : 0;
   // If i > num_cold_batches, hot_idx is the index of the batch that we want from the hot columns.
   auto hot_idx = row_batch_idx - num_cold_batches;
 
@@ -176,7 +176,7 @@ Status Table::TransferRecordBatch(
 
 int64_t Table::NumBatches() {
   auto num_batches = 0;
-  if (columns_.size() > 0) {
+  if (!columns_.empty()) {
     num_batches += columns_[0]->numBatches();
   }
 
@@ -205,9 +205,8 @@ std::shared_ptr<arrow::Array> Table::GetColumnBatch(int64_t col, int64_t batch,
   if (batch >= columns_[col]->numBatches()) {
     auto hot_col_idx = batch - columns_[col]->numBatches();
     return hot_batches_.at(hot_col_idx)->at(col)->ConvertToArrow(mem_pool);
-  } else {
-    return columns_[col]->batch(batch);
   }
+  return columns_[col]->batch(batch);
 }
 
 int64_t Table::FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
@@ -249,9 +248,11 @@ int64_t Table::FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
       udf::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), batch->length() - 1);
   if (time > start_val && time <= stop_val) {
     return mid;
-  } else if (time > stop_val) {
+  }
+  if (time > stop_val) {
     return FindBatchGreaterThanOrEqual(time_col_idx, time, mem_pool, mid + 1, end);
-  } else if (time <= start_val) {
+  }
+  if (time <= start_val) {
     auto res = FindBatchGreaterThanOrEqual(time_col_idx, time, mem_pool, start, mid - 1);
     if (res == -1) {
       return mid;
