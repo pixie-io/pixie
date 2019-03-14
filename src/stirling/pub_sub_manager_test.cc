@@ -40,7 +40,9 @@ const char* kInfoClassManager = R"(
     key: "source"
     value: "cpu_usage"
   }
-  subscribed: false
+  subscribed: false,
+  sampling_period_millis: 100,
+  push_period_millis: 1000
 )";
 
 class PubSubManagerTest : public ::testing::Test {
@@ -85,6 +87,10 @@ TEST_F(PubSubManagerTest, publish_test) {
   EXPECT_FALSE(actual_publish_pb.published_info_classes(0).subscribed());
   EXPECT_EQ(1, expected_publish_pb.published_info_classes_size());
   EXPECT_EQ(0, actual_publish_pb.published_info_classes(0).id());
+  EXPECT_EQ(InfoClassManager::kDefaultSamplingPeriod,
+            actual_publish_pb.published_info_classes(0).sampling_period_millis());
+  EXPECT_EQ(InfoClassManager::kDefaultPushPeriod,
+            actual_publish_pb.published_info_classes(0).push_period_millis());
 
   EXPECT_TRUE(MessageDifferencer::Equals(actual_publish_pb, expected_publish_pb));
 }

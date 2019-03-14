@@ -92,6 +92,8 @@ stirlingpb::InfoClass InfoClassManager::ToProto() const {
   info_class_proto.set_name(name_);
   info_class_proto.set_id(id_);
   info_class_proto.set_subscribed(subscribed_);
+  info_class_proto.set_sampling_period_millis(sampling_period_.count());
+  info_class_proto.set_push_period_millis(push_period_.count());
 
   return info_class_proto;
 }

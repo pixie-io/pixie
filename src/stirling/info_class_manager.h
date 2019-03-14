@@ -265,7 +265,7 @@ class InfoClassManager {
   /**
    * Sampling period.
    */
-  std::chrono::milliseconds sampling_period_;
+  std::chrono::milliseconds sampling_period_{kDefaultSamplingPeriod};
 
   /**
    * Keep track of when the source was last sampled.
@@ -280,7 +280,7 @@ class InfoClassManager {
   /**
    * Sampling period.
    */
-  std::chrono::milliseconds push_period_;
+  std::chrono::milliseconds push_period_{kDefaultPushPeriod};
 
   /**
    * Keep track of when the source was last sampled.
@@ -302,8 +302,16 @@ class InfoClassManager {
    */
   uint32_t push_count_ = 0;
 
+ public:
   static constexpr uint32_t kDefaultOccupancyThreshold = 1024;
   static constexpr uint32_t kDefaultOccupancyPctThreshold = 100;
+
+  // The sampling/push periods are overwritten by CreateSourceConnectors(),
+  // which uses SourceConnector specific default values.
+  // So don't read too much into these constants.
+  // See the default constants in the individual source connectors instead.
+  static constexpr uint32_t kDefaultSamplingPeriod = 100;
+  static constexpr uint32_t kDefaultPushPeriod = 1000;
 };
 
 }  // namespace stirling

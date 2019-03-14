@@ -45,6 +45,8 @@ message InfoClass {
   // k8s node, aws node, etc.), pods on the host node, services running on a node, etc.
   map<string, string> metadata = 4;
   bool subscribed = 5;
+  uint32 sampling_period_millis = 6;
+  uint32 push_period_millis = 7;
 }
 
 // Publish message contains information on
