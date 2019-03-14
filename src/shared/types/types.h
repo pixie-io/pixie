@@ -2,6 +2,7 @@
 #include <arrow/builder.h>
 #include <arrow/type.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <iostream>
@@ -95,6 +96,21 @@ struct Time64NSValue : public Int64Value {
   Time64NSValue(int64_t lhs) : Int64Value(lhs) {}
 };
 
+union FixedSizeValueUnion {
+  // Don't construct values up creation of this union, this default constructor
+  // prevents construction of sub types.
+  FixedSizeValueUnion() {}
+  BoolValue bool_value;
+  Int64Value int64_value;
+  Float64Value float64_value;
+  Time64NSValue time64ns_value;
+};
+
+const uint8_t kFixedSizeBytes = sizeof(FixedSizeValueUnion);
+
+static_assert(kFixedSizeBytes == 8,
+              "Please re-consider bloating fixed size values since it might have significant "
+              "performance impact");
 /**
  * The value type for string values.
  */
@@ -106,6 +122,68 @@ struct StringValue : BaseValueType, public std::string {
   StringValue(std::string&& str) : std::string(std::move(str)) {}
 };
 
+/**
+ * Get the value out of the fixed sized union (by type).
+ * @tparam T The type to pull out.
+ * @param u The union.
+ * @return const reference to the value.
+ */
+template <typename T>
+inline const T& Get(const FixedSizeValueUnion& u) {
+  PL_UNUSED(u);
+  static_assert(sizeof(T) == 0, "Invalid type for get expression");
+}
+
+template <>
+inline const BoolValue& Get<BoolValue>(const FixedSizeValueUnion& u) {
+  return u.bool_value;
+}
+
+template <>
+inline const Int64Value& Get<Int64Value>(const FixedSizeValueUnion& u) {
+  return u.int64_value;
+}
+
+template <>
+inline const Float64Value& Get<Float64Value>(const FixedSizeValueUnion& u) {
+  return u.float64_value;
+}
+
+template <>
+inline const Time64NSValue& Get<Time64NSValue>(const FixedSizeValueUnion& u) {
+  return u.time64ns_value;
+}
+
+template <typename T>
+inline void SetValue(FixedSizeValueUnion* u, T val) {
+  PL_UNUSED(u);
+  PL_UNUSED(val);
+  static_assert(sizeof(T) == 0, "Invalid type for set expression");
+}
+
+template <>
+inline void SetValue<BoolValue>(FixedSizeValueUnion* u, BoolValue val) {
+  DCHECK(u != nullptr);
+  u->bool_value = val;
+}
+
+template <>
+inline void SetValue<Int64Value>(FixedSizeValueUnion* u, Int64Value val) {
+  DCHECK(u != nullptr);
+  u->int64_value = val;
+}
+
+template <>
+inline void SetValue<Float64Value>(FixedSizeValueUnion* u, Float64Value val) {
+  DCHECK(u != nullptr);
+  u->float64_value = val;
+}
+
+template <>
+inline void SetValue<Time64NSValue>(FixedSizeValueUnion* u, Time64NSValue val) {
+  DCHECK(u != nullptr);
+  u->time64ns_value = val;
+}
 /**
  * Checks to see if a valid ValueType is being used.
  * @tparam T The type to check.
@@ -132,6 +210,7 @@ struct ValueTypeTraits {
 
 template <>
 struct ValueTypeTraits<BoolValue> {
+  static constexpr bool is_fixed_size = true;
   static constexpr DataType data_type = types::BOOLEAN;
   using arrow_type = arrow::BooleanType;
   using arrow_builder_type = arrow::BooleanBuilder;
@@ -141,6 +220,7 @@ struct ValueTypeTraits<BoolValue> {
 
 template <>
 struct ValueTypeTraits<Int64Value> {
+  static constexpr bool is_fixed_size = true;
   static constexpr DataType data_type = types::INT64;
   using arrow_type = arrow::Int64Type;
   using arrow_builder_type = arrow::Int64Builder;
@@ -150,6 +230,7 @@ struct ValueTypeTraits<Int64Value> {
 
 template <>
 struct ValueTypeTraits<Float64Value> {
+  static constexpr bool is_fixed_size = true;
   static constexpr DataType data_type = types::FLOAT64;
   using arrow_type = arrow::DoubleType;
   using arrow_builder_type = arrow::DoubleBuilder;
@@ -159,6 +240,7 @@ struct ValueTypeTraits<Float64Value> {
 
 template <>
 struct ValueTypeTraits<Time64NSValue> {
+  static constexpr bool is_fixed_size = true;
   static constexpr DataType data_type = types::TIME64NS;
   using arrow_type = arrow::Int64Type;
   using arrow_builder_type = arrow::Int64Builder;
@@ -168,6 +250,7 @@ struct ValueTypeTraits<Time64NSValue> {
 
 template <>
 struct ValueTypeTraits<StringValue> {
+  static constexpr bool is_fixed_size = false;
   static constexpr DataType data_type = types::STRING;
   using arrow_type = arrow::StringType;
   using arrow_builder_type = arrow::StringBuilder;
