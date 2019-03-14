@@ -72,7 +72,9 @@ enum class ScalarExpressionEvaluatorType : uint8_t {
 class ScalarExpressionEvaluator : public ExpressionEvaluator {
  public:
   explicit ScalarExpressionEvaluator(plan::ConstScalarExpressionVector expressions)
-      : expressions_(std::move(expressions)) {}
+      : expressions_(std::move(expressions)) {
+    function_ctx_ = std::make_unique<udf::FunctionContext>();
+  }
 
   /**
    * Creates a new Scalar expression evaluator.
@@ -93,6 +95,7 @@ class ScalarExpressionEvaluator : public ExpressionEvaluator {
   virtual Status EvaluateSingleExpression(ExecState* exec_state, const RowBatch& input,
                                           const plan::ScalarExpression& expr, RowBatch* output) = 0;
   plan::ConstScalarExpressionVector expressions_;
+  std::unique_ptr<udf::FunctionContext> function_ctx_;
 };
 
 /**

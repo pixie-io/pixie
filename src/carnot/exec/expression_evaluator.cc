@@ -220,7 +220,7 @@ Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
         auto output = types::ColumnWrapper::Make(def->exec_return_type(), num_rows);
         // TODO(zasgar): need a better way to handle errors.
         PL_CHECK_OK(
-            def->ExecBatch(udf.get(), nullptr /*ctx*/, raw_children, output.get(), num_rows));
+            def->ExecBatch(udf.get(), function_ctx_.get(), raw_children, output.get(), num_rows));
         return output;
       });
 
@@ -282,8 +282,8 @@ Status exec::ArrowNativeScalarExpressionEvaluator::EvaluateSingleExpression(
           raw_children.push_back(child.get());
         }
 
-        PL_CHECK_OK(
-            def->ExecBatchArrow(udf.get(), nullptr /*ctx*/, raw_children, output.get(), num_rows));
+        PL_CHECK_OK(def->ExecBatchArrow(udf.get(), function_ctx_.get(), raw_children, output.get(),
+                                        num_rows));
 
         std::shared_ptr<arrow::Array> output_array;
         PL_CHECK_OK(output->Finish(&output_array));
