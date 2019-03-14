@@ -3,22 +3,9 @@
 #include <random>
 #include <vector>
 #include "src/shared/types/types.h"
+#include "src/utils/benchmark/utils.h"
 
 using pl::types::Int64Value;
-
-template <typename T>
-std::vector<T> CreateLargeData(int size) {
-  std::vector<T> data(size);
-
-  std::random_device rnd_device;
-  std::mt19937 mersenne_engine{rnd_device()};  // Generates random integers
-  std::uniform_int_distribution<int64_t> dist{1, 52};
-
-  auto gen = [&dist, &mersenne_engine]() { return dist(mersenne_engine); };
-
-  std::generate(begin(data), end(data), gen);
-  return data;
-}
 
 // This is just a dummy function that does some work so we can use it in the benchmark.
 template <typename T>
@@ -47,8 +34,8 @@ std::vector<Int64Value> Compute(const std::vector<Int64Value> &vec1,
 
 template <typename T>
 static void BM_Int64Vector(benchmark::State &state) {  // NOLINT
-  auto vec1 = CreateLargeData<T>(state.range(0));
-  auto vec2 = CreateLargeData<T>(state.range(0));
+  auto vec1 = pl::bmutils::CreateLargeData<T>(state.range(0), 1, 52);
+  auto vec2 = pl::bmutils::CreateLargeData<T>(state.range(0), 1, 52);
 
   for (auto _ : state) {
     auto res = Compute(vec1, vec2);
