@@ -241,9 +241,7 @@ TEST(OptionalArgs, group_by_all) {
       absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
                      "queryDF.Agg(fn=lambda r : {'sum' : pl.sum(r.cpu0)}).Result(name='agg')"},
                     "\n");
-  auto status = ParseQuery(agg_query);
-  VLOG(1) << status.ToString();
-  EXPECT_OK(status);
+  EXPECT_OK(ParseQuery(agg_query));
 }
 
 TEST(OptionalArgs, DISABLED_map_copy_relation) {
@@ -254,9 +252,7 @@ TEST(OptionalArgs, DISABLED_map_copy_relation) {
                                          "queryDF.Map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1}, "
                                          "copy_source_cols=True).Result(name='map')"},
                                         "\n");
-  auto status = ParseQuery(map_query);
-  VLOG(1) << status.ToString();
-  EXPECT_OK(status);
+  EXPECT_OK(ParseQuery(map_query));
 }
 }  // namespace compiler
 }  // namespace carnot

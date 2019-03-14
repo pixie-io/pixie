@@ -14,6 +14,7 @@ pl_cc_library_internal(
         "//src/common/proto:status_pl_cc_proto",
         "//src/utils/proto:utils_pl_cc_proto",
         "@com_github_rlyeh_sole//:sole",
+        "@com_google_googletest//:gtest",
     ],
 )
 

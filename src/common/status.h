@@ -1,4 +1,5 @@
 #pragma once
+#include <gtest/gtest.h>
 
 #include <memory>
 #include <string>
@@ -94,6 +95,13 @@ inline Status StatusAdapter<pl::statuspb::Status>(const pl::statuspb::Status& s)
   return Status(s);
 };
 
+inline ::testing::AssertionResult IsOK(const Status& status) {
+  if (status.ok()) {
+    return ::testing::AssertionSuccess();
+  }
+  return ::testing::AssertionFailure() << status.ToString();
+}
+
 }  // namespace pl
 
 #define PL_RETURN_IF_ERROR_IMPL(__status_name__, __status) \
@@ -109,8 +117,8 @@ inline Status StatusAdapter<pl::statuspb::Status>(const pl::statuspb::Status& s)
 #define PL_RETURN_IF_ERROR(__status) \
   PL_RETURN_IF_ERROR_IMPL(PL_CONCAT_NAME(__status__, __COUNTER__), __status)
 
-#define EXPECT_OK(value) EXPECT_TRUE((value).status().ok())
-#define ASSERT_OK(value) ASSERT_TRUE((value).status().ok())
+#define EXPECT_OK(value) EXPECT_TRUE(IsOK(StatusAdapter(value)))
+#define ASSERT_OK(value) ASSERT_TRUE(IsOK(StatusAdapter(value)))
 
 #define PL_CHECK_OK_PREPEND(to_call, msg)             \
   do {                                                \
