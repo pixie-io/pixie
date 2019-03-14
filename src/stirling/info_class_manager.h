@@ -144,6 +144,13 @@ class InfoClassManager {
   stirlingpb::InfoClass ToProto() const;
 
   /**
+   * @brief Populates the schema from the SourceConnector.
+   *
+   * @return Status
+   */
+  Status PopulateSchemaFromSource();
+
+  /**
    * @brief Configure sampling period.
    *
    * @param period Sampling period in ms.

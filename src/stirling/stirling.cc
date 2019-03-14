@@ -33,13 +33,9 @@ Status Stirling::CreateSourceConnectors() {
   }
   auto sources = registry_->sources();
   for (auto const& [name, registry_element] : sources) {
-    auto s = AddSource(name, registry_element.create_source_fn(name));
+    Status s = AddSourceFromRegistry(name, registry_element);
 
-    if (s.ok()) {
-      auto mgr_ptr = s.ValueOrDie();
-      mgr_ptr->SetSamplingPeriod(registry_element.sampling_period);
-      mgr_ptr->SetPushPeriod(registry_element.push_period);
-    } else {
+    if (!s.ok()) {
       LOG(WARNING) << absl::StrFormat("Source Connector (registry name=%s) not instantiated", name);
       LOG(WARNING) << s.status().ToString();
     }
@@ -47,24 +43,28 @@ Status Stirling::CreateSourceConnectors() {
   return Status::OK();
 }
 
-StatusOr<InfoClassManager*> Stirling::AddSource(const std::string& name,
-                                                std::unique_ptr<SourceConnector> source) {
-  // Step 1: Init the source.
+Status Stirling::AddSourceFromRegistry(const std::string& name,
+                                       SourceRegistry::RegistryElement registry_element) {
+  // Step 1: Create and init the source.
+  auto source = registry_element.create_source_fn(name);
   PL_RETURN_IF_ERROR(source->Init());
 
+  // Step 2: Create the info class manager.
   // TODO(oazizi): What if a Source has multiple InfoClasses?
   auto mgr = std::make_unique<InfoClassManager>(name);
   auto mgr_ptr = mgr.get();
-
-  // Step 3: Ask the Connector to populate the Schema.
-  PL_CHECK_OK(source->PopulateSchema(mgr.get()));
   mgr->SetSourceConnector(source.get());
 
-  // Step 5: Keep pointers to all the objects
+  // Step 3: Setup the manager.
+  PL_CHECK_OK(mgr_ptr->PopulateSchemaFromSource());
+  mgr_ptr->SetSamplingPeriod(registry_element.sampling_period);
+  mgr_ptr->SetPushPeriod(registry_element.push_period);
+
+  // Step 4: Keep pointers to all the objects
   sources_.push_back(std::move(source));
   info_class_mgrs_.push_back(std::move(mgr));
 
-  return mgr_ptr;
+  return Status::OK();
 }
 
 void Stirling::GetPublishProto(stirlingpb::Publish* publish_pb) {

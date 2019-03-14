@@ -78,13 +78,6 @@ class SourceConnector : public NotCopyable {
   RawDataBuf GetData() { return GetDataImpl(); }
   Status Stop() { return StopImpl(); }
 
-  Status PopulateSchema(InfoClassManager* mgr) const {
-    for (const auto& element : elements_) {
-      mgr->Schema().emplace_back(InfoClassElement(element));
-    }
-    return Status::OK();
-  }
-
   SourceType type() const { return type_; }
   const std::string& source_name() const { return source_name_; }
   const DataElements& elements() const { return elements_; }

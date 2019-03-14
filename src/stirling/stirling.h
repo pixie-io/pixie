@@ -150,8 +150,8 @@ class Stirling : public NotCopyable {
   /**
    * Adds a source to Stirling, and updates all state accordingly.
    */
-  StatusOr<InfoClassManager*> AddSource(const std::string& name,
-                                        std::unique_ptr<SourceConnector> source);
+  Status AddSourceFromRegistry(const std::string& name,
+                               SourceRegistry::RegistryElement registry_element);
 
   /**
    * Helper function to figure out how much to sleep between polling iterations.

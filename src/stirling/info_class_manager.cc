@@ -21,6 +21,17 @@ stirlingpb::Element InfoClassElement::ToProto() const {
   return element_proto;
 }
 
+Status InfoClassManager::PopulateSchemaFromSource() {
+  if (source_ == nullptr) {
+    return error::ResourceUnavailable("Source connector has not been initialized.");
+  }
+  auto elements = source_->elements();
+  for (const auto& element : elements) {
+    elements_.emplace_back(InfoClassElement(element));
+  }
+  return Status::OK();
+}
+
 bool InfoClassManager::SamplingRequired() const { return CurrentTime() > NextSamplingTime(); }
 
 bool InfoClassManager::PushRequired() const {

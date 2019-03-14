@@ -49,7 +49,7 @@ class SourceToTableTest : public ::testing::Test {
   void SetUp() override {
     fake_proc_stat_ = FakeProcStatConnector::Create("fake_proc_stat_source");
     info_class_mgr_.SetSourceConnector(fake_proc_stat_.get());
-    EXPECT_OK(fake_proc_stat_->PopulateSchema(&info_class_mgr_));
+    EXPECT_OK(info_class_mgr_.PopulateSchemaFromSource());
     // Need to set all the Element states to subscribe manually here
     // since we are not doing a pub sub here.
     for (size_t i = 0; i < info_class_mgr_.Schema().size(); ++i) {
