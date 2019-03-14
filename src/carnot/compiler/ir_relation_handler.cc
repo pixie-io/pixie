@@ -132,14 +132,7 @@ StatusOr<plan::Relation> IRRelationHandler::BlockingAggHandler(OperatorIR* node,
                                                                plan::Relation parent_rel) {
   DCHECK_EQ(node->type(), IRNodeType::BlockingAggType);
   auto agg_node = static_cast<BlockingAggIR*>(node);
-  auto by_func_ir_node = agg_node->by_func();
-  if (by_func_ir_node->type() != IRNodeType::LambdaType &&
-      by_func_ir_node->type() != IRNodeType::BoolType) {
-    return IRUtils::CreateIRNodeError(
-        absl::StrFormat("Expected a 'LambdaType' for the by by function, got '%s",
-                        by_func_ir_node->type_string()),
-        *node);
-  }
+
   DCHECK_EQ(agg_node->agg_func()->type(), IRNodeType::LambdaType);
   auto* agg_func = static_cast<LambdaIR*>(agg_node->agg_func());
 
@@ -148,11 +141,9 @@ StatusOr<plan::Relation> IRRelationHandler::BlockingAggHandler(OperatorIR* node,
   PL_RETURN_IF_ERROR(HasExpectedColumns(agg_expected, parent_rel));
 
   plan::Relation agg_rel;
-  // TODO(philkuz) (PL-402) fix this hack.
-  if (by_func_ir_node->type() == IRNodeType::BoolType) {
-    agg_node->SetGroups({});
-  } else {
-    auto* by_func = static_cast<LambdaIR*>(agg_node->by_func());
+  // TODO(philkuz) move this handler to a helper to simplify code here.
+  if (agg_node->by_func()) {
+    LambdaIR* by_func = static_cast<LambdaIR*>(agg_node->by_func());
     auto by_expected = by_func->expected_column_names();
     PL_RETURN_IF_ERROR(HasExpectedColumns(by_expected, parent_rel));
     // Get the column to group by.
@@ -181,6 +172,9 @@ StatusOr<plan::Relation> IRRelationHandler::BlockingAggHandler(OperatorIR* node,
                           expr->type_string()),
           *node);
     }
+  } else {
+    // if by_func not set, group by all.
+    agg_node->SetGroups({});
   }
 
   // Make a new relation with each of the expression key, type pairs.

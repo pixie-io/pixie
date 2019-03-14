@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "src/carnot/compiler/optimize_ir.h"
+#include "src/carnot/compiler/test_utils.h"
 
 namespace pl {
 namespace carnot {
@@ -45,6 +46,29 @@ TEST(CompilerTest, remove_range) {
   EXPECT_EQ(start_time_ns, src->time_start_ns());
 }
 
+TEST(CompileThenOptimize, query_test_start_stop) {
+  int64_t start_hours = 2;
+  int64_t stop_hours = 10;
+  std::string query =
+      "From(table='test_table', select=['time_','col1']).Range(start=$0, "
+      "stop=$1).Result(name='out')";
+  auto ir_graph_status = ParseQuery(absl::Substitute(query, start_hours, stop_hours));
+  ASSERT_TRUE(ir_graph_status.ok());
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  EXPECT_OK(IROptimizer().Optimize(ir_graph.get()));
+  IRNode* node;
+  for (const auto idx : ir_graph->dag().TopologicalSort()) {
+    node = ir_graph->Get(idx);
+    if (node->type() == IRNodeType::MemorySourceType) {
+      break;
+    }
+  }
+
+  ASSERT_NE(nullptr, node);
+  MemorySourceIR* src = static_cast<MemorySourceIR*>(node);
+
+  EXPECT_EQ(stop_hours - start_hours, src->time_stop_ns() - src->time_start_ns());
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

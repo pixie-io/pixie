@@ -506,6 +506,7 @@ class BlockingAggIR : public OperatorIR {
     groups_ = groups;
     groups_set_ = true;
   }
+  std::vector<ColumnIR*> groups() const { return groups_; }
   bool groups_set() const { return groups_set_; }
   void SetAggValMap(ColExpressionVector agg_val_vec) {
     agg_val_vector_ = agg_val_vec;

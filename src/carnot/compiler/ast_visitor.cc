@@ -129,7 +129,6 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(
     bool kwargs_only, const std::unordered_map<std::string, pypa::AstPtr> default_args) {
   auto arg_ast = call_ast->arglist;
   if (!kwargs_only) {
-    // TODO(philkuz) (PL-406) add support for kwargs
     return error::Unimplemented("Only supporting kwargs for now.");
   }
   ArgMap arg_map;
@@ -283,11 +282,16 @@ StatusOr<IRNode*> ASTWalker::ProcessAggOp(const pypa::AstCallPtr& node) {
                           node->function);
   }
   PL_ASSIGN_OR_RETURN(BlockingAggIR * ir_node, ir_graph_->MakeNode<BlockingAggIR>());
+  // imitate a None argument.
+  pypa::AstName by_default;
+  by_default.id = "None";
   // Get arguments.
-  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"by", "fn"}, true));
+  PL_ASSIGN_OR_RETURN(
+      ArgMap args,
+      ProcessArgs(node, {"by", "fn"}, true, {{"by", std::make_shared<pypa::AstName>(by_default)}}));
+
   PL_ASSIGN_OR_RETURN(IRNode * call_result,
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
-
   PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["by"], args["fn"]));
   return ir_node;
 }
@@ -642,7 +646,6 @@ StatusOr<IRNode*> ASTWalker::ProcessLambda(const pypa::AstLambdaPtr& ast) {
   }
 }
 
-// TODO(philkuz) (PL-402) remove this and allow for optional kwargs in the ProcessArgs function.
 StatusOr<IRNode*> ASTWalker::ProcessNameData(const pypa::AstNamePtr& ast) {
   auto name_str = ast->id;
   if (name_str != "None") {
@@ -672,7 +675,6 @@ StatusOr<IRNode*> ASTWalker::ProcessData(const pypa::AstPtr& ast) {
       PL_ASSIGN_OR_RETURN(ir_node, ProcessLambda(PYPA_PTR_CAST(Lambda, ast)));
       break;
     }
-    // TODO(philkuz) (PL-402) hack to make group all work.
     case AstType::Name: {
       PL_ASSIGN_OR_RETURN(ir_node, ProcessNameData(PYPA_PTR_CAST(Name, ast)));
       break;

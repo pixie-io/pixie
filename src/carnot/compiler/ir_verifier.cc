@@ -96,8 +96,8 @@ Status IRVerifier::VerifyBlockingAgg(IRNode* node) {
                                 ExpString("BlockingAggIR", node->id(), "agg_func")));
   PL_RETURN_IF_ERROR(
       ExpectOp(agg_node->parent(), ExpString("BlockingAggIR", node->id(), "parent")));
-  // TODO(philkuz) (PL-402) unhack this
-  if (agg_node->by_func()->type() != IRNodeType::BoolType) {
+  // Only check if by_func is not a nullptr.
+  if (agg_node->by_func()) {
     PL_RETURN_IF_ERROR(ExpectType(LambdaType, agg_node->by_func(),
                                   ExpString("BlockingAggIR", node->id(), "by_func")));
     // Check whether the `by` function is just a column
@@ -114,9 +114,11 @@ Status IRVerifier::VerifyBlockingAgg(IRNode* node) {
           by_body->type_string(), by_body->id());
       return FormatErrorMsg(msg, node);
     }
-  } else {
-    LOG(WARNING) << "WARNING: you are currently using a hack to allow bool type for by_func";
+  } else if (agg_node->groups_set() || agg_node->groups().size() != 0) {
+    // Groups shouldn't be set.
+    return FormatErrorMsg("AggIR: by function is not set, shouldn't have groups set.", node);
   }
+
   // Check whether the `agg` fn is a dict body
   auto agg_func = static_cast<LambdaIR*>(agg_node->agg_func());
   if (!agg_func->HasDictBody()) {

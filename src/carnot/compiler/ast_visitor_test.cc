@@ -236,8 +236,7 @@ TEST(TimeValueTest, basic) {
   EXPECT_FALSE(ParseQuery(bad_attribute_value).ok());
 }
 
-TEST(OptionalArgs, DISABLED_group_by_all) {
-  // TODO(philkuz) later diff impl this.
+TEST(OptionalArgs, group_by_all) {
   std::string agg_query =
       absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
                      "queryDF.Agg(fn=lambda r : {'sum' : pl.sum(r.cpu0)}).Result(name='agg')"},

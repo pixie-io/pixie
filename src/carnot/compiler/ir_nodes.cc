@@ -250,31 +250,30 @@ Status MapIR::ToProto(carnotpb::Operator* op) const {
 }
 
 Status BlockingAggIR::Init(IRNode* parent_node, IRNode* by_func, IRNode* agg_func) {
-  // TODO(philkuz) remove this upon unhacking.
-  if (by_func->type() != IRNodeType::LambdaType && by_func->type() != IRNodeType::BoolType) {
-    return IRUtils::CreateIRNodeError(
-        absl::StrFormat("Expected 'by' argument of BlockingAggIR to be 'Lambda', got '%s'",
-                        by_func->type_string()),
-        *by_func);
-  }
   if (agg_func->type() != IRNodeType::LambdaType) {
     return IRUtils::CreateIRNodeError(
         absl::StrFormat("Expected 'agg' argument of BlockingAggIR to be 'Lambda', got '%s'",
                         agg_func->type_string()),
         *agg_func);
   }
-
-  // TODO(philkuz) (PL-402) remove this upon unhacking.
+  // If by_func_ is not a null pointer, then update the graph with it. Otherwise, continue onwards.
   if (by_func->type() == IRNodeType::BoolType) {
-    LOG(WARNING) << "WARNING: you are currently using a hack to allow bool type for by_func";
+    by_func_ = nullptr;
+
+  } else if (by_func->type() == IRNodeType::LambdaType) {
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, by_func));
+    by_func_ = by_func;
+  } else {
+    return IRUtils::CreateIRNodeError(
+        absl::StrFormat("Expected 'by' argument of AggIR to be 'Lambda', got '%s'",
+                        by_func->type_string()),
+        *by_func);
   }
 
-  by_func_ = by_func;
   agg_func_ = agg_func;
 
   PL_RETURN_IF_ERROR(SetParent(parent_node));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, agg_func_));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, by_func_));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
   return Status();
 }
@@ -354,10 +353,8 @@ Status BlockingAggIR::ToProto(carnotpb::Operator* op) const {
     PL_RETURN_IF_ERROR(EvaluateAggregateExpression(expr, *agg_expr.node));
     pb->add_value_names(agg_expr.name);
   }
-  // TODO(philkuz) (PL-402) remove this upon unhacking.
-  if (by_func_->type() == BoolType) {
-    LOG(WARNING) << "WARNING: you are currently using a hack to allow bool type for by_func";
-  } else {
+
+  if (by_func_) {
     for (const auto& group : groups_) {
       auto group_pb = pb->add_groups();
       group_pb->set_node(parent()->id());
