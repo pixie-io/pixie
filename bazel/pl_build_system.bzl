@@ -9,6 +9,7 @@ def pl_copts(repository, test = False):
         "-Wnon-virtual-dtor",
         "-Woverloaded-virtual",
         "-Wold-style-cast",
+        "-Wimplicit-fallthrough",
         # Language flags.
         "-std=c++17",
     ]
