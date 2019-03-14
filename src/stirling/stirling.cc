@@ -81,6 +81,7 @@ Status Stirling::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
       PL_CHECK_OK(mgr->PushData(agent_callback_));
     }
   }
+  tables_.clear();
 
   // Update schemas based on the subscribe_proto.
   PL_CHECK_OK(config_->UpdateSchemaFromSubscribe(subscribe_proto, info_class_mgrs_));
