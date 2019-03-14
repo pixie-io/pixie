@@ -1,17 +1,26 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library")
 load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
 
-pl_cc_binary(
-    name = "vizier",
+pl_cc_library(
+    name = "cc_library",
     srcs = glob(
         ["*.cc"],
         exclude = ["**/*_test.cc"],
     ),
     deps = [
-        "//src/common",
+        "//src/common/grpc_utils:cc_library",
+        "//src/vizier/controller:cc_library",
+        "//src/vizier/proto:service_pl_cc_proto",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_github_rlyeh_sole//:sole",
     ],
+)
+
+pl_cc_binary(
+    name = "vizier",
+    deps = [":cc_library"],
 )
 
 cc_image(
