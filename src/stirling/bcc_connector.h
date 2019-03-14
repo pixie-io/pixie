@@ -57,8 +57,8 @@ class BCCCPUMetricsConnector : public BCCConnector {
                                                 DataElement("cpu_id", DataType::INT64),
                                                 DataElement("cpu_percentage", DataType::FLOAT64)};
 
-  inline static const std::chrono::milliseconds kDefaultSamplingPeriod{10};
-  inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
+  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{10};
+  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   ~BCCCPUMetricsConnector() override = default;
 

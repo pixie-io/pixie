@@ -68,8 +68,8 @@ class SourceConnector : public NotCopyable {
    */
   static constexpr bool kAvailable = true;
 
-  inline static const std::chrono::milliseconds kDefaultSamplingPeriod{100};
-  inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
+  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
+  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   SourceConnector() = delete;
   virtual ~SourceConnector() = default;

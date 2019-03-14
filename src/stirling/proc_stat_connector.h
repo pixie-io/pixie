@@ -20,8 +20,8 @@ class ProcStatConnector : public SourceConnector {
                                           DataElement("user_percent", DataType::FLOAT64),
                                           DataElement("idle_percent", DataType::FLOAT64)};
 
-  inline static const std::chrono::milliseconds kDefaultSamplingPeriod{100};
-  inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
+  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
+  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   ProcStatConnector() = delete;
   ~ProcStatConnector() override = default;

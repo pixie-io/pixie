@@ -23,8 +23,8 @@ class SeqGenConnector : public SourceConnector {
 
   static constexpr char kName[] = "sequence_generator";
 
-  inline static const std::chrono::milliseconds kDefaultSamplingPeriod{500};
-  inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
+  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{500};
+  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   inline static const DataElements kElements = {
       DataElement("time_", DataType::TIME64NS),  DataElement("x", DataType::INT64),

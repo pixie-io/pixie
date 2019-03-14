@@ -86,8 +86,8 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
                                                 DataElement("cpustat_irq", DataType::INT64),
                                                 DataElement("cpustat_softirq", DataType::INT64)};
 
-  inline static const std::chrono::milliseconds kDefaultSamplingPeriod{100};
-  inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
+  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
+  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(name, cpu_id_));
@@ -117,8 +117,8 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
       DataElement("time_", DataType::TIME64NS), DataElement("pid", DataType::INT64),
       DataElement("runtime_ns", DataType::INT64), DataElement("cmd", DataType::STRING)};
 
-  inline static const std::chrono::milliseconds kDefaultSamplingPeriod{1000};
-  inline static const std::chrono::milliseconds kDefaultPushPeriod{1000};
+  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};
+  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new PIDCPUUseBPFTraceConnector(name));
