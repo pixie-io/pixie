@@ -646,6 +646,73 @@ StatusOr<IRNode*> ASTWalker::ProcessLambda(const pypa::AstLambdaPtr& ast) {
   }
 }
 
+StatusOr<IRNode*> ASTWalker::EvalCompileTimeNow(const pypa::AstArguments& arglist) {
+  if (!arglist.arguments.empty() || !arglist.keywords.empty()) {
+    return error::InvalidArgument("No Arguments expected for '$0.$1' fn", kCompileTimePrefix,
+                                  "now");
+  }
+  PL_ASSIGN_OR_RETURN(IntIR * ir_node, ir_graph_->MakeNode<IntIR>());
+  // TODO(philkuz) (PL-441) grab now time from the input to the compiler.
+  PL_RETURN_IF_ERROR(ir_node->Init(CurrentTimeNS()));
+  return ir_node;
+}
+StatusOr<IRNode*> ASTWalker::EvalCompileTimeFn(const std::string& attr_fn_name,
+                                               const pypa::AstArguments& arglist) {
+  IRNode* ir_node;
+  if (attr_fn_name == "now") {
+    PL_ASSIGN_OR_RETURN(ir_node, EvalCompileTimeNow(arglist));
+    // TODO(philkuz) (PL-445) support other funcs
+  } else {
+    return error::InvalidArgument("Couldn't find function with name '$0.$1'", kCompileTimePrefix,
+                                  attr_fn_name);
+  }
+
+  return ir_node;
+}
+
+StatusOr<IRNode*> ASTWalker::WrapAstError(StatusOr<IRNode*> status_or,
+                                          const pypa::AstPtr parent_node) {
+  if (status_or.ok()) {
+    auto val = status_or.ValueOrDie();
+    val->SetLineCol(parent_node->line, parent_node->column);
+    return val;
+  }
+  return CreateAstError(status_or.msg(), parent_node);
+}
+
+StatusOr<IRNode*> ASTWalker::ProcessDataCall(const pypa::AstCallPtr& node) {
+  auto fn = node->function;
+  if (fn->type != AstType::Attribute) {
+    return CreateAstError(
+        absl::StrFormat("Expected any function calls to be made an attribute, not as a %s",
+                        GetAstTypeName(fn->type)),
+        fn);
+  }
+  auto fn_attr = PYPA_PTR_CAST(Attribute, fn);
+  auto attr_parent = fn_attr->value;
+  auto attr_fn_name = fn_attr->attribute;
+  if (attr_parent->type != AstType::Name) {
+    return CreateAstError(absl::StrFormat("Nested calls not allowed. Expected Name attr not %s",
+                                          GetAstTypeName(fn->type)),
+                          attr_parent);
+  }
+  if (attr_fn_name->type != AstType::Name) {
+    return CreateAstError(absl::StrFormat("Expected Name attr not %s", GetAstTypeName(fn->type)),
+                          attr_fn_name);
+  }
+  // attr parent must be plc.
+  auto attr_parent_str = GetNameID(attr_parent);
+  if (attr_parent_str != kCompileTimePrefix) {
+    return CreateAstError(absl::StrFormat("Namespace '%s' not found.", attr_parent_str),
+                          attr_parent);
+  }
+  auto attr_fn_str = GetNameID(attr_fn_name);
+  // value must be a valid child of that namespace
+  // return the corresponding value IRNode
+  return WrapAstError(EvalCompileTimeFn(attr_fn_str, node->arglist), node);
+}
+
+// TODO(philkuz) (PL-402) remove this and allow for optional kwargs in the ProcessArgs function.
 StatusOr<IRNode*> ASTWalker::ProcessNameData(const pypa::AstNamePtr& ast) {
   auto name_str = ast->id;
   if (name_str != "None") {
@@ -677,6 +744,10 @@ StatusOr<IRNode*> ASTWalker::ProcessData(const pypa::AstPtr& ast) {
     }
     case AstType::Name: {
       PL_ASSIGN_OR_RETURN(ir_node, ProcessNameData(PYPA_PTR_CAST(Name, ast)));
+      break;
+    }
+    case AstType::Call: {
+      PL_ASSIGN_OR_RETURN(ir_node, ProcessDataCall(PYPA_PTR_CAST(Call, ast)));
       break;
     }
     default: {

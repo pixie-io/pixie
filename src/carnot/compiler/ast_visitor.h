@@ -20,6 +20,7 @@ namespace carnot {
 namespace compiler {
 
 constexpr const char* kUDFPrefix = "pl";
+constexpr const char* kCompileTimePrefix = "plc";
 
 constexpr const char* kFromOpId = "From";
 constexpr const char* kRangeOpId = "Range";
@@ -414,6 +415,24 @@ class ASTWalker {
    * @return StatusOr<IRNode*>
    */
   StatusOr<IRNode*> ProcessNameData(const pypa::AstNamePtr& ast);
+  StatusOr<IRNode*> EvalCompileTimeNow(const pypa::AstArguments& arglist);
+  /**
+   * @brief Evaluates a compile time fn.
+   *
+   * @param attr_fn_name the fn name
+   * @param arglist the args that are fed tinto this function.
+   * @return StatusOr<IRNode*>
+   */
+  StatusOr<IRNode*> EvalCompileTimeFn(const std::string& attr_fn_name,
+                                      const pypa::AstArguments& arglist);
+  /**
+   * @brief Handler for functions that are called as args in the data.
+   * Calls nested within Lambda trees are not touched by this.
+   *
+   * @param ast
+   * @return StatusOr<IRNode*>
+   */
+  StatusOr<IRNode*> ProcessDataCall(const pypa::AstCallPtr& ast);
 
   /**
    * @brief Create an error that incorporates line, column of ast node into the error message.
@@ -457,6 +476,8 @@ class ASTWalker {
   }
   StatusOr<LambdaExprReturn> LookupPLTimeAttribute(const std::string& attribute_name,
                                                    const pypa::AstPtr& parent_node);
+  // Wraps a statusor with a parent_node ast info.
+  StatusOr<IRNode*> WrapAstError(StatusOr<IRNode*> status_or, const pypa::AstPtr parent_node);
   std::shared_ptr<IR> ir_graph_;
   VarTable var_table_;
 };

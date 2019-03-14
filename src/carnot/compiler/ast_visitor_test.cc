@@ -254,6 +254,43 @@ TEST(OptionalArgs, DISABLED_map_copy_relation) {
                                         "\n");
   EXPECT_OK(ParseQuery(map_query));
 }
+
+TEST(RangeValueTests, now_should_compile_without_args) {
+  std::string plc_now_test = absl::StrJoin(
+      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=0,stop=plc.now())",
+       "queryDF.Result(name='mapped')"},
+      "\n");
+  EXPECT_OK(ParseQuery(plc_now_test));
+}
+
+TEST(RangeValueTests, now_should_fail_with_args) {
+  // now doesn't accept args.
+  std::string now_with_args = absl::StrJoin(
+      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=0,stop=plc.now(1))",
+       "queryDF.Result(name='mapped')"},
+      "\n");
+  auto status = ParseQuery(now_with_args);
+  VLOG(1) << status.ToString();
+  EXPECT_FALSE(status.ok());
+}
+
+TEST(RangeValueTests, DISABLED_minute_test) {
+  // TODO(philkuz) (PL-445) later diff impl this.
+  std::string minutes_test =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=plc.now() - "
+                     "plc.minutes(2),stop=plc.now())",
+                     "rangeDF = queryDF.Map(fn=lambda r : {'minutes' : r.cpu0 + pl.second})",
+                     "result = rangeDF.Result(name='mapped')"},
+                    "\n");
+  EXPECT_OK(ParseQuery(minutes_test));
+  // TODO(philkuz) (PL-445) test out minutes, days, hours by themselves
+  // TODO(philkuz) (PL-445) test out combos of minutes, days, and hours.
+  // TODO(philkuz) (PL-445) test out using time fns in both args.
+}
+
+TEST(RangeValueTests, DISABLED_only_start) {
+  // TODO(philkuz) (PL-442) later diff impl this with just the start param specified.
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

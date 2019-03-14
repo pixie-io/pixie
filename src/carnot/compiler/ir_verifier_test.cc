@@ -232,6 +232,15 @@ TEST(TimeTest, basic) {
       "\n");
   GraphVerify(add_test, false /*should_fail*/);
 }
+
+TEST(RangeValueTests, now_stop) {
+  std::string plc_now_test = absl::StrJoin(
+      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=0,stop=plc.now())",
+       "rangeDF = queryDF.Map(fn=lambda r : {'plc_now' : r.cpu0 + pl.second})",
+       "result = rangeDF.Result(name='mapped')"},
+      "\n");
+  GraphVerify(plc_now_test, false /*should_fail*/);
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
