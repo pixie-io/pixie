@@ -23,10 +23,11 @@ TEST(CompilerTest, remove_range) {
   auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
   int64_t start_time_ns = 2;
   int64_t stop_time_ns = 4;
-  EXPECT_OK(start_time->Init(start_time_ns));
-  EXPECT_OK(stop_time->Init(stop_time_ns));
-  EXPECT_OK(range->Init(src, start_time, stop_time));
-  EXPECT_OK(sink->Init(range, "sink"));
+  auto ast = MakeTestAstPtr();
+  EXPECT_OK(start_time->Init(start_time_ns, ast));
+  EXPECT_OK(stop_time->Init(stop_time_ns, ast));
+  EXPECT_OK(range->Init(src, start_time, stop_time, ast));
+  EXPECT_OK(sink->Init(range, "sink", ast));
   EXPECT_FALSE(src->IsTimeSet());
 
   EXPECT_EQ(std::vector<int64_t>({0, 1, 2, 3, 4}), graph->dag().TopologicalSort());

@@ -1,9 +1,11 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/message_differencer.h>
 #include <gtest/gtest.h>
+#include <pypa/ast/ast.hh>
 
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/ir_test_utils.h"
+#include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/plan/relation.h"
 
 namespace pl {
@@ -22,6 +24,7 @@ TEST(IRTypes, types_enum_test) {
  */
 
 TEST(IRTest, check_connection) {
+  auto ast = MakeTestAstPtr();
   auto ig = std::make_shared<IR>();
   auto src = ig->MakeNode<MemorySourceIR>().ValueOrDie();
   auto range = ig->MakeNode<RangeIR>().ValueOrDie();
@@ -30,13 +33,13 @@ TEST(IRTest, check_connection) {
   auto table_str = ig->MakeNode<StringIR>().ValueOrDie();
   auto select_col = ig->MakeNode<StringIR>().ValueOrDie();
   auto select_list = ig->MakeNode<ListIR>().ValueOrDie();
-  EXPECT_TRUE(start_rng_str->Init(0).ok());
-  EXPECT_TRUE(stop_rng_str->Init(10).ok());
-  EXPECT_TRUE(table_str->Init("tableName").ok());
-  EXPECT_TRUE(select_col->Init("testCol").ok());
-  EXPECT_TRUE(select_list->AddListItem(select_col).ok());
-  EXPECT_TRUE(src->Init(table_str, select_list).ok());
-  EXPECT_TRUE(range->Init(src, start_rng_str, stop_rng_str).ok());
+  EXPECT_OK(start_rng_str->Init(0, ast));
+  EXPECT_OK(stop_rng_str->Init(10, ast));
+  EXPECT_OK(table_str->Init("tableName", ast));
+  EXPECT_OK(select_col->Init("testCol", ast));
+  EXPECT_OK(select_list->AddListItem(select_col));
+  EXPECT_OK(src->Init(table_str, select_list, ast));
+  EXPECT_OK(range->Init(src, start_rng_str, stop_rng_str, ast));
   EXPECT_EQ(range->parent(), src);
   EXPECT_EQ(range->start_repr(), start_rng_str);
   EXPECT_EQ(range->stop_repr(), stop_rng_str);
@@ -107,21 +110,22 @@ const char* kExpectedMemSrcPb = R"(
 )";
 
 TEST(ToProto, memory_source_ir) {
+  auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
 
   auto mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
   auto select_list = graph->MakeNode<ListIR>().ValueOrDie();
   auto table_node = graph->MakeNode<StringIR>().ValueOrDie();
-  EXPECT_OK(table_node->Init("test_table"));
-  EXPECT_OK(mem_src->Init(table_node, select_list));
+  EXPECT_OK(table_node->Init("test_table", ast));
+  EXPECT_OK(mem_src->Init(table_node, select_list, ast));
 
   auto col_1 = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col_1->Init("cpu0"));
+  EXPECT_OK(col_1->Init("cpu0", ast));
   col_1->SetColumnIdx(0);
   col_1->SetColumnType(types::DataType::INT64);
 
   auto col_2 = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col_2->Init("cpu1"));
+  EXPECT_OK(col_2->Init("cpu1", ast));
   col_2->SetColumnIdx(2);
   col_2->SetColumnType(types::DataType::FLOAT64);
 
@@ -148,6 +152,7 @@ const char* kExpectedMemSinkPb = R"(
 )";
 
 TEST(ToProto, memory_sink_ir) {
+  auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
 
   auto mem_sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
@@ -157,7 +162,7 @@ TEST(ToProto, memory_sink_ir) {
       std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64}),
       std::vector<std::string>({"output1", "output2"}));
   EXPECT_OK(mem_sink->SetRelation(rel));
-  EXPECT_OK(mem_sink->Init(mem_source, "output_table"));
+  EXPECT_OK(mem_sink->Init(mem_source, "output_table", ast));
 
   carnotpb::Operator pb;
   EXPECT_OK(mem_sink->ToProto(&pb));
@@ -192,16 +197,17 @@ const char* kExpectedMapPb = R"(
 )";
 
 TEST(ToProto, map_ir) {
+  auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
   auto mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
   auto map = graph->MakeNode<MapIR>().ValueOrDie();
   auto constant = graph->MakeNode<IntIR>().ValueOrDie();
-  EXPECT_OK(constant->Init(10));
+  EXPECT_OK(constant->Init(10, ast));
   auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
   col->SetColumnIdx(4);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(func->Init("add", std::vector<IRNode*>({constant, col})));
-  EXPECT_OK(map->Init(mem_src, func));
+  EXPECT_OK(func->Init("add", std::vector<IRNode*>({constant, col}), ast));
+  EXPECT_OK(map->Init(mem_src, func, ast));
   auto expr_map = std::unordered_map<std::string, IRNode*>();
   auto exprs = std::vector<ColumnExpression>({ColumnExpression({"col_name", func})});
   map->SetColExprs(exprs);
@@ -242,26 +248,27 @@ const char* kExpectedAggPb = R"(
 )";
 
 TEST(ToProto, agg_ir) {
+  auto ast = MakeTestAstPtr();
   auto graph = std::make_shared<IR>();
   auto mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
   auto agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
   auto constant = graph->MakeNode<IntIR>().ValueOrDie();
-  EXPECT_OK(constant->Init(10));
+  EXPECT_OK(constant->Init(10, ast));
   auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
   col->SetColumnIdx(4);
 
   auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(agg_func->Init("pl.mean", std::vector<IRNode*>({constant, col})));
-  EXPECT_OK(agg_func_lambda->Init({"meaned_column"}, {{"mean", agg_func}}));
+  EXPECT_OK(agg_func->Init("pl.mean", std::vector<IRNode*>({constant, col}), ast));
+  EXPECT_OK(agg_func_lambda->Init({"meaned_column"}, {{"mean", agg_func}}, ast));
 
   auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   auto group1 = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(group1->Init("group1"));
+  EXPECT_OK(group1->Init("group1", ast));
   group1->SetColumnIdx(1);
-  EXPECT_OK(by_func_lambda->Init({"group1"}, group1));
+  EXPECT_OK(by_func_lambda->Init({"group1"}, group1, ast));
 
-  ASSERT_OK(agg->Init(mem_src, by_func_lambda, agg_func_lambda));
+  ASSERT_OK(agg->Init(mem_src, by_func_lambda, agg_func_lambda, ast));
   ColExpressionVector exprs;
   exprs.push_back(ColumnExpression({"value1", agg_func}));
   agg->SetAggValMap(exprs);
@@ -278,18 +285,19 @@ TEST(ToProto, agg_ir) {
 class DebugStringFunctionality : public ::testing::Test {
  public:
   void SetUp() override {
+    auto ast = MakeTestAstPtr();
     graph_ = std::make_shared<IR>();
     time_node_ = graph_->MakeNode<TimeIR>().ValueOrDie();
-    EXPECT_OK(time_node_->Init(12345));
+    EXPECT_OK(time_node_->Init(12345, ast));
 
     col_node_ = graph_->MakeNode<ColumnIR>().ValueOrDie();
-    EXPECT_OK(col_node_->Init("test_col"));
+    EXPECT_OK(col_node_->Init("test_col", ast));
 
     func_node_ = graph_->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(func_node_->Init("test_fn", {time_node_, col_node_}));
+    EXPECT_OK(func_node_->Init("test_fn", {time_node_, col_node_}, ast));
 
     lambda_node_ = graph_->MakeNode<LambdaIR>().ValueOrDie();
-    EXPECT_OK(lambda_node_->Init({"test_col"}, {{"time", func_node_}}));
+    EXPECT_OK(lambda_node_->Init({"test_col"}, {{"time", func_node_}}, ast));
   }
   std::shared_ptr<IR> graph_;
   TimeIR* time_node_;

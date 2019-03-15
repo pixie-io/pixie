@@ -15,6 +15,18 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 /**
+ * @brief Makes a test ast ptr that makes testing IRnode
+ * Init calls w/o queries not error out.
+ *
+ * @return pypa::AstPtr
+ */
+pypa::AstPtr MakeTestAstPtr() {
+  pypa::Ast ast_obj(pypa::AstType::Bool);
+  ast_obj.line = 0;
+  ast_obj.column = 0;
+  return std::make_shared<pypa::Ast>(ast_obj);
+}
+/**
  * @brief Parses a query.
  *
  * @param query_str

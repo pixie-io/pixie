@@ -632,9 +632,7 @@ TEST_F(CompilerTest, no_arg_pl_count_test) {
       "\n");
   auto compiler = Compiler();
   auto plan = compiler.Compile(query, compiler_state.get());
-  VLOG(1) << plan.ToString();
   ASSERT_OK(plan);
-  VLOG(1) << plan.ValueOrDie().DebugString();
 }
 }  // namespace compiler
 }  // namespace carnot

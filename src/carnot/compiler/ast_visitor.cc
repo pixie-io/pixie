@@ -207,7 +207,6 @@ StatusOr<IRNode*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
     std::string err_msg = absl::Substitute("No function named '$0'", func_name);
     return CreateAstError(err_msg, node);
   }
-  ir_node->SetLineCol(node->line, node->column);
   return ir_node;
 }
 
@@ -215,7 +214,7 @@ StatusOr<IRNode*> ASTWalker::ProcessFromOp(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(MemorySourceIR * ir_node, ir_graph_->MakeNode<MemorySourceIR>());
   // Get the arguments in the node.
   PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"table", "select"}, true));
-  PL_RETURN_IF_ERROR(ir_node->Init(args["table"], args["select"]));
+  PL_RETURN_IF_ERROR(ir_node->Init(args["table"], args["select"], node));
   return ir_node;
 }
 
@@ -238,7 +237,7 @@ StatusOr<IRNode*> ASTWalker::ProcessSinkOp(const pypa::AstCallPtr& node) {
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
   PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"name"}, true));
   PL_ASSIGN_OR_RETURN(std::string name_str, IRUtils::GetStrIRValue(*args["name"]));
-  PL_RETURN_IF_ERROR(ir_node->Init(call_result, name_str));
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result, name_str, node));
   return ir_node;
 }
 
@@ -253,7 +252,7 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeOp(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"start", "stop"}, true));
   PL_ASSIGN_OR_RETURN(IRNode * call_result,
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
-  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["start"], args["stop"]));
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["start"], args["stop"], node));
   return ir_node;
 }
 
@@ -268,11 +267,8 @@ StatusOr<IRNode*> ASTWalker::ProcessMapOp(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"fn"}, true));
   PL_ASSIGN_OR_RETURN(IRNode * call_result,
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
-  Status status = ir_node->Init(call_result, args["fn"]);
-  if (status.ok()) {
-    return ir_node;
-  }
-  return status;
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["fn"], node));
+  return ir_node;
 }
 
 StatusOr<IRNode*> ASTWalker::ProcessAggOp(const pypa::AstCallPtr& node) {
@@ -292,7 +288,7 @@ StatusOr<IRNode*> ASTWalker::ProcessAggOp(const pypa::AstCallPtr& node) {
 
   PL_ASSIGN_OR_RETURN(IRNode * call_result,
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
-  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["by"], args["fn"]));
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["by"], args["fn"], node));
   return ir_node;
 }
 
@@ -309,66 +305,58 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
 
   // Create Map IR.
   PL_ASSIGN_OR_RETURN(MapIR * map_ir_node, ir_graph_->MakeNode<MapIR>());
-  map_ir_node->SetLineCol(node->line, node->column);
 
   // pl.mod(by_col, size).
   DCHECK(args["by"]->type() == IRNodeType::LambdaType);
   auto by_col_ir_node = static_cast<LambdaIR*>(args["by"])->col_exprs()[0].node;
-  by_col_ir_node->SetLineCol(node->line, node->column);
   PL_ASSIGN_OR_RETURN(FuncIR * mod_ir_node, ir_graph_->MakeNode<FuncIR>());
   PL_RETURN_IF_ERROR(
-      mod_ir_node->Init("pl.modulo", std::vector<IRNode*>({by_col_ir_node, args["size"]})));
+      mod_ir_node->Init("pl.modulo", std::vector<IRNode*>({by_col_ir_node, args["size"]}), node));
 
-  mod_ir_node->SetLineCol(node->line, node->column);
   // pl.subtract(by_col, pl.mod(by_col, size)).
   PL_ASSIGN_OR_RETURN(FuncIR * sub_ir_node, ir_graph_->MakeNode<FuncIR>());
   PL_RETURN_IF_ERROR(
-      sub_ir_node->Init("pl.subtract", std::vector<IRNode*>({by_col_ir_node, mod_ir_node})));
-  sub_ir_node->SetLineCol(node->line, node->column);
+      sub_ir_node->Init("pl.subtract", std::vector<IRNode*>({by_col_ir_node, mod_ir_node}), node));
 
   // Map(lambda r: {'group': pl.subtract(by_col, pl.modulo(by_col, size))}.
   PL_ASSIGN_OR_RETURN(LambdaIR * map_lambda_ir_node, ir_graph_->MakeNode<LambdaIR>());
-  map_lambda_ir_node->SetLineCol(node->line, node->column);
   // Pull in all columns needed in fn.
   ColExpressionVector map_exprs = ColExpressionVector({ColumnExpression{"group", sub_ir_node}});
   for (const auto& name : static_cast<LambdaIR*>(args["fn"])->expected_column_names()) {
     PL_ASSIGN_OR_RETURN(ColumnIR * col_node, ir_graph_->MakeNode<ColumnIR>());
-    PL_RETURN_IF_ERROR(col_node->Init(name));
-    col_node->SetLineCol(node->line, node->column);
+    PL_RETURN_IF_ERROR(col_node->Init(name, node));
     map_exprs.push_back(ColumnExpression{name, col_node});
   }
   PL_RETURN_IF_ERROR(map_lambda_ir_node->Init(
       std::unordered_set<std::string>({static_cast<ColumnIR*>(by_col_ir_node)->col_name()}),
-      map_exprs));
-  PL_RETURN_IF_ERROR(map_ir_node->Init(call_result, map_lambda_ir_node));
+      map_exprs, node));
+  PL_RETURN_IF_ERROR(map_ir_node->Init(call_result, map_lambda_ir_node, node));
 
   // Create BlockingAggIR.
   PL_ASSIGN_OR_RETURN(BlockingAggIR * agg_ir_node, ir_graph_->MakeNode<BlockingAggIR>());
 
   // by = lambda r: r.group.
   PL_ASSIGN_OR_RETURN(ColumnIR * agg_col_ir_node, ir_graph_->MakeNode<ColumnIR>());
-  PL_RETURN_IF_ERROR(agg_col_ir_node->Init("group"));
-  agg_col_ir_node->SetLineCol(node->line, node->column);
+  PL_RETURN_IF_ERROR(agg_col_ir_node->Init("group", node));
   PL_ASSIGN_OR_RETURN(LambdaIR * agg_by_ir_node, ir_graph_->MakeNode<LambdaIR>());
   PL_RETURN_IF_ERROR(
-      agg_by_ir_node->Init(std::unordered_set<std::string>({"group"}), agg_col_ir_node));
-  agg_by_ir_node->SetLineCol(node->line, node->column);
+      agg_by_ir_node->Init(std::unordered_set<std::string>({"group"}), agg_col_ir_node, node));
 
   // Agg(fn = fn, by = lambda r: r.group).
-  PL_RETURN_IF_ERROR(agg_ir_node->Init(map_ir_node, agg_by_ir_node, args["fn"]));
-  agg_ir_node->SetLineCol(node->line, node->column);
+  PL_RETURN_IF_ERROR(agg_ir_node->Init(map_ir_node, agg_by_ir_node, args["fn"], node));
   return agg_ir_node;
 }
 
 StatusOr<IRNode*> ASTWalker::ProcessStr(const pypa::AstStrPtr& ast) {
   PL_ASSIGN_OR_RETURN(StringIR * ir_node, ir_graph_->MakeNode<StringIR>());
   PL_ASSIGN_OR_RETURN(auto str_value, GetStrAstValue(ast));
-  PL_RETURN_IF_ERROR(ir_node->Init(str_value));
+  PL_RETURN_IF_ERROR(ir_node->Init(str_value, ast));
   return ir_node;
 }
 
 StatusOr<IRNode*> ASTWalker::ProcessList(const pypa::AstListPtr& ast) {
   ListIR* ir_node = ir_graph_->MakeNode<ListIR>().ValueOrDie();
+  PL_RETURN_IF_ERROR(ir_node->Init(ast));
   for (auto& child : ast->elements) {
     PL_ASSIGN_OR_RETURN(IRNode * child_node, ProcessData(child));
     PL_RETURN_IF_ERROR(ir_node->AddListItem(child_node));
@@ -383,8 +371,7 @@ StatusOr<LambdaExprReturn> ASTWalker::LookupPLTimeAttribute(const std::string& a
                           parent_node);
   }
   PL_ASSIGN_OR_RETURN(TimeIR * time_node, ir_graph_->MakeNode<TimeIR>());
-  PL_RETURN_IF_ERROR(time_node->Init(time_idx->second));
-  time_node->SetLineCol(parent_node->line, parent_node->column);
+  PL_RETURN_IF_ERROR(time_node->Init(time_idx->second, parent_node));
   return LambdaExprReturn(time_node);
 }
 
@@ -409,7 +396,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const std::string& 
     std::unordered_set<std::string> column_names;
     column_names.insert(attribute);
     PL_ASSIGN_OR_RETURN(ColumnIR * expr, ir_graph_->MakeNode<ColumnIR>());
-    PL_RETURN_IF_ERROR(expr->Init(attribute));
+    PL_RETURN_IF_ERROR(expr->Init(attribute, node));
     return LambdaExprReturn(expr, column_names);
   } else if (value == kUDFPrefix) {
     return LambdaExprReturn(absl::StrFormat("%s.%s", value, attribute), true /*is_pixie_attr*/);
@@ -421,13 +408,13 @@ StatusOr<IRNode*> ASTWalker::ProcessNumber(const pypa::AstNumberPtr& node) {
   switch (node->num_type) {
     case pypa::AstNumber::Type::Float: {
       PL_ASSIGN_OR_RETURN(FloatIR * ir_node, ir_graph_->MakeNode<FloatIR>());
-      PL_RETURN_IF_ERROR(ir_node->Init(node->floating));
+      PL_RETURN_IF_ERROR(ir_node->Init(node->floating, node));
       return ir_node;
     }
     case pypa::AstNumber::Type::Integer:
     case pypa::AstNumber::Type::Long: {
       PL_ASSIGN_OR_RETURN(IntIR * ir_node, ir_graph_->MakeNode<IntIR>());
-      PL_RETURN_IF_ERROR(ir_node->Init(node->integer));
+      PL_RETURN_IF_ERROR(ir_node->Init(node->integer, node));
       return ir_node;
     }
     default:
@@ -450,7 +437,7 @@ StatusOr<LambdaExprReturn> ASTWalker::BuildLambdaFunc(
       ret.MergeColumns(expr_ret);
     }
   }
-  PL_RETURN_IF_ERROR(ir_node->Init(fn_name, expressions));
+  PL_RETURN_IF_ERROR(ir_node->Init(fn_name, expressions, parent_node));
   return ret;
 }
 
@@ -530,6 +517,7 @@ StatusOr<LambdaExprReturn> WrapLambdaExprReturn(StatusOr<IRNode*> node) {
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaList(const std::string& arg_name,
                                                         const pypa::AstListPtr& node) {
   ListIR* ir_node = ir_graph_->MakeNode<ListIR>().ValueOrDie();
+  PL_RETURN_IF_ERROR(ir_node->Init(node));
   LambdaExprReturn expr_return(ir_node);
   for (auto& child : node->elements) {
     PL_ASSIGN_OR_RETURN(auto child_attr, ProcessLambdaExpr(arg_name, child));
@@ -585,9 +573,6 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaExpr(const std::string& arg_n
           node);
     }
   }
-  if (!expr_return.StringOnly()) {
-    expr_return.expr_->SetLineCol(node->line, node->column);
-  }
   return expr_return;
 }
 
@@ -622,7 +607,6 @@ StatusOr<LambdaBodyReturn> ASTWalker::ProcessLambdaDict(const std::string& arg_n
     PL_ASSIGN_OR_RETURN(auto expr_ret, ProcessLambdaExpr(arg_name, value_ast));
     if (expr_ret.is_pixie_attr_) {
       PL_ASSIGN_OR_RETURN(expr_ret, BuildLambdaFunc(expr_ret.str_, {}, body_dict));
-      expr_ret.expr_->SetLineCol(value_ast->line, value_ast->column);
     }
     PL_RETURN_IF_ERROR(return_val.AddExprResult(key_string, expr_ret));
   }
@@ -637,14 +621,15 @@ StatusOr<IRNode*> ASTWalker::ProcessLambda(const pypa::AstLambdaPtr& ast) {
     case AstType::Dict: {
       PL_ASSIGN_OR_RETURN(return_struct,
                           ProcessLambdaDict(arg_name, PYPA_PTR_CAST(Dict, ast->body)));
-      PL_RETURN_IF_ERROR(
-          ir_node->Init(return_struct.input_relation_columns_, return_struct.col_exprs_));
+      PL_RETURN_IF_ERROR(ir_node->Init(return_struct.input_relation_columns_,
+                                       return_struct.col_exprs_, ast->body));
       return ir_node;
     }
 
     default: {
       PL_ASSIGN_OR_RETURN(LambdaExprReturn return_val, ProcessLambdaExpr(arg_name, ast->body));
-      PL_RETURN_IF_ERROR(ir_node->Init(return_val.input_relation_columns_, return_val.expr_));
+      PL_RETURN_IF_ERROR(
+          ir_node->Init(return_val.input_relation_columns_, return_val.expr_, ast->body));
       return ir_node;
     }
   }
@@ -657,7 +642,7 @@ StatusOr<IRNode*> ASTWalker::EvalCompileTimeNow(const pypa::AstArguments& arglis
   }
   PL_ASSIGN_OR_RETURN(IntIR * ir_node, ir_graph_->MakeNode<IntIR>());
   // TODO(philkuz) (PL-441) grab now time from the input to the compiler.
-  PL_RETURN_IF_ERROR(ir_node->Init(CurrentTimeNS()));
+  PL_RETURN_IF_ERROR(ir_node->Init(CurrentTimeNS(), std::make_shared<pypa::Ast>(arglist)));
   return ir_node;
 }
 StatusOr<IRNode*> ASTWalker::EvalCompileTimeFn(const std::string& attr_fn_name,
@@ -678,7 +663,6 @@ StatusOr<IRNode*> ASTWalker::WrapAstError(StatusOr<IRNode*> status_or,
                                           const pypa::AstPtr parent_node) {
   if (status_or.ok()) {
     auto val = status_or.ValueOrDie();
-    val->SetLineCol(parent_node->line, parent_node->column);
     return val;
   }
   return CreateAstError(status_or.msg(), parent_node);
@@ -723,7 +707,7 @@ StatusOr<IRNode*> ASTWalker::ProcessNameData(const pypa::AstNamePtr& ast) {
     return CreateAstError(absl::StrFormat("Couldn't process '%s'.", name_str), ast);
   }
   PL_ASSIGN_OR_RETURN(auto node, ir_graph_->MakeNode<BoolIR>());
-  PL_RETURN_IF_ERROR(node->Init(true));
+  PL_RETURN_IF_ERROR(node->Init(true, ast));
   return node;
 }
 
@@ -760,7 +744,6 @@ StatusOr<IRNode*> ASTWalker::ProcessData(const pypa::AstPtr& ast) {
       return CreateAstError(err_msg, ast);
     }
   }
-  ir_node->SetLineCol(ast->line, ast->column);
   return ir_node;
 }
 }  // namespace compiler

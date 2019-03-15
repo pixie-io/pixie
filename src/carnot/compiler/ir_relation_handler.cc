@@ -309,7 +309,7 @@ StatusOr<std::vector<ColumnIR*>> IRRelationHandler::GetColumnsFromRelation(
   for (const auto& col_name : col_names) {
     int64_t i = relation.GetColumnIndex(col_name);
     PL_ASSIGN_OR_RETURN(auto col_node, graph->MakeNode<ColumnIR>());
-    PL_RETURN_IF_ERROR(col_node->Init(col_name));
+    PL_RETURN_IF_ERROR(col_node->Init(col_name, node->ast_node()));
     col_node->SetColumnIdx(i);
     col_node->SetColumnType(relation.GetColumnType(i));
     result.push_back(col_node);

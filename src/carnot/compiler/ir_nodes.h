@@ -64,7 +64,6 @@ class IRNode {
    * @return whether or not the node has a logical representation.
    */
   virtual bool HasLogicalRepr() const = 0;
-  void SetLineCol(int64_t line, int64_t col);
   int64_t line() const { return line_; }
   int64_t col() const { return col_; }
   bool line_col_set() const { return line_col_set_; }
@@ -85,10 +84,13 @@ class IRNode {
   // Returns the ID of the operator.
   int64_t id() const { return id_; }
   IR* graph_ptr() { return graph_ptr_; }
+  pypa::AstPtr ast_node() const { return ast_node_; }
 
  protected:
   explicit IRNode(int64_t id, IRNodeType type, bool is_source)
       : id_(id), type_(type), is_source_(is_source) {}
+  void SetLineCol(int64_t line, int64_t col);
+  void SetLineCol(const pypa::AstPtr ast_node);
 
  private:
   int64_t id_;
@@ -100,6 +102,7 @@ class IRNode {
   IRNodeType type_;
   bool line_col_set_ = false;
   bool is_source_ = false;
+  pypa::AstPtr ast_node_;
 };
 
 /**
@@ -193,7 +196,7 @@ class ColumnIR : public IRNode {
  public:
   ColumnIR() = delete;
   explicit ColumnIR(int64_t id) : IRNode(id, ColumnType, false) {}
-  Status Init(const std::string& col_name);
+  Status Init(const std::string& col_name, const pypa::AstPtr ast_node);
   bool HasLogicalRepr() const override;
   std::string col_name() const { return col_name_; }
   std::string DebugString(int64_t depth) const override;
@@ -231,7 +234,7 @@ class StringIR : public IRNode {
  public:
   StringIR() = delete;
   explicit StringIR(int64_t id) : IRNode(id, StringType, false) {}
-  Status Init(std::string str);
+  Status Init(std::string str, const pypa::AstPtr ast_node);
   bool HasLogicalRepr() const override;
   std::string str() const { return str_; }
   std::string DebugString(int64_t depth) const override;
@@ -252,6 +255,8 @@ class ListIR : public IRNode {
   ListIR() = delete;
   explicit ListIR(int64_t id) : IRNode(id, ListType, false) {}
   bool HasLogicalRepr() const override;
+  // TODO(philkuz) (PL-545) refactor lists
+  Status Init(const pypa::AstPtr ast_node);
   Status AddListItem(IRNode* node);
   std::string DebugString(int64_t depth) const override;
   std::vector<IRNode*> children() { return children_; }
@@ -272,12 +277,14 @@ class LambdaIR : public IRNode {
  public:
   LambdaIR() = delete;
   explicit LambdaIR(int64_t id) : IRNode(id, LambdaType, false) {}
-  Status Init(std::unordered_set<std::string> column_names, ColExpressionVector col_exprs);
+  Status Init(std::unordered_set<std::string> column_names, ColExpressionVector col_exprs,
+              const pypa::AstPtr ast_node);
   /**
    * @brief Init for the Lambda called elsewhere. Uses a default value for the key to the expression
    * map.
    */
-  Status Init(std::unordered_set<std::string> expected_column_names, IRNode* node);
+  Status Init(std::unordered_set<std::string> expected_column_names, IRNode* node,
+              const pypa::AstPtr ast_node);
   /**
    * @brief Returns the one_expr_ if it has only one expr in the col_expr_map, otherwise returns an
    * error.
@@ -306,7 +313,7 @@ class FuncIR : public IRNode {
  public:
   FuncIR() = delete;
   explicit FuncIR(int64_t id) : IRNode(id, FuncType, false) {}
-  Status Init(std::string func_name, std::vector<IRNode*> args);
+  Status Init(std::string func_name, std::vector<IRNode*> args, const pypa::AstPtr ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   std::string func_name() const { return func_name_; }
@@ -326,7 +333,7 @@ class FloatIR : public IRNode {
  public:
   FloatIR() = delete;
   explicit FloatIR(int64_t id) : IRNode(id, FloatType, false) {}
-  Status Init(double val);
+  Status Init(double val, const pypa::AstPtr ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   double val() const { return val_; }
@@ -340,7 +347,7 @@ class IntIR : public IRNode {
  public:
   IntIR() = delete;
   explicit IntIR(int64_t id) : IRNode(id, IntType, false) {}
-  Status Init(int64_t val);
+  Status Init(int64_t val, const pypa::AstPtr ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   int64_t val() const { return val_; }
@@ -354,7 +361,7 @@ class BoolIR : public IRNode {
  public:
   BoolIR() = delete;
   explicit BoolIR(int64_t id) : IRNode(id, BoolType, false) {}
-  Status Init(bool val);
+  Status Init(bool val, const pypa::AstPtr ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   bool val() const { return val_; }
@@ -368,7 +375,7 @@ class TimeIR : public IRNode {
  public:
   TimeIR() = delete;
   explicit TimeIR(int64_t id) : IRNode(id, TimeType, false) {}
-  Status Init(int64_t val);
+  Status Init(int64_t val, const pypa::AstPtr ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   bool val() const { return val_ != 0; }
@@ -386,7 +393,7 @@ class MemorySourceIR : public OperatorIR {
  public:
   MemorySourceIR() = delete;
   explicit MemorySourceIR(int64_t id) : OperatorIR(id, MemorySourceType, false, true) {}
-  Status Init(IRNode* table_node, IRNode* select);
+  Status Init(IRNode* table_node, IRNode* select, const pypa::AstPtr ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   IRNode* table_node() { return table_node_; }
@@ -424,7 +431,7 @@ class MemorySinkIR : public OperatorIR {
  public:
   MemorySinkIR() = delete;
   explicit MemorySinkIR(int64_t id) : OperatorIR(id, MemorySinkType, true, false) {}
-  Status Init(IRNode* parent, const std::string& name);
+  Status Init(IRNode* parent, const std::string& name, const pypa::AstPtr ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   bool name_set() const { return name_set_; }
@@ -446,7 +453,7 @@ class RangeIR : public OperatorIR {
  public:
   RangeIR() = delete;
   explicit RangeIR(int64_t id) : OperatorIR(id, RangeType, true, false) {}
-  Status Init(IRNode* parent, IRNode* start_repr, IRNode* stop_repr);
+  Status Init(IRNode* parent, IRNode* start_repr, IRNode* stop_repr, const pypa::AstPtr ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   IRNode* start_repr() { return start_repr_; }
@@ -468,7 +475,7 @@ class MapIR : public OperatorIR {
  public:
   MapIR() = delete;
   explicit MapIR(int64_t id) : OperatorIR(id, MapType, true, false) {}
-  Status Init(IRNode* parent, IRNode* lambda_func);
+  Status Init(IRNode* parent, IRNode* lambda_func, const pypa::AstPtr ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   IRNode* lambda_func() const { return lambda_func_; }
@@ -497,7 +504,7 @@ class BlockingAggIR : public OperatorIR {
  public:
   BlockingAggIR() = delete;
   explicit BlockingAggIR(int64_t id) : OperatorIR(id, BlockingAggType, true, false) {}
-  Status Init(IRNode* parent, IRNode* by_func, IRNode* agg_func);
+  Status Init(IRNode* parent, IRNode* by_func, IRNode* agg_func, const pypa::AstPtr ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   IRNode* by_func() const { return by_func_; }
