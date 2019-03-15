@@ -15,7 +15,6 @@ pl_cc_library(
     ),
     hdrs = glob([
         "*.h",
-        "bt/*.bt",
     ]),
     deps = [
         "//src/shared/types:cc_library",

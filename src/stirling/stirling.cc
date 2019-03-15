@@ -102,22 +102,36 @@ Status Stirling::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
 
 // Main call to start the data collection.
 Status Stirling::RunAsThread() {
-  if (run_enable_) {
-    return error::AlreadyExists("A Stirling thread is already running");
+  bool prev_run_enable_ = run_enable_.exchange(true);
+
+  if (prev_run_enable_) {
+    return error::AlreadyExists("A Stirling thread is already running.");
   }
 
-  run_enable_ = true;
-  run_thread_ = std::thread(&Stirling::Run, this);
+  run_thread_ = std::thread(&Stirling::RunCore, this);
 
   return Status::OK();
 }
 
 void Stirling::WaitForThreadJoin() { run_thread_.join(); }
 
+void Stirling::Run() {
+  // Make sure multiple instances of Run() are not active,
+  // which would be possible if the caller created multiple threads.
+  bool prev_run_enable_ = run_enable_.exchange(true);
+
+  if (prev_run_enable_) {
+    LOG(ERROR) << "A Stirling thread is already running.";
+    return;
+  }
+
+  RunCore();
+}
+
 // Main Data Collector loop.
 // Poll on Data Source Through connectors, when appropriate, then go to sleep.
 // Must run as a thread, so only call from Run() as a thread.
-void Stirling::Run() {
+void Stirling::RunCore() {
   while (run_enable_) {
     {
       // Acquire spin lock to go through one iteration of sampling and pushing data.

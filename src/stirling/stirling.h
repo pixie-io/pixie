@@ -156,6 +156,11 @@ class Stirling : public NotCopyable {
                                SourceRegistry::RegistryElement registry_element);
 
   /**
+   * Main run implementation.
+   */
+  void RunCore();
+
+  /**
    * Helper function to figure out how much to sleep between polling iterations.
    */
   void SleepUntilNextTick();
