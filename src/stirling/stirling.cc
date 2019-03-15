@@ -106,6 +106,7 @@ Status Stirling::RunAsThread() {
     return error::AlreadyExists("A Stirling thread is already running");
   }
 
+  run_enable_ = true;
   run_thread_ = std::thread(&Stirling::Run, this);
 
   return Status::OK();
@@ -117,7 +118,6 @@ void Stirling::WaitForThreadJoin() { run_thread_.join(); }
 // Poll on Data Source Through connectors, when appropriate, then go to sleep.
 // Must run as a thread, so only call from Run() as a thread.
 void Stirling::Run() {
-  run_enable_ = true;
   while (run_enable_) {
     {
       // Acquire spin lock to go through one iteration of sampling and pushing data.

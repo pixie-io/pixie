@@ -139,7 +139,9 @@ class Stirling : public NotCopyable {
 
  protected:
   explicit Stirling(std::unique_ptr<SourceRegistry> registry)
-      : config_(std::make_unique<PubSubManager>()), registry_(std::move(registry)) {}
+      : run_enable_(false),
+        config_(std::make_unique<PubSubManager>()),
+        registry_(std::move(registry)) {}
 
  private:
   /**
