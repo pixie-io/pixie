@@ -10,6 +10,7 @@ def pl_copts(repository, test = False):
         "-Woverloaded-virtual",
         "-Wold-style-cast",
         "-Wimplicit-fallthrough",
+        "-Wfloat-conversion",
         # Language flags.
         "-std=c++17",
     ]

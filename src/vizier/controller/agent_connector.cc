@@ -7,7 +7,7 @@ namespace pl {
 namespace vizier {
 
 // The time after a missing heartbeat that the agent is deemed unhealthy.
-const int64_t kMissingHeartbeatBeforeUnhealthy = 30 * 1E9;  // 30 seconds.
+const int64_t kMissingHeartbeatBeforeUnhealthy = 30 * 1000000000LL;  // 30 seconds.
 
 AgentConnector::AgentConnector(const sole::uuid &agent_id, const RegisterAgentRequest &req,
                                AgentReaderWriter *stream)

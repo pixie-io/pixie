@@ -51,16 +51,16 @@ class ElapsedTimer : public NotCopyable {
   /**
    * @return the elapsed time in us.
    */
-  double ElapsedTime_us() const { return elapsed_time_us_ + (timer_running_ ? TimeDiff() : 0); }
+  uint64_t ElapsedTime_us() const { return elapsed_time_us_ + (timer_running_ ? TimeDiff() : 0); }
 
  private:
-  double TimeDiff() const {
+  uint64_t TimeDiff() const {
     auto current = std::chrono::high_resolution_clock::now();
     return std::chrono::duration_cast<std::chrono::microseconds>(current - start_time_).count();
   }
   bool timer_running_ = false;
   std::chrono::high_resolution_clock::time_point start_time_;
-  double elapsed_time_us_ = 0;
+  uint64_t elapsed_time_us_ = 0;
 };
 
 }  // namespace pl

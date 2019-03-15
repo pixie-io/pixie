@@ -53,8 +53,6 @@ void PrintRecordBatch(std::string prefix, DataElements schema, uint64_t num_reco
         case DataType::FLOAT64: {
           auto typedCol = std::static_pointer_cast<Float64ValueColumnWrapper>(col);
           double val = (*typedCol)[i].val;
-          // TODO(oazizi): Incorrectly setting the above to int64_t doesn't cause any compiler
-          // errors/warnings!!!
           std::cout << val << " ";
         } break;
         case DataType::STRING: {

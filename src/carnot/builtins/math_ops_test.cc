@@ -268,8 +268,8 @@ TEST(MathOps, basic_float64_sum_uda_test) {
 
 TEST(MathOps, basic_int64_sum_uda_test) {
   auto inputs = std::vector<uint64_t>({3, 6, 10, 5, 2});
-  double expected_sum = std::accumulate(std::begin(inputs), std::end(inputs), 0.0,
-                                        [&](double memo, double val) { return memo + val; });
+  uint64_t expected_sum = std::accumulate(std::begin(inputs), std::end(inputs), 0,
+                                          [&](uint64_t memo, uint64_t val) { return memo + val; });
 
   auto uda_tester = udf::UDATester<SumUDA<types::Int64Value>>();
   uda_tester.ForInput(3).ForInput(6).ForInput(10).ForInput(5).ForInput(2).Expect(expected_sum);
@@ -277,8 +277,8 @@ TEST(MathOps, basic_int64_sum_uda_test) {
 
 TEST(MathOps, merge_sum_test) {
   auto inputs = std::vector<uint64_t>({3, 6, 10, 5, 2, 1, 4, 5, 2, 8});
-  double expected_sum = std::accumulate(std::begin(inputs), std::end(inputs), 0.0,
-                                        [&](double memo, double val) { return memo + val; });
+  uint64_t expected_sum = std::accumulate(std::begin(inputs), std::end(inputs), 0,
+                                          [&](uint64_t memo, uint64_t val) { return memo + val; });
 
   auto uda_tester = udf::UDATester<SumUDA<types::Int64Value>>();
   uda_tester.ForInput(3).ForInput(6).ForInput(10).ForInput(5).ForInput(2);
