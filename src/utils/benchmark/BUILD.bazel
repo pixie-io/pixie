@@ -8,4 +8,5 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     visibility = ["//visibility:public"],
+    deps = ["@com_google_benchmark//:benchmark"],
 )

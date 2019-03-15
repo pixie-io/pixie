@@ -22,6 +22,26 @@ std::vector<T> CreateLargeData(int size, int64_t min_val = 0, int64_t max_val = 
   return data;
 }
 
+template <typename T>
+std::vector<T> GetIntsFromExponential(int size, int64_t lambda) {
+  std::vector<double> data(size);
+
+  std::random_device rnd_device;
+  std::mt19937 mersenne_engine{rnd_device()};  // Generates random integers
+  std::exponential_distribution<double> dist(lambda);
+
+  auto gen = [&dist, &mersenne_engine]() { return dist(mersenne_engine); };
+
+  std::generate(begin(data), end(data), gen);
+  auto max = *std::max_element(data.begin(), data.end());
+  std::vector<T> out_data(size);
+  for (size_t i = 0; i < data.size(); i++) {
+    out_data[i] = static_cast<int64_t>(data[i] / max * 100);
+  }
+
+  return out_data;
+}
+
 std::string RandomString(size_t length) {
   auto randchar = []() -> char {
     const char charset[] =

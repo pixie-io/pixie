@@ -1,12 +1,15 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
     name = "cc_library",
     srcs = glob(
         ["*.cc"],
-        exclude = ["**/*_test.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
     ),
     hdrs = glob(["*.h"]),
     deps = [
@@ -27,5 +30,16 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/carnot/exec:test_utils",
+    ],
+)
+
+pl_cc_binary(
+    name = "blocking_agg_benchmark",
+    testonly = 1,
+    srcs = ["blocking_agg_benchmark.cc"],
+    deps = [
+        ":cc_library",
+        "//src/utils/benchmark:cc_library",
+        "//third_party:arrow",
     ],
 )
