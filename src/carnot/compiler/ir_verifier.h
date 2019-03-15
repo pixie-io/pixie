@@ -19,17 +19,17 @@ class IRVerifier {
    * @brief Verifies that each node in the graph has a line, column attribute for debugging.
    *
    * @param ir_graph
-   * @return const std::vector<Status>&
+   * @return const Status&
    */
-  std::vector<Status> VerifyLineColGraph(const IR& ir_graph);
+  Status VerifyLineColGraph(const IR& ir_graph);
 
   /**
    * @brief Verifies that each node in the graph has their connections properly initialized.
    *
    * @param ir_graph
-   * @return const std::vector<Status>&
+   * @return const Status&
    */
-  std::vector<Status> VerifyGraphConnections(const IR& ir_graph);
+  Status VerifyGraphConnections(const IR& ir_graph);
 
  private:
   bool TypeIsOp(IRNodeType type);
@@ -52,6 +52,7 @@ class IRVerifier {
 
   Status VerifyNodeConnections(IRNode* node);
   Status VerifyLineCol(IRNode* node);
+  Status CombineStatuses(const std::vector<Status>& statuses);
 };
 }  // namespace compiler
 }  // namespace carnot

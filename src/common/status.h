@@ -118,6 +118,7 @@ inline ::testing::AssertionResult IsOK(const Status& status) {
   PL_RETURN_IF_ERROR_IMPL(PL_CONCAT_NAME(__status__, __COUNTER__), __status)
 
 #define EXPECT_OK(value) EXPECT_TRUE(IsOK(StatusAdapter(value)))
+#define EXPECT_NOT_OK(value) EXPECT_FALSE(IsOK(StatusAdapter(value)))
 #define ASSERT_OK(value) ASSERT_TRUE(IsOK(StatusAdapter(value)))
 
 #define PL_CHECK_OK_PREPEND(to_call, msg)             \

@@ -32,17 +32,8 @@ StatusOr<carnotpb::Plan> Compiler::Compile(const std::string& query,
 }
 Status Compiler::VerifyIRConnections(const IR& ir) {
   auto verifier = IRVerifier();
-  std::vector<Status> result = verifier.VerifyGraphConnections(ir);
-  if (!result.empty()) {
-    std::vector<std::string> msgs;
-    error::Code code = error::Code::OK;
-
-    for (const auto& err : result) {
-      msgs.push_back(err.ToString());
-      code = err.code();
-    }
-    return Status(code, absl::StrJoin(msgs, "\n"));
-  }
+  PL_RETURN_IF_ERROR(verifier.VerifyGraphConnections(ir));
+  PL_RETURN_IF_ERROR(verifier.VerifyLineColGraph(ir));
   return Status::OK();
 }
 Status Compiler::UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_state) {

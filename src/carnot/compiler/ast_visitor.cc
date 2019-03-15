@@ -309,26 +309,32 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
 
   // Create Map IR.
   PL_ASSIGN_OR_RETURN(MapIR * map_ir_node, ir_graph_->MakeNode<MapIR>());
+  map_ir_node->SetLineCol(node->line, node->column);
 
   // pl.mod(by_col, size).
   DCHECK(args["by"]->type() == IRNodeType::LambdaType);
   auto by_col_ir_node = static_cast<LambdaIR*>(args["by"])->col_exprs()[0].node;
+  by_col_ir_node->SetLineCol(node->line, node->column);
   PL_ASSIGN_OR_RETURN(FuncIR * mod_ir_node, ir_graph_->MakeNode<FuncIR>());
   PL_RETURN_IF_ERROR(
       mod_ir_node->Init("pl.modulo", std::vector<IRNode*>({by_col_ir_node, args["size"]})));
 
+  mod_ir_node->SetLineCol(node->line, node->column);
   // pl.subtract(by_col, pl.mod(by_col, size)).
   PL_ASSIGN_OR_RETURN(FuncIR * sub_ir_node, ir_graph_->MakeNode<FuncIR>());
   PL_RETURN_IF_ERROR(
       sub_ir_node->Init("pl.subtract", std::vector<IRNode*>({by_col_ir_node, mod_ir_node})));
+  sub_ir_node->SetLineCol(node->line, node->column);
 
   // Map(lambda r: {'group': pl.subtract(by_col, pl.modulo(by_col, size))}.
   PL_ASSIGN_OR_RETURN(LambdaIR * map_lambda_ir_node, ir_graph_->MakeNode<LambdaIR>());
+  map_lambda_ir_node->SetLineCol(node->line, node->column);
   // Pull in all columns needed in fn.
   ColExpressionVector map_exprs = ColExpressionVector({ColumnExpression{"group", sub_ir_node}});
   for (const auto& name : static_cast<LambdaIR*>(args["fn"])->expected_column_names()) {
     PL_ASSIGN_OR_RETURN(ColumnIR * col_node, ir_graph_->MakeNode<ColumnIR>());
     PL_RETURN_IF_ERROR(col_node->Init(name));
+    col_node->SetLineCol(node->line, node->column);
     map_exprs.push_back(ColumnExpression{name, col_node});
   }
   PL_RETURN_IF_ERROR(map_lambda_ir_node->Init(
@@ -342,12 +348,15 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
   // by = lambda r: r.group.
   PL_ASSIGN_OR_RETURN(ColumnIR * agg_col_ir_node, ir_graph_->MakeNode<ColumnIR>());
   PL_RETURN_IF_ERROR(agg_col_ir_node->Init("group"));
+  agg_col_ir_node->SetLineCol(node->line, node->column);
   PL_ASSIGN_OR_RETURN(LambdaIR * agg_by_ir_node, ir_graph_->MakeNode<LambdaIR>());
   PL_RETURN_IF_ERROR(
       agg_by_ir_node->Init(std::unordered_set<std::string>({"group"}), agg_col_ir_node));
+  agg_by_ir_node->SetLineCol(node->line, node->column);
 
   // Agg(fn = fn, by = lambda r: r.group).
   PL_RETURN_IF_ERROR(agg_ir_node->Init(map_ir_node, agg_by_ir_node, args["fn"]));
+  agg_ir_node->SetLineCol(node->line, node->column);
   return agg_ir_node;
 }
 
@@ -523,15 +532,8 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaList(const std::string& arg_n
   ListIR* ir_node = ir_graph_->MakeNode<ListIR>().ValueOrDie();
   LambdaExprReturn expr_return(ir_node);
   for (auto& child : node->elements) {
-    if (child->type != AstType::Attribute) {
-      return CreateAstError(
-          absl::StrFormat("Expect Lambda list to only contain column names, not %s",
-                          GetAstTypeName(node->type)),
-          node);
-    }
-    PL_ASSIGN_OR_RETURN(auto child_attr,
-                        ProcessLambdaAttribute(arg_name, PYPA_PTR_CAST(Attribute, child)));
-    if (child_attr.StringOnly()) {
+    PL_ASSIGN_OR_RETURN(auto child_attr, ProcessLambdaExpr(arg_name, child));
+    if (child_attr.StringOnly() || child_attr.expr_->type() != IRNodeType::ColumnType) {
       return CreateAstError("Expect Lambda list to only contain column names.", node);
     }
     expr_return.MergeColumns(child_attr);
@@ -615,10 +617,12 @@ StatusOr<LambdaBodyReturn> ASTWalker::ProcessLambdaDict(const std::string& arg_n
   auto return_val = LambdaBodyReturn();
   for (size_t i = 0; i < body_dict->keys.size(); i++) {
     auto key_str_ast = body_dict->keys[i];
+    auto value_ast = body_dict->values[i];
     PL_ASSIGN_OR_RETURN(auto key_string, GetStrAstValue(key_str_ast));
-    PL_ASSIGN_OR_RETURN(auto expr_ret, ProcessLambdaExpr(arg_name, body_dict->values[i]));
+    PL_ASSIGN_OR_RETURN(auto expr_ret, ProcessLambdaExpr(arg_name, value_ast));
     if (expr_ret.is_pixie_attr_) {
       PL_ASSIGN_OR_RETURN(expr_ret, BuildLambdaFunc(expr_ret.str_, {}, body_dict));
+      expr_ret.expr_->SetLineCol(value_ast->line, value_ast->column);
     }
     PL_RETURN_IF_ERROR(return_val.AddExprResult(key_string, expr_ret));
   }

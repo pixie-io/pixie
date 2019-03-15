@@ -170,8 +170,8 @@ Status IRVerifier::VerifyNodeConnections(IRNode* node) {
 
 Status IRVerifier::VerifyLineCol(IRNode* node) {
   if (!node->line_col_set()) {
-    std::string err_msg = "Line and column not set for $0 with id $1.";
-    return error::InvalidArgument(err_msg, node->type_string(), node->id());
+    std::string err_msg = "Line and column not set for $0 with id $1. DBG string: $2";
+    return error::InvalidArgument(err_msg, node->type_string(), node->id(), node->DebugString(0));
   }
   return Status::OK();
 }
@@ -182,7 +182,7 @@ Status IRVerifier::VerifyLineCol(IRNode* node) {
  * @param ir_graph
  * @return const std::vector<Status>&
  */
-std::vector<Status> IRVerifier::VerifyLineColGraph(const IR& ir_graph) {
+Status IRVerifier::VerifyLineColGraph(const IR& ir_graph) {
   std::vector<Status> statuses;
   for (auto& i : ir_graph.dag().TopologicalSort()) {
     auto node = ir_graph.Get(i);
@@ -191,7 +191,18 @@ std::vector<Status> IRVerifier::VerifyLineColGraph(const IR& ir_graph) {
       statuses.push_back(line_col_status);
     }
   }
-  return statuses;
+  return CombineStatuses(statuses);
+}
+
+Status IRVerifier::CombineStatuses(const std::vector<Status>& statuses) {
+  if (!statuses.empty()) {
+    std::vector<std::string> msgs;
+    for (const auto& s : statuses) {
+      msgs.push_back(s.msg());
+    }
+    return Status(statuses[0].code(), absl::StrJoin(msgs, "\n"));
+  }
+  return Status::OK();
 }
 
 /**
@@ -200,7 +211,7 @@ std::vector<Status> IRVerifier::VerifyLineColGraph(const IR& ir_graph) {
  * @param ir_graph
  * @return const std::vector<Status>&
  */
-std::vector<Status> IRVerifier::VerifyGraphConnections(const IR& ir_graph) {
+Status IRVerifier::VerifyGraphConnections(const IR& ir_graph) {
   std::vector<Status> statuses;
   bool has_sink = false;
   for (auto& i : ir_graph.dag().TopologicalSort()) {
@@ -218,7 +229,7 @@ std::vector<Status> IRVerifier::VerifyGraphConnections(const IR& ir_graph) {
         error::InvalidArgument("No Result() call found in the query. You must end the query with a "
                                "Result call to save something out."));
   }
-  return statuses;
+  return CombineStatuses(statuses);
 }
 }  // namespace compiler
 }  // namespace carnot
