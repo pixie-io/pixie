@@ -55,7 +55,7 @@ class SourceToTableTest : public ::testing::Test {
     for (size_t i = 0; i < info_class_mgr_.Schema().size(); ++i) {
       info_class_mgr_.UpdateElementSubscription(i, Element_State::Element_State_SUBSCRIBED);
     }
-    table_ = std::make_unique<ColumnWrapperDataTable>(info_class_mgr_.Schema());
+    table_ = std::make_unique<DataTable>(info_class_mgr_.Schema());
   }
 
   InfoClassSchema elements_;
@@ -69,7 +69,7 @@ TEST_F(SourceToTableTest, source_to_table) {
   RawDataBuf r = fake_proc_stat_->GetData();
   EXPECT_EQ(1, r.num_records);
   EXPECT_OK(table_->AppendData(r.buf, r.num_records));
-  auto record_batches_uptr = table_->GetColumnWrapperRecordBatches();
+  auto record_batches_uptr = table_->GetRecordBatches();
   auto record_batches_ptr = record_batches_uptr.ValueOrDie().get();
   ASSERT_TRUE(record_batches_ptr != nullptr);
   for (const auto& record_batch : *record_batches_ptr) {

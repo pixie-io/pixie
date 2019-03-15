@@ -11,20 +11,11 @@
 namespace pl {
 namespace stirling {
 
-enum class TableType { Null, ColumnWrapper, Arrow };
-
 class DataTable {
  public:
   DataTable() = delete;
   virtual ~DataTable() = default;
-  explicit DataTable(TableType table_type, const InfoClassSchema& schema);
-
-  /**
-   * @brief Return the schema of the table in Arrow format
-   *
-   * @return shared pointer to arrow Schema
-   */
-  std::shared_ptr<arrow::Schema> ArrowSchema();
+  explicit DataTable(const InfoClassSchema& schema);
 
   /**
    * @brief Given raw data, append the data to the existing Data Tables.
@@ -34,25 +25,14 @@ class DataTable {
    *
    * @return Status
    */
-  virtual Status AppendData(uint8_t* data, uint64_t num_rows) = 0;
+  Status AppendData(uint8_t* data, uint64_t num_rows);
 
   /**
    * @brief Get the data collected so far and relinquish ownership.
    *
    * @return pointer to a vector of ColumnWrapperRecordBatch pointers.
    */
-  virtual StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVec>> GetColumnWrapperRecordBatches() {
-    return error::Unimplemented("Ensure you are using the right type of Data Table");
-  }
-
-  /**
-   * @brief Get the data collected so far and relinquish ownership.
-   *
-   * @return pointer to a vector of Arrow RecordBatch pointers.
-   */
-  virtual StatusOr<std::unique_ptr<ArrowRecordBatchSPtrVec>> GetArrowRecordBatches() {
-    return error::Unimplemented("Ensure you are using the right type of Data Table");
-  }
+  StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVec>> GetRecordBatches();
 
   /**
    * @brief Return current occupancy of the Data Table.
@@ -68,16 +48,15 @@ class DataTable {
    */
   double OccupancyPct() { return 1.0 * current_row_ / target_capacity_; }
 
-  /**
-   * @brief Type of table used under the hood.
-   *
-   * @return TableType enum that defines the table type.
-   */
-  TableType table_type() { return table_type_; }
-
  protected:
   // Given an InfoClassSchema, generate the appropriate table. Helper for constructor.
   Status RegisterSchema(const InfoClassSchema& schema);
+
+  // Initialize a new Active record batch.
+  Status InitBuffers();
+
+  // Close the active record batch, and call InitBuffers to set up new active record batch.
+  Status SealActiveRecordBatch();
 
   // Table schema
   std::unique_ptr<DataTableSchema> table_schema_;
@@ -91,54 +70,14 @@ class DataTable {
   // Current row in the table, where items will be appended.
   uint64_t current_row_;
 
-  // ColumnWrapper specific members
-  static constexpr uint64_t target_capacity_ = 1024;
-
- private:
-  // Type of table used under the hood.
-  enum TableType table_type_ = TableType::Null;
-};
-
-class ColumnWrapperDataTable : public DataTable {
- public:
-  ColumnWrapperDataTable() = delete;
-  explicit ColumnWrapperDataTable(const InfoClassSchema& schema);
-  Status AppendData(uint8_t* data, uint64_t num_rows) override;
-  StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVec>> GetColumnWrapperRecordBatches() override;
-
- private:
-  // Initialize a new Active record batch.
-  Status InitBuffers();
-
-  // Close the active record batch, and call InitBuffers to set up new active record batch.
-  Status SealActiveRecordBatch();
-
   // Active record batch.
   std::unique_ptr<ColumnWrapperRecordBatch> record_batch_;
 
   // Sealed record batches that have been collected, but need to be pushed upstream.
   std::unique_ptr<ColumnWrapperRecordBatchVec> sealed_batches_;
-};
 
-class ArrowDataTable : public DataTable {
- public:
-  ArrowDataTable() = delete;
-  explicit ArrowDataTable(const InfoClassSchema& schema);
-  Status AppendData(uint8_t* data, uint64_t num_rows) override;
-  StatusOr<std::unique_ptr<ArrowRecordBatchSPtrVec>> GetArrowRecordBatches() override;
-
- private:
-  // Initialize a new Active record batch.
-  Status InitBuffers();
-
-  // Close the active record batch, and call InitBuffers to set up new active record batch.
-  Status SealActiveRecordBatch();
-
-  // Active record batch.
-  std::unique_ptr<ArrowArrayBuilderUPtrVec> arrow_arrays_;
-
-  // Sealed record batches that have been collected, but need to be pushed upstream.
-  std::unique_ptr<ArrowRecordBatchSPtrVec> sealed_batches_;
+  // ColumnWrapper specific members
+  static constexpr uint64_t target_capacity_ = 1024;
 };
 
 }  // namespace stirling

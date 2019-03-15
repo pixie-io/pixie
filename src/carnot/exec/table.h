@@ -1,6 +1,7 @@
 #pragma once
 
 #include <arrow/array.h>
+#include <arrow/record_batch.h>
 #include <memory>
 #include <string>
 #include <unordered_map>

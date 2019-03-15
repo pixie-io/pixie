@@ -1,7 +1,5 @@
 #pragma once
 
-#include <arrow/api.h>
-
 #include <atomic>
 #include <chrono>
 #include <memory>

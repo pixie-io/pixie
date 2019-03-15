@@ -13,22 +13,9 @@ namespace stirling {
 using types::ColumnWrapper;
 using types::DataType;
 
-DataTable::DataTable(enum TableType table_type, const InfoClassSchema& schema)
-    : table_type_(table_type) {
+DataTable::DataTable(const InfoClassSchema& schema) {
   Status s = RegisterSchema(schema);
-  CHECK(s.ok());
-}
-
-ColumnWrapperDataTable::ColumnWrapperDataTable(const InfoClassSchema& schema)
-    : DataTable(TableType::ColumnWrapper, schema) {
   sealed_batches_ = std::make_unique<std::vector<std::unique_ptr<ColumnWrapperRecordBatch>>>();
-
-  PL_CHECK_OK(InitBuffers());
-}
-
-ArrowDataTable::ArrowDataTable(const InfoClassSchema& schema)
-    : DataTable(TableType::Arrow, schema) {
-  sealed_batches_ = std::make_unique<std::vector<std::shared_ptr<arrow::RecordBatch>>>();
 
   PL_CHECK_OK(InitBuffers());
 }
@@ -50,21 +37,7 @@ Status DataTable::RegisterSchema(const InfoClassSchema& schema) {
   return Status::OK();
 }
 
-std::shared_ptr<arrow::Schema> DataTable::ArrowSchema() {
-  std::vector<std::shared_ptr<arrow::Field>> schema_vector(table_schema_->NumFields());
-
-  // Make an Arrow Schema
-  for (uint32_t field_idx = 0; field_idx < table_schema_->NumFields(); ++field_idx) {
-    auto name = (*table_schema_)[field_idx].name();
-    auto type = (*table_schema_)[field_idx].arrow_type();
-    schema_vector[field_idx] = arrow::field(name, type);
-  }
-  auto schema = std::make_shared<arrow::Schema>(schema_vector);
-
-  return schema;
-}
-
-Status ColumnWrapperDataTable::InitBuffers() {
+Status DataTable::InitBuffers() {
   DCHECK(record_batch_ == nullptr);
 
   record_batch_ = std::make_unique<ColumnWrapperRecordBatch>();
@@ -102,49 +75,8 @@ Status ColumnWrapperDataTable::InitBuffers() {
   return Status::OK();
 }
 
-Status ArrowDataTable::InitBuffers() {
-  DCHECK(arrow_arrays_ == nullptr);
-
-  arrow_arrays_ = std::make_unique<ArrowArrayBuilderUPtrVec>();
-
-  auto mem_pool = arrow::default_memory_pool();
-
-  for (uint32_t field_idx = 0; field_idx < table_schema_->NumFields(); ++field_idx) {
-    DataType type = (*table_schema_)[field_idx].type();
-    switch (type) {
-      case DataType::TIME64NS: {
-        std::unique_ptr<arrow::ArrayBuilder> col = std::make_unique<arrow::Int64Builder>();
-        PL_RETURN_IF_ERROR(
-            arrow::MakeBuilder(mem_pool, arrow::time64(arrow::TimeUnit::NANO), &col));
-        arrow_arrays_->push_back(std::move(col));
-      } break;
-      case DataType::INT64: {
-        std::unique_ptr<arrow::ArrayBuilder> col = std::make_unique<arrow::Int64Builder>();
-        PL_RETURN_IF_ERROR(arrow::MakeBuilder(mem_pool, arrow::int64(), &col));
-        arrow_arrays_->push_back(std::move(col));
-      } break;
-      case DataType::FLOAT64: {
-        std::unique_ptr<arrow::ArrayBuilder> col = std::make_unique<arrow::DoubleBuilder>();
-        PL_RETURN_IF_ERROR(arrow::MakeBuilder(mem_pool, arrow::float64(), &col));
-        arrow_arrays_->push_back(std::move(col));
-      } break;
-      case DataType::STRING: {
-        std::unique_ptr<arrow::ArrayBuilder> col = std::make_unique<arrow::StringBuilder>();
-        PL_RETURN_IF_ERROR(arrow::MakeBuilder(mem_pool, arrow::utf8(), &col));
-        arrow_arrays_->push_back(std::move(col));
-      } break;
-      default:
-        return error::Unimplemented("Unrecognized type: $0", ToString(type));
-    }
-  }
-
-  current_row_ = 0;
-
-  return Status::OK();
-}
-
 // Given raw data and a schema, append the data to the existing Column Wrappers.
-Status ColumnWrapperDataTable::AppendData(uint8_t* const data, uint64_t num_rows) {
+Status DataTable::AppendData(uint8_t* const data, uint64_t num_rows) {
   // TODO(oazizi): Does it make sense to call SealActiveRecordBatch() during the AppendData?
   //               Some scenarios to consider
   //               (a) num_rows is very large (> target capacity)
@@ -193,51 +125,7 @@ Status ColumnWrapperDataTable::AppendData(uint8_t* const data, uint64_t num_rows
   return Status::OK();
 }
 
-// Given raw data and a schema, append the data to the existing Arrow Arrays.
-Status ArrowDataTable::AppendData(uint8_t* const data, uint64_t num_rows) {
-  // TODO(oazizi): Does it make sense to call SealActiveRecordBatch() during the AppendData?
-  //               (see comments in ColumnWrapperDataTable::AppendData)  //
-  // TODO(oazizi): Investigate Append vs UnsafeAppend.
-
-  for (uint32_t row = 0; row < num_rows; ++row) {
-    for (uint32_t field_idx = 0; field_idx < table_schema_->NumFields(); ++field_idx) {
-      uint8_t* element_ptr = data + (row * row_size_) + offsets_[field_idx];
-
-      DataType type = (*table_schema_)[field_idx].type();
-      switch (type) {
-        case DataType::TIME64NS: {
-          auto* val_ptr = reinterpret_cast<int64_t*>(element_ptr);
-          auto* array = static_cast<arrow::Int64Builder*>((*arrow_arrays_)[field_idx].get());
-          PL_RETURN_IF_ERROR(array->Append(*val_ptr));
-        } break;
-        case DataType::INT64: {
-          auto* val_ptr = reinterpret_cast<int64_t*>(element_ptr);
-          auto* array = static_cast<arrow::Int64Builder*>((*arrow_arrays_)[field_idx].get());
-          PL_RETURN_IF_ERROR(array->Append(*val_ptr));
-        } break;
-        case DataType::FLOAT64: {
-          auto* val_ptr = reinterpret_cast<double*>(element_ptr);
-          auto* array = static_cast<arrow::DoubleBuilder*>((*arrow_arrays_)[field_idx].get());
-          PL_RETURN_IF_ERROR(array->Append(*val_ptr));
-        } break;
-        case DataType::STRING: {
-          auto* val_ptr = reinterpret_cast<uint64_t*>(element_ptr);
-          char* str_ptr = reinterpret_cast<char*>(*val_ptr);
-          std::string str(str_ptr);
-          auto* array = static_cast<arrow::StringBuilder*>((*arrow_arrays_)[field_idx].get());
-          PL_RETURN_IF_ERROR(array->Append(str));
-        } break;
-        default:
-          return error::Unimplemented("Unrecognized type: $0", ToString(type));
-      }
-    }
-  }
-
-  return Status::OK();
-}
-
-StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVec>>
-ColumnWrapperDataTable::GetColumnWrapperRecordBatches() {
+StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVec>> DataTable::GetRecordBatches() {
   Status s = SealActiveRecordBatch();
   PL_RETURN_IF_ERROR(s);
 
@@ -248,18 +136,7 @@ ColumnWrapperDataTable::GetColumnWrapperRecordBatches() {
   return std::move(sealed_batches_ptr);
 }
 
-StatusOr<std::unique_ptr<ArrowRecordBatchSPtrVec>> ArrowDataTable::GetArrowRecordBatches() {
-  Status s = SealActiveRecordBatch();
-  PL_RETURN_IF_ERROR(s);
-
-  auto sealed_batches_ptr = std::move(sealed_batches_);
-
-  sealed_batches_ = std::make_unique<ArrowRecordBatchSPtrVec>();
-
-  return std::move(sealed_batches_ptr);
-}
-
-Status ColumnWrapperDataTable::SealActiveRecordBatch() {
+Status DataTable::SealActiveRecordBatch() {
   for (uint32_t i = 0; i < table_schema_->NumFields(); ++i) {
     auto col = (*record_batch_)[i];
     col->ShrinkToFit();
@@ -267,28 +144,6 @@ Status ColumnWrapperDataTable::SealActiveRecordBatch() {
   sealed_batches_->push_back(std::move(record_batch_));
   Status s = InitBuffers();
   PL_RETURN_IF_ERROR(s);
-
-  return Status::OK();
-}
-
-Status ArrowDataTable::SealActiveRecordBatch() {
-  std::vector<std::shared_ptr<arrow::Array>> arrow_cols(table_schema_->NumFields());
-
-  auto schema = ArrowSchema();
-
-  for (uint32_t field_idx = 0; field_idx < table_schema_->NumFields(); ++field_idx) {
-    auto s = (*arrow_arrays_)[field_idx]->Finish(&(arrow_cols[field_idx]));
-    CHECK(s.ok());
-  }
-
-  arrow_arrays_ = nullptr;
-
-  // Create Arrow Record Batch.
-  auto record_batch = arrow::RecordBatch::Make(schema, current_row_, arrow_cols);
-
-  sealed_batches_->push_back(record_batch);
-
-  PL_RETURN_IF_ERROR(InitBuffers());
 
   return Status::OK();
 }

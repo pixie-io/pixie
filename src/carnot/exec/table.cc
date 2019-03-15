@@ -1,4 +1,3 @@
-#include <arrow/array.h>
 #include <algorithm>
 #include <cmath>
 #include <iterator>

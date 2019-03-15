@@ -49,18 +49,7 @@ class DataTableTest : public ::testing::Test {
   /**
    * @brief Setup the data type.
    */
-  void SetUpTable(TableType type) {
-    switch (type) {
-      case TableType::ColumnWrapper:
-        data_table_ = std::make_unique<ColumnWrapperDataTable>(schema_);
-        break;
-      case TableType::Arrow:
-        data_table_ = std::make_unique<ArrowDataTable>(schema_);
-        break;
-      default:
-        CHECK(0) << "Unknown data type";
-    }
-  }
+  void SetUpTable() { data_table_ = std::make_unique<DataTable>(schema_); }
 
   /**
    * @brief Change the random seed of the RNG.
@@ -149,28 +138,6 @@ class DataTableTest : public ::testing::Test {
   }
 
   /**
-   * Check that the output data matches the input functions.
-   */
-  void CheckArrowResult(std::shared_ptr<arrow::RecordBatch> record_batch, uint32_t start_record,
-                        uint32_t end_record) {
-    uint32_t f_idx;
-    uint32_t i;
-    for (f_idx = start_record, i = 0; f_idx < end_record; ++f_idx, ++i) {
-      auto col0 = std::static_pointer_cast<arrow::Int64Array>(record_batch->column(0));
-      auto col1 = std::static_pointer_cast<arrow::DoubleArray>(record_batch->column(1));
-      auto col2 = std::static_pointer_cast<arrow::Int64Array>(record_batch->column(2));
-
-      auto col0_val = col0->Value(i);
-      auto col1_val = col1->Value(i);
-      auto col2_val = col2->Value(i);
-
-      EXPECT_EQ(col0_val, f0_seq_());
-      EXPECT_DOUBLE_EQ(col1_val, f1_seq_());
-      EXPECT_EQ(col2_val, f2_seq_());
-    }
-  }
-
-  /**
    * Main test function.
    *
    * Test continuously writes (Appends) data from a "source" into the tables, with different batch
@@ -220,23 +187,10 @@ class DataTableTest : public ::testing::Test {
 
       // Periodically consume the data
       if ((probability_dist(rng_) < push_probability_) || last_pass) {
-        switch (data_table_->table_type()) {
-          case TableType::ColumnWrapper: {
-            auto data_batches_ptr = data_table_->GetColumnWrapperRecordBatches();
-            auto data_batches_ptr_raw = data_batches_ptr.ValueOrDie().get();
-            for (const auto& data_batch : *data_batches_ptr_raw) {
-              CheckColumnWrapperResult(data_batch.get(), check_record, current_record);
-            }
-          } break;
-          case TableType::Arrow: {
-            auto data_batches_ptr = data_table_->GetArrowRecordBatches();
-            auto data_batches_ptr_raw = data_batches_ptr.ValueOrDie().get();
-            for (const auto& data_batch_i : *data_batches_ptr_raw) {
-              CheckArrowResult(data_batch_i, check_record, current_record);
-            }
-          } break;
-          default:
-            CHECK(false) << "No test for this type of Data table";
+        auto data_batches_ptr = data_table_->GetRecordBatches();
+        auto data_batches_ptr_raw = data_batches_ptr.ValueOrDie().get();
+        for (const auto& data_batch : *data_batches_ptr_raw) {
+          CheckColumnWrapperResult(data_batch.get(), check_record, current_record);
         }
         check_record = current_record;
       }
@@ -263,31 +217,7 @@ TEST_F(DataTableTest, column_wrapper_read_write) {
 
   for (auto push_probability : kPushProbability) {
     for (auto max_append_size : kMaxAppendSize) {
-      SetUpTable(TableType::ColumnWrapper);
-
-      SetPushProbability(push_probability);
-
-      SetMaxAppendSize(max_append_size);
-
-      InitRawData(kNumRecords);
-
-      // Test appends the data into the data table in batches.
-      // Between certain batches, the data is consumed from the data table,
-      // and inspected for consistency with expected data pattern.
-      RunAndCheck();
-    }
-  }
-}
-
-/**
- * Same as above, but with Arrow Tables
- */
-TEST_F(DataTableTest, arrow_read_write) {
-  SetSeed(kRNGSeed);
-
-  for (auto push_probability : kPushProbability) {
-    for (auto max_append_size : kMaxAppendSize) {
-      SetUpTable(TableType::Arrow);
+      SetUpTable();
 
       SetPushProbability(push_probability);
 

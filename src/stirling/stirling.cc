@@ -89,7 +89,7 @@ Status Stirling::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
   // Generate the tables required based on subscribed Info Classes.
   for (const auto& mgr : info_class_mgrs_) {
     if (mgr->subscribed()) {
-      auto data_table = std::make_unique<ColumnWrapperDataTable>(mgr->Schema());
+      auto data_table = std::make_unique<DataTable>(mgr->Schema());
       mgr->SetDataTable(data_table.get());
       // TODO(kgandhi): PL-426
       // Set sampling frequency based on input from Vizer.
