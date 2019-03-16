@@ -33,6 +33,7 @@ class ColumnWrapper {
   virtual DataType data_type() const = 0;
   virtual size_t Size() const = 0;
   virtual void Reserve(size_t size) = 0;
+  virtual void Clear() = 0;
   virtual void ShrinkToFit() = 0;
   virtual std::shared_ptr<arrow::Array> ConvertToArrow(arrow::MemoryPool *mem_pool) = 0;
 };
@@ -72,7 +73,7 @@ class ColumnWrapperTmpl : public ColumnWrapper {
 
   void Resize(size_t size) { data_.resize(size); }
 
-  void Clear() { data_.clear(); }
+  void Clear() override { data_.clear(); }
 
  private:
   std::vector<T> data_;
@@ -177,6 +178,34 @@ inline SharedColumnWrapper ColumnWrapper::Make(DataType data_type, size_t size) 
       CHECK(0) << "Unknown data type";
   }
 }
+
+template <DataType DT>
+struct ColumnWrapperType {};
+
+template <>
+struct ColumnWrapperType<DataType::BOOLEAN> {
+  using type = BoolValueColumnWrapper;
+};
+
+template <>
+struct ColumnWrapperType<DataType::INT64> {
+  using type = Int64ValueColumnWrapper;
+};
+
+template <>
+struct ColumnWrapperType<DataType::FLOAT64> {
+  using type = Float64ValueColumnWrapper;
+};
+
+template <>
+struct ColumnWrapperType<DataType::TIME64NS> {
+  using type = Time64NSValueColumnWrapper;
+};
+
+template <>
+struct ColumnWrapperType<DataType::STRING> {
+  using type = StringValueColumnWrapper;
+};
 
 }  // namespace types
 }  // namespace pl

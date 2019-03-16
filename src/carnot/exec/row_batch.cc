@@ -18,13 +18,13 @@ std::shared_ptr<arrow::Array> RowBatch::ColumnAt(int64_t i) const { return colum
 
 Status RowBatch::AddColumn(const std::shared_ptr<arrow::Array>& col) {
   if (columns_.size() >= desc_.size()) {
-    return error::InvalidArgument("Schema only allows %d columns", desc_.size());
+    return error::InvalidArgument("Schema only allows $0 columns", desc_.size());
   }
   if (col->length() != num_rows_) {
-    return error::InvalidArgument("Schema only allows %d rows", num_rows_);
+    return error::InvalidArgument("Schema only allows $0 rows, got $1", num_rows_, col->length());
   }
   if (col->type_id() != types::ToArrowType(desc_.type(columns_.size()))) {
-    return error::InvalidArgument("Column[%d] was given incorrect type", columns_.size());
+    return error::InvalidArgument("Column[$0] was given incorrect type", columns_.size());
   }
 
   columns_.emplace_back(col);

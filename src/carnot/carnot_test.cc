@@ -428,7 +428,7 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
                      arrow::default_memory_pool())));
 }
 
-TEST_F(CarnotTest, DISABLED_group_by_col_agg_test) {
+TEST_F(CarnotTest, group_by_col_agg_test) {
   auto table = CarnotTestUtils::BigTestTable();
 
   auto table_store = carnot_.table_store();
@@ -467,7 +467,7 @@ TEST_F(CarnotTest, DISABLED_group_by_col_agg_test) {
   EXPECT_EQ(expected, actual);
 }
 
-TEST_F(CarnotTest, DISABLED_multiple_group_by_test) {
+TEST_F(CarnotTest, multiple_group_by_test) {
   auto table = CarnotTestUtils::BigTestTable();
 
   auto table_store = carnot_.table_store();
@@ -489,7 +489,7 @@ TEST_F(CarnotTest, DISABLED_multiple_group_by_test) {
   EXPECT_EQ(1, output_table->NumBatches());
   EXPECT_EQ(3, output_table->NumColumns());
   auto rb1 =
-      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
           .ConsumeValueOrDie();
   struct Key {
     int64_t num_group;
@@ -563,7 +563,7 @@ TEST_F(CarnotTest, comparison_tests) {
   EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(gt_exp, arrow::default_memory_pool())));
 }
 
-TEST_F(CarnotTest, DISABLED_comparison_to_agg_tests) {
+TEST_F(CarnotTest, comparison_to_agg_tests) {
   auto table = CarnotTestUtils::BigTestTable();
 
   auto table_store = carnot_.table_store();

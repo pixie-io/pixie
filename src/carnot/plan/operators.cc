@@ -153,7 +153,7 @@ Status BlockingAggregateOperator::Init(const carnotpb::BlockingAggregateOperator
   }
   groups_.reserve(pb_.groups_size());
   for (int idx = 0; idx < pb_.groups_size(); ++idx) {
-    groups_.emplace_back(GroupInfo{pb_.group_names(idx), pb_.groups(0).index()});
+    groups_.emplace_back(GroupInfo{pb_.group_names(idx), pb_.groups(idx).index()});
   }
 
   is_initialized_ = true;
