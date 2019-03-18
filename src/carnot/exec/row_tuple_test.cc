@@ -100,7 +100,8 @@ TEST_F(RowTupleDeathTest, should_debug_die_on_bad_order) {
   rt4_.SetValue(1, types::StringValue("abc"));
   rt4_.SetValue(2, types::Int64Value(1));
 
-  EXPECT_DEBUG_DEATH(PL_UNUSED((rt3_ == rt4_)), ".*ConsistentWriteOrder.*");
+  EXPECT_DEBUG_DEATH(PL_UNUSED((rt3_ == rt4_)), ".*write ordering mismatch.*");
+  EXPECT_DEBUG_DEATH(rt4_.Hash(), ".*write ordering mismatch.*");
 }
 
 }  // namespace exec

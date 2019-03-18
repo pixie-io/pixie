@@ -37,7 +37,7 @@ inline const types::StringValue &GetValueHelper<types::StringValue>(const RowTup
  * RowTuple stores a tuple of values corresponding to ValueTypes.
  */
 struct RowTuple : public NotCopyable {
-  explicit RowTuple(std::vector<types::DataType> *types) : types(types) {
+  explicit RowTuple(const std::vector<types::DataType> *types) : types(types) {
     Reset();
     // We set the values to zero since not all fixed size values are the same size.
     // Without this when we write values we might leave gaps that introduce mismatches during
@@ -81,9 +81,9 @@ struct RowTuple : public NotCopyable {
     DCHECK(*types == *(other.types));
     DCHECK(fixed_values.size() == other.fixed_values.size());
     DCHECK(types->size() == fixed_values.size());
-    DCHECK(CheckConsistentWriteOrder(other))
-        << "Row tuples are required to be writter in the same order."
-        << "Otherwise, comparisons will likely fail.";
+    DCHECK(CheckSequentialWriteOrder()) << "Variable sized write ordering mismatch";
+    DCHECK(other.CheckSequentialWriteOrder()) << "Variable sized write ordering mismatch";
+
     if (memcmp(fixed_values.data(), other.fixed_values.data(),
                sizeof(types::FixedSizeValueUnion) * fixed_values.size()) != 0) {
       // Early exit for failed comparisons.
@@ -105,9 +105,10 @@ struct RowTuple : public NotCopyable {
    * @return the hash results.
    */
   size_t Hash() const {
+    DCHECK(CheckSequentialWriteOrder()) << "Variable sized write ordering mismatch";
     // For fixed sized data we just hash the stored array.
-    size_t hash =
-        ::util::Hash64(reinterpret_cast<const char *>(fixed_values.data()), fixed_values.size());
+    size_t hash = ::util::Hash64(reinterpret_cast<const char *>(fixed_values.data()),
+                                 sizeof(types::FixedSizeValueUnion) * fixed_values.size());
     // For variable sized data we run the appropriate hash function.
     for (const auto &val : variable_values) {
       // This should be edited when we add support for new variable sized types.
@@ -118,16 +119,25 @@ struct RowTuple : public NotCopyable {
     return hash;
   }
 
-  bool CheckConsistentWriteOrder(const RowTuple &other) const {
-    for (size_t idx = 0; idx < other.types->size(); ++idx) {
-      if ((*types)[idx] == types::STRING) {
-        // We directly read the value here, because the accessors will trigger a type mismatch,
-        // but we know we keep ints in the spot for variable types.
-        auto lhs = types::Get<types::Int64Value>(fixed_values[idx]).val;
-        auto rhs = types::Get<types::Int64Value>(other.fixed_values[idx]).val;
-        if (lhs != rhs) {
+  /**
+   * Checks to make sure the write order of variable sized data is sequential, implying that
+   * the variable_sized data is in the correct order.
+   * @return false if the write ordering is bad.
+   */
+  bool CheckSequentialWriteOrder() const {
+    DCHECK(types != nullptr);
+    DCHECK(types->size() >= fixed_values.size());
+    int64_t expected_seq_id = 0;
+    for (size_t idx = 0; idx < fixed_values.size(); ++idx) {
+      // TODO(zasgar): Replace with IsVariableSizedType().
+      if (types->at(idx) == types::STRING) {
+        auto actual_seq_id = types::Get<types::Int64Value>(fixed_values[idx]).val;
+        if (actual_seq_id != expected_seq_id) {
+          LOG(ERROR) << absl::StrFormat("Expected seq_id: %ld, got %ld", expected_seq_id,
+                                        actual_seq_id);
           return false;
         }
+        ++expected_seq_id;
       }
     }
     return true;
@@ -135,7 +145,7 @@ struct RowTuple : public NotCopyable {
 
   // We store a pointer to the types, since they are likely to be shared across different RowTuples.
   // This pointer needs to be valid for the lifetime of this object.
-  std::vector<types::DataType> *types;
+  const std::vector<types::DataType> *types;
 
   // We store data in two chunks. The first being fixed size values which store values of fixed size
   // values in line, and for variable size data stores the index into the variables_values array.

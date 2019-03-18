@@ -288,9 +288,10 @@ class ExecNodeTester {
     std::vector<std::unique_ptr<RowTuple>> expected_rt;
     std::vector<std::unique_ptr<RowTuple>> actual_rt;
 
+    const auto& expected_rb_types = expected_rb.desc().types();
     for (int64_t i = 0; i < actual_rb.num_rows(); i++) {
-      auto expected_tuple = std::make_unique<RowTuple>(&expected_rb.desc().types());
-      auto actual_tuple = std::make_unique<RowTuple>(&expected_rb.desc().types());
+      auto expected_tuple = std::make_unique<RowTuple>(&expected_rb_types);
+      auto actual_tuple = std::make_unique<RowTuple>(&expected_rb_types);
       expected_rt.push_back(std::move(expected_tuple));
       actual_rt.push_back(std::move(actual_tuple));
     }

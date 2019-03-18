@@ -63,7 +63,7 @@ class RowBatch {
   /**
    * @ return the row descriptor which describes the schema of the row batch.
    */
-  RowDescriptor desc() const { return desc_; }
+  const RowDescriptor& desc() const { return desc_; }
 
   std::string DebugString() const;
   std::vector<std::shared_ptr<arrow::Array>> columns() const { return columns_; }
