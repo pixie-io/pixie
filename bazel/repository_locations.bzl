@@ -92,4 +92,9 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "rapidjson-7484e06c589873e1ed80382d262087e4fa80fb63",
         urls = ["https://github.com/Tencent/rapidjson/archive/7484e06c589873e1ed80382d262087e4fa80fb63.tar.gz"],
     ),
+    com_github_ariafallah_csv_parser = dict(
+        sha256 = "c722047128c97b7a3f38d0c320888d905692945e4a96b6ebd6d208686764644a",
+        strip_prefix = "csv-parser-e3c1207f4de50603a4946dc5daa0633ce31a9257",
+        urls = ["https://github.com/AriaFallah/csv-parser/archive/e3c1207f4de50603a4946dc5daa0633ce31a9257.tar.gz"],
+    ),
 )
