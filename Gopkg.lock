@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  branch = "master"
+  digest = "1:59c503e688bf1b6b10774db6d99fb54518231655b780492dd9084bc451bee06f"
+  name = "github.com/TylerBrock/colorjson"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "95ec53f28296f47af86a81eb73f0d7fe2b23a322"
+
+[[projects]]
   digest = "1:d19cfbbf2e7dad7c6faba60dc7700d6b7d6ff3d3c9477a8e44c32a9eaf3cd907"
   name = "github.com/abiosoft/ishell"
   packages = ["."]
@@ -528,6 +536,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/TylerBrock/colorjson",
     "github.com/abiosoft/ishell",
     "github.com/apache/arrow/go/arrow",
     "github.com/apache/arrow/go/arrow/array",

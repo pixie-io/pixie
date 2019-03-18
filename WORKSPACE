@@ -329,3 +329,9 @@ go_repository(
     commit = "e6d60cf7ba1f42d86d54cdf5508611c4aafb3970",
     importpath = "github.com/olekukonko/tablewriter",
 )
+
+go_repository(
+    name = "com_github_tylerbrock_colorjson",
+    commit = "95ec53f28296f47af86a81eb73f0d7fe2b23a322",
+    importpath = "github.com/TylerBrock/colorjson",
+)
