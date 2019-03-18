@@ -35,10 +35,6 @@ const char* kInfoClassManager = R"(
     type: FLOAT64,
     state: SUBSCRIBED,
   }
-  metadata {
-    key: "source"
-    value: "cpu_usage"
-  }
   subscribed: false,
   sampling_period_millis: 100,
   push_period_millis: 1000

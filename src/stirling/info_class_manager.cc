@@ -85,14 +85,6 @@ stirlingpb::InfoClass InfoClassManager::ToProto() const {
     element_proto_ptr->MergeFrom(element.ToProto());
   }
 
-  // Add metadata.
-  // TODO(kgandhi): For M2, only add the source name. Later on add other information
-  // from the SourceConnector.
-  auto metadata_map = info_class_proto.mutable_metadata();
-  std::string key = "source";
-  std::string value = source_->source_name();
-  (*metadata_map)[key] = value;
-
   // Add all the other fields for the proto.
   info_class_proto.set_name(name_);
   info_class_proto.set_id(id_);
