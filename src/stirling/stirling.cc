@@ -11,6 +11,7 @@
 namespace pl {
 namespace stirling {
 
+// TODO(oazizi/kgandhi): Is there a better place for this function?
 stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto) {
   stirlingpb::Subscribe subscribe_proto;
 
@@ -32,7 +33,7 @@ Status Stirling::CreateSourceConnectors() {
     return error::NotFound("Source registry doesn't exist");
   }
   auto sources = registry_->sources();
-  for (auto const& [name, registry_element] : sources) {
+  for (const auto& [name, registry_element] : sources) {
     Status s = AddSourceFromRegistry(name, registry_element);
 
     if (!s.ok()) {

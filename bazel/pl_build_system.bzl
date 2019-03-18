@@ -136,6 +136,7 @@ def pl_cc_test(
         repository = "",
         deps = [],
         tags = [],
+        size = "small",
         args = [],
         coverage = True,
         local = False):
@@ -161,6 +162,7 @@ def pl_cc_test(
         ] + _default_external_deps(),
         args = args,
         tags = tags + ["coverage_test"],
+        size = size,
         local = local,
     )
 
