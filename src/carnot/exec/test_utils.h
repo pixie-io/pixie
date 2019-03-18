@@ -280,6 +280,15 @@ class ExecNodeTester {
     EXPECT_EQ(actual_rb.eos(), expected_rb.eos());
   }
 
+  template <pl::types::DataType DT>
+  void SetRowTupleValues(RowTuple* expected_rt, RowTuple* actual_rt, arrow::Array* expected_arr,
+                         arrow::Array* actual_arr, int64_t col, int64_t row) {
+    using ValueType = typename pl::types::DataTypeTraits<DT>::value_type;
+
+    expected_rt->SetValue(col, ValueType(udf::GetValueFromArrowArray<DT>(expected_arr, row)));
+    actual_rt->SetValue(col, ValueType(udf::GetValueFromArrowArray<DT>(actual_arr, row)));
+  }
+
   void ValidateUnorderedRowBatch(const RowBatch& expected_rb, const RowBatch& actual_rb) {
     EXPECT_EQ(actual_rb.num_rows(), expected_rb.num_rows());
     EXPECT_EQ(actual_rb.num_columns(), expected_rb.num_columns());
@@ -298,50 +307,12 @@ class ExecNodeTester {
 
     for (int64_t col = 0; col < actual_rb.num_columns(); col++) {
       for (int64_t row = 0; row < actual_rb.num_rows(); row++) {
-        switch (expected_rb.desc().types()[col]) {
-          case types::DataType::INT64:
-            expected_rt[row]->SetValue(
-                col, types::Int64Value(udf::GetValueFromArrowArray<types::DataType::INT64>(
-                         expected_rb.ColumnAt(col).get(), row)));
-            actual_rt[row]->SetValue(
-                col, types::Int64Value(udf::GetValueFromArrowArray<types::DataType::INT64>(
-                         actual_rb.ColumnAt(col).get(), row)));
-            break;
-          case types::DataType::FLOAT64:
-            expected_rt[row]->SetValue(
-                col, types::Float64Value(udf::GetValueFromArrowArray<types::DataType::FLOAT64>(
-                         expected_rb.ColumnAt(col).get(), row)));
-            actual_rt[row]->SetValue(
-                col, types::Float64Value(udf::GetValueFromArrowArray<types::DataType::FLOAT64>(
-                         actual_rb.ColumnAt(col).get(), row)));
-            break;
-          case types::DataType::BOOLEAN:
-            expected_rt[row]->SetValue(
-                col, types::BoolValue(udf::GetValueFromArrowArray<types::DataType::BOOLEAN>(
-                         expected_rb.ColumnAt(col).get(), row)));
-            actual_rt[row]->SetValue(
-                col, types::BoolValue(udf::GetValueFromArrowArray<types::DataType::BOOLEAN>(
-                         actual_rb.ColumnAt(col).get(), row)));
-            break;
-          case types::DataType::STRING:
-            expected_rt[row]->SetValue(
-                col, types::StringValue(udf::GetValueFromArrowArray<types::DataType::STRING>(
-                         expected_rb.ColumnAt(col).get(), row)));
-            actual_rt[row]->SetValue(
-                col, types::StringValue(udf::GetValueFromArrowArray<types::DataType::STRING>(
-                         actual_rb.ColumnAt(col).get(), row)));
-            break;
-          case types::DataType::TIME64NS:
-            expected_rt[row]->SetValue(
-                col, types::Time64NSValue(udf::GetValueFromArrowArray<types::DataType::TIME64NS>(
-                         expected_rb.ColumnAt(col).get(), row)));
-            actual_rt[row]->SetValue(
-                col, types::Time64NSValue(udf::GetValueFromArrowArray<types::DataType::TIME64NS>(
-                         actual_rb.ColumnAt(col).get(), row)));
-            break;
-          default:
-            break;
-        }
+#define TYPE_CASE(_dt_)                                                                        \
+  SetRowTupleValues<_dt_>(expected_rt[row].get(), actual_rt[row].get(),                        \
+                          expected_rb.ColumnAt(col).get(), actual_rb.ColumnAt(col).get(), col, \
+                          row);
+        PL_SWITCH_FOREACH_DATATYPE(expected_rb.desc().types()[col], TYPE_CASE);
+#undef TYPE_CASE
       }
     }
 

@@ -40,34 +40,28 @@ pl::StatusOr<pl::types::DataType> GetTypeFromHeaderString(const std::string& typ
   }
 }
 
+std::string ValueToString(int64_t val) { return absl::StrFormat("%d", val); }
+
+std::string ValueToString(double val) { return absl::StrFormat("%.2f", val); }
+
+std::string ValueToString(std::string val) { return absl::StrFormat("%s", val); }
+
+std::string ValueToString(bool val) {
+  return absl::StrFormat("%s", val == true ? "true" : "false");
+}
+
 /**
- * Takes the value in an arrow array and returns the string representation.
- * @param arr The arrow array.
- * @param idx The value's index in the arrow array.
- * @param type The pl::DataType of the value.
- * @return The string representation of the value, or an error.
+ * Takes the value and converts it to the string representation.
+ * @ param type The type of the value.
+ * @ param val The value.
+ * @return The string representation.
  */
-pl::StatusOr<std::string> GetValueAsString(arrow::Array* arr, int64_t idx,
-                                           pl::types::DataType type) {
-  switch (type) {
-    case pl::types::INT64:
-    case pl::types::TIME64NS:
-      return absl::StrFormat("%d",
-                             pl::carnot::udf::GetValue(static_cast<arrow::Int64Array*>(arr), idx));
-    case pl::types::FLOAT64:
-      return absl::StrFormat("%.2f",
-                             pl::carnot::udf::GetValue(static_cast<arrow::DoubleArray*>(arr), idx));
-    case pl::types::BOOLEAN:
-      return absl::StrFormat(
-          "%s", pl::carnot::udf::GetValue(static_cast<arrow::BooleanArray*>(arr), idx) == true
-                    ? "true"
-                    : "false");
-    case pl::types::STRING:
-      return absl::StrFormat("%s",
-                             pl::carnot::udf::GetValue(static_cast<arrow::StringArray*>(arr), idx));
-    default:
-      return pl::error::InvalidArgument("Could not read output.");
-  }
+template <pl::types::DataType DT>
+void AddStringValueToRow(std::vector<std::string>* row, arrow::Array* arr, int64_t idx) {
+  using ArrowArrayType = typename pl::types::DataTypeTraits<DT>::arrow_array_type;
+
+  auto val = ValueToString(pl::carnot::udf::GetValue(static_cast<ArrowArrayType*>(arr), idx));
+  row->push_back(val);
 }
 
 /**
@@ -195,9 +189,9 @@ void TableToCsv(const std::string& filename, pl::carnot::exec::Table* table) {
     for (auto row_idx = 0; row_idx < rb->num_rows(); row_idx++) {
       std::vector<std::string> row;
       for (size_t col_idx = 0; col_idx < col_idxs.size(); col_idx++) {
-        auto val = GetValueAsString(rb->ColumnAt(col_idx).get(), row_idx,
-                                    table->GetColumn(col_idx)->data_type());
-        row.push_back(val.ConsumeValueOrDie());
+#define TYPE_CASE(_dt_) AddStringValueToRow<_dt_>(&row, rb->ColumnAt(col_idx).get(), row_idx);
+        PL_SWITCH_FOREACH_DATATYPE(table->GetColumn(col_idx)->data_type(), TYPE_CASE);
+#undef TYPE_CASE
       }
       output_csv << absl::StrFormat("%s\n", absl::StrJoin(row, ","));
     }
