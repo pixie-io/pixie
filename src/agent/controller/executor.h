@@ -10,6 +10,7 @@
 #include "src/shared/types/proto/types.pb.h"
 #include "src/stirling/proto/collector_config.pb.h"
 #include "src/stirling/stirling.h"
+#include "src/vizier/proto/service.pb.h"
 
 namespace pl {
 namespace agent {
@@ -77,19 +78,28 @@ class Executor {
   Status AddDummyTable(const std::string& name, std::shared_ptr<carnot::exec::Table> table);
 
   /**
-   * @brief Pass query to the executor, and return a vector of strings that represent
-   * the data as pretty-printed from arrow::RecordBatches
+   * @brief Begins collection of data samples by Stirling.
+   */
+  Status StartCollection() {
+    if (!stirling_) {
+      return error::ResourceUnavailable("Stirling collector not available.");
+    }
+    return stirling_->RunAsThread();
+  }
+
+  /**
+   * @brief Pass query to the executor, and write to a protobuf that represents query results.
    *
    * @param query : the query to call
-   * @return vector of strings representing the batches from the query, or status error.
+   * @param query_resp_pb: The result protobuf, must not be nullptr.
+   * @return Status of the query execution.
    */
-  StatusOr<std::vector<std::string>> ServiceQueryAsString(const std::string& query);
+  Status ServiceQuery(const std::string& query, pl::vizier::AgentQueryResponse* query_resp_pb);
 
   Carnot* carnot() { return carnot_.get(); }
   Stirling* stirling() { return stirling_.get(); }
 
  private:
-  std::string RecordBatchToStr(RecordBatchSPtr ptr);
   std::unique_ptr<Carnot> carnot_;
   std::unique_ptr<Stirling> stirling_;
   Relation InfoClassProtoToRelation(const InfoClass& info_class_proto);
