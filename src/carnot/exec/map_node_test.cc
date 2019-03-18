@@ -7,6 +7,7 @@
 
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/map_node.h"
+#include "src/carnot/exec/test_utils.h"
 #include "src/carnot/proto/test_proto.h"
 #include "src/shared/types/arrow_adapter.h"
 
@@ -40,14 +41,6 @@ class MapNodeTest : public ::testing::Test {
     exec_state_ =
         std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store);
   }
-  RowBatch CreateInputRowBatch(const std::vector<types::Int64Value>& in1,
-                               const std::vector<types::Int64Value>& in2) {
-    RowDescriptor rd({types::DataType::INT64, types::DataType::INT64});
-    RowBatch rb(rd, in1.size());
-    EXPECT_OK(rb.AddColumn(ToArrow(in1, arrow::default_memory_pool())));
-    EXPECT_OK(rb.AddColumn(ToArrow(in2, arrow::default_memory_pool())));
-    return rb;
-  }
 
  protected:
   std::unique_ptr<plan::Operator> plan_node_;
@@ -57,72 +50,39 @@ class MapNodeTest : public ::testing::Test {
 };
 
 TEST_F(MapNodeTest, basic) {
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
   RowDescriptor output_rd({types::DataType::INT64});
-  MapNode mn;
-  MockExecNode mock_child_;
-  mn.AddChild(&mock_child_);
-  EXPECT_OK(mn.Init(*plan_node_, output_rd, {}));
-  EXPECT_OK(mn.Prepare(exec_state_.get()));
-  EXPECT_OK(mn.Open(exec_state_.get()));
-  auto rb1 = CreateInputRowBatch({1, 2, 3, 4}, {1, 3, 6, 9});
 
-  auto check_result_batch1 = [&](ExecState* exec_state, const RowBatch& child_rb) {
-    EXPECT_EQ(exec_state, exec_state_.get());
-    EXPECT_EQ(child_rb.num_rows(), rb1.num_rows());
-    EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), types::DataType::INT64);
-    auto output_col = child_rb.ColumnAt(0);
-    auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
-    EXPECT_EQ(2, casted->Value(0));
-    EXPECT_EQ(5, casted->Value(1));
-  };
-
-  EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
-      .Times(1)
-      .WillOnce(testing::DoAll(testing::Invoke(check_result_batch1), testing::Return(Status::OK())))
-      .RetiresOnSaturation();
-  EXPECT_OK(mn.ConsumeNext(exec_state_.get(), rb1));
-
-  auto rb2 = CreateInputRowBatch({1, 2, 3}, {1, 4, 6});
-  rb2.set_eos(true);
-
-  auto check_result_batch2 = [&](ExecState* exec_state, const RowBatch& child_rb) {
-    EXPECT_EQ(exec_state, exec_state_.get());
-    EXPECT_EQ(child_rb.num_rows(), rb2.num_rows());
-    EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), types::DataType::INT64);
-    auto output_col = child_rb.ColumnAt(0);
-    auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
-    EXPECT_EQ(2, casted->Value(0));
-    EXPECT_EQ(6, casted->Value(1));
-    EXPECT_TRUE(child_rb.eos());
-  };
-
-  EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
-      .Times(1)
-      .WillOnce(
-          testing::DoAll(testing::Invoke(check_result_batch2), testing::Return(Status::OK())));
-  EXPECT_OK(mn.ConsumeNext(exec_state_.get(), rb2));
-  EXPECT_OK(mn.Close(exec_state_.get()));
+  auto tester = exec::ExecNodeTester<MapNode, plan::MapOperator>(*plan_node_.get(), output_rd, {},
+                                                                 exec_state_.get());
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, false)
+                       .AddColumn<types::Int64Value>({1, 2, 3, 4})
+                       .AddColumn<types::Int64Value>({1, 3, 6, 9})
+                       .get())
+      .ExpectRowBatch(
+          RowBatchBuilder(output_rd, 4, false).AddColumn<types::Int64Value>({2, 5, 9, 13}).get(),
+          false)
+      .ConsumeNext(RowBatchBuilder(input_rd, 3, true)
+                       .AddColumn<types::Int64Value>({1, 2, 3})
+                       .AddColumn<types::Int64Value>({1, 4, 6})
+                       .get())
+      .ExpectRowBatch(
+          RowBatchBuilder(output_rd, 3, true).AddColumn<types::Int64Value>({2, 6, 9}).get())
+      .Close();
 }
 
 TEST_F(MapNodeTest, child_fail) {
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
   RowDescriptor output_rd({types::DataType::INT64});
-  MapNode mn;
-  MockExecNode mock_child_;
-  mn.AddChild(&mock_child_);
-  EXPECT_OK(mn.Init(*plan_node_, output_rd, {}));
-  EXPECT_OK(mn.Prepare(exec_state_.get()));
-  EXPECT_OK(mn.Open(exec_state_.get()));
 
-  auto rb1 = CreateInputRowBatch({1, 2, 3, 4}, {1, 3, 6, 9});
-  EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
-      .Times(1)
-      .WillRepeatedly(testing::Return(error::InvalidArgument("args")));
-
-  auto retval = mn.ConsumeNext(exec_state_.get(), rb1);
-  EXPECT_FALSE(retval.ok());
-  EXPECT_TRUE(error::IsInvalidArgument(retval));
+  auto tester = exec::ExecNodeTester<MapNode, plan::MapOperator>(*plan_node_.get(), output_rd, {},
+                                                                 exec_state_.get());
+  tester.ConsumeNextShouldFail(RowBatchBuilder(input_rd, 4, false)
+                                   .AddColumn<types::Int64Value>({1, 2, 3, 4})
+                                   .AddColumn<types::Int64Value>({1, 3, 6, 9})
+                                   .get(),
+                               error::InvalidArgument("args"));
 }
 
 }  // namespace exec

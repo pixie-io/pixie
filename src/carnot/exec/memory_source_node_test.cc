@@ -8,6 +8,7 @@
 
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/memory_source_node.h"
+#include "src/carnot/exec/test_utils.h"
 #include "src/carnot/proto/test_proto.h"
 #include "src/shared/types/arrow_adapter.h"
 
@@ -58,173 +59,67 @@ class MemorySourceNodeTest : public ::testing::Test {
 TEST_F(MemorySourceNodeTest, basic) {
   auto op_proto = carnotpb::testutils::CreateTestSource1PB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
-  RowDescriptor output_rd({types::DataType::FLOAT64});
-  MemorySourceNode src;
-  MockExecNode mock_child_;
-  src.AddChild(&mock_child_);
-  EXPECT_OK(src.Init(*plan_node, output_rd, {}));
-  EXPECT_OK(src.Prepare(exec_state_.get()));
-  EXPECT_OK(src.Open(exec_state_.get()));
+  RowDescriptor output_rd({types::DataType::TIME64NS});
 
-  auto check_result_batch1 = [&](ExecState* exec_state, const RowBatch& child_rb) {
-    EXPECT_EQ(exec_state, exec_state_.get());
-    EXPECT_EQ(child_rb.num_rows(), 3);
-    EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), types::DataType::TIME64NS);
-    auto output_col = child_rb.ColumnAt(0);
-    auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
-    EXPECT_EQ(1, casted->Value(0));
-    EXPECT_EQ(2, casted->Value(1));
-    EXPECT_EQ(3, casted->Value(2));
-  };
-
-  EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
-      .Times(1)
-      .WillOnce(testing::DoAll(testing::Invoke(check_result_batch1), testing::Return(Status::OK())))
-      .RetiresOnSaturation();
-  EXPECT_TRUE(src.HasBatchesRemaining());
-  EXPECT_OK(src.GenerateNext(exec_state_.get()));
-
-  auto check_result_batch2 = [&](ExecState* exec_state, const RowBatch& child_rb) {
-    EXPECT_EQ(exec_state, exec_state_.get());
-    EXPECT_EQ(child_rb.num_rows(), 2);
-    EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), types::DataType::TIME64NS);
-    auto output_col = child_rb.ColumnAt(0);
-    auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
-    EXPECT_EQ(5, casted->Value(0));
-    EXPECT_EQ(6, casted->Value(1));
-    // check to make sure eos is set on last batch.
-    EXPECT_TRUE(child_rb.eos());
-  };
-
-  EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
-      .Times(1)
-      .WillOnce(
-          testing::DoAll(testing::Invoke(check_result_batch2), testing::Return(Status::OK())));
-  EXPECT_TRUE(src.HasBatchesRemaining());
-  EXPECT_OK(src.GenerateNext(exec_state_.get()));
-  EXPECT_FALSE(src.HasBatchesRemaining());
-  EXPECT_OK(src.Close(exec_state_.get()));
-  EXPECT_EQ(5, src.RowsProcessed());
-  EXPECT_EQ(sizeof(int64_t) * 5, src.BytesProcessed());
+  auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(
+      *plan_node.get(), output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 3, false).AddColumn<types::Time64NSValue>({1, 2, 3}).get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 2, true).AddColumn<types::Time64NSValue>({5, 6}).get());
+  EXPECT_FALSE(tester.node()->HasBatchesRemaining());
+  tester.Close();
+  EXPECT_EQ(5, tester.node()->RowsProcessed());
+  EXPECT_EQ(sizeof(int64_t) * 5, tester.node()->BytesProcessed());
 }
 
 TEST_F(MemorySourceNodeTest, range) {
   auto op_proto = carnotpb::testutils::CreateTestSourceRangePB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
-  RowDescriptor output_rd({types::DataType::FLOAT64});
-  MemorySourceNode src;
-  MockExecNode mock_child_;
-  src.AddChild(&mock_child_);
-  EXPECT_OK(src.Init(*plan_node, output_rd, {}));
-  EXPECT_OK(src.Prepare(exec_state_.get()));
-  EXPECT_OK(src.Open(exec_state_.get()));
+  RowDescriptor output_rd({types::DataType::TIME64NS});
 
-  auto check_result_batch1 = [&](ExecState* exec_state, const RowBatch& child_rb) {
-    EXPECT_EQ(exec_state, exec_state_.get());
-    EXPECT_EQ(child_rb.num_rows(), 1);
-    EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), types::DataType::TIME64NS);
-    auto output_col = child_rb.ColumnAt(0);
-    auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
-    EXPECT_EQ(3, casted->Value(0));
-  };
+  auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(
+      *plan_node.get(), output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
 
-  EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
-      .Times(1)
-      .WillOnce(testing::DoAll(testing::Invoke(check_result_batch1), testing::Return(Status::OK())))
-      .RetiresOnSaturation();
-  EXPECT_TRUE(src.HasBatchesRemaining());
-  EXPECT_OK(src.GenerateNext(exec_state_.get()));
-
-  auto check_result_batch2 = [&](ExecState* exec_state, const RowBatch& child_rb) {
-    EXPECT_EQ(exec_state, exec_state_.get());
-    EXPECT_EQ(child_rb.num_rows(), 1);
-    EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), types::DataType::TIME64NS);
-    auto output_col = child_rb.ColumnAt(0);
-    auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
-    EXPECT_EQ(5, casted->Value(0));
-    // check to make sure eos is set on last batch.
-    EXPECT_TRUE(child_rb.eos());
-  };
-
-  EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
-      .Times(1)
-      .WillOnce(
-          testing::DoAll(testing::Invoke(check_result_batch2), testing::Return(Status::OK())));
-  EXPECT_TRUE(src.HasBatchesRemaining());
-  EXPECT_OK(src.GenerateNext(exec_state_.get()));
-  EXPECT_FALSE(src.HasBatchesRemaining());
-  EXPECT_OK(src.Close(exec_state_.get()));
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 1, false).AddColumn<types::Time64NSValue>({3}).get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 1, true).AddColumn<types::Time64NSValue>({5}).get());
+  EXPECT_FALSE(tester.node()->HasBatchesRemaining());
+  tester.Close();
 }
 
 TEST_F(MemorySourceNodeTest, empty_range) {
   auto op_proto = carnotpb::testutils::CreateTestSourceEmptyRangePB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
-  RowDescriptor output_rd({types::DataType::FLOAT64});
-  MemorySourceNode src;
-  MockExecNode mock_child_;
-  src.AddChild(&mock_child_);
-  EXPECT_OK(src.Init(*plan_node, output_rd, {}));
-  EXPECT_OK(src.Prepare(exec_state_.get()));
-  EXPECT_OK(src.Open(exec_state_.get()));
+  RowDescriptor output_rd({types::DataType::TIME64NS});
 
-  EXPECT_FALSE(src.HasBatchesRemaining());
-  EXPECT_OK(src.Close(exec_state_.get()));
+  auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(
+      *plan_node.get(), output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
+  EXPECT_FALSE(tester.node()->HasBatchesRemaining());
+  tester.Close();
 }
 
 TEST_F(MemorySourceNodeTest, all_range) {
   auto op_proto = carnotpb::testutils::CreateTestSourceAllRangePB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
-  RowDescriptor output_rd({types::DataType::FLOAT64});
-  MemorySourceNode src;
-  MockExecNode mock_child_;
-  src.AddChild(&mock_child_);
-  EXPECT_OK(src.Init(*plan_node, output_rd, {}));
-  EXPECT_OK(src.Prepare(exec_state_.get()));
-  EXPECT_OK(src.Open(exec_state_.get()));
+  RowDescriptor output_rd({types::DataType::TIME64NS});
 
-  auto check_result_batch1 = [&](ExecState* exec_state, const RowBatch& child_rb) {
-    EXPECT_EQ(exec_state, exec_state_.get());
-    EXPECT_EQ(child_rb.num_rows(), 1);
-    EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), types::DataType::TIME64NS);
-    auto output_col = child_rb.ColumnAt(0);
-    auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
-    EXPECT_EQ(3, casted->Value(0));
-  };
+  auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(
+      *plan_node.get(), output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
 
-  EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
-      .Times(1)
-      .WillOnce(testing::DoAll(testing::Invoke(check_result_batch1), testing::Return(Status::OK())))
-      .RetiresOnSaturation();
-
-  EXPECT_TRUE(src.HasBatchesRemaining());
-  EXPECT_OK(src.GenerateNext(exec_state_.get()));
-
-  auto check_result_batch2 = [&](ExecState* exec_state, const RowBatch& child_rb) {
-    EXPECT_EQ(exec_state, exec_state_.get());
-    EXPECT_EQ(child_rb.num_rows(), 2);
-    EXPECT_EQ(child_rb.num_columns(), 1);
-    EXPECT_EQ(child_rb.desc().type(0), types::DataType::TIME64NS);
-    auto output_col = child_rb.ColumnAt(0);
-    auto casted = reinterpret_cast<arrow::Int64Array*>(output_col.get());
-    EXPECT_EQ(5, casted->Value(0));
-    EXPECT_EQ(6, casted->Value(1));
-    // check to make sure eos is set on last batch.
-    EXPECT_TRUE(child_rb.eos());
-  };
-
-  EXPECT_CALL(mock_child_, ConsumeNextImpl(_, _))
-      .Times(1)
-      .WillOnce(
-          testing::DoAll(testing::Invoke(check_result_batch2), testing::Return(Status::OK())));
-
-  EXPECT_OK(src.GenerateNext(exec_state_.get()));
-  EXPECT_FALSE(src.HasBatchesRemaining());
-  EXPECT_OK(src.Close(exec_state_.get()));
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 1, false).AddColumn<types::Time64NSValue>({3}).get());
+  EXPECT_TRUE(tester.node()->HasBatchesRemaining());
+  tester.GenerateNextResult().ExpectRowBatch(
+      RowBatchBuilder(output_rd, 2, true).AddColumn<types::Time64NSValue>({5, 6}).get());
+  EXPECT_FALSE(tester.node()->HasBatchesRemaining());
+  tester.Close();
 }
 
 }  // namespace exec

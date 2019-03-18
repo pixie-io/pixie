@@ -23,6 +23,7 @@ class RowDescriptor {
    * @ return Vector of datatypes.
    */
   const std::vector<types::DataType>& types() const { return types_; }
+  std::vector<types::DataType>& types() { return types_; }
 
   /**
    *  Gets the datatype for a specific column index.

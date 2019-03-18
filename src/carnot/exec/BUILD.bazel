@@ -32,7 +32,10 @@ pl_cc_library(
 pl_cc_test_library(
     name = "test_utils",
     hdrs = glob(["*test_utils.h"]),
-    deps = ["//third_party:arrow"],
+    deps = [
+        ":exec_node_test_helpers",
+        "//third_party:arrow",
+    ],
 )
 
 pl_cc_test(
@@ -91,6 +94,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         ":exec_node_test_helpers",
+        ":test_utils",
         "//src/carnot/proto:plan_testutils",
         "//third_party:arrow",
     ],
@@ -102,6 +106,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         ":exec_node_test_helpers",
+        ":test_utils",
         "//src/carnot/proto:plan_testutils",
         "//third_party:arrow",
     ],
@@ -113,6 +118,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         ":exec_node_test_helpers",
+        ":test_utils",
         "//src/carnot/proto:plan_testutils",
         "//third_party:arrow",
     ],
@@ -124,6 +130,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         ":exec_node_test_helpers",
+        ":test_utils",
         "//src/carnot/proto:plan_testutils",
         "//third_party:arrow",
     ],
