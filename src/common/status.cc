@@ -1,6 +1,5 @@
 #include "src/common/status.h"
 
-#include <cassert>
 #include <string>
 
 #include "src/common/error_strings.h"
@@ -8,10 +7,16 @@
 namespace pl {
 
 Status::Status(pl::error::Code code, const std::string& msg) {
-  assert(code != pl::error::OK);
   state_ = std::make_unique<State>();
   state_->code = code;
   state_->msg = msg;
+}
+
+Status::Status(const pl::statuspb::Status& status_pb) {
+  if (status_pb.err_code() == error::Code::OK) {
+    return;
+  }
+  *this = Status(status_pb.err_code(), status_pb.msg());
 }
 
 std::string Status::ToString() const {

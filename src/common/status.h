@@ -18,7 +18,7 @@ class PL_MUST_USE_RESULT Status {
   Status(const Status& s) noexcept;
   Status(pl::error::Code code, const std::string& msg);
   // NOLINTNEXTLINE to make it easier to return status.
-  Status(const pl::statuspb::Status& status_pb) : Status(status_pb.err_code(), status_pb.msg()) {}
+  Status(const pl::statuspb::Status& status_pb);
 
   void operator=(const Status& s) noexcept;
 

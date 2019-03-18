@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <iostream>
 
 #include "src/common/status.h"
 
@@ -70,6 +71,12 @@ TEST(StatusAdapter, from_proto) {
   Status s1(pl::error::UNKNOWN, "error 1");
   auto pb1 = s1.ToProto();
   EXPECT_EQ(s1, StatusAdapter(pb1));
+}
+
+TEST(StatusAdapter, from_proto_without_error) {
+  auto pb1 = Status::OK().ToProto();
+  std::cout << pb1.DebugString() << std::endl;
+  EXPECT_TRUE(Status::OK() == StatusAdapter(pb1));
 }
 
 }  // namespace pl
