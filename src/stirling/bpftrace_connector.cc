@@ -98,24 +98,26 @@ CPUStatBPFTraceConnector::CPUStatBPFTraceConnector(const std::string& name, uint
   data_buf_.resize(elements_.size());
 }
 
-RawDataBuf CPUStatBPFTraceConnector::GetDataImpl() {
+void CPUStatBPFTraceConnector::TransferDataImpl(ColumnWrapperRecordBatch* record_batch) {
+  auto& columns = *record_batch;
+
   auto cpustat_map = GetBPFMap("@retval");
 
   // If kernel hasn't populated BPF map yet, then we have no data to return.
   if (cpustat_map.size() != elements_.size()) {
-    return RawDataBuf(0, nullptr);
+    return;
   }
 
   for (uint32_t i = 0; i < elements_.size(); ++i) {
     if (elements_[i].type() == DataType::TIME64NS) {
-      data_buf_[i] =
+      types::Time64NSValue val =
           *(reinterpret_cast<int64_t*>(cpustat_map[i].second.data())) + ClockRealTimeOffset();
+      std::static_pointer_cast<types::Time64NSValueColumnWrapper>(columns[i])->Append(val);
     } else {
-      data_buf_[i] = *(reinterpret_cast<int64_t*>(cpustat_map[i].second.data()));
+      types::Int64Value val = *(reinterpret_cast<int64_t*>(cpustat_map[i].second.data()));
+      std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[i])->Append(val);
     }
   }
-
-  return RawDataBuf(1, reinterpret_cast<uint8_t*>(data_buf_.data()));
 }
 
 // Helper function for searching through a BPFTraceMap vector of key-value pairs.
@@ -140,11 +142,13 @@ bpftrace::BPFTraceMap::iterator PIDCPUUseBPFTraceConnector::BPFTraceMapSearch(
 PIDCPUUseBPFTraceConnector::PIDCPUUseBPFTraceConnector(const std::string& name)
     : BPFTraceConnector(name, kElements, kBTScript, std::vector<std::string>({})) {}
 
-RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
+void PIDCPUUseBPFTraceConnector::TransferDataImpl(ColumnWrapperRecordBatch* record_batch) {
+  auto& columns = *record_batch;
+
   auto pid_time_pairs = GetBPFMap("@total_time");
   auto num_pids = pid_time_pairs.size();
 
-  pid_name_pairs_ = GetBPFMap("@names");
+  auto pid_name_pairs = GetBPFMap("@names");
 
   // This is a special map with only one entry at location 0.
   auto sampling_time = GetBPFMap("@time");
@@ -155,11 +159,8 @@ RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
   data_buf_.resize(std::max<uint64_t>(num_pids * (elements_.size()), data_buf_.size()));
 
   auto last_result_it = last_result_times_.begin();
-  auto pid_name_it = pid_name_pairs_.begin();
+  auto pid_name_it = pid_name_pairs.begin();
 
-  RawDataBuf raw_data_buf(num_pids, reinterpret_cast<uint8_t*>(data_buf_.data()));
-
-  uint32_t idx = 0;
   for (auto& pid_time_pair : pid_time_pairs) {
     auto key = pid_time_pair.first;
     auto value = pid_time_pair.second;
@@ -171,8 +172,8 @@ RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
 
     // Get the name from the auxiliary BPFTraceMap for names.
     char* name = nullptr;
-    pid_name_it = BPFTraceMapSearch(pid_name_pairs_, pid_name_it, pid);
-    if (pid_name_it != pid_name_pairs_.end()) {
+    pid_name_it = BPFTraceMapSearch(pid_name_pairs, pid_name_it, pid);
+    if (pid_name_it != pid_name_pairs.end()) {
       uint32_t found_pid = *(reinterpret_cast<uint32_t*>(pid_name_it->first.data()));
       if (found_pid == pid) {
         name = reinterpret_cast<char*>(pid_name_it->second.data());
@@ -193,16 +194,16 @@ RawDataBuf PIDCPUUseBPFTraceConnector::GetDataImpl() {
       }
     }
 
-    data_buf_[idx++] = timestamp + ClockRealTimeOffset();
-    data_buf_[idx++] = pid;
-    data_buf_[idx++] = cputime - last_cputime;
-    data_buf_[idx++] = reinterpret_cast<uint64_t>(name);
+    std::static_pointer_cast<types::Time64NSValueColumnWrapper>(columns[0])
+        ->Append(timestamp + ClockRealTimeOffset());
+    std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[1])->Append(pid);
+    std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[2])
+        ->Append(cputime - last_cputime);
+    std::static_pointer_cast<types::StringValueColumnWrapper>(columns[3])->Append(name);
   }
 
   // Keep this, because we will want to compute deltas next time.
   last_result_times_ = std::move(pid_time_pairs);
-
-  return RawDataBuf(num_pids, reinterpret_cast<uint8_t*>(data_buf_.data()));
 }
 
 Status BPFTraceConnector::StopImpl() {

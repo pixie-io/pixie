@@ -61,8 +61,7 @@ class TestSourceConnector : public SourceConnector {
 
   Status StopImpl() override { return Status::OK(); }
 
-  // This will go away soon.
-  RawDataBuf GetDataImpl() override { return RawDataBuf(1, nullptr); }
+  void TransferDataImpl(ColumnWrapperRecordBatch* /*record_batch*/) override{};
 
  protected:
   explicit TestSourceConnector(const std::string& name, const DataElements& elements)

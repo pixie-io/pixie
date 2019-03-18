@@ -46,13 +46,14 @@ Status PIDCPUUseBCCConnector::StopImpl() {
   return Status::OK();
 }
 
-RawDataBuf PIDCPUUseBCCConnector::GetDataImpl() {
+void PIDCPUUseBCCConnector::TransferDataImpl(ColumnWrapperRecordBatch* record_batch) {
+  auto& columns = *record_batch;
+
   // TODO(kgandhi): PL-452 There is an extra copy when calling get_table_offline. We should extract
   // the key when it is a struct from the BPFHASHTable directly.
   table_ = bpf_.get_hash_table<uint16_t, pl_stirling_bcc_pidruntime_val>("pid_cpu_time")
                .get_table_offline();
 
-  data_buf_.clear();
   for (auto& item : table_) {
     // TODO(kgandhi): PL-460 Consider using other types of BPF tables to avoid a searching through
     // a map for the previously recorded run-time. Alternatively, calculate delta in the bpf code
@@ -64,14 +65,17 @@ RawDataBuf PIDCPUUseBCCConnector::GetDataImpl() {
     } else {
       prev_run_time = it->second;
     }
-    data_buf_.push_back(item.second.time_stamp + ClockRealTimeOffset());
-    data_buf_.push_back(static_cast<uint64_t>(item.first));
-    data_buf_.push_back(item.second.run_time - prev_run_time);
-    data_buf_.push_back(reinterpret_cast<uint64_t>(&item.second.name));
+
+    std::static_pointer_cast<types::Time64NSValueColumnWrapper>(columns[0])
+        ->Append(item.second.time_stamp + ClockRealTimeOffset());
+    std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[1])
+        ->Append(static_cast<uint64_t>(item.first));
+    std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[2])
+        ->Append(item.second.run_time - prev_run_time);
+    std::static_pointer_cast<types::StringValueColumnWrapper>(columns[3])->Append(item.second.name);
+
     prev_run_time_map_[item.first] = item.second.run_time;
   }
-
-  return RawDataBuf(table_.size(), reinterpret_cast<uint8_t*>(data_buf_.data()));
 }
 
 }  // namespace stirling

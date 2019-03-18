@@ -81,7 +81,7 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
     return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(name, cpu_id_));
   }
 
-  RawDataBuf GetDataImpl() override;
+  void TransferDataImpl(ColumnWrapperRecordBatch* record_batch) override;
 
  protected:
   explicit CPUStatBPFTraceConnector(const std::string& name, uint64_t cpu_id);
@@ -112,7 +112,7 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
     return std::unique_ptr<SourceConnector>(new PIDCPUUseBPFTraceConnector(name));
   }
 
-  RawDataBuf GetDataImpl() override;
+  void TransferDataImpl(ColumnWrapperRecordBatch* record_batch) override;
 
  protected:
   explicit PIDCPUUseBPFTraceConnector(const std::string& name);
@@ -123,9 +123,6 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
   std::vector<uint64_t> data_buf_;
 
   bpftrace::BPFTraceMap last_result_times_;
-
-  // This is a member variable to avoid copying the strings.
-  bpftrace::BPFTraceMap pid_name_pairs_;
 
   bpftrace::BPFTraceMap::iterator BPFTraceMapSearch(const bpftrace::BPFTraceMap& vector,
                                                     bpftrace::BPFTraceMap::iterator it,

@@ -57,7 +57,7 @@ class SeqGenConnector : public SourceConnector {
 
   Status InitImpl() override { return Status::OK(); }
 
-  RawDataBuf GetDataImpl() override;
+  void TransferDataImpl(ColumnWrapperRecordBatch* record_batch) override;
 
   Status StopImpl() override { return Status::OK(); }
 

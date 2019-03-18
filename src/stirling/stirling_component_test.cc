@@ -66,9 +66,7 @@ class SourceToTableTest : public ::testing::Test {
 
 TEST_F(SourceToTableTest, source_to_table) {
   EXPECT_OK(fake_proc_stat_->Init());
-  RawDataBuf r = fake_proc_stat_->GetData();
-  EXPECT_EQ(1, r.num_records);
-  EXPECT_OK(table_->AppendData(r.buf, r.num_records));
+  fake_proc_stat_->TransferData(table_->GetActiveRecordBatch());
   auto record_batches_uptr = table_->GetRecordBatches();
   auto record_batches_ptr = record_batches_uptr.ValueOrDie().get();
   ASSERT_TRUE(record_batches_ptr != nullptr);

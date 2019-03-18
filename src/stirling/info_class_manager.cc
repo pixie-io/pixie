@@ -51,13 +51,7 @@ bool InfoClassManager::PushRequired() const {
 }
 
 Status InfoClassManager::SampleData() {
-  // Get data from the Source.
-  // Source manages its own buffer as appropriate.
-  // The complexity of re-using same memory buffer then falls to the Data Source.
-  auto data = source_->GetData();
-  auto num_records = data.num_records;
-  auto* data_buf = reinterpret_cast<uint8_t*>(data.buf);
-  PL_CHECK_OK(data_table_->AppendData(data_buf, num_records));
+  source_->TransferData(data_table_->GetActiveRecordBatch());
 
   // Update the last sampling time.
   last_sampled_ = CurrentTime();

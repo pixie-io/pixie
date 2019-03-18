@@ -84,14 +84,23 @@ Status ProcStatConnector::GetProcStat(const std::vector<std::string>& parsed_str
   prev_cpu_usage_.user = user_cpu;
   prev_cpu_usage_.idle = idle_cpu;
 
-  data_buf_ = reinterpret_cast<uint8_t*>(&cpu_usage_);
   return Status::OK();
 }
 
-RawDataBuf ProcStatConnector::GetDataImpl() {
+void ProcStatConnector::TransferDataImpl(ColumnWrapperRecordBatch* record_batch) {
+  auto& columns = *record_batch;
+
   auto parsed_str = GetProcParams();
   PL_CHECK_OK(GetProcStat(parsed_str));
-  return RawDataBuf(1, data_buf_);
+
+  std::static_pointer_cast<types::Time64NSValueColumnWrapper>(columns[0])
+      ->Append(cpu_usage_.time_stamp);
+  std::static_pointer_cast<types::Float64ValueColumnWrapper>(columns[1])
+      ->Append(cpu_usage_.system_percent);
+  std::static_pointer_cast<types::Float64ValueColumnWrapper>(columns[2])
+      ->Append(cpu_usage_.user_percent);
+  std::static_pointer_cast<types::Float64ValueColumnWrapper>(columns[3])
+      ->Append(cpu_usage_.idle_percent);
 }
 
 }  // namespace stirling

@@ -18,21 +18,18 @@ class DataTable {
   explicit DataTable(const InfoClassSchema& schema);
 
   /**
-   * @brief Given raw data, append the data to the existing Data Tables.
-   *
-   * @param data pointer to buffer of raw data (schema implicit).
-   * @param num_rows number of rows/records in the buffer.
-   *
-   * @return Status
-   */
-  Status AppendData(uint8_t* data, uint64_t num_rows);
-
-  /**
    * @brief Get the data collected so far and relinquish ownership.
    *
    * @return pointer to a vector of ColumnWrapperRecordBatch pointers.
    */
   StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVec>> GetRecordBatches();
+
+  /**
+   * @brief Get a pointer to the active record batch, for appending.
+   *
+   * @return Pointer to active record batch
+   */
+  ColumnWrapperRecordBatch* GetActiveRecordBatch() { return record_batch_.get(); }
 
   /**
    * @brief Return current occupancy of the Data Table.

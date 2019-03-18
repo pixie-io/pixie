@@ -33,7 +33,7 @@ class ProcStatConnector : public SourceConnector {
   explicit ProcStatConnector(const std::string& name, const DataElements& elements)
       : SourceConnector(kSourceType, name, elements) {}
   Status InitImpl() override;
-  RawDataBuf GetDataImpl() override;
+  void TransferDataImpl(ColumnWrapperRecordBatch* record_batch) override;
   Status StopImpl() override { return Status::OK(); }
 
   /**
@@ -69,7 +69,6 @@ class ProcStatConnector : public SourceConnector {
 
   CPUUsage cpu_usage_;
   CPUStat prev_cpu_usage_ = {0, 0, 0, 0};
-  uint8_t* data_buf_;
   const char* kProcStatFileName = "/proc/stat";
   const int kUserIdx = 1;
   const int kIdleIdx = 4;

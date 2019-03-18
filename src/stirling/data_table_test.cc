@@ -29,9 +29,6 @@ class DataTableTest : public ::testing::Test {
   // Test parameter: probability of a push.
   double push_probability_ = 0.1;
 
-  // The source buffer of data
-  std::vector<uint8_t> buffer_vector_;
-
   // The main Data Table (unit under test)
   std::unique_ptr<DataTable> data_table_;
 
@@ -75,6 +72,10 @@ class DataTableTest : public ::testing::Test {
   LinearSequence<double> f1_seq_;
   ModuloSequence<int64_t> f2_seq_;
 
+  std::vector<int64_t> f0_vals_;
+  std::vector<double> f1_vals_;
+  std::vector<int64_t> f2_vals_;
+
   /**
    * Schema for our test table
    */
@@ -99,19 +100,10 @@ class DataTableTest : public ::testing::Test {
     f1_seq_.Reset();
     f2_seq_.Reset();
 
-    buffer_vector_.resize(num_records_ * record_size_);
-    uint8_t* buf = buffer_vector_.data();
-
-    size_t offset = 0;
     for (uint32_t i = 0; i < num_records_; ++i) {
-      reinterpret_cast<int64_t*>(buf)[offset / sizeof(int64_t)] = f0_seq_();
-      offset += sizeof(int64_t);
-
-      reinterpret_cast<double*>(buf)[offset / sizeof(double)] = f1_seq_();
-      offset += sizeof(double);
-
-      reinterpret_cast<int64_t*>(buf)[offset / sizeof(int64_t)] = f2_seq_();
-      offset += sizeof(int64_t);
+      f0_vals_.push_back(f0_seq_());
+      f1_vals_.push_back(f1_seq_());
+      f2_vals_.push_back(f2_seq_());
     }
   }
 
@@ -154,8 +146,6 @@ class DataTableTest : public ::testing::Test {
     std::uniform_int_distribution<uint32_t> append_num_rows_dist(0, max_append_size_);
     std::uniform_real_distribution<double> probability_dist(0, 1.0);
 
-    uint8_t* source_buffer = buffer_vector_.data();
-
     // Keep track of progress through the data
     uint32_t current_record = 0;  // Current position in source buffer
     uint32_t check_record = 0;    // Position to which the data has been compared/checked
@@ -176,14 +166,18 @@ class DataTableTest : public ::testing::Test {
         last_pass = true;
       }
 
-      // Get a pointer into the right part of the source buffer
-      uint8_t* current_buf = source_buffer + current_record * record_size_;
+      auto& columns = *(data_table_->GetActiveRecordBatch());
 
-      // Send the data to the Data Table
-      Status s = data_table_->AppendData(current_buf, num_rows);
+      for (uint32_t i = 0; i < num_rows; ++i) {
+        std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[0])
+            ->Append(f0_vals_[current_record + i]);
+        std::static_pointer_cast<types::Float64ValueColumnWrapper>(columns[1])
+            ->Append(f1_vals_[current_record + i]);
+        std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[2])
+            ->Append(f2_vals_[current_record + i]);
+      }
+
       current_record += num_rows;
-
-      EXPECT_OK(s);
 
       // Periodically consume the data
       if ((probability_dist(rng_) < push_probability_) || last_pass) {

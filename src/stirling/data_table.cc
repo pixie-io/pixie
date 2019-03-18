@@ -75,56 +75,6 @@ Status DataTable::InitBuffers() {
   return Status::OK();
 }
 
-// Given raw data and a schema, append the data to the existing Column Wrappers.
-Status DataTable::AppendData(uint8_t* const data, uint64_t num_rows) {
-  // TODO(oazizi): Does it make sense to call SealActiveRecordBatch() during the AppendData?
-  //               Some scenarios to consider
-  //               (a) num_rows is very large (> target capacity)
-  //               (b) num_rows would cause us to go above the target capacity.
-  // TODO(oazizi): Investigate ColumnWrapper::Append vs ColumnWrapper::operator[].
-
-  for (uint32_t row = 0; row < num_rows; ++row) {
-    for (uint32_t field_idx = 0; field_idx < table_schema_->NumFields(); ++field_idx) {
-      uint8_t* element_ptr = data + (row * row_size_) + offsets_[field_idx];
-
-      DataType type = (*table_schema_)[field_idx].type();
-      switch (type) {
-        case DataType::TIME64NS: {
-          auto* val_ptr = reinterpret_cast<int64_t*>(element_ptr);
-          auto column = std::static_pointer_cast<types::Time64NSValueColumnWrapper>(
-              (*record_batch_)[field_idx]);
-          column->Append(types::Time64NSValue(*val_ptr));
-        } break;
-        case DataType::INT64: {
-          auto* val_ptr = reinterpret_cast<int64_t*>(element_ptr);
-          auto column =
-              std::static_pointer_cast<types::Int64ValueColumnWrapper>((*record_batch_)[field_idx]);
-          column->Append(*val_ptr);
-        } break;
-        case DataType::FLOAT64: {
-          auto* val_ptr = reinterpret_cast<double*>(element_ptr);
-          auto column = std::static_pointer_cast<types::Float64ValueColumnWrapper>(
-              (*record_batch_)[field_idx]);
-          column->Append(*val_ptr);
-        } break;
-        case DataType::STRING: {
-          auto* val_ptr = reinterpret_cast<uint64_t*>(element_ptr);
-          char* str_ptr = reinterpret_cast<char*>(*val_ptr);
-          auto column = std::static_pointer_cast<types::StringValueColumnWrapper>(
-              (*record_batch_)[field_idx]);
-          column->Append(str_ptr);
-        } break;
-        default:
-          return error::Unimplemented("Unrecognized type: $0", ToString(type));
-      }
-    }
-
-    ++current_row_;
-  }
-
-  return Status::OK();
-}
-
 StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVec>> DataTable::GetRecordBatches() {
   Status s = SealActiveRecordBatch();
   PL_RETURN_IF_ERROR(s);

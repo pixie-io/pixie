@@ -92,17 +92,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "bpftrace_connector_test",
-    srcs = ["bpftrace_connector_test.cc"],
-    tags = [
-        "linux_only",
-        "requires_bpf",
-        "requires_root",
-    ],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
     name = "stirling_component_test",
     srcs = ["stirling_component_test.cc"],
     deps = [":cc_library"],

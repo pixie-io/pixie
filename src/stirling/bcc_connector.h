@@ -66,7 +66,7 @@ class PIDCPUUseBCCConnector : public BCCConnector {
 
   Status StopImpl() override;
 
-  RawDataBuf GetDataImpl() override;
+  void TransferDataImpl(ColumnWrapperRecordBatch* record_batch) override;
 
  protected:
   explicit PIDCPUUseBCCConnector(std::string name)
@@ -78,7 +78,6 @@ class PIDCPUUseBCCConnector : public BCCConnector {
   inline static const std::string_view kBCCScript = pidruntime_bcc_script;
   static constexpr char kFunctionName[] = "trace_pid_runtime";
 
-  std::vector<uint64_t> data_buf_;
   uint32_t event_type_;
   uint32_t event_config_;
   std::map<uint16_t, uint64_t> prev_run_time_map_;

@@ -39,13 +39,6 @@ class InfoClassManager;
     }                                                                      \
   }
 
-struct RawDataBuf {
- public:
-  RawDataBuf(uint32_t num_records, uint8_t* buf) : num_records(num_records), buf(buf) {}
-  uint64_t num_records;
-  uint8_t* buf;
-};
-
 enum class SourceType : uint8_t {
   kEBPF = 1,
   kOpenTracing,
@@ -75,7 +68,9 @@ class SourceConnector : public NotCopyable {
   virtual ~SourceConnector() = default;
 
   Status Init() { return InitImpl(); }
-  RawDataBuf GetData() { return GetDataImpl(); }
+  void TransferData(ColumnWrapperRecordBatch* record_batch) {
+    return TransferDataImpl(record_batch);
+  }
   Status Stop() { return StopImpl(); }
 
   SourceType type() const { return type_; }
@@ -87,7 +82,7 @@ class SourceConnector : public NotCopyable {
       : elements_(std::move(elements)), type_(type), source_name_(std::move(source_name)) {}
 
   virtual Status InitImpl() = 0;
-  virtual RawDataBuf GetDataImpl() = 0;
+  virtual void TransferDataImpl(ColumnWrapperRecordBatch* record_batch) { PL_UNUSED(record_batch); }
   virtual Status StopImpl() = 0;
   /**
    * @brief Init Helper function: calculates monotonic clock to real time clock offset.
