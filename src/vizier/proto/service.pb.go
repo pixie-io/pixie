@@ -8,7 +8,7 @@ import fmt "fmt"
 import math "math"
 import _ "github.com/gogo/protobuf/gogoproto"
 import proto2 "pixielabs.ai/pixielabs/src/common/proto"
-import types "pixielabs.ai/pixielabs/src/common/types"
+import proto3 "pixielabs.ai/pixielabs/src/shared/types/proto"
 import proto1 "pixielabs.ai/pixielabs/src/utils/proto"
 
 import strconv "strconv"
@@ -1624,8 +1624,8 @@ func (m *Relation) GetColumns() []*Relation_ColumnInfo {
 }
 
 type Relation_ColumnInfo struct {
-	ColumnName string         `protobuf:"bytes,1,opt,name=column_name,json=columnName,proto3" json:"column_name,omitempty"`
-	ColumnType types.DataType `protobuf:"varint,2,opt,name=column_type,json=columnType,proto3,enum=pl.types.DataType" json:"column_type,omitempty"`
+	ColumnName string          `protobuf:"bytes,1,opt,name=column_name,json=columnName,proto3" json:"column_name,omitempty"`
+	ColumnType proto3.DataType `protobuf:"varint,2,opt,name=column_type,json=columnType,proto3,enum=pl.types.DataType" json:"column_type,omitempty"`
 }
 
 func (m *Relation_ColumnInfo) Reset()      { *m = Relation_ColumnInfo{} }
@@ -1667,11 +1667,11 @@ func (m *Relation_ColumnInfo) GetColumnName() string {
 	return ""
 }
 
-func (m *Relation_ColumnInfo) GetColumnType() types.DataType {
+func (m *Relation_ColumnInfo) GetColumnType() proto3.DataType {
 	if m != nil {
 		return m.ColumnType
 	}
-	return types.DATA_TYPE_UNKNOWN
+	return proto3.DATA_TYPE_UNKNOWN
 }
 
 type Table struct {
@@ -8624,7 +8624,7 @@ func (m *Relation_ColumnInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ColumnType |= (types.DataType(b) & 0x7F) << shift
+				m.ColumnType |= (proto3.DataType(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
