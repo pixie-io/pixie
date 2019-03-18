@@ -6,6 +6,8 @@
 #include "src/carnot/proto/plan.pb.h"
 #include "src/common/common.h"
 #include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/type_utils.h"
+#include "src/shared/types/types.h"
 
 namespace pl {
 namespace carnot {
@@ -183,21 +185,8 @@ Status BlockingAggNode::ExtractRowTupleForBatch(const RowBatch &rb) {
     auto dt = group_data_types_[idx];
     auto col = rb.ColumnAt(grp.idx).get();
 
-    // For each column we just extract it into the row_tuple vector.
-#define TYPE_CASE(__dt__)                                       \
-  case __dt__:                                                  \
-    ExtractIntoGroupArgs<__dt__>(&group_args_chunk_, col, idx); \
-    break;
-
-    switch (dt) {
-      TYPE_CASE(types::DataType::BOOLEAN);
-      TYPE_CASE(types::DataType::INT64);
-      TYPE_CASE(types::DataType::FLOAT64);
-      TYPE_CASE(types::DataType::TIME64NS);
-      TYPE_CASE(types::DataType::STRING);
-      default:
-        CHECK(0) << "Unknown Type: " << types::ToString(dt);
-    }
+#define TYPE_CASE(_dt_) ExtractIntoGroupArgs<_dt_>(&group_args_chunk_, col, idx);
+    PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
 #undef TYPE_CASE
   }
   return Status::OK();

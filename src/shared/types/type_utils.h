@@ -64,3 +64,39 @@ inline std::shared_ptr<arrow::DataType> DataTypeToArrowType(DataType type) {
 
 }  // namespace types
 }  // namespace pl
+
+// Internal utility macro that creates a single case statement and calls the
+// case macro for the type.
+#define PL_SWITCH_FOREACH_DATATYPE_CASE(_dt_, _CASE_MACRO_) \
+  case _dt_: {                                              \
+    _CASE_MACRO_(_dt_);                                     \
+  } break
+
+// Internal utility macro to generate the default case.
+#define PL_SWITCH_FOREACH_DATATYPE_DEFAULT_CASE(_dt_) \
+  default: { CHECK(0) << "Unknown Type: " << ::pl::types::ToString(_dt_); }
+
+/**
+ * PL_SWITCH_FOREACH_DATATYPE can be use to run a macro func over each data type we have. For
+ * example:
+ *
+ * DataType dt = <...>;
+ *
+ * #define TYPE_CASE(_dt_) ExtractFoo<_dt_>(...)
+ * PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE)
+ * #undef TYPE_CASE
+ *
+ * Will run the function ExtractFoo with the correct args (at runtime).
+ */
+#define PL_SWITCH_FOREACH_DATATYPE(_dt_, _CASE_MACRO_)                                \
+  do {                                                                                \
+    auto __dt_var__ = (_dt_);                                                         \
+    switch (__dt_var__) {                                                             \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::BOOLEAN, _CASE_MACRO_);  \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::INT64, _CASE_MACRO_);    \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::TIME64NS, _CASE_MACRO_); \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::FLOAT64, _CASE_MACRO_);  \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::STRING, _CASE_MACRO_);   \
+      PL_SWITCH_FOREACH_DATATYPE_DEFAULT_CASE(__dt_var__);                            \
+    }                                                                                 \
+  } while (0)
