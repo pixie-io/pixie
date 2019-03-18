@@ -15,6 +15,7 @@ pl_cc_library(
     ),
     hdrs = glob([
         "*.h",
+        "bcc_bpf/*.h",
     ]),
     deps = [
         "//src/shared/types:cc_library",
@@ -25,6 +26,9 @@ pl_cc_library(
         "@bazel_tools//src/conditions:linux_x86_64": [
             "//third_party:bpftrace",
             ":bt_files",
+            ":bcc_bpf_files",
+            "@com_iovisor_bcc//:bcc",
+            "@com_llvm_lib//:llvm",
         ],
         "//conditions:default": [],
     }),
@@ -35,6 +39,13 @@ pl_cc_resource(
     srcs = [
         "bt/cpustat.bt",
         "bt/pidruntime.bt",
+    ],
+)
+
+pl_cc_resource(
+    name = "bcc_bpf_files",
+    srcs = [
+        "bcc_bpf/pidruntime.c",
     ],
 )
 
@@ -77,12 +88,6 @@ pl_cc_test(
 pl_cc_test(
     name = "source_registry_test",
     srcs = ["source_registry_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "source_connector_test",
-    srcs = ["source_connector_test.cc"],
     deps = [":cc_library"],
 )
 

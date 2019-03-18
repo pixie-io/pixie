@@ -17,20 +17,6 @@
 namespace pl {
 namespace stirling {
 
-// Utility function to convert time as recorded by bpftrace through the 'nsecs' built-in to
-// real-time. BPF provides only access to CLOCK_MONOTONIC values (through nsecs), so have to
-// determine the offset.
-void BPFTraceConnector::InitClockRealTimeOffset() {
-  struct timespec time, real_time;
-  clock_gettime(CLOCK_MONOTONIC, &time);
-  clock_gettime(CLOCK_REALTIME, &real_time);
-
-  real_time_offset_ =
-      1000000000ULL * (real_time.tv_sec - time.tv_sec) + real_time.tv_nsec - time.tv_nsec;
-}
-
-uint64_t BPFTraceConnector::ClockRealTimeOffset() { return real_time_offset_; }
-
 BPFTraceConnector::BPFTraceConnector(const std::string& source_name, const DataElements& elements,
                                      const std::string_view script, std::vector<std::string> params)
     : SourceConnector(SourceType::kEBPF, source_name, elements),

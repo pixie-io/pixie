@@ -48,13 +48,6 @@ class BPFTraceConnector : public SourceConnector {
 
   bpftrace::BPFTraceMap GetBPFMap(const std::string& name) { return bpftrace_.get_map(name); }
 
- protected:
-  /**
-   * @brief If recording nsecs in your bt file, this function can be used to find the offset for
-   * convert the result into realtime.
-   */
-  uint64_t ClockRealTimeOffset();
-
  private:
   // This is the script that will run with this Bpftrace Connector.
   std::string_view script_;
@@ -64,11 +57,6 @@ class BPFTraceConnector : public SourceConnector {
 
   bpftrace::BPFtrace bpftrace_;
   std::unique_ptr<bpftrace::BpfOrc> bpforc_;
-
-  uint64_t real_time_offset_;
-
-  // Init Helper function: calculates monotonic clock to real time clock offset.
-  void InitClockRealTimeOffset();
 };
 
 class CPUStatBPFTraceConnector : public BPFTraceConnector {

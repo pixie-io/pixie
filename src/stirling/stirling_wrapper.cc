@@ -2,6 +2,7 @@
 #include <iomanip>
 
 #include "src/common/common.h"
+#include "src/stirling/bcc_connector.h"
 #include "src/stirling/bpftrace_connector.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/seq_gen_connector.h"
@@ -22,6 +23,7 @@ using pl::types::SharedColumnWrapper;
 using pl::types::StringValueColumnWrapper;
 
 using pl::stirling::CPUStatBPFTraceConnector;
+using pl::stirling::PIDCPUUseBCCConnector;
 using pl::stirling::PIDCPUUseBPFTraceConnector;
 using pl::stirling::SeqGenConnector;
 
@@ -86,6 +88,8 @@ void StirlingWrapperCallback(uint64_t table_id,
   } else if (name == PIDCPUUseBPFTraceConnector::kName) {
     PrintRecordBatch("PIDBPFTrace", PIDCPUUseBPFTraceConnector::kElements, num_records,
                      *record_batch);
+  } else if (name == PIDCPUUseBCCConnector::kName) {
+    PrintRecordBatch("BCC CPU stats", PIDCPUUseBCCConnector::kElements, num_records, *record_batch);
   }
   // Can add other connectors, if desired, here.
 }

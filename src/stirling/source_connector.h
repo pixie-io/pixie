@@ -89,9 +89,20 @@ class SourceConnector : public NotCopyable {
   virtual Status InitImpl() = 0;
   virtual RawDataBuf GetDataImpl() = 0;
   virtual Status StopImpl() = 0;
+  /**
+   * @brief Init Helper function: calculates monotonic clock to real time clock offset.
+   *
+   */
+  void InitClockRealTimeOffset();
+  /**
+   * @brief If recording nsecs in your bt file, this function can be used to find the offset for
+   * convert the result into realtime.
+   */
+  uint64_t ClockRealTimeOffset();
 
- protected:
   DataElements elements_;
+  uint64_t real_time_offset_;
+  uint64_t kSecToNanosecFactor = 1000000000;
 
  private:
   SourceType type_;

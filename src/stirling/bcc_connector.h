@@ -1,11 +1,32 @@
 #pragma once
 
+#ifndef __linux__
+
+#include "src/stirling/source_connector.h"
+
+namespace pl {
+namespace stirling {
+
+DUMMY_SOURCE_CONNECTOR(PIDCPUUseBCCConnector);
+
+}  // namespace stirling
+}  // namespace pl
+#else
+
+#include <bcc/BPF.h>
+#include <linux/perf_event.h>
+
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "src/common/obj_tools.h"
+#include "src/stirling/bcc_bpf/pidruntime.h"
 #include "src/stirling/source_connector.h"
+
+OBJ_STRVIEW(pidruntime_bcc_script, _binary_src_stirling_bcc_bpf_pidruntime_c);
 
 namespace pl {
 namespace stirling {
@@ -18,72 +39,55 @@ class BCCConnector : public SourceConnector {
 
  protected:
   explicit BCCConnector(std::string source_name, const DataElements& elements,
-                        std::string kernel_event, std::string fn_name, std::string bpf_program)
-      : SourceConnector(kSourceType, std::move(source_name), elements),
-        kernel_event_(std::move(kernel_event)),
-        fn_name_(std::move(fn_name)),
-        bpf_program_(std::move(bpf_program)) {}
-  Status InitImpl() override {
-    // TODO(kgandhi): Launch the EBPF program.
-    return Status::OK();
-  }
-
-  // TODO(kgandhi): Get data records from EBPF program. Placeholder for now.
-  RawDataBuf GetDataImpl() override {
-    uint64_t num_records = 1;
-    return RawDataBuf(num_records, data_buf_.data());
-  };
-
-  // TODO(kgandhi): Stop the running EBPF program.
-  Status StopImpl() override { return Status::OK(); }
-
-  const std::string& kernel_event() { return kernel_event_; }
-  const std::string& fn_name() { return fn_name_; }
-  const std::string& bpf_program() { return bpf_program_; }
+                        const std::string_view bpf_program)
+      : SourceConnector(kSourceType, std::move(source_name), elements), bpf_program_(bpf_program) {}
 
  private:
-  std::string kernel_event_, fn_name_, bpf_program_;
+  std::string_view bpf_program_;
   std::vector<uint8_t> data_buf_;
 };
 
-class BCCCPUMetricsConnector : public BCCConnector {
+class PIDCPUUseBCCConnector : public BCCConnector {
  public:
-  // TODO(kgandhi): Remove next line once this SourceConnector is functional.
-  static constexpr bool kAvailable = false;
+  static constexpr SourceType kSourceType = SourceType::kEBPF;
+  static constexpr char kName[] = "bcc_pid_cpu_usage";
+  inline static const DataElements kElements = {
+      DataElement("time_", DataType::TIME64NS), DataElement("pid", DataType::INT64),
+      DataElement("runtime_ns", DataType::INT64), DataElement("cmd", DataType::STRING)};
 
-  static constexpr char kName[] = "bcc_cpu_stats";
-
-  inline static const DataElements kElements = {DataElement("time_", DataType::TIME64NS),
-                                                DataElement("cpu_id", DataType::INT64),
-                                                DataElement("cpu_percentage", DataType::FLOAT64)};
-
-  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{10};
+  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
-  ~BCCCPUMetricsConnector() override = default;
-
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
-    // EBPF CPU Data Source.
-    // TODO(kgandhi): Coming in a future diff. Adding a bpf program to the end of an object file
-    // currently only works on linux builds. We plan to add ifdefs around that to prevent breaking
-    // the builds on other platforms.
-    char prog = 0;
-    // There will be two extern chars pointing to locations in the obj file (marking
-    // start and end).
-    char* bpf_prog_ptr = &prog;
-    int bpf_prog_len = 0;
-    const std::string bpf_program = std::string(bpf_prog_ptr, bpf_prog_len);
-
-    return std::unique_ptr<SourceConnector>(new BCCCPUMetricsConnector(
-        name, kElements, "finish_task_switch", "task_switch_event", bpf_program));
+    return std::unique_ptr<SourceConnector>(new PIDCPUUseBCCConnector(name));
   }
 
+  Status InitImpl() override;
+
+  Status StopImpl() override;
+
+  RawDataBuf GetDataImpl() override;
+
  protected:
-  explicit BCCCPUMetricsConnector(const std::string& source_name, const DataElements& elements,
-                                  const std::string& kernel_event, const std::string& fn_name,
-                                  const std::string& bpf_program)
-      : BCCConnector(source_name, elements, kernel_event, fn_name, bpf_program) {}
+  explicit PIDCPUUseBCCConnector(std::string name)
+      : BCCConnector(name, kElements, kBCCScript),
+        event_type_(perf_type_id::PERF_TYPE_SOFTWARE),
+        event_config_(perf_sw_ids::PERF_COUNT_SW_CPU_CLOCK) {}
+
+ private:
+  inline static const std::string_view kBCCScript = pidruntime_bcc_script;
+  static constexpr char kFunctionName[] = "trace_pid_runtime";
+
+  std::vector<uint64_t> data_buf_;
+  uint32_t event_type_;
+  uint32_t event_config_;
+  std::map<uint16_t, uint64_t> prev_run_time_map_;
+  std::vector<std::pair<uint16_t, pl_stirling_bcc_pidruntime_val> > table_;
+  static constexpr uint64_t kSamplingFreq = 99;  // Freq. (in Hz) at which to trigger bpf func.
+  ebpf::BPF bpf_;
 };
 
 }  // namespace stirling
 }  // namespace pl
+
+#endif
