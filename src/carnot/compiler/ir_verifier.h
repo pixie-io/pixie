@@ -37,7 +37,8 @@ class IRVerifier {
 
   Status ExpectType(IRNodeType exp_type, const IRNode* test_node,
                     const std::string& err_msg_prefix);
-
+  Status ExpectType(std::vector<IRNodeType> possible_types, const IRNode* test_node,
+                    const std::string& err_msg_prefix);
   Status ExpectOp(IRNode* test_node, std::string err_msg_prefix);
   std::string ExpString(const std::string& node_name, int64_t id, const std::string& property_name);
   Status VerifyMemorySource(IRNode* node);

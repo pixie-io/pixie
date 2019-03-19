@@ -12,16 +12,25 @@ Status IRVerifier::FormatErrorMsg(const std::string& err_msg, const IRNode* node
   return error::InvalidArgument("Line $0, Col $1 : $2", node->line(), node->col(), err_msg);
 }
 
+Status IRVerifier::ExpectType(std::vector<IRNodeType> possible_types, const IRNode* test_node,
+                              const std::string& err_msg_prefix) {
+  std::vector<std::string> missing_exp_types_strings;
+  auto actual_type = test_node->type();
+  for (auto exp_type : possible_types) {
+    if (exp_type == actual_type) {
+      return Status::OK();
+    }
+    missing_exp_types_strings.push_back(kIRNodeStrings[exp_type]);
+  }
+  auto msg = absl::Substitute("$0: For node with id $3, Expected [$1] Got $2.", err_msg_prefix,
+                              absl::StrJoin(missing_exp_types_strings, "\n"),
+                              test_node->type_string(), test_node->id());
+  return FormatErrorMsg(msg, test_node);
+}
+
 Status IRVerifier::ExpectType(IRNodeType exp_type, const IRNode* test_node,
                               const std::string& err_msg_prefix) {
-  auto actual_type = test_node->type();
-  if (exp_type != actual_type) {
-    auto msg =
-        absl::Substitute("$0: For node with id $3, Expected $1 Got $2.", err_msg_prefix,
-                         kIRNodeStrings[exp_type], test_node->type_string(), test_node->id());
-    return FormatErrorMsg(msg, test_node);
-  }
-  return Status::OK();
+  return ExpectType(std::vector<IRNodeType>({exp_type}), test_node, err_msg_prefix);
 }
 
 Status IRVerifier::ExpectOp(IRNode* test_node, std::string err_msg_prefix) {
@@ -54,9 +63,9 @@ Status IRVerifier::VerifyMemorySource(IRNode* node) {
 
 Status IRVerifier::VerifyRange(IRNode* node) {
   auto range_node = static_cast<RangeIR*>(node);
-  PL_RETURN_IF_ERROR(ExpectType(IntType, range_node->start_repr(),
+  PL_RETURN_IF_ERROR(ExpectType({IntType, FuncType}, range_node->start_repr(),
                                 ExpString("RangeIR", range_node->id(), "start_repr")));
-  PL_RETURN_IF_ERROR(ExpectType(IntType, range_node->stop_repr(),
+  PL_RETURN_IF_ERROR(ExpectType({IntType, FuncType}, range_node->stop_repr(),
                                 ExpString("RangeIR", range_node->id(), "stop_repr")));
 
   PL_RETURN_IF_ERROR(ExpectType(MemorySourceType, range_node->parent(),

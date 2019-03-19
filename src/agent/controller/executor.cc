@@ -10,8 +10,6 @@
 #include "src/stirling/bpftrace_connector.h"
 #include "src/vizier/proto/service.pb.h"
 
-#include "src/shared/types/types.h"
-
 namespace pl {
 namespace agent {
 using carnot::exec::Column;
