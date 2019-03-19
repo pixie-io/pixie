@@ -25,11 +25,10 @@ using pl::stirling::SeqGenConnector;
 using pl::stirling::SourceRegistry;
 using pl::stirling::Stirling;
 
-using pl::types::Float64ValueColumnWrapper;
-using pl::types::Int64ValueColumnWrapper;
-using pl::types::SharedColumnWrapper;
-using pl::types::StringValueColumnWrapper;
-using pl::types::Time64NSValueColumnWrapper;
+using pl::types::Float64Value;
+using pl::types::Int64Value;
+using pl::types::StringValue;
+using pl::types::Time64NSValue;
 
 // Test arguments, from the command line
 DEFINE_uint64(kRNGSeed, gflags::Uint64FromEnv("seed", 377), "Random Seed");
@@ -156,38 +155,32 @@ class StirlingTest : public ::testing::Test {
 
     for (uint32_t i = 0; i < num_records; ++i) {
       uint32_t j = 0;
-      for (SharedColumnWrapper col : record_batch) {
+      for (auto col : record_batch) {
         // TODO(oazizi): Switch is statically connected to the SeqGenConnector schema.
         // Find a less brittle way.
         switch (j) {
           case 0: {
-            auto typedCol = std::static_pointer_cast<Time64NSValueColumnWrapper>(col);
-            auto ns_count = (*typedCol)[i].val;
+            auto ns_count = col->Get<Time64NSValue>(i).val;
             PL_UNUSED(ns_count);
           } break;
           case 1: {
-            auto typedCol = std::static_pointer_cast<Int64ValueColumnWrapper>(col);
-            int64_t val = (*typedCol)[i].val;
+            auto val = col->Get<Int64Value>(i).val;
             EXPECT_EQ(lin_seq_checker_[table_id](), val);
           } break;
           case 2: {
-            auto typedCol = std::static_pointer_cast<Int64ValueColumnWrapper>(col);
-            int64_t val = (*typedCol)[i].val;
+            auto val = col->Get<Int64Value>(i).val;
             EXPECT_EQ(mod10_seq_checker_[table_id](), val);
           } break;
           case 3: {
-            auto typedCol = std::static_pointer_cast<Int64ValueColumnWrapper>(col);
-            int64_t val = (*typedCol)[i].val;
+            auto val = col->Get<Int64Value>(i).val;
             EXPECT_EQ(square_seq_checker_[table_id](), val);
           } break;
           case 4: {
-            auto typedCol = std::static_pointer_cast<Int64ValueColumnWrapper>(col);
-            int64_t val = (*typedCol)[i].val;
+            auto val = col->Get<Int64Value>(i).val;
             EXPECT_EQ(fib_seq_checker_[table_id](), val);
           } break;
           case 5: {
-            auto typedCol = std::static_pointer_cast<Float64ValueColumnWrapper>(col);
-            double val = (*typedCol)[i].val;
+            auto val = col->Get<Float64Value>(i).val;
             EXPECT_EQ(pi_seq_checker_[table_id](), val);
           } break;
           default:

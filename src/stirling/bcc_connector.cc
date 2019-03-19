@@ -66,13 +66,10 @@ void PIDCPUUseBCCConnector::TransferDataImpl(ColumnWrapperRecordBatch* record_ba
       prev_run_time = it->second;
     }
 
-    std::static_pointer_cast<types::Time64NSValueColumnWrapper>(columns[0])
-        ->Append(item.second.time_stamp + ClockRealTimeOffset());
-    std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[1])
-        ->Append(static_cast<uint64_t>(item.first));
-    std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[2])
-        ->Append(item.second.run_time - prev_run_time);
-    std::static_pointer_cast<types::StringValueColumnWrapper>(columns[3])->Append(item.second.name);
+    columns[0]->Append<types::Time64NSValue>(item.second.time_stamp + ClockRealTimeOffset());
+    columns[1]->Append<types::Int64Value>(item.first);
+    columns[2]->Append<types::Int64Value>(item.second.run_time - prev_run_time);
+    columns[3]->Append<types::StringValue>(item.second.name);
 
     prev_run_time_map_[item.first] = item.second.run_time;
   }

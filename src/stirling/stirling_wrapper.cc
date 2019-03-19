@@ -17,10 +17,11 @@ using pl::stirling::stirlingpb::Publish;
 using pl::stirling::stirlingpb::Subscribe;
 
 using pl::stirling::ColumnWrapperRecordBatch;
-using pl::types::Float64ValueColumnWrapper;
-using pl::types::Int64ValueColumnWrapper;
+using pl::types::Float64Value;
+using pl::types::Int64Value;
 using pl::types::SharedColumnWrapper;
-using pl::types::StringValueColumnWrapper;
+using pl::types::StringValue;
+using pl::types::Time64NSValue;
 
 using pl::stirling::CPUStatBPFTraceConnector;
 using pl::stirling::PIDCPUUseBCCConnector;
@@ -42,24 +43,20 @@ void PrintRecordBatch(std::string prefix, DataElements schema, uint64_t num_reco
     for (SharedColumnWrapper col : record_batch) {
       switch (schema[j].type()) {
         case DataType::TIME64NS: {
-          auto typedCol = std::static_pointer_cast<Int64ValueColumnWrapper>(col);
-          auto ns_count = (*typedCol)[i].val;
-          std::time_t time = ns_count / 1000000000ULL;
+          const auto val = col->Get<Time64NSValue>(i).val;
+          std::time_t time = val / 1000000000ULL;
           std::cout << std::put_time(std::localtime(&time), "%Y-%m-%d %X") << " | ";
         } break;
         case DataType::INT64: {
-          auto typedCol = std::static_pointer_cast<Int64ValueColumnWrapper>(col);
-          int64_t val = (*typedCol)[i].val;
+          const auto val = col->Get<Int64Value>(i).val;
           std::cout << val << " ";
         } break;
         case DataType::FLOAT64: {
-          auto typedCol = std::static_pointer_cast<Float64ValueColumnWrapper>(col);
-          double val = (*typedCol)[i].val;
+          const auto val = col->Get<Float64Value>(i).val;
           std::cout << val << " ";
         } break;
         case DataType::STRING: {
-          auto typedCol = std::static_pointer_cast<StringValueColumnWrapper>(col);
-          std::string& val = (*typedCol)[i];
+          const auto& val = col->Get<StringValue>(i);
           std::cout << val << " ";
         } break;
         default:

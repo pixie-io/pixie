@@ -24,25 +24,22 @@ void SeqGenConnector::TransferDataImpl(ColumnWrapperRecordBatch* record_batch) {
     for (uint32_t ifield = 0; ifield < num_fields; ++ifield) {
       switch (ifield) {
         case 0:
-          std::static_pointer_cast<types::Time64NSValueColumnWrapper>(columns[0])
-              ->Append(time_seq_());
+          columns[ifield]->Append<types::Time64NSValue>(time_seq_());
           break;
         case 1:
-          std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[1])->Append(lin_seq_());
+          columns[ifield]->Append<types::Int64Value>(lin_seq_());
           break;
         case 2:
-          std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[2])
-              ->Append(mod10_seq_());
+          columns[ifield]->Append<types::Int64Value>(mod10_seq_());
           break;
         case 3:
-          std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[3])
-              ->Append(square_seq_());
+          columns[ifield]->Append<types::Int64Value>(square_seq_());
           break;
         case 4:
-          std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[4])->Append(fib_seq_());
+          columns[ifield]->Append<types::Int64Value>(fib_seq_());
           break;
         case 5:
-          std::static_pointer_cast<types::Float64ValueColumnWrapper>(columns[5])->Append(pi_seq_());
+          columns[ifield]->Append<types::Float64Value>(pi_seq_());
           break;
       }
     }

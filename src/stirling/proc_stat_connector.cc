@@ -93,14 +93,10 @@ void ProcStatConnector::TransferDataImpl(ColumnWrapperRecordBatch* record_batch)
   auto parsed_str = GetProcParams();
   PL_CHECK_OK(GetProcStat(parsed_str));
 
-  std::static_pointer_cast<types::Time64NSValueColumnWrapper>(columns[0])
-      ->Append(cpu_usage_.time_stamp);
-  std::static_pointer_cast<types::Float64ValueColumnWrapper>(columns[1])
-      ->Append(cpu_usage_.system_percent);
-  std::static_pointer_cast<types::Float64ValueColumnWrapper>(columns[2])
-      ->Append(cpu_usage_.user_percent);
-  std::static_pointer_cast<types::Float64ValueColumnWrapper>(columns[3])
-      ->Append(cpu_usage_.idle_percent);
+  columns[0]->Append<types::Time64NSValue>(cpu_usage_.time_stamp);
+  columns[1]->Append<types::Float64Value>(cpu_usage_.system_percent);
+  columns[2]->Append<types::Float64Value>(cpu_usage_.user_percent);
+  columns[3]->Append<types::Float64Value>(cpu_usage_.idle_percent);
 }
 
 }  // namespace stirling

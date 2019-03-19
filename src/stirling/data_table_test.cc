@@ -110,16 +110,14 @@ class DataTableTest : public ::testing::Test {
    */
   void CheckColumnWrapperResult(ColumnWrapperRecordBatch* col_arrays, uint32_t start_record,
                                 uint32_t end_record) {
+    ColumnWrapperRecordBatch& columns = *col_arrays;
+
     uint32_t f_idx;
     uint32_t i;
     for (f_idx = start_record, i = 0; f_idx < end_record; ++f_idx, ++i) {
-      auto col0 = std::static_pointer_cast<types::Int64ValueColumnWrapper>((*col_arrays)[0]);
-      auto col1 = std::static_pointer_cast<types::Float64ValueColumnWrapper>((*col_arrays)[1]);
-      auto col2 = std::static_pointer_cast<types::Int64ValueColumnWrapper>((*col_arrays)[2]);
-
-      auto col0_val = (*col0)[i].val;
-      auto col1_val = (*col1)[i].val;
-      auto col2_val = (*col2)[i].val;
+      auto col0_val = columns[0]->Get<types::Int64Value>(i).val;
+      auto col1_val = columns[1]->Get<types::Float64Value>(i).val;
+      auto col2_val = columns[2]->Get<types::Int64Value>(i).val;
 
       EXPECT_EQ(col0_val, f0_seq_());
       EXPECT_DOUBLE_EQ(col1_val, f1_seq_());
@@ -167,12 +165,9 @@ class DataTableTest : public ::testing::Test {
       auto& columns = *(data_table_->GetActiveRecordBatch());
 
       for (uint32_t i = 0; i < num_rows; ++i) {
-        std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[0])
-            ->Append(f0_vals_[current_record + i]);
-        std::static_pointer_cast<types::Float64ValueColumnWrapper>(columns[1])
-            ->Append(f1_vals_[current_record + i]);
-        std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[2])
-            ->Append(f2_vals_[current_record + i]);
+        columns[0]->Append<types::Int64Value>(f0_vals_[current_record + i]);
+        columns[1]->Append<types::Float64Value>(f1_vals_[current_record + i]);
+        columns[2]->Append<types::Int64Value>(f2_vals_[current_record + i]);
       }
 
       current_record += num_rows;

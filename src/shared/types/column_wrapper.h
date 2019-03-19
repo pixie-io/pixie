@@ -16,6 +16,9 @@ namespace types {
 class ColumnWrapper;
 using SharedColumnWrapper = std::shared_ptr<ColumnWrapper>;
 
+template <typename T>
+class ColumnWrapperTmpl;
+
 /**
  * Column wrapper stores underlying data so that it can be retrieved in a type erased way
  * to allow column chucks to be transparently passed.
@@ -36,6 +39,24 @@ class ColumnWrapper {
   virtual void Clear() = 0;
   virtual void ShrinkToFit() = 0;
   virtual std::shared_ptr<arrow::Array> ConvertToArrow(arrow::MemoryPool *mem_pool) = 0;
+
+  template <class TValueType>
+  void Append(TValueType val);
+
+  template <class TValueType>
+  TValueType &Get(size_t idx);
+
+  template <class TValueType>
+  TValueType Get(size_t idx) const;
+
+  template <class TValueType>
+  void AppendNoTypeCheck(TValueType val);
+
+  template <class TValueType>
+  TValueType &GetNoTypeCheck(size_t idx);
+
+  template <class TValueType>
+  TValueType GetNoTypeCheck(size_t idx) const;
 };
 
 /**
@@ -177,6 +198,42 @@ inline SharedColumnWrapper ColumnWrapper::Make(DataType data_type, size_t size) 
     default:
       CHECK(0) << "Unknown data type";
   }
+}
+
+template <class TValueType>
+inline void ColumnWrapper::Append(TValueType val) {
+  CHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
+  static_cast<ColumnWrapperTmpl<TValueType> *>(this)->Append(val);
+}
+
+template <class TValueType>
+inline TValueType &ColumnWrapper::Get(size_t idx) {
+  CHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
+  return static_cast<ColumnWrapperTmpl<TValueType> *>(this)->operator[](idx);
+}
+
+template <class TValueType>
+inline TValueType ColumnWrapper::Get(size_t idx) const {
+  CHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
+  return static_cast<ColumnWrapperTmpl<TValueType> *>(this)->operator[](idx);
+}
+
+template <class TValueType>
+inline void ColumnWrapper::AppendNoTypeCheck(TValueType val) {
+  DCHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
+  static_cast<ColumnWrapperTmpl<TValueType> *>(this)->Append(val);
+}
+
+template <class TValueType>
+inline TValueType &ColumnWrapper::GetNoTypeCheck(size_t idx) {
+  DCHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
+  return static_cast<ColumnWrapperTmpl<TValueType> *>(this)->operator[](idx);
+}
+
+template <class TValueType>
+inline TValueType ColumnWrapper::GetNoTypeCheck(size_t idx) const {
+  DCHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
+  return static_cast<ColumnWrapperTmpl<TValueType> *>(this)->operator[](idx);
 }
 
 template <DataType DT>

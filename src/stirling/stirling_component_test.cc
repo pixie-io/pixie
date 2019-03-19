@@ -74,24 +74,22 @@ TEST_F(SourceToTableTest, source_to_table) {
   for (const auto& record_batch : *record_batches_ptr) {
     auto col_arrays = record_batch.get();
     ASSERT_TRUE(col_arrays != nullptr);
-    ASSERT_EQ(types::DataType::TIME64NS, (*col_arrays)[0]->data_type());
-    auto col0 = std::static_pointer_cast<types::Int64ValueColumnWrapper>((*col_arrays)[0]);
-    auto col0_val = (*col0)[0].val;
+    auto& columns = *col_arrays;
+
+    ASSERT_EQ(types::DataType::TIME64NS, columns[0]->data_type());
+    auto col0_val = columns[0]->Get<types::Time64NSValue>(0).val;
     PL_UNUSED(col0_val);
 
-    ASSERT_EQ(types::DataType::FLOAT64, (*col_arrays)[1]->data_type());
-    auto col1 = std::static_pointer_cast<types::Float64ValueColumnWrapper>((*col_arrays)[1]);
-    auto col1_val = (*col1)[0].val;
+    ASSERT_EQ(types::DataType::FLOAT64, columns[1]->data_type());
+    auto col1_val = columns[1]->Get<types::Float64Value>(0).val;
     EXPECT_DOUBLE_EQ(70.0, col1_val);
 
-    ASSERT_EQ(types::DataType::FLOAT64, (*col_arrays)[2]->data_type());
-    auto col2 = std::static_pointer_cast<types::Float64ValueColumnWrapper>((*col_arrays)[2]);
-    auto col2_val = (*col2)[0].val;
+    ASSERT_EQ(types::DataType::FLOAT64, columns[2]->data_type());
+    auto col2_val = columns[2]->Get<types::Float64Value>(0).val;
     EXPECT_DOUBLE_EQ(10.0, col2_val);
 
-    ASSERT_EQ(types::DataType::FLOAT64, (*col_arrays)[3]->data_type());
-    auto col3 = std::static_pointer_cast<types::Float64ValueColumnWrapper>((*col_arrays)[3]);
-    auto col3_val = (*col3)[0].val;
+    ASSERT_EQ(types::DataType::FLOAT64, columns[3]->data_type());
+    auto col3_val = columns[3]->Get<types::Float64Value>(0).val;
     EXPECT_DOUBLE_EQ(20.0, col3_val);
   }
 }

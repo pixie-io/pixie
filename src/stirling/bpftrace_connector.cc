@@ -112,10 +112,10 @@ void CPUStatBPFTraceConnector::TransferDataImpl(ColumnWrapperRecordBatch* record
     if (elements_[i].type() == types::DataType::TIME64NS) {
       types::Time64NSValue val =
           *(reinterpret_cast<int64_t*>(cpustat_map[i].second.data())) + ClockRealTimeOffset();
-      std::static_pointer_cast<types::Time64NSValueColumnWrapper>(columns[i])->Append(val);
+      columns[i]->Append(val);
     } else {
       types::Int64Value val = *(reinterpret_cast<int64_t*>(cpustat_map[i].second.data()));
-      std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[i])->Append(val);
+      columns[i]->Append(val);
     }
   }
 }
@@ -194,12 +194,10 @@ void PIDCPUUseBPFTraceConnector::TransferDataImpl(ColumnWrapperRecordBatch* reco
       }
     }
 
-    std::static_pointer_cast<types::Time64NSValueColumnWrapper>(columns[0])
-        ->Append(timestamp + ClockRealTimeOffset());
-    std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[1])->Append(pid);
-    std::static_pointer_cast<types::Int64ValueColumnWrapper>(columns[2])
-        ->Append(cputime - last_cputime);
-    std::static_pointer_cast<types::StringValueColumnWrapper>(columns[3])->Append(name);
+    columns[0]->Append<types::Time64NSValue>(timestamp + ClockRealTimeOffset());
+    columns[1]->Append<types::Int64Value>(pid);
+    columns[2]->Append<types::Int64Value>(cputime - last_cputime);
+    columns[3]->Append<types::StringValue>(name);
   }
 
   // Keep this, because we will want to compute deltas next time.
