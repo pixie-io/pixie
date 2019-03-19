@@ -1,6 +1,7 @@
 #pragma once
 #ifdef __linux__
 #include <linux/sched.h>
+#include <stdint.h>
 
 // TODO(kgandhi): PL-451
 // TASK_COMM_LEN seems to be undefined so hardcoding to 16 for now.
