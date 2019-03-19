@@ -25,7 +25,6 @@ StatusOr<carnotpb::Plan> Compiler::Compile(const std::string& query,
                                            CompilerState* compiler_state) {
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state));
   PL_RETURN_IF_ERROR(VerifyIRConnections(*ir));
-  PL_RETURN_IF_ERROR(OptimizeIR(ir.get()));
   PL_RETURN_IF_ERROR(UpdateColumnsAndVerifyUDFs(ir.get(), compiler_state));
   PL_RETURN_IF_ERROR(OptimizeIR(ir.get()));
   return IRToLogicalPlan(*ir);

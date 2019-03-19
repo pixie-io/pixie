@@ -506,9 +506,12 @@ class CompilerTimeFnTest
 std::vector<std::tuple<std::string, std::chrono::nanoseconds>> compiler_time_data = {
     {"plc.minutes(2)", std::chrono::minutes(2)},
     {"plc.hours(2)", std::chrono::hours(2)},
-    {"plc.seconds(2)", std::chrono::seconds(2)}};
+    {"plc.seconds(2)", std::chrono::seconds(2)},
+    {"plc.days(2)", std::chrono::hours(2 * 24)},
+    {"plc.microseconds(2)", std::chrono::microseconds(2)},
+    {"plc.milliseconds(2)", std::chrono::milliseconds(2)}};
 
-TEST_P(CompilerTimeFnTest, DISABLED_range_now_keyword_test) {
+TEST_P(CompilerTimeFnTest, range_now_keyword_test) {
   auto plan = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan);
   VLOG(2) << plan.ValueOrDie().DebugString();

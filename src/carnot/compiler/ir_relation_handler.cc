@@ -220,7 +220,62 @@ StatusOr<plan::Relation> IRRelationHandler::SinkHandler(OperatorIR*, plan::Relat
   return parent_rel;
 }
 
-StatusOr<plan::Relation> IRRelationHandler::RangeHandler(OperatorIR*, plan::Relation parent_rel) {
+StatusOr<IntIR*> IRRelationHandler::EvaluateCompilerFunction(const std::string& name,
+                                                             std::vector<IntIR*> evaled_args,
+                                                             IRNode* parent_node) {
+  if (evaled_args.size() != 2) {
+    return IRUtils::CreateIRNodeError(
+        absl::StrFormat("Expected 2 argument to %s call, got %d.", name, evaled_args.size()),
+        *parent_node);
+  }
+  int64_t result = 0;
+  // TODO(philkuz) Reviewer: any ideas how can we make this cleaner?
+  if (name == "plc.multiply") {
+    result = 1;
+    for (auto a : evaled_args) {
+      result *= a->val();
+    }
+  } else if (name == "plc.add") {
+    for (auto a : evaled_args) {
+      result += a->val();
+    }
+  } else if (name == "plc.subtract") {
+    result = evaled_args[0]->val() - evaled_args[1]->val();
+  } else {
+    return IRUtils::CreateIRNodeError(
+        absl::StrFormat("Only allowing [multiply, add, subtract], not %s", name), *parent_node);
+  }
+  PL_ASSIGN_OR_RETURN(IntIR * ir_result, parent_node->graph_ptr()->MakeNode<IntIR>());
+  PL_RETURN_IF_ERROR(ir_result->Init(result, parent_node->ast_node()));
+  return ir_result;
+}
+
+StatusOr<IntIR*> IRRelationHandler::EvaluateCompilerExpression(IRNode* node) {
+  if (node->type() == IRNodeType::FuncType) {
+    auto func_node = static_cast<FuncIR*>(node);
+    std::vector<IntIR*> evaled_args;
+    for (const auto ag : func_node->args()) {
+      PL_ASSIGN_OR_RETURN(auto eval_result, EvaluateCompilerExpression(ag));
+      evaled_args.push_back(eval_result);
+    }
+    PL_ASSIGN_OR_RETURN(auto node_result,
+                        EvaluateCompilerFunction(func_node->func_name(), evaled_args, node));
+    return node_result;
+
+  } else if (node->type() == IRNodeType::IntType) {
+    return static_cast<IntIR*>(node);
+  }
+  return IRUtils::CreateIRNodeError(
+      absl::Substitute("Expected time constant or expression, not $0", node->type_string()), *node);
+}
+
+StatusOr<plan::Relation> IRRelationHandler::RangeHandler(OperatorIR* node,
+                                                         plan::Relation parent_rel) {
+  DCHECK_EQ(node->type(), IRNodeType::RangeType);
+  auto range_ir = static_cast<RangeIR*>(node);
+  PL_ASSIGN_OR_RETURN(IntIR * new_start_repr, EvaluateCompilerExpression(range_ir->start_repr()));
+  PL_ASSIGN_OR_RETURN(IntIR * new_stop_repr, EvaluateCompilerExpression(range_ir->stop_repr()));
+  PL_RETURN_IF_ERROR(range_ir->SetStartStop(new_start_repr, new_stop_repr));
   return parent_rel;
 }
 
@@ -240,6 +295,8 @@ Status IRRelationHandler::RelationUpdate(OperatorIR* node) {
   // with the relation, now do the appropriate thing for  it.
   plan::Relation parent_rel = parent->relation();
   plan::Relation rel;
+  // TODO(philkuz) (PL-466) update the arguments to each handler to only take in the specific
+  // type so you don't have to recast it.
   switch (node->type()) {
     case IRNodeType::MemorySinkType: {
       PL_ASSIGN_OR_RETURN(rel, SinkHandler(node, parent_rel));

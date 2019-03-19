@@ -108,6 +108,9 @@ class IRRelationHandler {
                                                           std::vector<std::string> col_names,
                                                           const plan::Relation& relation);
 
+  StatusOr<IntIR*> EvaluateCompilerExpression(IRNode* node);
+  StatusOr<IntIR*> EvaluateCompilerFunction(const std::string& name,
+                                            std::vector<IntIR*> evaled_args, IRNode* parent_node);
   /** Variables **/
   RegistryInfo registry_info_;
   RelationMap relation_map_;
