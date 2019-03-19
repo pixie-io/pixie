@@ -61,8 +61,7 @@ TEST_F(MapNodeTest, basic) {
                        .AddColumn<types::Int64Value>({1, 3, 6, 9})
                        .get())
       .ExpectRowBatch(
-          RowBatchBuilder(output_rd, 4, false).AddColumn<types::Int64Value>({2, 5, 9, 13}).get(),
-          false)
+          RowBatchBuilder(output_rd, 4, false).AddColumn<types::Int64Value>({2, 5, 9, 13}).get())
       .ConsumeNext(RowBatchBuilder(input_rd, 3, true)
                        .AddColumn<types::Int64Value>({1, 2, 3})
                        .AddColumn<types::Int64Value>({1, 4, 6})

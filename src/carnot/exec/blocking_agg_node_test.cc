@@ -79,6 +79,37 @@ blocking_agg_op {
   value_names: "value1"
 })";
 
+const char* kBlockingMultipleGroupAgg = R"(
+op_type: BLOCKING_AGGREGATE_OPERATOR
+blocking_agg_op {
+  values {
+    name: "minsum"
+    args {
+      column {
+        node:0
+        index: 2
+      }
+    }
+    args {
+      column {
+        node:0
+        index: 1
+      }
+    }
+  }
+  groups {
+     node: 0
+     index: 0
+  }
+  groups {
+     node: 0
+     index: 1
+  }
+  group_names: "g1"
+  group_names: "g2"
+  value_names: "value1"
+})";
+
 std::unique_ptr<ExecState> MakeTestExecState(udf::ScalarUDFRegistry* udf_registry,
                                              udf::UDARegistry* uda_registry) {
   auto table_store = std::make_shared<TableStore>();
@@ -154,6 +185,67 @@ TEST_F(BlockingAggNodeTest, single_group) {
       .ExpectRowBatch(RowBatchBuilder(output_rd, 6, true)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
                           .AddColumn<types::Int64Value>({2, 3, 3, 4, 1, 5})
+                          .get(),
+                      false)
+      .Close();
+}
+
+TEST_F(BlockingAggNodeTest, multiple_groups) {
+  auto plan_node = PlanNodeFromPbtxt(kBlockingMultipleGroupAgg);
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64});
+
+  RowDescriptor output_rd({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64});
+
+  auto tester = exec::ExecNodeTester<BlockingAggNode, plan::BlockingAggregateOperator>(
+      *plan_node.get(), output_rd, {input_rd}, exec_state_.get());
+
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, false)
+                       .AddColumn<types::Int64Value>({1, 5, 1, 2})
+                       .AddColumn<types::Int64Value>({2, 1, 3, 1})
+                       .AddColumn<types::Int64Value>({2, 5, 3, 1})
+                       .get(),
+                   false)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true)
+                       .AddColumn<types::Int64Value>({5, 1, 3, 3})
+                       .AddColumn<types::Int64Value>({1, 2, 3, 3})
+                       .AddColumn<types::Int64Value>({1, 3, 3, 8})
+                       .get())
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 5, true)
+                          .AddColumn<types::Int64Value>({1, 1, 2, 5, 3})
+                          .AddColumn<types::Int64Value>({2, 3, 1, 1, 3})
+                          .AddColumn<types::Int64Value>({4, 3, 1, 2, 6})
+                          .get(),
+                      false)
+      .Close();
+}
+
+TEST_F(BlockingAggNodeTest, multiple_groups_with_string) {
+  auto plan_node = PlanNodeFromPbtxt(kBlockingMultipleGroupAgg);
+  RowDescriptor input_rd({types::DataType::STRING, types::DataType::INT64, types::DataType::INT64});
+
+  RowDescriptor output_rd(
+      {types::DataType::STRING, types::DataType::INT64, types::DataType::INT64});
+
+  auto tester = exec::ExecNodeTester<BlockingAggNode, plan::BlockingAggregateOperator>(
+      *plan_node.get(), output_rd, {input_rd}, exec_state_.get());
+
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, false)
+                       .AddColumn<types::StringValue>({"abc", "def", "abc", "fgh"})
+                       .AddColumn<types::Int64Value>({2, 1, 3, 1})
+                       .AddColumn<types::Int64Value>({2, 5, 3, 1})
+                       .get(),
+                   false)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true)
+                       .AddColumn<types::StringValue>({"ijk", "abc", "abc", "def"})
+                       .AddColumn<types::Int64Value>({1, 2, 3, 3})
+                       .AddColumn<types::Int64Value>({1, 3, 3, 8})
+                       .get())
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 6, true)
+                          .AddColumn<types::StringValue>({"abc", "def", "abc", "fgh", "ijk", "def"})
+                          .AddColumn<types::Int64Value>({2, 1, 3, 1, 1, 3})
+                          .AddColumn<types::Int64Value>({4, 1, 6, 1, 1, 3})
                           .get(),
                       false)
       .Close();
