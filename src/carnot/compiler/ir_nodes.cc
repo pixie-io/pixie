@@ -145,12 +145,21 @@ Status MemorySinkIR::ToProto(carnotpb::Operator* op) const {
 Status RangeIR::Init(IRNode* parent_node, IRNode* start_repr, IRNode* stop_repr,
                      const pypa::AstPtr ast_node) {
   SetLineCol(ast_node);
+  PL_RETURN_IF_ERROR(SetParent(parent_node));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
+  return SetStartStop(start_repr, stop_repr);
+}
+Status RangeIR::SetStartStop(IRNode* start_repr, IRNode* stop_repr) {
+  if (start_repr_) {
+    graph_ptr()->DeleteEdge(id(), start_repr_->id());
+  }
+  if (stop_repr_) {
+    graph_ptr()->DeleteEdge(id(), stop_repr_->id());
+  }
   start_repr_ = start_repr;
   stop_repr_ = stop_repr;
-  PL_RETURN_IF_ERROR(SetParent(parent_node));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, start_repr_));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, stop_repr_));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
   return Status::OK();
 }
 

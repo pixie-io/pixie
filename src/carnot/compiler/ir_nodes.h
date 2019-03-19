@@ -458,11 +458,12 @@ class RangeIR : public OperatorIR {
   std::string DebugString(int64_t depth) const override;
   IRNode* start_repr() { return start_repr_; }
   IRNode* stop_repr() { return stop_repr_; }
+  Status SetStartStop(IRNode* start_repr, IRNode* stop_repr);
   Status ToProto(carnotpb::Operator*) const override;
 
  private:
-  IRNode* start_repr_;
-  IRNode* stop_repr_;
+  IRNode* start_repr_ = nullptr;
+  IRNode* stop_repr_ = nullptr;
 };
 
 /**
