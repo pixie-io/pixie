@@ -7,11 +7,18 @@ using pypa::AstType;
 using pypa::walk_tree;
 
 const std::unordered_map<std::string, std::string> kOP_TO_UDF_MAP = {
-    {"*", "pl.multiply"},         {"+", "pl.add"},
-    {"-", "pl.subtract"},         {"/", "pl.divide"},
-    {">", "pl.greaterThan"},      {"<", "pl.lessThan"},
-    {"==", "pl.equal"},           {"<=", "pl.lessThanEqual"},
-    {">=", "pl.greaterThanEqual"}};
+    {"*", "multiply"},         {"+", "add"},      {"-", "subtract"}, {"/", "divide"},
+    {">", "greaterThan"},      {"<", "lessThan"}, {"==", "equal"},   {"<=", "lessThanEqual"},
+    {">=", "greaterThanEqual"}};
+
+StatusOr<std::string> ASTWalker::ExpandOpString(const std::string& op, const std::string& prefix,
+                                                const pypa::AstPtr node) {
+  auto op_find = kOP_TO_UDF_MAP.find(op);
+  if (op_find == kOP_TO_UDF_MAP.end()) {
+    return CreateAstError(absl::StrFormat("Operator '%s' not handled", op), node);
+  }
+  return absl::Substitute("$0.$1", prefix, op_find->second);
+}
 
 const std::unordered_map<std::string, int64_t> kTimeMapNS = {
     {"pl.second", 1e9}, {"pl.minute", 6e10}, {"pl.hour", 3.6e11}};
@@ -444,13 +451,7 @@ StatusOr<LambdaExprReturn> ASTWalker::BuildLambdaFunc(
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaBinOp(const std::string& arg_name,
                                                          const pypa::AstBinOpPtr& node) {
   std::string op_str = pypa::to_string(node->op);
-  // map the operator to a string
-  auto op_find = kOP_TO_UDF_MAP.find(op_str);
-  if (op_find == kOP_TO_UDF_MAP.end()) {
-    return CreateAstError(absl::StrFormat("Operator '%s' not handled", op_str), node);
-  }
-
-  std::string fn_name = op_find->second;
+  PL_ASSIGN_OR_RETURN(std::string fn_name, ExpandOpString(op_str, kUDFPrefix, node));
   std::vector<LambdaExprReturn> children_ret_expr;
   PL_ASSIGN_OR_RETURN(auto left_expr_ret, ProcessLambdaExpr(arg_name, node->left));
   PL_ASSIGN_OR_RETURN(auto right_expr_ret, ProcessLambdaExpr(arg_name, node->right));
@@ -463,11 +464,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCompare(const std::string& ar
                                                            const pypa::AstComparePtr& node) {
   DCHECK_EQ(node->operators.size(), 1ULL);
   std::string op_str = pypa::to_string(node->operators[0]);
-  auto op_find = kOP_TO_UDF_MAP.find(op_str);
-  if (op_find == kOP_TO_UDF_MAP.end()) {
-    return CreateAstError(absl::StrFormat("Operator '%s' not handled", op_str), node);
-  }
-  std::string fn_name = op_find->second;
+  PL_ASSIGN_OR_RETURN(std::string fn_name, ExpandOpString(op_str, kUDFPrefix, node));
   std::vector<LambdaExprReturn> children_ret_expr;
   if (node->comparators.size() != 1) {
     return CreateAstError(
@@ -704,7 +701,7 @@ StatusOr<IRNode*> ASTWalker::ProcessDataCall(const pypa::AstCallPtr& node) {
 StatusOr<IRNode*> ASTWalker::ProcessNameData(const pypa::AstNamePtr& ast) {
   auto name_str = ast->id;
   if (name_str != "None") {
-    return CreateAstError(absl::StrFormat("Couldn't process '%s'.", name_str), ast);
+    return CreateAstError(absl::StrFormat("'%s' is not a variable or a keyword.", name_str), ast);
   }
   PL_ASSIGN_OR_RETURN(auto node, ir_graph_->MakeNode<BoolIR>());
   PL_RETURN_IF_ERROR(node->Init(true, ast));

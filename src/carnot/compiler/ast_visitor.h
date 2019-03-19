@@ -416,7 +416,15 @@ class ASTWalker {
    * @return StatusOr<IRNode*>
    */
   StatusOr<IRNode*> ProcessNameData(const pypa::AstNamePtr& ast);
+
+  /**
+   * @brief Evaluates a now argument as the now time that carnot has.
+   *
+   * @param arglist
+   * @return StatusOr<IRNode*>
+   */
   StatusOr<IRNode*> EvalCompileTimeNow(const pypa::AstArguments& arglist);
+
   /**
    * @brief Evaluates a compile time fn.
    *
@@ -426,6 +434,16 @@ class ASTWalker {
    */
   StatusOr<IRNode*> EvalCompileTimeFn(const std::string& attr_fn_name,
                                       const pypa::AstArguments& arglist);
+  /**
+   * @brief Returns the udf name from an op.
+   *
+   * @param op: the op representation to get.
+   * @param compile_time: whether this is a compile time function or not,
+   * @param node: the pointer to ast.
+   * @return StatusOr<std::string>
+   */
+  StatusOr<std::string> ExpandOpString(const std::string& op, const std::string& prefix,
+                                       const pypa::AstPtr node);
   /**
    * @brief Handler for functions that are called as args in the data.
    * Calls nested within Lambda trees are not touched by this.
