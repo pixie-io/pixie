@@ -47,12 +47,12 @@ template <typename TBuilder, typename TArray, typename T>
 std::shared_ptr<arrow::Array> EvalScalarFixedImpl(arrow::MemoryPool *mem_pool, T val,
                                                   size_t count) {
   TBuilder builder(mem_pool);
-  CHECK(builder.Reserve(count).ok());
+  PL_CHECK_OK(builder.Reserve(count));
   for (size_t i = 0; i < count; ++i) {
     builder.UnsafeAppend(val);
   }
   std::shared_ptr<arrow::Array> arr;
-  CHECK(builder.Finish(&arr).ok());
+  PL_CHECK_OK(builder.Finish(&arr));
   return arr;
 }
 
@@ -61,14 +61,14 @@ template <typename TBuilder, typename TArray, typename T>
 std::shared_ptr<arrow::Array> EvalScalarBinaryImpl(arrow::MemoryPool *mem_pool, T val,
                                                    size_t count) {
   TBuilder builder(mem_pool);
-  CHECK(builder.Reserve(count).ok());
-  CHECK(builder.ReserveData(count * val.size()).ok());
+  PL_CHECK_OK(builder.Reserve(count));
+  PL_CHECK_OK(builder.ReserveData(count * val.size()));
 
   for (size_t i = 0; i < count; ++i) {
     builder.UnsafeAppend(val);
   }
   std::shared_ptr<arrow::Array> arr;
-  CHECK(builder.Finish(&arr).ok());
+  PL_CHECK_OK(builder.Finish(&arr));
   return arr;
 }
 
