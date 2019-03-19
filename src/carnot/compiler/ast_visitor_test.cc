@@ -274,9 +274,47 @@ TEST(RangeValueTests, now_should_fail_with_args) {
   EXPECT_FALSE(status.ok());
 }
 
-TEST(RangeValueTests, DISABLED_only_start) {
-  // TODO(philkuz) (PL-442) later diff impl this with just the start param specified.
+TEST(RangeValueTests, time_range_compilation) {
+  // now doesn't accept args.
+  std::string stop_expr = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                         "'cpu1']).Range(start=0,stop=plc.now()-plc.seconds(2))",
+                                         "queryDF.Result(name='mapped')"},
+                                        "\n");
+  EXPECT_OK(ParseQuery(stop_expr));
+
+  std::string start_and_stop_expr = absl::StrJoin(
+      {"queryDF = From(table='cpu', select=['cpu0', "
+       "'cpu1']).Range(start=plc.now() - plc.minutes(2),stop=plc.now()-plc.seconds(2))",
+       "queryDF.Result(name='mapped')"},
+      "\n");
+  EXPECT_OK(ParseQuery(start_and_stop_expr));
 }
+
+TEST(RangeValueTests, nonexistant_time_variables) {
+  // now doesn't accept args.
+  std::string start_expr = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                          "'cpu1']).Range(start=0,stop=plc.now()-plc.nevers(2))",
+                                          "queryDF.Result(name='mapped')"},
+                                         "\n");
+  EXPECT_NOT_OK(ParseQuery(start_expr));
+
+  std::string start_and_stop_expr =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                     "'cpu1']).Range(start=plc.notnow(),stop=plc.now()-plc.nevers(2))",
+                     "queryDF.Result(name='mapped')"},
+                    "\n");
+  EXPECT_NOT_OK(ParseQuery(start_and_stop_expr));
+}
+
+TEST(RangeValueTests, namespace_mismatch) {
+  std::string start_and_stop_expr =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                     "'cpu1']).Range(start=pl.now() - pl.minutes(2),stop=pl.now()-pl.seconds(2))",
+                     "queryDF.Result(name='mapped')"},
+                    "\n");
+  EXPECT_NOT_OK(ParseQuery(start_and_stop_expr));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

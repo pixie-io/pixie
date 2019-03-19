@@ -10,6 +10,10 @@ const std::unordered_map<std::string, std::string> kOP_TO_UDF_MAP = {
     {"*", "multiply"},         {"+", "add"},      {"-", "subtract"}, {"/", "divide"},
     {">", "greaterThan"},      {"<", "lessThan"}, {"==", "equal"},   {"<=", "lessThanEqual"},
     {">=", "greaterThanEqual"}};
+const std::unordered_map<std::string, std::chrono::nanoseconds> kUnitTimeFnStr = {
+    {"minutes", std::chrono::minutes(1)},           {"hours", std::chrono::hours(1)},
+    {"seconds", std::chrono::seconds(1)},           {"days", std::chrono::hours(24)},
+    {"microseconds", std::chrono::microseconds(1)}, {"milliseconds", std::chrono::milliseconds(1)}};
 
 StatusOr<std::string> ASTWalker::ExpandOpString(const std::string& op, const std::string& prefix,
                                                 const pypa::AstPtr node) {
@@ -31,6 +35,9 @@ ASTWalker::ASTWalker(std::shared_ptr<IR> ir_graph, CompilerState* compiler_state
 
 Status ASTWalker::CreateAstError(const std::string& err_msg, const pypa::AstPtr& ast) {
   return error::InvalidArgument("Line $0 Col $1 : $2", ast->line, ast->column, err_msg);
+}
+Status ASTWalker::CreateAstError(const std::string& err_msg, const pypa::Ast& ast) {
+  return CreateAstError(err_msg, std::make_shared<pypa::Ast>(ast));
 }
 
 std::string ASTWalker::GetAstTypeName(pypa::AstType type) {
@@ -632,25 +639,77 @@ StatusOr<IRNode*> ASTWalker::ProcessLambda(const pypa::AstLambdaPtr& ast) {
   }
 }
 
-StatusOr<IRNode*> ASTWalker::EvalCompileTimeNow(const pypa::AstArguments& arglist) {
+StatusOr<IntIR*> ASTWalker::EvalCompileTimeNow(const pypa::AstArguments& arglist) {
   if (!arglist.arguments.empty() || !arglist.keywords.empty()) {
-    return error::InvalidArgument("No Arguments expected for '$0.$1' fn", kCompileTimePrefix,
-                                  "now");
+    return CreateAstError(
+        absl::Substitute("No Arguments expected for '$0.$1' fn", kCompileTimePrefix, "now"),
+        arglist);
   }
   PL_ASSIGN_OR_RETURN(IntIR * ir_node, ir_graph_->MakeNode<IntIR>());
   PL_RETURN_IF_ERROR(
       ir_node->Init(compiler_state_->time_now().val, std::make_shared<pypa::Ast>(arglist)));
   return ir_node;
 }
-StatusOr<IRNode*> ASTWalker::EvalCompileTimeFn(const std::string& attr_fn_name,
-                                               const pypa::AstArguments& arglist) {
-  IRNode* ir_node;
+
+StatusOr<IntIR*> ASTWalker::EvalUnitTimeFn(const std::string& attr_fn_name,
+                                           const pypa::AstArguments& arglist) {
+  auto fn_type_iter = kUnitTimeFnStr.find(attr_fn_name);
+  if (fn_type_iter == kUnitTimeFnStr.end()) {
+    return CreateAstError(
+        absl::Substitute("Function '$0.$1' not found", kCompileTimePrefix, attr_fn_name), arglist);
+  }
+  if (!arglist.keywords.empty()) {
+    return CreateAstError(absl::Substitute("No Keyword args expected for '$0.$1' fn",
+                                           kCompileTimePrefix, attr_fn_name),
+                          arglist);
+  }
+  if (arglist.arguments.size() != 1) {
+    return CreateAstError(
+        absl::Substitute("Only expected one arg for '$0.$1' fn", kCompileTimePrefix, attr_fn_name),
+        arglist);
+  }
+  auto argument = arglist.arguments[0];
+  if (argument->type != AstType::Number) {
+    return CreateAstError(absl::Substitute("Argument must be an integer for '$0.$1'",
+                                           kCompileTimePrefix, attr_fn_name),
+                          arglist);
+  }
+
+  // evaluate the arguments
+  PL_ASSIGN_OR_RETURN(auto number_node, ProcessNumber(PYPA_PTR_CAST(Number, argument)));
+  if (number_node->type() != IRNodeType::IntType) {
+    return CreateAstError(absl::Substitute("Argument must be an integer for '$0.$1'",
+                                           kCompileTimePrefix, attr_fn_name),
+                          arglist);
+  }
+  int64_t time_val = static_cast<IntIR*>(number_node)->val();
+
+  // create the ir_node;
+  PL_ASSIGN_OR_RETURN(auto time_node, ir_graph_->MakeNode<IntIR>());
+  std::chrono::nanoseconds time_output;
+  auto time_unit = fn_type_iter->second;
+  time_output = time_unit * time_val;
+  PL_RETURN_IF_ERROR(time_node->Init(time_output.count(), std::make_shared<pypa::Ast>(arglist)));
+
+  return time_node;
+}
+
+bool ASTWalker::IsUnitTimeFn(const std::string& fn_name) {
+  return kUnitTimeFnStr.find(fn_name) != kUnitTimeFnStr.end();
+}
+
+StatusOr<IntIR*> ASTWalker::EvalCompileTimeFn(const std::string& attr_fn_name,
+                                              const pypa::AstArguments& arglist) {
+  IntIR* ir_node;
   if (attr_fn_name == "now") {
     PL_ASSIGN_OR_RETURN(ir_node, EvalCompileTimeNow(arglist));
     // TODO(philkuz) (PL-445) support other funcs
+  } else if (IsUnitTimeFn(attr_fn_name)) {
+    PL_ASSIGN_OR_RETURN(ir_node, EvalUnitTimeFn(attr_fn_name, arglist));
   } else {
-    return error::InvalidArgument("Couldn't find function with name '$0.$1'", kCompileTimePrefix,
-                                  attr_fn_name);
+    return CreateAstError(absl::Substitute("Couldn't find function with name '$0.$1'",
+                                           kCompileTimePrefix, attr_fn_name),
+                          arglist);
   }
 
   return ir_node;
@@ -665,6 +724,18 @@ StatusOr<IRNode*> ASTWalker::WrapAstError(StatusOr<IRNode*> status_or,
   return CreateAstError(status_or.msg(), parent_node);
 }
 
+StatusOr<IRNode*> ASTWalker::ProcessDataBinOp(const pypa::AstBinOpPtr& node) {
+  std::string op_str = pypa::to_string(node->op);
+  PL_ASSIGN_OR_RETURN(std::string fn_name, ExpandOpString(op_str, kCompileTimePrefix, node));
+
+  PL_ASSIGN_OR_RETURN(IRNode * left, ProcessData(node->left));
+  PL_ASSIGN_OR_RETURN(IRNode * right, ProcessData(node->right));
+  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->MakeNode<FuncIR>());
+  std::vector<IRNode*> expressions = {left, right};
+  PL_RETURN_IF_ERROR(ir_node->Init(fn_name, expressions, node));
+
+  return ir_node;
+}
 StatusOr<IRNode*> ASTWalker::ProcessDataCall(const pypa::AstCallPtr& node) {
   auto fn = node->function;
   if (fn->type != AstType::Attribute) {
@@ -733,6 +804,10 @@ StatusOr<IRNode*> ASTWalker::ProcessData(const pypa::AstPtr& ast) {
     }
     case AstType::Call: {
       PL_ASSIGN_OR_RETURN(ir_node, ProcessDataCall(PYPA_PTR_CAST(Call, ast)));
+      break;
+    }
+    case AstType::BinOp: {
+      PL_ASSIGN_OR_RETURN(ir_node, ProcessDataBinOp(PYPA_PTR_CAST(BinOp, ast)));
       break;
     }
     default: {

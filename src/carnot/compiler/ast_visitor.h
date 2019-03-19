@@ -423,8 +423,17 @@ class ASTWalker {
    * @param arglist
    * @return StatusOr<IRNode*>
    */
-  StatusOr<IRNode*> EvalCompileTimeNow(const pypa::AstArguments& arglist);
+  StatusOr<IntIR*> EvalCompileTimeNow(const pypa::AstArguments& arglist);
 
+  /**
+   * @brief Evaluates the time functions like minutes, seconds, etc.
+   *
+   * @param attr_fn_name  the time function
+   * @param arglist
+   * @return StatusOr<IRNode*>
+   */
+  StatusOr<IntIR*> EvalUnitTimeFn(const std::string& attr_fn_name,
+                                  const pypa::AstArguments& arglist);
   /**
    * @brief Evaluates a compile time fn.
    *
@@ -432,8 +441,8 @@ class ASTWalker {
    * @param arglist the args that are fed tinto this function.
    * @return StatusOr<IRNode*>
    */
-  StatusOr<IRNode*> EvalCompileTimeFn(const std::string& attr_fn_name,
-                                      const pypa::AstArguments& arglist);
+  StatusOr<IntIR*> EvalCompileTimeFn(const std::string& attr_fn_name,
+                                     const pypa::AstArguments& arglist);
   /**
    * @brief Returns the udf name from an op.
    *
@@ -444,6 +453,13 @@ class ASTWalker {
    */
   StatusOr<std::string> ExpandOpString(const std::string& op, const std::string& prefix,
                                        const pypa::AstPtr node);
+  /**
+   * @brief Handler for Binary operations that are run at compile time, not runtime.
+   *
+   * @param ast
+   * @return StatusOr<IRNode*>
+   */
+  StatusOr<IRNode*> ProcessDataBinOp(const pypa::AstBinOpPtr& node);
   /**
    * @brief Handler for functions that are called as args in the data.
    * Calls nested within Lambda trees are not touched by this.
@@ -461,6 +477,7 @@ class ASTWalker {
    * @return Status
    */
   static Status CreateAstError(const std::string& err_msg, const pypa::AstPtr& ast);
+  static Status CreateAstError(const std::string& err_msg, const pypa::Ast& ast);
 
   /**
    * @brief Returns the string repr of an Ast Type.
@@ -493,6 +510,7 @@ class ASTWalker {
     }
     return PYPA_PTR_CAST(Str, ast)->value;
   }
+  static bool IsUnitTimeFn(const std::string& fn_name);
   StatusOr<LambdaExprReturn> LookupPLTimeAttribute(const std::string& attribute_name,
                                                    const pypa::AstPtr& parent_node);
   // Wraps a statusor with a parent_node ast info.
