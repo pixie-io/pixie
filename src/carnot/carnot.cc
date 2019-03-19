@@ -17,11 +17,12 @@ Status Carnot::Init() {
   return Status::OK();
 }
 
-StatusOr<CarnotQueryResult> Carnot::ExecuteQuery(const std::string& query) {
+StatusOr<CarnotQueryResult> Carnot::ExecuteQuery(const std::string& query,
+                                                 types::Time64NSValue time_now) {
   // Compile the query.
   auto timer = ElapsedTimer();
   timer.Start();
-  auto compiler_state = engine_state_->CreateCompilerState();
+  auto compiler_state = engine_state_->CreateCompilerState(time_now);
   PL_ASSIGN_OR_RETURN(auto logical_plan, compiler_.Compile(query, compiler_state.get()));
   timer.Stop();
   int64_t compile_time_ns = timer.ElapsedTime_us() * 1000;

@@ -13,6 +13,7 @@
 #include <pypa/ast/ast.hh>
 #include <pypa/ast/tree_walker.hh>
 
+#include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/ir_nodes.h"
 
 namespace pl {
@@ -109,7 +110,7 @@ class ASTWalker {
    *
    * @param ir_graph
    */
-  explicit ASTWalker(std::shared_ptr<IR> ir_graph);
+  ASTWalker(std::shared_ptr<IR> ir_graph, CompilerState* compiler_state);
 
   std::shared_ptr<IR> ir_graph() const { return ir_graph_; }
 
@@ -480,6 +481,7 @@ class ASTWalker {
   StatusOr<IRNode*> WrapAstError(StatusOr<IRNode*> status_or, const pypa::AstPtr parent_node);
   std::shared_ptr<IR> ir_graph_;
   VarTable var_table_;
+  CompilerState* compiler_state_;
 };
 
 }  // namespace compiler

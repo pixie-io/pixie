@@ -65,7 +65,7 @@ Status Controller::ExecuteQuery(const vizier::QueryRequest &req, vizier::AgentQu
   CHECK(resp != nullptr);
   *resp->mutable_query_id() = req.query_id();
 
-  PL_RETURN_IF_ERROR(executor_->ServiceQuery(req.query_str(), resp));
+  PL_RETURN_IF_ERROR(executor_->ServiceQuery(req.query_str(), resp, CurrentTimeNS()));
   *resp->mutable_status() = Status::OK().ToProto();
 
   return Status::OK();

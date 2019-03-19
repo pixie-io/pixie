@@ -68,9 +68,9 @@ class EngineState : public NotCopyable {
     return std::make_unique<plan::PlanState>(scalar_udf_registry_.get(), uda_registry_.get());
   }
 
-  std::unique_ptr<compiler::CompilerState> CreateCompilerState() {
+  std::unique_ptr<compiler::CompilerState> CreateCompilerState(types::Time64NSValue time_now) {
     return std::make_unique<compiler::CompilerState>(table_store_->GetRelationMap(),
-                                                     registry_info_.get());
+                                                     registry_info_.get(), time_now);
   }
 
  private:

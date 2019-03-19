@@ -52,7 +52,7 @@ TEST_F(ExecutorTest, should_execute_simple_query_and_return_results) {
   auto query =
       "queryDF = From(table='test_table', select=['col1', 'col2']).Result(name='test_output')";
   vizier::AgentQueryResponse query_response;
-  auto rb_str_status = executor_->ServiceQuery(query, &query_response);
+  auto rb_str_status = executor_->ServiceQuery(query, &query_response, 0);
   ASSERT_OK(rb_str_status);
   EXPECT_OK(Status(query_response.status()));
   // Should be one table.

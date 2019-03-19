@@ -8,6 +8,7 @@
 
 #include "src/carnot/carnot.h"
 #include "src/shared/types/proto/types.pb.h"
+#include "src/shared/types/types.h"
 #include "src/stirling/proto/collector_config.pb.h"
 #include "src/stirling/stirling.h"
 #include "src/vizier/proto/service.pb.h"
@@ -94,7 +95,8 @@ class Executor {
    * @param query_resp_pb: The result protobuf, must not be nullptr.
    * @return Status of the query execution.
    */
-  Status ServiceQuery(const std::string& query, pl::vizier::AgentQueryResponse* query_resp_pb);
+  Status ServiceQuery(const std::string& query, pl::vizier::AgentQueryResponse* query_resp_pb,
+                      types::Time64NSValue time_now);
 
   Carnot* carnot() { return carnot_.get(); }
   Stirling* stirling() { return stirling_.get(); }

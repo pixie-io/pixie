@@ -13,9 +13,13 @@
 #include "src/carnot/udf/udf.h"
 #include "src/carnot/udf/udf_wrapper.h"
 #include "src/common/common.h"
+#include "src/common/time.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/utils/benchmark/utils.h"
+PL_SUPPRESS_WARNINGS_START()
+#include "src/vizier/proto/service.grpc.pb.h"
+PL_SUPPRESS_WARNINGS_END()
 
 namespace pl {
 namespace carnot {
@@ -102,7 +106,7 @@ void BM_Query(benchmark::State& state, std::vector<types::DataType> types,
   for (auto _ : state) {
     auto queryWithTableName = absl::Substitute(query, "results_" + std::to_string(i));
     LOG(INFO) << queryWithTableName;
-    auto res = carnot->ExecuteQuery(queryWithTableName).ConsumeValueOrDie();
+    auto res = carnot->ExecuteQuery(queryWithTableName, CurrentTimeNS()).ConsumeValueOrDie();
     bytes_processed += res.bytes_processed;
     ++i;
   }

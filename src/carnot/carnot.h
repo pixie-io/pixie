@@ -59,7 +59,7 @@ class Carnot : public NotCopyable {
    * @param query the query in the form of a string.
    * @return a Carnot Return with output_tables if successful. Error status otherwise.
    */
-  StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query);
+  StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query, types::Time64NSValue time_now);
 
   bool is_initialized() { return is_initialized_; }
 

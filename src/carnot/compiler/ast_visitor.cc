@@ -1,5 +1,4 @@
 #include "src/carnot/compiler/ast_visitor.h"
-#include "src/carnot/compiler/ir_nodes.h"
 
 namespace pl {
 namespace carnot {
@@ -17,9 +16,10 @@ const std::unordered_map<std::string, std::string> kOP_TO_UDF_MAP = {
 const std::unordered_map<std::string, int64_t> kTimeMapNS = {
     {"pl.second", 1e9}, {"pl.minute", 6e10}, {"pl.hour", 3.6e11}};
 
-ASTWalker::ASTWalker(std::shared_ptr<IR> ir_graph) {
+ASTWalker::ASTWalker(std::shared_ptr<IR> ir_graph, CompilerState* compiler_state) {
   ir_graph_ = ir_graph;
   var_table_ = VarTable();
+  compiler_state_ = compiler_state;
 }
 
 Status ASTWalker::CreateAstError(const std::string& err_msg, const pypa::AstPtr& ast) {
@@ -641,8 +641,8 @@ StatusOr<IRNode*> ASTWalker::EvalCompileTimeNow(const pypa::AstArguments& arglis
                                   "now");
   }
   PL_ASSIGN_OR_RETURN(IntIR * ir_node, ir_graph_->MakeNode<IntIR>());
-  // TODO(philkuz) (PL-441) grab now time from the input to the compiler.
-  PL_RETURN_IF_ERROR(ir_node->Init(CurrentTimeNS(), std::make_shared<pypa::Ast>(arglist)));
+  PL_RETURN_IF_ERROR(
+      ir_node->Init(compiler_state_->time_now().val, std::make_shared<pypa::Ast>(arglist)));
   return ir_node;
 }
 StatusOr<IRNode*> ASTWalker::EvalCompileTimeFn(const std::string& attr_fn_name,

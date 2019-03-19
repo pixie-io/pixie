@@ -7,6 +7,7 @@
 #include "src/carnot/carnot.h"
 #include "src/carnot/exec/table.h"
 #include "src/common/env.h"
+#include "src/common/time.h"
 #include "src/shared/types/column_wrapper.h"
 DEFINE_string(input_file, gflags::StringFromEnv("INPUT_FILE", ""),
               "The csv containing data to run the query on.");
@@ -217,7 +218,7 @@ int main(int argc, char* argv[]) {
   }
   auto table_store = carnot.table_store();
   table_store->AddTable("csv_table", table);
-  auto exec_status = carnot.ExecuteQuery(query);
+  auto exec_status = carnot.ExecuteQuery(query, pl::CurrentTimeNS());
   auto res = exec_status.ConsumeValueOrDie();
 
   // Write output table to CSV.

@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <map>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -18,7 +19,6 @@ namespace pl {
 namespace carnot {
 
 using exec::CarnotTestUtils;
-using testing::_;
 
 class CarnotTest : public ::testing::Test {
  protected:
@@ -46,7 +46,8 @@ TEST_F(CarnotTest, basic) {
           "queryDF = From(table='test_table', select=['col1', 'col2']).Result(name='test_output')",
       },
       "\n");
-  auto s = carnot_.ExecuteQuery(query);
+  // No time column, doesn't use a time parameter.
+  auto s = carnot_.ExecuteQuery(query, 0);
   ASSERT_OK(s);
   auto res = s.ConsumeValueOrDie();
   EXPECT_EQ(5, res.rows_processed);
@@ -82,7 +83,8 @@ TEST_F(CarnotTest, map_test) {
       },
       "\n");
 
-  auto s = carnot_.ExecuteQuery(query);
+  // No time column, doesn't use a time parameter.
+  auto s = carnot_.ExecuteQuery(query, 0);
   ASSERT_OK(s);
 
   auto table_store = carnot_.table_store();
@@ -101,7 +103,8 @@ TEST_F(CarnotTest, map_test) {
 TEST_F(CarnotTest, bad_syntax) {
   // Missing paranethesis
   auto bad_syntax = "queryDF = From(.Result(name='test_output')";
-  auto bad_syntax_status = carnot_.ExecuteQuery(bad_syntax);
+  // No time column, doesn't use a time parameter.
+  auto bad_syntax_status = carnot_.ExecuteQuery(bad_syntax, 0);
   VLOG(1) << bad_syntax_status.ToString();
   EXPECT_FALSE(bad_syntax_status.ok());
 }
@@ -110,7 +113,8 @@ TEST_F(CarnotTest, wrong_args) {
   // select -> sel (wrong arg for Form).
   auto wrong_arg_names =
       "queryDF = From(table='test_table', sel=['col2', 'col2']).Result(name='test_output')";
-  auto wrong_arg_status = carnot_.ExecuteQuery(wrong_arg_names);
+  // No time column, doesn't use a time parameter.
+  auto wrong_arg_status = carnot_.ExecuteQuery(wrong_arg_names, 0);
   VLOG(1) << wrong_arg_status.ToString();
   EXPECT_FALSE(wrong_arg_status.ok());
 }
@@ -120,7 +124,8 @@ TEST_F(CarnotTest, wrong_columns) {
   auto wrong_columns =
       "queryDF = From(table='test_table', select=['col1', 'col2', "
       "'bunk_column']).Result(name='test_output')";
-  auto wrong_columns_status = carnot_.ExecuteQuery(wrong_columns);
+  // No time column, doesn't use a time parameter.
+  auto wrong_columns_status = carnot_.ExecuteQuery(wrong_columns, 0);
   VLOG(1) << wrong_columns_status.ToString();
   EXPECT_FALSE(wrong_columns_status.ok());
 }
@@ -128,7 +133,8 @@ TEST_F(CarnotTest, wrong_columns) {
 TEST_F(CarnotTest, missing_result) {
   // Missing the result call at the end of the query.
   auto missing_result_call = "queryDF = From(table='test_table', select=['col1', 'col2'])";
-  auto missing_result_status = carnot_.ExecuteQuery(missing_result_call);
+  // No time column, doesn't use a time parameter.
+  auto missing_result_status = carnot_.ExecuteQuery(missing_result_call, 0);
   VLOG(1) << missing_result_status.ToString();
   EXPECT_FALSE(missing_result_status.ok());
 }
@@ -137,7 +143,8 @@ TEST_F(CarnotTest, missing_result) {
 TEST_F(CarnotTest, wrong_table_name) {
   auto wrong_table_name =
       "queryDF = From(table='bunk_table', select=['col1', 'col2']).Result(name='test_output')";
-  auto wrong_table_status = carnot_.ExecuteQuery(wrong_table_name);
+  // No time column, doesn't use a time parameter.
+  auto wrong_table_status = carnot_.ExecuteQuery(wrong_table_name, 0);
   VLOG(1) << wrong_table_status.ToString();
   EXPECT_FALSE(wrong_table_status.ok());
 }
@@ -145,13 +152,15 @@ TEST_F(CarnotTest, wrong_table_name) {
 // Select no columns which should be acceptable.
 TEST_F(CarnotTest, no_columns) {
   auto no_columns_name = "queryDF = From(table='test_table', select=[]).Result(name='test_output')";
-  auto no_columns_status = carnot_.ExecuteQuery(no_columns_name);
+  // No time column, doesn't use a time parameter.
+  auto no_columns_status = carnot_.ExecuteQuery(no_columns_name, 0);
   VLOG(1) << no_columns_status.ToString();
   EXPECT_OK(no_columns_status);
 }
 
 TEST_F(CarnotTest, empty_query_test) {
-  auto s = carnot_.ExecuteQuery("");
+  // No time column, doesn't use a time parameter.
+  auto s = carnot_.ExecuteQuery("", 0);
   EXPECT_FALSE(s.ok());
 }
 
@@ -160,7 +169,8 @@ TEST_F(CarnotTest, map_op_udf_add) {
                                   "mapOutput = queryDF.Map(fn=lambda r : {'sum' : r.col1 + "
                                   "r.col2}).Result(name='test_output')"},
                                  "\n");
-  EXPECT_OK(carnot_.ExecuteQuery(add_query));
+  // No time column, doesn't use a time parameter.
+  EXPECT_OK(carnot_.ExecuteQuery(add_query, 0));
 }
 
 TEST_F(CarnotTest, map_op_udf_mult) {
@@ -168,7 +178,8 @@ TEST_F(CarnotTest, map_op_udf_mult) {
                                    "mapOutput = queryDF.Map(fn=lambda r : {'mult' : r.col1 * "
                                    "r.col2}).Result(name='test_output')"},
                                   "\n");
-  EXPECT_OK(carnot_.ExecuteQuery(mult_query));
+  // No time column, doesn't use a time parameter.
+  EXPECT_OK(carnot_.ExecuteQuery(mult_query, 0));
 }
 
 TEST_F(CarnotTest, map_op_udf_sub) {
@@ -176,7 +187,8 @@ TEST_F(CarnotTest, map_op_udf_sub) {
                                   "mapOutput = queryDF.Map(fn=lambda r : {'sub' : r.col1 - "
                                   "r.col2}).Result(name='test_output')"},
                                  "\n");
-  EXPECT_OK(carnot_.ExecuteQuery(sub_query));
+  // No time column, doesn't use a time parameter.
+  EXPECT_OK(carnot_.ExecuteQuery(sub_query, 0));
 }
 
 TEST_F(CarnotTest, map_op_udf_div) {
@@ -184,7 +196,8 @@ TEST_F(CarnotTest, map_op_udf_div) {
                                   "mapOutput = queryDF.Map(fn=lambda r : {'div' : r.col1 / "
                                   "r.col2}).Result(name='test_output')"},
                                  "\n");
-  EXPECT_OK(carnot_.ExecuteQuery(div_query));
+  // No time column, doesn't use a time parameter.
+  EXPECT_OK(carnot_.ExecuteQuery(div_query, 0));
 }
 
 TEST_F(CarnotTest, order_test) {
@@ -199,7 +212,8 @@ TEST_F(CarnotTest, order_test) {
           "pl.add(r.col3,r.col2), 'a': 1, 'b': 2}).Result(name='test_output')",
       },
       "\n");
-  auto s = carnot_.ExecuteQuery(query);
+  // Time Column unused, doesn't matter what value is.
+  auto s = carnot_.ExecuteQuery(query, 0);
   ASSERT_OK(s);
 
   auto output_table = table_store->GetTable("test_output");
@@ -239,15 +253,16 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col2', "
-          "'col3']).Range(start=$0, stop=$1).Result(name='rng_output')",
+          "'col3']).Range(start=$0, stop=$1).Result(name='range_output')",
       },
       "\n");
   query = absl::Substitute(query, start_time, stop_time);
-  auto s = carnot_.ExecuteQuery(query);
+  // now() not called, doesn't matter what now is.
+  auto s = carnot_.ExecuteQuery(query, 0);
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
 
-  auto output_table = table_store->GetTable("rng_output");
+  auto output_table = table_store->GetTable("range_output");
   EXPECT_EQ(2, output_table->NumBatches());
   EXPECT_EQ(3, output_table->NumColumns());
 
@@ -300,16 +315,17 @@ TEST_F(CarnotTest, range_test_single_rb) {
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col2', "
-          "'col3']).Range(start=$0, stop=$1).Result(name='rng_output')",
+          "'col3']).Range(start=$0, stop=$1).Result(name='range_output')",
       },
       "\n");
   int64_t start_time = 2;
   int64_t stop_time = 3;
   query = absl::Substitute(query, start_time, stop_time);
-  auto s = carnot_.ExecuteQuery(query);
+  // now() not called, doesn't matter what now is.
+  auto s = carnot_.ExecuteQuery(query, 0);
   ASSERT_OK(s);
 
-  auto output_table = table_store->GetTable("rng_output");
+  auto output_table = table_store->GetTable("range_output");
   EXPECT_EQ(1, output_table->NumBatches());
   EXPECT_EQ(3, output_table->NumColumns());
 
@@ -343,7 +359,7 @@ TEST_F(CarnotTest, empty_range_test) {
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col2', "
-          "'col3']).Range(start=$0, stop=$1).Result(name='rng_output')",
+          "'col3']).Range(start=$0, stop=$1).Result(name='range_output')",
       },
       "\n");
   auto time_col = CarnotTestUtils::big_test_col1;
@@ -352,14 +368,60 @@ TEST_F(CarnotTest, empty_range_test) {
   int64_t start_time = max_time->val + 1;
   int64_t stop_time = start_time + 10000;
   query = absl::Substitute(query, start_time, stop_time);
-  auto s = carnot_.ExecuteQuery(query);
+  // now() not called, doesn't matter what now is.
+  auto s = carnot_.ExecuteQuery(query, 0);
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
 
-  auto output_table = table_store->GetTable("rng_output");
+  auto output_table = table_store->GetTable("range_output");
   EXPECT_EQ(0, output_table->NumBatches());
   EXPECT_EQ(3, output_table->NumColumns());
 }
+
+class CarnotRangeTest
+    : public CarnotTest,
+      public ::testing::WithParamInterface<std::tuple<types::Int64Value, size_t, bool>> {
+ protected:
+  void SetUp() {
+    CarnotTest::SetUp();
+    bool start_at_now;
+    types::Int64Value sub_time;
+    std::tie(sub_time, num_batches, start_at_now) = GetParam();
+    query = absl::StrJoin({"queryDF = From(table='big_test_table', select=['time_', 'col2'])",
+                           "queryDF.Range(start=$0, stop=$1).Result(name='range_output')"},
+                          "\n");
+    if (start_at_now) {
+      query = absl::Substitute(query, "plc.now()", sub_time.val);
+    } else {
+      query = absl::Substitute(query, sub_time.val, "plc.now()");
+    }
+    auto table = CarnotTestUtils::BigTestTable();
+    carnot_.table_store()->AddTable("big_test_table", table);
+
+    auto max_time = CarnotTestUtils::big_test_col1[CarnotTestUtils::big_test_col1.size() - 1];
+    now_time_ = max_time.val + 1;
+  }
+  size_t num_batches;
+  std::string query;
+  int64_t now_time_;
+};
+
+std::vector<std::tuple<types::Int64Value, size_t, bool>> range_test_vals = {
+    {CarnotTestUtils::big_test_col1[CarnotTestUtils::big_test_col1.size() - 1] /*sub_time*/,
+     0 /*num_batches*/, true /*start_at_now*/},
+    {CarnotTestUtils::big_test_col1[CarnotTestUtils::split_idx[1].first].val /*sub_time*/,
+     CarnotTestUtils::split_idx.size() - 1 /*num_batches*/, false /*start_at_now*/}};
+
+TEST_P(CarnotRangeTest, range_now_keyword_test) {
+  auto s = carnot_.ExecuteQuery(query, now_time_);
+  ASSERT_OK(s);
+
+  auto output_table = carnot_.table_store()->GetTable("range_output");
+  EXPECT_EQ(num_batches, output_table->NumBatches());
+  EXPECT_EQ(2, output_table->NumColumns());
+}
+
+INSTANTIATE_TEST_CASE_P(CarnotRangeVariants, CarnotRangeTest, ::testing::ValuesIn(range_test_vals));
 
 TEST_F(CarnotTest, group_by_all_agg_test) {
   auto table = CarnotTestUtils::BigTestTable();
@@ -378,7 +440,8 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
       },
       "\n");
   query = absl::Substitute(query, agg_dict);
-  auto s = carnot_.ExecuteQuery(query);
+  // now() not called, doesn't matter what now is.
+  auto s = carnot_.ExecuteQuery(query, 0);
   auto output_table = table_store->GetTable("test_output");
   EXPECT_EQ(1, output_table->NumBatches());
   EXPECT_EQ(5, output_table->NumColumns());
@@ -440,7 +503,8 @@ TEST_F(CarnotTest, group_by_col_agg_test) {
           "aggDF.Result(name='test_output')",
       },
       "\n");
-  auto s = carnot_.ExecuteQuery(query);
+  // now() not called, doesn't matter what now is.
+  auto s = carnot_.ExecuteQuery(query, 0);
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
 
@@ -481,7 +545,8 @@ TEST_F(CarnotTest, multiple_group_by_test) {
           "aggDF.Result(name='test_output')",
       },
       "\n");
-  auto s = carnot_.ExecuteQuery(query);
+  // now() not called, doesn't matter what now is.
+  auto s = carnot_.ExecuteQuery(query, 0);
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
 
@@ -541,7 +606,8 @@ TEST_F(CarnotTest, comparison_tests) {
   int64_t col3_lt_val = 12;
   int64_t num_groups_gt_val = 1;
   query = absl::Substitute(query, col3_lt_val, num_groups_gt_val);
-  auto s = carnot_.ExecuteQuery(query);
+  // now() not called, doesn't matter what now is.
+  auto s = carnot_.ExecuteQuery(query, 0);
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
   auto output_table = table_store->GetTable("test_output");
@@ -582,7 +648,8 @@ TEST_F(CarnotTest, comparison_to_agg_tests) {
   // Value to test on.
   int64_t col3_gt_val = 30;
   query = absl::Substitute(query, col3_gt_val);
-  auto s = carnot_.ExecuteQuery(query);
+  // now() not called, doesn't matter what now is.
+  auto s = carnot_.ExecuteQuery(query, 0);
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
   auto output_table = table_store->GetTable("test_output");

@@ -7,9 +7,10 @@
 #include <unordered_map>
 
 #include "src/common/scoped_timer.h"
-#include "src/shared/types/types.h"
 #include "src/stirling/bpftrace_connector.h"
 #include "src/vizier/proto/service.pb.h"
+
+#include "src/shared/types/types.h"
 
 namespace pl {
 namespace agent {
@@ -94,11 +95,12 @@ Status Executor::AddDummyTable(const std::string& name,
 }
 
 Status Executor::ServiceQuery(const std::string& query,
-                              pl::vizier::AgentQueryResponse* query_resp_pb) {
+                              pl::vizier::AgentQueryResponse* query_resp_pb,
+                              types::Time64NSValue time_now) {
   carnot::CarnotQueryResult ret;
   {
     ScopedTimer query_timer("query timer");
-    PL_ASSIGN_OR_RETURN(ret, carnot_->ExecuteQuery(query));
+    PL_ASSIGN_OR_RETURN(ret, carnot_->ExecuteQuery(query, time_now));
   }
   // Currently ignore many output tables until it's necessary.
   CHECK_EQ(ret.NumTables(), 1ULL);

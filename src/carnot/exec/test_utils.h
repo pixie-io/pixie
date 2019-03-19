@@ -54,6 +54,7 @@ class CarnotTestUtils {
   static const std::vector<types::Int64Value> big_test_col3;
   static const std::vector<types::Int64Value> big_test_groups;
   static const std::vector<types::StringValue> big_test_strings;
+  static const std::vector<std::pair<int64_t, int64_t>> split_idx;
 
   static std::shared_ptr<exec::Table> BigTestTable() {
     auto descriptor = std::vector<types::DataType>(
@@ -62,7 +63,6 @@ class CarnotTestUtils {
     exec::RowDescriptor rd = exec::RowDescriptor(descriptor);
 
     auto table = std::make_shared<exec::Table>(rd);
-    std::vector<std::pair<int64_t, int64_t>> split_idx({{0, 3}, {3, 5}, {5, 8}});
 
     auto col1 = std::make_shared<exec::Column>(types::DataType::TIME64NS, "time_");
     auto col2 = std::make_shared<exec::Column>(types::DataType::FLOAT64, "col2");
@@ -109,6 +109,7 @@ const std::vector<types::Int64Value> CarnotTestUtils::big_test_groups({1, 1, 3, 
 const std::vector<types::StringValue> CarnotTestUtils::big_test_strings({"sum", "mean", "sum",
                                                                          "mean", "sum", "mean",
                                                                          "sum", "mean"});
+const std::vector<std::pair<int64_t, int64_t>> CarnotTestUtils::split_idx({{0, 3}, {3, 5}, {5, 8}});
 
 /**
  * Util for creating row batches.

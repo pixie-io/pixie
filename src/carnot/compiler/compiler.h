@@ -28,7 +28,7 @@ class Compiler {
   StatusOr<carnotpb::Plan> IRToLogicalPlan(const IR& ir);
 
  private:
-  StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query);
+  StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query, CompilerState* compiler_state);
 
   template <typename TIRNode>
   Status IRNodeToPlanNode(carnotpb::PlanFragment* pf, carnotpb::DAG* pf_dag, const IR& ir_graph,

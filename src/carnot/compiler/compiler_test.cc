@@ -97,7 +97,7 @@ class CompilerTest : public ::testing::Test {
     google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
     EXPECT_OK(info_->Init(info_pb));
 
-    auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
+    auto rel_map = std::make_shared<RelationMap>();
     rel_map->emplace("sequences",
                      plan::Relation(std::vector<types::DataType>({
                                         types::DataType::TIME64NS,
@@ -111,10 +111,11 @@ class CompilerTest : public ::testing::Test {
                                         {types::DataType::INT64, types::DataType::FLOAT64,
                                          types::DataType::FLOAT64, types::DataType::FLOAT64}),
                                     std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
-    compiler_state_ = std::make_unique<CompilerState>(rel_map, info_.get());
+    compiler_state_ = std::make_unique<CompilerState>(rel_map, info_.get(), time_now);
   }
   std::unique_ptr<CompilerState> compiler_state_;
   std::shared_ptr<RegistryInfo> info_;
+  int64_t time_now = 1000;
 };
 
 const char* kExpectedLogicalPlan = R"(
@@ -258,11 +259,11 @@ TEST_F(CompilerTest, test_general_compilation) {
       },
       "\n");
   auto plan_status = compiler.Compile(query, compiler_state_.get());
-  VLOG(1) << plan_status.ToString();
+  VLOG(2) << plan_status.ToString();
   ASSERT_OK(plan_status);
 
   carnotpb::Plan logical_plan = plan_status.ValueOrDie();
-  VLOG(1) << logical_plan.DebugString();
+  VLOG(2) << logical_plan.DebugString();
 
   carnotpb::Plan expected_logical_plan;
 
@@ -334,7 +335,79 @@ TEST_F(CompilerTest, select_order_test) {
   EXPECT_OK(plan);
   carnotpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kSelectOrderLogicalPlan, &plan_pb));
+  VLOG(2) << plan.ValueOrDie().DebugString();
+  EXPECT_TRUE(
+      google::protobuf::util::MessageDifferencer::Equals(plan_pb, plan.ConsumeValueOrDie()));
+}
+const char* kRangeNowPlan = R"(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      id: 4
+      sorted_deps: 0
+    }
+    nodes {
+    }
+  }
+  nodes {
+    id: 4
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "sequences"
+        column_idxs: 0
+        column_idxs: 1
+        column_names: "_time"
+        column_names: "xmod10"
+        column_types: TIME64NS
+        column_types: FLOAT64
+        start_time {
+        }
+        stop_time {
+          value: $0
+        }
+      }
+    }
+  }
+  nodes {
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "cpu_out"
+        column_types: TIME64NS
+        column_types: FLOAT64
+        column_names: "_time"
+        column_names: "xmod10"
+      }
+    }
+  }
+}
+
+)";
+
+TEST_F(CompilerTest, range_now_test) {
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='sequences', select=['_time', 'xmod10']).Range(start=0, "
+          "stop=plc.now()).Result(name='cpu_out')",
+      },
+      "\n");
+  auto compiler = Compiler();
+  auto plan = compiler.Compile(query, compiler_state_.get());
+  EXPECT_OK(plan);
   VLOG(1) << plan.ValueOrDie().DebugString();
+  VLOG(1) << "time_now_val" << compiler_state_->time_now().val;
+  auto expected_plan = absl::Substitute(kRangeNowPlan, compiler_state_->time_now().val);
+
+  carnotpb::Plan plan_pb;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
+  VLOG(1) << plan_pb.DebugString();
   EXPECT_TRUE(
       google::protobuf::util::MessageDifferencer::Equals(plan_pb, plan.ConsumeValueOrDie()));
 }
@@ -406,11 +479,10 @@ TEST_F(CompilerTest, group_by_all) {
       "\n");
   auto compiler = Compiler();
   auto plan_status = compiler.Compile(query, compiler_state_.get());
-  VLOG(1) << plan_status.ToString();
   // EXPECT_OK(plan_status);
   ASSERT_OK(plan_status);
   auto logical_plan = plan_status.ConsumeValueOrDie();
-  VLOG(1) << logical_plan.DebugString();
+  VLOG(2) << logical_plan.DebugString();
   carnotpb::Plan expected_logical_plan;
   // google::protobuf::util::MessageDifferencer differ();
   ASSERT_TRUE(
@@ -553,7 +625,7 @@ TEST_F(CompilerTest, range_agg_test) {
   EXPECT_OK(plan);
   carnotpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kRangeAggPlan, &plan_pb));
-  VLOG(1) << plan.ValueOrDie().DebugString();
+  VLOG(2) << plan.ValueOrDie().DebugString();
   EXPECT_TRUE(
       google::protobuf::util::MessageDifferencer::Equals(plan_pb, plan.ConsumeValueOrDie()));
 }
@@ -584,12 +656,13 @@ TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
   EXPECT_OK(plan);
 }
 TEST_F(CompilerTest, rename_then_group_by_test) {
-  auto query = absl::StrJoin(
-      {"queryDF = From(table='sequences', select=['_time', 'xmod10', 'PIx'])",
-       "map_out = queryDF.Map(fn=lambda r : {'res': r.PIx, 'c1': r.xmod10})",
-       "agg_out = map_out.Agg(by=lambda r: [r.res, r.c1], fn=lambda r: {'count': pl.count(r.c1)})",
-       "agg_out.Result(name='t15')"},
-      "\n");
+  auto query =
+      absl::StrJoin({"queryDF = From(table='sequences', select=['_time', 'xmod10', 'PIx'])",
+                     "map_out = queryDF.Map(fn=lambda r : {'res': r.PIx, 'c1': r.xmod10})",
+                     "agg_out = map_out.Agg(by=lambda r: [r.res, r.c1], fn=lambda r: {'count': "
+                     "pl.count(r.c1)})",
+                     "agg_out.Result(name='t15')"},
+                    "\n");
   auto compiler = Compiler();
   auto plan = compiler.Compile(query, compiler_state_.get());
   VLOG(1) << plan.ToString();
@@ -624,15 +697,16 @@ TEST_F(CompilerTest, no_arg_pl_count_test) {
                  std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
                                                types::DataType::FLOAT64, types::DataType::FLOAT64}),
                  std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
-  auto compiler_state = std::make_unique<CompilerState>(rel_map, info.get());
+
   std::string query = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0, stop=10)",
        "aggDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
        "pl.count}).Result(name='cpu_out')"},
       "\n");
   auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state.get());
+  auto plan = compiler.Compile(query, compiler_state_.get());
   ASSERT_OK(plan);
+  VLOG(2) << plan.ValueOrDie().DebugString();
 }
 }  // namespace compiler
 }  // namespace carnot

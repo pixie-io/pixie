@@ -23,7 +23,7 @@ namespace carnot {
 namespace compiler {
 StatusOr<carnotpb::Plan> Compiler::Compile(const std::string& query,
                                            CompilerState* compiler_state) {
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query));
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state));
   PL_RETURN_IF_ERROR(VerifyIRConnections(*ir));
   PL_RETURN_IF_ERROR(OptimizeIR(ir.get()));
   PL_RETURN_IF_ERROR(UpdateColumnsAndVerifyUDFs(ir.get(), compiler_state));
@@ -42,13 +42,14 @@ Status Compiler::UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_stat
   return relation_handler.UpdateRelationsAndCheckFunctions(ir);
 }
 
-StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query) {
+StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
+                                                  CompilerState* compiler_state) {
   if (query.empty()) {
     return error::InvalidArgument("Query should not be empty.");
   }
 
   std::shared_ptr<IR> ir = std::make_shared<IR>();
-  ASTWalker ast_walker(ir);
+  ASTWalker ast_walker(ir, compiler_state);
 
   pypa::AstModulePtr ast;
   pypa::SymbolTablePtr symbols;
