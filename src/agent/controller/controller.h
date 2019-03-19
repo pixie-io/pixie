@@ -9,7 +9,8 @@
 
 #include <sole.hpp>
 
-#include "src/agent/controller/executor.h"
+#include "src/carnot/carnot.h"
+#include "src/stirling/stirling.h"
 
 #include "src/common/common.h"
 PL_SUPPRESS_WARNINGS_START()
@@ -40,10 +41,14 @@ class Controller : public NotCopyable {
   using VizierReaderWriterSPtr = std::shared_ptr<VizierReaderWriter>;
 
  public:
-  Controller(std::shared_ptr<grpc::Channel> chan, Executor* executor);
-  ~Controller() = default;
+  /**
+   * Create a new controller. Expects carnot and stirling to be initialized.
+   */
+  static StatusOr<std::unique_ptr<Controller>> Create(std::shared_ptr<grpc::Channel> chan,
+                                                      std::unique_ptr<carnot::Carnot> carnot,
+                                                      std::unique_ptr<stirling::Stirling> stirling);
 
-  Status Init();
+  ~Controller() = default;
 
   /**
    * Main run loop for the agent. It blocks until the stop signal is sent.
@@ -57,16 +62,32 @@ class Controller : public NotCopyable {
    */
   Status Stop();
 
+  // TODO(zasgar): Remove me. Throwaway code for demo. We can't call this from Init because
+  // it will break tests and there is no way to stub out stirling.
+  Status InitThrowaway();
+
+ protected:
+  Controller(std::shared_ptr<grpc::Channel> chan, std::unique_ptr<carnot::Carnot> carnot,
+             std::unique_ptr<stirling::Stirling> stirling);
+  /**
+   * Initialize the executor.
+   */
+  Status Init();
+
  private:
+  // TODO(zasgar): Remove me. Throwaway code for demo.
+  Status AddDummyTable(const std::string& name, std::shared_ptr<carnot::exec::Table> table);
+
   void RunHeartBeat(VizierReaderWriter* stream) const;
   Status ExecuteQuery(const vizier::QueryRequest& req, vizier::AgentQueryResponse* resp);
   Status SendRegisterRequest(VizierReaderWriter* stream);
 
-  Executor* executor_;
+  std::shared_ptr<grpc::Channel> chan_;
+  std::unique_ptr<carnot::Carnot> carnot_;
+  std::unique_ptr<stirling::Stirling> stirling_;
 
   sole::uuid agent_id_;
   std::string hostname_;
-  std::shared_ptr<grpc::Channel> chan_;
   std::unique_ptr<vizier::VizierService::Stub> vizier_stub_;
   bool keepAlive_ = true;
 };

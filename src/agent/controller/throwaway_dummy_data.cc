@@ -6,7 +6,7 @@
 
 #include <sole.hpp>
 
-#include "src/agent/throwaway_dummy_data.h"
+#include "src/agent/controller/throwaway_dummy_data.h"
 #include "src/carnot/exec/table.h"
 #include "src/common/status.h"
 #include "src/shared/types/types.h"
