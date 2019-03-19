@@ -271,6 +271,7 @@ struct DataTypeTraits<DataType::BOOLEAN> {
   using arrow_type = arrow::BooleanType;
   using arrow_builder_type = arrow::BooleanBuilder;
   using arrow_array_type = arrow::BooleanArray;
+  using native_type = bool;
   static constexpr arrow::Type::type arrow_type_id = arrow::Type::BOOL;
 };
 
@@ -280,6 +281,7 @@ struct DataTypeTraits<DataType::INT64> {
   using arrow_type = arrow::Int64Type;
   using arrow_builder_type = arrow::Int64Builder;
   using arrow_array_type = arrow::Int64Array;
+  using native_type = int64_t;
   static constexpr arrow::Type::type arrow_type_id = arrow::Type::INT64;
 };
 
@@ -289,6 +291,7 @@ struct DataTypeTraits<DataType::FLOAT64> {
   using arrow_type = arrow::DoubleType;
   using arrow_builder_type = arrow::DoubleBuilder;
   using arrow_array_type = arrow::DoubleArray;
+  using native_type = double;
   static constexpr arrow::Type::type arrow_type_id = arrow::Type::DOUBLE;
 };
 
@@ -298,6 +301,7 @@ struct DataTypeTraits<DataType::STRING> {
   using arrow_type = arrow::StringType;
   using arrow_builder_type = arrow::StringBuilder;
   using arrow_array_type = arrow::StringArray;
+  using native_type = std::string;
   static constexpr arrow::Type::type arrow_type_id = arrow::Type::STRING;
 };
 
@@ -307,6 +311,7 @@ struct DataTypeTraits<DataType::TIME64NS> {
   using arrow_type = arrow::Int64Type;
   using arrow_builder_type = arrow::Int64Builder;
   using arrow_array_type = arrow::Int64Array;
+  using native_type = int64_t;
   static constexpr arrow::Type::type arrow_type_id = arrow::Type::INT64;
 };
 

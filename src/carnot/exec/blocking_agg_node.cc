@@ -219,20 +219,9 @@ Status BlockingAggNode::HashRowBatch(ExecState *exec_state, const RowBatch &rb) 
     const auto &rb_col_idx = stored_cols_to_plan_idx_[i];
     const auto &dt = input_descriptor_->type(rb_col_idx);
 
-#define TYPE_CASE(__dt__)                                                 \
-  case __dt__:                                                            \
-    ExtractToColumnWrapper<__dt__>(group_args_chunk_, rb, i, rb_col_idx); \
-    break;
+#define TYPE_CASE(_dt_) ExtractToColumnWrapper<_dt_>(group_args_chunk_, rb, i, rb_col_idx);
 
-    switch (dt) {
-      TYPE_CASE(types::DataType::BOOLEAN);
-      TYPE_CASE(types::DataType::INT64);
-      TYPE_CASE(types::DataType::FLOAT64);
-      TYPE_CASE(types::DataType::TIME64NS);
-      TYPE_CASE(types::DataType::STRING);
-      default:
-        CHECK(0) << "Unknown Type: " << types::ToString(dt);
-    }
+    PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
 #undef TYPE_CASE
   }
 
@@ -290,23 +279,10 @@ Status BlockingAggNode::ConvertAggHashMapToRowBatch(ExecState *exec_state, RowBa
     for (size_t i = 0; i < group_data_types_.size(); ++i) {
       DCHECK(i < group_builders.size());
 
-#define TYPE_CASE(__dt__)                                           \
-  case __dt__:                                                      \
-    AppendToBuilder<__dt__>(group_builders[i].get(), groups_rt, i); \
-    break
-
-      auto dt = group_data_types_[i];
-      switch (dt) {
-        TYPE_CASE(types::DataType::BOOLEAN);
-        TYPE_CASE(types::DataType::INT64);
-        TYPE_CASE(types::DataType::FLOAT64);
-        TYPE_CASE(types::DataType::TIME64NS);
-        TYPE_CASE(types::DataType::STRING);
-        default:
-          CHECK(0) << "Unknown Type: " << types::ToString(dt);
-      }
-    }
+#define TYPE_CASE(_dt_) AppendToBuilder<_dt_>(group_builders[i].get(), groups_rt, i);
+      PL_SWITCH_FOREACH_DATATYPE(group_data_types_[i], TYPE_CASE);
 #undef TYPE_CASE
+    }
     // Actually Finalize the UDA based on the column wrapper chunks.
     PL_RETURN_IF_ERROR(EvaluateAggHashValue(exec_state, val));
     for (size_t i = 0; i < val->udas.size(); ++i) {
