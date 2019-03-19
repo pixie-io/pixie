@@ -65,14 +65,15 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
 
   static constexpr char kName[] = "bpftrace_cpu_stats";
 
-  inline static const DataElements kElements = {DataElement("time_", DataType::TIME64NS),
-                                                DataElement("cpustat_user", DataType::INT64),
-                                                DataElement("cpustat_nice", DataType::INT64),
-                                                DataElement("cpustat_system", DataType::INT64),
-                                                DataElement("cpustat_idle", DataType::INT64),
-                                                DataElement("cpustat_iowait", DataType::INT64),
-                                                DataElement("cpustat_irq", DataType::INT64),
-                                                DataElement("cpustat_softirq", DataType::INT64)};
+  inline static const DataElements kElements = {
+      DataElement("time_", types::DataType::TIME64NS),
+      DataElement("cpustat_user", types::DataType::INT64),
+      DataElement("cpustat_nice", types::DataType::INT64),
+      DataElement("cpustat_system", types::DataType::INT64),
+      DataElement("cpustat_idle", types::DataType::INT64),
+      DataElement("cpustat_iowait", types::DataType::INT64),
+      DataElement("cpustat_irq", types::DataType::INT64),
+      DataElement("cpustat_softirq", types::DataType::INT64)};
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
@@ -101,9 +102,10 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
 
   static constexpr char kName[] = "bpftrace_pid_cpu_usage";
 
-  inline static const DataElements kElements = {
-      DataElement("time_", DataType::TIME64NS), DataElement("pid", DataType::INT64),
-      DataElement("runtime_ns", DataType::INT64), DataElement("cmd", DataType::STRING)};
+  inline static const DataElements kElements = {DataElement("time_", types::DataType::TIME64NS),
+                                                DataElement("pid", types::DataType::INT64),
+                                                DataElement("runtime_ns", types::DataType::INT64),
+                                                DataElement("cmd", types::DataType::STRING)};
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};

@@ -26,10 +26,12 @@ class SeqGenConnector : public SourceConnector {
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{500};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
-  inline static const DataElements kElements = {
-      DataElement("time_", DataType::TIME64NS),  DataElement("x", DataType::INT64),
-      DataElement("xmod10", DataType::INT64),    DataElement("xsquared", DataType::INT64),
-      DataElement("fibonnaci", DataType::INT64), DataElement("PIx", DataType::FLOAT64)};
+  inline static const DataElements kElements = {DataElement("time_", types::DataType::TIME64NS),
+                                                DataElement("x", types::DataType::INT64),
+                                                DataElement("xmod10", types::DataType::INT64),
+                                                DataElement("xsquared", types::DataType::INT64),
+                                                DataElement("fibonnaci", types::DataType::INT64),
+                                                DataElement("PIx", types::DataType::FLOAT64)};
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new SeqGenConnector(name));

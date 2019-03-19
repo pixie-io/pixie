@@ -10,8 +10,6 @@
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/proto/collector_config.pb.h"
 
-using pl::Status;
-
 namespace pl {
 namespace stirling {
 

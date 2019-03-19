@@ -15,10 +15,10 @@ class ProcStatConnector : public SourceConnector {
 
   static constexpr char kName[] = "proc_stat";
 
-  inline static DataElements kElements = {DataElement("time_", DataType::TIME64NS),
-                                          DataElement("system_percent", DataType::FLOAT64),
-                                          DataElement("user_percent", DataType::FLOAT64),
-                                          DataElement("idle_percent", DataType::FLOAT64)};
+  inline static DataElements kElements = {DataElement("time_", types::DataType::TIME64NS),
+                                          DataElement("system_percent", types::DataType::FLOAT64),
+                                          DataElement("user_percent", types::DataType::FLOAT64),
+                                          DataElement("idle_percent", types::DataType::FLOAT64)};
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
@@ -88,10 +88,10 @@ class FakeProcStatConnector : public ProcStatConnector {
 
   static constexpr char kName[] = "fake_proc_stat";
 
-  inline static DataElements kElements = {DataElement("time_", DataType::TIME64NS),
-                                          DataElement("system_percent", DataType::FLOAT64),
-                                          DataElement("user_percent", DataType::FLOAT64),
-                                          DataElement("idle_percent", DataType::FLOAT64)};
+  inline static DataElements kElements = {DataElement("time_", types::DataType::TIME64NS),
+                                          DataElement("system_percent", types::DataType::FLOAT64),
+                                          DataElement("user_percent", types::DataType::FLOAT64),
+                                          DataElement("idle_percent", types::DataType::FLOAT64)};
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new FakeProcStatConnector(name, kElements));

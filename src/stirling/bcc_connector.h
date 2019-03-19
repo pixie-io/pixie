@@ -51,9 +51,10 @@ class PIDCPUUseBCCConnector : public BCCConnector {
  public:
   static constexpr SourceType kSourceType = SourceType::kEBPF;
   static constexpr char kName[] = "bcc_pid_cpu_usage";
-  inline static const DataElements kElements = {
-      DataElement("time_", DataType::TIME64NS), DataElement("pid", DataType::INT64),
-      DataElement("runtime_ns", DataType::INT64), DataElement("cmd", DataType::STRING)};
+  inline static const DataElements kElements = {DataElement("time_", types::DataType::TIME64NS),
+                                                DataElement("pid", types::DataType::INT64),
+                                                DataElement("runtime_ns", types::DataType::INT64),
+                                                DataElement("cmd", types::DataType::STRING)};
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};

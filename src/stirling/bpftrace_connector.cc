@@ -109,7 +109,7 @@ void CPUStatBPFTraceConnector::TransferDataImpl(ColumnWrapperRecordBatch* record
   }
 
   for (uint32_t i = 0; i < elements_.size(); ++i) {
-    if (elements_[i].type() == DataType::TIME64NS) {
+    if (elements_[i].type() == types::DataType::TIME64NS) {
       types::Time64NSValue val =
           *(reinterpret_cast<int64_t*>(cpustat_map[i].second.data())) + ClockRealTimeOffset();
       std::static_pointer_cast<types::Time64NSValueColumnWrapper>(columns[i])->Append(val);

@@ -20,9 +20,6 @@ class SourceConnector;
 class DataTable;
 struct RawDataBuf;
 
-using stirlingpb::Element_State;
-using types::DataType;
-
 /**
  * InfoClassElement is a basic structure that holds a single available data element from a source,
  * its type and a state.
@@ -35,13 +32,13 @@ class InfoClassElement : public DataElement {
   InfoClassElement() = delete;
   ~InfoClassElement() override = default;
   explicit InfoClassElement(const DataElement& element)
-      : DataElement(element), state_(Element_State::Element_State_SUBSCRIBED) {}
-  explicit InfoClassElement(const std::string& name, const DataType& type,
-                            const Element_State& state)
+      : DataElement(element), state_(stirlingpb::Element_State_SUBSCRIBED) {}
+  explicit InfoClassElement(const std::string& name, const types::DataType& type,
+                            const stirlingpb::Element_State& state)
       : DataElement(name, type), state_(state) {}
 
-  void SetState(const Element_State& state) { state_ = state; }
-  const Element_State& state() const { return state_; }
+  void SetState(const stirlingpb::Element_State& state) { state_ = state; }
+  const stirlingpb::Element_State& state() const { return state_; }
 
   /**
    * @brief Generate a proto message based on the InfoClassElement.
@@ -51,7 +48,7 @@ class InfoClassElement : public DataElement {
   stirlingpb::Element ToProto() const;
 
  private:
-  Element_State state_;
+  stirlingpb::Element_State state_;
 };
 
 /**
@@ -118,7 +115,7 @@ class InfoClassManager {
    * @param state Subscription state
    * @return Status
    */
-  void UpdateElementSubscription(size_t index, const Element_State& state) {
+  void UpdateElementSubscription(size_t index, const stirlingpb::Element_State& state) {
     DCHECK(index < elements_.size());
     elements_[index].SetState(state);
   }

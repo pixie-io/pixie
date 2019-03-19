@@ -212,7 +212,7 @@ TEST_F(StirlingTest, hammer_time_on_stirling) {
   Stirling* stirling = GetStirling();
 
   uint32_t i = 0;
-  Status s;
+  pl::Status s;
   while (NumProcessed() < kNumProcessedRequirement || i < kNumIterMin) {
     // Process a subscription message.
     s = stirling->SetSubscription(GenerateRandomSubscription());

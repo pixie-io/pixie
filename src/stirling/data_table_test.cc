@@ -8,8 +8,6 @@
 namespace pl {
 namespace stirling {
 
-using types::DataType;
-
 class DataTableTest : public ::testing::Test {
  private:
   std::default_random_engine rng_;
@@ -80,12 +78,12 @@ class DataTableTest : public ::testing::Test {
    * Schema for our test table
    */
   void SetUpSchema() {
-    schema_.push_back(
-        InfoClassElement("f0", DataType::INT64, Element_State::Element_State_SUBSCRIBED));
-    schema_.push_back(
-        InfoClassElement("f1", DataType::FLOAT64, Element_State::Element_State_SUBSCRIBED));
-    schema_.push_back(
-        InfoClassElement("f2", DataType::INT64, Element_State::Element_State_SUBSCRIBED));
+    schema_.push_back(InfoClassElement("f0", types::DataType::INT64,
+                                       stirlingpb::Element_State::Element_State_SUBSCRIBED));
+    schema_.push_back(InfoClassElement("f1", types::DataType::FLOAT64,
+                                       stirlingpb::Element_State::Element_State_SUBSCRIBED));
+    schema_.push_back(InfoClassElement("f2", types::DataType::INT64,
+                                       stirlingpb::Element_State::Element_State_SUBSCRIBED));
 
     record_size_ = sizeof(int64_t) + sizeof(double) + sizeof(int64_t);
   }
