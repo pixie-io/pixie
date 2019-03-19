@@ -274,20 +274,6 @@ TEST(RangeValueTests, now_should_fail_with_args) {
   EXPECT_FALSE(status.ok());
 }
 
-TEST(RangeValueTests, DISABLED_minute_test) {
-  // TODO(philkuz) (PL-445) later diff impl this.
-  std::string minutes_test =
-      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=plc.now() - "
-                     "plc.minutes(2),stop=plc.now())",
-                     "rangeDF = queryDF.Map(fn=lambda r : {'minutes' : r.cpu0 + pl.second})",
-                     "result = rangeDF.Result(name='mapped')"},
-                    "\n");
-  EXPECT_OK(ParseQuery(minutes_test));
-  // TODO(philkuz) (PL-445) test out minutes, days, hours by themselves
-  // TODO(philkuz) (PL-445) test out combos of minutes, days, and hours.
-  // TODO(philkuz) (PL-445) test out using time fns in both args.
-}
-
 TEST(RangeValueTests, DISABLED_only_start) {
   // TODO(philkuz) (PL-442) later diff impl this with just the start param specified.
 }

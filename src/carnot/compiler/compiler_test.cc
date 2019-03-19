@@ -3,6 +3,7 @@
 #include <google/protobuf/util/message_differencer.h>
 #include <gtest/gtest.h>
 
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -115,7 +116,7 @@ class CompilerTest : public ::testing::Test {
   }
   std::unique_ptr<CompilerState> compiler_state_;
   std::shared_ptr<RegistryInfo> info_;
-  int64_t time_now = 1000;
+  int64_t time_now = 1552607213931245000;
 };
 
 const char* kExpectedLogicalPlan = R"(
@@ -339,6 +340,7 @@ TEST_F(CompilerTest, select_order_test) {
   EXPECT_TRUE(
       google::protobuf::util::MessageDifferencer::Equals(plan_pb, plan.ConsumeValueOrDie()));
 }
+
 const char* kRangeNowPlan = R"(
 dag {
   nodes {
@@ -349,14 +351,15 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 4
-      sorted_deps: 0
+      id: 3
+      sorted_deps: 8
     }
     nodes {
+      id: 8
     }
   }
   nodes {
-    id: 4
+    id: 3
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -368,18 +371,20 @@ nodes {
         column_types: TIME64NS
         column_types: FLOAT64
         start_time {
+          value: $0
         }
         stop_time {
-          value: $0
+          value: $1
         }
       }
     }
   }
   nodes {
+    id : 8
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
-        name: "cpu_out"
+        name: "range_table"
         column_types: TIME64NS
         column_types: FLOAT64
         column_names: "_time"
@@ -395,15 +400,17 @@ TEST_F(CompilerTest, range_now_test) {
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='sequences', select=['_time', 'xmod10']).Range(start=0, "
-          "stop=plc.now()).Result(name='cpu_out')",
+          "stop=plc.now())",
+          "queryDF.Result(name='range_table')",
       },
       "\n");
   auto compiler = Compiler();
   auto plan = compiler.Compile(query, compiler_state_.get());
   EXPECT_OK(plan);
   VLOG(1) << plan.ValueOrDie().DebugString();
-  VLOG(1) << "time_now_val" << compiler_state_->time_now().val;
-  auto expected_plan = absl::Substitute(kRangeNowPlan, compiler_state_->time_now().val);
+  int64_t start_time = 0;
+  int64_t stop_time = compiler_state_->time_now().val;
+  auto expected_plan = absl::Substitute(kRangeNowPlan, start_time, stop_time);
 
   carnotpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
@@ -411,6 +418,107 @@ TEST_F(CompilerTest, range_now_test) {
   EXPECT_TRUE(
       google::protobuf::util::MessageDifferencer::Equals(plan_pb, plan.ConsumeValueOrDie()));
 }
+const char* kRangeTimeUnitPlan = R"(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      id: 6
+      sorted_deps: 11
+    }
+    nodes {
+      id: 11
+    }
+  }
+  nodes {
+    id: 6
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "sequences"
+        column_idxs: 0
+        column_idxs: 1
+        column_names: "_time"
+        column_names: "xmod10"
+        column_types: TIME64NS
+        column_types: FLOAT64
+        start_time {
+          value: $0
+        }
+        stop_time {
+          value: $1
+        }
+      }
+    }
+  }
+  nodes {
+    id : 11
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "range_table"
+        column_types: TIME64NS
+        column_types: FLOAT64
+        column_names: "_time"
+        column_names: "xmod10"
+      }
+    }
+  }
+}
+
+)";
+class CompilerTimeFnTest
+    : public CompilerTest,
+      public ::testing::WithParamInterface<std::tuple<std::string, std::chrono::nanoseconds>> {
+ protected:
+  void SetUp() {
+    CompilerTest::SetUp();
+    // TODO(philkuz) use Combine with the tuple to get out a set of different values for each of the
+    // values.
+    std::tie(time_function, chrono_ns) = GetParam();
+    query = absl::StrJoin({"queryDF = From(table='sequences', select=['_time', "
+                           "'xmod10']).Range(start=plc.now() - $1,stop=plc.now())",
+                           "queryDF.Result(name='$0')"},
+                          "\n");
+    query = absl::Substitute(query, table_name_, time_function);
+    VLOG(2) << query;
+    int64_t now_time = compiler_state_->time_now().val;
+    std::string expected_plan =
+        absl::Substitute(kRangeTimeUnitPlan, now_time - chrono_ns.count(), now_time);
+    ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &expected_plan_pb));
+    VLOG(2) << expected_plan_pb.DebugString();
+    compiler_ = Compiler();
+  }
+  std::string time_function;
+  std::chrono::nanoseconds chrono_ns;
+  std::string query;
+  carnotpb::Plan expected_plan_pb;
+  Compiler compiler_;
+
+  std::string table_name_ = "range_table";
+};
+
+std::vector<std::tuple<std::string, std::chrono::nanoseconds>> compiler_time_data = {
+    {"plc.minutes(2)", std::chrono::minutes(2)},
+    {"plc.hours(2)", std::chrono::hours(2)},
+    {"plc.seconds(2)", std::chrono::seconds(2)}};
+
+TEST_P(CompilerTimeFnTest, DISABLED_range_now_keyword_test) {
+  auto plan = compiler_.Compile(query, compiler_state_.get());
+  ASSERT_OK(plan);
+  VLOG(2) << plan.ValueOrDie().DebugString();
+
+  EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_plan_pb,
+                                                                 plan.ConsumeValueOrDie()));
+}
+
+INSTANTIATE_TEST_CASE_P(CompilerTimeFnTestSuites, CompilerTimeFnTest,
+                        ::testing::ValuesIn(compiler_time_data));
 
 const char* kGroupByAllPlan = R"(
 dag {
