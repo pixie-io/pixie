@@ -106,7 +106,9 @@ func (r *TableRenderer) getRowBatchRowDataAsArray(in *pb.RowBatchData, batchIdx,
 
 	row := make([]interface{}, 0)
 	numCols := len(in.Cols)
-	row = append(row, batchIdx)
+	if r.printBatchIndex {
+		row = append(row, batchIdx)
+	}
 	for colIdx := 0; colIdx < numCols; colIdx++ {
 		switch u := in.Cols[colIdx].ColData.(type) {
 		case *pb.Column_StringData:
