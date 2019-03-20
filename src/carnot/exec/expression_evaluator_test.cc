@@ -108,7 +108,7 @@ TEST_P(ScalarExpressionTest, basic_tests) {
   auto se = AddScalarExpr();
   RunEvaluator({se}, &output_rb);
   auto out_col = output_rb.ColumnAt(0);
-  auto casted = reinterpret_cast<arrow::Int64Array*>(out_col.get());
+  auto casted = static_cast<arrow::Int64Array*>(out_col.get());
   EXPECT_EQ(4, casted->Value(0));
   EXPECT_EQ(6, casted->Value(1));
   EXPECT_EQ(8, casted->Value(2));
@@ -123,7 +123,7 @@ TEST_P(ScalarExpressionTest, eval_constant) {
 
   auto out_col = output_rb.ColumnAt(0);
   EXPECT_EQ(3, out_col->length());
-  auto casted = reinterpret_cast<arrow::Int64Array*>(out_col.get());
+  auto casted = static_cast<arrow::Int64Array*>(out_col.get());
   EXPECT_EQ(1337, casted->Value(0));
   EXPECT_EQ(1337, casted->Value(1));
   EXPECT_EQ(1337, casted->Value(2));
@@ -138,7 +138,7 @@ TEST_P(ScalarExpressionTest, eval_col_const) {
 
   auto out_col = output_rb.ColumnAt(0);
   EXPECT_EQ(3, out_col->length());
-  auto casted = reinterpret_cast<arrow::Int64Array*>(out_col.get());
+  auto casted = static_cast<arrow::Int64Array*>(out_col.get());
   EXPECT_EQ(1338, casted->Value(0));
   EXPECT_EQ(1339, casted->Value(1));
   EXPECT_EQ(1340, casted->Value(2));
@@ -153,7 +153,7 @@ TEST_P(ScalarExpressionTest, eval_add_nested) {
 
   auto out_col = output_rb.ColumnAt(0);
   EXPECT_EQ(3, out_col->length());
-  auto casted = reinterpret_cast<arrow::Int64Array*>(out_col.get());
+  auto casted = static_cast<arrow::Int64Array*>(out_col.get());
   EXPECT_EQ(1341, casted->Value(0));
   EXPECT_EQ(1343, casted->Value(1));
   EXPECT_EQ(1345, casted->Value(2));

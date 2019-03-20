@@ -523,8 +523,8 @@ TEST_F(CarnotTest, group_by_col_agg_test) {
   for (int i = 0; i < rb1->num_rows(); ++i) {
     auto output_col_grp = rb1->ColumnAt(0);
     auto output_col_agg = rb1->ColumnAt(1);
-    auto casted_grp = reinterpret_cast<arrow::Int64Array *>(output_col_grp.get());
-    auto casted_agg = reinterpret_cast<arrow::Int64Array *>(output_col_agg.get());
+    auto casted_grp = static_cast<arrow::Int64Array *>(output_col_grp.get());
+    auto casted_agg = static_cast<arrow::Int64Array *>(output_col_agg.get());
 
     actual[casted_grp->Value(i)] = casted_agg->Value(i);
   }
@@ -578,10 +578,10 @@ TEST_F(CarnotTest, multiple_group_by_test) {
     auto output_col_num_grp = rb1->ColumnAt(0);
     auto output_col_str_grp = rb1->ColumnAt(1);
     auto output_col_agg = rb1->ColumnAt(2);
-    auto casted_num_grp = reinterpret_cast<arrow::Int64Array *>(output_col_num_grp.get());
-    auto casted_str_grp = reinterpret_cast<arrow::StringArray *>(output_col_str_grp.get());
+    auto casted_num_grp = static_cast<arrow::Int64Array *>(output_col_num_grp.get());
+    auto casted_str_grp = static_cast<arrow::StringArray *>(output_col_str_grp.get());
 
-    auto casted_agg = reinterpret_cast<arrow::Int64Array *>(output_col_agg.get());
+    auto casted_agg = static_cast<arrow::Int64Array *>(output_col_agg.get());
     auto key = Key{casted_num_grp->Value(i), casted_str_grp->GetString(i)};
 
     actual[key] = casted_agg->Value(i);
@@ -671,8 +671,8 @@ TEST_F(CarnotTest, comparison_to_agg_tests) {
   for (int i = 0; i < rb1->num_rows(); ++i) {
     auto output_col_grp = rb1->ColumnAt(0);
     auto output_col_agg = rb1->ColumnAt(1);
-    auto casted_grp = reinterpret_cast<arrow::BooleanArray *>(output_col_grp.get());
-    auto casted_agg = reinterpret_cast<arrow::Int64Array *>(output_col_agg.get());
+    auto casted_grp = static_cast<arrow::BooleanArray *>(output_col_grp.get());
+    auto casted_agg = static_cast<arrow::Int64Array *>(output_col_agg.get());
 
     actual[casted_grp->Value(i)] = casted_agg->Value(i);
   }

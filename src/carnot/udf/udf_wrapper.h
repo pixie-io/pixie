@@ -26,8 +26,8 @@ const int kStringAssumedSizeHeuristic = 10;
 template <types::DataType TExecArgType>
 constexpr auto CastToUDFValueType(const types::BaseValueType *arg) {
   // A sample transformation (for TExecArgType = types::DataType::INT64) is:
-  // return reinterpret_cast<types::Int64Value*>(arg);
-  return reinterpret_cast<const typename types::DataTypeTraits<TExecArgType>::value_type *>(arg);
+  // return static_cast<types::Int64Value*>(arg);
+  return static_cast<const typename types::DataTypeTraits<TExecArgType>::value_type *>(arg);
 }
 /**
  * This is the inner wrapper which expands the arguments an performs type casts
@@ -78,9 +78,9 @@ inline auto UnWrap<types::StringValue>(const types::StringValue &s) {
 template <types::DataType TExecArgType>
 constexpr auto GetValueFromArrowArray(const arrow::Array *arg, int64_t idx) {
   // A sample transformation (for TExecArgType = types::DataType::INT64) is:
-  // return GetValue(reinterpret_cast<arrow::Int64Array*>(arg), idx);
+  // return GetValue(static_cast<arrow::Int64Array*>(arg), idx);
   using arrow_array_type = typename types::DataTypeTraits<TExecArgType>::arrow_array_type;
-  return GetValue(reinterpret_cast<const arrow_array_type *>(arg), idx);
+  return GetValue(static_cast<const arrow_array_type *>(arg), idx);
 }
 
 template <types::DataType T>
@@ -290,8 +290,8 @@ struct ScalarUDFWrapper {
     // the inputs with a sequence based on the number of arguments to iterate through and
     // cast the inputs.
     return ExecWrapperArrow<TUDF>(
-        reinterpret_cast<TUDF *>(udf), ctx, count,
-        reinterpret_cast<typename types::DataTypeTraits<return_type>::arrow_builder_type *>(output),
+        static_cast<TUDF *>(udf), ctx, count,
+        static_cast<typename types::DataTypeTraits<return_type>::arrow_builder_type *>(output),
         inputs, std::make_index_sequence<exec_argument_types.size()>{});
   }
 
@@ -326,11 +326,11 @@ struct ScalarUDFWrapper {
     auto input_as_base_value = ConvertToBaseValue(inputs);
 
     using output_type = typename types::DataTypeTraits<return_type>::value_type;
-    auto *casted_output = reinterpret_cast<output_type *>(output->UnsafeRawData());
+    auto *casted_output = static_cast<output_type *>(output->UnsafeRawData());
     // The outer wrapper just casts the output type and UDF type. We then pass in
     // the inputs with a sequence based on the number of arguments to iterate through and
     // cast the inputs.
-    return ExecWrapper<TUDF>(reinterpret_cast<TUDF *>(udf), ctx, count, casted_output,
+    return ExecWrapper<TUDF>(static_cast<TUDF *>(udf), ctx, count, casted_output,
                              input_as_base_value,
                              std::make_index_sequence<exec_argument_types.size()>{});
   }
@@ -396,7 +396,7 @@ struct UDAWrapper {
     auto input_as_base_value = ConvertToBaseValue(inputs);
 
     size_t num_records = inputs[0]->Size();
-    return UpdateWrapper<TUDA>(reinterpret_cast<TUDA *>(uda), ctx, num_records, input_as_base_value,
+    return UpdateWrapper<TUDA>(static_cast<TUDA *>(uda), ctx, num_records, input_as_base_value,
                                std::make_index_sequence<update_argument_types.size()>{});
   }
 
@@ -413,7 +413,7 @@ struct UDAWrapper {
     DCHECK(inputs.size() == update_argument_types.size());
 
     size_t num_records = inputs[0]->length();
-    return UpdateWrapperArrow<TUDA>(reinterpret_cast<TUDA *>(uda), ctx, num_records, inputs,
+    return UpdateWrapperArrow<TUDA>(static_cast<TUDA *>(uda), ctx, num_records, inputs,
                                     std::make_index_sequence<update_argument_types.size()>{});
   }
 
@@ -424,7 +424,7 @@ struct UDAWrapper {
    * @return Status of Merge.
    */
   static Status Merge(UDA *uda1, UDA *uda2, FunctionContext *ctx) {
-    reinterpret_cast<TUDA *>(uda1)->Merge(ctx, *reinterpret_cast<TUDA *>(uda2));
+    static_cast<TUDA *>(uda1)->Merge(ctx, *static_cast<TUDA *>(uda2));
     return Status::OK();
   }
 
@@ -436,8 +436,8 @@ struct UDAWrapper {
   static Status FinalizeArrow(UDA *uda, FunctionContext *ctx, arrow::ArrayBuilder *output) {
     DCHECK(output != nullptr);
     auto *casted_builder =
-        reinterpret_cast<typename types::DataTypeTraits<return_type>::arrow_builder_type *>(output);
-    auto *casted_uda = reinterpret_cast<TUDA *>(uda);
+        static_cast<typename types::DataTypeTraits<return_type>::arrow_builder_type *>(output);
+    auto *casted_uda = static_cast<TUDA *>(uda);
     PL_RETURN_IF_ERROR(casted_builder->Append(UnWrap(casted_uda->Finalize(ctx))));
     return Status::OK();
   }
@@ -453,8 +453,8 @@ struct UDAWrapper {
     using output_type = typename types::DataTypeTraits<return_type>::value_type;
 
     DCHECK(output != nullptr);
-    auto *casted_output = reinterpret_cast<output_type *>(output);
-    auto *casted_uda = reinterpret_cast<TUDA *>(uda);
+    auto *casted_output = static_cast<output_type *>(output);
+    auto *casted_uda = static_cast<TUDA *>(uda);
     *casted_output = casted_uda->Finalize(ctx);
     return Status::OK();
   }

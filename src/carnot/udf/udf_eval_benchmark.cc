@@ -130,9 +130,9 @@ static void BM_AddTwoInt64sArrow(benchmark::State &state) {
   }
 
   // Check results.
-  auto arr1_casted = reinterpret_cast<arrow::Int64Array *>(arr1.get());
-  auto arr2_casted = reinterpret_cast<arrow::Int64Array *>(arr2.get());
-  auto out_casted = reinterpret_cast<arrow::Int64Array *>(out.get());
+  auto arr1_casted = static_cast<arrow::Int64Array *>(arr1.get());
+  auto arr2_casted = static_cast<arrow::Int64Array *>(arr2.get());
+  auto out_casted = static_cast<arrow::Int64Array *>(out.get());
   for (size_t idx = 0; idx < size; ++idx) {
     CHECK(arr1_casted->Value(idx) + arr2_casted->Value(idx) == out_casted->Value(idx));
   }

@@ -112,9 +112,9 @@ inline SharedColumnWrapper FromArrowImpl(const std::shared_ptr<arrow::Array> &ar
   CHECK_EQ(arr->type_id(), DataTypeTraits<DType>::arrow_type_id);
   size_t size = arr->length();
   auto wrapper = TColumnWrapper::Make(DType, size);
-  auto arr_casted = reinterpret_cast<typename DataTypeTraits<DType>::arrow_array_type *>(arr.get());
+  auto arr_casted = static_cast<typename DataTypeTraits<DType>::arrow_array_type *>(arr.get());
   typename DataTypeTraits<DType>::value_type *out_data =
-      reinterpret_cast<TColumnWrapper *>(wrapper.get())->UnsafeRawData();
+      static_cast<TColumnWrapper *>(wrapper.get())->UnsafeRawData();
   for (size_t i = 0; i < size; ++i) {
     out_data[i] = arr_casted->Value(i);
     // <Time64NSValue> = <int64_t>
@@ -128,9 +128,9 @@ inline SharedColumnWrapper FromArrowImpl<Time64NSValueColumnWrapper, DataType::T
   CHECK_EQ(arr->type_id(), DataTypeTraits<types::TIME64NS>::arrow_type_id);
   size_t size = arr->length();
   auto wrapper = StringValueColumnWrapper::Make(types::TIME64NS, size);
-  auto arr_casted = reinterpret_cast<arrow::Int64Array *>(arr.get());
+  auto arr_casted = static_cast<arrow::Int64Array *>(arr.get());
   Time64NSValue *out_data =
-      reinterpret_cast<Time64NSValueColumnWrapper *>(wrapper.get())->UnsafeRawData();
+      static_cast<Time64NSValueColumnWrapper *>(wrapper.get())->UnsafeRawData();
   for (size_t i = 0; i < size; ++i) {
     out_data[i] = Time64NSValue(arr_casted->Value(i));
   }
@@ -143,9 +143,8 @@ inline SharedColumnWrapper FromArrowImpl<StringValueColumnWrapper, DataType::STR
   CHECK_EQ(arr->type_id(), DataTypeTraits<types::STRING>::arrow_type_id);
   size_t size = arr->length();
   auto wrapper = StringValueColumnWrapper::Make(types::STRING, size);
-  auto arr_casted = reinterpret_cast<arrow::StringArray *>(arr.get());
-  StringValue *out_data =
-      reinterpret_cast<StringValueColumnWrapper *>(wrapper.get())->UnsafeRawData();
+  auto arr_casted = static_cast<arrow::StringArray *>(arr.get());
+  StringValue *out_data = static_cast<StringValueColumnWrapper *>(wrapper.get())->UnsafeRawData();
   for (size_t i = 0; i < size; ++i) {
     out_data[i] = arr_casted->GetString(i);
   }

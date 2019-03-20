@@ -165,7 +165,7 @@ TEST(UDADefinition, arrow_output) {
   std::shared_ptr<arrow::Array> res;
   EXPECT_TRUE(output_builder->Finish(&res).ok());
   EXPECT_EQ(1, res->length());
-  auto casted = reinterpret_cast<arrow::Int64Array *>(res.get());
+  auto casted = static_cast<arrow::Int64Array *>(res.get());
   EXPECT_EQ(5, casted->Value(0));
 }
 
