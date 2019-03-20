@@ -140,7 +140,7 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(const pypa::AstCallPtr& call_ast,
 }
 StatusOr<ArgMap> ASTWalker::ProcessArgs(
     const pypa::AstCallPtr& call_ast, const std::vector<std::string>& expected_args,
-    bool kwargs_only, const std::unordered_map<std::string, pypa::AstPtr>& default_args) {
+    bool kwargs_only, const std::unordered_map<std::string, IRNode*> default_args) {
   auto arg_ast = call_ast->arglist;
   if (!kwargs_only) {
     return error::Unimplemented("Only supporting kwargs for now.");
@@ -175,9 +175,7 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(
           absl::Substitute("You must set '$0' directly. No default value found.", ma), call_ast));
       continue;
     }
-    auto default_value = find_ma->second;
-    PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(default_value));
-    arg_map[ma] = value;
+    arg_map[ma] = find_ma->second;
   }
   if (!errors.empty()) {
     std::vector<std::string> msg;
@@ -261,8 +259,11 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeOp(const pypa::AstCallPtr& node) {
                           node->function);
   }
   PL_ASSIGN_OR_RETURN(RangeIR * ir_node, ir_graph_->MakeNode<RangeIR>());
+  // Setup the default arguments.
+  PL_ASSIGN_OR_RETURN(IntIR * default_start_node, MakeTimeNow(node));
 
-  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"start", "stop"}, true));
+  PL_ASSIGN_OR_RETURN(ArgMap args,
+                      ProcessArgs(node, {"start", "stop"}, true, {{"stop", default_start_node}}));
   PL_ASSIGN_OR_RETURN(IRNode * call_result,
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
   PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["start"], args["stop"], node));
@@ -292,12 +293,9 @@ StatusOr<IRNode*> ASTWalker::ProcessAggOp(const pypa::AstCallPtr& node) {
   }
   PL_ASSIGN_OR_RETURN(BlockingAggIR * ir_node, ir_graph_->MakeNode<BlockingAggIR>());
   // imitate a None argument.
-  pypa::AstName by_default;
-  by_default.id = "None";
+  PL_ASSIGN_OR_RETURN(auto default_by_arg, MakeDefaultAggByArg(node));
   // Get arguments.
-  PL_ASSIGN_OR_RETURN(
-      ArgMap args,
-      ProcessArgs(node, {"by", "fn"}, true, {{"by", std::make_shared<pypa::AstName>(by_default)}}));
+  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"by", "fn"}, true, {{"by", default_by_arg}}));
 
   PL_ASSIGN_OR_RETURN(IRNode * call_result,
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
@@ -639,15 +637,19 @@ StatusOr<IRNode*> ASTWalker::ProcessLambda(const pypa::AstLambdaPtr& ast) {
   }
 }
 
+StatusOr<IntIR*> ASTWalker::MakeTimeNow(const pypa::AstPtr& ast_node) {
+  PL_ASSIGN_OR_RETURN(IntIR * ir_node, ir_graph_->MakeNode<IntIR>());
+  PL_RETURN_IF_ERROR(ir_node->Init(compiler_state_->time_now().val, ast_node));
+  return ir_node;
+}
+
 StatusOr<IntIR*> ASTWalker::EvalCompileTimeNow(const pypa::AstArguments& arglist) {
   if (!arglist.arguments.empty() || !arglist.keywords.empty()) {
     return CreateAstError(
         absl::Substitute("No Arguments expected for '$0.$1' fn", kCompileTimePrefix, "now"),
         arglist);
   }
-  PL_ASSIGN_OR_RETURN(IntIR * ir_node, ir_graph_->MakeNode<IntIR>());
-  PL_RETURN_IF_ERROR(
-      ir_node->Init(compiler_state_->time_now().val, std::make_shared<pypa::Ast>(arglist)));
+  PL_ASSIGN_OR_RETURN(IntIR * ir_node, MakeTimeNow(std::make_shared<pypa::Ast>(arglist)));
   return ir_node;
 }
 
@@ -767,18 +769,20 @@ StatusOr<IRNode*> ASTWalker::ProcessDataCall(const pypa::AstCallPtr& node) {
   // return the corresponding value IRNode
   return WrapAstError(EvalCompileTimeFn(attr_fn_str, node->arglist), node);
 }
-
+StatusOr<IRNode*> ASTWalker::MakeDefaultAggByArg(const pypa::AstPtr& ast) {
+  PL_ASSIGN_OR_RETURN(auto node, ir_graph_->MakeNode<BoolIR>());
+  PL_RETURN_IF_ERROR(node->Init(true, ast));
+  return node;
+}
 // TODO(philkuz) (PL-402) remove this and allow for optional kwargs in the ProcessArgs function.
 StatusOr<IRNode*> ASTWalker::ProcessNameData(const pypa::AstNamePtr& ast) {
   auto name_str = ast->id;
   if (name_str != "None") {
     return CreateAstError(absl::StrFormat("'%s' is not a variable or a keyword.", name_str), ast);
   }
-  PL_ASSIGN_OR_RETURN(auto node, ir_graph_->MakeNode<BoolIR>());
-  PL_RETURN_IF_ERROR(node->Init(true, ast));
-  return node;
+  PL_ASSIGN_OR_RETURN(auto ir_node, MakeDefaultAggByArg(ast));
+  return ir_node;
 }
-
 StatusOr<IRNode*> ASTWalker::ProcessData(const pypa::AstPtr& ast) {
   IRNode* ir_node;
   switch (ast->type) {

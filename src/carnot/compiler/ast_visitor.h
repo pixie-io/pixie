@@ -134,7 +134,7 @@ class ASTWalker {
    */
   StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast,
                                const std::vector<std::string>& expected_args, bool kwargs_only,
-                               const std::unordered_map<std::string, pypa::AstPtr>& default_args);
+                               const std::unordered_map<std::string, IRNode*> default_args);
 
   StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast,
                                const std::vector<std::string>& expected_args, bool kwargs_only);
@@ -408,6 +408,14 @@ class ASTWalker {
   StatusOr<IRNode*> ProcessLambda(const pypa::AstLambdaPtr& ast);
 
   /**
+   * @brief Function for constructing the default arg for Agg `by` value.
+   *
+   * @param ast - the ast node corresponding to the aggregate
+   * @return StatusOr<IRNode*> the resulting by arg or an error.
+   */
+  StatusOr<IRNode*> MakeDefaultAggByArg(const pypa::AstPtr& ast);
+
+  /**
    * @brief Special handler for data that comes up as Name, just for group by alls.
    *
    * TODO(philkuz) unhack this and allow for optional kwargs in the ProcessArgs function.
@@ -416,6 +424,14 @@ class ASTWalker {
    * @return StatusOr<IRNode*>
    */
   StatusOr<IRNode*> ProcessNameData(const pypa::AstNamePtr& ast);
+
+  /**
+   * @brief Make the time now node.
+   *
+   * @param ast_node
+   * @return StatusOr<IntIR*>
+   */
+  StatusOr<IntIR*> MakeTimeNow(const pypa::AstPtr& ast_node);
 
   /**
    * @brief Evaluates a now argument as the now time that carnot has.

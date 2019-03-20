@@ -315,6 +315,24 @@ TEST(RangeValueTests, namespace_mismatch) {
   EXPECT_NOT_OK(ParseQuery(start_and_stop_expr));
 }
 
+TEST(RangeValueTests, implied_stop_params) {
+  std::string start_expr_only = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                               "'cpu1']).Range(start=plc.now() - plc.minutes(2))",
+                                               "queryDF.Result(name='mapped')"},
+                                              "\n");
+  EXPECT_OK(ParseQuery(start_expr_only));
+}
+
+TEST(RangeValueTests, string_start_param) {
+  // TODO(philkuz) make a paramtereized test that takes in a value for minutes and makes sure they
+  // all compile correctly.
+  std::string start_expr_only = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                               "'cpu1']).Range(start='-2m')",
+                                               "queryDF.Result(name='mapped')"},
+                                              "\n");
+  EXPECT_OK(ParseQuery(start_expr_only));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

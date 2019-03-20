@@ -342,24 +342,8 @@ TEST_F(CompilerTest, select_order_test) {
 }
 
 const char* kRangeNowPlan = R"(
-dag {
-  nodes {
-    id: 1
-  }
-}
 nodes {
-  id: 1
-  dag {
-    nodes {
-      id: 3
-      sorted_deps: 8
-    }
-    nodes {
-      id: 8
-    }
-  }
   nodes {
-    id: 3
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -380,7 +364,6 @@ nodes {
     }
   }
   nodes {
-    id : 8
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -407,15 +390,15 @@ TEST_F(CompilerTest, range_now_test) {
   auto compiler = Compiler();
   auto plan = compiler.Compile(query, compiler_state_.get());
   EXPECT_OK(plan);
-  VLOG(1) << plan.ValueOrDie().DebugString();
+  VLOG(2) << plan.ValueOrDie().DebugString();
   int64_t start_time = 0;
   int64_t stop_time = compiler_state_->time_now().val;
   auto expected_plan = absl::Substitute(kRangeNowPlan, start_time, stop_time);
 
   carnotpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
-  VLOG(1) << plan_pb.DebugString();
-  EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), false /*ignore_ids*/));
+  VLOG(2) << plan_pb.DebugString();
+  EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
 }
 const char* kRangeTimeUnitPlan = R"(
 nodes {
@@ -443,7 +426,7 @@ nodes {
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
-        name: "range_table"
+        name: "$2"
         column_types: TIME64NS
         column_types: FLOAT64
         column_names: "_time"
@@ -471,7 +454,7 @@ class CompilerTimeFnTest
     VLOG(2) << query;
     int64_t now_time = compiler_state_->time_now().val;
     std::string expected_plan =
-        absl::Substitute(kRangeTimeUnitPlan, now_time - chrono_ns.count(), now_time);
+        absl::Substitute(kRangeTimeUnitPlan, now_time - chrono_ns.count(), now_time, table_name_);
     ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &expected_plan_pb));
     VLOG(2) << expected_plan_pb.DebugString();
     compiler_ = Compiler();
@@ -776,18 +759,6 @@ TEST_F(CompilerTest, comparison_test) {
 
 // Test to make sure that we can have no args to pl count.
 TEST_F(CompilerTest, no_arg_pl_count_test) {
-  auto info = std::make_shared<RegistryInfo>();
-  carnotpb::UDFInfo info_pb;
-  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
-  EXPECT_OK(info->Init(info_pb));
-
-  auto rel_map = std::make_unique<RelationMap>();
-  rel_map->emplace(
-      "cpu", plan::Relation(
-                 std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
-                                               types::DataType::FLOAT64, types::DataType::FLOAT64}),
-                 std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
-
   std::string query = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0, stop=10)",
        "aggDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
@@ -798,6 +769,30 @@ TEST_F(CompilerTest, no_arg_pl_count_test) {
   ASSERT_OK(plan);
   VLOG(2) << plan.ValueOrDie().DebugString();
 }
+
+TEST_F(CompilerTest, implied_stop_params) {
+  // std::string expected_plan =
+  //     absl::Substitute(kRangeTimeUnitPlan, now_time - chrono_ns.count(), now_time, table_name_);
+  std::string query = absl::StrJoin({"queryDF = From(table='sequences', select=['_time', "
+                                     "'xmod10']).Range(start=plc.now() - plc.minutes(2))",
+                                     "queryDF.Result(name='$0')"},
+                                    "\n");
+  std::string table_name = "ranged_table";
+  query = absl::Substitute(query, table_name);
+  auto compiler = Compiler();
+  auto plan = compiler.Compile(query, compiler_state_.get());
+  ASSERT_OK(plan);
+  VLOG(1) << plan.ValueOrDie().DebugString();
+  int64_t now_time = compiler_state_->time_now().val;
+  std::chrono::nanoseconds time_diff = std::chrono::minutes(2);
+  std::string expected_plan =
+      absl::Substitute(kRangeTimeUnitPlan, now_time - time_diff.count(), now_time, table_name);
+  carnotpb::Plan plan_pb;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
+  VLOG(1) << plan_pb.DebugString();
+  EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
