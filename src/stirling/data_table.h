@@ -46,9 +46,6 @@ class DataTable {
   double OccupancyPct() { return 1.0 * current_row_ / target_capacity_; }
 
  protected:
-  // Given an InfoClassSchema, generate the appropriate table. Helper for constructor.
-  Status RegisterSchema(const InfoClassSchema& schema);
-
   // Initialize a new Active record batch.
   Status InitBuffers();
 
@@ -57,9 +54,6 @@ class DataTable {
 
   // Table schema
   std::unique_ptr<DataTableSchema> table_schema_;
-
-  // Pre-computed offsets into raw data buffers, according to schema.
-  std::vector<uint32_t> offsets_;
 
   // Pre-computed row size, according to schema.
   uint32_t row_size_;

@@ -14,28 +14,10 @@ using types::ColumnWrapper;
 using types::DataType;
 
 DataTable::DataTable(const InfoClassSchema& schema) {
-  Status s = RegisterSchema(schema);
+  table_schema_ = std::make_unique<DataTableSchema>(schema);
   sealed_batches_ =
       std::make_unique<std::vector<std::unique_ptr<types::ColumnWrapperRecordBatch>>>();
-
   PL_CHECK_OK(InitBuffers());
-}
-
-// Given an InfoClassSchema, generate the appropriate table.
-Status DataTable::RegisterSchema(const InfoClassSchema& schema) {
-  table_schema_ = std::make_unique<DataTableSchema>(schema);
-
-  size_t current_offset = 0;
-  for (uint32_t i = 0; i < table_schema_->NumFields(); ++i) {
-    auto& elementInfo = (*table_schema_)[i];
-    elementInfo.SetOffset(current_offset);
-    offsets_.push_back(current_offset);
-    current_offset += elementInfo.WidthBytes();
-  }
-
-  row_size_ = current_offset;
-
-  return Status::OK();
 }
 
 Status DataTable::InitBuffers() {

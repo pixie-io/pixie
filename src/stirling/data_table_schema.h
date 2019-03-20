@@ -14,21 +14,8 @@
 namespace pl {
 namespace stirling {
 
-class DataTableElement : public DataElement {
- public:
-  // Conversion constructor: Construct a DataTableElement from an InfoClassElement
-  // Since they both have the same DataElement ancestor, we can simply call the
-  // copy constructor DataElement.
-  explicit DataTableElement(const InfoClassElement& e) : DataElement(e) {}
-  size_t offset() { return offset_; }
-  void SetOffset(size_t offset) { offset_ = offset; }
-
- private:
-  size_t offset_ = 0;
-};
-
 /**
- * DataTableSchema is simply an ordered list of DataTableElements that defines the schema of a
+ * DataTableSchema is simply an ordered list of DataElements that defines the schema of a
  * DataTable.
  */
 class DataTableSchema {
@@ -42,16 +29,16 @@ class DataTableSchema {
   /**
    * @brief Return the element at the specified index. Typically used to get the type or name.
    *
-   * @return DataTableElement
+   * @return DataElement
    */
-  DataTableElement operator[](size_t idx) const { return fields_[idx]; }
+  DataElement operator[](size_t idx) const { return fields_[idx]; }
 
   /**
    * @brief Return a reference to element at the specified index.
    *
-   * @return DataTableElement
+   * @return DataElement
    */
-  DataTableElement& operator[](size_t idx) { return fields_[idx]; }
+  DataElement& operator[](size_t idx) { return fields_[idx]; }
 
   /**
    * @brief Return the number of fields in the schema.
@@ -61,7 +48,7 @@ class DataTableSchema {
   size_t NumFields() const { return fields_.size(); }
 
  private:
-  std::vector<DataTableElement> fields_;
+  std::vector<DataElement> fields_;
 };
 
 }  // namespace stirling

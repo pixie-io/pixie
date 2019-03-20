@@ -11,7 +11,7 @@ namespace stirling {
 // Generate the appropriate data table schema from the InfoClassSchema.
 DataTableSchema::DataTableSchema(const InfoClassSchema& schema) {
   for (const auto& element : schema) {
-    // Create DataTableElement for subscribed elements
+    // Create DataElement for subscribed elements
     if (element.state() == stirlingpb::Element_State::Element_State_SUBSCRIBED) {
       fields_.emplace_back(element);
     }
