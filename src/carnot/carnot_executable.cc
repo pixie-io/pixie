@@ -22,26 +22,29 @@ DEFINE_string(query, gflags::StringFromEnv("QUERY", ""), "The query to run.");
 DEFINE_int64(rowbatch_size, gflags::Int64FromEnv("ROWBATCH_SIZE", 0),
              "The size of the rowbatches.");
 
+using pl::types::DataType;
+
+namespace {
 /**
  * Gets the corresponding pl::DataType from the string type in the csv.
  * @param type the string from the csv.
  * @return the pl::DataType.
  */
-pl::StatusOr<pl::types::DataType> GetTypeFromHeaderString(const std::string& type) {
+pl::StatusOr<DataType> GetTypeFromHeaderString(const std::string &type) {
   if (type == "int64") {
-    return pl::types::INT64;
+    return DataType::INT64;
   }
   if (type == "float64") {
-    return pl::types::FLOAT64;
+    return DataType::FLOAT64;
   }
   if (type == "boolean") {
-    return pl::types::BOOLEAN;
+    return DataType::BOOLEAN;
   }
   if (type == "string") {
-    return pl::types::STRING;
+    return DataType::STRING;
   }
   if (type == "time64ns") {
-    return pl::types::TIME64NS;
+    return DataType::TIME64NS;
   }
   return pl::error::InvalidArgument("Could not recognize type from header.");
 }
@@ -62,11 +65,11 @@ std::string ValueToString(bool val) {
  * @ param val The value.
  * @return The string representation.
  */
-template <pl::types::DataType DT>
-void AddStringValueToRow(std::vector<std::string>* row, arrow::Array* arr, int64_t idx) {
+template <DataType DT>
+void AddStringValueToRow(std::vector<std::string> *row, arrow::Array *arr, int64_t idx) {
   using ArrowArrayType = typename pl::types::DataTypeTraits<DT>::arrow_array_type;
 
-  auto val = ValueToString(pl::carnot::udf::GetValue(static_cast<ArrowArrayType*>(arr), idx));
+  auto val = ValueToString(pl::carnot::udf::GetValue(static_cast<ArrowArrayType *>(arr), idx));
   row->push_back(val);
 }
 
@@ -75,7 +78,7 @@ void AddStringValueToRow(std::vector<std::string>* row, arrow::Array* arr, int64
  * @param filename The filename of the csv to convert.
  * @return The Carnot table.
  */
-std::shared_ptr<pl::carnot::exec::Table> GetTableFromCsv(const std::string& filename,
+std::shared_ptr<pl::carnot::exec::Table> GetTableFromCsv(const std::string &filename,
                                                          int64_t rb_size) {
   std::ifstream f(filename);
   aria::csv::CsvParser parser(f);
@@ -87,9 +90,9 @@ std::shared_ptr<pl::carnot::exec::Table> GetTableFromCsv(const std::string& file
 
   // Get the columns types and names.
   auto row_idx = 0;
-  for (auto& row : parser) {
+  for (auto &row : parser) {
     auto col_idx = 0;
-    for (auto& field : row) {
+    for (auto &field : row) {
       if (row_idx == 0) {
         auto type = GetTypeFromHeaderString(field).ConsumeValueOrDie();
         // Currently reading the first row, which should be the types of the columns.
@@ -112,7 +115,7 @@ std::shared_ptr<pl::carnot::exec::Table> GetTableFromCsv(const std::string& file
   // Add rowbatches to the table.
   row_idx = 0;
   std::unique_ptr<std::vector<pl::types::SharedColumnWrapper>> batch;
-  for (auto& row : parser) {
+  for (auto &row : parser) {
     if (row_idx % rb_size == 0) {
       if (batch) {
         auto s = table->TransferRecordBatch(std::move(batch));
@@ -130,26 +133,26 @@ std::shared_ptr<pl::carnot::exec::Table> GetTableFromCsv(const std::string& file
       }
     }
     auto col_idx = 0;
-    for (auto& field : row) {
+    for (auto &field : row) {
       switch (types[col_idx]) {
-        case pl::types::DataType::INT64:
-          dynamic_cast<pl::types::Int64ValueColumnWrapper*>(batch->at(col_idx).get())
+        case DataType::INT64:
+          static_cast<pl::types::Int64ValueColumnWrapper *>(batch->at(col_idx).get())
               ->Append(std::stoi(field));
           break;
-        case pl::types::DataType::FLOAT64:
-          dynamic_cast<pl::types::Float64ValueColumnWrapper*>(batch->at(col_idx).get())
+        case DataType::FLOAT64:
+          static_cast<pl::types::Float64ValueColumnWrapper *>(batch->at(col_idx).get())
               ->Append(std::stof(field));
           break;
-        case pl::types::DataType::BOOLEAN:
-          dynamic_cast<pl::types::BoolValueColumnWrapper*>(batch->at(col_idx).get())
+        case DataType::BOOLEAN:
+          static_cast<pl::types::BoolValueColumnWrapper *>(batch->at(col_idx).get())
               ->Append(field == "true");
           break;
-        case pl::types::DataType::STRING:
-          dynamic_cast<pl::types::StringValueColumnWrapper*>(batch->at(col_idx).get())
+        case DataType::STRING:
+          static_cast<pl::types::StringValueColumnWrapper *>(batch->at(col_idx).get())
               ->Append(absl::StrFormat("%s", field));
           break;
-        case pl::types::DataType::TIME64NS:
-          dynamic_cast<pl::types::Time64NSValueColumnWrapper*>(batch->at(col_idx).get())
+        case DataType::TIME64NS:
+          static_cast<pl::types::Time64NSValueColumnWrapper *>(batch->at(col_idx).get())
               ->Append(std::stoi(field));
           break;
         default:
@@ -175,7 +178,7 @@ std::shared_ptr<pl::carnot::exec::Table> GetTableFromCsv(const std::string& file
  * @param filename The name of the output CSV file.
  * @param table The table to write to a CSV.
  */
-void TableToCsv(const std::string& filename, pl::carnot::exec::Table* table) {
+void TableToCsv(const std::string &filename, pl::carnot::exec::Table *table) {
   std::ofstream output_csv;
   output_csv.open(filename);
 
@@ -205,7 +208,9 @@ void TableToCsv(const std::string& filename, pl::carnot::exec::Table* table) {
   output_csv.close();
 }
 
-int main(int argc, char* argv[]) {
+}  // namespace
+
+int main(int argc, char *argv[]) {
   pl::InitEnvironmentOrDie(&argc, argv);
 
   auto filename = FLAGS_input_file;
