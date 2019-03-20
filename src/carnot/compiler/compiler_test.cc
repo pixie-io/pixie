@@ -98,7 +98,7 @@ class CompilerTest : public ::testing::Test {
     google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
     EXPECT_OK(info_->Init(info_pb));
 
-    auto rel_map = std::make_shared<RelationMap>();
+    auto rel_map = std::make_unique<RelationMap>();
     rel_map->emplace("sequences",
                      plan::Relation(std::vector<types::DataType>({
                                         types::DataType::TIME64NS,
@@ -112,7 +112,7 @@ class CompilerTest : public ::testing::Test {
                                         {types::DataType::INT64, types::DataType::FLOAT64,
                                          types::DataType::FLOAT64, types::DataType::FLOAT64}),
                                     std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
-    compiler_state_ = std::make_unique<CompilerState>(rel_map, info_.get(), time_now);
+    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
   }
   std::unique_ptr<CompilerState> compiler_state_;
   std::shared_ptr<RegistryInfo> info_;
@@ -802,7 +802,7 @@ TEST_F(CompilerTest, no_arg_pl_count_test) {
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
   EXPECT_OK(info->Init(info_pb));
 
-  auto rel_map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
+  auto rel_map = std::make_unique<RelationMap>();
   rel_map->emplace(
       "cpu", plan::Relation(
                  std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,

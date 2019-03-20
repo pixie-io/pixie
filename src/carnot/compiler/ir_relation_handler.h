@@ -19,9 +19,9 @@ class IRRelationHandler {
   explicit IRRelationHandler(const RelationMap& relation_map, const RegistryInfo& registry_info);
   /**
    * @brief Wrapper for all of the update functionality of the IRRelationHandler.
-   *
+
    * @param ir_graph -> ptr to ir memorythat is managed by the caller of the IRRelationHandler. Will
-   * be updated by this constructor.
+   * be updat by this constructor.
    * @return Status
    */
   Status UpdateRelationsAndCheckFunctions(IR* ir_graph);

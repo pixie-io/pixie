@@ -26,6 +26,7 @@ class Table;
  */
 class TableStore {
  public:
+  using RelationMap = std::unordered_map<std::string, plan::Relation>;
   using ColNameToTypeMap = std::unordered_map<std::string, types::DataType>;
 
   TableStore() = default;
@@ -57,7 +58,7 @@ class TableStore {
   /**
    * @return A map of table name to relation representing the table's structure.
    */
-  std::shared_ptr<std::unordered_map<std::string, plan::Relation>> GetRelationMap();
+  std::unique_ptr<RelationMap> GetRelationMap();
 
   Status AppendData(uint64_t table_id,
                     std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch);

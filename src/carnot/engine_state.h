@@ -69,8 +69,9 @@ class EngineState : public NotCopyable {
   }
 
   std::unique_ptr<compiler::CompilerState> CreateCompilerState(types::Time64NSValue time_now) {
-    return std::make_unique<compiler::CompilerState>(table_store_->GetRelationMap(),
-                                                     registry_info_.get(), time_now);
+    auto rel_map = table_store_->GetRelationMap();
+    return std::make_unique<compiler::CompilerState>(std::move(rel_map), registry_info_.get(),
+                                                     time_now);
   }
 
  private:

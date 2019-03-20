@@ -8,8 +8,8 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
-std::shared_ptr<std::unordered_map<std::string, plan::Relation>> TableStore::GetRelationMap() {
-  auto map = std::make_shared<std::unordered_map<std::string, plan::Relation>>();
+std::unique_ptr<std::unordered_map<std::string, plan::Relation>> TableStore::GetRelationMap() {
+  auto map = std::make_unique<RelationMap>();
   map->reserve(table_name_to_table_map_.size());
   for (const auto& table : table_name_to_table_map_) {
     map->emplace(table.first, table.second->GetRelation());
