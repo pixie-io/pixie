@@ -50,18 +50,21 @@ const double kSubscribeProb = 0.7;
 class StirlingTest : public ::testing::Test {
  private:
   std::unique_ptr<Stirling> stirling_;
-  std::vector<const DataElements*> schemas;
   PubProto publish_proto_;
+  std::unordered_map<uint64_t, std::string> id_to_name_map_;
+
+  // Schemas
+  std::unordered_map<uint64_t, const DataElements*> schemas_;
 
   // Reference model (checkers).
-  std::vector<pl::stirling::LinearSequence<int64_t>> lin_seq_checker_;
-  std::vector<pl::stirling::ModuloSequence<int64_t>> mod10_seq_checker_;
-  std::vector<pl::stirling::QuadraticSequence<int64_t>> square_seq_checker_;
-  std::vector<pl::stirling::LinearSequence<double>> pi_seq_checker_;
-  std::vector<pl::stirling::FibonacciSequence<int64_t>> fib_seq_checker_;
+  std::unordered_map<uint64_t, pl::stirling::LinearSequence<int64_t>> lin_seq_checker_;
+  std::unordered_map<uint64_t, pl::stirling::ModuloSequence<int64_t>> mod10_seq_checker_;
+  std::unordered_map<uint64_t, pl::stirling::QuadraticSequence<int64_t>> square_seq_checker_;
+  std::unordered_map<uint64_t, pl::stirling::LinearSequence<double>> pi_seq_checker_;
+  std::unordered_map<uint64_t, pl::stirling::FibonacciSequence<int64_t>> fib_seq_checker_;
 
-  std::vector<uint64_t> num_processed_per_table_;
-  uint64_t num_processed_;
+  std::unordered_map<uint64_t, uint64_t> num_processed_per_table_;
+  std::atomic<uint64_t> num_processed_;
 
   // Random distributions for test parameters.
   std::default_random_engine rng;
@@ -80,11 +83,7 @@ class StirlingTest : public ::testing::Test {
       : rng(kRNGSeed),
         sampling_period_millis_dist_(0, 10),
         push_period_millis_dist_(0, 100),
-        uniform_probability_dist_(0, 1.0) {
-    for (uint32_t i = 0; i < kNumTables; ++i) {
-      schemas.emplace_back(&SeqGenConnector::kElements);
-    }
-  }
+        uniform_probability_dist_(0, 1.0) {}
 
   void SetUp() override {
     // Make registry with a number of SeqGenConnectors.
@@ -105,22 +104,28 @@ class StirlingTest : public ::testing::Test {
 
     stirling_->GetPublishProto(&publish_proto_);
 
-    for (uint32_t i = 0; i < kNumTables; ++i) {
-      lin_seq_checker_.emplace_back(1, 1);
-      mod10_seq_checker_.emplace_back(10);
-      square_seq_checker_.emplace_back(1, 0, 0);
-      pi_seq_checker_.emplace_back(3.14159, 0);
-      fib_seq_checker_.emplace_back();
+    id_to_name_map_ = stirling_->TableIDToNameMap();
 
-      num_processed_per_table_.push_back(0);
+    for (const auto& [id, name] : id_to_name_map_) {
+      schemas_.emplace(id, &SeqGenConnector::kElements);
+
+      lin_seq_checker_.emplace(id, pl::stirling::LinearSequence<int64_t>(1, 1));
+      mod10_seq_checker_.emplace(id, pl::stirling::ModuloSequence<int64_t>(10));
+      square_seq_checker_.emplace(id, pl::stirling::QuadraticSequence<int64_t>(1, 0, 0));
+      pi_seq_checker_.emplace(id, pl::stirling::LinearSequence<double>(3.14159, 0));
+      fib_seq_checker_.emplace(id, pl::stirling::FibonacciSequence<int64_t>());
+
+      num_processed_per_table_.emplace(id, 0);
       num_processed_ = 0;
+
+      PL_UNUSED(name);
     }
   }
 
   void TearDown() override {
-    for (uint32_t itable = 0; itable < kNumTables; ++itable) {
-      LOG(INFO) << absl::StrFormat("Number of records processed: %u",
-                                   num_processed_per_table_[itable]);
+    for (const auto& [id, name] : id_to_name_map_) {
+      LOG(INFO) << absl::StrFormat("Number of records processed: %u", num_processed_per_table_[id]);
+      PL_UNUSED(name);
     }
   }
 
@@ -151,7 +156,7 @@ class StirlingTest : public ::testing::Test {
 
   void CheckRecordBatch(uint32_t table_id, uint64_t num_records,
                         const ColumnWrapperRecordBatch& record_batch) {
-    auto table_schema = *(schemas[table_id]);
+    auto table_schema = *(schemas_[table_id]);
 
     for (uint32_t i = 0; i < num_records; ++i) {
       uint32_t j = 0;
@@ -165,23 +170,23 @@ class StirlingTest : public ::testing::Test {
           } break;
           case 1: {
             auto val = col->Get<Int64Value>(i).val;
-            EXPECT_EQ(lin_seq_checker_[table_id](), val);
+            EXPECT_EQ(lin_seq_checker_.at(table_id)(), val);
           } break;
           case 2: {
             auto val = col->Get<Int64Value>(i).val;
-            EXPECT_EQ(mod10_seq_checker_[table_id](), val);
+            EXPECT_EQ(mod10_seq_checker_.at(table_id)(), val);
           } break;
           case 3: {
             auto val = col->Get<Int64Value>(i).val;
-            EXPECT_EQ(square_seq_checker_[table_id](), val);
+            EXPECT_EQ(square_seq_checker_.at(table_id)(), val);
           } break;
           case 4: {
             auto val = col->Get<Int64Value>(i).val;
-            EXPECT_EQ(fib_seq_checker_[table_id](), val);
+            EXPECT_EQ(fib_seq_checker_.at(table_id)(), val);
           } break;
           case 5: {
             auto val = col->Get<Float64Value>(i).val;
-            EXPECT_EQ(pi_seq_checker_[table_id](), val);
+            EXPECT_EQ(pi_seq_checker_.at(table_id)(), val);
           } break;
           default:
             CHECK(false) << absl::StrFormat("Unrecognized type: $%s",
@@ -201,11 +206,13 @@ class StirlingTest : public ::testing::Test {
 
 // Stress/regression test that hammers Stirling with sequences.
 // A reference model checks the sequences are correct on the callback.
-TEST_F(StirlingTest, hammer_time_on_stirling) {
+// This version uses synchronized subscriptions that occur while Stirling is stopped.
+TEST_F(StirlingTest, hammer_time_on_stirling_synchronized_subscriptions) {
+  pl::Status s;
+
   Stirling* stirling = GetStirling();
 
   uint32_t i = 0;
-  pl::Status s;
   while (NumProcessed() < kNumProcessedRequirement || i < kNumIterMin) {
     // Process a subscription message.
     s = stirling->SetSubscription(GenerateRandomSubscription());
@@ -215,7 +222,7 @@ TEST_F(StirlingTest, hammer_time_on_stirling) {
     s = stirling->RunAsThread();
     ASSERT_TRUE(s.ok());
 
-    // Stay in this config for the specified amount of time..
+    // Stay in this config for the specified amount of time.
     std::this_thread::sleep_for(kDurationPerIter);
 
     stirling->Stop();
@@ -228,6 +235,46 @@ TEST_F(StirlingTest, hammer_time_on_stirling) {
       break;
     }
   }
+
+  EXPECT_GT(NumProcessed(), 0);
+}
+
+// Stress/regression test that hammers Stirling with sequences.
+// A reference model checks the sequences are correct on the callback.
+// This version uses on-the-fly subscriptions that occur while Stirling is running.
+TEST_F(StirlingTest, hammer_time_on_stirling_on_the_fly_subs) {
+  pl::Status s;
+
+  Stirling* stirling = GetStirling();
+
+  // Run Stirling data collector.
+  s = stirling->RunAsThread();
+  ASSERT_TRUE(s.ok());
+
+  std::this_thread::sleep_for(kDurationPerIter);
+
+  // Default should be that nothing is subscribed.
+  EXPECT_EQ(NumProcessed(), 0);
+
+  uint32_t i = 0;
+  while (NumProcessed() < kNumProcessedRequirement || i < kNumIterMin) {
+    // Process a subscription message.
+    s = stirling->SetSubscription(GenerateRandomSubscription());
+    ASSERT_TRUE(s.ok());
+
+    // Stay in this config for the specified amount of time..
+    std::this_thread::sleep_for(kDurationPerIter);
+
+    i++;
+
+    // In case we have a slow environment, break out of the test after some time.
+    if (i > kNumIterMax) {
+      break;
+    }
+  }
+
+  stirling->Stop();
+  stirling->WaitForThreadJoin();
 
   EXPECT_GT(NumProcessed(), 0);
 }
