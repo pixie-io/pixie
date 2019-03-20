@@ -11,6 +11,11 @@
 namespace pl {
 namespace stirling {
 
+Stirling::~Stirling() {
+  Stop();
+  WaitForThreadJoin();
+}
+
 // TODO(oazizi/kgandhi): Is there a better place for this function?
 stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto) {
   stirlingpb::Subscribe subscribe_proto;
@@ -114,7 +119,11 @@ Status Stirling::RunAsThread() {
   return Status::OK();
 }
 
-void Stirling::WaitForThreadJoin() { run_thread_.join(); }
+void Stirling::WaitForThreadJoin() {
+  if (run_thread_.joinable()) {
+    run_thread_.join();
+  }
+}
 
 void Stirling::Run() {
   // Make sure multiple instances of Run() are not active,

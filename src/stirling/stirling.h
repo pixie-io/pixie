@@ -41,7 +41,7 @@ stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publi
 class Stirling : public NotCopyable {
  public:
   Stirling() = delete;
-  ~Stirling() = default;
+  ~Stirling();
 
   /**
    * @brief Create a Stirling object
