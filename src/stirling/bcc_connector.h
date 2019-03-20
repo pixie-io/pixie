@@ -67,7 +67,7 @@ class PIDCPUUseBCCConnector : public BCCConnector {
 
   Status StopImpl() override;
 
-  void TransferDataImpl(ColumnWrapperRecordBatch* record_batch) override;
+  void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) override;
 
  protected:
   explicit PIDCPUUseBCCConnector(std::string name)

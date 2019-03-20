@@ -17,10 +17,8 @@ class InfoClassManager;
 using ArrowArrayBuilderUPtrVec = std::vector<std::unique_ptr<arrow::ArrayBuilder>>;
 using ArrowRecordBatchSPtrVec = std::vector<std::shared_ptr<arrow::RecordBatch>>;
 
-using ColumnWrapperRecordBatch = std::vector<types::SharedColumnWrapper>;
-using ColumnWrapperRecordBatchVec = std::vector<std::unique_ptr<ColumnWrapperRecordBatch>>;
-
-using PushDataCallback = std::function<void(uint64_t, std::unique_ptr<ColumnWrapperRecordBatch>)>;
+using PushDataCallback =
+    std::function<void(uint64_t, std::unique_ptr<types::ColumnWrapperRecordBatch>)>;
 using InfoClassManagerVec = std::vector<std::unique_ptr<InfoClassManager>>;
 
 class DataElement {

@@ -82,7 +82,7 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
     return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(name, cpu_id_));
   }
 
-  void TransferDataImpl(ColumnWrapperRecordBatch* record_batch) override;
+  void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) override;
 
  protected:
   explicit CPUStatBPFTraceConnector(const std::string& name, uint64_t cpu_id);
@@ -114,7 +114,7 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
     return std::unique_ptr<SourceConnector>(new PIDCPUUseBPFTraceConnector(name));
   }
 
-  void TransferDataImpl(ColumnWrapperRecordBatch* record_batch) override;
+  void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) override;
 
  protected:
   explicit PIDCPUUseBPFTraceConnector(const std::string& name);

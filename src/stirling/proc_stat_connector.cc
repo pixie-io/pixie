@@ -87,7 +87,7 @@ Status ProcStatConnector::GetProcStat(const std::vector<std::string>& parsed_str
   return Status::OK();
 }
 
-void ProcStatConnector::TransferDataImpl(ColumnWrapperRecordBatch* record_batch) {
+void ProcStatConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
   auto& columns = *record_batch;
 
   auto parsed_str = GetProcParams();

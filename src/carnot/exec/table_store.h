@@ -6,14 +6,10 @@
 
 #include "src/carnot/exec/table.h"
 #include "src/common/status.h"
-#include "src/stirling/data_table.h"
-#include "src/stirling/seq_gen_connector.h"
 
 namespace pl {
 namespace carnot {
 namespace exec {
-
-using DefaultTableSchema = stirling::SeqGenConnector;
 
 /**
  * TableStore keeps track of the tables in our system.
@@ -59,12 +55,6 @@ class TableStore {
     return Status::OK();
   }
 
-  /**
-   * Add a default table, for testing purposes.
-   */
-  // TODO(oazizi/anyone): Remove once pub-sub with Stirling is fleshed out.
-  void AddDefaultTable();
-
   using ColNameToTypeMap = std::unordered_map<std::string, types::DataType>;
   /**
    * @return A map of table name to relation representing the table's structure.
@@ -72,7 +62,7 @@ class TableStore {
   std::shared_ptr<std::unordered_map<std::string, plan::Relation>> GetRelationMap();
 
   Status AppendData(uint64_t table_id,
-                    std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch> record_batch);
+                    std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch);
 
  private:
   std::unordered_map<std::string, std::shared_ptr<Table>> table_name_to_table_map_;

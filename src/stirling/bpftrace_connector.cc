@@ -98,7 +98,7 @@ CPUStatBPFTraceConnector::CPUStatBPFTraceConnector(const std::string& name, uint
   data_buf_.resize(elements_.size());
 }
 
-void CPUStatBPFTraceConnector::TransferDataImpl(ColumnWrapperRecordBatch* record_batch) {
+void CPUStatBPFTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
   auto& columns = *record_batch;
 
   auto cpustat_map = GetBPFMap("@retval");
@@ -142,7 +142,7 @@ bpftrace::BPFTraceMap::iterator PIDCPUUseBPFTraceConnector::BPFTraceMapSearch(
 PIDCPUUseBPFTraceConnector::PIDCPUUseBPFTraceConnector(const std::string& name)
     : BPFTraceConnector(name, kElements, kBTScript, std::vector<std::string>({})) {}
 
-void PIDCPUUseBPFTraceConnector::TransferDataImpl(ColumnWrapperRecordBatch* record_batch) {
+void PIDCPUUseBPFTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
   auto& columns = *record_batch;
 
   auto pid_time_pairs = GetBPFMap("@total_time");

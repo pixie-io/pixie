@@ -68,7 +68,7 @@ class SourceConnector : public NotCopyable {
   virtual ~SourceConnector() = default;
 
   Status Init() { return InitImpl(); }
-  void TransferData(ColumnWrapperRecordBatch* record_batch) {
+  void TransferData(types::ColumnWrapperRecordBatch* record_batch) {
     return TransferDataImpl(record_batch);
   }
   Status Stop() { return StopImpl(); }
@@ -82,7 +82,9 @@ class SourceConnector : public NotCopyable {
       : elements_(std::move(elements)), type_(type), source_name_(std::move(source_name)) {}
 
   virtual Status InitImpl() = 0;
-  virtual void TransferDataImpl(ColumnWrapperRecordBatch* record_batch) { PL_UNUSED(record_batch); }
+  virtual void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
+    PL_UNUSED(record_batch);
+  }
   virtual Status StopImpl() = 0;
   /**
    * @brief Init Helper function: calculates monotonic clock to real time clock offset.

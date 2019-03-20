@@ -108,9 +108,9 @@ class DataTableTest : public ::testing::Test {
   /**
    * Check that the output data matches the input functions.
    */
-  void CheckColumnWrapperResult(ColumnWrapperRecordBatch* col_arrays, uint32_t start_record,
+  void CheckColumnWrapperResult(types::ColumnWrapperRecordBatch* col_arrays, uint32_t start_record,
                                 uint32_t end_record) {
-    ColumnWrapperRecordBatch& columns = *col_arrays;
+    types::ColumnWrapperRecordBatch& columns = *col_arrays;
 
     uint32_t f_idx;
     uint32_t i;

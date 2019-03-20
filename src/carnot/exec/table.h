@@ -18,7 +18,6 @@
 #include "src/common/status.h"
 #include "src/common/statusor.h"
 #include "src/shared/types/types.h"
-#include "src/stirling/data_table.h"
 
 namespace pl {
 namespace carnot {
@@ -145,7 +144,7 @@ class Table : public NotCopyable {
    * @param record_batch the record batch to be appended to the Table.
    * @return status
    */
-  Status TransferRecordBatch(std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch> record_batch);
+  Status TransferRecordBatch(std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch);
 
   /**
    * @return number of column batches.
@@ -182,7 +181,7 @@ class Table : public NotCopyable {
   RowDescriptor desc_;
   std::vector<std::shared_ptr<Column>> columns_;
   // TODO(michelle): (PL-388) Change hot_batches_ to a list-based queue.
-  std::vector<std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch>> hot_batches_;
+  std::vector<std::unique_ptr<pl::types::ColumnWrapperRecordBatch>> hot_batches_;
   std::unordered_map<std::string, std::shared_ptr<Column>> name_to_column_map_;
 
   absl::base_internal::SpinLock hot_batches_lock_;

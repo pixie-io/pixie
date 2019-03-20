@@ -46,7 +46,7 @@ Status PIDCPUUseBCCConnector::StopImpl() {
   return Status::OK();
 }
 
-void PIDCPUUseBCCConnector::TransferDataImpl(ColumnWrapperRecordBatch* record_batch) {
+void PIDCPUUseBCCConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
   auto& columns = *record_batch;
 
   // TODO(kgandhi): PL-452 There is an extra copy when calling get_table_offline. We should extract

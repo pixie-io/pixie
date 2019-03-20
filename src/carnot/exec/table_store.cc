@@ -16,31 +16,11 @@ std::shared_ptr<std::unordered_map<std::string, plan::Relation>> TableStore::Get
   return map;
 }
 
-Status TableStore::AppendData(
-    uint64_t table_id, std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch> record_batch) {
+Status TableStore::AppendData(uint64_t table_id,
+                              std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch) {
   auto table = table_id_to_table_map_[table_id];
   PL_RETURN_IF_ERROR(table->TransferRecordBatch(std::move(record_batch)));
   return Status::OK();
-}
-
-// Temporary/Throwaway function
-// TODO(oazizi/anyone): Remove once pub-sub with Stirling is fleshed out.
-void TableStore::AddDefaultTable() {
-  // Create RowDescriptor by copying schema from SourceConnector
-  std::vector<types::DataType> col_types;
-  std::vector<std::string> col_names;
-  for (const auto& e : DefaultTableSchema::kElements) {
-    col_types.push_back(e.type());
-    col_names.push_back(e.name());
-  }
-  plan::Relation relation(col_types, col_names);
-
-  std::shared_ptr<exec::Table> table = std::make_shared<exec::Table>(relation);
-
-  // Table_id: use any number (remember, this is throwaway code).
-  uint64_t table_id = 314159;
-
-  PL_CHECK_OK(AddTable(DefaultTableSchema::kName, table_id, table));
 }
 
 }  // namespace exec

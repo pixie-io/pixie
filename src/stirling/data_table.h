@@ -22,14 +22,14 @@ class DataTable {
    *
    * @return pointer to a vector of ColumnWrapperRecordBatch pointers.
    */
-  StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVec>> GetRecordBatches();
+  StatusOr<std::unique_ptr<types::ColumnWrapperRecordBatchVec>> GetRecordBatches();
 
   /**
    * @brief Get a pointer to the active record batch, for appending.
    *
    * @return Pointer to active record batch
    */
-  ColumnWrapperRecordBatch* GetActiveRecordBatch() { return record_batch_.get(); }
+  types::ColumnWrapperRecordBatch* GetActiveRecordBatch() { return record_batch_.get(); }
 
   /**
    * @brief Return current occupancy of the Data Table.
@@ -68,10 +68,10 @@ class DataTable {
   uint64_t current_row_;
 
   // Active record batch.
-  std::unique_ptr<ColumnWrapperRecordBatch> record_batch_;
+  std::unique_ptr<types::ColumnWrapperRecordBatch> record_batch_;
 
   // Sealed record batches that have been collected, but need to be pushed upstream.
-  std::unique_ptr<ColumnWrapperRecordBatchVec> sealed_batches_;
+  std::unique_ptr<types::ColumnWrapperRecordBatchVec> sealed_batches_;
 
   // ColumnWrapper specific members
   static constexpr uint64_t target_capacity_ = 1024;

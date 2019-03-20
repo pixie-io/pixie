@@ -9,6 +9,8 @@
 #include "src/common/env.h"
 #include "src/common/time.h"
 #include "src/shared/types/column_wrapper.h"
+#include "src/shared/types/type_utils.h"
+
 DEFINE_string(input_file, gflags::StringFromEnv("INPUT_FILE", ""),
               "The csv containing data to run the query on.");
 
@@ -193,7 +195,7 @@ void TableToCsv(const std::string& filename, pl::carnot::exec::Table* table) {
     for (auto row_idx = 0; row_idx < rb->num_rows(); row_idx++) {
       std::vector<std::string> row;
       for (size_t col_idx = 0; col_idx < col_idxs.size(); col_idx++) {
-#define TYPE_CASE(_dt_) AddStringValueToRow<_dt_>(&row, rb->ColumnAt(col_idx).get(), row_idx);
+#define TYPE_CASE(_dt_) AddStringValueToRow<_dt_>(&row, rb->ColumnAt(col_idx).get(), row_idx)
         PL_SWITCH_FOREACH_DATATYPE(table->GetColumn(col_idx)->data_type(), TYPE_CASE);
 #undef TYPE_CASE
       }

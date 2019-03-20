@@ -16,7 +16,7 @@ using pl::stirling::Stirling;
 using pl::stirling::stirlingpb::Publish;
 using pl::stirling::stirlingpb::Subscribe;
 
-using pl::stirling::ColumnWrapperRecordBatch;
+using pl::types::ColumnWrapperRecordBatch;
 using pl::types::Float64Value;
 using pl::types::Int64Value;
 using pl::types::SharedColumnWrapper;

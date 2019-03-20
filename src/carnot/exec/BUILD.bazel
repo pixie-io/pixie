@@ -23,7 +23,6 @@ pl_cc_library(
         "//src/carnot/proto:plan_pl_cc_proto",
         "//src/carnot/udf:cc_library",
         "//src/shared/types:cc_library",
-        "//src/stirling:cc_library",
         "//third_party:arrow",
         "@com_efficient_libcuckoo//:libcuckoo",
     ],

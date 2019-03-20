@@ -19,12 +19,12 @@
 using PubProto = pl::stirling::stirlingpb::Publish;
 using SubProto = pl::stirling::stirlingpb::Subscribe;
 
-using pl::stirling::ColumnWrapperRecordBatch;
 using pl::stirling::DataElements;
 using pl::stirling::SeqGenConnector;
 using pl::stirling::SourceRegistry;
 using pl::stirling::Stirling;
 
+using pl::types::ColumnWrapperRecordBatch;
 using pl::types::Float64Value;
 using pl::types::Int64Value;
 using pl::types::StringValue;

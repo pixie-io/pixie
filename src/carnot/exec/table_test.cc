@@ -5,7 +5,6 @@
 #include "src/carnot/exec/table.h"
 #include "src/carnot/exec/test_utils.h"
 #include "src/shared/types/arrow_adapter.h"
-#include "src/stirling/data_table.h"
 
 namespace pl {
 namespace carnot {
@@ -179,12 +178,12 @@ TEST(TableTest, hot_batches_test) {
   EXPECT_OK(table.AddColumn(col1));
   EXPECT_OK(table.AddColumn(col2));
 
-  auto rb_wrapper_1 = std::make_unique<pl::stirling::ColumnWrapperRecordBatch>();
+  auto rb_wrapper_1 = std::make_unique<types::ColumnWrapperRecordBatch>();
   rb_wrapper_1->push_back(col1_in1_wrapper);
   rb_wrapper_1->push_back(col2_in1_wrapper);
   EXPECT_OK(table.TransferRecordBatch(std::move(rb_wrapper_1)));
 
-  auto rb_wrapper_2 = std::make_unique<pl::stirling::ColumnWrapperRecordBatch>();
+  auto rb_wrapper_2 = std::make_unique<types::ColumnWrapperRecordBatch>();
   rb_wrapper_2->push_back(col1_in2_wrapper);
   rb_wrapper_2->push_back(col2_in2_wrapper);
   EXPECT_OK(table.TransferRecordBatch(std::move(rb_wrapper_2)));
@@ -259,7 +258,7 @@ TEST(TableTest, find_batch_position_greater_or_eq) {
   std::vector<types::Time64NSValue> time_hot_col1 = {15, 16, 19};
   std::vector<types::Time64NSValue> time_hot_col2 = {21, 21, 21};
   std::vector<types::Time64NSValue> time_hot_col3 = {21, 23};
-  auto wrapper_batch_1 = std::make_unique<pl::stirling::ColumnWrapperRecordBatch>();
+  auto wrapper_batch_1 = std::make_unique<types::ColumnWrapperRecordBatch>();
   auto col_wrapper_1 = std::make_shared<types::Time64NSValueColumnWrapper>(3);
   col_wrapper_1->Clear();
   for (const auto& num : time_hot_col1) {
@@ -267,7 +266,7 @@ TEST(TableTest, find_batch_position_greater_or_eq) {
   }
   wrapper_batch_1->push_back(col_wrapper_1);
   EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_1)));
-  auto wrapper_batch_2 = std::make_unique<pl::stirling::ColumnWrapperRecordBatch>();
+  auto wrapper_batch_2 = std::make_unique<types::ColumnWrapperRecordBatch>();
   auto col_wrapper_2 = std::make_shared<types::Time64NSValueColumnWrapper>(3);
   col_wrapper_2->Clear();
   for (const auto& num : time_hot_col2) {
@@ -275,7 +274,7 @@ TEST(TableTest, find_batch_position_greater_or_eq) {
   }
   wrapper_batch_2->push_back(col_wrapper_2);
   EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_2)));
-  auto wrapper_batch_3 = std::make_unique<pl::stirling::ColumnWrapperRecordBatch>();
+  auto wrapper_batch_3 = std::make_unique<types::ColumnWrapperRecordBatch>();
   auto col_wrapper_3 = std::make_shared<types::Time64NSValueColumnWrapper>(2);
   col_wrapper_3->Clear();
   for (const auto& num : time_hot_col3) {

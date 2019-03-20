@@ -38,6 +38,7 @@ struct CarnotQueryResult {
   int64_t compile_time_ns = 0;
   int64_t exec_time_ns = 0;
 };
+
 class Carnot : public NotCopyable {
  public:
   /**

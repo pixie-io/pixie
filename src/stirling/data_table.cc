@@ -15,7 +15,8 @@ using types::DataType;
 
 DataTable::DataTable(const InfoClassSchema& schema) {
   Status s = RegisterSchema(schema);
-  sealed_batches_ = std::make_unique<std::vector<std::unique_ptr<ColumnWrapperRecordBatch>>>();
+  sealed_batches_ =
+      std::make_unique<std::vector<std::unique_ptr<types::ColumnWrapperRecordBatch>>>();
 
   PL_CHECK_OK(InitBuffers());
 }
@@ -40,7 +41,7 @@ Status DataTable::RegisterSchema(const InfoClassSchema& schema) {
 Status DataTable::InitBuffers() {
   DCHECK(record_batch_ == nullptr);
 
-  record_batch_ = std::make_unique<ColumnWrapperRecordBatch>();
+  record_batch_ = std::make_unique<types::ColumnWrapperRecordBatch>();
 
   for (uint32_t field_idx = 0; field_idx < table_schema_->NumFields(); ++field_idx) {
     DataType type = (*table_schema_)[field_idx].type();
@@ -75,13 +76,13 @@ Status DataTable::InitBuffers() {
   return Status::OK();
 }
 
-StatusOr<std::unique_ptr<ColumnWrapperRecordBatchVec>> DataTable::GetRecordBatches() {
+StatusOr<std::unique_ptr<types::ColumnWrapperRecordBatchVec>> DataTable::GetRecordBatches() {
   Status s = SealActiveRecordBatch();
   PL_RETURN_IF_ERROR(s);
 
   auto sealed_batches_ptr = std::move(sealed_batches_);
 
-  sealed_batches_ = std::make_unique<ColumnWrapperRecordBatchVec>();
+  sealed_batches_ = std::make_unique<types::ColumnWrapperRecordBatchVec>();
 
   return std::move(sealed_batches_ptr);
 }

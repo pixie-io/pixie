@@ -57,7 +57,7 @@ class TestSourceConnector : public SourceConnector {
 
   Status StopImpl() override { return Status::OK(); }
 
-  void TransferDataImpl(ColumnWrapperRecordBatch* /*record_batch*/) override{};
+  void TransferDataImpl(types::ColumnWrapperRecordBatch* /*record_batch*/) override{};
 
  protected:
   explicit TestSourceConnector(const std::string& name, const DataElements& elements)

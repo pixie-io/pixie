@@ -10,6 +10,7 @@
 #include "src/carnot/plan/relation.h"
 #include "src/common/common.h"
 #include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/type_utils.h"
 
 namespace pl {
 namespace carnot {
@@ -149,7 +150,7 @@ Status Table::WriteRowBatch(RowBatch rb) {
 }
 
 Status Table::TransferRecordBatch(
-    std::unique_ptr<pl::stirling::ColumnWrapperRecordBatch> record_batch) {
+    std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch) {
   // Check for matching types
   auto received_num_columns = record_batch->size();
   auto expected_num_columns = desc_.size();

@@ -3,7 +3,7 @@
 namespace pl {
 namespace stirling {
 
-void SeqGenConnector::TransferDataImpl(ColumnWrapperRecordBatch* record_batch) {
+void SeqGenConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
   auto& columns = *record_batch;
 
   std::uniform_int_distribution<uint32_t> num_rows_dist(num_rows_min_, num_rows_max_);
