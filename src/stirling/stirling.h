@@ -163,7 +163,12 @@ class Stirling : public NotCopyable {
   /**
    * Helper function to figure out how much to sleep between polling iterations.
    */
-  void SleepUntilNextTick();
+  std::chrono::milliseconds TimeUntilNextTick();
+
+  /**
+   * Sleeps for the specified duration, as long as it is above some threshold.
+   */
+  void SleepForDuration(std::chrono::milliseconds sleep_duration);
 
   /**
    * Main thread used to spawn off RunThread().

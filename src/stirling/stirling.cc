@@ -143,6 +143,8 @@ void Stirling::Run() {
 // Must run as a thread, so only call from Run() as a thread.
 void Stirling::RunCore() {
   while (run_enable_) {
+    auto sleep_duration = std::chrono::milliseconds::zero();
+
     {
       // Acquire spin lock to go through one iteration of sampling and pushing data.
       // Needed to avoid race with main thread update info_class_mgrs_ on new subscription.
@@ -164,16 +166,19 @@ void Stirling::RunCore() {
           // Optional: Update sampling periods if we are dropping data.
         }
       }
+
+      // Figure out how long to sleep.
+      sleep_duration = TimeUntilNextTick();
     }
-    // Figure out how long to sleep.
-    SleepUntilNextTick();
+
+    SleepForDuration(sleep_duration);
   }
 }
 
 void Stirling::Stop() { run_enable_ = false; }
 
 // Helper function: Figure out when to wake up next.
-void Stirling::SleepUntilNextTick() {
+std::chrono::milliseconds Stirling::TimeUntilNextTick() {
   // The amount to sleep depends on when the earliest Source needs to be sampled again.
   // Do this to avoid burning CPU cycles unnecessarily
 
@@ -188,8 +193,10 @@ void Stirling::SleepUntilNextTick() {
     wakeup_time = std::min(wakeup_time, mgr->NextSamplingTime());
   }
 
-  auto sleep_duration = wakeup_time - now;
+  return wakeup_time - now;
+}
 
+void Stirling::SleepForDuration(std::chrono::milliseconds sleep_duration) {
   if (sleep_duration > kMinSleepDuration) {
     std::this_thread::sleep_for(sleep_duration);
   }
