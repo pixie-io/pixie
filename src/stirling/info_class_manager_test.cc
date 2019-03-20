@@ -6,25 +6,21 @@
 namespace pl {
 namespace stirling {
 
-using stirlingpb::Element_State;
 using types::DataType;
 
-TEST(InfoClassElementTest, basic_test) {
-  InfoClassElement element("user_percentage", DataType::FLOAT64,
-                           Element_State::Element_State_NOT_SUBSCRIBED);
+TEST(InfoClassElementTest, infoclass_element_proto_getters_test) {
+  InfoClassElement element("user_percentage", DataType::FLOAT64);
 
   EXPECT_EQ("user_percentage", element.name());
   EXPECT_EQ(DataType::FLOAT64, element.type());
-  EXPECT_EQ(Element_State::Element_State_NOT_SUBSCRIBED, element.state());
 
   stirlingpb::Element element_pb;
   element_pb = element.ToProto();
   EXPECT_EQ("user_percentage", element_pb.name());
   EXPECT_EQ(DataType::FLOAT64, element_pb.type());
-  EXPECT_EQ(Element_State::Element_State_NOT_SUBSCRIBED, element_pb.state());
 }
 
-TEST(InfoClassInfoSchemaTest, basic_test) {
+TEST(InfoClassInfoSchemaTest, infoclass_mgr_proto_getters_test) {
   InfoClassSchema elements = {};
   InfoClassManager info_class_mgr("sequences_mgr");
   auto source = SeqGenConnector::Create("sequences");
@@ -40,12 +36,10 @@ TEST(InfoClassInfoSchemaTest, basic_test) {
   EXPECT_EQ("sequences_mgr", info_class_pb.name());
   EXPECT_EQ(0, info_class_pb.id());
 
-  info_class_mgr.UpdateElementSubscription(0, Element_State::Element_State_SUBSCRIBED);
-  EXPECT_EQ(Element_State::Element_State_SUBSCRIBED, info_class_mgr.GetElement(0).state());
-
+  info_class_mgr.SetSubscription(true);
   stirlingpb::InfoClass subscribe_pb;
   subscribe_pb = info_class_mgr.ToProto();
-  EXPECT_EQ(Element_State::Element_State_SUBSCRIBED, subscribe_pb.elements(0).state());
+  EXPECT_TRUE(subscribe_pb.subscribed());
 }
 
 }  // namespace stirling

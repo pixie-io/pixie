@@ -31,14 +31,9 @@ class InfoClassElement : public DataElement {
  public:
   InfoClassElement() = delete;
   ~InfoClassElement() override = default;
-  explicit InfoClassElement(const DataElement& element)
-      : DataElement(element), state_(stirlingpb::Element_State_SUBSCRIBED) {}
-  explicit InfoClassElement(const std::string& name, const types::DataType& type,
-                            const stirlingpb::Element_State& state)
-      : DataElement(name, type), state_(state) {}
-
-  void SetState(const stirlingpb::Element_State& state) { state_ = state; }
-  const stirlingpb::Element_State& state() const { return state_; }
+  explicit InfoClassElement(const DataElement& element) : DataElement(element) {}
+  explicit InfoClassElement(const std::string& name, const types::DataType& type)
+      : DataElement(name, type) {}
 
   /**
    * @brief Generate a proto message based on the InfoClassElement.
@@ -46,9 +41,6 @@ class InfoClassElement : public DataElement {
    * @return stirlingpb::Element
    */
   stirlingpb::Element ToProto() const;
-
- private:
-  stirlingpb::Element_State state_;
 };
 
 /**
@@ -107,18 +99,6 @@ class InfoClassManager {
    * @return InfoClassSchema schema
    */
   InfoClassSchema& Schema() { return elements_; }
-
-  /**
-   * @brief Set the subscription state of an Element
-   *
-   * @param index Element to update in the InfoClassManager
-   * @param state Subscription state
-   * @return Status
-   */
-  void UpdateElementSubscription(size_t index, const stirlingpb::Element_State& state) {
-    DCHECK(index < elements_.size());
-    elements_[index].SetState(state);
-  }
 
   /**
    * @brief Get an Element object

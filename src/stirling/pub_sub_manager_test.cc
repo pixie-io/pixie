@@ -14,7 +14,6 @@ namespace stirling {
 
 using google::protobuf::TextFormat;
 using google::protobuf::util::MessageDifferencer;
-using stirlingpb::Element_State;
 using stirlingpb::InfoClass;
 using types::DataType;
 
@@ -23,17 +22,14 @@ const char* kInfoClassManager = R"(
   elements {
     name: "user_percentage",
     type: FLOAT64,
-    state: SUBSCRIBED,
   }
   elements {
     name: "system_percentage",
     type: FLOAT64,
-    state: SUBSCRIBED,
   }
   elements {
     name: "io_percentage",
     type: FLOAT64,
-    state: SUBSCRIBED,
   }
   subscribed: false,
   sampling_period_millis: 100,

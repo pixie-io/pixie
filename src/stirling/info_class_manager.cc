@@ -16,7 +16,6 @@ std::atomic<uint64_t> InfoClassManager::global_id_ = 0;
 stirlingpb::Element InfoClassElement::ToProto() const {
   stirlingpb::Element element_proto;
   element_proto.set_name(name_);
-  element_proto.set_state(state_);
   element_proto.set_type(type_);
   return element_proto;
 }

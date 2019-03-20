@@ -50,12 +50,6 @@ class SourceToTableTest : public ::testing::Test {
     fake_proc_stat_ = FakeProcStatConnector::Create("fake_proc_stat_source");
     info_class_mgr_.SetSourceConnector(fake_proc_stat_.get());
     EXPECT_OK(info_class_mgr_.PopulateSchemaFromSource());
-    // Need to set all the Element states to subscribe manually here
-    // since we are not doing a pub sub here.
-    for (size_t i = 0; i < info_class_mgr_.Schema().size(); ++i) {
-      info_class_mgr_.UpdateElementSubscription(
-          i, stirlingpb::Element_State::Element_State_SUBSCRIBED);
-    }
     table_ = std::make_unique<DataTable>(info_class_mgr_.Schema());
   }
 

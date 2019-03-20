@@ -78,12 +78,9 @@ class DataTableTest : public ::testing::Test {
    * Schema for our test table
    */
   void SetUpSchema() {
-    schema_.push_back(InfoClassElement("f0", types::DataType::INT64,
-                                       stirlingpb::Element_State::Element_State_SUBSCRIBED));
-    schema_.push_back(InfoClassElement("f1", types::DataType::FLOAT64,
-                                       stirlingpb::Element_State::Element_State_SUBSCRIBED));
-    schema_.push_back(InfoClassElement("f2", types::DataType::INT64,
-                                       stirlingpb::Element_State::Element_State_SUBSCRIBED));
+    schema_.push_back(InfoClassElement("f0", types::DataType::INT64));
+    schema_.push_back(InfoClassElement("f1", types::DataType::FLOAT64));
+    schema_.push_back(InfoClassElement("f2", types::DataType::INT64));
 
     record_size_ = sizeof(int64_t) + sizeof(double) + sizeof(int64_t);
   }

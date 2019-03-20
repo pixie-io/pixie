@@ -13,9 +13,6 @@
 namespace pl {
 namespace stirling {
 
-using pl::types::DataType;
-using stirlingpb::Element_State;
-
 void RegisterAllSources(SourceRegistry* registry) {
   CHECK(registry != nullptr);
   registry->RegisterOrDie<SeqGenConnector>("sequences");

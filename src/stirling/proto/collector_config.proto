@@ -14,19 +14,6 @@ message Element {
   // for cpu usage (InfoClass).
   string name = 1;
   types.DataType type = 2;
-  // Enum describing an Element's state. It can either be subscribed
-  // to or not.
-  // TODO(kgandhi): We could change this to a boolean. But leaving as
-  // an enum if we think that there may be other states such as detailed
-  // debug collection for root cause or something along those lines.
-  enum State {
-    NOT_SUBSCRIBED = 0;
-    SUBSCRIBED = 1;
-  }
-  // Default profiles can be published
-  // by setting an element's state to COLLECTED_AND_SUBSCRIBED.
-  // However, an agent can modify it in a subscribe message.
-  State state = 3;
 }
 
 // InfoClass stores a set of Elements that share common timestamps (i.e., they are
