@@ -6,6 +6,7 @@
 
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/exec_state.h"
+#include "src/carnot/exec/table.h"
 
 namespace pl {
 namespace carnot {

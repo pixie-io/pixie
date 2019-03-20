@@ -13,10 +13,8 @@
 #include "src/carnot/exec/row_batch.h"
 #include "src/carnot/exec/row_descriptor.h"
 #include "src/carnot/plan/relation.h"
-#include "src/carnot/udf/udf_wrapper.h"
-#include "src/common/base.h"
-#include "src/common/status.h"
-#include "src/common/statusor.h"
+#include "src/common/common.h"
+#include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 
 namespace pl {

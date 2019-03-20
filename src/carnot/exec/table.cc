@@ -8,6 +8,7 @@
 #include "absl/strings/str_format.h"
 #include "src/carnot/exec/table.h"
 #include "src/carnot/plan/relation.h"
+#include "src/carnot/udf/udf_wrapper.h"
 #include "src/common/common.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/type_utils.h"
