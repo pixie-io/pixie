@@ -23,36 +23,36 @@ inline StatusOr<std::pair<int64_t, int64_t>> StringToTimeRange(const std::string
 inline StatusOr<int64_t> StringToTimeInt(const std::string& str_time) {
   std::regex rgx("([-]?[0-9]+)(ms|m|s|h|d)");
   std::smatch matches;
-  if (std::regex_search(str_time, matches, rgx)) {
-    if (matches.size() != 3) {
-      return error::InvalidArgument("Time string is in wrong format.");
-    }
-    auto amount = std::stoi(matches[1]);
-    auto unit = matches[2];
-
-    if (unit == "h") {
-      return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::hours(amount))
-          .count();
-    }
-    if (unit == "m") {
-      return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::minutes(amount))
-          .count();
-    }
-    if (unit == "ms") {
-      return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::milliseconds(amount))
-          .count();
-    } else if (unit == "s") {
-      return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(amount))
-          .count();
-    } else if (unit == "d") {
-      return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::hours(amount * 24))
-          .count();
-    } else {
-      return error::InvalidArgument("Unsupported unit.");
-    }
-  } else {
+  bool matched = std::regex_search(str_time, matches, rgx);
+  if (!matched) {
     return error::InvalidArgument("Time string is in wrong format.");
   }
+  if (matches.size() != 3) {
+    return error::InvalidArgument("Time string is in wrong format.");
+  }
+  auto amount = std::stoi(matches[1]);
+  auto unit = matches[2];
+
+  if (unit == "h") {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::hours(amount)).count();
+  }
+  if (unit == "m") {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::minutes(amount))
+        .count();
+  }
+  if (unit == "ms") {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::milliseconds(amount))
+        .count();
+  }
+  if (unit == "s") {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(amount))
+        .count();
+  }
+  if (unit == "d") {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::hours(amount * 24))
+        .count();
+  }
+  return error::InvalidArgument("Unsupported unit.");
 }
 
 /**

@@ -28,17 +28,20 @@ DEFINE_int64(rowbatch_size, gflags::Int64FromEnv("ROWBATCH_SIZE", 0),
 pl::StatusOr<pl::types::DataType> GetTypeFromHeaderString(const std::string& type) {
   if (type == "int64") {
     return pl::types::INT64;
-  } else if (type == "float64") {
-    return pl::types::FLOAT64;
-  } else if (type == "boolean") {
-    return pl::types::BOOLEAN;
-  } else if (type == "string") {
-    return pl::types::STRING;
-  } else if (type == "time64ns") {
-    return pl::types::TIME64NS;
-  } else {
-    return pl::error::InvalidArgument("Could not recognize type from header.");
   }
+  if (type == "float64") {
+    return pl::types::FLOAT64;
+  }
+  if (type == "boolean") {
+    return pl::types::BOOLEAN;
+  }
+  if (type == "string") {
+    return pl::types::STRING;
+  }
+  if (type == "time64ns") {
+    return pl::types::TIME64NS;
+  }
+  return pl::error::InvalidArgument("Could not recognize type from header.");
 }
 
 std::string ValueToString(int64_t val) { return absl::StrFormat("%d", val); }
@@ -137,7 +140,7 @@ std::shared_ptr<pl::carnot::exec::Table> GetTableFromCsv(const std::string& file
           break;
         case pl::types::DataType::BOOLEAN:
           dynamic_cast<pl::types::BoolValueColumnWrapper*>(batch->at(col_idx).get())
-              ->Append(field == "true" ? true : false);
+              ->Append(field == "true");
           break;
         case pl::types::DataType::STRING:
           dynamic_cast<pl::types::StringValueColumnWrapper*>(batch->at(col_idx).get())

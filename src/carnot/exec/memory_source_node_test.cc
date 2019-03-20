@@ -62,7 +62,7 @@ TEST_F(MemorySourceNodeTest, basic) {
   RowDescriptor output_rd({types::DataType::TIME64NS});
 
   auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(
-      *plan_node.get(), output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
+      *plan_node, output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
   EXPECT_TRUE(tester.node()->HasBatchesRemaining());
   tester.GenerateNextResult().ExpectRowBatch(
       RowBatchBuilder(output_rd, 3, false).AddColumn<types::Time64NSValue>({1, 2, 3}).get());
@@ -81,7 +81,7 @@ TEST_F(MemorySourceNodeTest, range) {
   RowDescriptor output_rd({types::DataType::TIME64NS});
 
   auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(
-      *plan_node.get(), output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
+      *plan_node, output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
   EXPECT_TRUE(tester.node()->HasBatchesRemaining());
 
   tester.GenerateNextResult().ExpectRowBatch(
@@ -99,7 +99,7 @@ TEST_F(MemorySourceNodeTest, empty_range) {
   RowDescriptor output_rd({types::DataType::TIME64NS});
 
   auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(
-      *plan_node.get(), output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
+      *plan_node, output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
   EXPECT_FALSE(tester.node()->HasBatchesRemaining());
   tester.Close();
 }
@@ -110,7 +110,7 @@ TEST_F(MemorySourceNodeTest, all_range) {
   RowDescriptor output_rd({types::DataType::TIME64NS});
 
   auto tester = exec::ExecNodeTester<MemorySourceNode, plan::MemorySourceOperator>(
-      *plan_node.get(), output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
+      *plan_node, output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
   EXPECT_TRUE(tester.node()->HasBatchesRemaining());
 
   tester.GenerateNextResult().ExpectRowBatch(

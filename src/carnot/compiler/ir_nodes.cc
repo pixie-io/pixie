@@ -34,7 +34,7 @@ void IRNode::SetLineCol(int64_t line, int64_t col) {
   col_ = col;
   line_col_set_ = true;
 }
-void IRNode::SetLineCol(pypa::AstPtr ast_node) {
+void IRNode::SetLineCol(const pypa::AstPtr& ast_node) {
   ast_node_ = ast_node;
   SetLineCol(ast_node->line, ast_node->column);
 }
@@ -49,7 +49,7 @@ Status OperatorIR::SetParent(IRNode* node) {
 
 bool MemorySourceIR::HasLogicalRepr() const { return true; }
 
-Status MemorySourceIR::Init(IRNode* table_node, IRNode* select, const pypa::AstPtr ast_node) {
+Status MemorySourceIR::Init(IRNode* table_node, IRNode* select, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   table_node_ = table_node;
   select_ = select;
@@ -110,7 +110,7 @@ std::string MemorySourceIR::DebugString(int64_t depth) const {
 bool MemorySinkIR::HasLogicalRepr() const { return true; }
 
 Status MemorySinkIR::Init(IRNode* parent_node, const std::string& name,
-                          const pypa::AstPtr ast_node) {
+                          const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   PL_RETURN_IF_ERROR(SetParent(parent_node));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
@@ -143,7 +143,7 @@ Status MemorySinkIR::ToProto(carnotpb::Operator* op) const {
 }
 
 Status RangeIR::Init(IRNode* parent_node, IRNode* start_repr, IRNode* stop_repr,
-                     const pypa::AstPtr ast_node) {
+                     const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   PL_RETURN_IF_ERROR(SetParent(parent_node));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
@@ -176,7 +176,7 @@ Status RangeIR::ToProto(carnotpb::Operator*) const {
   return error::InvalidArgument("RangeIR has no protobuf representation.");
 }
 
-Status MapIR::Init(IRNode* parent_node, IRNode* lambda_func, const pypa::AstPtr ast_node) {
+Status MapIR::Init(IRNode* parent_node, IRNode* lambda_func, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   lambda_func_ = lambda_func;
   PL_RETURN_IF_ERROR(SetParent(parent_node));
@@ -269,7 +269,7 @@ Status MapIR::ToProto(carnotpb::Operator* op) const {
 }
 
 Status BlockingAggIR::Init(IRNode* parent_node, IRNode* by_func, IRNode* agg_func,
-                           const pypa::AstPtr ast_node) {
+                           const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   if (agg_func->type() != IRNodeType::LambdaType) {
     return IRUtils::CreateIRNodeError(
@@ -375,7 +375,7 @@ Status BlockingAggIR::ToProto(carnotpb::Operator* op) const {
     pb->add_value_names(agg_expr.name);
   }
 
-  if (by_func_) {
+  if (by_func_ != nullptr) {
     for (const auto& group : groups_) {
       auto group_pb = pb->add_groups();
       group_pb->set_node(parent()->id());
@@ -390,7 +390,7 @@ Status BlockingAggIR::ToProto(carnotpb::Operator* op) const {
 }
 
 bool ColumnIR::HasLogicalRepr() const { return false; }
-Status ColumnIR::Init(const std::string& col_name, const pypa::AstPtr ast_node) {
+Status ColumnIR::Init(const std::string& col_name, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   col_name_ = col_name;
   return Status::OK();
@@ -401,7 +401,7 @@ std::string ColumnIR::DebugString(int64_t depth) const {
 }
 
 bool StringIR::HasLogicalRepr() const { return false; }
-Status StringIR::Init(std::string str, const pypa::AstPtr ast_node) {
+Status StringIR::Init(std::string str, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   str_ = str;
   return Status::OK();
@@ -412,7 +412,7 @@ std::string StringIR::DebugString(int64_t depth) const {
 }
 
 bool ListIR::HasLogicalRepr() const { return false; }
-Status ListIR::Init(const pypa::AstPtr ast_node) {
+Status ListIR::Init(const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   return Status::OK();
 }
@@ -433,7 +433,7 @@ bool LambdaIR::HasLogicalRepr() const { return false; }
 bool LambdaIR::HasDictBody() const { return has_dict_body_; }
 
 Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names,
-                      ColExpressionVector col_exprs, const pypa::AstPtr ast_node) {
+                      const ColExpressionVector& col_exprs, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   expected_column_names_ = expected_column_names;
   col_exprs_ = col_exprs;
@@ -442,7 +442,7 @@ Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names,
 }
 
 Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names, IRNode* node,
-                      const pypa::AstPtr ast_node) {
+                      const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   expected_column_names_ = expected_column_names;
   col_exprs_.push_back(ColumnExpression{"default_key", node});
@@ -475,7 +475,8 @@ std::string LambdaIR::DebugString(int64_t depth) const {
 }
 
 bool FuncIR::HasLogicalRepr() const { return false; }
-Status FuncIR::Init(std::string func_name, std::vector<IRNode*> args, const pypa::AstPtr ast_node) {
+Status FuncIR::Init(std::string func_name, const std::vector<IRNode*>& args,
+                    const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   func_name_ = func_name;
   args_ = args;
@@ -497,7 +498,7 @@ std::string FuncIR::DebugString(int64_t depth) const {
 
 /* Float IR */
 bool FloatIR::HasLogicalRepr() const { return false; }
-Status FloatIR::Init(double val, const pypa::AstPtr ast_node) {
+Status FloatIR::Init(double val, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   val_ = val;
   return Status::OK();
@@ -508,7 +509,7 @@ std::string FloatIR::DebugString(int64_t depth) const {
 
 /* Int IR */
 bool IntIR::HasLogicalRepr() const { return false; }
-Status IntIR::Init(int64_t val, const pypa::AstPtr ast_node) {
+Status IntIR::Init(int64_t val, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   val_ = val;
   return Status::OK();
@@ -519,7 +520,7 @@ std::string IntIR::DebugString(int64_t depth) const {
 
 /* Bool IR */
 bool BoolIR::HasLogicalRepr() const { return false; }
-Status BoolIR::Init(bool val, const pypa::AstPtr ast_node) {
+Status BoolIR::Init(bool val, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   val_ = val;
   return Status::OK();
@@ -529,7 +530,7 @@ std::string BoolIR::DebugString(int64_t depth) const {
 }
 /* Time IR */
 bool TimeIR::HasLogicalRepr() const { return false; }
-Status TimeIR::Init(int64_t val, const pypa::AstPtr ast_node) {
+Status TimeIR::Init(int64_t val, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   val_ = val;
   return Status::OK();

@@ -43,7 +43,7 @@ std::vector<std::string> tiers({"tier_0", "tier_1", "tier_2"});
 size_t GetTierIndex(const string& user_name) {
   return std::hash<std::string>()(user_name) % tiers.size();
 }
-static std::string GetUserTier(const string& user_name) { return tiers[GetTierIndex(user_name)]; }
+std::string GetUserTier(const string& user_name) { return tiers[GetTierIndex(user_name)]; }
 
 }  // namespace
 

@@ -140,7 +140,7 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(const pypa::AstCallPtr& call_ast,
 }
 StatusOr<ArgMap> ASTWalker::ProcessArgs(
     const pypa::AstCallPtr& call_ast, const std::vector<std::string>& expected_args,
-    bool kwargs_only, const std::unordered_map<std::string, pypa::AstPtr> default_args) {
+    bool kwargs_only, const std::unordered_map<std::string, pypa::AstPtr>& default_args) {
   auto arg_ast = call_ast->arglist;
   if (!kwargs_only) {
     return error::Unimplemented("Only supporting kwargs for now.");
@@ -174,13 +174,12 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(
       errors.push_back(CreateAstError(
           absl::Substitute("You must set '$0' directly. No default value found.", ma), call_ast));
       continue;
-    } else {
-      auto default_value = find_ma->second;
-      PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(default_value));
-      arg_map[ma] = value;
     }
+    auto default_value = find_ma->second;
+    PL_ASSIGN_OR_RETURN(IRNode * value, ProcessData(default_value));
+    arg_map[ma] = value;
   }
-  if (errors.size() != 0) {
+  if (!errors.empty()) {
     std::vector<std::string> msg;
     for (auto const& e : errors) {
       msg.push_back(e.ToString());
@@ -412,7 +411,8 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const std::string& 
     PL_ASSIGN_OR_RETURN(ColumnIR * expr, ir_graph_->MakeNode<ColumnIR>());
     PL_RETURN_IF_ERROR(expr->Init(attribute, node));
     return LambdaExprReturn(expr, column_names);
-  } else if (value == kUDFPrefix) {
+  }
+  if (value == kUDFPrefix) {
     return LambdaExprReturn(absl::StrFormat("%s.%s", value, attribute), true /*is_pixie_attr*/);
   }
   return CreateAstError(absl::StrFormat("Couldn't find value %s", value), node);
@@ -716,7 +716,7 @@ StatusOr<IntIR*> ASTWalker::EvalCompileTimeFn(const std::string& attr_fn_name,
 }
 
 StatusOr<IRNode*> ASTWalker::WrapAstError(StatusOr<IRNode*> status_or,
-                                          const pypa::AstPtr parent_node) {
+                                          const pypa::AstPtr& parent_node) {
   if (status_or.ok()) {
     auto val = status_or.ValueOrDie();
     return val;

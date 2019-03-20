@@ -105,7 +105,7 @@ Status AgentConnector::GetQueryResults(const sole::uuid &query_id,
   // TODO(zasgar): Handle hangups and errors from the agent.
   {
     std::unique_lock<std::mutex> lock(query_lock_);
-    while ((query_response_.query_id().data().size() == 0) ||
+    while ((query_response_.query_id().data().empty()) ||
            ParseUUID(query_response_.query_id()).ConsumeValueOrDie() != query_id) {
       query_cv_.wait(lock);
     }

@@ -138,7 +138,7 @@ class RowBatchBuilder {
   /**
    * @return The rowbatch.
    */
-  RowBatch& get() { return *rb_.get(); }
+  RowBatch& get() { return *rb_; }
 
  private:
   std::unique_ptr<RowBatch> rb_;

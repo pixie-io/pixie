@@ -142,7 +142,7 @@ StatusOr<plan::Relation> IRRelationHandler::BlockingAggHandler(OperatorIR* node,
 
   plan::Relation agg_rel;
   // TODO(philkuz) move this handler to a helper to simplify code here.
-  if (agg_node->by_func()) {
+  if (agg_node->by_func() != nullptr) {
     LambdaIR* by_func = static_cast<LambdaIR*>(agg_node->by_func());
     auto by_expected = by_func->expected_column_names();
     PL_RETURN_IF_ERROR(HasExpectedColumns(by_expected, parent_rel));

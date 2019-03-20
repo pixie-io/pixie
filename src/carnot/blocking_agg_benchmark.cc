@@ -50,10 +50,9 @@ std::shared_ptr<arrow::Array> GenerateInt64Batch(DistributionType dist_type, int
   if (dist_type == DistributionType::uniform) {
     auto data = bmutils::CreateLargeData<types::Int64Value>(size);
     return types::ToArrow(data, arrow::default_memory_pool());
-  } else {
-    auto data = bmutils::GetIntsFromExponential<types::Int64Value>(size, 1);
-    return types::ToArrow(data, arrow::default_memory_pool());
   }
+  auto data = bmutils::GetIntsFromExponential<types::Int64Value>(size, 1);
+  return types::ToArrow(data, arrow::default_memory_pool());
 }
 
 StatusOr<std::shared_ptr<Table>> CreateTable(std::vector<types::DataType> types,

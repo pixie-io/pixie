@@ -106,7 +106,7 @@ Status IRVerifier::VerifyBlockingAgg(IRNode* node) {
   PL_RETURN_IF_ERROR(
       ExpectOp(agg_node->parent(), ExpString("BlockingAggIR", node->id(), "parent")));
   // Only check if by_func is not a nullptr.
-  if (agg_node->by_func()) {
+  if (agg_node->by_func() != nullptr) {
     PL_RETURN_IF_ERROR(ExpectType(LambdaType, agg_node->by_func(),
                                   ExpString("BlockingAggIR", node->id(), "by_func")));
     // Check whether the `by` function is just a column
@@ -123,7 +123,7 @@ Status IRVerifier::VerifyBlockingAgg(IRNode* node) {
           by_body->type_string(), by_body->id());
       return FormatErrorMsg(msg, node);
     }
-  } else if (agg_node->groups_set() || agg_node->groups().size() != 0) {
+  } else if (agg_node->groups_set() || !agg_node->groups().empty()) {
     // Groups shouldn't be set.
     return FormatErrorMsg("AggIR: by function is not set, shouldn't have groups set.", node);
   }

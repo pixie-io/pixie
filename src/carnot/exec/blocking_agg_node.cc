@@ -295,13 +295,13 @@ Status BlockingAggNode::ConvertAggHashMapToRowBatch(ExecState *exec_state, RowBa
 
   for (const auto &group_builder : group_builders) {
     std::shared_ptr<arrow::Array> arr;
-    PL_RETURN_IF_ERROR(group_builder.get()->Finish(&arr));
+    PL_RETURN_IF_ERROR(group_builder->Finish(&arr));
     PL_RETURN_IF_ERROR(output_rb->AddColumn(arr));
   }
 
   for (const auto &value_builder : value_builders) {
     std::shared_ptr<arrow::Array> arr;
-    PL_RETURN_IF_ERROR(value_builder.get()->Finish(&arr));
+    PL_RETURN_IF_ERROR(value_builder->Finish(&arr));
     PL_RETURN_IF_ERROR(output_rb->AddColumn(arr));
   }
 

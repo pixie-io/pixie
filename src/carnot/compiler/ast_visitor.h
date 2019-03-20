@@ -132,11 +132,11 @@ class ASTWalker {
    * @param kwargs_only Whether to only allow keyword args.
    * @return StatusOr<ArgMap>
    */
-  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& arg_ast,
+  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast,
                                const std::vector<std::string>& expected_args, bool kwargs_only,
-                               const std::unordered_map<std::string, pypa::AstPtr> default_args);
+                               const std::unordered_map<std::string, pypa::AstPtr>& default_args);
 
-  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& arg_ast,
+  StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast,
                                const std::vector<std::string>& expected_args, bool kwargs_only);
   /**
    * @brief ProcessExprStmtNode handles full lines that are expression statements.
@@ -467,7 +467,7 @@ class ASTWalker {
    * @param ast
    * @return StatusOr<IRNode*>
    */
-  StatusOr<IRNode*> ProcessDataCall(const pypa::AstCallPtr& ast);
+  StatusOr<IRNode*> ProcessDataCall(const pypa::AstCallPtr& node);
 
   /**
    * @brief Create an error that incorporates line, column of ast node into the error message.
@@ -514,7 +514,7 @@ class ASTWalker {
   StatusOr<LambdaExprReturn> LookupPLTimeAttribute(const std::string& attribute_name,
                                                    const pypa::AstPtr& parent_node);
   // Wraps a statusor with a parent_node ast info.
-  StatusOr<IRNode*> WrapAstError(StatusOr<IRNode*> status_or, const pypa::AstPtr parent_node);
+  StatusOr<IRNode*> WrapAstError(StatusOr<IRNode*> status_or, const pypa::AstPtr& parent_node);
   std::shared_ptr<IR> ir_graph_;
   VarTable var_table_;
   CompilerState* compiler_state_;

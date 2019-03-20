@@ -53,7 +53,7 @@ TEST_F(MapNodeTest, basic) {
   RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
   RowDescriptor output_rd({types::DataType::INT64});
 
-  auto tester = exec::ExecNodeTester<MapNode, plan::MapOperator>(*plan_node_.get(), output_rd, {},
+  auto tester = exec::ExecNodeTester<MapNode, plan::MapOperator>(*plan_node_, output_rd, {},
                                                                  exec_state_.get());
   tester
       .ConsumeNext(RowBatchBuilder(input_rd, 4, false)
@@ -75,7 +75,7 @@ TEST_F(MapNodeTest, child_fail) {
   RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});
   RowDescriptor output_rd({types::DataType::INT64});
 
-  auto tester = exec::ExecNodeTester<MapNode, plan::MapOperator>(*plan_node_.get(), output_rd, {},
+  auto tester = exec::ExecNodeTester<MapNode, plan::MapOperator>(*plan_node_, output_rd, {},
                                                                  exec_state_.get());
   tester.ConsumeNextShouldFail(RowBatchBuilder(input_rd, 4, false)
                                    .AddColumn<types::Int64Value>({1, 2, 3, 4})

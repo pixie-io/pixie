@@ -99,7 +99,8 @@ struct Time64NSValue : public Int64Value {
 union FixedSizeValueUnion {
   // Don't construct values up creation of this union, this default constructor
   // prevents construction of sub types.
-  FixedSizeValueUnion() {}
+  // NOLINTNEXTLINE: using = default does not work, we actually want an empty constructor.
+  FixedSizeValueUnion(){};
   BoolValue bool_value;
   Int64Value int64_value;
   Float64Value float64_value;
