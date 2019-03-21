@@ -36,8 +36,7 @@ Status Compiler::VerifyIRConnections(const IR& ir) {
   return Status::OK();
 }
 Status Compiler::UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_state) {
-  auto relation_handler =
-      IRRelationHandler(*compiler_state->relation_map(), *compiler_state->registry_info());
+  auto relation_handler = IRRelationHandler(compiler_state);
   return relation_handler.UpdateRelationsAndCheckFunctions(ir);
 }
 

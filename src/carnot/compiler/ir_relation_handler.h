@@ -16,7 +16,7 @@ namespace compiler {
 class IRRelationHandler {
  public:
   IRRelationHandler() = delete;
-  explicit IRRelationHandler(const RelationMap& relation_map, const RegistryInfo& registry_info);
+  explicit IRRelationHandler(CompilerState* compiler_state);
   /**
    * @brief Wrapper for all of the update functionality of the IRRelationHandler.
 
@@ -112,8 +112,7 @@ class IRRelationHandler {
   StatusOr<IntIR*> EvaluateCompilerFunction(const std::string& name,
                                             std::vector<IntIR*> evaled_args, IRNode* parent_node);
   /** Variables **/
-  RegistryInfo registry_info_;
-  RelationMap relation_map_;
+  CompilerState* compiler_state_;
 };
 }  // namespace compiler
 }  // namespace carnot

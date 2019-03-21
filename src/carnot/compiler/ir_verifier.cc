@@ -63,9 +63,9 @@ Status IRVerifier::VerifyMemorySource(IRNode* node) {
 
 Status IRVerifier::VerifyRange(IRNode* node) {
   auto range_node = static_cast<RangeIR*>(node);
-  PL_RETURN_IF_ERROR(ExpectType({IntType, FuncType}, range_node->start_repr(),
+  PL_RETURN_IF_ERROR(ExpectType({IntType, FuncType, StringType}, range_node->start_repr(),
                                 ExpString("RangeIR", range_node->id(), "start_repr")));
-  PL_RETURN_IF_ERROR(ExpectType({IntType, FuncType}, range_node->stop_repr(),
+  PL_RETURN_IF_ERROR(ExpectType({IntType, FuncType, StringType}, range_node->stop_repr(),
                                 ExpString("RangeIR", range_node->id(), "stop_repr")));
 
   PL_RETURN_IF_ERROR(ExpectType(MemorySourceType, range_node->parent(),

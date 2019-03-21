@@ -130,11 +130,13 @@ class ASTWalker {
    * @param arg_ast The arglist ast
    * @param expected_args The string args are expect. Should be ordered if kwargs_only is false.
    * @param kwargs_only Whether to only allow keyword args.
+   * @param default_args A map from the arg name to a defualt node. Every arg is optionally default
+   * and doesn't need a specification
    * @return StatusOr<ArgMap>
    */
   StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast,
                                const std::vector<std::string>& expected_args, bool kwargs_only,
-                               const std::unordered_map<std::string, IRNode*> default_args);
+                               const std::unordered_map<std::string, IRNode*>& default_args);
 
   StatusOr<ArgMap> ProcessArgs(const pypa::AstCallPtr& call_ast,
                                const std::vector<std::string>& expected_args, bool kwargs_only);

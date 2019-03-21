@@ -771,8 +771,6 @@ TEST_F(CompilerTest, no_arg_pl_count_test) {
 }
 
 TEST_F(CompilerTest, implied_stop_params) {
-  // std::string expected_plan =
-  //     absl::Substitute(kRangeTimeUnitPlan, now_time - chrono_ns.count(), now_time, table_name_);
   std::string query = absl::StrJoin({"queryDF = From(table='sequences', select=['_time', "
                                      "'xmod10']).Range(start=plc.now() - plc.minutes(2))",
                                      "queryDF.Result(name='$0')"},
@@ -787,6 +785,50 @@ TEST_F(CompilerTest, implied_stop_params) {
   std::chrono::nanoseconds time_diff = std::chrono::minutes(2);
   std::string expected_plan =
       absl::Substitute(kRangeTimeUnitPlan, now_time - time_diff.count(), now_time, table_name);
+  carnotpb::Plan plan_pb;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
+  VLOG(1) << plan_pb.DebugString();
+  EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
+}
+
+TEST_F(CompilerTest, string_start_param) {
+  std::string query = absl::StrJoin({"queryDF = From(table='sequences', select=['_time', "
+                                     "'xmod10']).Range(start='-2m')",
+                                     "queryDF.Result(name='$0')"},
+                                    "\n");
+  std::string table_name = "ranged_table";
+  query = absl::Substitute(query, table_name);
+  auto compiler = Compiler();
+  auto plan = compiler.Compile(query, compiler_state_.get());
+  ASSERT_OK(plan);
+  VLOG(1) << plan.ValueOrDie().DebugString();
+  int64_t now_time = compiler_state_->time_now().val;
+  std::chrono::nanoseconds time_diff = std::chrono::minutes(2);
+  std::string expected_plan =
+      absl::Substitute(kRangeTimeUnitPlan, now_time - time_diff.count(), now_time, table_name);
+  carnotpb::Plan plan_pb;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
+  VLOG(1) << plan_pb.DebugString();
+  EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
+}
+
+TEST_F(CompilerTest, string_start_stop_param) {
+  std::string query = absl::StrJoin({"queryDF = From(table='sequences', select=['_time', "
+                                     "'xmod10']).Range(start='-5m', stop='-1m')",
+                                     "queryDF.Result(name='$0')"},
+                                    "\n");
+  std::string table_name = "ranged_table";
+  query = absl::Substitute(query, table_name);
+  auto compiler = Compiler();
+  auto plan = compiler.Compile(query, compiler_state_.get());
+  ASSERT_OK(plan);
+  VLOG(1) << plan.ValueOrDie().DebugString();
+  int64_t now_time = compiler_state_->time_now().val;
+  std::chrono::nanoseconds time_diff_start = std::chrono::minutes(5);
+  std::chrono::nanoseconds time_diff_end = std::chrono::minutes(1);
+  std::string expected_plan =
+      absl::Substitute(kRangeTimeUnitPlan, now_time - time_diff_start.count(),
+                       now_time - time_diff_end.count(), table_name);
   carnotpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
   VLOG(1) << plan_pb.DebugString();

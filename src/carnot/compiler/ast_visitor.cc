@@ -140,7 +140,7 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(const pypa::AstCallPtr& call_ast,
 }
 StatusOr<ArgMap> ASTWalker::ProcessArgs(
     const pypa::AstCallPtr& call_ast, const std::vector<std::string>& expected_args,
-    bool kwargs_only, const std::unordered_map<std::string, IRNode*> default_args) {
+    bool kwargs_only, const std::unordered_map<std::string, IRNode*>& default_args) {
   auto arg_ast = call_ast->arglist;
   if (!kwargs_only) {
     return error::Unimplemented("Only supporting kwargs for now.");
@@ -260,10 +260,10 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeOp(const pypa::AstCallPtr& node) {
   }
   PL_ASSIGN_OR_RETURN(RangeIR * ir_node, ir_graph_->MakeNode<RangeIR>());
   // Setup the default arguments.
-  PL_ASSIGN_OR_RETURN(IntIR * default_start_node, MakeTimeNow(node));
+  PL_ASSIGN_OR_RETURN(IntIR * default_stop_node, MakeTimeNow(node));
 
   PL_ASSIGN_OR_RETURN(ArgMap args,
-                      ProcessArgs(node, {"start", "stop"}, true, {{"stop", default_start_node}}));
+                      ProcessArgs(node, {"start", "stop"}, true, {{"stop", default_stop_node}}));
   PL_ASSIGN_OR_RETURN(IRNode * call_result,
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
   PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["start"], args["stop"], node));

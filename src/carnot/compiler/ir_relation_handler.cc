@@ -6,10 +6,8 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-IRRelationHandler::IRRelationHandler(const RelationMap& relation_map,
-                                     const RegistryInfo& registry_info) {
-  registry_info_ = registry_info;
-  relation_map_ = relation_map;
+IRRelationHandler::IRRelationHandler(CompilerState* compiler_state) {
+  compiler_state_ = compiler_state;
 }
 /**
  * @brief Iterates through all of the IR columns and makes sure
@@ -74,10 +72,12 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateFuncExpr(FuncIR* expr,
   types::DataType data_type;
   // set the type of the function in the UDF.
   if (is_map) {
-    PL_ASSIGN_OR_RETURN(data_type, registry_info_.GetUDF(expr->func_name(), args_types));
+    PL_ASSIGN_OR_RETURN(data_type,
+                        compiler_state_->registry_info()->GetUDF(expr->func_name(), args_types));
   } else {
     // Check in UDA instead.
-    PL_ASSIGN_OR_RETURN(data_type, registry_info_.GetUDA(expr->func_name(), args_types));
+    PL_ASSIGN_OR_RETURN(data_type,
+                        compiler_state_->registry_info()->GetUDA(expr->func_name(), args_types));
   }
 
   return data_type;
@@ -264,6 +264,14 @@ StatusOr<IntIR*> IRRelationHandler::EvaluateCompilerExpression(IRNode* node) {
 
   } else if (node->type() == IRNodeType::IntType) {
     return static_cast<IntIR*>(node);
+  } else if (node->type() == IRNodeType::StringType) {
+    // Do the string processing
+    auto str_node = static_cast<StringIR*>(node);
+    PL_ASSIGN_OR_RETURN(int64_t int_val, StringToTimeInt(str_node->str()));
+    int64_t time_repr = compiler_state_->time_now().val + int_val;
+    PL_ASSIGN_OR_RETURN(auto out_node, node->graph_ptr()->MakeNode<IntIR>());
+    PL_RETURN_IF_ERROR(out_node->Init(time_repr, node->ast_node()));
+    return out_node;
   }
   return IRUtils::CreateIRNodeError(
       absl::Substitute("Expected time constant or expression, not $0", node->type_string()), *node);
@@ -335,8 +343,8 @@ Status IRRelationHandler::SetSourceRelation(IRNode* node) {
   }
   auto table_str = static_cast<StringIR*>(table_node)->str();
   // get the table_str from the relation map
-  auto relation_map_it = relation_map_.find(table_str);
-  if (relation_map_it == relation_map_.end()) {
+  auto relation_map_it = compiler_state_->relation_map()->find(table_str);
+  if (relation_map_it == compiler_state_->relation_map()->end()) {
     return error::InvalidArgument("Table $0 not found in the relation map", table_str);
   }
   plan::Relation table_relation = relation_map_it->second;

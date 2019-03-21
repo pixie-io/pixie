@@ -74,6 +74,7 @@ class RelationHandlerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     Test::SetUp();
+    relation_map_ = std::make_unique<RelationMap>();
 
     registry_info_ = std::make_shared<RegistryInfo>();
     carnotpb::UDFInfo info_pb;
@@ -83,14 +84,16 @@ class RelationHandlerTest : public ::testing::Test {
     cpu_relation.AddColumn(types::FLOAT64, "cpu0");
     cpu_relation.AddColumn(types::FLOAT64, "cpu1");
     cpu_relation.AddColumn(types::FLOAT64, "cpu2");
-    relation_map_.emplace("cpu", cpu_relation);
+    relation_map_->emplace("cpu", cpu_relation);
 
     plan::Relation non_float_relation;
     non_float_relation.AddColumn(types::INT64, "int_col");
     non_float_relation.AddColumn(types::FLOAT64, "float_col");
     non_float_relation.AddColumn(types::STRING, "string_col");
     non_float_relation.AddColumn(types::BOOLEAN, "bool_col");
-    relation_map_.emplace("non_float_table", non_float_relation);
+    relation_map_->emplace("non_float_table", non_float_relation);
+    compiler_state_ =
+        std::make_unique<CompilerState>(std::move(relation_map_), registry_info_.get(), time_now);
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query) {
@@ -103,7 +106,7 @@ class RelationHandlerTest : public ::testing::Test {
     return result;
   }
   Status HandleRelation(std::shared_ptr<IR> ir_graph) {
-    auto relation_handler = IRRelationHandler(relation_map_, *registry_info_);
+    auto relation_handler = IRRelationHandler(compiler_state_.get());
     return relation_handler.UpdateRelationsAndCheckFunctions(ir_graph.get());
   }
   bool RelationEquality(const plan::Relation& r1, const plan::Relation& r2) {
@@ -156,17 +159,19 @@ class RelationHandlerTest : public ::testing::Test {
     return error::NotFound("Couldn't find node of type $0 in ir_graph.", kIRNodeStrings[type]);
   }
 
-  // std::unique_ptr<CompilerState> compiler_state_;
   std::shared_ptr<RegistryInfo> registry_info_;
-  std::unordered_map<std::string, plan::Relation> relation_map_;
+  std::unique_ptr<RelationMap> relation_map_;
+  std::unique_ptr<CompilerState> compiler_state_;
+  int64_t time_now = 1552607213931245000;
 };
 
 TEST_F(RelationHandlerTest, test_utils) {
   plan::Relation cpu2_relation;
   cpu2_relation.AddColumn(types::FLOAT64, "cpu0");
   cpu2_relation.AddColumn(types::FLOAT64, "cpu1");
-  EXPECT_FALSE(RelationEquality(relation_map_["cpu"], cpu2_relation));
-  EXPECT_TRUE(RelationEquality(relation_map_["cpu"], relation_map_["cpu"]));
+  EXPECT_FALSE(RelationEquality((*compiler_state_->relation_map())["cpu"], cpu2_relation));
+  EXPECT_TRUE(RelationEquality((*compiler_state_->relation_map())["cpu"],
+                               (*compiler_state_->relation_map())["cpu"]));
 }
 
 TEST_F(RelationHandlerTest, no_special_relation) {
@@ -340,14 +345,15 @@ TEST_F(RelationHandlerTest, test_relation_results) {
   auto source_node_status = FindNodeType(ir_graph, MemorySourceType);
   EXPECT_OK(source_node_status);
   auto source_node = static_cast<MemorySourceIR*>(source_node_status.ConsumeValueOrDie());
-  EXPECT_TRUE(RelationEquality(source_node->relation(), relation_map_["cpu"]));
+  EXPECT_TRUE(RelationEquality(source_node->relation(), (*compiler_state_->relation_map())["cpu"]));
   auto mem_node_status = FindNodeType(ir_graph, MemorySinkType);
 
   // Map relation should be contain cpu0, cpu1, and cpu_sum.
   auto map_node_status = FindNodeType(ir_graph, MapType);
   EXPECT_OK(map_node_status);
   auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
-  auto test_map_relation_s = relation_map_["cpu"].MakeSubRelation({"cpu0", "cpu1"});
+  auto test_map_relation_s =
+      (*compiler_state_->relation_map())["cpu"].MakeSubRelation({"cpu0", "cpu1"});
   EXPECT_OK(test_map_relation_s);
   plan::Relation test_map_relation = test_map_relation_s.ConsumeValueOrDie();
   test_map_relation.AddColumn(types::FLOAT64, "cpu_sum");
