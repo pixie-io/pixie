@@ -1,7 +1,11 @@
 #pragma once
 
 #include <google/protobuf/text_format.h>
+#include <google/protobuf/util/message_differencer.h>
+
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "absl/strings/substitute.h"
 #include "src/carnot/plan/dag.h"
@@ -15,6 +19,8 @@ namespace carnot {
 namespace carnotpb {
 namespace testutils {
 
+using google::protobuf::Descriptor;
+using google::protobuf::FieldDescriptor;
 /**
  * This files provides canonical test protos that
  * other parts of the project can use to provide "fakes" for the
@@ -584,6 +590,28 @@ carnotpb::ScalarExpression CreateTestScalarExpressionWithFunc1PB() {
   auto exp_proto = absl::Substitute(kScalarExpressionTmpl, "func", kFuncWithTwoCols);
   CHECK(google::protobuf::TextFormat::MergeFromString(exp_proto, &exp)) << "Failed to parse proto";
   return exp;
+}
+const FieldDescriptor* GetFieldDescriptor(const google::protobuf::Message& message,
+                                          const std::string& field_name) {
+  std::vector<std::string> field_path = absl::StrSplit(field_name, ".");
+  const Descriptor* descriptor = message.GetDescriptor();
+  const FieldDescriptor* field = NULL;
+  for (size_t i = 0; i < field_path.size(); i++) {
+    field = descriptor->FindFieldByName(field_path[i]);
+    descriptor = field->message_type();
+  }
+  return field;
+}
+bool CompareLogicalPlans(const carnotpb::Plan& expected_plan, const carnotpb::Plan& actual_plan,
+                         bool ignore_ids) {
+  google::protobuf::util::MessageDifferencer differ;
+  if (ignore_ids) {
+    differ.IgnoreField(GetFieldDescriptor(expected_plan, "dag"));
+    differ.IgnoreField(GetFieldDescriptor(expected_plan, "nodes.dag"));
+    differ.IgnoreField(GetFieldDescriptor(expected_plan, "nodes.id"));
+    differ.IgnoreField(GetFieldDescriptor(expected_plan, "nodes.nodes.id"));
+  }
+  return differ.Compare(expected_plan, actual_plan);
 }
 
 }  // namespace testutils

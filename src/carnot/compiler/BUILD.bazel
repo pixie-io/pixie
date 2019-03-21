@@ -76,7 +76,7 @@ pl_cc_test(
     srcs = ["compiler_test.cc"],
     deps = [
         ":cc_library",
-        "//src/carnot/proto:plan_pl_cc_proto",
+        "//src/carnot/proto:plan_testutils",
     ],
 )
 

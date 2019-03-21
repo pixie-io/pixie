@@ -12,11 +12,13 @@
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/proto/test_proto.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
 
+using carnotpb::testutils::CompareLogicalPlans;
 using testing::_;
 
 const char* kExpectedUDFInfo = R"(
@@ -270,8 +272,7 @@ TEST_F(CompilerTest, test_general_compilation) {
 
   ASSERT_TRUE(
       google::protobuf::TextFormat::MergeFromString(kExpectedLogicalPlan, &expected_logical_plan));
-  EXPECT_TRUE(
-      google::protobuf::util::MessageDifferencer::Equals(expected_logical_plan, logical_plan));
+  EXPECT_TRUE(CompareLogicalPlans(expected_logical_plan, logical_plan, false /*ignore_ids*/));
 }
 
 // Test for select order that is different than the schema.
@@ -337,8 +338,7 @@ TEST_F(CompilerTest, select_order_test) {
   carnotpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kSelectOrderLogicalPlan, &plan_pb));
   VLOG(2) << plan.ValueOrDie().DebugString();
-  EXPECT_TRUE(
-      google::protobuf::util::MessageDifferencer::Equals(plan_pb, plan.ConsumeValueOrDie()));
+  EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), false /*ignore_ids*/));
 }
 
 const char* kRangeNowPlan = R"(
@@ -415,28 +415,11 @@ TEST_F(CompilerTest, range_now_test) {
   carnotpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
   VLOG(1) << plan_pb.DebugString();
-  EXPECT_TRUE(
-      google::protobuf::util::MessageDifferencer::Equals(plan_pb, plan.ConsumeValueOrDie()));
+  EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), false /*ignore_ids*/));
 }
 const char* kRangeTimeUnitPlan = R"(
-dag {
-  nodes {
-    id: 1
-  }
-}
 nodes {
-  id: 1
-  dag {
-    nodes {
-      id: 6
-      sorted_deps: 11
-    }
-    nodes {
-      id: 11
-    }
-  }
   nodes {
-    id: 6
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -457,7 +440,6 @@ nodes {
     }
   }
   nodes {
-    id : 11
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -516,8 +498,7 @@ TEST_P(CompilerTimeFnTest, range_now_keyword_test) {
   ASSERT_OK(plan);
   VLOG(2) << plan.ValueOrDie().DebugString();
 
-  EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_plan_pb,
-                                                                 plan.ConsumeValueOrDie()));
+  EXPECT_TRUE(CompareLogicalPlans(expected_plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
 }
 
 INSTANTIATE_TEST_CASE_P(CompilerTimeFnTestSuites, CompilerTimeFnTest,
@@ -598,8 +579,7 @@ TEST_F(CompilerTest, group_by_all) {
   // google::protobuf::util::MessageDifferencer differ();
   ASSERT_TRUE(
       google::protobuf::TextFormat::MergeFromString(kGroupByAllPlan, &expected_logical_plan));
-  EXPECT_TRUE(
-      google::protobuf::util::MessageDifferencer::Equals(expected_logical_plan, logical_plan));
+  EXPECT_TRUE(CompareLogicalPlans(expected_logical_plan, logical_plan, false /*ignore_ids*/));
 }
 
 const char* kRangeAggPlan = R"(
@@ -737,8 +717,7 @@ TEST_F(CompilerTest, range_agg_test) {
   carnotpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kRangeAggPlan, &plan_pb));
   VLOG(2) << plan.ValueOrDie().DebugString();
-  EXPECT_TRUE(
-      google::protobuf::util::MessageDifferencer::Equals(plan_pb, plan.ConsumeValueOrDie()));
+  EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), false /*ignore_ids*/));
 }
 
 TEST_F(CompilerTest, multiple_group_by_agg_test) {
