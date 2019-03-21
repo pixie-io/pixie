@@ -9,6 +9,7 @@
 #include "src/carnot/exec/row_batch.h"
 #include "src/carnot/exec/row_descriptor.h"
 #include "src/carnot/exec/table.h"
+#include "src/carnot/plan/relation.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/carnot/udf/udf_wrapper.h"
@@ -59,11 +60,15 @@ StatusOr<std::shared_ptr<Table>> CreateTable(std::vector<types::DataType> types,
                                              std::vector<DistributionType> distribution_types,
                                              int64_t rb_size, int64_t num_batches) {
   RowDescriptor rd = RowDescriptor(types);
+  std::vector<std::string> col_names;
+  for (size_t col_idx = 0; col_idx < types.size(); col_idx++) {
+    col_names.push_back(absl::StrFormat("col%d", col_idx));
+  }
 
-  auto table = std::make_shared<Table>(rd);
+  auto table = std::make_shared<Table>(plan::Relation(types, col_names));
 
   for (size_t col_idx = 0; col_idx < types.size(); col_idx++) {
-    auto col = std::make_shared<Column>(types.at(col_idx), absl::StrFormat("col%d", col_idx));
+    auto col = table->GetColumn(col_idx);
     for (int batch_idx = 0; batch_idx < num_batches; batch_idx++) {
       std::shared_ptr<arrow::Array> batch;
       // TODO(michelle): Handle string types.
@@ -75,8 +80,6 @@ StatusOr<std::shared_ptr<Table>> CreateTable(std::vector<types::DataType> types,
       auto s = col->AddBatch(batch);
       PL_UNUSED(s);
     }
-    auto s = table->AddColumn(col);
-    PL_UNUSED(s);
   }
 
   return table;

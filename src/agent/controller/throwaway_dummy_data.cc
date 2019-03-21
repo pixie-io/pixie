@@ -8,6 +8,7 @@
 
 #include "src/agent/controller/throwaway_dummy_data.h"
 #include "src/carnot/exec/table.h"
+#include "src/carnot/plan/relation.h"
 #include "src/common/status.h"
 #include "src/shared/types/types.h"
 
@@ -79,11 +80,14 @@ StatusOr<std::shared_ptr<Table>> FakeHipsterTable() {
   int bad_start = num_records / 3;
   int bad_stop = bad_start + num_records / 10;
 
-  auto time_col = std::make_shared<Column>(DataType::TIME64NS, "time_");
-  auto transaction_id_col = std::make_shared<Column>(DataType::STRING, "transaction_id");
-  auto http_request_col = std::make_shared<Column>(DataType::STRING, "http_request");
-  auto latency_col = std::make_shared<Column>(DataType::FLOAT64, "latency_ms");
-  auto http_response_col = std::make_shared<Column>(DataType::INT64, "http_response");
+  auto table = std::make_shared<Table>(carnot::plan::Relation(
+      {DataType::TIME64NS, DataType::STRING, DataType::STRING, DataType::FLOAT64, DataType::INT64},
+      {"time_", "transaction_id", "http_request", "latency_ms", "http_response"}));
+  auto time_col = table->GetColumn(0);
+  auto transaction_id_col = table->GetColumn(1);
+  auto http_request_col = table->GetColumn(2);
+  auto latency_col = table->GetColumn(3);
+  auto http_response_col = table->GetColumn(4);
 
   std::vector<Time64NSValue> time_col_chunk;
   std::vector<StringValue> transaction_id_chunk;
@@ -145,13 +149,6 @@ StatusOr<std::shared_ptr<Table>> FakeHipsterTable() {
       batch_idx = 0;
     }
   }
-
-  auto table = std::make_shared<Table>(rd);
-  PL_RETURN_IF_ERROR(table->AddColumn(time_col));
-  PL_RETURN_IF_ERROR(table->AddColumn(transaction_id_col));
-  PL_RETURN_IF_ERROR(table->AddColumn(http_request_col));
-  PL_RETURN_IF_ERROR(table->AddColumn(latency_col));
-  PL_RETURN_IF_ERROR(table->AddColumn(http_response_col));
 
   return table;
 }

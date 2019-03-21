@@ -34,26 +34,24 @@ TEST(ColumnTest, wrong_chunk_type_test) {
 }
 
 TEST(TableTest, basic_test) {
-  auto descriptor =
-      std::vector<types::DataType>({types::DataType::BOOLEAN, types::DataType::INT64});
-  RowDescriptor rd = RowDescriptor(descriptor);
+  plan::Relation rel =
+      plan::Relation({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
 
-  Table table = Table(rd);
+  Table table = Table(rel);
+  auto col1 = table.GetColumn(0);
+  auto col2 = table.GetColumn(1);
 
-  auto col1 = std::make_shared<Column>(types::DataType::BOOLEAN, "col1");
   std::vector<types::BoolValue> col1_in1 = {true, false, true};
   std::vector<types::BoolValue> col1_in2 = {false, false};
+
   EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
 
-  auto col2 = std::make_shared<Column>(types::DataType::INT64, "col2");
   std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
   std::vector<types::Int64Value> col2_in2 = {5, 6};
   EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
   EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 
-  EXPECT_OK(table.AddColumn(col1));
-  EXPECT_OK(table.AddColumn(col2));
   EXPECT_EQ(table.NumBatches(), 2);
 
   auto rb1 = table.GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
@@ -75,67 +73,29 @@ TEST(TableTest, basic_test) {
   EXPECT_TRUE(rb2->ColumnAt(1)->Equals(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 }
 
-TEST(TableTest, wrong_schema_test) {
-  auto descriptor =
-      std::vector<types::DataType>({types::DataType::BOOLEAN, types::DataType::FLOAT64});
-  RowDescriptor rd = RowDescriptor(descriptor);
-
-  Table table = Table(rd);
-
-  auto col1 = std::make_shared<Column>(types::DataType::BOOLEAN, "col1");
-  auto col2 = std::make_shared<Column>(types::DataType::INT64, "col2");
-
-  EXPECT_OK(table.AddColumn(col1));
-  EXPECT_FALSE(table.AddColumn(col2).ok());
-}
-
 TEST(TableTest, wrong_batch_size_test) {
-  auto descriptor =
-      std::vector<types::DataType>({types::DataType::BOOLEAN, types::DataType::FLOAT64});
-  RowDescriptor rd = RowDescriptor(descriptor);
+  plan::Relation rel =
+      plan::Relation({types::DataType::BOOLEAN, types::DataType::FLOAT64}, {"col1", "col2"});
 
-  Table table = Table(rd);
+  Table table = Table(rel);
+  auto col1 = table.GetColumn(0);
+  auto col2 = table.GetColumn(1);
 
-  auto col1 = std::make_shared<Column>(types::DataType::BOOLEAN, "col1");
   std::vector<types::BoolValue> col1_in1 = {true, false, true};
   std::vector<types::BoolValue> col1_in2 = {false, false};
   EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
-  auto col2 = std::make_shared<Column>(Column(types::DataType::INT64, "col2"));
+
   std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
-  std::vector<types::Int64Value> col2_in2 = {5, 6, 7};
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
-  EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
-
-  EXPECT_TRUE(table.AddColumn(col1).ok());
-  EXPECT_FALSE(table.AddColumn(col2).ok());
-}
-
-TEST(TableTest, wrong_col_number_test) {
-  auto descriptor = std::vector<types::DataType>({types::DataType::BOOLEAN});
-  RowDescriptor rd = RowDescriptor(descriptor);
-
-  Table table = Table(rd);
-
-  auto col1 = std::make_shared<Column>(types::DataType::BOOLEAN, "col1");
-  auto col2 = std::make_shared<Column>(types::DataType::INT64, "col2");
-
-  EXPECT_OK(table.AddColumn(col1));
-  EXPECT_FALSE(table.AddColumn(col2).ok());
+  EXPECT_NOT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
 }
 
 TEST(TableTest, write_row_batch) {
-  auto descriptor =
-      std::vector<types::DataType>({types::DataType::BOOLEAN, types::DataType::INT64});
-  RowDescriptor rd = RowDescriptor(descriptor);
+  auto rd = RowDescriptor({types::DataType::BOOLEAN, types::DataType::INT64});
+  plan::Relation rel =
+      plan::Relation({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
 
-  Table table = Table(rd);
-
-  auto col1 = std::make_shared<Column>(types::DataType::BOOLEAN, "col1");
-  auto col2 = std::make_shared<Column>(types::DataType::INT64, "col2");
-
-  EXPECT_OK(table.AddColumn(col1));
-  EXPECT_OK(table.AddColumn(col2));
+  Table table = Table(rel);
 
   auto rb1 = RowBatch(rd, 2);
   std::vector<types::BoolValue> col1_rb1 = {true, false};
@@ -153,13 +113,11 @@ TEST(TableTest, write_row_batch) {
 }
 
 TEST(TableTest, hot_batches_test) {
-  auto descriptor =
-      std::vector<types::DataType>({types::DataType::BOOLEAN, types::DataType::INT64});
-  RowDescriptor rd = RowDescriptor(descriptor);
+  plan::Relation rel =
+      plan::Relation({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
 
-  Table table = Table(rd);
+  Table table = Table(rel);
 
-  auto col1 = std::make_shared<Column>(types::DataType::BOOLEAN, "col1");
   std::vector<types::BoolValue> col1_in1 = {true, false, true};
   auto col1_in1_wrapper =
       types::ColumnWrapper::FromArrow(types::ToArrow(col1_in1, arrow::default_memory_pool()));
@@ -167,16 +125,12 @@ TEST(TableTest, hot_batches_test) {
   auto col1_in2_wrapper =
       types::ColumnWrapper::FromArrow(types::ToArrow(col1_in2, arrow::default_memory_pool()));
 
-  auto col2 = std::make_shared<Column>(types::DataType::INT64, "col2");
   std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
   auto col2_in1_wrapper =
       types::ColumnWrapper::FromArrow(types::ToArrow(col2_in1, arrow::default_memory_pool()));
   std::vector<types::Int64Value> col2_in2 = {5, 6};
   auto col2_in2_wrapper =
       types::ColumnWrapper::FromArrow(types::ToArrow(col2_in2, arrow::default_memory_pool()));
-
-  EXPECT_OK(table.AddColumn(col1));
-  EXPECT_OK(table.AddColumn(col2));
 
   auto rb_wrapper_1 = std::make_unique<types::ColumnWrapperRecordBatch>();
   rb_wrapper_1->push_back(col1_in1_wrapper);
@@ -216,17 +170,11 @@ TEST(TableTest, arrow_batches_test) {
 }
 
 TEST(TableTest, greater_than_eq_eq) {
-  auto descriptor =
-      std::vector<types::DataType>({types::DataType::BOOLEAN, types::DataType::INT64});
-  RowDescriptor rd = RowDescriptor(descriptor);
+  plan::Relation rel =
+      plan::Relation({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
+  auto rd = RowDescriptor({types::DataType::BOOLEAN, types::DataType::INT64});
 
-  Table table = Table(rd);
-
-  auto col1 = std::make_shared<Column>(types::DataType::BOOLEAN, "col1");
-  auto col2 = std::make_shared<Column>(types::DataType::INT64, "col2");
-
-  EXPECT_OK(table.AddColumn(col1));
-  EXPECT_OK(table.AddColumn(col2));
+  Table table = Table(rel);
 
   auto rb1 = RowBatch(rd, 2);
   std::vector<types::BoolValue> col1_rb1 = {true, false};

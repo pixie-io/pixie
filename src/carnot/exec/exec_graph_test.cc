@@ -102,34 +102,29 @@ TEST_F(ExecGraphTest, execute) {
                                                                       types::DataType::FLOAT64}),
                                         std::vector<std::string>({"a", "b", "c"})));
 
-  auto descriptor = std::vector<types::DataType>(
-      {types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64});
-  RowDescriptor rd = RowDescriptor(descriptor);
+  plan::Relation rel =
+      plan::Relation({types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
+                     {"col1", "col2", "col3"});
+  auto table = std::make_shared<Table>(rel);
 
-  auto table = std::make_shared<Table>(rd);
-
-  auto col1 = std::make_shared<Column>(types::DataType::INT64, "col1");
+  auto col1 = table->GetColumn(0);
   std::vector<types::Int64Value> col1_in1 = {1, 2, 3};
   std::vector<types::Int64Value> col1_in2 = {4, 5};
 
   EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
 
-  auto col2 = std::make_shared<Column>(types::DataType::BOOLEAN, "col2");
+  auto col2 = table->GetColumn(1);
   std::vector<types::BoolValue> col2_in1 = {true, false, true};
   std::vector<types::BoolValue> col2_in2 = {false, false};
   EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
   EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 
-  auto col3 = std::make_shared<Column>(types::DataType::FLOAT64, "col3");
+  auto col3 = table->GetColumn(2);
   std::vector<types::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
   std::vector<types::Float64Value> col3_in2 = {3.4, 1.2};
   EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in1, arrow::default_memory_pool())));
   EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in2, arrow::default_memory_pool())));
-
-  EXPECT_OK(table->AddColumn(col1));
-  EXPECT_OK(table->AddColumn(col2));
-  EXPECT_OK(table->AddColumn(col3));
 
   auto table_store = std::make_shared<TableStore>();
   table_store->AddTable("numbers", table);
@@ -176,13 +171,12 @@ TEST_F(ExecGraphTest, execute_time) {
                                                                       types::DataType::FLOAT64}),
                                         std::vector<std::string>({"a", "b", "c"})));
 
-  auto descriptor = std::vector<types::DataType>(
-      {types::DataType::TIME64NS, types::DataType::BOOLEAN, types::DataType::FLOAT64});
-  RowDescriptor rd = RowDescriptor(descriptor);
+  plan::Relation rel = plan::Relation(
+      {types::DataType::TIME64NS, types::DataType::BOOLEAN, types::DataType::FLOAT64},
+      {"col1", "col2", "col3"});
+  auto table = std::make_shared<Table>(rel);
 
-  auto table = std::make_shared<Table>(rd);
-
-  auto col1 = std::make_shared<Column>(types::DataType::TIME64NS, "col1");
+  auto col1 = table->GetColumn(0);
   std::vector<types::Time64NSValue> col1_in1 = {types::Time64NSValue(1), types::Time64NSValue(2),
                                                 types::Time64NSValue(3)};
   std::vector<types::Time64NSValue> col1_in2 = {types::Time64NSValue(4), types::Time64NSValue(5)};
@@ -190,21 +184,17 @@ TEST_F(ExecGraphTest, execute_time) {
   EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
   EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
 
-  auto col2 = std::make_shared<Column>(types::DataType::BOOLEAN, "col2");
+  auto col2 = table->GetColumn(1);
   std::vector<types::BoolValue> col2_in1 = {true, false, true};
   std::vector<types::BoolValue> col2_in2 = {false, false};
   EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
   EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 
-  auto col3 = std::make_shared<Column>(types::DataType::FLOAT64, "col3");
+  auto col3 = table->GetColumn(2);
   std::vector<types::Float64Value> col3_in1 = {1.4, 6.2, 10.2};
   std::vector<types::Float64Value> col3_in2 = {3.4, 1.2};
   EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in1, arrow::default_memory_pool())));
   EXPECT_OK(col3->AddBatch(types::ToArrow(col3_in2, arrow::default_memory_pool())));
-
-  EXPECT_OK(table->AddColumn(col1));
-  EXPECT_OK(table->AddColumn(col2));
-  EXPECT_OK(table->AddColumn(col3));
 
   auto table_store = std::make_shared<TableStore>();
   table_store->AddTable("numbers", table);

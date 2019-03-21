@@ -5,7 +5,9 @@
 #include "absl/strings/str_join.h"
 #include "src/carnot/exec/memory_sink_node.h"
 #include "src/carnot/exec/table.h"
+#include "src/carnot/plan/relation.h"
 #include "src/carnot/proto/plan.pb.h"
+
 namespace pl {
 namespace carnot {
 namespace exec {
@@ -27,13 +29,13 @@ Status MemorySinkNode::InitImpl(const plan::Operator &plan_node, const RowDescri
 }
 Status MemorySinkNode::PrepareImpl(ExecState *exec_state_) {
   // Create Table.
-  table_ = std::make_shared<Table>(*input_descriptor_);
-  exec_state_->table_store()->AddTable(plan_node_->TableName(), table_);
+  std::vector<std::string> col_names;
   for (size_t i = 0; i < input_descriptor_->size(); i++) {
-    auto type = input_descriptor_->type(i);
-    PL_RETURN_IF_ERROR(
-        table_->AddColumn(std::make_shared<Column>(type, plan_node_->ColumnName(i))));
+    col_names.push_back(plan_node_->ColumnName(i));
   }
+
+  table_ = std::make_shared<Table>(plan::Relation(input_descriptor_->types(), col_names));
+  exec_state_->table_store()->AddTable(plan_node_->TableName(), table_);
 
   return Status::OK();
 }

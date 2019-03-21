@@ -27,27 +27,23 @@ class MemorySourceNodeTest : public ::testing::Test {
     exec_state_ =
         std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store);
 
-    auto descriptor =
-        std::vector<types::DataType>({types::DataType::BOOLEAN, types::DataType::TIME64NS});
-    RowDescriptor rd = RowDescriptor(descriptor);
+    plan::Relation rel =
+        plan::Relation({types::DataType::BOOLEAN, types::DataType::TIME64NS}, {"col1", "time_"});
 
-    auto col1 = std::make_shared<Column>(Column(types::DataType::BOOLEAN, "col1"));
+    std::shared_ptr<Table> table = std::make_shared<Table>(rel);
+    exec_state_->table_store()->AddTable("cpu", table);
+
+    auto col1 = table->GetColumn(0);
     std::vector<types::BoolValue> col1_in1 = {true, false, true};
     std::vector<types::BoolValue> col1_in2 = {false, false};
     EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
     EXPECT_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
 
-    auto col2 = std::make_shared<Column>(Column(types::DataType::TIME64NS, "time_"));
+    auto col2 = table->GetColumn(1);
     std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
     std::vector<types::Int64Value> col2_in2 = {5, 6};
     EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
     EXPECT_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
-
-    std::shared_ptr<Table> table = std::make_shared<Table>(rd);
-    exec_state_->table_store()->AddTable("cpu", table);
-
-    EXPECT_OK(table->AddColumn(col1));
-    EXPECT_OK(table->AddColumn(col2));
   }
 
  protected:

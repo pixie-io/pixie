@@ -83,25 +83,12 @@ class Column {
 class Table : public NotCopyable {
  public:
   /**
-   * Creates a Table.
-   *
-   * @ param desc the descriptor which describes the schema of the row batch
-   */
-  explicit Table(RowDescriptor desc) : desc_(std::move(desc)) { columns_.reserve(desc_.size()); }
-
-  /**
    * @brief Construct a new Table object along with its columns. Can be used to create
    * a table (along with columns) based on a subscription message from Stirling.
    *
    * @param relation the relation for the table.
    */
   explicit Table(const plan::Relation& relation);
-
-  /**
-   * Adds a column to the table. The column must be the correct type and be the same size as the
-   * other columns.
-   */
-  Status AddColumn(std::shared_ptr<Column> col);
 
   /**
    * @ param i the index of the column to get.
@@ -169,6 +156,12 @@ class Table : public NotCopyable {
   int64_t FindTimeColumn();
 
  private:
+  /**
+   * Adds a column to the table. The column must have the same type as the column expected by the
+   * relation and be the same size as the other columns.
+   */
+  Status AddColumn(std::shared_ptr<Column> col);
+
   int64_t FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
                                       arrow::MemoryPool* mem_pool);
   int64_t FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
