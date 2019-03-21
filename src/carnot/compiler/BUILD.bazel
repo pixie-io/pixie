@@ -5,13 +5,16 @@ load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_l
 pl_cc_library(
     name = "cc_library",
     srcs = glob(
-        ["*.cc"],
-        exclude = ["**/*_test.cc"],
+        [
+            "*.cc",
+            "*.h",
+        ],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_test_utils.h",
+        ],
     ),
-    hdrs = glob(
-        ["*.h"],
-        exclude = ["**/*_test_utils.h"],
-    ),
+    hdrs = ["compiler.h"],
     deps = [
         "//src/carnot/exec:cc_library",
         "//src/carnot/plan:cc_library",
