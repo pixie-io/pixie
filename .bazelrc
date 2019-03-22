@@ -1,4 +1,7 @@
-# For all builds, exclude tests that require root or BPF privileges
+# Limit memory for JVM to reduce runaway usage.
+startup --host_jvm_args=-Xmx512m
+
+# For all builds, exclude tests that require root or BPF privileges.
 build --test_tag_filters=-requires_root,-requires_bpf
 
 # bazel build --config asan ...
