@@ -122,8 +122,7 @@ Status BlockingAggNode::PrepareImpl(ExecState *) { return Status::OK(); }
 
 Status BlockingAggNode::OpenImpl(ExecState *exec_state) {
   if (HasNoGroups()) {
-    auto *uda_registry = exec_state->uda_registry();
-    PL_RETURN_IF_ERROR(CreateUDAInfoValues(&udas_no_groups_, *uda_registry));
+    PL_RETURN_IF_ERROR(CreateUDAInfoValues(&udas_no_groups_, exec_state));
   }
   return Status::OK();
 }
@@ -208,7 +207,7 @@ Status BlockingAggNode::HashRowBatch(ExecState *exec_state, const RowBatch &rb) 
     // If not in hash then insert
     if (!found) {
       // Create a val array.
-      val = CreateAggHashValue(*exec_state->uda_registry());
+      val = CreateAggHashValue(exec_state);
       agg_hash_map_.insert(ga.rt, val);
       // We have inserted this, so the stored RowTuple is now in the table.
       ga.rt = nullptr;
@@ -466,17 +465,16 @@ Status BlockingAggNode::CreateColumnMapping() {
   return Status::OK();
 }
 
-AggHashValue *BlockingAggNode::CreateAggHashValue(const udf::UDARegistry &registry) {
+AggHashValue *BlockingAggNode::CreateAggHashValue(ExecState *exec_state) {
   auto *val = udas_pool_.Add(new AggHashValue);
-  PL_CHECK_OK(CreateUDAInfoValues(&(val->udas), registry));
+  PL_CHECK_OK(CreateUDAInfoValues(&(val->udas), exec_state));
   for (const auto &dt : stored_cols_data_types_) {
     val->agg_cols.emplace_back(types::ColumnWrapper::Make(dt, 0));
   }
   return val;
 }
 
-Status BlockingAggNode::CreateUDAInfoValues(std::vector<UDAInfo> *val,
-                                            const udf::UDARegistry &registry) {
+Status BlockingAggNode::CreateUDAInfoValues(std::vector<UDAInfo> *val, ExecState *exec_state) {
   CHECK(val != nullptr);
   CHECK_EQ(val->size(), 0ULL);
 
@@ -487,7 +485,7 @@ Status BlockingAggNode::CreateUDAInfoValues(std::vector<UDAInfo> *val,
       PL_ASSIGN_OR_RETURN(auto type, GetTypeOfDep(*dep));
       types.push_back(type);
     }
-    PL_ASSIGN_OR_RETURN(auto def, registry.GetDefinition(value->name(), types));
+    auto def = exec_state->GetUDADefinition(value->uda_id());
     val->emplace_back(def->Make(), def);
   }
   return Status::OK();

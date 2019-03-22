@@ -318,6 +318,8 @@ class FuncIR : public IRNode {
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   std::string func_name() const { return func_name_; }
+  int64_t func_id() const { return func_id_; }
+  void set_func_id(int64_t func_id) { func_id_ = func_id; }
   const std::vector<IRNode*>& args() { return args_; }
 
   bool IsOp() const override { return false; }
@@ -325,6 +327,7 @@ class FuncIR : public IRNode {
  private:
   std::string func_name_;
   std::vector<IRNode*> args_;
+  int64_t func_id_ = 0;
 };
 
 /**

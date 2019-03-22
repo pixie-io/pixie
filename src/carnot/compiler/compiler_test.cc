@@ -179,6 +179,7 @@ nodes {
         expressions {
           func {
             name: "pl.divide"
+            id: 0
             args {
               column {
                 node: 0
@@ -615,6 +616,7 @@ nodes {
         expressions {
           func {
             name: "pl.subtract"
+            id: 1
             args {
               column {
                 node: 7
@@ -624,6 +626,7 @@ nodes {
             args {
               func {
                 name: "pl.modulo"
+                id: 0
                 args {
                   column {
                     node: 7

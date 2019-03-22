@@ -109,12 +109,12 @@ class BlockingAggNode : public ProcessingNode {
   Status ResetGroupArgs();
   Status ConvertAggHashMapToRowBatch(ExecState *exec_state, schema::RowBatch *output_rb);
 
-  AggHashValue *CreateAggHashValue(const udf::UDARegistry &registry);
+  AggHashValue *CreateAggHashValue(ExecState *exec_state);
   RowTuple *CreateGroupArgsRowTuple() {
     return group_args_pool_.Add(new RowTuple(&group_data_types_));
   }
 
-  Status CreateUDAInfoValues(std::vector<UDAInfo> *val, const udf::UDARegistry &registry);
+  Status CreateUDAInfoValues(std::vector<UDAInfo> *val, ExecState *exec_state);
 };
 
 }  // namespace exec

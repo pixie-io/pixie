@@ -70,6 +70,8 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
     EXPECT_TRUE(udf_registry_->Register<AddUDF>("add").ok());
     exec_state_ =
         std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store);
+    EXPECT_OK(exec_state_->AddScalarUDF(
+        0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::INT64})));
 
     std::vector<types::Int64Value> in1 = {1, 2, 3};
     std::vector<types::Int64Value> in2 = {3, 4, 5};

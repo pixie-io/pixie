@@ -42,6 +42,8 @@ class MapNodeTest : public ::testing::Test {
 
     exec_state_ =
         std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store);
+    EXPECT_OK(exec_state_->AddScalarUDF(
+        0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::INT64})));
   }
 
  protected:

@@ -187,10 +187,12 @@ class ScalarFunc : public ScalarExpression {
   std::string DebugString() const override;
 
   std::string name() const { return name_; }
+  int64_t udf_id() const { return udf_id_; }
   const ScalarExpressionPtrVector &arg_deps() const { return arg_deps_; }
 
  private:
   std::string name_;
+  int64_t udf_id_;
   ScalarExpressionPtrVector arg_deps_;
 };
 
@@ -209,10 +211,12 @@ class AggregateExpression : public ScalarExpression {
   std::string DebugString() const override;
 
   std::string name() const { return name_; }
+  int64_t uda_id() const { return uda_id_; }
   const ScalarExpressionPtrVector &arg_deps() const { return arg_deps_; }
 
  private:
   std::string name_;
+  int64_t uda_id_;
   ScalarExpressionPtrVector arg_deps_;  // Args can be ScalarValue or Column.
 };
 

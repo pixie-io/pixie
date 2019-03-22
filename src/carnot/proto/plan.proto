@@ -164,6 +164,7 @@ message ScalarFunc {
   repeated ScalarValue init_args = 2;
   // The arguments used during evaluation.
   repeated ScalarExpression args = 3;
+  int64 id = 4;
 }
 
 // AggregateExpressions perform an operator on a set of arguments and produce a single
@@ -182,6 +183,7 @@ message AggregateExpression {
   // The constructor arguments.
   repeated ScalarValue init_args = 4;
   repeated Arg args = 5;
+  int64 id = 6;
 }
 
 // A column reference.

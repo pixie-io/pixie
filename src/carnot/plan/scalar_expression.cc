@@ -180,6 +180,7 @@ StatusOr<std::unique_ptr<ScalarExpression>> ScalarExpression::FromProto(
 
 Status ScalarFunc::Init(const carnotpb::ScalarFunc &pb) {
   name_ = pb.name();
+  udf_id_ = pb.id();
   for (const auto arg : pb.args()) {
     auto s = ScalarExpression::FromProto(arg);
     if (!s.ok()) {
@@ -255,6 +256,7 @@ std::string ScalarFunc::DebugString() const {
 
 Status AggregateExpression::Init(const carnotpb::AggregateExpression &pb) {
   name_ = pb.name();
+  uda_id_ = pb.id();
   for (const auto arg : pb.args()) {
     // arg is of message type AggregateExpression.Arg. Needs to be casted to a ScalarExpression.
     carnotpb::ScalarExpression se;

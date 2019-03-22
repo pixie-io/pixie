@@ -140,9 +140,12 @@ std::string ScalarExpressionEvaluator::DebugString() {
   return absl::StrFormat("ExpressionEvaluator<%s>", absl::StrJoin(debug_strs, ","));
 }
 
-Status VectorNativeScalarExpressionEvaluator::Open(ExecState *) {
-  // Nothing here yet.
-  return Status();
+Status VectorNativeScalarExpressionEvaluator::Open(ExecState *exec_state) {
+  for (const auto &kv : exec_state->id_to_scalar_udf_map()) {
+    auto udf = kv.second->Make();
+    id_to_udf_map_[kv.first] = std::move(udf);
+  }
+  return Status::OK();
 }
 
 Status VectorNativeScalarExpressionEvaluator::Close(ExecState *) {
@@ -198,20 +201,14 @@ Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
   walker.OnScalarFunc(
       [&](const plan::ScalarFunc &fn,
           const std::vector<types::SharedColumnWrapper> &children) -> types::SharedColumnWrapper {
-        auto registry = exec_state->scalar_udf_registry();
         std::vector<types::DataType> arg_types;
         arg_types.reserve(children.size());
         for (const auto child : children) {
           arg_types.emplace_back(child->data_type());
         }
 
-        // TODO(zasgar): PL-253 - We should move this into the Open function,
-        // but it's a bit complicated because we might have functions with different
-        // init_args (when supported).
-        auto s_or_def = registry->GetDefinition(fn.name(), arg_types);
-        PL_CHECK_OK(s_or_def);
-        auto def = s_or_def.ConsumeValueOrDie();
-        auto udf = def->Make();
+        auto def = exec_state->GetScalarUDFDefinition(fn.udf_id());
+        auto udf = id_to_udf_map_[fn.udf_id()].get();
 
         std::vector<const types::ColumnWrapper *> raw_children;
         raw_children.reserve(children.size());
@@ -220,8 +217,7 @@ Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
         }
         auto output = types::ColumnWrapper::Make(def->exec_return_type(), num_rows);
         // TODO(zasgar): need a better way to handle errors.
-        PL_CHECK_OK(
-            def->ExecBatch(udf.get(), function_ctx_.get(), raw_children, output.get(), num_rows));
+        PL_CHECK_OK(def->ExecBatch(udf, function_ctx_.get(), raw_children, output.get(), num_rows));
         return output;
       });
 
@@ -230,9 +226,12 @@ Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
   return Status::OK();
 }
 
-Status ArrowNativeScalarExpressionEvaluator::Open(ExecState *) {
-  // Nothing here yet.
-  return Status();
+Status ArrowNativeScalarExpressionEvaluator::Open(ExecState *exec_state) {
+  for (const auto &kv : exec_state->id_to_scalar_udf_map()) {
+    auto udf = kv.second->Make();
+    id_to_udf_map_[kv.first] = std::move(udf);
+  }
+  return Status::OK();
 }
 Status ArrowNativeScalarExpressionEvaluator::Close(ExecState *) {
   // Nothing here yet.
@@ -261,19 +260,14 @@ Status exec::ArrowNativeScalarExpressionEvaluator::EvaluateSingleExpression(
   walker.OnScalarFunc(
       [&](const plan::ScalarFunc &fn, const std::vector<std::shared_ptr<arrow::Array>> &children)
           -> std::shared_ptr<arrow::Array> {
-        auto registry = exec_state->scalar_udf_registry();
         std::vector<types::DataType> arg_types;
         arg_types.reserve(children.size());
         for (const auto child : children) {
           arg_types.emplace_back(ArrowToDataType(child->type_id()));
         }
-        // TODO(zasgar): PL-253 - We should move this into the Open function,
-        // but it's a bit complicated because we might have functions with different
-        // init_args (when supported).
-        auto s_or_def = registry->GetDefinition(fn.name(), arg_types);
-        PL_CHECK_OK(s_or_def);
-        auto def = s_or_def.ConsumeValueOrDie();
-        auto udf = def->Make();
+
+        auto def = exec_state->GetScalarUDFDefinition(fn.udf_id());
+        auto udf = id_to_udf_map_[fn.udf_id()].get();
 
         auto output = MakeArrowBuilder(def->exec_return_type(), arrow::default_memory_pool());
 
@@ -283,8 +277,8 @@ Status exec::ArrowNativeScalarExpressionEvaluator::EvaluateSingleExpression(
           raw_children.push_back(child.get());
         }
 
-        PL_CHECK_OK(def->ExecBatchArrow(udf.get(), function_ctx_.get(), raw_children, output.get(),
-                                        num_rows));
+        PL_CHECK_OK(
+            def->ExecBatchArrow(udf, function_ctx_.get(), raw_children, output.get(), num_rows));
 
         std::shared_ptr<arrow::Array> output_array;
         PL_CHECK_OK(output->Finish(&output_array));

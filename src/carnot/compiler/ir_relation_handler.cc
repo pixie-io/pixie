@@ -75,10 +75,12 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateFuncExpr(FuncIR* expr,
   if (is_map) {
     PL_ASSIGN_OR_RETURN(data_type,
                         compiler_state_->registry_info()->GetUDF(expr->func_name(), args_types));
+    expr->set_func_id(compiler_state_->GetUDFID(RegistryKey(expr->func_name(), args_types)));
   } else {
     // Check in UDA instead.
     PL_ASSIGN_OR_RETURN(data_type,
                         compiler_state_->registry_info()->GetUDA(expr->func_name(), args_types));
+    expr->set_func_id(compiler_state_->GetUDAID(RegistryKey(expr->func_name(), args_types)));
   }
 
   return data_type;

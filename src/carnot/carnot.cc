@@ -69,6 +69,21 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecuteQuery(const std::string& query,
   // For each of the plan fragments in the plan, execute the query.
   std::vector<std::string> output_table_strs;
   auto exec_state = engine_state_->CreateExecState();
+
+  // Initialize ScalarUDFs and UDAs.
+  for (const auto& kv : compiler_state->udf_to_id_map()) {
+    auto key = kv.first;
+    auto name = key.name();
+    auto arg_types = key.registry_arg_types();
+    PL_RETURN_IF_ERROR(exec_state->AddScalarUDF(kv.second, name, arg_types));
+  }
+  for (const auto& kv : compiler_state->uda_to_id_map()) {
+    auto key = kv.first;
+    auto name = key.name();
+    auto arg_types = key.registry_arg_types();
+    PL_RETURN_IF_ERROR(exec_state->AddUDA(kv.second, name, arg_types));
+  }
+
   auto plan_state = engine_state_->CreatePlanState();
   int64_t bytes_processed = 0;
   int64_t rows_processed = 0;

@@ -82,6 +82,7 @@ class RelationHandlerTest : public ::testing::Test {
     google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
     EXPECT_OK(registry_info_->Init(info_pb));
     schema::Relation cpu_relation;
+    relation_map_ = std::make_unique<RelationMap>();
     cpu_relation.AddColumn(types::FLOAT64, "cpu0");
     cpu_relation.AddColumn(types::FLOAT64, "cpu1");
     cpu_relation.AddColumn(types::FLOAT64, "cpu2");
@@ -634,6 +635,56 @@ TEST_F(RelationHandlerTest, add_pl_time_type_fail) {
   auto handle_status = HandleRelation(ir_graph);
   EXPECT_FALSE(handle_status.ok());
   VLOG(1) << handle_status.status().ToString();
+}
+
+TEST_F(RelationHandlerTest, assign_udf_func_ids) {
+  std::string chain_operators = absl::StrJoin(
+      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0,stop=10)",
+       "mapDF = queryDF.Map(fn=lambda r : {'cpu_sub': r.cpu0 - r.cpu1, 'cpu_sum': r.cpu0+r.cpu1, "
+       "'cpu_sum2': r.cpu2 + r.cpu1})",
+       "mapDF.Result(name='cpu_out')"},
+      "\n");
+  auto ir_graph_status = CompileGraph(chain_operators);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto handle_status = HandleRelation(ir_graph);
+  EXPECT_OK(handle_status);
+
+  // Map relation should be contain cpu0, cpu1, and cpu_sum.
+  auto map_node_status = FindNodeType(ir_graph, MapType);
+  EXPECT_OK(map_node_status);
+  auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
+
+  auto lambda_func = static_cast<LambdaIR*>(map_node->lambda_func());
+  auto func_node = static_cast<FuncIR*>(lambda_func->col_exprs()[0].node);
+  EXPECT_EQ(0, func_node->func_id());
+  func_node = static_cast<FuncIR*>(lambda_func->col_exprs()[1].node);
+  EXPECT_EQ(1, func_node->func_id());
+  func_node = static_cast<FuncIR*>(lambda_func->col_exprs()[2].node);
+  EXPECT_EQ(1, func_node->func_id());
+}
+
+TEST_F(RelationHandlerTest, assign_uda_func_ids) {
+  std::string chain_operators = absl::StrJoin(
+      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0,stop=10)",
+       "aggDF = queryDF.Agg(by=lambda r: r.cpu0, fn=lambda r: {'cnt': pl.count(r.cpu1), 'mean': "
+       "pl.mean(r.cpu2)})",
+       "aggDF.Result(name='cpu_out')"},
+      "\n");
+  auto ir_graph_status = CompileGraph(chain_operators);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto handle_status = HandleRelation(ir_graph);
+  EXPECT_OK(handle_status);
+
+  // Map relation should be contain cpu0, cpu1, and cpu_sum.
+  auto agg_node_status = FindNodeType(ir_graph, BlockingAggType);
+  EXPECT_OK(agg_node_status);
+  auto agg_node = static_cast<BlockingAggIR*>(agg_node_status.ConsumeValueOrDie());
+
+  auto lambda_func = static_cast<LambdaIR*>(agg_node->agg_func());
+  auto func_node = static_cast<FuncIR*>(lambda_func->col_exprs()[0].node);
+  EXPECT_EQ(0, func_node->func_id());
+  func_node = static_cast<FuncIR*>(lambda_func->col_exprs()[1].node);
+  EXPECT_EQ(1, func_node->func_id());
 }
 
 }  // namespace compiler

@@ -131,6 +131,8 @@ class BlockingAggNodeTest : public ::testing::Test {
     EXPECT_TRUE(uda_registry_->Register<MinSumUDA>("minsum").ok());
 
     exec_state_ = MakeTestExecState(udf_registry_.get(), uda_registry_.get());
+    EXPECT_OK(exec_state_->AddUDA(0, "minsum",
+                                  std::vector<types::DataType>({types::INT64, types::INT64})));
   }
 
  protected:

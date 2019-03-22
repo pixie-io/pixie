@@ -178,6 +178,7 @@ const char* kExpectedMapPb = R"(
     column_names: "col_name"
     expressions {
       func {
+        id: 1
         name: "add"
         args {
           constant {
@@ -207,6 +208,7 @@ TEST(ToProto, map_ir) {
   col->SetColumnIdx(4);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   EXPECT_OK(func->Init("add", std::vector<IRNode*>({constant, col}), ast));
+  func->set_func_id(1);
   EXPECT_OK(map->Init(mem_src, func, ast));
   auto expr_map = std::unordered_map<std::string, IRNode*>();
   auto exprs = std::vector<ColumnExpression>({ColumnExpression({"col_name", func})});
@@ -225,6 +227,7 @@ const char* kExpectedAggPb = R"(
   blocking_agg_op {
     values {
       name: "pl.mean"
+      id: 0
       args {
         constant {
           data_type: INT64

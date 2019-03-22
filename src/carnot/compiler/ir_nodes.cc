@@ -209,6 +209,7 @@ Status MapIR::EvaluateExpression(carnotpb::ScalarExpression* expr, const IRNode&
         auto func_arg = func->add_args();
         PL_RETURN_IF_ERROR(EvaluateExpression(func_arg, *arg));
       }
+      func->set_id(casted_ir.func_id());
       break;
     }
     case IRNodeType::IntType: {
@@ -313,6 +314,7 @@ Status BlockingAggIR::EvaluateAggregateExpression(carnotpb::AggregateExpression*
   DCHECK(ir_node.type() == IRNodeType::FuncType);
   auto casted_ir = static_cast<const FuncIR&>(ir_node);
   expr->set_name(casted_ir.func_name());
+  expr->set_id(casted_ir.func_id());
   for (auto ir_arg : casted_ir.args()) {
     auto arg_pb = expr->add_args();
     switch (ir_arg->type()) {

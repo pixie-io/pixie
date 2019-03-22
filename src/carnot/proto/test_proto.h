@@ -396,6 +396,7 @@ const char* kLinearPlanFragment = R"(
         expressions {
           func {
             name: "add"
+            id: 0
             args {
               column {
                 node: 1
@@ -421,6 +422,7 @@ const char* kLinearPlanFragment = R"(
       map_op {
         expressions {
           func {
+            id: 1
             name: "multiply"
             args {
               column {

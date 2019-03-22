@@ -135,6 +135,12 @@ TEST_F(ExecGraphTest, execute) {
   auto exec_state_ =
       std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), table_store);
 
+  EXPECT_OK(exec_state_->AddScalarUDF(
+      0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64})));
+  EXPECT_OK(exec_state_->AddScalarUDF(
+      1, "multiply",
+      std::vector<types::DataType>({types::DataType::FLOAT64, types::DataType::INT64})));
+
   auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get());
 
   EXPECT_OK(e.Execute());
@@ -204,6 +210,12 @@ TEST_F(ExecGraphTest, execute_time) {
 
   auto exec_state_ =
       std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), table_store);
+
+  EXPECT_OK(exec_state_->AddScalarUDF(
+      0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64})));
+  EXPECT_OK(exec_state_->AddScalarUDF(
+      1, "multiply",
+      std::vector<types::DataType>({types::DataType::FLOAT64, types::DataType::INT64})));
 
   auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get());
 

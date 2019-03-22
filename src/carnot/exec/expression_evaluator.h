@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -99,6 +100,7 @@ class ScalarExpressionEvaluator : public ExpressionEvaluator {
                                           schema::RowBatch* output) = 0;
   plan::ConstScalarExpressionVector expressions_;
   std::unique_ptr<udf::FunctionContext> function_ctx_;
+  std::map<int64_t, std::unique_ptr<udf::ScalarUDF>> id_to_udf_map_;
 };
 
 /**

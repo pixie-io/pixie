@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -35,10 +36,38 @@ class CompilerState : public NotCopyable {
   compiler::RegistryInfo* registry_info() const { return registry_info_; }
   types::Time64NSValue time_now() const { return time_now_; }
 
+  std::map<RegistryKey, int64_t> udf_to_id_map() const { return udf_to_id_map_; }
+  std::map<RegistryKey, int64_t> uda_to_id_map() const { return uda_to_id_map_; }
+
+  int64_t GetUDFID(const RegistryKey& key) {
+    auto id = udf_to_id_map_.find(key);
+    if (id != udf_to_id_map_.end()) {
+      return id->second;
+    } else {
+      auto new_id = udf_to_id_map_.size();
+      udf_to_id_map_[key] = new_id;
+      return new_id;
+    }
+  }
+
+  int64_t GetUDAID(const RegistryKey& key) {
+    auto id = uda_to_id_map_.find(key);
+    if (id != uda_to_id_map_.end()) {
+      return id->second;
+    } else {
+      auto new_id = uda_to_id_map_.size();
+      uda_to_id_map_[key] = new_id;
+      return new_id;
+    }
+  }
+
  private:
   std::unique_ptr<RelationMap> relation_map_;
   compiler::RegistryInfo* registry_info_;
   types::Time64NSValue time_now_;
+  // TODO(michelle): Update this map to handle init args, once we add init args to the compiler.
+  std::map<RegistryKey, int64_t> udf_to_id_map_;
+  std::map<RegistryKey, int64_t> uda_to_id_map_;
 };
 
 }  // namespace compiler
