@@ -18,6 +18,11 @@ clang_deb_fname := "clang-$(CLANG_DEB_IMAGE_VERSION).deb"
 clang_deb_gs_path :=  gs://pl-infra-dev-artifacts/$(clang_deb_fname)
 clang_deb_image_tag := "gcr.io/pl-dev-infra/clang_deb_image:$(CLANG_DEB_IMAGE_VERSION)"
 
+## Clang deb parameters
+GPERFTOOLS_DEB_IMAGE_VERSION := 2.7-pl1
+gperftools_deb_fname := "gperftools-pixie-$(GPERFTOOLS_DEB_IMAGE_VERSION).deb"
+gperftools_deb_gs_path :=  gs://pl-infra-dev-artifacts/$(gperftools_deb_fname)
+gperftools_deb_image_tag := "gcr.io/pl-dev-infra/gperftools_deb_image:$(GPERFTOOLS_DEB_IMAGE_VERSION)"
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
@@ -36,7 +41,7 @@ upload_bcc_deb: build_bcc_deb_image  ## Target to build and upload BCC deb image
 	@echo "SHA: $(shell sha256sum ${bcc_deb_fname})"
 	rm -f $(bcc_deb_fname)
 
-# BCC DEB Image configuration.
+# Clang DEB Image configuration.
 .PHONY: build_clang_deb_image
 build_clang_deb_image:
 	cd $(mkfile_dir)/clang_deb_image && \
@@ -50,6 +55,20 @@ upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb 
 	@echo "SHA: "
 	sha256sum $(clang_deb_fname)
 	rm -f $(clang_deb_fname)
+
+.PHONY: build_gperftools_deb_image
+build_gperftools_deb_image:
+	cd $(mkfile_dir)/gperftools_deb_image && \
+	$(DOCKER) build . -t $(gperftools_deb_image_tag)
+
+.PHONY: upload_gperftools_deb
+upload_gperftools_deb: build_gperftools_deb_image ## Target to build and upload gperftools deb image
+	$(DOCKER) run --rm -e deb_name=$(gperftools_deb_fname) -v ${PWD}:/image $(gperftools_deb_image_tag)
+	gsutil cp $(gperftools_deb_fname)  ${gperftools_deb_gs_path}
+	gsutil acl ch -u allUsers:READER ${gperftools_deb_gs_path}
+	@echo "SHA: "
+	sha256sum $(gperftools_deb_fname)
+	rm -f $(gperftools_deb_fname)
 
 help: ## Print help for targets with comments.
 	@echo "Usage:"

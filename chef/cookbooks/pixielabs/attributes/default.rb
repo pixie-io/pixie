@@ -19,6 +19,13 @@ default['clang']['deb_sha256'] =
   'bddb994b2851210ba70c202b67a92f67f710b9fc878fe1af4e77a2be0f75833c'
 default['clang']['version'] = "7.0-pl8"
 
+default['gperftools']               = {}
+default['gperftools']['deb']        =
+  'https://storage.googleapis.com/pl-infra-dev-artifacts/gperftools-pixie-2.7-pl1.deb'
+default['gperftools']['deb_sha256'] =
+  '8b215251c3514504f04fbf4673edd26aa7c37663f4109bad6f9fa0f2adff427e'
+default['gperftools']['version'] = "2.7-pl1"
+
 
 default['skaffold']                  = {}
 

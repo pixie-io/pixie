@@ -19,10 +19,13 @@ if node[:platform] == 'ubuntu'
     command 'update-rc.d docker enable'
     action :run
   end
+
+  include_recipe 'pixielabs::linux_gperftools'
 elsif node[:platform] == 'mac_os_x'
   homebrew_package 'emacs'
   homebrew_package 'vim'
   homebrew_package 'jq'
+  homebrew_package 'gperftools'
 end
 
 execute 'install gcloud' do
