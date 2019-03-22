@@ -11,7 +11,7 @@
 
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/operators.h"
-#include "src/carnot/plan/relation.h"
+#include "src/carnot/schema/relation.h"
 #include "src/common/statusor.h"
 
 namespace pl {
@@ -165,8 +165,8 @@ class OperatorIR : public IRNode {
  public:
   OperatorIR() = delete;
   bool IsOp() const override { return true; }
-  plan::Relation relation() const { return relation_; }
-  Status SetRelation(plan::Relation relation) {
+  schema::Relation relation() const { return relation_; }
+  Status SetRelation(schema::Relation relation) {
     relation_init_ = true;
     relation_ = relation;
     return Status::OK();
@@ -182,7 +182,7 @@ class OperatorIR : public IRNode {
       : IRNode(id, type, is_source), has_parent_(has_parent) {}
 
  private:
-  plan::Relation relation_;
+  schema::Relation relation_;
   bool relation_init_ = false;
   bool has_parent_;
   OperatorIR* parent_;

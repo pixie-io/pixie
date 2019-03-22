@@ -8,11 +8,11 @@
 #include <utility>
 #include <vector>
 
-#include "src/carnot/exec/row_descriptor.h"
+#include "src/carnot/schema/row_descriptor.h"
 
 namespace pl {
 namespace carnot {
-namespace exec {
+namespace schema {
 
 /**
  * A RowBatch is a table-like structure which consists of equal-length arrays
@@ -77,6 +77,6 @@ class RowBatch {
   std::vector<std::shared_ptr<arrow::Array>> columns_;
 };
 
-}  // namespace exec
+}  // namespace schema
 }  // namespace carnot
 }  // namespace pl

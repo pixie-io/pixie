@@ -14,6 +14,7 @@ namespace carnot {
 namespace exec {
 
 // PL_CARNOT_UPDATE_FOR_NEW_TYPES
+using schema::RowBatch;
 using types::ArrowToDataType;
 using types::BaseValueType;
 using types::BoolValueColumnWrapper;
@@ -239,8 +240,8 @@ Status ArrowNativeScalarExpressionEvaluator::Close(ExecState *) {
 }
 
 Status exec::ArrowNativeScalarExpressionEvaluator::EvaluateSingleExpression(
-    exec::ExecState *exec_state, const exec::RowBatch &input, const plan::ScalarExpression &expr,
-    exec::RowBatch *output) {
+    exec::ExecState *exec_state, const RowBatch &input, const plan::ScalarExpression &expr,
+    RowBatch *output) {
   size_t num_rows = input.num_rows();
   plan::ExpressionWalker<std::shared_ptr<arrow::Array>> walker;
   walker.OnScalarValue(

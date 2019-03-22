@@ -1,6 +1,7 @@
 #include "src/carnot/compiler/ir_relation_handler.h"
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/ir_nodes.h"
+#include "src/carnot/schema/relation.h"
 #include "src/shared/types/proto/types.pb.h"
 
 namespace pl {
@@ -33,7 +34,7 @@ std::vector<Status> IRRelationHandler::VerifyIRColumnsReady(IR* ir_graph) {
 
 Status IRRelationHandler::HasExpectedColumns(
     const std::unordered_set<std::string>& expected_columns,
-    const plan::Relation& parent_relation) {
+    const schema::Relation& parent_relation) {
   std::vector<std::string> missing_cols;
   for (auto& c : expected_columns) {
     if (!parent_relation.HasColumn(c)) {
@@ -48,7 +49,7 @@ Status IRRelationHandler::HasExpectedColumns(
 }
 
 StatusOr<types::DataType> IRRelationHandler::EvaluateColExpr(ColumnIR* expr,
-                                                             const plan::Relation& parent_rel) {
+                                                             const schema::Relation& parent_rel) {
   // Update the column properties from the parent_rel
   if (!parent_rel.HasColumn(expr->col_name())) {
     return error::InvalidArgument("Couldn't find column $0 in relation.", expr->col_name());
@@ -61,7 +62,7 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateColExpr(ColumnIR* expr,
 }
 
 StatusOr<types::DataType> IRRelationHandler::EvaluateFuncExpr(FuncIR* expr,
-                                                              const plan::Relation& parent_rel,
+                                                              const schema::Relation& parent_rel,
                                                               bool is_map) {
   // Evaluate the args
   std::vector<types::DataType> args_types;
@@ -84,7 +85,7 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateFuncExpr(FuncIR* expr,
 }
 
 StatusOr<types::DataType> IRRelationHandler::EvaluateExpression(IRNode* expr,
-                                                                const plan::Relation& parent_rel,
+                                                                const schema::Relation& parent_rel,
                                                                 bool is_map) {
   types::DataType data_type;
   switch (expr->type()) {
@@ -128,8 +129,8 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateExpression(IRNode* expr,
 }
 // Get the types of the children
 // Check the registry for function names
-StatusOr<plan::Relation> IRRelationHandler::BlockingAggHandler(OperatorIR* node,
-                                                               plan::Relation parent_rel) {
+StatusOr<schema::Relation> IRRelationHandler::BlockingAggHandler(OperatorIR* node,
+                                                                 schema::Relation parent_rel) {
   DCHECK_EQ(node->type(), IRNodeType::BlockingAggType);
   auto agg_node = static_cast<BlockingAggIR*>(node);
 
@@ -140,7 +141,7 @@ StatusOr<plan::Relation> IRRelationHandler::BlockingAggHandler(OperatorIR* node,
   auto agg_expected = agg_func->expected_column_names();
   PL_RETURN_IF_ERROR(HasExpectedColumns(agg_expected, parent_rel));
 
-  plan::Relation agg_rel;
+  schema::Relation agg_rel;
   // TODO(philkuz) move this handler to a helper to simplify code here.
   if (agg_node->by_func() != nullptr) {
     LambdaIR* by_func = static_cast<LambdaIR*>(agg_node->by_func());
@@ -191,8 +192,8 @@ StatusOr<plan::Relation> IRRelationHandler::BlockingAggHandler(OperatorIR* node,
   return agg_rel;
 }
 
-StatusOr<plan::Relation> IRRelationHandler::MapHandler(OperatorIR* node,
-                                                       plan::Relation parent_rel) {
+StatusOr<schema::Relation> IRRelationHandler::MapHandler(OperatorIR* node,
+                                                         schema::Relation parent_rel) {
   DCHECK_EQ(node->type(), IRNodeType::MapType);
   auto map_node = static_cast<MapIR*>(node);
   DCHECK_EQ(map_node->lambda_func()->type(), IRNodeType::LambdaType);
@@ -204,7 +205,7 @@ StatusOr<plan::Relation> IRRelationHandler::MapHandler(OperatorIR* node,
   // Make a new relation with each of the expression key, type pairs.
   ColExpressionVector col_exprs = lambda_func->col_exprs();
 
-  plan::Relation map_rel;
+  schema::Relation map_rel;
   for (auto& entry : col_exprs) {
     std::string col_name = entry.name;
     PL_ASSIGN_OR_RETURN(types::DataType col_type, EvaluateExpression(entry.node, parent_rel, true));
@@ -216,7 +217,8 @@ StatusOr<plan::Relation> IRRelationHandler::MapHandler(OperatorIR* node,
   return map_rel;
 }
 
-StatusOr<plan::Relation> IRRelationHandler::SinkHandler(OperatorIR*, plan::Relation parent_rel) {
+StatusOr<schema::Relation> IRRelationHandler::SinkHandler(OperatorIR*,
+                                                          schema::Relation parent_rel) {
   return parent_rel;
 }
 
@@ -277,8 +279,8 @@ StatusOr<IntIR*> IRRelationHandler::EvaluateCompilerExpression(IRNode* node) {
       absl::Substitute("Expected time constant or expression, not $0", node->type_string()), *node);
 }
 
-StatusOr<plan::Relation> IRRelationHandler::RangeHandler(OperatorIR* node,
-                                                         plan::Relation parent_rel) {
+StatusOr<schema::Relation> IRRelationHandler::RangeHandler(OperatorIR* node,
+                                                           schema::Relation parent_rel) {
   DCHECK_EQ(node->type(), IRNodeType::RangeType);
   auto range_ir = static_cast<RangeIR*>(node);
   PL_ASSIGN_OR_RETURN(IntIR * new_start_repr, EvaluateCompilerExpression(range_ir->start_repr()));
@@ -301,8 +303,8 @@ Status IRRelationHandler::RelationUpdate(OperatorIR* node) {
     PL_RETURN_IF_ERROR(RelationUpdate(parent));
   }
   // with the relation, now do the appropriate thing for  it.
-  plan::Relation parent_rel = parent->relation();
-  plan::Relation rel;
+  schema::Relation parent_rel = parent->relation();
+  schema::Relation rel;
   // TODO(philkuz) (PL-466) update the arguments to each handler to only take in the specific
   // type so you don't have to recast it.
   switch (node->type()) {
@@ -347,7 +349,7 @@ Status IRRelationHandler::SetSourceRelation(IRNode* node) {
   if (relation_map_it == compiler_state_->relation_map()->end()) {
     return error::InvalidArgument("Table $0 not found in the relation map", table_str);
   }
-  plan::Relation table_relation = relation_map_it->second;
+  schema::Relation table_relation = relation_map_it->second;
 
   // get the children.
   auto select_children = static_cast<ListIR*>(select)->children();
@@ -366,7 +368,7 @@ Status IRRelationHandler::SetSourceRelation(IRNode* node) {
 }
 
 StatusOr<std::vector<ColumnIR*>> IRRelationHandler::GetColumnsFromRelation(
-    IRNode* node, std::vector<std::string> col_names, const plan::Relation& relation) {
+    IRNode* node, std::vector<std::string> col_names, const schema::Relation& relation) {
   auto graph = node->graph_ptr();
   auto result = std::vector<ColumnIR*>();
   // iterates through the columns, finds their relation position,

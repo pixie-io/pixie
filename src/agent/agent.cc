@@ -13,8 +13,7 @@ int main(int argc, char** argv) {
   pl::InitEnvironmentOrDie(&argc, argv);
   LOG(INFO) << "Pixie Lab Agent";
   auto chan = grpc::CreateChannel(FLAGS_vizier_addr, grpc::InsecureChannelCredentials());
-  auto carnot = std::make_unique<pl::carnot::Carnot>();
-  PL_CHECK_OK(carnot->Init());
+  auto carnot = pl::carnot::Carnot::Create().ConsumeValueOrDie();
   auto stirling = pl::stirling::Stirling::Create();
   // TODO(zasgar): We need to work on cleaning up thread mangement.
   PL_CHECK_OK(stirling->RunAsThread());

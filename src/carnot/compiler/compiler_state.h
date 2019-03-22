@@ -6,9 +6,9 @@
 #include <utility>
 
 #include "src/carnot/compiler/registry_info.h"
-#include "src/carnot/exec/row_descriptor.h"
-#include "src/carnot/plan/relation.h"
-#include "src/carnot/plan/schema.h"
+#include "src/carnot/schema/relation.h"
+#include "src/carnot/schema/row_descriptor.h"
+#include "src/carnot/schema/schema.h"
 #include "src/common/base.h"
 #include "src/shared/types/types.h"
 
@@ -16,7 +16,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-using RelationMap = std::unordered_map<std::string, plan::Relation>;
+using RelationMap = std::unordered_map<std::string, schema::Relation>;
 class CompilerState : public NotCopyable {
  public:
   /**

@@ -9,7 +9,7 @@
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/table_store.h"
 #include "src/carnot/plan/plan_state.h"
-#include "src/carnot/plan/schema.h"
+#include "src/carnot/schema/schema.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/common.h"
 
@@ -26,7 +26,7 @@ class EngineState : public NotCopyable {
  public:
   EngineState(std::unique_ptr<udf::ScalarUDFRegistry> udf_registry,
               std::unique_ptr<udf::UDARegistry> uda_registry,
-              std::shared_ptr<exec::TableStore> table_store, std::shared_ptr<plan::Schema> schema,
+              std::shared_ptr<exec::TableStore> table_store, std::shared_ptr<schema::Schema> schema,
               std::unique_ptr<compiler::RegistryInfo> registry_info)
       : uda_registry_(std::move(uda_registry)),
         scalar_udf_registry_(std::move(udf_registry)),
@@ -42,7 +42,7 @@ class EngineState : public NotCopyable {
     builtins::RegisterBuiltinsOrDie(uda_registry.get());
 
     auto table_store = std::make_shared<exec::TableStore>();
-    auto schema = std::make_shared<plan::Schema>();
+    auto schema = std::make_shared<schema::Schema>();
 
     auto registry_info = std::make_unique<compiler::RegistryInfo>();
     auto udf_info = udf::RegistryInfoExporter()
@@ -55,7 +55,7 @@ class EngineState : public NotCopyable {
                                          table_store, schema, std::move(registry_info));
   }
 
-  std::shared_ptr<plan::Schema> schema() { return schema_; }
+  std::shared_ptr<schema::Schema> schema() { return schema_; }
 
   exec::TableStore* table_store() { return table_store_.get(); }
 
@@ -78,7 +78,7 @@ class EngineState : public NotCopyable {
   std::unique_ptr<udf::UDARegistry> uda_registry_;
   std::unique_ptr<udf::ScalarUDFRegistry> scalar_udf_registry_;
   std::shared_ptr<exec::TableStore> table_store_;
-  std::shared_ptr<plan::Schema> schema_;
+  std::shared_ptr<schema::Schema> schema_;
   std::unique_ptr<compiler::RegistryInfo> registry_info_;
 };
 

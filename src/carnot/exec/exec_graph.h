@@ -33,7 +33,7 @@ class ExecutionGraph {
    * @param pf The plan fragment to create the execution graph from.
    * @return The status of whether initialization succeeded.
    */
-  Status Init(std::shared_ptr<plan::Schema> schema, plan::PlanState *plan_state,
+  Status Init(std::shared_ptr<schema::Schema> schema, plan::PlanState *plan_state,
               ExecState *exec_state, plan::PlanFragment *pf);
   std::vector<int64_t> sources() { return sources_; }
   StatusOr<ExecNode *> node(int64_t id) {
@@ -57,8 +57,8 @@ class ExecutionGraph {
    * @return A status of whether the initialization of the operator has succeeded.
    */
   template <typename TOp, typename TNode>
-  Status OnOperatorImpl(TOp node, std::unordered_map<int64_t, RowDescriptor> *descriptors) {
-    std::vector<RowDescriptor> input_descriptors;
+  Status OnOperatorImpl(TOp node, std::unordered_map<int64_t, schema::RowDescriptor> *descriptors) {
+    std::vector<schema::RowDescriptor> input_descriptors;
 
     auto parents = pf_->dag().ParentsOf(node.id());
 
@@ -72,7 +72,7 @@ class ExecutionGraph {
     }
     // Get output descriptor.
     auto output_rel = node.OutputRelation(*schema_, *plan_state_, parents).ConsumeValueOrDie();
-    auto output_descriptor = RowDescriptor(output_rel.col_types());
+    schema::RowDescriptor output_descriptor(output_rel.col_types());
     // TODO(michelle) (PL-400) causes excessive warnings.
     schema_->AddRelation(node.id(), output_rel);
     descriptors->insert({node.id(), output_descriptor});
@@ -96,7 +96,7 @@ class ExecutionGraph {
 
   ExecState *exec_state_;
   ObjectPool pool_;
-  std::shared_ptr<plan::Schema> schema_;
+  std::shared_ptr<schema::Schema> schema_;
   plan::PlanState *plan_state_;
   plan::PlanFragment *pf_;
   std::vector<int64_t> sources_;

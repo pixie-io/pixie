@@ -20,6 +20,12 @@ pl_cc_library(
 )
 
 pl_cc_test(
+    name = "arrow_adapter_test",
+    srcs = ["arrow_adapter_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "column_wrapper_test",
     srcs = ["column_wrapper_test.cc"],
     deps = [":cc_library"],

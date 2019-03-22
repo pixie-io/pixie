@@ -8,9 +8,10 @@
 #include "src/carnot/exec/exec_graph.h"
 #include "src/carnot/plan/plan_fragment.h"
 #include "src/carnot/plan/plan_state.h"
-#include "src/carnot/plan/schema.h"
 #include "src/carnot/proto/plan.pb.h"
 #include "src/carnot/proto/test_proto.h"
+#include "src/carnot/schema/schema.h"
+#include "src/carnot/schema/table.h"
 #include "src/common/object_pool.h"
 #include "src/shared/types/arrow_adapter.h"
 
@@ -19,6 +20,9 @@ namespace carnot {
 namespace exec {
 
 using google::protobuf::TextFormat;
+using schema::Column;
+using schema::RowDescriptor;
+using schema::Table;
 
 class AddUDF : public udf::ScalarUDF {
  public:
@@ -58,9 +62,9 @@ TEST_F(ExecGraphTest, basic) {
   auto uda_registry = std::make_unique<udf::UDARegistry>("testUDA");
   auto plan_state = std::make_unique<plan::PlanState>(udf_registry.get(), uda_registry.get());
 
-  auto schema = std::make_shared<plan::Schema>();
-  plan::Relation relation(std::vector<types::DataType>({types::DataType::INT64}),
-                          std::vector<std::string>({"test"}));
+  auto schema = std::make_shared<schema::Schema>();
+  schema::Relation relation(std::vector<types::DataType>({types::DataType::INT64}),
+                            std::vector<std::string>({"test"}));
   schema->AddRelation(1, relation);
 
   auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get());
@@ -96,15 +100,14 @@ TEST_F(ExecGraphTest, execute) {
 
   auto plan_state = std::make_unique<plan::PlanState>(udf_registry.get(), uda_registry.get());
 
-  auto schema = std::make_shared<plan::Schema>();
-  schema->AddRelation(1, plan::Relation(std::vector<types::DataType>({types::DataType::INT64,
-                                                                      types::DataType::BOOLEAN,
-                                                                      types::DataType::FLOAT64}),
-                                        std::vector<std::string>({"a", "b", "c"})));
+  auto schema = std::make_shared<schema::Schema>();
+  schema->AddRelation(1, schema::Relation(std::vector<types::DataType>({types::DataType::INT64,
+                                                                        types::DataType::BOOLEAN,
+                                                                        types::DataType::FLOAT64}),
+                                          std::vector<std::string>({"a", "b", "c"})));
 
-  plan::Relation rel =
-      plan::Relation({types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
-                     {"col1", "col2", "col3"});
+  schema::Relation rel({types::DataType::INT64, types::DataType::BOOLEAN, types::DataType::FLOAT64},
+                       {"col1", "col2", "col3"});
   auto table = std::make_shared<Table>(rel);
 
   auto col1 = table->GetColumn(0);
@@ -165,13 +168,13 @@ TEST_F(ExecGraphTest, execute_time) {
 
   auto plan_state = std::make_unique<plan::PlanState>(udf_registry.get(), uda_registry.get());
 
-  auto schema = std::make_shared<plan::Schema>();
-  schema->AddRelation(1, plan::Relation(std::vector<types::DataType>({types::DataType::TIME64NS,
-                                                                      types::DataType::BOOLEAN,
-                                                                      types::DataType::FLOAT64}),
-                                        std::vector<std::string>({"a", "b", "c"})));
+  auto schema = std::make_shared<schema::Schema>();
+  schema->AddRelation(1, schema::Relation(std::vector<types::DataType>({types::DataType::TIME64NS,
+                                                                        types::DataType::BOOLEAN,
+                                                                        types::DataType::FLOAT64}),
+                                          std::vector<std::string>({"a", "b", "c"})));
 
-  plan::Relation rel = plan::Relation(
+  schema::Relation rel(
       {types::DataType::TIME64NS, types::DataType::BOOLEAN, types::DataType::FLOAT64},
       {"col1", "col2", "col3"});
   auto table = std::make_shared<Table>(rel);

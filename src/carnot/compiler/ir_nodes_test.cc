@@ -6,7 +6,7 @@
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/ir_test_utils.h"
 #include "src/carnot/compiler/test_utils.h"
-#include "src/carnot/plan/relation.h"
+#include "src/carnot/schema/relation.h"
 
 namespace pl {
 namespace carnot {
@@ -158,7 +158,7 @@ TEST(ToProto, memory_sink_ir) {
   auto mem_sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
   auto mem_source = graph->MakeNode<MemorySourceIR>().ValueOrDie();
 
-  auto rel = plan::Relation(
+  auto rel = schema::Relation(
       std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64}),
       std::vector<std::string>({"output1", "output2"}));
   EXPECT_OK(mem_sink->SetRelation(rel));

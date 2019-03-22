@@ -6,7 +6,8 @@
 
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/exec_state.h"
-#include "src/carnot/exec/table.h"
+#include "src/carnot/schema/relation.h"
+#include "src/carnot/schema/table.h"
 
 namespace pl {
 namespace carnot {
@@ -20,8 +21,8 @@ class MemorySourceNode : public SourceNode {
 
  protected:
   std::string DebugStringImpl() override;
-  Status InitImpl(const plan::Operator &plan_node, const RowDescriptor &output_descriptor,
-                  const std::vector<RowDescriptor> &input_descriptors) override;
+  Status InitImpl(const plan::Operator &plan_node, const schema::RowDescriptor &output_descriptor,
+                  const std::vector<schema::RowDescriptor> &input_descriptors) override;
   Status PrepareImpl(ExecState *exec_state) override;
   Status OpenImpl(ExecState *exec_state) override;
   Status CloseImpl(ExecState *exec_state) override;
@@ -30,11 +31,11 @@ class MemorySourceNode : public SourceNode {
  private:
   int64_t num_batches_;
   int64_t current_batch_ = 0;
-  BatchPosition start_batch_info_;
+  schema::BatchPosition start_batch_info_;
 
   std::unique_ptr<plan::MemorySourceOperator> plan_node_;
-  std::unique_ptr<RowDescriptor> output_descriptor_;
-  Table *table_ = nullptr;
+  std::unique_ptr<schema::RowDescriptor> output_descriptor_;
+  schema::Table *table_ = nullptr;
 };
 
 }  // namespace exec

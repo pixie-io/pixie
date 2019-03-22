@@ -102,18 +102,18 @@ class CompilerTest : public ::testing::Test {
 
     auto rel_map = std::make_unique<RelationMap>();
     rel_map->emplace("sequences",
-                     plan::Relation(std::vector<types::DataType>({
-                                        types::DataType::TIME64NS,
-                                        types::DataType::FLOAT64,
-                                        types::DataType::FLOAT64,
-                                    }),
-                                    std::vector<std::string>({"_time", "xmod10", "PIx"})));
+                     schema::Relation(std::vector<types::DataType>({
+                                          types::DataType::TIME64NS,
+                                          types::DataType::FLOAT64,
+                                          types::DataType::FLOAT64,
+                                      }),
+                                      std::vector<std::string>({"_time", "xmod10", "PIx"})));
 
     rel_map->emplace("cpu",
-                     plan::Relation(std::vector<types::DataType>(
-                                        {types::DataType::INT64, types::DataType::FLOAT64,
-                                         types::DataType::FLOAT64, types::DataType::FLOAT64}),
-                                    std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
+                     schema::Relation(std::vector<types::DataType>(
+                                          {types::DataType::INT64, types::DataType::FLOAT64,
+                                           types::DataType::FLOAT64, types::DataType::FLOAT64}),
+                                      std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
   }
   std::unique_ptr<CompilerState> compiler_state_;

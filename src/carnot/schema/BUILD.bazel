@@ -1,0 +1,48 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = ["**/*_test.cc"],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/carnot/proto:plan_pl_cc_proto",
+        "//src/shared/types:cc_library",
+        "//third_party:arrow",
+    ],
+)
+
+pl_cc_test(
+    name = "relation_test",
+    srcs = ["relation_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "schema_test",
+    srcs = ["schema_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "row_batch_test",
+    srcs = ["row_batch_test.cc"],
+    deps = [
+        ":cc_library",
+        "//third_party:arrow",
+    ],
+)
+
+pl_cc_test(
+    name = "table_test",
+    srcs = ["table_test.cc"],
+    deps = [
+        ":cc_library",
+        #        ":test_utils",
+        "//third_party:arrow",
+    ],
+)

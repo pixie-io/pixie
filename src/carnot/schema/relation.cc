@@ -4,14 +4,13 @@
 
 #include "absl/strings/str_join.h"
 
-#include "src/carnot/plan/relation.h"
-#include "src/carnot/plan/utils.h"
+#include "src/carnot/schema/relation.h"
 #include "src/common/common.h"
 #include "src/shared/types/type_utils.h"
 
 namespace pl {
 namespace carnot {
-namespace plan {
+namespace schema {
 
 using std::string;
 
@@ -76,6 +75,6 @@ StatusOr<Relation> Relation::MakeSubRelation(const std::vector<std::string> &col
   return new_relation;
 }
 
-}  // namespace plan
+}  // namespace schema
 }  // namespace carnot
 }  // namespace pl

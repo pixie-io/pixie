@@ -14,6 +14,7 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
+using schema::RowDescriptor;
 using testing::_;
 using types::Int64Value;
 using udf::FunctionContext;

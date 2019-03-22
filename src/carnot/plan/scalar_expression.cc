@@ -96,7 +96,8 @@ std::string ScalarValue::DebugString() const {
   }
 }
 
-StatusOr<types::DataType> ScalarValue::OutputDataType(const PlanState &, const Schema &) const {
+StatusOr<types::DataType> ScalarValue::OutputDataType(const PlanState &,
+                                                      const schema::Schema &) const {
   DCHECK(is_initialized_) << "Not initialized";
   return DataType();
 }
@@ -133,9 +134,9 @@ std::string Column::DebugString() const {
 }
 
 StatusOr<types::DataType> Column::OutputDataType(const PlanState &,
-                                                 const Schema &input_schema) const {
+                                                 const schema::Schema &input_schema) const {
   DCHECK(is_initialized_) << "Not initialized";
-  StatusOr<const Relation> s = input_schema.GetRelation(NodeID());
+  StatusOr<const schema::Relation> s = input_schema.GetRelation(NodeID());
 
   PL_RETURN_IF_ERROR(s);
   const auto &relation = s.ValueOrDie();
@@ -212,7 +213,7 @@ std::vector<const Column *> ScalarFunc::ColumnDeps() {
 }
 
 StatusOr<types::DataType> ScalarFunc::OutputDataType(const PlanState &state,
-                                                     const Schema &input_schema) const {
+                                                     const schema::Schema &input_schema) const {
   // The output data type of a function is based on the computed types of the children
   // followed by the looking up the function in the registry and getting the output
   // data type of the function.
@@ -291,8 +292,8 @@ std::vector<const Column *> AggregateExpression::ColumnDeps() {
   return cols;
 }
 
-StatusOr<types::DataType> AggregateExpression::OutputDataType(const PlanState &state,
-                                                              const Schema &input_schema) const {
+StatusOr<types::DataType> AggregateExpression::OutputDataType(
+    const PlanState &state, const schema::Schema &input_schema) const {
   // The output data type of a function is based on the computed types of the args
   // followed by the looking up the function in the registry and getting the output
   // data type of the function.

@@ -30,7 +30,8 @@ namespace {
  * @param rb_data_pb The output proto.
  * @return Status of conversion.
  */
-Status ConvertRecordBatchToProto(arrow::RecordBatch* rb, const pl::carnot::plan::Relation& relation,
+Status ConvertRecordBatchToProto(arrow::RecordBatch* rb,
+                                 const pl::carnot::schema::Relation& relation,
                                  pl::vizier::RowBatchData* rb_data_pb) {
   for (int col_idx = 0; col_idx < rb->num_columns(); ++col_idx) {
     auto col = rb->column(col_idx);
@@ -40,7 +41,7 @@ Status ConvertRecordBatchToProto(arrow::RecordBatch* rb, const pl::carnot::plan:
         auto output_data_casted = output_col_data->mutable_time64ns_data();
         for (int64_t i = 0; i < col->length(); ++i) {
           output_data_casted->add_data(
-              pl::carnot::udf::GetValue(reinterpret_cast<arrow::Int64Array*>(col.get()), i));
+              pl::types::GetValue(reinterpret_cast<arrow::Int64Array*>(col.get()), i));
         }
         break;
       }
@@ -49,7 +50,7 @@ Status ConvertRecordBatchToProto(arrow::RecordBatch* rb, const pl::carnot::plan:
         auto output_data_casted = output_col_data->mutable_string_data();
         for (int64_t i = 0; i < col->length(); ++i) {
           output_data_casted->add_data(
-              pl::carnot::udf::GetValue(reinterpret_cast<arrow::StringArray*>(col.get()), i));
+              pl::types::GetValue(reinterpret_cast<arrow::StringArray*>(col.get()), i));
         }
         break;
       }
@@ -58,7 +59,7 @@ Status ConvertRecordBatchToProto(arrow::RecordBatch* rb, const pl::carnot::plan:
         auto output_data_casted = output_col_data->mutable_int64_data();
         for (int64_t i = 0; i < col->length(); ++i) {
           output_data_casted->add_data(
-              pl::carnot::udf::GetValue(reinterpret_cast<arrow::Int64Array*>(col.get()), i));
+              pl::types::GetValue(reinterpret_cast<arrow::Int64Array*>(col.get()), i));
         }
         break;
       }
@@ -67,7 +68,7 @@ Status ConvertRecordBatchToProto(arrow::RecordBatch* rb, const pl::carnot::plan:
         auto output_data_casted = output_col_data->mutable_float64_data();
         for (int64_t i = 0; i < col->length(); ++i) {
           output_data_casted->add_data(
-              pl::carnot::udf::GetValue(reinterpret_cast<arrow::DoubleArray*>(col.get()), i));
+              pl::types::GetValue(reinterpret_cast<arrow::DoubleArray*>(col.get()), i));
         }
         break;
       }
@@ -76,7 +77,7 @@ Status ConvertRecordBatchToProto(arrow::RecordBatch* rb, const pl::carnot::plan:
         auto output_data_casted = output_col_data->mutable_boolean_data();
         for (int64_t i = 0; i < col->length(); ++i) {
           output_data_casted->add_data(
-              pl::carnot::udf::GetValue(reinterpret_cast<arrow::BooleanArray*>(col.get()), i));
+              pl::types::GetValue(reinterpret_cast<arrow::BooleanArray*>(col.get()), i));
         }
         break;
       }
@@ -237,8 +238,8 @@ Status Controller::Run() {
 
 // Temporary and to be replaced by data table from Stirling and Executor
 Status Controller::AddDummyTable(const std::string& name,
-                                 std::shared_ptr<carnot::exec::Table> table) {
-  carnot_->table_store()->AddTable(name, table);
+                                 std::shared_ptr<carnot::schema::Table> table) {
+  carnot_->AddTable(name, table);
   return Status::OK();
 }
 
@@ -253,12 +254,11 @@ Status Controller::InitThrowaway() {
   PL_RETURN_IF_ERROR(stirling_->SetSubscription(subscribe_pb));
 
   // This should eventually be done by subscribe requests.
-  auto table_store = carnot_->table_store();
   auto relation_info_vec = ConvertSubscribePBToRelationInfo(subscribe_pb);
   for (const auto& relation_info : relation_info_vec) {
     PL_RETURN_IF_ERROR(
-        table_store->AddTable(relation_info.name, relation_info.id,
-                              std::make_shared<carnot::exec::Table>(relation_info.relation)));
+        carnot_->AddTable(relation_info.name, relation_info.id,
+                          std::make_shared<carnot::schema::Table>(relation_info.relation)));
   }
   return Status::OK();
 }

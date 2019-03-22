@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "src/carnot/plan/relation.h"
+#include "src/carnot/schema/relation.h"
 
 namespace pl {
 namespace carnot {
-namespace plan {
+namespace schema {
 
 TEST(RelationTest, empty_relation) {
   Relation r;
@@ -65,6 +65,6 @@ TEST(RelationDeathTest, bad_init) {
   EXPECT_DEATH(Relation({types::INT64, types::STRING}, {"abc"}), ".*mismatched.*");
 }
 
-}  // namespace plan
+}  // namespace schema
 }  // namespace carnot
 }  // namespace pl

@@ -16,6 +16,9 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
+using schema::Column;
+using schema::RowDescriptor;
+using schema::Table;
 using testing::_;
 
 class MemorySourceNodeTest : public ::testing::Test {
@@ -27,8 +30,7 @@ class MemorySourceNodeTest : public ::testing::Test {
     exec_state_ =
         std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store);
 
-    plan::Relation rel =
-        plan::Relation({types::DataType::BOOLEAN, types::DataType::TIME64NS}, {"col1", "time_"});
+    schema::Relation rel({types::DataType::BOOLEAN, types::DataType::TIME64NS}, {"col1", "time_"});
 
     std::shared_ptr<Table> table = std::make_shared<Table>(rel);
     exec_state_->table_store()->AddTable("cpu", table);

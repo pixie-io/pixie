@@ -5,7 +5,7 @@
 #include <parser.hpp>
 
 #include "src/carnot/carnot.h"
-#include "src/carnot/exec/table.h"
+#include "src/carnot/schema/table.h"
 #include "src/common/env.h"
 #include "src/common/time.h"
 #include "src/shared/types/column_wrapper.h"
@@ -69,7 +69,7 @@ template <DataType DT>
 void AddStringValueToRow(std::vector<std::string> *row, arrow::Array *arr, int64_t idx) {
   using ArrowArrayType = typename pl::types::DataTypeTraits<DT>::arrow_array_type;
 
-  auto val = ValueToString(pl::carnot::udf::GetValue(static_cast<ArrowArrayType *>(arr), idx));
+  auto val = ValueToString(pl::types::GetValue(static_cast<ArrowArrayType *>(arr), idx));
   row->push_back(val);
 }
 
@@ -78,8 +78,8 @@ void AddStringValueToRow(std::vector<std::string> *row, arrow::Array *arr, int64
  * @param filename The filename of the csv to convert.
  * @return The Carnot table.
  */
-std::shared_ptr<pl::carnot::exec::Table> GetTableFromCsv(const std::string &filename,
-                                                         int64_t rb_size) {
+std::shared_ptr<pl::carnot::schema::Table> GetTableFromCsv(const std::string &filename,
+                                                           int64_t rb_size) {
   std::ifstream f(filename);
   aria::csv::CsvParser parser(f);
 
@@ -109,8 +109,8 @@ std::shared_ptr<pl::carnot::exec::Table> GetTableFromCsv(const std::string &file
   }
 
   // Construct the table.
-  auto rel = pl::carnot::plan::Relation(types, names);
-  auto table = std::make_shared<pl::carnot::exec::Table>(rel);
+  pl::carnot::schema::Relation rel(types, names);
+  auto table = std::make_shared<pl::carnot::schema::Table>(rel);
 
   // Add rowbatches to the table.
   row_idx = 0;
@@ -178,7 +178,7 @@ std::shared_ptr<pl::carnot::exec::Table> GetTableFromCsv(const std::string &file
  * @param filename The name of the output CSV file.
  * @param table The table to write to a CSV.
  */
-void TableToCsv(const std::string &filename, pl::carnot::exec::Table *table) {
+void TableToCsv(const std::string &filename, pl::carnot::schema::Table *table) {
   std::ofstream output_csv;
   output_csv.open(filename);
 
@@ -221,14 +221,13 @@ int main(int argc, char *argv[]) {
   auto table = GetTableFromCsv(filename, rb_size);
 
   // Execute query.
-  pl::carnot::Carnot carnot;
-  auto s = carnot.Init();
-  if (!s.ok()) {
+  auto carnot_or_s = pl::carnot::Carnot::Create();
+  if (!carnot_or_s.ok()) {
     LOG(FATAL) << "Carnot failed to init.";
   }
-  auto table_store = carnot.table_store();
-  table_store->AddTable("csv_table", table);
-  auto exec_status = carnot.ExecuteQuery(query, pl::CurrentTimeNS());
+  auto carnot = carnot_or_s.ConsumeValueOrDie();
+  carnot->AddTable("csv_table", table);
+  auto exec_status = carnot->ExecuteQuery(query, pl::CurrentTimeNS());
   auto res = exec_status.ConsumeValueOrDie();
 
   // Write output table to CSV.

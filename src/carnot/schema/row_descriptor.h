@@ -9,7 +9,7 @@
 
 namespace pl {
 namespace carnot {
-namespace exec {
+namespace schema {
 
 /**
  * RowDescriptor describes the datatypes for each column in a RowBatch.
@@ -51,6 +51,6 @@ class RowDescriptor {
   std::vector<types::DataType> types_;
 };
 
-}  // namespace exec
+}  // namespace schema
 }  // namespace carnot
 }  // namespace pl

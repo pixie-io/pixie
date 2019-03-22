@@ -81,13 +81,13 @@ class RelationHandlerTest : public ::testing::Test {
     carnotpb::UDFInfo info_pb;
     google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
     EXPECT_OK(registry_info_->Init(info_pb));
-    plan::Relation cpu_relation;
+    schema::Relation cpu_relation;
     cpu_relation.AddColumn(types::FLOAT64, "cpu0");
     cpu_relation.AddColumn(types::FLOAT64, "cpu1");
     cpu_relation.AddColumn(types::FLOAT64, "cpu2");
     relation_map_->emplace("cpu", cpu_relation);
 
-    plan::Relation non_float_relation;
+    schema::Relation non_float_relation;
     non_float_relation.AddColumn(types::INT64, "int_col");
     non_float_relation.AddColumn(types::FLOAT64, "float_col");
     non_float_relation.AddColumn(types::STRING, "string_col");
@@ -110,7 +110,7 @@ class RelationHandlerTest : public ::testing::Test {
     auto relation_handler = IRRelationHandler(compiler_state_.get());
     return relation_handler.UpdateRelationsAndCheckFunctions(ir_graph.get());
   }
-  bool RelationEquality(const plan::Relation& r1, const plan::Relation& r2) {
+  bool RelationEquality(const schema::Relation& r1, const schema::Relation& r2) {
     std::vector<std::string> r1_names;
     std::vector<std::string> r2_names;
     std::vector<types::DataType> r1_types;
@@ -167,7 +167,7 @@ class RelationHandlerTest : public ::testing::Test {
 };
 
 TEST_F(RelationHandlerTest, test_utils) {
-  plan::Relation cpu2_relation;
+  schema::Relation cpu2_relation;
   cpu2_relation.AddColumn(types::FLOAT64, "cpu0");
   cpu2_relation.AddColumn(types::FLOAT64, "cpu1");
   EXPECT_FALSE(RelationEquality((*compiler_state_->relation_map())["cpu"], cpu2_relation));
@@ -356,7 +356,7 @@ TEST_F(RelationHandlerTest, test_relation_results) {
   auto test_map_relation_s =
       (*compiler_state_->relation_map())["cpu"].MakeSubRelation({"cpu0", "cpu1"});
   EXPECT_OK(test_map_relation_s);
-  plan::Relation test_map_relation = test_map_relation_s.ConsumeValueOrDie();
+  schema::Relation test_map_relation = test_map_relation_s.ConsumeValueOrDie();
   test_map_relation.AddColumn(types::FLOAT64, "cpu_sum");
   EXPECT_TRUE(RelationEquality(map_node->relation(), test_map_relation));
 
@@ -364,7 +364,7 @@ TEST_F(RelationHandlerTest, test_relation_results) {
   auto agg_node_status = FindNodeType(ir_graph, BlockingAggType);
   EXPECT_OK(agg_node_status);
   auto agg_node = static_cast<BlockingAggIR*>(agg_node_status.ConsumeValueOrDie());
-  plan::Relation test_agg_relation;
+  schema::Relation test_agg_relation;
   test_agg_relation.AddColumn(types::INT64, "cpu_count");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu_mean");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu0");
@@ -400,7 +400,7 @@ TEST_F(RelationHandlerTest, test_relation_fails) {
   auto map_node_status = FindNodeType(ir_graph, MapType);
   EXPECT_OK(map_node_status);
   auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
-  plan::Relation test_map_relation;
+  schema::Relation test_map_relation;
   test_map_relation.AddColumn(types::FLOAT64, "cpu_sum");
   EXPECT_TRUE(RelationEquality(map_node->relation(), test_map_relation));
 }
@@ -420,7 +420,7 @@ TEST_F(RelationHandlerTest, test_relation_multi_col_agg) {
   auto agg_node_status = FindNodeType(ir_graph, BlockingAggType);
   EXPECT_OK(agg_node_status);
   auto agg_node = static_cast<BlockingAggIR*>(agg_node_status.ConsumeValueOrDie());
-  plan::Relation test_agg_relation;
+  schema::Relation test_agg_relation;
   test_agg_relation.AddColumn(types::INT64, "cpu_count");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu_mean");
   test_agg_relation.AddColumn(types::FLOAT64, "cpu0");
@@ -433,7 +433,7 @@ TEST_F(RelationHandlerTest, test_from_select) {
   std::string chain_operators =
       "queryDF = From(table='cpu', select=['cpu0', "
       "'cpu2']).Range(start=0,stop=10).Result(name='cpu_out')";
-  plan::Relation test_relation;
+  schema::Relation test_relation;
   test_relation.AddColumn(types::FLOAT64, "cpu0");
   test_relation.AddColumn(types::FLOAT64, "cpu2");
   auto ir_graph_status = CompileGraph(chain_operators);

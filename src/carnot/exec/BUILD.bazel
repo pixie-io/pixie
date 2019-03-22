@@ -38,25 +38,6 @@ pl_cc_test_library(
 )
 
 pl_cc_test(
-    name = "row_batch_test",
-    srcs = ["row_batch_test.cc"],
-    deps = [
-        ":cc_library",
-        "//third_party:arrow",
-    ],
-)
-
-pl_cc_test(
-    name = "table_test",
-    srcs = ["table_test.cc"],
-    deps = [
-        ":cc_library",
-        ":test_utils",
-        "//third_party:arrow",
-    ],
-)
-
-pl_cc_test(
     name = "expression_evaluator_test",
     srcs = ["expression_evaluator_test.cc"],
     deps = [

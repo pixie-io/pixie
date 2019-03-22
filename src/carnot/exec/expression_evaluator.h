@@ -6,8 +6,8 @@
 #include <vector>
 
 #include "src/carnot/exec/exec_state.h"
-#include "src/carnot/exec/row_batch.h"
 #include "src/carnot/plan/scalar_expression.h"
+#include "src/carnot/schema/row_batch.h"
 #include "src/common/common.h"
 
 namespace pl {
@@ -44,7 +44,8 @@ class ExpressionEvaluator {
    * @param output A pointer to the output Rowbatch. This function expects a valid output RowBatch.
    * @return Status of the evaluation.
    */
-  virtual Status Evaluate(ExecState* exec_state, const RowBatch& input, RowBatch* output) = 0;
+  virtual Status Evaluate(ExecState* exec_state, const schema::RowBatch& input,
+                          schema::RowBatch* output) = 0;
 
   /**
    * Close should be called when this evaluator will no longer be used. Calling Evaluate or Open
@@ -86,14 +87,16 @@ class ScalarExpressionEvaluator : public ExpressionEvaluator {
       const plan::ConstScalarExpressionVector& expressions,
       const ScalarExpressionEvaluatorType& type);
 
-  Status Evaluate(ExecState* exec_state, const RowBatch& input, RowBatch* output) override;
+  Status Evaluate(ExecState* exec_state, const schema::RowBatch& input,
+                  schema::RowBatch* output) override;
   std::string DebugString() override;
 
  protected:
   // Function called for each individual expression in expressions_.
   // Implement in derived class.
-  virtual Status EvaluateSingleExpression(ExecState* exec_state, const RowBatch& input,
-                                          const plan::ScalarExpression& expr, RowBatch* output) = 0;
+  virtual Status EvaluateSingleExpression(ExecState* exec_state, const schema::RowBatch& input,
+                                          const plan::ScalarExpression& expr,
+                                          schema::RowBatch* output) = 0;
   plan::ConstScalarExpressionVector expressions_;
   std::unique_ptr<udf::FunctionContext> function_ctx_;
 };
@@ -112,8 +115,9 @@ class VectorNativeScalarExpressionEvaluator : public ScalarExpressionEvaluator {
   Status Close(ExecState* exec_state) override;
 
  protected:
-  Status EvaluateSingleExpression(ExecState* exec_state, const RowBatch& input,
-                                  const plan::ScalarExpression& expr, RowBatch* output) override;
+  Status EvaluateSingleExpression(ExecState* exec_state, const schema::RowBatch& input,
+                                  const plan::ScalarExpression& expr,
+                                  schema::RowBatch* output) override;
 };
 
 /**
@@ -129,8 +133,9 @@ class ArrowNativeScalarExpressionEvaluator : public ScalarExpressionEvaluator {
   Status Close(ExecState* exec_state) override;
 
  protected:
-  Status EvaluateSingleExpression(ExecState* exec_state, const RowBatch& input,
-                                  const plan::ScalarExpression& expr, RowBatch* output) override;
+  Status EvaluateSingleExpression(ExecState* exec_state, const schema::RowBatch& input,
+                                  const plan::ScalarExpression& expr,
+                                  schema::RowBatch* output) override;
 };
 
 }  // namespace exec

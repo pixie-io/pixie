@@ -4,11 +4,11 @@
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/plan/operators.h"
-#include "src/carnot/plan/relation.h"
 #include "src/carnot/plan/scalar_expression.h"
-#include "src/carnot/plan/schema.h"
 #include "src/carnot/plan/utils.h"
 #include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/schema/relation.h"
+#include "src/carnot/schema/schema.h"
 #include "src/common/common.h"
 
 namespace pl {
@@ -60,15 +60,15 @@ Status MemorySourceOperator::Init(const carnotpb::MemorySourceOperator &pb) {
   return Status::OK();
 }
 
-StatusOr<Relation> MemorySourceOperator::OutputRelation(
-    const Schema &, const PlanState &, const std::vector<int64_t> &input_ids) const {
+StatusOr<schema::Relation> MemorySourceOperator::OutputRelation(
+    const schema::Schema &, const PlanState &, const std::vector<int64_t> &input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
   if (!input_ids.empty()) {
     // TODO(zasgar): We should figure out if we need to treat the "source table" as
     // an input relation.
     return error::InvalidArgument("Source operator cannot have any inputs");
   }
-  Relation r;
+  schema::Relation r;
   for (int i = 0; i < pb_.column_idxs_size(); ++i) {
     r.AddColumn(pb_.column_types(i), pb_.column_names(i));
   }
@@ -112,8 +112,9 @@ Status MapOperator::Init(const carnotpb::MapOperator &pb) {
   return Status::OK();
 }
 
-StatusOr<Relation> MapOperator::OutputRelation(const Schema &schema, const PlanState &state,
-                                               const std::vector<int64_t> &input_ids) const {
+StatusOr<schema::Relation> MapOperator::OutputRelation(
+    const schema::Schema &schema, const PlanState &state,
+    const std::vector<int64_t> &input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
   if (input_ids.size() != 1) {
     return error::InvalidArgument("Map operator must have exactly one input");
@@ -121,7 +122,7 @@ StatusOr<Relation> MapOperator::OutputRelation(const Schema &schema, const PlanS
   if (!schema.HasRelation(input_ids[0])) {
     return error::NotFound("Missing relation ($0) for input of Map", input_ids[0]);
   }
-  Relation r;
+  schema::Relation r;
   for (size_t idx = 0; idx < expressions_.size(); ++idx) {
     auto s = expressions_[idx]->OutputDataType(state, schema);
     PL_RETURN_IF_ERROR(s);
@@ -160,8 +161,9 @@ Status BlockingAggregateOperator::Init(const carnotpb::BlockingAggregateOperator
   return Status::OK();
 }
 
-StatusOr<Relation> BlockingAggregateOperator::OutputRelation(
-    const Schema &schema, const PlanState &state, const std::vector<int64_t> &input_ids) const {
+StatusOr<schema::Relation> BlockingAggregateOperator::OutputRelation(
+    const schema::Schema &schema, const PlanState &state,
+    const std::vector<int64_t> &input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
   if (input_ids.size() != 1) {
     return error::InvalidArgument("BlockingAgg operator must have exactly one input");
@@ -174,7 +176,7 @@ StatusOr<Relation> BlockingAggregateOperator::OutputRelation(
   auto input_relation_s = schema.GetRelation(input_ids[0]);
   PL_RETURN_IF_ERROR(input_relation_s);
   const auto input_relation = input_relation_s.ConsumeValueOrDie();
-  Relation output_relation;
+  schema::Relation output_relation;
 
   for (int idx = 0; idx < pb_.groups_size(); ++idx) {
     int64_t node_id = pb_.groups(idx).node();
@@ -208,11 +210,12 @@ Status MemorySinkOperator::Init(const carnotpb::MemorySinkOperator &pb) {
   return Status::OK();
 }
 
-StatusOr<Relation> MemorySinkOperator::OutputRelation(const Schema &, const PlanState &,
-                                                      const std::vector<int64_t> &) const {
+StatusOr<schema::Relation> MemorySinkOperator::OutputRelation(const schema::Schema &,
+                                                              const PlanState &,
+                                                              const std::vector<int64_t> &) const {
   DCHECK(is_initialized_) << "Not initialized";
   // There are no outputs.
-  return Relation();
+  return schema::Relation();
 }
 
 }  // namespace plan

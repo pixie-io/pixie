@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "src/carnot/plan/schema.h"
+#include "src/carnot/schema/schema.h"
 
 namespace pl {
 namespace carnot {
-namespace plan {
+namespace schema {
 
 class SchemaTest : public ::testing::Test {
  protected:
@@ -52,6 +52,6 @@ TEST_F(SchemaTest, overwrite_relation) {
   EXPECT_EQ("Relation:\n  {123} : [def:string]\n", s.DebugString());
 }
 
-}  // namespace plan
+}  // namespace schema
 }  // namespace carnot
 }  // namespace pl

@@ -45,30 +45,31 @@ class BlockingAggNode : public ProcessingNode {
   BlockingAggNode() = default;
 
  protected:
-  Status AggregateGroupByNone(ExecState *exec_state, const RowBatch &rb);
-  Status AggregateGroupByClause(ExecState *exec_state, const RowBatch &rb);
+  Status AggregateGroupByNone(ExecState *exec_state, const schema::RowBatch &rb);
+  Status AggregateGroupByClause(ExecState *exec_state, const schema::RowBatch &rb);
 
   std::string DebugStringImpl() override;
-  Status InitImpl(const plan::Operator &plan_node, const RowDescriptor &output_descriptor,
-                  const std::vector<RowDescriptor> &input_descriptors) override;
+  Status InitImpl(const plan::Operator &plan_node, const schema::RowDescriptor &output_descriptor,
+                  const std::vector<schema::RowDescriptor> &input_descriptors) override;
   Status PrepareImpl(ExecState *exec_state) override;
   Status OpenImpl(ExecState *exec_state) override;
   Status CloseImpl(ExecState *exec_state) override;
-  Status ConsumeNextImpl(ExecState *exec_state, const RowBatch &rb) override;
+  Status ConsumeNextImpl(ExecState *exec_state, const schema::RowBatch &rb) override;
 
  private:
   AggHashMap agg_hash_map_;
   bool HasNoGroups() const { return plan_node_->groups().empty(); }
 
   Status EvaluateSingleExpressionNoGroups(ExecState *exec_state, const UDAInfo &uda_info,
-                                          plan::AggregateExpression *expr, const RowBatch &rb);
+                                          plan::AggregateExpression *expr,
+                                          const schema::RowBatch &rb);
   Status EvaluateAggHashValue(ExecState *exec_state, AggHashValue *val);
   StatusOr<types::DataType> GetTypeOfDep(const plan::ScalarExpression &expr) const;
 
   // Store information about aggregate node from the query planner.
   std::unique_ptr<plan::BlockingAggregateOperator> plan_node_;
-  std::unique_ptr<RowDescriptor> output_descriptor_;
-  std::unique_ptr<RowDescriptor> input_descriptor_;
+  std::unique_ptr<schema::RowDescriptor> output_descriptor_;
+  std::unique_ptr<schema::RowDescriptor> input_descriptor_;
 
   // Variables specific to GroupByNone Agg.
   std::vector<UDAInfo> udas_no_groups_;
@@ -102,11 +103,11 @@ class BlockingAggNode : public ProcessingNode {
   // Creates a mapping between plan cols and stored cols (see above comment).
   Status CreateColumnMapping();
 
-  Status ExtractRowTupleForBatch(const RowBatch &rb);
-  Status HashRowBatch(ExecState *exec_state, const RowBatch &rb);
+  Status ExtractRowTupleForBatch(const schema::RowBatch &rb);
+  Status HashRowBatch(ExecState *exec_state, const schema::RowBatch &rb);
   Status EvaluatePartialAggregates(ExecState *exec_state, size_t num_records);
   Status ResetGroupArgs();
-  Status ConvertAggHashMapToRowBatch(ExecState *exec_state, RowBatch *output_rb);
+  Status ConvertAggHashMapToRowBatch(ExecState *exec_state, schema::RowBatch *output_rb);
 
   AggHashValue *CreateAggHashValue(const udf::UDARegistry &registry);
   RowTuple *CreateGroupArgsRowTuple() {

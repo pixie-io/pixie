@@ -16,13 +16,13 @@ std::string MemorySourceNode::DebugStringImpl() {
 }
 
 Status MemorySourceNode::InitImpl(const plan::Operator &plan_node,
-                                  const RowDescriptor &output_descriptor,
-                                  const std::vector<RowDescriptor> &) {
+                                  const schema::RowDescriptor &output_descriptor,
+                                  const std::vector<schema::RowDescriptor> &) {
   CHECK(plan_node.op_type() == carnotpb::OperatorType::MEMORY_SOURCE_OPERATOR);
   const auto *source_plan_node = static_cast<const plan::MemorySourceOperator *>(&plan_node);
   // copy the plan node to local object;
   plan_node_ = std::make_unique<plan::MemorySourceOperator>(*source_plan_node);
-  output_descriptor_ = std::make_unique<RowDescriptor>(output_descriptor);
+  output_descriptor_ = std::make_unique<schema::RowDescriptor>(output_descriptor);
 
   return Status::OK();
 }
@@ -61,10 +61,10 @@ Status MemorySourceNode::GenerateNextImpl(ExecState *exec_state) {
     auto time_col = table_->FindTimeColumn();
     DCHECK_NE(time_col, -1);
     auto batch = table_->GetColumn(time_col)->batch(current_batch_);
-    if (udf::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), batch->length() - 1) >=
+    if (types::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), batch->length() - 1) >=
         plan_node_->stop_time()) {
-      end = udf::SearchArrowArrayLessThan<types::DataType::INT64>(batch.get(),
-                                                                  plan_node_->stop_time()) +
+      end = types::SearchArrowArrayLessThan<types::DataType::INT64>(batch.get(),
+                                                                    plan_node_->stop_time()) +
             1;
     }
   }
@@ -88,7 +88,7 @@ bool MemorySourceNode::HasBatchesRemaining() {
     auto time_col = table_->FindTimeColumn();
     DCHECK_NE(time_col, -1);
     auto batch = table_->GetColumn(time_col)->batch(current_batch_);
-    return udf::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), 0) <
+    return types::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), 0) <
            plan_node_->stop_time();
   }
 

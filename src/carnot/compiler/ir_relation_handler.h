@@ -8,11 +8,12 @@
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/registry_info.h"
-#include "src/carnot/plan/schema.h"
+#include "src/carnot/schema/schema.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
+
 class IRRelationHandler {
  public:
   IRRelationHandler() = delete;
@@ -52,9 +53,9 @@ class IRRelationHandler {
    *
    * @param the node operating on.
    * @param parent_rel - the parent relation of the node.
-   * @return StatusOr<plan::Relation> the resultant relation.
+   * @return StatusOr<schema::Relation> the resultant relation.
    */
-  StatusOr<plan::Relation> SinkHandler(OperatorIR* node, plan::Relation parent_rel);
+  StatusOr<schema::Relation> SinkHandler(OperatorIR* node, schema::Relation parent_rel);
 
   /**
    * @brief Handle Agg Operator.
@@ -63,9 +64,9 @@ class IRRelationHandler {
    *
    * @param the node operating on.
    * @param parent_rel - the parent relation of the node.
-   * @return StatusOr<plan::Relation> the resultant relation.
+   * @return StatusOr<schema::Relation> the resultant relation.
    */
-  StatusOr<plan::Relation> BlockingAggHandler(OperatorIR* node, plan::Relation parent_rel);
+  StatusOr<schema::Relation> BlockingAggHandler(OperatorIR* node, schema::Relation parent_rel);
 
   /**
    * @brief Handle Map operator.
@@ -74,21 +75,21 @@ class IRRelationHandler {
    *
    * @param the node operating on.
    * @param parent_rel - the parent relation of the node.
-   * @return StatusOr<plan::Relation> the resultant relation.
+   * @return StatusOr<schema::Relation> the resultant relation.
    */
-  StatusOr<plan::Relation> MapHandler(OperatorIR* node, plan::Relation parent_rel);
+  StatusOr<schema::Relation> MapHandler(OperatorIR* node, schema::Relation parent_rel);
 
   /**
    * @brief Handle Range Operator. Just copies the parent_relation.
    *
    * @param the node operating on.
    * @param parent_rel - the parent relation of the node.
-   * @return StatusOr<plan::Relation> the resultant relation.
+   * @return StatusOr<schema::Relation> the resultant relation.
    */
-  StatusOr<plan::Relation> RangeHandler(OperatorIR* node, plan::Relation parent_rel);
+  StatusOr<schema::Relation> RangeHandler(OperatorIR* node, schema::Relation parent_rel);
 
   Status HasExpectedColumns(const std::unordered_set<std::string>& expected_columns,
-                            const plan::Relation& parent_relation);
+                            const schema::Relation& parent_relation);
   /**
    * @brief Evaluates the expression to get the data.
    *
@@ -97,16 +98,16 @@ class IRRelationHandler {
    * @param is_map -> true if this is for a map, false if this is for agg. Used to select UDF vs UDA
    * @return StatusOr<types::DataType> The datatype output by this expression.
    */
-  StatusOr<types::DataType> EvaluateExpression(IRNode* expr, const plan::Relation& parent_rel,
+  StatusOr<types::DataType> EvaluateExpression(IRNode* expr, const schema::Relation& parent_rel,
                                                bool is_map);
-  StatusOr<types::DataType> EvaluateFuncExpr(FuncIR* expr, const plan::Relation& parent_rel,
+  StatusOr<types::DataType> EvaluateFuncExpr(FuncIR* expr, const schema::Relation& parent_rel,
                                              bool is_map);
-  StatusOr<types::DataType> EvaluateColExpr(ColumnIR* expr, const plan::Relation& parent_rel);
+  StatusOr<types::DataType> EvaluateColExpr(ColumnIR* expr, const schema::Relation& parent_rel);
   Status SetSourceRelation(IRNode* node);
   Status SetAllSourceRelations(IR* ir_graph);
   StatusOr<std::vector<ColumnIR*>> GetColumnsFromRelation(IRNode* node,
                                                           std::vector<std::string> col_names,
-                                                          const plan::Relation& relation);
+                                                          const schema::Relation& relation);
 
   StatusOr<IntIR*> EvaluateCompilerExpression(IRNode* node);
   StatusOr<IntIR*> EvaluateCompilerFunction(const std::string& name,

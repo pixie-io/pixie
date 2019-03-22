@@ -2,14 +2,14 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
-#include "src/carnot/plan/schema.h"
+#include "src/carnot/schema/schema.h"
 #include "src/common/common.h"
 
 namespace pl {
 namespace carnot {
-namespace plan {
+namespace schema {
 
-bool plan::Schema::HasRelation(int64_t id) const { return relations_.find(id) != relations_.end(); }
+bool Schema::HasRelation(int64_t id) const { return relations_.find(id) != relations_.end(); }
 
 std::vector<int64_t> Schema::GetIDs() const {
   std::vector<int64_t> ids(relations_.size());
@@ -41,6 +41,6 @@ StatusOr<const Relation> Schema::GetRelation(int64_t id) const {
   return relations_.at(id);
 }
 
-}  // namespace plan
+}  // namespace schema
 }  // namespace carnot
 }  // namespace pl

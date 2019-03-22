@@ -8,6 +8,8 @@
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/plan/utils.h"
 #include "src/carnot/proto/test_proto.h"
+#include "src/carnot/schema/relation.h"
+#include "src/carnot/schema/schema.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 
@@ -16,6 +18,8 @@ namespace carnot {
 namespace plan {
 
 using google::protobuf::TextFormat;
+using schema::Relation;
+using schema::Schema;
 
 TEST(ToString, values) {
   EXPECT_EQ("Function", ToString(carnotpb::ScalarExpression::kFunc));

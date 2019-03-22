@@ -2,15 +2,15 @@
 #include <gtest/gtest.h>
 #include <vector>
 
-#include "src/carnot/exec/row_batch.h"
-#include "src/carnot/exec/row_descriptor.h"
+#include "src/carnot/schema/row_batch.h"
+#include "src/carnot/schema/row_descriptor.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/proto/types.pb.h"
 #include "src/shared/types/types.h"
 
 namespace pl {
 namespace carnot {
-namespace exec {
+namespace schema {
 
 TEST(RowDescriptorTest, basic_test) {
   auto descriptor = std::vector<types::DataType>(
@@ -100,6 +100,6 @@ TEST_F(RowBatchTest, num_bytes) {
   EXPECT_EQ(expected_bytes, rb_->NumBytes());
 }
 
-}  // namespace exec
+}  // namespace schema
 }  // namespace carnot
 }  // namespace pl

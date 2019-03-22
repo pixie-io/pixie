@@ -10,16 +10,16 @@
 
 #include "absl/base/internal/spinlock.h"
 #include "absl/strings/str_format.h"
-#include "src/carnot/exec/row_batch.h"
-#include "src/carnot/exec/row_descriptor.h"
-#include "src/carnot/plan/relation.h"
+#include "src/carnot/schema/relation.h"
+#include "src/carnot/schema/row_batch.h"
+#include "src/carnot/schema/row_descriptor.h"
 #include "src/common/common.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 
 namespace pl {
 namespace carnot {
-namespace exec {
+namespace schema {
 
 using RecordBatchSPtr = std::shared_ptr<arrow::RecordBatch>;
 
@@ -88,7 +88,7 @@ class Table : public NotCopyable {
    *
    * @param relation the relation for the table.
    */
-  explicit Table(const plan::Relation& relation);
+  explicit Table(const schema::Relation& relation);
 
   /**
    * @ param i the index of the column to get.
@@ -141,7 +141,7 @@ class Table : public NotCopyable {
    */
   int64_t NumColumns() { return columns_.size(); }
 
-  plan::Relation GetRelation();
+  schema::Relation GetRelation();
   StatusOr<std::vector<RecordBatchSPtr>> GetTableAsRecordBatches();
 
   /**
@@ -178,6 +178,6 @@ class Table : public NotCopyable {
   absl::base_internal::SpinLock hot_batches_lock_;
 };
 
-}  // namespace exec
+}  // namespace schema
 }  // namespace carnot
 }  // namespace pl

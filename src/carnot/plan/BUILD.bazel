@@ -11,6 +11,7 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/carnot/proto:plan_pl_cc_proto",
+        "//src/carnot/schema:cc_library",
         "//src/carnot/udf:cc_library",
     ],
 )
@@ -28,18 +29,6 @@ pl_cc_test(
         ":cc_library",
         "//src/carnot/proto:plan_testutils",
     ],
-)
-
-pl_cc_test(
-    name = "relation_test",
-    srcs = ["relation_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "schema_test",
-    srcs = ["schema_test.cc"],
-    deps = [":cc_library"],
 )
 
 pl_cc_test(

@@ -6,18 +6,17 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
-#include "src/carnot/exec/table.h"
-#include "src/carnot/plan/relation.h"
-#include "src/carnot/udf/udf_wrapper.h"
+#include "src/carnot/schema/relation.h"
+#include "src/carnot/schema/table.h"
 #include "src/common/common.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/type_utils.h"
 
 namespace pl {
 namespace carnot {
-namespace exec {
+namespace schema {
 
-Table::Table(const plan::Relation& relation) : desc_(relation.col_types()) {
+Table::Table(const schema::Relation& relation) : desc_(relation.col_types()) {
   uint64_t num_cols = desc_.size();
   columns_.reserve(num_cols);
   for (uint64_t i = 0; i < num_cols; ++i) {
@@ -230,7 +229,7 @@ BatchPosition Table::FindBatchPositionGreaterThanOrEqual(int64_t time,
     std::shared_ptr<arrow::Array> batch =
         GetColumnBatch(time_col_idx, batch_pos.batch_idx, mem_pool);
     batch_pos.row_idx =
-        udf::SearchArrowArrayGreaterThanOrEqual<types::DataType::INT64>(batch.get(), time);
+        types::SearchArrowArrayGreaterThanOrEqual<types::DataType::INT64>(batch.get(), time);
   }
   return batch_pos;
 }
@@ -244,9 +243,9 @@ int64_t Table::FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
 
   int64_t mid = (start + end) / 2;
   auto batch = GetColumnBatch(time_col_idx, mid, mem_pool);
-  auto start_val = udf::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), 0);
+  auto start_val = types::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), 0);
   auto stop_val =
-      udf::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), batch->length() - 1);
+      types::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), batch->length() - 1);
   if (time > start_val && time <= stop_val) {
     return mid;
   }
@@ -263,7 +262,7 @@ int64_t Table::FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
   return -1;
 }
 
-plan::Relation Table::GetRelation() {
+schema::Relation Table::GetRelation() {
   std::vector<types::DataType> types;
   std::vector<std::string> names;
   types.reserve(columns_.size());
@@ -274,7 +273,7 @@ plan::Relation Table::GetRelation() {
     names.push_back(col->name());
   }
 
-  return plan::Relation(types, names);
+  return schema::Relation(types, names);
 }
 
 StatusOr<std::vector<RecordBatchSPtr>> Table::GetTableAsRecordBatches() {
@@ -299,6 +298,6 @@ StatusOr<std::vector<RecordBatchSPtr>> Table::GetTableAsRecordBatches() {
   }
   return record_batches;
 }
-}  // namespace exec
+}  // namespace schema
 }  // namespace carnot
 }  // namespace pl

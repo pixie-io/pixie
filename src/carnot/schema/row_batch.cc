@@ -5,14 +5,13 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
-#include "src/carnot/exec/row_batch.h"
-#include "src/carnot/udf/udf_wrapper.h"
+#include "src/carnot/schema/row_batch.h"
 #include "src/common/common.h"
 #include "src/shared/types/arrow_adapter.h"
 
 namespace pl {
 namespace carnot {
-namespace exec {
+namespace schema {
 
 std::shared_ptr<arrow::Array> RowBatch::ColumnAt(int64_t i) const { return columns_[i]; }
 
@@ -54,8 +53,9 @@ int64_t RowBatch::NumBytes() const {
     if (col->type_id() == arrow::Type::STRING) {
       // Loop through each string in the Arrow array.
       for (int64_t i = 0; i < col->length(); i++) {
-        total_bytes += sizeof(char) *
-                       udf::GetValueFromArrowArray<types::DataType::STRING>(col.get(), i).length();
+        total_bytes +=
+            sizeof(char) *
+            types::GetValueFromArrowArray<types::DataType::STRING>(col.get(), i).length();
       }
     } else {
       total_bytes += num_rows() * types::ArrowTypeToBytes(col->type_id());
@@ -64,6 +64,6 @@ int64_t RowBatch::NumBytes() const {
   return total_bytes;
 }
 
-}  // namespace exec
+}  // namespace schema
 }  // namespace carnot
 }  // namespace pl

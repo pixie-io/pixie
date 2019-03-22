@@ -9,15 +9,17 @@
 #include "src/carnot/exec/memory_sink_node.h"
 #include "src/carnot/exec/memory_source_node.h"
 #include "src/carnot/plan/plan_state.h"
-#include "src/carnot/plan/relation.h"
-#include "src/carnot/plan/schema.h"
+#include "src/carnot/schema/relation.h"
+#include "src/carnot/schema/schema.h"
 #include "src/common/object_pool.h"
 
 namespace pl {
 namespace carnot {
 namespace exec {
 
-Status ExecutionGraph::Init(std::shared_ptr<plan::Schema> schema, plan::PlanState* plan_state,
+using schema::RowDescriptor;
+
+Status ExecutionGraph::Init(std::shared_ptr<schema::Schema> schema, plan::PlanState* plan_state,
                             ExecState* exec_state, plan::PlanFragment* pf) {
   plan_state_ = plan_state;
   schema_ = schema;

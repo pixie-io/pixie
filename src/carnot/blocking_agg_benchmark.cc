@@ -6,10 +6,9 @@
 #include <vector>
 
 #include "src/carnot/carnot.h"
-#include "src/carnot/exec/row_batch.h"
-#include "src/carnot/exec/row_descriptor.h"
-#include "src/carnot/exec/table.h"
-#include "src/carnot/plan/relation.h"
+#include "src/carnot/schema/row_batch.h"
+#include "src/carnot/schema/row_descriptor.h"
+#include "src/carnot/schema/table.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/carnot/udf/udf_wrapper.h"
@@ -25,6 +24,10 @@ PL_SUPPRESS_WARNINGS_END()
 namespace pl {
 namespace carnot {
 namespace exec {
+
+using schema::Column;
+using schema::RowDescriptor;
+using schema::Table;
 
 const char* kGroupByNoneQuery =
     R"(
@@ -59,13 +62,13 @@ std::shared_ptr<arrow::Array> GenerateInt64Batch(DistributionType dist_type, int
 StatusOr<std::shared_ptr<Table>> CreateTable(std::vector<types::DataType> types,
                                              std::vector<DistributionType> distribution_types,
                                              int64_t rb_size, int64_t num_batches) {
-  RowDescriptor rd = RowDescriptor(types);
+  RowDescriptor rd(types);
   std::vector<std::string> col_names;
   for (size_t col_idx = 0; col_idx < types.size(); col_idx++) {
     col_names.push_back(absl::StrFormat("col%d", col_idx));
   }
 
-  auto table = std::make_shared<Table>(plan::Relation(types, col_names));
+  auto table = std::make_shared<Table>(schema::Relation(types, col_names));
 
   for (size_t col_idx = 0; col_idx < types.size(); col_idx++) {
     auto col = table->GetColumn(col_idx);
@@ -85,12 +88,12 @@ StatusOr<std::shared_ptr<Table>> CreateTable(std::vector<types::DataType> types,
   return table;
 }
 
-std::shared_ptr<Carnot> SetUpCarnot() {
-  auto carnot = std::make_shared<Carnot>();
-  auto s = carnot->Init();
-  PL_UNUSED(s);
-
-  return carnot;
+std::unique_ptr<Carnot> SetUpCarnot() {
+  auto carnot_or_s = Carnot::Create();
+  if (!carnot_or_s.ok()) {
+    LOG(FATAL) << "Failed to initialize Carnot.";
+  }
+  return carnot_or_s.ConsumeValueOrDie();
 }
 
 // NOLINTNEXTLINE : runtime/references.
@@ -98,10 +101,9 @@ void BM_Query(benchmark::State& state, std::vector<types::DataType> types,
               std::vector<DistributionType> distribution_types, const std::string& query,
               int64_t num_batches) {
   auto carnot = SetUpCarnot();
-  auto table_store = carnot->table_store();
   auto table =
       CreateTable(types, distribution_types, state.range(0), num_batches).ConsumeValueOrDie();
-  table_store->AddTable("test_table", table);
+  carnot->AddTable("test_table", table);
 
   int64_t bytes_processed = 0;
   int i = 0;

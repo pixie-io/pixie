@@ -2,13 +2,36 @@
 #include <gtest/gtest.h>
 #include <vector>
 
-#include "src/carnot/exec/table.h"
-#include "src/carnot/exec/test_utils.h"
+#include "src/carnot/schema/relation.h"
+#include "src/carnot/schema/table.h"
 #include "src/shared/types/arrow_adapter.h"
 
 namespace pl {
 namespace carnot {
-namespace exec {
+namespace schema {
+
+namespace {
+// TOOD(zasgar): deduplicate this with exec/test_utils.
+std::shared_ptr<schema::Table> TestTable() {
+  schema::Relation rel({types::DataType::FLOAT64, types::DataType::INT64}, {"col1", "col2"});
+  auto table = std::make_shared<Table>(rel);
+
+  auto col1 = table->GetColumn(0);
+  std::vector<types::Float64Value> col1_in1 = {0.5, 1.2, 5.3};
+  std::vector<types::Float64Value> col1_in2 = {0.1, 5.1};
+  PL_CHECK_OK(col1->AddBatch(types::ToArrow(col1_in1, arrow::default_memory_pool())));
+  PL_CHECK_OK(col1->AddBatch(types::ToArrow(col1_in2, arrow::default_memory_pool())));
+
+  auto col2 = table->GetColumn(1);
+  std::vector<types::Int64Value> col2_in1 = {1, 2, 3};
+  std::vector<types::Int64Value> col2_in2 = {5, 6};
+  PL_CHECK_OK(col2->AddBatch(types::ToArrow(col2_in1, arrow::default_memory_pool())));
+  PL_CHECK_OK(col2->AddBatch(types::ToArrow(col2_in2, arrow::default_memory_pool())));
+
+  return table;
+}
+
+}  // namespace
 
 TEST(ColumnTest, basic_test) {
   auto col = Column(types::DataType::INT64, "col");
@@ -34,10 +57,9 @@ TEST(ColumnTest, wrong_chunk_type_test) {
 }
 
 TEST(TableTest, basic_test) {
-  plan::Relation rel =
-      plan::Relation({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
+  schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
 
-  Table table = Table(rel);
+  Table table(rel);
   auto col1 = table.GetColumn(0);
   auto col2 = table.GetColumn(1);
 
@@ -74,10 +96,9 @@ TEST(TableTest, basic_test) {
 }
 
 TEST(TableTest, wrong_batch_size_test) {
-  plan::Relation rel =
-      plan::Relation({types::DataType::BOOLEAN, types::DataType::FLOAT64}, {"col1", "col2"});
+  schema::Relation rel({types::DataType::BOOLEAN, types::DataType::FLOAT64}, {"col1", "col2"});
 
-  Table table = Table(rel);
+  Table table(rel);
   auto col1 = table.GetColumn(0);
   auto col2 = table.GetColumn(1);
 
@@ -92,12 +113,11 @@ TEST(TableTest, wrong_batch_size_test) {
 
 TEST(TableTest, write_row_batch) {
   auto rd = RowDescriptor({types::DataType::BOOLEAN, types::DataType::INT64});
-  plan::Relation rel =
-      plan::Relation({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
+  schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
 
-  Table table = Table(rel);
+  Table table(rel);
 
-  auto rb1 = RowBatch(rd, 2);
+  RowBatch rb1(rd, 2);
   std::vector<types::BoolValue> col1_rb1 = {true, false};
   std::vector<types::Int64Value> col2_rb1 = {1, 2};
   auto col1_rb1_arrow = types::ToArrow(col1_rb1, arrow::default_memory_pool());
@@ -113,10 +133,9 @@ TEST(TableTest, write_row_batch) {
 }
 
 TEST(TableTest, hot_batches_test) {
-  plan::Relation rel =
-      plan::Relation({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
+  schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
 
-  Table table = Table(rel);
+  Table table(rel);
 
   std::vector<types::BoolValue> col1_in1 = {true, false, true};
   auto col1_in1_wrapper =
@@ -154,7 +173,7 @@ TEST(TableTest, hot_batches_test) {
 }
 
 TEST(TableTest, arrow_batches_test) {
-  auto table = CarnotTestUtils::TestTable();
+  auto table = TestTable();
 
   auto record_batches_status = table->GetTableAsRecordBatches();
   ASSERT_OK(record_batches_status);
@@ -170,13 +189,12 @@ TEST(TableTest, arrow_batches_test) {
 }
 
 TEST(TableTest, greater_than_eq_eq) {
-  plan::Relation rel =
-      plan::Relation({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
-  auto rd = RowDescriptor({types::DataType::BOOLEAN, types::DataType::INT64});
+  schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
+  RowDescriptor rd({types::DataType::BOOLEAN, types::DataType::INT64});
 
-  Table table = Table(rel);
+  Table table(rel);
 
-  auto rb1 = RowBatch(rd, 2);
+  RowBatch rb1(rd, 2);
   std::vector<types::BoolValue> col1_rb1 = {true, false};
   std::vector<types::Int64Value> col2_rb1 = {1, 2};
   auto col1_rb1_arrow = types::ToArrow(col1_rb1, arrow::default_memory_pool());
@@ -189,9 +207,9 @@ TEST(TableTest, greater_than_eq_eq) {
 }
 
 TEST(TableTest, find_batch_position_greater_or_eq) {
-  auto relation = plan::Relation(std::vector<types::DataType>({types::DataType::TIME64NS}),
-                                 std::vector<std::string>({"time_"}));
-  Table table = Table(relation);
+  schema::Relation relation(std::vector<types::DataType>({types::DataType::TIME64NS}),
+                            std::vector<std::string>({"time_"}));
+  Table table(relation);
   std::vector<types::Time64NSValue> time_cold_col1 = {2, 3, 4, 6};
   std::vector<types::Time64NSValue> time_cold_col2 = {8, 8, 8};
   std::vector<types::Time64NSValue> time_cold_col3 = {8, 9, 11};
@@ -265,6 +283,6 @@ TEST(TableTest, find_batch_position_greater_or_eq) {
   EXPECT_EQ(-1, batch_pos.row_idx);
 }
 
-}  // namespace exec
+}  // namespace schema
 }  // namespace carnot
 }  // namespace pl

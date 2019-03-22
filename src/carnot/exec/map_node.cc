@@ -5,9 +5,13 @@
 #include "absl/strings/str_join.h"
 #include "src/carnot/exec/map_node.h"
 #include "src/carnot/proto/plan.pb.h"
+
 namespace pl {
 namespace carnot {
 namespace exec {
+
+using schema::RowBatch;
+using schema::RowDescriptor;
 
 std::string MapNode::DebugStringImpl() {
   return absl::StrFormat("Exec::MapNode<%s>", evaluator_->DebugString());

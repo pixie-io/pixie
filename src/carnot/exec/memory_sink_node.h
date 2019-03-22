@@ -18,17 +18,17 @@ class MemorySinkNode : public SinkNode {
 
  protected:
   std::string DebugStringImpl() override;
-  Status InitImpl(const plan::Operator &plan_node, const RowDescriptor &output_descriptor,
-                  const std::vector<RowDescriptor> &input_descriptors) override;
+  Status InitImpl(const plan::Operator &plan_node, const schema::RowDescriptor &output_descriptor,
+                  const std::vector<schema::RowDescriptor> &input_descriptors) override;
   Status PrepareImpl(ExecState *exec_state) override;
   Status OpenImpl(ExecState *exec_state) override;
   Status CloseImpl(ExecState *exec_state) override;
-  Status ConsumeNextImpl(ExecState *exec_state, const RowBatch &rb) override;
+  Status ConsumeNextImpl(ExecState *exec_state, const schema::RowBatch &rb) override;
 
  private:
   std::unique_ptr<plan::MemorySinkOperator> plan_node_;
-  std::unique_ptr<RowDescriptor> input_descriptor_;
-  std::shared_ptr<Table> table_;
+  std::unique_ptr<schema::RowDescriptor> input_descriptor_;
+  std::shared_ptr<schema::Table> table_;
 };
 
 }  // namespace exec

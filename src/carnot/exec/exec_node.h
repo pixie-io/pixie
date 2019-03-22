@@ -4,9 +4,9 @@
 #include <vector>
 
 #include "src/carnot/exec/exec_state.h"
-#include "src/carnot/exec/row_batch.h"
-#include "src/carnot/exec/row_descriptor.h"
 #include "src/carnot/plan/operators.h"
+#include "src/carnot/schema/row_batch.h"
+#include "src/carnot/schema/row_descriptor.h"
 #include "src/common/common.h"
 
 namespace pl {
@@ -34,8 +34,8 @@ class ExecNode {
    * @param input_descriptors The input column schema of row batches.
    * @return
    */
-  Status Init(const plan::Operator& plan_node, const RowDescriptor& output_descriptor,
-              std::vector<RowDescriptor> input_descriptors) {
+  Status Init(const plan::Operator& plan_node, const schema::RowDescriptor& output_descriptor,
+              std::vector<schema::RowDescriptor> input_descriptors) {
     return InitImpl(plan_node, output_descriptor, input_descriptors);
   }
 
@@ -83,7 +83,7 @@ class ExecNode {
    * @param rb The input row batch.
    * @return The Status of consumption.
    */
-  Status ConsumeNext(ExecState* exec_state, const RowBatch& rb) {
+  Status ConsumeNext(ExecState* exec_state, const schema::RowBatch& rb) {
     DCHECK(type() == ExecNodeType::kSinkNode || type() == ExecNodeType::kProcessingNode);
 
     return ConsumeNextImpl(exec_state, rb);
@@ -137,7 +137,7 @@ class ExecNode {
    * @param rb The row batch to send.
    * @return Status of children execution.
    */
-  Status SendRowBatchToChildren(ExecState* exec_state, const RowBatch& rb) {
+  Status SendRowBatchToChildren(ExecState* exec_state, const schema::RowBatch& rb) {
     for (auto* child : children_) {
       PL_RETURN_IF_ERROR(child->ConsumeNext(exec_state, rb));
     }
@@ -150,8 +150,9 @@ class ExecNode {
   // Defines the protected implementations of the non-virtual interface functions
   // defined above.
   virtual std::string DebugStringImpl() = 0;
-  virtual Status InitImpl(const plan::Operator& plan_node, const RowDescriptor& output_descriptor,
-                          const std::vector<RowDescriptor>& input_descriptors) = 0;
+  virtual Status InitImpl(const plan::Operator& plan_node,
+                          const schema::RowDescriptor& output_descriptor,
+                          const std::vector<schema::RowDescriptor>& input_descriptors) = 0;
   virtual Status PrepareImpl(ExecState* exec_state) = 0;
   virtual Status OpenImpl(ExecState* exec_state) = 0;
   virtual Status CloseImpl(ExecState* exec_state) = 0;
@@ -160,7 +161,7 @@ class ExecNode {
     return error::Unimplemented("Implement in derived class (if source)");
   }
 
-  virtual Status ConsumeNextImpl(ExecState*, const RowBatch&) {
+  virtual Status ConsumeNextImpl(ExecState*, const schema::RowBatch&) {
     return error::Unimplemented("Implement in derived class (if sink or processing)");
   }
 

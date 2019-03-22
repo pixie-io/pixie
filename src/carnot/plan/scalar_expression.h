@@ -8,8 +8,8 @@
 #include "absl/strings/str_format.h"
 #include "src/carnot/plan/plan_node.h"
 #include "src/carnot/plan/plan_state.h"
-#include "src/carnot/plan/schema.h"
 #include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/schema/schema.h"
 #include "src/common/common.h"
 
 namespace pl {
@@ -70,7 +70,7 @@ class ScalarExpression : public PlanNode {
    * @return Either an Status or the compute data type.
    */
   virtual StatusOr<types::DataType> OutputDataType(const PlanState &state,
-                                                   const Schema &input_schema) const = 0;
+                                                   const schema::Schema &input_schema) const = 0;
 
   /**
    * Computes the column dependencies and returns a reference to all of them. No
@@ -122,7 +122,7 @@ class Column : public ScalarExpression {
 
   // Implementation of base class methods.
   StatusOr<types::DataType> OutputDataType(const PlanState &state,
-                                           const Schema &input_schema) const override;
+                                           const schema::Schema &input_schema) const override;
   std::vector<const Column *> ColumnDeps() override;
   std::vector<ScalarExpression *> Deps() const override;
   Expression ExpressionType() const override;
@@ -152,7 +152,7 @@ class ScalarValue : public ScalarExpression {
   // Override base class methods.
   std::vector<const Column *> ColumnDeps() override;
   StatusOr<types::DataType> OutputDataType(const PlanState &state,
-                                           const Schema &input_schema) const override;
+                                           const schema::Schema &input_schema) const override;
   std::vector<ScalarExpression *> Deps() const override;
   Expression ExpressionType() const override;
   std::string DebugString() const override;
@@ -181,7 +181,7 @@ class ScalarFunc : public ScalarExpression {
   // Override base class methods.
   std::vector<const Column *> ColumnDeps() override;
   StatusOr<types::DataType> OutputDataType(const PlanState &state,
-                                           const Schema &input_schema) const override;
+                                           const schema::Schema &input_schema) const override;
   std::vector<ScalarExpression *> Deps() const override;
   Expression ExpressionType() const override;
   std::string DebugString() const override;
@@ -203,7 +203,7 @@ class AggregateExpression : public ScalarExpression {
   // Override base class methods.
   std::vector<const Column *> ColumnDeps() override;
   StatusOr<types::DataType> OutputDataType(const PlanState &state,
-                                           const Schema &input_schema) const override;
+                                           const schema::Schema &input_schema) const override;
   std::vector<ScalarExpression *> Deps() const override;
   Expression ExpressionType() const override;
   std::string DebugString() const override;

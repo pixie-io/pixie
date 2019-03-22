@@ -16,6 +16,9 @@ namespace exec {
 using SharedArray = std::shared_ptr<arrow::Array>;
 constexpr int64_t kAggCompactionThreshold = 512;
 
+using schema::RowBatch;
+using schema::RowDescriptor;
+
 namespace {
 template <types::DataType DT>
 void ExtractIntoGroupArgs(std::vector<GroupArgs> *group_args, arrow::Array *col, int rt_col_idx) {
@@ -24,7 +27,7 @@ void ExtractIntoGroupArgs(std::vector<GroupArgs> *group_args, arrow::Array *col,
   auto num_rows = col->length();
   for (auto row_idx = 0; row_idx < num_rows; ++row_idx) {
     (*group_args)[row_idx].rt->SetValue<UDFValueType>(
-        rt_col_idx, udf::GetValue(static_cast<ArrowArrayType *>(col), row_idx));
+        rt_col_idx, types::GetValue(static_cast<ArrowArrayType *>(col), row_idx));
   }
 }
 
@@ -39,7 +42,7 @@ void AppendToBuilder(arrow::ArrayBuilder *builder, RowTuple *rt, size_t rt_idx) 
 }
 
 template <types::DataType DT>
-void ExtractToColumnWrapper(const std::vector<GroupArgs> &group_args, const RowBatch &rb,
+void ExtractToColumnWrapper(const std::vector<GroupArgs> &group_args, const schema::RowBatch &rb,
                             size_t col_idx, size_t rb_col_idx) {
   size_t num_rows = rb.num_rows();
   DCHECK(num_rows <= group_args.size());
@@ -48,7 +51,7 @@ void ExtractToColumnWrapper(const std::vector<GroupArgs> &group_args, const RowB
     auto col_wrapper = group_args[row_idx].av->agg_cols[col_idx].get();
     auto arr = rb.ColumnAt(rb_col_idx).get();
     static_cast<typename types::ColumnWrapperType<DT>::type *>(col_wrapper)
-        ->Append(udf::GetValueFromArrowArray<DT>(arr, row_idx));
+        ->Append(types::GetValueFromArrowArray<DT>(arr, row_idx));
   }
 }
 

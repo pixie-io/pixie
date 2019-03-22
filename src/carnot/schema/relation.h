@@ -3,13 +3,13 @@
 #include <string>
 #include <vector>
 
-#include "src/carnot/proto/plan.pb.h"
+// #include "src/carnot/proto/plan.pb.h"
 #include "src/common/statusor.h"
 #include "src/shared/types/proto/types.pb.h"
 
 namespace pl {
 namespace carnot {
-namespace plan {
+namespace schema {
 
 using ColTypeArray = std::vector<types::DataType>;
 using ColNameArray = std::vector<std::string>;
@@ -57,6 +57,6 @@ class Relation {
   ColNameArray col_names_;
 };
 
-}  // namespace plan
+}  // namespace schema
 }  // namespace carnot
 }  // namespace pl
