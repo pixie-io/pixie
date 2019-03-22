@@ -25,8 +25,9 @@ apt_pkg_list = [
   'libedit-dev',
   'libelf-dev',
 
-  # Libtool, needed for perftools.
+  # Libtool/unwind, needed for perftools.
   'libltdl-dev',
+  'libunwind-dev',
 ]
 
 apt_package apt_pkg_list do
