@@ -23,7 +23,10 @@ apt_pkg_list = [
   'cmake',
   'flex',
   'libedit-dev',
-  'libelf-dev'
+  'libelf-dev',
+
+  # Libtool, needed for perftools.
+  'libltdl-dev',
 ]
 
 apt_package apt_pkg_list do
