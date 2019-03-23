@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 #include "src/stirling/sequence_generator.h"
 #include "src/stirling/source_connector.h"
 

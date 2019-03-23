@@ -3,8 +3,8 @@ syntax = "proto3";
 package pl.vizier;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/utils/proto/utils.proto";
-import "src/common/proto/status.proto";
+import "src/common/uuid/proto/uuid.proto";
+import "src/common/base/proto/status.proto";
 import "src/shared/types/proto/types.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/proto;service";
@@ -50,7 +50,7 @@ message SchemaRequest {}
 // The schema response from Vizier.
 message SchemaResponse {
   message SchemaByAgent {
-    utils.UUID agent_id      = 1 [
+    uuidpb.UUID agent_id      = 1 [
       (gogoproto.customname) = "AgentID"
     ];
     Schema schema = 2;
@@ -89,7 +89,7 @@ message AgentStatus {
 
 // AgentInfo contains information about host and agent running on a given machine.
 message AgentInfo {
-  utils.UUID agent_id      = 1 [
+  uuidpb.UUID agent_id      = 1 [
     (gogoproto.customname) = "AgentID"
   ];
   HostInfo host_info = 2;
@@ -136,7 +136,7 @@ message HeartBeatAck {
 
 // RegisterAgentRequest is the first message sent from the agent to register the agent.
 message RegisterAgentRequest {
-  utils.UUID agent_id = 1 [
+  uuidpb.UUID agent_id = 1 [
     (gogoproto.customname) = "AgentID"
   ];
   AgentInfo agent_info = 2;
@@ -149,7 +149,7 @@ message RegisterAgentResponse {
 
 message QueryRequest {
   // The ID of the query (will be returned in response).
-  utils.UUID query_id = 1 [
+  uuidpb.UUID query_id = 1 [
     (gogoproto.customname) = "QueryID"
   ];
   // The query string (either this or proto will be set).
@@ -243,7 +243,7 @@ message AgentQueryResponse {
   pl.statuspb.Status status = 1;
 
   // The ID of the returned query.
-  utils.UUID query_id = 2 [
+  uuidpb.UUID query_id = 2 [
     (gogoproto.customname) = "QueryID"
   ];
 
@@ -259,7 +259,7 @@ message AgentQueryResponse {
 // QueryResponse is returned by Vizier in response to a query.
 message VizierQueryResponse {
   message ResponseByAgent {
-    utils.UUID agent_id      = 1 [
+    uuidpb.UUID agent_id      = 1 [
       (gogoproto.customname) = "AgentID"
     ];
 

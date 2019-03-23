@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "src/carnot/udf/udf_wrapper.h"
-#include "src/common/status.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/column_wrapper.h"
 
 namespace pl {

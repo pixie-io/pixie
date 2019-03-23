@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "src/common/statusor.h"
+#include "src/common/base/base.h"
 #include "src/stirling/data_table_schema.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/types.h"

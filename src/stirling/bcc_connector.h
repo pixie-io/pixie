@@ -22,7 +22,7 @@ DUMMY_SOURCE_CONNECTOR(PIDCPUUseBCCConnector);
 #include <utility>
 #include <vector>
 
-#include "src/common/obj_tools.h"
+#include "src/common/base/base.h"
 #include "src/stirling/bcc_bpf/pidruntime.h"
 #include "src/stirling/source_connector.h"
 

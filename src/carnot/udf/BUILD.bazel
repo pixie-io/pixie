@@ -54,7 +54,7 @@ pl_cc_binary(
     srcs = ["udf_eval_benchmark.cc"],
     deps = [
         ":cc_library",
-        "//src/utils/benchmark:cc_library",
+        "//src/common/benchmark:cc_library",
         "//third_party:arrow",
         "@com_google_benchmark//:benchmark_main",
     ],

@@ -6,6 +6,6 @@ pl_cc_test_library(
     name = "main",
     srcs = ["main.cc"],
     deps = [
-        "//src/common",
+        "//src/common/base:cc_library",
     ],
 )

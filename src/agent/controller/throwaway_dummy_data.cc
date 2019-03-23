@@ -9,7 +9,7 @@
 #include "src/agent/controller/throwaway_dummy_data.h"
 #include "src/carnot/schema/relation.h"
 #include "src/carnot/schema/table.h"
-#include "src/common/status.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/types.h"
 
 using pl::carnot::schema::Column;

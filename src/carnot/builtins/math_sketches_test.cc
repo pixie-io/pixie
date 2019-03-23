@@ -3,7 +3,7 @@
 
 #include "src/carnot/builtins/math_sketches.h"
 #include "src/carnot/udf/test_utils.h"
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace carnot {

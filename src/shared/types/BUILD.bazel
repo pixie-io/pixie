@@ -42,7 +42,7 @@ pl_cc_binary(
     srcs = ["wrapper_benchmark.cc"],
     deps = [
         ":cc_library",
-        "//src/utils/benchmark:cc_library",
+        "//src/common/benchmark:cc_library",
         "@com_google_benchmark//:benchmark_main",
     ],
 )

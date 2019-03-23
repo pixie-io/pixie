@@ -10,7 +10,7 @@ pl_cc_library(
         exclude = ["**/*_test.cc"],
     ),
     deps = [
-        "//src/common/grpc_utils:cc_library",
+        "//src/common/grpcutils:cc_library",
         "//src/vizier/controller:cc_library",
         "//src/vizier/proto:service_pl_cc_proto",
         "@com_github_grpc_grpc//:grpc++",

@@ -5,8 +5,8 @@
 #include <libcuckoo/cuckoohash_map.hh>
 #include <sole.hpp>
 
-#include "src/common/common.h"
-#include "src/common/uuid_utils.h"
+#include "src/common/base/base.h"
+#include "src/common/uuid/uuid.h"
 #include "src/vizier/controller/agent_connector.h"
 
 PL_SUPPRESS_WARNINGS_START()

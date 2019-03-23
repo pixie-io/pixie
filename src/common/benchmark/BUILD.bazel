@@ -1,0 +1,15 @@
+load("//bazel:pl_build_system.bzl", "pl_cc_library")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.h",
+            "*.cc",
+        ],
+        exclude = ["**/*_test.cc"],
+    ),
+    hdrs = ["benchmark.h"],
+    visibility = ["//visibility:public"],
+    deps = ["@com_google_benchmark//:benchmark"],
+)

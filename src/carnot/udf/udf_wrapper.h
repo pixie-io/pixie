@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "src/carnot/udf/udf.h"
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
 

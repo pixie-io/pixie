@@ -2,7 +2,7 @@
 #include <memory>
 
 #include "src/carnot/schema/table.h"
-#include "src/common/status.h"
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace agent {

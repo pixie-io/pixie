@@ -93,9 +93,14 @@ def pl_cc_library_internal(
 
 def pl_cc_library(**kwargs):
     if "deps" in kwargs:
-        kwargs["deps"] = kwargs["deps"] + ["//src/common:common"]
+        kwargs["deps"] = kwargs["deps"] + ["//src/common/base:cc_library"]
+        kwargs["deps"] = kwargs["deps"] + ["//src/common/memory:cc_library"]
+        kwargs["deps"] = kwargs["deps"] + ["//src/common/perf:cc_library"]
     else:
-        kwargs["deps"] = ["//src/common:common"]
+        kwargs["deps"] = ["//src/common/base:cc_library"]
+        kwargs["deps"] = kwargs["deps"] + ["//src/common/memory:cc_library"]
+        kwargs["deps"] = kwargs["deps"] + ["//src/common/perf:cc_library"]
+
     pl_cc_library_internal(**kwargs)
 
 # PL C++ binary targets should be specified with this function.

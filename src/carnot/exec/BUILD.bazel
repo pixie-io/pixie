@@ -56,7 +56,7 @@ pl_cc_binary(
     deps = [
         ":cc_library",
         "//src/carnot/proto:plan_testutils",
-        "//src/utils/benchmark:cc_library",
+        "//src/common/benchmark:cc_library",
         "//third_party:arrow",
         "@com_google_benchmark//:benchmark_main",
     ],

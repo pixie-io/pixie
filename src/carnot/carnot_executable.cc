@@ -6,8 +6,7 @@
 
 #include "src/carnot/carnot.h"
 #include "src/carnot/schema/table.h"
-#include "src/common/env.h"
-#include "src/common/time.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/type_utils.h"
 

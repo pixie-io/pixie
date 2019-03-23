@@ -17,7 +17,7 @@ DUMMY_SOURCE_CONNECTOR(PIDCPUUseBPFTraceConnector);
 }  // namespace pl
 #else
 
-#include "src/common/obj_tools.h"
+#include "src/common/base/base.h"
 #include "third_party/bpftrace/src/bpforc.h"
 #include "third_party/bpftrace/src/bpftrace.h"
 

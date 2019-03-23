@@ -6,7 +6,7 @@
 
 #include "src/carnot/schema/relation.h"
 #include "src/carnot/schema/table.h"
-#include "src/common/status.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/column_wrapper.h"
 
 namespace pl {

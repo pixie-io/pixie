@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include "src/common/error.h"
+#include "src/common/base/base.h"
 
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/memory_source_node.h"

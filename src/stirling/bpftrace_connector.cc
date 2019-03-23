@@ -5,7 +5,7 @@
 #include <thread>
 #include <utility>
 
-#include "src/common/utils.h"
+#include "src/common/base/base.h"
 #include "src/stirling/bpftrace_connector.h"
 
 #include "third_party/bpftrace/src/ast/codegen_llvm.h"

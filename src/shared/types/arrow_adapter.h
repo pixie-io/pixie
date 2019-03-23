@@ -9,7 +9,7 @@
 #include <memory>
 #include <vector>
 
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/types.h"
 
 namespace pl {
@@ -19,7 +19,7 @@ namespace pl {
  */
 template <>
 inline Status StatusAdapter<arrow::Status>(const arrow::Status &s) noexcept {
-  return Status(error::UNKNOWN, s.message());
+  return Status(statuspb::UNKNOWN, s.message());
 }
 
 namespace types {

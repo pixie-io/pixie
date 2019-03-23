@@ -2,8 +2,8 @@
 
 #include <random>
 #include <vector>
+#include "src/common/benchmark/benchmark.h"
 #include "src/shared/types/types.h"
-#include "src/utils/benchmark/utils.h"
 
 using pl::types::Int64Value;
 

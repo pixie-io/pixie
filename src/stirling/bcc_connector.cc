@@ -10,7 +10,7 @@
 #include <iostream>
 #include <string>
 
-#include "src/common/utils.h"
+#include "src/common/base/base.h"
 #include "src/stirling/bcc_connector.h"
 
 namespace pl {

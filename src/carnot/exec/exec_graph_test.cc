@@ -12,7 +12,7 @@
 #include "src/carnot/proto/test_proto.h"
 #include "src/carnot/schema/schema.h"
 #include "src/carnot/schema/table.h"
-#include "src/common/object_pool.h"
+#include "src/common/memory/memory.h"
 #include "src/shared/types/arrow_adapter.h"
 
 namespace pl {

@@ -2,7 +2,7 @@ package utils
 
 import (
 	"github.com/satori/go.uuid"
-	pb "pixielabs.ai/pixielabs/src/utils/proto"
+	pb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 )
 
 // UUIDFromProto converts a proto message to uuid.

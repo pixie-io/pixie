@@ -1,7 +1,7 @@
 #include "src/vizier/controller/agent_connector.h"
 #include "absl/strings/str_format.h"
-#include "src/common/time.h"
-#include "src/common/uuid_utils.h"
+#include "src/common/base/base.h"
+#include "src/common/uuid/uuid.h"
 
 namespace pl {
 namespace vizier {

@@ -11,7 +11,7 @@
 #include "src/carnot/plan/plan_state.h"
 #include "src/carnot/schema/relation.h"
 #include "src/carnot/schema/schema.h"
-#include "src/common/object_pool.h"
+#include "src/common/memory/memory.h"
 
 namespace pl {
 namespace carnot {

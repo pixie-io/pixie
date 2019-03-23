@@ -14,7 +14,7 @@
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/schema/row_descriptor.h"
 #include "src/carnot/schema/table.h"
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
 
 namespace pl {

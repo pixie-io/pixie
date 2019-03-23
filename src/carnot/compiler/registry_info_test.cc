@@ -4,9 +4,7 @@
 
 #include "absl/strings/match.h"
 #include "src/carnot/compiler/registry_info.h"
-#include "src/common/error.h"
-#include "src/common/macros.h"
-#include "src/common/status.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/types.h"
 
 namespace pl {

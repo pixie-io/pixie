@@ -12,7 +12,7 @@
 #include "src/carnot/exec/expression_evaluator.h"
 #include "src/carnot/exec/row_tuple.h"
 #include "src/carnot/plan/operators.h"
-#include "src/common/object_pool.h"
+#include "src/common/memory/memory.h"
 #include "src/shared/types/hash_utils.h"
 
 namespace pl {

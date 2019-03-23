@@ -4,7 +4,7 @@
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/plan/utils.h"
 #include "src/carnot/proto/plan.pb.h"
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/type_utils.h"
 #include "src/shared/types/types.h"

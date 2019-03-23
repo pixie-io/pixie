@@ -6,8 +6,8 @@
 
 #include <sole.hpp>
 
-#include "src/common/common.h"
-#include "src/common/grpc_utils/logger.h"
+#include "src/common/base/base.h"
+#include "src/common/grpcutils/grpcutils.h"
 #include "src/vizier/controller/service.h"
 
 // GRPC headers have lots of unused variable warnings.

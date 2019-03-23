@@ -9,7 +9,7 @@
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/schema/schema.h"
 #include "src/carnot/schema/table.h"
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace carnot {

@@ -2,7 +2,7 @@
 #include <utility>
 #include <vector>
 
-#include "src/common/macros.h"
+#include "src/common/base/base.h"
 #include "src/stirling/data_table_schema.h"
 
 namespace pl {

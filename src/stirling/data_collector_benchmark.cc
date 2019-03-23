@@ -10,7 +10,7 @@
 #include <random>
 #include <vector>
 
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 #include "src/stirling/proto/canonical_message.pb.h"
 
 using arrow::DoubleBuilder;

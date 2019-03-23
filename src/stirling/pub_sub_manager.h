@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "src/common/status.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/proto/types.pb.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/proto/collector_config.pb.h"

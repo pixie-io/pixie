@@ -10,7 +10,7 @@
 
 #include "src/carnot/exec/table_store.h"
 #include "src/carnot/udf/registry.h"
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace carnot {

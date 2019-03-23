@@ -11,6 +11,7 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/carnot",
+        "//src/common/uuid:cc_library",
         "//src/shared/schema:cc_library",
         "//src/stirling:cc_library",
         "//src/vizier/proto:service_pl_cc_proto",

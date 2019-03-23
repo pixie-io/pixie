@@ -6,7 +6,7 @@
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/schema/row_batch.h"
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
 
 namespace pl {

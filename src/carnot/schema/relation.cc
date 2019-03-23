@@ -5,7 +5,7 @@
 #include "absl/strings/str_join.h"
 
 #include "src/carnot/schema/relation.h"
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/type_utils.h"
 
 namespace pl {

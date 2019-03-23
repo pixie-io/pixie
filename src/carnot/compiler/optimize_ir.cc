@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "src/carnot/compiler/optimize_ir.h"
-#include "src/common/time.h"
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace carnot {

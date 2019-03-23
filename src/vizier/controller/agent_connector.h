@@ -10,7 +10,7 @@
 #include <sole.hpp>
 
 #include "absl/base/thread_annotations.h"
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 
 PL_SUPPRESS_WARNINGS_START()
 #include "src/vizier/proto/service.grpc.pb.h"

@@ -10,6 +10,7 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
+        "//src/common/uuid:cc_library",
         "//src/vizier/proto:service_pl_cc_proto",
         "@com_efficient_libcuckoo//:libcuckoo",
         "@com_github_cpp_taskflow//:cpp_taskflow",

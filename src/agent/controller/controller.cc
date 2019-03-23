@@ -10,10 +10,9 @@
 #include "absl/strings/str_format.h"
 #include "src/agent/controller/controller.h"
 #include "src/agent/controller/throwaway_dummy_data.h"
-#include "src/common/common.h"
-#include "src/common/scoped_timer.h"
-#include "src/common/time.h"
-#include "src/common/uuid_utils.h"
+#include "src/common/base/base.h"
+#include "src/common/perf/perf.h"
+#include "src/common/uuid/uuid.h"
 #include "src/shared/schema/utils.h"
 namespace pl {
 namespace agent {

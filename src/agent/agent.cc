@@ -4,7 +4,7 @@
 
 #include "src/agent/controller/controller.h"
 
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 
 DEFINE_string(vizier_addr, gflags::StringFromEnv("PL_VIZIER_ADDR", "localhost:40000"),
               "The host address of vizier");

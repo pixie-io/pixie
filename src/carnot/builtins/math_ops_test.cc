@@ -5,8 +5,7 @@
 
 #include "src/carnot/builtins/math_ops.h"
 #include "src/carnot/udf/test_utils.h"
-#include "src/common/macros.h"
-#include "src/common/status.h"
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace carnot {

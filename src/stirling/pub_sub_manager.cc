@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "src/common/error.h"
+#include "src/common/base/base.h"
 #include "src/stirling/pub_sub_manager.h"
 
 namespace pl {
@@ -34,7 +34,7 @@ Status PubSubManager::UpdateSchemaFromSubscribe(const Subscribe& subscribe_proto
 
     // Check that the InfoClass exists in the map.
     if (it == info_class_mgrs.end()) {
-      return Status(pl::error::NOT_FOUND, "Info Class Schema not found in Config map");
+      return error::NotFound("Info Class Schema not found in Config map");
     }
 
     // Check that the number or elements are the same between the proto
@@ -42,7 +42,7 @@ Status PubSubManager::UpdateSchemaFromSubscribe(const Subscribe& subscribe_proto
 
     size_t num_elements = info_class_proto.elements_size();
     if (num_elements != (*it)->Schema().size()) {
-      return Status(pl::error::INTERNAL, "Number of elements in InfoClassManager does not match");
+      return error::Internal("Number of elements in InfoClassManager does not match");
     }
 
     (*it)->SetSubscription(info_class_proto.subscribed());

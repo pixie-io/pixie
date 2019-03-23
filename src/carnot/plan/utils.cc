@@ -2,7 +2,7 @@
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/plan/utils.h"
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace carnot {

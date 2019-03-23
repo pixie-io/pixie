@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package pl.statuspb;
+
+option go_package = "statuspb";
+
+enum Code {
+  // Not an error, returned on success.
+  OK = 0;
+  // The operation was cancelled (typically by the caller).
+  CANCELLED = 1;
+  // There was an error due to unknown cause. Errors may be converted
+  // into this form if APIs don't give enough information to get the correct
+  // error codes.
+  UNKNOWN = 2;
+  // Bad argument was given and a retry will not be successful.
+  INVALID_ARGUMENT = 3;
+  // The deadline for this operation was exceeded.
+  DEADLINE_EXCEEDED = 4;
+  // Resource specified was not found.
+  NOT_FOUND = 5;
+  // The resource already exists and cannot be overridden.
+  ALREADY_EXISTS = 6;
+  PERMISSION_DENIED = 7;
+  UNAUTHENTICATED = 8;
+  INTERNAL = 9;
+  // Operation specified is not implemented.
+  UNIMPLEMENTED = 10;
+  // No resources available for action.
+  RESOURCE_UNAVAILABLE = 11;
+  // Use default instead of specifying all entries here. Otherwise, code might get
+  // hard to maintain.
+  DO_NOT_USE_ = 100;
+}
+
+// This is the proto representation of a status.
+message Status {
+  Code err_code = 1;
+  string msg = 2;
+}

@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
-#include "src/common/const_str.h"
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace stirling {

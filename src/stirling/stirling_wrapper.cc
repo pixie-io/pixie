@@ -1,7 +1,7 @@
 #include <ctime>
 #include <iomanip>
 
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 #include "src/stirling/bcc_connector.h"
 #include "src/stirling/bpftrace_connector.h"
 #include "src/stirling/info_class_manager.h"

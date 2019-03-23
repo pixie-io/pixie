@@ -3,7 +3,7 @@
 #include <utility>
 #include <vector>
 
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/type_utils.h"
 #include "src/stirling/data_table.h"
 

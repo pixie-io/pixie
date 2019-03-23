@@ -10,7 +10,7 @@
 #include "src/carnot/schema/relation.h"
 #include "src/carnot/schema/row_descriptor.h"
 #include "src/carnot/schema/schema.h"
-#include "src/common/base.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/types.h"
 
 namespace pl {

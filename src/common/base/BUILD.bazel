@@ -1,0 +1,43 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library_internal", "pl_cc_test")
+
+pl_cc_library_internal(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = ["**/*_test.cc"],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/common/base/proto:status_pl_cc_proto",
+        "@com_google_googletest//:gtest",
+    ],
+)
+
+pl_cc_test(
+    name = "status_test",
+    srcs = ["status_test.cc"],
+    deps = [
+        ":cc_library",
+        #        "//src/common/codes:error_codes_pl_cc_proto",
+    ],
+)
+
+pl_cc_test(
+    name = "statusor_test",
+    srcs = ["statusor_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "error_test",
+    srcs = ["error_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "time_test",
+    srcs = ["time_test.cc"],
+    deps = [":cc_library"],
+)

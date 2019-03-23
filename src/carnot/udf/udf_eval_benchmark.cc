@@ -5,11 +5,11 @@
 
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf_wrapper.h"
-#include "src/common/common.h"
+#include "src/common/base/base.h"
+#include "src/common/benchmark/benchmark.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
-#include "src/utils/benchmark/utils.h"
 
 using pl::Status;
 using pl::carnot::udf::FunctionContext;

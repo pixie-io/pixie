@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "src/carnot/schema/relation.h"
-#include "src/common/statusor.h"
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace carnot {

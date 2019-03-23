@@ -6,9 +6,7 @@
 #include <utility>
 #include <vector>
 
-#include "src/common/error.h"
-#include "src/common/status.h"
-#include "src/common/statusor.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/proto/types.pb.h"
 #include "src/stirling/source_connector.h"
 

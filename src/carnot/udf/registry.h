@@ -9,7 +9,7 @@
 #include "absl/strings/str_format.h"
 #include "src/carnot/proto/udfs.pb.h"
 #include "src/carnot/udf/udf_definition.h"
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/types.h"
 
 namespace pl {

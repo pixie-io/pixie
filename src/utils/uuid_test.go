@@ -6,8 +6,8 @@ import (
 
 	"github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+	pb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/utils"
-	pb "pixielabs.ai/pixielabs/src/utils/proto"
 )
 
 func TestProtoFromUUID_BaseCaseValidUUID(t *testing.T) {

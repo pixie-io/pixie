@@ -6,10 +6,10 @@
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/proto/plan.pb.h"
 #include "src/carnot/proto/test_proto.h"
-#include "src/common/common.h"
+#include "src/common/base/base.h"
+#include "src/common/benchmark/benchmark.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
-#include "src/utils/benchmark/utils.h"
 
 using ScalarExpression = pl::carnot::plan::ScalarExpression;
 using ScalarExpressionVector = std::vector<std::shared_ptr<ScalarExpression>>;

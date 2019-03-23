@@ -9,7 +9,7 @@
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/schema/row_batch.h"
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace carnot {

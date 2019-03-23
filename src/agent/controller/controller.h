@@ -12,7 +12,7 @@
 #include "src/carnot/carnot.h"
 #include "src/stirling/stirling.h"
 
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 PL_SUPPRESS_WARNINGS_START()
 #include "src/vizier/proto/service.grpc.pb.h"
 PL_SUPPRESS_WARNINGS_END()

@@ -11,7 +11,7 @@
 
 #include <functional>
 
-#include "src/common/common.h"
+#include "src/common/base/base.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/proto/types.pb.h"
 #include "src/shared/types/types.h"

@@ -12,7 +12,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc"
-	"pixielabs.ai/pixielabs/src/utils/proto"
+	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	pb "pixielabs.ai/pixielabs/src/vizier/proto"
 )
 
@@ -86,7 +86,7 @@ func (c *Controller) ExecuteQuery(in string) error {
 		return err
 	}
 	reqPb := &pb.QueryRequest{}
-	reqPb.QueryID = &utilspb.UUID{}
+	reqPb.QueryID = &uuidpb.UUID{}
 	reqPb.QueryID.Data = []byte(queryID.String())
 	reqPb.QueryStr = in
 

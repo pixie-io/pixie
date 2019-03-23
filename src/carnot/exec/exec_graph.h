@@ -8,7 +8,7 @@
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/memory_source_node.h"
 #include "src/carnot/plan/plan_fragment.h"
-#include "src/common/object_pool.h"
+#include "src/common/memory/memory.h"
 #include "src/shared/types/types.h"
 
 namespace pl {

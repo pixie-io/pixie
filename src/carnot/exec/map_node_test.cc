@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "src/common/error.h"
+#include "src/common/base/base.h"
 
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/map_node.h"

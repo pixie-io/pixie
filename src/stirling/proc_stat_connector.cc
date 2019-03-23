@@ -1,6 +1,6 @@
 #include <fstream>
 
-#include "src/common/error.h"
+#include "src/common/base/base.h"
 #include "src/stirling/proc_stat_connector.h"
 
 namespace pl {

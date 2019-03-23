@@ -12,11 +12,10 @@
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/carnot/udf/udf_wrapper.h"
-#include "src/common/common.h"
-#include "src/common/time.h"
+#include "src/common/base/base.h"
+#include "src/common/benchmark/benchmark.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
-#include "src/utils/benchmark/utils.h"
 PL_SUPPRESS_WARNINGS_START()
 #include "src/vizier/proto/service.grpc.pb.h"
 PL_SUPPRESS_WARNINGS_END()
