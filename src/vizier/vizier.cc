@@ -8,6 +8,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/grpcutils/grpcutils.h"
+#include "src/shared/version/version.h"
 #include "src/vizier/controller/service.h"
 
 // GRPC headers have lots of unused variable warnings.
@@ -23,7 +24,7 @@ int main(int argc, char** argv) {
 
   std::string addr = "0.0.0.0:";
   addr += std::to_string(FLAGS_vizier_port);
-  LOG(INFO) << "Vizier";
+  LOG(INFO) << "Vizier: " << pl::VersionInfo::VersionString();
 
   grpc::ServerBuilder builder;
   pl::vizier::VizierServiceImpl srvc;

@@ -1,0 +1,16 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = ["version.cc"],
+    hdrs = ["version.h"],
+    linkstamp = "version_linkstamp.cc",
+    deps = [
+        "//src/shared/types/proto:types_pl_cc_proto",
+        "//third_party:arrow",
+        "@com_google_absl//absl/time",
+        "@com_google_farmhash//:farmhash",
+    ],
+)

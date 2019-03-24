@@ -17,6 +17,7 @@ pl_cc_library(
     ),
     deps = [
         "//src/agent/controller:cc_library",
+        "//src/shared/version:cc_library",
     ],
 )
 

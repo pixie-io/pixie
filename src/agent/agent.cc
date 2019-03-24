@@ -3,15 +3,15 @@
 #include <csignal>
 
 #include "src/agent/controller/controller.h"
-
 #include "src/common/base/base.h"
+#include "src/shared/version/version.h"
 
 DEFINE_string(vizier_addr, gflags::StringFromEnv("PL_VIZIER_ADDR", "localhost:40000"),
               "The host address of vizier");
 
 int main(int argc, char** argv) {
   pl::InitEnvironmentOrDie(&argc, argv);
-  LOG(INFO) << "Pixie Lab Agent";
+  LOG(INFO) << "Pixie Lab Agent: " << pl::VersionInfo::VersionString();
   auto chan = grpc::CreateChannel(FLAGS_vizier_addr, grpc::InsecureChannelCredentials());
   auto carnot = pl::carnot::Carnot::Create().ConsumeValueOrDie();
   auto stirling = pl::stirling::Stirling::Create();
