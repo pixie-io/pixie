@@ -1,3 +1,5 @@
+homebrew_package 'automake'
+homebrew_package 'autoconf'
 homebrew_package 'python'
 homebrew_package 'python3'
 homebrew_package 'bazel'
