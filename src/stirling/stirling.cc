@@ -1,20 +1,25 @@
 #include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <functional>
+#include <memory>
+#include <string>
+#include <thread>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
+#include "absl/base/internal/spinlock.h"
 #include "src/common/base/base.h"
-#include "src/stirling/bpftrace_connector.h"
+#include "src/stirling/data_table.h"
+#include "src/stirling/proto/collector_config.pb.h"
 #include "src/stirling/pub_sub_manager.h"
 #include "src/stirling/source_connector.h"
+#include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
 
 namespace pl {
 namespace stirling {
-
-Stirling::~Stirling() {
-  Stop();
-  WaitForThreadJoin();
-}
 
 // TODO(oazizi/kgandhi): Is there a better place for this function?
 stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto) {
@@ -28,12 +33,117 @@ stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publi
   return subscribe_proto;
 }
 
-Status Stirling::Init() {
+class StirlingImpl final : public Stirling {
+ public:
+  StirlingImpl() = delete;
+  explicit StirlingImpl(std::unique_ptr<SourceRegistry> registry);
+  ~StirlingImpl();
+
+  Status Init() override;
+  void GetPublishProto(stirlingpb::Publish* publish_pb) override;
+  Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) override;
+  void RegisterCallback(PushDataCallback f) override { agent_callback_ = f; }
+  std::unordered_map<uint64_t, std::string> TableIDToNameMap() override;
+  void Run() override;
+  Status RunAsThread() override;
+  void Stop() override;
+  void WaitForThreadJoin() override;
+
+ private:
+  /**
+   * Create data source connectors from the registered sources.
+   */
+  Status CreateSourceConnectors();
+
+  /**
+   * Adds a source to Stirling, and updates all state accordingly.
+   */
+  Status AddSourceFromRegistry(const std::string& name,
+                               SourceRegistry::RegistryElement registry_element);
+
+  /**
+   * Main run implementation.
+   */
+  void RunCore();
+
+  /**
+   * Helper function to figure out how much to sleep between polling iterations.
+   */
+  std::chrono::milliseconds TimeUntilNextTick();
+
+  /**
+   * Sleeps for the specified duration, as long as it is above some threshold.
+   */
+  void SleepForDuration(std::chrono::milliseconds sleep_duration);
+
+  /**
+   * Main thread used to spawn off RunThread().
+   */
+  std::thread run_thread_;
+
+  /**
+   * Whether thread should be running.
+   */
+  std::atomic<bool> run_enable_;
+
+  /**
+   * Vector of all Source Connectors.
+   */
+  std::vector<std::unique_ptr<SourceConnector>> sources_;
+
+  /**
+   * Vector of all Data Tables.
+   */
+  std::vector<std::unique_ptr<DataTable>> tables_;
+
+  /**
+   * Vector of all the InfoClassManagers.
+   */
+  InfoClassManagerVec info_class_mgrs_;
+  /**
+   * Spin lock to lock updates to info_class_mgrs_.
+   *
+   */
+  absl::base_internal::SpinLock info_class_mgrs_lock_;
+
+  /**
+   * Pointer the config unit that handles sub/pub with agent.
+   */
+  std::unique_ptr<PubSubManager> config_;
+
+  /**
+   * @brief Pointer to data source registry
+   *
+   */
+  std::unique_ptr<SourceRegistry> registry_;
+
+  const std::chrono::milliseconds kMinSleepDuration{1};
+
+  /**
+   * Function to call to push data to the agent.
+   * Function signature is:
+   *   uint64_t table_id
+   *   std::unique_ptr<ColumnWrapperRecordBatch> data
+   */
+  PushDataCallback agent_callback_;
+};
+
+StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
+    : run_enable_(false),
+      config_(std::make_unique<PubSubManager>()),
+      registry_(std::move(registry)) {}
+
+StirlingImpl::~StirlingImpl() {
+  Stop();
+  WaitForThreadJoin();
+}
+
+Status StirlingImpl::Init() {
   PL_RETURN_IF_ERROR(CreateSourceConnectors());
   return Status::OK();
 }
 
-Status Stirling::CreateSourceConnectors() {
+Status StirlingImpl::CreateSourceConnectors() {
   if (!registry_) {
     return error::NotFound("Source registry doesn't exist");
   }
@@ -49,14 +159,23 @@ Status Stirling::CreateSourceConnectors() {
   return Status::OK();
 }
 
-Status Stirling::AddSourceFromRegistry(const std::string& name,
-                                       SourceRegistry::RegistryElement registry_element) {
+std::unordered_map<uint64_t, std::string> StirlingImpl::TableIDToNameMap() {
+  std::unordered_map<uint64_t, std::string> map;
+
+  for (auto& mgr : info_class_mgrs_) {
+    map.insert({mgr->id(), mgr->name()});
+  }
+
+  return map;
+}
+
+Status StirlingImpl::AddSourceFromRegistry(const std::string& name,
+                                           SourceRegistry::RegistryElement registry_element) {
   // Step 1: Create and init the source.
   auto source = registry_element.create_source_fn(name);
   PL_RETURN_IF_ERROR(source->Init());
 
   // Step 2: Create the info class manager.
-  // TODO(oazizi): What if a Source has multiple InfoClasses?
   auto mgr = std::make_unique<InfoClassManager>(name);
   auto mgr_ptr = mgr.get();
   mgr->SetSourceConnector(source.get());
@@ -73,11 +192,11 @@ Status Stirling::AddSourceFromRegistry(const std::string& name,
   return Status::OK();
 }
 
-void Stirling::GetPublishProto(stirlingpb::Publish* publish_pb) {
+void StirlingImpl::GetPublishProto(stirlingpb::Publish* publish_pb) {
   config_->GeneratePublishProto(publish_pb, info_class_mgrs_);
 }
 
-Status Stirling::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
+Status StirlingImpl::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
   // Acquire lock to update info_class_mgrs_.
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
 
@@ -107,25 +226,25 @@ Status Stirling::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {
 }
 
 // Main call to start the data collection.
-Status Stirling::RunAsThread() {
+Status StirlingImpl::RunAsThread() {
   bool prev_run_enable_ = run_enable_.exchange(true);
 
   if (prev_run_enable_) {
     return error::AlreadyExists("A Stirling thread is already running.");
   }
 
-  run_thread_ = std::thread(&Stirling::RunCore, this);
+  run_thread_ = std::thread(&StirlingImpl::RunCore, this);
 
   return Status::OK();
 }
 
-void Stirling::WaitForThreadJoin() {
+void StirlingImpl::WaitForThreadJoin() {
   if (run_thread_.joinable()) {
     run_thread_.join();
   }
 }
 
-void Stirling::Run() {
+void StirlingImpl::Run() {
   // Make sure multiple instances of Run() are not active,
   // which would be possible if the caller created multiple threads.
   bool prev_run_enable_ = run_enable_.exchange(true);
@@ -141,7 +260,7 @@ void Stirling::Run() {
 // Main Data Collector loop.
 // Poll on Data Source Through connectors, when appropriate, then go to sleep.
 // Must run as a thread, so only call from Run() as a thread.
-void Stirling::RunCore() {
+void StirlingImpl::RunCore() {
   while (run_enable_) {
     auto sleep_duration = std::chrono::milliseconds::zero();
 
@@ -175,10 +294,10 @@ void Stirling::RunCore() {
   }
 }
 
-void Stirling::Stop() { run_enable_ = false; }
+void StirlingImpl::Stop() { run_enable_ = false; }
 
 // Helper function: Figure out when to wake up next.
-std::chrono::milliseconds Stirling::TimeUntilNextTick() {
+std::chrono::milliseconds StirlingImpl::TimeUntilNextTick() {
   // The amount to sleep depends on when the earliest Source needs to be sampled again.
   // Do this to avoid burning CPU cycles unnecessarily
 
@@ -196,10 +315,21 @@ std::chrono::milliseconds Stirling::TimeUntilNextTick() {
   return wakeup_time - now;
 }
 
-void Stirling::SleepForDuration(std::chrono::milliseconds sleep_duration) {
+void StirlingImpl::SleepForDuration(std::chrono::milliseconds sleep_duration) {
   if (sleep_duration > kMinSleepDuration) {
     std::this_thread::sleep_for(sleep_duration);
   }
+}
+
+std::unique_ptr<Stirling> Stirling::Create() {
+  auto registry = std::make_unique<SourceRegistry>();
+  RegisterAllSources(registry.get());
+  return Create(std::move(registry));
+}
+
+std::unique_ptr<Stirling> Stirling::Create(std::unique_ptr<SourceRegistry> registry) {
+  std::unique_ptr<Stirling> stirling(new StirlingImpl(std::move(registry)));
+  return stirling;
 }
 
 }  // namespace stirling

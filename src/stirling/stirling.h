@@ -1,21 +1,11 @@
 #pragma once
 
-#include <atomic>
-#include <chrono>
-#include <functional>
 #include <memory>
 #include <string>
-#include <thread>
 #include <unordered_map>
-#include <utility>
-#include <vector>
 
-#include "absl/base/internal/spinlock.h"
 #include "src/common/base/base.h"
-#include "src/stirling/data_table.h"
 #include "src/stirling/proto/collector_config.pb.h"
-#include "src/stirling/pub_sub_manager.h"
-#include "src/stirling/source_connector.h"
 #include "src/stirling/source_registry.h"
 
 namespace pl {
@@ -39,8 +29,8 @@ stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publi
  */
 class Stirling : public NotCopyable {
  public:
-  Stirling() = delete;
-  ~Stirling();
+  Stirling() = default;
+  virtual ~Stirling() = default;
 
   /**
    * @brief Create a Stirling object
@@ -49,11 +39,8 @@ class Stirling : public NotCopyable {
    *
    * @return std::unique_ptr<Stirling>
    */
-  static std::unique_ptr<Stirling> Create() {
-    auto registry = std::make_unique<SourceRegistry>();
-    RegisterAllSources(registry.get());
-    return Create(std::move(registry));
-  }
+  static std::unique_ptr<Stirling> Create();
+
   /**
    * @brief Create a Stirling object
    * Factory method to create Stirling with a source registry.
@@ -61,17 +48,14 @@ class Stirling : public NotCopyable {
    * @param registry
    * @return std::unique_ptr<Stirling>
    */
-  static std::unique_ptr<Stirling> Create(std::unique_ptr<SourceRegistry> registry) {
-    auto stirling = std::unique_ptr<Stirling>(new Stirling(std::move(registry)));
-    return stirling;
-  }
+  static std::unique_ptr<Stirling> Create(std::unique_ptr<SourceRegistry> registry);
 
   /**
    * @brief Initializes Stirling, including bring-up of all the SourceConnectors.
    *
    * @return Status
    */
-  Status Init();
+  virtual Status Init() = 0;
 
   /**
    * @brief Populate the Publish Proto object. Agent calls this function to get the Publish
@@ -81,7 +65,7 @@ class Stirling : public NotCopyable {
    * is defined in //src/stirling/proto/collector_config.proto.
    *
    */
-  void GetPublishProto(stirlingpb::Publish* publish_pb);
+  virtual void GetPublishProto(stirlingpb::Publish* publish_pb) = 0;
 
   /**
    * @brief Get the Subscription object. Receive a Subscribe proto message from the agent.
@@ -91,7 +75,7 @@ class Stirling : public NotCopyable {
    * @param subscribe_proto
    * @return Status
    */
-  Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto);
+  virtual Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) = 0;
 
   /**
    * @brief Register call-back from Agent. Used to periodically send data.
@@ -100,125 +84,33 @@ class Stirling : public NotCopyable {
    *   uint64_t table_id
    *   std::unique_ptr<ColumnWrapperRecordBatch> data
    */
-  void RegisterCallback(PushDataCallback f) { agent_callback_ = f; }
+  virtual void RegisterCallback(PushDataCallback f) = 0;
 
-  // TODO(oazizi): Get rid of this eventually?
   /**
    * @brief Return a map of table ID to InfoClassManager names.
    */
-  std::unordered_map<uint64_t, std::string> TableIDToNameMap() {
-    std::unordered_map<uint64_t, std::string> map;
-
-    for (auto& mgr : info_class_mgrs_) {
-      map.insert({mgr->id(), mgr->name()});
-    }
-
-    return map;
-  }
+  virtual std::unordered_map<uint64_t, std::string> TableIDToNameMap() = 0;
 
   /**
-   * Main data collection call. This version will block, so make sure to wrap a thread around it.
+   * @brief Main data collection call. This version will block, so make sure to wrap a thread around
+   * it.
    */
-  void Run();
+  virtual void Run() = 0;
 
   /**
-   * Main data collection call. This version spawns off as an independent thread.
+   * @brief Main data collection call. This version spawns off as an independent thread.
    */
-  Status RunAsThread();
+  virtual Status RunAsThread() = 0;
 
   /**
-   * Stop the running thread. Return will not be immediate.
+   * @brief Stop the running thread. Return will not be immediate.
    */
-  void Stop();
+  virtual void Stop() = 0;
 
   /**
-   * Wait for the running thread to terminate. Assuming you ran RunThread().
+   * @brief Wait for the running thread to terminate. Assuming you ran RunThread().
    */
-  void WaitForThreadJoin();
-
- protected:
-  explicit Stirling(std::unique_ptr<SourceRegistry> registry)
-      : run_enable_(false),
-        config_(std::make_unique<PubSubManager>()),
-        registry_(std::move(registry)) {}
-
- private:
-  /**
-   * Create data source connectors from the registered sources.
-   */
-  Status CreateSourceConnectors();
-
-  /**
-   * Adds a source to Stirling, and updates all state accordingly.
-   */
-  Status AddSourceFromRegistry(const std::string& name,
-                               SourceRegistry::RegistryElement registry_element);
-
-  /**
-   * Main run implementation.
-   */
-  void RunCore();
-
-  /**
-   * Helper function to figure out how much to sleep between polling iterations.
-   */
-  std::chrono::milliseconds TimeUntilNextTick();
-
-  /**
-   * Sleeps for the specified duration, as long as it is above some threshold.
-   */
-  void SleepForDuration(std::chrono::milliseconds sleep_duration);
-
-  /**
-   * Main thread used to spawn off RunThread().
-   */
-  std::thread run_thread_;
-
-  /**
-   * Whether thread should be running.
-   */
-  std::atomic<bool> run_enable_;
-
-  /**
-   * Vector of all Source Connectors.
-   */
-  std::vector<std::unique_ptr<SourceConnector>> sources_;
-
-  /**
-   * Vector of all Data Tables.
-   */
-  std::vector<std::unique_ptr<DataTable>> tables_;
-
-  /**
-   * Vector of all the InfoClassManagers.
-   */
-  InfoClassManagerVec info_class_mgrs_;
-  /**
-   * Spin lock to lock updates to info_class_mgrs_.
-   *
-   */
-  absl::base_internal::SpinLock info_class_mgrs_lock_;
-
-  /**
-   * Pointer the config unit that handles sub/pub with agent.
-   */
-  std::unique_ptr<PubSubManager> config_;
-
-  /**
-   * @brief Pointer to data source registry
-   *
-   */
-  std::unique_ptr<SourceRegistry> registry_;
-
-  const std::chrono::milliseconds kMinSleepDuration{1};
-
-  /**
-   * Function to call to push data to the agent.
-   * Function signature is:
-   *   uint64_t table_id
-   *   std::unique_ptr<ColumnWrapperRecordBatch> data
-   */
-  PushDataCallback agent_callback_;
+  virtual void WaitForThreadJoin() = 0;
 };
 
 }  // namespace stirling

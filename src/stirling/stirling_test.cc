@@ -2,6 +2,8 @@
 #include <ctime>
 #include <functional>
 #include <iomanip>
+#include <thread>
+#include <utility>
 
 #include "absl/strings/str_format.h"
 #include "src/common/base/base.h"
