@@ -7,14 +7,18 @@ load("//bazel:gogo.bzl", "gogo_grpc_proto")
 
 check_min_bazel_version("0.17.1")
 
-cc_configure()
-
 # Install Pixie Labs Dependencies.
 pl_deps()
 
 load("//bazel:pl_workspace.bzl", "pl_workspace_setup")
 
 pl_workspace_setup()
+
+load("@rules_foreign_cc//:workspace_definitions.bzl", "rules_foreign_cc_dependencies")
+
+rules_foreign_cc_dependencies()
+
+cc_configure()
 
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 

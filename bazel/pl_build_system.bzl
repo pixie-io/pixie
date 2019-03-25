@@ -15,7 +15,13 @@ def pl_copts(repository, test = False):
         "-std=c++17",
     ]
 
-    return posix_options
+    return posix_options + select({
+        "@pl//bazel:disable_tcmalloc": ["-DABSL_MALLOC_HOOK_MMAP_DISABLE=1"],
+        "//conditions:default": ["-DTCMALLOC=1"],
+    }) + select({
+        "@pl//bazel:debug_tcmalloc": ["-DPL_MEMORY_DEBUG_ENABLED=1"],
+        "//conditions:default": [],
+    })
 
 def pl_static_link_libstdcpp_linkopts():
     return select({
@@ -30,6 +36,7 @@ def pl_linkopts():
         "@bazel_tools//tools/osx:darwin": [],
         "//conditions:default": [
             "-pthread",
+            "-lunwind",
             "-lrt",
             "-ldl",
             "-Wl,--hash-style=gnu",
@@ -42,6 +49,7 @@ def pl_test_linkopts():
         "@bazel_tools//tools/osx:darwin": [],
         "//conditions:default": [
             "-pthread",
+            "-lunwind",
             "-lrt",
             "-ldl",
         ],
@@ -67,6 +75,7 @@ def pl_cc_library_internal(
         includes = [],
         visibility = None,
         external_deps = [],
+        tcmalloc_dep = False,
         repository = "",
         linkstamp = None,
         linkopts = [],
@@ -74,6 +83,9 @@ def pl_cc_library_internal(
         testonly = 0,
         deps = [],
         strip_include_prefix = None):
+    if tcmalloc_dep:
+        deps += tcmalloc_external_deps(repository)
+
     native.cc_library(
         name = name,
         srcs = srcs,
@@ -128,6 +140,7 @@ def pl_cc_binary(
         testonly = testonly,
         linkstatic = 1,
         visibility = visibility,
+        malloc = tcmalloc_external_dep(repository),
         stamp = 1,
         tags = tags,
         deps = deps + _default_external_deps(),
@@ -161,6 +174,7 @@ def pl_cc_test(
         copts = pl_copts(repository, test = True),
         linkopts = pl_test_linkopts(),
         linkstatic = 1,
+        malloc = tcmalloc_external_dep(repository),
         deps = [
             ":" + name + "_lib",
             repository + "//src/test_utils:main",
@@ -202,3 +216,23 @@ def pl_cc_test_library(
 # PL C++ mock targets should be specified with this function.
 def pl_cc_mock(name, **kargs):
     pl_cc_test_library(name = name, **kargs)
+
+# Borrowed from Envoy:
+def pl_external_dep_path(dep):
+    return "//external:%s" % dep
+
+# Dependencies on tcmalloc_and_profiler should be wrapped with this function.
+def tcmalloc_external_dep(repository):
+    return select({
+        repository + "//bazel:disable_tcmalloc": None,
+        "//conditions:default": pl_external_dep_path("gperftools"),
+    })
+
+# As above, but wrapped in list form for adding to dep lists. This smell seems needed as
+# SelectorValue values have to match the attribute type. See
+# https://github.com/bazelbuild/bazel/issues/2273.
+def tcmalloc_external_deps(repository):
+    return select({
+        repository + "//bazel:disable_tcmalloc": [],
+        "//conditions:default": [pl_external_dep_path("gperftools")],
+    })

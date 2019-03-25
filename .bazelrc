@@ -25,6 +25,7 @@ build:asan --test_env=ASAN_SYMBOLIZER_PATH
 build:asan --test_env=ASAN_OPTIONS=handle_abort=1:allow_addr2line=true
 build:asan --linkopt -fuse-ld=lld
 build:asan --cxxopt -std=c++17
+build:asan --define tcmalloc=disabled
 
 # bazel build --config msan
 build:msan --define PL_CONFIG_MSAN=1
@@ -35,6 +36,7 @@ build:msan --test_tag_filters=-no_msan,-requires_root,-requires_bpf
 build:msan --copt -fsanitize-memory-track-origins=2
 build:msan --linkopt -fuse-ld=lld
 build:msan --cxxopt -std=c++17
+build:msan --define tcmalloc=disabled
 
 # bazel build --config tsan
 build:tsan --define PL_CONFIG_TSAN=1
@@ -44,6 +46,7 @@ build:tsan --define tcmalloc=disabled
 build:tsan --test_tag_filters=-no_tsan,-requires_root,-requires_bpf
 build:tsan --linkopt -fuse-ld=lld
 build:tsan --cxxopt -std=c++17
+build:tsan --define tcmalloc=disabled
 
 # We need this to ensure that external projects are built with
 # C++17 support. This is needed in some libraries like absl which

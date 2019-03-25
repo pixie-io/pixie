@@ -1,6 +1,10 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load(":repository_locations.bzl", "REPOSITORY_LOCATIONS")
 
+# Make all contents of an external repository accessible under a filegroup.  Used for external HTTP
+# archives, e.g. cares.
+BUILD_ALL_CONTENT = """filegroup(name = "all", srcs = glob(["**"]), visibility = ["//visibility:public"])"""
+
 # Borrowed from Envoy (46c0693)
 def _repository_impl(name, **kwargs):
     # `existing_rule_keys` contains the names of repositories that have already
@@ -107,6 +111,20 @@ def _com_github_ariafallah_csv_parser():
         build_file = "//third_party:csv_parser.BUILD",
     )
 
+def _com_github_gperftools_gperftools():
+    location = REPOSITORY_LOCATIONS["com_github_gperftools_gperftools"]
+    http_archive(
+        name = "com_github_gperftools_gperftools",
+        build_file_content = BUILD_ALL_CONTENT,
+        patch_cmds = ["./autogen.sh"],
+        **location
+    )
+
+    native.bind(
+        name = "gperftools",
+        actual = "//third_party/foreign_cc:gperftools",
+    )
+
 def _cc_deps():
     _repository_impl(name = "com_google_benchmark")
     _repository_impl(
@@ -121,6 +139,7 @@ def _cc_deps():
     _com_github_cpp_taskflow()
     _com_github_tencent_rapidjson()
     _com_github_ariafallah_csv_parser()
+    _com_github_gperftools_gperftools()
 
 def _go_deps():
     # Add go specific imports here when necessary.
@@ -139,6 +158,7 @@ def pl_deps():
     _repository_impl(name = "com_intel_tbb", build_file = "@pl//third_party:tbb.BUILD")
     _repository_impl(name = "com_efficient_libcuckoo", build_file = "@pl//third_party:libcuckoo.BUILD")
     _repository_impl(name = "com_google_farmhash", build_file = "@pl//third_party:farmhash.BUILD")
+    _repository_impl("rules_foreign_cc")
 
     _cc_deps()
     _go_deps()

@@ -12,6 +12,7 @@ pl_cc_library_internal(
         exclude = ["**/*_test.cc"],
     ),
     hdrs = ["perf.h"],
+    tcmalloc_dep = True,
     deps = [
         "//src/common/base:cc_library",
     ],

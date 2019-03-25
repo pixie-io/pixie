@@ -1,0 +1,29 @@
+licenses(["notice"])
+
+package(default_visibility = ["//visibility:public"])
+
+load("@rules_foreign_cc//tools/build_defs:configure.bzl", "configure_make")
+
+configure_make(
+    name = "gperftools_build",
+    configure_options = [
+        "--enable-shared=no",
+        "--disable-frame-pointers",
+        "--enable-libunwind",
+    ],
+    lib_source = "@com_github_gperftools_gperftools//:all",
+    linkopts = ["-lpthread"],
+    make_commands = ["make install-libLTLIBRARIES install-perftoolsincludeHEADERS"],
+    static_libraries = select({
+        "//bazel:debug_tcmalloc": ["libtcmalloc_debug.a"],
+        "//conditions:default": ["libtcmalloc_and_profiler.a"],
+    }),
+)
+
+# Workaround for https://github.com/bazelbuild/rules_foreign_cc/issues/227
+cc_library(
+    name = "gperftools",
+    deps = [
+        "gperftools_build",
+    ],
+)

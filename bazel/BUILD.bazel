@@ -1,1 +1,11 @@
 package(default_visibility = ["//visibility:public"])
+
+config_setting(
+    name = "disable_tcmalloc",
+    values = {"define": "tcmalloc=disabled"},
+)
+
+config_setting(
+    name = "debug_tcmalloc",
+    values = {"define": "tcmalloc=debug"},
+)
