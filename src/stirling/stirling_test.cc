@@ -96,9 +96,6 @@ class StirlingTest : public ::testing::Test {
     // Make Stirling.
     stirling_ = Stirling::Create(std::move(registry));
 
-    // Initialize Stirling (brings-up all source connectors).
-    PL_CHECK_OK(stirling_->Init());
-
     // Set a dummy callback function (normally this would be in the agent).
     stirling_->RegisterCallback(
         std::bind(&StirlingTest::AppendData, this, std::placeholders::_1, std::placeholders::_2));

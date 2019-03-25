@@ -51,13 +51,6 @@ class Stirling : public NotCopyable {
   static std::unique_ptr<Stirling> Create(std::unique_ptr<SourceRegistry> registry);
 
   /**
-   * @brief Initializes Stirling, including bring-up of all the SourceConnectors.
-   *
-   * @return Status
-   */
-  virtual Status Init() = 0;
-
-  /**
    * @brief Populate the Publish Proto object. Agent calls this function to get the Publish
    * proto message. The proto publish message contains information (InfoClassSchema) on
    * all the Source Connectors that can be run to gather data and information on the types
@@ -92,8 +85,7 @@ class Stirling : public NotCopyable {
   virtual std::unordered_map<uint64_t, std::string> TableIDToNameMap() = 0;
 
   /**
-   * @brief Main data collection call. This version will block, so make sure to wrap a thread around
-   * it.
+   * @brief Main data collection call. This version blocks, so make sure to wrap a thread around it.
    */
   virtual void Run() = 0;
 

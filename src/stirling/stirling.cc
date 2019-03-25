@@ -36,10 +36,11 @@ stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publi
 class StirlingImpl final : public Stirling {
  public:
   StirlingImpl() = delete;
-  explicit StirlingImpl(std::unique_ptr<SourceRegistry> registry);
   ~StirlingImpl();
 
-  Status Init() override;
+  static std::unique_ptr<StirlingImpl> Create();
+  static std::unique_ptr<StirlingImpl> Create(std::unique_ptr<SourceRegistry> registry);
+
   void GetPublishProto(stirlingpb::Publish* publish_pb) override;
   Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) override;
   void RegisterCallback(PushDataCallback f) override { agent_callback_ = f; }
@@ -50,6 +51,16 @@ class StirlingImpl final : public Stirling {
   void WaitForThreadJoin() override;
 
  private:
+  /**
+   * Private constructor. See Create() on how to make StirlingImpl.
+   */
+  explicit StirlingImpl(std::unique_ptr<SourceRegistry> registry);
+
+  /**
+   * Initializes Stirling, including bring-up of all the SourceConnectors.
+   */
+  Status Init();
+
   /**
    * Create data source connectors from the registered sources.
    */
@@ -321,15 +332,26 @@ void StirlingImpl::SleepForDuration(std::chrono::milliseconds sleep_duration) {
   }
 }
 
-std::unique_ptr<Stirling> Stirling::Create() {
+std::unique_ptr<StirlingImpl> StirlingImpl::Create() {
   auto registry = std::make_unique<SourceRegistry>();
   RegisterAllSources(registry.get());
   return Create(std::move(registry));
 }
 
-std::unique_ptr<Stirling> Stirling::Create(std::unique_ptr<SourceRegistry> registry) {
-  std::unique_ptr<Stirling> stirling(new StirlingImpl(std::move(registry)));
+std::unique_ptr<StirlingImpl> StirlingImpl::Create(std::unique_ptr<SourceRegistry> registry) {
+  // Create Stirling object.
+  auto stirling = std::unique_ptr<StirlingImpl>(new StirlingImpl(std::move(registry)));
+
+  // Initialize Stirling (brings-up all source connectors).
+  PL_CHECK_OK(stirling->Init());
+
   return stirling;
+}
+
+std::unique_ptr<Stirling> Stirling::Create() { return StirlingImpl::Create(); }
+
+std::unique_ptr<Stirling> Stirling::Create(std::unique_ptr<SourceRegistry> registry) {
+  return StirlingImpl::Create(std::move(registry));
 }
 
 }  // namespace stirling

@@ -25,7 +25,6 @@ class StirlingComponentTest : public ::testing::Test {
 };
 
 TEST_F(StirlingComponentTest, registry_to_subscribe_test) {
-  EXPECT_OK(data_collector_->Init());
   // Generate the Publish message.
   stirlingpb::Publish publish_proto;
   data_collector_->GetPublishProto(&publish_proto);

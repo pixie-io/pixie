@@ -119,9 +119,6 @@ int main(int argc, char** argv) {
   // Make Stirling.
   auto data_collector = Stirling::Create(std::move(registry));
 
-  // Initialize Stirling (brings-up all source connectors)
-  PL_CHECK_OK(data_collector->Init());
-
   // Get a publish proto message to subscribe from.
   Publish publish_proto;
   data_collector->GetPublishProto(&publish_proto);
