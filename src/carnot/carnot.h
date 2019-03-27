@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "src/carnot/compiler/compiler.h"
+#include "src/carnot/proto/query_results.pb.h"
 #include "src/carnot/schema/schema.h"
 #include "src/carnot/schema/table.h"
 #include "src/common/base/base.h"
@@ -25,9 +26,11 @@ struct CarnotQueryResult {
         exec_time_ns(exec_time_ns) {}
   size_t NumTables() const { return output_tables_.size(); }
   schema::Table* GetTable(int64_t i) const { return output_tables_[i]; }
-  StatusOr<std::vector<schema::RecordBatchSPtr>> GetTableAsRecordBatches(int64_t i) const {
-    return GetTable(i)->GetTableAsRecordBatches();
-  }
+  /**
+   * Convert this query result to a proto that can be sent over the wire.
+   * @param query_result The query result to fill in.
+   */
+  Status ToProto(carnotpb::QueryResult* query_result) const;
   std::vector<schema::Table*> output_tables_;
   int64_t rows_processed = 0;
   int64_t bytes_processed = 0;

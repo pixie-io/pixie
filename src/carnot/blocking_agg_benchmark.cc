@@ -9,16 +9,11 @@
 #include "src/carnot/schema/row_batch.h"
 #include "src/carnot/schema/row_descriptor.h"
 #include "src/carnot/schema/table.h"
-#include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
-#include "src/carnot/udf/udf_wrapper.h"
 #include "src/common/base/base.h"
 #include "src/common/benchmark/benchmark.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
-PL_SUPPRESS_WARNINGS_START()
-#include "src/vizier/proto/service.grpc.pb.h"
-PL_SUPPRESS_WARNINGS_END()
 
 namespace pl {
 namespace carnot {

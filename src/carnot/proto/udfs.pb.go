@@ -6,7 +6,7 @@ package carnotpb
 import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
-import types "pixielabs.ai/pixielabs/src/common/types"
+import proto1 "pixielabs.ai/pixielabs/src/shared/types/proto"
 
 import strings "strings"
 import reflect "reflect"
@@ -25,10 +25,10 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type UDASpec struct {
-	Name           string           `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	InitArgTypes   []types.DataType `protobuf:"varint,2,rep,packed,name=init_arg_types,json=initArgTypes,proto3,enum=pl.types.DataType" json:"init_arg_types,omitempty"`
-	UpdateArgTypes []types.DataType `protobuf:"varint,3,rep,packed,name=update_arg_types,json=updateArgTypes,proto3,enum=pl.types.DataType" json:"update_arg_types,omitempty"`
-	FinalizeType   types.DataType   `protobuf:"varint,4,opt,name=finalize_type,json=finalizeType,proto3,enum=pl.types.DataType" json:"finalize_type,omitempty"`
+	Name           string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	InitArgTypes   []proto1.DataType `protobuf:"varint,2,rep,packed,name=init_arg_types,json=initArgTypes,proto3,enum=pl.types.DataType" json:"init_arg_types,omitempty"`
+	UpdateArgTypes []proto1.DataType `protobuf:"varint,3,rep,packed,name=update_arg_types,json=updateArgTypes,proto3,enum=pl.types.DataType" json:"update_arg_types,omitempty"`
+	FinalizeType   proto1.DataType   `protobuf:"varint,4,opt,name=finalize_type,json=finalizeType,proto3,enum=pl.types.DataType" json:"finalize_type,omitempty"`
 }
 
 func (m *UDASpec) Reset()      { *m = UDASpec{} }
@@ -70,32 +70,32 @@ func (m *UDASpec) GetName() string {
 	return ""
 }
 
-func (m *UDASpec) GetInitArgTypes() []types.DataType {
+func (m *UDASpec) GetInitArgTypes() []proto1.DataType {
 	if m != nil {
 		return m.InitArgTypes
 	}
 	return nil
 }
 
-func (m *UDASpec) GetUpdateArgTypes() []types.DataType {
+func (m *UDASpec) GetUpdateArgTypes() []proto1.DataType {
 	if m != nil {
 		return m.UpdateArgTypes
 	}
 	return nil
 }
 
-func (m *UDASpec) GetFinalizeType() types.DataType {
+func (m *UDASpec) GetFinalizeType() proto1.DataType {
 	if m != nil {
 		return m.FinalizeType
 	}
-	return types.DATA_TYPE_UNKNOWN
+	return proto1.DATA_TYPE_UNKNOWN
 }
 
 type ScalarUDFSpec struct {
-	Name         string           `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	InitArgTypes []types.DataType `protobuf:"varint,2,rep,packed,name=init_arg_types,json=initArgTypes,proto3,enum=pl.types.DataType" json:"init_arg_types,omitempty"`
-	ExecArgTypes []types.DataType `protobuf:"varint,3,rep,packed,name=exec_arg_types,json=execArgTypes,proto3,enum=pl.types.DataType" json:"exec_arg_types,omitempty"`
-	ReturnType   types.DataType   `protobuf:"varint,4,opt,name=return_type,json=returnType,proto3,enum=pl.types.DataType" json:"return_type,omitempty"`
+	Name         string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	InitArgTypes []proto1.DataType `protobuf:"varint,2,rep,packed,name=init_arg_types,json=initArgTypes,proto3,enum=pl.types.DataType" json:"init_arg_types,omitempty"`
+	ExecArgTypes []proto1.DataType `protobuf:"varint,3,rep,packed,name=exec_arg_types,json=execArgTypes,proto3,enum=pl.types.DataType" json:"exec_arg_types,omitempty"`
+	ReturnType   proto1.DataType   `protobuf:"varint,4,opt,name=return_type,json=returnType,proto3,enum=pl.types.DataType" json:"return_type,omitempty"`
 }
 
 func (m *ScalarUDFSpec) Reset()      { *m = ScalarUDFSpec{} }
@@ -137,25 +137,25 @@ func (m *ScalarUDFSpec) GetName() string {
 	return ""
 }
 
-func (m *ScalarUDFSpec) GetInitArgTypes() []types.DataType {
+func (m *ScalarUDFSpec) GetInitArgTypes() []proto1.DataType {
 	if m != nil {
 		return m.InitArgTypes
 	}
 	return nil
 }
 
-func (m *ScalarUDFSpec) GetExecArgTypes() []types.DataType {
+func (m *ScalarUDFSpec) GetExecArgTypes() []proto1.DataType {
 	if m != nil {
 		return m.ExecArgTypes
 	}
 	return nil
 }
 
-func (m *ScalarUDFSpec) GetReturnType() types.DataType {
+func (m *ScalarUDFSpec) GetReturnType() proto1.DataType {
 	if m != nil {
 		return m.ReturnType
 	}
-	return types.DATA_TYPE_UNKNOWN
+	return proto1.DATA_TYPE_UNKNOWN
 }
 
 type UDFInfo struct {
@@ -762,7 +762,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType == 0 {
-				var v types.DataType
+				var v proto1.DataType
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return ErrIntOverflowUdfs
@@ -772,7 +772,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (types.DataType(b) & 0x7F) << shift
+					v |= (proto1.DataType(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -803,10 +803,10 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 				}
 				var elementCount int
 				if elementCount != 0 && len(m.InitArgTypes) == 0 {
-					m.InitArgTypes = make([]types.DataType, 0, elementCount)
+					m.InitArgTypes = make([]proto1.DataType, 0, elementCount)
 				}
 				for iNdEx < postIndex {
-					var v types.DataType
+					var v proto1.DataType
 					for shift := uint(0); ; shift += 7 {
 						if shift >= 64 {
 							return ErrIntOverflowUdfs
@@ -816,7 +816,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (types.DataType(b) & 0x7F) << shift
+						v |= (proto1.DataType(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -828,7 +828,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 			}
 		case 3:
 			if wireType == 0 {
-				var v types.DataType
+				var v proto1.DataType
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return ErrIntOverflowUdfs
@@ -838,7 +838,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (types.DataType(b) & 0x7F) << shift
+					v |= (proto1.DataType(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -869,10 +869,10 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 				}
 				var elementCount int
 				if elementCount != 0 && len(m.UpdateArgTypes) == 0 {
-					m.UpdateArgTypes = make([]types.DataType, 0, elementCount)
+					m.UpdateArgTypes = make([]proto1.DataType, 0, elementCount)
 				}
 				for iNdEx < postIndex {
-					var v types.DataType
+					var v proto1.DataType
 					for shift := uint(0); ; shift += 7 {
 						if shift >= 64 {
 							return ErrIntOverflowUdfs
@@ -882,7 +882,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (types.DataType(b) & 0x7F) << shift
+						v |= (proto1.DataType(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -906,7 +906,7 @@ func (m *UDASpec) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.FinalizeType |= (types.DataType(b) & 0x7F) << shift
+				m.FinalizeType |= (proto1.DataType(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -992,7 +992,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType == 0 {
-				var v types.DataType
+				var v proto1.DataType
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return ErrIntOverflowUdfs
@@ -1002,7 +1002,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (types.DataType(b) & 0x7F) << shift
+					v |= (proto1.DataType(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -1033,10 +1033,10 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 				}
 				var elementCount int
 				if elementCount != 0 && len(m.InitArgTypes) == 0 {
-					m.InitArgTypes = make([]types.DataType, 0, elementCount)
+					m.InitArgTypes = make([]proto1.DataType, 0, elementCount)
 				}
 				for iNdEx < postIndex {
-					var v types.DataType
+					var v proto1.DataType
 					for shift := uint(0); ; shift += 7 {
 						if shift >= 64 {
 							return ErrIntOverflowUdfs
@@ -1046,7 +1046,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (types.DataType(b) & 0x7F) << shift
+						v |= (proto1.DataType(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -1058,7 +1058,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 			}
 		case 3:
 			if wireType == 0 {
-				var v types.DataType
+				var v proto1.DataType
 				for shift := uint(0); ; shift += 7 {
 					if shift >= 64 {
 						return ErrIntOverflowUdfs
@@ -1068,7 +1068,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (types.DataType(b) & 0x7F) << shift
+					v |= (proto1.DataType(b) & 0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -1099,10 +1099,10 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 				}
 				var elementCount int
 				if elementCount != 0 && len(m.ExecArgTypes) == 0 {
-					m.ExecArgTypes = make([]types.DataType, 0, elementCount)
+					m.ExecArgTypes = make([]proto1.DataType, 0, elementCount)
 				}
 				for iNdEx < postIndex {
-					var v types.DataType
+					var v proto1.DataType
 					for shift := uint(0); ; shift += 7 {
 						if shift >= 64 {
 							return ErrIntOverflowUdfs
@@ -1112,7 +1112,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (types.DataType(b) & 0x7F) << shift
+						v |= (proto1.DataType(b) & 0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -1136,7 +1136,7 @@ func (m *ScalarUDFSpec) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ReturnType |= (types.DataType(b) & 0x7F) << shift
+				m.ReturnType |= (proto1.DataType(b) & 0x7F) << shift
 				if b < 0x80 {
 					break
 				}

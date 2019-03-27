@@ -1,7 +1,10 @@
 #include <arrow/array.h>
+#include <google/protobuf/text_format.h>
+#include <google/protobuf/util/message_differencer.h>
 #include <gtest/gtest.h>
 #include <vector>
 
+#include "src/carnot/schema/proto/schema.pb.h"
 #include "src/carnot/schema/relation.h"
 #include "src/carnot/schema/table.h"
 #include "src/shared/types/arrow_adapter.h"
@@ -281,6 +284,59 @@ TEST(TableTest, find_batch_position_greater_or_eq) {
   batch_pos = table.FindBatchPositionGreaterThanOrEqual(24, arrow::default_memory_pool());
   EXPECT_EQ(-1, batch_pos.batch_idx);
   EXPECT_EQ(-1, batch_pos.row_idx);
+}
+
+TEST(TableTest, ToProto) {
+  auto table = TestTable();
+  schemapb::Table table_proto;
+  EXPECT_OK(table->ToProto(&table_proto));
+  LOG(ERROR) << table_proto.DebugString();
+
+  std::string expected = R"(
+relation {
+  columns {
+    column_name: "col1"
+    column_type: FLOAT64
+  }
+  columns {
+    column_name: "col2"
+    column_type: INT64
+  }
+}
+row_batches {
+  cols {
+    float64_data {
+      data: 0.5
+      data: 1.2
+      data: 5.3
+    }
+  }
+  cols {
+    int64_data {
+      data: 1
+      data: 2
+      data: 3
+    }
+  }
+  cols {
+    float64_data {
+      data: 0.1
+      data: 5.1
+    }
+  }
+  cols {
+    int64_data {
+      data: 5
+      data: 6
+    }
+  }
+}
+  )";
+
+  google::protobuf::util::MessageDifferencer differ;
+  schemapb::Table expected_proto;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected, &expected_proto));
+  EXPECT_TRUE(differ.Compare(expected_proto, table_proto));
 }
 
 }  // namespace schema

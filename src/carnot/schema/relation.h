@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "src/carnot/schema/proto/schema.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/proto/types.pb.h"
 
@@ -50,6 +51,13 @@ class Relation {
    * @brief Makes a new relation that has the specified columns.
    */
   StatusOr<Relation> MakeSubRelation(const std::vector<std::string> &columns) const;
+
+  /**
+   * Convert relation and write to passed in proto.
+   * @param relation_proto The proto to write.
+   * @return The status of conversion.
+   */
+  Status ToProto(schemapb::Relation *relation_proto) const;
 
  private:
   ColTypeArray col_types_;

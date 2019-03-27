@@ -11,9 +11,28 @@
 #include "src/carnot/schema/table.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/perf/perf.h"
+#include "src/shared/types/type_utils.h"
 
 namespace pl {
 namespace carnot {
+
+using types::DataType;
+
+Status CarnotQueryResult::ToProto(carnotpb::QueryResult* query_result) const {
+  CHECK(query_result != nullptr);
+  auto* exec_stats = query_result->mutable_execution_stats();
+  exec_stats->set_records_processed(rows_processed);
+  exec_stats->set_bytes_processed(bytes_processed);
+
+  auto* timing_info = query_result->mutable_timing_info();
+  timing_info->set_execution_time_ns(exec_time_ns);
+  timing_info->set_compilation_time_ns(compile_time_ns);
+
+  for (const auto table : output_tables_) {
+    PL_RETURN_IF_ERROR(table->ToProto(query_result->add_tables()));
+  }
+  return Status::OK();
+}
 
 class CarnotImpl final : public Carnot {
  public:

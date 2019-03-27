@@ -3,9 +3,10 @@ syntax = "proto3";
 package pl.vizier;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/carnot/proto/query_results.proto";
 import "src/common/uuid/proto/uuid.proto";
 import "src/common/base/proto/status.proto";
-import "src/shared/types/proto/types.proto";
+import "src/carnot/schema/proto/schema.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/proto;service";
 /**
@@ -41,7 +42,7 @@ service VizierService {
 
 // The schema information per agent.
 message Schema {
-  repeated Relation relations = 1;
+  repeated pl.carnot.schemapb.Relation relations = 1;
 }
 
 // The schema request.
@@ -157,86 +158,6 @@ message QueryRequest {
   // TODO(zasgar): Add proto query.
 }
 
-// Boolean data column.
-message BooleanColumn {
-  repeated bool data = 1;
-}
-
-// Int64 column data.
-message Int64Column {
-  repeated int64 data = 1;
-}
-
-// Float64 column data.
-message Float64Column {
-  repeated double data = 1;
-}
-
-// Time64 column data.
-message Time64NSColumn {
-  repeated int64 data = 1;
-}
-
-// String data column.
-message StringColumn {
-  repeated string data = 1;
-}
-
-// A single column of data.
-message Column {
-  oneof col_data {
-    BooleanColumn boolean_data = 1;
-    Int64Column int64_data = 2;
-    Time64NSColumn time64ns_data = 3;
-    Float64Column float64_data = 4;
-    StringColumn string_data = 5;
-  }
-}
-
-// RowBatchData is a temporary data type that will remove when proper serialization
-// is implemented.
-message RowBatchData {
-  // The data stored as a string (on Vizier) or as a serialized arrow:RowBatch on
-  // the agent.
-  bytes data = 1;
-  repeated Column cols = 2;
-}
-
-message Relation {
-  message ColumnInfo {
-    string column_name = 1;
-    pl.types.DataType column_type = 2;
-  }
-  string name = 1;
-  repeated ColumnInfo columns = 2;
-}
-
-// A table serialized as proto.
-message Table {
-  // Information about the relation in this table. All row batches *must* follow,
-  // this schema.
-  Relation relation = 4;
-  // A row batch of data.
-  repeated RowBatchData data = 5;
-}
-
-// Tracks information about query execution time.
-message QueryTimingInfo {
-  // The total execution time for the query in nanoseconds.
-  int64 execution_time_ns = 1;
-  // The time in ns spent compiling the query.
-  int64 compilation_time_ns = 2;
-}
-
-// QueryExecutionStats contains information about the time/data processed by the query.
-message QueryExecutionStats {
-  QueryTimingInfo timing  = 1;
-  // The number of input bytes.
-  int64 bytes_processed = 2;
-  // The number of input records.
-  int64 records_processed = 3;
-
-}
 
 // AgentQueryResponse is returned for each execution of a query by the agent.
 message AgentQueryResponse {
@@ -247,13 +168,7 @@ message AgentQueryResponse {
     (gogoproto.customname) = "QueryID"
   ];
 
-  // Stats about the query execution.
-  QueryExecutionStats stats = 3;
-
-  // The output tables from executing the query.
-  // The data as a serialized flat_buffer.
-  // TODO(zasgar): Make it send flat_buffer directly from grpc.
-  repeated Table tables = 4;
+  pl.carnot.carnotpb.QueryResult query_result = 3;
 }
 
 // QueryResponse is returned by Vizier in response to a query.

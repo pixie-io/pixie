@@ -10,6 +10,7 @@
 
 #include "absl/base/internal/spinlock.h"
 #include "absl/strings/str_format.h"
+#include "src/carnot/schema/proto/schema.pb.h"
 #include "src/carnot/schema/relation.h"
 #include "src/carnot/schema/row_batch.h"
 #include "src/carnot/schema/row_descriptor.h"
@@ -93,7 +94,7 @@ class Table : public NotCopyable {
   /**
    * @ param i the index of the column to get.
    */
-  std::shared_ptr<Column> GetColumn(size_t i) {
+  std::shared_ptr<Column> GetColumn(size_t i) const {
     DCHECK(i < columns_.size()) << absl::StrFormat(
         "columns_[%d] does not exist, columns_ is size %d", i, columns_.size());
     return columns_[i];
@@ -104,7 +105,7 @@ class Table : public NotCopyable {
    * @ param cols the indices of the columns to get
    */
   StatusOr<std::unique_ptr<RowBatch>> GetRowBatch(int64_t row_batch_idx, std::vector<int64_t> cols,
-                                                  arrow::MemoryPool* mem_pool);
+                                                  arrow::MemoryPool* mem_pool) const;
   /**
    * Get a slice of the row batch at the given index.
    * @ param i the index of the RowBatch to get.
@@ -116,7 +117,7 @@ class Table : public NotCopyable {
   StatusOr<std::unique_ptr<RowBatch>> GetRowBatchSlice(int64_t row_batch_idx,
                                                        std::vector<int64_t> cols,
                                                        arrow::MemoryPool* mem_pool, int64_t offset,
-                                                       int64_t end);
+                                                       int64_t end) const;
 
   /**
    * @ param rb Rowbatch to write to the table.
@@ -134,15 +135,15 @@ class Table : public NotCopyable {
   /**
    * @return number of column batches.
    */
-  int64_t NumBatches();
+  int64_t NumBatches() const;
 
   /**
    * @return number of columns.
    */
-  int64_t NumColumns() { return columns_.size(); }
+  int64_t NumColumns() const { return columns_.size(); }
 
-  schema::Relation GetRelation();
-  StatusOr<std::vector<RecordBatchSPtr>> GetTableAsRecordBatches();
+  schema::Relation GetRelation() const;
+  StatusOr<std::vector<RecordBatchSPtr>> GetTableAsRecordBatches() const;
 
   /**
    * @param the timestamp to search for.
@@ -154,6 +155,13 @@ class Table : public NotCopyable {
 
   // TODO(michelle) (PL-404): Time should always be column 0.
   int64_t FindTimeColumn();
+
+  /**
+   * Covert the table and store in passed in proto.
+   * @param table_proto The table proto to write to.
+   * @return Status of conversion.
+   */
+  Status ToProto(schemapb::Table* table_proto) const;
 
  private:
   /**
@@ -172,10 +180,10 @@ class Table : public NotCopyable {
   RowDescriptor desc_;
   std::vector<std::shared_ptr<Column>> columns_;
   // TODO(michelle): (PL-388) Change hot_batches_ to a list-based queue.
-  std::vector<std::unique_ptr<pl::types::ColumnWrapperRecordBatch>> hot_batches_;
   std::unordered_map<std::string, std::shared_ptr<Column>> name_to_column_map_;
 
-  absl::base_internal::SpinLock hot_batches_lock_;
+  mutable std::vector<std::unique_ptr<pl::types::ColumnWrapperRecordBatch>> hot_batches_;
+  mutable absl::base_internal::SpinLock hot_batches_lock_;
 };
 
 }  // namespace schema

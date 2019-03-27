@@ -12,21 +12,21 @@ import (
 	"github.com/TylerBrock/colorjson"
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
-	pb "pixielabs.ai/pixielabs/src/vizier/proto"
+	schemapb "pixielabs.ai/pixielabs/src/carnot/schema/proto"
 )
 
 // Function getNumRows returns the number of rows in the input column.
-func getNumRows(in *pb.Column) int {
+func getNumRows(in *schemapb.Column) int {
 	switch u := in.ColData.(type) {
-	case *pb.Column_StringData:
+	case *schemapb.Column_StringData:
 		return len(u.StringData.Data)
-	case *pb.Column_Float64Data:
+	case *schemapb.Column_Float64Data:
 		return len(u.Float64Data.Data)
-	case *pb.Column_Int64Data:
+	case *schemapb.Column_Int64Data:
 		return len(u.Int64Data.Data)
-	case *pb.Column_Time64NsData:
+	case *schemapb.Column_Time64NsData:
 		return len(u.Time64NsData.Data)
-	case *pb.Column_BooleanData:
+	case *schemapb.Column_BooleanData:
 		return len(u.BooleanData.Data)
 	}
 	return 0
@@ -102,7 +102,7 @@ func (r *TableRenderer) prettyStringValue(val string) string {
 	return val
 }
 
-func (r *TableRenderer) getRowBatchRowDataAsArray(in *pb.RowBatchData, batchIdx, rowIdx, timeColIdx int) []interface{} {
+func (r *TableRenderer) getRowBatchRowDataAsArray(in *schemapb.RowBatchData, batchIdx, rowIdx, timeColIdx int) []interface{} {
 
 	row := make([]interface{}, 0)
 	numCols := len(in.Cols)
@@ -111,11 +111,11 @@ func (r *TableRenderer) getRowBatchRowDataAsArray(in *pb.RowBatchData, batchIdx,
 	}
 	for colIdx := 0; colIdx < numCols; colIdx++ {
 		switch u := in.Cols[colIdx].ColData.(type) {
-		case *pb.Column_StringData:
+		case *schemapb.Column_StringData:
 			row = append(row, string(u.StringData.Data[rowIdx]))
-		case *pb.Column_Float64Data:
+		case *schemapb.Column_Float64Data:
 			row = append(row, float64(u.Float64Data.Data[rowIdx]))
-		case *pb.Column_Int64Data:
+		case *schemapb.Column_Int64Data:
 			// TODO(zasgar): We really should not need this, but some of our operations convert time
 			// to int64. We need to maintain types in the engine/compiler so that proper type casting can be done.
 			if colIdx == timeColIdx {
@@ -123,9 +123,9 @@ func (r *TableRenderer) getRowBatchRowDataAsArray(in *pb.RowBatchData, batchIdx,
 			} else {
 				row = append(row, u.Int64Data.Data[rowIdx])
 			}
-		case *pb.Column_Time64NsData:
+		case *schemapb.Column_Time64NsData:
 			row = append(row, time.Unix(0, u.Time64NsData.Data[rowIdx]))
-		case *pb.Column_BooleanData:
+		case *schemapb.Column_BooleanData:
 			row = append(row, bool(u.BooleanData.Data[rowIdx]))
 		}
 	}
@@ -168,9 +168,9 @@ func (r *TableRenderer) dataToString(data [][]interface{}, latencyCols map[int]b
 }
 
 // RenderTable will convert the proto table to a tabular format and print it to the string.
-func (r *TableRenderer) RenderTable(t *pb.Table) {
+func (r *TableRenderer) RenderTable(t *schemapb.Table) {
 	relation := t.Relation
-	in := t.Data
+	in := t.RowBatches
 	if len(in) == 0 {
 		fmt.Println("Empty table ...")
 		return

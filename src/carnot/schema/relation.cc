@@ -74,6 +74,16 @@ StatusOr<Relation> Relation::MakeSubRelation(const std::vector<std::string> &col
   }
   return new_relation;
 }
+Status Relation::ToProto(schemapb::Relation *relation_proto) const {
+  CHECK(relation_proto != nullptr);
+  size_t num_columns = NumColumns();
+  for (size_t col_idx = 0; col_idx < num_columns; ++col_idx) {
+    auto col_pb = relation_proto->add_columns();
+    col_pb->set_column_type(GetColumnType(col_idx));
+    col_pb->set_column_name(GetColumnName(col_idx));
+  }
+  return Status::OK();
+}
 
 }  // namespace schema
 }  // namespace carnot

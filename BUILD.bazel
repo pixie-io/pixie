@@ -21,6 +21,8 @@ gazelle(
 # Make gazelle resolve the proto paths correctly.
 # gazelle:resolve go pixielabs.ai/pixielabs/src/common/uuid/proto //src/common/uuid/proto:uuid_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/proto //src/vizier/proto:service_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/proto //src/carnot/proto:query_results_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/schema/proto //src/carnot/schema/proto:schema_pl_go_proto
 
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 

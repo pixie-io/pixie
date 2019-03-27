@@ -16,6 +16,73 @@ namespace pl {
 namespace carnot {
 namespace schema {
 
+using types::DataType;
+
+template <DataType T>
+auto GetPBDataColumn(schemapb::Column* /*data_col*/) {
+  static_assert(sizeof(T) != 0, "Unsupported data type");
+}
+
+template <>
+auto GetPBDataColumn<DataType::BOOLEAN>(schemapb::Column* data_col) {
+  return data_col->mutable_boolean_data();
+}
+
+template <>
+auto GetPBDataColumn<DataType::TIME64NS>(schemapb::Column* data_col) {
+  return data_col->mutable_time64ns_data();
+}
+
+template <>
+auto GetPBDataColumn<DataType::INT64>(schemapb::Column* data_col) {
+  return data_col->mutable_int64_data();
+}
+
+template <>
+auto GetPBDataColumn<DataType::FLOAT64>(schemapb::Column* data_col) {
+  return data_col->mutable_float64_data();
+}
+
+template <>
+auto GetPBDataColumn<DataType::STRING>(schemapb::Column* data_col) {
+  return data_col->mutable_string_data();
+}
+
+template <DataType T>
+void CopyIntoOutputPB(schemapb::Column* data_col, arrow::Array* col) {
+  CHECK(data_col != nullptr);
+  CHECK(col != nullptr);
+
+  size_t col_length = col->length();
+  auto casted_output_data = GetPBDataColumn<T>(data_col);
+  for (size_t i = 0; i < col_length; ++i) {
+    casted_output_data->add_data(types::GetValueFromArrowArray<T>(col, i));
+  }
+}
+
+/**
+ * Converts an arrow batch to a proto row batch.
+ * @param rb The rowbatch.
+ * @param relation The relation.
+ * @param rb_data_pb The output proto.
+ * @return Status of conversion.
+ */
+Status ConvertRecordBatchToProto(arrow::RecordBatch* rb,
+                                 const pl::carnot::schema::Relation& relation,
+                                 schemapb::RowBatchData* rb_data_pb) {
+  for (int col_idx = 0; col_idx < rb->num_columns(); ++col_idx) {
+    auto col = rb->column(col_idx);
+    auto output_col_data = rb_data_pb->add_cols();
+    auto dt = relation.GetColumnType(col_idx);
+
+#define TYPE_CASE(_dt_) CopyIntoOutputPB<_dt_>(output_col_data, col.get());
+
+    PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
+#undef TYPE_CASE
+  }
+  return Status::OK();
+}
+
 Table::Table(const schema::Relation& relation) : desc_(relation.col_types()) {
   uint64_t num_cols = desc_.size();
   columns_.reserve(num_cols);
@@ -69,16 +136,29 @@ Status Table::AddColumn(std::shared_ptr<Column> col) {
   return Status::OK();
 }
 
+Status Table::ToProto(schemapb::Table* table_proto) const {
+  CHECK(table_proto != nullptr);
+  auto row_batch_proto = table_proto->add_row_batches();
+  auto relation = GetRelation();
+  // TODO(zasgar): Table should store record batches, that way we can reduce conversions.
+  PL_ASSIGN_OR_RETURN(auto batches, GetTableAsRecordBatches());
+  for (const auto batch : batches) {
+    PL_RETURN_IF_ERROR(ConvertRecordBatchToProto(batch.get(), relation, row_batch_proto));
+  }
+  PL_RETURN_IF_ERROR(relation.ToProto(table_proto->mutable_relation()));
+  return Status::OK();
+}
+
 StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatch(int64_t row_batch_idx,
                                                        std::vector<int64_t> cols,
-                                                       arrow::MemoryPool* mem_pool) {
+                                                       arrow::MemoryPool* mem_pool) const {
   return GetRowBatchSlice(row_batch_idx, cols, mem_pool, 0 /* offset */, -1 /* end */);
 }
 
 StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatchSlice(int64_t row_batch_idx,
                                                             std::vector<int64_t> cols,
                                                             arrow::MemoryPool* mem_pool,
-                                                            int64_t offset, int64_t end) {
+                                                            int64_t offset, int64_t end) const {
   DCHECK(!columns_.empty()) << "RowBatch does not have any columns.";
   DCHECK(NumBatches() > row_batch_idx) << absl::StrFormat(
       "Table has %d batches, but requesting batch %d", NumBatches(), row_batch_idx);
@@ -174,7 +254,7 @@ Status Table::TransferRecordBatch(
   return Status::OK();
 }
 
-int64_t Table::NumBatches() {
+int64_t Table::NumBatches() const {
   auto num_batches = 0;
   if (!columns_.empty()) {
     num_batches += columns_[0]->numBatches();
@@ -262,7 +342,7 @@ int64_t Table::FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
   return -1;
 }
 
-schema::Relation Table::GetRelation() {
+schema::Relation Table::GetRelation() const {
   std::vector<types::DataType> types;
   std::vector<std::string> names;
   types.reserve(columns_.size());
@@ -276,7 +356,7 @@ schema::Relation Table::GetRelation() {
   return schema::Relation(types, names);
 }
 
-StatusOr<std::vector<RecordBatchSPtr>> Table::GetTableAsRecordBatches() {
+StatusOr<std::vector<RecordBatchSPtr>> Table::GetTableAsRecordBatches() const {
   std::vector<int64_t> col_selector;
   // Set up the schema.
   std::vector<std::shared_ptr<arrow::Field>> schema_vector = {};

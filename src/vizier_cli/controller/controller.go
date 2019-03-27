@@ -105,12 +105,15 @@ func (c *Controller) ExecuteQuery(in string) error {
 			return err
 		}
 		fmt.Printf("Agent ID: %s\n", agentUUID)
-		bytesProcessed := float64(agentResp.Response.Stats.BytesProcessed)
-		execTimeNS := float64(agentResp.Response.Stats.Timing.ExecutionTimeNs)
-		for _, table := range agentResp.Response.Tables {
+		queryResult := agentResp.Response.QueryResult
+		execStats := queryResult.ExecutionStats
+		timingStats := queryResult.TimingInfo
+		bytesProcessed := float64(execStats.BytesProcessed)
+		execTimeNS := float64(timingStats.ExecutionTimeNs)
+		for _, table := range queryResult.Tables {
 			c.renderer.RenderTable(table)
 		}
-		fmt.Printf("Compilation Time: %.2f ms\n", float64(agentResp.Response.Stats.Timing.CompilationTimeNs)/1.0E6)
+		fmt.Printf("Compilation Time: %.2f ms\n", float64(timingStats.CompilationTimeNs)/1.0E6)
 		fmt.Printf("Execution Time: %.2f ms\n", execTimeNS/1.0E6)
 		fmt.Printf("Bytes processed: %.2f KB\n", bytesProcessed/1024)
 	}

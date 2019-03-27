@@ -7,13 +7,12 @@ import proto "github.com/gogo/protobuf/proto"
 import fmt "fmt"
 import math "math"
 import _ "github.com/gogo/protobuf/gogoproto"
-import proto2 "pixielabs.ai/pixielabs/src/common/base/proto"
-import proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
-import proto3 "pixielabs.ai/pixielabs/src/shared/types/proto"
+import proto4 "pixielabs.ai/pixielabs/src/carnot/proto"
+import proto1 "pixielabs.ai/pixielabs/src/carnot/schema/proto"
+import proto3 "pixielabs.ai/pixielabs/src/common/base/proto"
+import proto2 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 
 import strconv "strconv"
-
-import bytes "bytes"
 
 import strings "strings"
 import reflect "reflect"
@@ -22,8 +21,6 @@ import (
 	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
 )
-
-import encoding_binary "encoding/binary"
 
 import io "io"
 
@@ -61,17 +58,17 @@ var AgentState_value = map[string]int32{
 }
 
 func (AgentState) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{0}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{0}
 }
 
 type Schema struct {
-	Relations []*Relation `protobuf:"bytes,1,rep,name=relations,proto3" json:"relations,omitempty"`
+	Relations []*proto1.Relation `protobuf:"bytes,1,rep,name=relations,proto3" json:"relations,omitempty"`
 }
 
 func (m *Schema) Reset()      { *m = Schema{} }
 func (*Schema) ProtoMessage() {}
 func (*Schema) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{0}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{0}
 }
 func (m *Schema) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -100,7 +97,7 @@ func (m *Schema) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Schema proto.InternalMessageInfo
 
-func (m *Schema) GetRelations() []*Relation {
+func (m *Schema) GetRelations() []*proto1.Relation {
 	if m != nil {
 		return m.Relations
 	}
@@ -113,7 +110,7 @@ type SchemaRequest struct {
 func (m *SchemaRequest) Reset()      { *m = SchemaRequest{} }
 func (*SchemaRequest) ProtoMessage() {}
 func (*SchemaRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{1}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{1}
 }
 func (m *SchemaRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -149,7 +146,7 @@ type SchemaResponse struct {
 func (m *SchemaResponse) Reset()      { *m = SchemaResponse{} }
 func (*SchemaResponse) ProtoMessage() {}
 func (*SchemaResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{2}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{2}
 }
 func (m *SchemaResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -186,14 +183,14 @@ func (m *SchemaResponse) GetSchemaByAgent() []*SchemaResponse_SchemaByAgent {
 }
 
 type SchemaResponse_SchemaByAgent struct {
-	AgentID *proto1.UUID `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	AgentID *proto2.UUID `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 	Schema  *Schema      `protobuf:"bytes,2,opt,name=schema,proto3" json:"schema,omitempty"`
 }
 
 func (m *SchemaResponse_SchemaByAgent) Reset()      { *m = SchemaResponse_SchemaByAgent{} }
 func (*SchemaResponse_SchemaByAgent) ProtoMessage() {}
 func (*SchemaResponse_SchemaByAgent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{2, 0}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{2, 0}
 }
 func (m *SchemaResponse_SchemaByAgent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -222,7 +219,7 @@ func (m *SchemaResponse_SchemaByAgent) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_SchemaResponse_SchemaByAgent proto.InternalMessageInfo
 
-func (m *SchemaResponse_SchemaByAgent) GetAgentID() *proto1.UUID {
+func (m *SchemaResponse_SchemaByAgent) GetAgentID() *proto2.UUID {
 	if m != nil {
 		return m.AgentID
 	}
@@ -242,7 +239,7 @@ type AgentInfoRequest struct {
 func (m *AgentInfoRequest) Reset()      { *m = AgentInfoRequest{} }
 func (*AgentInfoRequest) ProtoMessage() {}
 func (*AgentInfoRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{3}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{3}
 }
 func (m *AgentInfoRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -278,7 +275,7 @@ type AgentInfoResponse struct {
 func (m *AgentInfoResponse) Reset()      { *m = AgentInfoResponse{} }
 func (*AgentInfoResponse) ProtoMessage() {}
 func (*AgentInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{4}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{4}
 }
 func (m *AgentInfoResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -323,7 +320,7 @@ type AgentStatus struct {
 func (m *AgentStatus) Reset()      { *m = AgentStatus{} }
 func (*AgentStatus) ProtoMessage() {}
 func (*AgentStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{5}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{5}
 }
 func (m *AgentStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -374,14 +371,14 @@ func (m *AgentStatus) GetState() AgentState {
 }
 
 type AgentInfo struct {
-	AgentID  *proto1.UUID `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	AgentID  *proto2.UUID `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 	HostInfo *HostInfo    `protobuf:"bytes,2,opt,name=host_info,json=hostInfo,proto3" json:"host_info,omitempty"`
 }
 
 func (m *AgentInfo) Reset()      { *m = AgentInfo{} }
 func (*AgentInfo) ProtoMessage() {}
 func (*AgentInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{6}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{6}
 }
 func (m *AgentInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -410,7 +407,7 @@ func (m *AgentInfo) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_AgentInfo proto.InternalMessageInfo
 
-func (m *AgentInfo) GetAgentID() *proto1.UUID {
+func (m *AgentInfo) GetAgentID() *proto2.UUID {
 	if m != nil {
 		return m.AgentID
 	}
@@ -431,7 +428,7 @@ type HostInfo struct {
 func (m *HostInfo) Reset()      { *m = HostInfo{} }
 func (*HostInfo) ProtoMessage() {}
 func (*HostInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{7}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{7}
 }
 func (m *HostInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -478,7 +475,7 @@ type AgentToVizierMessage struct {
 func (m *AgentToVizierMessage) Reset()      { *m = AgentToVizierMessage{} }
 func (*AgentToVizierMessage) ProtoMessage() {}
 func (*AgentToVizierMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{8}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{8}
 }
 func (m *AgentToVizierMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -660,7 +657,7 @@ type VizierToAgentMessage struct {
 func (m *VizierToAgentMessage) Reset()      { *m = VizierToAgentMessage{} }
 func (*VizierToAgentMessage) ProtoMessage() {}
 func (*VizierToAgentMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{9}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{9}
 }
 func (m *VizierToAgentMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -838,7 +835,7 @@ type HeartBeat struct {
 func (m *HeartBeat) Reset()      { *m = HeartBeat{} }
 func (*HeartBeat) ProtoMessage() {}
 func (*HeartBeat) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{10}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{10}
 }
 func (m *HeartBeat) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -881,7 +878,7 @@ type HeartBeatAck struct {
 func (m *HeartBeatAck) Reset()      { *m = HeartBeatAck{} }
 func (*HeartBeatAck) ProtoMessage() {}
 func (*HeartBeatAck) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{11}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{11}
 }
 func (m *HeartBeatAck) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -918,14 +915,14 @@ func (m *HeartBeatAck) GetTime() int64 {
 }
 
 type RegisterAgentRequest struct {
-	AgentID   *proto1.UUID `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	AgentID   *proto2.UUID `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 	AgentInfo *AgentInfo   `protobuf:"bytes,2,opt,name=agent_info,json=agentInfo,proto3" json:"agent_info,omitempty"`
 }
 
 func (m *RegisterAgentRequest) Reset()      { *m = RegisterAgentRequest{} }
 func (*RegisterAgentRequest) ProtoMessage() {}
 func (*RegisterAgentRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{12}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{12}
 }
 func (m *RegisterAgentRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -954,7 +951,7 @@ func (m *RegisterAgentRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RegisterAgentRequest proto.InternalMessageInfo
 
-func (m *RegisterAgentRequest) GetAgentID() *proto1.UUID {
+func (m *RegisterAgentRequest) GetAgentID() *proto2.UUID {
 	if m != nil {
 		return m.AgentID
 	}
@@ -969,13 +966,13 @@ func (m *RegisterAgentRequest) GetAgentInfo() *AgentInfo {
 }
 
 type RegisterAgentResponse struct {
-	Status *proto2.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	Status *proto3.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 }
 
 func (m *RegisterAgentResponse) Reset()      { *m = RegisterAgentResponse{} }
 func (*RegisterAgentResponse) ProtoMessage() {}
 func (*RegisterAgentResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{13}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{13}
 }
 func (m *RegisterAgentResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1004,7 +1001,7 @@ func (m *RegisterAgentResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RegisterAgentResponse proto.InternalMessageInfo
 
-func (m *RegisterAgentResponse) GetStatus() *proto2.Status {
+func (m *RegisterAgentResponse) GetStatus() *proto3.Status {
 	if m != nil {
 		return m.Status
 	}
@@ -1012,14 +1009,14 @@ func (m *RegisterAgentResponse) GetStatus() *proto2.Status {
 }
 
 type QueryRequest struct {
-	QueryID  *proto1.UUID `protobuf:"bytes,1,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
+	QueryID  *proto2.UUID `protobuf:"bytes,1,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
 	QueryStr string       `protobuf:"bytes,2,opt,name=query_str,json=queryStr,proto3" json:"query_str,omitempty"`
 }
 
 func (m *QueryRequest) Reset()      { *m = QueryRequest{} }
 func (*QueryRequest) ProtoMessage() {}
 func (*QueryRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{14}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{14}
 }
 func (m *QueryRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1048,7 +1045,7 @@ func (m *QueryRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryRequest proto.InternalMessageInfo
 
-func (m *QueryRequest) GetQueryID() *proto1.UUID {
+func (m *QueryRequest) GetQueryID() *proto2.UUID {
 	if m != nil {
 		return m.QueryID
 	}
@@ -1062,790 +1059,16 @@ func (m *QueryRequest) GetQueryStr() string {
 	return ""
 }
 
-type BooleanColumn struct {
-	Data []bool `protobuf:"varint,1,rep,packed,name=data,proto3" json:"data,omitempty"`
-}
-
-func (m *BooleanColumn) Reset()      { *m = BooleanColumn{} }
-func (*BooleanColumn) ProtoMessage() {}
-func (*BooleanColumn) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{15}
-}
-func (m *BooleanColumn) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *BooleanColumn) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_BooleanColumn.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *BooleanColumn) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BooleanColumn.Merge(dst, src)
-}
-func (m *BooleanColumn) XXX_Size() int {
-	return m.Size()
-}
-func (m *BooleanColumn) XXX_DiscardUnknown() {
-	xxx_messageInfo_BooleanColumn.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_BooleanColumn proto.InternalMessageInfo
-
-func (m *BooleanColumn) GetData() []bool {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
-type Int64Column struct {
-	Data []int64 `protobuf:"varint,1,rep,packed,name=data,proto3" json:"data,omitempty"`
-}
-
-func (m *Int64Column) Reset()      { *m = Int64Column{} }
-func (*Int64Column) ProtoMessage() {}
-func (*Int64Column) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{16}
-}
-func (m *Int64Column) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Int64Column) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Int64Column.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *Int64Column) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Int64Column.Merge(dst, src)
-}
-func (m *Int64Column) XXX_Size() int {
-	return m.Size()
-}
-func (m *Int64Column) XXX_DiscardUnknown() {
-	xxx_messageInfo_Int64Column.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Int64Column proto.InternalMessageInfo
-
-func (m *Int64Column) GetData() []int64 {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
-type Float64Column struct {
-	Data []float64 `protobuf:"fixed64,1,rep,packed,name=data,proto3" json:"data,omitempty"`
-}
-
-func (m *Float64Column) Reset()      { *m = Float64Column{} }
-func (*Float64Column) ProtoMessage() {}
-func (*Float64Column) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{17}
-}
-func (m *Float64Column) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Float64Column) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Float64Column.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *Float64Column) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Float64Column.Merge(dst, src)
-}
-func (m *Float64Column) XXX_Size() int {
-	return m.Size()
-}
-func (m *Float64Column) XXX_DiscardUnknown() {
-	xxx_messageInfo_Float64Column.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Float64Column proto.InternalMessageInfo
-
-func (m *Float64Column) GetData() []float64 {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
-type Time64NSColumn struct {
-	Data []int64 `protobuf:"varint,1,rep,packed,name=data,proto3" json:"data,omitempty"`
-}
-
-func (m *Time64NSColumn) Reset()      { *m = Time64NSColumn{} }
-func (*Time64NSColumn) ProtoMessage() {}
-func (*Time64NSColumn) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{18}
-}
-func (m *Time64NSColumn) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Time64NSColumn) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Time64NSColumn.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *Time64NSColumn) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Time64NSColumn.Merge(dst, src)
-}
-func (m *Time64NSColumn) XXX_Size() int {
-	return m.Size()
-}
-func (m *Time64NSColumn) XXX_DiscardUnknown() {
-	xxx_messageInfo_Time64NSColumn.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Time64NSColumn proto.InternalMessageInfo
-
-func (m *Time64NSColumn) GetData() []int64 {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
-type StringColumn struct {
-	Data []string `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
-}
-
-func (m *StringColumn) Reset()      { *m = StringColumn{} }
-func (*StringColumn) ProtoMessage() {}
-func (*StringColumn) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{19}
-}
-func (m *StringColumn) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *StringColumn) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_StringColumn.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *StringColumn) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StringColumn.Merge(dst, src)
-}
-func (m *StringColumn) XXX_Size() int {
-	return m.Size()
-}
-func (m *StringColumn) XXX_DiscardUnknown() {
-	xxx_messageInfo_StringColumn.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_StringColumn proto.InternalMessageInfo
-
-func (m *StringColumn) GetData() []string {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
-type Column struct {
-	// Types that are valid to be assigned to ColData:
-	//	*Column_BooleanData
-	//	*Column_Int64Data
-	//	*Column_Time64NsData
-	//	*Column_Float64Data
-	//	*Column_StringData
-	ColData isColumn_ColData `protobuf_oneof:"col_data"`
-}
-
-func (m *Column) Reset()      { *m = Column{} }
-func (*Column) ProtoMessage() {}
-func (*Column) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{20}
-}
-func (m *Column) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Column) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Column.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *Column) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Column.Merge(dst, src)
-}
-func (m *Column) XXX_Size() int {
-	return m.Size()
-}
-func (m *Column) XXX_DiscardUnknown() {
-	xxx_messageInfo_Column.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Column proto.InternalMessageInfo
-
-type isColumn_ColData interface {
-	isColumn_ColData()
-	Equal(interface{}) bool
-	MarshalTo([]byte) (int, error)
-	Size() int
-}
-
-type Column_BooleanData struct {
-	BooleanData *BooleanColumn `protobuf:"bytes,1,opt,name=boolean_data,json=booleanData,proto3,oneof"`
-}
-type Column_Int64Data struct {
-	Int64Data *Int64Column `protobuf:"bytes,2,opt,name=int64_data,json=int64Data,proto3,oneof"`
-}
-type Column_Time64NsData struct {
-	Time64NsData *Time64NSColumn `protobuf:"bytes,3,opt,name=time64ns_data,json=time64nsData,proto3,oneof"`
-}
-type Column_Float64Data struct {
-	Float64Data *Float64Column `protobuf:"bytes,4,opt,name=float64_data,json=float64Data,proto3,oneof"`
-}
-type Column_StringData struct {
-	StringData *StringColumn `protobuf:"bytes,5,opt,name=string_data,json=stringData,proto3,oneof"`
-}
-
-func (*Column_BooleanData) isColumn_ColData()  {}
-func (*Column_Int64Data) isColumn_ColData()    {}
-func (*Column_Time64NsData) isColumn_ColData() {}
-func (*Column_Float64Data) isColumn_ColData()  {}
-func (*Column_StringData) isColumn_ColData()   {}
-
-func (m *Column) GetColData() isColumn_ColData {
-	if m != nil {
-		return m.ColData
-	}
-	return nil
-}
-
-func (m *Column) GetBooleanData() *BooleanColumn {
-	if x, ok := m.GetColData().(*Column_BooleanData); ok {
-		return x.BooleanData
-	}
-	return nil
-}
-
-func (m *Column) GetInt64Data() *Int64Column {
-	if x, ok := m.GetColData().(*Column_Int64Data); ok {
-		return x.Int64Data
-	}
-	return nil
-}
-
-func (m *Column) GetTime64NsData() *Time64NSColumn {
-	if x, ok := m.GetColData().(*Column_Time64NsData); ok {
-		return x.Time64NsData
-	}
-	return nil
-}
-
-func (m *Column) GetFloat64Data() *Float64Column {
-	if x, ok := m.GetColData().(*Column_Float64Data); ok {
-		return x.Float64Data
-	}
-	return nil
-}
-
-func (m *Column) GetStringData() *StringColumn {
-	if x, ok := m.GetColData().(*Column_StringData); ok {
-		return x.StringData
-	}
-	return nil
-}
-
-// XXX_OneofFuncs is for the internal use of the proto package.
-func (*Column) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error, func(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error), func(msg proto.Message) (n int), []interface{}) {
-	return _Column_OneofMarshaler, _Column_OneofUnmarshaler, _Column_OneofSizer, []interface{}{
-		(*Column_BooleanData)(nil),
-		(*Column_Int64Data)(nil),
-		(*Column_Time64NsData)(nil),
-		(*Column_Float64Data)(nil),
-		(*Column_StringData)(nil),
-	}
-}
-
-func _Column_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
-	m := msg.(*Column)
-	// col_data
-	switch x := m.ColData.(type) {
-	case *Column_BooleanData:
-		_ = b.EncodeVarint(1<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.BooleanData); err != nil {
-			return err
-		}
-	case *Column_Int64Data:
-		_ = b.EncodeVarint(2<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Int64Data); err != nil {
-			return err
-		}
-	case *Column_Time64NsData:
-		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Time64NsData); err != nil {
-			return err
-		}
-	case *Column_Float64Data:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.Float64Data); err != nil {
-			return err
-		}
-	case *Column_StringData:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
-		if err := b.EncodeMessage(x.StringData); err != nil {
-			return err
-		}
-	case nil:
-	default:
-		return fmt.Errorf("Column.ColData has unexpected type %T", x)
-	}
-	return nil
-}
-
-func _Column_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer) (bool, error) {
-	m := msg.(*Column)
-	switch tag {
-	case 1: // col_data.boolean_data
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(BooleanColumn)
-		err := b.DecodeMessage(msg)
-		m.ColData = &Column_BooleanData{msg}
-		return true, err
-	case 2: // col_data.int64_data
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Int64Column)
-		err := b.DecodeMessage(msg)
-		m.ColData = &Column_Int64Data{msg}
-		return true, err
-	case 3: // col_data.time64ns_data
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Time64NSColumn)
-		err := b.DecodeMessage(msg)
-		m.ColData = &Column_Time64NsData{msg}
-		return true, err
-	case 4: // col_data.float64_data
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(Float64Column)
-		err := b.DecodeMessage(msg)
-		m.ColData = &Column_Float64Data{msg}
-		return true, err
-	case 5: // col_data.string_data
-		if wire != proto.WireBytes {
-			return true, proto.ErrInternalBadWireType
-		}
-		msg := new(StringColumn)
-		err := b.DecodeMessage(msg)
-		m.ColData = &Column_StringData{msg}
-		return true, err
-	default:
-		return false, nil
-	}
-}
-
-func _Column_OneofSizer(msg proto.Message) (n int) {
-	m := msg.(*Column)
-	// col_data
-	switch x := m.ColData.(type) {
-	case *Column_BooleanData:
-		s := proto.Size(x.BooleanData)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Column_Int64Data:
-		s := proto.Size(x.Int64Data)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Column_Time64NsData:
-		s := proto.Size(x.Time64NsData)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Column_Float64Data:
-		s := proto.Size(x.Float64Data)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case *Column_StringData:
-		s := proto.Size(x.StringData)
-		n += 1 // tag and wire
-		n += proto.SizeVarint(uint64(s))
-		n += s
-	case nil:
-	default:
-		panic(fmt.Sprintf("proto: unexpected type %T in oneof", x))
-	}
-	return n
-}
-
-type RowBatchData struct {
-	Data []byte    `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
-	Cols []*Column `protobuf:"bytes,2,rep,name=cols,proto3" json:"cols,omitempty"`
-}
-
-func (m *RowBatchData) Reset()      { *m = RowBatchData{} }
-func (*RowBatchData) ProtoMessage() {}
-func (*RowBatchData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{21}
-}
-func (m *RowBatchData) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *RowBatchData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_RowBatchData.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *RowBatchData) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RowBatchData.Merge(dst, src)
-}
-func (m *RowBatchData) XXX_Size() int {
-	return m.Size()
-}
-func (m *RowBatchData) XXX_DiscardUnknown() {
-	xxx_messageInfo_RowBatchData.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_RowBatchData proto.InternalMessageInfo
-
-func (m *RowBatchData) GetData() []byte {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
-func (m *RowBatchData) GetCols() []*Column {
-	if m != nil {
-		return m.Cols
-	}
-	return nil
-}
-
-type Relation struct {
-	Name    string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Columns []*Relation_ColumnInfo `protobuf:"bytes,2,rep,name=columns,proto3" json:"columns,omitempty"`
-}
-
-func (m *Relation) Reset()      { *m = Relation{} }
-func (*Relation) ProtoMessage() {}
-func (*Relation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{22}
-}
-func (m *Relation) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Relation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Relation.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *Relation) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Relation.Merge(dst, src)
-}
-func (m *Relation) XXX_Size() int {
-	return m.Size()
-}
-func (m *Relation) XXX_DiscardUnknown() {
-	xxx_messageInfo_Relation.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Relation proto.InternalMessageInfo
-
-func (m *Relation) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *Relation) GetColumns() []*Relation_ColumnInfo {
-	if m != nil {
-		return m.Columns
-	}
-	return nil
-}
-
-type Relation_ColumnInfo struct {
-	ColumnName string          `protobuf:"bytes,1,opt,name=column_name,json=columnName,proto3" json:"column_name,omitempty"`
-	ColumnType proto3.DataType `protobuf:"varint,2,opt,name=column_type,json=columnType,proto3,enum=pl.types.DataType" json:"column_type,omitempty"`
-}
-
-func (m *Relation_ColumnInfo) Reset()      { *m = Relation_ColumnInfo{} }
-func (*Relation_ColumnInfo) ProtoMessage() {}
-func (*Relation_ColumnInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{22, 0}
-}
-func (m *Relation_ColumnInfo) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Relation_ColumnInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Relation_ColumnInfo.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *Relation_ColumnInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Relation_ColumnInfo.Merge(dst, src)
-}
-func (m *Relation_ColumnInfo) XXX_Size() int {
-	return m.Size()
-}
-func (m *Relation_ColumnInfo) XXX_DiscardUnknown() {
-	xxx_messageInfo_Relation_ColumnInfo.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Relation_ColumnInfo proto.InternalMessageInfo
-
-func (m *Relation_ColumnInfo) GetColumnName() string {
-	if m != nil {
-		return m.ColumnName
-	}
-	return ""
-}
-
-func (m *Relation_ColumnInfo) GetColumnType() proto3.DataType {
-	if m != nil {
-		return m.ColumnType
-	}
-	return proto3.DATA_TYPE_UNKNOWN
-}
-
-type Table struct {
-	Relation *Relation       `protobuf:"bytes,4,opt,name=relation,proto3" json:"relation,omitempty"`
-	Data     []*RowBatchData `protobuf:"bytes,5,rep,name=data,proto3" json:"data,omitempty"`
-}
-
-func (m *Table) Reset()      { *m = Table{} }
-func (*Table) ProtoMessage() {}
-func (*Table) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{23}
-}
-func (m *Table) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Table) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Table.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *Table) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Table.Merge(dst, src)
-}
-func (m *Table) XXX_Size() int {
-	return m.Size()
-}
-func (m *Table) XXX_DiscardUnknown() {
-	xxx_messageInfo_Table.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Table proto.InternalMessageInfo
-
-func (m *Table) GetRelation() *Relation {
-	if m != nil {
-		return m.Relation
-	}
-	return nil
-}
-
-func (m *Table) GetData() []*RowBatchData {
-	if m != nil {
-		return m.Data
-	}
-	return nil
-}
-
-type QueryTimingInfo struct {
-	ExecutionTimeNs   int64 `protobuf:"varint,1,opt,name=execution_time_ns,json=executionTimeNs,proto3" json:"execution_time_ns,omitempty"`
-	CompilationTimeNs int64 `protobuf:"varint,2,opt,name=compilation_time_ns,json=compilationTimeNs,proto3" json:"compilation_time_ns,omitempty"`
-}
-
-func (m *QueryTimingInfo) Reset()      { *m = QueryTimingInfo{} }
-func (*QueryTimingInfo) ProtoMessage() {}
-func (*QueryTimingInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{24}
-}
-func (m *QueryTimingInfo) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryTimingInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryTimingInfo.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *QueryTimingInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryTimingInfo.Merge(dst, src)
-}
-func (m *QueryTimingInfo) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryTimingInfo) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryTimingInfo.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryTimingInfo proto.InternalMessageInfo
-
-func (m *QueryTimingInfo) GetExecutionTimeNs() int64 {
-	if m != nil {
-		return m.ExecutionTimeNs
-	}
-	return 0
-}
-
-func (m *QueryTimingInfo) GetCompilationTimeNs() int64 {
-	if m != nil {
-		return m.CompilationTimeNs
-	}
-	return 0
-}
-
-type QueryExecutionStats struct {
-	Timing           *QueryTimingInfo `protobuf:"bytes,1,opt,name=timing,proto3" json:"timing,omitempty"`
-	BytesProcessed   int64            `protobuf:"varint,2,opt,name=bytes_processed,json=bytesProcessed,proto3" json:"bytes_processed,omitempty"`
-	RecordsProcessed int64            `protobuf:"varint,3,opt,name=records_processed,json=recordsProcessed,proto3" json:"records_processed,omitempty"`
-}
-
-func (m *QueryExecutionStats) Reset()      { *m = QueryExecutionStats{} }
-func (*QueryExecutionStats) ProtoMessage() {}
-func (*QueryExecutionStats) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{25}
-}
-func (m *QueryExecutionStats) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *QueryExecutionStats) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_QueryExecutionStats.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (dst *QueryExecutionStats) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_QueryExecutionStats.Merge(dst, src)
-}
-func (m *QueryExecutionStats) XXX_Size() int {
-	return m.Size()
-}
-func (m *QueryExecutionStats) XXX_DiscardUnknown() {
-	xxx_messageInfo_QueryExecutionStats.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_QueryExecutionStats proto.InternalMessageInfo
-
-func (m *QueryExecutionStats) GetTiming() *QueryTimingInfo {
-	if m != nil {
-		return m.Timing
-	}
-	return nil
-}
-
-func (m *QueryExecutionStats) GetBytesProcessed() int64 {
-	if m != nil {
-		return m.BytesProcessed
-	}
-	return 0
-}
-
-func (m *QueryExecutionStats) GetRecordsProcessed() int64 {
-	if m != nil {
-		return m.RecordsProcessed
-	}
-	return 0
-}
-
 type AgentQueryResponse struct {
-	Status  *proto2.Status       `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
-	QueryID *proto1.UUID         `protobuf:"bytes,2,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
-	Stats   *QueryExecutionStats `protobuf:"bytes,3,opt,name=stats,proto3" json:"stats,omitempty"`
-	Tables  []*Table             `protobuf:"bytes,4,rep,name=tables,proto3" json:"tables,omitempty"`
+	Status      *proto3.Status      `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	QueryID     *proto2.UUID        `protobuf:"bytes,2,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
+	QueryResult *proto4.QueryResult `protobuf:"bytes,3,opt,name=query_result,json=queryResult,proto3" json:"query_result,omitempty"`
 }
 
 func (m *AgentQueryResponse) Reset()      { *m = AgentQueryResponse{} }
 func (*AgentQueryResponse) ProtoMessage() {}
 func (*AgentQueryResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{26}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{15}
 }
 func (m *AgentQueryResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1874,30 +1097,23 @@ func (m *AgentQueryResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_AgentQueryResponse proto.InternalMessageInfo
 
-func (m *AgentQueryResponse) GetStatus() *proto2.Status {
+func (m *AgentQueryResponse) GetStatus() *proto3.Status {
 	if m != nil {
 		return m.Status
 	}
 	return nil
 }
 
-func (m *AgentQueryResponse) GetQueryID() *proto1.UUID {
+func (m *AgentQueryResponse) GetQueryID() *proto2.UUID {
 	if m != nil {
 		return m.QueryID
 	}
 	return nil
 }
 
-func (m *AgentQueryResponse) GetStats() *QueryExecutionStats {
+func (m *AgentQueryResponse) GetQueryResult() *proto4.QueryResult {
 	if m != nil {
-		return m.Stats
-	}
-	return nil
-}
-
-func (m *AgentQueryResponse) GetTables() []*Table {
-	if m != nil {
-		return m.Tables
+		return m.QueryResult
 	}
 	return nil
 }
@@ -1909,7 +1125,7 @@ type VizierQueryResponse struct {
 func (m *VizierQueryResponse) Reset()      { *m = VizierQueryResponse{} }
 func (*VizierQueryResponse) ProtoMessage() {}
 func (*VizierQueryResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{27}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{16}
 }
 func (m *VizierQueryResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1946,14 +1162,14 @@ func (m *VizierQueryResponse) GetResponses() []*VizierQueryResponse_ResponseByAg
 }
 
 type VizierQueryResponse_ResponseByAgent struct {
-	AgentID  *proto1.UUID        `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	AgentID  *proto2.UUID        `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 	Response *AgentQueryResponse `protobuf:"bytes,2,opt,name=response,proto3" json:"response,omitempty"`
 }
 
 func (m *VizierQueryResponse_ResponseByAgent) Reset()      { *m = VizierQueryResponse_ResponseByAgent{} }
 func (*VizierQueryResponse_ResponseByAgent) ProtoMessage() {}
 func (*VizierQueryResponse_ResponseByAgent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_0c077cd7745dec65, []int{27, 0}
+	return fileDescriptor_service_995f7c4ce31b7db8, []int{16, 0}
 }
 func (m *VizierQueryResponse_ResponseByAgent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1982,7 +1198,7 @@ func (m *VizierQueryResponse_ResponseByAgent) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_VizierQueryResponse_ResponseByAgent proto.InternalMessageInfo
 
-func (m *VizierQueryResponse_ResponseByAgent) GetAgentID() *proto1.UUID {
+func (m *VizierQueryResponse_ResponseByAgent) GetAgentID() *proto2.UUID {
 	if m != nil {
 		return m.AgentID
 	}
@@ -2013,18 +1229,6 @@ func init() {
 	proto.RegisterType((*RegisterAgentRequest)(nil), "pl.vizier.RegisterAgentRequest")
 	proto.RegisterType((*RegisterAgentResponse)(nil), "pl.vizier.RegisterAgentResponse")
 	proto.RegisterType((*QueryRequest)(nil), "pl.vizier.QueryRequest")
-	proto.RegisterType((*BooleanColumn)(nil), "pl.vizier.BooleanColumn")
-	proto.RegisterType((*Int64Column)(nil), "pl.vizier.Int64Column")
-	proto.RegisterType((*Float64Column)(nil), "pl.vizier.Float64Column")
-	proto.RegisterType((*Time64NSColumn)(nil), "pl.vizier.Time64NSColumn")
-	proto.RegisterType((*StringColumn)(nil), "pl.vizier.StringColumn")
-	proto.RegisterType((*Column)(nil), "pl.vizier.Column")
-	proto.RegisterType((*RowBatchData)(nil), "pl.vizier.RowBatchData")
-	proto.RegisterType((*Relation)(nil), "pl.vizier.Relation")
-	proto.RegisterType((*Relation_ColumnInfo)(nil), "pl.vizier.Relation.ColumnInfo")
-	proto.RegisterType((*Table)(nil), "pl.vizier.Table")
-	proto.RegisterType((*QueryTimingInfo)(nil), "pl.vizier.QueryTimingInfo")
-	proto.RegisterType((*QueryExecutionStats)(nil), "pl.vizier.QueryExecutionStats")
 	proto.RegisterType((*AgentQueryResponse)(nil), "pl.vizier.AgentQueryResponse")
 	proto.RegisterType((*VizierQueryResponse)(nil), "pl.vizier.VizierQueryResponse")
 	proto.RegisterType((*VizierQueryResponse_ResponseByAgent)(nil), "pl.vizier.VizierQueryResponse.ResponseByAgent")
@@ -2604,481 +1808,6 @@ func (this *QueryRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *BooleanColumn) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*BooleanColumn)
-	if !ok {
-		that2, ok := that.(BooleanColumn)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if len(this.Data) != len(that1.Data) {
-		return false
-	}
-	for i := range this.Data {
-		if this.Data[i] != that1.Data[i] {
-			return false
-		}
-	}
-	return true
-}
-func (this *Int64Column) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Int64Column)
-	if !ok {
-		that2, ok := that.(Int64Column)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if len(this.Data) != len(that1.Data) {
-		return false
-	}
-	for i := range this.Data {
-		if this.Data[i] != that1.Data[i] {
-			return false
-		}
-	}
-	return true
-}
-func (this *Float64Column) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Float64Column)
-	if !ok {
-		that2, ok := that.(Float64Column)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if len(this.Data) != len(that1.Data) {
-		return false
-	}
-	for i := range this.Data {
-		if this.Data[i] != that1.Data[i] {
-			return false
-		}
-	}
-	return true
-}
-func (this *Time64NSColumn) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Time64NSColumn)
-	if !ok {
-		that2, ok := that.(Time64NSColumn)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if len(this.Data) != len(that1.Data) {
-		return false
-	}
-	for i := range this.Data {
-		if this.Data[i] != that1.Data[i] {
-			return false
-		}
-	}
-	return true
-}
-func (this *StringColumn) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*StringColumn)
-	if !ok {
-		that2, ok := that.(StringColumn)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if len(this.Data) != len(that1.Data) {
-		return false
-	}
-	for i := range this.Data {
-		if this.Data[i] != that1.Data[i] {
-			return false
-		}
-	}
-	return true
-}
-func (this *Column) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Column)
-	if !ok {
-		that2, ok := that.(Column)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if that1.ColData == nil {
-		if this.ColData != nil {
-			return false
-		}
-	} else if this.ColData == nil {
-		return false
-	} else if !this.ColData.Equal(that1.ColData) {
-		return false
-	}
-	return true
-}
-func (this *Column_BooleanData) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Column_BooleanData)
-	if !ok {
-		that2, ok := that.(Column_BooleanData)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.BooleanData.Equal(that1.BooleanData) {
-		return false
-	}
-	return true
-}
-func (this *Column_Int64Data) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Column_Int64Data)
-	if !ok {
-		that2, ok := that.(Column_Int64Data)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.Int64Data.Equal(that1.Int64Data) {
-		return false
-	}
-	return true
-}
-func (this *Column_Time64NsData) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Column_Time64NsData)
-	if !ok {
-		that2, ok := that.(Column_Time64NsData)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.Time64NsData.Equal(that1.Time64NsData) {
-		return false
-	}
-	return true
-}
-func (this *Column_Float64Data) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Column_Float64Data)
-	if !ok {
-		that2, ok := that.(Column_Float64Data)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.Float64Data.Equal(that1.Float64Data) {
-		return false
-	}
-	return true
-}
-func (this *Column_StringData) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Column_StringData)
-	if !ok {
-		that2, ok := that.(Column_StringData)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.StringData.Equal(that1.StringData) {
-		return false
-	}
-	return true
-}
-func (this *RowBatchData) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*RowBatchData)
-	if !ok {
-		that2, ok := that.(RowBatchData)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !bytes.Equal(this.Data, that1.Data) {
-		return false
-	}
-	if len(this.Cols) != len(that1.Cols) {
-		return false
-	}
-	for i := range this.Cols {
-		if !this.Cols[i].Equal(that1.Cols[i]) {
-			return false
-		}
-	}
-	return true
-}
-func (this *Relation) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Relation)
-	if !ok {
-		that2, ok := that.(Relation)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Name != that1.Name {
-		return false
-	}
-	if len(this.Columns) != len(that1.Columns) {
-		return false
-	}
-	for i := range this.Columns {
-		if !this.Columns[i].Equal(that1.Columns[i]) {
-			return false
-		}
-	}
-	return true
-}
-func (this *Relation_ColumnInfo) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Relation_ColumnInfo)
-	if !ok {
-		that2, ok := that.(Relation_ColumnInfo)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.ColumnName != that1.ColumnName {
-		return false
-	}
-	if this.ColumnType != that1.ColumnType {
-		return false
-	}
-	return true
-}
-func (this *Table) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Table)
-	if !ok {
-		that2, ok := that.(Table)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.Relation.Equal(that1.Relation) {
-		return false
-	}
-	if len(this.Data) != len(that1.Data) {
-		return false
-	}
-	for i := range this.Data {
-		if !this.Data[i].Equal(that1.Data[i]) {
-			return false
-		}
-	}
-	return true
-}
-func (this *QueryTimingInfo) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*QueryTimingInfo)
-	if !ok {
-		that2, ok := that.(QueryTimingInfo)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.ExecutionTimeNs != that1.ExecutionTimeNs {
-		return false
-	}
-	if this.CompilationTimeNs != that1.CompilationTimeNs {
-		return false
-	}
-	return true
-}
-func (this *QueryExecutionStats) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*QueryExecutionStats)
-	if !ok {
-		that2, ok := that.(QueryExecutionStats)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.Timing.Equal(that1.Timing) {
-		return false
-	}
-	if this.BytesProcessed != that1.BytesProcessed {
-		return false
-	}
-	if this.RecordsProcessed != that1.RecordsProcessed {
-		return false
-	}
-	return true
-}
 func (this *AgentQueryResponse) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -3104,16 +1833,8 @@ func (this *AgentQueryResponse) Equal(that interface{}) bool {
 	if !this.QueryID.Equal(that1.QueryID) {
 		return false
 	}
-	if !this.Stats.Equal(that1.Stats) {
+	if !this.QueryResult.Equal(that1.QueryResult) {
 		return false
-	}
-	if len(this.Tables) != len(that1.Tables) {
-		return false
-	}
-	for i := range this.Tables {
-		if !this.Tables[i].Equal(that1.Tables[i]) {
-			return false
-		}
 	}
 	return true
 }
@@ -3413,190 +2134,11 @@ func (this *QueryRequest) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *BooleanColumn) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 5)
-	s = append(s, "&service.BooleanColumn{")
-	s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Int64Column) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 5)
-	s = append(s, "&service.Int64Column{")
-	s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Float64Column) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 5)
-	s = append(s, "&service.Float64Column{")
-	s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Time64NSColumn) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 5)
-	s = append(s, "&service.Time64NSColumn{")
-	s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *StringColumn) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 5)
-	s = append(s, "&service.StringColumn{")
-	s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Column) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 9)
-	s = append(s, "&service.Column{")
-	if this.ColData != nil {
-		s = append(s, "ColData: "+fmt.Sprintf("%#v", this.ColData)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Column_BooleanData) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&service.Column_BooleanData{` +
-		`BooleanData:` + fmt.Sprintf("%#v", this.BooleanData) + `}`}, ", ")
-	return s
-}
-func (this *Column_Int64Data) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&service.Column_Int64Data{` +
-		`Int64Data:` + fmt.Sprintf("%#v", this.Int64Data) + `}`}, ", ")
-	return s
-}
-func (this *Column_Time64NsData) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&service.Column_Time64NsData{` +
-		`Time64NsData:` + fmt.Sprintf("%#v", this.Time64NsData) + `}`}, ", ")
-	return s
-}
-func (this *Column_Float64Data) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&service.Column_Float64Data{` +
-		`Float64Data:` + fmt.Sprintf("%#v", this.Float64Data) + `}`}, ", ")
-	return s
-}
-func (this *Column_StringData) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&service.Column_StringData{` +
-		`StringData:` + fmt.Sprintf("%#v", this.StringData) + `}`}, ", ")
-	return s
-}
-func (this *RowBatchData) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&service.RowBatchData{")
-	s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
-	if this.Cols != nil {
-		s = append(s, "Cols: "+fmt.Sprintf("%#v", this.Cols)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Relation) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&service.Relation{")
-	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
-	if this.Columns != nil {
-		s = append(s, "Columns: "+fmt.Sprintf("%#v", this.Columns)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Relation_ColumnInfo) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&service.Relation_ColumnInfo{")
-	s = append(s, "ColumnName: "+fmt.Sprintf("%#v", this.ColumnName)+",\n")
-	s = append(s, "ColumnType: "+fmt.Sprintf("%#v", this.ColumnType)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Table) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&service.Table{")
-	if this.Relation != nil {
-		s = append(s, "Relation: "+fmt.Sprintf("%#v", this.Relation)+",\n")
-	}
-	if this.Data != nil {
-		s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *QueryTimingInfo) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&service.QueryTimingInfo{")
-	s = append(s, "ExecutionTimeNs: "+fmt.Sprintf("%#v", this.ExecutionTimeNs)+",\n")
-	s = append(s, "CompilationTimeNs: "+fmt.Sprintf("%#v", this.CompilationTimeNs)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *QueryExecutionStats) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 7)
-	s = append(s, "&service.QueryExecutionStats{")
-	if this.Timing != nil {
-		s = append(s, "Timing: "+fmt.Sprintf("%#v", this.Timing)+",\n")
-	}
-	s = append(s, "BytesProcessed: "+fmt.Sprintf("%#v", this.BytesProcessed)+",\n")
-	s = append(s, "RecordsProcessed: "+fmt.Sprintf("%#v", this.RecordsProcessed)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
 func (this *AgentQueryResponse) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 8)
+	s := make([]string, 0, 7)
 	s = append(s, "&service.AgentQueryResponse{")
 	if this.Status != nil {
 		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
@@ -3604,11 +2146,8 @@ func (this *AgentQueryResponse) GoString() string {
 	if this.QueryID != nil {
 		s = append(s, "QueryID: "+fmt.Sprintf("%#v", this.QueryID)+",\n")
 	}
-	if this.Stats != nil {
-		s = append(s, "Stats: "+fmt.Sprintf("%#v", this.Stats)+",\n")
-	}
-	if this.Tables != nil {
-		s = append(s, "Tables: "+fmt.Sprintf("%#v", this.Tables)+",\n")
+	if this.QueryResult != nil {
+		s = append(s, "QueryResult: "+fmt.Sprintf("%#v", this.QueryResult)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -4397,472 +2936,6 @@ func (m *QueryRequest) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
-func (m *BooleanColumn) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *BooleanColumn) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Data) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Data)))
-		for _, b := range m.Data {
-			if b {
-				dAtA[i] = 1
-			} else {
-				dAtA[i] = 0
-			}
-			i++
-		}
-	}
-	return i, nil
-}
-
-func (m *Int64Column) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Int64Column) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Data) > 0 {
-		dAtA19 := make([]byte, len(m.Data)*10)
-		var j18 int
-		for _, num1 := range m.Data {
-			num := uint64(num1)
-			for num >= 1<<7 {
-				dAtA19[j18] = uint8(uint64(num)&0x7f | 0x80)
-				num >>= 7
-				j18++
-			}
-			dAtA19[j18] = uint8(num)
-			j18++
-		}
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(j18))
-		i += copy(dAtA[i:], dAtA19[:j18])
-	}
-	return i, nil
-}
-
-func (m *Float64Column) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Float64Column) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Data) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Data)*8))
-		for _, num := range m.Data {
-			f20 := math.Float64bits(float64(num))
-			encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(f20))
-			i += 8
-		}
-	}
-	return i, nil
-}
-
-func (m *Time64NSColumn) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Time64NSColumn) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Data) > 0 {
-		dAtA22 := make([]byte, len(m.Data)*10)
-		var j21 int
-		for _, num1 := range m.Data {
-			num := uint64(num1)
-			for num >= 1<<7 {
-				dAtA22[j21] = uint8(uint64(num)&0x7f | 0x80)
-				num >>= 7
-				j21++
-			}
-			dAtA22[j21] = uint8(num)
-			j21++
-		}
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(j21))
-		i += copy(dAtA[i:], dAtA22[:j21])
-	}
-	return i, nil
-}
-
-func (m *StringColumn) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *StringColumn) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Data) > 0 {
-		for _, s := range m.Data {
-			dAtA[i] = 0xa
-			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
-		}
-	}
-	return i, nil
-}
-
-func (m *Column) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Column) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.ColData != nil {
-		nn23, err := m.ColData.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += nn23
-	}
-	return i, nil
-}
-
-func (m *Column_BooleanData) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
-	if m.BooleanData != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.BooleanData.Size()))
-		n24, err := m.BooleanData.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n24
-	}
-	return i, nil
-}
-func (m *Column_Int64Data) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
-	if m.Int64Data != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.Int64Data.Size()))
-		n25, err := m.Int64Data.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n25
-	}
-	return i, nil
-}
-func (m *Column_Time64NsData) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
-	if m.Time64NsData != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.Time64NsData.Size()))
-		n26, err := m.Time64NsData.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n26
-	}
-	return i, nil
-}
-func (m *Column_Float64Data) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
-	if m.Float64Data != nil {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.Float64Data.Size()))
-		n27, err := m.Float64Data.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n27
-	}
-	return i, nil
-}
-func (m *Column_StringData) MarshalTo(dAtA []byte) (int, error) {
-	i := 0
-	if m.StringData != nil {
-		dAtA[i] = 0x2a
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.StringData.Size()))
-		n28, err := m.StringData.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n28
-	}
-	return i, nil
-}
-func (m *RowBatchData) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *RowBatchData) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Data) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Data)))
-		i += copy(dAtA[i:], m.Data)
-	}
-	if len(m.Cols) > 0 {
-		for _, msg := range m.Cols {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	return i, nil
-}
-
-func (m *Relation) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Relation) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.Name) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.Name)))
-		i += copy(dAtA[i:], m.Name)
-	}
-	if len(m.Columns) > 0 {
-		for _, msg := range m.Columns {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	return i, nil
-}
-
-func (m *Relation_ColumnInfo) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Relation_ColumnInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if len(m.ColumnName) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(len(m.ColumnName)))
-		i += copy(dAtA[i:], m.ColumnName)
-	}
-	if m.ColumnType != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.ColumnType))
-	}
-	return i, nil
-}
-
-func (m *Table) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Table) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Relation != nil {
-		dAtA[i] = 0x22
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.Relation.Size()))
-		n29, err := m.Relation.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n29
-	}
-	if len(m.Data) > 0 {
-		for _, msg := range m.Data {
-			dAtA[i] = 0x2a
-			i++
-			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
-	}
-	return i, nil
-}
-
-func (m *QueryTimingInfo) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryTimingInfo) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.ExecutionTimeNs != 0 {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.ExecutionTimeNs))
-	}
-	if m.CompilationTimeNs != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.CompilationTimeNs))
-	}
-	return i, nil
-}
-
-func (m *QueryExecutionStats) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *QueryExecutionStats) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Timing != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.Timing.Size()))
-		n30, err := m.Timing.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n30
-	}
-	if m.BytesProcessed != 0 {
-		dAtA[i] = 0x10
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.BytesProcessed))
-	}
-	if m.RecordsProcessed != 0 {
-		dAtA[i] = 0x18
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.RecordsProcessed))
-	}
-	return i, nil
-}
-
 func (m *AgentQueryResponse) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -4882,43 +2955,31 @@ func (m *AgentQueryResponse) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.Status.Size()))
-		n31, err := m.Status.MarshalTo(dAtA[i:])
+		n18, err := m.Status.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n31
+		i += n18
 	}
 	if m.QueryID != nil {
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.QueryID.Size()))
-		n32, err := m.QueryID.MarshalTo(dAtA[i:])
+		n19, err := m.QueryID.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n32
+		i += n19
 	}
-	if m.Stats != nil {
+	if m.QueryResult != nil {
 		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintService(dAtA, i, uint64(m.Stats.Size()))
-		n33, err := m.Stats.MarshalTo(dAtA[i:])
+		i = encodeVarintService(dAtA, i, uint64(m.QueryResult.Size()))
+		n20, err := m.QueryResult.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n33
-	}
-	if len(m.Tables) > 0 {
-		for _, msg := range m.Tables {
-			dAtA[i] = 0x22
-			i++
-			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
-		}
+		i += n20
 	}
 	return i, nil
 }
@@ -4972,21 +3033,21 @@ func (m *VizierQueryResponse_ResponseByAgent) MarshalTo(dAtA []byte) (int, error
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.AgentID.Size()))
-		n34, err := m.AgentID.MarshalTo(dAtA[i:])
+		n21, err := m.AgentID.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n34
+		i += n21
 	}
 	if m.Response != nil {
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.Response.Size()))
-		n35, err := m.Response.MarshalTo(dAtA[i:])
+		n22, err := m.Response.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n35
+		i += n22
 	}
 	return i, nil
 }
@@ -5296,256 +3357,6 @@ func (m *QueryRequest) Size() (n int) {
 	return n
 }
 
-func (m *BooleanColumn) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Data) > 0 {
-		n += 1 + sovService(uint64(len(m.Data))) + len(m.Data)*1
-	}
-	return n
-}
-
-func (m *Int64Column) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Data) > 0 {
-		l = 0
-		for _, e := range m.Data {
-			l += sovService(uint64(e))
-		}
-		n += 1 + sovService(uint64(l)) + l
-	}
-	return n
-}
-
-func (m *Float64Column) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Data) > 0 {
-		n += 1 + sovService(uint64(len(m.Data)*8)) + len(m.Data)*8
-	}
-	return n
-}
-
-func (m *Time64NSColumn) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Data) > 0 {
-		l = 0
-		for _, e := range m.Data {
-			l += sovService(uint64(e))
-		}
-		n += 1 + sovService(uint64(l)) + l
-	}
-	return n
-}
-
-func (m *StringColumn) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if len(m.Data) > 0 {
-		for _, s := range m.Data {
-			l = len(s)
-			n += 1 + l + sovService(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *Column) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ColData != nil {
-		n += m.ColData.Size()
-	}
-	return n
-}
-
-func (m *Column_BooleanData) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.BooleanData != nil {
-		l = m.BooleanData.Size()
-		n += 1 + l + sovService(uint64(l))
-	}
-	return n
-}
-func (m *Column_Int64Data) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Int64Data != nil {
-		l = m.Int64Data.Size()
-		n += 1 + l + sovService(uint64(l))
-	}
-	return n
-}
-func (m *Column_Time64NsData) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Time64NsData != nil {
-		l = m.Time64NsData.Size()
-		n += 1 + l + sovService(uint64(l))
-	}
-	return n
-}
-func (m *Column_Float64Data) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Float64Data != nil {
-		l = m.Float64Data.Size()
-		n += 1 + l + sovService(uint64(l))
-	}
-	return n
-}
-func (m *Column_StringData) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.StringData != nil {
-		l = m.StringData.Size()
-		n += 1 + l + sovService(uint64(l))
-	}
-	return n
-}
-func (m *RowBatchData) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Data)
-	if l > 0 {
-		n += 1 + l + sovService(uint64(l))
-	}
-	if len(m.Cols) > 0 {
-		for _, e := range m.Cols {
-			l = e.Size()
-			n += 1 + l + sovService(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *Relation) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Name)
-	if l > 0 {
-		n += 1 + l + sovService(uint64(l))
-	}
-	if len(m.Columns) > 0 {
-		for _, e := range m.Columns {
-			l = e.Size()
-			n += 1 + l + sovService(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *Relation_ColumnInfo) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.ColumnName)
-	if l > 0 {
-		n += 1 + l + sovService(uint64(l))
-	}
-	if m.ColumnType != 0 {
-		n += 1 + sovService(uint64(m.ColumnType))
-	}
-	return n
-}
-
-func (m *Table) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Relation != nil {
-		l = m.Relation.Size()
-		n += 1 + l + sovService(uint64(l))
-	}
-	if len(m.Data) > 0 {
-		for _, e := range m.Data {
-			l = e.Size()
-			n += 1 + l + sovService(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *QueryTimingInfo) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ExecutionTimeNs != 0 {
-		n += 1 + sovService(uint64(m.ExecutionTimeNs))
-	}
-	if m.CompilationTimeNs != 0 {
-		n += 1 + sovService(uint64(m.CompilationTimeNs))
-	}
-	return n
-}
-
-func (m *QueryExecutionStats) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Timing != nil {
-		l = m.Timing.Size()
-		n += 1 + l + sovService(uint64(l))
-	}
-	if m.BytesProcessed != 0 {
-		n += 1 + sovService(uint64(m.BytesProcessed))
-	}
-	if m.RecordsProcessed != 0 {
-		n += 1 + sovService(uint64(m.RecordsProcessed))
-	}
-	return n
-}
-
 func (m *AgentQueryResponse) Size() (n int) {
 	if m == nil {
 		return 0
@@ -5560,15 +3371,9 @@ func (m *AgentQueryResponse) Size() (n int) {
 		l = m.QueryID.Size()
 		n += 1 + l + sovService(uint64(l))
 	}
-	if m.Stats != nil {
-		l = m.Stats.Size()
+	if m.QueryResult != nil {
+		l = m.QueryResult.Size()
 		n += 1 + l + sovService(uint64(l))
-	}
-	if len(m.Tables) > 0 {
-		for _, e := range m.Tables {
-			l = e.Size()
-			n += 1 + l + sovService(uint64(l))
-		}
 	}
 	return n
 }
@@ -5623,7 +3428,7 @@ func (this *Schema) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&Schema{`,
-		`Relations:` + strings.Replace(fmt.Sprintf("%v", this.Relations), "Relation", "Relation", 1) + `,`,
+		`Relations:` + strings.Replace(fmt.Sprintf("%v", this.Relations), "Relation", "proto1.Relation", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5652,7 +3457,7 @@ func (this *SchemaResponse_SchemaByAgent) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&SchemaResponse_SchemaByAgent{`,
-		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
+		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto2.UUID", 1) + `,`,
 		`Schema:` + strings.Replace(fmt.Sprintf("%v", this.Schema), "Schema", "Schema", 1) + `,`,
 		`}`,
 	}, "")
@@ -5694,7 +3499,7 @@ func (this *AgentInfo) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&AgentInfo{`,
-		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
+		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto2.UUID", 1) + `,`,
 		`HostInfo:` + strings.Replace(fmt.Sprintf("%v", this.HostInfo), "HostInfo", "HostInfo", 1) + `,`,
 		`}`,
 	}, "")
@@ -5815,7 +3620,7 @@ func (this *RegisterAgentRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&RegisterAgentRequest{`,
-		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
+		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto2.UUID", 1) + `,`,
 		`AgentInfo:` + strings.Replace(fmt.Sprintf("%v", this.AgentInfo), "AgentInfo", "AgentInfo", 1) + `,`,
 		`}`,
 	}, "")
@@ -5826,7 +3631,7 @@ func (this *RegisterAgentResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&RegisterAgentResponse{`,
-		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto2.Status", 1) + `,`,
+		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto3.Status", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5836,185 +3641,8 @@ func (this *QueryRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&QueryRequest{`,
-		`QueryID:` + strings.Replace(fmt.Sprintf("%v", this.QueryID), "UUID", "proto1.UUID", 1) + `,`,
+		`QueryID:` + strings.Replace(fmt.Sprintf("%v", this.QueryID), "UUID", "proto2.UUID", 1) + `,`,
 		`QueryStr:` + fmt.Sprintf("%v", this.QueryStr) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *BooleanColumn) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&BooleanColumn{`,
-		`Data:` + fmt.Sprintf("%v", this.Data) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Int64Column) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Int64Column{`,
-		`Data:` + fmt.Sprintf("%v", this.Data) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Float64Column) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Float64Column{`,
-		`Data:` + fmt.Sprintf("%v", this.Data) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Time64NSColumn) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Time64NSColumn{`,
-		`Data:` + fmt.Sprintf("%v", this.Data) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *StringColumn) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&StringColumn{`,
-		`Data:` + fmt.Sprintf("%v", this.Data) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Column) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Column{`,
-		`ColData:` + fmt.Sprintf("%v", this.ColData) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Column_BooleanData) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Column_BooleanData{`,
-		`BooleanData:` + strings.Replace(fmt.Sprintf("%v", this.BooleanData), "BooleanColumn", "BooleanColumn", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Column_Int64Data) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Column_Int64Data{`,
-		`Int64Data:` + strings.Replace(fmt.Sprintf("%v", this.Int64Data), "Int64Column", "Int64Column", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Column_Time64NsData) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Column_Time64NsData{`,
-		`Time64NsData:` + strings.Replace(fmt.Sprintf("%v", this.Time64NsData), "Time64NSColumn", "Time64NSColumn", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Column_Float64Data) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Column_Float64Data{`,
-		`Float64Data:` + strings.Replace(fmt.Sprintf("%v", this.Float64Data), "Float64Column", "Float64Column", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Column_StringData) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Column_StringData{`,
-		`StringData:` + strings.Replace(fmt.Sprintf("%v", this.StringData), "StringColumn", "StringColumn", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *RowBatchData) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&RowBatchData{`,
-		`Data:` + fmt.Sprintf("%v", this.Data) + `,`,
-		`Cols:` + strings.Replace(fmt.Sprintf("%v", this.Cols), "Column", "Column", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Relation) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Relation{`,
-		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`Columns:` + strings.Replace(fmt.Sprintf("%v", this.Columns), "Relation_ColumnInfo", "Relation_ColumnInfo", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Relation_ColumnInfo) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Relation_ColumnInfo{`,
-		`ColumnName:` + fmt.Sprintf("%v", this.ColumnName) + `,`,
-		`ColumnType:` + fmt.Sprintf("%v", this.ColumnType) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Table) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Table{`,
-		`Relation:` + strings.Replace(fmt.Sprintf("%v", this.Relation), "Relation", "Relation", 1) + `,`,
-		`Data:` + strings.Replace(fmt.Sprintf("%v", this.Data), "RowBatchData", "RowBatchData", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *QueryTimingInfo) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&QueryTimingInfo{`,
-		`ExecutionTimeNs:` + fmt.Sprintf("%v", this.ExecutionTimeNs) + `,`,
-		`CompilationTimeNs:` + fmt.Sprintf("%v", this.CompilationTimeNs) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *QueryExecutionStats) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&QueryExecutionStats{`,
-		`Timing:` + strings.Replace(fmt.Sprintf("%v", this.Timing), "QueryTimingInfo", "QueryTimingInfo", 1) + `,`,
-		`BytesProcessed:` + fmt.Sprintf("%v", this.BytesProcessed) + `,`,
-		`RecordsProcessed:` + fmt.Sprintf("%v", this.RecordsProcessed) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6024,10 +3652,9 @@ func (this *AgentQueryResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&AgentQueryResponse{`,
-		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto2.Status", 1) + `,`,
-		`QueryID:` + strings.Replace(fmt.Sprintf("%v", this.QueryID), "UUID", "proto1.UUID", 1) + `,`,
-		`Stats:` + strings.Replace(fmt.Sprintf("%v", this.Stats), "QueryExecutionStats", "QueryExecutionStats", 1) + `,`,
-		`Tables:` + strings.Replace(fmt.Sprintf("%v", this.Tables), "Table", "Table", 1) + `,`,
+		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto3.Status", 1) + `,`,
+		`QueryID:` + strings.Replace(fmt.Sprintf("%v", this.QueryID), "UUID", "proto2.UUID", 1) + `,`,
+		`QueryResult:` + strings.Replace(fmt.Sprintf("%v", this.QueryResult), "QueryResult", "proto4.QueryResult", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6047,7 +3674,7 @@ func (this *VizierQueryResponse_ResponseByAgent) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&VizierQueryResponse_ResponseByAgent{`,
-		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
+		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto2.UUID", 1) + `,`,
 		`Response:` + strings.Replace(fmt.Sprintf("%v", this.Response), "AgentQueryResponse", "AgentQueryResponse", 1) + `,`,
 		`}`,
 	}, "")
@@ -6116,7 +3743,7 @@ func (m *Schema) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Relations = append(m.Relations, &Relation{})
+			m.Relations = append(m.Relations, &proto1.Relation{})
 			if err := m.Relations[len(m.Relations)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -6329,7 +3956,7 @@ func (m *SchemaResponse_SchemaByAgent) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.AgentID == nil {
-				m.AgentID = &proto1.UUID{}
+				m.AgentID = &proto2.UUID{}
 			}
 			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -6697,7 +4324,7 @@ func (m *AgentInfo) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.AgentID == nil {
-				m.AgentID = &proto1.UUID{}
+				m.AgentID = &proto2.UUID{}
 			}
 			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -7322,7 +4949,7 @@ func (m *RegisterAgentRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.AgentID == nil {
-				m.AgentID = &proto1.UUID{}
+				m.AgentID = &proto2.UUID{}
 			}
 			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -7438,7 +5065,7 @@ func (m *RegisterAgentResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Status == nil {
-				m.Status = &proto2.Status{}
+				m.Status = &proto3.Status{}
 			}
 			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -7521,7 +5148,7 @@ func (m *QueryRequest) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.QueryID == nil {
-				m.QueryID = &proto1.UUID{}
+				m.QueryID = &proto2.UUID{}
 			}
 			if err := m.QueryID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -7556,1402 +5183,6 @@ func (m *QueryRequest) Unmarshal(dAtA []byte) error {
 			}
 			m.QueryStr = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *BooleanColumn) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: BooleanColumn: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: BooleanColumn: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType == 0 {
-				var v int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowService
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= (int(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.Data = append(m.Data, bool(v != 0))
-			} else if wireType == 2 {
-				var packedLen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowService
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if packedLen < 0 {
-					return ErrInvalidLengthService
-				}
-				postIndex := iNdEx + packedLen
-				if postIndex > l {
-					return io.ErrUnexpectedEOF
-				}
-				var elementCount int
-				elementCount = packedLen
-				if elementCount != 0 && len(m.Data) == 0 {
-					m.Data = make([]bool, 0, elementCount)
-				}
-				for iNdEx < postIndex {
-					var v int
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowService
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						v |= (int(b) & 0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					m.Data = append(m.Data, bool(v != 0))
-				}
-			} else {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Int64Column) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Int64Column: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Int64Column: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType == 0 {
-				var v int64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowService
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= (int64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.Data = append(m.Data, v)
-			} else if wireType == 2 {
-				var packedLen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowService
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if packedLen < 0 {
-					return ErrInvalidLengthService
-				}
-				postIndex := iNdEx + packedLen
-				if postIndex > l {
-					return io.ErrUnexpectedEOF
-				}
-				var elementCount int
-				var count int
-				for _, integer := range dAtA {
-					if integer < 128 {
-						count++
-					}
-				}
-				elementCount = count
-				if elementCount != 0 && len(m.Data) == 0 {
-					m.Data = make([]int64, 0, elementCount)
-				}
-				for iNdEx < postIndex {
-					var v int64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowService
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						v |= (int64(b) & 0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					m.Data = append(m.Data, v)
-				}
-			} else {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Float64Column) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Float64Column: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Float64Column: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType == 1 {
-				var v uint64
-				if (iNdEx + 8) > l {
-					return io.ErrUnexpectedEOF
-				}
-				v = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
-				iNdEx += 8
-				v2 := float64(math.Float64frombits(v))
-				m.Data = append(m.Data, v2)
-			} else if wireType == 2 {
-				var packedLen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowService
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if packedLen < 0 {
-					return ErrInvalidLengthService
-				}
-				postIndex := iNdEx + packedLen
-				if postIndex > l {
-					return io.ErrUnexpectedEOF
-				}
-				var elementCount int
-				elementCount = packedLen / 8
-				if elementCount != 0 && len(m.Data) == 0 {
-					m.Data = make([]float64, 0, elementCount)
-				}
-				for iNdEx < postIndex {
-					var v uint64
-					if (iNdEx + 8) > l {
-						return io.ErrUnexpectedEOF
-					}
-					v = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
-					iNdEx += 8
-					v2 := float64(math.Float64frombits(v))
-					m.Data = append(m.Data, v2)
-				}
-			} else {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Time64NSColumn) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Time64NSColumn: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Time64NSColumn: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType == 0 {
-				var v int64
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowService
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					v |= (int64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				m.Data = append(m.Data, v)
-			} else if wireType == 2 {
-				var packedLen int
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return ErrIntOverflowService
-					}
-					if iNdEx >= l {
-						return io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				if packedLen < 0 {
-					return ErrInvalidLengthService
-				}
-				postIndex := iNdEx + packedLen
-				if postIndex > l {
-					return io.ErrUnexpectedEOF
-				}
-				var elementCount int
-				var count int
-				for _, integer := range dAtA {
-					if integer < 128 {
-						count++
-					}
-				}
-				elementCount = count
-				if elementCount != 0 && len(m.Data) == 0 {
-					m.Data = make([]int64, 0, elementCount)
-				}
-				for iNdEx < postIndex {
-					var v int64
-					for shift := uint(0); ; shift += 7 {
-						if shift >= 64 {
-							return ErrIntOverflowService
-						}
-						if iNdEx >= l {
-							return io.ErrUnexpectedEOF
-						}
-						b := dAtA[iNdEx]
-						iNdEx++
-						v |= (int64(b) & 0x7F) << shift
-						if b < 0x80 {
-							break
-						}
-					}
-					m.Data = append(m.Data, v)
-				}
-			} else {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *StringColumn) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: StringColumn: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: StringColumn: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Data = append(m.Data, string(dAtA[iNdEx:postIndex]))
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Column) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Column: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Column: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BooleanData", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &BooleanColumn{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.ColData = &Column_BooleanData{v}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Int64Data", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &Int64Column{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.ColData = &Column_Int64Data{v}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Time64NsData", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &Time64NSColumn{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.ColData = &Column_Time64NsData{v}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Float64Data", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &Float64Column{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.ColData = &Column_Float64Data{v}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field StringData", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &StringColumn{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.ColData = &Column_StringData{v}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *RowBatchData) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: RowBatchData: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RowBatchData: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
-			if m.Data == nil {
-				m.Data = []byte{}
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Cols", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Cols = append(m.Cols, &Column{})
-			if err := m.Cols[len(m.Cols)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Relation) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Relation: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Relation: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Name = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Columns", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Columns = append(m.Columns, &Relation_ColumnInfo{})
-			if err := m.Columns[len(m.Columns)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Relation_ColumnInfo) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: ColumnInfo: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ColumnInfo: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ColumnName", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.ColumnName = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ColumnType", wireType)
-			}
-			m.ColumnType = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ColumnType |= (proto3.DataType(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Table) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Table: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Table: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Relation", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Relation == nil {
-				m.Relation = &Relation{}
-			}
-			if err := m.Relation.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Data = append(m.Data, &RowBatchData{})
-			if err := m.Data[len(m.Data)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryTimingInfo) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryTimingInfo: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryTimingInfo: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ExecutionTimeNs", wireType)
-			}
-			m.ExecutionTimeNs = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ExecutionTimeNs |= (int64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field CompilationTimeNs", wireType)
-			}
-			m.CompilationTimeNs = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.CompilationTimeNs |= (int64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipService(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthService
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *QueryExecutionStats) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowService
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: QueryExecutionStats: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: QueryExecutionStats: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Timing", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Timing == nil {
-				m.Timing = &QueryTimingInfo{}
-			}
-			if err := m.Timing.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field BytesProcessed", wireType)
-			}
-			m.BytesProcessed = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.BytesProcessed |= (int64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RecordsProcessed", wireType)
-			}
-			m.RecordsProcessed = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.RecordsProcessed |= (int64(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipService(dAtA[iNdEx:])
@@ -9029,7 +5260,7 @@ func (m *AgentQueryResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Status == nil {
-				m.Status = &proto2.Status{}
+				m.Status = &proto3.Status{}
 			}
 			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -9062,7 +5293,7 @@ func (m *AgentQueryResponse) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.QueryID == nil {
-				m.QueryID = &proto1.UUID{}
+				m.QueryID = &proto2.UUID{}
 			}
 			if err := m.QueryID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -9070,7 +5301,7 @@ func (m *AgentQueryResponse) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Stats", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field QueryResult", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -9094,41 +5325,10 @@ func (m *AgentQueryResponse) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.Stats == nil {
-				m.Stats = &QueryExecutionStats{}
+			if m.QueryResult == nil {
+				m.QueryResult = &proto4.QueryResult{}
 			}
-			if err := m.Stats.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Tables", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Tables = append(m.Tables, &Table{})
-			if err := m.Tables[len(m.Tables)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.QueryResult.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
@@ -9290,7 +5490,7 @@ func (m *VizierQueryResponse_ResponseByAgent) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.AgentID == nil {
-				m.AgentID = &proto1.UUID{}
+				m.AgentID = &proto2.UUID{}
 			}
 			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -9456,104 +5656,77 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("src/vizier/proto/service.proto", fileDescriptor_service_0c077cd7745dec65)
+	proto.RegisterFile("src/vizier/proto/service.proto", fileDescriptor_service_995f7c4ce31b7db8)
 }
 
-var fileDescriptor_service_0c077cd7745dec65 = []byte{
-	// 1518 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x57, 0x4f, 0x93, 0x13, 0x45,
-	0x14, 0x9f, 0xd9, 0xec, 0x86, 0xe4, 0xe5, 0xef, 0xf6, 0x82, 0x84, 0x80, 0xb3, 0xeb, 0xa0, 0xb2,
-	0xb2, 0x65, 0x82, 0xcb, 0x16, 0xa8, 0x14, 0xe2, 0x66, 0x37, 0x90, 0x14, 0x98, 0xc5, 0x49, 0xc0,
-	0xd2, 0xcb, 0xd4, 0x64, 0xd2, 0x9b, 0x4c, 0x91, 0xcc, 0x64, 0xa7, 0x27, 0xc8, 0x72, 0xf2, 0xa0,
-	0x77, 0xbe, 0x81, 0x57, 0x3f, 0x84, 0x27, 0x4f, 0x7a, 0xe3, 0x64, 0x51, 0x1e, 0x2c, 0x09, 0x17,
-	0x2d, 0x2f, 0x7c, 0x04, 0xab, 0xff, 0x4c, 0xd2, 0xc9, 0x0e, 0x58, 0xec, 0xad, 0xfb, 0xbd, 0xdf,
-	0x7b, 0xfd, 0x7e, 0xef, 0xbd, 0xee, 0x79, 0x03, 0x1a, 0xf1, 0xed, 0xf2, 0x43, 0xe7, 0xb1, 0x83,
-	0xfd, 0xf2, 0xd0, 0xf7, 0x02, 0xaf, 0x4c, 0xb0, 0xff, 0xd0, 0xb1, 0x71, 0x89, 0xed, 0x50, 0x72,
-	0xd8, 0x2f, 0x71, 0x75, 0xf1, 0xc3, 0xae, 0x13, 0xf4, 0x46, 0xed, 0x92, 0xed, 0x0d, 0xca, 0x5d,
-	0xaf, 0xeb, 0x71, 0x7c, 0x7b, 0xb4, 0xcf, 0x76, 0xdc, 0x98, 0xae, 0xb8, 0x65, 0x71, 0x8d, 0x7a,
-	0xb6, 0xbd, 0xc1, 0xc0, 0x73, 0xcb, 0xa3, 0x91, 0xd3, 0x11, 0xee, 0xe9, 0x52, 0x20, 0x74, 0x09,
-	0xd1, 0xb6, 0x08, 0x0e, 0x03, 0x08, 0xac, 0x60, 0x44, 0x64, 0x0c, 0xe9, 0x59, 0x3e, 0xee, 0x94,
-	0x83, 0xc3, 0x21, 0x26, 0x02, 0xc4, 0xd6, 0x1c, 0xa3, 0x5f, 0x83, 0x78, 0xd3, 0xee, 0xe1, 0x81,
-	0x85, 0x3e, 0x82, 0xa4, 0x8f, 0xfb, 0x56, 0xe0, 0x78, 0x2e, 0x29, 0xa8, 0x6b, 0xb1, 0xf5, 0xd4,
-	0xe6, 0x4a, 0x69, 0xc2, 0xa0, 0x64, 0x08, 0x9d, 0x31, 0x45, 0xe9, 0x39, 0xc8, 0x70, 0x63, 0x03,
-	0x1f, 0x8c, 0x30, 0x09, 0xf4, 0xdf, 0x55, 0xc8, 0x86, 0x12, 0x32, 0xf4, 0x5c, 0x82, 0xd1, 0x1e,
-	0xe4, 0x08, 0x93, 0x98, 0xed, 0x43, 0xd3, 0xea, 0x62, 0x37, 0x10, 0xce, 0x2f, 0x48, 0xce, 0x67,
-	0x6d, 0xc4, 0xb6, 0x72, 0xb8, 0x4d, 0xe1, 0x46, 0x86, 0xc8, 0xdb, 0x22, 0x09, 0x0f, 0x15, 0x02,
-	0x74, 0x15, 0x12, 0xcc, 0xaf, 0xe9, 0x74, 0x0a, 0xea, 0x9a, 0xba, 0x9e, 0xda, 0xcc, 0x51, 0xd7,
-	0x34, 0x59, 0xc3, 0x76, 0xe9, 0xde, 0xbd, 0xfa, 0x6e, 0x25, 0x35, 0xfe, 0x73, 0xf5, 0x04, 0x43,
-	0xd7, 0x77, 0x8d, 0x13, 0x0c, 0x5d, 0xef, 0xa0, 0x0f, 0x20, 0xce, 0x5d, 0x17, 0x16, 0x98, 0xd9,
-	0xf2, 0xd1, 0x88, 0x04, 0x40, 0x47, 0x90, 0xe7, 0xe6, 0xee, 0xbe, 0x17, 0x92, 0xbd, 0x01, 0xcb,
-	0x92, 0x4c, 0xd0, 0xbd, 0x08, 0x8b, 0x8e, 0xbb, 0xef, 0x09, 0x8e, 0x6f, 0x49, 0x1e, 0x19, 0xb6,
-	0xc9, 0xea, 0x63, 0x30, 0x8c, 0xfe, 0x44, 0x85, 0x94, 0x24, 0x45, 0xeb, 0x13, 0x5b, 0x1a, 0xcd,
-	0xc9, 0x79, 0x5b, 0x76, 0x0e, 0x43, 0xa0, 0x8b, 0xb0, 0xdc, 0xb7, 0x48, 0x60, 0xf6, 0xb0, 0xe5,
-	0x07, 0x6d, 0x6c, 0x05, 0xa6, 0x4b, 0x18, 0x89, 0x98, 0x91, 0xa3, 0x8a, 0x5a, 0x28, 0x6f, 0x10,
-	0xb4, 0x01, 0x4b, 0xb4, 0x2b, 0x70, 0x21, 0xb6, 0xa6, 0xae, 0x67, 0x37, 0x4f, 0x45, 0x85, 0x84,
-	0x0d, 0x8e, 0xd1, 0x1f, 0x42, 0x72, 0x72, 0xd6, 0xf1, 0x13, 0x7b, 0x09, 0x92, 0x3d, 0x8f, 0x04,
-	0x26, 0x63, 0xc3, 0x73, 0x2b, 0xb7, 0x52, 0xcd, 0x23, 0x9c, 0x4c, 0xa2, 0x27, 0x56, 0xfa, 0xfb,
-	0x90, 0x08, 0xa5, 0xa8, 0x08, 0x4c, 0xee, 0x5a, 0x03, 0xcc, 0x8e, 0x4d, 0x1a, 0x93, 0xbd, 0xfe,
-	0x8f, 0x0a, 0x27, 0xd9, 0x71, 0x2d, 0xef, 0x3e, 0x73, 0xf6, 0x05, 0x26, 0xc4, 0xea, 0x62, 0x74,
-	0x07, 0xf2, 0x3e, 0xee, 0x3a, 0x24, 0xc0, 0xbe, 0xe9, 0xf3, 0x02, 0x89, 0x98, 0x57, 0x67, 0x9a,
-	0x98, 0x43, 0x78, 0x63, 0x71, 0x58, 0x4d, 0x31, 0x72, 0xa1, 0xa9, 0x10, 0xa1, 0x9b, 0x90, 0x3d,
-	0x18, 0x61, 0xff, 0xd0, 0xf4, 0x45, 0x5d, 0x05, 0x8b, 0xb7, 0xe7, 0x93, 0xf7, 0x25, 0x45, 0x85,
-	0xc5, 0xaf, 0x29, 0x46, 0xe6, 0x40, 0x16, 0xa0, 0x2d, 0x48, 0x4e, 0x4a, 0xc4, 0xf2, 0x3f, 0x5b,
-	0x56, 0x56, 0xa6, 0x0a, 0xb6, 0x68, 0x0c, 0x53, 0x60, 0x65, 0x09, 0x62, 0x03, 0xd2, 0x65, 0x5c,
-	0x39, 0xc9, 0x96, 0xc7, 0x0e, 0x0b, 0xb9, 0xd6, 0x21, 0xcb, 0xeb, 0x32, 0x89, 0x8e, 0x33, 0x5d,
-	0x7b, 0x35, 0xd3, 0x69, 0x80, 0x96, 0x2c, 0x40, 0x9f, 0x41, 0x26, 0x24, 0xca, 0x73, 0xc6, 0x79,
-	0x9e, 0x96, 0x3c, 0x09, 0x8a, 0x61, 0xae, 0xd2, 0x07, 0xd2, 0x1e, 0xdd, 0x80, 0x2c, 0x8b, 0xdb,
-	0x64, 0x4d, 0x68, 0xd9, 0x0f, 0x04, 0xcb, 0xd3, 0x51, 0x2c, 0xb7, 0xed, 0x07, 0xd4, 0x41, 0x4f,
-	0xda, 0x87, 0x5c, 0x57, 0x21, 0x39, 0x81, 0x21, 0x04, 0x8b, 0x81, 0x23, 0x8a, 0x1f, 0x33, 0xd8,
-	0x5a, 0xd7, 0x21, 0x2d, 0xfb, 0x89, 0xc4, 0x7c, 0xaf, 0xc2, 0xc9, 0xa8, 0x0a, 0x1f, 0xbf, 0x91,
-	0x2f, 0x03, 0x08, 0xc3, 0x69, 0x27, 0x47, 0xdf, 0xcb, 0xa4, 0x15, 0x2e, 0xf5, 0x5d, 0x38, 0x15,
-	0x99, 0x7d, 0xb4, 0x01, 0x71, 0xfe, 0x3e, 0x8b, 0x20, 0xd8, 0x9d, 0xe0, 0x92, 0x61, 0xbb, 0x24,
-	0x9e, 0x06, 0x01, 0xd1, 0x3b, 0x90, 0x96, 0x33, 0x4f, 0x39, 0xf0, 0x4a, 0xfd, 0x0f, 0x07, 0x66,
-	0x44, 0x39, 0x30, 0x74, 0xbd, 0x83, 0xce, 0x42, 0x92, 0x1b, 0x92, 0xc0, 0x67, 0x14, 0x92, 0x06,
-	0xf7, 0xd4, 0x0c, 0x7c, 0xfd, 0x3c, 0x64, 0x2a, 0x9e, 0xd7, 0xc7, 0x96, 0xbb, 0xe3, 0xf5, 0x47,
-	0x03, 0x97, 0xe6, 0xb5, 0x63, 0x05, 0x16, 0x7b, 0xbf, 0x12, 0x06, 0x5b, 0xeb, 0xef, 0x40, 0xaa,
-	0xee, 0x06, 0x57, 0xb6, 0x22, 0x20, 0x31, 0x01, 0x39, 0x0f, 0x99, 0x9b, 0x7d, 0xcf, 0x8a, 0x06,
-	0xa9, 0x02, 0xf4, 0x2e, 0x64, 0x5b, 0xce, 0x00, 0x5f, 0xd9, 0x6a, 0x34, 0x5f, 0xe3, 0x4a, 0x87,
-	0x74, 0x33, 0xf0, 0x1d, 0xb7, 0x1b, 0x81, 0x49, 0x0a, 0xcc, 0x6f, 0x0b, 0x10, 0x17, 0xea, 0xeb,
-	0x90, 0x6e, 0x73, 0x06, 0xa6, 0x80, 0xd1, 0xdc, 0x14, 0xa4, 0x22, 0xcd, 0x10, 0xac, 0x29, 0x46,
-	0x4a, 0xe0, 0x77, 0xad, 0xc0, 0x42, 0x57, 0x01, 0x1c, 0xca, 0x8d, 0x1b, 0xf3, 0x0a, 0xcb, 0xaf,
-	0xb6, 0x44, 0x9c, 0x5e, 0x52, 0x86, 0x65, 0x86, 0x9f, 0x43, 0x26, 0x60, 0x64, 0x5c, 0xc2, 0x6d,
-	0x79, 0xe3, 0x9f, 0x91, 0x6c, 0x67, 0xc9, 0xd2, 0xd6, 0x0f, 0x2d, 0x98, 0x87, 0xeb, 0x90, 0xde,
-	0xe7, 0x39, 0xe3, 0x0e, 0x16, 0x8f, 0x44, 0x3e, 0x93, 0x52, 0x1a, 0xb9, 0xc0, 0x33, 0xf3, 0x4f,
-	0x21, 0x45, 0x58, 0x9e, 0xb8, 0xf5, 0xd2, 0x91, 0x7b, 0x27, 0x67, 0xb1, 0xa6, 0x18, 0xc0, 0xd1,
-	0xd4, 0xb6, 0x02, 0x90, 0xb0, 0xbd, 0x3e, 0x33, 0xd4, 0xeb, 0x90, 0x36, 0xbc, 0x6f, 0x2b, 0x56,
-	0x60, 0xf7, 0x98, 0xdf, 0x69, 0xbe, 0xd5, 0xf5, 0x34, 0xcf, 0x37, 0x7a, 0x0f, 0x16, 0x6d, 0xaf,
-	0x4f, 0x3f, 0x31, 0xb1, 0xb9, 0xef, 0x24, 0x77, 0x6f, 0x30, 0xb5, 0xfe, 0xb3, 0x0a, 0x89, 0x70,
-	0x4e, 0xa0, 0x7e, 0xa4, 0x27, 0x9c, 0xad, 0xd1, 0xc7, 0x70, 0xc2, 0x66, 0x06, 0xa1, 0x2b, 0x2d,
-	0x62, 0xc2, 0x10, 0x3e, 0xd9, 0xb5, 0x0a, 0xe1, 0xc5, 0x36, 0xc0, 0x54, 0x8c, 0x56, 0x21, 0xc5,
-	0x15, 0xa6, 0x74, 0x04, 0x70, 0x51, 0x83, 0x1e, 0x74, 0x79, 0x02, 0xa0, 0xc3, 0x0e, 0xab, 0x6b,
-	0x76, 0x13, 0xd1, 0xc3, 0xf8, 0xf0, 0x43, 0x99, 0xb6, 0x0e, 0x87, 0x38, 0x34, 0xa2, 0x6b, 0x1d,
-	0xc3, 0x52, 0xcb, 0x6a, 0xf7, 0x31, 0x2a, 0x43, 0x22, 0x1c, 0x72, 0x44, 0x55, 0x22, 0x27, 0xa1,
-	0x09, 0x08, 0x6d, 0x88, 0x9c, 0x2d, 0x31, 0x52, 0x72, 0x11, 0xe4, 0xd4, 0x8a, 0xe6, 0x1d, 0x40,
-	0x8e, 0x5d, 0xd2, 0x96, 0x33, 0x70, 0xdc, 0x6e, 0x5d, 0x7c, 0xcf, 0xf1, 0x23, 0x6c, 0x8f, 0xa8,
-	0x33, 0x93, 0x36, 0x89, 0xe9, 0x12, 0xf1, 0xb4, 0xe5, 0x26, 0x0a, 0xda, 0x4e, 0x0d, 0x82, 0x4a,
-	0xb0, 0x62, 0x7b, 0x83, 0xa1, 0xc3, 0x8f, 0x9e, 0xa0, 0xf9, 0xd7, 0x7f, 0x59, 0x52, 0x71, 0xbc,
-	0xfe, 0xa3, 0x0a, 0x2b, 0xec, 0xbc, 0x6a, 0xe8, 0x88, 0xbe, 0x34, 0x04, 0x6d, 0x42, 0x3c, 0x60,
-	0x11, 0x88, 0x2b, 0x53, 0x9c, 0x7f, 0xf3, 0xa7, 0xf1, 0x19, 0x02, 0x89, 0x2e, 0x40, 0xae, 0x7d,
-	0x18, 0x60, 0x62, 0x0e, 0x7d, 0xcf, 0xc6, 0x84, 0xe0, 0x8e, 0x38, 0x37, 0xcb, 0xc4, 0x77, 0x43,
-	0x29, 0xda, 0x80, 0x65, 0x1f, 0xdb, 0x9e, 0xdf, 0x91, 0xa1, 0x31, 0x06, 0xcd, 0x0b, 0xc5, 0x04,
-	0xac, 0xff, 0xa1, 0x02, 0x3a, 0xfa, 0x35, 0x7d, 0xa3, 0xe7, 0x72, 0xe6, 0x79, 0x5c, 0x78, 0x93,
-	0xe7, 0x71, 0x8b, 0x8f, 0x47, 0x44, 0xdc, 0x5f, 0x6d, 0x3e, 0x0b, 0xb3, 0x59, 0xe3, 0x73, 0x12,
-	0x1d, 0xd5, 0xe2, 0x01, 0x6d, 0x15, 0x52, 0x58, 0x64, 0x25, 0xcf, 0xcb, 0xd7, 0x9e, 0x2a, 0x0c,
-	0xa1, 0xd7, 0xff, 0x55, 0x61, 0x85, 0x7f, 0xc5, 0x67, 0xd9, 0xdd, 0xa1, 0xe3, 0x36, 0x5f, 0x87,
-	0xe3, 0x76, 0x49, 0x72, 0x12, 0x61, 0x52, 0x0a, 0x17, 0xe1, 0x60, 0x3c, 0x75, 0x50, 0xfc, 0x41,
-	0x85, 0xdc, 0x9c, 0xfa, 0xf8, 0x5f, 0xbd, 0x4f, 0x68, 0xfb, 0xbf, 0xc1, 0xdc, 0x63, 0x4c, 0xe0,
-	0x17, 0x1f, 0x03, 0x4c, 0x87, 0x4a, 0x74, 0x1a, 0x56, 0xb6, 0x6f, 0x55, 0x1b, 0x2d, 0xb3, 0xd9,
-	0xda, 0x6e, 0x55, 0xcd, 0x7b, 0x8d, 0xdb, 0x8d, 0xbd, 0xaf, 0x1a, 0x79, 0x65, 0x5e, 0x51, 0xab,
-	0x6e, 0xdf, 0x69, 0xd5, 0xbe, 0xce, 0xab, 0xe8, 0x1c, 0x14, 0x66, 0x2d, 0x8c, 0x6a, 0xf3, 0xee,
-	0x5e, 0xa3, 0x59, 0xbf, 0x5f, 0xcd, 0x2f, 0xcc, 0x6b, 0x77, 0xeb, 0xcd, 0x9d, 0xbd, 0x46, 0xa3,
-	0xba, 0xd3, 0xaa, 0xee, 0xe6, 0x63, 0x9b, 0xbf, 0x2c, 0x40, 0x86, 0xa7, 0xad, 0xc9, 0x7f, 0xc3,
-	0x50, 0x0b, 0x80, 0x2e, 0x31, 0xcf, 0xc7, 0xea, 0x3c, 0x89, 0xb9, 0x19, 0xb2, 0xb8, 0x7a, 0x24,
-	0xff, 0xb3, 0x83, 0x97, 0xae, 0xac, 0xab, 0x97, 0x54, 0x74, 0x1b, 0xd2, 0xb7, 0x70, 0x30, 0x1d,
-	0x93, 0xcf, 0x46, 0x0e, 0x04, 0xfc, 0xb3, 0x5d, 0x3c, 0x17, 0xad, 0xe4, 0xe9, 0xd2, 0x15, 0x54,
-	0x87, 0x34, 0xef, 0x30, 0xcc, 0x52, 0x8a, 0x5e, 0x35, 0x79, 0x15, 0xb5, 0xd7, 0x37, 0x87, 0xae,
-	0xa0, 0x1d, 0x80, 0x5b, 0x38, 0xe0, 0x3f, 0x2e, 0x04, 0x15, 0x22, 0x7e, 0xaf, 0xb8, 0xa7, 0x33,
-	0xaf, 0xfc, 0xf1, 0xd2, 0x95, 0x0a, 0x7e, 0xfa, 0x5c, 0x53, 0x9e, 0x3d, 0xd7, 0x94, 0x97, 0xcf,
-	0x35, 0xf5, 0xbb, 0xb1, 0xa6, 0xfe, 0x34, 0xd6, 0xd4, 0x5f, 0xc7, 0x9a, 0xfa, 0x74, 0xac, 0xa9,
-	0x7f, 0x8d, 0x35, 0xf5, 0xef, 0xb1, 0xa6, 0xbc, 0x1c, 0x6b, 0xea, 0x93, 0x17, 0x9a, 0xf2, 0xf4,
-	0x85, 0xa6, 0x3c, 0x7b, 0xa1, 0x29, 0xdf, 0x94, 0x87, 0xce, 0x23, 0x07, 0xf7, 0xad, 0x36, 0x29,
-	0x59, 0xce, 0x74, 0x53, 0x9e, 0xff, 0x41, 0xbe, 0x26, 0x7e, 0x90, 0xdb, 0x71, 0xb6, 0xbd, 0xfc,
-	0x5f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xc5, 0x37, 0x9f, 0x4e, 0x43, 0x0f, 0x00, 0x00,
+var fileDescriptor_service_995f7c4ce31b7db8 = []byte{
+	// 1088 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x56, 0x4f, 0x6f, 0x1b, 0x45,
+	0x14, 0xdf, 0x89, 0xdb, 0x34, 0xfb, 0xe2, 0xc4, 0xce, 0x24, 0x25, 0xc6, 0x0d, 0xeb, 0x68, 0x85,
+	0x20, 0xa4, 0x62, 0x5d, 0xa5, 0x48, 0x08, 0x90, 0xa8, 0xec, 0xd8, 0xc4, 0x56, 0x83, 0x03, 0x6b,
+	0xa7, 0x08, 0x2e, 0xab, 0x5d, 0x7b, 0x62, 0xaf, 0x6a, 0x7b, 0xed, 0x9d, 0x71, 0xd4, 0xf4, 0xc4,
+	0x01, 0xee, 0xfd, 0x18, 0x7c, 0x0a, 0x0e, 0x9c, 0x38, 0xe6, 0x84, 0x7a, 0x42, 0xc4, 0xb9, 0x80,
+	0xb8, 0xf4, 0x23, 0xa0, 0x9d, 0x99, 0xb5, 0xd7, 0xce, 0x86, 0x2a, 0x39, 0xed, 0xbc, 0xb7, 0xbf,
+	0xf7, 0xe7, 0xf7, 0xde, 0x9b, 0x3f, 0xa0, 0x51, 0xbf, 0x99, 0x3f, 0x75, 0x5f, 0xba, 0xc4, 0xcf,
+	0x0f, 0x7c, 0x8f, 0x79, 0x79, 0x4a, 0xfc, 0x53, 0xb7, 0x49, 0x0c, 0x2e, 0x61, 0x75, 0xd0, 0x35,
+	0xc4, 0xef, 0xec, 0xc7, 0x6d, 0x97, 0x75, 0x46, 0x8e, 0xd1, 0xf4, 0x7a, 0xf9, 0xb6, 0xd7, 0xf6,
+	0x04, 0xde, 0x19, 0x9d, 0x70, 0x49, 0x18, 0x07, 0x2b, 0x61, 0x99, 0x7d, 0x3f, 0xf0, 0xdc, 0xb4,
+	0xfd, 0xbe, 0xc7, 0xa4, 0xe7, 0xe1, 0x88, 0xf8, 0x67, 0x96, 0x4f, 0xe8, 0xa8, 0xcb, 0xa8, 0x44,
+	0x6d, 0x73, 0x94, 0xd7, 0xeb, 0x79, 0xfd, 0xfc, 0x68, 0xe4, 0xb6, 0x24, 0x34, 0x58, 0x4a, 0x84,
+	0x1e, 0x41, 0x38, 0x36, 0x25, 0x61, 0x9a, 0xcc, 0x66, 0x23, 0x1a, 0x13, 0x8b, 0x36, 0x3b, 0xa4,
+	0x67, 0x87, 0x28, 0x2e, 0x08, 0x94, 0x5e, 0x82, 0xc5, 0x3a, 0x97, 0xf1, 0xe7, 0xa0, 0xfa, 0xa4,
+	0x6b, 0x33, 0xd7, 0xeb, 0xd3, 0x0c, 0xda, 0x4e, 0xec, 0x2c, 0xef, 0x6d, 0x19, 0x83, 0xae, 0x21,
+	0x5c, 0x18, 0xc2, 0x6a, 0xe0, 0x18, 0xa6, 0x04, 0x99, 0x53, 0xb8, 0x9e, 0x82, 0x15, 0xe1, 0xc5,
+	0x24, 0xc3, 0x11, 0xa1, 0x4c, 0xff, 0x03, 0xc1, 0x6a, 0xa8, 0xa1, 0x03, 0xaf, 0x4f, 0x09, 0x3e,
+	0x82, 0x94, 0xf0, 0x61, 0x39, 0x67, 0x96, 0xdd, 0x26, 0x7d, 0x26, 0xa3, 0x7c, 0x68, 0x4c, 0xea,
+	0x69, 0xcc, 0xda, 0x48, 0xb1, 0x78, 0x56, 0x08, 0xe0, 0xe6, 0x0a, 0x8d, 0x8a, 0x59, 0x1a, 0x06,
+	0x95, 0x0a, 0xfc, 0x29, 0x2c, 0x71, 0xbf, 0x96, 0xdb, 0xca, 0xa0, 0x6d, 0xb4, 0xb3, 0xbc, 0x97,
+	0x0a, 0x5c, 0x07, 0x75, 0x1b, 0x38, 0xc6, 0xf1, 0x71, 0xb5, 0x54, 0x5c, 0x1e, 0xff, 0x99, 0xbb,
+	0xc7, 0xd1, 0xd5, 0x92, 0x79, 0x8f, 0xa3, 0xab, 0x2d, 0xfc, 0x11, 0x2c, 0x0a, 0xd7, 0x99, 0x05,
+	0x6e, 0xb6, 0x76, 0x35, 0x23, 0x09, 0xd0, 0x31, 0xa4, 0x85, 0x79, 0xff, 0xc4, 0x0b, 0xc9, 0x3e,
+	0x81, 0xb5, 0x88, 0x4e, 0xd2, 0xdd, 0x85, 0x3b, 0x6e, 0xff, 0xc4, 0x93, 0x1c, 0xdf, 0x89, 0x78,
+	0xe4, 0xd8, 0x3a, 0x6f, 0x95, 0xc9, 0x31, 0xfa, 0x2b, 0x04, 0xcb, 0x11, 0x2d, 0xde, 0x99, 0xd8,
+	0x06, 0xd9, 0x6c, 0xcc, 0xdb, 0xf2, 0x38, 0x1c, 0x81, 0x77, 0x61, 0xad, 0x6b, 0x53, 0x66, 0x75,
+	0x88, 0xed, 0x33, 0x87, 0xd8, 0xcc, 0xea, 0x53, 0x4e, 0x22, 0x61, 0xa6, 0x82, 0x1f, 0x95, 0x50,
+	0x5f, 0xa3, 0xf8, 0x21, 0xdc, 0x0d, 0x06, 0x84, 0x64, 0x12, 0xdb, 0x68, 0x67, 0x75, 0xef, 0x7e,
+	0x5c, 0x4a, 0xc4, 0x14, 0x18, 0xfd, 0x14, 0xd4, 0x49, 0xac, 0xdb, 0x17, 0xf6, 0x11, 0xa8, 0x1d,
+	0x8f, 0x32, 0x8b, 0xb3, 0x11, 0xb5, 0x5d, 0x8f, 0x84, 0xad, 0x78, 0x54, 0x90, 0x59, 0xea, 0xc8,
+	0x95, 0xfe, 0x01, 0x2c, 0x85, 0x5a, 0x9c, 0x05, 0xae, 0xef, 0xdb, 0x3d, 0xc2, 0xc3, 0xaa, 0xe6,
+	0x44, 0xd6, 0xff, 0x41, 0xb0, 0xc1, 0xc3, 0x35, 0xbc, 0x67, 0xdc, 0xd9, 0xd7, 0x84, 0x52, 0xbb,
+	0x4d, 0xf0, 0x21, 0xa4, 0x7d, 0xd2, 0x76, 0x29, 0x23, 0xbe, 0xe5, 0x8b, 0x06, 0xc9, 0x9c, 0x73,
+	0x91, 0xc8, 0xa6, 0x84, 0x88, 0xc1, 0x12, 0xb0, 0x8a, 0x62, 0xa6, 0x42, 0x53, 0xa9, 0xc2, 0x5f,
+	0xc1, 0xea, 0x64, 0x87, 0xf2, 0xbe, 0x4a, 0x16, 0xef, 0xcd, 0x17, 0xef, 0xdb, 0x00, 0x15, 0x36,
+	0xbf, 0xa2, 0x98, 0x2b, 0xc3, 0xa8, 0x02, 0x7f, 0x02, 0xea, 0xa4, 0x45, 0xbc, 0xfe, 0xb3, 0x6d,
+	0xe5, 0x6d, 0x2a, 0x12, 0x3b, 0xc8, 0x61, 0x0a, 0x2c, 0xde, 0x85, 0x44, 0x8f, 0xb6, 0x39, 0x57,
+	0x41, 0xb2, 0xe1, 0xf1, 0x60, 0x21, 0xd7, 0x2a, 0xac, 0x8a, 0xbe, 0x4c, 0xb2, 0x13, 0x4c, 0xb7,
+	0xaf, 0x67, 0x3a, 0x4d, 0xd0, 0x8e, 0x2a, 0xf0, 0x97, 0xb0, 0x12, 0x12, 0x15, 0x35, 0x13, 0x3c,
+	0x37, 0x23, 0x9e, 0x24, 0xc5, 0xb0, 0x56, 0xc9, 0x61, 0x44, 0xc6, 0x4f, 0x60, 0x95, 0xe7, 0x6d,
+	0xf1, 0x21, 0xb4, 0x9b, 0xcf, 0x25, 0xcb, 0xcd, 0x38, 0x96, 0x85, 0xe6, 0xf3, 0xc0, 0x41, 0x27,
+	0x22, 0x87, 0x5c, 0x73, 0xa0, 0x4e, 0x60, 0x18, 0xc3, 0x1d, 0xe6, 0xca, 0xe6, 0x27, 0x4c, 0xbe,
+	0xd6, 0x75, 0x48, 0x46, 0xfd, 0xc4, 0x62, 0x7e, 0x42, 0xb0, 0x11, 0xd7, 0xe1, 0xdb, 0x0f, 0xf2,
+	0x63, 0x00, 0x69, 0x38, 0x9d, 0xe4, 0xf8, 0x7d, 0xa9, 0xda, 0xe1, 0x52, 0x2f, 0xc1, 0xfd, 0xd8,
+	0xea, 0xe3, 0x87, 0xb0, 0x28, 0x8e, 0x6a, 0x99, 0x04, 0xdf, 0x13, 0x42, 0x33, 0x70, 0x0c, 0x79,
+	0x34, 0x48, 0x88, 0xde, 0x82, 0x64, 0xb4, 0xf2, 0x01, 0x07, 0xd1, 0xa9, 0xb7, 0x70, 0xe0, 0x46,
+	0x01, 0x07, 0x8e, 0xae, 0xb6, 0xf0, 0x03, 0x50, 0x85, 0x21, 0x65, 0x3e, 0xa7, 0xa0, 0x9a, 0xc2,
+	0x53, 0x9d, 0xf9, 0xfa, 0xaf, 0x08, 0xf0, 0xd5, 0x41, 0xbe, 0x51, 0xa6, 0x33, 0x99, 0x2d, 0xdc,
+	0x24, 0xb3, 0x22, 0x24, 0xa3, 0xf7, 0xa0, 0x1c, 0x9d, 0x5c, 0xe4, 0xf6, 0x11, 0x9f, 0x81, 0x13,
+	0x0e, 0x61, 0x00, 0x33, 0x97, 0x87, 0x53, 0x41, 0xff, 0x17, 0xc1, 0xba, 0xd8, 0x24, 0xb3, 0x0c,
+	0x0e, 0x83, 0x6b, 0x4d, 0xac, 0xc3, 0x6b, 0xcd, 0x88, 0x34, 0x2e, 0xc6, 0xc4, 0x08, 0x17, 0xe1,
+	0xbd, 0x33, 0x75, 0x90, 0xfd, 0x19, 0x41, 0x6a, 0xee, 0xf7, 0xed, 0x87, 0xea, 0x33, 0x58, 0xba,
+	0xd1, 0xb1, 0x62, 0x4e, 0xe0, 0xbb, 0x2f, 0x01, 0xa6, 0x67, 0x36, 0xde, 0x84, 0xf5, 0xc2, 0x41,
+	0xb9, 0xd6, 0xb0, 0xea, 0x8d, 0x42, 0xa3, 0x6c, 0x1d, 0xd7, 0x9e, 0xd6, 0x8e, 0xbe, 0xab, 0xa5,
+	0x95, 0xf9, 0x1f, 0x95, 0x72, 0xe1, 0xb0, 0x51, 0xf9, 0x3e, 0x8d, 0xf0, 0x16, 0x64, 0x66, 0x2d,
+	0xcc, 0x72, 0xfd, 0x9b, 0xa3, 0x5a, 0xbd, 0xfa, 0xac, 0x9c, 0x5e, 0x98, 0xff, 0x5b, 0xaa, 0xd6,
+	0xf7, 0x8f, 0x6a, 0xb5, 0xf2, 0x7e, 0xa3, 0x5c, 0x4a, 0x27, 0xf6, 0x7e, 0x5b, 0x80, 0x15, 0x51,
+	0xb6, 0xba, 0x78, 0x16, 0xe1, 0x06, 0x40, 0xb0, 0x24, 0xa2, 0x1e, 0xb9, 0x79, 0x12, 0x73, 0x47,
+	0x74, 0x36, 0x77, 0xa5, 0xfe, 0xb3, 0xe7, 0x9a, 0xae, 0xec, 0xa0, 0x47, 0x08, 0x3f, 0x85, 0xe4,
+	0x01, 0x61, 0xd3, 0x5b, 0xe8, 0x41, 0xec, 0x7e, 0x13, 0xbb, 0x22, 0xbb, 0x15, 0xff, 0x53, 0x94,
+	0x4b, 0x57, 0x70, 0x15, 0x92, 0xe5, 0x17, 0xa4, 0x39, 0x62, 0x84, 0x97, 0x14, 0x5f, 0x77, 0xb0,
+	0x65, 0xb5, 0xff, 0x1f, 0x0e, 0x5d, 0xc1, 0xfb, 0x00, 0x07, 0x84, 0x89, 0x77, 0x01, 0xc5, 0x99,
+	0x98, 0xd7, 0x8b, 0xf0, 0xf4, 0xee, 0xb5, 0xef, 0x1a, 0x5d, 0x29, 0x92, 0xf3, 0x0b, 0x4d, 0x79,
+	0x7d, 0xa1, 0x29, 0x6f, 0x2e, 0x34, 0xf4, 0xe3, 0x58, 0x43, 0xbf, 0x8c, 0x35, 0xf4, 0xfb, 0x58,
+	0x43, 0xe7, 0x63, 0x0d, 0xfd, 0x35, 0xd6, 0xd0, 0xdf, 0x63, 0x4d, 0x79, 0x33, 0xd6, 0xd0, 0xab,
+	0x4b, 0x4d, 0x39, 0xbf, 0xd4, 0x94, 0xd7, 0x97, 0x9a, 0xf2, 0x43, 0x7e, 0xe0, 0xbe, 0x70, 0x49,
+	0xd7, 0x76, 0xa8, 0x61, 0xbb, 0x53, 0x21, 0x3f, 0xff, 0x60, 0xfd, 0x42, 0x3e, 0x58, 0x9d, 0x45,
+	0x2e, 0x3e, 0xfe, 0x2f, 0x00, 0x00, 0xff, 0xff, 0xe3, 0xa6, 0xab, 0x61, 0xd3, 0x0a, 0x00, 0x00,
 }

@@ -1,0 +1,69 @@
+
+syntax = "proto3";
+import "src/shared/types/proto/types.proto";
+
+package pl.carnot.schemapb;
+
+option go_package = "schemapb";
+
+// PL_CARNOT_UPDATE_FOR_NEW_TYPES.
+
+// Boolean data column.
+message BooleanColumn {
+  repeated bool data = 1;
+}
+
+// Int64 column data.
+message Int64Column {
+  repeated int64 data = 1;
+}
+
+// Float64 column data.
+message Float64Column {
+  repeated double data = 1;
+}
+
+// Time64 column data.
+message Time64NSColumn {
+  repeated int64 data = 1;
+}
+
+// String data column.
+message StringColumn {
+  repeated string data = 1;
+}
+
+// A single column of data.
+message Column {
+  oneof col_data {
+    BooleanColumn boolean_data = 1;
+    Int64Column int64_data = 2;
+    Time64NSColumn time64ns_data = 3;
+    Float64Column float64_data = 4;
+    StringColumn string_data = 5;
+  }
+}
+
+// RowBatchData is a temporary data type that will remove when proper serialization
+// is implemented.
+message RowBatchData {
+  repeated Column cols = 1;
+}
+
+message Relation {
+  message ColumnInfo {
+    string column_name = 1;
+    pl.types.DataType column_type = 2;
+  }
+  string name = 1;
+  repeated ColumnInfo columns = 2;
+}
+
+// A table serialized as proto.
+message Table {
+  // Information about the relation in this table. All row batches *must* follow,
+  // this schema.
+  Relation relation = 4;
+  // A row batch of data.
+  repeated RowBatchData row_batches = 5;
+}
