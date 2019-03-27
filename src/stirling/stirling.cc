@@ -238,8 +238,11 @@ Status StirlingImpl::SetSubscription(const stirlingpb::Subscribe& subscribe_prot
 
 // Main call to start the data collection.
 Status StirlingImpl::RunAsThread() {
-  bool prev_run_enable_ = run_enable_.exchange(true);
+  if (agent_callback_ == nullptr) {
+    return error::Internal("No callback function is registered in Stirling. Refusing to run.");
+  }
 
+  bool prev_run_enable_ = run_enable_.exchange(true);
   if (prev_run_enable_) {
     return error::AlreadyExists("A Stirling thread is already running.");
   }
@@ -256,10 +259,14 @@ void StirlingImpl::WaitForThreadJoin() {
 }
 
 void StirlingImpl::Run() {
+  if (agent_callback_ == nullptr) {
+    LOG(ERROR) << "No callback function is registered in Stirling. Refusing to run.";
+    return;
+  }
+
   // Make sure multiple instances of Run() are not active,
   // which would be possible if the caller created multiple threads.
   bool prev_run_enable_ = run_enable_.exchange(true);
-
   if (prev_run_enable_) {
     LOG(ERROR) << "A Stirling thread is already running.";
     return;

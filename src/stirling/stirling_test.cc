@@ -276,3 +276,17 @@ TEST_F(StirlingTest, hammer_time_on_stirling_on_the_fly_subs) {
 
   EXPECT_GT(NumProcessed(), 0);
 }
+
+TEST_F(StirlingTest, no_callback_defined) {
+  Stirling* stirling = GetStirling();
+  stirling->RegisterCallback(nullptr);
+
+  // Should fail to run as a Stirling-managed thread.
+  EXPECT_NOT_OK(stirling->RunAsThread());
+
+  // Should also fail to run as a caller-managed thread,
+  // which means it should be immediately joinable.
+  std::thread run_thread = std::thread(&Stirling::Run, stirling);
+  ASSERT_TRUE(run_thread.joinable());
+  run_thread.join();
+}
