@@ -66,6 +66,11 @@ def _default_external_deps():
         "@com_google_absl//absl/debugging:failure_signal_handler",
     ]
 
+def _default_link_deps():
+    return [
+        "//src/common/glibc_compat:cc_library",
+    ]
+
 # PL C++ library targets should be specified with this function.
 def pl_cc_library_internal(
         name,
@@ -143,7 +148,7 @@ def pl_cc_binary(
         malloc = tcmalloc_external_dep(repository),
         stamp = 1,
         tags = tags,
-        deps = deps + _default_external_deps(),
+        deps = deps + _default_link_deps() + _default_external_deps(),
     )
 
 # PL C++ test targets should be specified with this function.
@@ -165,7 +170,7 @@ def pl_cc_test(
         name = name + "_lib",
         srcs = srcs,
         data = data,
-        deps = deps,
+        deps = deps + _default_link_deps(),
         repository = repository,
         tags = test_lib_tags,
     )

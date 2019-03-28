@@ -109,4 +109,10 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "gperftools-fc00474ddc21fff618fc3f009b46590e241e425e",
         urls = ["https://github.com/gperftools/gperftools/archive/fc00474ddc21fff618fc3f009b46590e241e425e.tar.gz"],
     ),
+    distroless = dict(
+        sha256 = "af1dd62ace9925f8aec73d303397c29f54611b6beef9901229dceecdbd3622ed",
+        strip_prefix = "distroless-b4dfb5c3076302a873be8e413c120771c4cc2e1b",
+        urls = ["https://github.com/GoogleContainerTools/distroless/" +
+                "archive/b4dfb5c3076302a873be8e413c120771c4cc2e1b.tar.gz"],
+    ),
 )

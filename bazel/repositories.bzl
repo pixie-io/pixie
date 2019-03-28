@@ -153,6 +153,7 @@ def pl_deps():
     _repository_impl(name = "com_github_bazelbuild_buildtools")
     _repository_impl(name = "bazel_skylib", repository_key = "io_bazel_rules_skylib")
     _repository_impl(name = "io_bazel_rules_docker")
+    _repository_impl(name = "distroless")
     _repository_impl(name = "io_bazel_rules_go")
     _repository_impl(name = "com_github_grpc_grpc")
     _repository_impl(name = "com_intel_tbb", build_file = "@pl//third_party:tbb.BUILD")
