@@ -24,7 +24,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "schema_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/carnot/schema/proto",
+    importpath = "pixielabs.ai/pixielabs/src/table_store/proto",
     proto = ":schema_pl_proto",
     visibility = ["//visibility:public"],
     deps = [

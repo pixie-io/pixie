@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
-#include "src/carnot/schema/relation.h"
+#include "src/table_store/schema/relation.h"
 
 namespace pl {
-namespace carnot {
+namespace table_store {
 namespace schema {
 
 TEST(RelationTest, empty_relation) {
@@ -66,5 +66,5 @@ TEST(RelationDeathTest, bad_init) {
 }
 
 }  // namespace schema
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl

@@ -41,8 +41,8 @@ class Operator : public PlanNode {
   // Prints out the debug to INFO log.
   void Debug() { LOG(INFO) << DebugString(); }
 
-  virtual StatusOr<schema::Relation> OutputRelation(
-      const schema::Schema &schema, const PlanState &state,
+  virtual StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema &schema, const PlanState &state,
       const std::vector<int64_t> &input_ids) const = 0;
 
  protected:
@@ -58,8 +58,9 @@ class MemorySourceOperator : public Operator {
  public:
   explicit MemorySourceOperator(int64_t id) : Operator(id, carnotpb::MEMORY_SOURCE_OPERATOR) {}
   ~MemorySourceOperator() override = default;
-  StatusOr<schema::Relation> OutputRelation(const schema::Schema &schema, const PlanState &state,
-                                            const std::vector<int64_t> &input_ids) const override;
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema &schema, const PlanState &state,
+      const std::vector<int64_t> &input_ids) const override;
   Status Init(const carnotpb::MemorySourceOperator &pb);
   std::string DebugString() const override;
   std::string TableName() const { return pb_.name(); }
@@ -80,8 +81,9 @@ class MapOperator : public Operator {
   explicit MapOperator(int64_t id) : Operator(id, carnotpb::MAP_OPERATOR) {}
   ~MapOperator() override = default;
 
-  StatusOr<schema::Relation> OutputRelation(const schema::Schema &schema, const PlanState &state,
-                                            const std::vector<int64_t> &input_ids) const override;
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema &schema, const PlanState &state,
+      const std::vector<int64_t> &input_ids) const override;
   Status Init(const carnotpb::MapOperator &pb);
   std::string DebugString() const override;
 
@@ -102,8 +104,9 @@ class BlockingAggregateOperator : public Operator {
       : Operator(id, carnotpb::BLOCKING_AGGREGATE_OPERATOR) {}
   ~BlockingAggregateOperator() override = default;
 
-  StatusOr<schema::Relation> OutputRelation(const schema::Schema &schema, const PlanState &state,
-                                            const std::vector<int64_t> &input_ids) const override;
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema &schema, const PlanState &state,
+      const std::vector<int64_t> &input_ids) const override;
   Status Init(const carnotpb::BlockingAggregateOperator &pb);
   std::string DebugString() const override;
 
@@ -126,8 +129,9 @@ class MemorySinkOperator : public Operator {
   explicit MemorySinkOperator(int64_t id) : Operator(id, carnotpb::MEMORY_SINK_OPERATOR) {}
   ~MemorySinkOperator() override = default;
 
-  StatusOr<schema::Relation> OutputRelation(const schema::Schema &schema, const PlanState &state,
-                                            const std::vector<int64_t> &input_ids) const override;
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema &schema, const PlanState &state,
+      const std::vector<int64_t> &input_ids) const override;
   Status Init(const carnotpb::MemorySinkOperator &pb);
   std::string TableName() const { return pb_.name(); }
   std::string ColumnName(int64_t i) const { return pb_.column_names(i); }

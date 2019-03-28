@@ -67,8 +67,8 @@ pl_proto_library(
     srcs = ["query_results.proto"],
     visibility = ["//visibility:public"],
     deps = [
-        "//src/carnot/schema/proto:schema_pl_proto",
         "//src/shared/types/proto:types_pl_proto",
+        "//src/table_store/proto:schema_pl_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
     ],
 )
@@ -78,8 +78,8 @@ pl_cc_proto_library(
     proto = ":query_results_pl_proto",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/carnot/schema/proto:schema_pl_cc_proto",
         "//src/shared/types/proto:types_pl_cc_proto",
+        "//src/table_store/proto:schema_pl_cc_proto",
         "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
     ],
 )
@@ -90,8 +90,8 @@ pl_go_proto_library(
     proto = ":query_results_pl_proto",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/carnot/schema/proto:schema_pl_go_proto",
         "//src/shared/types/proto:types_pl_go_proto",
+        "//src/table_store/proto:schema_pl_go_proto",
     ],
 )
 

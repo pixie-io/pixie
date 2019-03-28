@@ -3,12 +3,12 @@
 #include <string>
 #include <vector>
 
-#include "src/carnot/schema/proto/schema.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/proto/types.pb.h"
+#include "src/table_store/proto/schema.pb.h"
 
 namespace pl {
-namespace carnot {
+namespace table_store {
 namespace schema {
 
 using ColTypeArray = std::vector<types::DataType>;
@@ -57,7 +57,7 @@ class Relation {
    * @param relation_proto The proto to write.
    * @return The status of conversion.
    */
-  Status ToProto(schemapb::Relation *relation_proto) const;
+  Status ToProto(table_store::schemapb::Relation *relation_proto) const;
 
  private:
   ColTypeArray col_types_;
@@ -65,5 +65,5 @@ class Relation {
 };
 
 }  // namespace schema
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl

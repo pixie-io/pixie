@@ -2,11 +2,11 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
-#include "src/carnot/schema/schema.h"
 #include "src/common/base/base.h"
+#include "src/table_store/schema/schema.h"
 
 namespace pl {
-namespace carnot {
+namespace table_store {
 namespace schema {
 
 bool Schema::HasRelation(int64_t id) const { return relations_.find(id) != relations_.end(); }
@@ -42,5 +42,5 @@ StatusOr<const Relation> Schema::GetRelation(int64_t id) const {
 }
 
 }  // namespace schema
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl

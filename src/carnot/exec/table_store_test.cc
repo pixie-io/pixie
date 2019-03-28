@@ -2,21 +2,22 @@
 #include <vector>
 
 #include "src/carnot/exec/table_store.h"
-#include "src/carnot/schema/table.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {
 namespace exec {
 
-using schema::Column;
-using schema::RowDescriptor;
-using schema::Table;
+using table_store::schema::Column;
+using table_store::schema::RowDescriptor;
+using table_store::schema::Table;
 
 TEST(TableStoreTest, basic) {
-  schema::Relation rel1({types::DataType::BOOLEAN, types::DataType::FLOAT64},
-                        {"table1col1", "table1col2"});
-  schema::Relation rel2({types::DataType::INT64, types::DataType::FLOAT64, types::DataType::INT64},
-                        {"table2col1", "table2col2", "table2col3"});
+  table_store::schema::Relation rel1({types::DataType::BOOLEAN, types::DataType::FLOAT64},
+                                     {"table1col1", "table1col2"});
+  table_store::schema::Relation rel2(
+      {types::DataType::INT64, types::DataType::FLOAT64, types::DataType::INT64},
+      {"table2col1", "table2col2", "table2col3"});
   auto table1 = std::make_shared<Table>(rel1);
   auto table2 = std::make_shared<Table>(rel2);
 

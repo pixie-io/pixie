@@ -8,8 +8,8 @@
 
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/plan/scalar_expression.h"
-#include "src/carnot/schema/row_batch.h"
 #include "src/common/base/base.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {
@@ -45,8 +45,8 @@ class ExpressionEvaluator {
    * @param output A pointer to the output Rowbatch. This function expects a valid output RowBatch.
    * @return Status of the evaluation.
    */
-  virtual Status Evaluate(ExecState* exec_state, const schema::RowBatch& input,
-                          schema::RowBatch* output) = 0;
+  virtual Status Evaluate(ExecState* exec_state, const table_store::schema::RowBatch& input,
+                          table_store::schema::RowBatch* output) = 0;
 
   /**
    * Close should be called when this evaluator will no longer be used. Calling Evaluate or Open
@@ -88,16 +88,17 @@ class ScalarExpressionEvaluator : public ExpressionEvaluator {
       const plan::ConstScalarExpressionVector& expressions,
       const ScalarExpressionEvaluatorType& type);
 
-  Status Evaluate(ExecState* exec_state, const schema::RowBatch& input,
-                  schema::RowBatch* output) override;
+  Status Evaluate(ExecState* exec_state, const table_store::schema::RowBatch& input,
+                  table_store::schema::RowBatch* output) override;
   std::string DebugString() override;
 
  protected:
   // Function called for each individual expression in expressions_.
   // Implement in derived class.
-  virtual Status EvaluateSingleExpression(ExecState* exec_state, const schema::RowBatch& input,
+  virtual Status EvaluateSingleExpression(ExecState* exec_state,
+                                          const table_store::schema::RowBatch& input,
                                           const plan::ScalarExpression& expr,
-                                          schema::RowBatch* output) = 0;
+                                          table_store::schema::RowBatch* output) = 0;
   plan::ConstScalarExpressionVector expressions_;
   std::unique_ptr<udf::FunctionContext> function_ctx_;
   std::map<int64_t, std::unique_ptr<udf::ScalarUDF>> id_to_udf_map_;
@@ -117,9 +118,9 @@ class VectorNativeScalarExpressionEvaluator : public ScalarExpressionEvaluator {
   Status Close(ExecState* exec_state) override;
 
  protected:
-  Status EvaluateSingleExpression(ExecState* exec_state, const schema::RowBatch& input,
+  Status EvaluateSingleExpression(ExecState* exec_state, const table_store::schema::RowBatch& input,
                                   const plan::ScalarExpression& expr,
-                                  schema::RowBatch* output) override;
+                                  table_store::schema::RowBatch* output) override;
 };
 
 /**
@@ -135,9 +136,9 @@ class ArrowNativeScalarExpressionEvaluator : public ScalarExpressionEvaluator {
   Status Close(ExecState* exec_state) override;
 
  protected:
-  Status EvaluateSingleExpression(ExecState* exec_state, const schema::RowBatch& input,
+  Status EvaluateSingleExpression(ExecState* exec_state, const table_store::schema::RowBatch& input,
                                   const plan::ScalarExpression& expr,
-                                  schema::RowBatch* output) override;
+                                  table_store::schema::RowBatch* output) override;
 };
 
 }  // namespace exec

@@ -16,13 +16,13 @@ std::string MemorySourceNode::DebugStringImpl() {
 }
 
 Status MemorySourceNode::InitImpl(const plan::Operator &plan_node,
-                                  const schema::RowDescriptor &output_descriptor,
-                                  const std::vector<schema::RowDescriptor> &) {
+                                  const table_store::schema::RowDescriptor &output_descriptor,
+                                  const std::vector<table_store::schema::RowDescriptor> &) {
   CHECK(plan_node.op_type() == carnotpb::OperatorType::MEMORY_SOURCE_OPERATOR);
   const auto *source_plan_node = static_cast<const plan::MemorySourceOperator *>(&plan_node);
   // copy the plan node to local object;
   plan_node_ = std::make_unique<plan::MemorySourceOperator>(*source_plan_node);
-  output_descriptor_ = std::make_unique<schema::RowDescriptor>(output_descriptor);
+  output_descriptor_ = std::make_unique<table_store::schema::RowDescriptor>(output_descriptor);
 
   return Status::OK();
 }

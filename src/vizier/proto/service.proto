@@ -6,7 +6,7 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/carnot/proto/query_results.proto";
 import "src/common/uuid/proto/uuid.proto";
 import "src/common/base/proto/status.proto";
-import "src/carnot/schema/proto/schema.proto";
+import "src/table_store/proto/schema.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/proto;service";
 /**
@@ -42,7 +42,7 @@ service VizierService {
 
 // The schema information per agent.
 message Schema {
-  repeated pl.carnot.schemapb.Relation relations = 1;
+  repeated pl.table_store.schemapb.Relation relations = 1;
 }
 
 // The schema request.

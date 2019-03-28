@@ -2,14 +2,14 @@
 #include <gtest/gtest.h>
 #include <vector>
 
-#include "src/carnot/schema/row_batch.h"
-#include "src/carnot/schema/row_descriptor.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/proto/types.pb.h"
 #include "src/shared/types/types.h"
+#include "src/table_store/schema/row_batch.h"
+#include "src/table_store/schema/row_descriptor.h"
 
 namespace pl {
-namespace carnot {
+namespace table_store {
 namespace schema {
 
 TEST(RowDescriptorTest, basic_test) {
@@ -101,5 +101,5 @@ TEST_F(RowBatchTest, num_bytes) {
 }
 
 }  // namespace schema
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl

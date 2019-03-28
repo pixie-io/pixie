@@ -5,12 +5,12 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
-#include "src/carnot/schema/row_batch.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
+#include "src/table_store/schema/row_batch.h"
 
 namespace pl {
-namespace carnot {
+namespace table_store {
 namespace schema {
 
 std::shared_ptr<arrow::Array> RowBatch::ColumnAt(int64_t i) const { return columns_[i]; }
@@ -65,5 +65,5 @@ int64_t RowBatch::NumBytes() const {
 }
 
 }  // namespace schema
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl

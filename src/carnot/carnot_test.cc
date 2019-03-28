@@ -12,8 +12,7 @@
 
 #include "src/carnot/carnot.h"
 #include "src/carnot/exec/test_utils.h"
-#include "src/carnot/schema/row_descriptor.h"
-#include "src/carnot/schema/table.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {

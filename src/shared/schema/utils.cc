@@ -5,9 +5,9 @@
 namespace pl {
 namespace {
 
-carnot::schema::Relation InfoClassProtoToRelation(
+table_store::schema::Relation InfoClassProtoToRelation(
     const stirling::stirlingpb::InfoClass& info_class_pb) {
-  carnot::schema::Relation relation;
+  table_store::schema::Relation relation;
   for (const auto& element : info_class_pb.elements()) {
     relation.AddColumn(element.type(), element.name());
   }

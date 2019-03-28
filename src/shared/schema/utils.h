@@ -3,8 +3,8 @@
 #include <utility>
 #include <vector>
 
-#include "src/carnot/schema/relation.h"
 #include "src/stirling/proto/collector_config.pb.h"
+#include "src/table_store/schema/relation.h"
 
 namespace pl {
 
@@ -12,11 +12,11 @@ namespace pl {
  * A relation and accompanying information such as names and ids.
  */
 struct RelationInfo {
-  RelationInfo(std::string name, uint64_t id, carnot::schema::Relation relation)
+  RelationInfo(std::string name, uint64_t id, table_store::schema::Relation relation)
       : name(std::move(name)), id(id), relation(std::move(relation)) {}
   std::string name;
   uint64_t id;
-  carnot::schema::Relation relation;
+  table_store::schema::Relation relation;
 };
 
 /**

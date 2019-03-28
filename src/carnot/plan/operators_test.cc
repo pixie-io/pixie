@@ -4,17 +4,16 @@
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/proto/plan.pb.h"
 #include "src/carnot/proto/test_proto.h"
-#include "src/carnot/schema/relation.h"
-#include "src/carnot/schema/schema.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {
 namespace plan {
 
-using schema::Relation;
-using schema::Schema;
+using table_store::schema::Relation;
+using table_store::schema::Schema;
 
 class DummyTestUDF : public udf::ScalarUDF {
  public:

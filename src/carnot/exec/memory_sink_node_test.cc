@@ -16,8 +16,8 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
-using schema::RowBatch;
-using schema::RowDescriptor;
+using table_store::schema::RowBatch;
+using table_store::schema::RowDescriptor;
 using testing::_;
 
 class MemorySinkNodeTest : public ::testing::Test {

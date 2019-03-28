@@ -1,8 +1,8 @@
 #pragma once
 #include <memory>
 
-#include "src/carnot/schema/table.h"
 #include "src/common/base/base.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace agent {
@@ -12,7 +12,7 @@ namespace agent {
  *
  * @return StatusOr<std::shared_ptr<Table>>
  */
-StatusOr<std::shared_ptr<carnot::schema::Table>> FakeHipsterTable();
+StatusOr<std::shared_ptr<table_store::schema::Table>> FakeHipsterTable();
 
 }  // namespace agent
 }  // namespace pl

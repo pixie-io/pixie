@@ -5,31 +5,31 @@
 #include "absl/strings/str_join.h"
 #include "src/carnot/exec/memory_sink_node.h"
 #include "src/carnot/proto/plan.pb.h"
-#include "src/carnot/schema/relation.h"
-#include "src/carnot/schema/table.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {
 namespace exec {
 
-using schema::Column;
-using schema::Relation;
-using schema::RowBatch;
-using schema::RowDescriptor;
-using schema::Table;
+using table_store::schema::Column;
+using table_store::schema::Relation;
+using table_store::schema::RowBatch;
+using table_store::schema::RowDescriptor;
+using table_store::schema::Table;
 
 std::string MemorySinkNode::DebugStringImpl() {
   return absl::StrFormat("Exec::MemorySinkNode: {name: %s, output: %s}", plan_node_->TableName(),
                          input_descriptor_->DebugString());
 }
 
-Status MemorySinkNode::InitImpl(const plan::Operator &plan_node, const schema::RowDescriptor &,
-                                const std::vector<schema::RowDescriptor> &input_descriptors) {
+Status MemorySinkNode::InitImpl(
+    const plan::Operator &plan_node, const table_store::schema::RowDescriptor &,
+    const std::vector<table_store::schema::RowDescriptor> &input_descriptors) {
   CHECK(plan_node.op_type() == carnotpb::OperatorType::MEMORY_SINK_OPERATOR);
   const auto *sink_plan_node = static_cast<const plan::MemorySinkOperator *>(&plan_node);
   // copy the plan node to local object;
   plan_node_ = std::make_unique<plan::MemorySinkOperator>(*sink_plan_node);
-  input_descriptor_ = std::make_unique<schema::RowDescriptor>(input_descriptors[0]);
+  input_descriptor_ = std::make_unique<table_store::schema::RowDescriptor>(input_descriptors[0]);
 
   return Status::OK();
 }

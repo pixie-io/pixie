@@ -14,7 +14,7 @@ namespace carnot {
 namespace exec {
 
 // PL_CARNOT_UPDATE_FOR_NEW_TYPES
-using schema::RowBatch;
+using table_store::schema::RowBatch;
 using types::ArrowToDataType;
 using types::BaseValueType;
 using types::BoolValueColumnWrapper;

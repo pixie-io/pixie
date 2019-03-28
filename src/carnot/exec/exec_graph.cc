@@ -9,18 +9,18 @@
 #include "src/carnot/exec/memory_sink_node.h"
 #include "src/carnot/exec/memory_source_node.h"
 #include "src/carnot/plan/plan_state.h"
-#include "src/carnot/schema/relation.h"
-#include "src/carnot/schema/schema.h"
 #include "src/common/memory/memory.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {
 namespace exec {
 
-using schema::RowDescriptor;
+using table_store::schema::RowDescriptor;
 
-Status ExecutionGraph::Init(std::shared_ptr<schema::Schema> schema, plan::PlanState* plan_state,
-                            ExecState* exec_state, plan::PlanFragment* pf) {
+Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
+                            plan::PlanState* plan_state, ExecState* exec_state,
+                            plan::PlanFragment* pf) {
   plan_state_ = plan_state;
   schema_ = schema;
   pf_ = pf;

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "src/shared/types/proto/types.proto";
 
-package pl.carnot.schemapb;
+package pl.table_store.schemapb;
 
 option go_package = "schemapb";
 

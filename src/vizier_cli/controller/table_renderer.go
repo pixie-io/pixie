@@ -12,7 +12,7 @@ import (
 	"github.com/TylerBrock/colorjson"
 	"github.com/fatih/color"
 	"github.com/olekukonko/tablewriter"
-	schemapb "pixielabs.ai/pixielabs/src/carnot/schema/proto"
+	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 )
 
 // Function getNumRows returns the number of rows in the input column.

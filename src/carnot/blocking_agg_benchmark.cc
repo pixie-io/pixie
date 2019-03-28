@@ -6,22 +6,20 @@
 #include <vector>
 
 #include "src/carnot/carnot.h"
-#include "src/carnot/schema/row_batch.h"
-#include "src/carnot/schema/row_descriptor.h"
-#include "src/carnot/schema/table.h"
 #include "src/carnot/udf/udf.h"
 #include "src/common/base/base.h"
 #include "src/common/benchmark/benchmark.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {
 namespace exec {
 
-using schema::Column;
-using schema::RowDescriptor;
-using schema::Table;
+using table_store::schema::Column;
+using table_store::schema::RowDescriptor;
+using table_store::schema::Table;
 
 const char* kGroupByNoneQuery =
     R"(
@@ -62,7 +60,7 @@ StatusOr<std::shared_ptr<Table>> CreateTable(std::vector<types::DataType> types,
     col_names.push_back(absl::StrFormat("col%d", col_idx));
   }
 
-  auto table = std::make_shared<Table>(schema::Relation(types, col_names));
+  auto table = std::make_shared<Table>(table_store::schema::Relation(types, col_names));
 
   for (size_t col_idx = 0; col_idx < types.size(); col_idx++) {
     auto col = table->GetColumn(col_idx);

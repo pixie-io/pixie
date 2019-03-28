@@ -10,8 +10,8 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/carnot/schema/proto:schema_pl_cc_proto",
         "//src/shared/types:cc_library",
+        "//src/table_store/proto:schema_pl_cc_proto",
         "//third_party:arrow",
     ],
 )
@@ -42,7 +42,6 @@ pl_cc_test(
     srcs = ["table_test.cc"],
     deps = [
         ":cc_library",
-        #        ":test_utils",
         "//third_party:arrow",
     ],
 )

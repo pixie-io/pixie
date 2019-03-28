@@ -7,17 +7,15 @@
 #include <utility>
 
 #include "src/carnot/compiler/registry_info.h"
-#include "src/carnot/schema/relation.h"
-#include "src/carnot/schema/row_descriptor.h"
-#include "src/carnot/schema/schema.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/types.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
 
-using RelationMap = std::unordered_map<std::string, schema::Relation>;
+using RelationMap = std::unordered_map<std::string, table_store::schema::Relation>;
 class CompilerState : public NotCopyable {
  public:
   /**

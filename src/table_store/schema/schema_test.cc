@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 
-#include "src/carnot/schema/schema.h"
+#include "src/table_store/schema/schema.h"
 
 namespace pl {
-namespace carnot {
+namespace table_store {
 namespace schema {
 
 class SchemaTest : public ::testing::Test {
@@ -53,5 +53,5 @@ TEST_F(SchemaTest, overwrite_relation) {
 }
 
 }  // namespace schema
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl

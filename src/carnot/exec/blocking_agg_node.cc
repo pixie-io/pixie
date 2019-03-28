@@ -16,8 +16,8 @@ namespace exec {
 using SharedArray = std::shared_ptr<arrow::Array>;
 constexpr int64_t kAggCompactionThreshold = 512;
 
-using schema::RowBatch;
-using schema::RowDescriptor;
+using table_store::schema::RowBatch;
+using table_store::schema::RowDescriptor;
 
 namespace {
 template <types::DataType DT>
@@ -42,8 +42,9 @@ void AppendToBuilder(arrow::ArrayBuilder *builder, RowTuple *rt, size_t rt_idx) 
 }
 
 template <types::DataType DT>
-void ExtractToColumnWrapper(const std::vector<GroupArgs> &group_args, const schema::RowBatch &rb,
-                            size_t col_idx, size_t rb_col_idx) {
+void ExtractToColumnWrapper(const std::vector<GroupArgs> &group_args,
+                            const table_store::schema::RowBatch &rb, size_t col_idx,
+                            size_t rb_col_idx) {
   size_t num_rows = rb.num_rows();
   DCHECK(num_rows <= group_args.size());
   for (size_t row_idx = 0; row_idx < num_rows; ++row_idx) {

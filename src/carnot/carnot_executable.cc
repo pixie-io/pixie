@@ -5,10 +5,10 @@
 #include <parser.hpp>
 
 #include "src/carnot/carnot.h"
-#include "src/carnot/schema/table.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/type_utils.h"
+#include "src/table_store/table_store.h"
 
 DEFINE_string(input_file, gflags::StringFromEnv("INPUT_FILE", ""),
               "The csv containing data to run the query on.");
@@ -77,8 +77,8 @@ void AddStringValueToRow(std::vector<std::string> *row, arrow::Array *arr, int64
  * @param filename The filename of the csv to convert.
  * @return The Carnot table.
  */
-std::shared_ptr<pl::carnot::schema::Table> GetTableFromCsv(const std::string &filename,
-                                                           int64_t rb_size) {
+std::shared_ptr<pl::table_store::schema::Table> GetTableFromCsv(const std::string &filename,
+                                                                int64_t rb_size) {
   std::ifstream f(filename);
   aria::csv::CsvParser parser(f);
 
@@ -108,8 +108,8 @@ std::shared_ptr<pl::carnot::schema::Table> GetTableFromCsv(const std::string &fi
   }
 
   // Construct the table.
-  pl::carnot::schema::Relation rel(types, names);
-  auto table = std::make_shared<pl::carnot::schema::Table>(rel);
+  pl::table_store::schema::Relation rel(types, names);
+  auto table = std::make_shared<pl::table_store::schema::Table>(rel);
 
   // Add rowbatches to the table.
   row_idx = 0;
@@ -177,7 +177,7 @@ std::shared_ptr<pl::carnot::schema::Table> GetTableFromCsv(const std::string &fi
  * @param filename The name of the output CSV file.
  * @param table The table to write to a CSV.
  */
-void TableToCsv(const std::string &filename, pl::carnot::schema::Table *table) {
+void TableToCsv(const std::string &filename, pl::table_store::schema::Table *table) {
   std::ofstream output_csv;
   output_csv.open(filename);
 

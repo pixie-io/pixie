@@ -16,14 +16,15 @@ class MockExecNode : public ExecNode {
   explicit MockExecNode(const ExecNodeType& exec_node_type) : ExecNode(exec_node_type) {}
 
   MOCK_METHOD0(DebugStringImpl, std::string());
-  MOCK_METHOD3(InitImpl, Status(const plan::Operator& plan_node,
-                                const schema::RowDescriptor& output_descriptor,
-                                const std::vector<schema::RowDescriptor>& input_descriptors));
+  MOCK_METHOD3(InitImpl,
+               Status(const plan::Operator& plan_node,
+                      const table_store::schema::RowDescriptor& output_descriptor,
+                      const std::vector<table_store::schema::RowDescriptor>& input_descriptors));
   MOCK_METHOD1(PrepareImpl, Status(ExecState* exec_state));
   MOCK_METHOD1(OpenImpl, Status(ExecState* exec_state));
   MOCK_METHOD1(CloseImpl, Status(ExecState* exec_state));
   MOCK_METHOD1(GenerateNextImpl, Status(ExecState*));
-  MOCK_METHOD2(ConsumeNextImpl, Status(ExecState*, const schema::RowBatch&));
+  MOCK_METHOD2(ConsumeNextImpl, Status(ExecState*, const table_store::schema::RowBatch&));
 };
 
 }  // namespace exec

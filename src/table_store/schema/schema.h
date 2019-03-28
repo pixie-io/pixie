@@ -4,11 +4,11 @@
 #include <string>
 #include <vector>
 
-#include "src/carnot/schema/relation.h"
 #include "src/common/base/base.h"
+#include "src/table_store/schema/relation.h"
 
 namespace pl {
-namespace carnot {
+namespace table_store {
 namespace schema {
 
 /**
@@ -38,5 +38,5 @@ class Schema {
 };
 
 }  // namespace schema
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl

@@ -7,9 +7,8 @@
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/plan/utils.h"
 #include "src/carnot/proto/plan.pb.h"
-#include "src/carnot/schema/relation.h"
-#include "src/carnot/schema/schema.h"
 #include "src/common/base/base.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {
@@ -60,15 +59,16 @@ Status MemorySourceOperator::Init(const carnotpb::MemorySourceOperator &pb) {
   return Status::OK();
 }
 
-StatusOr<schema::Relation> MemorySourceOperator::OutputRelation(
-    const schema::Schema &, const PlanState &, const std::vector<int64_t> &input_ids) const {
+StatusOr<table_store::schema::Relation> MemorySourceOperator::OutputRelation(
+    const table_store::schema::Schema &, const PlanState &,
+    const std::vector<int64_t> &input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
   if (!input_ids.empty()) {
     // TODO(zasgar): We should figure out if we need to treat the "source table" as
     // an input relation.
     return error::InvalidArgument("Source operator cannot have any inputs");
   }
-  schema::Relation r;
+  table_store::schema::Relation r;
   for (int i = 0; i < pb_.column_idxs_size(); ++i) {
     r.AddColumn(pb_.column_types(i), pb_.column_names(i));
   }
@@ -112,8 +112,8 @@ Status MapOperator::Init(const carnotpb::MapOperator &pb) {
   return Status::OK();
 }
 
-StatusOr<schema::Relation> MapOperator::OutputRelation(
-    const schema::Schema &schema, const PlanState &state,
+StatusOr<table_store::schema::Relation> MapOperator::OutputRelation(
+    const table_store::schema::Schema &schema, const PlanState &state,
     const std::vector<int64_t> &input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
   if (input_ids.size() != 1) {
@@ -122,7 +122,7 @@ StatusOr<schema::Relation> MapOperator::OutputRelation(
   if (!schema.HasRelation(input_ids[0])) {
     return error::NotFound("Missing relation ($0) for input of Map", input_ids[0]);
   }
-  schema::Relation r;
+  table_store::schema::Relation r;
   for (size_t idx = 0; idx < expressions_.size(); ++idx) {
     auto s = expressions_[idx]->OutputDataType(state, schema);
     PL_RETURN_IF_ERROR(s);
@@ -161,8 +161,8 @@ Status BlockingAggregateOperator::Init(const carnotpb::BlockingAggregateOperator
   return Status::OK();
 }
 
-StatusOr<schema::Relation> BlockingAggregateOperator::OutputRelation(
-    const schema::Schema &schema, const PlanState &state,
+StatusOr<table_store::schema::Relation> BlockingAggregateOperator::OutputRelation(
+    const table_store::schema::Schema &schema, const PlanState &state,
     const std::vector<int64_t> &input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
   if (input_ids.size() != 1) {
@@ -176,7 +176,7 @@ StatusOr<schema::Relation> BlockingAggregateOperator::OutputRelation(
   auto input_relation_s = schema.GetRelation(input_ids[0]);
   PL_RETURN_IF_ERROR(input_relation_s);
   const auto input_relation = input_relation_s.ConsumeValueOrDie();
-  schema::Relation output_relation;
+  table_store::schema::Relation output_relation;
 
   for (int idx = 0; idx < pb_.groups_size(); ++idx) {
     int64_t node_id = pb_.groups(idx).node();
@@ -210,12 +210,11 @@ Status MemorySinkOperator::Init(const carnotpb::MemorySinkOperator &pb) {
   return Status::OK();
 }
 
-StatusOr<schema::Relation> MemorySinkOperator::OutputRelation(const schema::Schema &,
-                                                              const PlanState &,
-                                                              const std::vector<int64_t> &) const {
+StatusOr<table_store::schema::Relation> MemorySinkOperator::OutputRelation(
+    const table_store::schema::Schema &, const PlanState &, const std::vector<int64_t> &) const {
   DCHECK(is_initialized_) << "Not initialized";
   // There are no outputs.
-  return schema::Relation();
+  return table_store::schema::Relation();
 }
 
 }  // namespace plan

@@ -96,7 +96,7 @@ std::string ScalarValue::DebugString() const {
 }
 
 StatusOr<types::DataType> ScalarValue::OutputDataType(const PlanState &,
-                                                      const schema::Schema &) const {
+                                                      const table_store::schema::Schema &) const {
   DCHECK(is_initialized_) << "Not initialized";
   return DataType();
 }
@@ -132,10 +132,10 @@ std::string Column::DebugString() const {
   return absl::StrFormat("node<%d>::col[%d]", NodeID(), Index());
 }
 
-StatusOr<types::DataType> Column::OutputDataType(const PlanState &,
-                                                 const schema::Schema &input_schema) const {
+StatusOr<types::DataType> Column::OutputDataType(
+    const PlanState &, const table_store::schema::Schema &input_schema) const {
   DCHECK(is_initialized_) << "Not initialized";
-  StatusOr<const schema::Relation> s = input_schema.GetRelation(NodeID());
+  StatusOr<const table_store::schema::Relation> s = input_schema.GetRelation(NodeID());
 
   PL_RETURN_IF_ERROR(s);
   const auto &relation = s.ValueOrDie();
@@ -212,8 +212,8 @@ std::vector<const Column *> ScalarFunc::ColumnDeps() {
   return cols;
 }
 
-StatusOr<types::DataType> ScalarFunc::OutputDataType(const PlanState &state,
-                                                     const schema::Schema &input_schema) const {
+StatusOr<types::DataType> ScalarFunc::OutputDataType(
+    const PlanState &state, const table_store::schema::Schema &input_schema) const {
   // The output data type of a function is based on the computed types of the children
   // followed by the looking up the function in the registry and getting the output
   // data type of the function.
@@ -294,7 +294,7 @@ std::vector<const Column *> AggregateExpression::ColumnDeps() {
 }
 
 StatusOr<types::DataType> AggregateExpression::OutputDataType(
-    const PlanState &state, const schema::Schema &input_schema) const {
+    const PlanState &state, const table_store::schema::Schema &input_schema) const {
   // The output data type of a function is based on the computed types of the args
   // followed by the looking up the function in the registry and getting the output
   // data type of the function.

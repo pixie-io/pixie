@@ -101,19 +101,20 @@ class CompilerTest : public ::testing::Test {
     EXPECT_OK(info_->Init(info_pb));
 
     auto rel_map = std::make_unique<RelationMap>();
-    rel_map->emplace("sequences",
-                     schema::Relation(std::vector<types::DataType>({
+    rel_map->emplace("sequences", table_store::schema::Relation(
+                                      std::vector<types::DataType>({
                                           types::DataType::TIME64NS,
                                           types::DataType::FLOAT64,
                                           types::DataType::FLOAT64,
                                       }),
                                       std::vector<std::string>({"_time", "xmod10", "PIx"})));
 
-    rel_map->emplace("cpu",
-                     schema::Relation(std::vector<types::DataType>(
-                                          {types::DataType::INT64, types::DataType::FLOAT64,
-                                           types::DataType::FLOAT64, types::DataType::FLOAT64}),
-                                      std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
+    rel_map->emplace(
+        "cpu",
+        table_store::schema::Relation(
+            std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
+                                          types::DataType::FLOAT64, types::DataType::FLOAT64}),
+            std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
   }
   std::unique_ptr<CompilerState> compiler_state_;

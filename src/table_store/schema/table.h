@@ -10,16 +10,16 @@
 
 #include "absl/base/internal/spinlock.h"
 #include "absl/strings/str_format.h"
-#include "src/carnot/schema/proto/schema.pb.h"
-#include "src/carnot/schema/relation.h"
-#include "src/carnot/schema/row_batch.h"
-#include "src/carnot/schema/row_descriptor.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
+#include "src/table_store/proto/schema.pb.h"
+#include "src/table_store/schema/relation.h"
+#include "src/table_store/schema/row_batch.h"
+#include "src/table_store/schema/row_descriptor.h"
 
 namespace pl {
-namespace carnot {
+namespace table_store {
 namespace schema {
 
 using RecordBatchSPtr = std::shared_ptr<arrow::RecordBatch>;
@@ -161,7 +161,7 @@ class Table : public NotCopyable {
    * @param table_proto The table proto to write to.
    * @return Status of conversion.
    */
-  Status ToProto(schemapb::Table* table_proto) const;
+  Status ToProto(table_store::schemapb::Table* table_proto) const;
 
  private:
   /**
@@ -187,5 +187,5 @@ class Table : public NotCopyable {
 };
 
 }  // namespace schema
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl

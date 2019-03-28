@@ -138,7 +138,7 @@ Status Controller::Run() {
 
 // Temporary and to be replaced by data table from Stirling and Executor
 Status Controller::AddDummyTable(const std::string& name,
-                                 std::shared_ptr<carnot::schema::Table> table) {
+                                 std::shared_ptr<table_store::schema::Table> table) {
   carnot_->AddTable(name, table);
   return Status::OK();
 }
@@ -158,7 +158,7 @@ Status Controller::InitThrowaway() {
   for (const auto& relation_info : relation_info_vec) {
     PL_RETURN_IF_ERROR(
         carnot_->AddTable(relation_info.name, relation_info.id,
-                          std::make_shared<carnot::schema::Table>(relation_info.relation)));
+                          std::make_shared<table_store::schema::Table>(relation_info.relation)));
   }
   return Status::OK();
 }

@@ -8,10 +8,10 @@
 #include <utility>
 #include <vector>
 
-#include "src/carnot/schema/row_descriptor.h"
+#include "src/table_store/schema/row_descriptor.h"
 
 namespace pl {
-namespace carnot {
+namespace table_store {
 namespace schema {
 
 /**
@@ -78,5 +78,5 @@ class RowBatch {
 };
 
 }  // namespace schema
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl

@@ -4,12 +4,12 @@
 
 #include "absl/strings/str_join.h"
 
-#include "src/carnot/schema/relation.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/type_utils.h"
+#include "src/table_store/schema/relation.h"
 
 namespace pl {
-namespace carnot {
+namespace table_store {
 namespace schema {
 
 using std::string;
@@ -74,7 +74,7 @@ StatusOr<Relation> Relation::MakeSubRelation(const std::vector<std::string> &col
   }
   return new_relation;
 }
-Status Relation::ToProto(schemapb::Relation *relation_proto) const {
+Status Relation::ToProto(table_store::schemapb::Relation *relation_proto) const {
   CHECK(relation_proto != nullptr);
   size_t num_columns = NumColumns();
   for (size_t col_idx = 0; col_idx < num_columns; ++col_idx) {
@@ -86,5 +86,5 @@ Status Relation::ToProto(schemapb::Relation *relation_proto) const {
 }
 
 }  // namespace schema
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl

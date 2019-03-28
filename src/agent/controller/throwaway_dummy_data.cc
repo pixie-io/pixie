@@ -7,14 +7,13 @@
 #include <sole.hpp>
 
 #include "src/agent/controller/throwaway_dummy_data.h"
-#include "src/carnot/schema/relation.h"
-#include "src/carnot/schema/table.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/types.h"
+#include "src/table_store/table_store.h"
 
-using pl::carnot::schema::Column;
-using pl::carnot::schema::RowDescriptor;
-using pl::carnot::schema::Table;
+using pl::table_store::schema::Column;
+using pl::table_store::schema::RowDescriptor;
+using pl::table_store::schema::Table;
 
 using pl::types::DataType;
 using pl::types::Float64Value;
@@ -80,7 +79,7 @@ StatusOr<std::shared_ptr<Table>> FakeHipsterTable() {
   int bad_start = num_records / 3;
   int bad_stop = bad_start + num_records / 10;
 
-  auto table = std::make_shared<Table>(carnot::schema::Relation(
+  auto table = std::make_shared<Table>(table_store::schema::Relation(
       {DataType::TIME64NS, DataType::STRING, DataType::STRING, DataType::FLOAT64, DataType::INT64},
       {"time_", "transaction_id", "http_request", "latency_ms", "http_response"}));
   auto time_col = table->GetColumn(0);

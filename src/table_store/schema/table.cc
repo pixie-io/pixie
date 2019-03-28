@@ -6,50 +6,50 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
-#include "src/carnot/schema/relation.h"
-#include "src/carnot/schema/table.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/type_utils.h"
+#include "src/table_store/schema/relation.h"
+#include "src/table_store/schema/table.h"
 
 namespace pl {
-namespace carnot {
+namespace table_store {
 namespace schema {
 
 using types::DataType;
 
 template <DataType T>
-auto GetPBDataColumn(schemapb::Column* /*data_col*/) {
+auto GetPBDataColumn(table_store::schemapb::Column* /*data_col*/) {
   static_assert(sizeof(T) != 0, "Unsupported data type");
 }
 
 template <>
-auto GetPBDataColumn<DataType::BOOLEAN>(schemapb::Column* data_col) {
+auto GetPBDataColumn<DataType::BOOLEAN>(table_store::schemapb::Column* data_col) {
   return data_col->mutable_boolean_data();
 }
 
 template <>
-auto GetPBDataColumn<DataType::TIME64NS>(schemapb::Column* data_col) {
+auto GetPBDataColumn<DataType::TIME64NS>(table_store::schemapb::Column* data_col) {
   return data_col->mutable_time64ns_data();
 }
 
 template <>
-auto GetPBDataColumn<DataType::INT64>(schemapb::Column* data_col) {
+auto GetPBDataColumn<DataType::INT64>(table_store::schemapb::Column* data_col) {
   return data_col->mutable_int64_data();
 }
 
 template <>
-auto GetPBDataColumn<DataType::FLOAT64>(schemapb::Column* data_col) {
+auto GetPBDataColumn<DataType::FLOAT64>(table_store::schemapb::Column* data_col) {
   return data_col->mutable_float64_data();
 }
 
 template <>
-auto GetPBDataColumn<DataType::STRING>(schemapb::Column* data_col) {
+auto GetPBDataColumn<DataType::STRING>(table_store::schemapb::Column* data_col) {
   return data_col->mutable_string_data();
 }
 
 template <DataType T>
-void CopyIntoOutputPB(schemapb::Column* data_col, arrow::Array* col) {
+void CopyIntoOutputPB(table_store::schemapb::Column* data_col, arrow::Array* col) {
   CHECK(data_col != nullptr);
   CHECK(col != nullptr);
 
@@ -68,8 +68,8 @@ void CopyIntoOutputPB(schemapb::Column* data_col, arrow::Array* col) {
  * @return Status of conversion.
  */
 Status ConvertRecordBatchToProto(arrow::RecordBatch* rb,
-                                 const pl::carnot::schema::Relation& relation,
-                                 schemapb::RowBatchData* rb_data_pb) {
+                                 const pl::table_store::schema::Relation& relation,
+                                 table_store::schemapb::RowBatchData* rb_data_pb) {
   for (int col_idx = 0; col_idx < rb->num_columns(); ++col_idx) {
     auto col = rb->column(col_idx);
     auto output_col_data = rb_data_pb->add_cols();
@@ -136,7 +136,7 @@ Status Table::AddColumn(std::shared_ptr<Column> col) {
   return Status::OK();
 }
 
-Status Table::ToProto(schemapb::Table* table_proto) const {
+Status Table::ToProto(table_store::schemapb::Table* table_proto) const {
   CHECK(table_proto != nullptr);
   auto row_batch_proto = table_proto->add_row_batches();
   auto relation = GetRelation();
@@ -379,5 +379,5 @@ StatusOr<std::vector<RecordBatchSPtr>> Table::GetTableAsRecordBatches() const {
   return record_batches;
 }
 }  // namespace schema
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl

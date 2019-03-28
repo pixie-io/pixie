@@ -4,13 +4,13 @@
 #include <gtest/gtest.h>
 #include <vector>
 
-#include "src/carnot/schema/proto/schema.pb.h"
-#include "src/carnot/schema/relation.h"
-#include "src/carnot/schema/table.h"
 #include "src/shared/types/arrow_adapter.h"
+#include "src/table_store/proto/schema.pb.h"
+#include "src/table_store/schema/relation.h"
+#include "src/table_store/schema/table.h"
 
 namespace pl {
-namespace carnot {
+namespace table_store {
 namespace schema {
 
 namespace {
@@ -288,7 +288,7 @@ TEST(TableTest, find_batch_position_greater_or_eq) {
 
 TEST(TableTest, ToProto) {
   auto table = TestTable();
-  schemapb::Table table_proto;
+  table_store::schemapb::Table table_proto;
   EXPECT_OK(table->ToProto(&table_proto));
   LOG(ERROR) << table_proto.DebugString();
 
@@ -334,11 +334,11 @@ row_batches {
   )";
 
   google::protobuf::util::MessageDifferencer differ;
-  schemapb::Table expected_proto;
+  table_store::schemapb::Table expected_proto;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected, &expected_proto));
   EXPECT_TRUE(differ.Compare(expected_proto, table_proto));
 }
 
 }  // namespace schema
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl

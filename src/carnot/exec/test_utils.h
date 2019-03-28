@@ -12,10 +12,9 @@
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/row_tuple.h"
 #include "src/carnot/plan/operators.h"
-#include "src/carnot/schema/row_descriptor.h"
-#include "src/carnot/schema/table.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
+#include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {
@@ -24,9 +23,10 @@ namespace exec {
 class CarnotTestUtils {
  public:
   CarnotTestUtils() = default;
-  static std::shared_ptr<schema::Table> TestTable() {
-    schema::Relation rel({types::DataType::FLOAT64, types::DataType::INT64}, {"col1", "col2"});
-    auto table = std::make_shared<schema::Table>(rel);
+  static std::shared_ptr<table_store::schema::Table> TestTable() {
+    table_store::schema::Relation rel({types::DataType::FLOAT64, types::DataType::INT64},
+                                      {"col1", "col2"});
+    auto table = std::make_shared<table_store::schema::Table>(rel);
 
     auto col1 = table->GetColumn(0);
     std::vector<types::Float64Value> col1_in1 = {0.5, 1.2, 5.3};
@@ -50,12 +50,13 @@ class CarnotTestUtils {
   static const std::vector<types::StringValue> big_test_strings;
   static const std::vector<std::pair<int64_t, int64_t>> split_idx;
 
-  static std::shared_ptr<schema::Table> BigTestTable() {
-    schema::Relation rel({types::DataType::TIME64NS, types::DataType::FLOAT64,
-                          types::DataType::INT64, types::DataType::INT64, types::DataType::STRING},
-                         {"time_", "col2", "col3", "num_groups", "string_groups"});
+  static std::shared_ptr<table_store::schema::Table> BigTestTable() {
+    table_store::schema::Relation rel(
+        {types::DataType::TIME64NS, types::DataType::FLOAT64, types::DataType::INT64,
+         types::DataType::INT64, types::DataType::STRING},
+        {"time_", "col2", "col3", "num_groups", "string_groups"});
 
-    auto table = std::make_shared<schema::Table>(rel);
+    auto table = std::make_shared<table_store::schema::Table>(rel);
 
     auto col1 = table->GetColumn(0);
     auto col2 = table->GetColumn(1);
@@ -103,8 +104,8 @@ const std::vector<std::pair<int64_t, int64_t>> CarnotTestUtils::split_idx({{0, 3
  */
 class RowBatchBuilder {
  public:
-  RowBatchBuilder(const schema::RowDescriptor& rd, int64_t size, bool eos_set) {
-    rb_ = std::make_unique<schema::RowBatch>(rd, size);
+  RowBatchBuilder(const table_store::schema::RowDescriptor& rd, int64_t size, bool eos_set) {
+    rb_ = std::make_unique<table_store::schema::RowBatch>(rd, size);
     rb_->set_eos(eos_set);
   }
 
@@ -125,10 +126,10 @@ class RowBatchBuilder {
   /**
    * @return The rowbatch.
    */
-  schema::RowBatch& get() { return *rb_; }
+  table_store::schema::RowBatch& get() { return *rb_; }
 
  private:
-  std::unique_ptr<schema::RowBatch> rb_;
+  std::unique_ptr<table_store::schema::RowBatch> rb_;
 };
 
 /*
@@ -146,8 +147,10 @@ class RowBatchBuilder {
 template <typename TExecNode, typename TPlanNode>
 class ExecNodeTester {
  public:
-  ExecNodeTester(const plan::Operator& plan_node, const schema::RowDescriptor& output_descriptor,
-                 std::vector<schema::RowDescriptor> input_descriptors, ExecState* exec_state)
+  ExecNodeTester(const plan::Operator& plan_node,
+                 const table_store::schema::RowDescriptor& output_descriptor,
+                 std::vector<table_store::schema::RowDescriptor> input_descriptors,
+                 ExecState* exec_state)
       : output_descriptor_(output_descriptor),
         input_descriptors_(input_descriptors),
         exec_state_(exec_state) {
@@ -185,8 +188,8 @@ class ExecNodeTester {
    * @return the ExecNodeTester, to allow for chaining.
    */
   ExecNodeTester& GenerateNextResult() {
-    auto check_result_batch = [&](ExecState*, const schema::RowBatch& child_rb) {
-      current_rb_ = std::make_unique<schema::RowBatch>(child_rb);
+    auto check_result_batch = [&](ExecState*, const table_store::schema::RowBatch& child_rb) {
+      current_rb_ = std::make_unique<table_store::schema::RowBatch>(child_rb);
     };
 
     EXPECT_CALL(mock_child_, ConsumeNextImpl(testing::_, testing::_))
@@ -205,7 +208,7 @@ class ExecNodeTester {
    * @param error The expected error that ConsumeNext should fail with.
    * @return the ExecNodeTester, to allow for chaining.
    */
-  ExecNodeTester& ConsumeNextShouldFail(const schema::RowBatch& rb, Status error) {
+  ExecNodeTester& ConsumeNextShouldFail(const table_store::schema::RowBatch& rb, Status error) {
     EXPECT_CALL(mock_child_, ConsumeNextImpl(testing::_, testing::_))
         .Times(1)
         .WillRepeatedly(testing::Return(error));
@@ -222,9 +225,9 @@ class ExecNodeTester {
    * @param child_called Whether the mock child's ConsumeNext should be called.
    * @return the ExecNodeTester, to allow for chaining.
    */
-  ExecNodeTester& ConsumeNext(const schema::RowBatch& rb, bool child_called = true) {
-    auto check_result_batch = [&](ExecState*, const schema::RowBatch& child_rb) {
-      current_rb_ = std::make_unique<schema::RowBatch>(child_rb);
+  ExecNodeTester& ConsumeNext(const table_store::schema::RowBatch& rb, bool child_called = true) {
+    auto check_result_batch = [&](ExecState*, const table_store::schema::RowBatch& child_rb) {
+      current_rb_ = std::make_unique<table_store::schema::RowBatch>(child_rb);
     };
 
     if (child_called) {
@@ -244,7 +247,8 @@ class ExecNodeTester {
    * ConsumeNext/GenerateNext.
    * @return the ExecNodeTester, to allow for chaining.
    */
-  ExecNodeTester& ExpectRowBatch(const schema::RowBatch& expected_rb, bool ordered = true) {
+  ExecNodeTester& ExpectRowBatch(const table_store::schema::RowBatch& expected_rb,
+                                 bool ordered = true) {
     if (ordered) {
       ValidateRowBatch(expected_rb, *current_rb_.get());
     } else {
@@ -255,7 +259,8 @@ class ExecNodeTester {
   }
 
  private:
-  void ValidateRowBatch(const schema::RowBatch& expected_rb, const schema::RowBatch& actual_rb) {
+  void ValidateRowBatch(const table_store::schema::RowBatch& expected_rb,
+                        const table_store::schema::RowBatch& actual_rb) {
     EXPECT_EQ(actual_rb.num_rows(), expected_rb.num_rows());
     EXPECT_EQ(actual_rb.num_columns(), expected_rb.num_columns());
     for (size_t i = 0; i < actual_rb.desc().size(); i++) {
@@ -277,8 +282,8 @@ class ExecNodeTester {
     actual_rt->SetValue(col, ValueType(types::GetValueFromArrowArray<DT>(actual_arr, row)));
   }
 
-  void ValidateUnorderedRowBatch(const schema::RowBatch& expected_rb,
-                                 const schema::RowBatch& actual_rb) {
+  void ValidateUnorderedRowBatch(const table_store::schema::RowBatch& expected_rb,
+                                 const table_store::schema::RowBatch& actual_rb) {
     EXPECT_EQ(actual_rb.num_rows(), expected_rb.num_rows());
     EXPECT_EQ(actual_rb.num_columns(), expected_rb.num_columns());
 
@@ -321,10 +326,10 @@ class ExecNodeTester {
   MockExecNode mock_child_;
   std::unique_ptr<TExecNode> exec_node_;
   std::unique_ptr<TPlanNode> plan_node_;
-  schema::RowDescriptor output_descriptor_;
-  std::vector<schema::RowDescriptor> input_descriptors_;
+  table_store::schema::RowDescriptor output_descriptor_;
+  std::vector<table_store::schema::RowDescriptor> input_descriptors_;
   ExecState* exec_state_;
-  std::unique_ptr<schema::RowBatch> current_rb_;
+  std::unique_ptr<table_store::schema::RowBatch> current_rb_;
 };
 }  // namespace exec
 }  // namespace carnot

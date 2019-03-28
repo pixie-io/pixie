@@ -4,11 +4,11 @@
 #include <utility>
 #include <vector>
 
+#include "../../shared/types/types.h"
 #include "absl/strings/str_format.h"
-#include "src/shared/types/types.h"
 
 namespace pl {
-namespace carnot {
+namespace table_store {
 namespace schema {
 
 /**
@@ -52,5 +52,5 @@ class RowDescriptor {
 };
 
 }  // namespace schema
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl
