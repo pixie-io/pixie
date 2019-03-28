@@ -220,12 +220,13 @@ int main(int argc, char *argv[]) {
   auto table = GetTableFromCsv(filename, rb_size);
 
   // Execute query.
-  auto carnot_or_s = pl::carnot::Carnot::Create();
+  auto table_store = std::make_shared<pl::table_store::TableStore>();
+  auto carnot_or_s = pl::carnot::Carnot::Create(table_store);
   if (!carnot_or_s.ok()) {
     LOG(FATAL) << "Carnot failed to init.";
   }
   auto carnot = carnot_or_s.ConsumeValueOrDie();
-  carnot->AddTable("csv_table", table);
+  table_store->AddTable("csv_table", table);
   auto exec_status = carnot->ExecuteQuery(query, pl::CurrentTimeNS());
   auto res = exec_status.ConsumeValueOrDie();
 

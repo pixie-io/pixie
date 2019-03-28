@@ -34,14 +34,14 @@ class EngineState : public NotCopyable {
         schema_(std::move(schema)),
         registry_info_(std::move(registry_info)) {}
 
-  static StatusOr<std::unique_ptr<EngineState>> CreateDefault() {
+  static StatusOr<std::unique_ptr<EngineState>> CreateDefault(
+      std::shared_ptr<table_store::TableStore> table_store) {
     // Initialize state.
     auto scalar_udf_registry = std::make_unique<udf::ScalarUDFRegistry>("udf_registry");
     auto uda_registry = std::make_unique<udf::UDARegistry>("uda_registry");
     builtins::RegisterBuiltinsOrDie(scalar_udf_registry.get());
     builtins::RegisterBuiltinsOrDie(uda_registry.get());
 
-    auto table_store = std::make_shared<exec::TableStore>();
     auto schema = std::make_shared<table_store::schema::Schema>();
 
     auto registry_info = std::make_unique<compiler::RegistryInfo>();

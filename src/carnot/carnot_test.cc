@@ -23,11 +23,13 @@ class CarnotTest : public ::testing::Test {
  protected:
   void SetUp() override {
     Test::SetUp();
-    carnot_ = Carnot::Create().ConsumeValueOrDie();
+    table_store_ = std::make_shared<table_store::TableStore>();
+    carnot_ = Carnot::Create(table_store_).ConsumeValueOrDie();
     auto table = CarnotTestUtils::TestTable();
-    carnot_->AddTable("test_table", table);
+    table_store_->AddTable("test_table", table);
   }
 
+  std::shared_ptr<table_store::TableStore> table_store_;
   std::unique_ptr<Carnot> carnot_;
 };
 
@@ -51,7 +53,7 @@ TEST_F(CarnotTest, basic) {
   EXPECT_GT(res.compile_time_ns, 0);
   EXPECT_GT(res.exec_time_ns, 0);
 
-  auto output_table = carnot_->GetTable("test_output");
+  auto output_table = table_store_->GetTable("test_output");
   EXPECT_EQ(2, output_table->NumBatches());
 
   auto rb1 =
@@ -82,7 +84,7 @@ TEST_F(CarnotTest, map_test) {
   auto s = carnot_->ExecuteQuery(query, 0);
   ASSERT_OK(s);
 
-  auto output_table = carnot_->GetTable("test_output");
+  auto output_table = table_store_->GetTable("test_output");
   EXPECT_EQ(2, output_table->NumBatches());
   //
   auto rb1 = output_table->GetRowBatch(0, std::vector<int64_t>({0}), arrow::default_memory_pool())
@@ -196,7 +198,7 @@ TEST_F(CarnotTest, map_op_udf_div) {
 
 TEST_F(CarnotTest, order_test) {
   auto table = CarnotTestUtils::BigTestTable();
-  carnot_->AddTable("big_test_table", table);
+  table_store_->AddTable("big_test_table", table);
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col2', 'col3']).Map(fn=lambda "
@@ -208,7 +210,7 @@ TEST_F(CarnotTest, order_test) {
   auto s = carnot_->ExecuteQuery(query, 0);
   ASSERT_OK(s);
 
-  auto output_table = carnot_->GetTable("test_output");
+  auto output_table = table_store_->GetTable("test_output");
   EXPECT_EQ(3, output_table->NumBatches());
   EXPECT_EQ(3, output_table->NumColumns());
 
@@ -238,7 +240,7 @@ TEST_F(CarnotTest, order_test) {
 TEST_F(CarnotTest, range_test_multiple_rbs) {
   auto table = CarnotTestUtils::BigTestTable();
 
-  carnot_->AddTable("big_test_table", table);
+  table_store_->AddTable("big_test_table", table);
   int64_t start_time = 2;
   int64_t stop_time = 6;
   auto query = absl::StrJoin(
@@ -253,7 +255,7 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
 
-  auto output_table = carnot_->GetTable("range_output");
+  auto output_table = table_store_->GetTable("range_output");
   EXPECT_EQ(2, output_table->NumBatches());
   EXPECT_EQ(3, output_table->NumColumns());
 
@@ -301,7 +303,7 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
 TEST_F(CarnotTest, range_test_single_rb) {
   auto table = CarnotTestUtils::BigTestTable();
 
-  carnot_->AddTable("big_test_table", table);
+  table_store_->AddTable("big_test_table", table);
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col2', "
@@ -315,7 +317,7 @@ TEST_F(CarnotTest, range_test_single_rb) {
   auto s = carnot_->ExecuteQuery(query, 0);
   ASSERT_OK(s);
 
-  auto output_table = carnot_->GetTable("range_output");
+  auto output_table = table_store_->GetTable("range_output");
   EXPECT_EQ(1, output_table->NumBatches());
   EXPECT_EQ(3, output_table->NumColumns());
 
@@ -344,7 +346,7 @@ TEST_F(CarnotTest, empty_range_test) {
   // rowbatch.
   auto table = CarnotTestUtils::BigTestTable();
 
-  carnot_->AddTable("big_test_table", table);
+  table_store_->AddTable("big_test_table", table);
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col2', "
@@ -362,7 +364,7 @@ TEST_F(CarnotTest, empty_range_test) {
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
 
-  auto output_table = carnot_->GetTable("range_output");
+  auto output_table = table_store_->GetTable("range_output");
   EXPECT_EQ(0, output_table->NumBatches());
   EXPECT_EQ(3, output_table->NumColumns());
 }
@@ -385,7 +387,7 @@ class CarnotRangeTest
       query = absl::Substitute(query, sub_time.val, "plc.now()");
     }
     auto table = CarnotTestUtils::BigTestTable();
-    carnot_->AddTable("big_test_table", table);
+    table_store_->AddTable("big_test_table", table);
 
     auto max_time = CarnotTestUtils::big_test_col1[CarnotTestUtils::big_test_col1.size() - 1];
     now_time_ = max_time.val + 1;
@@ -405,7 +407,7 @@ TEST_P(CarnotRangeTest, range_now_keyword_test) {
   auto s = carnot_->ExecuteQuery(query, now_time_);
   ASSERT_OK(s);
 
-  auto output_table = carnot_->GetTable("range_output");
+  auto output_table = table_store_->GetTable("range_output");
   EXPECT_EQ(num_batches, output_table->NumBatches());
   EXPECT_EQ(2, output_table->NumColumns());
 }
@@ -415,7 +417,7 @@ INSTANTIATE_TEST_CASE_P(CarnotRangeVariants, CarnotRangeTest, ::testing::ValuesI
 TEST_F(CarnotTest, group_by_all_agg_test) {
   auto table = CarnotTestUtils::BigTestTable();
 
-  carnot_->AddTable("big_test_table", table);
+  table_store_->AddTable("big_test_table", table);
   auto agg_dict =
       absl::StrJoin({"'mean' : pl.mean(r.col2)", "'count' : pl.count(r.col3)",
                      "'min' : pl.min(r.col2)", "'max' : pl.max(r.col3)", "'sum' : pl.sum(r.col3)"},
@@ -430,7 +432,7 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
   query = absl::Substitute(query, agg_dict);
   // now() not called, doesn't matter what now is.
   auto s = carnot_->ExecuteQuery(query, 0);
-  auto output_table = carnot_->GetTable("test_output");
+  auto output_table = table_store_->GetTable("test_output");
   EXPECT_EQ(1, output_table->NumBatches());
   EXPECT_EQ(5, output_table->NumColumns());
 
@@ -482,7 +484,7 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
 TEST_F(CarnotTest, group_by_col_agg_test) {
   auto table = CarnotTestUtils::BigTestTable();
 
-  carnot_->AddTable("big_test_table", table);
+  table_store_->AddTable("big_test_table", table);
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col3', 'num_groups'])",
@@ -495,7 +497,7 @@ TEST_F(CarnotTest, group_by_col_agg_test) {
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
 
-  auto output_table = carnot_->GetTable("test_output");
+  auto output_table = table_store_->GetTable("test_output");
   EXPECT_EQ(1, output_table->NumBatches());
   EXPECT_EQ(2, output_table->NumColumns());
   auto rb1 =
@@ -521,7 +523,7 @@ TEST_F(CarnotTest, group_by_col_agg_test) {
 TEST_F(CarnotTest, multiple_group_by_test) {
   auto table = CarnotTestUtils::BigTestTable();
 
-  carnot_->AddTable("big_test_table", table);
+  table_store_->AddTable("big_test_table", table);
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col3', 'num_groups', "
@@ -536,7 +538,7 @@ TEST_F(CarnotTest, multiple_group_by_test) {
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
 
-  auto output_table = carnot_->GetTable("test_output");
+  auto output_table = table_store_->GetTable("test_output");
   EXPECT_EQ(1, output_table->NumBatches());
   EXPECT_EQ(3, output_table->NumColumns());
   auto rb1 =
@@ -578,7 +580,7 @@ TEST_F(CarnotTest, multiple_group_by_test) {
 TEST_F(CarnotTest, comparison_tests) {
   auto table = CarnotTestUtils::BigTestTable();
 
-  carnot_->AddTable("big_test_table", table);
+  table_store_->AddTable("big_test_table", table);
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col3', 'num_groups', "
@@ -595,7 +597,7 @@ TEST_F(CarnotTest, comparison_tests) {
   auto s = carnot_->ExecuteQuery(query, 0);
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
-  auto output_table = carnot_->GetTable("test_output");
+  auto output_table = table_store_->GetTable("test_output");
   EXPECT_EQ(3, output_table->NumBatches());
   EXPECT_EQ(2, output_table->NumColumns());
   auto rb1 =
@@ -617,7 +619,7 @@ TEST_F(CarnotTest, comparison_tests) {
 TEST_F(CarnotTest, comparison_to_agg_tests) {
   auto table = CarnotTestUtils::BigTestTable();
 
-  carnot_->AddTable("big_test_table", table);
+  table_store_->AddTable("big_test_table", table);
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col3', 'num_groups', "
@@ -636,7 +638,7 @@ TEST_F(CarnotTest, comparison_to_agg_tests) {
   auto s = carnot_->ExecuteQuery(query, 0);
   VLOG(1) << s.ToString();
   ASSERT_OK(s);
-  auto output_table = carnot_->GetTable("test_output");
+  auto output_table = table_store_->GetTable("test_output");
   EXPECT_EQ(1, output_table->NumBatches());
   EXPECT_EQ(2, output_table->NumColumns());
   auto rb1 =

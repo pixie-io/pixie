@@ -41,20 +41,7 @@ class CarnotImpl final : public Carnot {
    * This includes the tables and udf registries.
    * @return a status of whether initialization was successful.
    */
-  Status Init();
-
-  void AddTable(const std::string& table_name, std::shared_ptr<table_store::Table> table) override {
-    table_store()->AddTable(table_name, table);
-  }
-
-  Status AddTable(const std::string& table_name, uint64_t table_id,
-                  std::shared_ptr<table_store::Table> table) override {
-    return table_store()->AddTable(table_name, table_id, table);
-  }
-
-  table_store::Table* GetTable(const std::string& table_name) override {
-    return table_store()->GetTable(table_name);
-  }
+  Status Init(std::shared_ptr<table_store::TableStore> table_store);
 
   StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query,
                                            types::Time64NSValue time_now) override;
@@ -69,8 +56,8 @@ class CarnotImpl final : public Carnot {
   std::unique_ptr<EngineState> engine_state_;
 };
 
-Status CarnotImpl::Init() {
-  PL_ASSIGN_OR_RETURN(engine_state_, EngineState::CreateDefault());
+Status CarnotImpl::Init(std::shared_ptr<table_store::TableStore> table_store) {
+  PL_ASSIGN_OR_RETURN(engine_state_, EngineState::CreateDefault(table_store));
   return Status::OK();
 }
 
@@ -137,9 +124,10 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecuteQuery(const std::string& query,
                            exec_time_ns);
 }
 
-StatusOr<std::unique_ptr<Carnot>> Carnot::Create() {
+StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
+    std::shared_ptr<table_store::TableStore> table_store) {
   std::unique_ptr<Carnot> carnot_impl(new CarnotImpl());
-  PL_RETURN_IF_ERROR(static_cast<CarnotImpl*>(carnot_impl.get())->Init());
+  PL_RETURN_IF_ERROR(static_cast<CarnotImpl*>(carnot_impl.get())->Init(table_store));
   return carnot_impl;
 }
 

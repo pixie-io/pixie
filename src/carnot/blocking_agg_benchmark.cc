@@ -80,8 +80,8 @@ StatusOr<std::shared_ptr<Table>> CreateTable(std::vector<types::DataType> types,
   return table;
 }
 
-std::unique_ptr<Carnot> SetUpCarnot() {
-  auto carnot_or_s = Carnot::Create();
+std::unique_ptr<Carnot> SetUpCarnot(std::shared_ptr<table_store::TableStore> table_store) {
+  auto carnot_or_s = Carnot::Create(table_store);
   if (!carnot_or_s.ok()) {
     LOG(FATAL) << "Failed to initialize Carnot.";
   }
@@ -92,10 +92,11 @@ std::unique_ptr<Carnot> SetUpCarnot() {
 void BM_Query(benchmark::State& state, std::vector<types::DataType> types,
               std::vector<DistributionType> distribution_types, const std::string& query,
               int64_t num_batches) {
-  auto carnot = SetUpCarnot();
+  auto table_store = std::make_shared<table_store::TableStore>();
+  auto carnot = SetUpCarnot(table_store);
   auto table =
       CreateTable(types, distribution_types, state.range(0), num_batches).ConsumeValueOrDie();
-  carnot->AddTable("test_table", table);
+  table_store->AddTable("test_table", table);
 
   int64_t bytes_processed = 0;
   int i = 0;

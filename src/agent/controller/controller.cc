@@ -24,18 +24,21 @@ constexpr uint64_t kMaxHostnameSize = 128;
 
 StatusOr<std::unique_ptr<Controller>> Controller::Create(
     std::shared_ptr<grpc::Channel> chan, std::unique_ptr<carnot::Carnot> carnot,
-    std::unique_ptr<stirling::Stirling> stirling) {
+    std::unique_ptr<stirling::Stirling> stirling,
+    std::shared_ptr<table_store::TableStore> table_store) {
   std::unique_ptr<Controller> controller(
-      new Controller(chan, std::move(carnot), std::move(stirling)));
+      new Controller(chan, std::move(carnot), std::move(stirling), table_store));
   PL_RETURN_IF_ERROR(controller->Init());
   return controller;
 }
 
 Controller::Controller(std::shared_ptr<grpc::Channel> chan, std::unique_ptr<carnot::Carnot> carnot,
-                       std::unique_ptr<stirling::Stirling> stirling)
+                       std::unique_ptr<stirling::Stirling> stirling,
+                       std::shared_ptr<table_store::TableStore> table_store)
     : chan_(chan),
       carnot_(std::move(carnot)),
       stirling_(std::move(stirling)),
+      table_store_(table_store),
       agent_id_(sole::uuid4()) {}
 
 Status Controller::Init() {
@@ -139,7 +142,7 @@ Status Controller::Run() {
 // Temporary and to be replaced by data table from Stirling and Executor
 Status Controller::AddDummyTable(const std::string& name,
                                  std::shared_ptr<table_store::Table> table) {
-  carnot_->AddTable(name, table);
+  table_store_->AddTable(name, table);
   return Status::OK();
 }
 
@@ -157,8 +160,8 @@ Status Controller::InitThrowaway() {
   auto relation_info_vec = ConvertSubscribePBToRelationInfo(subscribe_pb);
   for (const auto& relation_info : relation_info_vec) {
     PL_RETURN_IF_ERROR(
-        carnot_->AddTable(relation_info.name, relation_info.id,
-                          std::make_shared<table_store::Table>(relation_info.relation)));
+        table_store_->AddTable(relation_info.name, relation_info.id,
+                               std::make_shared<table_store::Table>(relation_info.relation)));
   }
   return Status::OK();
 }

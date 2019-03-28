@@ -44,9 +44,10 @@ class Controller : public NotCopyable {
   /**
    * Create a new controller. Expects carnot and stirling to be initialized.
    */
-  static StatusOr<std::unique_ptr<Controller>> Create(std::shared_ptr<grpc::Channel> chan,
-                                                      std::unique_ptr<carnot::Carnot> carnot,
-                                                      std::unique_ptr<stirling::Stirling> stirling);
+  static StatusOr<std::unique_ptr<Controller>> Create(
+      std::shared_ptr<grpc::Channel> chan, std::unique_ptr<carnot::Carnot> carnot,
+      std::unique_ptr<stirling::Stirling> stirling,
+      std::shared_ptr<table_store::TableStore> table_store);
 
   ~Controller() = default;
 
@@ -68,7 +69,8 @@ class Controller : public NotCopyable {
 
  protected:
   Controller(std::shared_ptr<grpc::Channel> chan, std::unique_ptr<carnot::Carnot> carnot,
-             std::unique_ptr<stirling::Stirling> stirling);
+             std::unique_ptr<stirling::Stirling> stirling,
+             std::shared_ptr<table_store::TableStore> table_store);
   /**
    * Initialize the executor.
    */
@@ -85,6 +87,7 @@ class Controller : public NotCopyable {
   std::shared_ptr<grpc::Channel> chan_;
   std::unique_ptr<carnot::Carnot> carnot_;
   std::unique_ptr<stirling::Stirling> stirling_;
+  std::shared_ptr<table_store::TableStore> table_store_;
 
   sole::uuid agent_id_;
   std::string hostname_;

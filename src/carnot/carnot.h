@@ -39,33 +39,9 @@ struct CarnotQueryResult {
 
 class Carnot : public NotCopyable {
  public:
-  static StatusOr<std::unique_ptr<Carnot>> Create();
+  static StatusOr<std::unique_ptr<Carnot>> Create(
+      std::shared_ptr<table_store::TableStore> table_store);
   virtual ~Carnot() = default;
-
-  /**
-   * Adds a table by name (id generated automatically).
-   * @param table_name The name of the table.
-   * @param table The status.
-   */
-  virtual void AddTable(const std::string& table_name,
-                        std::shared_ptr<table_store::Table> table) = 0;
-
-  /**
-   * Adds a table by id and name.
-   * @param table_name The name of the table.
-   * @param table_id The ID of the table.
-   * @param table The table.
-   * @return Status of adding the table.
-   */
-  virtual Status AddTable(const std::string& table_name, uint64_t table_id,
-                          std::shared_ptr<table_store::Table> table) = 0;
-
-  /**
-   * Gets a table by name.
-   * @param table_name
-   * @return a pointer to a table (ownership is not transferred).
-   */
-  virtual table_store::Table* GetTable(const std::string& table_name) = 0;
 
   /**
    * Executes the given query.
