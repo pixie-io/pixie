@@ -1,16 +1,16 @@
 #include <gtest/gtest.h>
 #include <vector>
 
-#include "src/carnot/exec/table_store.h"
-#include "src/table_store/table_store.h"
+#include "src/table_store/schema/relation.h"
+#include "src/table_store/schema/row_descriptor.h"
+#include "src/table_store/table/table_store.h"
 
 namespace pl {
-namespace carnot {
-namespace exec {
+namespace table_store {
 
-using table_store::schema::Column;
+using table_store::Column;
+using table_store::Table;
 using table_store::schema::RowDescriptor;
-using table_store::schema::Table;
 
 TEST(TableStoreTest, basic) {
   table_store::schema::Relation rel1({types::DataType::BOOLEAN, types::DataType::FLOAT64},
@@ -39,6 +39,5 @@ TEST(TableStoreTest, basic) {
   EXPECT_EQ("table2col3", lookup->at("b").GetColumnName(2));
 }
 
-}  // namespace exec
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl

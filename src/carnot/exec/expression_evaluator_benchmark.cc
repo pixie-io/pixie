@@ -2,7 +2,6 @@
 #include <google/protobuf/text_format.h>
 
 #include "src/carnot/exec/expression_evaluator.h"
-#include "src/carnot/exec/table_store.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/proto/plan.pb.h"
 #include "src/carnot/proto/test_proto.h"
@@ -10,6 +9,7 @@
 #include "src/common/benchmark/benchmark.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
+#include "src/table_store/table/table_store.h"
 
 using ScalarExpression = pl::carnot::plan::ScalarExpression;
 using ScalarExpressionVector = std::vector<std::shared_ptr<ScalarExpression>>;

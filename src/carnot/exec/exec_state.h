@@ -8,9 +8,9 @@
 #include <utility>
 #include <vector>
 
-#include "src/carnot/exec/table_store.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
+#include "src/table_store/table/table_store.h"
 
 namespace pl {
 namespace carnot {
@@ -23,6 +23,8 @@ namespace exec {
  * The purpose of this class is to keep track of resources required for the query
  * and provide common resources (UDFs, UDA, etc) the operators within the query.
  */
+using table_store::TableStore;
+
 class ExecState {
  public:
   explicit ExecState(udf::ScalarUDFRegistry* scalar_udf_registry, udf::UDARegistry* uda_registry,

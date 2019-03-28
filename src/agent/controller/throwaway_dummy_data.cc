@@ -11,9 +11,9 @@
 #include "src/shared/types/types.h"
 #include "src/table_store/table_store.h"
 
-using pl::table_store::schema::Column;
+using pl::table_store::Column;
+using pl::table_store::Table;
 using pl::table_store::schema::RowDescriptor;
-using pl::table_store::schema::Table;
 
 using pl::types::DataType;
 using pl::types::Float64Value;

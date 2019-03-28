@@ -43,17 +43,16 @@ class CarnotImpl final : public Carnot {
    */
   Status Init();
 
-  void AddTable(const std::string& table_name,
-                std::shared_ptr<table_store::schema::Table> table) override {
+  void AddTable(const std::string& table_name, std::shared_ptr<table_store::Table> table) override {
     table_store()->AddTable(table_name, table);
   }
 
   Status AddTable(const std::string& table_name, uint64_t table_id,
-                  std::shared_ptr<table_store::schema::Table> table) override {
+                  std::shared_ptr<table_store::Table> table) override {
     return table_store()->AddTable(table_name, table_id, table);
   }
 
-  table_store::schema::Table* GetTable(const std::string& table_name) override {
+  table_store::Table* GetTable(const std::string& table_name) override {
     return table_store()->GetTable(table_name);
   }
 
@@ -127,7 +126,7 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecuteQuery(const std::string& query,
   timer.Stop();
   int64_t exec_time_ns = timer.ElapsedTime_us() * 1000;
 
-  std::vector<table_store::schema::Table*> output_tables;
+  std::vector<table_store::Table*> output_tables;
   output_tables.reserve(output_table_strs.size());
   for (const auto& table_str : output_table_strs) {
     output_tables.push_back(table_store()->GetTable(table_str));

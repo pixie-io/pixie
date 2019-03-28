@@ -12,7 +12,7 @@ namespace agent {
  *
  * @return StatusOr<std::shared_ptr<Table>>
  */
-StatusOr<std::shared_ptr<table_store::schema::Table>> FakeHipsterTable();
+StatusOr<std::shared_ptr<table_store::Table>> FakeHipsterTable();
 
 }  // namespace agent
 }  // namespace pl

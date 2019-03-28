@@ -7,7 +7,6 @@
 #include "src/carnot/builtins/builtins.h"
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/exec/exec_state.h"
-#include "src/carnot/exec/table_store.h"
 #include "src/carnot/plan/plan_state.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"

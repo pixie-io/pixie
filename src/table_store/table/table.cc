@@ -10,11 +10,10 @@
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/type_utils.h"
 #include "src/table_store/schema/relation.h"
-#include "src/table_store/schema/table.h"
+#include "src/table_store/table/table.h"
 
 namespace pl {
 namespace table_store {
-namespace schema {
 
 using types::DataType;
 
@@ -149,16 +148,17 @@ Status Table::ToProto(table_store::schemapb::Table* table_proto) const {
   return Status::OK();
 }
 
-StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatch(int64_t row_batch_idx,
-                                                       std::vector<int64_t> cols,
-                                                       arrow::MemoryPool* mem_pool) const {
+StatusOr<std::unique_ptr<schema::RowBatch>> Table::GetRowBatch(int64_t row_batch_idx,
+                                                               std::vector<int64_t> cols,
+                                                               arrow::MemoryPool* mem_pool) const {
   return GetRowBatchSlice(row_batch_idx, cols, mem_pool, 0 /* offset */, -1 /* end */);
 }
 
-StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatchSlice(int64_t row_batch_idx,
-                                                            std::vector<int64_t> cols,
-                                                            arrow::MemoryPool* mem_pool,
-                                                            int64_t offset, int64_t end) const {
+StatusOr<std::unique_ptr<schema::RowBatch>> Table::GetRowBatchSlice(int64_t row_batch_idx,
+                                                                    std::vector<int64_t> cols,
+                                                                    arrow::MemoryPool* mem_pool,
+                                                                    int64_t offset,
+                                                                    int64_t end) const {
   DCHECK(!columns_.empty()) << "RowBatch does not have any columns.";
   DCHECK(NumBatches() > row_batch_idx) << absl::StrFormat(
       "Table has %d batches, but requesting batch %d", NumBatches(), row_batch_idx);
@@ -200,7 +200,7 @@ StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatchSlice(int64_t row_batch_id
   DCHECK(columns_[0]->numBatches() > row_batch_idx);
   auto batch_size =
       (end == -1) ? (columns_[0]->batch(row_batch_idx)->length() - offset) : (end - offset);
-  auto output_rb = std::make_unique<RowBatch>(RowDescriptor(rb_types), batch_size);
+  auto output_rb = std::make_unique<schema::RowBatch>(schema::RowDescriptor(rb_types), batch_size);
   for (auto col_idx : cols) {
     auto arrow_array_sptr = columns_[col_idx]->batch(row_batch_idx);
     PL_RETURN_IF_ERROR(output_rb->AddColumn(arrow_array_sptr->Slice(offset, batch_size)));
@@ -209,7 +209,7 @@ StatusOr<std::unique_ptr<RowBatch>> Table::GetRowBatchSlice(int64_t row_batch_id
   return output_rb;
 }
 
-Status Table::WriteRowBatch(RowBatch rb) {
+Status Table::WriteRowBatch(schema::RowBatch rb) {
   if (rb.desc().size() != desc_.size()) {
     return error::InvalidArgument(
         "RowBatch's row descriptor length ($0) does not match table's row descriptor length ($1).",
@@ -378,6 +378,6 @@ StatusOr<std::vector<RecordBatchSPtr>> Table::GetTableAsRecordBatches() const {
   }
   return record_batches;
 }
-}  // namespace schema
+
 }  // namespace table_store
 }  // namespace pl

@@ -19,9 +19,9 @@ namespace carnot {
 namespace exec {
 
 using google::protobuf::TextFormat;
-using table_store::schema::Column;
+using table_store::Column;
+using table_store::Table;
 using table_store::schema::RowDescriptor;
-using table_store::schema::Table;
 
 class AddUDF : public udf::ScalarUDF {
  public:

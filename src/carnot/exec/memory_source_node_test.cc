@@ -16,9 +16,9 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
-using table_store::schema::Column;
+using table_store::Column;
+using table_store::Table;
 using table_store::schema::RowDescriptor;
-using table_store::schema::Table;
 using testing::_;
 
 class MemorySourceNodeTest : public ::testing::Test {

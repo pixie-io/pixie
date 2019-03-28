@@ -31,6 +31,7 @@ pl_cc_library(
         "//src/carnot/proto:udfs_pl_cc_proto",
         "//src/carnot/udf:cc_library",
         "//src/shared/types:cc_library",
+        "//src/table_store/table:cc_library",
         "@com_github_ariafallah_csv_parser//:csv_parser",
         "@com_github_grpc_grpc//:grpc++",
     ],

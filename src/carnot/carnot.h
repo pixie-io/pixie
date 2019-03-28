@@ -16,22 +16,21 @@ namespace carnot {
 
 struct CarnotQueryResult {
   CarnotQueryResult() = default;
-  explicit CarnotQueryResult(std::vector<table_store::schema::Table*> output_tables,
-                             int64_t rows_processed, int64_t bytes_processed,
-                             int64_t compile_time_ns, int64_t exec_time_ns)
+  explicit CarnotQueryResult(std::vector<table_store::Table*> output_tables, int64_t rows_processed,
+                             int64_t bytes_processed, int64_t compile_time_ns, int64_t exec_time_ns)
       : output_tables_(std::move(output_tables)),
         rows_processed(rows_processed),
         bytes_processed(bytes_processed),
         compile_time_ns(compile_time_ns),
         exec_time_ns(exec_time_ns) {}
   size_t NumTables() const { return output_tables_.size(); }
-  table_store::schema::Table* GetTable(int64_t i) const { return output_tables_[i]; }
+  table_store::Table* GetTable(int64_t i) const { return output_tables_[i]; }
   /**
    * Convert this query result to a proto that can be sent over the wire.
    * @param query_result The query result to fill in.
    */
   Status ToProto(carnotpb::QueryResult* query_result) const;
-  std::vector<table_store::schema::Table*> output_tables_;
+  std::vector<table_store::Table*> output_tables_;
   int64_t rows_processed = 0;
   int64_t bytes_processed = 0;
   int64_t compile_time_ns = 0;
@@ -49,7 +48,7 @@ class Carnot : public NotCopyable {
    * @param table The status.
    */
   virtual void AddTable(const std::string& table_name,
-                        std::shared_ptr<table_store::schema::Table> table) = 0;
+                        std::shared_ptr<table_store::Table> table) = 0;
 
   /**
    * Adds a table by id and name.
@@ -59,14 +58,14 @@ class Carnot : public NotCopyable {
    * @return Status of adding the table.
    */
   virtual Status AddTable(const std::string& table_name, uint64_t table_id,
-                          std::shared_ptr<table_store::schema::Table> table) = 0;
+                          std::shared_ptr<table_store::Table> table) = 0;
 
   /**
    * Gets a table by name.
    * @param table_name
    * @return a pointer to a table (ownership is not transferred).
    */
-  virtual table_store::schema::Table* GetTable(const std::string& table_name) = 0;
+  virtual table_store::Table* GetTable(const std::string& table_name) = 0;
 
   /**
    * Executes the given query.

@@ -76,7 +76,7 @@ class Controller : public NotCopyable {
 
  private:
   // TODO(zasgar): Remove me. Throwaway code for demo.
-  Status AddDummyTable(const std::string& name, std::shared_ptr<table_store::schema::Table> table);
+  Status AddDummyTable(const std::string& name, std::shared_ptr<table_store::Table> table);
 
   void RunHeartBeat(VizierReaderWriter* stream) const;
   Status ExecuteQuery(const vizier::QueryRequest& req, vizier::AgentQueryResponse* resp);

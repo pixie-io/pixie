@@ -77,8 +77,8 @@ void AddStringValueToRow(std::vector<std::string> *row, arrow::Array *arr, int64
  * @param filename The filename of the csv to convert.
  * @return The Carnot table.
  */
-std::shared_ptr<pl::table_store::schema::Table> GetTableFromCsv(const std::string &filename,
-                                                                int64_t rb_size) {
+std::shared_ptr<pl::table_store::Table> GetTableFromCsv(const std::string &filename,
+                                                        int64_t rb_size) {
   std::ifstream f(filename);
   aria::csv::CsvParser parser(f);
 
@@ -109,7 +109,7 @@ std::shared_ptr<pl::table_store::schema::Table> GetTableFromCsv(const std::strin
 
   // Construct the table.
   pl::table_store::schema::Relation rel(types, names);
-  auto table = std::make_shared<pl::table_store::schema::Table>(rel);
+  auto table = std::make_shared<pl::table_store::Table>(rel);
 
   // Add rowbatches to the table.
   row_idx = 0;
@@ -177,7 +177,7 @@ std::shared_ptr<pl::table_store::schema::Table> GetTableFromCsv(const std::strin
  * @param filename The name of the output CSV file.
  * @param table The table to write to a CSV.
  */
-void TableToCsv(const std::string &filename, pl::table_store::schema::Table *table) {
+void TableToCsv(const std::string &filename, pl::table_store::Table *table) {
   std::ofstream output_csv;
   output_csv.open(filename);
 

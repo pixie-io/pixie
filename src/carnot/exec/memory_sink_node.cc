@@ -11,11 +11,11 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
-using table_store::schema::Column;
+using table_store::Column;
+using table_store::Table;
 using table_store::schema::Relation;
 using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
-using table_store::schema::Table;
 
 std::string MemorySinkNode::DebugStringImpl() {
   return absl::StrFormat("Exec::MemorySinkNode: {name: %s, output: %s}", plan_node_->TableName(),

@@ -29,7 +29,7 @@ class MemorySinkNode : public SinkNode {
  private:
   std::unique_ptr<plan::MemorySinkOperator> plan_node_;
   std::unique_ptr<table_store::schema::RowDescriptor> input_descriptor_;
-  std::shared_ptr<table_store::schema::Table> table_;
+  std::shared_ptr<table_store::Table> table_;
 };
 
 }  // namespace exec

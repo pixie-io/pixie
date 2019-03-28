@@ -23,10 +23,10 @@ namespace exec {
 class CarnotTestUtils {
  public:
   CarnotTestUtils() = default;
-  static std::shared_ptr<table_store::schema::Table> TestTable() {
+  static std::shared_ptr<table_store::Table> TestTable() {
     table_store::schema::Relation rel({types::DataType::FLOAT64, types::DataType::INT64},
                                       {"col1", "col2"});
-    auto table = std::make_shared<table_store::schema::Table>(rel);
+    auto table = std::make_shared<table_store::Table>(rel);
 
     auto col1 = table->GetColumn(0);
     std::vector<types::Float64Value> col1_in1 = {0.5, 1.2, 5.3};
@@ -50,13 +50,13 @@ class CarnotTestUtils {
   static const std::vector<types::StringValue> big_test_strings;
   static const std::vector<std::pair<int64_t, int64_t>> split_idx;
 
-  static std::shared_ptr<table_store::schema::Table> BigTestTable() {
+  static std::shared_ptr<table_store::Table> BigTestTable() {
     table_store::schema::Relation rel(
         {types::DataType::TIME64NS, types::DataType::FLOAT64, types::DataType::INT64,
          types::DataType::INT64, types::DataType::STRING},
         {"time_", "col2", "col3", "num_groups", "string_groups"});
 
-    auto table = std::make_shared<table_store::schema::Table>(rel);
+    auto table = std::make_shared<table_store::Table>(rel);
 
     auto col1 = table->GetColumn(0);
     auto col2 = table->GetColumn(1);

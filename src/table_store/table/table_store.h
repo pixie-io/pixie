@@ -6,11 +6,11 @@
 
 #include "src/common/base/base.h"
 #include "src/shared/types/column_wrapper.h"
-#include "src/table_store/table_store.h"
+#include "src/table_store/schema/relation.h"
+#include "src/table_store/table/table.h"
 
 namespace pl {
-namespace carnot {
-namespace exec {
+namespace table_store {
 
 /**
  * TableStore keeps track of the tables in our system.
@@ -27,7 +27,7 @@ class TableStore {
    * @ param table_name the name of the table to get
    * @ returns the associated table
    */
-  table_store::schema::Table* GetTable(const std::string& table_name);
+  table_store::Table* GetTable(const std::string& table_name);
 
   /*
    * Add a table under the given name.
@@ -35,7 +35,7 @@ class TableStore {
    * @ param table_name the name of the table to create.
    * @ param table the table to store.
    */
-  void AddTable(const std::string& table_name, std::shared_ptr<table_store::schema::Table> table);
+  void AddTable(const std::string& table_name, std::shared_ptr<table_store::Table> table);
 
   /*
    * Add a table under the given name, with an assigned ID.
@@ -45,7 +45,7 @@ class TableStore {
    * @ param table the table to store.
    */
   Status AddTable(const std::string& table_name, uint64_t table_id,
-                  std::shared_ptr<table_store::schema::Table> table);
+                  std::shared_ptr<table_store::Table> table);
 
   /**
    * @return A map of table name to relation representing the table's structure.
@@ -56,11 +56,9 @@ class TableStore {
                     std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch);
 
  private:
-  std::unordered_map<std::string, std::shared_ptr<table_store::schema::Table>>
-      table_name_to_table_map_;
-  std::unordered_map<uint64_t, std::shared_ptr<table_store::schema::Table>> table_id_to_table_map_;
+  std::unordered_map<std::string, std::shared_ptr<table_store::Table>> table_name_to_table_map_;
+  std::unordered_map<uint64_t, std::shared_ptr<table_store::Table>> table_id_to_table_map_;
 };
 
-}  // namespace exec
-}  // namespace carnot
+}  // namespace table_store
 }  // namespace pl

@@ -7,15 +7,14 @@
 #include "src/shared/types/arrow_adapter.h"
 #include "src/table_store/proto/schema.pb.h"
 #include "src/table_store/schema/relation.h"
-#include "src/table_store/schema/table.h"
+#include "src/table_store/table/table.h"
 
 namespace pl {
 namespace table_store {
-namespace schema {
 
 namespace {
 // TOOD(zasgar): deduplicate this with exec/test_utils.
-std::shared_ptr<schema::Table> TestTable() {
+std::shared_ptr<Table> TestTable() {
   schema::Relation rel({types::DataType::FLOAT64, types::DataType::INT64}, {"col1", "col2"});
   auto table = std::make_shared<Table>(rel);
 
@@ -115,12 +114,12 @@ TEST(TableTest, wrong_batch_size_test) {
 }
 
 TEST(TableTest, write_row_batch) {
-  auto rd = RowDescriptor({types::DataType::BOOLEAN, types::DataType::INT64});
+  auto rd = schema::RowDescriptor({types::DataType::BOOLEAN, types::DataType::INT64});
   schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
 
   Table table(rel);
 
-  RowBatch rb1(rd, 2);
+  schema::RowBatch rb1(rd, 2);
   std::vector<types::BoolValue> col1_rb1 = {true, false};
   std::vector<types::Int64Value> col2_rb1 = {1, 2};
   auto col1_rb1_arrow = types::ToArrow(col1_rb1, arrow::default_memory_pool());
@@ -193,11 +192,11 @@ TEST(TableTest, arrow_batches_test) {
 
 TEST(TableTest, greater_than_eq_eq) {
   schema::Relation rel({types::DataType::BOOLEAN, types::DataType::INT64}, {"col1", "col2"});
-  RowDescriptor rd({types::DataType::BOOLEAN, types::DataType::INT64});
+  schema::RowDescriptor rd({types::DataType::BOOLEAN, types::DataType::INT64});
 
   Table table(rel);
 
-  RowBatch rb1(rd, 2);
+  schema::RowBatch rb1(rd, 2);
   std::vector<types::BoolValue> col1_rb1 = {true, false};
   std::vector<types::Int64Value> col2_rb1 = {1, 2};
   auto col1_rb1_arrow = types::ToArrow(col1_rb1, arrow::default_memory_pool());
@@ -339,6 +338,5 @@ row_batches {
   EXPECT_TRUE(differ.Compare(expected_proto, table_proto));
 }
 
-}  // namespace schema
 }  // namespace table_store
 }  // namespace pl

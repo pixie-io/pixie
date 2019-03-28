@@ -31,11 +31,11 @@ class MemorySourceNode : public SourceNode {
  private:
   int64_t num_batches_;
   int64_t current_batch_ = 0;
-  table_store::schema::BatchPosition start_batch_info_;
+  table_store::BatchPosition start_batch_info_;
 
   std::unique_ptr<plan::MemorySourceOperator> plan_node_;
   std::unique_ptr<table_store::schema::RowDescriptor> output_descriptor_;
-  table_store::schema::Table *table_ = nullptr;
+  table_store::Table *table_ = nullptr;
 };
 
 }  // namespace exec

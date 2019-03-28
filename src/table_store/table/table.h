@@ -20,7 +20,6 @@
 
 namespace pl {
 namespace table_store {
-namespace schema {
 
 using RecordBatchSPtr = std::shared_ptr<arrow::RecordBatch>;
 
@@ -104,8 +103,9 @@ class Table : public NotCopyable {
    * @ param i the index of the RowBatch to get.
    * @ param cols the indices of the columns to get
    */
-  StatusOr<std::unique_ptr<RowBatch>> GetRowBatch(int64_t row_batch_idx, std::vector<int64_t> cols,
-                                                  arrow::MemoryPool* mem_pool) const;
+  StatusOr<std::unique_ptr<schema::RowBatch>> GetRowBatch(int64_t row_batch_idx,
+                                                          std::vector<int64_t> cols,
+                                                          arrow::MemoryPool* mem_pool) const;
   /**
    * Get a slice of the row batch at the given index.
    * @ param i the index of the RowBatch to get.
@@ -114,15 +114,15 @@ class Table : public NotCopyable {
    * @ param offset the first index of the slice of the RowBatch.
    * @ param end the ending index of the slice of the RowBatch (not inclusive).
    */
-  StatusOr<std::unique_ptr<RowBatch>> GetRowBatchSlice(int64_t row_batch_idx,
-                                                       std::vector<int64_t> cols,
-                                                       arrow::MemoryPool* mem_pool, int64_t offset,
-                                                       int64_t end) const;
+  StatusOr<std::unique_ptr<schema::RowBatch>> GetRowBatchSlice(int64_t row_batch_idx,
+                                                               std::vector<int64_t> cols,
+                                                               arrow::MemoryPool* mem_pool,
+                                                               int64_t offset, int64_t end) const;
 
   /**
    * @ param rb Rowbatch to write to the table.
    */
-  Status WriteRowBatch(RowBatch rb);
+  Status WriteRowBatch(schema::RowBatch rb);
 
   /**
    * Transfers the given record batch (from Stirling) into the Table.
@@ -177,7 +177,7 @@ class Table : public NotCopyable {
   std::shared_ptr<arrow::Array> GetColumnBatch(int64_t col, int64_t batch,
                                                arrow::MemoryPool* mem_pool);
 
-  RowDescriptor desc_;
+  schema::RowDescriptor desc_;
   std::vector<std::shared_ptr<Column>> columns_;
   // TODO(michelle): (PL-388) Change hot_batches_ to a list-based queue.
   std::unordered_map<std::string, std::shared_ptr<Column>> name_to_column_map_;
@@ -186,6 +186,5 @@ class Table : public NotCopyable {
   mutable absl::base_internal::SpinLock hot_batches_lock_;
 };
 
-}  // namespace schema
 }  // namespace table_store
 }  // namespace pl
