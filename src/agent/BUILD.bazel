@@ -2,6 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library")
 load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 pl_cc_library(
     name = "cc_library",
@@ -30,5 +31,15 @@ pl_cc_binary(
 
 cc_image(
     name = "agent_image",
+    base = "//:pl_cc_base_image",
     binary = ":agent",
+)
+
+container_push(
+    name = "push_agent_image",
+    format = "Docker",
+    image = ":agent_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/agent",
+    tag = "{STABLE_BUILD_TAG}",
 )
