@@ -49,6 +49,10 @@ Status Controller::Init() {
     return error::Unknown("Failed to get hostname");
   }
   LOG(INFO) << "Hostname: " << hostname_;
+
+  // Register the Stirling Callback.
+  stirling_->RegisterCallback(std::bind(&table_store::TableStore::AppendData, table_store_.get(),
+                                        std::placeholders::_1, std::placeholders::_2));
   return Status::OK();
 }
 
