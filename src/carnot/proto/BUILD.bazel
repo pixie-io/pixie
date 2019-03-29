@@ -100,5 +100,8 @@ pl_cc_library(
     testonly = 1,
     hdrs = ["test_proto.h"],
     visibility = ["//visibility:public"],
-    deps = [":plan_pl_cc_proto"],
+    deps = [
+        ":plan_pl_cc_proto",
+        "//third_party:arrow",
+    ],
 )
