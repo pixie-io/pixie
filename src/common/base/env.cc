@@ -8,6 +8,10 @@ namespace pl {
 std::once_flag init_once, shutdown_once;
 
 void InitEnvironmentOrDieImpl(int *argc, char **argv) {
+  // Enable logging by default.
+  FLAGS_logtostderr = true;
+  FLAGS_colorlogtostderr = true;
+
   google::ParseCommandLineFlags(argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
   LOG(INFO) << "Started: " << argv[0];
