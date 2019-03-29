@@ -67,9 +67,10 @@ def _default_external_deps():
     ]
 
 def _default_link_deps():
-    return [
-        "//src/common/glibc_compat:cc_library",
-    ]
+    return select({
+        "@bazel_tools//tools/osx:darwin": [],
+        "//conditions:default": ["//src/common/glibc_compat:cc_library"],
+    })
 
 # PL C++ library targets should be specified with this function.
 def pl_cc_library_internal(

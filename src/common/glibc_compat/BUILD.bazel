@@ -4,10 +4,10 @@ load("//bazel:pl_build_system.bzl", "pl_cc_library_internal")
 
 pl_cc_library_internal(
     name = "cc_library",
-    srcs = glob(
-        ["*.cc"],
-        exclude = ["**/*_test.cc"],
-    ),
+    srcs = select({
+        "@bazel_tools//tools/osx:darwin": [],
+        "//conditions:default": ["glibc_compat.cc"],
+    }),
     hdrs = glob(["*.h"]),
     linkopts = ["-Wl,--wrap=glob"],
 )
