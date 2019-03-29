@@ -29,3 +29,20 @@ load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 buildifier(
     name = "buildifier",
 )
+
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_pull")
+load("@package_bundle//file:packages.bzl", "packages")
+
+container_image(
+    name = "pl_cc_base_image",
+    base = "@cc_base//image",
+    debs = [
+        packages["libc6"],
+        packages["libunwind8"],
+        packages["liblzma5"],
+        packages["libelf1"],
+        packages["libtinfo5"],
+        packages["zlib1g"],
+    ],
+    visibility = ["//visibility:public"],
+)
