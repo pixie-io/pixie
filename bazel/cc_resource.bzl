@@ -23,4 +23,4 @@ def pl_cc_resource(
         object_files.append(object_file)
 
     # Create a cc_library with the .o files.
-    native.cc_library(name = name, srcs = object_files, tags = tags, **kwargs)
+    native.cc_library(name = name, srcs = object_files, tags = tags, linkstatic = 1, **kwargs)
