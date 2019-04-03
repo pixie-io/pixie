@@ -2,6 +2,7 @@
 import os
 import subprocess
 import shutil
+import argparse
 
 pj = os.path.join
 
@@ -19,7 +20,7 @@ def call_cmd(cmd):
     return output
 
 
-def copy_go_proto_bazel_rule(bazel_workspace, bazel_rule):
+def copy_go_proto_bazel_rule(bazel_workspace, bazel_rule, verbose=False):
     ''' Copies the go proto created by the bazel rule.'''
     # should fail if there are extra colons
     bazel_rule_path, bazel_rule_name = bazel_rule.split(':')
@@ -51,9 +52,12 @@ def copy_go_proto_bazel_rule(bazel_workspace, bazel_rule):
         len(pbgo_files), ",".join(pbgo_files), bazel_rule)
 
     assert len(pbgo_files) == 1, assert_msg
+
     gen_proto_path = pbgo_files[0]
     assert os.path.exists(
         gen_proto_path), "{} doesn't exist.".format(gen_proto_path)
+    if verbose:
+        print("\t" + gen_proto_path)
 
     # copy overfile to the source directory of the proto.
     dest_path = pj(bazel_workspace, bazel_rule_path,
@@ -67,23 +71,32 @@ def copy_go_proto_bazel_rule(bazel_workspace, bazel_rule):
         dest_path), "didn't successfully copy to {0}".format(dest_path)
 
 
-# get all of the go proto library rules
-get_all_rules_cmd = ['bazel', 'query',
-                     "kind(\"go_proto_library rule\", //...)"]
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-r', '--rule', action='append', help='Rules to run', required=False)
+    parser.add_argument('-v', '--verbose', action='store_true', help='verbose mode')
+    args = parser.parse_args()
+    if args.rule:
+        all_rules = args.rule
+    else:
+        # get all of the go proto library rules
+        get_all_rules_cmd = ['bazel', 'query',
+                             "kind(\"go_proto_library rule\", //...)"]
 
-# get the top of the workspace.
-bazel_workspace = call_cmd("bazel info workspace").strip()
+        all_rules = call_cmd(get_all_rules_cmd).strip().split('\n')
+    # get the top of the workspace.
+    bazel_workspace = call_cmd("bazel info workspace").strip()
+    failed_rules = []
+    if args.verbose:
+        print("Source files:")
+    for bazel_rule in all_rules:
+        # bazel_rule = "//src/carnot/proto:plan_pl_go_proto"
+        res = copy_go_proto_bazel_rule(bazel_workspace, bazel_rule, args.verbose)
+        if res is not None:
+            failed_rules.append(res)
 
-all_rules = call_cmd(get_all_rules_cmd).strip().split('\n')
-failed_rules = []
-for bazel_rule in all_rules:
-    # bazel_rule = "//src/carnot/proto:plan_pl_go_proto"
-    res = copy_go_proto_bazel_rule(bazel_workspace, bazel_rule)
-    if res is not None:
-        failed_rules.append(res)
-
-print("Rules that succeeded")
-print("\t" + "\n\t".join(set(all_rules) - set(failed_rules)))
-# print out any rules that failed because of missing build files.
-print("Rules that failed (you might need to build these.)")
-print("\t" + "\n\t".join(failed_rules))
+    print("Rules that succeeded")
+    print("\t" + "\n\t".join(set(all_rules) - set(failed_rules)))
+    # print out any rules that failed because of missing build files.
+    print("Rules that failed (you might need to build these.)")
+    print("\t" + "\n\t".join(failed_rules))
