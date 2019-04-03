@@ -115,6 +115,7 @@
       "exclude": [
         "(LICENSE.txt)",
         "(chef/.*\\.json$)",
+        "(demos/applications/sockshop/monitoring_manifests/grafana/.*\\.json$)",
         "(src/ui/yarn.lock)",
         "(__snapshots__/.*)",
         "(Makefile)",
