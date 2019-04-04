@@ -1,14 +1,99 @@
+# This file describes the schema from the API service.
+
+# It's not ideal, but we need to manually generate types for the TypeScript UI
+# when this file is updated. This can be done by running:
+#  graphql-schema-typescript generate-ts schema.graphql --output schema.d.ts
+# which will generate the output type file that will be picked up by the UI.
+# This schema.d.ts files should exist in the same directory as the schema.graphql file.
+
 schema {
-        query: Query
+  query: Query
+  mutation: Mutation
+}
+
+# The data types of the columns.
+enum DataColTypes {
+  BOOLEAN
+  INT64
+  TIME64NS
+  FLOAT64
+  STRING
+}
+
+# We need an Int64 type since JavaScript does not natively support a 64-bit
+# integer. This just composes it based on two 32-bit integers.
+type Int64 {
+  l: Int!
+  h: Int!
+}
+
+# Relation for a Data Table tracking names and types.
+type DataTableRelation {
+  colNames: [String]!
+  colTypes: [DataColTypes]!
+}
+
+# The data tables. Holds relation and data.
+type DataTable {
+  relation: DataTableRelation!
+  # The data is a JSON encoded string.
+  data: String!
+}
+
+# The result of a query.
+type QueryResult {
+  id: ID!
+  table: DataTable
+}
+
+# Information about the host machine.
+type HostInfo {
+  hostname: String
+}
+
+# Information about the agent.
+type AgentInfo {
+  id: ID!
+  hostInfo: HostInfo!
+}
+
+enum AgentState {
+  # The default state if nothing is known.
+  AGENT_STATE_UNKNOWN
+  # The state is healthy if heartbeats are received on regular intervals and the
+  # agent is responding to requests.
+  AGENT_STATE_HEALTHY
+  # The state will go to unresponsive if the agent hasn't sent a heartbeat for a while
+  # or is unresponsive to messages from Vizier.
+  AGENT_STATE_UNRESPONSIVE
+  # The state will go to disconnected if the GRPC connection breaks. The hope is that the agent
+  # will come back online and resume in HEALTHY state.
+  AGENT_STATE_DISCONNECTED
+}
+
+# Status of agent.
+type AgentStatus {
+  info: AgentInfo!
+  lastHeartbeatNs: Int64!
+  state: AgentState!
 }
 
 type UserInfo {
-        id: ID!
-        name: String!
-        email: String!
-        picture: String!
+  id: ID!
+  name: String!
+  email: String!
+  picture: String!
+}
+
+type VizierInfo {
+  agents: [AgentStatus]
 }
 
 type Query {
-        user: UserInfo!
+  user: UserInfo!
+  vizier: VizierInfo
+}
+
+type Mutation {
+  ExecuteQuery(queryStr: String): QueryResult
 }
