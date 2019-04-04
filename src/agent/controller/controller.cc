@@ -48,6 +48,7 @@ Status Controller::Init() {
   if (err != 0) {
     return error::Unknown("Failed to get hostname");
   }
+  hostname_ = hostname;
   LOG(INFO) << "Hostname: " << hostname_;
 
   // Register the Stirling Callback.
