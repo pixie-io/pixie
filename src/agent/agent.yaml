@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: agent
+  namespace: pl
+  labels:
+    app: pl-monitoring
+spec:
+  selector:
+    matchLabels:
+      name: agent
+  template:
+    metadata:
+      labels:
+        name: agent
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: agent
+        image: gcr.io/pl-dev-infra/agent:latest
+        imagePullPolicy: Always
+        env:
+        - name: PL_VIZIER_ADDR
+          value: vizier.pl.svc.cluster.local:40000
+        resources:
+          limits:
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        securityContext:
+          capabilities:
+            add:
+              - SYS_PTRACE
+              - SYS_ADMIN
+      hostPID: true
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      terminationGracePeriodSeconds: 30

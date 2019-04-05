@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: vizier
+  namespace: pl
+  labels:
+    app: pl-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vizier
+  template:
+    metadata:
+      labels:
+        app: vizier
+        name: vizier
+    spec:
+      containers:
+      - image: gcr.io/pl-dev-infra/vizier:latest
+        name: vizier
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vizier
+  namespace: pl
+spec:
+  type: ClusterIP
+  ports:
+  - name: vizier
+    port: 40000
+    protocol: TCP
+    targetPort: 40000
+  selector:
+    app: vizier
