@@ -4,7 +4,7 @@ package host_system_info;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
-option go_package = "pixielabs.ai/platform_dependent/smoke-test;host_system_info";
+option go_package = "pixielabs.ai/platform_dependent/smoke-test/host_system_info";
 
 // Host Processor information.
 // This message is identical to the Processor struct defined here:
