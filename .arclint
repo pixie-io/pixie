@@ -59,11 +59,17 @@
       "include": [
           "(\\.go$)"
       ],
+      "exclude": [
+          "(experimental/.*\\.go$)"
+      ],
       "type": "golint"
     },
     "govet": {
       "include": [
         "(\\.go$)"
+      ],
+      "exclude": [
+          "(experimental/.*\\.go$)"
       ],
       "type": "govet"
     },
