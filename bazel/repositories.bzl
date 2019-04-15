@@ -125,6 +125,19 @@ def _com_github_gperftools_gperftools():
         actual = "//third_party/foreign_cc:gperftools",
     )
 
+def _com_github_nats_io_cnats():
+    location = REPOSITORY_LOCATIONS["com_github_nats_io_cnats"]
+    http_archive(
+        name = "com_github_nats_io_cnats",
+        build_file_content = BUILD_ALL_CONTENT,
+        **location
+    )
+
+    native.bind(
+        name = "cnats",
+        actual = "//third_party/foreign_cc:cnats",
+    )
+
 def _cc_deps():
     _repository_impl(name = "com_google_benchmark")
     _repository_impl(
@@ -140,6 +153,7 @@ def _cc_deps():
     _com_github_tencent_rapidjson()
     _com_github_ariafallah_csv_parser()
     _com_github_gperftools_gperftools()
+    _com_github_nats_io_cnats()
 
 def _go_deps():
     # Add go specific imports here when necessary.

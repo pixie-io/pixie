@@ -2,3 +2,23 @@ package(default_visibility = ["//visibility:public"])
 
 load("//bazel:cc_resource.bzl", "pl_cc_resource")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cnats",
+    srcs = glob(
+        [
+            "cnats.cc",
+        ],
+    ),
+    deps = [
+        "//third_party/foreign_cc:cnats",
+    ],
+)
+
+pl_cc_binary(
+    name = "cnats_binary",
+    deps = [
+        ":cnats",
+        "//third_party/foreign_cc:cnats",
+    ],
+)

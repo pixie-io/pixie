@@ -3,6 +3,7 @@ licenses(["notice"])
 package(default_visibility = ["//visibility:public"])
 
 load("@rules_foreign_cc//tools/build_defs:configure.bzl", "configure_make")
+load("@rules_foreign_cc//tools/build_defs:cmake.bzl", "cmake_external")
 
 configure_make(
     name = "gperftools_build",
@@ -26,4 +27,14 @@ cc_library(
     deps = [
         "gperftools_build",
     ],
+)
+
+cmake_external(
+    name = "cnats",
+    cache_entries = {
+        "NATS_BUILD_WITH_TLS": "OFF",
+        "NATS_BUILD_STREAMING": "OFF",
+    },
+    lib_source = "@com_github_nats_io_cnats//:all",
+    static_libraries = ["libnats_static.a"],
 )
