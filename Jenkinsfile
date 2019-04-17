@@ -21,10 +21,10 @@ final String SRC_STASH_NAME = "${BUILD_TAG}_src"
 // Restrict build to source code, since otherwise bazel seems to build all our deps.
 final String BAZEL_SRC_FILES_PATH = "//src/... //throwaway/..."
 // ASAN/TSAN only work for CC code.
-// TODO(zasgar): We should fix this after GO ASAN/TSAN works to include that
-// and remove the directory restriction.
-final String BAZEL_CC_SRC_FILES_PATH = "//src/carnot/... //src/stirling/... " +
-      "//src/shared/... //src/agent/... //src/vizier/..."
+// TODO(zasgar): This query selects only cc binaries. After GO ASAN/TSAN works, we can update the ASAN/TSAN builds
+// to include all binaries.
+// This line also contains a hack to filter out go_default_library, which is the assumed name for go binaries.
+final String BAZEL_CC_QUERY = "`bazel query 'kind(\"cc_(binary|test) rule\", src/...)' | grep -v go_default_library `"
 
 // Sometimes docker fetches fail, so we just do a retry. This can be optimized to just
 // retry on docker failues, but not worth it now.
@@ -234,7 +234,7 @@ builders['Build & Test (asan)'] = {
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
         docker.image(devDockerImageWithTag).inside('--cap-add=SYS_PTRACE') {
           sh 'scripts/bazel_fetch_retry.sh'
-          sh "bazel test --config=asan ${BAZEL_CC_SRC_FILES_PATH}"
+          sh "bazel test --config=asan ${BAZEL_CC_QUERY}"
           sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
           stash name: 'build-asan-testlogs', includes: "bazel-testlogs-archive/**"
         }
@@ -251,7 +251,7 @@ builders['Build & Test (tsan)'] = {
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
         docker.image(devDockerImageWithTag).inside {
           sh 'scripts/bazel_fetch_retry.sh'
-          sh "bazel test --config=tsan ${BAZEL_CC_SRC_FILES_PATH}"
+          sh "bazel test --config=tsan ${BAZEL_CC_QUERY}"
           sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
           stash name: 'build-tsan-testlogs', includes: "bazel-testlogs-archive/**"
         }

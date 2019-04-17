@@ -1,5 +1,7 @@
 # Based on envoy(28d5f41) envoy/bazel/envoy_build_system.bzl
 # Compute the final copts based on various options.
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+
 def pl_copts(repository, test = False):
     posix_options = [
         # Warnings setup.
@@ -242,3 +244,8 @@ def tcmalloc_external_deps(repository):
         repository + "//bazel:disable_tcmalloc": [],
         "//conditions:default": [pl_external_dep_path("gperftools")],
     })
+
+def pl_go_library(**kwargs):
+    if "clinkopts" not in kwargs:
+        kwargs["clinkopts"] = pl_linkopts()
+    go_library(**kwargs)
