@@ -27,6 +27,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:8fda70c57919d8b3eda9806c43d26ad27efd6049571b838f6351d4c4b9dd5767"
+  name = "github.com/ajstarks/svgo"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "6ce6a3bcf6cde6c5007887677ebd148ec30f42a4"
+
+[[projects]]
+  branch = "master"
   digest = "1:14a59654126005cdbdac3341e4314e44c7cf09ff70b9d3c7163ed799b834b836"
   name = "github.com/apache/arrow"
   packages = [
@@ -93,6 +101,14 @@
   revision = "3f9db97f856818214da2e1057f8ad84803971cff"
 
 [[projects]]
+  digest = "1:b6e21e98fcbc23345ea2e3b70766edfc7fb53c0c99966fed18e889de0fcb67f2"
+  name = "github.com/fogleman/gg"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "0403632d5b905943a1c2a5b2763aaecd568467ec"
+  version = "v1.3.0"
+
+[[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
@@ -113,6 +129,17 @@
   pruneopts = "UT"
   revision = "636bf0302bc95575d69441b25a2603156ffdddf1"
   version = "v1.1.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:62c57507df491b657e9ae2645f30958d9964c8eeb380600469eedc951ebb3a0e"
+  name = "github.com/golang/freetype"
+  packages = [
+    "raster",
+    "truetype",
+  ]
+  pruneopts = "UT"
+  revision = "e2365dfdc4a05e4b8299a783240d4a7d5a65d4e4"
 
 [[projects]]
   digest = "1:bc38c7c481812e178d85160472e231c5e1c9a7f5845d67e23ee4e706933c10d8"
@@ -237,6 +264,14 @@
   pruneopts = "UT"
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
   version = "v1.0"
+
+[[projects]]
+  digest = "1:6cfa42a0c508aa85fb7bfd0fd028179884688afcb917eb14defa59393e09dc06"
+  name = "github.com/jung-kurt/gofpdf"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "8fd1e0a49c50a568249b877054a6401de1c118a8"
+  version = "v2.3.0"
 
 [[projects]]
   branch = "master"
@@ -431,6 +466,31 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:d87af402fc3f371d6b008f58903e98bee8873db45263dc54762f00735c582495"
+  name = "golang.org/x/exp"
+  packages = ["rand"]
+  pruneopts = "UT"
+  revision = "7f338f5710825d68a78f2a58c25378e5e2b972df"
+
+[[projects]]
+  branch = "master"
+  digest = "1:7f3867d04858d729fc2228e1df5a05d3759753d701b38e18bd561842edf26287"
+  name = "golang.org/x/image"
+  packages = [
+    "draw",
+    "font",
+    "font/basicfont",
+    "font/plan9font",
+    "math/f64",
+    "math/fixed",
+    "tiff",
+    "tiff/lzw",
+  ]
+  pruneopts = "UT"
+  revision = "3fc05d484e9f77dd51816890e05f2602e4ca4d65"
+
+[[projects]]
+  branch = "master"
   digest = "1:b5c3834d33445efdc5a8dcb154bed9e4c211edadbf02f6f5cc20c5e9be26a499"
   name = "golang.org/x/net"
   packages = [
@@ -478,6 +538,51 @@
   pruneopts = "UT"
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:393a7d82ecbacf20dba3dba63920102c40f3c345e03136894540dde57918f61c"
+  name = "gonum.org/v1/gonum"
+  packages = [
+    "blas",
+    "blas/blas64",
+    "blas/cblas128",
+    "blas/gonum",
+    "floats",
+    "internal/asm/c128",
+    "internal/asm/c64",
+    "internal/asm/f32",
+    "internal/asm/f64",
+    "internal/cmplx64",
+    "internal/math32",
+    "lapack",
+    "lapack/gonum",
+    "lapack/lapack64",
+    "mat",
+  ]
+  pruneopts = "UT"
+  revision = "5d695651a1d533b5b371458b6da17b45c17ed718"
+
+[[projects]]
+  branch = "master"
+  digest = "1:7a2a44d7a58b088998a805cf8395240b0b5a50fdd75a14589da4d576d97efe0c"
+  name = "gonum.org/v1/plot"
+  packages = [
+    ".",
+    "palette",
+    "plotter",
+    "plotutil",
+    "tools/bezier",
+    "vg",
+    "vg/draw",
+    "vg/fonts",
+    "vg/vgeps",
+    "vg/vgimg",
+    "vg/vgpdf",
+    "vg/vgsvg",
+  ]
+  pruneopts = "UT"
+  revision = "3a5f52653745fa15b552c97e1d8052e496e85503"
 
 [[projects]]
   branch = "master"
@@ -576,6 +681,10 @@
     "github.com/x-cray/logrus-prefixed-formatter",
     "github.com/zenazn/goji/web/mutil",
     "golang.org/x/net/context",
+    "gonum.org/v1/plot",
+    "gonum.org/v1/plot/plotter",
+    "gonum.org/v1/plot/plotutil",
+    "gonum.org/v1/plot/vg",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/credentials",

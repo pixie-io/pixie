@@ -339,3 +339,51 @@ go_repository(
     commit = "95ec53f28296f47af86a81eb73f0d7fe2b23a322",
     importpath = "github.com/TylerBrock/colorjson",
 )
+
+go_repository(
+    name = "com_github_ajstarks_svgo",
+    commit = "6ce6a3bcf6cde6c5007887677ebd148ec30f42a4",
+    importpath = "github.com/ajstarks/svgo",
+)
+
+go_repository(
+    name = "com_github_fogleman_gg",
+    commit = "0403632d5b905943a1c2a5b2763aaecd568467ec",
+    importpath = "github.com/fogleman/gg",
+)
+
+go_repository(
+    name = "com_github_golang_freetype",
+    commit = "e2365dfdc4a05e4b8299a783240d4a7d5a65d4e4",
+    importpath = "github.com/golang/freetype",
+)
+
+go_repository(
+    name = "com_github_jung_kurt_gofpdf",
+    commit = "8fd1e0a49c50a568249b877054a6401de1c118a8",
+    importpath = "github.com/jung-kurt/gofpdf",
+)
+
+go_repository(
+    name = "org_golang_x_exp",
+    commit = "7f338f5710825d68a78f2a58c25378e5e2b972df",
+    importpath = "golang.org/x/exp",
+)
+
+go_repository(
+    name = "org_golang_x_image",
+    commit = "3fc05d484e9f77dd51816890e05f2602e4ca4d65",
+    importpath = "golang.org/x/image",
+)
+
+go_repository(
+    name = "org_gonum_v1_gonum",
+    commit = "5d695651a1d533b5b371458b6da17b45c17ed718",
+    importpath = "gonum.org/v1/gonum",
+)
+
+go_repository(
+    name = "org_gonum_v1_plot",
+    commit = "3a5f52653745fa15b552c97e1d8052e496e85503",
+    importpath = "gonum.org/v1/plot",
+)

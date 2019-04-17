@@ -173,6 +173,7 @@ def pl_deps():
     _repository_impl(name = "com_intel_tbb", build_file = "@pl//third_party:tbb.BUILD")
     _repository_impl(name = "com_efficient_libcuckoo", build_file = "@pl//third_party:libcuckoo.BUILD")
     _repository_impl(name = "com_google_farmhash", build_file = "@pl//third_party:farmhash.BUILD")
+    _repository_impl(name = "com_github_h2o_picohttpparser", build_file = "@pl//third_party:picohttpparser.BUILD")
     _repository_impl("rules_foreign_cc")
 
     _cc_deps()
