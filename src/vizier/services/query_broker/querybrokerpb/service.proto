@@ -1,0 +1,122 @@
+syntax = "proto3";
+
+package pl.vizier.services.query_broker.querybrokerpb;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/carnot/proto/query_results.proto";
+import "src/common/uuid/proto/uuid.proto";
+import "src/common/base/proto/status.proto";
+import "src/table_store/proto/schema.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb;querybrokerpb";
+
+service QueryBrokerService {
+  /**
+   * These RPC calls are used by debug tools, etc, that connect to vizier.
+   */
+
+  // Returns information about registered agents.
+  rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
+  // This is an incoming request to Vizier to execute queries.
+  rpc ExecuteQuery(QueryRequest) returns (VizierQueryResponse) {}
+  rpc GetSchemas(SchemaRequest) returns (SchemaResponse) {}
+}
+
+// The schema information per agent.
+message Schema {
+  repeated pl.table_store.schemapb.Relation relations = 1;
+}
+
+// The schema request.
+message SchemaRequest {}
+
+// The schema response from Vizier.
+message SchemaResponse {
+  message SchemaByAgent {
+    uuidpb.UUID agent_id      = 1 [
+      (gogoproto.customname) = "AgentID"
+    ];
+    Schema schema = 2;
+  }
+  repeated SchemaByAgent schema_by_agent = 1;
+}
+
+enum AgentState {
+  // The default state if nothing is known.
+  AGENT_STATE_UNKNOWN = 0;
+  // The state is healthy if heartbeats are received on regular intervals and the
+  // agent is responding to requests.
+  AGENT_STATE_HEALTHY = 1;
+  // The state will go to unresponsive if the agent hasn't sent a heartbeat for a while
+  // or is unresponsive to messages from Vizier.
+  AGENT_STATE_UNRESPONSIVE = 2;
+  // The state will go to disconnected if the GRPC connection breaks. The hope is that the agent
+  // will come back online and resume in HEALTHY state.
+  AGENT_STATE_DISCONNECTED = 3;
+}
+
+message AgentInfoRequest {}
+
+message AgentInfoResponse {
+  // Contains AgentStatus for each of the agents currently registered with Vizier.
+  repeated AgentStatus info = 1;
+}
+
+message AgentStatus {
+  AgentInfo info = 1;
+  // Time in nanoseconds since the last heartbeat from the agent.
+  int64 last_heartbeat_ns = 2;
+  // The state of the Agent.
+  AgentState state = 3;
+}
+
+// AgentInfo contains information about host and agent running on a given machine.
+message AgentInfo {
+  uuidpb.UUID agent_id      = 1 [
+    (gogoproto.customname) = "AgentID"
+  ];
+  HostInfo host_info = 2;
+}
+
+// HostInfo contains the details for the host (OS, kernel, CPU, etc).
+message HostInfo {
+  string hostname = 1;
+}
+
+message QueryRequest {
+  // The ID of the query (will be returned in response).
+  uuidpb.UUID query_id = 1 [
+    (gogoproto.customname) = "QueryID"
+  ];
+  // The query string (either this or proto will be set).
+  string query_str = 2;
+  // TODO(zasgar): Add proto query.
+}
+
+
+// TODO(zasgar/michelle): We should change this after we add the compute nodes.
+// For now, we plan to just return the QueryResponse from each agent on the message bus
+// and have the broker merge the results together.
+// AgentQueryResponse is returned for each execution of a query by the agent.
+message AgentQueryResponse {
+  pl.statuspb.Status status = 1;
+
+  // The ID of the returned query.
+  uuidpb.UUID query_id = 2 [
+    (gogoproto.customname) = "QueryID"
+  ];
+
+  pl.carnot.carnotpb.QueryResult query_result = 3;
+}
+
+// VizierQueryResponse is returned by Vizier in response to a query.
+message VizierQueryResponse {
+  message ResponseByAgent {
+    uuidpb.UUID agent_id      = 1 [
+      (gogoproto.customname) = "AgentID"
+    ];
+
+    AgentQueryResponse response = 2;
+  }
+  repeated ResponseByAgent responses = 1;
+}
