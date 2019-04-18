@@ -120,6 +120,7 @@
       "text.max-line-length": 120,
       "exclude": [
         "(LICENSE.txt)",
+        "(BUILD.bazel)",
         "(chef/.*\\.json$)",
         "(demos/applications/sockshop/monitoring_manifests/grafana/.*\\.json$)",
         "(src/ui/yarn.lock)",
