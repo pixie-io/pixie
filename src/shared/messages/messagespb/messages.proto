@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package pl.shared.messages;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/common/uuid/proto/uuid.proto";
+import "src/table_store/proto/schema.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/shared/messages/messagespb;messages";
+
+// AgentInfo contains information about host and agent running on a given machine.
+message AgentInfo {
+    uuidpb.UUID agent_id      = 1 [
+                                  (gogoproto.customname) = "AgentID"
+                                  ];
+    HostInfo host_info = 2;
+}
+
+// HostInfo contains the details for the host (OS, kernel, CPU, etc).
+message HostInfo {
+    string hostname = 1;
+}
+
+message RegisterAgentRequest {
+    AgentInfo info = 1;
+    AgentUpdateInfo update_info = 2;
+}
+
+message RegisterAgentResponse {}
+
+message UpdateAgentRequest {
+    AgentInfo info = 1;
+    AgentUpdateInfo update_info = 2;
+}
+
+message UpdateAgentResponse {}
+
+message AgentUpdateInfo {
+    message ContainerPids {
+        string container_id = 1; // docker container running on the machine
+        repeated int64 pids = 2;
+    }
+    repeated ContainerPids container_to_pids = 1;
+    repeated pl.table_store.schemapb.Relation relations = 2;
+}
+
+// The heart beat signal.
+message HeartBeat {
+    uuidpb.UUID agent_id = 1 [
+      (gogoproto.customname) = "AgentID"
+                             ];
+    // The current unix time in ns on the machine.
+    int64 time = 2;
+}
+
+// Response sent for a successful heart beat.
+message HeartBeatAck {
+    // The current unix time in ns on the machine.
+    int64 time = 1;
+}
+
+// Response sent for a failed heart beat.
+message HeartBeatNack {}

@@ -25,6 +25,7 @@ gazelle(
 # gazelle:resolve go pixielabs.ai/pixielabs/src/table_store/proto //src/table_store/proto:schema_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb //src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb //src/vizier/services/metadata/metadatapb:service_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/shared/messages/messagespb //src/shared/messages/messagespb:messages_pl_go_proto
 
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 
