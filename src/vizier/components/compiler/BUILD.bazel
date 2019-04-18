@@ -1,0 +1,22 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_go_library")
+
+pl_cc_library(
+    name = "cc_compiler",
+    srcs = [
+        "compiler_export.cc",
+    ],
+    hdrs = ["compiler_export.h"],
+    deps = [
+        "//src/carnot/compiler:cc_library",
+    ],
+)
+
+pl_go_library(
+    name = "go_default_library",
+    srcs = ["compiler.go"],
+    importpath = "pixielabs.ai/pixielabs/src/vizier/components/compiler",
+    cdeps = [":cc_compiler"],
+    cgo = True,
+)

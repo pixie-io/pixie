@@ -1,0 +1,18 @@
+load("//bazel:pl_build_system.bzl", "pl_go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary")
+
+pl_go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importpath = "pixielabs.ai/pixielabs/src/vizier/components",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//src/vizier/components/compiler:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "broker_compiler_go",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)
