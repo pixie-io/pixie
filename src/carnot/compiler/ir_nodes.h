@@ -256,8 +256,7 @@ class ListIR : public IRNode {
   explicit ListIR(int64_t id) : IRNode(id, ListType, false) {}
   bool HasLogicalRepr() const override;
   // TODO(philkuz) (PL-545) refactor lists
-  Status Init(const pypa::AstPtr& ast_node);
-  Status AddListItem(IRNode* node);
+  Status Init(const pypa::AstPtr& ast_node, std::vector<IRNode*> children);
   std::string DebugString(int64_t depth) const override;
   std::vector<IRNode*> children() { return children_; }
   bool IsOp() const override { return false; }

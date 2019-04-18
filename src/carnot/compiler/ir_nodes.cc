@@ -414,15 +414,18 @@ std::string StringIR::DebugString(int64_t depth) const {
 }
 
 bool ListIR::HasLogicalRepr() const { return false; }
-Status ListIR::Init(const pypa::AstPtr& ast_node) {
+Status ListIR::Init(const pypa::AstPtr& ast_node, std::vector<IRNode*> children) {
+  if (children_.size() > 0) {
+    return error::AlreadyExists("ListIR already has children and likely has been created already.");
+  }
   SetLineCol(ast_node);
+  for (auto child : children) {
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, child));
+  }
+  children_ = children;
   return Status::OK();
 }
-Status ListIR::AddListItem(IRNode* node) {
-  children_.push_back(node);
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, node));
-  return Status::OK();
-}
+
 std::string ListIR::DebugString(int64_t depth) const {
   std::map<std::string, std::string> childMap;
   for (size_t i = 0; i < children_.size(); i++) {

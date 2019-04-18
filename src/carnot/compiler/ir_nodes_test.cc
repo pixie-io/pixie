@@ -37,7 +37,7 @@ TEST(IRTest, check_connection) {
   EXPECT_OK(stop_rng_str->Init(10, ast));
   EXPECT_OK(table_str->Init("tableName", ast));
   EXPECT_OK(select_col->Init("testCol", ast));
-  EXPECT_OK(select_list->AddListItem(select_col));
+  EXPECT_OK(select_list->Init(ast, {select_col}));
   EXPECT_OK(src->Init(table_str, select_list, ast));
   EXPECT_OK(range->Init(src, start_rng_str, stop_rng_str, ast));
   EXPECT_EQ(range->parent(), src);

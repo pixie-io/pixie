@@ -367,11 +367,12 @@ StatusOr<IRNode*> ASTWalker::ProcessStr(const pypa::AstStrPtr& ast) {
 
 StatusOr<IRNode*> ASTWalker::ProcessList(const pypa::AstListPtr& ast) {
   ListIR* ir_node = ir_graph_->MakeNode<ListIR>().ValueOrDie();
-  PL_RETURN_IF_ERROR(ir_node->Init(ast));
+  std::vector<IRNode*> children;
   for (auto& child : ast->elements) {
     PL_ASSIGN_OR_RETURN(IRNode * child_node, ProcessData(child));
-    PL_RETURN_IF_ERROR(ir_node->AddListItem(child_node));
+    children.push_back(child_node);
   }
+  PL_RETURN_IF_ERROR(ir_node->Init(ast, children));
   return ir_node;
 }
 StatusOr<LambdaExprReturn> ASTWalker::LookupPLTimeAttribute(const std::string& attribute_name,
@@ -519,16 +520,17 @@ StatusOr<LambdaExprReturn> WrapLambdaExprReturn(StatusOr<IRNode*> node) {
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaList(const std::string& arg_name,
                                                         const pypa::AstListPtr& node) {
   ListIR* ir_node = ir_graph_->MakeNode<ListIR>().ValueOrDie();
-  PL_RETURN_IF_ERROR(ir_node->Init(node));
   LambdaExprReturn expr_return(ir_node);
+  std::vector<IRNode*> children;
   for (auto& child : node->elements) {
     PL_ASSIGN_OR_RETURN(auto child_attr, ProcessLambdaExpr(arg_name, child));
     if (child_attr.StringOnly() || child_attr.expr_->type() != IRNodeType::ColumnType) {
       return CreateAstError("Expect Lambda list to only contain column names.", node);
     }
     expr_return.MergeColumns(child_attr);
-    PL_RETURN_IF_ERROR(ir_node->AddListItem(child_attr.expr_));
+    children.push_back(child_attr.expr_);
   }
+  PL_RETURN_IF_ERROR(ir_node->Init(node, children));
   return expr_return;
 }
 
