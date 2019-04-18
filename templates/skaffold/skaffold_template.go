@@ -5,10 +5,10 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"text/template"
 
+	"github.com/bmatcuk/doublestar"
 	"github.com/golang/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -57,27 +57,17 @@ func getEnviron() string {
 
 // findTemplateFiles searches for template files.
 func findTemplateFiles(pathsToSearch []string, ext string) []string {
-	var templateFiles = []string{}
+	var allTemplates []string
 	for _, curPath := range pathsToSearch {
 		log.Infof("Searching %s", curPath)
-		err := filepath.Walk(curPath,
-			func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					return err
-				}
-				// Check whether path has the extension, which
-				// might contain several "." delineated pieces.
-				if strings.HasSuffix(path, ext) {
-					log.Infof("Found template: %s\n", path)
-					templateFiles = append(templateFiles, path)
-				}
-				return nil
-			})
+		globTemplate := curPath + "/**/*" + ext
+		templateFiles, err := doublestar.Glob(globTemplate)
 		if err != nil {
 			log.WithError(err).Errorf("Error on findTemplateFiles while searching %s", curPath)
 		}
+		allTemplates = append(allTemplates, templateFiles...)
 	}
-	return templateFiles
+	return allTemplates
 }
 
 // loadConfig loads the config from protobuf and adds another field, the BuildDir.
@@ -173,9 +163,22 @@ func main() {
 	os.MkdirAll(buildDir, os.ModePerm)
 
 	// Find all the skaffold template files to generate service configs.
-	servicesDir := path.Join(totPath, "services")
 	skaffoldDir := path.Join(totPath, "skaffold")
-	dirsToTemplate := []string{skaffoldDir, servicesDir}
+	dirsToTemplate := []string{skaffoldDir}
+
+	// Remove the UI directory from the services search path, since
+	// node_modules contains a lot of files making the template search slow.
+	servicesDir := path.Join(totPath, "src")
+	fileInfos, err := ioutil.ReadDir(servicesDir)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to read directory info for services.")
+	}
+
+	for _, fileInfo := range fileInfos {
+		if fileInfo.IsDir() && fileInfo.Name() != "ui" {
+			dirsToTemplate = append(dirsToTemplate, path.Join(servicesDir, fileInfo.Name()))
+		}
+	}
 
 	// Extension
 	ext := ".skfld.tmpl"
@@ -188,7 +191,4 @@ func main() {
 
 	// Generate all the service config from templateFiles.
 	generateServiceConfigs(templateFiles, buildDir, totPath, ext, config)
-
-	// Get the skaffold YAML template.
-	startSkaffold(buildDir, totPath)
 }

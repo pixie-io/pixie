@@ -14,6 +14,9 @@ MINIKUBE  := minikube
 ## Kubectl command to use.
 KUBECTL := kubectl
 
+## Skaffold command to use.
+SKAFFOLD := skaffold
+
 ## The directory to write template files to for skaffold (with respect to bazel info workspace).
 SKAFFOLD_DIR := $$(bazel info workspace)/skaffold_build
 
@@ -95,12 +98,15 @@ dev-env-teardown: dev-env-stop ## Clean up dev environment.
 
 skaffold-dev: ## Run Skaffold in the dev environment.
 	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR)
+	$(SKAFFOLD) dev -f $(SKAFFOLD_DIR)/skaffold/skaffold_dev.yaml
 
 skaffold-prod: ## Run Skaffold in the prod environment.
 	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --prod
+	$(SKAFFOLD) run -f $(SKAFFOLD_DIR)/skaffold/skaffold_prod.yaml
 
 skaffold-staging: ## Run Skaffold in the staging environment.
 	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --staging
+	$(SKAFFOLD) staging -f $(SKAFFOLD_DIR)/skaffold/skaffold_staging.yaml
 
 help: ## Print help for targets with comments.
 	@echo "Usage:"

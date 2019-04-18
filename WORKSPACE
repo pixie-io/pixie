@@ -387,3 +387,9 @@ go_repository(
     commit = "3a5f52653745fa15b552c97e1d8052e496e85503",
     importpath = "gonum.org/v1/plot",
 )
+
+go_repository(
+    name = "com_github_bmatcuk_doublestar",
+    commit = "85a78806aa1b4707d1dbace9be592cf1ece91ab3",
+    importpath = "github.com/bmatcuk/doublestar",
+)

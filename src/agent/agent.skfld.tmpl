@@ -20,7 +20,6 @@ spec:
       containers:
       - name: agent
         image: gcr.io/pl-dev-infra/agent:latest
-        imagePullPolicy: Always
         env:
         - name: PL_VIZIER_ADDR
           value: vizier.pl.svc.cluster.local:40000

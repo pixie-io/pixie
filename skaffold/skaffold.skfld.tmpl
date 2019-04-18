@@ -1,31 +1,21 @@
 # Generated file: bazel run //templates/skaffold:skaffoldtemplate
 # DO NOT EDIT
-apiVersion: skaffold/v1alpha5
+apiVersion: skaffold/v1beta8
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/pl-dev-infra/api_server_image
+  - image: gcr.io/pl-dev-infra/agent
     context: .
     bazel:
-      target: //services/api:api_server_image.tar
-  - image: gcr.io/pl-dev-infra/auth_server_image
+      target: //src/agent:agent_image.tar
+  - image: gcr.io/pl-dev-infra/vizier
     context: .
     bazel:
-      target: //services/auth:auth_server_image.tar
-  - image: gcr.io/pl-dev-infra/proxy
-    context: .
-    bazel:
-      target: {{.BazelServicesProxyTarget}}
-  - image: gcr.io/pl-dev-infra/gateway_server_image
-    context: .
-    bazel:
-      target: //services/gateway:gateway_server_image.tar
+      target: //src/vizier:vizier_image.tar
   local:
     push: {{.PushArtifacts}}
 deploy:
   kubectl:
     manifests:
-    - {{.BuildDir}}/services/api/service_{{.Deployment}}.yaml
-    - {{.BuildDir}}/services/auth/service_{{.Deployment}}.yaml
-    - {{.BuildDir}}/services/proxy/service_{{.Deployment}}.yaml
-    - {{.BuildDir}}/services/gateway/service_{{.Deployment}}.yaml
+    - {{.BuildDir}}/src/agent/agent_{{.Deployment}}.yaml
+    - {{.BuildDir}}/src/vizier/service_{{.Deployment}}.yaml

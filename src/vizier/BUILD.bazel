@@ -26,5 +26,6 @@ pl_cc_binary(
 
 cc_image(
     name = "vizier_image",
+    base = "//:pl_cc_base_image",
     binary = ":vizier",
 )

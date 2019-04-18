@@ -61,6 +61,14 @@
   version = "v3.5.1"
 
 [[projects]]
+  digest = "1:2aaf2cc045d0219bba79655e4df795b973168c310574669cb75786684f7287d3"
+  name = "github.com/bmatcuk/doublestar"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "85a78806aa1b4707d1dbace9be592cf1ece91ab3"
+  version = "v1.1.1"
+
+[[projects]]
   branch = "master"
   digest = "1:080689a7cb710dc8f694005f8e5b3aab861d01e885eaf53fae54431c4635bfe6"
   name = "github.com/c9s/goprocinfo"
@@ -654,6 +662,7 @@
     "github.com/apache/arrow/go/arrow/memory",
     "github.com/apache/arrow/go/arrow/tensor",
     "github.com/blang/semver",
+    "github.com/bmatcuk/doublestar",
     "github.com/c9s/goprocinfo/linux",
     "github.com/dgrijalva/jwt-go",
     "github.com/fatih/color",

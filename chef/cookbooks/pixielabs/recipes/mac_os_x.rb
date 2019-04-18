@@ -10,4 +10,3 @@ homebrew_package 'clang-format'
 homebrew_package 'dep'
 
 homebrew_cask 'docker-edge'
-homebrew_cask 'minikube'

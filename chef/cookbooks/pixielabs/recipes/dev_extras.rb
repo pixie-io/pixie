@@ -55,6 +55,12 @@ remote_file '/usr/local/bin/skaffold' do
   checksum node['skaffold']['sha256']
 end
 
+remote_file '/usr/local/bin/minikube' do
+  source node['minikube']['download_path']
+  mode 0755
+  checksum node['minikube']['sha256']
+end
+
 remote_file '/tmp/packer.zip' do
   source node['packer']['download_path']
   mode 0644

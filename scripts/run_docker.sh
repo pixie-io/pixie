@@ -34,6 +34,7 @@ while [ "$1" != "" ]; do
 done
 
 docker run --rm -it \
+       --network host \
        -v ~/.config:/root/.config \
        -v "$HOME/.minikube:/root/.minikube" \
        -v "$HOME/.kube:/root/.kube" \
