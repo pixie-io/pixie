@@ -116,10 +116,13 @@ class CompilerTest : public ::testing::Test {
                                           types::DataType::FLOAT64, types::DataType::FLOAT64}),
             std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
+
+    compiler_ = Compiler();
   }
   std::unique_ptr<CompilerState> compiler_state_;
   std::shared_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
+  Compiler compiler_;
 };
 
 const char* kExpectedLogicalPlan = R"(
@@ -252,7 +255,6 @@ nodes {
 )";
 
 TEST_F(CompilerTest, test_general_compilation) {
-  auto compiler = Compiler();
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
@@ -263,7 +265,7 @@ TEST_F(CompilerTest, test_general_compilation) {
           ").Result(name='cpu2')",
       },
       "\n");
-  auto plan_status = compiler.Compile(query, compiler_state_.get());
+  auto plan_status = compiler_.Compile(query, compiler_state_.get());
   VLOG(2) << plan_status.ToString();
   ASSERT_OK(plan_status);
 
@@ -334,8 +336,8 @@ TEST_F(CompilerTest, select_order_test) {
           "queryDF = From(table='cpu', select=['cpu2', 'count', 'cpu1']).Result(name='cpu_out')",
       },
       "\n");
-  auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state_.get());
+
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   EXPECT_OK(plan);
   carnotpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kSelectOrderLogicalPlan, &plan_pb));
@@ -389,8 +391,8 @@ TEST_F(CompilerTest, range_now_test) {
           "queryDF.Result(name='range_table')",
       },
       "\n");
-  auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state_.get());
+
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   EXPECT_OK(plan);
   VLOG(2) << plan.ValueOrDie().DebugString();
   int64_t start_time = 0;
@@ -554,8 +556,8 @@ TEST_F(CompilerTest, group_by_all) {
           "pl.mean(r.cpu0)}).Result(name='cpu_out')",
       },
       "\n");
-  auto compiler = Compiler();
-  auto plan_status = compiler.Compile(query, compiler_state_.get());
+
+  auto plan_status = compiler_.Compile(query, compiler_state_.get());
   // EXPECT_OK(plan_status);
   ASSERT_OK(plan_status);
   auto logical_plan = plan_status.ConsumeValueOrDie();
@@ -698,8 +700,8 @@ TEST_F(CompilerTest, range_agg_test) {
           "r.count, size=2, fn= lambda r: { 'mean': pl.mean(r.cpu1)}).Result(name='cpu_out')",
       },
       "\n");
-  auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state_.get());
+
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   EXPECT_OK(plan);
   carnotpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kRangeAggPlan, &plan_pb));
@@ -713,8 +715,8 @@ TEST_F(CompilerTest, multiple_group_by_agg_test) {
        "aggDF = queryDF.Agg(by=lambda r : [r.cpu0, r.cpu2], fn=lambda r : {'cpu_count' : "
        "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).Result(name='cpu_out')"},
       "\n");
-  auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state_.get());
+
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(1) << plan.ToString();
   EXPECT_OK(plan);
 }
@@ -727,8 +729,8 @@ TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
        "aggDF = mapDF.Agg(by=lambda r : [r.cpu0, r.cpu2], fn=lambda r : {'cpu_count' : "
        "pl.count(r.cpu1), 'cpu_mean' : pl.mean(r.cpu1)}).Result(name='cpu_out')"},
       "\n");
-  auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state_.get());
+
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(1) << plan.ToString();
   EXPECT_OK(plan);
 }
@@ -740,8 +742,8 @@ TEST_F(CompilerTest, rename_then_group_by_test) {
                      "pl.count(r.c1)})",
                      "agg_out.Result(name='t15')"},
                     "\n");
-  auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state_.get());
+
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(1) << plan.ToString();
   EXPECT_OK(plan);
 }
@@ -755,8 +757,8 @@ TEST_F(CompilerTest, comparison_test) {
                      "'gte' : r.PIx >= 1.0, 'lte' : r.PIx <= 1.0,", "'eq' : r.PIx == 1.0})",
                      "map_out.Result(name='t15')"},
                     "\n");
-  auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state_.get());
+
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(1) << plan.ToString();
   EXPECT_OK(plan);
 }
@@ -768,8 +770,8 @@ TEST_F(CompilerTest, no_arg_pl_count_test) {
        "aggDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
        "pl.count}).Result(name='cpu_out')"},
       "\n");
-  auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state_.get());
+
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan);
   VLOG(2) << plan.ValueOrDie().DebugString();
 }
@@ -781,8 +783,8 @@ TEST_F(CompilerTest, implied_stop_params) {
                                     "\n");
   std::string table_name = "ranged_table";
   query = absl::Substitute(query, table_name);
-  auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state_.get());
+
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan);
   VLOG(1) << plan.ValueOrDie().DebugString();
   int64_t now_time = compiler_state_->time_now().val;
@@ -802,8 +804,8 @@ TEST_F(CompilerTest, string_start_param) {
                                     "\n");
   std::string table_name = "ranged_table";
   query = absl::Substitute(query, table_name);
-  auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state_.get());
+
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan);
   VLOG(1) << plan.ValueOrDie().DebugString();
   int64_t now_time = compiler_state_->time_now().val;
@@ -823,8 +825,8 @@ TEST_F(CompilerTest, string_start_stop_param) {
                                     "\n");
   std::string table_name = "ranged_table";
   query = absl::Substitute(query, table_name);
-  auto compiler = Compiler();
-  auto plan = compiler.Compile(query, compiler_state_.get());
+
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan);
   VLOG(1) << plan.ValueOrDie().DebugString();
   int64_t now_time = compiler_state_->time_now().val;
