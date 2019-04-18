@@ -58,6 +58,14 @@ class Relation {
    * @return The status of conversion.
    */
   Status ToProto(table_store::schemapb::Relation *relation_proto) const;
+  /**
+   * @brief Initialize the Relation from a proto.
+   * Will fail if columns already exist in the relation.
+   *
+   * @param relation_proto
+   * @return Status
+   */
+  Status FromProto(table_store::schemapb::Relation *relation_proto);
 
  private:
   ColTypeArray col_types_;

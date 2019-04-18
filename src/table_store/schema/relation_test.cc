@@ -1,3 +1,4 @@
+#include <google/protobuf/text_format.h>
 #include <gtest/gtest.h>
 
 #include "src/table_store/schema/relation.h"
@@ -30,6 +31,50 @@ TEST(RelationTest, basic_tests) {
   EXPECT_FALSE(r.HasColumn("abcde"));
   EXPECT_EQ(r.GetColumnType("abc"), types::INT64);
   EXPECT_EQ(r.GetColumnType("def"), types::STRING);
+}
+
+TEST(RelationTest, basic_from_proto_tests) {
+  std::string rel_proto_str = R"(columns {
+    column_name: "abc"
+    column_type: INT64
+  }
+  columns {
+    column_name: "def"
+    column_type: STRING
+  })";
+  Relation r;
+  schemapb::Relation rel_pb;
+  google::protobuf::TextFormat::MergeFromString(rel_proto_str, &rel_pb);
+  ASSERT_OK(r.FromProto(&rel_pb));
+  EXPECT_EQ(2, r.NumColumns());
+  EXPECT_EQ("[abc:int64, def:string]", r.DebugString());
+  EXPECT_EQ(ColTypeArray({types::INT64, types::STRING}), r.col_types());
+  EXPECT_TRUE(r.HasColumn(0));
+  EXPECT_TRUE(r.HasColumn(1));
+  EXPECT_FALSE(r.HasColumn(2));
+  EXPECT_EQ(0, r.GetColumnIndex("abc"));
+  EXPECT_EQ(1, r.GetColumnIndex("def"));
+  EXPECT_TRUE(r.HasColumn("abc"));
+  EXPECT_TRUE(r.HasColumn("def"));
+  EXPECT_FALSE(r.HasColumn("abcde"));
+  EXPECT_EQ(r.GetColumnType("abc"), types::INT64);
+  EXPECT_EQ(r.GetColumnType("def"), types::STRING);
+}
+
+TEST(RelationTest, from_proto_failure) {
+  std::string rel_proto_str = R"(columns {
+    column_name: "abc"
+    column_type: INT64
+  }
+  columns {
+    column_name: "def"
+    column_type: STRING
+  })";
+  Relation r({types::INT64, types::STRING}, {"abc", "def"});
+  schemapb::Relation rel_pb;
+  google::protobuf::TextFormat::MergeFromString(rel_proto_str, &rel_pb);
+  // shouldn't accept from proto if already has columns.
+  EXPECT_NOT_OK(r.FromProto(&rel_pb));
 }
 
 TEST(RelationTest, mutate_relation) {
