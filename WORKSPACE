@@ -191,12 +191,6 @@ go_repository(
 )
 
 go_repository(
-    name = "com_github_graph_gophers_graphql_go",
-    commit = "25d6d94fa7a7f2b0ce10fd509e54e85f7a2f866b",
-    importpath = "github.com/graph-gophers/graphql-go",
-)
-
-go_repository(
     name = "com_github_konsorten_go_windows_terminal_sequences",
     commit = "b729f2633dfe35f4d1d8a32385f6685610ce1cb5",
     importpath = "github.com/konsorten/go-windows-terminal-sequences",
@@ -392,4 +386,10 @@ go_repository(
     name = "com_github_bmatcuk_doublestar",
     commit = "85a78806aa1b4707d1dbace9be592cf1ece91ab3",
     importpath = "github.com/bmatcuk/doublestar",
+)
+
+go_repository(
+    name = "com_github_graph_gophers_graphql_go",
+    commit = "3e8838d4614c12ab337e796548521744f921e05d",
+    importpath = "github.com/graph-gophers/graphql-go",
 )

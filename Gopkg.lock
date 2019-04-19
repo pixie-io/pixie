@@ -208,11 +208,12 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:83981adb1fbbadcc689fa0706614a91724793c40a01c10fd25084109ce91eddf"
+  digest = "1:e6ffadf2d1e75ec583aa3f796ac3933a6af241c652d8f68c8a4f3be700b3e71f"
   name = "github.com/graph-gophers/graphql-go"
   packages = [
     ".",
     "errors",
+    "gqltesting",
     "internal/common",
     "internal/exec",
     "internal/exec/packer",
@@ -227,7 +228,7 @@
     "trace",
   ]
   pruneopts = "UT"
-  revision = "25d6d94fa7a7f2b0ce10fd509e54e85f7a2f866b"
+  revision = "3e8838d4614c12ab337e796548521744f921e05d"
 
 [[projects]]
   digest = "1:c99635434bee2cce9e75a864ca17f8085fcdd43cd564057b431ee01aef2bdd12"
@@ -671,10 +672,13 @@
     "github.com/gogo/protobuf/sortkeys",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
+    "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/google/uuid",
     "github.com/gorilla/sessions",
     "github.com/graph-gophers/graphql-go",
+    "github.com/graph-gophers/graphql-go/errors",
+    "github.com/graph-gophers/graphql-go/gqltesting",
     "github.com/graph-gophers/graphql-go/relay",
     "github.com/grpc-ecosystem/go-grpc-middleware",
     "github.com/grpc-ecosystem/go-grpc-middleware/auth",

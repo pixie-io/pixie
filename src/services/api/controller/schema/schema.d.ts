@@ -69,8 +69,8 @@ export interface GQLDataTable {
 }
 
 export interface GQLDataTableRelation {
-  colNames: Array<string | null>;
-  colTypes: Array<GQLDataColTypes | null>;
+  colNames?: Array<string>;
+  colTypes?: Array<GQLDataColTypes>;
 }
 
 export enum GQLDataColTypes {

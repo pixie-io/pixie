@@ -29,8 +29,8 @@ type Int64 {
 
 # Relation for a Data Table tracking names and types.
 type DataTableRelation {
-  colNames: [String]!
-  colTypes: [DataColTypes]!
+  colNames: [String!]
+  colTypes: [DataColTypes!]
 }
 
 # The data tables. Holds relation and data.
@@ -95,5 +95,5 @@ type Query {
 }
 
 type Mutation {
-  ExecuteQuery(queryStr: String): QueryResult
+   ExecuteQuery(queryStr: String): QueryResult
 }

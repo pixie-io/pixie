@@ -20,6 +20,7 @@ gazelle(
 # TODO(zasgar): We should keep an eye on fixes to gazelle that make this automatic
 # Make gazelle resolve the proto paths correctly.
 # gazelle:resolve go pixielabs.ai/pixielabs/src/common/uuid/proto //src/common/uuid/proto:uuid_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/shared/types/proto //src/shared/types/proto:types_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/proto //src/vizier/proto:service_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/proto //src/carnot/proto:query_results_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/table_store/proto //src/table_store/proto:schema_pl_go_proto

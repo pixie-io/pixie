@@ -23,7 +23,7 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}
-	h := http.Handler(controller.GraphQLHandler(env))
+	h := http.Handler(controller.NewGraphQLHandler(env))
 	mux := http.NewServeMux()
 	mux.Handle("/graphql", h)
 

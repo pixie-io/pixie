@@ -16,7 +16,7 @@ func TestUserInfoResolver(t *testing.T) {
 	sCtx.Claims.Email = "test@test.com"
 	sCtx.Claims.UserID = "abcdef"
 
-	resolver := controller.UserInfoResolver{sCtx}
+	resolver := controller.UserInfoResolver{SessionCtx: sCtx}
 	assert.Equal(t, "test@test.com", resolver.Email())
 	assert.Equal(t, graphql.ID("abcdef"), resolver.ID())
 }

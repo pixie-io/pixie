@@ -11,11 +11,18 @@ import (
 	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
 )
 
-type query struct {
-	env apienv.APIEnv
+// QueryResolver resolves queries for GQL.
+type QueryResolver struct {
+	Env apienv.APIEnv
 }
 
-func (*query) User(ctx context.Context) (*UserInfoResolver, error) {
+// MutationResolver resolves mutations for GQL.
+type MutationResolver struct {
+	Env apienv.APIEnv
+}
+
+// User resolves user information.
+func (*QueryResolver) User(ctx context.Context) (*UserInfoResolver, error) {
 	sCtx, err := sessioncontext.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -23,9 +30,19 @@ func (*query) User(ctx context.Context) (*UserInfoResolver, error) {
 	return &UserInfoResolver{sCtx}, nil
 }
 
-// GraphQLHandler is the hTTP handler used for handling GraphQL requests.
-func GraphQLHandler(env apienv.APIEnv) http.Handler {
+// Vizier resolves vizier information.
+func (q *QueryResolver) Vizier(ctx context.Context) (*VizierInfoResolver, error) {
+	sCtx, err := sessioncontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &VizierInfoResolver{sCtx, q.Env}, nil
+}
+
+// NewGraphQLHandler is the hTTP handler used for handling GraphQL requests.
+func NewGraphQLHandler(env apienv.APIEnv) http.Handler {
 	schemaData := schema.MustLoadSchema()
-	gqlSchema := graphql.MustParseSchema(schemaData, &query{env})
+	opts := []graphql.SchemaOpt{graphql.UseFieldResolvers(), graphql.MaxParallelism(20)}
+	gqlSchema := graphql.MustParseSchema(schemaData, &QueryResolver{env}, opts...)
 	return &relay.Handler{Schema: gqlSchema}
 }
