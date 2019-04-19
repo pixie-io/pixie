@@ -6,10 +6,10 @@ package(default_visibility = ["//visibility:public"])
 go_library(
     name = "go_default_library",
     srcs = ["main.go"],
-    importpath = "pixielabs.ai/pixielabs/src/vizier_cli",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/cli",
     deps = [
-        "//src/vizier_cli/cli:go_default_library",
-        "//src/vizier_cli/controller:go_default_library",
+        "//src/vizier/cli/cli:go_default_library",
+        "//src/vizier/cli/controller:go_default_library",
         "@com_github_fatih_color//:go_default_library",
         "@com_github_sirupsen_logrus//:go_default_library",
     ],

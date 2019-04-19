@@ -5,8 +5,8 @@ import (
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
-	"pixielabs.ai/pixielabs/src/vizier_cli/cli"
-	"pixielabs.ai/pixielabs/src/vizier_cli/controller"
+	"pixielabs.ai/pixielabs/src/vizier/cli/cli"
+	"pixielabs.ai/pixielabs/src/vizier/cli/controller"
 )
 
 func main() {

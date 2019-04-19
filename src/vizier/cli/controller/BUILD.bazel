@@ -6,7 +6,7 @@ go_library(
         "controller.go",
         "table_renderer.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/vizier_cli/controller",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/cli/controller",
     visibility = ["//visibility:public"],
     deps = [
         "//src/common/uuid/proto:uuid_pl_go_proto",
