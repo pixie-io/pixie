@@ -5,6 +5,7 @@
 
 #include "src/stirling/bcc_connector.h"
 #include "src/stirling/bpftrace_connector.h"
+#include "src/stirling/http_trace_connector.h"
 #include "src/stirling/proc_stat_connector.h"
 #include "src/stirling/proto/collector_config.pb.h"
 #include "src/stirling/seq_gen_connector.h"
@@ -21,6 +22,7 @@ void RegisterAllSources(SourceRegistry* registry) {
   registry->RegisterOrDie<PIDCPUUseBCCConnector>(PIDCPUUseBCCConnector::kName);
   registry->RegisterOrDie<CPUStatBPFTraceConnector>("bpftrace_cpu_stats");
   registry->RegisterOrDie<PIDCPUUseBPFTraceConnector>(PIDCPUUseBPFTraceConnector::kName);
+  registry->RegisterOrDie<HTTPTraceConnector>(HTTPTraceConnector::kName);
 }
 
 }  // namespace stirling

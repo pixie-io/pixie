@@ -10,17 +10,19 @@
 #define MAX_MSG_SIZE 4096
 struct syscall_write_event_t {
   struct attr_t {
-    unsigned int time_stamp_ns;
-    unsigned int pid_tgid;
+    uint64_t time_stamp_ns;
+    // Comes from the process from which this is captured.
+    uint32_t tgid;
+    uint32_t pid;
     int fd;
-    unsigned int event_type;
-    unsigned int bytes;
-    unsigned int msg_size;
+    uint32_t event_type;
+    uint32_t bytes;
+    uint32_t msg_size;
   } attr;
   char msg[MAX_MSG_SIZE];
 } __attribute__((__packed__));
-const int kEventTypeSyscallWriteEvent = 1;
-const int kEventTypeSyscallAddrEvent = 2;
+const uint32_t kEventTypeSyscallWriteEvent = 1;
+const uint32_t kEventTypeSyscallAddrEvent = 2;
 
 // This is the perf buffer for BPF program to export data from kernel to user space.
 BPF_PERF_OUTPUT(syscall_write_events);
@@ -53,7 +55,7 @@ BPF_HASH(active_sock_addr, u64, struct addr_info_t);
 //
 // TODO(yzhao): We are not able to trace the source address/port yet. We might need access the
 // sockfd argument to accept() syscall.
-int probe_entry_accept4(struct pt_regs *ctx, struct sockaddr *addr, size_t *addrlen) {
+int probe_entry_accept4(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t *addrlen) {
   u64 id = bpf_get_current_pid_tgid();
   struct addr_info_t addr_info;
   addr_info.addr = addr;
@@ -90,7 +92,8 @@ int probe_ret_accept4(struct pt_regs *ctx) {
   size_t buf_size = addr_size < sizeof(event->msg) ? addr_size : sizeof(event->msg);
   bpf_probe_read(&event->msg, buf_size, addr_info->addr);
   event->attr.time_stamp_ns = bpf_ktime_get_ns();
-  event->attr.pid_tgid = (unsigned int)id;
+  event->attr.tgid = id >> 32;
+  event->attr.pid = (uint32_t)id;
   event->attr.fd = ret;
   event->attr.event_type = kEventTypeSyscallAddrEvent;
   event->attr.msg_size = buf_size;
@@ -121,7 +124,8 @@ int probe_write(struct pt_regs *ctx, int fd, char* buf, size_t count) {
   size_t buf_size = count < sizeof(event->msg) ? count : sizeof(event->msg);
   bpf_probe_read(&event->msg, buf_size, (void*) buf);
   event->attr.time_stamp_ns = bpf_ktime_get_ns();
-  event->attr.pid_tgid = (unsigned int)id;
+  event->attr.tgid = id >> 32;
+  event->attr.pid = (uint32_t)id;
   event->attr.fd = fd;
   event->attr.msg_size = buf_size;
 

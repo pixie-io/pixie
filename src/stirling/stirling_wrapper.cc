@@ -5,6 +5,7 @@
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_connector.h"
 #include "src/stirling/bpftrace_connector.h"
+#include "src/stirling/http_trace_connector.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/seq_gen_connector.h"
 #include "src/stirling/source_registry.h"
@@ -25,6 +26,7 @@ using pl::types::StringValue;
 using pl::types::Time64NSValue;
 
 using pl::stirling::CPUStatBPFTraceConnector;
+using pl::stirling::HTTPTraceConnector;
 using pl::stirling::PIDCPUUseBCCConnector;
 using pl::stirling::PIDCPUUseBPFTraceConnector;
 using pl::stirling::SeqGenConnector;
@@ -88,6 +90,8 @@ void StirlingWrapperCallback(uint64_t table_id,
                      *record_batch);
   } else if (name == PIDCPUUseBCCConnector::kName) {
     PrintRecordBatch("BCC CPU stats", PIDCPUUseBCCConnector::kElements, num_records, *record_batch);
+  } else if (name == HTTPTraceConnector::kName) {
+    PrintRecordBatch("HTTPTrace", HTTPTraceConnector::kElements, num_records, *record_batch);
   }
   // Can add other connectors, if desired, here.
 }
