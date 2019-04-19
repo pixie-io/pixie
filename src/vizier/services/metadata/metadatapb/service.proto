@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package pl.vizier.services.metadata;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/carnot/proto/query_results.proto";
+import "src/common/uuid/proto/uuid.proto";
+import "src/common/base/proto/status.proto";
+import "src/table_store/proto/schema.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb;service";
+
+service MetadataService {
+    /**
+     * These RPC calls are used by the query broker and CLI to fetch metadata.
+     */
+
+    rpc GetSchemas(SchemaRequest) returns (SchemaResponse) {}
+    rpc GetSchemaByAgent(SchemaByAgentRequest) returns (SchemaByAgentResponse) {}
+    rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
+}
+
+// The schema information per agent.
+message Schema {
+    repeated pl.table_store.schemapb.Relation relations = 1;
+}
+
+// The schema request for each agent's schema.
+message SchemaByAgentRequest {
+    // IDs of the agents to get schemas from. If no IDs are specified,
+    // it is assumed that schemas for all agents are requested.
+    repeated uuidpb.UUID agent_ids = 1;
+}
+
+// The schema response from the metadata service.
+message SchemaByAgentResponse {
+    message SchemaByAgent {
+        uuidpb.UUID agent_id      = 1 [
+                                      (gogoproto.customname) = "AgentID"
+                                      ];
+        Schema schema = 2;
+    }
+    repeated SchemaByAgent schema_by_agent = 1;
+}
+
+message SchemaRequest {}
+
+// The schema response from the metadata service containing the schema that all agents serve.
+message SchemaResponse {
+    Schema schema = 2;
+}
+
+enum AgentState {
+    // The default state if nothing is known.
+    AGENT_STATE_UNKNOWN = 0;
+    // The state is healthy if heartbeats are received on regular intervals and the
+    // agent is responding to requests.
+    AGENT_STATE_HEALTHY = 1;
+    // The state will go to unresponsive if the agent hasn't sent a heartbeat for a while
+    // or is unresponsive to messages from Vizier.
+    AGENT_STATE_UNRESPONSIVE = 2;
+    // The state will go to disconnected if the GRPC connection breaks. The hope is that the agent
+    // will come back online and resume in HEALTHY state.
+    AGENT_STATE_DISCONNECTED = 3;
+}
+
+message AgentInfoRequest {}
+
+message AgentInfoResponse {
+    // Contains AgentStatus for each of the agents currently registered with Vizier.
+    repeated AgentStatus info = 1;
+}
+
+message AgentStatus {
+    AgentInfo info = 1;
+    // Time in nanoseconds since the last heartbeat from the agent.
+    int64 last_heartbeat_ns = 2;
+    // The state of the Agent.
+    AgentState state = 3;
+}
+
+// AgentInfo contains information about host and agent running on a given machine.
+message AgentInfo {
+    uuidpb.UUID agent_id      = 1 [
+                                  (gogoproto.customname) = "AgentID"
+                                  ];
+    HostInfo host_info = 2;
+}
+
+// HostInfo contains the details for the host (OS, kernel, CPU, etc).
+message HostInfo {
+    string hostname = 1;
+}
