@@ -8,7 +8,7 @@ import "src/common/uuid/proto/uuid.proto";
 import "src/common/base/proto/status.proto";
 import "src/table_store/proto/schema.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb;service";
+option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb;metadatapb";
 
 service MetadataService {
     /**

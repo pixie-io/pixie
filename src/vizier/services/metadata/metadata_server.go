@@ -7,20 +7,20 @@ import (
 	"pixielabs.ai/pixielabs/src/services/common"
 	"pixielabs.ai/pixielabs/src/services/common/healthz"
 	"pixielabs.ai/pixielabs/src/services/common/httpmiddleware"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 )
 
 func main() {
-	log.WithField("service", "query-broker").Info("Starting service")
+	log.WithField("service", "metadata").Info("Starting service")
 
-	common.SetupService("query-broker", 50300)
+	common.SetupService("metadata", 50400)
 	common.PostFlagSetupAndParse()
 	common.CheckServiceFlags()
 	common.SetupServiceLogging()
 
-	env, err := querybrokerenv.New()
+	env, err := metadataenv.New()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}
@@ -35,7 +35,7 @@ func main() {
 	s := common.NewPLServer(env,
 		httpmiddleware.WithNewSessionMiddleware(
 			httpmiddleware.WithBearerAuthMiddleware(env, mux)))
-	querybrokerpb.RegisterQueryBrokerServiceServer(s.GRPCServer(), server)
+	metadatapb.RegisterMetadataServiceServer(s.GRPCServer(), server)
 	s.Start()
 	s.StopOnInterrupt()
 }

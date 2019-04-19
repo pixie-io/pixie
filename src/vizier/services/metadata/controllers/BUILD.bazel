@@ -3,11 +3,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["server.go"],
-    importpath = "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/vizier/services/query_broker/querybrokerenv:go_default_library",
-        "//src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto",
+        "//src/vizier/services/metadata/metadataenv:go_default_library",
+        "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "@org_golang_google_grpc//codes:go_default_library",
         "@org_golang_google_grpc//status:go_default_library",
     ],
