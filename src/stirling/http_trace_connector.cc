@@ -1,5 +1,7 @@
 #ifdef __linux__
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <picohttpparser.h>
 
 #include <deque>
@@ -15,24 +17,164 @@ namespace pl {
 namespace stirling {
 namespace {
 
-void ParseHTTPResponse(const syscall_write_event_t* event) {
-  const char* msg = 0;
-  size_t msg_len = 0;
+// The order here must be identical to HTTPTraceConnector::kElements, and it must start from 0.
+// TODO(yzhao): We probably could have some form of template construct to offload part of the
+// schema bookkeeping outside of kElements. Today we have a few major issues:
+// - When changing field order, we need to update 2 data structures: kElements,
+// DataElementsIndexes. Investigate if it's possible to use only one data structure.
+// - When runtime check failed, the error information does not show the field index.
+// Investigate if it's possible to enforce the check during compilation time.
+enum DataElementsIndexes {
+  kTimeStampNs = 0,
+  kTgid,
+  kPid,
+  kFd,
+  kEventType,
+  kSrcAddr,
+  kSrcPort,
+  kDstAddr,
+  kDstPort,
+  kHttpMinorVersion,
+  kHttpReqMethod,
+  kHttpReqPath,
+  kHttpRespStatus,
+  kHttpRespMessage,
+  kHttpRespHeaders,
+};
 
+void AppendCommonFields(const syscall_write_event_t& event, uint64_t time_offset_ns,
+                        types::ColumnWrapperRecordBatch* record_batch) {
+  auto& columns = *record_batch;
+  columns[kTimeStampNs]->Append<types::Time64NSValue>(event.attr.time_stamp_ns + time_offset_ns);
+  columns[kTgid]->Append<types::Int64Value>(event.attr.tgid);
+  columns[kPid]->Append<types::Int64Value>(event.attr.pid);
+  columns[kFd]->Append<types::Int64Value>(event.attr.fd);
+}
+
+bool ParseHTTPRequest(const syscall_write_event_t& event, uint64_t time_offset_ns,
+                      types::ColumnWrapperRecordBatch* record_batch) {
+  const char* method = nullptr;
+  size_t method_len = 0;
+  const char* path = nullptr;
+  size_t path_len = 0;
   int minor_version = 0;
   size_t num_headers = 10;
   struct phr_header headers[num_headers];
-
-  int status = 0;
-  int retval = phr_parse_response(event->msg, event->attr.msg_size, &minor_version, &status, &msg,
-                                  &msg_len, headers, &num_headers, 0 /*prevbuflen*/);
+  const int retval =
+      phr_parse_request(event.msg, event.attr.msg_size, &method, &method_len, &path, &path_len,
+                        &minor_version, headers, &num_headers, /*last_len*/ 0);
   if (retval > 0) {
-    // TODO(yzhao): Record interesting data to ColumnWrapperRecordBatch or return to caller for
-    // doing that.
-  } else {
-    // TODO(yzhao): Return error code so that the caller can proceed with parsing the data as HTTP
-    // request.
+    AppendCommonFields(event, time_offset_ns, record_batch);
+    auto& columns = *record_batch;
+    columns[kEventType]->Append<types::StringValue>("http_request");
+    columns[kSrcAddr]->Append<types::StringValue>("");
+    columns[kSrcPort]->Append<types::Int64Value>(-1);
+    columns[kDstAddr]->Append<types::StringValue>("");
+    columns[kDstPort]->Append<types::Int64Value>(-1);
+    columns[kHttpMinorVersion]->Append<types::Int64Value>(minor_version);
+    columns[kHttpReqMethod]->Append<types::StringValue>(std::string(method, method_len));
+    columns[kHttpReqPath]->Append<types::StringValue>(std::string(path, path_len));
+    columns[kHttpRespStatus]->Append<types::Int64Value>(-1);
+    columns[kHttpRespMessage]->Append<types::StringValue>("");
+    columns[kHttpRespHeaders]->Append<types::StringValue>("");
+    return true;
   }
+  return false;
+}
+
+std::string ConcatHTTPHeaders(const struct phr_header* headers, int size) {
+  std::vector<std::pair<std::string_view, std::string_view>> results;
+  results.reserve(size);
+  for (int i = 0; i < size; i++) {
+    auto name_value = std::make_pair(std::string_view{headers[i].name, headers[i].name_len},
+                                     std::string_view{headers[i].value, headers[i].value_len});
+    results.push_back(name_value);
+  }
+  return absl::StrJoin(results, "\n", absl::PairFormatter(":"));
+}
+
+// TODO(PL-519): Now we discard anything of the response that are not http headers. This is because
+// we cannot associate a write() call with the http response. The future work is to keep a list of
+// captured data from write() and associate them with the same http response. The rough idea looks
+// like as follows:
+// time         event type
+// t0           write() http response #1 header + body
+// t1           write() http response #1 body
+// t2           write() http response #1 body
+// t3           write() http response #2 header + body
+// t4           write() http response #2 body
+// ...
+//
+// We then can squash events at t0, t1, t2 together and concatenate their bodies as the full http
+// message. This works in http 1.1 because the responses and requests are not interleaved.
+bool ParseHTTPResponse(const syscall_write_event_t& event, uint64_t time_offset_ns,
+                       types::ColumnWrapperRecordBatch* record_batch) {
+  const char* msg = 0;
+  size_t msg_len = 0;
+  int minor_version = 0;
+  int status = 0;
+  size_t num_headers = 10;
+  struct phr_header headers[num_headers];
+  const int retval = phr_parse_response(event.msg, event.attr.msg_size, &minor_version, &status,
+                                        &msg, &msg_len, headers, &num_headers, /*last_len*/ 0);
+  if (retval > 0) {
+    AppendCommonFields(event, time_offset_ns, record_batch);
+    auto& columns = *record_batch;
+    columns[kEventType]->Append<types::StringValue>("http_response");
+    columns[kSrcAddr]->Append<types::StringValue>("");
+    columns[kSrcPort]->Append<types::Int64Value>(-1);
+    columns[kDstAddr]->Append<types::StringValue>("");
+    columns[kDstPort]->Append<types::Int64Value>(-1);
+    columns[kHttpMinorVersion]->Append<types::Int64Value>(minor_version);
+    columns[kHttpReqMethod]->Append<types::StringValue>("");
+    columns[kHttpReqPath]->Append<types::StringValue>("");
+    columns[kHttpRespStatus]->Append<types::Int64Value>(status);
+    columns[kHttpRespMessage]->Append<types::StringValue>(std::string(msg, msg_len));
+    columns[kHttpRespHeaders]->Append<types::StringValue>(ConcatHTTPHeaders(headers, num_headers));
+    return true;
+  }
+  return false;
+}
+
+bool ParseSockAddr(const syscall_write_event_t& event, uint64_t time_offset_ns,
+                   types::ColumnWrapperRecordBatch* record_batch) {
+  const auto* sa = reinterpret_cast<const struct sockaddr*>(event.msg);
+  char s[INET6_ADDRSTRLEN] = "";
+  const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
+  const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);
+  std::string ip;
+  int port = -1;
+  switch (sa->sa_family) {
+    case AF_INET:
+      port = sa_in->sin_port;
+      if (inet_ntop(AF_INET, &sa_in->sin_addr, s, INET_ADDRSTRLEN) != nullptr) {
+        ip.assign(s);
+      }
+      break;
+    case AF_INET6:
+      port = sa_in6->sin6_port;
+      if (inet_ntop(AF_INET6, &sa_in6->sin6_addr, s, INET6_ADDRSTRLEN) != nullptr) {
+        ip.assign(s);
+      }
+      break;
+  }
+  if (!ip.empty() && port != -1) {
+    AppendCommonFields(event, time_offset_ns, record_batch);
+    auto& columns = *record_batch;
+    columns[kEventType]->Append<types::StringValue>("accept_connection");
+    columns[kSrcAddr]->Append<types::StringValue>("");
+    columns[kSrcPort]->Append<types::Int64Value>(-1);
+    columns[kDstAddr]->Append<types::StringValue>(std::move(ip));
+    columns[kDstPort]->Append<types::Int64Value>(port);
+    columns[kHttpMinorVersion]->Append<types::Int64Value>(-1);
+    columns[kHttpReqMethod]->Append<types::StringValue>("");
+    columns[kHttpReqPath]->Append<types::StringValue>("");
+    columns[kHttpRespStatus]->Append<types::Int64Value>(-1);
+    columns[kHttpRespMessage]->Append<types::StringValue>("");
+    columns[kHttpRespHeaders]->Append<types::StringValue>("");
+    return true;
+  }
+  return false;
 }
 
 // This holds the target buffer for recording the events captured in http tracing. It roughly works
@@ -62,19 +204,18 @@ void HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   if (g_record_batch == nullptr) {
     return;
   }
+  auto* record_batch = g_record_batch;
   auto* event = static_cast<syscall_write_event_t*>(data);
-  auto& columns = *g_record_batch;
-  columns[0]->Append<types::Time64NSValue>(event->attr.time_stamp_ns +
-                                           *static_cast<uint64_t*>(cb_cookie));
-  columns[1]->Append<types::Int64Value>(event->attr.tgid);
-  columns[2]->Append<types::Int64Value>(event->attr.pid);
-  columns[3]->Append<types::Int64Value>(event->attr.fd);
-  if (event->attr.event_type == kEventTypeSyscallWriteEvent) {
-    ParseHTTPResponse(event);
-    // TODO(yzhao): Add ParseHTTPRequest().
+  const uint64_t time_offset_ns = *static_cast<uint64_t*>(cb_cookie);
+  if (event->attr.event_type == kEventTypeSyscallAddrEvent) {
+    const bool addr_good = ParseSockAddr(*event, time_offset_ns, record_batch);
+    LOG_IF(ERROR, !addr_good) << "Failed to parse sockaddr.";
+  } else if (event->attr.event_type == kEventTypeSyscallWriteEvent) {
+    const bool http_good = ParseHTTPRequest(*event, time_offset_ns, record_batch) ||
+                           ParseHTTPResponse(*event, time_offset_ns, record_batch);
+    LOG_IF(INFO, !http_good) << "Failed to parse http messages.";
   } else {
-    // This has the socket info.
-    // TODO(yzhao): Add ParseSockAddr().
+    LOG(ERROR) << "Unknown event type: " << event->attr.event_type;
   }
 }
 

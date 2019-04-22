@@ -1,6 +1,7 @@
 #include <arrow/array.h>
 #include <arrow/buffer.h>
 #include <arrow/builder.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <iostream>
@@ -106,6 +107,13 @@ TEST(ColumnWrapper, FromArrowString) {
   auto wrapper = ColumnWrapper::FromArrow(arr);
   auto converted_to_arrow = wrapper->ConvertToArrow(arrow::default_memory_pool());
   EXPECT_TRUE(converted_to_arrow->Equals(arr));
+}
+
+TEST(ColumnWrapperTest, AppendTypeMismatches) {
+  auto wrapper = ColumnWrapper::Make(DataType::BOOLEAN, 1);
+  ASSERT_EQ(1, wrapper->Size());
+  EXPECT_DEATH(wrapper->Append<types::StringValue>("abc"),
+               R"(\(1 vs\. 4\) Expect bool got string)");
 }
 
 }  // namespace types

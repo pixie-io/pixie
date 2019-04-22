@@ -35,6 +35,8 @@ using pl::stirling::DataElements;
 
 using pl::types::DataType;
 
+DEFINE_string(source_name, "*", "The name of the source to report.");
+
 std::unordered_map<uint64_t, std::string> table_id_to_name_map;
 
 void PrintRecordBatch(std::string prefix, DataElements schema, uint64_t num_records,
@@ -78,6 +80,11 @@ void StirlingWrapperCallback(uint64_t table_id,
   uint64_t num_records = (*record_batch)[0]->Size();
 
   std::string name = table_id_to_name_map[table_id];
+
+  if (FLAGS_source_name != "*" && name != FLAGS_source_name) {
+    // If the name is not selected, do not do anything.
+    return;
+  }
 
   // Use assigned names, from registry.
   if (name == "bpftrace_cpu_stats") {

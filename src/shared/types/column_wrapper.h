@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/type_utils.h"
 #include "src/shared/types/types.h"
 
 namespace pl {
@@ -203,7 +204,9 @@ inline SharedColumnWrapper ColumnWrapper::Make(DataType data_type, size_t size) 
 
 template <class TValueType>
 inline void ColumnWrapper::Append(TValueType val) {
-  CHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
+  CHECK_EQ(data_type(), ValueTypeTraits<TValueType>::data_type)
+      << "Expect " << ToString(data_type()) << " got "
+      << ToString(ValueTypeTraits<TValueType>::data_type);
   static_cast<ColumnWrapperTmpl<TValueType> *>(this)->Append(val);
 }
 

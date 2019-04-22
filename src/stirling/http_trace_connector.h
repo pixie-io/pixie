@@ -39,10 +39,22 @@ class HTTPTraceConnector : public SourceConnector {
   inline static const DataElements kElements = {
       DataElement("time_stamp_ns", types::DataType::TIME64NS),
       // tgid is the user space "pid".
-      DataElement("tgid", types::DataType::INT64), DataElement("pid", types::DataType::INT64),
+      DataElement("tgid", types::DataType::INT64),
+      DataElement("pid", types::DataType::INT64),
       DataElement("fd", types::DataType::INT64),
-      // TODO(yzhao): Add the additional data elements:
-      // {src,dst}_{addr,port}, http_{req, resp, payload}
+      DataElement("event_type", types::DataType::STRING),
+      // TODO(PL-519): Eventually, use the appropriate data type to represent IP addresses, as will
+      // be resolved in the Jira issue.
+      DataElement("src_addr", types::DataType::STRING),
+      DataElement("src_port", types::DataType::INT64),
+      DataElement("dst_addr", types::DataType::STRING),
+      DataElement("dst_port", types::DataType::INT64),
+      DataElement("http_minor_version", types::DataType::INT64),
+      DataElement("http_req_method", types::DataType::STRING),
+      DataElement("http_req_path", types::DataType::STRING),
+      DataElement("http_resp_status", types::DataType::INT64),
+      DataElement("http_resp_message", types::DataType::STRING),
+      DataElement("http_resp_headers", types::DataType::STRING),
   };
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
