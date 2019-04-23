@@ -22,3 +22,15 @@ pl_cc_binary(
         "//third_party/foreign_cc:cnats",
     ],
 )
+
+pl_cc_library(
+    name = "concurrentqueue",
+    srcs = glob(
+        [
+            "concurrentqueue.cc",
+        ],
+    ),
+    deps = [
+        "@com_github_cameron314_concurrentqueue//:concurrentqueue",
+    ],
+)

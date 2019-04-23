@@ -125,4 +125,10 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "cnats-3b4668698b8510b8f08413a94523b05a8036d9ab",
         urls = ["https://github.com/nats-io/cnats/archive/3b4668698b8510b8f08413a94523b05a8036d9ab.tar.gz"],
     ),
+    com_github_cameron314_concurrentqueue = dict(
+        sha256 = "dde227e8fd561b46bdb3c211fa843adc543227b30607acf8eff049006cdffcd1",
+        strip_prefix = "concurrentqueue-dea078cf5b6e742cd67a0d725e36f872feca4de4",
+        urls = ["https://github.com/cameron314/concurrentqueue/" +
+                "archive/dea078cf5b6e742cd67a0d725e36f872feca4de4.tar.gz"],
+    ),
 )

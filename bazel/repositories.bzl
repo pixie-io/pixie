@@ -138,6 +138,17 @@ def _com_github_nats_io_cnats():
         actual = "//third_party/foreign_cc:cnats",
     )
 
+def _com_github_cameron314_concurrentqueue():
+    name = "com_github_cameron314_concurrentqueue"
+    location = REPOSITORY_LOCATIONS[name]
+    http_archive(
+        name = name,
+        urls = location["urls"],
+        sha256 = location["sha256"],
+        strip_prefix = location.get("strip_prefix", ""),
+        build_file = "//third_party:concurrentqueue.BUILD",
+    )
+
 def _cc_deps():
     _repository_impl(name = "com_google_benchmark")
     _repository_impl(
@@ -154,6 +165,7 @@ def _cc_deps():
     _com_github_ariafallah_csv_parser()
     _com_github_gperftools_gperftools()
     _com_github_nats_io_cnats()
+    _com_github_cameron314_concurrentqueue()
 
 def _go_deps():
     # Add go specific imports here when necessary.

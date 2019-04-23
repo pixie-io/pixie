@@ -32,7 +32,9 @@
 // We can add to this list if needed.
 #define PL_SUPPRESS_WARNINGS_START()                         \
   _Pragma("GCC diagnostic push")                             \
-  _Pragma("GCC diagnostic ignored \"-Wunused-variable\"")
+  _Pragma("GCC diagnostic ignored \"-Wunused-variable\"")    \
+  _Pragma("GCC diagnostic ignored \"-Wold-style-cast\"")
+
 
 #define PL_SUPPRESS_WARNINGS_END()                           \
   _Pragma("GCC diagnostic pop")
