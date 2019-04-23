@@ -7,7 +7,7 @@ import { Button } from 'react-bootstrap';
 storiesOf('Button', module)
   .add('Active', () => (
     <Button
-      bsStyle='primary'
+      variant='primary'
       onClick={action('onClick')}
     >
       Click me!
@@ -18,8 +18,8 @@ storiesOf('Button', module)
     })
   .add('Disabled', () => (
     <Button
-      bsSize='large'
-      bsStyle='success'
+      size='lg'
+      variant='success'
       disabled
     >
       Save
