@@ -69,6 +69,7 @@ void CopyIntoOutputPB(table_store::schemapb::Column* data_col, arrow::Array* col
 Status ConvertRecordBatchToProto(arrow::RecordBatch* rb,
                                  const pl::table_store::schema::Relation& relation,
                                  table_store::schemapb::RowBatchData* rb_data_pb) {
+  int64_t num_rows_in_batch = rb->num_rows();
   for (int col_idx = 0; col_idx < rb->num_columns(); ++col_idx) {
     auto col = rb->column(col_idx);
     auto output_col_data = rb_data_pb->add_cols();
@@ -79,6 +80,7 @@ Status ConvertRecordBatchToProto(arrow::RecordBatch* rb,
     PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
 #undef TYPE_CASE
   }
+  rb_data_pb->set_num_rows(num_rows_in_batch);
   return Status::OK();
 }
 
@@ -137,11 +139,11 @@ Status Table::AddColumn(std::shared_ptr<Column> col) {
 
 Status Table::ToProto(table_store::schemapb::Table* table_proto) const {
   CHECK(table_proto != nullptr);
-  auto row_batch_proto = table_proto->add_row_batches();
   auto relation = GetRelation();
   // TODO(zasgar): Table should store record batches, that way we can reduce conversions.
   PL_ASSIGN_OR_RETURN(auto batches, GetTableAsRecordBatches());
   for (const auto batch : batches) {
+    auto row_batch_proto = table_proto->add_row_batches();
     PL_RETURN_IF_ERROR(ConvertRecordBatchToProto(batch.get(), relation, row_batch_proto));
   }
   PL_RETURN_IF_ERROR(relation.ToProto(table_proto->mutable_relation()));

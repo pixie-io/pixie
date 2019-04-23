@@ -317,6 +317,9 @@ row_batches {
       data: 3
     }
   }
+  num_rows: 3
+}
+row_batches {
   cols {
     float64_data {
       data: 0.1
@@ -329,8 +332,8 @@ row_batches {
       data: 6
     }
   }
-}
-  )";
+  num_rows: 2
+})";
 
   google::protobuf::util::MessageDifferencer differ;
   table_store::schemapb::Table expected_proto;
