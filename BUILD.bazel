@@ -37,16 +37,31 @@ buildifier(
 load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_pull")
 load("@package_bundle//file:packages.bzl", "packages")
 
+pl_cc_base_packages = [
+    packages["libc6"],
+    packages["libunwind8"],
+    packages["liblzma5"],
+    packages["libelf1"],
+    packages["libtinfo5"],
+    packages["zlib1g"],
+]
+
 container_image(
     name = "pl_cc_base_image",
     base = "@cc_base//image",
-    debs = [
-        packages["libc6"],
-        packages["libunwind8"],
-        packages["liblzma5"],
-        packages["libelf1"],
-        packages["libtinfo5"],
-        packages["zlib1g"],
-    ],
+    debs = pl_cc_base_packages,
+    visibility = ["//visibility:public"],
+)
+
+container_image(
+    name = "pl_cc_base_debug_image",
+    base = "@cc_base_debug//image",
+    debs = pl_cc_base_packages,
+    visibility = ["//visibility:public"],
+)
+
+container_image(
+    name = "pl_cc_dev_image",
+    base = "@dev_image//image",
     visibility = ["//visibility:public"],
 )

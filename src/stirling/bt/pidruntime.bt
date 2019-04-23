@@ -1,5 +1,3 @@
-#include <linux/sched.h>
-
 tracepoint:sched:sched_switch
 {
   // Calculate run-time of previously running process.

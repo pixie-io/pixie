@@ -54,13 +54,31 @@ def _docker_setup():
         repository = "library/nginx",
     )
 
-    # Import CC base image
+    # Import CC base image.
     container_pull(
         name = "cc_base",
         # From : March 27, 2019
         digest = "sha256:482e7efb3245ded60e9ced05909551fc14d39b47e2cc643830f4466010c25372",
         registry = "gcr.io",
         repository = "distroless/cc",
+    )
+
+    # Import CC base debug image.
+    container_pull(
+        name = "cc_base_debug",
+        # From : April 22, 2019
+        digest = "sha256:8bd401c66e7bf2432a8f22052060021ceb485d00b78e916149a5b3738f24c787",
+        registry = "gcr.io",
+        repository = "distroless/cc",
+    )
+
+    # Import dev image.
+    # Warning: Make sure to update the digest if you need an up-to-date version.
+    container_pull(
+        name = "dev_image",
+        digest = "sha256:e0f7ba46700d4eb0b823e4949cea3219e408f2443fc5612b22785be0ded46b96",
+        registry = "gcr.io",
+        repository = "pl-dev-infra/dev_image",
     )
 
 def pl_workspace_setup():
