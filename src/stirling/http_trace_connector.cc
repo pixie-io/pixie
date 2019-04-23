@@ -35,51 +35,37 @@ enum DataElementsIndexes {
   kDstAddr,
   kDstPort,
   kHttpMinorVersion,
+  kHttpHeaders,
   kHttpReqMethod,
   kHttpReqPath,
   kHttpRespStatus,
   kHttpRespMessage,
-  kHttpRespHeaders,
 };
 
-void AppendCommonFields(const syscall_write_event_t& event, uint64_t time_offset_ns,
-                        types::ColumnWrapperRecordBatch* record_batch) {
+void ConsumeRecord(HTTPTraceRecord record, types::ColumnWrapperRecordBatch* record_batch) {
   auto& columns = *record_batch;
-  columns[kTimeStampNs]->Append<types::Time64NSValue>(event.attr.time_stamp_ns + time_offset_ns);
-  columns[kTgid]->Append<types::Int64Value>(event.attr.tgid);
-  columns[kPid]->Append<types::Int64Value>(event.attr.pid);
-  columns[kFd]->Append<types::Int64Value>(event.attr.fd);
+  columns[kTimeStampNs]->Append<types::Time64NSValue>(record.time_stamp_ns);
+  columns[kTgid]->Append<types::Int64Value>(record.tgid);
+  columns[kPid]->Append<types::Int64Value>(record.pid);
+  columns[kFd]->Append<types::Int64Value>(record.fd);
+  columns[kEventType]->Append<types::StringValue>(std::move(record.event_type));
+  columns[kSrcAddr]->Append<types::StringValue>(std::move(record.src_addr));
+  columns[kSrcPort]->Append<types::Int64Value>(record.src_port);
+  columns[kDstAddr]->Append<types::StringValue>(std::move(record.dst_addr));
+  columns[kDstPort]->Append<types::Int64Value>(record.dst_port);
+  columns[kHttpMinorVersion]->Append<types::Int64Value>(record.http_minor_version);
+  columns[kHttpHeaders]->Append<types::StringValue>(std::move(record.http_headers));
+  columns[kHttpReqMethod]->Append<types::StringValue>(std::move(record.http_req_method));
+  columns[kHttpReqPath]->Append<types::StringValue>(std::move(record.http_req_path));
+  columns[kHttpRespStatus]->Append<types::Int64Value>(record.http_resp_status);
+  columns[kHttpRespMessage]->Append<types::StringValue>(std::move(record.http_resp_message));
 }
 
-bool ParseHTTPRequest(const syscall_write_event_t& event, uint64_t time_offset_ns,
-                      types::ColumnWrapperRecordBatch* record_batch) {
-  const char* method = nullptr;
-  size_t method_len = 0;
-  const char* path = nullptr;
-  size_t path_len = 0;
-  int minor_version = 0;
-  size_t num_headers = 10;
-  struct phr_header headers[num_headers];
-  const int retval =
-      phr_parse_request(event.msg, event.attr.msg_size, &method, &method_len, &path, &path_len,
-                        &minor_version, headers, &num_headers, /*last_len*/ 0);
-  if (retval > 0) {
-    AppendCommonFields(event, time_offset_ns, record_batch);
-    auto& columns = *record_batch;
-    columns[kEventType]->Append<types::StringValue>("http_request");
-    columns[kSrcAddr]->Append<types::StringValue>("");
-    columns[kSrcPort]->Append<types::Int64Value>(-1);
-    columns[kDstAddr]->Append<types::StringValue>("");
-    columns[kDstPort]->Append<types::Int64Value>(-1);
-    columns[kHttpMinorVersion]->Append<types::Int64Value>(minor_version);
-    columns[kHttpReqMethod]->Append<types::StringValue>(std::string(method, method_len));
-    columns[kHttpReqPath]->Append<types::StringValue>(std::string(path, path_len));
-    columns[kHttpRespStatus]->Append<types::Int64Value>(-1);
-    columns[kHttpRespMessage]->Append<types::StringValue>("");
-    columns[kHttpRespHeaders]->Append<types::StringValue>("");
-    return true;
-  }
-  return false;
+void ParseEventAttr(const syscall_write_event_t& event, HTTPTraceRecord* record) {
+  record->time_stamp_ns = event.attr.time_stamp_ns;
+  record->tgid = event.attr.tgid;
+  record->pid = event.attr.pid;
+  record->fd = event.attr.fd;
 }
 
 std::string ConcatHTTPHeaders(const struct phr_header* headers, int size) {
@@ -91,6 +77,30 @@ std::string ConcatHTTPHeaders(const struct phr_header* headers, int size) {
     results.push_back(name_value);
   }
   return absl::StrJoin(results, "\n", absl::PairFormatter(":"));
+}
+
+bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* record) {
+  const char* method = nullptr;
+  size_t method_len = 0;
+  const char* path = nullptr;
+  size_t path_len = 0;
+  int minor_version = 0;
+  size_t num_headers = 10;
+  struct phr_header headers[num_headers];
+  const int retval =
+      phr_parse_request(event.msg, event.attr.msg_size, &method, &method_len, &path, &path_len,
+                        &minor_version, headers, &num_headers, /*last_len*/ 0);
+  HTTPTraceRecord& result = *record;
+  if (retval > 0) {
+    ParseEventAttr(event, &result);
+    result.event_type = "http_request";
+    result.http_minor_version = minor_version;
+    result.http_headers = ConcatHTTPHeaders(headers, num_headers);
+    result.http_req_method = std::string(method, method_len);
+    result.http_req_path = std::string(path, path_len);
+    return true;
+  }
+  return false;
 }
 
 // TODO(PL-519): Now we discard anything of the response that are not http headers. This is because
@@ -107,8 +117,7 @@ std::string ConcatHTTPHeaders(const struct phr_header* headers, int size) {
 //
 // We then can squash events at t0, t1, t2 together and concatenate their bodies as the full http
 // message. This works in http 1.1 because the responses and requests are not interleaved.
-bool ParseHTTPResponse(const syscall_write_event_t& event, uint64_t time_offset_ns,
-                       types::ColumnWrapperRecordBatch* record_batch) {
+bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* record) {
   const char* msg = 0;
   size_t msg_len = 0;
   int minor_version = 0;
@@ -117,27 +126,21 @@ bool ParseHTTPResponse(const syscall_write_event_t& event, uint64_t time_offset_
   struct phr_header headers[num_headers];
   const int retval = phr_parse_response(event.msg, event.attr.msg_size, &minor_version, &status,
                                         &msg, &msg_len, headers, &num_headers, /*last_len*/ 0);
+  HTTPTraceRecord& result = *record;
   if (retval > 0) {
-    AppendCommonFields(event, time_offset_ns, record_batch);
-    auto& columns = *record_batch;
-    columns[kEventType]->Append<types::StringValue>("http_response");
-    columns[kSrcAddr]->Append<types::StringValue>("");
-    columns[kSrcPort]->Append<types::Int64Value>(-1);
-    columns[kDstAddr]->Append<types::StringValue>("");
-    columns[kDstPort]->Append<types::Int64Value>(-1);
-    columns[kHttpMinorVersion]->Append<types::Int64Value>(minor_version);
-    columns[kHttpReqMethod]->Append<types::StringValue>("");
-    columns[kHttpReqPath]->Append<types::StringValue>("");
-    columns[kHttpRespStatus]->Append<types::Int64Value>(status);
-    columns[kHttpRespMessage]->Append<types::StringValue>(std::string(msg, msg_len));
-    columns[kHttpRespHeaders]->Append<types::StringValue>(ConcatHTTPHeaders(headers, num_headers));
+    ParseEventAttr(event, &result);
+    result.event_type = "http_response";
+    result.http_minor_version = minor_version;
+    result.http_headers = ConcatHTTPHeaders(headers, num_headers);
+    result.http_resp_status = status;
+    result.http_resp_message = std::string(msg, msg_len);
     return true;
   }
   return false;
 }
 
-bool ParseSockAddr(const syscall_write_event_t& event, uint64_t time_offset_ns,
-                   types::ColumnWrapperRecordBatch* record_batch) {
+// Returns an IP:port pair form parsing the input.
+bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record) {
   const auto* sa = reinterpret_cast<const struct sockaddr*>(event.msg);
   char s[INET6_ADDRSTRLEN] = "";
   const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
@@ -158,20 +161,9 @@ bool ParseSockAddr(const syscall_write_event_t& event, uint64_t time_offset_ns,
       }
       break;
   }
-  if (!ip.empty() && port != -1) {
-    AppendCommonFields(event, time_offset_ns, record_batch);
-    auto& columns = *record_batch;
-    columns[kEventType]->Append<types::StringValue>("accept_connection");
-    columns[kSrcAddr]->Append<types::StringValue>("");
-    columns[kSrcPort]->Append<types::Int64Value>(-1);
-    columns[kDstAddr]->Append<types::StringValue>(std::move(ip));
-    columns[kDstPort]->Append<types::Int64Value>(port);
-    columns[kHttpMinorVersion]->Append<types::Int64Value>(-1);
-    columns[kHttpReqMethod]->Append<types::StringValue>("");
-    columns[kHttpReqPath]->Append<types::StringValue>("");
-    columns[kHttpRespStatus]->Append<types::Int64Value>(-1);
-    columns[kHttpRespMessage]->Append<types::StringValue>("");
-    columns[kHttpRespHeaders]->Append<types::StringValue>("");
+  if (!ip.empty()) {
+    record->dst_addr = std::move(ip);
+    record->dst_port = port;
     return true;
   }
   return false;
@@ -199,21 +191,35 @@ bool ParseSockAddr(const syscall_write_event_t& event, uint64_t time_offset_ns,
 // descriptor, and let TransferDataImpl() directly poll that file descriptor.
 types::ColumnWrapperRecordBatch* g_record_batch = nullptr;
 
-// We use cb_cookie (callback cookie) to attach the time offset.
-void HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
+}  // namespace
+
+void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   if (g_record_batch == nullptr) {
     return;
   }
   auto* record_batch = g_record_batch;
   auto* event = static_cast<syscall_write_event_t*>(data);
-  const uint64_t time_offset_ns = *static_cast<uint64_t*>(cb_cookie);
+  auto* connector = static_cast<HTTPTraceConnector*>(cb_cookie);
+  const uint64_t time_offset_ns = connector->ClockRealTimeOffset();
   if (event->attr.event_type == kEventTypeSyscallAddrEvent) {
-    const bool addr_good = ParseSockAddr(*event, time_offset_ns, record_batch);
-    LOG_IF(ERROR, !addr_good) << "Failed to parse sockaddr.";
+    HTTPTraceRecord record;
+    bool succeeded = ParseSockAddr(*event, &record);
+    if (succeeded) {
+      record.time_stamp_ns += time_offset_ns;
+      connector->UpdateFdRecordMap(event->attr.fd, std::move(record));
+    } else {
+      LOG(ERROR) << "Failed to parse sockaddr.";
+    }
   } else if (event->attr.event_type == kEventTypeSyscallWriteEvent) {
-    const bool http_good = ParseHTTPRequest(*event, time_offset_ns, record_batch) ||
-                           ParseHTTPResponse(*event, time_offset_ns, record_batch);
-    LOG_IF(INFO, !http_good) << "Failed to parse http messages.";
+    HTTPTraceRecord record = connector->GetRecordForFd(event->attr.fd);
+    const bool http_parse_succeeded =
+        ParseHTTPRequest(*event, &record) || ParseHTTPResponse(*event, &record);
+    if (http_parse_succeeded) {
+      record.time_stamp_ns += time_offset_ns;
+      ConsumeRecord(record, record_batch);
+    } else {
+      LOG(INFO) << "Failed to parse http messages.";
+    }
   } else {
     LOG(ERROR) << "Unknown event type: " << event->attr.event_type;
   }
@@ -222,7 +228,9 @@ void HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
 // This function is invoked by BCC runtime when a item in the perf buffer is not read and lost.
 // For now we do nothing.
 // TODO(yzhao): Investigate what should be done here.
-void HandleProbeLoss(void* /*cb_cookie*/, uint64_t) {}
+void HTTPTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t) {}
+
+namespace {
 
 // Describes a kprobe that should be attached with the BPF::attach_kprobe().
 struct ProbeSpec {
@@ -264,11 +272,11 @@ Status HTTPTraceConnector::InitImpl() {
                        ", error message: ", attach_status.msg()));
     }
   }
-  ebpf::StatusTuple open_status =
-      bpf_.open_perf_buffer(kPerfBufferName, &HandleProbeOutput, &HandleProbeLoss,
-                            // TODO(yzhao): We sort of are not unified around how record_batch and
-                            // real_time_offset_ is passed to the callback. Consider unifying them.
-                            /*cb_cookie*/ &real_time_offset_, perf_buffer_page_num_);
+  ebpf::StatusTuple open_status = bpf_.open_perf_buffer(
+      kPerfBufferName, &HTTPTraceConnector::HandleProbeOutput, &HTTPTraceConnector::HandleProbeLoss,
+      // TODO(yzhao): We sort of are not unified around how record_batch and
+      // real_time_offset_ is passed to the callback. Consider unifying them.
+      /*cb_cookie*/ this, perf_buffer_page_num_);
   if (open_status.code() != 0) {
     return error::Internal(absl::StrCat("Failed to open perf buffer: ", kPerfBufferName,
                                         ", error message: ", open_status.msg()));
@@ -306,6 +314,12 @@ void HTTPTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* recor
     perf_buffer->poll(1);
   }
 }
+
+void HTTPTraceConnector::UpdateFdRecordMap(int fd, HTTPTraceRecord record) {
+  fd_record_map_[fd] = std::move(record);
+}
+
+const HTTPTraceRecord& HTTPTraceConnector::GetRecordForFd(int fd) { return fd_record_map_[fd]; }
 
 }  // namespace stirling
 }  // namespace pl

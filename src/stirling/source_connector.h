@@ -74,6 +74,11 @@ class SourceConnector : public NotCopyable {
   SourceType type() const { return type_; }
   const std::string& source_name() const { return source_name_; }
   const DataElements& elements() const { return elements_; }
+  /**
+   * @brief If recording nsecs in your bt file, this function can be used to find the offset for
+   * convert the result into realtime.
+   */
+  uint64_t ClockRealTimeOffset();
 
  protected:
   explicit SourceConnector(SourceType type, std::string source_name, DataElements elements)
@@ -89,11 +94,6 @@ class SourceConnector : public NotCopyable {
    *
    */
   void InitClockRealTimeOffset();
-  /**
-   * @brief If recording nsecs in your bt file, this function can be used to find the offset for
-   * convert the result into realtime.
-   */
-  uint64_t ClockRealTimeOffset();
 
   DataElements elements_;
   uint64_t real_time_offset_;
