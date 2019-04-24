@@ -141,6 +141,25 @@ class MemorySinkOperator : public Operator {
   carnotpb::MemorySinkOperator pb_;
 };
 
+class FilterOperator : public Operator {
+ public:
+  explicit FilterOperator(int64_t id) : Operator(id, carnotpb::FILTER_OPERATOR) {}
+  ~FilterOperator() override = default;
+
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema &schema, const PlanState &state,
+      const std::vector<int64_t> &input_ids) const override;
+  Status Init(const carnotpb::FilterOperator &pb);
+  std::string DebugString() const override;
+
+  const std::shared_ptr<const ScalarExpression> &expression() const { return expression_; }
+
+ private:
+  std::shared_ptr<const ScalarExpression> expression_;
+
+  carnotpb::FilterOperator pb_;
+};
+
 }  // namespace plan
 }  // namespace carnot
 }  // namespace pl

@@ -38,6 +38,8 @@ std::unique_ptr<Operator> Operator::FromProto(const carnotpb::Operator &pb, int6
       return CreateOperator<BlockingAggregateOperator>(id, pb.blocking_agg_op());
     case carnotpb::MEMORY_SINK_OPERATOR:
       return CreateOperator<MemorySinkOperator>(id, pb.mem_sink_op());
+    case carnotpb::FILTER_OPERATOR:
+      return CreateOperator<FilterOperator>(id, pb.filter_op());
     default:
       LOG(FATAL) << absl::StrFormat("Unknown operator type: %s", ToString(pb.op_type()));
   }
@@ -215,6 +217,42 @@ StatusOr<table_store::schema::Relation> MemorySinkOperator::OutputRelation(
   DCHECK(is_initialized_) << "Not initialized";
   // There are no outputs.
   return table_store::schema::Relation();
+}
+
+/**
+ * Filter Operator Implementation.
+ */
+std::string FilterOperator::DebugString() const {
+  std::string debug_string = absl::StrFormat("(%s)", expression_->DebugString());
+  return "Op:Filter" + debug_string;
+}
+
+Status FilterOperator::Init(const carnotpb::FilterOperator &pb) {
+  pb_ = pb;
+  PL_ASSIGN_OR_RETURN(expression_, ScalarExpression::FromProto(pb_.expression()));
+
+  is_initialized_ = true;
+  return Status::OK();
+}
+
+StatusOr<table_store::schema::Relation> FilterOperator::OutputRelation(
+    const table_store::schema::Schema &schema, const PlanState & /*state*/,
+    const std::vector<int64_t> &input_ids) const {
+  DCHECK(is_initialized_) << "Not initialized";
+
+  if (input_ids.size() != 1) {
+    return error::InvalidArgument("Filter operator must have exactly one input");
+  }
+  if (!schema.HasRelation(input_ids[0])) {
+    return error::NotFound("Missing relation ($0) for input of FilterOperator", input_ids[0]);
+  }
+
+  auto input_relation_s = schema.GetRelation(input_ids[0]);
+  PL_RETURN_IF_ERROR(input_relation_s);
+  const auto input_relation = input_relation_s.ConsumeValueOrDie();
+
+  // Output relation is the same as the input relation.
+  return input_relation;
 }
 
 }  // namespace plan

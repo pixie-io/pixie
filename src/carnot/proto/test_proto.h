@@ -158,6 +158,28 @@ group_names: "group1"
 value_names: "value1"
 )";
 
+const char* kFilterOperator1 = R"(
+expression {
+  func {
+    name: "testUdf"
+    args {
+      constant {
+        data_type: BOOLEAN,
+        bool_value: false
+      }
+    }
+  }
+}
+columns {
+  node: 1
+  index: 0
+}
+columns {
+  node: 1
+  index: 1
+}
+)";
+
 const char* kMemSinkOperator1 = R"(
 name: "cpu_15s"
 column_names: "winagg_cpu0"
@@ -562,6 +584,14 @@ carnotpb::Operator CreateTestBlockingAgg1PB() {
   carnotpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "BLOCKING_AGGREGATE_OPERATOR",
                                    "blocking_agg_op", kBlockingAggOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+carnotpb::Operator CreateTestFilter1PB() {
+  carnotpb::Operator op;
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "FILTER_OPERATOR", "filter_op", kFilterOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

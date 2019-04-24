@@ -80,6 +80,14 @@ TEST_F(OperatorTest, from_proto_blocking_agg) {
   EXPECT_EQ(carnotpb::OperatorType::BLOCKING_AGGREGATE_OPERATOR, agg_op->op_type());
 }
 
+TEST_F(OperatorTest, from_proto_filter) {
+  auto filter_pb = carnotpb::testutils::CreateTestFilter1PB();
+  auto filter_op = Operator::FromProto(filter_pb, 1);
+  EXPECT_EQ(1, filter_op->id());
+  EXPECT_TRUE(filter_op->is_initialized());
+  EXPECT_EQ(carnotpb::OperatorType::FILTER_OPERATOR, filter_op->op_type());
+}
+
 TEST_F(OperatorTest, output_relation_source) {
   auto src_pb = carnotpb::testutils::CreateTestSource1PB();
   auto src_op = Operator::FromProto(src_pb, 1);
@@ -144,6 +152,16 @@ TEST_F(OperatorTest, output_relation_blocking_agg_missing_rel) {
   auto rel = agg_op->OutputRelation(schema_, *state_, std::vector<int64_t>({3}));
   EXPECT_FALSE(rel.ok());
   EXPECT_EQ(rel.msg(), "Missing relation (3) for input of BlockingAggregateOperator");
+}
+
+TEST_F(OperatorTest, output_relation_filter) {
+  auto filter_pb = carnotpb::testutils::CreateTestFilter1PB();
+  auto filter_op = Operator::FromProto(filter_pb, 1);
+
+  auto rel = filter_op->OutputRelation(schema_, *state_, std::vector<int64_t>({0}));
+  EXPECT_EQ(2, rel.ValueOrDie().NumColumns());
+  EXPECT_EQ(types::DataType::INT64, rel.ValueOrDie().GetColumnType(0));
+  EXPECT_EQ(types::DataType::FLOAT64, rel.ValueOrDie().GetColumnType(1));
 }
 
 }  // namespace plan
