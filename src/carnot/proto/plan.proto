@@ -55,6 +55,7 @@ enum OperatorType {
   // Regular operators are range 2000 - 10000.
   MAP_OPERATOR = 2000;
   BLOCKING_AGGREGATE_OPERATOR = 2100;
+  FILTER_OPERATOR = 2200; 
   // Sink operators are range 9000-10000.
   MEMORY_SINK_OPERATOR = 9000;
 }
@@ -72,6 +73,8 @@ message Operator {
     BlockingAggregateOperator blocking_agg_op = 4;
     // Operator that stores data to memory.
     MemorySinkOperator mem_sink_op = 5;
+    // Performs a compacting Filter operation.
+    FilterOperator filter_op = 6;
   }
 }
 
@@ -124,6 +127,14 @@ message BlockingAggregateOperator {
   repeated string group_names = 3;
   // The names of values.
   repeated string value_names = 4;
+}
+
+// Performs a compacting filter
+message FilterOperator {
+  // The scalar expression defines the filtering expression that will be run on the data.
+  ScalarExpression expression = 1;
+  // Defines the columns that are passed from the previous operator.
+  repeated Column columns = 2;
 }
 
 // Scalar expression is any single valued expression.
