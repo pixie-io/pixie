@@ -13,6 +13,10 @@
 #include "src/stirling/bcc_bpf/http_trace.h"
 #include "src/stirling/http_trace_connector.h"
 
+DEFINE_string(selected_content_type_substrs, "",
+              "Comma-separated strings. Select any http messages of which Content-Type header "
+              "contains one of the strings. If empty, all http messages are selected.");
+
 namespace pl {
 namespace stirling {
 namespace {
@@ -54,7 +58,8 @@ void ConsumeRecord(HTTPTraceRecord record, types::ColumnWrapperRecordBatch* reco
   columns[kDstAddr]->Append<types::StringValue>(std::move(record.dst_addr));
   columns[kDstPort]->Append<types::Int64Value>(record.dst_port);
   columns[kHttpMinorVersion]->Append<types::Int64Value>(record.http_minor_version);
-  columns[kHttpHeaders]->Append<types::StringValue>(std::move(record.http_headers));
+  columns[kHttpHeaders]->Append<types::StringValue>(
+      absl::StrJoin(record.http_headers, "\n", absl::PairFormatter(": ")));
   columns[kHttpReqMethod]->Append<types::StringValue>(std::move(record.http_req_method));
   columns[kHttpReqPath]->Append<types::StringValue>(std::move(record.http_req_path));
   columns[kHttpRespStatus]->Append<types::Int64Value>(record.http_resp_status);
@@ -68,15 +73,14 @@ void ParseEventAttr(const syscall_write_event_t& event, HTTPTraceRecord* record)
   record->fd = event.attr.fd;
 }
 
-std::string ConcatHTTPHeaders(const struct phr_header* headers, int size) {
-  std::vector<std::pair<std::string_view, std::string_view>> results;
-  results.reserve(size);
-  for (int i = 0; i < size; i++) {
-    auto name_value = std::make_pair(std::string_view{headers[i].name, headers[i].name_len},
-                                     std::string_view{headers[i].value, headers[i].value_len});
-    results.push_back(name_value);
+std::map<std::string, std::string> GetHttpHeadersMap(const phr_header* headers,
+                                                     size_t num_headers) {
+  std::map<std::string, std::string> result;
+  for (size_t i = 0; i < num_headers; i++) {
+    result[std::string(headers[i].name, headers[i].name_len)] =
+        std::string(headers[i].value, headers[i].value_len);
   }
-  return absl::StrJoin(results, "\n", absl::PairFormatter(":"));
+  return result;
 }
 
 bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* record) {
@@ -95,7 +99,7 @@ bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* recor
     ParseEventAttr(event, &result);
     result.event_type = "http_request";
     result.http_minor_version = minor_version;
-    result.http_headers = ConcatHTTPHeaders(headers, num_headers);
+    result.http_headers = GetHttpHeadersMap(headers, num_headers);
     result.http_req_method = std::string(method, method_len);
     result.http_req_path = std::string(path, path_len);
     return true;
@@ -131,7 +135,7 @@ bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* reco
     ParseEventAttr(event, &result);
     result.event_type = "http_response";
     result.http_minor_version = minor_version;
-    result.http_headers = ConcatHTTPHeaders(headers, num_headers);
+    result.http_headers = GetHttpHeadersMap(headers, num_headers);
     result.http_resp_status = status;
     result.http_resp_message = std::string(msg, msg_len);
     return true;
@@ -191,8 +195,27 @@ bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record) 
 // descriptor, and let TransferDataImpl() directly poll that file descriptor.
 types::ColumnWrapperRecordBatch* g_record_batch = nullptr;
 
+bool ShouldSelect(const HTTPTraceRecord& record) {
+  if (FLAGS_selected_content_type_substrs.empty()) {
+    return true;
+  }
+  const auto iter = record.http_headers.find("Content-Type");
+  if (iter == record.http_headers.end()) {
+    return false;
+  }
+  static const std::vector<std::string_view> substrs =
+      absl::StrSplit(FLAGS_selected_content_type_substrs, ",", absl::SkipEmpty());
+  for (auto substr : substrs) {
+    if (absl::StrContains(iter->second, substr)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 }  // namespace
 
+// TODO(yzhao): Add tests.
 void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   if (g_record_batch == nullptr) {
     return;
@@ -215,8 +238,14 @@ void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*da
     const bool http_parse_succeeded =
         ParseHTTPRequest(*event, &record) || ParseHTTPResponse(*event, &record);
     if (http_parse_succeeded) {
-      record.time_stamp_ns += time_offset_ns;
-      ConsumeRecord(record, record_batch);
+      if (record.event_type == "http_response" && !ShouldSelect(record)) {
+        LOG(INFO) << "Discarded http response of which 'Content-Type' header doesn't contain "
+                     "one of: "
+                  << FLAGS_selected_content_type_substrs;
+      } else {
+        record.time_stamp_ns += time_offset_ns;
+        ConsumeRecord(record, record_batch);
+      }
     } else {
       LOG(INFO) << "Failed to parse http messages.";
     }

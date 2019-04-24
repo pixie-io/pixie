@@ -23,6 +23,8 @@ DUMMY_SOURCE_CONNECTOR(HTTPTraceConnector);
 
 #include "src/stirling/source_connector.h"
 
+DECLARE_string(selected_content_type_substrs);
+
 OBJ_STRVIEW(http_trace_bcc_script, _binary_src_stirling_bcc_bpf_http_trace_c);
 
 namespace pl {
@@ -43,7 +45,7 @@ struct HTTPTraceRecord {
   std::string dst_addr;
   int dst_port = -1;
   int http_minor_version = -1;
-  std::string http_headers;
+  std::map<std::string, std::string> http_headers;
   std::string http_req_method;
   std::string http_req_path;
   int http_resp_status = -1;
