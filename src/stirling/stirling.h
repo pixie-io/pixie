@@ -22,6 +22,17 @@ namespace stirling {
 stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto);
 
 /**
+ * @brief Convenience function to subscribe to a single info classes of
+ * a published proto message. This should actually be in an agent.
+ * TODO(kgandhi): Move to agent or common utils for agent when available.
+ *
+ * @param publish_proto
+ * @return stirlingpb::Subscribe
+ */
+stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_proto,
+                                           std::string_view name);
+
+/**
  * The data collector collects data from various different 'sources',
  * and makes them available via a structured API, where the data can then be used and queried as
  * needed (by Pixie or others). Its function is to unify various, disparate sources of data into a

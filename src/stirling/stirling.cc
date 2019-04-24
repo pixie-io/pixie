@@ -25,10 +25,24 @@ namespace stirling {
 stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto) {
   stirlingpb::Subscribe subscribe_proto;
 
-  for (int i = 0; i < publish_proto.published_info_classes_size(); ++i) {
+  for (const auto& info_class : publish_proto.published_info_classes()) {
     auto sub_info_class = subscribe_proto.add_subscribed_info_classes();
-    sub_info_class->MergeFrom(publish_proto.published_info_classes(i));
+    sub_info_class->MergeFrom(info_class);
     sub_info_class->set_subscribed(true);
+  }
+  return subscribe_proto;
+}
+
+stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_proto,
+                                           std::string_view name) {
+  stirlingpb::Subscribe subscribe_proto;
+
+  for (const auto& info_class : publish_proto.published_info_classes()) {
+    auto sub_info_class = subscribe_proto.add_subscribed_info_classes();
+    sub_info_class->CopyFrom(info_class);
+    if (sub_info_class->name() == name) {
+      sub_info_class->set_subscribed(true);
+    }
   }
   return subscribe_proto;
 }

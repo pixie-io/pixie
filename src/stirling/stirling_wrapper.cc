@@ -81,22 +81,17 @@ void StirlingWrapperCallback(uint64_t table_id,
 
   std::string name = table_id_to_name_map[table_id];
 
-  if (FLAGS_source_name != "*" && name != FLAGS_source_name) {
-    // If the name is not selected, do not do anything.
-    return;
-  }
-
   // Use assigned names, from registry.
   if (name == "bpftrace_cpu_stats") {
-    PrintRecordBatch("CPUStatBPFTrace", CPUStatBPFTraceConnector::kElements, num_records,
+    PrintRecordBatch("CPUStat-BPFTrace", CPUStatBPFTraceConnector::kElements, num_records,
                      *record_batch);
   } else if (name == "sequences") {
     PrintRecordBatch("SeqGen", SeqGenConnector::kElements, num_records, *record_batch);
   } else if (name == PIDCPUUseBPFTraceConnector::kName) {
-    PrintRecordBatch("PIDBPFTrace", PIDCPUUseBPFTraceConnector::kElements, num_records,
+    PrintRecordBatch("PIDStat-BPFTrace", PIDCPUUseBPFTraceConnector::kElements, num_records,
                      *record_batch);
   } else if (name == PIDCPUUseBCCConnector::kName) {
-    PrintRecordBatch("BCC CPU stats", PIDCPUUseBCCConnector::kElements, num_records, *record_batch);
+    PrintRecordBatch("PIDStat-BCC", PIDCPUUseBCCConnector::kElements, num_records, *record_batch);
   } else if (name == HTTPTraceConnector::kName) {
     PrintRecordBatch("HTTPTrace", HTTPTraceConnector::kElements, num_records, *record_batch);
   }
@@ -136,7 +131,12 @@ int main(int argc, char** argv) {
 
   // Subscribe to all elements.
   // Stirling will update its schemas and sets up the data tables.
-  auto subscribe_proto = pl::stirling::SubscribeToAllInfoClasses(publish_proto);
+  pl::stirling::stirlingpb::Subscribe subscribe_proto;
+  if (FLAGS_source_name == "*") {
+    subscribe_proto = pl::stirling::SubscribeToAllInfoClasses(publish_proto);
+  } else {
+    subscribe_proto = pl::stirling::SubscribeToInfoClass(publish_proto, FLAGS_source_name);
+  }
   PL_CHECK_OK(data_collector->SetSubscription(subscribe_proto));
 
   // Get a map from InfoClassManager names to Table IDs
