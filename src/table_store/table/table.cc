@@ -84,7 +84,8 @@ Status ConvertRecordBatchToProto(arrow::RecordBatch* rb,
   return Status::OK();
 }
 
-Table::Table(const schema::Relation& relation) : desc_(relation.col_types()) {
+Table::Table(const schema::Relation& relation, int64_t max_table_size)
+    : desc_(relation.col_types()), max_table_size_(max_table_size) {
   uint64_t num_cols = desc_.size();
   columns_.reserve(num_cols);
   for (uint64_t i = 0; i < num_cols; ++i) {
@@ -101,6 +102,14 @@ Status Column::AddBatch(const std::shared_ptr<arrow::Array>& batch) {
   }
 
   batches_.emplace_back(batch);
+  return Status::OK();
+}
+
+Status Column::DeleteNextBatch() {
+  if (!batches_.size()) {
+    return error::InvalidArgument("No batch to delete.");
+  }
+  batches_.pop_front();
   return Status::OK();
 }
 
@@ -211,6 +220,51 @@ StatusOr<std::unique_ptr<schema::RowBatch>> Table::GetRowBatchSlice(int64_t row_
   return output_rb;
 }
 
+Status Table::DeleteNextRowBatch() {
+  // First delete row batches from cold columns.
+  if (!columns_.empty() && columns_[0]->numBatches() > 0) {
+    auto rb_size = 0;
+    for (auto col : columns_) {
+      auto batch = col->batch(0);
+#define TYPE_CASE(_dt_) rb_size += types::GetArrowArrayBytes<_dt_>(batch.get());
+      PL_SWITCH_FOREACH_DATATYPE(col->data_type(), TYPE_CASE);
+#undef TYPE_CASE
+      PL_RETURN_IF_ERROR(col->DeleteNextBatch());
+    }
+    bytes_ -= rb_size;
+
+    // Delete row batches from hot columns if cold columns are empty.
+  } else if (!hot_batches_.empty()) {
+    absl::base_internal::SpinLockHolder lock(&hot_batches_lock_);
+    auto batch = std::move(hot_batches_.front());
+
+    auto rb_size = 0;
+    for (const auto& col : *batch) {
+      rb_size += col->Bytes();
+    }
+
+    hot_batches_.pop_front();
+    bytes_ -= rb_size;
+  } else {
+    return error::InvalidArgument("No row batches to delete.");
+  }
+  return Status::OK();
+}
+
+Status Table::ExpireRowBatches(int64_t row_batch_size) {
+  if (max_table_size_ != -1) {
+    if (row_batch_size > max_table_size_) {
+      return error::InvalidArgument("RowBatch size ($0) is bigger than maximum table size ($1).",
+                                    row_batch_size, max_table_size_);
+    }
+    while (bytes_ + row_batch_size > max_table_size_) {
+      DCHECK_NE(NumBatches(), 0);
+      PL_RETURN_IF_ERROR(DeleteNextRowBatch());
+    }
+  }
+  return Status::OK();
+}
+
 Status Table::WriteRowBatch(schema::RowBatch rb) {
   if (rb.desc().size() != desc_.size()) {
     return error::InvalidArgument(
@@ -224,11 +278,15 @@ Status Table::WriteRowBatch(schema::RowBatch rb) {
     }
   }
 
+  auto rb_bytes = rb.NumBytes();
+
+  PL_RETURN_IF_ERROR(ExpireRowBatches(rb_bytes));
+
   for (int64_t i = 0; i < rb.num_columns(); i++) {
     auto s = columns_[i]->AddBatch(rb.ColumnAt(i));
     PL_RETURN_IF_ERROR(s);
   }
-  bytes_ += rb.NumBytes();
+  bytes_ += rb_bytes;
   return Status::OK();
 }
 
@@ -242,18 +300,22 @@ Status Table::TransferRecordBatch(
                          received_num_columns);
 
   uint32_t i = 0;
+  auto rb_bytes = 0;
   for (const auto& col : *record_batch) {
     auto received_type = col->data_type();
     auto expected_type = desc_.type(i);
     DCHECK_EQ(expected_type, received_type)
         << absl::StrFormat("Type mismatch [column=%u]: expected=%s received=%s", i,
                            ToString(expected_type), ToString(received_type));
-    bytes_ += col->Bytes();
+    rb_bytes += col->Bytes();
     ++i;
   }
 
+  PL_RETURN_IF_ERROR(ExpireRowBatches(rb_bytes));
+
   absl::base_internal::SpinLockHolder lock(&hot_batches_lock_);
   hot_batches_.push_back(std::move(record_batch));
+  bytes_ += rb_bytes;
 
   return Status::OK();
 }

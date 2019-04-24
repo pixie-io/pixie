@@ -105,6 +105,21 @@ constexpr auto GetValueFromArrowArray(const arrow::Array *arg, int64_t idx) {
   return GetValue(static_cast<const arrow_array_type *>(arg), idx);
 }
 
+template <types::DataType TDataType>
+inline int64_t GetArrowArrayBytes(const arrow::Array *arr) {
+  return arr->length() * types::ArrowTypeToBytes(types::ToArrowType(TDataType));
+}
+
+template <>
+inline int64_t GetArrowArrayBytes<types::DataType::STRING>(const arrow::Array *arr) {
+  int64_t total_bytes = 0;
+  // Loop through each string in the Arrow array.
+  for (int64_t i = 0; i < arr->length(); i++) {
+    total_bytes += sizeof(char) * GetValueFromArrowArray<types::DataType::STRING>(arr, i).length();
+  }
+  return total_bytes;
+}
+
 template <types::DataType T>
 class ArrowArrayIterator
     : public std::iterator<std::forward_iterator_tag,

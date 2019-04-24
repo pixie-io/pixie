@@ -7,6 +7,7 @@
 #include "absl/strings/str_format.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
+#include "src/shared/types/type_utils.h"
 #include "src/table_store/schema/row_batch.h"
 
 namespace pl {
@@ -50,16 +51,9 @@ int64_t RowBatch::NumBytes() const {
 
   int64_t total_bytes = 0;
   for (auto col : columns_) {
-    if (col->type_id() == arrow::Type::STRING) {
-      // Loop through each string in the Arrow array.
-      for (int64_t i = 0; i < col->length(); i++) {
-        total_bytes +=
-            sizeof(char) *
-            types::GetValueFromArrowArray<types::DataType::STRING>(col.get(), i).length();
-      }
-    } else {
-      total_bytes += num_rows() * types::ArrowTypeToBytes(col->type_id());
-    }
+#define TYPE_CASE(_dt_) total_bytes += types::GetArrowArrayBytes<_dt_>(col.get());
+    PL_SWITCH_FOREACH_DATATYPE(types::ArrowToDataType(col->type_id()), TYPE_CASE);
+#undef TYPE_CASE
   }
   return total_bytes;
 }

@@ -61,6 +61,12 @@ class Column {
   Status AddBatch(const std::shared_ptr<arrow::Array>& batch);
 
   /**
+   * Delete the next batch in the column.
+   * @return a status of whether deletion was successful.
+   */
+  Status DeleteNextBatch();
+
+  /**
    * @ param i the index to get the batch from.
    */
   std::shared_ptr<arrow::Array> batch(size_t i) {
@@ -91,8 +97,10 @@ class Table : public NotCopyable {
    * a table (along with columns) based on a subscription message from Stirling.
    *
    * @param relation the relation for the table.
+   * @param max_table_size the maximum number of bytes that the table can hold. This is limitless
+   * (-1) by default.
    */
-  explicit Table(const schema::Relation& relation);
+  explicit Table(const schema::Relation& relation, int64_t max_table_size = -1);
 
   /**
    * @ param i the index of the column to get.
@@ -179,6 +187,9 @@ class Table : public NotCopyable {
    */
   Status AddColumn(std::shared_ptr<Column> col);
 
+  Status ExpireRowBatches(int64_t row_batch_size);
+  Status DeleteNextRowBatch();
+
   int64_t FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
                                       arrow::MemoryPool* mem_pool);
   int64_t FindBatchGreaterThanOrEqual(int64_t time_col_idx, int64_t time,
@@ -191,10 +202,14 @@ class Table : public NotCopyable {
   // TODO(michelle): (PL-388) Change hot_batches_ to a list-based queue.
   std::unordered_map<std::string, std::shared_ptr<Column>> name_to_column_map_;
 
-  mutable std::vector<std::unique_ptr<pl::types::ColumnWrapperRecordBatch>> hot_batches_;
+  // TODO(michelle): This is a deque so that we can do easily do data expiration. In the future,
+  // when we refactor the table store to do data compaction we may want to change back to a vector
+  // with beginning and end indices.
+  mutable std::deque<std::unique_ptr<pl::types::ColumnWrapperRecordBatch>> hot_batches_;
   mutable absl::base_internal::SpinLock hot_batches_lock_;
 
   int64_t bytes_ = 0;
+  int64_t max_table_size_ = 0;
 };
 
 }  // namespace table_store
