@@ -7,7 +7,6 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	uuid "github.com/satori/go.uuid"
 	carnotpb "pixielabs.ai/pixielabs/src/carnot/proto"
-	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/services/api/apienv"
 	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
 	"pixielabs.ai/pixielabs/src/table_store/proto"
@@ -29,9 +28,14 @@ type executeQueryArgs struct {
 // ExecuteQuery executes a query on vizier.
 func (q *QueryResolver) ExecuteQuery(ctx context.Context, args *executeQueryArgs) (*QueryResultResolver, error) {
 	client := q.Env.VizierClient()
+	req := service.QueryRequest{QueryStr: *args.QueryStr}
+
 	queryID := uuid.NewV4()
-	req := service.QueryRequest{QueryStr: *args.QueryStr, QueryID: &uuidpb.UUID{}}
-	req.QueryID.Data = []byte(queryID.String())
+	idpb, err := utils.ProtoFromUUID(&queryID)
+	req.QueryID = idpb
+	if err != nil {
+		return nil, err
+	}
 
 	resp, err := client.ExecuteQuery(ctx, &req)
 	if err != nil {
