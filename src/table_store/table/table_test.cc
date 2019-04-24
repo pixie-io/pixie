@@ -97,6 +97,61 @@ TEST(TableTest, basic_test) {
   EXPECT_TRUE(rb2->ColumnAt(1)->Equals(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 }
 
+TEST(TableTest, bytes_test) {
+  auto rd = schema::RowDescriptor({types::DataType::INT64, types::DataType::STRING});
+  schema::Relation rel(rd.types(), {"col1", "col2"});
+
+  Table table(rel);
+
+  schema::RowBatch rb1(rd, 3);
+  std::vector<types::Int64Value> col1_rb1 = {4, 5, 10};
+  std::vector<types::StringValue> col2_rb1 = {"hello", "abc", "defg"};
+  auto col1_rb1_arrow = types::ToArrow(col1_rb1, arrow::default_memory_pool());
+  auto col2_rb1_arrow = types::ToArrow(col2_rb1, arrow::default_memory_pool());
+  EXPECT_OK(rb1.AddColumn(col1_rb1_arrow));
+  EXPECT_OK(rb1.AddColumn(col2_rb1_arrow));
+  int64_t rb1_size = 3 * sizeof(int64_t) + 12 * sizeof(char);
+
+  EXPECT_OK(table.WriteRowBatch(rb1));
+  EXPECT_EQ(table.NumBatches(), 1);
+  EXPECT_EQ(table.NumBytes(), rb1_size);
+
+  schema::RowBatch rb2(rd, 2);
+  std::vector<types::Int64Value> col1_rb2 = {4, 5};
+  std::vector<types::StringValue> col2_rb2 = {"a", "bc"};
+  auto col1_rb2_arrow = types::ToArrow(col1_rb2, arrow::default_memory_pool());
+  auto col2_rb2_arrow = types::ToArrow(col2_rb2, arrow::default_memory_pool());
+  EXPECT_OK(rb2.AddColumn(col1_rb2_arrow));
+  EXPECT_OK(rb2.AddColumn(col2_rb2_arrow));
+  int64_t rb2_size = 2 * sizeof(int64_t) + 3 * sizeof(char);
+
+  EXPECT_OK(table.WriteRowBatch(rb2));
+  EXPECT_EQ(table.NumBatches(), 2);
+  EXPECT_EQ(table.NumBytes(), rb1_size + rb2_size);
+
+  std::vector<types::Int64Value> time_hot_col1 = {1, 5, 3};
+  std::vector<types::StringValue> time_hot_col2 = {"test", "abc", "de"};
+  auto wrapper_batch_1 = std::make_unique<types::ColumnWrapperRecordBatch>();
+  auto col_wrapper_1 = std::make_shared<types::Int64ValueColumnWrapper>(3);
+  col_wrapper_1->Clear();
+  for (const auto& num : time_hot_col1) {
+    col_wrapper_1->Append(num);
+  }
+  auto col_wrapper_2 = std::make_shared<types::StringValueColumnWrapper>(3);
+  col_wrapper_2->Clear();
+  for (const auto& num : time_hot_col2) {
+    col_wrapper_2->Append(num);
+  }
+  wrapper_batch_1->push_back(col_wrapper_1);
+  wrapper_batch_1->push_back(col_wrapper_2);
+  int64_t rb3_size = 3 * sizeof(int64_t) + 9 * sizeof(char);
+
+  EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_1)));
+
+  EXPECT_EQ(table.NumBatches(), 3);
+  EXPECT_EQ(table.NumBytes(), rb1_size + rb2_size + rb3_size);
+}
+
 TEST(TableTest, wrong_batch_size_test) {
   schema::Relation rel({types::DataType::BOOLEAN, types::DataType::FLOAT64}, {"col1", "col2"});
 

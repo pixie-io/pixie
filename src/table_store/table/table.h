@@ -2,6 +2,7 @@
 
 #include <arrow/array.h>
 #include <arrow/record_batch.h>
+#include <deque>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -74,7 +75,10 @@ class Column {
   std::string name_;
   types::DataType data_type_;
 
-  std::vector<std::shared_ptr<arrow::Array>> batches_;
+  // TODO(michelle): This is a deque so that we can do easily do data expiration. In the future,
+  // when we refactor the table store to do data compaction we may want to change back to a vector
+  // with beginning and end indices.
+  std::deque<std::shared_ptr<arrow::Array>> batches_;
 };
 
 /**
@@ -142,6 +146,11 @@ class Table : public NotCopyable {
    */
   int64_t NumColumns() const { return columns_.size(); }
 
+  /**
+   * @return the size of the table in bytes.
+   */
+  int64_t NumBytes() const { return bytes_; }
+
   schema::Relation GetRelation() const;
   StatusOr<std::vector<RecordBatchSPtr>> GetTableAsRecordBatches() const;
 
@@ -184,6 +193,8 @@ class Table : public NotCopyable {
 
   mutable std::vector<std::unique_ptr<pl::types::ColumnWrapperRecordBatch>> hot_batches_;
   mutable absl::base_internal::SpinLock hot_batches_lock_;
+
+  int64_t bytes_ = 0;
 };
 
 }  // namespace table_store

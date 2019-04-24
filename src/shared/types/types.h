@@ -82,6 +82,8 @@ struct FixedSizedValueType : BaseValueType {
     val = lhs;
     return *this;
   }
+
+  int64_t bytes() const { return sizeof(T); }
 };
 
 using BoolValue = FixedSizedValueType<bool>;
@@ -121,6 +123,7 @@ struct StringValue : BaseValueType, public std::string {
   // from functions.
   // NOLINTNEXTLINE: implicit constructor.
   StringValue(std::string&& str) : std::string(std::move(str)) {}
+  int64_t bytes() const { return sizeof(char) * this->length(); }
 };
 
 /**

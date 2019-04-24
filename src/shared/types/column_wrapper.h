@@ -38,6 +38,8 @@ class ColumnWrapper {
   virtual const BaseValueType *UnsafeRawData() const = 0;
   virtual DataType data_type() const = 0;
   virtual size_t Size() const = 0;
+  virtual int64_t Bytes() const = 0;
+
   virtual void Reserve(size_t size) = 0;
   virtual void Clear() = 0;
   virtual void ShrinkToFit() = 0;
@@ -99,9 +101,25 @@ class ColumnWrapperTmpl : public ColumnWrapper {
 
   void Clear() override { data_.clear(); }
 
+  int64_t Bytes() const override;
+
  private:
   std::vector<T> data_;
 };
+
+template <typename T>
+int64_t ColumnWrapperTmpl<T>::Bytes() const {
+  return Size() * sizeof(T);
+}
+
+template <>
+inline int64_t ColumnWrapperTmpl<StringValue>::Bytes() const {
+  int64_t bytes = 0;
+  for (const auto &data : data_) {
+    bytes += data.bytes();
+  }
+  return bytes;
+}
 
 // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
 using BoolValueColumnWrapper = ColumnWrapperTmpl<BoolValue>;

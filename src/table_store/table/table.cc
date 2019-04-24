@@ -228,6 +228,7 @@ Status Table::WriteRowBatch(schema::RowBatch rb) {
     auto s = columns_[i]->AddBatch(rb.ColumnAt(i));
     PL_RETURN_IF_ERROR(s);
   }
+  bytes_ += rb.NumBytes();
   return Status::OK();
 }
 
@@ -247,6 +248,7 @@ Status Table::TransferRecordBatch(
     DCHECK_EQ(expected_type, received_type)
         << absl::StrFormat("Type mismatch [column=%u]: expected=%s received=%s", i,
                            ToString(expected_type), ToString(received_type));
+    bytes_ += col->Bytes();
     ++i;
   }
 
