@@ -1,0 +1,24 @@
+.vizier-body {
+    width: calc(100vw - 72px); // 72px is the sidebar width
+    min-width: 600px;
+    padding: 20px;
+    margin-right: 40px;
+}
+
+.query-executor .code-editor .CodeMirror {
+    height: 200px;
+}
+
+.query-results {
+    height: 400px;
+    width: 800px;
+}
+
+.query-results .ReactVirtualized__Table__row {
+    font-size: 0.8rem;
+}
+
+.agent-display-table {
+    height: 400px;
+    width: 800px;
+}
