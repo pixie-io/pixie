@@ -256,8 +256,10 @@ void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*da
 
 // This function is invoked by BCC runtime when a item in the perf buffer is not read and lost.
 // For now we do nothing.
-// TODO(yzhao): Investigate what should be done here.
-void HTTPTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t) {}
+void HTTPTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
+  // TODO(yzhao): Lower to VLOG(1) after HTTP tracing reaches production stability.
+  LOG(INFO) << "Possibly lost " << lost << " samples";
+}
 
 namespace {
 
@@ -304,7 +306,7 @@ Status HTTPTraceConnector::InitImpl() {
   ebpf::StatusTuple open_status = bpf_.open_perf_buffer(
       kPerfBufferName, &HTTPTraceConnector::HandleProbeOutput, &HTTPTraceConnector::HandleProbeLoss,
       // TODO(yzhao): We sort of are not unified around how record_batch and
-      // real_time_offset_ is passed to the callback. Consider unifying them.
+      // cb_cookie is passed to the callback. Consider unifying them.
       /*cb_cookie*/ this, perf_buffer_page_num_);
   if (open_status.code() != 0) {
     return error::Internal(absl::StrCat("Failed to open perf buffer: ", kPerfBufferName,
