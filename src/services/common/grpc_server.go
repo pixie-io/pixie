@@ -27,6 +27,9 @@ func grpcInjectSession() grpc.UnaryServerInterceptor {
 
 func createGRPCAuthFunc(env commonenv.Env) func(context.Context) (context.Context, error) {
 	return func(ctx context.Context) (context.Context, error) {
+		if viper.GetBool("disable_grpc_auth") {
+			return ctx, nil
+		}
 		token, err := grpc_auth.AuthFromMD(ctx, "bearer")
 		if err != nil {
 			return nil, err
