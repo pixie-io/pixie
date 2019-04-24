@@ -62,8 +62,8 @@ var webpackConfig = {
         test: /\.(jpe?g|png|gif|svg)$/i,
         loader: require.resolve('url-loader'),
         options: {
-          limit: 10000,
-          name: 'static/media/[name].[hash:8].[ext]',
+          limit: 100,
+          name: 'assets/[name].[hash:8].[ext]',
         },
       },
       {
@@ -105,8 +105,9 @@ var webpackConfig = {
       '.tsx',
       '.web.js',
       '.webpack.js',
+      '.png',
     ],
-    modules: ['node_modules', resolve('./src')],
+    modules: ['node_modules', resolve('./src'), resolve('./assets')],
   },
   optimization: {
     splitChunks: {
@@ -143,7 +144,7 @@ module.exports = (env) => {
   }
 
   var proxyEntry = {
-    context: ['/api'],
+    context: ['/graphql'],
     target: gatewayPath,
     secure: false,
   };

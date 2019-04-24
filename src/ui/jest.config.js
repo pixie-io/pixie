@@ -18,9 +18,10 @@ module.exports = {
     '<rootDir>/src',
   ],
   moduleNameMapper: {
-    '^.+\\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/config/jest/file-mock.js',
+    '^.+\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/file-mock.js',
     '(\\.css|scss$)|(normalize.css/normalize)|(^exports-loader)': 'identity-obj-proxy',
   },
+  resolver: null,
   transform: {
     '^.+\\.jsx?$': 'babel-jest',
     '^.+\\.tsx?$': 'ts-jest',

@@ -1,0 +1,35 @@
+html {
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  display: flex;
+  box-sizing: border-box;
+}
+
+.logoImage {
+  padding: 10px;
+  width: 72px;
+}
+
+.main-page {
+  display: flex;
+  flex-direction: row;
+}
+
+.sidebar-nav{
+  padding: 20px;
+  padding-left: 0px;
+  flex-direction: column;
+  width: 72px;
+}
+
+.sidebar-nav-icon {
+  padding: 10px;
+  padding-left: 10px;
+  padding-top: 10px;
+  width: 48px;
+}
