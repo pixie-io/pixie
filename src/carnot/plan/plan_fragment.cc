@@ -43,6 +43,9 @@ void PlanFragmentWalker::CallWalkFn(const Operator &op) {
     case carnotpb::OperatorType::MEMORY_SINK_OPERATOR:
       CallAs<MemorySinkOperator>(on_memory_sink_walk_fn_, op);
       break;
+    case carnotpb::OperatorType::FILTER_OPERATOR:
+      CallAs<FilterOperator>(on_filter_walk_fn_, op);
+      break;
     default:
       LOG(WARNING) << absl::StrCat("Operator does not exist.");
   }

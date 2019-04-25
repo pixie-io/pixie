@@ -11,7 +11,7 @@ namespace plan {
 
 using google::protobuf::TextFormat;
 
-const char* kPlanFragmentWithFiveNodes = R"(
+const char* kPlanFragmentWithSixNodes = R"(
   id: 1,
   dag {
     nodes {
@@ -33,6 +33,10 @@ const char* kPlanFragmentWithFiveNodes = R"(
     }
     nodes {
       id: 5
+      sorted_deps: 6
+    }
+    nodes {
+      id: 6
     }
   }
   nodes {
@@ -89,6 +93,24 @@ const char* kPlanFragmentWithFiveNodes = R"(
   nodes {
     id: 5
     op {
+      op_type: FILTER_OPERATOR
+      filter_op {
+        expression {
+          constant {
+            data_type: BOOLEAN
+            bool_value: true
+          }
+        }
+        columns {
+          node: 4
+          index: 0
+        }
+      }
+    }
+  }
+  nodes {
+    id: 6
+    op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
         name: "mem_sink"
@@ -101,7 +123,7 @@ class PlanFragmentWalkerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     carnotpb::PlanFragment pf_pb;
-    ASSERT_TRUE(TextFormat::MergeFromString(kPlanFragmentWithFiveNodes, &pf_pb));
+    ASSERT_TRUE(TextFormat::MergeFromString(kPlanFragmentWithSixNodes, &pf_pb));
     ASSERT_OK(plan_fragment_.Init(pf_pb));
   }
   PlanFragment plan_fragment_ = PlanFragment(1);
@@ -113,30 +135,36 @@ TEST_F(PlanFragmentWalkerTest, basic_tests) {
   int map_call_count = 0;
   int blocking_agg_call_count = 0;
   int mem_sink_call_count = 0;
+  int filter_call_count = 0;
 
   PlanFragmentWalker()
       .OnMemorySource([&](auto& mem_src) {
         col_order.push_back(mem_src.id());
-        mem_src_call_count += 1;
+        mem_src_call_count++;
       })
       .OnMap([&](auto& map) {
         col_order.push_back(map.id());
-        map_call_count += 1;
+        map_call_count++;
       })
       .OnBlockingAggregate([&](auto& blocking_agg) {
         col_order.push_back(blocking_agg.id());
-        blocking_agg_call_count += 1;
+        blocking_agg_call_count++;
       })
       .OnMemorySink([&](auto& mem_sink) {
         col_order.push_back(mem_sink.id());
-        mem_sink_call_count += 1;
+        mem_sink_call_count++;
+      })
+      .OnFilter([&](auto& filter) {
+        col_order.push_back(filter.id());
+        filter_call_count++;
       })
       .Walk(&plan_fragment_);
   EXPECT_EQ(1, mem_src_call_count);
   EXPECT_EQ(1, mem_sink_call_count);
   EXPECT_EQ(1, blocking_agg_call_count);
   EXPECT_EQ(2, map_call_count);
-  EXPECT_EQ(std::vector<int64_t>({1, 2, 3, 4, 5}), col_order);
+  EXPECT_EQ(1, filter_call_count);
+  EXPECT_EQ(std::vector<int64_t>({1, 2, 3, 4, 5, 6}), col_order);
 }
 
 }  // namespace plan

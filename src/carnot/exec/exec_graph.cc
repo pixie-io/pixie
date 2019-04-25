@@ -43,6 +43,7 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
         sources_.push_back(node.id());
         return OnOperatorImpl<plan::MemorySourceOperator, MemorySourceNode>(node, &descriptors);
       })
+      .OnFilter([&](auto&) { return error::InvalidArgument("Filter Node not yet implemented."); })
       .Walk(pf_);
   return Status::OK();
 }
