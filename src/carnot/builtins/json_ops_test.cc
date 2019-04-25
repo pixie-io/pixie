@@ -19,6 +19,11 @@ TEST(JSONOps, PluckUDF) {
   udf_tester.ForInput(kTestJSONStr, "str_key").Expect(R"({"abc":"def"})");
 }
 
+TEST(JSONOps, PluckUDF_non_existent_key_return_empty) {
+  auto udf_tester = udf::UDFTester<PluckUDF>();
+  udf_tester.ForInput(kTestJSONStr, "blah").Expect("");
+}
+
 TEST(JSONOps, PluckUDF_bad_input_return_empty) {
   auto udf_tester = udf::UDFTester<PluckUDF>();
   udf_tester.ForInput("asdad", "str_key").Expect("");

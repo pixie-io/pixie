@@ -22,7 +22,13 @@ class PluckUDF : public udf::ScalarUDF {
     if (!ok) {
       return "";
     }
+    if (!d.HasMember(key.data())) {
+      return "";
+    }
     const auto &plucked_value = d[key.data()];
+    if (plucked_value.IsNull()) {
+      return "";
+    }
     // This is robust to nested JSON.
     rapidjson::StringBuffer sb;
     rapidjson::Writer<rapidjson::StringBuffer> writer(sb);
