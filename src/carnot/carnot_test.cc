@@ -27,9 +27,12 @@ class CarnotTest : public ::testing::Test {
     carnot_ = Carnot::Create(table_store_).ConsumeValueOrDie();
     auto table = CarnotTestUtils::TestTable();
     table_store_->AddTable("test_table", table);
+    big_table_ = CarnotTestUtils::BigTestTable();
+    table_store_->AddTable("big_test_table", big_table_);
   }
 
   std::shared_ptr<table_store::TableStore> table_store_;
+  std::shared_ptr<table_store::Table> big_table_;
   std::unique_ptr<Carnot> carnot_;
 };
 
@@ -197,8 +200,6 @@ TEST_F(CarnotTest, map_op_udf_div) {
 }
 
 TEST_F(CarnotTest, order_test) {
-  auto table = CarnotTestUtils::BigTestTable();
-  table_store_->AddTable("big_test_table", table);
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col2', 'col3']).Map(fn=lambda "
@@ -238,9 +239,6 @@ TEST_F(CarnotTest, order_test) {
 }
 
 TEST_F(CarnotTest, range_test_multiple_rbs) {
-  auto table = CarnotTestUtils::BigTestTable();
-
-  table_store_->AddTable("big_test_table", table);
   int64_t start_time = 2;
   int64_t stop_time = 6;
   auto query = absl::StrJoin(
@@ -266,7 +264,7 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   std::vector<types::Time64NSValue> col0_out1;
   std::vector<types::Float64Value> col1_out1;
   std::vector<types::Int64Value> col2_out1;
-  for (int64_t i = 0; i < table->GetColumn(0)->batch(0)->length(); i++) {
+  for (int64_t i = 0; i < big_table_->GetColumn(0)->batch(0)->length(); i++) {
     if (CarnotTestUtils::big_test_col1[i].val >= 2 && CarnotTestUtils::big_test_col1[i].val < 6) {
       col0_out1.emplace_back(CarnotTestUtils::big_test_col1[i].val);
       col1_out1.emplace_back(CarnotTestUtils::big_test_col2[i].val);
@@ -285,8 +283,10 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   std::vector<types::Time64NSValue> col0_out2;
   std::vector<types::Float64Value> col1_out2;
   std::vector<types::Int64Value> col2_out2;
-  for (int64_t i = table->GetColumn(0)->batch(0)->length();
-       i < table->GetColumn(0)->batch(0)->length() + table->GetColumn(0)->batch(1)->length(); i++) {
+  for (int64_t i = big_table_->GetColumn(0)->batch(0)->length();
+       i <
+       big_table_->GetColumn(0)->batch(0)->length() + big_table_->GetColumn(0)->batch(1)->length();
+       i++) {
     if (CarnotTestUtils::big_test_col1[i].val >= start_time &&
         CarnotTestUtils::big_test_col1[i].val < stop_time) {
       col0_out2.emplace_back(CarnotTestUtils::big_test_col1[i].val);
@@ -301,9 +301,6 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
 }
 
 TEST_F(CarnotTest, range_test_single_rb) {
-  auto table = CarnotTestUtils::BigTestTable();
-
-  table_store_->AddTable("big_test_table", table);
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col2', "
@@ -344,9 +341,6 @@ TEST_F(CarnotTest, range_test_single_rb) {
 TEST_F(CarnotTest, empty_range_test) {
   // Tests that a table that has no rows that fall within the query's range returns an empty
   // rowbatch.
-  auto table = CarnotTestUtils::BigTestTable();
-
-  table_store_->AddTable("big_test_table", table);
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col2', "
@@ -386,8 +380,6 @@ class CarnotRangeTest
     } else {
       query = absl::Substitute(query, sub_time.val, "plc.now()");
     }
-    auto table = CarnotTestUtils::BigTestTable();
-    table_store_->AddTable("big_test_table", table);
 
     auto max_time = CarnotTestUtils::big_test_col1[CarnotTestUtils::big_test_col1.size() - 1];
     now_time_ = max_time.val + 1;
@@ -415,9 +407,6 @@ TEST_P(CarnotRangeTest, range_now_keyword_test) {
 INSTANTIATE_TEST_CASE_P(CarnotRangeVariants, CarnotRangeTest, ::testing::ValuesIn(range_test_vals));
 
 TEST_F(CarnotTest, group_by_all_agg_test) {
-  auto table = CarnotTestUtils::BigTestTable();
-
-  table_store_->AddTable("big_test_table", table);
   auto agg_dict =
       absl::StrJoin({"'mean' : pl.mean(r.col2)", "'count' : pl.count(r.col3)",
                      "'min' : pl.min(r.col2)", "'max' : pl.max(r.col3)", "'sum' : pl.sum(r.col3)"},
@@ -482,9 +471,6 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
 }
 
 TEST_F(CarnotTest, group_by_col_agg_test) {
-  auto table = CarnotTestUtils::BigTestTable();
-
-  table_store_->AddTable("big_test_table", table);
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col3', 'num_groups'])",
@@ -521,9 +507,6 @@ TEST_F(CarnotTest, group_by_col_agg_test) {
 }
 
 TEST_F(CarnotTest, multiple_group_by_test) {
-  auto table = CarnotTestUtils::BigTestTable();
-
-  table_store_->AddTable("big_test_table", table);
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col3', 'num_groups', "
@@ -578,9 +561,6 @@ TEST_F(CarnotTest, multiple_group_by_test) {
 }
 
 TEST_F(CarnotTest, comparison_tests) {
-  auto table = CarnotTestUtils::BigTestTable();
-
-  table_store_->AddTable("big_test_table", table);
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col3', 'num_groups', "
@@ -617,9 +597,6 @@ TEST_F(CarnotTest, comparison_tests) {
 }
 
 TEST_F(CarnotTest, comparison_to_agg_tests) {
-  auto table = CarnotTestUtils::BigTestTable();
-
-  table_store_->AddTable("big_test_table", table);
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col3', 'num_groups', "
@@ -665,5 +642,152 @@ TEST_F(CarnotTest, comparison_to_agg_tests) {
   EXPECT_EQ(expected, actual);
 }
 
+class CarnotFilterTest
+    : public CarnotTest,
+      public ::testing::WithParamInterface<
+          std::tuple<std::string, std::function<bool(const double &, const double &)>>> {
+ protected:
+  void SetUp() {
+    CarnotTest::SetUp();
+    std::tie(comparison_fn_str, comparison_fn) = GetParam();
+  }
+  std::string comparison_fn_str;
+  std::function<bool(const double &, const double &)> comparison_fn;
+};
+
+std::vector<std::tuple<std::string, std::function<bool(const double &, const double &)>>>
+    filter_test_values = {
+        {
+            ">",
+            [](double a, double b) { return a > b; },
+        },
+        {
+            "<",
+            [](double a, double b) { return a < b; },
+        },
+        {
+            "==",
+            [](double a, double b) { return a == b; },
+        },
+        // TODO(philkuz) add operation for != into builtins
+        // {
+        //     "!=",
+        //     [](double a, double b) { return a != b; },
+        // }
+};
+
+TEST_P(CarnotFilterTest, int_filter) {
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='big_test_table', select=['time_', 'col2', 'col3', 'num_groups', "
+          "'string_groups'])",
+          "mapDF = queryDF.Filter(fn=lambda r : r.$2 $1 $0)",
+          "mapDF.Result(name='test_output')",
+      },
+      "\n");
+
+  // these three parameters don't package well.
+  double comparison_val = 12;
+  auto comparison_column = CarnotTestUtils::big_test_col3;
+  std::string comparison_column_str = "col3";
+
+  query = absl::Substitute(query, comparison_val, comparison_fn_str, comparison_column_str);
+  auto s = carnot_->ExecuteQuery(query, 0);
+  ASSERT_OK(s);
+
+  auto output_table = table_store_->GetTable("test_output");
+  EXPECT_EQ(3, output_table->NumBatches());
+  EXPECT_EQ(5, output_table->NumColumns());
+  std::vector<int64_t> column_selector_vec({0, 1, 2, 3, 4});
+  EXPECT_EQ(output_table->NumColumns(), column_selector_vec.size());
+
+  // iterate through the batches
+  for (size_t i = 0; i < CarnotTestUtils::split_idx.size(); i++) {
+    // iterate through the column
+    const auto &cur_split = CarnotTestUtils::split_idx[i];
+    int64_t left = cur_split.first;
+    int64_t right = cur_split.second;
+    std::vector<types::Int64Value> time_out;
+    std::vector<types::Float64Value> col2_out;
+    std::vector<types::Int64Value> col3_out;
+    std::vector<types::Int64Value> groups_out;
+    std::vector<types::StringValue> strings_out;
+    for (int64_t j = left; j < right; j++) {
+      if (comparison_fn(comparison_column[j].val, comparison_val)) {
+        time_out.push_back(CarnotTestUtils::big_test_col1[j]);
+        col2_out.push_back(CarnotTestUtils::big_test_col2[j]);
+        col3_out.push_back(CarnotTestUtils::big_test_col3[j]);
+        groups_out.push_back(CarnotTestUtils::big_test_groups[j]);
+        strings_out.push_back(CarnotTestUtils::big_test_strings[j]);
+      }
+    }
+    auto rb = output_table->GetRowBatch(i, column_selector_vec, arrow::default_memory_pool())
+                  .ConsumeValueOrDie();
+    EXPECT_TRUE(rb->ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb->ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb->ColumnAt(2)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb->ColumnAt(3)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb->ColumnAt(4)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
+  }
+}
+INSTANTIATE_TEST_CASE_P(CarnotFilterTestSuite, CarnotFilterTest,
+                        ::testing::ValuesIn(filter_test_values));
+
+TEST_F(CarnotTest, string_filter) {
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='big_test_table', select=['time_', 'col2', 'col3', 'num_groups', "
+          "'string_groups'])",
+          "mapDF = queryDF.Filter(fn=lambda r : r.$2 $1 '$0')",
+          "mapDF.Result(name='test_output')",
+      },
+      "\n");
+
+  // these three parameters don't package well.
+  std::string comparison_val = "sum";
+  auto comparison_column = CarnotTestUtils::big_test_strings;
+  std::string comparison_column_str = "string_groups";
+  std::string comparison_fn_str = "==";
+  auto comparison_fn = [](std::string a, std::string b) { return a == b; };
+
+  query = absl::Substitute(query, comparison_val, comparison_fn_str, comparison_column_str);
+  auto s = carnot_->ExecuteQuery(query, 0);
+  ASSERT_OK(s);
+
+  auto output_table = table_store_->GetTable("test_output");
+  EXPECT_EQ(3, output_table->NumBatches());
+  EXPECT_EQ(5, output_table->NumColumns());
+  std::vector<int64_t> column_selector_vec({0, 1, 2, 3, 4});
+  EXPECT_EQ(output_table->NumColumns(), column_selector_vec.size());
+
+  // iterate through the batches
+  for (size_t i = 0; i < CarnotTestUtils::split_idx.size(); i++) {
+    // iterate through the column
+    const auto &cur_split = CarnotTestUtils::split_idx[i];
+    int64_t left = cur_split.first;
+    int64_t right = cur_split.second;
+    std::vector<types::Int64Value> time_out;
+    std::vector<types::Float64Value> col2_out;
+    std::vector<types::Int64Value> col3_out;
+    std::vector<types::Int64Value> groups_out;
+    std::vector<types::StringValue> strings_out;
+    for (int64_t j = left; j < right; j++) {
+      if (comparison_fn(comparison_column[j], comparison_val)) {
+        time_out.push_back(CarnotTestUtils::big_test_col1[j]);
+        col2_out.push_back(CarnotTestUtils::big_test_col2[j]);
+        col3_out.push_back(CarnotTestUtils::big_test_col3[j]);
+        groups_out.push_back(CarnotTestUtils::big_test_groups[j]);
+        strings_out.push_back(CarnotTestUtils::big_test_strings[j]);
+      }
+    }
+    auto rb = output_table->GetRowBatch(i, column_selector_vec, arrow::default_memory_pool())
+                  .ConsumeValueOrDie();
+    EXPECT_TRUE(rb->ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb->ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb->ColumnAt(2)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb->ColumnAt(3)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb->ColumnAt(4)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
+  }
+}
 }  // namespace carnot
 }  // namespace pl

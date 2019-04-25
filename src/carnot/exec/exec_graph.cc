@@ -5,6 +5,7 @@
 #include "src/carnot/exec/blocking_agg_node.h"
 #include "src/carnot/exec/exec_graph.h"
 #include "src/carnot/exec/exec_node.h"
+#include "src/carnot/exec/filter_node.h"
 #include "src/carnot/exec/map_node.h"
 #include "src/carnot/exec/memory_sink_node.h"
 #include "src/carnot/exec/memory_source_node.h"
@@ -43,7 +44,9 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
         sources_.push_back(node.id());
         return OnOperatorImpl<plan::MemorySourceOperator, MemorySourceNode>(node, &descriptors);
       })
-      .OnFilter([&](auto&) { return error::InvalidArgument("Filter Node not yet implemented."); })
+      .OnFilter([&](auto& node) {
+        return OnOperatorImpl<plan::FilterOperator, FilterNode>(node, &descriptors);
+      })
       .OnLimit([&](auto&) { return error::InvalidArgument("Limit Node not yet implemented."); })
       .Walk(pf_);
   return Status::OK();
