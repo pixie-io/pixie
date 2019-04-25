@@ -171,15 +171,14 @@ void PIDCPUUseBPFTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatc
     uint64_t pid = *(reinterpret_cast<uint32_t*>(key.data()));
 
     // Get the name from the auxiliary BPFTraceMap for names.
-    char* name = nullptr;
+    std::string name("-");
     pid_name_it = BPFTraceMapSearch(pid_name_pairs, pid_name_it, pid);
     if (pid_name_it != pid_name_pairs.end()) {
       uint32_t found_pid = *(reinterpret_cast<uint32_t*>(pid_name_it->first.data()));
       if (found_pid == pid) {
-        name = reinterpret_cast<char*>(pid_name_it->second.data());
+        name = std::string(reinterpret_cast<char*>(pid_name_it->second.data()));
       } else {
         // Couldn't find the name for the PID.
-        // May happen in practice due to a race with how the kernel populates the BPF maps.
         LOG(WARNING) << absl::StrFormat("Could not find a name for the PID %d", pid);
       }
     }
@@ -197,7 +196,7 @@ void PIDCPUUseBPFTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatc
     columns[0]->Append<types::Time64NSValue>(timestamp + ClockRealTimeOffset());
     columns[1]->Append<types::Int64Value>(pid);
     columns[2]->Append<types::Int64Value>(cputime - last_cputime);
-    columns[3]->Append<types::StringValue>(name);
+    columns[3]->Append<types::StringValue>(std::move(name));
   }
 
   // Keep this, because we will want to compute deltas next time.
