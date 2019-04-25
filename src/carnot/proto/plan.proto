@@ -56,6 +56,7 @@ enum OperatorType {
   MAP_OPERATOR = 2000;
   BLOCKING_AGGREGATE_OPERATOR = 2100;
   FILTER_OPERATOR = 2200;
+  LIMIT_OPERATOR = 2300;
   // Sink operators are range 9000-10000.
   MEMORY_SINK_OPERATOR = 9000;
 }
@@ -75,6 +76,8 @@ message Operator {
     MemorySinkOperator mem_sink_op = 5;
     // Performs a compacting Filter operation.
     FilterOperator filter_op = 6;
+    // Operator that performs a limit.
+    LimitOperator limit_op = 7;
   }
 }
 
@@ -133,6 +136,13 @@ message BlockingAggregateOperator {
 message FilterOperator {
   // The scalar expression defines the filtering expression that will be run on the data.
   ScalarExpression expression = 1;
+  // Defines the columns that are passed from the previous operator.
+  repeated Column columns = 2;
+}
+
+// Limit performs a limit on the results of the previous operation.
+message LimitOperator {
+  int64 limit = 1;
   // Defines the columns that are passed from the previous operator.
   repeated Column columns = 2;
 }
