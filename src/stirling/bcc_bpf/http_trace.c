@@ -1,4 +1,3 @@
-#include <linux/sched.h>
 #include <uapi/linux/ptrace.h>
 
 // This is copied from http_trace.h, with comments removed, so that this whole file can be
