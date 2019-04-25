@@ -30,6 +30,7 @@ constexpr const char* kBlockingAggOpId = "Agg";
 constexpr const char* kRangeAggOpId = "RangeAgg";
 constexpr const char* kSinkOpId = "Result";
 constexpr const char* kFilterOpId = "Filter";
+constexpr const char* kLimitOpId = "Limit";
 
 using VarTable = std::unordered_map<std::string, IRNode*>;
 using ArgMap = std::unordered_map<std::string, IRNode*>;
@@ -248,6 +249,14 @@ class ASTWalker {
    * @return StatusOr<IRNode*> the filter op.
    */
   StatusOr<IRNode*> ProcessFilterOp(const pypa::AstCallPtr& node);
+
+  /**
+   * @brief Processes the Limit operator.
+   *
+   * @param node
+   * @return StatusOr<IRNode*> the filter op.
+   */
+  StatusOr<IRNode*> ProcessLimitOp(const pypa::AstCallPtr& node);
 
   // /**
   //  * @brief ProcessFunc handles functions that have already been determined with a name.

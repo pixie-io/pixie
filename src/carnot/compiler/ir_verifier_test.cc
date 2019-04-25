@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <memory>
+
 #include <pypa/ast/tree_walker.hh>
 #include <pypa/parser/parser.hh>
 
@@ -383,6 +385,89 @@ TEST(RangeValueTests, now_stop) {
   VLOG(1) << status_connection.ToString();
   EXPECT_OK(status_connection);
   EXPECT_OK(verifier.VerifyLineColGraph(*ir_graph_status.ValueOrDie()));
+}
+
+class VerifierTest : public ::testing::Test {
+ protected:
+  void SetUp() override { verifier_ = IRVerifier(); }
+  /** @brief Convenient function to parse and save the result of the parse to the object. */
+  Status ParseQueryTest(std::string query) {
+    auto ir_graph_status = ParseQuery(query);
+    if (ir_graph_status.ok()) {
+      ir_graph_ = ir_graph_status.ValueOrDie();
+    }
+    return ir_graph_status.status();
+  }
+
+  Status VerifyGraphTest() {
+    Status s = verifier_.VerifyGraphConnections(*ir_graph_);
+    VLOG(2) << s.ToString();
+    return s;
+  }
+
+  Status VerifyLineColTest() {
+    Status s = verifier_.VerifyLineColGraph(*ir_graph_);
+    VLOG(2) << s.ToString();
+    return s;
+  }
+
+  std::shared_ptr<IR> ir_graph_;
+  IRVerifier verifier_;
+};
+
+TEST_F(VerifierTest, filter_valid_query) {
+  std::string query = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                     "'cpu1']).Filter(fn=lambda r : r.cpu0 >  0.5)",
+                                     "queryDF.Result(name='filtered')"},
+                                    "\n");
+  ASSERT_OK(ParseQueryTest(query));
+  EXPECT_OK(VerifyGraphTest());
+  EXPECT_OK(VerifyLineColTest());
+}
+
+TEST_F(VerifierTest, filter_invalid_queries) {
+  std::string int_val = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                       "'cpu1']).Filter(fn=1)",
+                                       "queryDF.Result(name='filtered')"},
+                                      "\n");
+  ASSERT_OK(ParseQueryTest(int_val));
+  EXPECT_NOT_OK(VerifyGraphTest());
+}
+
+TEST_F(VerifierTest, limit_valid_query) {
+  std::string no_arg = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                      "'cpu1']).Limit(rows=100)",
+                                      "queryDF.Result(name='limited')"},
+                                     "\n");
+  // No arg shouldn't work.
+  ASSERT_OK(ParseQueryTest(no_arg));
+  EXPECT_OK(VerifyGraphTest());
+  EXPECT_OK(VerifyLineColTest());
+}
+
+TEST_F(VerifierTest, limit_invalid_queries) {
+  std::string no_arg = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                      "'cpu1']).Limit()",
+                                      "queryDF.Result(name='limited')"},
+                                     "\n");
+  // No arg shouldn't work.
+  EXPECT_NOT_OK(ParseQueryTest(no_arg));
+
+  std::string string_arg = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                          "'cpu1']).Limit(rows='arg')",
+                                          "queryDF.Result(name='limited')"},
+                                         "\n");
+  // String as an arg should not work.
+  ASSERT_OK(ParseQueryTest(string_arg));
+  EXPECT_NOT_OK(VerifyGraphTest());
+
+  std::string float_arg = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                         "'cpu1']).Limit(rows=1.2)",
+                                         "queryDF.Result(name='limited')"},
+                                        "\n");
+  // float as an arg should not work.
+  ASSERT_OK(ParseQueryTest(float_arg));
+  EXPECT_NOT_OK(VerifyGraphTest());
 }
 }  // namespace compiler
 }  // namespace carnot

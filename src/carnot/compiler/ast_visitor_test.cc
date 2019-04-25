@@ -384,6 +384,14 @@ TEST(FilterExprTest, basic) {
   // TODO(philkuz) handle simple math opes
 }
 
+TEST(LimitTest, basic) {
+  std::string limit = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                     "'cpu1']).Limit(rows=100)",
+                                     "queryDF.Result(name='limited')"},
+                                    "\n");
+  EXPECT_OK(ParseQuery(limit));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

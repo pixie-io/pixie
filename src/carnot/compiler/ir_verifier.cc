@@ -103,6 +103,15 @@ Status IRVerifier::VerifyFilter(IRNode* node) {
   return Status::OK();
 }
 
+Status IRVerifier::VerifyLimit(IRNode* node) {
+  auto limit_node = static_cast<LimitIR*>(node);
+  PL_RETURN_IF_ERROR(ExpectType(IntType, limit_node->limit_node(),
+                                ExpString("LimitIR", node->id(), "limit_node")));
+  PL_RETURN_IF_ERROR(ExpectOp(limit_node->parent(), ExpString("LimitIR", node->id(), "parent")));
+
+  return Status::OK();
+}
+
 Status IRVerifier::VerifySink(IRNode* node) {
   auto sink_node = static_cast<MemorySinkIR*>(node);
   PL_RETURN_IF_ERROR(
@@ -172,6 +181,10 @@ Status IRVerifier::VerifyBlockingAgg(IRNode* node) {
 }
 
 Status IRVerifier::VerifyNodeConnections(IRNode* node) {
+  // Should only look at ops.
+  if (!node->IsOp()) {
+    return Status::OK();
+  }
   switch (node->type()) {
     case IRNodeType::MemorySourceType: {
       return VerifyMemorySource(node);
@@ -188,7 +201,16 @@ Status IRVerifier::VerifyNodeConnections(IRNode* node) {
     case IRNodeType::MemorySinkType: {
       return VerifySink(node);
     }
-    default: { return Status::OK(); }
+    case IRNodeType::FilterType: {
+      return VerifyFilter(node);
+    }
+    case IRNodeType::LimitType: {
+      return VerifyLimit(node);
+    }
+    default: {
+      return IRUtils::CreateIRNodeError(
+          absl::StrFormat("Couldn't find verify node of type %s", node->type_string()), *node);
+    }
   }
 }
 

@@ -50,6 +50,8 @@ class IRVerifier {
 
   Status VerifyFilter(IRNode* node);
 
+  Status VerifyLimit(IRNode* node);
+
   Status VerifyBlockingAgg(IRNode* node);
 
   Status VerifySink(IRNode* node);

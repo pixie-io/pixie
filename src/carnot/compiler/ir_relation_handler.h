@@ -103,6 +103,17 @@ class IRRelationHandler {
   StatusOr<table_store::schema::Relation> FilterHandler(OperatorIR* node,
                                                         table_store::schema::Relation parent_rel);
 
+  /**
+   * @brief Handle LimitOperator
+   * Really should just copy the parent relation for now.
+   *
+   * @param the node operating on.
+   * @param parent_rel - the parent relation of the node.
+   * @return StatusOr <table_store::schema::Relation> the resultant relation.
+   */
+  StatusOr<table_store::schema::Relation> LimitHandler(OperatorIR* node,
+                                                       table_store::schema::Relation parent_rel);
+
   Status HasExpectedColumns(const std::unordered_set<std::string>& expected_columns,
                             const table_store::schema::Relation& parent_relation);
   /**

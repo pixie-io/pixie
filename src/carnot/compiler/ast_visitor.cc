@@ -210,6 +210,8 @@ StatusOr<IRNode*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessMapOp(node));
   } else if (func_name == kFilterOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessFilterOp(node));
+  } else if (func_name == kLimitOpId) {
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessLimitOp(node));
   } else if (func_name == kBlockingAggOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessAggOp(node));
   } else if (func_name == kSinkOpId) {
@@ -372,6 +374,21 @@ StatusOr<IRNode*> ASTWalker::ProcessFilterOp(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(IRNode * call_result,
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
   PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["fn"], node));
+  return ir_node;
+}
+
+StatusOr<IRNode*> ASTWalker::ProcessLimitOp(const pypa::AstCallPtr& node) {
+  if (node->function->type != AstType::Attribute) {
+    return CreateAstError(absl::StrFormat("Expected Limit to be an attribute, not a %s",
+                                          GetAstTypeName(node->function->type)),
+                          node->function);
+  }
+  PL_ASSIGN_OR_RETURN(LimitIR * ir_node, ir_graph_->MakeNode<LimitIR>());
+  // Get arguments.
+  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"rows"}, true));
+  PL_ASSIGN_OR_RETURN(IRNode * call_result,
+                      ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["rows"], node));
   return ir_node;
 }
 

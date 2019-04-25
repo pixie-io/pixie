@@ -34,6 +34,7 @@ enum IRNodeType {
   MapType,
   BlockingAggType,
   FilterType,
+  LimitType,
   StringType,
   FloatType,
   IntType,
@@ -47,9 +48,9 @@ enum IRNodeType {
                    // with enums.
 };
 static constexpr const char* kIRNodeStrings[] = {
-    "MemorySourceType", "MemorySinkType", "RangeType",  "MapType",    "BlockingAggType",
-    "FilterType",       "StringType",     "FloatType",  "IntType",    "BoolType",
-    "FuncType",         "ListType",       "LambdaType", "ColumnType", "TimeType"};
+    "MemorySourceType", "MemorySinkType", "RangeType",  "MapType", "BlockingAggType", "FilterType",
+    "LimitType",        "StringType",     "FloatType",  "IntType", "BoolType",        "FuncType",
+    "ListType",         "LambdaType",     "ColumnType", "TimeType"};
 
 /**
  * @brief Node class for the IR.
@@ -550,17 +551,31 @@ class FilterIR : public OperatorIR {
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   IRNode* filter_func() const { return filter_func_; }
-  void SetColumns(std::vector<ColumnIR*> columns) {
-    columns_ = columns;
-    columns_set_ = true;
-  }
-  bool columns_set() const { return columns_set_; }
   Status ToProto(carnotpb::Operator*) const override;
 
  private:
   IRNode* filter_func_;
-  std::vector<ColumnIR*> columns_;
-  bool columns_set_ = false;
+};
+
+class LimitIR : public OperatorIR {
+ public:
+  LimitIR() = delete;
+  explicit LimitIR(int64_t id) : OperatorIR(id, LimitType, true, false) {}
+  Status Init(IRNode* parent, IRNode* limit_value, const pypa::AstPtr& ast_node);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+  Status ToProto(carnotpb::Operator*) const override;
+  void SetLimitValue(int64_t value) {
+    limit_value_ = value;
+    limit_value_set_ = true;
+  }
+  bool limit_value_set() const { return limit_value_set_; }
+  IRNode* limit_node() const { return limit_node_; }
+
+ private:
+  IRNode* limit_node_;
+  int64_t limit_value_;
+  bool limit_value_set_ = false;
 };
 
 /**
@@ -577,6 +592,7 @@ class IRWalker {
   using MapWalkFn = NodeWalkFn<MapIR>;
   using AggWalkFn = NodeWalkFn<BlockingAggIR>;
   using FilterWalkFn = NodeWalkFn<FilterIR>;
+  using LimitWalkFn = NodeWalkFn<LimitIR>;
   using MemorySinkWalkFn = NodeWalkFn<MemorySinkIR>;
 
   /**
@@ -605,6 +621,16 @@ class IRWalker {
    */
   IRWalker& OnFilter(const FilterWalkFn& fn) {
     filter_walk_fn_ = fn;
+    return *this;
+  }
+
+  /**
+   * Register callback for when a limit IR node is encountered.
+   * @param fn The function to call when a limit IR node is encountered.
+   * @return self to allow chaining.
+   */
+  IRWalker& OnLimit(const LimitWalkFn& fn) {
+    limit_walk_fn_ = fn;
     return *this;
   }
 
@@ -663,6 +689,8 @@ class IRWalker {
         return CallAs<BlockingAggIR>(agg_walk_fn_, node);
       case IRNodeType::FilterType:
         return CallAs<FilterIR>(filter_walk_fn_, node);
+      case IRNodeType::LimitType:
+        return CallAs<LimitIR>(limit_walk_fn_, node);
       case IRNodeType::MemorySinkType:
         return CallAs<MemorySinkIR>(memory_sink_walk_fn_, node);
       case IRNodeType::RangeType:
@@ -680,6 +708,7 @@ class IRWalker {
   MapWalkFn map_walk_fn_;
   AggWalkFn agg_walk_fn_;
   FilterWalkFn filter_walk_fn_;
+  LimitWalkFn limit_walk_fn_;
   MemorySinkWalkFn memory_sink_walk_fn_;
 };
 class IRUtils {

@@ -306,6 +306,42 @@ Status FilterIR::ToProto(carnotpb::Operator* op) const {
   return Status::OK();
 }
 
+Status LimitIR::Init(IRNode* parent_node, IRNode* limit_value_node, const pypa::AstPtr& ast_node) {
+  SetLineCol(ast_node);
+  limit_node_ = limit_value_node;
+  PL_RETURN_IF_ERROR(SetParent(parent_node));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, limit_node_));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
+  return Status::OK();
+}
+
+bool LimitIR::HasLogicalRepr() const { return true; }
+
+std::string LimitIR::DebugString(int64_t depth) const {
+  return DebugStringFmt(depth, absl::StrFormat("%d:LimitIR", id()),
+                        {{"Parent", parent()->DebugString(depth + 1)},
+                         {"Limit", limit_node_->DebugString(depth + 1)}});
+}
+
+Status LimitIR::ToProto(carnotpb::Operator* op) const {
+  auto pb = new carnotpb::LimitOperator();
+
+  for (size_t i = 0; i < relation().NumColumns(); i++) {
+    carnotpb::Column* col_pb = pb->add_columns();
+    col_pb->set_node(parent()->id());
+    col_pb->set_index(i);
+  }
+  if (!limit_value_set_) {
+    return IRUtils::CreateIRNodeError("Limit value not set properly.", *this);
+  }
+
+  pb->set_limit(limit_value_);
+
+  op->set_op_type(carnotpb::LIMIT_OPERATOR);
+  op->set_allocated_limit_op(pb);
+  return Status::OK();
+}
+
 Status BlockingAggIR::Init(IRNode* parent_node, IRNode* by_func, IRNode* agg_func,
                            const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);

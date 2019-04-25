@@ -92,6 +92,9 @@ StatusOr<carnotpb::Plan> Compiler::IRToLogicalPlan(const IR& ir) {
                .OnFilter([&](const auto& filter) {
                  return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, filter);
                })
+               .OnLimit([&](const auto& limit) {
+                 return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, limit);
+               })
                .Walk(ir);
   PL_RETURN_IF_ERROR(s);
   return plan;

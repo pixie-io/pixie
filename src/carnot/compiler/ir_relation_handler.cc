@@ -240,6 +240,17 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::FilterHandler(
   return parent_rel;
 }
 
+StatusOr<table_store::schema::Relation> IRRelationHandler::LimitHandler(
+    OperatorIR* node, table_store::schema::Relation parent_rel) {
+  DCHECK_EQ(node->type(), IRNodeType::LimitType);
+  auto limit_node = static_cast<LimitIR*>(node);
+  DCHECK_EQ(limit_node->limit_node()->type(), IRNodeType::IntType);
+  auto limit_value_node = static_cast<IntIR*>(limit_node->limit_node());
+
+  limit_node->SetLimitValue(limit_value_node->val());
+  return parent_rel;
+}
+
 StatusOr<table_store::schema::Relation> IRRelationHandler::SinkHandler(
     OperatorIR*, table_store::schema::Relation parent_rel) {
   return parent_rel;
@@ -349,6 +360,10 @@ Status IRRelationHandler::RelationUpdate(OperatorIR* node) {
     }
     case IRNodeType::FilterType: {
       PL_ASSIGN_OR_RETURN(rel, FilterHandler(node, parent_rel));
+      break;
+    }
+    case IRNodeType::LimitType: {
+      PL_ASSIGN_OR_RETURN(rel, LimitHandler(node, parent_rel));
       break;
     }
     default: { return error::InvalidArgument("Couldn't find handler for $0", node->type_string()); }
