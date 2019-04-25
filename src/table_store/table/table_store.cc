@@ -29,16 +29,12 @@ table_store::Table* TableStore::GetTable(const std::string& table_name) {
 
 void TableStore::AddTable(const std::string& table_name,
                           std::shared_ptr<table_store::Table> table) {
-  table_name_to_table_map_.emplace(table_name, table);
+  table_name_to_table_map_.insert_or_assign(table_name, table);
 }
 
 Status TableStore::AddTable(const std::string& table_name, uint64_t table_id,
                             std::shared_ptr<table_store::Table> table) {
-  auto ok = table_id_to_table_map_.insert({table_id, table}).second;
-  if (!ok) {
-    return error::AlreadyExists("table_id=$0 is already in use");
-  }
-
+  table_id_to_table_map_.insert_or_assign(table_id, table);
   AddTable(table_name, table);
 
   return Status::OK();
