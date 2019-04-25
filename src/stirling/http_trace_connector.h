@@ -20,7 +20,9 @@ DUMMY_SOURCE_CONNECTOR(HTTPTraceConnector);
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
+#include "src/stirling/bcc_bpf/http_trace.h"
 #include "src/stirling/source_connector.h"
 
 DECLARE_string(selected_content_type_substrs);
@@ -39,17 +41,18 @@ struct HTTPTraceRecord {
   uint32_t tgid = 0;
   uint32_t pid = 0;
   int fd = -1;
-  std::string event_type;
-  std::string src_addr;
+  std::string event_type = "-";
+  std::string src_addr = "-";
   int src_port = -1;
-  std::string dst_addr;
+  std::string dst_addr = "-";
   int dst_port = -1;
   int http_minor_version = -1;
   std::map<std::string, std::string> http_headers;
-  std::string http_req_method;
-  std::string http_req_path;
+  std::string http_req_method = "-";
+  std::string http_req_path = "-";
   int http_resp_status = -1;
-  std::string http_resp_message;
+  std::string http_resp_message = "-";
+  std::string http_resp_body = "-";
 };
 
 class HTTPTraceConnector : public SourceConnector {
@@ -80,7 +83,11 @@ class HTTPTraceConnector : public SourceConnector {
       DataElement("http_req_path", types::DataType::STRING),
       DataElement("http_resp_status", types::DataType::INT64),
       DataElement("http_resp_message", types::DataType::STRING),
+      DataElement("http_resp_body", types::DataType::STRING),
   };
+
+  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
+  static constexpr std::chrono::milliseconds kDefaultPushPeriod{5000};
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new HTTPTraceConnector(name));
@@ -97,9 +104,30 @@ class HTTPTraceConnector : public SourceConnector {
 
  private:
   explicit HTTPTraceConnector(const std::string& source_name)
-      : SourceConnector(kSourceType, std::move(source_name), kElements) {}
+      : SourceConnector(kSourceType, std::move(source_name), kElements) {
+    // TODO(oazizi): Is there a better place/time to grab the flags?
+    filter_substrs_ = absl::StrSplit(FLAGS_selected_content_type_substrs, ",", absl::SkipEmpty());
+  }
 
   inline static const std::string_view kBCCScript = http_trace_bcc_script;
+
+  static types::ColumnWrapperRecordBatch* g_record_batch_;
+
+  inline static std::vector<std::string_view> filter_substrs_;
+
+  // Helper functions used by HandleProbeOutput().
+  static bool SelectForAppend(const HTTPTraceRecord& record);
+  static void PreprocessRecord(HTTPTraceRecord* record);
+  static void AppendToRecordBatch(HTTPTraceRecord record,
+                                  types::ColumnWrapperRecordBatch* record_batch);
+  static void ConsumeRecord(HTTPTraceRecord record, types::ColumnWrapperRecordBatch* record_batch);
+
+  // Parse functions used by HandleProbeOutput().
+  static void ParseEventAttr(const syscall_write_event_t& event, HTTPTraceRecord* record);
+  static bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* record);
+  static bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* record);
+  static bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record);
+  static bool ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record);
 
   ebpf::BPF bpf_;
   const int perf_buffer_page_num_ = 8;

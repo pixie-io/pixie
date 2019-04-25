@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <picohttpparser.h>
+#include <zlib.h>
 
 #include <deque>
 #include <unordered_map>
@@ -10,7 +11,7 @@
 
 #include "absl/strings/str_replace.h"
 #include "src/common/base/base.h"
-#include "src/stirling/bcc_bpf/http_trace.h"
+#include "src/common/zlib/zlib_wrapper.h"
 #include "src/stirling/http_trace_connector.h"
 
 DEFINE_string(selected_content_type_substrs, "",
@@ -38,35 +39,19 @@ enum DataElementsIndexes {
   kSrcPort,
   kDstAddr,
   kDstPort,
-  kHttpMinorVersion,
-  kHttpHeaders,
-  kHttpReqMethod,
-  kHttpReqPath,
-  kHttpRespStatus,
-  kHttpRespMessage,
+  kHTTPMinorVersion,
+  kHTTPHeaders,
+  kHTTPReqMethod,
+  kHTTPReqPath,
+  kHTTPRespStatus,
+  kHTTPRespMessage,
+  kHTTPRespBody,
 };
 
-void ConsumeRecord(HTTPTraceRecord record, types::ColumnWrapperRecordBatch* record_batch) {
-  auto& columns = *record_batch;
-  columns[kTimeStampNs]->Append<types::Time64NSValue>(record.time_stamp_ns);
-  columns[kTgid]->Append<types::Int64Value>(record.tgid);
-  columns[kPid]->Append<types::Int64Value>(record.pid);
-  columns[kFd]->Append<types::Int64Value>(record.fd);
-  columns[kEventType]->Append<types::StringValue>(std::move(record.event_type));
-  columns[kSrcAddr]->Append<types::StringValue>(std::move(record.src_addr));
-  columns[kSrcPort]->Append<types::Int64Value>(record.src_port);
-  columns[kDstAddr]->Append<types::StringValue>(std::move(record.dst_addr));
-  columns[kDstPort]->Append<types::Int64Value>(record.dst_port);
-  columns[kHttpMinorVersion]->Append<types::Int64Value>(record.http_minor_version);
-  columns[kHttpHeaders]->Append<types::StringValue>(
-      absl::StrJoin(record.http_headers, "\n", absl::PairFormatter(": ")));
-  columns[kHttpReqMethod]->Append<types::StringValue>(std::move(record.http_req_method));
-  columns[kHttpReqPath]->Append<types::StringValue>(std::move(record.http_req_path));
-  columns[kHttpRespStatus]->Append<types::Int64Value>(record.http_resp_status);
-  columns[kHttpRespMessage]->Append<types::StringValue>(std::move(record.http_resp_message));
-}
+}  // namespace
 
-void ParseEventAttr(const syscall_write_event_t& event, HTTPTraceRecord* record) {
+void HTTPTraceConnector::ParseEventAttr(const syscall_write_event_t& event,
+                                        HTTPTraceRecord* record) {
   record->time_stamp_ns = event.attr.time_stamp_ns;
   record->tgid = event.attr.tgid;
   record->pid = event.attr.pid;
@@ -83,7 +68,8 @@ std::map<std::string, std::string> GetHttpHeadersMap(const phr_header* headers,
   return result;
 }
 
-bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* record) {
+bool HTTPTraceConnector::ParseHTTPRequest(const syscall_write_event_t& event,
+                                          HTTPTraceRecord* record) {
   const char* method = nullptr;
   size_t method_len = 0;
   const char* path = nullptr;
@@ -94,8 +80,9 @@ bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* recor
   const int retval =
       phr_parse_request(event.msg, event.attr.msg_size, &method, &method_len, &path, &path_len,
                         &minor_version, headers, &num_headers, /*last_len*/ 0);
-  HTTPTraceRecord& result = *record;
+
   if (retval > 0) {
+    HTTPTraceRecord& result = *record;
     ParseEventAttr(event, &result);
     result.event_type = "http_request";
     result.http_minor_version = minor_version;
@@ -121,30 +108,36 @@ bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* recor
 //
 // We then can squash events at t0, t1, t2 together and concatenate their bodies as the full http
 // message. This works in http 1.1 because the responses and requests are not interleaved.
-bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* record) {
-  const char* msg = 0;
+bool HTTPTraceConnector::ParseHTTPResponse(const syscall_write_event_t& event,
+                                           HTTPTraceRecord* record) {
+  const char* msg = nullptr;
   size_t msg_len = 0;
   int minor_version = 0;
   int status = 0;
   size_t num_headers = 10;
   struct phr_header headers[num_headers];
-  const int retval = phr_parse_response(event.msg, event.attr.msg_size, &minor_version, &status,
-                                        &msg, &msg_len, headers, &num_headers, /*last_len*/ 0);
-  HTTPTraceRecord& result = *record;
-  if (retval > 0) {
+  const int bytes_processed =
+      phr_parse_response(event.msg, event.attr.msg_size, &minor_version, &status, &msg, &msg_len,
+                         headers, &num_headers, /*last_len*/ 0);
+
+  if (bytes_processed > 0) {
+    HTTPTraceRecord& result = *record;
     ParseEventAttr(event, &result);
     result.event_type = "http_response";
     result.http_minor_version = minor_version;
     result.http_headers = GetHttpHeadersMap(headers, num_headers);
     result.http_resp_status = status;
     result.http_resp_message = std::string(msg, msg_len);
+    result.http_resp_body =
+        std::string(event.msg + bytes_processed, event.attr.msg_size - bytes_processed);
     return true;
   }
   return false;
 }
 
 // Returns an IP:port pair form parsing the input.
-bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record) {
+bool HTTPTraceConnector::ParseSockAddr(const syscall_write_event_t& event,
+                                       HTTPTraceRecord* record) {
   const auto* sa = reinterpret_cast<const struct sockaddr*>(event.msg);
   char s[INET6_ADDRSTRLEN] = "";
   const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
@@ -173,6 +166,15 @@ bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record) 
   return false;
 }
 
+bool HTTPTraceConnector::ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record) {
+  HTTPTraceRecord& result = *record;
+  ParseEventAttr(event, &result);
+  result.event_type = "parse_failure";
+  result.http_resp_body = std::string(event.msg, event.attr.msg_size);
+  // Rest of the fields remain at default values.
+  return true;
+}
+
 // This holds the target buffer for recording the events captured in http tracing. It roughly works
 // as follows:
 // - The data is sent through perf ring buffer.
@@ -193,62 +195,153 @@ bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record) 
 //
 // TODO(yzhao): A less-possible option: Let the BPF::open_perf_buffer() expose the underlying file
 // descriptor, and let TransferDataImpl() directly poll that file descriptor.
-types::ColumnWrapperRecordBatch* g_record_batch = nullptr;
+types::ColumnWrapperRecordBatch* HTTPTraceConnector::g_record_batch_ = nullptr;
 
-bool ShouldSelect(const HTTPTraceRecord& record) {
-  if (FLAGS_selected_content_type_substrs.empty()) {
-    return true;
-  }
-  const auto iter = record.http_headers.find("Content-Type");
-  if (iter == record.http_headers.end()) {
+bool HTTPTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
+  // Some of this function is currently a placeholder for the demo.
+  // TODO(oazizi/yzhao): update this function further.
+
+  // Rule: Exclude any HTTP requests.
+  if (record.event_type == "http_request") {
     return false;
   }
-  static const std::vector<std::string_view> substrs =
-      absl::StrSplit(FLAGS_selected_content_type_substrs, ",", absl::SkipEmpty());
-  for (auto substr : substrs) {
-    if (absl::StrContains(iter->second, substr)) {
-      return true;
+
+  const auto content_type_iter = record.http_headers.find("Content-Type");
+
+  // Rule: Exclude anything that doesn't specify its Content-Type.
+  if (content_type_iter == record.http_headers.end()) {
+    return false;
+  }
+
+  // Rule: Exclude anything that doesn't match the filter, if filter is active.
+  if (record.event_type == "http_response" && !filter_substrs_.empty()) {
+    // Note: this is actually covered already above, but including it again
+    // to maintain independence of rules.
+    if (content_type_iter == record.http_headers.end()) {
+      return false;
+    }
+
+    bool match = false;
+    for (auto substr : filter_substrs_) {
+      if (absl::StrContains(content_type_iter->second, substr)) {
+        match = true;
+        break;
+      }
+    }
+
+    if (!match) {
+      return false;
     }
   }
-  return false;
+
+  // Rule: Exclude anything that isn't json.
+  if (content_type_iter != record.http_headers.end()) {
+    auto content_type = content_type_iter->second;
+    if (content_type.find("json") == std::string::npos) {
+      return false;
+    }
+  }
+
+  const auto content_encoding_iter = record.http_headers.find("Content-Encoding");
+
+  // Rule: Exclude gzip content.
+  if (content_encoding_iter != record.http_headers.end()) {
+    auto content_encoding = content_encoding_iter->second;
+    if (content_encoding == "gzip") {
+      return false;
+    }
+  }
+
+  const auto transfer_encoding_iter = record.http_headers.find("Transfer-Encoding");
+
+  // Rule: Exclude any chunked transfers.
+  if (transfer_encoding_iter != record.http_headers.end()) {
+    auto transfer_encoding = transfer_encoding_iter->second;
+    if (transfer_encoding == "chunked") {
+      return false;
+    }
+  }
+
+  return true;
 }
 
-}  // namespace
+void HTTPTraceConnector::PreprocessRecord(HTTPTraceRecord* record) {
+  // Replace body with decompressed version, if required.
+  if (record->http_headers["Content-Encoding"] == "gzip") {
+    std::string_view body_strview(record->http_resp_body.c_str(), record->http_resp_body.size());
+    auto bodyOrErr = pl::zlib::StrInflate(body_strview);
+    if (!bodyOrErr.ok()) {
+      LOG(WARNING) << "Unable to gunzip HTTP body.";
+      record->http_resp_body = "<Stirling failed to gunzip body>";
+    } else {
+      record->http_resp_body = bodyOrErr.ValueOrDie();
+    }
+  }
+}
+
+void HTTPTraceConnector::AppendToRecordBatch(HTTPTraceRecord record,
+                                             types::ColumnWrapperRecordBatch* record_batch) {
+  auto& columns = *record_batch;
+  columns[kTimeStampNs]->Append<types::Time64NSValue>(record.time_stamp_ns);
+  columns[kTgid]->Append<types::Int64Value>(record.tgid);
+  columns[kPid]->Append<types::Int64Value>(record.pid);
+  columns[kFd]->Append<types::Int64Value>(record.fd);
+  columns[kEventType]->Append<types::StringValue>(std::move(record.event_type));
+  columns[kSrcAddr]->Append<types::StringValue>(std::move(record.src_addr));
+  columns[kSrcPort]->Append<types::Int64Value>(record.src_port);
+  columns[kDstAddr]->Append<types::StringValue>(std::move(record.dst_addr));
+  columns[kDstPort]->Append<types::Int64Value>(record.dst_port);
+  columns[kHTTPMinorVersion]->Append<types::Int64Value>(record.http_minor_version);
+  columns[kHTTPHeaders]->Append<types::StringValue>(
+      absl::StrJoin(record.http_headers, "\n", absl::PairFormatter(": ")));
+  columns[kHTTPReqMethod]->Append<types::StringValue>(std::move(record.http_req_method));
+  columns[kHTTPReqPath]->Append<types::StringValue>(std::move(record.http_req_path));
+  columns[kHTTPRespStatus]->Append<types::Int64Value>(record.http_resp_status);
+  columns[kHTTPRespMessage]->Append<types::StringValue>(std::move(record.http_resp_message));
+  columns[kHTTPRespBody]->Append<types::StringValue>(std::move(record.http_resp_body));
+}
+
+void HTTPTraceConnector::ConsumeRecord(HTTPTraceRecord record,
+                                       types::ColumnWrapperRecordBatch* record_batch) {
+  // Only allow certain records to be transferred upstream.
+  if (SelectForAppend(record)) {
+    // Currently decompresses gzip content, but could handle other transformations too.
+    // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
+    PreprocessRecord(&record);
+
+    // Push data to the TableStore.
+    AppendToRecordBatch(std::move(record), record_batch);
+  }
+}
 
 // TODO(yzhao): Add tests.
 void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
-  if (g_record_batch == nullptr) {
+  // TODO(yzhao): Get rid of g_record_batch_, use cb_cookie to get a pointer to HTTPTraceConnector,
+  // and then add HTTPTraceConnector member functions to get active record batch.
+  if (g_record_batch_ == nullptr) {
     return;
   }
-  auto* record_batch = g_record_batch;
+  auto* record_batch = g_record_batch_;
   auto* event = static_cast<syscall_write_event_t*>(data);
   auto* connector = static_cast<HTTPTraceConnector*>(cb_cookie);
-  const uint64_t time_offset_ns = connector->ClockRealTimeOffset();
   if (event->attr.event_type == kEventTypeSyscallAddrEvent) {
-    HTTPTraceRecord record;
+    HTTPTraceRecord record = {};
     bool succeeded = ParseSockAddr(*event, &record);
-    if (succeeded) {
-      record.time_stamp_ns += time_offset_ns;
-      connector->UpdateFdRecordMap(event->attr.fd, std::move(record));
-    } else {
-      LOG(ERROR) << "Failed to parse sockaddr.";
+    if (!succeeded) {
+      LOG(ERROR) << "Failed to parse SyscallAddrEvent.";
+      return;
     }
+    connector->UpdateFdRecordMap(event->attr.fd, std::move(record));
   } else if (event->attr.event_type == kEventTypeSyscallWriteEvent) {
     HTTPTraceRecord record = connector->GetRecordForFd(event->attr.fd);
-    const bool http_parse_succeeded =
-        ParseHTTPRequest(*event, &record) || ParseHTTPResponse(*event, &record);
-    if (http_parse_succeeded) {
-      if (record.event_type == "http_response" && !ShouldSelect(record)) {
-        LOG(INFO) << "Discarded http response of which 'Content-Type' header doesn't contain "
-                     "one of: "
-                  << FLAGS_selected_content_type_substrs;
-      } else {
-        record.time_stamp_ns += time_offset_ns;
-        ConsumeRecord(record, record_batch);
-      }
-    } else {
-      LOG(INFO) << "Failed to parse http messages.";
+    bool succeeded = ParseHTTPRequest(*event, &record) || ParseHTTPResponse(*event, &record) ||
+                     ParseRaw(*event, &record);
+    if (!succeeded) {
+      LOG(ERROR) << "Failed to parse SyscallWriteEvent.";
+      return;
     }
+    record.time_stamp_ns += connector->ClockRealTimeOffset();
+    ConsumeRecord(std::move(record), record_batch);
   } else {
     LOG(ERROR) << "Unknown event type: " << event->attr.event_type;
   }
@@ -340,8 +433,8 @@ void HTTPTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* recor
   auto perf_buffer = bpf_.get_perf_buffer(kPerfBufferName);
   if (perf_buffer) {
     // Assign the data sink to the global variable accessed by the callback to the perf buffer.
-    // See the comments on the g_record_batch for details.
-    g_record_batch = record_batch;
+    // See the comments on the g_record_batch_ for details.
+    g_record_batch_ = record_batch;
     perf_buffer->poll(1);
   }
 }
