@@ -63,12 +63,19 @@ class ExecState {
 
   udf::UDADefinition* GetUDADefinition(int64_t id) { return id_to_uda_map_[id]; }
 
+  // A node can call this method to say no more records will be processed (ie. Limit).
+  // That node is responsible for setting eos.
+  void StopLimitReached() { keep_running_ = false; }
+
+  bool keep_running() { return keep_running_; }
+
  private:
   udf::ScalarUDFRegistry* scalar_udf_registry_;
   udf::UDARegistry* uda_registry_;
   std::shared_ptr<TableStore> table_store_;
   std::map<int64_t, udf::ScalarUDFDefinition*> id_to_scalar_udf_map_;
   std::map<int64_t, udf::UDADefinition*> id_to_uda_map_;
+  bool keep_running_ = true;
 };
 
 }  // namespace exec

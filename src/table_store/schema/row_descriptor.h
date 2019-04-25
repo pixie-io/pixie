@@ -47,6 +47,8 @@ class RowDescriptor {
     return debug_string;
   }
 
+  bool operator==(const RowDescriptor& other) const { return other.types_ == types_; }
+
  private:
   std::vector<types::DataType> types_;
 };
