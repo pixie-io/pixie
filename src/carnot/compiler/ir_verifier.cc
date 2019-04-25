@@ -88,6 +88,21 @@ Status IRVerifier::VerifyMap(IRNode* node) {
   return Status::OK();
 }
 
+Status IRVerifier::VerifyFilter(IRNode* node) {
+  auto filter_node = static_cast<FilterIR*>(node);
+  PL_RETURN_IF_ERROR(ExpectType(LambdaType, filter_node->filter_func(),
+                                ExpString("FilterIR", node->id(), "filter_func")));
+  PL_RETURN_IF_ERROR(ExpectOp(filter_node->parent(), ExpString("FilterIR", node->id(), "parent")));
+
+  // verify properties of the filter_func
+  auto filter_func = static_cast<LambdaIR*>(filter_node->filter_func());
+
+  if (filter_func->HasDictBody()) {
+    return FormatErrorMsg("Expected filter function to only contain an expression.", filter_func);
+  }
+  return Status::OK();
+}
+
 Status IRVerifier::VerifySink(IRNode* node) {
   auto sink_node = static_cast<MemorySinkIR*>(node);
   PL_RETURN_IF_ERROR(

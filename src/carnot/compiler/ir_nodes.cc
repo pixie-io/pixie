@@ -193,7 +193,8 @@ std::string MapIR::DebugString(int64_t depth) const {
                          {"Lambda", lambda_func_->DebugString(depth + 1)}});
 }
 
-Status MapIR::EvaluateExpression(carnotpb::ScalarExpression* expr, const IRNode& ir_node) const {
+Status OperatorIR::EvaluateExpression(carnotpb::ScalarExpression* expr,
+                                      const IRNode& ir_node) const {
   switch (ir_node.type()) {
     case IRNodeType::ColumnType: {
       auto col = expr->mutable_column();
@@ -266,6 +267,42 @@ Status MapIR::ToProto(carnotpb::Operator* op) const {
 
   op->set_op_type(carnotpb::MAP_OPERATOR);
   op->set_allocated_map_op(pb);
+  return Status::OK();
+}
+
+Status FilterIR::Init(IRNode* parent_node, IRNode* filter_func, const pypa::AstPtr& ast_node) {
+  SetLineCol(ast_node);
+  filter_func_ = filter_func;
+  PL_RETURN_IF_ERROR(SetParent(parent_node));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, filter_func_));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
+  return Status::OK();
+}
+
+bool FilterIR::HasLogicalRepr() const { return true; }
+
+std::string FilterIR::DebugString(int64_t depth) const {
+  return DebugStringFmt(depth, absl::StrFormat("%d:FilterIR", id()),
+                        {{"Parent", parent()->DebugString(depth + 1)},
+                         {"Filter", filter_func_->DebugString(depth + 1)}});
+}
+
+Status FilterIR::ToProto(carnotpb::Operator* op) const {
+  auto pb = new carnotpb::FilterOperator();
+
+  for (size_t i = 0; i < relation().NumColumns(); i++) {
+    carnotpb::Column* col_pb = pb->add_columns();
+    col_pb->set_node(parent()->id());
+    col_pb->set_index(i);
+  }
+
+  auto expr = new carnotpb::ScalarExpression();
+  PL_ASSIGN_OR_RETURN(auto lambda_expr, static_cast<LambdaIR*>(filter_func_)->GetDefaultExpr());
+  PL_RETURN_IF_ERROR(EvaluateExpression(expr, *lambda_expr));
+  pb->set_allocated_expression(expr);
+
+  op->set_op_type(carnotpb::FILTER_OPERATOR);
+  op->set_allocated_filter_op(pb);
   return Status::OK();
 }
 

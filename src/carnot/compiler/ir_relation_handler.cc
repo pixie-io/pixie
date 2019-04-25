@@ -217,6 +217,29 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::MapHandler(
   return map_rel;
 }
 
+StatusOr<table_store::schema::Relation> IRRelationHandler::FilterHandler(
+    OperatorIR* node, table_store::schema::Relation parent_rel) {
+  DCHECK_EQ(node->type(), IRNodeType::FilterType);
+  auto filter_node = static_cast<FilterIR*>(node);
+  DCHECK_EQ(filter_node->filter_func()->type(), IRNodeType::LambdaType);
+  auto* lambda_func = static_cast<LambdaIR*>(filter_node->filter_func());
+
+  // Make sure that the expected columns exist in the parent_relation.
+  auto lambda_expected = lambda_func->expected_column_names();
+  PL_RETURN_IF_ERROR(HasExpectedColumns(lambda_expected, parent_rel));
+  PL_ASSIGN_OR_RETURN(auto expr, lambda_func->GetDefaultExpr());
+  PL_ASSIGN_OR_RETURN(types::DataType col_type, EvaluateExpression(expr, parent_rel, true));
+  if (col_type != types::DataType::BOOLEAN) {
+    return IRUtils::CreateIRNodeError(
+        absl::StrFormat("Only expecting Boolean type for the filter expression, not %s",
+                        types::DataType_Name(col_type)),
+        *lambda_func);
+  }
+
+  PL_RETURN_IF_ERROR(filter_node->SetRelation(parent_rel));
+  return parent_rel;
+}
+
 StatusOr<table_store::schema::Relation> IRRelationHandler::SinkHandler(
     OperatorIR*, table_store::schema::Relation parent_rel) {
   return parent_rel;
@@ -322,6 +345,10 @@ Status IRRelationHandler::RelationUpdate(OperatorIR* node) {
     }
     case IRNodeType::RangeType: {
       PL_ASSIGN_OR_RETURN(rel, RangeHandler(node, parent_rel));
+      break;
+    }
+    case IRNodeType::FilterType: {
+      PL_ASSIGN_OR_RETURN(rel, FilterHandler(node, parent_rel));
       break;
     }
     default: { return error::InvalidArgument("Couldn't find handler for $0", node->type_string()); }

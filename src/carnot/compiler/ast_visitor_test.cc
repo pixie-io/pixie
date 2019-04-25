@@ -333,6 +333,57 @@ TEST(RangeValueTests, string_start_param) {
   EXPECT_OK(ParseQuery(start_expr_only));
 }
 
+class FilterTestParam : public ::testing::TestWithParam<std::string> {
+ protected:
+  void SetUp() {
+    // TODO(philkuz) use Combine with the tuple to get out a set of different values for each of the
+    // values.
+    compare_op_ = GetParam();
+    query = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                           "'cpu1']).Filter(fn=lambda r : r.cpu0 $0 0.5)",
+                           "queryDF.Result(name='filtered')"},
+                          "\n");
+    query = absl::Substitute(query, compare_op_);
+    VLOG(2) << query;
+  }
+  std::string compare_op_;
+  std::string query;
+};
+
+std::vector<std::string> comparison_functions = {">", "<", "==", ">=", "<="};
+
+TEST_P(FilterTestParam, filter_simple_ops_test) { EXPECT_OK(ParseQuery(query)); }
+
+INSTANTIATE_TEST_CASE_P(FilterTestSuites, FilterTestParam,
+                        ::testing::ValuesIn(comparison_functions));
+
+TEST(FilterExprTest, basic) {
+  // Test for and
+  std::string simple_and =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                     "'cpu1']).Filter(fn=lambda r : r.cpu0 == 0.5 and r.cpu1 >= 0.2)",
+                     "queryDF.Result(name='filtered')"},
+                    "\n");
+  EXPECT_OK(ParseQuery(simple_and));
+  // Test for or
+  std::string simple_or =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                     "'cpu1']).Filter(fn=lambda r : r.cpu0 == 0.5 or r.cpu1 >= 0.2)",
+                     "queryDF.Result(name='filtered')"},
+                    "\n");
+  EXPECT_OK(ParseQuery(simple_or));
+  // Test for nested and/or clauses
+  std::string and_or_query =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                     "'cpu1']).Filter(fn=lambda r : r.cpu0 == 0.5 and r.cpu1 "
+                     ">= 0.2 or r.cpu0 >= 0.5 and r.cpu1 == 0.2)",
+                     "queryDF.Result(name='filtered')"},
+                    "\n");
+  EXPECT_OK(ParseQuery(and_or_query));
+  // TODO(philkuz) check that and/or clauses are honored properly.
+  // TODO(philkuz) handle simple math opes
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -89,6 +89,9 @@ StatusOr<carnotpb::Plan> Compiler::IRToLogicalPlan(const IR& ir) {
                .OnBlockingAggregate([&](const auto& agg) {
                  return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, agg);
                })
+               .OnFilter([&](const auto& filter) {
+                 return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, filter);
+               })
                .Walk(ir);
   PL_RETURN_IF_ERROR(s);
   return plan;

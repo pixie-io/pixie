@@ -33,6 +33,7 @@ class IRVerifier {
 
  private:
   bool TypeIsOp(IRNodeType type);
+  // TODO(philkuz) refactor to use IRUtils::CreateIRNodeError.
   Status FormatErrorMsg(const std::string& err_msg, const IRNode* node);
 
   Status ExpectType(IRNodeType exp_type, const IRNode* test_node,
@@ -46,6 +47,8 @@ class IRVerifier {
   Status VerifyRange(IRNode* node);
 
   Status VerifyMap(IRNode* node);
+
+  Status VerifyFilter(IRNode* node);
 
   Status VerifyBlockingAgg(IRNode* node);
 

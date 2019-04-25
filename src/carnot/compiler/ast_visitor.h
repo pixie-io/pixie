@@ -29,6 +29,7 @@ constexpr const char* kMapOpId = "Map";
 constexpr const char* kBlockingAggOpId = "Agg";
 constexpr const char* kRangeAggOpId = "RangeAgg";
 constexpr const char* kSinkOpId = "Result";
+constexpr const char* kFilterOpId = "Filter";
 
 using VarTable = std::unordered_map<std::string, IRNode*>;
 using ArgMap = std::unordered_map<std::string, IRNode*>;
@@ -240,6 +241,14 @@ class ASTWalker {
    */
   StatusOr<IRNode*> ProcessRangeAggOp(const pypa::AstCallPtr& node);
 
+  /**
+   * @brief Processes the Filter operator.
+   *
+   * @param node
+   * @return StatusOr<IRNode*> the filter op.
+   */
+  StatusOr<IRNode*> ProcessFilterOp(const pypa::AstCallPtr& node);
+
   // /**
   //  * @brief ProcessFunc handles functions that have already been determined with a name.
   //  *
@@ -358,6 +367,15 @@ class ASTWalker {
    */
   StatusOr<LambdaExprReturn> ProcessLambdaBinOp(const std::string& arg_name,
                                                 const pypa::AstBinOpPtr& node);
+  /**
+   * @brief Takes a bool op node and translates it to an IRNode expression.
+   *
+   * @param arg_name
+   * @param node
+   * @return StatusOr<LambdaExprReturn> bool op contained in the return value.
+   */
+  StatusOr<LambdaExprReturn> ProcessLambdaBoolOp(const std::string& arg_name,
+                                                 const pypa::AstBoolOpPtr& node);
 
   /**
    * @brief Takes a comparison (<,=,<=,>=,>) node and translates it to an IRNode expression.

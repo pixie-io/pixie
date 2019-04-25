@@ -33,6 +33,7 @@ enum IRNodeType {
   RangeType,
   MapType,
   BlockingAggType,
+  FilterType,
   StringType,
   FloatType,
   IntType,
@@ -46,9 +47,9 @@ enum IRNodeType {
                    // with enums.
 };
 static constexpr const char* kIRNodeStrings[] = {
-    "MemorySourceType", "MemorySinkType", "RangeType",  "MapType",  "BlockingAggType",
-    "StringType",       "FloatType",      "IntType",    "BoolType", "FuncType",
-    "ListType",         "LambdaType",     "ColumnType", "TimeType"};
+    "MemorySourceType", "MemorySinkType", "RangeType",  "MapType",    "BlockingAggType",
+    "FilterType",       "StringType",     "FloatType",  "IntType",    "BoolType",
+    "FuncType",         "ListType",       "LambdaType", "ColumnType", "TimeType"};
 
 /**
  * @brief Node class for the IR.
@@ -176,6 +177,7 @@ class OperatorIR : public IRNode {
   OperatorIR* parent() const { return parent_; }
   Status SetParent(IRNode* node);
   virtual Status ToProto(carnotpb::Operator*) const = 0;
+  Status EvaluateExpression(carnotpb::ScalarExpression* expr, const IRNode& ir_node) const;
 
  protected:
   explicit OperatorIR(int64_t id, IRNodeType type, bool has_parent, bool is_source)
@@ -469,6 +471,7 @@ class RangeIR : public OperatorIR {
   IRNode* stop_repr_ = nullptr;
 };
 
+// TODO(philkuz) adjust the documentation for map.
 /**
  * @brief The RangeIR describe the range()
  * operator, which is combined with a Source
@@ -489,7 +492,6 @@ class MapIR : public OperatorIR {
   }
   bool col_exprs_set() const { return col_exprs_set_; }
   Status ToProto(carnotpb::Operator*) const override;
-  Status EvaluateExpression(carnotpb::ScalarExpression* expr, const IRNode& ir_node) const;
 
  private:
   IRNode* lambda_func_;
@@ -498,6 +500,7 @@ class MapIR : public OperatorIR {
   bool col_exprs_set_ = false;
 };
 
+// TODO(philkuz) adjust the documentation for blocking agg.
 /**
  * @brief The RangeIR describe the range()
  * operator, which is combined with a Source
@@ -539,6 +542,27 @@ class BlockingAggIR : public OperatorIR {
   bool agg_val_vector_set_ = false;
 };
 
+class FilterIR : public OperatorIR {
+ public:
+  FilterIR() = delete;
+  explicit FilterIR(int64_t id) : OperatorIR(id, FilterType, true, false) {}
+  Status Init(IRNode* parent, IRNode* filter_func, const pypa::AstPtr& ast_node);
+  bool HasLogicalRepr() const override;
+  std::string DebugString(int64_t depth) const override;
+  IRNode* filter_func() const { return filter_func_; }
+  void SetColumns(std::vector<ColumnIR*> columns) {
+    columns_ = columns;
+    columns_set_ = true;
+  }
+  bool columns_set() const { return columns_set_; }
+  Status ToProto(carnotpb::Operator*) const override;
+
+ private:
+  IRNode* filter_func_;
+  std::vector<ColumnIR*> columns_;
+  bool columns_set_ = false;
+};
+
 /**
  * A walker for an IR Graph.
  *
@@ -552,6 +576,7 @@ class IRWalker {
   using MemorySourceWalkFn = NodeWalkFn<MemorySourceIR>;
   using MapWalkFn = NodeWalkFn<MapIR>;
   using AggWalkFn = NodeWalkFn<BlockingAggIR>;
+  using FilterWalkFn = NodeWalkFn<FilterIR>;
   using MemorySinkWalkFn = NodeWalkFn<MemorySinkIR>;
 
   /**
@@ -571,6 +596,15 @@ class IRWalker {
    */
   IRWalker& OnMap(const MapWalkFn& fn) {
     map_walk_fn_ = fn;
+    return *this;
+  }
+  /**
+   * Register callback for when a filter IR node is encountered.
+   * @param fn The function to call when a filter IR node is encountered.
+   * @return self to allow chaining.
+   */
+  IRWalker& OnFilter(const FilterWalkFn& fn) {
+    filter_walk_fn_ = fn;
     return *this;
   }
 
@@ -627,6 +661,8 @@ class IRWalker {
         return CallAs<MapIR>(map_walk_fn_, node);
       case IRNodeType::BlockingAggType:
         return CallAs<BlockingAggIR>(agg_walk_fn_, node);
+      case IRNodeType::FilterType:
+        return CallAs<FilterIR>(filter_walk_fn_, node);
       case IRNodeType::MemorySinkType:
         return CallAs<MemorySinkIR>(memory_sink_walk_fn_, node);
       case IRNodeType::RangeType:
@@ -643,6 +679,7 @@ class IRWalker {
   MemorySourceWalkFn memory_source_walk_fn_;
   MapWalkFn map_walk_fn_;
   AggWalkFn agg_walk_fn_;
+  FilterWalkFn filter_walk_fn_;
   MemorySinkWalkFn memory_sink_walk_fn_;
 };
 class IRUtils {

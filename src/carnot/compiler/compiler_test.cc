@@ -21,6 +21,8 @@ namespace compiler {
 using carnotpb::testutils::CompareLogicalPlans;
 using testing::_;
 
+// TODO(philkuz) (PL-521) use the builtins wrapper of udfexporter to set this up.
+// TODO(philkuz) (PL-522) support missing operations in Carnot that exist here.
 const char* kExpectedUDFInfo = R"(
 scalar_udfs {
   name: "pl.divide"
@@ -839,6 +841,136 @@ TEST_F(CompilerTest, string_start_stop_param) {
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
   VLOG(1) << plan_pb.DebugString();
   EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
+}
+
+const char* kFilterPlan = R"(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      id: 5
+      sorted_deps: 0
+    }
+    nodes {
+      sorted_deps: 10
+    }
+    nodes {
+      id: 10
+    }
+  }
+  nodes {
+    id: 5
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 1
+        column_idxs: 2
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_types: FLOAT64
+        column_types: FLOAT64
+      }
+    }
+  }
+  nodes {
+    op {
+      op_type: FILTER_OPERATOR
+      filter_op {
+        expression {
+          func {
+            name: "pl.$0"
+            args {
+              column {
+                node: 5
+              }
+            }
+            args {
+              constant {
+                data_type: FLOAT64
+                float64_value: 0.5
+              }
+            }
+          }
+        }
+        columns {
+          node: 5
+        }
+        columns {
+          node: 5
+          index: 1
+        }
+      }
+    }
+  }
+  nodes {
+    id: 10
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "$1"
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_names: "cpu0"
+        column_names: "cpu1"
+      }
+    }
+  }
+}
+)";
+
+class FilterTest : public CompilerTest,
+                   public ::testing::WithParamInterface<std::tuple<std::string, std::string>> {
+ protected:
+  void SetUp() {
+    CompilerTest::SetUp();
+    std::tie(compare_op_, compare_op_proto_) = GetParam();
+    query = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                           "'cpu1']).Filter(fn=lambda r : r.cpu0 $0 0.5)",
+                           "queryDF.Result(name='$1')"},
+                          "\n");
+    query = absl::Substitute(query, compare_op_, table_name_);
+    VLOG(2) << query;
+    std::string expected_plan = absl::Substitute(kFilterPlan, compare_op_proto_, table_name_);
+    ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &expected_plan_pb));
+    VLOG(2) << expected_plan_pb.DebugString();
+  }
+  std::string compare_op_;
+  std::string compare_op_proto_;
+  std::string query;
+  carnotpb::Plan expected_plan_pb;
+  Compiler compiler_;
+
+  std::string table_name_ = "range_table";
+};
+
+std::vector<std::tuple<std::string, std::string>> comparison_fns = {{">", "greaterThan"},
+                                                                    {"<", "lessThan"},
+                                                                    {"==", "equal"},
+                                                                    {">=", "greaterThanEqual"},
+                                                                    {"<=", "lessThanEqual"}};
+
+TEST_P(FilterTest, basic) {
+  auto plan = compiler_.Compile(query, compiler_state_.get());
+  ASSERT_OK(plan);
+  VLOG(2) << plan.ValueOrDie().DebugString();
+
+  EXPECT_TRUE(CompareLogicalPlans(expected_plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
+}
+
+INSTANTIATE_TEST_CASE_P(FilterTestSuite, FilterTest, ::testing::ValuesIn(comparison_fns));
+
+TEST_F(CompilerTest, filter_errors) {
+  std::string non_bool_filter = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                               "'cpu1']).Filter(fn=lambda r : r.cpu0 + 0.5)",
+                                               "queryDF.Result(name='blah')"},
+                                              "\n");
+  EXPECT_NOT_OK(compiler_.Compile(non_bool_filter, compiler_state_.get()));
 }
 
 }  // namespace compiler

@@ -7,9 +7,9 @@ using pypa::AstType;
 using pypa::walk_tree;
 
 const std::unordered_map<std::string, std::string> kOP_TO_UDF_MAP = {
-    {"*", "multiply"},         {"+", "add"},      {"-", "subtract"}, {"/", "divide"},
-    {">", "greaterThan"},      {"<", "lessThan"}, {"==", "equal"},   {"<=", "lessThanEqual"},
-    {">=", "greaterThanEqual"}};
+    {"*", "multiply"},          {"+", "add"},          {"-", "subtract"},  {"/", "divide"},
+    {">", "greaterThan"},       {"<", "lessThan"},     {"==", "equal"},    {"<=", "lessThanEqual"},
+    {">=", "greaterThanEqual"}, {"and", "logicalAnd"}, {"or", "logicalOr"}};
 const std::unordered_map<std::string, std::chrono::nanoseconds> kUnitTimeFnStr = {
     {"minutes", std::chrono::minutes(1)},           {"hours", std::chrono::hours(1)},
     {"seconds", std::chrono::seconds(1)},           {"days", std::chrono::hours(24)},
@@ -208,6 +208,8 @@ StatusOr<IRNode*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessRangeOp(node));
   } else if (func_name == kMapOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessMapOp(node));
+  } else if (func_name == kFilterOpId) {
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessFilterOp(node));
   } else if (func_name == kBlockingAggOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessAggOp(node));
   } else if (func_name == kSinkOpId) {
@@ -358,6 +360,21 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
   return agg_ir_node;
 }
 
+StatusOr<IRNode*> ASTWalker::ProcessFilterOp(const pypa::AstCallPtr& node) {
+  if (node->function->type != AstType::Attribute) {
+    return CreateAstError(absl::StrFormat("Expected Filter to be an attribute, not a %s",
+                                          GetAstTypeName(node->function->type)),
+                          node->function);
+  }
+  PL_ASSIGN_OR_RETURN(FilterIR * ir_node, ir_graph_->MakeNode<FilterIR>());
+  // Get arguments.
+  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"fn"}, true));
+  PL_ASSIGN_OR_RETURN(IRNode * call_result,
+                      ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["fn"], node));
+  return ir_node;
+}
+
 StatusOr<IRNode*> ASTWalker::ProcessStr(const pypa::AstStrPtr& ast) {
   PL_ASSIGN_OR_RETURN(StringIR * ir_node, ir_graph_->MakeNode<StringIR>());
   PL_ASSIGN_OR_RETURN(auto str_value, GetStrAstValue(ast));
@@ -466,6 +483,18 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaBinOp(const std::string& arg_
   return BuildLambdaFunc(fn_name, children_ret_expr, node);
 }
 
+StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaBoolOp(const std::string& arg_name,
+                                                          const pypa::AstBoolOpPtr& node) {
+  std::string op_str = pypa::to_string(node->op);
+  PL_ASSIGN_OR_RETURN(std::string fn_name, ExpandOpString(op_str, kUDFPrefix, node));
+  std::vector<LambdaExprReturn> children_ret_expr;
+  for (auto comp : node->values) {
+    PL_ASSIGN_OR_RETURN(auto rt, ProcessLambdaExpr(arg_name, comp));
+    children_ret_expr.push_back(rt);
+  }
+  return BuildLambdaFunc(fn_name, children_ret_expr, node);
+}
+
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCompare(const std::string& arg_name,
                                                            const pypa::AstComparePtr& node) {
   DCHECK_EQ(node->operators.size(), 1ULL);
@@ -568,6 +597,10 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaExpr(const std::string& arg_n
     case AstType::Compare: {
       PL_ASSIGN_OR_RETURN(expr_return,
                           ProcessLambdaCompare(arg_name, PYPA_PTR_CAST(Compare, node)));
+      break;
+    }
+    case AstType::BoolOp: {
+      PL_ASSIGN_OR_RETURN(expr_return, ProcessLambdaBoolOp(arg_name, PYPA_PTR_CAST(BoolOp, node)));
       break;
     }
     default: {

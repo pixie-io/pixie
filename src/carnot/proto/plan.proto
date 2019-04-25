@@ -55,7 +55,7 @@ enum OperatorType {
   // Regular operators are range 2000 - 10000.
   MAP_OPERATOR = 2000;
   BLOCKING_AGGREGATE_OPERATOR = 2100;
-  FILTER_OPERATOR = 2200; 
+  FILTER_OPERATOR = 2200;
   // Sink operators are range 9000-10000.
   MEMORY_SINK_OPERATOR = 9000;
 }
