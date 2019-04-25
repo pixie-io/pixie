@@ -13,6 +13,7 @@ MINIKUBE  := minikube
 
 ## Kubectl command to use.
 KUBECTL := kubectl
+KUBECTL_FLAGS := -n pl
 
 ## Skaffold command to use.
 SKAFFOLD := skaffold
@@ -71,12 +72,12 @@ gazelle: gazelle-repos ## Run gazelle to update go build rules.
 go-setup: dep-ensure gazelle
 
 k8s-load-certs:
-	-$(KUBECTL) delete secret custom-tls-cert
-	$(KUBECTL) create secret tls custom-tls-cert --key src/services/certs/server.key --cert src/services/certs/server.crt
+	-$(KUBECTL) $(KUBECTL_FLAGS) delete secret custom-tls-cert
+	$(KUBECTL) $(KUBECTL_FLAGS) create secret tls custom-tls-cert --key src/services/certs/server.key --cert src/services/certs/server.crt
 
 k8s-load-dev-secrets: #Loads the secrets used by the dev environment. At some point it might makse sense to move this into a dev setup script somewhere.
-	-$(KUBECTL) delete secret pl-app-secrets
-	$(KUBECTL) create secret generic pl-app-secrets \
+	-$(KUBECTL) $(KUBECTL_FLAGS) delete secret pl-app-secrets
+	$(KUBECTL) $(KUBECTL_FLAGS) create secret generic pl-app-secrets \
 		--from-literal=jwt-signing-key=ABCDEFG \
 		--from-literal=session-key=test-session-key \
 		--from-literal=auth0-client-id=qaAfEHQT7mRt6W0gMd9mcQwNANz9kRup \
