@@ -152,33 +152,14 @@ Status VectorNativeScalarExpressionEvaluator::Close(ExecState *) {
   // Nothing here yet.
   return Status();
 }
-Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
-    ExecState *exec_state, const RowBatch &input, const plan::ScalarExpression &expr,
-    RowBatch *output) {
+
+StatusOr<types::SharedColumnWrapper>
+VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
+    ExecState *exec_state, const RowBatch &input, const plan::ScalarExpression &expr) {
   CHECK(exec_state != nullptr);
-  CHECK(output != nullptr);
   CHECK_GT(input.num_columns(), 0);
 
   size_t num_rows = input.num_rows();
-
-  // Since this evaluator uses vectors internally and the inputs/outputs
-  // always have to be arrow::arrays, we just evaluate the case where the
-  // expression is a constant/column without using the expression walker.
-  // Fast path for just having a constant.
-  if (expr.ExpressionType() == plan::Expression::kConstant) {
-    auto scalar_expr = static_cast<const plan::ScalarValue &>(expr);
-    auto arr = EvalScalarToArrow(exec_state, scalar_expr, num_rows);
-    PL_RETURN_IF_ERROR(output->AddColumn(arr));
-    return Status::OK();
-  }
-
-  // Fast path for just a column (copy it directly to the output).
-  if (expr.ExpressionType() == plan::Expression::kColumn) {
-    // Trivial copy reference for arrow column.
-    auto col_expr = static_cast<const plan::Column &>(expr);
-    PL_RETURN_IF_ERROR(output->AddColumn(input.ColumnAt(col_expr.Index())));
-    return Status::OK();
-  }
 
   // Path for scalar funcs an their dependencies to get evaluated.
   // The Arrow arrays are converted to type erased column wrappers
@@ -221,7 +202,39 @@ Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
         return output;
       });
 
-  PL_ASSIGN_OR_RETURN(auto result, walker.Walk(expr));
+  return walker.Walk(expr);
+}
+
+Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
+    ExecState *exec_state, const RowBatch &input, const plan::ScalarExpression &expr,
+    RowBatch *output) {
+  CHECK(exec_state != nullptr);
+  CHECK(output != nullptr);
+  CHECK_GT(input.num_columns(), 0);
+
+  size_t num_rows = input.num_rows();
+
+  // Since this evaluator uses vectors internally and the inputs/outputs
+  // always have to be arrow::arrays, we just evaluate the case where the
+  // expression is a constant/column without using the expression walker.
+  // Fast path for just having a constant.
+  if (expr.ExpressionType() == plan::Expression::kConstant) {
+    auto scalar_expr = static_cast<const plan::ScalarValue &>(expr);
+    auto arr = EvalScalarToArrow(exec_state, scalar_expr, num_rows);
+    PL_RETURN_IF_ERROR(output->AddColumn(arr));
+    return Status::OK();
+  }
+
+  // Fast path for just a column (copy it directly to the output).
+  if (expr.ExpressionType() == plan::Expression::kColumn) {
+    // Trivial copy reference for arrow column.
+    auto col_expr = static_cast<const plan::Column &>(expr);
+    PL_RETURN_IF_ERROR(output->AddColumn(input.ColumnAt(col_expr.Index())));
+    return Status::OK();
+  }
+
+  PL_ASSIGN_OR_RETURN(auto result, VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
+                                       exec_state, input, expr));
   PL_RETURN_IF_ERROR(output->AddColumn(result->ConvertToArrow(exec_state->exec_mem_pool())));
   return Status::OK();
 }

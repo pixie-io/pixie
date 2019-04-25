@@ -238,6 +238,28 @@ expressions {
 column_names: "col1"
 )";
 
+/**
+ * Template for Map Operator.
+ *   $0 : the expression
+ */
+const char* kFilterOperatorTmpl = R"(
+expression {
+  $0
+}
+columns {
+  node: 0
+  index: 0
+}
+columns {
+  node: 0
+  index: 1
+}
+columns {
+  node: 0
+  index: 2
+}
+)";
+
 /*
  * Template for a ScalarExpression.
  * $0: The type of ScalarExpression. (constant|func|column)
@@ -279,6 +301,47 @@ func {
     constant {
       data_type: INT64,
       int64_value: 1337
+    }
+  }
+})";
+
+const char* kEq1ScalarFuncConstPbtxt = R"(
+func {
+  name: "eq"
+  args {
+    column {
+      node: 0
+      index: 0
+    }
+  }
+  args {
+    constant {
+      data_type: INT64,
+      int64_value: 1
+    }
+  }
+})";
+
+const char* kColValueScalarFuncConstPbtxt = R"(
+column {
+  node: 0
+  index: 0
+})";
+
+const char* kStrEqAScalarFuncConstPbtxt = R"(
+func {
+  name: "eq"
+  id: 1
+  args {
+    column {
+      node: 0
+      index: 0
+    }
+  }
+  args {
+    constant {
+      data_type: STRING,
+      string_value: "A"
     }
   }
 })";
@@ -540,6 +603,23 @@ carnotpb::Operator CreateTestMapAddTwoCols() {
   carnotpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MAP_OPERATOR", "map_op",
                                    absl::Substitute(kMapOperatorTmpl, kAddScalarFuncPbtxt));
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+carnotpb::Operator CreateTestFilterTwoCols() {
+  carnotpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "FILTER_OPERATOR", "filter_op",
+                                   absl::Substitute(kFilterOperatorTmpl, kEq1ScalarFuncConstPbtxt));
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+carnotpb::Operator CreateTestFilterTwoColsString() {
+  carnotpb::Operator op;
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "FILTER_OPERATOR", "filter_op",
+                       absl::Substitute(kFilterOperatorTmpl, kStrEqAScalarFuncConstPbtxt));
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

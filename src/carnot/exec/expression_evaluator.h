@@ -117,6 +117,10 @@ class VectorNativeScalarExpressionEvaluator : public ScalarExpressionEvaluator {
   Status Open(ExecState* exec_state) override;
   Status Close(ExecState* exec_state) override;
 
+  StatusOr<types::SharedColumnWrapper> EvaluateSingleExpression(
+      ExecState* exec_state, const table_store::schema::RowBatch& input,
+      const plan::ScalarExpression& expr);
+
  protected:
   Status EvaluateSingleExpression(ExecState* exec_state, const table_store::schema::RowBatch& input,
                                   const plan::ScalarExpression& expr,

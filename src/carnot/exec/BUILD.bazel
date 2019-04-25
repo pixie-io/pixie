@@ -96,6 +96,18 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "filter_node_test",
+    srcs = ["filter_node_test.cc"] + glob(["*_mock.h"]),
+    deps = [
+        ":cc_library",
+        ":exec_node_test_helpers",
+        ":test_utils",
+        "//src/carnot/proto:plan_testutils",
+        "//third_party:arrow",
+    ],
+)
+
+pl_cc_test(
     name = "blocking_agg_node_test",
     srcs = ["blocking_agg_node_test.cc"] + glob(["*_mock.h"]),
     deps = [
