@@ -215,6 +215,18 @@ expressions {
 column_names: "col1"
 )";
 
+const char* kLimitOperator1 = R"(
+limit: 10
+columns {
+  node: 1
+  index: 0
+}
+columns {
+  node: 1
+  index: 1
+}
+)";
+
 /**
  * Template for Map Operator.
  *   $0 : the expressions
@@ -592,6 +604,14 @@ carnotpb::Operator CreateTestFilter1PB() {
   carnotpb::Operator op;
   auto op_proto =
       absl::Substitute(kOperatorProtoTmpl, "FILTER_OPERATOR", "filter_op", kFilterOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+carnotpb::Operator CreateTestLimit1PB() {
+  carnotpb::Operator op;
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "LIMIT_OPERATOR", "limit_op", kLimitOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

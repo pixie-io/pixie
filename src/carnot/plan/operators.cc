@@ -40,6 +40,8 @@ std::unique_ptr<Operator> Operator::FromProto(const carnotpb::Operator &pb, int6
       return CreateOperator<MemorySinkOperator>(id, pb.mem_sink_op());
     case carnotpb::FILTER_OPERATOR:
       return CreateOperator<FilterOperator>(id, pb.filter_op());
+    case carnotpb::LIMIT_OPERATOR:
+      return CreateOperator<LimitOperator>(id, pb.limit_op());
     default:
       LOG(FATAL) << absl::StrFormat("Unknown operator type: %s", ToString(pb.op_type()));
   }
@@ -236,6 +238,42 @@ Status FilterOperator::Init(const carnotpb::FilterOperator &pb) {
 }
 
 StatusOr<table_store::schema::Relation> FilterOperator::OutputRelation(
+    const table_store::schema::Schema &schema, const PlanState & /*state*/,
+    const std::vector<int64_t> &input_ids) const {
+  DCHECK(is_initialized_) << "Not initialized";
+
+  if (input_ids.size() != 1) {
+    return error::InvalidArgument("Filter operator must have exactly one input");
+  }
+  if (!schema.HasRelation(input_ids[0])) {
+    return error::NotFound("Missing relation ($0) for input of FilterOperator", input_ids[0]);
+  }
+
+  auto input_relation_s = schema.GetRelation(input_ids[0]);
+  PL_RETURN_IF_ERROR(input_relation_s);
+  const auto input_relation = input_relation_s.ConsumeValueOrDie();
+
+  // Output relation is the same as the input relation.
+  return input_relation;
+}
+
+/**
+ * Limit Operator Implementation.
+ */
+std::string LimitOperator::DebugString() const {
+  std::string debug_string = absl::StrFormat("(%d)", record_limit_);
+  return "Op:Limit" + debug_string;
+}
+
+Status LimitOperator::Init(const carnotpb::LimitOperator &pb) {
+  pb_ = pb;
+  record_limit_ = pb_.limit();
+
+  is_initialized_ = true;
+  return Status::OK();
+}
+
+StatusOr<table_store::schema::Relation> LimitOperator::OutputRelation(
     const table_store::schema::Schema &schema, const PlanState & /*state*/,
     const std::vector<int64_t> &input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";

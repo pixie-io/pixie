@@ -88,6 +88,14 @@ TEST_F(OperatorTest, from_proto_filter) {
   EXPECT_EQ(carnotpb::OperatorType::FILTER_OPERATOR, filter_op->op_type());
 }
 
+TEST_F(OperatorTest, from_proto_limit) {
+  auto limit_pb = carnotpb::testutils::CreateTestLimit1PB();
+  auto limit_op = Operator::FromProto(limit_pb, 1);
+  EXPECT_EQ(1, limit_op->id());
+  EXPECT_TRUE(limit_op->is_initialized());
+  EXPECT_EQ(carnotpb::OperatorType::LIMIT_OPERATOR, limit_op->op_type());
+}
+
 TEST_F(OperatorTest, output_relation_source) {
   auto src_pb = carnotpb::testutils::CreateTestSource1PB();
   auto src_op = Operator::FromProto(src_pb, 1);
@@ -159,6 +167,16 @@ TEST_F(OperatorTest, output_relation_filter) {
   auto filter_op = Operator::FromProto(filter_pb, 1);
 
   auto rel = filter_op->OutputRelation(schema_, *state_, std::vector<int64_t>({0}));
+  EXPECT_EQ(2, rel.ValueOrDie().NumColumns());
+  EXPECT_EQ(types::DataType::INT64, rel.ValueOrDie().GetColumnType(0));
+  EXPECT_EQ(types::DataType::FLOAT64, rel.ValueOrDie().GetColumnType(1));
+}
+
+TEST_F(OperatorTest, output_relation_limit) {
+  auto limit_pb = carnotpb::testutils::CreateTestLimit1PB();
+  auto limit_op = Operator::FromProto(limit_pb, 1);
+
+  auto rel = limit_op->OutputRelation(schema_, *state_, std::vector<int64_t>({0}));
   EXPECT_EQ(2, rel.ValueOrDie().NumColumns());
   EXPECT_EQ(types::DataType::INT64, rel.ValueOrDie().GetColumnType(0));
   EXPECT_EQ(types::DataType::FLOAT64, rel.ValueOrDie().GetColumnType(1));

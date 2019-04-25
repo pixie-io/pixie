@@ -160,6 +160,25 @@ class FilterOperator : public Operator {
   carnotpb::FilterOperator pb_;
 };
 
+class LimitOperator : public Operator {
+ public:
+  explicit LimitOperator(int64_t id) : Operator(id, carnotpb::LIMIT_OPERATOR) {}
+  ~LimitOperator() override = default;
+
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema &schema, const PlanState &state,
+      const std::vector<int64_t> &input_ids) const override;
+  Status Init(const carnotpb::LimitOperator &pb);
+  std::string DebugString() const override;
+
+  int64_t record_limit() const { return record_limit_; }
+
+ private:
+  int64_t record_limit_ = 0;
+
+  carnotpb::LimitOperator pb_;
+};
+
 }  // namespace plan
 }  // namespace carnot
 }  // namespace pl

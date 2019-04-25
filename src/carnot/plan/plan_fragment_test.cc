@@ -11,7 +11,7 @@ namespace plan {
 
 using google::protobuf::TextFormat;
 
-const char* kPlanFragmentWithSixNodes = R"(
+const char* kPlanFragmentWithAllNodes = R"(
   id: 1,
   dag {
     nodes {
@@ -37,6 +37,10 @@ const char* kPlanFragmentWithSixNodes = R"(
     }
     nodes {
       id: 6
+      sorted_deps: 7
+    }
+    nodes {
+      id: 7
     }
   }
   nodes {
@@ -111,6 +115,19 @@ const char* kPlanFragmentWithSixNodes = R"(
   nodes {
     id: 6
     op {
+      op_type: LIMIT_OPERATOR
+      limit_op {
+        limit: 10
+        columns {
+          node: 4
+          index: 0
+        }
+      }
+    }
+  }
+  nodes {
+    id: 7
+    op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
         name: "mem_sink"
@@ -123,7 +140,7 @@ class PlanFragmentWalkerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     carnotpb::PlanFragment pf_pb;
-    ASSERT_TRUE(TextFormat::MergeFromString(kPlanFragmentWithSixNodes, &pf_pb));
+    ASSERT_TRUE(TextFormat::MergeFromString(kPlanFragmentWithAllNodes, &pf_pb));
     ASSERT_OK(plan_fragment_.Init(pf_pb));
   }
   PlanFragment plan_fragment_ = PlanFragment(1);
@@ -136,6 +153,7 @@ TEST_F(PlanFragmentWalkerTest, basic_tests) {
   int blocking_agg_call_count = 0;
   int mem_sink_call_count = 0;
   int filter_call_count = 0;
+  int limit_call_count = 0;
 
   PlanFragmentWalker()
       .OnMemorySource([&](auto& mem_src) {
@@ -158,13 +176,18 @@ TEST_F(PlanFragmentWalkerTest, basic_tests) {
         col_order.push_back(filter.id());
         filter_call_count++;
       })
+      .OnLimit([&](auto& limit) {
+        col_order.push_back(limit.id());
+        limit_call_count++;
+      })
       .Walk(&plan_fragment_);
   EXPECT_EQ(1, mem_src_call_count);
   EXPECT_EQ(1, mem_sink_call_count);
   EXPECT_EQ(1, blocking_agg_call_count);
   EXPECT_EQ(2, map_call_count);
   EXPECT_EQ(1, filter_call_count);
-  EXPECT_EQ(std::vector<int64_t>({1, 2, 3, 4, 5, 6}), col_order);
+  EXPECT_EQ(1, limit_call_count);
+  EXPECT_EQ(std::vector<int64_t>({1, 2, 3, 4, 5, 6, 7}), col_order);
 }
 
 }  // namespace plan

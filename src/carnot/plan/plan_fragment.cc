@@ -46,6 +46,9 @@ void PlanFragmentWalker::CallWalkFn(const Operator &op) {
     case carnotpb::OperatorType::FILTER_OPERATOR:
       CallAs<FilterOperator>(on_filter_walk_fn_, op);
       break;
+    case carnotpb::OperatorType::LIMIT_OPERATOR:
+      CallAs<LimitOperator>(on_limit_walk_fn_, op);
+      break;
     default:
       LOG(WARNING) << absl::StrCat("Operator does not exist.");
   }

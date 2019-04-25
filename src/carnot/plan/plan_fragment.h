@@ -48,6 +48,7 @@ class PlanFragmentWalker {
   using BlockingAggregateWalkFn = std::function<void(const BlockingAggregateOperator &)>;
   using MemorySinkWalkFn = std::function<void(const MemorySinkOperator &)>;
   using FilterWalkFn = std::function<void(const FilterOperator &)>;
+  using LimitWalkFn = std::function<void(const LimitOperator &)>;
 
   /**
    * Register callback for when a memory source operator is encountered.
@@ -90,12 +91,22 @@ class PlanFragmentWalker {
   }
 
   /**
-   * Register callback for when a memory sink operator is encountered.
-   * @param fn The function to call when a MemorySinkOperator is encountered.
+   * Register callback for when a filter operator is encountered.
+   * @param fn The function to call when a FilterOperator is encountered.
    * @return self to allow chaining
    */
   PlanFragmentWalker &OnFilter(const FilterWalkFn &fn) {
     on_filter_walk_fn_ = fn;
+    return *this;
+  }
+
+  /**
+   * Register callback for when a limit operator is encountered.
+   * @param fn The function to call when a LimitOperator is encountered.
+   * @return self to allow chaining
+   */
+  PlanFragmentWalker &OnLimit(const LimitWalkFn &fn) {
+    on_limit_walk_fn_ = fn;
     return *this;
   }
 
@@ -116,6 +127,7 @@ class PlanFragmentWalker {
   BlockingAggregateWalkFn on_blocking_aggregate_walk_fn_;
   MemorySinkWalkFn on_memory_sink_walk_fn_;
   FilterWalkFn on_filter_walk_fn_;
+  LimitWalkFn on_limit_walk_fn_;
 };
 
 }  // namespace plan
