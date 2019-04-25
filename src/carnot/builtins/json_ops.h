@@ -17,7 +17,11 @@ class PluckUDF : public udf::ScalarUDF {
  public:
   types::StringValue Exec(udf::FunctionContext *, types::StringValue in, types::StringValue key) {
     rapidjson::Document d;
-    d.Parse(in.data());
+    rapidjson::ParseResult ok = d.Parse(in.data());
+    // TODO(zasgar/michelle): Replace with null when available.
+    if (!ok) {
+      return "";
+    }
     const auto &plucked_value = d[key.data()];
     // This is robust to nested JSON.
     rapidjson::StringBuffer sb;
@@ -31,17 +35,25 @@ class PluckAsInt64UDF : public udf::ScalarUDF {
  public:
   types::Int64Value Exec(udf::FunctionContext *, types::StringValue in, types::StringValue key) {
     rapidjson::Document d;
-    d.Parse(in.data());
+    rapidjson::ParseResult ok = d.Parse(in.data());
+    // TODO(zasgar/michelle): Replace with null when available.
+    if (!ok) {
+      return 0;
+    }
     const auto &plucked_value = d[key.data()];
     return plucked_value.GetInt64();
   }
 };
 
-class PluckAsFloat4UDF : public udf::ScalarUDF {
+class PluckAsFloat64UDF : public udf::ScalarUDF {
  public:
   types::Float64Value Exec(udf::FunctionContext *, types::StringValue in, types::StringValue key) {
     rapidjson::Document d;
-    d.Parse(in.data());
+    rapidjson::ParseResult ok = d.Parse(in.data());
+    // TODO(zasgar/michelle): Replace with null when available.
+    if (!ok) {
+      return 0.0;
+    }
     const auto &plucked_value = d[key.data()];
     return plucked_value.GetDouble();
   }
@@ -50,7 +62,7 @@ class PluckAsFloat4UDF : public udf::ScalarUDF {
 inline void RegisterJSONOpsOrDie(udf::ScalarUDFRegistry *registry) {
   registry->RegisterOrDie<PluckUDF>("pl.pluck");
   registry->RegisterOrDie<PluckAsInt64UDF>("pl.pluck_int64");
-  registry->RegisterOrDie<PluckAsFloat4UDF>("pl.pluck_float64");
+  registry->RegisterOrDie<PluckAsFloat64UDF>("pl.pluck_float64");
 }
 
 }  // namespace builtins
