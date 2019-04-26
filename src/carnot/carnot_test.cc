@@ -685,7 +685,6 @@ TEST_P(CarnotFilterTest, int_filter) {
           "mapDF.Result(name='test_output')",
       },
       "\n");
-
   // these three parameters don't package well.
   double comparison_val = 12;
   auto comparison_column = CarnotTestUtils::big_test_col3;
@@ -696,6 +695,7 @@ TEST_P(CarnotFilterTest, int_filter) {
   ASSERT_OK(s);
 
   auto output_table = table_store_->GetTable("test_output");
+
   EXPECT_EQ(3, output_table->NumBatches());
   EXPECT_EQ(5, output_table->NumColumns());
   std::vector<int64_t> column_selector_vec({0, 1, 2, 3, 4});
@@ -760,9 +760,9 @@ TEST_F(CarnotTest, string_filter) {
   std::vector<int64_t> column_selector_vec({0, 1, 2, 3, 4});
   EXPECT_EQ(output_table->NumColumns(), column_selector_vec.size());
 
-  // iterate through the batches
+  // Iterate through the batches.
   for (size_t i = 0; i < CarnotTestUtils::split_idx.size(); i++) {
-    // iterate through the column
+    // Iterate through the column.
     const auto &cur_split = CarnotTestUtils::split_idx[i];
     int64_t left = cur_split.first;
     int64_t right = cur_split.second;
@@ -789,5 +789,59 @@ TEST_F(CarnotTest, string_filter) {
     EXPECT_TRUE(rb->ColumnAt(4)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
   }
 }
+class CarnotLimitTest : public CarnotTest,
+                        public ::testing::WithParamInterface<std::tuple<int64_t, int64_t>> {
+ protected:
+  void SetUp() { CarnotTest::SetUp(); }
+};
+
+TEST_P(CarnotLimitTest, limit) {
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='big_test_table', select=['time_', 'col2'])",
+          "mapDF = queryDF.Limit(rows=$0)",
+          "mapDF.Result(name='test_output')",
+      },
+      "\n");
+  int64_t num_rows;
+  int64_t expected_num_batches;
+  std::tie(expected_num_batches, num_rows) = GetParam();
+  VLOG(2) << absl::Substitute("{$0, $1}", expected_num_batches, num_rows);
+  query = absl::Substitute(query, num_rows);
+  auto s = carnot_->ExecuteQuery(query, 0);
+  ASSERT_OK(s);
+
+  auto output_table = table_store_->GetTable("test_output");
+  EXPECT_EQ(expected_num_batches, output_table->NumBatches());
+  EXPECT_EQ(2, output_table->NumColumns());
+  std::vector<int64_t> column_selector_vec({0, 1});
+  EXPECT_EQ(output_table->NumColumns(), column_selector_vec.size());
+  // Iterate through the batches.
+  for (int64_t i = 0; i < expected_num_batches; i++) {
+    // Iterate through the column.
+    const auto &cur_split = CarnotTestUtils::split_idx[i];
+    int64_t left = cur_split.first;
+    int64_t right = cur_split.second;
+    std::vector<types::Int64Value> time_out;
+    std::vector<types::Float64Value> col2_out;
+    for (int64_t j = left; j < right; j++) {
+      if (j >= num_rows) {
+        break;
+      }
+      time_out.push_back(CarnotTestUtils::big_test_col1[j]);
+      col2_out.push_back(CarnotTestUtils::big_test_col2[j]);
+    }
+    auto rb = output_table->GetRowBatch(i, column_selector_vec, arrow::default_memory_pool())
+                  .ConsumeValueOrDie();
+    EXPECT_TRUE(rb->ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb->ColumnAt(1)->Equals(types::ToArrow(col2_out, arrow::default_memory_pool())));
+  }
+}
+
+// {expected_num_batches, num_rows}
+std::vector<std::tuple<int64_t, int64_t>> limit_test_values = {{1, 2}, {2, 4}, {3, 7}};
+INSTANTIATE_TEST_CASE_P(CarnotLimitTestSuite, CarnotLimitTest,
+                        ::testing::ValuesIn(limit_test_values));
+
 }  // namespace carnot
 }  // namespace pl
