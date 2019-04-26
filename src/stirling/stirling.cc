@@ -354,8 +354,17 @@ void StirlingImpl::SleepForDuration(std::chrono::milliseconds sleep_duration) {
 }
 
 std::unique_ptr<StirlingImpl> StirlingImpl::Create() {
+  LOG(INFO) << "Creating Stirling";
+
   auto registry = std::make_unique<SourceRegistry>();
   RegisterAllSources(registry.get());
+
+  LOG(INFO) << "Stirling: Registered sources: ";
+  auto registered_sources = registry->sources();
+  for (auto registered_source : registered_sources) {
+    LOG(INFO) << "    " << registered_source.first;
+  }
+
   return Create(std::move(registry));
 }
 
