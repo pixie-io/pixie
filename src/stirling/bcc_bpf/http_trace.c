@@ -43,7 +43,7 @@ struct addr_info_t {
 };
 
 // The set of file descriptors we are tracking.
-BPF_HASH(active_fds, int, bool);
+BPF_HASH(active_fds, u64, bool);
 
 // Tracks struct addr_info so we can map between entry and exit.
 BPF_HASH(active_sock_addr, u64, struct addr_info_t);
@@ -68,18 +68,20 @@ int probe_entry_accept4(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, 
 // Read the sockaddr values and write to the output buffer.
 int probe_ret_accept4(struct pt_regs *ctx) {
   u64 id = bpf_get_current_pid_tgid();
+  u64 tgid = id >> 32;
 
   struct addr_info_t* addr_info = active_sock_addr.lookup(&id);
   if (addr_info == NULL) {
     goto done;
   }
 
-  int ret = PT_REGS_RC(ctx);
-  if (ret < 0) {
+  u64 ret_fd = PT_REGS_RC(ctx);
+  if (ret_fd < 0) {
     goto done;
   }
+  ret_fd = (tgid << 32 | ret_fd);
   bool t = true;
-  active_fds.update(&ret, &t);
+  active_fds.update(&ret_fd, &t);
 
   int zero = 0;
   struct syscall_write_event_t *event = write_buffer_heap.lookup(&zero);
@@ -93,7 +95,7 @@ int probe_ret_accept4(struct pt_regs *ctx) {
   event->attr.time_stamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
   event->attr.pid = (uint32_t)id;
-  event->attr.fd = ret;
+  event->attr.fd = ret_fd;
   event->attr.event_type = kEventTypeSyscallAddrEvent;
   event->attr.msg_size = buf_size;
   event->attr.bytes = buf_size;
@@ -109,7 +111,9 @@ int probe_ret_accept4(struct pt_regs *ctx) {
 
 int probe_write(struct pt_regs *ctx, int fd, char* buf, size_t count) {
   u64 id = bpf_get_current_pid_tgid();
-  if (active_fds.lookup(&fd) == NULL) {
+  u64 tgid = id >> 32;
+  u64 lookup_fd = (tgid << 32) | fd;
+  if (active_fds.lookup(&lookup_fd) == NULL) {
     // Bail early if we aren't tracking fd.
     return 0;
   }
@@ -137,6 +141,9 @@ int probe_write(struct pt_regs *ctx, int fd, char* buf, size_t count) {
 }
 
 int probe_close(struct pt_regs *ctx, int fd) {
-  active_fds.delete(&fd);
+  u64 id = bpf_get_current_pid_tgid();
+  u64 tgid = id >> 32;
+  u64 lookup_fd = (tgid << 32) | fd;
+  active_fds.delete(&lookup_fd);
   return 0;
 }
