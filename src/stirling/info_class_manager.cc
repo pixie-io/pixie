@@ -34,6 +34,10 @@ Status InfoClassManager::PopulateSchemaFromSource() {
 bool InfoClassManager::SamplingRequired() const { return CurrentTime() > NextSamplingTime(); }
 
 bool InfoClassManager::PushRequired() const {
+  if (data_table_->Occupancy() == 0) {
+    return false;
+  }
+
   if (CurrentTime() > NextPushTime()) {
     return true;
   }

@@ -53,8 +53,6 @@ Status DataTable::InitBuffers() {
     }
   }
 
-  current_row_ = 0;
-
   return Status::OK();
 }
 

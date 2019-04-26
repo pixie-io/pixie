@@ -34,16 +34,16 @@ class DataTable {
   /**
    * @brief Return current occupancy of the Data Table.
    *
-   * @return uint32_t occupancy
+   * @return size_t occupancy
    */
-  uint32_t Occupancy() { return current_row_; }
+  size_t Occupancy() { return record_batch_->at(0)->Size(); }
 
   /**
    * @brief Occupancy of the Data Table as a percentage of size.
    *
    * @return double percent occupancy
    */
-  double OccupancyPct() { return 1.0 * current_row_ / target_capacity_; }
+  double OccupancyPct() { return 1.0 * Occupancy() / target_capacity_; }
 
  protected:
   // Initialize a new Active record batch.
@@ -57,9 +57,6 @@ class DataTable {
 
   // Pre-computed row size, according to schema.
   uint32_t row_size_;
-
-  // Current row in the table, where items will be appended.
-  uint64_t current_row_;
 
   // Active record batch.
   std::unique_ptr<types::ColumnWrapperRecordBatch> record_batch_;
