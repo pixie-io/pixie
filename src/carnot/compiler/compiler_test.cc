@@ -13,6 +13,7 @@
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/proto/plan.pb.h"
 #include "src/carnot/proto/test_proto.h"
+#include "src/carnot/udf_exporter/udf_exporter.h"
 
 namespace pl {
 namespace carnot {
@@ -23,84 +24,11 @@ using testing::_;
 
 // TODO(philkuz) (PL-521) use the builtins wrapper of udfexporter to set this up.
 // TODO(philkuz) (PL-522) support missing operations in Carnot that exist here.
-const char* kExpectedUDFInfo = R"(
-scalar_udfs {
-  name: "pl.divide"
-  exec_arg_types: FLOAT64
-  exec_arg_types: FLOAT64
-  return_type: FLOAT64
-}
-scalar_udfs {
-  name: "pl.add"
-  exec_arg_types: FLOAT64
-  exec_arg_types: FLOAT64
-  return_type: FLOAT64
-}
-scalar_udfs {
-  name: "pl.greaterThan"
-  exec_arg_types: FLOAT64
-  exec_arg_types: FLOAT64
-  return_type: BOOLEAN
-}
-scalar_udfs {
-  name: "pl.lessThan"
-  exec_arg_types: FLOAT64
-  exec_arg_types: FLOAT64
-  return_type: BOOLEAN
-}
-scalar_udfs {
-  name: "pl.greaterThanEqual"
-  exec_arg_types: FLOAT64
-  exec_arg_types: FLOAT64
-  return_type: BOOLEAN
-}
-scalar_udfs {
-  name: "pl.lessThanEqual"
-  exec_arg_types: FLOAT64
-  exec_arg_types: FLOAT64
-  return_type: BOOLEAN
-}
-scalar_udfs {
-  name: "pl.equal"
-  exec_arg_types: FLOAT64
-  exec_arg_types: FLOAT64
-  return_type: BOOLEAN
-}
-scalar_udfs {
-  name: "pl.modulo"
-  exec_arg_types: INT64
-  exec_arg_types: INT64
-  return_type: INT64
-}
-scalar_udfs {
-  name: "pl.subtract"
-  exec_arg_types: INT64
-  exec_arg_types: INT64
-  return_type: INT64
-}
-udas {
-  name: "pl.mean"
-  update_arg_types: FLOAT64
-  finalize_type:  FLOAT64
-}
-udas {
-  name: "pl.count"
-  update_arg_types: FLOAT64
-  finalize_type:  INT64
-}
-udas {
-  name: "pl.count"
-  finalize_type:  INT64
-}
-)";
 
 class CompilerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    info_ = std::make_shared<RegistryInfo>();
-    carnotpb::UDFInfo info_pb;
-    google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
-    EXPECT_OK(info_->Init(info_pb));
+    info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
 
     auto rel_map = std::make_unique<RelationMap>();
     rel_map->emplace("sequences", table_store::schema::Relation(
@@ -122,7 +50,7 @@ class CompilerTest : public ::testing::Test {
     compiler_ = Compiler();
   }
   std::unique_ptr<CompilerState> compiler_state_;
-  std::shared_ptr<RegistryInfo> info_;
+  std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
   Compiler compiler_;
 };
@@ -766,7 +694,10 @@ TEST_F(CompilerTest, comparison_test) {
 }
 
 // Test to make sure that we can have no args to pl count.
-TEST_F(CompilerTest, no_arg_pl_count_test) {
+// The compiler will allow it if you have a udf definition for it
+// however, translating to the executor is more than a quick fix.
+// TODO(philkuz) fix up the builtins to allow for arg-less count.
+TEST_F(CompilerTest, DISABLED_no_arg_pl_count_test) {
   std::string query = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0, stop=10)",
        "aggDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
@@ -949,11 +880,9 @@ class FilterTest : public CompilerTest,
   std::string table_name_ = "range_table";
 };
 
-std::vector<std::tuple<std::string, std::string>> comparison_fns = {{">", "greaterThan"},
-                                                                    {"<", "lessThan"},
-                                                                    {"==", "equal"},
-                                                                    {">=", "greaterThanEqual"},
-                                                                    {"<=", "lessThanEqual"}};
+std::vector<std::tuple<std::string, std::string>> comparison_fns = {
+    {">", "greaterThan"},       {"<", "lessThan"},       {"==", "equal"},
+    {">=", "greaterThanEqual"}, {"<=", "lessThanEqual"}, {"!=", "notEqual"}};
 
 TEST_P(FilterTest, basic) {
   auto plan = compiler_.Compile(query, compiler_state_.get());

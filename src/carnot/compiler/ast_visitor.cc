@@ -7,9 +7,12 @@ using pypa::AstType;
 using pypa::walk_tree;
 
 const std::unordered_map<std::string, std::string> kOP_TO_UDF_MAP = {
-    {"*", "multiply"},          {"+", "add"},          {"-", "subtract"},  {"/", "divide"},
-    {">", "greaterThan"},       {"<", "lessThan"},     {"==", "equal"},    {"<=", "lessThanEqual"},
-    {">=", "greaterThanEqual"}, {"and", "logicalAnd"}, {"or", "logicalOr"}};
+    {"*", "multiply"},       {"+", "add"},
+    {"-", "subtract"},       {"/", "divide"},
+    {">", "greaterThan"},    {"<", "lessThan"},
+    {"==", "equal"},         {"!=", "notEqual"},
+    {"<=", "lessThanEqual"}, {">=", "greaterThanEqual"},
+    {"and", "logicalAnd"},   {"or", "logicalOr"}};
 const std::unordered_map<std::string, std::chrono::nanoseconds> kUnitTimeFnStr = {
     {"minutes", std::chrono::minutes(1)},           {"hours", std::chrono::hours(1)},
     {"seconds", std::chrono::seconds(1)},           {"days", std::chrono::hours(24)},
