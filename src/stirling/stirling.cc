@@ -156,7 +156,14 @@ class StirlingImpl final : public Stirling {
 StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
     : run_enable_(false),
       config_(std::make_unique<PubSubManager>()),
-      registry_(std::move(registry)) {}
+      registry_(std::move(registry)) {
+  LOG(INFO) << "Creating Stirling";
+
+  LOG(INFO) << "Stirling: Registered sources: ";
+  for (const auto& registered_source : registry_->sources()) {
+    LOG(INFO) << "    " << registered_source.first;
+  }
+}
 
 StirlingImpl::~StirlingImpl() {
   Stop();
@@ -354,16 +361,8 @@ void StirlingImpl::SleepForDuration(std::chrono::milliseconds sleep_duration) {
 }
 
 std::unique_ptr<StirlingImpl> StirlingImpl::Create() {
-  LOG(INFO) << "Creating Stirling";
-
   auto registry = std::make_unique<SourceRegistry>();
   RegisterAllSources(registry.get());
-
-  LOG(INFO) << "Stirling: Registered sources: ";
-  auto registered_sources = registry->sources();
-  for (auto registered_source : registered_sources) {
-    LOG(INFO) << "    " << registered_source.first;
-  }
 
   return Create(std::move(registry));
 }
