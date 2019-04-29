@@ -1,0 +1,16 @@
+.sidebar-nav {
+    width: 84px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sidebar-nav--logo img {
+    width: 24px;
+    padding-top: 30px;
+    padding-bottom: 20px;
+}
+
+.sidebar-nav--item {
+    padding-top: 24px;
+}

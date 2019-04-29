@@ -126,7 +126,8 @@
         "(src/ui/yarn.lock)",
         "(__snapshots__/.*)",
         "(Makefile)",
-        "(\\.go$)"
+        "(\\.go$)",
+        "(src/ui/assets/images/.*)"
       ]
     },
     "tslint-ui": {
