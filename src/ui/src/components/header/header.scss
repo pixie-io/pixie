@@ -1,0 +1,24 @@
+.header {
+    height: 60px;
+    display: flex;
+    flex-direction: column;
+    font-size: 20px;
+    letter-spacing: 0.02em;
+    margin-bottom: 10px;
+    color: white;
+}
+
+.header--text {
+    display: flex;
+    padding-top: 20px;
+}
+
+.header--primary-text {
+    padding-right: 10px;
+    color: #6C6D7A;
+}
+
+.header--secondary-text {
+    padding-left: 10px;
+    font-weight: 500;
+}
