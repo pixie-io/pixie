@@ -392,6 +392,24 @@ TEST(LimitTest, basic) {
   EXPECT_OK(ParseQuery(limit));
 }
 
+// TODO(philkuz) (PL-524) both of these changes require modifications to the actual parser.
+TEST(NegationTest, DISABLED_bang_negation) {
+  std::string bang_negation = absl::StrJoin({"queryDF = From(table='cpu', select=['bool_col']) "
+                                             "filterDF = queryDF.Filter(fn=lambda r : !r.bool_col)",
+                                             "filterDF.Result(name='filtered')"},
+                                            "\n");
+  EXPECT_OK(ParseQuery(bang_negation));
+}
+
+TEST(NegationTest, DISABLED_pythonic_negation) {
+  std::string pythonic_negation =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['bool_col']) "
+                     "filterDF = queryDF.Filter(fn=lambda r : not r.bool_col)",
+                     "filterDF.Result(name='filtered')"},
+                    "\n");
+  EXPECT_OK(ParseQuery(pythonic_negation));
+}  // namespace compiler
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
