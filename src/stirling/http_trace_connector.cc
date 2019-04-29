@@ -12,6 +12,7 @@
 #include "absl/strings/str_replace.h"
 #include "src/common/base/base.h"
 #include "src/common/zlib/zlib_wrapper.h"
+#include "src/stirling/http_parse.h"
 #include "src/stirling/http_trace_connector.h"
 
 DEFINE_string(selected_content_type_substrs, "",
@@ -252,16 +253,6 @@ bool HTTPTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
     }
   }
 
-  const auto transfer_encoding_iter = record.http_headers.find("Transfer-Encoding");
-
-  // Rule: Exclude any chunked transfers.
-  if (transfer_encoding_iter != record.http_headers.end()) {
-    auto transfer_encoding = transfer_encoding_iter->second;
-    if (transfer_encoding == "chunked") {
-      return false;
-    }
-  }
-
   return true;
 }
 
@@ -305,6 +296,27 @@ void HTTPTraceConnector::ConsumeRecord(HTTPTraceRecord record,
                                        types::ColumnWrapperRecordBatch* record_batch) {
   // Only allow certain records to be transferred upstream.
   if (SelectForAppend(record)) {
+    // - Transfer-encoding has to be processed before gzip decompression.
+    // - This either is inside SelectForAppend(), but we need to change SelectForAppend() to accept
+    // a pointer.
+    // - Or this instead of mutates the input, it copies the data to a separate buffer, which is not
+    // optimal.
+    // For now let it leave outside and for later optimization when more info is known about the
+    // overall logical workflow of HTTP trace.
+    //
+    // TODO(yzhao): Revise with new understanding of the whole workflow.
+    if (record.event_type == "http_response") {
+      auto iter = record.http_headers.find("Transfer-Encoding");
+      if (iter != record.http_headers.end() && iter->second == "chunked") {
+        ParseMessageBodyChunked(&record);
+      }
+      if (record.chunking_status == ChunkingStatus::CHUNKED) {
+        // TODO(PL-519): Revise after message stitching is implemented.
+        LOG(INFO) << "Discard chunked http response";
+        return;
+      }
+    }
+
     // Currently decompresses gzip content, but could handle other transformations too.
     // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
     PreprocessRecord(&record);
