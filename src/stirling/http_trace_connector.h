@@ -88,11 +88,13 @@ class HTTPTraceConnector : public SourceConnector {
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{5000};
+  static types::ColumnWrapperRecordBatch* g_record_batch_;
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new HTTPTraceConnector(name));
   }
-  static void HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/);
+  static void HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/,
+                                types::ColumnWrapperRecordBatch* record_batch);
   static void HandleProbeLoss(void* /*cb_cookie*/, uint64_t);
 
   Status InitImpl() override;
@@ -111,8 +113,7 @@ class HTTPTraceConnector : public SourceConnector {
 
   inline static const std::string_view kBCCScript = http_trace_bcc_script;
 
-  static types::ColumnWrapperRecordBatch* g_record_batch_;
-
+  FRIEND_TEST(HandleProbeOutputTest, FilterMessages);
   inline static std::vector<std::string_view> filter_substrs_;
 
   // Helper functions used by HandleProbeOutput().

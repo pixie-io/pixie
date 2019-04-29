@@ -126,3 +126,9 @@ container_push(
     repository = "pl-dev-infra/stirling_wrapper",
     tag = "{BUILD_USER}",
 )
+
+pl_cc_test(
+    name = "http_trace_connector_test",
+    srcs = ["http_trace_connector_test.cc"],
+    deps = [":cc_library"],
+)

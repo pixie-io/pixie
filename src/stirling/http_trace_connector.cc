@@ -314,14 +314,13 @@ void HTTPTraceConnector::ConsumeRecord(HTTPTraceRecord record,
   }
 }
 
-// TODO(yzhao): Add tests.
-void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
+void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/,
+                                           types::ColumnWrapperRecordBatch* record_batch) {
   // TODO(yzhao): Get rid of g_record_batch_, use cb_cookie to get a pointer to HTTPTraceConnector,
   // and then add HTTPTraceConnector member functions to get active record batch.
-  if (g_record_batch_ == nullptr) {
+  if (record_batch == nullptr) {
     return;
   }
-  auto* record_batch = g_record_batch_;
   auto* event = static_cast<syscall_write_event_t*>(data);
   auto* connector = static_cast<HTTPTraceConnector*>(cb_cookie);
   if (event->attr.event_type == kEventTypeSyscallAddrEvent) {
@@ -374,6 +373,11 @@ const std::vector<ProbeSpec> kProbeSpecs = {
 // This is same as the perf buffer inside bcc_bpf/http_trace.c.
 const char kPerfBufferName[] = "syscall_write_events";
 
+void HandleProbeOutputWrapper(void* cb_cookie, void* data, int data_size) {
+  HTTPTraceConnector::HandleProbeOutput(cb_cookie, data, data_size,
+                                        HTTPTraceConnector::g_record_batch_);
+}
+
 }  // namespace
 
 Status HTTPTraceConnector::InitImpl() {
@@ -397,7 +401,7 @@ Status HTTPTraceConnector::InitImpl() {
     }
   }
   ebpf::StatusTuple open_status = bpf_.open_perf_buffer(
-      kPerfBufferName, &HTTPTraceConnector::HandleProbeOutput, &HTTPTraceConnector::HandleProbeLoss,
+      kPerfBufferName, &HandleProbeOutputWrapper, &HTTPTraceConnector::HandleProbeLoss,
       // TODO(yzhao): We sort of are not unified around how record_batch and
       // cb_cookie is passed to the callback. Consider unifying them.
       /*cb_cookie*/ this, perf_buffer_page_num_);
