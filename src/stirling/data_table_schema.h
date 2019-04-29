@@ -15,9 +15,10 @@ namespace pl {
 namespace stirling {
 
 /**
- * DataTableSchema is simply an ordered list of DataElements that defines the schema of a
+ * DataTableSchema is simply an ordered list of DataElement that defines the schema of a
  * DataTable.
  */
+// TODO(yzhao): Is this class necessary? Seems replaceable with a vanilla std::vector<DataElement>.
 class DataTableSchema {
  public:
   /**
@@ -46,6 +47,13 @@ class DataTableSchema {
    * @return uint64_t number of fields.
    */
   size_t NumFields() const { return fields_.size(); }
+
+  /**
+   * @brief Returns a reference to the underlying data.
+   *
+   * @return const std::vector<DataElement>& the underlying data.
+   */
+  const std::vector<DataElement>& AsVector() const { return fields_; }
 
  private:
   std::vector<DataElement> fields_;

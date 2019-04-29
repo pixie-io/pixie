@@ -6,6 +6,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/type_utils.h"
 #include "src/stirling/data_table.h"
+#include "src/stirling/types.h"
 
 namespace pl {
 namespace stirling {
@@ -25,35 +26,7 @@ Status DataTable::InitBuffers() {
 
   record_batch_ = std::make_unique<types::ColumnWrapperRecordBatch>();
 
-  for (uint32_t field_idx = 0; field_idx < table_schema_->NumFields(); ++field_idx) {
-    DataType type = (*table_schema_)[field_idx].type();
-    switch (type) {
-      case DataType::TIME64NS: {
-        auto col = ColumnWrapper::Make(DataType::TIME64NS, 0);
-        col->Reserve(target_capacity_);
-        record_batch_->push_back(col);
-      } break;
-      case DataType::INT64: {
-        auto col = ColumnWrapper::Make(DataType::INT64, 0);
-        col->Reserve(target_capacity_);
-        record_batch_->push_back(col);
-      } break;
-      case DataType::FLOAT64: {
-        auto col = ColumnWrapper::Make(DataType::FLOAT64, 0);
-        col->Reserve(target_capacity_);
-        record_batch_->push_back(col);
-      } break;
-      case DataType::STRING: {
-        auto col = ColumnWrapper::Make(DataType::STRING, 0);
-        col->Reserve(target_capacity_);
-        record_batch_->push_back(col);
-      } break;
-      default:
-        return error::Unimplemented("Unrecognized type: $0", ToString(type));
-    }
-  }
-
-  return Status::OK();
+  return InitRecordBatch(table_schema_->AsVector(), target_capacity_, record_batch_.get());
 }
 
 StatusOr<std::unique_ptr<types::ColumnWrapperRecordBatchVec>> DataTable::GetRecordBatches() {
