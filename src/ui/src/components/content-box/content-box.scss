@@ -1,0 +1,39 @@
+@import "../../index.scss";
+
+.content-box {
+  margin: 10px 20px 10px 0;
+  background-color: $content-bg;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.content-box--header {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0px 18px 0px 18px;
+  font-size: 14px;
+}
+
+.content-box--header-text {
+  color: white;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+}
+
+.content-box--subheader-text {
+  color: $light;
+  margin-left: 5px;
+}
+
+.content-box--secondary-text {
+  font-family: monospace;
+  color: $secondary;
+  opacity: 0.65;
+}
+
+.content-box--content {
+  padding: 20px;
+}

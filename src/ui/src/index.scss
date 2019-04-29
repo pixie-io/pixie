@@ -34,18 +34,19 @@ $teal:    #20c997 !default;
 $cyan:    #5bc0de !default;
 
 $primary:       $gray-800 !default;
-$secondary:     $gray-600 !default;
+$secondary:     #71EFCE !default;
 $success:       $green !default;
 $info:          $cyan !default;
 $warning:       $yellow !default;
 $danger:        $red !default;
-$light:         $gray-200 !default;
+$light:         #6C6D7A !default;
 $dark:          $gray-900 !default;
 
 // Body
 
 $body-bg:                   $gray-900 !default;
 $body-color:                #aaa !default;
+$content-bg: #0B1420 !default;
 
 // Links
 
@@ -163,5 +164,11 @@ $breadcrumb-active-color:           $gray-500 !default;
 // Code
 
 $pre-color:                         inherit !default;
+
+// Commonly-used classes.
+
+.spacer {
+  flex: 1;
+}
 
 @import "~bootstrap/scss/bootstrap";
