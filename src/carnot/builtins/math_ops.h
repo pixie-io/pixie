@@ -71,10 +71,24 @@ class EqualUDF : public udf::ScalarUDF {
 };
 
 template <typename TArg1, typename TArg2>
+class NotEqualUDF : public udf::ScalarUDF {
+ public:
+  types::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1 != b2; }
+};
+
+template <typename TArg1, typename TArg2>
 class ApproxEqualUDF : public udf::ScalarUDF {
  public:
   types::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) {
     return std::abs(b1.val - b2.val) < std::numeric_limits<double>::epsilon();
+  }
+};
+
+template <typename TArg1, typename TArg2>
+class ApproxNotEqualUDF : public udf::ScalarUDF {
+ public:
+  types::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) {
+    return std::abs(b1.val - b2.val) > std::numeric_limits<double>::epsilon();
   }
 };
 
@@ -85,9 +99,21 @@ class GreaterThanUDF : public udf::ScalarUDF {
 };
 
 template <typename TArg1, typename TArg2>
+class GreaterThanEqualUDF : public udf::ScalarUDF {
+ public:
+  types::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1 >= b2; }
+};
+
+template <typename TArg1, typename TArg2>
 class LessThanUDF : public udf::ScalarUDF {
  public:
   types::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1 < b2; }
+};
+
+template <typename TArg1, typename TArg2>
+class LessThanEqualUDF : public udf::ScalarUDF {
+ public:
+  types::BoolValue Exec(udf::FunctionContext *, TArg1 b1, TArg2 b2) { return b1 <= b2; }
 };
 
 template <typename TArg>

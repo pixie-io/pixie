@@ -78,6 +78,23 @@ void RegisterMathOpsOrDie(udf::ScalarUDFRegistry* registry) {
   // ==
   registry->RegisterOrDie<EqualUDF<types::Int64Value, types::Int64Value>>("pl.equal");
   registry->RegisterOrDie<EqualUDF<types::StringValue, types::StringValue>>("pl.equal");
+  registry->RegisterOrDie<EqualUDF<types::BoolValue, types::BoolValue>>("pl.equal");
+  registry->RegisterOrDie<EqualUDF<types::BoolValue, types::Int64Value>>("pl.equal");
+  registry->RegisterOrDie<EqualUDF<types::Int64Value, types::BoolValue>>("pl.equal");
+  registry->RegisterOrDie<EqualUDF<types::Int64Value, types::Float64Value>>("pl.equal");
+  registry->RegisterOrDie<EqualUDF<types::Float64Value, types::Int64Value>>("pl.equal");
+  registry->RegisterOrDie<ApproxEqualUDF<types::Float64Value, types::Float64Value>>("pl.equal");
+
+  // !=
+  registry->RegisterOrDie<NotEqualUDF<types::Int64Value, types::Int64Value>>("pl.notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::StringValue, types::StringValue>>("pl.notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::BoolValue, types::BoolValue>>("pl.notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::BoolValue, types::Int64Value>>("pl.notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::Int64Value, types::BoolValue>>("pl.notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::Int64Value, types::Float64Value>>("pl.notEqual");
+  registry->RegisterOrDie<NotEqualUDF<types::Float64Value, types::Int64Value>>("pl.notEqual");
+  registry->RegisterOrDie<ApproxNotEqualUDF<types::Float64Value, types::Float64Value>>(
+      "pl.notEqual");
   // ~=
   registry->RegisterOrDie<ApproxEqualUDF<types::Float64Value, types::Float64Value>>(
       "pl.approxEqual");
@@ -86,10 +103,23 @@ void RegisterMathOpsOrDie(udf::ScalarUDFRegistry* registry) {
   registry->RegisterOrDie<GreaterThanUDF<types::Float64Value, types::Float64Value>>(
       "pl.greaterThan");
   registry->RegisterOrDie<GreaterThanUDF<types::StringValue, types::StringValue>>("pl.greaterThan");
+  // >=
+  registry->RegisterOrDie<GreaterThanEqualUDF<types::Int64Value, types::Int64Value>>(
+      "pl.greaterThanEqual");
+  registry->RegisterOrDie<GreaterThanEqualUDF<types::Float64Value, types::Float64Value>>(
+      "pl.greaterThanEqual");
+  registry->RegisterOrDie<GreaterThanUDF<types::StringValue, types::StringValue>>(
+      "pl.greaterThanEqual");
   // <
   registry->RegisterOrDie<LessThanUDF<types::Int64Value, types::Int64Value>>("pl.lessThan");
   registry->RegisterOrDie<LessThanUDF<types::Float64Value, types::Float64Value>>("pl.lessThan");
   registry->RegisterOrDie<LessThanUDF<types::StringValue, types::StringValue>>("pl.lessThan");
+  // <=
+  registry->RegisterOrDie<LessThanEqualUDF<types::Int64Value, types::Int64Value>>(
+      "pl.lessThanEqual");
+  registry->RegisterOrDie<LessThanEqualUDF<types::Float64Value, types::Float64Value>>(
+      "pl.lessThanEqual");
+  registry->RegisterOrDie<LessThanUDF<types::StringValue, types::StringValue>>("pl.lessThanEqual");
 }
 
 void RegisterMathOpsOrDie(udf::UDARegistry* registry) {
