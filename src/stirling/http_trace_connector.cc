@@ -331,9 +331,9 @@ void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*da
       LOG(ERROR) << "Failed to parse SyscallAddrEvent.";
       return;
     }
-    connector->UpdateFdRecordMap(event->attr.fd, std::move(record));
+    connector->UpdateFdRecordMap(event->attr.tgid, event->attr.fd, std::move(record));
   } else if (event->attr.event_type == kEventTypeSyscallWriteEvent) {
-    HTTPTraceRecord record = connector->GetRecordForFd(event->attr.fd);
+    HTTPTraceRecord record = connector->GetRecordForFd(event->attr.tgid, event->attr.fd);
     bool succeeded = ParseHTTPRequest(*event, &record) || ParseHTTPResponse(*event, &record) ||
                      ParseRaw(*event, &record);
     if (!succeeded) {
@@ -439,11 +439,13 @@ void HTTPTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* recor
   }
 }
 
-void HTTPTraceConnector::UpdateFdRecordMap(int fd, HTTPTraceRecord record) {
-  fd_record_map_[fd] = std::move(record);
+void HTTPTraceConnector::UpdateFdRecordMap(uint64_t tgid, uint64_t fd, HTTPTraceRecord record) {
+  fd_record_map_[(tgid << 32) | fd] = std::move(record);
 }
 
-const HTTPTraceRecord& HTTPTraceConnector::GetRecordForFd(int fd) { return fd_record_map_[fd]; }
+const HTTPTraceRecord& HTTPTraceConnector::GetRecordForFd(uint64_t tgid, uint64_t fd) {
+  return fd_record_map_[(tgid << 32) | fd];
+}
 
 }  // namespace stirling
 }  // namespace pl

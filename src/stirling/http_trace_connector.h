@@ -99,8 +99,8 @@ class HTTPTraceConnector : public SourceConnector {
   Status StopImpl() override;
   void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) override;
 
-  void UpdateFdRecordMap(int fd, HTTPTraceRecord record);
-  const HTTPTraceRecord& GetRecordForFd(int fd);
+  void UpdateFdRecordMap(uint64_t tgid, uint64_t fd, HTTPTraceRecord record);
+  const HTTPTraceRecord& GetRecordForFd(uint64_t tgid, uint64_t fd);
 
  private:
   explicit HTTPTraceConnector(const std::string& source_name)
@@ -133,7 +133,7 @@ class HTTPTraceConnector : public SourceConnector {
   const int perf_buffer_page_num_ = 8;
   // A map from file descriptor to an IP:port pair. There is no race conditions as the caller is
   // single threaded.
-  std::map<int, HTTPTraceRecord> fd_record_map_;
+  std::map<uint64_t, HTTPTraceRecord> fd_record_map_;
 };
 
 }  // namespace stirling
