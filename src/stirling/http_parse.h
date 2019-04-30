@@ -22,6 +22,7 @@ struct HTTPTraceRecord {
   uint32_t pid = 0;
   int fd = -1;
   std::string event_type = "-";
+  uint64_t http_start_time_stamp_ns = 0;
   std::string src_addr = "-";
   int src_port = -1;
   std::string dst_addr = "-";

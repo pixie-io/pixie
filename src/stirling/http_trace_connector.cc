@@ -47,6 +47,7 @@ enum DataElementsIndexes {
   kHTTPRespStatus,
   kHTTPRespMessage,
   kHTTPRespBody,
+  kHTTPRespLatencyNs,
 };
 
 }  // namespace
@@ -63,14 +64,15 @@ std::map<std::string, std::string> GetHttpHeadersMap(const phr_header* headers,
                                                      size_t num_headers) {
   std::map<std::string, std::string> result;
   for (size_t i = 0; i < num_headers; i++) {
-    result[std::string(headers[i].name, headers[i].name_len)] =
-        std::string(headers[i].value, headers[i].value_len);
+    std::string name(headers[i].name, headers[i].name_len);
+    std::string value(headers[i].value, headers[i].value_len);
+    result[name] = value;
   }
   return result;
 }
 
 bool HTTPTraceConnector::ParseHTTPRequest(const syscall_write_event_t& event,
-                                          HTTPTraceRecord* record) {
+                                          HTTPTraceRecord* record, uint64_t msg_size) {
   const char* method = nullptr;
   size_t method_len = 0;
   const char* path = nullptr;
@@ -78,9 +80,8 @@ bool HTTPTraceConnector::ParseHTTPRequest(const syscall_write_event_t& event,
   int minor_version = 0;
   size_t num_headers = 10;
   struct phr_header headers[num_headers];
-  const int retval =
-      phr_parse_request(event.msg, event.attr.msg_size, &method, &method_len, &path, &path_len,
-                        &minor_version, headers, &num_headers, /*last_len*/ 0);
+  const int retval = phr_parse_request(event.msg, msg_size, &method, &method_len, &path, &path_len,
+                                       &minor_version, headers, &num_headers, /*last_len*/ 0);
 
   if (retval > 0) {
     HTTPTraceRecord& result = *record;
@@ -110,16 +111,15 @@ bool HTTPTraceConnector::ParseHTTPRequest(const syscall_write_event_t& event,
 // We then can squash events at t0, t1, t2 together and concatenate their bodies as the full http
 // message. This works in http 1.1 because the responses and requests are not interleaved.
 bool HTTPTraceConnector::ParseHTTPResponse(const syscall_write_event_t& event,
-                                           HTTPTraceRecord* record) {
+                                           HTTPTraceRecord* record, uint64_t msg_size) {
   const char* msg = nullptr;
   size_t msg_len = 0;
   int minor_version = 0;
   int status = 0;
   size_t num_headers = 10;
   struct phr_header headers[num_headers];
-  const int bytes_processed =
-      phr_parse_response(event.msg, event.attr.msg_size, &minor_version, &status, &msg, &msg_len,
-                         headers, &num_headers, /*last_len*/ 0);
+  const int bytes_processed = phr_parse_response(event.msg, msg_size, &minor_version, &status, &msg,
+                                                 &msg_len, headers, &num_headers, /*last_len*/ 0);
 
   if (bytes_processed > 0) {
     HTTPTraceRecord& result = *record;
@@ -129,17 +129,18 @@ bool HTTPTraceConnector::ParseHTTPResponse(const syscall_write_event_t& event,
     result.http_headers = GetHttpHeadersMap(headers, num_headers);
     result.http_resp_status = status;
     result.http_resp_message = std::string(msg, msg_len);
-    result.http_resp_body =
-        std::string(event.msg + bytes_processed, event.attr.msg_size - bytes_processed);
+    result.http_resp_body = std::string(event.msg + bytes_processed, msg_size - bytes_processed);
     return true;
   }
   return false;
 }
 
-// Returns an IP:port pair form parsing the input.
+// Parses an IP:port pair from the event input into the provided record.
+// Returns false if an unexpected sockaddr family is provided.
+// Currently this function understands IPV4 and IPV6 sockaddr families.
 bool HTTPTraceConnector::ParseSockAddr(const syscall_write_event_t& event,
                                        HTTPTraceRecord* record) {
-  const auto* sa = reinterpret_cast<const struct sockaddr*>(event.msg);
+  const auto* sa = reinterpret_cast<const struct sockaddr*>(&event.attr.accept_info.addr);
   char s[INET6_ADDRSTRLEN] = "";
   const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
   const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);
@@ -158,20 +159,23 @@ bool HTTPTraceConnector::ParseSockAddr(const syscall_write_event_t& event,
         ip.assign(s);
       }
       break;
+    default:
+      LOG(WARNING) << "Ignoring unhandled sockaddr family: " << sa->sa_family;
+      return false;
   }
   if (!ip.empty()) {
     record->dst_addr = std::move(ip);
     record->dst_port = port;
-    return true;
   }
-  return false;
+  return true;
 }
 
-bool HTTPTraceConnector::ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record) {
+bool HTTPTraceConnector::ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record,
+                                  uint64_t msg_size) {
   HTTPTraceRecord& result = *record;
   ParseEventAttr(event, &result);
   result.event_type = "parse_failure";
-  result.http_resp_body = std::string(event.msg, event.attr.msg_size);
+  result.http_resp_body = std::string(event.msg, msg_size);
   // Rest of the fields remain at default values.
   return true;
 }
@@ -290,6 +294,9 @@ void HTTPTraceConnector::AppendToRecordBatch(HTTPTraceRecord record,
   columns[kHTTPRespStatus]->Append<types::Int64Value>(record.http_resp_status);
   columns[kHTTPRespMessage]->Append<types::StringValue>(std::move(record.http_resp_message));
   columns[kHTTPRespBody]->Append<types::StringValue>(std::move(record.http_resp_body));
+  columns[kHTTPRespLatencyNs]->Append<types::Int64Value>(record.time_stamp_ns -
+                                                         record.http_start_time_stamp_ns);
+  DCHECK_GE(record.time_stamp_ns, record.http_start_time_stamp_ns);
 }
 
 void HTTPTraceConnector::ConsumeRecord(HTTPTraceRecord record,
@@ -335,23 +342,38 @@ void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*da
   }
   auto* event = static_cast<syscall_write_event_t*>(data);
   auto* connector = static_cast<HTTPTraceConnector*>(cb_cookie);
-  if (event->attr.event_type == kEventTypeSyscallAddrEvent) {
-    HTTPTraceRecord record = {};
-    bool succeeded = ParseSockAddr(*event, &record);
+
+  if (event->attr.event_type == kEventTypeSyscallWriteEvent) {
+    HTTPTraceRecord record = connector->GetRecordForFd(event->attr.tgid, event->attr.fd);
+
+    // The actual message width is min(attr.msg_buf_size, attr.msg_bytes).
+    // Due to the BPF weirdness (see http_trace.c), this calucation must be done here, not in BPF.
+    // Also we can't modify the event object, because it belongs to the kernel, and is read-only.
+    uint64_t msg_size = event->attr.msg_buf_size;
+    if (event->attr.msg_bytes < msg_size) {
+      msg_size = event->attr.msg_bytes;
+    }
+
+    bool succeeded;
+
+    // Extract the IP and port.
+    succeeded = ParseSockAddr(*event, &record);
     if (!succeeded) {
-      LOG(ERROR) << "Failed to parse SyscallAddrEvent.";
+      LOG(ERROR) << "Failed to parse SyscallWriteEvent (addr).";
       return;
     }
-    connector->UpdateFdRecordMap(event->attr.tgid, event->attr.fd, std::move(record));
-  } else if (event->attr.event_type == kEventTypeSyscallWriteEvent) {
-    HTTPTraceRecord record = connector->GetRecordForFd(event->attr.tgid, event->attr.fd);
-    bool succeeded = ParseHTTPRequest(*event, &record) || ParseHTTPResponse(*event, &record) ||
-                     ParseRaw(*event, &record);
+    record.http_start_time_stamp_ns =
+        event->attr.accept_info.timestamp_ns + connector->ClockRealTimeOffset();
+
+    // Parse as either a Request, Response, or as Raw (if everything else fails).
+    succeeded = ParseHTTPRequest(*event, &record, msg_size) ||
+                ParseHTTPResponse(*event, &record, msg_size) || ParseRaw(*event, &record, msg_size);
     if (!succeeded) {
       LOG(ERROR) << "Failed to parse SyscallWriteEvent.";
       return;
     }
-    record.time_stamp_ns += connector->ClockRealTimeOffset();
+    record.time_stamp_ns = event->attr.time_stamp_ns + connector->ClockRealTimeOffset();
+
     ConsumeRecord(std::move(record), record_batch);
   } else {
     LOG(ERROR) << "Unknown event type: " << event->attr.event_type;
@@ -362,7 +384,7 @@ void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*da
 // For now we do nothing.
 void HTTPTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
   // TODO(yzhao): Lower to VLOG(1) after HTTP tracing reaches production stability.
-  LOG(INFO) << "Possibly lost " << lost << " samples";
+  VLOG(1) << "Possibly lost " << lost << " samples";
 }
 
 namespace {

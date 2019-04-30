@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <sys/socket.h>
 #include <memory>
 
 #include "src/stirling/bcc_bpf/http_trace.h"
@@ -18,7 +19,11 @@ Content-Type: application/json; charset=utf-8
 X)";
   syscall_write_event_t event;
   event.attr.event_type = kEventTypeSyscallWriteEvent;
-  event.attr.msg_size = msg.size();
+  event.attr.accept_info.addr.sin6_family = AF_INET;
+  event.attr.accept_info.timestamp_ns = 0;
+  event.attr.time_stamp_ns = 1000000;
+  event.attr.msg_buf_size = sizeof(event.msg);
+  event.attr.msg_bytes = msg.size();
   msg.copy(event.msg, msg.size());
 
   std::unique_ptr<SourceConnector> source = HTTPTraceConnector::Create("bcc_http_trace");

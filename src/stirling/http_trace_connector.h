@@ -43,7 +43,7 @@ class HTTPTraceConnector : public SourceConnector {
   //   2) {src,dst}_{addr,port}.
   // - A HTTP message table with fields 1) id (same as above), type (req or resp), header, payload.
   inline static const DataElements kElements = {
-      DataElement("time_stamp_ns", types::DataType::TIME64NS),
+      DataElement("time_", types::DataType::TIME64NS),
       // tgid is the user space "pid".
       DataElement("tgid", types::DataType::INT64),
       DataElement("pid", types::DataType::INT64),
@@ -62,6 +62,7 @@ class HTTPTraceConnector : public SourceConnector {
       DataElement("http_resp_status", types::DataType::INT64),
       DataElement("http_resp_message", types::DataType::STRING),
       DataElement("http_resp_body", types::DataType::STRING),
+      DataElement("http_resp_latency_ns", types::DataType::INT64),
   };
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
@@ -103,10 +104,13 @@ class HTTPTraceConnector : public SourceConnector {
 
   // Parse functions used by HandleProbeOutput().
   static void ParseEventAttr(const syscall_write_event_t& event, HTTPTraceRecord* record);
-  static bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* record);
-  static bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* record);
+  static bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* record,
+                               uint64_t msg_size);
+  static bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* record,
+                                uint64_t msg_size);
   static bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record);
-  static bool ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record);
+  static bool ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record,
+                       uint64_t msg_size);
 
   ebpf::BPF bpf_;
   const int perf_buffer_page_num_ = 8;
