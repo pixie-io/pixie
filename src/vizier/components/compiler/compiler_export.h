@@ -3,9 +3,8 @@
 extern "C" {
 #endif
 
-// TODO(reviewer) - got any ideas on better naming suggestions here?
-// lots of overloading with the pl::carnot::compiler ns.
-typedef void* CompilerPtr;
+typedef void *CompilerPtr;
+
 /**
  * @brief Makes a new compiler object.
  * @return CompilerState     - pointer to the compiler object.
@@ -17,15 +16,17 @@ CompilerPtr CompilerNew();
  * compile the query into a serialized protobuf.
  *
  * @param compiler    - pointer to the compiler object.
- * @param schema      - schema represented as a protobuf.
- * @param schema_len  - length of the schema string.
+ * @param rel_str_c      - relation represented as a protobuf
+ * @param rel_str_len  - length of the rel_map string
+ * @param table_name_str_c      - name of the table.
+ * @param table_name_str_len  - length of the table_name_str
  * @param query       - The query string to comple.
  * @param query_len   - The length of the query string.
  * @return char*      - the serialized logical plan after compilation.
  */
-char* CompilerCompile(CompilerPtr compiler_ptr, const char* schema, int schema_len,
-                      const char* query, int query_len, const char* udf_proto_c_str,
-                      int udf_proto_str_len, int* resultLen);
+char *CompilerCompile(CompilerPtr compiler_ptr, const char *rel_str_c, int rel_str_len,
+                      const char *table_name_str_c, int table_name_str_len, const char *query,
+                      int query_len, int *resultLen);
 
 /**
  * @brief Frees up the memory handled by the compiler.
@@ -39,7 +40,7 @@ void CompilerFree(CompilerPtr compiler_ptr);
  *
  * @param str
  */
-void CompilerStrFree(char* str);
+void CompilerStrFree(char *str);
 
 #ifdef __cplusplus
 }
