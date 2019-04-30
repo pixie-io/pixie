@@ -26,20 +26,25 @@ X)";
   event.attr.msg_bytes = msg.size();
   msg.copy(event.msg, msg.size());
 
-  std::unique_ptr<SourceConnector> source = HTTPTraceConnector::Create("bcc_http_trace");
+  // FRIEND_TEST() does not grant std::make_unique() access to HTTPTraceConnector's private ctor.
+  // We choose this style over the HTTPTraceConnector::Create() + dynamic_cast<>, as this is
+  // clearer.
+  std::unique_ptr<HTTPTraceConnector> source(new HTTPTraceConnector("bcc_http_trace"));
   types::ColumnWrapperRecordBatch record_batch;
   Status init_status =
       InitRecordBatch(HTTPTraceConnector::kElements, /*target_capacity*/ 1, &record_batch);
   EXPECT_EQ(0, init_status.code());
 
+  source->SetRecordBatch(&record_batch);
+
   HTTPTraceConnector::filter_substrs_ = {"text/plain"};
-  HTTPTraceConnector::HandleProbeOutput(source.get(), &event, sizeof(event), &record_batch);
+  HTTPTraceConnector::HandleProbeOutput(source.get(), &event, sizeof(event));
   for (const auto& column : record_batch) {
     EXPECT_EQ(0, column->Size());
   }
 
   HTTPTraceConnector::filter_substrs_ = {"application/json"};
-  HTTPTraceConnector::HandleProbeOutput(source.get(), &event, sizeof(event), &record_batch);
+  HTTPTraceConnector::HandleProbeOutput(source.get(), &event, sizeof(event));
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size());
   }

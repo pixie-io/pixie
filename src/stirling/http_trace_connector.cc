@@ -180,28 +180,6 @@ bool HTTPTraceConnector::ParseRaw(const syscall_write_event_t& event, HTTPTraceR
   return true;
 }
 
-// This holds the target buffer for recording the events captured in http tracing. It roughly works
-// as follows:
-// - The data is sent through perf ring buffer.
-// - The perf ring buffer is opened with a callback that is executed inside kernel.
-// - The callback will write data into this variable.
-// - The callback is triggered when TransferDataImpl() calls BPFTable::poll() and there is items in
-// the buffer.
-// - TransferDataImpl() will assign its input record_batch to this variable, and block during the
-// polling.
-//
-// We need to do this because the callback passed into BPF::open_perf_buffer() is a pure function
-// pointer that cannot be customized to on the point to write to a different record batch.
-//
-// TODO(yzhao): BPF::open_perf_buffer() also accepts a void * cb_cookie that is then passed as the
-// first argument to the callback. With that we can remove this global variable, by pass a
-// SourceConnector* to BPF::open_perf_buffer() and in HandleProbeOutput(), write the data to
-// SourceConnector*. That requires adding a data sink into SourceConnector, which is non-trivial.
-//
-// TODO(yzhao): A less-possible option: Let the BPF::open_perf_buffer() expose the underlying file
-// descriptor, and let TransferDataImpl() directly poll that file descriptor.
-types::ColumnWrapperRecordBatch* HTTPTraceConnector::g_record_batch_ = nullptr;
-
 bool HTTPTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
   // Some of this function is currently a placeholder for the demo.
   // TODO(oazizi/yzhao): update this function further.
@@ -333,16 +311,15 @@ void HTTPTraceConnector::ConsumeRecord(HTTPTraceRecord record,
   }
 }
 
-void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/,
-                                           types::ColumnWrapperRecordBatch* record_batch) {
-  // TODO(yzhao): Get rid of g_record_batch_, use cb_cookie to get a pointer to HTTPTraceConnector,
-  // and then add HTTPTraceConnector member functions to get active record batch.
-  if (record_batch == nullptr) {
+void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
+  if (cb_cookie == nullptr) {
     return;
   }
   auto* event = static_cast<syscall_write_event_t*>(data);
   auto* connector = static_cast<HTTPTraceConnector*>(cb_cookie);
-
+  if (connector->GetRecordBatch() == nullptr) {
+    return;
+  }
   if (event->attr.event_type == kEventTypeSyscallWriteEvent) {
     HTTPTraceRecord record = connector->GetRecordForFd(event->attr.tgid, event->attr.fd);
 
@@ -374,7 +351,7 @@ void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*da
     }
     record.time_stamp_ns = event->attr.time_stamp_ns + connector->ClockRealTimeOffset();
 
-    ConsumeRecord(std::move(record), record_batch);
+    ConsumeRecord(std::move(record), connector->GetRecordBatch());
   } else {
     LOG(ERROR) << "Unknown event type: " << event->attr.event_type;
   }
@@ -407,11 +384,6 @@ const std::vector<ProbeSpec> kProbeSpecs = {
 // This is same as the perf buffer inside bcc_bpf/http_trace.c.
 const char kPerfBufferName[] = "syscall_write_events";
 
-void HandleProbeOutputWrapper(void* cb_cookie, void* data, int data_size) {
-  HTTPTraceConnector::HandleProbeOutput(cb_cookie, data, data_size,
-                                        HTTPTraceConnector::g_record_batch_);
-}
-
 }  // namespace
 
 Status HTTPTraceConnector::InitImpl() {
@@ -435,7 +407,7 @@ Status HTTPTraceConnector::InitImpl() {
     }
   }
   ebpf::StatusTuple open_status = bpf_.open_perf_buffer(
-      kPerfBufferName, &HandleProbeOutputWrapper, &HTTPTraceConnector::HandleProbeLoss,
+      kPerfBufferName, &HTTPTraceConnector::HandleProbeOutput, &HTTPTraceConnector::HandleProbeLoss,
       // TODO(yzhao): We sort of are not unified around how record_batch and
       // cb_cookie is passed to the callback. Consider unifying them.
       /*cb_cookie*/ this, perf_buffer_page_num_);
@@ -470,10 +442,11 @@ Status HTTPTraceConnector::StopImpl() {
 void HTTPTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
   auto perf_buffer = bpf_.get_perf_buffer(kPerfBufferName);
   if (perf_buffer) {
-    // Assign the data sink to the global variable accessed by the callback to the perf buffer.
-    // See the comments on the g_record_batch_ for details.
-    g_record_batch_ = record_batch;
+    // record_batch_ is then given to HandleProbeOutput() through GetRecordBatch().
+    SetRecordBatch(record_batch);
     perf_buffer->poll(1);
+    // Reset to prevent accidental misuse.
+    SetRecordBatch(nullptr);
   }
 }
 

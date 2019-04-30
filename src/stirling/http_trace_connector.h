@@ -67,13 +67,11 @@ class HTTPTraceConnector : public SourceConnector {
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{5000};
-  static types::ColumnWrapperRecordBatch* g_record_batch_;
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new HTTPTraceConnector(name));
   }
-  static void HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/,
-                                types::ColumnWrapperRecordBatch* record_batch);
+  static void HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/);
   static void HandleProbeLoss(void* /*cb_cookie*/, uint64_t);
 
   Status InitImpl() override;
@@ -82,6 +80,13 @@ class HTTPTraceConnector : public SourceConnector {
 
   void UpdateFdRecordMap(uint64_t tgid, uint64_t fd, HTTPTraceRecord record);
   const HTTPTraceRecord& GetRecordForFd(uint64_t tgid, uint64_t fd);
+
+  // 'this' pointer of this class is passed to the callback, and the callback will call this
+  // function to get the result argument for processing data items from perf buffer.
+  types::ColumnWrapperRecordBatch* GetRecordBatch() const { return record_batch_; }
+  void SetRecordBatch(types::ColumnWrapperRecordBatch* record_batch) {
+    record_batch_ = record_batch;
+  }
 
  private:
   explicit HTTPTraceConnector(const std::string& source_name)
@@ -117,6 +122,23 @@ class HTTPTraceConnector : public SourceConnector {
   // A map from file descriptor to an IP:port pair. There is no race conditions as the caller is
   // single threaded.
   std::map<uint64_t, HTTPTraceRecord> fd_record_map_;
+
+  // This holds the target buffer for recording the events captured in http tracing. It roughly
+  // works as follows:
+  // - The data is sent through perf ring buffer.
+  // - The perf ring buffer is opened with a callback that is executed inside kernel.
+  // - The callback will write data into this variable.
+  // - The callback is triggered when TransferDataImpl() calls BPFTable::poll() and there is items
+  // in the buffer.
+  // - TransferDataImpl() will assign its input record_batch to this variable, and block during the
+  // polling.
+  //
+  // We need to do this because the callback passed into BPF::open_perf_buffer() is a pure function
+  // pointer that cannot be customized to write to a different record batch.
+  //
+  // TODO(yzhao): A less-possible option: Let the BPF::open_perf_buffer() expose the underlying file
+  // descriptor, and let TransferDataImpl() directly poll that file descriptor.
+  types::ColumnWrapperRecordBatch* record_batch_ = nullptr;
 };
 
 }  // namespace stirling
