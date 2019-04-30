@@ -71,12 +71,9 @@ int probe_entry_accept4(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, 
   u64 id = bpf_get_current_pid_tgid();
   struct addr_info_t addr_info;
 
-  // Only record IP (IPV4 and IPV6) connections.
-  if (addr->sa_family == AF_INET || addr->sa_family == AF_INET6) {
-    addr_info.addr = addr;
-    addr_info.addrlen = addrlen;
-    active_sock_addr.update(&id, &addr_info);
-  }
+  addr_info.addr = addr;
+  addr_info.addrlen = addrlen;
+  active_sock_addr.update(&id, &addr_info);
 
   return 0;
 }
@@ -146,7 +143,7 @@ int probe_write(struct pt_regs *ctx, int fd, char* buf, size_t count) {
 
   event->attr.accept_info = *accept_info;
   event->attr.event_type = kEventTypeSyscallWriteEvent;
-  event->attr.bytes = count;
+  event->attr.msg_bytes = count;
   event->attr.time_stamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
   event->attr.pid = (uint32_t)id;
