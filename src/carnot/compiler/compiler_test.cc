@@ -22,9 +22,6 @@ namespace compiler {
 using carnotpb::testutils::CompareLogicalPlans;
 using testing::_;
 
-// TODO(philkuz) (PL-521) use the builtins wrapper of udfexporter to set this up.
-// TODO(philkuz) (PL-522) support missing operations in Carnot that exist here.
-
 class CompilerTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -45,6 +42,15 @@ class CompilerTest : public ::testing::Test {
             std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
                                           types::DataType::FLOAT64, types::DataType::FLOAT64}),
             std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
+
+    rel_map->emplace(
+        "bcc_http_trace",
+        table_store::schema::Relation(
+            std::vector<types::DataType>({types::DataType::TIME64NS, types::DataType::INT64,
+                                          types::DataType::INT64, types::DataType::INT64}),
+            std::vector<std::string>(
+                {"time_", "pid", "http_resp_status", "http_resp_latency_ns"})));
+
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
 
     compiler_ = Compiler();
@@ -982,6 +988,22 @@ TEST_F(CompilerTest, limit_test) {
   VLOG(2) << plan.ValueOrDie().DebugString();
 
   EXPECT_TRUE(CompareLogicalPlans(expected_plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
+}
+
+TEST_F(CompilerTest, reused_result) {
+  std::string query = absl::StrJoin(
+      {
+          "queryDF = From(table='bcc_http_trace', select=['time_', 'pid', 'http_resp_status', "
+          "'http_resp_latency_ns'])",
+          "range_out = queryDF.Range(start='-1m')",
+          "x = range_out.Filter(fn=lambda r: r.http_resp_latency_ns < 1000000)",
+          "result_= range_out.Result(name='out');",
+      },
+
+      "\n");
+  auto plan_status = compiler_.Compile(query, compiler_state_.get());
+  VLOG(1) << plan_status.ToString();
+  EXPECT_NOT_OK(plan_status);
 }
 
 }  // namespace compiler

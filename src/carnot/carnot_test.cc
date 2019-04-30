@@ -843,5 +843,22 @@ std::vector<std::tuple<int64_t, int64_t>> limit_test_values = {{1, 2}, {2, 4}, {
 INSTANTIATE_TEST_CASE_P(CarnotLimitTestSuite, CarnotLimitTest,
                         ::testing::ValuesIn(limit_test_values));
 
+TEST_F(CarnotTest, reused_result) {
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='big_test_table', select=['time_', 'col3', 'num_groups', "
+          "'string_groups'])",
+          "mapDF = queryDF.Map(fn=lambda r : {'is_large' : r.col3 > 30, 'num_groups' : "
+          "r.num_groups})",
+          "x = queryDF.Filter(fn = lambda r : r.num_groups > 2)",
+          "mapDF.Result(name='test_output')",
+      },
+      "\n");
+  auto s = carnot_->ExecuteQuery(query, 0);
+  VLOG(1) << s.ToString();
+  // This used to segfault according to PL-525, should just send compiler error.
+  EXPECT_NOT_OK(s);
+}
+
 }  // namespace carnot
 }  // namespace pl

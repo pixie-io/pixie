@@ -33,6 +33,15 @@ class Compiler {
   template <typename TIRNode>
   Status IRNodeToPlanNode(carnotpb::PlanFragment* pf, carnotpb::DAG* pf_dag, const IR& ir_graph,
                           const TIRNode& ir_node) {
+    // Check to make sure that the relation is set for this ir_node, otherwise it's not connected to
+    // a Sink.
+    if (!ir_node.IsRelationInit()) {
+      return IRUtils::CreateIRNodeError(
+          "Call doesn't connect to a Sink and thus isn't used. Please remove this call or add a "
+          "`Result()` call on this.",
+          ir_node);
+    }
+
     // Add PlanNode.
     auto plan_node = pf->add_nodes();
     plan_node->set_id(ir_node.id());
