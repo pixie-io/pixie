@@ -1,8 +1,8 @@
 $theme-colors: (
-  "primary": #5362E9
+  "primary": #323942
 );
 
-$body-bg: #272722;
+$body-bg: #0F222D;
 // Slate 4.3.1
 // Bootswatch
 
@@ -70,6 +70,11 @@ $table-dark-color:            $white !default;
 
 $input-btn-padding-y:         .75rem !default;
 $input-btn-padding-x:         1rem !default;
+$btn-border-radius:  1px !default;
+$btn-padding-y: 9px !default;
+$btn-padding-x: 16px !default;
+$btn-font-size : 14px !default;
+$btn-line-height: 18px !default;
 
 // Forms
 

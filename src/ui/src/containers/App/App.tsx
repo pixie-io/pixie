@@ -1,3 +1,4 @@
+import {SidebarNav} from 'components/sidebar-nav/sidebar-nav';
 import {Auth} from 'containers/Auth';
 import {Home} from 'containers/Home';
 import {Vizier} from 'containers/vizier';
@@ -14,11 +15,11 @@ import { ApolloProvider } from 'react-apollo';
 // TODO(zasgar/michelle): we should figure out a good way to
 // package assets.
 // @ts-ignore : TS does not like image files.
-import * as codeImage from 'images/icons/code.png';
+import * as infoImage from 'images/icons/agent.svg';
 // @ts-ignore : TS does not like image files.
-import * as infoImage from 'images/icons/info.png';
+import * as codeImage from 'images/icons/query.svg';
 // @ts-ignore : TS does not like image files.
-import * as logoImage from 'images/logo500pxHiDPI.png';
+import * as logoImage from 'images/logo.svg';
 
 import './App.scss';
 
@@ -59,20 +60,15 @@ export class App extends React.Component<AppProps, {}> {
     return (
       <Router>
         <ApolloProvider client={gqlClient}>
-          <div>
-            <img className='logoImage' src={logoImage}/>
-            Pixie Labs Vizier UI
-          </div>
           <div className='main-page'>
-            <div className='sidebar-nav'>
-              <div>
-                <Link to='/vizier/agents'><img className='sidebar-nav-icon' src={infoImage}/></Link>
-              </div>
-              <div>
-                <Link to='/vizier/query'><img className='sidebar-nav-icon' src={codeImage}/></Link>
-              </div>
-            </div>
-            <div>
+            <SidebarNav
+              logo = {logoImage}
+              items={[
+                { link: '/vizier/query', selectedImg: codeImage, unselectedImg: codeImage },
+                { link: '/vizier/agents', selectedImg: infoImage, unselectedImg: infoImage },
+              ]}
+            />
+            <div className='content'>
               <Route exact path='/' component={Home} />
               <Route path='/login' component={Auth} />
               <Route path='/vizier' component={Vizier} />
