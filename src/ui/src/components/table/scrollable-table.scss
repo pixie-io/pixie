@@ -1,0 +1,18 @@
+@import "../../index.scss";
+
+.scrollable-table--cell {
+  display: flex;
+}
+
+.scrollable-table--row-odd {
+  background-color: $navy;
+}
+
+.ReactVirtualized__Table__headerRow {
+    background-color: $navy;
+}
+
+.ReactVirtualized__Table__row {
+    font-size: 14px;
+    height: 40px;
+}

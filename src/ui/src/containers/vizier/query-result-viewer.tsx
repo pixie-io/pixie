@@ -1,4 +1,4 @@
-import { ScrollableTable, TableColumnInfo } from 'components/table/scrollable-table';
+import { AutoSizedScrollableTable, TableColumnInfo } from 'components/table/scrollable-table';
 import * as React from 'react';
 // TODO(zasgar/michelle): Figure out how to impor schema properly
 import {
@@ -216,7 +216,7 @@ export class QueryResultViewer extends React.Component<QueryResultViewerProps, {
       <div className='query-results'>
         QueryID: {data.id}
         <br />
-        <ScrollableTable data={parsedTable} columnInfo={colInfo}></ScrollableTable>
+        <AutoSizedScrollableTable data={parsedTable} columnInfo={colInfo}/>
       </div>
     );
   }

@@ -3,7 +3,7 @@ import * as React from 'react';
 import { Query } from 'react-apollo';
 import './vizier.scss';
 
-import { ScrollableTable } from 'components/table/scrollable-table';
+import { AutoSizedScrollableTable } from 'components/table/scrollable-table';
 
 const GET_AGENTS = gql`
 {
@@ -72,7 +72,7 @@ export const AgentDisplay = ({onAgents}) => (
 
       return (
           <div className='agent-display-table'>
-            <ScrollableTable data={mappedData} columnInfo={agentTableCols}></ScrollableTable>
+            <AutoSizedScrollableTable data={mappedData} columnInfo={agentTableCols}/>
           </div>
       );
     }}
