@@ -1,3 +1,5 @@
+#!/bin/bash
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}"  )" && pwd  )"
 export gcloud_user_email=`gcloud info --format='value(config.account)'`
 kubectl create clusterrolebinding system:aggregated-metrics-reader --clusterrole=cluster-admin --user $gcloud_user_email

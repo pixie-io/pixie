@@ -39,6 +39,11 @@ execute 'install gcloud::kubectl' do
   action :run
 end
 
+execute 'install gcloud::beta' do
+  command 'gcloud components install beta'
+  action :run
+end
+
 execute 'install gcloud::docker-credential-gcr' do
   command 'gcloud components install docker-credential-gcr'
   action :run
