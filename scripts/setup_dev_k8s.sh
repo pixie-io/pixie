@@ -56,9 +56,9 @@ else
 fi
 
 
-kubectl get namespaces pl
+kubectl get namespaces ${namespace}
 if [ $? -ne 0 ]; then
-  kubectl create namespace pl
+  kubectl create namespace ${namespace}
 fi
 
 nats_deploy() {
