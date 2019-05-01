@@ -50,9 +50,6 @@ struct addr_info_t {
   size_t *addrlen;
 };
 
-// The set of file descriptors we are tracking.
-BPF_HASH(active_fds, u64, bool);
-
 // Tracks struct addr_info so we can map between entry and exit.
 // Key is {TGID, fd}.
 BPF_HASH(active_sock_addr, u64, struct addr_info_t);
@@ -91,14 +88,18 @@ int probe_ret_accept4(struct pt_regs *ctx) {
     goto done;
   }
 
-  // Prepend TGID to make the FD unique across processes.
-  ret_fd = (tgid << 32) | ret_fd;
-  active_fds.update(&ret_fd, &TRUE);
-
-  struct addr_info_t* addr_info = active_sock_addr.lookup(&id);
+  struct addr_info_t *addr_info = active_sock_addr.lookup(&id);
   if (addr_info == NULL) {
     goto done;
   }
+
+  // Only record IP (IPV4 and IPV6) connections.
+  if (!(addr_info->addr->sa_family == AF_INET || addr_info->addr->sa_family == AF_INET6)) {
+    goto done;
+  }
+
+  // Prepend TGID to make the FD unique across processes.
+  ret_fd = (tgid << 32) | ret_fd;
 
   struct accept_info_t accept_info;
   memset(&accept_info, 0, sizeof(struct accept_info_t));
@@ -119,13 +120,10 @@ int probe_write(struct pt_regs *ctx, int fd, char* buf, size_t count) {
   u64 id = bpf_get_current_pid_tgid();
   u64 tgid = id >> 32;
   u64 lookup_fd = (tgid << 32) | fd;
-  if (active_fds.lookup(&lookup_fd) == NULL) {
-    // Bail early if we aren't tracking fd.
-    return 0;
-  }
 
   struct accept_info_t *accept_info = accept_info_map.lookup(&lookup_fd);
   if (accept_info == NULL) {
+    // Bail early if we aren't tracking fd.
     return 0;
   }
 
@@ -163,6 +161,6 @@ int probe_close(struct pt_regs *ctx, int fd) {
   u64 id = bpf_get_current_pid_tgid();
   u64 tgid = id >> 32;
   u64 lookup_fd = (tgid << 32) | fd;
-  active_fds.delete(&lookup_fd);
+  accept_info_map.delete(&lookup_fd);
   return 0;
 }
