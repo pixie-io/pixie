@@ -128,11 +128,16 @@ fi
 ##################
 
 if [ ! ${BARE_CLUSTER} = true ]; then
-  # Sockshop
+  # Deploy Pixie prereqs (NATS, etcd).
+  # TODO(oazizi): Enable the line below once it's working.
+  #$PIXIE_ROOT_DIR/scripts/deploy_cluster_prereqs.sh
+
+
+  # Deploy Sockshop Demo app
   kubectl apply -f $PIXIE_ROOT_DIR/demos/applications/sockshop/kubernetes_manifests/sock-shop-ns.yaml
   sleep 5
-  kubectl apply -f $PIXIE_ROOT_DIR/src/pixielabs.ai/pixielabs/demos/applications/sockshop/kubernetes_manifests
-  kubectl apply -f $PIXIE_ROOT_DIR/src/pixielabs.ai/pixielabs/demos/applications/sockshop/load_generation
+  kubectl apply -f $PIXIE_ROOT_DIR/demos/applications/sockshop/kubernetes_manifests
+  kubectl apply -f $PIXIE_ROOT_DIR/demos/applications/sockshop/load_generation
 
   # TODO(oazizi/philkuz): Enable monitoring through this script.
   # $PIXIE_ROOT_DIR/demos/applications/sockshop/monitoring_manifests/create_monitoring.sh
