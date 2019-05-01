@@ -1,0 +1,11 @@
+Inter-|   Receive                                                |  Transmit
+ face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+ ens33: 54504114   65296    0    0    0     0          0         0  4258632   39739    0    0    0     0       0          0
+ vnet1: 3936114   23029    0    0    0     0          0         0 551949355   42771    0    0    0     0       0          0
+ vnet0:   60046     493    0    0    0     0          0         0   385535    4690    0    0    0     0       0          0
+virbr0:   53144     493    0    0    0     0          0         0   163539     463    0    0    0     0       0          0
+    lo: 3001998   19351    0    0    0     0          0         0  3001998   19351    0    0    0     0       0          0
+virbr0-nic:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+virbr1-nic:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0
+virbr1: 3613708   23029    0    0    0     0          0         0 551727307   38543    0    0    0     0       0          0
+docker0:       0       0    0    0    0     0          0         0        0       0    0    0    0     0       0          0

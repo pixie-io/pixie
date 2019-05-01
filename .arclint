@@ -12,6 +12,7 @@
     "(\\.idea/.*$)",
     "(\\.sublime-project$)",
     "(\\.gitmodules$)",
+    "(.*/testdata/.*)",
     "(c_cpp_properties.json$)"
   ],
   "linters": {

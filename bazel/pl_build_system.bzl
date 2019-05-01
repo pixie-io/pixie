@@ -41,6 +41,7 @@ def pl_linkopts():
             "-lunwind",
             "-lrt",
             "-ldl",
+            "-lstdc++fs",
             "-Wl,--hash-style=gnu",
         ],
     }) + pl_static_link_libstdcpp_linkopts()
@@ -54,6 +55,7 @@ def pl_test_linkopts():
             "-lunwind",
             "-lrt",
             "-ldl",
+            "-lstdc++fs",
         ],
     })
 
