@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/stirling/data_table_schema.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/types.h"
 
@@ -53,7 +52,7 @@ class DataTable {
   Status SealActiveRecordBatch();
 
   // Table schema
-  std::unique_ptr<DataTableSchema> table_schema_;
+  std::unique_ptr<DataElements> table_schema_;
 
   // Pre-computed row size, according to schema.
   uint32_t row_size_;

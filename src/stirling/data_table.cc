@@ -15,7 +15,10 @@ using types::ColumnWrapper;
 using types::DataType;
 
 DataTable::DataTable(const InfoClassSchema& schema) {
-  table_schema_ = std::make_unique<DataTableSchema>(schema);
+  table_schema_ = std::make_unique<DataElements>();
+  for (const auto& info_class_element : schema) {
+    table_schema_->emplace_back(info_class_element);
+  }
   sealed_batches_ =
       std::make_unique<std::vector<std::unique_ptr<types::ColumnWrapperRecordBatch>>>();
   PL_CHECK_OK(InitBuffers());
@@ -26,7 +29,7 @@ Status DataTable::InitBuffers() {
 
   record_batch_ = std::make_unique<types::ColumnWrapperRecordBatch>();
 
-  return InitRecordBatch(table_schema_->AsVector(), target_capacity_, record_batch_.get());
+  return InitRecordBatch(*table_schema_, target_capacity_, record_batch_.get());
 }
 
 StatusOr<std::unique_ptr<types::ColumnWrapperRecordBatchVec>> DataTable::GetRecordBatches() {
@@ -41,7 +44,7 @@ StatusOr<std::unique_ptr<types::ColumnWrapperRecordBatchVec>> DataTable::GetReco
 }
 
 Status DataTable::SealActiveRecordBatch() {
-  for (uint32_t i = 0; i < table_schema_->NumFields(); ++i) {
+  for (uint32_t i = 0; i < table_schema_->size(); ++i) {
     auto col = (*record_batch_)[i];
     col->ShrinkToFit();
   }
