@@ -14,7 +14,8 @@
     ],
     "skipLibCheck": true,
     "lib": ["es2015", "es2017", "dom"],
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "resolveJsonModule": true
   },
   "include": [
     "./src/**/*",

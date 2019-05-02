@@ -25,6 +25,7 @@ module.exports = {
   transform: {
     '^.+\\.jsx?$': 'babel-jest',
     '^.+\\.tsx?$': 'ts-jest',
+    '^.+\\.toml?$': 'jest-raw-loader',
   },
   testRegex: '.*-test\\.(ts|tsx|js|jsx)$',
   reporters: [

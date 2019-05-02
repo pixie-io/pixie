@@ -1,0 +1,58 @@
+queries = [
+["Sample HTTP Data",
+"""
+t1 = From(table='bcc_http_trace', select=['time_', 'dst_addr', 'dst_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns']).Range(start='-30s')
+t2 = t1.Map(fn=lambda r: {'time_': r.time_,
+                       'dst_addr': r.dst_addr,
+                       'dst_port': r.dst_port,
+                       'http_resp_status': r.http_resp_status,
+                       'http_resp_message': r.http_resp_message,
+                       'http_resp_body': r.http_resp_body,
+                       'http_resp_latency_ms': r.http_resp_latency_ns / 1.0E6})
+t3 = t2.Limit(rows=100).Result(name='resp_table')
+"""],
+["Filter by Service",
+"""
+t1 = From(table='bcc_http_trace', select=['time_', 'dst_addr', 'dst_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns']).Range(start='-30s')
+t2 = t1.Map(fn=lambda r: {'time_': r.time_,
+                       'dst_addr': r.dst_addr,
+                       'dst_port': r.dst_port,
+                       'http_resp_status': r.http_resp_status,
+                       'http_resp_message': r.http_resp_message,
+                       'http_resp_body': r.http_resp_body,
+                       'http_resp_latency_ms': r.http_resp_latency_ns / 1.0E6})
+t3 = t2.Filter(fn=lambda r: r.dst_addr == '::ffff:10.44.10.10').Limit(rows=100).Result(name='resp_table')
+"""],
+["Count by Service & User",
+"""
+t1 = From(table='bcc_http_trace', select=['time_', 'dst_addr', 'dst_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns']).Range(start='-30s')
+t2 = t1.Map(fn=lambda r: {'time_': r.time_,
+                       'dst_addr': r.dst_addr,
+                       'dst_port': r.dst_port,
+                       'http_resp_status': r.http_resp_status,
+                       'http_resp_message': r.http_resp_message,
+                       'http_resp_body': r.http_resp_body,
+                       'http_resp_latency_ns': r.http_resp_latency_ns/1E6,
+                       'user_id': pl.pluck(r.http_resp_body, 'id')})
+t3 = t2.Agg(by=lambda r: [r.dst_addr, r.user_id], fn=lambda r: {'count': pl.count(r.dst_addr)})
+t4 = t3.Result(name='resp_table')
+"""],
+["Data Exfiltration",
+"""
+t1 = From(table='bcc_http_trace', select=['time_', 'dst_addr', 'dst_port', 'http_resp_status', 'http_resp_message', 'http_resp_body', 'http_resp_latency_ns']).Range(start='-30s')
+t2 = t1.Map(fn=lambda r: {'time_': r.time_,
+                       'dst_addr': r.dst_addr,
+                       'dst_port': r.dst_port,
+                       'http_resp_status': r.http_resp_status,
+                       'http_resp_message': r.http_resp_message,
+                       'http_resp_body': r.http_resp_body,
+                       'http_resp_latency_ns': r.http_resp_latency_ns/1E6,
+                       'Alert': r.dst_addr == '::ffff:10.44.10.10'})
+t4 = t2.Result(name='resp_table')
+"""],
+["Cgroups",
+"""
+t1 = From(table='cgroup_stats', select=['time_', 'qos', 'pod', 'num_cpus', 'cpu_user_time_ns', 'cpu_system_time_ns']).Range(start='-30s')
+t2 = t1.Limit(rows=100).Result(name='cpu_stats')
+"""]
+]

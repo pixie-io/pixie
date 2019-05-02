@@ -7,8 +7,11 @@ import { OperationVariables } from 'apollo-client';
 import gql from 'graphql-tag';
 import * as React from 'react';
 import {Mutation, MutationFn, Query} from 'react-apollo';
-import {Button} from 'react-bootstrap';
+import {Button, Dropdown, DropdownButton} from 'react-bootstrap';
 import * as CodeMirror from 'react-codemirror';
+import * as toml from 'toml';
+// @ts-ignore : TS does not seem to like this import.
+import * as PresetQueries from './preset-queries.toml';
 import {QueryResultViewer} from './query-result-viewer';
 
 // TODO(zasgar/michelle): Figure out how to impor schema properly
@@ -16,7 +19,9 @@ import {GQLQueryResult} from '../../../../services/api/controller/schema/schema'
 
 interface QueryManagerState {
   code: string;
+  codeMirror: CodeMirror; // Ref to codeMirror component.
 }
+
 const GET_AGENT_IDS = gql`
 {
   vizier {
@@ -42,6 +47,8 @@ mutation ExecuteQuery($queryStr: String!) {
     }
 }
 `;
+
+const PRESET_QUERIES = toml.parse(PresetQueries).queries;
 
 // This component displays the number of agents available to query.
 const AgentCountDisplay = () => (
@@ -70,8 +77,10 @@ const AgentCountDisplay = () => (
 export class QueryManager extends React.Component<{}, QueryManagerState> {
   constructor(props) {
     super(props);
+
     this.state = {
       code: '# Enter Query Here\n',
+      codeMirror: React.createRef(),
     };
   }
 
@@ -98,11 +107,36 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
       }});
     };
 
+    const setQuery = (eventKey, event) => {
+      const key = parseInt(eventKey, 10);
+      const query = PRESET_QUERIES[key][1];
+      this.setState({
+        code: query,
+      });
+      if (this.state.codeMirror.current) {
+        this.state.codeMirror.current.codeMirror.setValue(query);
+      }
+    };
     return (<div className='query-executor'>
       <AgentCountDisplay/>
+      <DropdownButton
+        id='query-dropdown'
+        title='Select a query template to start with'
+      >
+        {
+          PRESET_QUERIES.map((query, idx) => {
+            return <Dropdown.Item key={idx} eventKey={idx} onSelect={setQuery.bind(this)}>{query[0]}</Dropdown.Item>;
+          })
+        }
+      </DropdownButton>
       <span>Query:</span>
       <div className='code-editor'>
-        <CodeMirror value={this.state.code} onChange={this.updateCode.bind(this)} options={options} />
+        <CodeMirror
+          value={this.state.code}
+          onChange={this.updateCode.bind(this)}
+          options={options}
+          ref={this.state.codeMirror}
+        />
       </div>
       <Mutation mutation={EXECUTE_QUERY}>
         {(executeQuery, { data }) => (

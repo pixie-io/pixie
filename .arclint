@@ -128,7 +128,8 @@
         "(__snapshots__/.*)",
         "(Makefile)",
         "(\\.go$)",
-        "(src/ui/assets/images/.*)"
+        "(src/ui/assets/images/.*)",
+        "(\\.toml$)"
       ]
     },
     "tslint-ui": {

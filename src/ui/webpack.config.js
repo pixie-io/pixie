@@ -87,6 +87,10 @@ var webpackConfig = {
         test: /\.css$/,
         use: ['style-loader', 'css-loader'],
       },
+      {
+        test: /\.toml$/,
+        use: ['raw-loader'],
+      },
     ],
   },
   output: {
