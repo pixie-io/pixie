@@ -82,6 +82,7 @@
   "scripts": {
     "build_dev": "./node_modules/.bin/webpack",
     "dev": "./node_modules/.bin/webpack-dev-server",
-    "storybook": "start-storybook -p 9001 -c .storybook"
+    "storybook": "start-storybook -p 9001 -c .storybook",
+    "storybook_static": "./node_modules/.bin/build-storybook -c .storybook -o storybook_static"
   }
 }

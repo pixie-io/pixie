@@ -98,6 +98,26 @@ def addBuildInfo = {
 
 }
 
+def addStoryBookLink = {
+  def encodedDisplayUrl = URLEncoder.encode(env.BUILD_URL + '/ui-storybook', 'UTF-8')
+  def url = harborMasterUrl("harbormaster.createartifact")
+  def body = ""
+  body += "&buildTargetPHID=${params.PHID}"
+  body += '&artifactKey=storybook.uri'
+  body += '&artifactType=uri'
+  body += "&artifactData[uri]=${encodedDisplayUrl}"
+  body += '&artifactData[name]=StoryBook'
+  body += '&artifactData[ui.external]=true'
+
+  httpRequest consoleLogResponseBody: true,
+    contentType: 'APPLICATION_FORM',
+    httpMode: 'POST',
+    requestBody: body,
+    responseHandle: 'NONE',
+    url: url,
+    validResponseCodes: '200'
+}
+
 /**
  * @brief Returns true if it's a phabricator triggered build.
  *  This could either be code review build or master commit.
@@ -117,6 +137,7 @@ def codeReviewPostBuild = {
   } else {
     sendBuildStatus('fail')
   }
+  addStoryBookLink()
 }
 
 def writeBazelRCFile() {
@@ -285,8 +306,12 @@ builders['Build & Test UI'] = {
             cd src/ui
             yarn install --prefer_offline
             jest
+
+            # Build story book static files.
+            yarn run storybook_static
           '''
           stash name: 'build-ui-testlogs', includes: "src/ui/junit.xml"
+          stash name: 'build-ui-storybook-static', includes: "src/ui/storybook_static/**"
         }
       }
     }
@@ -342,11 +367,23 @@ node {
       dir ('build-ui-testlogs') {
         unstash 'build-ui-testlogs'
       }
+      dir ('build-ui-storybook-static') {
+        unstash 'build-ui-storybook-static'
+      }
       if (env.JOB_NAME == "pixielabs-master") {
         dir ('build-gcc-coverage-testlogs') {
           unstash 'build-gcc-coverage-testlogs'
         }
       }
+
+      publishHTML([allowMissing: false,
+        alwaysLinkToLastBuild: true,
+        keepAll: true,
+        reportDir: 'build-ui-storybook-static/src/ui/storybook_static',
+        reportFiles: 'index.html',
+        reportName: 'ui-storybook'
+      ])
+
       step([
         $class: 'XUnitBuilder',
         thresholds: [
