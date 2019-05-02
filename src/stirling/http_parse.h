@@ -2,6 +2,7 @@
 
 #include <map>
 #include <string>
+#include "src/common/base/base.h"
 
 #include "src/stirling/bcc_bpf/http_trace.h"
 
@@ -21,6 +22,28 @@ enum class ChunkingStatus {
   kComplete,
 };
 
+enum class HTTPTraceEventType { kUnknown, kHTTPRequest, kHTTPResponse };
+
+inline std::string EventTypeToString(HTTPTraceEventType event_type) {
+  std::string event_type_str;
+
+  switch (event_type) {
+    case HTTPTraceEventType::kUnknown:
+      event_type_str = "unknown";
+      break;
+    case HTTPTraceEventType::kHTTPResponse:
+      event_type_str = "http_response";
+      break;
+    case HTTPTraceEventType::kHTTPRequest:
+      event_type_str = "http_request";
+      break;
+    default:
+      CHECK(false) << absl::StrFormat("Unrecognized event_type: %d", event_type);
+  }
+
+  return event_type_str;
+}
+
 // The fields corresponding exactly to HTTPTraceConnector::kElements.
 // TODO(yzhao): The repetitions of information among this, DataElementsIndexes, and kElements should
 // be eliminated. It might make sense to use proto file to define data schema and generate kElements
@@ -30,7 +53,7 @@ struct HTTPTraceRecord {
   uint32_t tgid = 0;
   uint32_t pid = 0;
   int fd = -1;
-  std::string event_type = "-";
+  HTTPTraceEventType event_type = HTTPTraceEventType::kUnknown;
   uint64_t http_start_time_stamp_ns = 0;
   std::string src_addr = "-";
   int src_port = -1;

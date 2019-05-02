@@ -98,7 +98,7 @@ Host: www.pixielabs.ai
   EXPECT_EQ(1, record.tgid);
   EXPECT_EQ(2, record.pid);
   EXPECT_EQ(3, record.fd);
-  EXPECT_EQ("http_request", record.event_type);
+  EXPECT_EQ(HTTPTraceEventType::kHTTPRequest, record.event_type);
   EXPECT_THAT(record.http_headers, ElementsAre(Pair("Host", "www.pixielabs.ai")));
   EXPECT_EQ(1, record.http_minor_version);
   EXPECT_EQ("GET", record.http_req_method);
@@ -127,7 +127,7 @@ pixielabs)";
   EXPECT_EQ(1, record.tgid);
   EXPECT_EQ(2, record.pid);
   EXPECT_EQ(3, record.fd);
-  EXPECT_EQ("http_response", record.event_type);
+  EXPECT_EQ(HTTPTraceEventType::kHTTPResponse, record.event_type);
   EXPECT_THAT(record.http_headers,
               ElementsAre(Pair("Content-Type", "application/json; charset=utf-8")));
   EXPECT_EQ(1, record.http_minor_version);
@@ -153,7 +153,7 @@ TEST(ParseRawTest, ContentIsCopied) {
   EXPECT_EQ(1, record.tgid);
   EXPECT_EQ(2, record.pid);
   EXPECT_EQ(3, record.fd);
-  EXPECT_EQ("parse_failure", record.event_type);
+  EXPECT_EQ(HTTPTraceEventType::kUnknown, record.event_type);
   EXPECT_EQ("test", record.http_resp_body);
 }
 

@@ -83,7 +83,7 @@ bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* recor
   if (retval > 0) {
     HTTPTraceRecord& result = *record;
     ParseEventAttr(event, &result);
-    result.event_type = "http_request";
+    result.event_type = HTTPTraceEventType::kHTTPRequest;
     result.http_minor_version = minor_version;
     result.http_headers = GetHttpHeadersMap(headers, num_headers);
     result.http_req_method = std::string(method, method_len);
@@ -121,7 +121,7 @@ bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* reco
   if (bytes_processed > 0) {
     HTTPTraceRecord& result = *record;
     ParseEventAttr(event, &result);
-    result.event_type = "http_response";
+    result.event_type = HTTPTraceEventType::kHTTPResponse;
     result.http_minor_version = minor_version;
     result.http_headers = GetHttpHeadersMap(headers, num_headers);
     result.http_resp_status = status;
@@ -169,7 +169,7 @@ bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record) 
 bool ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record, uint64_t msg_size) {
   HTTPTraceRecord& result = *record;
   ParseEventAttr(event, &result);
-  result.event_type = "parse_failure";
+  result.event_type = HTTPTraceEventType::kUnknown;
   result.http_resp_body = std::string(event.msg, msg_size);
   // Rest of the fields remain at default values.
   return true;

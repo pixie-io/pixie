@@ -48,7 +48,7 @@ bool HTTPTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
   // TODO(oazizi/yzhao): update this function further.
 
   // Rule: Exclude any HTTP requests.
-  if (record.event_type == "http_request") {
+  if (record.event_type == HTTPTraceEventType::kHTTPRequest) {
     return false;
   }
 
@@ -60,7 +60,7 @@ bool HTTPTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
   }
 
   // Rule: Exclude anything that doesn't match the filter, if filter is active.
-  if (record.event_type == "http_response" && !filter_substrs_.empty()) {
+  if (record.event_type == HTTPTraceEventType::kHTTPResponse && !filter_substrs_.empty()) {
     // Note: this is actually covered already above, but including it again
     // to maintain independence of rules.
     if (content_type_iter == record.http_headers.end()) {
@@ -108,7 +108,7 @@ void HTTPTraceConnector::AppendToRecordBatch(HTTPTraceRecord record,
   columns[kTgid]->Append<types::Int64Value>(record.tgid);
   columns[kPid]->Append<types::Int64Value>(record.pid);
   columns[kFd]->Append<types::Int64Value>(record.fd);
-  columns[kEventType]->Append<types::StringValue>(std::move(record.event_type));
+  columns[kEventType]->Append<types::StringValue>(EventTypeToString(record.event_type));
   columns[kSrcAddr]->Append<types::StringValue>(std::move(record.src_addr));
   columns[kSrcPort]->Append<types::Int64Value>(record.src_port);
   columns[kDstAddr]->Append<types::StringValue>(std::move(record.dst_addr));
@@ -139,7 +139,7 @@ void HTTPTraceConnector::ConsumeRecord(HTTPTraceRecord record,
     // overall logical workflow of HTTP trace.
     //
     // TODO(yzhao): Revise with new understanding of the whole workflow.
-    if (record.event_type == "http_response") {
+    if (record.event_type == HTTPTraceEventType::kHTTPResponse) {
       auto iter = record.http_headers.find(http_header_keys::kTransferEncoding);
       if (iter != record.http_headers.end() && iter->second == "chunked") {
         ParseMessageBodyChunked(&record);
