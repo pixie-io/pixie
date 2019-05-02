@@ -1,4 +1,4 @@
-package compiler
+package compiler_test
 
 import (
 	"fmt"
@@ -10,6 +10,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	pb "pixielabs.ai/pixielabs/src/carnot/proto"
+	"pixielabs.ai/pixielabs/src/vizier/components/compiler"
 )
 
 // TestCompiler_Simple makes sure that we can actually pass in all the info needed
@@ -124,7 +125,7 @@ func TestCompiler_Simple(t *testing.T) {
 	tableName := "perf_and_http"
 
 	// Create the compiler.
-	c := New()
+	c := compiler.New()
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
 	queryLines := []string{

@@ -1,3 +1,7 @@
+# gazelle:ignore
+# We need to gazelle ignore this file since gazelle is not working well
+# with the CGO library.
+
 package(default_visibility = ["//visibility:public"])
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_go_library")
@@ -33,8 +37,9 @@ pl_go_library(
 go_test(
     name = "go_default_test",
     srcs = ["compiler_test.go"],
-    embed = [":go_default_library"],
     deps = [
+        ":go_default_library",
+        "//src/carnot/proto:plan_pl_go_proto",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
     ],

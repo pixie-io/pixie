@@ -11,7 +11,6 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/carnot/proto:query_results_pl_go_proto",
-        "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/services/api/apienv:go_default_library",
         "//src/services/api/controller/schema:go_default_library",
         "//src/services/common/sessioncontext:go_default_library",
