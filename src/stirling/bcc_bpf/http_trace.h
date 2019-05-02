@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __cplusplus
+#include <cstdint>
+#endif
+
 #include <linux/in6.h>
 
 // This struct contains information collected when a connection is established,

@@ -66,3 +66,4 @@ demos/load_generation/load_generation
 *.deb
 
 compile_commands.json
+clang_tidy.log

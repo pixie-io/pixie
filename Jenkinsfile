@@ -221,6 +221,24 @@ builders['Build & Test (gcc:opt)'] = {
   }
 }
 
+
+builders['Build & Test (clang-tidy)'] = {
+  retry(JENKINS_RETRIES) {
+    node {
+      deleteDir()
+      unstash SRC_STASH_NAME
+      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
+        docker.image(devDockerImageWithTag).inside {
+          sh 'scripts/bazel_fetch_retry.sh'
+          sh 'scripts/run_clang_tidy.sh'
+          stash name: 'build-clang-tidy-logs', includes: "clang_tidy.log"
+        }
+      }
+    }
+  }
+}
+
+
 // Only run coverage on master test.
 if (env.JOB_NAME == "pixielabs-master") {
   builders['Build & Test (gcc:coverage)'] = {
@@ -370,11 +388,17 @@ node {
       dir ('build-ui-storybook-static') {
         unstash 'build-ui-storybook-static'
       }
+      dir ('build-clang-tidy-logs') {
+        unstash 'build-clang-tidy-logs'
+      }
+
       if (env.JOB_NAME == "pixielabs-master") {
         dir ('build-gcc-coverage-testlogs') {
           unstash 'build-gcc-coverage-testlogs'
         }
       }
+
+      archiveArtifacts artifacts: 'build-clang-tidy-logs/**', fingerprint: true
 
       publishHTML([allowMissing: false,
         alwaysLinkToLastBuild: true,

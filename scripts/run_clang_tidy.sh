@@ -32,5 +32,5 @@ pushd $SRCDIR
 "${SRCDIR}/scripts/gen_compilation_database.py" --include_headers --run_bazel_build
 
 # Actually invoke clang-tidy.
-"${clang_tidy_script}" -j $(nproc)
+"${clang_tidy_script}" -j $(nproc) src 2>&1 | tee clang_tidy.log
 popd
