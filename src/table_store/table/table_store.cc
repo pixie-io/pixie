@@ -24,6 +24,8 @@ Status TableStore::AppendData(uint64_t table_id,
 }
 
 table_store::Table* TableStore::GetTable(const std::string& table_name) {
+  // TODO(philkuz) (PL-526) need to add an if statement to return a failure if this doesn't work.
+  DCHECK(table_name_to_table_map_.find(table_name) != table_name_to_table_map_.end());
   return table_name_to_table_map_[table_name].get();
 }
 

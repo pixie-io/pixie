@@ -860,5 +860,79 @@ TEST_F(CarnotTest, reused_result) {
   EXPECT_NOT_OK(s);
 }
 
+TEST_F(CarnotTest, multiple_result_calls) {
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='big_test_table', select=['time_', 'col3', 'num_groups', "
+          "'string_groups'])",
+          "mapDF = queryDF.Map(fn=lambda r : {'lt' : r.col3 < $0, 'gt' : r.num_groups > $1 })",
+          "x = queryDF.Filter(fn = lambda r : r.num_groups > $2).Result(name='filtered_output')",
+          "mapDF.Result(name='test_output')",
+      },
+      "\n");
+  // Values to test on.
+  int64_t col3_lt_val = 12;
+  int64_t num_groups_gt_val = 1;
+  int64_t groups_val = 1;
+  query = absl::Substitute(query, col3_lt_val, num_groups_gt_val, groups_val);
+  auto s = carnot_->ExecuteQuery(query, 0);
+  VLOG(1) << s.ToString();
+  // This used to segfault according to PL-525, should just send compiler error.
+  ASSERT_OK(s);
+
+  // test the original output
+  VLOG(1) << "test the original output";
+  auto output_table = table_store_->GetTable("test_output");
+  EXPECT_EQ(3, output_table->NumBatches());
+  EXPECT_EQ(2, output_table->NumColumns());
+  auto rb1 =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  auto col3 = CarnotTestUtils::big_test_col3;
+  auto col_num_groups = CarnotTestUtils::big_test_groups;
+  std::vector<types::BoolValue> lt_exp;
+  std::vector<types::BoolValue> gt_exp;
+
+  for (int64_t i = 0; i < rb1->num_rows(); i++) {
+    lt_exp.emplace_back(col3[i] < col3_lt_val);
+    gt_exp.emplace_back(col_num_groups[i] > num_groups_gt_val);
+  }
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(lt_exp, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(gt_exp, arrow::default_memory_pool())));
+
+  // test the filtered_output
+  output_table = table_store_->GetTable("filtered_output");
+  EXPECT_EQ(3, output_table->NumBatches());
+  EXPECT_EQ(4, output_table->NumColumns());
+  std::vector<int64_t> column_selector_vec({0, 1, 2, 3});
+  EXPECT_EQ(output_table->NumColumns(), column_selector_vec.size());
+
+  // iterate through the batches
+  for (size_t i = 0; i < CarnotTestUtils::split_idx.size(); i++) {
+    // iterate through the column
+    const auto &cur_split = CarnotTestUtils::split_idx[i];
+    int64_t left = cur_split.first;
+    int64_t right = cur_split.second;
+    std::vector<types::Int64Value> time_out;
+    std::vector<types::StringValue> strings_out;
+    std::vector<types::Int64Value> col3_out;
+    std::vector<types::Int64Value> groups_out;
+    for (int64_t j = left; j < right; j++) {
+      if (CarnotTestUtils::big_test_groups[j].val > groups_val) {
+        time_out.push_back(CarnotTestUtils::big_test_col1[j]);
+        col3_out.push_back(CarnotTestUtils::big_test_col3[j]);
+        groups_out.push_back(CarnotTestUtils::big_test_groups[j]);
+        strings_out.push_back(CarnotTestUtils::big_test_strings[j]);
+      }
+    }
+    auto rb = output_table->GetRowBatch(i, column_selector_vec, arrow::default_memory_pool())
+                  .ConsumeValueOrDie();
+    EXPECT_TRUE(rb->ColumnAt(0)->Equals(types::ToArrow(time_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb->ColumnAt(1)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb->ColumnAt(2)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
+    EXPECT_TRUE(rb->ColumnAt(3)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
+  }
+}
+
 }  // namespace carnot
 }  // namespace pl

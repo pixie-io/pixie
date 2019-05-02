@@ -143,15 +143,19 @@ class IR {
   std::string DebugString();
   IRNode* Get(int64_t id) const { return id_node_map_.at(id).get(); }
   size_t size() const { return id_node_map_.size(); }
-  StatusOr<IRNode*> GetSink() {
-    IRNode* node;
+  StatusOr<std::vector<IRNode*>> GetSinks() {
+    std::vector<IRNode*> nodes;
     for (auto& i : dag().TopologicalSort()) {
-      node = Get(i);
+      IRNode* node = Get(i);
       if (node->type() == MemorySinkType) {
-        return node;
+        nodes.push_back(node);
+        DCHECK(node->IsOp());
       }
     }
-    return error::InvalidArgument("No sink node found for this graph.");
+    if (nodes.size() < 1) {
+      return error::InvalidArgument("No Result() found in the graph.");
+    }
+    return nodes;
   }
 
  private:

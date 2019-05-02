@@ -1006,6 +1006,22 @@ TEST_F(CompilerTest, reused_result) {
   EXPECT_NOT_OK(plan_status);
 }
 
+TEST_F(CompilerTest, multiple_result_sinks) {
+  std::string query = absl::StrJoin(
+      {
+          "queryDF = From(table='bcc_http_trace', select=['time_', 'pid', 'http_resp_status', "
+          "'http_resp_latency_ns'])",
+          "range_out = queryDF.Range(start='-1m')",
+          "x = range_out.Filter(fn=lambda r: r.http_resp_latency_ns < "
+          "1000000).Result(name='filtered_result')",
+          "result_= range_out.Result(name='result');",
+      },
+      "\n");
+  auto plan_status = compiler_.Compile(query, compiler_state_.get());
+  VLOG(1) << plan_status.ToString();
+  EXPECT_OK(plan_status);
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

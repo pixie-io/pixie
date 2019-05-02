@@ -440,13 +440,13 @@ Status IRRelationHandler::SetAllSourceRelations(IR* ir_graph) {
 Status IRRelationHandler::UpdateRelationsAndCheckFunctions(IR* ir_graph) {
   // Get the source relations.
   PL_RETURN_IF_ERROR(SetAllSourceRelations(ir_graph));
-  // Currently only
-  PL_ASSIGN_OR_RETURN(auto node, ir_graph->GetSink());
-  DCHECK(node->IsOp());
-  // Get the sink node
-  auto sink_node = static_cast<OperatorIR*>(node);
   // Start the relation update at the sink nodes.
-  return RelationUpdate(sink_node);
+  PL_ASSIGN_OR_RETURN(std::vector<IRNode*> sinks, ir_graph->GetSinks());
+  for (const auto node : sinks) {
+    // Get the sink node
+    PL_RETURN_IF_ERROR(RelationUpdate(static_cast<OperatorIR*>(node)));
+  }
+  return Status::OK();
 }
 }  // namespace compiler
 }  // namespace carnot

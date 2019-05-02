@@ -102,7 +102,7 @@ class RelationHandlerTest : public ::testing::Test {
     auto result = ParseQuery(query);
     PL_RETURN_IF_ERROR(result);
     // just a quick test to find issues.
-    if (!result.ValueOrDie()->GetSink().ok()) {
+    if (!result.ValueOrDie()->GetSinks().ok()) {
       return error::InvalidArgument("IR Doesn't have sink");
     }
     return result;
