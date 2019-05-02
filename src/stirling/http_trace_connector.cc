@@ -320,7 +320,8 @@ void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*da
   if (connector->GetRecordBatch() == nullptr) {
     return;
   }
-  if (event->attr.event_type == kEventTypeSyscallWriteEvent) {
+  if (event->attr.event_type == kEventTypeSyscallWriteEvent ||
+      event->attr.event_type == kEventTypeSyscallSendEvent) {
     HTTPTraceRecord record = connector->GetRecordForFd(event->attr.tgid, event->attr.fd);
 
     // The actual message width is min(attr.msg_buf_size, attr.msg_bytes).
@@ -378,6 +379,7 @@ const std::vector<ProbeSpec> kProbeSpecs = {
     {"accept4", "probe_entry_accept4"},
     {"accept4", "probe_ret_accept4", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
     {"write", "probe_write"},
+    {"send", "probe_send"},
     {"close", "probe_close"},
 };
 

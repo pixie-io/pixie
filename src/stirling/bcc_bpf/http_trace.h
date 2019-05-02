@@ -49,3 +49,4 @@ struct syscall_write_event_t {
 // Indicates that the event is for a write() syscall, whose msg field records the input data
 // to write().
 const uint32_t kEventTypeSyscallWriteEvent = 1;
+const uint32_t kEventTypeSyscallSendEvent = 2;

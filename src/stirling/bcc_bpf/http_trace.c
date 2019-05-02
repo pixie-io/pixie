@@ -30,6 +30,7 @@ struct syscall_write_event_t {
   char msg[MAX_MSG_SIZE];
 } __attribute__((__packed__));
 const uint32_t kEventTypeSyscallWriteEvent = 1;
+const uint32_t kEventTypeSyscallSendEvent = 2;
 
 // This is the perf buffer for BPF program to export data from kernel to user space.
 BPF_PERF_OUTPUT(syscall_write_events);
@@ -114,7 +115,7 @@ int probe_ret_accept4(struct pt_regs *ctx) {
   return 0;
 }
 
-int probe_write(struct pt_regs *ctx, int fd, char* buf, size_t count) {
+static int probe_write_send(struct pt_regs *ctx, int fd, char* buf, size_t count, uint32_t event_type) {
   u32 zero = 0;
 
   u64 id = bpf_get_current_pid_tgid();
@@ -134,13 +135,12 @@ int probe_write(struct pt_regs *ctx, int fd, char* buf, size_t count) {
 
   // TODO(oazizi/yzhao): Why does the commented line not work? Error message is below:
   //                     R2 min value is negative, either use unsigned or 'var &= const'
-  //                     Need to bring this back to avoid unnecessary copying.
-  //
+  //                     Need to bring this back to avoid unnecessary fix-up in userspace.
   //size_t buf_size = count < sizeof(event->msg) ? count : sizeof(event->msg);
   size_t buf_size = sizeof(event->msg);
 
   event->attr.accept_info = *accept_info;
-  event->attr.event_type = kEventTypeSyscallWriteEvent;
+  event->attr.event_type = event_type;
   event->attr.msg_bytes = count;
   event->attr.time_stamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
@@ -156,6 +156,16 @@ int probe_write(struct pt_regs *ctx, int fd, char* buf, size_t count) {
 
   return 0;
 }
+
+int probe_write(struct pt_regs *ctx, int fd, char* buf, size_t count) {
+  return probe_write_send(ctx, fd, buf, count, kEventTypeSyscallWriteEvent);
+}
+
+int probe_send(struct pt_regs *ctx, int fd, char* buf, size_t count) {
+  return probe_write_send(ctx, fd, buf, count, kEventTypeSyscallSendEvent);
+}
+
+
 
 int probe_close(struct pt_regs *ctx, int fd) {
   u64 id = bpf_get_current_pid_tgid();
