@@ -240,7 +240,6 @@ Status ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out) {
    *   cancelled_write_bytes: 192512
    */
   DCHECK(out != nullptr);
-  out->Clear();
 
   std::ifstream ifs;
   ifs.open(fpath);

@@ -23,3 +23,10 @@ pl_cc_test(
     data = glob(["testdata/**/*"]),
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "cgroup_manager_test",
+    srcs = ["cgroup_manager_test.cc"],
+    data = glob(["testdata/**/*"]),
+    deps = [":cc_library"],
+)
