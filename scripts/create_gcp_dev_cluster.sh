@@ -128,14 +128,16 @@ fi
 ##################
 
 if [ ! ${BARE_CLUSTER} = true ]; then
-  # Deploy Pixie prereqs (NATS, etcd).
-  # TODO(oazizi): Enable the line below once it's working.
-  #$PIXIE_ROOT_DIR/scripts/deploy_cluster_prereqs.sh
+  # Make the current user a cluster-admin
+  # WARNING: this is insecure.
+  # TODO(oazizi/philkuz): Fix when we set-up RBAC.
+  $PIXIE_ROOT_DIR/scripts/setup_cluster_role_bindings.sh
 
+  # Deploy Pixie prereqs (NATS, etcd).
+  $PIXIE_ROOT_DIR/scripts/deploy_cluster_prereqs.sh
 
   # Deploy Sockshop Demo app
-  kubectl apply -f $PIXIE_ROOT_DIR/demos/applications/sockshop/kubernetes_manifests/sock-shop-ns.yaml
-  sleep 5
+  kubectl apply -f $PIXIE_ROOT_DIR/demos/applications/sockshop/kubernetes_manifests/sock-shop-ns.yaml && sleep 5
   kubectl apply -f $PIXIE_ROOT_DIR/demos/applications/sockshop/kubernetes_manifests
   kubectl apply -f $PIXIE_ROOT_DIR/demos/applications/sockshop/load_generation
 
