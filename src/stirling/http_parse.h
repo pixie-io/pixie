@@ -3,13 +3,22 @@
 #include <map>
 #include <string>
 
+#include "src/stirling/bcc_bpf/http_trace.h"
+
 namespace pl {
 namespace stirling {
+namespace http_header_keys {
+
+inline constexpr char kContentEncoding[] = "Content-Encoding";
+inline constexpr char kContentType[] = "Content-Type";
+inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
+
+}  // namespace http_header_keys
 
 enum class ChunkingStatus {
-  UNSPECIFIED,
-  CHUNKED,
-  COMPLETE,
+  kUnknown,
+  kChunked,
+  kComplete,
 };
 
 // The fields corresponding exactly to HTTPTraceConnector::kElements.
@@ -35,7 +44,7 @@ struct HTTPTraceRecord {
   std::string http_resp_message = "-";
   std::string http_resp_body = "-";
   // If true, http_resp_body is an chunked message, therefore incomplete. But it's not
-  ChunkingStatus chunking_status = ChunkingStatus::UNSPECIFIED;
+  ChunkingStatus chunking_status = ChunkingStatus::kUnknown;
 };
 
 /**
@@ -45,6 +54,15 @@ struct HTTPTraceRecord {
  * @param record The input and result.
  */
 void ParseMessageBodyChunked(HTTPTraceRecord* record);
+
+void PreProcessRecord(HTTPTraceRecord* record);
+void ParseEventAttr(const syscall_write_event_t& event, HTTPTraceRecord* record);
+bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* record,
+                      uint64_t msg_size);
+bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* record,
+                       uint64_t msg_size);
+bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record);
+bool ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record, uint64_t msg_size);
 
 }  // namespace stirling
 }  // namespace pl

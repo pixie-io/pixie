@@ -1,17 +1,8 @@
 #ifdef __linux__
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <picohttpparser.h>
-#include <zlib.h>
-
-#include <deque>
-#include <unordered_map>
 #include <vector>
 
-#include "absl/strings/str_replace.h"
 #include "src/common/base/base.h"
-#include "src/common/zlib/zlib_wrapper.h"
 #include "src/stirling/http_parse.h"
 #include "src/stirling/http_trace_connector.h"
 
@@ -52,134 +43,6 @@ enum DataElementsIndexes {
 
 }  // namespace
 
-void HTTPTraceConnector::ParseEventAttr(const syscall_write_event_t& event,
-                                        HTTPTraceRecord* record) {
-  record->time_stamp_ns = event.attr.time_stamp_ns;
-  record->tgid = event.attr.tgid;
-  record->pid = event.attr.pid;
-  record->fd = event.attr.fd;
-}
-
-std::map<std::string, std::string> GetHttpHeadersMap(const phr_header* headers,
-                                                     size_t num_headers) {
-  std::map<std::string, std::string> result;
-  for (size_t i = 0; i < num_headers; i++) {
-    std::string name(headers[i].name, headers[i].name_len);
-    std::string value(headers[i].value, headers[i].value_len);
-    result[name] = value;
-  }
-  return result;
-}
-
-bool HTTPTraceConnector::ParseHTTPRequest(const syscall_write_event_t& event,
-                                          HTTPTraceRecord* record, uint64_t msg_size) {
-  const char* method = nullptr;
-  size_t method_len = 0;
-  const char* path = nullptr;
-  size_t path_len = 0;
-  int minor_version = 0;
-  size_t num_headers = 10;
-  struct phr_header headers[num_headers];
-  const int retval = phr_parse_request(event.msg, msg_size, &method, &method_len, &path, &path_len,
-                                       &minor_version, headers, &num_headers, /*last_len*/ 0);
-
-  if (retval > 0) {
-    HTTPTraceRecord& result = *record;
-    ParseEventAttr(event, &result);
-    result.event_type = "http_request";
-    result.http_minor_version = minor_version;
-    result.http_headers = GetHttpHeadersMap(headers, num_headers);
-    result.http_req_method = std::string(method, method_len);
-    result.http_req_path = std::string(path, path_len);
-    return true;
-  }
-  return false;
-}
-
-// TODO(PL-519): Now we discard anything of the response that are not http headers. This is because
-// we cannot associate a write() call with the http response. The future work is to keep a list of
-// captured data from write() and associate them with the same http response. The rough idea looks
-// like as follows:
-// time         event type
-// t0           write() http response #1 header + body
-// t1           write() http response #1 body
-// t2           write() http response #1 body
-// t3           write() http response #2 header + body
-// t4           write() http response #2 body
-// ...
-//
-// We then can squash events at t0, t1, t2 together and concatenate their bodies as the full http
-// message. This works in http 1.1 because the responses and requests are not interleaved.
-bool HTTPTraceConnector::ParseHTTPResponse(const syscall_write_event_t& event,
-                                           HTTPTraceRecord* record, uint64_t msg_size) {
-  const char* msg = nullptr;
-  size_t msg_len = 0;
-  int minor_version = 0;
-  int status = 0;
-  size_t num_headers = 10;
-  struct phr_header headers[num_headers];
-  const int bytes_processed = phr_parse_response(event.msg, msg_size, &minor_version, &status, &msg,
-                                                 &msg_len, headers, &num_headers, /*last_len*/ 0);
-
-  if (bytes_processed > 0) {
-    HTTPTraceRecord& result = *record;
-    ParseEventAttr(event, &result);
-    result.event_type = "http_response";
-    result.http_minor_version = minor_version;
-    result.http_headers = GetHttpHeadersMap(headers, num_headers);
-    result.http_resp_status = status;
-    result.http_resp_message = std::string(msg, msg_len);
-    result.http_resp_body = std::string(event.msg + bytes_processed, msg_size - bytes_processed);
-    return true;
-  }
-  return false;
-}
-
-// Parses an IP:port pair from the event input into the provided record.
-// Returns false if an unexpected sockaddr family is provided.
-// Currently this function understands IPV4 and IPV6 sockaddr families.
-bool HTTPTraceConnector::ParseSockAddr(const syscall_write_event_t& event,
-                                       HTTPTraceRecord* record) {
-  const auto* sa = reinterpret_cast<const struct sockaddr*>(&event.attr.accept_info.addr);
-  char s[INET6_ADDRSTRLEN] = "";
-  const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
-  const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);
-  std::string ip;
-  int port = -1;
-  switch (sa->sa_family) {
-    case AF_INET:
-      port = sa_in->sin_port;
-      if (inet_ntop(AF_INET, &sa_in->sin_addr, s, INET_ADDRSTRLEN) != nullptr) {
-        ip.assign(s);
-      }
-      break;
-    case AF_INET6:
-      port = sa_in6->sin6_port;
-      if (inet_ntop(AF_INET6, &sa_in6->sin6_addr, s, INET6_ADDRSTRLEN) != nullptr) {
-        ip.assign(s);
-      }
-      break;
-    default:
-      LOG(WARNING) << "Ignoring unhandled sockaddr family: " << sa->sa_family;
-      return false;
-  }
-  if (!ip.empty()) {
-    record->dst_addr = std::move(ip);
-    record->dst_port = port;
-  }
-  return true;
-}
-
-bool HTTPTraceConnector::ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record,
-                                  uint64_t msg_size) {
-  HTTPTraceRecord& result = *record;
-  ParseEventAttr(event, &result);
-  result.event_type = "parse_failure";
-  result.http_resp_body = std::string(event.msg, msg_size);
-  // Rest of the fields remain at default values.
-  return true;
-}
-
 bool HTTPTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
   // Some of this function is currently a placeholder for the demo.
   // TODO(oazizi/yzhao): update this function further.
@@ -189,7 +52,7 @@ bool HTTPTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
     return false;
   }
 
-  const auto content_type_iter = record.http_headers.find("Content-Type");
+  const auto content_type_iter = record.http_headers.find(http_header_keys::kContentType);
 
   // Rule: Exclude anything that doesn't specify its Content-Type.
   if (content_type_iter == record.http_headers.end()) {
@@ -225,7 +88,7 @@ bool HTTPTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
     }
   }
 
-  const auto content_encoding_iter = record.http_headers.find("Content-Encoding");
+  const auto content_encoding_iter = record.http_headers.find(http_header_keys::kContentEncoding);
 
   // Rule: Exclude gzip content.
   if (content_encoding_iter != record.http_headers.end()) {
@@ -236,20 +99,6 @@ bool HTTPTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
   }
 
   return true;
-}
-
-void HTTPTraceConnector::PreprocessRecord(HTTPTraceRecord* record) {
-  // Replace body with decompressed version, if required.
-  if (record->http_headers["Content-Encoding"] == "gzip") {
-    std::string_view body_strview(record->http_resp_body.c_str(), record->http_resp_body.size());
-    auto bodyOrErr = pl::zlib::StrInflate(body_strview);
-    if (!bodyOrErr.ok()) {
-      LOG(WARNING) << "Unable to gunzip HTTP body.";
-      record->http_resp_body = "<Stirling failed to gunzip body>";
-    } else {
-      record->http_resp_body = bodyOrErr.ValueOrDie();
-    }
-  }
 }
 
 void HTTPTraceConnector::AppendToRecordBatch(HTTPTraceRecord record,
@@ -291,11 +140,11 @@ void HTTPTraceConnector::ConsumeRecord(HTTPTraceRecord record,
     //
     // TODO(yzhao): Revise with new understanding of the whole workflow.
     if (record.event_type == "http_response") {
-      auto iter = record.http_headers.find("Transfer-Encoding");
+      auto iter = record.http_headers.find(http_header_keys::kTransferEncoding);
       if (iter != record.http_headers.end() && iter->second == "chunked") {
         ParseMessageBodyChunked(&record);
       }
-      if (record.chunking_status == ChunkingStatus::CHUNKED) {
+      if (record.chunking_status == ChunkingStatus::kChunked) {
         // TODO(PL-519): Revise after message stitching is implemented.
         LOG(INFO) << "Discard chunked http response";
         return;
@@ -304,7 +153,7 @@ void HTTPTraceConnector::ConsumeRecord(HTTPTraceRecord record,
 
     // Currently decompresses gzip content, but could handle other transformations too.
     // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
-    PreprocessRecord(&record);
+    PreProcessRecord(&record);
 
     // Push data to the TableStore.
     AppendToRecordBatch(std::move(record), record_batch);

@@ -102,20 +102,9 @@ class HTTPTraceConnector : public SourceConnector {
 
   // Helper functions used by HandleProbeOutput().
   static bool SelectForAppend(const HTTPTraceRecord& record);
-  static void PreprocessRecord(HTTPTraceRecord* record);
   static void AppendToRecordBatch(HTTPTraceRecord record,
                                   types::ColumnWrapperRecordBatch* record_batch);
   static void ConsumeRecord(HTTPTraceRecord record, types::ColumnWrapperRecordBatch* record_batch);
-
-  // Parse functions used by HandleProbeOutput().
-  static void ParseEventAttr(const syscall_write_event_t& event, HTTPTraceRecord* record);
-  static bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* record,
-                               uint64_t msg_size);
-  static bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* record,
-                                uint64_t msg_size);
-  static bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record);
-  static bool ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record,
-                       uint64_t msg_size);
 
   ebpf::BPF bpf_;
   const int perf_buffer_page_num_ = 8;
