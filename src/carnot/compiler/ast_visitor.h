@@ -497,7 +497,7 @@ class ASTWalker {
    * @return StatusOr<std::string>
    */
   StatusOr<std::string> ExpandOpString(const std::string& op, const std::string& prefix,
-                                       const pypa::AstPtr node);
+                                       pypa::AstPtr node);
   /**
    * @brief Handler for Binary operations that are run at compile time, not runtime.
    *

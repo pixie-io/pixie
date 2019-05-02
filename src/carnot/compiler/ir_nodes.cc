@@ -150,10 +150,10 @@ Status RangeIR::Init(IRNode* parent_node, IRNode* start_repr, IRNode* stop_repr,
   return SetStartStop(start_repr, stop_repr);
 }
 Status RangeIR::SetStartStop(IRNode* start_repr, IRNode* stop_repr) {
-  if (start_repr_) {
+  if (start_repr_ != nullptr) {
     graph_ptr()->DeleteEdge(id(), start_repr_->id());
   }
-  if (stop_repr_) {
+  if (stop_repr_ != nullptr) {
     graph_ptr()->DeleteEdge(id(), stop_repr_->id());
   }
   start_repr_ = start_repr;
@@ -488,7 +488,7 @@ std::string StringIR::DebugString(int64_t depth) const {
 
 bool ListIR::HasLogicalRepr() const { return false; }
 Status ListIR::Init(const pypa::AstPtr& ast_node, std::vector<IRNode*> children) {
-  if (children_.size() > 0) {
+  if (!children_.empty()) {
     return error::AlreadyExists("ListIR already has children and likely has been created already.");
   }
   SetLineCol(ast_node);

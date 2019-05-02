@@ -41,22 +41,20 @@ class CompilerState : public NotCopyable {
     auto id = udf_to_id_map_.find(key);
     if (id != udf_to_id_map_.end()) {
       return id->second;
-    } else {
-      auto new_id = udf_to_id_map_.size();
-      udf_to_id_map_[key] = new_id;
-      return new_id;
     }
+    auto new_id = udf_to_id_map_.size();
+    udf_to_id_map_[key] = new_id;
+    return new_id;
   }
 
   int64_t GetUDAID(const RegistryKey& key) {
     auto id = uda_to_id_map_.find(key);
     if (id != uda_to_id_map_.end()) {
       return id->second;
-    } else {
-      auto new_id = uda_to_id_map_.size();
-      uda_to_id_map_[key] = new_id;
-      return new_id;
     }
+    auto new_id = uda_to_id_map_.size();
+    uda_to_id_map_[key] = new_id;
+    return new_id;
   }
 
  private:

@@ -200,7 +200,7 @@ TEST_F(BlockingAggNodeTest, multiple_groups) {
   RowDescriptor output_rd({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64});
 
   auto tester = exec::ExecNodeTester<BlockingAggNode, plan::BlockingAggregateOperator>(
-      *plan_node.get(), output_rd, {input_rd}, exec_state_.get());
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
 
   tester
       .ConsumeNext(RowBatchBuilder(input_rd, 4, false)
@@ -231,7 +231,7 @@ TEST_F(BlockingAggNodeTest, multiple_groups_with_string) {
       {types::DataType::STRING, types::DataType::INT64, types::DataType::INT64});
 
   auto tester = exec::ExecNodeTester<BlockingAggNode, plan::BlockingAggregateOperator>(
-      *plan_node.get(), output_rd, {input_rd}, exec_state_.get());
+      *plan_node, output_rd, {input_rd}, exec_state_.get());
 
   tester
       .ConsumeNext(RowBatchBuilder(input_rd, 4, false)

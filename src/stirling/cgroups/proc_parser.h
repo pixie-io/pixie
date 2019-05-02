@@ -76,8 +76,8 @@ fs::path GetProcPidNetDevFile(int64_t pid, fs::path proc_base_path = "/proc");
  * @param bytes_per_page The number of bytes in each page of memory.
  * @return Status of parsing.
  */
-Status ParseProcPIDStat(const fs::path &fpath, ProcessStats *out, const int64_t ns_per_jiffy,
-                        const int bytes_per_page = 4096);
+Status ParseProcPIDStat(const fs::path &fpath, ProcessStats *out, int64_t ns_per_jiffy,
+                        int bytes_per_page = 4096);
 
 /**
  * Parses /proc/<pid>/io files.

@@ -10,17 +10,17 @@
 namespace pl {
 namespace profiler {
 
-bool CPU::ProfilerAvailable() { return ProfilingIsEnabledForAllThreads(); }
+bool CPU::ProfilerAvailable() { return ProfilingIsEnabledForAllThreads() != 0; }
 
 bool CPU::StartProfiler(const std::string& output_path) {
-  return ProfilerStart(output_path.c_str());
+  return ProfilerStart(output_path.c_str()) != 0;
 }
 
 void CPU::StopProfiler() { return ProfilerStop(); }
 
 bool Heap::ProfilerAvailable() { return true; }
 
-bool Heap::IsProfilerStarted() { return IsHeapProfilerRunning(); }
+bool Heap::IsProfilerStarted() { return IsHeapProfilerRunning() != 0; }
 
 bool Heap::StartProfiler(const std::string& output_path) {
   HeapProfilerStart(output_path.c_str());
@@ -28,7 +28,7 @@ bool Heap::StartProfiler(const std::string& output_path) {
 }
 
 bool Heap::StopProfiler() {
-  if (!IsHeapProfilerRunning()) {
+  if (IsHeapProfilerRunning() == 0) {
     return false;
   }
   HeapProfilerDump("stop and dump");

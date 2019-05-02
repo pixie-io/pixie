@@ -65,7 +65,7 @@ class Relation {
    * @param relation_proto
    * @return Status
    */
-  Status FromProto(table_store::schemapb::Relation *relation_proto);
+  Status FromProto(table_store::schemapb::Relation *relation_pb);
 
  private:
   ColTypeArray col_types_;

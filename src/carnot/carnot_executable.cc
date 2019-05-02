@@ -54,9 +54,7 @@ std::string ValueToString(double val) { return absl::StrFormat("%.2f", val); }
 
 std::string ValueToString(std::string val) { return absl::StrFormat("%s", val); }
 
-std::string ValueToString(bool val) {
-  return absl::StrFormat("%s", val == true ? "true" : "false");
-}
+std::string ValueToString(bool val) { return absl::StrFormat("%s", val ? "true" : "false"); }
 
 /**
  * Takes the value and converts it to the string representation.

@@ -292,7 +292,7 @@ Status HTTPTraceConnector::StopImpl() {
 
 void HTTPTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
   auto perf_buffer = bpf_.get_perf_buffer(kPerfBufferName);
-  if (perf_buffer) {
+  if (perf_buffer != nullptr) {
     // record_batch_ is then given to HandleProbeOutput() through GetRecordBatch().
     SetRecordBatch(record_batch);
     perf_buffer->poll(1);

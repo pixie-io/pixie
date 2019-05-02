@@ -152,7 +152,7 @@ class IR {
         DCHECK(node->IsOp());
       }
     }
-    if (nodes.size() < 1) {
+    if (nodes.empty()) {
       return error::InvalidArgument("No Result() found in the graph.");
     }
     return nodes;

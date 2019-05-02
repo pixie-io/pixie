@@ -106,7 +106,7 @@ Status Column::AddBatch(const std::shared_ptr<arrow::Array>& batch) {
 }
 
 Status Column::DeleteNextBatch() {
-  if (!batches_.size()) {
+  if (batches_.empty()) {
     return error::InvalidArgument("No batch to delete.");
   }
   batches_.pop_front();

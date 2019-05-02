@@ -297,8 +297,8 @@ StatusOr<IntIR*> IRRelationHandler::EvaluateCompilerExpression(IRNode* node) {
     PL_ASSIGN_OR_RETURN(auto node_result,
                         EvaluateCompilerFunction(func_node->func_name(), evaled_args, node));
     return node_result;
-
-  } else if (node->type() == IRNodeType::IntType) {
+  }
+  if (node->type() == IRNodeType::IntType) {
     return static_cast<IntIR*>(node);
   } else if (node->type() == IRNodeType::StringType) {
     // Do the string processing
