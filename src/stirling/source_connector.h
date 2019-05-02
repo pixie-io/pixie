@@ -97,7 +97,7 @@ class SourceConnector : public NotCopyable {
 
   DataElements elements_;
   uint64_t real_time_offset_;
-  uint64_t kSecToNanosecFactor = 1000000000;
+  static constexpr uint64_t kSecToNanosecFactor = 1000000000;
 
  private:
   SourceType type_;

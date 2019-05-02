@@ -42,11 +42,12 @@ const char* kInfoClassManager = R"(
  */
 class TestSourceConnector : public SourceConnector {
  public:
+  inline static const DataElements kElements = {DataElement("user_percentage", DataType::FLOAT64),
+                                                DataElement("system_percentage", DataType::FLOAT64),
+                                                DataElement("io_percentage", DataType::FLOAT64)};
+
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
-    DataElements elements = {DataElement("user_percentage", DataType::FLOAT64),
-                             DataElement("system_percentage", DataType::FLOAT64),
-                             DataElement("io_percentage", DataType::FLOAT64)};
-    return std::unique_ptr<SourceConnector>(new TestSourceConnector(name, elements));
+    return std::unique_ptr<SourceConnector>(new TestSourceConnector(name));
   }
 
   Status InitImpl() override { return Status::OK(); }
@@ -56,8 +57,8 @@ class TestSourceConnector : public SourceConnector {
   void TransferDataImpl(types::ColumnWrapperRecordBatch* /*record_batch*/) override{};
 
  protected:
-  explicit TestSourceConnector(const std::string& name, const DataElements& elements)
-      : SourceConnector(SourceType::kUnknown, name, elements) {}
+  explicit TestSourceConnector(const std::string& name)
+      : SourceConnector(SourceType::kUnknown, name, kElements) {}
 };
 
 class PubSubManagerTest : public ::testing::Test {

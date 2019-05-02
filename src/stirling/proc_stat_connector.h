@@ -26,12 +26,12 @@ class ProcStatConnector : public SourceConnector {
   ProcStatConnector() = delete;
   ~ProcStatConnector() override = default;
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
-    return std::unique_ptr<SourceConnector>(new ProcStatConnector(name, kElements));
+    return std::unique_ptr<SourceConnector>(new ProcStatConnector(name));
   }
 
  protected:
-  explicit ProcStatConnector(const std::string& name, const DataElements& elements)
-      : SourceConnector(kSourceType, name, elements) {}
+  explicit ProcStatConnector(const std::string& name)
+      : SourceConnector(kSourceType, name, kElements) {}
   Status InitImpl() override;
   void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) override;
   Status StopImpl() override { return Status::OK(); }
@@ -88,18 +88,12 @@ class FakeProcStatConnector : public ProcStatConnector {
 
   static constexpr char kName[] = "fake_proc_stat";
 
-  inline static DataElements kElements = {DataElement("time_", types::DataType::TIME64NS),
-                                          DataElement("system_percent", types::DataType::FLOAT64),
-                                          DataElement("user_percent", types::DataType::FLOAT64),
-                                          DataElement("idle_percent", types::DataType::FLOAT64)};
-
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
-    return std::unique_ptr<SourceConnector>(new FakeProcStatConnector(name, kElements));
+    return std::unique_ptr<SourceConnector>(new FakeProcStatConnector(name));
   }
 
  protected:
-  explicit FakeProcStatConnector(const std::string& name, const DataElements& elements)
-      : ProcStatConnector(name, elements) {}
+  explicit FakeProcStatConnector(const std::string& name) : ProcStatConnector(name) {}
 
   Status InitImpl() override;
 
