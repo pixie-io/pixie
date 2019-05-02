@@ -171,8 +171,6 @@ void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*da
   }
   if (event->attr.event_type == kEventTypeSyscallWriteEvent ||
       event->attr.event_type == kEventTypeSyscallSendEvent) {
-    HTTPTraceRecord record = connector->GetRecordForFd(event->attr.tgid, event->attr.fd);
-
     // The actual message width is min(attr.msg_buf_size, attr.msg_bytes).
     // Due to the BPF weirdness (see http_trace.c), this calucation must be done here, not in BPF.
     // Also we can't modify the event object, because it belongs to the kernel, and is read-only.
@@ -182,6 +180,7 @@ void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*da
     }
 
     bool succeeded;
+    HTTPTraceRecord record;
 
     // Extract the IP and port.
     succeeded = ParseSockAddr(*event, &record);
@@ -299,14 +298,6 @@ void HTTPTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* recor
     // Reset to prevent accidental misuse.
     SetRecordBatch(nullptr);
   }
-}
-
-void HTTPTraceConnector::UpdateFdRecordMap(uint64_t tgid, uint64_t fd, HTTPTraceRecord record) {
-  fd_record_map_[(tgid << 32) | fd] = std::move(record);
-}
-
-const HTTPTraceRecord& HTTPTraceConnector::GetRecordForFd(uint64_t tgid, uint64_t fd) {
-  return fd_record_map_[(tgid << 32) | fd];
 }
 
 }  // namespace stirling

@@ -78,9 +78,6 @@ class HTTPTraceConnector : public SourceConnector {
   Status StopImpl() override;
   void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) override;
 
-  void UpdateFdRecordMap(uint64_t tgid, uint64_t fd, HTTPTraceRecord record);
-  const HTTPTraceRecord& GetRecordForFd(uint64_t tgid, uint64_t fd);
-
   // 'this' pointer of this class is passed to the callback, and the callback will call this
   // function to get the result argument for processing data items from perf buffer.
   types::ColumnWrapperRecordBatch* GetRecordBatch() const { return record_batch_; }
