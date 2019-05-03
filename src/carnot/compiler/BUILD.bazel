@@ -88,3 +88,12 @@ pl_cc_test(
     srcs = ["ir_relation_handler_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "compiler_error_context_test",
+    srcs = ["compiler_error_context_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/compiler/compilerpb:compiler_status_pl_cc_proto",
+    ],
+)

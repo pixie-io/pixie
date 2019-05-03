@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+import "src/common/base/proto/status.proto";
+import "src/carnot/proto/plan.proto";
+
+package pl.carnot.compiler.compilerpb;
+
+option go_package = "compilerpb";
+
+// Allows for multiple compiler errors which we need to support.
+enum CompilerErrorType {
+  UNKNOWN = 0;
+  LINECOL = 1;
+}
+
+message LineColError {
+  uint64 line = 1;
+  uint64 column = 2;
+  string message = 3;
+}
+message CompilerError {
+  CompilerErrorType type = 1;
+  oneof error { LineColError line_col_error = 2; }
+}
+
+message CompilerResult {
+  pl.statuspb.Status status = 1;
+  pl.carnot.carnotpb.Plan logical_plan = 2;
+}
+
+message CompilerErrorGroup { repeated CompilerError errors = 1; }
