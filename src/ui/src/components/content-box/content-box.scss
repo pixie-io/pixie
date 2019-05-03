@@ -3,9 +3,9 @@
 .content-box {
   margin: 10px 20px 10px 0;
   background-color: $content-bg;
-  display: flex;
   flex: 1;
   flex-direction: column;
+  display: flex;
 }
 
 .content-box--header {
@@ -36,4 +36,7 @@
 
 .content-box--content {
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }

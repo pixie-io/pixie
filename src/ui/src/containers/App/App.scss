@@ -1,3 +1,7 @@
+#root {
+  flex: 1;
+}
+
 html {
   height: 100%;
   font-family: Roboto;
@@ -15,4 +19,8 @@ body {
   display: flex;
   flex-direction: row;
   height: 100%;
+}
+
+.content {
+  flex: 1;
 }

@@ -1,16 +1,14 @@
 .header {
-    height: 60px;
     display: flex;
     flex-direction: column;
     font-size: 20px;
     letter-spacing: 0.02em;
-    margin-bottom: 10px;
+    padding-top: 28px;
     color: white;
 }
 
 .header--text {
     display: flex;
-    padding-top: 20px;
 }
 
 .header--primary-text {

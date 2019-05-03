@@ -4,6 +4,7 @@ import 'codemirror/mode/python/python';
 import 'codemirror/theme/monokai.css';
 
 import { OperationVariables } from 'apollo-client';
+import {ContentBox} from 'components/content-box/content-box';
 import gql from 'graphql-tag';
 import * as React from 'react';
 import {Mutation, MutationFn, Query} from 'react-apollo';
@@ -22,7 +23,16 @@ interface QueryManagerState {
   codeMirror: CodeMirror; // Ref to codeMirror component.
 }
 
-const GET_AGENT_IDS = gql`
+interface ExecuteQueryResult {
+  ExecuteQuery: GQLQueryResult;
+}
+
+interface ResultDisplayProps {
+  data: ExecuteQueryResult;
+  error: string;
+}
+
+export const GET_AGENT_IDS = gql`
 {
   vizier {
     agents {
@@ -33,7 +43,7 @@ const GET_AGENT_IDS = gql`
   }
 }`;
 
-const EXECUTE_QUERY = gql`
+export const EXECUTE_QUERY = gql`
 mutation ExecuteQuery($queryStr: String!) {
     ExecuteQuery(queryStr: $queryStr) {
       id
@@ -52,27 +62,38 @@ const PRESET_QUERIES = toml.parse(PresetQueries).queries;
 
 // This component displays the number of agents available to query.
 const AgentCountDisplay = () => (
-    <Query query={GET_AGENT_IDS} pollInterval={1000}>
-    {({ loading, error, data }) => {
-      if (loading) { return 'Loading...'; }
-      if (error) { return `Error! ${error.message}`; }
+  <Query query={GET_AGENT_IDS} pollInterval={1000}>
+  {({ loading, error, data }) => {
+    if (loading) { return 'Loading...'; }
+    if (error) { return `Error! ${error.message}`; }
 
-      const agentCount = data.vizier.agents.length;
-      let s = `There are ${agentCount} agents available.`;
-      if (agentCount === 1) {
-        s = `There is 1 agent available.`;
-      } else if (agentCount === 0) {
-        s = `There are no agents available.`;
-      }
+    const agentCount = data.vizier.agents.length;
+    let s = `${agentCount} agents available`;
+    if (agentCount === 1) {
+      s = `1 agent available`;
+    } else if (agentCount === 0) {
+      s = `0 agents available`;
+    }
 
-      return (
-          <div>
-            {s}
-          </div>
-      );
-    }}
-    </Query>
+    return (
+        <div>
+          {s}
+        </div>
+    );
+  }}
+  </Query>
 );
+
+const ResultDisplay = (props: ResultDisplayProps) => {
+  if (props.data) {
+    return <QueryResultViewer data={props.data.ExecuteQuery}></QueryResultViewer>;
+  }
+  let body = '(No data)';
+  if (props.error) {
+    body = props.error;
+  }
+  return <div className='query-results--empty'>{body}</div>;
+};
 
 export class QueryManager extends React.Component<{}, QueryManagerState> {
   constructor(props) {
@@ -104,7 +125,7 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
     const executeQueryClickHandler = (mutationFn: MutationFn<any, OperationVariables>) => {
       mutationFn({variables: {
         queryStr: this.state.code,
-      }});
+      }}).catch((err) => err);
     };
 
     const setQuery = (eventKey, event) => {
@@ -117,38 +138,59 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
         this.state.codeMirror.current.codeMirror.setValue(query);
       }
     };
-    return (<div className='query-executor'>
-      <AgentCountDisplay/>
-      <DropdownButton
-        id='query-dropdown'
-        title='Select a query template to start with'
-      >
-        {
-          PRESET_QUERIES.map((query, idx) => {
-            return <Dropdown.Item key={idx} eventKey={idx} onSelect={setQuery.bind(this)}>{query[0]}</Dropdown.Item>;
-          })
-        }
-      </DropdownButton>
-      <span>Query:</span>
-      <div className='code-editor'>
-        <CodeMirror
-          value={this.state.code}
-          onChange={this.updateCode.bind(this)}
-          options={options}
-          ref={this.state.codeMirror}
-        />
-      </div>
+    return (
       <Mutation mutation={EXECUTE_QUERY}>
-        {(executeQuery, { data }) => (
+        {(executeQuery, { loading, error, data }) => (
+          <div className='query-executor'>
             <div>
-              <Button variant='primary' onClick={() => executeQueryClickHandler(executeQuery)}>
-                Execute Query
-              </Button>
-              {data && <QueryResultViewer data={data.ExecuteQuery}></QueryResultViewer>}
+              <ContentBox
+                headerText='Enter Query'
+                secondaryText={<AgentCountDisplay/>}
+              >
+              <DropdownButton
+                id='query-dropdown'
+                title='Select a query template to start with'
+              >
+                {
+                  PRESET_QUERIES.map((query, idx) => {
+                    return <Dropdown.Item
+                      key={idx}
+                      eventKey={idx}
+                      onSelect={setQuery.bind(this)}
+                    >
+                      {query[0]}
+                    </Dropdown.Item>;
+                  })
+                }
+              </DropdownButton>
+              <div className='code-editor'>
+                <CodeMirror
+                  value={this.state.code}
+                  onChange={this.updateCode.bind(this)}
+                  options={options}
+                  ref={this.state.codeMirror}
+                />
+              </div>
+              <div className='query-executor--footer'>
+                <div className='spacer'/>
+                <Button id='execute-button' variant='primary' onClick={() => executeQueryClickHandler(executeQuery)}>
+                  Execute
+                </Button>
+              </div>
+              </ContentBox>
             </div>
-        )}
-      </Mutation>
-      <br/>
-    </div>);
+            <ContentBox
+              headerText={'Results'}
+              subheaderText={data ? 'Query ID: ' + data.ExecuteQuery.id : ''}
+            >
+              <ResultDisplay
+                data={data}
+                error={error ? error.toString() : ''}
+              />
+            </ContentBox>
+          </div>
+      )}
+    </Mutation>
+    );
   }
 }

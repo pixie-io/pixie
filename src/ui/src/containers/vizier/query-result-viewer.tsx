@@ -214,8 +214,6 @@ export class QueryResultViewer extends React.Component<QueryResultViewerProps, {
 
     return (
       <div className='query-results'>
-        QueryID: {data.id}
-        <br />
         <AutoSizedScrollableTable data={parsedTable} columnInfo={colInfo}/>
       </div>
     );

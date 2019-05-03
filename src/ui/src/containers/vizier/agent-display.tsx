@@ -1,11 +1,11 @@
+import {ContentBox} from 'components/content-box/content-box';
+import { AutoSizedScrollableTable } from 'components/table/scrollable-table';
 import gql from 'graphql-tag';
 import * as React from 'react';
 import { Query } from 'react-apollo';
 import './vizier.scss';
 
-import { AutoSizedScrollableTable } from 'components/table/scrollable-table';
-
-const GET_AGENTS = gql`
+export const GET_AGENTS = gql`
 {
   vizier {
     agents {
@@ -50,6 +50,16 @@ const agentTableCols = [{
   resizable: true,
 }];
 
+const agentString = (agentCount: number) => {
+  let s = `${agentCount} agents available`;
+  if (agentCount === 1) {
+    s = `1 agent available`;
+  } else if (agentCount === 0) {
+    s = `0 agents available`;
+  }
+  return s;
+};
+
 export const AgentDisplay = ({onAgents}) => (
     <Query query={GET_AGENTS} pollInterval={150}>
     {({ loading, error, data }) => {
@@ -71,9 +81,14 @@ export const AgentDisplay = ({onAgents}) => (
       });
 
       return (
+        <ContentBox
+          headerText='Available Agents'
+          secondaryText={agentString(agents.length)}
+        >
           <div className='agent-display-table'>
-            <AutoSizedScrollableTable data={mappedData} columnInfo={agentTableCols}/>
+            <AutoSizedScrollableTable data={mappedData} columnInfo={agentTableCols}></AutoSizedScrollableTable>
           </div>
+        </ContentBox>
       );
     }}
   </Query>

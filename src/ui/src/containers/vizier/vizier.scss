@@ -1,17 +1,31 @@
+@import "../../index.scss";
+
 .vizier-body {
-    width: calc(100vw - 72px); // 72px is the sidebar width
-    min-width: 600px;
-    padding: 20px;
-    margin-right: 40px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.query-executor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .query-executor .code-editor .CodeMirror {
-    height: 200px;
+    height: 150px;
 }
 
-.query-results {
-    height: 400px;
-    width: 800px;
+.code-editor {
+    margin-top: 25px;
+}
+
+.query-executor .code-editor .CodeMirror {
+    background: $content-bg;
+}
+
+.query-executor .code-editor .CodeMirror-gutters {
+    background: $content-bg;
 }
 
 .query-results .ReactVirtualized__Table__row {
@@ -19,6 +33,22 @@
 }
 
 .agent-display-table {
-    height: 400px;
-    width: 800px;
+    display: flex;
+    flex: 1;
+}
+
+.query-executor--footer {
+    display: flex;
+}
+
+.query-results {
+    display: flex;
+    flex: 1;
+}
+
+.query-results--empty {
+    justify-content: center;
+    align-items: center;
+    display: flex;
+    flex: 1;
 }

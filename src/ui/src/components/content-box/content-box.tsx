@@ -3,9 +3,9 @@ import * as React from 'react';
 import './content-box.scss';
 
 export interface ContentBoxProps {
-    headerText: string;
-    subheaderText?: string;
-    secondaryText?: string;
+    headerText: string | JSX.Element;
+    subheaderText?: string | JSX.Element;
+    secondaryText?: string | JSX.Element;
     children: any;
 }
 
