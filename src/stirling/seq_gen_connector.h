@@ -48,13 +48,11 @@ class SeqGenConnector : public SourceConnector {
 
  protected:
   explicit SeqGenConnector(const std::string& name)
-      : SourceConnector(kSourceType, name, kElements),
-
+      : SourceConnector(kSourceType, name, kElements, kDefaultSamplingPeriod, kDefaultPushPeriod),
         lin_seq_(1, 1),
         mod10_seq_(10),
         square_seq_(1, 0, 0),
         pi_seq_(3.14159, 0),
-
         rng_(37) {}
 
   Status InitImpl() override { return Status::OK(); }

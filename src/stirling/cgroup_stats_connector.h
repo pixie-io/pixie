@@ -68,7 +68,8 @@ class CGroupStatsConnector : public SourceConnector {
 
  protected:
   explicit CGroupStatsConnector(std::string source_name)
-      : SourceConnector(kSourceType, std::move(source_name), kElements) {
+      : SourceConnector(kSourceType, std::move(source_name), kElements, kDefaultSamplingPeriod,
+                        kDefaultPushPeriod) {
     // TODO(zasgar): Make proc/sys paths configurable.
     cgroup_mgr_ = CGroupManager::Create("/proc", "/sys/fs");
   }

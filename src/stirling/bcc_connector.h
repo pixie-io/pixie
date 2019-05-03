@@ -39,8 +39,12 @@ class BCCConnector : public SourceConnector {
 
  protected:
   explicit BCCConnector(std::string source_name, const DataElements& elements,
+                        std::chrono::milliseconds default_sampling_period,
+                        std::chrono::milliseconds default_push_period,
                         const std::string_view bpf_program)
-      : SourceConnector(kSourceType, std::move(source_name), elements), bpf_program_(bpf_program) {}
+      : SourceConnector(kSourceType, std::move(source_name), elements, default_sampling_period,
+                        default_push_period),
+        bpf_program_(bpf_program) {}
 
  private:
   std::string_view bpf_program_;
@@ -70,7 +74,7 @@ class PIDCPUUseBCCConnector : public BCCConnector {
 
  protected:
   explicit PIDCPUUseBCCConnector(std::string name)
-      : BCCConnector(name, kElements, kBCCScript),
+      : BCCConnector(name, kElements, kDefaultSamplingPeriod, kDefaultPushPeriod, kBCCScript),
         event_type_(perf_type_id::PERF_TYPE_SOFTWARE),
         event_config_(perf_sw_ids::PERF_COUNT_SW_CPU_CLOCK) {}
 

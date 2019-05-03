@@ -74,6 +74,9 @@ class SourceConnector : public NotCopyable {
   SourceType type() const { return type_; }
   const std::string& source_name() const { return source_name_; }
   const DataElements& elements() const { return elements_; }
+  const std::chrono::milliseconds& default_sampling_period() { return default_sampling_period_; }
+  const std::chrono::milliseconds& default_push_period() { return default_push_period_; }
+
   /**
    * @brief If recording nsecs in your bt file, this function can be used to find the offset for
    * convert the result into realtime.
@@ -81,8 +84,14 @@ class SourceConnector : public NotCopyable {
   uint64_t ClockRealTimeOffset();
 
  protected:
-  explicit SourceConnector(SourceType type, std::string source_name, DataElements elements)
-      : elements_(std::move(elements)), type_(type), source_name_(std::move(source_name)) {}
+  explicit SourceConnector(SourceType type, std::string source_name, DataElements elements,
+                           std::chrono::milliseconds default_sampling_period,
+                           std::chrono::milliseconds default_push_period)
+      : type_(type),
+        source_name_(std::move(source_name)),
+        elements_(std::move(elements)),
+        default_sampling_period_(default_sampling_period),
+        default_push_period_(default_push_period) {}
 
   virtual Status InitImpl() = 0;
   virtual void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) = 0;
@@ -94,13 +103,15 @@ class SourceConnector : public NotCopyable {
    */
   void InitClockRealTimeOffset();
 
-  DataElements elements_;
   uint64_t real_time_offset_;
   static constexpr uint64_t kSecToNanosecFactor = 1000000000;
 
  private:
   SourceType type_;
   std::string source_name_;
+  DataElements elements_;
+  std::chrono::milliseconds default_sampling_period_;
+  std::chrono::milliseconds default_push_period_;
 };
 
 }  // namespace stirling

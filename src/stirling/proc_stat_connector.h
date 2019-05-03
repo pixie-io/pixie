@@ -31,7 +31,7 @@ class ProcStatConnector : public SourceConnector {
 
  protected:
   explicit ProcStatConnector(const std::string& name)
-      : SourceConnector(kSourceType, name, kElements) {}
+      : SourceConnector(kSourceType, name, kElements, kDefaultSamplingPeriod, kDefaultPushPeriod) {}
   Status InitImpl() override;
   void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) override;
   Status StopImpl() override { return Status::OK(); }

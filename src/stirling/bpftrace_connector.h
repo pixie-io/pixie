@@ -40,7 +40,9 @@ class BPFTraceConnector : public SourceConnector {
 
  protected:
   explicit BPFTraceConnector(const std::string& source_name, const DataElements& elements,
-                             std::string_view script, std::vector<std::string> params);
+                             std::chrono::milliseconds default_sampling_period,
+                             std::chrono::milliseconds default_push_period, std::string_view script,
+                             std::vector<std::string> params);
 
   Status InitImpl() override;
 

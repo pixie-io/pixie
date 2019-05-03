@@ -87,7 +87,8 @@ class HTTPTraceConnector : public SourceConnector {
 
  private:
   explicit HTTPTraceConnector(const std::string& source_name)
-      : SourceConnector(kSourceType, std::move(source_name), kElements) {
+      : SourceConnector(kSourceType, std::move(source_name), kElements, kDefaultSamplingPeriod,
+                        kDefaultPushPeriod) {
     // TODO(oazizi): Is there a better place/time to grab the flags?
     filter_substrs_ = absl::StrSplit(FLAGS_selected_content_type_substrs, ",", absl::SkipEmpty());
   }

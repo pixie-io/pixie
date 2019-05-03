@@ -28,16 +28,10 @@ class SourceRegistry : public NotCopyable {
   struct RegistryElement {
     RegistryElement() : create_source_fn(nullptr) {}
     explicit RegistryElement(
-        SourceType type, std::chrono::milliseconds sampling_period,
-        std::chrono::milliseconds push_period,
+        SourceType type,
         std::function<std::unique_ptr<SourceConnector>(const std::string&)> create_source_fn)
-        : type(type),
-          sampling_period(sampling_period),
-          push_period(push_period),
-          create_source_fn(std::move(create_source_fn)) {}
+        : type(type), create_source_fn(std::move(create_source_fn)) {}
     SourceType type{SourceType::kUnknown};
-    std::chrono::milliseconds sampling_period;
-    std::chrono::milliseconds push_period;
     std::function<std::unique_ptr<SourceConnector>(const std::string&)> create_source_fn;
   };
 
@@ -61,9 +55,8 @@ class SourceRegistry : public NotCopyable {
     }
 
     // Create registry element from template
-    SourceRegistry::RegistryElement element(
-        TSourceConnector::kSourceType, TSourceConnector::kDefaultSamplingPeriod,
-        TSourceConnector::kDefaultPushPeriod, TSourceConnector::Create);
+    SourceRegistry::RegistryElement element(TSourceConnector::kSourceType,
+                                            TSourceConnector::Create);
     if (sources_map_.find(name) != sources_map_.end()) {
       return error::AlreadyExists("The data source with name \"$0\" already exists", name);
     }

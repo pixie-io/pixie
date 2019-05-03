@@ -18,8 +18,11 @@ namespace pl {
 namespace stirling {
 
 BPFTraceConnector::BPFTraceConnector(const std::string& source_name, const DataElements& elements,
+                                     std::chrono::milliseconds default_sampling_period,
+                                     std::chrono::milliseconds default_push_period,
                                      const std::string_view script, std::vector<std::string> params)
-    : SourceConnector(SourceType::kEBPF, source_name, elements),
+    : SourceConnector(SourceType::kEBPF, source_name, elements, default_sampling_period,
+                      default_push_period),
       script_(script),
       params_(std::move(params)) {
   // TODO(oazizi): if machine is ever suspended, this would have to be called again.
@@ -92,7 +95,7 @@ Status BPFTraceConnector::InitImpl() {
 }
 
 CPUStatBPFTraceConnector::CPUStatBPFTraceConnector(const std::string& name, uint64_t cpu_id)
-    : BPFTraceConnector(name, kElements, kBTScript,
+    : BPFTraceConnector(name, kElements, kDefaultSamplingPeriod, kDefaultPushPeriod, kBTScript,
                         std::vector<std::string>({std::to_string(cpu_id)})) {}
 
 void CPUStatBPFTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
@@ -100,13 +103,15 @@ void CPUStatBPFTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch*
 
   auto cpustat_map = GetBPFMap("@retval");
 
+  auto data_elements = elements();
+
   // If kernel hasn't populated BPF map yet, then we have no data to return.
-  if (cpustat_map.size() != elements_.size()) {
+  if (cpustat_map.size() != data_elements.size()) {
     return;
   }
 
-  for (uint32_t i = 0; i < elements_.size(); ++i) {
-    if (elements_[i].type() == types::DataType::TIME64NS) {
+  for (uint32_t i = 0; i < data_elements.size(); ++i) {
+    if (data_elements[i].type() == types::DataType::TIME64NS) {
       types::Time64NSValue val =
           *(reinterpret_cast<int64_t*>(cpustat_map[i].second.data())) + ClockRealTimeOffset();
       columns[i]->Append(val);
@@ -137,7 +142,8 @@ bpftrace::BPFTraceMap::iterator PIDCPUUseBPFTraceConnector::BPFTraceMapSearch(
 }
 
 PIDCPUUseBPFTraceConnector::PIDCPUUseBPFTraceConnector(const std::string& name)
-    : BPFTraceConnector(name, kElements, kBTScript, std::vector<std::string>({})) {}
+    : BPFTraceConnector(name, kElements, kDefaultSamplingPeriod, kDefaultPushPeriod, kBTScript,
+                        std::vector<std::string>({})) {}
 
 void PIDCPUUseBPFTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
   auto& columns = *record_batch;

@@ -214,8 +214,8 @@ Status StirlingImpl::AddSourceFromRegistry(const std::string& name,
 
   // Step 3: Setup the manager.
   PL_CHECK_OK(mgr_ptr->PopulateSchemaFromSource());
-  mgr_ptr->SetSamplingPeriod(registry_element.sampling_period);
-  mgr_ptr->SetPushPeriod(registry_element.push_period);
+  mgr_ptr->SetSamplingPeriod(source->default_sampling_period());
+  mgr_ptr->SetPushPeriod(source->default_push_period());
 
   // Step 4: Keep pointers to all the objects
   sources_.push_back(std::move(source));

@@ -45,6 +45,8 @@ class TestSourceConnector : public SourceConnector {
   inline static const DataElements kElements = {DataElement("user_percentage", DataType::FLOAT64),
                                                 DataElement("system_percentage", DataType::FLOAT64),
                                                 DataElement("io_percentage", DataType::FLOAT64)};
+  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};
+  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new TestSourceConnector(name));
@@ -58,7 +60,8 @@ class TestSourceConnector : public SourceConnector {
 
  protected:
   explicit TestSourceConnector(const std::string& name)
-      : SourceConnector(SourceType::kUnknown, name, kElements) {}
+      : SourceConnector(SourceType::kUnknown, name, kElements, kDefaultSamplingPeriod,
+                        kDefaultPushPeriod) {}
 };
 
 class PubSubManagerTest : public ::testing::Test {
