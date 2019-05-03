@@ -106,9 +106,6 @@ class HTTPTraceConnector : public SourceConnector {
 
   ebpf::BPF bpf_;
   const int perf_buffer_page_num_ = 8;
-  // A map from file descriptor to an IP:port pair. There is no race conditions as the caller is
-  // single threaded.
-  std::map<uint64_t, HTTPTraceRecord> fd_record_map_;
 
   // This holds the target buffer for recording the events captured in http tracing. It roughly
   // works as follows:
