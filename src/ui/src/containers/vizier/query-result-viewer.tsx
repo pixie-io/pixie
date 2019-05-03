@@ -1,5 +1,6 @@
 import { AutoSizedScrollableTable, TableColumnInfo } from 'components/table/scrollable-table';
 import * as React from 'react';
+import * as FormatData from 'utils/format-data';
 // TODO(zasgar/michelle): Figure out how to impor schema properly
 import {
   GQLDataColTypes,
@@ -73,109 +74,32 @@ function computeColumnWidthRatios(relation: GQLDataTableRelation, parsedTable: a
     return colWidthRatio;
 }
 
-function looksLikeLatencyCol(colName: string, colType: string) {
-  if (colType !== 'FLOAT64') {
-    return false;
+function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
+  const colType = columnInfo.type;
+  const colName = columnInfo.label;
+  if (FormatData.looksLikeLatencyCol(colName, colType)) {
+    return FormatData.LatencyData(cellData);
   }
-  const colNameLC = colName.toLowerCase();
-  if (colNameLC.match(/latency.*/)) {
-    return true;
-  }
-  if (colNameLC.match(/p\d{0,2}$/)) {
-    return true;
-  }
-}
 
-function looksLikeAlertCol(colName: string, colType: string) {
-  if (colType !== 'BOOLEAN') {
-    return false;
+  if (FormatData.looksLikeAlertCol(colName, colType)) {
+    return FormatData.AlertData(cellData);
   }
-  const colNameLC = colName.toLowerCase();
-  if (colNameLC.match(/alert.*/)) {
-    return true;
+
+  try {
+    const jsonObj = JSON.parse(cellData);
+    return <FormatData.JSONData
+      data={jsonObj}
+    />;
+  } catch {
+    return cellData;
   }
 }
 
-function formatAlertCol(colName: string, parsedTable: any) {
-  for (const row of parsedTable) {
-    let val = row[colName];
-    if (val === 'true') {
-      val = '<div class=\'col_data--alert-true\'>' + val + '</div>';
-    } else {
-      val = '<div class=\'col_data--alert-false\'>' + val + '</div>';
-    }
-    row[colName] = val;
-  }
-}
-
-function formatLatencyCol(colName: string, parsedTable: any) {
-  for (const row of parsedTable) {
-    let val = row[colName];
-    // TODO(zasgar/michelle): We should move this up so we don't have to
-    // decode the float here.
-    const floatVal = parseFloat(val);
-    if (floatVal > 300) {
-      val = '<div class=\'col_data--latency-high\'>' + val + '</div>';
-    } else if (floatVal > 150) {
-      val = '<div class=\'col_data--latency-med\'>' + val + '</div>';
-    } else {
-      val = '<div class=\'col_data--latency-low\'>' + val + '</div>';
-    }
-    row[colName] = val;
-  }
-}
-
-function prettyPrintJSON(jsonObj: object) {
-  let jsonStr: string = JSON.stringify(jsonObj, null, 2);
-  jsonStr = jsonStr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  return jsonStr.replace(
-    /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
-    (match) => {
-      let cls = 'col_data--json-number';
-      if (/^"/.test(match)) {
-          if (/:$/.test(match)) {
-              cls = 'col_data--json-key';
-          } else {
-              cls = 'col_data--json-string';
-          }
-      } else if (/true|false/.test(match)) {
-          cls = 'col_data--json-boolean';
-      } else if (/null/.test(match)) {
-          cls = 'col_data--json-null';
-      }
-      return '<span class="' + cls + '">' + match + '</span>';
-  });
-}
-
-function prettyFormatString(colName: string, parsedTable: any) {
-  for (const row of parsedTable) {
-    const val = row[colName];
-    try {
-      const jsonObj = JSON.parse(val);
-      row[colName] = prettyPrintJSON(jsonObj);
-    } catch {
-      // Ingore, string won't be formatted.
-    }
-  }
-}
-
-// Formats the data by applying in place edits.
-function formatData(relation: GQLDataTableRelation, parsedTable) {
-  relation.colNames.forEach((colName, colIdx) => {
-    const colType = relation.colTypes[colIdx];
-    if (looksLikeLatencyCol(colName, colType)) {
-      formatLatencyCol(colName, parsedTable);
-      return;
-    }
-
-    if (looksLikeAlertCol(colName, colType)) {
-      formatAlertCol(colName, parsedTable);
-      return;
-    }
-
-    // Try to parse string as JSON if possible.
-    prettyFormatString(colName, parsedTable);
-  });
+function ExpandedRowRenderer(rowData) {
+  return <FormatData.JSONData
+    data={rowData}
+    multiline={true}
+  />;
 }
 
 export class QueryResultViewer extends React.Component<QueryResultViewerProps, {}> {
@@ -199,22 +123,25 @@ export class QueryResultViewer extends React.Component<QueryResultViewerProps, {
     // CSS.
     const colWidth = 600;
     const minColWidth = 200;
-    const colInfo: TableColumnInfo[] = relation.colNames.map((colName) => {
+    const colInfo: TableColumnInfo[] = relation.colNames.map((colName, idx) => {
       return {
         dataKey: colName,
         label: colName,
+        type: relation.colTypes[idx],
         flexGrow: 8,
         width: Math.max(minColWidth, colWidthRatio[colName] * colWidth),
       };
     });
 
-    // TODO(zasgar/michelle): Uncomment this after we figure out how to
-    // get react-virtualized to render styles.
-    formatData(relation, parsedTable);
-
     return (
       <div className='query-results'>
-        <AutoSizedScrollableTable data={parsedTable} columnInfo={colInfo}/>
+        <AutoSizedScrollableTable
+          data={parsedTable}
+          columnInfo={colInfo}
+          cellRenderer={ResultCellRenderer}
+          expandable={true}
+          expandRenderer={ExpandedRowRenderer}
+        />
       </div>
     );
   }

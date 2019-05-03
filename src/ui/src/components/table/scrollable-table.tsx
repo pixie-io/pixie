@@ -19,6 +19,7 @@ export interface TableColumnInfo {
     flexGrow?: number;  // The factor that this column width can grow by.
     width?: number;     // The width of the column.
     resizable?: boolean;
+    type?: string;
 }
 
 export interface AutoSizedScrollableTableProps {
@@ -26,6 +27,7 @@ export interface AutoSizedScrollableTableProps {
     columnInfo: TableColumnInfo[];
     expandable?: boolean;
     expandRenderer?: (rowData: any) => JSX.Element;
+    cellRenderer?: (cellData: any, columnInfo: TableColumnInfo) => JSX.Element;
 }
 
 export interface ScrollableTableProps {
@@ -33,6 +35,7 @@ export interface ScrollableTableProps {
     columnInfo: TableColumnInfo[];
     expandable?: boolean;
     expandRenderer?: (rowData: any) => JSX.Element;
+    cellRenderer?: (cellData: any, columnInfo: TableColumnInfo) => JSX.Element;
     width: number;
     height: number;
 }
@@ -56,20 +59,20 @@ function RowRenderer(props) {
         <div className={'scrollable-table--row-' + (props.index % 2 === 0 ? 'even' : 'odd')} style={props.style}>
             <DefaultRowRenderer {...rowProps}/>
              {_.has(this.state.expandedRows, props.index) ?
-                this.props.expandRenderer(props.rowData) : null}
+                <div className='scrollable-table--expanded'>{this.props.expandRenderer(props.rowData)}</div> : null}
         </div>
     );
 }
 
 function CellRenderer(props) {
-  // TODO(michelle): Add syntax highlighting for the cell in a follow-up diff.
   const cellData = props.cellData;
   return (
     <div className='scrollable-table--cell'>
       {this.props.expandable && props.columnIndex === 0 ?
         <img src={_.has(this.state.expandedRows, props.rowIndex) ? expanded : unexpanded}/> : null
       }
-      { cellData }
+      { this.props.cellRenderer ?
+          this.props.cellRenderer(cellData, this.props.columnInfo[props.columnIndex]) : cellData }
     </div>
   );
 }

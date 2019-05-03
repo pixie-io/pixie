@@ -4,8 +4,20 @@
   display: flex;
 }
 
+.scrollable-table--row-odd,
+.scrollable-table--row-even {
+  display: flex;
+  flex-direction: column;
+}
+
 .scrollable-table--row-odd {
   background-color: $navy;
+}
+
+.scrollable-table--expanded {
+  overflow: scroll;
+  flex: 1;
+  padding-left: 20px;
 }
 
 .ReactVirtualized__Table__headerRow {

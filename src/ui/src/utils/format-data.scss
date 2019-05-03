@@ -1,0 +1,40 @@
+.formatted_data--latency-low {
+    color: #a6e22e;
+}
+
+.formatted_data--latency-high {
+    color: red;
+}
+
+.formatted_data--latency-med {
+    color: orange;
+}
+
+.formatted_data--alert-true {
+    color: red;
+}
+
+.formatted_data--json-number {
+    color: #ae81ff;
+}
+
+.formatted_data--json-key {
+    color: white;
+}
+
+.formatted_data--json-boolean {
+    color: #f92672;
+}
+
+.formatted_data--json-null {
+    color: #f92672;
+}
+
+.formatted_data--json-string {
+    color: #e6db74;
+}
+
+.formatted_data--json {
+  font-size: 13px;
+  font-family: monospace;
+}
