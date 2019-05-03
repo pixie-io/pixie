@@ -18,7 +18,8 @@ export class ContentBox extends React.Component<ContentBoxProps, {}> {
             {_.toUpper(this.props.headerText)}
           </div>
           <div className='content-box--subheader-text'>
-            {this.props.subheaderText ? '| ' + this.props.subheaderText : ''}
+            {this.props.subheaderText ? '| ' : ''}
+            {this.props.subheaderText}
           </div>
           <div className='spacer'/>
           <div className='content-box--secondary-text'>

@@ -11,6 +11,7 @@ import {Mutation, MutationFn, Query} from 'react-apollo';
 import {Button, Dropdown, DropdownButton} from 'react-bootstrap';
 import * as CodeMirror from 'react-codemirror';
 import * as toml from 'toml';
+import * as ResultDataUtils from 'utils/result-data-utils';
 // @ts-ignore : TS does not seem to like this import.
 import * as PresetQueries from './preset-queries.toml';
 import {QueryResultViewer} from './query-result-viewer';
@@ -30,6 +31,10 @@ interface ExecuteQueryResult {
 interface ResultDisplayProps {
   data: ExecuteQueryResult;
   error: string;
+}
+
+interface QueryInfoProps {
+  data: ExecuteQueryResult;
 }
 
 export const GET_AGENT_IDS = gql`
@@ -93,6 +98,38 @@ const ResultDisplay = (props: ResultDisplayProps) => {
     body = props.error;
   }
   return <div className='query-results--empty'>{body}</div>;
+};
+
+const QueryInfo = (props: QueryInfoProps) => {
+  return (
+    <span>
+      {'Query ID: ' + props.data.ExecuteQuery.id}
+      {localStorage.getItem('debug') === 'true' ?
+        <span>
+          {' | '}
+          <a
+            href='#'
+            onClick={
+              () => {
+                const download = document.createElement('a');
+                download.setAttribute('type', 'hidden');
+                const blob = new Blob([ResultDataUtils.ResultsToCsv(props.data.ExecuteQuery.table.data)],
+                  {type: 'octet/stream'});
+                const url = window.URL.createObjectURL(blob);
+                download.setAttribute('href', url);
+                download.setAttribute('download', String(props.data.ExecuteQuery.id) + '.csv');
+                download.click();
+              }
+            }
+          >
+            Download
+          </a>
+        </span>
+        : null
+      }
+
+    </span>
+  );
 };
 
 export class QueryManager extends React.Component<{}, QueryManagerState> {
@@ -181,7 +218,7 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
             </div>
             <ContentBox
               headerText={'Results'}
-              subheaderText={data ? 'Query ID: ' + data.ExecuteQuery.id : ''}
+              subheaderText={data ? <QueryInfo data={data}/> : ''}
             >
               <ResultDisplay
                 data={data}
