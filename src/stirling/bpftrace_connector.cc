@@ -185,10 +185,11 @@ void PIDCPUUseBPFTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatc
       }
     }
 
-    columns[0]->Append<types::Time64NSValue>(timestamp + ClockRealTimeOffset());
-    columns[1]->Append<types::Int64Value>(pid);
-    columns[2]->Append<types::Int64Value>(cputime - last_cputime);
-    columns[3]->Append<types::StringValue>(std::move(name));
+    uint32_t idx = 0;
+    columns[idx++]->Append<types::Time64NSValue>(timestamp + ClockRealTimeOffset());
+    columns[idx++]->Append<types::Int64Value>(pid);
+    columns[idx++]->Append<types::Int64Value>(cputime - last_cputime);
+    columns[idx++]->Append<types::StringValue>(std::move(name));
   }
 
   // Keep this, because we will want to compute deltas next time.

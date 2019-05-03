@@ -19,28 +19,13 @@ void SeqGenConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_b
   }
 
   for (uint32_t irecord = 0; irecord < num_records; ++irecord) {
-    for (uint32_t ifield = 0; ifield < num_fields; ++ifield) {
-      switch (ifield) {
-        case 0:
-          columns[ifield]->Append<types::Time64NSValue>(time_seq_());
-          break;
-        case 1:
-          columns[ifield]->Append<types::Int64Value>(lin_seq_());
-          break;
-        case 2:
-          columns[ifield]->Append<types::Int64Value>(mod10_seq_());
-          break;
-        case 3:
-          columns[ifield]->Append<types::Int64Value>(square_seq_());
-          break;
-        case 4:
-          columns[ifield]->Append<types::Int64Value>(fib_seq_());
-          break;
-        case 5:
-          columns[ifield]->Append<types::Float64Value>(pi_seq_());
-          break;
-      }
-    }
+    uint32_t ifield = 0;
+    columns[ifield++]->Append<types::Time64NSValue>(time_seq_());
+    columns[ifield++]->Append<types::Int64Value>(lin_seq_());
+    columns[ifield++]->Append<types::Int64Value>(mod10_seq_());
+    columns[ifield++]->Append<types::Int64Value>(square_seq_());
+    columns[ifield++]->Append<types::Int64Value>(fib_seq_());
+    columns[ifield++]->Append<types::Float64Value>(pi_seq_());
   }
 }
 

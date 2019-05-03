@@ -84,10 +84,10 @@ void StirlingWrapperCallback(uint64_t table_id,
   std::string name = table_id_to_name_map[table_id];
 
   // Use assigned names, from registry.
-  if (name == "bpftrace_cpu_stats") {
+  if (name == CPUStatBPFTraceConnector::kName) {
     PrintRecordBatch("CPUStat-BPFTrace", CPUStatBPFTraceConnector::kElements, num_records,
                      *record_batch);
-  } else if (name == "sequences") {
+  } else if (name == SeqGenConnector::kName) {
     PrintRecordBatch("SeqGen", SeqGenConnector::kElements, num_records, *record_batch);
   } else if (name == PIDCPUUseBPFTraceConnector::kName) {
     PrintRecordBatch("PIDStat-BPFTrace", PIDCPUUseBPFTraceConnector::kElements, num_records,
