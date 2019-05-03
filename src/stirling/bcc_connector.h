@@ -44,7 +44,6 @@ class BCCConnector : public SourceConnector {
 
  private:
   std::string_view bpf_program_;
-  std::vector<uint8_t> data_buf_;
 };
 
 class PIDCPUUseBCCConnector : public BCCConnector {

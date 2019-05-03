@@ -92,8 +92,6 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
 
   // TODO(oazizi): Make this controllable through Create.
   static constexpr uint64_t cpu_id_ = 0;
-
-  std::vector<uint64_t> data_buf_;
 };
 
 class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
@@ -121,8 +119,6 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
 
  private:
   inline static const std::string_view kBTScript = pidruntime_bt_script;
-
-  std::vector<uint64_t> data_buf_;
 
   bpftrace::BPFTraceMap last_result_times_;
 

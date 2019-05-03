@@ -74,8 +74,6 @@ class SeqGenConnector : public SourceConnector {
   std::default_random_engine rng_;
   uint32_t num_rows_min_ = 0;
   uint32_t num_rows_max_ = 10;
-
-  std::vector<uint8_t> data_buf_;
 };
 
 }  // namespace stirling

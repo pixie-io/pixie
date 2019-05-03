@@ -10,8 +10,6 @@ void SeqGenConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_b
 
   uint32_t num_records = num_rows_dist(rng_);
 
-  data_buf_.resize(num_records * elements_.size() * sizeof(uint64_t));
-
   uint32_t field_size_bytes = 8;
   uint32_t num_fields = elements_.size();
 

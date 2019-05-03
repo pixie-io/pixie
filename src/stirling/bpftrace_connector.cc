@@ -93,10 +93,7 @@ Status BPFTraceConnector::InitImpl() {
 
 CPUStatBPFTraceConnector::CPUStatBPFTraceConnector(const std::string& name, uint64_t cpu_id)
     : BPFTraceConnector(name, kElements, kBTScript,
-                        std::vector<std::string>({std::to_string(cpu_id)})) {
-  // Create a data buffer that can hold one record only
-  data_buf_.resize(elements_.size());
-}
+                        std::vector<std::string>({std::to_string(cpu_id)})) {}
 
 void CPUStatBPFTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
   auto& columns = *record_batch;
@@ -146,17 +143,12 @@ void PIDCPUUseBPFTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatc
   auto& columns = *record_batch;
 
   auto pid_time_pairs = GetBPFMap("@total_time");
-  auto num_pids = pid_time_pairs.size();
-
   auto pid_name_pairs = GetBPFMap("@names");
 
   // This is a special map with only one entry at location 0.
   auto sampling_time = GetBPFMap("@time");
   CHECK_EQ(1ULL, sampling_time.size());
   auto timestamp = *(reinterpret_cast<int64_t*>(sampling_time[0].second.data()));
-
-  // TODO(oazizi): Optimize this. Likely need a way of removing old PIDs in the bt file.
-  data_buf_.resize(std::max<uint64_t>(num_pids * (elements_.size()), data_buf_.size()));
 
   auto last_result_it = last_result_times_.begin();
   auto pid_name_it = pid_name_pairs.begin();
