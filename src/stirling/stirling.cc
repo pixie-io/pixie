@@ -84,7 +84,7 @@ class StirlingImpl final : public Stirling {
    * Adds a source to Stirling, and updates all state accordingly.
    */
   Status AddSourceFromRegistry(const std::string& name,
-                               SourceRegistry::RegistryElement registry_element);
+                               const SourceRegistry::RegistryElement& registry_element);
 
   /**
    * Main run implementation.
@@ -201,8 +201,8 @@ std::unordered_map<uint64_t, std::string> StirlingImpl::TableIDToNameMap() {
   return map;
 }
 
-Status StirlingImpl::AddSourceFromRegistry(const std::string& name,
-                                           SourceRegistry::RegistryElement registry_element) {
+Status StirlingImpl::AddSourceFromRegistry(
+    const std::string& name, const SourceRegistry::RegistryElement& registry_element) {
   // Step 1: Create and init the source.
   auto source = registry_element.create_source_fn(name);
   PL_RETURN_IF_ERROR(source->Init());

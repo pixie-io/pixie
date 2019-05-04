@@ -26,13 +26,18 @@ class SourceRegistry : public NotCopyable {
   virtual ~SourceRegistry() = default;
 
   struct RegistryElement {
-    RegistryElement() : create_source_fn(nullptr) {}
+    RegistryElement() : create_source_fn(nullptr), schema(empty_vector) {}
     explicit RegistryElement(
         SourceType type,
-        std::function<std::unique_ptr<SourceConnector>(const std::string&)> create_source_fn)
-        : type(type), create_source_fn(std::move(create_source_fn)) {}
+        std::function<std::unique_ptr<SourceConnector>(const std::string&)> create_source_fn,
+        const DataElements& schema)
+        : type(type), create_source_fn(std::move(create_source_fn)), schema(schema) {}
     SourceType type{SourceType::kUnknown};
     std::function<std::unique_ptr<SourceConnector>(const std::string&)> create_source_fn;
+    const DataElements& schema;
+
+   private:
+    inline static const DataElements empty_vector = {};
   };
 
   const auto& sources() { return sources_map_; }
@@ -55,8 +60,8 @@ class SourceRegistry : public NotCopyable {
     }
 
     // Create registry element from template
-    SourceRegistry::RegistryElement element(TSourceConnector::kSourceType,
-                                            TSourceConnector::Create);
+    SourceRegistry::RegistryElement element(TSourceConnector::kSourceType, TSourceConnector::Create,
+                                            TSourceConnector::kElements);
     if (sources_map_.find(name) != sources_map_.end()) {
       return error::AlreadyExists("The data source with name \"$0\" already exists", name);
     }
@@ -71,7 +76,7 @@ class SourceRegistry : public NotCopyable {
     PL_CHECK_OK(status);
   }
 
-  StatusOr<RegistryElement> GetRegistryElement(const std::string& name) {
+  StatusOr<RegistryElement> GetRegistryElement(const std::string& name) const {
     auto it = sources_map_.find(name);
     if (it == sources_map_.end()) {
       return error::NotFound("The data source with name \"$0\" was not found", name);
