@@ -1,12 +1,26 @@
 syntax = "proto3";
 
-package pl.shared.messages;
+package pl.vizier.messages;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/common/uuid/proto/uuid.proto";
 import "src/table_store/proto/schema.proto";
 
-option go_package = "pixielabs.ai/pixielabs/src/shared/messages/messagespb;messages";
+option go_package = "pixielabs.ai/pixielabs/src/vizier/messages/messagespb;messages";
+
+// A wrapper around all messages which can be sent over the message bus.
+message VizierMessage {
+    oneof msg {
+        RegisterAgentRequest register_agent_request = 1;
+        RegisterAgentResponse register_agent_response = 2;
+        UpdateAgentRequest update_agent_request = 3;
+        UpdateAgentResponse update_agent_response = 4;
+        HeartBeat heartbeat = 5;
+        HeartBeatAck heartbeat_ack = 6;
+        HeartBeatNack heartbeat_nack = 7;
+        ExecuteQueryRequest execute_query_request = 8;
+    }
+}
 
 // AgentInfo contains information about host and agent running on a given machine.
 message AgentInfo {
@@ -61,3 +75,10 @@ message HeartBeatAck {
 
 // Response sent for a failed heart beat.
 message HeartBeatNack {}
+
+message ExecuteQueryRequest {
+    uuidpb.UUID query_id      = 1 [
+                                  (gogoproto.customname) = "QueryID"
+                                  ];
+    string query_str = 2;
+}

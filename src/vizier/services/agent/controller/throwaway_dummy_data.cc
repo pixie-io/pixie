@@ -6,10 +6,10 @@
 
 #include <sole.hpp>
 
-#include "src/agent/controller/throwaway_dummy_data.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/types.h"
 #include "src/table_store/table_store.h"
+#include "src/vizier/services/agent/controller/throwaway_dummy_data.h"
 
 using pl::table_store::Column;
 using pl::table_store::Table;

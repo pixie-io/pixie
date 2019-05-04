@@ -29,7 +29,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "messages_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/shared/messages/messagespb",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/messages/messagespb",
     proto = ":messages_pl_proto",
     visibility = ["//visibility:public"],
     deps = [

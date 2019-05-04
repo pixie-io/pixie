@@ -8,12 +8,12 @@
 #include <utility>
 
 #include "absl/strings/str_format.h"
-#include "src/agent/controller/controller.h"
-#include "src/agent/controller/throwaway_dummy_data.h"
 #include "src/common/base/base.h"
 #include "src/common/perf/perf.h"
 #include "src/common/uuid/uuid.h"
 #include "src/shared/schema/utils.h"
+#include "src/vizier/services/agent/controller/controller.h"
+#include "src/vizier/services/agent/controller/throwaway_dummy_data.h"
 namespace pl {
 namespace agent {
 

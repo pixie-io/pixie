@@ -1,9 +1,9 @@
 #include <grpcpp/grpcpp.h>
 #include <algorithm>
 
-#include "src/agent/controller/controller.h"
 #include "src/common/base/base.h"
 #include "src/shared/version/version.h"
+#include "src/vizier/services/agent/controller/controller.h"
 
 DEFINE_string(vizier_addr, gflags::StringFromEnv("PL_VIZIER_ADDR", "localhost:40000"),
               "The host address of vizier");
