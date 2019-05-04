@@ -52,6 +52,7 @@ class BCCConnector : public SourceConnector {
 
 class PIDCPUUseBCCConnector : public BCCConnector {
  public:
+  inline static const std::string_view kBCCScript = pidruntime_bcc_script;
   static constexpr SourceType kSourceType = SourceType::kEBPF;
   static constexpr char kName[] = "bcc_pid_cpu_usage";
   inline static const DataElements kElements = {DataElement("time_", types::DataType::TIME64NS),
@@ -79,7 +80,6 @@ class PIDCPUUseBCCConnector : public BCCConnector {
         event_config_(perf_sw_ids::PERF_COUNT_SW_CPU_CLOCK) {}
 
  private:
-  inline static const std::string_view kBCCScript = pidruntime_bcc_script;
   static constexpr char kFunctionName[] = "trace_pid_runtime";
 
   uint32_t event_type_;

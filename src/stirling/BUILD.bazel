@@ -42,6 +42,12 @@ pl_cc_library(
     }),
 )
 
+pl_cc_test(
+    name = "bpf_program_test",
+    srcs = ["bpf_program_test.cc"],
+    deps = [":cc_library"],
+)
+
 pl_cc_resource(
     name = "bt_files",
     srcs = [

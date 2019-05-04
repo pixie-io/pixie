@@ -35,6 +35,8 @@ namespace stirling {
 
 class HTTPTraceConnector : public SourceConnector {
  public:
+  inline static const std::string_view kBCCScript = http_trace_bcc_script;
+
   static constexpr SourceType kSourceType = SourceType::kEBPF;
   static constexpr char kName[] = "bcc_http_trace";
   // TODO(yzhao): As of 2019-04-18, all HTTP trace data is written to one table. An option to
@@ -92,8 +94,6 @@ class HTTPTraceConnector : public SourceConnector {
     // TODO(oazizi): Is there a better place/time to grab the flags?
     filter_substrs_ = absl::StrSplit(FLAGS_selected_content_type_substrs, ",", absl::SkipEmpty());
   }
-
-  inline static const std::string_view kBCCScript = http_trace_bcc_script;
 
   FRIEND_TEST(HandleProbeOutputTest, FilterMessages);
   inline static std::vector<std::string_view> filter_substrs_;
