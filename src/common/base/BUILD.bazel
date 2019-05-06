@@ -20,7 +20,7 @@ pl_cc_test(
     srcs = ["status_test.cc"],
     deps = [
         ":cc_library",
-        #        "//src/common/codes:error_codes_pl_cc_proto",
+        "//src/common/base/testproto:test_pl_cc_proto",
     ],
 )
 

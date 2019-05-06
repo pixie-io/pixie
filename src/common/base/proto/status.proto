@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/any.proto";
+
 package pl.statuspb;
 
 option go_package = "statuspb";
@@ -37,4 +39,5 @@ enum Code {
 message Status {
   Code err_code = 1;
   string msg = 2;
+  google.protobuf.Any context = 3;
 }

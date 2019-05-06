@@ -1,8 +1,11 @@
 #pragma once
+#include <google/protobuf/any.h>
+#include <google/protobuf/message.h>
 #include <gtest/gtest.h>
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "src/common/base/logging.h"
 #include "src/common/base/macros.h"
@@ -16,6 +19,8 @@ class PL_MUST_USE_RESULT Status {
   Status() = default;
   Status(const Status& s) noexcept;
   Status(pl::statuspb::Code code, const std::string& msg);
+  Status(pl::statuspb::Code code, const std::string& msg,
+         std::unique_ptr<google::protobuf::Message> ctx);
   // NOLINTNEXTLINE to make it easier to return status.
   Status(const pl::statuspb::Status& status_pb);
 
@@ -31,6 +36,9 @@ class PL_MUST_USE_RESULT Status {
 
   const std::string& msg() const { return ok() ? empty_string() : state_->msg; }
 
+  google::protobuf::Any* context() const { return ok() ? nullptr : state_->context.get(); }
+  bool has_context() const { return ok() ? false : state_->context != nullptr; }
+
   bool operator==(const Status& x) const;
   bool operator!=(const Status& x) const;
 
@@ -43,8 +51,23 @@ class PL_MUST_USE_RESULT Status {
 
  private:
   struct State {
+    // Needed for a call in status.cc.
+    State() {}
+    State(const State& state) noexcept;
+    State(pl::statuspb::Code code, std::string msg, std::unique_ptr<google::protobuf::Any> context)
+        : code(code), msg(msg), context(std::move(context)) {}
+    State(pl::statuspb::Code code, std::string msg,
+          std::unique_ptr<google::protobuf::Message> generic_pb_context)
+        : code(code), msg(msg) {
+      if (generic_pb_context == nullptr) {
+        return;
+      }
+      context = std::make_unique<google::protobuf::Any>();
+      context->PackFrom(*generic_pb_context);
+    }
     pl::statuspb::Code code;
     std::string msg;
+    std::unique_ptr<google::protobuf::Any> context;
   };
 
   static const std::string& empty_string() {
@@ -55,6 +78,17 @@ class PL_MUST_USE_RESULT Status {
   // Will be null if status is OK.
   std::unique_ptr<State> state_;
 };
+
+inline Status::State::State(const State& state) noexcept {
+  code = state.code;
+  msg = state.msg;
+  if (!state.context) {
+    context = nullptr;
+    return;
+  }
+  context = std::unique_ptr<google::protobuf::Any>(state.context->New());
+  context->CopyFrom(*state.context);
+}
 
 inline Status::Status(const Status& s) noexcept
     : state_((s.state_ == nullptr) ? nullptr : new State(*s.state_)) {}
