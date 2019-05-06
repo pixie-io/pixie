@@ -408,7 +408,28 @@ TEST(NegationTest, DISABLED_pythonic_negation) {
                      "filterDF.Result(name='filtered')"},
                     "\n");
   EXPECT_OK(ParseQuery(pythonic_negation));
-}  // namespace compiler
+}
+class OpsAsAttributes : public ::testing::TestWithParam<std::string> {};
+TEST_P(OpsAsAttributes, valid_attributes) {
+  std::string op_call = GetParam();
+  std::string invalid_query =
+      absl::StrJoin({"invalid_queryDF = From(table='cpu', select=['bool_col']) ", "opDF = $0",
+                     "opDF.Result(name='out')"},
+                    "\n");
+  invalid_query = absl::Substitute(invalid_query, op_call);
+  EXPECT_NOT_OK(ParseQuery(invalid_query));
+  std::string valid_query = absl::StrJoin({"queryDF = From(table='cpu', select=['bool_col']) ",
+                                           "opDF = queryDF.$0", "opDF.Result(name='out')"},
+                                          "\n");
+  valid_query = absl::Substitute(valid_query, op_call);
+  EXPECT_OK(ParseQuery(valid_query));
+}
+std::vector<std::string> operators{
+    "Filter(fn=lambda r : r.bool_col)", "Map(fn=lambda r : r.bool_col)",
+    "Agg(fn=lambda r : pl.count(r.bool_col),by=lambda r : r.bool_col)", "Limit(rows=1000)",
+    "Range(start=plc.now() - plc.minutes(2), stop=plc.now())"};
+
+INSTANTIATE_TEST_CASE_P(OpsAsAttributesSuite, OpsAsAttributes, ::testing::ValuesIn(operators));
 
 }  // namespace compiler
 }  // namespace carnot

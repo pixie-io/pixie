@@ -74,16 +74,6 @@ Status OperatorIR::Init(IRNode* parent, const ArgMap& args, const pypa::AstPtr& 
 
 bool MemorySourceIR::HasLogicalRepr() const { return true; }
 
-Status MemorySourceIR::Init(IRNode* table_node, IRNode* select, const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
-  table_node_ = table_node;
-  select_ = select;
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, select_));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, table_node_));
-
-  return Status::OK();
-}
-
 Status MemorySourceIR::ToProto(carnotpb::Operator* op) const {
   auto pb = new carnotpb::MemorySourceOperator();
   DCHECK(table_node_->type() == IRNodeType::StringType);
@@ -135,24 +125,21 @@ std::string MemorySourceIR::DebugString(int64_t depth) const {
 bool MemorySinkIR::HasLogicalRepr() const { return true; }
 
 Status MemorySinkIR::InitImpl(const ArgMap& args) {
+  DCHECK(args.find("name") != args.end());
   PL_ASSIGN_OR_RETURN(name_, IRUtils::GetStrIRValue(*(args.find("name")->second)));
   name_set_ = true;
+  return Status::OK();
+}
 
-  return Status::OK();
-}
-// TODO(philkuz) impl
 Status MemorySourceIR::InitImpl(const ArgMap& args) {
-  PL_UNUSED(args);
-  return Status::OK();
-}
-// TODO(philkuz) impl
-Status FilterIR::InitImpl(const ArgMap& args) {
-  PL_UNUSED(args);
-  return Status::OK();
-}
-// TODO(philkuz) impl
-Status LimitIR::InitImpl(const ArgMap& args) {
-  PL_UNUSED(args);
+  DCHECK(args.find("table") != args.end());
+  DCHECK(args.find("select") != args.end());
+  // TODO(philkuz) store the table as a string instead of this.
+  table_node_ = args.find("table")->second;
+  // TODO(philkuz) store the select as a string instead of this.
+  select_ = args.find("select")->second;
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, select_));
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, table_node_));
   return Status::OK();
 }
 // TODO(philkuz) impl
@@ -308,10 +295,9 @@ Status MapIR::ToProto(carnotpb::Operator* op) const {
   return Status::OK();
 }
 
-Status FilterIR::Init(IRNode* parent_node, IRNode* filter_func, const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
-  filter_func_ = filter_func;
-  PL_RETURN_IF_ERROR(SetParent(parent_node));
+Status FilterIR::InitImpl(const ArgMap& args) {
+  DCHECK(args.find("fn") != args.end());
+  filter_func_ = args.find("fn")->second;
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, filter_func_));
   return Status::OK();
 }
@@ -343,10 +329,9 @@ Status FilterIR::ToProto(carnotpb::Operator* op) const {
   return Status::OK();
 }
 
-Status LimitIR::Init(IRNode* parent_node, IRNode* limit_value_node, const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
-  limit_node_ = limit_value_node;
-  PL_RETURN_IF_ERROR(SetParent(parent_node));
+Status LimitIR::InitImpl(const ArgMap& args) {
+  DCHECK(args.find("rows") != args.end());
+  limit_node_ = args.find("rows")->second;
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, limit_node_));
   return Status::OK();
 }

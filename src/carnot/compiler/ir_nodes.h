@@ -412,7 +412,6 @@ class MemorySourceIR : public OperatorIR {
  public:
   MemorySourceIR() = delete;
   explicit MemorySourceIR(int64_t id) : OperatorIR(id, MemorySourceType, false, true) {}
-  Status Init(IRNode* table_node, IRNode* select, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   IRNode* table_node() { return table_node_; }
@@ -431,11 +430,10 @@ class MemorySourceIR : public OperatorIR {
     columns_ = columns;
   }
   Status ToProto(carnotpb::Operator*) const override;
-  // TODO(philkuz) implement
-  std::vector<std::string> ArgKeys() override { return {"name"}; }
+  std::vector<std::string> ArgKeys() override { return {"table", "select"}; }
 
-  // TODO(philkuz) implement
   std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
+    // TODO(philkuz) allow default select value that selects all.
     return std::unordered_map<std::string, IRNode*>();
   }
   Status InitImpl(const ArgMap& args) override;
@@ -600,16 +598,13 @@ class FilterIR : public OperatorIR {
  public:
   FilterIR() = delete;
   explicit FilterIR(int64_t id) : OperatorIR(id, FilterType, true, false) {}
-  Status Init(IRNode* parent, IRNode* filter_func, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   IRNode* filter_func() const { return filter_func_; }
   Status ToProto(carnotpb::Operator*) const override;
 
-  // TODO(philkuz) implement
-  std::vector<std::string> ArgKeys() override { return {"name"}; }
+  std::vector<std::string> ArgKeys() override { return {"fn"}; }
 
-  // TODO(philkuz) implement
   std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
     return std::unordered_map<std::string, IRNode*>();
   }
@@ -623,7 +618,6 @@ class LimitIR : public OperatorIR {
  public:
   LimitIR() = delete;
   explicit LimitIR(int64_t id) : OperatorIR(id, LimitType, true, false) {}
-  Status Init(IRNode* parent, IRNode* limit_value, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   Status ToProto(carnotpb::Operator*) const override;
@@ -634,10 +628,8 @@ class LimitIR : public OperatorIR {
   bool limit_value_set() const { return limit_value_set_; }
   IRNode* limit_node() const { return limit_node_; }
 
-  // TODO(philkuz) implement
-  std::vector<std::string> ArgKeys() override { return {"name"}; }
+  std::vector<std::string> ArgKeys() override { return {"rows"}; }
 
-  // TODO(philkuz) implement
   std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
     return std::unordered_map<std::string, IRNode*>();
   }

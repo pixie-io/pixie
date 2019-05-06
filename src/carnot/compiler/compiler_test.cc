@@ -790,7 +790,7 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 5
+      id: 1
       sorted_deps: 0
     }
     nodes {
@@ -801,7 +801,7 @@ nodes {
     }
   }
   nodes {
-    id: 5
+    id: 1
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -824,7 +824,7 @@ nodes {
             name: "pl.$0"
             args {
               column {
-                node: 5
+                node: 1
               }
             }
             args {
@@ -836,10 +836,10 @@ nodes {
           }
         }
         columns {
-          node: 5
+          node: 1
         }
         columns {
-          node: 5
+          node: 1
           index: 1
         }
       }
@@ -918,7 +918,7 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 2
+      id: 1
       sorted_deps: 0
     }
     nodes {
@@ -929,7 +929,7 @@ nodes {
     }
   }
   nodes {
-    id: 2
+    id: 1
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -949,10 +949,10 @@ nodes {
       limit_op {
         limit: 1000
         columns {
-          node: 2
+          node: 1
         }
         columns {
-          node: 2
+          node: 1
           index: 1
         }
       }
@@ -981,11 +981,13 @@ TEST_F(CompilerTest, limit_test) {
                                     "\n");
   carnotpb::Plan expected_plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedLimitPlan, &expected_plan_pb));
-  VLOG(2) << expected_plan_pb.DebugString();
+  VLOG(1) << "expected";
+  VLOG(1) << expected_plan_pb.DebugString();
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan);
-  VLOG(2) << plan.ValueOrDie().DebugString();
+  VLOG(1) << "actual";
+  VLOG(1) << plan.ValueOrDie().DebugString();
 
   EXPECT_TRUE(CompareLogicalPlans(expected_plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
 }

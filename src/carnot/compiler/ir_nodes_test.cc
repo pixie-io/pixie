@@ -38,7 +38,8 @@ TEST(IRTest, check_connection) {
   EXPECT_OK(table_str->Init("tableName", ast));
   EXPECT_OK(select_col->Init("testCol", ast));
   EXPECT_OK(select_list->Init(ast, {select_col}));
-  EXPECT_OK(src->Init(table_str, select_list, ast));
+  ArgMap memsrc_argmap({{"table", table_str}, {"select", select_list}});
+  EXPECT_OK(src->Init(nullptr, memsrc_argmap, ast));
   EXPECT_OK(range->Init(src, start_rng_str, stop_rng_str, ast));
   EXPECT_EQ(range->parent(), src);
   EXPECT_EQ(range->start_repr(), start_rng_str);
@@ -117,7 +118,8 @@ TEST(ToProto, memory_source_ir) {
   auto select_list = graph->MakeNode<ListIR>().ValueOrDie();
   auto table_node = graph->MakeNode<StringIR>().ValueOrDie();
   EXPECT_OK(table_node->Init("test_table", ast));
-  EXPECT_OK(mem_src->Init(table_node, select_list, ast));
+  ArgMap memsrc_argmap({{"table", table_node}, {"select", select_list}});
+  EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
 
   auto col_1 = graph->MakeNode<ColumnIR>().ValueOrDie();
   EXPECT_OK(col_1->Init("cpu0", ast));

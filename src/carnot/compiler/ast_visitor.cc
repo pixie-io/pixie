@@ -206,15 +206,15 @@ StatusOr<IRNode*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(std::string func_name, GetFuncName(node));
   IRNode* ir_node;
   if (func_name == kFromOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessFromOp(node));
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<MemorySourceIR>(node));
   } else if (func_name == kRangeOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessRangeOp(node));
   } else if (func_name == kMapOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<MapIR>(node));
   } else if (func_name == kFilterOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessFilterOp(node));
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<FilterIR>(node));
   } else if (func_name == kLimitOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessLimitOp(node));
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<LimitIR>(node));
   } else if (func_name == kBlockingAggOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<BlockingAggIR>(node));
   } else if (func_name == kSinkOpId) {
@@ -225,14 +225,6 @@ StatusOr<IRNode*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
     std::string err_msg = absl::Substitute("No function named '$0'", func_name);
     return CreateAstError(err_msg, node);
   }
-  return ir_node;
-}
-
-StatusOr<IRNode*> ASTWalker::ProcessFromOp(const pypa::AstCallPtr& node) {
-  PL_ASSIGN_OR_RETURN(MemorySourceIR * ir_node, ir_graph_->MakeNode<MemorySourceIR>());
-  // Get the arguments in the node.
-  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"table", "select"}, true));
-  PL_RETURN_IF_ERROR(ir_node->Init(args["table"], args["select"], node));
   return ir_node;
 }
 
@@ -262,9 +254,9 @@ StatusOr<TOpIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
   if (node->function->type == AstType::Attribute) {
     PL_ASSIGN_OR_RETURN(call_result, ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
   }
-
   PL_ASSIGN_OR_RETURN(ArgMap args,
                       ProcessArgs(node, ir_node->ArgKeys(), true, ir_node->DefaultArgValues(node)));
+
   PL_RETURN_IF_ERROR(ir_node->Init(call_result, args, node));
   return ir_node;
 }
@@ -342,36 +334,6 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
   ArgMap agg_args{{"by", agg_by_ir_node}, {"fn", args["fn"]}};
   PL_RETURN_IF_ERROR(agg_ir_node->Init(map_ir_node, agg_args, node));
   return agg_ir_node;
-}
-
-StatusOr<IRNode*> ASTWalker::ProcessFilterOp(const pypa::AstCallPtr& node) {
-  if (node->function->type != AstType::Attribute) {
-    return CreateAstError(absl::StrFormat("Expected Filter to be an attribute, not a %s",
-                                          GetAstTypeName(node->function->type)),
-                          node->function);
-  }
-  PL_ASSIGN_OR_RETURN(FilterIR * ir_node, ir_graph_->MakeNode<FilterIR>());
-  // Get arguments.
-  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"fn"}, true));
-  PL_ASSIGN_OR_RETURN(IRNode * call_result,
-                      ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
-  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["fn"], node));
-  return ir_node;
-}
-
-StatusOr<IRNode*> ASTWalker::ProcessLimitOp(const pypa::AstCallPtr& node) {
-  if (node->function->type != AstType::Attribute) {
-    return CreateAstError(absl::StrFormat("Expected Limit to be an attribute, not a %s",
-                                          GetAstTypeName(node->function->type)),
-                          node->function);
-  }
-  PL_ASSIGN_OR_RETURN(LimitIR * ir_node, ir_graph_->MakeNode<LimitIR>());
-  // Get arguments.
-  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"rows"}, true));
-  PL_ASSIGN_OR_RETURN(IRNode * call_result,
-                      ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
-  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["rows"], node));
-  return ir_node;
 }
 
 StatusOr<IRNode*> ASTWalker::ProcessStr(const pypa::AstStrPtr& ast) {
