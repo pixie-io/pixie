@@ -31,9 +31,11 @@ using pl::types::Int64Value;
 using pl::types::StringValue;
 using pl::types::Time64NSValue;
 
+using pl::types::DataType;
+
 // Test arguments, from the command line
 DEFINE_uint64(kRNGSeed, gflags::Uint64FromEnv("seed", 377), "Random Seed");
-DEFINE_uint64(kNumTables, gflags::Uint64FromEnv("num_tables", 2), "Number of sources");
+DEFINE_uint64(kNumSources, gflags::Uint64FromEnv("num_sources", 2), "Number of sources");
 DEFINE_uint64(kNumIterMin, gflags::Uint64FromEnv("num_iter_min", 10), "Min number of iterations");
 DEFINE_uint64(kNumIterMax, gflags::Uint64FromEnv("num_iter_max", 20), "Max number of iterations");
 DEFINE_uint64(kNumProcessedRequirement, gflags::Uint64FromEnv("num_processed_required", 5000),
@@ -58,11 +60,8 @@ class StirlingTest : public ::testing::Test {
   std::unordered_map<uint64_t, const DataElements*> schemas_;
 
   // Reference model (checkers).
-  std::unordered_map<uint64_t, pl::stirling::LinearSequence<int64_t>> lin_seq_checker_;
-  std::unordered_map<uint64_t, pl::stirling::ModuloSequence<int64_t>> mod10_seq_checker_;
-  std::unordered_map<uint64_t, pl::stirling::QuadraticSequence<int64_t>> square_seq_checker_;
-  std::unordered_map<uint64_t, pl::stirling::LinearSequence<double>> pi_seq_checker_;
-  std::unordered_map<uint64_t, pl::stirling::FibonacciSequence<int64_t>> fib_seq_checker_;
+  std::unordered_map<uint64_t, std::unique_ptr<pl::stirling::Sequence<int64_t>>> int_seq_checker_;
+  std::unordered_map<uint64_t, std::unique_ptr<pl::stirling::Sequence<double>>> double_seq_checker_;
 
   std::unordered_map<uint64_t, uint64_t> num_processed_per_table_;
   std::atomic<uint64_t> num_processed_;
@@ -75,7 +74,7 @@ class StirlingTest : public ::testing::Test {
 
  public:
   inline static const uint64_t& kRNGSeed = FLAGS_kRNGSeed;
-  inline static const uint64_t& kNumTables = FLAGS_kNumTables;
+  inline static const uint64_t& kNumSources = FLAGS_kNumSources;
   inline static const uint64_t& kNumIterMin = FLAGS_kNumIterMin;
   inline static const uint64_t& kNumIterMax = FLAGS_kNumIterMax;
   inline static const uint64_t& kNumProcessedRequirement = FLAGS_kNumProcessedRequirement;
@@ -89,7 +88,7 @@ class StirlingTest : public ::testing::Test {
   void SetUp() override {
     // Make registry with a number of SeqGenConnectors.
     std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
-    for (uint32_t i = 0; i < kNumTables; ++i) {
+    for (uint32_t i = 0; i < kNumSources; ++i) {
       registry->RegisterOrDie<SeqGenConnector>(absl::StrFormat("sequences%u", i));
     }
 
@@ -107,11 +106,19 @@ class StirlingTest : public ::testing::Test {
     for (const auto& [id, name] : id_to_name_map_) {
       schemas_.emplace(id, &SeqGenConnector::kElements);
 
-      lin_seq_checker_.emplace(id, pl::stirling::LinearSequence<int64_t>(1, 1));
-      mod10_seq_checker_.emplace(id, pl::stirling::ModuloSequence<int64_t>(10));
-      square_seq_checker_.emplace(id, pl::stirling::QuadraticSequence<int64_t>(1, 0, 0));
-      pi_seq_checker_.emplace(id, pl::stirling::LinearSequence<double>(3.14159, 0));
-      fib_seq_checker_.emplace(id, pl::stirling::FibonacciSequence<int64_t>());
+      // Start at 1, because column 0 is time.
+      uint32_t col_idx = 1;
+      int_seq_checker_.emplace((id << 32) | col_idx++,
+                               std::make_unique<pl::stirling::LinearSequence<int64_t>>(1, 1));
+      int_seq_checker_.emplace((id << 32) | col_idx++,
+                               std::make_unique<pl::stirling::ModuloSequence<int64_t>>(10));
+      int_seq_checker_.emplace((id << 32) | col_idx++,
+                               std::make_unique<pl::stirling::QuadraticSequence<int64_t>>(1, 0, 0));
+      int_seq_checker_.emplace((id << 32) | col_idx++,
+                               std::make_unique<pl::stirling::FibonacciSequence<int64_t>>());
+      double_seq_checker_.emplace(
+          (id << 32) | col_idx++,
+          std::make_unique<pl::stirling::LinearSequence<double>>(3.14159, 0));
 
       num_processed_per_table_.emplace(id, 0);
       num_processed_ = 0;
@@ -148,43 +155,31 @@ class StirlingTest : public ::testing::Test {
   void AppendData(uint64_t table_id, std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
     // Note: Implicit assumption (not checked here) is that all columns have the same size
     uint64_t num_records = (*record_batch)[0]->Size();
-
     CheckRecordBatch(table_id, num_records, *record_batch);
   }
 
-  void CheckRecordBatch(uint32_t table_id, uint64_t num_records,
+  void CheckRecordBatch(const uint32_t table_id, uint64_t num_records,
                         const ColumnWrapperRecordBatch& record_batch) {
     auto table_schema = *(schemas_[table_id]);
 
     for (uint32_t i = 0; i < num_records; ++i) {
       uint32_t j = 0;
+
       for (auto col : record_batch) {
-        // TODO(oazizi): Switch is statically connected to the SeqGenConnector schema.
-        // Find a less brittle way.
-        switch (j) {
-          case 0: {
-            auto ns_count = col->Get<Time64NSValue>(i).val;
-            PL_UNUSED(ns_count);
+        uint64_t key = static_cast<uint64_t>(table_id) << 32 | j;
+
+        switch (table_schema[j].type()) {
+          case DataType::TIME64NS: {
+            auto val = col->Get<Time64NSValue>(i).val;
+            PL_UNUSED(val);
           } break;
-          case 1: {
-            auto val = col->Get<Int64Value>(i).val;
-            EXPECT_EQ(lin_seq_checker_.at(table_id)(), val);
+          case DataType::INT64: {
+            auto& checker = *(int_seq_checker_.at(key));
+            EXPECT_EQ(checker(), col->Get<Int64Value>(i).val);
           } break;
-          case 2: {
-            auto val = col->Get<Int64Value>(i).val;
-            EXPECT_EQ(mod10_seq_checker_.at(table_id)(), val);
-          } break;
-          case 3: {
-            auto val = col->Get<Int64Value>(i).val;
-            EXPECT_EQ(square_seq_checker_.at(table_id)(), val);
-          } break;
-          case 4: {
-            auto val = col->Get<Int64Value>(i).val;
-            EXPECT_EQ(fib_seq_checker_.at(table_id)(), val);
-          } break;
-          case 5: {
-            auto val = col->Get<Float64Value>(i).val;
-            EXPECT_EQ(pi_seq_checker_.at(table_id)(), val);
+          case DataType::FLOAT64: {
+            auto& checker = *(double_seq_checker_.at(key));
+            EXPECT_EQ(checker(), col->Get<Float64Value>(i).val);
           } break;
           default:
             CHECK(false) << absl::StrFormat("Unrecognized type: $%s",
