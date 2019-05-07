@@ -2,7 +2,7 @@ package compiler
 
 // // The following is live code even though it is commented out.
 // // If you delete it, the compiler will break.
-// #include "src/vizier/components/compiler/compiler_export.h"
+// #include "src/carnot/compiler/compiler_export.h"
 //
 // CompilerPtr CompilerNewGoStr() {
 //   return CompilerNew();
@@ -29,7 +29,7 @@ import (
 	"unsafe"
 
 	"github.com/gogo/protobuf/proto"
-	pb "pixielabs.ai/pixielabs/src/carnot/proto"
+	pb "pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
 )
 
 // GoCompiler wraps the C Compiler.
@@ -45,7 +45,7 @@ func New() GoCompiler {
 }
 
 // Compile the query with the schema in place, then return the result as a logical plan protobuf.
-func (cm GoCompiler) Compile(schema, tableName, query string) (*pb.Plan, error) {
+func (cm GoCompiler) Compile(schema, tableName, query string) (*pb.CompilerResult, error) {
 	var resultLen C.int
 	// TODO(reviewer) what if we also pass a "error" bool pointer that keeps
 	// track of whether the result is an error or not?
@@ -57,7 +57,7 @@ func (cm GoCompiler) Compile(schema, tableName, query string) (*pb.Plan, error) 
 		return nil, errors.New("no result returned")
 	}
 
-	plan := &pb.Plan{}
+	plan := &pb.CompilerResult{}
 	if err := proto.Unmarshal(lp, plan); err != nil {
 		return plan, fmt.Errorf("error: '%s'; string: '%s'", err, string(lp))
 	}

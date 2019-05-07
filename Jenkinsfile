@@ -23,8 +23,8 @@ final String BAZEL_SRC_FILES_PATH = "//src/... //throwaway/..."
 // ASAN/TSAN only work for CC code.
 // TODO(zasgar): This query selects only cc binaries. After GO ASAN/TSAN works, we can update the ASAN/TSAN builds
 // to include all binaries.
-// This line also contains a hack to filter out go_default_library, which is the assumed name for go binaries.
-final String BAZEL_CC_QUERY = "`bazel query 'kind(\"cc_(binary|test) rule\", src/...)' | grep -v go_default_library `"
+// This line also contains a hack to filter out cgo object files, assuming the object files have the _cgo_.o suffix.
+final String BAZEL_CC_QUERY = "`bazel query 'kind(\"cc_(binary|test) rule\", src/...)' | grep -v '_cgo_.o\$'`"
 
 // Sometimes docker fetches fail, so we just do a retry. This can be optimized to just
 // retry on docker failues, but not worth it now.

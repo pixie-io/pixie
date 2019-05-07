@@ -1,6 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -12,6 +13,8 @@ pl_cc_library(
         exclude = [
             "**/*_test.cc",
             "**/*_test_utils.h",
+            "compiler_export.cc",
+            "compiler_export.h",
         ],
     ),
     hdrs = ["compiler.h"],
@@ -20,6 +23,55 @@ pl_cc_library(
         "//src/carnot/proto:plan_pl_cc_proto",
         "//src/carnot/udf:cc_library",
         "//third_party:libpypa",
+    ],
+)
+
+pl_cc_library(
+    name = "cc_compiler_export",
+    srcs = [
+        "compiler_export.cc",
+    ],
+    hdrs = ["compiler_export.h"],
+    deps = [
+        "//src/carnot/compiler:cc_library",
+        "//src/carnot/compiler/compilerpb:compiler_status_pl_cc_proto",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+pl_go_library(
+    name = "go_compiler_library",
+    srcs = ["compiler.go"],
+    cdeps = [":cc_compiler_export"],
+    cgo = True,
+    importpath = "pixielabs.ai/pixielabs/src/carnot/compiler",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
+        "//src/carnot/proto:plan_pl_go_proto",
+        "//src/shared/types/proto:types_pl_go_proto",
+        "//src/table_store/proto:schema_pl_go_proto",
+        "@com_github_gogo_protobuf//proto:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_compiler_test",
+    srcs = ["compiler_test.go"],
+    deps = [
+        ":go_compiler_library",
+        "//src/carnot/proto:plan_pl_go_proto",
+        "//src/common/base/proto:status_pl_go_proto",
+        "@com_github_gogo_protobuf//proto:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+    ],
+)
+
+pl_cc_test(
+    name = "compiler_export_test",
+    srcs = ["compiler_export_test.cc"],
+    deps = [
+        ":cc_compiler_export",
     ],
 )
 

@@ -9,8 +9,9 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	pb "pixielabs.ai/pixielabs/src/carnot/proto"
-	"pixielabs.ai/pixielabs/src/vizier/components/compiler"
+	"pixielabs.ai/pixielabs/src/carnot/compiler"
+	planpb "pixielabs.ai/pixielabs/src/carnot/proto"
+	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 )
 
 // TestCompiler_Simple makes sure that we can actually pass in all the info needed
@@ -100,8 +101,8 @@ func TestCompiler_Simple(t *testing.T) {
 		}
 	}`
 
-	expectedPlanPb := &pb.Plan{}
-	if err := proto.UnmarshalText(expectedPlan, expectedPlanPb); err != nil {
+	expectedPlanPB := &planpb.Plan{}
+	if err := proto.UnmarshalText(expectedPlan, expectedPlanPB); err != nil {
 		fmt.Println(err)
 	}
 
@@ -134,10 +135,55 @@ func TestCompiler_Simple(t *testing.T) {
 		"mapDF.Result(name='out')",
 	}
 	query := strings.Join(queryLines, "\n")
-	compilerPlanPb, err := c.Compile(relProto, tableName, query)
+	compilerResultPB, err := c.Compile(relProto, tableName, query)
 	if err != nil {
 		log.Fatalln("Failed to compile:", err)
 		os.Exit(1)
 	}
-	assert.True(t, proto.Equal(expectedPlanPb, compilerPlanPb))
+	status := compilerResultPB.Status
+	assert.Equal(t, status.ErrCode, statuspb.OK)
+
+	compilerPlanPB := compilerResultPB.LogicalPlan
+	assert.True(t, proto.Equal(expectedPlanPB, compilerPlanPB))
+}
+
+func TestCompiler_MissingTable(t *testing.T) {
+	// Setup the schema from a proto.
+	relProto := `columns {
+		column_name: "_time"
+		column_type: TIME64NS
+	}
+	columns {
+		column_name: "cpu_cycles"
+		column_type: INT64 
+	}
+	columns {
+		column_name: "tlb_misses"
+		column_type: INT64 
+	}
+	columns {
+		column_name: "http"
+		column_type: INT64
+	}`
+	tableName := "perf_and_http"
+
+	// Create the compiler.
+	c := compiler.New()
+	defer c.Free()
+	// Pass the relation proto, table and query to the compilation.
+	queryLines := []string{
+		"queryDF = From(table='not_perf_and_http', select=['_time', 'cpu_cycles', 'tlb_misses', 'http'])",
+		"mapDF = queryDF.Map(fn=lambda r : {'http_code' : r.http, 'cpu_tlb_ratio' : r.cpu_cycles/r.tlb_misses})",
+		"mapDF.Result(name='out')",
+	}
+	query := strings.Join(queryLines, "\n")
+	compilerResultPB, err := c.Compile(relProto, tableName, query)
+	if err != nil {
+		log.Fatalln("Failed to compile:", err)
+		os.Exit(1)
+	}
+	status := compilerResultPB.Status
+
+	assert.NotEqual(t, status.ErrCode, statuspb.OK)
+	// TODO(PL-518) test the error context.
 }
