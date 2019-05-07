@@ -205,8 +205,10 @@ struct ProbeSpec {
 const std::vector<ProbeSpec> kProbeSpecs = {
     {"accept4", "probe_entry_accept4"},
     {"accept4", "probe_ret_accept4", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-    {"write", "probe_write"},
-    {"send", "probe_send"},
+    {"write", "probe_entry_write"},
+    {"write", "probe_ret_write", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
+    {"send", "probe_entry_send"},
+    {"send", "probe_ret_send", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
     {"close", "probe_close"},
 };
 

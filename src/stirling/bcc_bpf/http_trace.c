@@ -59,6 +59,14 @@ BPF_HASH(active_sock_addr, u64, struct addr_info_t);
 // Key is {TGID, fd}.
 BPF_HASH(accept_info_map, u64, struct accept_info_t);
 
+struct write_info_t {
+  int fd;
+  char* buf;
+  struct accept_info_t accept_info;
+} __attribute__((__packed__, aligned(8)));
+
+// Map from a thread's id to its ongoing write() syscall's input argument.
+BPF_HASH(active_write_info_map, u64, struct write_info_t);
 
 // This function stores the address to the sockaddr struct in the active_sock_addr map.
 // The key is the current pid/tgid.
@@ -75,7 +83,6 @@ int probe_entry_accept4(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, 
 
   return 0;
 }
-
 
 // Read the sockaddr values and write to the output buffer.
 int probe_ret_accept4(struct pt_regs *ctx) {
@@ -115,9 +122,7 @@ int probe_ret_accept4(struct pt_regs *ctx) {
   return 0;
 }
 
-static int probe_write_send(struct pt_regs *ctx, int fd, char* buf, size_t count, uint32_t event_type) {
-  u32 zero = 0;
-
+static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t count) {
   u64 id = bpf_get_current_pid_tgid();
   u64 tgid = id >> 32;
   u64 lookup_fd = (tgid << 32) | fd;
@@ -128,9 +133,34 @@ static int probe_write_send(struct pt_regs *ctx, int fd, char* buf, size_t count
     return 0;
   }
 
+  struct write_info_t write_info;
+  memset(&write_info, 0, sizeof(struct write_info_t));
+  write_info.fd = fd;
+  write_info.buf = buf;
+  write_info.accept_info = *accept_info;
+
+  active_write_info_map.update(&id, &write_info);
+  return 0;
+}
+
+static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
+  u64 id = bpf_get_current_pid_tgid();
+
+  int64_t written_bytes = PT_REGS_RC(ctx);
+  if (written_bytes < 0) {
+    // This write() call failed.
+    goto done;
+  }
+
+  const struct write_info_t* write_info = active_write_info_map.lookup(&id);
+  if (write_info == NULL) {
+    goto done;
+  }
+
+  u32 zero = 0;
   struct syscall_write_event_t *event = write_buffer_heap.lookup(&zero);
   if (event == NULL) {
-    return 0;
+    goto done;
   }
 
   // TODO(oazizi/yzhao): Why does the commented line not work? Error message is below:
@@ -139,33 +169,45 @@ static int probe_write_send(struct pt_regs *ctx, int fd, char* buf, size_t count
   //size_t buf_size = count < sizeof(event->msg) ? count : sizeof(event->msg);
   size_t buf_size = sizeof(event->msg);
 
-  event->attr.accept_info = *accept_info;
+  event->attr.accept_info = write_info->accept_info;
   event->attr.event_type = event_type;
-  event->attr.msg_bytes = count;
+  event->attr.msg_bytes = written_bytes;
+  // TODO(yzhao): This is the time is after write/send() finishes. If we want to capture the time
+  // before write/send() starts, we need to capture the time in probe_entry_write_send().
   event->attr.time_stamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
   event->attr.pid = (uint32_t)id;
-  event->attr.fd = fd;
+  event->attr.fd = write_info->fd;
   event->attr.msg_buf_size = buf_size;
 
-  bpf_probe_read(&event->msg, buf_size, (const void*) buf);
+  bpf_probe_read(&event->msg, buf_size, (const void*) write_info->buf);
 
   // Write snooped arguments to perf ring buffer.
   unsigned int size_to_submit = sizeof(event->attr) + buf_size;
   syscall_write_events.perf_submit(ctx, event, size_to_submit);
 
+ done:
+  // Regardless of what happened, after write/send() returns, there is no need to track the fd & buf
+  // being accepted by write/send() call, therefore we can remove the entry.
+  active_write_info_map.delete(&id);
   return 0;
 }
 
-int probe_write(struct pt_regs *ctx, int fd, char* buf, size_t count) {
-  return probe_write_send(ctx, fd, buf, count, kEventTypeSyscallWriteEvent);
+int probe_entry_write(struct pt_regs *ctx, int fd, char* buf, size_t count) {
+  return probe_entry_write_send(ctx, fd, buf, count);
 }
 
-int probe_send(struct pt_regs *ctx, int fd, char* buf, size_t count) {
-  return probe_write_send(ctx, fd, buf, count, kEventTypeSyscallSendEvent);
+int probe_ret_write(struct pt_regs *ctx) {
+  return probe_ret_write_send(ctx, kEventTypeSyscallWriteEvent);
 }
 
+int probe_entry_send(struct pt_regs *ctx, int fd, char* buf, size_t count) {
+  return probe_entry_write_send(ctx, fd, buf, count);
+}
 
+int probe_ret_send(struct pt_regs *ctx) {
+  return probe_ret_write_send(ctx, kEventTypeSyscallSendEvent);
+}
 
 int probe_close(struct pt_regs *ctx, int fd) {
   u64 id = bpf_get_current_pid_tgid();
