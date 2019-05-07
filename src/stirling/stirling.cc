@@ -207,19 +207,22 @@ Status StirlingImpl::AddSourceFromRegistry(
   auto source = registry_element.create_source_fn(name);
   PL_RETURN_IF_ERROR(source->Init());
 
-  // Step 2: Create the info class manager.
-  auto mgr = std::make_unique<InfoClassManager>(name);
-  auto mgr_ptr = mgr.get();
-  mgr->SetSourceConnector(source.get());
+  for (uint32_t i = 0; i < source->num_tables(); ++i) {
+    // Step 2: Create the info class manager.
+    auto mgr = std::make_unique<InfoClassManager>(source->table_name(i));
+    auto mgr_ptr = mgr.get();
+    mgr->SetSourceConnector(source.get(), i);
 
-  // Step 3: Setup the manager.
-  PL_CHECK_OK(mgr_ptr->PopulateSchemaFromSource());
-  mgr_ptr->SetSamplingPeriod(source->default_sampling_period());
-  mgr_ptr->SetPushPeriod(source->default_push_period());
+    // Step 3: Setup the manager.
+    PL_CHECK_OK(mgr_ptr->PopulateSchemaFromSource());
+    mgr_ptr->SetSamplingPeriod(source->default_sampling_period());
+    mgr_ptr->SetPushPeriod(source->default_push_period());
 
-  // Step 4: Keep pointers to all the objects
+    // Step 4: Keep pointers to all the objects
+    info_class_mgrs_.push_back(std::move(mgr));
+  }
+
   sources_.push_back(std::move(source));
-  info_class_mgrs_.push_back(std::move(mgr));
 
   return Status::OK();
 }

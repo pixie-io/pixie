@@ -26,12 +26,17 @@ class SeqGenConnector : public SourceConnector {
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{500};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
-  inline static const DataElements kElements = {DataElement("time_", types::DataType::TIME64NS),
-                                                DataElement("x", types::DataType::INT64),
-                                                DataElement("xmod10", types::DataType::INT64),
-                                                DataElement("xsquared", types::DataType::INT64),
-                                                DataElement("fibonnaci", types::DataType::INT64),
-                                                DataElement("PIx", types::DataType::FLOAT64)};
+  inline static const std::vector<DataTableSchema> kElements = {
+      DataTableSchema(std::string(kName) + "0", {DataElement("time_", types::DataType::TIME64NS),
+                                                 DataElement("x", types::DataType::INT64),
+                                                 DataElement("xmod10", types::DataType::INT64),
+                                                 DataElement("xsquared", types::DataType::INT64),
+                                                 DataElement("fibonnaci", types::DataType::INT64),
+                                                 DataElement("PIx", types::DataType::FLOAT64)}),
+      DataTableSchema(std::string(kName) + "1", {DataElement("time_", types::DataType::TIME64NS),
+                                                 DataElement("x", types::DataType::INT64),
+                                                 DataElement("xmod8", types::DataType::INT64)}),
+  };
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new SeqGenConnector(name));
@@ -49,25 +54,36 @@ class SeqGenConnector : public SourceConnector {
  protected:
   explicit SeqGenConnector(const std::string& name)
       : SourceConnector(kSourceType, name, kElements, kDefaultSamplingPeriod, kDefaultPushPeriod),
-        lin_seq_(1, 1),
-        mod10_seq_(10),
-        square_seq_(1, 0, 0),
-        pi_seq_(3.14159, 0),
+        table0_lin_seq_(1, 1),
+        table0_mod10_seq_(10),
+        table0_square_seq_(1, 0, 0),
+        table0_pi_seq_(3.14159, 0),
+        table1_lin_seq_(2, 2),
+        table1_mod8_seq_(8),
         rng_(37) {}
 
   Status InitImpl() override { return Status::OK(); }
 
-  void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) override;
+  void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
   Status StopImpl() override { return Status::OK(); }
 
  private:
-  TimeSequence<int64_t> time_seq_;
-  LinearSequence<int64_t> lin_seq_;
-  ModuloSequence<int64_t> mod10_seq_;
-  QuadraticSequence<int64_t> square_seq_;
-  LinearSequence<double> pi_seq_;
-  FibonacciSequence<int64_t> fib_seq_;
+  void TransferDataTable0(uint32_t num_records, uint32_t num_columns,
+                          types::ColumnWrapperRecordBatch* record_batch);
+  void TransferDataTable1(uint32_t num_records, uint32_t num_columns,
+                          types::ColumnWrapperRecordBatch* record_batch);
+
+  TimeSequence<int64_t> table0_time_seq_;
+  LinearSequence<int64_t> table0_lin_seq_;
+  ModuloSequence<int64_t> table0_mod10_seq_;
+  QuadraticSequence<int64_t> table0_square_seq_;
+  LinearSequence<double> table0_pi_seq_;
+  FibonacciSequence<int64_t> table0_fib_seq_;
+
+  TimeSequence<int64_t> table1_time_seq_;
+  LinearSequence<int64_t> table1_lin_seq_;
+  ModuloSequence<int64_t> table1_mod8_seq_;
 
   std::default_random_engine rng_;
   uint32_t num_rows_min_ = 0;

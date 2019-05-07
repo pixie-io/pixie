@@ -38,11 +38,11 @@ class BCCConnector : public SourceConnector {
   ~BCCConnector() override = default;
 
  protected:
-  explicit BCCConnector(std::string source_name, const DataElements& elements,
+  explicit BCCConnector(std::string source_name, const std::vector<DataTableSchema>& schemas,
                         std::chrono::milliseconds default_sampling_period,
                         std::chrono::milliseconds default_push_period,
                         const std::string_view bpf_program)
-      : SourceConnector(kSourceType, std::move(source_name), elements, default_sampling_period,
+      : SourceConnector(kSourceType, std::move(source_name), schemas, default_sampling_period,
                         default_push_period),
         bpf_program_(bpf_program) {}
 
@@ -55,10 +55,11 @@ class PIDCPUUseBCCConnector : public BCCConnector {
   inline static const std::string_view kBCCScript = pidruntime_bcc_script;
   static constexpr SourceType kSourceType = SourceType::kEBPF;
   static constexpr char kName[] = "bcc_pid_cpu_usage";
-  inline static const DataElements kElements = {DataElement("time_", types::DataType::TIME64NS),
-                                                DataElement("pid", types::DataType::INT64),
-                                                DataElement("runtime_ns", types::DataType::INT64),
-                                                DataElement("cmd", types::DataType::STRING)};
+  inline static const std::vector<DataTableSchema> kElements = {DataTableSchema(
+      kName,
+      {DataElement("time_", types::DataType::TIME64NS), DataElement("pid", types::DataType::INT64),
+       DataElement("runtime_ns", types::DataType::INT64),
+       DataElement("cmd", types::DataType::STRING)})};
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
@@ -71,7 +72,7 @@ class PIDCPUUseBCCConnector : public BCCConnector {
 
   Status StopImpl() override;
 
-  void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) override;
+  void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
  protected:
   explicit PIDCPUUseBCCConnector(std::string name)

@@ -24,15 +24,18 @@ TEST(InfoClassInfoSchemaTest, infoclass_mgr_proto_getters_test) {
   InfoClassSchema elements = {};
   InfoClassManager info_class_mgr("sequences_mgr");
   auto source = SeqGenConnector::Create("sequences");
-  info_class_mgr.SetSourceConnector(source.get());
+  uint32_t source_table_id = 0;
+  info_class_mgr.SetSourceConnector(source.get(), source_table_id);
   ASSERT_OK(info_class_mgr.PopulateSchemaFromSource());
 
-  EXPECT_EQ(SeqGenConnector::kElements.size(), info_class_mgr.Schema().size());
+  auto& data_elements = SeqGenConnector::kElements[source_table_id].elements();
+
+  EXPECT_EQ(data_elements.size(), info_class_mgr.Schema().size());
   EXPECT_EQ("sequences_mgr", info_class_mgr.name());
 
   stirlingpb::InfoClass info_class_pb;
   info_class_pb = info_class_mgr.ToProto();
-  EXPECT_EQ(SeqGenConnector::kElements.size(), info_class_pb.elements_size());
+  EXPECT_EQ(data_elements.size(), info_class_pb.elements_size());
   EXPECT_EQ("sequences_mgr", info_class_pb.name());
   EXPECT_EQ(0, info_class_pb.id());
 

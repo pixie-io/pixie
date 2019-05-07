@@ -42,9 +42,10 @@ const char* kInfoClassManager = R"(
  */
 class TestSourceConnector : public SourceConnector {
  public:
-  inline static const DataElements kElements = {DataElement("user_percentage", DataType::FLOAT64),
-                                                DataElement("system_percentage", DataType::FLOAT64),
-                                                DataElement("io_percentage", DataType::FLOAT64)};
+  inline static const std::vector<DataTableSchema> kElements = {
+      DataTableSchema("", {DataElement("user_percentage", DataType::FLOAT64),
+                           DataElement("system_percentage", DataType::FLOAT64),
+                           DataElement("io_percentage", DataType::FLOAT64)})};
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
@@ -56,7 +57,8 @@ class TestSourceConnector : public SourceConnector {
 
   Status StopImpl() override { return Status::OK(); }
 
-  void TransferDataImpl(types::ColumnWrapperRecordBatch* /*record_batch*/) override{};
+  void TransferDataImpl(uint32_t /*table_num*/,
+                        types::ColumnWrapperRecordBatch* /*record_batch*/) override{};
 
  protected:
   explicit TestSourceConnector(const std::string& name)
@@ -70,8 +72,9 @@ class PubSubManagerTest : public ::testing::Test {
   void SetUp() override {
     std::string name = "cpu_usage";
     source_ = TestSourceConnector::Create(name);
+    auto source_table_num = 0;
     info_class_mgrs_.push_back(std::make_unique<InfoClassManager>(name));
-    info_class_mgrs_[0]->SetSourceConnector(source_.get());
+    info_class_mgrs_[0]->SetSourceConnector(source_.get(), source_table_num);
     ASSERT_OK(info_class_mgrs_[0]->PopulateSchemaFromSource());
     pub_sub_manager_ = std::make_unique<PubSubManager>();
   }

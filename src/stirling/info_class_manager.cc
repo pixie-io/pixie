@@ -24,7 +24,7 @@ Status InfoClassManager::PopulateSchemaFromSource() {
   if (source_ == nullptr) {
     return error::ResourceUnavailable("Source connector has not been initialized.");
   }
-  auto elements = source_->elements();
+  auto elements = source_->elements(source_table_num_);
   for (const auto& element : elements) {
     elements_.emplace_back(InfoClassElement(element));
   }
@@ -54,7 +54,7 @@ bool InfoClassManager::PushRequired() const {
 }
 
 Status InfoClassManager::SampleData() {
-  source_->TransferData(data_table_->GetActiveRecordBatch());
+  source_->TransferData(source_table_num_, data_table_->GetActiveRecordBatch());
 
   // Update the last sampling time.
   last_sampled_ = CurrentTime();

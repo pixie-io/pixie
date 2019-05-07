@@ -40,6 +40,18 @@ class DataElement {
 
 using DataElements = std::vector<DataElement>;
 
+class DataTableSchema {
+ public:
+  DataTableSchema(std::string_view name, const DataElements& elements)
+      : name_(name), elements_(elements) {}
+  const std::string& name() const { return name_; }
+  const DataElements& elements() const { return elements_; }
+
+ private:
+  std::string name_;
+  DataElements elements_;
+};
+
 // Initializes record_batch so that it has data fields that matches data_elements' spec.
 Status InitRecordBatch(const std::vector<DataElement>& data_elements, int target_capacity,
                        types::ColumnWrapperRecordBatch* record_batch);

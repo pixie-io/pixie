@@ -39,7 +39,8 @@ class BPFTraceConnector : public SourceConnector {
   ~BPFTraceConnector() override = default;
 
  protected:
-  explicit BPFTraceConnector(const std::string& source_name, const DataElements& elements,
+  explicit BPFTraceConnector(const std::string& source_name,
+                             const std::vector<DataTableSchema>& elements,
                              std::chrono::milliseconds default_sampling_period,
                              std::chrono::milliseconds default_push_period, std::string_view script,
                              std::vector<std::string> params);
@@ -67,15 +68,15 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
 
   static constexpr char kName[] = "bpftrace_cpu_stats";
 
-  inline static const DataElements kElements = {
-      DataElement("time_", types::DataType::TIME64NS),
-      DataElement("cpustat_user", types::DataType::INT64),
-      DataElement("cpustat_nice", types::DataType::INT64),
-      DataElement("cpustat_system", types::DataType::INT64),
-      DataElement("cpustat_idle", types::DataType::INT64),
-      DataElement("cpustat_iowait", types::DataType::INT64),
-      DataElement("cpustat_irq", types::DataType::INT64),
-      DataElement("cpustat_softirq", types::DataType::INT64)};
+  inline static const std::vector<DataTableSchema> kElements = {
+      DataTableSchema(kName, {DataElement("time_", types::DataType::TIME64NS),
+                              DataElement("cpustat_user", types::DataType::INT64),
+                              DataElement("cpustat_nice", types::DataType::INT64),
+                              DataElement("cpustat_system", types::DataType::INT64),
+                              DataElement("cpustat_idle", types::DataType::INT64),
+                              DataElement("cpustat_iowait", types::DataType::INT64),
+                              DataElement("cpustat_irq", types::DataType::INT64),
+                              DataElement("cpustat_softirq", types::DataType::INT64)})};
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
@@ -84,7 +85,7 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
     return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(name, cpu_id_));
   }
 
-  void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) override;
+  void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
  protected:
   explicit CPUStatBPFTraceConnector(const std::string& name, uint64_t cpu_id);
@@ -102,10 +103,11 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
 
   static constexpr char kName[] = "bpftrace_pid_cpu_usage";
 
-  inline static const DataElements kElements = {DataElement("time_", types::DataType::TIME64NS),
-                                                DataElement("pid", types::DataType::INT64),
-                                                DataElement("runtime_ns", types::DataType::INT64),
-                                                DataElement("cmd", types::DataType::STRING)};
+  inline static const std::vector<DataTableSchema> kElements = {DataTableSchema(
+      kName,
+      {DataElement("time_", types::DataType::TIME64NS), DataElement("pid", types::DataType::INT64),
+       DataElement("runtime_ns", types::DataType::INT64),
+       DataElement("cmd", types::DataType::STRING)})};
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
@@ -114,7 +116,7 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
     return std::unique_ptr<SourceConnector>(new PIDCPUUseBPFTraceConnector(name));
   }
 
-  void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) override;
+  void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
  protected:
   explicit PIDCPUUseBPFTraceConnector(const std::string& name);

@@ -28,7 +28,11 @@ Status CGroupStatsConnector::InitImpl() {
 
 Status CGroupStatsConnector::StopImpl() { return Status::OK(); }
 
-void CGroupStatsConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
+void CGroupStatsConnector::TransferDataImpl(uint32_t table_num,
+                                            types::ColumnWrapperRecordBatch* record_batch) {
+  CHECK_LT(table_num, num_tables())
+      << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
+
   auto status = cgroup_mgr_->UpdateCGroupInfo();
   if (!status.ok()) {
     LOG(ERROR) << "Failed to get the latest cgroup stat files: " << status.msg();

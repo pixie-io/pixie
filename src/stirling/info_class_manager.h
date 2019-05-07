@@ -84,7 +84,10 @@ class InfoClassManager {
    *
    * @param source Pointer to source connector instance.
    */
-  void SetSourceConnector(SourceConnector* source) { source_ = source; }
+  void SetSourceConnector(SourceConnector* source, uint32_t table_num) {
+    source_ = source;
+    source_table_num_ = table_num;
+  }
 
   /**
    * @brief Data table connected to this Info Class.
@@ -238,6 +241,11 @@ class InfoClassManager {
    * Pointer back to the source connector providing the data.
    */
   SourceConnector* source_;
+
+  /**
+   * Table number within source connector for this info class.
+   */
+  uint32_t source_table_num_;
 
   /**
    * Pointer to the data table where the data is stored.

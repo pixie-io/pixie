@@ -84,20 +84,27 @@ void StirlingWrapperCallback(uint64_t table_id,
   std::string name = table_id_to_name_map[table_id];
 
   // Use assigned names, from registry.
-  if (name == CPUStatBPFTraceConnector::kName) {
-    PrintRecordBatch("CPUStat-BPFTrace", CPUStatBPFTraceConnector::kElements, num_records,
+  if (name == CPUStatBPFTraceConnector::kElements[0].name()) {
+    PrintRecordBatch("CPUStat-BPFTrace", CPUStatBPFTraceConnector::kElements[0].elements(),
+                     num_records, *record_batch);
+  } else if (name == SeqGenConnector::kElements[0].name()) {
+    PrintRecordBatch("SeqGen-0", SeqGenConnector::kElements[0].elements(), num_records,
                      *record_batch);
-  } else if (name == SeqGenConnector::kName) {
-    PrintRecordBatch("SeqGen", SeqGenConnector::kElements, num_records, *record_batch);
-  } else if (name == PIDCPUUseBPFTraceConnector::kName) {
-    PrintRecordBatch("PIDStat-BPFTrace", PIDCPUUseBPFTraceConnector::kElements, num_records,
+  } else if (name == SeqGenConnector::kElements[1].name()) {
+    PrintRecordBatch("SeqGen-1", SeqGenConnector::kElements[1].elements(), num_records,
                      *record_batch);
-  } else if (name == PIDCPUUseBCCConnector::kName) {
-    PrintRecordBatch("PIDStat-BCC", PIDCPUUseBCCConnector::kElements, num_records, *record_batch);
-  } else if (name == HTTPTraceConnector::kName) {
-    PrintRecordBatch("HTTPTrace", HTTPTraceConnector::kElements, num_records, *record_batch);
-  } else if (name == CGroupStatsConnector::kName) {
-    PrintRecordBatch("CGroupStats", CGroupStatsConnector::kElements, num_records, *record_batch);
+  } else if (name == PIDCPUUseBPFTraceConnector::kElements[0].name()) {
+    PrintRecordBatch("PIDStat-BPFTrace", PIDCPUUseBPFTraceConnector::kElements[0].elements(),
+                     num_records, *record_batch);
+  } else if (name == PIDCPUUseBCCConnector::kElements[0].name()) {
+    PrintRecordBatch("PIDStat-BCC", PIDCPUUseBCCConnector::kElements[0].elements(), num_records,
+                     *record_batch);
+  } else if (name == HTTPTraceConnector::kElements[0].name()) {
+    PrintRecordBatch("HTTPTrace", HTTPTraceConnector::kElements[0].elements(), num_records,
+                     *record_batch);
+  } else if (name == CGroupStatsConnector::kElements[0].name()) {
+    PrintRecordBatch("CGroupStats", CGroupStatsConnector::kElements[0].elements(), num_records,
+                     *record_batch);
   }
   // Can add other connectors, if desired, here.
 }

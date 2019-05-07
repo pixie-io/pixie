@@ -30,7 +30,7 @@ class InfoClassManager;
     static constexpr bool kAvailable = false;                              \
     static constexpr SourceType kSourceType = SourceType::kNotImplemented; \
     static constexpr char kName[] = "dummy";                               \
-    inline static const DataElements kElements = {};                       \
+    inline static const std::vector<DataTableSchema> kElements = {};       \
     static std::unique_ptr<SourceConnector> Create(std::string name) {     \
       PL_UNUSED(name);                                                     \
       return nullptr;                                                      \
@@ -66,14 +66,28 @@ class SourceConnector : public NotCopyable {
   virtual ~SourceConnector() = default;
 
   Status Init() { return InitImpl(); }
-  void TransferData(types::ColumnWrapperRecordBatch* record_batch) {
-    return TransferDataImpl(record_batch);
+  void TransferData(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) {
+    CHECK_LT(table_num, num_tables())
+        << absl::StrFormat("Access to table out of bounds: table_num=%d", table_num);
+    return TransferDataImpl(table_num, record_batch);
   }
   Status Stop() { return StopImpl(); }
 
   SourceType type() const { return type_; }
   const std::string& source_name() const { return source_name_; }
-  const DataElements& elements() const { return elements_; }
+
+  uint32_t num_tables() const { return table_schemas_.size(); }
+  const DataElements& elements(uint32_t table_num) const {
+    CHECK_LT(table_num, num_tables())
+        << absl::StrFormat("Access to table out of bounds: table_num=%d", table_num);
+    return table_schemas_[table_num].elements();
+  }
+  const std::string& table_name(uint32_t table_num) const {
+    CHECK_LT(table_num, num_tables())
+        << absl::StrFormat("Access to table out of bounds: table_num=%d", table_num);
+    return table_schemas_[table_num].name();
+  }
+
   const std::chrono::milliseconds& default_sampling_period() { return default_sampling_period_; }
   const std::chrono::milliseconds& default_push_period() { return default_push_period_; }
 
@@ -84,17 +98,19 @@ class SourceConnector : public NotCopyable {
   uint64_t ClockRealTimeOffset();
 
  protected:
-  explicit SourceConnector(SourceType type, std::string source_name, DataElements elements,
+  explicit SourceConnector(SourceType type, std::string source_name,
+                           std::vector<DataTableSchema> table_schemas,
                            std::chrono::milliseconds default_sampling_period,
                            std::chrono::milliseconds default_push_period)
       : type_(type),
         source_name_(std::move(source_name)),
-        elements_(std::move(elements)),
+        table_schemas_(std::move(table_schemas)),
         default_sampling_period_(default_sampling_period),
         default_push_period_(default_push_period) {}
 
   virtual Status InitImpl() = 0;
-  virtual void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) = 0;
+  virtual void TransferDataImpl(uint32_t table_num,
+                                types::ColumnWrapperRecordBatch* record_batch) = 0;
   virtual Status StopImpl() = 0;
 
   /**
@@ -109,7 +125,7 @@ class SourceConnector : public NotCopyable {
  private:
   SourceType type_;
   std::string source_name_;
-  DataElements elements_;
+  std::vector<DataTableSchema> table_schemas_;
   std::chrono::milliseconds default_sampling_period_;
   std::chrono::milliseconds default_push_period_;
 };

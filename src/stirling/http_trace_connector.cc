@@ -289,7 +289,11 @@ Status HTTPTraceConnector::StopImpl() {
   return Status();
 }
 
-void HTTPTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
+void HTTPTraceConnector::TransferDataImpl(uint32_t table_num,
+                                          types::ColumnWrapperRecordBatch* record_batch) {
+  CHECK_EQ(table_num, 0ULL) << absl::StrFormat(
+      "This connector has only one table, but access to table_num=%d", table_num);
+
   auto perf_buffer = bpf_.get_perf_buffer(kPerfBufferName);
   if (perf_buffer != nullptr) {
     // record_batch_ is then given to HandleProbeOutput() through GetRecordBatch().

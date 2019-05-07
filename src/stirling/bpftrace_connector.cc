@@ -17,11 +17,12 @@
 namespace pl {
 namespace stirling {
 
-BPFTraceConnector::BPFTraceConnector(const std::string& source_name, const DataElements& elements,
+BPFTraceConnector::BPFTraceConnector(const std::string& source_name,
+                                     const std::vector<DataTableSchema>& schemas,
                                      std::chrono::milliseconds default_sampling_period,
                                      std::chrono::milliseconds default_push_period,
                                      const std::string_view script, std::vector<std::string> params)
-    : SourceConnector(SourceType::kEBPF, source_name, elements, default_sampling_period,
+    : SourceConnector(SourceType::kEBPF, source_name, schemas, default_sampling_period,
                       default_push_period),
       script_(script),
       params_(std::move(params)) {
@@ -98,12 +99,16 @@ CPUStatBPFTraceConnector::CPUStatBPFTraceConnector(const std::string& name, uint
     : BPFTraceConnector(name, kElements, kDefaultSamplingPeriod, kDefaultPushPeriod, kBTScript,
                         std::vector<std::string>({std::to_string(cpu_id)})) {}
 
-void CPUStatBPFTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
+void CPUStatBPFTraceConnector::TransferDataImpl(uint32_t table_num,
+                                                types::ColumnWrapperRecordBatch* record_batch) {
+  CHECK_LT(table_num, kElements.size())
+      << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
+
   auto& columns = *record_batch;
 
   auto cpustat_map = GetBPFMap("@retval");
 
-  auto data_elements = elements();
+  auto data_elements = elements(table_num);
 
   // If kernel hasn't populated BPF map yet, then we have no data to return.
   if (cpustat_map.size() != data_elements.size()) {
@@ -145,7 +150,11 @@ PIDCPUUseBPFTraceConnector::PIDCPUUseBPFTraceConnector(const std::string& name)
     : BPFTraceConnector(name, kElements, kDefaultSamplingPeriod, kDefaultPushPeriod, kBTScript,
                         std::vector<std::string>({})) {}
 
-void PIDCPUUseBPFTraceConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
+void PIDCPUUseBPFTraceConnector::TransferDataImpl(uint32_t table_num,
+                                                  types::ColumnWrapperRecordBatch* record_batch) {
+  CHECK_LT(table_num, kElements.size())
+      << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
+
   auto& columns = *record_batch;
 
   auto pid_time_pairs = GetBPFMap("@total_time");

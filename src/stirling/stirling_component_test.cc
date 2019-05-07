@@ -47,7 +47,7 @@ class SourceToTableTest : public ::testing::Test {
   SourceToTableTest() : info_class_mgr_("proc_stats_mgr") {}
   void SetUp() override {
     fake_proc_stat_ = FakeProcStatConnector::Create("fake_proc_stat_source");
-    info_class_mgr_.SetSourceConnector(fake_proc_stat_.get());
+    info_class_mgr_.SetSourceConnector(fake_proc_stat_.get(), 0);
     EXPECT_OK(info_class_mgr_.PopulateSchemaFromSource());
     table_ = std::make_unique<DataTable>(info_class_mgr_.Schema());
   }
@@ -60,7 +60,8 @@ class SourceToTableTest : public ::testing::Test {
 
 TEST_F(SourceToTableTest, source_to_table) {
   EXPECT_OK(fake_proc_stat_->Init());
-  fake_proc_stat_->TransferData(table_->GetActiveRecordBatch());
+  uint32_t table_num = 0;
+  fake_proc_stat_->TransferData(table_num, table_->GetActiveRecordBatch());
   auto record_batches_uptr = table_->GetRecordBatches();
   auto record_batches_ptr = record_batches_uptr.ValueOrDie().get();
   ASSERT_TRUE(record_batches_ptr != nullptr);

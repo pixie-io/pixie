@@ -104,27 +104,38 @@ class StirlingTest : public ::testing::Test {
     id_to_name_map_ = stirling_->TableIDToNameMap();
 
     for (const auto& [id, name] : id_to_name_map_) {
-      schemas_.emplace(id, &SeqGenConnector::kElements);
+      if (name[name.length() - 1] == '0') {
+        schemas_.emplace(id, &SeqGenConnector::kElements[0].elements());
 
-      // Start at 1, because column 0 is time.
-      uint32_t col_idx = 1;
-      int_seq_checker_.emplace((id << 32) | col_idx++,
-                               std::make_unique<pl::stirling::LinearSequence<int64_t>>(1, 1));
-      int_seq_checker_.emplace((id << 32) | col_idx++,
-                               std::make_unique<pl::stirling::ModuloSequence<int64_t>>(10));
-      int_seq_checker_.emplace((id << 32) | col_idx++,
-                               std::make_unique<pl::stirling::QuadraticSequence<int64_t>>(1, 0, 0));
-      int_seq_checker_.emplace((id << 32) | col_idx++,
-                               std::make_unique<pl::stirling::FibonacciSequence<int64_t>>());
-      double_seq_checker_.emplace(
-          (id << 32) | col_idx++,
-          std::make_unique<pl::stirling::LinearSequence<double>>(3.14159, 0));
+        uint32_t col_idx = 1;  // Start at 1, because column 0 is time.
+        int_seq_checker_.emplace((id << 32) | col_idx++,
+                                 std::make_unique<pl::stirling::LinearSequence<int64_t>>(1, 1));
+        int_seq_checker_.emplace((id << 32) | col_idx++,
+                                 std::make_unique<pl::stirling::ModuloSequence<int64_t>>(10));
+        int_seq_checker_.emplace(
+            (id << 32) | col_idx++,
+            std::make_unique<pl::stirling::QuadraticSequence<int64_t>>(1, 0, 0));
+        int_seq_checker_.emplace((id << 32) | col_idx++,
+                                 std::make_unique<pl::stirling::FibonacciSequence<int64_t>>());
+        double_seq_checker_.emplace(
+            (id << 32) | col_idx++,
+            std::make_unique<pl::stirling::LinearSequence<double>>(3.14159, 0));
 
-      num_processed_per_table_.emplace(id, 0);
-      num_processed_ = 0;
+        num_processed_per_table_.emplace(id, 0);
+      } else if (name[name.length() - 1] == '1') {
+        schemas_.emplace(id, &SeqGenConnector::kElements[1].elements());
 
-      PL_UNUSED(name);
+        uint32_t col_idx = 1;  // Start at 1, because column 0 is time.
+        int_seq_checker_.emplace((id << 32) | col_idx++,
+                                 std::make_unique<pl::stirling::LinearSequence<int64_t>>(2, 2));
+        int_seq_checker_.emplace((id << 32) | col_idx++,
+                                 std::make_unique<pl::stirling::ModuloSequence<int64_t>>(8));
+
+        num_processed_per_table_.emplace(id, 0);
+      }
     }
+
+    num_processed_ = 0;
   }
 
   void TearDown() override {

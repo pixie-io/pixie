@@ -44,28 +44,26 @@ class HTTPTraceConnector : public SourceConnector {
   // - A HTTP connection table with fields 1) id (fd+additional_data for uniqueness),
   //   2) {src,dst}_{addr,port}.
   // - A HTTP message table with fields 1) id (same as above), type (req or resp), header, payload.
-  inline static const DataElements kElements = {
-      DataElement("time_", types::DataType::TIME64NS),
-      // tgid is the user space "pid".
-      DataElement("tgid", types::DataType::INT64),
-      DataElement("pid", types::DataType::INT64),
-      DataElement("fd", types::DataType::INT64),
-      DataElement("event_type", types::DataType::STRING),
-      // TODO(PL-519): Eventually, use the appropriate data type to represent IP addresses, as will
-      // be resolved in the Jira issue.
-      DataElement("src_addr", types::DataType::STRING),
-      DataElement("src_port", types::DataType::INT64),
-      DataElement("dst_addr", types::DataType::STRING),
-      DataElement("dst_port", types::DataType::INT64),
-      DataElement("http_minor_version", types::DataType::INT64),
-      DataElement("http_headers", types::DataType::STRING),
-      DataElement("http_req_method", types::DataType::STRING),
-      DataElement("http_req_path", types::DataType::STRING),
-      DataElement("http_resp_status", types::DataType::INT64),
-      DataElement("http_resp_message", types::DataType::STRING),
-      DataElement("http_resp_body", types::DataType::STRING),
-      DataElement("http_resp_latency_ns", types::DataType::INT64),
-  };
+  inline static const std::vector<DataTableSchema> kElements = {DataTableSchema(
+      kName, {DataElement("time_", types::DataType::TIME64NS),
+              // tgid is the user space "pid".
+              DataElement("tgid", types::DataType::INT64),
+              DataElement("pid", types::DataType::INT64), DataElement("fd", types::DataType::INT64),
+              DataElement("event_type", types::DataType::STRING),
+              // TODO(PL-519): Eventually, use the appropriate data type to represent IP addresses,
+              // as will be resolved in the Jira issue.
+              DataElement("src_addr", types::DataType::STRING),
+              DataElement("src_port", types::DataType::INT64),
+              DataElement("dst_addr", types::DataType::STRING),
+              DataElement("dst_port", types::DataType::INT64),
+              DataElement("http_minor_version", types::DataType::INT64),
+              DataElement("http_headers", types::DataType::STRING),
+              DataElement("http_req_method", types::DataType::STRING),
+              DataElement("http_req_path", types::DataType::STRING),
+              DataElement("http_resp_status", types::DataType::INT64),
+              DataElement("http_resp_message", types::DataType::STRING),
+              DataElement("http_resp_body", types::DataType::STRING),
+              DataElement("http_resp_latency_ns", types::DataType::INT64)})};
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{5000};
@@ -78,7 +76,7 @@ class HTTPTraceConnector : public SourceConnector {
 
   Status InitImpl() override;
   Status StopImpl() override;
-  void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) override;
+  void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
   // 'this' pointer of this class is passed to the callback, and the callback will call this
   // function to get the result argument for processing data items from perf buffer.

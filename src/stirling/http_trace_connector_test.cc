@@ -31,8 +31,8 @@ X)";
   // clearer.
   std::unique_ptr<HTTPTraceConnector> source(new HTTPTraceConnector("bcc_http_trace"));
   types::ColumnWrapperRecordBatch record_batch;
-  Status init_status =
-      InitRecordBatch(HTTPTraceConnector::kElements, /*target_capacity*/ 1, &record_batch);
+  Status init_status = InitRecordBatch(HTTPTraceConnector::kElements[0].elements(),
+                                       /*target_capacity*/ 1, &record_batch);
   EXPECT_EQ(0, init_status.code());
 
   source->SetRecordBatch(&record_batch);

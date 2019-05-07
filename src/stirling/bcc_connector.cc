@@ -46,7 +46,11 @@ Status PIDCPUUseBCCConnector::StopImpl() {
   return Status::OK();
 }
 
-void PIDCPUUseBCCConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) {
+void PIDCPUUseBCCConnector::TransferDataImpl(uint32_t table_num,
+                                             types::ColumnWrapperRecordBatch* record_batch) {
+  CHECK_EQ(table_num, 0ULL) << absl::StrFormat(
+      "This connector has only one table, but access to table_num=%d", table_num);
+
   auto& columns = *record_batch;
 
   // TODO(kgandhi): PL-452 There is an extra copy when calling get_table_offline. We should extract

@@ -31,24 +31,24 @@ class CGroupStatsConnector : public SourceConnector {
  public:
   static constexpr SourceType kSourceType = SourceType::kFile;
   static constexpr char kName[] = "cgroup_stats";
-  inline static const DataElements kElements = {
-      DataElement("time_", types::DataType::TIME64NS),
-      DataElement("qos", types::DataType::STRING),
-      DataElement("pod", types::DataType::STRING),
-      DataElement("container", types::DataType::STRING),
-      DataElement("process_name", types::DataType::STRING),
-      DataElement("pid", types::DataType::INT64),
-      DataElement("major_faults", types::DataType::INT64),
-      DataElement("minor_faults", types::DataType::INT64),
-      DataElement("utime_ns", types::DataType::INT64),
-      DataElement("ktime_ns", types::DataType::INT64),
-      DataElement("num_threads", types::DataType::INT64),
-      DataElement("vsize_bytes", types::DataType::INT64),
-      DataElement("rss_bytes", types::DataType::INT64),
-      DataElement("rchar_bytes", types::DataType::INT64),
-      DataElement("wchar_bytes", types::DataType::INT64),
-      DataElement("read_bytes", types::DataType::INT64),
-      DataElement("write_bytes", types::DataType::INT64)};
+  inline static const std::vector<DataTableSchema> kElements = {DataTableSchema(
+      kName,
+      {DataElement("time_", types::DataType::TIME64NS), DataElement("qos", types::DataType::STRING),
+       DataElement("pod", types::DataType::STRING),
+       DataElement("container", types::DataType::STRING),
+       DataElement("process_name", types::DataType::STRING),
+       DataElement("pid", types::DataType::INT64),
+       DataElement("major_faults", types::DataType::INT64),
+       DataElement("minor_faults", types::DataType::INT64),
+       DataElement("utime_ns", types::DataType::INT64),
+       DataElement("ktime_ns", types::DataType::INT64),
+       DataElement("num_threads", types::DataType::INT64),
+       DataElement("vsize_bytes", types::DataType::INT64),
+       DataElement("rss_bytes", types::DataType::INT64),
+       DataElement("rchar_bytes", types::DataType::INT64),
+       DataElement("wchar_bytes", types::DataType::INT64),
+       DataElement("read_bytes", types::DataType::INT64),
+       DataElement("write_bytes", types::DataType::INT64)})};
 
   CGroupStatsConnector() = delete;
   ~CGroupStatsConnector() override = default;
@@ -64,7 +64,7 @@ class CGroupStatsConnector : public SourceConnector {
 
   Status StopImpl() override;
 
-  void TransferDataImpl(types::ColumnWrapperRecordBatch* record_batch) override;
+  void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
  protected:
   explicit CGroupStatsConnector(std::string source_name)

@@ -30,14 +30,14 @@ class SourceRegistry : public NotCopyable {
     explicit RegistryElement(
         SourceType type,
         std::function<std::unique_ptr<SourceConnector>(const std::string&)> create_source_fn,
-        const DataElements& schema)
+        const std::vector<DataTableSchema>& schema)
         : type(type), create_source_fn(std::move(create_source_fn)), schema(schema) {}
     SourceType type{SourceType::kUnknown};
     std::function<std::unique_ptr<SourceConnector>(const std::string&)> create_source_fn;
-    const DataElements& schema;
+    const std::vector<DataTableSchema>& schema;
 
    private:
-    inline static const DataElements empty_vector = {};
+    inline static const std::vector<DataTableSchema> empty_vector = {};
   };
 
   const auto& sources() { return sources_map_; }
