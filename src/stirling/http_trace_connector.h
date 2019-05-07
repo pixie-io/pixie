@@ -26,7 +26,7 @@ DUMMY_SOURCE_CONNECTOR(HTTPTraceConnector);
 #include "src/stirling/http_parse.h"
 #include "src/stirling/source_connector.h"
 
-DECLARE_string(selected_content_type_substrs);
+DECLARE_string(http_response_header_filters);
 
 OBJ_STRVIEW(http_trace_bcc_script, _binary_src_stirling_bcc_bpf_http_trace_c);
 
@@ -90,11 +90,11 @@ class HTTPTraceConnector : public SourceConnector {
       : SourceConnector(kSourceType, std::move(source_name), kElements, kDefaultSamplingPeriod,
                         kDefaultPushPeriod) {
     // TODO(oazizi): Is there a better place/time to grab the flags?
-    filter_substrs_ = absl::StrSplit(FLAGS_selected_content_type_substrs, ",", absl::SkipEmpty());
+    http_response_header_filter_ = ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
   }
 
   FRIEND_TEST(HandleProbeOutputTest, FilterMessages);
-  inline static std::vector<std::string_view> filter_substrs_;
+  inline static HTTPHeaderFilter http_response_header_filter_;
 
   // Helper functions used by HandleProbeOutput().
   static bool SelectForAppend(const HTTPTraceRecord& record);

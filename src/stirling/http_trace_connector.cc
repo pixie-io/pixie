@@ -2,13 +2,22 @@
 
 #include <vector>
 
+#include "absl/strings/match.h"
 #include "src/common/base/base.h"
 #include "src/stirling/http_parse.h"
 #include "src/stirling/http_trace_connector.h"
 
-DEFINE_string(selected_content_type_substrs, "",
-              "Comma-separated strings. Select any http messages of which Content-Type header "
-              "contains one of the strings. If empty, all http messages are selected.");
+// TODO(yzhao): This is only for inclusion. We can add another flag for exclusion, or come up with a
+// filter format that support exclusion in the same flag (for example, we can add '-' at the
+// beginning of the filter to indicate it's a exclusion filter: -Content-Type:json, which means a
+// HTTP response with the 'Content-Type' header contains 'json' should *not* be selected.
+DEFINE_string(http_response_header_filters, "Content-Type:json",
+              "Comma-separated strings to specify the substrings should be included for a header. "
+              "The format looks like <header-1>:<substr-1>,...,<header-n>:<substr-n>. "
+              "The substrings cannot include comma(s). The filters are conjunctive, "
+              "therefore the headers can be duplicate. For example, "
+              "'Content-Type:json,Content-Type:text' will select a HTTP response "
+              "with a Content-Type header whose value contains 'json' *or* 'text'.");
 
 namespace pl {
 namespace stirling {
@@ -60,40 +69,10 @@ bool HTTPTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
   }
 
   // Rule: Exclude anything that doesn't match the filter, if filter is active.
-  if (record.event_type == HTTPTraceEventType::kHTTPResponse && !filter_substrs_.empty()) {
-    // Note: this is actually covered already above, but including it again
-    // to maintain independence of rules.
-    if (content_type_iter == record.http_headers.end()) {
-      return false;
-    }
-
-    bool match = false;
-    for (auto substr : filter_substrs_) {
-      if (absl::StrContains(content_type_iter->second, substr)) {
-        match = true;
-        break;
-      }
-    }
-
-    if (!match) {
-      return false;
-    }
-  }
-
-  // Rule: Exclude anything that isn't json.
-  if (content_type_iter != record.http_headers.end()) {
-    auto content_type = content_type_iter->second;
-    if (content_type.find("json") == std::string::npos) {
-      return false;
-    }
-  }
-
-  const auto content_encoding_iter = record.http_headers.find(http_header_keys::kContentEncoding);
-
-  // Rule: Exclude gzip content.
-  if (content_encoding_iter != record.http_headers.end()) {
-    auto content_encoding = content_encoding_iter->second;
-    if (content_encoding == "gzip") {
+  if (record.event_type == HTTPTraceEventType::kHTTPResponse &&
+      (!http_response_header_filter_.inclusions.empty() ||
+       !http_response_header_filter_.exclusions.empty())) {
+    if (!MatchesHTTPTHeaders(record.http_headers, http_response_header_filter_)) {
       return false;
     }
   }
