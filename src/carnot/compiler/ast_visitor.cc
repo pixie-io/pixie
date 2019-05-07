@@ -202,32 +202,6 @@ StatusOr<IRNode*> ASTWalker::LookupName(const pypa::AstNamePtr& name_node) {
   return node;
 }
 
-StatusOr<IRNode*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
-  PL_ASSIGN_OR_RETURN(std::string func_name, GetFuncName(node));
-  IRNode* ir_node;
-  if (func_name == kFromOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<MemorySourceIR>(node));
-  } else if (func_name == kRangeOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessRangeOp(node));
-  } else if (func_name == kMapOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<MapIR>(node));
-  } else if (func_name == kFilterOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<FilterIR>(node));
-  } else if (func_name == kLimitOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<LimitIR>(node));
-  } else if (func_name == kBlockingAggOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<BlockingAggIR>(node));
-  } else if (func_name == kSinkOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<MemorySinkIR>(node));
-  } else if (func_name == kRangeAggOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessRangeAggOp(node));
-  } else {
-    std::string err_msg = absl::Substitute("No function named '$0'", func_name);
-    return CreateAstError(err_msg, node);
-  }
-  return ir_node;
-}
-
 StatusOr<IRNode*> ASTWalker::ProcessAttribute(const pypa::AstAttributePtr& node) {
   switch (node->value->type) {
     case AstType::Call: {
@@ -260,8 +234,8 @@ StatusOr<TOpIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
   PL_RETURN_IF_ERROR(ir_node->Init(call_result, args, node));
   return ir_node;
 }
-
-StatusOr<IRNode*> ASTWalker::ProcessRangeOp(const pypa::AstCallPtr& node) {
+template <>
+StatusOr<RangeIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
   if (node->function->type != AstType::Attribute) {
     return CreateAstError(absl::StrFormat("Expected Range to be an attribute, not a %s",
                                           GetAstTypeName(node->function->type)),
@@ -276,6 +250,32 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeOp(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(IRNode * call_result,
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
   PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["start"], args["stop"], node));
+  return ir_node;
+}
+
+StatusOr<IRNode*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
+  PL_ASSIGN_OR_RETURN(std::string func_name, GetFuncName(node));
+  IRNode* ir_node;
+  if (func_name == kFromOpId) {
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<MemorySourceIR>(node));
+  } else if (func_name == kRangeOpId) {
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<RangeIR>(node));
+  } else if (func_name == kMapOpId) {
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<MapIR>(node));
+  } else if (func_name == kFilterOpId) {
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<FilterIR>(node));
+  } else if (func_name == kLimitOpId) {
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<LimitIR>(node));
+  } else if (func_name == kBlockingAggOpId) {
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<BlockingAggIR>(node));
+  } else if (func_name == kSinkOpId) {
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<MemorySinkIR>(node));
+  } else if (func_name == kRangeAggOpId) {
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessRangeAggOp(node));
+  } else {
+    std::string err_msg = absl::Substitute("No function named '$0'", func_name);
+    return CreateAstError(err_msg, node);
+  }
   return ir_node;
 }
 
