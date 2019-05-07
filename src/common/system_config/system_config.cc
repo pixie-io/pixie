@@ -1,10 +1,10 @@
 #include <unistd.h>
 
 #include "src/common/base/base.h"
-#include "src/stirling/system_config.h"
+#include "src/common/system_config/system_config.h"
 
 namespace pl {
-namespace stirling {
+namespace common {
 
 #ifdef __linux__
 
@@ -32,7 +32,9 @@ class SystemConfigImpl final : public SystemConfig {
 
 #endif
 
-std::unique_ptr<SystemConfig> Create() { return std::make_unique<SystemConfigImpl>(); }
+std::unique_ptr<SystemConfig> SystemConfig::Create() {
+  return std::make_unique<SystemConfigImpl>();
+}
 
-}  // namespace stirling
+}  // namespace common
 }  // namespace pl

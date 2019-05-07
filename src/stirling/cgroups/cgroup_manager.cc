@@ -45,22 +45,18 @@ Status ReadPIDList(fs::path pid_file_path, std::vector<int64_t> *pid_list) {
 
 std::unique_ptr<CGroupManager> CGroupManager::Create(std::string_view proc_path,
                                                      std::string_view sysfs_path) {
-  int64_t ns_per_jiffy = 0;
-  int bytes_per_page = 0;
-#ifdef __linux__
-  ns_per_jiffy = static_cast<int64_t>(1E9 / sysconf(_SC_CLK_TCK));
-  bytes_per_page = sysconf(_SC_PAGESIZE);
-#else
-  LOG(FATAL) << "Not supported on OS other than linux";
-#endif
-  return CGroupManager::Create(proc_path, sysfs_path, bytes_per_page, ns_per_jiffy);
+  auto syscfg = common::SystemConfig::Create();
+  if (!syscfg->HasSystemConfig()) {
+    LOG(ERROR) << "CGroupManager requires SystemConfig";
+    return nullptr;
+  }
+  return CGroupManager::Create(*syscfg, proc_path, sysfs_path);
 }
 
-std::unique_ptr<CGroupManager> CGroupManager::Create(std::string_view proc_path,
-                                                     std::string_view sysfs_path,
-                                                     int bytes_per_page, int64_t ns_per_jiffy) {
-  std::unique_ptr<CGroupManager> retval(
-      new CGroupManager(proc_path, sysfs_path, bytes_per_page, ns_per_jiffy));
+std::unique_ptr<CGroupManager> CGroupManager::Create(const common::SystemConfig &cfg,
+                                                     std::string_view proc_path,
+                                                     std::string_view sysfs_path) {
+  std::unique_ptr<CGroupManager> retval(new CGroupManager(cfg, proc_path, sysfs_path));
   return retval;
 }
 
@@ -120,13 +116,12 @@ Status CGroupManager::UpdateCGroupInfo() {
 }
 
 Status CGroupManager::GetNetworkStatsForPod(const std::string &pod,
-                                            proc_parser::NetworkStats *stats) {
+                                            ProcParser::NetworkStats *stats) {
   DCHECK(stats != nullptr);
   PL_ASSIGN_OR_RETURN(const auto *cgroup_info, GetCGroupInfoForPod(pod));
   for (const auto &container_info : cgroup_info->container_info_by_name) {
     for (const int64_t pid : container_info.second.pids) {
-      auto s = proc_parser::ParseProcPIDNetDev(proc_parser::GetProcPidNetDevFile(pid, proc_path_),
-                                               stats);
+      auto s = proc_parser_.ParseProcPIDNetDev(proc_parser_.GetProcPidNetDevFile(pid), stats);
       // Since all the containers running in a K8s pod use the same network namespace we only,
       // need to pull stats from a single PID. The stas themselves are the same for each PID since
       // Linux only tracks networks stats at a namespace level.
@@ -144,14 +139,13 @@ Status CGroupManager::GetNetworkStatsForPod(const std::string &pod,
   return error::Unknown("failed to read network stats.");
 }
 
-Status CGroupManager::GetProcessStats(int64_t pid, proc_parser::ProcessStats *stats) {
+Status CGroupManager::GetProcessStats(int64_t pid, ProcParser::ProcessStats *stats) {
   DCHECK(stats != nullptr);
-  auto proc_stat_path = proc_parser::GetProcPidStatFilePath(pid, proc_path_);
-  auto proc_io_path = proc_parser::GetProcPidStatIOFile(pid, proc_path_);
+  auto proc_stat_path = proc_parser_.GetProcPidStatFilePath(pid);
+  auto proc_io_path = proc_parser_.GetProcPidStatIOFile(pid);
 
-  PL_RETURN_IF_ERROR(
-      proc_parser::ParseProcPIDStat(proc_stat_path, stats, ns_per_jiffy_, bytes_per_page_));
-  PL_RETURN_IF_ERROR(proc_parser::ParseProcPIDStatIO(proc_io_path, stats));
+  PL_RETURN_IF_ERROR(proc_parser_.ParseProcPIDStat(proc_stat_path, stats));
+  PL_RETURN_IF_ERROR(proc_parser_.ParseProcPIDStatIO(proc_io_path, stats));
 
   return Status::OK();
 }

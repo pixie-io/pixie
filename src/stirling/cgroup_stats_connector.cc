@@ -44,7 +44,7 @@ void CGroupStatsConnector::TransferDataImpl(types::ColumnWrapperRecordBatch* rec
   for (const auto& [pod, pod_info] : cgroup_mgr_->cgroup_info()) {
     for (const auto& [container, process_info] : pod_info.container_info_by_name) {
       for (const auto& pid : process_info.pids) {
-        proc_parser::ProcessStats stats;
+        ProcParser::ProcessStats stats;
         auto s = cgroup_mgr_->GetProcessStats(pid, &stats);
         if (!s.ok()) {
           LOG(ERROR) << absl::StrFormat(

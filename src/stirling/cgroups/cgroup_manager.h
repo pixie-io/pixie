@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/common/system_config/system_config.h"
 #include "src/stirling/cgroups/proc_parser.h"
 
 namespace pl {
@@ -39,15 +40,15 @@ class CGroupManager {
    *
    * This version should be used for testing only.
    *
+   * @param cfg is a system config reference. Needs to be valid for the duration of the Create call.
    * @param proc_path Path to the proc file system.
    * @param sysfs_path Path to the sysfs file system.
-   * @param bytes_per_page The number of bytes per page in the kernel.
-   * @param ns_per_jiffy The number of ns per kernel tick.
-   * @return unique_ptr to the CGroupManager
+   * @return unique_ptr to the CGroupManager, returns null if it can't construct a valid
+   * CGroupManager.
    */
-  static std::unique_ptr<CGroupManager> Create(std::string_view proc_path,
-                                               std::string_view sysfs_path, int bytes_per_page,
-                                               int64_t ns_per_jiffy);
+  static std::unique_ptr<CGroupManager> Create(const common::SystemConfig& cfg,
+                                               std::string_view proc_path,
+                                               std::string_view sysfs_path);
 
   /**
    * CGroupQoS store the K8S QoS levels.
@@ -102,7 +103,7 @@ class CGroupManager {
    * @param stats The network stats.
    * @return Status of getting the network data.
    */
-  Status GetNetworkStatsForPod(const std::string& pod, proc_parser::NetworkStats* stats);
+  Status GetNetworkStatsForPod(const std::string& pod, ProcParser::NetworkStats* stats);
 
   /**
    * Get the procs stats per pod.
@@ -110,7 +111,7 @@ class CGroupManager {
    * @param stats The stats to be filled in.
    * @return Status of getting process stats.
    */
-  Status GetProcessStats(int64_t pid, proc_parser::ProcessStats* stats);
+  Status GetProcessStats(int64_t pid, ProcParser::ProcessStats* stats);
 
   /**
    * Get the information for a particular pod.
@@ -148,12 +149,9 @@ class CGroupManager {
  protected:
   CGroupManager() = delete;
 
-  CGroupManager(std::string_view proc_path, std::string_view sysfs_path, int bytes_per_page,
-                int64_t ns_per_jiffy)
-      : proc_path_(std::string(proc_path)),
-        sysfs_path_(std::string(sysfs_path)),
-        bytes_per_page_(bytes_per_page),
-        ns_per_jiffy_(ns_per_jiffy) {}
+  CGroupManager(const common::SystemConfig& cfg, std::string_view proc_path,
+                std::string_view sysfs_path)
+      : proc_parser_(cfg, proc_path), sysfs_path_(sysfs_path) {}
 
  private:
   /**
@@ -162,10 +160,8 @@ class CGroupManager {
    */
   Status UpdateCGroupInfoForQoSClass(CGroupQoS qos, fs::path base_path);
 
-  std::string proc_path_;
-  std::string sysfs_path_;
-  int bytes_per_page_;
-  int64_t ns_per_jiffy_;
+  ProcParser proc_parser_;
+  fs::path sysfs_path_;
 
   // Map from pod name to group info. Pods are unique across QOS classes so we don't need to track
   // that in the key.

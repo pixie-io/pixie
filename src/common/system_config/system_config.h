@@ -3,7 +3,7 @@
 #include <memory>
 
 namespace pl {
-namespace stirling {
+namespace common {
 
 /**
  * This interface provides access to global system config.
@@ -14,7 +14,7 @@ class SystemConfig {
    * Create an OS specific SystemConfig instance.
    * @return unique_ptr to SystemConfig.
    */
-  std::unique_ptr<SystemConfig> Create();
+  static std::unique_ptr<SystemConfig> Create();
 
   virtual ~SystemConfig() {}
 
@@ -37,5 +37,5 @@ class SystemConfig {
   virtual int KernelTicksPerSecond() const = 0;
 };
 
-}  // namespace stirling
+}  // namespace common
 }  // namespace pl

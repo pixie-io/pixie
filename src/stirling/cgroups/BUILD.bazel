@@ -15,18 +15,27 @@ pl_cc_library(
     hdrs = glob([
         "*.h",
     ]),
+    deps = [
+        "//src/common/system_config:cc_library",
+    ],
 )
 
 pl_cc_test(
     name = "proc_parser_test",
     srcs = ["proc_parser_test.cc"],
     data = glob(["testdata/**/*"]),
-    deps = [":cc_library"],
+    deps = [
+        ":cc_library",
+        "//src/common/system_config:cc_library_mock",
+    ],
 )
 
 pl_cc_test(
     name = "cgroup_manager_test",
     srcs = ["cgroup_manager_test.cc"],
     data = glob(["testdata/**/*"]),
-    deps = [":cc_library"],
+    deps = [
+        ":cc_library",
+        "//src/common/system_config:cc_library_mock",
+    ],
 )

@@ -1,3 +1,4 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <experimental/filesystem>
 
@@ -6,6 +7,7 @@
 #include <memory>
 #include <sstream>
 
+#include "src/common/system_config/system_config_mock.h"
 #include "src/stirling/cgroups/cgroup_manager.h"
 
 namespace pl {
@@ -13,6 +15,7 @@ namespace stirling {
 
 namespace fs = std::experimental::filesystem;
 using std::string;
+using ::testing::Return;
 
 // TODO(zasgar): refactor into common utils.
 string GetTestRunDir() {
@@ -30,6 +33,12 @@ string GetPathToTestDataFile(const string& fname) { return GetTestRunDir() + "/"
 class CGroupManagerTest : public ::testing::Test {
  protected:
   void SetUp() override {
+    common::MockSystemConfig sysconfig;
+
+    EXPECT_CALL(sysconfig, HasSystemConfig()).WillRepeatedly(Return(true));
+    EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
+    EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
+
     std::string prefix = "cgroup_test";
     char dir_template[] = "/tmp/cgroup_test_XXXXXX";
     char* dir_name = mkdtemp(dir_template);
@@ -37,13 +46,11 @@ class CGroupManagerTest : public ::testing::Test {
     tmp_dir_ = dir_name;
     Test::SetUp();
 
-    int bytes_per_page = 4096;
-    int64_t ns_per_jiffy = 100;
-
     std::string proc = tmp_dir_ + "/proc";
     std::string sysfs = tmp_dir_ + "/sysfs";
     fs::copy(GetPathToTestDataFile("testdata/cgroup_basic"), tmp_dir_, fs::copy_options::recursive);
-    mgr_ = CGroupManager::Create(proc, sysfs, bytes_per_page, ns_per_jiffy);
+
+    mgr_ = CGroupManager::Create(sysconfig, proc, sysfs);
   }
 
   void TearDown() override {
@@ -95,7 +102,7 @@ TEST_F(CGroupManagerTest, network_stats) {
   // Values are based on the test directory.
   std::string pod_name = "pod04bfccc8-6526-11e9-b815-42010a8a0135";
   ASSERT_TRUE(mgr_->HasPod(pod_name));
-  proc_parser::NetworkStats stats;
+  ProcParser::NetworkStats stats;
 
   PL_CHECK_OK(mgr_->GetNetworkStatsForPod(pod_name, &stats));
 
@@ -105,7 +112,7 @@ TEST_F(CGroupManagerTest, network_stats) {
 
 TEST_F(CGroupManagerTest, process_stats) {
   PL_CHECK_OK(mgr_->UpdateCGroupInfo());
-  proc_parser::ProcessStats stats;
+  ProcParser::ProcessStats stats;
 
   // Values are based on the test directory.
   // The intended use case is to loop through cgroup_info.

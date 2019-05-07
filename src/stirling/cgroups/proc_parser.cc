@@ -8,7 +8,6 @@
 
 namespace pl {
 namespace stirling {
-namespace proc_parser {
 
 /**
  * These constants are used to ignore virtual and local network interfaces.
@@ -53,9 +52,8 @@ const int kProcStatNumThreadsField = 19;
 const int kProcStatVSizeField = 22;
 const int kProcStatRSSField = 23;
 
-namespace {
-Status ParseNetworkStatAccumulateIFaceData(const std::vector<std::string_view>& dev_stat_record,
-                                           NetworkStats* out) {
+Status ProcParser::ParseNetworkStatAccumulateIFaceData(
+    const std::vector<std::string_view>& dev_stat_record, NetworkStats* out) {
   DCHECK(out != nullptr);
 
   int64_t val;
@@ -105,21 +103,19 @@ bool ShouldSkipNetIFace(const std::string_view iface) {
   return false;
 }
 
-}  // namespace
-
-fs::path GetProcPidStatFilePath(int64_t pid, fs::path proc_base_path) {
-  return proc_base_path / std::to_string(pid) / fs::path("stat");
+fs::path ProcParser::GetProcPidStatFilePath(int64_t pid) {
+  return proc_base_path_ / std::to_string(pid) / fs::path("stat");
 }
 
-fs::path GetProcPidStatIOFile(int64_t pid, fs::path proc_base_path) {
-  return proc_base_path / std::to_string(pid) / fs::path("io");
+fs::path ProcParser::GetProcPidStatIOFile(int64_t pid) {
+  return proc_base_path_ / std::to_string(pid) / fs::path("io");
 }
 
-fs::path GetProcPidNetDevFile(int64_t pid, fs::path proc_base_path) {
-  return proc_base_path / std::to_string(pid) / fs::path("net") / fs::path("dev");
+fs::path ProcParser::GetProcPidNetDevFile(int64_t pid) {
+  return proc_base_path_ / std::to_string(pid) / fs::path("net") / fs::path("dev");
 }
 
-Status ParseProcPIDNetDev(const fs::path& fpath, NetworkStats* out) {
+Status ProcParser::ParseProcPIDNetDev(const fs::path& fpath, NetworkStats* out) {
   /**
    * Sample file:
    * Inter-|   Receive                                                |  Transmit
@@ -166,8 +162,7 @@ Status ParseProcPIDNetDev(const fs::path& fpath, NetworkStats* out) {
   return Status::OK();
 }
 
-Status ParseProcPIDStat(const fs::path& fpath, ProcessStats* out, const int64_t ns_per_jiffy,
-                        const int bytes_per_page) {
+Status ProcParser::ParseProcPIDStat(const fs::path& fpath, ProcessStats* out) {
   /**
    * Sample file:
    * 4602 (ibazel) S 3260 4602 3260 34818 4602 1077936128 1799 174589 \
@@ -206,15 +201,15 @@ Status ParseProcPIDStat(const fs::path& fpath, ProcessStats* out, const int64_t 
     ok &= absl::SimpleAtoi(split[kProcStatUTimeField], &out->utime_ns);
     ok &= absl::SimpleAtoi(split[kProcStatKTimeField], &out->ktime_ns);
     // The kernel tracks utime and ktime in jiffies.
-    out->utime_ns *= ns_per_jiffy;
-    out->ktime_ns *= ns_per_jiffy;
+    out->utime_ns *= ns_per_kernel_tick_;
+    out->ktime_ns *= ns_per_kernel_tick_;
 
     ok &= absl::SimpleAtoi(split[kProcStatNumThreadsField], &out->num_threads);
     ok &= absl::SimpleAtoi(split[kProcStatVSizeField], &out->vsize_bytes);
     ok &= absl::SimpleAtoi(std::string(split[kProcStatRSSField]), &out->rss_bytes);
 
     // RSS is in pages.
-    out->rss_bytes *= bytes_per_page;
+    out->rss_bytes *= bytes_per_page_;
 
   } else {
     return error::Internal("Failed to read proc stat file: $0", fpath.string());
@@ -228,7 +223,7 @@ Status ParseProcPIDStat(const fs::path& fpath, ProcessStats* out, const int64_t 
   return Status::OK();
 }
 
-Status ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out) {
+Status ProcParser::ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out) {
   /**
    * Sample file:
    *   rchar: 5405203
@@ -286,6 +281,5 @@ Status ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out) {
   return Status::OK();
 }
 
-}  // namespace proc_parser
 }  // namespace stirling
 }  // namespace pl
