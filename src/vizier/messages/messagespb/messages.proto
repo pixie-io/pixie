@@ -15,9 +15,9 @@ message VizierMessage {
         RegisterAgentResponse register_agent_response = 2;
         UpdateAgentRequest update_agent_request = 3;
         UpdateAgentResponse update_agent_response = 4;
-        HeartBeat heartbeat = 5;
-        HeartBeatAck heartbeat_ack = 6;
-        HeartBeatNack heartbeat_nack = 7;
+        Heartbeat heartbeat = 5;
+        HeartbeatAck heartbeat_ack = 6;
+        HeartbeatNack heartbeat_nack = 7;
         ExecuteQueryRequest execute_query_request = 8;
     }
 }
@@ -59,7 +59,7 @@ message AgentUpdateInfo {
 }
 
 // The heart beat signal.
-message HeartBeat {
+message Heartbeat {
     uuidpb.UUID agent_id = 1 [
       (gogoproto.customname) = "AgentID"
                              ];
@@ -68,13 +68,13 @@ message HeartBeat {
 }
 
 // Response sent for a successful heart beat.
-message HeartBeatAck {
+message HeartbeatAck {
     // The current unix time in ns on the machine.
     int64 time = 1;
 }
 
 // Response sent for a failed heart beat.
-message HeartBeatNack {}
+message HeartbeatNack {}
 
 message ExecuteQueryRequest {
     uuidpb.UUID query_id      = 1 [
