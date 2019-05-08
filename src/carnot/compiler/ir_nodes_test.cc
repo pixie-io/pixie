@@ -157,12 +157,15 @@ TEST(ToProto, memory_sink_ir) {
 
   auto mem_sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
   auto mem_source = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  auto name_ir = graph->MakeNode<StringIR>().ValueOrDie();
 
   auto rel = table_store::schema::Relation(
       std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64}),
       std::vector<std::string>({"output1", "output2"}));
   EXPECT_OK(mem_sink->SetRelation(rel));
-  EXPECT_OK(mem_sink->Init(mem_source, "output_table", ast));
+  EXPECT_OK(name_ir->Init("output_table", ast));
+  ArgMap amap({{"name", name_ir}});
+  EXPECT_OK(mem_sink->Init(mem_source, amap, ast));
 
   carnotpb::Operator pb;
   EXPECT_OK(mem_sink->ToProto(&pb));
@@ -209,7 +212,8 @@ TEST(ToProto, map_ir) {
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   EXPECT_OK(func->Init("add", std::vector<IRNode*>({constant, col}), ast));
   func->set_func_id(1);
-  EXPECT_OK(map->Init(mem_src, func, ast));
+  ArgMap amap({{"fn", func}});
+  EXPECT_OK(map->Init(mem_src, amap, ast));
   auto expr_map = std::unordered_map<std::string, IRNode*>();
   auto exprs = std::vector<ColumnExpression>({ColumnExpression({"col_name", func})});
   map->SetColExprs(exprs);
@@ -270,8 +274,9 @@ TEST(ToProto, agg_ir) {
   EXPECT_OK(group1->Init("group1", ast));
   group1->SetColumnIdx(1);
   EXPECT_OK(by_func_lambda->Init({"group1"}, group1, ast));
+  ArgMap amap({{"by", by_func_lambda}, {"fn", agg_func_lambda}});
 
-  ASSERT_OK(agg->Init(mem_src, by_func_lambda, agg_func_lambda, ast));
+  ASSERT_OK(agg->Init(mem_src, amap, ast));
   ColExpressionVector exprs;
   exprs.push_back(ColumnExpression({"value1", agg_func}));
   agg->SetAggValMap(exprs);

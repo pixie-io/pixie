@@ -21,16 +21,20 @@ TEST(CompilerTest, remove_range) {
   auto start_time = graph->MakeNode<IntIR>().ValueOrDie();
   auto stop_time = graph->MakeNode<IntIR>().ValueOrDie();
   auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
+  auto sink_name = graph->MakeNode<StringIR>().ValueOrDie();
   int64_t start_time_ns = 2;
   int64_t stop_time_ns = 4;
   auto ast = MakeTestAstPtr();
   EXPECT_OK(start_time->Init(start_time_ns, ast));
   EXPECT_OK(stop_time->Init(stop_time_ns, ast));
   EXPECT_OK(range->Init(src, start_time, stop_time, ast));
-  EXPECT_OK(sink->Init(range, "sink", ast));
+  ArgMap amap;
+  EXPECT_OK(sink_name->Init("sink", ast));
+  amap["name"] = sink_name;
+  EXPECT_OK(sink->Init(range, amap, ast));
   EXPECT_FALSE(src->IsTimeSet());
 
-  EXPECT_EQ(std::vector<int64_t>({0, 1, 2, 3, 4}), graph->dag().TopologicalSort());
+  EXPECT_EQ(std::vector<int64_t>({5, 0, 1, 2, 3, 4}), graph->dag().TopologicalSort());
 
   // Add dependencies.
   EXPECT_OK(graph->AddEdge(src, range));
@@ -40,7 +44,7 @@ TEST(CompilerTest, remove_range) {
 
   EXPECT_OK(IROptimizer().Optimize(graph.get()));
   // checks to make sure that all the edges related to range are removed.
-  EXPECT_EQ(std::vector<int64_t>({0, 4}), graph->dag().TopologicalSort());
+  EXPECT_EQ(std::vector<int64_t>({5, 0, 4}), graph->dag().TopologicalSort());
   EXPECT_TRUE(src->IsTimeSet());
   EXPECT_EQ(stop_time_ns - start_time_ns, src->time_stop_ns() - src->time_start_ns());
   EXPECT_EQ(stop_time_ns, src->time_stop_ns());

@@ -46,11 +46,12 @@ Status IROptimizer::CollapseRange(IR* ir_graph) {
     for (const auto& dep_id : ir_graph->dag().DependenciesOf(range_ir->id())) {
       auto dep = ir_graph->Get(dep_id);
       ir_graph->DeleteEdge(range_ir->id(), dep_id);
-      PL_RETURN_IF_ERROR(ir_graph->AddEdge(src_ir->id(), dep_id));
-      if (dep->IsOp()) {
-        auto casted_node = static_cast<OperatorIR*>(dep);
-        PL_RETURN_IF_ERROR(casted_node->SetParent(dynamic_cast<IRNode*>(src_ir)));
+      if (!dep->IsOp()) {
+        PL_RETURN_IF_ERROR(ir_graph->AddEdge(src_ir->id(), dep_id));
+        continue;
       }
+      auto casted_node = static_cast<OperatorIR*>(dep);
+      PL_RETURN_IF_ERROR(casted_node->SetParent(dynamic_cast<IRNode*>(src_ir)));
     }
     break;
   }

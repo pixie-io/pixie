@@ -33,7 +33,6 @@ constexpr const char* kFilterOpId = "Filter";
 constexpr const char* kLimitOpId = "Limit";
 
 using VarTable = std::unordered_map<std::string, IRNode*>;
-using ArgMap = std::unordered_map<std::string, IRNode*>;
 
 #define PYPA_PTR_CAST(TYPE, VAL) \
   std::static_pointer_cast<typename pypa::AstTypeByID<pypa::AstType::TYPE>::Type>(VAL)
@@ -201,6 +200,15 @@ class ASTWalker {
    * @return StatusOr<IRNode*> the from op.
    */
   StatusOr<IRNode*> ProcessFromOp(const pypa::AstCallPtr& node);
+
+  /**
+   * @brief Processes arbitrary operations.
+   *
+   * @param node
+   * @return StatusOr<IRNode*> the sink op.
+   */
+  template <typename TOpIR>
+  StatusOr<TOpIR*> ProcessOp(const pypa::AstCallPtr& node);
 
   /**
    * @brief Processes the Result operator.

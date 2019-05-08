@@ -210,15 +210,15 @@ StatusOr<IRNode*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
   } else if (func_name == kRangeOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessRangeOp(node));
   } else if (func_name == kMapOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessMapOp(node));
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<MapIR>(node));
   } else if (func_name == kFilterOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessFilterOp(node));
   } else if (func_name == kLimitOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessLimitOp(node));
   } else if (func_name == kBlockingAggOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessAggOp(node));
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<BlockingAggIR>(node));
   } else if (func_name == kSinkOpId) {
-    PL_ASSIGN_OR_RETURN(ir_node, ProcessSinkOp(node));
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<MemorySinkIR>(node));
   } else if (func_name == kRangeAggOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessRangeAggOp(node));
   } else {
@@ -248,14 +248,24 @@ StatusOr<IRNode*> ASTWalker::ProcessAttribute(const pypa::AstAttributePtr& node)
   }
 }
 
-StatusOr<IRNode*> ASTWalker::ProcessSinkOp(const pypa::AstCallPtr& node) {
-  PL_ASSIGN_OR_RETURN(MemorySinkIR * ir_node, ir_graph_->MakeNode<MemorySinkIR>());
+template <typename TOpIR>
+StatusOr<TOpIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
+  PL_ASSIGN_OR_RETURN(TOpIR * ir_node, ir_graph_->MakeNode<TOpIR>());
+  if (!(ir_node->is_source()) && node->function->type != AstType::Attribute) {
+    return CreateAstError(
+        absl::StrFormat("Only source operators can be called from outside a table reference. '%s' "
+                        "needs to be called as an attribute of a table.",
+                        ir_node->type_string()),
+        node->function);
+  }
+  IRNode* call_result = nullptr;
+  if (node->function->type == AstType::Attribute) {
+    PL_ASSIGN_OR_RETURN(call_result, ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
+  }
 
-  PL_ASSIGN_OR_RETURN(IRNode * call_result,
-                      ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
-  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"name"}, true));
-  PL_ASSIGN_OR_RETURN(std::string name_str, IRUtils::GetStrIRValue(*args["name"]));
-  PL_RETURN_IF_ERROR(ir_node->Init(call_result, name_str, node));
+  PL_ASSIGN_OR_RETURN(ArgMap args,
+                      ProcessArgs(node, ir_node->ArgKeys(), true, ir_node->DefaultArgValues(node)));
+  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args, node));
   return ir_node;
 }
 
@@ -274,39 +284,6 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeOp(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(IRNode * call_result,
                       ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
   PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["start"], args["stop"], node));
-  return ir_node;
-}
-
-StatusOr<IRNode*> ASTWalker::ProcessMapOp(const pypa::AstCallPtr& node) {
-  if (node->function->type != AstType::Attribute) {
-    return CreateAstError(absl::StrFormat("Expected Map to be an attribute, not a %s",
-                                          GetAstTypeName(node->function->type)),
-                          node->function);
-  }
-  PL_ASSIGN_OR_RETURN(MapIR * ir_node, ir_graph_->MakeNode<MapIR>());
-  // Get arguments.
-  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"fn"}, true));
-  PL_ASSIGN_OR_RETURN(IRNode * call_result,
-                      ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
-  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["fn"], node));
-  return ir_node;
-}
-
-StatusOr<IRNode*> ASTWalker::ProcessAggOp(const pypa::AstCallPtr& node) {
-  if (node->function->type != AstType::Attribute) {
-    return CreateAstError(absl::StrFormat("Expected Agg to be an attribute, not a %s",
-                                          GetAstTypeName(node->function->type)),
-                          node->function);
-  }
-  PL_ASSIGN_OR_RETURN(BlockingAggIR * ir_node, ir_graph_->MakeNode<BlockingAggIR>());
-  // imitate a None argument.
-  PL_ASSIGN_OR_RETURN(auto default_by_arg, MakeDefaultAggByArg(node));
-  // Get arguments.
-  PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"by", "fn"}, true, {{"by", default_by_arg}}));
-
-  PL_ASSIGN_OR_RETURN(IRNode * call_result,
-                      ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
-  PL_RETURN_IF_ERROR(ir_node->Init(call_result, args["by"], args["fn"], node));
   return ir_node;
 }
 
@@ -348,7 +325,8 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
   PL_RETURN_IF_ERROR(map_lambda_ir_node->Init(
       std::unordered_set<std::string>({static_cast<ColumnIR*>(by_col_ir_node)->col_name()}),
       map_exprs, node));
-  PL_RETURN_IF_ERROR(map_ir_node->Init(call_result, map_lambda_ir_node, node));
+  ArgMap map_args{{"fn", map_lambda_ir_node}};
+  PL_RETURN_IF_ERROR(map_ir_node->Init(call_result, map_args, node));
 
   // Create BlockingAggIR.
   PL_ASSIGN_OR_RETURN(BlockingAggIR * agg_ir_node, ir_graph_->MakeNode<BlockingAggIR>());
@@ -361,7 +339,8 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
       agg_by_ir_node->Init(std::unordered_set<std::string>({"group"}), agg_col_ir_node, node));
 
   // Agg(fn = fn, by = lambda r: r.group).
-  PL_RETURN_IF_ERROR(agg_ir_node->Init(map_ir_node, agg_by_ir_node, args["fn"], node));
+  ArgMap agg_args{{"by", agg_by_ir_node}, {"fn", args["fn"]}};
+  PL_RETURN_IF_ERROR(agg_ir_node->Init(map_ir_node, agg_args, node));
   return agg_ir_node;
 }
 
@@ -835,7 +814,7 @@ StatusOr<IRNode*> ASTWalker::ProcessNameData(const pypa::AstNamePtr& ast) {
   if (name_str != "None") {
     return CreateAstError(absl::StrFormat("'%s' is not a variable or a keyword.", name_str), ast);
   }
-  PL_ASSIGN_OR_RETURN(auto ir_node, MakeDefaultAggByArg(ast));
+  PL_ASSIGN_OR_RETURN(auto ir_node, BlockingAggIR::MakeDefaultAggByArg(ir_graph_.get(), ast));
   return ir_node;
 }
 StatusOr<IRNode*> ASTWalker::ProcessData(const pypa::AstPtr& ast) {

@@ -21,6 +21,7 @@ namespace compiler {
 class IR;
 class IRNode;
 using IRNodePtr = std::unique_ptr<IRNode>;
+using ArgMap = std::unordered_map<std::string, IRNode*>;
 struct ColumnExpression {
   std::string name;
   IRNode* node;
@@ -181,7 +182,15 @@ class OperatorIR : public IRNode {
   bool HasParent() const { return has_parent_; }
   OperatorIR* parent() const { return parent_; }
   Status SetParent(IRNode* node);
+  Status Init(IRNode* parent, const ArgMap& args, const pypa::AstPtr& ast_node);
+  virtual Status InitImpl(const ArgMap& args) = 0;
+  virtual std::vector<std::string> ArgKeys() = 0;
+  virtual std::unordered_map<std::string, IRNode*> DefaultArgValues(
+      const pypa::AstPtr& ast_node) = 0;
   virtual Status ToProto(carnotpb::Operator*) const = 0;
+  // Checks whether the passed in arg maps contains the expected keys in this init function.
+  Status ArgMapContainsKeys(const ArgMap& args);
+
   Status EvaluateExpression(carnotpb::ScalarExpression* expr, const IRNode& ir_node) const;
 
  protected:
@@ -422,6 +431,14 @@ class MemorySourceIR : public OperatorIR {
     columns_ = columns;
   }
   Status ToProto(carnotpb::Operator*) const override;
+  // TODO(philkuz) implement
+  std::vector<std::string> ArgKeys() override { return {"name"}; }
+
+  // TODO(philkuz) implement
+  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
+    return std::unordered_map<std::string, IRNode*>();
+  }
+  Status InitImpl(const ArgMap& args) override;
 
  private:
   IRNode* table_node_;
@@ -441,12 +458,18 @@ class MemorySinkIR : public OperatorIR {
  public:
   MemorySinkIR() = delete;
   explicit MemorySinkIR(int64_t id) : OperatorIR(id, MemorySinkType, true, false) {}
-  Status Init(IRNode* parent, const std::string& name, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   bool name_set() const { return name_set_; }
   std::string name() const { return name_; }
   Status ToProto(carnotpb::Operator*) const override;
+
+  std::vector<std::string> ArgKeys() override { return {"name"}; }
+  Status InitImpl(const ArgMap& args) override;
+
+  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
+    return std::unordered_map<std::string, IRNode*>();
+  }
 
  private:
   std::string name_;
@@ -471,6 +494,16 @@ class RangeIR : public OperatorIR {
   Status SetStartStop(IRNode* start_repr, IRNode* stop_repr);
   Status ToProto(carnotpb::Operator*) const override;
 
+  // TODO(philkuz) implement
+  std::vector<std::string> ArgKeys() override { return {"start", "stop"}; }
+
+  // TODO(philkuz) implement
+  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
+    return std::unordered_map<std::string, IRNode*>();
+  }
+  // TODO(philkuz) implement
+  Status InitImpl(const ArgMap& args) override;
+
  private:
   IRNode* start_repr_ = nullptr;
   IRNode* stop_repr_ = nullptr;
@@ -487,7 +520,6 @@ class MapIR : public OperatorIR {
  public:
   MapIR() = delete;
   explicit MapIR(int64_t id) : OperatorIR(id, MapType, true, false) {}
-  Status Init(IRNode* parent, IRNode* lambda_func, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   IRNode* lambda_func() const { return lambda_func_; }
@@ -497,6 +529,13 @@ class MapIR : public OperatorIR {
   }
   bool col_exprs_set() const { return col_exprs_set_; }
   Status ToProto(carnotpb::Operator*) const override;
+
+  std::vector<std::string> ArgKeys() override { return {"fn"}; }
+
+  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
+    return std::unordered_map<std::string, IRNode*>();
+  }
+  Status InitImpl(const ArgMap& args) override;
 
  private:
   IRNode* lambda_func_;
@@ -516,7 +555,6 @@ class BlockingAggIR : public OperatorIR {
  public:
   BlockingAggIR() = delete;
   explicit BlockingAggIR(int64_t id) : OperatorIR(id, BlockingAggType, true, false) {}
-  Status Init(IRNode* parent, IRNode* by_func, IRNode* agg_func, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   IRNode* by_func() const { return by_func_; }
@@ -535,6 +573,17 @@ class BlockingAggIR : public OperatorIR {
   Status ToProto(carnotpb::Operator*) const override;
   Status EvaluateAggregateExpression(carnotpb::AggregateExpression* expr,
                                      const IRNode& ir_node) const;
+
+  std::vector<std::string> ArgKeys() override { return {"fn", "by"}; }
+
+  static StatusOr<IRNode*> MakeDefaultAggByArg(IR* graph_ptr, const pypa::AstPtr& ast);
+  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr& node) override {
+    StatusOr<IRNode*> default_by_arg_wrapper = MakeDefaultAggByArg(graph_ptr(), node);
+    PL_CHECK_OK(default_by_arg_wrapper);
+    IRNode* default_by_arg = default_by_arg_wrapper.ConsumeValueOrDie();
+    return std::unordered_map<std::string, IRNode*>{{"by", default_by_arg}};
+  }
+  Status InitImpl(const ArgMap& args) override;
 
  private:
   IRNode* by_func_;
@@ -557,6 +606,15 @@ class FilterIR : public OperatorIR {
   IRNode* filter_func() const { return filter_func_; }
   Status ToProto(carnotpb::Operator*) const override;
 
+  // TODO(philkuz) implement
+  std::vector<std::string> ArgKeys() override { return {"name"}; }
+
+  // TODO(philkuz) implement
+  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
+    return std::unordered_map<std::string, IRNode*>();
+  }
+  Status InitImpl(const ArgMap& args) override;
+
  private:
   IRNode* filter_func_;
 };
@@ -575,6 +633,15 @@ class LimitIR : public OperatorIR {
   }
   bool limit_value_set() const { return limit_value_set_; }
   IRNode* limit_node() const { return limit_node_; }
+
+  // TODO(philkuz) implement
+  std::vector<std::string> ArgKeys() override { return {"name"}; }
+
+  // TODO(philkuz) implement
+  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
+    return std::unordered_map<std::string, IRNode*>();
+  }
+  Status InitImpl(const ArgMap& args) override;
 
  private:
   IRNode* limit_node_;

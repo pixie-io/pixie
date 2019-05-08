@@ -44,6 +44,31 @@ Status OperatorIR::SetParent(IRNode* node) {
     return error::InvalidArgument("Expected Op, got $0 instead", node->type_string());
   }
   parent_ = static_cast<OperatorIR*>(node);
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent_, this));
+  return Status::OK();
+}
+
+Status OperatorIR::ArgMapContainsKeys(const ArgMap& args) {
+  std::vector<std::string> missing_keys;
+  for (const auto& arg : ArgKeys()) {
+    if (args.find(arg) == args.end()) {
+      missing_keys.push_back(arg);
+    }
+  }
+  if (missing_keys.size() != 0) {
+    return IRUtils::CreateIRNodeError(
+        absl::StrFormat("Missing args [%s] in call. ", absl::StrJoin(missing_keys, ",")), *this);
+  }
+  return Status::OK();
+}
+
+Status OperatorIR::Init(IRNode* parent, const ArgMap& args, const pypa::AstPtr& ast_node) {
+  SetLineCol(ast_node);
+  PL_RETURN_IF_ERROR(ArgMapContainsKeys(args));
+  if (parent != nullptr) {
+    PL_RETURN_IF_ERROR(SetParent(parent));
+  }
+  PL_RETURN_IF_ERROR(InitImpl(args));
   return Status::OK();
 }
 
@@ -109,14 +134,30 @@ std::string MemorySourceIR::DebugString(int64_t depth) const {
 
 bool MemorySinkIR::HasLogicalRepr() const { return true; }
 
-Status MemorySinkIR::Init(IRNode* parent_node, const std::string& name,
-                          const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
-  PL_RETURN_IF_ERROR(SetParent(parent_node));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
-  name_ = name;
+Status MemorySinkIR::InitImpl(const ArgMap& args) {
+  PL_ASSIGN_OR_RETURN(name_, IRUtils::GetStrIRValue(*(args.find("name")->second)));
   name_set_ = true;
 
+  return Status::OK();
+}
+// TODO(philkuz) impl
+Status MemorySourceIR::InitImpl(const ArgMap& args) {
+  PL_UNUSED(args);
+  return Status::OK();
+}
+// TODO(philkuz) impl
+Status FilterIR::InitImpl(const ArgMap& args) {
+  PL_UNUSED(args);
+  return Status::OK();
+}
+// TODO(philkuz) impl
+Status LimitIR::InitImpl(const ArgMap& args) {
+  PL_UNUSED(args);
+  return Status::OK();
+}
+// TODO(philkuz) impl
+Status RangeIR::InitImpl(const ArgMap& args) {
+  PL_UNUSED(args);
   return Status::OK();
 }
 
@@ -146,7 +187,6 @@ Status RangeIR::Init(IRNode* parent_node, IRNode* start_repr, IRNode* stop_repr,
                      const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   PL_RETURN_IF_ERROR(SetParent(parent_node));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
   return SetStartStop(start_repr, stop_repr);
 }
 Status RangeIR::SetStartStop(IRNode* start_repr, IRNode* stop_repr) {
@@ -176,12 +216,10 @@ Status RangeIR::ToProto(carnotpb::Operator*) const {
   return error::InvalidArgument("RangeIR has no protobuf representation.");
 }
 
-Status MapIR::Init(IRNode* parent_node, IRNode* lambda_func, const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
-  lambda_func_ = lambda_func;
-  PL_RETURN_IF_ERROR(SetParent(parent_node));
+Status MapIR::InitImpl(const ArgMap& args) {
+  DCHECK(args.find("fn") != args.end());
+  lambda_func_ = args.find("fn")->second;
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, lambda_func_));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
   return Status::OK();
 }
 
@@ -275,7 +313,6 @@ Status FilterIR::Init(IRNode* parent_node, IRNode* filter_func, const pypa::AstP
   filter_func_ = filter_func;
   PL_RETURN_IF_ERROR(SetParent(parent_node));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, filter_func_));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
   return Status::OK();
 }
 
@@ -311,7 +348,6 @@ Status LimitIR::Init(IRNode* parent_node, IRNode* limit_value_node, const pypa::
   limit_node_ = limit_value_node;
   PL_RETURN_IF_ERROR(SetParent(parent_node));
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, limit_node_));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
   return Status::OK();
 }
 
@@ -342,9 +378,10 @@ Status LimitIR::ToProto(carnotpb::Operator* op) const {
   return Status::OK();
 }
 
-Status BlockingAggIR::Init(IRNode* parent_node, IRNode* by_func, IRNode* agg_func,
-                           const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
+// TODO(philkuz) fix up the initimpl to make this less hardcoded
+Status BlockingAggIR::InitImpl(const ArgMap& args) {
+  IRNode* by_func = args.find("by")->second;
+  IRNode* agg_func = args.find("fn")->second;
   if (agg_func->type() != IRNodeType::LambdaType) {
     return IRUtils::CreateIRNodeError(
         absl::StrFormat("Expected 'agg' argument of BlockingAggIR to be 'Lambda', got '%s'",
@@ -354,7 +391,6 @@ Status BlockingAggIR::Init(IRNode* parent_node, IRNode* by_func, IRNode* agg_fun
   // If by_func_ is not a null pointer, then update the graph with it. Otherwise, continue onwards.
   if (by_func->type() == IRNodeType::BoolType) {
     by_func_ = nullptr;
-
   } else if (by_func->type() == IRNodeType::LambdaType) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, by_func));
     by_func_ = by_func;
@@ -367,10 +403,13 @@ Status BlockingAggIR::Init(IRNode* parent_node, IRNode* by_func, IRNode* agg_fun
 
   agg_func_ = agg_func;
 
-  PL_RETURN_IF_ERROR(SetParent(parent_node));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, agg_func_));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent(), this));
   return Status();
+}
+
+StatusOr<IRNode*> BlockingAggIR::MakeDefaultAggByArg(IR* graph_ptr, const pypa::AstPtr& ast) {
+  PL_ASSIGN_OR_RETURN(auto node, graph_ptr->MakeNode<BoolIR>());
+  PL_RETURN_IF_ERROR(node->Init(true, ast));
+  return node;
 }
 
 bool BlockingAggIR::HasLogicalRepr() const { return true; }
