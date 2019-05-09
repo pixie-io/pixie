@@ -1,9 +1,9 @@
 default['bazel']               = {}
 default['bazel']['deb']        =
-  'https://releases.bazel.build/0.23.0/rc1/bazel_0.23.0rc1-linux-x86_64.deb'
+  'https://github.com/bazelbuild/bazel/releases/download/0.24.1/bazel_0.24.1-linux-x86_64.deb'
 default['bazel']['deb_sha256'] =
-  '10655a8c877ca2b32dd86fb7aee2efcac8527763a9f0e2e37f2aafbd5e35d5cc'
-default['bazel']['version'] = "0.23.0rc1"
+  'b6fec7719046953f8b9b18bb798b8d11a84147b936c31e4cfe8d1e6184cc24ed'
+default['bazel']['version'] = "0.24.1"
 
 default['bcc']               = {}
 default['bcc']['deb']        =
