@@ -4,10 +4,9 @@
 
 // This is copied from http_trace.h, with comments removed, so that this whole file can be
 // hermetically installed as a BPF program.
-
-// TODO(yzhao): PL-451 These struct definitions should come
-// from a header file. Figure out how to expand the header file
-// using preprocessing in pl_cc_resource.
+//
+// TODO(PL-451): The struct definitions that are reused in HTTPTraceConnector should be shared from
+// the same header file.
 
 struct accept_info_t {
   uint64_t timestamp_ns;
@@ -19,7 +18,6 @@ struct syscall_write_event_t {
   struct attr_t {
     struct accept_info_t accept_info;
     uint64_t time_stamp_ns;
-    // Comes from the process from which this is captured.
     uint32_t tgid;
     uint32_t pid;
     int fd;
@@ -34,7 +32,6 @@ const uint32_t kEventTypeSyscallSendEvent = 2;
 
 // This is the perf buffer for BPF program to export data from kernel to user space.
 BPF_PERF_OUTPUT(syscall_write_events);
-
 
 // BPF programs are limited to a 512-byte stack. We store this value per CPU
 // and use it as a heap allocated value.
@@ -51,12 +48,12 @@ struct addr_info_t {
   size_t *addrlen;
 };
 
-// Tracks struct addr_info so we can map between entry and exit.
-// Key is {TGID, fd}.
+// Map from threads to its ongoing accept() syscall's input argument.
+// Key is {tgid, pid}.
 BPF_HASH(active_sock_addr, u64, struct addr_info_t);
 
-// Map recording connection-related information on connection accept.
-// Key is {TGID, fd}.
+// Map from user-space file descriptors to the connections obtained from accept() syscall.
+// Key is {tgid, fd}.
 BPF_HASH(accept_info_map, u64, struct accept_info_t);
 
 struct write_info_t {
@@ -65,14 +62,17 @@ struct write_info_t {
   struct accept_info_t accept_info;
 } __attribute__((__packed__, aligned(8)));
 
-// Map from a thread's id to its ongoing write() syscall's input argument.
+// Map from threads to its ongoing write() syscall's input argument.
+// Key is {tgid, pid}.
+//
+// TODO(yzhao): Consider merging this with active_sock_addr.
 BPF_HASH(active_write_info_map, u64, struct write_info_t);
 
 // This function stores the address to the sockaddr struct in the active_sock_addr map.
 // The key is the current pid/tgid.
 //
-// TODO(yzhao): We are not able to trace the source address/port yet. We might need access the
-// sockfd argument to accept() syscall.
+// TODO(yzhao): We are not able to trace the source address/port yet. We might need to probe the
+// socket() syscall.
 int probe_entry_accept4(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t *addrlen) {
   u64 id = bpf_get_current_pid_tgid();
   struct addr_info_t addr_info;
