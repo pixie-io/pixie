@@ -22,7 +22,7 @@ StatusOr<std::string> ASTWalker::ExpandOpString(const std::string& op, const std
                                                 const pypa::AstPtr node) {
   auto op_find = kOP_TO_UDF_MAP.find(op);
   if (op_find == kOP_TO_UDF_MAP.end()) {
-    return CreateAstError(absl::StrFormat("Operator '%s' not handled", op), node);
+    return CreateAstError(node, "Operator '$0' not handled", op);
   }
   return absl::Substitute("$0.$1", prefix, op_find->second);
 }
@@ -36,11 +36,15 @@ ASTWalker::ASTWalker(std::shared_ptr<IR> ir_graph, CompilerState* compiler_state
   compiler_state_ = compiler_state;
 }
 
-Status ASTWalker::CreateAstError(const std::string& err_msg, const pypa::AstPtr& ast) {
-  return error::InvalidArgument("Line $0 Col $1 : $2", ast->line, ast->column, err_msg);
+template <typename... Args>
+Status ASTWalker::CreateAstError(const pypa::AstPtr& ast, Args... args) {
+  return error::InvalidArgument("Line $0 Col $1 : $2", ast->line, ast->column,
+                                absl::Substitute(args...));
 }
-Status ASTWalker::CreateAstError(const std::string& err_msg, const pypa::Ast& ast) {
-  return CreateAstError(err_msg, std::make_shared<pypa::Ast>(ast));
+
+template <typename... Args>
+Status ASTWalker::CreateAstError(const pypa::Ast& ast, Args... args) {
+  return CreateAstError(std::make_shared<pypa::Ast>(ast), args...);
 }
 
 std::string ASTWalker::GetAstTypeName(pypa::AstType type) {
@@ -52,7 +56,7 @@ std::string ASTWalker::GetAstTypeName(pypa::AstType type) {
 #undef PYPA_AST_TYPE
   };
   DCHECK(type_names.size() > static_cast<size_t>(type));
-  return absl::StrFormat("%s", type_names[static_cast<int>(type)]);
+  return absl::Substitute("$0", type_names[static_cast<int>(type)]);
 }
 
 Status ASTWalker::ProcessExprStmtNode(const pypa::AstExpressionStatementPtr& e) {
@@ -60,7 +64,7 @@ Status ASTWalker::ProcessExprStmtNode(const pypa::AstExpressionStatementPtr& e) 
     case AstType::Call:
       return ProcessOpCallNode(PYPA_PTR_CAST(Call, e->expr)).status();
     default:
-      return CreateAstError("Expression node not defined", e);
+      return CreateAstError(e, "Expression node not defined");
   }
 }
 
@@ -79,9 +83,7 @@ Status ASTWalker::ProcessModuleNode(const pypa::AstModulePtr& m) {
         PL_RETURN_IF_ERROR(result);
         break;
       default:
-        std::string err_msg =
-            absl::StrFormat("Can't parse expression of type %s", GetAstTypeName(stmt->type));
-        return CreateAstError(err_msg, m);
+        return CreateAstError(m, "Can't parse expression of type $0", GetAstTypeName(stmt->type));
     }
   }
   return Status::OK();
@@ -90,17 +92,17 @@ Status ASTWalker::ProcessModuleNode(const pypa::AstModulePtr& m) {
 Status ASTWalker::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   // Check # nodes to assign.
   if (node->targets.size() != 1) {
-    return CreateAstError("AssignNodes are only supported with one target.", node);
+    return CreateAstError(node, "AssignNodes are only supported with one target.");
   }
   // Get the name that we are targeting.
   auto expr_node = node->targets[0];
   if (expr_node->type != AstType::Name) {
-    return CreateAstError("Assign target must be a Name node.", expr_node);
+    return CreateAstError(expr_node, "Assign target must be a Name node.");
   }
   std::string assign_name = GetNameID(expr_node);
   // Get the object that we want to assign.
   if (node->value->type != AstType::Call) {
-    return CreateAstError("Assign value must be a function call.", node->value);
+    return CreateAstError(node->value, "Assign value must be a function call.");
   }
   StatusOr<IRNode*> value = ProcessOpCallNode(PYPA_PTR_CAST(Call, node->value));
 
@@ -120,17 +122,15 @@ StatusOr<std::string> ASTWalker::GetFuncName(const pypa::AstCallPtr& node) {
     case AstType::Attribute: {
       auto attr = PYPA_PTR_CAST(Attribute, node->function);
       if (attr->attribute->type != AstType::Name) {
-        return CreateAstError(absl::StrFormat("Couldn't get string name out of node of type %s.",
-                                              GetAstTypeName(attr->attribute->type)),
-                              attr->attribute);
+        return CreateAstError(node->function, "Couldn't get string name out of node of type $0.",
+                              GetAstTypeName(attr->attribute->type));
       }
       func_name = GetNameID(attr->attribute);
       break;
     }
     default: {
-      return CreateAstError(absl::StrFormat("Couldn't get string name out of node of type %s.",
-                                            GetAstTypeName(node->function->type)),
-                            node->function);
+      return CreateAstError(node->function, "Couldn't get string name out of node of type $0.",
+                            GetAstTypeName(node->function->type));
     }
   }
   return func_name;
@@ -160,8 +160,7 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(
     std::string key = GetNameID(kw_ptr->name);
     if (missing_or_default_args.find(key) == missing_or_default_args.end()) {
       // TODO(philkuz) make a string output version of CreateAstError.
-      errors.push_back(CreateAstError(
-          absl::Substitute("Keyword '$0' not expected in function.", key), call_ast));
+      errors.push_back(CreateAstError(call_ast, "Keyword '$0' not expected in function.", key));
       continue;
     }
     missing_or_default_args.erase(missing_or_default_args.find(key));
@@ -174,8 +173,8 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(
     if (find_ma == default_args.end()) {
       // TODO(philkuz) look for places where ast error might exit prematurely in other parts of the
       // code.
-      errors.push_back(CreateAstError(
-          absl::Substitute("You must set '$0' directly. No default value found.", ma), call_ast));
+      errors.push_back(
+          CreateAstError(call_ast, "You must set '$0' directly. No default value found.", ma));
       continue;
     }
     arg_map[ma] = find_ma->second;
@@ -195,8 +194,7 @@ StatusOr<IRNode*> ASTWalker::LookupName(const pypa::AstNamePtr& name_node) {
   // if doesn't exist, then
   auto find_name = var_table_.find(name_node->id);
   if (find_name == var_table_.end()) {
-    std::string err_msg = absl::StrFormat("Can't find variable \"%s\".", name_node->id);
-    return CreateAstError(err_msg, name_node);
+    return CreateAstError(name_node, "Can't find variable '$0'.", name_node->id);
   }
   IRNode* node = find_name->second;
   return node;
@@ -210,7 +208,7 @@ StatusOr<IRNode*> ASTWalker::ProcessAttribute(const pypa::AstAttributePtr& node)
     case AstType::Name: {
       return LookupName(PYPA_PTR_CAST(Name, node->value));
     }
-    default: { return CreateAstError("Can't handle the attribute of this type", node->value); }
+    default: { return CreateAstError(node->value, "Can't handle the attribute of this type"); }
   }
 }
 
@@ -219,10 +217,10 @@ StatusOr<TOpIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(TOpIR * ir_node, ir_graph_->MakeNode<TOpIR>());
   if (!(ir_node->is_source()) && node->function->type != AstType::Attribute) {
     return CreateAstError(
-        absl::StrFormat("Only source operators can be called from outside a table reference. '%s' "
-                        "needs to be called as an attribute of a table.",
-                        ir_node->type_string()),
-        node->function);
+        node->function,
+        "Only source operators can be called from outside a table reference. '$0' "
+        "needs to be called as an attribute of a table.",
+        ir_node->type_string());
   }
   IRNode* call_result = nullptr;
   if (node->function->type == AstType::Attribute) {
@@ -237,9 +235,8 @@ StatusOr<TOpIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
 template <>
 StatusOr<RangeIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
   if (node->function->type != AstType::Attribute) {
-    return CreateAstError(absl::StrFormat("Expected Range to be an attribute, not a %s",
-                                          GetAstTypeName(node->function->type)),
-                          node->function);
+    return CreateAstError(node->function, "Expected Range to be an attribute, not a $0",
+                          GetAstTypeName(node->function->type));
   }
   PL_ASSIGN_OR_RETURN(RangeIR * ir_node, ir_graph_->MakeNode<RangeIR>());
   // Setup the default arguments.
@@ -273,17 +270,15 @@ StatusOr<IRNode*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
   } else if (func_name == kRangeAggOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessRangeAggOp(node));
   } else {
-    std::string err_msg = absl::Substitute("No function named '$0'", func_name);
-    return CreateAstError(err_msg, node);
+    return CreateAstError(node, "No function named '$0'", func_name);
   }
   return ir_node;
 }
 
 StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
   if (node->function->type != AstType::Attribute) {
-    return CreateAstError(absl::StrFormat("Expected RangeAgg to be an attribute, not a %s",
-                                          GetAstTypeName(node->function->type)),
-                          node->function);
+    return CreateAstError(node->function, "Expected RangeAgg to be an attribute, not a $0",
+                          GetAstTypeName(node->function->type));
   }
 
   PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, {"fn", "by", "size"}, true));
@@ -357,8 +352,7 @@ StatusOr<LambdaExprReturn> ASTWalker::LookupPLTimeAttribute(const std::string& a
                                                             const pypa::AstPtr& parent_node) {
   auto time_idx = kTimeMapNS.find(attribute_name);
   if (time_idx == kTimeMapNS.end()) {
-    return CreateAstError(absl::Substitute("Couldn't find attribute $0", attribute_name),
-                          parent_node);
+    return CreateAstError(parent_node, "Couldn't find attribute $0", attribute_name);
   }
   PL_ASSIGN_OR_RETURN(TimeIR * time_node, ir_graph_->MakeNode<TimeIR>());
   PL_RETURN_IF_ERROR(time_node->Init(time_idx->second, parent_node));
@@ -369,14 +363,12 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const std::string& 
                                                              const pypa::AstAttributePtr& node) {
   // make sure that the attribute values are of type name.
   if (node->attribute->type != AstType::Name) {
-    return CreateAstError(absl::StrFormat("Attribute must be a variable, not a %s",
-                                          GetAstTypeName(node->attribute->type)),
-                          node->attribute);
+    return CreateAstError(node->attribute, "Attribute must be a variable, not a $0",
+                          GetAstTypeName(node->attribute->type));
   }
   if (node->value->type != AstType::Name) {
-    return CreateAstError(absl::StrFormat("Attribute value must be a variable, not a %s",
-                                          GetAstTypeName(node->value->type)),
-                          node->value);
+    return CreateAstError(node->value, "Attribute value must be a variable, not a $0",
+                          GetAstTypeName(node->value->type));
   }
   auto value = GetNameID(node->value);
   auto attribute = GetNameID(node->attribute);
@@ -390,9 +382,9 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const std::string& 
     return LambdaExprReturn(expr, column_names);
   }
   if (value == kUDFPrefix) {
-    return LambdaExprReturn(absl::StrFormat("%s.%s", value, attribute), true /*is_pixie_attr*/);
+    return LambdaExprReturn(absl::Substitute("$0.$1", value, attribute), true /*is_pixie_attr*/);
   }
-  return CreateAstError(absl::StrFormat("Couldn't find value %s", value), node);
+  return CreateAstError(node, "Couldn't find value $0", value);
 }
 
 StatusOr<IRNode*> ASTWalker::ProcessNumber(const pypa::AstNumberPtr& node) {
@@ -409,7 +401,7 @@ StatusOr<IRNode*> ASTWalker::ProcessNumber(const pypa::AstNumberPtr& node) {
       return ir_node;
     }
     default:
-      return CreateAstError(absl::StrFormat("Couldn't find number type %d", node->num_type), node);
+      return CreateAstError(node, "Couldn't find number type $0", node->num_type);
   }
 }
 
@@ -463,8 +455,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCompare(const std::string& ar
   PL_ASSIGN_OR_RETURN(std::string fn_name, ExpandOpString(op_str, kUDFPrefix, node));
   std::vector<LambdaExprReturn> children_ret_expr;
   if (node->comparators.size() != 1) {
-    return CreateAstError(
-        absl::StrFormat("Only expected one argument to the right of '%s'.", op_str), node);
+    return CreateAstError(node, "Only expected one argument to the right of '$0'.", op_str);
   }
   PL_ASSIGN_OR_RETURN(auto rt, ProcessLambdaExpr(arg_name, node->left));
   children_ret_expr.push_back(rt);
@@ -479,11 +470,11 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCall(const std::string& arg_n
                                                         const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(auto attr_result, ProcessLambdaExpr(arg_name, node->function));
   if (!attr_result.StringOnly()) {
-    return CreateAstError("Expected a string for the return", node);
+    return CreateAstError(node, "Expected a string for the return");
   }
   auto arglist = node->arglist;
   if (!arglist.defaults.empty() || !arglist.keywords.empty()) {
-    return CreateAstError("Only non-default and non-keyword args allowed.", node);
+    return CreateAstError(node, "Only non-default and non-keyword args allowed.");
   }
 
   std::string fn_name = attr_result.str_;
@@ -515,7 +506,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaList(const std::string& arg_n
   for (auto& child : node->elements) {
     PL_ASSIGN_OR_RETURN(auto child_attr, ProcessLambdaExpr(arg_name, child));
     if (child_attr.StringOnly() || child_attr.expr_->type() != IRNodeType::ColumnType) {
-      return CreateAstError("Expect Lambda list to only contain column names.", node);
+      return CreateAstError(node, "Expect Lambda list to only contain column names.");
     }
     expr_return.MergeColumns(child_attr);
     children.push_back(child_attr.expr_);
@@ -565,10 +556,8 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaExpr(const std::string& arg_n
       break;
     }
     default: {
-      return CreateAstError(
-          absl::StrFormat("Node of type %s not allowed for expression in Lambda function.",
-                          GetAstTypeName(node->type)),
-          node);
+      return CreateAstError(node, "Node of type $0 not allowed for expression in Lambda function.",
+                            GetAstTypeName(node->type));
     }
   }
   return expr_return;
@@ -577,20 +566,18 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaExpr(const std::string& arg_n
 StatusOr<std::string> ASTWalker::ProcessLambdaArgs(const pypa::AstLambdaPtr& node) {
   auto arg_ast = node->arguments;
   if (arg_ast.arguments.size() != 1) {
-    return CreateAstError("Only allow 1 arg for the lambda.", node);
+    return CreateAstError(node, "Only allow 1 arg for the lambda.");
   }
   if (!arg_ast.defaults.empty() && arg_ast.defaults[0]) {
-    return CreateAstError(
-        absl::StrFormat("No default arguments allowed for lambdas. Found %d default args.",
-                        arg_ast.defaults.size()),
-        node);
+    return CreateAstError(node, "No default arguments allowed for lambdas. Found $0 default args.",
+                          arg_ast.defaults.size());
   }
   if (!arg_ast.keywords.empty()) {
-    return CreateAstError("No keyword arguments allowed for lambdas.", node);
+    return CreateAstError(node, "No keyword arguments allowed for lambdas.");
   }
   auto arg_node = arg_ast.arguments[0];
   if (arg_node->type != AstType::Name) {
-    return CreateAstError("Argument must be a Name.", node);
+    return CreateAstError(node, "Argument must be a Name.");
   }
   return GetNameID(arg_node);
 }
@@ -642,9 +629,8 @@ StatusOr<IntIR*> ASTWalker::MakeTimeNow(const pypa::AstPtr& ast_node) {
 StatusOr<IntIR*> ASTWalker::EvalCompileTimeNow(const pypa::AstArguments& arglist,
                                                const pypa::AstPtr& arglist_parent) {
   if (!arglist.arguments.empty() || !arglist.keywords.empty()) {
-    return CreateAstError(
-        absl::Substitute("No Arguments expected for '$0.$1' fn", kCompileTimePrefix, "now"),
-        arglist_parent);
+    return CreateAstError(arglist_parent, "No Arguments expected for '$0.$1' fn",
+                          kCompileTimePrefix, "now");
   }
   PL_ASSIGN_OR_RETURN(IntIR * ir_node, MakeTimeNow(arglist_parent));
   return ir_node;
@@ -655,33 +641,28 @@ StatusOr<IntIR*> ASTWalker::EvalUnitTimeFn(const std::string& attr_fn_name,
                                            const pypa::AstPtr& arglist_parent) {
   auto fn_type_iter = kUnitTimeFnStr.find(attr_fn_name);
   if (fn_type_iter == kUnitTimeFnStr.end()) {
-    return CreateAstError(
-        absl::Substitute("Function '$0.$1' not found", kCompileTimePrefix, attr_fn_name),
-        arglist_parent);
+    return CreateAstError(arglist_parent, "Function '$0.$1' not found", kCompileTimePrefix,
+                          attr_fn_name);
   }
   if (!arglist.keywords.empty()) {
-    return CreateAstError(absl::Substitute("No Keyword args expected for '$0.$1' fn",
-                                           kCompileTimePrefix, attr_fn_name),
-                          arglist_parent);
+    return CreateAstError(arglist_parent, "No Keyword args expected for '$0.$1' fn",
+                          kCompileTimePrefix, attr_fn_name);
   }
   if (arglist.arguments.size() != 1) {
-    return CreateAstError(
-        absl::Substitute("Only expected one arg for '$0.$1' fn", kCompileTimePrefix, attr_fn_name),
-        arglist_parent);
+    return CreateAstError(arglist_parent, "Only expected one arg for '$0.$1' fn",
+                          kCompileTimePrefix, attr_fn_name);
   }
   auto argument = arglist.arguments[0];
   if (argument->type != AstType::Number) {
-    return CreateAstError(absl::Substitute("Argument must be an integer for '$0.$1'",
-                                           kCompileTimePrefix, attr_fn_name),
-                          arglist_parent);
+    return CreateAstError(arglist_parent, "Argument must be an integer for '$0.$1'",
+                          kCompileTimePrefix, attr_fn_name);
   }
 
   // evaluate the arguments
   PL_ASSIGN_OR_RETURN(auto number_node, ProcessNumber(PYPA_PTR_CAST(Number, argument)));
   if (number_node->type() != IRNodeType::IntType) {
-    return CreateAstError(absl::Substitute("Argument must be an integer for '$0.$1'",
-                                           kCompileTimePrefix, attr_fn_name),
-                          arglist_parent);
+    return CreateAstError(arglist_parent, "Argument must be an integer for '$0.$1'",
+                          kCompileTimePrefix, attr_fn_name);
   }
   int64_t time_val = static_cast<IntIR*>(number_node)->val();
 
@@ -709,9 +690,8 @@ StatusOr<IntIR*> ASTWalker::EvalCompileTimeFn(const std::string& attr_fn_name,
   } else if (IsUnitTimeFn(attr_fn_name)) {
     PL_ASSIGN_OR_RETURN(ir_node, EvalUnitTimeFn(attr_fn_name, arglist, arglist_parent));
   } else {
-    return CreateAstError(absl::Substitute("Couldn't find function with name '$0.$1'",
-                                           kCompileTimePrefix, attr_fn_name),
-                          arglist_parent);
+    return CreateAstError(arglist_parent, "Couldn't find function with name '$0.$1'",
+                          kCompileTimePrefix, attr_fn_name);
   }
 
   return ir_node;
@@ -732,28 +712,23 @@ StatusOr<IRNode*> ASTWalker::ProcessDataBinOp(const pypa::AstBinOpPtr& node) {
 StatusOr<IRNode*> ASTWalker::ProcessDataCall(const pypa::AstCallPtr& node) {
   auto fn = node->function;
   if (fn->type != AstType::Attribute) {
-    return CreateAstError(
-        absl::StrFormat("Expected any function calls to be made an attribute, not as a %s",
-                        GetAstTypeName(fn->type)),
-        fn);
+    return CreateAstError(fn, "Expected any function calls to be made an attribute, not as a $0",
+                          GetAstTypeName(fn->type));
   }
   auto fn_attr = PYPA_PTR_CAST(Attribute, fn);
   auto attr_parent = fn_attr->value;
   auto attr_fn_name = fn_attr->attribute;
   if (attr_parent->type != AstType::Name) {
-    return CreateAstError(absl::StrFormat("Nested calls not allowed. Expected Name attr not %s",
-                                          GetAstTypeName(fn->type)),
-                          attr_parent);
+    return CreateAstError(attr_parent, "Nested calls not allowed. Expected Name attr not $0",
+                          GetAstTypeName(fn->type));
   }
   if (attr_fn_name->type != AstType::Name) {
-    return CreateAstError(absl::StrFormat("Expected Name attr not %s", GetAstTypeName(fn->type)),
-                          attr_fn_name);
+    return CreateAstError(attr_fn_name, "Expected Name attr not $0", GetAstTypeName(fn->type));
   }
   // attr parent must be plc.
   auto attr_parent_str = GetNameID(attr_parent);
   if (attr_parent_str != kCompileTimePrefix) {
-    return CreateAstError(absl::StrFormat("Namespace '%s' not found.", attr_parent_str),
-                          attr_parent);
+    return CreateAstError(attr_parent, "Namespace '$0' not found.", attr_parent_str);
   }
   auto attr_fn_str = GetNameID(attr_fn_name);
   // value must be a valid child of that namespace
@@ -789,9 +764,7 @@ StatusOr<IRNode*> ASTWalker::ProcessData(const pypa::AstPtr& ast) {
       break;
     }
     default: {
-      std::string err_msg =
-          absl::StrFormat("Couldn't find %s in ProcessData", GetAstTypeName(ast->type));
-      return CreateAstError(err_msg, ast);
+      return CreateAstError(ast, "Couldn't find $0 in ProcessData", GetAstTypeName(ast->type));
     }
   }
   return ir_node;

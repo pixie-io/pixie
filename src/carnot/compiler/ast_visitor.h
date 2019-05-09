@@ -517,8 +517,10 @@ class ASTWalker {
    * @param ast
    * @return Status
    */
-  static Status CreateAstError(const std::string& err_msg, const pypa::AstPtr& ast);
-  static Status CreateAstError(const std::string& err_msg, const pypa::Ast& ast);
+  template <typename... Args>
+  static Status CreateAstError(const pypa::AstPtr& ast, Args... args);
+  template <typename... Args>
+  static Status CreateAstError(const pypa::Ast& ast, Args... args);
 
   /**
    * @brief Returns the string repr of an Ast Type.
@@ -546,8 +548,7 @@ class ASTWalker {
    */
   static StatusOr<std::string> GetStrAstValue(const pypa::AstPtr& ast) {
     if (ast->type != pypa::AstType::Str) {
-      return CreateAstError(
-          absl::StrFormat("Expected string type. Got %s", GetAstTypeName(ast->type)), ast);
+      return CreateAstError(ast, "Expected string type. Got $0", GetAstTypeName(ast->type));
     }
     return PYPA_PTR_CAST(Str, ast)->value;
   }
