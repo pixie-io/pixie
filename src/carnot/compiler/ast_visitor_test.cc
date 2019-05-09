@@ -270,7 +270,7 @@ TEST(RangeValueTests, now_should_fail_with_args) {
        "queryDF.Result(name='mapped')"},
       "\n");
   auto status = ParseQuery(now_with_args);
-  VLOG(1) << status.ToString();
+  VLOG(2) << status.ToString();
   EXPECT_FALSE(status.ok());
 }
 

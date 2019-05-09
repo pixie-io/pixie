@@ -373,8 +373,9 @@ Status BlockingAggIR::InitImpl(const ArgMap& args) {
                         agg_func->type_string()),
         *agg_func);
   }
+
   // If by_func_ is not a null pointer, then update the graph with it. Otherwise, continue onwards.
-  if (by_func->type() == IRNodeType::BoolType) {
+  if (by_func == nullptr) {
     by_func_ = nullptr;
   } else if (by_func->type() == IRNodeType::LambdaType) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, by_func));
@@ -389,12 +390,6 @@ Status BlockingAggIR::InitImpl(const ArgMap& args) {
   agg_func_ = agg_func;
 
   return Status();
-}
-
-StatusOr<IRNode*> BlockingAggIR::MakeDefaultAggByArg(IR* graph_ptr, const pypa::AstPtr& ast) {
-  PL_ASSIGN_OR_RETURN(auto node, graph_ptr->MakeNode<BoolIR>());
-  PL_RETURN_IF_ERROR(node->Init(true, ast));
-  return node;
 }
 
 bool BlockingAggIR::HasLogicalRepr() const { return true; }

@@ -414,13 +414,14 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col2', 'col3'])",
-          "aggDF = queryDF.Agg(by=None, fn=lambda r : {$0})",
+          "aggDF = queryDF.Agg(fn=lambda r : {$0})",
           "aggDF.Result(name='test_output')",
       },
       "\n");
   query = absl::Substitute(query, agg_dict);
   // now() not called, doesn't matter what now is.
   auto s = carnot_->ExecuteQuery(query, 0);
+  ASSERT_OK(s);
   auto output_table = table_store_->GetTable("test_output");
   EXPECT_EQ(1, output_table->NumBatches());
   EXPECT_EQ(5, output_table->NumColumns());

@@ -445,24 +445,6 @@ class ASTWalker {
   StatusOr<IRNode*> ProcessLambda(const pypa::AstLambdaPtr& ast);
 
   /**
-   * @brief Function for constructing the default arg for Agg `by` value.
-   *
-   * @param ast - the ast node corresponding to the aggregate
-   * @return StatusOr<IRNode*> the resulting by arg or an error.
-   */
-  StatusOr<IRNode*> MakeDefaultAggByArg(const pypa::AstPtr& ast);
-
-  /**
-   * @brief Special handler for data that comes up as Name, just for group by alls.
-   *
-   * TODO(philkuz) unhack this and allow for optional kwargs in the ProcessArgs function.
-   *
-   * @param ast
-   * @return StatusOr<IRNode*>
-   */
-  StatusOr<IRNode*> ProcessNameData(const pypa::AstNamePtr& ast);
-
-  /**
    * @brief Make the time now node.
    *
    * @param ast_node
@@ -473,29 +455,35 @@ class ASTWalker {
   /**
    * @brief Evaluates a now argument as the now time that carnot has.
    *
-   * @param arglist
-   * @return StatusOr<IRNode*>
+   * @param arglist The args that are fed tinto this function.
+   * @param arglist_parent The parent node used for error reporting.
+   * @return StatusOr<IntIR*>
    */
-  StatusOr<IntIR*> EvalCompileTimeNow(const pypa::AstArguments& arglist);
+  StatusOr<IntIR*> EvalCompileTimeNow(const pypa::AstArguments& arglist,
+                                      const pypa::AstPtr& arglist_parent);
 
   /**
    * @brief Evaluates the time functions like minutes, seconds, etc.
    *
-   * @param attr_fn_name  the time function
-   * @param arglist
-   * @return StatusOr<IRNode*>
+   * @param attr_fn_name  The time function.
+   * @param arglist The args that are fed tinto this function.
+   * @param arglist_parent The parent node used for error reporting.
+   * @return StatusOr<IntIR*>
    */
   StatusOr<IntIR*> EvalUnitTimeFn(const std::string& attr_fn_name,
-                                  const pypa::AstArguments& arglist);
+                                  const pypa::AstArguments& arglist,
+                                  const pypa::AstPtr& arglist_parent);
   /**
    * @brief Evaluates a compile time fn.
    *
-   * @param attr_fn_name the fn name
-   * @param arglist the args that are fed tinto this function.
-   * @return StatusOr<IRNode*>
+   * @param attr_fn_name The fn name.
+   * @param arglist The args that are fed tinto this function.
+   * @param arglist_parent The parent node used for error reporting.
+   * @return StatusOr<IntIR*>
    */
   StatusOr<IntIR*> EvalCompileTimeFn(const std::string& attr_fn_name,
-                                     const pypa::AstArguments& arglist);
+                                     const pypa::AstArguments& arglist,
+                                     const pypa::AstPtr& arglist_parent);
   /**
    * @brief Returns the udf name from an op.
    *
@@ -566,8 +554,6 @@ class ASTWalker {
   static bool IsUnitTimeFn(const std::string& fn_name);
   StatusOr<LambdaExprReturn> LookupPLTimeAttribute(const std::string& attribute_name,
                                                    const pypa::AstPtr& parent_node);
-  // Wraps a statusor with a parent_node ast info.
-  StatusOr<IRNode*> WrapAstError(StatusOr<IRNode*> status_or, const pypa::AstPtr& parent_node);
   std::shared_ptr<IR> ir_graph_;
   VarTable var_table_;
   CompilerState* compiler_state_;

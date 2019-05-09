@@ -488,7 +488,7 @@ TEST_F(CompilerTest, group_by_all) {
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu1', 'cpu0'])",
-          "aggDF = queryDF.Agg(by=None, fn=lambda r : {'mean' : "
+          "aggDF = queryDF.Agg(fn=lambda r : {'mean' : "
           "pl.mean(r.cpu0)}).Result(name='cpu_out')",
       },
       "\n");
@@ -503,6 +503,21 @@ TEST_F(CompilerTest, group_by_all) {
   ASSERT_TRUE(
       google::protobuf::TextFormat::MergeFromString(kGroupByAllPlan, &expected_logical_plan));
   EXPECT_TRUE(CompareLogicalPlans(expected_logical_plan, logical_plan, false /*ignore_ids*/));
+}
+
+TEST_F(CompilerTest, group_by_all_none_by_fails) {
+  // by=None is no longer supported. Adding a test to make sure that it doesn't work.
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu1', 'cpu0'])",
+          "aggDF = queryDF.Agg(by=None, fn=lambda r : {'mean' : "
+          "pl.mean(r.cpu0)}).Result(name='cpu_out')",
+      },
+      "\n");
+
+  auto plan_status = compiler_.Compile(query, compiler_state_.get());
+  VLOG(2) << plan_status.ToString();
+  EXPECT_NOT_OK(plan_status);
 }
 
 const char* kRangeAggPlan = R"(
@@ -981,13 +996,13 @@ TEST_F(CompilerTest, limit_test) {
                                     "\n");
   carnotpb::Plan expected_plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedLimitPlan, &expected_plan_pb));
-  VLOG(1) << "expected";
-  VLOG(1) << expected_plan_pb.DebugString();
+  VLOG(2) << "expected";
+  VLOG(2) << expected_plan_pb.DebugString();
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan);
-  VLOG(1) << "actual";
-  VLOG(1) << plan.ValueOrDie().DebugString();
+  VLOG(2) << "actual";
+  VLOG(2) << plan.ValueOrDie().DebugString();
 
   EXPECT_TRUE(CompareLogicalPlans(expected_plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
 }
@@ -1004,7 +1019,7 @@ TEST_F(CompilerTest, reused_result) {
 
       "\n");
   auto plan_status = compiler_.Compile(query, compiler_state_.get());
-  VLOG(1) << plan_status.ToString();
+  VLOG(2) << plan_status.ToString();
   EXPECT_NOT_OK(plan_status);
 }
 
@@ -1020,7 +1035,7 @@ TEST_F(CompilerTest, multiple_result_sinks) {
       },
       "\n");
   auto plan_status = compiler_.Compile(query, compiler_state_.get());
-  VLOG(1) << plan_status.ToString();
+  VLOG(2) << plan_status.ToString();
   EXPECT_OK(plan_status);
 }
 

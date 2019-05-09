@@ -574,12 +574,8 @@ class BlockingAggIR : public OperatorIR {
 
   std::vector<std::string> ArgKeys() override { return {"fn", "by"}; }
 
-  static StatusOr<IRNode*> MakeDefaultAggByArg(IR* graph_ptr, const pypa::AstPtr& ast);
-  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr& node) override {
-    StatusOr<IRNode*> default_by_arg_wrapper = MakeDefaultAggByArg(graph_ptr(), node);
-    PL_CHECK_OK(default_by_arg_wrapper);
-    IRNode* default_by_arg = default_by_arg_wrapper.ConsumeValueOrDie();
-    return std::unordered_map<std::string, IRNode*>{{"by", default_by_arg}};
+  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
+    return std::unordered_map<std::string, IRNode*>{{"by", nullptr}};
   }
   Status InitImpl(const ArgMap& args) override;
 
