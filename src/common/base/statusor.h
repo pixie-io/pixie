@@ -47,7 +47,11 @@ class StatusOr {
   // Not marked with explicit so the implicit conversion can happen.
   template <typename U>
   StatusOr(StatusOr<U>&& other)  // NOLINT
-      : status_(std::move(other.status_)), value_(std::move(other.value_)) {}
+      : status_(std::move(other.status_)) {
+    if (status_.ok()) {
+      value_ = std::move(other.value_);
+    }
+  }
 
   // Move assignment operator to avoid unnecessary copy.
   // T must be assignable from U
