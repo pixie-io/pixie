@@ -174,10 +174,9 @@ builders['Build & Test (dbg)'] = {
       deleteDir()
       unstash SRC_STASH_NAME
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(devDockerImageWithTag).inside(
-        '--cap-add=SYS_ADMIN -v /lib/modules:/lib/modules -v /usr/src:/usr/src -v /sys:/sys') {
+        docker.image(devDockerImageWithTag).inside {
           sh 'scripts/bazel_fetch_retry.sh'
-          sh "bazel test -c dbg ${BAZEL_SRC_FILES_PATH}"
+          sh "bazel test --compilation_mode=dbg ${BAZEL_SRC_FILES_PATH}"
           sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
           stash name: 'build-dbg-testlogs', includes: "bazel-testlogs-archive/**"
         }
@@ -193,10 +192,9 @@ builders['Build & Test (opt)'] = {
       deleteDir()
       unstash SRC_STASH_NAME
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(devDockerImageWithTag).inside(
-        '--cap-add=SYS_ADMIN -v /lib/modules:/lib/modules -v /usr/src:/usr/src -v /sys:/sys') {
+        docker.image(devDockerImageWithTag).inside {
           sh 'scripts/bazel_fetch_retry.sh'
-          sh "bazel test -c opt ${BAZEL_SRC_FILES_PATH}"
+          sh "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}"
           sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
           stash name: 'build-opt-testlogs', includes: "bazel-testlogs-archive/**"
         }
@@ -212,12 +210,30 @@ builders['Build & Test (gcc:opt)'] = {
       deleteDir()
       unstash SRC_STASH_NAME
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(devDockerImageWithTag).inside(
-        '--cap-add=SYS_ADMIN -v /lib/modules:/lib/modules -v /usr/src:/usr/src -v /sys:/sys') {
+        docker.image(devDockerImageWithTag).inside {
           sh 'scripts/bazel_fetch_retry.sh'
-          sh "CC=gcc CXX=g++ bazel test -c opt ${BAZEL_SRC_FILES_PATH}"
+          sh "CC=gcc CXX=g++ bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}"
           sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
           stash name: 'build-gcc-opt-testlogs', includes: "bazel-testlogs-archive/**"
+        }
+      }
+    }
+  }
+}
+
+
+builders['Build & Test (bpf)'] = {
+  retry(JENKINS_RETRIES) {
+    node {
+      deleteDir()
+      unstash SRC_STASH_NAME
+      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
+        docker.image(devDockerImageWithTag).inside(
+        '--privileged --volume /lib/modules:/lib/modules --volume /usr/src:/usr/src --volume /sys:/sys') {
+          sh 'scripts/bazel_fetch_retry.sh'
+          sh "bazel test --compilation_mode=opt --strategy=TestRunner=standalone --config=bpf ${BAZEL_SRC_FILES_PATH}"
+          sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
+          stash name: 'build-bpf-testlogs', includes: "bazel-testlogs-archive/**"
         }
       }
     }
@@ -250,8 +266,7 @@ if (env.JOB_NAME == "pixielabs-master") {
         deleteDir()
         unstash SRC_STASH_NAME
         docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-          docker.image(devDockerImageWithTag).inside(
-          '--cap-add=SYS_ADMIN -v /lib/modules:/lib/modules -v /usr/src:/usr/src -v /sys:/sys') {
+          docker.image(devDockerImageWithTag).inside {
             sh 'scripts/bazel_fetch_retry.sh'
             sh 'scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b master -c `cat GIT_COMMIT`'
             sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
@@ -275,8 +290,8 @@ builders['Build & Test (asan)'] = {
       deleteDir()
       unstash SRC_STASH_NAME
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(devDockerImageWithTag).inside(
-        '--cap-add=SYS_PTRACE --cap-add=SYS_ADMIN -v /lib/modules:/lib/modules -v /usr/src:/usr/src -v /sys:/sys') {
+        // ASAN needs SYS_PTRACE capability, do not remove.
+        docker.image(devDockerImageWithTag).inside('--cap-add=SYS_PTRACE') {
           sh 'scripts/bazel_fetch_retry.sh'
           sh "bazel test --config=asan ${BAZEL_CC_QUERY}"
           sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
@@ -293,8 +308,7 @@ builders['Build & Test (tsan)'] = {
       deleteDir()
       unstash SRC_STASH_NAME
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(devDockerImageWithTag).inside(
-        '--cap-add=SYS_ADMIN -v /lib/modules:/lib/modules -v /usr/src:/usr/src -v /sys:/sys') {
+        docker.image(devDockerImageWithTag).inside {
           sh 'scripts/bazel_fetch_retry.sh'
           sh "bazel test --config=tsan ${BAZEL_CC_QUERY}"
           sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
@@ -378,6 +392,9 @@ node {
       }
       dir ('build-gcc-opt-testlogs') {
         unstash 'build-gcc-opt-testlogs'
+      }
+      dir ('build-bpf-testlogs') {
+        unstash 'build-bpf-testlogs'
       }
       dir ('build-dbg-testlogs') {
         unstash 'build-dbg-testlogs'

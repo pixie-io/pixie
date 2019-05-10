@@ -1,10 +1,15 @@
+# Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
+
 # Get version information into the build.
 build --workspace_status_command=bazel/get_workspace_status
 
 # Limit memory for JVM to reduce runaway usage.
 startup --host_jvm_args=-Xmx512m
 
-# For all builds, exclude tests that require root or BPF privileges.
+# For all builds, by default, exclude tests that require root or BPF privileges.
+# To run a test that was filtered out:
+# bazel test //path/to:test --test_tag_filter=
+# Which reset the filter to empty.
 build --test_tag_filters=-requires_root,-requires_bpf
 
 # bazel build --config asan ...
@@ -47,6 +52,9 @@ build:tsan --test_tag_filters=-no_tsan,-requires_root,-requires_bpf
 build:tsan --linkopt -fuse-ld=lld
 build:tsan --cxxopt -std=c++17
 build:tsan --define tcmalloc=disabled
+
+# bazel build --config bpf
+build:bpf --test_tag_filters=requires_bpf
 
 # We need this to ensure that external projects are built with
 # C++17 support. This is needed in some libraries like absl which
