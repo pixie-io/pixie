@@ -120,10 +120,10 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/GoogleContainerTools/distroless/" +
                 "archive/b4dfb5c3076302a873be8e413c120771c4cc2e1b.tar.gz"],
     ),
-    com_github_nats_io_cnats = dict(
-        sha256 = "c3160bcabe0c9b82a58f4c7bb5a3881daba35257877785e4333ddf7428bc2397",
-        strip_prefix = "cnats-3b4668698b8510b8f08413a94523b05a8036d9ab",
-        urls = ["https://github.com/nats-io/cnats/archive/3b4668698b8510b8f08413a94523b05a8036d9ab.tar.gz"],
+    com_github_nats_io_natsc = dict(
+        sha256 = "14e50dd3cf30c9839aedf7c8929f3d433c0a69af38f13f7baf5491d9ed2ac43b",
+        strip_prefix = "nats.c-3b4668698b8510b8f08413a94523b05a8036d9ab",
+        urls = ["https://github.com/nats-io/nats.c/archive/3b4668698b8510b8f08413a94523b05a8036d9ab.tar.gz"],
     ),
     com_github_cameron314_concurrentqueue = dict(
         sha256 = "dde227e8fd561b46bdb3c211fa843adc543227b30607acf8eff049006cdffcd1",

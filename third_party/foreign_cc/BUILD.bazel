@@ -30,11 +30,11 @@ cc_library(
 )
 
 cmake_external(
-    name = "cnats",
+    name = "natsc",
     cache_entries = {
         "NATS_BUILD_WITH_TLS": "OFF",
         "NATS_BUILD_STREAMING": "OFF",
     },
-    lib_source = "@com_github_nats_io_cnats//:all",
+    lib_source = "@com_github_nats_io_natsc//:all",
     static_libraries = ["libnats_static.a"],
 )
