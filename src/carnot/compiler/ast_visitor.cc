@@ -1,5 +1,7 @@
 #include "src/carnot/compiler/ast_visitor.h"
 
+#include "src/carnot/compiler/compiler_error_context.h"
+
 namespace pl {
 namespace carnot {
 namespace compiler {
@@ -38,8 +40,10 @@ ASTWalker::ASTWalker(std::shared_ptr<IR> ir_graph, CompilerState* compiler_state
 
 template <typename... Args>
 Status ASTWalker::CreateAstError(const pypa::AstPtr& ast, Args... args) {
-  return error::InvalidArgument("Line $0 Col $1 : $2", ast->line, ast->column,
-                                absl::Substitute(args...));
+  compilerpb::CompilerErrorGroup context =
+      LineColErrorPb(ast->line, ast->column, absl::Substitute(args...));
+  return Status(statuspb::INVALID_ARGUMENT, "",
+                std::make_unique<compilerpb::CompilerErrorGroup>(context));
 }
 
 template <typename... Args>
@@ -180,11 +184,7 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(
     arg_map[ma] = find_ma->second;
   }
   if (!errors.empty()) {
-    std::vector<std::string> msg;
-    for (auto const& e : errors) {
-      msg.push_back(e.ToString());
-    }
-    return error::InvalidArgument(absl::StrJoin(msg, "\n"));
+    return MergeStatuses(errors);
   }
 
   return arg_map;

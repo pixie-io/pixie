@@ -4,6 +4,7 @@
 #include <pypa/ast/tree_walker.hh>
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
 #include "src/carnot/compiler/ir_test_utils.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/common/base/base.h"
@@ -25,14 +26,63 @@ TEST(ASTVisitor, compilation_test) {
 }
 
 // Checks whether the IR graph constructor can identify bads args.
-TEST(ASTVisitor, bad_arguments) {
+TEST(ASTVisitor, extra_arguments) {
   std::string extra_from_args =
       "From(table='cpu', select=['cpu0'], fakeArg='hahaha').Range(start=0,stop=10)";
-  EXPECT_FALSE(ParseQuery(extra_from_args).ok());
+  Status s1 = ParseQuery(extra_from_args).status();
+  compilerpb::CompilerErrorGroup error_group;
+  EXPECT_NOT_OK(s1);
+  VLOG(1) << s1.ToString();
+  // Make sure the number of context errors are as expected.
+  ASSERT_TRUE(s1.has_context());
+  ASSERT_TRUE(s1.context()->Is<compilerpb::CompilerErrorGroup>());
+  ASSERT_TRUE(s1.context()->UnpackTo(&error_group));
+  int64_t s1_num_errors = error_group.errors_size();
+  ASSERT_EQ(s1_num_errors, 1);
+  EXPECT_EQ(error_group.errors(0).line_col_error().line(), 1);
+  EXPECT_EQ(error_group.errors(0).line_col_error().column(), 5);
+  EXPECT_EQ(error_group.errors(0).line_col_error().message(),
+            "Keyword \'fakeArg\' not expected in function.");
+}
+
+TEST(ASTVisitor, missing_one_argument) {
   std::string missing_from_args = "From(table='cpu').Range(start=0,stop=10)";
-  EXPECT_FALSE(ParseQuery(missing_from_args).ok());
+  Status s2 = ParseQuery(missing_from_args).status();
+  compilerpb::CompilerErrorGroup error_group;
+  EXPECT_NOT_OK(s2);
+  VLOG(1) << s2.ToString();
+  // Make sure the number of context errors are as expected.
+  ASSERT_TRUE(s2.has_context());
+  ASSERT_TRUE(s2.context()->Is<compilerpb::CompilerErrorGroup>());
+  ASSERT_TRUE(s2.context()->UnpackTo(&error_group));
+  int64_t s2_num_errors = error_group.errors_size();
+  ASSERT_EQ(s2_num_errors, 1);
+  EXPECT_EQ(error_group.errors(0).line_col_error().line(), 1);
+  EXPECT_EQ(error_group.errors(0).line_col_error().column(), 5);
+  EXPECT_EQ(error_group.errors(0).line_col_error().message(),
+            "You must set \'select\' directly. No default value found.");
+}
+
+TEST(ASTVisitor, missing_multiple_args) {
   std::string no_from_args = "From().Range(start=0,stop=10)";
-  EXPECT_FALSE(ParseQuery(no_from_args).ok());
+  Status s3 = ParseQuery(no_from_args).status();
+  compilerpb::CompilerErrorGroup error_group;
+  EXPECT_NOT_OK(s3);
+  VLOG(1) << s3.ToString();
+  // Make sure the number of context errors are as expected.
+  ASSERT_TRUE(s3.has_context());
+  ASSERT_TRUE(s3.context()->Is<compilerpb::CompilerErrorGroup>());
+  ASSERT_TRUE(s3.context()->UnpackTo(&error_group));
+  int64_t s3_num_errors = error_group.errors_size();
+  ASSERT_EQ(s3_num_errors, 2);
+  EXPECT_EQ(error_group.errors(0).line_col_error().line(), 1);
+  EXPECT_EQ(error_group.errors(0).line_col_error().column(), 5);
+  EXPECT_EQ(error_group.errors(1).line_col_error().line(), 1);
+  EXPECT_EQ(error_group.errors(1).line_col_error().column(), 5);
+  EXPECT_EQ(error_group.errors(0).line_col_error().message(),
+            "You must set \'select\' directly. No default value found.");
+  EXPECT_EQ(error_group.errors(1).line_col_error().message(),
+            "You must set \'table\' directly. No default value found.");
 }
 // Checks to make sure the parser identifies bad syntax
 TEST(ASTVisitor, bad_syntax) {
