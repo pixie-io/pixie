@@ -9,7 +9,7 @@
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/memory_source_node.h"
 #include "src/carnot/exec/test_utils.h"
-#include "src/carnot/proto/test_proto.h"
+#include "src/carnot/planpb/test_proto.h"
 #include "src/shared/types/arrow_adapter.h"
 
 namespace pl {
@@ -56,7 +56,7 @@ class MemorySourceNodeTest : public ::testing::Test {
 };
 
 TEST_F(MemorySourceNodeTest, basic) {
-  auto op_proto = carnotpb::testutils::CreateTestSource1PB();
+  auto op_proto = planpb::testutils::CreateTestSource1PB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
   RowDescriptor output_rd({types::DataType::TIME64NS});
 
@@ -75,7 +75,7 @@ TEST_F(MemorySourceNodeTest, basic) {
 }
 
 TEST_F(MemorySourceNodeTest, range) {
-  auto op_proto = carnotpb::testutils::CreateTestSourceRangePB();
+  auto op_proto = planpb::testutils::CreateTestSourceRangePB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
   RowDescriptor output_rd({types::DataType::TIME64NS});
 
@@ -93,7 +93,7 @@ TEST_F(MemorySourceNodeTest, range) {
 }
 
 TEST_F(MemorySourceNodeTest, empty_range) {
-  auto op_proto = carnotpb::testutils::CreateTestSourceEmptyRangePB();
+  auto op_proto = planpb::testutils::CreateTestSourceEmptyRangePB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
   RowDescriptor output_rd({types::DataType::TIME64NS});
 
@@ -104,7 +104,7 @@ TEST_F(MemorySourceNodeTest, empty_range) {
 }
 
 TEST_F(MemorySourceNodeTest, all_range) {
-  auto op_proto = carnotpb::testutils::CreateTestSourceAllRangePB();
+  auto op_proto = planpb::testutils::CreateTestSourceAllRangePB();
   std::unique_ptr<plan::Operator> plan_node = plan::MemorySourceOperator::FromProto(op_proto, 1);
   RowDescriptor output_rd({types::DataType::TIME64NS});
 

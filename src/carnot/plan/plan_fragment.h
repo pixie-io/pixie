@@ -5,17 +5,17 @@
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/plan/plan_graph.h"
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 
 namespace pl {
 namespace carnot {
 namespace plan {
 
-class PlanFragment final : public PlanGraph<carnotpb::PlanFragment, Operator, carnotpb::PlanNode> {
+class PlanFragment final : public PlanGraph<planpb::PlanFragment, Operator, planpb::PlanNode> {
  public:
   explicit PlanFragment(int64_t id) : id_(id) {}
-  static std::unique_ptr<PlanFragment> FromProto(const carnotpb::PlanFragment &pb, int64_t id);
+  static std::unique_ptr<PlanFragment> FromProto(const planpb::PlanFragment &pb, int64_t id);
   int64_t id() const { return id_; }
 
  protected:

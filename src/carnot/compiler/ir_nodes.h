@@ -202,11 +202,11 @@ class OperatorIR : public IRNode {
   virtual std::vector<std::string> ArgKeys() = 0;
   virtual std::unordered_map<std::string, IRNode*> DefaultArgValues(
       const pypa::AstPtr& ast_node) = 0;
-  virtual Status ToProto(carnotpb::Operator*) const = 0;
+  virtual Status ToProto(planpb::Operator*) const = 0;
   // Checks whether the passed in arg maps contains the expected keys in this init function.
   Status ArgMapContainsKeys(const ArgMap& args);
 
-  Status EvaluateExpression(carnotpb::ScalarExpression* expr, const IRNode& ir_node) const;
+  Status EvaluateExpression(planpb::ScalarExpression* expr, const IRNode& ir_node) const;
 
  protected:
   explicit OperatorIR(int64_t id, IRNodeType type, bool has_parent, bool is_source)
@@ -444,7 +444,7 @@ class MemorySourceIR : public OperatorIR {
     columns_set_ = true;
     columns_ = columns;
   }
-  Status ToProto(carnotpb::Operator*) const override;
+  Status ToProto(planpb::Operator*) const override;
   std::vector<std::string> ArgKeys() override { return {"table", "select"}; }
 
   std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
@@ -475,7 +475,7 @@ class MemorySinkIR : public OperatorIR {
   std::string DebugString(int64_t depth) const override;
   bool name_set() const { return name_set_; }
   std::string name() const { return name_; }
-  Status ToProto(carnotpb::Operator*) const override;
+  Status ToProto(planpb::Operator*) const override;
 
   std::vector<std::string> ArgKeys() override { return {"name"}; }
   Status InitImpl(const ArgMap& args) override;
@@ -505,7 +505,7 @@ class RangeIR : public OperatorIR {
   IRNode* start_repr() { return start_repr_; }
   IRNode* stop_repr() { return stop_repr_; }
   Status SetStartStop(IRNode* start_repr, IRNode* stop_repr);
-  Status ToProto(carnotpb::Operator*) const override;
+  Status ToProto(planpb::Operator*) const override;
 
   // TODO(philkuz) implement
   std::vector<std::string> ArgKeys() override { return {"start", "stop"}; }
@@ -541,7 +541,7 @@ class MapIR : public OperatorIR {
     col_exprs_set_ = true;
   }
   bool col_exprs_set() const { return col_exprs_set_; }
-  Status ToProto(carnotpb::Operator*) const override;
+  Status ToProto(planpb::Operator*) const override;
 
   std::vector<std::string> ArgKeys() override { return {"fn"}; }
 
@@ -583,8 +583,8 @@ class BlockingAggIR : public OperatorIR {
     agg_val_vector_set_ = true;
   }
   bool agg_val_vector_set() const { return agg_val_vector_set_; }
-  Status ToProto(carnotpb::Operator*) const override;
-  Status EvaluateAggregateExpression(carnotpb::AggregateExpression* expr,
+  Status ToProto(planpb::Operator*) const override;
+  Status EvaluateAggregateExpression(planpb::AggregateExpression* expr,
                                      const IRNode& ir_node) const;
 
   std::vector<std::string> ArgKeys() override { return {"fn", "by"}; }
@@ -612,7 +612,7 @@ class FilterIR : public OperatorIR {
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   IRNode* filter_func() const { return filter_func_; }
-  Status ToProto(carnotpb::Operator*) const override;
+  Status ToProto(planpb::Operator*) const override;
 
   std::vector<std::string> ArgKeys() override { return {"fn"}; }
 
@@ -631,7 +631,7 @@ class LimitIR : public OperatorIR {
   explicit LimitIR(int64_t id) : OperatorIR(id, LimitType, true, false) {}
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  Status ToProto(carnotpb::Operator*) const override;
+  Status ToProto(planpb::Operator*) const override;
   void SetLimitValue(int64_t value) {
     limit_value_ = value;
     limit_value_set_ = true;

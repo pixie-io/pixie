@@ -6,7 +6,7 @@
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/compiler/registry_info.h"
-#include "src/carnot/proto/udfs.pb.h"
+#include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/proto/types.pb.h"
 
@@ -14,7 +14,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-Status RegistryInfo::Init(const carnotpb::UDFInfo info) {
+Status RegistryInfo::Init(const udfspb::UDFInfo info) {
   for (auto uda : info.udas()) {
     std::vector<types::DataType> arg_types;
     arg_types.reserve(uda.update_arg_types_size());

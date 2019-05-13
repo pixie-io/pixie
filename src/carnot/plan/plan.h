@@ -5,14 +5,14 @@
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/plan_fragment.h"
 #include "src/carnot/plan/plan_graph.h"
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 
 namespace pl {
 namespace carnot {
 namespace plan {
 
-class Plan final : public PlanGraph<carnotpb::Plan, PlanFragment, carnotpb::PlanFragment> {};
+class Plan final : public PlanGraph<planpb::Plan, PlanFragment, planpb::PlanFragment> {};
 
 /**
  * A walker that walks the plan fragments of a plan in a topologically-sorted order.

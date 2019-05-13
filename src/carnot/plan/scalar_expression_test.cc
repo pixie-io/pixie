@@ -7,7 +7,7 @@
 #include "absl/strings/match.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/plan/utils.h"
-#include "src/carnot/proto/test_proto.h"
+#include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf/registry.h"
 #include "src/carnot/udf/udf.h"
 #include "src/table_store/table_store.h"
@@ -21,9 +21,9 @@ using table_store::schema::Relation;
 using table_store::schema::Schema;
 
 TEST(ToString, values) {
-  EXPECT_EQ("Function", ToString(carnotpb::ScalarExpression::kFunc));
-  EXPECT_EQ("Column", ToString(carnotpb::ScalarExpression::kColumn));
-  EXPECT_EQ("Value", ToString(carnotpb::ScalarExpression::kConstant));
+  EXPECT_EQ("Function", ToString(planpb::ScalarExpression::kFunc));
+  EXPECT_EQ("Column", ToString(planpb::ScalarExpression::kColumn));
+  EXPECT_EQ("Value", ToString(planpb::ScalarExpression::kConstant));
 }
 
 class DummyTestUDF : public udf::ScalarUDF {
@@ -73,7 +73,7 @@ class ScalarExpressionTest : public ::testing::Test {
 
 TEST(ColumnTest, basic_tests) {
   Column col;
-  carnotpb::Column colpb;
+  planpb::Column colpb;
   colpb.set_node(1);
   colpb.set_index(36);
 
@@ -93,7 +93,7 @@ TEST(ColumnDeathTest, no_init) {
 
 TEST(ColumnDeathTest, double_init) {
   Column col;
-  carnotpb::Column colpb;
+  planpb::Column colpb;
   colpb.set_node(1);
   colpb.set_index(36);
 
@@ -103,7 +103,7 @@ TEST(ColumnDeathTest, double_init) {
 
 TEST(ScalarValueTest, basic_tests_bool) {
   ScalarValue sv;
-  carnotpb::ScalarValue sv_pb;
+  planpb::ScalarValue sv_pb;
   sv_pb.set_data_type(types::BOOLEAN);
   sv_pb.set_bool_value(true);
 
@@ -120,7 +120,7 @@ TEST(ScalarValueTest, basic_tests_bool) {
 
 TEST(ScalarValueTest, basic_tests_bool_null) {
   ScalarValue sv;
-  carnotpb::ScalarValue sv_pb;
+  planpb::ScalarValue sv_pb;
   sv_pb.set_data_type(types::BOOLEAN);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
@@ -134,7 +134,7 @@ TEST(ScalarValueTest, basic_tests_bool_null) {
 
 TEST(ScalarValueTest, basic_tests_int64) {
   ScalarValue sv;
-  carnotpb::ScalarValue sv_pb;
+  planpb::ScalarValue sv_pb;
   sv_pb.set_data_type(types::INT64);
   sv_pb.set_int64_value(63);
 
@@ -149,7 +149,7 @@ TEST(ScalarValueTest, basic_tests_int64) {
 
 TEST(ScalarValueTest, basic_tests_int64_null) {
   ScalarValue sv;
-  carnotpb::ScalarValue sv_pb;
+  planpb::ScalarValue sv_pb;
   sv_pb.set_data_type(types::INT64);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
@@ -162,7 +162,7 @@ TEST(ScalarValueTest, basic_tests_int64_null) {
 
 TEST(ScalarValueTest, basic_tests_float64) {
   ScalarValue sv;
-  carnotpb::ScalarValue sv_pb;
+  planpb::ScalarValue sv_pb;
   sv_pb.set_data_type(types::FLOAT64);
   sv_pb.set_float64_value(3.14159);
 
@@ -179,7 +179,7 @@ TEST(ScalarValueTest, basic_tests_float64) {
 
 TEST(ScalarValueTest, basic_tests_float64_null) {
   ScalarValue sv;
-  carnotpb::ScalarValue sv_pb;
+  planpb::ScalarValue sv_pb;
   sv_pb.set_data_type(types::FLOAT64);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
@@ -192,7 +192,7 @@ TEST(ScalarValueTest, basic_tests_float64_null) {
 
 TEST(ScalarValueTest, basic_tests_string) {
   ScalarValue sv;
-  carnotpb::ScalarValue sv_pb;
+  planpb::ScalarValue sv_pb;
   sv_pb.set_data_type(types::STRING);
   sv_pb.set_string_value("test string");
 
@@ -207,7 +207,7 @@ TEST(ScalarValueTest, basic_tests_string) {
 
 TEST(ScalarValueTest, basic_tests_string_null) {
   ScalarValue sv;
-  carnotpb::ScalarValue sv_pb;
+  planpb::ScalarValue sv_pb;
   sv_pb.set_data_type(types::STRING);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
@@ -220,7 +220,7 @@ TEST(ScalarValueTest, basic_tests_string_null) {
 
 TEST(ScalarValueDeathTest, double_init) {
   ScalarValue sv;
-  carnotpb::ScalarValue sv_pb;
+  planpb::ScalarValue sv_pb;
   sv_pb.set_data_type(types::STRING);
 
   EXPECT_TRUE(sv.Init(sv_pb).ok());
@@ -237,7 +237,7 @@ TEST(ScalarValueDeathTest, not_initialized) {
 }
 
 TEST_F(ScalarExpressionTest, col_tests) {
-  carnotpb::ScalarExpression se_pb;
+  planpb::ScalarExpression se_pb;
   auto const_pb = se_pb.mutable_constant();
   const_pb->set_string_value("testing");
   const_pb->set_data_type(types::STRING);
@@ -276,7 +276,7 @@ class ScalarFuncTest : public ScalarExpressionTest {
  public:
   ~ScalarFuncTest() override = default;
   void SetUp() override {
-    carnotpb::ScalarFunc func_pb = carnotpb::testutils::CreateTestFuncWithTwoColsPB();
+    planpb::ScalarFunc func_pb = planpb::testutils::CreateTestFuncWithTwoColsPB();
     ASSERT_OK(sf_.Init(func_pb));
   }
   ScalarFunc sf_;
@@ -312,8 +312,8 @@ TEST_F(ScalarFuncTest, debug_string) {
 }
 
 TEST(ScalarExpressionWalker, walk_node_graph) {
-  carnotpb::ScalarExpression se_pb = carnotpb::testutils::CreateTestScalarExpressionWithFunc1PB();
-  EXPECT_EQ(carnotpb::ScalarExpression::kFunc, se_pb.value_case());
+  planpb::ScalarExpression se_pb = planpb::testutils::CreateTestScalarExpressionWithFunc1PB();
+  EXPECT_EQ(planpb::ScalarExpression::kFunc, se_pb.value_case());
   auto se = ScalarExpression::FromProto(se_pb);
   std::vector<int64_t> col_node_ids;
   int val_func_call_count = 0;
@@ -370,7 +370,7 @@ class AggregateExpressionTest : public ScalarExpressionTest {
  public:
   ~AggregateExpressionTest() override = default;
   void SetUp() override {
-    carnotpb::AggregateExpression agg_pb;
+    planpb::AggregateExpression agg_pb;
     ASSERT_TRUE(TextFormat::MergeFromString(kAggregateExpression, &agg_pb));
     ASSERT_OK(ae_.Init(agg_pb));
   }

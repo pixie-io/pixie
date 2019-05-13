@@ -3,7 +3,7 @@
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/filter_node.h"
 #include "src/carnot/exec/test_utils.h"
-#include "src/carnot/proto/test_proto.h"
+#include "src/carnot/planpb/test_proto.h"
 #include "src/shared/types/arrow_adapter.h"
 
 namespace pl {
@@ -56,7 +56,7 @@ class FilterNodeTest : public ::testing::Test {
 };
 
 TEST_F(FilterNodeTest, basic) {
-  auto op_proto = carnotpb::testutils::CreateTestFilterTwoCols();
+  auto op_proto = planpb::testutils::CreateTestFilterTwoCols();
   plan_node_ = plan::FilterOperator::FromProto(op_proto, /*id*/ 1);
 
   RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64, types::DataType::STRING});
@@ -91,7 +91,7 @@ TEST_F(FilterNodeTest, basic) {
 
 // TODO(zasgar/michelle): For some reason this test is not working. Need to debug.
 TEST_F(FilterNodeTest, string_pred) {
-  auto op_proto = carnotpb::testutils::CreateTestFilterTwoColsString();
+  auto op_proto = planpb::testutils::CreateTestFilterTwoColsString();
   plan_node_ = plan::FilterOperator::FromProto(op_proto, /*id*/ 1);
 
   RowDescriptor input_rd({types::DataType::STRING, types::DataType::INT64});
@@ -120,7 +120,7 @@ TEST_F(FilterNodeTest, string_pred) {
 }
 
 TEST_F(FilterNodeTest, child_fail) {
-  auto op_proto = carnotpb::testutils::CreateTestFilterTwoCols();
+  auto op_proto = planpb::testutils::CreateTestFilterTwoCols();
   plan_node_ = plan::FilterOperator::FromProto(op_proto, /*id*/ 1);
 
   RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64});

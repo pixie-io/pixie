@@ -8,7 +8,7 @@
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/map_node.h"
 #include "src/carnot/exec/test_utils.h"
-#include "src/carnot/proto/test_proto.h"
+#include "src/carnot/planpb/test_proto.h"
 #include "src/shared/types/arrow_adapter.h"
 
 namespace pl {
@@ -32,7 +32,7 @@ class AddUDF : public udf::ScalarUDF {
 class MapNodeTest : public ::testing::Test {
  public:
   MapNodeTest() {
-    auto op_proto = carnotpb::testutils::CreateTestMapAddTwoCols();
+    auto op_proto = planpb::testutils::CreateTestMapAddTwoCols();
     plan_node_ = plan::MapOperator::FromProto(op_proto, 1);
 
     udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");

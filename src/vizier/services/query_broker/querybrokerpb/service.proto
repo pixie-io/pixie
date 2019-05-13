@@ -3,7 +3,7 @@ syntax = "proto3";
 package pl.vizier.services.query_broker.querybrokerpb;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/carnot/proto/query_results.proto";
+import "src/carnot/queryresultspb/query_results.proto";
 import "src/common/uuid/proto/uuid.proto";
 import "src/common/base/proto/status.proto";
 import "src/table_store/proto/schema.proto";
@@ -105,7 +105,7 @@ message AgentQueryResponse {
     (gogoproto.customname) = "QueryID"
   ];
 
-  pl.carnot.carnotpb.QueryResult query_result = 3;
+  pl.carnot.queryresultspb.QueryResult query_result = 3;
 }
 
 // AgentQueryResultRequest is a request from the agent to the query broker containing the

@@ -6,7 +6,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/graph-gophers/graphql-go"
 	uuid "github.com/satori/go.uuid"
-	carnotpb "pixielabs.ai/pixielabs/src/carnot/proto"
+	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	"pixielabs.ai/pixielabs/src/services/api/apienv"
 	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
 	"pixielabs.ai/pixielabs/src/table_store/proto"
@@ -131,7 +131,7 @@ func (h *HostInfoResolver) Hostname() *string {
 // QueryResultResolver resolves results of a query.
 type QueryResultResolver struct {
 	QueryID uuid.UUID
-	Result  *carnotpb.QueryResult
+	Result  *queryresultspb.QueryResult
 }
 
 // ID returns the ID of the query (as string).

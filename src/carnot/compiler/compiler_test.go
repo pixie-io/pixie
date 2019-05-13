@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/carnot/compiler"
 	pb "pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
-	planpb "pixielabs.ai/pixielabs/src/carnot/proto"
+	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 )
 

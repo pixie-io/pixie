@@ -2,8 +2,8 @@
 #include <vector>
 
 #include "src/carnot/plan/plan.h"
-#include "src/carnot/proto/plan.pb.h"
-#include "src/carnot/proto/test_proto.h"
+#include "src/carnot/planpb/plan.pb.h"
+#include "src/carnot/planpb/test_proto.h"
 
 namespace pl {
 namespace carnot {
@@ -12,9 +12,9 @@ namespace plan {
 class PlanWalkerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    carnotpb::Plan plan_pb;
-    ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(
-        carnotpb::testutils::kPlanWithFiveNodes, &plan_pb));
+    planpb::Plan plan_pb;
+    ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(planpb::testutils::kPlanWithFiveNodes,
+                                                              &plan_pb));
     ASSERT_OK(plan_.Init(plan_pb));
   }
   Plan plan_;

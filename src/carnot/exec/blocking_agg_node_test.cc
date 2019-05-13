@@ -6,7 +6,7 @@
 #include "src/carnot/exec/blocking_agg_node.h"
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/test_utils.h"
-#include "src/carnot/proto/test_proto.h"
+#include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf/registry.h"
 #include "src/shared/types/arrow_adapter.h"
 
@@ -118,7 +118,7 @@ std::unique_ptr<ExecState> MakeTestExecState(udf::ScalarUDFRegistry* udf_registr
 }
 
 std::unique_ptr<plan::Operator> PlanNodeFromPbtxt(const std::string& pbtxt) {
-  carnotpb::Operator op_pb;
+  planpb::Operator op_pb;
   EXPECT_TRUE(google::protobuf::TextFormat::MergeFromString(pbtxt, &op_pb));
   return plan::BlockingAggregateOperator::FromProto(op_pb, 1);
 }

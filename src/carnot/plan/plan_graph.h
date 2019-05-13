@@ -5,7 +5,7 @@
 
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/operators.h"
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 
 namespace pl {
@@ -41,11 +41,11 @@ class PlanGraph {
     return Status::OK();
   }
 
-  static std::unique_ptr<TNode> ProtoToNode(const carnotpb::PlanFragment& pb, int64_t id) {
+  static std::unique_ptr<TNode> ProtoToNode(const planpb::PlanFragment& pb, int64_t id) {
     return TNode::FromProto(pb, id);
   }
 
-  static std::unique_ptr<Operator> ProtoToNode(const carnotpb::PlanNode& pb, int64_t id) {
+  static std::unique_ptr<Operator> ProtoToNode(const planpb::PlanNode& pb, int64_t id) {
     return Operator::FromProto(pb.op(), id);
   }
 

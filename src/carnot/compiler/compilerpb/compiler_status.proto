@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 import "src/common/base/proto/status.proto";
-import "src/carnot/proto/plan.proto";
+import "src/carnot/planpb/plan.proto";
 
 package pl.carnot.compiler.compilerpb;
 
@@ -18,7 +18,7 @@ message CompilerError {
 
 message CompilerResult {
   pl.statuspb.Status status = 1;
-  pl.carnot.carnotpb.Plan logical_plan = 2;
+  pl.carnot.planpb.Plan logical_plan = 2;
 }
 
 message CompilerErrorGroup { repeated CompilerError errors = 1; }

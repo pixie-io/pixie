@@ -78,7 +78,7 @@ class RelationHandlerTest : public ::testing::Test {
     relation_map_ = std::make_unique<RelationMap>();
 
     registry_info_ = std::make_shared<RegistryInfo>();
-    carnotpb::UDFInfo info_pb;
+    udfspb::UDFInfo info_pb;
     google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
     EXPECT_OK(registry_info_->Init(info_pb));
     table_store::schema::Relation cpu_relation;

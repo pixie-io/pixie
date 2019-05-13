@@ -69,8 +69,8 @@ Status OperatorIR::Init(IRNode* parent, const ArgMap& args, const pypa::AstPtr& 
 
 bool MemorySourceIR::HasLogicalRepr() const { return true; }
 
-Status MemorySourceIR::ToProto(carnotpb::Operator* op) const {
-  auto pb = new carnotpb::MemorySourceOperator();
+Status MemorySourceIR::ToProto(planpb::Operator* op) const {
+  auto pb = new planpb::MemorySourceOperator();
   DCHECK(table_node_->type() == IRNodeType::StringType);
   pb->set_name(static_cast<StringIR*>(table_node_)->str());
 
@@ -93,7 +93,7 @@ Status MemorySourceIR::ToProto(carnotpb::Operator* op) const {
     pb->set_allocated_stop_time(stop_time);
   }
 
-  op->set_op_type(carnotpb::MEMORY_SOURCE_OPERATOR);
+  op->set_op_type(planpb::MEMORY_SOURCE_OPERATOR);
   op->set_allocated_mem_source_op(pb);
   return Status::OK();
 }
@@ -152,8 +152,8 @@ std::string MemorySinkIR::DebugString(int64_t depth) const {
                         {{"Parent", parent()->DebugString(depth + 1)}});
 }
 
-Status MemorySinkIR::ToProto(carnotpb::Operator* op) const {
-  auto pb = new carnotpb::MemorySinkOperator();
+Status MemorySinkIR::ToProto(planpb::Operator* op) const {
+  auto pb = new planpb::MemorySinkOperator();
   pb->set_name(name_);
 
   auto types = relation().col_types();
@@ -164,7 +164,7 @@ Status MemorySinkIR::ToProto(carnotpb::Operator* op) const {
     pb->add_column_names(names[i]);
   }
 
-  op->set_op_type(carnotpb::MEMORY_SINK_OPERATOR);
+  op->set_op_type(planpb::MEMORY_SINK_OPERATOR);
   op->set_allocated_mem_sink_op(pb);
   return Status::OK();
 }
@@ -198,7 +198,7 @@ std::string RangeIR::DebugString(int64_t depth) const {
                          {"Stop", stop_repr_->DebugString(depth + 1)}});
 }
 
-Status RangeIR::ToProto(carnotpb::Operator*) const {
+Status RangeIR::ToProto(planpb::Operator*) const {
   return error::InvalidArgument("RangeIR has no protobuf representation.");
 }
 
@@ -217,8 +217,7 @@ std::string MapIR::DebugString(int64_t depth) const {
                          {"Lambda", lambda_func_->DebugString(depth + 1)}});
 }
 
-Status OperatorIR::EvaluateExpression(carnotpb::ScalarExpression* expr,
-                                      const IRNode& ir_node) const {
+Status OperatorIR::EvaluateExpression(planpb::ScalarExpression* expr, const IRNode& ir_node) const {
   switch (ir_node.type()) {
     case IRNodeType::ColumnType: {
       auto col = expr->mutable_column();
@@ -280,8 +279,8 @@ Status OperatorIR::EvaluateExpression(carnotpb::ScalarExpression* expr,
   return Status::OK();
 }
 
-Status MapIR::ToProto(carnotpb::Operator* op) const {
-  auto pb = new carnotpb::MapOperator();
+Status MapIR::ToProto(planpb::Operator* op) const {
+  auto pb = new planpb::MapOperator();
 
   for (const auto& col_expr : col_exprs_) {
     auto expr = pb->add_expressions();
@@ -289,7 +288,7 @@ Status MapIR::ToProto(carnotpb::Operator* op) const {
     pb->add_column_names(col_expr.name);
   }
 
-  op->set_op_type(carnotpb::MAP_OPERATOR);
+  op->set_op_type(planpb::MAP_OPERATOR);
   op->set_allocated_map_op(pb);
   return Status::OK();
 }
@@ -309,21 +308,21 @@ std::string FilterIR::DebugString(int64_t depth) const {
                          {"Filter", filter_func_->DebugString(depth + 1)}});
 }
 
-Status FilterIR::ToProto(carnotpb::Operator* op) const {
-  auto pb = new carnotpb::FilterOperator();
+Status FilterIR::ToProto(planpb::Operator* op) const {
+  auto pb = new planpb::FilterOperator();
 
   for (size_t i = 0; i < relation().NumColumns(); i++) {
-    carnotpb::Column* col_pb = pb->add_columns();
+    planpb::Column* col_pb = pb->add_columns();
     col_pb->set_node(parent()->id());
     col_pb->set_index(i);
   }
 
-  auto expr = new carnotpb::ScalarExpression();
+  auto expr = new planpb::ScalarExpression();
   PL_ASSIGN_OR_RETURN(auto lambda_expr, static_cast<LambdaIR*>(filter_func_)->GetDefaultExpr());
   PL_RETURN_IF_ERROR(EvaluateExpression(expr, *lambda_expr));
   pb->set_allocated_expression(expr);
 
-  op->set_op_type(carnotpb::FILTER_OPERATOR);
+  op->set_op_type(planpb::FILTER_OPERATOR);
   op->set_allocated_filter_op(pb);
   return Status::OK();
 }
@@ -343,11 +342,11 @@ std::string LimitIR::DebugString(int64_t depth) const {
                          {"Limit", limit_node_->DebugString(depth + 1)}});
 }
 
-Status LimitIR::ToProto(carnotpb::Operator* op) const {
-  auto pb = new carnotpb::LimitOperator();
+Status LimitIR::ToProto(planpb::Operator* op) const {
+  auto pb = new planpb::LimitOperator();
 
   for (size_t i = 0; i < relation().NumColumns(); i++) {
-    carnotpb::Column* col_pb = pb->add_columns();
+    planpb::Column* col_pb = pb->add_columns();
     col_pb->set_node(parent()->id());
     col_pb->set_index(i);
   }
@@ -357,7 +356,7 @@ Status LimitIR::ToProto(carnotpb::Operator* op) const {
 
   pb->set_limit(limit_value_);
 
-  op->set_op_type(carnotpb::LIMIT_OPERATOR);
+  op->set_op_type(planpb::LIMIT_OPERATOR);
   op->set_allocated_limit_op(pb);
   return Status::OK();
 }
@@ -396,7 +395,7 @@ std::string BlockingAggIR::DebugString(int64_t depth) const {
                          {"AggFn", agg_func_->DebugString(depth + 1)}});
 }
 
-Status BlockingAggIR::EvaluateAggregateExpression(carnotpb::AggregateExpression* expr,
+Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* expr,
                                                   const IRNode& ir_node) const {
   DCHECK(ir_node.type() == IRNodeType::FuncType);
   auto casted_ir = static_cast<const FuncIR&>(ir_node);
@@ -455,8 +454,8 @@ Status BlockingAggIR::EvaluateAggregateExpression(carnotpb::AggregateExpression*
   return Status::OK();
 }
 
-Status BlockingAggIR::ToProto(carnotpb::Operator* op) const {
-  auto pb = new carnotpb::BlockingAggregateOperator();
+Status BlockingAggIR::ToProto(planpb::Operator* op) const {
+  auto pb = new planpb::BlockingAggregateOperator();
 
   for (const auto& agg_expr : agg_val_vector_) {
     auto expr = pb->add_values();
@@ -473,7 +472,7 @@ Status BlockingAggIR::ToProto(carnotpb::Operator* op) const {
     }
   }
 
-  op->set_op_type(carnotpb::BLOCKING_AGGREGATE_OPERATOR);
+  op->set_op_type(planpb::BLOCKING_AGGREGATE_OPERATOR);
   op->set_allocated_blocking_agg_op(pb);
   return Status::OK();
 }

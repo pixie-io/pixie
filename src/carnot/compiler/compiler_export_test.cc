@@ -9,7 +9,7 @@
 
 #include "absl/strings/str_join.h"
 #include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/error.h"
 #include "src/common/base/macros.h"
 #include "src/common/base/statusor.h"

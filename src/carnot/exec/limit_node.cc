@@ -4,7 +4,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "src/carnot/exec/limit_node.h"
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -19,7 +19,7 @@ std::string LimitNode::DebugStringImpl() {
 
 Status LimitNode::InitImpl(const plan::Operator &plan_node, const RowDescriptor &output_descriptor,
                            const std::vector<RowDescriptor> &input_descriptors) {
-  CHECK(plan_node.op_type() == carnotpb::OperatorType::LIMIT_OPERATOR);
+  CHECK(plan_node.op_type() == planpb::OperatorType::LIMIT_OPERATOR);
   const auto *limit_plan_node = static_cast<const plan::LimitOperator *>(&plan_node);
   // copy the plan node to local object;
   plan_node_ = std::make_unique<plan::LimitOperator>(*limit_plan_node);

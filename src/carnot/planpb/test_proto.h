@@ -11,12 +11,12 @@
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/plan_fragment.h"
 #include "src/carnot/plan/plan_graph.h"
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 
 namespace pl {
 namespace carnot {
-namespace carnotpb {
+namespace planpb {
 namespace testutils {
 
 using google::protobuf::Descriptor;
@@ -84,7 +84,7 @@ args {
 
 /*
  * Template for an Operator.
- * $0: The type of Operator. See carnotpb::OperatorType.
+ * $0: The type of Operator. See planpb::OperatorType.
  * $1: The operator field.
  * $2: The operator contents.
  */
@@ -592,31 +592,31 @@ const char* kPlanWithFiveNodes = R"(
   }
 )";
 
-carnotpb::Operator CreateTestMap1PB() {
-  carnotpb::Operator op;
+planpb::Operator CreateTestMap1PB() {
+  planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MAP_OPERATOR", "map_op", kMapOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-carnotpb::Operator CreateTestMapAddTwoCols() {
-  carnotpb::Operator op;
+planpb::Operator CreateTestMapAddTwoCols() {
+  planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MAP_OPERATOR", "map_op",
                                    absl::Substitute(kMapOperatorTmpl, kAddScalarFuncPbtxt));
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-carnotpb::Operator CreateTestFilterTwoCols() {
-  carnotpb::Operator op;
+planpb::Operator CreateTestFilterTwoCols() {
+  planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "FILTER_OPERATOR", "filter_op",
                                    absl::Substitute(kFilterOperatorTmpl, kEq1ScalarFuncConstPbtxt));
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-carnotpb::Operator CreateTestFilterTwoColsString() {
-  carnotpb::Operator op;
+planpb::Operator CreateTestFilterTwoColsString() {
+  planpb::Operator op;
   auto op_proto =
       absl::Substitute(kOperatorProtoTmpl, "FILTER_OPERATOR", "filter_op",
                        absl::Substitute(kFilterOperatorTmpl, kStrEqAScalarFuncConstPbtxt));
@@ -624,101 +624,101 @@ carnotpb::Operator CreateTestFilterTwoColsString() {
   return op;
 }
 
-carnotpb::Operator CreateTestSource1PB() {
-  carnotpb::Operator op;
+planpb::Operator CreateTestSource1PB() {
+  planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SOURCE_OPERATOR", "mem_source_op",
                                    kMemSourceOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-carnotpb::Operator CreateTestSourceRangePB() {
-  carnotpb::Operator op;
+planpb::Operator CreateTestSourceRangePB() {
+  planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SOURCE_OPERATOR", "mem_source_op",
                                    kMemSourceOperatorRange);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-carnotpb::Operator CreateTestSourceEmptyRangePB() {
-  carnotpb::Operator op;
+planpb::Operator CreateTestSourceEmptyRangePB() {
+  planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SOURCE_OPERATOR", "mem_source_op",
                                    kMemSourceOperatorEmptyRange);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-carnotpb::Operator CreateTestSourceAllRangePB() {
-  carnotpb::Operator op;
+planpb::Operator CreateTestSourceAllRangePB() {
+  planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SOURCE_OPERATOR", "mem_source_op",
                                    kMemSourceOperatorAllRange);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-carnotpb::Operator CreateTestSink1PB() {
-  carnotpb::Operator op;
+planpb::Operator CreateTestSink1PB() {
+  planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SINK_OPERATOR", "mem_sink_op",
                                    kMemSinkOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-carnotpb::Operator CreateTestSink2PB() {
-  carnotpb::Operator op;
+planpb::Operator CreateTestSink2PB() {
+  planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SINK_OPERATOR", "mem_sink_op",
                                    kMemSinkOperator2);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-carnotpb::Operator CreateTestBlockingAgg1PB() {
-  carnotpb::Operator op;
+planpb::Operator CreateTestBlockingAgg1PB() {
+  planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "BLOCKING_AGGREGATE_OPERATOR",
                                    "blocking_agg_op", kBlockingAggOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-carnotpb::Operator CreateTestFilter1PB() {
-  carnotpb::Operator op;
+planpb::Operator CreateTestFilter1PB() {
+  planpb::Operator op;
   auto op_proto =
       absl::Substitute(kOperatorProtoTmpl, "FILTER_OPERATOR", "filter_op", kFilterOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-carnotpb::Operator CreateTestLimit1PB() {
-  carnotpb::Operator op;
+planpb::Operator CreateTestLimit1PB() {
+  planpb::Operator op;
   auto op_proto =
       absl::Substitute(kOperatorProtoTmpl, "LIMIT_OPERATOR", "limit_op", kLimitOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-carnotpb::ScalarFunc CreateTestFuncWithTwoColsPB() {
-  carnotpb::ScalarFunc func;
+planpb::ScalarFunc CreateTestFuncWithTwoColsPB() {
+  planpb::ScalarFunc func;
   CHECK(google::protobuf::TextFormat::MergeFromString(kFuncWithTwoCols, &func))
       << "Failed to parse proto";
   return func;
 }
 
-carnotpb::ScalarExpression CreateTestScalarExpressionWithConstBooleanPB() {
-  carnotpb::ScalarExpression exp;
+planpb::ScalarExpression CreateTestScalarExpressionWithConstBooleanPB() {
+  planpb::ScalarExpression exp;
   auto exp_proto = absl::Substitute(kScalarExpressionTmpl, "constant", kScalarBooleanValue);
   CHECK(google::protobuf::TextFormat::MergeFromString(exp_proto, &exp)) << "Failed to parse proto";
   return exp;
 }
 
-carnotpb::ScalarExpression CreateTestScalarExpressionWithConstInt64PB() {
-  carnotpb::ScalarExpression exp;
+planpb::ScalarExpression CreateTestScalarExpressionWithConstInt64PB() {
+  planpb::ScalarExpression exp;
   CHECK(google::protobuf::TextFormat::MergeFromString(kScalarInt64ValuePbtxt, &exp))
       << "Failed to parse proto";
   return exp;
 }
 
-carnotpb::ScalarExpression CreateTestScalarExpressionWithFunc1PB() {
-  carnotpb::ScalarExpression exp;
+planpb::ScalarExpression CreateTestScalarExpressionWithFunc1PB() {
+  planpb::ScalarExpression exp;
   auto exp_proto = absl::Substitute(kScalarExpressionTmpl, "func", kFuncWithTwoCols);
   CHECK(google::protobuf::TextFormat::MergeFromString(exp_proto, &exp)) << "Failed to parse proto";
   return exp;
@@ -734,7 +734,7 @@ const FieldDescriptor* GetFieldDescriptor(const google::protobuf::Message& messa
   }
   return field;
 }
-bool CompareLogicalPlans(const carnotpb::Plan& expected_plan, const carnotpb::Plan& actual_plan,
+bool CompareLogicalPlans(const planpb::Plan& expected_plan, const planpb::Plan& actual_plan,
                          bool ignore_ids) {
   google::protobuf::util::MessageDifferencer differ;
   if (ignore_ids) {
@@ -747,6 +747,6 @@ bool CompareLogicalPlans(const carnotpb::Plan& expected_plan, const carnotpb::Pl
 }
 
 }  // namespace testutils
-}  // namespace carnotpb
+}  // namespace planpb
 }  // namespace carnot
 }  // namespace pl

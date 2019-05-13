@@ -11,15 +11,15 @@
 
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/compiler_state.h"
-#include "src/carnot/proto/plan.pb.h"
-#include "src/carnot/proto/test_proto.h"
+#include "src/carnot/planpb/plan.pb.h"
+#include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
 
-using carnotpb::testutils::CompareLogicalPlans;
+using planpb::testutils::CompareLogicalPlans;
 using testing::_;
 
 class CompilerTest : public ::testing::Test {
@@ -205,10 +205,10 @@ TEST_F(CompilerTest, test_general_compilation) {
   VLOG(2) << plan_status.ToString();
   ASSERT_OK(plan_status);
 
-  carnotpb::Plan logical_plan = plan_status.ValueOrDie();
+  planpb::Plan logical_plan = plan_status.ValueOrDie();
   VLOG(2) << logical_plan.DebugString();
 
-  carnotpb::Plan expected_logical_plan;
+  planpb::Plan expected_logical_plan;
 
   ASSERT_TRUE(
       google::protobuf::TextFormat::MergeFromString(kExpectedLogicalPlan, &expected_logical_plan));
@@ -275,7 +275,7 @@ TEST_F(CompilerTest, select_order_test) {
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
   EXPECT_OK(plan);
-  carnotpb::Plan plan_pb;
+  planpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kSelectOrderLogicalPlan, &plan_pb));
   VLOG(2) << plan.ValueOrDie().DebugString();
   EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), false /*ignore_ids*/));
@@ -335,7 +335,7 @@ TEST_F(CompilerTest, range_now_test) {
   int64_t stop_time = compiler_state_->time_now().val;
   auto expected_plan = absl::Substitute(kRangeNowPlan, start_time, stop_time);
 
-  carnotpb::Plan plan_pb;
+  planpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
   VLOG(2) << plan_pb.DebugString();
   EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
@@ -402,7 +402,7 @@ class CompilerTimeFnTest
   std::string time_function;
   std::chrono::nanoseconds chrono_ns;
   std::string query;
-  carnotpb::Plan expected_plan_pb;
+  planpb::Plan expected_plan_pb;
   Compiler compiler_;
 
   std::string table_name_ = "range_table";
@@ -498,7 +498,7 @@ TEST_F(CompilerTest, group_by_all) {
   ASSERT_OK(plan_status);
   auto logical_plan = plan_status.ConsumeValueOrDie();
   VLOG(2) << logical_plan.DebugString();
-  carnotpb::Plan expected_logical_plan;
+  planpb::Plan expected_logical_plan;
   // google::protobuf::util::MessageDifferencer differ();
   ASSERT_TRUE(
       google::protobuf::TextFormat::MergeFromString(kGroupByAllPlan, &expected_logical_plan));
@@ -654,7 +654,7 @@ TEST_F(CompilerTest, range_agg_test) {
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
   EXPECT_OK(plan);
-  carnotpb::Plan plan_pb;
+  planpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kRangeAggPlan, &plan_pb));
   VLOG(2) << plan.ValueOrDie().DebugString();
   EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), false /*ignore_ids*/));
@@ -745,7 +745,7 @@ TEST_F(CompilerTest, implied_stop_params) {
   std::chrono::nanoseconds time_diff = std::chrono::minutes(2);
   std::string expected_plan =
       absl::Substitute(kRangeTimeUnitPlan, now_time - time_diff.count(), now_time, table_name);
-  carnotpb::Plan plan_pb;
+  planpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
   VLOG(2) << plan_pb.DebugString();
   EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
@@ -766,7 +766,7 @@ TEST_F(CompilerTest, string_start_param) {
   std::chrono::nanoseconds time_diff = std::chrono::minutes(2);
   std::string expected_plan =
       absl::Substitute(kRangeTimeUnitPlan, now_time - time_diff.count(), now_time, table_name);
-  carnotpb::Plan plan_pb;
+  planpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
   VLOG(2) << plan_pb.DebugString();
   EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
@@ -789,7 +789,7 @@ TEST_F(CompilerTest, string_start_stop_param) {
   std::string expected_plan =
       absl::Substitute(kRangeTimeUnitPlan, now_time - time_diff_start.count(),
                        now_time - time_diff_end.count(), table_name);
-  carnotpb::Plan plan_pb;
+  planpb::Plan plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(expected_plan, &plan_pb));
   VLOG(2) << plan_pb.DebugString();
   EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), true /*ignore_ids*/));
@@ -895,7 +895,7 @@ class FilterTest : public CompilerTest,
   std::string compare_op_;
   std::string compare_op_proto_;
   std::string query;
-  carnotpb::Plan expected_plan_pb;
+  planpb::Plan expected_plan_pb;
   Compiler compiler_;
 
   std::string table_name_ = "range_table";
@@ -994,7 +994,7 @@ TEST_F(CompilerTest, limit_test) {
                                      "'cpu1']).Limit(rows=1000)",
                                      "queryDF.Result(name='out_table')"},
                                     "\n");
-  carnotpb::Plan expected_plan_pb;
+  planpb::Plan expected_plan_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedLimitPlan, &expected_plan_pb));
   VLOG(2) << "expected";
   VLOG(2) << expected_plan_pb.DebugString();

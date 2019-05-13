@@ -35,7 +35,7 @@ pypa::AstPtr MakeTestAstPtr() {
 StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   std::shared_ptr<IR> ir = std::make_shared<IR>();
   auto info = std::make_shared<RegistryInfo>();
-  carnotpb::UDFInfo info_pb;
+  udfspb::UDFInfo info_pb;
   PL_RETURN_IF_ERROR(info->Init(info_pb));
   auto compiler_state =
       std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);

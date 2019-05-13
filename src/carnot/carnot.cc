@@ -18,7 +18,7 @@ namespace carnot {
 
 using types::DataType;
 
-Status CarnotQueryResult::ToProto(carnotpb::QueryResult* query_result) const {
+Status CarnotQueryResult::ToProto(queryresultspb::QueryResult* query_result) const {
   CHECK(query_result != nullptr);
   auto* exec_stats = query_result->mutable_execution_stats();
   exec_stats->set_records_processed(rows_processed);

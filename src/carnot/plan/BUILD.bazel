@@ -10,7 +10,7 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/carnot/proto:plan_pl_cc_proto",
+        "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/carnot/udf:cc_library",
         "//src/table_store:cc_library",
     ],
@@ -27,7 +27,7 @@ pl_cc_test(
     srcs = ["operators_test.cc"],
     deps = [
         ":cc_library",
-        "//src/carnot/proto:plan_testutils",
+        "//src/carnot/planpb:plan_testutils",
     ],
 )
 
@@ -48,7 +48,7 @@ pl_cc_test(
     srcs = ["plan_test.cc"],
     deps = [
         ":cc_library",
-        "//src/carnot/proto:plan_testutils",
+        "//src/carnot/planpb:plan_testutils",
     ],
 )
 
@@ -57,6 +57,6 @@ pl_cc_test(
     srcs = ["scalar_expression_test.cc"],
     deps = [
         ":cc_library",
-        "//src/carnot/proto:plan_testutils",
+        "//src/carnot/planpb:plan_testutils",
     ],
 )

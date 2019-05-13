@@ -4,7 +4,7 @@
 #include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
 #include "src/carnot/exec/memory_sink_node.h"
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {
@@ -25,7 +25,7 @@ std::string MemorySinkNode::DebugStringImpl() {
 Status MemorySinkNode::InitImpl(
     const plan::Operator &plan_node, const table_store::schema::RowDescriptor &,
     const std::vector<table_store::schema::RowDescriptor> &input_descriptors) {
-  CHECK(plan_node.op_type() == carnotpb::OperatorType::MEMORY_SINK_OPERATOR);
+  CHECK(plan_node.op_type() == planpb::OperatorType::MEMORY_SINK_OPERATOR);
   const auto *sink_plan_node = static_cast<const plan::MemorySinkOperator *>(&plan_node);
   // copy the plan node to local object;
   plan_node_ = std::make_unique<plan::MemorySinkOperator>(*sink_plan_node);

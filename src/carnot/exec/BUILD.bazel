@@ -22,7 +22,7 @@ pl_cc_library(
     ],
     deps = [
         "//src/carnot/plan:cc_library",
-        "//src/carnot/proto:plan_pl_cc_proto",
+        "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/carnot/udf:cc_library",
         "//src/shared/types:cc_library",
         "//src/table_store/table:cc_library",
@@ -45,7 +45,7 @@ pl_cc_test(
     srcs = ["expression_evaluator_test.cc"],
     deps = [
         ":cc_library",
-        "//src/carnot/proto:plan_testutils",
+        "//src/carnot/planpb:plan_testutils",
         "//third_party:arrow",
     ],
 )
@@ -56,7 +56,7 @@ pl_cc_binary(
     srcs = ["expression_evaluator_benchmark.cc"],
     deps = [
         ":cc_library",
-        "//src/carnot/proto:plan_testutils",
+        "//src/carnot/planpb:plan_testutils",
         "//src/common/benchmark:cc_library",
         "//third_party:arrow",
         "@com_google_benchmark//:benchmark_main",
@@ -78,7 +78,7 @@ pl_cc_test(
         ":cc_library",
         ":exec_node_test_helpers",
         ":test_utils",
-        "//src/carnot/proto:plan_testutils",
+        "//src/carnot/planpb:plan_testutils",
         "//third_party:arrow",
     ],
 )
@@ -90,7 +90,7 @@ pl_cc_test(
         ":cc_library",
         ":exec_node_test_helpers",
         ":test_utils",
-        "//src/carnot/proto:plan_testutils",
+        "//src/carnot/planpb:plan_testutils",
         "//third_party:arrow",
     ],
 )
@@ -102,7 +102,7 @@ pl_cc_test(
         ":cc_library",
         ":exec_node_test_helpers",
         ":test_utils",
-        "//src/carnot/proto:plan_testutils",
+        "//src/carnot/planpb:plan_testutils",
         "//third_party:arrow",
     ],
 )
@@ -114,7 +114,7 @@ pl_cc_test(
         ":cc_library",
         ":exec_node_test_helpers",
         ":test_utils",
-        "//src/carnot/proto:plan_testutils",
+        "//src/carnot/planpb:plan_testutils",
         "//third_party:arrow",
     ],
 )
@@ -126,7 +126,7 @@ pl_cc_test(
         ":cc_library",
         ":exec_node_test_helpers",
         ":test_utils",
-        "//src/carnot/proto:plan_testutils",
+        "//src/carnot/planpb:plan_testutils",
         "//third_party:arrow",
     ],
 )
@@ -138,7 +138,7 @@ pl_cc_test(
         ":cc_library",
         ":exec_node_test_helpers",
         ":test_utils",
-        "//src/carnot/proto:plan_testutils",
+        "//src/carnot/planpb:plan_testutils",
         "//third_party:arrow",
     ],
 )
@@ -148,7 +148,7 @@ pl_cc_test(
     srcs = ["exec_graph_test.cc"],
     deps = [
         ":cc_library",
-        "//src/carnot/proto:plan_testutils",
+        "//src/carnot/planpb:plan_testutils",
         "//third_party:arrow",
     ],
 )

@@ -16,13 +16,12 @@
 #include "src/carnot/compiler/ir_verifier.h"
 #include "src/carnot/compiler/optimize_ir.h"
 #include "src/carnot/compiler/string_reader.h"
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
-StatusOr<carnotpb::Plan> Compiler::Compile(const std::string& query,
-                                           CompilerState* compiler_state) {
+StatusOr<planpb::Plan> Compiler::Compile(const std::string& query, CompilerState* compiler_state) {
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state));
   PL_RETURN_IF_ERROR(VerifyIRConnections(*ir));
   PL_RETURN_IF_ERROR(UpdateColumnsAndVerifyUDFs(ir.get(), compiler_state));
@@ -64,8 +63,8 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
   return ir;
 }
 
-StatusOr<carnotpb::Plan> Compiler::IRToLogicalPlan(const IR& ir) {
-  auto plan = carnotpb::Plan();
+StatusOr<planpb::Plan> Compiler::IRToLogicalPlan(const IR& ir) {
+  auto plan = planpb::Plan();
   // TODO(michelle) For M1.5 , we'll only handle plans with a single plan fragment. In the future
   // we will need to update this to loop through all plan fragments.
   auto plan_dag = plan.mutable_dag();

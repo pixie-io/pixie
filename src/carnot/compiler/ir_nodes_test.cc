@@ -134,10 +134,10 @@ TEST(ToProto, memory_source_ir) {
   mem_src->SetColumns(std::vector<ColumnIR*>({col_1, col_2}));
   mem_src->SetTime(10, 20);
 
-  carnotpb::Operator pb;
+  planpb::Operator pb;
   EXPECT_OK(mem_src->ToProto(&pb));
 
-  carnotpb::Operator expected_pb;
+  planpb::Operator expected_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedMemSrcPb, &expected_pb));
   EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_pb, pb));
 }
@@ -169,10 +169,10 @@ TEST(ToProto, memory_sink_ir) {
   ArgMap amap({{"name", name_ir}});
   EXPECT_OK(mem_sink->Init(mem_source, amap, ast));
 
-  carnotpb::Operator pb;
+  planpb::Operator pb;
   EXPECT_OK(mem_sink->ToProto(&pb));
 
-  carnotpb::Operator expected_pb;
+  planpb::Operator expected_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedMemSinkPb, &expected_pb));
   EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_pb, pb));
 }
@@ -220,10 +220,10 @@ TEST(ToProto, map_ir) {
   auto exprs = std::vector<ColumnExpression>({ColumnExpression({"col_name", func})});
   map->SetColExprs(exprs);
 
-  carnotpb::Operator pb;
+  planpb::Operator pb;
   EXPECT_OK(map->ToProto(&pb));
 
-  carnotpb::Operator expected_pb;
+  planpb::Operator expected_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedMapPb, &expected_pb));
   EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_pb, pb));
 }
@@ -284,10 +284,10 @@ TEST(ToProto, agg_ir) {
   agg->SetAggValMap(exprs);
   agg->SetGroups(std::vector<ColumnIR*>({group1}));
 
-  carnotpb::Operator pb;
+  planpb::Operator pb;
   ASSERT_OK(agg->ToProto(&pb));
 
-  carnotpb::Operator expected_pb;
+  planpb::Operator expected_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedAggPb, &expected_pb));
   EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_pb, pb));
 }

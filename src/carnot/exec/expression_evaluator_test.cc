@@ -5,12 +5,12 @@
 #include <memory>
 #include <string>
 
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/expression_evaluator.h"
 #include "src/carnot/plan/scalar_expression.h"
-#include "src/carnot/proto/test_proto.h"
+#include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf/registry.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
@@ -19,10 +19,10 @@ namespace pl {
 namespace carnot {
 namespace exec {
 
-using pl::carnot::carnotpb::testutils::kAddScalarFuncConstPbtxt;
-using pl::carnot::carnotpb::testutils::kAddScalarFuncNestedPbtxt;
-using pl::carnot::carnotpb::testutils::kAddScalarFuncPbtxt;
-using pl::carnot::carnotpb::testutils::kScalarInt64ValuePbtxt;
+using pl::carnot::planpb::testutils::kAddScalarFuncConstPbtxt;
+using pl::carnot::planpb::testutils::kAddScalarFuncNestedPbtxt;
+using pl::carnot::planpb::testutils::kAddScalarFuncPbtxt;
+using pl::carnot::planpb::testutils::kScalarInt64ValuePbtxt;
 using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
 using types::Int64Value;
@@ -37,7 +37,7 @@ class AddUDF : public udf::ScalarUDF {
 };
 
 std::shared_ptr<plan::ScalarExpression> AddScalarExpr() {
-  carnotpb::ScalarExpression se_pb;
+  planpb::ScalarExpression se_pb;
   google::protobuf::TextFormat::MergeFromString(kAddScalarFuncPbtxt, &se_pb);
   auto s_or_se = plan::ScalarExpression::FromProto(se_pb);
   EXPECT_TRUE(s_or_se.ok());
@@ -45,7 +45,7 @@ std::shared_ptr<plan::ScalarExpression> AddScalarExpr() {
 }
 
 std::shared_ptr<plan::ScalarExpression> ConstScalarExpr() {
-  carnotpb::ScalarExpression se_pb;
+  planpb::ScalarExpression se_pb;
   google::protobuf::TextFormat::MergeFromString(kScalarInt64ValuePbtxt, &se_pb);
   auto s_or_se = plan::ScalarExpression::FromProto(se_pb);
   EXPECT_TRUE(s_or_se.ok());
@@ -53,7 +53,7 @@ std::shared_ptr<plan::ScalarExpression> ConstScalarExpr() {
 }
 
 std::shared_ptr<plan::ScalarExpression> ScalarExpressionOf(const std::string& pbtxt) {
-  carnotpb::ScalarExpression se_pb;
+  planpb::ScalarExpression se_pb;
   google::protobuf::TextFormat::MergeFromString(pbtxt, &se_pb);
   auto s_or_se = plan::ScalarExpression::FromProto(se_pb);
   EXPECT_TRUE(s_or_se.ok());

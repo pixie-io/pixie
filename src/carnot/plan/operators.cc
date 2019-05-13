@@ -6,7 +6,7 @@
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/plan/utils.h"
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
 
@@ -28,19 +28,19 @@ std::unique_ptr<Operator> CreateOperator(int64_t id, const TProto &pb) {
   return op;
 }
 
-std::unique_ptr<Operator> Operator::FromProto(const carnotpb::Operator &pb, int64_t id) {
+std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator &pb, int64_t id) {
   switch (pb.op_type()) {
-    case carnotpb::MEMORY_SOURCE_OPERATOR:
+    case planpb::MEMORY_SOURCE_OPERATOR:
       return CreateOperator<MemorySourceOperator>(id, pb.mem_source_op());
-    case carnotpb::MAP_OPERATOR:
+    case planpb::MAP_OPERATOR:
       return CreateOperator<MapOperator>(id, pb.map_op());
-    case carnotpb::BLOCKING_AGGREGATE_OPERATOR:
+    case planpb::BLOCKING_AGGREGATE_OPERATOR:
       return CreateOperator<BlockingAggregateOperator>(id, pb.blocking_agg_op());
-    case carnotpb::MEMORY_SINK_OPERATOR:
+    case planpb::MEMORY_SINK_OPERATOR:
       return CreateOperator<MemorySinkOperator>(id, pb.mem_sink_op());
-    case carnotpb::FILTER_OPERATOR:
+    case planpb::FILTER_OPERATOR:
       return CreateOperator<FilterOperator>(id, pb.filter_op());
-    case carnotpb::LIMIT_OPERATOR:
+    case planpb::LIMIT_OPERATOR:
       return CreateOperator<LimitOperator>(id, pb.limit_op());
     default:
       LOG(FATAL) << absl::StrFormat("Unknown operator type: %s", ToString(pb.op_type()));
@@ -53,7 +53,7 @@ std::unique_ptr<Operator> Operator::FromProto(const carnotpb::Operator &pb, int6
 
 std::string MemorySourceOperator::DebugString() const { return "Operator: MemorySource"; }
 
-Status MemorySourceOperator::Init(const carnotpb::MemorySourceOperator &pb) {
+Status MemorySourceOperator::Init(const planpb::MemorySourceOperator &pb) {
   pb_ = pb;
   column_idxs_.reserve(static_cast<size_t>(pb_.column_idxs_size()));
   for (int i = 0; i < pb_.column_idxs_size(); ++i) {
@@ -96,7 +96,7 @@ std::string MapOperator::DebugString() const {
   return "Op:Map" + debug_string;
 }
 
-Status MapOperator::Init(const carnotpb::MapOperator &pb) {
+Status MapOperator::Init(const planpb::MapOperator &pb) {
   pb_ = pb;
   // Some sanity tests.
   if (pb_.column_names_size() != pb_.expressions_size()) {
@@ -141,7 +141,7 @@ StatusOr<table_store::schema::Relation> MapOperator::OutputRelation(
 
 std::string BlockingAggregateOperator::DebugString() const { return "Operator: BlockingAggregate"; }
 
-Status BlockingAggregateOperator::Init(const carnotpb::BlockingAggregateOperator &pb) {
+Status BlockingAggregateOperator::Init(const planpb::BlockingAggregateOperator &pb) {
   pb_ = pb;
   if (pb_.groups_size() != pb_.group_names_size()) {
     return error::InvalidArgument("group names/exp size mismatch");
@@ -208,7 +208,7 @@ StatusOr<table_store::schema::Relation> BlockingAggregateOperator::OutputRelatio
 
 std::string MemorySinkOperator::DebugString() const { return "Operator: MemorySink"; }
 
-Status MemorySinkOperator::Init(const carnotpb::MemorySinkOperator &pb) {
+Status MemorySinkOperator::Init(const planpb::MemorySinkOperator &pb) {
   pb_ = pb;
   is_initialized_ = true;
   return Status::OK();
@@ -229,7 +229,7 @@ std::string FilterOperator::DebugString() const {
   return "Op:Filter" + debug_string;
 }
 
-Status FilterOperator::Init(const carnotpb::FilterOperator &pb) {
+Status FilterOperator::Init(const planpb::FilterOperator &pb) {
   pb_ = pb;
   PL_ASSIGN_OR_RETURN(expression_, ScalarExpression::FromProto(pb_.expression()));
 
@@ -265,7 +265,7 @@ std::string LimitOperator::DebugString() const {
   return "Op:Limit" + debug_string;
 }
 
-Status LimitOperator::Init(const carnotpb::LimitOperator &pb) {
+Status LimitOperator::Init(const planpb::LimitOperator &pb) {
   pb_ = pb;
   record_limit_ = pb_.limit();
 

@@ -8,7 +8,7 @@
 #include "absl/strings/str_format.h"
 #include "src/carnot/plan/plan_node.h"
 #include "src/carnot/plan/plan_state.h"
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
 
@@ -36,13 +36,13 @@ inline std::string ToString(Expression expr) {
   }
 }
 
-inline std::string ToString(const carnotpb::ScalarExpression::ValueCase &exp) {
+inline std::string ToString(const planpb::ScalarExpression::ValueCase &exp) {
   switch (exp) {
-    case carnotpb::ScalarExpression::kFunc:
+    case planpb::ScalarExpression::kFunc:
       return "Function";
-    case carnotpb::ScalarExpression::kColumn:
+    case planpb::ScalarExpression::kColumn:
       return "Column";
-    case carnotpb::ScalarExpression::kConstant:
+    case planpb::ScalarExpression::kConstant:
       return "Value";
     default:
       std::string err_msg = absl::StrFormat("Unknown expression type: %d", static_cast<int>(exp));
@@ -57,8 +57,7 @@ inline std::string ToString(const carnotpb::ScalarExpression::ValueCase &exp) {
  */
 class ScalarExpression : public PlanNode {
  public:
-  static StatusOr<std::unique_ptr<ScalarExpression>> FromProto(
-      const carnotpb::ScalarExpression &pb);
+  static StatusOr<std::unique_ptr<ScalarExpression>> FromProto(const planpb::ScalarExpression &pb);
 
   ~ScalarExpression() override = default;
   bool is_initialized() const { return is_initialized_; }
@@ -118,7 +117,7 @@ class Column : public ScalarExpression {
   ~Column() override = default;
 
   /// Initializes the column value based on the passed in protobuf msg.
-  Status Init(const carnotpb::Column &pb);
+  Status Init(const planpb::Column &pb);
 
   // Implementation of base class methods.
   StatusOr<types::DataType> OutputDataType(
@@ -135,7 +134,7 @@ class Column : public ScalarExpression {
   int64_t NodeID() const;
 
  private:
-  carnotpb::Column pb_;
+  planpb::Column pb_;
 };
 
 /**
@@ -147,7 +146,7 @@ class ScalarValue : public ScalarExpression {
   ~ScalarValue() override = default;
 
   /// Initializes the constant scalar value based on the passed in protobuf msg.
-  Status Init(const carnotpb::ScalarValue &pb);
+  Status Init(const planpb::ScalarValue &pb);
 
   // Override base class methods.
   std::vector<const Column *> ColumnDeps() override;
@@ -169,7 +168,7 @@ class ScalarValue : public ScalarExpression {
   bool IsNull() const;
 
  private:
-  carnotpb::ScalarValue pb_;
+  planpb::ScalarValue pb_;
 };
 
 class ScalarFunc : public ScalarExpression {
@@ -177,7 +176,7 @@ class ScalarFunc : public ScalarExpression {
   ScalarFunc() = default;
   ~ScalarFunc() override = default;
 
-  Status Init(const carnotpb::ScalarFunc &pb);
+  Status Init(const planpb::ScalarFunc &pb);
   // Override base class methods.
   std::vector<const Column *> ColumnDeps() override;
   StatusOr<types::DataType> OutputDataType(
@@ -201,7 +200,7 @@ class AggregateExpression : public ScalarExpression {
   AggregateExpression() = default;
   ~AggregateExpression() override = default;
 
-  Status Init(const carnotpb::AggregateExpression &pb);
+  Status Init(const planpb::AggregateExpression &pb);
   // Override base class methods.
   std::vector<const Column *> ColumnDeps() override;
   StatusOr<types::DataType> OutputDataType(

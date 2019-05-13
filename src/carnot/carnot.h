@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "src/carnot/compiler/compiler.h"
-#include "src/carnot/proto/query_results.pb.h"
+#include "src/carnot/queryresultspb/query_results.pb.h"
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
 
@@ -29,7 +29,7 @@ struct CarnotQueryResult {
    * Convert this query result to a proto that can be sent over the wire.
    * @param query_result The query result to fill in.
    */
-  Status ToProto(carnotpb::QueryResult* query_result) const;
+  Status ToProto(queryresultspb::QueryResult* query_result) const;
   std::vector<table_store::Table*> output_tables_;
   int64_t rows_processed = 0;
   int64_t bytes_processed = 0;

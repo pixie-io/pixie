@@ -7,7 +7,7 @@
 
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/ir_nodes.h"
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -23,15 +23,15 @@ class Compiler {
    * @param query the query to compile.
    * @return the logical plan in the form of a plan protobuf message.
    */
-  StatusOr<carnotpb::Plan> Compile(const std::string& query, CompilerState* compiler_state);
+  StatusOr<planpb::Plan> Compile(const std::string& query, CompilerState* compiler_state);
   // TODO(philkuz) make irtologicalplan private.
-  StatusOr<carnotpb::Plan> IRToLogicalPlan(const IR& ir);
+  StatusOr<planpb::Plan> IRToLogicalPlan(const IR& ir);
 
  private:
   StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query, CompilerState* compiler_state);
 
   template <typename TIRNode>
-  Status IRNodeToPlanNode(carnotpb::PlanFragment* pf, carnotpb::DAG* pf_dag, const IR& ir_graph,
+  Status IRNodeToPlanNode(planpb::PlanFragment* pf, planpb::DAG* pf_dag, const IR& ir_graph,
                           const TIRNode& ir_node) {
     // Check to make sure that the relation is set for this ir_node, otherwise it's not connected to
     // a Sink.

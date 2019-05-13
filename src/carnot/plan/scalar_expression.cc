@@ -16,7 +16,7 @@ namespace pl {
 namespace carnot {
 namespace plan {
 
-pl::Status ScalarValue::Init(const pl::carnot::carnotpb::ScalarValue &pb) {
+pl::Status ScalarValue::Init(const pl::carnot::planpb::ScalarValue &pb) {
   DCHECK(!is_initialized_) << "Already initialized";
   CHECK(pb.data_type() != types::DATA_TYPE_UNKNOWN);
   CHECK(types::DataType_IsValid(pb.data_type()));
@@ -33,7 +33,7 @@ pl::Status ScalarValue::Init(const pl::carnot::carnotpb::ScalarValue &pb) {
 
 int64_t ScalarValue::Int64Value() const {
   DCHECK(is_initialized_) << "Not initialized";
-  VLOG_IF(1, pb_.value_case() != carnotpb::ScalarValue::kInt64Value)
+  VLOG_IF(1, pb_.value_case() != planpb::ScalarValue::kInt64Value)
 
       << "Calling accessor on null/invalid value";
   return pb_.int64_value();
@@ -41,28 +41,28 @@ int64_t ScalarValue::Int64Value() const {
 
 double ScalarValue::Float64Value() const {
   DCHECK(is_initialized_) << "Not initialized";
-  VLOG_IF(1, pb_.value_case() != carnotpb::ScalarValue::kFloat64Value)
+  VLOG_IF(1, pb_.value_case() != planpb::ScalarValue::kFloat64Value)
       << "Calling accessor on null/invalid value";
   return pb_.float64_value();
 }
 
 std::string ScalarValue::StringValue() const {
   DCHECK(is_initialized_) << "Not initialized";
-  VLOG_IF(1, pb_.value_case() != carnotpb::ScalarValue::kStringValue)
+  VLOG_IF(1, pb_.value_case() != planpb::ScalarValue::kStringValue)
       << "Calling accessor on null/invalid value";
   return pb_.string_value();
 }
 
 bool ScalarValue::BoolValue() const {
   DCHECK(is_initialized_) << "Not initialized";
-  VLOG_IF(1, pb_.value_case() != carnotpb::ScalarValue::kBoolValue)
+  VLOG_IF(1, pb_.value_case() != planpb::ScalarValue::kBoolValue)
       << "Calling accessor on null/invalid value";
   return pb_.bool_value();
 }
 
 int64_t ScalarValue::Time64NSValue() const {
   DCHECK(is_initialized_) << "Not initialized";
-  VLOG_IF(1, pb_.value_case() != carnotpb::ScalarValue::kTime64NsValue)
+  VLOG_IF(1, pb_.value_case() != planpb::ScalarValue::kTime64NsValue)
 
       << "Calling accessor on null/invalid value";
   return pb_.time64_ns_value();
@@ -70,7 +70,7 @@ int64_t ScalarValue::Time64NSValue() const {
 
 bool ScalarValue::IsNull() const {
   DCHECK(is_initialized_) << "Not initialized";
-  return pb_.value_case() == carnotpb::ScalarValue::VALUE_NOT_SET;
+  return pb_.value_case() == planpb::ScalarValue::VALUE_NOT_SET;
 }
 
 // PL_CARNOT_UPDATE_FOR_NEW_TYPES
@@ -113,7 +113,7 @@ std::vector<ScalarExpression *> ScalarValue::Deps() const {
 
 Expression ScalarValue::ExpressionType() const { return Expression::kConstant; }
 
-Status Column::Init(const carnotpb::Column &pb) {
+Status Column::Init(const planpb::Column &pb) {
   DCHECK(!is_initialized_) << "Already initialized";
   pb_ = pb;
   is_initialized_ = true;
@@ -164,20 +164,20 @@ StatusOr<std::unique_ptr<ScalarExpression>> MakeExprHelper(const TProto &pb) {
 }
 
 StatusOr<std::unique_ptr<ScalarExpression>> ScalarExpression::FromProto(
-    const carnotpb::ScalarExpression &pb) {
+    const planpb::ScalarExpression &pb) {
   switch (pb.value_case()) {
-    case carnotpb::ScalarExpression::kColumn:
+    case planpb::ScalarExpression::kColumn:
       return MakeExprHelper<Column>(pb.column());
-    case carnotpb::ScalarExpression::kConstant:
+    case planpb::ScalarExpression::kConstant:
       return MakeExprHelper<ScalarValue>(pb.constant());
-    case carnotpb::ScalarExpression::kFunc:
+    case planpb::ScalarExpression::kFunc:
       return MakeExprHelper<ScalarFunc>(pb.func());
     default:
       return error::Unimplemented("Expression type: %d", pb.value_case());
   }
 }
 
-Status ScalarFunc::Init(const carnotpb::ScalarFunc &pb) {
+Status ScalarFunc::Init(const planpb::ScalarFunc &pb) {
   name_ = pb.name();
   udf_id_ = pb.id();
   for (const auto arg : pb.args()) {
@@ -253,12 +253,12 @@ std::string ScalarFunc::DebugString() const {
   return debug_string;
 }
 
-Status AggregateExpression::Init(const carnotpb::AggregateExpression &pb) {
+Status AggregateExpression::Init(const planpb::AggregateExpression &pb) {
   name_ = pb.name();
   uda_id_ = pb.id();
   for (const auto arg : pb.args()) {
     // arg is of message type AggregateExpression.Arg. Needs to be casted to a ScalarExpression.
-    carnotpb::ScalarExpression se;
+    planpb::ScalarExpression se;
 
     se.ParseFromString(arg.SerializeAsString());
     auto s = ScalarExpression::FromProto(se);

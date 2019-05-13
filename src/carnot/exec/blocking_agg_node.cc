@@ -3,7 +3,7 @@
 #include "src/carnot/exec/blocking_agg_node.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/plan/utils.h"
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/type_utils.h"
@@ -66,7 +66,7 @@ std::string BlockingAggNode::DebugStringImpl() {
 Status BlockingAggNode::InitImpl(const plan::Operator &plan_node,
                                  const RowDescriptor &output_descriptor,
                                  const std::vector<RowDescriptor> &input_descriptors) {
-  CHECK(plan_node.op_type() == carnotpb::OperatorType::BLOCKING_AGGREGATE_OPERATOR);
+  CHECK(plan_node.op_type() == planpb::OperatorType::BLOCKING_AGGREGATE_OPERATOR);
   const auto *agg_plan_node = static_cast<const plan::BlockingAggregateOperator *>(&plan_node);
 
   // Copy the plan node to local object.

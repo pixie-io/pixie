@@ -8,22 +8,22 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/errors"
 	"github.com/graph-gophers/graphql-go/gqltesting"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"pixielabs.ai/pixielabs/src/carnot/proto"
-	"pixielabs.ai/pixielabs/src/common/uuid/proto"
+	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/services/api/apienv"
 	"pixielabs.ai/pixielabs/src/services/api/controller"
 	"pixielabs.ai/pixielabs/src/services/api/controller/schema"
 	"pixielabs.ai/pixielabs/src/services/common/env"
 	jwt "pixielabs.ai/pixielabs/src/services/common/proto"
 	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
-	"pixielabs.ai/pixielabs/src/shared/types/proto"
-	"pixielabs.ai/pixielabs/src/table_store/proto"
+	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
+	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	service "pixielabs.ai/pixielabs/src/vizier/proto"
-	"pixielabs.ai/pixielabs/src/vizier/proto/mock"
+	mock_proto "pixielabs.ai/pixielabs/src/vizier/proto/mock"
 )
 
 // Impl is an implementation of the ApiEnv interface
@@ -192,7 +192,7 @@ func TestVizierExecuteQuery(t *testing.T) {
 	resp.Responses = append(resp.Responses, &service.VizierQueryResponse_ResponseByAgent{
 		Response: &service.AgentQueryResponse{
 			QueryID: upb,
-			QueryResult: &carnotpb.QueryResult{
+			QueryResult: &queryresultspb.QueryResult{
 
 				Tables: []*schemapb.Table{
 					{

@@ -3,8 +3,8 @@
 
 #include "src/carnot/exec/expression_evaluator.h"
 #include "src/carnot/plan/scalar_expression.h"
-#include "src/carnot/proto/plan.pb.h"
-#include "src/carnot/proto/test_proto.h"
+#include "src/carnot/planpb/plan.pb.h"
+#include "src/carnot/planpb/test_proto.h"
 #include "src/common/base/base.h"
 #include "src/common/benchmark/benchmark.h"
 #include "src/shared/types/arrow_adapter.h"
@@ -13,13 +13,13 @@
 
 using ScalarExpression = pl::carnot::plan::ScalarExpression;
 using ScalarExpressionVector = std::vector<std::shared_ptr<ScalarExpression>>;
-using pl::carnot::carnotpb::testutils::kAddScalarFuncNestedPbtxt;
-using pl::carnot::carnotpb::testutils::kAddScalarFuncPbtxt;
-using pl::carnot::carnotpb::testutils::kColumnReferencePbtxt;
-using pl::carnot::carnotpb::testutils::kScalarInt64ValuePbtxt;
 using pl::carnot::exec::ExecState;
 using pl::carnot::exec::ScalarExpressionEvaluator;
 using pl::carnot::exec::ScalarExpressionEvaluatorType;
+using pl::carnot::planpb::testutils::kAddScalarFuncNestedPbtxt;
+using pl::carnot::planpb::testutils::kAddScalarFuncPbtxt;
+using pl::carnot::planpb::testutils::kColumnReferencePbtxt;
+using pl::carnot::planpb::testutils::kScalarInt64ValuePbtxt;
 using pl::carnot::udf::FunctionContext;
 using pl::carnot::udf::ScalarUDF;
 using pl::carnot::udf::ScalarUDFRegistry;
@@ -38,7 +38,7 @@ class AddUDF : public ScalarUDF {
 // NOLINTNEXTLINE : runtime/references.
 void BM_ScalarExpressionTwoCols(benchmark::State& state,
                                 const ScalarExpressionEvaluatorType& eval_type, const char* pbtxt) {
-  pl::carnot::carnotpb::ScalarExpression se_pb;
+  pl::carnot::planpb::ScalarExpression se_pb;
   size_t data_size = state.range(0);
 
   google::protobuf::TextFormat::MergeFromString(pbtxt, &se_pb);

@@ -8,8 +8,8 @@
 #include "src/carnot/exec/exec_graph.h"
 #include "src/carnot/plan/plan_fragment.h"
 #include "src/carnot/plan/plan_state.h"
-#include "src/carnot/proto/plan.pb.h"
-#include "src/carnot/proto/test_proto.h"
+#include "src/carnot/planpb/plan.pb.h"
+#include "src/carnot/planpb/test_proto.h"
 #include "src/common/memory/memory.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/table_store/table_store.h"
@@ -40,9 +40,8 @@ class MultiplyUDF : public udf::ScalarUDF {
 class ExecGraphTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    carnotpb::PlanFragment pf_pb;
-    ASSERT_TRUE(
-        TextFormat::MergeFromString(carnotpb::testutils::kPlanFragmentWithFourNodes, &pf_pb));
+    planpb::PlanFragment pf_pb;
+    ASSERT_TRUE(TextFormat::MergeFromString(planpb::testutils::kPlanFragmentWithFourNodes, &pf_pb));
     ASSERT_OK(plan_fragment_->Init(pf_pb));
 
     auto udf_registry = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
@@ -87,8 +86,8 @@ TEST_F(ExecGraphTest, basic) {
 TEST_F(ExecGraphTest, execute) {
   ExecutionGraph e;
 
-  carnotpb::PlanFragment pf_pb;
-  ASSERT_TRUE(TextFormat::MergeFromString(carnotpb::testutils::kLinearPlanFragment, &pf_pb));
+  planpb::PlanFragment pf_pb;
+  ASSERT_TRUE(TextFormat::MergeFromString(planpb::testutils::kLinearPlanFragment, &pf_pb));
   std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
   ASSERT_OK(plan_fragment_->Init(pf_pb));
 
@@ -163,8 +162,8 @@ TEST_F(ExecGraphTest, execute) {
 TEST_F(ExecGraphTest, execute_time) {
   ExecutionGraph e;
 
-  carnotpb::PlanFragment pf_pb;
-  ASSERT_TRUE(TextFormat::MergeFromString(carnotpb::testutils::kLinearPlanFragment, &pf_pb));
+  planpb::PlanFragment pf_pb;
+  ASSERT_TRUE(TextFormat::MergeFromString(planpb::testutils::kLinearPlanFragment, &pf_pb));
   std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
   ASSERT_OK(plan_fragment_->Init(pf_pb));
 

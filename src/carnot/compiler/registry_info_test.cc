@@ -33,7 +33,7 @@ scalar_udfs {
 
 TEST(RegistryInfo, basic) {
   auto info = RegistryInfo();
-  carnotpb::UDFInfo info_pb;
+  udfspb::UDFInfo info_pb;
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
   EXPECT_OK(info.Init(info_pb));
   EXPECT_EQ(types::INT64,

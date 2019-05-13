@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "absl/strings/str_format.h"
-#include "src/carnot/proto/udfs.pb.h"
+#include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/proto/types.pb.h"
 
@@ -57,7 +57,7 @@ class RegistryKey {
 
 class RegistryInfo {
  public:
-  Status Init(carnotpb::UDFInfo info);
+  Status Init(udfspb::UDFInfo info);
   StatusOr<types::DataType> GetUDA(std::string name, std::vector<types::DataType> update_arg_types);
   StatusOr<types::DataType> GetUDF(std::string name, std::vector<types::DataType> exec_arg_types);
 

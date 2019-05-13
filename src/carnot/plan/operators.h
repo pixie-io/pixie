@@ -6,7 +6,7 @@
 
 #include "src/carnot/plan/plan_node.h"
 #include "src/carnot/plan/scalar_expression.h"
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 
 namespace pl {
@@ -25,13 +25,13 @@ class Operator : public PlanNode {
   ~Operator() override = default;
 
   // Create a new operator using the Operator proto.
-  static std::unique_ptr<Operator> FromProto(const carnotpb::Operator &pb, int64_t id);
+  static std::unique_ptr<Operator> FromProto(const planpb::Operator &pb, int64_t id);
 
   // Returns the ID of the operator.
   int64_t id() const { return id_; }
 
   // Returns the type of the operator.
-  carnotpb::OperatorType op_type() const { return op_type_; }
+  planpb::OperatorType op_type() const { return op_type_; }
 
   bool is_initialized() const { return is_initialized_; }
 
@@ -46,22 +46,22 @@ class Operator : public PlanNode {
       const std::vector<int64_t> &input_ids) const = 0;
 
  protected:
-  Operator(int64_t id, carnotpb::OperatorType op_type) : id_(id), op_type_(op_type) {}
+  Operator(int64_t id, planpb::OperatorType op_type) : id_(id), op_type_(op_type) {}
 
   int64_t id_;
-  carnotpb::OperatorType op_type_;
+  planpb::OperatorType op_type_;
   // Tracks if the operator has been fully initialized.
   bool is_initialized_ = false;
 };
 
 class MemorySourceOperator : public Operator {
  public:
-  explicit MemorySourceOperator(int64_t id) : Operator(id, carnotpb::MEMORY_SOURCE_OPERATOR) {}
+  explicit MemorySourceOperator(int64_t id) : Operator(id, planpb::MEMORY_SOURCE_OPERATOR) {}
   ~MemorySourceOperator() override = default;
   StatusOr<table_store::schema::Relation> OutputRelation(
       const table_store::schema::Schema &schema, const PlanState &state,
       const std::vector<int64_t> &input_ids) const override;
-  Status Init(const carnotpb::MemorySourceOperator &pb);
+  Status Init(const planpb::MemorySourceOperator &pb);
   std::string DebugString() const override;
   std::string TableName() const { return pb_.name(); }
   bool HasStartTime() const { return pb_.has_start_time(); }
@@ -71,20 +71,20 @@ class MemorySourceOperator : public Operator {
   std::vector<int64_t> Columns() const { return column_idxs_; }
 
  private:
-  carnotpb::MemorySourceOperator pb_;
+  planpb::MemorySourceOperator pb_;
 
   std::vector<int64_t> column_idxs_;
 };
 
 class MapOperator : public Operator {
  public:
-  explicit MapOperator(int64_t id) : Operator(id, carnotpb::MAP_OPERATOR) {}
+  explicit MapOperator(int64_t id) : Operator(id, planpb::MAP_OPERATOR) {}
   ~MapOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
       const table_store::schema::Schema &schema, const PlanState &state,
       const std::vector<int64_t> &input_ids) const override;
-  Status Init(const carnotpb::MapOperator &pb);
+  Status Init(const planpb::MapOperator &pb);
   std::string DebugString() const override;
 
   const std::vector<std::shared_ptr<const ScalarExpression>> &expressions() const {
@@ -95,19 +95,19 @@ class MapOperator : public Operator {
   std::vector<std::shared_ptr<const ScalarExpression>> expressions_;
   std::vector<std::string> column_names_;
 
-  carnotpb::MapOperator pb_;
+  planpb::MapOperator pb_;
 };
 
 class BlockingAggregateOperator : public Operator {
  public:
   explicit BlockingAggregateOperator(int64_t id)
-      : Operator(id, carnotpb::BLOCKING_AGGREGATE_OPERATOR) {}
+      : Operator(id, planpb::BLOCKING_AGGREGATE_OPERATOR) {}
   ~BlockingAggregateOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
       const table_store::schema::Schema &schema, const PlanState &state,
       const std::vector<int64_t> &input_ids) const override;
-  Status Init(const carnotpb::BlockingAggregateOperator &pb);
+  Status Init(const planpb::BlockingAggregateOperator &pb);
   std::string DebugString() const override;
 
   struct GroupInfo {
@@ -121,35 +121,35 @@ class BlockingAggregateOperator : public Operator {
  private:
   std::vector<std::shared_ptr<AggregateExpression>> values_;
   std::vector<GroupInfo> groups_;
-  carnotpb::BlockingAggregateOperator pb_;
+  planpb::BlockingAggregateOperator pb_;
 };
 
 class MemorySinkOperator : public Operator {
  public:
-  explicit MemorySinkOperator(int64_t id) : Operator(id, carnotpb::MEMORY_SINK_OPERATOR) {}
+  explicit MemorySinkOperator(int64_t id) : Operator(id, planpb::MEMORY_SINK_OPERATOR) {}
   ~MemorySinkOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
       const table_store::schema::Schema &schema, const PlanState &state,
       const std::vector<int64_t> &input_ids) const override;
-  Status Init(const carnotpb::MemorySinkOperator &pb);
+  Status Init(const planpb::MemorySinkOperator &pb);
   std::string TableName() const { return pb_.name(); }
   std::string ColumnName(int64_t i) const { return pb_.column_names(i); }
   std::string DebugString() const override;
 
  private:
-  carnotpb::MemorySinkOperator pb_;
+  planpb::MemorySinkOperator pb_;
 };
 
 class FilterOperator : public Operator {
  public:
-  explicit FilterOperator(int64_t id) : Operator(id, carnotpb::FILTER_OPERATOR) {}
+  explicit FilterOperator(int64_t id) : Operator(id, planpb::FILTER_OPERATOR) {}
   ~FilterOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
       const table_store::schema::Schema &schema, const PlanState &state,
       const std::vector<int64_t> &input_ids) const override;
-  Status Init(const carnotpb::FilterOperator &pb);
+  Status Init(const planpb::FilterOperator &pb);
   std::string DebugString() const override;
 
   const std::shared_ptr<const ScalarExpression> &expression() const { return expression_; }
@@ -157,18 +157,18 @@ class FilterOperator : public Operator {
  private:
   std::shared_ptr<const ScalarExpression> expression_;
 
-  carnotpb::FilterOperator pb_;
+  planpb::FilterOperator pb_;
 };
 
 class LimitOperator : public Operator {
  public:
-  explicit LimitOperator(int64_t id) : Operator(id, carnotpb::LIMIT_OPERATOR) {}
+  explicit LimitOperator(int64_t id) : Operator(id, planpb::LIMIT_OPERATOR) {}
   ~LimitOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
       const table_store::schema::Schema &schema, const PlanState &state,
       const std::vector<int64_t> &input_ids) const override;
-  Status Init(const carnotpb::LimitOperator &pb);
+  Status Init(const planpb::LimitOperator &pb);
   std::string DebugString() const override;
 
   int64_t record_limit() const { return record_limit_; }
@@ -176,7 +176,7 @@ class LimitOperator : public Operator {
  private:
   int64_t record_limit_ = 0;
 
-  carnotpb::LimitOperator pb_;
+  planpb::LimitOperator pb_;
 };
 
 }  // namespace plan

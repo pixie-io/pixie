@@ -10,7 +10,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/services/api/controller",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/carnot/proto:query_results_pl_go_proto",
+        "//src/carnot/queryresultspb:query_results_pl_go_proto",
         "//src/services/api/apienv:go_default_library",
         "//src/services/api/controller/schema:go_default_library",
         "//src/services/common/sessioncontext:go_default_library",
@@ -32,7 +32,7 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
-        "//src/carnot/proto:query_results_pl_go_proto",
+        "//src/carnot/queryresultspb:query_results_pl_go_proto",
         "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/services/api/apienv:go_default_library",
         "//src/services/api/controller/schema:go_default_library",

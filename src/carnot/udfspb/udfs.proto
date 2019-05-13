@@ -1,9 +1,9 @@
 syntax = "proto3";
 import "src/shared/types/proto/types.proto";
 
-package pl.carnot.carnotpb;
+package pl.carnot.udfspb;
 
-option go_package = "carnotpb";
+option go_package = "udfspb";
 
 // UDASpec stores the specification of a single UDA.
 message UDASpec {

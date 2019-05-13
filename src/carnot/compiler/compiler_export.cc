@@ -9,7 +9,7 @@
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
 #include "src/carnot/compiler/registry_info.h"
-#include "src/carnot/proto/plan.pb.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/base/time.h"
 #include "src/table_store/schema/relation.h"
@@ -102,7 +102,7 @@ char *CompilerCompile(CompilerPtr compiler_ptr, const char *rel_str_c, int rel_s
       std::move(rel_map), registry_info.get(), pl::CurrentTimeNS());
 
   // Pass query into the C++ compile call.
-  pl::StatusOr<pl::carnot::carnotpb::Plan> compiler_result =
+  pl::StatusOr<pl::carnot::planpb::Plan> compiler_result =
       compiler->Compile(query_str, compiler_state_obj.get());
 
   if (!compiler_result.ok()) {
@@ -111,7 +111,7 @@ char *CompilerCompile(CompilerPtr compiler_ptr, const char *rel_str_c, int rel_s
   // If the response is ok, then we can go ahead and set this up.
   pl::carnot::compiler::compilerpb::CompilerResult compiler_result_pb;
   WrapStatus(&compiler_result_pb, compiler_result.status());
-  pl::carnot::carnotpb::Plan plan_pb = compiler_result.ConsumeValueOrDie();
+  pl::carnot::planpb::Plan plan_pb = compiler_result.ConsumeValueOrDie();
   *(compiler_result_pb.mutable_logical_plan()) = plan_pb;
 
   // Serialize the logical plan into bytes.
