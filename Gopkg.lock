@@ -208,7 +208,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e6ffadf2d1e75ec583aa3f796ac3933a6af241c652d8f68c8a4f3be700b3e71f"
+  digest = "1:775e304bf842bd7dfe6542409b7db4976384be209ddee9748963da1a0631da4d"
   name = "github.com/graph-gophers/graphql-go"
   packages = [
     ".",
@@ -339,6 +339,48 @@
   version = "v1.1.1"
 
 [[projects]]
+  digest = "1:152b9f697690cedea626f1d61e1a8a9ca564fd67629b3aa4e3d489065718999a"
+  name = "github.com/nats-io/gnatsd"
+  packages = [
+    "conf",
+    "logger",
+    "server",
+    "server/pse",
+    "test",
+  ]
+  pruneopts = "UT"
+  revision = "3e64f0bfd1fe4c2cf6599f064ff72fa7af439663"
+  version = "v1.4.1"
+
+[[projects]]
+  digest = "1:2ca73053216eb11c8eea2855c8099ad82773638522f91cc0542ec9759163ff3c"
+  name = "github.com/nats-io/go-nats"
+  packages = [
+    ".",
+    "encoders/builtin",
+    "util",
+  ]
+  pruneopts = "UT"
+  revision = "70fe06cee50d4b6f98248d9675fb55f2a3aa7228"
+  version = "v1.7.2"
+
+[[projects]]
+  digest = "1:0b5d91120efc54504bc253fda90b08c4be88cd78a4023ef60019e95bb0cdc136"
+  name = "github.com/nats-io/nkeys"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "1546a3320a8f195a5b5c84aef8309377c2e411d5"
+  version = "v0.0.2"
+
+[[projects]]
+  digest = "1:599f3202ce0a754144ddc4be4c6df9c6ab27b1d722a63ede6b2e0c3a2cc338a8"
+  name = "github.com/nats-io/nuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "4b96681fa6d28dd0ab5fe79bac63b3a493d9ee94"
+  version = "v1.0.1"
+
+[[projects]]
   digest = "1:abcdbf03ca6ca13d3697e2186edc1f33863bbdac2b3a44dfa39015e8903f7409"
   name = "github.com/olekukonko/tablewriter"
   packages = ["."]
@@ -365,6 +407,14 @@
   pruneopts = "UT"
   revision = "c01d1270ff3e442a8a57cddc1c92dc1138598194"
   version = "v1.2.0"
+
+[[projects]]
+  digest = "1:7413525ee648f20b4181be7fe8103d0cb98be9e141926a03ee082dc207061e4e"
+  name = "github.com/phayes/freeport"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "b8543db493a5ed890c5499e935e2cad7504f3a04"
+  version = "1.0.2"
 
 [[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
@@ -467,9 +517,15 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3f3a05ae0b95893d90b9b3b5afdb79a9b3d96e4e36e099d841ae602e4aca0da8"
+  digest = "1:3196833b172b4c756bd125993f970cdbaa33f09cea679f2a0d15adee29bee1f2"
   name = "golang.org/x/crypto"
-  packages = ["ssh/terminal"]
+  packages = [
+    "bcrypt",
+    "blowfish",
+    "ed25519",
+    "ed25519/internal/edwards25519",
+    "ssh/terminal",
+  ]
   pruneopts = "UT"
   revision = "e3636079e1a4c1f337f212cc5cd2aca108f6c900"
 
@@ -516,11 +572,16 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d756534cd4124a2c7f9b349b2a70a63e53d4e32befae47d6a4bd938a64b92e14"
+  digest = "1:87adc6fb0e7ad61eba7aa6c21657d7b05fd6ed26b8d03b92c97c7d27e8a00fd7"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
+    "windows/registry",
+    "windows/svc",
+    "windows/svc/debug",
+    "windows/svc/eventlog",
+    "windows/svc/mgr",
   ]
   pruneopts = "UT"
   revision = "4e1fef5609515ec7a2cee7b5de30ba6d9b438cbf"
@@ -684,7 +745,11 @@
     "github.com/grpc-ecosystem/go-grpc-middleware/auth",
     "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus",
     "github.com/grpc-ecosystem/go-grpc-middleware/tags",
+    "github.com/nats-io/gnatsd/server",
+    "github.com/nats-io/gnatsd/test",
+    "github.com/nats-io/go-nats",
     "github.com/olekukonko/tablewriter",
+    "github.com/phayes/freeport",
     "github.com/satori/go.uuid",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",

@@ -1,13 +1,25 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["jwt.go"],
+    srcs = [
+        "jwt.go",
+        "test_clock.go",
+    ],
     importpath = "pixielabs.ai/pixielabs/src/utils/testingutils",
     visibility = ["//visibility:public"],
     deps = [
         "//src/services/common/proto:jwt_go_proto",
         "//src/services/common/utils:go_default_library",
         "@com_github_dgrijalva_jwt_go//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["test_clock_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "@com_github_stretchr_testify//assert:go_default_library",
     ],
 )

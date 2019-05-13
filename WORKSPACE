@@ -393,3 +393,33 @@ go_repository(
     commit = "3e8838d4614c12ab337e796548521744f921e05d",
     importpath = "github.com/graph-gophers/graphql-go",
 )
+
+go_repository(
+    name = "com_github_nats_io_go_nats",
+    commit = "70fe06cee50d4b6f98248d9675fb55f2a3aa7228",
+    importpath = "github.com/nats-io/go-nats",
+)
+
+go_repository(
+    name = "com_github_nats_io_nkeys",
+    commit = "1546a3320a8f195a5b5c84aef8309377c2e411d5",
+    importpath = "github.com/nats-io/nkeys",
+)
+
+go_repository(
+    name = "com_github_nats_io_nuid",
+    commit = "4b96681fa6d28dd0ab5fe79bac63b3a493d9ee94",
+    importpath = "github.com/nats-io/nuid",
+)
+
+go_repository(
+    name = "com_github_nats_io_gnatsd",
+    commit = "3e64f0bfd1fe4c2cf6599f064ff72fa7af439663",
+    importpath = "github.com/nats-io/gnatsd",
+)
+
+go_repository(
+    name = "com_github_phayes_freeport",
+    commit = "b8543db493a5ed890c5499e935e2cad7504f3a04",
+    importpath = "github.com/phayes/freeport",
+)

@@ -20,6 +20,12 @@ func main() {
 	common.CheckServiceFlags()
 	common.SetupServiceLogging()
 
+	mc, err := controllers.NewMessageBusController("pl-nats", "update_agent")
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to message bus")
+	}
+	defer mc.Close()
+
 	env, err := metadataenv.New()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
