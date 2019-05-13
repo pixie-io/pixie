@@ -21,36 +21,6 @@ DEFINE_string(http_response_header_filters, "Content-Type:json",
 
 namespace pl {
 namespace stirling {
-namespace {
-
-// The order here must be identical to HTTPTraceConnector::kElements, and it must start from 0.
-// TODO(yzhao): We probably could have some form of template construct to offload part of the
-// schema bookkeeping outside of kElements. Today we have a few major issues:
-// - When changing field order, we need to update 2 data structures: kElements,
-// DataElementsIndexes. Investigate if it's possible to use only one data structure.
-// - When runtime check failed, the error information does not show the field index.
-// Investigate if it's possible to enforce the check during compilation time.
-enum DataElementsIndexes {
-  kTimeStampNs = 0,
-  kTgid,
-  kPid,
-  kFd,
-  kEventType,
-  kSrcAddr,
-  kSrcPort,
-  kDstAddr,
-  kDstPort,
-  kHTTPMinorVersion,
-  kHTTPHeaders,
-  kHTTPReqMethod,
-  kHTTPReqPath,
-  kHTTPRespStatus,
-  kHTTPRespMessage,
-  kHTTPRespBody,
-  kHTTPRespLatencyNs,
-};
-
-}  // namespace
 
 bool HTTPTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
   // Some of this function is currently a placeholder for the demo.

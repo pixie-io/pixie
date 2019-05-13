@@ -157,3 +157,13 @@ pl_cc_test(
     srcs = ["types_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "http_trace_bpf_test",
+    srcs = ["http_trace_bpf_test.cc"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)

@@ -65,6 +65,33 @@ class HTTPTraceConnector : public SourceConnector {
               DataElement("http_resp_body", types::DataType::STRING),
               DataElement("http_resp_latency_ns", types::DataType::INT64)})};
 
+  // The order here must be identical to HTTPTraceConnector::kElements, and it must start from 0.
+  // TODO(yzhao): We probably could have some form of template construct to offload part of the
+  // schema bookkeeping outside of kElements. Today we have a few major issues:
+  // - When changing field order, we need to update 2 data structures: kElements,
+  // DataElementsIndexes. Investigate if it's possible to use only one data structure.
+  // - When runtime check failed, the error information does not show the field index.
+  // Investigate if it's possible to enforce the check during compilation time.
+  enum DataElementsIndexes {
+    kTimeStampNs = 0,
+    kTgid,
+    kPid,
+    kFd,
+    kEventType,
+    kSrcAddr,
+    kSrcPort,
+    kDstAddr,
+    kDstPort,
+    kHTTPMinorVersion,
+    kHTTPHeaders,
+    kHTTPReqMethod,
+    kHTTPReqPath,
+    kHTTPRespStatus,
+    kHTTPRespMessage,
+    kHTTPRespBody,
+    kHTTPRespLatencyNs,
+  };
+
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{5000};
 

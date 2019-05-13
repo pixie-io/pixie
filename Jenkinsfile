@@ -229,7 +229,7 @@ builders['Build & Test (bpf)'] = {
       unstash SRC_STASH_NAME
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
         docker.image(devDockerImageWithTag).inside(
-        '--privileged --volume /lib/modules:/lib/modules --volume /usr/src:/usr/src --volume /sys:/sys') {
+        '--privileged --pid=host --volume /lib/modules:/lib/modules --volume /usr/src:/usr/src --volume /sys:/sys') {
           sh 'scripts/bazel_fetch_retry.sh'
           sh "bazel test --compilation_mode=opt --strategy=TestRunner=standalone --config=bpf ${BAZEL_SRC_FILES_PATH}"
           sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
