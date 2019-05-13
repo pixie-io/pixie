@@ -10,6 +10,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/carnot/compiler"
+	pb "pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/proto"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 )
@@ -179,11 +180,27 @@ func TestCompiler_MissingTable(t *testing.T) {
 	query := strings.Join(queryLines, "\n")
 	compilerResultPB, err := c.Compile(relProto, tableName, query)
 	if err != nil {
-		log.Fatalln("Failed to compile:", err)
-		os.Exit(1)
+		t.Fatal("Failed to compiler:", err)
 	}
 	status := compilerResultPB.Status
 
 	assert.NotEqual(t, status.ErrCode, statuspb.OK)
 	// TODO(PL-518) test the error context.
+	var errorPB pb.CompilerErrorGroup
+	err = compiler.GetCompilerErrorContext(status, &errorPB)
+	if !assert.NoError(t, err) {
+		t.FailNow()
+	}
+
+	if !assert.Equal(t, 1, len(errorPB.Errors)) {
+		t.FailNow()
+	}
+	compilerError := errorPB.Errors[0]
+	lineColError := compilerError.GetLineColError()
+	if !assert.NotEqual(t, lineColError, nil) {
+		t.FailNow()
+	}
+	assert.Equal(t, lineColError.Line, uint64(1))
+	assert.Equal(t, lineColError.Column, uint64(15))
+	assert.Equal(t, lineColError.Message, "Table not_perf_and_http not found in the relation map")
 }

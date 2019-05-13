@@ -42,7 +42,10 @@ pl_cc_library(
 
 pl_go_library(
     name = "go_compiler_library",
-    srcs = ["compiler.go"],
+    srcs = [
+        "compiler.go",
+        "compiler_error_context.go",
+    ],
     cdeps = [":cc_compiler_export"],
     cgo = True,
     importpath = "pixielabs.ai/pixielabs/src/carnot/compiler",
@@ -50,9 +53,11 @@ pl_go_library(
     deps = [
         "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/proto:plan_pl_go_proto",
+        "//src/common/base/proto:status_pl_go_proto",
         "//src/shared/types/proto:types_pl_go_proto",
         "//src/table_store/proto:schema_pl_go_proto",
         "@com_github_gogo_protobuf//proto:go_default_library",
+        "@com_github_gogo_protobuf//types:go_default_library",
     ],
 )
 
@@ -61,6 +66,7 @@ go_test(
     srcs = ["compiler_test.go"],
     deps = [
         ":go_compiler_library",
+        "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/proto:plan_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
         "@com_github_gogo_protobuf//proto:go_default_library",
