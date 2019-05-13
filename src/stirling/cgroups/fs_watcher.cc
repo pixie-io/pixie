@@ -196,8 +196,9 @@ Status FSWatcher::HandleInotifyEvent(inotify_event *event) {
   FSEventType type = FSEventType::kUnknown;
   std::string_view event_name;
   if (event->len) {
-    event_name = std::string_view(event->name, event->len);
-    DCHECK_EQ(event->name[event->len], '\0');
+    auto event_length = strnlen(event->name, event->len);
+    DCHECK(event_length < event->len);
+    event_name = std::string_view(event->name, event_length + 1);
   }
 
   // Note that the events we are setting the type for are based on the
@@ -226,19 +227,26 @@ Status FSWatcher::ReadInotifyUpdates() {
   }
 
   char buffer[kBufferSize];
-  inotify_event *event = nullptr;
   int length = 0;
   size_t bytes_read = 0;
-  size_t index = 0;
+  size_t buffer_offset = 0;
 
-  while ((length = read(inotify_fd_, buffer + bytes_read, sizeof(buffer) - bytes_read) > 0)) {
+  while ((length = read(inotify_fd_, buffer + bytes_read, sizeof(buffer) - bytes_read)) > 0) {
     bytes_read += length;
-    // TODO(kgandhi): Need to refactor for case where a read is interrupted
-    // and support for partial reads.
-    while (index < bytes_read) {
-      event = reinterpret_cast<inotify_event *>(&buffer[index]);
+    while (buffer_offset < bytes_read) {
+      inotify_event *event = reinterpret_cast<inotify_event *>(&buffer[buffer_offset]);
+      // Check if the read is partial.
+      if (buffer_offset + sizeof(inotify_event) + event->len > bytes_read) {
+        // memcpy partial event to the beginning of the buffer.
+        int num_bytes_to_copy = bytes_read - buffer_offset;
+        std::memcpy(buffer, event, num_bytes_to_copy);
+        // Set bytes_read and bufer_offset due to memcpy to beginning of buffer.
+        bytes_read = num_bytes_to_copy;
+        buffer_offset = 0;
+        break;
+      }
       PL_RETURN_IF_ERROR(HandleInotifyEvent(event));
-      index += sizeof(inotify_event) + event->len;
+      buffer_offset += sizeof(inotify_event) + event->len;
     }
   }
 

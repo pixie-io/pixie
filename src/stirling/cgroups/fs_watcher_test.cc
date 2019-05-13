@@ -75,32 +75,61 @@ TEST_F(FSWatcherTest, fs_watcher_addwatch_removewatch) {
 }
 
 TEST_F(FSWatcherTest, fs_watcher_read_inotify_event) {
+  // Remove this directory if it already exists.
+  fs::remove_all(
+      GetPathToTestDataFile("testdata/cgroup_basic/sysfs/cgroup/cpu,cpuacct/kubepods/"
+                            "pod04bfccc8-6526-11e9-b815-42010a8a0135/"
+                            "3814823571b7857e7ef48e55414ade5d2d6c0c7d5f62476c9199bff741b5d31e"));
+
   fs::path procs_file = GetPathToTestDataFile(
       "testdata/cgroup_basic/sysfs/cgroup/cpu,cpuacct/"
       "kubepods/pod04bfccc8-6526-11e9-b815-42010a8a0135/"
-      "3814823571b7857e7ef48e55414ade5d2d6c0c7d5f62476c91"
-      "99bff741b5d31e/cgroup.procs");
+      "43cb2cc960eb486184381495e2f3f3071592f14e9270de586d46ff38b0bd2c2a/"
+      "cgroup.procs");
 
   EXPECT_OK(fs_watcher_.AddWatch(procs_file));
+
+  fs::path pod_dir = GetPathToTestDataFile(
+      "testdata/cgroup_basic/sysfs/cgroup/cpu,cpuacct/"
+      "kubepods/pod04bfccc8-6526-11e9-b815-42010a8a0135");
+
+  EXPECT_OK(fs_watcher_.AddWatch(pod_dir));
+
   EXPECT_FALSE(fs_watcher_.HasEvents());
 
   // Update procs file.
   fs::copy(GetPathToTestDataFile("testdata/cgroup_basic/sysfs/cgroup/cpu,cpuacct/"
                                  "kubepods/pod04bfccc8-6526-11e9-b815-42010a8a0135/"
-                                 "3814823571b7857e7ef48e55414ade5d2d6c0c7d5f62476c91"
-                                 "99bff741b5d31e/cgroup.procs"),
+                                 "43cb2cc960eb486184381495e2f3f3071592f14e9270de586d46ff38b0bd2c2a/"
+                                 "cgroup.procs"),
            tmp_dir_, fs::copy_options::overwrite_existing | fs::copy_options::recursive);
+
+  // Add containers
+  fs::copy(GetPathToTestDataFile("testdata/cgroup_basic_add_pid"),
+           GetPathToTestDataFile("testdata/cgroup_basic"),
+           fs::copy_options::overwrite_existing | fs::copy_options::recursive);
+
   EXPECT_EQ(0, fs_watcher_.NumEvents());
   EXPECT_OK(fs_watcher_.ReadInotifyUpdates());
   EXPECT_TRUE(fs_watcher_.HasEvents());
-  EXPECT_EQ(1, fs_watcher_.NumEvents());
+
+  EXPECT_EQ(2, fs_watcher_.NumEvents());
   auto fs_event = fs_watcher_.GetNextEvent().ConsumeValueOrDie();
   EXPECT_EQ(FSWatcher::FSEventType::kModifyFile, fs_event.type);
-  EXPECT_EQ(0, fs_watcher_.NumEvents());
+
+  EXPECT_EQ(1, fs_watcher_.NumEvents());
+  fs_event = fs_watcher_.GetNextEvent().ConsumeValueOrDie();
+  EXPECT_EQ(FSWatcher::FSEventType::kCreateDir, fs_event.type);
 
   // Reset watchers and FSNode tree. Assuming a rescan of the filesystem.
   EXPECT_OK(fs_watcher_.RemoveAllWatchers());
   EXPECT_EQ(0, fs_watcher_.NumWatchers());
+
+  // Remove the container directory that was created.
+  EXPECT_TRUE(fs::remove_all(
+      GetPathToTestDataFile("testdata/cgroup_basic/sysfs/cgroup/cpu,cpuacct/kubepods/"
+                            "pod04bfccc8-6526-11e9-b815-42010a8a0135/"
+                            "3814823571b7857e7ef48e55414ade5d2d6c0c7d5f62476c9199bff741b5d31e")));
 }
 
 }  // namespace fs_watcher
