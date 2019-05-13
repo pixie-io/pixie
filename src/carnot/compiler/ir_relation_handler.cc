@@ -25,7 +25,7 @@ std::vector<Status> IRRelationHandler::VerifyIRColumnsReady(IR* ir_graph) {
       auto col_node = static_cast<ColumnIR*>(node);
       if (!col_node->col_idx_set()) {
         exprs.push_back(
-            error::InvalidArgument("ColNode(id=$0) has not been validated.", col_node->id()));
+            col_node->CreateIRNodeError("ColNode(id=$0) has not been validated.", col_node->id()));
       }
     }
   }
@@ -52,7 +52,7 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateColExpr(
     ColumnIR* expr, const table_store::schema::Relation& parent_rel) {
   // Update the column properties from the parent_rel
   if (!parent_rel.HasColumn(expr->col_name())) {
-    return error::InvalidArgument("Couldn't find column $0 in relation.", expr->col_name());
+    return expr->CreateIRNodeError("Couldn't find column $0 in relation.", expr->col_name());
   }
   types::DataType data_type = parent_rel.GetColumnType(expr->col_name());
   int64_t col_idx = parent_rel.GetColumnIndex(expr->col_name());
@@ -121,8 +121,8 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateExpression(
       break;
     }
     default: {
-      return error::InvalidArgument("Didn't expect node of type $0 in expression evaluator.",
-                                    expr->type_string());
+      return expr->CreateIRNodeError("Didn't expect node of type $0 in expression evaluator.",
+                                     expr->type_string());
     }
   }
   return data_type;
@@ -168,10 +168,8 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::BlockingAggHandler(
         agg_rel.AddColumn(c->type(), c->col_name());
       }
     } else {
-      return IRUtils::CreateIRNodeError(
-          absl::StrFormat("Expected a 'Column' or 'List' for the by function body, got '%s",
-                          expr->type_string()),
-          *node);
+      return node->CreateIRNodeError(
+          "Expected a 'Column' or 'List' for the by function body, got '$0", expr->type_string());
     }
   } else {
     // if by_func not set, group by all.
@@ -230,10 +228,9 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::FilterHandler(
   PL_ASSIGN_OR_RETURN(auto expr, lambda_func->GetDefaultExpr());
   PL_ASSIGN_OR_RETURN(types::DataType col_type, EvaluateExpression(expr, parent_rel, true));
   if (col_type != types::DataType::BOOLEAN) {
-    return IRUtils::CreateIRNodeError(
-        absl::StrFormat("Only expecting Boolean type for the filter expression, not %s",
-                        types::DataType_Name(col_type)),
-        *lambda_func);
+    return lambda_func->CreateIRNodeError(
+        "Only expecting Boolean type for the filter expression, not $0",
+        types::DataType_Name(col_type));
   }
 
   PL_RETURN_IF_ERROR(filter_node->SetRelation(parent_rel));
@@ -260,9 +257,8 @@ StatusOr<IntIR*> IRRelationHandler::EvaluateCompilerFunction(const std::string& 
                                                              std::vector<IntIR*> evaled_args,
                                                              IRNode* parent_node) {
   if (evaled_args.size() != 2) {
-    return IRUtils::CreateIRNodeError(
-        absl::StrFormat("Expected 2 argument to %s call, got %d.", name, evaled_args.size()),
-        *parent_node);
+    return parent_node->CreateIRNodeError("Expected 2 argument to $0 call, got $1.", name,
+                                          evaled_args.size());
   }
   int64_t result = 0;
   // TODO(philkuz) Reviewer: any ideas how can we make this cleaner?
@@ -278,8 +274,7 @@ StatusOr<IntIR*> IRRelationHandler::EvaluateCompilerFunction(const std::string& 
   } else if (name == "plc.subtract") {
     result = evaled_args[0]->val() - evaled_args[1]->val();
   } else {
-    return IRUtils::CreateIRNodeError(
-        absl::StrFormat("Only allowing [multiply, add, subtract], not %s", name), *parent_node);
+    return parent_node->CreateIRNodeError("Only allowing [multiply, add, subtract], not $0", name);
   }
   PL_ASSIGN_OR_RETURN(IntIR * ir_result, parent_node->graph_ptr()->MakeNode<IntIR>());
   PL_RETURN_IF_ERROR(ir_result->Init(result, parent_node->ast_node()));
@@ -309,8 +304,8 @@ StatusOr<IntIR*> IRRelationHandler::EvaluateCompilerExpression(IRNode* node) {
     PL_RETURN_IF_ERROR(out_node->Init(time_repr, node->ast_node()));
     return out_node;
   }
-  return IRUtils::CreateIRNodeError(
-      absl::Substitute("Expected time constant or expression, not $0", node->type_string()), *node);
+  return node->CreateIRNodeError("Expected time constant or expression, not $0",
+                                 node->type_string());
 }
 
 StatusOr<table_store::schema::Relation> IRRelationHandler::RangeHandler(
@@ -325,7 +320,7 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::RangeHandler(
 
 Status IRRelationHandler::RelationUpdate(OperatorIR* node) {
   if (!node->HasParent()) {
-    return error::InvalidArgument(
+    return node->CreateIRNodeError(
         "The $0 node (id=$1) has no parent. This means that the relation was not initialized "
         "correctlly for $0",
         node->type_string(), node->id());
@@ -366,30 +361,32 @@ Status IRRelationHandler::RelationUpdate(OperatorIR* node) {
       PL_ASSIGN_OR_RETURN(rel, LimitHandler(node, parent_rel));
       break;
     }
-    default: { return error::InvalidArgument("Couldn't find handler for $0", node->type_string()); }
+    default: {
+      return node->CreateIRNodeError("Couldn't find handler for $0", node->type_string());
+    }
   }
   return node->SetRelation(rel);
 }
 
 Status IRRelationHandler::SetSourceRelation(IRNode* node) {
   if (node->type() != MemorySourceType) {
-    return error::InvalidArgument("Only implemented MemorySourceType, can't handle $0",
-                                  node->type_string());
+    return node->CreateIRNodeError("Only implemented MemorySourceType, can't handle $0",
+                                   node->type_string());
   }
   auto mem_node = static_cast<MemorySourceIR*>(node);
   auto table_node = mem_node->table_node();
   auto select = mem_node->select();
   if (table_node->type() != StringType) {
-    return error::InvalidArgument("table argument only implemented for string type.");
+    return node->CreateIRNodeError("table argument only implemented for string type.");
   }
   if (select->type() != ListType) {
-    return error::InvalidArgument("select argument only implemented for list type.");
+    return node->CreateIRNodeError("select argument only implemented for list type.");
   }
   auto table_str = static_cast<StringIR*>(table_node)->str();
   // get the table_str from the relation map
   auto relation_map_it = compiler_state_->relation_map()->find(table_str);
   if (relation_map_it == compiler_state_->relation_map()->end()) {
-    return error::InvalidArgument("Table $0 not found in the relation map", table_str);
+    return node->CreateIRNodeError("Table $0 not found in the relation map", table_str);
   }
   table_store::schema::Relation table_relation = relation_map_it->second;
 
@@ -398,7 +395,7 @@ Status IRRelationHandler::SetSourceRelation(IRNode* node) {
   std::vector<std::string> columns;
   for (auto& col_string_node : select_children) {
     if (col_string_node->type() != StringType) {
-      return error::InvalidArgument("select children should be strings.");
+      return col_string_node->CreateIRNodeError("select children should be strings.");
     }
     columns.push_back(static_cast<StringIR*>(col_string_node)->str());
   }

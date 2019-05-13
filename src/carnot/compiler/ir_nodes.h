@@ -9,6 +9,8 @@
 
 #include <pypa/ast/ast.hh>
 
+#include "src/carnot/compiler/compiler_error_context.h"
+#include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/operators.h"
 #include "src/common/base/base.h"
@@ -88,6 +90,18 @@ class IRNode {
   int64_t id() const { return id_; }
   IR* graph_ptr() { return graph_ptr_; }
   pypa::AstPtr ast_node() const { return ast_node_; }
+  /**
+   * @brief Create an error that incorporates line, column of ir node into the error message.
+   *
+   * @param err_msg
+   * @return Status
+   */
+  template <typename... Args>
+  Status CreateIRNodeError(Args... args) const {
+    compilerpb::CompilerErrorGroup context = LineColErrorPb(line(), col(), absl::Substitute(args...));
+    return Status(statuspb::INVALID_ARGUMENT, "",
+                  std::make_unique<compilerpb::CompilerErrorGroup>(context));
+  }
 
  protected:
   explicit IRNode(int64_t id, IRNodeType type, bool is_source)
@@ -107,6 +121,7 @@ class IRNode {
   bool is_source_ = false;
   pypa::AstPtr ast_node_;
 };
+
 
 /**
  * IR contains the intermediate representation of the query
@@ -769,32 +784,6 @@ class IRWalker {
   FilterWalkFn filter_walk_fn_;
   LimitWalkFn limit_walk_fn_;
   MemorySinkWalkFn memory_sink_walk_fn_;
-};
-class IRUtils {
- public:
-  /**
-   * @brief Create an error that incorporates line, column of ir node into the error message.
-   *
-   * @param err_msg
-   * @param ast
-   * @return Status
-   */
-  static Status CreateIRNodeError(const std::string& err_msg, const IRNode& node);
-
-  /**
-   * @brief Helper to get string out of a suspected node object. Fails if the node is not a
-   * StringIR.
-   *
-   * @param node
-   * @return StatusOr<std::string>
-   */
-  static StatusOr<std::string> GetStrIRValue(const IRNode& node) {
-    if (node.type() != IRNodeType::StringType) {
-      return CreateIRNodeError(
-          absl::StrFormat("Expected string IRNode type. Got %s", node.type_string()), node);
-    }
-    return static_cast<const StringIR&>(node).str();
-  }
 };
 }  // namespace compiler
 }  // namespace carnot

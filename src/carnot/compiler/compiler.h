@@ -36,10 +36,9 @@ class Compiler {
     // Check to make sure that the relation is set for this ir_node, otherwise it's not connected to
     // a Sink.
     if (!ir_node.IsRelationInit()) {
-      return IRUtils::CreateIRNodeError(
+      return ir_node.CreateIRNodeError(
           "Call doesn't connect to a Sink and thus isn't used. Please remove this call or add a "
-          "`Result()` call on this.",
-          ir_node);
+          "`Result()` call on this.");
     }
 
     // Add PlanNode.

@@ -87,9 +87,9 @@ TEST(CompilerErrorBuilder, MergedStatuses) {
   Status s2(s1.code(), s1.msg(), std::make_unique<compilerpb::CompilerErrorGroup>(error2));
   Status s3(s1.code(), s1.msg(), std::make_unique<compilerpb::CompilerErrorGroup>(error3));
   Status merged_statuses = MergeStatuses({s1, s2, s3});
-  EXPECT_EQ(
-      Status(s1.code(), s1.msg(), std::make_unique<compilerpb::CompilerErrorGroup>(merged_errors)),
-      merged_statuses);
+  EXPECT_EQ(Status(s1.code(), absl::StrJoin({s1.msg(), s2.msg(), s3.msg()}, "\n"),
+                   std::make_unique<compilerpb::CompilerErrorGroup>(merged_errors)),
+            merged_statuses);
 }
 }  // namespace compiler
 }  // namespace carnot

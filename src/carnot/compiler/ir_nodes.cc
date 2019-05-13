@@ -4,10 +4,6 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-Status IRUtils::CreateIRNodeError(const std::string& err_msg, const IRNode& node) {
-  return error::InvalidArgument("Line $0 Col $1 : $2", node.line(), node.col(), err_msg);
-}
-
 Status IR::AddEdge(int64_t from_node, int64_t to_node) {
   dag_.AddEdge(from_node, to_node);
   return Status::OK();
@@ -56,8 +52,7 @@ Status OperatorIR::ArgMapContainsKeys(const ArgMap& args) {
     }
   }
   if (missing_keys.size() != 0) {
-    return IRUtils::CreateIRNodeError(
-        absl::StrFormat("Missing args [%s] in call. ", absl::StrJoin(missing_keys, ",")), *this);
+    return CreateIRNodeError("Missing args [$0] in call. ", absl::StrJoin(missing_keys, ","));
   }
   return Status::OK();
 }
@@ -126,7 +121,11 @@ bool MemorySinkIR::HasLogicalRepr() const { return true; }
 
 Status MemorySinkIR::InitImpl(const ArgMap& args) {
   DCHECK(args.find("name") != args.end());
-  PL_ASSIGN_OR_RETURN(name_, IRUtils::GetStrIRValue(*(args.find("name")->second)));
+  IRNode* name_node = args.find("name")->second;
+  if (name_node->type() != IRNodeType::StringType) {
+    return name_node->CreateIRNodeError("Expected string. Got $0", name_node->type_string());
+  }
+  name_ = static_cast<StringIR*>(name_node)->str();
   name_set_ = true;
   return Status::OK();
 }
@@ -353,7 +352,7 @@ Status LimitIR::ToProto(carnotpb::Operator* op) const {
     col_pb->set_index(i);
   }
   if (!limit_value_set_) {
-    return IRUtils::CreateIRNodeError("Limit value not set properly.", *this);
+    return CreateIRNodeError("Limit value not set properly.");
   }
 
   pb->set_limit(limit_value_);
@@ -368,10 +367,8 @@ Status BlockingAggIR::InitImpl(const ArgMap& args) {
   IRNode* by_func = args.find("by")->second;
   IRNode* agg_func = args.find("fn")->second;
   if (agg_func->type() != IRNodeType::LambdaType) {
-    return IRUtils::CreateIRNodeError(
-        absl::StrFormat("Expected 'agg' argument of BlockingAggIR to be 'Lambda', got '%s'",
-                        agg_func->type_string()),
-        *agg_func);
+    return CreateIRNodeError("Expected 'agg' argument of BlockingAggIR to be 'Lambda', got '$0'",
+                             agg_func->type_string());
   }
 
   // If by_func_ is not a null pointer, then update the graph with it. Otherwise, continue onwards.
@@ -381,10 +378,8 @@ Status BlockingAggIR::InitImpl(const ArgMap& args) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, by_func));
     by_func_ = by_func;
   } else {
-    return IRUtils::CreateIRNodeError(
-        absl::StrFormat("Expected 'by' argument of AggIR to be 'Lambda', got '%s'",
-                        by_func->type_string()),
-        *by_func);
+    return CreateIRNodeError("Expected 'by' argument of BlockingAggIR to be 'Lambda', got '$0'",
+                             by_func->type_string());
   }
 
   agg_func_ = agg_func;

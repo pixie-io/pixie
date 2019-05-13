@@ -35,7 +35,9 @@ compilerpb::CompilerErrorGroup MergeGroups(
 Status MergeStatuses(const std::vector<Status>& statuses) {
   CHECK_NE(statuses.size(), 0UL);
   std::vector<compilerpb::CompilerErrorGroup> error_group_pbs;
+  std::vector<std::string> messages;
   for (const auto s : statuses) {
+    messages.push_back(s.msg());
     if (!s.has_context() || !s.context()->Is<compilerpb::CompilerErrorGroup>()) {
       continue;
     }
@@ -43,7 +45,10 @@ Status MergeStatuses(const std::vector<Status>& statuses) {
     s.context()->UnpackTo(&cur_error);
     error_group_pbs.push_back(cur_error);
   }
-  return Status(statuses[0].code(), statuses[0].msg(),
+  if (error_group_pbs.empty()) {
+    return Status(statuses[0].code(), absl::StrJoin(messages, "\n"));
+  }
+  return Status(statuses[0].code(), absl::StrJoin(messages, "\n"),
                 std::make_unique<compilerpb::CompilerErrorGroup>(MergeGroups(error_group_pbs)));
 }
 

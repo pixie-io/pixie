@@ -87,7 +87,7 @@ class StatusOr {
     if (ok()) {
       return "OK";
     }
-    return ::pl::error::CodeToString(code()) + " : " + msg();
+    return status().ToString();
   }
 
   template <typename U>

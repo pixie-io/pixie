@@ -3,14 +3,12 @@
 #include <string>
 #include <vector>
 
+#include "src/carnot/compiler/compiler_error_context.h"
 #include "src/carnot/compiler/ir_nodes.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
-Status IRVerifier::FormatErrorMsg(const std::string& err_msg, const IRNode* node) {
-  return error::InvalidArgument("Line $0, Col $1 : $2", node->line(), node->col(), err_msg);
-}
 
 Status IRVerifier::ExpectType(std::vector<IRNodeType> possible_types, const IRNode* test_node,
                               const std::string& err_msg_prefix) {
@@ -25,7 +23,7 @@ Status IRVerifier::ExpectType(std::vector<IRNodeType> possible_types, const IRNo
   auto msg = absl::Substitute("$0: For node with id $3, Expected [$1] Got $2.", err_msg_prefix,
                               absl::StrJoin(missing_exp_types_strings, "\n"),
                               test_node->type_string(), test_node->id());
-  return FormatErrorMsg(msg, test_node);
+  return test_node->CreateIRNodeError(msg);
 }
 
 Status IRVerifier::ExpectType(IRNodeType exp_type, const IRNode* test_node,
@@ -37,7 +35,7 @@ Status IRVerifier::ExpectOp(IRNode* test_node, std::string err_msg_prefix) {
   if (!test_node->IsOp()) {
     auto msg = absl::Substitute("$0: Expected an Operator Got $1", err_msg_prefix,
                                 test_node->type_string());
-    return FormatErrorMsg(msg, test_node);
+    return test_node->CreateIRNodeError(msg);
   }
   return Status::OK();
 }
@@ -83,7 +81,7 @@ Status IRVerifier::VerifyMap(IRNode* node) {
   auto lambda_func = static_cast<LambdaIR*>(map_node->lambda_func());
 
   if (!lambda_func->HasDictBody()) {
-    return FormatErrorMsg("Expected lambda func to have dictionary body.", lambda_func);
+    return lambda_func->CreateIRNodeError("Expected lambda func to have dictionary body.");
   }
   return Status::OK();
 }
@@ -98,7 +96,8 @@ Status IRVerifier::VerifyFilter(IRNode* node) {
   auto filter_func = static_cast<LambdaIR*>(filter_node->filter_func());
 
   if (filter_func->HasDictBody()) {
-    return FormatErrorMsg("Expected filter function to only contain an expression.", filter_func);
+    return filter_func->CreateIRNodeError(
+        "Expected filter function to only contain an expression.");
   }
   return Status::OK();
 }
@@ -118,7 +117,7 @@ Status IRVerifier::VerifySink(IRNode* node) {
       ExpectOp(sink_node->parent(), ExpString("MemorySinkIR", node->id(), "parent")));
 
   if (!sink_node->name_set()) {
-    return FormatErrorMsg("Expected sink to have name set.", sink_node);
+    return sink_node->CreateIRNodeError("Expected sink to have name set.");
   }
   return Status::OK();
 }
@@ -136,7 +135,7 @@ Status IRVerifier::VerifyBlockingAgg(IRNode* node) {
     // Check whether the `by` function is just a column
     auto by_func = static_cast<LambdaIR*>(agg_node->by_func());
     if (by_func->HasDictBody()) {
-      return FormatErrorMsg("Expected by function to only contain a column.", by_func);
+      return by_func->CreateIRNodeError("Expected by function to only contain a column.");
     }
     PL_ASSIGN_OR_RETURN(IRNode * by_body, by_func->GetDefaultExpr());
 
@@ -145,35 +144,33 @@ Status IRVerifier::VerifyBlockingAgg(IRNode* node) {
       auto msg = absl::Substitute(
           "BlockingAggIR: For node with id $1, Expected ColumnType or ListType Got $0.",
           by_body->type_string(), by_body->id());
-      return FormatErrorMsg(msg, node);
+      return node->CreateIRNodeError(msg);
     }
   } else if (agg_node->groups_set() || !agg_node->groups().empty()) {
     // Groups shouldn't be set.
-    return FormatErrorMsg("AggIR: by function is not set, shouldn't have groups set.", node);
+    return node->CreateIRNodeError("AggIR: by function is not set, shouldn't have groups set.");
   }
 
   // Check whether the `agg` fn is a dict body
   auto agg_func = static_cast<LambdaIR*>(agg_node->agg_func());
   if (!agg_func->HasDictBody()) {
-    return FormatErrorMsg(
+    return agg_func->CreateIRNodeError(
         "Expected agg function to map resulting column names to the expression that generates "
-        "them.",
-        agg_func);
+        "them.");
   }
   ColExpressionVector col_exprs = agg_func->col_exprs();
   for (const auto& entry : col_exprs) {
     // check that the expression type is a function and that it only has leaf nodes as children.
     if (entry.node->type() != IRNodeType::FuncType) {
-      return FormatErrorMsg(
-          absl::Substitute("Expected agg fns of the format \"udf(r.column_name)\". Object "
-                           "of type $0 not allowed.",
-                           entry.node->type_string()),
-          entry.node);
+      return entry.node->CreateIRNodeError(
+          "Expected agg fns of the format \"udf(r.column_name)\". Object "
+          "of type $0 not allowed.",
+          entry.node->type_string());
     }
     auto func = static_cast<FuncIR*>(entry.node);
     for (const auto& fn_child : func->args()) {
       if (fn_child->type() == IRNodeType::FuncType) {
-        return FormatErrorMsg("Nested aggregate expressions not allowed.", fn_child);
+        return fn_child->CreateIRNodeError("Nested aggregate expressions not allowed.");
       }
     }
   }
@@ -208,8 +205,7 @@ Status IRVerifier::VerifyNodeConnections(IRNode* node) {
       return VerifyLimit(node);
     }
     default: {
-      return IRUtils::CreateIRNodeError(
-          absl::StrFormat("Couldn't find verify node of type %s", node->type_string()), *node);
+      return node->CreateIRNodeError("Couldn't find verify node of type $0", node->type_string());
     }
   }
 }
@@ -237,18 +233,10 @@ Status IRVerifier::VerifyLineColGraph(const IR& ir_graph) {
       statuses.push_back(line_col_status);
     }
   }
-  return CombineStatuses(statuses);
-}
-
-Status IRVerifier::CombineStatuses(const std::vector<Status>& statuses) {
-  if (!statuses.empty()) {
-    std::vector<std::string> msgs;
-    for (const auto& s : statuses) {
-      msgs.push_back(s.msg());
-    }
-    return Status(statuses[0].code(), absl::StrJoin(msgs, "\n"));
+  if (statuses.empty()) {
+    return Status::OK();
   }
-  return Status::OK();
+  return MergeStatuses(statuses);
 }
 
 /**
@@ -275,7 +263,10 @@ Status IRVerifier::VerifyGraphConnections(const IR& ir_graph) {
         error::InvalidArgument("No Result() call found in the query. You must end the query with a "
                                "Result call to save something out."));
   }
-  return CombineStatuses(statuses);
+  if (statuses.empty()) {
+    return Status::OK();
+  }
+  return MergeStatuses(statuses);
 }
 }  // namespace compiler
 }  // namespace carnot
