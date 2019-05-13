@@ -98,7 +98,8 @@ class IRNode {
    */
   template <typename... Args>
   Status CreateIRNodeError(Args... args) const {
-    compilerpb::CompilerErrorGroup context = LineColErrorPb(line(), col(), absl::Substitute(args...));
+    compilerpb::CompilerErrorGroup context =
+        LineColErrorPb(line(), col(), absl::Substitute(args...));
     return Status(statuspb::INVALID_ARGUMENT, "",
                   std::make_unique<compilerpb::CompilerErrorGroup>(context));
   }
@@ -121,7 +122,6 @@ class IRNode {
   bool is_source_ = false;
   pypa::AstPtr ast_node_;
 };
-
 
 /**
  * IR contains the intermediate representation of the query
