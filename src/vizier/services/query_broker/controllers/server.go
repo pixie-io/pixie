@@ -35,3 +35,9 @@ func (s *Server) GetSchemas(ctx context.Context, req *querybrokerpb.SchemaReques
 func (s *Server) GetAgentInfo(ctx context.Context, req *querybrokerpb.AgentInfoRequest) (*querybrokerpb.AgentInfoResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "Not implemented yet")
 }
+
+// ReceiveAgentQueryResult gets the query result from an agent and stores the results until all
+// relevant agents have responded.
+func (s *Server) ReceiveAgentQueryResult(ctx context.Context, req *querybrokerpb.AgentQueryResultRequest) (*querybrokerpb.AgentQueryResultResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "Not implemented yet")
+}

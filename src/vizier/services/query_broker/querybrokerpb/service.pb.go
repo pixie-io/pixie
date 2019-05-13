@@ -58,7 +58,7 @@ var AgentState_value = map[string]int32{
 }
 
 func (AgentState) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_service_74498adc7d91d4ee, []int{0}
+	return fileDescriptor_service_43b4031083582f25, []int{0}
 }
 
 type Schema struct {
@@ -68,7 +68,7 @@ type Schema struct {
 func (m *Schema) Reset()      { *m = Schema{} }
 func (*Schema) ProtoMessage() {}
 func (*Schema) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_74498adc7d91d4ee, []int{0}
+	return fileDescriptor_service_43b4031083582f25, []int{0}
 }
 func (m *Schema) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -110,7 +110,7 @@ type SchemaRequest struct {
 func (m *SchemaRequest) Reset()      { *m = SchemaRequest{} }
 func (*SchemaRequest) ProtoMessage() {}
 func (*SchemaRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_74498adc7d91d4ee, []int{1}
+	return fileDescriptor_service_43b4031083582f25, []int{1}
 }
 func (m *SchemaRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -146,7 +146,7 @@ type SchemaResponse struct {
 func (m *SchemaResponse) Reset()      { *m = SchemaResponse{} }
 func (*SchemaResponse) ProtoMessage() {}
 func (*SchemaResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_74498adc7d91d4ee, []int{2}
+	return fileDescriptor_service_43b4031083582f25, []int{2}
 }
 func (m *SchemaResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -190,7 +190,7 @@ type SchemaResponse_SchemaByAgent struct {
 func (m *SchemaResponse_SchemaByAgent) Reset()      { *m = SchemaResponse_SchemaByAgent{} }
 func (*SchemaResponse_SchemaByAgent) ProtoMessage() {}
 func (*SchemaResponse_SchemaByAgent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_74498adc7d91d4ee, []int{2, 0}
+	return fileDescriptor_service_43b4031083582f25, []int{2, 0}
 }
 func (m *SchemaResponse_SchemaByAgent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -239,7 +239,7 @@ type AgentInfoRequest struct {
 func (m *AgentInfoRequest) Reset()      { *m = AgentInfoRequest{} }
 func (*AgentInfoRequest) ProtoMessage() {}
 func (*AgentInfoRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_74498adc7d91d4ee, []int{3}
+	return fileDescriptor_service_43b4031083582f25, []int{3}
 }
 func (m *AgentInfoRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -275,7 +275,7 @@ type AgentInfoResponse struct {
 func (m *AgentInfoResponse) Reset()      { *m = AgentInfoResponse{} }
 func (*AgentInfoResponse) ProtoMessage() {}
 func (*AgentInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_74498adc7d91d4ee, []int{4}
+	return fileDescriptor_service_43b4031083582f25, []int{4}
 }
 func (m *AgentInfoResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -312,15 +312,16 @@ func (m *AgentInfoResponse) GetInfo() []*AgentStatus {
 }
 
 type AgentStatus struct {
-	Info            *AgentInfo `protobuf:"bytes,1,opt,name=info,proto3" json:"info,omitempty"`
-	LastHeartbeatNs int64      `protobuf:"varint,2,opt,name=last_heartbeat_ns,json=lastHeartbeatNs,proto3" json:"last_heartbeat_ns,omitempty"`
-	State           AgentState `protobuf:"varint,3,opt,name=state,proto3,enum=pl.vizier.services.query_broker.querybrokerpb.AgentState" json:"state,omitempty"`
+	Info              *AgentInfo `protobuf:"bytes,1,opt,name=info,proto3" json:"info,omitempty"`
+	LastHeartbeatNs   int64      `protobuf:"varint,2,opt,name=last_heartbeat_ns,json=lastHeartbeatNs,proto3" json:"last_heartbeat_ns,omitempty"`
+	AgentCreateTimeNs int64      `protobuf:"varint,3,opt,name=agent_create_time_ns,json=agentCreateTimeNs,proto3" json:"agent_create_time_ns,omitempty"`
+	State             AgentState `protobuf:"varint,4,opt,name=state,proto3,enum=pl.vizier.services.query_broker.querybrokerpb.AgentState" json:"state,omitempty"`
 }
 
 func (m *AgentStatus) Reset()      { *m = AgentStatus{} }
 func (*AgentStatus) ProtoMessage() {}
 func (*AgentStatus) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_74498adc7d91d4ee, []int{5}
+	return fileDescriptor_service_43b4031083582f25, []int{5}
 }
 func (m *AgentStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -363,6 +364,13 @@ func (m *AgentStatus) GetLastHeartbeatNs() int64 {
 	return 0
 }
 
+func (m *AgentStatus) GetAgentCreateTimeNs() int64 {
+	if m != nil {
+		return m.AgentCreateTimeNs
+	}
+	return 0
+}
+
 func (m *AgentStatus) GetState() AgentState {
 	if m != nil {
 		return m.State
@@ -378,7 +386,7 @@ type AgentInfo struct {
 func (m *AgentInfo) Reset()      { *m = AgentInfo{} }
 func (*AgentInfo) ProtoMessage() {}
 func (*AgentInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_74498adc7d91d4ee, []int{6}
+	return fileDescriptor_service_43b4031083582f25, []int{6}
 }
 func (m *AgentInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -428,7 +436,7 @@ type HostInfo struct {
 func (m *HostInfo) Reset()      { *m = HostInfo{} }
 func (*HostInfo) ProtoMessage() {}
 func (*HostInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_74498adc7d91d4ee, []int{7}
+	return fileDescriptor_service_43b4031083582f25, []int{7}
 }
 func (m *HostInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -465,14 +473,13 @@ func (m *HostInfo) GetHostname() string {
 }
 
 type QueryRequest struct {
-	QueryID  *proto2.UUID `protobuf:"bytes,1,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
-	QueryStr string       `protobuf:"bytes,2,opt,name=query_str,json=queryStr,proto3" json:"query_str,omitempty"`
+	QueryStr string `protobuf:"bytes,1,opt,name=query_str,json=queryStr,proto3" json:"query_str,omitempty"`
 }
 
 func (m *QueryRequest) Reset()      { *m = QueryRequest{} }
 func (*QueryRequest) ProtoMessage() {}
 func (*QueryRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_74498adc7d91d4ee, []int{8}
+	return fileDescriptor_service_43b4031083582f25, []int{8}
 }
 func (m *QueryRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -501,13 +508,6 @@ func (m *QueryRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryRequest proto.InternalMessageInfo
 
-func (m *QueryRequest) GetQueryID() *proto2.UUID {
-	if m != nil {
-		return m.QueryID
-	}
-	return nil
-}
-
 func (m *QueryRequest) GetQueryStr() string {
 	if m != nil {
 		return m.QueryStr
@@ -524,7 +524,7 @@ type AgentQueryResponse struct {
 func (m *AgentQueryResponse) Reset()      { *m = AgentQueryResponse{} }
 func (*AgentQueryResponse) ProtoMessage() {}
 func (*AgentQueryResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_74498adc7d91d4ee, []int{9}
+	return fileDescriptor_service_43b4031083582f25, []int{9}
 }
 func (m *AgentQueryResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -574,6 +574,92 @@ func (m *AgentQueryResponse) GetQueryResult() *proto4.QueryResult {
 	return nil
 }
 
+type AgentQueryResultRequest struct {
+	AgentID *proto2.UUID        `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	Result  *AgentQueryResponse `protobuf:"bytes,2,opt,name=result,proto3" json:"result,omitempty"`
+}
+
+func (m *AgentQueryResultRequest) Reset()      { *m = AgentQueryResultRequest{} }
+func (*AgentQueryResultRequest) ProtoMessage() {}
+func (*AgentQueryResultRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_43b4031083582f25, []int{10}
+}
+func (m *AgentQueryResultRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *AgentQueryResultRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_AgentQueryResultRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *AgentQueryResultRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AgentQueryResultRequest.Merge(dst, src)
+}
+func (m *AgentQueryResultRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *AgentQueryResultRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_AgentQueryResultRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AgentQueryResultRequest proto.InternalMessageInfo
+
+func (m *AgentQueryResultRequest) GetAgentID() *proto2.UUID {
+	if m != nil {
+		return m.AgentID
+	}
+	return nil
+}
+
+func (m *AgentQueryResultRequest) GetResult() *AgentQueryResponse {
+	if m != nil {
+		return m.Result
+	}
+	return nil
+}
+
+type AgentQueryResultResponse struct {
+}
+
+func (m *AgentQueryResultResponse) Reset()      { *m = AgentQueryResultResponse{} }
+func (*AgentQueryResultResponse) ProtoMessage() {}
+func (*AgentQueryResultResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_service_43b4031083582f25, []int{11}
+}
+func (m *AgentQueryResultResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *AgentQueryResultResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_AgentQueryResultResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (dst *AgentQueryResultResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AgentQueryResultResponse.Merge(dst, src)
+}
+func (m *AgentQueryResultResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *AgentQueryResultResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_AgentQueryResultResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AgentQueryResultResponse proto.InternalMessageInfo
+
 type VizierQueryResponse struct {
 	Responses []*VizierQueryResponse_ResponseByAgent `protobuf:"bytes,1,rep,name=responses,proto3" json:"responses,omitempty"`
 }
@@ -581,7 +667,7 @@ type VizierQueryResponse struct {
 func (m *VizierQueryResponse) Reset()      { *m = VizierQueryResponse{} }
 func (*VizierQueryResponse) ProtoMessage() {}
 func (*VizierQueryResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_74498adc7d91d4ee, []int{10}
+	return fileDescriptor_service_43b4031083582f25, []int{12}
 }
 func (m *VizierQueryResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -625,7 +711,7 @@ type VizierQueryResponse_ResponseByAgent struct {
 func (m *VizierQueryResponse_ResponseByAgent) Reset()      { *m = VizierQueryResponse_ResponseByAgent{} }
 func (*VizierQueryResponse_ResponseByAgent) ProtoMessage() {}
 func (*VizierQueryResponse_ResponseByAgent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_service_74498adc7d91d4ee, []int{10, 0}
+	return fileDescriptor_service_43b4031083582f25, []int{12, 0}
 }
 func (m *VizierQueryResponse_ResponseByAgent) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -680,6 +766,8 @@ func init() {
 	proto.RegisterType((*HostInfo)(nil), "pl.vizier.services.query_broker.querybrokerpb.HostInfo")
 	proto.RegisterType((*QueryRequest)(nil), "pl.vizier.services.query_broker.querybrokerpb.QueryRequest")
 	proto.RegisterType((*AgentQueryResponse)(nil), "pl.vizier.services.query_broker.querybrokerpb.AgentQueryResponse")
+	proto.RegisterType((*AgentQueryResultRequest)(nil), "pl.vizier.services.query_broker.querybrokerpb.AgentQueryResultRequest")
+	proto.RegisterType((*AgentQueryResultResponse)(nil), "pl.vizier.services.query_broker.querybrokerpb.AgentQueryResultResponse")
 	proto.RegisterType((*VizierQueryResponse)(nil), "pl.vizier.services.query_broker.querybrokerpb.VizierQueryResponse")
 	proto.RegisterType((*VizierQueryResponse_ResponseByAgent)(nil), "pl.vizier.services.query_broker.querybrokerpb.VizierQueryResponse.ResponseByAgent")
 	proto.RegisterEnum("pl.vizier.services.query_broker.querybrokerpb.AgentState", AgentState_name, AgentState_value)
@@ -872,6 +960,9 @@ func (this *AgentStatus) Equal(that interface{}) bool {
 	if this.LastHeartbeatNs != that1.LastHeartbeatNs {
 		return false
 	}
+	if this.AgentCreateTimeNs != that1.AgentCreateTimeNs {
+		return false
+	}
 	if this.State != that1.State {
 		return false
 	}
@@ -947,9 +1038,6 @@ func (this *QueryRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.QueryID.Equal(that1.QueryID) {
-		return false
-	}
 	if this.QueryStr != that1.QueryStr {
 		return false
 	}
@@ -981,6 +1069,54 @@ func (this *AgentQueryResponse) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.QueryResult.Equal(that1.QueryResult) {
+		return false
+	}
+	return true
+}
+func (this *AgentQueryResultRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*AgentQueryResultRequest)
+	if !ok {
+		that2, ok := that.(AgentQueryResultRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.AgentID.Equal(that1.AgentID) {
+		return false
+	}
+	if !this.Result.Equal(that1.Result) {
+		return false
+	}
+	return true
+}
+func (this *AgentQueryResultResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*AgentQueryResultResponse)
+	if !ok {
+		that2, ok := that.(AgentQueryResultResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
 		return false
 	}
 	return true
@@ -1114,12 +1250,13 @@ func (this *AgentStatus) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 8)
 	s = append(s, "&querybrokerpb.AgentStatus{")
 	if this.Info != nil {
 		s = append(s, "Info: "+fmt.Sprintf("%#v", this.Info)+",\n")
 	}
 	s = append(s, "LastHeartbeatNs: "+fmt.Sprintf("%#v", this.LastHeartbeatNs)+",\n")
+	s = append(s, "AgentCreateTimeNs: "+fmt.Sprintf("%#v", this.AgentCreateTimeNs)+",\n")
 	s = append(s, "State: "+fmt.Sprintf("%#v", this.State)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -1153,11 +1290,8 @@ func (this *QueryRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 5)
 	s = append(s, "&querybrokerpb.QueryRequest{")
-	if this.QueryID != nil {
-		s = append(s, "QueryID: "+fmt.Sprintf("%#v", this.QueryID)+",\n")
-	}
 	s = append(s, "QueryStr: "+fmt.Sprintf("%#v", this.QueryStr)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -1177,6 +1311,30 @@ func (this *AgentQueryResponse) GoString() string {
 	if this.QueryResult != nil {
 		s = append(s, "QueryResult: "+fmt.Sprintf("%#v", this.QueryResult)+",\n")
 	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *AgentQueryResultRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&querybrokerpb.AgentQueryResultRequest{")
+	if this.AgentID != nil {
+		s = append(s, "AgentID: "+fmt.Sprintf("%#v", this.AgentID)+",\n")
+	}
+	if this.Result != nil {
+		s = append(s, "Result: "+fmt.Sprintf("%#v", this.Result)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *AgentQueryResultResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&querybrokerpb.AgentQueryResultResponse{")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1231,6 +1389,7 @@ type QueryBrokerServiceClient interface {
 	GetAgentInfo(ctx context.Context, in *AgentInfoRequest, opts ...grpc.CallOption) (*AgentInfoResponse, error)
 	ExecuteQuery(ctx context.Context, in *QueryRequest, opts ...grpc.CallOption) (*VizierQueryResponse, error)
 	GetSchemas(ctx context.Context, in *SchemaRequest, opts ...grpc.CallOption) (*SchemaResponse, error)
+	ReceiveAgentQueryResult(ctx context.Context, in *AgentQueryResultRequest, opts ...grpc.CallOption) (*AgentQueryResultResponse, error)
 }
 
 type queryBrokerServiceClient struct {
@@ -1268,11 +1427,21 @@ func (c *queryBrokerServiceClient) GetSchemas(ctx context.Context, in *SchemaReq
 	return out, nil
 }
 
+func (c *queryBrokerServiceClient) ReceiveAgentQueryResult(ctx context.Context, in *AgentQueryResultRequest, opts ...grpc.CallOption) (*AgentQueryResultResponse, error) {
+	out := new(AgentQueryResultResponse)
+	err := c.cc.Invoke(ctx, "/pl.vizier.services.query_broker.querybrokerpb.QueryBrokerService/ReceiveAgentQueryResult", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // QueryBrokerServiceServer is the server API for QueryBrokerService service.
 type QueryBrokerServiceServer interface {
 	GetAgentInfo(context.Context, *AgentInfoRequest) (*AgentInfoResponse, error)
 	ExecuteQuery(context.Context, *QueryRequest) (*VizierQueryResponse, error)
 	GetSchemas(context.Context, *SchemaRequest) (*SchemaResponse, error)
+	ReceiveAgentQueryResult(context.Context, *AgentQueryResultRequest) (*AgentQueryResultResponse, error)
 }
 
 func RegisterQueryBrokerServiceServer(s *grpc.Server, srv QueryBrokerServiceServer) {
@@ -1333,6 +1502,24 @@ func _QueryBrokerService_GetSchemas_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _QueryBrokerService_ReceiveAgentQueryResult_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AgentQueryResultRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(QueryBrokerServiceServer).ReceiveAgentQueryResult(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.vizier.services.query_broker.querybrokerpb.QueryBrokerService/ReceiveAgentQueryResult",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(QueryBrokerServiceServer).ReceiveAgentQueryResult(ctx, req.(*AgentQueryResultRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _QueryBrokerService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "pl.vizier.services.query_broker.querybrokerpb.QueryBrokerService",
 	HandlerType: (*QueryBrokerServiceServer)(nil),
@@ -1348,6 +1535,10 @@ var _QueryBrokerService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetSchemas",
 			Handler:    _QueryBrokerService_GetSchemas_Handler,
+		},
+		{
+			MethodName: "ReceiveAgentQueryResult",
+			Handler:    _QueryBrokerService_ReceiveAgentQueryResult_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -1548,8 +1739,13 @@ func (m *AgentStatus) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.LastHeartbeatNs))
 	}
-	if m.State != 0 {
+	if m.AgentCreateTimeNs != 0 {
 		dAtA[i] = 0x18
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.AgentCreateTimeNs))
+	}
+	if m.State != 0 {
+		dAtA[i] = 0x20
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.State))
 	}
@@ -1633,18 +1829,8 @@ func (m *QueryRequest) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.QueryID != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintService(dAtA, i, uint64(m.QueryID.Size()))
-		n6, err := m.QueryID.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n6
-	}
 	if len(m.QueryStr) > 0 {
-		dAtA[i] = 0x12
+		dAtA[i] = 0xa
 		i++
 		i = encodeVarintService(dAtA, i, uint64(len(m.QueryStr)))
 		i += copy(dAtA[i:], m.QueryStr)
@@ -1671,32 +1857,88 @@ func (m *AgentQueryResponse) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.Status.Size()))
-		n7, err := m.Status.MarshalTo(dAtA[i:])
+		n6, err := m.Status.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n7
+		i += n6
 	}
 	if m.QueryID != nil {
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.QueryID.Size()))
-		n8, err := m.QueryID.MarshalTo(dAtA[i:])
+		n7, err := m.QueryID.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n8
+		i += n7
 	}
 	if m.QueryResult != nil {
 		dAtA[i] = 0x1a
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.QueryResult.Size()))
-		n9, err := m.QueryResult.MarshalTo(dAtA[i:])
+		n8, err := m.QueryResult.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n8
+	}
+	return i, nil
+}
+
+func (m *AgentQueryResultRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AgentQueryResultRequest) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if m.AgentID != nil {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.AgentID.Size()))
+		n9, err := m.AgentID.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n9
 	}
+	if m.Result != nil {
+		dAtA[i] = 0x12
+		i++
+		i = encodeVarintService(dAtA, i, uint64(m.Result.Size()))
+		n10, err := m.Result.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n10
+	}
+	return i, nil
+}
+
+func (m *AgentQueryResultResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AgentQueryResultResponse) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
 	return i, nil
 }
 
@@ -1749,21 +1991,21 @@ func (m *VizierQueryResponse_ResponseByAgent) MarshalTo(dAtA []byte) (int, error
 		dAtA[i] = 0xa
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.AgentID.Size()))
-		n10, err := m.AgentID.MarshalTo(dAtA[i:])
+		n11, err := m.AgentID.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n10
+		i += n11
 	}
 	if m.Response != nil {
 		dAtA[i] = 0x12
 		i++
 		i = encodeVarintService(dAtA, i, uint64(m.Response.Size()))
-		n11, err := m.Response.MarshalTo(dAtA[i:])
+		n12, err := m.Response.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n11
+		i += n12
 	}
 	return i, nil
 }
@@ -1870,6 +2112,9 @@ func (m *AgentStatus) Size() (n int) {
 	if m.LastHeartbeatNs != 0 {
 		n += 1 + sovService(uint64(m.LastHeartbeatNs))
 	}
+	if m.AgentCreateTimeNs != 0 {
+		n += 1 + sovService(uint64(m.AgentCreateTimeNs))
+	}
 	if m.State != 0 {
 		n += 1 + sovService(uint64(m.State))
 	}
@@ -1912,10 +2157,6 @@ func (m *QueryRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.QueryID != nil {
-		l = m.QueryID.Size()
-		n += 1 + l + sovService(uint64(l))
-	}
 	l = len(m.QueryStr)
 	if l > 0 {
 		n += 1 + l + sovService(uint64(l))
@@ -1941,6 +2182,32 @@ func (m *AgentQueryResponse) Size() (n int) {
 		l = m.QueryResult.Size()
 		n += 1 + l + sovService(uint64(l))
 	}
+	return n
+}
+
+func (m *AgentQueryResultRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.AgentID != nil {
+		l = m.AgentID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.Result != nil {
+		l = m.Result.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *AgentQueryResultResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
 	return n
 }
 
@@ -2055,6 +2322,7 @@ func (this *AgentStatus) String() string {
 	s := strings.Join([]string{`&AgentStatus{`,
 		`Info:` + strings.Replace(fmt.Sprintf("%v", this.Info), "AgentInfo", "AgentInfo", 1) + `,`,
 		`LastHeartbeatNs:` + fmt.Sprintf("%v", this.LastHeartbeatNs) + `,`,
+		`AgentCreateTimeNs:` + fmt.Sprintf("%v", this.AgentCreateTimeNs) + `,`,
 		`State:` + fmt.Sprintf("%v", this.State) + `,`,
 		`}`,
 	}, "")
@@ -2086,7 +2354,6 @@ func (this *QueryRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&QueryRequest{`,
-		`QueryID:` + strings.Replace(fmt.Sprintf("%v", this.QueryID), "UUID", "proto2.UUID", 1) + `,`,
 		`QueryStr:` + fmt.Sprintf("%v", this.QueryStr) + `,`,
 		`}`,
 	}, "")
@@ -2100,6 +2367,26 @@ func (this *AgentQueryResponse) String() string {
 		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto3.Status", 1) + `,`,
 		`QueryID:` + strings.Replace(fmt.Sprintf("%v", this.QueryID), "UUID", "proto2.UUID", 1) + `,`,
 		`QueryResult:` + strings.Replace(fmt.Sprintf("%v", this.QueryResult), "QueryResult", "proto4.QueryResult", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AgentQueryResultRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AgentQueryResultRequest{`,
+		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto2.UUID", 1) + `,`,
+		`Result:` + strings.Replace(fmt.Sprintf("%v", this.Result), "AgentQueryResponse", "AgentQueryResponse", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AgentQueryResultResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&AgentQueryResultResponse{`,
 		`}`,
 	}, "")
 	return s
@@ -2675,6 +2962,25 @@ func (m *AgentStatus) Unmarshal(dAtA []byte) error {
 			}
 		case 3:
 			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AgentCreateTimeNs", wireType)
+			}
+			m.AgentCreateTimeNs = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.AgentCreateTimeNs |= (int64(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field State", wireType)
 			}
 			m.State = 0
@@ -2939,39 +3245,6 @@ func (m *QueryRequest) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field QueryID", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowService
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthService
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.QueryID == nil {
-				m.QueryID = &proto2.UUID{}
-			}
-			if err := m.QueryID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field QueryStr", wireType)
 			}
 			var stringLen uint64
@@ -3148,6 +3421,172 @@ func (m *AgentQueryResponse) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AgentQueryResultRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AgentQueryResultRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AgentQueryResultRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AgentID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.AgentID == nil {
+				m.AgentID = &proto2.UUID{}
+			}
+			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Result", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Result == nil {
+				m.Result = &AgentQueryResponse{}
+			}
+			if err := m.Result.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AgentQueryResultResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AgentQueryResultResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AgentQueryResultResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
 		default:
 			iNdEx = preIndex
 			skippy, err := skipService(dAtA[iNdEx:])
@@ -3472,67 +3911,72 @@ var (
 )
 
 func init() {
-	proto.RegisterFile("src/vizier/services/query_broker/querybrokerpb/service.proto", fileDescriptor_service_74498adc7d91d4ee)
+	proto.RegisterFile("src/vizier/services/query_broker/querybrokerpb/service.proto", fileDescriptor_service_43b4031083582f25)
 }
 
-var fileDescriptor_service_74498adc7d91d4ee = []byte{
-	// 914 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x56, 0x41, 0x6f, 0x1b, 0x45,
-	0x14, 0xde, 0xb1, 0x21, 0x8d, 0x9f, 0xd3, 0xda, 0x9d, 0x1c, 0xb0, 0x0c, 0xda, 0x86, 0x15, 0x42,
-	0x51, 0x51, 0xd7, 0x92, 0x11, 0x2a, 0xd0, 0xa2, 0x62, 0x37, 0x56, 0x62, 0xb5, 0x6c, 0x60, 0xd7,
-	0x29, 0x02, 0x09, 0xad, 0x76, 0xed, 0x49, 0xbc, 0xc2, 0xde, 0xd9, 0xec, 0xcc, 0x56, 0x4d, 0x4f,
-	0x5c, 0x11, 0x17, 0x10, 0x07, 0x24, 0x2e, 0x5c, 0xe1, 0xcc, 0x9d, 0x33, 0x07, 0x0e, 0x39, 0xe6,
-	0x84, 0x88, 0x73, 0xe1, 0xd8, 0x9f, 0x80, 0x76, 0x66, 0xd6, 0x5e, 0x47, 0x48, 0x95, 0x37, 0x27,
-	0xcf, 0x7b, 0xf3, 0xbd, 0xef, 0x7d, 0xef, 0xcd, 0x9b, 0x59, 0xc3, 0x7d, 0x16, 0x0f, 0x5b, 0x4f,
-	0x83, 0xe7, 0x01, 0x89, 0x5b, 0x8c, 0xc4, 0x4f, 0x83, 0x21, 0x61, 0xad, 0xe3, 0x84, 0xc4, 0x27,
-	0xae, 0x1f, 0xd3, 0xaf, 0x49, 0x2c, 0x0d, 0xb9, 0x8e, 0xfc, 0x0c, 0x63, 0x46, 0x31, 0xe5, 0x14,
-	0xdf, 0x89, 0x26, 0xa6, 0x0c, 0x36, 0xb3, 0x60, 0x33, 0x1f, 0x6c, 0x2e, 0x05, 0x37, 0xef, 0x1c,
-	0x05, 0x7c, 0x9c, 0xf8, 0xe6, 0x90, 0x4e, 0x5b, 0x47, 0xf4, 0x88, 0xb6, 0x04, 0x8b, 0x9f, 0x1c,
-	0x0a, 0x4b, 0x18, 0x62, 0x25, 0xd9, 0x9b, 0x6f, 0xa5, 0xda, 0x86, 0x5e, 0x1c, 0x52, 0x2e, 0x91,
-	0x4a, 0x58, 0x4c, 0x58, 0x32, 0xe1, 0x4c, 0xa1, 0xb6, 0x04, 0x8a, 0x4e, 0xa7, 0x34, 0x6c, 0x25,
-	0x49, 0x30, 0x52, 0xd0, 0x74, 0xa9, 0x10, 0x46, 0x0e, 0xe1, 0x7b, 0x8c, 0x28, 0x04, 0xe3, 0x1e,
-	0x4f, 0x58, 0x1e, 0xc3, 0x3d, 0x7f, 0x42, 0x5c, 0xc6, 0x69, 0x3c, 0xc7, 0x0c, 0xc7, 0x64, 0xea,
-	0x49, 0x8c, 0xd1, 0x87, 0x35, 0x47, 0xd8, 0xf8, 0x01, 0x54, 0x62, 0x32, 0xf1, 0x78, 0x40, 0x43,
-	0xd6, 0x40, 0x5b, 0xe5, 0xed, 0x6a, 0xfb, 0x4d, 0x33, 0x9a, 0x98, 0x39, 0x02, 0x53, 0x86, 0x46,
-	0xbe, 0x69, 0x2b, 0xa4, 0xbd, 0x88, 0x31, 0x6a, 0x70, 0x5d, 0x52, 0xd9, 0xe4, 0x38, 0x21, 0x8c,
-	0x1b, 0xbf, 0x94, 0xe0, 0x46, 0xe6, 0x61, 0x11, 0x0d, 0x19, 0xc1, 0x0c, 0x6a, 0x92, 0xc3, 0xf5,
-	0x4f, 0x5c, 0xef, 0x88, 0x84, 0x5c, 0xa5, 0x7a, 0x64, 0xae, 0xd4, 0x76, 0x73, 0x99, 0x57, 0x99,
-	0xdd, 0x93, 0x4e, 0x4a, 0x69, 0x5f, 0x67, 0x79, 0xb3, 0xf9, 0x13, 0xca, 0x94, 0x29, 0x0f, 0xbe,
-	0x0b, 0xeb, 0x22, 0xb9, 0x1b, 0x8c, 0x1a, 0x68, 0x0b, 0x6d, 0x57, 0xdb, 0xb5, 0x34, 0x7f, 0xda,
-	0xdf, 0xc8, 0x37, 0x0f, 0x0e, 0xfa, 0x3b, 0xdd, 0xea, 0xec, 0xef, 0x5b, 0xd7, 0x04, 0xba, 0xbf,
-	0x63, 0x5f, 0x13, 0xe8, 0xfe, 0x08, 0x7f, 0x02, 0x6b, 0x92, 0xbb, 0x51, 0x12, 0x61, 0xef, 0x15,
-	0x93, 0xad, 0x48, 0x0c, 0x0c, 0x75, 0x99, 0x22, 0x3c, 0xa4, 0x59, 0xd7, 0x86, 0x70, 0x33, 0xe7,
-	0x53, 0x7d, 0xb3, 0xe0, 0x95, 0x20, 0x3c, 0xa4, 0xaa, 0x59, 0x1f, 0xae, 0x98, 0x55, 0xf0, 0x39,
-	0x62, 0x34, 0x6c, 0xc1, 0x63, 0x9c, 0x21, 0xa8, 0xe6, 0xbc, 0xf8, 0xf1, 0x9c, 0x3f, 0xad, 0xea,
-	0xfd, 0x22, 0xfc, 0x42, 0xaf, 0x60, 0xc1, 0xb7, 0xe1, 0xe6, 0xc4, 0x63, 0xdc, 0x1d, 0x13, 0x2f,
-	0xe6, 0x3e, 0xf1, 0xb8, 0x1b, 0x32, 0xd1, 0xb0, 0xb2, 0x5d, 0x4b, 0x37, 0xf6, 0x32, 0xbf, 0xc5,
-	0xf0, 0x3e, 0xbc, 0x9a, 0x0e, 0x2d, 0x69, 0x94, 0xb7, 0xd0, 0xf6, 0x8d, 0xf6, 0x07, 0x45, 0x4b,
-	0x23, 0xb6, 0xe4, 0x31, 0x7e, 0x46, 0x50, 0x99, 0x0b, 0x2a, 0x7e, 0xd2, 0x03, 0xa8, 0x8c, 0x29,
-	0xe3, 0xae, 0x68, 0x8b, 0x3c, 0xec, 0xbb, 0x2b, 0x6a, 0xdb, 0xa3, 0x4c, 0x76, 0x65, 0x7d, 0xac,
-	0x56, 0xc6, 0xdb, 0xb0, 0x9e, 0x79, 0x71, 0x13, 0x84, 0x3f, 0xf4, 0xa6, 0x44, 0x48, 0xab, 0xd8,
-	0x73, 0xdb, 0x18, 0xc1, 0xc6, 0x67, 0x29, 0x97, 0x1a, 0x8a, 0xb4, 0x0c, 0x99, 0xe8, 0x25, 0x65,
-	0x88, 0xa0, 0xb4, 0x0c, 0x81, 0xee, 0x8f, 0xf0, 0xeb, 0x50, 0x91, 0x81, 0x8c, 0xc7, 0xa2, 0x8c,
-	0x8a, 0x2d, 0x99, 0x1c, 0x1e, 0x1b, 0x7f, 0x20, 0xc0, 0xa2, 0x70, 0x95, 0x4b, 0x0d, 0xdb, 0x3b,
-	0xb0, 0x26, 0xdf, 0x11, 0x95, 0x6a, 0x33, 0x4d, 0x25, 0x3d, 0xe9, 0x08, 0xcb, 0x39, 0x52, 0x90,
-	0x25, 0x65, 0xa5, 0x55, 0x94, 0x75, 0x61, 0x23, 0xff, 0xf4, 0x89, 0xf3, 0xaf, 0xb6, 0x6f, 0xa5,
-	0xc1, 0xf2, 0x7d, 0x54, 0x3f, 0x91, 0x6f, 0x66, 0xf2, 0x92, 0x09, 0xb7, 0xab, 0xc7, 0x0b, 0xc3,
-	0xf8, 0xbd, 0x04, 0x9b, 0x4f, 0xc4, 0x81, 0x2c, 0x57, 0x10, 0xa5, 0x6f, 0x99, 0x5c, 0x67, 0x6f,
-	0x99, 0xbd, 0xe2, 0xe1, 0xfd, 0x0f, 0xad, 0x99, 0x2d, 0xb2, 0x77, 0x66, 0x91, 0xa4, 0xf9, 0x1b,
-	0x82, 0xda, 0xa5, 0xed, 0xe2, 0xb3, 0xf7, 0x15, 0xac, 0x67, 0xcc, 0xaa, 0xa7, 0x9d, 0x22, 0xd7,
-	0x62, 0x49, 0xbc, 0x3d, 0xa7, 0xbc, 0xfd, 0x1c, 0x60, 0x71, 0x6d, 0xf0, 0x6b, 0xb0, 0xd9, 0xd9,
-	0xed, 0x59, 0x03, 0xd7, 0x19, 0x74, 0x06, 0x3d, 0xf7, 0xc0, 0x7a, 0x64, 0xed, 0x7f, 0x6e, 0xd5,
-	0xb5, 0xcb, 0x1b, 0x7b, 0xbd, 0xce, 0xe3, 0xc1, 0xde, 0x17, 0x75, 0x84, 0xdf, 0x80, 0xc6, 0x72,
-	0x84, 0xdd, 0x73, 0x3e, 0xdd, 0xb7, 0x9c, 0xfe, 0x93, 0x5e, 0xbd, 0x74, 0x79, 0x77, 0xa7, 0xef,
-	0x3c, 0xdc, 0xb7, 0xac, 0xde, 0xc3, 0x41, 0x6f, 0xa7, 0x5e, 0x6e, 0xff, 0x55, 0x06, 0x2c, 0x74,
-	0x75, 0x85, 0x54, 0x47, 0xd6, 0x82, 0x7f, 0x44, 0xb0, 0xb1, 0x4b, 0xf8, 0xe2, 0xde, 0x3e, 0x28,
-	0xfc, 0x04, 0xc9, 0x1b, 0xd3, 0xfc, 0xb8, 0x38, 0x81, 0x6c, 0x93, 0xa1, 0xe1, 0x1f, 0x10, 0x6c,
-	0xf4, 0x9e, 0x91, 0x61, 0xc2, 0x89, 0xd0, 0x8c, 0xef, 0xad, 0x48, 0x9a, 0xbf, 0xc3, 0xcd, 0xee,
-	0xd5, 0x27, 0xd0, 0xd0, 0xf0, 0x77, 0x08, 0x60, 0x97, 0x70, 0xf9, 0x21, 0x61, 0xf8, 0x7e, 0xc1,
-	0xef, 0xa6, 0x94, 0xf4, 0xd1, 0x95, 0xbe, 0xba, 0x86, 0xd6, 0xfd, 0x16, 0x9d, 0x9e, 0xeb, 0xda,
-	0xd9, 0xb9, 0xae, 0xbd, 0x38, 0xd7, 0xd1, 0x37, 0x33, 0x1d, 0xfd, 0x3a, 0xd3, 0xd1, 0x9f, 0x33,
-	0x1d, 0x9d, 0xce, 0x74, 0xf4, 0xcf, 0x4c, 0x47, 0xff, 0xce, 0x74, 0xed, 0xc5, 0x4c, 0x47, 0xdf,
-	0x5f, 0xe8, 0xda, 0xe9, 0x85, 0xae, 0x9d, 0x5d, 0xe8, 0xda, 0x97, 0x4e, 0x14, 0x3c, 0x0b, 0xc8,
-	0xc4, 0xf3, 0x99, 0xe9, 0x05, 0xad, 0xb9, 0xd1, 0x5a, 0xed, 0x8f, 0xdb, 0xbd, 0x25, 0xcb, 0x5f,
-	0x13, 0xff, 0x68, 0xde, 0xfd, 0x2f, 0x00, 0x00, 0xff, 0xff, 0x0f, 0x44, 0x1a, 0xd9, 0xff, 0x09,
+var fileDescriptor_service_43b4031083582f25 = []byte{
+	// 994 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x56, 0x41, 0x6c, 0xdb, 0x54,
+	0x18, 0xf6, 0x4b, 0x47, 0xd6, 0xfc, 0xe9, 0x96, 0xf4, 0x15, 0xa9, 0x51, 0x40, 0x5e, 0xb1, 0x10,
+	0xaa, 0x36, 0xcd, 0x91, 0x82, 0xd0, 0x80, 0x0d, 0x8d, 0xa4, 0x0d, 0x6d, 0xb4, 0xe1, 0x82, 0x93,
+	0x0e, 0x0d, 0x09, 0x59, 0xb6, 0xf3, 0xda, 0x58, 0x24, 0xb6, 0xeb, 0xf7, 0x5c, 0xad, 0x3b, 0x71,
+	0x9d, 0xb8, 0x80, 0x38, 0x20, 0x71, 0xe1, 0x0a, 0x12, 0x9c, 0xb8, 0x73, 0xe6, 0xd8, 0xe3, 0x4e,
+	0x88, 0xa6, 0x17, 0x8e, 0xbb, 0x73, 0x41, 0x7e, 0xef, 0x39, 0x71, 0xca, 0x2e, 0x71, 0x39, 0xe5,
+	0xfd, 0xff, 0xfb, 0xfe, 0xef, 0xff, 0xfe, 0xdf, 0x7f, 0x7e, 0x1b, 0xee, 0xd1, 0xc8, 0x6d, 0x1c,
+	0x7b, 0x4f, 0x3d, 0x12, 0x35, 0x28, 0x89, 0x8e, 0x3d, 0x97, 0xd0, 0xc6, 0x51, 0x4c, 0xa2, 0x13,
+	0xcb, 0x89, 0x82, 0x2f, 0x49, 0x24, 0x0c, 0x71, 0x0e, 0x9d, 0x14, 0xa3, 0x87, 0x51, 0xc0, 0x02,
+	0x7c, 0x3b, 0x1c, 0xe9, 0x22, 0x58, 0x4f, 0x83, 0xf5, 0x6c, 0xb0, 0x3e, 0x17, 0x5c, 0xbf, 0x7d,
+	0xe8, 0xb1, 0x61, 0xec, 0xe8, 0x6e, 0x30, 0x6e, 0x1c, 0x06, 0x87, 0x41, 0x83, 0xb3, 0x38, 0xf1,
+	0x01, 0xb7, 0xb8, 0xc1, 0x4f, 0x82, 0xbd, 0xfe, 0x66, 0xa2, 0xcd, 0xb5, 0x23, 0x3f, 0x60, 0x02,
+	0x29, 0x85, 0x45, 0x84, 0xc6, 0x23, 0x46, 0x25, 0x6a, 0x83, 0xa3, 0x82, 0xf1, 0x38, 0xf0, 0x1b,
+	0x71, 0xec, 0x0d, 0x24, 0x34, 0x39, 0x4a, 0x84, 0x96, 0x41, 0x38, 0x36, 0x25, 0x12, 0x41, 0x99,
+	0xcd, 0x62, 0x9a, 0xc5, 0x30, 0xdb, 0x19, 0x11, 0x8b, 0xb2, 0x20, 0x9a, 0x62, 0xdc, 0x21, 0x19,
+	0xdb, 0x02, 0xa3, 0x75, 0xa1, 0xd8, 0xe3, 0x36, 0xbe, 0x0f, 0xa5, 0x88, 0x8c, 0x6c, 0xe6, 0x05,
+	0x3e, 0xad, 0xa1, 0x8d, 0xa5, 0xcd, 0x72, 0xf3, 0x0d, 0x3d, 0x1c, 0xe9, 0x19, 0x02, 0x5d, 0x84,
+	0x86, 0x8e, 0x6e, 0x4a, 0xa4, 0x39, 0x8b, 0xd1, 0x2a, 0x70, 0x4d, 0x50, 0x99, 0xe4, 0x28, 0x26,
+	0x94, 0x69, 0x3f, 0x16, 0xe0, 0x7a, 0xea, 0xa1, 0x61, 0xe0, 0x53, 0x82, 0x29, 0x54, 0x04, 0x87,
+	0xe5, 0x9c, 0x58, 0xf6, 0x21, 0xf1, 0x99, 0x4c, 0xf5, 0x40, 0x5f, 0xa8, 0xed, 0xfa, 0x3c, 0xaf,
+	0x34, 0xdb, 0x27, 0xad, 0x84, 0xd2, 0xbc, 0x46, 0xb3, 0x66, 0xfd, 0x7b, 0x94, 0x2a, 0x93, 0x1e,
+	0x7c, 0x07, 0x96, 0x79, 0x72, 0xcb, 0x1b, 0xd4, 0xd0, 0x06, 0xda, 0x2c, 0x37, 0x2b, 0x49, 0xfe,
+	0xa4, 0xbf, 0xa1, 0xa3, 0xef, 0xef, 0x77, 0xb7, 0xdb, 0xe5, 0xc9, 0x9f, 0x37, 0xae, 0x72, 0x74,
+	0x77, 0xdb, 0xbc, 0xca, 0xd1, 0xdd, 0x01, 0xfe, 0x18, 0x8a, 0x82, 0xbb, 0x56, 0xe0, 0x61, 0xef,
+	0xe4, 0x93, 0x2d, 0x49, 0x34, 0x0c, 0x55, 0x91, 0xc2, 0x3f, 0x08, 0xd2, 0xae, 0xb9, 0xb0, 0x9a,
+	0xf1, 0xc9, 0xbe, 0x19, 0x70, 0xc5, 0xf3, 0x0f, 0x02, 0xd9, 0xac, 0xf7, 0x17, 0xcc, 0xca, 0xf9,
+	0x7a, 0x7c, 0x34, 0x4c, 0xce, 0xa3, 0x3d, 0x2b, 0x40, 0x39, 0xe3, 0xc5, 0x0f, 0xa7, 0xfc, 0x49,
+	0x55, 0xef, 0xe6, 0xe1, 0xe7, 0x7a, 0x39, 0x0b, 0xbe, 0x09, 0xab, 0x23, 0x9b, 0x32, 0x6b, 0x48,
+	0xec, 0x88, 0x39, 0xc4, 0x66, 0x96, 0x4f, 0x79, 0xc3, 0x96, 0xcc, 0x4a, 0x72, 0xb1, 0x9b, 0xfa,
+	0x0d, 0x8a, 0x1b, 0xf0, 0xaa, 0x78, 0x14, 0x6e, 0x44, 0x6c, 0x46, 0x2c, 0xe6, 0x8d, 0x49, 0x02,
+	0x5f, 0xe2, 0xf0, 0x55, 0x7e, 0xb7, 0xc5, 0xaf, 0xfa, 0xde, 0x98, 0x18, 0x14, 0xef, 0xc1, 0x2b,
+	0xc9, 0x94, 0x93, 0xda, 0x95, 0x0d, 0xb4, 0x79, 0xbd, 0xf9, 0x5e, 0xde, 0x5e, 0x10, 0x53, 0xf0,
+	0x68, 0x3f, 0x20, 0x28, 0x4d, 0x2b, 0xc8, 0x3f, 0x1a, 0x7d, 0x28, 0x0d, 0x03, 0xca, 0x2c, 0xde,
+	0x47, 0x31, 0x1d, 0x77, 0x16, 0xd4, 0xb6, 0x1b, 0x50, 0xd1, 0xc6, 0xe5, 0xa1, 0x3c, 0x69, 0x6f,
+	0xc1, 0x72, 0xea, 0xc5, 0x75, 0xe0, 0x7e, 0xdf, 0x1e, 0x13, 0x2e, 0xad, 0x64, 0x4e, 0x6d, 0xed,
+	0x16, 0xac, 0x7c, 0x9a, 0x70, 0xc9, 0x29, 0xc2, 0xaf, 0x41, 0x49, 0x24, 0xa2, 0x2c, 0x4a, 0xc1,
+	0xdc, 0xd1, 0x63, 0x91, 0xf6, 0x3b, 0x02, 0xcc, 0xf5, 0xcb, 0x10, 0x39, 0x64, 0xb7, 0xa0, 0x28,
+	0xf6, 0x87, 0x2c, 0x7c, 0x2d, 0x91, 0x2f, 0x3c, 0xc9, 0xe8, 0x8a, 0xf9, 0x91, 0x90, 0xa4, 0x4f,
+	0x22, 0x81, 0x37, 0x90, 0xd5, 0xbe, 0xbc, 0x4f, 0x3c, 0x45, 0xd2, 0x27, 0x8e, 0xee, 0x0e, 0x70,
+	0x1b, 0x56, 0xb2, 0x2b, 0x8f, 0x3f, 0xe8, 0x72, 0xf3, 0x46, 0x12, 0x2c, 0xf6, 0xa2, 0xfc, 0x09,
+	0x1d, 0x3d, 0x95, 0x17, 0x8f, 0x98, 0x59, 0x3e, 0x9a, 0x19, 0xda, 0xaf, 0x08, 0xd6, 0xe7, 0x0a,
+	0x48, 0x10, 0xb2, 0xf2, 0xdc, 0x0f, 0xf0, 0x31, 0x14, 0xa5, 0x24, 0x51, 0x4f, 0x2b, 0xcf, 0x64,
+	0xcd, 0x75, 0xd4, 0x94, 0x84, 0x5a, 0x1d, 0x6a, 0xff, 0x95, 0x2b, 0x30, 0xda, 0x6f, 0x05, 0x58,
+	0x7b, 0xc4, 0xb3, 0xcc, 0x3f, 0x8d, 0x30, 0xd9, 0xc7, 0xe2, 0x9c, 0xee, 0x63, 0x73, 0x41, 0x45,
+	0x2f, 0xa1, 0xd5, 0xd3, 0x43, 0xba, 0x2b, 0x67, 0x49, 0xea, 0x3f, 0x23, 0xa8, 0x5c, 0xb8, 0xce,
+	0xdf, 0xcd, 0x2f, 0x60, 0x39, 0x65, 0xfe, 0xff, 0xfa, 0x39, 0xa5, 0xbc, 0xf9, 0x14, 0x60, 0xf6,
+	0x4f, 0xc6, 0xeb, 0xb0, 0xd6, 0xda, 0xe9, 0x18, 0x7d, 0xab, 0xd7, 0x6f, 0xf5, 0x3b, 0xd6, 0xbe,
+	0xf1, 0xc0, 0xd8, 0xfb, 0xcc, 0xa8, 0x2a, 0x17, 0x2f, 0x76, 0x3b, 0xad, 0x87, 0xfd, 0xdd, 0xc7,
+	0x55, 0x84, 0x5f, 0x87, 0xda, 0x7c, 0x84, 0xd9, 0xe9, 0x7d, 0xb2, 0x67, 0xf4, 0xba, 0x8f, 0x3a,
+	0xd5, 0xc2, 0xc5, 0xdb, 0xed, 0x6e, 0x6f, 0x6b, 0xcf, 0x30, 0x3a, 0x5b, 0xfd, 0xce, 0x76, 0x75,
+	0xa9, 0xf9, 0xcf, 0x15, 0xc0, 0x5c, 0x57, 0x9b, 0x4b, 0xed, 0x89, 0x5a, 0xf0, 0x77, 0x08, 0x56,
+	0x76, 0x08, 0x9b, 0xad, 0x92, 0xfb, 0xb9, 0xd7, 0xa8, 0x18, 0xe5, 0xfa, 0x87, 0xf9, 0x09, 0xe4,
+	0x70, 0x29, 0xf8, 0x5b, 0x04, 0x2b, 0x9d, 0x27, 0xc4, 0x8d, 0x19, 0xe1, 0x9a, 0xf1, 0xdd, 0x05,
+	0x49, 0xb3, 0x6b, 0xa5, 0xde, 0xbe, 0xfc, 0x04, 0x6a, 0x0a, 0xfe, 0x1a, 0x01, 0xec, 0x10, 0x26,
+	0x5e, 0x86, 0x14, 0xdf, 0xcb, 0xf9, 0xee, 0x17, 0x92, 0x3e, 0xb8, 0xd4, 0x97, 0x83, 0xa6, 0xe0,
+	0x5f, 0x10, 0xac, 0x9b, 0xc4, 0x25, 0xde, 0x31, 0xb9, 0xf8, 0x27, 0xc5, 0x1f, 0x5d, 0x66, 0x66,
+	0x67, 0x4b, 0xa9, 0xbe, 0x73, 0x69, 0x9e, 0x54, 0x6e, 0xfb, 0x19, 0x3a, 0x3d, 0x53, 0x95, 0xe7,
+	0x67, 0xaa, 0xf2, 0xe2, 0x4c, 0x45, 0x5f, 0x4d, 0x54, 0xf4, 0xd3, 0x44, 0x45, 0x7f, 0x4c, 0x54,
+	0x74, 0x3a, 0x51, 0xd1, 0x5f, 0x13, 0x15, 0xfd, 0x3d, 0x51, 0x95, 0x17, 0x13, 0x15, 0x7d, 0x73,
+	0xae, 0x2a, 0xa7, 0xe7, 0xaa, 0xf2, 0xfc, 0x5c, 0x55, 0x3e, 0xef, 0x85, 0xde, 0x13, 0x8f, 0x8c,
+	0x6c, 0x87, 0xea, 0xb6, 0xd7, 0x98, 0x1a, 0x8d, 0xc5, 0xbe, 0x95, 0xef, 0xce, 0x59, 0x4e, 0x91,
+	0x7f, 0x44, 0xbe, 0xfd, 0x6f, 0x00, 0x00, 0x00, 0xff, 0xff, 0x92, 0xf8, 0xee, 0x23, 0x72, 0x0b,
 	0x00, 0x00,
 }

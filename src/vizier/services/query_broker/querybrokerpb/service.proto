@@ -19,7 +19,10 @@ service QueryBrokerService {
   rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
   // This is an incoming request to Vizier to execute queries.
   rpc ExecuteQuery(QueryRequest) returns (VizierQueryResponse) {}
+  // This is an incoming request to Vizier for the schema available on each agent.
   rpc GetSchemas(SchemaRequest) returns (SchemaResponse) {}
+  // This is an incoming request from the agents, containing results for a query.
+  rpc ReceiveAgentQueryResult(AgentQueryResultRequest) returns (AgentQueryResultResponse) {}
 }
 
 // The schema information per agent.
@@ -66,8 +69,10 @@ message AgentStatus {
   AgentInfo info = 1;
   // Time in nanoseconds since the last heartbeat from the agent.
   int64 last_heartbeat_ns = 2;
+  // The unix time in nanoseconds when this agent registered.
+  int64  agent_create_time_ns = 3;
   // The state of the Agent.
-  AgentState state = 3;
+  AgentState state = 4;
 }
 
 // AgentInfo contains information about host and agent running on a given machine.
@@ -84,15 +89,9 @@ message HostInfo {
 }
 
 message QueryRequest {
-  // The ID of the query (will be returned in response).
-  uuidpb.UUID query_id = 1 [
-    (gogoproto.customname) = "QueryID"
-  ];
-  // The query string (either this or proto will be set).
-  string query_str = 2;
+  string query_str = 1;
   // TODO(zasgar): Add proto query.
 }
-
 
 // TODO(zasgar/michelle): We should change this after we add the compute nodes.
 // For now, we plan to just return the QueryResponse from each agent on the message bus
@@ -108,6 +107,17 @@ message AgentQueryResponse {
 
   pl.carnot.carnotpb.QueryResult query_result = 3;
 }
+
+// AgentQueryResultRequest is a request from the agent to the query broker containing the
+// results from a query.
+message AgentQueryResultRequest {
+  uuidpb.UUID agent_id      = 1 [
+    (gogoproto.customname) = "AgentID"
+  ];
+  AgentQueryResponse result = 2;
+}
+
+message AgentQueryResultResponse {}
 
 // VizierQueryResponse is returned by Vizier in response to a query.
 message VizierQueryResponse {
