@@ -19,10 +19,11 @@ class TCPSocket {
   void Bind();
   void Accept();
   void Close();
-  int Write(std::string_view data) const;
-  int Send(std::string_view data) const;
+  ssize_t Write(std::string_view data) const;
+  ssize_t Send(std::string_view data) const;
   void Connect(const TCPSocket& addr);
   bool Read(std::string* data);
+  bool Recv(std::string* data);
   const struct sockaddr_in& Addr() const { return addr_; }
 
  private:

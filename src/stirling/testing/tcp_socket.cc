@@ -58,11 +58,11 @@ void TCPSocket::Close() {
   }
 }
 
-int TCPSocket::Write(std::string_view data) const {
+ssize_t TCPSocket::Write(std::string_view data) const {
   return write(sockfd_, data.data(), data.size());
 }
 
-int TCPSocket::Send(std::string_view data) const {
+ssize_t TCPSocket::Send(std::string_view data) const {
   return send(sockfd_, data.data(), data.size(), /*flags*/ 0);
 }
 
@@ -73,7 +73,16 @@ void TCPSocket::Connect(const TCPSocket& addr) {
 }
 
 bool TCPSocket::Read(std::string* data) {
-  int size = read(sockfd_, static_cast<void*>(buf_), kBufSize);
+  ssize_t size = read(sockfd_, static_cast<void*>(buf_), kBufSize);
+  if (size <= 0) {
+    return false;
+  }
+  data->assign(buf_, size);
+  return true;
+}
+
+bool TCPSocket::Recv(std::string* data) {
+  ssize_t size = recv(sockfd_, static_cast<void*>(buf_), kBufSize, /*flags*/ 0);
   if (size <= 0) {
     return false;
   }
