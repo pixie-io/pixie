@@ -46,6 +46,12 @@ parse_args() {
   CLUSTER_NAME=$1
   shift
 
+  # Make sure the cluster name does not start with dash.
+  # User is probably trying to pass a flag without the required positional argument.
+  if [ ${CLUSTER_NAME:0:1} -eq '-' ]; then
+    usage
+  fi
+
   local OPTIND
   # Process the command line arguments.
   while getopts "bn:m:i:" opt; do
