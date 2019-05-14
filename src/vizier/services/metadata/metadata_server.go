@@ -2,7 +2,9 @@ package main
 
 import (
 	"net/http"
+	"time"
 
+	"github.com/coreos/etcd/clientv3"
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/services/common"
 	"pixielabs.ai/pixielabs/src/services/common/healthz"
@@ -20,7 +22,28 @@ func main() {
 	common.CheckServiceFlags()
 	common.SetupServiceLogging()
 
+	etcdClient, err := clientv3.New(clientv3.Config{
+		Endpoints:   []string{"http://pl-etcd-client.pl.svc.cluster.local:2379"},
+		DialTimeout: 5 * time.Second,
+	})
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to etcd.")
+	}
+	defer etcdClient.Close()
+
+	// TODO(michelle): Add code for leader election. For now, since we only have one metadata
+	// service, it is always the leader.
+	agtMgr := controllers.NewAgentManager(etcdClient, true)
+	keepAlive := true
+	go func() {
+		for keepAlive {
+			agtMgr.UpdateAgentState()
+			time.Sleep(10 * time.Second)
+		}
+	}()
+
 	mc, err := controllers.NewMessageBusController("pl-nats", "update_agent")
+
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to message bus")
 	}

@@ -395,6 +395,109 @@ go_repository(
 )
 
 go_repository(
+    name = "com_github_beorn7_perks",
+    commit = "4b2b341e8d7715fae06375aa633dbb6e91b3fb46",
+    importpath = "github.com/beorn7/perks",
+)
+
+go_repository(
+    name = "com_github_coreos_bbolt",
+    commit = "63597a96ec0ad9e6d43c3fc81e809909e0237461",
+    importpath = "github.com/coreos/bbolt",
+)
+
+go_repository(
+    name = "com_github_coreos_etcd",
+    build_file_proto_mode = "disable",
+    commit = "98d308426819d892e149fe45f6fd542464cb1f9d",
+    importpath = "github.com/coreos/etcd",
+)
+
+go_repository(
+    name = "com_github_coreos_go_semver",
+    commit = "e214231b295a8ea9479f11b70b35d5acf3556d9b",
+    importpath = "github.com/coreos/go-semver",
+)
+
+go_repository(
+    name = "com_github_coreos_go_systemd",
+    commit = "95778dfbb74eb7e4dbaf43bf7d71809650ef8076",
+    importpath = "github.com/coreos/go-systemd",
+)
+
+go_repository(
+    name = "com_github_coreos_pkg",
+    commit = "97fdf19511ea361ae1c100dd393cc47f8dcfa1e1",
+    importpath = "github.com/coreos/pkg",
+)
+
+go_repository(
+    name = "com_github_ghodss_yaml",
+    commit = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7",
+    importpath = "github.com/ghodss/yaml",
+)
+
+go_repository(
+    name = "com_github_google_btree",
+    commit = "4030bb1f1f0c35b30ca7009e9ebd06849dd45306",
+    importpath = "github.com/google/btree",
+)
+
+go_repository(
+    name = "com_github_gorilla_websocket",
+    commit = "66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d",
+    importpath = "github.com/gorilla/websocket",
+)
+
+go_repository(
+    name = "com_github_grpc_ecosystem_go_grpc_prometheus",
+    commit = "c225b8c3b01faf2899099b768856a9e916e5087b",
+    importpath = "github.com/grpc-ecosystem/go-grpc-prometheus",
+)
+
+go_repository(
+    name = "com_github_grpc_ecosystem_grpc_gateway",
+    commit = "15c7b2ea9d896c07d9b28eca57050b1ee0aea4d6",
+    importpath = "github.com/grpc-ecosystem/grpc-gateway",
+)
+
+go_repository(
+    name = "com_github_jonboulle_clockwork",
+    commit = "2eee05ed794112d45db504eb05aa693efd2b8b09",
+    importpath = "github.com/jonboulle/clockwork",
+)
+
+go_repository(
+    name = "com_github_json_iterator_go",
+    commit = "0ff49de124c6f76f8494e194af75bde0f1a49a29",
+    importpath = "github.com/json-iterator/go",
+)
+
+go_repository(
+    name = "com_github_matttproud_golang_protobuf_extensions",
+    commit = "c12348ce28de40eed0136aa2b644d0ee0650e56c",
+    importpath = "github.com/matttproud/golang_protobuf_extensions",
+)
+
+go_repository(
+    name = "com_github_modern_go_concurrent",
+    commit = "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94",
+    importpath = "github.com/modern-go/concurrent",
+)
+
+go_repository(
+    name = "com_github_modern_go_reflect2",
+    commit = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd",
+    importpath = "github.com/modern-go/reflect2",
+)
+
+go_repository(
+    name = "com_github_nats_io_gnatsd",
+    commit = "3e64f0bfd1fe4c2cf6599f064ff72fa7af439663",
+    importpath = "github.com/nats-io/gnatsd",
+)
+
+go_repository(
     name = "com_github_nats_io_go_nats",
     commit = "70fe06cee50d4b6f98248d9675fb55f2a3aa7228",
     importpath = "github.com/nats-io/go-nats",
@@ -413,13 +516,79 @@ go_repository(
 )
 
 go_repository(
-    name = "com_github_nats_io_gnatsd",
-    commit = "3e64f0bfd1fe4c2cf6599f064ff72fa7af439663",
-    importpath = "github.com/nats-io/gnatsd",
+    name = "com_github_petar_gollrb",
+    commit = "53be0d36a84c2a886ca057d34b6aa4468df9ccb4",
+    importpath = "github.com/petar/GoLLRB",
 )
 
 go_repository(
     name = "com_github_phayes_freeport",
     commit = "b8543db493a5ed890c5499e935e2cad7504f3a04",
     importpath = "github.com/phayes/freeport",
+)
+
+go_repository(
+    name = "com_github_prometheus_client_golang",
+    commit = "505eaef017263e299324067d40ca2c48f6a2cf50",
+    importpath = "github.com/prometheus/client_golang",
+)
+
+go_repository(
+    name = "com_github_prometheus_client_model",
+    commit = "fd36f4220a901265f90734c3183c5f0c91daa0b8",
+    importpath = "github.com/prometheus/client_model",
+)
+
+go_repository(
+    name = "com_github_prometheus_common",
+    commit = "1ba88736f028e37bc17328369e94a537ae9e0234",
+    importpath = "github.com/prometheus/common",
+)
+
+go_repository(
+    name = "com_github_prometheus_procfs",
+    commit = "5867b95ac084bbfee6ea16595c4e05ab009021da",
+    importpath = "github.com/prometheus/procfs",
+)
+
+go_repository(
+    name = "com_github_soheilhy_cmux",
+    commit = "e09e9389d85d8492d313d73d1469c029e710623f",
+    importpath = "github.com/soheilhy/cmux",
+)
+
+go_repository(
+    name = "com_github_tmc_grpc_websocket_proxy",
+    commit = "0ad062ec5ee553a48f6dbd280b7a1b5638e8a113",
+    importpath = "github.com/tmc/grpc-websocket-proxy",
+)
+
+go_repository(
+    name = "com_github_xiang90_probing",
+    commit = "43a291ad63a214a207fefbf03c7d9d78b703162b",
+    importpath = "github.com/xiang90/probing",
+)
+
+go_repository(
+    name = "org_golang_x_time",
+    commit = "9d24e82272b4f38b78bc8cff74fa936d31ccd8ef",
+    importpath = "golang.org/x/time",
+)
+
+go_repository(
+    name = "org_uber_go_atomic",
+    commit = "df976f2515e274675050de7b3f42545de80594fd",
+    importpath = "go.uber.org/atomic",
+)
+
+go_repository(
+    name = "org_uber_go_multierr",
+    commit = "3c4937480c32f4c13a875a1829af76c98ca3d40a",
+    importpath = "go.uber.org/multierr",
+)
+
+go_repository(
+    name = "org_uber_go_zap",
+    commit = "27376062155ad36be76b0f12cf1572a221d3a48c",
+    importpath = "go.uber.org/zap",
 )

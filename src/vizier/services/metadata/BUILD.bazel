@@ -1,4 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
     name = "go_default_library",
@@ -12,6 +14,7 @@ go_library(
         "//src/vizier/services/metadata/controllers:go_default_library",
         "//src/vizier/services/metadata/metadataenv:go_default_library",
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
+        "@com_github_coreos_etcd//clientv3:go_default_library",
         "@com_github_sirupsen_logrus//:go_default_library",
     ],
 )
@@ -20,4 +23,19 @@ go_binary(
     name = "metadata",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+)
+
+go_image(
+    name = "vizier_metadata_image",
+    binary = ":metadata",
+    visibility = ["//visibility:public"],
+)
+
+container_push(
+    name = "push_vizier_metadata_image",
+    format = "Docker",
+    image = ":vizier_metadata_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/vizier_metadata",
+    tag = "{STABLE_BUILD_TAG}",
 )

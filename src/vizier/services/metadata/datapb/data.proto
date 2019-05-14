@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package pl.vizier.services.metadata;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/carnot/queryresultspb/query_results.proto";
+import "src/common/uuid/proto/uuid.proto";
+import "src/common/base/proto/status.proto";
+import "src/table_store/proto/schema.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb;datapb";
+
+message AgentData {
+    uuidpb.UUID agent_id      = 1 [
+                                  (gogoproto.customname) = "AgentID"
+                                  ];
+    HostInfo host_info = 2;
+    int64 create_time_ns = 3 [ (gogoproto.customname) = "CreateTimeNS" ];
+    int64 last_heartbeat_ns = 4 [
+                                    (gogoproto.customname) = "LastHeartbeatNS"
+                                  ];
+}
+
+// HostInfo contains the details for the host (OS, kernel, CPU, etc).
+message HostInfo {
+    string hostname = 1;
+}

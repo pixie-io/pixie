@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: vizier-metadata
+  namespace: pl
+  labels:
+    app: pl-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vizier-metadata
+  template:
+    metadata:
+      labels:
+        app: vizier-metadata
+        name: vizier-metadata
+    spec:
+      containers:
+      - image: gcr.io/pl-dev-infra/vizier_metadata:latest
+        name: vizier-metadata
+        env:
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: pl-app-secrets
+              key: jwt-signing-key
+        - name: PL_TLS_CERT
+          value: /certs/tls.crt
+        - name: PL_TLS_KEY
+          value: /certs/tls.key
+           # TODO(zasgar): Remove this.
+        - name: PL_EXTERNAL_ADDR
+          value: {{.ExternalAddress}}
+        - name: PL_DISABLE_GRPC_AUTH
+          value: "true"
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+      volumes:
+        - name: certs
+          secret:
+            secretName: custom-tls-cert
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vizier-metadata
+  namespace: pl
+spec:
+  type: ClusterIP
+  ports:
+  - name: vizier-metadata
+    port: 50400
+    protocol: TCP
+    targetPort: 50400
+  selector:
+    app: vizier-metadata

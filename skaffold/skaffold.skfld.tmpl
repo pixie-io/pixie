@@ -4,18 +4,18 @@ apiVersion: skaffold/v1beta8
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/pl-dev-infra/agent
+  - image: gcr.io/pl-dev-infra/vizier_metadata
     context: .
     bazel:
-      target: //src/agent:agent_image.tar
-  - image: gcr.io/pl-dev-infra/vizier
+      target: //src/vizier/services/metadata:vizier_metadata_image.tar
+  - image: gcr.io/pl-dev-infra/api_server_image
     context: .
     bazel:
-      target: //src/vizier:vizier_image.tar
+      target: //src/services/api:api_server_image.tar
   local:
     push: {{.PushArtifacts}}
 deploy:
   kubectl:
     manifests:
-    - {{.BuildDir}}/src/agent/agent_{{.Deployment}}.yaml
-    - {{.BuildDir}}/src/vizier/service_{{.Deployment}}.yaml
+    - {{.BuildDir}}/src/vizier/services/metadata/service_{{.Deployment}}.yaml
+    - {{.BuildDir}}/src/services/api/service_{{.Deployment}}.yaml

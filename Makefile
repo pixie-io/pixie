@@ -32,7 +32,7 @@ endif
 
 .PHONY: clean
 clean:
-	$(BAZEL) clean 
+	$(BAZEL) clean
 	rm -rf $(SKAFFOLD_DIR)
 
 .PHONY: pristine

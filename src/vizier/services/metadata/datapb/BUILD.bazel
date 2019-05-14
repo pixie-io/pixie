@@ -1,0 +1,44 @@
+# gazelle:ignore
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+
+pl_proto_library(
+    name = "data_pl_proto",
+    srcs = ["data.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/carnot/queryresultspb:query_results_pl_proto",
+        "//src/common/base/proto:status_pl_proto",
+        "//src/common/uuid/proto:uuid_pl_proto",
+        "//src/shared/types/proto:types_pl_proto",
+        "//src/table_store/proto:schema_pl_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
+    ],
+)
+
+pl_cc_proto_library(
+    name = "data_pl_cc_proto",
+    proto = ":data_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/carnot/queryresultspb:query_results_pl_cc_proto",
+        "//src/common/base/proto:status_pl_cc_proto",
+        "//src/common/uuid/proto:uuid_pl_cc_proto",
+        "//src/shared/types/proto:types_pl_cc_proto",
+        "//src/table_store/proto:schema_pl_cc_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+    ],
+)
+
+pl_go_proto_library(
+    name = "data_pl_go_proto",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb",
+    proto = ":data_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/carnot/queryresultspb:query_results_pl_go_proto",
+        "//src/common/base/proto:status_pl_go_proto",
+        "//src/common/uuid/proto:uuid_pl_go_proto",
+        "//src/shared/types/proto:types_pl_go_proto",
+        "//src/table_store/proto:schema_pl_go_proto",
+    ],
+)
