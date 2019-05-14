@@ -179,6 +179,8 @@ const std::vector<ProbeSpec> kProbeSpecs = {
     {"write", "probe_ret_write", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
     {"send", "probe_entry_send"},
     {"send", "probe_ret_send", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
+    {"sendto", "probe_entry_sendto"},
+    {"sendto", "probe_ret_sendto", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
     {"close", "probe_close"},
 };
 

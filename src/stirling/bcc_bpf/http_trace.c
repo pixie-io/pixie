@@ -187,8 +187,8 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
   syscall_write_events.perf_submit(ctx, event, size_to_submit);
 
  done:
-  // Regardless of what happened, after write/send() returns, there is no need to track the fd & buf
-  // being accepted by write/send() call, therefore we can remove the entry.
+  // Regardless of what happened, after write/send/sendto() returns, there is no need to track the fd & buf
+  // being accepted by write/send/sendto() call, therefore we can remove the entry.
   active_write_info_map.delete(&id);
   return 0;
 }
@@ -208,6 +208,19 @@ int probe_entry_send(struct pt_regs *ctx, int fd, char* buf, size_t count) {
 int probe_ret_send(struct pt_regs *ctx) {
   return probe_ret_write_send(ctx, kEventTypeSyscallSendEvent);
 }
+
+int probe_entry_sendto(struct pt_regs *ctx, int fd, char* buf, size_t count) {
+  return probe_entry_write_send(ctx, fd, buf, count);
+}
+
+int probe_ret_sendto(struct pt_regs *ctx) {
+  return probe_ret_write_send(ctx, kEventTypeSyscallSendEvent);
+}
+
+// TODO(oazizi): Look into the following opens:
+// 1) Should we trace sendmsg(), which is another syscall, but with a different interface?
+// 2) Why does the syscall table only include sendto, while Linux source code and man page list both sendto and send?
+// 3) What do we do when the sendto() is called with a dest_addr provided? I believe this overrides the accept_info.
 
 int probe_close(struct pt_regs *ctx, int fd) {
   u64 id = bpf_get_current_pid_tgid();
