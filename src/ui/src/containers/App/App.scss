@@ -19,8 +19,11 @@ body {
   display: flex;
   flex-direction: row;
   height: 100%;
+  width: 100vw;
 }
 
 .content {
   flex: 1;
+  min-width: 400px;
+  min-height: 500px;
 }

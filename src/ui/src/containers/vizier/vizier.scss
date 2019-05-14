@@ -28,6 +28,10 @@
     background: $content-bg;
 }
 
+.query-executor .code-editor .CodeMirror-linenumber {
+    color: $white;
+}
+
 .query-results .ReactVirtualized__Table__row {
     font-size: 0.8rem;
 }
