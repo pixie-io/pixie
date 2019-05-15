@@ -74,7 +74,7 @@ TEST_F(FSWatcherTest, fs_watcher_addwatch_removewatch) {
   EXPECT_EQ(0, fs_watcher_.NumWatchers());
 }
 
-TEST_F(FSWatcherTest, fs_watcher_read_inotify_event) {
+TEST_F(FSWatcherTest, DISABLED_fs_watcher_read_inotify_event) {
   // Remove this directory if it already exists.
   fs::remove_all(
       GetPathToTestDataFile("testdata/cgroup_basic/sysfs/cgroup/cpu,cpuacct/kubepods/"
