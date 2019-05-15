@@ -33,7 +33,11 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	// Connect to metadata service.
-	mdsConn, err := grpc.Dial(plMDSAddr, grpc.WithInsecure())
+	dialOpts, err := common.DefaultClientDialOpts()
+	if err != nil {
+		log.WithError(err).Fatal("Could not get dial opts.")
+	}
+	mdsConn, err := grpc.Dial(plMDSAddr, dialOpts...)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to Metadata Service.")
 	}

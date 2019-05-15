@@ -12,10 +12,15 @@ build:
     context: .
     bazel:
       target: //src/services/api:api_server_image.tar
+  - image: gcr.io/pl-dev-infra/vizier_query_broker
+    context: .
+    bazel:
+      target: //src/vizier/services/query_broker:vizier_query_broker_image.tar
   local:
     push: {{.PushArtifacts}}
 deploy:
   kubectl:
     manifests:
+    - {{.BuildDir}}/src/vizier/services/query_broker/service_{{.Deployment}}.yaml
     - {{.BuildDir}}/src/vizier/services/metadata/service_{{.Deployment}}.yaml
     - {{.BuildDir}}/src/services/api/service_{{.Deployment}}.yaml
