@@ -1,17 +1,22 @@
-package controllers
+package controllers_test
 
 import (
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/gogo/protobuf/proto"
+	"github.com/golang/mock/gomock"
 	"github.com/nats-io/gnatsd/server"
 	"github.com/nats-io/gnatsd/test"
 	"github.com/nats-io/go-nats"
 	"github.com/phayes/freeport"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
-	"testing"
-	"time"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 )
 
 var registerAgentRequestPB = `
@@ -92,9 +97,10 @@ func getNATSURL(port int) string {
 	return fmt.Sprintf("nats://%s:%d", testOptions.Host, port)
 }
 
-func getTestNATSInstance(t *testing.T, port int) *nats.Conn {
+func getTestNATSInstance(t *testing.T, port int, agtMgr controllers.AgentManager) *nats.Conn {
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	_, err := newMessageBusController(getNATSURL(port), "agent_update", clock)
+
+	_, err := controllers.NewTestMessageBusController(getNATSURL(port), "agent_update", agtMgr, clock)
 	assert.Equal(t, err, nil)
 
 	nc, err := nats.Connect(getNATSURL(port))
@@ -110,12 +116,33 @@ func TestAgentRegisterRequest(t *testing.T) {
 	defer cleanup()
 
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+	u, err := uuid.FromString(uuidStr)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+
+	agentInfo := &controllers.AgentInfo{
+		LastHeartbeatNS: 10,
+		CreateTimeNS:    10,
+		Hostname:        "test-host",
+		AgentID:         u,
+	}
+
+	mockAgtMgr.
+		EXPECT().
+		CreateAgent(agentInfo).
+		Return(nil)
 
 	// Create Metadata Service controller.
-	nc := getTestNATSInstance(t, port)
+	nc := getTestNATSInstance(t, port, mockAgtMgr)
 
 	// Listen for response.
-	sub, err := nc.SubscribeSync(GetAgentTopic(uuidStr))
+	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
 	if err != nil {
 		t.Fatal("Could not subscribe to NATS.")
 	}
@@ -146,11 +173,16 @@ func TestAgentUpdateRequest(t *testing.T) {
 	// Create request and expected response protos.
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+
 	// Create Metadata Service controller.
-	nc := getTestNATSInstance(t, port)
+	nc := getTestNATSInstance(t, port, mockAgtMgr)
 
 	// Listen for response.
-	sub, err := nc.SubscribeSync(GetAgentTopic(uuidStr))
+	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
 	if err != nil {
 		t.Fatal("Could not subscribe to NATS.")
 	}
@@ -180,12 +212,26 @@ func TestAgentHeartbeat(t *testing.T) {
 
 	// Create request and expected response protos.
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+	u, err := uuid.FromString(uuidStr)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+
+	mockAgtMgr.
+		EXPECT().
+		UpdateHeartbeat(u).
+		Return(nil)
 
 	// Create Metadata Service controller.
-	nc := getTestNATSInstance(t, port)
+	nc := getTestNATSInstance(t, port, mockAgtMgr)
 
 	// Listen for response.
-	sub, err := nc.SubscribeSync(GetAgentTopic(uuidStr))
+	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
 	if err != nil {
 		t.Fatal("Could not subscribe to NATS.")
 	}

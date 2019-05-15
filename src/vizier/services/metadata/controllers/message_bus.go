@@ -18,15 +18,17 @@ type MessageBusController struct {
 	agentSubscription *nats.Subscription
 	ch                chan *nats.Msg
 	clock             utils.Clock
+	agentManager      AgentManager
 }
 
-func newMessageBusController(natsURL string, agentTopic string, clock utils.Clock) (*MessageBusController, error) {
+// NewTestMessageBusController creates a new message bus controller where you can specify a test clock.
+func NewTestMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, clock utils.Clock) (*MessageBusController, error) {
 	conn, err := nats.Connect(natsURL)
 	if err != nil {
 		return nil, err
 	}
 
-	mc := &MessageBusController{conn: conn, clock: clock}
+	mc := &MessageBusController{conn: conn, clock: clock, agentManager: agentManager}
 
 	ch := make(chan *nats.Msg, 64)
 
@@ -43,9 +45,9 @@ func newMessageBusController(natsURL string, agentTopic string, clock utils.Cloc
 }
 
 // NewMessageBusController creates a new message bus controller.
-func NewMessageBusController(natsURL string, agentTopic string) (*MessageBusController, error) {
+func NewMessageBusController(natsURL string, agentTopic string, agentManager AgentManager) (*MessageBusController, error) {
 	clock := utils.SystemClock{}
-	return newMessageBusController(natsURL, agentTopic, clock)
+	return NewTestMessageBusController(natsURL, agentTopic, agentManager, clock)
 }
 
 // AgentTopicListener handles any incoming messages on the controller's channel.
@@ -116,7 +118,11 @@ func (mc *MessageBusController) onAgentHeartBeat(m *messages.Heartbeat) {
 		log.WithError(err).Error("Could not send heartbeat ack to agent.")
 	}
 
-	// TODO(michelle): Update heartbeat on etcd through agent manager.
+	// Update agent's heartbeat in agent manager.
+	err = mc.agentManager.UpdateHeartbeat(agentID)
+	if err != nil {
+		log.WithError(err).Error("Could not update agent heartbeat.")
+	}
 }
 
 func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgentRequest) {
@@ -133,7 +139,17 @@ func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgent
 		log.WithError(err).Error("Could not send registerAgentResponse to agent.")
 	}
 
-	// TODO(michelle): Add agent to etcd through agent manager.
+	// Create agent in agent manager.
+	agentInfo := &AgentInfo{
+		LastHeartbeatNS: mc.clock.Now().UnixNano(),
+		CreateTimeNS:    mc.clock.Now().UnixNano(),
+		Hostname:        m.Info.HostInfo.Hostname,
+		AgentID:         agentID,
+	}
+	err = mc.agentManager.CreateAgent(agentInfo)
+	if err != nil {
+		log.WithError(err).Error("Could not create agent.")
+	}
 }
 
 func (mc *MessageBusController) onAgentUpdateRequest(m *messages.UpdateAgentRequest) {

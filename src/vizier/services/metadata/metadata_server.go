@@ -42,7 +42,7 @@ func main() {
 		}
 	}()
 
-	mc, err := controllers.NewMessageBusController("pl-nats", "update_agent")
+	mc, err := controllers.NewMessageBusController("pl-nats", "update_agent", agtMgr)
 
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to message bus")
@@ -56,7 +56,7 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	server, err := controllers.NewServer(env)
+	server, err := controllers.NewServer(env, agtMgr)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}

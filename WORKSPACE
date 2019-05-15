@@ -395,6 +395,36 @@ go_repository(
 )
 
 go_repository(
+    name = "com_github_nats_io_go_nats",
+    commit = "70fe06cee50d4b6f98248d9675fb55f2a3aa7228",
+    importpath = "github.com/nats-io/go-nats",
+)
+
+go_repository(
+    name = "com_github_nats_io_nkeys",
+    commit = "1546a3320a8f195a5b5c84aef8309377c2e411d5",
+    importpath = "github.com/nats-io/nkeys",
+)
+
+go_repository(
+    name = "com_github_nats_io_nuid",
+    commit = "4b96681fa6d28dd0ab5fe79bac63b3a493d9ee94",
+    importpath = "github.com/nats-io/nuid",
+)
+
+go_repository(
+    name = "com_github_nats_io_gnatsd",
+    commit = "3e64f0bfd1fe4c2cf6599f064ff72fa7af439663",
+    importpath = "github.com/nats-io/gnatsd",
+)
+
+go_repository(
+    name = "com_github_phayes_freeport",
+    commit = "b8543db493a5ed890c5499e935e2cad7504f3a04",
+    importpath = "github.com/phayes/freeport",
+)
+
+go_repository(
     name = "com_github_beorn7_perks",
     commit = "4b2b341e8d7715fae06375aa633dbb6e91b3fb46",
     importpath = "github.com/beorn7/perks",
@@ -457,7 +487,7 @@ go_repository(
 
 go_repository(
     name = "com_github_grpc_ecosystem_grpc_gateway",
-    commit = "15c7b2ea9d896c07d9b28eca57050b1ee0aea4d6",
+    commit = "8fd5fd9d19ce68183a6b0934519dfe7fe6269612",
     importpath = "github.com/grpc-ecosystem/grpc-gateway",
 )
 
@@ -492,39 +522,9 @@ go_repository(
 )
 
 go_repository(
-    name = "com_github_nats_io_gnatsd",
-    commit = "3e64f0bfd1fe4c2cf6599f064ff72fa7af439663",
-    importpath = "github.com/nats-io/gnatsd",
-)
-
-go_repository(
-    name = "com_github_nats_io_go_nats",
-    commit = "70fe06cee50d4b6f98248d9675fb55f2a3aa7228",
-    importpath = "github.com/nats-io/go-nats",
-)
-
-go_repository(
-    name = "com_github_nats_io_nkeys",
-    commit = "1546a3320a8f195a5b5c84aef8309377c2e411d5",
-    importpath = "github.com/nats-io/nkeys",
-)
-
-go_repository(
-    name = "com_github_nats_io_nuid",
-    commit = "4b96681fa6d28dd0ab5fe79bac63b3a493d9ee94",
-    importpath = "github.com/nats-io/nuid",
-)
-
-go_repository(
     name = "com_github_petar_gollrb",
-    commit = "53be0d36a84c2a886ca057d34b6aa4468df9ccb4",
+    commit = "33fb24c13b99c46c93183c291836c573ac382536",
     importpath = "github.com/petar/GoLLRB",
-)
-
-go_repository(
-    name = "com_github_phayes_freeport",
-    commit = "b8543db493a5ed890c5499e935e2cad7504f3a04",
-    importpath = "github.com/phayes/freeport",
 )
 
 go_repository(
