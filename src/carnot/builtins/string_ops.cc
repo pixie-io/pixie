@@ -1,0 +1,17 @@
+#include "src/carnot/builtins/string_ops.h"
+#include "src/carnot/udf/registry.h"
+#include "src/common/base/base.h"
+
+namespace pl {
+namespace carnot {
+namespace builtins {
+
+void RegisterStringOpsOrDie(udf::ScalarUDFRegistry* registry) {
+  CHECK(registry != nullptr);
+  // String contains.
+  registry->RegisterOrDie<ContainsUDF>("pl.contains");
+}
+
+}  // namespace builtins
+}  // namespace carnot
+}  // namespace pl

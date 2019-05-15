@@ -47,3 +47,12 @@ pl_cc_test(
         "//src/carnot/udf:udf_testutils",
     ],
 )
+
+pl_cc_test(
+    name = "string_ops",
+    srcs = ["string_ops_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf:udf_testutils",
+    ],
+)
