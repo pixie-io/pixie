@@ -13,6 +13,14 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
 
+// Executor is the interface for a query executor.
+type Executor interface {
+	ExecuteQuery(query string) error
+	WaitForCompletion() ([]*querybrokerpb.VizierQueryResponse_ResponseByAgent, error)
+	AddResult(res *querybrokerpb.AgentQueryResultRequest)
+	GetQueryID() uuid.UUID
+}
+
 // QueryExecutor is responsible for handling a query's execution, from sending requests to agents, to
 // tracking the responses.
 type QueryExecutor struct {
@@ -25,13 +33,18 @@ type QueryExecutor struct {
 }
 
 // NewQueryExecutor creates a Query Executor for a specific query.
-func NewQueryExecutor(natsConn *nats.Conn, queryID uuid.UUID, agentList *[]uuid.UUID) *QueryExecutor {
+func NewQueryExecutor(natsConn *nats.Conn, queryID uuid.UUID, agentList *[]uuid.UUID) Executor {
 	return &QueryExecutor{
 		queryID:   queryID,
 		agentList: agentList,
 		conn:      natsConn,
 		done:      make(chan bool, 1),
 	}
+}
+
+// GetQueryID gets the ID for the query that the queryExecutor is responsible for.
+func (e *QueryExecutor) GetQueryID() uuid.UUID {
+	return e.queryID
 }
 
 // ExecuteQuery executes a query by sending query fragments to relevant agents.
