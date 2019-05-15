@@ -80,12 +80,10 @@ void ParseMessageBodyChunked(HTTPTraceRecord* record);
 
 void PreProcessRecord(HTTPTraceRecord* record);
 void ParseEventAttr(const syscall_write_event_t& event, HTTPTraceRecord* record);
-bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* record,
-                      uint64_t msg_size);
-bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* record,
-                       uint64_t msg_size);
+bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* record);
+bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* record);
 bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record);
-bool ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record, uint64_t msg_size);
+bool ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record);
 
 // For each HTTP message, inclusions are applied first; then exclusions, which can overturn the
 // selection done by the former. An empty inclusions results into any HTTP message being selected,

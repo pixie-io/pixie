@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <picohttpparser.h>
+#include <algorithm>
 #include <utility>
 
 #include "src/common/zlib/zlib_wrapper.h"
@@ -68,8 +69,10 @@ std::map<std::string, std::string> GetHttpHeadersMap(const phr_header* headers,
 
 }  // namespace
 
-bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* record,
-                      uint64_t msg_size) {
+bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* record) {
+  // TODO(yzhao): Due to the BPF weirdness (see http_trace.c), this calculation must be done here,
+  // not in BPF. Investigate if we can fix it.
+  const uint64_t msg_size = std::min(event.attr.msg_bytes, event.attr.msg_buf_size);
   const char* method = nullptr;
   size_t method_len = 0;
   const char* path = nullptr;
@@ -107,8 +110,8 @@ bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* recor
 //
 // We then can squash events at t0, t1, t2 together and concatenate their bodies as the full http
 // message. This works in http 1.1 because the responses and requests are not interleaved.
-bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* record,
-                       uint64_t msg_size) {
+bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* record) {
+  const uint64_t msg_size = std::min(event.attr.msg_bytes, event.attr.msg_buf_size);
   const char* msg = nullptr;
   size_t msg_len = 0;
   int minor_version = 0;
@@ -166,7 +169,8 @@ bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record) 
   return true;
 }
 
-bool ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record, uint64_t msg_size) {
+bool ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record) {
+  const uint64_t msg_size = std::min(event.attr.msg_bytes, event.attr.msg_buf_size);
   HTTPTraceRecord& result = *record;
   ParseEventAttr(event, &result);
   result.event_type = HTTPTraceEventType::kUnknown;

@@ -93,7 +93,7 @@ Host: www.pixielabs.ai
 
   HTTPTraceRecord record;
 
-  EXPECT_TRUE(ParseHTTPRequest(event, &record, http_request.size()));
+  EXPECT_TRUE(ParseHTTPRequest(event, &record));
   EXPECT_EQ(100, record.time_stamp_ns);
   EXPECT_EQ(1, record.tgid);
   EXPECT_EQ(2, record.pid);
@@ -122,7 +122,7 @@ pixielabs)";
 
   HTTPTraceRecord record;
 
-  EXPECT_TRUE(ParseHTTPResponse(event, &record, http_response.size()));
+  EXPECT_TRUE(ParseHTTPResponse(event, &record));
   EXPECT_EQ(100, record.time_stamp_ns);
   EXPECT_EQ(1, record.tgid);
   EXPECT_EQ(2, record.pid);
@@ -148,7 +148,7 @@ TEST(ParseRawTest, ContentIsCopied) {
 
   HTTPTraceRecord record;
 
-  EXPECT_TRUE(ParseRaw(event, &record, data.size()));
+  EXPECT_TRUE(ParseRaw(event, &record));
   EXPECT_EQ(100, record.time_stamp_ns);
   EXPECT_EQ(1, record.tgid);
   EXPECT_EQ(2, record.pid);

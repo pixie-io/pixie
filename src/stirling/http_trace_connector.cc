@@ -120,14 +120,6 @@ void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*da
   }
   if (event->attr.event_type == kEventTypeSyscallWriteEvent ||
       event->attr.event_type == kEventTypeSyscallSendEvent) {
-    // The actual message width is min(attr.msg_buf_size, attr.msg_bytes).
-    // Due to the BPF weirdness (see http_trace.c), this calucation must be done here, not in BPF.
-    // Also we can't modify the event object, because it belongs to the kernel, and is read-only.
-    uint64_t msg_size = event->attr.msg_buf_size;
-    if (event->attr.msg_bytes < msg_size) {
-      msg_size = event->attr.msg_bytes;
-    }
-
     bool succeeded;
     HTTPTraceRecord record;
 
@@ -141,8 +133,8 @@ void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*da
         event->attr.accept_info.timestamp_ns + connector->ClockRealTimeOffset();
 
     // Parse as either a Request, Response, or as Raw (if everything else fails).
-    succeeded = ParseHTTPRequest(*event, &record, msg_size) ||
-                ParseHTTPResponse(*event, &record, msg_size) || ParseRaw(*event, &record, msg_size);
+    succeeded = ParseHTTPRequest(*event, &record) || ParseHTTPResponse(*event, &record) ||
+                ParseRaw(*event, &record);
     if (!succeeded) {
       LOG(ERROR) << "Failed to parse SyscallWriteEvent.";
       return;
