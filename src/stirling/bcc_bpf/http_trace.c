@@ -91,7 +91,7 @@ int probe_ret_accept4(struct pt_regs *ctx) {
   u64 id = bpf_get_current_pid_tgid();
   u64 tgid = id >> 32;
 
-  u64 ret_fd = PT_REGS_RC(ctx);
+  int ret_fd = PT_REGS_RC(ctx);
   if (ret_fd < 0) {
     goto done;
   }
@@ -107,13 +107,13 @@ int probe_ret_accept4(struct pt_regs *ctx) {
   }
 
   // Prepend TGID to make the FD unique across processes.
-  ret_fd = (tgid << 32) | ret_fd;
+  u64 tgid_fd = (tgid << 32) | (u32)ret_fd;
 
   struct accept_info_t accept_info;
   memset(&accept_info, 0, sizeof(struct accept_info_t));
   accept_info.timestamp_ns = bpf_ktime_get_ns();
   accept_info.addr = *((struct sockaddr_in6*) addr_info->addr);
-  accept_info_map.update(&ret_fd, &accept_info);
+  accept_info_map.update(&tgid_fd, &accept_info);
 
  done:
   // Regardless of what happened, after accept() returns, there is no need to track the sock_addr
