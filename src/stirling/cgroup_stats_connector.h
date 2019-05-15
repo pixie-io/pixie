@@ -31,24 +31,36 @@ class CGroupStatsConnector : public SourceConnector {
  public:
   static constexpr SourceType kSourceType = SourceType::kFile;
   static constexpr char kName[] = "cgroup_stats";
-  inline static const std::vector<DataTableSchema> kElements = {DataTableSchema(
-      kName,
-      {DataElement("time_", types::DataType::TIME64NS), DataElement("qos", types::DataType::STRING),
-       DataElement("pod", types::DataType::STRING),
-       DataElement("container", types::DataType::STRING),
-       DataElement("process_name", types::DataType::STRING),
-       DataElement("pid", types::DataType::INT64),
-       DataElement("major_faults", types::DataType::INT64),
-       DataElement("minor_faults", types::DataType::INT64),
-       DataElement("utime_ns", types::DataType::INT64),
-       DataElement("ktime_ns", types::DataType::INT64),
-       DataElement("num_threads", types::DataType::INT64),
-       DataElement("vsize_bytes", types::DataType::INT64),
-       DataElement("rss_bytes", types::DataType::INT64),
-       DataElement("rchar_bytes", types::DataType::INT64),
-       DataElement("wchar_bytes", types::DataType::INT64),
-       DataElement("read_bytes", types::DataType::INT64),
-       DataElement("write_bytes", types::DataType::INT64)})};
+  inline static const std::vector<DataTableSchema> kElements = {
+      DataTableSchema(kName, {DataElement("time_", types::DataType::TIME64NS),
+                              DataElement("qos", types::DataType::STRING),
+                              DataElement("pod", types::DataType::STRING),
+                              DataElement("container", types::DataType::STRING),
+                              DataElement("process_name", types::DataType::STRING),
+                              DataElement("pid", types::DataType::INT64),
+                              DataElement("major_faults", types::DataType::INT64),
+                              DataElement("minor_faults", types::DataType::INT64),
+                              DataElement("utime_ns", types::DataType::INT64),
+                              DataElement("ktime_ns", types::DataType::INT64),
+                              DataElement("num_threads", types::DataType::INT64),
+                              DataElement("vsize_bytes", types::DataType::INT64),
+                              DataElement("rss_bytes", types::DataType::INT64),
+                              DataElement("rchar_bytes", types::DataType::INT64),
+                              DataElement("wchar_bytes", types::DataType::INT64),
+                              DataElement("read_bytes", types::DataType::INT64),
+                              DataElement("write_bytes", types::DataType::INT64)}),
+      DataTableSchema("net_stats", {
+                                       DataElement("time_", types::DataType::TIME64NS),
+                                       DataElement("pod", types::DataType::STRING),
+                                       DataElement("rx_bytes", types::DataType::INT64),
+                                       DataElement("rx_packets", types::DataType::INT64),
+                                       DataElement("rx_errors", types::DataType::INT64),
+                                       DataElement("rx_drops", types::DataType::INT64),
+                                       DataElement("tx_bytes", types::DataType::INT64),
+                                       DataElement("tx_packets", types::DataType::INT64),
+                                       DataElement("tx_errors", types::DataType::INT64),
+                                       DataElement("tx_drops", types::DataType::INT64),
+                                   })};
 
   CGroupStatsConnector() = delete;
   ~CGroupStatsConnector() override = default;
@@ -76,6 +88,9 @@ class CGroupStatsConnector : public SourceConnector {
   }
 
  private:
+  void TransferCGroupStatsTable(types::ColumnWrapperRecordBatch* record_batch);
+  void TransferNetStatsTable(types::ColumnWrapperRecordBatch* record_batch);
+
   std::unique_ptr<CGroupManager> cgroup_mgr_;
 };
 
