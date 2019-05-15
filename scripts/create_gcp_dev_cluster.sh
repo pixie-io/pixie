@@ -149,4 +149,8 @@ if [ ! ${BARE_CLUSTER} = true ]; then
 
   # TODO(oazizi/philkuz): Enable monitoring through this script.
   # $PIXIE_ROOT_DIR/demos/applications/sockshop/monitoring_manifests/create_monitoring.sh
+
+  # Load certs and secrets for required Pixie agent deployment.
+  make k8s-load-certs
+  make k8s-load-dev-secrets
 fi
