@@ -43,9 +43,8 @@ class HTTPTraceBPFTest : public ::testing::Test {
   void CheckCapturedData() {
     const int table_num = 0;
     types::ColumnWrapperRecordBatch record_batch;
-    Status init_status = InitRecordBatch(HTTPTraceConnector::kElements[table_num].elements(),
-                                         /*target_capacity*/ 2, &record_batch);
-    EXPECT_EQ(0, init_status.code());
+    EXPECT_OK(InitRecordBatch(HTTPTraceConnector::kElements[table_num].elements(),
+                              /*target_capacity*/ 2, &record_batch));
     source->TransferData(table_num, &record_batch);
     EXPECT_OK(source->Stop());
 
