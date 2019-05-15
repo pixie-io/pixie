@@ -36,7 +36,7 @@ std::string Schema::DebugString() const {
 
 StatusOr<const Relation> Schema::GetRelation(int64_t id) const {
   if (!HasRelation(id)) {
-    return error::NotFound("no such relation: %d", id);
+    return error::NotFound("no such relation: $0", id);
   }
   return relations_.at(id);
 }
