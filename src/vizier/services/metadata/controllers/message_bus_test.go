@@ -103,7 +103,7 @@ func getTestNATSInstance(t *testing.T, port int, agtMgr controllers.AgentManager
 	_, err := controllers.NewTestMessageBusController(getNATSURL(port), "agent_update", agtMgr, clock)
 	assert.Equal(t, err, nil)
 
-	nc, err := nats.Connect(getNATSURL(port))
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
 	if err != nil {
 		t.Fatal("Could not connect to NATS.")
 	}
@@ -112,7 +112,7 @@ func getTestNATSInstance(t *testing.T, port int, agtMgr controllers.AgentManager
 }
 
 func TestAgentRegisterRequest(t *testing.T) {
-	port, cleanup := startNATS(t)
+	port, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
 
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
@@ -167,7 +167,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 }
 
 func TestAgentUpdateRequest(t *testing.T) {
-	port, cleanup := startNATS(t)
+	port, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
 
 	// Create request and expected response protos.
@@ -207,7 +207,7 @@ func TestAgentUpdateRequest(t *testing.T) {
 }
 
 func TestAgentHeartbeat(t *testing.T) {
-	port, cleanup := startNATS(t)
+	port, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
 
 	// Create request and expected response protos.

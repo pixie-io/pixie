@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "jwt.go",
+        "nats.go",
         "test_clock.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/utils/testingutils",
@@ -12,6 +13,10 @@ go_library(
         "//src/services/common/proto:jwt_go_proto",
         "//src/services/common/utils:go_default_library",
         "@com_github_dgrijalva_jwt_go//:go_default_library",
+        "@com_github_nats_io_gnatsd//server:go_default_library",
+        "@com_github_nats_io_gnatsd//test:go_default_library",
+        "@com_github_nats_io_go_nats//:go_default_library",
+        "@com_github_phayes_freeport//:go_default_library",
     ],
 )
 
