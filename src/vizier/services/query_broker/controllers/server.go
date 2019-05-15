@@ -103,7 +103,33 @@ func (s *Server) GetSchemas(ctx context.Context, req *querybrokerpb.SchemaReques
 
 // GetAgentInfo returns information about registered agents.
 func (s *Server) GetAgentInfo(ctx context.Context, req *querybrokerpb.AgentInfoRequest) (*querybrokerpb.AgentInfoResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "Not implemented yet")
+	mdsReq := &metadatapb.AgentInfoRequest{}
+	mdsResp, err := s.mdsClient.GetAgentInfo(ctx, mdsReq)
+	if err != nil {
+		return nil, err
+	}
+
+	var agentStatuses []*querybrokerpb.AgentStatus
+
+	for _, agentInfo := range mdsResp.Info {
+		agentStatuses = append(agentStatuses, &querybrokerpb.AgentStatus{
+			Info: &querybrokerpb.AgentInfo{
+				AgentID: agentInfo.Info.AgentID,
+				HostInfo: &querybrokerpb.HostInfo{
+					Hostname: agentInfo.Info.HostInfo.Hostname,
+				},
+			},
+			LastHeartbeatNs: agentInfo.LastHeartbeatNs,
+			State:           querybrokerpb.AGENT_STATE_HEALTHY,
+		})
+	}
+
+	// Map the responses.
+	resp := &querybrokerpb.AgentInfoResponse{
+		Info: agentStatuses,
+	}
+
+	return resp, nil
 }
 
 // ReceiveAgentQueryResult gets the query result from an agent and stores the results until all

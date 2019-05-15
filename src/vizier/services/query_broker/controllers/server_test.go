@@ -27,6 +27,32 @@ info {
 			hostname: "test_host"
 		}
 	}
+	state: 1
+}
+`
+
+const getMultipleAgentsResponse = `
+info {
+	info {
+		agent_id {
+			data: "21285cdd1de94ab1ae6a0ba08c8c676c"
+		}
+		host_info {
+			hostname: "test_host"
+		}
+	}
+	state: 1
+}
+info {
+	info {
+		agent_id {
+			data: "31285cdd1de94ab1ae6a0ba08c8c676c"
+		}
+		host_info {
+			hostname: "another_host"
+		}
+	}
+	state: 1
 }
 `
 
@@ -200,4 +226,106 @@ func TestReceiveAgentQueryResult(t *testing.T) {
 
 	resp, err := s.ReceiveAgentQueryResult(context.Background(), req)
 	assert.Equal(t, expectedResp, resp)
+}
+
+func TestGetAgentInfo(t *testing.T) {
+	// Start NATS.
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	// Set up mocks.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
+
+	req := new(querybrokerpb.AgentQueryResultRequest)
+	if err := proto.UnmarshalText(agent1Response, req); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	getAgentsPB := &metadatapb.AgentInfoResponse{}
+	if err := proto.UnmarshalText(getAgentsResponse, getAgentsPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	mds.
+		EXPECT().
+		GetAgentInfo(context.Background(), &metadatapb.AgentInfoRequest{}).
+		Return(getAgentsPB, nil)
+
+		// Set up server.
+	env, err := querybrokerenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	s, err := NewServer(env, mds, nc)
+	if err != nil {
+		t.Fatal("Creating server failed.")
+	}
+
+	getAgentsRespPB := &querybrokerpb.AgentInfoResponse{}
+	if err := proto.UnmarshalText(getAgentsResponse, getAgentsRespPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	resp, err := s.GetAgentInfo(context.Background(), &querybrokerpb.AgentInfoRequest{})
+	assert.Equal(t, getAgentsRespPB, resp)
+}
+
+func TestGetMultipleAgentInfo(t *testing.T) {
+	// Start NATS.
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	// Set up mocks.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
+
+	req := new(querybrokerpb.AgentQueryResultRequest)
+	if err := proto.UnmarshalText(agent1Response, req); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	getAgentsPB := &metadatapb.AgentInfoResponse{}
+	if err := proto.UnmarshalText(getMultipleAgentsResponse, getAgentsPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	mds.
+		EXPECT().
+		GetAgentInfo(context.Background(), &metadatapb.AgentInfoRequest{}).
+		Return(getAgentsPB, nil)
+
+		// Set up server.
+	env, err := querybrokerenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	s, err := NewServer(env, mds, nc)
+	if err != nil {
+		t.Fatal("Creating server failed.")
+	}
+
+	getAgentsRespPB := &querybrokerpb.AgentInfoResponse{}
+	if err := proto.UnmarshalText(getMultipleAgentsResponse, getAgentsRespPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	resp, err := s.GetAgentInfo(context.Background(), &querybrokerpb.AgentInfoRequest{})
+	assert.Equal(t, getAgentsRespPB, resp)
 }
