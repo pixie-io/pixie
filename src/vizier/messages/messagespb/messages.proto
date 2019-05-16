@@ -3,6 +3,7 @@ syntax = "proto3";
 package pl.vizier.messages;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/carnot/planpb/plan.proto";
 import "src/common/uuid/proto/uuid.proto";
 import "src/table_store/proto/schema.proto";
 
@@ -80,5 +81,7 @@ message ExecuteQueryRequest {
     uuidpb.UUID query_id      = 1 [
                                   (gogoproto.customname) = "QueryID"
                                   ];
+    // TODO(philkuz) DEPRECATION planned.
     string query_str = 2;
+    pl.carnot.planpb.Plan logical_plan = 3;
 }
