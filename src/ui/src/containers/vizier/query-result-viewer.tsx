@@ -39,8 +39,12 @@ function extractData(colType: string, col: any, rowIdx): string {
 // This function translates the incoming table into a array of object,
 // where each key of the object is the column name according to the relation.
 function parseDataTable(relation: GQLDataTableRelation, tableData): any {
-  // The data is stored in columnar format, this converts
-  // it to rows.
+  if (!tableData || !Array.isArray(tableData.rowBatches)) {
+    // No row batches available.
+    return [];
+  }
+
+  // The data is stored in columnar format, this converts it to rows.
   const outputData = [];
   tableData.rowBatches.forEach((rowBatch) => {
     const numRows = rowBatch.numRows;
