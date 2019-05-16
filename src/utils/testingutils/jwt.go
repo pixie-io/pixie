@@ -9,21 +9,31 @@ import (
 	"pixielabs.ai/pixielabs/src/services/common/utils"
 )
 
-// GenerateTestClaims generates valid test user claims.
-func GenerateTestClaims(t *testing.T) *pb.JWTClaims {
+// GenerateTestClaimsWithDuration generates valid test user claims for a specified duration.
+func GenerateTestClaimsWithDuration(t *testing.T, duration time.Duration) *pb.JWTClaims {
 	claims := pb.JWTClaims{}
 	claims.Subject = "test"
 	claims.UserID = "test"
 	claims.Email = "test@test.com"
 	claims.Issuer = "PL"
-	claims.ExpiresAt = time.Now().Add(time.Minute * 60).Unix()
+	claims.ExpiresAt = time.Now().Add(duration).Unix()
 
 	return &claims
 }
 
+// GenerateTestClaims generates valid test user claims valid for 60 minutes
+func GenerateTestClaims(t *testing.T) *pb.JWTClaims {
+	return GenerateTestClaimsWithDuration(t, time.Minute*60)
+}
+
 // GenerateTestJWTToken generates valid tokens for testing.
 func GenerateTestJWTToken(t *testing.T, signingKey string) string {
-	claims := GenerateTestClaims(t)
+	return GenerateTestJWTTokenWithDuration(t, signingKey, time.Minute*60)
+}
+
+// GenerateTestJWTTokenWithDuration generates valid tokens for testing with the specified duration.
+func GenerateTestJWTTokenWithDuration(t *testing.T, signingKey string, timeout time.Duration) string {
+	claims := GenerateTestClaimsWithDuration(t, timeout)
 
 	return SignPBClaims(t, claims, signingKey)
 }
