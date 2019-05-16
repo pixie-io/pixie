@@ -429,7 +429,7 @@ StatusOr<std::vector<RecordBatchSPtr>> Table::GetTableAsRecordBatches() const {
   for (int64_t i = 0; i < NumColumns(); i++) {
     auto col = GetColumn(i);
     col_selector.push_back(i);
-    schema_vector.push_back(arrow::field(col->name(), col->batch(0)->type()));
+    schema_vector.push_back(arrow::field(col->name(), DataTypeToArrowType(col->data_type())));
   }
   auto schema = std::make_shared<arrow::Schema>(schema_vector);
 

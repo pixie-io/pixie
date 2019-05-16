@@ -33,6 +33,13 @@ std::shared_ptr<Table> TestTable() {
   return table;
 }
 
+std::shared_ptr<Table> EmptyTable() {
+  schema::Relation rel({types::DataType::FLOAT64, types::DataType::INT64}, {"col1", "col2"});
+  auto table = std::make_shared<Table>(rel);
+
+  return table;
+}
+
 }  // namespace
 
 TEST(ColumnTest, basic_test) {
@@ -352,6 +359,16 @@ TEST(TableTest, arrow_batches_test) {
   auto col2_batch = record_batch->column(1);
   EXPECT_TRUE(col1_batch->Equals(types::ToArrow(col1_exp1, arrow::default_memory_pool())));
   EXPECT_TRUE(col2_batch->Equals(types::ToArrow(col2_exp1, arrow::default_memory_pool())));
+}
+
+TEST(TableTest, empty_batches_test) {
+  auto table = EmptyTable();
+
+  auto record_batches_status = table->GetTableAsRecordBatches();
+  ASSERT_OK(record_batches_status);
+  auto record_batches = record_batches_status.ConsumeValueOrDie();
+
+  EXPECT_EQ(0, record_batches.size());
 }
 
 TEST(TableTest, greater_than_eq_eq) {
