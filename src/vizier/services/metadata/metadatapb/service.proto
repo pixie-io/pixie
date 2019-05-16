@@ -20,10 +20,6 @@ service MetadataService {
     rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
 }
 
-// The schema information per agent.
-message Schema {
-    repeated pl.table_store.schemapb.Relation relations = 1;
-}
 
 // The schema request for each agent's schema.
 message SchemaByAgentRequest {
@@ -38,7 +34,7 @@ message SchemaByAgentResponse {
         uuidpb.UUID agent_id      = 1 [
                                       (gogoproto.customname) = "AgentID"
                                       ];
-        Schema schema = 2;
+        pl.table_store.schemapb.Schema schema = 2;
     }
     repeated SchemaByAgent schema_by_agent = 1;
 }
@@ -47,7 +43,7 @@ message SchemaRequest {}
 
 // The schema response from the metadata service containing the schema that all agents serve.
 message SchemaResponse {
-    Schema schema = 2;
+    pl.table_store.schemapb.Schema schema = 2;
 }
 
 enum AgentState {
