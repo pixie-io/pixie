@@ -10,14 +10,11 @@ package compiler
 //
 // char* CompilerCompileGoStr(CompilerPtr compiler_ptr,
 // 													 _GoString_ schema,
-// 													 _GoString_ table_name,
 // 													 _GoString_ query,
 // 													 int* resultLen) {
 //   return CompilerCompile(compiler_ptr,
 //   											 _GoStringPtr(schema),
 //   											 _GoStringLen(schema),
-//   											 _GoStringPtr(table_name),
-//   											 _GoStringLen(table_name),
 //   											 _GoStringPtr(query),
 //   											 _GoStringLen(query),
 //   											 resultLen);
@@ -30,6 +27,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	pb "pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
+	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 )
 
 // GoCompiler wraps the C Compiler.
@@ -45,12 +43,11 @@ func New() GoCompiler {
 }
 
 // Compile the query with the schema in place, then return the result as a logical plan protobuf.
-func (cm GoCompiler) Compile(schema, tableName, query string) (*pb.CompilerResult, error) {
+func (cm GoCompiler) Compile(schema *schemapb.Schema, query string) (*pb.CompilerResult, error) {
 	var resultLen C.int
-	// TODO(reviewer) what if we also pass a "error" bool pointer that keeps
-	// track of whether the result is an error or not?
-	// That way we don't have to unmarshal before we find out there's an error.
-	res := C.CompilerCompileGoStr(cm.compiler, schema, tableName, query, &resultLen)
+	// TODO(philkuz) change this into the serialized (not human readable version) and figure out bytes[] passing.
+	schemaStr := proto.MarshalTextString(schema)
+	res := C.CompilerCompileGoStr(cm.compiler, schemaStr, query, &resultLen)
 	defer C.CompilerStrFree(res)
 	lp := C.GoBytes(unsafe.Pointer(res), resultLen)
 	if resultLen == 0 {

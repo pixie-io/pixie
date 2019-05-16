@@ -12,24 +12,28 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/base/time.h"
+#include "src/table_store/proto/schema.pb.h"
 #include "src/table_store/schema/relation.h"
 
 namespace {
 pl::StatusOr<std::unique_ptr<pl::carnot::compiler::RelationMap>> MakeRelationMap(
-    std::string relation_pb_str, std::string table_name) {
-  pl::table_store::schema::Relation rel;
+    std::string schema_pb_str) {
+  pl::table_store::schemapb::Schema schema_pb;
 
-  pl::table_store::schemapb::Relation relation_pb;
-  bool str_merge_success =
-      google::protobuf::TextFormat::MergeFromString(relation_pb_str, &relation_pb);
+  // TODO(philkuz) convert this and the other calls into a serialized protobuf instead of a human
+  // readable representation.
+  bool str_merge_success = google::protobuf::TextFormat::MergeFromString(schema_pb_str, &schema_pb);
   if (!str_merge_success) {
     return pl::error::InvalidArgument("Couldn't load the relation str as a protobuf.");
   }
 
-  PL_RETURN_IF_ERROR(rel.FromProto(&relation_pb));
-
   auto rel_map = std::make_unique<pl::carnot::compiler::RelationMap>();
-  rel_map->emplace(table_name, rel);
+  for (auto &relation_pair : schema_pb.relation_map()) {
+    pl::table_store::schema::Relation rel;
+    PL_RETURN_IF_ERROR(rel.FromProto(&relation_pair.second));
+    rel_map->emplace(relation_pair.first, rel);
+  }
+
   return rel_map;
 }
 
@@ -71,13 +75,10 @@ CompilerPtr CompilerNew() {
 }
 
 char *CompilerCompile(CompilerPtr compiler_ptr, const char *rel_str_c, int rel_str_len,
-                      const char *table_name_str_c, int table_name_str_len, const char *query,
-                      int query_len, int *resultLen) {
+                      const char *query, int query_len, int *resultLen) {
   DCHECK(rel_str_c != nullptr);
-  DCHECK(table_name_str_c != nullptr);
   DCHECK(query != nullptr);
   std::string rel_str(rel_str_c, rel_str_c + rel_str_len);
-  std::string table_name_str(table_name_str_c, table_name_str_c + table_name_str_len);
   std::string query_str(query, query + query_len);
 
   auto compiler = reinterpret_cast<pl::carnot::compiler::Compiler *>(compiler_ptr);
@@ -91,7 +92,7 @@ char *CompilerCompile(CompilerPtr compiler_ptr, const char *rel_str_c, int rel_s
       registry_info_status.ConsumeValueOrDie();
 
   pl::StatusOr<std::unique_ptr<pl::carnot::compiler::RelationMap>> rel_map_status =
-      MakeRelationMap(rel_str, table_name_str);
+      MakeRelationMap(rel_str);
   if (!rel_map_status.ok()) {
     return ReturnStatusEarly(rel_map_status.status(), resultLen);
   }

@@ -68,3 +68,7 @@ message Table {
   // A row batch of data.
   repeated RowBatchData row_batches = 5;
 }
+
+message Schema {
+  map<string, Relation> relation_map = 1;
+}

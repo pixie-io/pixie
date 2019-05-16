@@ -18,15 +18,12 @@ CompilerPtr CompilerNew();
  * @param compiler    - pointer to the compiler object.
  * @param rel_str_c      - relation represented as a protobuf
  * @param rel_str_len  - length of the rel_map string
- * @param table_name_str_c      - name of the table.
- * @param table_name_str_len  - length of the table_name_str
  * @param query       - The query string to comple.
  * @param query_len   - The length of the query string.
  * @return char*      - the serialized logical plan after compilation.
  */
 char *CompilerCompile(CompilerPtr compiler_ptr, const char *rel_str_c, int rel_str_len,
-                      const char *table_name_str_c, int table_name_str_len, const char *query,
-                      int query_len, int *resultLen);
+                      const char *query, int query_len, int *resultLen);
 
 /**
  * @brief Frees up the memory handled by the compiler.

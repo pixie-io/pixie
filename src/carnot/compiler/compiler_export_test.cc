@@ -17,10 +17,9 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 StatusOr<std::string> CompilerCompileGoStr(CompilerPtr compiler_ptr, std::string schema,
-                                           std::string tableName, std::string query,
-                                           int* resultLen) {
-  char* result = CompilerCompile(compiler_ptr, schema.c_str(), schema.length(), tableName.c_str(),
-                                 tableName.length(), query.c_str(), query.length(), resultLen);
+                                           std::string query, int* resultLen) {
+  char* result = CompilerCompile(compiler_ptr, schema.c_str(), schema.length(), query.c_str(),
+                                 query.length(), resultLen);
   if (*resultLen == 0) {
     return error::InvalidArgument("Compiler failed to return.");
   }
@@ -35,7 +34,11 @@ class CompilerExportTest : public ::testing::Test {
   void SetUp() override {
     compiler_ = CompilerNew();
     // Setup the schema from a proto.
-    rel_proto_ = R"(columns {
+    rel_proto_ = R"proto(
+      relation_map {
+  key: "perf_and_http"
+  value {
+    columns {
       column_name: "_time"
       column_type: TIME64NS
     }
@@ -50,7 +53,9 @@ class CompilerExportTest : public ::testing::Test {
     columns {
       column_name: "http"
       column_type: INT64
-    })";
+  }
+}
+    })proto";
     table_name_ = "perf_and_http";
   }
   void TearDown() override { CompilerFree(compiler_); }
@@ -160,8 +165,8 @@ TEST_F(CompilerExportTest, query_test) {
       "r.cpu_cycles/r.tlb_misses})",
       "mapDF.Result(name='out')",
   };
-  auto compiler_interface_result = CompilerCompileGoStr(
-      compiler_, rel_proto_, table_name_, absl::StrJoin(query_lines, "\n"), &result_len);
+  auto compiler_interface_result =
+      CompilerCompileGoStr(compiler_, rel_proto_, absl::StrJoin(query_lines, "\n"), &result_len);
   ASSERT_OK(compiler_interface_result);
 
   compilerpb::CompilerResult compiler_result_pb;
@@ -185,7 +190,7 @@ TEST_F(CompilerExportTest, bad_queries) {
       "mapDF.Result(name='out')",
   };
   auto compiler_interface_result = CompilerCompileGoStr(
-      compiler_, rel_proto_, table_name_, absl::StrJoin(bad_table_query, "\n"), &result_len);
+      compiler_, rel_proto_, absl::StrJoin(bad_table_query, "\n"), &result_len);
   // The compiler should successfully compile and a proto should be returned.
   ASSERT_OK(compiler_interface_result);
   compilerpb::CompilerResult compiler_result_pb;

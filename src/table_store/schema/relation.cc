@@ -84,7 +84,7 @@ Status Relation::ToProto(table_store::schemapb::Relation *relation_proto) const 
   }
   return Status::OK();
 }
-Status Relation::FromProto(table_store::schemapb::Relation *relation_pb) {
+Status Relation::FromProto(const table_store::schemapb::Relation *relation_pb) {
   if (NumColumns() != 0) {
     return error::AlreadyExists("Relation already has $0 columns. Can't init from proto.",
                                 NumColumns());

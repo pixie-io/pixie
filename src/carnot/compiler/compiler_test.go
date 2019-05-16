@@ -13,7 +13,30 @@ import (
 	pb "pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
+	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 )
+
+var relProto = `relation_map {
+		key: "perf_and_http"
+		value {
+			columns {
+				column_name: "_time"
+				column_type: TIME64NS
+			}
+			columns {
+				column_name: "cpu_cycles"
+				column_type: INT64
+			}
+			columns {
+				column_name: "tlb_misses"
+				column_type: INT64
+			}
+			columns {
+				column_name: "http"
+				column_type: INT64
+			}
+		}
+	}`
 
 // TestCompiler_Simple makes sure that we can actually pass in all the info needed
 // to create a CompilerState and can successfully compile to an expected result.
@@ -109,25 +132,6 @@ func TestCompiler_Simple(t *testing.T) {
 		fmt.Println(err)
 	}
 
-	// Setup the schema from a proto.
-	relProto := `columns {
-		column_name: "_time"
-		column_type: TIME64NS
-	}
-	columns {
-		column_name: "cpu_cycles"
-		column_type: INT64 
-	}
-	columns {
-		column_name: "tlb_misses"
-		column_type: INT64 
-	}
-	columns {
-		column_name: "http"
-		column_type: INT64
-	}`
-	tableName := "perf_and_http"
-
 	// Create the compiler.
 	c := compiler.New()
 	defer c.Free()
@@ -138,7 +142,9 @@ func TestCompiler_Simple(t *testing.T) {
 		"mapDF.Result(name='out')",
 	}
 	query := strings.Join(queryLines, "\n")
-	compilerResultPB, err := c.Compile(relProto, tableName, query)
+	schema := new(schemapb.Schema)
+	proto.UnmarshalText(relProto, schema)
+	compilerResultPB, err := c.Compile(schema, query)
 	if err != nil {
 		log.Fatalln("Failed to compile:", err)
 		os.Exit(1)
@@ -151,25 +157,6 @@ func TestCompiler_Simple(t *testing.T) {
 }
 
 func TestCompiler_MissingTable(t *testing.T) {
-	// Setup the schema from a proto.
-	relProto := `columns {
-		column_name: "_time"
-		column_type: TIME64NS
-	}
-	columns {
-		column_name: "cpu_cycles"
-		column_type: INT64 
-	}
-	columns {
-		column_name: "tlb_misses"
-		column_type: INT64 
-	}
-	columns {
-		column_name: "http"
-		column_type: INT64
-	}`
-	tableName := "perf_and_http"
-
 	// Create the compiler.
 	c := compiler.New()
 	defer c.Free()
@@ -180,14 +167,17 @@ func TestCompiler_MissingTable(t *testing.T) {
 		"mapDF.Result(name='out')",
 	}
 	query := strings.Join(queryLines, "\n")
-	compilerResultPB, err := c.Compile(relProto, tableName, query)
+	schema := new(schemapb.Schema)
+	if err := proto.UnmarshalText(relProto, schema); err != nil {
+		t.Fatal("Failed to unmarshal:", err)
+	}
+	compilerResultPB, err := c.Compile(schema, query)
 	if err != nil {
-		t.Fatal("Failed to compiler:", err)
+		t.Fatal("Failed to compile:", err)
 	}
 	status := compilerResultPB.Status
 
 	assert.NotEqual(t, status.ErrCode, statuspb.OK)
-	// TODO(PL-518) test the error context.
 	var errorPB pb.CompilerErrorGroup
 	err = compiler.GetCompilerErrorContext(status, &errorPB)
 	if !assert.NoError(t, err) {
