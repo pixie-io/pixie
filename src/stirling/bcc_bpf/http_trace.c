@@ -11,6 +11,8 @@
 struct accept_info_t {
   uint64_t timestamp_ns;
   struct sockaddr_in6 addr;
+  uint32_t conn_id;
+  uint64_t seq_num;
 } __attribute__((__packed__, aligned(8)));
 
 #define MAX_MSG_SIZE 4096
@@ -20,7 +22,7 @@ struct syscall_write_event_t {
     uint64_t time_stamp_ns;
     uint32_t tgid;
     uint32_t pid;
-    int fd;
+    uint32_t fd;
     uint32_t event_type;
     uint32_t msg_bytes;
     uint32_t msg_buf_size;
@@ -57,9 +59,8 @@ BPF_HASH(active_sock_addr, u64, struct addr_info_t);
 BPF_HASH(accept_info_map, u64, struct accept_info_t);
 
 struct write_info_t {
-  int fd;
+  u64 lookup_fd;
   char* buf;
-  struct accept_info_t accept_info;
 } __attribute__((__packed__, aligned(8)));
 
 // Map from threads to its ongoing write() syscall's input argument.
@@ -67,6 +68,10 @@ struct write_info_t {
 //
 // TODO(yzhao): Consider merging this with active_sock_addr.
 BPF_HASH(active_write_info_map, u64, struct write_info_t);
+
+// Map from process to the next available connection ID.
+// Key is tgid
+BPF_HASH(proc_conn_map, u32, u32);
 
 // This function stores the address to the sockaddr struct in the active_sock_addr map.
 // The key is the current pid/tgid.
@@ -89,7 +94,7 @@ int probe_ret_accept4(struct pt_regs *ctx) {
   bool TRUE = true;
 
   u64 id = bpf_get_current_pid_tgid();
-  u64 tgid = id >> 32;
+  u32 tgid = id >> 32;
 
   int ret_fd = PT_REGS_RC(ctx);
   if (ret_fd < 0) {
@@ -107,12 +112,21 @@ int probe_ret_accept4(struct pt_regs *ctx) {
   }
 
   // Prepend TGID to make the FD unique across processes.
-  u64 tgid_fd = (tgid << 32) | (u32)ret_fd;
+  u64 tgid_fd = ((u64)tgid << 32) | (u32)ret_fd;
+
+  u32 kZero = 0;
+  u32 conn_id = 0;
+  u32* curr_conn_id = proc_conn_map.lookup_or_init(&tgid, &kZero);
+  if (curr_conn_id != NULL) {
+    conn_id = (*curr_conn_id)++;
+  }
 
   struct accept_info_t accept_info;
   memset(&accept_info, 0, sizeof(struct accept_info_t));
   accept_info.timestamp_ns = bpf_ktime_get_ns();
   accept_info.addr = *((struct sockaddr_in6*) addr_info->addr);
+  accept_info.conn_id = conn_id;
+  accept_info.seq_num = 0;
   accept_info_map.update(&tgid_fd, &accept_info);
 
  done:
@@ -123,9 +137,11 @@ int probe_ret_accept4(struct pt_regs *ctx) {
 }
 
 static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t count) {
+  if (fd < 0) { return 0; }
+
   u64 id = bpf_get_current_pid_tgid();
-  u64 tgid = id >> 32;
-  u64 lookup_fd = (tgid << 32) | fd;
+  u32 tgid = id >> 32;
+  u64 lookup_fd = ((u64)tgid << 32) | (u32)fd;
 
   struct accept_info_t *accept_info = accept_info_map.lookup(&lookup_fd);
   if (accept_info == NULL) {
@@ -135,9 +151,8 @@ static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t
 
   struct write_info_t write_info;
   memset(&write_info, 0, sizeof(struct write_info_t));
-  write_info.fd = fd;
+  write_info.lookup_fd = lookup_fd;
   write_info.buf = buf;
-  write_info.accept_info = *accept_info;
 
   active_write_info_map.update(&id, &write_info);
   return 0;
@@ -157,6 +172,12 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
     goto done;
   }
 
+  uint64_t lookup_fd = write_info->lookup_fd;
+  struct accept_info_t *accept_info = accept_info_map.lookup(&lookup_fd);
+  if (accept_info == NULL) {
+    goto done;
+  }
+
   u32 zero = 0;
   struct syscall_write_event_t *event = write_buffer_heap.lookup(&zero);
   if (event == NULL) {
@@ -169,7 +190,9 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
   //size_t buf_size = count < sizeof(event->msg) ? count : sizeof(event->msg);
   size_t buf_size = sizeof(event->msg);
 
-  event->attr.accept_info = write_info->accept_info;
+  event->attr.accept_info = *accept_info;
+  // Increment sequence number after copying so the index is 0-based.
+  ++accept_info->seq_num;
   event->attr.event_type = event_type;
   event->attr.msg_bytes = written_bytes;
   // TODO(yzhao): This is the time is after write/send() finishes. If we want to capture the time
@@ -177,7 +200,7 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
   event->attr.time_stamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
   event->attr.pid = (uint32_t)id;
-  event->attr.fd = write_info->fd;
+  event->attr.fd = (uint32_t)write_info->lookup_fd;
   event->attr.msg_buf_size = buf_size;
 
   bpf_probe_read(&event->msg, buf_size, (const void*) write_info->buf);
@@ -223,9 +246,10 @@ int probe_ret_sendto(struct pt_regs *ctx) {
 // 3) What do we do when the sendto() is called with a dest_addr provided? I believe this overrides the accept_info.
 
 int probe_close(struct pt_regs *ctx, int fd) {
+  if (fd < 0) { return 0; }
   u64 id = bpf_get_current_pid_tgid();
-  u64 tgid = id >> 32;
-  u64 lookup_fd = (tgid << 32) | fd;
+  u32 tgid = id >> 32;
+  u64 lookup_fd = ((u64)tgid << 32) | fd;
   accept_info_map.delete(&lookup_fd);
   return 0;
 }

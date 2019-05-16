@@ -43,15 +43,13 @@ Content-Type: text/plain; charset=utf-8
   EXPECT_OK(InitRecordBatch(HTTPTraceConnector::kElements[0].elements(),
                             /*target_capacity*/ 1, &record_batch));
 
-  source->SetRecordBatch(&record_batch);
-
-  HTTPTraceConnector::HandleProbeOutput(source.get(), &event1, sizeof(event1));
+  source->OutputEvent(event1, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size())
         << "event1 Content-Type does have 'json', and will be selected by the default filter";
   }
 
-  HTTPTraceConnector::HandleProbeOutput(source.get(), &event2, sizeof(event2));
+  source->OutputEvent(event2, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size())
         << "event2 Content-Type has no 'json', and won't be selected by the default filter";
@@ -73,7 +71,7 @@ Content-Type: text/plain; charset=utf-8
       {{"Content-Type", "application/json"}},
       {{"Content-Encoding", "gzip"}},
   };
-  HTTPTraceConnector::HandleProbeOutput(source.get(), &event1, sizeof(event1));
+  source->OutputEvent(event1, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(2, column->Size())
         << "The filter is changed to require 'application/json' in Content-Type header, "

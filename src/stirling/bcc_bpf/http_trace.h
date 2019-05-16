@@ -12,6 +12,11 @@
 struct accept_info_t {
   uint64_t timestamp_ns;
   struct sockaddr_in6 addr;
+  // A 0-based number that uniquely identify a connection for a process.
+  uint32_t conn_id;
+  // A 0-based number for the next event on this connection.
+  // This number is incremented each time a new event is recorded.
+  uint64_t seq_num;
 } __attribute__((__packed__, aligned(8)));
 
 // This is the maximum value for the msg size.
@@ -32,7 +37,7 @@ struct syscall_write_event_t {
     uint32_t tgid;
     uint32_t pid;
     // The file descriptor to the opened network connection.
-    int fd;
+    uint32_t fd;
     // The type of the actual data that the msg field encodes, which is used by the caller
     // to determine how to interpret the data.
     uint32_t event_type;

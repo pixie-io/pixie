@@ -3,10 +3,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <string_view>
 #include <thread>
 
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
+#include "src/stirling/bcc_bpf/http_trace.h"
 #include "src/stirling/http_trace_connector.h"
 #include "src/stirling/testing/tcp_socket.h"
 
@@ -17,10 +19,14 @@ using ::pl::stirling::testing::TCPSocket;
 using ::pl::types::ColumnWrapper;
 using ::pl::types::ColumnWrapperRecordBatch;
 using ::pl::types::DataType;
+using ::testing::_;
+using ::testing::ElementsAre;
+using ::testing::Pair;
 using ::testing::SizeIs;
+using ::testing::UnorderedElementsAre;
 
 class HTTPTraceBPFTest : public ::testing::Test {
- public:
+ protected:
   HTTPTraceBPFTest() {}
 
   void SetUp() override {
@@ -64,17 +70,16 @@ class HTTPTraceBPFTest : public ::testing::Test {
               record_batch[HTTPTraceConnector::kHTTPHeaders]->Get<types::StringValue>(1));
   }
 
-  const std::string msg1 = R"(HTTP/1.1 200 OK
+  static constexpr std::string_view kMsg1 = R"(HTTP/1.1 200 OK
 Content-Type: application/json; msg1
 
 )";
 
-  const std::string msg2 = R"(HTTP/1.1 200 OK
+  static constexpr std::string_view kMsg2 = R"(HTTP/1.1 200 OK
 Content-Type: application/json; msg2
 
 )";
 
- private:
   std::unique_ptr<SourceConnector> source;
   std::thread client_thread;
 };
@@ -86,8 +91,8 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
   SpawnClient(server);
 
   server.Accept();
-  EXPECT_EQ(msg1.length(), server.Write(msg1));
-  EXPECT_EQ(msg2.length(), server.Write(msg2));
+  EXPECT_EQ(kMsg1.length(), server.Write(kMsg1));
+  EXPECT_EQ(kMsg2.length(), server.Write(kMsg2));
   server.Close();
 
   JoinClient();
@@ -102,8 +107,9 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
   SpawnClient(server);
 
   server.Accept();
-  EXPECT_EQ(msg1.length(), server.Send(msg1));
-  EXPECT_EQ(msg2.length(), server.Send(msg2));
+  EXPECT_EQ(kMsg1.length(), server.Send(kMsg1));
+
+  EXPECT_EQ(kMsg2.length(), server.Send(kMsg2));
   server.Close();
 
   JoinClient();
@@ -111,8 +117,46 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
   CheckCapturedData();
 }
 
-// TODO(yzhao): Add close() and reopen sequences to test the behavior across connection establish
-// and close.
+TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
+  {
+    TCPSocket server;
+    server.Bind();
+    SpawnClient(server);
+    server.Accept();
+    EXPECT_EQ(kMsg1.length(), server.Write(kMsg1));
+    server.Close();
+    client_thread.join();
+  }
+  {
+    // A new connection.
+    TCPSocket server;
+    server.Bind();
+    SpawnClient(server);
+    server.Accept();
+    EXPECT_EQ(kMsg2.length(), server.Write(kMsg2));
+    server.Close();
+    client_thread.join();
+  }
+
+  auto* http_trace_connector = dynamic_cast<HTTPTraceConnector*>(source.get());
+  ASSERT_NE(nullptr, http_trace_connector);
+  http_trace_connector->PollPerfBuffer();
+  EXPECT_OK(source->Stop());
+
+  ASSERT_THAT(http_trace_connector->TestOnlyGetWriteStreamMap(),
+              UnorderedElementsAre(Pair(_, SizeIs(1)), Pair(_, SizeIs(1))));
+
+  auto get_message = [](const syscall_write_event_t& event) -> std::string_view {
+    return std::string_view(event.msg, std::min(event.attr.msg_bytes, event.attr.msg_buf_size));
+  };
+  std::vector<std::pair<uint64_t, std::string_view>> seq_msgs;
+  for (const auto& stream : http_trace_connector->TestOnlyGetWriteStreamMap()) {
+    for (const auto& seq_event : stream.second) {
+      seq_msgs.push_back(std::make_pair(seq_event.first, get_message(seq_event.second)));
+    }
+  }
+  EXPECT_THAT(seq_msgs, UnorderedElementsAre(Pair(0, kMsg1), Pair(0, kMsg2)));
+}
 
 }  // namespace stirling
 }  // namespace pl

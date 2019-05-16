@@ -1,5 +1,6 @@
 #ifdef __linux__
 
+#include <algorithm>
 #include <vector>
 
 #include "absl/strings/match.h"
@@ -52,6 +53,9 @@ bool HTTPTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
 
 void HTTPTraceConnector::AppendToRecordBatch(HTTPTraceRecord record,
                                              types::ColumnWrapperRecordBatch* record_batch) {
+  CHECK(record_batch->size() == HTTPTraceConnector::kElements[0].elements().size())
+      << "HTTP trace record field count should be: "
+      << HTTPTraceConnector::kElements[0].elements().size() << ", got " << record_batch->size();
   auto& columns = *record_batch;
   columns[kTimeStampNs]->Append<types::Time64NSValue>(record.time_stamp_ns);
   columns[kTgid]->Append<types::Int64Value>(record.tgid);
@@ -115,36 +119,37 @@ void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*da
   }
   auto* event = static_cast<syscall_write_event_t*>(data);
   auto* connector = static_cast<HTTPTraceConnector*>(cb_cookie);
-  if (connector->GetRecordBatch() == nullptr) {
-    return;
-  }
   if (event->attr.event_type == kEventTypeSyscallWriteEvent ||
       event->attr.event_type == kEventTypeSyscallSendEvent) {
-    bool succeeded;
-    HTTPTraceRecord record;
-
-    // Extract the IP and port.
-    succeeded = ParseSockAddr(*event, &record);
-    if (!succeeded) {
-      LOG(ERROR) << "Failed to parse SyscallWriteEvent (addr).";
-      return;
-    }
-    record.http_start_time_stamp_ns =
-        event->attr.accept_info.timestamp_ns + connector->ClockRealTimeOffset();
-
-    // Parse as either a Request, Response, or as Raw (if everything else fails).
-    succeeded = ParseHTTPRequest(*event, &record) || ParseHTTPResponse(*event, &record) ||
-                ParseRaw(*event, &record);
-    if (!succeeded) {
-      LOG(ERROR) << "Failed to parse SyscallWriteEvent.";
-      return;
-    }
-    record.time_stamp_ns = event->attr.time_stamp_ns + connector->ClockRealTimeOffset();
-
-    ConsumeRecord(std::move(record), connector->GetRecordBatch());
+    connector->AcceptEvent(*event);
   } else {
     LOG(ERROR) << "Unknown event type: " << event->attr.event_type;
   }
+}
+
+void HTTPTraceConnector::OutputEvent(const syscall_write_event_t& event,
+                                     types::ColumnWrapperRecordBatch* record_batch) {
+  bool succeeded;
+  HTTPTraceRecord record;
+
+  // Extract the IP and port.
+  succeeded = ParseSockAddr(event, &record);
+  if (!succeeded) {
+    LOG(ERROR) << "Failed to parse SyscallWriteEvent (addr).";
+    return;
+  }
+  record.http_start_time_stamp_ns = event.attr.accept_info.timestamp_ns + ClockRealTimeOffset();
+
+  // Parse as either a Request, Response, or as Raw (if everything else fails).
+  succeeded = ParseHTTPRequest(event, &record) || ParseHTTPResponse(event, &record) ||
+              ParseRaw(event, &record);
+  if (!succeeded) {
+    LOG(ERROR) << "Failed to parse SyscallWriteEvent.";
+    return;
+  }
+  record.time_stamp_ns = event.attr.time_stamp_ns + ClockRealTimeOffset();
+
+  ConsumeRecord(std::move(record), record_batch);
 }
 
 // This function is invoked by BCC runtime when a item in the perf buffer is not read and lost.
@@ -234,19 +239,35 @@ Status HTTPTraceConnector::StopImpl() {
   return Status();
 }
 
+void HTTPTraceConnector::PollPerfBuffer() {
+  auto perf_buffer = bpf_.get_perf_buffer(kPerfBufferName);
+  if (perf_buffer != nullptr) {
+    perf_buffer->poll(1);
+  }
+}
+
 void HTTPTraceConnector::TransferDataImpl(uint32_t table_num,
                                           types::ColumnWrapperRecordBatch* record_batch) {
   CHECK_EQ(table_num, 0ULL) << absl::StrFormat(
       "This connector has only one table, but access to table_num=%d", table_num);
+  CHECK(record_batch != nullptr) << "record_batch cannot be nullptr";
 
-  auto perf_buffer = bpf_.get_perf_buffer(kPerfBufferName);
-  if (perf_buffer != nullptr) {
-    // record_batch_ is then given to HandleProbeOutput() through GetRecordBatch().
-    SetRecordBatch(record_batch);
-    perf_buffer->poll(1);
-    // Reset to prevent accidental misuse.
-    SetRecordBatch(nullptr);
+  PollPerfBuffer();
+
+  for (const auto& write_stream : write_stream_map_) {
+    for (const auto& seq_and_event : write_stream.second) {
+      OutputEvent(seq_and_event.second, record_batch);
+    }
   }
+  write_stream_map_.clear();
+}
+
+void HTTPTraceConnector::AcceptEvent(syscall_write_event_t event) {
+  const uint64_t stream_id =
+      (static_cast<uint64_t>(event.attr.tgid) << 32) | event.attr.accept_info.conn_id;
+  // accept_info_t is packed, so we need cast its member to the right type.
+  write_stream_map_[stream_id].emplace(static_cast<uint64_t>(event.attr.accept_info.seq_num),
+                                       std::move(event));
 }
 
 }  // namespace stirling

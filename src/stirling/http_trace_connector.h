@@ -33,6 +33,11 @@ OBJ_STRVIEW(http_trace_bcc_script, _binary_src_stirling_bcc_bpf_http_trace_c);
 namespace pl {
 namespace stirling {
 
+// Key: stream ID that identifies a TCP connection, value: map from sequence number to event.
+// TODO(yzhao): Write a benchmark for std::map vs. std::priority_queue and pick the more efficient
+// one for our usage scenarios.
+using write_stream_map_t = std::map<uint64_t, std::map<uint64_t, syscall_write_event_t> >;
+
 class HTTPTraceConnector : public SourceConnector {
  public:
   inline static const std::string_view kBCCScript = http_trace_bcc_script;
@@ -48,6 +53,7 @@ class HTTPTraceConnector : public SourceConnector {
       kName, {DataElement("time_", types::DataType::TIME64NS),
               // tgid is the user space "pid".
               DataElement("tgid", types::DataType::INT64),
+              // TODO(yzhao): Remove 'pid' and 'fd'.
               DataElement("pid", types::DataType::INT64), DataElement("fd", types::DataType::INT64),
               DataElement("event_type", types::DataType::STRING),
               // TODO(PL-519): Eventually, use the appropriate data type to represent IP addresses,
@@ -105,12 +111,12 @@ class HTTPTraceConnector : public SourceConnector {
   Status StopImpl() override;
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
-  // 'this' pointer of this class is passed to the callback, and the callback will call this
-  // function to get the result argument for processing data items from perf buffer.
-  types::ColumnWrapperRecordBatch* GetRecordBatch() const { return record_batch_; }
-  void SetRecordBatch(types::ColumnWrapperRecordBatch* record_batch) {
-    record_batch_ = record_batch;
-  }
+  void PollPerfBuffer();
+  void AcceptEvent(syscall_write_event_t event);
+  void OutputEvent(const syscall_write_event_t& event,
+                   types::ColumnWrapperRecordBatch* record_batch);
+
+  const write_stream_map_t& TestOnlyGetWriteStreamMap() const { return write_stream_map_; }
 
  private:
   explicit HTTPTraceConnector(const std::string& source_name)
@@ -131,6 +137,9 @@ class HTTPTraceConnector : public SourceConnector {
 
   ebpf::BPF bpf_;
   const int perf_buffer_page_num_ = 8;
+
+  // For each write stream, keep an ordered list of events.
+  write_stream_map_t write_stream_map_;
 
   // This holds the target buffer for recording the events captured in http tracing. It roughly
   // works as follows:
