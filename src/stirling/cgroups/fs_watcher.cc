@@ -3,6 +3,7 @@
 #include <experimental/filesystem>
 
 #include <algorithm>
+#include <cstring>
 #include <iterator>
 #include <memory>
 #include <queue>
@@ -23,7 +24,21 @@ namespace fs = std::experimental::filesystem;
 
 const uint32_t kBufferSize = 4096;
 
-bool FSWatcher::HasEvents() { return (event_queue_.size() > 0); }
+fs::path FSWatcher::FSEvent::GetPath() {
+  fs::path path = fs_node_->name;
+  FSNode *node_ptr = fs_node_->parent;
+  while (node_ptr) {
+    path = node_ptr->name / path;
+    node_ptr = node_ptr->parent;
+  }
+  return path;
+}
+
+bool FSWatcher::HasEvents() { return (!event_queue_.empty() && !overflow_); }
+
+bool FSWatcher::HasOverflow() { return overflow_; }
+
+void FSWatcher::ResetOverflow() { overflow_ = false; }
 
 StatusOr<FSWatcher::FSEvent> FSWatcher::GetNextEvent() {
   if (event_queue_.size()) {
@@ -39,10 +54,9 @@ Status FSWatcher::Init() {
   if (inotify_fd_ == -1) {
     return error::Unknown("Failed to initialize inotify");
   }
-  // Setting root to empty string. When reconstructing a path, we can just add
-  // the appropriate file separator. And setting the watch descriptor to -1,
+  // Setting the watch descriptor to -1,
   // which implies that it is invalid.
-  root_fs_node_ = std::make_unique<FSNode>(nullptr, /* wd */ -1, "");
+  root_fs_node_ = std::make_unique<FSNode>(nullptr, /* wd */ -1, "/");
   return Status::OK();
 }
 
@@ -183,22 +197,14 @@ Status FSWatcher::RemoveWatch(const fs::path &file_or_dir) {
   return Status::OK();
 }
 
-Status FSWatcher::RemoveAllWatchers() {
-  root_fs_node_->children.clear();
-  for (const auto &watch : inotify_watchers_) {
-    inotify_rm_watch(inotify_fd_, watch.first);
-  }
-  inotify_watchers_.clear();
-  return Status::OK();
-}
-
 Status FSWatcher::HandleInotifyEvent(inotify_event *event) {
   FSEventType type = FSEventType::kUnknown;
   std::string_view event_name;
+
   if (event->len) {
     auto event_length = strnlen(event->name, event->len);
     DCHECK(event_length < event->len);
-    event_name = std::string_view(event->name, event_length + 1);
+    event_name = std::string_view(event->name, event_length);
   }
 
   // Note that the events we are setting the type for are based on the
@@ -207,6 +213,7 @@ Status FSWatcher::HandleInotifyEvent(inotify_event *event) {
   // directory creation or deletion and file modification.
   if (event->wd == -1) {
     type = FSEventType::kOverFlow;
+    overflow_ = true;
   } else if (event->mask & IN_ISDIR) {
     if (event->mask & IN_CREATE) {
       type = FSEventType::kCreateDir;
@@ -217,7 +224,7 @@ Status FSWatcher::HandleInotifyEvent(inotify_event *event) {
     type = FSEventType::kModifyFile;
   }
 
-  event_queue_.emplace(type, inotify_watchers_[event->wd], event->wd, event_name);
+  event_queue_.emplace(type, event_name, inotify_watchers_[event->wd]);
   return Status::OK();
 }
 
@@ -233,7 +240,7 @@ Status FSWatcher::ReadInotifyUpdates() {
 
   while ((length = read(inotify_fd_, buffer + bytes_read, sizeof(buffer) - bytes_read)) > 0) {
     bytes_read += length;
-    while (buffer_offset < bytes_read) {
+    while (!overflow_ && (buffer_offset < bytes_read)) {
       inotify_event *event = reinterpret_cast<inotify_event *>(&buffer[buffer_offset]);
       // Check if the read is partial.
       if (buffer_offset + sizeof(inotify_event) + event->len > bytes_read) {

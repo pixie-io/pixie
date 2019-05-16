@@ -74,6 +74,8 @@ TEST_F(FSWatcherTest, fs_watcher_addwatch_removewatch) {
   EXPECT_EQ(0, fs_watcher_.NumWatchers());
 }
 
+// TODO(kgandhi): Planning to fix this test in a future diff where
+// fs watcher will be moved to common.
 TEST_F(FSWatcherTest, DISABLED_fs_watcher_read_inotify_event) {
   // Remove this directory if it already exists.
   fs::remove_all(
@@ -116,14 +118,13 @@ TEST_F(FSWatcherTest, DISABLED_fs_watcher_read_inotify_event) {
   EXPECT_EQ(2, fs_watcher_.NumEvents());
   auto fs_event = fs_watcher_.GetNextEvent().ConsumeValueOrDie();
   EXPECT_EQ(FSWatcher::FSEventType::kModifyFile, fs_event.type);
+  EXPECT_EQ(procs_file, fs_event.GetPath());
 
   EXPECT_EQ(1, fs_watcher_.NumEvents());
   fs_event = fs_watcher_.GetNextEvent().ConsumeValueOrDie();
   EXPECT_EQ(FSWatcher::FSEventType::kCreateDir, fs_event.type);
-
-  // Reset watchers and FSNode tree. Assuming a rescan of the filesystem.
-  EXPECT_OK(fs_watcher_.RemoveAllWatchers());
-  EXPECT_EQ(0, fs_watcher_.NumWatchers());
+  EXPECT_EQ(pod_dir, fs_event.GetPath());
+  EXPECT_EQ("3814823571b7857e7ef48e55414ade5d2d6c0c7d5f62476c9199bff741b5d31e", fs_event.name);
 
   // Remove the container directory that was created.
   EXPECT_TRUE(fs::remove_all(

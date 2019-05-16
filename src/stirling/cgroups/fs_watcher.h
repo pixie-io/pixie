@@ -11,8 +11,11 @@ namespace fs_watcher {
 class FSWatcher {
  public:
   struct FSEvent {};
-  bool SupportsInotify() { return false; }
+  static std::unique_ptr<FSWatcher> Create() { return std::unique_ptr<FSWatcher>(nullptr); }
+  static bool SupportsInotify() { return false; }
   bool HasEvents() { return false; }
+  bool HasOverflow() { return false; }
+  bool NotInitialized() { return true; }
   StatusOr<FSEvent> GetNextEvent() { return error::NotImplemented("Inotify not supported"); }
   Status AddWatch(const fs::path &file_or_dir, uint32_t flags) {
     return error::NotImplemented("Inotify not supported");
@@ -20,7 +23,6 @@ class FSWatcher {
   Status RemoveWatch(const fs::path &file_or_dir) {
     return error::NotImplemented("Inotify not supported");
   }
-  Status RemoveAllWatchers() { return error::NotImplemented("Inotify not supported"); }
   Status ReadInotifyUpdates() { return error::NotImplemented("Inotify not supported."); }
 };
 }  // namespace fs_watcher
@@ -56,7 +58,14 @@ namespace fs = std::experimental::filesystem;
 class FSWatcher {
  public:
   FSWatcher() = default;
-  ~FSWatcher() = default;
+  ~FSWatcher() { close(inotify_fd_); }
+
+  static bool SupportsInotify() { return true; }
+
+  static std::unique_ptr<FSWatcher> Create() {
+    std::unique_ptr<FSWatcher> retval(new FSWatcher());
+    return retval;
+  }
 
   /**
    * @brief Enum class to report inotify event types. Currently we only support
@@ -86,22 +95,17 @@ class FSWatcher {
    */
   struct FSEvent {
     FSEventType type;
-    FSNode *fs_node;
-    int wd;
     // Name of the event. For example, name of directory
     // that was created.
     std::string name;
-    FSEvent(FSEventType type, FSNode *node, int wd, std::string_view name)
-        : type(type), fs_node(node), wd(wd), name(name) {}
+    FSEvent(FSEventType type, std::string_view name, FSNode *node)
+        : type(type), name(name), fs_node_(node) {}
     FSEvent() {}
-  };
+    fs::path GetPath();
 
-  /**
-   * @brief Does the system support Inotify.
-   *
-   * @return true for linux.
-   */
-  bool SupportsInotify() { return true; }
+   private:
+    FSNode *fs_node_;
+  };
 
   /**
    * @brief Are there any pending inotify events that need to be processed.
@@ -110,6 +114,10 @@ class FSWatcher {
    * @return false No Inotify events.
    */
   bool HasEvents();
+
+  bool HasOverflow();
+
+  void ResetOverflow();
 
   /**
    * @brief Get the Next Event object from the inptify queue if there are events
@@ -138,13 +146,6 @@ class FSWatcher {
   Status RemoveWatch(const fs::path &file_or_dir);
 
   /**
-   * @brief Remove all existing watchers.
-   *
-   * @return Status
-   */
-  Status RemoveAllWatchers();
-
-  /**
    * @brief Read the inotify event queue and generate events for watchers that
    * have been added. Any new events will be available in the event_queue.
    *
@@ -155,6 +156,8 @@ class FSWatcher {
   size_t NumEvents() const { return event_queue_.size(); }
 
   size_t NumWatchers() const { return inotify_watchers_.size(); }
+
+  bool NotInitialized() { return inotify_fd_ == -1 || inotify_watchers_.empty(); }
 
  private:
   /**
@@ -243,8 +246,9 @@ class FSWatcher {
   // parent which holds a unique pointer to it.
   std::unordered_map<int, FSNode *> inotify_watchers_;
   std::queue<FSEvent> event_queue_;
-  int inotify_fd_;
+  int inotify_fd_ = -1;
   std::unique_ptr<FSNode> root_fs_node_ = nullptr;
+  bool overflow_ = false;
 };
 
 }  // namespace fs_watcher

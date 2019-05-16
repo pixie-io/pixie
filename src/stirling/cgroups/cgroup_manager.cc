@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "absl/strings/str_split.h"
+#include "absl/strings/strip.h"
 #include "src/common/base/base.h"
 #include "src/stirling/cgroups/cgroup_manager.h"
 
@@ -60,6 +61,70 @@ std::unique_ptr<CGroupManager> CGroupManager::Create(const common::SystemConfig 
   return retval;
 }
 
+void CGroupManager::AddFSWatch(const fs::path &path) {
+  if (!fs_watcher_) {
+    return;
+  }
+  auto s = fs_watcher_->AddWatch(path);
+  if (!s.ok()) {
+    // Cannot rely on fs watcher anymore. Reset the unique pointer.
+    fs_watcher_.reset();
+    LOG(INFO) << absl::StrFormat("Could not add watcher for path: %s, error: %s", path.string(),
+                                 s.msg());
+  }
+}
+
+void CGroupManager::RemoveFSWatch(const fs::path &path) {
+  if (!fs_watcher_) {
+    return;
+  }
+  auto s = fs_watcher_->RemoveWatch(path);
+  if (!s.ok()) {
+    // Cannot rely on fs watcher anymore. Reset the unique pointer.
+    fs_watcher_.reset();
+    LOG(INFO) << absl::StrFormat("Could not remove watcher for path: %s, error: %s", path.string(),
+                                 s.msg());
+  }
+}
+
+Status CGroupManager::UpdatePodInfo(fs::path pod_path, const std::string &pod_name, CGroupQoS qos) {
+  std::error_code ec;
+  auto container_dir_iter = fs::directory_iterator(pod_path, ec);
+  if (ec) {
+    return error::Unknown("Failed to open: $0: $1", pod_path.string(), ec.message());
+  }
+
+  AddFSWatch(pod_path);
+  PodInfo pod_info;
+  pod_info.qos = qos;
+  for (const auto &container_path : container_dir_iter) {
+    PL_RETURN_IF_ERROR(UpdateContainerInfo(container_path.path(), &pod_info));
+  }
+  cgroup_info_[pod_name] = std::move(pod_info);
+
+  return Status::OK();
+}
+
+Status CGroupManager::UpdateContainerInfo(const fs::path &container_path, PodInfo *pod_info) {
+  std::error_code ec;
+  bool is_directory = fs::is_directory(container_path, ec);
+
+  if (ec) {
+    return error::Unknown("Failed to open: $0: $1", container_path.string(), ec.message());
+  }
+  if (!is_directory) {
+    return error::Unknown("Container path is not a directory: $0", container_path.string());
+  }
+
+  auto container_name = container_path.filename().string();
+  ContainerInfo info;
+  // Read the pid list.
+  PL_RETURN_IF_ERROR(ReadPIDList(container_path / kPidFile, &info.pids));
+  AddFSWatch(container_path / kPidFile);
+  pod_info->container_info_by_name[container_name] = std::move(info);
+  return Status::OK();
+}
+
 Status CGroupManager::UpdateCGroupInfoForQoSClass(CGroupQoS qos, fs::path base_path) {
   std::error_code ec;
   auto dir_iter = fs::directory_iterator(base_path, ec);
@@ -67,43 +132,83 @@ Status CGroupManager::UpdateCGroupInfoForQoSClass(CGroupQoS qos, fs::path base_p
     return error::Unknown("Failed to open: $0: $1", base_path.string(), ec.message());
   }
 
+  AddFSWatch(base_path);
   for (const auto &p : dir_iter) {
     auto path_str = p.path().string();
-    if (std::experimental::filesystem::is_directory(p.path()) &&
-        absl::StartsWith(p.path().filename().string(), kPodPrefix)) {
-      auto pod_name = p.path().filename().string();
-
-      PodInfo cgroup;
-      cgroup.qos = qos;
-
-      auto container_dir_iter = fs::directory_iterator(p.path(), ec);
-      if (ec) {
-        return error::Unknown("Failed to open: $0: $1", p.path().string(), ec.message());
-      }
-      for (const auto &container_path : container_dir_iter) {
-        if (std::experimental::filesystem::is_directory(container_path.path())) {
-          auto container_name = container_path.path().filename().string();
-          ContainerInfo info;
-          // Read the pid list.
-          PL_RETURN_IF_ERROR(ReadPIDList(container_path.path() / kPidFile, &info.pids));
-          cgroup.container_info_by_name[container_name] = info;
-        }
-      }
-      cgroup_info_[pod_name] = cgroup;
+    auto pod_name = p.path().filename().string();
+    if (fs::is_directory(p.path()) && absl::StartsWith(pod_name, kPodPrefix)) {
+      // Update cgroup_info_ with pod and container details.
+      PL_RETURN_IF_ERROR(UpdatePodInfo(p.path(), pod_name, qos));
     }
   }
-
   return Status::OK();
 }
 
-Status CGroupManager::UpdateCGroupInfo() {
-  auto base_path = fs::path(sysfs_path_) / kSysfsCpuAcctPatch;
-  // TODO(zasgar/kgandhi): This is really inefficient, we should use inotify or something
-  // to capture the changes.
-  cgroup_info_.clear();
+Status CGroupManager::HandleFSPodEvent(const fs::path &path,
+                                       fs_watcher::FSWatcher::FSEventType event_type,
+                                       const std::string &pod_name) {
+  if (event_type == fs_watcher::FSWatcher::FSEventType::kDeleteDir) {
+    cgroup_info_.erase(pod_name);
+    RemoveFSWatch(path / pod_name);
+    return Status::OK();
+  }
 
-  // K8s has three different QoS classes and with the exception of the guaranteed class they are
-  // placed i sub directories.
+  // TODO(kgandhi): Since we know the exact path, we should use that to
+  // determine the qos instead of StrContains.
+  CGroupQoS qos = CGroupQoS::kGuaranteed;
+  if (absl::StrContains(path.string(), "besteffort")) {
+    qos = CGroupQoS::kBestEffort;
+  } else if (absl::StrContains(path.string(), "burstable")) {
+    qos = CGroupQoS::kBurstable;
+  }
+  return UpdatePodInfo(path, pod_name, qos);
+}
+
+Status CGroupManager::HandleFSContainerEvent(const fs::path &path,
+                                             fs_watcher::FSWatcher::FSEventType event_type,
+                                             const std::string &container_name) {
+  auto pod_name = path.filename().string();
+  auto pod_info = cgroup_info_[pod_name];
+  if (event_type == fs_watcher::FSWatcher::FSEventType::kDeleteDir) {
+    pod_info.container_info_by_name.erase(container_name);
+    RemoveFSWatch(path / container_name / kPidFile);
+    return Status::OK();
+  }
+
+  return UpdateContainerInfo(path / container_name, &pod_info);
+}
+
+Status CGroupManager::HandleFSEvent(fs_watcher::FSWatcher::FSEvent *fs_event) {
+  auto path = fs_event->GetPath();
+  switch (fs_event->type) {
+    case fs_watcher::FSWatcher::FSEventType::kCreateDir:
+      // fall through
+    case fs_watcher::FSWatcher::FSEventType::kDeleteDir: {
+      auto dir_name = fs_event->name;
+      bool is_pod = absl::StartsWith(fs_event->name, kPodPrefix);
+      if (is_pod) {
+        return HandleFSPodEvent(path, fs_event->type, dir_name);
+      }
+      return HandleFSContainerEvent(path, fs_event->type, dir_name);
+    }
+    case fs_watcher::FSWatcher::FSEventType::kModifyFile: {
+      auto container_path = path.parent_path();
+      auto pod_name = container_path.parent_path().filename().string();
+      return UpdateContainerInfo(container_path, &(cgroup_info_[pod_name]));
+    }
+    case fs_watcher::FSWatcher::FSEventType::kUnknown:
+      // fall through
+    default:
+      return error::Unknown("Unknown FS watcher event type.");
+  }
+  return Status::OK();
+}
+
+Status CGroupManager::ScanFileSystem() {
+  cgroup_info_.clear();
+  auto base_path = fs::path(sysfs_path_) / kSysfsCpuAcctPatch;
+  // K8s has three different QoS classes and with the exception of the
+  // guaranteed class they are placed i sub directories.
   fs::path best_effort_path = base_path / "besteffort";
   fs::path burstable_path = base_path / "burstable";
   fs::path guaranteed_path = base_path;
@@ -115,6 +220,57 @@ Status CGroupManager::UpdateCGroupInfo() {
   return Status::OK();
 }
 
+Status CGroupManager::UpdateCGroupInfo() {
+  // No system support for inotify. Always scan file system.
+  if (!fs_watcher::FSWatcher::SupportsInotify()) {
+    return ScanFileSystem();
+  }
+
+  // There was potentially an error while adding or removing watchers
+  // in a previous iteration or needs to be created for the first time.
+  if (!fs_watcher_) {
+    fs_watcher_ = fs_watcher::FSWatcher::Create();
+    return ScanFileSystem();
+  }
+
+  // Scan the filesystem: FS Watcher not initialized
+  if (fs_watcher_->NotInitialized()) {
+    return ScanFileSystem();
+  }
+
+  if (fs_watcher_->HasOverflow()) {
+    // To avoid race conditions on an exisiting inotify fd, destroy existing
+    // fs_watcher_ and recreate it.
+    fs_watcher_ = fs_watcher::FSWatcher::Create();
+    return ScanFileSystem();
+  }
+
+  // Handle fs watcher events.
+  if (!fs_watcher_->ReadInotifyUpdates().ok()) {
+    LOG(INFO) << "Could not read inotfy updated from FS Watcher.";
+    return ScanFileSystem();
+  }
+  while (fs_watcher_->HasEvents()) {
+    auto event_status = fs_watcher_->GetNextEvent();
+    if (!event_status.ok()) {
+      LOG(INFO) << "Could not get next event from FS Watcher.";
+      return ScanFileSystem();
+    }
+    auto fs_event = event_status.ConsumeValueOrDie();
+    if (fs_event.type == fs_watcher::FSWatcher::FSEventType::kUnknown) {
+      LOG(INFO) << "FS Watcher reported an unknown event.";
+      return ScanFileSystem();
+    }
+    auto handle_status = HandleFSEvent(&fs_event);
+
+    if (!handle_status.ok()) {
+      LOG(INFO) << "Could not handle FS Watcher event: " << handle_status.msg();
+      return ScanFileSystem();
+    }
+  }
+  return Status::OK();
+}
+
 Status CGroupManager::GetNetworkStatsForPod(const std::string &pod,
                                             ProcParser::NetworkStats *stats) {
   DCHECK(stats != nullptr);
@@ -122,13 +278,15 @@ Status CGroupManager::GetNetworkStatsForPod(const std::string &pod,
   for (const auto &container_info : cgroup_info->container_info_by_name) {
     for (const int64_t pid : container_info.second.pids) {
       auto s = proc_parser_.ParseProcPIDNetDev(proc_parser_.GetProcPidNetDevFile(pid), stats);
-      // Since all the containers running in a K8s pod use the same network namespace we only,
-      // need to pull stats from a single PID. The stas themselves are the same for each PID since
-      // Linux only tracks networks stats at a namespace level.
+      // Since all the containers running in a K8s pod use the same network
+      // namespace we only, need to pull stats from a single PID. The stas
+      // themselves are the same for each PID since Linux only tracks networks
+      // stats at a namespace level.
       //
-      // In case the read fails we try another file. This should not noramally be required, but
-      // will make the code more robust to cases where the PID is killed between when we update
-      // the pid list but before the network data is requested.
+      // In case the read fails we try another file. This should not noramally
+      // be required, but will make the code more robust to cases where the PID
+      // is killed between when we update the pid list but before the network
+      // data is requested.
       if (s.ok()) {
         return Status::OK();
       }

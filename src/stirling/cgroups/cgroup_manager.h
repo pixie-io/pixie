@@ -10,6 +10,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/system_config/system_config.h"
+#include "src/stirling/cgroups/fs_watcher.h"
 #include "src/stirling/cgroups/proc_parser.h"
 
 namespace pl {
@@ -18,8 +19,8 @@ namespace stirling {
 namespace fs = std::experimental::filesystem;
 
 /**
- * CGroupManager keeps track of K8s cgroups and allows fetching of stats for underlying process
- * and network namespaces.
+ * CGroupManager keeps track of K8s cgroups and allows fetching of stats for
+ * underlying process and network namespaces.
  */
 class CGroupManager {
  public:
@@ -40,13 +41,14 @@ class CGroupManager {
    *
    * This version should be used for testing only.
    *
-   * @param cfg is a system config reference. Needs to be valid for the duration of the Create call.
+   * @param cfg is a system config reference. Needs to be valid for the duration
+   * of the Create call.
    * @param proc_path Path to the proc file system.
    * @param sysfs_path Path to the sysfs file system.
-   * @return unique_ptr to the CGroupManager, returns null if it can't construct a valid
-   * CGroupManager.
+   * @return unique_ptr to the CGroupManager, returns null if it can't construct
+   * a valid CGroupManager.
    */
-  static std::unique_ptr<CGroupManager> Create(const common::SystemConfig& cfg,
+  static std::unique_ptr<CGroupManager> Create(const common::SystemConfig &cfg,
                                                std::string_view proc_path,
                                                std::string_view sysfs_path);
 
@@ -73,8 +75,9 @@ class CGroupManager {
     }
   }
 
-  // Right now we track information for pods and containers, where containers are sub-entities of a
-  // pod. We store them as maps, to deduplicate the names of the containers and pods.
+  // Right now we track information for pods and containers, where containers
+  // are sub-entities of a pod. We store them as maps, to deduplicate the names
+  // of the containers and pods.
   /**
    * ContainerInfo stores information for a given container.
    */
@@ -103,7 +106,7 @@ class CGroupManager {
    * @param stats The network stats.
    * @return Status of getting the network data.
    */
-  Status GetNetworkStatsForPod(const std::string& pod, ProcParser::NetworkStats* stats);
+  Status GetNetworkStatsForPod(const std::string &pod, ProcParser::NetworkStats *stats);
 
   /**
    * Get the procs stats per pod.
@@ -111,15 +114,16 @@ class CGroupManager {
    * @param stats The stats to be filled in.
    * @return Status of getting process stats.
    */
-  Status GetProcessStats(int64_t pid, ProcParser::ProcessStats* stats);
+  Status GetProcessStats(int64_t pid, ProcParser::ProcessStats *stats);
 
   /**
    * Get the information for a particular pod.
    * @param pod The name of the pod.
-   * @return A status or pointer to the pod info. This pointer is valid until UpdateCGroupInfo is
-   * called. Note we return a pointer because status or does not like references being returned.
+   * @return A status or pointer to the pod info. This pointer is valid until
+   * UpdateCGroupInfo is called. Note we return a pointer because status or does
+   * not like references being returned.
    */
-  StatusOr<const PodInfo*> GetCGroupInfoForPod(const std::string& pod);
+  StatusOr<const PodInfo *> GetCGroupInfoForPod(const std::string &pod);
 
   /**
    * Get a reference to the underlying cgroup information.
@@ -127,29 +131,29 @@ class CGroupManager {
    *
    * @return reference to cgroup_info.
    */
-  const std::unordered_map<std::string, PodInfo>& cgroup_info() { return cgroup_info_; }
+  const std::unordered_map<std::string, PodInfo> &cgroup_info() { return cgroup_info_; }
 
   /**
    * HasPod checks if a pod exists.
    * @param pod The name of the pod.
    * @return true if a pod exists.
    */
-  bool HasPod(const std::string& pod) { return cgroup_info_.find(pod) != end(cgroup_info_); }
+  bool HasPod(const std::string &pod) { return cgroup_info_.find(pod) != end(cgroup_info_); }
 
   /**
    * PIDsInContainer returns a list of pids in a given container.
    * @param pod The name of the pod.
    * @param container The name of the container.
-   * @return Status or a pointer to the pid list, which is valid until the next time UpdateGroupInfo
-   * is called.
+   * @return Status or a pointer to the pid list, which is valid until the next
+   * time UpdateGroupInfo is called.
    */
-  StatusOr<const std::vector<int64_t>*> PIDsInContainer(const std::string& pod,
-                                                        const std::string& container);
+  StatusOr<const std::vector<int64_t> *> PIDsInContainer(const std::string &pod,
+                                                         const std::string &container);
 
  protected:
   CGroupManager() = delete;
 
-  CGroupManager(const common::SystemConfig& cfg, std::string_view proc_path,
+  CGroupManager(const common::SystemConfig &cfg, std::string_view proc_path,
                 std::string_view sysfs_path)
       : proc_parser_(cfg, proc_path), sysfs_path_(sysfs_path) {}
 
@@ -160,11 +164,24 @@ class CGroupManager {
    */
   Status UpdateCGroupInfoForQoSClass(CGroupQoS qos, fs::path base_path);
 
+  Status UpdatePodInfo(fs::path pod_path, const std::string &pod_name, CGroupQoS qos);
+  Status UpdateContainerInfo(const fs::path &container_path, PodInfo *pod_info);
+  Status HandleFSEvent(fs_watcher::FSWatcher::FSEvent *fs_event);
+  void AddFSWatch(const fs::path &path);
+  void RemoveFSWatch(const fs::path &path);
+  Status HandleFSPodEvent(const fs::path &path, fs_watcher::FSWatcher::FSEventType event_type,
+                          const std::string &pod_name);
+  Status HandleFSContainerEvent(const fs::path &path, fs_watcher::FSWatcher::FSEventType event_type,
+                                const std::string &container_name);
+
+  Status ScanFileSystem();
+
   ProcParser proc_parser_;
+  std::unique_ptr<fs_watcher::FSWatcher> fs_watcher_ = nullptr;
   fs::path sysfs_path_;
 
-  // Map from pod name to group info. Pods are unique across QOS classes so we don't need to track
-  // that in the key.
+  // Map from pod name to group info. Pods are unique across QOS classes so we
+  // don't need to track that in the key.
   std::unordered_map<std::string, PodInfo> cgroup_info_;
 };
 
