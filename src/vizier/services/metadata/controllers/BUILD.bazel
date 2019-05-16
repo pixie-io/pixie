@@ -1,5 +1,8 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
+# TODO(michelle): Fix this so that this file can be auto-generated using gazelle.
+# All the tests below should be in a single binary.
+
 go_library(
     name = "go_default_library",
     srcs = [

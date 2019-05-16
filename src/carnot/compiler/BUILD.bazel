@@ -1,3 +1,4 @@
+# gazelle:ignore
 package(default_visibility = ["//visibility:public"])
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_go_library")

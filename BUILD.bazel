@@ -19,15 +19,18 @@ gazelle(
 
 # TODO(zasgar): We should keep an eye on fixes to gazelle that make this automatic
 # Make gazelle resolve the proto paths correctly.
+# gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb //src/carnot/compiler:compiler_status_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/planpb //src/carnot/planpb:plan_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/queryresultspb //src/carnot/queryresultspb:query_results_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/common/base/proto //src/common/base/proto:status_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/common/uuid/proto //src/common/uuid/proto:uuid_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/types/proto //src/shared/types/proto:types_pl_go_proto
-# gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/proto //src/vizier/proto:service_pl_go_proto
-# gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/proto //src/carnot/queryresultspb:query_results_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/table_store/proto //src/table_store/proto:schema_pl_go_proto
-# gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb //src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto
-# gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb //src/vizier/services/metadata/metadatapb:service_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/messages/messagespb //src/vizier/messages/messagespb:messages_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/proto //src/vizier/proto:service_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb //src/vizier/services/metadata/datapb:data_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb //src/vizier/services/metadata/metadatapb:service_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb //src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto
 
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 
