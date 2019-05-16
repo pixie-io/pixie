@@ -82,9 +82,9 @@ TEST_F(ProcParserTest, ParseStatIO) {
   EXPECT_EQ(634880, stats.write_bytes);
 }
 
-TEST_F(ProcParserTest, ParseStat) {
+TEST_F(ProcParserTest, ParsePidStat) {
   ProcParser::ProcessStats stats;
-  auto test_file = GetPathToTestDataFile("testdata/proc/sample_proc_stat");
+  auto test_file = GetPathToTestDataFile("testdata/proc/sample_proc_pid_stat");
   PL_CHECK_OK(parser_->ParseProcPIDStat(test_file, &stats));
 
   // The expeted values are from the test file above.
@@ -99,6 +99,15 @@ TEST_F(ProcParserTest, ParseStat) {
 
   EXPECT_EQ(114384896, stats.vsize_bytes);
   EXPECT_EQ(2577 * bytes_per_page_, stats.rss_bytes);
+}
+
+TEST_F(ProcParserTest, ParseStat) {
+  ProcParser::SystemStats stats;
+  auto test_file = GetPathToTestDataFile("testdata/proc/sample_proc_stat");
+  PL_CHECK_OK(parser_->ParseProcStat(test_file, &stats));
+
+  EXPECT_EQ(248758, stats.utime_ns);
+  EXPECT_EQ(78314, stats.ktime_ns);
 }
 
 }  // namespace stirling

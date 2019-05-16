@@ -19,6 +19,13 @@ const std::vector<std::string> kNetIFaceIgnorePrefix = {
 };
 
 /*************************************************
+ * Constants for the /proc/stat file
+ *************************************************/
+const int kProcStatCPUNumFields = 11;
+const int KProcStatCPUUTimeField = 1;
+const int KProcStatCPUKTimeField = 3;
+
+/*************************************************
  * Constants for the /proc/<pid>/net/dev file
  *************************************************/
 const int kProcNetDevNumFields = 17;
@@ -102,6 +109,8 @@ bool ShouldSkipNetIFace(const std::string_view iface) {
   }
   return false;
 }
+
+fs::path ProcParser::GetProcStatFilePath() { return proc_base_path_ / fs::path("stat"); }
 
 fs::path ProcParser::GetProcPidStatFilePath(int64_t pid) {
   return proc_base_path_ / std::to_string(pid) / fs::path("stat");
@@ -279,6 +288,46 @@ Status ProcParser::ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out) 
     return error::Internal("failed to parse io stat file ($0). ATOI failed.", fpath.string());
   }
   return Status::OK();
+}
+
+Status ProcParser::ParseProcStat(const fs::path& fpath, SystemStats* out) {
+  /**
+   * Sample file:
+   * cpu  248758 4995 78314 12965346 10040 0 5498 0 0 0
+   * cpu0 43574 817 13011 2159486 994 0 1022 0 0 0
+   * ...
+   */
+  CHECK(out != nullptr);
+
+  std::ifstream ifs;
+  ifs.open(fpath);
+  if (!ifs) {
+    return error::Internal("Failed to open file $0", fpath.string());
+  }
+
+  std::string line;
+  bool ok = true;
+  while (std::getline(ifs, line)) {
+    std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
+
+    if (!split.empty() && split[0] == "cpu") {
+      if (split.size() < kProcStatCPUNumFields) {
+        return error::Unknown("Incorrect number of fields in proc/stat CPU");
+      }
+
+      ok &= absl::SimpleAtoi(split[KProcStatCPUKTimeField], &out->ktime_ns);
+      ok &= absl::SimpleAtoi(split[KProcStatCPUUTimeField], &out->utime_ns);
+
+      if (!ok) {
+        return error::Unknown("Failed to parse proc/stat cpu info");
+      }
+      // We only need cpu. We can exit here.
+      return Status::OK();
+    }
+  }
+
+  // If we get here, we failed to extract system information.
+  return error::NotFound("Could not extract system information");
 }
 
 }  // namespace stirling

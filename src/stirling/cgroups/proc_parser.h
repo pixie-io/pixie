@@ -78,6 +78,17 @@ class ProcParser {
     void Clear() { *this = ProcessStats(); }
   };
 
+  /**
+   * SystemStats tracks system level stats.
+   */
+  struct SystemStats {
+    int64_t utime_ns = 0;
+    int64_t ktime_ns = 0;
+
+    void Clear() { *this = SystemStats(); }
+  };
+
+  fs::path GetProcStatFilePath();
   fs::path GetProcPidStatFilePath(int64_t pid);
   fs::path GetProcPidStatIOFile(int64_t pid);
   fs::path GetProcPidNetDevFile(int64_t pid);
@@ -109,6 +120,8 @@ class ProcParser {
    * @return Status of the parsing.
    */
   static Status ParseProcPIDNetDev(const fs::path &fpath, NetworkStats *out);
+
+  static Status ParseProcStat(const fs::path &fpath, SystemStats *out);
 
  private:
   static Status ParseNetworkStatAccumulateIFaceData(
