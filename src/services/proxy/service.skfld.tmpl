@@ -2,12 +2,13 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: proxy-server
+  namespace: pl
   labels:
     name: proxy-server
 spec:
   containers:
   - name: proxy-server
-    image: gcr.io/pl-dev-infra/proxy
+    image: gcr.io/pl-dev-infra/proxy_image:latest
     ports:
       - containerPort: 443
         hostPort: 443
@@ -40,10 +41,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: proxy-service
+  namespace: pl
   annotations:
-    service.alpha.kubernetes.io/app-protocols: '{"tcp-https":"HTTPS"}'
+    cloud.google.com/load-balancer-type: internal
 spec:
-  type: NodePort
+  type: LoadBalancer
   ports:
     - port: 443
       protocol: TCP
@@ -51,18 +53,3 @@ spec:
       name: tcp-https
   selector:
     name: proxy-server
----
-{{ if .HasCloudIngress }}
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: proxy
-  annotations:
-    kubernetes.io/ingress.global-static-ip-name: "app-staging-https"
-spec:
-  tls:
-  - secretName: ssl-app-staging
-  backend:
-    serviceName: proxy-service
-    servicePort: 443
-{{ end }}
