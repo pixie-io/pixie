@@ -52,7 +52,8 @@ type AgentManagerImpl struct {
 	clock    utils.Clock
 }
 
-func newAgentManager(client *clientv3.Client, isLeader bool, clock utils.Clock) *AgentManagerImpl {
+// NewAgentManagerWithClock creates a new agent manager with a clock.
+func NewAgentManagerWithClock(client *clientv3.Client, isLeader bool, clock utils.Clock) *AgentManagerImpl {
 	agentManager := &AgentManagerImpl{
 		client:   client,
 		IsLeader: isLeader,
@@ -65,7 +66,7 @@ func newAgentManager(client *clientv3.Client, isLeader bool, clock utils.Clock) 
 // NewAgentManager creates a new agent manager.
 func NewAgentManager(client *clientv3.Client, isLeader bool) *AgentManagerImpl {
 	clock := utils.SystemClock{}
-	return newAgentManager(client, isLeader, clock)
+	return NewAgentManagerWithClock(client, isLeader, clock)
 }
 
 // GetAgentKeyFromUUID gets the etcd key for the agent, given the id in a UUID format.

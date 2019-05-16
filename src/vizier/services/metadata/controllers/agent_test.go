@@ -1,4 +1,4 @@
-package controllers
+package controllers_test
 
 import (
 	"context"
@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	data "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 )
 
@@ -49,7 +50,7 @@ var newAgentUUID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 var existingAgentUUID = "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 var unhealthyAgentUUID = "8ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
-func setupAgentManager(t *testing.T) (*clientv3.Client, AgentManager, func()) {
+func setupAgentManager(t *testing.T) (*clientv3.Client, controllers.AgentManager, func()) {
 	// Find available port.
 	port, err := freeport.GetFreePort()
 	if err != nil {
@@ -101,7 +102,7 @@ func setupAgentManager(t *testing.T) (*clientv3.Client, AgentManager, func()) {
 	}
 
 	clock := testingutils.NewTestClock(time.Unix(0, clockNowNS))
-	agtMgr := newAgentManager(etcdClient, true, clock)
+	agtMgr := controllers.NewAgentManagerWithClock(etcdClient, true, clock)
 
 	return etcdClient, agtMgr, cleanup
 }
@@ -116,7 +117,7 @@ func createAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb 
 		t.Fatal("Unable to marshal agentData pb.")
 	}
 
-	_, err = client.Put(context.Background(), GetAgentKey(agentID), string(i))
+	_, err = client.Put(context.Background(), controllers.GetAgentKey(agentID), string(i))
 	if err != nil {
 		t.Fatal("Unable to add agentData to etcd.")
 	}
@@ -131,7 +132,7 @@ func TestCreateAgent(t *testing.T) {
 		t.Fatal("Could not generate UUID.")
 	}
 
-	agentInfo := &AgentInfo{
+	agentInfo := &controllers.AgentInfo{
 		LastHeartbeatNS: 1,
 		CreateTimeNS:    4,
 		Hostname:        "localhost",
@@ -141,7 +142,7 @@ func TestCreateAgent(t *testing.T) {
 	assert.Equal(t, nil, err)
 
 	// Check that correct agent info is in etcd.
-	resp, err := etcdClient.Get(context.Background(), GetAgentKeyFromUUID(u))
+	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
 	if err != nil {
 		t.Fatal("Failed to get agent.")
 	}
@@ -166,7 +167,7 @@ func TestCreateExistingAgent(t *testing.T) {
 		t.Fatal("Could not generate UUID.")
 	}
 
-	agentInfo := &AgentInfo{
+	agentInfo := &controllers.AgentInfo{
 		LastHeartbeatNS: 1,
 		CreateTimeNS:    4,
 		Hostname:        "localhost",
@@ -176,7 +177,7 @@ func TestCreateExistingAgent(t *testing.T) {
 	assert.NotNil(t, err)
 
 	// Check that correct agent info is in etcd.
-	resp, err := etcdClient.Get(context.Background(), GetAgentKeyFromUUID(u))
+	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
 	if err != nil {
 		t.Fatal("Failed to get agent.")
 	}
@@ -205,7 +206,7 @@ func TestUpdateHeartbeat(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Check that correct agent info is in etcd.
-	resp, err := etcdClient.Get(context.Background(), GetAgentKeyFromUUID(u))
+	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
 	if err != nil {
 		t.Fatal("Failed to get agent.")
 	}
@@ -228,10 +229,10 @@ func TestUpdateAgentState(t *testing.T) {
 	err := agtMgr.UpdateAgentState()
 	assert.Nil(t, err)
 
-	resp, err := etcdClient.Get(context.Background(), GetAgentKey(""), clientv3.WithPrefix())
+	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKey(""), clientv3.WithPrefix())
 	assert.Equal(t, 1, len(resp.Kvs))
 
-	resp, err = etcdClient.Get(context.Background(), GetAgentKey(unhealthyAgentUUID))
+	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentKey(unhealthyAgentUUID))
 	// Agent should no longer exist in etcd.
 	assert.Equal(t, 0, len(resp.Kvs))
 }
@@ -249,7 +250,7 @@ func TestGetActiveAgents(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
-	agent1Info := &AgentInfo{
+	agent1Info := &controllers.AgentInfo{
 		LastHeartbeatNS: healthyAgentLastHeartbeatNS,
 		CreateTimeNS:    0,
 		AgentID:         u1,
@@ -260,7 +261,7 @@ func TestGetActiveAgents(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
-	agent2Info := &AgentInfo{
+	agent2Info := &controllers.AgentInfo{
 		LastHeartbeatNS: 0,
 		CreateTimeNS:    0,
 		AgentID:         u2,
