@@ -54,7 +54,7 @@ parse_args() {
 
   local OPTIND
   # Process the command line arguments.
-  while getopts "bn:m:i:" opt; do
+  while getopts "bn:m:i:d:" opt; do
     case ${opt} in
       b)
         BARE_CLUSTER=true
@@ -68,7 +68,7 @@ parse_args() {
       i)
         IMAGE_NAME=$OPTARG
         ;;
-      i)
+      d)
         DISK_SIZE=$OPTARG
         ;;
       :)
@@ -151,6 +151,8 @@ if [ ! ${BARE_CLUSTER} = true ]; then
   # $PIXIE_ROOT_DIR/demos/applications/sockshop/monitoring_manifests/create_monitoring.sh
 
   # Load certs and secrets for required Pixie agent deployment.
+  pushd $PIXIE_ROOT_DIR > /dev/null
   make k8s-load-certs
   make k8s-load-dev-secrets
+  popd > /dev/null
 fi
