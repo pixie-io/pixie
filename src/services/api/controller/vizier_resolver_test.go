@@ -191,7 +191,6 @@ func TestVizierExecuteQuery(t *testing.T) {
 				Tables: []*schemapb.Table{
 					{
 						Relation: &schemapb.Relation{
-							Name: "rel1",
 							Columns: []*schemapb.Relation_ColumnInfo{
 								{
 									ColumnName: "scolE",
@@ -241,7 +240,7 @@ func TestVizierExecuteQuery(t *testing.T) {
 				   "ExecuteQuery":{
 					  "id":"65294d6a-6ceb-48a7-96b0-9a1eb7d467cb",
 					  "table":{
-						 "data":"{\"relation\":{\"name\":\"rel1\",\"columns\":[{\"columnName\":\"scolE\",\"columnType\":\"BOOLEAN\"},{\"columnName\":\"scolI\",\"columnType\":\"INT64\"}]},\"rowBatches\":[{\"cols\":[]}]}",
+						 "data":"{\"relation\":{\"columns\":[{\"columnName\":\"scolE\",\"columnType\":\"BOOLEAN\"},{\"columnName\":\"scolI\",\"columnType\":\"INT64\"}]},\"rowBatches\":[{\"cols\":[]}]}",
 						 "relation":{
 							"colNames":[
 							   "scolE",

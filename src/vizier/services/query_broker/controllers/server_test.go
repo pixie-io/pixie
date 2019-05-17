@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb/mock"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers/mock"
+	mock_metadatapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb/mock"
+	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
@@ -64,7 +64,6 @@ response {
   query_result {
     tables {
       relation {
-        name: "test_table"
       }
     }
   }

@@ -26,7 +26,6 @@ result {
   query_result {
     tables {
       relation {
-        name: "test_table"
       }
     }
   }
@@ -44,7 +43,6 @@ result {
   query_result {
     tables {
       relation {
-        name: "test_table"
       }
     }
   }
