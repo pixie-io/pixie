@@ -12,6 +12,7 @@
 
 #include "src/carnot/carnot.h"
 #include "src/carnot/exec/test_utils.h"
+#include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {
@@ -932,6 +933,57 @@ TEST_F(CarnotTest, multiple_result_calls) {
     EXPECT_TRUE(rb->ColumnAt(1)->Equals(types::ToArrow(col3_out, arrow::default_memory_pool())));
     EXPECT_TRUE(rb->ColumnAt(2)->Equals(types::ToArrow(groups_out, arrow::default_memory_pool())));
     EXPECT_TRUE(rb->ColumnAt(3)->Equals(types::ToArrow(strings_out, arrow::default_memory_pool())));
+  }
+}
+
+// Test to see whether we can pass logical plan into Carnot instead of query.
+TEST_F(CarnotTest, pass_logical_plan) {
+  std::string query = absl::StrJoin(
+      {
+          "queryDF = From(table='test_table', select=['col1', 'col2']).Map(fn=lambda r : {'res' : "
+          "pl.add(r.col1,r.col2)}).Result(name='$0')",
+      },
+      "\n");
+  compiler::Compiler compiler;
+  int64_t current_time = 0;
+  std::string logical_plan_table_name = "logical_plan";
+  std::string query_table_name = "query";
+
+  // Create a CompilerState obj using the relation map and grabbing the current time.
+
+  pl::StatusOr<std::unique_ptr<compiler::RegistryInfo>> registry_info_status =
+      udfexporter::ExportUDFInfo();
+  ASSERT_OK(registry_info_status);
+  std::unique_ptr<compiler::RegistryInfo> registry_info = registry_info_status.ConsumeValueOrDie();
+
+  std::unique_ptr<compiler::CompilerState> compiler_state =
+      std::make_unique<compiler::CompilerState>(table_store_->GetRelationMap(), registry_info.get(),
+                                                current_time);
+  StatusOr<planpb::Plan> logical_plan_status =
+      compiler.Compile(absl::Substitute(query, logical_plan_table_name), compiler_state.get());
+  ASSERT_OK(logical_plan_status);
+  planpb::Plan plan = logical_plan_status.ConsumeValueOrDie();
+  ASSERT_OK(carnot_->ExecutePlan(plan));
+
+  // Run the parallel execution using the Query path.
+  ASSERT_OK(carnot_->ExecuteQuery(absl::Substitute(query, query_table_name), current_time));
+
+  auto plan_table = table_store_->GetTable(logical_plan_table_name);
+  auto query_table = table_store_->GetTable(query_table_name);
+  ASSERT_EQ(plan_table->NumBatches(), query_table->NumBatches());
+  ASSERT_EQ(plan_table->NumColumns(), query_table->NumColumns());
+  std::vector<int64_t> column_selector_vec({0});
+  ASSERT_EQ(plan_table->NumColumns(), column_selector_vec.size());
+
+  for (int64_t i = 0; i < plan_table->NumBatches(); i++) {
+    auto plan_rb = plan_table->GetRowBatch(i, column_selector_vec, arrow::default_memory_pool())
+                       .ConsumeValueOrDie();
+    auto query_rb = query_table->GetRowBatch(i, column_selector_vec, arrow::default_memory_pool())
+                        .ConsumeValueOrDie();
+    for (int64_t j = 0; j < plan_table->NumColumns(); j++) {
+      VLOG(2) << absl::Substitute("Batch $0; Column $1", i, j);
+      EXPECT_TRUE(plan_rb->ColumnAt(j)->Equals(query_rb->ColumnAt(j)));
+    }
   }
 }
 

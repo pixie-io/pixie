@@ -47,10 +47,18 @@ class Carnot : public NotCopyable {
    * Executes the given query.
    *
    * @param query the query in the form of a string.
+   * @param time_now the current time.
    * @return a Carnot Return with output_tables if successful. Error status otherwise.
    */
   virtual StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query,
                                                    types::Time64NSValue time_now) = 0;
+  /**
+   * Executes the given logical plan.
+   *
+   * @param plan the plan protobuf describing what should be compiled.
+   * @return a Carnot Return with output_tables if successful. Error status otherwise.
+   */
+  virtual StatusOr<CarnotQueryResult> ExecutePlan(const planpb::Plan& plan) = 0;
 };
 
 }  // namespace carnot

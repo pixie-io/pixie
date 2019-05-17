@@ -46,7 +46,13 @@ class CarnotImpl final : public Carnot {
   StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query,
                                            types::Time64NSValue time_now) override;
 
+  StatusOr<CarnotQueryResult> ExecutePlan(const planpb::Plan& plan) override;
+
  private:
+  Status RegisterUDFs(exec::ExecState* exec_state, plan::Plan* plan);
+
+  Status RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan::PlanFragment* pf);
+  Status WalkExpression(exec::ExecState* exec_state, const plan::ScalarExpression& expr);
   /**
    * Returns the Table Store.
    */
@@ -70,25 +76,82 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecuteQuery(const std::string& query,
   PL_ASSIGN_OR_RETURN(auto logical_plan, compiler_.Compile(query, compiler_state.get()));
   timer.Stop();
   int64_t compile_time_ns = timer.ElapsedTime_us() * 1000;
+  // Get the output table names from the plan.
+  PL_ASSIGN_OR_RETURN(CarnotQueryResult plan_result, ExecutePlan(logical_plan));
+  plan_result.compile_time_ns = compile_time_ns;
+  return plan_result;
+}
+
+/**
+ * @brief LogicalPlanUDFRegister takes in an exec_state and a plan, finds all of the
+ * UDF/UDA definitions and then tracks them with the ids provided by the Logical Plan.
+ *
+ * This assumes that the logical plan has valid ids for each udf/uda and that ids
+ * aren't shared by non-matching RegistryKeys.
+ */
+
+Status CarnotImpl::RegisterUDFs(exec::ExecState* exec_state, plan::Plan* plan) {
+  return plan::PlanWalker()
+      .OnPlanFragment(std::bind(&CarnotImpl::RegisterUDFsInPlanFragment, this, exec_state,
+                                std::placeholders::_1))
+      .Walk(plan);
+}
+
+Status CarnotImpl::RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan::PlanFragment* pf) {
+  plan::PlanFragmentWalker()
+      .OnMap([&](const plan::MapOperator& map) {
+        for (const auto& expr : map.expressions()) {
+          PL_RETURN_IF_ERROR(WalkExpression(exec_state, *expr));
+        }
+        return Status::OK();
+      })
+      .OnBlockingAggregate([&](const plan::BlockingAggregateOperator& agg) {
+        for (const auto& expr : agg.values()) {
+          PL_RETURN_IF_ERROR(WalkExpression(exec_state, *expr));
+        }
+        return Status::OK();
+      })
+      .OnFilter([&](const plan::FilterOperator& filter) {
+        return WalkExpression(exec_state, *filter.expression());
+      })
+      .OnLimit([&](const auto&) {})
+      .OnMemorySink([&](const auto&) {})
+      .OnMemorySource([&](const auto&) {})
+      .Walk(pf);
+  return Status::OK();
+}
+
+Status CarnotImpl::WalkExpression(exec::ExecState* exec_state, const plan::ScalarExpression& expr) {
+  StatusOr<bool> walk_result =
+      plan::ExpressionWalker<bool>()
+          .OnAggregateExpression([&](const plan::AggregateExpression& func, std::vector<bool>) {
+            CHECK_EQ(func.args_types().size(), func.arg_deps().size());
+            Status s = exec_state->AddUDA(func.uda_id(), func.name(), func.args_types());
+            return s.ok();
+          })
+          .OnColumn([&](const auto&, std::vector<bool>) { return true; })
+          .OnScalarFunc([&](const plan::ScalarFunc& func, std::vector<bool>) {
+            CHECK_EQ(func.args_types().size(), func.arg_deps().size());
+            Status s = exec_state->AddScalarUDF(func.udf_id(), func.name(), func.args_types());
+            return s.ok();
+          })
+          .OnScalarValue([&](const auto&, std::vector<bool>) { return true; })
+          .Walk(expr);
+  if (!walk_result.ok() || !walk_result.ConsumeValueOrDie()) {
+    return error::Internal("Error walking expression.");
+  }
+  return Status::OK();
+}
+
+StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan) {
+  auto timer = ElapsedTimer();
   plan::Plan plan;
   PL_RETURN_IF_ERROR(plan.Init(logical_plan));
   // For each of the plan fragments in the plan, execute the query.
   std::vector<std::string> output_table_strs;
   auto exec_state = engine_state_->CreateExecState();
 
-  // Initialize ScalarUDFs and UDAs.
-  for (const auto& kv : compiler_state->udf_to_id_map()) {
-    auto key = kv.first;
-    auto name = key.name();
-    auto arg_types = key.registry_arg_types();
-    PL_RETURN_IF_ERROR(exec_state->AddScalarUDF(kv.second, name, arg_types));
-  }
-  for (const auto& kv : compiler_state->uda_to_id_map()) {
-    auto key = kv.first;
-    auto name = key.name();
-    auto arg_types = key.registry_arg_types();
-    PL_RETURN_IF_ERROR(exec_state->AddUDA(kv.second, name, arg_types));
-  }
+  PL_RETURN_IF_ERROR(RegisterUDFs(exec_state.get(), &plan));
 
   auto plan_state = engine_state_->CreatePlanState();
   int64_t bytes_processed = 0;
@@ -119,6 +182,8 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecuteQuery(const std::string& query,
     output_tables.push_back(table_store()->GetTable(table_str));
   }
 
+  // Compile time is not set for ExecutePlan.
+  int64_t compile_time_ns = 0;
   // Get the output table names from the plan.
   return CarnotQueryResult(output_tables, rows_processed, bytes_processed, compile_time_ns,
                            exec_time_ns);
