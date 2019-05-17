@@ -3,6 +3,7 @@
 #include <experimental/filesystem>
 #include <istream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "src/common/base/base.h"
@@ -151,6 +152,11 @@ class ProcParser {
  private:
   static Status ParseNetworkStatAccumulateIFaceData(
       const std::vector<std::string_view> &dev_stat_record, NetworkStats *out);
+
+  static Status ParseFromKeyValueFile(
+      const fs::path &fpath,
+      const std::unordered_map<std::string_view, int64_t *> &field_name_to_value_map,
+      int64_t field_value_multiplier);
   int64_t ns_per_kernel_tick_;
   int32_t bytes_per_page_;
   fs::path proc_base_path_;

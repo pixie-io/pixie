@@ -246,49 +246,13 @@ Status ProcParser::ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out) 
    */
   DCHECK(out != nullptr);
 
-  std::ifstream ifs;
-  ifs.open(fpath);
-  if (!ifs) {
-    return error::Internal("Failed to open file $0", fpath.string());
-  }
-
-  std::string line;
-  bool ok = true;
-  while (std::getline(ifs, line)) {
-    std::vector<std::string_view> split = absl::StrSplit(line, ":", absl::SkipWhitespace());
-    // It's key value pairs.
-    if (split.size() != 2) {
-      return error::Internal("Got incorrect number of fields parsing io stat file ($0)",
-                             fpath.string());
-    }
-
-    const auto& key = split[0];
-    const auto& value = split[1];
-
-    if (key == "rchar") {
-      ok &= absl::SimpleAtoi(value, &out->rchar_bytes);
-    }
-
-    if (key == "wchar") {
-      ok &= absl::SimpleAtoi(value, &out->wchar_bytes);
-    }
-
-    if (key == "read_bytes") {
-      ok &= absl::SimpleAtoi(value, &out->read_bytes);
-    }
-
-    if (key == "write_bytes") {
-      ok &= absl::SimpleAtoi(value, &out->write_bytes);
-    }
-  }
-
-  if (!ok) {
-    // This should never happen since it requires the file to be ill-formed
-    // by the kernel.
-    out->Clear();
-    return error::Internal("failed to parse io stat file ($0). ATOI failed.", fpath.string());
-  }
-  return Status::OK();
+  static const std::unordered_map<std::string_view, int64_t*> field_name_to_value_map = {
+      {"rchar:", &out->rchar_bytes},
+      {"wchar:", &out->wchar_bytes},
+      {"read_bytes:", &out->read_bytes},
+      {"write_bytes:", &out->write_bytes},
+  };
+  return ParseFromKeyValueFile(fpath, field_name_to_value_map, 1 /*field_value_multipler*/);
 }
 
 Status ProcParser::ParseProcStat(const fs::path& fpath, SystemStats* out) {
@@ -348,6 +312,15 @@ Status ProcParser::ParseProcMemInfo(const fs::path& fpath, SystemStats* out) {
       {"Active:", &out->mem_active_bytes},          {"Inactive:", &out->mem_inactive_bytes},
   };
 
+  // This is a key value pair with a unit (that is always KB when present).
+  constexpr int kKBToByteMultiplier = 1024;
+  return ParseFromKeyValueFile(fpath, field_name_to_value_map, kKBToByteMultiplier);
+}
+
+Status ProcParser::ParseFromKeyValueFile(
+    const fs::path& fpath,
+    const std::unordered_map<std::string_view, int64_t*>& field_name_to_value_map,
+    int64_t field_value_multiplier) {
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
@@ -367,7 +340,6 @@ Status ProcParser::ParseProcMemInfo(const fs::path& fpath, SystemStats* out) {
     if (split.size() >= kMemInfoMinFields && split.size() <= kMemInfoMaxFields) {
       const auto& key = split[0];
       const auto& val = split[1];
-      constexpr int kKBToByteMultiplier = 1024;
 
       const auto& it = field_name_to_value_map.find(key);
       // Key not found in map, we can just go to next iteration of loop.
@@ -376,7 +348,7 @@ Status ProcParser::ParseProcMemInfo(const fs::path& fpath, SystemStats* out) {
       }
 
       bool ok = absl::SimpleAtoi(val, it->second);
-      *it->second *= kKBToByteMultiplier;
+      *it->second *= field_value_multiplier;
 
       if (!ok) {
         return error::Unknown("Failed to parse proc/meminfo");
