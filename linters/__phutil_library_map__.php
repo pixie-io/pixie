@@ -14,6 +14,8 @@ phutil_register_library_map(array(
     'ArcanistGoVetLinter' => 'arcanist-go/src/lint/linter/ArcanistGoVetLinter.php',
     'ClangFormatLinter' => 'clang-format-linter/lint/linter/ClangFormatLinter.php',
     'FileCheckerTestEngine' => 'engine/FileCheckerTestEngine.php',
+    'GazelleCheckerTestEngine' => 'engine/GazelleCheckerTestEngine.php',
+    'PLTestEngine' => 'engine/PLTestEngine.php',
     'GoTestEngine' => 'arcanist-go/src/unit/engine/GoTestEngine.php',
     'TypescriptLinter' => 'arc-tslint/lint/linter/typescript-linter.php',
   ),
@@ -24,7 +26,9 @@ phutil_register_library_map(array(
     'ArcanistGoVetLinter' => 'ArcanistExternalLinter',
     'ClangFormatLinter' => 'ArcanistExternalLinter',
     'FileCheckerTestEngine' => 'ArcanistUnitTestEngine',
+    'GazelleCheckerTestEngine' => 'ArcanistUnitTestEngine',
     'GoTestEngine' => 'ArcanistUnitTestEngine',
+    'PLTestEngine' => 'ArcanistUnitTestEngine',
     'TypescriptLinter' => 'ArcanistExternalLinter',
   ),
 ));

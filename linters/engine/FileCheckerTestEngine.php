@@ -1,12 +1,17 @@
 <?php
 
-final class FileCheckerTestEngine extends ArcanistUnitTestEngine {
+final class FileCheckerTest {
     private $project_root;
     private $files;
     private $go_generate_map = array(
         'go-bindata' => '/(?<=-o=)(.*)(?=\.gen\.go)/',
         'mockgen' => '/(?<=-destination=)(.*)(?=\.gen\.go)/'
     );
+
+    public function __construct($project_root, $files) {
+        $this->project_root = $project_root;
+        $this->files = $files;
+    }
 
     private function checkFile($file, $fileToCheck, $res) {
         # Check that $fileToCheck exists.
@@ -36,11 +41,7 @@ final class FileCheckerTestEngine extends ArcanistUnitTestEngine {
     }
 
     public function run() {
-        $this->project_root = $this->getWorkingCopy()->getProjectRoot();
-
         $test_results = array();
-
-        $this->files = $this->getPaths();
 
         // Filter out deleted files.
         $this->files = array_filter($this->files, function($f) {
