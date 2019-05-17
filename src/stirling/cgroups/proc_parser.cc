@@ -2,6 +2,7 @@
 #include <fstream>
 #include <limits>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "src/stirling/cgroups/proc_parser.h"
@@ -315,8 +316,8 @@ Status ProcParser::ParseProcStat(const fs::path& fpath, SystemStats* out) {
         return error::Unknown("Incorrect number of fields in proc/stat CPU");
       }
 
-      ok &= absl::SimpleAtoi(split[KProcStatCPUKTimeField], &out->ktime_ns);
-      ok &= absl::SimpleAtoi(split[KProcStatCPUUTimeField], &out->utime_ns);
+      ok &= absl::SimpleAtoi(split[KProcStatCPUKTimeField], &out->cpu_ktime_ns);
+      ok &= absl::SimpleAtoi(split[KProcStatCPUUTimeField], &out->cpu_utime_ns);
 
       if (!ok) {
         return error::Unknown("Failed to parse proc/stat cpu info");
@@ -328,6 +329,68 @@ Status ProcParser::ParseProcStat(const fs::path& fpath, SystemStats* out) {
 
   // If we get here, we failed to extract system information.
   return error::NotFound("Could not extract system information");
+}
+
+Status ProcParser::ParseProcMemInfo(const fs::path& fpath, SystemStats* out) {
+  /**
+   * Sample file:
+   *   MemTotal:       65652452 kB
+   *   MemFree:        19170960 kB
+   *   MemAvailable:   52615288 kB
+   * ...
+   */
+  CHECK(out != nullptr);
+
+  static const std::unordered_map<std::string_view, int64_t*> field_name_to_value_map = {
+      {"MemTotal:", &out->mem_total_bytes},         {"MemFree:", &out->mem_free_bytes},
+      {"MemAvailable:", &out->mem_available_bytes}, {"Buffers:", &out->mem_buffer_bytes},
+      {"Cached:", &out->mem_cached_bytes},          {"SwapCached:", &out->mem_swap_cached_bytes},
+      {"Active:", &out->mem_active_bytes},          {"Inactive:", &out->mem_inactive_bytes},
+  };
+
+  std::ifstream ifs;
+  ifs.open(fpath);
+  if (!ifs) {
+    return error::Internal("Failed to open file $0", fpath.string());
+  }
+
+  std::string line;
+  size_t read_count = 0;
+  while (std::getline(ifs, line)) {
+    std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
+    // This is a key value pair with a unit (that is always KB when present).
+    // If the number is 0 then the units are missing so we either have 2 or 3 for the width of the
+    // field.
+    const int kMemInfoMinFields = 2;
+    const int kMemInfoMaxFields = 3;
+
+    if (split.size() >= kMemInfoMinFields && split.size() <= kMemInfoMaxFields) {
+      const auto& key = split[0];
+      const auto& val = split[1];
+      constexpr int kKBToByteMultiplier = 1024;
+
+      const auto& it = field_name_to_value_map.find(key);
+      // Key not found in map, we can just go to next iteration of loop.
+      if (it == field_name_to_value_map.end()) {
+        continue;
+      }
+
+      bool ok = absl::SimpleAtoi(val, it->second);
+      *it->second *= kKBToByteMultiplier;
+
+      if (!ok) {
+        return error::Unknown("Failed to parse proc/meminfo");
+      }
+
+      // Check to see if we have read all the fields, if so we can skip the rest. We assume no
+      // duplicates.
+      if (read_count == field_name_to_value_map.size()) {
+        break;
+      }
+    }
+  }
+
+  return Status::OK();
 }
 
 }  // namespace stirling

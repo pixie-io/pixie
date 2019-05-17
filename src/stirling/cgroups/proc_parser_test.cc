@@ -106,8 +106,27 @@ TEST_F(ProcParserTest, ParseStat) {
   auto test_file = GetPathToTestDataFile("testdata/proc/sample_proc_stat");
   PL_CHECK_OK(parser_->ParseProcStat(test_file, &stats));
 
-  EXPECT_EQ(248758, stats.utime_ns);
-  EXPECT_EQ(78314, stats.ktime_ns);
+  // The expected values are from the test file above.
+  EXPECT_EQ(248758, stats.cpu_utime_ns);
+  EXPECT_EQ(78314, stats.cpu_ktime_ns);
+}
+
+TEST_F(ProcParserTest, ParseMemInfo) {
+  ProcParser::SystemStats stats;
+  auto test_file = GetPathToTestDataFile("testdata/proc/sample_proc_meminfo");
+  PL_CHECK_OK(parser_->ParseProcMemInfo(test_file, &stats));
+
+  // The expected values are from the test file above.
+  EXPECT_EQ(67228110848, stats.mem_total_bytes);
+  EXPECT_EQ(17634656256, stats.mem_free_bytes);
+  EXPECT_EQ(51960180736, stats.mem_available_bytes);
+
+  EXPECT_EQ(6654636032, stats.mem_buffer_bytes);
+  EXPECT_EQ(25549463552, stats.mem_cached_bytes);
+  EXPECT_EQ(24576, stats.mem_swap_cached_bytes);
+
+  EXPECT_EQ(28388524032, stats.mem_active_bytes);
+  EXPECT_EQ(15734595584, stats.mem_inactive_bytes);
 }
 
 }  // namespace stirling

@@ -82,8 +82,19 @@ class ProcParser {
    * SystemStats tracks system level stats.
    */
   struct SystemStats {
-    int64_t utime_ns = 0;
-    int64_t ktime_ns = 0;
+    // CPU stats.
+    int64_t cpu_utime_ns = 0;
+    int64_t cpu_ktime_ns = 0;
+
+    // Memory stats.
+    int64_t mem_total_bytes = 0;
+    int64_t mem_free_bytes = 0;
+    int64_t mem_available_bytes = 0;
+    int64_t mem_buffer_bytes = 0;
+    int64_t mem_cached_bytes = 0;
+    int64_t mem_swap_cached_bytes = 0;
+    int64_t mem_active_bytes = 0;
+    int64_t mem_inactive_bytes = 0;
 
     void Clear() { *this = SystemStats(); }
   };
@@ -121,7 +132,21 @@ class ProcParser {
    */
   static Status ParseProcPIDNetDev(const fs::path &fpath, NetworkStats *out);
 
+  /**
+   * Parses /proc/stat
+   * @param fpath The path to the proc stat file.
+   * @param out a valid pointer to an output struct.
+   * @return status of parsing.
+   */
   static Status ParseProcStat(const fs::path &fpath, SystemStats *out);
+
+  /**
+   * Parses /proc/meminfo
+   * @param fpath the path to the proc file.
+   * @param out A valid pointer to the output struct.
+   * @return status of parsing
+   */
+  Status ParseProcMemInfo(const fs::path &fpath, SystemStats *out);
 
  private:
   static Status ParseNetworkStatAccumulateIFaceData(
