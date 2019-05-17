@@ -188,11 +188,13 @@ class ScalarFunc : public ScalarExpression {
   std::string name() const { return name_; }
   int64_t udf_id() const { return udf_id_; }
   const ScalarExpressionPtrVector &arg_deps() const { return arg_deps_; }
+  const std::vector<types::DataType> args_types() const { return args_types_; }
 
  private:
   std::string name_;
   int64_t udf_id_;
   ScalarExpressionPtrVector arg_deps_;
+  std::vector<types::DataType> args_types_;
 };
 
 class AggregateExpression : public ScalarExpression {
@@ -212,11 +214,13 @@ class AggregateExpression : public ScalarExpression {
   std::string name() const { return name_; }
   int64_t uda_id() const { return uda_id_; }
   const ScalarExpressionPtrVector &arg_deps() const { return arg_deps_; }
+  const std::vector<types::DataType> args_types() const { return args_types_; }
 
  private:
   std::string name_;
   int64_t uda_id_;
   ScalarExpressionPtrVector arg_deps_;  // Args can be ScalarValue or Column.
+  std::vector<types::DataType> args_types_;
 };
 
 /**

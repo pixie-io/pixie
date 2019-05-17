@@ -80,7 +80,11 @@ args {
     data_type: INT64
     int64_value: 36
   }
-})";
+}
+args_data_types: INT64
+args_data_types: INT64
+args_data_types: INT64
+)";
 
 /*
  * Template for an Operator.
@@ -168,6 +172,7 @@ expression {
         bool_value: false
       }
     }
+    args_data_types: BOOLEAN
   }
 }
 columns {
@@ -210,6 +215,8 @@ expressions {
         index: 1
       }
     }
+    args_data_types: BOOLEAN
+    args_data_types: BOOLEAN
   }
 }
 column_names: "col1"
@@ -286,6 +293,8 @@ func {
       index: 1
     }
   }
+  args_data_types: INT64
+  args_data_types: INT64
 })";
 
 const char* kAddScalarFuncConstPbtxt = R"(
@@ -303,6 +312,8 @@ func {
       int64_value: 1337
     }
   }
+  args_data_types: INT64
+  args_data_types: INT64
 })";
 
 const char* kEq1ScalarFuncConstPbtxt = R"(
@@ -320,6 +331,8 @@ func {
       int64_value: 1
     }
   }
+  args_data_types: INT64
+  args_data_types: INT64
 })";
 
 const char* kColValueScalarFuncConstPbtxt = R"(
@@ -344,6 +357,8 @@ func {
       string_value: "A"
     }
   }
+  args_data_types: STRING
+  args_data_types: STRING
 })";
 
 const char* kAddScalarFuncNestedPbtxt = R"(
@@ -370,8 +385,12 @@ func {
           int64_value: 1337
         }
       }
+      args_data_types: FLOAT64
+      args_data_types: INT64
     }
   }
+  args_data_types: FLOAT64
+  args_data_types: FLOAT64
 })";
 
 const char* kPlanFragmentWithFourNodes = R"(
@@ -506,6 +525,8 @@ const char* kLinearPlanFragment = R"(
                 index: 2
               }
             }
+            args_data_types: INT64
+            args_data_types: FLOAT64
           }
         }
         column_names: "summed"
@@ -533,6 +554,8 @@ const char* kLinearPlanFragment = R"(
                 int64_value: 2
               }
             }
+            args_data_types: FLOAT64
+            args_data_types: INT64
           }
         }
         column_names: "mult"

@@ -351,12 +351,15 @@ class FuncIR : public IRNode {
   int64_t func_id() const { return func_id_; }
   void set_func_id(int64_t func_id) { func_id_ = func_id; }
   const std::vector<IRNode*>& args() { return args_; }
+  const std::vector<types::DataType>& args_types() { return args_types_; }
+  void SetArgsTypes(std::vector<types::DataType> args_types) { args_types_ = args_types; }
 
   bool IsOp() const override { return false; }
 
  private:
   std::string func_name_;
   std::vector<IRNode*> args_;
+  std::vector<types::DataType> args_types_;
   int64_t func_id_ = 0;
 };
 

@@ -234,6 +234,9 @@ Status OperatorIR::EvaluateExpression(planpb::ScalarExpression* expr, const IRNo
         PL_RETURN_IF_ERROR(EvaluateExpression(func_arg, *arg));
       }
       func->set_id(casted_ir.func_id());
+      for (const types::DataType dt : casted_ir.args_types()) {
+        func->add_args_data_types(dt);
+      }
       break;
     }
     case IRNodeType::IntType: {
@@ -401,6 +404,9 @@ Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* e
   auto casted_ir = static_cast<const FuncIR&>(ir_node);
   expr->set_name(casted_ir.func_name());
   expr->set_id(casted_ir.func_id());
+  for (types::DataType dt : casted_ir.args_types()) {
+    expr->add_args_data_types(dt);
+  }
   for (auto ir_arg : casted_ir.args()) {
     auto arg_pb = expr->add_args();
     switch (ir_arg->type()) {

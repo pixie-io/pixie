@@ -81,6 +81,7 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateFuncExpr(
                         compiler_state_->registry_info()->GetUDA(expr->func_name(), args_types));
     expr->set_func_id(compiler_state_->GetUDAID(RegistryKey(expr->func_name(), args_types)));
   }
+  expr->SetArgsTypes(args_types);
 
   return data_type;
 }

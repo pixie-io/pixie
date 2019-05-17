@@ -178,6 +178,7 @@ StatusOr<std::unique_ptr<ScalarExpression>> ScalarExpression::FromProto(
 }
 
 Status ScalarFunc::Init(const planpb::ScalarFunc &pb) {
+  DCHECK_EQ(pb.args_size(), pb.args_data_types_size());
   name_ = pb.name();
   udf_id_ = pb.id();
   for (const auto arg : pb.args()) {
@@ -186,6 +187,9 @@ Status ScalarFunc::Init(const planpb::ScalarFunc &pb) {
       return s.status();
     }
     arg_deps_.emplace_back(s.ConsumeValueOrDie());
+  }
+  for (int64_t i = 0; i < pb.args_data_types_size(); i++) {
+    args_types_.push_back(pb.args_data_types(i));
   }
   return Status::OK();
 }
@@ -266,6 +270,9 @@ Status AggregateExpression::Init(const planpb::AggregateExpression &pb) {
       return s.status();
     }
     arg_deps_.emplace_back(s.ConsumeValueOrDie());
+  }
+  for (int64_t i = 0; i < pb.args_data_types_size(); i++) {
+    args_types_.push_back(pb.args_data_types(i));
   }
   return Status::OK();
 }

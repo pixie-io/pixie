@@ -80,6 +80,8 @@ func TestCompiler_Simple(t *testing.T) {
 									index: 2
 								}
 							}
+							args_data_types: INT64
+							args_data_types: INT64
 						}
 					}
 					column_names: "http_code"

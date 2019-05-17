@@ -127,6 +127,8 @@ TEST_F(CompilerExportTest, query_test) {
                     index: 2
                   }
                 }
+                args_data_types: INT64
+                args_data_types: INT64
               }
             }
             column_names: "http_code"

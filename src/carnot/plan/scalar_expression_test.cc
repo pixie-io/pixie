@@ -270,7 +270,11 @@ args {
     data_type: INT64
     int64_value: 36
   }
-})";
+}
+args_data_types: INT64
+args_data_types: INT64
+args_data_types: INT64
+)";
 
 class ScalarFuncTest : public ScalarExpressionTest {
  public:
@@ -364,7 +368,11 @@ args {
     data_type: INT64
     int64_value: 36
   }
-})";
+}
+args_data_types: INT64
+args_data_types: INT64
+args_data_types: INT64
+)";
 
 class AggregateExpressionTest : public ScalarExpressionTest {
  public:

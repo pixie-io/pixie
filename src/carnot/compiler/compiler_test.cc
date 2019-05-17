@@ -132,6 +132,8 @@ nodes {
                 index: 0
               }
             }
+            args_data_types: FLOAT64
+            args_data_types: FLOAT64
           }
         }
         column_names: "cpu0"
@@ -153,6 +155,7 @@ nodes {
               index: 2
             }
           }
+          args_data_types: FLOAT64
         }
         values {
           name: "pl.mean"
@@ -162,6 +165,7 @@ nodes {
               index: 1
             }
           }
+          args_data_types: FLOAT64
         }
         groups {
           node: 5
@@ -465,6 +469,7 @@ nodes {
               index: 1
             }
           }
+          args_data_types: FLOAT64
         }
         value_names: "mean"
       }
@@ -593,8 +598,12 @@ nodes {
                     int64_value: 2
                   }
                 }
+                args_data_types: INT64
+                args_data_types: INT64
               }
             }
+            args_data_types: INT64
+            args_data_types: INT64
           }
         }
         expressions {
@@ -621,6 +630,7 @@ nodes {
               index: 1
             }
           }
+          args_data_types: FLOAT64
         }
         groups {
           node: 13
@@ -848,6 +858,8 @@ nodes {
                 float64_value: 0.5
               }
             }
+            args_data_types: FLOAT64
+            args_data_types: FLOAT64
           }
         }
         columns {
