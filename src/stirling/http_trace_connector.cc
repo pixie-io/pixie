@@ -181,8 +181,10 @@ const std::vector<ProbeSpec> kProbeSpecs = {
     {"close", "probe_close"},
 };
 
-// This is same as the perf buffer inside bcc_bpf/http_trace.c.
-const char kPerfBufferName[] = "socket_write_events";
+// This is same as the perf buffer inside bcc_bpf/socket_trace.c.
+const std::vector<std::string> kPerfBufferNames = {
+    "socket_write_events",
+};
 
 }  // namespace
 
@@ -206,14 +208,17 @@ Status HTTPTraceConnector::InitImpl() {
                        ", error message: ", attach_status.msg()));
     }
   }
-  ebpf::StatusTuple open_status = bpf_.open_perf_buffer(
-      kPerfBufferName, &HTTPTraceConnector::HandleProbeOutput, &HTTPTraceConnector::HandleProbeLoss,
-      // TODO(yzhao): We sort of are not unified around how record_batch and
-      // cb_cookie is passed to the callback. Consider unifying them.
-      /*cb_cookie*/ this, perf_buffer_page_num_);
-  if (open_status.code() != 0) {
-    return error::Internal(absl::StrCat("Failed to open perf buffer: ", kPerfBufferName,
-                                        ", error message: ", open_status.msg()));
+  for (auto& perf_buffer_name : kPerfBufferNames) {
+    ebpf::StatusTuple open_status =
+        bpf_.open_perf_buffer(perf_buffer_name, &HTTPTraceConnector::HandleProbeOutput,
+                              &HTTPTraceConnector::HandleProbeLoss,
+                              // TODO(yzhao): We sort of are not unified around how record_batch and
+                              // cb_cookie is passed to the callback. Consider unifying them.
+                              /*cb_cookie*/ this, perf_buffer_page_num_);
+    if (open_status.code() != 0) {
+      return error::Internal(absl::StrCat("Failed to open perf buffer: ", perf_buffer_name,
+                                          ", error message: ", open_status.msg()));
+    }
   }
   // TODO(oazizi): if machine is ever suspended, this would have to be called again.
   InitClockRealTimeOffset();
@@ -231,16 +236,18 @@ Status HTTPTraceConnector::StopImpl() {
                        ", error message: ", detach_status.msg()));
     }
   }
-  ebpf::StatusTuple close_status = bpf_.close_perf_buffer(kPerfBufferName);
-  if (close_status.code() != 0) {
-    return error::Internal(absl::StrCat("Failed to close perf buffer: ", kPerfBufferName,
-                                        ", error message: ", close_status.msg()));
+  for (auto& perf_buffer_name : kPerfBufferNames) {
+    ebpf::StatusTuple close_status = bpf_.close_perf_buffer(perf_buffer_name);
+    if (close_status.code() != 0) {
+      return error::Internal(absl::StrCat("Failed to close perf buffer: ", perf_buffer_name,
+                                          ", error message: ", close_status.msg()));
+    }
   }
   return Status();
 }
 
-void HTTPTraceConnector::PollPerfBuffer() {
-  auto perf_buffer = bpf_.get_perf_buffer(kPerfBufferName);
+void HTTPTraceConnector::PollPerfBuffer(uint32_t table_num) {
+  auto perf_buffer = bpf_.get_perf_buffer(kPerfBufferNames[table_num]);
   if (perf_buffer != nullptr) {
     perf_buffer->poll(1);
   }
@@ -248,11 +255,11 @@ void HTTPTraceConnector::PollPerfBuffer() {
 
 void HTTPTraceConnector::TransferDataImpl(uint32_t table_num,
                                           types::ColumnWrapperRecordBatch* record_batch) {
-  CHECK_EQ(table_num, 0ULL) << absl::StrFormat(
-      "This connector has only one table, but access to table_num=%d", table_num);
+  CHECK_LT(table_num, kElements.size())
+      << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
   CHECK(record_batch != nullptr) << "record_batch cannot be nullptr";
 
-  PollPerfBuffer();
+  PollPerfBuffer(table_num);
 
   for (const auto& write_stream : write_stream_map_) {
     for (const auto& seq_and_event : write_stream.second) {

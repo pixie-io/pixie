@@ -111,7 +111,7 @@ class HTTPTraceConnector : public SourceConnector {
   Status StopImpl() override;
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
-  void PollPerfBuffer();
+  void PollPerfBuffer(uint32_t table_num);
   void AcceptEvent(socket_data_event_t event);
   void OutputEvent(const socket_data_event_t& event, types::ColumnWrapperRecordBatch* record_batch);
 

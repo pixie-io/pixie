@@ -138,9 +138,10 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
     client_thread.join();
   }
 
+  const int table_num = 0;  // HTTP Table
   auto* http_trace_connector = dynamic_cast<HTTPTraceConnector*>(source.get());
   ASSERT_NE(nullptr, http_trace_connector);
-  http_trace_connector->PollPerfBuffer();
+  http_trace_connector->PollPerfBuffer(table_num);
   EXPECT_OK(source->Stop());
 
   ASSERT_THAT(http_trace_connector->TestOnlyGetWriteStreamMap(),
