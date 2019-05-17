@@ -1,5 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
     name = "go_default_library",
@@ -25,5 +26,14 @@ go_binary(
 go_image(
     name = "api_server_image",
     binary = ":api_server",
-    importpath = "pixielabs.ai/pixielabs",
+    visibility = ["//visibility:public"],
+)
+
+container_push(
+    name = "push_api_server_image",
+    format = "Docker",
+    image = ":api_server_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/api_server",
+    tag = "{STABLE_BUILD_TAG}",
 )

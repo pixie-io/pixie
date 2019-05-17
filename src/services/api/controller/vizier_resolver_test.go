@@ -11,7 +11,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+	qrpb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/services/api/apienv"
 	"pixielabs.ai/pixielabs/src/services/api/controller"
@@ -22,24 +22,24 @@ import (
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
-	service "pixielabs.ai/pixielabs/src/vizier/proto"
-	mock_proto "pixielabs.ai/pixielabs/src/vizier/proto/mock"
+	service "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
+	mock_proto "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb/mock"
 )
 
 // Impl is an implementation of the ApiEnv interface
 type FakeAPIEnv struct {
 	*env.BaseEnv
-	client *mock_proto.MockVizierServiceClient
+	client *mock_proto.MockQueryBrokerServiceClient
 }
 
 // New creates a new api env.
 func NewFakeAPIEnv(c *gomock.Controller) *FakeAPIEnv {
 	return &FakeAPIEnv{
-		client: mock_proto.NewMockVizierServiceClient(c),
+		client: mock_proto.NewMockQueryBrokerServiceClient(c),
 	}
 }
 
-func (c *FakeAPIEnv) VizierClient() service.VizierServiceClient {
+func (c *FakeAPIEnv) QueryBrokerClient() service.QueryBrokerServiceClient {
 	return c.client
 }
 
@@ -103,10 +103,7 @@ func TestVizierResolverWorksOnGoodRequest(t *testing.T) {
 							}
 						  }
 						  state
-						  lastHeartbeatNs {
-							l
-							h
-						  }
+						  lastHeartbeatMs
 						}
 					  }
 					}
@@ -123,10 +120,7 @@ func TestVizierResolverWorksOnGoodRequest(t *testing.T) {
 							}
 						  },
 						  "state": "AGENT_STATE_HEALTHY",
-						  "lastHeartbeatNs": {
-							"l": 970045792,
-							"h": 28245
-						  }
+						  "lastHeartbeatMs": 121312321
 						}
 					  ]
 					}
@@ -192,7 +186,7 @@ func TestVizierExecuteQuery(t *testing.T) {
 	resp.Responses = append(resp.Responses, &service.VizierQueryResponse_ResponseByAgent{
 		Response: &service.AgentQueryResponse{
 			QueryID: upb,
-			QueryResult: &queryresultspb.QueryResult{
+			QueryResult: &qrpb.QueryResult{
 
 				Tables: []*schemapb.Table{
 					{

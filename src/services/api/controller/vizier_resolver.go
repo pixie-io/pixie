@@ -2,16 +2,22 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"math"
+	"sort"
+	"time"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/graph-gophers/graphql-go"
 	uuid "github.com/satori/go.uuid"
-	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+	qrpb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	"pixielabs.ai/pixielabs/src/services/api/apienv"
 	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
-	"pixielabs.ai/pixielabs/src/table_store/proto"
+	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
-	service "pixielabs.ai/pixielabs/src/vizier/proto"
+	qbpb "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
 
 // GQLInt64Type stores 64-bit numbers as two int32, since JS does not support
@@ -27,19 +33,31 @@ type executeQueryArgs struct {
 
 // ExecuteQuery executes a query on vizier.
 func (q *QueryResolver) ExecuteQuery(ctx context.Context, args *executeQueryArgs) (*QueryResultResolver, error) {
-	client := q.Env.VizierClient()
-	req := service.QueryRequest{QueryStr: *args.QueryStr}
-
-	queryID := uuid.NewV4()
-	idpb, err := utils.ProtoFromUUID(&queryID)
-	req.QueryID = idpb
-	if err != nil {
-		return nil, err
-	}
+	client := q.Env.QueryBrokerClient()
+	req := qbpb.QueryRequest{QueryStr: *args.QueryStr}
 
 	resp, err := client.ExecuteQuery(ctx, &req)
 	if err != nil {
 		return nil, err
+	}
+
+	// Find the response with the most data.
+	var maxQR *qrpb.QueryResult
+	// TODO(zasgar/michelle): This is a placeholder until we add results merging.
+	// This simply selects the largest resulting table.
+	maxResultsSize := int(-1)
+	for _, r := range resp.Responses {
+		if r.Response.Status != nil && r.Response.Status.ErrCode != statuspb.OK {
+			return nil, fmt.Errorf("failed to execute: %s", r.Response.Status.Msg)
+		}
+		if maxResultsSize < r.Response.QueryResult.Tables[0].Size() {
+			maxQR = r.Response.QueryResult
+			maxResultsSize = r.Response.QueryResult.Tables[0].Size()
+		}
+	}
+
+	if maxResultsSize < 0 {
+		return nil, errors.New("no results were returned")
 	}
 
 	returnedQueryID := resp.Responses[0].Response.QueryID
@@ -47,9 +65,8 @@ func (q *QueryResolver) ExecuteQuery(ctx context.Context, args *executeQueryArgs
 	if err != nil {
 		return nil, err
 	}
-
 	// Always return response from first agent.
-	return &QueryResultResolver{u, resp.Responses[0].Response.QueryResult}, nil
+	return &QueryResultResolver{u, maxQR}, nil
 }
 
 /**
@@ -64,8 +81,8 @@ type VizierInfoResolver struct {
 
 // Agents gets information about agents connected to vizier.
 func (v *VizierInfoResolver) Agents(ctx context.Context) (*[]*AgentStatusResolver, error) {
-	client := v.Env.VizierClient()
-	req := service.AgentInfoRequest{}
+	client := v.Env.QueryBrokerClient()
+	req := qbpb.AgentInfoRequest{}
 	resp, err := client.GetAgentInfo(ctx, &req)
 	if err != nil {
 		return nil, err
@@ -74,18 +91,31 @@ func (v *VizierInfoResolver) Agents(ctx context.Context) (*[]*AgentStatusResolve
 	for _, info := range resp.Info {
 		resolvers = append(resolvers, &AgentStatusResolver{info})
 	}
+	// Sort agents by hostname.
+	sort.Slice(resolvers, func(i, j int) bool {
+		return resolvers[i].Status.Info.HostInfo.Hostname < resolvers[j].Status.Info.HostInfo.Hostname
+	})
+
 	return &resolvers, nil
 }
 
 // AgentStatusResolver resolves agent status information.
 type AgentStatusResolver struct {
-	Status *service.AgentStatus
+	Status *qbpb.AgentStatus
 }
 
 // LastHeartBeatNs returns the time since last heartbeat.
-func (a *AgentStatusResolver) LastHeartBeatNs() GQLInt64Type {
+func (a *AgentStatusResolver) LastHeartBeatMs() float64 {
 	hb := a.Status.LastHeartbeatNs
-	return GQLInt64Type{int32(hb), int32(hb >> 32)}
+	return float64(hb / 1E6)
+}
+
+// UptimeS returns the time in seconds that the agent has been alive.
+func (a *AgentStatusResolver) UptimeS() float64 {
+	// TOOD(zasgar): Consider having the metadata service return relative time.
+	// Remove negatives.
+	hb := math.Max(float64(time.Now().UnixNano()-a.Status.AgentCreateTimeNs), 0.0)
+	return hb / 1.0E9
 }
 
 // State returns the state of the given agent.
@@ -100,7 +130,7 @@ func (a *AgentStatusResolver) Info() *AgentInfoResolver {
 
 // AgentInfoResolver resolves agent information.
 type AgentInfoResolver struct {
-	Info *service.AgentInfo
+	Info *qbpb.AgentInfo
 }
 
 // ID returns agent ID.
@@ -116,7 +146,7 @@ func (a *AgentInfoResolver) HostInfo() *HostInfoResolver {
 
 // HostInfoResolver resolves agent host information.
 type HostInfoResolver struct {
-	HostInfo *service.HostInfo
+	HostInfo *qbpb.HostInfo
 }
 
 // Hostname returns the hostname of the machine where the agent is running.
@@ -131,7 +161,7 @@ func (h *HostInfoResolver) Hostname() *string {
 // QueryResultResolver resolves results of a query.
 type QueryResultResolver struct {
 	QueryID uuid.UUID
-	Result  *queryresultspb.QueryResult
+	Result  *qrpb.QueryResult
 }
 
 // ID returns the ID of the query (as string).

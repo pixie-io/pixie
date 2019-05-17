@@ -88,3 +88,21 @@ func (mr *MockQueryBrokerServiceClientMockRecorder) GetSchemas(arg0, arg1 interf
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchemas", reflect.TypeOf((*MockQueryBrokerServiceClient)(nil).GetSchemas), varargs...)
 }
+
+// ReceiveAgentQueryResult mocks base method
+func (m *MockQueryBrokerServiceClient) ReceiveAgentQueryResult(arg0 context.Context, arg1 *querybrokerpb.AgentQueryResultRequest, arg2 ...grpc.CallOption) (*querybrokerpb.AgentQueryResultResponse, error) {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ReceiveAgentQueryResult", varargs...)
+	ret0, _ := ret[0].(*querybrokerpb.AgentQueryResultResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReceiveAgentQueryResult indicates an expected call of ReceiveAgentQueryResult
+func (mr *MockQueryBrokerServiceClientMockRecorder) ReceiveAgentQueryResult(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReceiveAgentQueryResult", reflect.TypeOf((*MockQueryBrokerServiceClient)(nil).ReceiveAgentQueryResult), varargs...)
+}

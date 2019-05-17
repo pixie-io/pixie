@@ -1,37 +1,45 @@
 package apienv
 
 import (
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"pixielabs.ai/pixielabs/src/services/common/env"
-	service "pixielabs.ai/pixielabs/src/vizier/proto"
+	qbpb "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
 
-const defaultVizierAddr = "localhost:40000"
+func init() {
+	pflag.String("query_broker_grpc_addr",
+		"vizier-query-broker.pl.svc.cluster.local:50300",
+		"The address to the query broker grpc server")
+}
 
 // APIEnv is the interface for the API service environment.
 type APIEnv interface {
 	env.Env
-	VizierClient() service.VizierServiceClient
+	QueryBrokerClient() qbpb.QueryBrokerServiceClient
 }
 
 // Impl is an implementation of the ApiEnv interface
 type Impl struct {
 	*env.BaseEnv
 	Conn   *grpc.ClientConn
-	Client service.VizierServiceClient
+	Client qbpb.QueryBrokerServiceClient
 }
 
 // New creates a new api env.
 func New() (*Impl, error) {
-	conn, err := grpc.Dial(defaultVizierAddr, grpc.WithInsecure())
+	conn, err := grpc.Dial(viper.GetString("query_broker_grpc_addr"),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(20000000)),
+		grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
-	srvc := service.NewVizierServiceClient(conn)
+	srvc := qbpb.NewQueryBrokerServiceClient(conn)
 	return &Impl{env.New(), conn, srvc}, nil
 }
 
-// VizierClient returns a GRPC vizier client.
-func (c *Impl) VizierClient() service.VizierServiceClient {
+// QueryBrokerClient returns a GRPC vizier client.
+func (c *Impl) QueryBrokerClient() qbpb.QueryBrokerServiceClient {
 	return c.Client
 }

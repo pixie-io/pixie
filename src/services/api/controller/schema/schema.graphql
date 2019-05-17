@@ -74,7 +74,9 @@ enum AgentState {
 # Status of agent.
 type AgentStatus {
   info: AgentInfo!
-  lastHeartbeatNs: Int64!
+  lastHeartbeatMs: Float!
+  # The time in seconds that this agent has been alive. Will always be >=0 even with clock skew.
+  uptimeS: Float!
   state: AgentState!
 }
 

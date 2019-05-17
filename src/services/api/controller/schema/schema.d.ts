@@ -29,7 +29,8 @@ export interface GQLVizierInfo {
 
 export interface GQLAgentStatus {
   info: GQLAgentInfo;
-  lastHeartbeatNs: GQLInt64;
+  lastHeartbeatMs: number;
+  uptimeS: number;
   state: GQLAgentState;
 }
 
@@ -40,11 +41,6 @@ export interface GQLAgentInfo {
 
 export interface GQLHostInfo {
   hostname?: string;
-}
-
-export interface GQLInt64 {
-  l: number;
-  h: number;
 }
 
 export enum GQLAgentState {
@@ -79,4 +75,9 @@ export enum GQLDataColTypes {
   TIME64NS = 'TIME64NS',
   FLOAT64 = 'FLOAT64',
   STRING = 'STRING'
+}
+
+export interface GQLInt64 {
+  l: number;
+  h: number;
 }
