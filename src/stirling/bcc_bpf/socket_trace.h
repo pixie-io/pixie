@@ -24,7 +24,7 @@ struct accept_info_t {
 // tracing on a vfs_write.
 #define MAX_MSG_SIZE 4096
 
-struct syscall_write_event_t {
+struct socket_data_event_t {
   // We split attributes into a separate struct, because BPF gets upset if you do lots of
   // size arithmetic. This makes it so that it's attributes followed by message.
   struct attr_t {

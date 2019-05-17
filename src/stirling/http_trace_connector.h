@@ -22,13 +22,13 @@ DUMMY_SOURCE_CONNECTOR(HTTPTraceConnector);
 #include <utility>
 #include <vector>
 
-#include "src/stirling/bcc_bpf/http_trace.h"
+#include "src/stirling/bcc_bpf/socket_trace.h"
 #include "src/stirling/http_parse.h"
 #include "src/stirling/source_connector.h"
 
 DECLARE_string(http_response_header_filters);
 
-OBJ_STRVIEW(http_trace_bcc_script, _binary_src_stirling_bcc_bpf_http_trace_c);
+OBJ_STRVIEW(http_trace_bcc_script, _binary_src_stirling_bcc_bpf_socket_trace_c);
 
 namespace pl {
 namespace stirling {
@@ -36,7 +36,7 @@ namespace stirling {
 // Key: stream ID that identifies a TCP connection, value: map from sequence number to event.
 // TODO(yzhao): Write a benchmark for std::map vs. std::priority_queue and pick the more efficient
 // one for our usage scenarios.
-using write_stream_map_t = std::map<uint64_t, std::map<uint64_t, syscall_write_event_t> >;
+using write_stream_map_t = std::map<uint64_t, std::map<uint64_t, socket_data_event_t> >;
 
 class HTTPTraceConnector : public SourceConnector {
  public:
@@ -112,9 +112,8 @@ class HTTPTraceConnector : public SourceConnector {
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
   void PollPerfBuffer();
-  void AcceptEvent(syscall_write_event_t event);
-  void OutputEvent(const syscall_write_event_t& event,
-                   types::ColumnWrapperRecordBatch* record_batch);
+  void AcceptEvent(socket_data_event_t event);
+  void OutputEvent(const socket_data_event_t& event, types::ColumnWrapperRecordBatch* record_batch);
 
   const write_stream_map_t& TestOnlyGetWriteStreamMap() const { return write_stream_map_; }
 

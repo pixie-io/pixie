@@ -5,13 +5,13 @@
 #include <sys/socket.h>
 #include <memory>
 
-#include "src/stirling/bcc_bpf/http_trace.h"
+#include "src/stirling/bcc_bpf/socket_trace.h"
 
 namespace pl {
 namespace stirling {
 
-syscall_write_event_t InitEvent(std::string_view msg) {
-  syscall_write_event_t event;
+socket_data_event_t InitEvent(std::string_view msg) {
+  socket_data_event_t event;
   event.attr.event_type = kEventTypeSyscallWriteEvent;
   event.attr.accept_info.addr.sin6_family = AF_INET;
   event.attr.accept_info.timestamp_ns = 0;
@@ -27,13 +27,13 @@ TEST(HandleProbeOutputTest, FilterMessages) {
 Content-Type: application/json; charset=utf-8
 
 )";
-  syscall_write_event_t event1 = InitEvent(msg1);
+  socket_data_event_t event1 = InitEvent(msg1);
 
   const std::string msg2 = R"(HTTP/1.1 200 OK
 Content-Type: text/plain; charset=utf-8
 
 )";
-  syscall_write_event_t event2 = InitEvent(msg2);
+  socket_data_event_t event2 = InitEvent(msg2);
 
   // FRIEND_TEST() does not grant std::make_unique() access to HTTPTraceConnector's private ctor.
   // We choose this style over the HTTPTraceConnector::Create() + dynamic_cast<>, as this is

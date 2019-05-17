@@ -47,7 +47,7 @@ void PreProcessRecord(HTTPTraceRecord* record) {
   }
 }
 
-void ParseEventAttr(const syscall_write_event_t& event, HTTPTraceRecord* record) {
+void ParseEventAttr(const socket_data_event_t& event, HTTPTraceRecord* record) {
   record->time_stamp_ns = event.attr.time_stamp_ns;
   record->tgid = event.attr.tgid;
   record->pid = event.attr.pid;
@@ -69,8 +69,8 @@ std::map<std::string, std::string> GetHttpHeadersMap(const phr_header* headers,
 
 }  // namespace
 
-bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* record) {
-  // TODO(yzhao): Due to the BPF weirdness (see http_trace.c), this calculation must be done here,
+bool ParseHTTPRequest(const socket_data_event_t& event, HTTPTraceRecord* record) {
+  // TODO(yzhao): Due to the BPF weirdness (see socket_trace.c), this calculation must be done here,
   // not in BPF. Investigate if we can fix it.
   const uint64_t msg_size = std::min(event.attr.msg_bytes, event.attr.msg_buf_size);
   const char* method = nullptr;
@@ -110,7 +110,7 @@ bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* recor
 //
 // We then can squash events at t0, t1, t2 together and concatenate their bodies as the full http
 // message. This works in http 1.1 because the responses and requests are not interleaved.
-bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* record) {
+bool ParseHTTPResponse(const socket_data_event_t& event, HTTPTraceRecord* record) {
   const uint64_t msg_size = std::min(event.attr.msg_bytes, event.attr.msg_buf_size);
   const char* msg = nullptr;
   size_t msg_len = 0;
@@ -138,7 +138,7 @@ bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* reco
 // Parses an IP:port pair from the event input into the provided record.
 // Returns false if an unexpected sockaddr family is provided.
 // Currently this function understands IPV4 and IPV6 sockaddr families.
-bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record) {
+bool ParseSockAddr(const socket_data_event_t& event, HTTPTraceRecord* record) {
   const auto* sa = reinterpret_cast<const struct sockaddr*>(&event.attr.accept_info.addr);
   char s[INET6_ADDRSTRLEN] = "";
   const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
@@ -169,7 +169,7 @@ bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record) 
   return true;
 }
 
-bool ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record) {
+bool ParseRaw(const socket_data_event_t& event, HTTPTraceRecord* record) {
   const uint64_t msg_size = std::min(event.attr.msg_bytes, event.attr.msg_buf_size);
   HTTPTraceRecord& result = *record;
   ParseEventAttr(event, &result);

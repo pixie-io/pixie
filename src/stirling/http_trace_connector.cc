@@ -117,7 +117,7 @@ void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*da
   if (cb_cookie == nullptr) {
     return;
   }
-  auto* event = static_cast<syscall_write_event_t*>(data);
+  auto* event = static_cast<socket_data_event_t*>(data);
   auto* connector = static_cast<HTTPTraceConnector*>(cb_cookie);
   if (event->attr.event_type == kEventTypeSyscallWriteEvent ||
       event->attr.event_type == kEventTypeSyscallSendEvent) {
@@ -127,7 +127,7 @@ void HTTPTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*da
   }
 }
 
-void HTTPTraceConnector::OutputEvent(const syscall_write_event_t& event,
+void HTTPTraceConnector::OutputEvent(const socket_data_event_t& event,
                                      types::ColumnWrapperRecordBatch* record_batch) {
   bool succeeded;
   HTTPTraceRecord record;
@@ -182,7 +182,7 @@ const std::vector<ProbeSpec> kProbeSpecs = {
 };
 
 // This is same as the perf buffer inside bcc_bpf/http_trace.c.
-const char kPerfBufferName[] = "syscall_write_events";
+const char kPerfBufferName[] = "socket_write_events";
 
 }  // namespace
 
@@ -262,7 +262,7 @@ void HTTPTraceConnector::TransferDataImpl(uint32_t table_num,
   write_stream_map_.clear();
 }
 
-void HTTPTraceConnector::AcceptEvent(syscall_write_event_t event) {
+void HTTPTraceConnector::AcceptEvent(socket_data_event_t event) {
   const uint64_t stream_id =
       (static_cast<uint64_t>(event.attr.tgid) << 32) | event.attr.accept_info.conn_id;
   // accept_info_t is packed, so we need cast its member to the right type.

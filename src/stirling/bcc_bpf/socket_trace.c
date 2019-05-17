@@ -2,7 +2,7 @@
 #include <uapi/linux/in6.h>
 #include <linux/socket.h>
 
-// This is copied from http_trace.h, with comments removed, so that this whole file can be
+// This is copied from socket_trace.h, with comments removed, so that this whole file can be
 // hermetically installed as a BPF program.
 //
 // TODO(PL-451): The struct definitions that are reused in HTTPTraceConnector should be shared from
@@ -16,7 +16,7 @@ struct accept_info_t {
 } __attribute__((__packed__, aligned(8)));
 
 #define MAX_MSG_SIZE 4096
-struct syscall_write_event_t {
+struct socket_data_event_t {
   struct attr_t {
     struct accept_info_t accept_info;
     uint64_t time_stamp_ns;
@@ -33,11 +33,11 @@ const uint32_t kEventTypeSyscallWriteEvent = 1;
 const uint32_t kEventTypeSyscallSendEvent = 2;
 
 // This is the perf buffer for BPF program to export data from kernel to user space.
-BPF_PERF_OUTPUT(syscall_write_events);
+BPF_PERF_OUTPUT(socket_write_events);
 
 // BPF programs are limited to a 512-byte stack. We store this value per CPU
 // and use it as a heap allocated value.
-BPF_PERCPU_ARRAY(write_buffer_heap, struct syscall_write_event_t, 1);
+BPF_PERCPU_ARRAY(data_buffer_heap, struct socket_data_event_t, 1);
 
 /***********************************************************
  * BPF Program that traces a request lifecycle:
@@ -58,7 +58,7 @@ BPF_HASH(active_sock_addr, u64, struct addr_info_t);
 // Key is {tgid, fd}.
 BPF_HASH(accept_info_map, u64, struct accept_info_t);
 
-struct write_info_t {
+struct data_info_t {
   u64 lookup_fd;
   char* buf;
 } __attribute__((__packed__, aligned(8)));
@@ -67,7 +67,7 @@ struct write_info_t {
 // Key is {tgid, pid}.
 //
 // TODO(yzhao): Consider merging this with active_sock_addr.
-BPF_HASH(active_write_info_map, u64, struct write_info_t);
+BPF_HASH(active_write_info_map, u64, struct data_info_t);
 
 // Map from process to the next available connection ID.
 // Key is tgid
@@ -149,8 +149,8 @@ static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t
     return 0;
   }
 
-  struct write_info_t write_info;
-  memset(&write_info, 0, sizeof(struct write_info_t));
+  struct data_info_t write_info;
+  memset(&write_info, 0, sizeof(struct data_info_t));
   write_info.lookup_fd = lookup_fd;
   write_info.buf = buf;
 
@@ -167,7 +167,7 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
     goto done;
   }
 
-  const struct write_info_t* write_info = active_write_info_map.lookup(&id);
+  const struct data_info_t* write_info = active_write_info_map.lookup(&id);
   if (write_info == NULL) {
     goto done;
   }
@@ -179,7 +179,7 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
   }
 
   u32 zero = 0;
-  struct syscall_write_event_t *event = write_buffer_heap.lookup(&zero);
+  struct socket_data_event_t *event = data_buffer_heap.lookup(&zero);
   if (event == NULL) {
     goto done;
   }
@@ -207,7 +207,7 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
 
   // Write snooped arguments to perf ring buffer.
   unsigned int size_to_submit = sizeof(event->attr) + buf_size;
-  syscall_write_events.perf_submit(ctx, event, size_to_submit);
+  socket_write_events.perf_submit(ctx, event, size_to_submit);
 
  done:
   // Regardless of what happened, after write/send/sendto() returns, there is no need to track the fd & buf

@@ -8,7 +8,7 @@
 
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
-#include "src/stirling/bcc_bpf/http_trace.h"
+#include "src/stirling/bcc_bpf/socket_trace.h"
 #include "src/stirling/http_trace_connector.h"
 #include "src/stirling/testing/tcp_socket.h"
 
@@ -146,7 +146,7 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
   ASSERT_THAT(http_trace_connector->TestOnlyGetWriteStreamMap(),
               UnorderedElementsAre(Pair(_, SizeIs(1)), Pair(_, SizeIs(1))));
 
-  auto get_message = [](const syscall_write_event_t& event) -> std::string_view {
+  auto get_message = [](const socket_data_event_t& event) -> std::string_view {
     return std::string_view(event.msg, std::min(event.attr.msg_bytes, event.attr.msg_buf_size));
   };
   std::vector<std::pair<uint64_t, std::string_view>> seq_msgs;

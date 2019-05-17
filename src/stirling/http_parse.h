@@ -4,7 +4,7 @@
 #include <string>
 #include "src/common/base/base.h"
 
-#include "src/stirling/bcc_bpf/http_trace.h"
+#include "src/stirling/bcc_bpf/socket_trace.h"
 
 namespace pl {
 namespace stirling {
@@ -79,11 +79,11 @@ struct HTTPTraceRecord {
 void ParseMessageBodyChunked(HTTPTraceRecord* record);
 
 void PreProcessRecord(HTTPTraceRecord* record);
-void ParseEventAttr(const syscall_write_event_t& event, HTTPTraceRecord* record);
-bool ParseHTTPRequest(const syscall_write_event_t& event, HTTPTraceRecord* record);
-bool ParseHTTPResponse(const syscall_write_event_t& event, HTTPTraceRecord* record);
-bool ParseSockAddr(const syscall_write_event_t& event, HTTPTraceRecord* record);
-bool ParseRaw(const syscall_write_event_t& event, HTTPTraceRecord* record);
+void ParseEventAttr(const socket_data_event_t& event, HTTPTraceRecord* record);
+bool ParseHTTPRequest(const socket_data_event_t& event, HTTPTraceRecord* record);
+bool ParseHTTPResponse(const socket_data_event_t& event, HTTPTraceRecord* record);
+bool ParseSockAddr(const socket_data_event_t& event, HTTPTraceRecord* record);
+bool ParseRaw(const socket_data_event_t& event, HTTPTraceRecord* record);
 
 // For each HTTP message, inclusions are applied first; then exclusions, which can overturn the
 // selection done by the former. An empty inclusions results into any HTTP message being selected,

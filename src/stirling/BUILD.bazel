@@ -65,8 +65,8 @@ pl_cc_resource(
 pl_cc_resource(
     name = "bcc_bpf_files",
     srcs = [
-        "bcc_bpf/http_trace.c",
         "bcc_bpf/pidruntime.c",
+        "bcc_bpf/socket_trace.c",
     ],
 )
 

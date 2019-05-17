@@ -61,7 +61,7 @@ TEST(PreProcessRecordTest, ContentHeaderIsNotAdded) {
 }
 
 TEST(ParseEventAttrTest, DataIsCopied) {
-  syscall_write_event_t event;
+  socket_data_event_t event;
   event.attr.time_stamp_ns = 100;
   event.attr.tgid = 1;
   event.attr.pid = 2;
@@ -82,7 +82,7 @@ TEST(ParseHTTPRequestTest, RequestIsIdentified) {
 Host: www.pixielabs.ai
 
 <body>)";
-  syscall_write_event_t event;
+  socket_data_event_t event;
   event.attr.time_stamp_ns = 100;
   event.attr.tgid = 1;
   event.attr.pid = 2;
@@ -111,7 +111,7 @@ Content-Type: application/json; charset=utf-8
 
 pixielabs)";
 
-  syscall_write_event_t event;
+  socket_data_event_t event;
   event.attr.time_stamp_ns = 100;
   event.attr.tgid = 1;
   event.attr.pid = 2;
@@ -137,7 +137,7 @@ pixielabs)";
 
 TEST(ParseRawTest, ContentIsCopied) {
   const std::string data = "test";
-  syscall_write_event_t event;
+  socket_data_event_t event;
   event.attr.time_stamp_ns = 100;
   event.attr.tgid = 1;
   event.attr.pid = 2;
