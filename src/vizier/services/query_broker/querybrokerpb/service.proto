@@ -129,4 +129,7 @@ message VizierQueryResponse {
     AgentQueryResponse response = 2;
   }
   repeated ResponseByAgent responses = 1;
+  // Status message carries information
+  // about any potential failures, ie compiler error failures
+  pl.statuspb.Status status = 2;
 }
