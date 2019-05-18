@@ -56,7 +56,6 @@ class IRVerifier {
 
   Status VerifyNodeConnections(IRNode* node);
   Status VerifyLineCol(IRNode* node);
-  Status CombineStatuses(const std::vector<Status>& statuses);
 };
 }  // namespace compiler
 }  // namespace carnot

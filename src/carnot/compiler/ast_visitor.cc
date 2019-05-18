@@ -75,20 +75,31 @@ Status ASTWalker::ProcessExprStmtNode(const pypa::AstExpressionStatementPtr& e) 
 Status ASTWalker::ProcessModuleNode(const pypa::AstModulePtr& m) {
   pypa::AstStmtList items_list = m->body->items;
   // iterate through all the items on this list.
+  std::vector<Status> status_vector;
   for (pypa::AstStmt stmt : items_list) {
-    Status result;
     switch (stmt->type) {
-      case pypa::AstType::ExpressionStatement:
-        result = ProcessExprStmtNode(PYPA_PTR_CAST(ExpressionStatement, stmt));
-        PL_RETURN_IF_ERROR(result);
+      case pypa::AstType::ExpressionStatement: {
+        Status result = ProcessExprStmtNode(PYPA_PTR_CAST(ExpressionStatement, stmt));
+        if (!result.ok()) {
+          status_vector.push_back(result);
+        }
         break;
-      case pypa::AstType::Assign:
-        result = ProcessAssignNode(PYPA_PTR_CAST(Assign, stmt));
-        PL_RETURN_IF_ERROR(result);
+      }
+      case pypa::AstType::Assign: {
+        Status result = ProcessAssignNode(PYPA_PTR_CAST(Assign, stmt));
+        if (!result.ok()) {
+          status_vector.push_back(result);
+        }
         break;
-      default:
-        return CreateAstError(m, "Can't parse expression of type $0", GetAstTypeName(stmt->type));
+      }
+      default: {
+        status_vector.push_back(
+            CreateAstError(m, "Can't parse expression of type $0", GetAstTypeName(stmt->type)));
+      }
     }
+  }
+  if (!status_vector.empty()) {
+    return MergeStatuses(status_vector);
   }
   return Status::OK();
 }
@@ -108,11 +119,7 @@ Status ASTWalker::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   if (node->value->type != AstType::Call) {
     return CreateAstError(node->value, "Assign value must be a function call.");
   }
-  StatusOr<IRNode*> value = ProcessOpCallNode(PYPA_PTR_CAST(Call, node->value));
-
-  PL_RETURN_IF_ERROR(value);
-
-  var_table_[assign_name] = value.ValueOrDie();
+  PL_ASSIGN_OR_RETURN(var_table_[assign_name], ProcessOpCallNode(PYPA_PTR_CAST(Call, node->value)));
   return Status::OK();
 }
 
@@ -175,8 +182,8 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(
   for (const auto& ma : missing_or_default_args) {
     auto find_ma = default_args.find(ma);
     if (find_ma == default_args.end()) {
-      // TODO(philkuz) look for places where ast error might exit prematurely in other parts of the
-      // code.
+      // TODO(philkuz) look for places where ast error might exit prematurely in other parts of
+      // the code.
       errors.push_back(
           CreateAstError(call_ast, "You must set '$0' directly. No default value found.", ma));
       continue;
@@ -412,6 +419,7 @@ StatusOr<LambdaExprReturn> ASTWalker::BuildLambdaFunc(
   std::vector<IRNode*> expressions;
   auto ret = LambdaExprReturn(ir_node);
   for (auto expr_ret : children_ret_expr) {
+    // TODO(philkuz) (PL-476) remove lookup_pl_time_attribtt
     if (expr_ret.StringOnly()) {
       PL_ASSIGN_OR_RETURN(auto attr_expr, LookupPLTimeAttribute(expr_ret.str_, parent_node));
       expressions.push_back(attr_expr.expr_);
