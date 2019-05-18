@@ -233,9 +233,6 @@ Status IRVerifier::VerifyLineColGraph(const IR& ir_graph) {
       statuses.push_back(line_col_status);
     }
   }
-  if (statuses.empty()) {
-    return Status::OK();
-  }
   return MergeStatuses(statuses);
 }
 
@@ -263,9 +260,7 @@ Status IRVerifier::VerifyGraphConnections(const IR& ir_graph) {
         error::InvalidArgument("No Result() call found in the query. You must end the query with a "
                                "Result call to save something out."));
   }
-  if (statuses.empty()) {
-    return Status::OK();
-  }
+
   return MergeStatuses(statuses);
 }
 }  // namespace compiler

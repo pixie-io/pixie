@@ -98,10 +98,7 @@ Status ASTWalker::ProcessModuleNode(const pypa::AstModulePtr& m) {
       }
     }
   }
-  if (!status_vector.empty()) {
-    return MergeStatuses(status_vector);
-  }
-  return Status::OK();
+  return MergeStatuses(status_vector);
 }
 
 Status ASTWalker::ProcessAssignNode(const pypa::AstAssignPtr& node) {
@@ -190,10 +187,7 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(
     }
     arg_map[ma] = find_ma->second;
   }
-  if (!errors.empty()) {
-    return MergeStatuses(errors);
-  }
-
+  PL_RETURN_IF_ERROR(MergeStatuses(errors));
   return arg_map;
 }
 

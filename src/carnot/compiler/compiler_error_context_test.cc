@@ -91,6 +91,11 @@ TEST(CompilerErrorBuilder, MergedStatuses) {
                    std::make_unique<compilerpb::CompilerErrorGroup>(merged_errors)),
             merged_statuses);
 }
+
+TEST(CompilerErrorBuilder, EmptyStatusesVector) {
+  // should return ok
+  EXPECT_OK(MergeStatuses({}));
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

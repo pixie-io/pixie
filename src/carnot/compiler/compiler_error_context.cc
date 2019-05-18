@@ -33,7 +33,10 @@ compilerpb::CompilerErrorGroup MergeGroups(
 }
 
 Status MergeStatuses(const std::vector<Status>& statuses) {
-  CHECK_NE(statuses.size(), 0UL);
+  // If statuses is empty, then we return OK.
+  if (statuses.empty()) {
+    return Status::OK();
+  }
   std::vector<compilerpb::CompilerErrorGroup> error_group_pbs;
   std::vector<std::string> messages;
   for (const auto s : statuses) {
