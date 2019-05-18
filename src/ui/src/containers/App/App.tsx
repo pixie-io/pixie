@@ -4,7 +4,7 @@ import {Home} from 'containers/Home';
 import {Vizier} from 'containers/vizier';
 import * as React from 'react';
 import { BrowserRouter as Router, Link, Route} from 'react-router-dom';
-import * as fetch from 'unfetch';
+import {fetch} from 'unfetch/polyfill';
 
 import { InMemoryCache } from 'apollo-cache-inmemory';
 import {ApolloClient} from 'apollo-client';
