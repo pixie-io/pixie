@@ -138,7 +138,7 @@ void HTTPTraceConnector::OutputEvent(const socket_data_event_t& event,
     LOG(ERROR) << "Failed to parse SyscallWriteEvent (addr).";
     return;
   }
-  record.http_start_time_stamp_ns = event.attr.accept_info.timestamp_ns + ClockRealTimeOffset();
+  record.http_start_time_stamp_ns = event.attr.conn_info.timestamp_ns + ClockRealTimeOffset();
 
   // Parse as either a Request, Response, or as Raw (if everything else fails).
   succeeded = ParseHTTPRequest(event, &record) || ParseHTTPResponse(event, &record) ||
@@ -183,7 +183,7 @@ const std::vector<ProbeSpec> kProbeSpecs = {
 
 // This is same as the perf buffer inside bcc_bpf/socket_trace.c.
 const std::vector<std::string> kPerfBufferNames = {
-    "socket_write_events",
+    "socket_http_resp_events",
 };
 
 }  // namespace
@@ -271,9 +271,9 @@ void HTTPTraceConnector::TransferDataImpl(uint32_t table_num,
 
 void HTTPTraceConnector::AcceptEvent(socket_data_event_t event) {
   const uint64_t stream_id =
-      (static_cast<uint64_t>(event.attr.tgid) << 32) | event.attr.accept_info.conn_id;
-  // accept_info_t is packed, so we need cast its member to the right type.
-  write_stream_map_[stream_id].emplace(static_cast<uint64_t>(event.attr.accept_info.seq_num),
+      (static_cast<uint64_t>(event.attr.tgid) << 32) | event.attr.conn_info.conn_id;
+  // conn_info_t is packed, so we need cast its member to the right type.
+  write_stream_map_[stream_id].emplace(static_cast<uint64_t>(event.attr.conn_info.seq_num),
                                        std::move(event));
 }
 

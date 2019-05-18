@@ -6,14 +6,26 @@
 
 #include <linux/in6.h>
 
+// Indicates that the event is for a write() syscall, whose msg field records the input data
+// to write().
+const uint32_t kEventTypeSyscallWriteEvent = 1;
+const uint32_t kEventTypeSyscallSendEvent = 2;
+
+// Protocol being used on a connection (HTTP, MySQL, etc.).
+const uint32_t kProtocolUnknown = 0;
+const uint32_t kProtocolHTTP = 1;
+const uint32_t kProtocolMySQL = 2;
+
 // This struct contains information collected when a connection is established,
 // via an accept() syscall.
 // This struct must be aligned, because BCC cannot currently handle unaligned structs.
-struct accept_info_t {
+struct conn_info_t {
   uint64_t timestamp_ns;
   struct sockaddr_in6 addr;
   // A 0-based number that uniquely identify a connection for a process.
   uint32_t conn_id;
+  // The protocol on the connection (HTTP, MySQL, etc.)
+  uint32_t protocol;
   // A 0-based number for the next event on this connection.
   // This number is incremented each time a new event is recorded.
   uint64_t seq_num;
@@ -29,7 +41,7 @@ struct socket_data_event_t {
   // size arithmetic. This makes it so that it's attributes followed by message.
   struct attr_t {
     // Information from the accept() syscall, including IP and port.
-    struct accept_info_t accept_info;
+    struct conn_info_t conn_info;
     // The time stamp as this is captured by BPF program.
     uint64_t time_stamp_ns;
     // Comes from the process from which this is captured.
@@ -50,12 +62,3 @@ struct socket_data_event_t {
   } attr;
   char msg[MAX_MSG_SIZE];
 } __attribute__((__packed__));
-
-// TODO(oazizi): We should only put a single event-type in the perf buffer.
-// With multiple event-types, pushed at different probes, we get into a reordering problem.
-// If we only use a single event type, then these consts below can go away.
-
-// Indicates that the event is for a write() syscall, whose msg field records the input data
-// to write().
-const uint32_t kEventTypeSyscallWriteEvent = 1;
-const uint32_t kEventTypeSyscallSendEvent = 2;

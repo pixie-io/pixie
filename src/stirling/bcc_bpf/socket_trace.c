@@ -2,23 +2,35 @@
 #include <uapi/linux/in6.h>
 #include <linux/socket.h>
 
+/***********************************************************
+ * External structs and definitions
+ ***********************************************************/
+
 // This is copied from socket_trace.h, with comments removed, so that this whole file can be
 // hermetically installed as a BPF program.
 //
 // TODO(PL-451): The struct definitions that are reused in HTTPTraceConnector should be shared from
 // the same header file.
 
-struct accept_info_t {
+const uint32_t kEventTypeSyscallWriteEvent = 1;
+const uint32_t kEventTypeSyscallSendEvent = 2;
+
+const uint32_t kProtocolUnknown = 0;
+const uint32_t kProtocolHTTP = 1;
+const uint32_t kProtocolMySQL = 2;
+
+struct conn_info_t {
   uint64_t timestamp_ns;
   struct sockaddr_in6 addr;
   uint32_t conn_id;
+  uint32_t protocol;
   uint64_t seq_num;
 } __attribute__((__packed__, aligned(8)));
 
 #define MAX_MSG_SIZE 4096
 struct socket_data_event_t {
   struct attr_t {
-    struct accept_info_t accept_info;
+    struct conn_info_t conn_info;
     uint64_t time_stamp_ns;
     uint32_t tgid;
     uint32_t pid;
@@ -29,41 +41,38 @@ struct socket_data_event_t {
   } attr;
   char msg[MAX_MSG_SIZE];
 } __attribute__((__packed__));
-const uint32_t kEventTypeSyscallWriteEvent = 1;
-const uint32_t kEventTypeSyscallSendEvent = 2;
 
 // This is the perf buffer for BPF program to export data from kernel to user space.
-BPF_PERF_OUTPUT(socket_write_events);
-
-// BPF programs are limited to a 512-byte stack. We store this value per CPU
-// and use it as a heap allocated value.
-BPF_PERCPU_ARRAY(data_buffer_heap, struct socket_data_event_t, 1);
+BPF_PERF_OUTPUT(socket_http_resp_events);
+BPF_PERF_OUTPUT(socket_mysql_events);
 
 /***********************************************************
- * BPF Program that traces a request lifecycle:
- *   Starts at accept4 (establish connection)
- *   Write (extract data)
- *   Close (complete request)
- **********************************************************/
+ * Internal structs and definitions
+ ***********************************************************/
+
 struct addr_info_t {
   struct sockaddr *addr;
   size_t *addrlen;
-};
-
-// Map from threads to its ongoing accept() syscall's input argument.
-// Key is {tgid, pid}.
-BPF_HASH(active_sock_addr, u64, struct addr_info_t);
-
-// Map from user-space file descriptors to the connections obtained from accept() syscall.
-// Key is {tgid, fd}.
-BPF_HASH(accept_info_map, u64, struct accept_info_t);
+} __attribute__((__packed__, aligned(8)));
 
 struct data_info_t {
   u64 lookup_fd;
   char* buf;
 } __attribute__((__packed__, aligned(8)));
 
+
+// Map from user-space file descriptors to the connections obtained from accept() syscall.
+// Tracks connection from accept() -> close().
+// Key is {tgid, fd}.
+BPF_HASH(conn_info_map, u64, struct conn_info_t);
+
+// Map from threads to its ongoing accept() syscall's input argument.
+// Tracks accept() call from entry -> exit.
+// Key is {tgid, pid}.
+BPF_HASH(active_sock_addr, u64, struct addr_info_t);
+
 // Map from threads to its ongoing write() syscall's input argument.
+// Tracks write() call from entry -> exit.
 // Key is {tgid, pid}.
 //
 // TODO(yzhao): Consider merging this with active_sock_addr.
@@ -72,6 +81,54 @@ BPF_HASH(active_write_info_map, u64, struct data_info_t);
 // Map from process to the next available connection ID.
 // Key is tgid
 BPF_HASH(proc_conn_map, u32, u32);
+
+// BPF programs are limited to a 512-byte stack. We store this value per CPU
+// and use it as a heap allocated value.
+BPF_PERCPU_ARRAY(data_buffer_heap, struct socket_data_event_t, 1);
+
+/***********************************************************
+ * Buffer processing helper functions
+ ***********************************************************/
+
+static bool is_http_response(char *buf, size_t count) {
+  // Smallest HTTP response is 17 characters:
+  // HTTP/1.1 200 OK\r\n
+  // Use 16 here to be conservative.
+  if (count < 16) {
+    return false;
+  }
+
+  if (buf[0] == 'H' && buf[1] == 'T' && buf[2] == 'T' && buf[3] == 'P') {
+    return true;
+  }
+
+  return false;
+}
+
+static bool is_mysql_protocol(char *buf, size_t count) {
+  if (count < 1){
+    return false;
+  }
+
+  // MySQL queries appear to start with this special SYN character (0x16).
+  // This was discovered experimentally, and is not guaranteed to be robust.
+  // TODO(oazizi): Find a better way.
+  if (*buf == 0x16) {
+    return true;
+  }
+
+  return false;
+}
+
+static u32 infer_protocol(char *buf, size_t count) {
+  return is_http_response(buf, count)  ? kProtocolHTTP :
+         is_mysql_protocol(buf, count) ? kProtocolMySQL :
+                                         kProtocolUnknown;
+}
+
+/***********************************************************
+ * BPF syscall probe functions
+ ***********************************************************/
 
 // This function stores the address to the sockaddr struct in the active_sock_addr map.
 // The key is the current pid/tgid.
@@ -91,7 +148,7 @@ int probe_entry_accept4(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, 
 
 // Read the sockaddr values and write to the output buffer.
 int probe_ret_accept4(struct pt_regs *ctx) {
-  bool TRUE = true;
+  u32 kZero = 0;
 
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
@@ -114,20 +171,20 @@ int probe_ret_accept4(struct pt_regs *ctx) {
   // Prepend TGID to make the FD unique across processes.
   u64 tgid_fd = ((u64)tgid << 32) | (u32)ret_fd;
 
-  u32 kZero = 0;
   u32 conn_id = 0;
   u32* curr_conn_id = proc_conn_map.lookup_or_init(&tgid, &kZero);
   if (curr_conn_id != NULL) {
     conn_id = (*curr_conn_id)++;
   }
 
-  struct accept_info_t accept_info;
-  memset(&accept_info, 0, sizeof(struct accept_info_t));
-  accept_info.timestamp_ns = bpf_ktime_get_ns();
-  accept_info.addr = *((struct sockaddr_in6*) addr_info->addr);
-  accept_info.conn_id = conn_id;
-  accept_info.seq_num = 0;
-  accept_info_map.update(&tgid_fd, &accept_info);
+  struct conn_info_t conn_info;
+  memset(&conn_info, 0, sizeof(struct conn_info_t));
+  conn_info.timestamp_ns = bpf_ktime_get_ns();
+  conn_info.addr = *((struct sockaddr_in6*) addr_info->addr);
+  conn_info.conn_id = conn_id;
+  conn_info.protocol = kProtocolUnknown;
+  conn_info.seq_num = 0;
+  conn_info_map.update(&tgid_fd, &conn_info);
 
  done:
   // Regardless of what happened, after accept() returns, there is no need to track the sock_addr
@@ -143,9 +200,35 @@ static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t
   u32 tgid = id >> 32;
   u64 lookup_fd = ((u64)tgid << 32) | (u32)fd;
 
-  struct accept_info_t *accept_info = accept_info_map.lookup(&lookup_fd);
-  if (accept_info == NULL) {
-    // Bail early if we aren't tracking fd.
+  struct conn_info_t* conn_info = conn_info_map.lookup(&lookup_fd);
+
+  // Try to infer connection type (protocol) based on written data.
+  // If protocol is detected, then let it through, even though accept_info was not captured.
+  // Won't know remote endpoint (e.g. IP), but still let it through.
+  // TODO(oazizi): Future architecture could have user-land provide this information.
+  if (conn_info == NULL) {
+    u32 protocol = infer_protocol(buf, count);
+    if (protocol != kProtocolUnknown) {
+      struct conn_info_t new_conn_info;
+      memset(&new_conn_info, 0, sizeof(struct conn_info_t));
+      new_conn_info.protocol = protocol;
+      conn_info_map.update(&lookup_fd, &new_conn_info);
+      conn_info = &new_conn_info;
+    }
+  }
+
+  // If connection info is still NULL, abort.
+  if (conn_info == NULL) {
+    return 0;
+  }
+
+  // Attempt to classify protocol, if unknown.
+  if (conn_info->protocol == kProtocolUnknown) {
+    conn_info->protocol = infer_protocol(buf, count);
+  }
+
+  // If this connection has an unknown protocol, abort (to avoid pollution).
+  if (conn_info->protocol == kProtocolUnknown) {
     return 0;
   }
 
@@ -159,11 +242,13 @@ static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t
 }
 
 static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
+  u32 kZero = 0;
+
   u64 id = bpf_get_current_pid_tgid();
 
   int64_t written_bytes = PT_REGS_RC(ctx);
-  if (written_bytes < 0) {
-    // This write() call failed.
+  if (written_bytes <= 0) {
+    // This write() call failed, or has nothing to write.
     goto done;
   }
 
@@ -173,13 +258,12 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
   }
 
   uint64_t lookup_fd = write_info->lookup_fd;
-  struct accept_info_t *accept_info = accept_info_map.lookup(&lookup_fd);
-  if (accept_info == NULL) {
+  struct conn_info_t* conn_info = conn_info_map.lookup(&lookup_fd);
+  if (conn_info == NULL) {
     goto done;
   }
 
-  u32 zero = 0;
-  struct socket_data_event_t *event = data_buffer_heap.lookup(&zero);
+  struct socket_data_event_t *event = data_buffer_heap.lookup(&kZero);
   if (event == NULL) {
     goto done;
   }
@@ -190,9 +274,9 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
   //size_t buf_size = count < sizeof(event->msg) ? count : sizeof(event->msg);
   size_t buf_size = sizeof(event->msg);
 
-  event->attr.accept_info = *accept_info;
+  event->attr.conn_info = *conn_info;
   // Increment sequence number after copying so the index is 0-based.
-  ++accept_info->seq_num;
+  ++conn_info->seq_num;
   event->attr.event_type = event_type;
   event->attr.msg_bytes = written_bytes;
   // TODO(yzhao): This is the time is after write/send() finishes. If we want to capture the time
@@ -207,7 +291,10 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
 
   // Write snooped arguments to perf ring buffer.
   unsigned int size_to_submit = sizeof(event->attr) + buf_size;
-  socket_write_events.perf_submit(ctx, event, size_to_submit);
+  switch (conn_info->protocol) {
+    case kProtocolHTTP: socket_http_resp_events.perf_submit(ctx, event, size_to_submit); break;
+    case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
+  }
 
  done:
   // Regardless of what happened, after write/send/sendto() returns, there is no need to track the fd & buf
@@ -243,13 +330,13 @@ int probe_ret_sendto(struct pt_regs *ctx) {
 // TODO(oazizi): Look into the following opens:
 // 1) Should we trace sendmsg(), which is another syscall, but with a different interface?
 // 2) Why does the syscall table only include sendto, while Linux source code and man page list both sendto and send?
-// 3) What do we do when the sendto() is called with a dest_addr provided? I believe this overrides the accept_info.
+// 3) What do we do when the sendto() is called with a dest_addr provided? I believe this overrides the conn_info.
 
 int probe_close(struct pt_regs *ctx, int fd) {
   if (fd < 0) { return 0; }
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
   u64 lookup_fd = ((u64)tgid << 32) | fd;
-  accept_info_map.delete(&lookup_fd);
+  conn_info_map.delete(&lookup_fd);
   return 0;
 }

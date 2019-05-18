@@ -13,8 +13,8 @@ namespace stirling {
 socket_data_event_t InitEvent(std::string_view msg) {
   socket_data_event_t event;
   event.attr.event_type = kEventTypeSyscallWriteEvent;
-  event.attr.accept_info.addr.sin6_family = AF_INET;
-  event.attr.accept_info.timestamp_ns = 0;
+  event.attr.conn_info.addr.sin6_family = AF_INET;
+  event.attr.conn_info.timestamp_ns = 0;
   event.attr.time_stamp_ns = 1000000;
   event.attr.msg_buf_size = sizeof(event.msg);
   event.attr.msg_bytes = msg.size();

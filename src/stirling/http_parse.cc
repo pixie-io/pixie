@@ -139,7 +139,7 @@ bool ParseHTTPResponse(const socket_data_event_t& event, HTTPTraceRecord* record
 // Returns false if an unexpected sockaddr family is provided.
 // Currently this function understands IPV4 and IPV6 sockaddr families.
 bool ParseSockAddr(const socket_data_event_t& event, HTTPTraceRecord* record) {
-  const auto* sa = reinterpret_cast<const struct sockaddr*>(&event.attr.accept_info.addr);
+  const auto* sa = reinterpret_cast<const struct sockaddr*>(&event.attr.conn_info.addr);
   char s[INET6_ADDRSTRLEN] = "";
   const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
   const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);

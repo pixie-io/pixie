@@ -46,30 +46,6 @@ class HTTPTraceBPFTest : public ::testing::Test {
 
   void JoinClient() { client_thread.join(); }
 
-  void CheckCapturedData() {
-    const int table_num = 0;
-    types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(HTTPTraceConnector::kElements[table_num].elements(),
-                              /*target_capacity*/ 2, &record_batch));
-    source->TransferData(table_num, &record_batch);
-    EXPECT_OK(source->Stop());
-
-    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-      ASSERT_EQ(2, col->Size());
-    }
-
-    // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
-    // host machine are identical.
-    // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
-    EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(0).val);
-    EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
-
-    EXPECT_EQ(std::string_view("Content-Type: application/json; msg1"),
-              record_batch[HTTPTraceConnector::kHTTPHeaders]->Get<types::StringValue>(0));
-    EXPECT_EQ(std::string_view("Content-Type: application/json; msg2"),
-              record_batch[HTTPTraceConnector::kHTTPHeaders]->Get<types::StringValue>(1));
-  }
-
   static constexpr std::string_view kMsg1 = R"(HTTP/1.1 200 OK
 Content-Type: application/json; msg1
 
@@ -79,6 +55,8 @@ Content-Type: application/json; msg1
 Content-Type: application/json; msg2
 
 )";
+
+  static constexpr std::string_view kMsg3 = R"(This is not an HTTP message)";
 
   std::unique_ptr<SourceConnector> source;
   std::thread client_thread;
@@ -97,7 +75,27 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
 
   JoinClient();
 
-  CheckCapturedData();
+  const int table_num = 0;
+  types::ColumnWrapperRecordBatch record_batch;
+  EXPECT_OK(InitRecordBatch(HTTPTraceConnector::kElements[table_num].elements(),
+                            /*target_capacity*/ 2, &record_batch));
+  source->TransferData(table_num, &record_batch);
+  EXPECT_OK(source->Stop());
+
+  for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
+    ASSERT_EQ(2, col->Size());
+  }
+
+  // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
+  // host machine are identical.
+  // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
+  EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(0).val);
+  EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
+
+  EXPECT_EQ(std::string_view("Content-Type: application/json; msg1"),
+            record_batch[HTTPTraceConnector::kHTTPHeaders]->Get<types::StringValue>(0));
+  EXPECT_EQ(std::string_view("Content-Type: application/json; msg2"),
+            record_batch[HTTPTraceConnector::kHTTPHeaders]->Get<types::StringValue>(1));
 }
 
 TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
@@ -108,13 +106,60 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
 
   server.Accept();
   EXPECT_EQ(kMsg1.length(), server.Send(kMsg1));
-
   EXPECT_EQ(kMsg2.length(), server.Send(kMsg2));
   server.Close();
 
   JoinClient();
 
-  CheckCapturedData();
+  const int table_num = 0;
+  types::ColumnWrapperRecordBatch record_batch;
+  EXPECT_OK(InitRecordBatch(HTTPTraceConnector::kElements[table_num].elements(),
+                            /*target_capacity*/ 2, &record_batch));
+  source->TransferData(table_num, &record_batch);
+  EXPECT_OK(source->Stop());
+
+  for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
+    ASSERT_EQ(2, col->Size());
+  }
+
+  // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
+  // host machine are identical.
+  // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
+  EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(0).val);
+  EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
+
+  EXPECT_EQ(std::string_view("Content-Type: application/json; msg1"),
+            record_batch[HTTPTraceConnector::kHTTPHeaders]->Get<types::StringValue>(0));
+  EXPECT_EQ(std::string_view("Content-Type: application/json; msg2"),
+            record_batch[HTTPTraceConnector::kHTTPHeaders]->Get<types::StringValue>(1));
+}
+
+TEST_F(HTTPTraceBPFTest, TestNonHTTPWritesNotCaptured) {
+  TCPSocket server;
+  server.Bind();
+
+  SpawnClient(server);
+
+  server.Accept();
+  EXPECT_EQ(kMsg3.length(), server.Write(kMsg3));
+  EXPECT_EQ(0, server.Write(""));
+  EXPECT_EQ(kMsg3.length(), server.Send(kMsg3));
+  EXPECT_EQ(0, server.Send(""));
+  server.Close();
+
+  JoinClient();
+
+  const int table_num = 0;
+  types::ColumnWrapperRecordBatch record_batch;
+  EXPECT_OK(InitRecordBatch(HTTPTraceConnector::kElements[table_num].elements(),
+                            /*target_capacity*/ 2, &record_batch));
+  source->TransferData(table_num, &record_batch);
+  EXPECT_OK(source->Stop());
+
+  // Should not have captured anything.
+  for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
+    ASSERT_EQ(0, col->Size());
+  }
 }
 
 TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
