@@ -34,13 +34,24 @@ class HTTPTraceBPFTest : public ::testing::Test {
     ASSERT_OK(source->Init());
   }
 
-  void SpawnClient(const TCPSocket& server) {
+  void SpawnReaderClient(const TCPSocket& server) {
     client_thread = std::thread([&server]() {
       TCPSocket client;
       client.Connect(server);
       std::string data;
       while (client.Read(&data)) {
       }
+    });
+  }
+
+  void SpawnWriterClient(const TCPSocket& server, const std::vector<std::string_view>& write_data) {
+    client_thread = std::thread([&server, &write_data]() {
+      TCPSocket client;
+      client.Connect(server);
+      for (auto data : write_data) {
+        client.Write(data);
+      }
+      client.Close();
     });
   }
 
@@ -66,7 +77,7 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
   TCPSocket server;
   server.Bind();
 
-  SpawnClient(server);
+  SpawnReaderClient(server);
 
   server.Accept();
   EXPECT_EQ(kMsg1.length(), server.Write(kMsg1));
@@ -102,7 +113,7 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
   TCPSocket server;
   server.Bind();
 
-  SpawnClient(server);
+  SpawnReaderClient(server);
 
   server.Accept();
   EXPECT_EQ(kMsg1.length(), server.Send(kMsg1));
@@ -138,7 +149,7 @@ TEST_F(HTTPTraceBPFTest, TestNonHTTPWritesNotCaptured) {
   TCPSocket server;
   server.Bind();
 
-  SpawnClient(server);
+  SpawnReaderClient(server);
 
   server.Accept();
   EXPECT_EQ(kMsg3.length(), server.Write(kMsg3));
@@ -162,11 +173,88 @@ TEST_F(HTTPTraceBPFTest, TestNonHTTPWritesNotCaptured) {
   }
 }
 
+TEST_F(HTTPTraceBPFTest, TestReadCapturedData) {
+  TCPSocket server;
+  server.Bind();
+
+  std::vector<std::string_view> write_data = {kMsg1, kMsg2};
+  SpawnWriterClient(server, write_data);
+
+  server.Accept();
+  std::string recv_msg;
+  std::string recv_tmp;
+  while (server.Read(&recv_tmp)) {
+    recv_msg.append(recv_tmp);
+  }
+
+  // Unlike write/send syscalls, read probes may capture zero, one or multiple messages at a time.
+  // For example, a single Read() call after two Write() calls may return the data from both Writes.
+  // As a result, we can only only check that the aggregate was received correctly.
+  std::string expected_msg;
+  expected_msg.append(kMsg1);
+  expected_msg.append(kMsg2);
+  EXPECT_EQ(expected_msg, recv_msg);
+  server.Close();
+
+  JoinClient();
+
+  // TODO(oazizi): Check that the probes actually captured the data. Coming in a future diff soon.
+}
+
+TEST_F(HTTPTraceBPFTest, TestRecvCapturedData) {
+  TCPSocket server;
+  server.Bind();
+
+  std::vector<std::string_view> write_data = {kMsg1, kMsg2};
+  SpawnWriterClient(server, write_data);
+
+  server.Accept();
+  std::string recv_msg;
+  std::string recv_tmp;
+  while (server.Recv(&recv_tmp)) {
+    recv_msg.append(recv_tmp);
+  }
+
+  // Unlike write/send syscalls, read probes may capture zero, one or multiple messages at a time.
+  // For example, a single Recv() call after two Write() calls may return the data from both Writes.
+  // As a result, we can only only check that the aggregate was received correctly.
+  std::string expected_msg;
+  expected_msg.append(kMsg1);
+  expected_msg.append(kMsg2);
+  EXPECT_EQ(expected_msg, recv_msg);
+  server.Close();
+
+  JoinClient();
+
+  // TODO(oazizi): Check that the probes actually captured the data. Coming in a future diff soon.
+}
+
+TEST_F(HTTPTraceBPFTest, TestNonHTTPReadsNotCaptured) {
+  TCPSocket server;
+  server.Bind();
+
+  std::vector<std::string_view> write_data = {kMsg3};
+  SpawnWriterClient(server, write_data);
+
+  server.Accept();
+  std::string recv_msg;
+  std::string recv_tmp;
+  while (server.Read(&recv_tmp)) {
+    recv_msg.append(recv_tmp);
+  }
+  EXPECT_EQ(kMsg3, recv_msg);
+  server.Close();
+
+  JoinClient();
+
+  // TODO(oazizi): Check that the probes did not capture the data. Coming in a future diff soon.
+}
+
 TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
   {
     TCPSocket server;
     server.Bind();
-    SpawnClient(server);
+    SpawnReaderClient(server);
     server.Accept();
     EXPECT_EQ(kMsg1.length(), server.Write(kMsg1));
     server.Close();
@@ -176,7 +264,7 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
     // A new connection.
     TCPSocket server;
     server.Bind();
-    SpawnClient(server);
+    SpawnReaderClient(server);
     server.Accept();
     EXPECT_EQ(kMsg2.length(), server.Write(kMsg2));
     server.Close();

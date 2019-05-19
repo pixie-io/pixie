@@ -14,10 +14,13 @@
 
 const uint32_t kEventTypeSyscallWriteEvent = 1;
 const uint32_t kEventTypeSyscallSendEvent = 2;
+const uint32_t kEventTypeSyscallReadEvent = 3;
+const uint32_t kEventTypeSyscallRecvEvent = 4;
 
 const uint32_t kProtocolUnknown = 0;
-const uint32_t kProtocolHTTP = 1;
-const uint32_t kProtocolMySQL = 2;
+const uint32_t kProtocolHTTPResponse = 1;
+const uint32_t kProtocolHTTPRequest = 2;
+const uint32_t kProtocolMySQL = 3;
 
 struct conn_info_t {
   uint64_t timestamp_ns;
@@ -77,6 +80,7 @@ BPF_HASH(active_sock_addr, u64, struct addr_info_t);
 //
 // TODO(yzhao): Consider merging this with active_sock_addr.
 BPF_HASH(active_write_info_map, u64, struct data_info_t);
+BPF_HASH(active_read_info_map, u64, struct data_info_t);
 
 // Map from process to the next available connection ID.
 // Key is tgid
@@ -105,6 +109,24 @@ static bool is_http_response(char *buf, size_t count) {
   return false;
 }
 
+static bool is_http_request(char* buf, size_t count) {
+  // Smallest HTTP response is 16 characters:
+  // GET x HTTP/1.1\r\n
+  if (count < 16) {
+    return false;
+  }
+
+  if (buf[0] == 'G' && buf[1] == 'E' && buf[2] == 'T') {
+    return true;
+  }
+  if (buf[0] == 'P' && buf[1] == 'O' && buf[2] == 'S' && buf[3] == 'T') {
+    return true;
+  }
+  // TODO(oazizi): Should we add PUT, DELETE, HEAD, and perhaps others?
+
+  return false;
+}
+
 static bool is_mysql_protocol(char *buf, size_t count) {
   if (count < 1){
     return false;
@@ -121,7 +143,8 @@ static bool is_mysql_protocol(char *buf, size_t count) {
 }
 
 static u32 infer_protocol(char *buf, size_t count) {
-  return is_http_response(buf, count)  ? kProtocolHTTP :
+  return is_http_response(buf, count)  ? kProtocolHTTPResponse :
+         is_http_request(buf, count)   ? kProtocolHTTPRequest :
          is_mysql_protocol(buf, count) ? kProtocolMySQL :
                                          kProtocolUnknown;
 }
@@ -224,6 +247,7 @@ static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t
 
   // Attempt to classify protocol, if unknown.
   if (conn_info->protocol == kProtocolUnknown) {
+    // TODO(oazizi): Look for only certain protocols on write/send()?
     conn_info->protocol = infer_protocol(buf, count);
   }
 
@@ -292,7 +316,7 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
   // Write snooped arguments to perf ring buffer.
   unsigned int size_to_submit = sizeof(event->attr) + buf_size;
   switch (conn_info->protocol) {
-    case kProtocolHTTP: socket_http_resp_events.perf_submit(ctx, event, size_to_submit); break;
+    case kProtocolHTTPResponse: socket_http_resp_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
   }
 
@@ -302,6 +326,107 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
   active_write_info_map.delete(&id);
   return 0;
 }
+
+static int probe_entry_read_recv(struct pt_regs *ctx, unsigned int fd, char* buf, size_t count, uint32_t event_type) {
+  u64 id = bpf_get_current_pid_tgid();
+  u32 tgid = id >> 32;
+  u64 lookup_fd = ((u64)tgid << 32) | (u32)fd;
+
+  struct data_info_t read_info;
+  memset(&read_info, 0, sizeof(struct data_info_t));
+  read_info.lookup_fd = lookup_fd;
+  read_info.buf = buf;
+
+  active_read_info_map.update(&id, &read_info);
+  return 0;
+}
+
+static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
+  u32 kZero = 0;
+
+  u64 id = bpf_get_current_pid_tgid();
+
+  size_t bytes_read = PT_REGS_RC(ctx);
+
+  if (bytes_read <= 0) {
+    // This read() call failed, or read nothing.
+    goto done;
+  }
+
+  const struct data_info_t* read_info = active_read_info_map.lookup(&id);
+  if (read_info == NULL) {
+    goto done;
+  }
+
+  u64 lookup_fd = read_info->lookup_fd;
+  struct conn_info_t* conn_info = conn_info_map.lookup(&lookup_fd);
+
+  char* buf = read_info->buf;
+
+  // Try to infer connection type.
+  if (conn_info == NULL) {
+    u32 protocol = infer_protocol(buf, bytes_read);
+    if (protocol != kProtocolUnknown) {
+      struct conn_info_t new_conn_info;
+      memset(&new_conn_info, 0, sizeof(struct conn_info_t));
+      new_conn_info.protocol = protocol;
+      conn_info_map.update(&lookup_fd, &new_conn_info);
+      conn_info = &new_conn_info;
+    }
+  }
+
+  // If connection info is still NULL, abort.
+  if (conn_info == NULL) {
+    goto done;
+  }
+
+  // Attempt to classify protocol, if unknown.
+  if (conn_info->protocol == kProtocolUnknown) {
+    // TODO(oazizi): Look for only certain protocols on read/recv()?
+    conn_info->protocol = infer_protocol(buf, bytes_read);
+  }
+
+  // If this connection has an unknown protocol, abort (to avoid pollution).
+  if (conn_info->protocol == kProtocolUnknown) {
+    return 0;
+  }
+
+  struct socket_data_event_t *event = data_buffer_heap.lookup(&kZero);
+  if (event == NULL) {
+    goto done;
+  }
+
+  // TODO(oazizi/yzhao): Why does the commented line not work? Error message is below:
+  //                     R2 min value is negative, either use unsigned or 'var &= const'
+  //                     Need to bring this back to avoid unnecessary fix-up in userspace.
+  //size_t buf_size = count < sizeof(event->msg) ? count : sizeof(event->msg);
+  size_t buf_size = sizeof(event->msg);
+
+  event->attr.conn_info = *conn_info;
+  event->attr.event_type = event_type;
+  event->attr.msg_bytes = bytes_read;
+  event->attr.time_stamp_ns = bpf_ktime_get_ns();
+  event->attr.tgid = id >> 32;
+  event->attr.pid = (uint32_t)id;
+  event->attr.fd = read_info->lookup_fd;
+  event->attr.msg_buf_size = buf_size;
+
+  bpf_probe_read(&event->msg, buf_size, (const void*) read_info->buf);
+
+  // Write snooped arguments to perf ring buffer.
+  unsigned int size_to_submit = sizeof(event->attr) + buf_size;
+  switch (conn_info->protocol) {
+    case kProtocolHTTPResponse: socket_http_resp_events.perf_submit(ctx, event, size_to_submit); break;
+    case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
+  }
+
+  done:
+  // Regardless of what happened, after write/send() returns, there is no need to track the fd & buf
+  // being accepted by write/send() call, therefore we can remove the entry.
+  active_read_info_map.delete(&id);
+  return 0;
+}
+
 
 int probe_entry_write(struct pt_regs *ctx, int fd, char* buf, size_t count) {
   return probe_entry_write_send(ctx, fd, buf, count);
@@ -317,6 +442,22 @@ int probe_entry_send(struct pt_regs *ctx, int fd, char* buf, size_t count) {
 
 int probe_ret_send(struct pt_regs *ctx) {
   return probe_ret_write_send(ctx, kEventTypeSyscallSendEvent);
+}
+
+int probe_entry_read(struct pt_regs *ctx, int fd, char* buf, size_t count) {
+  return probe_entry_read_recv(ctx, fd, buf, count, kEventTypeSyscallReadEvent);
+}
+
+int probe_ret_read(struct pt_regs *ctx) {
+  return probe_ret_read_recv(ctx, kEventTypeSyscallReadEvent);
+}
+
+int probe_entry_recv(struct pt_regs *ctx, int fd, char* buf, size_t count) {
+  return probe_entry_read_recv(ctx, fd, buf, count, kEventTypeSyscallRecvEvent);
+}
+
+int probe_ret_recv(struct pt_regs *ctx) {
+  return probe_ret_read_recv(ctx, kEventTypeSyscallRecvEvent);
 }
 
 int probe_entry_sendto(struct pt_regs *ctx, int fd, char* buf, size_t count) {
