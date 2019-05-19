@@ -12,8 +12,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc"
-	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
-	pb "pixielabs.ai/pixielabs/src/vizier/proto"
+	pb "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
 
 const defaultVizierAddr = "localhost:40000"
@@ -86,11 +85,9 @@ func (c *Controller) ExecuteQuery(in string) error {
 		return err
 	}
 	reqPb := &pb.QueryRequest{}
-	reqPb.QueryID = &uuidpb.UUID{}
-	reqPb.QueryID.Data = []byte(queryID.String())
 	reqPb.QueryStr = in
 
-	cl := pb.NewVizierServiceClient(c.conn)
+	cl := pb.NewQueryBrokerServiceClient(c.conn)
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 
@@ -127,7 +124,7 @@ func (c *Controller) PrintAgentInfo() error {
 		return err
 	}
 	reqPb := &pb.AgentInfoRequest{}
-	cl := pb.NewVizierServiceClient(c.conn)
+	cl := pb.NewQueryBrokerServiceClient(c.conn)
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
 
