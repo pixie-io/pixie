@@ -99,6 +99,45 @@ def generateLaunchSegments(lldb_mode, target, output_base):
         }]
 
 
+# Formats a directory target from a given path.
+def format_directory_target(path):
+    if path[-1] != '/':
+        path += '/'
+    return path + "..."
+
+
+# Combines path sections into a formatted directory target.
+def split_path_format(path_sections):
+    return format_directory_target('//{}'.format('/'.join(path_sections)))
+
+
+# Gets the parent directory targets for a given target path.
+def get_all_parent_directories(target_path):
+    split_path = target_path.split('/')
+    if not (split_path[0] == '' and split_path[1] == ''):
+        return []
+
+    split_paths_content = split_path[2:]
+    new_paths = []
+    for i in range(0, len(split_paths_content) + 1):
+        new_paths.append(split_path_format(split_paths_content[:i]))
+
+    return new_paths
+
+
+# Takes in the list of targets and adds all of the parent directories as targets.
+def get_build_directories(targets):
+    seen_test_dirs = set()
+    for t in targets:
+        path_target_split = t.split(':')
+        if len(path_target_split) != 2:
+            continue
+        path, target = path_target_split
+        seen_test_dirs.update(get_all_parent_directories(path))
+
+    return seen_test_dirs
+
+
 def main():
     parser = argparse.ArgumentParser(description='Generate files for vscode.')
     parser.add_argument('--lldb', action='store_true',
@@ -111,17 +150,25 @@ def main():
     if parsed.lldb:
         print('In LLDB mode')
 
-    targets = subprocess.check_output(
+    targets_str = subprocess.check_output(
         ['bazel', 'query', 'kind(\'cc_test rule\', //...)'])
     output_base = getOutputBase()
     task_list = []
     launch_list = []
-    for target in targets.split('\n'):
+    targets = targets_str.split('\n')
+    for target in targets:
         if target != '':
             task_list += generateTaskSegments(target,
                                               parsed.all_output, parsed.v)
             launch_list += generateLaunchSegments(
                 parsed.lldb, target, output_base)
+
+    # directory targets don't have a launch segment.
+    directory_targets = get_build_directories(targets)
+    for target in directory_targets:
+        if target != '':
+            task_list += generateTaskSegments(target,
+                                              parsed.all_output, parsed.v)
 
     # Task to regnerate the file.
     task_list += [{
