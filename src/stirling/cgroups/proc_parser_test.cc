@@ -8,6 +8,7 @@
 #include <sstream>
 
 #include "src/common/system_config/system_config_mock.h"
+#include "src/common/testing/testing.h"
 #include "src/stirling/cgroups/proc_parser.h"
 
 namespace pl {
@@ -16,6 +17,14 @@ namespace stirling {
 using std::string;
 using std::experimental::filesystem::path;
 using ::testing::Return;
+
+constexpr char kTestDataBasePath[] = "src/stirling/cgroups";
+
+namespace {
+string GetPathToTestDataFile(const string &fname) {
+  return TestEnvironment::PathToTestDataFile(std::string(kTestDataBasePath) + "/" + fname);
+}
+}  // namespace
 
 class ProcParserTest : public ::testing::Test {
  protected:
@@ -34,17 +43,6 @@ class ProcParserTest : public ::testing::Test {
   std::unique_ptr<ProcParser> parser_;
   int bytes_per_page_;
 };
-
-// TODO(zasgar): refactor into common utils.
-string GetTestRunDir() {
-  const char* test_src_dir = std::getenv("TEST_SRCDIR");
-  CHECK(test_src_dir != nullptr);
-
-  return path(test_src_dir) / path("pl/src/stirling/cgroups");
-}
-
-// TODO(zasgar): refactor into common utils.
-string GetPathToTestDataFile(const string& fname) { return GetTestRunDir() + "/" + fname; }
 
 TEST_F(ProcParserTest, GetProcPidStatFilePath) {
   EXPECT_EQ("/pl/proc/123/stat", parser_->GetProcPidStatFilePath(123));

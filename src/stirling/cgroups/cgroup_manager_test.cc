@@ -8,6 +8,7 @@
 #include <sstream>
 
 #include "src/common/system_config/system_config_mock.h"
+#include "src/common/testing/testing.h"
 #include "src/stirling/cgroups/cgroup_manager.h"
 
 namespace pl {
@@ -17,18 +18,13 @@ namespace fs = std::experimental::filesystem;
 using std::string;
 using ::testing::Return;
 
-// TODO(zasgar): refactor into common utils.
-string GetTestRunDir() {
-  const char *test_src_dir = std::getenv("TEST_SRCDIR");
-  const char *test_workspace = std::getenv("TEST_WORKSPACE");
-  CHECK(test_src_dir != nullptr);
-  CHECK(test_workspace != nullptr);
+constexpr char kTestDataBasePath[] = "src/stirling/cgroups";
 
-  return fs::path(test_src_dir) / fs::path("pl/src/stirling/cgroups");
+namespace {
+string GetPathToTestDataFile(const string &fname) {
+  return TestEnvironment::PathToTestDataFile(std::string(kTestDataBasePath) + "/" + fname);
 }
-
-// TODO(zasgar): refactor into common utils.
-string GetPathToTestDataFile(const string &fname) { return GetTestRunDir() + "/" + fname; }
+}  // namespace
 
 class CGroupManagerTest : public ::testing::Test {
  protected:
