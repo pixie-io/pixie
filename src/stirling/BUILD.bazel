@@ -30,9 +30,6 @@ pl_cc_library(
         "//src/stirling/cgroups:cc_library",
         "//src/stirling/proto:collector_config_pl_cc_proto",
         "//third_party:arrow",
-        # :picohttpparser is only used by :http_trace_connector, but if it's inside
-        # :http_trace_connector's deps, bazel won't be able to find the picohttpparser.h header.
-        # TODO(yzhao): Investigate and fix.
         "@com_github_h2o_picohttpparser//:picohttpparser",
         "//src/common/zlib:cc_library",
     ] + select({

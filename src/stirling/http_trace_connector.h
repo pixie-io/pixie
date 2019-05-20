@@ -139,23 +139,6 @@ class HTTPTraceConnector : public SourceConnector {
 
   // For each write stream, keep an ordered list of events.
   write_stream_map_t write_stream_map_;
-
-  // This holds the target buffer for recording the events captured in http tracing. It roughly
-  // works as follows:
-  // - The data is sent through perf ring buffer.
-  // - The perf ring buffer is opened with a callback that is executed inside kernel.
-  // - The callback will write data into this variable.
-  // - The callback is triggered when TransferDataImpl() calls BPFTable::poll() and there is items
-  // in the buffer.
-  // - TransferDataImpl() will assign its input record_batch to this variable, and block during the
-  // polling.
-  //
-  // We need to do this because the callback passed into BPF::open_perf_buffer() is a pure function
-  // pointer that cannot be customized to write to a different record batch.
-  //
-  // TODO(yzhao): A less-possible option: Let the BPF::open_perf_buffer() expose the underlying file
-  // descriptor, and let TransferDataImpl() directly poll that file descriptor.
-  types::ColumnWrapperRecordBatch* record_batch_ = nullptr;
 };
 
 }  // namespace stirling
