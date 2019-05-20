@@ -194,5 +194,5 @@ func TestCompiler_MissingTable(t *testing.T) {
 	}
 	assert.Equal(t, lineColError.Line, uint64(1))
 	assert.Equal(t, lineColError.Column, uint64(15))
-	assert.Equal(t, lineColError.Message, "Table not_perf_and_http not found in the relation map")
+	assert.Equal(t, lineColError.Message, "Table 'not_perf_and_http' not found in the relation map")
 }

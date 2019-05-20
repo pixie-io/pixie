@@ -131,12 +131,8 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateExpression(
 // Get the types of the children
 // Check the registry for function names
 StatusOr<table_store::schema::Relation> IRRelationHandler::BlockingAggHandler(
-    OperatorIR* node, table_store::schema::Relation parent_rel) {
-  DCHECK_EQ(node->type(), IRNodeType::BlockingAggType);
-  auto agg_node = static_cast<BlockingAggIR*>(node);
-
-  DCHECK_EQ(agg_node->agg_func()->type(), IRNodeType::LambdaType);
-  auto* agg_func = static_cast<LambdaIR*>(agg_node->agg_func());
+    BlockingAggIR* agg_node, table_store::schema::Relation parent_rel) {
+  LambdaIR* agg_func = agg_node->agg_func();
 
   // Make sure that the expected columns exist in the parent_relation.
   auto agg_expected = agg_func->expected_column_names();
@@ -145,7 +141,7 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::BlockingAggHandler(
   table_store::schema::Relation agg_rel;
   // TODO(philkuz) move this handler to a helper to simplify code here.
   if (agg_node->by_func() != nullptr) {
-    LambdaIR* by_func = static_cast<LambdaIR*>(agg_node->by_func());
+    LambdaIR* by_func = agg_node->by_func();
     auto by_expected = by_func->expected_column_names();
     PL_RETURN_IF_ERROR(HasExpectedColumns(by_expected, parent_rel));
     // Get the column to group by.
@@ -169,7 +165,7 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::BlockingAggHandler(
         agg_rel.AddColumn(c->type(), c->col_name());
       }
     } else {
-      return node->CreateIRNodeError(
+      return agg_node->CreateIRNodeError(
           "Expected a 'Column' or 'List' for the by function body, got '$0", expr->type_string());
     }
   } else {
@@ -192,11 +188,8 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::BlockingAggHandler(
 }
 
 StatusOr<table_store::schema::Relation> IRRelationHandler::MapHandler(
-    OperatorIR* node, table_store::schema::Relation parent_rel) {
-  DCHECK_EQ(node->type(), IRNodeType::MapType);
-  auto map_node = static_cast<MapIR*>(node);
-  DCHECK_EQ(map_node->lambda_func()->type(), IRNodeType::LambdaType);
-  auto* lambda_func = static_cast<LambdaIR*>(map_node->lambda_func());
+    MapIR* map_node, table_store::schema::Relation parent_rel) {
+  LambdaIR* lambda_func = map_node->lambda_func();
 
   // Make sure that the expected columns exist in the parent_relation.
   auto lambda_expected = lambda_func->expected_column_names();
@@ -217,11 +210,8 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::MapHandler(
 }
 
 StatusOr<table_store::schema::Relation> IRRelationHandler::FilterHandler(
-    OperatorIR* node, table_store::schema::Relation parent_rel) {
-  DCHECK_EQ(node->type(), IRNodeType::FilterType);
-  auto filter_node = static_cast<FilterIR*>(node);
-  DCHECK_EQ(filter_node->filter_func()->type(), IRNodeType::LambdaType);
-  auto* lambda_func = static_cast<LambdaIR*>(filter_node->filter_func());
+    FilterIR* filter_node, table_store::schema::Relation parent_rel) {
+  LambdaIR* lambda_func = filter_node->filter_func();
 
   // Make sure that the expected columns exist in the parent_relation.
   auto lambda_expected = lambda_func->expected_column_names();
@@ -239,13 +229,12 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::FilterHandler(
 }
 
 StatusOr<table_store::schema::Relation> IRRelationHandler::LimitHandler(
-    OperatorIR* node, table_store::schema::Relation parent_rel) {
-  DCHECK_EQ(node->type(), IRNodeType::LimitType);
+    LimitIR*, table_store::schema::Relation parent_rel) {
   return parent_rel;
 }
 
 StatusOr<table_store::schema::Relation> IRRelationHandler::SinkHandler(
-    OperatorIR*, table_store::schema::Relation parent_rel) {
+    MemorySinkIR*, table_store::schema::Relation parent_rel) {
   return parent_rel;
 }
 
@@ -305,9 +294,7 @@ StatusOr<IntIR*> IRRelationHandler::EvaluateCompilerExpression(IRNode* node) {
 }
 
 StatusOr<table_store::schema::Relation> IRRelationHandler::RangeHandler(
-    OperatorIR* node, table_store::schema::Relation parent_rel) {
-  DCHECK_EQ(node->type(), IRNodeType::RangeType);
-  auto range_ir = static_cast<RangeIR*>(node);
+    RangeIR* range_ir, table_store::schema::Relation parent_rel) {
   PL_ASSIGN_OR_RETURN(IntIR * new_start_repr, EvaluateCompilerExpression(range_ir->start_repr()));
   PL_ASSIGN_OR_RETURN(IntIR * new_stop_repr, EvaluateCompilerExpression(range_ir->stop_repr()));
   PL_RETURN_IF_ERROR(range_ir->SetStartStop(new_start_repr, new_stop_repr));
@@ -323,7 +310,7 @@ Status IRRelationHandler::RelationUpdate(OperatorIR* node) {
   }
 
   // Get the parents relation, or update it if necessary
-  auto parent = node->parent();
+  OperatorIR* parent = node->parent();
   if (!parent->IsRelationInit()) {
     PL_RETURN_IF_ERROR(RelationUpdate(parent));
   }
@@ -334,27 +321,27 @@ Status IRRelationHandler::RelationUpdate(OperatorIR* node) {
   // type so you don't have to recast it.
   switch (node->type()) {
     case IRNodeType::MemorySinkType: {
-      PL_ASSIGN_OR_RETURN(rel, SinkHandler(node, parent_rel));
+      PL_ASSIGN_OR_RETURN(rel, SinkHandler(static_cast<MemorySinkIR*>(node), parent_rel));
       break;
     }
     case IRNodeType::BlockingAggType: {
-      PL_ASSIGN_OR_RETURN(rel, BlockingAggHandler(node, parent_rel));
+      PL_ASSIGN_OR_RETURN(rel, BlockingAggHandler(static_cast<BlockingAggIR*>(node), parent_rel));
       break;
     }
     case IRNodeType::MapType: {
-      PL_ASSIGN_OR_RETURN(rel, MapHandler(node, parent_rel));
+      PL_ASSIGN_OR_RETURN(rel, MapHandler(static_cast<MapIR*>(node), parent_rel));
       break;
     }
     case IRNodeType::RangeType: {
-      PL_ASSIGN_OR_RETURN(rel, RangeHandler(node, parent_rel));
+      PL_ASSIGN_OR_RETURN(rel, RangeHandler(static_cast<RangeIR*>(node), parent_rel));
       break;
     }
     case IRNodeType::FilterType: {
-      PL_ASSIGN_OR_RETURN(rel, FilterHandler(node, parent_rel));
+      PL_ASSIGN_OR_RETURN(rel, FilterHandler(static_cast<FilterIR*>(node), parent_rel));
       break;
     }
     case IRNodeType::LimitType: {
-      PL_ASSIGN_OR_RETURN(rel, LimitHandler(node, parent_rel));
+      PL_ASSIGN_OR_RETURN(rel, LimitHandler(static_cast<LimitIR*>(node), parent_rel));
       break;
     }
     default: {
@@ -364,33 +351,31 @@ Status IRRelationHandler::RelationUpdate(OperatorIR* node) {
   return node->SetRelation(rel);
 }
 
-Status IRRelationHandler::SetSourceRelation(IRNode* node) {
-  if (node->type() != MemorySourceType) {
-    return node->CreateIRNodeError("Only implemented MemorySourceType, can't handle $0",
-                                   node->type_string());
-  }
-  auto mem_node = static_cast<MemorySourceIR*>(node);
+Status IRRelationHandler::SetSourceRelation(MemorySourceIR* mem_node) {
   ListIR* select = mem_node->select();
   auto table_str = mem_node->table_name();
   // get the table_str from the relation map
   auto relation_map_it = compiler_state_->relation_map()->find(table_str);
   if (relation_map_it == compiler_state_->relation_map()->end()) {
-    return node->CreateIRNodeError("Table $0 not found in the relation map", table_str);
+    return mem_node->CreateIRNodeError("Table '$0' not found in the relation map", table_str);
   }
   table_store::schema::Relation table_relation = relation_map_it->second;
 
   // get the children.
-  auto select_children = static_cast<ListIR*>(select)->children();
+  auto select_children = select->children();
   std::vector<std::string> columns;
-  for (auto& col_string_node : select_children) {
+  for (size_t idx = 0; idx < select_children.size(); idx++) {
+    IRNode* col_string_node = select_children[idx];
     if (col_string_node->type() != StringType) {
-      return col_string_node->CreateIRNodeError("select children should be strings.");
+      return col_string_node->CreateIRNodeError(
+          "The elements of the select list must be of type String. Found a '$0' for idx $1.",
+          col_string_node->type_string(), idx);
     }
     columns.push_back(static_cast<StringIR*>(col_string_node)->str());
   }
   PL_ASSIGN_OR_RETURN(auto select_relation, table_relation.MakeSubRelation(columns));
 
-  PL_ASSIGN_OR_RETURN(auto cols, GetColumnsFromRelation(node, columns, table_relation));
+  PL_ASSIGN_OR_RETURN(auto cols, GetColumnsFromRelation(mem_node, columns, table_relation));
   mem_node->SetColumns(cols);
   return mem_node->SetRelation(select_relation);
 }
@@ -417,7 +402,7 @@ Status IRRelationHandler::SetAllSourceRelations(IR* ir_graph) {
   for (auto& i : ir_graph->dag().TopologicalSort()) {
     auto node = ir_graph->Get(i);
     if (node->is_source()) {
-      PL_RETURN_IF_ERROR(SetSourceRelation(node));
+      PL_RETURN_IF_ERROR(SetSourceRelation(static_cast<MemorySourceIR*>(node)));
     }
   }
   return Status::OK();

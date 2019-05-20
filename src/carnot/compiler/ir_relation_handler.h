@@ -55,7 +55,7 @@ class IRRelationHandler {
    * @param parent_rel - the parent relation of the node.
    * @return StatusOr <table_store::schema::Relation> the resultant relation.
    */
-  StatusOr<table_store::schema::Relation> SinkHandler(OperatorIR* node,
+  StatusOr<table_store::schema::Relation> SinkHandler(MemorySinkIR* node,
                                                       table_store::schema::Relation parent_rel);
 
   /**
@@ -68,7 +68,7 @@ class IRRelationHandler {
    * @return StatusOr <table_store::schema::Relation> the resultant relation.
    */
   StatusOr<table_store::schema::Relation> BlockingAggHandler(
-      OperatorIR* node, table_store::schema::Relation parent_rel);
+      BlockingAggIR* node, table_store::schema::Relation parent_rel);
 
   /**
    * @brief Handle Map operator.
@@ -79,7 +79,7 @@ class IRRelationHandler {
    * @param parent_rel - the parent relation of the node.
    * @return StatusOr <table_store::schema::Relation> the resultant relation.
    */
-  StatusOr<table_store::schema::Relation> MapHandler(OperatorIR* node,
+  StatusOr<table_store::schema::Relation> MapHandler(MapIR* node,
                                                      table_store::schema::Relation parent_rel);
 
   /**
@@ -89,7 +89,7 @@ class IRRelationHandler {
    * @param parent_rel - the parent relation of the node.
    * @return StatusOr <table_store::schema::Relation> the resultant relation.
    */
-  StatusOr<table_store::schema::Relation> RangeHandler(OperatorIR* node,
+  StatusOr<table_store::schema::Relation> RangeHandler(RangeIR* node,
                                                        table_store::schema::Relation parent_rel);
 
   /**
@@ -100,7 +100,7 @@ class IRRelationHandler {
    * @param parent_rel - the parent relation of the node.
    * @return StatusOr <table_store::schema::Relation> the resultant relation.
    */
-  StatusOr<table_store::schema::Relation> FilterHandler(OperatorIR* node,
+  StatusOr<table_store::schema::Relation> FilterHandler(FilterIR* node,
                                                         table_store::schema::Relation parent_rel);
 
   /**
@@ -111,7 +111,7 @@ class IRRelationHandler {
    * @param parent_rel - the parent relation of the node.
    * @return StatusOr <table_store::schema::Relation> the resultant relation.
    */
-  StatusOr<table_store::schema::Relation> LimitHandler(OperatorIR* node,
+  StatusOr<table_store::schema::Relation> LimitHandler(LimitIR* node,
                                                        table_store::schema::Relation parent_rel);
 
   Status HasExpectedColumns(const std::unordered_set<std::string>& expected_columns,
@@ -132,7 +132,7 @@ class IRRelationHandler {
                                              bool is_map);
   StatusOr<types::DataType> EvaluateColExpr(ColumnIR* expr,
                                             const table_store::schema::Relation& parent_rel);
-  Status SetSourceRelation(IRNode* node);
+  Status SetSourceRelation(MemorySourceIR* node);
   Status SetAllSourceRelations(IR* ir_graph);
   StatusOr<std::vector<ColumnIR*>> GetColumnsFromRelation(
       IRNode* node, std::vector<std::string> col_names,
