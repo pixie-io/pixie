@@ -553,8 +553,6 @@ class ASTWalker {
     return PYPA_PTR_CAST(Str, ast)->value;
   }
   static bool IsUnitTimeFn(const std::string& fn_name);
-  StatusOr<LambdaExprReturn> LookupPLTimeAttribute(const std::string& attribute_name,
-                                                   const pypa::AstPtr& parent_node);
   std::shared_ptr<IR> ir_graph_;
   VarTable var_table_;
   CompilerState* compiler_state_;

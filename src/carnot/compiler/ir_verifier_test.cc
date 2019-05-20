@@ -363,18 +363,13 @@ TEST(TimeTest, basic) {
       "\n");
   auto ir_graph_status = ParseQuery(add_test);
   VLOG(1) << ir_graph_status.ToString();
-  ASSERT_OK(ir_graph_status);
-  auto verifier = IRVerifier();
-  auto status_connection = verifier.VerifyGraphConnections(*ir_graph_status.ValueOrDie());
-  VLOG(1) << status_connection.ToString();
-  EXPECT_OK(status_connection);
-  EXPECT_OK(verifier.VerifyLineColGraph(*ir_graph_status.ValueOrDie()));
+  EXPECT_NOT_OK(ir_graph_status);
 }
 
 TEST(RangeValueTests, now_stop) {
   std::string plc_now_test = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=0,stop=plc.now())",
-       "rangeDF = queryDF.Map(fn=lambda r : {'plc_now' : r.cpu0 + pl.second})",
+       "rangeDF = queryDF.Map(fn=lambda r : {'plc_now' : r.cpu0 })",
        "result = rangeDF.Result(name='mapped')"},
       "\n");
   auto ir_graph_status = ParseQuery(plc_now_test);

@@ -624,20 +624,6 @@ TEST_F(RelationHandlerTest, non_float_columns) {
   VLOG(1) << handle_status.status().ToString();
 }
 
-TEST_F(RelationHandlerTest, add_pl_time_type_fail) {
-  std::string time_fail_float_time_add =
-      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=0,stop=10)",
-                     "mapDF = queryDF.Map(fn=lambda r : {'sub' : r.cpu0 + pl.second})",
-                     "mapDF.Result(name='cpu_out')"},
-                    "\n");
-  auto ir_graph_status = CompileGraph(time_fail_float_time_add);
-  ASSERT_OK(ir_graph_status);
-  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
-  auto handle_status = HandleRelation(ir_graph);
-  EXPECT_FALSE(handle_status.ok());
-  VLOG(1) << handle_status.status().ToString();
-}
-
 TEST_F(RelationHandlerTest, assign_udf_func_ids) {
   std::string chain_operators = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0,stop=10)",

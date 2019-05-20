@@ -29,9 +29,6 @@ StatusOr<std::string> ASTWalker::ExpandOpString(const std::string& op, const std
   return absl::Substitute("$0.$1", prefix, op_find->second);
 }
 
-const std::unordered_map<std::string, int64_t> kTimeMapNS = {
-    {"pl.second", 1e9}, {"pl.minute", 6e10}, {"pl.hour", 3.6e11}};
-
 ASTWalker::ASTWalker(std::shared_ptr<IR> ir_graph, CompilerState* compiler_state) {
   ir_graph_ = ir_graph;
   var_table_ = VarTable();
@@ -167,7 +164,6 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(
     pypa::AstKeywordPtr kw_ptr = PYPA_PTR_CAST(Keyword, k);
     std::string key = GetNameID(kw_ptr->name);
     if (missing_or_default_args.find(key) == missing_or_default_args.end()) {
-      // TODO(philkuz) make a string output version of CreateAstError.
       errors.push_back(CreateAstError(call_ast, "Keyword '$0' not expected in function.", key));
       continue;
     }
@@ -349,16 +345,6 @@ StatusOr<IRNode*> ASTWalker::ProcessList(const pypa::AstListPtr& ast) {
   PL_RETURN_IF_ERROR(ir_node->Init(ast, children));
   return ir_node;
 }
-StatusOr<LambdaExprReturn> ASTWalker::LookupPLTimeAttribute(const std::string& attribute_name,
-                                                            const pypa::AstPtr& parent_node) {
-  auto time_idx = kTimeMapNS.find(attribute_name);
-  if (time_idx == kTimeMapNS.end()) {
-    return CreateAstError(parent_node, "Couldn't find attribute $0", attribute_name);
-  }
-  PL_ASSIGN_OR_RETURN(TimeIR * time_node, ir_graph_->MakeNode<TimeIR>());
-  PL_RETURN_IF_ERROR(time_node->Init(time_idx->second, parent_node));
-  return LambdaExprReturn(time_node);
-}
 
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const std::string& arg_name,
                                                              const pypa::AstAttributePtr& node) {
@@ -413,10 +399,9 @@ StatusOr<LambdaExprReturn> ASTWalker::BuildLambdaFunc(
   std::vector<IRNode*> expressions;
   auto ret = LambdaExprReturn(ir_node);
   for (auto expr_ret : children_ret_expr) {
-    // TODO(philkuz) (PL-476) remove lookup_pl_time_attribtt
     if (expr_ret.StringOnly()) {
-      PL_ASSIGN_OR_RETURN(auto attr_expr, LookupPLTimeAttribute(expr_ret.str_, parent_node));
-      expressions.push_back(attr_expr.expr_);
+      return CreateAstError(parent_node, "Attribute call with '$0' prefix not allowed in lambda.",
+                            kCompileTimePrefix);
     } else {
       expressions.push_back(expr_ret.expr_);
       ret.MergeColumns(expr_ret);
