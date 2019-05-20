@@ -63,7 +63,10 @@ export function JSONData(props) {
         {
           Object.keys(data).map((key, idx) => {
             return (
-              <span style={{ marginLeft: props.multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}>
+              <span
+                key={key + '-' + indentation}
+                style={{ marginLeft: props.multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}
+              >
                 <span className='formatted_data--json-key'>{key + ': ' }</span>
                 <JSONData  data={data[key]} multiline={props.multiline} indentation={indentation + 1}/>
                 { idx !== Object.keys(data).length - 1 ? ', ' : ''}

@@ -56,7 +56,11 @@ function DefaultRowRenderer(props) {
 function RowRenderer(props) {
     const rowProps = _.omit(props, 'style', 'key');
     return (
-        <div className={'scrollable-table--row-' + (props.index % 2 === 0 ? 'even' : 'odd')} style={props.style}>
+        <div
+          className={'scrollable-table--row-' + (props.index % 2 === 0 ? 'even' : 'odd')}
+          key={'row-' + props.key}
+          style={props.style}
+        >
             <DefaultRowRenderer {...rowProps}/>
              {_.has(this.state.expandedRows, props.index) ?
                 <div className='scrollable-table--expanded'>{this.props.expandRenderer(props.rowData)}</div> : null}
