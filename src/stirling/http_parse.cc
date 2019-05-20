@@ -3,7 +3,10 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <picohttpparser.h>
+
 #include <algorithm>
+#include <string>
+#include <string_view>
 #include <utility>
 
 #include "src/common/zlib/zlib_wrapper.h"
@@ -32,7 +35,7 @@ void ParseMessageBodyChunked(HTTPTraceRecord* record) {
 }
 
 void PreProcessRecord(HTTPTraceRecord* record) {
-  auto content_encoding_iter = record->http_headers.find(http_header_keys::kContentEncoding);
+  auto content_encoding_iter = record->http_headers.find(http_headers::kContentEncoding);
   // Replace body with decompressed version, if required.
   if (content_encoding_iter != record->http_headers.end() &&
       content_encoding_iter->second == "gzip") {
@@ -86,7 +89,7 @@ bool ParseHTTPRequest(const socket_data_event_t& event, HTTPTraceRecord* record)
   if (retval > 0) {
     HTTPTraceRecord& result = *record;
     ParseEventAttr(event, &result);
-    result.event_type = HTTPTraceEventType::kHTTPRequest;
+    result.event_type = SocketTraceEventType::kHTTPRequest;
     result.http_minor_version = minor_version;
     result.http_headers = GetHttpHeadersMap(headers, num_headers);
     result.http_req_method = std::string(method, method_len);
@@ -124,7 +127,7 @@ bool ParseHTTPResponse(const socket_data_event_t& event, HTTPTraceRecord* record
   if (bytes_processed > 0) {
     HTTPTraceRecord& result = *record;
     ParseEventAttr(event, &result);
-    result.event_type = HTTPTraceEventType::kHTTPResponse;
+    result.event_type = SocketTraceEventType::kHTTPResponse;
     result.http_minor_version = minor_version;
     result.http_headers = GetHttpHeadersMap(headers, num_headers);
     result.http_resp_status = status;
@@ -173,7 +176,7 @@ bool ParseRaw(const socket_data_event_t& event, HTTPTraceRecord* record) {
   const uint64_t msg_size = std::min(event.attr.msg_bytes, event.attr.msg_buf_size);
   HTTPTraceRecord& result = *record;
   ParseEventAttr(event, &result);
-  result.event_type = HTTPTraceEventType::kUnknown;
+  result.event_type = SocketTraceEventType::kUnknown;
   result.http_resp_body = std::string(event.msg, msg_size);
   // Rest of the fields remain at default values.
   return true;
@@ -233,6 +236,103 @@ bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
   }
   return true;
 }
+
+bool PicoHTTPParserWrapper::ParseResponse(std::string_view buf) {
+  // Reset header number to the size of the buffer.
+  num_headers = kMaxNumHeaders;
+  const int retval = phr_parse_response(buf.data(), buf.size(), &minor_version, &status, &msg,
+                                        &msg_len, headers, &num_headers, /*last_len*/ 0);
+  if (retval >= 0) {
+    unparsed_data = buf.substr(retval);
+    header_map = GetHttpHeadersMap(headers, num_headers);
+  }
+  return retval >= 0;
+}
+
+bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
+  result->type = SocketTraceEventType::kHTTPResponse;
+  result->http_minor_version = minor_version;
+  result->http_headers = std::move(header_map);
+  result->http_resp_status = status;
+  result->http_resp_message = std::string(msg, msg_len);
+
+  const auto content_length_iter = result->http_headers.find(http_headers::kContentLength);
+  if (content_length_iter != result->http_headers.end()) {
+    const int len = std::stoi(content_length_iter->second);
+    if (len < 0) {
+      LOG(ERROR) << "HTTP message has a negative Content-Length: " << len;
+      return false;
+    }
+    if (static_cast<size_t>(len) <= unparsed_data.size()) {
+      result->is_complete = true;
+      result->http_resp_body = unparsed_data.substr(0, len);
+      if (static_cast<size_t>(len) < unparsed_data.size()) {
+        LOG(WARNING) << "Have data left unparsed: " << unparsed_data.substr(len);
+      }
+    } else {
+      result->is_complete = false;
+      result->http_resp_body.reserve(len);
+      result->content_length = len;
+      result->http_resp_body = unparsed_data;
+    }
+  }
+  return true;
+}
+
+// HTTP messages are sequentially written to the file descriptor, and their sequence numbers are
+// obtained accordingly. We rely on the consecutive sequence numbers to detect missing events and
+// order the events correctly.
+HTTPParser::ParseState HTTPParser::ParseResponse(uint64_t seq_num, std::string_view buf) {
+  if (absl::StartsWith(buf, "HTTP")) {
+    if (!pico_wrapper_.ParseResponse(buf)) {
+      return ParseState::kInvalid;
+    }
+    HTTPMessage message;
+    if (!pico_wrapper_.WriteResponse(&message)) {
+      return ParseState::kInvalid;
+    }
+    if (message.is_complete) {
+      msgs_complete_.push_back(std::move(message));
+      return ParseState::kSuccess;
+    } else {
+      msgs_incomplete_[seq_num] = std::move(message);
+      return ParseState::kNeedsMoreData;
+    }
+  }
+  if (seq_num == 0) {
+    // This is the first event, and it does not start with a valid HTTP prefix, this must be an
+    // invalid data.
+    return ParseState::kInvalid;
+  }
+  const uint64_t prev_seq_num = seq_num - 1;
+  auto iter = msgs_incomplete_.find(prev_seq_num);
+  if (iter == msgs_incomplete_.end()) {
+    // There is no previous unfinished HTTP message, maybe we just missed it.
+    return ParseState::kUnknown;
+  }
+
+  HTTPMessage& message = iter->second;
+  if (message.content_length != -1) {
+    const int remaining_size = message.content_length - message.http_resp_body.size();
+    if (remaining_size >= 0) {
+      message.http_resp_body.append(buf.substr(0, remaining_size));
+      message.is_complete =
+          static_cast<size_t>(message.content_length) == message.http_resp_body.size();
+    }
+  }
+
+  if (message.is_complete) {
+    msgs_complete_.push_back(std::move(message));
+    msgs_incomplete_.erase(iter);
+    return ParseState::kSuccess;
+  } else {
+    msgs_incomplete_[seq_num] = std::move(message);
+    msgs_incomplete_.erase(iter);
+    return ParseState::kNeedsMoreData;
+  }
+}
+
+std::vector<HTTPMessage> HTTPParser::ExtractHTTPMessages() { return std::move(msgs_complete_); }
 
 }  // namespace stirling
 }  // namespace pl

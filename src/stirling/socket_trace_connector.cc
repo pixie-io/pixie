@@ -28,11 +28,11 @@ bool SocketTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
   // TODO(oazizi/yzhao): update this function further.
 
   // Rule: Exclude any HTTP requests.
-  if (record.event_type == HTTPTraceEventType::kHTTPRequest) {
+  if (record.event_type == SocketTraceEventType::kHTTPRequest) {
     return false;
   }
 
-  const auto content_type_iter = record.http_headers.find(http_header_keys::kContentType);
+  const auto content_type_iter = record.http_headers.find(http_headers::kContentType);
 
   // Rule: Exclude anything that doesn't specify its Content-Type.
   if (content_type_iter == record.http_headers.end()) {
@@ -40,7 +40,7 @@ bool SocketTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
   }
 
   // Rule: Exclude anything that doesn't match the filter, if filter is active.
-  if (record.event_type == HTTPTraceEventType::kHTTPResponse &&
+  if (record.event_type == SocketTraceEventType::kHTTPResponse &&
       (!http_response_header_filter_.inclusions.empty() ||
        !http_response_header_filter_.exclusions.empty())) {
     if (!MatchesHTTPTHeaders(record.http_headers, http_response_header_filter_)) {
@@ -92,8 +92,8 @@ void SocketTraceConnector::ConsumeRecord(HTTPTraceRecord record,
     // overall logical workflow of HTTP trace.
     //
     // TODO(yzhao): Revise with new understanding of the whole workflow.
-    if (record.event_type == HTTPTraceEventType::kHTTPResponse) {
-      auto iter = record.http_headers.find(http_header_keys::kTransferEncoding);
+    if (record.event_type == SocketTraceEventType::kHTTPResponse) {
+      auto iter = record.http_headers.find(http_headers::kTransferEncoding);
       if (iter != record.http_headers.end() && iter->second == "chunked") {
         ParseMessageBodyChunked(&record);
       }

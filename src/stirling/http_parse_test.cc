@@ -8,6 +8,7 @@ namespace stirling {
 
 using ::testing::Contains;
 using ::testing::ElementsAre;
+using ::testing::IsEmpty;
 using ::testing::Key;
 using ::testing::Not;
 using ::testing::Pair;
@@ -41,7 +42,7 @@ TEST(ParseChunkedMessageBodyTest, DetectChunkedMessage) {
 
 TEST(PreProcessRecordTest, GzipCompressedContentIsDecompressed) {
   HTTPTraceRecord record;
-  record.http_headers[http_header_keys::kContentEncoding] = "gzip";
+  record.http_headers[http_headers::kContentEncoding] = "gzip";
   const uint8_t compressed_bytes[] = {0x1f, 0x8b, 0x08, 0x00, 0x37, 0xf0, 0xbf, 0x5c, 0x00,
                                       0x03, 0x0b, 0xc9, 0xc8, 0x2c, 0x56, 0x00, 0xa2, 0x44,
                                       0x85, 0x92, 0xd4, 0xe2, 0x12, 0x2e, 0x00, 0x8c, 0x2d,
@@ -57,7 +58,7 @@ TEST(PreProcessRecordTest, ContentHeaderIsNotAdded) {
   record.http_resp_body = "test";
   PreProcessRecord(&record);
   EXPECT_EQ("test", record.http_resp_body);
-  EXPECT_THAT(record.http_headers, Not(Contains(Key(http_header_keys::kContentEncoding))));
+  EXPECT_THAT(record.http_headers, Not(Contains(Key(http_headers::kContentEncoding))));
 }
 
 TEST(ParseEventAttrTest, DataIsCopied) {
@@ -98,7 +99,7 @@ Host: www.pixielabs.ai
   EXPECT_EQ(1, record.tgid);
   EXPECT_EQ(2, record.pid);
   EXPECT_EQ(3, record.fd);
-  EXPECT_EQ(HTTPTraceEventType::kHTTPRequest, record.event_type);
+  EXPECT_EQ(SocketTraceEventType::kHTTPRequest, record.event_type);
   EXPECT_THAT(record.http_headers, ElementsAre(Pair("Host", "www.pixielabs.ai")));
   EXPECT_EQ(1, record.http_minor_version);
   EXPECT_EQ("GET", record.http_req_method);
@@ -127,7 +128,7 @@ pixielabs)";
   EXPECT_EQ(1, record.tgid);
   EXPECT_EQ(2, record.pid);
   EXPECT_EQ(3, record.fd);
-  EXPECT_EQ(HTTPTraceEventType::kHTTPResponse, record.event_type);
+  EXPECT_EQ(SocketTraceEventType::kHTTPResponse, record.event_type);
   EXPECT_THAT(record.http_headers,
               ElementsAre(Pair("Content-Type", "application/json; charset=utf-8")));
   EXPECT_EQ(1, record.http_minor_version);
@@ -153,7 +154,7 @@ TEST(ParseRawTest, ContentIsCopied) {
   EXPECT_EQ(1, record.tgid);
   EXPECT_EQ(2, record.pid);
   EXPECT_EQ(3, record.fd);
-  EXPECT_EQ(HTTPTraceEventType::kUnknown, record.event_type);
+  EXPECT_EQ(SocketTraceEventType::kUnknown, record.event_type);
   EXPECT_EQ("test", record.http_resp_body);
 }
 
@@ -202,6 +203,88 @@ TEST(ParseHTTPHeaderFiltersAndMatchTest, FiltersAreAsExpectedAndMatchesWork) {
     };
     EXPECT_FALSE(MatchesHTTPTHeaders(http_headers, filter));
   }
+}
+
+class HTTPParserTest : public ::testing::Test {
+ protected:
+  HTTPParser parser_;
+};
+
+bool operator==(const HTTPMessage& lhs, const HTTPMessage& rhs) {
+  return lhs.is_complete == rhs.is_complete && lhs.type == rhs.type &&
+         lhs.http_minor_version == rhs.http_minor_version && lhs.http_headers == rhs.http_headers &&
+         lhs.http_req_method == rhs.http_req_method && lhs.http_req_path == rhs.http_req_path &&
+         lhs.http_req_body == rhs.http_req_body && lhs.http_resp_status == rhs.http_resp_status &&
+         lhs.http_resp_message == rhs.http_resp_message && lhs.http_resp_body == rhs.http_resp_body;
+}
+
+TEST_F(HTTPParserTest, ParseCompleteHTTPResponseWithContentLengthHeader) {
+  const std::string_view msg1 = R"(HTTP/1.1 200 OK
+Content-Type: foo
+Content-Length: 9
+
+pixielabs)";
+  const std::string_view msg2 = R"(HTTP/1.1 200 OK
+Content-Type: bar
+Content-Length: 10
+
+pixielabs!)";
+  EXPECT_EQ(HTTPParser::ParseState::kSuccess, parser_.ParseResponse(0, msg1));
+  EXPECT_EQ(HTTPParser::ParseState::kSuccess, parser_.ParseResponse(1, msg2));
+
+  HTTPMessage expected_message1;
+  expected_message1.is_complete = true;
+  expected_message1.type = SocketTraceEventType::kHTTPResponse;
+  expected_message1.http_minor_version = 1;
+  expected_message1.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
+  expected_message1.http_resp_status = 200;
+  expected_message1.http_resp_message = "OK";
+  expected_message1.http_resp_body = "pixielabs";
+
+  HTTPMessage expected_message2;
+  expected_message2.is_complete = true;
+  expected_message2.type = SocketTraceEventType::kHTTPResponse;
+  expected_message2.http_minor_version = 1;
+  expected_message2.http_headers = {{"Content-Type", "bar"}, {"Content-Length", "10"}};
+  expected_message2.http_resp_status = 200;
+  expected_message2.http_resp_message = "OK";
+  expected_message2.http_resp_body = "pixielabs!";
+
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message1, expected_message2));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
+}
+
+TEST_F(HTTPParserTest, ParseIncompleteHTTPResponseWithContentLengthHeader) {
+  const std::string_view msg1 = R"(HTTP/1.1 200 OK
+Content-Type: foo
+Content-Length: 21
+
+pixielabs)";
+  const std::string_view msg2 = " is awesome";
+  const std::string_view msg3 = "!";
+
+  EXPECT_EQ(HTTPParser::ParseState::kNeedsMoreData, parser_.ParseResponse(0, msg1));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
+  EXPECT_EQ(HTTPParser::ParseState::kNeedsMoreData, parser_.ParseResponse(1, msg2));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
+  EXPECT_EQ(HTTPParser::ParseState::kSuccess, parser_.ParseResponse(2, msg3));
+
+  HTTPMessage expected_message1;
+  expected_message1.is_complete = true;
+  expected_message1.type = SocketTraceEventType::kHTTPResponse;
+  expected_message1.http_minor_version = 1;
+  expected_message1.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "21"}};
+  expected_message1.http_resp_status = 200;
+  expected_message1.http_resp_message = "OK";
+  expected_message1.http_resp_body = "pixielabs is awesome!";
+
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message1));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
+}
+
+TEST_F(HTTPParserTest, InvalidInput) {
+  EXPECT_EQ(HTTPParser::ParseState::kInvalid, parser_.ParseResponse(0, "test"));
+  EXPECT_EQ(HTTPParser::ParseState::kUnknown, parser_.ParseResponse(2, "test"));
 }
 
 }  // namespace stirling
