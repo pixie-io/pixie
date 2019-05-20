@@ -135,7 +135,6 @@ class HTTPTraceConnector : public SourceConnector {
   static void ConsumeRecord(HTTPTraceRecord record, types::ColumnWrapperRecordBatch* record_batch);
 
   ebpf::BPF bpf_;
-  const int perf_buffer_page_num_ = 8;
 
   // For each write stream, keep an ordered list of events.
   write_stream_map_t write_stream_map_;

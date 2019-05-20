@@ -169,6 +169,14 @@ struct ProbeSpec {
   bpf_probe_attach_type attach_type = bpf_probe_attach_type::BPF_PROBE_ENTRY;
 };
 
+struct PerfBufferSpec {
+  // Name is same as the perf buffer inside bcc_bpf/socket_trace.c.
+  std::string name;
+  perf_reader_raw_cb probe_output_fn;
+  perf_reader_lost_cb probe_loss_fn;
+  uint32_t num_pages;
+};
+
 const std::vector<ProbeSpec> kProbeSpecs = {
     {"accept4", "probe_entry_accept4"},
     {"accept4", "probe_ret_accept4", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
@@ -181,10 +189,10 @@ const std::vector<ProbeSpec> kProbeSpecs = {
     {"close", "probe_close"},
 };
 
-// This is same as the perf buffer inside bcc_bpf/socket_trace.c.
-const std::vector<std::string> kPerfBufferNames = {
-    "socket_http_resp_events",
-};
+const std::vector<PerfBufferSpec> kPerfBufferSpecs = {{"socket_http_resp_events",
+                                                       &HTTPTraceConnector::HandleProbeOutput,
+                                                       &HTTPTraceConnector::HandleProbeLoss,
+                                                       /* num_pages */ 8}};
 
 }  // namespace
 
@@ -208,15 +216,14 @@ Status HTTPTraceConnector::InitImpl() {
                        ", error message: ", attach_status.msg()));
     }
   }
-  for (auto& perf_buffer_name : kPerfBufferNames) {
-    ebpf::StatusTuple open_status =
-        bpf_.open_perf_buffer(perf_buffer_name, &HTTPTraceConnector::HandleProbeOutput,
-                              &HTTPTraceConnector::HandleProbeLoss,
-                              // TODO(yzhao): We sort of are not unified around how record_batch and
-                              // cb_cookie is passed to the callback. Consider unifying them.
-                              /*cb_cookie*/ this, perf_buffer_page_num_);
+  for (auto& perf_buffer_spec : kPerfBufferSpecs) {
+    ebpf::StatusTuple open_status = bpf_.open_perf_buffer(
+        perf_buffer_spec.name, perf_buffer_spec.probe_output_fn, perf_buffer_spec.probe_loss_fn,
+        // TODO(yzhao): We sort of are not unified around how record_batch and
+        // cb_cookie is passed to the callback. Consider unifying them.
+        /*cb_cookie*/ this, perf_buffer_spec.num_pages);
     if (open_status.code() != 0) {
-      return error::Internal(absl::StrCat("Failed to open perf buffer: ", perf_buffer_name,
+      return error::Internal(absl::StrCat("Failed to open perf buffer: ", perf_buffer_spec.name,
                                           ", error message: ", open_status.msg()));
     }
   }
@@ -236,10 +243,10 @@ Status HTTPTraceConnector::StopImpl() {
                        ", error message: ", detach_status.msg()));
     }
   }
-  for (auto& perf_buffer_name : kPerfBufferNames) {
-    ebpf::StatusTuple close_status = bpf_.close_perf_buffer(perf_buffer_name);
+  for (auto& perf_buffer_spec : kPerfBufferSpecs) {
+    ebpf::StatusTuple close_status = bpf_.close_perf_buffer(perf_buffer_spec.name);
     if (close_status.code() != 0) {
-      return error::Internal(absl::StrCat("Failed to close perf buffer: ", perf_buffer_name,
+      return error::Internal(absl::StrCat("Failed to close perf buffer: ", perf_buffer_spec.name,
                                           ", error message: ", close_status.msg()));
     }
   }
@@ -247,7 +254,7 @@ Status HTTPTraceConnector::StopImpl() {
 }
 
 void HTTPTraceConnector::PollPerfBuffer(uint32_t table_num) {
-  auto perf_buffer = bpf_.get_perf_buffer(kPerfBufferNames[table_num]);
+  auto perf_buffer = bpf_.get_perf_buffer(kPerfBufferSpecs[table_num].name);
   if (perf_buffer != nullptr) {
     perf_buffer->poll(1);
   }
