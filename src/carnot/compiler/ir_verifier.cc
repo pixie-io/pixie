@@ -31,15 +31,6 @@ Status IRVerifier::ExpectType(IRNodeType exp_type, const IRNode* test_node,
   return ExpectType(std::vector<IRNodeType>({exp_type}), test_node, err_msg_prefix);
 }
 
-Status IRVerifier::ExpectOp(IRNode* test_node, std::string err_msg_prefix) {
-  if (!test_node->IsOp()) {
-    auto msg = absl::Substitute("$0: Expected an Operator Got $1", err_msg_prefix,
-                                test_node->type_string());
-    return test_node->CreateIRNodeError(msg);
-  }
-  return Status::OK();
-}
-
 std::string IRVerifier::ExpString(const std::string& node_name, const int64_t id,
                                   const std::string& property_name) {
   return absl::Substitute("$0(id=$1) '$2'", node_name, id, property_name);
@@ -65,8 +56,6 @@ Status IRVerifier::VerifyRange(RangeIR* range_node) {
 }
 
 Status IRVerifier::VerifyMap(MapIR* map_node) {
-  PL_RETURN_IF_ERROR(ExpectOp(map_node->parent(), ExpString("MapIR", map_node->id(), "parent")));
-
   // verify properties of the lambda_func
   LambdaIR* lambda_func = map_node->lambda_func();
 
@@ -77,11 +66,7 @@ Status IRVerifier::VerifyMap(MapIR* map_node) {
 }
 
 Status IRVerifier::VerifyFilter(FilterIR* filter_node) {
-  PL_RETURN_IF_ERROR(
-      ExpectOp(filter_node->parent(), ExpString("FilterIR", filter_node->id(), "parent")));
-
   // verify properties of the filter_func
-
   if (filter_node->filter_func()->HasDictBody()) {
     return filter_node->filter_func()->CreateIRNodeError(
         "Expected filter function to only contain an expression, not a dictionary.");
@@ -89,16 +74,9 @@ Status IRVerifier::VerifyFilter(FilterIR* filter_node) {
   return Status::OK();
 }
 
-Status IRVerifier::VerifyLimit(LimitIR* limit_node) {
-  PL_RETURN_IF_ERROR(
-      ExpectOp(limit_node->parent(), ExpString("LimitIR", limit_node->id(), "parent")));
-  return Status::OK();
-}
+Status IRVerifier::VerifyLimit(LimitIR*) { return Status::OK(); }
 
 Status IRVerifier::VerifySink(MemorySinkIR* sink_node) {
-  PL_RETURN_IF_ERROR(
-      ExpectOp(sink_node->parent(), ExpString("MemorySinkIR", sink_node->id(), "parent")));
-
   if (!sink_node->name_set()) {
     return sink_node->CreateIRNodeError("Expected sink to have name set.");
   }
@@ -106,8 +84,6 @@ Status IRVerifier::VerifySink(MemorySinkIR* sink_node) {
 }
 
 Status IRVerifier::VerifyBlockingAgg(BlockingAggIR* agg_node) {
-  PL_RETURN_IF_ERROR(
-      ExpectOp(agg_node->parent(), ExpString("BlockingAggIR", agg_node->id(), "parent")));
   // Only check if by_func is not a nullptr.
   if (agg_node->by_func() != nullptr) {
     if (agg_node->by_func()->HasDictBody()) {
