@@ -249,6 +249,32 @@ bool PicoHTTPParserWrapper::ParseResponse(std::string_view buf) {
   return retval >= 0;
 }
 
+namespace {
+
+// Mutates the input data.
+bool ParseChunk(std::string data, HTTPMessage* result) {
+  char* buf = const_cast<char*>(data.data());
+  size_t buf_size = data.size();
+  ssize_t retval = phr_decode_chunked(&result->chunk_decoder, buf, &buf_size);
+  if (retval == -1) {
+    // Parse failed.
+    return false;
+  } else if (retval >= 0) {
+    // Complete message.
+    result->is_complete = true;
+    result->http_resp_body.append(buf, buf_size);
+    return true;
+  } else if (retval == -2) {
+    // Incomplete message.
+    result->is_complete = false;
+    result->http_resp_body.append(buf, buf_size);
+    return true;
+  }
+  return false;
+}
+
+}  // namespace
+
 bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
   result->type = SocketTraceEventType::kHTTPResponse;
   result->http_minor_version = minor_version;
@@ -275,6 +301,21 @@ bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
       result->content_length = len;
       result->http_resp_body = unparsed_data;
     }
+    return true;
+  }
+
+  const auto transfer_encoding_iter = result->http_headers.find(http_headers::kTransferEncoding);
+  if (transfer_encoding_iter != result->http_headers.end() &&
+      transfer_encoding_iter->second == "chunked") {
+    result->http_resp_body.clear();
+    if (!ParseChunk(std::string(unparsed_data), result)) {
+      return false;
+    }
+    return true;
+  }
+
+  if (!unparsed_data.empty()) {
+    result->http_resp_body = unparsed_data;
   }
   return true;
 }
@@ -318,6 +359,10 @@ HTTPParser::ParseState HTTPParser::ParseResponse(uint64_t seq_num, std::string_v
       message.http_resp_body.append(buf.substr(0, remaining_size));
       message.is_complete =
           static_cast<size_t>(message.content_length) == message.http_resp_body.size();
+    }
+  } else {
+    if (!ParseChunk(std::string(buf), &message)) {
+      return ParseState::kInvalid;
     }
   }
 

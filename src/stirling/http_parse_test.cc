@@ -287,5 +287,82 @@ TEST_F(HTTPParserTest, InvalidInput) {
   EXPECT_EQ(HTTPParser::ParseState::kUnknown, parser_.ParseResponse(2, "test"));
 }
 
+// Leave http_resp_body set by caller.
+HTTPMessage ExpectMessage() {
+  HTTPMessage result;
+  result.is_complete = true;
+  result.type = SocketTraceEventType::kHTTPResponse;
+  result.http_minor_version = 1;
+  result.http_headers = {{"Transfer-Encoding", "chunked"}};
+  result.http_resp_status = 200;
+  result.http_resp_message = "OK";
+  return result;
+}
+
+TEST_F(HTTPParserTest, ParseComplteChunkEncodedMessage) {
+  std::string msg = R"(HTTP/1.1 200 OK
+Transfer-Encoding: chunked
+
+9
+pixielabs
+C
+ is awesome!
+0
+
+)";
+
+  HTTPMessage expected_message = ExpectMessage();
+  expected_message.http_resp_body = "pixielabs is awesome!";
+
+  EXPECT_EQ(HTTPParser::ParseState::kSuccess, parser_.ParseResponse(0, msg));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
+}
+
+TEST_F(HTTPParserTest, ParseMultipleChunks) {
+  std::string msg1 = R"(HTTP/1.1 200 OK
+Transfer-Encoding: chunked
+
+9
+pixielabs
+)";
+
+  std::string msg2 = "C\r\n is awesome!\r\n";
+  std::string msg3 = "0\r\n\r\n";
+
+  HTTPMessage expected_message = ExpectMessage();
+  expected_message.http_resp_body = "pixielabs is awesome!";
+
+  EXPECT_EQ(HTTPParser::ParseState::kNeedsMoreData, parser_.ParseResponse(0, msg1));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
+  EXPECT_EQ(HTTPParser::ParseState::kNeedsMoreData, parser_.ParseResponse(1, msg2));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
+  EXPECT_EQ(HTTPParser::ParseState::kSuccess, parser_.ParseResponse(2, msg3));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty()) << "Data should be empty after extraction";
+}
+
+TEST_F(HTTPParserTest, ParseIncompleteChunks) {
+  std::string msg1 = R"(HTTP/1.1 200 OK
+Transfer-Encoding: chunked
+
+9
+pixie)";
+
+  std::string msg2 = "labs\r\n";
+  std::string msg3 = "0\r\n\r\n";
+
+  HTTPMessage expected_message = ExpectMessage();
+  expected_message.http_resp_body = "pixielabs";
+
+  EXPECT_EQ(HTTPParser::ParseState::kNeedsMoreData, parser_.ParseResponse(0, msg1));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
+  EXPECT_EQ(HTTPParser::ParseState::kNeedsMoreData, parser_.ParseResponse(1, msg2));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
+  EXPECT_EQ(HTTPParser::ParseState::kSuccess, parser_.ParseResponse(2, msg3));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty()) << "Data should be empty after extraction";
+}
+
 }  // namespace stirling
 }  // namespace pl

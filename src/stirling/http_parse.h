@@ -101,10 +101,15 @@ bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
 // TODO(yzhao): Use this inside HTTPRecord to replace the duplicate fields.
 struct HTTPMessage {
   bool is_complete = false;
+
+  // Only meaningful is is_chunked is true.
+  phr_chunked_decoder chunk_decoder = {};
+
   SocketTraceEventType type = SocketTraceEventType::kUnknown;
 
   int http_minor_version = -1;
   std::map<std::string, std::string> http_headers = {};
+  // -1 indicates this message does not have 'Content-Length' header.
   int content_length = -1;
 
   std::string http_req_method = "-";
