@@ -98,11 +98,11 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/AriaFallah/csv-parser/archive/e3c1207f4de50603a4946dc5daa0633ce31a9257.tar.gz"],
     ),
     rules_foreign_cc = dict(
-        sha256 = "4f97b30a7206efa82c35a5ad0fac6cc4f1c315bb2c17b0bf77d2e7cad6b1fc60",
-        strip_prefix = "rules_foreign_cc-59a618db5f5408481957c52d345fa1368a244194",
-        # 2019-03-20
+        sha256 = "ccffb49fb24aee3f0a005fa59810dc596228fe86eacacbe0c004d59ed1881bd8",
+        strip_prefix = "rules_foreign_cc-bf99a0bf0080bcd50431aa7124ef23e5afd58325",
+        # 2019-05-09
         urls = ["https://github.com/bazelbuild/rules_foreign_cc/" +
-                "archive/59a618db5f5408481957c52d345fa1368a244194.tar.gz"],
+                "archive/bf99a0bf0080bcd50431aa7124ef23e5afd58325.tar.gz"],
     ),
     com_github_gperftools_gperftools = dict(
         sha256 = "18574813a062eee487bc1b761e8024a346075a7cb93da19607af362dc09565ef",

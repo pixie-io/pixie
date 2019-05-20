@@ -30,7 +30,7 @@ class NATSConnector {
       : nats_server_(std::string(nats_server)),
         pub_topic_(std::string(pub_topic)),
         sub_topic_(std::string(sub_topic)) {}
-  virtual ~NATSConnector();
+  virtual ~NATSConnector() {}
 
   /**
    * Connect to the nats server.
@@ -72,11 +72,13 @@ class NATSConnector {
    * @param timeout the duration to wait.
    * @return unique_ptr to msg (or nullptr).
    */
-  std::unique_ptr<TMsg> GetNextMsg(std::chrono::duration<int64_t> timeout) {
+  std::unique_ptr<TMsg> GetNextMessage(std::chrono::duration<int64_t> timeout) {
     std::unique_ptr<TMsg> msg;
-    incoming_message_queue_.wait_deque_timed(msg, timeout);
+    incoming_message_queue_.wait_dequeue_timed(msg, timeout);
     return msg;
   }
+
+  size_t ApproximatePendingMessages() { return incoming_message_queue_.size_approx(); }
 
   /**
    * Publish a message to the NATS topic.
@@ -96,7 +98,7 @@ class NATSConnector {
     return Status::OK();
   }
 
- private:
+ protected:
   static void NATSMessageCallbackHandler(natsConnection *nc, natsSubscription *sub, natsMsg *msg,
                                          void *closure) {
     // We know that closure is of type NATSConnector.

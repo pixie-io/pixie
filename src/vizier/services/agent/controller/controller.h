@@ -1,10 +1,11 @@
 #pragma once
 
-#include <grpcpp/grpcpp.h>
+#include <nats/nats.h>
 
 #include <chrono>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <thread>
 
 #include <sole.hpp>
@@ -13,21 +14,24 @@
 #include "src/stirling/stirling.h"
 
 #include "src/common/base/base.h"
+#include "src/common/nats/nats.h"
+
 PL_SUPPRESS_WARNINGS_START()
-#include "src/vizier/proto/service.grpc.pb.h"
+// TODO(michelle): Fix this so that we don't need to the NOLINT.
+// NOLINTNEXTLINE(build/include_subdir)
+#include "blockingconcurrentqueue.h"
+PL_SUPPRESS_WARNINGS_END()
+#include "src/vizier/messages/messagespb/messages.pb.h"
+
+PL_SUPPRESS_WARNINGS_START()
+#include "src/vizier/services/query_broker/querybrokerpb/service.grpc.pb.h"
 PL_SUPPRESS_WARNINGS_END()
 
 namespace pl {
+namespace vizier {
 namespace agent {
 
-/**
- * The interval to retry connections o vizier.
- */
-constexpr int kAgentConnectRetryIntervalSeconds = 1;
-/**
- * The interval on which heartbeats are sent to vizier.
- */
-constexpr int kAgentHeartBeatIntervalSeconds = 5;
+constexpr int kAgentHeartbeatIntervalSeconds = 5;
 
 /**
  * Controller is responsible for managing and orchestrating the
@@ -36,18 +40,18 @@ constexpr int kAgentHeartBeatIntervalSeconds = 5;
  * The controller contains the connection to Vizier.
  */
 class Controller : public NotCopyable {
-  using VizierReaderWriter =
-      grpc::ClientReaderWriter<vizier::AgentToVizierMessage, vizier::VizierToAgentMessage>;
-  using VizierReaderWriterSPtr = std::shared_ptr<VizierReaderWriter>;
-
  public:
+  using VizierNATSConnector = pl::nats::NATSConnector<pl::vizier::messages::VizierMessage>;
+  using QBStub =
+      pl::vizier::services::query_broker::querybrokerpb::QueryBrokerService::StubInterface;
   /**
    * Create a new controller. Expects carnot and stirling to be initialized.
    */
   static StatusOr<std::unique_ptr<Controller>> Create(
-      std::shared_ptr<grpc::Channel> chan, std::unique_ptr<carnot::Carnot> carnot,
-      std::unique_ptr<stirling::Stirling> stirling,
-      std::shared_ptr<table_store::TableStore> table_store);
+      sole::uuid agent_id, std::unique_ptr<QBStub> queryBrokerChan,
+      std::unique_ptr<carnot::Carnot> carnot, std::unique_ptr<stirling::Stirling> stirling,
+      std::shared_ptr<table_store::TableStore> table_store,
+      std::unique_ptr<VizierNATSConnector> nats_connector);
 
   ~Controller() = default;
 
@@ -59,6 +63,7 @@ class Controller : public NotCopyable {
 
   /**
    * Stop all executing threads.
+   *
    * @return Status of stopping.
    */
   Status Stop();
@@ -68,32 +73,51 @@ class Controller : public NotCopyable {
   Status InitThrowaway();
 
  protected:
-  Controller(std::shared_ptr<grpc::Channel> chan, std::unique_ptr<carnot::Carnot> carnot,
-             std::unique_ptr<stirling::Stirling> stirling,
-             std::shared_ptr<table_store::TableStore> table_store);
+  Controller(sole::uuid agent_id, std::unique_ptr<QBStub> queryBrokerChan,
+             std::unique_ptr<carnot::Carnot> carnot, std::unique_ptr<stirling::Stirling> stirling,
+             std::shared_ptr<table_store::TableStore> table_store,
+             std::unique_ptr<VizierNATSConnector> nats_connector);
   /**
    * Initialize the executor.
    */
   Status Init();
 
  private:
+  /**
+   * StartMessageReader intialized the nats subscription.
+   *
+   * @return Status of nats subscription.
+   */
+  Status StartMessageReader();
+
   // TODO(zasgar): Remove me. Throwaway code for demo.
-  Status AddDummyTable(const std::string& name, std::shared_ptr<table_store::Table> table);
+  Status AddDummyTable(const std::string &name, std::shared_ptr<table_store::Table> table);
+  Status ExecuteQuery(const messages::ExecuteQueryRequest &req,
+                      pl::vizier::services::query_broker::querybrokerpb::AgentQueryResponse *resp);
 
-  void RunHeartBeat(VizierReaderWriter* stream) const;
-  Status ExecuteQuery(const vizier::QueryRequest& req, vizier::AgentQueryResponse* resp);
-  Status SendRegisterRequest(VizierReaderWriter* stream);
+  void RunHeartbeat();
+  Status RegisterAgent();
 
-  std::shared_ptr<grpc::Channel> chan_;
+  Status HandleHeartbeatMessage(std::unique_ptr<messages::VizierMessage> msg);
+  Status HandleExecuteQueryMessage(std::unique_ptr<messages::VizierMessage> msg);
+
+  // We direct heartbeat messages to this queue.
+  moodycamel::BlockingConcurrentQueue<std::unique_ptr<messages::VizierMessage>>
+      incoming_heartbeat_queue_;
+
+  std::unique_ptr<QBStub> qb_stub_;
   std::unique_ptr<carnot::Carnot> carnot_;
   std::unique_ptr<stirling::Stirling> stirling_;
   std::shared_ptr<table_store::TableStore> table_store_;
 
   sole::uuid agent_id_;
   std::string hostname_;
-  std::unique_ptr<vizier::VizierService::Stub> vizier_stub_;
+
+  std::unique_ptr<VizierNATSConnector> nats_connector_;
+  std::unique_ptr<std::thread> heartbeat_thread_;
   bool keepAlive_ = true;
 };
 
 }  // namespace agent
+}  // namespace vizier
 }  // namespace pl

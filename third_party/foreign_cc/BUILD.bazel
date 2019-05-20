@@ -35,6 +35,7 @@ cmake_external(
         "NATS_BUILD_WITH_TLS": "OFF",
         "NATS_BUILD_STREAMING": "OFF",
     },
+    generate_crosstool_file = True,
     lib_source = "@com_github_nats_io_natsc//:all",
     static_libraries = ["libnats_static.a"],
 )

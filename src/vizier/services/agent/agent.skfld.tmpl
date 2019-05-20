@@ -19,10 +19,16 @@ spec:
         effect: NoSchedule
       containers:
       - name: agent
-        image: gcr.io/pl-dev-infra/agent:latest
+        image: gcr.io/pl-dev-infra/agent_image:latest
         env:
         - name: PL_VIZIER_ADDR
           value: vizier.pl.svc.cluster.local:40000
+        - name: PL_TLS_CERT
+          value: /certs/tls.crt
+        - name: PL_TLS_KEY
+          value: /certs/tls.key
+        - name: PL_DISABLE_SSL
+          value: "true"
         resources:
           limits:
             memory: 256Mi
@@ -44,6 +50,8 @@ spec:
         - name: lib-modules # mount the linux headers
           mountPath: /lib/modules
           readOnly: true
+        - name: certs
+          mountPath: /certs
       hostPID: true
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
@@ -56,8 +64,11 @@ spec:
       - name: linux-headers
         hostPath:
             path: /usr/src
-            type: Directory
+            type: DirectoryOrCreate
       - name: lib-modules
         hostPath:
             path: /lib/modules
-            type: Directory
+            type: DirectoryOrCreate
+      - name: certs
+        secret:
+            secretName: custom-tls-cert

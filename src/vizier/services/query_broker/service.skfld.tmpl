@@ -37,6 +37,8 @@ spec:
           value: {{.ExternalAddress}}
         - name: PL_DISABLE_GRPC_AUTH
           value: "true"
+        - name: PL_DISABLE_SSL
+          value: "true"
         volumeMounts:
         - name: certs
           mountPath: /certs
