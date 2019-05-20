@@ -9,8 +9,19 @@ pl_cc_test_library(
             "*.h",
             "*.cc",
         ],
-        exclude = ["**/*_test.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "test_main.cc",
+        ],
     ),
     hdrs = ["testing.h"],
     deps = ["//src/common/base:cc_library"],
+)
+
+pl_cc_test_library(
+    name = "test_main",
+    srcs = ["test_main.cc"],
+    deps = [
+        "//src/common/base:cc_library",
+    ],
 )

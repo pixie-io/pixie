@@ -187,7 +187,7 @@ def pl_cc_test(
         malloc = tcmalloc_external_dep(repository),
         deps = [
             ":" + name + "_lib",
-            repository + "//src/test_utils:main",
+            repository + "//src/common/testing:test_main",
         ] + _default_external_deps(),
         args = args,
         tags = tags + ["coverage_test"],
