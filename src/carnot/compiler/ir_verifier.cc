@@ -44,14 +44,8 @@ std::string IRVerifier::ExpString(const std::string& node_name, const int64_t id
                                   const std::string& property_name) {
   return absl::Substitute("$0(id=$1) '$2'", node_name, id, property_name);
 }
-Status IRVerifier::VerifyMemorySource(IRNode* node) {
-  auto mem_node = static_cast<MemorySourceIR*>(node);
-  PL_RETURN_IF_ERROR(ExpectType(StringType, mem_node->table_node(),
-                                ExpString("MemorySourceIR", node->id(), "table")));
-  PL_RETURN_IF_ERROR(
-      ExpectType(ListType, mem_node->select(), ExpString("MemorySourceIR", node->id(), "select")));
-
-  auto select_node = static_cast<ListIR*>(mem_node->select());
+Status IRVerifier::VerifyMemorySource(MemorySourceIR* mem_node) {
+  ListIR* select_node = mem_node->select();
   for (auto& c : select_node->children()) {
     PL_RETURN_IF_ERROR(
         ExpectType(StringType, c, ExpString("MemorySourceIR select", select_node->id(), "child")));
@@ -59,8 +53,7 @@ Status IRVerifier::VerifyMemorySource(IRNode* node) {
   return Status::OK();
 }
 
-Status IRVerifier::VerifyRange(IRNode* node) {
-  auto range_node = static_cast<RangeIR*>(node);
+Status IRVerifier::VerifyRange(RangeIR* range_node) {
   PL_RETURN_IF_ERROR(ExpectType({IntType, FuncType, StringType}, range_node->start_repr(),
                                 ExpString("RangeIR", range_node->id(), "start_repr")));
   PL_RETURN_IF_ERROR(ExpectType({IntType, FuncType, StringType}, range_node->stop_repr(),
@@ -71,14 +64,11 @@ Status IRVerifier::VerifyRange(IRNode* node) {
   return Status::OK();
 }
 
-Status IRVerifier::VerifyMap(IRNode* node) {
-  auto map_node = static_cast<MapIR*>(node);
-  PL_RETURN_IF_ERROR(ExpectType(LambdaType, map_node->lambda_func(),
-                                ExpString("MapIR", node->id(), "lambda_func")));
-  PL_RETURN_IF_ERROR(ExpectOp(map_node->parent(), ExpString("MapIR", node->id(), "parent")));
+Status IRVerifier::VerifyMap(MapIR* map_node) {
+  PL_RETURN_IF_ERROR(ExpectOp(map_node->parent(), ExpString("MapIR", map_node->id(), "parent")));
 
   // verify properties of the lambda_func
-  auto lambda_func = static_cast<LambdaIR*>(map_node->lambda_func());
+  LambdaIR* lambda_func = map_node->lambda_func();
 
   if (!lambda_func->HasDictBody()) {
     return lambda_func->CreateIRNodeError("Expected lambda func to have dictionary body.");
@@ -86,35 +76,28 @@ Status IRVerifier::VerifyMap(IRNode* node) {
   return Status::OK();
 }
 
-Status IRVerifier::VerifyFilter(IRNode* node) {
-  auto filter_node = static_cast<FilterIR*>(node);
-  PL_RETURN_IF_ERROR(ExpectType(LambdaType, filter_node->filter_func(),
-                                ExpString("FilterIR", node->id(), "filter_func")));
-  PL_RETURN_IF_ERROR(ExpectOp(filter_node->parent(), ExpString("FilterIR", node->id(), "parent")));
+Status IRVerifier::VerifyFilter(FilterIR* filter_node) {
+  PL_RETURN_IF_ERROR(
+      ExpectOp(filter_node->parent(), ExpString("FilterIR", filter_node->id(), "parent")));
 
   // verify properties of the filter_func
-  auto filter_func = static_cast<LambdaIR*>(filter_node->filter_func());
 
-  if (filter_func->HasDictBody()) {
-    return filter_func->CreateIRNodeError(
-        "Expected filter function to only contain an expression.");
+  if (filter_node->filter_func()->HasDictBody()) {
+    return filter_node->filter_func()->CreateIRNodeError(
+        "Expected filter function to only contain an expression, not a dictionary.");
   }
   return Status::OK();
 }
 
-Status IRVerifier::VerifyLimit(IRNode* node) {
-  auto limit_node = static_cast<LimitIR*>(node);
-  PL_RETURN_IF_ERROR(ExpectType(IntType, limit_node->limit_node(),
-                                ExpString("LimitIR", node->id(), "limit_node")));
-  PL_RETURN_IF_ERROR(ExpectOp(limit_node->parent(), ExpString("LimitIR", node->id(), "parent")));
-
+Status IRVerifier::VerifyLimit(LimitIR* limit_node) {
+  PL_RETURN_IF_ERROR(
+      ExpectOp(limit_node->parent(), ExpString("LimitIR", limit_node->id(), "parent")));
   return Status::OK();
 }
 
-Status IRVerifier::VerifySink(IRNode* node) {
-  auto sink_node = static_cast<MemorySinkIR*>(node);
+Status IRVerifier::VerifySink(MemorySinkIR* sink_node) {
   PL_RETURN_IF_ERROR(
-      ExpectOp(sink_node->parent(), ExpString("MemorySinkIR", node->id(), "parent")));
+      ExpectOp(sink_node->parent(), ExpString("MemorySinkIR", sink_node->id(), "parent")));
 
   if (!sink_node->name_set()) {
     return sink_node->CreateIRNodeError("Expected sink to have name set.");
@@ -122,37 +105,31 @@ Status IRVerifier::VerifySink(IRNode* node) {
   return Status::OK();
 }
 
-Status IRVerifier::VerifyBlockingAgg(IRNode* node) {
-  auto agg_node = static_cast<BlockingAggIR*>(node);
-  PL_RETURN_IF_ERROR(ExpectType(LambdaType, agg_node->agg_func(),
-                                ExpString("BlockingAggIR", node->id(), "agg_func")));
+Status IRVerifier::VerifyBlockingAgg(BlockingAggIR* agg_node) {
   PL_RETURN_IF_ERROR(
-      ExpectOp(agg_node->parent(), ExpString("BlockingAggIR", node->id(), "parent")));
+      ExpectOp(agg_node->parent(), ExpString("BlockingAggIR", agg_node->id(), "parent")));
   // Only check if by_func is not a nullptr.
   if (agg_node->by_func() != nullptr) {
-    PL_RETURN_IF_ERROR(ExpectType(LambdaType, agg_node->by_func(),
-                                  ExpString("BlockingAggIR", node->id(), "by_func")));
-    // Check whether the `by` function is just a column
-    auto by_func = static_cast<LambdaIR*>(agg_node->by_func());
-    if (by_func->HasDictBody()) {
-      return by_func->CreateIRNodeError("Expected by function to only contain a column.");
+    if (agg_node->by_func()->HasDictBody()) {
+      return agg_node->by_func()->CreateIRNodeError(
+          "Expected by function to only contain columns.");
     }
-    PL_ASSIGN_OR_RETURN(IRNode * by_body, by_func->GetDefaultExpr());
+    PL_ASSIGN_OR_RETURN(IRNode * by_body, agg_node->by_func()->GetDefaultExpr());
 
     auto actual_type = by_body->type();
     if (ColumnType != actual_type && actual_type != ListType) {
       auto msg = absl::Substitute(
           "BlockingAggIR: For node with id $1, Expected ColumnType or ListType Got $0.",
           by_body->type_string(), by_body->id());
-      return node->CreateIRNodeError(msg);
+      return agg_node->CreateIRNodeError(msg);
     }
   } else if (agg_node->groups_set() || !agg_node->groups().empty()) {
     // Groups shouldn't be set.
-    return node->CreateIRNodeError("AggIR: by function is not set, shouldn't have groups set.");
+    return agg_node->CreateIRNodeError("AggIR: by function is not set, shouldn't have groups set.");
   }
 
   // Check whether the `agg` fn is a dict body
-  auto agg_func = static_cast<LambdaIR*>(agg_node->agg_func());
+  LambdaIR* agg_func = agg_node->agg_func();
   if (!agg_func->HasDictBody()) {
     return agg_func->CreateIRNodeError(
         "Expected agg function to map resulting column names to the expression that generates "
@@ -184,25 +161,25 @@ Status IRVerifier::VerifyNodeConnections(IRNode* node) {
   }
   switch (node->type()) {
     case IRNodeType::MemorySourceType: {
-      return VerifyMemorySource(node);
+      return VerifyMemorySource(static_cast<MemorySourceIR*>(node));
     }
     case IRNodeType::RangeType: {
-      return VerifyRange(node);
+      return VerifyRange(static_cast<RangeIR*>(node));
     }
     case IRNodeType::MapType: {
-      return VerifyMap(node);
+      return VerifyMap(static_cast<MapIR*>(node));
     }
     case IRNodeType::BlockingAggType: {
-      return VerifyBlockingAgg(node);
+      return VerifyBlockingAgg(static_cast<BlockingAggIR*>(node));
     }
     case IRNodeType::MemorySinkType: {
-      return VerifySink(node);
+      return VerifySink(static_cast<MemorySinkIR*>(node));
     }
     case IRNodeType::FilterType: {
-      return VerifyFilter(node);
+      return VerifyFilter(static_cast<FilterIR*>(node));
     }
     case IRNodeType::LimitType: {
-      return VerifyLimit(node);
+      return VerifyLimit(static_cast<LimitIR*>(node));
     }
     default: {
       return node->CreateIRNodeError("Couldn't find verify node of type $0", node->type_string());

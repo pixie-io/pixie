@@ -9,8 +9,6 @@ namespace compiler {
 
 void VerifyMemorySource(IRNode* node) {
   auto mem_node = static_cast<MemorySourceIR*>(node);
-  EXPECT_EQ(mem_node->table_node()->type(), IRNodeType::StringType);
-  EXPECT_EQ(mem_node->select()->type(), IRNodeType::ListType);
   EXPECT_TRUE(mem_node->HasLogicalRepr());
 }
 

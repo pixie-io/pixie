@@ -428,6 +428,37 @@ TEST(LimitTest, basic) {
   EXPECT_OK(ParseQuery(limit));
 }
 
+TEST(LimitTest, limit_invalid_queries) {
+  std::string no_arg = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                      "'cpu1']).Limit()",
+                                      "queryDF.Result(name='limited')"},
+                                     "\n");
+  // No arg shouldn't work.
+  EXPECT_NOT_OK(ParseQuery(no_arg));
+
+  std::string string_arg = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                          "'cpu1']).Limit(rows='arg')",
+                                          "queryDF.Result(name='limited')"},
+                                         "\n");
+  // String as an arg should not work.
+  EXPECT_NOT_OK(ParseQuery(string_arg));
+
+  std::string float_arg = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                         "'cpu1']).Limit(rows=1.2)",
+                                         "queryDF.Result(name='limited')"},
+                                        "\n");
+  // float as an arg should not work.
+  EXPECT_NOT_OK(ParseQuery(float_arg));
+}
+
+TEST(FilterTest, filter_invalid_queries) {
+  std::string int_val = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', "
+                                       "'cpu1']).Filter(fn=1)",
+                                       "queryDF.Result(name='filtered')"},
+                                      "\n");
+  EXPECT_NOT_OK(ParseQuery(int_val));
+}
+
 // TODO(philkuz) (PL-524) both of these changes require modifications to the actual parser.
 TEST(NegationTest, DISABLED_bang_negation) {
   std::string bang_negation = absl::StrJoin({"queryDF = From(table='cpu', select=['bool_col']) "

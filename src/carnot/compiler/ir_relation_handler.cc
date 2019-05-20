@@ -241,11 +241,6 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::FilterHandler(
 StatusOr<table_store::schema::Relation> IRRelationHandler::LimitHandler(
     OperatorIR* node, table_store::schema::Relation parent_rel) {
   DCHECK_EQ(node->type(), IRNodeType::LimitType);
-  auto limit_node = static_cast<LimitIR*>(node);
-  DCHECK_EQ(limit_node->limit_node()->type(), IRNodeType::IntType);
-  auto limit_value_node = static_cast<IntIR*>(limit_node->limit_node());
-
-  limit_node->SetLimitValue(limit_value_node->val());
   return parent_rel;
 }
 
@@ -375,15 +370,8 @@ Status IRRelationHandler::SetSourceRelation(IRNode* node) {
                                    node->type_string());
   }
   auto mem_node = static_cast<MemorySourceIR*>(node);
-  auto table_node = mem_node->table_node();
-  auto select = mem_node->select();
-  if (table_node->type() != StringType) {
-    return node->CreateIRNodeError("table argument only implemented for string type.");
-  }
-  if (select->type() != ListType) {
-    return node->CreateIRNodeError("select argument only implemented for list type.");
-  }
-  auto table_str = static_cast<StringIR*>(table_node)->str();
+  ListIR* select = mem_node->select();
+  auto table_str = mem_node->table_name();
   // get the table_str from the relation map
   auto relation_map_it = compiler_state_->relation_map()->find(table_str);
   if (relation_map_it == compiler_state_->relation_map()->end()) {

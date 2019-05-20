@@ -432,8 +432,8 @@ class MemorySourceIR : public OperatorIR {
   explicit MemorySourceIR(int64_t id) : OperatorIR(id, MemorySourceType, false, true) {}
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  IRNode* table_node() { return table_node_; }
-  IRNode* select() { return select_; }
+  std::string table_name() { return table_name_; }
+  ListIR* select() { return select_; }
   void SetTime(int64_t time_start_ns, int64_t time_stop_ns) {
     time_start_ns_ = time_start_ns;
     time_stop_ns_ = time_stop_ns;
@@ -457,8 +457,8 @@ class MemorySourceIR : public OperatorIR {
   Status InitImpl(const ArgMap& args) override;
 
  private:
-  IRNode* table_node_;
-  IRNode* select_;
+  std::string table_name_;
+  ListIR* select_;
   bool time_set_ = false;
   int64_t time_start_ns_;
   int64_t time_stop_ns_;
@@ -521,6 +521,7 @@ class RangeIR : public OperatorIR {
   Status InitImpl(const ArgMap& args) override;
 
  private:
+  // Start and Stop eventually evaluate to integers, but might be expressions.
   IRNode* start_repr_ = nullptr;
   IRNode* stop_repr_ = nullptr;
 };
@@ -538,7 +539,7 @@ class MapIR : public OperatorIR {
   explicit MapIR(int64_t id) : OperatorIR(id, MapType, true, false) {}
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  IRNode* lambda_func() const { return lambda_func_; }
+  LambdaIR* lambda_func() const { return lambda_func_; }
   void SetColExprs(ColExpressionVector col_exprs) {
     col_exprs_ = col_exprs;
     col_exprs_set_ = true;
@@ -554,7 +555,7 @@ class MapIR : public OperatorIR {
   Status InitImpl(const ArgMap& args) override;
 
  private:
-  IRNode* lambda_func_;
+  LambdaIR* lambda_func_;
   // The map from new column_names to expressions.
   ColExpressionVector col_exprs_;
   bool col_exprs_set_ = false;
@@ -573,8 +574,8 @@ class BlockingAggIR : public OperatorIR {
   explicit BlockingAggIR(int64_t id) : OperatorIR(id, BlockingAggType, true, false) {}
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  IRNode* by_func() const { return by_func_; }
-  IRNode* agg_func() const { return agg_func_; }
+  LambdaIR* by_func() const { return by_func_; }
+  LambdaIR* agg_func() const { return agg_func_; }
   void SetGroups(std::vector<ColumnIR*> groups) {
     groups_ = groups;
     groups_set_ = true;
@@ -598,8 +599,8 @@ class BlockingAggIR : public OperatorIR {
   Status InitImpl(const ArgMap& args) override;
 
  private:
-  IRNode* by_func_;
-  IRNode* agg_func_;
+  LambdaIR* by_func_;
+  LambdaIR* agg_func_;
   // contains group_names and groups columns.
   std::vector<ColumnIR*> groups_;
   bool groups_set_ = false;
@@ -614,7 +615,7 @@ class FilterIR : public OperatorIR {
   explicit FilterIR(int64_t id) : OperatorIR(id, FilterType, true, false) {}
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  IRNode* filter_func() const { return filter_func_; }
+  LambdaIR* filter_func() const { return filter_func_; }
   Status ToProto(planpb::Operator*) const override;
 
   std::vector<std::string> ArgKeys() override { return {"fn"}; }
@@ -625,7 +626,7 @@ class FilterIR : public OperatorIR {
   Status InitImpl(const ArgMap& args) override;
 
  private:
-  IRNode* filter_func_;
+  LambdaIR* filter_func_;
 };
 
 class LimitIR : public OperatorIR {
@@ -640,7 +641,7 @@ class LimitIR : public OperatorIR {
     limit_value_set_ = true;
   }
   bool limit_value_set() const { return limit_value_set_; }
-  IRNode* limit_node() const { return limit_node_; }
+  int64_t limit_value() const { return limit_value_; }
 
   std::vector<std::string> ArgKeys() override { return {"rows"}; }
 
@@ -650,7 +651,6 @@ class LimitIR : public OperatorIR {
   Status InitImpl(const ArgMap& args) override;
 
  private:
-  IRNode* limit_node_;
   int64_t limit_value_;
   bool limit_value_set_ = false;
 };

@@ -71,8 +71,7 @@ bool MemorySourceIR::HasLogicalRepr() const { return true; }
 
 Status MemorySourceIR::ToProto(planpb::Operator* op) const {
   auto pb = new planpb::MemorySourceOperator();
-  DCHECK(table_node_->type() == IRNodeType::StringType);
-  pb->set_name(static_cast<StringIR*>(table_node_)->str());
+  pb->set_name(table_name_);
 
   if (!columns_set()) {
     return error::InvalidArgument("MemorySource columns are not set.");
@@ -112,9 +111,8 @@ std::string DebugStringFmt(int64_t depth, std::string name,
   return absl::StrJoin(property_strings, "\n");
 }
 std::string MemorySourceIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(
-      depth, absl::StrFormat("%d:MemorySourceIR", id()),
-      {{"From", table_node_->DebugString(depth + 1)}, {"Select", select_->DebugString(depth + 1)}});
+  return DebugStringFmt(depth, absl::StrFormat("%d:MemorySourceIR", id()),
+                        {{"From", table_name_}, {"Select", select_->DebugString(depth + 1)}});
 }
 
 bool MemorySinkIR::HasLogicalRepr() const { return true; }
@@ -133,14 +131,25 @@ Status MemorySinkIR::InitImpl(const ArgMap& args) {
 Status MemorySourceIR::InitImpl(const ArgMap& args) {
   DCHECK(args.find("table") != args.end());
   DCHECK(args.find("select") != args.end());
-  // TODO(philkuz) store the table as a string instead of this.
-  table_node_ = args.find("table")->second;
-  // TODO(philkuz) store the select as a string instead of this.
-  select_ = args.find("select")->second;
+
+  IRNode* table_node = args.find("table")->second;
+  if (table_node->type() != IRNodeType::StringType) {
+    return CreateIRNodeError("Expected table argument to be a string, not a $0",
+                             table_node->type());
+  }
+  table_name_ = static_cast<StringIR*>(table_node)->str();
+
+  IRNode* select_node = args.find("select")->second;
+  if (select_node->type() != IRNodeType::ListType) {
+    return CreateIRNodeError("Expected select argument to be a list, not a $0",
+                             table_node->type_string());
+  }
+  select_ = static_cast<ListIR*>(select_node);
+
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, select_));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, table_node_));
   return Status::OK();
 }
+
 // TODO(philkuz) impl
 Status RangeIR::InitImpl(const ArgMap& args) {
   PL_UNUSED(args);
@@ -204,7 +213,12 @@ Status RangeIR::ToProto(planpb::Operator*) const {
 
 Status MapIR::InitImpl(const ArgMap& args) {
   DCHECK(args.find("fn") != args.end());
-  lambda_func_ = args.find("fn")->second;
+  IRNode* lambda_func_node = args.find("fn")->second;
+  if (lambda_func_node->type() != IRNodeType::LambdaType) {
+    return CreateIRNodeError("Expected 'fn' argument of Agg to be a lambda, got '$0'",
+                             lambda_func_node->type_string());
+  }
+  lambda_func_ = static_cast<LambdaIR*>(lambda_func_node);
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, lambda_func_));
   return Status::OK();
 }
@@ -298,7 +312,12 @@ Status MapIR::ToProto(planpb::Operator* op) const {
 
 Status FilterIR::InitImpl(const ArgMap& args) {
   DCHECK(args.find("fn") != args.end());
-  filter_func_ = args.find("fn")->second;
+  IRNode* filter_func_node = args.find("fn")->second;
+  if (filter_func_node->type() != IRNodeType::LambdaType) {
+    return CreateIRNodeError("Expected 'fn' argument of Filter to be a 'lambda', got '$0'",
+                             filter_func_node->type_string());
+  }
+  filter_func_ = static_cast<LambdaIR*>(filter_func_node);
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, filter_func_));
   return Status::OK();
 }
@@ -332,8 +351,12 @@ Status FilterIR::ToProto(planpb::Operator* op) const {
 
 Status LimitIR::InitImpl(const ArgMap& args) {
   DCHECK(args.find("rows") != args.end());
-  limit_node_ = args.find("rows")->second;
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, limit_node_));
+  IRNode* limit_node = args.find("rows")->second;
+  if (limit_node->type() != IRNodeType::IntType) {
+    return CreateIRNodeError("Expected 'int', got $0", limit_node->type_string());
+  }
+
+  SetLimitValue(static_cast<IntIR*>(limit_node)->val());
   return Status::OK();
 }
 
@@ -342,7 +365,7 @@ bool LimitIR::HasLogicalRepr() const { return true; }
 std::string LimitIR::DebugString(int64_t depth) const {
   return DebugStringFmt(depth, absl::StrFormat("%d:LimitIR", id()),
                         {{"Parent", parent()->DebugString(depth + 1)},
-                         {"Limit", limit_node_->DebugString(depth + 1)}});
+                         {"Limit", absl::Substitute("$0", limit_value_)}});
 }
 
 Status LimitIR::ToProto(planpb::Operator* op) const {
@@ -369,7 +392,7 @@ Status BlockingAggIR::InitImpl(const ArgMap& args) {
   IRNode* by_func = args.find("by")->second;
   IRNode* agg_func = args.find("fn")->second;
   if (agg_func->type() != IRNodeType::LambdaType) {
-    return CreateIRNodeError("Expected 'agg' argument of BlockingAggIR to be 'Lambda', got '$0'",
+    return CreateIRNodeError("Expected 'agg' argument of Agg to be 'Lambda', got '$0'",
                              agg_func->type_string());
   }
 
@@ -378,13 +401,13 @@ Status BlockingAggIR::InitImpl(const ArgMap& args) {
     by_func_ = nullptr;
   } else if (by_func->type() == IRNodeType::LambdaType) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, by_func));
-    by_func_ = by_func;
+    by_func_ = static_cast<LambdaIR*>(by_func);
   } else {
-    return CreateIRNodeError("Expected 'by' argument of BlockingAggIR to be 'Lambda', got '$0'",
+    return CreateIRNodeError("Expected 'by' argument of Agg to be 'Lambda', got '$0'",
                              by_func->type_string());
   }
 
-  agg_func_ = agg_func;
+  agg_func_ = static_cast<LambdaIR*>(agg_func);
 
   return Status();
 }
@@ -392,10 +415,12 @@ Status BlockingAggIR::InitImpl(const ArgMap& args) {
 bool BlockingAggIR::HasLogicalRepr() const { return true; }
 
 std::string BlockingAggIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(depth, absl::StrFormat("%d:BlockingAggIR", id()),
-                        {{"Parent", parent()->DebugString(depth + 1)},
-                         {"ByFn", by_func_->DebugString(depth + 1)},
-                         {"AggFn", agg_func_->DebugString(depth + 1)}});
+  std::map<std::string, std::string> property_map = {{"Parent", parent()->DebugString(depth + 1)},
+                                                     {"AggFn", agg_func_->DebugString(depth + 1)}};
+  if (by_func_ != nullptr) {
+    property_map["ByFn"] = by_func_->DebugString(depth + 1);
+  }
+  return DebugStringFmt(depth, absl::StrFormat("%d:BlockingAggIR", id()), property_map);
 }
 
 Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* expr,
@@ -558,7 +583,8 @@ StatusOr<IRNode*> LambdaIR::GetDefaultExpr() {
     }
   }
   return error::InvalidArgument(
-      "Couldn't return the default expression, no default expression in column expression vector.");
+      "Couldn't return the default expression, no default expression in column expression "
+      "vector.");
 }
 
 std::string LambdaIR::DebugString(int64_t depth) const {

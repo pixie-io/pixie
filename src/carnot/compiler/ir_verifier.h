@@ -40,19 +40,19 @@ class IRVerifier {
                     const std::string& err_msg_prefix);
   Status ExpectOp(IRNode* test_node, std::string err_msg_prefix);
   std::string ExpString(const std::string& node_name, int64_t id, const std::string& property_name);
-  Status VerifyMemorySource(IRNode* node);
+  Status VerifyMemorySource(MemorySourceIR* node);
 
-  Status VerifyRange(IRNode* node);
+  Status VerifyRange(RangeIR* node);
 
-  Status VerifyMap(IRNode* node);
+  Status VerifyMap(MapIR* node);
 
-  Status VerifyFilter(IRNode* node);
+  Status VerifyFilter(FilterIR* node);
 
-  Status VerifyLimit(IRNode* node);
+  Status VerifyLimit(LimitIR* node);
 
-  Status VerifyBlockingAgg(IRNode* node);
+  Status VerifyBlockingAgg(BlockingAggIR* node);
 
-  Status VerifySink(IRNode* node);
+  Status VerifySink(MemorySinkIR* node);
 
   Status VerifyNodeConnections(IRNode* node);
   Status VerifyLineCol(IRNode* node);
