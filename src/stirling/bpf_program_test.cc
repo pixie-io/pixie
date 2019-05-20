@@ -3,7 +3,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "src/stirling/bcc_connector.h"
-#include "src/stirling/http_trace_connector.h"
+#include "src/stirling/socket_trace_connector.h"
 
 namespace pl {
 namespace stirling {
@@ -42,7 +42,7 @@ TEST_P(BPFProgramTest, CheckSyntax) {
 INSTANTIATE_TEST_CASE_P(AllConnectors, BPFProgramTest,
                         ::testing::Values(
                             // TODO(yzhao): Remember to add new connector into this list.
-                            TestParam{"HTTPTraceConnector", HTTPTraceConnector::kBCCScript},
+                            TestParam{"SocketTraceConnector", SocketTraceConnector::kBCCScript},
                             TestParam{"PIDCPUUseBCCConnector", PIDCPUUseBCCConnector::kBCCScript}),
                         [](const ::testing::TestParamInfo<TestParam> info) -> std::string {
                           return std::string(info.param.connector);

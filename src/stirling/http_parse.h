@@ -44,7 +44,7 @@ inline std::string EventTypeToString(HTTPTraceEventType event_type) {
   return event_type_str;
 }
 
-// The fields corresponding exactly to HTTPTraceConnector::kElements.
+// The fields corresponding exactly to SocketTraceConnector::kElements.
 // TODO(yzhao): The repetitions of information among this, DataElementsIndexes, and kElements should
 // be eliminated. It might make sense to use proto file to define data schema and generate kElements
 // array during runtime, based on proto schema.

@@ -144,8 +144,8 @@ container_push(
 )
 
 pl_cc_test(
-    name = "http_trace_connector_test",
-    srcs = ["http_trace_connector_test.cc"],
+    name = "socket_trace_connector_test",
+    srcs = ["socket_trace_connector_test.cc"],
     deps = [":cc_library"],
 )
 
@@ -156,8 +156,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "http_trace_bpf_test",
-    srcs = ["http_trace_bpf_test.cc"],
+    name = "socket_trace_bpf_test",
+    srcs = ["socket_trace_bpf_test.cc"],
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",

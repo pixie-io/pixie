@@ -9,7 +9,7 @@
 // This is copied from socket_trace.h, with comments removed, so that this whole file can be
 // hermetically installed as a BPF program.
 //
-// TODO(PL-451): The struct definitions that are reused in HTTPTraceConnector should be shared from
+// TODO(PL-451): The struct definitions that are reused in SocketTraceConnector should be shared from
 // the same header file.
 
 const uint32_t kEventTypeSyscallWriteEvent = 1;

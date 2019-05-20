@@ -6,9 +6,9 @@
 #include "src/stirling/bcc_connector.h"
 #include "src/stirling/bpftrace_connector.h"
 #include "src/stirling/cgroup_stats_connector.h"
-#include "src/stirling/http_trace_connector.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/seq_gen_connector.h"
+#include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
 #include "src/stirling/types.h"
@@ -28,10 +28,10 @@ using pl::types::Time64NSValue;
 
 using pl::stirling::CGroupStatsConnector;
 using pl::stirling::CPUStatBPFTraceConnector;
-using pl::stirling::HTTPTraceConnector;
 using pl::stirling::PIDCPUUseBCCConnector;
 using pl::stirling::PIDCPUUseBPFTraceConnector;
 using pl::stirling::SeqGenConnector;
+using pl::stirling::SocketTraceConnector;
 
 using pl::stirling::DataElements;
 
@@ -99,8 +99,8 @@ void StirlingWrapperCallback(uint64_t table_id,
   } else if (name == PIDCPUUseBCCConnector::kElements[0].name()) {
     PrintRecordBatch("PIDStat-BCC", PIDCPUUseBCCConnector::kElements[0].elements(), num_records,
                      *record_batch);
-  } else if (name == HTTPTraceConnector::kElements[0].name()) {
-    PrintRecordBatch("HTTPTrace", HTTPTraceConnector::kElements[0].elements(), num_records,
+  } else if (name == SocketTraceConnector::kElements[0].name()) {
+    PrintRecordBatch("HTTPTrace", SocketTraceConnector::kElements[0].elements(), num_records,
                      *record_batch);
   } else if (name == CGroupStatsConnector::kElements[0].name()) {
     PrintRecordBatch("CGroupStats", CGroupStatsConnector::kElements[0].elements(), num_records,

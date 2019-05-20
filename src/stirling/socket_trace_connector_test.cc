@@ -1,4 +1,4 @@
-#include "src/stirling/http_trace_connector.h"
+#include "src/stirling/socket_trace_connector.h"
 
 #include <gtest/gtest.h>
 
@@ -35,12 +35,12 @@ Content-Type: text/plain; charset=utf-8
 )";
   socket_data_event_t event2 = InitEvent(msg2);
 
-  // FRIEND_TEST() does not grant std::make_unique() access to HTTPTraceConnector's private ctor.
-  // We choose this style over the HTTPTraceConnector::Create() + dynamic_cast<>, as this is
+  // FRIEND_TEST() does not grant std::make_unique() access to SocketTraceConnector's private ctor.
+  // We choose this style over the SocketTraceConnector::Create() + dynamic_cast<>, as this is
   // clearer.
-  std::unique_ptr<HTTPTraceConnector> source(new HTTPTraceConnector("bcc_http_trace"));
+  std::unique_ptr<SocketTraceConnector> source(new SocketTraceConnector("bcc_http_trace"));
   types::ColumnWrapperRecordBatch record_batch;
-  EXPECT_OK(InitRecordBatch(HTTPTraceConnector::kElements[0].elements(),
+  EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[0].elements(),
                             /*target_capacity*/ 1, &record_batch));
 
   source->OutputEvent(event1, &record_batch);
@@ -55,11 +55,11 @@ Content-Type: text/plain; charset=utf-8
         << "event2 Content-Type has no 'json', and won't be selected by the default filter";
   }
 
-  HTTPTraceConnector::http_response_header_filter_ = {
+  SocketTraceConnector::http_response_header_filter_ = {
       {{"Content-Type", "text/plain"}},
       {{"Content-Encoding", "gzip"}},
   };
-  HTTPTraceConnector::HandleProbeOutput(source.get(), &event1, sizeof(event1));
+  SocketTraceConnector::HandleProbeOutput(source.get(), &event1, sizeof(event1));
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size())
         << "The filter is changed to require 'text/plain' in Content-Type header, "
@@ -67,7 +67,7 @@ Content-Type: text/plain; charset=utf-8
   }
 
   // Duplicate headers are allowed in the filters.
-  HTTPTraceConnector::http_response_header_filter_ = {
+  SocketTraceConnector::http_response_header_filter_ = {
       {{"Content-Type", "application/json"}},
       {{"Content-Encoding", "gzip"}},
   };

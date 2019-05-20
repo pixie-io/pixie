@@ -7,7 +7,7 @@
 namespace pl {
 namespace stirling {
 
-DUMMY_SOURCE_CONNECTOR(HTTPTraceConnector);
+DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 }  // namespace stirling
 }  // namespace pl
@@ -38,7 +38,7 @@ namespace stirling {
 // one for our usage scenarios.
 using write_stream_map_t = std::map<uint64_t, std::map<uint64_t, socket_data_event_t> >;
 
-class HTTPTraceConnector : public SourceConnector {
+class SocketTraceConnector : public SourceConnector {
  public:
   inline static const std::string_view kBCCScript = http_trace_bcc_script;
 
@@ -71,7 +71,7 @@ class HTTPTraceConnector : public SourceConnector {
               DataElement("http_resp_body", types::DataType::STRING),
               DataElement("http_resp_latency_ns", types::DataType::INT64)})};
 
-  // The order here must be identical to HTTPTraceConnector::kElements, and it must start from 0.
+  // The order here must be identical to SocketTraceConnector::kElements, and it must start from 0.
   // TODO(yzhao): We probably could have some form of template construct to offload part of the
   // schema bookkeeping outside of kElements. Today we have a few major issues:
   // - When changing field order, we need to update 2 data structures: kElements,
@@ -102,7 +102,7 @@ class HTTPTraceConnector : public SourceConnector {
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{5000};
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
-    return std::unique_ptr<SourceConnector>(new HTTPTraceConnector(name));
+    return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
   }
   static void HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/);
   static void HandleProbeLoss(void* /*cb_cookie*/, uint64_t);
@@ -118,7 +118,7 @@ class HTTPTraceConnector : public SourceConnector {
   const write_stream_map_t& TestOnlyGetWriteStreamMap() const { return write_stream_map_; }
 
  private:
-  explicit HTTPTraceConnector(const std::string& source_name)
+  explicit SocketTraceConnector(const std::string& source_name)
       : SourceConnector(kSourceType, std::move(source_name), kElements, kDefaultSamplingPeriod,
                         kDefaultPushPeriod) {
     // TODO(oazizi): Is there a better place/time to grab the flags?

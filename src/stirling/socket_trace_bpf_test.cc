@@ -9,7 +9,7 @@
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 #include "src/stirling/bcc_bpf/socket_trace.h"
-#include "src/stirling/http_trace_connector.h"
+#include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/testing/tcp_socket.h"
 
 namespace pl {
@@ -30,7 +30,7 @@ class HTTPTraceBPFTest : public ::testing::Test {
   HTTPTraceBPFTest() {}
 
   void SetUp() override {
-    source = HTTPTraceConnector::Create("bcc_http_trace");
+    source = SocketTraceConnector::Create("bcc_http_trace");
     ASSERT_OK(source->Init());
   }
 
@@ -88,7 +88,7 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
 
   const int table_num = 0;
   types::ColumnWrapperRecordBatch record_batch;
-  EXPECT_OK(InitRecordBatch(HTTPTraceConnector::kElements[table_num].elements(),
+  EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
                             /*target_capacity*/ 2, &record_batch));
   source->TransferData(table_num, &record_batch);
   EXPECT_OK(source->Stop());
@@ -104,9 +104,9 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
   EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
 
   EXPECT_EQ(std::string_view("Content-Type: application/json; msg1"),
-            record_batch[HTTPTraceConnector::kHTTPHeaders]->Get<types::StringValue>(0));
+            record_batch[SocketTraceConnector::kHTTPHeaders]->Get<types::StringValue>(0));
   EXPECT_EQ(std::string_view("Content-Type: application/json; msg2"),
-            record_batch[HTTPTraceConnector::kHTTPHeaders]->Get<types::StringValue>(1));
+            record_batch[SocketTraceConnector::kHTTPHeaders]->Get<types::StringValue>(1));
 }
 
 TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
@@ -124,7 +124,7 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
 
   const int table_num = 0;
   types::ColumnWrapperRecordBatch record_batch;
-  EXPECT_OK(InitRecordBatch(HTTPTraceConnector::kElements[table_num].elements(),
+  EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
                             /*target_capacity*/ 2, &record_batch));
   source->TransferData(table_num, &record_batch);
   EXPECT_OK(source->Stop());
@@ -140,9 +140,9 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
   EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
 
   EXPECT_EQ(std::string_view("Content-Type: application/json; msg1"),
-            record_batch[HTTPTraceConnector::kHTTPHeaders]->Get<types::StringValue>(0));
+            record_batch[SocketTraceConnector::kHTTPHeaders]->Get<types::StringValue>(0));
   EXPECT_EQ(std::string_view("Content-Type: application/json; msg2"),
-            record_batch[HTTPTraceConnector::kHTTPHeaders]->Get<types::StringValue>(1));
+            record_batch[SocketTraceConnector::kHTTPHeaders]->Get<types::StringValue>(1));
 }
 
 TEST_F(HTTPTraceBPFTest, TestNonHTTPWritesNotCaptured) {
@@ -162,7 +162,7 @@ TEST_F(HTTPTraceBPFTest, TestNonHTTPWritesNotCaptured) {
 
   const int table_num = 0;
   types::ColumnWrapperRecordBatch record_batch;
-  EXPECT_OK(InitRecordBatch(HTTPTraceConnector::kElements[table_num].elements(),
+  EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
                             /*target_capacity*/ 2, &record_batch));
   source->TransferData(table_num, &record_batch);
   EXPECT_OK(source->Stop());
@@ -272,19 +272,19 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
   }
 
   const int table_num = 0;  // HTTP Table
-  auto* http_trace_connector = dynamic_cast<HTTPTraceConnector*>(source.get());
-  ASSERT_NE(nullptr, http_trace_connector);
-  http_trace_connector->PollPerfBuffer(table_num);
+  auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source.get());
+  ASSERT_NE(nullptr, socket_trace_connector);
+  socket_trace_connector->PollPerfBuffer(table_num);
   EXPECT_OK(source->Stop());
 
-  ASSERT_THAT(http_trace_connector->TestOnlyGetWriteStreamMap(),
+  ASSERT_THAT(socket_trace_connector->TestOnlyGetWriteStreamMap(),
               UnorderedElementsAre(Pair(_, SizeIs(1)), Pair(_, SizeIs(1))));
 
   auto get_message = [](const socket_data_event_t& event) -> std::string_view {
     return std::string_view(event.msg, std::min(event.attr.msg_bytes, event.attr.msg_buf_size));
   };
   std::vector<std::pair<uint64_t, std::string_view>> seq_msgs;
-  for (const auto& stream : http_trace_connector->TestOnlyGetWriteStreamMap()) {
+  for (const auto& stream : socket_trace_connector->TestOnlyGetWriteStreamMap()) {
     for (const auto& seq_event : stream.second) {
       seq_msgs.push_back(std::make_pair(seq_event.first, get_message(seq_event.second)));
     }
