@@ -13,12 +13,10 @@
 #include <vector>
 
 #include "absl/strings/str_split.h"
-#include "src/common/base/base.h"
-#include "src/stirling/cgroups/fs_watcher.h"
+#include "src/common/base/error.h"
+#include "src/common/fs/fs_watcher.h"
 
 namespace pl {
-namespace stirling {
-namespace fs_watcher {
 
 namespace fs = std::experimental::filesystem;
 
@@ -265,7 +263,5 @@ Status FSWatcher::ReadInotifyUpdates() {
   return Status::OK();
 }
 
-}  // namespace fs_watcher
-}  // namespace stirling
 }  // namespace pl
 #endif

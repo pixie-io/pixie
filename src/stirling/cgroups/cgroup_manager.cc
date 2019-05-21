@@ -9,6 +9,7 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/strip.h"
 #include "src/common/base/base.h"
+#include "src/common/fs/fs.h"
 #include "src/stirling/cgroups/cgroup_manager.h"
 
 namespace pl {
@@ -144,10 +145,9 @@ Status CGroupManager::UpdateCGroupInfoForQoSClass(CGroupQoS qos, fs::path base_p
   return Status::OK();
 }
 
-Status CGroupManager::HandleFSPodEvent(const fs::path &path,
-                                       fs_watcher::FSWatcher::FSEventType event_type,
+Status CGroupManager::HandleFSPodEvent(const fs::path &path, FSWatcher::FSEventType event_type,
                                        const std::string &pod_name) {
-  if (event_type == fs_watcher::FSWatcher::FSEventType::kDeleteDir) {
+  if (event_type == FSWatcher::FSEventType::kDeleteDir) {
     cgroup_info_.erase(pod_name);
     RemoveFSWatch(path / pod_name);
     return Status::OK();
@@ -165,11 +165,11 @@ Status CGroupManager::HandleFSPodEvent(const fs::path &path,
 }
 
 Status CGroupManager::HandleFSContainerEvent(const fs::path &path,
-                                             fs_watcher::FSWatcher::FSEventType event_type,
+                                             FSWatcher::FSEventType event_type,
                                              const std::string &container_name) {
   auto pod_name = path.filename().string();
   auto pod_info = cgroup_info_[pod_name];
-  if (event_type == fs_watcher::FSWatcher::FSEventType::kDeleteDir) {
+  if (event_type == FSWatcher::FSEventType::kDeleteDir) {
     pod_info.container_info_by_name.erase(container_name);
     RemoveFSWatch(path / container_name / kPidFile);
     return Status::OK();
@@ -178,12 +178,12 @@ Status CGroupManager::HandleFSContainerEvent(const fs::path &path,
   return UpdateContainerInfo(path / container_name, &pod_info);
 }
 
-Status CGroupManager::HandleFSEvent(fs_watcher::FSWatcher::FSEvent *fs_event) {
+Status CGroupManager::HandleFSEvent(FSWatcher::FSEvent *fs_event) {
   auto path = fs_event->GetPath();
   switch (fs_event->type) {
-    case fs_watcher::FSWatcher::FSEventType::kCreateDir:
+    case FSWatcher::FSEventType::kCreateDir:
       // fall through
-    case fs_watcher::FSWatcher::FSEventType::kDeleteDir: {
+    case FSWatcher::FSEventType::kDeleteDir: {
       auto dir_name = fs_event->name;
       bool is_pod = absl::StartsWith(fs_event->name, kPodPrefix);
       if (is_pod) {
@@ -191,12 +191,12 @@ Status CGroupManager::HandleFSEvent(fs_watcher::FSWatcher::FSEvent *fs_event) {
       }
       return HandleFSContainerEvent(path, fs_event->type, dir_name);
     }
-    case fs_watcher::FSWatcher::FSEventType::kModifyFile: {
+    case FSWatcher::FSEventType::kModifyFile: {
       auto container_path = path.parent_path();
       auto pod_name = container_path.parent_path().filename().string();
       return UpdateContainerInfo(container_path, &(cgroup_info_[pod_name]));
     }
-    case fs_watcher::FSWatcher::FSEventType::kUnknown:
+    case FSWatcher::FSEventType::kUnknown:
       // fall through
     default:
       return error::Unknown("Unknown FS watcher event type.");
@@ -222,14 +222,14 @@ Status CGroupManager::ScanFileSystem() {
 
 Status CGroupManager::UpdateCGroupInfo() {
   // No system support for inotify. Always scan file system.
-  if (!fs_watcher::FSWatcher::SupportsInotify()) {
+  if (!FSWatcher::SupportsInotify()) {
     return ScanFileSystem();
   }
 
   // There was potentially an error while adding or removing watchers
   // in a previous iteration or needs to be created for the first time.
   if (!fs_watcher_) {
-    fs_watcher_ = fs_watcher::FSWatcher::Create();
+    fs_watcher_ = FSWatcher::Create();
     return ScanFileSystem();
   }
 
@@ -241,7 +241,7 @@ Status CGroupManager::UpdateCGroupInfo() {
   if (fs_watcher_->HasOverflow()) {
     // To avoid race conditions on an exisiting inotify fd, destroy existing
     // fs_watcher_ and recreate it.
-    fs_watcher_ = fs_watcher::FSWatcher::Create();
+    fs_watcher_ = FSWatcher::Create();
     return ScanFileSystem();
   }
 
@@ -257,7 +257,7 @@ Status CGroupManager::UpdateCGroupInfo() {
       return ScanFileSystem();
     }
     auto fs_event = event_status.ConsumeValueOrDie();
-    if (fs_event.type == fs_watcher::FSWatcher::FSEventType::kUnknown) {
+    if (fs_event.type == FSWatcher::FSEventType::kUnknown) {
       LOG(INFO) << "FS Watcher reported an unknown event.";
       return ScanFileSystem();
     }

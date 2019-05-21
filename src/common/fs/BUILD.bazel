@@ -1,0 +1,27 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library_internal", "pl_cc_test")
+
+pl_cc_library_internal(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.h",
+            "*.cc",
+        ],
+        exclude = ["**/*_test.cc"],
+    ),
+    hdrs = ["fs.h"],
+    deps = ["//src/common/base:cc_library"],
+)
+
+pl_cc_test(
+    name = "fs_watcher_test",
+    srcs = ["fs_watcher_test.cc"],
+    data = glob(["testdata/**/*"]),
+    tags = ["linux_only"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing:cc_library",
+    ],
+)

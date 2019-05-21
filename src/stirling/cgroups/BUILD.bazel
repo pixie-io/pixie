@@ -16,6 +16,7 @@ pl_cc_library(
         "*.h",
     ]),
     deps = [
+        "//src/common/fs:cc_library",
         "//src/common/system_config:cc_library",
     ],
 )
@@ -40,12 +41,4 @@ pl_cc_test(
         "//src/common/system_config:cc_library_mock",
         "//src/common/testing:cc_library",
     ],
-)
-
-pl_cc_test(
-    name = "fs_watcher_test",
-    srcs = ["fs_watcher_test.cc"],
-    data = glob(["testdata/**/*"]),
-    tags = ["linux_only"],
-    deps = [":cc_library"],
 )

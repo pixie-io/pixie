@@ -61,7 +61,7 @@ const int kProcStatVSizeField = 22;
 const int kProcStatRSSField = 23;
 
 Status ProcParser::ParseNetworkStatAccumulateIFaceData(
-    const std::vector<std::string_view>& dev_stat_record, NetworkStats* out) {
+    const std::vector<std::string_view> &dev_stat_record, NetworkStats *out) {
   DCHECK(out != nullptr);
 
   int64_t val;
@@ -103,7 +103,7 @@ Status ProcParser::ParseNetworkStatAccumulateIFaceData(
 
 bool ShouldSkipNetIFace(const std::string_view iface) {
   // TODO(zasgar): We might want to make this configurable at some point.
-  for (const auto& prefix : kNetIFaceIgnorePrefix) {
+  for (const auto &prefix : kNetIFaceIgnorePrefix) {
     if (absl::StartsWith(iface, prefix)) {
       return true;
     }
@@ -125,14 +125,15 @@ fs::path ProcParser::GetProcPidNetDevFile(int64_t pid) {
   return proc_base_path_ / std::to_string(pid) / fs::path("net") / fs::path("dev");
 }
 
-Status ProcParser::ParseProcPIDNetDev(const fs::path& fpath, NetworkStats* out) {
+Status ProcParser::ParseProcPIDNetDev(const fs::path &fpath, NetworkStats *out) {
   /**
    * Sample file:
-   * Inter-|   Receive                                                |  Transmit
-   * face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop
-   * fifo colls carrier compressed ens33: 54504114   65296    0    0    0     0          0         0
-   * 4258632   39739    0    0    0     0       0          0 vnet1: 3936114   23029    0    0    0
-   * 0          0         0 551949355   42771    0    0    0     0       0          0
+   * Inter-|   Receive                                                | Transmit
+   * face |bytes    packets errs drop fifo frame compressed multicast|bytes
+   * packets errs drop fifo colls carrier compressed ens33: 54504114   65296 0
+   * 0    0     0          0         0 4258632   39739    0    0    0     0 0 0
+   * vnet1: 3936114   23029    0    0    0 0          0         0 551949355
+   * 42771    0    0    0     0       0          0
    *
    */
   DCHECK(out != nullptr);
@@ -172,7 +173,7 @@ Status ProcParser::ParseProcPIDNetDev(const fs::path& fpath, NetworkStats* out) 
   return Status::OK();
 }
 
-Status ProcParser::ParseProcPIDStat(const fs::path& fpath, ProcessStats* out) {
+Status ProcParser::ParseProcPIDStat(const fs::path &fpath, ProcessStats *out) {
   /**
    * Sample file:
    * 4602 (ibazel) S 3260 4602 3260 34818 4602 1077936128 1799 174589 \
@@ -199,7 +200,7 @@ Status ProcParser::ParseProcPIDStat(const fs::path& fpath, ProcessStats* out) {
     }
     ok &= absl::SimpleAtoi(split[kProcStatPIDField], &out->pid);
     // The name is surrounded by () we remove it here.
-    const std::string_view& name_field = split[kProcStatProcessNameField];
+    const std::string_view &name_field = split[kProcStatProcessNameField];
     if (name_field.length() > 2) {
       out->process_name = std::string(name_field.substr(1, name_field.size() - 2));
     } else {
@@ -233,7 +234,7 @@ Status ProcParser::ParseProcPIDStat(const fs::path& fpath, ProcessStats* out) {
   return Status::OK();
 }
 
-Status ProcParser::ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out) {
+Status ProcParser::ParseProcPIDStatIO(const fs::path &fpath, ProcessStats *out) {
   /**
    * Sample file:
    *   rchar: 5405203
@@ -246,7 +247,7 @@ Status ProcParser::ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out) 
    */
   DCHECK(out != nullptr);
 
-  static const std::unordered_map<std::string_view, int64_t*> field_name_to_value_map = {
+  static const std::unordered_map<std::string_view, int64_t *> field_name_to_value_map = {
       {"rchar:", &out->rchar_bytes},
       {"wchar:", &out->wchar_bytes},
       {"read_bytes:", &out->read_bytes},
@@ -255,7 +256,7 @@ Status ProcParser::ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out) 
   return ParseFromKeyValueFile(fpath, field_name_to_value_map, 1 /*field_value_multipler*/);
 }
 
-Status ProcParser::ParseProcStat(const fs::path& fpath, SystemStats* out) {
+Status ProcParser::ParseProcStat(const fs::path &fpath, SystemStats *out) {
   /**
    * Sample file:
    * cpu  248758 4995 78314 12965346 10040 0 5498 0 0 0
@@ -295,7 +296,7 @@ Status ProcParser::ParseProcStat(const fs::path& fpath, SystemStats* out) {
   return error::NotFound("Could not extract system information");
 }
 
-Status ProcParser::ParseProcMemInfo(const fs::path& fpath, SystemStats* out) {
+Status ProcParser::ParseProcMemInfo(const fs::path &fpath, SystemStats *out) {
   /**
    * Sample file:
    *   MemTotal:       65652452 kB
@@ -305,7 +306,7 @@ Status ProcParser::ParseProcMemInfo(const fs::path& fpath, SystemStats* out) {
    */
   CHECK(out != nullptr);
 
-  static const std::unordered_map<std::string_view, int64_t*> field_name_to_value_map = {
+  static const std::unordered_map<std::string_view, int64_t *> field_name_to_value_map = {
       {"MemTotal:", &out->mem_total_bytes},         {"MemFree:", &out->mem_free_bytes},
       {"MemAvailable:", &out->mem_available_bytes}, {"Buffers:", &out->mem_buffer_bytes},
       {"Cached:", &out->mem_cached_bytes},          {"SwapCached:", &out->mem_swap_cached_bytes},
@@ -318,8 +319,8 @@ Status ProcParser::ParseProcMemInfo(const fs::path& fpath, SystemStats* out) {
 }
 
 Status ProcParser::ParseFromKeyValueFile(
-    const fs::path& fpath,
-    const std::unordered_map<std::string_view, int64_t*>& field_name_to_value_map,
+    const fs::path &fpath,
+    const std::unordered_map<std::string_view, int64_t *> &field_name_to_value_map,
     int64_t field_value_multiplier) {
   std::ifstream ifs;
   ifs.open(fpath);
@@ -332,16 +333,16 @@ Status ProcParser::ParseFromKeyValueFile(
   while (std::getline(ifs, line)) {
     std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
     // This is a key value pair with a unit (that is always KB when present).
-    // If the number is 0 then the units are missing so we either have 2 or 3 for the width of the
-    // field.
+    // If the number is 0 then the units are missing so we either have 2 or 3
+    // for the width of the field.
     const int kMemInfoMinFields = 2;
     const int kMemInfoMaxFields = 3;
 
     if (split.size() >= kMemInfoMinFields && split.size() <= kMemInfoMaxFields) {
-      const auto& key = split[0];
-      const auto& val = split[1];
+      const auto &key = split[0];
+      const auto &val = split[1];
 
-      const auto& it = field_name_to_value_map.find(key);
+      const auto &it = field_name_to_value_map.find(key);
       // Key not found in map, we can just go to next iteration of loop.
       if (it == field_name_to_value_map.end()) {
         continue;
@@ -354,8 +355,8 @@ Status ProcParser::ParseFromKeyValueFile(
         return error::Unknown("Failed to parse proc/meminfo");
       }
 
-      // Check to see if we have read all the fields, if so we can skip the rest. We assume no
-      // duplicates.
+      // Check to see if we have read all the fields, if so we can skip the
+      // rest. We assume no duplicates.
       if (read_count == field_name_to_value_map.size()) {
         break;
       }

@@ -20,8 +20,8 @@ class ProcParser {
 
   /**
    * ProcParser constructor.
-   * @param cfg a reference to the system config. Only needs to be valid for the duration of the
-   * constructor call.
+   * @param cfg a reference to the system config. Only needs to be valid for the
+   * duration of the constructor call.
    * @param proc_base_path The base path to the proc files.
    */
   ProcParser(const common::SystemConfig &cfg, std::string_view proc_base_path)
@@ -124,8 +124,8 @@ class ProcParser {
   /**
    * Parses /proc/<pid>/net/dev
    *
-   * It accumulates the results from all network devices into the output. This will ignore virtual,
-   * docker and lo interfaces.
+   * It accumulates the results from all network devices into the output. This
+   * will ignore virtual, docker and lo interfaces.
    *
    * @param fpath The path to the proc file.
    * @param out A valid pointer to an output struct.

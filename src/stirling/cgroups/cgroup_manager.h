@@ -9,8 +9,8 @@
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/common/fs/fs.h"
 #include "src/common/system_config/system_config.h"
-#include "src/stirling/cgroups/fs_watcher.h"
 #include "src/stirling/cgroups/proc_parser.h"
 
 namespace pl {
@@ -166,18 +166,18 @@ class CGroupManager {
 
   Status UpdatePodInfo(fs::path pod_path, const std::string &pod_name, CGroupQoS qos);
   Status UpdateContainerInfo(const fs::path &container_path, PodInfo *pod_info);
-  Status HandleFSEvent(fs_watcher::FSWatcher::FSEvent *fs_event);
+  Status HandleFSEvent(FSWatcher::FSEvent *fs_event);
   void AddFSWatch(const fs::path &path);
   void RemoveFSWatch(const fs::path &path);
-  Status HandleFSPodEvent(const fs::path &path, fs_watcher::FSWatcher::FSEventType event_type,
+  Status HandleFSPodEvent(const fs::path &path, FSWatcher::FSEventType event_type,
                           const std::string &pod_name);
-  Status HandleFSContainerEvent(const fs::path &path, fs_watcher::FSWatcher::FSEventType event_type,
+  Status HandleFSContainerEvent(const fs::path &path, FSWatcher::FSEventType event_type,
                                 const std::string &container_name);
 
   Status ScanFileSystem();
 
   ProcParser proc_parser_;
-  std::unique_ptr<fs_watcher::FSWatcher> fs_watcher_ = nullptr;
+  std::unique_ptr<FSWatcher> fs_watcher_ = nullptr;
   fs::path sysfs_path_;
 
   // Map from pod name to group info. Pods are unique across QOS classes so we
