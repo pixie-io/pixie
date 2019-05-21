@@ -40,6 +40,7 @@ spec:
             add:
               - SYS_PTRACE
               - SYS_ADMIN
+          privileged: true
         volumeMounts:
         - name: sys # mount the debug filesystem
           mountPath: /sys
