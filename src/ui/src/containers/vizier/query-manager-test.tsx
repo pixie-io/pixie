@@ -107,4 +107,29 @@ describe('<QueryManager/> test', () => {
 
     expect(wrapper.find('.content-box--header').at(1).text()).toEqual('RESULTS| Query ID: 1');
   });
+
+  it('should should loading image when loading results', async () => {
+    const mocks = [
+      {
+        request: {
+          query: EXECUTE_QUERY,
+          variables: { queryStr: '# Enter Query Here\n' },
+        },
+        result: {
+          loading: true,
+        },
+    }];
+
+    const wrapper = mount(
+      <MockedProvider mocks={mocks} addTypename={false}>
+        <QueryManager/>
+      </MockedProvider>,
+    );
+
+    const executeButton = wrapper.find('#execute-button').at(0);
+    executeButton.simulate('click');
+    wrapper.update();
+
+    expect(wrapper.find('.spinner')).toHaveLength(1);
+  });
 });

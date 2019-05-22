@@ -16,6 +16,8 @@ import * as ResultDataUtils from 'utils/result-data-utils';
 import * as PresetQueries from './preset-queries.toml';
 import {QueryResultViewer} from './query-result-viewer';
 
+// @ts-ignore : TS does not like image files.
+import * as loadingSvg from 'images/icons/Loading.svg';
 // TODO(zasgar/michelle): Figure out how to impor schema properly
 import {GQLQueryResult} from '../../../../services/api/controller/schema/schema';
 
@@ -31,6 +33,7 @@ interface ExecuteQueryResult {
 interface ResultDisplayProps {
   data: ExecuteQueryResult;
   error: string;
+  loading: boolean;
 }
 
 interface QueryInfoProps {
@@ -93,9 +96,11 @@ const ResultDisplay = (props: ResultDisplayProps) => {
   if (props.data) {
     return <QueryResultViewer data={props.data.ExecuteQuery}></QueryResultViewer>;
   }
-  let body = '(No data)';
+  let body = <div>(No data)</div>;
   if (props.error) {
-    body = props.error;
+    body = <div>{props.error}</div>;
+  } else if (props.loading) {
+    body = <img className='spinner' src={loadingSvg} />;
   }
   return <div className='query-results--empty'>{body}</div>;
 };
@@ -223,6 +228,7 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
               <ResultDisplay
                 data={data}
                 error={error ? error.toString() : ''}
+                loading={loading}
               />
             </ContentBox>
           </div>
