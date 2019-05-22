@@ -140,9 +140,12 @@ const QueryInfo = (props: QueryInfoProps) => {
 export class QueryManager extends React.Component<{}, QueryManagerState> {
   constructor(props) {
     super(props);
-
+    let code = localStorage.getItem('savedCode');
+    if (!code) {
+      code = '# Enter Query Here\n';
+    }
     this.state = {
-      code: '# Enter Query Here\n',
+      code,
       codeMirror: React.createRef(),
     };
   }
@@ -151,6 +154,7 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
     this.setState({
       code: newCode,
     });
+    localStorage.setItem('savedCode', newCode);
   }
 
   render() {

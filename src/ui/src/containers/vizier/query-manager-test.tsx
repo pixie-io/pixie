@@ -28,6 +28,16 @@ describe('<QueryManager/> test', () => {
     expect(wrapper.find(QueryManager).at(0).state('code')).toContain('t1 = From(table=\'bcc_http_trace\',');
   });
 
+  it('should use saved query', () => {
+    window.localStorage.setItem('savedCode', 'test');
+    const wrapper = mount(
+      <MockedProvider addTypename={false}>
+        <QueryManager/>
+      </MockedProvider>,
+    );
+    expect(wrapper.find(QueryManager).at(0).state('code')).toContain('test');
+  });
+
   it('should pass correct headers into query editor box', async () => {
     const mocks = [
       {
@@ -69,6 +79,7 @@ describe('<QueryManager/> test', () => {
   });
 
   it('should pass correct headers into results box when data', async () => {
+    window.localStorage.setItem('savedCode', '');
     const dataStr = '{"relation":{"columns":[{"columnName":"time_","columnType":"TIME64NS"},' +
       '{"columnName":"http_request","columnType":"STRING"}]},"rowBatches":[]}';
     const mocks = [
