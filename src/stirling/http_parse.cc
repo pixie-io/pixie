@@ -31,8 +31,8 @@ void PreProcessRecord(HTTPTraceRecord* record) {
 }
 
 void ParseEventAttr(const socket_data_event_t& event, HTTPTraceRecord* record) {
-  record->tgid = event.attr.tgid;
-  record->fd = event.attr.fd;
+  record->conn.tgid = event.attr.tgid;
+  record->conn.fd = event.attr.fd;
   record->message.time_stamp_ns = event.attr.time_stamp_ns;
 }
 
@@ -117,8 +117,8 @@ StatusOr<IPEndpoint> ParseSockAddr(const socket_data_event_t& event) {
 bool ParseSockAddr(const socket_data_event_t& event, HTTPTraceRecord* record) {
   auto ip_endpoint_or = ParseSockAddr(event);
   if (ip_endpoint_or.ok()) {
-    record->dst_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
-    record->dst_port = ip_endpoint_or.ValueOrDie().port;
+    record->conn.dst_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
+    record->conn.dst_port = ip_endpoint_or.ValueOrDie().port;
     return true;
   }
   return false;

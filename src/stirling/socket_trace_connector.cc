@@ -57,13 +57,13 @@ void SocketTraceConnector::AppendToRecordBatch(HTTPTraceRecord record,
       << SocketTraceConnector::kElements[0].elements().size() << ", got " << record_batch->size();
   auto& columns = *record_batch;
   columns[kTimeStampNs]->Append<types::Time64NSValue>(record.message.time_stamp_ns);
-  columns[kTgid]->Append<types::Int64Value>(record.tgid);
-  columns[kFd]->Append<types::Int64Value>(record.fd);
+  columns[kTgid]->Append<types::Int64Value>(record.conn.tgid);
+  columns[kFd]->Append<types::Int64Value>(record.conn.fd);
   columns[kEventType]->Append<types::StringValue>(EventTypeToString(record.message.type));
-  columns[kSrcAddr]->Append<types::StringValue>(std::move(record.src_addr));
-  columns[kSrcPort]->Append<types::Int64Value>(record.src_port);
-  columns[kDstAddr]->Append<types::StringValue>(std::move(record.dst_addr));
-  columns[kDstPort]->Append<types::Int64Value>(record.dst_port);
+  columns[kSrcAddr]->Append<types::StringValue>(std::move(record.conn.src_addr));
+  columns[kSrcPort]->Append<types::Int64Value>(record.conn.src_port);
+  columns[kDstAddr]->Append<types::StringValue>(std::move(record.conn.dst_addr));
+  columns[kDstPort]->Append<types::Int64Value>(record.conn.dst_port);
   columns[kHTTPMinorVersion]->Append<types::Int64Value>(record.message.http_minor_version);
   columns[kHTTPHeaders]->Append<types::StringValue>(
       absl::StrJoin(record.message.http_headers, "\n", absl::PairFormatter(": ")));
@@ -74,8 +74,8 @@ void SocketTraceConnector::AppendToRecordBatch(HTTPTraceRecord record,
       std::move(record.message.http_resp_message));
   columns[kHTTPRespBody]->Append<types::StringValue>(std::move(record.message.http_resp_body));
   columns[kHTTPRespLatencyNs]->Append<types::Int64Value>(record.message.time_stamp_ns -
-                                                         record.http_start_time_stamp_ns);
-  DCHECK_GE(record.message.time_stamp_ns, record.http_start_time_stamp_ns);
+                                                         record.conn.time_stamp_ns);
+  DCHECK_GE(record.message.time_stamp_ns, record.conn.time_stamp_ns);
 }
 
 void SocketTraceConnector::ConsumeRecord(HTTPTraceRecord record,
@@ -95,26 +95,26 @@ void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
   const uint64_t stream_id =
       (static_cast<uint64_t>(event.attr.tgid) << 32) | event.attr.conn_info.conn_id;
   const uint64_t seq_num = static_cast<uint64_t>(event.attr.conn_info.seq_num);
-  const auto iter = streams_.find(stream_id);
-  if (iter == streams_.end()) {
+  const auto iter = http_streams_.find(stream_id);
+  if (iter == http_streams_.end()) {
     // This is the first event of the stream.
-    Stream stream;
+    HTTPStream stream;
     // TODO(yzhao): We should explicitly capture the accept() event into user space to determine the
     // time stamp when the stream is created.
-    stream.time_stamp_ns = event.attr.conn_info.timestamp_ns;
-    stream.tgid = event.attr.tgid;
-    stream.fd = event.attr.fd;
+    stream.conn.time_stamp_ns = event.attr.conn_info.timestamp_ns;
+    stream.conn.tgid = event.attr.tgid;
+    stream.conn.fd = event.attr.fd;
     auto ip_endpoint_or = ParseSockAddr(event);
     if (ip_endpoint_or.ok()) {
-      stream.remote_ip = std::move(ip_endpoint_or.ValueOrDie().ip);
-      stream.remote_port = ip_endpoint_or.ValueOrDie().port;
+      stream.conn.dst_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
+      stream.conn.dst_port = ip_endpoint_or.ValueOrDie().port;
     } else {
       LOG(WARNING) << "Could not parse IP address.";
     }
-    stream.data.emplace(seq_num, std::move(event));
-    streams_.emplace(stream_id, std::move(stream));
+    stream.events.emplace(seq_num, std::move(event));
+    http_streams_.emplace(stream_id, std::move(stream));
   } else {
-    iter->second.data.emplace(seq_num, std::move(event));
+    iter->second.events.emplace(seq_num, std::move(event));
   }
 }
 
@@ -212,14 +212,14 @@ void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
 
   PollPerfBuffer(table_num);
 
-  for (auto& [id, stream] : streams_) {
+  for (auto& [id, stream] : http_streams_) {
     PL_UNUSED(id);
     HTTPParser& parser = stream.parser;
-    std::map<uint64_t, socket_data_event_t>& data = stream.data;
+    std::map<uint64_t, socket_data_event_t>& events = stream.events;
     std::vector<uint64_t> seq_num_to_remove;
 
     // Parse all recorded events.
-    for (const auto& [seq_num, event] : data) {
+    for (const auto& [seq_num, event] : events) {
       std::string_view msg(event.msg, std::min<uint32_t>(event.attr.msg_size, sizeof(event.msg)));
       if (parser.ParseResponse(event) != HTTPParser::ParseState::kUnknown) {
         seq_num_to_remove.push_back(seq_num);
@@ -228,15 +228,7 @@ void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
 
     // Extract and output all complete messages.
     for (HTTPMessage& msg : parser.ExtractHTTPMessages()) {
-      HTTPTraceRecord record;
-
-      record.http_start_time_stamp_ns = stream.time_stamp_ns;
-      record.tgid = stream.tgid;
-      record.fd = stream.fd;
-      record.dst_addr = stream.remote_ip;
-      record.dst_port = stream.remote_port;
-      record.message = std::move(msg);
-
+      HTTPTraceRecord record{stream.conn, std::move(msg)};
       ConsumeRecord(std::move(record), record_batch);
     }
 
@@ -244,7 +236,7 @@ void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
     // TODO(yzhao): Consider change the data structure to a vector, and use sorting to order events
     // before stitching. That might be faster (verify with benchmark).
     for (const uint64_t seq_num : seq_num_to_remove) {
-      data.erase(seq_num);
+      events.erase(seq_num);
     }
   }
 }

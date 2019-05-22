@@ -288,15 +288,15 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
   EXPECT_OK(source->Stop());
 
   // TODO(yzhao): Write a matcher for Stream.
-  ASSERT_THAT(socket_trace_connector->TestOnlyStreams(), SizeIs(2));
+  ASSERT_THAT(socket_trace_connector->TestOnlyHTTPStreams(), SizeIs(2));
 
   auto get_message = [](const socket_data_event_t& event) -> std::string_view {
     return std::string_view(event.msg, std::min<uint32_t>(event.attr.msg_size, MAX_MSG_SIZE));
   };
   std::vector<std::pair<uint64_t, std::string_view>> seq_msgs;
-  for (const auto& [id, stream] : socket_trace_connector->TestOnlyStreams()) {
+  for (const auto& [id, http_stream] : socket_trace_connector->TestOnlyHTTPStreams()) {
     PL_UNUSED(id);
-    for (const auto& [seq_num, event] : stream.data) {
+    for (const auto& [seq_num, event] : http_stream.events) {
       seq_msgs.emplace_back(seq_num, get_message(event));
     }
   }

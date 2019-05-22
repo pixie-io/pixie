@@ -45,8 +45,8 @@ TEST(ParseEventAttrTest, DataIsCopied) {
   ParseEventAttr(event, &record);
 
   EXPECT_EQ(100, record.message.time_stamp_ns);
-  EXPECT_EQ(1, record.tgid);
-  EXPECT_EQ(3, record.fd);
+  EXPECT_EQ(1, record.conn.tgid);
+  EXPECT_EQ(3, record.conn.fd);
 }
 
 TEST(ParseHTTPRequestTest, RequestIsIdentified) {
@@ -65,8 +65,8 @@ Host: www.pixielabs.ai
 
   EXPECT_TRUE(ParseHTTPRequest(event, &record));
   EXPECT_EQ(100, record.message.time_stamp_ns);
-  EXPECT_EQ(1, record.tgid);
-  EXPECT_EQ(3, record.fd);
+  EXPECT_EQ(1, record.conn.tgid);
+  EXPECT_EQ(3, record.conn.fd);
   EXPECT_EQ(SocketTraceEventType::kHTTPRequest, record.message.type);
   EXPECT_THAT(record.message.http_headers, ElementsAre(Pair("Host", "www.pixielabs.ai")));
   EXPECT_EQ(1, record.message.http_minor_version);
@@ -87,8 +87,8 @@ TEST(ParseRawTest, ContentIsCopied) {
 
   EXPECT_TRUE(ParseRaw(event, &record));
   EXPECT_EQ(100, record.message.time_stamp_ns);
-  EXPECT_EQ(1, record.tgid);
-  EXPECT_EQ(3, record.fd);
+  EXPECT_EQ(1, record.conn.tgid);
+  EXPECT_EQ(3, record.conn.fd);
   EXPECT_EQ(SocketTraceEventType::kUnknown, record.message.type);
   EXPECT_EQ("test", record.message.http_resp_body);
 }

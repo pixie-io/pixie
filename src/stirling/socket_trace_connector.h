@@ -24,6 +24,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 #include "src/stirling/bcc_bpf/socket_trace.h"
 #include "src/stirling/http_parse.h"
+#include "src/stirling/socket_connection.h"
 #include "src/stirling/source_connector.h"
 
 DECLARE_string(http_response_header_filters);
@@ -33,17 +34,10 @@ OBJ_STRVIEW(http_trace_bcc_script, _binary_src_stirling_bcc_bpf_socket_trace_c);
 namespace pl {
 namespace stirling {
 
-// TODO(yzhao): NEXT DIFF: Move parser field out, and create a new struct HTTPStream to include
-// Stream and HTTPParser.
-struct Stream {
-  // The time stamp when this connection is created.
-  uint64_t time_stamp_ns;
-  uint32_t tgid;
-  uint32_t fd;
-  std::string remote_ip;
-  int remote_port;
+struct HTTPStream {
+  SocketConnection conn;
   // Key: sequence number.
-  std::map<uint64_t, socket_data_event_t> data;
+  std::map<uint64_t, socket_data_event_t> events;
   HTTPParser parser;
 };
 
@@ -121,7 +115,7 @@ class SocketTraceConnector : public SourceConnector {
   void PollPerfBuffer(uint32_t table_num);
   void AcceptEvent(socket_data_event_t event);
 
-  const std::map<uint64_t, Stream>& TestOnlyStreams() const { return streams_; }
+  const std::map<uint64_t, HTTPStream>& TestOnlyHTTPStreams() const { return http_streams_; }
   static void TestOnlySetHTTPResponseHeaderFilter(HTTPHeaderFilter filter) {
     http_response_header_filter_ = std::move(filter);
   }
@@ -147,7 +141,7 @@ class SocketTraceConnector : public SourceConnector {
 
   ebpf::BPF bpf_;
 
-  std::map<uint64_t, Stream> streams_;
+  std::map<uint64_t, HTTPStream> http_streams_;
 
   // Describes a kprobe that should be attached with the BPF::attach_kprobe().
   struct ProbeSpec {

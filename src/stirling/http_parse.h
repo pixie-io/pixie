@@ -9,6 +9,7 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_bpf/socket_trace.h"
+#include "src/stirling/socket_connection.h"
 #include "src/stirling/socket_trace_event_type.h"
 
 namespace pl {
@@ -21,6 +22,10 @@ inline constexpr char kContentType[] = "Content-Type";
 inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
 
 }  // namespace http_headers
+
+// TODO(yzhao): The repetitions of information among HTTPMessage + ConnectionTraceRecord,
+// DataElementsIndexes, and kElements should be eliminated. It might make sense to use proto file
+// to define data schema and generate kElements array during runtime, based on proto schema.
 
 struct HTTPMessage {
   bool is_complete = false;
@@ -45,22 +50,8 @@ struct HTTPMessage {
   std::string http_resp_body = "-";
 };
 
-// The fields corresponding exactly to SocketTraceConnector::kElements.
-// TODO(yzhao): The repetitions of information among this, DataElementsIndexes, and kElements should
-// be eliminated. It might make sense to use proto file to define data schema and generate kElements
-// array during runtime, based on proto schema.
-//
-// TODO(yzhao): NEXT DIFF: Move fields except message into a new struct ConnectionTraceRecord, and
-// change this into a composition with the new struct.
 struct HTTPTraceRecord {
-  uint32_t tgid = 0;
-  int fd = -1;
-  uint64_t http_start_time_stamp_ns = 0;
-  std::string src_addr = "-";
-  int src_port = -1;
-  std::string dst_addr = "-";
-  int dst_port = -1;
-
+  SocketConnection conn;
   HTTPMessage message;
 };
 
