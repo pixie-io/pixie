@@ -22,35 +22,46 @@ inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
 
 }  // namespace http_headers
 
-enum class ChunkingStatus {
-  kUnknown,
-  kChunked,
-  kComplete,
+struct HTTPMessage {
+  bool is_complete = false;
+
+  // Only meaningful is is_chunked is true.
+  phr_chunked_decoder chunk_decoder = {};
+
+  uint64_t time_stamp_ns;
+  SocketTraceEventType type = SocketTraceEventType::kUnknown;
+
+  int http_minor_version = -1;
+  std::map<std::string, std::string> http_headers = {};
+  // -1 indicates this message does not have 'Content-Length' header.
+  int content_length = -1;
+
+  std::string http_req_method = "-";
+  std::string http_req_path = "-";
+  std::string http_req_body = "-";
+
+  int http_resp_status = -1;
+  std::string http_resp_message = "-";
+  std::string http_resp_body = "-";
 };
 
 // The fields corresponding exactly to SocketTraceConnector::kElements.
 // TODO(yzhao): The repetitions of information among this, DataElementsIndexes, and kElements should
 // be eliminated. It might make sense to use proto file to define data schema and generate kElements
 // array during runtime, based on proto schema.
+//
+// TODO(yzhao): NEXT DIFF: Move fields except message into a new struct ConnectionTraceRecord, and
+// change this into a composition with the new struct.
 struct HTTPTraceRecord {
-  uint64_t time_stamp_ns = 0;
   uint32_t tgid = 0;
   int fd = -1;
-  SocketTraceEventType event_type = SocketTraceEventType::kUnknown;
   uint64_t http_start_time_stamp_ns = 0;
   std::string src_addr = "-";
   int src_port = -1;
   std::string dst_addr = "-";
   int dst_port = -1;
-  int http_minor_version = -1;
-  std::map<std::string, std::string> http_headers;
-  std::string http_req_method = "-";
-  std::string http_req_path = "-";
-  int http_resp_status = -1;
-  std::string http_resp_message = "-";
-  std::string http_resp_body = "-";
-  // If true, http_resp_body is an chunked message, therefore incomplete. But it's not
-  ChunkingStatus chunking_status = ChunkingStatus::kUnknown;
+
+  HTTPMessage message;
 };
 
 /**
@@ -63,9 +74,16 @@ void ParseMessageBodyChunked(HTTPTraceRecord* record);
 
 void PreProcessRecord(HTTPTraceRecord* record);
 void ParseEventAttr(const socket_data_event_t& event, HTTPTraceRecord* record);
+// TODO(yzhao): Changes the functions that return bool to return Status.
 bool ParseHTTPRequest(const socket_data_event_t& event, HTTPTraceRecord* record);
 bool ParseHTTPResponse(const socket_data_event_t& event, HTTPTraceRecord* record);
+struct IPEndpoint {
+  std::string ip;
+  int port;
+};
+StatusOr<IPEndpoint> ParseSockAddr(const socket_data_event_t& event);
 bool ParseSockAddr(const socket_data_event_t& event, HTTPTraceRecord* record);
+// TODO(oazizi): Enable to output all raw events on debug cases for particular protocols.
 bool ParseRaw(const socket_data_event_t& event, HTTPTraceRecord* record);
 
 // For each HTTP message, inclusions are applied first; then exclusions, which can overturn the
@@ -96,29 +114,6 @@ HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters);
  */
 bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
                          const HTTPHeaderFilter& filter);
-
-// TODO(yzhao): Use this inside HTTPRecord to replace the duplicate fields.
-struct HTTPMessage {
-  bool is_complete = false;
-
-  // Only meaningful is is_chunked is true.
-  phr_chunked_decoder chunk_decoder = {};
-
-  SocketTraceEventType type = SocketTraceEventType::kUnknown;
-
-  int http_minor_version = -1;
-  std::map<std::string, std::string> http_headers = {};
-  // -1 indicates this message does not have 'Content-Length' header.
-  int content_length = -1;
-
-  std::string http_req_method = "-";
-  std::string http_req_path = "-";
-  std::string http_req_body = "-";
-
-  int http_resp_status = -1;
-  std::string http_resp_message = "-";
-  std::string http_resp_body = "-";
-};
 
 struct PicoHTTPParserWrapper {
   bool ParseResponse(std::string_view buf);
@@ -157,7 +152,7 @@ class HTTPParser {
    * @brief Parses a possibly incomplete data chunk of a HTTP message, and combines it with any
    * previous partial messages.
    */
-  ParseState ParseResponse(uint64_t seq_num, std::string_view buf);
+  ParseState ParseResponse(const socket_data_event_t& event);
 
   /**
    * @brief Extracts the current parsed HTTP messages, partial ones are not included.

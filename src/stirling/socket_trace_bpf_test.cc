@@ -59,11 +59,13 @@ class HTTPTraceBPFTest : public ::testing::Test {
 
   static constexpr std::string_view kMsg1 = R"(HTTP/1.1 200 OK
 Content-Type: application/json; msg1
+Content-Length: 0
 
 )";
 
   static constexpr std::string_view kMsg2 = R"(HTTP/1.1 200 OK
 Content-Type: application/json; msg2
+Content-Length: 0
 
 )";
 
@@ -103,10 +105,14 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
   EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(0).val);
   EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
 
-  EXPECT_EQ(std::string_view("Content-Type: application/json; msg1"),
+  EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
             record_batch[SocketTraceConnector::kHTTPHeaders]->Get<types::StringValue>(0));
-  EXPECT_EQ(std::string_view("Content-Type: application/json; msg2"),
+  EXPECT_EQ(server.sockfd(),
+            record_batch[SocketTraceConnector::kFd]->Get<types::Int64Value>(0).val);
+  EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
             record_batch[SocketTraceConnector::kHTTPHeaders]->Get<types::StringValue>(1));
+  EXPECT_EQ(server.sockfd(),
+            record_batch[SocketTraceConnector::kFd]->Get<types::Int64Value>(1).val);
 }
 
 TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
@@ -139,10 +145,14 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
   EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(0).val);
   EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
 
-  EXPECT_EQ(std::string_view("Content-Type: application/json; msg1"),
+  EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
             record_batch[SocketTraceConnector::kHTTPHeaders]->Get<types::StringValue>(0));
-  EXPECT_EQ(std::string_view("Content-Type: application/json; msg2"),
+  EXPECT_EQ(server.sockfd(),
+            record_batch[SocketTraceConnector::kFd]->Get<types::Int64Value>(0).val);
+  EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
             record_batch[SocketTraceConnector::kHTTPHeaders]->Get<types::StringValue>(1));
+  EXPECT_EQ(server.sockfd(),
+            record_batch[SocketTraceConnector::kFd]->Get<types::Int64Value>(1).val);
 }
 
 TEST_F(HTTPTraceBPFTest, TestNonHTTPWritesNotCaptured) {
@@ -277,16 +287,17 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
   socket_trace_connector->PollPerfBuffer(table_num);
   EXPECT_OK(source->Stop());
 
-  ASSERT_THAT(socket_trace_connector->TestOnlyGetWriteStreamMap(),
-              UnorderedElementsAre(Pair(_, SizeIs(1)), Pair(_, SizeIs(1))));
+  // TODO(yzhao): Write a matcher for Stream.
+  ASSERT_THAT(socket_trace_connector->TestOnlyStreams(), SizeIs(2));
 
   auto get_message = [](const socket_data_event_t& event) -> std::string_view {
     return std::string_view(event.msg, std::min<uint32_t>(event.attr.msg_size, MAX_MSG_SIZE));
   };
   std::vector<std::pair<uint64_t, std::string_view>> seq_msgs;
-  for (const auto& stream : socket_trace_connector->TestOnlyGetWriteStreamMap()) {
-    for (const auto& seq_event : stream.second) {
-      seq_msgs.push_back(std::make_pair(seq_event.first, get_message(seq_event.second)));
+  for (const auto& [id, stream] : socket_trace_connector->TestOnlyStreams()) {
+    PL_UNUSED(id);
+    for (const auto& [seq_num, event] : stream.data) {
+      seq_msgs.emplace_back(seq_num, get_message(event));
     }
   }
   EXPECT_THAT(seq_msgs, UnorderedElementsAre(Pair(0, kMsg1), Pair(0, kMsg2)));

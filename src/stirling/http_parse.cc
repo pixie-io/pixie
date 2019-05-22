@@ -14,46 +14,26 @@
 namespace pl {
 namespace stirling {
 
-void ParseMessageBodyChunked(HTTPTraceRecord* record) {
-  if (record->http_resp_body.empty()) {
-    return;
-  }
-  phr_chunked_decoder decoder = {};
-  char* buf = const_cast<char*>(record->http_resp_body.data());
-  size_t buf_size = record->http_resp_body.size();
-  ssize_t retval = phr_decode_chunked(&decoder, buf, &buf_size);
-  if (retval != -1) {
-    // As long as the parse succeeded (-1 indicate parse failure), buf_size is the decoded data
-    // size (even if it's incomplete).
-    record->http_resp_body.resize(buf_size);
-  }
-  if (retval >= 0) {
-    record->chunking_status = ChunkingStatus::kComplete;
-  } else {
-    record->chunking_status = ChunkingStatus::kChunked;
-  }
-}
-
 void PreProcessRecord(HTTPTraceRecord* record) {
-  auto content_encoding_iter = record->http_headers.find(http_headers::kContentEncoding);
+  auto content_encoding_iter = record->message.http_headers.find(http_headers::kContentEncoding);
   // Replace body with decompressed version, if required.
-  if (content_encoding_iter != record->http_headers.end() &&
+  if (content_encoding_iter != record->message.http_headers.end() &&
       content_encoding_iter->second == "gzip") {
-    std::string_view body_strview(record->http_resp_body.c_str(), record->http_resp_body.size());
+    std::string_view body_strview(record->message.http_resp_body);
     auto bodyOrErr = pl::zlib::StrInflate(body_strview);
     if (!bodyOrErr.ok()) {
       LOG(WARNING) << "Unable to gunzip HTTP body.";
-      record->http_resp_body = "<Stirling failed to gunzip body>";
+      record->message.http_resp_body = "<Stirling failed to gunzip body>";
     } else {
-      record->http_resp_body = bodyOrErr.ValueOrDie();
+      record->message.http_resp_body = bodyOrErr.ValueOrDie();
     }
   }
 }
 
 void ParseEventAttr(const socket_data_event_t& event, HTTPTraceRecord* record) {
-  record->time_stamp_ns = event.attr.time_stamp_ns;
   record->tgid = event.attr.tgid;
   record->fd = event.attr.fd;
+  record->message.time_stamp_ns = event.attr.time_stamp_ns;
 }
 
 namespace {
@@ -92,59 +72,17 @@ bool ParseHTTPRequest(const socket_data_event_t& event, HTTPTraceRecord* record)
   if (retval > 0) {
     HTTPTraceRecord& result = *record;
     ParseEventAttr(event, &result);
-    result.event_type = SocketTraceEventType::kHTTPRequest;
-    result.http_minor_version = minor_version;
-    result.http_headers = GetHttpHeadersMap(headers, num_headers);
-    result.http_req_method = std::string(method, method_len);
-    result.http_req_path = std::string(path, path_len);
+    result.message.type = SocketTraceEventType::kHTTPRequest;
+    result.message.http_minor_version = minor_version;
+    result.message.http_headers = GetHttpHeadersMap(headers, num_headers);
+    result.message.http_req_method = std::string(method, method_len);
+    result.message.http_req_path = std::string(path, path_len);
     return true;
   }
   return false;
 }
 
-// TODO(PL-519): Now we discard anything of the response that are not http headers. This is because
-// we cannot associate a write() call with the http response. The future work is to keep a list of
-// captured data from write() and associate them with the same http response. The rough idea looks
-// like as follows:
-// time         event type
-// t0           write() http response #1 header + body
-// t1           write() http response #1 body
-// t2           write() http response #1 body
-// t3           write() http response #2 header + body
-// t4           write() http response #2 body
-// ...
-//
-// We then can squash events at t0, t1, t2 together and concatenate their bodies as the full http
-// message. This works in http 1.1 because the responses and requests are not interleaved.
-bool ParseHTTPResponse(const socket_data_event_t& event, HTTPTraceRecord* record) {
-  const uint32_t msg_size = MsgSize(event);
-  const char* msg = nullptr;
-  size_t msg_len = 0;
-  int minor_version = 0;
-  int status = 0;
-  size_t num_headers = 10;
-  struct phr_header headers[num_headers];
-  const int bytes_processed = phr_parse_response(event.msg, msg_size, &minor_version, &status, &msg,
-                                                 &msg_len, headers, &num_headers, /*last_len*/ 0);
-
-  if (bytes_processed > 0) {
-    HTTPTraceRecord& result = *record;
-    ParseEventAttr(event, &result);
-    result.event_type = SocketTraceEventType::kHTTPResponse;
-    result.http_minor_version = minor_version;
-    result.http_headers = GetHttpHeadersMap(headers, num_headers);
-    result.http_resp_status = status;
-    result.http_resp_message = std::string(msg, msg_len);
-    result.http_resp_body = std::string(event.msg + bytes_processed, msg_size - bytes_processed);
-    return true;
-  }
-  return false;
-}
-
-// Parses an IP:port pair from the event input into the provided record.
-// Returns false if an unexpected sockaddr family is provided.
-// Currently this function understands IPV4 and IPV6 sockaddr families.
-bool ParseSockAddr(const socket_data_event_t& event, HTTPTraceRecord* record) {
+StatusOr<IPEndpoint> ParseSockAddr(const socket_data_event_t& event) {
   const auto* sa = reinterpret_cast<const struct sockaddr*>(&event.attr.conn_info.addr);
   char s[INET6_ADDRSTRLEN] = "";
   const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
@@ -165,21 +103,33 @@ bool ParseSockAddr(const socket_data_event_t& event, HTTPTraceRecord* record) {
       }
       break;
     default:
-      LOG(WARNING) << "Ignoring unhandled sockaddr family: " << sa->sa_family;
-      return false;
+      return error::InvalidArgument(
+          absl::StrCat("Ignoring unhandled sockaddr family: ", sa->sa_family));
   }
   if (!ip.empty()) {
-    record->dst_addr = std::move(ip);
-    record->dst_port = port;
+    return IPEndpoint{std::move(ip), port};
   }
-  return true;
+  return Status();
+}
+
+// Parses an IP:port pair from the event input into the provided record.
+// Returns false if an unexpected sockaddr family is provided.
+// Currently this function understands IPV4 and IPV6 sockaddr families.
+bool ParseSockAddr(const socket_data_event_t& event, HTTPTraceRecord* record) {
+  auto ip_endpoint_or = ParseSockAddr(event);
+  if (ip_endpoint_or.ok()) {
+    record->dst_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
+    record->dst_port = ip_endpoint_or.ValueOrDie().port;
+    return true;
+  }
+  return false;
 }
 
 bool ParseRaw(const socket_data_event_t& event, HTTPTraceRecord* record) {
   HTTPTraceRecord& result = *record;
   ParseEventAttr(event, &result);
-  result.event_type = SocketTraceEventType::kUnknown;
-  result.http_resp_body = std::string(event.msg, MsgSize(event));
+  result.message.type = SocketTraceEventType::kUnknown;
+  result.message.http_resp_body = std::string(event.msg, MsgSize(event));
   // Rest of the fields remain at default values.
   return true;
 }
@@ -208,7 +158,8 @@ bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
     // space as it's necessary in this form.
     //
     // TODO(yzhao): Update cpplint to newer version.
-    for (auto [http_header, substr] : filter.inclusions) {  // NOLINT(whitespace/braces)
+    // NOLINTNEXTLINE: whitespace/braces
+    for (auto [http_header, substr] : filter.inclusions) {
       auto http_header_iter = http_headers.find(std::string(http_header));
       if (http_header_iter != http_headers.end() &&
           absl::StrContains(http_header_iter->second, substr)) {
@@ -224,7 +175,8 @@ bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
   // also inside a if statement, which is not needed for correctness.
   if (!filter.exclusions.empty()) {
     bool excluded = false;
-    for (auto [http_header, substr] : filter.exclusions) {  // NOLINT(whitespace/braces)
+    // NOLINTNEXTLINE: whitespace/braces
+    for (auto [http_header, substr] : filter.exclusions) {
       auto http_header_iter = http_headers.find(std::string(http_header));
       if (http_header_iter != http_headers.end() &&
           absl::StrContains(http_header_iter->second, substr)) {
@@ -316,6 +268,11 @@ bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
     return true;
   }
 
+  // For messages that do not have Content-Length and chunked Transfer-Encoding. According to
+  // HTTP/1.1 standard: https://www.w3.org/Protocols/HTTP/1.0/draft-ietf-http-spec.html#BodyLength
+  // such messages is terminated by the close of the connection.
+  // TODO(yzhao): For now we just accumulate messages, let probe_close() submit a message to
+  // perf buffer, so that we can terminate such messages.
   if (!unparsed_data.empty()) {
     result->http_resp_body = unparsed_data;
   }
@@ -325,7 +282,9 @@ bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
 // HTTP messages are sequentially written to the file descriptor, and their sequence numbers are
 // obtained accordingly. We rely on the consecutive sequence numbers to detect missing events and
 // order the events correctly.
-HTTPParser::ParseState HTTPParser::ParseResponse(uint64_t seq_num, std::string_view buf) {
+HTTPParser::ParseState HTTPParser::ParseResponse(const socket_data_event_t& event) {
+  const uint64_t seq_num = event.attr.conn_info.seq_num;
+  std::string_view buf(event.msg, MsgSize(event));
   if (absl::StartsWith(buf, "HTTP")) {
     if (!pico_wrapper_.ParseResponse(buf)) {
       return ParseState::kInvalid;
@@ -334,6 +293,8 @@ HTTPParser::ParseState HTTPParser::ParseResponse(uint64_t seq_num, std::string_v
     if (!pico_wrapper_.WriteResponse(&message)) {
       return ParseState::kInvalid;
     }
+    // The message's time stamp is from its first event.
+    message.time_stamp_ns = event.attr.time_stamp_ns;
     if (message.is_complete) {
       msgs_complete_.push_back(std::move(message));
       return ParseState::kSuccess;
@@ -343,8 +304,8 @@ HTTPParser::ParseState HTTPParser::ParseResponse(uint64_t seq_num, std::string_v
     }
   }
   if (seq_num == 0) {
-    // This is the first event, and it does not start with a valid HTTP prefix, this must be an
-    // invalid data.
+    // This is the first event, and it does not start with a valid HTTP prefix, so we have no way to
+    // produce a complete HTTP response from this.
     return ParseState::kInvalid;
   }
   const uint64_t prev_seq_num = seq_num - 1;

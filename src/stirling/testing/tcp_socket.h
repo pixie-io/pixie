@@ -24,7 +24,7 @@ class TCPSocket {
   void Connect(const TCPSocket& addr);
   bool Read(std::string* data);
   bool Recv(std::string* data);
-  const struct sockaddr_in& Addr() const { return addr_; }
+  int sockfd() const { return sockfd_; }
 
  private:
   bool closed = false;

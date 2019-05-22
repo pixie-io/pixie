@@ -28,22 +28,21 @@ bool SocketTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
   // TODO(oazizi/yzhao): update this function further.
 
   // Rule: Exclude any HTTP requests.
-  if (record.event_type == SocketTraceEventType::kHTTPRequest) {
+  if (record.message.type == SocketTraceEventType::kHTTPRequest) {
     return false;
   }
 
-  const auto content_type_iter = record.http_headers.find(http_headers::kContentType);
-
   // Rule: Exclude anything that doesn't specify its Content-Type.
-  if (content_type_iter == record.http_headers.end()) {
+  auto content_type_iter = record.message.http_headers.find(http_headers::kContentType);
+  if (content_type_iter == record.message.http_headers.end()) {
     return false;
   }
 
   // Rule: Exclude anything that doesn't match the filter, if filter is active.
-  if (record.event_type == SocketTraceEventType::kHTTPResponse &&
+  if (record.message.type == SocketTraceEventType::kHTTPResponse &&
       (!http_response_header_filter_.inclusions.empty() ||
        !http_response_header_filter_.exclusions.empty())) {
-    if (!MatchesHTTPTHeaders(record.http_headers, http_response_header_filter_)) {
+    if (!MatchesHTTPTHeaders(record.message.http_headers, http_response_header_filter_)) {
       return false;
     }
   }
@@ -57,52 +56,32 @@ void SocketTraceConnector::AppendToRecordBatch(HTTPTraceRecord record,
       << "HTTP trace record field count should be: "
       << SocketTraceConnector::kElements[0].elements().size() << ", got " << record_batch->size();
   auto& columns = *record_batch;
-  columns[kTimeStampNs]->Append<types::Time64NSValue>(record.time_stamp_ns);
+  columns[kTimeStampNs]->Append<types::Time64NSValue>(record.message.time_stamp_ns);
   columns[kTgid]->Append<types::Int64Value>(record.tgid);
   columns[kFd]->Append<types::Int64Value>(record.fd);
-  columns[kEventType]->Append<types::StringValue>(EventTypeToString(record.event_type));
+  columns[kEventType]->Append<types::StringValue>(EventTypeToString(record.message.type));
   columns[kSrcAddr]->Append<types::StringValue>(std::move(record.src_addr));
   columns[kSrcPort]->Append<types::Int64Value>(record.src_port);
   columns[kDstAddr]->Append<types::StringValue>(std::move(record.dst_addr));
   columns[kDstPort]->Append<types::Int64Value>(record.dst_port);
-  columns[kHTTPMinorVersion]->Append<types::Int64Value>(record.http_minor_version);
+  columns[kHTTPMinorVersion]->Append<types::Int64Value>(record.message.http_minor_version);
   columns[kHTTPHeaders]->Append<types::StringValue>(
-      absl::StrJoin(record.http_headers, "\n", absl::PairFormatter(": ")));
-  columns[kHTTPReqMethod]->Append<types::StringValue>(std::move(record.http_req_method));
-  columns[kHTTPReqPath]->Append<types::StringValue>(std::move(record.http_req_path));
-  columns[kHTTPRespStatus]->Append<types::Int64Value>(record.http_resp_status);
-  columns[kHTTPRespMessage]->Append<types::StringValue>(std::move(record.http_resp_message));
-  columns[kHTTPRespBody]->Append<types::StringValue>(std::move(record.http_resp_body));
-  columns[kHTTPRespLatencyNs]->Append<types::Int64Value>(record.time_stamp_ns -
+      absl::StrJoin(record.message.http_headers, "\n", absl::PairFormatter(": ")));
+  columns[kHTTPReqMethod]->Append<types::StringValue>(std::move(record.message.http_req_method));
+  columns[kHTTPReqPath]->Append<types::StringValue>(std::move(record.message.http_req_path));
+  columns[kHTTPRespStatus]->Append<types::Int64Value>(record.message.http_resp_status);
+  columns[kHTTPRespMessage]->Append<types::StringValue>(
+      std::move(record.message.http_resp_message));
+  columns[kHTTPRespBody]->Append<types::StringValue>(std::move(record.message.http_resp_body));
+  columns[kHTTPRespLatencyNs]->Append<types::Int64Value>(record.message.time_stamp_ns -
                                                          record.http_start_time_stamp_ns);
-  DCHECK_GE(record.time_stamp_ns, record.http_start_time_stamp_ns);
+  DCHECK_GE(record.message.time_stamp_ns, record.http_start_time_stamp_ns);
 }
 
 void SocketTraceConnector::ConsumeRecord(HTTPTraceRecord record,
                                          types::ColumnWrapperRecordBatch* record_batch) {
   // Only allow certain records to be transferred upstream.
   if (SelectForAppend(record)) {
-    // - Transfer-encoding has to be processed before gzip decompression.
-    // - This either is inside SelectForAppend(), but we need to change SelectForAppend() to accept
-    // a pointer.
-    // - Or this instead of mutates the input, it copies the data to a separate buffer, which is not
-    // optimal.
-    // For now let it leave outside and for later optimization when more info is known about the
-    // overall logical workflow of HTTP trace.
-    //
-    // TODO(yzhao): Revise with new understanding of the whole workflow.
-    if (record.event_type == SocketTraceEventType::kHTTPResponse) {
-      auto iter = record.http_headers.find(http_headers::kTransferEncoding);
-      if (iter != record.http_headers.end() && iter->second == "chunked") {
-        ParseMessageBodyChunked(&record);
-      }
-      if (record.chunking_status == ChunkingStatus::kChunked) {
-        // TODO(PL-519): Revise after message stitching is implemented.
-        LOG(INFO) << "Discard chunked http response";
-        return;
-      }
-    }
-
     // Currently decompresses gzip content, but could handle other transformations too.
     // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
     PreProcessRecord(&record);
@@ -115,34 +94,28 @@ void SocketTraceConnector::ConsumeRecord(HTTPTraceRecord record,
 void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
   const uint64_t stream_id =
       (static_cast<uint64_t>(event.attr.tgid) << 32) | event.attr.conn_info.conn_id;
-  // conn_info_t is packed, so we need cast its member to the right type.
-  write_stream_map_[stream_id].emplace(static_cast<uint64_t>(event.attr.conn_info.seq_num),
-                                       std::move(event));
-}
-
-void SocketTraceConnector::OutputEvent(const socket_data_event_t& event,
-                                       types::ColumnWrapperRecordBatch* record_batch) {
-  bool succeeded;
-  HTTPTraceRecord record;
-
-  // Extract the IP and port.
-  succeeded = ParseSockAddr(event, &record);
-  if (!succeeded) {
-    LOG(ERROR) << "Failed to parse SyscallWriteEvent (addr).";
-    return;
+  const uint64_t seq_num = static_cast<uint64_t>(event.attr.conn_info.seq_num);
+  const auto iter = streams_.find(stream_id);
+  if (iter == streams_.end()) {
+    // This is the first event of the stream.
+    Stream stream;
+    // TODO(yzhao): We should explicitly capture the accept() event into user space to determine the
+    // time stamp when the stream is created.
+    stream.time_stamp_ns = event.attr.conn_info.timestamp_ns;
+    stream.tgid = event.attr.tgid;
+    stream.fd = event.attr.fd;
+    auto ip_endpoint_or = ParseSockAddr(event);
+    if (ip_endpoint_or.ok()) {
+      stream.remote_ip = std::move(ip_endpoint_or.ValueOrDie().ip);
+      stream.remote_port = ip_endpoint_or.ValueOrDie().port;
+    } else {
+      LOG(WARNING) << "Could not parse IP address.";
+    }
+    stream.data.emplace(seq_num, std::move(event));
+    streams_.emplace(stream_id, std::move(stream));
+  } else {
+    iter->second.data.emplace(seq_num, std::move(event));
   }
-  record.http_start_time_stamp_ns = event.attr.conn_info.timestamp_ns + ClockRealTimeOffset();
-
-  // Parse as either a Request, Response, or as Raw (if everything else fails).
-  succeeded = ParseHTTPRequest(event, &record) || ParseHTTPResponse(event, &record) ||
-              ParseRaw(event, &record);
-  if (!succeeded) {
-    LOG(ERROR) << "Failed to parse SyscallWriteEvent.";
-    return;
-  }
-  record.time_stamp_ns = event.attr.time_stamp_ns + ClockRealTimeOffset();
-
-  ConsumeRecord(std::move(record), record_batch);
 }
 
 void SocketTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
@@ -276,12 +249,41 @@ void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
 
   PollPerfBuffer(table_num);
 
-  for (const auto& write_stream : write_stream_map_) {
-    for (const auto& seq_and_event : write_stream.second) {
-      OutputEvent(seq_and_event.second, record_batch);
+  for (auto& [id, stream] : streams_) {
+    PL_UNUSED(id);
+    HTTPParser& parser = stream.parser;
+    std::map<uint64_t, socket_data_event_t>& data = stream.data;
+    std::vector<uint64_t> seq_num_to_remove;
+
+    // Parse all recorded events.
+    for (const auto& [seq_num, event] : data) {
+      std::string_view msg(event.msg, std::min<uint32_t>(event.attr.msg_size, sizeof(event.msg)));
+      if (parser.ParseResponse(event) != HTTPParser::ParseState::kUnknown) {
+        seq_num_to_remove.push_back(seq_num);
+      }
+    }
+
+    // Extract and output all complete messages.
+    for (HTTPMessage& msg : parser.ExtractHTTPMessages()) {
+      HTTPTraceRecord record;
+
+      record.http_start_time_stamp_ns = stream.time_stamp_ns;
+      record.tgid = stream.tgid;
+      record.fd = stream.fd;
+      record.dst_addr = stream.remote_ip;
+      record.dst_port = stream.remote_port;
+      record.message = std::move(msg);
+
+      ConsumeRecord(std::move(record), record_batch);
+    }
+
+    // TODO(yzhao): Add the capability to remove events that are too old.
+    // TODO(yzhao): Consider change the data structure to a vector, and use sorting to order events
+    // before stitching. That might be faster (verify with benchmark).
+    for (const uint64_t seq_num : seq_num_to_remove) {
+      data.erase(seq_num);
     }
   }
-  write_stream_map_.clear();
 }
 
 }  // namespace stirling

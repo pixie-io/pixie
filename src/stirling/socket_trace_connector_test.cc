@@ -24,57 +24,71 @@ socket_data_event_t InitEvent(std::string_view msg) {
 TEST(HandleProbeOutputTest, FilterMessages) {
   const std::string msg1 = R"(HTTP/1.1 200 OK
 Content-Type: application/json; charset=utf-8
+Content-Length: 0
 
 )";
-  socket_data_event_t event1 = InitEvent(msg1);
+  socket_data_event_t event_json = InitEvent(msg1);
 
   const std::string msg2 = R"(HTTP/1.1 200 OK
 Content-Type: text/plain; charset=utf-8
+Content-Length: 0
 
 )";
-  socket_data_event_t event2 = InitEvent(msg2);
+  socket_data_event_t event_text = InitEvent(msg2);
+  const int table_num = 0;
 
   // FRIEND_TEST() does not grant std::make_unique() access to SocketTraceConnector's private ctor.
   // We choose this style over the SocketTraceConnector::Create() + dynamic_cast<>, as this is
   // clearer.
-  std::unique_ptr<SocketTraceConnector> source(new SocketTraceConnector("bcc_http_trace"));
+  std::unique_ptr<SourceConnector> connector = SocketTraceConnector::Create("bcc_http_trace");
+  auto* source = dynamic_cast<SocketTraceConnector*>(connector.get());
   types::ColumnWrapperRecordBatch record_batch;
   EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[0].elements(),
                             /*target_capacity*/ 1, &record_batch));
 
-  source->OutputEvent(event1, &record_batch);
+  event_json.attr.conn_info.seq_num = 0;
+  // AcceptEvent() puts data into the internal buffer of SocketTraceConnector. And then
+  // TransferData() polls perf buffer, which is no-op because we did not initialize probes, and the
+  // data in the internal buffer is being processed and filtered.
+  source->AcceptEvent(event_json);
+  source->TransferData(table_num, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size())
-        << "event1 Content-Type does have 'json', and will be selected by the default filter";
+        << "event_json Content-Type does have 'json', and will be selected by the default filter";
   }
 
-  source->OutputEvent(event2, &record_batch);
+  event_text.attr.conn_info.seq_num = 1;
+  source->AcceptEvent(event_text);
+  source->TransferData(table_num, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size())
-        << "event2 Content-Type has no 'json', and won't be selected by the default filter";
+        << "event_text Content-Type has no 'json', and won't be selected by the default filter";
   }
 
-  SocketTraceConnector::http_response_header_filter_ = {
+  SocketTraceConnector::TestOnlySetHTTPResponseHeaderFilter({
       {{"Content-Type", "text/plain"}},
       {{"Content-Encoding", "gzip"}},
-  };
-  SocketTraceConnector::HandleProbeOutput(source.get(), &event1, sizeof(event1));
-  for (const auto& column : record_batch) {
-    EXPECT_EQ(1, column->Size())
-        << "The filter is changed to require 'text/plain' in Content-Type header, "
-           "and event1 Content-Type does not match, and won't be selected";
-  }
-
-  // Duplicate headers are allowed in the filters.
-  SocketTraceConnector::http_response_header_filter_ = {
-      {{"Content-Type", "application/json"}},
-      {{"Content-Encoding", "gzip"}},
-  };
-  source->OutputEvent(event1, &record_batch);
+  });
+  event_text.attr.conn_info.seq_num = 2;
+  source->AcceptEvent(event_text);
+  source->TransferData(table_num, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(2, column->Size())
+        << "The filter is changed to require 'text/plain' in Content-Type header, "
+           "and event_json Content-Type does not match, and won't be selected";
+  }
+
+  SocketTraceConnector::TestOnlySetHTTPResponseHeaderFilter({
+      {{"Content-Type", "application/json"}},
+      {{"Content-Encoding", "gzip"}},
+  });
+  event_json.attr.conn_info.seq_num = 3;
+  source->AcceptEvent(event_json);
+  source->TransferData(table_num, &record_batch);
+  for (const auto& column : record_batch) {
+    EXPECT_EQ(3, column->Size())
         << "The filter is changed to require 'application/json' in Content-Type header, "
-           "and event1 Content-Type matches, and is selected";
+           "and event_json Content-Type matches, and is selected";
   }
 }
 

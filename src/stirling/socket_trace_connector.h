@@ -33,10 +33,19 @@ OBJ_STRVIEW(http_trace_bcc_script, _binary_src_stirling_bcc_bpf_socket_trace_c);
 namespace pl {
 namespace stirling {
 
-// Key: stream ID that identifies a TCP connection, value: map from sequence number to event.
-// TODO(yzhao): Write a benchmark for std::map vs. std::priority_queue and pick the more efficient
-// one for our usage scenarios.
-using write_stream_map_t = std::map<uint64_t, std::map<uint64_t, socket_data_event_t> >;
+// TODO(yzhao): NEXT DIFF: Move parser field out, and create a new struct HTTPStream to include
+// Stream and HTTPParser.
+struct Stream {
+  // The time stamp when this connection is created.
+  uint64_t time_stamp_ns;
+  uint32_t tgid;
+  uint32_t fd;
+  std::string remote_ip;
+  int remote_port;
+  // Key: sequence number.
+  std::map<uint64_t, socket_data_event_t> data;
+  HTTPParser parser;
+};
 
 class SocketTraceConnector : public SourceConnector {
  public:
@@ -112,9 +121,11 @@ class SocketTraceConnector : public SourceConnector {
 
   void PollPerfBuffer(uint32_t table_num);
   void AcceptEvent(socket_data_event_t event);
-  void OutputEvent(const socket_data_event_t& event, types::ColumnWrapperRecordBatch* record_batch);
 
-  const write_stream_map_t& TestOnlyGetWriteStreamMap() const { return write_stream_map_; }
+  const std::map<uint64_t, Stream>& TestOnlyStreams() const { return streams_; }
+  static void TestOnlySetHTTPResponseHeaderFilter(HTTPHeaderFilter filter) {
+    http_response_header_filter_ = std::move(filter);
+  }
 
  private:
   explicit SocketTraceConnector(const std::string& source_name)
@@ -124,7 +135,6 @@ class SocketTraceConnector : public SourceConnector {
     http_response_header_filter_ = ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
   }
 
-  FRIEND_TEST(HandleProbeOutputTest, FilterMessages);
   inline static HTTPHeaderFilter http_response_header_filter_;
 
   // Helper functions used by HandleProbeOutput().
@@ -135,8 +145,7 @@ class SocketTraceConnector : public SourceConnector {
 
   ebpf::BPF bpf_;
 
-  // For each write stream, keep an ordered list of events.
-  write_stream_map_t write_stream_map_;
+  std::map<uint64_t, Stream> streams_;
 };
 
 }  // namespace stirling
