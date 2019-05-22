@@ -10,6 +10,7 @@ import * as React from 'react';
 import {Mutation, MutationFn, Query} from 'react-apollo';
 import {Button, Dropdown, DropdownButton} from 'react-bootstrap';
 import * as CodeMirror from 'react-codemirror';
+import { HotKeys } from 'react-hotkeys';
 import * as toml from 'toml';
 import * as ResultDataUtils from 'utils/result-data-utils';
 // @ts-ignore : TS does not seem to like this import.
@@ -20,6 +21,10 @@ import {QueryResultViewer} from './query-result-viewer';
 import * as loadingSvg from 'images/icons/Loading.svg';
 // TODO(zasgar/michelle): Figure out how to impor schema properly
 import {GQLQueryResult} from '../../../../services/api/controller/schema/schema';
+
+const HOT_KEY_MAP = {
+  EXECUTE_QUERY: ['ctrl+enter', 'command+enter'],
+};
 
 interface QueryManagerState {
   code: string;
@@ -157,13 +162,26 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
     localStorage.setItem('savedCode', newCode);
   }
 
-  render() {
+  renderCodeEditor(executeQueryFn) {
     const options = {
       lineNumbers: true,
       mode: 'python',
       theme: 'monokai',
+      extraKeys: {
+        'Cmd-Enter': executeQueryFn,
+        'Ctrl-Enter': executeQueryFn,
+      },
     };
 
+    return (<CodeMirror
+      value={this.state.code}
+      onChange={this.updateCode.bind(this)}
+      options={options}
+      ref={this.state.codeMirror}
+    />);
+  }
+
+  render() {
     const getCurrentQuery = () => {
       return this.state.code;
     };
@@ -187,55 +205,57 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
     return (
       <Mutation mutation={EXECUTE_QUERY}>
         {(executeQuery, { loading, error, data }) => (
-          <div className='query-executor'>
-            <div>
+          <HotKeys
+            attach={window}
+            focused={true}
+            keyMap={HOT_KEY_MAP}
+            handlers={{ EXECUTE_QUERY: () => executeQueryClickHandler(executeQuery) }}
+          >
+            <div className='query-executor'>
+              <div>
+                <ContentBox
+                  headerText='Enter Query'
+                  secondaryText={<AgentCountDisplay/>}
+                >
+                <DropdownButton
+                  id='query-dropdown'
+                  title='Select a query template to start with'
+                >
+                  {
+                    PRESET_QUERIES.map((query, idx) => {
+                      return <Dropdown.Item
+                        key={idx}
+                        eventKey={idx}
+                        onSelect={setQuery.bind(this)}
+                      >
+                        {query[0]}
+                      </Dropdown.Item>;
+                    })
+                  }
+                </DropdownButton>
+                <div className='code-editor'>
+                  { this.renderCodeEditor(() => executeQueryClickHandler(executeQuery)) }
+                </div>
+                <div className='query-executor--footer'>
+                  <div className='spacer'/>
+                  <Button id='execute-button' variant='primary' onClick={() => executeQueryClickHandler(executeQuery)}>
+                    Execute
+                  </Button>
+                </div>
+                </ContentBox>
+              </div>
               <ContentBox
-                headerText='Enter Query'
-                secondaryText={<AgentCountDisplay/>}
+                headerText={'Results'}
+                subheaderText={data ? <QueryInfo data={data}/> : ''}
               >
-              <DropdownButton
-                id='query-dropdown'
-                title='Select a query template to start with'
-              >
-                {
-                  PRESET_QUERIES.map((query, idx) => {
-                    return <Dropdown.Item
-                      key={idx}
-                      eventKey={idx}
-                      onSelect={setQuery.bind(this)}
-                    >
-                      {query[0]}
-                    </Dropdown.Item>;
-                  })
-                }
-              </DropdownButton>
-              <div className='code-editor'>
-                <CodeMirror
-                  value={this.state.code}
-                  onChange={this.updateCode.bind(this)}
-                  options={options}
-                  ref={this.state.codeMirror}
+                <ResultDisplay
+                  data={data}
+                  error={error ? error.toString() : ''}
+                  loading={loading}
                 />
-              </div>
-              <div className='query-executor--footer'>
-                <div className='spacer'/>
-                <Button id='execute-button' variant='primary' onClick={() => executeQueryClickHandler(executeQuery)}>
-                  Execute
-                </Button>
-              </div>
               </ContentBox>
             </div>
-            <ContentBox
-              headerText={'Results'}
-              subheaderText={data ? <QueryInfo data={data}/> : ''}
-            >
-              <ResultDisplay
-                data={data}
-                error={error ? error.toString() : ''}
-                loading={loading}
-              />
-            </ContentBox>
-          </div>
+          </HotKeys>
       )}
     </Mutation>
     );

@@ -72,7 +72,7 @@ describe('<ScrollableTable/> test', () => {
         expandable={true}
         height={300}
         width={300}
-    /></div>);
+  /></div>);
 
     expect(wrapper.find('img')).toHaveLength(3);
   });

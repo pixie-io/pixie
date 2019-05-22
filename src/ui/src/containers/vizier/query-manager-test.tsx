@@ -4,6 +4,7 @@ import * as React from 'react';
 import { MockedProvider } from 'react-apollo/test-utils';
 import {Button, Dropdown, DropdownButton} from 'react-bootstrap';
 import * as CodeMirror from 'react-codemirror';
+import { HotKeys } from 'react-hotkeys';
 import {EXECUTE_QUERY, GET_AGENT_IDS, QueryManager} from './query-manager';
 
 const wait = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -26,16 +27,6 @@ describe('<QueryManager/> test', () => {
     dropdownItem.simulate('click');
 
     expect(wrapper.find(QueryManager).at(0).state('code')).toContain('t1 = From(table=\'bcc_http_trace\',');
-  });
-
-  it('should use saved query', () => {
-    window.localStorage.setItem('savedCode', 'test');
-    const wrapper = mount(
-      <MockedProvider addTypename={false}>
-        <QueryManager/>
-      </MockedProvider>,
-    );
-    expect(wrapper.find(QueryManager).at(0).state('code')).toContain('test');
   });
 
   it('should pass correct headers into query editor box', async () => {
@@ -79,7 +70,6 @@ describe('<QueryManager/> test', () => {
   });
 
   it('should pass correct headers into results box when data', async () => {
-    window.localStorage.setItem('savedCode', '');
     const dataStr = '{"relation":{"columns":[{"columnName":"time_","columnType":"TIME64NS"},' +
       '{"columnName":"http_request","columnType":"STRING"}]},"rowBatches":[]}';
     const mocks = [
@@ -113,6 +103,48 @@ describe('<QueryManager/> test', () => {
 
     const executeButton = wrapper.find('#execute-button').at(0);
     executeButton.simulate('click');
+    await wait(0);
+    wrapper.update();
+
+    expect(wrapper.find('.content-box--header').at(1).text()).toEqual('RESULTS| Query ID: 1');
+  });
+
+  it('should handle hot keys', async () => {
+    const dataStr = '{"relation":{"columns":[{"columnName":"time_","columnType":"TIME64NS"},' +
+      '{"columnName":"http_request","columnType":"STRING"}]},"rowBatches":[]}';
+    const mocks = [
+      {
+        request: {
+          query: EXECUTE_QUERY,
+          variables: { queryStr: '# Enter Query Here\n' },
+        },
+        result: {
+          data: {
+            ExecuteQuery: {
+              id: '1',
+              table: {
+                data: dataStr,
+                relation: {
+                  colNames: ['time_', 'http_request'],
+                  colTypes: ['TIME64NS', 'STRING'],
+                },
+              },
+            },
+          },
+        },
+      },
+    ];
+
+    const wrapper = mount(
+      <MockedProvider mocks={mocks} addTypename={false}>
+        <QueryManager/>
+      </MockedProvider>,
+    );
+
+    // Verify props to HotKey component are correct.
+    const hotkeys = wrapper.find(HotKeys).at(0);
+    hotkeys.props().handlers.EXECUTE_QUERY();
+
     await wait(0);
     wrapper.update();
 
