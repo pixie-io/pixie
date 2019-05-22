@@ -269,3 +269,42 @@ func TestGetActiveAgents(t *testing.T) {
 	}
 	assert.Equal(t, *agent2Info, agents[1])
 }
+
+func TestGetActiveAgentsWithLock(t *testing.T) {
+	etcdClient, agtMgr, cleanup := setupAgentManager(t)
+	defer cleanup()
+
+	_, err := etcdClient.Put(context.Background(),
+		controllers.GetAgentKey("ae6f4648-c06b-470c-a01f-1209a3dfa4bc")+"/487f6ad73ac92645", "")
+	if err != nil {
+		t.Fatal("Unable to add fake agent key to etcd.")
+	}
+
+	agents, err := agtMgr.GetActiveAgents()
+	assert.Nil(t, err)
+
+	assert.Equal(t, 2, len(agents))
+	// Check agents contain correct info.
+	u1, err := uuid.FromString(existingAgentUUID)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+	agent1Info := &controllers.AgentInfo{
+		LastHeartbeatNS: healthyAgentLastHeartbeatNS,
+		CreateTimeNS:    0,
+		AgentID:         u1,
+		Hostname:        "testhost",
+	}
+	assert.Equal(t, *agent1Info, agents[0])
+	u2, err := uuid.FromString(unhealthyAgentUUID)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+	agent2Info := &controllers.AgentInfo{
+		LastHeartbeatNS: 0,
+		CreateTimeNS:    0,
+		AgentID:         u2,
+		Hostname:        "anotherhost",
+	}
+	assert.Equal(t, *agent2Info, agents[1])
+}

@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"
@@ -245,8 +246,16 @@ func (m *AgentManagerImpl) GetActiveAgents() ([]AgentInfo, error) {
 		return agents, err
 	}
 	for _, kv := range resp.Kvs {
+
+		// Filter out keys that aren't of the form /agent/<uuid>.
+		splitKey := strings.Split(string(kv.Key), "/")
+		if len(splitKey) != 3 {
+			continue
+		}
+
 		pb := &data.AgentData{}
 		proto.Unmarshal(kv.Value, pb)
+
 		uid, err := utils.UUIDFromProto(pb.AgentID)
 		if err != nil {
 			log.WithError(err).Fatal("Could not convert UUID to proto")
