@@ -49,27 +49,27 @@ class SocketTraceConnector : public SourceConnector {
   // - A HTTP connection table with fields 1) id (fd+additional_data for uniqueness),
   //   2) {src,dst}_{addr,port}.
   // - A HTTP message table with fields 1) id (same as above), type (req or resp), header, payload.
-  inline static const std::vector<DataTableSchema> kElements = {DataTableSchema(
-      kName, {DataElement("time_", types::DataType::TIME64NS),
-              // tgid is the user space "pid".
-              DataElement("tgid", types::DataType::INT64),
-              // TODO(yzhao): Remove 'pid' and 'fd'.
-              DataElement("pid", types::DataType::INT64), DataElement("fd", types::DataType::INT64),
-              DataElement("event_type", types::DataType::STRING),
-              // TODO(PL-519): Eventually, use the appropriate data type to represent IP addresses,
-              // as will be resolved in the Jira issue.
-              DataElement("src_addr", types::DataType::STRING),
-              DataElement("src_port", types::DataType::INT64),
-              DataElement("dst_addr", types::DataType::STRING),
-              DataElement("dst_port", types::DataType::INT64),
-              DataElement("http_minor_version", types::DataType::INT64),
-              DataElement("http_headers", types::DataType::STRING),
-              DataElement("http_req_method", types::DataType::STRING),
-              DataElement("http_req_path", types::DataType::STRING),
-              DataElement("http_resp_status", types::DataType::INT64),
-              DataElement("http_resp_message", types::DataType::STRING),
-              DataElement("http_resp_body", types::DataType::STRING),
-              DataElement("http_resp_latency_ns", types::DataType::INT64)})};
+  inline static const std::vector<DataTableSchema> kElements = {
+      DataTableSchema(kName, {DataElement("time_", types::DataType::TIME64NS),
+                              // tgid is the user space "pid".
+                              DataElement("tgid", types::DataType::INT64),
+                              // TODO(yzhao): Remove 'fd'.
+                              DataElement("fd", types::DataType::INT64),
+                              DataElement("event_type", types::DataType::STRING),
+                              // TODO(PL-519): Eventually, use the appropriate data type to
+                              // represent IP addresses, as will be resolved in the Jira issue.
+                              DataElement("src_addr", types::DataType::STRING),
+                              DataElement("src_port", types::DataType::INT64),
+                              DataElement("dst_addr", types::DataType::STRING),
+                              DataElement("dst_port", types::DataType::INT64),
+                              DataElement("http_minor_version", types::DataType::INT64),
+                              DataElement("http_headers", types::DataType::STRING),
+                              DataElement("http_req_method", types::DataType::STRING),
+                              DataElement("http_req_path", types::DataType::STRING),
+                              DataElement("http_resp_status", types::DataType::INT64),
+                              DataElement("http_resp_message", types::DataType::STRING),
+                              DataElement("http_resp_body", types::DataType::STRING),
+                              DataElement("http_resp_latency_ns", types::DataType::INT64)})};
 
   // The order here must be identical to SocketTraceConnector::kElements, and it must start from 0.
   // TODO(yzhao): We probably could have some form of template construct to offload part of the
@@ -81,7 +81,6 @@ class SocketTraceConnector : public SourceConnector {
   enum DataElementsIndexes {
     kTimeStampNs = 0,
     kTgid,
-    kPid,
     kFd,
     kEventType,
     kSrcAddr,

@@ -53,7 +53,6 @@ void PreProcessRecord(HTTPTraceRecord* record) {
 void ParseEventAttr(const socket_data_event_t& event, HTTPTraceRecord* record) {
   record->time_stamp_ns = event.attr.time_stamp_ns;
   record->tgid = event.attr.tgid;
-  record->pid = event.attr.pid;
   record->fd = event.attr.fd;
 }
 
@@ -70,12 +69,16 @@ std::map<std::string, std::string> GetHttpHeadersMap(const phr_header* headers,
   return result;
 }
 
+uint32_t MsgSize(const socket_data_event_t& event) {
+  return std::min<uint32_t>(event.attr.msg_size, MAX_MSG_SIZE);
+}
+
 }  // namespace
 
 bool ParseHTTPRequest(const socket_data_event_t& event, HTTPTraceRecord* record) {
   // TODO(yzhao): Due to the BPF weirdness (see socket_trace.c), this calculation must be done here,
   // not in BPF. Investigate if we can fix it.
-  const uint64_t msg_size = std::min(event.attr.msg_bytes, event.attr.msg_buf_size);
+  const uint32_t msg_size = MsgSize(event);
   const char* method = nullptr;
   size_t method_len = 0;
   const char* path = nullptr;
@@ -114,7 +117,7 @@ bool ParseHTTPRequest(const socket_data_event_t& event, HTTPTraceRecord* record)
 // We then can squash events at t0, t1, t2 together and concatenate their bodies as the full http
 // message. This works in http 1.1 because the responses and requests are not interleaved.
 bool ParseHTTPResponse(const socket_data_event_t& event, HTTPTraceRecord* record) {
-  const uint64_t msg_size = std::min(event.attr.msg_bytes, event.attr.msg_buf_size);
+  const uint32_t msg_size = MsgSize(event);
   const char* msg = nullptr;
   size_t msg_len = 0;
   int minor_version = 0;
@@ -173,11 +176,10 @@ bool ParseSockAddr(const socket_data_event_t& event, HTTPTraceRecord* record) {
 }
 
 bool ParseRaw(const socket_data_event_t& event, HTTPTraceRecord* record) {
-  const uint64_t msg_size = std::min(event.attr.msg_bytes, event.attr.msg_buf_size);
   HTTPTraceRecord& result = *record;
   ParseEventAttr(event, &result);
   result.event_type = SocketTraceEventType::kUnknown;
-  result.http_resp_body = std::string(event.msg, msg_size);
+  result.http_resp_body = std::string(event.msg, MsgSize(event));
   // Rest of the fields remain at default values.
   return true;
 }

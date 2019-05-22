@@ -281,7 +281,7 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
               UnorderedElementsAre(Pair(_, SizeIs(1)), Pair(_, SizeIs(1))));
 
   auto get_message = [](const socket_data_event_t& event) -> std::string_view {
-    return std::string_view(event.msg, std::min(event.attr.msg_bytes, event.attr.msg_buf_size));
+    return std::string_view(event.msg, std::min<uint32_t>(event.attr.msg_size, MAX_MSG_SIZE));
   };
   std::vector<std::pair<uint64_t, std::string_view>> seq_msgs;
   for (const auto& stream : socket_trace_connector->TestOnlyGetWriteStreamMap()) {

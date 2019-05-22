@@ -47,18 +47,14 @@ struct socket_data_event_t {
     // Comes from the process from which this is captured.
     // See https://stackoverflow.com/a/9306150 for details.
     uint32_t tgid;
-    uint32_t pid;
     // The file descriptor to the opened network connection.
     uint32_t fd;
     // The type of the actual data that the msg field encodes, which is used by the caller
     // to determine how to interpret the data.
     uint32_t event_type;
-    // The size of the original data being captured, which might be truncated because msg
-    // field has a size list.
-    uint32_t msg_bytes;
-    // The size of the data being actually captured in msg field.
-    // Care need to be take as only msg_size bytes of msg are guaranteed to be valid.
-    uint32_t msg_buf_size;
+    // The full size as processed by the syscalls, which might not fit in msg as indicated by
+    // msg_size > MAX_MSG_SIZE.
+    uint32_t msg_size;
   } attr;
   char msg[MAX_MSG_SIZE];
 } __attribute__((__packed__));

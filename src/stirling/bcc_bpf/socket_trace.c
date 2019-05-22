@@ -36,11 +36,9 @@ struct socket_data_event_t {
     struct conn_info_t conn_info;
     uint64_t time_stamp_ns;
     uint32_t tgid;
-    uint32_t pid;
     uint32_t fd;
     uint32_t event_type;
-    uint32_t msg_bytes;
-    uint32_t msg_buf_size;
+    uint32_t msg_size;
   } attr;
   char msg[MAX_MSG_SIZE];
 } __attribute__((__packed__));
@@ -270,8 +268,8 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
 
   u64 id = bpf_get_current_pid_tgid();
 
-  int64_t written_bytes = PT_REGS_RC(ctx);
-  if (written_bytes <= 0) {
+  int32_t bytes_written = PT_REGS_RC(ctx);
+  if (bytes_written <= 0) {
     // This write() call failed, or has nothing to write.
     goto done;
   }
@@ -292,29 +290,24 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
     goto done;
   }
 
-  // TODO(oazizi/yzhao): Why does the commented line not work? Error message is below:
-  //                     R2 min value is negative, either use unsigned or 'var &= const'
-  //                     Need to bring this back to avoid unnecessary fix-up in userspace.
-  //size_t buf_size = count < sizeof(event->msg) ? count : sizeof(event->msg);
-  size_t buf_size = sizeof(event->msg);
-
   event->attr.conn_info = *conn_info;
   // Increment sequence number after copying so the index is 0-based.
   ++conn_info->seq_num;
   event->attr.event_type = event_type;
-  event->attr.msg_bytes = written_bytes;
   // TODO(yzhao): This is the time is after write/send() finishes. If we want to capture the time
   // before write/send() starts, we need to capture the time in probe_entry_write_send().
   event->attr.time_stamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
-  event->attr.pid = (uint32_t)id;
   event->attr.fd = (uint32_t)write_info->lookup_fd;
-  event->attr.msg_buf_size = buf_size;
+  event->attr.msg_size = bytes_written;
 
+  // TODO(yzhao): Changing to bytes_written to int64_t would result into "unbounded memory access"
+  // when attaching kprobe.
+  const u32 buf_size = bytes_written < sizeof(event->msg) ? bytes_written : sizeof(event->msg);
   bpf_probe_read(&event->msg, buf_size, (const void*) write_info->buf);
 
   // Write snooped arguments to perf ring buffer.
-  unsigned int size_to_submit = sizeof(event->attr) + buf_size;
+  unsigned int size_to_submit = sizeof(struct socket_data_event_t);
   switch (conn_info->protocol) {
     case kProtocolHTTPResponse: socket_http_resp_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
@@ -346,7 +339,7 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
 
   u64 id = bpf_get_current_pid_tgid();
 
-  size_t bytes_read = PT_REGS_RC(ctx);
+  int32_t bytes_read = PT_REGS_RC(ctx);
 
   if (bytes_read <= 0) {
     // This read() call failed, or read nothing.
@@ -396,25 +389,18 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
     goto done;
   }
 
-  // TODO(oazizi/yzhao): Why does the commented line not work? Error message is below:
-  //                     R2 min value is negative, either use unsigned or 'var &= const'
-  //                     Need to bring this back to avoid unnecessary fix-up in userspace.
-  //size_t buf_size = count < sizeof(event->msg) ? count : sizeof(event->msg);
-  size_t buf_size = sizeof(event->msg);
-
   event->attr.conn_info = *conn_info;
   event->attr.event_type = event_type;
-  event->attr.msg_bytes = bytes_read;
   event->attr.time_stamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
-  event->attr.pid = (uint32_t)id;
   event->attr.fd = read_info->lookup_fd;
-  event->attr.msg_buf_size = buf_size;
+  event->attr.msg_size = bytes_read;
 
+  const u32 buf_size = bytes_read < sizeof(event->msg) ? bytes_read : sizeof(event->msg);
   bpf_probe_read(&event->msg, buf_size, (const void*) read_info->buf);
 
   // Write snooped arguments to perf ring buffer.
-  unsigned int size_to_submit = sizeof(event->attr) + buf_size;
+  unsigned int size_to_submit = sizeof(struct socket_data_event_t);
   switch (conn_info->protocol) {
     case kProtocolHTTPResponse: socket_http_resp_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;

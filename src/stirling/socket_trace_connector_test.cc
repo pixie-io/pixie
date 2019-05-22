@@ -16,8 +16,7 @@ socket_data_event_t InitEvent(std::string_view msg) {
   event.attr.conn_info.addr.sin6_family = AF_INET;
   event.attr.conn_info.timestamp_ns = 0;
   event.attr.time_stamp_ns = 1000000;
-  event.attr.msg_buf_size = sizeof(event.msg);
-  event.attr.msg_bytes = msg.size();
+  event.attr.msg_size = msg.size();
   msg.copy(event.msg, msg.size());
   return event;
 }

@@ -35,7 +35,6 @@ enum class ChunkingStatus {
 struct HTTPTraceRecord {
   uint64_t time_stamp_ns = 0;
   uint32_t tgid = 0;
-  uint32_t pid = 0;
   int fd = -1;
   SocketTraceEventType event_type = SocketTraceEventType::kUnknown;
   uint64_t http_start_time_stamp_ns = 0;

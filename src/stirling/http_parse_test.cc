@@ -65,7 +65,6 @@ TEST(ParseEventAttrTest, DataIsCopied) {
   socket_data_event_t event;
   event.attr.time_stamp_ns = 100;
   event.attr.tgid = 1;
-  event.attr.pid = 2;
   event.attr.fd = 3;
 
   HTTPTraceRecord record;
@@ -74,7 +73,6 @@ TEST(ParseEventAttrTest, DataIsCopied) {
 
   EXPECT_EQ(100, record.time_stamp_ns);
   EXPECT_EQ(1, record.tgid);
-  EXPECT_EQ(2, record.pid);
   EXPECT_EQ(3, record.fd);
 }
 
@@ -86,10 +84,8 @@ Host: www.pixielabs.ai
   socket_data_event_t event;
   event.attr.time_stamp_ns = 100;
   event.attr.tgid = 1;
-  event.attr.pid = 2;
   event.attr.fd = 3;
-  event.attr.msg_buf_size = sizeof(event.msg);
-  event.attr.msg_bytes = http_request.size();
+  event.attr.msg_size = http_request.size();
   http_request.copy(event.msg, http_request.size());
 
   HTTPTraceRecord record;
@@ -97,7 +93,6 @@ Host: www.pixielabs.ai
   EXPECT_TRUE(ParseHTTPRequest(event, &record));
   EXPECT_EQ(100, record.time_stamp_ns);
   EXPECT_EQ(1, record.tgid);
-  EXPECT_EQ(2, record.pid);
   EXPECT_EQ(3, record.fd);
   EXPECT_EQ(SocketTraceEventType::kHTTPRequest, record.event_type);
   EXPECT_THAT(record.http_headers, ElementsAre(Pair("Host", "www.pixielabs.ai")));
@@ -115,10 +110,8 @@ pixielabs)";
   socket_data_event_t event;
   event.attr.time_stamp_ns = 100;
   event.attr.tgid = 1;
-  event.attr.pid = 2;
   event.attr.fd = 3;
-  event.attr.msg_buf_size = sizeof(event.msg);
-  event.attr.msg_bytes = http_response.size();
+  event.attr.msg_size = http_response.size();
   http_response.copy(event.msg, http_response.size());
 
   HTTPTraceRecord record;
@@ -126,7 +119,6 @@ pixielabs)";
   EXPECT_TRUE(ParseHTTPResponse(event, &record));
   EXPECT_EQ(100, record.time_stamp_ns);
   EXPECT_EQ(1, record.tgid);
-  EXPECT_EQ(2, record.pid);
   EXPECT_EQ(3, record.fd);
   EXPECT_EQ(SocketTraceEventType::kHTTPResponse, record.event_type);
   EXPECT_THAT(record.http_headers,
@@ -141,10 +133,8 @@ TEST(ParseRawTest, ContentIsCopied) {
   socket_data_event_t event;
   event.attr.time_stamp_ns = 100;
   event.attr.tgid = 1;
-  event.attr.pid = 2;
   event.attr.fd = 3;
-  event.attr.msg_buf_size = sizeof(event.msg);
-  event.attr.msg_bytes = data.size();
+  event.attr.msg_size = data.size();
   data.copy(event.msg, data.size());
 
   HTTPTraceRecord record;
@@ -152,7 +142,6 @@ TEST(ParseRawTest, ContentIsCopied) {
   EXPECT_TRUE(ParseRaw(event, &record));
   EXPECT_EQ(100, record.time_stamp_ns);
   EXPECT_EQ(1, record.tgid);
-  EXPECT_EQ(2, record.pid);
   EXPECT_EQ(3, record.fd);
   EXPECT_EQ(SocketTraceEventType::kUnknown, record.event_type);
   EXPECT_EQ("test", record.http_resp_body);

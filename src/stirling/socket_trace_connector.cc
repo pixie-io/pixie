@@ -59,7 +59,6 @@ void SocketTraceConnector::AppendToRecordBatch(HTTPTraceRecord record,
   auto& columns = *record_batch;
   columns[kTimeStampNs]->Append<types::Time64NSValue>(record.time_stamp_ns);
   columns[kTgid]->Append<types::Int64Value>(record.tgid);
-  columns[kPid]->Append<types::Int64Value>(record.pid);
   columns[kFd]->Append<types::Int64Value>(record.fd);
   columns[kEventType]->Append<types::StringValue>(EventTypeToString(record.event_type));
   columns[kSrcAddr]->Append<types::StringValue>(std::move(record.src_addr));
