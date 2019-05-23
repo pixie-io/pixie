@@ -52,30 +52,33 @@ bool SocketTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
 
 void SocketTraceConnector::AppendToRecordBatch(HTTPTraceRecord record,
                                                types::ColumnWrapperRecordBatch* record_batch) {
-  CHECK(record_batch->size() == SocketTraceConnector::kElements[0].elements().size())
-      << "HTTP trace record field count should be: "
-      << SocketTraceConnector::kElements[0].elements().size() << ", got " << record_batch->size();
+  uint64_t num_columns = SocketTraceConnector::kElements[0].elements().size();
+  CHECK(record_batch->size() == num_columns) << absl::StrFormat(
+      "HTTP trace record field count should be: %d, got %d", num_columns, record_batch->size());
   auto& columns = *record_batch;
-  columns[kTimeStampNs]->Append<types::Time64NSValue>(record.message.time_stamp_ns);
-  columns[kTgid]->Append<types::Int64Value>(record.conn.tgid);
-  columns[kFd]->Append<types::Int64Value>(record.conn.fd);
-  columns[kEventType]->Append<types::StringValue>(EventTypeToString(record.message.type));
-  columns[kSrcAddr]->Append<types::StringValue>(std::move(record.conn.src_addr));
-  columns[kSrcPort]->Append<types::Int64Value>(record.conn.src_port);
-  columns[kDstAddr]->Append<types::StringValue>(std::move(record.conn.dst_addr));
-  columns[kDstPort]->Append<types::Int64Value>(record.conn.dst_port);
-  columns[kHTTPMinorVersion]->Append<types::Int64Value>(record.message.http_minor_version);
-  columns[kHTTPHeaders]->Append<types::StringValue>(
+
+  uint32_t idx = 0;
+  columns[idx++]->Append<types::Time64NSValue>(record.message.time_stamp_ns);
+  columns[idx++]->Append<types::Int64Value>(record.conn.tgid);
+  columns[idx++]->Append<types::Int64Value>(record.conn.fd);
+  columns[idx++]->Append<types::StringValue>(EventTypeToString(record.message.type));
+  columns[idx++]->Append<types::StringValue>(std::move(record.conn.src_addr));
+  columns[idx++]->Append<types::Int64Value>(record.conn.src_port);
+  columns[idx++]->Append<types::StringValue>(std::move(record.conn.dst_addr));
+  columns[idx++]->Append<types::Int64Value>(record.conn.dst_port);
+  columns[idx++]->Append<types::Int64Value>(record.message.http_minor_version);
+  columns[idx++]->Append<types::StringValue>(
       absl::StrJoin(record.message.http_headers, "\n", absl::PairFormatter(": ")));
-  columns[kHTTPReqMethod]->Append<types::StringValue>(std::move(record.message.http_req_method));
-  columns[kHTTPReqPath]->Append<types::StringValue>(std::move(record.message.http_req_path));
-  columns[kHTTPRespStatus]->Append<types::Int64Value>(record.message.http_resp_status);
-  columns[kHTTPRespMessage]->Append<types::StringValue>(
-      std::move(record.message.http_resp_message));
-  columns[kHTTPRespBody]->Append<types::StringValue>(std::move(record.message.http_resp_body));
-  columns[kHTTPRespLatencyNs]->Append<types::Int64Value>(record.message.time_stamp_ns -
-                                                         record.conn.time_stamp_ns);
+  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_req_method));
+  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_req_path));
+  columns[idx++]->Append<types::Int64Value>(record.message.http_resp_status);
+  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_resp_message));
+  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_resp_body));
+  columns[idx++]->Append<types::Int64Value>(record.message.time_stamp_ns -
+                                            record.conn.time_stamp_ns);
   DCHECK_GE(record.message.time_stamp_ns, record.conn.time_stamp_ns);
+  CHECK_EQ(idx, num_columns) << absl::StrFormat(
+      "Didn't populate all fields [idx = %d, num_columns = %d]", idx, num_columns);
 }
 
 void SocketTraceConnector::ConsumeRecord(HTTPTraceRecord record,

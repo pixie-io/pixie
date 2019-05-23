@@ -71,6 +71,10 @@ Content-Length: 0
 
   static constexpr std::string_view kMsg3 = R"(This is not an HTTP message)";
 
+  const DataTableSchema& schema = SocketTraceConnector::kElements[0];
+  const uint64_t kHTTPHeaderIdx = schema.KeyIndex("http_headers");
+  const uint64_t kFdIdx = schema.KeyIndex("fd");
+
   std::unique_ptr<SourceConnector> source;
   std::thread client_thread;
 };
@@ -106,13 +110,11 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
   EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
 
   EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
-            record_batch[SocketTraceConnector::kHTTPHeaders]->Get<types::StringValue>(0));
-  EXPECT_EQ(server.sockfd(),
-            record_batch[SocketTraceConnector::kFd]->Get<types::Int64Value>(0).val);
+            record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
+  EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(0).val);
   EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
-            record_batch[SocketTraceConnector::kHTTPHeaders]->Get<types::StringValue>(1));
-  EXPECT_EQ(server.sockfd(),
-            record_batch[SocketTraceConnector::kFd]->Get<types::Int64Value>(1).val);
+            record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
+  EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(1).val);
 }
 
 TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
@@ -146,13 +148,11 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
   EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
 
   EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
-            record_batch[SocketTraceConnector::kHTTPHeaders]->Get<types::StringValue>(0));
-  EXPECT_EQ(server.sockfd(),
-            record_batch[SocketTraceConnector::kFd]->Get<types::Int64Value>(0).val);
+            record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
+  EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(0).val);
   EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
-            record_batch[SocketTraceConnector::kHTTPHeaders]->Get<types::StringValue>(1));
-  EXPECT_EQ(server.sockfd(),
-            record_batch[SocketTraceConnector::kFd]->Get<types::Int64Value>(1).val);
+            record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
+  EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(1).val);
 }
 
 TEST_F(HTTPTraceBPFTest, TestNonHTTPWritesNotCaptured) {

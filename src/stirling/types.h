@@ -47,6 +47,14 @@ class DataTableSchema {
   const std::string& name() const { return name_; }
   const DataElements& elements() const { return elements_; }
 
+  // Use cautiously. This is not efficient.
+  // TODO(oazizi): Consider creating an std::map on constructor to speed this up.
+  uint64_t KeyIndex(std::string_view key) const {
+    auto it = find_if(elements_.begin(), elements_.end(),
+                      [key](const DataElement& element) { return element.name() == key; });
+    return std::distance(elements_.begin(), it);
+  }
+
  private:
   std::string name_;
   DataElements elements_;
