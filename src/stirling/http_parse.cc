@@ -84,32 +84,31 @@ bool ParseHTTPRequest(const socket_data_event_t& event, HTTPTraceRecord* record)
 
 StatusOr<IPEndpoint> ParseSockAddr(const socket_data_event_t& event) {
   const auto* sa = reinterpret_cast<const struct sockaddr*>(&event.attr.conn_info.addr);
-  char s[INET6_ADDRSTRLEN] = "";
-  const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
-  const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);
-  std::string ip;
+
+  char addr[INET6_ADDRSTRLEN] = "";
   int port = -1;
+
   switch (sa->sa_family) {
-    case AF_INET:
+    case AF_INET: {
+      const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
       port = sa_in->sin_port;
-      if (inet_ntop(AF_INET, &sa_in->sin_addr, s, INET_ADDRSTRLEN) != nullptr) {
-        ip.assign(s);
+      if (inet_ntop(AF_INET, &sa_in->sin_addr, addr, INET_ADDRSTRLEN) == nullptr) {
+        return error::InvalidArgument("Could not parse sockaddr (AF_INET)");
       }
-      break;
-    case AF_INET6:
+    } break;
+    case AF_INET6: {
+      const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);
       port = sa_in6->sin6_port;
-      if (inet_ntop(AF_INET6, &sa_in6->sin6_addr, s, INET6_ADDRSTRLEN) != nullptr) {
-        ip.assign(s);
+      if (inet_ntop(AF_INET6, &sa_in6->sin6_addr, addr, INET6_ADDRSTRLEN) == nullptr) {
+        return error::InvalidArgument("Could not parse sockaddr (AF_INET6)");
       }
-      break;
+    } break;
     default:
       return error::InvalidArgument(
           absl::StrCat("Ignoring unhandled sockaddr family: ", sa->sa_family));
   }
-  if (!ip.empty()) {
-    return IPEndpoint{std::move(ip), port};
-  }
-  return Status();
+
+  return IPEndpoint{std::string(addr), port};
 }
 
 // Parses an IP:port pair from the event input into the provided record.
