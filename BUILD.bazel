@@ -31,6 +31,8 @@ gazelle(
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb //src/vizier/services/metadata/datapb:data_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb //src/vizier/services/metadata/metadatapb:service_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb //src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/throwaway/golang-grpc-service/proto //throwaway/golang-grpc-service/proto:greet_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/experimental/bpf/grpc_trace/proto //experimental/bpf/grpc_trace/proto:greet_pl_go_proto
 
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 

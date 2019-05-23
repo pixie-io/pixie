@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package greet;
 
-option go_package = "pixielabs.ai/pixielabs/throwaway/golang-grpc-service;greet";
-
 // The greeting service definition.
 service Greeter {
   // Sends a greeting
