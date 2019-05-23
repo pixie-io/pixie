@@ -112,13 +112,12 @@ class SocketTraceConnector : public SourceConnector {
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
   }
-  static void HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/);
-  static void HandleProbeLoss(void* /*cb_cookie*/, uint64_t);
 
   Status InitImpl() override;
   Status StopImpl() override;
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
+  // TODO(oazizi): These are only public for the sake of tests. Should be private?
   void PollPerfBuffer(uint32_t table_num);
   void AcceptEvent(socket_data_event_t event);
 
@@ -137,6 +136,9 @@ class SocketTraceConnector : public SourceConnector {
 
   inline static HTTPHeaderFilter http_response_header_filter_;
 
+  static void HandleProbeOutput(void* cb_cookie, void* data, int data_size);
+  static void HandleProbeLoss(void* cb_cookie, uint64_t);
+
   // Helper functions used by HandleProbeOutput().
   static bool SelectForAppend(const HTTPTraceRecord& record);
   static void AppendToRecordBatch(HTTPTraceRecord record,
@@ -146,6 +148,39 @@ class SocketTraceConnector : public SourceConnector {
   ebpf::BPF bpf_;
 
   std::map<uint64_t, Stream> streams_;
+
+  // Describes a kprobe that should be attached with the BPF::attach_kprobe().
+  struct ProbeSpec {
+    std::string kernel_fn_short_name;
+    std::string trace_fn_name;
+    int kernel_fn_offset;
+    bpf_probe_attach_type attach_type;
+  };
+
+  struct PerfBufferSpec {
+    // Name is same as the perf buffer inside bcc_bpf/socket_trace.c.
+    std::string name;
+    perf_reader_raw_cb probe_output_fn;
+    perf_reader_lost_cb probe_loss_fn;
+    uint32_t num_pages;
+  };
+
+  static inline const std::vector<ProbeSpec> kProbeSpecs = {
+      {"accept4", "probe_entry_accept4", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"accept4", "probe_ret_accept4", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"write", "probe_entry_write", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"write", "probe_ret_write", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"send", "probe_entry_send", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"send", "probe_ret_send", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"sendto", "probe_entry_sendto", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"sendto", "probe_ret_sendto", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"close", "probe_close", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+  };
+
+  static inline const std::vector<PerfBufferSpec> kPerfBufferSpecs = {
+      {"socket_http_resp_events", &SocketTraceConnector::HandleProbeOutput,
+       &SocketTraceConnector::HandleProbeLoss,
+       /* num_pages */ 8}};
 };
 
 }  // namespace stirling

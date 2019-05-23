@@ -140,43 +140,6 @@ void SocketTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
   VLOG(1) << "Possibly lost " << lost << " samples";
 }
 
-namespace {
-
-// Describes a kprobe that should be attached with the BPF::attach_kprobe().
-struct ProbeSpec {
-  std::string kernel_fn_short_name;
-  std::string trace_fn_name;
-  int kernel_fn_offset = 0;
-  bpf_probe_attach_type attach_type = bpf_probe_attach_type::BPF_PROBE_ENTRY;
-};
-
-struct PerfBufferSpec {
-  // Name is same as the perf buffer inside bcc_bpf/socket_trace.c.
-  std::string name;
-  perf_reader_raw_cb probe_output_fn;
-  perf_reader_lost_cb probe_loss_fn;
-  uint32_t num_pages;
-};
-
-const std::vector<ProbeSpec> kProbeSpecs = {
-    {"accept4", "probe_entry_accept4"},
-    {"accept4", "probe_ret_accept4", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-    {"write", "probe_entry_write"},
-    {"write", "probe_ret_write", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-    {"send", "probe_entry_send"},
-    {"send", "probe_ret_send", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-    {"sendto", "probe_entry_sendto"},
-    {"sendto", "probe_ret_sendto", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-    {"close", "probe_close"},
-};
-
-const std::vector<PerfBufferSpec> kPerfBufferSpecs = {{"socket_http_resp_events",
-                                                       &SocketTraceConnector::HandleProbeOutput,
-                                                       &SocketTraceConnector::HandleProbeLoss,
-                                                       /* num_pages */ 8}};
-
-}  // namespace
-
 Status SocketTraceConnector::InitImpl() {
   if (!IsRoot()) {
     return error::PermissionDenied("BCC currently only supported as the root user.");
