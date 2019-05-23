@@ -57,17 +57,8 @@ Status MemorySourceNode::GenerateNextImpl(ExecState *exec_state) {
   if (plan_node_->HasStartTime() && current_batch_ == start_batch_info_.batch_idx) {
     offset = start_batch_info_.row_idx;
   }
-  if (plan_node_->HasStopTime()) {
-    auto time_col = table_->FindTimeColumn();
-    DCHECK_NE(time_col, -1);
-    auto batch = table_->GetColumn(time_col)->batch(current_batch_);
-    if (types::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), batch->length() - 1) >=
-        plan_node_->stop_time()) {
-      end = types::SearchArrowArrayLessThan<types::DataType::INT64>(batch.get(),
-                                                                    plan_node_->stop_time()) +
-            1;
-    }
-  }
+  // TODO(michelle): PL-388 Fix our table store to correctly support hot/cold data. For now, do not
+  // support StopTime, since the current implementation is buggy.
 
   PL_ASSIGN_OR_RETURN(const auto &row_batch,
                       table_->GetRowBatchSlice(current_batch_, plan_node_->Columns(),
@@ -84,13 +75,8 @@ bool MemorySourceNode::HasBatchesRemaining() {
   if (current_batch_ >= table_->NumBatches()) {
     return false;
   }
-  if (plan_node_->HasStopTime()) {
-    auto time_col = table_->FindTimeColumn();
-    DCHECK_NE(time_col, -1);
-    auto batch = table_->GetColumn(time_col)->batch(current_batch_);
-    return types::GetValueFromArrowArray<types::DataType::INT64>(batch.get(), 0) <
-           plan_node_->stop_time();
-  }
+  // TODO(michelle): PL-388 Fix our table store to correctly support hot/cold data. For now, do not
+  // support StopTime, since the current implementation is buggy.
 
   return true;
 }

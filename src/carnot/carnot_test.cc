@@ -241,7 +241,7 @@ TEST_F(CarnotTest, order_test) {
 
 TEST_F(CarnotTest, range_test_multiple_rbs) {
   int64_t start_time = 2;
-  int64_t stop_time = 6;
+  int64_t stop_time = 12;
   auto query = absl::StrJoin(
       {
           "queryDF = From(table='big_test_table', select=['time_', 'col2', "
@@ -255,7 +255,7 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   ASSERT_OK(s);
 
   auto output_table = table_store_->GetTable("range_output");
-  EXPECT_EQ(2, output_table->NumBatches());
+  EXPECT_EQ(3, output_table->NumBatches());
   EXPECT_EQ(3, output_table->NumColumns());
 
   auto rb1 =
@@ -308,8 +308,8 @@ TEST_F(CarnotTest, range_test_single_rb) {
           "'col3']).Range(start=$0, stop=$1).Result(name='range_output')",
       },
       "\n");
-  int64_t start_time = 2;
-  int64_t stop_time = 3;
+  int64_t start_time = 9;
+  int64_t stop_time = 12;
   query = absl::Substitute(query, start_time, stop_time);
   // now() not called, doesn't matter what now is.
   auto s = carnot_->ExecuteQuery(query, 0);

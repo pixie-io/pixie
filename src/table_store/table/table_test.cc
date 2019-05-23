@@ -521,5 +521,26 @@ row_batches {
   EXPECT_TRUE(differ.Compare(expected_proto, table_proto));
 }
 
+TEST(TableTest, transfer_empty_record_batch_test) {
+  schema::Relation rel({types::DataType::INT64}, {"col1"});
+  schema::RowDescriptor rd({types::DataType::INT64});
+
+  Table table(rel);
+
+  // ColumnWrapper with no columns should not be added to row batches.
+  auto wrapper_batch_1 = std::make_unique<types::ColumnWrapperRecordBatch>();
+  EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_1)));
+
+  EXPECT_EQ(table.NumBatches(), 0);
+
+  // Column wrapper with empty columns should not be added to row batches.
+  auto wrapper_batch_2 = std::make_unique<types::ColumnWrapperRecordBatch>();
+  auto col_wrapper_2 = std::make_shared<types::Time64NSValueColumnWrapper>(0);
+  wrapper_batch_2->push_back(col_wrapper_2);
+  EXPECT_OK(table.TransferRecordBatch(std::move(wrapper_batch_2)));
+
+  EXPECT_EQ(table.NumBatches(), 0);
+}
+
 }  // namespace table_store
 }  // namespace pl

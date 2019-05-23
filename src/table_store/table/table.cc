@@ -292,6 +292,11 @@ Status Table::WriteRowBatch(schema::RowBatch rb) {
 
 Status Table::TransferRecordBatch(
     std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch) {
+  // Don't transfer over empty row batches.
+  if (record_batch->empty() || record_batch->at(0)->Size() == 0) {
+    return Status::OK();
+  }
+
   // Check for matching types
   auto received_num_columns = record_batch->size();
   auto expected_num_columns = desc_.size();
