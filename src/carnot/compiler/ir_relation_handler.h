@@ -141,6 +141,7 @@ class IRRelationHandler {
   StatusOr<IntIR*> EvaluateCompilerExpression(IRNode* node);
   StatusOr<IntIR*> EvaluateCompilerFunction(const std::string& name,
                                             std::vector<IntIR*> evaled_args, IRNode* parent_node);
+  StatusOr<std::vector<std::string>> GetColumnNames(std::vector<IRNode*> select_children);
   /** Variables **/
   CompilerState* compiler_state_;
 };

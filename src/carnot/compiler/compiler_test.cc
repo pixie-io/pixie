@@ -1051,6 +1051,76 @@ TEST_F(CompilerTest, multiple_result_sinks) {
   EXPECT_OK(plan_status);
 }
 
+const char* kExpectedSelectDefaultArg = R"proto(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      id: 1
+      sorted_deps: 0
+    }
+    nodes {
+    }
+  }
+  nodes {
+    id: 1
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 0
+        column_idxs: 1
+        column_idxs: 2
+        column_idxs: 3
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+        column_types: INT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+      }
+    }
+  }
+  nodes {
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "out"
+        column_types: INT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+      }
+    }
+  }
+}
+)proto";
+TEST_F(CompilerTest, from_select_default_arg) {
+  std::string no_select_arg = "From(table='cpu').Result(name='out')";
+  auto plan_status = compiler_.Compile(no_select_arg, compiler_state_.get());
+  VLOG(2) << plan_status.ToString();
+  ASSERT_OK(plan_status);
+  auto plan = plan_status.ValueOrDie();
+  VLOG(2) << plan.DebugString();
+
+  // Check the select columns match the expected values.
+  planpb::Plan expected_plan_pb;
+  ASSERT_TRUE(
+      google::protobuf::TextFormat::MergeFromString(kExpectedSelectDefaultArg, &expected_plan_pb));
+  EXPECT_TRUE(CompareLogicalPlans(expected_plan_pb, plan, true /*ignore_ids*/));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

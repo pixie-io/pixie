@@ -452,13 +452,15 @@ class MemorySourceIR : public OperatorIR {
 
   std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
     // TODO(philkuz) allow default select value that selects all.
-    return std::unordered_map<std::string, IRNode*>();
+    return std::unordered_map<std::string, IRNode*>{{"select", nullptr}};
   }
   Status InitImpl(const ArgMap& args) override;
+  bool select_all() const { return select_ == nullptr; }
 
  private:
   std::string table_name_;
   ListIR* select_;
+
   bool time_set_ = false;
   int64_t time_start_ns_;
   int64_t time_stop_ns_;

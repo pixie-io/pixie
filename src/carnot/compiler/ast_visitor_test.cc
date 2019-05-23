@@ -46,7 +46,7 @@ TEST(ASTVisitor, extra_arguments) {
 }
 
 TEST(ASTVisitor, missing_one_argument) {
-  std::string missing_from_args = "From(table='cpu').Range(start=0,stop=10)";
+  std::string missing_from_args = "From(select=['cpu']).Range(start=0,stop=10)";
   Status s2 = ParseQuery(missing_from_args).status();
   compilerpb::CompilerErrorGroup error_group;
   EXPECT_NOT_OK(s2);
@@ -60,30 +60,14 @@ TEST(ASTVisitor, missing_one_argument) {
   EXPECT_EQ(error_group.errors(0).line_col_error().line(), 1);
   EXPECT_EQ(error_group.errors(0).line_col_error().column(), 5);
   EXPECT_EQ(error_group.errors(0).line_col_error().message(),
-            "You must set \'select\' directly. No default value found.");
-}
-
-TEST(ASTVisitor, missing_multiple_args) {
-  std::string no_from_args = "From().Range(start=0,stop=10)";
-  Status s3 = ParseQuery(no_from_args).status();
-  compilerpb::CompilerErrorGroup error_group;
-  EXPECT_NOT_OK(s3);
-  VLOG(1) << s3.ToString();
-  // Make sure the number of context errors are as expected.
-  ASSERT_TRUE(s3.has_context());
-  ASSERT_TRUE(s3.context()->Is<compilerpb::CompilerErrorGroup>());
-  ASSERT_TRUE(s3.context()->UnpackTo(&error_group));
-  int64_t s3_num_errors = error_group.errors_size();
-  ASSERT_EQ(s3_num_errors, 2);
-  EXPECT_EQ(error_group.errors(0).line_col_error().line(), 1);
-  EXPECT_EQ(error_group.errors(0).line_col_error().column(), 5);
-  EXPECT_EQ(error_group.errors(1).line_col_error().line(), 1);
-  EXPECT_EQ(error_group.errors(1).line_col_error().column(), 5);
-  EXPECT_EQ(error_group.errors(0).line_col_error().message(),
-            "You must set \'select\' directly. No default value found.");
-  EXPECT_EQ(error_group.errors(1).line_col_error().message(),
             "You must set \'table\' directly. No default value found.");
 }
+
+TEST(ASTVisitor, from_select_default_arg) {
+  std::string no_select_arg = "From(table='cpu').Result(name='out')";
+  EXPECT_OK(ParseQuery(no_select_arg));
+}
+
 // Checks to make sure the parser identifies bad syntax
 TEST(ASTVisitor, bad_syntax) {
   std::string early_paranetheses_close = "From";

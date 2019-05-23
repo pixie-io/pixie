@@ -37,6 +37,13 @@ std::string IRVerifier::ExpString(const std::string& node_name, const int64_t id
 }
 Status IRVerifier::VerifyMemorySource(MemorySourceIR* mem_node) {
   ListIR* select_node = mem_node->select();
+  if (mem_node->select_all()) {
+    return Status::OK();
+  }
+  if (select_node == nullptr) {
+    return mem_node->CreateIRNodeError(
+        "Select value is not set, but the compiler thinks that it is.");
+  }
   for (auto& c : select_node->children()) {
     PL_RETURN_IF_ERROR(
         ExpectType(StringType, c, ExpString("MemorySourceIR select", select_node->id(), "child")));

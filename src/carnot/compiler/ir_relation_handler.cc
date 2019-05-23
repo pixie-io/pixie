@@ -351,6 +351,21 @@ Status IRRelationHandler::RelationUpdate(OperatorIR* node) {
   return node->SetRelation(rel);
 }
 
+StatusOr<std::vector<std::string>> IRRelationHandler::GetColumnNames(
+    std::vector<IRNode*> select_children) {
+  std::vector<std::string> columns;
+  for (size_t idx = 0; idx < select_children.size(); idx++) {
+    IRNode* col_string_node = select_children[idx];
+    if (col_string_node->type() != StringType) {
+      return col_string_node->CreateIRNodeError(
+          "The elements of the select list must be of type `str`. Found a '$0' for idx $1.",
+          col_string_node->type_string(), idx);
+    }
+    columns.push_back(static_cast<StringIR*>(col_string_node)->str());
+  }
+  return columns;
+}
+
 Status IRRelationHandler::SetSourceRelation(MemorySourceIR* mem_node) {
   ListIR* select = mem_node->select();
   auto table_str = mem_node->table_name();
@@ -362,20 +377,14 @@ Status IRRelationHandler::SetSourceRelation(MemorySourceIR* mem_node) {
   table_store::schema::Relation table_relation = relation_map_it->second;
 
   // get the children.
-  auto select_children = select->children();
-  std::vector<std::string> columns;
-  for (size_t idx = 0; idx < select_children.size(); idx++) {
-    IRNode* col_string_node = select_children[idx];
-    if (col_string_node->type() != StringType) {
-      return col_string_node->CreateIRNodeError(
-          "The elements of the select list must be of type String. Found a '$0' for idx $1.",
-          col_string_node->type_string(), idx);
-    }
-    columns.push_back(static_cast<StringIR*>(col_string_node)->str());
+  std::vector<std::string> columns = table_relation.col_names();
+  if (!mem_node->select_all()) {
+    PL_ASSIGN_OR_RETURN(columns, GetColumnNames(select->children()));
   }
-  PL_ASSIGN_OR_RETURN(auto select_relation, table_relation.MakeSubRelation(columns));
-
-  PL_ASSIGN_OR_RETURN(auto cols, GetColumnsFromRelation(mem_node, columns, table_relation));
+  PL_ASSIGN_OR_RETURN(table_store::schema::Relation select_relation,
+                      table_relation.MakeSubRelation(columns));
+  PL_ASSIGN_OR_RETURN(std::vector<ColumnIR*> cols,
+                      GetColumnsFromRelation(mem_node, columns, table_relation));
   mem_node->SetColumns(cols);
   return mem_node->SetRelation(select_relation);
 }

@@ -111,8 +111,12 @@ std::string DebugStringFmt(int64_t depth, std::string name,
   return absl::StrJoin(property_strings, "\n");
 }
 std::string MemorySourceIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(depth, absl::StrFormat("%d:MemorySourceIR", id()),
-                        {{"From", table_name_}, {"Select", select_->DebugString(depth + 1)}});
+  std::map<std::string, std::string> property_map = {{"From", table_name_}};
+  if (!select_all()) {
+    CHECK(select_ != nullptr);
+    property_map["Select"] = select_->DebugString(depth + 1);
+  }
+  return DebugStringFmt(depth, absl::StrFormat("%d:MemorySourceIR", id()), property_map);
 }
 
 bool MemorySinkIR::HasLogicalRepr() const { return true; }
@@ -140,6 +144,10 @@ Status MemorySourceIR::InitImpl(const ArgMap& args) {
   table_name_ = static_cast<StringIR*>(table_node)->str();
 
   IRNode* select_node = args.find("select")->second;
+  if (select_node == nullptr) {
+    select_ = nullptr;
+    return Status::OK();
+  }
   if (select_node->type() != IRNodeType::ListType) {
     return CreateIRNodeError("Expected select argument to be a list, not a $0",
                              table_node->type_string());
@@ -396,7 +404,8 @@ Status BlockingAggIR::InitImpl(const ArgMap& args) {
                              agg_func->type_string());
   }
 
-  // If by_func_ is not a null pointer, then update the graph with it. Otherwise, continue onwards.
+  // If by_func_ is not a null pointer, then update the graph with it. Otherwise, continue
+  // onwards.
   if (by_func == nullptr) {
     by_func_ = nullptr;
   } else if (by_func->type() == IRNodeType::LambdaType) {

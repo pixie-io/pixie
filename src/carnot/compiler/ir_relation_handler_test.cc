@@ -674,6 +674,24 @@ TEST_F(RelationHandlerTest, assign_uda_func_ids) {
   EXPECT_EQ(1, func_node->func_id());
 }
 
+TEST_F(RelationHandlerTest, select_all) {
+  std::string select_all = "queryDF = From(table='cpu').Result(name='cpu_out')";
+  auto ir_graph_status = CompileGraph(select_all);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  ASSERT_OK(HandleRelation(ir_graph));
+
+  // Map relation should be contain cpu0, cpu1, and cpu_sum.
+  auto sink_node_status = FindNodeType(ir_graph, MemorySinkType);
+  EXPECT_OK(sink_node_status);
+  auto sink_node = static_cast<MemorySinkIR*>(sink_node_status.ConsumeValueOrDie());
+  auto relation_map = compiler_state_->relation_map();
+  ASSERT_NE(relation_map->find("cpu"), relation_map->end());
+  auto expected_relation = relation_map->find("cpu")->second;
+  EXPECT_EQ(expected_relation.col_types(), sink_node->relation().col_types());
+  EXPECT_EQ(expected_relation.col_names(), sink_node->relation().col_names());
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
