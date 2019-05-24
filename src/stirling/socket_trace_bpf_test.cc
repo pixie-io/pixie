@@ -284,7 +284,7 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
   const int table_num = 0;  // HTTP Table
   auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source.get());
   ASSERT_NE(nullptr, socket_trace_connector);
-  socket_trace_connector->PollPerfBuffer(table_num);
+  socket_trace_connector->ReadPerfBuffer(table_num);
   EXPECT_OK(source->Stop());
 
   // TODO(yzhao): Write a matcher for Stream.

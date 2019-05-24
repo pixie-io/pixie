@@ -46,33 +46,35 @@ class SocketTraceConnector : public SourceConnector {
   inline static const std::string_view kBCCScript = http_trace_bcc_script;
 
   static constexpr SourceType kSourceType = SourceType::kEBPF;
-  static constexpr char kName[] = "bcc_http_trace";
+  static constexpr char kName[] = "socket_trace";
+
   // TODO(yzhao): As of 2019-04-18, all HTTP trace data is written to one table. An option to
   // improve is to have different tables:
   // - A HTTP connection table with fields 1) id (fd+additional_data for uniqueness),
   //   2) {src,dst}_{addr,port}.
   // - A HTTP message table with fields 1) id (same as above), type (req or resp), header, payload.
   inline static const std::vector<DataTableSchema> kElements = {
-      DataTableSchema(kName, {DataElement("time_", types::DataType::TIME64NS),
-                              // tgid is the user space "pid".
-                              DataElement("tgid", types::DataType::INT64),
-                              // TODO(yzhao): Remove 'fd'.
-                              DataElement("fd", types::DataType::INT64),
-                              DataElement("event_type", types::DataType::STRING),
-                              // TODO(PL-519): Eventually, use the appropriate data type to
-                              // represent IP addresses, as will be resolved in the Jira issue.
-                              DataElement("src_addr", types::DataType::STRING),
-                              DataElement("src_port", types::DataType::INT64),
-                              DataElement("dst_addr", types::DataType::STRING),
-                              DataElement("dst_port", types::DataType::INT64),
-                              DataElement("http_minor_version", types::DataType::INT64),
-                              DataElement("http_headers", types::DataType::STRING),
-                              DataElement("http_req_method", types::DataType::STRING),
-                              DataElement("http_req_path", types::DataType::STRING),
-                              DataElement("http_resp_status", types::DataType::INT64),
-                              DataElement("http_resp_message", types::DataType::STRING),
-                              DataElement("http_resp_body", types::DataType::STRING),
-                              DataElement("http_resp_latency_ns", types::DataType::INT64)})};
+      DataTableSchema(std::string(kName) + "_http",
+                      {DataElement("time_", types::DataType::TIME64NS),
+                       // tgid is the user space "pid".
+                       DataElement("tgid", types::DataType::INT64),
+                       // TODO(yzhao): Remove 'fd'.
+                       DataElement("fd", types::DataType::INT64),
+                       DataElement("event_type", types::DataType::STRING),
+                       // TODO(PL-519): Eventually, use the appropriate data type to
+                       // represent IP addresses, as will be resolved in the Jira issue.
+                       DataElement("src_addr", types::DataType::STRING),
+                       DataElement("src_port", types::DataType::INT64),
+                       DataElement("dst_addr", types::DataType::STRING),
+                       DataElement("dst_port", types::DataType::INT64),
+                       DataElement("http_minor_version", types::DataType::INT64),
+                       DataElement("http_headers", types::DataType::STRING),
+                       DataElement("http_req_method", types::DataType::STRING),
+                       DataElement("http_req_path", types::DataType::STRING),
+                       DataElement("http_resp_status", types::DataType::INT64),
+                       DataElement("http_resp_message", types::DataType::STRING),
+                       DataElement("http_resp_body", types::DataType::STRING),
+                       DataElement("http_resp_latency_ns", types::DataType::INT64)})};
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{5000};
@@ -85,33 +87,43 @@ class SocketTraceConnector : public SourceConnector {
   Status StopImpl() override;
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
-  // TODO(oazizi): These are only public for the sake of tests. Should be private?
-  void PollPerfBuffer(uint32_t table_num);
-  void AcceptEvent(socket_data_event_t event);
-
   const std::map<uint64_t, HTTPStream>& TestOnlyHTTPStreams() const { return http_streams_; }
   static void TestOnlySetHTTPResponseHeaderFilter(HTTPHeaderFilter filter) {
     http_response_header_filter_ = std::move(filter);
   }
 
+  // This function causes the perf buffer to be read, and triggers callbacks per message.
+  // TODO(oazizi): This function is only public for testing purposes. Make private?
+  void ReadPerfBuffer(uint32_t table_num);
+
  private:
   explicit SocketTraceConnector(const std::string& source_name)
       : SourceConnector(kSourceType, std::move(source_name), kElements, kDefaultSamplingPeriod,
                         kDefaultPushPeriod) {
-    // TODO(oazizi): Is there a better place/time to grab the flags?
+    // TODO(yzhao): Is there a better place/time to grab the flags?
     http_response_header_filter_ = ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
   }
 
-  inline static HTTPHeaderFilter http_response_header_filter_;
-
-  static void HandleProbeOutput(void* cb_cookie, void* data, int data_size);
+  // ReadPerfBuffer poll callback functions (must be static).
+  static void HandleHTTPResponseProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleProbeLoss(void* cb_cookie, uint64_t);
 
-  // Helper functions used by HandleProbeOutput().
-  static bool SelectForAppend(const HTTPTraceRecord& record);
-  static void AppendToRecordBatch(HTTPTraceRecord record,
+  // Places the event into a stream buffer to deal with reorderings.
+  void AcceptEvent(socket_data_event_t event);
+
+  // Transfers the data from stream buffers (from AcceptEvent()) to record_batch.
+  void TransferStreamData(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch);
+
+  // Transfer of an HTTP Response Event to the HTTP Response Table in the table store.
+  void TransferHTTPResponseStreams(types::ColumnWrapperRecordBatch* record_batch);
+  static void ConsumeHTTPResponse(HTTPTraceRecord record,
                                   types::ColumnWrapperRecordBatch* record_batch);
-  static void ConsumeRecord(HTTPTraceRecord record, types::ColumnWrapperRecordBatch* record_batch);
+  static bool SelectHTTPResponse(const HTTPTraceRecord& record);
+  static void AppendHTTPResponse(HTTPTraceRecord record,
+                                 types::ColumnWrapperRecordBatch* record_batch);
+
+  FRIEND_TEST(HandleProbeOutputTest, FilterMessages);
+  inline static HTTPHeaderFilter http_response_header_filter_;
 
   ebpf::BPF bpf_;
 
@@ -145,8 +157,9 @@ class SocketTraceConnector : public SourceConnector {
       {"close", "probe_close", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
   };
 
+  // Indexed by table_num from kElements (one-to-one mapping).
   static inline const std::vector<PerfBufferSpec> kPerfBufferSpecs = {
-      {"socket_http_resp_events", &SocketTraceConnector::HandleProbeOutput,
+      {"socket_http_resp_events", &SocketTraceConnector::HandleHTTPResponseProbeOutput,
        &SocketTraceConnector::HandleProbeLoss,
        /* num_pages */ 8}};
 };

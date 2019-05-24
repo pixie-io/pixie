@@ -22,14 +22,14 @@ TEST(PreProcessRecordTest, GzipCompressedContentIsDecompressed) {
                                       0xc0, 0xfa, 0x0f, 0x00, 0x00, 0x00};
   record.message.http_resp_body.assign(reinterpret_cast<const char*>(compressed_bytes),
                                        sizeof(compressed_bytes));
-  PreProcessRecord(&record);
+  PreProcessHTTPRecord(&record);
   EXPECT_EQ("This is a test\n", record.message.http_resp_body);
 }
 
 TEST(PreProcessRecordTest, ContentHeaderIsNotAdded) {
   HTTPTraceRecord record;
   record.message.http_resp_body = "test";
-  PreProcessRecord(&record);
+  PreProcessHTTPRecord(&record);
   EXPECT_EQ("test", record.message.http_resp_body);
   EXPECT_THAT(record.message.http_headers, Not(Contains(Key(http_headers::kContentEncoding))));
 }

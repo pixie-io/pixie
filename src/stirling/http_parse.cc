@@ -14,7 +14,7 @@
 namespace pl {
 namespace stirling {
 
-void PreProcessRecord(HTTPTraceRecord* record) {
+void PreProcessHTTPRecord(HTTPTraceRecord* record) {
   auto content_encoding_iter = record->message.http_headers.find(http_headers::kContentEncoding);
   // Replace body with decompressed version, if required.
   if (content_encoding_iter != record->message.http_headers.end() &&

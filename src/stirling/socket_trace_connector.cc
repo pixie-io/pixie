@@ -23,126 +23,6 @@ DEFINE_string(http_response_header_filters, "Content-Type:json",
 namespace pl {
 namespace stirling {
 
-bool SocketTraceConnector::SelectForAppend(const HTTPTraceRecord& record) {
-  // Some of this function is currently a placeholder for the demo.
-  // TODO(oazizi/yzhao): update this function further.
-
-  // Rule: Exclude any HTTP requests.
-  if (record.message.type == SocketTraceEventType::kHTTPRequest) {
-    return false;
-  }
-
-  // Rule: Exclude anything that doesn't specify its Content-Type.
-  auto content_type_iter = record.message.http_headers.find(http_headers::kContentType);
-  if (content_type_iter == record.message.http_headers.end()) {
-    return false;
-  }
-
-  // Rule: Exclude anything that doesn't match the filter, if filter is active.
-  if (record.message.type == SocketTraceEventType::kHTTPResponse &&
-      (!http_response_header_filter_.inclusions.empty() ||
-       !http_response_header_filter_.exclusions.empty())) {
-    if (!MatchesHTTPTHeaders(record.message.http_headers, http_response_header_filter_)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-void SocketTraceConnector::AppendToRecordBatch(HTTPTraceRecord record,
-                                               types::ColumnWrapperRecordBatch* record_batch) {
-  uint64_t num_columns = SocketTraceConnector::kElements[0].elements().size();
-  CHECK(record_batch->size() == num_columns) << absl::StrFormat(
-      "HTTP trace record field count should be: %d, got %d", num_columns, record_batch->size());
-  auto& columns = *record_batch;
-
-  uint32_t idx = 0;
-  columns[idx++]->Append<types::Time64NSValue>(record.message.time_stamp_ns);
-  columns[idx++]->Append<types::Int64Value>(record.conn.tgid);
-  columns[idx++]->Append<types::Int64Value>(record.conn.fd);
-  columns[idx++]->Append<types::StringValue>(EventTypeToString(record.message.type));
-  columns[idx++]->Append<types::StringValue>(std::move(record.conn.src_addr));
-  columns[idx++]->Append<types::Int64Value>(record.conn.src_port);
-  columns[idx++]->Append<types::StringValue>(std::move(record.conn.dst_addr));
-  columns[idx++]->Append<types::Int64Value>(record.conn.dst_port);
-  columns[idx++]->Append<types::Int64Value>(record.message.http_minor_version);
-  columns[idx++]->Append<types::StringValue>(
-      absl::StrJoin(record.message.http_headers, "\n", absl::PairFormatter(": ")));
-  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_req_method));
-  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_req_path));
-  columns[idx++]->Append<types::Int64Value>(record.message.http_resp_status);
-  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_resp_message));
-  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_resp_body));
-  columns[idx++]->Append<types::Int64Value>(record.message.time_stamp_ns -
-                                            record.conn.time_stamp_ns);
-  DCHECK_GE(record.message.time_stamp_ns, record.conn.time_stamp_ns);
-  CHECK_EQ(idx, num_columns) << absl::StrFormat(
-      "Didn't populate all fields [idx = %d, num_columns = %d]", idx, num_columns);
-}
-
-void SocketTraceConnector::ConsumeRecord(HTTPTraceRecord record,
-                                         types::ColumnWrapperRecordBatch* record_batch) {
-  // Only allow certain records to be transferred upstream.
-  if (SelectForAppend(record)) {
-    // Currently decompresses gzip content, but could handle other transformations too.
-    // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
-    PreProcessRecord(&record);
-
-    // Push data to the TableStore.
-    AppendToRecordBatch(std::move(record), record_batch);
-  }
-}
-
-void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
-  const uint64_t stream_id =
-      (static_cast<uint64_t>(event.attr.tgid) << 32) | event.attr.conn_info.conn_id;
-  const uint64_t seq_num = static_cast<uint64_t>(event.attr.conn_info.seq_num);
-  const auto iter = http_streams_.find(stream_id);
-  if (iter == http_streams_.end()) {
-    // This is the first event of the stream.
-    HTTPStream stream;
-    // TODO(yzhao): We should explicitly capture the accept() event into user space to determine the
-    // time stamp when the stream is created.
-    stream.conn.time_stamp_ns = event.attr.conn_info.timestamp_ns;
-    stream.conn.tgid = event.attr.tgid;
-    stream.conn.fd = event.attr.fd;
-    auto ip_endpoint_or = ParseSockAddr(event);
-    if (ip_endpoint_or.ok()) {
-      stream.conn.dst_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
-      stream.conn.dst_port = ip_endpoint_or.ValueOrDie().port;
-    } else {
-      LOG(WARNING) << "Could not parse IP address.";
-    }
-    stream.events.emplace(seq_num, std::move(event));
-    http_streams_.emplace(stream_id, std::move(stream));
-  } else {
-    iter->second.events.emplace(seq_num, std::move(event));
-  }
-}
-
-void SocketTraceConnector::HandleProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
-  if (cb_cookie == nullptr) {
-    return;
-  }
-  auto* event = static_cast<socket_data_event_t*>(data);
-  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  if (event->attr.event_type != kEventTypeSyscallWriteEvent &&
-      event->attr.event_type != kEventTypeSyscallSendEvent) {
-    LOG(ERROR) << "Unknown event type: " << event->attr.event_type;
-    return;
-  }
-
-  connector->AcceptEvent(*event);
-}
-
-// This function is invoked by BCC runtime when a item in the perf buffer is not read and lost.
-// For now we do nothing.
-void SocketTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
-  // TODO(yzhao): Lower to VLOG(1) after HTTP tracing reaches production stability.
-  VLOG(1) << "Possibly lost " << lost << " samples";
-}
-
 Status SocketTraceConnector::InitImpl() {
   if (!IsRoot()) {
     return error::PermissionDenied("BCC currently only supported as the root user.");
@@ -200,21 +80,106 @@ Status SocketTraceConnector::StopImpl() {
   return Status();
 }
 
-void SocketTraceConnector::PollPerfBuffer(uint32_t table_num) {
-  auto perf_buffer = bpf_.get_perf_buffer(kPerfBufferSpecs[table_num].name);
-  if (perf_buffer != nullptr) {
-    perf_buffer->poll(1);
-  }
-}
-
 void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
                                             types::ColumnWrapperRecordBatch* record_batch) {
   CHECK_LT(table_num, kElements.size())
       << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
   CHECK(record_batch != nullptr) << "record_batch cannot be nullptr";
 
-  PollPerfBuffer(table_num);
+  // TODO(oazizi): Should this run more frequently than TransferDataImpl?
+  // This drains the relevant perf buffer, and causes Handle() callback functions to get called.
+  ReadPerfBuffer(table_num);
 
+  // ReadPerfBuffer copies data into a reorder buffer called the write_stream_map_.
+  // This call transfers the data from the
+  TransferStreamData(table_num, record_batch);
+}
+
+//-----------------------------------------------------------------------------
+// Perf Buffer Polling and Callback functions.
+//-----------------------------------------------------------------------------
+
+void SocketTraceConnector::ReadPerfBuffer(uint32_t table_num) {
+  auto perf_buffer = bpf_.get_perf_buffer(kPerfBufferSpecs[table_num].name);
+  if (perf_buffer != nullptr) {
+    perf_buffer->poll(1);
+  }
+}
+
+void SocketTraceConnector::HandleHTTPResponseProbeOutput(void* cb_cookie, void* data,
+                                                         int /*data_size*/) {
+  if (cb_cookie == nullptr) {
+    return;
+  }
+  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
+  auto* event = static_cast<socket_data_event_t*>(data);
+
+  if (event->attr.event_type != kEventTypeSyscallWriteEvent &&
+      event->attr.event_type != kEventTypeSyscallSendEvent) {
+    LOG(ERROR) << "Unexpected event type: " << event->attr.event_type;
+    return;
+  }
+
+  connector->AcceptEvent(*event);
+}
+
+// This function is invoked by BCC runtime when a item in the perf buffer is not read and lost.
+// For now we do nothing.
+void SocketTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
+  VLOG(1) << "Possibly lost " << lost << " samples";
+  // TODO(oazizi): Can we figure out which perf buffer lost the event?
+}
+
+//-----------------------------------------------------------------------------
+// Write Stream Map Functions
+//-----------------------------------------------------------------------------
+
+void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
+  const uint64_t stream_id =
+      (static_cast<uint64_t>(event.attr.tgid) << 32) | event.attr.conn_info.conn_id;
+  const uint64_t seq_num = static_cast<uint64_t>(event.attr.conn_info.seq_num);
+  const auto iter = http_streams_.find(stream_id);
+
+  if (iter != http_streams_.end()) {
+    iter->second.events.emplace(seq_num, std::move(event));
+    return;
+  }
+
+  // This is the first event of the stream.
+  HTTPStream stream;
+  // TODO(yzhao): We should explicitly capture the accept() event into user space to determine the
+  // time stamp when the stream is created.
+  stream.conn.time_stamp_ns = event.attr.conn_info.timestamp_ns;
+  stream.conn.tgid = event.attr.tgid;
+  stream.conn.fd = event.attr.fd;
+  auto ip_endpoint_or = ParseSockAddr(event);
+  if (ip_endpoint_or.ok()) {
+    stream.conn.dst_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
+    stream.conn.dst_port = ip_endpoint_or.ValueOrDie().port;
+  } else {
+    LOG(WARNING) << "Could not parse IP address.";
+  }
+  stream.events.emplace(seq_num, std::move(event));
+  http_streams_.emplace(stream_id, std::move(stream));
+}
+
+void SocketTraceConnector::TransferStreamData(uint32_t table_num,
+                                              types::ColumnWrapperRecordBatch* record_batch) {
+  switch (table_num) {
+    case 0:
+      TransferHTTPResponseStreams(record_batch);
+      break;
+    default:
+      CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
+  }
+}
+
+//-----------------------------------------------------------------------------
+// HTTP Specific TransferImpl Helpers
+//-----------------------------------------------------------------------------
+
+void SocketTraceConnector::TransferHTTPResponseStreams(
+    types::ColumnWrapperRecordBatch* record_batch) {
   for (auto& [id, stream] : http_streams_) {
     PL_UNUSED(id);
     HTTPParser& parser = stream.parser;
@@ -232,7 +197,7 @@ void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
     // Extract and output all complete messages.
     for (HTTPMessage& msg : parser.ExtractHTTPMessages()) {
       HTTPTraceRecord record{stream.conn, std::move(msg)};
-      ConsumeRecord(std::move(record), record_batch);
+      ConsumeHTTPResponse(std::move(record), record_batch);
     }
 
     // TODO(yzhao): Add the capability to remove events that are too old.
@@ -242,6 +207,77 @@ void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
       events.erase(seq_num);
     }
   }
+}
+
+void SocketTraceConnector::ConsumeHTTPResponse(HTTPTraceRecord record,
+                                               types::ColumnWrapperRecordBatch* record_batch) {
+  // Only allow certain records to be transferred upstream.
+  if (SelectHTTPResponse(record)) {
+    // Currently decompresses gzip content, but could handle other transformations too.
+    // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
+    PreProcessHTTPRecord(&record);
+
+    // Push data to the TableStore.
+    AppendHTTPResponse(std::move(record), record_batch);
+  }
+}
+
+bool SocketTraceConnector::SelectHTTPResponse(const HTTPTraceRecord& record) {
+  // Some of this function is currently a placeholder for the demo.
+  // TODO(oazizi/yzhao): update this function further.
+
+  // Rule: Exclude any HTTP requests.
+  if (record.message.type == SocketTraceEventType::kHTTPRequest) {
+    return false;
+  }
+
+  // Rule: Exclude anything that doesn't specify its Content-Type.
+  auto content_type_iter = record.message.http_headers.find(http_headers::kContentType);
+  if (content_type_iter == record.message.http_headers.end()) {
+    return false;
+  }
+
+  // Rule: Exclude anything that doesn't match the filter, if filter is active.
+  if (record.message.type == SocketTraceEventType::kHTTPResponse &&
+      (!http_response_header_filter_.inclusions.empty() ||
+       !http_response_header_filter_.exclusions.empty())) {
+    if (!MatchesHTTPTHeaders(record.message.http_headers, http_response_header_filter_)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+void SocketTraceConnector::AppendHTTPResponse(HTTPTraceRecord record,
+                                              types::ColumnWrapperRecordBatch* record_batch) {
+  uint64_t num_columns = SocketTraceConnector::kElements[0].elements().size();
+  CHECK(record_batch->size() == num_columns) << absl::StrFormat(
+      "HTTP trace record field count should be: %d, got %d", num_columns, record_batch->size());
+  auto& columns = *record_batch;
+
+  uint32_t idx = 0;
+  columns[idx++]->Append<types::Time64NSValue>(record.message.time_stamp_ns);
+  columns[idx++]->Append<types::Int64Value>(record.conn.tgid);
+  columns[idx++]->Append<types::Int64Value>(record.conn.fd);
+  columns[idx++]->Append<types::StringValue>(EventTypeToString(record.message.type));
+  columns[idx++]->Append<types::StringValue>(std::move(record.conn.src_addr));
+  columns[idx++]->Append<types::Int64Value>(record.conn.src_port);
+  columns[idx++]->Append<types::StringValue>(std::move(record.conn.dst_addr));
+  columns[idx++]->Append<types::Int64Value>(record.conn.dst_port);
+  columns[idx++]->Append<types::Int64Value>(record.message.http_minor_version);
+  columns[idx++]->Append<types::StringValue>(
+      absl::StrJoin(record.message.http_headers, "\n", absl::PairFormatter(": ")));
+  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_req_method));
+  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_req_path));
+  columns[idx++]->Append<types::Int64Value>(record.message.http_resp_status);
+  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_resp_message));
+  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_resp_body));
+  columns[idx++]->Append<types::Int64Value>(record.message.time_stamp_ns -
+                                            record.conn.time_stamp_ns);
+  DCHECK_GE(record.message.time_stamp_ns, record.conn.time_stamp_ns);
+  CHECK_EQ(idx, num_columns) << absl::StrFormat(
+      "Didn't populate all fields [idx = %d, num_columns = %d]", idx, num_columns);
 }
 
 }  // namespace stirling

@@ -63,7 +63,7 @@ struct HTTPTraceRecord {
  */
 void ParseMessageBodyChunked(HTTPTraceRecord* record);
 
-void PreProcessRecord(HTTPTraceRecord* record);
+void PreProcessHTTPRecord(HTTPTraceRecord* record);
 void ParseEventAttr(const socket_data_event_t& event, HTTPTraceRecord* record);
 // TODO(yzhao): Changes the functions that return bool to return Status.
 bool ParseHTTPRequest(const socket_data_event_t& event, HTTPTraceRecord* record);
