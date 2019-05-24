@@ -60,7 +60,7 @@ class ProcStatConnector : public SourceConnector {
    *
    */
   struct __attribute__((__packed__)) CPUUsage {
-    uint64_t time_stamp;
+    uint64_t timestamp;
     double system_percent, user_percent, idle_percent;
   };
 

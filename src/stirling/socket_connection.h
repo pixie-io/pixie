@@ -12,7 +12,7 @@ namespace stirling {
  * src/stirling/bcc_bpf/socket_trace.h.
  */
 struct SocketConnection {
-  uint64_t time_stamp_ns = 0;
+  uint64_t timestamp_ns = 0;
   uint32_t tgid = 0;
   uint32_t fd = -1;
   std::string src_addr = "-";

@@ -46,7 +46,7 @@ struct socket_data_event_t {
     // Information from the accept() syscall, including IP and port.
     struct conn_info_t conn_info;
     // The time stamp as this is captured by BPF program.
-    uint64_t time_stamp_ns;
+    uint64_t timestamp_ns;
     // Comes from the process from which this is captured.
     // See https://stackoverflow.com/a/9306150 for details.
     uint32_t tgid;

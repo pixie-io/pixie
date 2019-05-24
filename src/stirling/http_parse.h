@@ -33,7 +33,7 @@ struct HTTPMessage {
   // Only meaningful is is_chunked is true.
   phr_chunked_decoder chunk_decoder = {};
 
-  uint64_t time_stamp_ns;
+  uint64_t timestamp_ns;
   SocketTraceEventType type = SocketTraceEventType::kUnknown;
 
   int http_minor_version = -1;

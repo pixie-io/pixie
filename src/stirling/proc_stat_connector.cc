@@ -65,7 +65,7 @@ Status ProcStatConnector::GetProcStat(const std::vector<std::string>& parsed_str
   auto system_cpu = total_cpu - user_cpu - idle_cpu;
 
   auto now = std::chrono::steady_clock::now();
-  cpu_usage_.time_stamp =
+  cpu_usage_.timestamp =
       std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count();
 
   // Change in cpu stats since last poll.
@@ -96,7 +96,7 @@ void ProcStatConnector::TransferDataImpl(uint32_t table_num,
   auto parsed_str = GetProcParams();
   PL_CHECK_OK(GetProcStat(parsed_str));
 
-  columns[0]->Append<types::Time64NSValue>(cpu_usage_.time_stamp);
+  columns[0]->Append<types::Time64NSValue>(cpu_usage_.timestamp);
   columns[1]->Append<types::Float64Value>(cpu_usage_.system_percent);
   columns[2]->Append<types::Float64Value>(cpu_usage_.user_percent);
   columns[3]->Append<types::Float64Value>(cpu_usage_.idle_percent);

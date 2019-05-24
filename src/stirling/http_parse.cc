@@ -33,7 +33,7 @@ void PreProcessHTTPRecord(HTTPTraceRecord* record) {
 void ParseEventAttr(const socket_data_event_t& event, HTTPTraceRecord* record) {
   record->conn.tgid = event.attr.tgid;
   record->conn.fd = event.attr.fd;
-  record->message.time_stamp_ns = event.attr.time_stamp_ns;
+  record->message.timestamp_ns = event.attr.timestamp_ns;
 }
 
 namespace {
@@ -293,7 +293,7 @@ HTTPParser::ParseState HTTPParser::ParseResponse(const socket_data_event_t& even
       return ParseState::kInvalid;
     }
     // The message's time stamp is from its first event.
-    message.time_stamp_ns = event.attr.time_stamp_ns;
+    message.timestamp_ns = event.attr.timestamp_ns;
     if (message.is_complete) {
       msgs_complete_.push_back(std::move(message));
       return ParseState::kSuccess;

@@ -149,7 +149,7 @@ void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
   HTTPStream stream;
   // TODO(yzhao): We should explicitly capture the accept() event into user space to determine the
   // time stamp when the stream is created.
-  stream.conn.time_stamp_ns = event.attr.conn_info.timestamp_ns;
+  stream.conn.timestamp_ns = event.attr.conn_info.timestamp_ns;
   stream.conn.tgid = event.attr.tgid;
   stream.conn.fd = event.attr.fd;
   auto ip_endpoint_or = ParseSockAddr(event);
@@ -257,7 +257,7 @@ void SocketTraceConnector::AppendHTTPResponse(HTTPTraceRecord record,
   auto& columns = *record_batch;
 
   uint32_t idx = 0;
-  columns[idx++]->Append<types::Time64NSValue>(record.message.time_stamp_ns);
+  columns[idx++]->Append<types::Time64NSValue>(record.message.timestamp_ns);
   columns[idx++]->Append<types::Int64Value>(record.conn.tgid);
   columns[idx++]->Append<types::Int64Value>(record.conn.fd);
   columns[idx++]->Append<types::StringValue>(EventTypeToString(record.message.type));
@@ -273,9 +273,8 @@ void SocketTraceConnector::AppendHTTPResponse(HTTPTraceRecord record,
   columns[idx++]->Append<types::Int64Value>(record.message.http_resp_status);
   columns[idx++]->Append<types::StringValue>(std::move(record.message.http_resp_message));
   columns[idx++]->Append<types::StringValue>(std::move(record.message.http_resp_body));
-  columns[idx++]->Append<types::Int64Value>(record.message.time_stamp_ns -
-                                            record.conn.time_stamp_ns);
-  DCHECK_GE(record.message.time_stamp_ns, record.conn.time_stamp_ns);
+  columns[idx++]->Append<types::Int64Value>(record.message.timestamp_ns - record.conn.timestamp_ns);
+  DCHECK_GE(record.message.timestamp_ns, record.conn.timestamp_ns);
   CHECK_EQ(idx, num_columns) << absl::StrFormat(
       "Didn't populate all fields [idx = %d, num_columns = %d]", idx, num_columns);
 }

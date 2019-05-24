@@ -70,7 +70,7 @@ void PIDCPUUseBCCConnector::TransferDataImpl(uint32_t table_num,
       prev_run_time = it->second;
     }
 
-    columns[0]->Append<types::Time64NSValue>(item.second.time_stamp + ClockRealTimeOffset());
+    columns[0]->Append<types::Time64NSValue>(item.second.timestamp + ClockRealTimeOffset());
     columns[1]->Append<types::Int64Value>(item.first);
     columns[2]->Append<types::Int64Value>(item.second.run_time - prev_run_time);
     columns[3]->Append<types::StringValue>(item.second.name);

@@ -36,7 +36,7 @@ TEST(PreProcessRecordTest, ContentHeaderIsNotAdded) {
 
 TEST(ParseEventAttrTest, DataIsCopied) {
   socket_data_event_t event;
-  event.attr.time_stamp_ns = 100;
+  event.attr.timestamp_ns = 100;
   event.attr.tgid = 1;
   event.attr.fd = 3;
 
@@ -44,7 +44,7 @@ TEST(ParseEventAttrTest, DataIsCopied) {
 
   ParseEventAttr(event, &record);
 
-  EXPECT_EQ(100, record.message.time_stamp_ns);
+  EXPECT_EQ(100, record.message.timestamp_ns);
   EXPECT_EQ(1, record.conn.tgid);
   EXPECT_EQ(3, record.conn.fd);
 }
@@ -55,7 +55,7 @@ Host: www.pixielabs.ai
 
 <body>)";
   socket_data_event_t event;
-  event.attr.time_stamp_ns = 100;
+  event.attr.timestamp_ns = 100;
   event.attr.tgid = 1;
   event.attr.fd = 3;
   event.attr.msg_size = http_request.size();
@@ -64,7 +64,7 @@ Host: www.pixielabs.ai
   HTTPTraceRecord record;
 
   EXPECT_TRUE(ParseHTTPRequest(event, &record));
-  EXPECT_EQ(100, record.message.time_stamp_ns);
+  EXPECT_EQ(100, record.message.timestamp_ns);
   EXPECT_EQ(1, record.conn.tgid);
   EXPECT_EQ(3, record.conn.fd);
   EXPECT_EQ(SocketTraceEventType::kHTTPRequest, record.message.type);
@@ -77,7 +77,7 @@ Host: www.pixielabs.ai
 TEST(ParseRawTest, ContentIsCopied) {
   const std::string data = "test";
   socket_data_event_t event;
-  event.attr.time_stamp_ns = 100;
+  event.attr.timestamp_ns = 100;
   event.attr.tgid = 1;
   event.attr.fd = 3;
   event.attr.msg_size = data.size();
@@ -86,7 +86,7 @@ TEST(ParseRawTest, ContentIsCopied) {
   HTTPTraceRecord record;
 
   EXPECT_TRUE(ParseRaw(event, &record));
-  EXPECT_EQ(100, record.message.time_stamp_ns);
+  EXPECT_EQ(100, record.message.timestamp_ns);
   EXPECT_EQ(1, record.conn.tgid);
   EXPECT_EQ(3, record.conn.fd);
   EXPECT_EQ(SocketTraceEventType::kUnknown, record.message.type);

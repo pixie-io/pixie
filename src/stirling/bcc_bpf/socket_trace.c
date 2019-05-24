@@ -34,7 +34,7 @@ struct conn_info_t {
 struct socket_data_event_t {
   struct attr_t {
     struct conn_info_t conn_info;
-    uint64_t time_stamp_ns;
+    uint64_t timestamp_ns;
     uint32_t tgid;
     uint32_t fd;
     uint32_t event_type;
@@ -296,7 +296,7 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
   event->attr.event_type = event_type;
   // TODO(yzhao): This is the time is after write/send() finishes. If we want to capture the time
   // before write/send() starts, we need to capture the time in probe_entry_write_send().
-  event->attr.time_stamp_ns = bpf_ktime_get_ns();
+  event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
   event->attr.fd = (uint32_t)write_info->lookup_fd;
   event->attr.msg_size = bytes_written;
@@ -391,7 +391,7 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
 
   event->attr.conn_info = *conn_info;
   event->attr.event_type = event_type;
-  event->attr.time_stamp_ns = bpf_ktime_get_ns();
+  event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
   event->attr.fd = read_info->lookup_fd;
   event->attr.msg_size = bytes_read;

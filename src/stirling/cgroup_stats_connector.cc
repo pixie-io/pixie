@@ -36,7 +36,7 @@ void CGroupStatsConnector::TransferCGroupStatsTable(types::ColumnWrapperRecordBa
   }
 
   auto now = std::chrono::steady_clock::now();
-  int64_t time_stamp =
+  int64_t timestamp =
       std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count() +
       ClockRealTimeOffset();
 
@@ -53,7 +53,7 @@ void CGroupStatsConnector::TransferCGroupStatsTable(types::ColumnWrapperRecordBa
         }
 
         int64_t col_idx = 0;
-        columns[col_idx++]->Append<types::Time64NSValue>(time_stamp);
+        columns[col_idx++]->Append<types::Time64NSValue>(timestamp);
         columns[col_idx++]->Append<types::StringValue>(
             CGroupManager::CGroupQoSToString(pod_info.qos));
         columns[col_idx++]->Append<types::StringValue>(std::string(pod));
@@ -84,7 +84,7 @@ void CGroupStatsConnector::TransferNetStatsTable(types::ColumnWrapperRecordBatch
   }
 
   auto now = std::chrono::steady_clock::now();
-  int64_t time_stamp =
+  int64_t timestamp =
       std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count() +
       ClockRealTimeOffset();
 
@@ -100,7 +100,7 @@ void CGroupStatsConnector::TransferNetStatsTable(types::ColumnWrapperRecordBatch
     }
 
     int64_t col_idx = 0;
-    columns[col_idx++]->Append<types::Time64NSValue>(time_stamp);
+    columns[col_idx++]->Append<types::Time64NSValue>(timestamp);
     columns[col_idx++]->Append<types::StringValue>(std::string(pod));
 
     columns[col_idx++]->Append<types::Int64Value>(stats.rx_bytes);
