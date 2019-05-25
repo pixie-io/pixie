@@ -7,7 +7,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/throwaway/golang-grpc-service/greeter_server",
     visibility = ["//visibility:private"],
     deps = [
-        "//throwaway/golang-grpc-service/proto:greet_pl_go_proto",
+        "//src/stirling/testing/proto:greet_pl_go_proto",
         "@org_golang_google_grpc//:go_default_library",
         "@org_golang_google_grpc//reflection:go_default_library",
         "@org_golang_x_net//context:go_default_library",

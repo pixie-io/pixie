@@ -25,7 +25,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	pb "pixielabs.ai/pixielabs/throwaway/golang-grpc-service/proto"
+	pb "pixielabs.ai/pixielabs/src/stirling/testing/proto"
 )
 
 const (
