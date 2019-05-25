@@ -140,6 +140,9 @@ void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
   const uint64_t seq_num = static_cast<uint64_t>(event.attr.conn_info.seq_num);
   const auto iter = http_streams_.find(stream_id);
 
+  // Need to adjust the clocks to convert to real time.
+  event.attr.timestamp_ns += ClockRealTimeOffset();
+
   if (iter != http_streams_.end()) {
     iter->second.events.emplace(seq_num, std::move(event));
     return;
@@ -149,7 +152,7 @@ void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
   HTTPStream stream;
   // TODO(yzhao): We should explicitly capture the accept() event into user space to determine the
   // time stamp when the stream is created.
-  stream.conn.timestamp_ns = event.attr.conn_info.timestamp_ns;
+  stream.conn.timestamp_ns = event.attr.conn_info.timestamp_ns + ClockRealTimeOffset();
   stream.conn.tgid = event.attr.tgid;
   stream.conn.fd = event.attr.fd;
   auto ip_endpoint_or = ParseSockAddr(event);
