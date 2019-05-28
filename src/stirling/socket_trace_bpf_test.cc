@@ -120,17 +120,17 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
   }
 
   // Check that MySQL table did not capture any data.
-  {
-    const int table_num = 1;
-    types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
-                              /*target_capacity*/ 2, &record_batch));
-    source->TransferData(table_num, &record_batch);
-
-    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
-      ASSERT_EQ(0, col->Size());
-    }
-  }
+  //  {
+  //    const int table_num = 1;
+  //    types::ColumnWrapperRecordBatch record_batch;
+  //    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+  //                              /*target_capacity*/ 2, &record_batch));
+  //    source->TransferData(table_num, &record_batch);
+  //
+  //    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+  //      ASSERT_EQ(0, col->Size());
+  //    }
+  //  }
 
   EXPECT_OK(source->Stop());
 }
@@ -174,17 +174,17 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
   }
 
   // Check that HTTP table did not capture any data.
-  {
-    const int table_num = 1;
-    types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
-                              /*target_capacity*/ 2, &record_batch));
-    source->TransferData(table_num, &record_batch);
-
-    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
-      ASSERT_EQ(0, col->Size());
-    }
-  }
+  //  {
+  //    const int table_num = 1;
+  //    types::ColumnWrapperRecordBatch record_batch;
+  //    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+  //                              /*target_capacity*/ 2, &record_batch));
+  //    source->TransferData(table_num, &record_batch);
+  //
+  //    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+  //      ASSERT_EQ(0, col->Size());
+  //    }
+  //  }
 
   EXPECT_OK(source->Stop());
 }
@@ -266,18 +266,18 @@ TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   }
 
   // Check that MySQL table did not capture any data.
-  {
-    const int table_num = 1;
-    types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
-                              /*target_capacity*/ 2, &record_batch));
-    source->TransferData(table_num, &record_batch);
-
-    // Should not have captured anything.
-    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
-      ASSERT_EQ(0, col->Size());
-    }
-  }
+  //  {
+  //    const int table_num = 1;
+  //    types::ColumnWrapperRecordBatch record_batch;
+  //    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+  //                              /*target_capacity*/ 2, &record_batch));
+  //    source->TransferData(table_num, &record_batch);
+  //
+  //    // Should not have captured anything.
+  //    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+  //      ASSERT_EQ(0, col->Size());
+  //    }
+  //  }
 
   EXPECT_OK(source->Stop());
 }
