@@ -8,6 +8,12 @@
   display: flex;
 }
 
+.content-box--wrapper {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
 .content-box--header {
   display: flex;
   align-items: center;
@@ -47,4 +53,32 @@
 
 .content-box--header a:hover {
   color: $lighter;
+}
+
+.content-box--resizer {
+  height: 20px;
+  justify-content: center;
+  display: flex;
+  user-drag: none;
+
+  img {
+    opacity: 0.5;
+    user-drag: none;
+  }
+}
+
+.content-box--resizer:hover {
+  img {
+    opacity: 1;
+  }
+
+  cursor: row-resize;
+}
+
+.content-box[data-resizable] {
+  margin: 0 20px 0 0;
+}
+
+.content-box[data-resizable] .content-box--content {
+  overflow-y: scroll;
 }

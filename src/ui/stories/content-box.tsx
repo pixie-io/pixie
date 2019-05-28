@@ -29,4 +29,17 @@ storiesOf('ContentBox', module)
   ), {
       info: { inline: true },
       notes: 'This is a content box that contains the content in our UI.',
+    }).add('Resizable', () => (
+    <ContentBox
+      headerText={'Header'}
+      resizable={true}
+      initialHeight={150}
+    >
+      <div>
+        This is some content. It can be a string or more JSX.
+      </div>
+    </ContentBox>
+  ), {
+      info: { inline: true },
+      notes: 'This is a content box that is resizable.',
     });

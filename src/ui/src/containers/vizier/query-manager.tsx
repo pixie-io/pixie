@@ -206,6 +206,7 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
       <Mutation mutation={EXECUTE_QUERY}>
         {(executeQuery, { loading, error, data }) => (
           <HotKeys
+            className='hotkey-container'
             attach={window}
             focused={true}
             keyMap={HOT_KEY_MAP}
@@ -215,6 +216,8 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
               <div>
                 <ContentBox
                   headerText='Enter Query'
+                  initialHeight={250}
+                  resizable={true}
                   secondaryText={<AgentCountDisplay/>}
                 >
                 <DropdownButton

@@ -35,4 +35,15 @@ describe('<ContentBox/> test', () => {
     </ContentBox>);
     expect(wrapper.find('.content-box--content').text()).toEqual('Here is a child.');
   });
+
+  it('should handle resizing', () => {
+    const wrapper = shallow(<ContentBox
+      headerText='header'
+      resizable={true}
+      initialHeight={150}
+    >
+      {'Here is a child.'}
+    </ContentBox>);
+    expect(wrapper.find('.content-box--resizer')).toHaveLength(1);
+  });
 });

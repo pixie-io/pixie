@@ -13,11 +13,18 @@
 }
 
 .query-executor .code-editor .CodeMirror {
-    height: 150px;
+    height: 100%;
 }
 
 .code-editor {
     margin-top: 25px;
+    display: flex;
+    flex: 1;
+}
+
+.hotkey-container {
+    flex: 1;
+    display: flex;
 }
 
 .query-executor .code-editor .CodeMirror {
