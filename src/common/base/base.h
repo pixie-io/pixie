@@ -4,7 +4,7 @@
  * importing them everywhere.
  */
 
-#include "src/common/base/const_str.h"      // IWYU pragma: export
+#include "src/common/base/const_types.h"    // IWYU pragma: export
 #include "src/common/base/env.h"            // IWYU pragma: export
 #include "src/common/base/error.h"          // IWYU pragma: export
 #include "src/common/base/error_strings.h"  // IWYU pragma: export
