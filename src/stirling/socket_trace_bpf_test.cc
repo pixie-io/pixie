@@ -34,7 +34,7 @@ class HTTPTraceBPFTest : public ::testing::Test {
     ASSERT_OK(source->Init());
   }
 
-  void SpawnReaderClient(const TCPSocket& server) {
+  void SpawnReaderClient(const TCPSocket &server) {
     client_thread = std::thread([&server]() {
       TCPSocket client;
       client.Connect(server);
@@ -44,7 +44,7 @@ class HTTPTraceBPFTest : public ::testing::Test {
     });
   }
 
-  void SpawnWriterClient(const TCPSocket& server, const std::vector<std::string_view>& write_data) {
+  void SpawnWriterClient(const TCPSocket &server, const std::vector<std::string_view> &write_data) {
     client_thread = std::thread([&server, &write_data]() {
       TCPSocket client;
       client.Connect(server);
@@ -57,21 +57,23 @@ class HTTPTraceBPFTest : public ::testing::Test {
 
   void JoinClient() { client_thread.join(); }
 
-  static constexpr std::string_view kMsg1 = R"(HTTP/1.1 200 OK
+  static constexpr std::string_view kHTTPMsg1 = R"(HTTP/1.1 200 OK
 Content-Type: application/json; msg1
 Content-Length: 0
 
 )";
 
-  static constexpr std::string_view kMsg2 = R"(HTTP/1.1 200 OK
+  static constexpr std::string_view kHTTPMsg2 = R"(HTTP/1.1 200 OK
 Content-Type: application/json; msg2
 Content-Length: 0
 
 )";
 
-  static constexpr std::string_view kMsg3 = R"(This is not an HTTP message)";
+  static constexpr std::string_view kNoProtocolMsg = R"(This is not an HTTP message)";
 
-  const DataTableSchema& schema = SocketTraceConnector::kElements[0];
+  static constexpr std::string_view kMySQLMsg = "\x16SELECT column FROM table";
+
+  const DataTableSchema &schema = SocketTraceConnector::kElements[0];
   const uint64_t kHTTPHeaderIdx = schema.KeyIndex("http_headers");
   const uint64_t kFdIdx = schema.KeyIndex("fd");
 
@@ -86,35 +88,51 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
   SpawnReaderClient(server);
 
   server.Accept();
-  EXPECT_EQ(kMsg1.length(), server.Write(kMsg1));
-  EXPECT_EQ(kMsg2.length(), server.Write(kMsg2));
+  EXPECT_EQ(kHTTPMsg1.length(), server.Write(kHTTPMsg1));
+  EXPECT_EQ(kHTTPMsg2.length(), server.Write(kHTTPMsg2));
   server.Close();
 
   JoinClient();
 
-  const int table_num = 0;
-  types::ColumnWrapperRecordBatch record_batch;
-  EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
-                            /*target_capacity*/ 2, &record_batch));
-  source->TransferData(table_num, &record_batch);
-  EXPECT_OK(source->Stop());
+  {
+    const int table_num = 0;
+    types::ColumnWrapperRecordBatch record_batch;
+    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+                              /*target_capacity*/ 2, &record_batch));
+    source->TransferData(table_num, &record_batch);
 
-  for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-    ASSERT_EQ(2, col->Size());
+    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+      ASSERT_EQ(2, col->Size());
+    }
+
+    // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
+    // host machine are identical.
+    // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
+    EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
+
+    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
+              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
+    EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
+              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
+    EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(1).val);
   }
 
-  // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
-  // host machine are identical.
-  // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
-  EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(0).val);
-  EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
+  // Check that MySQL table did not capture any data.
+  {
+    const int table_num = 1;
+    types::ColumnWrapperRecordBatch record_batch;
+    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+                              /*target_capacity*/ 2, &record_batch));
+    source->TransferData(table_num, &record_batch);
 
-  EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
-            record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
-  EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(0).val);
-  EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
-            record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
-  EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(1).val);
+    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+      ASSERT_EQ(0, col->Size());
+    }
+  }
+
+  EXPECT_OK(source->Stop());
 }
 
 TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
@@ -124,70 +142,151 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
   SpawnReaderClient(server);
 
   server.Accept();
-  EXPECT_EQ(kMsg1.length(), server.Send(kMsg1));
-  EXPECT_EQ(kMsg2.length(), server.Send(kMsg2));
+  EXPECT_EQ(kHTTPMsg1.length(), server.Send(kHTTPMsg1));
+  EXPECT_EQ(kHTTPMsg2.length(), server.Send(kHTTPMsg2));
   server.Close();
 
   JoinClient();
 
-  const int table_num = 0;
-  types::ColumnWrapperRecordBatch record_batch;
-  EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
-                            /*target_capacity*/ 2, &record_batch));
-  source->TransferData(table_num, &record_batch);
-  EXPECT_OK(source->Stop());
+  {
+    const int table_num = 0;
+    types::ColumnWrapperRecordBatch record_batch;
+    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+                              /*target_capacity*/ 2, &record_batch));
+    source->TransferData(table_num, &record_batch);
 
-  for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-    ASSERT_EQ(2, col->Size());
+    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+      ASSERT_EQ(2, col->Size());
+    }
+
+    // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
+    // host machine are identical.
+    // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
+    EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
+
+    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
+              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
+    EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
+              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
+    EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(1).val);
   }
 
-  // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
-  // host machine are identical.
-  // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
-  EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(0).val);
-  EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
+  // Check that HTTP table did not capture any data.
+  {
+    const int table_num = 1;
+    types::ColumnWrapperRecordBatch record_batch;
+    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+                              /*target_capacity*/ 2, &record_batch));
+    source->TransferData(table_num, &record_batch);
 
-  EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
-            record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
-  EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(0).val);
-  EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
-            record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
-  EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(1).val);
+    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+      ASSERT_EQ(0, col->Size());
+    }
+  }
+
+  EXPECT_OK(source->Stop());
 }
 
-TEST_F(HTTPTraceBPFTest, TestNonHTTPWritesNotCaptured) {
+TEST_F(HTTPTraceBPFTest, TestMySQLWriteCapturedData) {
   TCPSocket server;
   server.Bind();
 
   SpawnReaderClient(server);
 
   server.Accept();
-  EXPECT_EQ(kMsg3.length(), server.Write(kMsg3));
+  EXPECT_EQ(kMySQLMsg.length(), server.Write(kMySQLMsg));
+  EXPECT_EQ(kMySQLMsg.length(), server.Send(kMySQLMsg));
+  server.Close();
+
+  JoinClient();
+
+  // Check that HTTP table did not capture any data.
+  {
+    const int table_num = 0;
+    types::ColumnWrapperRecordBatch record_batch;
+    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+                              /*target_capacity*/ 2, &record_batch));
+    source->TransferData(table_num, &record_batch);
+
+    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+      ASSERT_EQ(0, col->Size());
+    }
+  }
+
+  // Check that MySQL table did capture the appropriate data.
+  {
+    const int table_num = 1;
+    types::ColumnWrapperRecordBatch record_batch;
+    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+                              /*target_capacity*/ 2, &record_batch));
+    source->TransferData(table_num, &record_batch);
+
+    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+      ASSERT_EQ(2, col->Size());
+    }
+
+    EXPECT_EQ(std::string_view("\x16SELECT column FROM table"),
+              record_batch[8]->Get<types::StringValue>(0));
+    EXPECT_EQ(std::string_view("\x16SELECT column FROM table"),
+              record_batch[8]->Get<types::StringValue>(1));
+  }
+
+  EXPECT_OK(source->Stop());
+}
+
+TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
+  TCPSocket server;
+  server.Bind();
+
+  SpawnReaderClient(server);
+
+  server.Accept();
+  EXPECT_EQ(kNoProtocolMsg.length(), server.Write(kNoProtocolMsg));
   EXPECT_EQ(0, server.Write(""));
-  EXPECT_EQ(kMsg3.length(), server.Send(kMsg3));
+  EXPECT_EQ(kNoProtocolMsg.length(), server.Send(kNoProtocolMsg));
   EXPECT_EQ(0, server.Send(""));
   server.Close();
 
   JoinClient();
 
-  const int table_num = 0;
-  types::ColumnWrapperRecordBatch record_batch;
-  EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
-                            /*target_capacity*/ 2, &record_batch));
-  source->TransferData(table_num, &record_batch);
-  EXPECT_OK(source->Stop());
+  // Check that HTTP table did not capture any data.
+  {
+    const int table_num = 0;
+    types::ColumnWrapperRecordBatch record_batch;
+    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+                              /*target_capacity*/ 2, &record_batch));
+    source->TransferData(table_num, &record_batch);
 
-  // Should not have captured anything.
-  for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-    ASSERT_EQ(0, col->Size());
+    // Should not have captured anything.
+    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+      ASSERT_EQ(0, col->Size());
+    }
   }
+
+  // Check that MySQL table did not capture any data.
+  {
+    const int table_num = 1;
+    types::ColumnWrapperRecordBatch record_batch;
+    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+                              /*target_capacity*/ 2, &record_batch));
+    source->TransferData(table_num, &record_batch);
+
+    // Should not have captured anything.
+    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+      ASSERT_EQ(0, col->Size());
+    }
+  }
+
+  EXPECT_OK(source->Stop());
 }
 
 TEST_F(HTTPTraceBPFTest, TestReadCapturedData) {
   TCPSocket server;
   server.Bind();
 
-  std::vector<std::string_view> write_data = {kMsg1, kMsg2};
+  std::vector<std::string_view> write_data = {kHTTPMsg1, kHTTPMsg2};
   SpawnWriterClient(server, write_data);
 
   server.Accept();
@@ -201,8 +300,8 @@ TEST_F(HTTPTraceBPFTest, TestReadCapturedData) {
   // For example, a single Read() call after two Write() calls may return the data from both Writes.
   // As a result, we can only only check that the aggregate was received correctly.
   std::string expected_msg;
-  expected_msg.append(kMsg1);
-  expected_msg.append(kMsg2);
+  expected_msg.append(kHTTPMsg1);
+  expected_msg.append(kHTTPMsg2);
   EXPECT_EQ(expected_msg, recv_msg);
   server.Close();
 
@@ -215,7 +314,7 @@ TEST_F(HTTPTraceBPFTest, TestRecvCapturedData) {
   TCPSocket server;
   server.Bind();
 
-  std::vector<std::string_view> write_data = {kMsg1, kMsg2};
+  std::vector<std::string_view> write_data = {kHTTPMsg1, kHTTPMsg2};
   SpawnWriterClient(server, write_data);
 
   server.Accept();
@@ -229,8 +328,8 @@ TEST_F(HTTPTraceBPFTest, TestRecvCapturedData) {
   // For example, a single Recv() call after two Write() calls may return the data from both Writes.
   // As a result, we can only only check that the aggregate was received correctly.
   std::string expected_msg;
-  expected_msg.append(kMsg1);
-  expected_msg.append(kMsg2);
+  expected_msg.append(kHTTPMsg1);
+  expected_msg.append(kHTTPMsg2);
   EXPECT_EQ(expected_msg, recv_msg);
   server.Close();
 
@@ -243,7 +342,7 @@ TEST_F(HTTPTraceBPFTest, TestNonHTTPReadsNotCaptured) {
   TCPSocket server;
   server.Bind();
 
-  std::vector<std::string_view> write_data = {kMsg3};
+  std::vector<std::string_view> write_data = {kNoProtocolMsg};
   SpawnWriterClient(server, write_data);
 
   server.Accept();
@@ -252,7 +351,7 @@ TEST_F(HTTPTraceBPFTest, TestNonHTTPReadsNotCaptured) {
   while (server.Read(&recv_tmp)) {
     recv_msg.append(recv_tmp);
   }
-  EXPECT_EQ(kMsg3, recv_msg);
+  EXPECT_EQ(kNoProtocolMsg, recv_msg);
   server.Close();
 
   JoinClient();
@@ -266,7 +365,7 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
     server.Bind();
     SpawnReaderClient(server);
     server.Accept();
-    EXPECT_EQ(kMsg1.length(), server.Write(kMsg1));
+    EXPECT_EQ(kHTTPMsg1.length(), server.Write(kHTTPMsg1));
     server.Close();
     client_thread.join();
   }
@@ -276,13 +375,13 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
     server.Bind();
     SpawnReaderClient(server);
     server.Accept();
-    EXPECT_EQ(kMsg2.length(), server.Write(kMsg2));
+    EXPECT_EQ(kHTTPMsg2.length(), server.Write(kHTTPMsg2));
     server.Close();
     client_thread.join();
   }
 
   const int table_num = 0;  // HTTP Table
-  auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source.get());
+  auto *socket_trace_connector = dynamic_cast<SocketTraceConnector *>(source.get());
   ASSERT_NE(nullptr, socket_trace_connector);
   socket_trace_connector->ReadPerfBuffer(table_num);
   EXPECT_OK(source->Stop());
@@ -290,17 +389,17 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
   // TODO(yzhao): Write a matcher for Stream.
   ASSERT_THAT(socket_trace_connector->TestOnlyHTTPStreams(), SizeIs(2));
 
-  auto get_message = [](const socket_data_event_t& event) -> std::string_view {
+  auto get_message = [](const socket_data_event_t &event) -> std::string_view {
     return std::string_view(event.msg, std::min<uint32_t>(event.attr.msg_size, MAX_MSG_SIZE));
   };
   std::vector<std::pair<uint64_t, std::string_view>> seq_msgs;
-  for (const auto& [id, http_stream] : socket_trace_connector->TestOnlyHTTPStreams()) {
+  for (const auto &[id, http_stream] : socket_trace_connector->TestOnlyHTTPStreams()) {
     PL_UNUSED(id);
-    for (const auto& [seq_num, event] : http_stream.events) {
+    for (const auto &[seq_num, event] : http_stream.events) {
       seq_msgs.emplace_back(seq_num, get_message(event));
     }
   }
-  EXPECT_THAT(seq_msgs, UnorderedElementsAre(Pair(0, kMsg1), Pair(0, kMsg2)));
+  EXPECT_THAT(seq_msgs, UnorderedElementsAre(Pair(0, kHTTPMsg1), Pair(0, kHTTPMsg2)));
 }
 
 }  // namespace stirling

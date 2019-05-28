@@ -133,6 +133,7 @@ static bool is_mysql_protocol(char *buf, size_t count) {
   // MySQL queries appear to start with this special SYN character (0x16).
   // This was discovered experimentally, and is not guaranteed to be robust.
   // TODO(oazizi): Find a better way.
+  // 0x16 represents COM_STMT_PREPARE in the MySQL protocol.
   if (*buf == 0x16) {
     return true;
   }

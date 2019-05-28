@@ -74,7 +74,17 @@ class SocketTraceConnector : public SourceConnector {
                        DataElement("http_resp_status", types::DataType::INT64),
                        DataElement("http_resp_message", types::DataType::STRING),
                        DataElement("http_resp_body", types::DataType::STRING),
-                       DataElement("http_resp_latency_ns", types::DataType::INT64)})};
+                       DataElement("http_resp_latency_ns", types::DataType::INT64)}),
+      DataTableSchema(
+          std::string(kName) + "_sql",
+          {DataElement("time_", types::DataType::TIME64NS),
+           DataElement("tgid", types::DataType::INT64), DataElement("fd", types::DataType::INT64),
+           DataElement("bpf_event", types::DataType::INT64),
+           DataElement("src_addr", types::DataType::STRING),
+           DataElement("src_port", types::DataType::INT64),
+           DataElement("dst_addr", types::DataType::STRING),
+           DataElement("dst_port", types::DataType::INT64),
+           DataElement("body", types::DataType::STRING)})};
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{5000};
@@ -106,7 +116,8 @@ class SocketTraceConnector : public SourceConnector {
 
   // ReadPerfBuffer poll callback functions (must be static).
   static void HandleHTTPResponseProbeOutput(void* cb_cookie, void* data, int data_size);
-  static void HandleProbeLoss(void* cb_cookie, uint64_t);
+  static void HandleMySQLProbeOutput(void* cb_cookie, void* data, int data_size);
+  static void HandleProbeLoss(void* cb_cookie, uint64_t lost);
 
   // Places the event into a stream buffer to deal with reorderings.
   void AcceptEvent(socket_data_event_t event);
@@ -122,12 +133,19 @@ class SocketTraceConnector : public SourceConnector {
   static void AppendHTTPResponse(HTTPTraceRecord record,
                                  types::ColumnWrapperRecordBatch* record_batch);
 
+  // Transfer of a MySQL Event to the MySQL Table.
+  void TransferMySQLEvent(const socket_data_event_t& event,
+                          types::ColumnWrapperRecordBatch* record_batch);
+
   FRIEND_TEST(HandleProbeOutputTest, FilterMessages);
   inline static HTTPHeaderFilter http_response_header_filter_;
 
   ebpf::BPF bpf_;
 
   std::map<uint64_t, HTTPStream> http_streams_;
+
+  // For MySQL tracing only. Will go away when MySQL uses streams.
+  types::ColumnWrapperRecordBatch* record_batch_;
 
   // Describes a kprobe that should be attached with the BPF::attach_kprobe().
   struct ProbeSpec {
@@ -154,14 +172,29 @@ class SocketTraceConnector : public SourceConnector {
       {"send", "probe_ret_send", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"sendto", "probe_entry_sendto", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"sendto", "probe_ret_sendto", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      // TODO(oazizi): Enable probing on reads, when tested.
+      //    {"read", "probe_entry_read", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      //    {"read", "probe_ret_read", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"recv", "probe_entry_recv", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"recv", "probe_ret_recv", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"recvfrom", "probe_entry_recv", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"recvfrom", "probe_ret_recv", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"close", "probe_close", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
   };
+  // TODO(oazizi): Remove send and recv probes once we are confident that they don't trace anything.
+  //               Note that send/recv are not in the syscall table
+  //               (https://filippo.io/linux-syscall-table/), but are defined as SYSCALL_DEFINE4 in
+  //               https://elixir.bootlin.com/linux/latest/source/net/socket.c.
 
   // Indexed by table_num from kElements (one-to-one mapping).
   static inline const std::vector<PerfBufferSpec> kPerfBufferSpecs = {
       {"socket_http_resp_events", &SocketTraceConnector::HandleHTTPResponseProbeOutput,
        &SocketTraceConnector::HandleProbeLoss,
-       /* num_pages */ 8}};
+       /* num_pages */ 8},
+      {"socket_mysql_events", &SocketTraceConnector::HandleMySQLProbeOutput,
+       &SocketTraceConnector::HandleProbeLoss,
+       /* num_pages */ 8},
+  };
 };
 
 }  // namespace stirling

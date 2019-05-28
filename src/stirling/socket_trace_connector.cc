@@ -88,7 +88,9 @@ void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
 
   // TODO(oazizi): Should this run more frequently than TransferDataImpl?
   // This drains the relevant perf buffer, and causes Handle() callback functions to get called.
+  record_batch_ = record_batch;
   ReadPerfBuffer(table_num);
+  record_batch_ = nullptr;
 
   // ReadPerfBuffer copies data into a reorder buffer called the write_stream_map_.
   // This call transfers the data from the
@@ -123,6 +125,15 @@ void SocketTraceConnector::HandleHTTPResponseProbeOutput(void* cb_cookie, void* 
   connector->AcceptEvent(*event);
 }
 
+void SocketTraceConnector::HandleMySQLProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
+  auto* event = static_cast<socket_data_event_t*>(data);
+
+  // TODO(oazizi): Use AcceptEvent() to handle reorderings.
+  connector->TransferMySQLEvent(*event, connector->record_batch_);
+}
+
 // This function is invoked by BCC runtime when a item in the perf buffer is not read and lost.
 // For now we do nothing.
 void SocketTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
@@ -131,7 +142,7 @@ void SocketTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
 }
 
 //-----------------------------------------------------------------------------
-// Write Stream Map Functions
+// Stream Functions
 //-----------------------------------------------------------------------------
 
 void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
@@ -171,6 +182,10 @@ void SocketTraceConnector::TransferStreamData(uint32_t table_num,
   switch (table_num) {
     case 0:
       TransferHTTPResponseStreams(record_batch);
+      break;
+    case 1:
+      // TODO(oazizi): Convert MySQL protocol to use streams.
+      // TransferMySQLStreams(record_batch);
       break;
     default:
       CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
@@ -280,6 +295,44 @@ void SocketTraceConnector::AppendHTTPResponse(HTTPTraceRecord record,
   DCHECK_GE(record.message.timestamp_ns, record.conn.timestamp_ns);
   CHECK_EQ(idx, num_columns) << absl::StrFormat(
       "Didn't populate all fields [idx = %d, num_columns = %d]", idx, num_columns);
+}
+
+//-----------------------------------------------------------------------------
+// MySQL Specific TransferImpl Helpers
+//-----------------------------------------------------------------------------
+
+void SocketTraceConnector::TransferMySQLEvent(const socket_data_event_t& event,
+                                              types::ColumnWrapperRecordBatch* record_batch) {
+  // The actual message width is min(attr.msg_buf_size, attr.msg_bytes).
+  // Due to the BPF weirdness (see socket_trace.c), this calculation must be done here, not in BPF.
+  // Also we can't modify the event object, because it belongs to the kernel, and is read-only.
+  uint64_t msg_size = std::min<uint32_t>(event.attr.msg_size, sizeof(event.msg));
+
+  // TODO(oazizi): Enable the below to only capture requestor-side messages.
+  //  if (event.attr.event_type != kEventTypeSyscallWriteEvent &&
+  //      event.attr.event_type != kEventTypeSyscallSendEvent) {
+  //    return;
+  //  }
+
+  std::string msg(&event.msg[0], msg_size);
+
+  auto s = ParseSockAddr(event);
+  IPEndpoint dst_sockaddr = s.ok() ? s.ConsumeValueOrDie() : IPEndpoint();
+
+  auto& columns = *record_batch;
+
+  uint32_t idx = 0;
+  columns[idx++]->Append<types::Time64NSValue>(event.attr.timestamp_ns + ClockRealTimeOffset());
+  columns[idx++]->Append<types::Int64Value>(event.attr.tgid);
+  columns[idx++]->Append<types::Int64Value>(event.attr.fd);
+  columns[idx++]->Append<types::Int64Value>(event.attr.event_type);
+  columns[idx++]->Append<types::StringValue>("-");
+  columns[idx++]->Append<types::Int64Value>(-1);
+  columns[idx++]->Append<types::StringValue>(std::move(dst_sockaddr.ip));
+  columns[idx++]->Append<types::Int64Value>(dst_sockaddr.port);
+  columns[idx++]->Append<types::StringValue>(std::move(msg));
+  CHECK_EQ(idx, columns.size()) << absl::StrFormat(
+      "Didn't populate all fields [idx = %d, columns = %d]", idx, columns.size());
 }
 
 }  // namespace stirling

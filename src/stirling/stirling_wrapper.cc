@@ -102,6 +102,9 @@ void StirlingWrapperCallback(uint64_t table_id,
   } else if (name == SocketTraceConnector::kElements[0].name()) {
     PrintRecordBatch("HTTPTrace", SocketTraceConnector::kElements[0].elements(), num_records,
                      *record_batch);
+  } else if (name == SocketTraceConnector::kElements[1].name()) {
+    PrintRecordBatch("MySQLTrace", SocketTraceConnector::kElements[1].elements(), num_records,
+                     *record_batch);
   } else if (name == CGroupStatsConnector::kElements[0].name()) {
     PrintRecordBatch("CGroupStats", CGroupStatsConnector::kElements[0].elements(), num_records,
                      *record_batch);
