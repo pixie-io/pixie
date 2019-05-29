@@ -11,8 +11,8 @@
 extern "C" {
 
 __asm__(".symver glob,glob@GLIBC_2.2.5");
-int __wrap_glob(const char *pattern, int flags, int (*errfunc)(const char *epath, int eerrno),
-                glob_t *pglob) {
+int __wrap_glob(const char* pattern, int flags, int (*errfunc)(const char* epath, int eerrno),
+                glob_t* pglob) {
   return glob(pattern, flags, errfunc, pglob);
 }
 }

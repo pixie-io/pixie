@@ -5,7 +5,7 @@
 #include "src/common/base/logging.h"
 
 namespace pl {
-std::string FileContentsOrDie(const std::string &filename) {
+std::string FileContentsOrDie(const std::string& filename) {
   std::ifstream ifs(filename);
   if (!ifs) {
     LOG(FATAL) << "Failed to read file: " << filename;

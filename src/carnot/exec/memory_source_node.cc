@@ -15,20 +15,20 @@ std::string MemorySourceNode::DebugStringImpl() {
                          output_descriptor_->DebugString());
 }
 
-Status MemorySourceNode::InitImpl(const plan::Operator &plan_node,
-                                  const table_store::schema::RowDescriptor &output_descriptor,
-                                  const std::vector<table_store::schema::RowDescriptor> &) {
+Status MemorySourceNode::InitImpl(const plan::Operator& plan_node,
+                                  const table_store::schema::RowDescriptor& output_descriptor,
+                                  const std::vector<table_store::schema::RowDescriptor>&) {
   CHECK(plan_node.op_type() == planpb::OperatorType::MEMORY_SOURCE_OPERATOR);
-  const auto *source_plan_node = static_cast<const plan::MemorySourceOperator *>(&plan_node);
+  const auto* source_plan_node = static_cast<const plan::MemorySourceOperator*>(&plan_node);
   // copy the plan node to local object;
   plan_node_ = std::make_unique<plan::MemorySourceOperator>(*source_plan_node);
   output_descriptor_ = std::make_unique<table_store::schema::RowDescriptor>(output_descriptor);
 
   return Status::OK();
 }
-Status MemorySourceNode::PrepareImpl(ExecState *) { return Status::OK(); }
+Status MemorySourceNode::PrepareImpl(ExecState*) { return Status::OK(); }
 
-Status MemorySourceNode::OpenImpl(ExecState *exec_state) {
+Status MemorySourceNode::OpenImpl(ExecState* exec_state) {
   table_ = exec_state->table_store()->GetTable(plan_node_->TableName());
 
   // Determine number of chunks at Open() time
@@ -48,9 +48,9 @@ Status MemorySourceNode::OpenImpl(ExecState *exec_state) {
   return Status::OK();
 }
 
-Status MemorySourceNode::CloseImpl(ExecState *) { return Status::OK(); }
+Status MemorySourceNode::CloseImpl(ExecState*) { return Status::OK(); }
 
-Status MemorySourceNode::GenerateNextImpl(ExecState *exec_state) {
+Status MemorySourceNode::GenerateNextImpl(ExecState* exec_state) {
   DCHECK(table_ != nullptr);
   auto offset = 0;
   auto end = -1;
@@ -60,7 +60,7 @@ Status MemorySourceNode::GenerateNextImpl(ExecState *exec_state) {
   // TODO(michelle): PL-388 Fix our table store to correctly support hot/cold data. For now, do not
   // support StopTime, since the current implementation is buggy.
 
-  PL_ASSIGN_OR_RETURN(const auto &row_batch,
+  PL_ASSIGN_OR_RETURN(const auto& row_batch,
                       table_->GetRowBatchSlice(current_batch_, plan_node_->Columns(),
                                                exec_state->exec_mem_pool(), offset, end));
   rows_processed_ += row_batch->num_rows();

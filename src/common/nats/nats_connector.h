@@ -53,9 +53,9 @@ class NATSConnector {
    * also be used by Fakes/tests to inject new messages.
    * @param msg The natsMessage.
    */
-  void NATSMessageHandler(natsConnection * /*nc*/, natsSubscription * /*sub*/, natsMsg *msg) {
+  void NATSMessageHandler(natsConnection* /*nc*/, natsSubscription* /*sub*/, natsMsg* msg) {
     int len = natsMsg_GetDataLength(msg);
-    const char *data = natsMsg_GetData(msg);
+    const char* data = natsMsg_GetData(msg);
     auto parsed_msg = std::make_unique<TMsg>();
 
     bool ok = parsed_msg->ParseFromArray(data, len);
@@ -85,7 +85,7 @@ class NATSConnector {
    * @param msg The protobuf message.
    * @return Status of publication.
    */
-  virtual Status Publish(const TMsg &msg) {
+  virtual Status Publish(const TMsg& msg) {
     if (!nats_connection_) {
       return error::ResourceUnavailable("Not connected to NATS");
     }
@@ -99,15 +99,15 @@ class NATSConnector {
   }
 
  protected:
-  static void NATSMessageCallbackHandler(natsConnection *nc, natsSubscription *sub, natsMsg *msg,
-                                         void *closure) {
+  static void NATSMessageCallbackHandler(natsConnection* nc, natsSubscription* sub, natsMsg* msg,
+                                         void* closure) {
     // We know that closure is of type NATSConnector.
-    auto *connector = static_cast<NATSConnector<TMsg> *>(closure);
+    auto* connector = static_cast<NATSConnector<TMsg>*>(closure);
     connector->NATSMessageHandler(nc, sub, msg);
   }
 
-  natsConnection *nats_connection_ = nullptr;
-  natsSubscription *nats_subscription_ = nullptr;
+  natsConnection* nats_connection_ = nullptr;
+  natsSubscription* nats_subscription_ = nullptr;
 
   std::string nats_server_;
   std::string pub_topic_;

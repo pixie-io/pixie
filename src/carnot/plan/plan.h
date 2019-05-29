@@ -24,14 +24,14 @@ class Plan final : public PlanGraph<planpb::Plan, PlanFragment, planpb::PlanFrag
  */
 class PlanWalker {
  public:
-  using PlanFragmentWalkFn = std::function<Status(PlanFragment *)>;
+  using PlanFragmentWalkFn = std::function<Status(PlanFragment*)>;
 
   /**
    * Register callback for each plan fragment.
    * @param fn The function to call for each plan fragment.
    * @return self to allow chaining
    */
-  PlanWalker &OnPlanFragment(const PlanFragmentWalkFn &fn) {
+  PlanWalker& OnPlanFragment(const PlanFragmentWalkFn& fn) {
     on_plan_fragment_walk_fn_ = fn;
     return *this;
   }
@@ -40,10 +40,10 @@ class PlanWalker {
    * Perform a walk of the plan fragments in a topologically-sorted order.
    * @param plan The plan to walk.
    */
-  Status Walk(Plan *plan);
+  Status Walk(Plan* plan);
 
  private:
-  Status CallWalkFn(PlanFragment *pf);
+  Status CallWalkFn(PlanFragment* pf);
 
   PlanFragmentWalkFn on_plan_fragment_walk_fn_;
 };

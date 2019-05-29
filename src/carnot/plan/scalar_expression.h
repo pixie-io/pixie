@@ -36,7 +36,7 @@ inline std::string ToString(Expression expr) {
   }
 }
 
-inline std::string ToString(const planpb::ScalarExpression::ValueCase &exp) {
+inline std::string ToString(const planpb::ScalarExpression::ValueCase& exp) {
   switch (exp) {
     case planpb::ScalarExpression::kFunc:
       return "Function";
@@ -57,7 +57,7 @@ inline std::string ToString(const planpb::ScalarExpression::ValueCase &exp) {
  */
 class ScalarExpression : public PlanNode {
  public:
-  static StatusOr<std::unique_ptr<ScalarExpression>> FromProto(const planpb::ScalarExpression &pb);
+  static StatusOr<std::unique_ptr<ScalarExpression>> FromProto(const planpb::ScalarExpression& pb);
 
   ~ScalarExpression() override = default;
   bool is_initialized() const { return is_initialized_; }
@@ -69,7 +69,7 @@ class ScalarExpression : public PlanNode {
    * @return Either an Status or the compute data type.
    */
   virtual StatusOr<types::DataType> OutputDataType(
-      const PlanState &state, const table_store::schema::Schema &input_schema) const = 0;
+      const PlanState& state, const table_store::schema::Schema& input_schema) const = 0;
 
   /**
    * Computes the column dependencies and returns a reference to all of them. No
@@ -78,7 +78,7 @@ class ScalarExpression : public PlanNode {
    *
    * @return A list of column dependencies, if any.
    */
-  virtual std::vector<const Column *> ColumnDeps() = 0;
+  virtual std::vector<const Column*> ColumnDeps() = 0;
 
   /**
    * Get a list of the dependent ScalarExpression. For some expressions this might be
@@ -86,7 +86,7 @@ class ScalarExpression : public PlanNode {
    *
    * @return All dependent ScalarExpressions. The lifetime is the same as the parent class.
    */
-  virtual std::vector<ScalarExpression *> Deps() const = 0;
+  virtual std::vector<ScalarExpression*> Deps() const = 0;
 
   /**
    * ExpressionType gets the column type from the proto.
@@ -117,13 +117,13 @@ class Column : public ScalarExpression {
   ~Column() override = default;
 
   /// Initializes the column value based on the passed in protobuf msg.
-  Status Init(const planpb::Column &pb);
+  Status Init(const planpb::Column& pb);
 
   // Implementation of base class methods.
   StatusOr<types::DataType> OutputDataType(
-      const PlanState &state, const table_store::schema::Schema &input_schema) const override;
-  std::vector<const Column *> ColumnDeps() override;
-  std::vector<ScalarExpression *> Deps() const override;
+      const PlanState& state, const table_store::schema::Schema& input_schema) const override;
+  std::vector<const Column*> ColumnDeps() override;
+  std::vector<ScalarExpression*> Deps() const override;
   Expression ExpressionType() const override;
   std::string DebugString() const override;
 
@@ -146,13 +146,13 @@ class ScalarValue : public ScalarExpression {
   ~ScalarValue() override = default;
 
   /// Initializes the constant scalar value based on the passed in protobuf msg.
-  Status Init(const planpb::ScalarValue &pb);
+  Status Init(const planpb::ScalarValue& pb);
 
   // Override base class methods.
-  std::vector<const Column *> ColumnDeps() override;
+  std::vector<const Column*> ColumnDeps() override;
   StatusOr<types::DataType> OutputDataType(
-      const PlanState &state, const table_store::schema::Schema &input_schema) const override;
-  std::vector<ScalarExpression *> Deps() const override;
+      const PlanState& state, const table_store::schema::Schema& input_schema) const override;
+  std::vector<ScalarExpression*> Deps() const override;
   Expression ExpressionType() const override;
   std::string DebugString() const override;
 
@@ -176,18 +176,18 @@ class ScalarFunc : public ScalarExpression {
   ScalarFunc() = default;
   ~ScalarFunc() override = default;
 
-  Status Init(const planpb::ScalarFunc &pb);
+  Status Init(const planpb::ScalarFunc& pb);
   // Override base class methods.
-  std::vector<const Column *> ColumnDeps() override;
+  std::vector<const Column*> ColumnDeps() override;
   StatusOr<types::DataType> OutputDataType(
-      const PlanState &state, const table_store::schema::Schema &input_schema) const override;
-  std::vector<ScalarExpression *> Deps() const override;
+      const PlanState& state, const table_store::schema::Schema& input_schema) const override;
+  std::vector<ScalarExpression*> Deps() const override;
   Expression ExpressionType() const override;
   std::string DebugString() const override;
 
   std::string name() const { return name_; }
   int64_t udf_id() const { return udf_id_; }
-  const ScalarExpressionPtrVector &arg_deps() const { return arg_deps_; }
+  const ScalarExpressionPtrVector& arg_deps() const { return arg_deps_; }
   const std::vector<types::DataType> args_types() const { return args_types_; }
 
  private:
@@ -202,18 +202,18 @@ class AggregateExpression : public ScalarExpression {
   AggregateExpression() = default;
   ~AggregateExpression() override = default;
 
-  Status Init(const planpb::AggregateExpression &pb);
+  Status Init(const planpb::AggregateExpression& pb);
   // Override base class methods.
-  std::vector<const Column *> ColumnDeps() override;
+  std::vector<const Column*> ColumnDeps() override;
   StatusOr<types::DataType> OutputDataType(
-      const PlanState &state, const table_store::schema::Schema &input_schema) const override;
-  std::vector<ScalarExpression *> Deps() const override;
+      const PlanState& state, const table_store::schema::Schema& input_schema) const override;
+  std::vector<ScalarExpression*> Deps() const override;
   Expression ExpressionType() const override;
   std::string DebugString() const override;
 
   std::string name() const { return name_; }
   int64_t uda_id() const { return uda_id_; }
-  const ScalarExpressionPtrVector &arg_deps() const { return arg_deps_; }
+  const ScalarExpressionPtrVector& arg_deps() const { return arg_deps_; }
   const std::vector<types::DataType> args_types() const { return args_types_; }
 
  private:
@@ -249,8 +249,7 @@ class ExpressionWalker {
    * and they get a list of all the children values.
    */
   template <typename TExpression>
-  using ExpressionWalkFn =
-      std::function<TReturn(const TExpression &, const std::vector<TReturn> &)>;
+  using ExpressionWalkFn = std::function<TReturn(const TExpression&, const std::vector<TReturn>&)>;
 
   using ScalarFuncWalkFn = ExpressionWalkFn<ScalarFunc>;
   using ScalarValueWalkFn = ExpressionWalkFn<ScalarValue>;
@@ -261,7 +260,7 @@ class ExpressionWalker {
    * @param fn The function to call when a ScalarFunc is encountered.
    * @return self to allow chaining
    */
-  ExpressionWalker &OnScalarFunc(const ScalarFuncWalkFn &fn) {
+  ExpressionWalker& OnScalarFunc(const ScalarFuncWalkFn& fn) {
     scalar_func_walk_fn_ = fn;
     return *this;
   }
@@ -271,7 +270,7 @@ class ExpressionWalker {
    * @param fn The function to call when a ScalarValue is encountered.
    * @return self to allow chaining.
    */
-  ExpressionWalker &OnScalarValue(const ScalarValueWalkFn &fn) {
+  ExpressionWalker& OnScalarValue(const ScalarValueWalkFn& fn) {
     scalar_value_walk_fn_ = fn;
     return *this;
   }
@@ -281,7 +280,7 @@ class ExpressionWalker {
    * @param fn The function to call when a Column is encountered.
    * @return self to allow chaining.
    */
-  ExpressionWalker &OnColumn(const ColumnWalkFn &fn) {
+  ExpressionWalker& OnColumn(const ColumnWalkFn& fn) {
     column_walk_fn_ = fn;
     return *this;
   }
@@ -291,7 +290,7 @@ class ExpressionWalker {
    * @param fn The function to call.
    * @return self to allow chaining.
    */
-  ExpressionWalker &OnAggregateExpression(const AggregateFuncWalkFn &fn) {
+  ExpressionWalker& OnAggregateExpression(const AggregateFuncWalkFn& fn) {
     aggregate_func_walk_fn_ = fn;
     return *this;
   }
@@ -301,9 +300,9 @@ class ExpressionWalker {
    * @param expression The expression to walk.
    * @return A StatusOr where the valid value is the registered return type.
    */
-  StatusOr<TReturn> Walk(const ScalarExpression &expression) {
+  StatusOr<TReturn> Walk(const ScalarExpression& expression) {
     std::vector<TReturn> child_values;
-    for (const auto *child : expression.Deps()) {
+    for (const auto* child : expression.Deps()) {
       auto res = Walk(*child);
       if (!res.ok() && !error::IsNotFound(res.status())) {
         return res;
@@ -317,15 +316,15 @@ class ExpressionWalker {
 
  private:
   template <typename T, typename TWalkFunc>
-  StatusOr<TReturn> CallAs(const TWalkFunc &fn, const ScalarExpression &expression,
+  StatusOr<TReturn> CallAs(const TWalkFunc& fn, const ScalarExpression& expression,
                            std::vector<TReturn> child_values) {
     if (!fn) {
       return error::NotFound("no func");
     }
-    return fn(static_cast<const T &>(expression), child_values);
+    return fn(static_cast<const T&>(expression), child_values);
   }
 
-  StatusOr<TReturn> CallWalkFn(const ScalarExpression &expression,
+  StatusOr<TReturn> CallWalkFn(const ScalarExpression& expression,
                                std::vector<TReturn> child_values) {
     const auto expression_type = expression.ExpressionType();
     switch (expression_type) {

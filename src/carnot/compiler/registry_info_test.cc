@@ -11,7 +11,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-const char *kExpectedUDFInfo = R"(
+const char* kExpectedUDFInfo = R"(
 udas {
   name: "uda1"
   update_arg_types: INT64

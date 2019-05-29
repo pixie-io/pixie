@@ -18,7 +18,7 @@ using std::string;
 constexpr char kTestDataBasePathFS[] = "src/common/fs";
 
 namespace {
-string GetPathToTestDataFile(const string &fname) {
+string GetPathToTestDataFile(const string& fname) {
   return TestEnvironment::PathToTestDataFile(std::string(kTestDataBasePathFS) + "/" + fname);
 }
 }  // namespace
@@ -28,7 +28,7 @@ class FSWatcherTest : public ::testing::Test {
   void SetUp() override {
     std::string prefix = "fs_watcher_test";
     char dir_template[] = "/tmp/fs_watcher_test_XXXXXX";
-    char *dir_name = mkdtemp(dir_template);
+    char* dir_name = mkdtemp(dir_template);
     CHECK(dir_name != nullptr);
     tmp_dir_ = dir_name;
     Test::SetUp();

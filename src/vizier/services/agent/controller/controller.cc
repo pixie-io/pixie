@@ -168,8 +168,8 @@ void Controller::RunHeartbeat() {
 }
 
 Status Controller::ExecuteQuery(
-    const messages::ExecuteQueryRequest &req,
-    pl::vizier::services::query_broker::querybrokerpb::AgentQueryResponse *resp) {
+    const messages::ExecuteQueryRequest& req,
+    pl::vizier::services::query_broker::querybrokerpb::AgentQueryResponse* resp) {
   VLOG(1) << "Executing query: "
           << absl::StrFormat("id=%s, query=%s", ParseUUID(req.query_id()).ConsumeValueOrDie().str(),
                              req.query_str());
@@ -222,7 +222,7 @@ Status Controller::Run() {
 }
 
 // Temporary and to be replaced by data table from Stirling and Executor
-Status Controller::AddDummyTable(const std::string &name,
+Status Controller::AddDummyTable(const std::string& name,
                                  std::shared_ptr<table_store::Table> table) {
   table_store_->AddTable(name, table);
   return Status::OK();
@@ -240,7 +240,7 @@ Status Controller::InitThrowaway() {
 
   // This should eventually be done by subscribe requests.
   auto relation_info_vec = ConvertSubscribePBToRelationInfo(subscribe_pb);
-  for (const auto &relation_info : relation_info_vec) {
+  for (const auto& relation_info : relation_info_vec) {
     PL_RETURN_IF_ERROR(
         table_store_->AddTable(relation_info.name, relation_info.id,
                                std::make_shared<table_store::Table>(relation_info.relation)));
@@ -264,7 +264,7 @@ Status Controller::HandleHeartbeatMessage(std::unique_ptr<messages::VizierMessag
 }
 
 Status Controller::HandleExecuteQueryMessage(std::unique_ptr<messages::VizierMessage> msg) {
-  const auto &executor_query_req = msg->execute_query_request();
+  const auto& executor_query_req = msg->execute_query_request();
   pl::vizier::services::query_broker::querybrokerpb::AgentQueryResultRequest req;
 
   auto s = ExecuteQuery(executor_query_req, req.mutable_result());

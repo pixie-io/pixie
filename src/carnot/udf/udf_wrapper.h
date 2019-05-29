@@ -24,10 +24,10 @@ const int kStringAssumedSizeHeuristic = 10;
 // UDFValue type. This function is unsafe and will produce wrong results (or crash)
 // if used incorrectly.
 template <types::DataType TExecArgType>
-constexpr auto CastToUDFValueType(const types::BaseValueType *arg) {
+constexpr auto CastToUDFValueType(const types::BaseValueType* arg) {
   // A sample transformation (for TExecArgType = types::DataType::INT64) is:
   // return static_cast<types::Int64Value*>(arg);
-  return static_cast<const typename types::DataTypeTraits<TExecArgType>::value_type *>(arg);
+  return static_cast<const typename types::DataTypeTraits<TExecArgType>::value_type*>(arg);
 }
 /**
  * This is the inner wrapper which expands the arguments an performs type casts
@@ -39,8 +39,8 @@ constexpr auto CastToUDFValueType(const types::BaseValueType *arg) {
  * @return Status of execution.
  */
 template <typename TUDF, typename TOutput, std::size_t... I>
-Status ExecWrapper(TUDF *udf, FunctionContext *ctx, size_t count, TOutput *out,
-                   const std::vector<const types::BaseValueType *> &args,
+Status ExecWrapper(TUDF* udf, FunctionContext* ctx, size_t count, TOutput* out,
+                   const std::vector<const types::BaseValueType*>& args,
                    std::index_sequence<I...>) {
   [[maybe_unused]] constexpr auto exec_argument_types = ScalarUDFTraits<TUDF>::ExecArguments();
   for (size_t idx = 0; idx < count; ++idx) {
@@ -51,12 +51,12 @@ Status ExecWrapper(TUDF *udf, FunctionContext *ctx, size_t count, TOutput *out,
 
 // Returns the underlying data from a UDF value.
 template <typename T>
-inline auto UnWrap(const T &v) {
+inline auto UnWrap(const T& v) {
   return v.val;
 }
 
 template <>
-inline auto UnWrap<types::StringValue>(const types::StringValue &s) {
+inline auto UnWrap<types::StringValue>(const types::StringValue& s) {
   return s;
 }
 
@@ -65,8 +65,8 @@ inline auto UnWrap<types::StringValue>(const types::StringValue &s) {
  * This performs type casting and storing the data in the output builder.
  */
 template <typename TUDF, typename TOutput, std::size_t... I>
-Status ExecWrapperArrow(TUDF *udf, FunctionContext *ctx, size_t count, TOutput *out,
-                        const std::vector<arrow::Array *> &args, std::index_sequence<I...>) {
+Status ExecWrapperArrow(TUDF* udf, FunctionContext* ctx, size_t count, TOutput* out,
+                        const std::vector<arrow::Array*>& args, std::index_sequence<I...>) {
   [[maybe_unused]] static constexpr auto exec_argument_types =
       ScalarUDFTraits<TUDF>::ExecArguments();
   CHECK(out->Reserve(count).ok());
@@ -102,8 +102,8 @@ Status ExecWrapperArrow(TUDF *udf, FunctionContext *ctx, size_t count, TOutput *
  * @return true if all types match.
  */
 template <std::size_t SIZE>
-inline bool CheckTypes(const std::vector<const types::ColumnWrapper *> &args,
-                       const std::array<types::DataType, SIZE> &types) {
+inline bool CheckTypes(const std::vector<const types::ColumnWrapper*>& args,
+                       const std::array<types::DataType, SIZE>& types) {
   if (args.size() != SIZE) {
     return false;
   }
@@ -115,10 +115,10 @@ inline bool CheckTypes(const std::vector<const types::ColumnWrapper *> &args,
   return true;
 }
 
-inline std::vector<const types::BaseValueType *> ConvertToBaseValue(
-    const std::vector<const types::ColumnWrapper *> &args) {
-  std::vector<const types::BaseValueType *> retval;
-  for (const auto *col : args) {
+inline std::vector<const types::BaseValueType*> ConvertToBaseValue(
+    const std::vector<const types::ColumnWrapper*>& args) {
+  std::vector<const types::BaseValueType*> retval;
+  for (const auto* col : args) {
     retval.push_back(col->UnsafeRawData());
   }
   return retval;
@@ -151,9 +151,9 @@ struct ScalarUDFWrapper {
    * @param count The number of elements in the input and out (these need to be the same).
    * @return Status of execution.
    */
-  static Status ExecBatchArrow(ScalarUDF *udf, FunctionContext *ctx,
-                               const std::vector<arrow::Array *> &inputs,
-                               arrow::ArrayBuilder *output, int count) {
+  static Status ExecBatchArrow(ScalarUDF* udf, FunctionContext* ctx,
+                               const std::vector<arrow::Array*>& inputs,
+                               arrow::ArrayBuilder* output, int count) {
     constexpr types::DataType return_type = ScalarUDFTraits<TUDF>::ReturnType();
     auto exec_argument_types = ScalarUDFTraits<TUDF>::ExecArguments();
 
@@ -166,8 +166,8 @@ struct ScalarUDFWrapper {
     // the inputs with a sequence based on the number of arguments to iterate through and
     // cast the inputs.
     return ExecWrapperArrow<TUDF>(
-        static_cast<TUDF *>(udf), ctx, count,
-        static_cast<typename types::DataTypeTraits<return_type>::arrow_builder_type *>(output),
+        static_cast<TUDF*>(udf), ctx, count,
+        static_cast<typename types::DataTypeTraits<return_type>::arrow_builder_type*>(output),
         inputs, std::make_index_sequence<exec_argument_types.size()>{});
   }
 
@@ -188,9 +188,9 @@ struct ScalarUDFWrapper {
    * @param count The number of elements in the input and out (these need to be the same).
    * @return Status of execution.
    */
-  static Status ExecBatch(ScalarUDF *udf, FunctionContext *ctx,
-                          const std::vector<const types::ColumnWrapper *> &inputs,
-                          types::ColumnWrapper *output, int count) {
+  static Status ExecBatch(ScalarUDF* udf, FunctionContext* ctx,
+                          const std::vector<const types::ColumnWrapper*>& inputs,
+                          types::ColumnWrapper* output, int count) {
     // Check that output is allocated.
     DCHECK(output != nullptr);
     // Check that the arity is correct.
@@ -202,11 +202,11 @@ struct ScalarUDFWrapper {
     auto input_as_base_value = ConvertToBaseValue(inputs);
 
     using output_type = typename types::DataTypeTraits<return_type>::value_type;
-    auto *casted_output = static_cast<output_type *>(output->UnsafeRawData());
+    auto* casted_output = static_cast<output_type*>(output->UnsafeRawData());
     // The outer wrapper just casts the output type and UDF type. We then pass in
     // the inputs with a sequence based on the number of arguments to iterate through and
     // cast the inputs.
-    return ExecWrapper<TUDF>(static_cast<TUDF *>(udf), ctx, count, casted_output,
+    return ExecWrapper<TUDF>(static_cast<TUDF*>(udf), ctx, count, casted_output,
                              input_as_base_value,
                              std::make_index_sequence<exec_argument_types.size()>{});
   }
@@ -217,8 +217,8 @@ struct ScalarUDFWrapper {
  * This is similar to the ExecBatch, except it does not store a return value.
  */
 template <typename TUDA, std::size_t... I>
-Status UpdateWrapper(TUDA *uda, FunctionContext *ctx, size_t count,
-                     const std::vector<const types::BaseValueType *> &args,
+Status UpdateWrapper(TUDA* uda, FunctionContext* ctx, size_t count,
+                     const std::vector<const types::BaseValueType*>& args,
                      std::index_sequence<I...>) {
   constexpr auto update_argument_types = UDATraits<TUDA>::UpdateArgumentTypes();
   for (size_t idx = 0; idx < count; ++idx) {
@@ -232,9 +232,8 @@ Status UpdateWrapper(TUDA *uda, FunctionContext *ctx, size_t count,
  * This is similar to the ExecBatch, except it does not store a return value.
  */
 template <typename TUDA, std::size_t... I>
-Status UpdateWrapperArrow(TUDA *uda, FunctionContext *ctx, size_t count,
-                          const std::vector<const arrow::Array *> &args,
-                          std::index_sequence<I...>) {
+Status UpdateWrapperArrow(TUDA* uda, FunctionContext* ctx, size_t count,
+                          const std::vector<const arrow::Array*>& args, std::index_sequence<I...>) {
   constexpr auto update_argument_types = UDATraits<TUDA>::UpdateArgumentTypes();
   for (size_t idx = 0; idx < count; ++idx) {
     uda->Update(ctx, types::GetValueFromArrowArray<update_argument_types[I]>(args[I], idx)...);
@@ -263,8 +262,8 @@ struct UDAWrapper {
    * @param inputs A vector of pointers to types::ColumnWrappers.
    * @return Status of update.
    */
-  static Status ExecBatchUpdate(UDA *uda, FunctionContext *ctx,
-                                const std::vector<const types::ColumnWrapper *> &inputs) {
+  static Status ExecBatchUpdate(UDA* uda, FunctionContext* ctx,
+                                const std::vector<const types::ColumnWrapper*>& inputs) {
     constexpr auto update_argument_types = UDATraits<TUDA>::UpdateArgumentTypes();
     DCHECK(CheckTypes(inputs, update_argument_types));
     DCHECK(inputs.size() == update_argument_types.size());
@@ -272,7 +271,7 @@ struct UDAWrapper {
     auto input_as_base_value = ConvertToBaseValue(inputs);
 
     size_t num_records = inputs[0]->Size();
-    return UpdateWrapper<TUDA>(static_cast<TUDA *>(uda), ctx, num_records, input_as_base_value,
+    return UpdateWrapper<TUDA>(static_cast<TUDA*>(uda), ctx, num_records, input_as_base_value,
                                std::make_index_sequence<update_argument_types.size()>{});
   }
 
@@ -283,13 +282,13 @@ struct UDAWrapper {
    * @param inputs A vector of pointers to types::ColumnWrappers.
    * @return Status of update.
    */
-  static Status ExecBatchUpdateArrow(UDA *uda, FunctionContext *ctx,
-                                     const std::vector<const arrow::Array *> &inputs) {
+  static Status ExecBatchUpdateArrow(UDA* uda, FunctionContext* ctx,
+                                     const std::vector<const arrow::Array*>& inputs) {
     constexpr auto update_argument_types = UDATraits<TUDA>::UpdateArgumentTypes();
     DCHECK(inputs.size() == update_argument_types.size());
 
     size_t num_records = inputs[0]->length();
-    return UpdateWrapperArrow<TUDA>(static_cast<TUDA *>(uda), ctx, num_records, inputs,
+    return UpdateWrapperArrow<TUDA>(static_cast<TUDA*>(uda), ctx, num_records, inputs,
                                     std::make_index_sequence<update_argument_types.size()>{});
   }
 
@@ -299,8 +298,8 @@ struct UDAWrapper {
    * or not the same type as the templated UDA.
    * @return Status of Merge.
    */
-  static Status Merge(UDA *uda1, UDA *uda2, FunctionContext *ctx) {
-    static_cast<TUDA *>(uda1)->Merge(ctx, *static_cast<TUDA *>(uda2));
+  static Status Merge(UDA* uda1, UDA* uda2, FunctionContext* ctx) {
+    static_cast<TUDA*>(uda1)->Merge(ctx, *static_cast<TUDA*>(uda2));
     return Status::OK();
   }
 
@@ -309,11 +308,11 @@ struct UDAWrapper {
    * for the finalize return type.
    * @return Status of the finalize.
    */
-  static Status FinalizeArrow(UDA *uda, FunctionContext *ctx, arrow::ArrayBuilder *output) {
+  static Status FinalizeArrow(UDA* uda, FunctionContext* ctx, arrow::ArrayBuilder* output) {
     DCHECK(output != nullptr);
-    auto *casted_builder =
-        static_cast<typename types::DataTypeTraits<return_type>::arrow_builder_type *>(output);
-    auto *casted_uda = static_cast<TUDA *>(uda);
+    auto* casted_builder =
+        static_cast<typename types::DataTypeTraits<return_type>::arrow_builder_type*>(output);
+    auto* casted_uda = static_cast<TUDA*>(uda);
     PL_RETURN_IF_ERROR(casted_builder->Append(UnWrap(casted_uda->Finalize(ctx))));
     return Status::OK();
   }
@@ -325,12 +324,12 @@ struct UDAWrapper {
    *
    * @return Status of the Finalize.
    */
-  static Status FinalizeValue(UDA *uda, FunctionContext *ctx, types::BaseValueType *output) {
+  static Status FinalizeValue(UDA* uda, FunctionContext* ctx, types::BaseValueType* output) {
     using output_type = typename types::DataTypeTraits<return_type>::value_type;
 
     DCHECK(output != nullptr);
-    auto *casted_output = static_cast<output_type *>(output);
-    auto *casted_uda = static_cast<TUDA *>(uda);
+    auto* casted_output = static_cast<output_type*>(output);
+    auto* casted_uda = static_cast<TUDA*>(uda);
     *casted_output = casted_uda->Finalize(ctx);
     return Status::OK();
   }

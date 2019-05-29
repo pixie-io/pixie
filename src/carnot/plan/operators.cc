@@ -17,7 +17,7 @@ namespace plan {
 using pl::Status;
 
 template <typename TOp, typename TProto>
-std::unique_ptr<Operator> CreateOperator(int64_t id, const TProto &pb) {
+std::unique_ptr<Operator> CreateOperator(int64_t id, const TProto& pb) {
   auto op = std::make_unique<TOp>(id);
   auto s = op->Init(pb);
   // On init failure, return null;
@@ -28,7 +28,7 @@ std::unique_ptr<Operator> CreateOperator(int64_t id, const TProto &pb) {
   return op;
 }
 
-std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator &pb, int64_t id) {
+std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_t id) {
   switch (pb.op_type()) {
     case planpb::MEMORY_SOURCE_OPERATOR:
       return CreateOperator<MemorySourceOperator>(id, pb.mem_source_op());
@@ -53,7 +53,7 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator &pb, int64_
 
 std::string MemorySourceOperator::DebugString() const { return "Operator: MemorySource"; }
 
-Status MemorySourceOperator::Init(const planpb::MemorySourceOperator &pb) {
+Status MemorySourceOperator::Init(const planpb::MemorySourceOperator& pb) {
   pb_ = pb;
   column_idxs_.reserve(static_cast<size_t>(pb_.column_idxs_size()));
   for (int i = 0; i < pb_.column_idxs_size(); ++i) {
@@ -64,8 +64,8 @@ Status MemorySourceOperator::Init(const planpb::MemorySourceOperator &pb) {
 }
 
 StatusOr<table_store::schema::Relation> MemorySourceOperator::OutputRelation(
-    const table_store::schema::Schema &, const PlanState &,
-    const std::vector<int64_t> &input_ids) const {
+    const table_store::schema::Schema&, const PlanState&,
+    const std::vector<int64_t>& input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
   if (!input_ids.empty()) {
     // TODO(zasgar): We should figure out if we need to treat the "source table" as
@@ -96,7 +96,7 @@ std::string MapOperator::DebugString() const {
   return "Op:Map" + debug_string;
 }
 
-Status MapOperator::Init(const planpb::MapOperator &pb) {
+Status MapOperator::Init(const planpb::MapOperator& pb) {
   pb_ = pb;
   // Some sanity tests.
   if (pb_.column_names_size() != pb_.expressions_size()) {
@@ -117,8 +117,8 @@ Status MapOperator::Init(const planpb::MapOperator &pb) {
 }
 
 StatusOr<table_store::schema::Relation> MapOperator::OutputRelation(
-    const table_store::schema::Schema &schema, const PlanState &state,
-    const std::vector<int64_t> &input_ids) const {
+    const table_store::schema::Schema& schema, const PlanState& state,
+    const std::vector<int64_t>& input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
   if (input_ids.size() != 1) {
     return error::InvalidArgument("Map operator must have exactly one input");
@@ -141,7 +141,7 @@ StatusOr<table_store::schema::Relation> MapOperator::OutputRelation(
 
 std::string BlockingAggregateOperator::DebugString() const { return "Operator: BlockingAggregate"; }
 
-Status BlockingAggregateOperator::Init(const planpb::BlockingAggregateOperator &pb) {
+Status BlockingAggregateOperator::Init(const planpb::BlockingAggregateOperator& pb) {
   pb_ = pb;
   if (pb_.groups_size() != pb_.group_names_size()) {
     return error::InvalidArgument("group names/exp size mismatch");
@@ -166,8 +166,8 @@ Status BlockingAggregateOperator::Init(const planpb::BlockingAggregateOperator &
 }
 
 StatusOr<table_store::schema::Relation> BlockingAggregateOperator::OutputRelation(
-    const table_store::schema::Schema &schema, const PlanState &state,
-    const std::vector<int64_t> &input_ids) const {
+    const table_store::schema::Schema& schema, const PlanState& state,
+    const std::vector<int64_t>& input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
   if (input_ids.size() != 1) {
     return error::InvalidArgument("BlockingAgg operator must have exactly one input");
@@ -194,7 +194,7 @@ StatusOr<table_store::schema::Relation> BlockingAggregateOperator::OutputRelatio
     output_relation.AddColumn(input_relation.GetColumnType(col_idx), pb_.group_names(idx));
   }
 
-  for (const auto &value : values_) {
+  for (const auto& value : values_) {
     auto s = value->OutputDataType(state, schema);
     PL_RETURN_IF_ERROR(s);
     output_relation.AddColumn(s.ConsumeValueOrDie(), value->name());
@@ -208,14 +208,14 @@ StatusOr<table_store::schema::Relation> BlockingAggregateOperator::OutputRelatio
 
 std::string MemorySinkOperator::DebugString() const { return "Operator: MemorySink"; }
 
-Status MemorySinkOperator::Init(const planpb::MemorySinkOperator &pb) {
+Status MemorySinkOperator::Init(const planpb::MemorySinkOperator& pb) {
   pb_ = pb;
   is_initialized_ = true;
   return Status::OK();
 }
 
 StatusOr<table_store::schema::Relation> MemorySinkOperator::OutputRelation(
-    const table_store::schema::Schema &, const PlanState &, const std::vector<int64_t> &) const {
+    const table_store::schema::Schema&, const PlanState&, const std::vector<int64_t>&) const {
   DCHECK(is_initialized_) << "Not initialized";
   // There are no outputs.
   return table_store::schema::Relation();
@@ -229,7 +229,7 @@ std::string FilterOperator::DebugString() const {
   return "Op:Filter" + debug_string;
 }
 
-Status FilterOperator::Init(const planpb::FilterOperator &pb) {
+Status FilterOperator::Init(const planpb::FilterOperator& pb) {
   pb_ = pb;
   PL_ASSIGN_OR_RETURN(expression_, ScalarExpression::FromProto(pb_.expression()));
 
@@ -238,8 +238,8 @@ Status FilterOperator::Init(const planpb::FilterOperator &pb) {
 }
 
 StatusOr<table_store::schema::Relation> FilterOperator::OutputRelation(
-    const table_store::schema::Schema &schema, const PlanState & /*state*/,
-    const std::vector<int64_t> &input_ids) const {
+    const table_store::schema::Schema& schema, const PlanState& /*state*/,
+    const std::vector<int64_t>& input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
 
   if (input_ids.size() != 1) {
@@ -265,7 +265,7 @@ std::string LimitOperator::DebugString() const {
   return "Op:Limit" + debug_string;
 }
 
-Status LimitOperator::Init(const planpb::LimitOperator &pb) {
+Status LimitOperator::Init(const planpb::LimitOperator& pb) {
   pb_ = pb;
   record_limit_ = pb_.limit();
 
@@ -274,8 +274,8 @@ Status LimitOperator::Init(const planpb::LimitOperator &pb) {
 }
 
 StatusOr<table_store::schema::Relation> LimitOperator::OutputRelation(
-    const table_store::schema::Schema &schema, const PlanState & /*state*/,
-    const std::vector<int64_t> &input_ids) const {
+    const table_store::schema::Schema& schema, const PlanState& /*state*/,
+    const std::vector<int64_t>& input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";
 
   if (input_ids.size() != 1) {

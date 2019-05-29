@@ -28,7 +28,7 @@ pl::StatusOr<std::unique_ptr<pl::carnot::compiler::RelationMap>> MakeRelationMap
   }
 
   auto rel_map = std::make_unique<pl::carnot::compiler::RelationMap>();
-  for (auto &relation_pair : schema_pb.relation_map()) {
+  for (auto& relation_pair : schema_pb.relation_map()) {
     pl::table_store::schema::Relation rel;
     PL_RETURN_IF_ERROR(rel.FromProto(&relation_pair.second));
     rel_map->emplace(relation_pair.first, rel);
@@ -37,20 +37,20 @@ pl::StatusOr<std::unique_ptr<pl::carnot::compiler::RelationMap>> MakeRelationMap
   return rel_map;
 }
 
-char *CloneStringToCharArray(std::string str, int *ret_len) {
+char* CloneStringToCharArray(std::string str, int* ret_len) {
   *ret_len = str.size();
-  char *retval = new char[str.size()];
+  char* retval = new char[str.size()];
   memcpy(retval, str.data(), str.size());
   return retval;
 }
-void WrapStatus(pl::carnot::compiler::compilerpb::CompilerResult *compiler_result_pb,
-                const pl::Status &status) {
+void WrapStatus(pl::carnot::compiler::compilerpb::CompilerResult* compiler_result_pb,
+                const pl::Status& status) {
   DCHECK(compiler_result_pb);
   status.ToProto(compiler_result_pb->mutable_status());
 }
 
-char *ReturnCompilerResult(pl::carnot::compiler::compilerpb::CompilerResult *compiler_result_pb,
-                           int *result_len) {
+char* ReturnCompilerResult(pl::carnot::compiler::compilerpb::CompilerResult* compiler_result_pb,
+                           int* result_len) {
   DCHECK(compiler_result_pb);
   std::string serialized;
   bool success = compiler_result_pb->SerializeToString(&serialized);
@@ -61,7 +61,7 @@ char *ReturnCompilerResult(pl::carnot::compiler::compilerpb::CompilerResult *com
   }
   return CloneStringToCharArray(serialized, result_len);
 }
-char *ReturnStatusEarly(const pl::Status &status, int *result_len) {
+char* ReturnStatusEarly(const pl::Status& status, int* result_len) {
   DCHECK(result_len != nullptr);
   pl::carnot::compiler::compilerpb::CompilerResult compiler_result_pb;
   WrapStatus(&compiler_result_pb, status);
@@ -74,14 +74,14 @@ CompilerPtr CompilerNew() {
   return reinterpret_cast<CompilerPtr>(compiler_ptr);
 }
 
-char *CompilerCompile(CompilerPtr compiler_ptr, const char *rel_str_c, int rel_str_len,
-                      const char *query, int query_len, int *resultLen) {
+char* CompilerCompile(CompilerPtr compiler_ptr, const char* rel_str_c, int rel_str_len,
+                      const char* query, int query_len, int* resultLen) {
   DCHECK(rel_str_c != nullptr);
   DCHECK(query != nullptr);
   std::string rel_str(rel_str_c, rel_str_c + rel_str_len);
   std::string query_str(query, query + query_len);
 
-  auto compiler = reinterpret_cast<pl::carnot::compiler::Compiler *>(compiler_ptr);
+  auto compiler = reinterpret_cast<pl::carnot::compiler::Compiler*>(compiler_ptr);
 
   pl::StatusOr<std::unique_ptr<pl::carnot::compiler::RegistryInfo>> registry_info_status =
       pl::carnot::udfexporter::ExportUDFInfo();
@@ -120,7 +120,7 @@ char *CompilerCompile(CompilerPtr compiler_ptr, const char *rel_str_c, int rel_s
 }
 
 void CompilerFree(CompilerPtr compiler_ptr) {
-  delete reinterpret_cast<pl::carnot::compiler::Compiler *>(compiler_ptr);
+  delete reinterpret_cast<pl::carnot::compiler::Compiler*>(compiler_ptr);
 }
 
-void CompilerStrFree(char *str) { delete str; }
+void CompilerStrFree(char* str) { delete str; }

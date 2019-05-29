@@ -9,11 +9,11 @@ namespace pl {
 namespace carnot {
 namespace plan {
 
-Status PlanWalker::CallWalkFn(PlanFragment *pf) { return on_plan_fragment_walk_fn_(pf); }
+Status PlanWalker::CallWalkFn(PlanFragment* pf) { return on_plan_fragment_walk_fn_(pf); }
 
-Status PlanWalker::Walk(Plan *plan) {
+Status PlanWalker::Walk(Plan* plan) {
   auto plan_fragments = plan->dag().TopologicalSort();
-  for (const auto &node_id : plan_fragments) {
+  for (const auto& node_id : plan_fragments) {
     auto node = plan->nodes().find(node_id);
     if (node == plan->nodes().end()) {
       LOG(WARNING) << absl::StrCat("Could not find node in plan.");

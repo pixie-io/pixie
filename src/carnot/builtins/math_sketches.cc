@@ -4,7 +4,7 @@ namespace pl {
 namespace carnot {
 namespace builtins {
 
-void RegisterMathSketchesOrDie(udf::UDARegistry *registry) {
+void RegisterMathSketchesOrDie(udf::UDARegistry* registry) {
   registry->RegisterOrDie<QuantilesUDA<types::Int64Value>>("pl.quantiles");
   registry->RegisterOrDie<QuantilesUDA<types::Float64Value>>("pl.quantiles");
 }

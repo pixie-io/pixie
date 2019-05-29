@@ -16,10 +16,10 @@ template <typename TArg>
 class QuantilesUDA : public udf::UDA {
  public:
   QuantilesUDA() : digest_(1000) {}
-  void Update(udf::FunctionContext *, TArg val) { digest_.add(val.val); }
-  void Merge(udf::FunctionContext *, const QuantilesUDA &other) { digest_.merge(&other.digest_); }
+  void Update(udf::FunctionContext*, TArg val) { digest_.add(val.val); }
+  void Merge(udf::FunctionContext*, const QuantilesUDA& other) { digest_.merge(&other.digest_); }
 
-  types::StringValue Finalize(udf::FunctionContext *) {
+  types::StringValue Finalize(udf::FunctionContext*) {
     rapidjson::Document d;
     d.SetObject();
     d.AddMember("p01", digest_.quantile(0.01), d.GetAllocator());
@@ -37,7 +37,7 @@ class QuantilesUDA : public udf::UDA {
   tdigest::TDigest digest_;
 };
 
-void RegisterMathSketchesOrDie(udf::UDARegistry *registry);
+void RegisterMathSketchesOrDie(udf::UDARegistry* registry);
 
 }  // namespace builtins
 }  // namespace carnot

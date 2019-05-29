@@ -18,7 +18,7 @@ namespace pl {
  * Status adapter for arrow.
  */
 template <>
-inline Status StatusAdapter<arrow::Status>(const arrow::Status &s) noexcept {
+inline Status StatusAdapter<arrow::Status>(const arrow::Status& s) noexcept {
   return Status(statuspb::UNKNOWN, s.message());
 }
 
@@ -27,8 +27,8 @@ namespace types {
 // The functions convert vector of UDF values to an arrow representation on
 // the given MemoryPool.
 template <typename TUDFValue>
-inline std::shared_ptr<arrow::Array> ToArrow(const std::vector<TUDFValue> &data,
-                                             arrow::MemoryPool *mem_pool) {
+inline std::shared_ptr<arrow::Array> ToArrow(const std::vector<TUDFValue>& data,
+                                             arrow::MemoryPool* mem_pool) {
   DCHECK(mem_pool != nullptr);
 
   typename ValueTypeTraits<TUDFValue>::arrow_builder_type builder(mem_pool);
@@ -43,13 +43,13 @@ inline std::shared_ptr<arrow::Array> ToArrow(const std::vector<TUDFValue> &data,
 
 // Specialization of the above for strings.
 template <>
-inline std::shared_ptr<arrow::Array> ToArrow<StringValue>(const std::vector<StringValue> &data,
-                                                          arrow::MemoryPool *mem_pool) {
+inline std::shared_ptr<arrow::Array> ToArrow<StringValue>(const std::vector<StringValue>& data,
+                                                          arrow::MemoryPool* mem_pool) {
   DCHECK(mem_pool != nullptr);
   arrow::StringBuilder builder(mem_pool);
   size_t total_size =
       std::accumulate(data.begin(), data.end(), 0ULL,
-                      [](uint64_t sum, const std::string &str) { return sum + str.size(); });
+                      [](uint64_t sum, const std::string& str) { return sum + str.size(); });
   // This allocates space for null/ptrs/size.
   PL_CHECK_OK(builder.Reserve(data.size()));
   // This allocates space for the actual data.
@@ -67,11 +67,11 @@ inline std::shared_ptr<arrow::Array> ToArrow<StringValue>(const std::vector<Stri
  * @param arrow_type The arrow type.
  * @return The UDFDataType.
  */
-DataType ArrowToDataType(const arrow::Type::type &arrow_type);
+DataType ArrowToDataType(const arrow::Type::type& arrow_type);
 
-arrow::Type::type ToArrowType(const DataType &udf_type);
+arrow::Type::type ToArrowType(const DataType& udf_type);
 
-int64_t ArrowTypeToBytes(const arrow::Type::type &arrow_type);
+int64_t ArrowTypeToBytes(const arrow::Type::type& arrow_type);
 
 /**
  * Make an arrow builder based on UDFDataType and usng the passed in MemoryPool.
@@ -79,18 +79,18 @@ int64_t ArrowTypeToBytes(const arrow::Type::type &arrow_type);
  * @param mem_pool The MemoryPool to use.
  * @return a unique_ptr to an array builder.
  */
-std::unique_ptr<arrow::ArrayBuilder> MakeArrowBuilder(const DataType &data_type,
-                                                      arrow::MemoryPool *mem_pool);
+std::unique_ptr<arrow::ArrayBuilder> MakeArrowBuilder(const DataType& data_type,
+                                                      arrow::MemoryPool* mem_pool);
 
 // The get value functions pluck out value at a specific index.
 template <typename T>
-inline auto GetValue(const T *arr, int64_t idx) {
+inline auto GetValue(const T* arr, int64_t idx) {
   return arr->Value(idx);
 }
 
 // Specialization for string type.
 template <>
-inline auto GetValue<arrow::StringArray>(const arrow::StringArray *arr, int64_t idx) {
+inline auto GetValue<arrow::StringArray>(const arrow::StringArray* arr, int64_t idx) {
   return arr->GetString(idx);
 }
 
@@ -98,20 +98,20 @@ inline auto GetValue<arrow::StringArray>(const arrow::StringArray *arr, int64_t 
 // specific arrow::Array subtype. This function is unsafe and will produce wrong results (or crash)
 // if used incorrectly.
 template <types::DataType TExecArgType>
-constexpr auto GetValueFromArrowArray(const arrow::Array *arg, int64_t idx) {
+constexpr auto GetValueFromArrowArray(const arrow::Array* arg, int64_t idx) {
   // A sample transformation (for TExecArgType = types::DataType::INT64) is:
   // return GetValue(static_cast<arrow::Int64Array*>(arg), idx);
   using arrow_array_type = typename types::DataTypeTraits<TExecArgType>::arrow_array_type;
-  return GetValue(static_cast<const arrow_array_type *>(arg), idx);
+  return GetValue(static_cast<const arrow_array_type*>(arg), idx);
 }
 
 template <types::DataType TDataType>
-inline int64_t GetArrowArrayBytes(const arrow::Array *arr) {
+inline int64_t GetArrowArrayBytes(const arrow::Array* arr) {
   return arr->length() * types::ArrowTypeToBytes(types::ToArrowType(TDataType));
 }
 
 template <>
-inline int64_t GetArrowArrayBytes<types::DataType::STRING>(const arrow::Array *arr) {
+inline int64_t GetArrowArrayBytes<types::DataType::STRING>(const arrow::Array* arr) {
   int64_t total_bytes = 0;
   // Loop through each string in the Arrow array.
   for (int64_t i = 0; i < arr->length(); i++) {
@@ -131,23 +131,23 @@ class ArrowArrayIterator
  public:
   ArrowArrayIterator();
 
-  explicit ArrowArrayIterator(arrow::Array *array) : array_(array) {}
+  explicit ArrowArrayIterator(arrow::Array* array) : array_(array) {}
 
-  ArrowArrayIterator(arrow::Array *array, int64_t idx) : array_(array), curr_idx_(idx) {}
+  ArrowArrayIterator(arrow::Array* array, int64_t idx) : array_(array), curr_idx_(idx) {}
 
-  bool operator==(const ArrowArrayIterator<T> &iterator) const {
+  bool operator==(const ArrowArrayIterator<T>& iterator) const {
     return this->array_ == iterator.array_ && this->curr_idx_ == iterator.curr_idx_;
   }
 
-  bool operator!=(const ArrowArrayIterator<T> &iterator) const {
+  bool operator!=(const ArrowArrayIterator<T>& iterator) const {
     return this->array_ != iterator.array_ || this->curr_idx_ != iterator.curr_idx_;
   }
 
   ReturnType operator*() const { return (types::GetValueFromArrowArray<T>(array_, curr_idx_)); }
 
-  ReturnType *operator->() const { return (types::GetValueFromArrowArray<T>(array_, curr_idx_)); }
+  ReturnType* operator->() const { return (types::GetValueFromArrowArray<T>(array_, curr_idx_)); }
 
-  ArrowArrayIterator<T> &operator++() {
+  ArrowArrayIterator<T>& operator++() {
     curr_idx_++;
 
     return *this;
@@ -168,7 +168,7 @@ class ArrowArrayIterator
   }
 
  private:
-  arrow::Array *array_;
+  arrow::Array* array_;
   int64_t curr_idx_ = 0;
 };
 
@@ -182,7 +182,7 @@ class ArrowArrayIterator
  */
 template <types::DataType T>
 int64_t SearchArrowArrayGreaterThanOrEqual(
-    arrow::Array *arr,
+    arrow::Array* arr,
     typename types::ValueTypeTraits<typename types::DataTypeTraits<T>::value_type>::native_type
         val) {
   auto arr_iterator = ArrowArrayIterator<T>(arr);
@@ -202,7 +202,7 @@ int64_t SearchArrowArrayGreaterThanOrEqual(
  */
 template <types::DataType T>
 int64_t SearchArrowArrayLessThan(
-    arrow::Array *arr,
+    arrow::Array* arr,
     typename types::ValueTypeTraits<typename types::DataTypeTraits<T>::value_type>::native_type
         val) {
   auto res = SearchArrowArrayGreaterThanOrEqual<T>(arr, val);

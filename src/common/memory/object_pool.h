@@ -23,15 +23,15 @@ class ObjectPool final : public pl::NotCopyable {
    * @return The pointer to the entity.
    */
   template <typename T>
-  T *Add(T *entity) {
+  T* Add(T* entity) {
     absl::base_internal::SpinLockHolder lock(&lock_);
-    obj_list_.emplace_back(Entity{entity, [](void *obj) { delete reinterpret_cast<T *>(obj); }});
+    obj_list_.emplace_back(Entity{entity, [](void* obj) { delete reinterpret_cast<T*>(obj); }});
     return entity;
   }
 
   void Clear() {
     absl::base_internal::SpinLockHolder lock(&lock_);
-    for (auto &obj : obj_list_) {
+    for (auto& obj : obj_list_) {
       obj.delete_fn(obj.obj);
     }
     obj_list_.clear();
@@ -39,11 +39,11 @@ class ObjectPool final : public pl::NotCopyable {
 
  private:
   // A generic deletion function pointer. Deletes its first argument.
-  using DeleteFn = void (*)(void *);
+  using DeleteFn = void (*)(void*);
 
   // For each object, a pointer to the object and a function that deletes it.
   struct Entity {
-    void *obj;
+    void* obj;
     DeleteFn delete_fn;
   };
 

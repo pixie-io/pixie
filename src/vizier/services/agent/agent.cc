@@ -29,7 +29,7 @@ DEFINE_bool(disable_SSL, gflags::BoolFromEnv("PL_DISABLE_SSL", false), "Disable 
 
 using pl::vizier::agent::Controller;
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   pl::InitEnvironmentOrDie(&argc, argv);
   LOG(INFO) << "Pixie Lab Agent: " << pl::VersionInfo::VersionString();
 

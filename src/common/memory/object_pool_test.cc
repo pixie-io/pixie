@@ -6,21 +6,21 @@ namespace pl {
 class TestObject {
  public:
   TestObject() = delete;
-  explicit TestObject(int *destroy_count) : destroy_count_(destroy_count) {}
+  explicit TestObject(int* destroy_count) : destroy_count_(destroy_count) {}
   ~TestObject() { (*destroy_count_)++; }
 
  private:
-  int *destroy_count_;
+  int* destroy_count_;
 };
 
 class TestObjectTwo {
  public:
   TestObjectTwo() = delete;
-  explicit TestObjectTwo(int *destroy_count) : destroy_count_(destroy_count) {}
+  explicit TestObjectTwo(int* destroy_count) : destroy_count_(destroy_count) {}
   ~TestObjectTwo() { (*destroy_count_)++; }
 
  private:
-  int *destroy_count_;
+  int* destroy_count_;
 };
 
 TEST(object_pool_test, test_destroy) {

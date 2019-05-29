@@ -29,8 +29,8 @@ using types::StringValueColumnWrapper;
 using types::Time64NSValueColumnWrapper;
 
 std::unique_ptr<ScalarExpressionEvaluator> ScalarExpressionEvaluator::Create(
-    const plan::ConstScalarExpressionVector &expressions,
-    const ScalarExpressionEvaluatorType &type) {
+    const plan::ConstScalarExpressionVector& expressions,
+    const ScalarExpressionEvaluatorType& type) {
   switch (type) {
     case ScalarExpressionEvaluatorType::kVectorNative:
       return std::make_unique<VectorNativeScalarExpressionEvaluator>(expressions);
@@ -45,7 +45,7 @@ namespace {
 
 // Evaluate a scalar value to an arrow::Array.
 template <typename TBuilder, typename TArray, typename T>
-std::shared_ptr<arrow::Array> EvalScalarFixedImpl(arrow::MemoryPool *mem_pool, T val,
+std::shared_ptr<arrow::Array> EvalScalarFixedImpl(arrow::MemoryPool* mem_pool, T val,
                                                   size_t count) {
   TBuilder builder(mem_pool);
   PL_CHECK_OK(builder.Reserve(count));
@@ -59,7 +59,7 @@ std::shared_ptr<arrow::Array> EvalScalarFixedImpl(arrow::MemoryPool *mem_pool, T
 
 // Specialization for binary types.
 template <typename TBuilder, typename TArray, typename T>
-std::shared_ptr<arrow::Array> EvalScalarBinaryImpl(arrow::MemoryPool *mem_pool, T val,
+std::shared_ptr<arrow::Array> EvalScalarBinaryImpl(arrow::MemoryPool* mem_pool, T val,
                                                    size_t count) {
   TBuilder builder(mem_pool);
   PL_CHECK_OK(builder.Reserve(count));
@@ -77,7 +77,7 @@ std::shared_ptr<arrow::Array> EvalScalarBinaryImpl(arrow::MemoryPool *mem_pool, 
 
 // Evaluate Scalar to arrow.
 // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
-std::shared_ptr<arrow::Array> EvalScalarToArrow(ExecState *exec_state, const plan::ScalarValue &val,
+std::shared_ptr<arrow::Array> EvalScalarToArrow(ExecState* exec_state, const plan::ScalarValue& val,
                                                 size_t count) {
   auto mem_pool = exec_state->exec_mem_pool();
   switch (val.DataType()) {
@@ -103,7 +103,7 @@ std::shared_ptr<arrow::Array> EvalScalarToArrow(ExecState *exec_state, const pla
 
 // Eval scalar value to type erased column wrapper.
 // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
-std::shared_ptr<ColumnWrapper> EvalScalarToColumnWrapper(ExecState *, const plan::ScalarValue &val,
+std::shared_ptr<ColumnWrapper> EvalScalarToColumnWrapper(ExecState*, const plan::ScalarValue& val,
                                                          size_t count) {
   switch (val.DataType()) {
     case types::BOOLEAN:
@@ -122,8 +122,8 @@ std::shared_ptr<ColumnWrapper> EvalScalarToColumnWrapper(ExecState *, const plan
   }
 }
 
-Status ScalarExpressionEvaluator::Evaluate(ExecState *exec_state, const RowBatch &input,
-                                           RowBatch *output) {
+Status ScalarExpressionEvaluator::Evaluate(ExecState* exec_state, const RowBatch& input,
+                                           RowBatch* output) {
   CHECK(exec_state != nullptr);
   CHECK(output != nullptr);
   CHECK_EQ(static_cast<size_t>(output->num_columns()), expressions_.size());
@@ -140,22 +140,22 @@ std::string ScalarExpressionEvaluator::DebugString() {
   return absl::StrFormat("ExpressionEvaluator<%s>", absl::StrJoin(debug_strs, ","));
 }
 
-Status VectorNativeScalarExpressionEvaluator::Open(ExecState *exec_state) {
-  for (const auto &kv : exec_state->id_to_scalar_udf_map()) {
+Status VectorNativeScalarExpressionEvaluator::Open(ExecState* exec_state) {
+  for (const auto& kv : exec_state->id_to_scalar_udf_map()) {
     auto udf = kv.second->Make();
     id_to_udf_map_[kv.first] = std::move(udf);
   }
   return Status::OK();
 }
 
-Status VectorNativeScalarExpressionEvaluator::Close(ExecState *) {
+Status VectorNativeScalarExpressionEvaluator::Close(ExecState*) {
   // Nothing here yet.
   return Status();
 }
 
 StatusOr<types::SharedColumnWrapper>
 VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
-    ExecState *exec_state, const RowBatch &input, const plan::ScalarExpression &expr) {
+    ExecState* exec_state, const RowBatch& input, const plan::ScalarExpression& expr) {
   CHECK(exec_state != nullptr);
   CHECK_GT(input.num_columns(), 0);
 
@@ -166,22 +166,22 @@ VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
   // and then evaluated.
   plan::ExpressionWalker<types::SharedColumnWrapper> walker;
   walker.OnScalarValue(
-      [&](const plan::ScalarValue &val,
-          const std::vector<types::SharedColumnWrapper> &children) -> types::SharedColumnWrapper {
+      [&](const plan::ScalarValue& val,
+          const std::vector<types::SharedColumnWrapper>& children) -> types::SharedColumnWrapper {
         DCHECK_EQ(children.size(), 0ULL);
         return EvalScalarToColumnWrapper(exec_state, val, num_rows);
       });
 
   walker.OnColumn(
-      [&](const plan::Column &col,
-          const std::vector<types::SharedColumnWrapper> &children) -> types::SharedColumnWrapper {
+      [&](const plan::Column& col,
+          const std::vector<types::SharedColumnWrapper>& children) -> types::SharedColumnWrapper {
         DCHECK_EQ(children.size(), 0ULL);
         return ColumnWrapper::FromArrow(input.ColumnAt(col.Index()));
       });
 
   walker.OnScalarFunc(
-      [&](const plan::ScalarFunc &fn,
-          const std::vector<types::SharedColumnWrapper> &children) -> types::SharedColumnWrapper {
+      [&](const plan::ScalarFunc& fn,
+          const std::vector<types::SharedColumnWrapper>& children) -> types::SharedColumnWrapper {
         std::vector<types::DataType> arg_types;
         arg_types.reserve(children.size());
         for (const auto child : children) {
@@ -191,7 +191,7 @@ VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
         auto def = exec_state->GetScalarUDFDefinition(fn.udf_id());
         auto udf = id_to_udf_map_[fn.udf_id()].get();
 
-        std::vector<const types::ColumnWrapper *> raw_children;
+        std::vector<const types::ColumnWrapper*> raw_children;
         raw_children.reserve(children.size());
         for (const auto child : children) {
           raw_children.emplace_back(child.get());
@@ -206,8 +206,8 @@ VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
 }
 
 Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
-    ExecState *exec_state, const RowBatch &input, const plan::ScalarExpression &expr,
-    RowBatch *output) {
+    ExecState* exec_state, const RowBatch& input, const plan::ScalarExpression& expr,
+    RowBatch* output) {
   CHECK(exec_state != nullptr);
   CHECK(output != nullptr);
   CHECK_GT(input.num_columns(), 0);
@@ -219,7 +219,7 @@ Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
   // expression is a constant/column without using the expression walker.
   // Fast path for just having a constant.
   if (expr.ExpressionType() == plan::Expression::kConstant) {
-    auto scalar_expr = static_cast<const plan::ScalarValue &>(expr);
+    auto scalar_expr = static_cast<const plan::ScalarValue&>(expr);
     auto arr = EvalScalarToArrow(exec_state, scalar_expr, num_rows);
     PL_RETURN_IF_ERROR(output->AddColumn(arr));
     return Status::OK();
@@ -228,7 +228,7 @@ Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
   // Fast path for just a column (copy it directly to the output).
   if (expr.ExpressionType() == plan::Expression::kColumn) {
     // Trivial copy reference for arrow column.
-    auto col_expr = static_cast<const plan::Column &>(expr);
+    auto col_expr = static_cast<const plan::Column&>(expr);
     PL_RETURN_IF_ERROR(output->AddColumn(input.ColumnAt(col_expr.Index())));
     return Status::OK();
   }
@@ -239,39 +239,39 @@ Status VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
   return Status::OK();
 }
 
-Status ArrowNativeScalarExpressionEvaluator::Open(ExecState *exec_state) {
-  for (const auto &kv : exec_state->id_to_scalar_udf_map()) {
+Status ArrowNativeScalarExpressionEvaluator::Open(ExecState* exec_state) {
+  for (const auto& kv : exec_state->id_to_scalar_udf_map()) {
     auto udf = kv.second->Make();
     id_to_udf_map_[kv.first] = std::move(udf);
   }
   return Status::OK();
 }
-Status ArrowNativeScalarExpressionEvaluator::Close(ExecState *) {
+Status ArrowNativeScalarExpressionEvaluator::Close(ExecState*) {
   // Nothing here yet.
   return Status();
 }
 
 Status exec::ArrowNativeScalarExpressionEvaluator::EvaluateSingleExpression(
-    exec::ExecState *exec_state, const RowBatch &input, const plan::ScalarExpression &expr,
-    RowBatch *output) {
+    exec::ExecState* exec_state, const RowBatch& input, const plan::ScalarExpression& expr,
+    RowBatch* output) {
   size_t num_rows = input.num_rows();
   plan::ExpressionWalker<std::shared_ptr<arrow::Array>> walker;
   walker.OnScalarValue(
-      [&](const plan::ScalarValue &val, const std::vector<std::shared_ptr<arrow::Array>> &children)
+      [&](const plan::ScalarValue& val, const std::vector<std::shared_ptr<arrow::Array>>& children)
           -> std::shared_ptr<arrow::Array> {
         DCHECK_EQ(children.size(), 0ULL);
         return EvalScalarToArrow(exec_state, val, num_rows);
       });
 
   walker.OnColumn(
-      [&](const plan::Column &col, const std::vector<std::shared_ptr<arrow::Array>> &children)
+      [&](const plan::Column& col, const std::vector<std::shared_ptr<arrow::Array>>& children)
           -> std::shared_ptr<arrow::Array> {
         DCHECK_EQ(children.size(), 0ULL);
         return input.ColumnAt(col.Index());
       });
 
   walker.OnScalarFunc(
-      [&](const plan::ScalarFunc &fn, const std::vector<std::shared_ptr<arrow::Array>> &children)
+      [&](const plan::ScalarFunc& fn, const std::vector<std::shared_ptr<arrow::Array>>& children)
           -> std::shared_ptr<arrow::Array> {
         std::vector<types::DataType> arg_types;
         arg_types.reserve(children.size());
@@ -284,9 +284,9 @@ Status exec::ArrowNativeScalarExpressionEvaluator::EvaluateSingleExpression(
 
         auto output = MakeArrowBuilder(def->exec_return_type(), arrow::default_memory_pool());
 
-        std::vector<arrow::Array *> raw_children;
+        std::vector<arrow::Array*> raw_children;
         raw_children.reserve(children.size());
-        for (const auto &child : children) {
+        for (const auto& child : children) {
           raw_children.push_back(child.get());
         }
 

@@ -35,17 +35,17 @@ std::vector<StringValue> GenerateStringValueVector(int size, int string_width) {
 
 class AddUDF : public ScalarUDF {
  public:
-  Int64Value Exec(FunctionContext *, Int64Value v1, Int64Value v2) { return v1.val + v2.val; }
+  Int64Value Exec(FunctionContext*, Int64Value v1, Int64Value v2) { return v1.val + v2.val; }
 };
 
 class SubStrUDF : public ScalarUDF {
  public:
-  StringValue Exec(FunctionContext *, StringValue v1) { return v1.substr(1, 2); }
+  StringValue Exec(FunctionContext*, StringValue v1) { return v1.substr(1, 2); }
 };
 
 // This benchmark add two columns using Int64ValueVectors.
 // NOLINTNEXTLINE : runtime/references.
-static void BM_AddInt64Values(benchmark::State &state) {
+static void BM_AddInt64Values(benchmark::State& state) {
   auto vec1 = CreateLargeData<Int64Value>(state.range(0));
   auto vec2 = CreateLargeData<Int64Value>(state.range(0));
   Int64ValueColumnWrapper out(vec2.size());
@@ -80,7 +80,7 @@ static void BM_AddInt64Values(benchmark::State &state) {
 // This benchmark performs a substring on 10 char wide strings,
 // selects two characters.
 // NOLINTNEXTLINE : runtime/references.
-static void BM_SubStr(benchmark::State &state) {
+static void BM_SubStr(benchmark::State& state) {
   int width = 10;
   auto vec1 = GenerateStringValueVector(state.range(0), width);
   StringValueColumnWrapper out(vec1.size());
@@ -109,7 +109,7 @@ static void BM_SubStr(benchmark::State &state) {
 
 // Benchmark adding two integers using arrow as the interface.
 // NOLINTNEXTLINE : runtime/references.
-static void BM_AddTwoInt64sArrow(benchmark::State &state) {
+static void BM_AddTwoInt64sArrow(benchmark::State& state) {
   size_t size = state.range(0);
   auto arr1 = ToArrow(CreateLargeData<Int64Value>(size), arrow::default_memory_pool());
   auto arr2 = ToArrow(CreateLargeData<Int64Value>(size), arrow::default_memory_pool());
@@ -130,9 +130,9 @@ static void BM_AddTwoInt64sArrow(benchmark::State &state) {
   }
 
   // Check results.
-  auto arr1_casted = static_cast<arrow::Int64Array *>(arr1.get());
-  auto arr2_casted = static_cast<arrow::Int64Array *>(arr2.get());
-  auto out_casted = static_cast<arrow::Int64Array *>(out.get());
+  auto arr1_casted = static_cast<arrow::Int64Array*>(arr1.get());
+  auto arr2_casted = static_cast<arrow::Int64Array*>(arr2.get());
+  auto out_casted = static_cast<arrow::Int64Array*>(out.get());
   for (size_t idx = 0; idx < size; ++idx) {
     CHECK(arr1_casted->Value(idx) + arr2_casted->Value(idx) == out_casted->Value(idx));
   }
@@ -142,7 +142,7 @@ static void BM_AddTwoInt64sArrow(benchmark::State &state) {
 
 // Benchmark converting Int64 to Arrow.
 // NOLINTNEXTLINE : runtime/references.
-static void BM_ConvertToArrowInt64(benchmark::State &state) {
+static void BM_ConvertToArrowInt64(benchmark::State& state) {
   size_t size = state.range(0);
   auto data = CreateLargeData<Int64Value>(size);
   // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
@@ -155,7 +155,7 @@ static void BM_ConvertToArrowInt64(benchmark::State &state) {
 
 // Benchmark converting strings to Arrow.
 // NOLINTNEXTLINE : runtime/references.
-static void BM_ConvertToArrowString(benchmark::State &state) {
+static void BM_ConvertToArrowString(benchmark::State& state) {
   int width = 10;
   auto data = GenerateStringValueVector(state.range(0), width);
   // NOLINTNEXTLINE : clang-analyzer-deadcode.DeadStores.
@@ -169,7 +169,7 @@ static void BM_ConvertToArrowString(benchmark::State &state) {
 
 // Benchmark adding two Int64 values and producing an arrow result.
 // NOLINTNEXTLINE : runtime/references.
-static void BM_AddInt64ValueToArrow(benchmark::State &state) {
+static void BM_AddInt64ValueToArrow(benchmark::State& state) {
   auto vec1 = CreateLargeData<Int64Value>(state.range(0));
   auto vec2 = CreateLargeData<Int64Value>(state.range(0));
   Int64ValueColumnWrapper out(vec2.size());
@@ -200,7 +200,7 @@ static void BM_AddInt64ValueToArrow(benchmark::State &state) {
 
 // Benchmark doing substring on arrow.
 // NOLINTNEXTLINE : runtime/references.
-static void BM_SubStrArrow(benchmark::State &state) {
+static void BM_SubStrArrow(benchmark::State& state) {
   int width = 10;
   auto data = GenerateStringValueVector(state.range(0), width);
   auto in_arr = ToArrow(data, arrow::default_memory_pool());

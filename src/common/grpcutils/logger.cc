@@ -15,9 +15,9 @@ namespace pl {
 
 class LoggingInterceptor : public grpc::experimental::Interceptor {
  public:
-  explicit LoggingInterceptor(grpc::experimental::ServerRpcInfo *info) : info_(info) {}
+  explicit LoggingInterceptor(grpc::experimental::ServerRpcInfo* info) : info_(info) {}
 
-  void Intercept(grpc::experimental::InterceptorBatchMethods *methods) override {
+  void Intercept(grpc::experimental::InterceptorBatchMethods* methods) override {
     if (methods->QueryInterceptionHookPoint(InterceptionHookPoints::POST_RECV_INITIAL_METADATA)) {
       start_time_ = std::chrono::high_resolution_clock::now();
     }
@@ -42,12 +42,12 @@ class LoggingInterceptor : public grpc::experimental::Interceptor {
   }
 
  private:
-  grpc::experimental::ServerRpcInfo *info_;
+  grpc::experimental::ServerRpcInfo* info_;
   grpc::Status status_;
   std::chrono::high_resolution_clock::time_point start_time_;
 };
 
-Interceptor *pl::LoggingInterceptorFactory::CreateServerInterceptor(ServerRpcInfo *info) {
+Interceptor* pl::LoggingInterceptorFactory::CreateServerInterceptor(ServerRpcInfo* info) {
   return new LoggingInterceptor(info);
 }
 

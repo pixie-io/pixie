@@ -21,7 +21,7 @@ using ::testing::Return;
 constexpr char kTestDataBasePath[] = "src/stirling/cgroups";
 
 namespace {
-string GetPathToTestDataFile(const string &fname) {
+string GetPathToTestDataFile(const string& fname) {
   return TestEnvironment::PathToTestDataFile(std::string(kTestDataBasePath) + "/" + fname);
 }
 }  // namespace

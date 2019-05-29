@@ -24,7 +24,7 @@ class ProcParser {
    * duration of the constructor call.
    * @param proc_base_path The base path to the proc files.
    */
-  ProcParser(const common::SystemConfig &cfg, std::string_view proc_base_path)
+  ProcParser(const common::SystemConfig& cfg, std::string_view proc_base_path)
       : proc_base_path_(proc_base_path) {
     CHECK(cfg.HasSystemConfig()) << "System config is required for the ProcParser";
     ns_per_kernel_tick_ = static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond());
@@ -111,7 +111,7 @@ class ProcParser {
    * @param out A valid pointer to the output.
    * @return Status of parsing.
    */
-  Status ParseProcPIDStat(const fs::path &fpath, ProcessStats *out);
+  Status ParseProcPIDStat(const fs::path& fpath, ProcessStats* out);
 
   /**
    * Parses /proc/<pid>/io files.
@@ -119,7 +119,7 @@ class ProcParser {
    * @param out A valid pointer to an output struct.
    * @return Status of the parsing.
    */
-  Status ParseProcPIDStatIO(const fs::path &fpath, ProcessStats *out);
+  Status ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out);
 
   /**
    * Parses /proc/<pid>/net/dev
@@ -131,7 +131,7 @@ class ProcParser {
    * @param out A valid pointer to an output struct.
    * @return Status of the parsing.
    */
-  static Status ParseProcPIDNetDev(const fs::path &fpath, NetworkStats *out);
+  static Status ParseProcPIDNetDev(const fs::path& fpath, NetworkStats* out);
 
   /**
    * Parses /proc/stat
@@ -139,7 +139,7 @@ class ProcParser {
    * @param out a valid pointer to an output struct.
    * @return status of parsing.
    */
-  static Status ParseProcStat(const fs::path &fpath, SystemStats *out);
+  static Status ParseProcStat(const fs::path& fpath, SystemStats* out);
 
   /**
    * Parses /proc/meminfo
@@ -147,15 +147,15 @@ class ProcParser {
    * @param out A valid pointer to the output struct.
    * @return status of parsing
    */
-  Status ParseProcMemInfo(const fs::path &fpath, SystemStats *out);
+  Status ParseProcMemInfo(const fs::path& fpath, SystemStats* out);
 
  private:
   static Status ParseNetworkStatAccumulateIFaceData(
-      const std::vector<std::string_view> &dev_stat_record, NetworkStats *out);
+      const std::vector<std::string_view>& dev_stat_record, NetworkStats* out);
 
   static Status ParseFromKeyValueFile(
-      const fs::path &fpath,
-      const std::unordered_map<std::string_view, int64_t *> &field_name_to_value_map,
+      const fs::path& fpath,
+      const std::unordered_map<std::string_view, int64_t*>& field_name_to_value_map,
       int64_t field_value_multiplier);
   int64_t ns_per_kernel_tick_;
   int32_t bytes_per_page_;

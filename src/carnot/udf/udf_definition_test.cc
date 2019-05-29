@@ -13,7 +13,7 @@ namespace udf {
 
 class NoArgUDF : public ScalarUDF {
  public:
-  types::Int64Value Exec(FunctionContext *) { return invoke_count++; }
+  types::Int64Value Exec(FunctionContext*) { return invoke_count++; }
 
  private:
   int invoke_count = 0;
@@ -21,12 +21,12 @@ class NoArgUDF : public ScalarUDF {
 
 class SubStrUDF : public ScalarUDF {
  public:
-  types::StringValue Exec(FunctionContext *, types::StringValue str) { return str.substr(1, 2); }
+  types::StringValue Exec(FunctionContext*, types::StringValue str) { return str.substr(1, 2); }
 };
 
 class AddUDF : public ScalarUDF {
  public:
-  types::Int64Value Exec(FunctionContext *, types::Int64Value v1, types::Int64Value v2) {
+  types::Int64Value Exec(FunctionContext*, types::Int64Value v1, types::Int64Value v2) {
     return v1.val + v2.val;
   }
 };
@@ -96,7 +96,7 @@ TEST(UDFDefinition, arrow_write) {
 
   std::shared_ptr<arrow::Array> res;
   EXPECT_TRUE(output_builder->Finish(&res).ok());
-  auto *resArr = static_cast<arrow::Int64Array *>(res.get());
+  auto* resArr = static_cast<arrow::Int64Array*>(res.get());
   EXPECT_EQ(4, resArr->Value(0));
   EXPECT_EQ(6, resArr->Value(1));
 }
@@ -104,11 +104,11 @@ TEST(UDFDefinition, arrow_write) {
 // Test UDA, takes the min of two arguments and then sums them.
 class MinSumUDA : public udf::UDA {
  public:
-  void Update(udf::FunctionContext *, types::Int64Value arg1, types::Int64Value arg2) {
+  void Update(udf::FunctionContext*, types::Int64Value arg1, types::Int64Value arg2) {
     sum_ = sum_.val + std::min(arg1.val, arg2.val);
   }
-  void Merge(udf::FunctionContext *, const MinSumUDA &other) { sum_ = sum_.val + other.sum_.val; }
-  types::Int64Value Finalize(udf::FunctionContext *) { return sum_; }
+  void Merge(udf::FunctionContext*, const MinSumUDA& other) { sum_ = sum_.val + other.sum_.val; }
+  types::Int64Value Finalize(udf::FunctionContext*) { return sum_; }
 
  protected:
   types::Int64Value sum_ = 0;
@@ -165,7 +165,7 @@ TEST(UDADefinition, arrow_output) {
   std::shared_ptr<arrow::Array> res;
   EXPECT_TRUE(output_builder->Finish(&res).ok());
   EXPECT_EQ(1, res->length());
-  auto casted = static_cast<arrow::Int64Array *>(res.get());
+  auto casted = static_cast<arrow::Int64Array*>(res.get());
   EXPECT_EQ(5, casted->Value(0));
 }
 

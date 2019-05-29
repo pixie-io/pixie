@@ -17,10 +17,10 @@ std::string LimitNode::DebugStringImpl() {
   return absl::StrFormat("Exec::LimitNode<%s>", plan_node_->DebugString());
 }
 
-Status LimitNode::InitImpl(const plan::Operator &plan_node, const RowDescriptor &output_descriptor,
-                           const std::vector<RowDescriptor> &input_descriptors) {
+Status LimitNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor& output_descriptor,
+                           const std::vector<RowDescriptor>& input_descriptors) {
   CHECK(plan_node.op_type() == planpb::OperatorType::LIMIT_OPERATOR);
-  const auto *limit_plan_node = static_cast<const plan::LimitOperator *>(&plan_node);
+  const auto* limit_plan_node = static_cast<const plan::LimitOperator*>(&plan_node);
   // copy the plan node to local object;
   plan_node_ = std::make_unique<plan::LimitOperator>(*limit_plan_node);
   // NOTE: We expect output and input descriptors to match.
@@ -29,13 +29,13 @@ Status LimitNode::InitImpl(const plan::Operator &plan_node, const RowDescriptor 
 
   return Status::OK();
 }
-Status LimitNode::PrepareImpl(ExecState * /*exec_state*/) { return Status::OK(); }
+Status LimitNode::PrepareImpl(ExecState* /*exec_state*/) { return Status::OK(); }
 
-Status LimitNode::OpenImpl(ExecState * /*exec_state*/) { return Status::OK(); }
+Status LimitNode::OpenImpl(ExecState* /*exec_state*/) { return Status::OK(); }
 
-Status LimitNode::CloseImpl(ExecState * /*exec_state*/) { return Status::OK(); }
+Status LimitNode::CloseImpl(ExecState* /*exec_state*/) { return Status::OK(); }
 
-Status LimitNode::ConsumeNextImpl(ExecState *exec_state, const RowBatch &rb) {
+Status LimitNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb) {
   size_t record_limit = plan_node_->record_limit();
   // Check if the entire row batch will fit.
   if (record_limit > (records_processed_ + rb.num_rows())) {

@@ -16,7 +16,7 @@ namespace zlib {
  * @param dst_len Size of the destination buffer.
  * @return zlib status (see zlib.h).
  */
-int Inflate(const char *src, int src_len, char *dst, int dst_len);
+int Inflate(const char* src, int src_len, char* dst, int dst_len);
 
 /**
  * @brief Inflates (gunzip) a source buffer and returns the decompressed content as a string.

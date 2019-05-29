@@ -20,12 +20,12 @@ class MapNode : public ProcessingNode {
  protected:
   std::string DebugStringImpl() override;
   Status InitImpl(
-      const plan::Operator &plan_node, const table_store::schema::RowDescriptor &output_descriptor,
-      const std::vector<table_store::schema::RowDescriptor> &input_descriptors) override;
-  Status PrepareImpl(ExecState *exec_state) override;
-  Status OpenImpl(ExecState *exec_state) override;
-  Status CloseImpl(ExecState *exec_state) override;
-  Status ConsumeNextImpl(ExecState *exec_state, const table_store::schema::RowBatch &rb) override;
+      const plan::Operator& plan_node, const table_store::schema::RowDescriptor& output_descriptor,
+      const std::vector<table_store::schema::RowDescriptor>& input_descriptors) override;
+  Status PrepareImpl(ExecState* exec_state) override;
+  Status OpenImpl(ExecState* exec_state) override;
+  Status CloseImpl(ExecState* exec_state) override;
+  Status ConsumeNextImpl(ExecState* exec_state, const table_store::schema::RowBatch& rb) override;
 
  private:
   std::unique_ptr<ExpressionEvaluator> evaluator_;

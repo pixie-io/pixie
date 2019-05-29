@@ -7,7 +7,7 @@ namespace pl {
 
 std::once_flag init_once, shutdown_once;
 
-void InitEnvironmentOrDieImpl(int *argc, char **argv) {
+void InitEnvironmentOrDieImpl(int* argc, char** argv) {
   // Enable logging by default.
   FLAGS_logtostderr = true;
   FLAGS_colorlogtostderr = true;
@@ -22,7 +22,7 @@ void ShutdownEnvironmentOrDieImpl() {
   google::ShutdownGoogleLogging();
 }
 
-void InitEnvironmentOrDie(int *argc, char **argv) {
+void InitEnvironmentOrDie(int* argc, char** argv) {
   CHECK(argc != nullptr) << "argc must not be null";
   CHECK(argv != nullptr) << "argv must not be null";
   std::call_once(init_once, InitEnvironmentOrDieImpl, argc, argv);

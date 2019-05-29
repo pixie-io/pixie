@@ -9,8 +9,8 @@ namespace pl {
  */
 class LoggingInterceptorFactory : public grpc::experimental::ServerInterceptorFactoryInterface {
  public:
-  grpc::experimental::Interceptor *CreateServerInterceptor(
-      grpc::experimental::ServerRpcInfo *info) override;
+  grpc::experimental::Interceptor* CreateServerInterceptor(
+      grpc::experimental::ServerRpcInfo* info) override;
 };
 
 }  // namespace pl

@@ -20,11 +20,11 @@ namespace carnot {
 namespace exec {
 
 struct UDAInfo {
-  UDAInfo(std::unique_ptr<udf::UDA> uda_inst, udf::UDADefinition *def_ptr)
+  UDAInfo(std::unique_ptr<udf::UDA> uda_inst, udf::UDADefinition* def_ptr)
       : uda(std::move(uda_inst)), def(def_ptr) {}
   std::unique_ptr<udf::UDA> uda;
   // unowned pointer to the definition;
-  udf::UDADefinition *def = nullptr;
+  udf::UDADefinition* def = nullptr;
 };
 
 struct AggHashValue {
@@ -33,39 +33,39 @@ struct AggHashValue {
 };
 
 struct GroupArgs {
-  explicit GroupArgs(RowTuple *rt) : rt(rt), av(nullptr) {}
-  RowTuple *rt;
-  AggHashValue *av;
+  explicit GroupArgs(RowTuple* rt) : rt(rt), av(nullptr) {}
+  RowTuple* rt;
+  AggHashValue* av;
 };
 
 class BlockingAggNode : public ProcessingNode {
-  using AggHashMap = cuckoohash_map<RowTuple *, AggHashValue *, RowTuplePtrHasher, RowTuplePtrEq>;
+  using AggHashMap = cuckoohash_map<RowTuple*, AggHashValue*, RowTuplePtrHasher, RowTuplePtrEq>;
 
  public:
   BlockingAggNode() = default;
 
  protected:
-  Status AggregateGroupByNone(ExecState *exec_state, const table_store::schema::RowBatch &rb);
-  Status AggregateGroupByClause(ExecState *exec_state, const table_store::schema::RowBatch &rb);
+  Status AggregateGroupByNone(ExecState* exec_state, const table_store::schema::RowBatch& rb);
+  Status AggregateGroupByClause(ExecState* exec_state, const table_store::schema::RowBatch& rb);
 
   std::string DebugStringImpl() override;
   Status InitImpl(
-      const plan::Operator &plan_node, const table_store::schema::RowDescriptor &output_descriptor,
-      const std::vector<table_store::schema::RowDescriptor> &input_descriptors) override;
-  Status PrepareImpl(ExecState *exec_state) override;
-  Status OpenImpl(ExecState *exec_state) override;
-  Status CloseImpl(ExecState *exec_state) override;
-  Status ConsumeNextImpl(ExecState *exec_state, const table_store::schema::RowBatch &rb) override;
+      const plan::Operator& plan_node, const table_store::schema::RowDescriptor& output_descriptor,
+      const std::vector<table_store::schema::RowDescriptor>& input_descriptors) override;
+  Status PrepareImpl(ExecState* exec_state) override;
+  Status OpenImpl(ExecState* exec_state) override;
+  Status CloseImpl(ExecState* exec_state) override;
+  Status ConsumeNextImpl(ExecState* exec_state, const table_store::schema::RowBatch& rb) override;
 
  private:
   AggHashMap agg_hash_map_;
   bool HasNoGroups() const { return plan_node_->groups().empty(); }
 
-  Status EvaluateSingleExpressionNoGroups(ExecState *exec_state, const UDAInfo &uda_info,
-                                          plan::AggregateExpression *expr,
-                                          const table_store::schema::RowBatch &rb);
-  Status EvaluateAggHashValue(ExecState *exec_state, AggHashValue *val);
-  StatusOr<types::DataType> GetTypeOfDep(const plan::ScalarExpression &expr) const;
+  Status EvaluateSingleExpressionNoGroups(ExecState* exec_state, const UDAInfo& uda_info,
+                                          plan::AggregateExpression* expr,
+                                          const table_store::schema::RowBatch& rb);
+  Status EvaluateAggHashValue(ExecState* exec_state, AggHashValue* val);
+  StatusOr<types::DataType> GetTypeOfDep(const plan::ScalarExpression& expr) const;
 
   // Store information about aggregate node from the query planner.
   std::unique_ptr<plan::BlockingAggregateOperator> plan_node_;
@@ -104,19 +104,19 @@ class BlockingAggNode : public ProcessingNode {
   // Creates a mapping between plan cols and stored cols (see above comment).
   Status CreateColumnMapping();
 
-  Status ExtractRowTupleForBatch(const table_store::schema::RowBatch &rb);
-  Status HashRowBatch(ExecState *exec_state, const table_store::schema::RowBatch &rb);
-  Status EvaluatePartialAggregates(ExecState *exec_state, size_t num_records);
+  Status ExtractRowTupleForBatch(const table_store::schema::RowBatch& rb);
+  Status HashRowBatch(ExecState* exec_state, const table_store::schema::RowBatch& rb);
+  Status EvaluatePartialAggregates(ExecState* exec_state, size_t num_records);
   Status ResetGroupArgs();
-  Status ConvertAggHashMapToRowBatch(ExecState *exec_state,
-                                     table_store::schema::RowBatch *output_rb);
+  Status ConvertAggHashMapToRowBatch(ExecState* exec_state,
+                                     table_store::schema::RowBatch* output_rb);
 
-  AggHashValue *CreateAggHashValue(ExecState *exec_state);
-  RowTuple *CreateGroupArgsRowTuple() {
+  AggHashValue* CreateAggHashValue(ExecState* exec_state);
+  RowTuple* CreateGroupArgsRowTuple() {
     return group_args_pool_.Add(new RowTuple(&group_data_types_));
   }
 
-  Status CreateUDAInfoValues(std::vector<UDAInfo> *val, ExecState *exec_state);
+  Status CreateUDAInfoValues(std::vector<UDAInfo>* val, ExecState* exec_state);
 };
 
 }  // namespace exec

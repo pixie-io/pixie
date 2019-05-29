@@ -15,13 +15,13 @@ using testing::ElementsAre;
 
 class ScalarUDF1 : ScalarUDF {
  public:
-  types::Int64Value Exec(FunctionContext *, types::BoolValue, types::Int64Value) { return 0; }
+  types::Int64Value Exec(FunctionContext*, types::BoolValue, types::Int64Value) { return 0; }
 };
 
 class ScalarUDF1WithInit : ScalarUDF {
  public:
-  Status Init(FunctionContext *, types::Int64Value) { return Status::OK(); }
-  types::Int64Value Exec(FunctionContext *, types::BoolValue, types::BoolValue) { return 0; }
+  Status Init(FunctionContext*, types::Int64Value) { return Status::OK(); }
+  types::Int64Value Exec(FunctionContext*, types::BoolValue, types::BoolValue) { return 0; }
 };
 
 TEST(ScalarUDF, basic_tests) {
@@ -41,73 +41,73 @@ TEST(UDFDataTypes, valid_tests) {
 
 class UDA1 : UDA {
  public:
-  Status Init(FunctionContext *) { return Status::OK(); }
-  void Update(FunctionContext *, types::Int64Value) {}
-  void Merge(FunctionContext *, const UDA1 &) {}
-  types::Int64Value Finalize(FunctionContext *) { return 0; }
+  Status Init(FunctionContext*) { return Status::OK(); }
+  void Update(FunctionContext*, types::Int64Value) {}
+  void Merge(FunctionContext*, const UDA1&) {}
+  types::Int64Value Finalize(FunctionContext*) { return 0; }
 };
 
 class UDA1WithInit : UDA {
  public:
-  Status Init(FunctionContext *, types::Int64Value) { return Status::OK(); }
-  void Update(FunctionContext *, types::Int64Value, types::Float64Value) {}
-  void Merge(FunctionContext *, const UDA1WithInit &) {}
-  types::Int64Value Finalize(FunctionContext *) { return 0; }
+  Status Init(FunctionContext*, types::Int64Value) { return Status::OK(); }
+  void Update(FunctionContext*, types::Int64Value, types::Float64Value) {}
+  void Merge(FunctionContext*, const UDA1WithInit&) {}
+  types::Int64Value Finalize(FunctionContext*) { return 0; }
 };
 
 class UDAWithBadMerge1 : UDA {
  public:
-  Status Init(FunctionContext *, types::Int64Value) { return Status::OK(); }
-  void Update(FunctionContext *, types::Int64Value, types::Float64Value) {}
-  void Merge(const UDAWithBadMerge1 &) {}
-  types::Int64Value Finalize(FunctionContext *) { return 0; }
+  Status Init(FunctionContext*, types::Int64Value) { return Status::OK(); }
+  void Update(FunctionContext*, types::Int64Value, types::Float64Value) {}
+  void Merge(const UDAWithBadMerge1&) {}
+  types::Int64Value Finalize(FunctionContext*) { return 0; }
 };
 
 class UDAWithBadMerge2 : UDA {
  public:
-  Status Init(FunctionContext *, types::Int64Value) { return Status::OK(); }
-  void Update(FunctionContext *, types::Int64Value, types::Float64Value) {}
-  int Merge(FunctionContext *, const UDAWithBadMerge2 &) { return 0; }
-  types::Int64Value Finalize(FunctionContext *) { return 0; }
+  Status Init(FunctionContext*, types::Int64Value) { return Status::OK(); }
+  void Update(FunctionContext*, types::Int64Value, types::Float64Value) {}
+  int Merge(FunctionContext*, const UDAWithBadMerge2&) { return 0; }
+  types::Int64Value Finalize(FunctionContext*) { return 0; }
 };
 
 class UDAWithBadMerge3 : UDA {
  public:
-  Status Init(FunctionContext *, types::Int64Value) { return Status::OK(); }
-  void Update(FunctionContext *, types::Int64Value, types::Float64Value) {}
-  void Merge(FunctionContext *, const UDA &) {}
-  types::Int64Value Finalize(FunctionContext *) { return 0; }
+  Status Init(FunctionContext*, types::Int64Value) { return Status::OK(); }
+  void Update(FunctionContext*, types::Int64Value, types::Float64Value) {}
+  void Merge(FunctionContext*, const UDA&) {}
+  types::Int64Value Finalize(FunctionContext*) { return 0; }
 };
 
 class UDAWithBadUpdate1 : UDA {
  public:
-  Status Init(FunctionContext *) { return Status::OK(); }
-  int Update(FunctionContext *, types::Int64Value) { return 0; }
-  void Merge(FunctionContext *, const UDAWithBadUpdate1 &) {}
-  types::Int64Value Finalize(FunctionContext *) { return 0; }
+  Status Init(FunctionContext*) { return Status::OK(); }
+  int Update(FunctionContext*, types::Int64Value) { return 0; }
+  void Merge(FunctionContext*, const UDAWithBadUpdate1&) {}
+  types::Int64Value Finalize(FunctionContext*) { return 0; }
 };
 
 class UDAWithBadUpdate2 : UDA {
  public:
-  Status Init(FunctionContext *) { return Status::OK(); }
+  Status Init(FunctionContext*) { return Status::OK(); }
   void Update(types::Int64Value) {}
-  void Merge(FunctionContext *, const UDAWithBadUpdate2 &) {}
-  types::Int64Value Finalize(FunctionContext *) { return 0; }
+  void Merge(FunctionContext*, const UDAWithBadUpdate2&) {}
+  types::Int64Value Finalize(FunctionContext*) { return 0; }
 };
 
 class UDAWithBadFinalize1 : UDA {
  public:
-  Status Init(FunctionContext *) { return Status::OK(); }
-  void Update(FunctionContext *, types::Int64Value) {}
-  void Merge(FunctionContext *, const UDAWithBadFinalize1 &) {}
-  void Finalize(FunctionContext *) {}
+  Status Init(FunctionContext*) { return Status::OK(); }
+  void Update(FunctionContext*, types::Int64Value) {}
+  void Merge(FunctionContext*, const UDAWithBadFinalize1&) {}
+  void Finalize(FunctionContext*) {}
 };
 
 class UDAWithBadFinalize2 : UDA {
  public:
-  Status Init(FunctionContext *) { return Status::OK(); }
-  void Update(FunctionContext *, types::Int64Value) {}
-  void Merge(FunctionContext *, const UDAWithBadFinalize2 &) {}
+  Status Init(FunctionContext*) { return Status::OK(); }
+  void Update(FunctionContext*, types::Int64Value) {}
+  void Merge(FunctionContext*, const UDAWithBadFinalize2&) {}
   types::Int64Value Finalize() { return 0; }
 };
 

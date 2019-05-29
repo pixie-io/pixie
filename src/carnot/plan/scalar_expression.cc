@@ -16,7 +16,7 @@ namespace pl {
 namespace carnot {
 namespace plan {
 
-pl::Status ScalarValue::Init(const pl::carnot::planpb::ScalarValue &pb) {
+pl::Status ScalarValue::Init(const pl::carnot::planpb::ScalarValue& pb) {
   DCHECK(!is_initialized_) << "Already initialized";
   CHECK(pb.data_type() != types::DATA_TYPE_UNKNOWN);
   CHECK(types::DataType_IsValid(pb.data_type()));
@@ -95,25 +95,25 @@ std::string ScalarValue::DebugString() const {
   }
 }
 
-StatusOr<types::DataType> ScalarValue::OutputDataType(const PlanState &,
-                                                      const table_store::schema::Schema &) const {
+StatusOr<types::DataType> ScalarValue::OutputDataType(const PlanState&,
+                                                      const table_store::schema::Schema&) const {
   DCHECK(is_initialized_) << "Not initialized";
   return DataType();
 }
 
-std::vector<const Column *> ScalarValue::ColumnDeps() {
+std::vector<const Column*> ScalarValue::ColumnDeps() {
   DCHECK(is_initialized_) << "Not initialized";
   return {};
 }
 
-std::vector<ScalarExpression *> ScalarValue::Deps() const {
+std::vector<ScalarExpression*> ScalarValue::Deps() const {
   DCHECK(is_initialized_) << "Not initialized";
   return {};
 }
 
 Expression ScalarValue::ExpressionType() const { return Expression::kConstant; }
 
-Status Column::Init(const planpb::Column &pb) {
+Status Column::Init(const planpb::Column& pb) {
   DCHECK(!is_initialized_) << "Already initialized";
   pb_ = pb;
   is_initialized_ = true;
@@ -133,30 +133,30 @@ std::string Column::DebugString() const {
 }
 
 StatusOr<types::DataType> Column::OutputDataType(
-    const PlanState &, const table_store::schema::Schema &input_schema) const {
+    const PlanState&, const table_store::schema::Schema& input_schema) const {
   DCHECK(is_initialized_) << "Not initialized";
   StatusOr<const table_store::schema::Relation> s = input_schema.GetRelation(NodeID());
 
   PL_RETURN_IF_ERROR(s);
-  const auto &relation = s.ValueOrDie();
+  const auto& relation = s.ValueOrDie();
   types::DataType dt = relation.GetColumnType(Index());
   return dt;
 }
 
-std::vector<const Column *> Column::ColumnDeps() {
+std::vector<const Column*> Column::ColumnDeps() {
   DCHECK(is_initialized_) << "Not initialized";
   return {this};
 }
 
 Expression Column::ExpressionType() const { return Expression::kColumn; }
 
-std::vector<ScalarExpression *> Column::Deps() const {
+std::vector<ScalarExpression*> Column::Deps() const {
   DCHECK(is_initialized_) << "Not initialized";
   return {};
 }
 
 template <typename T, typename TProto>
-StatusOr<std::unique_ptr<ScalarExpression>> MakeExprHelper(const TProto &pb) {
+StatusOr<std::unique_ptr<ScalarExpression>> MakeExprHelper(const TProto& pb) {
   auto expr = std::make_unique<T>();
   auto s = expr->Init(pb);
   PL_RETURN_IF_ERROR(s);
@@ -164,7 +164,7 @@ StatusOr<std::unique_ptr<ScalarExpression>> MakeExprHelper(const TProto &pb) {
 }
 
 StatusOr<std::unique_ptr<ScalarExpression>> ScalarExpression::FromProto(
-    const planpb::ScalarExpression &pb) {
+    const planpb::ScalarExpression& pb) {
   switch (pb.value_case()) {
     case planpb::ScalarExpression::kColumn:
       return MakeExprHelper<Column>(pb.column());
@@ -177,7 +177,7 @@ StatusOr<std::unique_ptr<ScalarExpression>> ScalarExpression::FromProto(
   }
 }
 
-Status ScalarFunc::Init(const planpb::ScalarFunc &pb) {
+Status ScalarFunc::Init(const planpb::ScalarFunc& pb) {
   DCHECK_EQ(pb.args_size(), pb.args_data_types_size());
   name_ = pb.name();
   udf_id_ = pb.id();
@@ -194,9 +194,9 @@ Status ScalarFunc::Init(const planpb::ScalarFunc &pb) {
   return Status::OK();
 }
 
-std::vector<ScalarExpression *> ScalarFunc::Deps() const {
-  std::vector<ScalarExpression *> deps;
-  for (const auto &arg : arg_deps_) {
+std::vector<ScalarExpression*> ScalarFunc::Deps() const {
+  std::vector<ScalarExpression*> deps;
+  for (const auto& arg : arg_deps_) {
     // No ownership transfer.
     deps.emplace_back(arg.get());
   }
@@ -205,10 +205,10 @@ std::vector<ScalarExpression *> ScalarFunc::Deps() const {
 
 Expression ScalarFunc::ExpressionType() const { return Expression::kFunc; }
 
-std::vector<const Column *> ScalarFunc::ColumnDeps() {
-  std::vector<const Column *> cols;
+std::vector<const Column*> ScalarFunc::ColumnDeps() {
+  std::vector<const Column*> cols;
   ExpressionWalker<int>()
-      .OnColumn([&](const auto &col, const auto &) {
+      .OnColumn([&](const auto& col, const auto&) {
         cols.push_back(&col);
         return 0;
       })
@@ -217,21 +217,21 @@ std::vector<const Column *> ScalarFunc::ColumnDeps() {
 }
 
 StatusOr<types::DataType> ScalarFunc::OutputDataType(
-    const PlanState &state, const table_store::schema::Schema &input_schema) const {
+    const PlanState& state, const table_store::schema::Schema& input_schema) const {
   // The output data type of a function is based on the computed types of the children
   // followed by the looking up the function in the registry and getting the output
   // data type of the function.
   auto res = ExpressionWalker<StatusOr<types::DataType>>()
-                 .OnScalarValue([&](auto &val, auto &) -> StatusOr<types::DataType> {
+                 .OnScalarValue([&](auto& val, auto&) -> StatusOr<types::DataType> {
                    return val.OutputDataType(state, input_schema);
                  })
-                 .OnColumn([&](auto &col, auto &) -> StatusOr<types::DataType> {
+                 .OnColumn([&](auto& col, auto&) -> StatusOr<types::DataType> {
                    return col.OutputDataType(state, input_schema);
                  })
-                 .OnScalarFunc([&](auto &func, auto &child_results) -> StatusOr<types::DataType> {
+                 .OnScalarFunc([&](auto& func, auto& child_results) -> StatusOr<types::DataType> {
                    std::vector<types::DataType> child_args;
                    child_args.reserve(child_results.size());
-                   for (const auto &child_result : child_results) {
+                   for (const auto& child_result : child_results) {
                      PL_RETURN_IF_ERROR(child_result);
                      child_args.push_back(child_result.ValueOrDie());
                    }
@@ -250,14 +250,14 @@ StatusOr<types::DataType> ScalarFunc::OutputDataType(
 std::string ScalarFunc::DebugString() const {
   std::string debug_string;
   std::vector<std::string> arg_strings;
-  for (const auto &arg : arg_deps_) {
+  for (const auto& arg : arg_deps_) {
     arg_strings.push_back(arg->DebugString());
   }
   debug_string += absl::StrFormat("fn:%s(%s)", name_, absl::StrJoin(arg_strings, ","));
   return debug_string;
 }
 
-Status AggregateExpression::Init(const planpb::AggregateExpression &pb) {
+Status AggregateExpression::Init(const planpb::AggregateExpression& pb) {
   name_ = pb.name();
   uda_id_ = pb.id();
   for (const auto arg : pb.args()) {
@@ -279,21 +279,21 @@ Status AggregateExpression::Init(const planpb::AggregateExpression &pb) {
 
 Expression AggregateExpression::ExpressionType() const { return Expression::kAgg; }
 
-std::vector<ScalarExpression *> AggregateExpression::Deps() const {
-  std::vector<ScalarExpression *> deps;
-  for (const auto &arg : arg_deps_) {
+std::vector<ScalarExpression*> AggregateExpression::Deps() const {
+  std::vector<ScalarExpression*> deps;
+  for (const auto& arg : arg_deps_) {
     // No ownership transfer.
     deps.emplace_back(arg.get());
   }
   return deps;
 }
 
-std::vector<const Column *> AggregateExpression::ColumnDeps() {
-  std::vector<const Column *> cols;
-  for (const auto &arg : arg_deps_) {
+std::vector<const Column*> AggregateExpression::ColumnDeps() {
+  std::vector<const Column*> cols;
+  for (const auto& arg : arg_deps_) {
     auto dep = arg.get();
     if (dep->ExpressionType() == Expression::kColumn) {
-      const auto *col = static_cast<const Column *>(dep);
+      const auto* col = static_cast<const Column*>(dep);
       cols.push_back(col);
     }
   }
@@ -301,13 +301,13 @@ std::vector<const Column *> AggregateExpression::ColumnDeps() {
 }
 
 StatusOr<types::DataType> AggregateExpression::OutputDataType(
-    const PlanState &state, const table_store::schema::Schema &input_schema) const {
+    const PlanState& state, const table_store::schema::Schema& input_schema) const {
   // The output data type of a function is based on the computed types of the args
   // followed by the looking up the function in the registry and getting the output
   // data type of the function.
   std::vector<types::DataType> child_args;
   child_args.reserve(arg_deps_.size());
-  for (const auto &arg : arg_deps_) {
+  for (const auto& arg : arg_deps_) {
     child_args.push_back(arg->OutputDataType(state, input_schema).ValueOrDie());
   }
   PL_ASSIGN_OR_RETURN(auto s, state.uda_registry()->GetDefinition(name_, child_args));
@@ -317,7 +317,7 @@ StatusOr<types::DataType> AggregateExpression::OutputDataType(
 std::string AggregateExpression::DebugString() const {
   std::string debug_string;
   std::vector<std::string> arg_strings;
-  for (const auto &arg : arg_deps_) {
+  for (const auto& arg : arg_deps_) {
     arg_strings.push_back(arg->DebugString());
   }
   debug_string +=

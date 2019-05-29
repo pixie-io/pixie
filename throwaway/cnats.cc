@@ -17,7 +17,7 @@
 
 #include <nats/nats.h>
 
-static void onMsg(natsConnection *nc, natsSubscription * /*sub*/, natsMsg *msg, void *closure) {
+static void onMsg(natsConnection* nc, natsSubscription* /*sub*/, natsMsg* msg, void* closure) {
   printf("Received msg: %s - %.*s\n", natsMsg_GetSubject(msg), natsMsg_GetDataLength(msg),
          natsMsg_GetData(msg));
 
@@ -30,12 +30,12 @@ static void onMsg(natsConnection *nc, natsSubscription * /*sub*/, natsMsg *msg, 
   natsMsg_Destroy(msg);
 
   // Notify the main thread that we are done.
-  *reinterpret_cast<bool *>(closure) = true;
+  *reinterpret_cast<bool*>(closure) = true;
 }
 
-int main(int /*argc*/, char ** /*argv*/) {
-  natsConnection *conn = NULL;
-  natsSubscription *sub = NULL;
+int main(int /*argc*/, char** /*argv*/) {
+  natsConnection* conn = NULL;
+  natsSubscription* sub = NULL;
   natsStatus s;
   volatile bool done = false;
 
@@ -48,7 +48,7 @@ int main(int /*argc*/, char ** /*argv*/) {
     // waiting for a request. If a message arrives on this
     // subject, the callback onMsg() will be invoked and it
     // will send a reply.
-    void *d = const_cast<void *>(static_cast<volatile void *>(&done));
+    void* d = const_cast<void*>(static_cast<volatile void*>(&done));
     s = natsConnection_Subscribe(&sub, conn, "help", onMsg, d);
   }
   if (s == NATS_OK) {

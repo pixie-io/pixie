@@ -34,7 +34,7 @@ class HTTPTraceBPFTest : public ::testing::Test {
     ASSERT_OK(source->Init());
   }
 
-  void SpawnReaderClient(const TCPSocket &server) {
+  void SpawnReaderClient(const TCPSocket& server) {
     client_thread = std::thread([&server]() {
       TCPSocket client;
       client.Connect(server);
@@ -44,7 +44,7 @@ class HTTPTraceBPFTest : public ::testing::Test {
     });
   }
 
-  void SpawnWriterClient(const TCPSocket &server, const std::vector<std::string_view> &write_data) {
+  void SpawnWriterClient(const TCPSocket& server, const std::vector<std::string_view>& write_data) {
     client_thread = std::thread([&server, &write_data]() {
       TCPSocket client;
       client.Connect(server);
@@ -73,7 +73,7 @@ Content-Length: 0
 
   static constexpr std::string_view kMySQLMsg = "\x16SELECT column FROM table";
 
-  const DataTableSchema &schema = SocketTraceConnector::kElements[0];
+  const DataTableSchema& schema = SocketTraceConnector::kElements[0];
   const uint64_t kHTTPHeaderIdx = schema.KeyIndex("http_headers");
   const uint64_t kFdIdx = schema.KeyIndex("fd");
 
@@ -101,7 +101,7 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
                               /*target_capacity*/ 2, &record_batch));
     source->TransferData(table_num, &record_batch);
 
-    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(2, col->Size());
     }
 
@@ -127,7 +127,7 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
   //                              /*target_capacity*/ 2, &record_batch));
   //    source->TransferData(table_num, &record_batch);
   //
-  //    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+  //    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
   //      ASSERT_EQ(0, col->Size());
   //    }
   //  }
@@ -155,7 +155,7 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
                               /*target_capacity*/ 2, &record_batch));
     source->TransferData(table_num, &record_batch);
 
-    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(2, col->Size());
     }
 
@@ -181,7 +181,7 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
   //                              /*target_capacity*/ 2, &record_batch));
   //    source->TransferData(table_num, &record_batch);
   //
-  //    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+  //    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
   //      ASSERT_EQ(0, col->Size());
   //    }
   //  }
@@ -210,7 +210,7 @@ TEST_F(HTTPTraceBPFTest, TestMySQLWriteCapturedData) {
                               /*target_capacity*/ 2, &record_batch));
     source->TransferData(table_num, &record_batch);
 
-    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(0, col->Size());
     }
   }
@@ -223,7 +223,7 @@ TEST_F(HTTPTraceBPFTest, TestMySQLWriteCapturedData) {
                               /*target_capacity*/ 2, &record_batch));
     source->TransferData(table_num, &record_batch);
 
-    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(2, col->Size());
     }
 
@@ -260,7 +260,7 @@ TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
     source->TransferData(table_num, &record_batch);
 
     // Should not have captured anything.
-    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(0, col->Size());
     }
   }
@@ -274,7 +274,7 @@ TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   //    source->TransferData(table_num, &record_batch);
   //
   //    // Should not have captured anything.
-  //    for (const std::shared_ptr<ColumnWrapper> &col : record_batch) {
+  //    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
   //      ASSERT_EQ(0, col->Size());
   //    }
   //  }
@@ -381,7 +381,7 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
   }
 
   const int table_num = 0;  // HTTP Table
-  auto *socket_trace_connector = dynamic_cast<SocketTraceConnector *>(source.get());
+  auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source.get());
   ASSERT_NE(nullptr, socket_trace_connector);
   socket_trace_connector->ReadPerfBuffer(table_num);
   EXPECT_OK(source->Stop());
@@ -389,13 +389,13 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
   // TODO(yzhao): Write a matcher for Stream.
   ASSERT_THAT(socket_trace_connector->TestOnlyHTTPStreams(), SizeIs(2));
 
-  auto get_message = [](const socket_data_event_t &event) -> std::string_view {
+  auto get_message = [](const socket_data_event_t& event) -> std::string_view {
     return std::string_view(event.msg, std::min<uint32_t>(event.attr.msg_size, MAX_MSG_SIZE));
   };
   std::vector<std::pair<uint64_t, std::string_view>> seq_msgs;
-  for (const auto &[id, http_stream] : socket_trace_connector->TestOnlyHTTPStreams()) {
+  for (const auto& [id, http_stream] : socket_trace_connector->TestOnlyHTTPStreams()) {
     PL_UNUSED(id);
-    for (const auto &[seq_num, event] : http_stream.events) {
+    for (const auto& [seq_num, event] : http_stream.events) {
       seq_msgs.emplace_back(seq_num, get_message(event));
     }
   }

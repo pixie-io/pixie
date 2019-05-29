@@ -8,7 +8,7 @@ namespace pl {
 namespace carnot {
 namespace plan {
 
-std::unique_ptr<PlanFragment> PlanFragment::FromProto(const planpb::PlanFragment &pb, int64_t id) {
+std::unique_ptr<PlanFragment> PlanFragment::FromProto(const planpb::PlanFragment& pb, int64_t id) {
   auto pf = std::make_unique<PlanFragment>(id);
   auto s = pf->Init(pb);
   // On init failure, return null;
@@ -20,14 +20,14 @@ std::unique_ptr<PlanFragment> PlanFragment::FromProto(const planpb::PlanFragment
 }
 
 template <typename T, typename TWalkFunc>
-void PlanFragmentWalker::CallAs(const TWalkFunc &fn, const Operator &op) {
+void PlanFragmentWalker::CallAs(const TWalkFunc& fn, const Operator& op) {
   if (!fn) {
     VLOG(google::WARNING) << "fn does not exist";
   }
-  return fn(static_cast<const T &>(op));
+  return fn(static_cast<const T&>(op));
 }
 
-void PlanFragmentWalker::CallWalkFn(const Operator &op) {
+void PlanFragmentWalker::CallWalkFn(const Operator& op) {
   const auto op_type = op.op_type();
   switch (op_type) {
     case planpb::OperatorType::MEMORY_SOURCE_OPERATOR:
@@ -53,9 +53,9 @@ void PlanFragmentWalker::CallWalkFn(const Operator &op) {
   }
 }
 
-void PlanFragmentWalker::Walk(PlanFragment *plan_fragment) {
+void PlanFragmentWalker::Walk(PlanFragment* plan_fragment) {
   auto operators = plan_fragment->dag().TopologicalSort();
-  for (const auto &node_id : operators) {
+  for (const auto& node_id : operators) {
     auto node = plan_fragment->nodes().find(node_id);
     if (node == plan_fragment->nodes().end()) {
       LOG(WARNING) << absl::StrCat("Could not find node in plan fragment");

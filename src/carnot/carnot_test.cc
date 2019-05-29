@@ -500,8 +500,8 @@ TEST_F(CarnotTest, group_by_col_agg_test) {
   for (int i = 0; i < rb1->num_rows(); ++i) {
     auto output_col_grp = rb1->ColumnAt(0);
     auto output_col_agg = rb1->ColumnAt(1);
-    auto casted_grp = static_cast<arrow::Int64Array *>(output_col_grp.get());
-    auto casted_agg = static_cast<arrow::Int64Array *>(output_col_agg.get());
+    auto casted_grp = static_cast<arrow::Int64Array*>(output_col_grp.get());
+    auto casted_agg = static_cast<arrow::Int64Array*>(output_col_agg.get());
 
     actual[casted_grp->Value(i)] = casted_agg->Value(i);
   }
@@ -533,11 +533,11 @@ TEST_F(CarnotTest, multiple_group_by_test) {
     int64_t num_group;
     std::string string_group;
 
-    bool operator<(const Key &other) const {
+    bool operator<(const Key& other) const {
       return num_group < other.num_group ||
              (num_group == other.num_group && string_group < other.string_group);
     }
-    bool operator==(const Key &other) const {
+    bool operator==(const Key& other) const {
       return (num_group == other.num_group) && string_group == other.string_group;
     }
   };
@@ -551,10 +551,10 @@ TEST_F(CarnotTest, multiple_group_by_test) {
     auto output_col_num_grp = rb1->ColumnAt(0);
     auto output_col_str_grp = rb1->ColumnAt(1);
     auto output_col_agg = rb1->ColumnAt(2);
-    auto casted_num_grp = static_cast<arrow::Int64Array *>(output_col_num_grp.get());
-    auto casted_str_grp = static_cast<arrow::StringArray *>(output_col_str_grp.get());
+    auto casted_num_grp = static_cast<arrow::Int64Array*>(output_col_num_grp.get());
+    auto casted_str_grp = static_cast<arrow::StringArray*>(output_col_str_grp.get());
 
-    auto casted_agg = static_cast<arrow::Int64Array *>(output_col_agg.get());
+    auto casted_agg = static_cast<arrow::Int64Array*>(output_col_agg.get());
     auto key = Key{casted_num_grp->Value(i), casted_str_grp->GetString(i)};
 
     actual[key] = casted_agg->Value(i);
@@ -625,7 +625,7 @@ TEST_F(CarnotTest, comparison_to_agg_tests) {
           .ConsumeValueOrDie();
   auto col3 = CarnotTestUtils::big_test_col3;
   int64_t gt_count = 0;
-  for (auto &i : col3) {
+  for (auto& i : col3) {
     if (i > col3_gt_val) {
       gt_count += 1;
     }
@@ -636,8 +636,8 @@ TEST_F(CarnotTest, comparison_to_agg_tests) {
   for (int i = 0; i < rb1->num_rows(); ++i) {
     auto output_col_grp = rb1->ColumnAt(0);
     auto output_col_agg = rb1->ColumnAt(1);
-    auto casted_grp = static_cast<arrow::BooleanArray *>(output_col_grp.get());
-    auto casted_agg = static_cast<arrow::Int64Array *>(output_col_agg.get());
+    auto casted_grp = static_cast<arrow::BooleanArray*>(output_col_grp.get());
+    auto casted_agg = static_cast<arrow::Int64Array*>(output_col_agg.get());
 
     actual[casted_grp->Value(i)] = casted_agg->Value(i);
   }
@@ -647,17 +647,17 @@ TEST_F(CarnotTest, comparison_to_agg_tests) {
 class CarnotFilterTest
     : public CarnotTest,
       public ::testing::WithParamInterface<
-          std::tuple<std::string, std::function<bool(const double &, const double &)>>> {
+          std::tuple<std::string, std::function<bool(const double&, const double&)>>> {
  protected:
   void SetUp() {
     CarnotTest::SetUp();
     std::tie(comparison_fn_str, comparison_fn) = GetParam();
   }
   std::string comparison_fn_str;
-  std::function<bool(const double &, const double &)> comparison_fn;
+  std::function<bool(const double&, const double&)> comparison_fn;
 };
 
-std::vector<std::tuple<std::string, std::function<bool(const double &, const double &)>>>
+std::vector<std::tuple<std::string, std::function<bool(const double&, const double&)>>>
     filter_test_values = {
         {
             ">",
@@ -706,7 +706,7 @@ TEST_P(CarnotFilterTest, int_filter) {
   // iterate through the batches
   for (size_t i = 0; i < CarnotTestUtils::split_idx.size(); i++) {
     // iterate through the column
-    const auto &cur_split = CarnotTestUtils::split_idx[i];
+    const auto& cur_split = CarnotTestUtils::split_idx[i];
     int64_t left = cur_split.first;
     int64_t right = cur_split.second;
     std::vector<types::Int64Value> time_out;
@@ -765,7 +765,7 @@ TEST_F(CarnotTest, string_filter) {
   // Iterate through the batches.
   for (size_t i = 0; i < CarnotTestUtils::split_idx.size(); i++) {
     // Iterate through the column.
-    const auto &cur_split = CarnotTestUtils::split_idx[i];
+    const auto& cur_split = CarnotTestUtils::split_idx[i];
     int64_t left = cur_split.first;
     int64_t right = cur_split.second;
     std::vector<types::Int64Value> time_out;
@@ -821,7 +821,7 @@ TEST_P(CarnotLimitTest, limit) {
   // Iterate through the batches.
   for (int64_t i = 0; i < expected_num_batches; i++) {
     // Iterate through the column.
-    const auto &cur_split = CarnotTestUtils::split_idx[i];
+    const auto& cur_split = CarnotTestUtils::split_idx[i];
     int64_t left = cur_split.first;
     int64_t right = cur_split.second;
     std::vector<types::Int64Value> time_out;
@@ -912,7 +912,7 @@ TEST_F(CarnotTest, multiple_result_calls) {
   // iterate through the batches
   for (size_t i = 0; i < CarnotTestUtils::split_idx.size(); i++) {
     // iterate through the column
-    const auto &cur_split = CarnotTestUtils::split_idx[i];
+    const auto& cur_split = CarnotTestUtils::split_idx[i];
     int64_t left = cur_split.first;
     int64_t right = cur_split.second;
     std::vector<types::Int64Value> time_out;

@@ -23,7 +23,7 @@ constexpr std::string_view kPidFile = "cgroup.procs";
 
 namespace {
 
-Status ReadPIDList(fs::path pid_file_path, std::vector<int64_t> *pid_list) {
+Status ReadPIDList(fs::path pid_file_path, std::vector<int64_t>* pid_list) {
   CHECK(pid_list != nullptr);
   std::ifstream ifs(pid_file_path);
   if (!ifs.good()) {
@@ -55,14 +55,14 @@ std::unique_ptr<CGroupManager> CGroupManager::Create(std::string_view proc_path,
   return CGroupManager::Create(*syscfg, proc_path, sysfs_path);
 }
 
-std::unique_ptr<CGroupManager> CGroupManager::Create(const common::SystemConfig &cfg,
+std::unique_ptr<CGroupManager> CGroupManager::Create(const common::SystemConfig& cfg,
                                                      std::string_view proc_path,
                                                      std::string_view sysfs_path) {
   std::unique_ptr<CGroupManager> retval(new CGroupManager(cfg, proc_path, sysfs_path));
   return retval;
 }
 
-void CGroupManager::AddFSWatch(const fs::path &path) {
+void CGroupManager::AddFSWatch(const fs::path& path) {
   if (!fs_watcher_) {
     return;
   }
@@ -75,7 +75,7 @@ void CGroupManager::AddFSWatch(const fs::path &path) {
   }
 }
 
-void CGroupManager::RemoveFSWatch(const fs::path &path) {
+void CGroupManager::RemoveFSWatch(const fs::path& path) {
   if (!fs_watcher_) {
     return;
   }
@@ -88,7 +88,7 @@ void CGroupManager::RemoveFSWatch(const fs::path &path) {
   }
 }
 
-Status CGroupManager::UpdatePodInfo(fs::path pod_path, const std::string &pod_name, CGroupQoS qos) {
+Status CGroupManager::UpdatePodInfo(fs::path pod_path, const std::string& pod_name, CGroupQoS qos) {
   std::error_code ec;
   auto container_dir_iter = fs::directory_iterator(pod_path, ec);
   if (ec) {
@@ -98,7 +98,7 @@ Status CGroupManager::UpdatePodInfo(fs::path pod_path, const std::string &pod_na
   AddFSWatch(pod_path);
   PodInfo pod_info;
   pod_info.qos = qos;
-  for (const auto &container_path : container_dir_iter) {
+  for (const auto& container_path : container_dir_iter) {
     PL_RETURN_IF_ERROR(UpdateContainerInfo(container_path.path(), &pod_info));
   }
   cgroup_info_[pod_name] = std::move(pod_info);
@@ -106,7 +106,7 @@ Status CGroupManager::UpdatePodInfo(fs::path pod_path, const std::string &pod_na
   return Status::OK();
 }
 
-Status CGroupManager::UpdateContainerInfo(const fs::path &container_path, PodInfo *pod_info) {
+Status CGroupManager::UpdateContainerInfo(const fs::path& container_path, PodInfo* pod_info) {
   std::error_code ec;
   bool is_directory = fs::is_directory(container_path, ec);
 
@@ -134,7 +134,7 @@ Status CGroupManager::UpdateCGroupInfoForQoSClass(CGroupQoS qos, fs::path base_p
   }
 
   AddFSWatch(base_path);
-  for (const auto &p : dir_iter) {
+  for (const auto& p : dir_iter) {
     auto path_str = p.path().string();
     auto pod_name = p.path().filename().string();
     if (fs::is_directory(p.path()) && absl::StartsWith(pod_name, kPodPrefix)) {
@@ -145,8 +145,8 @@ Status CGroupManager::UpdateCGroupInfoForQoSClass(CGroupQoS qos, fs::path base_p
   return Status::OK();
 }
 
-Status CGroupManager::HandleFSPodEvent(const fs::path &path, FSWatcher::FSEventType event_type,
-                                       const std::string &pod_name) {
+Status CGroupManager::HandleFSPodEvent(const fs::path& path, FSWatcher::FSEventType event_type,
+                                       const std::string& pod_name) {
   if (event_type == FSWatcher::FSEventType::kDeleteDir) {
     cgroup_info_.erase(pod_name);
     RemoveFSWatch(path / pod_name);
@@ -164,9 +164,9 @@ Status CGroupManager::HandleFSPodEvent(const fs::path &path, FSWatcher::FSEventT
   return UpdatePodInfo(path, pod_name, qos);
 }
 
-Status CGroupManager::HandleFSContainerEvent(const fs::path &path,
+Status CGroupManager::HandleFSContainerEvent(const fs::path& path,
                                              FSWatcher::FSEventType event_type,
-                                             const std::string &container_name) {
+                                             const std::string& container_name) {
   auto pod_name = path.filename().string();
   auto pod_info = cgroup_info_[pod_name];
   if (event_type == FSWatcher::FSEventType::kDeleteDir) {
@@ -178,7 +178,7 @@ Status CGroupManager::HandleFSContainerEvent(const fs::path &path,
   return UpdateContainerInfo(path / container_name, &pod_info);
 }
 
-Status CGroupManager::HandleFSEvent(FSWatcher::FSEvent *fs_event) {
+Status CGroupManager::HandleFSEvent(FSWatcher::FSEvent* fs_event) {
   auto path = fs_event->GetPath();
   switch (fs_event->type) {
     case FSWatcher::FSEventType::kCreateDir:
@@ -271,11 +271,11 @@ Status CGroupManager::UpdateCGroupInfo() {
   return Status::OK();
 }
 
-Status CGroupManager::GetNetworkStatsForPod(const std::string &pod,
-                                            ProcParser::NetworkStats *stats) {
+Status CGroupManager::GetNetworkStatsForPod(const std::string& pod,
+                                            ProcParser::NetworkStats* stats) {
   DCHECK(stats != nullptr);
-  PL_ASSIGN_OR_RETURN(const auto *cgroup_info, GetCGroupInfoForPod(pod));
-  for (const auto &container_info : cgroup_info->container_info_by_name) {
+  PL_ASSIGN_OR_RETURN(const auto* cgroup_info, GetCGroupInfoForPod(pod));
+  for (const auto& container_info : cgroup_info->container_info_by_name) {
     for (const int64_t pid : container_info.second.pids) {
       auto s = proc_parser_.ParseProcPIDNetDev(proc_parser_.GetProcPidNetDevFile(pid), stats);
       // Since all the containers running in a K8s pod use the same network
@@ -297,7 +297,7 @@ Status CGroupManager::GetNetworkStatsForPod(const std::string &pod,
   return error::Unknown("failed to read network stats.");
 }
 
-Status CGroupManager::GetProcessStats(int64_t pid, ProcParser::ProcessStats *stats) {
+Status CGroupManager::GetProcessStats(int64_t pid, ProcParser::ProcessStats* stats) {
   DCHECK(stats != nullptr);
   auto proc_stat_path = proc_parser_.GetProcPidStatFilePath(pid);
   auto proc_io_path = proc_parser_.GetProcPidStatIOFile(pid);
@@ -308,22 +308,21 @@ Status CGroupManager::GetProcessStats(int64_t pid, ProcParser::ProcessStats *sta
   return Status::OK();
 }
 
-StatusOr<const CGroupManager::PodInfo *> CGroupManager::GetCGroupInfoForPod(
-    const std::string &pod) {
-  const auto &cgroup_info = cgroup_info_.find(pod);
+StatusOr<const CGroupManager::PodInfo*> CGroupManager::GetCGroupInfoForPod(const std::string& pod) {
+  const auto& cgroup_info = cgroup_info_.find(pod);
   if (cgroup_info == end(cgroup_info_)) {
     return error::NotFound("Pod $0 not found, while fetching cgroup info", pod);
   }
   return &cgroup_info->second;
 }
 
-StatusOr<const std::vector<int64_t> *> CGroupManager::PIDsInContainer(
-    const std::string &pod, const std::string &container) {
-  const auto &cgroup_it = cgroup_info_.find(pod);
+StatusOr<const std::vector<int64_t>*> CGroupManager::PIDsInContainer(const std::string& pod,
+                                                                     const std::string& container) {
+  const auto& cgroup_it = cgroup_info_.find(pod);
   if (cgroup_it == end(cgroup_info_)) {
     return error::NotFound("pod not found: $0", pod);
   }
-  const auto &container_it = cgroup_it->second.container_info_by_name.find(container);
+  const auto& container_it = cgroup_it->second.container_info_by_name.find(container);
   if (container_it == end(cgroup_it->second.container_info_by_name)) {
     return error::NotFound("container not found: $0", container);
   }

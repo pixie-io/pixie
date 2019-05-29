@@ -4,8 +4,8 @@
 #include "absl/time/time.h"
 #include "src/shared/version/version.h"
 
-extern const char *kBuildSCMStatus;
-extern const char *kBuildSCMRevision;
+extern const char* kBuildSCMStatus;
+extern const char* kBuildSCMRevision;
 extern const int64_t kBuildTimeStamp;
 
 namespace pl {
@@ -16,9 +16,9 @@ std::string VersionInfo::RevisionStatus() { return kBuildSCMStatus; }
 
 std::string VersionInfo::VersionString() {
 #ifdef NDEBUG
-  const char *build_type = "RELEASE";
+  const char* build_type = "RELEASE";
 #else
-  const char *build_type = "DEBUG";
+  const char* build_type = "DEBUG";
 #endif
   auto t = absl::FromUnixSeconds(kBuildTimeStamp);
   auto build_time = absl::FormatTime(t, absl::UTCTimeZone());

@@ -7,8 +7,8 @@ namespace pl {
  */
 class NotCopyable {
  public:
-  NotCopyable(NotCopyable const &) = delete;
-  NotCopyable &operator=(NotCopyable const &) = delete;
+  NotCopyable(NotCopyable const&) = delete;
+  NotCopyable& operator=(NotCopyable const&) = delete;
   NotCopyable() = default;
 };
 

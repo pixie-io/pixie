@@ -21,7 +21,7 @@ using ::testing::Return;
 constexpr char kTestDataBasePath[] = "src/stirling/cgroups";
 
 namespace {
-string GetPathToTestDataFile(const string &fname) {
+string GetPathToTestDataFile(const string& fname) {
   return TestEnvironment::PathToTestDataFile(std::string(kTestDataBasePath) + "/" + fname);
 }
 }  // namespace
@@ -37,7 +37,7 @@ class CGroupManagerTest : public ::testing::Test {
 
     std::string prefix = "cgroup_test";
     char dir_template[] = "/tmp/cgroup_test_XXXXXX";
-    char *dir_name = mkdtemp(dir_template);
+    char* dir_name = mkdtemp(dir_template);
     CHECK(dir_name != nullptr);
     tmp_dir_ = dir_name;
     Test::SetUp();
@@ -63,7 +63,7 @@ TEST_F(CGroupManagerTest, cgroup_basic) {
   // Values are based on the test directory.
   EXPECT_TRUE(mgr_->HasPod("pod04bfccc8-6526-11e9-b815-42010a8a0135"));
   EXPECT_TRUE(mgr_->HasPod("poda22d8c1e-67bf-11e9-b815-42010a8a0135"));
-  auto *pid_list = mgr_->PIDsInContainer("pod04bfccc8-6526-11e9-b815-42010a8a0135",
+  auto* pid_list = mgr_->PIDsInContainer("pod04bfccc8-6526-11e9-b815-42010a8a0135",
                                          "3814823571b7857e7ef48e55414ade5d2d6c0c7d5f62476c91"
                                          "99bff741b5d31e")
                        .ConsumeValueOrDie();
@@ -85,7 +85,7 @@ TEST_F(CGroupManagerTest, cgroup_basic_add_pid) {
   // Values are based on the test directory.
   EXPECT_TRUE(mgr_->HasPod("pod04bfccc8-6526-11e9-b815-42010a8a0135"));
   EXPECT_TRUE(mgr_->HasPod("poda22d8c1e-67bf-11e9-b815-42010a8a0135"));
-  auto *pid_list = mgr_->PIDsInContainer("pod04bfccc8-6526-11e9-b815-42010a8a0135",
+  auto* pid_list = mgr_->PIDsInContainer("pod04bfccc8-6526-11e9-b815-42010a8a0135",
                                          "3814823571b7857e7ef48e55414ade5d2d6c0c7d5f62476c91"
                                          "99bff741b5d31e")
                        .ConsumeValueOrDie();

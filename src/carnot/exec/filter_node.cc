@@ -19,40 +19,40 @@ std::string FilterNode::DebugStringImpl() {
   return absl::StrFormat("Exec::FilterNode<%s>", evaluator_->DebugString());
 }
 
-Status FilterNode::InitImpl(const plan::Operator &plan_node, const RowDescriptor &output_descriptor,
-                            const std::vector<RowDescriptor> &input_descriptors) {
+Status FilterNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor& output_descriptor,
+                            const std::vector<RowDescriptor>& input_descriptors) {
   CHECK(plan_node.op_type() == planpb::OperatorType::FILTER_OPERATOR);
-  const auto *filter_plan_node = static_cast<const plan::FilterOperator *>(&plan_node);
+  const auto* filter_plan_node = static_cast<const plan::FilterOperator*>(&plan_node);
   // copy the plan node to local object;
   plan_node_ = std::make_unique<plan::FilterOperator>(*filter_plan_node);
   output_descriptor_ = std::make_unique<RowDescriptor>(output_descriptor);
   PL_UNUSED(input_descriptors);
   return Status::OK();
 }
-Status FilterNode::PrepareImpl(ExecState *) {
+Status FilterNode::PrepareImpl(ExecState*) {
   evaluator_ = std::make_unique<VectorNativeScalarExpressionEvaluator>(
       plan::ConstScalarExpressionVector{plan_node_->expression()});
   return Status::OK();
 }
 
-Status FilterNode::OpenImpl(ExecState *exec_state) {
+Status FilterNode::OpenImpl(ExecState* exec_state) {
   PL_RETURN_IF_ERROR(evaluator_->Open(exec_state));
   return Status::OK();
 }
 
-Status FilterNode::CloseImpl(ExecState *exec_state) {
+Status FilterNode::CloseImpl(ExecState* exec_state) {
   PL_RETURN_IF_ERROR(evaluator_->Close(exec_state));
   return Status::OK();
 }
 
 template <types::DataType T>
-Status PredicateCopyValues(const types::BoolValueColumnWrapper &pred, const arrow::Array *input_col,
-                           RowBatch *output_rb) {
+Status PredicateCopyValues(const types::BoolValueColumnWrapper& pred, const arrow::Array* input_col,
+                           RowBatch* output_rb) {
   DCHECK_EQ(pred.Size(), static_cast<size_t>(input_col->length()));
   size_t num_output_records = output_rb->num_rows();
   size_t num_input_records = input_col->length();
   auto output_col_builder_generic = MakeArrowBuilder(T, arrow::default_memory_pool());
-  auto *output_col_builder = static_cast<typename types::DataTypeTraits<T>::arrow_builder_type *>(
+  auto* output_col_builder = static_cast<typename types::DataTypeTraits<T>::arrow_builder_type*>(
       output_col_builder_generic.get());
   PL_RETURN_IF_ERROR(output_col_builder->Reserve(num_output_records));
   for (size_t idx = 0; idx < num_input_records; ++idx) {
@@ -67,8 +67,8 @@ Status PredicateCopyValues(const types::BoolValueColumnWrapper &pred, const arro
 }
 
 template <>
-Status PredicateCopyValues<types::STRING>(const types::BoolValueColumnWrapper &pred,
-                                          const arrow::Array *input_col, RowBatch *output_rb) {
+Status PredicateCopyValues<types::STRING>(const types::BoolValueColumnWrapper& pred,
+                                          const arrow::Array* input_col, RowBatch* output_rb) {
   DCHECK_EQ(pred.Size(), static_cast<size_t>(input_col->length()));
   size_t num_output_records = output_rb->num_rows();
   size_t num_input_records = input_col->length();
@@ -77,9 +77,8 @@ Status PredicateCopyValues<types::STRING>(const types::BoolValueColumnWrapper &p
   size_t total_size = 0;
 
   auto output_col_builder_generic = MakeArrowBuilder(types::STRING, arrow::default_memory_pool());
-  auto *output_col_builder =
-      static_cast<types::DataTypeTraits<types::STRING>::arrow_builder_type *>(
-          output_col_builder_generic.get());
+  auto* output_col_builder = static_cast<types::DataTypeTraits<types::STRING>::arrow_builder_type*>(
+      output_col_builder_generic.get());
 
   PL_RETURN_IF_ERROR(output_col_builder->Reserve(num_output_records));
   PL_RETURN_IF_ERROR(output_col_builder->ReserveData(reserved));
@@ -100,7 +99,7 @@ Status PredicateCopyValues<types::STRING>(const types::BoolValueColumnWrapper &p
   return Status::OK();
 }
 
-Status FilterNode::ConsumeNextImpl(ExecState *exec_state, const RowBatch &rb) {
+Status FilterNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb) {
   // TODO(zasgar/michelle): Current implementation does not merge across row batches, which is
   // something we should consider in case the filter has really low selectivity.
 
@@ -110,8 +109,8 @@ Status FilterNode::ConsumeNextImpl(ExecState *exec_state, const RowBatch &rb) {
   // Verify that the type of the column is boolean.
   DCHECK_EQ(pred_col->data_type(), types::BOOLEAN) << "Predicate expression must be a boolean";
 
-  const types::BoolValueColumnWrapper &pred_col_wrapper =
-      *static_cast<types::BoolValueColumnWrapper *>(pred_col.get());
+  const types::BoolValueColumnWrapper& pred_col_wrapper =
+      *static_cast<types::BoolValueColumnWrapper*>(pred_col.get());
   size_t num_pred = pred_col_wrapper.Size();
 
   DCHECK_EQ(static_cast<size_t>(rb.num_rows()), num_pred);

@@ -33,10 +33,10 @@ class ExecutionGraph {
    * @param pf The plan fragment to create the execution graph from.
    * @return The status of whether initialization succeeded.
    */
-  Status Init(std::shared_ptr<table_store::schema::Schema> schema, plan::PlanState *plan_state,
-              ExecState *exec_state, plan::PlanFragment *pf);
+  Status Init(std::shared_ptr<table_store::schema::Schema> schema, plan::PlanState* plan_state,
+              ExecState* exec_state, plan::PlanFragment* pf);
   std::vector<int64_t> sources() { return sources_; }
-  StatusOr<ExecNode *> node(int64_t id) {
+  StatusOr<ExecNode*> node(int64_t id) {
     auto node = nodes_.find(id);
     if (node == nodes_.end()) {
       return error::NotFound("Could not find ExecNode.");
@@ -58,13 +58,13 @@ class ExecutionGraph {
    */
   template <typename TOp, typename TNode>
   Status OnOperatorImpl(
-      TOp node, std::unordered_map<int64_t, table_store::schema::RowDescriptor> *descriptors) {
+      TOp node, std::unordered_map<int64_t, table_store::schema::RowDescriptor>* descriptors) {
     std::vector<table_store::schema::RowDescriptor> input_descriptors;
 
     auto parents = pf_->dag().ParentsOf(node.id());
 
     // Get input descriptors for this operator.
-    for (const int64_t &parent_id : parents) {
+    for (const int64_t& parent_id : parents) {
       auto input_desc = descriptors->find(parent_id);
       if (input_desc == descriptors->end()) {
         return error::NotFound("Could not find RowDescriptor.");
@@ -84,7 +84,7 @@ class ExecutionGraph {
     nodes_.insert({node.id(), execNode});
 
     // Update parents' children.
-    for (const int64_t &parent_id : parents) {
+    for (const int64_t& parent_id : parents) {
       auto parent = nodes_.find(parent_id);
       // Error if can't find parent in nodes.
       if (parent == nodes_.end()) {
@@ -95,14 +95,14 @@ class ExecutionGraph {
     return Status::OK();
   }
 
-  ExecState *exec_state_;
+  ExecState* exec_state_;
   ObjectPool pool_;
   std::shared_ptr<table_store::schema::Schema> schema_;
-  plan::PlanState *plan_state_;
-  plan::PlanFragment *pf_;
+  plan::PlanState* plan_state_;
+  plan::PlanFragment* pf_;
   std::vector<int64_t> sources_;
   std::vector<int64_t> sinks_;
-  std::unordered_map<int64_t, ExecNode *> nodes_;
+  std::unordered_map<int64_t, ExecNode*> nodes_;
 };
 
 }  // namespace exec

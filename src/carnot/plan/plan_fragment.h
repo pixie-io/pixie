@@ -15,7 +15,7 @@ namespace plan {
 class PlanFragment final : public PlanGraph<planpb::PlanFragment, Operator, planpb::PlanNode> {
  public:
   explicit PlanFragment(int64_t id) : id_(id) {}
-  static std::unique_ptr<PlanFragment> FromProto(const planpb::PlanFragment &pb, int64_t id);
+  static std::unique_ptr<PlanFragment> FromProto(const planpb::PlanFragment& pb, int64_t id);
   int64_t id() const { return id_; }
 
  protected:
@@ -43,19 +43,19 @@ class PlanFragment final : public PlanGraph<planpb::PlanFragment, Operator, plan
  */
 class PlanFragmentWalker {
  public:
-  using MemorySourceWalkFn = std::function<void(const MemorySourceOperator &)>;
-  using MapWalkFn = std::function<void(const MapOperator &)>;
-  using BlockingAggregateWalkFn = std::function<void(const BlockingAggregateOperator &)>;
-  using MemorySinkWalkFn = std::function<void(const MemorySinkOperator &)>;
-  using FilterWalkFn = std::function<void(const FilterOperator &)>;
-  using LimitWalkFn = std::function<void(const LimitOperator &)>;
+  using MemorySourceWalkFn = std::function<void(const MemorySourceOperator&)>;
+  using MapWalkFn = std::function<void(const MapOperator&)>;
+  using BlockingAggregateWalkFn = std::function<void(const BlockingAggregateOperator&)>;
+  using MemorySinkWalkFn = std::function<void(const MemorySinkOperator&)>;
+  using FilterWalkFn = std::function<void(const FilterOperator&)>;
+  using LimitWalkFn = std::function<void(const LimitOperator&)>;
 
   /**
    * Register callback for when a memory source operator is encountered.
    * @param fn The function to call when a MemorySourceOperator is encountered.
    * @return self to allow chaining
    */
-  PlanFragmentWalker &OnMemorySource(const MemorySourceWalkFn &fn) {
+  PlanFragmentWalker& OnMemorySource(const MemorySourceWalkFn& fn) {
     on_memory_source_walk_fn_ = fn;
     return *this;
   }
@@ -65,7 +65,7 @@ class PlanFragmentWalker {
    * @param fn The function to call when a MapOperator is encountered.
    * @return self to allow chaining
    */
-  PlanFragmentWalker &OnMap(const MapWalkFn &fn) {
+  PlanFragmentWalker& OnMap(const MapWalkFn& fn) {
     on_map_walk_fn_ = fn;
     return *this;
   }
@@ -75,7 +75,7 @@ class PlanFragmentWalker {
    * @param fn The function to call when a BlockingAggregateOperator is encountered.
    * @return self to allow chaining
    */
-  PlanFragmentWalker &OnBlockingAggregate(const BlockingAggregateWalkFn &fn) {
+  PlanFragmentWalker& OnBlockingAggregate(const BlockingAggregateWalkFn& fn) {
     on_blocking_aggregate_walk_fn_ = fn;
     return *this;
   }
@@ -85,7 +85,7 @@ class PlanFragmentWalker {
    * @param fn The function to call when a MemorySinkOperator is encountered.
    * @return self to allow chaining
    */
-  PlanFragmentWalker &OnMemorySink(const MemorySinkWalkFn &fn) {
+  PlanFragmentWalker& OnMemorySink(const MemorySinkWalkFn& fn) {
     on_memory_sink_walk_fn_ = fn;
     return *this;
   }
@@ -95,7 +95,7 @@ class PlanFragmentWalker {
    * @param fn The function to call when a FilterOperator is encountered.
    * @return self to allow chaining
    */
-  PlanFragmentWalker &OnFilter(const FilterWalkFn &fn) {
+  PlanFragmentWalker& OnFilter(const FilterWalkFn& fn) {
     on_filter_walk_fn_ = fn;
     return *this;
   }
@@ -105,7 +105,7 @@ class PlanFragmentWalker {
    * @param fn The function to call when a LimitOperator is encountered.
    * @return self to allow chaining
    */
-  PlanFragmentWalker &OnLimit(const LimitWalkFn &fn) {
+  PlanFragmentWalker& OnLimit(const LimitWalkFn& fn) {
     on_limit_walk_fn_ = fn;
     return *this;
   }
@@ -114,13 +114,13 @@ class PlanFragmentWalker {
    * Perform a walk of the plan fragment operators in a topologically-sorted order.
    * @param plan_fragment The plan fragment to walk.
    */
-  void Walk(PlanFragment *plan_fragment);
+  void Walk(PlanFragment* plan_fragment);
 
  private:
-  void CallWalkFn(const Operator &op);
+  void CallWalkFn(const Operator& op);
 
   template <typename T, typename TWalkFunc>
-  void CallAs(TWalkFunc const &fn, const Operator &op);
+  void CallAs(TWalkFunc const& fn, const Operator& op);
 
   MemorySourceWalkFn on_memory_source_walk_fn_;
   MapWalkFn on_map_walk_fn_;

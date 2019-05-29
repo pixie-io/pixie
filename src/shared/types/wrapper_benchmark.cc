@@ -9,7 +9,7 @@ using pl::types::Int64Value;
 
 // This is just a dummy function that does some work so we can use it in the benchmark.
 template <typename T>
-std::vector<T> Compute(const std::vector<T> &vec1, const std::vector<T> &vec2) {
+std::vector<T> Compute(const std::vector<T>& vec1, const std::vector<T>& vec2) {
   size_t size = std::min(vec1.size(), vec2.size());
   std::vector<T> res(size);
 
@@ -21,8 +21,8 @@ std::vector<T> Compute(const std::vector<T> &vec1, const std::vector<T> &vec2) {
 
 // Specialization of the above function for Int64Value (since it needs accessors).
 template <>
-std::vector<Int64Value> Compute(const std::vector<Int64Value> &vec1,
-                                const std::vector<Int64Value> &vec2) {
+std::vector<Int64Value> Compute(const std::vector<Int64Value>& vec1,
+                                const std::vector<Int64Value>& vec2) {
   size_t size = std::min(vec1.size(), vec2.size());
   std::vector<Int64Value> res(size);
 
@@ -33,7 +33,7 @@ std::vector<Int64Value> Compute(const std::vector<Int64Value> &vec1,
 }
 
 template <typename T>
-static void BM_Int64Vector(benchmark::State &state) {  // NOLINT
+static void BM_Int64Vector(benchmark::State& state) {  // NOLINT
   auto vec1 = pl::bmutils::CreateLargeData<T>(state.range(0), 1, 52);
   auto vec2 = pl::bmutils::CreateLargeData<T>(state.range(0), 1, 52);
 

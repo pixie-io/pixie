@@ -21,15 +21,15 @@ struct RowTuple;
 
 namespace internal {
 template <typename T>
-inline void SetValueHelper(RowTuple *rt, size_t idx, const T &val);
+inline void SetValueHelper(RowTuple* rt, size_t idx, const T& val);
 template <>
-inline void SetValueHelper<types::StringValue>(RowTuple *rt, size_t idx,
-                                               const types::StringValue &val);
+inline void SetValueHelper<types::StringValue>(RowTuple* rt, size_t idx,
+                                               const types::StringValue& val);
 
 template <typename T>
-inline const T &GetValueHelper(const RowTuple &rt, size_t idx);
+inline const T& GetValueHelper(const RowTuple& rt, size_t idx);
 template <>
-inline const types::StringValue &GetValueHelper<types::StringValue>(const RowTuple &rt, size_t idx);
+inline const types::StringValue& GetValueHelper<types::StringValue>(const RowTuple& rt, size_t idx);
 
 }  // namespace internal
 
@@ -37,7 +37,7 @@ inline const types::StringValue &GetValueHelper<types::StringValue>(const RowTup
  * RowTuple stores a tuple of values corresponding to ValueTypes.
  */
 struct RowTuple : public NotCopyable {
-  explicit RowTuple(const std::vector<types::DataType> *types) : types(types) {
+  explicit RowTuple(const std::vector<types::DataType>* types) : types(types) {
     Reset();
     // We set the values to zero since not all fixed size values are the same size.
     // Without this when we write values we might leave gaps that introduce mismatches during
@@ -57,7 +57,7 @@ struct RowTuple : public NotCopyable {
    * @param val The value.
    */
   template <typename T>
-  void SetValue(size_t idx, const T &val) {
+  void SetValue(size_t idx, const T& val) {
     internal::SetValueHelper<T>(this, idx, val);
   }
 
@@ -69,11 +69,11 @@ struct RowTuple : public NotCopyable {
    * @return The return value (as reference).
    */
   template <typename T>
-  const T &GetValue(size_t idx) const {
+  const T& GetValue(size_t idx) const {
     return internal::GetValueHelper<T>(*this, idx);
   }
 
-  bool operator==(const RowTuple &other) const {
+  bool operator==(const RowTuple& other) const {
     DCHECK(types != nullptr);
     DCHECK(other.types != nullptr);
     // This should actually be part of the check, but we assume that row-tuples
@@ -107,10 +107,10 @@ struct RowTuple : public NotCopyable {
   size_t Hash() const {
     DCHECK(CheckSequentialWriteOrder()) << "Variable sized write ordering mismatch";
     // For fixed sized data we just hash the stored array.
-    size_t hash = ::util::Hash64(reinterpret_cast<const char *>(fixed_values.data()),
+    size_t hash = ::util::Hash64(reinterpret_cast<const char*>(fixed_values.data()),
                                  sizeof(types::FixedSizeValueUnion) * fixed_values.size());
     // For variable sized data we run the appropriate hash function.
-    for (const auto &val : variable_values) {
+    for (const auto& val : variable_values) {
       // This should be edited when we add support for new variable sized types.
       DCHECK(std::holds_alternative<types::StringValue>(val));
       hash = types::utils::HashCombine(
@@ -145,7 +145,7 @@ struct RowTuple : public NotCopyable {
 
   // We store a pointer to the types, since they are likely to be shared across different RowTuples.
   // This pointer needs to be valid for the lifetime of this object.
-  const std::vector<types::DataType> *types;
+  const std::vector<types::DataType>* types;
 
   // We store data in two chunks. The first being fixed size values which store values of fixed size
   // values in line, and for variable size data stores the index into the variables_values array.
@@ -156,21 +156,21 @@ struct RowTuple : public NotCopyable {
 
 namespace internal {
 template <typename T>
-inline void SetValueHelper(RowTuple *rt, size_t idx, const T &val) {
+inline void SetValueHelper(RowTuple* rt, size_t idx, const T& val) {
   static_assert(types::ValueTypeTraits<T>::is_fixed_size, "Only fixed size values allowed");
   types::SetValue<T>(&rt->fixed_values[idx], val);
 }
 
 template <>
-inline void SetValueHelper<types::StringValue>(RowTuple *rt, size_t idx,
-                                               const types::StringValue &val) {
+inline void SetValueHelper<types::StringValue>(RowTuple* rt, size_t idx,
+                                               const types::StringValue& val) {
   DCHECK_LT(idx, rt->fixed_values.size());
   rt->SetValue(idx, types::Int64Value(rt->variable_values.size()));
   rt->variable_values.emplace_back(val);
 }
 
 template <typename T>
-inline const T &GetValueHelper(const RowTuple &rt, size_t idx) {
+inline const T& GetValueHelper(const RowTuple& rt, size_t idx) {
   static_assert(types::ValueTypeTraits<T>::is_fixed_size, "Only fixed size values allowed");
   DCHECK_LT(idx, rt.types->size());
   DCHECK_EQ(types::ValueTypeTraits<T>::data_type, rt.types->at(idx));
@@ -178,7 +178,7 @@ inline const T &GetValueHelper(const RowTuple &rt, size_t idx) {
 }
 
 template <>
-inline const types::StringValue &GetValueHelper<types::StringValue>(const RowTuple &rt,
+inline const types::StringValue& GetValueHelper<types::StringValue>(const RowTuple& rt,
                                                                     size_t idx) {
   DCHECK_LT(idx, rt.types->size());
   DCHECK_EQ(types::ValueTypeTraits<types::StringValue>::data_type, rt.types->at(idx));
@@ -192,7 +192,7 @@ inline const types::StringValue &GetValueHelper<types::StringValue>(const RowTup
  * Hash operator for RowTuple pointers.
  */
 struct RowTuplePtrHasher {
-  size_t operator()(const RowTuple *k) const {
+  size_t operator()(const RowTuple* k) const {
     DCHECK(k != nullptr);
     return k->Hash();
   }
@@ -202,7 +202,7 @@ struct RowTuplePtrHasher {
  * Equality operator for RowTuple pointers.
  */
 struct RowTuplePtrEq {
-  bool operator()(const RowTuple *k1, const RowTuple *k2) const { return *k1 == *k2; }
+  bool operator()(const RowTuple* k1, const RowTuple* k2) const { return *k1 == *k2; }
 };
 
 }  // namespace exec

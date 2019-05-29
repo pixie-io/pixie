@@ -25,7 +25,7 @@ class Operator : public PlanNode {
   ~Operator() override = default;
 
   // Create a new operator using the Operator proto.
-  static std::unique_ptr<Operator> FromProto(const planpb::Operator &pb, int64_t id);
+  static std::unique_ptr<Operator> FromProto(const planpb::Operator& pb, int64_t id);
 
   // Returns the ID of the operator.
   int64_t id() const { return id_; }
@@ -42,8 +42,8 @@ class Operator : public PlanNode {
   void Debug() { LOG(INFO) << DebugString(); }
 
   virtual StatusOr<table_store::schema::Relation> OutputRelation(
-      const table_store::schema::Schema &schema, const PlanState &state,
-      const std::vector<int64_t> &input_ids) const = 0;
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const = 0;
 
  protected:
   Operator(int64_t id, planpb::OperatorType op_type) : id_(id), op_type_(op_type) {}
@@ -59,9 +59,9 @@ class MemorySourceOperator : public Operator {
   explicit MemorySourceOperator(int64_t id) : Operator(id, planpb::MEMORY_SOURCE_OPERATOR) {}
   ~MemorySourceOperator() override = default;
   StatusOr<table_store::schema::Relation> OutputRelation(
-      const table_store::schema::Schema &schema, const PlanState &state,
-      const std::vector<int64_t> &input_ids) const override;
-  Status Init(const planpb::MemorySourceOperator &pb);
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::MemorySourceOperator& pb);
   std::string DebugString() const override;
   std::string TableName() const { return pb_.name(); }
   bool HasStartTime() const { return pb_.has_start_time(); }
@@ -82,12 +82,12 @@ class MapOperator : public Operator {
   ~MapOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
-      const table_store::schema::Schema &schema, const PlanState &state,
-      const std::vector<int64_t> &input_ids) const override;
-  Status Init(const planpb::MapOperator &pb);
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::MapOperator& pb);
   std::string DebugString() const override;
 
-  const std::vector<std::shared_ptr<const ScalarExpression>> &expressions() const {
+  const std::vector<std::shared_ptr<const ScalarExpression>>& expressions() const {
     return expressions_;
   }
 
@@ -105,9 +105,9 @@ class BlockingAggregateOperator : public Operator {
   ~BlockingAggregateOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
-      const table_store::schema::Schema &schema, const PlanState &state,
-      const std::vector<int64_t> &input_ids) const override;
-  Status Init(const planpb::BlockingAggregateOperator &pb);
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::BlockingAggregateOperator& pb);
   std::string DebugString() const override;
 
   struct GroupInfo {
@@ -115,8 +115,8 @@ class BlockingAggregateOperator : public Operator {
     uint64_t idx;
   };
 
-  const std::vector<GroupInfo> &groups() const { return groups_; }
-  const std::vector<std::shared_ptr<AggregateExpression>> &values() const { return values_; }
+  const std::vector<GroupInfo>& groups() const { return groups_; }
+  const std::vector<std::shared_ptr<AggregateExpression>>& values() const { return values_; }
 
  private:
   std::vector<std::shared_ptr<AggregateExpression>> values_;
@@ -130,9 +130,9 @@ class MemorySinkOperator : public Operator {
   ~MemorySinkOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
-      const table_store::schema::Schema &schema, const PlanState &state,
-      const std::vector<int64_t> &input_ids) const override;
-  Status Init(const planpb::MemorySinkOperator &pb);
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::MemorySinkOperator& pb);
   std::string TableName() const { return pb_.name(); }
   std::string ColumnName(int64_t i) const { return pb_.column_names(i); }
   std::string DebugString() const override;
@@ -147,12 +147,12 @@ class FilterOperator : public Operator {
   ~FilterOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
-      const table_store::schema::Schema &schema, const PlanState &state,
-      const std::vector<int64_t> &input_ids) const override;
-  Status Init(const planpb::FilterOperator &pb);
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::FilterOperator& pb);
   std::string DebugString() const override;
 
-  const std::shared_ptr<const ScalarExpression> &expression() const { return expression_; }
+  const std::shared_ptr<const ScalarExpression>& expression() const { return expression_; }
 
  private:
   std::shared_ptr<const ScalarExpression> expression_;
@@ -166,9 +166,9 @@ class LimitOperator : public Operator {
   ~LimitOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
-      const table_store::schema::Schema &schema, const PlanState &state,
-      const std::vector<int64_t> &input_ids) const override;
-  Status Init(const planpb::LimitOperator &pb);
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::LimitOperator& pb);
   std::string DebugString() const override;
 
   int64_t record_limit() const { return record_limit_; }

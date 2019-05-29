@@ -16,10 +16,10 @@ class FSWatcher {
   bool HasOverflow() { return false; }
   bool NotInitialized() { return true; }
   StatusOr<FSEvent> GetNextEvent() { return error::NotImplemented("Inotify not supported"); }
-  Status AddWatch(const std::experimental::filesystem::path &file_or_dir, uint32_t flags) {
+  Status AddWatch(const std::experimental::filesystem::path& file_or_dir, uint32_t flags) {
     return error::NotImplemented("Inotify not supported");
   }
-  Status RemoveWatch(const std::experimental::filesystem::path &file_or_dir) {
+  Status RemoveWatch(const std::experimental::filesystem::path& file_or_dir) {
     return error::NotImplemented("Inotify not supported");
   }
   Status ReadInotifyUpdates() { return error::NotImplemented("Inotify not supported."); }
@@ -75,11 +75,11 @@ class FSWatcher {
    *
    */
   struct FSNode {
-    FSNode *parent;  // Raw pointer to parent. Does not imply ownership.
+    FSNode* parent;  // Raw pointer to parent. Does not imply ownership.
     std::vector<std::unique_ptr<FSNode> > children;
     int wd;            // Watch descriptor.
     std::string name;  // Name of the file or directory.
-    FSNode(FSNode *node, int wd, std::string_view name) : parent(node), wd(wd), name(name) {}
+    FSNode(FSNode* node, int wd, std::string_view name) : parent(node), wd(wd), name(name) {}
   };
 
   /**
@@ -93,13 +93,13 @@ class FSWatcher {
     // Name of the event. For example, name of directory
     // that was created.
     std::string name;
-    FSEvent(FSEventType type, std::string_view name, FSNode *node)
+    FSEvent(FSEventType type, std::string_view name, FSNode* node)
         : type(type), name(name), fs_node_(node) {}
     FSEvent() {}
     std::experimental::filesystem::path GetPath();
 
    private:
-    FSNode *fs_node_;
+    FSNode* fs_node_;
   };
 
   /**
@@ -130,7 +130,7 @@ class FSWatcher {
    * @param file_or_dir full path to be monitored.
    * @return Status
    */
-  Status AddWatch(const std::experimental::filesystem::path &file_or_dir);
+  Status AddWatch(const std::experimental::filesystem::path& file_or_dir);
 
   /**
    * @brief Remove an existing watch for a path.
@@ -138,7 +138,7 @@ class FSWatcher {
    * @param file_or_dir full path
    * @return Status
    */
-  Status RemoveWatch(const std::experimental::filesystem::path &file_or_dir);
+  Status RemoveWatch(const std::experimental::filesystem::path& file_or_dir);
 
   /**
    * @brief Read the inotify event queue and generate events for watchers that
@@ -169,16 +169,16 @@ class FSWatcher {
    * @param event
    * @return Status
    */
-  Status HandleInotifyEvent(inotify_event *event);
+  Status HandleInotifyEvent(inotify_event* event);
 
   /**
    * @brief A struct to define the location of an FSNode in the FSNode tree.
    *
    */
   struct FSNodeLocation {
-    FSNode *node;  // Does not imply ownership.
+    FSNode* node;  // Does not imply ownership.
     std::vector<std::string_view>::iterator sv_it;
-    FSNodeLocation(FSNode *node, std::vector<std::string_view>::iterator sv_it)
+    FSNodeLocation(FSNode* node, std::vector<std::string_view>::iterator sv_it)
         : node(node), sv_it(sv_it) {}
   };
 
@@ -191,7 +191,7 @@ class FSWatcher {
    * @param path_end    String view vector iterator indicating end of path.
    * @return FSNodeLocation
    */
-  FSNodeLocation LastFSNodeInPath(FSNode *parent_node,
+  FSNodeLocation LastFSNodeInPath(FSNode* parent_node,
                                   std::vector<std::string_view>::iterator path_begin,
                                   std::vector<std::string_view>::iterator path_end);
 
@@ -202,7 +202,7 @@ class FSWatcher {
    * @param child_name
    * @return std::vector<std::unique_ptr<FSNode>>::iterator
    */
-  std::vector<std::unique_ptr<FSNode> >::iterator FindChildNode(FSNode *parent_node,
+  std::vector<std::unique_ptr<FSNode> >::iterator FindChildNode(FSNode* parent_node,
                                                                 std::string_view child_name);
 
   /**
@@ -213,7 +213,7 @@ class FSWatcher {
    * @param end iterator to end of a path.
    * @return FSNode* For the last level FSNode in the path.
    */
-  FSNode *CreateFSNodesFromPartialPath(FSNode *node, std::vector<std::string_view>::iterator begin,
+  FSNode* CreateFSNodesFromPartialPath(FSNode* node, std::vector<std::string_view>::iterator begin,
                                        std::vector<std::string_view>::iterator end);
 
   /**
@@ -226,7 +226,7 @@ class FSWatcher {
    * @param path_end
    * @return Status
    */
-  Status RemoveFSNode(FSNode *node, std::vector<std::string_view>::iterator path_begin,
+  Status RemoveFSNode(FSNode* node, std::vector<std::string_view>::iterator path_begin,
                       std::vector<std::string_view>::iterator path_end);
 
   /**
@@ -235,11 +235,11 @@ class FSWatcher {
    * @param node
    * @return Status
    */
-  Status DeleteChildWatchers(FSNode *node);
+  Status DeleteChildWatchers(FSNode* node);
 
   // Raw pointer to FSNode. Does not imply ownership. The node is owned by its
   // parent which holds a unique pointer to it.
-  std::unordered_map<int, FSNode *> inotify_watchers_;
+  std::unordered_map<int, FSNode*> inotify_watchers_;
   std::queue<FSEvent> event_queue_;
   int inotify_fd_ = -1;
   std::unique_ptr<FSNode> root_fs_node_ = nullptr;

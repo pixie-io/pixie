@@ -32,10 +32,10 @@ class ColumnWrapper {
   virtual ~ColumnWrapper() = default;
 
   static SharedColumnWrapper Make(DataType data_type, size_t size);
-  static SharedColumnWrapper FromArrow(const std::shared_ptr<arrow::Array> &arr);
+  static SharedColumnWrapper FromArrow(const std::shared_ptr<arrow::Array>& arr);
 
-  virtual BaseValueType *UnsafeRawData() = 0;
-  virtual const BaseValueType *UnsafeRawData() const = 0;
+  virtual BaseValueType* UnsafeRawData() = 0;
+  virtual const BaseValueType* UnsafeRawData() const = 0;
   virtual DataType data_type() const = 0;
   virtual size_t Size() const = 0;
   virtual int64_t Bytes() const = 0;
@@ -43,13 +43,13 @@ class ColumnWrapper {
   virtual void Reserve(size_t size) = 0;
   virtual void Clear() = 0;
   virtual void ShrinkToFit() = 0;
-  virtual std::shared_ptr<arrow::Array> ConvertToArrow(arrow::MemoryPool *mem_pool) = 0;
+  virtual std::shared_ptr<arrow::Array> ConvertToArrow(arrow::MemoryPool* mem_pool) = 0;
 
   template <class TValueType>
   void Append(TValueType val);
 
   template <class TValueType>
-  TValueType &Get(size_t idx);
+  TValueType& Get(size_t idx);
 
   template <class TValueType>
   TValueType Get(size_t idx) const;
@@ -58,7 +58,7 @@ class ColumnWrapper {
   void AppendNoTypeCheck(TValueType val);
 
   template <class TValueType>
-  TValueType &GetNoTypeCheck(size_t idx);
+  TValueType& GetNoTypeCheck(size_t idx);
 
   template <class TValueType>
   TValueType GetNoTypeCheck(size_t idx) const;
@@ -72,24 +72,24 @@ template <typename T>
 class ColumnWrapperTmpl : public ColumnWrapper {
  public:
   explicit ColumnWrapperTmpl(size_t size) : data_(size) {}
-  explicit ColumnWrapperTmpl(size_t size, const T &val) : data_(size, val) {}
-  explicit ColumnWrapperTmpl(const std::vector<T> &vals) : data_(vals) {}
+  explicit ColumnWrapperTmpl(size_t size, const T& val) : data_(size, val) {}
+  explicit ColumnWrapperTmpl(const std::vector<T>& vals) : data_(vals) {}
 
   ~ColumnWrapperTmpl() override = default;
 
-  T *UnsafeRawData() override { return data_.data(); }
-  const T *UnsafeRawData() const override { return data_.data(); }
+  T* UnsafeRawData() override { return data_.data(); }
+  const T* UnsafeRawData() const override { return data_.data(); }
   DataType data_type() const override { return ValueTypeTraits<T>::data_type; }
 
   size_t Size() const override { return data_.size(); }
 
-  std::shared_ptr<arrow::Array> ConvertToArrow(arrow::MemoryPool *mem_pool) override {
+  std::shared_ptr<arrow::Array> ConvertToArrow(arrow::MemoryPool* mem_pool) override {
     return ToArrow(data_, mem_pool);
   }
 
   T operator[](size_t idx) const { return data_[idx]; }
 
-  T &operator[](size_t idx) { return data_[idx]; }
+  T& operator[](size_t idx) { return data_[idx]; }
 
   void Append(T val) { data_.push_back(val); }
 
@@ -115,7 +115,7 @@ int64_t ColumnWrapperTmpl<T>::Bytes() const {
 template <>
 inline int64_t ColumnWrapperTmpl<StringValue>::Bytes() const {
   int64_t bytes = 0;
-  for (const auto &data : data_) {
+  for (const auto& data : data_) {
     bytes += data.bytes();
   }
   return bytes;
@@ -129,13 +129,13 @@ using StringValueColumnWrapper = ColumnWrapperTmpl<StringValue>;
 using Time64NSValueColumnWrapper = ColumnWrapperTmpl<Time64NSValue>;
 
 template <typename TColumnWrapper, types::DataType DType>
-inline SharedColumnWrapper FromArrowImpl(const std::shared_ptr<arrow::Array> &arr) {
+inline SharedColumnWrapper FromArrowImpl(const std::shared_ptr<arrow::Array>& arr) {
   CHECK_EQ(arr->type_id(), DataTypeTraits<DType>::arrow_type_id);
   size_t size = arr->length();
   auto wrapper = TColumnWrapper::Make(DType, size);
-  auto arr_casted = static_cast<typename DataTypeTraits<DType>::arrow_array_type *>(arr.get());
-  typename DataTypeTraits<DType>::value_type *out_data =
-      static_cast<TColumnWrapper *>(wrapper.get())->UnsafeRawData();
+  auto arr_casted = static_cast<typename DataTypeTraits<DType>::arrow_array_type*>(arr.get());
+  typename DataTypeTraits<DType>::value_type* out_data =
+      static_cast<TColumnWrapper*>(wrapper.get())->UnsafeRawData();
   for (size_t i = 0; i < size; ++i) {
     out_data[i] = arr_casted->Value(i);
     // <Time64NSValue> = <int64_t>
@@ -145,13 +145,13 @@ inline SharedColumnWrapper FromArrowImpl(const std::shared_ptr<arrow::Array> &ar
 
 template <>
 inline SharedColumnWrapper FromArrowImpl<Time64NSValueColumnWrapper, DataType::TIME64NS>(
-    const std::shared_ptr<arrow::Array> &arr) {
+    const std::shared_ptr<arrow::Array>& arr) {
   CHECK_EQ(arr->type_id(), DataTypeTraits<types::TIME64NS>::arrow_type_id);
   size_t size = arr->length();
   auto wrapper = StringValueColumnWrapper::Make(types::TIME64NS, size);
-  auto arr_casted = static_cast<arrow::Int64Array *>(arr.get());
-  Time64NSValue *out_data =
-      static_cast<Time64NSValueColumnWrapper *>(wrapper.get())->UnsafeRawData();
+  auto arr_casted = static_cast<arrow::Int64Array*>(arr.get());
+  Time64NSValue* out_data =
+      static_cast<Time64NSValueColumnWrapper*>(wrapper.get())->UnsafeRawData();
   for (size_t i = 0; i < size; ++i) {
     out_data[i] = Time64NSValue(arr_casted->Value(i));
   }
@@ -160,12 +160,12 @@ inline SharedColumnWrapper FromArrowImpl<Time64NSValueColumnWrapper, DataType::T
 
 template <>
 inline SharedColumnWrapper FromArrowImpl<StringValueColumnWrapper, DataType::STRING>(
-    const std::shared_ptr<arrow::Array> &arr) {
+    const std::shared_ptr<arrow::Array>& arr) {
   CHECK_EQ(arr->type_id(), DataTypeTraits<types::STRING>::arrow_type_id);
   size_t size = arr->length();
   auto wrapper = StringValueColumnWrapper::Make(types::STRING, size);
-  auto arr_casted = static_cast<arrow::StringArray *>(arr.get());
-  StringValue *out_data = static_cast<StringValueColumnWrapper *>(wrapper.get())->UnsafeRawData();
+  auto arr_casted = static_cast<arrow::StringArray*>(arr.get());
+  StringValue* out_data = static_cast<StringValueColumnWrapper*>(wrapper.get())->UnsafeRawData();
   for (size_t i = 0; i < size; ++i) {
     out_data[i] = arr_casted->GetString(i);
   }
@@ -178,7 +178,7 @@ inline SharedColumnWrapper FromArrowImpl<StringValueColumnWrapper, DataType::STR
  * @return A shared_ptr to the ColumnWrapper.
  * PL_CARNOT_UPDATE_FOR_NEW_TYPES.
  */
-inline SharedColumnWrapper ColumnWrapper::FromArrow(const std::shared_ptr<arrow::Array> &arr) {
+inline SharedColumnWrapper ColumnWrapper::FromArrow(const std::shared_ptr<arrow::Array>& arr) {
   auto type_id = arr->type_id();
   switch (type_id) {
     case arrow::Type::BOOL:
@@ -225,37 +225,37 @@ inline void ColumnWrapper::Append(TValueType val) {
   CHECK_EQ(data_type(), ValueTypeTraits<TValueType>::data_type)
       << "Expect " << ToString(data_type()) << " got "
       << ToString(ValueTypeTraits<TValueType>::data_type);
-  static_cast<ColumnWrapperTmpl<TValueType> *>(this)->Append(val);
+  static_cast<ColumnWrapperTmpl<TValueType>*>(this)->Append(val);
 }
 
 template <class TValueType>
-inline TValueType &ColumnWrapper::Get(size_t idx) {
+inline TValueType& ColumnWrapper::Get(size_t idx) {
   CHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
-  return static_cast<ColumnWrapperTmpl<TValueType> *>(this)->operator[](idx);
+  return static_cast<ColumnWrapperTmpl<TValueType>*>(this)->operator[](idx);
 }
 
 template <class TValueType>
 inline TValueType ColumnWrapper::Get(size_t idx) const {
   CHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
-  return static_cast<ColumnWrapperTmpl<TValueType> *>(this)->operator[](idx);
+  return static_cast<ColumnWrapperTmpl<TValueType>*>(this)->operator[](idx);
 }
 
 template <class TValueType>
 inline void ColumnWrapper::AppendNoTypeCheck(TValueType val) {
   DCHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
-  static_cast<ColumnWrapperTmpl<TValueType> *>(this)->Append(val);
+  static_cast<ColumnWrapperTmpl<TValueType>*>(this)->Append(val);
 }
 
 template <class TValueType>
-inline TValueType &ColumnWrapper::GetNoTypeCheck(size_t idx) {
+inline TValueType& ColumnWrapper::GetNoTypeCheck(size_t idx) {
   DCHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
-  return static_cast<ColumnWrapperTmpl<TValueType> *>(this)->operator[](idx);
+  return static_cast<ColumnWrapperTmpl<TValueType>*>(this)->operator[](idx);
 }
 
 template <class TValueType>
 inline TValueType ColumnWrapper::GetNoTypeCheck(size_t idx) const {
   DCHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
-  return static_cast<ColumnWrapperTmpl<TValueType> *>(this)->operator[](idx);
+  return static_cast<ColumnWrapperTmpl<TValueType>*>(this)->operator[](idx);
 }
 
 template <DataType DT>

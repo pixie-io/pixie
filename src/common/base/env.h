@@ -7,7 +7,7 @@ namespace pl {
 
 // Does basic environment init (such as flags and logging).
 // Can only be called once. Multiple invocations are ignored.
-void InitEnvironmentOrDie(int *argc, char **argv);
+void InitEnvironmentOrDie(int* argc, char** argv);
 
 // Cleans up the environment.
 // Can only be called once. Multiple invocations are ignored.

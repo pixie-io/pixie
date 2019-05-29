@@ -7,15 +7,15 @@
 namespace pl {
 namespace zlib {
 
-int Inflate(const char *src, int src_len, char *dst, int dst_len) {
+int Inflate(const char* src, int src_len, char* dst, int dst_len) {
   z_stream strm = {};
 
   // Setup input buffer.
-  strm.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(src));
+  strm.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(src));
   strm.avail_in = src_len;
 
   // Setup output buffer.
-  strm.next_out = reinterpret_cast<Bytef *>(dst);
+  strm.next_out = reinterpret_cast<Bytef*>(dst);
   strm.avail_out = dst_len;
 
   int err = -1;
@@ -35,7 +35,7 @@ StatusOr<std::string> StrInflate(std::string_view str, size_t output_block_size)
   }
 
   // Setup input buffer.
-  zs.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(str.data()));
+  zs.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(str.data()));
   zs.avail_in = str.size();
 
   int ret;
@@ -44,7 +44,7 @@ StatusOr<std::string> StrInflate(std::string_view str, size_t output_block_size)
   // Get the decompressed bytes blockwise using repeated calls to inflate.
   do {
     outstring.resize(outstring.size() + output_block_size);
-    zs.next_out = reinterpret_cast<Bytef *>(outstring.data() + zs.total_out);
+    zs.next_out = reinterpret_cast<Bytef*>(outstring.data() + zs.total_out);
     zs.avail_out = outstring.size() - zs.total_out;
 
     ret = inflate(&zs, 0);

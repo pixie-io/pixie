@@ -14,7 +14,7 @@ namespace udf {
 
 class ScalarUDF1 : public ScalarUDF {
  public:
-  types::Int64Value Exec(FunctionContext *ctx, types::BoolValue b1, types::Int64Value b2) {
+  types::Int64Value Exec(FunctionContext* ctx, types::BoolValue b1, types::Int64Value b2) {
     PL_UNUSED(ctx);
     return b1.val && (b2.val != 0) ? 3 : 0;
   }
@@ -22,12 +22,12 @@ class ScalarUDF1 : public ScalarUDF {
 
 class ScalarUDF1WithInit : public ScalarUDF {
  public:
-  Status Init(FunctionContext *ctx, types::Int64Value v1) {
+  Status Init(FunctionContext* ctx, types::Int64Value v1) {
     PL_UNUSED(ctx);
     PL_UNUSED(v1);
     return Status::OK();
   }
-  types::Int64Value Exec(FunctionContext *ctx, types::BoolValue b1, types::BoolValue b2) {
+  types::Int64Value Exec(FunctionContext* ctx, types::BoolValue b1, types::BoolValue b2) {
     PL_UNUSED(ctx);
     return b1.val && b2.val ? 3 : 0;
   }
@@ -36,7 +36,7 @@ class ScalarUDF1WithInit : public ScalarUDF {
 template <typename TOutput, typename TInput1, typename TInput2>
 class AddUDF : public ScalarUDF {
  public:
-  TOutput Exec(FunctionContext *ctx, TInput1 v1, TInput2 v2) {
+  TOutput Exec(FunctionContext* ctx, TInput1 v1, TInput2 v2) {
     PL_UNUSED(ctx);
     return v1.val + v2.val;
   }
@@ -58,7 +58,7 @@ TEST(ScalarUDFRegistry, init_with_udfs) {
   EXPECT_EQ(std::vector<types::DataType>({types::DataType::BOOLEAN, types::DataType::INT64}),
             def->exec_arguments());
 
-  const char *expected_debug_str =
+  const char* expected_debug_str =
       "Registry(ScalarUDFRegistry): test registry\n"
       "scalar1\n"
       "scalar1WithInit\n";
@@ -117,18 +117,18 @@ TEST(ScalarUDFRegistryDeathTest, double_register) {
 
 class UDA1 : public UDA {
  public:
-  Status Init(FunctionContext *) { return Status::OK(); }
-  void Update(FunctionContext *, types::Int64Value) {}
-  void Merge(FunctionContext *, const UDA1 &) {}
-  types::Int64Value Finalize(FunctionContext *) { return 0; }
+  Status Init(FunctionContext*) { return Status::OK(); }
+  void Update(FunctionContext*, types::Int64Value) {}
+  void Merge(FunctionContext*, const UDA1&) {}
+  types::Int64Value Finalize(FunctionContext*) { return 0; }
 };
 
 class UDA1Overload : public UDA {
  public:
-  Status Init(FunctionContext *) { return Status::OK(); }
-  void Update(FunctionContext *, types::Int64Value, types::Float64Value) {}
-  void Merge(FunctionContext *, const UDA1Overload &) {}
-  types::Float64Value Finalize(FunctionContext *) { return 0; }
+  Status Init(FunctionContext*) { return Status::OK(); }
+  void Update(FunctionContext*, types::Int64Value, types::Float64Value) {}
+  void Merge(FunctionContext*, const UDA1Overload&) {}
+  types::Float64Value Finalize(FunctionContext*) { return 0; }
 };
 
 TEST(UDARegistry, init_with_udas) {
@@ -146,7 +146,7 @@ TEST(UDARegistry, init_with_udas) {
   EXPECT_EQ(std::vector<types::DataType>({types::DataType::INT64}), def->update_arguments());
   EXPECT_EQ(types::DataType::INT64, def->finalize_return_type());
 
-  const char *expected_debug_str =
+  const char* expected_debug_str =
       "Registry(UDARegistry): test registry\n"
       "uda1\n"
       "uda1\n";
@@ -178,7 +178,7 @@ TEST(UDARegistryDeathTest, double_register) {
   EXPECT_DEATH(registry.RegisterOrDie<UDA1>("uda1"), ".*already exists.*");
 }
 
-const char *kExpectedUDFInfo = R"(
+const char* kExpectedUDFInfo = R"(
 udas {
   name: "uda1"
   update_arg_types: INT64

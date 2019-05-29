@@ -3,7 +3,7 @@
 extern "C" {
 #endif
 
-typedef void *CompilerPtr;
+typedef void* CompilerPtr;
 
 /**
  * @brief Makes a new compiler object.
@@ -22,8 +22,8 @@ CompilerPtr CompilerNew();
  * @param query_len   - The length of the query string.
  * @return char*      - the serialized logical plan after compilation.
  */
-char *CompilerCompile(CompilerPtr compiler_ptr, const char *rel_str_c, int rel_str_len,
-                      const char *query, int query_len, int *resultLen);
+char* CompilerCompile(CompilerPtr compiler_ptr, const char* rel_str_c, int rel_str_len,
+                      const char* query, int query_len, int* resultLen);
 
 /**
  * @brief Frees up the memory handled by the compiler.
@@ -37,7 +37,7 @@ void CompilerFree(CompilerPtr compiler_ptr);
  *
  * @param str
  */
-void CompilerStrFree(char *str);
+void CompilerStrFree(char* str);
 
 #ifdef __cplusplus
 }

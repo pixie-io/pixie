@@ -24,7 +24,7 @@ const uint32_t kBufferSize = 4096;
 
 fs::path FSWatcher::FSEvent::GetPath() {
   fs::path path = fs_node_->name;
-  FSNode *node_ptr = fs_node_->parent;
+  FSNode* node_ptr = fs_node_->parent;
   while (node_ptr) {
     path = node_ptr->name / path;
     node_ptr = node_ptr->parent;
@@ -59,21 +59,21 @@ Status FSWatcher::Init() {
 }
 
 std::vector<std::unique_ptr<FSWatcher::FSNode>>::iterator FSWatcher::FindChildNode(
-    FSNode *parent_node, std::string_view child_name) {
+    FSNode* parent_node, std::string_view child_name) {
   auto it = std::find_if(
       parent_node->children.begin(), parent_node->children.end(),
-      [&](std::unique_ptr<FSNode> &obj) { return obj->name.compare(child_name) == 0; });
+      [&](std::unique_ptr<FSNode>& obj) { return obj->name.compare(child_name) == 0; });
   return it;
 }
 
-FSWatcher::FSNode *FSWatcher::CreateFSNodesFromPartialPath(
-    FSNode *parent_node, std::vector<std::string_view>::iterator path_begin,
+FSWatcher::FSNode* FSWatcher::CreateFSNodesFromPartialPath(
+    FSNode* parent_node, std::vector<std::string_view>::iterator path_begin,
     std::vector<std::string_view>::iterator path_end) {
   auto current_dir_it = path_begin;
-  FSNode *current_parent_node = parent_node;
+  FSNode* current_parent_node = parent_node;
 
   while (current_dir_it != path_end) {
-    FSNode *next_parent_node = nullptr;
+    FSNode* next_parent_node = nullptr;
     // wd = -1 implies invalid watch descriptor.
     auto new_node = std::make_unique<FSNode>(current_parent_node, /* wd */ -1, *current_dir_it);
     next_parent_node = new_node.get();
@@ -87,7 +87,7 @@ FSWatcher::FSNode *FSWatcher::CreateFSNodesFromPartialPath(
 }
 
 FSWatcher::FSNodeLocation FSWatcher::LastFSNodeInPath(
-    FSNode *parent_node, std::vector<std::string_view>::iterator path_begin,
+    FSNode* parent_node, std::vector<std::string_view>::iterator path_begin,
     std::vector<std::string_view>::iterator path_end) {
   auto current_dir_it = path_begin;
   while (current_dir_it != path_end) {
@@ -102,7 +102,7 @@ FSWatcher::FSNodeLocation FSWatcher::LastFSNodeInPath(
   return FSNodeLocation(parent_node, current_dir_it);
 }
 
-Status FSWatcher::AddWatch(const fs::path &file_or_dir) {
+Status FSWatcher::AddWatch(const fs::path& file_or_dir) {
   if (!root_fs_node_) {
     PL_RETURN_IF_ERROR(Init());
   }
@@ -111,7 +111,7 @@ Status FSWatcher::AddWatch(const fs::path &file_or_dir) {
       absl::StrSplit(path_str, fs::path::preferred_separator, absl::SkipWhitespace());
 
   // Find and/or construct required path in the FSNode tree.
-  FSNode *node_ptr = nullptr;
+  FSNode* node_ptr = nullptr;
   if (parsed_path.empty()) {
     node_ptr = root_fs_node_.get();
   } else {
@@ -147,12 +147,12 @@ Status FSWatcher::AddWatch(const fs::path &file_or_dir) {
   return Status::OK();
 }
 
-Status FSWatcher::RemoveFSNode(FSNode *parent_node,
+Status FSWatcher::RemoveFSNode(FSNode* parent_node,
                                std::vector<std::string_view>::iterator path_begin,
                                std::vector<std::string_view>::iterator path_end) {
   auto current_dir_it = path_begin;
 
-  FSNode *last_node = parent_node;
+  FSNode* last_node = parent_node;
   std::vector<std::unique_ptr<FSNode>>::iterator child_node_it;
 
   // Find the FSNode that corresponds to the last dir or file in the given path.
@@ -175,11 +175,11 @@ Status FSWatcher::RemoveFSNode(FSNode *parent_node,
   return Status::OK();
 }
 
-Status FSWatcher::DeleteChildWatchers(FSNode *node) {
+Status FSWatcher::DeleteChildWatchers(FSNode* node) {
   if (node->children.empty()) {
     return Status::OK();
   }
-  for (const auto &it : node->children) {
+  for (const auto& it : node->children) {
     inotify_rm_watch(inotify_fd_, it->wd);
     inotify_watchers_.erase(it->wd);
     PL_RETURN_IF_ERROR(DeleteChildWatchers(it.get()));
@@ -187,7 +187,7 @@ Status FSWatcher::DeleteChildWatchers(FSNode *node) {
   return Status::OK();
 }
 
-Status FSWatcher::RemoveWatch(const fs::path &file_or_dir) {
+Status FSWatcher::RemoveWatch(const fs::path& file_or_dir) {
   auto path_str = file_or_dir.string();
   std::vector<std::string_view> parsed_path =
       absl::StrSplit(path_str, fs::path::preferred_separator, absl::SkipWhitespace());
@@ -195,7 +195,7 @@ Status FSWatcher::RemoveWatch(const fs::path &file_or_dir) {
   return Status::OK();
 }
 
-Status FSWatcher::HandleInotifyEvent(inotify_event *event) {
+Status FSWatcher::HandleInotifyEvent(inotify_event* event) {
   FSEventType type = FSEventType::kUnknown;
   std::string_view event_name;
 
@@ -239,7 +239,7 @@ Status FSWatcher::ReadInotifyUpdates() {
   while ((length = read(inotify_fd_, buffer + bytes_read, sizeof(buffer) - bytes_read)) > 0) {
     bytes_read += length;
     while (!overflow_ && (buffer_offset < bytes_read)) {
-      inotify_event *event = reinterpret_cast<inotify_event *>(&buffer[buffer_offset]);
+      inotify_event* event = reinterpret_cast<inotify_event*>(&buffer[buffer_offset]);
       // Check if the read is partial.
       if (buffer_offset + sizeof(inotify_event) + event->len > bytes_read) {
         // memcpy partial event to the beginning of the buffer.
