@@ -110,9 +110,7 @@ void SocketTraceConnector::ReadPerfBuffer(uint32_t table_num) {
 
 void SocketTraceConnector::HandleHTTPResponseProbeOutput(void* cb_cookie, void* data,
                                                          int /*data_size*/) {
-  if (cb_cookie == nullptr) {
-    return;
-  }
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   auto* event = static_cast<socket_data_event_t*>(data);
 
