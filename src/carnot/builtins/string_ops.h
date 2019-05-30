@@ -14,6 +14,11 @@ class ContainsUDF : public udf::ScalarUDF {
   }
 };
 
+class LengthUDF : public udf::ScalarUDF {
+ public:
+  types::Int64Value Exec(udf::FunctionContext*, types::StringValue b1) { return b1.length(); }
+};
+
 void RegisterStringOpsOrDie(udf::ScalarUDFRegistry* registry);
 }  // namespace builtins
 }  // namespace carnot
