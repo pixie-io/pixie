@@ -40,7 +40,7 @@ buildifier(
     name = "buildifier",
 )
 
-load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_pull")
+load("@io_bazel_rules_docker//container:container.bzl", "container_bundle", "container_image", "container_pull")
 load("@package_bundle//file:packages.bzl", "packages")
 
 pl_cc_base_packages = [
@@ -70,4 +70,15 @@ container_image(
     name = "pl_cc_dev_image",
     base = "@dev_image//image",
     visibility = ["//visibility:public"],
+)
+
+container_bundle(
+    name = "pl_image_bundle",
+    images = {
+        "gcr.io/pl-dev-infra/agent_image:$(BUNDLE_VERSION)": "//src/vizier/services/agent:agent_image",
+        "gcr.io/pl-dev-infra/vizier_metadata_image:$(BUNDLE_VERSION)": "//src/vizier/services/metadata:vizier_metadata_image",
+        "gcr.io/pl-dev-infra/vizier_query_broker_image:$(BUNDLE_VERSION)": "//src/vizier/services/query_broker:vizier_query_broker_image",
+        "gcr.io/pl-dev-infra/api_server_image:$(BUNDLE_VERSION)": "//src/services/api:api_server_image",
+        "gcr.io/pl-dev-infra/proxy_image:$(BUNDLE_VERSION)": "//src/services/proxy:proxy_prod_image",
+    },
 )
