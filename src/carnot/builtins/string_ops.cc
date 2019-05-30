@@ -14,6 +14,7 @@ void RegisterStringOpsOrDie(udf::ScalarUDFRegistry* registry) {
   registry->RegisterOrDie<FindUDF>("pl.find");
   registry->RegisterOrDie<SubstringUDF>("pl.substring");
   registry->RegisterOrDie<ToLowerUDF>("pl.tolower");
+  registry->RegisterOrDie<ToUpperUDF>("pl.toupper");
 }
 
 }  // namespace builtins

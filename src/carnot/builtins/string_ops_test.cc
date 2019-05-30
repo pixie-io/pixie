@@ -39,6 +39,11 @@ TEST(StringOps, basic_string_tolower_test) {
   auto udf_tester = udf::UDFTester<ToLowerUDF>();
   udf_tester.ForInput("pIXiE").Expect("pixie");
 }
+
+TEST(StringOps, basic_string_toupper_test) {
+  auto udf_tester = udf::UDFTester<ToUpperUDF>();
+  udf_tester.ForInput("pIXiE").Expect("PIXIE");
+}
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace pl
