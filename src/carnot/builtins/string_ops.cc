@@ -12,6 +12,7 @@ void RegisterStringOpsOrDie(udf::ScalarUDFRegistry* registry) {
   registry->RegisterOrDie<ContainsUDF>("pl.contains");
   registry->RegisterOrDie<LengthUDF>("pl.length");
   registry->RegisterOrDie<FindUDF>("pl.find");
+  registry->RegisterOrDie<SubstringUDF>("pl.substring");
 }
 
 }  // namespace builtins

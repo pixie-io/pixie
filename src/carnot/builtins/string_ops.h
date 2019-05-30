@@ -26,6 +26,14 @@ class FindUDF : public udf::ScalarUDF {
   }
 };
 
+class SubstringUDF : public udf::ScalarUDF {
+ public:
+  types::StringValue Exec(udf::FunctionContext*, types::StringValue b1, types::Int64Value pos,
+                          types::Int64Value length) {
+    return b1.substr(static_cast<size_t>(pos.val), static_cast<size_t>(length.val));
+  }
+};
+
 void RegisterStringOpsOrDie(udf::ScalarUDFRegistry* registry);
 }  // namespace builtins
 }  // namespace carnot

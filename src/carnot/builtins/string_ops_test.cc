@@ -29,6 +29,12 @@ TEST(StringOps, basic_string_find_test) {
   udf_tester.ForInput("pixielabs", "hello").Expect(-1);
 }
 
+TEST(StringOps, basic_string_substr_test) {
+  auto udf_tester = udf::UDFTester<SubstringUDF>();
+  udf_tester.ForInput("pixielabs", 3, 4).Expect("iela");
+  udf_tester.ForInput("pixielabs", 5, 10).Expect("labs");
+}
+
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace pl
