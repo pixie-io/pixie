@@ -94,7 +94,7 @@ TEST(ConstVectorTest, compile_time_lookup) {
     }
 
     // Compile-time lookup function within ConstVectorView<T>.
-    constexpr uint32_t StringIndex(ConstStrView key) const {
+    constexpr uint32_t StringIndex(const ConstStrView& key) const {
       uint32_t i = 0;
       for (i = 0; i < elements.size(); i++) {
         if (elements[i].str.equals(key)) {
