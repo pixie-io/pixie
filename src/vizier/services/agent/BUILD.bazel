@@ -41,6 +41,6 @@ container_push(
     format = "Docker",
     image = ":agent_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/agent",
+    repository = "pl-dev-infra/agent_image",
     tag = "{STABLE_BUILD_TAG}",
 )
