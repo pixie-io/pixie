@@ -189,7 +189,7 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
   EXPECT_OK(source->Stop());
 }
 
-TEST_F(HTTPTraceBPFTest, TestMySQLWriteCapturedData) {
+TEST_F(HTTPTraceBPFTest, DISABLED_TestMySQLWriteCapturedData) {
   TCPSocket server;
   server.Bind();
 
