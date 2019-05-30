@@ -58,7 +58,7 @@ struct addr_info_t {
 
 struct data_info_t {
   u64 lookup_fd;
-  char* buf;
+  const char *buf;
 } __attribute__((__packed__, aligned(8)));
 
 
@@ -92,7 +92,7 @@ BPF_PERCPU_ARRAY(data_buffer_heap, struct socket_data_event_t, 1);
  * Buffer processing helper functions
  ***********************************************************/
 
-static bool is_http_response(char *buf, size_t count) {
+static bool is_http_response(const char *buf, size_t count) {
   // Smallest HTTP response is 17 characters:
   // HTTP/1.1 200 OK\r\n
   // Use 16 here to be conservative.
@@ -107,7 +107,7 @@ static bool is_http_response(char *buf, size_t count) {
   return false;
 }
 
-static bool is_http_request(char* buf, size_t count) {
+static bool is_http_request(const char *buf, size_t count) {
   // Smallest HTTP response is 16 characters:
   // GET x HTTP/1.1\r\n
   if (count < 16) {
@@ -125,7 +125,7 @@ static bool is_http_request(char* buf, size_t count) {
   return false;
 }
 
-static bool is_mysql_protocol(char *buf, size_t count) {
+static bool is_mysql_protocol(const char *buf, size_t count) {
   if (count < 1){
     return false;
   }
@@ -141,7 +141,7 @@ static bool is_mysql_protocol(char *buf, size_t count) {
   return false;
 }
 
-static u32 infer_protocol(char *buf, size_t count) {
+static u32 infer_protocol(const char *buf, size_t count) {
   return is_http_response(buf, count)  ? kProtocolHTTPResponse :
          is_http_request(buf, count)   ? kProtocolHTTPRequest :
          is_mysql_protocol(buf, count) ? kProtocolMySQL :
@@ -355,7 +355,7 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
   u64 lookup_fd = read_info->lookup_fd;
   struct conn_info_t* conn_info = conn_info_map.lookup(&lookup_fd);
 
-  char* buf = read_info->buf;
+  const char* buf = read_info->buf;
 
   // Try to infer connection type.
   if (conn_info == NULL) {
@@ -398,7 +398,7 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
   event->attr.msg_size = bytes_read;
 
   const u32 buf_size = bytes_read < sizeof(event->msg) ? bytes_read : sizeof(event->msg);
-  bpf_probe_read(&event->msg, buf_size, (const void*) read_info->buf);
+  bpf_probe_read(&event->msg, buf_size, buf);
 
   // Write snooped arguments to perf ring buffer.
   unsigned int size_to_submit = sizeof(struct socket_data_event_t);
