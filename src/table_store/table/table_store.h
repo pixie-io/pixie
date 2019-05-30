@@ -55,6 +55,8 @@ class TableStore {
   Status AppendData(uint64_t table_id,
                     std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch);
 
+  Status SchemaAsProto(schemapb::Schema* schema) const;
+
  private:
   std::unordered_map<std::string, std::shared_ptr<table_store::Table>> table_name_to_table_map_;
   std::unordered_map<uint64_t, std::shared_ptr<table_store::Table>> table_id_to_table_map_;

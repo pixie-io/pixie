@@ -42,5 +42,15 @@ Status TableStore::AddTable(const std::string& table_name, uint64_t table_id,
   return Status::OK();
 }
 
+Status TableStore::SchemaAsProto(schemapb::Schema* schema) const {
+  CHECK(schema != nullptr);
+  auto map = schema->mutable_relation_map();
+  for (auto& [key, value] : table_name_to_table_map_) {
+    schemapb::Relation* relation = &(*map)[key];
+    PL_RETURN_IF_ERROR(value->GetRelation().ToProto(relation));
+  }
+  return Status::OK();
+}
+
 }  // namespace table_store
 }  // namespace pl
