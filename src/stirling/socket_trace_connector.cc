@@ -82,7 +82,7 @@ Status SocketTraceConnector::StopImpl() {
 
 void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
                                             types::ColumnWrapperRecordBatch* record_batch) {
-  CHECK_LT(table_num, kElements.size())
+  CHECK_LT(table_num, kTables.size())
       << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
   CHECK(record_batch != nullptr) << "record_batch cannot be nullptr";
 
@@ -269,9 +269,9 @@ bool SocketTraceConnector::SelectHTTPResponse(const HTTPTraceRecord& record) {
 
 void SocketTraceConnector::AppendHTTPResponse(HTTPTraceRecord record,
                                               types::ColumnWrapperRecordBatch* record_batch) {
-  uint64_t num_columns = SocketTraceConnector::kElements[0].elements().size();
-  CHECK(record_batch->size() == num_columns) << absl::StrFormat(
-      "HTTP trace record field count should be: %d, got %d", num_columns, record_batch->size());
+  uint64_t num_columns = SocketTraceConnector::kHTTPTable.elements().size();
+  CHECK_EQ(num_columns, record_batch->size());
+
   auto& columns = *record_batch;
 
   uint32_t idx = 0;
@@ -293,8 +293,7 @@ void SocketTraceConnector::AppendHTTPResponse(HTTPTraceRecord record,
   columns[idx++]->Append<types::StringValue>(std::move(record.message.http_resp_body));
   columns[idx++]->Append<types::Int64Value>(record.message.timestamp_ns - record.conn.timestamp_ns);
   DCHECK_GE(record.message.timestamp_ns, record.conn.timestamp_ns);
-  CHECK_EQ(idx, num_columns) << absl::StrFormat(
-      "Didn't populate all fields [idx = %d, num_columns = %d]", idx, num_columns);
+  CHECK_EQ(idx, num_columns) << "Didn't populate all fields";
 }
 
 //-----------------------------------------------------------------------------

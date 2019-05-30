@@ -30,37 +30,31 @@ namespace stirling {
 class CGroupStatsConnector : public SourceConnector {
  public:
   static constexpr SourceType kSourceType = SourceType::kFile;
-  static constexpr char kName[] = "cgroup_stats";
-  inline static const std::vector<DataTableSchema> kElements = {
-      DataTableSchema(kName, {DataElement("time_", types::DataType::TIME64NS),
-                              DataElement("qos", types::DataType::STRING),
-                              DataElement("pod", types::DataType::STRING),
-                              DataElement("container", types::DataType::STRING),
-                              DataElement("process_name", types::DataType::STRING),
-                              DataElement("pid", types::DataType::INT64),
-                              DataElement("major_faults", types::DataType::INT64),
-                              DataElement("minor_faults", types::DataType::INT64),
-                              DataElement("cpu_utime_ns", types::DataType::INT64),
-                              DataElement("cpu_ktime_ns", types::DataType::INT64),
-                              DataElement("num_threads", types::DataType::INT64),
-                              DataElement("vsize_bytes", types::DataType::INT64),
-                              DataElement("rss_bytes", types::DataType::INT64),
-                              DataElement("rchar_bytes", types::DataType::INT64),
-                              DataElement("wchar_bytes", types::DataType::INT64),
-                              DataElement("read_bytes", types::DataType::INT64),
-                              DataElement("write_bytes", types::DataType::INT64)}),
-      DataTableSchema("net_stats", {
-                                       DataElement("time_", types::DataType::TIME64NS),
-                                       DataElement("pod", types::DataType::STRING),
-                                       DataElement("rx_bytes", types::DataType::INT64),
-                                       DataElement("rx_packets", types::DataType::INT64),
-                                       DataElement("rx_errors", types::DataType::INT64),
-                                       DataElement("rx_drops", types::DataType::INT64),
-                                       DataElement("tx_bytes", types::DataType::INT64),
-                                       DataElement("tx_packets", types::DataType::INT64),
-                                       DataElement("tx_errors", types::DataType::INT64),
-                                       DataElement("tx_drops", types::DataType::INT64),
-                                   })};
+
+  static constexpr DataElement kCPUElements[] = {
+      {"time_", types::DataType::TIME64NS},      {"qos", types::DataType::STRING},
+      {"pod", types::DataType::STRING},          {"container", types::DataType::STRING},
+      {"process_name", types::DataType::STRING}, {"pid", types::DataType::INT64},
+      {"major_faults", types::DataType::INT64},  {"minor_faults", types::DataType::INT64},
+      {"cpu_utime_ns", types::DataType::INT64},  {"cpu_ktime_ns", types::DataType::INT64},
+      {"num_threads", types::DataType::INT64},   {"vsize_bytes", types::DataType::INT64},
+      {"rss_bytes", types::DataType::INT64},     {"rchar_bytes", types::DataType::INT64},
+      {"wchar_bytes", types::DataType::INT64},   {"read_bytes", types::DataType::INT64},
+      {"write_bytes", types::DataType::INT64},
+  };
+  static constexpr auto kCPUTable = DataTableSchema("cgroup_cpu_stats", kCPUElements);
+
+  static constexpr DataElement kNetworkElements[] = {
+      {"time_", types::DataType::TIME64NS},  {"pod", types::DataType::STRING},
+      {"rx_bytes", types::DataType::INT64},  {"rx_packets", types::DataType::INT64},
+      {"rx_errors", types::DataType::INT64}, {"rx_drops", types::DataType::INT64},
+      {"tx_bytes", types::DataType::INT64},  {"tx_packets", types::DataType::INT64},
+      {"tx_errors", types::DataType::INT64}, {"tx_drops", types::DataType::INT64},
+  };
+  static constexpr auto kNetworkTable = DataTableSchema("cgroup_net_stats", kNetworkElements);
+
+  static constexpr DataTableSchema kTablesArray[] = {kCPUTable, kNetworkTable};
+  static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
 
   CGroupStatsConnector() = delete;
   ~CGroupStatsConnector() override = default;
@@ -80,7 +74,7 @@ class CGroupStatsConnector : public SourceConnector {
 
  protected:
   explicit CGroupStatsConnector(std::string source_name)
-      : SourceConnector(kSourceType, std::move(source_name), kElements, kDefaultSamplingPeriod,
+      : SourceConnector(kSourceType, std::move(source_name), kTables, kDefaultSamplingPeriod,
                         kDefaultPushPeriod) {
     auto sysconfig = common::SystemConfig::Create();
     // TODO(zasgar): Make proc/sys paths configurable.

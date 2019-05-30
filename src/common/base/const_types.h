@@ -49,6 +49,7 @@ class ConstVectorView {
   const size_t size_;
 
  public:
+  constexpr ConstVectorView() : elements_(nullptr), size_(0) {}
   template <std::size_t N>
   // NOLINTNEXTLINE: implicit constructor.
   constexpr ConstVectorView(const T (&a)[N]) : elements_(a), size_(N) {}

@@ -11,6 +11,8 @@ namespace stirling {
 // real-time. BPF provides only access to CLOCK_MONOTONIC values (through nsecs), so have to
 // determine the offset.
 void SourceConnector::InitClockRealTimeOffset() {
+  static constexpr uint64_t kSecToNanosecFactor = 1000000000;
+
   struct timespec time, real_time;
   clock_gettime(CLOCK_MONOTONIC, &time);
   clock_gettime(CLOCK_REALTIME, &real_time);

@@ -38,7 +38,8 @@ class BCCConnector : public SourceConnector {
   ~BCCConnector() override = default;
 
  protected:
-  explicit BCCConnector(std::string source_name, const std::vector<DataTableSchema>& schemas,
+  // TODO(oazizi): Convert std::string to string_view.
+  explicit BCCConnector(std::string source_name, const ConstVectorView<DataTableSchema>& schemas,
                         std::chrono::milliseconds default_sampling_period,
                         std::chrono::milliseconds default_push_period,
                         const std::string_view bpf_program)
@@ -54,12 +55,16 @@ class PIDCPUUseBCCConnector : public BCCConnector {
  public:
   inline static const std::string_view kBCCScript = pidruntime_bcc_script;
   static constexpr SourceType kSourceType = SourceType::kEBPF;
-  static constexpr char kName[] = "bcc_pid_cpu_usage";
-  inline static const std::vector<DataTableSchema> kElements = {DataTableSchema(
-      kName,
-      {DataElement("time_", types::DataType::TIME64NS), DataElement("pid", types::DataType::INT64),
-       DataElement("runtime_ns", types::DataType::INT64),
-       DataElement("cmd", types::DataType::STRING)})};
+
+  static constexpr DataElement kElements[] = {
+      {"time_", types::DataType::TIME64NS},
+      {"pid", types::DataType::INT64},
+      {"runtime_ns", types::DataType::INT64},
+      {"cmd", types::DataType::STRING},
+  };
+  static constexpr auto kTable = DataTableSchema("bcc_pid_cpu_usage", kElements);
+  static constexpr DataTableSchema kTablesArray[] = {kTable};
+  static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
@@ -76,7 +81,7 @@ class PIDCPUUseBCCConnector : public BCCConnector {
 
  protected:
   explicit PIDCPUUseBCCConnector(std::string name)
-      : BCCConnector(name, kElements, kDefaultSamplingPeriod, kDefaultPushPeriod, kBCCScript),
+      : BCCConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod, kBCCScript),
         event_type_(perf_type_id::PERF_TYPE_SOFTWARE),
         event_config_(perf_sw_ids::PERF_COUNT_SW_CPU_CLOCK) {}
 

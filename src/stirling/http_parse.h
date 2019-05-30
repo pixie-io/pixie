@@ -24,8 +24,8 @@ inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
 }  // namespace http_headers
 
 // TODO(yzhao): The repetitions of information among HTTPMessage + ConnectionTraceRecord,
-// DataElementsIndexes, and kElements should be eliminated. It might make sense to use proto file
-// to define data schema and generate kElements array during runtime, based on proto schema.
+// DataElementsIndexes, and kTables should be eliminated. It might make sense to use proto file
+// to define data schema and generate kTables array during runtime, based on proto schema.
 
 struct HTTPMessage {
   bool is_complete = false;

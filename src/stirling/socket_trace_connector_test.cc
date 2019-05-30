@@ -43,7 +43,7 @@ Content-Length: 0
   std::unique_ptr<SourceConnector> connector = SocketTraceConnector::Create("bcc_http_trace");
   auto* source = dynamic_cast<SocketTraceConnector*>(connector.get());
   types::ColumnWrapperRecordBatch record_batch;
-  EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[0].elements(),
+  EXPECT_OK(InitRecordBatch(SocketTraceConnector::kTables[table_num].elements(),
                             /*target_capacity*/ 1, &record_batch));
 
   event_json.attr.conn_info.seq_num = 0;

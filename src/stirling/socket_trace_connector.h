@@ -46,16 +46,10 @@ class SocketTraceConnector : public SourceConnector {
   inline static const std::string_view kBCCScript = http_trace_bcc_script;
 
   static constexpr SourceType kSourceType = SourceType::kEBPF;
-  static constexpr char kName[] = "socket_trace";
 
-  // TODO(yzhao): As of 2019-04-18, all HTTP trace data is written to one table. An option to
-  // improve is to have different tables:
-  // - A HTTP connection table with fields 1) id (fd+additional_data for uniqueness),
-  //   2) {src,dst}_{addr,port}.
-  // - A HTTP message table with fields 1) id (same as above), type (req or resp), header, payload.
-  inline static const std::vector<DataTableSchema> kElements = {
-      DataTableSchema(std::string(kName) + "_http",
-                      {DataElement("time_", types::DataType::TIME64NS),
+  // clang-format off
+  static constexpr DataElement kHTTPElements[] = {
+                       DataElement("time_", types::DataType::TIME64NS),
                        // tgid is the user space "pid".
                        DataElement("tgid", types::DataType::INT64),
                        // TODO(yzhao): Remove 'fd'.
@@ -74,17 +68,27 @@ class SocketTraceConnector : public SourceConnector {
                        DataElement("http_resp_status", types::DataType::INT64),
                        DataElement("http_resp_message", types::DataType::STRING),
                        DataElement("http_resp_body", types::DataType::STRING),
-                       DataElement("http_resp_latency_ns", types::DataType::INT64)}),
-      DataTableSchema(
-          std::string(kName) + "_sql",
-          {DataElement("time_", types::DataType::TIME64NS),
+                       DataElement("http_resp_latency_ns", types::DataType::INT64)
+  };
+  // clang-format on
+  static constexpr auto kHTTPTable = DataTableSchema("socket_trace", kHTTPElements);
+
+  // clang-format off
+  static constexpr DataElement kMySQLElements[] = {
+           DataElement("time_", types::DataType::TIME64NS),
            DataElement("tgid", types::DataType::INT64), DataElement("fd", types::DataType::INT64),
            DataElement("bpf_event", types::DataType::INT64),
            DataElement("src_addr", types::DataType::STRING),
            DataElement("src_port", types::DataType::INT64),
            DataElement("dst_addr", types::DataType::STRING),
            DataElement("dst_port", types::DataType::INT64),
-           DataElement("body", types::DataType::STRING)})};
+           DataElement("body", types::DataType::STRING),
+  };
+  // clang-format on
+  static constexpr auto kMySQLTable = DataTableSchema("mysql_trace", kMySQLElements);
+
+  static constexpr DataTableSchema kTablesArray[] = {kHTTPTable, kMySQLTable};
+  static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{5000};
@@ -108,7 +112,7 @@ class SocketTraceConnector : public SourceConnector {
 
  private:
   explicit SocketTraceConnector(const std::string& source_name)
-      : SourceConnector(kSourceType, std::move(source_name), kElements, kDefaultSamplingPeriod,
+      : SourceConnector(kSourceType, std::move(source_name), kTables, kDefaultSamplingPeriod,
                         kDefaultPushPeriod) {
     // TODO(yzhao): Is there a better place/time to grab the flags?
     http_response_header_filter_ = ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
@@ -186,7 +190,7 @@ class SocketTraceConnector : public SourceConnector {
   //               (https://filippo.io/linux-syscall-table/), but are defined as SYSCALL_DEFINE4 in
   //               https://elixir.bootlin.com/linux/latest/source/net/socket.c.
 
-  // Indexed by table_num from kElements (one-to-one mapping).
+  // Indexed by table_num from kTables (one-to-one mapping).
   static inline const std::vector<PerfBufferSpec> kPerfBufferSpecs = {
       {"socket_http_resp_events", &SocketTraceConnector::HandleHTTPResponseProbeOutput,
        &SocketTraceConnector::HandleProbeLoss,

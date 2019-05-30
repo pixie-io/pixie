@@ -15,7 +15,7 @@ using types::ColumnWrapper;
 using types::DataType;
 
 DataTable::DataTable(const InfoClassSchema& schema) {
-  table_schema_ = std::make_unique<DataElements>();
+  table_schema_ = std::make_unique<std::vector<DataElement>>();
   for (const auto& info_class_element : schema) {
     table_schema_->emplace_back(info_class_element);
   }

@@ -209,7 +209,7 @@ Status StirlingImpl::AddSourceFromRegistry(
 
   for (uint32_t i = 0; i < source->num_tables(); ++i) {
     // Step 2: Create the info class manager.
-    auto mgr = std::make_unique<InfoClassManager>(source->table_name(i));
+    auto mgr = std::make_unique<InfoClassManager>(source->table_name(i).get());
     auto mgr_ptr = mgr.get();
     mgr->SetSourceConnector(source.get(), i);
 

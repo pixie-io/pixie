@@ -18,7 +18,7 @@ namespace pl {
 namespace stirling {
 
 BPFTraceConnector::BPFTraceConnector(const std::string& source_name,
-                                     const std::vector<DataTableSchema>& schemas,
+                                     const ConstVectorView<DataTableSchema>& schemas,
                                      std::chrono::milliseconds default_sampling_period,
                                      std::chrono::milliseconds default_push_period,
                                      const std::string_view script, std::vector<std::string> params)
@@ -96,12 +96,12 @@ Status BPFTraceConnector::InitImpl() {
 }
 
 CPUStatBPFTraceConnector::CPUStatBPFTraceConnector(const std::string& name, uint64_t cpu_id)
-    : BPFTraceConnector(name, kElements, kDefaultSamplingPeriod, kDefaultPushPeriod, kBTScript,
+    : BPFTraceConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod, kBTScript,
                         std::vector<std::string>({std::to_string(cpu_id)})) {}
 
 void CPUStatBPFTraceConnector::TransferDataImpl(uint32_t table_num,
                                                 types::ColumnWrapperRecordBatch* record_batch) {
-  CHECK_LT(table_num, kElements.size())
+  CHECK_LT(table_num, kTables.size())
       << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
 
   auto& columns = *record_batch;
@@ -147,12 +147,12 @@ bpftrace::BPFTraceMap::iterator PIDCPUUseBPFTraceConnector::BPFTraceMapSearch(
 }
 
 PIDCPUUseBPFTraceConnector::PIDCPUUseBPFTraceConnector(const std::string& name)
-    : BPFTraceConnector(name, kElements, kDefaultSamplingPeriod, kDefaultPushPeriod, kBTScript,
+    : BPFTraceConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod, kBTScript,
                         std::vector<std::string>({})) {}
 
 void PIDCPUUseBPFTraceConnector::TransferDataImpl(uint32_t table_num,
                                                   types::ColumnWrapperRecordBatch* record_batch) {
-  CHECK_LT(table_num, kElements.size())
+  CHECK_LT(table_num, kTables.size())
       << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
 
   auto& columns = *record_batch;

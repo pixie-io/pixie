@@ -17,14 +17,14 @@ namespace stirling {
 
 void RegisterAllSources(SourceRegistry* registry) {
   CHECK(registry != nullptr);
-  registry->RegisterOrDie<SeqGenConnector>(SeqGenConnector::kName);
-  registry->RegisterOrDie<FakeProcStatConnector>(FakeProcStatConnector::kName);
-  registry->RegisterOrDie<ProcStatConnector>(ProcStatConnector::kName);
-  registry->RegisterOrDie<PIDCPUUseBCCConnector>(PIDCPUUseBCCConnector::kName);
-  registry->RegisterOrDie<CPUStatBPFTraceConnector>(CPUStatBPFTraceConnector::kName);
-  registry->RegisterOrDie<PIDCPUUseBPFTraceConnector>(PIDCPUUseBPFTraceConnector::kName);
-  registry->RegisterOrDie<SocketTraceConnector>(SocketTraceConnector::kName);
-  registry->RegisterOrDie<CGroupStatsConnector>(CGroupStatsConnector::kName);
+  registry->RegisterOrDie<SeqGenConnector>("sequences");
+  registry->RegisterOrDie<FakeProcStatConnector>("fake_proc_stat");
+  registry->RegisterOrDie<ProcStatConnector>("proc_stat");
+  registry->RegisterOrDie<PIDCPUUseBCCConnector>("bcc_cpu_stat");
+  registry->RegisterOrDie<CPUStatBPFTraceConnector>("bpftrace_cpu_stats");
+  registry->RegisterOrDie<PIDCPUUseBPFTraceConnector>("bpftrace_pid_cpu_usage");
+  registry->RegisterOrDie<SocketTraceConnector>("socket_tracer");
+  registry->RegisterOrDie<CGroupStatsConnector>("cgroup_stats");
 }
 
 }  // namespace stirling

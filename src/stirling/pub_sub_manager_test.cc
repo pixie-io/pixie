@@ -42,10 +42,12 @@ const char* kInfoClassManager = R"(
  */
 class TestSourceConnector : public SourceConnector {
  public:
-  inline static const std::vector<DataTableSchema> kElements = {
-      DataTableSchema("", {DataElement("user_percentage", DataType::FLOAT64),
-                           DataElement("system_percentage", DataType::FLOAT64),
-                           DataElement("io_percentage", DataType::FLOAT64)})};
+  static constexpr DataElement kElements[] = {{"user_percentage", DataType::FLOAT64},
+                                              {"system_percentage", DataType::FLOAT64},
+                                              {"io_percentage", DataType::FLOAT64}};
+  static constexpr DataTableSchema kTablesArray[] = {DataTableSchema("", kElements)};
+  static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
+
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
@@ -62,7 +64,7 @@ class TestSourceConnector : public SourceConnector {
 
  protected:
   explicit TestSourceConnector(const std::string& name)
-      : SourceConnector(SourceType::kUnknown, name, kElements, kDefaultSamplingPeriod,
+      : SourceConnector(SourceType::kUnknown, name, kTables, kDefaultSamplingPeriod,
                         kDefaultPushPeriod) {}
 };
 

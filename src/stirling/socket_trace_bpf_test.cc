@@ -73,7 +73,7 @@ Content-Length: 0
 
   static constexpr std::string_view kMySQLMsg = "\x16SELECT column FROM table";
 
-  const DataTableSchema& schema = SocketTraceConnector::kElements[0];
+  const DataTableSchema& schema = SocketTraceConnector::kTables[0];
   const uint64_t kHTTPHeaderIdx = schema.KeyIndex("http_headers");
   const uint64_t kFdIdx = schema.KeyIndex("fd");
 
@@ -97,7 +97,7 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
   {
     const int table_num = 0;
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kTables[table_num].elements(),
                               /*target_capacity*/ 2, &record_batch));
     source->TransferData(table_num, &record_batch);
 
@@ -123,7 +123,7 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
   //  {
   //    const int table_num = 1;
   //    types::ColumnWrapperRecordBatch record_batch;
-  //    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+  //    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kTables[table_num].elements(),
   //                              /*target_capacity*/ 2, &record_batch));
   //    source->TransferData(table_num, &record_batch);
   //
@@ -151,7 +151,7 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
   {
     const int table_num = 0;
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kTables[table_num].elements(),
                               /*target_capacity*/ 2, &record_batch));
     source->TransferData(table_num, &record_batch);
 
@@ -177,7 +177,7 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
   //  {
   //    const int table_num = 1;
   //    types::ColumnWrapperRecordBatch record_batch;
-  //    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+  //    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kTables[table_num].elements(),
   //                              /*target_capacity*/ 2, &record_batch));
   //    source->TransferData(table_num, &record_batch);
   //
@@ -206,7 +206,7 @@ TEST_F(HTTPTraceBPFTest, TestMySQLWriteCapturedData) {
   {
     const int table_num = 0;
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kTables[table_num].elements(),
                               /*target_capacity*/ 2, &record_batch));
     source->TransferData(table_num, &record_batch);
 
@@ -219,7 +219,7 @@ TEST_F(HTTPTraceBPFTest, TestMySQLWriteCapturedData) {
   {
     const int table_num = 1;
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kTables[table_num].elements(),
                               /*target_capacity*/ 2, &record_batch));
     source->TransferData(table_num, &record_batch);
 
@@ -255,7 +255,7 @@ TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   {
     const int table_num = 0;
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kTables[table_num].elements(),
                               /*target_capacity*/ 2, &record_batch));
     source->TransferData(table_num, &record_batch);
 
@@ -269,7 +269,7 @@ TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   //  {
   //    const int table_num = 1;
   //    types::ColumnWrapperRecordBatch record_batch;
-  //    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kElements[table_num].elements(),
+  //    EXPECT_OK(InitRecordBatch(SocketTraceConnector::kTables[table_num].elements(),
   //                              /*target_capacity*/ 2, &record_batch));
   //    source->TransferData(table_num, &record_batch);
   //

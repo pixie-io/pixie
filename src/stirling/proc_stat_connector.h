@@ -13,13 +13,15 @@ class ProcStatConnector : public SourceConnector {
  public:
   static constexpr SourceType kSourceType = SourceType::kFile;
 
-  static constexpr char kName[] = "proc_stat";
+  static constexpr DataElement kElements[] = {{"time_", types::DataType::TIME64NS},
+                                              {"system_percent", types::DataType::FLOAT64},
+                                              {"user_percent", types::DataType::FLOAT64},
+                                              {"idle_percent", types::DataType::FLOAT64},
+                                              {"http_resp_latency_ns", types::DataType::INT64}};
+  static constexpr auto kTable = DataTableSchema("proc_stat", kElements);
 
-  inline static std::vector<DataTableSchema> kElements = {
-      DataTableSchema(kName, {DataElement("time_", types::DataType::TIME64NS),
-                              DataElement("system_percent", types::DataType::FLOAT64),
-                              DataElement("user_percent", types::DataType::FLOAT64),
-                              DataElement("idle_percent", types::DataType::FLOAT64)})};
+  static constexpr DataTableSchema kTablesArray[] = {kTable};
+  static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
@@ -32,7 +34,7 @@ class ProcStatConnector : public SourceConnector {
 
  protected:
   explicit ProcStatConnector(const std::string& name)
-      : SourceConnector(kSourceType, name, kElements, kDefaultSamplingPeriod, kDefaultPushPeriod) {}
+      : SourceConnector(kSourceType, name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {}
   Status InitImpl() override;
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
   Status StopImpl() override { return Status::OK(); }
@@ -86,8 +88,6 @@ class FakeProcStatConnector : public ProcStatConnector {
  public:
   FakeProcStatConnector() = delete;
   ~FakeProcStatConnector() override = default;
-
-  static constexpr char kName[] = "fake_proc_stat";
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new FakeProcStatConnector(name));

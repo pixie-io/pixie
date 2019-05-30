@@ -22,18 +22,14 @@ struct RawDataBuf;
 
 /**
  * InfoClassElement is a basic structure that holds a single available data element from a source,
- * its type and a state.
- *
- * The state defines whether the data element is subscribed or not.
- *
+ * and its type.
  */
 class InfoClassElement : public DataElement {
  public:
   InfoClassElement() = delete;
-  ~InfoClassElement() override = default;
-  explicit InfoClassElement(const DataElement& element) : DataElement(element) {}
-  explicit InfoClassElement(const std::string& name, const types::DataType& type)
-      : DataElement(name, type) {}
+  explicit InfoClassElement(DataElement element) : DataElement(std::move(element)) {}
+  explicit InfoClassElement(ConstStrView name, types::DataType type)
+      : DataElement(std::move(name), std::move(type)) {}
 
   /**
    * @brief Generate a proto message based on the InfoClassElement.

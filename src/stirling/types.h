@@ -23,46 +23,63 @@ using InfoClassManagerVec = std::vector<std::unique_ptr<InfoClassManager>>;
 
 class DataElement {
  public:
-  DataElement() = delete;
-  virtual ~DataElement() = default;
-  explicit DataElement(std::string name, const types::DataType& type)
-      : name_(std::move(name)), type_(type) {}
+  constexpr DataElement() = delete;
+  constexpr DataElement(ConstStrView name, types::DataType type)
+      : name_(std::move(name)), type_(std::move(type)) {}
 
-  const std::string& name() const { return name_; }
-  const types::DataType& type() const { return type_; }
+  constexpr const ConstStrView& name() const { return name_; }
+  constexpr const types::DataType& type() const { return type_; }
   size_t WidthBytes() const { return pl::types::DataTypeWidthBytes(type_); }
   std::shared_ptr<arrow::DataType> arrow_type() { return types::DataTypeToArrowType(type()); }
 
  protected:
-  std::string name_;
+  const ConstStrView name_;
   types::DataType type_;
 };
 
-using DataElements = std::vector<DataElement>;
-
 class DataTableSchema {
  public:
-  DataTableSchema(std::string_view name, const DataElements& elements)
-      : name_(name), elements_(elements) {}
-  const std::string& name() const { return name_; }
-  const DataElements& elements() const { return elements_; }
+  template <std::size_t N>
+  constexpr DataTableSchema(ConstStrView name, const DataElement (&elements)[N])
+      : name_(std::move(name)), elements_(elements) {}
+  constexpr const ConstStrView& name() const { return name_; }
+  constexpr const ConstVectorView<DataElement>& elements() const { return elements_; }
 
-  // Use cautiously. This is not efficient.
-  // TODO(oazizi): Consider creating an std::map on constructor to speed this up.
-  uint64_t KeyIndex(std::string_view key) const {
-    auto it = find_if(elements_.begin(), elements_.end(),
-                      [key](const DataElement& element) { return element.name() == key; });
-    return std::distance(elements_.begin(), it);
+  // Warning: use at compile-time only!
+  constexpr uint32_t KeyIndex(const ConstStrView& key) const {
+    uint32_t i = 0;
+    for (i = 0; i < elements_.size(); i++) {
+      if (elements_[i].name().equals(key)) {
+        break;
+      }
+    }
+
+    return i;
   }
 
  private:
-  std::string name_;
-  DataElements elements_;
+  const ConstStrView name_;
+  const ConstVectorView<DataElement> elements_;
 };
 
 // Initializes record_batch so that it has data fields that matches data_elements' spec.
-Status InitRecordBatch(const std::vector<DataElement>& data_elements, int target_capacity,
-                       types::ColumnWrapperRecordBatch* record_batch);
+// Template to cover both ConstVectorView<DataElement> and std::vector<InfoClassElement>.
+// TODO(oazizi): No point in returning a Status for this function.
+template <class T>
+Status InitRecordBatch(const T& data_elements, uint32_t target_capacity,
+                       types::ColumnWrapperRecordBatch* record_batch) {
+  for (const auto& element : data_elements) {
+    pl::types::DataType type = element.type();
+
+#define TYPE_CASE(_dt_)                           \
+  auto col = types::ColumnWrapper::Make(_dt_, 0); \
+  col->Reserve(target_capacity);                  \
+  record_batch->push_back(col);
+    PL_SWITCH_FOREACH_DATATYPE(type, TYPE_CASE);
+#undef TYPE_CASE
+  }
+  return Status::OK();
+}
 
 }  // namespace stirling
 }  // namespace pl

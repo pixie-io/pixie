@@ -21,22 +21,25 @@ class SeqGenConnector : public SourceConnector {
 
   static constexpr SourceType kSourceType = SourceType::kUnknown;
 
-  static constexpr char kName[] = "sequence_generator";
+  static constexpr DataElement kElementsSeq0[] = {
+      {"time_", types::DataType::TIME64NS},  {"x", types::DataType::INT64},
+      {"xmod10", types::DataType::INT64},    {"xsquared", types::DataType::INT64},
+      {"fibonnaci", types::DataType::INT64}, {"PIx", types::DataType::FLOAT64},
+  };
+  static constexpr auto kTableSeq0 = DataTableSchema("sequence_generator0", kElementsSeq0);
+
+  static constexpr DataElement kElementsSeq1[] = {
+      {"time_", types::DataType::TIME64NS},
+      {"x", types::DataType::INT64},
+      {"xmod8", types::DataType::INT64},
+  };
+  static constexpr auto kTableSeq1 = DataTableSchema("sequence_generator1", kElementsSeq1);
+
+  static constexpr DataTableSchema kTablesArray[] = {kTableSeq0, kTableSeq1};
+  static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{500};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
-
-  inline static const std::vector<DataTableSchema> kElements = {
-      DataTableSchema(std::string(kName) + "0", {DataElement("time_", types::DataType::TIME64NS),
-                                                 DataElement("x", types::DataType::INT64),
-                                                 DataElement("xmod10", types::DataType::INT64),
-                                                 DataElement("xsquared", types::DataType::INT64),
-                                                 DataElement("fibonnaci", types::DataType::INT64),
-                                                 DataElement("PIx", types::DataType::FLOAT64)}),
-      DataTableSchema(std::string(kName) + "1", {DataElement("time_", types::DataType::TIME64NS),
-                                                 DataElement("x", types::DataType::INT64),
-                                                 DataElement("xmod8", types::DataType::INT64)}),
-  };
 
   static std::unique_ptr<SourceConnector> Create(const std::string& name) {
     return std::unique_ptr<SourceConnector>(new SeqGenConnector(name));
@@ -53,7 +56,7 @@ class SeqGenConnector : public SourceConnector {
 
  protected:
   explicit SeqGenConnector(const std::string& name)
-      : SourceConnector(kSourceType, name, kElements, kDefaultSamplingPeriod, kDefaultPushPeriod),
+      : SourceConnector(kSourceType, name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod),
         table0_lin_seq_(1, 1),
         table0_mod10_seq_(10),
         table0_square_seq_(1, 0, 0),

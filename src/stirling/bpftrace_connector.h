@@ -40,7 +40,7 @@ class BPFTraceConnector : public SourceConnector {
 
  protected:
   explicit BPFTraceConnector(const std::string& source_name,
-                             const std::vector<DataTableSchema>& elements,
+                             const ConstVectorView<DataTableSchema>& elements,
                              std::chrono::milliseconds default_sampling_period,
                              std::chrono::milliseconds default_push_period, std::string_view script,
                              std::vector<std::string> params);
@@ -66,17 +66,21 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
  public:
   static constexpr SourceType kSourceType = SourceType::kEBPF;
 
-  static constexpr char kName[] = "bpftrace_cpu_stats";
-
-  inline static const std::vector<DataTableSchema> kElements = {
-      DataTableSchema(kName, {DataElement("time_", types::DataType::TIME64NS),
-                              DataElement("cpustat_user", types::DataType::INT64),
-                              DataElement("cpustat_nice", types::DataType::INT64),
-                              DataElement("cpustat_system", types::DataType::INT64),
-                              DataElement("cpustat_idle", types::DataType::INT64),
-                              DataElement("cpustat_iowait", types::DataType::INT64),
-                              DataElement("cpustat_irq", types::DataType::INT64),
-                              DataElement("cpustat_softirq", types::DataType::INT64)})};
+  // clang-format off
+  static constexpr DataElement kElements[] = {
+      {"time_", types::DataType::TIME64NS},
+      {"cpustat_user", types::DataType::INT64},
+      {"cpustat_nice", types::DataType::INT64},
+      {"cpustat_system", types::DataType::INT64},
+      {"cpustat_idle", types::DataType::INT64},
+      {"cpustat_iowait", types::DataType::INT64},
+      {"cpustat_irq", types::DataType::INT64},
+      {"cpustat_softirq", types::DataType::INT64}
+  };
+  // clang-format on
+  static constexpr auto kTable = DataTableSchema("bpftrace_cpu_stats", kElements);
+  static constexpr DataTableSchema kTablesArray[] = {kTable};
+  static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
@@ -101,13 +105,17 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
  public:
   static constexpr SourceType kSourceType = SourceType::kEBPF;
 
-  static constexpr char kName[] = "bpftrace_pid_cpu_usage";
-
-  inline static const std::vector<DataTableSchema> kElements = {DataTableSchema(
-      kName,
-      {DataElement("time_", types::DataType::TIME64NS), DataElement("pid", types::DataType::INT64),
-       DataElement("runtime_ns", types::DataType::INT64),
-       DataElement("cmd", types::DataType::STRING)})};
+  // clang-format off
+  static constexpr DataElement kElements[] = {
+      {"time_", types::DataType::TIME64NS},
+      {"pid", types::DataType::INT64},
+      {"runtime_ns", types::DataType::INT64},
+      {"cmd", types::DataType::STRING}
+  };
+  // clang-format on
+  static constexpr auto kTable = DataTableSchema("bpftrace_pid_cpu_usage", kElements);
+  static constexpr DataTableSchema kTablesArray[] = {kTable};
+  static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};

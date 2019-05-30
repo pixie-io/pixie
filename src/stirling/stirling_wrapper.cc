@@ -33,7 +33,7 @@ using pl::stirling::PIDCPUUseBPFTraceConnector;
 using pl::stirling::SeqGenConnector;
 using pl::stirling::SocketTraceConnector;
 
-using pl::stirling::DataElements;
+using pl::stirling::DataElement;
 
 using pl::types::DataType;
 
@@ -41,8 +41,8 @@ DEFINE_string(source_name, "*", "The name of the source to report.");
 
 std::unordered_map<uint64_t, std::string> table_id_to_name_map;
 
-void PrintRecordBatch(std::string prefix, DataElements schema, uint64_t num_records,
-                      const ColumnWrapperRecordBatch& record_batch) {
+void PrintRecordBatch(std::string prefix, const ConstVectorView<DataElement>& schema,
+                      uint64_t num_records, const ColumnWrapperRecordBatch& record_batch) {
   for (uint32_t i = 0; i < num_records; ++i) {
     std::cout << "[" << prefix << "] ";
 
@@ -84,33 +84,33 @@ void StirlingWrapperCallback(uint64_t table_id,
   std::string name = table_id_to_name_map[table_id];
 
   // Use assigned names, from registry.
-  if (name == CPUStatBPFTraceConnector::kElements[0].name()) {
-    PrintRecordBatch("CPUStat-BPFTrace", CPUStatBPFTraceConnector::kElements[0].elements(),
-                     num_records, *record_batch);
-  } else if (name == SeqGenConnector::kElements[0].name()) {
-    PrintRecordBatch("SeqGen-0", SeqGenConnector::kElements[0].elements(), num_records,
+  if (name == CPUStatBPFTraceConnector::kTable.name().get()) {
+    PrintRecordBatch("CPUStat-BPFTrace", CPUStatBPFTraceConnector::kTable.elements(), num_records,
                      *record_batch);
-  } else if (name == SeqGenConnector::kElements[1].name()) {
-    PrintRecordBatch("SeqGen-1", SeqGenConnector::kElements[1].elements(), num_records,
+  } else if (name == SeqGenConnector::kTableSeq0.name().get()) {
+    PrintRecordBatch("SeqGen-0", SeqGenConnector::kTableSeq0.elements(), num_records,
                      *record_batch);
-  } else if (name == PIDCPUUseBPFTraceConnector::kElements[0].name()) {
-    PrintRecordBatch("PIDStat-BPFTrace", PIDCPUUseBPFTraceConnector::kElements[0].elements(),
-                     num_records, *record_batch);
-  } else if (name == PIDCPUUseBCCConnector::kElements[0].name()) {
-    PrintRecordBatch("PIDStat-BCC", PIDCPUUseBCCConnector::kElements[0].elements(), num_records,
+  } else if (name == SeqGenConnector::kTableSeq1.name().get()) {
+    PrintRecordBatch("SeqGen-1", SeqGenConnector::kTableSeq1.elements(), num_records,
                      *record_batch);
-  } else if (name == SocketTraceConnector::kElements[0].name()) {
-    PrintRecordBatch("HTTPTrace", SocketTraceConnector::kElements[0].elements(), num_records,
+  } else if (name == PIDCPUUseBPFTraceConnector::kTable.name().get()) {
+    PrintRecordBatch("PIDStat-BPFTrace", PIDCPUUseBPFTraceConnector::kTable.elements(), num_records,
                      *record_batch);
-  } else if (name == SocketTraceConnector::kElements[1].name()) {
-    PrintRecordBatch("MySQLTrace", SocketTraceConnector::kElements[1].elements(), num_records,
+  } else if (name == SocketTraceConnector::kMySQLTable.name().get()) {
+    PrintRecordBatch("MySQLTrace", SocketTraceConnector::kMySQLTable.elements(), num_records,
                      *record_batch);
-  } else if (name == CGroupStatsConnector::kElements[0].name()) {
-    PrintRecordBatch("CGroupStats", CGroupStatsConnector::kElements[0].elements(), num_records,
+  } else if (name == PIDCPUUseBCCConnector::kTable.name().get()) {
+    PrintRecordBatch("PIDStat-BCC", PIDCPUUseBCCConnector::kTable.elements(), num_records,
                      *record_batch);
-  } else if (name == "NetStats") {
-    PrintRecordBatch(CGroupStatsConnector::kElements[1].name(),
-                     CGroupStatsConnector::kElements[1].elements(), num_records, *record_batch);
+  } else if (name == SocketTraceConnector::kHTTPTable.name().get()) {
+    PrintRecordBatch("HTTPTrace", SocketTraceConnector::kHTTPTable.elements(), num_records,
+                     *record_batch);
+  } else if (name == CGroupStatsConnector::kCPUTable.name().get()) {
+    PrintRecordBatch("CGroupStats", CGroupStatsConnector::kCPUTable.elements(), num_records,
+                     *record_batch);
+  } else if (name == CGroupStatsConnector::kNetworkTable.name().get()) {
+    PrintRecordBatch("NetStats", CGroupStatsConnector::kNetworkTable.elements(), num_records,
+                     *record_batch);
   }
   // Can add other connectors, if desired, here.
 }

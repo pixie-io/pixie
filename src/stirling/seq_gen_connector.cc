@@ -8,7 +8,7 @@ void SeqGenConnector::TransferDataImpl(uint32_t table_num,
   std::uniform_int_distribution<uint32_t> num_rows_dist(num_rows_min_, num_rows_max_);
   uint32_t num_records = num_rows_dist(rng_);
 
-  auto data_elements = elements(table_num);
+  auto& data_elements = elements(table_num);
   uint32_t num_columns = data_elements.size();
 
   switch (table_num) {

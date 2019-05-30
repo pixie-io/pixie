@@ -29,8 +29,7 @@ class InfoClassManager;
    public:                                                                 \
     static constexpr bool kAvailable = false;                              \
     static constexpr SourceType kSourceType = SourceType::kNotImplemented; \
-    static constexpr char kName[] = "dummy";                               \
-    inline static const std::vector<DataTableSchema> kElements = {};       \
+    static constexpr auto kTables = ConstVectorView<DataTableSchema>();    \
     static std::unique_ptr<SourceConnector> Create(std::string name) {     \
       PL_UNUSED(name);                                                     \
       return nullptr;                                                      \
@@ -77,13 +76,13 @@ class SourceConnector : public NotCopyable {
   const std::string& source_name() const { return source_name_; }
 
   uint32_t num_tables() const { return table_schemas_.size(); }
-  const DataElements& elements(uint32_t table_num) const {
-    CHECK_LT(table_num, num_tables())
+  const ConstVectorView<DataElement>& elements(uint32_t table_num) const {
+    DCHECK_LT(table_num, num_tables())
         << absl::StrFormat("Access to table out of bounds: table_num=%d", table_num);
     return table_schemas_[table_num].elements();
   }
-  const std::string& table_name(uint32_t table_num) const {
-    CHECK_LT(table_num, num_tables())
+  const ConstStrView& table_name(uint32_t table_num) const {
+    DCHECK_LT(table_num, num_tables())
         << absl::StrFormat("Access to table out of bounds: table_num=%d", table_num);
     return table_schemas_[table_num].name();
   }
@@ -98,13 +97,20 @@ class SourceConnector : public NotCopyable {
   uint64_t ClockRealTimeOffset();
 
  protected:
+  template <std::size_t N>
   explicit SourceConnector(SourceType type, std::string source_name,
-                           std::vector<DataTableSchema> table_schemas,
+                           const DataTableSchema (&table_schemas)[N],
+                           std::chrono::milliseconds default_sampling_period,
+                           std::chrono::milliseconds default_push_period)
+      : SourceConnector(type, std::move(source_name), ConstVectorView(table_schemas),
+                        default_sampling_period, default_push_period) {}
+  explicit SourceConnector(SourceType type, std::string source_name,
+                           const ConstVectorView<DataTableSchema>& table_schemas,
                            std::chrono::milliseconds default_sampling_period,
                            std::chrono::milliseconds default_push_period)
       : type_(type),
         source_name_(std::move(source_name)),
-        table_schemas_(std::move(table_schemas)),
+        table_schemas_(table_schemas),
         default_sampling_period_(default_sampling_period),
         default_push_period_(default_push_period) {}
 
@@ -120,14 +126,13 @@ class SourceConnector : public NotCopyable {
   void InitClockRealTimeOffset();
 
   uint64_t real_time_offset_;
-  static constexpr uint64_t kSecToNanosecFactor = 1000000000;
 
  private:
-  SourceType type_;
-  std::string source_name_;
-  std::vector<DataTableSchema> table_schemas_;
-  std::chrono::milliseconds default_sampling_period_;
-  std::chrono::milliseconds default_push_period_;
+  const SourceType type_;
+  const std::string source_name_;
+  const ConstVectorView<DataTableSchema> table_schemas_;
+  const std::chrono::milliseconds default_sampling_period_;
+  const std::chrono::milliseconds default_push_period_;
 };
 
 }  // namespace stirling

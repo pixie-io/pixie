@@ -52,7 +52,7 @@ class DataTable {
   Status SealActiveRecordBatch();
 
   // Table schema
-  std::unique_ptr<DataElements> table_schema_;
+  std::unique_ptr<std::vector<DataElement>> table_schema_;
 
   // Pre-computed row size, according to schema.
   uint32_t row_size_;
