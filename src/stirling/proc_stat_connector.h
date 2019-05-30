@@ -28,12 +28,12 @@ class ProcStatConnector : public SourceConnector {
 
   ProcStatConnector() = delete;
   ~ProcStatConnector() override = default;
-  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
+  static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new ProcStatConnector(name));
   }
 
  protected:
-  explicit ProcStatConnector(const std::string& name)
+  explicit ProcStatConnector(std::string_view name)
       : SourceConnector(kSourceType, name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {}
   Status InitImpl() override;
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
@@ -89,12 +89,12 @@ class FakeProcStatConnector : public ProcStatConnector {
   FakeProcStatConnector() = delete;
   ~FakeProcStatConnector() override = default;
 
-  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
+  static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new FakeProcStatConnector(name));
   }
 
  protected:
-  explicit FakeProcStatConnector(const std::string& name) : ProcStatConnector(name) {}
+  explicit FakeProcStatConnector(std::string_view name) : ProcStatConnector(name) {}
 
   Status InitImpl() override;
 

@@ -17,7 +17,7 @@
 namespace pl {
 namespace stirling {
 
-BPFTraceConnector::BPFTraceConnector(const std::string& source_name,
+BPFTraceConnector::BPFTraceConnector(std::string_view source_name,
                                      const ConstVectorView<DataTableSchema>& schemas,
                                      std::chrono::milliseconds default_sampling_period,
                                      std::chrono::milliseconds default_push_period,
@@ -95,7 +95,7 @@ Status BPFTraceConnector::InitImpl() {
   return Status::OK();
 }
 
-CPUStatBPFTraceConnector::CPUStatBPFTraceConnector(const std::string& name, uint64_t cpu_id)
+CPUStatBPFTraceConnector::CPUStatBPFTraceConnector(std::string_view name, uint64_t cpu_id)
     : BPFTraceConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod, kBTScript,
                         std::vector<std::string>({std::to_string(cpu_id)})) {}
 
@@ -146,7 +146,7 @@ bpftrace::BPFTraceMap::iterator PIDCPUUseBPFTraceConnector::BPFTraceMapSearch(
   return next_it;
 }
 
-PIDCPUUseBPFTraceConnector::PIDCPUUseBPFTraceConnector(const std::string& name)
+PIDCPUUseBPFTraceConnector::PIDCPUUseBPFTraceConnector(std::string_view name)
     : BPFTraceConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod, kBTScript,
                         std::vector<std::string>({})) {}
 

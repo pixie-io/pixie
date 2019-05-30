@@ -51,7 +51,7 @@ class TestSourceConnector : public SourceConnector {
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
-  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
+  static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new TestSourceConnector(name));
   }
 
@@ -63,7 +63,7 @@ class TestSourceConnector : public SourceConnector {
                         types::ColumnWrapperRecordBatch* /*record_batch*/) override{};
 
  protected:
-  explicit TestSourceConnector(const std::string& name)
+  explicit TestSourceConnector(std::string_view name)
       : SourceConnector(SourceType::kUnknown, name, kTables, kDefaultSamplingPeriod,
                         kDefaultPushPeriod) {}
 };

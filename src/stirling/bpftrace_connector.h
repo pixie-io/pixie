@@ -39,7 +39,7 @@ class BPFTraceConnector : public SourceConnector {
   ~BPFTraceConnector() override = default;
 
  protected:
-  explicit BPFTraceConnector(const std::string& source_name,
+  explicit BPFTraceConnector(std::string_view source_name,
                              const ConstVectorView<DataTableSchema>& elements,
                              std::chrono::milliseconds default_sampling_period,
                              std::chrono::milliseconds default_push_period, std::string_view script,
@@ -85,14 +85,14 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
-  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
+  static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new CPUStatBPFTraceConnector(name, cpu_id_));
   }
 
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
  protected:
-  explicit CPUStatBPFTraceConnector(const std::string& name, uint64_t cpu_id);
+  explicit CPUStatBPFTraceConnector(std::string_view name, uint64_t cpu_id);
 
  private:
   inline static const std::string_view kBTScript = cpustat_bt_script;
@@ -120,14 +120,14 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
-  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
+  static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new PIDCPUUseBPFTraceConnector(name));
   }
 
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
  protected:
-  explicit PIDCPUUseBPFTraceConnector(const std::string& name);
+  explicit PIDCPUUseBPFTraceConnector(std::string_view name);
 
  private:
   inline static const std::string_view kBTScript = pidruntime_bt_script;

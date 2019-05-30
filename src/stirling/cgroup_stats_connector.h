@@ -62,7 +62,7 @@ class CGroupStatsConnector : public SourceConnector {
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
-  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
+  static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new CGroupStatsConnector(name));
   }
 
@@ -73,8 +73,8 @@ class CGroupStatsConnector : public SourceConnector {
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
  protected:
-  explicit CGroupStatsConnector(std::string source_name)
-      : SourceConnector(kSourceType, std::move(source_name), kTables, kDefaultSamplingPeriod,
+  explicit CGroupStatsConnector(std::string_view source_name)
+      : SourceConnector(kSourceType, source_name, kTables, kDefaultSamplingPeriod,
                         kDefaultPushPeriod) {
     auto sysconfig = common::SystemConfig::Create();
     // TODO(zasgar): Make proc/sys paths configurable.

@@ -41,7 +41,7 @@ class SeqGenConnector : public SourceConnector {
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{500};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
-  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
+  static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SeqGenConnector(name));
   }
 
@@ -55,7 +55,7 @@ class SeqGenConnector : public SourceConnector {
   void ConfigureNumRowsPerGet(uint32_t num_rows) { ConfigureNumRowsPerGet(num_rows, num_rows); }
 
  protected:
-  explicit SeqGenConnector(const std::string& name)
+  explicit SeqGenConnector(std::string_view name)
       : SourceConnector(kSourceType, name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod),
         table0_lin_seq_(1, 1),
         table0_mod10_seq_(10),

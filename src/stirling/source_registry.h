@@ -29,11 +29,11 @@ class SourceRegistry : public NotCopyable {
     RegistryElement() : create_source_fn(nullptr), schema(ConstVectorView<DataTableSchema>()) {}
     explicit RegistryElement(
         SourceType type,
-        std::function<std::unique_ptr<SourceConnector>(const std::string&)> create_source_fn,
+        std::function<std::unique_ptr<SourceConnector>(std::string_view)> create_source_fn,
         const ConstVectorView<DataTableSchema>& schema)
         : type(type), create_source_fn(std::move(create_source_fn)), schema(schema) {}
     SourceType type{SourceType::kUnknown};
-    std::function<std::unique_ptr<SourceConnector>(const std::string&)> create_source_fn;
+    std::function<std::unique_ptr<SourceConnector>(std::string_view)> create_source_fn;
     ConstVectorView<DataTableSchema> schema;
   };
 

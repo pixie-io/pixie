@@ -38,12 +38,12 @@ class BCCConnector : public SourceConnector {
   ~BCCConnector() override = default;
 
  protected:
-  // TODO(oazizi): Convert std::string to string_view.
-  explicit BCCConnector(std::string source_name, const ConstVectorView<DataTableSchema>& schemas,
+  explicit BCCConnector(std::string_view source_name,
+                        const ConstVectorView<DataTableSchema>& schemas,
                         std::chrono::milliseconds default_sampling_period,
                         std::chrono::milliseconds default_push_period,
                         const std::string_view bpf_program)
-      : SourceConnector(kSourceType, std::move(source_name), schemas, default_sampling_period,
+      : SourceConnector(kSourceType, source_name, schemas, default_sampling_period,
                         default_push_period),
         bpf_program_(bpf_program) {}
 
@@ -69,7 +69,7 @@ class PIDCPUUseBCCConnector : public BCCConnector {
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
-  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
+  static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new PIDCPUUseBCCConnector(name));
   }
 
@@ -80,7 +80,7 @@ class PIDCPUUseBCCConnector : public BCCConnector {
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
  protected:
-  explicit PIDCPUUseBCCConnector(std::string name)
+  explicit PIDCPUUseBCCConnector(std::string_view name)
       : BCCConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod, kBCCScript),
         event_type_(perf_type_id::PERF_TYPE_SOFTWARE),
         event_config_(perf_sw_ids::PERF_COUNT_SW_CPU_CLOCK) {}

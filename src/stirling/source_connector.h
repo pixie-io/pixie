@@ -24,16 +24,16 @@ namespace stirling {
 class InfoClassElement;
 class InfoClassManager;
 
-#define DUMMY_SOURCE_CONNECTOR(NAME)                                       \
-  class NAME : public SourceConnector {                                    \
-   public:                                                                 \
-    static constexpr bool kAvailable = false;                              \
-    static constexpr SourceType kSourceType = SourceType::kNotImplemented; \
-    static constexpr auto kTables = ConstVectorView<DataTableSchema>();    \
-    static std::unique_ptr<SourceConnector> Create(std::string name) {     \
-      PL_UNUSED(name);                                                     \
-      return nullptr;                                                      \
-    }                                                                      \
+#define DUMMY_SOURCE_CONNECTOR(NAME)                                        \
+  class NAME : public SourceConnector {                                     \
+   public:                                                                  \
+    static constexpr bool kAvailable = false;                               \
+    static constexpr SourceType kSourceType = SourceType::kNotImplemented;  \
+    static constexpr auto kTables = ConstVectorView<DataTableSchema>();     \
+    static std::unique_ptr<SourceConnector> Create(std::string_view name) { \
+      PL_UNUSED(name);                                                      \
+      return nullptr;                                                       \
+    }                                                                       \
   }
 
 enum class SourceType : uint8_t {
@@ -98,18 +98,18 @@ class SourceConnector : public NotCopyable {
 
  protected:
   template <std::size_t N>
-  explicit SourceConnector(SourceType type, std::string source_name,
+  explicit SourceConnector(SourceType type, std::string_view source_name,
                            const DataTableSchema (&table_schemas)[N],
                            std::chrono::milliseconds default_sampling_period,
                            std::chrono::milliseconds default_push_period)
       : SourceConnector(type, std::move(source_name), ConstVectorView(table_schemas),
                         default_sampling_period, default_push_period) {}
-  explicit SourceConnector(SourceType type, std::string source_name,
+  explicit SourceConnector(SourceType type, std::string_view source_name,
                            const ConstVectorView<DataTableSchema>& table_schemas,
                            std::chrono::milliseconds default_sampling_period,
                            std::chrono::milliseconds default_push_period)
       : type_(type),
-        source_name_(std::move(source_name)),
+        source_name_(source_name),
         table_schemas_(table_schemas),
         default_sampling_period_(default_sampling_period),
         default_push_period_(default_push_period) {}

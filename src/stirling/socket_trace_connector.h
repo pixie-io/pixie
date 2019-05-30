@@ -93,7 +93,7 @@ class SocketTraceConnector : public SourceConnector {
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{5000};
 
-  static std::unique_ptr<SourceConnector> Create(const std::string& name) {
+  static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
   }
 
@@ -111,8 +111,8 @@ class SocketTraceConnector : public SourceConnector {
   void ReadPerfBuffer(uint32_t table_num);
 
  private:
-  explicit SocketTraceConnector(const std::string& source_name)
-      : SourceConnector(kSourceType, std::move(source_name), kTables, kDefaultSamplingPeriod,
+  explicit SocketTraceConnector(std::string_view source_name)
+      : SourceConnector(kSourceType, source_name, kTables, kDefaultSamplingPeriod,
                         kDefaultPushPeriod) {
     // TODO(yzhao): Is there a better place/time to grab the flags?
     http_response_header_filter_ = ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
