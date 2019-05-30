@@ -11,6 +11,7 @@ void RegisterStringOpsOrDie(udf::ScalarUDFRegistry* registry) {
   // String contains.
   registry->RegisterOrDie<ContainsUDF>("pl.contains");
   registry->RegisterOrDie<LengthUDF>("pl.length");
+  registry->RegisterOrDie<FindUDF>("pl.find");
 }
 
 }  // namespace builtins

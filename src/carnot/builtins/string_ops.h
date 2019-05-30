@@ -19,6 +19,13 @@ class LengthUDF : public udf::ScalarUDF {
   types::Int64Value Exec(udf::FunctionContext*, types::StringValue b1) { return b1.length(); }
 };
 
+class FindUDF : public udf::ScalarUDF {
+ public:
+  types::Int64Value Exec(udf::FunctionContext*, types::StringValue src, types::StringValue substr) {
+    return src.find(substr);
+  }
+};
+
 void RegisterStringOpsOrDie(udf::ScalarUDFRegistry* registry);
 }  // namespace builtins
 }  // namespace carnot

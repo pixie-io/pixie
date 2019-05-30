@@ -23,6 +23,12 @@ TEST(StringOps, basic_string_length_test) {
   udf_tester.ForInput("apple").Expect(5);
 }
 
+TEST(StringOps, basic_string_find_test) {
+  auto udf_tester = udf::UDFTester<FindUDF>();
+  udf_tester.ForInput("pixielabs", "xie").Expect(2);
+  udf_tester.ForInput("pixielabs", "hello").Expect(-1);
+}
+
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace pl
