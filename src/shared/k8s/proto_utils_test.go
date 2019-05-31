@@ -78,6 +78,108 @@ phase: 2
 conditions: 2
 `
 
+const objectReferencePb = `
+kind: "pod"
+namespace: "pl"
+name: "pod-abc"
+uid: "abcd"
+`
+
+const endpointPortPb = `
+name: "endpt"
+port: 10,
+protocol: 1
+`
+
+const endpointAddrPb = `
+ip: "127.0.0.1"
+hostname: "host"
+node_name: "this-is-a-node"
+target_ref {
+	kind: "pod"
+	namespace: "pl"
+}
+`
+
+const endpointSubsetPb = `
+addresses {
+	ip: "127.0.0.1"
+	hostname: "host"
+	node_name: "this-is-a-node"
+	target_ref {
+		kind: "pod"
+		namespace: "pl"
+	}
+}
+addresses {
+	ip: "127.0.0.2"
+	hostname: "host-2"
+	node_name: "node-a"
+}
+not_ready_addresses {
+	ip: "127.0.0.3"
+	hostname: "host-3"
+	node_name: "node-b"
+}
+ports {
+	name: "endpt"
+	port: 10,
+	protocol: 1
+}
+ports {
+	name: "abcd"
+	port: 500,
+	protocol: 1
+}
+`
+
+const endpointsPb = `
+subsets {
+	addresses {
+		ip: "127.0.0.1"
+		hostname: "host"
+		node_name: "this-is-a-node"
+		target_ref {
+			kind: "pod"
+			namespace: "pl"
+		}
+	}
+	addresses {
+		ip: "127.0.0.2"
+		hostname: "host-2"
+		node_name: "node-a"
+	}
+	not_ready_addresses {
+		ip: "127.0.0.3"
+		hostname: "host-3"
+		node_name: "node-b"
+	}
+	ports {
+		name: "endpt"
+		port: 10,
+		protocol: 1
+	}
+	ports {
+		name: "abcd"
+		port: 500,
+		protocol: 1
+	}
+}
+metadata {
+	name: "object_md"
+	namespace: "a_namespace"
+	uid: "ijkl"
+	resource_version: "1"
+	creation_timestamp_ns: 4
+	deletion_timestamp_ns: 6
+	owner_references {
+	  kind: "pod"
+	  name: "test"
+	  uid: "abcd"
+	}
+}
+`
+
 func TestOwnerReferenceToProto(t *testing.T) {
 	o := metav1.OwnerReference{
 		Kind: "pod",
@@ -152,20 +254,18 @@ func TestObjectMetadataToProto(t *testing.T) {
 }
 
 func TestObjectMetadataMissingClusterToProto(t *testing.T) {
-	var ownerRefs []metav1.OwnerReference
-	or1 := metav1.OwnerReference{
+	ownerRefs := make([]metav1.OwnerReference, 2)
+	ownerRefs[0] = metav1.OwnerReference{
 		Kind: "pod",
 		Name: "test",
 		UID:  "abcd",
 	}
-	ownerRefs = append(ownerRefs, or1)
 
-	or2 := metav1.OwnerReference{
+	ownerRefs[1] = metav1.OwnerReference{
 		Kind: "pod",
 		Name: "another_test",
 		UID:  "efgh",
 	}
-	ownerRefs = append(ownerRefs, or2)
 
 	delTime := metav1.Unix(0, 6)
 	creationTime := metav1.Unix(0, 4)
@@ -281,4 +381,283 @@ func TestPodStatusFromProto(t *testing.T) {
 	assert.Equal(t, v1.PodRunning, obj.Phase)
 	assert.Equal(t, 1, len(obj.Conditions))
 	assert.Equal(t, v1.PodReady, obj.Conditions[0].Type)
+}
+
+func TestObjectReferenceToProto(t *testing.T) {
+	o := v1.ObjectReference{
+		Kind:      "pod",
+		Namespace: "pl",
+		Name:      "pod-abc",
+		UID:       types.UID("abcd"),
+	}
+
+	oPb, err := k8s.ObjectReferenceToProto(&o)
+	assert.Nil(t, err, "must not have an error")
+
+	expectedPb := &metadatapb.ObjectReference{}
+	if err := proto.UnmarshalText(objectReferencePb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	assert.Equal(t, expectedPb, oPb)
+}
+
+func TestObjectReferenceFromProto(t *testing.T) {
+	oPb := &metadatapb.ObjectReference{}
+	if err := proto.UnmarshalText(objectReferencePb, oPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	obj, err := k8s.ObjectReferenceFromProto(oPb)
+	assert.Nil(t, err, "must not have an error")
+
+	assert.Equal(t, "pod", obj.Kind)
+	assert.Equal(t, "pl", obj.Namespace)
+	assert.Equal(t, "pod-abc", obj.Name)
+	assert.Equal(t, "abcd", string(obj.UID))
+}
+
+func TestEndpointPortToProto(t *testing.T) {
+	o := v1.EndpointPort{
+		Name:     "endpt",
+		Port:     10,
+		Protocol: v1.ProtocolTCP,
+	}
+
+	oPb, err := k8s.EndpointPortToProto(&o)
+	assert.Nil(t, err, "must not have an error")
+
+	expectedPb := &metadatapb.EndpointPort{}
+	if err := proto.UnmarshalText(endpointPortPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	assert.Equal(t, expectedPb, oPb)
+}
+
+func TestEndpointPortFromProto(t *testing.T) {
+	oPb := &metadatapb.EndpointPort{}
+	if err := proto.UnmarshalText(endpointPortPb, oPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	obj, err := k8s.EndpointPortFromProto(oPb)
+	assert.Nil(t, err, "must not have an error")
+
+	assert.Equal(t, "endpt", obj.Name)
+	assert.Equal(t, int32(10), obj.Port)
+	assert.Equal(t, v1.ProtocolTCP, obj.Protocol)
+}
+
+func TestEndpointAddressToProto(t *testing.T) {
+	or := v1.ObjectReference{
+		Kind:      "pod",
+		Namespace: "pl",
+	}
+
+	nodeName := "this-is-a-node"
+	o := v1.EndpointAddress{
+		IP:        "127.0.0.1",
+		Hostname:  "host",
+		NodeName:  &nodeName,
+		TargetRef: &or,
+	}
+
+	oPb, err := k8s.EndpointAddressToProto(&o)
+	assert.Nil(t, err, "must not have an error")
+
+	expectedPb := &metadatapb.EndpointAddress{}
+	if err := proto.UnmarshalText(endpointAddrPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	assert.Equal(t, expectedPb, oPb)
+}
+
+func TestEndpointAddressFromProto(t *testing.T) {
+	oPb := &metadatapb.EndpointAddress{}
+	if err := proto.UnmarshalText(endpointAddrPb, oPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	obj, err := k8s.EndpointAddressFromProto(oPb)
+	assert.Nil(t, err, "must not have an error")
+
+	assert.Equal(t, "127.0.0.1", obj.IP)
+	assert.Equal(t, "host", obj.Hostname)
+	assert.Equal(t, "this-is-a-node", *obj.NodeName)
+	assert.Equal(t, "pod", obj.TargetRef.Kind)
+}
+
+func TestEndpointSubsetToProto(t *testing.T) {
+	or := v1.ObjectReference{
+		Kind:      "pod",
+		Namespace: "pl",
+	}
+
+	addrs := make([]v1.EndpointAddress, 2)
+	nodeName := "this-is-a-node"
+	addrs[0] = v1.EndpointAddress{
+		IP:        "127.0.0.1",
+		Hostname:  "host",
+		NodeName:  &nodeName,
+		TargetRef: &or,
+	}
+
+	nodeName2 := "node-a"
+	addrs[1] = v1.EndpointAddress{
+		IP:       "127.0.0.2",
+		Hostname: "host-2",
+		NodeName: &nodeName2,
+	}
+
+	notReadyAddrs := make([]v1.EndpointAddress, 1)
+	nodeName3 := "node-b"
+	notReadyAddrs[0] = v1.EndpointAddress{
+		IP:       "127.0.0.3",
+		Hostname: "host-3",
+		NodeName: &nodeName3,
+	}
+
+	ports := make([]v1.EndpointPort, 2)
+	ports[0] = v1.EndpointPort{
+		Name:     "endpt",
+		Port:     10,
+		Protocol: v1.ProtocolTCP,
+	}
+	ports[1] = v1.EndpointPort{
+		Name:     "abcd",
+		Port:     500,
+		Protocol: v1.ProtocolTCP,
+	}
+
+	o := v1.EndpointSubset{
+		Addresses:         addrs,
+		NotReadyAddresses: notReadyAddrs,
+		Ports:             ports,
+	}
+
+	oPb, err := k8s.EndpointSubsetToProto(&o)
+	assert.Nil(t, err, "must not have an error")
+
+	expectedPb := &metadatapb.EndpointSubset{}
+	if err := proto.UnmarshalText(endpointSubsetPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	assert.Equal(t, expectedPb, oPb)
+}
+
+func TestEndpointSubsetsFromProto(t *testing.T) {
+	oPb := &metadatapb.EndpointSubset{}
+	if err := proto.UnmarshalText(endpointSubsetPb, oPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	obj, err := k8s.EndpointSubsetFromProto(oPb)
+	assert.Nil(t, err, "must not have an error")
+
+	assert.Equal(t, 2, len(obj.Addresses))
+	assert.Equal(t, "127.0.0.1", obj.Addresses[0].IP)
+	assert.Equal(t, "127.0.0.2", obj.Addresses[1].IP)
+	assert.Equal(t, "pod", obj.Addresses[0].TargetRef.Kind)
+	assert.Equal(t, 1, len(obj.NotReadyAddresses))
+	assert.Equal(t, "127.0.0.3", obj.NotReadyAddresses[0].IP)
+	assert.Equal(t, 2, len(obj.Ports))
+	assert.Equal(t, "endpt", obj.Ports[0].Name)
+	assert.Equal(t, "abcd", obj.Ports[1].Name)
+}
+
+func TestEndpointsToProto(t *testing.T) {
+	or := v1.ObjectReference{
+		Kind:      "pod",
+		Namespace: "pl",
+	}
+
+	addrs := make([]v1.EndpointAddress, 2)
+	nodeName := "this-is-a-node"
+	addrs[0] = v1.EndpointAddress{
+		IP:        "127.0.0.1",
+		Hostname:  "host",
+		NodeName:  &nodeName,
+		TargetRef: &or,
+	}
+
+	nodeName2 := "node-a"
+	addrs[1] = v1.EndpointAddress{
+		IP:       "127.0.0.2",
+		Hostname: "host-2",
+		NodeName: &nodeName2,
+	}
+
+	notReadyAddrs := make([]v1.EndpointAddress, 1)
+	nodeName3 := "node-b"
+	notReadyAddrs[0] = v1.EndpointAddress{
+		IP:       "127.0.0.3",
+		Hostname: "host-3",
+		NodeName: &nodeName3,
+	}
+
+	ports := make([]v1.EndpointPort, 2)
+	ports[0] = v1.EndpointPort{
+		Name:     "endpt",
+		Port:     10,
+		Protocol: v1.ProtocolTCP,
+	}
+	ports[1] = v1.EndpointPort{
+		Name:     "abcd",
+		Port:     500,
+		Protocol: v1.ProtocolTCP,
+	}
+
+	subsets := make([]v1.EndpointSubset, 1)
+	subsets[0] = v1.EndpointSubset{
+		Addresses:         addrs,
+		NotReadyAddresses: notReadyAddrs,
+		Ports:             ports,
+	}
+
+	delTime := metav1.Unix(0, 6)
+	creationTime := metav1.Unix(0, 4)
+	oRef := metav1.OwnerReference{
+		Kind: "pod",
+		Name: "test",
+		UID:  "abcd",
+	}
+
+	oRefs := make([]metav1.OwnerReference, 1)
+	oRefs[0] = oRef
+	md := metav1.ObjectMeta{
+		Name:              "object_md",
+		Namespace:         "a_namespace",
+		UID:               "ijkl",
+		ResourceVersion:   "1",
+		CreationTimestamp: creationTime,
+		DeletionTimestamp: &delTime,
+		OwnerReferences:   oRefs,
+	}
+
+	o := v1.Endpoints{
+		ObjectMeta: md,
+		Subsets:    subsets,
+	}
+
+	oPb, err := k8s.EndpointsToProto(&o)
+	assert.Nil(t, err, "must not have an error")
+
+	expectedPb := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(endpointsPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	assert.Equal(t, expectedPb, oPb)
+}
+
+func TestEndpointsFromProto(t *testing.T) {
+	oPb := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(endpointsPb, oPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	e, err := k8s.EndpointsFromProto(oPb)
+	assert.Nil(t, err, "must not have an error")
+
+	assert.Equal(t, "object_md", e.ObjectMeta.Name)
+	assert.Equal(t, 1, len(e.Subsets))
+	assert.Equal(t, 2, len(e.Subsets[0].Addresses))
 }
