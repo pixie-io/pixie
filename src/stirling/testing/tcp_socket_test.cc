@@ -27,13 +27,14 @@ TEST(TCPSocketTest, DataIsWrittenAndReceivedCorrectly) {
   server.Accept();
   EXPECT_EQ(2, server.Write("a,"));
   EXPECT_EQ(3, server.Send("bc,"));
-  EXPECT_EQ(3, server.Send("END"));
+  EXPECT_EQ(4, server.Send("END,"));
+  EXPECT_EQ(7, server.SendMsg({"send", "msg"}));
 
   server.Close();
   client_thread.join();
   // read() might get all data from multiple write() because of kernel buffering, so we can only
   // check the concatenated string.
-  EXPECT_EQ("a,bc,END", absl::StrJoin(received_data, ""));
+  EXPECT_EQ("a,bc,END,sendmsg", absl::StrJoin(received_data, ""));
 }
 
 }  // namespace testing

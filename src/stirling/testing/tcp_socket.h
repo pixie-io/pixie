@@ -4,6 +4,7 @@
 
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace pl {
 namespace stirling {
@@ -21,6 +22,7 @@ class TCPSocket {
   void Close();
   ssize_t Write(std::string_view data) const;
   ssize_t Send(std::string_view data) const;
+  ssize_t SendMsg(const std::vector<std::string_view>& data) const;
   void Connect(const TCPSocket& addr);
   bool Read(std::string* data);
   bool Recv(std::string* data);

@@ -5,6 +5,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <memory>
+#include <vector>
+
 #include "src/common/base/base.h"
 
 namespace pl {
@@ -64,6 +67,18 @@ ssize_t TCPSocket::Write(std::string_view data) const {
 
 ssize_t TCPSocket::Send(std::string_view data) const {
   return send(sockfd_, data.data(), data.size(), /*flags*/ 0);
+}
+
+ssize_t TCPSocket::SendMsg(const std::vector<std::string_view>& data) const {
+  struct msghdr msg = {};
+  msg.msg_iovlen = data.size();
+  auto msg_iov = std::make_unique<struct iovec[]>(data.size());
+  msg.msg_iov = msg_iov.get();
+  for (size_t i = 0; i < data.size(); ++i) {
+    msg.msg_iov[i].iov_base = const_cast<char*>(data[i].data());
+    msg.msg_iov[i].iov_len = data[i].size();
+  }
+  return sendmsg(sockfd_, &msg, /*flags*/ 0);
 }
 
 void TCPSocket::Connect(const TCPSocket& addr) {
