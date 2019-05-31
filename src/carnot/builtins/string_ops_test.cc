@@ -35,6 +35,10 @@ TEST(StringOps, basic_string_substr_test) {
   udf_tester.ForInput("pixielabs", 5, 10).Expect("labs");
 }
 
+TEST(StringOps, basic_string_tolower_test) {
+  auto udf_tester = udf::UDFTester<ToLowerUDF>();
+  udf_tester.ForInput("pIXiE").Expect("pixie");
+}
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace pl
