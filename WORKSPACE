@@ -592,3 +592,95 @@ go_repository(
     commit = "27376062155ad36be76b0f12cf1572a221d3a48c",
     importpath = "go.uber.org/zap",
 )
+
+go_repository(
+    name = "com_github_google_go_cmp",
+    commit = "6f77996f0c42f7b84e5a2b252227263f93432e9b",
+    importpath = "github.com/google/go-cmp",
+)
+
+go_repository(
+    name = "com_github_google_gofuzz",
+    commit = "f140a6486e521aad38f5917de355cbf147cc0496",
+    importpath = "github.com/google/gofuzz",
+)
+
+go_repository(
+    name = "com_github_googleapis_gnostic",
+    commit = "7c663266750e7d82587642f65e60bc4083f1f84e",
+    importpath = "github.com/googleapis/gnostic",
+)
+
+go_repository(
+    name = "com_github_hashicorp_golang_lru",
+    commit = "7087cb70de9f7a8bc0a10c375cb0d2280a8edf9c",
+    importpath = "github.com/hashicorp/golang-lru",
+)
+
+go_repository(
+    name = "com_github_imdario_mergo",
+    commit = "7c29201646fa3de8506f701213473dd407f19646",
+    importpath = "github.com/imdario/mergo",
+)
+
+go_repository(
+    name = "com_google_cloud_go",
+    commit = "775730d6e48254a2430366162cf6298e5368833c",
+    importpath = "cloud.google.com/go",
+)
+
+go_repository(
+    name = "in_gopkg_inf_v0",
+    commit = "d2d2541c53f18d2a059457998ce2876cc8e67cbf",
+    importpath = "gopkg.in/inf.v0",
+)
+
+go_repository(
+    name = "io_k8s_api",
+    build_file_proto_mode = "disable",
+    commit = "67ef80593b248c87b40adcbff0d564819f27640a",
+    importpath = "k8s.io/api",
+)
+
+go_repository(
+    name = "io_k8s_apimachinery",
+    build_file_proto_mode = "disable",
+    commit = "e59c2fb0a8e52fc46da20f5a03d2b3b935ba7f88",
+    importpath = "k8s.io/apimachinery",
+)
+
+go_repository(
+    name = "io_k8s_client_go",
+    commit = "6ee68ca5fd8355d024d02f9db0b3b667e8357a0f",
+    importpath = "k8s.io/client-go",
+)
+
+go_repository(
+    name = "io_k8s_klog",
+    commit = "78315d914a8af2453db4864e69230b647b1ff711",
+    importpath = "k8s.io/klog",
+)
+
+go_repository(
+    name = "io_k8s_sigs_yaml",
+    commit = "fd68e9863619f6ec2fdd8625fe1f02e7c877e480",
+    importpath = "sigs.k8s.io/yaml",
+)
+
+go_repository(
+    name = "io_k8s_utils",
+    commit = "6999998975a717e7f5fc2a7476497044cb111854",
+    importpath = "k8s.io/utils",
+)
+
+go_repository(
+    name = "org_golang_google_appengine",
+    commit = "4c25cacc810c02874000e4f7071286a8e96b2515",
+    importpath = "google.golang.org/appengine",
+)
+
+go_repository(
+    name = "org_golang_x_oauth2",
+    commit = "aaccbc9213b0974828f81aaac109d194880e3014",
+    importpath = "golang.org/x/oauth2",
+)

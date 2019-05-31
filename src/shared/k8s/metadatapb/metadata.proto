@@ -127,7 +127,7 @@ message PodStatus {
   PodPhase phase = 1;
 
   // Current service state of pod.
-  PodConditionType conditions = 2;
+  repeated PodConditionType conditions = 2;
 
   // A human readable message indicating details about why the pod is in this condition.
   string message = 3;
