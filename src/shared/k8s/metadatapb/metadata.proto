@@ -1,0 +1,285 @@
+syntax = "proto3";
+
+package pl.shared.k8s.metadatapb;
+
+// This file is mostly copied from
+// github.com/kubernetes/api/blob/e480447a07fd8adfbff8abea81c1d2dcd6af906e/core/v1/generated.proto and
+// github.com/kubernetes/apimachinery/blob/bca0c154df821d07920394c2d6831112dc1bcdec/pkg/apis/meta/v1/generated.proto
+// with some modifications, such as deletion of unnecessary fields and field re-naming.
+
+message ObjectMetadata {
+  // Name of the resource.
+  string name = 1;
+
+  // Namespace defines the space within each name must be unique. An empty namespace is
+  // equivalent to the "default" namespace.
+  string namespace = 2;
+
+  // UID is an identifier that is unique in time and space value for this object.
+  string uid = 3;
+
+  // An opaque value that represents the internal version of this object that can
+  // be used by clients to determine when objects have changed. May be used for optimistic
+  // concurrency, change detection, and the watch operation on a resource or set of resources.
+  string resource_version = 4;
+
+  // The server time in nanoseconds when this object was created.
+  int64 creation_timestamp_ns = 5;
+
+  // The time in nanoseconds at which this resource will be deleted.
+  int64 deletion_timestamp_ns = 6;
+
+  // Map of string keys and values that can be used to organize and categorize
+  // (scope and select) objects.
+  map<string, string> labels = 7;
+
+  // List of objects depended by this object.
+  repeated OwnerReference owner_references = 8;
+
+  // The name of the cluster which the object belongs to.
+  string cluster_name = 9;
+}
+
+message OwnerReference {
+  // Kind of the referent.
+  string kind = 1;
+
+  // Name of the referent.
+  string name = 3;
+
+  // UID of the referent.
+  string uid = 4;
+}
+
+// Pod is a collection of containers that can run on a host. This resource is created
+// by clients and scheduled onto hosts.
+message Pod {
+  // Standard object's metadata.
+  ObjectMetadata metadata = 1;
+
+  // Specification of the desired behavior of the pod.
+  PodSpec spec = 2;
+
+  // Most recently observed status of the pod.
+  PodStatus status = 3;
+}
+
+enum DNSPolicy {
+  DEFAULT = 0;
+  NONE = 1;
+  CLUSTER_FIRST = 2;
+  CLUSTER_FIRST_WITH_HOST_NET = 3;
+}
+
+// PodSpec is a description of a pod.
+message PodSpec {
+  // List of volumes that can be mounted by containers belonging to the pod.
+  // TODO(michelle): Add this in at some point, since we may want volume information.
+  // repeated Volume volumes = 1;
+
+  // The DNS policy for the pod.
+  DNSPolicy dns_policy = 1;
+
+  // A selector which must be true for the pod to fit on a node.
+  map<string, string> node_selector = 2;
+
+  // A request to schedule this pod onto a specific node.
+  string node_name = 3;
+
+  // Specifies the hostname of the Pod.
+  string hostname = 4;
+
+  // If specified, the fully qualified Pod hostname will be
+  // "<hostname>.<subdomain>.<pod namespace>.svc.<cluster domain>".
+  string subdomain = 5;
+
+  // If specified, indicates the pod's priority.
+  string priority_class_name = 6;
+
+  // The priority value.
+  int32 priority = 7;
+}
+
+// There are five possible pod phase values:
+//
+// Pending: The pod has been accepted by the Kubernetes system, but one or more of the
+// container images has not been created. This includes time before being scheduled as
+// well as time spent downloading images over the network, which could take a while.
+// Running: The pod has been bound to a node, and all of the containers have been created.
+// At least one container is still running, or is in the process of starting or restarting.
+// Succeeded: All containers in the pod have terminated in success, and will not be restarted.
+// Failed: All containers in the pod have terminated, and at least one container has
+// terminated in failure. The container either exited with non-zero status or was terminated
+// by the system.
+// Unknown: For some reason the state of the pod could not be obtained, typically due to an
+// error in communicating with the host of the pod.
+enum PodPhase {
+  PHASE_UNKNOWN = 0;
+  PENDING = 1;
+  RUNNING = 2;
+  SUCCEEDED = 3;
+  FAILED = 4;
+}
+
+// PodStatus represents information about the status of a pod.
+message PodStatus {
+  // The phase of a Pod is a simple, high-level summary of where the Pod is in its lifecycle.
+  PodPhase phase = 1;
+
+  // Current service state of pod.
+  PodConditionType conditions = 2;
+
+  // A human readable message indicating details about why the pod is in this condition.
+  string message = 3;
+
+  // A brief CamelCase message indicating details about why the pod is in this state.
+  // e.g. 'Evicted'
+  string reason = 4;
+
+  // IP address of the host to which the pod is assigned. Empty if not yet scheduled.
+  string host_ip = 5;
+
+  // IP address allocated to the pod. Routable at least within the cluster.
+  string pod_ip = 6;
+}
+
+enum PodConditionType {
+  TYPE_UNKNOWN = 0;
+  POD_SCHEDULED = 1;
+  READY = 2;
+  INITIALIZED = 3;
+  UNSCHEDULABLE = 4;
+  CONTAINERS_READY = 5;
+}
+
+message Endpoints {
+  // Standard object's metadata.
+  ObjectMetadata metadata = 1;
+
+  // Sets of addresses and ports that comprise a service.
+  repeated EndpointSubset subsets = 2;
+}
+
+message EndpointSubset {
+  // IP addresses which offer the related ports that are marked as ready.
+  repeated EndpointAddress addresses = 1;
+
+  // IP addresses which offer the related ports but are not currently marked as ready.
+  repeated EndpointAddress not_ready_addresses = 2;
+
+  // Port numbers available on the related IP addresses.
+  repeated EndpointPort ports = 3;
+}
+
+// EndpointAddress is a tuple that describes single IP address.
+message EndpointAddress {
+  // The IP of this endpoint.
+  string ip = 1;
+
+  // The hostname of this endpoint
+  string hostname = 2;
+
+  // Node hosting this endpoint. This can be used to determine endpoints local to a node.
+  string node_name = 3;
+
+  // Reference to object providing the endpoint.
+  ObjectReference target_ref = 4;
+}
+
+enum IPProtocol {
+  IP_PROTOCOL_UNKNOWN = 0;
+  TCP = 1;
+  UDP = 2;
+  SCTP = 3;
+}
+
+// EndpointPort is a tuple that describes a single port.
+message EndpointPort {
+  // The name of this port (corresponds to ServicePort.Name).
+  string name = 1;
+
+  // The port number of the endpoint.
+  int32 port = 2;
+
+  // The IP protocol for this port.
+  IPProtocol protocol = 3;
+}
+
+// ObjectReference contains enough information to let you inspect or modify the referred object.
+message ObjectReference {
+  // Kind of the referent.
+  string kind = 1;
+
+  // Namespace of the referent.
+  string namespace = 2;
+
+  // Name of the referent.
+  string name = 3;
+
+  // UID of the referent.
+  string uid = 4;
+
+  // Specific resource version to which this reference is made, if any.
+  string resourceVersion = 6;
+}
+
+// Service is a named abstraction of software service (for example, mysql) consisting of local port
+// (for example 3306) that the proxy listens on.
+message Service {
+  // Standard object's metadata.
+  ObjectMetadata metadata = 1;
+
+  // Spec defines the behavior of a service.
+  ServiceSpec spec = 2;
+}
+
+enum ServiceType {
+  SERVICE_TYPE_UNKNOWN = 0;
+  EXTERNAL_NAME = 1;
+  CLUSTER_IP = 2;
+  NODE_PORT = 3;
+  LOAD_BALANCER = 4;
+}
+
+// ServiceSpec describes the attributes that a user creates on a service.
+message ServiceSpec {
+  // The list of ports that are exposed by this service.
+  repeated ServicePort ports = 1;
+
+  // The IP address of the service.
+  string cluster_ip = 2;
+
+  // The type which determines how the Service is exposed.
+  ServiceType type = 3;
+
+  // List of IP addresses for which nodes in the cluster
+  // will also accept traffic for this service.
+  repeated string external_ips = 4;
+
+  // Only applies to Service Type: LoadBalancer
+  // LoadBalancer will get created with the IP specified in this field.
+  string load_balancer_ip = 5;
+
+  // The external reference that kubedns or equivalent will
+  // return as a CNAME record for this service.
+  string external_name = 6;
+
+  // Policy that denotes if this Service desires to route external
+  // traffic to node-local or cluster-wide endpoints.
+  string external_traffic_policy = 7;
+}
+
+// ServicePort contains information on service's port.
+message ServicePort {
+  // The name of this port within the service.
+  string name = 1;
+
+  // The IP protocol for this port.
+  IPProtocol protocol = 2;
+
+  // The port that will be exposed by this service.
+  int32 port = 3;
+
+  // The port on each node on which this service is exposed when type=NodePort or LoadBalancer.
+  int32 node_port = 4;
+}
