@@ -148,10 +148,20 @@ class SourceConnector : public NotCopyable {
     inline void Append(
         typename types::DataTypeTraits<schema->elements()[index].type()>::value_type val) {
       record_batch_[index]->Append(std::move(val));
+      CHECK(!signature_[index]) << absl::StrFormat(
+          "Attempt to Append() to column %d (name=%s) multiple times", index,
+          schema->elements()[index].name().get());
+      signature_.set(index);
+    }
+
+    ~RecordBuilder() {
+      CHECK(signature_.all()) << absl::StrFormat(
+          "Must call Append() on all columns. Column bitset = %s", signature_.to_string());
     }
 
    private:
     types::ColumnWrapperRecordBatch& record_batch_;
+    std::bitset<schema->elements().size()> signature_;
   };
 
  private:

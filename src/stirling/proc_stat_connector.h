@@ -18,8 +18,7 @@ class ProcStatConnector : public SourceConnector {
           {"time_", types::DataType::TIME64NS},
           {"system_percent", types::DataType::FLOAT64},
           {"user_percent", types::DataType::FLOAT64},
-          {"idle_percent", types::DataType::FLOAT64},
-          {"http_resp_latency_ns", types::DataType::INT64}
+          {"idle_percent", types::DataType::FLOAT64}
   };
   // clang-format on
   static constexpr auto kTable = DataTableSchema("proc_stat", kElements);
