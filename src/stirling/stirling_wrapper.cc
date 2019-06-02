@@ -87,11 +87,11 @@ void StirlingWrapperCallback(uint64_t table_id,
   if (name == CPUStatBPFTraceConnector::kTable.name().get()) {
     PrintRecordBatch("CPUStat-BPFTrace", CPUStatBPFTraceConnector::kTable.elements(), num_records,
                      *record_batch);
-  } else if (name == SeqGenConnector::kTableSeq0.name().get()) {
-    PrintRecordBatch("SeqGen-0", SeqGenConnector::kTableSeq0.elements(), num_records,
+  } else if (name == SeqGenConnector::kSeq0Table.name().get()) {
+    PrintRecordBatch("SeqGen-0", SeqGenConnector::kSeq0Table.elements(), num_records,
                      *record_batch);
-  } else if (name == SeqGenConnector::kTableSeq1.name().get()) {
-    PrintRecordBatch("SeqGen-1", SeqGenConnector::kTableSeq1.elements(), num_records,
+  } else if (name == SeqGenConnector::kSeq1Table.name().get()) {
+    PrintRecordBatch("SeqGen-1", SeqGenConnector::kSeq1Table.elements(), num_records,
                      *record_batch);
   } else if (name == PIDCPUUseBPFTraceConnector::kTable.name().get()) {
     PrintRecordBatch("PIDStat-BPFTrace", PIDCPUUseBPFTraceConnector::kTable.elements(), num_records,

@@ -75,8 +75,8 @@ Content-Length: 0
 
   const int http_table_num = 0;
   const DataTableSchema& http_table_schema = SocketTraceConnector::kHTTPTable;
-  const uint64_t kHTTPHeaderIdx = http_table_schema.KeyIndex("http_headers");
-  const uint64_t kFdIdx = http_table_schema.KeyIndex("fd");
+  const uint64_t kHTTPHeaderIdx = http_table_schema.ColIndex("http_headers");
+  const uint64_t kFdIdx = http_table_schema.ColIndex("fd");
 
   const int mysql_table_num = 1;
   const DataTableSchema& mysql_table_schema = SocketTraceConnector::kMySQLTable;

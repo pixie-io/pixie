@@ -105,7 +105,7 @@ class StirlingTest : public ::testing::Test {
 
     for (const auto& [id, name] : id_to_name_map_) {
       if (name[name.length() - 1] == '0') {
-        schemas_.emplace(id, &SeqGenConnector::kTableSeq0.elements());
+        schemas_.emplace(id, &SeqGenConnector::kSeq0Table.elements());
 
         uint32_t col_idx = 1;  // Start at 1, because column 0 is time.
         int_seq_checker_.emplace((id << 32) | col_idx++,
@@ -123,7 +123,7 @@ class StirlingTest : public ::testing::Test {
 
         num_processed_per_table_.emplace(id, 0);
       } else if (name[name.length() - 1] == '1') {
-        schemas_.emplace(id, &SeqGenConnector::kTableSeq1.elements());
+        schemas_.emplace(id, &SeqGenConnector::kSeq1Table.elements());
 
         uint32_t col_idx = 1;  // Start at 1, because column 0 is time.
         int_seq_checker_.emplace((id << 32) | col_idx++,

@@ -7,6 +7,7 @@
 
 #include "absl/strings/str_format.h"
 #include "src/common/base/base.h"
+#include "src/shared/types/types.h"
 #include "src/stirling/info_class_manager.h"
 
 /**
@@ -126,6 +127,32 @@ class SourceConnector : public NotCopyable {
   void InitClockRealTimeOffset();
 
   uint64_t real_time_offset_;
+
+ protected:
+  // Example usage:
+  // RecordBuilder<&kTable> r(record_batch);
+  // r.Append<r.ColIndex("field0")>(val0);
+  // r.Append<r.ColIndex("field1")>(val1);
+  // r.Append<r.ColIndex("field2")>(val2);
+  template <const DataTableSchema* schema>
+  class RecordBuilder {
+   public:
+    explicit RecordBuilder(types::ColumnWrapperRecordBatch* record_batch)
+        : record_batch_(*record_batch) {}
+
+    // For convenience, a wrapper around ColIndex() in the DataTableSchema class.
+    constexpr uint32_t ColIndex(ConstStrView name) { return schema->ColIndex(name); }
+
+    // The argument type is inferred by the table schema and the column index.
+    template <const uint32_t index>
+    inline void Append(
+        typename types::DataTypeTraits<schema->elements()[index].type()>::value_type val) {
+      record_batch_[index]->Append(std::move(val));
+    }
+
+   private:
+    types::ColumnWrapperRecordBatch& record_batch_;
+  };
 
  private:
   const SourceType type_;

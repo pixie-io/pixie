@@ -79,6 +79,7 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
   };
   // clang-format on
   static constexpr auto kTable = DataTableSchema("bpftrace_cpu_stats", kElements);
+
   static constexpr DataTableSchema kTablesArray[] = {kTable};
   static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
 
@@ -114,6 +115,7 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
   };
   // clang-format on
   static constexpr auto kTable = DataTableSchema("bpftrace_pid_cpu_usage", kElements);
+
   static constexpr DataTableSchema kTablesArray[] = {kTable};
   static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
 

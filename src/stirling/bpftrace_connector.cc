@@ -155,8 +155,6 @@ void PIDCPUUseBPFTraceConnector::TransferDataImpl(uint32_t table_num,
   CHECK_LT(table_num, kTables.size())
       << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
 
-  auto& columns = *record_batch;
-
   auto pid_time_pairs = GetBPFMap("@total_time");
   auto pid_name_pairs = GetBPFMap("@names");
 
@@ -200,11 +198,11 @@ void PIDCPUUseBPFTraceConnector::TransferDataImpl(uint32_t table_num,
       }
     }
 
-    uint32_t idx = 0;
-    columns[idx++]->Append<types::Time64NSValue>(timestamp + ClockRealTimeOffset());
-    columns[idx++]->Append<types::Int64Value>(pid);
-    columns[idx++]->Append<types::Int64Value>(cputime - last_cputime);
-    columns[idx++]->Append<types::StringValue>(std::move(name));
+    RecordBuilder<&kTable> r(record_batch);
+    r.Append<r.ColIndex("time_")>(timestamp + ClockRealTimeOffset());
+    r.Append<r.ColIndex("pid")>(pid);
+    r.Append<r.ColIndex("runtime_ns")>(cputime - last_cputime);
+    r.Append<r.ColIndex("cmd")>(std::move(name));
   }
 
   // Keep this, because we will want to compute deltas next time.

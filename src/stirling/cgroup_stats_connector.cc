@@ -40,7 +40,6 @@ void CGroupStatsConnector::TransferCGroupStatsTable(types::ColumnWrapperRecordBa
       std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count() +
       ClockRealTimeOffset();
 
-  auto& columns = *record_batch;
   for (const auto& [pod, pod_info] : cgroup_mgr_->cgroup_info()) {
     for (const auto& [container, process_info] : pod_info.container_info_by_name) {
       for (const auto& pid : process_info.pids) {
@@ -52,25 +51,24 @@ void CGroupStatsConnector::TransferCGroupStatsTable(types::ColumnWrapperRecordBa
           continue;
         }
 
-        int64_t col_idx = 0;
-        columns[col_idx++]->Append<types::Time64NSValue>(timestamp);
-        columns[col_idx++]->Append<types::StringValue>(
-            CGroupManager::CGroupQoSToString(pod_info.qos));
-        columns[col_idx++]->Append<types::StringValue>(std::string(pod));
-        columns[col_idx++]->Append<types::StringValue>(std::string(container));
-        columns[col_idx++]->Append<types::StringValue>(std::move(stats.process_name));
-        columns[col_idx++]->Append<types::Int64Value>(stats.pid);
-        columns[col_idx++]->Append<types::Int64Value>(stats.major_faults);
-        columns[col_idx++]->Append<types::Int64Value>(stats.minor_faults);
-        columns[col_idx++]->Append<types::Int64Value>(stats.utime_ns);
-        columns[col_idx++]->Append<types::Int64Value>(stats.ktime_ns);
-        columns[col_idx++]->Append<types::Int64Value>(stats.num_threads);
-        columns[col_idx++]->Append<types::Int64Value>(stats.vsize_bytes);
-        columns[col_idx++]->Append<types::Int64Value>(stats.rss_bytes);
-        columns[col_idx++]->Append<types::Int64Value>(stats.rchar_bytes);
-        columns[col_idx++]->Append<types::Int64Value>(stats.wchar_bytes);
-        columns[col_idx++]->Append<types::Int64Value>(stats.read_bytes);
-        columns[col_idx++]->Append<types::Int64Value>(stats.write_bytes);
+        RecordBuilder<&kCPUTable> r(record_batch);
+        r.Append<r.ColIndex("time_")>(timestamp);
+        r.Append<r.ColIndex("qos")>(CGroupManager::CGroupQoSToString(pod_info.qos));
+        r.Append<r.ColIndex("pod")>(std::string(pod));
+        r.Append<r.ColIndex("container")>(std::string(container));
+        r.Append<r.ColIndex("process_name")>(std::move(stats.process_name));
+        r.Append<r.ColIndex("pid")>(stats.pid);
+        r.Append<r.ColIndex("major_faults")>(stats.major_faults);
+        r.Append<r.ColIndex("minor_faults")>(stats.minor_faults);
+        r.Append<r.ColIndex("cpu_utime_ns")>(stats.utime_ns);
+        r.Append<r.ColIndex("cpu_ktime_ns")>(stats.ktime_ns);
+        r.Append<r.ColIndex("num_threads")>(stats.num_threads);
+        r.Append<r.ColIndex("vsize_bytes")>(stats.vsize_bytes);
+        r.Append<r.ColIndex("rss_bytes")>(stats.rss_bytes);
+        r.Append<r.ColIndex("rchar_bytes")>(stats.rchar_bytes);
+        r.Append<r.ColIndex("wchar_bytes")>(stats.wchar_bytes);
+        r.Append<r.ColIndex("read_bytes")>(stats.read_bytes);
+        r.Append<r.ColIndex("write_bytes")>(stats.write_bytes);
       }
     }
   }
@@ -88,7 +86,6 @@ void CGroupStatsConnector::TransferNetStatsTable(types::ColumnWrapperRecordBatch
       std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count() +
       ClockRealTimeOffset();
 
-  auto& columns = *record_batch;
   for (const auto& [pod, pod_info] : cgroup_mgr_->cgroup_info()) {
     PL_UNUSED(pod_info);
     ProcParser::NetworkStats stats;
@@ -99,19 +96,20 @@ void CGroupStatsConnector::TransferNetStatsTable(types::ColumnWrapperRecordBatch
       continue;
     }
 
-    int64_t col_idx = 0;
-    columns[col_idx++]->Append<types::Time64NSValue>(timestamp);
-    columns[col_idx++]->Append<types::StringValue>(std::string(pod));
+    RecordBuilder<&kNetworkTable> r(record_batch);
 
-    columns[col_idx++]->Append<types::Int64Value>(stats.rx_bytes);
-    columns[col_idx++]->Append<types::Int64Value>(stats.rx_packets);
-    columns[col_idx++]->Append<types::Int64Value>(stats.rx_errs);
-    columns[col_idx++]->Append<types::Int64Value>(stats.rx_drops);
+    r.Append<r.ColIndex("time_")>(timestamp);
+    r.Append<r.ColIndex("pod")>(std::string(pod));
 
-    columns[col_idx++]->Append<types::Int64Value>(stats.tx_bytes);
-    columns[col_idx++]->Append<types::Int64Value>(stats.tx_packets);
-    columns[col_idx++]->Append<types::Int64Value>(stats.tx_errs);
-    columns[col_idx++]->Append<types::Int64Value>(stats.tx_drops);
+    r.Append<r.ColIndex("rx_bytes")>(stats.rx_bytes);
+    r.Append<r.ColIndex("rx_packets")>(stats.rx_packets);
+    r.Append<r.ColIndex("rx_errors")>(stats.rx_errs);
+    r.Append<r.ColIndex("rx_drops")>(stats.rx_drops);
+
+    r.Append<r.ColIndex("tx_bytes")>(stats.tx_bytes);
+    r.Append<r.ColIndex("tx_packets")>(stats.tx_packets);
+    r.Append<r.ColIndex("tx_errors")>(stats.tx_errs);
+    r.Append<r.ColIndex("tx_drops")>(stats.tx_drops);
   }
 }
 

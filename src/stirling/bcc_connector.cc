@@ -51,8 +51,6 @@ void PIDCPUUseBCCConnector::TransferDataImpl(uint32_t table_num,
   CHECK_EQ(table_num, 0ULL) << absl::StrFormat(
       "This connector has only one table, but access to table_num=%d", table_num);
 
-  auto& columns = *record_batch;
-
   // TODO(kgandhi): PL-452 There is an extra copy when calling get_table_offline. We should extract
   // the key when it is a struct from the BPFHASHTable directly.
   table_ = bpf_.get_hash_table<uint16_t, pl_stirling_bcc_pidruntime_val>("pid_cpu_time")
@@ -70,10 +68,11 @@ void PIDCPUUseBCCConnector::TransferDataImpl(uint32_t table_num,
       prev_run_time = it->second;
     }
 
-    columns[0]->Append<types::Time64NSValue>(item.second.timestamp + ClockRealTimeOffset());
-    columns[1]->Append<types::Int64Value>(item.first);
-    columns[2]->Append<types::Int64Value>(item.second.run_time - prev_run_time);
-    columns[3]->Append<types::StringValue>(item.second.name);
+    RecordBuilder<&kTable> r(record_batch);
+    r.Append<r.ColIndex("time_")>(item.second.timestamp + ClockRealTimeOffset());
+    r.Append<r.ColIndex("pid")>(item.first);
+    r.Append<r.ColIndex("runtime_ns")>(item.second.run_time - prev_run_time);
+    r.Append<r.ColIndex("cmd")>(item.second.name);
 
     prev_run_time_map_[item.first] = item.second.run_time;
   }

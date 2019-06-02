@@ -13,11 +13,15 @@ class ProcStatConnector : public SourceConnector {
  public:
   static constexpr SourceType kSourceType = SourceType::kFile;
 
-  static constexpr DataElement kElements[] = {{"time_", types::DataType::TIME64NS},
-                                              {"system_percent", types::DataType::FLOAT64},
-                                              {"user_percent", types::DataType::FLOAT64},
-                                              {"idle_percent", types::DataType::FLOAT64},
-                                              {"http_resp_latency_ns", types::DataType::INT64}};
+  // clang-format off
+  static constexpr DataElement kElements[] = {
+          {"time_", types::DataType::TIME64NS},
+          {"system_percent", types::DataType::FLOAT64},
+          {"user_percent", types::DataType::FLOAT64},
+          {"idle_percent", types::DataType::FLOAT64},
+          {"http_resp_latency_ns", types::DataType::INT64}
+  };
+  // clang-format on
   static constexpr auto kTable = DataTableSchema("proc_stat", kElements);
 
   static constexpr DataTableSchema kTablesArray[] = {kTable};

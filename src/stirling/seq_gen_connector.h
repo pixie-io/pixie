@@ -21,21 +21,28 @@ class SeqGenConnector : public SourceConnector {
 
   static constexpr SourceType kSourceType = SourceType::kUnknown;
 
+  // clang-format off
   static constexpr DataElement kElementsSeq0[] = {
-      {"time_", types::DataType::TIME64NS},  {"x", types::DataType::INT64},
-      {"xmod10", types::DataType::INT64},    {"xsquared", types::DataType::INT64},
-      {"fibonnaci", types::DataType::INT64}, {"PIx", types::DataType::FLOAT64},
+      {"time_", types::DataType::TIME64NS},
+      {"x", types::DataType::INT64},
+      {"xmod10", types::DataType::INT64},
+      {"xsquared", types::DataType::INT64},
+      {"fibonnaci", types::DataType::INT64},
+      {"PIx", types::DataType::FLOAT64},
   };
-  static constexpr auto kTableSeq0 = DataTableSchema("sequence_generator0", kElementsSeq0);
+  // clang-format on
+  static constexpr auto kSeq0Table = DataTableSchema("sequence_generator0", kElementsSeq0);
 
+  // clang-format off
   static constexpr DataElement kElementsSeq1[] = {
       {"time_", types::DataType::TIME64NS},
       {"x", types::DataType::INT64},
       {"xmod8", types::DataType::INT64},
   };
-  static constexpr auto kTableSeq1 = DataTableSchema("sequence_generator1", kElementsSeq1);
+  // clang-format on
+  static constexpr auto kSeq1Table = DataTableSchema("sequence_generator1", kElementsSeq1);
 
-  static constexpr DataTableSchema kTablesArray[] = {kTableSeq0, kTableSeq1};
+  static constexpr DataTableSchema kTablesArray[] = {kSeq0Table, kSeq1Table};
   static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{500};
@@ -72,10 +79,8 @@ class SeqGenConnector : public SourceConnector {
   Status StopImpl() override { return Status::OK(); }
 
  private:
-  void TransferDataTable0(uint32_t num_records, uint32_t num_columns,
-                          types::ColumnWrapperRecordBatch* record_batch);
-  void TransferDataTable1(uint32_t num_records, uint32_t num_columns,
-                          types::ColumnWrapperRecordBatch* record_batch);
+  void TransferDataTable0(uint32_t num_records, types::ColumnWrapperRecordBatch* record_batch);
+  void TransferDataTable1(uint32_t num_records, types::ColumnWrapperRecordBatch* record_batch);
 
   TimeSequence<int64_t> table0_time_seq_;
   LinearSequence<int64_t> table0_lin_seq_;

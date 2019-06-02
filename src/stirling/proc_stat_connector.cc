@@ -91,15 +91,15 @@ void ProcStatConnector::TransferDataImpl(uint32_t table_num,
                                          types::ColumnWrapperRecordBatch* record_batch) {
   CHECK_LT(table_num, num_tables())
       << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
-  auto& columns = *record_batch;
 
   auto parsed_str = GetProcParams();
   PL_CHECK_OK(GetProcStat(parsed_str));
 
-  columns[0]->Append<types::Time64NSValue>(cpu_usage_.timestamp);
-  columns[1]->Append<types::Float64Value>(cpu_usage_.system_percent);
-  columns[2]->Append<types::Float64Value>(cpu_usage_.user_percent);
-  columns[3]->Append<types::Float64Value>(cpu_usage_.idle_percent);
+  RecordBuilder<&kTable> r(record_batch);
+  r.Append<r.ColIndex("time_")>(cpu_usage_.timestamp);
+  r.Append<r.ColIndex("system_percent")>(cpu_usage_.system_percent);
+  r.Append<r.ColIndex("user_percent")>(cpu_usage_.user_percent);
+  r.Append<r.ColIndex("idle_percent")>(cpu_usage_.idle_percent);
 }
 
 }  // namespace stirling

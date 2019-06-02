@@ -56,13 +56,16 @@ class PIDCPUUseBCCConnector : public BCCConnector {
   inline static const std::string_view kBCCScript = pidruntime_bcc_script;
   static constexpr SourceType kSourceType = SourceType::kEBPF;
 
+  // clang-format off
   static constexpr DataElement kElements[] = {
       {"time_", types::DataType::TIME64NS},
       {"pid", types::DataType::INT64},
       {"runtime_ns", types::DataType::INT64},
       {"cmd", types::DataType::STRING},
   };
+  // clang-format on
   static constexpr auto kTable = DataTableSchema("bcc_pid_cpu_usage", kElements);
+
   static constexpr DataTableSchema kTablesArray[] = {kTable};
   static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
 

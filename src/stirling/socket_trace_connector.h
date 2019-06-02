@@ -49,40 +49,41 @@ class SocketTraceConnector : public SourceConnector {
 
   // clang-format off
   static constexpr DataElement kHTTPElements[] = {
-                       DataElement("time_", types::DataType::TIME64NS),
-                       // tgid is the user space "pid".
-                       DataElement("tgid", types::DataType::INT64),
-                       // TODO(yzhao): Remove 'fd'.
-                       DataElement("fd", types::DataType::INT64),
-                       DataElement("event_type", types::DataType::STRING),
-                       // TODO(PL-519): Eventually, use the appropriate data type to
-                       // represent IP addresses, as will be resolved in the Jira issue.
-                       DataElement("src_addr", types::DataType::STRING),
-                       DataElement("src_port", types::DataType::INT64),
-                       DataElement("dst_addr", types::DataType::STRING),
-                       DataElement("dst_port", types::DataType::INT64),
-                       DataElement("http_minor_version", types::DataType::INT64),
-                       DataElement("http_headers", types::DataType::STRING),
-                       DataElement("http_req_method", types::DataType::STRING),
-                       DataElement("http_req_path", types::DataType::STRING),
-                       DataElement("http_resp_status", types::DataType::INT64),
-                       DataElement("http_resp_message", types::DataType::STRING),
-                       DataElement("http_resp_body", types::DataType::STRING),
-                       DataElement("http_resp_latency_ns", types::DataType::INT64)
+          {"time_", types::DataType::TIME64NS},
+          // tgid is the user space "pid".
+          {"tgid", types::DataType::INT64},
+          // TODO(yzhao): Remove 'fd'.
+          {"fd", types::DataType::INT64},
+          {"event_type", types::DataType::STRING},
+          // TODO(PL-519): Eventually, use the appropriate data type to
+          // represent IP addresses, as will be resolved in the Jira issue.
+          {"src_addr", types::DataType::STRING},
+          {"src_port", types::DataType::INT64},
+          {"dst_addr", types::DataType::STRING},
+          {"dst_port", types::DataType::INT64},
+          {"http_minor_version", types::DataType::INT64},
+          {"http_headers", types::DataType::STRING},
+          {"http_req_method", types::DataType::STRING},
+          {"http_req_path", types::DataType::STRING},
+          {"http_resp_status", types::DataType::INT64},
+          {"http_resp_message", types::DataType::STRING},
+          {"http_resp_body", types::DataType::STRING},
+          {"http_resp_latency_ns", types::DataType::INT64}
   };
   // clang-format on
   static constexpr auto kHTTPTable = DataTableSchema("socket_trace", kHTTPElements);
 
   // clang-format off
   static constexpr DataElement kMySQLElements[] = {
-           DataElement("time_", types::DataType::TIME64NS),
-           DataElement("tgid", types::DataType::INT64), DataElement("fd", types::DataType::INT64),
-           DataElement("bpf_event", types::DataType::INT64),
-           DataElement("src_addr", types::DataType::STRING),
-           DataElement("src_port", types::DataType::INT64),
-           DataElement("dst_addr", types::DataType::STRING),
-           DataElement("dst_port", types::DataType::INT64),
-           DataElement("body", types::DataType::STRING),
+          {"time_", types::DataType::TIME64NS},
+          {"tgid", types::DataType::INT64},
+          {"fd", types::DataType::INT64},
+          {"bpf_event", types::DataType::INT64},
+          {"src_addr", types::DataType::STRING},
+          {"src_port", types::DataType::INT64},
+          {"dst_addr", types::DataType::STRING},
+          {"dst_port", types::DataType::INT64},
+          {"body", types::DataType::STRING},
   };
   // clang-format on
   static constexpr auto kMySQLTable = DataTableSchema("mysql_trace", kMySQLElements);

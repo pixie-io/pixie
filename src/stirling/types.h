@@ -46,7 +46,7 @@ class DataTableSchema {
   constexpr const ConstVectorView<DataElement>& elements() const { return elements_; }
 
   // Warning: use at compile-time only!
-  constexpr uint32_t KeyIndex(const ConstStrView& key) const {
+  constexpr uint32_t ColIndex(const ConstStrView& key) const {
     uint32_t i = 0;
     for (i = 0; i < elements_.size(); i++) {
       if (elements_[i].name().equals(key)) {

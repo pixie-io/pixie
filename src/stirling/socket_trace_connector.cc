@@ -267,31 +267,30 @@ bool SocketTraceConnector::SelectHTTPResponse(const HTTPTraceRecord& record) {
 
 void SocketTraceConnector::AppendHTTPResponse(HTTPTraceRecord record,
                                               types::ColumnWrapperRecordBatch* record_batch) {
-  uint64_t num_columns = SocketTraceConnector::kHTTPTable.elements().size();
-  CHECK_EQ(num_columns, record_batch->size());
+  CHECK_EQ(kHTTPTable.elements().size(), record_batch->size());
 
-  auto& columns = *record_batch;
-
-  uint32_t idx = 0;
-  columns[idx++]->Append<types::Time64NSValue>(record.message.timestamp_ns);
-  columns[idx++]->Append<types::Int64Value>(record.conn.tgid);
-  columns[idx++]->Append<types::Int64Value>(record.conn.fd);
-  columns[idx++]->Append<types::StringValue>(EventTypeToString(record.message.type));
-  columns[idx++]->Append<types::StringValue>(std::move(record.conn.src_addr));
-  columns[idx++]->Append<types::Int64Value>(record.conn.src_port);
-  columns[idx++]->Append<types::StringValue>(std::move(record.conn.dst_addr));
-  columns[idx++]->Append<types::Int64Value>(record.conn.dst_port);
-  columns[idx++]->Append<types::Int64Value>(record.message.http_minor_version);
-  columns[idx++]->Append<types::StringValue>(
-      absl::StrJoin(record.message.http_headers, "\n", absl::PairFormatter(": ")));
-  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_req_method));
-  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_req_path));
-  columns[idx++]->Append<types::Int64Value>(record.message.http_resp_status);
-  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_resp_message));
-  columns[idx++]->Append<types::StringValue>(std::move(record.message.http_resp_body));
-  columns[idx++]->Append<types::Int64Value>(record.message.timestamp_ns - record.conn.timestamp_ns);
+  // Check for positive latencies.
   DCHECK_GE(record.message.timestamp_ns, record.conn.timestamp_ns);
-  CHECK_EQ(idx, num_columns) << "Didn't populate all fields";
+
+  RecordBuilder<&kHTTPTable> r(record_batch);
+  r.Append<r.ColIndex("time_")>(record.message.timestamp_ns);
+  r.Append<r.ColIndex("tgid")>(record.conn.tgid);
+  r.Append<r.ColIndex("fd")>(record.conn.fd);
+  r.Append<r.ColIndex("event_type")>(EventTypeToString(record.message.type));
+  r.Append<r.ColIndex("src_addr")>(std::move(record.conn.src_addr));
+  r.Append<r.ColIndex("src_port")>(record.conn.src_port);
+  r.Append<r.ColIndex("dst_addr")>(std::move(record.conn.dst_addr));
+  r.Append<r.ColIndex("dst_port")>(record.conn.dst_port);
+  r.Append<r.ColIndex("http_minor_version")>(record.message.http_minor_version);
+  r.Append<r.ColIndex("http_headers")>(
+      absl::StrJoin(record.message.http_headers, "\n", absl::PairFormatter(": ")));
+  r.Append<r.ColIndex("http_req_method")>(std::move(record.message.http_req_method));
+  r.Append<r.ColIndex("http_req_path")>(std::move(record.message.http_req_path));
+  r.Append<r.ColIndex("http_resp_status")>(record.message.http_resp_status);
+  r.Append<r.ColIndex("http_resp_message")>(std::move(record.message.http_resp_message));
+  r.Append<r.ColIndex("http_resp_body")>(std::move(record.message.http_resp_body));
+  r.Append<r.ColIndex("http_resp_latency_ns")>(record.message.timestamp_ns -
+                                               record.conn.timestamp_ns);
 }
 
 //-----------------------------------------------------------------------------
@@ -316,20 +315,16 @@ void SocketTraceConnector::TransferMySQLEvent(const socket_data_event_t& event,
   auto s = ParseSockAddr(event);
   IPEndpoint dst_sockaddr = s.ok() ? s.ConsumeValueOrDie() : IPEndpoint();
 
-  auto& columns = *record_batch;
-
-  uint32_t idx = 0;
-  columns[idx++]->Append<types::Time64NSValue>(event.attr.timestamp_ns + ClockRealTimeOffset());
-  columns[idx++]->Append<types::Int64Value>(event.attr.tgid);
-  columns[idx++]->Append<types::Int64Value>(event.attr.fd);
-  columns[idx++]->Append<types::Int64Value>(event.attr.event_type);
-  columns[idx++]->Append<types::StringValue>("-");
-  columns[idx++]->Append<types::Int64Value>(-1);
-  columns[idx++]->Append<types::StringValue>(std::move(dst_sockaddr.ip));
-  columns[idx++]->Append<types::Int64Value>(dst_sockaddr.port);
-  columns[idx++]->Append<types::StringValue>(std::move(msg));
-  CHECK_EQ(idx, columns.size()) << absl::StrFormat(
-      "Didn't populate all fields [idx = %d, columns = %d]", idx, columns.size());
+  RecordBuilder<&kMySQLTable> r(record_batch);
+  r.Append<r.ColIndex("time_")>(event.attr.timestamp_ns + ClockRealTimeOffset());
+  r.Append<r.ColIndex("tgid")>(event.attr.tgid);
+  r.Append<r.ColIndex("fd")>(event.attr.fd);
+  r.Append<r.ColIndex("bpf_event")>(event.attr.event_type);
+  r.Append<r.ColIndex("src_addr")>("-");
+  r.Append<r.ColIndex("src_port")>(-1);
+  r.Append<r.ColIndex("dst_addr")>(std::move(dst_sockaddr.ip));
+  r.Append<r.ColIndex("dst_port")>(dst_sockaddr.port);
+  r.Append<r.ColIndex("body")>(std::move(msg));
 }
 
 }  // namespace stirling
