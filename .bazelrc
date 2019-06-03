@@ -65,6 +65,9 @@ coverage --cxxopt -fprofile-arcs
 coverage --cxxopt -ftest-coverage
 coverage --instrument_test_targets
 
+# Use stable GIT build tag by default.
+build --define BUNDLE_VERSION={STABLE_BUILD_TAG}
+
 # Import other bazelrc files
 try-import %workspace%/jenkins.bazelrc
 try-import %workspace%/user.bazelrc
