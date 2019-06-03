@@ -204,7 +204,6 @@ void SocketTraceConnector::TransferHTTPResponseStreams(
 
     // Parse all recorded events.
     for (const auto& [seq_num, event] : events) {
-      std::string_view msg(event.msg, std::min<uint32_t>(event.attr.msg_size, sizeof(event.msg)));
       if (parser.ParseResponse(event) != HTTPParser::ParseState::kUnknown) {
         seq_num_to_remove.push_back(seq_num);
       }
@@ -299,18 +298,11 @@ void SocketTraceConnector::AppendHTTPResponse(HTTPTraceRecord record,
 
 void SocketTraceConnector::TransferMySQLEvent(const socket_data_event_t& event,
                                               types::ColumnWrapperRecordBatch* record_batch) {
-  // The actual message width is min(attr.msg_buf_size, attr.msg_bytes).
-  // Due to the BPF weirdness (see socket_trace.c), this calculation must be done here, not in BPF.
-  // Also we can't modify the event object, because it belongs to the kernel, and is read-only.
-  uint64_t msg_size = std::min<uint32_t>(event.attr.msg_size, sizeof(event.msg));
-
   // TODO(oazizi): Enable the below to only capture requestor-side messages.
   //  if (event.attr.event_type != kEventTypeSyscallWriteEvent &&
   //      event.attr.event_type != kEventTypeSyscallSendEvent) {
   //    return;
   //  }
-
-  std::string msg(&event.msg[0], msg_size);
 
   auto s = ParseSockAddr(event);
   IPEndpoint dst_sockaddr = s.ok() ? s.ConsumeValueOrDie() : IPEndpoint();
@@ -324,7 +316,7 @@ void SocketTraceConnector::TransferMySQLEvent(const socket_data_event_t& event,
   r.Append<r.ColIndex("src_port")>(-1);
   r.Append<r.ColIndex("dst_addr")>(std::move(dst_sockaddr.ip));
   r.Append<r.ColIndex("dst_port")>(dst_sockaddr.port);
-  r.Append<r.ColIndex("body")>(std::move(msg));
+  r.Append<r.ColIndex("body")>(std::string(event.msg, MsgSize(event)));
 }
 
 }  // namespace stirling

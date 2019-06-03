@@ -4,7 +4,6 @@
 #include <netinet/in.h>
 #include <picohttpparser.h>
 
-#include <algorithm>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -47,10 +46,6 @@ std::map<std::string, std::string> GetHttpHeadersMap(const phr_header* headers,
     result[name] = value;
   }
   return result;
-}
-
-uint32_t MsgSize(const socket_data_event_t& event) {
-  return std::min<uint32_t>(event.attr.msg_size, MAX_MSG_SIZE);
 }
 
 }  // namespace

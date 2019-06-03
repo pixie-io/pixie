@@ -1,6 +1,7 @@
 #pragma once
 
 #ifdef __cplusplus
+#include <algorithm>  // For std::min.
 #include <cstdint>
 #endif
 
@@ -61,3 +62,13 @@ struct socket_data_event_t {
   } attr;
   char msg[MAX_MSG_SIZE];
 } __attribute__((__packed__));
+
+#ifdef __cplusplus
+// TODO(yzhao): This is not needed inside socket_trace.c. Eventually we should export multiple
+// socket_data_event_t from one system call, of which the data exceeds the buffer size. In that
+// case, msg_size should be the available data size and will never exceeds MAX_MSG_SIZE, then this
+// can be removed.
+inline uint32_t MsgSize(const socket_data_event_t& event) {
+  return std::min<uint32_t>(event.attr.msg_size, MAX_MSG_SIZE);
+}
+#endif
