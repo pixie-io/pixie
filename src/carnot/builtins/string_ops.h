@@ -36,11 +36,11 @@ class SubstringUDF : public udf::ScalarUDF {
 };
 
 class ToLowerUDF : public udf::ScalarUDF {
-public:
-    types::StringValue Exec(udf::FunctionContext *, types::StringValue b1) {
-        transform(b1.begin(), b1.end(), b1.begin(), ::tolower);
-        return b1;
-    }
+ public:
+  types::StringValue Exec(udf::FunctionContext*, types::StringValue b1) {
+    transform(b1.begin(), b1.end(), b1.begin(), ::tolower);
+    return b1;
+  }
 };
 
 class ToUpperUDF : public udf::ScalarUDF {
