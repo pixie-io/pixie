@@ -319,20 +319,6 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:bf40199583e5143d1472fc34d10d6f4b69d97572142acf343b3e43136da40823"
-  name = "github.com/google/go-cmp"
-  packages = [
-    "cmp",
-    "cmp/internal/diff",
-    "cmp/internal/flags",
-    "cmp/internal/function",
-    "cmp/internal/value",
-  ]
-  pruneopts = "UT"
-  revision = "6f77996f0c42f7b84e5a2b252227263f93432e9b"
-  version = "v0.3.0"
-
-[[projects]]
   digest = "1:a6181aca1fd5e27103f9a920876f29ac72854df7345a39f3b01e61c8c94cc8af"
   name = "github.com/google/gofuzz"
   packages = ["."]
@@ -1172,7 +1158,7 @@
   revision = "67ef80593b248c87b40adcbff0d564819f27640a"
 
 [[projects]]
-  branch = "master"
+  branch = "release-1.14"
   digest = "1:1c177e481eeccea2b4f28ada71cdb671991b1fb3188a4f78967ee802fb6506eb"
   name = "k8s.io/apimachinery"
   packages = [
@@ -1217,7 +1203,7 @@
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "UT"
-  revision = "e59c2fb0a8e52fc46da20f5a03d2b3b935ba7f88"
+  revision = "6a84e37a896db9780c75367af8d2ed2bb944022e"
 
 [[projects]]
   digest = "1:181036db149b80f11649a9d4c6271a8723a604545969643794963eb8637e04b0"
@@ -1389,6 +1375,7 @@
     "k8s.io/api/core/v1",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/fields",
+    "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/runtime",
     "k8s.io/apimachinery/pkg/util/wait",

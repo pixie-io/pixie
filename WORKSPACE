@@ -655,7 +655,7 @@ go_repository(
 go_repository(
     name = "io_k8s_apimachinery",
     build_file_proto_mode = "disable",
-    commit = "e59c2fb0a8e52fc46da20f5a03d2b3b935ba7f88",
+    commit = "6a84e37a896db9780c75367af8d2ed2bb944022e",
     importpath = "k8s.io/apimachinery",
 )
 
