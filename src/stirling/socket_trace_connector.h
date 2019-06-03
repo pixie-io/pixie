@@ -169,6 +169,8 @@ class SocketTraceConnector : public SourceConnector {
   };
 
   static inline const std::vector<ProbeSpec> kProbeSpecs = {
+      {"accept", "probe_entry_accept", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"accept", "probe_ret_accept", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"accept4", "probe_entry_accept4", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"accept4", "probe_ret_accept4", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"write", "probe_entry_write", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},

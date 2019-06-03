@@ -157,7 +157,7 @@ static u32 infer_protocol(const char *buf, size_t count) {
 //
 // TODO(yzhao): We are not able to trace the source address/port yet. We might need to probe the
 // socket() syscall.
-int probe_entry_accept4(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t *addrlen) {
+static int probe_entry_accept_impl(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t *addrlen) {
   u64 id = bpf_get_current_pid_tgid();
   struct addr_info_t addr_info;
 
@@ -169,7 +169,7 @@ int probe_entry_accept4(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, 
 }
 
 // Read the sockaddr values and write to the output buffer.
-int probe_ret_accept4(struct pt_regs *ctx) {
+static int probe_ret_accept_impl(struct pt_regs *ctx) {
   u32 kZero = 0;
 
   u64 id = bpf_get_current_pid_tgid();
@@ -414,6 +414,34 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
   return 0;
 }
 
+int probe_close(struct pt_regs *ctx, int fd) {
+  if (fd < 0) { return 0; }
+  u64 id = bpf_get_current_pid_tgid();
+  u32 tgid = id >> 32;
+  u64 lookup_fd = ((u64)tgid << 32) | fd;
+  conn_info_map.delete(&lookup_fd);
+  return 0;
+}
+
+/***********************************************************
+ * BPF syscall probe function entry-points
+ ***********************************************************/
+
+int probe_entry_accept(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t *addrlen) {
+  return probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
+}
+
+int probe_ret_accept(struct pt_regs *ctx) {
+  return probe_ret_accept_impl(ctx);
+}
+
+int probe_entry_accept4(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t *addrlen) {
+  return probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
+}
+
+int probe_ret_accept4(struct pt_regs *ctx) {
+  return probe_ret_accept_impl(ctx);
+}
 
 int probe_entry_write(struct pt_regs *ctx, int fd, char* buf, size_t count) {
   return probe_entry_write_send(ctx, fd, buf, count);
@@ -459,12 +487,3 @@ int probe_ret_sendto(struct pt_regs *ctx) {
 // 1) Should we trace sendmsg(), which is another syscall, but with a different interface?
 // 2) Why does the syscall table only include sendto, while Linux source code and man page list both sendto and send?
 // 3) What do we do when the sendto() is called with a dest_addr provided? I believe this overrides the conn_info.
-
-int probe_close(struct pt_regs *ctx, int fd) {
-  if (fd < 0) { return 0; }
-  u64 id = bpf_get_current_pid_tgid();
-  u32 tgid = id >> 32;
-  u64 lookup_fd = ((u64)tgid << 32) | fd;
-  conn_info_map.delete(&lookup_fd);
-  return 0;
-}
