@@ -447,6 +447,7 @@ go_repository(
 
 go_repository(
     name = "com_github_coreos_etcd",
+    build_file_generation = "on",
     build_file_proto_mode = "disable",
     commit = "98d308426819d892e149fe45f6fd542464cb1f9d",
     importpath = "github.com/coreos/etcd",
