@@ -1,10 +1,3 @@
-default['bazel']               = {}
-default['bazel']['deb']        =
-  'https://github.com/bazelbuild/bazel/releases/download/0.24.1/bazel_0.24.1-linux-x86_64.deb'
-default['bazel']['deb_sha256'] =
-  'b6fec7719046953f8b9b18bb798b8d11a84147b936c31e4cfe8d1e6184cc24ed'
-default['bazel']['version'] = "0.24.1"
-
 default['bcc']               = {}
 default['bcc']['deb']        =
   'https://storage.googleapis.com/pl-infra-dev-artifacts/bcc-pixie-1.1.deb'
@@ -28,8 +21,15 @@ default['gperftools']['version'] = "2.7-pl1"
 
 
 default['skaffold']                  = {}
+default['bazel']               = {}
 
 if node[:platform] == 'ubuntu'
+  default['bazel']['deb']        =
+    'https://github.com/bazelbuild/bazel/releases/download/0.25.3/bazel_0.25.3-linux-x86_64.deb'
+  default['bazel']['deb_sha256'] =
+    'fb196371cdf7d02e58de72a3a2a1b52f2ac8910811ba146bd6eb0c2eb599bdb6'
+  default['bazel']['version'] = "0.25.3"
+
   default['skaffold']['download_path'] =
     'https://storage.googleapis.com/skaffold/releases/v0.27.0/skaffold-linux-amd64'
   default['skaffold']['sha256']        =
@@ -46,6 +46,11 @@ if node[:platform] == 'ubuntu'
   default['packer']['download_path'] = 'https://releases.hashicorp.com/packer/1.3.2/packer_1.3.2_linux_amd64.zip'
   default['packer']['sha256']        = '5e51808299135fee7a2e664b09f401b5712b5ef18bd4bad5bc50f4dcd8b149a1'
 elsif node[:platform] == 'mac_os_x'
+  default['bazel']['download_path']        =
+    'https://github.com/bazelbuild/bazel/releases/download/0.25.3/bazel-0.25.3-darwin-x86_64'
+  default['bazel']['sha256'] =
+    '07c6cc7d9ad2bace6b1f9b67947907274887f40e9ffa555ed73aeed5f5e27c5c'
+
   default['skaffold']['download_path'] =
     'https://storage.googleapis.com/skaffold/releases/v0.27.0/skaffold-darwin-amd64'
   default['skaffold']['sha256']        = 'bc20412b585106ed742ca7fa1d43e117597f85e5c162b69e6ce64cd4d8278d5e'
