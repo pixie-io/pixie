@@ -21,7 +21,8 @@ default['gperftools']['version'] = "2.7-pl1"
 
 
 default['skaffold']                  = {}
-default['bazel']               = {}
+default['bazel']                     = {}
+default['golang']                    = {}
 
 if node[:platform] == 'ubuntu'
   default['bazel']['deb']        =
@@ -29,6 +30,11 @@ if node[:platform] == 'ubuntu'
   default['bazel']['deb_sha256'] =
     'fb196371cdf7d02e58de72a3a2a1b52f2ac8910811ba146bd6eb0c2eb599bdb6'
   default['bazel']['version'] = "0.25.3"
+
+  default['golang']['download_path'] =
+    'https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz'
+  default['golang']['sha256'] =
+    'aea86e3c73495f205929cfebba0d63f1382c8ac59be081b6351681415f4063cf'
 
   default['skaffold']['download_path'] =
     'https://storage.googleapis.com/skaffold/releases/v0.27.0/skaffold-linux-amd64'
@@ -46,10 +52,15 @@ if node[:platform] == 'ubuntu'
   default['packer']['download_path'] = 'https://releases.hashicorp.com/packer/1.3.2/packer_1.3.2_linux_amd64.zip'
   default['packer']['sha256']        = '5e51808299135fee7a2e664b09f401b5712b5ef18bd4bad5bc50f4dcd8b149a1'
 elsif node[:platform] == 'mac_os_x'
-  default['bazel']['download_path']        =
+  default['bazel']['download_path'] =
     'https://github.com/bazelbuild/bazel/releases/download/0.25.3/bazel-0.25.3-darwin-x86_64'
   default['bazel']['sha256'] =
     '07c6cc7d9ad2bace6b1f9b67947907274887f40e9ffa555ed73aeed5f5e27c5c'
+
+  default['golang']['download_path'] =
+    'https://dl.google.com/go/go1.12.5.darwin-amd64.tar.gz'
+  default['golang']['sha256'] =
+    '566d0b407f7d4aa5a1315988b562bbe4e9422a93ce2fbf27a664cddcb9a3e617'
 
   default['skaffold']['download_path'] =
     'https://storage.googleapis.com/skaffold/releases/v0.27.0/skaffold-darwin-amd64'

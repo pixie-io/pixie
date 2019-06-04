@@ -6,7 +6,6 @@ apt_pkg_list = [
   'curl',
   'doxygen',
   'git',
-  'golang',
   'lcov',
   'php',
   'php-curl',
