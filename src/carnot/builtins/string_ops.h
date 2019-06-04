@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <string>
 #include "src/carnot/udf/registry.h"
 #include "src/shared/types/types.h"
 
@@ -48,6 +49,17 @@ class ToUpperUDF : public udf::ScalarUDF {
   types::StringValue Exec(udf::FunctionContext*, types::StringValue b1) {
     transform(b1.begin(), b1.end(), b1.begin(), ::toupper);
     return b1;
+  }
+};
+
+class TrimUDF : public udf::ScalarUDF {
+ public:
+  types::StringValue Exec(udf::FunctionContext*, types::StringValue s) {
+    auto wsfront = std::find_if_not(s.begin(), s.end(), [](int c) { return std::isspace(c); });
+    auto wsback =
+        std::find_if_not(s.rbegin(), s.rend(), [](int c) { return std::isspace(c); }).base();
+    return (wsback <= wsfront ? types::StringValue(std::string())
+                              : types::StringValue(std::string(wsfront, wsback)));
   }
 };
 

@@ -44,6 +44,13 @@ TEST(StringOps, basic_string_toupper_test) {
   auto udf_tester = udf::UDFTester<ToUpperUDF>();
   udf_tester.ForInput("pIXiE").Expect("PIXIE");
 }
+
+TEST(StringOps, basic_string_trim_test) {
+  auto udf_tester = udf::UDFTester<TrimUDF>();
+  udf_tester.ForInput("   ").Expect("");
+  udf_tester.ForInput(" pixieLabs ").Expect("pixieLabs");
+  udf_tester.ForInput("pixie").Expect("pixie");
+}
 }  // namespace builtins
 }  // namespace carnot
 }  // namespace pl
