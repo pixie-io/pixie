@@ -6,4 +6,5 @@ kubectl create configmap grafana-import-dashboards \
   --from-file=$DIR/prometheus-datasource.json               \
   --from-file=$DIR/sock-shop-performance-dashboard.json \
   --from-file=$DIR/prometheus-stats-dashboard.json          \
-  --from-file=$DIR/sock-shop-resources-dashboard.json
+  --from-file=$DIR/sock-shop-resources-dashboard.json \
+  --validate=false
