@@ -5,18 +5,12 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	// Blank import necessary for kubeConfig to work.
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 )
-
-// K8sMessage is a message for K8s metadata events/updates.
-type K8sMessage struct {
-	object runtime.Object
-}
 
 // K8sMetadataController listens to any metadata updates from the K8s API.
 type K8sMetadataController struct {
@@ -56,7 +50,8 @@ func (mc *K8sMetadataController) startWatcher(client cache.Getter, resource stri
 
 	for c := range watch.ResultChan() {
 		msg := &K8sMessage{
-			object: c.Object,
+			Object:     c.Object,
+			ObjectType: resource,
 		}
 		mc.events <- msg
 	}
