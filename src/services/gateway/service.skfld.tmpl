@@ -1,49 +1,60 @@
-apiVersion: v1
-kind: Pod
+apiVersion: extensions/v1beta1
+kind: Deployment
 metadata:
-  name: gateway-server
+  name: vizier-gateway
+  namespace: pl
   labels:
-    name: gateway-server
+    app: pl-monitoring
 spec:
-  containers:
-  - name: gateway-server
-    image: gcr.io/pl-dev-infra/gateway_server_image
-    ports:
-      - containerPort: 51000
-        hostPort: 51000
-      - containerPort: 51001
-        hostPort: 51001
-    env:
-      - name: PL_JWT_SIGNING_KEY
-        valueFrom:
-          secretKeyRef:
-            name: pl-app-secrets
-            key: jwt-signing-key
-      - name: PL_SESSION_KEY
-        valueFrom:
-          secretKeyRef:
-            name: pl-app-secrets
-            key: session-key
-      - name: PL_EXTERNAL_ADDR
-        value: {{.ExternalAddress}}
-      - name: PL_TLS_CERT
-        value: /certs/tls.crt
-      - name: PL_TLS_KEY
-        value: /certs/tls.key
-      - name: PL_AUTH_SERVICE
-        value: "auth-service.default.svc.cluster.local:50100"
-    volumeMounts:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vizier-gateway
+  template:
+    metadata:
+      labels:
+        app: vizier-gateway
+        name: vizier-gateway
+    spec:
+      containers:
+      - name: vizier-gateway-server
+        image: gcr.io/pl-dev-infra/gateway_server_image
+        ports:
+          - containerPort: 51000
+            hostPort: 51000
+          - containerPort: 51001
+            hostPort: 51001
+        env:
+          - name: PL_JWT_SIGNING_KEY
+            valueFrom:
+              secretKeyRef:
+                name: pl-app-secrets
+                key: jwt-signing-key
+          - name: PL_SESSION_KEY
+            valueFrom:
+              secretKeyRef:
+                name: pl-app-secrets
+                key: session-key
+          - name: PL_EXTERNAL_ADDR
+            value: {{.ExternalAddress}}
+          - name: PL_TLS_CERT
+            value: /certs/tls.crt
+          - name: PL_TLS_KEY
+            value: /certs/tls.key
+          - name: PL_AUTH_SERVICE
+            value: "auth-service.default.svc.cluster.local:50100"
+        volumeMounts:
+            - name: certs
+              mountPath: /certs
+      volumes:
         - name: certs
-          mountPath: /certs
-  volumes:
-    - name: certs
-      secret:
-        secretName: custom-tls-cert
+          secret:
+            secretName: custom-tls-cert
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: gateway-service
+  name: vizier-gateway-service
 spec:
   type: NodePort
   ports:
@@ -58,4 +69,4 @@ spec:
       nodePort: 31001
       name: tcp-rest
   selector:
-    name: gateway-server
+    name: vizier-gateway

@@ -1,46 +1,57 @@
-apiVersion: v1
-kind: Pod
+apiVersion: extensions/v1beta1
+kind: Deployment
 metadata:
-  name: proxy-server
+  name: vizier-proxy
   namespace: pl
   labels:
-    name: proxy-server
+    app: pl-monitoring
 spec:
-  containers:
-  - name: proxy-server
-    image: gcr.io/pl-dev-infra/proxy_image:latest
-    ports:
-      - containerPort: 443
-        hostPort: 443
-    readinessProbe:
-      httpGet:
-        scheme: HTTPS
-        path: /healthz
-        port: 443
-    env:
-      - name: PL_JWT_SIGNING_KEY
-        valueFrom:
-          secretKeyRef:
-            name: pl-app-secrets
-            key: jwt-signing-key
-      - name: PL_EXTERNAL_ADDR
-        value: {{.ExternalAddress}}
-      - name: PL_TLS_CERT
-        value: /certs/tls.crt
-      - name: PL_TLS_KEY
-        value: /certs/tls.key
-    volumeMounts:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vizier-proxy
+  template:
+    metadata:
+      name: vizier-proxy
+      labels:
+        app: vizier-proxy
+        name: vizier-proxy
+    spec:
+      containers:
+      - name: vizier-proxy-server
+        image: gcr.io/pl-dev-infra/proxy_image:latest
+        ports:
+          - containerPort: 443
+            hostPort: 443
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 443
+        env:
+          - name: PL_JWT_SIGNING_KEY
+            valueFrom:
+              secretKeyRef:
+                name: pl-app-secrets
+                key: jwt-signing-key
+          - name: PL_EXTERNAL_ADDR
+            value: {{.ExternalAddress}}
+          - name: PL_TLS_CERT
+            value: /certs/tls.crt
+          - name: PL_TLS_KEY
+            value: /certs/tls.key
+        volumeMounts:
+            - name: certs
+              mountPath: /certs
+      volumes:
         - name: certs
-          mountPath: /certs
-  volumes:
-    - name: certs
-      secret:
-        secretName: custom-tls-cert
+          secret:
+            secretName: custom-tls-cert
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: proxy-service
+  name: vizier-proxy-service
   namespace: pl
   annotations:
     cloud.google.com/load-balancer-type: internal
@@ -52,4 +63,4 @@ spec:
       targetPort: 443
       name: tcp-https
   selector:
-    name: proxy-server
+    name: vizier-proxy

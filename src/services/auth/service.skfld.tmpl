@@ -1,52 +1,64 @@
-apiVersion: v1
-kind: Pod
+apiVersion: extensions/v1beta1
+kind: Deployment
 metadata:
-  name: auth-server
+  name: vizier-auth
+  namespace: pl
   labels:
-    name: auth-server
-spec:
-  containers:
-  - name: auth-server
-    image: gcr.io/pl-dev-infra/auth_server_image
-    ports:
-      - containerPort: 50100
-        hostPort: 50100
-      - containerPort: 50101
-        hostPort: 50101
-    env:
-      - name: PL_JWT_SIGNING_KEY
-        valueFrom:
-          secretKeyRef:
-            name: pl-app-secrets
-            key: jwt-signing-key
-      - name: PL_EXTERNAL_ADDR
-        value: {{.ExternalAddress}}
-      - name: PL_TLS_CERT
-        value: /certs/tls.crt
-      - name: PL_TLS_KEY
-        value: /certs/tls.key
-      - name: PL_AUTH0_CLIENT_ID
-        valueFrom:
-          secretKeyRef:
-            name: pl-app-secrets
-            key: auth0-client-id
-      - name: PL_AUTH0_CLIENT_SECRET
-        valueFrom:
-          secretKeyRef:
-            name: pl-app-secrets
-            key: auth0-client-secret
-    volumeMounts:
-        - name: certs
-          mountPath: /certs
-  volumes:
-    - name: certs
-      secret:
-        secretName: custom-tls-cert
+    app: pl-monitoring
+sepc:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vizier-auth
+   template:
+     metadata:
+       name: vizier-auth
+       labels:
+         app: vizier-auth
+         name: vizier-auth
+     spec:
+       containers:
+       - name: vizier-auth-server
+         image: gcr.io/pl-dev-infra/auth_server_image
+         ports:
+           - containerPort: 50100
+             hostPort: 50100
+           - containerPort: 50101
+             hostPort: 50101
+         env:
+           - name: PL_JWT_SIGNING_KEY
+             valueFrom:
+               secretKeyRef:
+                 name: pl-app-secrets
+                 key: jwt-signing-key
+           - name: PL_EXTERNAL_ADDR
+             value: {{.ExternalAddress}}
+           - name: PL_TLS_CERT
+             value: /certs/tls.crt
+           - name: PL_TLS_KEY
+             value: /certs/tls.key
+           - name: PL_AUTH0_CLIENT_ID
+             valueFrom:
+               secretKeyRef:
+                 name: pl-app-secrets
+                 key: auth0-client-id
+           - name: PL_AUTH0_CLIENT_SECRET
+             valueFrom:
+               secretKeyRef:
+                 name: pl-app-secrets
+                 key: auth0-client-secret
+         volumeMounts:
+             - name: certs
+               mountPath: /certs
+       volumes:
+         - name: certs
+           secret:
+             secretName: custom-tls-cert
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: auth-service
+  name: vizier-auth-service
 spec:
   type: NodePort
   ports:
@@ -61,4 +73,4 @@ spec:
       nodePort: 30101
       name: tcp-rest
   selector:
-    name: auth-server
+    name: vizier-auth
