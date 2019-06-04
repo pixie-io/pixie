@@ -1,19 +1,28 @@
 workspace(name = "pl")
 
-load("//bazel:repositories.bzl", "pl_deps")
 load("//:workspace.bzl", "check_min_bazel_version")
-load("//bazel:cc_configure.bzl", "cc_configure")
-load("//bazel:gogo.bzl", "gogo_grpc_proto")
 
-check_min_bazel_version("0.23.0")
+check_min_bazel_version("0.25.0")
+
+load("//bazel:repositories.bzl", "pl_deps")
 
 # Install Pixie Labs Dependencies.
 pl_deps()
+
+# The go dependency does not work if loaded during our normal pl_workspace setup.
+# moving it here fixes the errors.
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+
+go_rules_dependencies()
+
+go_register_toolchains(go_version = "host")
 
 load("//bazel:pl_workspace.bzl", "pl_workspace_setup")
 
 pl_workspace_setup()
 
+load("//bazel:cc_configure.bzl", "cc_configure")
+load("//bazel:gogo.bzl", "gogo_grpc_proto")
 load("@rules_foreign_cc//:workspace_definitions.bzl", "rules_foreign_cc_dependencies")
 
 rules_foreign_cc_dependencies()

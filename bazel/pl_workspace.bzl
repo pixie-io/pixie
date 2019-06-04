@@ -1,4 +1,3 @@
-load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 load("@com_github_bazelbuild_buildtools//buildifier:deps.bzl", "buildifier_dependencies")
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
@@ -12,8 +11,6 @@ load("@distroless//package_manager:package_manager.bzl", "package_manager_reposi
 load("@distroless//package_manager:dpkg.bzl", "dpkg_list", "dpkg_src")
 
 def _go_setup():
-    go_rules_dependencies()
-    go_register_toolchains()
     gazelle_dependencies()
 
 # Sets up package manager which we use build deploy images.
