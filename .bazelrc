@@ -1,5 +1,9 @@
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
 
+# This is a compatibility for bazel 0.25.3.
+# TODO(zasgar): None of these should exists
+build --incompatible_disable_legacy_cc_provider=false
+
 # Get version information into the build.
 build --workspace_status_command=bazel/get_workspace_status
 

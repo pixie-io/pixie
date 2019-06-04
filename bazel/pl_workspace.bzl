@@ -8,7 +8,8 @@ load(
     "@io_bazel_rules_docker//container:container.bzl",
     "container_pull",
 )
-load("@distroless//package_manager:package_manager.bzl", "dpkg_list", "dpkg_src", "package_manager_repositories")
+load("@distroless//package_manager:package_manager.bzl", "package_manager_repositories")
+load("@distroless//package_manager:dpkg.bzl", "dpkg_list", "dpkg_src")
 
 def _go_setup():
     go_rules_dependencies()

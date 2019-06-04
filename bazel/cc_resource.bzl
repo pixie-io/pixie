@@ -14,6 +14,7 @@ def pl_cc_resource(
             outs = [object_file],
             srcs = [src],
             tags = tags,
+            toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
             cmd = " $(OBJCOPY) --input binary" +
                   " --output elf64-x86-64" +
                   " --binary-architecture i386:x86-64" +

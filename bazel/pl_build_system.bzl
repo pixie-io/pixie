@@ -250,4 +250,5 @@ def tcmalloc_external_deps(repository):
 def pl_go_library(**kwargs):
     if "cgo" in kwargs and kwargs["cgo"] and "clinkopts" not in kwargs:
         kwargs["clinkopts"] = pl_linkopts()
+        kwargs["toolchains"] = ["@bazel_tools//tools/cpp:current_cc_toolchain"]
     go_library(**kwargs)

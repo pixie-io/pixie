@@ -33,9 +33,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/googletest/archive/release-1.8.1.tar.gz"],
     ),
     com_github_grpc_grpc = dict(
-        sha256 = "069a52a166382dd7b99bf8e7e805f6af40d797cfcee5f80e530ca3fc75fd06e2",
-        strip_prefix = "grpc-1.18.0",
-        urls = ["https://github.com/grpc/grpc/archive/v1.18.0.tar.gz"],
+        sha256 = "50747c8939c535b1059f19534de263eb9b7570b5347390fb24b0bbce8763e9a4",
+        strip_prefix = "grpc-1.21.3",
+        urls = ["https://github.com/grpc/grpc/archive/v1.21.3.tar.gz"],
     ),
     com_github_gflags_gflags = dict(
         sha256 = "9e1a38e2dcbb20bb10891b5a171de2e5da70e0a50fff34dd4b0c2c6d75043909",
