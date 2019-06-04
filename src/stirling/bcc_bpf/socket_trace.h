@@ -30,9 +30,12 @@ struct conn_info_t {
   uint32_t conn_id;
   // The protocol on the connection (HTTP, MySQL, etc.)
   uint32_t protocol;
-  // A 0-based number for the next event on this connection.
-  // This number is incremented each time a new event is recorded.
-  uint64_t seq_num;
+  // A 0-based number for the next write event on this connection.
+  // This number is incremented each time a new write event is recorded.
+  uint64_t wr_seq_num;
+  // A 0-based number for the next read event on this connection.
+  // This number is incremented each time a new read event is recorded.
+  uint64_t rd_seq_num;
 } __attribute__((__packed__, aligned(8)));
 
 // This is the maximum value for the msg size.
@@ -56,6 +59,9 @@ struct socket_data_event_t {
     // The type of the actual data that the msg field encodes, which is used by the caller
     // to determine how to interpret the data.
     uint32_t event_type;
+    // A 0-based sequence number for this event on the connection.
+    // Note that write/send have separate sequences than read/recv.
+    uint64_t seq_num;
     // The full size as processed by the syscalls, which might not fit in msg as indicated by
     // msg_size > MAX_MSG_SIZE.
     uint32_t msg_size;

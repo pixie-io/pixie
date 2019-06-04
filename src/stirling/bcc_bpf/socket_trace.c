@@ -27,17 +27,23 @@ struct conn_info_t {
   struct sockaddr_in6 addr;
   uint32_t conn_id;
   uint32_t protocol;
-  uint64_t seq_num;
+  // TODO(oazizi/yzhao): These sequence numbers are internal state only.
+  // They don't need to be sent to user-land when sending conn_info_t.
+  uint64_t wr_seq_num;
+  uint64_t rd_seq_num;
 } __attribute__((__packed__, aligned(8)));
 
 #define MAX_MSG_SIZE 4096
 struct socket_data_event_t {
   struct attr_t {
+    // TODO(oazizi/yzhao/PL-609): Remove conn_info. It should be sent separately on accept/connect only.
     struct conn_info_t conn_info;
     uint64_t timestamp_ns;
+    // TODO(oazizi/yzhao): tgid & fd should move to conn_info.
     uint32_t tgid;
     uint32_t fd;
     uint32_t event_type;
+    uint64_t seq_num;
     uint32_t msg_size;
   } attr;
   char msg[MAX_MSG_SIZE];
@@ -205,7 +211,8 @@ static int probe_ret_accept_impl(struct pt_regs *ctx) {
   conn_info.addr = *((struct sockaddr_in6*) addr_info->addr);
   conn_info.conn_id = conn_id;
   conn_info.protocol = kProtocolUnknown;
-  conn_info.seq_num = 0;
+  conn_info.wr_seq_num = 0;
+  conn_info.rd_seq_num = 0;
   conn_info_map.update(&tgid_fd, &conn_info);
 
  done:
@@ -234,8 +241,7 @@ static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t
       struct conn_info_t new_conn_info;
       memset(&new_conn_info, 0, sizeof(struct conn_info_t));
       new_conn_info.protocol = protocol;
-      conn_info_map.update(&lookup_fd, &new_conn_info);
-      conn_info = &new_conn_info;
+      conn_info = conn_info_map.lookup_or_init(&lookup_fd, &new_conn_info);
     }
   }
 
@@ -293,7 +299,8 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
 
   event->attr.conn_info = *conn_info;
   // Increment sequence number after copying so the index is 0-based.
-  ++conn_info->seq_num;
+  event->attr.seq_num = conn_info->wr_seq_num;
+  ++conn_info->wr_seq_num;
   event->attr.event_type = event_type;
   // TODO(yzhao): This is the time is after write/send() finishes. If we want to capture the time
   // before write/send() starts, we need to capture the time in probe_entry_write_send().
@@ -364,8 +371,7 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
       struct conn_info_t new_conn_info;
       memset(&new_conn_info, 0, sizeof(struct conn_info_t));
       new_conn_info.protocol = protocol;
-      conn_info_map.update(&lookup_fd, &new_conn_info);
-      conn_info = &new_conn_info;
+      conn_info = conn_info_map.lookup_or_init(&lookup_fd, &new_conn_info);
     }
   }
 
@@ -391,6 +397,8 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
   }
 
   event->attr.conn_info = *conn_info;
+  event->attr.seq_num = conn_info->rd_seq_num;
+  ++conn_info->rd_seq_num;
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;

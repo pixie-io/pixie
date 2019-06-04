@@ -277,7 +277,7 @@ bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
 // obtained accordingly. We rely on the consecutive sequence numbers to detect missing events and
 // order the events correctly.
 HTTPParser::ParseState HTTPParser::ParseResponse(const socket_data_event_t& event) {
-  const uint64_t seq_num = event.attr.conn_info.seq_num;
+  const uint64_t seq_num = event.attr.seq_num;
   std::string_view buf(event.msg, MsgSize(event));
   if (absl::StartsWith(buf, "HTTP")) {
     if (!pico_wrapper_.ParseResponse(buf)) {

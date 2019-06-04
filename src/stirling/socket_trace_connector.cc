@@ -146,7 +146,7 @@ void SocketTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
 void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
   const uint64_t stream_id =
       (static_cast<uint64_t>(event.attr.tgid) << 32) | event.attr.conn_info.conn_id;
-  const uint64_t seq_num = static_cast<uint64_t>(event.attr.conn_info.seq_num);
+  const uint64_t seq_num = static_cast<uint64_t>(event.attr.seq_num);
   const auto iter = http_streams_.find(stream_id);
 
   // Need to adjust the clocks to convert to real time.

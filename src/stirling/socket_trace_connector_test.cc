@@ -46,7 +46,7 @@ Content-Length: 0
   EXPECT_OK(InitRecordBatch(SocketTraceConnector::kTables[table_num].elements(),
                             /*target_capacity*/ 1, &record_batch));
 
-  event_json.attr.conn_info.seq_num = 0;
+  event_json.attr.seq_num = 0;
   // AcceptEvent() puts data into the internal buffer of SocketTraceConnector. And then
   // TransferData() polls perf buffer, which is no-op because we did not initialize probes, and the
   // data in the internal buffer is being processed and filtered.
@@ -57,7 +57,7 @@ Content-Length: 0
         << "event_json Content-Type does have 'json', and will be selected by the default filter";
   }
 
-  event_text.attr.conn_info.seq_num = 1;
+  event_text.attr.seq_num = 1;
   source->AcceptEvent(event_text);
   source->TransferData(table_num, &record_batch);
   for (const auto& column : record_batch) {
@@ -69,7 +69,7 @@ Content-Length: 0
       {{"Content-Type", "text/plain"}},
       {{"Content-Encoding", "gzip"}},
   });
-  event_text.attr.conn_info.seq_num = 2;
+  event_text.attr.seq_num = 2;
   source->AcceptEvent(event_text);
   source->TransferData(table_num, &record_batch);
   for (const auto& column : record_batch) {
@@ -82,7 +82,7 @@ Content-Length: 0
       {{"Content-Type", "application/json"}},
       {{"Content-Encoding", "gzip"}},
   });
-  event_json.attr.conn_info.seq_num = 3;
+  event_json.attr.seq_num = 3;
   source->AcceptEvent(event_json);
   source->TransferData(table_num, &record_batch);
   for (const auto& column : record_batch) {

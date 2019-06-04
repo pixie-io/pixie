@@ -155,7 +155,7 @@ bool operator==(const HTTPMessage& lhs, const HTTPMessage& rhs) {
 
 socket_data_event_t Event(uint64_t seq_num, std::string_view msg) {
   socket_data_event_t event;
-  event.attr.conn_info.seq_num = seq_num;
+  event.attr.seq_num = seq_num;
   event.attr.msg_size = msg.size();
   msg.copy(event.msg, msg.size());
   return event;
@@ -237,14 +237,14 @@ pixielabs)";
 TEST_F(HTTPParserTest, InvalidInput) {
   {
     socket_data_event_t event;
-    event.attr.conn_info.seq_num = 0;
+    event.attr.seq_num = 0;
     const std::string_view msg = " is awesome";
     msg.copy(event.msg, msg.size());
     EXPECT_EQ(HTTPParser::ParseState::kInvalid, parser_.ParseResponse(event));
   }
   {
     socket_data_event_t event;
-    event.attr.conn_info.seq_num = 2;
+    event.attr.seq_num = 2;
     const std::string_view msg = " is awesome";
     msg.copy(event.msg, msg.size());
     EXPECT_EQ(HTTPParser::ParseState::kUnknown, parser_.ParseResponse(event));
