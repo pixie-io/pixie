@@ -13,14 +13,14 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/buildtools/archive/db073457c5a56d810e46efc18bb93a4fd7aa7b5e.tar.gz"],
     ),
     com_google_benchmark = dict(
-        sha256 = "b3cded2d66d5ea14a135701784959de62042a484b6d5a45da3c9a1d9597b8c7b",
-        strip_prefix = "benchmark-eafa34a5e80c352b078307be312d3fafd0a5d13e",
-        urls = ["https://github.com/google/benchmark/archive/eafa34a5e80c352b078307be312d3fafd0a5d13e.tar.gz"],
+        sha256 = "3c6a165b6ecc948967a1ead710d4a181d7b0fbcaa183ef7ea84604994966221a",
+        strip_prefix = "benchmark-1.5.0",
+        urls = ["https://github.com/google/benchmark/archive/v1.5.0.tar.gz"],
     ),
     io_bazel_rules_skylib = dict(
-        sha256 = "2c62d8cd4ab1e65c08647eb4afe38f51591f43f7f0885e7769832fa137633dcb",
-        strip_prefix = "bazel-skylib-0.7.0",
-        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.7.0.tar.gz"],
+        sha256 = "2ea8a5ed2b448baf4a6855d3ce049c4c452a6470b1efd1504fdb7c1c134d220a",
+        strip_prefix = "bazel-skylib-0.8.0",
+        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.8.0.tar.gz"],
     ),
     io_bazel_rules_docker = dict(
         sha256 = "aed1c249d4ec8f703edddf35cbe9dfaca0b5f5ea6e4cd9e83e99f3b0d1136c3d",
@@ -53,9 +53,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/r-lyeh-archived/sole/archive/653a25ad03775d7e0a2d50142160795723915ba6.tar.gz"],
     ),
     com_google_absl = dict(
-        sha256 = "e35082e88b9da04f4d68094c05ba112502a5063712f3021adfa465306d238c76",
-        strip_prefix = "abseil-cpp-cc8dcd307b76a575d2e3e0958a4fe4c7193c2f68",
-        urls = ["https://github.com/abseil/abseil-cpp/archive/cc8dcd307b76a575d2e3e0958a4fe4c7193c2f68.tar.gz"],
+        sha256 = "0322e3a15fd119fcc8b03033e7011bb1beb7d6c4111f9e57272b7be78d56045a",
+        strip_prefix = "abseil-cpp-2f76a9bf50046e396138cc8eeb3cdc17b7a5ac24",
+        urls = ["https://github.com/abseil/abseil-cpp/archive/2f76a9bf50046e396138cc8eeb3cdc17b7a5ac24.tar.gz"],
     ),
     com_google_flatbuffers = dict(
         sha256 = "b2bb0311ca40b12ebe36671bdda350b10c7728caf0cfe2d432ea3b6e409016f3",
@@ -98,11 +98,11 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/AriaFallah/csv-parser/archive/e3c1207f4de50603a4946dc5daa0633ce31a9257.tar.gz"],
     ),
     rules_foreign_cc = dict(
-        sha256 = "ccffb49fb24aee3f0a005fa59810dc596228fe86eacacbe0c004d59ed1881bd8",
-        strip_prefix = "rules_foreign_cc-bf99a0bf0080bcd50431aa7124ef23e5afd58325",
-        # 2019-05-09
+        sha256 = "55d490b062adc37ca70cabe8daae6324da7760a6c894d7953e6c0ef35379a769",
+        strip_prefix = "rules_foreign_cc-6b2f454a41dc1d59607718224438d66ad4f4ddbc",
+        # 2019-06-03
         urls = ["https://github.com/bazelbuild/rules_foreign_cc/" +
-                "archive/bf99a0bf0080bcd50431aa7124ef23e5afd58325.tar.gz"],
+                "archive/6b2f454a41dc1d59607718224438d66ad4f4ddbc.tar.gz"],
     ),
     com_github_gperftools_gperftools = dict(
         sha256 = "18574813a062eee487bc1b761e8024a346075a7cb93da19607af362dc09565ef",
