@@ -19,7 +19,7 @@ final String DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image'
 final String SRC_STASH_NAME = "${BUILD_TAG}_src"
 
 // Restrict build to source code, since otherwise bazel seems to build all our deps.
-final String BAZEL_SRC_FILES_PATH = "//src/... //throwaway/..."
+final String BAZEL_SRC_FILES_PATH = "//src/..."
 // ASAN/TSAN only work for CC code.
 // TODO(zasgar): This query selects only cc binaries. After GO ASAN/TSAN works, we can update the ASAN/TSAN builds
 // to include all binaries.
