@@ -73,13 +73,15 @@ Content-Length: 0
 
   static constexpr std::string_view kMySQLMsg = "\x16SELECT column FROM table";
 
-  const int http_table_num = 0;
-  const DataTableSchema& http_table_schema = SocketTraceConnector::kHTTPTable;
-  const uint64_t kHTTPHeaderIdx = http_table_schema.ColIndex("http_headers");
-  const uint64_t kFdIdx = http_table_schema.ColIndex("fd");
+  static constexpr int http_table_num = 0;
+  static constexpr DataTableSchema http_table_schema = SocketTraceConnector::kHTTPTable;
+  static constexpr uint64_t kHTTPHeaderIdx = http_table_schema.ColIndex("http_headers");
+  static constexpr uint64_t kHTTPTGIDIdx = http_table_schema.ColIndex("tgid");
+  static constexpr uint64_t kHTTPFdIdx = http_table_schema.ColIndex("fd");
 
-  const int mysql_table_num = 1;
-  const DataTableSchema& mysql_table_schema = SocketTraceConnector::kMySQLTable;
+  static constexpr int mysql_table_num = 1;
+  static constexpr DataTableSchema mysql_table_schema = SocketTraceConnector::kMySQLTable;
+  static constexpr uint64_t kMySQLBodyIdx = mysql_table_schema.ColIndex("body");
 
   std::unique_ptr<SourceConnector> source;
   std::thread client_thread;
@@ -110,15 +112,15 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
     // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
     // host machine are identical.
     // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
-    EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(0).val);
-    EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(1).val);
 
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
               record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
-    EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(server.sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(0).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
               record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
-    EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(server.sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(1).val);
   }
 
   // Check that MySQL table did not capture any data.
@@ -160,15 +162,15 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
     // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
     // host machine are identical.
     // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
-    EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(0).val);
-    EXPECT_EQ(getpid(), record_batch[1]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(1).val);
 
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
               record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
-    EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(server.sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(0).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
               record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
-    EXPECT_EQ(server.sockfd(), record_batch[kFdIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(server.sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(1).val);
   }
 
   // Check that MySQL table did not capture any data.
@@ -220,9 +222,9 @@ TEST_F(HTTPTraceBPFTest, DISABLED_TestMySQLWriteCapturedData) {
     }
 
     EXPECT_EQ(std::string_view("\x16SELECT column FROM table"),
-              record_batch[8]->Get<types::StringValue>(0));
+              record_batch[kMySQLBodyIdx]->Get<types::StringValue>(0));
     EXPECT_EQ(std::string_view("\x16SELECT column FROM table"),
-              record_batch[8]->Get<types::StringValue>(1));
+              record_batch[kMySQLBodyIdx]->Get<types::StringValue>(1));
   }
 
   EXPECT_OK(source->Stop());

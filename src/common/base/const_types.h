@@ -73,3 +73,6 @@ class ConstVectorView {
   iterator begin() const { return iterator(elements_); }
   iterator end() const { return iterator(elements_ + size_); }
 };
+
+// When used in a constexpr function, this will prevent compilation if assert does not pass.
+#define COMPILE_TIME_ASSERT(expr, msg) (expr || error::Internal(#msg).ok())

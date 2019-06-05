@@ -54,6 +54,13 @@ class DataTableSchema {
       }
     }
 
+    // Check that we found the index.
+    // This prevents compilation during constexpr evaluation (which is awesome!).
+    COMPILE_TIME_ASSERT(i != elements_.size(), "Could not find key");
+
+    // Alternative form, but this one checks at run-time as well as compile-time.
+    // CHECK(i != elements_.size()) << "Could not find key";
+
     return i;
   }
 
