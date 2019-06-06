@@ -62,6 +62,30 @@ var ipProtocolPbToObjMap = map[metadatapb.IPProtocol]v1.Protocol{
 	metadatapb.SCTP: v1.ProtocolSCTP,
 }
 
+var serviceTypeObjToPbMap = map[v1.ServiceType]metadatapb.ServiceType{
+	v1.ServiceTypeClusterIP:    metadatapb.CLUSTER_IP,
+	v1.ServiceTypeNodePort:     metadatapb.NODE_PORT,
+	v1.ServiceTypeLoadBalancer: metadatapb.LOAD_BALANCER,
+	v1.ServiceTypeExternalName: metadatapb.EXTERNAL_NAME,
+}
+
+var serviceTypePbToObjMap = map[metadatapb.ServiceType]v1.ServiceType{
+	metadatapb.CLUSTER_IP:    v1.ServiceTypeClusterIP,
+	metadatapb.NODE_PORT:     v1.ServiceTypeNodePort,
+	metadatapb.LOAD_BALANCER: v1.ServiceTypeLoadBalancer,
+	metadatapb.EXTERNAL_NAME: v1.ServiceTypeExternalName,
+}
+
+var externalPolicyObjToPbMap = map[v1.ServiceExternalTrafficPolicyType]metadatapb.ExternalTrafficPolicyType{
+	v1.ServiceExternalTrafficPolicyTypeLocal:   metadatapb.TRAFFIC_LOCAL,
+	v1.ServiceExternalTrafficPolicyTypeCluster: metadatapb.TRAFFIC_CLUSTER,
+}
+
+var externalPolicyPbToObjMap = map[metadatapb.ExternalTrafficPolicyType]v1.ServiceExternalTrafficPolicyType{
+	metadatapb.TRAFFIC_LOCAL:   v1.ServiceExternalTrafficPolicyTypeLocal,
+	metadatapb.TRAFFIC_CLUSTER: v1.ServiceExternalTrafficPolicyTypeCluster,
+}
+
 // OwnerReferenceToProto converts an OwnerReference into a proto.
 func OwnerReferenceToProto(o *metav1.OwnerReference) (*metadatapb.OwnerReference, error) {
 	oPb := &metadatapb.OwnerReference{
@@ -217,6 +241,57 @@ func PodStatusFromProto(pb *metadatapb.PodStatus) (*v1.PodStatus, error) {
 	}
 
 	return ps, nil
+}
+
+// PodToProto converts a Pod into a proto.
+func PodToProto(p *v1.Pod) (*metadatapb.Pod, error) {
+	metadata, err := ObjectMetadataToProto(&p.ObjectMeta)
+	if err != nil {
+		return nil, err
+	}
+
+	spec, err := PodSpecToProto(&p.Spec)
+	if err != nil {
+		return nil, err
+	}
+
+	status, err := PodStatusToProto(&p.Status)
+	if err != nil {
+		return nil, err
+	}
+
+	pPb := &metadatapb.Pod{
+		Metadata: metadata,
+		Spec:     spec,
+		Status:   status,
+	}
+	return pPb, nil
+}
+
+// PodFromProto converts a proto message to a Pod.
+func PodFromProto(pb *metadatapb.Pod) (*v1.Pod, error) {
+	metadata, err := ObjectMetadataFromProto(pb.Metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	spec, err := PodSpecFromProto(pb.Spec)
+	if err != nil {
+		return nil, err
+	}
+
+	status, err := PodStatusFromProto(pb.Status)
+	if err != nil {
+		return nil, err
+	}
+
+	p := &v1.Pod{
+		ObjectMeta: *metadata,
+		Spec:       *spec,
+		Status:     *status,
+	}
+
+	return p, nil
 }
 
 // ObjectReferenceToProto converts an ObjectReference into a proto.
@@ -417,4 +492,114 @@ func EndpointsFromProto(pb *metadatapb.Endpoints) (*v1.Endpoints, error) {
 	}
 
 	return e, nil
+}
+
+// ServicePortToProto converts a ServicePort into a proto.
+func ServicePortToProto(e *v1.ServicePort) (*metadatapb.ServicePort, error) {
+	sPb := &metadatapb.ServicePort{
+		Name:     e.Name,
+		Port:     e.Port,
+		Protocol: ipProtocolObjToPbMap[e.Protocol],
+		NodePort: e.NodePort,
+	}
+	return sPb, nil
+}
+
+// ServicePortFromProto converts a proto message to a ServicePort.
+func ServicePortFromProto(pb *metadatapb.ServicePort) (*v1.ServicePort, error) {
+	s := &v1.ServicePort{
+		Name:     pb.Name,
+		Port:     pb.Port,
+		Protocol: ipProtocolPbToObjMap[pb.Protocol],
+		NodePort: pb.NodePort,
+	}
+
+	return s, nil
+}
+
+// ServiceSpecToProto converts a ServiceSpec into a proto.
+func ServiceSpecToProto(s *v1.ServiceSpec) (*metadatapb.ServiceSpec, error) {
+	ports := make([]*metadatapb.ServicePort, len(s.Ports))
+	for i, p := range s.Ports {
+		pPb, err := ServicePortToProto(&p)
+		if err != nil {
+			return nil, err
+		}
+		ports[i] = pPb
+	}
+
+	sPb := &metadatapb.ServiceSpec{
+		ClusterIp:             s.ClusterIP,
+		ExternalIps:           s.ExternalIPs,
+		LoadBalancerIp:        s.LoadBalancerIP,
+		ExternalName:          s.ExternalName,
+		ExternalTrafficPolicy: externalPolicyObjToPbMap[s.ExternalTrafficPolicy],
+		Ports:                 ports,
+		Type:                  serviceTypeObjToPbMap[s.Type],
+	}
+
+	return sPb, nil
+}
+
+// ServiceSpecFromProto converts a proto message to a ServiceSpec.
+func ServiceSpecFromProto(pb *metadatapb.ServiceSpec) (*v1.ServiceSpec, error) {
+	ports := make([]v1.ServicePort, len(pb.Ports))
+	for i, p := range pb.Ports {
+		pPb, err := ServicePortFromProto(p)
+		if err != nil {
+			return nil, err
+		}
+		ports[i] = *pPb
+	}
+
+	s := &v1.ServiceSpec{
+		ClusterIP:             pb.ClusterIp,
+		ExternalIPs:           pb.ExternalIps,
+		LoadBalancerIP:        pb.LoadBalancerIp,
+		ExternalName:          pb.ExternalName,
+		ExternalTrafficPolicy: externalPolicyPbToObjMap[pb.ExternalTrafficPolicy],
+		Type:                  serviceTypePbToObjMap[pb.Type],
+		Ports:                 ports,
+	}
+
+	return s, nil
+}
+
+// ServiceToProto converts a Service into a proto.
+func ServiceToProto(s *v1.Service) (*metadatapb.Service, error) {
+	metadata, err := ObjectMetadataToProto(&s.ObjectMeta)
+	if err != nil {
+		return nil, err
+	}
+
+	spec, err := ServiceSpecToProto(&s.Spec)
+	if err != nil {
+		return nil, err
+	}
+
+	sPb := &metadatapb.Service{
+		Metadata: metadata,
+		Spec:     spec,
+	}
+	return sPb, nil
+}
+
+// ServiceFromProto converts a proto message to a Service.
+func ServiceFromProto(pb *metadatapb.Service) (*v1.Service, error) {
+	metadata, err := ObjectMetadataFromProto(pb.Metadata)
+	if err != nil {
+		return nil, err
+	}
+
+	spec, err := ServiceSpecFromProto(pb.Spec)
+	if err != nil {
+		return nil, err
+	}
+
+	s := &v1.Service{
+		ObjectMeta: *metadata,
+		Spec:       *spec,
+	}
+
+	return s, nil
 }

@@ -78,6 +78,33 @@ phase: 2
 conditions: 2
 `
 
+const podPb = `
+metadata {
+	name: "object_md"
+	namespace: "a_namespace"
+	uid: "ijkl"
+	resource_version: "1",
+	cluster_name: "a_cluster",
+	owner_references {
+	  kind: "pod"
+	  name: "test"
+	  uid: "abcd"
+	}
+	creation_timestamp_ns: 4
+	deletion_timestamp_ns: 6
+}
+status {
+	message: "this is message"
+	phase: 2
+	conditions: 2
+}
+spec {
+	node_name: "test"
+	hostname: "hostname"
+	dns_policy: 2
+}
+`
+
 const objectReferencePb = `
 kind: "pod"
 namespace: "pl"
@@ -177,6 +204,73 @@ metadata {
 	  name: "test"
 	  uid: "abcd"
 	}
+}
+`
+
+const servicePortPb = `
+name: "endpt"
+port: 10
+protocol: 1
+node_port: 20
+`
+
+const serviceSpecPb = `
+cluster_ip: "127.0.0.1"
+external_ips: "127.0.0.2"
+external_ips: "127.0.0.3"
+load_balancer_ip: "127.0.0.4"
+external_name: "hello"
+external_traffic_policy: 1
+ports {
+	name: "endpt"
+	port: 10
+	protocol: 1
+	node_port: 20
+}
+ports {
+	name: "another_port"
+	port: 50
+	protocol: 1
+	node_port: 60
+}
+type: 1
+`
+
+const servicePb = `
+metadata {
+	name: "object_md"
+	namespace: "a_namespace"
+	uid: "ijkl"
+	resource_version: "1",
+	cluster_name: "a_cluster",
+	owner_references {
+	  kind: "pod"
+	  name: "test"
+	  uid: "abcd"
+	}
+	creation_timestamp_ns: 4
+	deletion_timestamp_ns: 6
+}
+spec {
+	cluster_ip: "127.0.0.1"
+	external_ips: "127.0.0.2"
+	external_ips: "127.0.0.3"
+	load_balancer_ip: "127.0.0.4"
+	external_name: "hello"
+	external_traffic_policy: 1
+	ports {
+		name: "endpt"
+		port: 10
+		protocol: 1
+		node_port: 20
+	}
+	ports {
+		name: "another_port"
+		port: 50
+		protocol: 1
+		node_port: 60
+	}
+	type: 1
 }
 `
 
@@ -381,6 +475,74 @@ func TestPodStatusFromProto(t *testing.T) {
 	assert.Equal(t, v1.PodRunning, obj.Phase)
 	assert.Equal(t, 1, len(obj.Conditions))
 	assert.Equal(t, v1.PodReady, obj.Conditions[0].Type)
+}
+
+func TestPodToProto(t *testing.T) {
+	ownerRefs := make([]metav1.OwnerReference, 1)
+	ownerRefs[0] = metav1.OwnerReference{
+		Kind: "pod",
+		Name: "test",
+		UID:  "abcd",
+	}
+
+	delTime := metav1.Unix(0, 6)
+	creationTime := metav1.Unix(0, 4)
+	metadata := metav1.ObjectMeta{
+		Name:              "object_md",
+		Namespace:         "a_namespace",
+		UID:               "ijkl",
+		ResourceVersion:   "1",
+		ClusterName:       "a_cluster",
+		OwnerReferences:   ownerRefs,
+		CreationTimestamp: creationTime,
+		DeletionTimestamp: &delTime,
+	}
+
+	conditions := make([]v1.PodCondition, 1)
+	conditions[0] = v1.PodCondition{
+		Type: v1.PodReady,
+	}
+
+	status := v1.PodStatus{
+		Message:    "this is message",
+		Phase:      v1.PodRunning,
+		Conditions: conditions,
+	}
+
+	spec := v1.PodSpec{
+		NodeName:  "test",
+		Hostname:  "hostname",
+		DNSPolicy: v1.DNSClusterFirst,
+	}
+
+	o := v1.Pod{
+		ObjectMeta: metadata,
+		Status:     status,
+		Spec:       spec,
+	}
+
+	oPb, err := k8s.PodToProto(&o)
+	assert.Nil(t, err, "must not have an error")
+
+	expectedPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(podPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	assert.Equal(t, expectedPb, oPb)
+}
+
+func TestPodFromProto(t *testing.T) {
+	oPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(podPb, oPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	obj, err := k8s.PodFromProto(oPb)
+	assert.Nil(t, err, "must not have an error")
+
+	assert.Equal(t, "object_md", obj.ObjectMeta.Name)
+	assert.Equal(t, "this is message", obj.Status.Message)
+	assert.Equal(t, "test", obj.Spec.NodeName)
 }
 
 func TestObjectReferenceToProto(t *testing.T) {
@@ -660,4 +822,169 @@ func TestEndpointsFromProto(t *testing.T) {
 	assert.Equal(t, "object_md", e.ObjectMeta.Name)
 	assert.Equal(t, 1, len(e.Subsets))
 	assert.Equal(t, 2, len(e.Subsets[0].Addresses))
+}
+
+func TestServicePortToProto(t *testing.T) {
+	o := v1.ServicePort{
+		Name:     "endpt",
+		Port:     10,
+		Protocol: v1.ProtocolTCP,
+		NodePort: 20,
+	}
+
+	oPb, err := k8s.ServicePortToProto(&o)
+	assert.Nil(t, err, "must not have an error")
+
+	expectedPb := &metadatapb.ServicePort{}
+	if err := proto.UnmarshalText(servicePortPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	assert.Equal(t, expectedPb, oPb)
+}
+
+func TestServicePortFromProto(t *testing.T) {
+	oPb := &metadatapb.ServicePort{}
+	if err := proto.UnmarshalText(servicePortPb, oPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	obj, err := k8s.ServicePortFromProto(oPb)
+	assert.Nil(t, err, "must not have an error")
+
+	assert.Equal(t, "endpt", obj.Name)
+	assert.Equal(t, int32(10), obj.Port)
+	assert.Equal(t, v1.ProtocolTCP, obj.Protocol)
+	assert.Equal(t, int32(20), obj.NodePort)
+}
+
+func TestServiceSpecToProto(t *testing.T) {
+	ports := make([]v1.ServicePort, 2)
+	ports[0] = v1.ServicePort{
+		Name:     "endpt",
+		Port:     10,
+		Protocol: v1.ProtocolTCP,
+		NodePort: 20,
+	}
+	ports[1] = v1.ServicePort{
+		Name:     "another_port",
+		Port:     50,
+		Protocol: v1.ProtocolTCP,
+		NodePort: 60,
+	}
+
+	externalIPs := []string{"127.0.0.2", "127.0.0.3"}
+
+	o := v1.ServiceSpec{
+		ClusterIP:             "127.0.0.1",
+		LoadBalancerIP:        "127.0.0.4",
+		ExternalName:          "hello",
+		ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
+		Type:                  v1.ServiceTypeExternalName,
+		Ports:                 ports,
+		ExternalIPs:           externalIPs,
+	}
+
+	oPb, err := k8s.ServiceSpecToProto(&o)
+	assert.Nil(t, err, "must not have an error")
+
+	expectedPb := &metadatapb.ServiceSpec{}
+	if err := proto.UnmarshalText(serviceSpecPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	assert.Equal(t, expectedPb, oPb)
+}
+
+func TestServiceSpecFromProto(t *testing.T) {
+	oPb := &metadatapb.ServiceSpec{}
+	if err := proto.UnmarshalText(serviceSpecPb, oPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	obj, err := k8s.ServiceSpecFromProto(oPb)
+	assert.Nil(t, err, "must not have an error")
+
+	assert.Equal(t, "127.0.0.1", obj.ClusterIP)
+	assert.Equal(t, "127.0.0.4", obj.LoadBalancerIP)
+	assert.Equal(t, "hello", obj.ExternalName)
+	assert.Equal(t, v1.ServiceExternalTrafficPolicyTypeLocal, obj.ExternalTrafficPolicy)
+	assert.Equal(t, v1.ServiceTypeExternalName, obj.Type)
+	assert.Equal(t, 2, len(obj.Ports))
+	assert.Equal(t, "endpt", obj.Ports[0].Name)
+	assert.Equal(t, 2, len(obj.ExternalIPs))
+	assert.Equal(t, "127.0.0.2", obj.ExternalIPs[0])
+}
+
+func TestServiceToProto(t *testing.T) {
+	ports := make([]v1.ServicePort, 2)
+	ports[0] = v1.ServicePort{
+		Name:     "endpt",
+		Port:     10,
+		Protocol: v1.ProtocolTCP,
+		NodePort: 20,
+	}
+	ports[1] = v1.ServicePort{
+		Name:     "another_port",
+		Port:     50,
+		Protocol: v1.ProtocolTCP,
+		NodePort: 60,
+	}
+
+	externalIPs := []string{"127.0.0.2", "127.0.0.3"}
+
+	spec := v1.ServiceSpec{
+		ClusterIP:             "127.0.0.1",
+		LoadBalancerIP:        "127.0.0.4",
+		ExternalName:          "hello",
+		ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
+		Type:                  v1.ServiceTypeExternalName,
+		Ports:                 ports,
+		ExternalIPs:           externalIPs,
+	}
+
+	ownerRefs := make([]metav1.OwnerReference, 1)
+	ownerRefs[0] = metav1.OwnerReference{
+		Kind: "pod",
+		Name: "test",
+		UID:  "abcd",
+	}
+
+	delTime := metav1.Unix(0, 6)
+	creationTime := metav1.Unix(0, 4)
+	metadata := metav1.ObjectMeta{
+		Name:              "object_md",
+		Namespace:         "a_namespace",
+		UID:               "ijkl",
+		ResourceVersion:   "1",
+		ClusterName:       "a_cluster",
+		OwnerReferences:   ownerRefs,
+		CreationTimestamp: creationTime,
+		DeletionTimestamp: &delTime,
+	}
+
+	o := v1.Service{
+		ObjectMeta: metadata,
+		Spec:       spec,
+	}
+
+	oPb, err := k8s.ServiceToProto(&o)
+	assert.Nil(t, err, "must not have an error")
+
+	expectedPb := &metadatapb.Service{}
+	if err := proto.UnmarshalText(servicePb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	assert.Equal(t, expectedPb, oPb)
+}
+
+func TestServiceFromProto(t *testing.T) {
+	oPb := &metadatapb.Service{}
+	if err := proto.UnmarshalText(servicePb, oPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	obj, err := k8s.ServiceFromProto(oPb)
+	assert.Nil(t, err, "must not have an error")
+
+	assert.Equal(t, "object_md", obj.ObjectMeta.Name)
+	assert.Equal(t, "hello", obj.Spec.ExternalName)
 }

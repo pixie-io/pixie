@@ -241,6 +241,12 @@ enum ServiceType {
   LOAD_BALANCER = 4;
 }
 
+enum ExternalTrafficPolicyType {
+  TRAFFIC_POLICY_TYPE_UNKNOWN = 0;
+  TRAFFIC_LOCAL = 1;
+  TRAFFIC_CLUSTER = 2;
+}
+
 // ServiceSpec describes the attributes that a user creates on a service.
 message ServiceSpec {
   // The list of ports that are exposed by this service.
@@ -266,7 +272,7 @@ message ServiceSpec {
 
   // Policy that denotes if this Service desires to route external
   // traffic to node-local or cluster-wide endpoints.
-  string external_traffic_policy = 7;
+  ExternalTrafficPolicyType external_traffic_policy = 7;
 }
 
 // ServicePort contains information on service's port.

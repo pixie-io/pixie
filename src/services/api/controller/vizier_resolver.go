@@ -104,7 +104,7 @@ type AgentStatusResolver struct {
 	Status *qbpb.AgentStatus
 }
 
-// LastHeartBeatNs returns the time since last heartbeat.
+// LastHeartBeatMs returns the time since last heartbeat.
 func (a *AgentStatusResolver) LastHeartBeatMs() float64 {
 	hb := a.Status.LastHeartbeatNs
 	return float64(hb / 1E6)
