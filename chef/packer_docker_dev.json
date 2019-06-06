@@ -10,6 +10,12 @@
       "image": "{{ user `base_image_and_tag` }}",
       "commit": true,
       "changes": [
+        "ENV PATH /opt/golang/bin/:/opt/pixielabs/bin:/opt/clang-7.0/bin:/pl/bin:/opt/google-cloud-sdk/bin:/opt/node/bin:/opt/phab/arcanist/bin:/usr/lib/go-1.10/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "ENV LD_LIBRARY_PATH /opt/clang-7.0/lib",
+        "ENV GOPATH /pl",
+        "ENV CC clang",
+        "ENV CXX clang++",
+        "ENV ASAN_SYMBOLIZER_PATH /opt/clang-7.0/bin/llvm-symbolizer",      
         "WORKDIR /pl/src/pixielabs.ai/pixielabs"
       ]
     }
@@ -40,9 +46,7 @@
       "inline": [
         "rm -rf /tmp/*",
         "rm -rf /root/.npm",
-        "rm -rf /var/lib/apt/lists/*",
-        "ln -s /opt/pixielabs/plenv.inc /etc/profile.d/pixie.sh",
-        "echo \"source /opt/pixielabs/plenv.inc\" >> ~/.bashrc"
+        "rm -rf /var/lib/apt/lists/*"
       ]
     }
   ],
