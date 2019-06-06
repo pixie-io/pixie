@@ -34,36 +34,93 @@ class HTTPTraceBPFTest : public ::testing::Test {
     ASSERT_OK(source->Init());
   }
 
-  void SpawnReaderClient(const TCPSocket& server) {
-    client_thread = std::thread([&server]() {
-      TCPSocket client;
-      client.Connect(server);
-      std::string data;
-      while (client.Read(&data)) {
-      }
-    });
-  }
+  class ClientServerSystem {
+   public:
+    ClientServerSystem() { server.Bind(); }
 
-  void SpawnWriterClient(const TCPSocket& server, const std::vector<std::string_view>& write_data) {
-    client_thread = std::thread([&server, &write_data]() {
-      TCPSocket client;
-      client.Connect(server);
-      for (auto data : write_data) {
-        client.Write(data);
-      }
-      client.Close();
-    });
-  }
+    void RunWriterReader(const std::vector<std::string_view>& write_data) {
+      SpawnReaderClient();
+      SpawnWriterServer(write_data);
+      JoinThreads();
+    }
 
-  void JoinClient() { client_thread.join(); }
+    void RunSenderReceiver(const std::vector<std::string_view>& write_data) {
+      SpawnReceiverClient();
+      SpawnSenderServer(write_data);
+      JoinThreads();
+    }
 
-  static constexpr std::string_view kHTTPMsg1 = R"(HTTP/1.1 200 OK
+    void SpawnReaderClient() {
+      client_thread = std::thread([this]() {
+        client.Connect(server);
+        std::string data;
+        while (client.Read(&data)) {
+        }
+      });
+    }
+
+    void SpawnReceiverClient() {
+      client_thread = std::thread([this]() {
+        client.Connect(server);
+        std::string data;
+        while (client.Recv(&data)) {
+        }
+      });
+    }
+
+    void SpawnWriterServer(const std::vector<std::string_view>& write_data) {
+      server_thread = std::thread([this, write_data]() {
+        server.Accept();
+        for (auto data : write_data) {
+          ASSERT_EQ(data.length(), server.Write(data));
+        }
+        server.Close();
+      });
+    }
+
+    void SpawnSenderServer(const std::vector<std::string_view>& write_data) {
+      server_thread = std::thread([this, write_data]() {
+        server.Accept();
+        for (auto data : write_data) {
+          ASSERT_EQ(data.length(), server.Send(data));
+        }
+        server.Close();
+      });
+    }
+
+    void JoinThreads() {
+      server_thread.join();
+      client_thread.join();
+    }
+
+    TCPSocket& Server() { return server; }
+    TCPSocket& Client() { return client; }
+
+   private:
+    TCPSocket client;
+    TCPSocket server;
+
+    std::thread client_thread;
+    std::thread server_thread;
+  };
+
+  static constexpr std::string_view kHTTPReqMsg1 = R"(GET /endpoint1 HTTP/1.1
+User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0
+
+)";
+
+  static constexpr std::string_view kHTTPReqMsg2 = R"(GET /endpoint2 HTTP/1.1
+User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0
+
+)";
+
+  static constexpr std::string_view kHTTPRespMsg1 = R"(HTTP/1.1 200 OK
 Content-Type: application/json; msg1
 Content-Length: 0
 
 )";
 
-  static constexpr std::string_view kHTTPMsg2 = R"(HTTP/1.1 200 OK
+  static constexpr std::string_view kHTTPRespMsg2 = R"(HTTP/1.1 200 OK
 Content-Type: application/json; msg2
 Content-Length: 0
 
@@ -77,6 +134,7 @@ Content-Length: 0
   static constexpr DataTableSchema http_table_schema = SocketTraceConnector::kHTTPTable;
   static constexpr uint64_t kHTTPHeaderIdx = http_table_schema.ColIndex("http_headers");
   static constexpr uint64_t kHTTPTGIDIdx = http_table_schema.ColIndex("tgid");
+  static constexpr uint64_t kHTTPDstAddrIdx = http_table_schema.ColIndex("dst_addr");
   static constexpr uint64_t kHTTPFdIdx = http_table_schema.ColIndex("fd");
 
   static constexpr int mysql_table_num = 1;
@@ -84,43 +142,36 @@ Content-Length: 0
   static constexpr uint64_t kMySQLBodyIdx = mysql_table_schema.ColIndex("body");
 
   std::unique_ptr<SourceConnector> source;
-  std::thread client_thread;
 };
 
-TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
-  TCPSocket server;
-  server.Bind();
-
-  SpawnReaderClient(server);
-
-  server.Accept();
-  EXPECT_EQ(kHTTPMsg1.length(), server.Write(kHTTPMsg1));
-  EXPECT_EQ(kHTTPMsg2.length(), server.Write(kHTTPMsg2));
-  server.Close();
-
-  JoinClient();
+TEST_F(HTTPTraceBPFTest, TestWriteRespCapture) {
+  ClientServerSystem system;
+  system.RunWriterReader({kHTTPRespMsg1, kHTTPRespMsg2});
 
   {
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(http_table_schema.elements(), /*target_capacity*/ 2, &record_batch));
+    EXPECT_OK(InitRecordBatch(http_table_schema.elements(), /*target_capacity*/ 4, &record_batch));
     source->TransferData(http_table_num, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(2, col->Size());
     }
 
-    // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
-    // host machine are identical.
-    // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
-    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(0).val);
-    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(1).val);
+    // These getpid() EXPECTs require docker container with --pid=host so that the container's PID
+    // and the host machine are identical. See
+    // https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
 
+    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(0).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
               record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
-    EXPECT_EQ(server.sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(system.Server().sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ("127.0.0.1", record_batch[kHTTPDstAddrIdx]->Get<types::StringValue>(0));
+
+    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(1).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
               record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
-    EXPECT_EQ(server.sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(system.Server().sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ("127.0.0.1", record_batch[kHTTPDstAddrIdx]->Get<types::StringValue>(1));
   }
 
   // Check that MySQL table did not capture any data.
@@ -137,18 +188,9 @@ TEST_F(HTTPTraceBPFTest, TestWriteCapturedData) {
   EXPECT_OK(source->Stop());
 }
 
-TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
-  TCPSocket server;
-  server.Bind();
-
-  SpawnReaderClient(server);
-
-  server.Accept();
-  EXPECT_EQ(kHTTPMsg1.length(), server.Send(kHTTPMsg1));
-  EXPECT_EQ(kHTTPMsg2.length(), server.Send(kHTTPMsg2));
-  server.Close();
-
-  JoinClient();
+TEST_F(HTTPTraceBPFTest, TestSendRespCapture) {
+  ClientServerSystem system;
+  system.RunSenderReceiver({kHTTPRespMsg1, kHTTPRespMsg2});
 
   {
     types::ColumnWrapperRecordBatch record_batch;
@@ -162,15 +204,16 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
     // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
     // host machine are identical.
     // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
-    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(0).val);
-    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(1).val);
 
+    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(0).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
               record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
-    EXPECT_EQ(server.sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(system.Server().sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(0).val);
+
+    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(1).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
               record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
-    EXPECT_EQ(server.sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(system.Server().sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(1).val);
   }
 
   // Check that MySQL table did not capture any data.
@@ -188,17 +231,8 @@ TEST_F(HTTPTraceBPFTest, TestSendCapturedData) {
 }
 
 TEST_F(HTTPTraceBPFTest, DISABLED_TestMySQLWriteCapturedData) {
-  TCPSocket server;
-  server.Bind();
-
-  SpawnReaderClient(server);
-
-  server.Accept();
-  EXPECT_EQ(kMySQLMsg.length(), server.Write(kMySQLMsg));
-  EXPECT_EQ(kMySQLMsg.length(), server.Send(kMySQLMsg));
-  server.Close();
-
-  JoinClient();
+  ClientServerSystem system;
+  system.RunSenderReceiver({kMySQLMsg, kMySQLMsg});
 
   // Check that HTTP table did not capture any data.
   {
@@ -231,19 +265,8 @@ TEST_F(HTTPTraceBPFTest, DISABLED_TestMySQLWriteCapturedData) {
 }
 
 TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
-  TCPSocket server;
-  server.Bind();
-
-  SpawnReaderClient(server);
-
-  server.Accept();
-  EXPECT_EQ(kNoProtocolMsg.length(), server.Write(kNoProtocolMsg));
-  EXPECT_EQ(0, server.Write(""));
-  EXPECT_EQ(kNoProtocolMsg.length(), server.Send(kNoProtocolMsg));
-  EXPECT_EQ(0, server.Send(""));
-  server.Close();
-
-  JoinClient();
+  ClientServerSystem system;
+  system.RunWriterReader({kNoProtocolMsg, "", kNoProtocolMsg, ""});
 
   // Check that HTTP table did not capture any data.
   {
@@ -272,103 +295,13 @@ TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   EXPECT_OK(source->Stop());
 }
 
-TEST_F(HTTPTraceBPFTest, TestReadCapturedData) {
-  TCPSocket server;
-  server.Bind();
-
-  std::vector<std::string_view> write_data = {kHTTPMsg1, kHTTPMsg2};
-  SpawnWriterClient(server, write_data);
-
-  server.Accept();
-  std::string recv_msg;
-  std::string recv_tmp;
-  while (server.Read(&recv_tmp)) {
-    recv_msg.append(recv_tmp);
-  }
-
-  // Unlike write/send syscalls, read probes may capture zero, one or multiple messages at a time.
-  // For example, a single Read() call after two Write() calls may return the data from both Writes.
-  // As a result, we can only only check that the aggregate was received correctly.
-  std::string expected_msg;
-  expected_msg.append(kHTTPMsg1);
-  expected_msg.append(kHTTPMsg2);
-  EXPECT_EQ(expected_msg, recv_msg);
-  server.Close();
-
-  JoinClient();
-
-  // TODO(oazizi): Check that the probes actually captured the data. Coming in a future diff soon.
-}
-
-TEST_F(HTTPTraceBPFTest, TestRecvCapturedData) {
-  TCPSocket server;
-  server.Bind();
-
-  std::vector<std::string_view> write_data = {kHTTPMsg1, kHTTPMsg2};
-  SpawnWriterClient(server, write_data);
-
-  server.Accept();
-  std::string recv_msg;
-  std::string recv_tmp;
-  while (server.Recv(&recv_tmp)) {
-    recv_msg.append(recv_tmp);
-  }
-
-  // Unlike write/send syscalls, read probes may capture zero, one or multiple messages at a time.
-  // For example, a single Recv() call after two Write() calls may return the data from both Writes.
-  // As a result, we can only only check that the aggregate was received correctly.
-  std::string expected_msg;
-  expected_msg.append(kHTTPMsg1);
-  expected_msg.append(kHTTPMsg2);
-  EXPECT_EQ(expected_msg, recv_msg);
-  server.Close();
-
-  JoinClient();
-
-  // TODO(oazizi): Check that the probes actually captured the data. Coming in a future diff soon.
-}
-
-TEST_F(HTTPTraceBPFTest, TestNonHTTPReadsNotCaptured) {
-  TCPSocket server;
-  server.Bind();
-
-  std::vector<std::string_view> write_data = {kNoProtocolMsg};
-  SpawnWriterClient(server, write_data);
-
-  server.Accept();
-  std::string recv_msg;
-  std::string recv_tmp;
-  while (server.Read(&recv_tmp)) {
-    recv_msg.append(recv_tmp);
-  }
-  EXPECT_EQ(kNoProtocolMsg, recv_msg);
-  server.Close();
-
-  JoinClient();
-
-  // TODO(oazizi): Check that the probes did not capture the data. Coming in a future diff soon.
-}
-
 TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
-  {
-    TCPSocket server;
-    server.Bind();
-    SpawnReaderClient(server);
-    server.Accept();
-    EXPECT_EQ(kHTTPMsg1.length(), server.Write(kHTTPMsg1));
-    server.Close();
-    client_thread.join();
-  }
-  {
-    // A new connection.
-    TCPSocket server;
-    server.Bind();
-    SpawnReaderClient(server);
-    server.Accept();
-    EXPECT_EQ(kHTTPMsg2.length(), server.Write(kHTTPMsg2));
-    server.Close();
-    client_thread.join();
-  }
+  // Two separate connections.
+  ClientServerSystem system1;
+  system1.RunWriterReader({kHTTPRespMsg1});
+
+  ClientServerSystem system2;
+  system2.RunWriterReader({kHTTPRespMsg2});
 
   auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source.get());
   ASSERT_NE(nullptr, socket_trace_connector);
@@ -388,7 +321,7 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
       seq_msgs.emplace_back(seq_num, get_message(event));
     }
   }
-  EXPECT_THAT(seq_msgs, UnorderedElementsAre(Pair(0, kHTTPMsg1), Pair(0, kHTTPMsg2)));
+  EXPECT_THAT(seq_msgs, UnorderedElementsAre(Pair(0, kHTTPRespMsg1), Pair(0, kHTTPRespMsg2)));
 }
 
 }  // namespace stirling

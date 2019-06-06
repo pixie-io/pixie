@@ -114,9 +114,10 @@ void SocketTraceConnector::HandleHTTPResponseProbeOutput(void* cb_cookie, void* 
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   auto* event = static_cast<socket_data_event_t*>(data);
 
+  // TODO(oazizi): This if statement to be removed soon,
+  // because we may need to capture responses from either direction.
   if (event->attr.event_type != kEventTypeSyscallWriteEvent &&
       event->attr.event_type != kEventTypeSyscallSendEvent) {
-    LOG(ERROR) << "Unexpected event type: " << event->attr.event_type;
     return;
   }
 
