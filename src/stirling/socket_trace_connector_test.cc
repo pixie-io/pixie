@@ -40,7 +40,8 @@ Content-Length: 0
   // FRIEND_TEST() does not grant std::make_unique() access to SocketTraceConnector's private ctor.
   // We choose this style over the SocketTraceConnector::Create() + dynamic_cast<>, as this is
   // clearer.
-  std::unique_ptr<SourceConnector> connector = SocketTraceConnector::Create("bcc_http_trace");
+  std::unique_ptr<SourceConnector> connector =
+      SocketTraceConnector::Create("socket_trace_connector");
   auto* source = dynamic_cast<SocketTraceConnector*>(connector.get());
   types::ColumnWrapperRecordBatch record_batch;
   EXPECT_OK(InitRecordBatch(SocketTraceConnector::kTables[table_num].elements(),

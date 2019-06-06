@@ -26,7 +26,7 @@ describe('<QueryManager/> test', () => {
     const dropdownItem = wrapper.find(Dropdown.Item).at(1);
     dropdownItem.simulate('click');
 
-    expect(wrapper.find(QueryManager).at(0).state('code')).toContain('t1 = From(table=\'bcc_http_trace\',');
+    expect(wrapper.find(QueryManager).at(0).state('code')).toContain('t1 = From(table=\'http_events\',');
   });
 
   it('should pass correct headers into query editor box', async () => {

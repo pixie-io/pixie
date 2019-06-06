@@ -44,7 +44,7 @@ class CompilerTest : public ::testing::Test {
             std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
 
     rel_map->emplace(
-        "bcc_http_trace",
+        "http_table",
         table_store::schema::Relation(
             std::vector<types::DataType>({types::DataType::TIME64NS, types::DataType::INT64,
                                           types::DataType::INT64, types::DataType::INT64}),
@@ -1022,7 +1022,7 @@ TEST_F(CompilerTest, limit_test) {
 TEST_F(CompilerTest, reused_result) {
   std::string query = absl::StrJoin(
       {
-          "queryDF = From(table='bcc_http_trace', select=['time_', 'pid', 'http_resp_status', "
+          "queryDF = From(table='http_table', select=['time_', 'pid', 'http_resp_status', "
           "'http_resp_latency_ns'])",
           "range_out = queryDF.Range(start='-1m')",
           "x = range_out.Filter(fn=lambda r: r.http_resp_latency_ns < 1000000)",
@@ -1038,7 +1038,7 @@ TEST_F(CompilerTest, reused_result) {
 TEST_F(CompilerTest, multiple_result_sinks) {
   std::string query = absl::StrJoin(
       {
-          "queryDF = From(table='bcc_http_trace', select=['time_', 'pid', 'http_resp_status', "
+          "queryDF = From(table='http_table', select=['time_', 'pid', 'http_resp_status', "
           "'http_resp_latency_ns'])",
           "range_out = queryDF.Range(start='-1m')",
           "x = range_out.Filter(fn=lambda r: r.http_resp_latency_ns < "

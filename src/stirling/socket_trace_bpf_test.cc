@@ -30,7 +30,7 @@ class HTTPTraceBPFTest : public ::testing::Test {
   HTTPTraceBPFTest() {}
 
   void SetUp() override {
-    source = SocketTraceConnector::Create("bcc_http_trace");
+    source = SocketTraceConnector::Create("socket_trace_connector");
     ASSERT_OK(source->Init());
   }
 

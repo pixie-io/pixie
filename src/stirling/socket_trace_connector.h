@@ -71,7 +71,7 @@ class SocketTraceConnector : public SourceConnector {
           {"http_resp_latency_ns", types::DataType::INT64}
   };
   // clang-format on
-  static constexpr auto kHTTPTable = DataTableSchema("socket_trace", kHTTPElements);
+  static constexpr auto kHTTPTable = DataTableSchema("http_events", kHTTPElements);
 
   // clang-format off
   static constexpr DataElement kMySQLElements[] = {
@@ -86,7 +86,7 @@ class SocketTraceConnector : public SourceConnector {
           {"body", types::DataType::STRING},
   };
   // clang-format on
-  static constexpr auto kMySQLTable = DataTableSchema("mysql_trace", kMySQLElements);
+  static constexpr auto kMySQLTable = DataTableSchema("mysql_events", kMySQLElements);
 
   static constexpr DataTableSchema kTablesArray[] = {kHTTPTable, kMySQLTable};
   static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
