@@ -16,6 +16,7 @@ import groovy.json.JsonBuilder
 // global variables.
 PHAB_URL = 'https://phab.pixielabs.ai'
 PHAB_API_URL = "${PHAB_URL}/api"
+REPOSITORY = "PLM"
 
 // Restrict build to source code, since otherwise bazel seems to build all our deps.
 BAZEL_SRC_FILES_PATH = "//src/..."
@@ -33,6 +34,8 @@ JENKINS_RETRIES = 2;
 
 // This variable store the dev docker image that we need to parse before running any docker steps.
 devDockerImageWithTag = ''
+
+stashList = [];
 
 /**
   * @brief Generates URL for harbormaster.
@@ -91,7 +94,7 @@ def addBuildInfo = {
     link = "${PHAB_URL}/${revisionId}"
   } else {
     text = params.PHAB_COMMIT.substring(0, 7)
-    link = "${PHAB_URL}/rPLM${env.PHAB_COMMIT}"
+    link = "${PHAB_URL}/r${REPOSITORY}${env.PHAB_COMMIT}"
   }
   addShortText(text: text,
     background: "transparent",
@@ -170,8 +173,11 @@ def writeBazelRCFile() {
   writeFile file: "jenkins.bazelrc", text: "${bazelRcFile}"
 }
 
-def builders = [:]
-
+def createBazelStash(String stashName) {
+  sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
+  stash name: stashName, includes: 'bazel-testlogs-archive/**'
+  stashList.add(stashName)
+}
 
 /**
   * Our default docker step :
@@ -194,68 +200,135 @@ def dockerStepWithCode(String dockerConfig = '', Closure body) {
   }
 }
 
-builders['Build & Test (dbg)'] = {
-  dockerStepWithCode {
+/**
+  * dockerStepWithCode but also has all the bazel dependencies.
+  */
+def dockerStepWithBazelDeps(String dockerConfig = '', Closure body) {
+  dockerStepWithCode(dockerConfig) {
     sh 'scripts/bazel_fetch_retry.sh'
-    sh "bazel test --compilation_mode=dbg ${BAZEL_SRC_FILES_PATH}"
-    sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-    stash name: 'build-dbg-testlogs', includes: "bazel-testlogs-archive/**"
+    body()
   }
 }
 
+/**
+  * dockerStepWithBazelDeps with stashing of logs for the passed in Bazel command.
+  */
+def dockerStepWithBazelCmd(String dockerConfig = '', String bazelCmd, String name) {
+  dockerStepWithBazelDeps(dockerConfig) {
+    sh "${bazelCmd}"
+    createBazelStash("${name}-testlogs")
+  }
+}
+
+def archiveBazelLogs() {
+  step([
+    $class: 'XUnitBuilder',
+    thresholds: [
+      [
+        $class: 'FailedThreshold',
+        unstableThreshold: '1'
+      ]
+    ],
+    tools: [
+      [
+        $class: 'GoogleTestType',
+        pattern: "build*/bazel-testlogs-archive/**/*.xml"
+      ]
+    ]
+  ])
+}
+
+def archiveUILogs() {
+  step([
+    $class: 'XUnitBuilder',
+    thresholds: [
+      [
+        $class: 'FailedThreshold',
+        unstableThreshold: '1'
+      ]
+    ],
+    tools: [
+      [
+        $class: 'JUnitType',
+        pattern: "build-ui-testlogs/src/ui/junit.xml"
+      ]
+    ]
+  ])
+}
+
+def publishStoryBook() {
+  publishHTML([allowMissing: false,
+    alwaysLinkToLastBuild: true,
+    keepAll: true,
+    reportDir: 'build-ui-storybook-static/src/ui/storybook_static',
+    reportFiles: 'index.html',
+    reportName: 'ui-storybook'
+  ])
+}
+
+/**
+ * Checkout the source code, record git info and stash sources.
+ */
+def checkoutAndInitialize() {
+  checkout scm
+  sh '''
+    printenv
+    # Store the GIT commit in a file, since the git plugin has issues with
+    # the Jenkins pipeline system.
+    git rev-parse HEAD > GIT_COMMIT
+  '''
+  writeBazelRCFile()
+
+  // Get docker image tag.
+  def properties = readProperties file: 'docker.properties'
+  devDockerImageWithTag = DEV_DOCKER_IMAGE + ":${properties.DOCKER_IMAGE_TAG}"
+
+  // Excluding default excludes also stashes the .git folder which downstream steps need.
+  stash name: SRC_STASH_NAME, useDefaultExcludes: false
+}
+
+/*****************************************************************************
+ * BUILDERS: This sections defines all the build steps that will happen in parallel.
+ *****************************************************************************/
+def builders = [:]
+
+builders['Build & Test (dbg)'] = {
+  dockerStepWithBazelCmd("bazel test --compilation_mode=dbg ${BAZEL_SRC_FILES_PATH}", 'build-dbg')
+}
 
 builders['Build & Test (opt)'] = {
-  dockerStepWithCode {
-    sh 'scripts/bazel_fetch_retry.sh'
-    sh "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}"
-    sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-    stash name: 'build-opt-testlogs', includes: "bazel-testlogs-archive/**"
-  }
+  dockerStepWithBazelCmd("bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}", 'build-opt')
 }
-
 
 builders['Build & Test (gcc:opt)'] = {
-  dockerStepWithCode {
-    sh 'scripts/bazel_fetch_retry.sh'
-    sh "CC=gcc CXX=g++ bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}"
-    sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-    stash name: 'build-gcc-opt-testlogs', includes: "bazel-testlogs-archive/**"
-  }
+  dockerStepWithBazelCmd("CC=gcc CXX=g++ bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}", 'build-gcc-opt')
 }
-
 
 builders['Build & Test (bpf)'] = {
-  dockerStepWithCode(
-    '--privileged --pid=host --volume /lib/modules:/lib/modules --volume /usr/src:/usr/src --volume /sys:/sys') {
-    sh 'scripts/bazel_fetch_retry.sh'
-    sh "bazel test --compilation_mode=opt --strategy=TestRunner=standalone --config=bpf ${BAZEL_SRC_FILES_PATH}"
-    sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-    stash name: 'build-bpf-testlogs', includes: "bazel-testlogs-archive/**"
-  }
+  dockerStepWithBazelCmd(
+    '--privileged --pid=host --volume /lib/modules:/lib/modules --volume /usr/src:/usr/src --volume /sys:/sys',
+    "bazel test --compilation_mode=opt --strategy=TestRunner=standalone --config=bpf ${BAZEL_SRC_FILES_PATH}",
+    'build-bpf')
 }
-
 
 builders['Build & Test (clang-tidy)'] = {
-  dockerStepWithCode {
-    sh 'scripts/bazel_fetch_retry.sh'
+  dockerStepWithBazelDeps {
+    def stashName = 'build-clang-tidy-logs'
     sh 'scripts/run_clang_tidy.sh'
-    stash name: 'build-clang-tidy-logs', includes: "clang_tidy.log"
+    stash name: stashName, includes: 'clang_tidy.log'
+    stashList.add(stashName)
   }
 }
-
 
 // Only run coverage on master test.
 if (env.JOB_NAME == "pixielabs-master") {
   builders['Build & Test (gcc:coverage)'] = {
-    dockerStepWithCode {
-      sh 'scripts/bazel_fetch_retry.sh'
-      sh 'scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b master -c `cat GIT_COMMIT`'
-      sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-      stash name: 'build-gcc-coverage-testlogs', includes: "bazel-testlogs-archive/**"
+    dockerStepWithBazelDeps {
+      sh "scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b master -c `cat GIT_COMMIT`"
+      createBazelStash('build-gcc-coverage-testlogs')
     }
   }
 }
-
 
 /********************************************
  * For now restrict the ASAN and TSAN builds to carnot. There is a bug in go(or llvm) preventing linking:
@@ -263,21 +336,11 @@ if (env.JOB_NAME == "pixielabs-master") {
  * TODO(zasgar): Fix after above is resolved.
  ********************************************/
 builders['Build & Test (asan)'] = {
-  dockerStepWithCode('--cap-add=SYS_PTRACE') {
-    sh 'scripts/bazel_fetch_retry.sh'
-    sh "bazel test --config=asan ${BAZEL_CC_QUERY}"
-    sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-    stash name: 'build-asan-testlogs', includes: "bazel-testlogs-archive/**"
-  }
+  dockerStepWithBazelCmd('--cap-add=SYS_PTRACE', "bazel test --config=asan ${BAZEL_CC_QUERY}", 'build-asan')
 }
 
 builders['Build & Test (tsan)'] = {
-  dockerStepWithCode {
-    sh 'scripts/bazel_fetch_retry.sh'
-    sh "bazel test --config=tsan ${BAZEL_CC_QUERY}"
-    sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-    stash name: 'build-tsan-testlogs', includes: "bazel-testlogs-archive/**"
-  }
+  dockerStepWithBazelCmd("bazel test --config=tsan ${BAZEL_CC_QUERY}", 'build-tsan')
 }
 
 builders['Linting'] = {
@@ -298,8 +361,16 @@ builders['Build & Test UI'] = {
     '''
     stash name: 'build-ui-testlogs', includes: "src/ui/junit.xml"
     stash name: 'build-ui-storybook-static', includes: "src/ui/storybook_static/**"
+
+    stashList.add('build-ui-testlogs')
+    stashList.add('build-ui-storybook-static')
   }
 }
+
+/*****************************************************************************
+ * END BUILDERS
+ *****************************************************************************/
+
 
 /********************************************
  * The build script starts here.
@@ -313,101 +384,23 @@ node {
   deleteDir()
   try {
     stage('Checkout code') {
-      checkout scm
-      sh '''
-        printenv
-        # Store the GIT commit in a file, since the git plugin has issues with
-        # the Jenkins pipeline system.
-        git rev-parse HEAD > GIT_COMMIT
-      '''
-      writeBazelRCFile()
-
-      // Get docker image tag.
-      def properties = readProperties file: 'docker.properties'
-      devDockerImageWithTag = DEV_DOCKER_IMAGE + ":${properties.DOCKER_IMAGE_TAG}"
-
-      // Excluding default excludes also stashes the .git folder which downstream steps need.
-      stash name: SRC_STASH_NAME, useDefaultExcludes: false
+      checkoutAndInitialize()
     }
     stage('Build Steps') {
       parallel(builders)
     }
     stage('Archive') {
-      dir ('build-opt-testlogs') {
-        unstash 'build-opt-testlogs'
-      }
-      dir ('build-gcc-opt-testlogs') {
-        unstash 'build-gcc-opt-testlogs'
-      }
-      dir ('build-bpf-testlogs') {
-        unstash 'build-bpf-testlogs'
-      }
-      dir ('build-dbg-testlogs') {
-        unstash 'build-dbg-testlogs'
-      }
-      dir ('build-asan-testlogs') {
-        unstash 'build-asan-testlogs'
-      }
-      dir ('build-tsan-testlogs') {
-        unstash 'build-tsan-testlogs'
-      }
-      dir ('build-ui-testlogs') {
-        unstash 'build-ui-testlogs'
-      }
-      dir ('build-ui-storybook-static') {
-        unstash 'build-ui-storybook-static'
-      }
-      dir ('build-clang-tidy-logs') {
-        unstash 'build-clang-tidy-logs'
-      }
-
-      if (env.JOB_NAME == "pixielabs-master") {
-        dir ('build-gcc-coverage-testlogs') {
-          unstash 'build-gcc-coverage-testlogs'
+      // Unstash the build artifacts.
+      stashList.each({stashName ->
+        dir(stashName) {
+          unstash stashName
         }
-      }
-
+      })
+      // Archive clang-tidy logs.
       archiveArtifacts artifacts: 'build-clang-tidy-logs/**', fingerprint: true
-
-      publishHTML([allowMissing: false,
-        alwaysLinkToLastBuild: true,
-        keepAll: true,
-        reportDir: 'build-ui-storybook-static/src/ui/storybook_static',
-        reportFiles: 'index.html',
-        reportName: 'ui-storybook'
-      ])
-
-      step([
-        $class: 'XUnitBuilder',
-        thresholds: [
-          [
-            $class: 'FailedThreshold',
-            unstableThreshold: '1'
-          ]
-        ],
-        tools: [
-          [
-            $class: 'GoogleTestType',
-            pattern: "build*/bazel-testlogs-archive/**/*.xml"
-          ]
-        ]
-      ])
-
-      step([
-        $class: 'XUnitBuilder',
-        thresholds: [
-          [
-            $class: 'FailedThreshold',
-            unstableThreshold: '1'
-          ]
-        ],
-        tools: [
-          [
-            $class: 'JUnitType',
-            pattern: "build-ui-testlogs/src/ui/junit.xml"
-          ]
-        ]
-      ])
+      publishStoryBook()
+      archiveBazelLogs()
+      archiveUILogs()
     }
   }
   catch(err) {
