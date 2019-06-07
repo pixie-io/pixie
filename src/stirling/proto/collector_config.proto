@@ -14,6 +14,7 @@ message Element {
   // for cpu usage (InfoClass).
   string name = 1;
   types.DataType type = 2;
+  types.PatternType ptype = 3;
 }
 
 // InfoClass stores a set of Elements that share common timestamps (i.e., they are

@@ -58,10 +58,11 @@ class PIDCPUUseBCCConnector : public BCCConnector {
 
   // clang-format off
   static constexpr DataElement kElements[] = {
-      {"time_", types::DataType::TIME64NS},
-      {"pid", types::DataType::INT64},
-      {"runtime_ns", types::DataType::INT64},
-      {"cmd", types::DataType::STRING},
+      {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
+      {"pid", types::DataType::INT64, types::PatternType::GENERAL},
+      // TODO(chengruizhe): runtime_ns: Will be converted to counter
+      {"runtime_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
+      {"cmd", types::DataType::STRING, types::PatternType::GENERAL},
   };
   // clang-format on
   static constexpr auto kTable = DataTableSchema("bcc_pid_cpu_usage", kElements);

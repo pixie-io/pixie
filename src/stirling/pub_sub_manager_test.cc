@@ -16,20 +16,24 @@ using google::protobuf::TextFormat;
 using google::protobuf::util::MessageDifferencer;
 using stirlingpb::InfoClass;
 using types::DataType;
+using types::PatternType;
 
 const char* kInfoClassManager = R"(
   name : "cpu_usage",
   elements {
     name: "user_percentage",
     type: FLOAT64,
+    ptype: METRIC_GAUGE,
   }
   elements {
     name: "system_percentage",
     type: FLOAT64,
+    ptype: METRIC_GAUGE,
   }
   elements {
     name: "io_percentage",
     type: FLOAT64,
+    ptype: METRIC_GAUGE,
   }
   subscribed: false,
   sampling_period_millis: 100,
@@ -42,9 +46,10 @@ const char* kInfoClassManager = R"(
  */
 class TestSourceConnector : public SourceConnector {
  public:
-  static constexpr DataElement kElements[] = {{"user_percentage", DataType::FLOAT64},
-                                              {"system_percentage", DataType::FLOAT64},
-                                              {"io_percentage", DataType::FLOAT64}};
+  static constexpr DataElement kElements[] = {
+      {"user_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE},
+      {"system_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE},
+      {"io_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE}};
   static constexpr DataTableSchema kTablesArray[] = {DataTableSchema("", kElements)};
   static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
 
@@ -96,7 +101,7 @@ TEST_F(PubSubManagerTest, publish_test) {
   // Set expectations for the publish message.
   stirlingpb::Publish expected_publish_pb;
   auto expected_info_class = expected_publish_pb.add_published_info_classes();
-  EXPECT_TRUE(TextFormat::MergeFromString(kInfoClassManager, expected_info_class));
+  ASSERT_TRUE(TextFormat::MergeFromString(kInfoClassManager, expected_info_class));
   expected_info_class->set_id(0);
 
   EXPECT_FALSE(actual_publish_pb.published_info_classes(0).subscribed());

@@ -23,21 +23,21 @@ class SeqGenConnector : public SourceConnector {
 
   // clang-format off
   static constexpr DataElement kElementsSeq0[] = {
-      {"time_", types::DataType::TIME64NS},
-      {"x", types::DataType::INT64},
-      {"xmod10", types::DataType::INT64},
-      {"xsquared", types::DataType::INT64},
-      {"fibonnaci", types::DataType::INT64},
-      {"PIx", types::DataType::FLOAT64},
+      {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
+      {"x", types::DataType::INT64, types::PatternType::GENERAL},
+      {"xmod10", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
+      {"xsquared", types::DataType::INT64, types::PatternType::GENERAL},
+      {"fibonnaci", types::DataType::INT64, types::PatternType::GENERAL},
+      {"PIx", types::DataType::FLOAT64, types::PatternType::GENERAL},
   };
   // clang-format on
   static constexpr auto kSeq0Table = DataTableSchema("sequence_generator0", kElementsSeq0);
 
   // clang-format off
   static constexpr DataElement kElementsSeq1[] = {
-      {"time_", types::DataType::TIME64NS},
-      {"x", types::DataType::INT64},
-      {"xmod8", types::DataType::INT64},
+      {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
+      {"x", types::DataType::INT64, types::PatternType::GENERAL},
+      {"xmod8", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
   };
   // clang-format on
   static constexpr auto kSeq1Table = DataTableSchema("sequence_generator1", kElementsSeq1);

@@ -3,11 +3,12 @@
 
 package typespb
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-
-import strconv "strconv"
+import (
+	fmt "fmt"
+	proto "github.com/gogo/protobuf/proto"
+	math "math"
+	strconv "strconv"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -39,6 +40,7 @@ var DataType_name = map[int32]string{
 	4: "STRING",
 	5: "TIME64NS",
 }
+
 var DataType_value = map[string]int32{
 	"DATA_TYPE_UNKNOWN": 0,
 	"BOOLEAN":           1,
@@ -49,25 +51,16 @@ var DataType_value = map[string]int32{
 }
 
 func (DataType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_types_923ebdc07becc380, []int{0}
+	return fileDescriptor_6a0f3bae72116e90, []int{0}
 }
 
 func init() {
 	proto.RegisterEnum("pl.types.DataType", DataType_name, DataType_value)
 }
-func (x DataType) String() string {
-	s, ok := DataType_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
 
-func init() {
-	proto.RegisterFile("src/shared/types/proto/types.proto", fileDescriptor_types_923ebdc07becc380)
-}
+func init() { proto.RegisterFile("src/shared/types/proto/types.proto", fileDescriptor_6a0f3bae72116e90) }
 
-var fileDescriptor_types_923ebdc07becc380 = []byte{
+var fileDescriptor_6a0f3bae72116e90 = []byte{
 	// 222 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x2a, 0x2e, 0x4a, 0xd6,
 	0x2f, 0xce, 0x48, 0x2c, 0x4a, 0x4d, 0xd1, 0x2f, 0xa9, 0x2c, 0x48, 0x2d, 0xd6, 0x2f, 0x28, 0xca,
@@ -83,4 +76,12 @@ var fileDescriptor_types_923ebdc07becc380 = []byte{
 	0x3c, 0x92, 0x63, 0xf8, 0xf0, 0x48, 0x8e, 0x71, 0xc2, 0x63, 0x39, 0x86, 0x0b, 0x8f, 0xe5, 0x18,
 	0x6e, 0x3c, 0x96, 0x63, 0x88, 0x62, 0x07, 0x3b, 0xaf, 0x20, 0x29, 0x89, 0x0d, 0xec, 0x62, 0x63,
 	0x40, 0x00, 0x00, 0x00, 0xff, 0xff, 0x5f, 0x25, 0x87, 0xa1, 0xd7, 0x00, 0x00, 0x00,
+}
+
+func (x DataType) String() string {
+	s, ok := DataType_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
 }

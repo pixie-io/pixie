@@ -78,9 +78,11 @@ class DataTableTest : public ::testing::Test {
    * Schema for our test table
    */
   void SetUpSchema() {
-    schema_.push_back(InfoClassElement("f0", types::DataType::INT64));
-    schema_.push_back(InfoClassElement("f1", types::DataType::FLOAT64));
-    schema_.push_back(InfoClassElement("f2", types::DataType::INT64));
+    schema_.push_back(InfoClassElement("f0", types::DataType::INT64, types::PatternType::GENERAL));
+    schema_.push_back(
+        InfoClassElement("f1", types::DataType::FLOAT64, types::PatternType::GENERAL));
+    schema_.push_back(
+        InfoClassElement("f2", types::DataType::INT64, types::PatternType::GENERAL_ENUM));
 
     record_size_ = sizeof(int64_t) + sizeof(double) + sizeof(int64_t);
   }

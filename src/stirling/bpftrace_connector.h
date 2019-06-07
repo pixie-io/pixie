@@ -68,14 +68,15 @@ class CPUStatBPFTraceConnector : public BPFTraceConnector {
 
   // clang-format off
   static constexpr DataElement kElements[] = {
-      {"time_", types::DataType::TIME64NS},
-      {"cpustat_user", types::DataType::INT64},
-      {"cpustat_nice", types::DataType::INT64},
-      {"cpustat_system", types::DataType::INT64},
-      {"cpustat_idle", types::DataType::INT64},
-      {"cpustat_iowait", types::DataType::INT64},
-      {"cpustat_irq", types::DataType::INT64},
-      {"cpustat_softirq", types::DataType::INT64}
+      {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
+      // TODO(chengruizhe): Following should be converted to counters
+      {"cpustat_user", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
+      {"cpustat_nice", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
+      {"cpustat_system", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
+      {"cpustat_idle", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
+      {"cpustat_iowait", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
+      {"cpustat_irq", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
+      {"cpustat_softirq", types::DataType::INT64, types::PatternType::METRIC_GAUGE}
   };
   // clang-format on
   static constexpr auto kTable = DataTableSchema("bpftrace_cpu_stats", kElements);
@@ -108,10 +109,10 @@ class PIDCPUUseBPFTraceConnector : public BPFTraceConnector {
 
   // clang-format off
   static constexpr DataElement kElements[] = {
-      {"time_", types::DataType::TIME64NS},
-      {"pid", types::DataType::INT64},
-      {"runtime_ns", types::DataType::INT64},
-      {"cmd", types::DataType::STRING}
+      {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
+      {"pid", types::DataType::INT64, types::PatternType::GENERAL},
+      {"runtime_ns", types::DataType::INT64, types::PatternType::METRIC_COUNTER},
+      {"cmd", types::DataType::STRING, types::PatternType::GENERAL}
   };
   // clang-format on
   static constexpr auto kTable = DataTableSchema("bpftrace_pid_cpu_usage", kElements);

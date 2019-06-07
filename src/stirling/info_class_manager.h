@@ -28,8 +28,8 @@ class InfoClassElement : public DataElement {
  public:
   InfoClassElement() = delete;
   explicit InfoClassElement(DataElement element) : DataElement(std::move(element)) {}
-  explicit InfoClassElement(ConstStrView name, types::DataType type)
-      : DataElement(std::move(name), std::move(type)) {}
+  explicit InfoClassElement(ConstStrView name, types::DataType type, types::PatternType ptype)
+      : DataElement(std::move(name), std::move(type), std::move(ptype)) {}
 
   /**
    * @brief Generate a proto message based on the InfoClassElement.

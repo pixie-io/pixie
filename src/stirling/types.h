@@ -24,8 +24,8 @@ using InfoClassManagerVec = std::vector<std::unique_ptr<InfoClassManager>>;
 class DataElement {
  public:
   constexpr DataElement() = delete;
-  constexpr DataElement(ConstStrView name, types::DataType type)
-      : name_(std::move(name)), type_(std::move(type)) {}
+  constexpr DataElement(ConstStrView name, types::DataType type, types::PatternType ptype)
+      : name_(std::move(name)), type_(std::move(type)), ptype_(std::move(ptype)) {}
 
   constexpr const ConstStrView& name() const { return name_; }
   constexpr const types::DataType& type() const { return type_; }
@@ -34,6 +34,7 @@ class DataElement {
  protected:
   const ConstStrView name_;
   types::DataType type_;
+  types::PatternType ptype_;
 };
 
 class DataTableSchema {

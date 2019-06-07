@@ -49,41 +49,41 @@ class SocketTraceConnector : public SourceConnector {
 
   // clang-format off
   static constexpr DataElement kHTTPElements[] = {
-          {"time_", types::DataType::TIME64NS},
+          {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
           // tgid is the user space "pid".
-          {"tgid", types::DataType::INT64},
+          {"tgid", types::DataType::INT64, types::PatternType::GENERAL},
           // TODO(yzhao): Remove 'fd'.
-          {"fd", types::DataType::INT64},
-          {"event_type", types::DataType::STRING},
+          {"fd", types::DataType::INT64, types::PatternType::GENERAL},
+          {"event_type", types::DataType::STRING, types::PatternType::GENERAL_ENUM},
           // TODO(PL-519): Eventually, use the appropriate data type to
           // represent IP addresses, as will be resolved in the Jira issue.
-          {"src_addr", types::DataType::STRING},
-          {"src_port", types::DataType::INT64},
-          {"dst_addr", types::DataType::STRING},
-          {"dst_port", types::DataType::INT64},
-          {"http_minor_version", types::DataType::INT64},
-          {"http_headers", types::DataType::STRING},
-          {"http_req_method", types::DataType::STRING},
-          {"http_req_path", types::DataType::STRING},
-          {"http_resp_status", types::DataType::INT64},
-          {"http_resp_message", types::DataType::STRING},
-          {"http_resp_body", types::DataType::STRING},
-          {"http_resp_latency_ns", types::DataType::INT64}
+          {"src_addr", types::DataType::STRING, types::PatternType::GENERAL},
+          {"src_port", types::DataType::INT64, types::PatternType::GENERAL},
+          {"dst_addr", types::DataType::STRING, types::PatternType::GENERAL},
+          {"dst_port", types::DataType::INT64, types::PatternType::GENERAL},
+          {"http_minor_version", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
+          {"http_headers", types::DataType::STRING, types::PatternType::STRUCTURED},
+          {"http_req_method", types::DataType::STRING, types::PatternType::GENERAL_ENUM},
+          {"http_req_path", types::DataType::STRING, types::PatternType::STRUCTURED},
+          {"http_resp_status", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
+          {"http_resp_message", types::DataType::STRING, types::PatternType::STRUCTURED},
+          {"http_resp_body", types::DataType::STRING, types::PatternType::STRUCTURED},
+          {"http_resp_latency_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE}
   };
   // clang-format on
   static constexpr auto kHTTPTable = DataTableSchema("http_events", kHTTPElements);
 
   // clang-format off
   static constexpr DataElement kMySQLElements[] = {
-          {"time_", types::DataType::TIME64NS},
-          {"tgid", types::DataType::INT64},
-          {"fd", types::DataType::INT64},
-          {"bpf_event", types::DataType::INT64},
-          {"src_addr", types::DataType::STRING},
-          {"src_port", types::DataType::INT64},
-          {"dst_addr", types::DataType::STRING},
-          {"dst_port", types::DataType::INT64},
-          {"body", types::DataType::STRING},
+          {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
+          {"tgid", types::DataType::INT64, types::PatternType::GENERAL},
+          {"fd", types::DataType::INT64, types::PatternType::GENERAL},
+          {"bpf_event", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
+          {"src_addr", types::DataType::STRING, types::PatternType::GENERAL},
+          {"src_port", types::DataType::INT64, types::PatternType::GENERAL},
+          {"dst_addr", types::DataType::STRING, types::PatternType::GENERAL},
+          {"dst_port", types::DataType::INT64, types::PatternType::GENERAL},
+          {"body", types::DataType::STRING, types::PatternType::STRUCTURED},
   };
   // clang-format on
   static constexpr auto kMySQLTable = DataTableSchema("mysql_events", kMySQLElements);

@@ -15,10 +15,10 @@ class ProcStatConnector : public SourceConnector {
 
   // clang-format off
   static constexpr DataElement kElements[] = {
-          {"time_", types::DataType::TIME64NS},
-          {"system_percent", types::DataType::FLOAT64},
-          {"user_percent", types::DataType::FLOAT64},
-          {"idle_percent", types::DataType::FLOAT64}
+          {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
+          {"system_percent", types::DataType::FLOAT64, types::PatternType::METRIC_GAUGE},
+          {"user_percent", types::DataType::FLOAT64, types::PatternType::METRIC_GAUGE},
+          {"idle_percent", types::DataType::FLOAT64, types::PatternType::METRIC_GAUGE}
   };
   // clang-format on
   static constexpr auto kTable = DataTableSchema("proc_stat", kElements);
