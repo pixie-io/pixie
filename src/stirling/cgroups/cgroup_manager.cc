@@ -88,9 +88,35 @@ void CGroupManager::RemoveFSWatch(const fs::path& path) {
   }
 }
 
+Status CGroupManager::UpdateQoSClassInfo(fs::path qos_path, CGroupQoS qos) {
+  std::error_code ec;
+
+  // It is not an error if the directory doesn't exist.
+  // There might be no pods in that QoS class.
+  if (!fs::exists(qos_path)) {
+    return Status::OK();
+  }
+
+  auto dir_iter = fs::directory_iterator(qos_path, ec);
+  if (ec) {
+    return error::Unknown("Failed to open: $0: $1", qos_path.string(), ec.message());
+  }
+
+  AddFSWatch(qos_path);
+  for (const auto& p : dir_iter) {
+    auto path_str = p.path().string();
+    auto pod_name = p.path().filename().string();
+    if (fs::is_directory(p.path()) && absl::StartsWith(pod_name, kPodPrefix)) {
+      // Update cgroup_info_ with pod and container details.
+      PL_RETURN_IF_ERROR(UpdatePodInfo(p.path(), pod_name, qos));
+    }
+  }
+  return Status::OK();
+}
+
 Status CGroupManager::UpdatePodInfo(fs::path pod_path, const std::string& pod_name, CGroupQoS qos) {
   std::error_code ec;
-  auto container_dir_iter = fs::directory_iterator(pod_path, ec);
+  auto pod_dir_iter = fs::directory_iterator(pod_path, ec);
   if (ec) {
     return error::Unknown("Failed to open: $0: $1", pod_path.string(), ec.message());
   }
@@ -98,8 +124,10 @@ Status CGroupManager::UpdatePodInfo(fs::path pod_path, const std::string& pod_na
   AddFSWatch(pod_path);
   PodInfo pod_info;
   pod_info.qos = qos;
-  for (const auto& container_path : container_dir_iter) {
-    PL_RETURN_IF_ERROR(UpdateContainerInfo(container_path.path(), &pod_info));
+  for (const auto& container_path : pod_dir_iter) {
+    if (fs::is_directory(container_path.path())) {
+      PL_RETURN_IF_ERROR(UpdateContainerInfo(container_path.path(), &pod_info));
+    }
   }
   cgroup_info_[pod_name] = std::move(pod_info);
 
@@ -126,32 +154,6 @@ Status CGroupManager::UpdateContainerInfo(const fs::path& container_path, PodInf
   return Status::OK();
 }
 
-Status CGroupManager::UpdateCGroupInfoForQoSClass(CGroupQoS qos, fs::path base_path) {
-  std::error_code ec;
-
-  // It is not an error if the directory doesn't exist.
-  // There might be no pods in that QoS class.
-  if (!fs::is_directory(base_path)) {
-    return Status::OK();
-  }
-
-  auto dir_iter = fs::directory_iterator(base_path, ec);
-  if (ec) {
-    return error::Unknown("Failed to open: $0: $1", base_path.string(), ec.message());
-  }
-
-  AddFSWatch(base_path);
-  for (const auto& p : dir_iter) {
-    auto path_str = p.path().string();
-    auto pod_name = p.path().filename().string();
-    if (fs::is_directory(p.path()) && absl::StartsWith(pod_name, kPodPrefix)) {
-      // Update cgroup_info_ with pod and container details.
-      PL_RETURN_IF_ERROR(UpdatePodInfo(p.path(), pod_name, qos));
-    }
-  }
-  return Status::OK();
-}
-
 Status CGroupManager::HandleFSQoSEvent(const fs::path& path, FSWatcher::FSEventType event_type,
                                        const std::string& qos_name) {
   if (event_type == FSWatcher::FSEventType::kDeleteDir) {
@@ -167,7 +169,7 @@ Status CGroupManager::HandleFSQoSEvent(const fs::path& path, FSWatcher::FSEventT
     qos = CGroupQoS::kBurstable;
   }
 
-  return UpdateCGroupInfoForQoSClass(qos, path / qos_name);
+  return UpdateQoSClassInfo(path / qos_name, qos);
 }
 
 Status CGroupManager::HandleFSPodEvent(const fs::path& path, FSWatcher::FSEventType event_type,
@@ -249,9 +251,9 @@ Status CGroupManager::ScanFileSystem() {
   fs::path burstable_path = base_path / "burstable";
   fs::path best_effort_path = base_path / "besteffort";
 
-  PL_RETURN_IF_ERROR(UpdateCGroupInfoForQoSClass(CGroupQoS::kGuaranteed, guaranteed_path));
-  PL_RETURN_IF_ERROR(UpdateCGroupInfoForQoSClass(CGroupQoS::kBurstable, burstable_path));
-  PL_RETURN_IF_ERROR(UpdateCGroupInfoForQoSClass(CGroupQoS::kBestEffort, best_effort_path));
+  PL_RETURN_IF_ERROR(UpdateQoSClassInfo(guaranteed_path, CGroupQoS::kGuaranteed));
+  PL_RETURN_IF_ERROR(UpdateQoSClassInfo(burstable_path, CGroupQoS::kBurstable));
+  PL_RETURN_IF_ERROR(UpdateQoSClassInfo(best_effort_path, CGroupQoS::kBestEffort));
 
   return Status::OK();
 }

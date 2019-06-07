@@ -158,12 +158,7 @@ class CGroupManager {
       : proc_parser_(cfg, proc_path), sysfs_path_(sysfs_path) {}
 
  private:
-  /**
-   * Rescan the cgroups to update qos/pod/container/pid info.
-   * @return Status of the update.
-   */
-  Status UpdateCGroupInfoForQoSClass(CGroupQoS qos, fs::path base_path);
-
+  Status UpdateQoSClassInfo(fs::path qos_path, CGroupQoS qos);
   Status UpdatePodInfo(fs::path pod_path, const std::string& pod_name, CGroupQoS qos);
   Status UpdateContainerInfo(const fs::path& container_path, PodInfo* pod_info);
   Status HandleFSEvent(FSWatcher::FSEvent* fs_event);
