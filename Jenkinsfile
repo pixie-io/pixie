@@ -12,23 +12,27 @@ import groovy.json.JsonBuilder
   *    REVISION: The revision ID of the Differential.
   */
 
-final String PHAB_URL = 'https://phab.pixielabs.ai'
-final String PHAB_API_URL = "${PHAB_URL}/api"
-
-final String DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image'
-final String SRC_STASH_NAME = "${BUILD_TAG}_src"
+// NOTE: We use these without a def/type because that way Groovy will treat these as
+// global variables.
+PHAB_URL = 'https://phab.pixielabs.ai'
+PHAB_API_URL = "${PHAB_URL}/api"
 
 // Restrict build to source code, since otherwise bazel seems to build all our deps.
-final String BAZEL_SRC_FILES_PATH = "//src/..."
+BAZEL_SRC_FILES_PATH = "//src/..."
 // ASAN/TSAN only work for CC code.
 // TODO(zasgar): This query selects only cc binaries. After GO ASAN/TSAN works, we can update the ASAN/TSAN builds
 // to include all binaries.
 // This line also contains a hack to filter out cgo object files, assuming the object files have the _cgo_.o suffix.
-final String BAZEL_CC_QUERY = "`bazel query 'kind(\"cc_(binary|test) rule\", src/...)' | grep -v '_cgo_.o\$'`"
+BAZEL_CC_QUERY = "`bazel query 'kind(\"cc_(binary|test) rule\", src/...)' | grep -v '_cgo_.o\$'`"
+SRC_STASH_NAME = "${BUILD_TAG}_src"
+DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image'
 
 // Sometimes docker fetches fail, so we just do a retry. This can be optimized to just
 // retry on docker failues, but not worth it now.
-final int JENKINS_RETRIES = 2;
+JENKINS_RETRIES = 2;
+
+// This variable store the dev docker image that we need to parse before running any docker steps.
+devDockerImageWithTag = ''
 
 /**
   * @brief Generates URL for harbormaster.
@@ -166,94 +170,76 @@ def writeBazelRCFile() {
   writeFile file: "jenkins.bazelrc", text: "${bazelRcFile}"
 }
 
-String devDockerImageWithTag = '';
 def builders = [:]
-builders['Build & Test (dbg)'] = {
+
+
+/**
+  * Our default docker step :
+  *   1. Deletes old directory.
+  *   2. Checks out new code stash.
+  *   3. Starts docker container.
+  *   4. Runs the passed in body.
+  */
+def dockerStepWithCode(String dockerConfig = '', Closure body) {
   retry(JENKINS_RETRIES) {
     node {
       deleteDir()
       unstash SRC_STASH_NAME
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(devDockerImageWithTag).inside {
-          sh 'scripts/bazel_fetch_retry.sh'
-          sh "bazel test --compilation_mode=dbg ${BAZEL_SRC_FILES_PATH}"
-          sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-          stash name: 'build-dbg-testlogs', includes: "bazel-testlogs-archive/**"
+        docker.image(devDockerImageWithTag).inside(dockerConfig) {
+          body()
         }
       }
     }
+  }
+}
+
+builders['Build & Test (dbg)'] = {
+  dockerStepWithCode {
+    sh 'scripts/bazel_fetch_retry.sh'
+    sh "bazel test --compilation_mode=dbg ${BAZEL_SRC_FILES_PATH}"
+    sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
+    stash name: 'build-dbg-testlogs', includes: "bazel-testlogs-archive/**"
   }
 }
 
 
 builders['Build & Test (opt)'] = {
-  retry(JENKINS_RETRIES) {
-    node {
-      deleteDir()
-      unstash SRC_STASH_NAME
-      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(devDockerImageWithTag).inside {
-          sh 'scripts/bazel_fetch_retry.sh'
-          sh "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}"
-          sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-          stash name: 'build-opt-testlogs', includes: "bazel-testlogs-archive/**"
-        }
-      }
-    }
+  dockerStepWithCode {
+    sh 'scripts/bazel_fetch_retry.sh'
+    sh "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}"
+    sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
+    stash name: 'build-opt-testlogs', includes: "bazel-testlogs-archive/**"
   }
 }
 
 
 builders['Build & Test (gcc:opt)'] = {
-  retry(JENKINS_RETRIES) {
-    node {
-      deleteDir()
-      unstash SRC_STASH_NAME
-      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(devDockerImageWithTag).inside {
-          sh 'scripts/bazel_fetch_retry.sh'
-          sh "CC=gcc CXX=g++ bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}"
-          sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-          stash name: 'build-gcc-opt-testlogs', includes: "bazel-testlogs-archive/**"
-        }
-      }
-    }
+  dockerStepWithCode {
+    sh 'scripts/bazel_fetch_retry.sh'
+    sh "CC=gcc CXX=g++ bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}"
+    sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
+    stash name: 'build-gcc-opt-testlogs', includes: "bazel-testlogs-archive/**"
   }
 }
 
 
 builders['Build & Test (bpf)'] = {
-  retry(JENKINS_RETRIES) {
-    node {
-      deleteDir()
-      unstash SRC_STASH_NAME
-      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(devDockerImageWithTag).inside(
-        '--privileged --pid=host --volume /lib/modules:/lib/modules --volume /usr/src:/usr/src --volume /sys:/sys') {
-          sh 'scripts/bazel_fetch_retry.sh'
-          sh "bazel test --compilation_mode=opt --strategy=TestRunner=standalone --config=bpf ${BAZEL_SRC_FILES_PATH}"
-          sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-          stash name: 'build-bpf-testlogs', includes: "bazel-testlogs-archive/**"
-        }
-      }
-    }
+  dockerStepWithCode(
+    '--privileged --pid=host --volume /lib/modules:/lib/modules --volume /usr/src:/usr/src --volume /sys:/sys') {
+    sh 'scripts/bazel_fetch_retry.sh'
+    sh "bazel test --compilation_mode=opt --strategy=TestRunner=standalone --config=bpf ${BAZEL_SRC_FILES_PATH}"
+    sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
+    stash name: 'build-bpf-testlogs', includes: "bazel-testlogs-archive/**"
   }
 }
 
 
 builders['Build & Test (clang-tidy)'] = {
-  retry(JENKINS_RETRIES) {
-    node {
-      deleteDir()
-      unstash SRC_STASH_NAME
-      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(devDockerImageWithTag).inside {
-          sh 'scripts/bazel_fetch_retry.sh'
-          sh 'scripts/run_clang_tidy.sh'
-          stash name: 'build-clang-tidy-logs', includes: "clang_tidy.log"
-        }
-      }
-    }
+  dockerStepWithCode {
+    sh 'scripts/bazel_fetch_retry.sh'
+    sh 'scripts/run_clang_tidy.sh'
+    stash name: 'build-clang-tidy-logs', includes: "clang_tidy.log"
   }
 }
 
@@ -261,19 +247,11 @@ builders['Build & Test (clang-tidy)'] = {
 // Only run coverage on master test.
 if (env.JOB_NAME == "pixielabs-master") {
   builders['Build & Test (gcc:coverage)'] = {
-    retry(JENKINS_RETRIES) {
-      node {
-        deleteDir()
-        unstash SRC_STASH_NAME
-        docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-          docker.image(devDockerImageWithTag).inside {
-            sh 'scripts/bazel_fetch_retry.sh'
-            sh 'scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b master -c `cat GIT_COMMIT`'
-            sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-           stash name: 'build-gcc-coverage-testlogs', includes: "bazel-testlogs-archive/**"
-          }
-        }
-      }
+    dockerStepWithCode {
+      sh 'scripts/bazel_fetch_retry.sh'
+      sh 'scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b master -c `cat GIT_COMMIT`'
+      sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
+      stash name: 'build-gcc-coverage-testlogs', includes: "bazel-testlogs-archive/**"
     }
   }
 }
@@ -285,74 +263,41 @@ if (env.JOB_NAME == "pixielabs-master") {
  * TODO(zasgar): Fix after above is resolved.
  ********************************************/
 builders['Build & Test (asan)'] = {
-  retry(JENKINS_RETRIES) {
-    node {
-      deleteDir()
-      unstash SRC_STASH_NAME
-      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        // ASAN needs SYS_PTRACE capability, do not remove.
-        docker.image(devDockerImageWithTag).inside('--cap-add=SYS_PTRACE') {
-          sh 'scripts/bazel_fetch_retry.sh'
-          sh "bazel test --config=asan ${BAZEL_CC_QUERY}"
-          sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-          stash name: 'build-asan-testlogs', includes: "bazel-testlogs-archive/**"
-        }
-      }
-    }
+  dockerStepWithCode('--cap-add=SYS_PTRACE') {
+    sh 'scripts/bazel_fetch_retry.sh'
+    sh "bazel test --config=asan ${BAZEL_CC_QUERY}"
+    sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
+    stash name: 'build-asan-testlogs', includes: "bazel-testlogs-archive/**"
   }
 }
 
 builders['Build & Test (tsan)'] = {
-  retry(JENKINS_RETRIES) {
-    node {
-      deleteDir()
-      unstash SRC_STASH_NAME
-      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(devDockerImageWithTag).inside {
-          sh 'scripts/bazel_fetch_retry.sh'
-          sh "bazel test --config=tsan ${BAZEL_CC_QUERY}"
-          sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-          stash name: 'build-tsan-testlogs', includes: "bazel-testlogs-archive/**"
-        }
-      }
-    }
+  dockerStepWithCode {
+    sh 'scripts/bazel_fetch_retry.sh'
+    sh "bazel test --config=tsan ${BAZEL_CC_QUERY}"
+    sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
+    stash name: 'build-tsan-testlogs', includes: "bazel-testlogs-archive/**"
   }
 }
 
 builders['Linting'] = {
-  retry(JENKINS_RETRIES) {
-    node {
-      deleteDir()
-      unstash SRC_STASH_NAME
-      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(devDockerImageWithTag).inside('--cap-add=SYS_PTRACE') {
-          sh 'arc lint --everything'
-        }
-      }
-    }
+  dockerStepWithCode {
+    sh 'arc lint --everything'
   }
 }
 
 builders['Build & Test UI'] = {
-  retry(JENKINS_RETRIES) {
-    node {
-      deleteDir()
-      unstash SRC_STASH_NAME
-      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(devDockerImageWithTag).inside('--cap-add=SYS_PTRACE') {
-          sh '''
-            cd src/ui
-            yarn install --prefer_offline
-            jest
+  dockerStepWithCode {
+    sh '''
+      cd src/ui
+      yarn install --prefer_offline
+      jest
 
-            # Build story book static files.
-            yarn run storybook_static
-          '''
-          stash name: 'build-ui-testlogs', includes: "src/ui/junit.xml"
-          stash name: 'build-ui-storybook-static', includes: "src/ui/storybook_static/**"
-        }
-      }
-    }
+      # Build story book static files.
+      yarn run storybook_static
+    '''
+    stash name: 'build-ui-testlogs', includes: "src/ui/junit.xml"
+    stash name: 'build-ui-storybook-static', includes: "src/ui/storybook_static/**"
   }
 }
 
@@ -378,8 +323,9 @@ node {
       writeBazelRCFile()
 
       // Get docker image tag.
-      properties = readProperties file: 'docker.properties'
+      def properties = readProperties file: 'docker.properties'
       devDockerImageWithTag = DEV_DOCKER_IMAGE + ":${properties.DOCKER_IMAGE_TAG}"
+
       // Excluding default excludes also stashes the .git folder which downstream steps need.
       stash name: SRC_STASH_NAME, useDefaultExcludes: false
     }
