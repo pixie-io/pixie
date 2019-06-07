@@ -29,7 +29,6 @@ class DataElement {
 
   constexpr const ConstStrView& name() const { return name_; }
   constexpr const types::DataType& type() const { return type_; }
-  size_t WidthBytes() const { return pl::types::DataTypeWidthBytes(type_); }
   std::shared_ptr<arrow::DataType> arrow_type() { return types::DataTypeToArrowType(type()); }
 
  protected:
