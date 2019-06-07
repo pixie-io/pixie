@@ -169,6 +169,8 @@ class CGroupManager {
   Status HandleFSEvent(FSWatcher::FSEvent* fs_event);
   void AddFSWatch(const fs::path& path);
   void RemoveFSWatch(const fs::path& path);
+  Status HandleFSQoSEvent(const fs::path& path, FSWatcher::FSEventType event_type,
+                          const std::string& qos_name);
   Status HandleFSPodEvent(const fs::path& path, FSWatcher::FSEventType event_type,
                           const std::string& pod_name);
   Status HandleFSContainerEvent(const fs::path& path, FSWatcher::FSEventType event_type,

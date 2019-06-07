@@ -44,7 +44,6 @@ class CGroupManagerTest : public ::testing::Test {
 
     std::string proc = tmp_dir_ + "/proc";
     std::string sysfs = tmp_dir_ + "/sysfs";
-    fs::copy(GetPathToTestDataFile("testdata/cgroup_basic"), tmp_dir_, fs::copy_options::recursive);
 
     mgr_ = CGroupManager::Create(sysconfig, proc, sysfs);
   }
@@ -58,6 +57,7 @@ class CGroupManagerTest : public ::testing::Test {
 };
 
 TEST_F(CGroupManagerTest, cgroup_basic) {
+  fs::copy(GetPathToTestDataFile("testdata/cgroup_basic"), tmp_dir_, fs::copy_options::recursive);
   PL_CHECK_OK(mgr_->UpdateCGroupInfo());
 
   // Values are based on the test directory.
@@ -72,6 +72,7 @@ TEST_F(CGroupManagerTest, cgroup_basic) {
 }
 
 TEST_F(CGroupManagerTest, cgroup_basic_add_pid) {
+  fs::copy(GetPathToTestDataFile("testdata/cgroup_basic"), tmp_dir_, fs::copy_options::recursive);
   PL_CHECK_OK(mgr_->UpdateCGroupInfo());
 
   // Add a container.
@@ -93,7 +94,33 @@ TEST_F(CGroupManagerTest, cgroup_basic_add_pid) {
   EXPECT_EQ(std::vector<int64_t>({123, 789}), *pid_list);
 }
 
+TEST_F(CGroupManagerTest, cgroup_empty) {
+  // CGroupManager should handle non-existent cgroup directories gracefully.
+  // This can happen in real life, if there are not pods in a particular QoS class.
+  fs::copy(GetPathToTestDataFile("testdata/cgroup_empty"), tmp_dir_, fs::copy_options::recursive);
+  PL_CHECK_OK(mgr_->UpdateCGroupInfo());
+
+  // Create a bunch of Pods, containers and PIDs.
+  fs::copy(GetPathToTestDataFile("testdata/cgroup_basic"), tmp_dir_,
+           fs::copy_options::overwrite_existing | fs::copy_options::recursive);
+
+  // Rescan. For now this should always works since we delete everything, but we
+  // can use this to test notification system.
+  PL_CHECK_OK(mgr_->UpdateCGroupInfo());
+
+  // Values are based on the test directory.
+  EXPECT_TRUE(mgr_->HasPod("pod04bfccc8-6526-11e9-b815-42010a8a0135"));
+  EXPECT_TRUE(mgr_->HasPod("poda22d8c1e-67bf-11e9-b815-42010a8a0135"));
+  auto* pid_list = mgr_->PIDsInContainer("pod04bfccc8-6526-11e9-b815-42010a8a0135",
+                                         "3814823571b7857e7ef48e55414ade5d2d6c0c7d5f62476c91"
+                                         "99bff741b5d31e")
+                       .ConsumeValueOrDie();
+  ASSERT_NE(nullptr, pid_list);
+  EXPECT_EQ(std::vector<int64_t>({123}), *pid_list);
+}
+
 TEST_F(CGroupManagerTest, network_stats) {
+  fs::copy(GetPathToTestDataFile("testdata/cgroup_basic"), tmp_dir_, fs::copy_options::recursive);
   PL_CHECK_OK(mgr_->UpdateCGroupInfo());
   // Values are based on the test directory.
   std::string pod_name = "pod04bfccc8-6526-11e9-b815-42010a8a0135";
@@ -108,6 +135,7 @@ TEST_F(CGroupManagerTest, network_stats) {
 }
 
 TEST_F(CGroupManagerTest, process_stats) {
+  fs::copy(GetPathToTestDataFile("testdata/cgroup_basic"), tmp_dir_, fs::copy_options::recursive);
   PL_CHECK_OK(mgr_->UpdateCGroupInfo());
   ProcParser::ProcessStats stats;
 

@@ -128,6 +128,13 @@ Status CGroupManager::UpdateContainerInfo(const fs::path& container_path, PodInf
 
 Status CGroupManager::UpdateCGroupInfoForQoSClass(CGroupQoS qos, fs::path base_path) {
   std::error_code ec;
+
+  // It is not an error if the directory doesn't exist.
+  // There might be no pods in that QoS class.
+  if (!fs::is_directory(base_path)) {
+    return Status::OK();
+  }
+
   auto dir_iter = fs::directory_iterator(base_path, ec);
   if (ec) {
     return error::Unknown("Failed to open: $0: $1", base_path.string(), ec.message());
@@ -143,6 +150,24 @@ Status CGroupManager::UpdateCGroupInfoForQoSClass(CGroupQoS qos, fs::path base_p
     }
   }
   return Status::OK();
+}
+
+Status CGroupManager::HandleFSQoSEvent(const fs::path& path, FSWatcher::FSEventType event_type,
+                                       const std::string& qos_name) {
+  if (event_type == FSWatcher::FSEventType::kDeleteDir) {
+    cgroup_info_.erase(qos_name);
+    RemoveFSWatch(path / qos_name);
+    return Status::OK();
+  }
+
+  CGroupQoS qos = CGroupQoS::kGuaranteed;
+  if (qos_name == "besteffort") {
+    qos = CGroupQoS::kBestEffort;
+  } else if (qos_name == "burstable") {
+    qos = CGroupQoS::kBurstable;
+  }
+
+  return UpdateCGroupInfoForQoSClass(qos, path / qos_name);
 }
 
 Status CGroupManager::HandleFSPodEvent(const fs::path& path, FSWatcher::FSEventType event_type,
@@ -161,7 +186,7 @@ Status CGroupManager::HandleFSPodEvent(const fs::path& path, FSWatcher::FSEventT
   } else if (absl::StrContains(path.string(), "burstable")) {
     qos = CGroupQoS::kBurstable;
   }
-  return UpdatePodInfo(path, pod_name, qos);
+  return UpdatePodInfo(path / pod_name, pod_name, qos);
 }
 
 Status CGroupManager::HandleFSContainerEvent(const fs::path& path,
@@ -185,6 +210,10 @@ Status CGroupManager::HandleFSEvent(FSWatcher::FSEvent* fs_event) {
       // fall through
     case FSWatcher::FSEventType::kDeleteDir: {
       auto dir_name = fs_event->name;
+      bool is_qos = (fs_event->name == "burstable") || (fs_event->name == "besteffort");
+      if (is_qos) {
+        return HandleFSQoSEvent(path, fs_event->type, fs_event->name);
+      }
       bool is_pod = absl::StartsWith(fs_event->name, kPodPrefix);
       if (is_pod) {
         return HandleFSPodEvent(path, fs_event->type, dir_name);
@@ -201,21 +230,28 @@ Status CGroupManager::HandleFSEvent(FSWatcher::FSEvent* fs_event) {
     default:
       return error::Unknown("Unknown FS watcher event type.");
   }
-  return Status::OK();
 }
 
 Status CGroupManager::ScanFileSystem() {
   cgroup_info_.clear();
-  auto base_path = fs::path(sysfs_path_) / kSysfsCpuAcctPatch;
-  // K8s has three different QoS classes and with the exception of the
-  // guaranteed class they are placed i sub directories.
-  fs::path best_effort_path = base_path / "besteffort";
-  fs::path burstable_path = base_path / "burstable";
-  fs::path guaranteed_path = base_path;
 
-  PL_RETURN_IF_ERROR(UpdateCGroupInfoForQoSClass(CGroupQoS::kBestEffort, best_effort_path));
-  PL_RETURN_IF_ERROR(UpdateCGroupInfoForQoSClass(CGroupQoS::kBurstable, burstable_path));
+  auto base_path = sysfs_path_ / kSysfsCpuAcctPatch;
+
+  // Sysfs base path must be valid.
+  bool is_directory = fs::is_directory(base_path);
+  if (!is_directory) {
+    return error::Unknown("Sysfs path is not a directory: $0", sysfs_path_.string());
+  }
+
+  // K8s has three different QoS classes and with the exception of the
+  // guaranteed class they are placed in sub directories.
+  fs::path guaranteed_path = base_path;
+  fs::path burstable_path = base_path / "burstable";
+  fs::path best_effort_path = base_path / "besteffort";
+
   PL_RETURN_IF_ERROR(UpdateCGroupInfoForQoSClass(CGroupQoS::kGuaranteed, guaranteed_path));
+  PL_RETURN_IF_ERROR(UpdateCGroupInfoForQoSClass(CGroupQoS::kBurstable, burstable_path));
+  PL_RETURN_IF_ERROR(UpdateCGroupInfoForQoSClass(CGroupQoS::kBestEffort, best_effort_path));
 
   return Status::OK();
 }
@@ -239,7 +275,7 @@ Status CGroupManager::UpdateCGroupInfo() {
   }
 
   if (fs_watcher_->HasOverflow()) {
-    // To avoid race conditions on an exisiting inotify fd, destroy existing
+    // To avoid race conditions on an existing inotify fd, destroy existing
     // fs_watcher_ and recreate it.
     fs_watcher_ = FSWatcher::Create();
     return ScanFileSystem();
@@ -247,7 +283,7 @@ Status CGroupManager::UpdateCGroupInfo() {
 
   // Handle fs watcher events.
   if (!fs_watcher_->ReadInotifyUpdates().ok()) {
-    LOG(INFO) << "Could not read inotfy updated from FS Watcher.";
+    LOG(INFO) << "Could not read inotify updated from FS Watcher.";
     return ScanFileSystem();
   }
   while (fs_watcher_->HasEvents()) {
