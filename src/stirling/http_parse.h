@@ -40,6 +40,7 @@ struct HTTPMessage {
   std::map<std::string, std::string> http_headers = {};
   // -1 indicates this message does not have 'Content-Length' header.
   int content_length = -1;
+  bool is_chunked = false;
 
   std::string http_req_method = "-";
   std::string http_req_path = "-";
@@ -144,6 +145,7 @@ class HTTPParser {
    * previous partial messages.
    */
   ParseState ParseResponse(const socket_data_event_t& event);
+  void Close();
 
   /**
    * @brief Extracts the current parsed HTTP messages, partial ones are not included.

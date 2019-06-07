@@ -148,8 +148,7 @@ class HTTPParserTest : public ::testing::Test {
 bool operator==(const HTTPMessage& lhs, const HTTPMessage& rhs) {
   return lhs.is_complete == rhs.is_complete && lhs.type == rhs.type &&
          lhs.http_minor_version == rhs.http_minor_version && lhs.http_headers == rhs.http_headers &&
-         lhs.http_req_method == rhs.http_req_method && lhs.http_req_path == rhs.http_req_path &&
-         lhs.http_req_body == rhs.http_req_body && lhs.http_resp_status == rhs.http_resp_status &&
+         lhs.http_resp_status == rhs.http_resp_status &&
          lhs.http_resp_message == rhs.http_resp_message && lhs.http_resp_body == rhs.http_resp_body;
 }
 
@@ -333,6 +332,32 @@ pixie)";
   EXPECT_EQ(HTTPParser::ParseState::kNeedsMoreData, parser_.ParseResponse(event2));
   EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
   EXPECT_EQ(HTTPParser::ParseState::kSuccess, parser_.ParseResponse(event3));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty()) << "Data should be empty after extraction";
+}
+
+TEST_F(HTTPParserTest, ParseMessagesWithoutLengthOrChunking) {
+  std::string msg1 = R"(HTTP/1.1 200 OK
+
+pixielabs )";
+  socket_data_event_t event1 = Event(0, msg1);
+
+  std::string msg2 = "is ";
+  socket_data_event_t event2 = Event(1, msg2);
+
+  std::string msg3 = "awesome!";
+  socket_data_event_t event3 = Event(2, msg3);
+
+  HTTPMessage expected_message = ExpectMessage();
+  expected_message.http_headers.clear();
+  expected_message.http_resp_body = "pixielabs is awesome!";
+
+  EXPECT_EQ(HTTPParser::ParseState::kNeedsMoreData, parser_.ParseResponse(event1));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
+  EXPECT_EQ(HTTPParser::ParseState::kNeedsMoreData, parser_.ParseResponse(event2));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
+  EXPECT_EQ(HTTPParser::ParseState::kNeedsMoreData, parser_.ParseResponse(event3));
+  parser_.Close();
   EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message));
   EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty()) << "Data should be empty after extraction";
 }

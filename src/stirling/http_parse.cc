@@ -256,6 +256,7 @@ bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
   if (transfer_encoding_iter != result->http_headers.end() &&
       transfer_encoding_iter->second == "chunked") {
     result->http_resp_body.clear();
+    result->is_chunked = true;
     if (!ParseChunk(std::string(unparsed_data), result)) {
       return false;
     }
@@ -317,10 +318,12 @@ HTTPParser::ParseState HTTPParser::ParseResponse(const socket_data_event_t& even
       message.is_complete =
           static_cast<size_t>(message.content_length) == message.http_resp_body.size();
     }
-  } else {
+  } else if (message.is_chunked) {
     if (!ParseChunk(std::string(buf), &message)) {
       return ParseState::kInvalid;
     }
+  } else {
+    message.http_resp_body.append(buf);
   }
 
   if (message.is_complete) {
@@ -335,6 +338,17 @@ HTTPParser::ParseState HTTPParser::ParseResponse(const socket_data_event_t& even
 }
 
 std::vector<HTTPMessage> HTTPParser::ExtractHTTPMessages() { return std::move(msgs_complete_); }
+
+void HTTPParser::Close() {
+  for (auto& [last_seq_num, message] : msgs_incomplete_) {
+    PL_UNUSED(last_seq_num);
+    if (!message.is_chunked && message.content_length == -1) {
+      message.is_complete = true;
+      msgs_complete_.push_back(std::move(message));
+    }
+  }
+  msgs_incomplete_.clear();
+}
 
 }  // namespace stirling
 }  // namespace pl
