@@ -26,12 +26,13 @@ using pl::stirling::SourceRegistry;
 using pl::stirling::Stirling;
 
 using pl::types::ColumnWrapperRecordBatch;
+using pl::types::DataType;
 using pl::types::Float64Value;
 using pl::types::Int64Value;
 using pl::types::StringValue;
 using pl::types::Time64NSValue;
 
-using pl::types::DataType;
+using pl::ConstVectorView;
 
 // Test arguments, from the command line
 DEFINE_uint64(kRNGSeed, gflags::Uint64FromEnv("seed", 377), "Random Seed");

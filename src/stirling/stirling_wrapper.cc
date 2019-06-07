@@ -20,6 +20,7 @@ using pl::stirling::stirlingpb::Publish;
 using pl::stirling::stirlingpb::Subscribe;
 
 using pl::types::ColumnWrapperRecordBatch;
+using pl::types::DataType;
 using pl::types::Float64Value;
 using pl::types::Int64Value;
 using pl::types::SharedColumnWrapper;
@@ -35,7 +36,7 @@ using pl::stirling::SocketTraceConnector;
 
 using pl::stirling::DataElement;
 
-using pl::types::DataType;
+using pl::ConstVectorView;
 
 DEFINE_string(source_name, "*", "The name of the source to report.");
 

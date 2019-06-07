@@ -3,6 +3,8 @@
 #include <string>
 #include <utility>
 
+namespace pl {
+
 /**
  * A Constant Compile-Time String
  *
@@ -73,6 +75,8 @@ class ConstVectorView {
   iterator begin() const { return iterator(elements_); }
   iterator end() const { return iterator(elements_ + size_); }
 };
+
+}  // namespace pl
 
 // When used in a constexpr function, this will prevent compilation if assert does not pass.
 #define COMPILE_TIME_ASSERT(expr, msg) (expr || error::Internal(#msg).ok())
