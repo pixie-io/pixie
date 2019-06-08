@@ -110,7 +110,7 @@ skaffold-staging: ## Run Skaffold in the staging environment.
 	$(SKAFFOLD) staging -f $(SKAFFOLD_DIR)/skaffold/skaffold_staging.yaml
 
 gen-jwt: ## Generate a JWT for our demo cluster.
-	@JWT=$$($(BAZEL) run --action_env=PL_JWT_SIGNING_KEY=ABCDEFG //src/utils/gen_test_key); \
+	@JWT=$$(PL_JWT_SIGNING_KEY=ABCDEFG $(BAZEL) run //src/utils/gen_test_key); \
         echo ""; \
 	echo "Paste the following into your browser console:"; \
 	echo "pltoken='$$JWT';"; \
