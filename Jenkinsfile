@@ -63,18 +63,15 @@ def sendBuildStatus = {
       validResponseCodes: '200'
 }
 
-/**
-  * @brief Add build info to harbormaster and badge to Jenkins.
-  */
-def addBuildInfo = {
-  def encodedDisplayUrl = URLEncoder.encode(env.RUN_DISPLAY_URL, 'UTF-8')
+def addPhabArtifactLink = { linkURL, artifactKey, artifactName ->
+  def encodedDisplayUrl = URLEncoder.encode(linkURL, 'UTF-8')
   def url = harborMasterUrl("harbormaster.createartifact")
   def body = ""
   body += "&buildTargetPHID=${params.PHID}"
-  body += '&artifactKey=jenkins.uri'
+  body += "&artifactKey=${artifactKey}"
   body += '&artifactType=uri'
   body += "&artifactData[uri]=${encodedDisplayUrl}"
-  body += '&artifactData[name]=Jenkins'
+  body += "&artifactData[name]=${artifactName}"
   body += '&artifactData[ui.external]=true'
 
   httpRequest consoleLogResponseBody: true,
@@ -84,6 +81,13 @@ def addBuildInfo = {
     responseHandle: 'NONE',
     url: url,
     validResponseCodes: '200'
+}
+
+/**
+  * @brief Add build info to harbormaster and badge to Jenkins.
+  */
+def addBuildInfo = {
+  addPhabArtifactLink(env.RUN_DISPLAY_URL, 'jenkins.uri', 'Jenkins')
 
   def text = ""
   def link = ""
@@ -105,26 +109,6 @@ def addBuildInfo = {
 
 }
 
-def addStoryBookLink = {
-  def encodedDisplayUrl = URLEncoder.encode(env.BUILD_URL + '/ui-storybook', 'UTF-8')
-  def url = harborMasterUrl("harbormaster.createartifact")
-  def body = ""
-  body += "&buildTargetPHID=${params.PHID}"
-  body += '&artifactKey=storybook.uri'
-  body += '&artifactType=uri'
-  body += "&artifactData[uri]=${encodedDisplayUrl}"
-  body += '&artifactData[name]=StoryBook'
-  body += '&artifactData[ui.external]=true'
-
-  httpRequest consoleLogResponseBody: true,
-    contentType: 'APPLICATION_FORM',
-    httpMode: 'POST',
-    requestBody: body,
-    responseHandle: 'NONE',
-    url: url,
-    validResponseCodes: '200'
-}
-
 /**
  * @brief Returns true if it's a phabricator triggered build.
  *  This could either be code review build or master commit.
@@ -144,7 +128,7 @@ def codeReviewPostBuild = {
   } else {
     sendBuildStatus('fail')
   }
-  addStoryBookLink()
+  addPhabArtifactLink(env.BUILD_URL + '/ui-storybook', 'storybook.uri', 'Storybook')
 }
 
 def writeBazelRCFile() {
