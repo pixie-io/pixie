@@ -78,7 +78,7 @@
       "type": "jshint",
       "jshint.jshintrc": "./src/ui/.jshintrc",
       "include": [
-        "(\\.js)"
+        "(src/ui/.*\\.js)"
       ]
     },
     "json": {
@@ -124,12 +124,14 @@
         "(BUILD.bazel)",
         "(chef/.*\\.json$)",
         "(demos/applications/sockshop/monitoring_manifests/grafana/.*\\.json$)",
-        "(src/ui/yarn.lock)",
+        "(yarn\\.lock)",
         "(__snapshots__/.*)",
         "(Makefile)",
         "(\\.go$)",
         "(src/ui/assets/images/.*)",
-        "(\\.toml$)"
+        "(\\.toml$)",
+        "(.*\\.md)",
+        "(.*\\.svg)"
       ]
     },
     "tslint-ui": {
