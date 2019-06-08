@@ -37,6 +37,9 @@ devDockerImageWithTag = ''
 
 stashList = [];
 
+// Flag controlling if coverage job is enabled.
+runCoverageJob = (env.JOB_NAME == "pixielabs-master") ? true : false;
+
 /**
   * @brief Generates URL for harbormaster.
   */
@@ -305,7 +308,7 @@ builders['Build & Test (clang-tidy)'] = {
 }
 
 // Only run coverage on master test.
-if (env.JOB_NAME == "pixielabs-master") {
+if (runCoverageJob) {
   builders['Build & Test (gcc:coverage)'] = {
     dockerStepWithBazelDeps {
       sh "scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b master -c `cat GIT_COMMIT`"
