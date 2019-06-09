@@ -4,6 +4,65 @@
 import java.net.URLEncoder;
 import groovy.json.JsonBuilder
 
+
+/**
+  * PhabConnector handles all communication with phabricator if the build
+  * was triggered by a phabricator run.
+  */
+class PhabConnector {
+  def jenkinsCtx
+  def URL
+  def repository
+  def apiToken
+  def phid
+
+  def PhabConnector(jenkinsCtx, URL, repository, apiToken, phid) {
+    this.jenkinsCtx = jenkinsCtx
+    this.URL = URL
+    this.repository = repository
+    this.apiToken = apiToken
+    this.phid = phid
+  }
+
+  def harborMasterUrl(method) {
+    def url = "${URL}/api/${method}?api.token=${apiToken}" +
+            "&buildTargetPHID=${phid}"
+    return url
+  }
+
+  def sendBuildStatus(build_status) {
+    def url = this.harborMasterUrl("harbormaster.sendmessage")
+    def body = "type=${build_status}"
+    jenkinsCtx.httpRequest consoleLogResponseBody: true,
+      contentType: 'APPLICATION_FORM',
+      httpMode: 'POST',
+      requestBody: body,
+      responseHandle: 'NONE',
+      url: url,
+      validResponseCodes: '200'
+  }
+
+  def addArtifactLink(linkURL, artifactKey, artifactName) {
+    def encodedDisplayUrl = URLEncoder.encode(linkURL, 'UTF-8')
+    def url = this.harborMasterUrl("harbormaster.createartifact")
+    def body = ""
+    body += "&buildTargetPHID=${phid}"
+    body += "&artifactKey=${artifactKey}"
+    body += '&artifactType=uri'
+    body += "&artifactData[uri]=${encodedDisplayUrl}"
+    body += "&artifactData[name]=${artifactName}"
+    body += '&artifactData[ui.external]=true'
+
+    jenkinsCtx.httpRequest consoleLogResponseBody: true,
+      contentType: 'APPLICATION_FORM',
+      httpMode: 'POST',
+      requestBody: body,
+      responseHandle: 'NONE',
+      url: url,
+      validResponseCodes: '200'
+  }
+}
+
 /**
   * We expect the following parameters to be defined (for code review builds):
   *    PHID: Which should be the buildTargetPHID from Harbormaster.
@@ -14,9 +73,8 @@ import groovy.json.JsonBuilder
 
 // NOTE: We use these without a def/type because that way Groovy will treat these as
 // global variables.
-PHAB_URL = 'https://phab.pixielabs.ai'
-PHAB_API_URL = "${PHAB_URL}/api"
-REPOSITORY = "PLM"
+phabConnector = PhabConnector.newInstance(this, 'https://phab.pixielabs.ai' /*url*/,
+                                          'PLM' /*repository*/, params.API_TOKEN, params.PHID)
 
 // Restrict build to source code, since otherwise bazel seems to build all our deps.
 BAZEL_SRC_FILES_PATH = "//src/..."
@@ -41,56 +99,10 @@ stashList = [];
 runCoverageJob = (env.JOB_NAME == "pixielabs-master") ? true : false;
 
 /**
-  * @brief Generates URL for harbormaster.
-  */
-def harborMasterUrl = {
-  method ->
-    url = "${PHAB_API_URL}/${method}?api.token=${params.API_TOKEN}" +
-            "&buildTargetPHID=${params.PHID}"
-    return url
-}
-
-/**
- * @brief Sends build status to Phabricator.
- */
-def sendBuildStatus = {
-  build_status ->
-    def url = harborMasterUrl("harbormaster.sendmessage")
-    def body = "type=${build_status}"
-    httpRequest consoleLogResponseBody: true,
-      contentType: 'APPLICATION_FORM',
-      httpMode: 'POST',
-      requestBody: body,
-      responseHandle: 'NONE',
-      url: url,
-      validResponseCodes: '200'
-}
-
-def addPhabArtifactLink = { linkURL, artifactKey, artifactName ->
-  def encodedDisplayUrl = URLEncoder.encode(linkURL, 'UTF-8')
-  def url = harborMasterUrl("harbormaster.createartifact")
-  def body = ""
-  body += "&buildTargetPHID=${params.PHID}"
-  body += "&artifactKey=${artifactKey}"
-  body += '&artifactType=uri'
-  body += "&artifactData[uri]=${encodedDisplayUrl}"
-  body += "&artifactData[name]=${artifactName}"
-  body += '&artifactData[ui.external]=true'
-
-  httpRequest consoleLogResponseBody: true,
-    contentType: 'APPLICATION_FORM',
-    httpMode: 'POST',
-    requestBody: body,
-    responseHandle: 'NONE',
-    url: url,
-    validResponseCodes: '200'
-}
-
-/**
   * @brief Add build info to harbormaster and badge to Jenkins.
   */
 def addBuildInfo = {
-  addPhabArtifactLink(env.RUN_DISPLAY_URL, 'jenkins.uri', 'Jenkins')
+  phabConnector.addArtifactLink(env.RUN_DISPLAY_URL, 'jenkins.uri', 'Jenkins')
 
   def text = ""
   def link = ""
@@ -98,10 +110,10 @@ def addBuildInfo = {
   if (params.REVISION) {
     def revisionId = "D${REVISION}"
     text = revisionId
-    link = "${PHAB_URL}/${revisionId}"
+    link = "${phabConnector.URL}/${revisionId}"
   } else {
     text = params.PHAB_COMMIT.substring(0, 7)
-    link = "${PHAB_URL}/r${REPOSITORY}${env.PHAB_COMMIT}"
+    link = "${phabConnector.URL}/r${phabConnector.repository}${env.PHAB_COMMIT}"
   }
   addShortText(text: text,
     background: "transparent",
@@ -109,7 +121,6 @@ def addBuildInfo = {
     borderColor: "transparent",
     color: "#1FBAD6",
     link: link)
-
 }
 
 /**
@@ -121,17 +132,17 @@ def isPhabricatorTriggeredBuild() {
 }
 
 def codeReviewPreBuild = {
-  sendBuildStatus('work')
+  phabConnector.sendBuildStatus('work')
   addBuildInfo()
 }
 
 def codeReviewPostBuild = {
   if (currentBuild.result == "SUCCESS") {
-    sendBuildStatus('pass')
+    phabConnector.sendBuildStatus('pass')
   } else {
-    sendBuildStatus('fail')
+    phabConnector.sendBuildStatus('fail')
   }
-  addPhabArtifactLink(env.BUILD_URL + '/ui-storybook', 'storybook.uri', 'Storybook')
+  phabConnector.addArtifactLink(env.BUILD_URL + '/ui-storybook', 'storybook.uri', 'Storybook')
 }
 
 def writeBazelRCFile() {
