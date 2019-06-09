@@ -234,6 +234,7 @@ Status ProcParser::ParseProcPIDStat(const fs::path& fpath, ProcessStats* out) {
   return Status::OK();
 }
 
+// WARNING: since this function uses a static variable, it is not thread-safe.
 Status ProcParser::ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out) {
   /**
    * Sample file:
@@ -247,13 +248,18 @@ Status ProcParser::ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out) 
    */
   DCHECK(out != nullptr);
 
-  static const std::unordered_map<std::string_view, int64_t*> field_name_to_value_map = {
-      {"rchar:", &out->rchar_bytes},
-      {"wchar:", &out->wchar_bytes},
-      {"read_bytes:", &out->read_bytes},
-      {"write_bytes:", &out->write_bytes},
+  // Just to be safe when using offsetof, make sure object is standard layout.
+  static_assert(std::is_standard_layout<ProcessStats>::value);
+
+  static std::unordered_map<std::string_view, size_t> field_name_to_offset_map = {
+      {"rchar:", offsetof(ProcessStats, rchar_bytes)},
+      {"wchar:", offsetof(ProcessStats, wchar_bytes)},
+      {"read_bytes:", offsetof(ProcessStats, read_bytes)},
+      {"write_bytes:", offsetof(ProcessStats, write_bytes)},
   };
-  return ParseFromKeyValueFile(fpath, field_name_to_value_map, 1 /*field_value_multipler*/);
+
+  return ParseFromKeyValueFile(fpath, field_name_to_offset_map, reinterpret_cast<uint8_t*>(out),
+                               1 /*field_value_multipler*/);
 }
 
 Status ProcParser::ParseProcStat(const fs::path& fpath, SystemStats* out) {
@@ -296,6 +302,7 @@ Status ProcParser::ParseProcStat(const fs::path& fpath, SystemStats* out) {
   return error::NotFound("Could not extract system information");
 }
 
+// WARNING: since this function uses a static variable, it is not thread-safe.
 Status ProcParser::ParseProcMemInfo(const fs::path& fpath, SystemStats* out) {
   /**
    * Sample file:
@@ -306,21 +313,31 @@ Status ProcParser::ParseProcMemInfo(const fs::path& fpath, SystemStats* out) {
    */
   CHECK(out != nullptr);
 
-  static const std::unordered_map<std::string_view, int64_t*> field_name_to_value_map = {
-      {"MemTotal:", &out->mem_total_bytes},         {"MemFree:", &out->mem_free_bytes},
-      {"MemAvailable:", &out->mem_available_bytes}, {"Buffers:", &out->mem_buffer_bytes},
-      {"Cached:", &out->mem_cached_bytes},          {"SwapCached:", &out->mem_swap_cached_bytes},
-      {"Active:", &out->mem_active_bytes},          {"Inactive:", &out->mem_inactive_bytes},
+  // Just to be safe when using offsetof, make sure object is standard layout.
+  static_assert(std::is_standard_layout<SystemStats>::value);
+
+  // clang-format off
+  static std::unordered_map<std::string_view, size_t> field_name_to_offset_map = {
+      {"MemTotal:", offsetof(SystemStats, mem_total_bytes)},
+      {"MemFree:", offsetof(SystemStats, mem_free_bytes)},
+      {"MemAvailable:", offsetof(SystemStats, mem_available_bytes)},
+      {"Buffers:", offsetof(SystemStats, mem_buffer_bytes)},
+      {"Cached:", offsetof(SystemStats, mem_cached_bytes)},
+      {"SwapCached:", offsetof(SystemStats, mem_swap_cached_bytes)},
+      {"Active:", offsetof(SystemStats, mem_active_bytes)},
+      {"Inactive:", offsetof(SystemStats, mem_inactive_bytes)},
   };
+  // clang-format on
 
   // This is a key value pair with a unit (that is always KB when present).
   constexpr int kKBToByteMultiplier = 1024;
-  return ParseFromKeyValueFile(fpath, field_name_to_value_map, kKBToByteMultiplier);
+  return ParseFromKeyValueFile(fpath, field_name_to_offset_map, reinterpret_cast<uint8_t*>(out),
+                               kKBToByteMultiplier);
 }
 
 Status ProcParser::ParseFromKeyValueFile(
     const fs::path& fpath,
-    const std::unordered_map<std::string_view, int64_t*>& field_name_to_value_map,
+    const std::unordered_map<std::string_view, size_t>& field_name_to_value_map, uint8_t* out_base,
     int64_t field_value_multiplier) {
   std::ifstream ifs;
   ifs.open(fpath);
@@ -348,8 +365,10 @@ Status ProcParser::ParseFromKeyValueFile(
         continue;
       }
 
-      bool ok = absl::SimpleAtoi(val, it->second);
-      *it->second *= field_value_multiplier;
+      size_t offset = it->second;
+      int64_t* val_ptr = reinterpret_cast<int64_t*>(out_base + offset);
+      bool ok = absl::SimpleAtoi(val, val_ptr);
+      *val_ptr *= field_value_multiplier;
 
       if (!ok) {
         return error::Unknown("Failed to parse proc/meminfo");

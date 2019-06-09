@@ -155,8 +155,8 @@ class ProcParser {
 
   static Status ParseFromKeyValueFile(
       const fs::path& fpath,
-      const std::unordered_map<std::string_view, int64_t*>& field_name_to_value_map,
-      int64_t field_value_multiplier);
+      const std::unordered_map<std::string_view, size_t>& field_name_to_value_map,
+      uint8_t* out_base, int64_t field_value_multiplier);
   int64_t ns_per_kernel_tick_;
   int32_t bytes_per_page_;
   fs::path proc_base_path_;
