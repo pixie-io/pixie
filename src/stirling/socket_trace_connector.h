@@ -90,6 +90,8 @@ class SocketTraceConnector : public SourceConnector {
 
   static constexpr DataTableSchema kTablesArray[] = {kHTTPTable, kMySQLTable};
   static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
+  static constexpr uint32_t kHTTPTableNum = SourceConnector::TableNum(kTables, kHTTPTable);
+  static constexpr uint32_t kMySQLTableNum = SourceConnector::TableNum(kTables, kMySQLTable);
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{5000};

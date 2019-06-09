@@ -179,10 +179,10 @@ void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
 void SocketTraceConnector::TransferStreamData(uint32_t table_num,
                                               types::ColumnWrapperRecordBatch* record_batch) {
   switch (table_num) {
-    case 0:
+    case kHTTPTableNum:
       TransferHTTPResponseStreams(record_batch);
       break;
-    case 1:
+    case kMySQLTableNum:
       // TODO(oazizi): Convert MySQL protocol to use streams.
       // TransferMySQLStreams(record_batch);
       break;

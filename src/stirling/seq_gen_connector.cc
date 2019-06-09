@@ -9,10 +9,10 @@ void SeqGenConnector::TransferDataImpl(uint32_t table_num,
   uint32_t num_records = num_rows_dist(rng_);
 
   switch (table_num) {
-    case 0:
+    case kSeq0TableNum:
       TransferDataTable0(num_records, record_batch);
       break;
-    case 1:
+    case kSeq1TableNum:
       TransferDataTable1(num_records, record_batch);
       break;
     default:

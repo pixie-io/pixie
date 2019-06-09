@@ -35,7 +35,8 @@ Content-Length: 0
 
 )";
   socket_data_event_t event_text = InitEvent(msg2);
-  const int table_num = 0;
+  const int table_num = SourceConnector::TableNum(SocketTraceConnector::kTablesArray,
+                                                  SocketTraceConnector::kHTTPTable);
 
   // FRIEND_TEST() does not grant std::make_unique() access to SocketTraceConnector's private ctor.
   // We choose this style over the SocketTraceConnector::Create() + dynamic_cast<>, as this is
@@ -44,7 +45,7 @@ Content-Length: 0
       SocketTraceConnector::Create("socket_trace_connector");
   auto* source = dynamic_cast<SocketTraceConnector*>(connector.get());
   types::ColumnWrapperRecordBatch record_batch;
-  EXPECT_OK(InitRecordBatch(SocketTraceConnector::kTables[table_num].elements(),
+  EXPECT_OK(InitRecordBatch(SocketTraceConnector::kHTTPTable.elements(),
                             /*target_capacity*/ 1, &record_batch));
 
   event_json.attr.seq_num = 0;

@@ -48,8 +48,8 @@ Status PIDCPUUseBCCConnector::StopImpl() {
 
 void PIDCPUUseBCCConnector::TransferDataImpl(uint32_t table_num,
                                              types::ColumnWrapperRecordBatch* record_batch) {
-  CHECK_EQ(table_num, 0ULL) << absl::StrFormat(
-      "This connector has only one table, but access to table_num=%d", table_num);
+  CHECK_LT(table_num, kTables.size())
+      << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
 
   // TODO(kgandhi): PL-452 There is an extra copy when calling get_table_offline. We should extract
   // the key when it is a struct from the BPFHASHTable directly.

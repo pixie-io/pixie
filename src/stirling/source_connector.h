@@ -88,6 +88,22 @@ class SourceConnector : public NotCopyable {
     return table_schemas_[table_num].name();
   }
 
+  static constexpr uint32_t TableNum(ConstVectorView<DataTableSchema> tables,
+                                     const DataTableSchema& key) {
+    uint32_t i = 0;
+    for (i = 0; i < tables.size(); i++) {
+      if (tables[i].name().equals(key.name())) {
+        break;
+      }
+    }
+
+    // Check that we found the index. This prevents compilation if name is not found,
+    // during constexpr evaluation (which is awesome!).
+    COMPILE_TIME_ASSERT(i != tables.size(), "Could not find name");
+
+    return i;
+  }
+
   const std::chrono::milliseconds& default_sampling_period() { return default_sampling_period_; }
   const std::chrono::milliseconds& default_push_period() { return default_push_period_; }
 
