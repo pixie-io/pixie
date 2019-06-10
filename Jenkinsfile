@@ -150,6 +150,10 @@ def codeReviewPostBuild = {
     phabConnector.sendBuildStatus('fail')
   }
   phabConnector.addArtifactLink(env.BUILD_URL + '/ui-storybook', 'storybook.uri', 'Storybook')
+
+  // Gatsby websites aren't portable to sub urls. So link to the download so we can host them locally.
+  phabConnector.addArtifactLink(env.BUILD_URL + '/customer-docs/*zip*/customer-docs.zip',
+                                'customer-docs.uri', 'Customer Docs')
 }
 
 def writeBazelRCFile() {
@@ -272,6 +276,17 @@ def publishStoryBook() {
   ])
 }
 
+
+def publishCustomerDocs() {
+  publishHTML([allowMissing: false,
+    alwaysLinkToLastBuild: true,
+    keepAll: true,
+    reportDir: 'build-customer-docs/public',
+    reportFiles: 'index.html',
+    reportName: 'customer-docs'
+  ])
+}
+
 /**
  * Checkout the source code, record git info and stash sources.
  */
@@ -312,13 +327,17 @@ builders['Build & Test (opt + UI)'] = {
     // Untar and save the UI artifacts.
     sh 'tar -zxvf bazel-bin/src/ui/bundle_storybook.tar.gz'
     sh 'mkdir testlogs && cp -a bazel-bin/src/ui/*.xml testlogs'
-    sh 'ls testlogs'
+
+    // Untar the customer docs.
+    sh 'tar -zxvf bazel-bin/docs/customer/bundle.tar.gz'
 
     stash name: 'build-ui-storybook-static', includes: 'storybook_static/**'
     stash name: 'build-ui-testlogs', includes: 'testlogs/**'
+    stash name: 'build-customer-docs', includes: 'public/**'
 
     stashList.add('build-ui-storybook-static')
     stashList.add('build-ui-testlogs')
+    stashList.add('build-customer-docs')
   }
 }
 
@@ -403,7 +422,10 @@ def buildScriptForCommits = {
         })
         // Archive clang-tidy logs.
         archiveArtifacts artifacts: 'build-clang-tidy-logs/**', fingerprint: true
+
         publishStoryBook()
+        publishCustomerDocs()
+
         archiveBazelLogs()
         archiveUILogs()
       }
