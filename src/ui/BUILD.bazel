@@ -5,23 +5,52 @@ package(default_visibility = ["//visibility:public"])
 genrule(
     name = "ui-bundle",
     srcs = [
-        "package.json",
-        "tsconfig.json",
-        "webpack.config.js",
         "yarn.lock",
         ".yarnrc",
-    ] + glob(["src/**"]),
-    outs = ["bundle.tar.gz"],
+    ] + glob([
+        "*.js",
+        "*.json",
+        ".storybook/**",
+        "stories/**",
+        "src/**",
+        "assets/**",
+        "offline_package_cache/**",
+    ]) + ["//src/services/api/controller/schema:schema"],
+    outs = [
+        "bundle.tar.gz",
+        "bundle_storybook.tar.gz",
+        "junit.xml",
+    ],
     cmd = """
       export PATH=/usr/local/bin:/opt/node/bin:$$PATH;
-      pushd src/ui;
+      export HOME=`mktemp -d` # This makes node-gyp happy.
+      export PL_DIST_BUNDLE_OUTPUT=`pwd`/$(RULEDIR)
+      export TMPPATH=`mktemp -d`
+
+      cp -aL `pwd`/* $${TMPPATH}
+
+      pushd $${TMPPATH}/src/ui
       yarn install --prefer_offline
+
+      # Run the unit tests.
+      jest
+
+      # Build the dev bundle.
       yarn build_dev;
+
+      # Build the storybook bundle.
+      yarn storybook_static
+
+      # Write the outputs to the correct location so Bazel can find them.
+      cp dist/bundle.tar.gz $${PL_DIST_BUNDLE_OUTPUT}
+      tar -czvvf $${PL_DIST_BUNDLE_OUTPUT}/bundle_storybook.tar.gz storybook_static
+      cp junit.xml $${PL_DIST_BUNDLE_OUTPUT}
       popd;
-      cp src/ui/dist/bundle.tar.gz $@
+
+      rm -rf $${TMPPATH}
     """,
     output_to_bindir = 1,  # We treat "outputs" as binaries.
     tags = [
-        "no-sandbox",
+        "ui_build",
     ],
 )

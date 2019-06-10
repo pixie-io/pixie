@@ -248,7 +248,7 @@ def archiveUILogs() {
     tools: [
       [
         $class: 'JUnitType',
-        pattern: "build-ui-testlogs/src/ui/junit.xml"
+        pattern: "build-ui-testlogs/testlogs/junit.xml"
       ]
     ]
   ])
@@ -258,7 +258,7 @@ def publishStoryBook() {
   publishHTML([allowMissing: false,
     alwaysLinkToLastBuild: true,
     keepAll: true,
-    reportDir: 'build-ui-storybook-static/src/ui/storybook_static',
+    reportDir: 'build-ui-storybook-static/storybook_static',
     reportFiles: 'index.html',
     reportName: 'ui-storybook'
   ])
@@ -294,8 +294,22 @@ builders['Build & Test (dbg)'] = {
   dockerStepWithBazelCmd("bazel test --compilation_mode=dbg ${BAZEL_SRC_FILES_PATH}", 'build-dbg')
 }
 
-builders['Build & Test (opt)'] = {
-  dockerStepWithBazelCmd("bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}", 'build-opt')
+builders['Build & Test (opt + UI)'] = {
+  dockerStepWithBazelDeps {
+    sh "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH} //docs/..."
+    createBazelStash("build-opt-testlogs")
+
+    // Untar and save the UI artifacts.
+    sh 'tar -zxvf bazel-bin/src/ui/bundle_storybook.tar.gz'
+    sh 'mkdir testlogs && cp -a bazel-bin/src/ui/*.xml testlogs'
+    sh 'ls testlogs'
+
+    stash name: 'build-ui-storybook-static', includes: 'storybook_static/**'
+    stash name: 'build-ui-testlogs', includes: 'testlogs/**'
+
+    stashList.add('build-ui-storybook-static')
+    stashList.add('build-ui-testlogs')
+  }
 }
 
 builders['Build & Test (gcc:opt)'] = {
@@ -344,24 +358,6 @@ builders['Build & Test (tsan)'] = {
 builders['Linting'] = {
   dockerStepWithCode {
     sh 'arc lint --everything'
-  }
-}
-
-builders['Build & Test UI'] = {
-  dockerStepWithCode {
-    sh '''
-      cd src/ui
-      yarn install --prefer_offline
-      jest
-
-      # Build story book static files.
-      yarn run storybook_static
-    '''
-    stash name: 'build-ui-testlogs', includes: "src/ui/junit.xml"
-    stash name: 'build-ui-storybook-static', includes: "src/ui/storybook_static/**"
-
-    stashList.add('build-ui-testlogs')
-    stashList.add('build-ui-storybook-static')
   }
 }
 

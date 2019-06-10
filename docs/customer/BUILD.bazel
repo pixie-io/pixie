@@ -3,28 +3,30 @@ package(default_visibility = ["//visibility:public"])
 genrule(
     name = "customer-docs-bundle",
     srcs = [
-        "package.json",
         "yarn.lock",
     ] + glob([
         "*.js",
+        "*.json",
         "src/**",
         "content/**",
     ]),
     outs = ["bundle.tar.gz"],
     cmd = """
-      export PATH=/usr/local/bin:/opt/node/bin:$$PATH;
-      export DOCSPATH=`pwd`/docs/customer
-      pushd $${DOCSPATH};
-      rm -rf node_modules public;
+      export PATH=/usr/local/bin:/opt/node/bin:$$PATH
+      export HOME=`mktemp -d` # This makes node-gyp happy.
+      export PL_DIST_BUNDLE_OUTPUT=`pwd`/$(RULEDIR)
+      export TMPPATH=`mktemp -d`
+
+      cp -aL `pwd`/* $${TMPPATH}
+      pushd $${TMPPATH}/docs/customer
+
       yarn install;
       yarn build;
-      tar -czvvf bundle.tar.gz public;
+
+      tar -czvvf $${PL_DIST_BUNDLE_OUTPUT}/bundle.tar.gz public;
       popd;
-      cp $${DOCSPATH}/bundle.tar.gz $@
-      rm -f $${DOCSPATH}/bundle.tar.gz
+
+      rm -rf $${TMPPATH}
     """,
     output_to_bindir = 1,  # We treat "outputs" as binaries.
-    tags = [
-        "no-sandbox",
-    ],
 )

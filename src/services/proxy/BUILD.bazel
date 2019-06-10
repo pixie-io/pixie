@@ -11,7 +11,7 @@ container_layer(
 container_layer(
     name = "ui_assets",
     directory = "/assets",
-    tars = ["//src/ui:ui-bundle"],
+    tars = ["//src/ui:bundle.tar.gz"],
 )
 
 container_image(
