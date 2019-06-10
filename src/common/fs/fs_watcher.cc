@@ -136,7 +136,7 @@ Status FSWatcher::AddWatch(const fs::path& file_or_dir) {
   // TODO(kgandhi): Make this configurable or define as constant in
   // header. For example, flags for directories, files, etc.
   uint32_t flags;
-  flags = is_dir ? IN_CREATE | IN_DELETE | IN_Q_OVERFLOW : IN_ACCESS | IN_MODIFY | IN_Q_OVERFLOW;
+  flags = is_dir ? IN_CREATE | IN_DELETE | IN_Q_OVERFLOW : IN_MODIFY | IN_Q_OVERFLOW;
 
   int wd = inotify_add_watch(inotify_fd_, path_str.c_str(), flags);
   if (wd == -1) {
@@ -196,7 +196,7 @@ Status FSWatcher::RemoveWatch(const fs::path& file_or_dir) {
 }
 
 Status FSWatcher::HandleInotifyEvent(inotify_event* event) {
-  FSEventType type = FSEventType::kUnknown;
+  FSEventType type;
   std::string_view event_name;
 
   if (event->len) {
@@ -210,16 +210,23 @@ Status FSWatcher::HandleInotifyEvent(inotify_event* event) {
   // other events that may be of interest. For now, we only report
   // directory creation or deletion and file modification.
   if (event->wd == -1) {
-    type = FSEventType::kOverFlow;
+    type = FSEventType::kOverflow;
     overflow_ = true;
-  } else if (event->mask & IN_ISDIR) {
-    if (event->mask & IN_CREATE) {
-      type = FSEventType::kCreateDir;
-    } else if (event->mask & IN_DELETE) {
-      type = FSEventType::kDeleteDir;
-    }
-  } else if (event->mask & IN_MODIFY || event->mask & IN_ACCESS) {
+  } else if (event->mask & IN_IGNORED) {
+    // Watch was dropped (likely because the watch directory was deleted).
+    // This gets reported even if we don't ask for it in inotify_add_watch() flags.
+    type = FSEventType::kIgnored;
+  } else if (event->mask & IN_CREATE) {
+    // Something was created in the watched directory.
+    type = (event->mask & IN_ISDIR) ? FSEventType::kCreateDir : FSEventType::kCreateFile;
+  } else if (event->mask & IN_DELETE) {
+    // Something was deleted in the watched directory.
+    type = (event->mask & IN_ISDIR) ? FSEventType::kDeleteDir : FSEventType::kDeleteFile;
+  } else if (event->mask & IN_MODIFY) {
+    // Watched file was modified.
     type = FSEventType::kModifyFile;
+  } else {
+    type = FSEventType::kUnknown;
   }
 
   event_queue_.emplace(type, event_name, inotify_watchers_[event->wd]);

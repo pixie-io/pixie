@@ -150,6 +150,12 @@ class CGroupManager {
   StatusOr<const std::vector<int64_t>*> PIDsInContainer(const std::string& pod,
                                                         const std::string& container);
 
+  /**
+   * full_scan_count returns the number of times a full scan was performed.
+   * @return Count of full scans.
+   */
+  uint64_t full_scan_count() { return full_scan_count_; }
+
  protected:
   CGroupManager() = delete;
 
@@ -180,6 +186,9 @@ class CGroupManager {
   // Map from pod name to group info. Pods are unique across QOS classes so we
   // don't need to track that in the key.
   std::unordered_map<std::string, PodInfo> cgroup_info_;
+
+  // Stat: number of times a full scan was performed.
+  uint64_t full_scan_count_ = 0;
 };
 
 }  // namespace stirling

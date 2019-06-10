@@ -64,10 +64,19 @@ class FSWatcher {
 
   /**
    * @brief Enum class to report inotify event types. Currently we only support
-   * overflow, creation/deletion of directories, and modification of files.
+   * overflow, creation/deletion of directories and files, and modification of files.
    * This can be extended if additional events need to be supported.
    */
-  enum class FSEventType { kUnknown = 0, kOverFlow, kCreateDir, kDeleteDir, kModifyFile };
+  enum class FSEventType {
+    kUnknown = 0,
+    kOverflow,    /// Watch event overflow, causing lost watch events.
+    kIgnored,     /// Watch on file/directory dropped, likely because file/directory was deleted.
+    kCreateDir,   /// Directory added to watched directory.
+    kDeleteDir,   /// Directory removed from watched directory.
+    kCreateFile,  /// File add to watched directory.
+    kDeleteFile,  /// File removed from watched directory.
+    kModifyFile,  /// Watched file modified.
+  };
 
   /**
    * @brief Struct to define an FSNode in a FSNode tree. Each file or dir is

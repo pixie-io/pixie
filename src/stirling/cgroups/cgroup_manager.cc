@@ -81,10 +81,8 @@ void CGroupManager::RemoveFSWatch(const fs::path& path) {
   }
   auto s = fs_watcher_->RemoveWatch(path);
   if (!s.ok()) {
-    // Cannot rely on fs watcher anymore. Reset the unique pointer.
-    fs_watcher_.reset();
-    LOG(INFO) << absl::StrFormat("Could not remove watcher for path: %s, error: %s", path.string(),
-                                 s.msg());
+    LOG(WARNING) << absl::StrFormat("Could not remove watcher for path: %s, error: %s",
+                                    path.string(), s.msg());
   }
 }
 
@@ -195,7 +193,7 @@ Status CGroupManager::HandleFSContainerEvent(const fs::path& path,
                                              FSWatcher::FSEventType event_type,
                                              const std::string& container_name) {
   auto pod_name = path.filename().string();
-  auto pod_info = cgroup_info_[pod_name];
+  auto& pod_info = cgroup_info_[pod_name];
   if (event_type == FSWatcher::FSEventType::kDeleteDir) {
     pod_info.container_info_by_name.erase(container_name);
     RemoveFSWatch(path / container_name / kPidFile);
@@ -227,6 +225,24 @@ Status CGroupManager::HandleFSEvent(FSWatcher::FSEvent* fs_event) {
       auto pod_name = container_path.parent_path().filename().string();
       return UpdateContainerInfo(container_path, &(cgroup_info_[pod_name]));
     }
+    case FSWatcher::FSEventType::kCreateFile: {
+      // We don't care about new files, just new directories.
+      return Status::OK();
+    }
+    case FSWatcher::FSEventType::kDeleteFile: {
+      // We don't care about deleted files, just deleted directories.
+      return Status::OK();
+    }
+    case FSWatcher::FSEventType::kIgnored: {
+      // A watched directory was deleted, and the watch is being automatically removed.
+      // There should also be a watch on the parent that will report a kDeleteDir,
+      // so no need to to take action here.
+      // Only exception is if the root watch on 'kubepods' disappears. Then we're in trouble.
+      if (fs_event->name == "kubepods") {
+        return error::Internal("Not expecting watch on 'kubepods' to be ignored.");
+      }
+      return Status::OK();
+    }
     case FSWatcher::FSEventType::kUnknown:
       // fall through
     default:
@@ -254,6 +270,8 @@ Status CGroupManager::ScanFileSystem() {
   PL_RETURN_IF_ERROR(UpdateQoSClassInfo(guaranteed_path, CGroupQoS::kGuaranteed));
   PL_RETURN_IF_ERROR(UpdateQoSClassInfo(burstable_path, CGroupQoS::kBurstable));
   PL_RETURN_IF_ERROR(UpdateQoSClassInfo(best_effort_path, CGroupQoS::kBestEffort));
+
+  full_scan_count_++;
 
   return Status::OK();
 }
@@ -317,11 +335,11 @@ Status CGroupManager::GetNetworkStatsForPod(const std::string& pod,
     for (const int64_t pid : container_info.second.pids) {
       auto s = proc_parser_.ParseProcPIDNetDev(proc_parser_.GetProcPidNetDevFile(pid), stats);
       // Since all the containers running in a K8s pod use the same network
-      // namespace we only, need to pull stats from a single PID. The stas
+      // namespace we only, need to pull stats from a single PID. The stats
       // themselves are the same for each PID since Linux only tracks networks
       // stats at a namespace level.
       //
-      // In case the read fails we try another file. This should not noramally
+      // In case the read fails we try another file. This should not normally
       // be required, but will make the code more robust to cases where the PID
       // is killed between when we update the pid list but before the network
       // data is requested.

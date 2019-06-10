@@ -40,7 +40,6 @@ class CGroupManagerTest : public ::testing::Test {
     char* dir_name = mkdtemp(dir_template);
     CHECK(dir_name != nullptr);
     tmp_dir_ = dir_name;
-    Test::SetUp();
 
     std::string proc = tmp_dir_ + "/proc";
     std::string sysfs = tmp_dir_ + "/sysfs";
@@ -48,9 +47,7 @@ class CGroupManagerTest : public ::testing::Test {
     mgr_ = CGroupManager::Create(sysconfig, proc, sysfs);
   }
 
-  void TearDown() override {
-    //    fs::remove_all(tmp_dir_);
-  }
+  void TearDown() override { fs::remove_all(tmp_dir_); }
 
   std::unique_ptr<CGroupManager> mgr_;
   std::string tmp_dir_;
@@ -69,6 +66,17 @@ TEST_F(CGroupManagerTest, cgroup_basic) {
                        .ConsumeValueOrDie();
   ASSERT_NE(nullptr, pid_list);
   EXPECT_EQ(std::vector<int64_t>({123}), *pid_list);
+
+  EXPECT_EQ(1, mgr_->full_scan_count());
+
+  for (const auto& pod_info : mgr_->cgroup_info()) {
+    for (const auto& container_info : pod_info.second.container_info_by_name) {
+      for (const auto& pid : container_info.second.pids) {
+        ProcParser::ProcessStats stats;
+        EXPECT_OK(mgr_->GetProcessStats(pid, &stats));
+      }
+    }
+  }
 }
 
 TEST_F(CGroupManagerTest, cgroup_basic_add_pid) {
@@ -92,6 +100,17 @@ TEST_F(CGroupManagerTest, cgroup_basic_add_pid) {
                        .ConsumeValueOrDie();
   ASSERT_NE(nullptr, pid_list);
   EXPECT_EQ(std::vector<int64_t>({123, 789}), *pid_list);
+
+  EXPECT_EQ(1, mgr_->full_scan_count());
+
+  for (const auto& pod_info : mgr_->cgroup_info()) {
+    for (const auto& container_info : pod_info.second.container_info_by_name) {
+      for (const auto& pid : container_info.second.pids) {
+        ProcParser::ProcessStats stats;
+        EXPECT_OK(mgr_->GetProcessStats(pid, &stats));
+      }
+    }
+  }
 }
 
 TEST_F(CGroupManagerTest, cgroup_empty) {
@@ -117,6 +136,95 @@ TEST_F(CGroupManagerTest, cgroup_empty) {
                        .ConsumeValueOrDie();
   ASSERT_NE(nullptr, pid_list);
   EXPECT_EQ(std::vector<int64_t>({123}), *pid_list);
+
+  EXPECT_EQ(1, mgr_->full_scan_count());
+
+  for (const auto& pod_info : mgr_->cgroup_info()) {
+    for (const auto& container_info : pod_info.second.container_info_by_name) {
+      for (const auto& pid : container_info.second.pids) {
+        ProcParser::ProcessStats stats;
+        EXPECT_OK(mgr_->GetProcessStats(pid, &stats));
+      }
+    }
+  }
+}
+
+TEST_F(CGroupManagerTest, cgroup_rm_pod) {
+  fs::copy(GetPathToTestDataFile("testdata/cgroup_basic"), tmp_dir_, fs::copy_options::recursive);
+  PL_CHECK_OK(mgr_->UpdateCGroupInfo());
+
+  std::string pod_dir =
+      tmp_dir_ + "/sysfs/cgroup/cpu,cpuacct/kubepods/pod04bfccc8-6526-11e9-b815-42010a8a0135";
+
+  uint32_t files_removed;
+  files_removed = fs::remove_all(pod_dir);
+  ASSERT_EQ(6, files_removed);
+  files_removed = fs::remove_all(tmp_dir_ + "/proc/123");
+  ASSERT_EQ(5, files_removed);
+  files_removed = fs::remove_all(tmp_dir_ + "/proc/456");
+  ASSERT_EQ(5, files_removed);
+
+  PL_CHECK_OK(mgr_->UpdateCGroupInfo());
+
+  // Values are based on the test directory.
+  EXPECT_FALSE(mgr_->HasPod("pod04bfccc8-6526-11e9-b815-42010a8a0135"));
+  EXPECT_TRUE(mgr_->HasPod("poda22d8c1e-67bf-11e9-b815-42010a8a0135"));
+  auto* pid_list =
+      mgr_->PIDsInContainer("poda22d8c1e-67bf-11e9-b815-42010a8a0135",
+                            "be03bce2b959975c40cd3796cdb101213aa89b72638b7d46f567ee328863a358")
+          .ConsumeValueOrDie();
+  ASSERT_NE(nullptr, pid_list);
+  EXPECT_EQ(std::vector<int64_t>({234}), *pid_list);
+
+  EXPECT_EQ(1, mgr_->full_scan_count());
+
+  for (const auto& pod_info : mgr_->cgroup_info()) {
+    for (const auto& container_info : pod_info.second.container_info_by_name) {
+      for (const auto& pid : container_info.second.pids) {
+        ProcParser::ProcessStats stats;
+        EXPECT_OK(mgr_->GetProcessStats(pid, &stats));
+      }
+    }
+  }
+}
+
+TEST_F(CGroupManagerTest, cgroup_rm_container) {
+  fs::copy(GetPathToTestDataFile("testdata/cgroup_basic"), tmp_dir_, fs::copy_options::recursive);
+  PL_CHECK_OK(mgr_->UpdateCGroupInfo());
+
+  std::string container_dir =
+      tmp_dir_ +
+      "/sysfs/cgroup/cpu,cpuacct/kubepods/pod04bfccc8-6526-11e9-b815-42010a8a0135/"
+      "3814823571b7857e7ef48e55414ade5d2d6c0c7d5f62476c9199bff741b5d31e";
+
+  uint32_t files_removed;
+  files_removed = fs::remove_all(container_dir);
+  ASSERT_EQ(2, files_removed);
+  files_removed = fs::remove_all(tmp_dir_ + "/proc/123");
+  ASSERT_EQ(5, files_removed);
+
+  PL_CHECK_OK(mgr_->UpdateCGroupInfo());
+
+  // Values are based on the test directory.
+  EXPECT_TRUE(mgr_->HasPod("pod04bfccc8-6526-11e9-b815-42010a8a0135"));
+  EXPECT_TRUE(mgr_->HasPod("poda22d8c1e-67bf-11e9-b815-42010a8a0135"));
+  auto* pid_list =
+      mgr_->PIDsInContainer("pod04bfccc8-6526-11e9-b815-42010a8a0135",
+                            "43cb2cc960eb486184381495e2f3f3071592f14e9270de586d46ff38b0bd2c2a")
+          .ConsumeValueOrDie();
+  ASSERT_NE(nullptr, pid_list);
+  EXPECT_EQ(std::vector<int64_t>({456}), *pid_list);
+
+  EXPECT_EQ(1, mgr_->full_scan_count());
+
+  for (const auto& pod_info : mgr_->cgroup_info()) {
+    for (const auto& container_info : pod_info.second.container_info_by_name) {
+      for (const auto& pid : container_info.second.pids) {
+        ProcParser::ProcessStats stats;
+        EXPECT_OK(mgr_->GetProcessStats(pid, &stats));
+      }
+    }
+  }
 }
 
 TEST_F(CGroupManagerTest, network_stats) {
