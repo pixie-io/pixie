@@ -37,18 +37,6 @@ func parseArgs() {
 	}
 }
 
-// getEnviron returns the environment string based on the current flags.
-func getEnviron() string {
-	environ := "dev"
-	if viper.GetBool("prod") {
-		environ = "prod"
-		// TODO(philkuz) PL-64 make a script that emails everyone upon push to prod.
-	} else if viper.GetBool("staging") {
-		environ = "staging"
-	}
-	return environ
-}
-
 // findTemplateFiles searches for template files.
 func findTemplateFiles(pathsToSearch []string, ext string) []string {
 	var allTemplates []string
