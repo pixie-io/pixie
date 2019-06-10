@@ -4,6 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "agent.go",
+        "etcd_metadata_store.go",
         "k8s_metadata.go",
         "message_bus.go",
         "metadata_handler.go",
@@ -42,6 +43,7 @@ go_test(
     name = "go_default_test",
     srcs = [
         "agent_test.go",
+        "etcd_metadata_store_test.go",
         "message_bus_test.go",
         "metadata_handler_test.go",
         "server_test.go",
