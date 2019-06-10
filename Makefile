@@ -107,7 +107,11 @@ skaffold-prod: ## Run Skaffold in the prod environment.
 
 skaffold-staging: ## Run Skaffold in the staging environment.
 	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --build_type staging
-	$(SKAFFOLD) staging -f $(SKAFFOLD_DIR)/skaffold/skaffold_staging.yaml
+	$(SKAFFOLD) run -f $(SKAFFOLD_DIR)/skaffold/skaffold_staging.yaml
+
+skaffold-nightly: ## Run Skaffold in the nightly environment.
+	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --build_type nightly
+	$(SKAFFOLD) run -f $(SKAFFOLD_DIR)/skaffold/skaffold_nightly.yaml
 
 gen-jwt: ## Generate a JWT for our demo cluster.
 	@JWT=$$(PL_JWT_SIGNING_KEY=ABCDEFG $(BAZEL) run //src/utils/gen_test_key); \
