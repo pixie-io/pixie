@@ -124,7 +124,8 @@ func main() {
 
 	// Find all the skaffold template files to generate service configs.
 	skaffoldDir := path.Join(totPath, "skaffold")
-	dirsToTemplate := []string{skaffoldDir}
+	docsDir := path.Join(totPath, "docs")
+	dirsToTemplate := []string{skaffoldDir, docsDir}
 
 	// Remove the UI directory from the services search path, since
 	// node_modules contains a lot of files making the template search slow.

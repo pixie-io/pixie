@@ -1,7 +1,11 @@
 package(default_visibility = ["//visibility:public"])
 
+load("@io_bazel_rules_docker//container:image.bzl", "container_image")
+load("@io_bazel_rules_docker//container:layer.bzl", "container_layer")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+
 genrule(
-    name = "customer-docs-bundle",
+    name = "customer_docs_bundle",
     srcs = [
         "yarn.lock",
     ] + glob([
@@ -29,4 +33,35 @@ genrule(
       rm -rf $${TMPPATH}
     """,
     output_to_bindir = 1,  # We treat "outputs" as binaries.
+)
+
+container_layer(
+    name = "conf",
+    directory = "/etc/nginx/conf.d",
+    files = ["default.conf"],
+)
+
+container_layer(
+    name = "customer_docs_assets",
+    directory = "/assets",
+    tars = [":customer_docs_bundle"],
+)
+
+container_image(
+    name = "customer_docs_prod_image",
+    base = "@nginx_base//image",
+    layers = [
+        ":conf",
+        ":customer_docs_assets",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+container_push(
+    name = "push_customer_docs_prod_image",
+    format = "Docker",
+    image = ":customer_docs_prod_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/customer_docs_prod_image",
+    tag = "{STABLE_BUILD_TAG}",
 )
