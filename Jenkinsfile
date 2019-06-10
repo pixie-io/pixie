@@ -85,6 +85,11 @@ BAZEL_SRC_FILES_PATH = "//src/..."
 BAZEL_CC_QUERY = "`bazel query 'kind(\"cc_(binary|test) rule\", src/...)' | grep -v '_cgo_.o\$'`"
 SRC_STASH_NAME = "${BUILD_TAG}_src"
 DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image'
+DEV_DOCKER_IMAGE_EXTRAS = 'pl-dev-infra/dev_image_with_extras'
+
+K8S_CREDS_NAME = 'nightly-cluster-0001'
+K8S_ADDR = 'https://nightly-cluster-0001.pixielabs.ai'
+K8S_NS = 'pl'
 
 // Sometimes docker fetches fail, so we just do a retry. This can be optimized to just
 // retry on docker failues, but not worth it now.
@@ -92,11 +97,13 @@ JENKINS_RETRIES = 2;
 
 // This variable store the dev docker image that we need to parse before running any docker steps.
 devDockerImageWithTag = ''
+devDockerImageExtrasWithTag = ''
 
 stashList = [];
 
 // Flag controlling if coverage job is enabled.
 runCoverageJob = (env.JOB_NAME == "pixielabs-master") ? true : false;
+isNightlyRun = (env.JOB_NAME == "pixielabs-master-nightly") ? true : false;
 
 /**
   * @brief Add build info to harbormaster and badge to Jenkins.
@@ -184,13 +191,13 @@ def createBazelStash(String stashName) {
   *   3. Starts docker container.
   *   4. Runs the passed in body.
   */
-def dockerStepWithCode(String dockerConfig = '', Closure body) {
+def dockerStepWithCode(String dockerConfig = '', String dockerImage = devDockerImageWithTag, Closure body) {
   retry(JENKINS_RETRIES) {
     node {
       deleteDir()
       unstash SRC_STASH_NAME
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(devDockerImageWithTag).inside(dockerConfig) {
+        docker.image(dockerImage).inside(dockerConfig) {
           body()
         }
       }
@@ -201,8 +208,8 @@ def dockerStepWithCode(String dockerConfig = '', Closure body) {
 /**
   * dockerStepWithCode but also has all the bazel dependencies.
   */
-def dockerStepWithBazelDeps(String dockerConfig = '', Closure body) {
-  dockerStepWithCode(dockerConfig) {
+def dockerStepWithBazelDeps(String dockerConfig = '', String dockerImage = devDockerImageWithTag, Closure body) {
+  dockerStepWithCode(dockerConfig, dockerImage) {
     sh 'scripts/bazel_fetch_retry.sh'
     body()
   }
@@ -211,8 +218,9 @@ def dockerStepWithBazelDeps(String dockerConfig = '', Closure body) {
 /**
   * dockerStepWithBazelDeps with stashing of logs for the passed in Bazel command.
   */
-def dockerStepWithBazelCmd(String dockerConfig = '', String bazelCmd, String name) {
-  dockerStepWithBazelDeps(dockerConfig) {
+def dockerStepWithBazelCmd(String dockerConfig = '', String dockerImage = devDockerImageWithTag,
+                           String bazelCmd, String name) {
+  dockerStepWithBazelDeps(dockerConfig, dockerImage) {
     sh "${bazelCmd}"
     createBazelStash("${name}-testlogs")
   }
@@ -274,12 +282,14 @@ def checkoutAndInitialize() {
     # Store the GIT commit in a file, since the git plugin has issues with
     # the Jenkins pipeline system.
     git rev-parse HEAD > GIT_COMMIT
+    echo ${BUILD_NUMBER} > SOURCE_VERSION
   '''
   writeBazelRCFile()
 
   // Get docker image tag.
   def properties = readProperties file: 'docker.properties'
   devDockerImageWithTag = DEV_DOCKER_IMAGE + ":${properties.DOCKER_IMAGE_TAG}"
+  devDockerImageExtrasWithTag = DEV_DOCKER_IMAGE_EXTRAS + ":${properties.DOCKER_IMAGE_TAG}"
 
   // Excluding default excludes also stashes the .git folder which downstream steps need.
   stash name: SRC_STASH_NAME, useDefaultExcludes: false
@@ -369,43 +379,77 @@ builders['Linting'] = {
 /********************************************
  * The build script starts here.
  ********************************************/
-if (isPhabricatorTriggeredBuild()) {
-  codeReviewPreBuild()
+def buildScriptForCommits = {
+  if (isPhabricatorTriggeredBuild()) {
+    codeReviewPreBuild()
+  }
+
+  node {
+    currentBuild.result = 'SUCCESS'
+    deleteDir()
+    try {
+      stage('Checkout code') {
+        checkoutAndInitialize()
+      }
+      stage('Build Steps') {
+        parallel(builders)
+      }
+      stage('Archive') {
+        // Unstash the build artifacts.
+        stashList.each({stashName ->
+          dir(stashName) {
+            unstash stashName
+          }
+        })
+        // Archive clang-tidy logs.
+        archiveArtifacts artifacts: 'build-clang-tidy-logs/**', fingerprint: true
+        publishStoryBook()
+        archiveBazelLogs()
+        archiveUILogs()
+      }
+    }
+    catch(err) {
+      currentBuild.result = 'FAILURE'
+      echo "Exception thrown:\n ${err}"
+      echo "Stacktrace:"
+      err.printStackTrace()
+    }
+    finally {
+      if (isPhabricatorTriggeredBuild()) {
+        codeReviewPostBuild()
+      }
+    }
+  }
 }
 
-node {
-  currentBuild.result = 'SUCCESS'
-  deleteDir()
-  try {
-    stage('Checkout code') {
-      checkoutAndInitialize()
-    }
-    stage('Build Steps') {
-      parallel(builders)
-    }
-    stage('Archive') {
-      // Unstash the build artifacts.
-      stashList.each({stashName ->
-        dir(stashName) {
-          unstash stashName
+def buildScriptForNightly = {
+  node {
+    currentBuild.result = 'SUCCESS'
+    deleteDir()
+    try {
+      stage('Checkout code') {
+        checkoutAndInitialize()
+      }
+      stage('Deploy to K8s Nightly') {
+        dockerStepWithBazelDeps('', devDockerImageExtrasWithTag) {
+          withKubeConfig([credentialsId: K8S_CREDS_NAME,
+                          serverUrl: K8S_ADDR, namespace: K8S_NS]) {
+            sh 'PL_IMAGE_TAG=nightly-$(date +%s)-`cat SOURCE_VERSION` make skaffold-staging'
+          }
         }
-      })
-      // Archive clang-tidy logs.
-      archiveArtifacts artifacts: 'build-clang-tidy-logs/**', fingerprint: true
-      publishStoryBook()
-      archiveBazelLogs()
-      archiveUILogs()
+      }
+    }
+    catch(err) {
+      currentBuild.result = 'FAILURE'
+      echo "Exception thrown:\n ${err}"
+      echo "Stacktrace:"
+      err.printStackTrace()
     }
   }
-  catch(err) {
-    currentBuild.result = 'FAILURE'
-    echo "Exception thrown:\n ${err}"
-    echo "Stacktrace:"
-    err.printStackTrace()
-  }
-  finally {
-    if (isPhabricatorTriggeredBuild()) {
-      codeReviewPostBuild()
-    }
-  }
+}
+
+if (isNightlyRun) {
+  buildScriptForNightly()
+} else {
+  buildScriptForCommits()
 }
