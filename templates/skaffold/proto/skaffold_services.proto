@@ -8,14 +8,18 @@ option go_package = "pixielabs.ai/pixielabs/templates/skaffold;skaffold_services
 
 // ServiceConfig defines all the template params required to generate skaffold service yamls.
 message ServiceConfig {
-    // [dev, prod, staging] Define the type of deployment.
-    string deployment                  = 1;
-    // Determine whether to push code to production env.
-    bool push_artifacts                = 2;
-    // bazel generated target name.
-    string bazel_services_proxy_target = 3;
-    // External address to be used for deployment.
-    string external_address            = 4;
-    // Requires an external cloud load balancer resource.
-    bool has_cloud_ingress             = 5;
+  // [dev, prod, staging] Define the type of deployment.
+  string deployment                  = 1;
+  // Determine whether to push code to production env.
+  bool push_artifacts                = 2;
+  // bazel generated target name.
+  string bazel_services_proxy_target = 3;
+  // External address to be used for deployment.
+  string external_address            = 4;
+  // Requires an external cloud load balancer resource.
+  bool has_cloud_ingress             = 5;
+  // Use a static IP address if specified for the external load balancer.
+  string load_balancer_ip            = 6 [
+    (gogoproto.customname) = "LoadBalancerIP"
+  ];
 }
