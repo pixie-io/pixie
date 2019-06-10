@@ -12,6 +12,8 @@ import (
 // MetadataStore is the interface for our metadata store.
 type MetadataStore interface {
 	UpdateEndpoints(*metadatapb.Endpoints) error
+	UpdatePod(*metadatapb.Pod) error
+	UpdateService(*metadatapb.Service) error
 }
 
 // K8sMessage is a message for K8s metadata events/updates.
@@ -56,6 +58,10 @@ func (mh *MetadataHandler) MetadataListener() {
 		switch msg.ObjectType {
 		case "endpoints":
 			mh.handleEndpointsMetadata(msg.Object)
+		case "services":
+			mh.handleServiceMetadata(msg.Object)
+		case "pods":
+			mh.handlePodMetadata(msg.Object)
 		default:
 			log.Error("Received unknown metadata message with type: " + msg.ObjectType)
 		}
@@ -67,10 +73,36 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 
 	pb, err := protoutils.EndpointsToProto(e)
 	if err != nil {
-		log.Info("Could not convert endpoints object to protobuf.")
+		log.WithError(err).Fatal("Could not convert endpoints object to protobuf.")
 	}
 	err = mh.mds.UpdateEndpoints(pb)
 	if err != nil {
-		log.Info("Could not write endpoints protobuf to metadata store.")
+		log.WithError(err).Fatal("Could not write endpoints protobuf to metadata store.")
+	}
+}
+
+func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
+	e := o.(*v1.Pod)
+
+	pb, err := protoutils.PodToProto(e)
+	if err != nil {
+		log.WithError(err).Fatal("Could not convert pod object to protobuf.")
+	}
+	err = mh.mds.UpdatePod(pb)
+	if err != nil {
+		log.WithError(err).Fatal("Could not write pod protobuf to metadata store.")
+	}
+}
+
+func (mh *MetadataHandler) handleServiceMetadata(o runtime.Object) {
+	e := o.(*v1.Service)
+
+	pb, err := protoutils.ServiceToProto(e)
+	if err != nil {
+		log.WithError(err).Fatal("Could not convert service object to protobuf.")
+	}
+	err = mh.mds.UpdateService(pb)
+	if err != nil {
+		log.WithError(err).Fatal("Could not write service protobuf to metadata store.")
 	}
 }

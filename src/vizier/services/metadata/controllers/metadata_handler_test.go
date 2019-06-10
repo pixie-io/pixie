@@ -60,6 +60,71 @@ metadata {
 }
 `
 
+const servicePb = `
+metadata {
+	name: "object_md"
+	namespace: "a_namespace"
+	uid: "ijkl"
+	resource_version: "1",
+	cluster_name: "a_cluster",
+	owner_references {
+	  kind: "pod"
+	  name: "test"
+	  uid: "abcd"
+	}
+	creation_timestamp_ns: 4
+	deletion_timestamp_ns: 6
+}
+spec {
+	cluster_ip: "127.0.0.1"
+	external_ips: "127.0.0.2"
+	external_ips: "127.0.0.3"
+	load_balancer_ip: "127.0.0.4"
+	external_name: "hello"
+	external_traffic_policy: 1
+	ports {
+		name: "endpt"
+		port: 10
+		protocol: 1
+		node_port: 20
+	}
+	ports {
+		name: "another_port"
+		port: 50
+		protocol: 1
+		node_port: 60
+	}
+	type: 1
+}
+`
+
+const podPb = `
+metadata {
+	name: "object_md"
+	namespace: "a_namespace"
+	uid: "ijkl"
+	resource_version: "1",
+	cluster_name: "a_cluster",
+	owner_references {
+	  kind: "pod"
+	  name: "test"
+	  uid: "abcd"
+	}
+	creation_timestamp_ns: 4
+	deletion_timestamp_ns: 6
+}
+status {
+	message: "this is message"
+	phase: 2
+	conditions: 2
+}
+spec {
+	node_name: "test"
+	hostname: "hostname"
+	dns_policy: 2
+}
+`
+
 func TestObjectToEndpointsProto(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
@@ -155,5 +220,149 @@ func TestObjectToEndpointsProto(t *testing.T) {
 
 	ch := mh.GetChannel()
 	msg := &controllers.K8sMessage{Object: &o, ObjectType: "endpoints"}
+	ch <- msg
+}
+
+func TestObjectToServiceProto(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	expectedPb := &metadatapb.Service{}
+	if err := proto.UnmarshalText(servicePb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	mockMds.
+		EXPECT().
+		UpdateService(expectedPb).
+		Return(nil)
+
+	// Create service object.
+	ports := make([]v1.ServicePort, 2)
+	ports[0] = v1.ServicePort{
+		Name:     "endpt",
+		Port:     10,
+		Protocol: v1.ProtocolTCP,
+		NodePort: 20,
+	}
+	ports[1] = v1.ServicePort{
+		Name:     "another_port",
+		Port:     50,
+		Protocol: v1.ProtocolTCP,
+		NodePort: 60,
+	}
+
+	externalIPs := []string{"127.0.0.2", "127.0.0.3"}
+
+	spec := v1.ServiceSpec{
+		ClusterIP:             "127.0.0.1",
+		LoadBalancerIP:        "127.0.0.4",
+		ExternalName:          "hello",
+		ExternalTrafficPolicy: v1.ServiceExternalTrafficPolicyTypeLocal,
+		Type:                  v1.ServiceTypeExternalName,
+		Ports:                 ports,
+		ExternalIPs:           externalIPs,
+	}
+
+	ownerRefs := make([]metav1.OwnerReference, 1)
+	ownerRefs[0] = metav1.OwnerReference{
+		Kind: "pod",
+		Name: "test",
+		UID:  "abcd",
+	}
+
+	delTime := metav1.Unix(0, 6)
+	creationTime := metav1.Unix(0, 4)
+	metadata := metav1.ObjectMeta{
+		Name:              "object_md",
+		Namespace:         "a_namespace",
+		UID:               "ijkl",
+		ResourceVersion:   "1",
+		ClusterName:       "a_cluster",
+		OwnerReferences:   ownerRefs,
+		CreationTimestamp: creationTime,
+		DeletionTimestamp: &delTime,
+	}
+
+	o := v1.Service{
+		ObjectMeta: metadata,
+		Spec:       spec,
+	}
+
+	mh, err := controllers.NewMetadataHandler(mockMds)
+	assert.Nil(t, err)
+
+	ch := mh.GetChannel()
+	msg := &controllers.K8sMessage{Object: &o, ObjectType: "services"}
+	ch <- msg
+}
+
+func TestObjectToPodProto(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	expectedPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(podPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	mockMds.
+		EXPECT().
+		UpdatePod(expectedPb).
+		Return(nil)
+
+	// Create service object.
+	ownerRefs := make([]metav1.OwnerReference, 1)
+	ownerRefs[0] = metav1.OwnerReference{
+		Kind: "pod",
+		Name: "test",
+		UID:  "abcd",
+	}
+
+	delTime := metav1.Unix(0, 6)
+	creationTime := metav1.Unix(0, 4)
+	metadata := metav1.ObjectMeta{
+		Name:              "object_md",
+		Namespace:         "a_namespace",
+		UID:               "ijkl",
+		ResourceVersion:   "1",
+		ClusterName:       "a_cluster",
+		OwnerReferences:   ownerRefs,
+		CreationTimestamp: creationTime,
+		DeletionTimestamp: &delTime,
+	}
+
+	conditions := make([]v1.PodCondition, 1)
+	conditions[0] = v1.PodCondition{
+		Type: v1.PodReady,
+	}
+
+	status := v1.PodStatus{
+		Message:    "this is message",
+		Phase:      v1.PodRunning,
+		Conditions: conditions,
+	}
+
+	spec := v1.PodSpec{
+		NodeName:  "test",
+		Hostname:  "hostname",
+		DNSPolicy: v1.DNSClusterFirst,
+	}
+
+	o := v1.Pod{
+		ObjectMeta: metadata,
+		Status:     status,
+		Spec:       spec,
+	}
+
+	mh, err := controllers.NewMetadataHandler(mockMds)
+	assert.Nil(t, err)
+
+	ch := mh.GetChannel()
+	msg := &controllers.K8sMessage{Object: &o, ObjectType: "pods"}
 	ch <- msg
 }

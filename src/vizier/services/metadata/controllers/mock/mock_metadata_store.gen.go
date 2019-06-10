@@ -44,3 +44,27 @@ func (m *MockMetadataStore) UpdateEndpoints(arg0 *metadatapb.Endpoints) error {
 func (mr *MockMetadataStoreMockRecorder) UpdateEndpoints(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateEndpoints", reflect.TypeOf((*MockMetadataStore)(nil).UpdateEndpoints), arg0)
 }
+
+// UpdatePod mocks base method
+func (m *MockMetadataStore) UpdatePod(arg0 *metadatapb.Pod) error {
+	ret := m.ctrl.Call(m, "UpdatePod", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePod indicates an expected call of UpdatePod
+func (mr *MockMetadataStoreMockRecorder) UpdatePod(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePod", reflect.TypeOf((*MockMetadataStore)(nil).UpdatePod), arg0)
+}
+
+// UpdateService mocks base method
+func (m *MockMetadataStore) UpdateService(arg0 *metadatapb.Service) error {
+	ret := m.ctrl.Call(m, "UpdateService", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateService indicates an expected call of UpdateService
+func (mr *MockMetadataStoreMockRecorder) UpdateService(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateService", reflect.TypeOf((*MockMetadataStore)(nil).UpdateService), arg0)
+}

@@ -32,9 +32,9 @@ func NewK8sMetadataController(kubeConfigPath string, c chan *K8sMessage) (*K8sMe
 	mc := &K8sMetadataController{events: c}
 
 	// Start up Watchers.
-	// TODO(michelle) : Add when D881 lands.
-	// go mc.startWatcher(clientset.CoreV1().RESTClient(), "pods")
+	go mc.startWatcher(clientset.CoreV1().RESTClient(), "pods")
 	go mc.startWatcher(clientset.CoreV1().RESTClient(), "endpoints")
+	go mc.startWatcher(clientset.CoreV1().RESTClient(), "services")
 
 	return mc, nil
 }
