@@ -133,6 +133,13 @@ void SocketTraceConnector::HandleMySQLProbeOutput(void* cb_cookie, void* data, i
   connector->TransferMySQLEvent(*event, connector->record_batch_);
 }
 
+void SocketTraceConnector::HandleHTTP2ProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
+  auto* event = static_cast<socket_data_event_t*>(data);
+  connector->AcceptEvent(*event);
+}
+
 // This function is invoked by BCC runtime when a item in the perf buffer is not read and lost.
 // For now we do nothing.
 void SocketTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
@@ -144,25 +151,25 @@ void SocketTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
 // Stream Functions
 //-----------------------------------------------------------------------------
 
-void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
+namespace {
+
+template <typename StreamType>
+void AppendToStream(socket_data_event_t event, std::map<uint64_t, StreamType>* streams) {
   const uint64_t stream_id =
       (static_cast<uint64_t>(event.attr.tgid) << 32) | event.attr.conn_info.conn_id;
   const uint64_t seq_num = static_cast<uint64_t>(event.attr.seq_num);
-  const auto iter = http_streams_.find(stream_id);
+  const auto iter = streams->find(stream_id);
 
-  // Need to adjust the clocks to convert to real time.
-  event.attr.timestamp_ns += ClockRealTimeOffset();
-
-  if (iter != http_streams_.end()) {
+  if (iter != streams->end()) {
     iter->second.events.emplace(seq_num, std::move(event));
     return;
   }
 
   // This is the first event of the stream.
-  HTTPStream stream;
+  StreamType stream;
   // TODO(yzhao): We should explicitly capture the accept() event into user space to determine the
   // time stamp when the stream is created.
-  stream.conn.timestamp_ns = event.attr.conn_info.timestamp_ns + ClockRealTimeOffset();
+  stream.conn.timestamp_ns = event.attr.conn_info.timestamp_ns;
   stream.conn.tgid = event.attr.tgid;
   stream.conn.fd = event.attr.fd;
   auto ip_endpoint_or = ParseSockAddr(event);
@@ -173,7 +180,26 @@ void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
     LOG(WARNING) << "Could not parse IP address.";
   }
   stream.events.emplace(seq_num, std::move(event));
-  http_streams_.emplace(stream_id, std::move(stream));
+  streams->emplace(stream_id, std::move(stream));
+}
+
+}  // namespace
+
+void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
+  // Need to adjust the clocks to convert to real time.
+  event.attr.timestamp_ns += ClockRealTimeOffset();
+  event.attr.conn_info.timestamp_ns += ClockRealTimeOffset();
+  switch (event.attr.conn_info.protocol) {
+    case kProtocolHTTP2:
+      AppendToStream(std::move(event), &http2_streams_);
+      break;
+      // TODO(oazizi/yzhao): Discuss what to do with MySQL events.
+    default:
+      // TODO(yzhao): This is to preserve current behavior. Obviously this appears contradictory,
+      // and should be changed to not sending to HTTP streams.
+      AppendToStream(std::move(event), &http_streams_);
+      LOG(WARNING) << "Unknown protocol: " << event.attr.conn_info.protocol;
+  }
 }
 
 void SocketTraceConnector::TransferStreamData(uint32_t table_num,

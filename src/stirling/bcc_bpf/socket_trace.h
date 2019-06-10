@@ -19,6 +19,7 @@ const uint32_t kProtocolUnknown = 0;
 const uint32_t kProtocolHTTPResponse = 1;
 const uint32_t kProtocolHTTPRequest = 2;
 const uint32_t kProtocolMySQL = 3;
+const uint32_t kProtocolHTTP2 = 4;
 
 // This struct contains information collected when a connection is established,
 // via an accept() syscall.

@@ -158,9 +158,15 @@ pl_cc_test(
 pl_cc_test(
     name = "socket_trace_bpf_test",
     srcs = ["socket_trace_bpf_test.cc"],
+    data = [
+        "//src/stirling/testing:go_greeter_client",
+        "//src/stirling/testing:go_greeter_server",
+    ],
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
+        "//src/common/subprocess:cc_library",
+        "//src/common/testing:cc_library",
         "//src/stirling/testing:cc_library",
     ],
 )

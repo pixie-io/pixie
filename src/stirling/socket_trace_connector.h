@@ -34,11 +34,18 @@ OBJ_STRVIEW(http_trace_bcc_script, _binary_src_stirling_bcc_bpf_socket_trace_c);
 namespace pl {
 namespace stirling {
 
-struct HTTPStream {
+struct EventStream {
   SocketConnection conn;
   // Key: sequence number.
   std::map<uint64_t, socket_data_event_t> events;
+};
+
+struct HTTPStream : public EventStream {
   HTTPParser parser;
+};
+
+struct HTTP2Stream : public EventStream {
+  // TODO(yzhao): Add HTTP2Parser, or gRPC parser.
 };
 
 class SocketTraceConnector : public SourceConnector {
@@ -105,6 +112,7 @@ class SocketTraceConnector : public SourceConnector {
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
   const std::map<uint64_t, HTTPStream>& TestOnlyHTTPStreams() const { return http_streams_; }
+  const std::map<uint64_t, HTTP2Stream>& TestOnlyHTTP2Streams() const { return http2_streams_; }
   static void TestOnlySetHTTPResponseHeaderFilter(HTTPHeaderFilter filter) {
     http_response_header_filter_ = std::move(filter);
   }
@@ -124,6 +132,7 @@ class SocketTraceConnector : public SourceConnector {
   // ReadPerfBuffer poll callback functions (must be static).
   static void HandleHTTPResponseProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleMySQLProbeOutput(void* cb_cookie, void* data, int data_size);
+  static void HandleHTTP2ProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleProbeLoss(void* cb_cookie, uint64_t lost);
 
   // Places the event into a stream buffer to deal with reorderings.
@@ -150,6 +159,7 @@ class SocketTraceConnector : public SourceConnector {
   ebpf::BPF bpf_;
 
   std::map<uint64_t, HTTPStream> http_streams_;
+  std::map<uint64_t, HTTP2Stream> http2_streams_;
 
   // For MySQL tracing only. Will go away when MySQL uses streams.
   types::ColumnWrapperRecordBatch* record_batch_;
@@ -181,9 +191,8 @@ class SocketTraceConnector : public SourceConnector {
       {"send", "probe_ret_send", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"sendto", "probe_entry_sendto", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"sendto", "probe_ret_sendto", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      // TODO(oazizi): Enable probing on reads, when tested.
-      //    {"read", "probe_entry_read", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      //    {"read", "probe_ret_read", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"read", "probe_entry_read", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"read", "probe_ret_read", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"recv", "probe_entry_recv", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"recv", "probe_ret_recv", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"recvfrom", "probe_entry_recv", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
@@ -203,6 +212,9 @@ class SocketTraceConnector : public SourceConnector {
       {"socket_mysql_events", &SocketTraceConnector::HandleMySQLProbeOutput,
        &SocketTraceConnector::HandleProbeLoss,
        /* num_pages */ 8},
+      {"socket_http2_events", &SocketTraceConnector::HandleHTTP2ProbeOutput,
+       &SocketTraceConnector::HandleProbeLoss,
+       /* num_pages */ 32},
   };
 };
 

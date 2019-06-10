@@ -21,6 +21,7 @@ const uint32_t kProtocolUnknown = 0;
 const uint32_t kProtocolHTTPResponse = 1;
 const uint32_t kProtocolHTTPRequest = 2;
 const uint32_t kProtocolMySQL = 3;
+const uint32_t kProtocolHTTP2 = 4;
 
 struct conn_info_t {
   uint64_t timestamp_ns;
@@ -52,6 +53,7 @@ struct socket_data_event_t {
 // This is the perf buffer for BPF program to export data from kernel to user space.
 BPF_PERF_OUTPUT(socket_http_resp_events);
 BPF_PERF_OUTPUT(socket_mysql_events);
+BPF_PERF_OUTPUT(socket_http2_events);
 
 /***********************************************************
  * Internal structs and definitions
@@ -147,10 +149,24 @@ static bool is_mysql_protocol(const char *buf, size_t count) {
   return false;
 }
 
+// Technically, HTTP2 client connection preface is 24 octes [1]. Practically,
+// the first 3 shall be sufficient. Note this is sent from client,
+// so it would be captured on server's read()/recvfrom()/recvmsg() or client's
+// write()/sendto()/sendmsg().
+//
+// [1] https://http2.github.io/http2-spec/#ConnectionHeader
+static bool is_http2_connection_preface(const char *buf, size_t count) {
+  if (count < 3) {
+    return false;
+  }
+  return buf[0] == 'P' && buf[1] == 'R' && buf[2] == 'I';
+}
+
 static u32 infer_protocol(const char *buf, size_t count) {
   return is_http_response(buf, count)  ? kProtocolHTTPResponse :
          is_http_request(buf, count)   ? kProtocolHTTPRequest :
          is_mysql_protocol(buf, count) ? kProtocolMySQL :
+         is_http2_connection_preface(buf, count) ? kProtocolHTTP2 :
                                          kProtocolUnknown;
 }
 
@@ -319,6 +335,7 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
   switch (conn_info->protocol) {
     case kProtocolHTTPResponse: socket_http_resp_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
+    case kProtocolHTTP2: socket_http2_events.perf_submit(ctx, event, size_to_submit); break;
   }
 
  done:
@@ -380,16 +397,18 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
     goto done;
   }
 
+  int protocol = conn_info->protocol;
   // Attempt to classify protocol, if unknown.
-  if (conn_info->protocol == kProtocolUnknown) {
+  if (protocol == kProtocolUnknown) {
     // TODO(oazizi): Look for only certain protocols on read/recv()?
-    conn_info->protocol = infer_protocol(buf, bytes_read);
+    protocol = infer_protocol(buf, bytes_read);
   }
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
-  if (conn_info->protocol == kProtocolUnknown) {
+  if (protocol == kProtocolUnknown) {
     return 0;
   }
+  conn_info->protocol = protocol;
 
   struct socket_data_event_t *event = data_buffer_heap.lookup(&kZero);
   if (event == NULL) {
@@ -413,6 +432,7 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
   switch (conn_info->protocol) {
     case kProtocolHTTPResponse: socket_http_resp_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
+    case kProtocolHTTP2: socket_http2_events.perf_submit(ctx, event, size_to_submit); break;
   }
 
   done:
