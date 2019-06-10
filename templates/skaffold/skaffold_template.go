@@ -20,8 +20,7 @@ import (
 // init defines the args.
 func init() {
 	pflag.String("build_dir", "", "The build_dir in which to build the project")
-	pflag.Bool("staging", false, "Flag to turn on staging. Do not use with --prod.")
-	pflag.Bool("prod", false, "Flag to turn on prod. Do not use with --staging.")
+	pflag.String("build_type", "dev", "The type of the buid: dev, staging, prod")
 }
 
 // parseArgs parses the arguments into specified variables.
@@ -35,11 +34,6 @@ func parseArgs() {
 	// Check the args.
 	if viper.GetString("build_dir") == "" {
 		log.Fatal("Flag --build_dir is required. Please specify build_dir as an argument. Refer to the usage menu (-h) for more help.")
-	}
-
-	if viper.GetBool("prod") && viper.GetBool("staging") {
-		log.Fatal("Flags --prod and --staging can only be used exclusively. Please remove one to specify the environment")
-
 	}
 }
 
@@ -121,28 +115,6 @@ func generateServiceConfigs(templateFiles []string, buildDir, totPath, ext strin
 	}
 }
 
-// startSkaffold starts the skaffold command.
-func startSkaffold(buildDir, workspaceDir string) {
-	skaffoldSubCmd := "dev"
-	if viper.GetBool("prod") || viper.GetBool("staging") {
-		skaffoldSubCmd = "run"
-	}
-	environ := getEnviron()
-	skaffoldFile := path.Join(buildDir, fmt.Sprintf("skaffold/skaffold_%s.yaml", environ))
-	if utils.FileExists(skaffoldFile) {
-		skaffoldCmd := fmt.Sprintf("skaffold %s -f %s", skaffoldSubCmd, skaffoldFile)
-		log.WithField("cmd", skaffoldCmd).Info("Starting Skaffold")
-		cmd := utils.MakeCommand(skaffoldCmd)
-		os.Chdir(workspaceDir)
-		err := utils.RunCmd(cmd)
-		if err != nil {
-			log.WithError(err).Fatalf("Error starting skaffold with cmd \"%s\".", skaffoldCmd)
-		}
-	} else {
-		log.Fatalf("Can't find skaffold file %s. Skaffold cannot run", skaffoldFile)
-	}
-}
-
 type serviceConfigExt struct {
 	pb.ServiceConfig
 	BuildDir string
@@ -185,7 +157,7 @@ func main() {
 	templateFiles := findTemplateFiles(dirsToTemplate, ext)
 
 	// Get the config file.
-	configEnviron := getEnviron()
+	configEnviron := viper.GetString("build_type")
 	configFile := path.Join(totPath, fmt.Sprintf("templates/skaffold/skaffold_service_config_%s.pbtxt", configEnviron))
 	config := loadConfig(configFile, buildDir)
 

@@ -1,0 +1,6 @@
+deployment: "nightly"
+push_artifacts: true
+bazel_services_proxy_target: "//services/proxy:proxy_prod.tar"
+external_address: "https://nightly.pixielabs.ai"
+has_cloud_ingress: true
+load_balancer_ip: "10.32.15.211"

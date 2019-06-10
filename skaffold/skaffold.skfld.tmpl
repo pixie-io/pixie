@@ -3,6 +3,14 @@
 apiVersion: skaffold/v1beta8
 kind: Config
 build:
+  # In nightly cluster we pass in the tag for the image.
+  # TODO(zasgar): This is probably similar to staging clusters in general
+  # and we should probably generalize this.
+  {{ if (eq .Deployment "nightly") }}
+  tagPolicy:
+    envTemplate:
+      template: "{{`{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}`}}"
+  {{ end }}
   artifacts:
   - image: gcr.io/pl-dev-infra/agent_image
     context: .

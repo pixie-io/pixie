@@ -98,15 +98,15 @@ dev-env-teardown: dev-env-stop ## Clean up dev environment.
 	$(MINIKUBE) delete
 
 skaffold-dev: ## Run Skaffold in the dev environment.
-	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR)
+	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --build_type dev
 	$(SKAFFOLD) dev -f $(SKAFFOLD_DIR)/skaffold/skaffold_dev.yaml
 
 skaffold-prod: ## Run Skaffold in the prod environment.
-	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --prod
+	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --build_type prod
 	$(SKAFFOLD) run -f $(SKAFFOLD_DIR)/skaffold/skaffold_prod.yaml
 
 skaffold-staging: ## Run Skaffold in the staging environment.
-	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --staging
+	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --build_type staging
 	$(SKAFFOLD) staging -f $(SKAFFOLD_DIR)/skaffold/skaffold_staging.yaml
 
 gen-jwt: ## Generate a JWT for our demo cluster.

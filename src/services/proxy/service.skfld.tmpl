@@ -57,6 +57,9 @@ metadata:
     cloud.google.com/load-balancer-type: internal
 spec:
   type: LoadBalancer
+  {{ if (ne .LoadBalancerIP "") }}
+  loadBalancerIP: {{ .LoadBalancerIP }}
+  {{ end }}
   ports:
     - port: 443
       protocol: TCP
