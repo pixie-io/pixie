@@ -107,6 +107,15 @@ uint32_t get_conn_id(u32 tgid) {
 // and use it as a heap allocated value.
 BPF_PERCPU_ARRAY(data_buffer_heap, struct socket_data_event_t, 1);
 
+// Attribute copied from:
+// https://github.com/iovisor/bcc/blob/ef9d83f289222df78f0b16a04ade7c393bf4d83d/\
+// examples/cpp/pyperf/PyPerfBPFProgram.cc#L168
+static inline __attribute__((__always_inline__))
+struct socket_data_event_t* data_buffer() {
+  u32 kZero = 0;
+  return data_buffer_heap.lookup(&kZero);
+}
+
 /***********************************************************
  * Buffer processing helper functions
  ***********************************************************/
@@ -292,8 +301,6 @@ static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t
 }
 
 static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
-  u32 kZero = 0;
-
   u64 id = bpf_get_current_pid_tgid();
 
   int32_t bytes_written = PT_REGS_RC(ctx);
@@ -313,7 +320,7 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
     goto done;
   }
 
-  struct socket_data_event_t *event = data_buffer_heap.lookup(&kZero);
+  struct socket_data_event_t* event = data_buffer();
   if (event == NULL) {
     goto done;
   }
@@ -365,8 +372,6 @@ static int probe_entry_read_recv(struct pt_regs *ctx, unsigned int fd, char* buf
 }
 
 static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
-  u32 kZero = 0;
-
   u64 id = bpf_get_current_pid_tgid();
 
   int32_t bytes_read = PT_REGS_RC(ctx);
@@ -415,7 +420,7 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
   }
   conn_info->protocol = protocol;
 
-  struct socket_data_event_t *event = data_buffer_heap.lookup(&kZero);
+  struct socket_data_event_t* event = data_buffer();
   if (event == NULL) {
     goto done;
   }
