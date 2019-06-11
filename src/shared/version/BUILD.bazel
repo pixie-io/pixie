@@ -1,3 +1,5 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
 package(default_visibility = ["//visibility:public"])
 
 load("//bazel:pl_build_system.bzl", "pl_cc_library")
@@ -13,4 +15,18 @@ pl_cc_library(
         "@com_google_absl//absl/time",
         "@com_google_farmhash//:farmhash",
     ],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "version.go",
+        "version.h",
+    ],
+    importpath = "pixielabs.ai/pixielabs/src/shared/version",
+    x_defs = {
+        "buildSCMRevision": "{BUILD_SCM_STATUS}",
+        "buildSCMStatus": "{BUILD_SCM_REVISION}",
+        "buildTimeStamp": "{BUILD_TIMESTAMP}",
+    },
 )

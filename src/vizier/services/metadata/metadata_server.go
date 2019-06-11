@@ -9,6 +9,7 @@ import (
 	"pixielabs.ai/pixielabs/src/services/common"
 	"pixielabs.ai/pixielabs/src/services/common/healthz"
 	"pixielabs.ai/pixielabs/src/services/common/httpmiddleware"
+	"pixielabs.ai/pixielabs/src/shared/version"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
@@ -60,6 +61,8 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}
+
+	log.Info("Metadata Server: " + version.GetVersion().ToString())
 
 	s := common.NewPLServer(env,
 		httpmiddleware.WithNewSessionMiddleware(
