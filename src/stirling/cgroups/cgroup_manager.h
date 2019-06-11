@@ -180,8 +180,12 @@ class CGroupManager {
   Status ScanFileSystem();
 
   ProcParser proc_parser_;
-  std::unique_ptr<FSWatcher> fs_watcher_ = nullptr;
   fs::path sysfs_path_;
+
+  // Disable FSWatcher/inotify, since it doesn't work well on /sys/fs or /proc.
+  // TODO(oazizi/PL-617): Make this a knob or remove FSWatcher as it's currently dead code.
+  const bool fs_watcher_enabled_ = false;
+  std::unique_ptr<FSWatcher> fs_watcher_ = nullptr;
 
   // Map from pod name to group info. Pods are unique across QOS classes so we
   // don't need to track that in the key.

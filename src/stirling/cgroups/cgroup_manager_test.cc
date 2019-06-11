@@ -101,7 +101,7 @@ TEST_F(CGroupManagerTest, cgroup_basic_add_pid) {
   ASSERT_NE(nullptr, pid_list);
   EXPECT_EQ(std::vector<int64_t>({123, 789}), *pid_list);
 
-  EXPECT_EQ(1, mgr_->full_scan_count());
+  EXPECT_EQ(2, mgr_->full_scan_count());
 
   for (const auto& pod_info : mgr_->cgroup_info()) {
     for (const auto& container_info : pod_info.second.container_info_by_name) {
@@ -137,7 +137,7 @@ TEST_F(CGroupManagerTest, cgroup_empty) {
   ASSERT_NE(nullptr, pid_list);
   EXPECT_EQ(std::vector<int64_t>({123}), *pid_list);
 
-  EXPECT_EQ(1, mgr_->full_scan_count());
+  EXPECT_EQ(2, mgr_->full_scan_count());
 
   for (const auto& pod_info : mgr_->cgroup_info()) {
     for (const auto& container_info : pod_info.second.container_info_by_name) {
@@ -176,7 +176,7 @@ TEST_F(CGroupManagerTest, cgroup_rm_pod) {
   ASSERT_NE(nullptr, pid_list);
   EXPECT_EQ(std::vector<int64_t>({234}), *pid_list);
 
-  EXPECT_EQ(1, mgr_->full_scan_count());
+  EXPECT_EQ(2, mgr_->full_scan_count());
 
   for (const auto& pod_info : mgr_->cgroup_info()) {
     for (const auto& container_info : pod_info.second.container_info_by_name) {
@@ -215,7 +215,7 @@ TEST_F(CGroupManagerTest, cgroup_rm_container) {
   ASSERT_NE(nullptr, pid_list);
   EXPECT_EQ(std::vector<int64_t>({456}), *pid_list);
 
-  EXPECT_EQ(1, mgr_->full_scan_count());
+  EXPECT_EQ(2, mgr_->full_scan_count());
 
   for (const auto& pod_info : mgr_->cgroup_info()) {
     for (const auto& container_info : pod_info.second.container_info_by_name) {

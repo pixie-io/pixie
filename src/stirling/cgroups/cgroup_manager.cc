@@ -277,8 +277,8 @@ Status CGroupManager::ScanFileSystem() {
 }
 
 Status CGroupManager::UpdateCGroupInfo() {
-  // No system support for inotify. Always scan file system.
-  if (!FSWatcher::SupportsInotify()) {
+  // No system support for inotify, or inotify disabled. Always scan file system.
+  if (!FSWatcher::SupportsInotify() || !fs_watcher_enabled_) {
     return ScanFileSystem();
   }
 
