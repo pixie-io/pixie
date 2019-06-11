@@ -88,9 +88,20 @@ BPF_HASH(active_sock_addr, u64, struct addr_info_t);
 BPF_HASH(active_write_info_map, u64, struct data_info_t);
 BPF_HASH(active_read_info_map, u64, struct data_info_t);
 
+// TODO(yzhao): Change to use tgid+fd as the key.
 // Map from process to the next available connection ID.
 // Key is tgid
 BPF_HASH(proc_conn_map, u32, u32);
+
+static inline __attribute__((__always_inline__))
+uint32_t get_conn_id(u32 tgid) {
+  u32 conn_id = 0;
+  u32* curr_conn_id = proc_conn_map.lookup_or_init(&tgid, &conn_id);
+  if (curr_conn_id != NULL) {
+    conn_id = (*curr_conn_id)++;
+  }
+  return conn_id;
+}
 
 // BPF programs are limited to a 512-byte stack. We store this value per CPU
 // and use it as a heap allocated value.
@@ -192,8 +203,6 @@ static int probe_entry_accept_impl(struct pt_regs *ctx, int sockfd, struct socka
 
 // Read the sockaddr values and write to the output buffer.
 static int probe_ret_accept_impl(struct pt_regs *ctx) {
-  u32 kZero = 0;
-
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
@@ -215,11 +224,7 @@ static int probe_ret_accept_impl(struct pt_regs *ctx) {
   // Prepend TGID to make the FD unique across processes.
   u64 tgid_fd = ((u64)tgid << 32) | (u32)ret_fd;
 
-  u32 conn_id = 0;
-  u32* curr_conn_id = proc_conn_map.lookup_or_init(&tgid, &kZero);
-  if (curr_conn_id != NULL) {
-    conn_id = (*curr_conn_id)++;
-  }
+  u32 conn_id = get_conn_id(tgid);
 
   struct conn_info_t conn_info;
   memset(&conn_info, 0, sizeof(struct conn_info_t));
