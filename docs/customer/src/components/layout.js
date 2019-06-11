@@ -17,14 +17,9 @@ const Wrapper = styled('div')`
 const Content = styled('main')`
   display: flex;
   flex-grow: 1;
-  margin: 0px 88px;
+  margin: 0px 20px;
   margin-top: 3rem;
 
-  @media only screen and (max-width: 1023px) {
-    padding-left: 0;
-    margin: 0 10px;
-    margin-top: 3rem;
-  }
 `;
 
 const MaxWidth = styled('div')`
@@ -35,7 +30,9 @@ const MaxWidth = styled('div')`
   }
 `;
 const LeftSideBarWidth = styled('div')`
-  width: 298px;
+ width: 30vw;
+ max-width: 400px;
+ min-width: 200px;
 `;
 const RightSideBarWidth = styled('div')`
   width: 224px;

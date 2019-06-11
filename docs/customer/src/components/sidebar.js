@@ -32,19 +32,7 @@ const Sidebar = styled('aside')`
 //  background: -ms-linear-gradient(top, #0b1420, #132E38);
 //  /* Opera 11.10+ */
 //  background: -o-linear-gradient(top, #0b1420, #132E38);
-  @media only screen and (max-width: 767px) {
-    padding-left: 0px;
-    background-color: #0b1420;
-    background: #0b1420;
-  }
-  @media (min-width: 767px) and (max-width:1023px)
-  {
-    padding-left: 0;
-  }
-  @media only screen and (max-width: 1023px) {
-    width: 100%;
-    position: relative;
-  }
+
 `;
 
 // eslint-disable-next-line no-unused-vars
