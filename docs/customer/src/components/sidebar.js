@@ -44,7 +44,6 @@ const Sidebar = styled('aside')`
   @media only screen and (max-width: 1023px) {
     width: 100%;
     position: relative;
-    height: auto;
   }
 `;
 
@@ -184,7 +183,6 @@ const SidebarLayout = ({ location }) => (
         <Sidebar>
           <ul className={'sideBarUL'}>
             {nav}
-            <Divider />
             {config.sidebar.links.map((link, key) => {
               if (link.link !== '' && link.text !== '') {
                 return (
