@@ -21,13 +21,12 @@ spec:
       - name: customer-docs-server
         image: gcr.io/pl-dev-infra/customer_docs_prod_image:latest
         ports:
-          - containerPort: 443
-            hostPort: 443
+          - containerPort: 56000
         readinessProbe:
           httpGet:
             scheme: HTTPS
             path: /healthz
-            port: 443
+            port: 56000
         volumeMounts:
             - name: certs
               mountPath: /certs
@@ -51,7 +50,7 @@ spec:
   ports:
     - port: 443
       protocol: TCP
-      targetPort: 443
+      targetPort: 56000
       name: tcp-https
   selector:
     name: customer-docs

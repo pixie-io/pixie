@@ -21,13 +21,12 @@ spec:
       - name: vizier-proxy-server
         image: gcr.io/pl-dev-infra/proxy_image:latest
         ports:
-          - containerPort: 443
-            hostPort: 443
+          - containerPort: 55000
         readinessProbe:
           httpGet:
             scheme: HTTPS
             path: /healthz
-            port: 443
+            port: 55000
         env:
           - name: PL_JWT_SIGNING_KEY
             valueFrom:
@@ -63,7 +62,7 @@ spec:
   ports:
     - port: 443
       protocol: TCP
-      targetPort: 443
+      targetPort: 55000
       name: tcp-https
   selector:
     name: vizier-proxy
