@@ -50,33 +50,6 @@ std::map<std::string, std::string> GetHttpHeadersMap(const phr_header* headers,
 
 }  // namespace
 
-bool ParseHTTPRequest(const socket_data_event_t& event, HTTPTraceRecord* record) {
-  // TODO(yzhao): Due to the BPF weirdness (see socket_trace.c), this calculation must be done here,
-  // not in BPF. Investigate if we can fix it.
-  const uint32_t msg_size = MsgSize(event);
-  const char* method = nullptr;
-  size_t method_len = 0;
-  const char* path = nullptr;
-  size_t path_len = 0;
-  int minor_version = 0;
-  size_t num_headers = 10;
-  struct phr_header headers[num_headers];
-  const int retval = phr_parse_request(event.msg, msg_size, &method, &method_len, &path, &path_len,
-                                       &minor_version, headers, &num_headers, /*last_len*/ 0);
-
-  if (retval > 0) {
-    HTTPTraceRecord& result = *record;
-    ParseEventAttr(event, &result);
-    result.message.type = SocketTraceEventType::kHTTPRequest;
-    result.message.http_minor_version = minor_version;
-    result.message.http_headers = GetHttpHeadersMap(headers, num_headers);
-    result.message.http_req_method = std::string(method, method_len);
-    result.message.http_req_path = std::string(path, path_len);
-    return true;
-  }
-  return false;
-}
-
 StatusOr<IPEndpoint> ParseSockAddr(const socket_data_event_t& event) {
   const auto* sa = reinterpret_cast<const struct sockaddr*>(&event.attr.conn_info.addr);
 

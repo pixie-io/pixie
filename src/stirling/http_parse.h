@@ -56,19 +56,8 @@ struct HTTPTraceRecord {
   HTTPMessage message;
 };
 
-/**
- * @brief Parses the message body assuming it's encoded with 'Transfer-Encoding: chunked'.
- * Writes a bool to indicate if the message body surpasses the end of the entire message.
- *
- * @param record The input and result.
- */
-void ParseMessageBodyChunked(HTTPTraceRecord* record);
-
 void PreProcessHTTPRecord(HTTPTraceRecord* record);
 void ParseEventAttr(const socket_data_event_t& event, HTTPTraceRecord* record);
-// TODO(yzhao): Changes the functions that return bool to return Status.
-bool ParseHTTPRequest(const socket_data_event_t& event, HTTPTraceRecord* record);
-bool ParseHTTPResponse(const socket_data_event_t& event, HTTPTraceRecord* record);
 struct IPEndpoint {
   std::string ip;
   int port;

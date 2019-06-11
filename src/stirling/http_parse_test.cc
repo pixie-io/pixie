@@ -49,31 +49,6 @@ TEST(ParseEventAttrTest, DataIsCopied) {
   EXPECT_EQ(3, record.conn.fd);
 }
 
-TEST(ParseHTTPRequestTest, RequestIsIdentified) {
-  const std::string http_request = R"(GET /index.html HTTP/1.1
-Host: www.pixielabs.ai
-
-<body>)";
-  socket_data_event_t event;
-  event.attr.timestamp_ns = 100;
-  event.attr.tgid = 1;
-  event.attr.fd = 3;
-  event.attr.msg_size = http_request.size();
-  http_request.copy(event.msg, http_request.size());
-
-  HTTPTraceRecord record;
-
-  EXPECT_TRUE(ParseHTTPRequest(event, &record));
-  EXPECT_EQ(100, record.message.timestamp_ns);
-  EXPECT_EQ(1, record.conn.tgid);
-  EXPECT_EQ(3, record.conn.fd);
-  EXPECT_EQ(SocketTraceEventType::kHTTPRequest, record.message.type);
-  EXPECT_THAT(record.message.http_headers, ElementsAre(Pair("Host", "www.pixielabs.ai")));
-  EXPECT_EQ(1, record.message.http_minor_version);
-  EXPECT_EQ("GET", record.message.http_req_method);
-  EXPECT_EQ("/index.html", record.message.http_req_path);
-}
-
 TEST(ParseRawTest, ContentIsCopied) {
   const std::string data = "test";
   socket_data_event_t event;
