@@ -8,8 +8,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	// Blank import necessary for kubeConfig to work.
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 // K8sMetadataController listens to any metadata updates from the K8s API.
@@ -18,11 +18,13 @@ type K8sMetadataController struct {
 }
 
 // NewK8sMetadataController creates a new K8sMetadataController.
-func NewK8sMetadataController(kubeConfigPath string, c chan *K8sMessage) (*K8sMetadataController, error) {
-	kubeConfig, err := clientcmd.BuildConfigFromFlags("", kubeConfigPath)
+func NewK8sMetadataController(c chan *K8sMessage) (*K8sMetadataController, error) {
+	// There is a specific config for services running in the cluster.
+	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
 		return nil, err
 	}
+
 	// Create k8s client.
 	clientset, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {

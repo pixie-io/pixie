@@ -32,6 +32,11 @@ func main() {
 	}
 	defer etcdClient.Close()
 
+	etcdMds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to create etcd metadata store")
+	}
+
 	// TODO(michelle): Add code for leader election. For now, since we only have one metadata
 	// service, it is always the leader.
 	agtMgr := controllers.NewAgentManager(etcdClient, true)
@@ -49,6 +54,16 @@ func main() {
 		log.WithError(err).Fatal("Failed to connect to message bus")
 	}
 	defer mc.Close()
+
+	// Listen for K8s metadata updates.
+	mdHandler, err := controllers.NewMetadataHandler(etcdMds)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to create metadata handler")
+	}
+
+	mdCh := mdHandler.GetChannel()
+
+	_, err = controllers.NewK8sMetadataController(mdCh)
 
 	env, err := metadataenv.New()
 	if err != nil {

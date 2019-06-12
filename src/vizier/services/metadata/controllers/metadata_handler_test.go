@@ -223,6 +223,72 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	ch <- msg
 }
 
+func TestKubernetesEndpointHandler(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	expectedPb := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(endpointsPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	mockMds.
+		EXPECT().
+		UpdateEndpoints(gomock.Any()).
+		Times(0)
+
+	// Create endpoints object.
+	addrs := make([]v1.EndpointAddress, 1)
+	addrs[0] = v1.EndpointAddress{
+		IP: "192.168.65.3",
+	}
+
+	ports := make([]v1.EndpointPort, 1)
+	ports[0] = v1.EndpointPort{
+		Name:     "https",
+		Port:     6443,
+		Protocol: v1.ProtocolTCP,
+	}
+
+	subsets := make([]v1.EndpointSubset, 1)
+	subsets[0] = v1.EndpointSubset{
+		Addresses: addrs,
+		Ports:     ports,
+	}
+
+	creationTime := metav1.Unix(0, 4)
+	oRef := metav1.OwnerReference{
+		Kind: "pod",
+		Name: "test",
+		UID:  "abcd",
+	}
+
+	oRefs := make([]metav1.OwnerReference, 1)
+	oRefs[0] = oRef
+	md := metav1.ObjectMeta{
+		Name:              "kubernetes",
+		Namespace:         "default",
+		UID:               "ijkl",
+		ResourceVersion:   "1",
+		CreationTimestamp: creationTime,
+		OwnerReferences:   oRefs,
+	}
+
+	o := v1.Endpoints{
+		ObjectMeta: md,
+		Subsets:    subsets,
+	}
+
+	mh, err := controllers.NewMetadataHandler(mockMds)
+	assert.Nil(t, err)
+
+	ch := mh.GetChannel()
+	msg := &controllers.K8sMessage{Object: &o, ObjectType: "endpoints"}
+	ch <- msg
+}
+
 func TestObjectToServiceProto(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)

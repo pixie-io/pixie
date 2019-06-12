@@ -97,5 +97,6 @@ func (mds *EtcdMetadataStore) updateValue(key string, value string) error {
 	if err != nil {
 		return errors.New("Unable to update etcd")
 	}
+
 	return nil
 }

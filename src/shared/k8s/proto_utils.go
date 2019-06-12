@@ -342,10 +342,15 @@ func EndpointPortFromProto(pb *metadatapb.EndpointPort) (*v1.EndpointPort, error
 
 // EndpointAddressToProto converts an EndpointAddress into a proto.
 func EndpointAddressToProto(e *v1.EndpointAddress) (*metadatapb.EndpointAddress, error) {
+	nodename := ""
+	if e.NodeName != nil {
+		nodename = *e.NodeName
+	}
+
 	ePb := &metadatapb.EndpointAddress{
 		Ip:       e.IP,
 		Hostname: e.Hostname,
-		NodeName: *e.NodeName,
+		NodeName: nodename,
 	}
 	if e.TargetRef != nil {
 		objRef, err := ObjectReferenceToProto(e.TargetRef)

@@ -71,6 +71,12 @@ func (mh *MetadataHandler) MetadataListener() {
 func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 	e := o.(*v1.Endpoints)
 
+	// Don't record the endpoint if there is no nodename.
+	if len(e.Subsets) > 0 && len(e.Subsets[0].Addresses) > 0 && e.Subsets[0].Addresses[0].NodeName == nil {
+		log.Info("Received endpoint with no nodename: " + e.String())
+		return
+	}
+
 	pb, err := protoutils.EndpointsToProto(e)
 	if err != nil {
 		log.WithError(err).Fatal("Could not convert endpoints object to protobuf.")
