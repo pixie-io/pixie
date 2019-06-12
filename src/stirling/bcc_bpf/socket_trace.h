@@ -1,7 +1,6 @@
 #pragma once
 
 #ifdef __cplusplus
-#include <algorithm>  // For std::min.
 #include <cstdint>
 #endif
 
@@ -63,19 +62,9 @@ struct socket_data_event_t {
     // A 0-based sequence number for this event on the connection.
     // Note that write/send have separate sequences than read/recv.
     uint64_t seq_num;
-    // The full size as processed by the syscalls, which might not fit in msg as indicated by
-    // msg_size > MAX_MSG_SIZE.
+    // The size of the actual data, which can be < MAX_MSG_SIZE. We use this to truncated msg field
+    // to minimize the amount of data being transferred.
     uint32_t msg_size;
   } attr;
   char msg[MAX_MSG_SIZE];
 } __attribute__((__packed__));
-
-#ifdef __cplusplus
-// TODO(yzhao): This is not needed inside socket_trace.c. Eventually we should export multiple
-// socket_data_event_t from one system call, of which the data exceeds the buffer size. In that
-// case, msg_size should be the available data size and will never exceeds MAX_MSG_SIZE, then this
-// can be removed.
-inline uint32_t MsgSize(const socket_data_event_t& event) {
-  return std::min<uint32_t>(event.attr.msg_size, MAX_MSG_SIZE);
-}
-#endif

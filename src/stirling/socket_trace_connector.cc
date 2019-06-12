@@ -343,7 +343,7 @@ void SocketTraceConnector::TransferMySQLEvent(const socket_data_event_t& event,
   r.Append<r.ColIndex("src_port")>(-1);
   r.Append<r.ColIndex("dst_addr")>(std::move(dst_sockaddr.ip));
   r.Append<r.ColIndex("dst_port")>(dst_sockaddr.port);
-  r.Append<r.ColIndex("body")>(std::string(event.msg, MsgSize(event)));
+  r.Append<r.ColIndex("body")>(std::string(event.msg, event.attr.msg_size));
 }
 
 }  // namespace stirling

@@ -330,20 +330,16 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
   event->attr.seq_num = conn_info->wr_seq_num;
   ++conn_info->wr_seq_num;
   event->attr.event_type = event_type;
-  // TODO(yzhao): This is the time is after write/send() finishes. If we want to capture the time
-  // before write/send() starts, we need to capture the time in probe_entry_write_send().
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
   event->attr.fd = (uint32_t)write_info->lookup_fd;
-  event->attr.msg_size = bytes_written;
 
-  // TODO(yzhao): Changing to bytes_written to int64_t would result into "unbounded memory access"
-  // when attaching kprobe.
-  const u32 buf_size = bytes_written < sizeof(event->msg) ? bytes_written : sizeof(event->msg);
-  bpf_probe_read(&event->msg, buf_size, (const void*) write_info->buf);
+  const uint32_t buf_size = bytes_written < sizeof(event->msg) ? bytes_written : sizeof(event->msg);
+  event->attr.msg_size = buf_size;
+  bpf_probe_read(&event->msg, buf_size, write_info->buf);
 
   // Write snooped arguments to perf ring buffer.
-  unsigned int size_to_submit = sizeof(struct socket_data_event_t);
+  const uint32_t size_to_submit = sizeof(event->attr) + buf_size;
   switch (conn_info->protocol) {
     case kProtocolHTTPResponse: socket_http_resp_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
@@ -431,14 +427,14 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
-  event->attr.fd = read_info->lookup_fd;
-  event->attr.msg_size = bytes_read;
+  event->attr.fd = (uint32_t)read_info->lookup_fd;
 
-  const u32 buf_size = bytes_read < sizeof(event->msg) ? bytes_read : sizeof(event->msg);
+  const uint32_t buf_size = bytes_read < sizeof(event->msg) ? bytes_read : sizeof(event->msg);
+  event->attr.msg_size = buf_size;
   bpf_probe_read(&event->msg, buf_size, buf);
 
-  // Write snooped arguments to perf ring buffer.
-  unsigned int size_to_submit = sizeof(struct socket_data_event_t);
+  // Write snooped arguments to perf ring buffer. Note that msg field is truncated.
+  const uint32_t size_to_submit = sizeof(event->attr) + buf_size;
   switch (conn_info->protocol) {
     case kProtocolHTTPResponse: socket_http_resp_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;

@@ -96,7 +96,7 @@ bool ParseRaw(const socket_data_event_t& event, HTTPTraceRecord* record) {
   HTTPTraceRecord& result = *record;
   ParseEventAttr(event, &result);
   result.message.type = SocketTraceEventType::kUnknown;
-  result.message.http_resp_body = std::string(event.msg, MsgSize(event));
+  result.message.http_resp_body = std::string(event.msg, event.attr.msg_size);
   // Rest of the fields remain at default values.
   return true;
 }
@@ -252,7 +252,7 @@ bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
 // order the events correctly.
 HTTPParser::ParseState HTTPParser::ParseResponse(const socket_data_event_t& event) {
   const uint64_t seq_num = event.attr.seq_num;
-  std::string_view buf(event.msg, MsgSize(event));
+  std::string_view buf(event.msg, event.attr.msg_size);
   if (absl::StartsWith(buf, "HTTP")) {
     if (!pico_wrapper_.ParseResponse(buf)) {
       return ParseState::kInvalid;
