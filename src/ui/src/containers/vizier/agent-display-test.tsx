@@ -18,7 +18,7 @@ describe('<AgentDisplay/> test', () => {
           data: {
             vizier: {
               agents: [
-                { state: 'HEALTHY', info: { id: '1', hostInfo: { hostname: 'test'} }, lastHeartbeatNs: { l: 1, h: 2} },
+                { state: 'HEALTHY', info: { id: '1', hostInfo: { hostname: 'test'} }, lastHeartbeatMs: 1, uptimeS: 1 },
               ],
             },
           },

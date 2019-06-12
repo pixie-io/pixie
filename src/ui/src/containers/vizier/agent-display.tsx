@@ -1,5 +1,6 @@
 import {ContentBox} from 'components/content-box/content-box';
 import { AutoSizedScrollableTable } from 'components/table/scrollable-table';
+import {distanceInWords, subSeconds} from 'date-fns';
 import gql from 'graphql-tag';
 import * as React from 'react';
 import { Query } from 'react-apollo';
@@ -15,10 +16,8 @@ export const GET_AGENTS = gql`
           hostname
         }
       }
-      lastHeartbeatNs {
-        l
-        h
-      }
+      lastHeartbeatMs
+      uptimeS
       state
     }
   }
@@ -38,7 +37,13 @@ const agentTableCols = [{
   resizable: true,
 }, {
   dataKey: 'heartbeat',
-  label: 'Heartbeat',
+  label: 'Last Heartbeat (s)',
+  flexGrow: 1,
+  width: 30,
+  resizable: true,
+}, {
+  dataKey: 'uptime',
+  label: 'Uptime',
   flexGrow: 1,
   width: 30,
   resizable: true,
@@ -66,16 +71,13 @@ export const AgentDisplay = ({onAgents}) => (
       if (loading) { return 'Loading...'; }
       if (error) { return `Error! ${error.message}`; }
       const agents = (data.vizier.agents);
+      const now = new Date();
       const mappedData = agents.map((agent) => {
-        // TODO(zasgar): We should change this to use large ints. Or better yet,
-        // in this case we should just name the times relative since clock skews
-        // can cause negative numbers. After these are relative, shipping as miroseconds
-        // in a 32-bit number should be ok.
-        const timeInMilliAsFloat = (agent.lastHeartbeatNs.h * (2.0 ** 32) + agent.lastHeartbeatNs.l) / 1e6;
         return {
           id: agent.info.id,
           hostname: agent.info.hostInfo.hostname,
-          heartbeat: (new Date().getTime() - new Date(timeInMilliAsFloat).getTime()) / 1000,
+          heartbeat: (agent.lastHeartbeatMs / 1000.0).toFixed(2),
+          uptime: distanceInWords(subSeconds(now, agent.uptimeS), now, {addSuffix: false}),
           state: agent.state,
         };
       });
