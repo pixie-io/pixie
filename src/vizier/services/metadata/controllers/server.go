@@ -15,14 +15,22 @@ import (
 type Server struct {
 	env          metadataenv.MetadataEnv
 	agentManager AgentManager
+	clock        utils.Clock
+}
+
+// NewServerWithClock creates a new server with a clock.
+func NewServerWithClock(env metadataenv.MetadataEnv, agtMgr AgentManager, clock utils.Clock) (*Server, error) {
+	return &Server{
+		env:          env,
+		agentManager: agtMgr,
+		clock:        clock,
+	}, nil
 }
 
 // NewServer creates GRPC handlers.
 func NewServer(env metadataenv.MetadataEnv, agtMgr AgentManager) (*Server, error) {
-	return &Server{
-		env:          env,
-		agentManager: agtMgr,
-	}, nil
+	clock := utils.SystemClock{}
+	return NewServerWithClock(env, agtMgr, clock)
 }
 
 // GetSchemas returns the schemas in the system.
@@ -42,6 +50,8 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequ
 		return nil, err
 	}
 
+	currentTime := s.clock.Now().UnixNano()
+
 	// Populate AgentInfoResponse.
 	agentResponses := make([]*metadatapb.AgentStatus, 0)
 	for _, agent := range agents {
@@ -56,8 +66,9 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequ
 					Hostname: agent.Hostname,
 				},
 			},
-			LastHeartbeatNs: agent.LastHeartbeatNS,
+			LastHeartbeatNs: currentTime - agent.LastHeartbeatNS,
 			State:           metadatapb.AGENT_STATE_HEALTHY,
+			CreateTimeNs:    agent.CreateTimeNS,
 		}
 		agentResponses = append(agentResponses, &resp)
 	}

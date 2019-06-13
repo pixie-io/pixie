@@ -3,11 +3,13 @@ package controllers_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
@@ -23,7 +25,8 @@ info {
     hostname: "test_host"
   }
 }
-last_heartbeat_ns: 10
+last_heartbeat_ns: 60
+create_time_ns: 5
 state: 1
 `
 
@@ -36,7 +39,8 @@ info {
     hostname: "another_host"
   }
 }
-last_heartbeat_ns: 20
+last_heartbeat_ns: 50
+create_time_ns: 0
 state: 1
 `
 
@@ -84,7 +88,9 @@ func TestGetAgentInfo(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := controllers.NewServer(env, mockAgtMgr)
+	clock := testingutils.NewTestClock(time.Unix(0, 70))
+
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, clock)
 
 	req := metadatapb.AgentInfoRequest{}
 

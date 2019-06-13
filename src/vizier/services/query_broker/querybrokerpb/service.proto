@@ -70,7 +70,7 @@ message AgentStatus {
   // Time in nanoseconds since the last heartbeat from the agent.
   int64 last_heartbeat_ns = 2;
   // The unix time in nanoseconds when this agent registered.
-  int64  agent_create_time_ns = 3;
+  int64  create_time_ns = 3;
   // The state of the Agent.
   AgentState state = 4;
 }

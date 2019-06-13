@@ -71,6 +71,8 @@ message AgentStatus {
     int64 last_heartbeat_ns = 2;
     // The state of the Agent.
     AgentState state = 3;
+    // Time in nanoseconds of when the agent was created.
+    int64 create_time_ns = 4;
 }
 
 // AgentInfo contains information about host and agent running on a given machine.

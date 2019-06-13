@@ -114,7 +114,7 @@ func (a *AgentStatusResolver) LastHeartBeatMs() float64 {
 func (a *AgentStatusResolver) UptimeS() float64 {
 	// TOOD(zasgar): Consider having the metadata service return relative time.
 	// Remove negatives.
-	hb := math.Max(float64(time.Now().UnixNano()-a.Status.AgentCreateTimeNs), 0.0)
+	hb := math.Max(float64(time.Now().UnixNano()-a.Status.CreateTimeNs), 0.0)
 	return hb / 1.0E9
 }
 
