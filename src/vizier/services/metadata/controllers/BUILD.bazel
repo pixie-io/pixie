@@ -21,6 +21,7 @@ go_library(
         "//src/vizier/services/metadata/metadataenv:go_default_library",
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "@com_github_coreos_etcd//clientv3:go_default_library",
+        "@com_github_coreos_etcd//clientv3/clientv3util:go_default_library",
         "@com_github_coreos_etcd//clientv3/concurrency:go_default_library",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_nats_io_go_nats//:go_default_library",

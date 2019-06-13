@@ -121,6 +121,11 @@ func createAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb 
 	if err != nil {
 		t.Fatal("Unable to add agentData to etcd.")
 	}
+
+	_, err = client.Put(context.Background(), controllers.GetHostnameAgentKey(info.HostInfo.Hostname), agentID)
+	if err != nil {
+		t.Fatal("Unable to add agentData to etcd.")
+	}
 }
 
 func TestCreateAgent(t *testing.T) {
@@ -156,6 +161,63 @@ func TestCreateAgent(t *testing.T) {
 	assert.Equal(t, nil, err)
 	assert.Equal(t, newAgentUUID, uid.String())
 	assert.Equal(t, "localhost", pb.HostInfo.Hostname)
+
+	resp, err = etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("localhost"))
+	if err != nil {
+		t.Fatal("Failed to get agent hostname.")
+	}
+	assert.Equal(t, 1, len(resp.Kvs))
+	assert.Equal(t, newAgentUUID, string(resp.Kvs[0].Value))
+}
+
+func TestCreateAgentWithExistingHostname(t *testing.T) {
+	etcdClient, agtMgr, cleanup := setupAgentManager(t)
+	defer cleanup()
+
+	u, err := uuid.FromString(newAgentUUID)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+	u2, err := uuid.FromString(existingAgentUUID)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+
+	agentInfo := &controllers.AgentInfo{
+		LastHeartbeatNS: 1,
+		CreateTimeNS:    4,
+		Hostname:        "testhost",
+		AgentID:         u,
+	}
+	err = agtMgr.CreateAgent(agentInfo)
+	assert.Nil(t, err)
+
+	// Check that correct agent info is in etcd.
+	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
+	if err != nil {
+		t.Fatal("Failed to get agent.")
+	}
+	assert.Equal(t, 1, len(resp.Kvs))
+	pb := &data.AgentData{}
+	proto.Unmarshal(resp.Kvs[0].Value, pb)
+
+	assert.Equal(t, int64(clockNowNS), pb.LastHeartbeatNS)
+	assert.Equal(t, int64(clockNowNS), pb.CreateTimeNS)
+	uid, err := utils.UUIDFromProto(pb.AgentID)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, newAgentUUID, uid.String())
+	assert.Equal(t, "testhost", pb.HostInfo.Hostname)
+
+	resp, err = etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("testhost"))
+	if err != nil {
+		t.Fatal("Failed to get agent hostname.")
+	}
+	assert.Equal(t, 1, len(resp.Kvs))
+	assert.Equal(t, newAgentUUID, string(resp.Kvs[0].Value))
+
+	// Check that previous agent has been deleted.
+	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u2))
+	assert.Equal(t, 0, len(resp.Kvs))
 }
 
 func TestCreateExistingAgent(t *testing.T) {
@@ -233,6 +295,10 @@ func TestUpdateAgentState(t *testing.T) {
 	assert.Equal(t, 1, len(resp.Kvs))
 
 	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentKey(unhealthyAgentUUID))
+	// Agent should no longer exist in etcd.
+	assert.Equal(t, 0, len(resp.Kvs))
+
+	resp, err = etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("anotherhost"))
 	// Agent should no longer exist in etcd.
 	assert.Equal(t, 0, len(resp.Kvs))
 }

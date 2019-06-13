@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/clientv3/clientv3util"
 	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/gogo/protobuf/proto"
 	uuid "github.com/satori/go.uuid"
@@ -80,6 +81,11 @@ func GetAgentKey(agentID string) string {
 	return "/agent/" + agentID
 }
 
+// GetHostnameAgentKey gets the etcd key for the hostname's agent.
+func GetHostnameAgentKey(hostname string) string {
+	return "/hostname/" + hostname + "/agent"
+}
+
 func updateAgentData(agentID uuid.UUID, data *data.AgentData, client *clientv3.Client) error {
 	i, err := data.Marshal()
 	if err != nil {
@@ -115,8 +121,14 @@ func (m *AgentManagerImpl) CreateAgent(info *AgentInfo) error {
 		return errors.New("Agent already exists")
 	}
 
-	// TODO(michelle): PL-551 If an agent already exists at the given hostname, assume
-	// the old one has died and delete it.
+	// Check there's an existing agent for the hostname.
+	resp, err = m.client.Get(ctx, GetHostnameAgentKey(info.Hostname))
+	if err != nil {
+		log.WithError(err).Fatal("Failed to execute etcd Get")
+	} else if len(resp.Kvs) != 0 {
+		// Another agent already exists for this hostname. Delete it.
+		m.deleteAgent(ctx, string(resp.Kvs[0].Value), info.Hostname, ss)
+	}
 
 	idPb, err := utils.ProtoFromUUID(&info.AgentID)
 	if err != nil {
@@ -130,11 +142,20 @@ func (m *AgentManagerImpl) CreateAgent(info *AgentInfo) error {
 		CreateTimeNS:    m.clock.Now().UnixNano(),
 		LastHeartbeatNS: m.clock.Now().UnixNano(),
 	}
+	i, err := infoPb.Marshal()
+	if err != nil {
+		return errors.New("Unable to marshal agentData pb")
+	}
 
 	mu := concurrency.NewMutex(ss, GetAgentKeyFromUUID(info.AgentID))
 	mu.Lock(ctx)
 	defer mu.Unlock(ctx)
-	err = updateAgentData(info.AgentID, infoPb, m.client)
+
+	hostnameDNE := clientv3util.KeyMissing(GetHostnameAgentKey(info.Hostname))
+	createHostname := clientv3.OpPut(GetHostnameAgentKey(info.Hostname), info.AgentID.String())
+	createAgent := clientv3.OpPut(GetAgentKeyFromUUID(info.AgentID), string(i))
+
+	_, err = m.client.Txn(ctx).If(hostnameDNE).Then(createHostname, createAgent).Commit()
 	if err != nil {
 		log.WithError(err).Fatal("Could not update agent data in etcd")
 	}
@@ -186,14 +207,21 @@ func (m *AgentManagerImpl) UpdateAgent(info *AgentInfo) error {
 	return nil
 }
 
-func (m *AgentManagerImpl) deleteAgent(ctx context.Context, agentKey string, ss *concurrency.Session) error {
-	mu := concurrency.NewMutex(ss, agentKey)
+func (m *AgentManagerImpl) deleteAgent(ctx context.Context, agentID string, hostname string, ss *concurrency.Session) error {
+	mu := concurrency.NewMutex(ss, GetAgentKey(agentID))
 	mu.Lock(ctx)
+
 	defer mu.Unlock(ctx)
-	_, err := m.client.Delete(ctx, agentKey)
+
+	_, err := m.client.Delete(ctx, GetAgentKey(agentID))
 	if err != nil {
 		return err
 	}
+	hostnameAgentMap := clientv3.Compare(clientv3.Value(GetHostnameAgentKey(hostname)), "=", agentID)
+	delHostname := clientv3.OpDelete(GetHostnameAgentKey(hostname))
+
+	_, err = m.client.Txn(ctx).If(hostnameAgentMap).Then(delHostname).Commit()
+
 	return nil
 }
 
@@ -224,7 +252,11 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 		proto.Unmarshal(kv.Value, pb)
 
 		if currentTime-pb.LastHeartbeatNS > AgentExpirationTimeout {
-			err := m.deleteAgent(ctx, string(kv.Key), ss)
+			uid, err := utils.UUIDFromProto(pb.AgentID)
+			if err != nil {
+				log.WithError(err).Fatal("Could not convert UUID to proto")
+			}
+			err = m.deleteAgent(ctx, uid.String(), pb.HostInfo.Hostname, ss)
 			if err != nil {
 				log.WithError(err).Fatal("Failed to delete agent from etcd")
 			}
