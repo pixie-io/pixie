@@ -14,7 +14,7 @@ func init() {
 
 // NewAuthClient creates a new auth RPC client stub.
 func NewAuthClient() (authpb.AuthServiceClient, error) {
-	dialOpts, err := common.DefaultClientDialOpts()
+	dialOpts, err := common.GetGRPCClientDialOpts()
 	if err != nil {
 		return nil, err
 	}

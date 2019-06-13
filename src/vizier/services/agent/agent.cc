@@ -19,11 +19,16 @@ DEFINE_string(query_broker_addr,
                                     "vizier-query-broker.pl.svc.cluster.local:50300"),
               "The host address of Query Broker");
 
-DEFINE_string(tls_cert, gflags::StringFromEnv("PL_TLS_CERT", "../../services/certs/client.crt"),
-              "The TLS Cert");
+DEFINE_string(client_tls_cert,
+              gflags::StringFromEnv("PL_CLIENT_TLS_CERT", "../../services/certs/client.crt"),
+              "The GRPC client TLS cert");
 
-DEFINE_string(tls_key, gflags::StringFromEnv("PL_TLS_KEY", "../../services/certs/client.key"),
-              "The TLS Key");
+DEFINE_string(client_tls_key,
+              gflags::StringFromEnv("PL_CLIENT_TLS_KEY", "../../services/certs/client.key"),
+              "The GRPC client TLS key");
+
+DEFINE_string(tls_ca_crt, gflags::StringFromEnv("PL_TLS_CA_CERT", "../../services/certs/ca.crt"),
+              "The GRPC CA cert");
 
 DEFINE_bool(disable_SSL, gflags::BoolFromEnv("PL_DISABLE_SSL", false), "Disable GRPC SSL");
 
@@ -40,8 +45,9 @@ int main(int argc, char** argv) {
   auto channel_creds = grpc::InsecureChannelCredentials();
   if (!FLAGS_disable_SSL) {
     auto ssl_opts = grpc::SslCredentialsOptions();
-    ssl_opts.pem_root_certs = pl::FileContentsOrDie(FLAGS_tls_cert);
-    ssl_opts.pem_private_key = pl::FileContentsOrDie(FLAGS_tls_key);
+    ssl_opts.pem_root_certs = pl::FileContentsOrDie(FLAGS_tls_ca_crt);
+    ssl_opts.pem_cert_chain = pl::FileContentsOrDie(FLAGS_client_tls_cert);
+    ssl_opts.pem_private_key = pl::FileContentsOrDie(FLAGS_client_tls_key);
     channel_creds = grpc::SslCredentials(ssl_opts);
   }
 

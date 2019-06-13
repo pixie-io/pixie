@@ -25,24 +25,30 @@ spec:
             secretKeyRef:
               name: pl-app-secrets
               key: jwt-signing-key
-        - name: PL_TLS_CERT
-          value: /certs/tls.crt
-        - name: PL_TLS_KEY
-          value: /certs/tls.key
-           # TODO(zasgar): Remove this.
+        - name: PL_SERVER_TLS_CERT
+          value: /certs/server.crt
+        - name: PL_SERVER_TLS_KEY
+          value: /certs/server.key
+        - name: PL_CLIENT_TLS_CERT
+          value: /certs/client.crt
+        - name: PL_CLIENT_TLS_KEY
+          value: /certs/client.key
+        - name: PL_TLS_CA_CERT
+          value: /certs/ca.crt
+        # TODO(zasgar): Remove this.
         - name: PL_EXTERNAL_ADDR
           value: {{.ExternalAddress}}
         - name: PL_DISABLE_GRPC_AUTH
           value: "true"
         - name: PL_DISABLE_SSL
-          value: "true"
+          value: "false"
         volumeMounts:
         - name: certs
           mountPath: /certs
       volumes:
         - name: certs
           secret:
-            secretName: custom-tls-cert
+            secretName: grpc-tls-cert
 
 ---
 apiVersion: v1

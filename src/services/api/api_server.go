@@ -15,8 +15,10 @@ func main() {
 	log.WithField("service", "api-service").Info("Starting service")
 
 	common.SetupService("api-service", 50200)
+	common.SetupGRPCClientFlags()
 	common.PostFlagSetupAndParse()
 	common.CheckServiceFlags()
+	common.CheckGRPCClientFlags()
 	common.SetupServiceLogging()
 
 	env, err := apienv.New()

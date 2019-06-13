@@ -23,12 +23,14 @@ spec:
         env:
         - name: PL_VIZIER_ADDR
           value: vizier.pl.svc.cluster.local:40000
-        - name: PL_TLS_CERT
-          value: /certs/tls.crt
-        - name: PL_TLS_KEY
-          value: /certs/tls.key
+        - name: PL_CLIENT_TLS_CERT
+          value: /certs/client.crt
+        - name: PL_CLIENT_TLS_KEY
+          value: /certs/client.key
+        - name: PL_TLS_CA_CERT
+          value: /certs/ca.crt
         - name: PL_DISABLE_SSL
-          value: "true"
+          value: "false"
         resources:
           limits:
             memory: 256Mi
@@ -72,4 +74,4 @@ spec:
             type: DirectoryOrCreate
       - name: certs
         secret:
-            secretName: custom-tls-cert
+            secretName: grpc-tls-cert

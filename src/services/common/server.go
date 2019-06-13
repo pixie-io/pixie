@@ -68,21 +68,10 @@ func (s *PLServer) serveHTTP() {
 	var tlsConfig *tls.Config
 
 	if sslEnabled {
-		tlsCert := viper.GetString("tls_cert")
-		tlsKey := viper.GetString("tls_key")
-		log.WithFields(log.Fields{
-			"tlsCertFile": tlsCert,
-			"tlsKeyFile":  tlsKey,
-		}).Info("Loading HTTP TLS certs")
-
-		pair, err := tls.LoadX509KeyPair(tlsCert, tlsKey)
+		var err error
+		tlsConfig, err = DefaultServerTLSConfig()
 		if err != nil {
-			log.WithError(err).Fatal("Failed to load certs.")
-		}
-
-		tlsConfig = &tls.Config{
-			Certificates: []tls.Certificate{pair},
-			NextProtos:   []string{"h2"},
+			log.WithError(err).Fatal("Failed to load default server TLS config")
 		}
 	}
 

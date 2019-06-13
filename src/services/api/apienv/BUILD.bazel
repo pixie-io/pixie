@@ -6,6 +6,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/services/api/apienv",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/services/common:go_default_library",
         "//src/services/common/env:go_default_library",
         "//src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto",
         "@com_github_spf13_pflag//:go_default_library",

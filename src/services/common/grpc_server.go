@@ -3,10 +3,10 @@ package common
 import (
 	"time"
 
-	"github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
-	"github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
+	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
@@ -51,19 +51,11 @@ func createGRPCAuthFunc(env commonenv.Env) func(context.Context) (context.Contex
 func CreateGRPCServer(env commonenv.Env) *grpc.Server {
 	var tlsOpts grpc.ServerOption
 	if !viper.GetBool("disable_ssl") {
-		// Create the TLS credentials
-		tlsCert := viper.GetString("tls_cert")
-		tlsKey := viper.GetString("tls_key")
-		log.WithFields(log.Fields{
-			"tlsCertFile": tlsCert,
-			"tlsKeyFile":  tlsKey,
-		}).Info("Loading GRPC TLS certs")
-
-		creds, err := credentials.NewServerTLSFromFile(tlsCert, tlsKey)
+		tlsConfig, err := DefaultServerTLSConfig()
 		if err != nil {
-			log.WithError(err).Errorf("Could not load TLS config")
-			return nil
+			log.WithError(err).Fatal("Failed to load default server TLS config")
 		}
+		creds := credentials.NewTLS(tlsConfig)
 		tlsOpts = grpc.Creds(creds)
 	}
 

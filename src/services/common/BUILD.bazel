@@ -3,11 +3,11 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 go_library(
     name = "go_default_library",
     srcs = [
-        "dial_options.go",
         "grpc_server.go",
         "logging.go",
         "server.go",
         "service_flags.go",
+        "tls.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/services/common",
     visibility = ["//visibility:public"],

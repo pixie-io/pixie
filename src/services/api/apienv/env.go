@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"pixielabs.ai/pixielabs/src/services/common"
 	"pixielabs.ai/pixielabs/src/services/common/env"
 	qbpb "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
@@ -29,9 +30,12 @@ type Impl struct {
 
 // New creates a new api env.
 func New() (*Impl, error) {
-	conn, err := grpc.Dial(viper.GetString("query_broker_grpc_addr"),
-		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(20000000)),
-		grpc.WithInsecure())
+	dialOpts, err := common.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, err
+	}
+	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(20000000)))
+	conn, err := grpc.Dial(viper.GetString("query_broker_grpc_addr"), dialOpts...)
 	if err != nil {
 		return nil, err
 	}

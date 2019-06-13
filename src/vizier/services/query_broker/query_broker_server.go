@@ -21,8 +21,10 @@ func main() {
 	log.WithField("service", "query-broker").Info("Starting service")
 
 	common.SetupService("query-broker", 50300)
+	common.SetupGRPCClientFlags()
 	common.PostFlagSetupAndParse()
 	common.CheckServiceFlags()
+	common.CheckGRPCClientFlags()
 	common.SetupServiceLogging()
 
 	env, err := querybrokerenv.New()
@@ -33,7 +35,7 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	// Connect to metadata service.
-	dialOpts, err := common.DefaultClientDialOpts()
+	dialOpts, err := common.GetGRPCClientDialOpts()
 	if err != nil {
 		log.WithError(err).Fatal("Could not get dial opts.")
 	}
