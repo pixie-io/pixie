@@ -6,6 +6,7 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/carnot/planpb/plan.proto";
 import "src/common/uuid/proto/uuid.proto";
 import "src/table_store/proto/schema.proto";
+import "src/shared/k8s/metadatapb/metadata.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/messages/messagespb;messages";
 
@@ -51,11 +52,7 @@ message UpdateAgentRequest {
 message UpdateAgentResponse {}
 
 message AgentUpdateInfo {
-    message ContainerPids {
-        string container_id = 1; // docker container running on the machine
-        repeated int64 pids = 2;
-    }
-    repeated ContainerPids container_to_pids = 1;
+    repeated pl.shared.k8s.metadatapb.ContainerInfo containers = 1;
     repeated pl.table_store.schemapb.Relation relations = 2;
 }
 
@@ -66,12 +63,15 @@ message Heartbeat {
                              ];
     // The current unix time in ns on the machine.
     int64 time = 2;
+    AgentUpdateInfo update_info = 3;
+    int64 sequence_number = 4;
 }
 
 // Response sent for a successful heart beat.
 message HeartbeatAck {
     // The current unix time in ns on the machine.
     int64 time = 1;
+    int64 sequence_number = 2;
 }
 
 // Response sent for a failed heart beat.

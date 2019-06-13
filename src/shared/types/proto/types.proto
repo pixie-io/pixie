@@ -33,3 +33,9 @@ enum PatternType {
    METRIC_COUNTER = 300;
    METRIC_GAUGE = 301;
 }
+
+// Represents a 128-bit int.
+message int128 {
+  int64 low = 1;
+  int64 high = 2;
+}

@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package pl.shared.k8s.metadatapb;
 
+import "src/shared/types/proto/types.proto";
+
 // This file is mostly copied from
 // github.com/kubernetes/api/blob/e480447a07fd8adfbff8abea81c1d2dcd6af906e/core/v1/generated.proto and
 // github.com/kubernetes/apimachinery/blob/bca0c154df821d07920394c2d6831112dc1bcdec/pkg/apis/meta/v1/generated.proto
@@ -288,4 +290,43 @@ message ServicePort {
 
   // The port on each node on which this service is exposed when type=NodePort or LoadBalancer.
   int32 node_port = 4;
+}
+
+// ContainerInfo contains info for a container running on a pod.
+message ContainerInfo {
+  // Name of the container.
+  string name = 1;
+
+  // UID is an identifier that is unique in time and space value for the container.
+  string uid = 2;
+
+  // The server time in nanoseconds when the container started.
+  int64 start_timestamp_ns = 3;
+
+  // The time in nanoseconds when the container stopped.
+  int64 stop_timestamp_ns = 4;
+
+  // The identifier of the pod that the container belongs to.
+  string pod_uid =  5;
+
+  // The processes running on the container.
+  repeated ProcessInfo processes = 6;
+}
+
+// ProcessInfo contains info for a process running in a container.
+message ProcessInfo {
+  // Name of the process.
+  string name = 1;
+
+  pl.types.int128 upid = 2;
+
+  int32 pid = 3;
+
+  // The server time in nanoseconds when the process started.
+  int64 start_timestamp_ns = 4;
+
+  // The time in nanoseconds when the process stopped.
+  int64 stop_timestamp_ns = 5;
+
+  string process_args = 6;
 }
