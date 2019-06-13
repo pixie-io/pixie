@@ -67,11 +67,34 @@ message Heartbeat {
     int64 sequence_number = 4;
 }
 
+enum MetadataResourceType {
+    METADATA_RESOURCE_TYPE_UNKNOWN = 0;
+    POD = 1;
+    SERVICE = 2;
+}
+
+message MetadataUpdateInfo {
+    message ResourceUpdate {
+        // The resource's unique identifier.
+        string uid = 1;
+
+        // The resource's name.
+        string name = 2;
+
+        // The type of the resource.
+        MetadataResourceType type = 3;
+    }
+    repeated ResourceUpdate updates = 4;
+}
+
 // Response sent for a successful heart beat.
 message HeartbeatAck {
     // The current unix time in ns on the machine.
     int64 time = 1;
+
     int64 sequence_number = 2;
+
+    MetadataUpdateInfo update_info = 3;
 }
 
 // Response sent for a failed heart beat.
