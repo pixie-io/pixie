@@ -5,8 +5,10 @@
 #include <map>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
+#include "absl/base/macros.h"
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_bpf/socket_trace.h"
 #include "src/stirling/socket_connection.h"
@@ -29,6 +31,7 @@ inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
 
 struct HTTPMessage {
   bool is_complete = false;
+  bool is_header_complete = false;
 
   // Only meaningful is is_chunked is true.
   phr_chunked_decoder chunk_decoder = {};
@@ -96,8 +99,17 @@ HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters);
 bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
                          const HTTPHeaderFilter& filter);
 
+enum class ParseState {
+  kUnknown,
+  // The data is invalid.
+  kInvalid,
+  // The data has been combined with an incomplete HTTP message, but more data is needed.
+  kNeedsMoreData,
+  kSuccess,
+};
+
 struct PicoHTTPParserWrapper {
-  bool ParseResponse(std::string_view buf);
+  ParseState ParseResponse(std::string_view buf);
   bool WriteResponse(HTTPMessage* result);
 
   // For parsing HTTP responses.
@@ -120,20 +132,27 @@ struct PicoHTTPParserWrapper {
  */
 class HTTPParser {
  public:
-  enum class ParseState {
-    kUnknown,
-    // The data is invalid.
-    kInvalid,
-    // The data has been combined with an incomplete HTTP message, but more data is needed.
-    kNeedsMoreData,
-    kSuccess,
-  };
+  /**
+   * @brief Append a sequence message to the internal buffer, ts_ns stands for time stamp in
+   * nanosecond.
+   *
+   * @return False if the message is not appended.
+   */
+  bool Append(uint64_t seq_num, uint64_t ts_ns, std::string_view msg);
 
+  // TODO(yzhao): Remove this function.
   /**
    * @brief Parses a possibly incomplete data chunk of a HTTP message, and combines it with any
    * previous partial messages.
    */
   ParseState ParseResponse(const socket_data_event_t& event);
+
+  /**
+   * @brief Parses the accumulated text in the internal buffer, updates state and writes resultant
+   * HTTPMessage into appropriate internal data structure for extraction.
+   */
+  std::pair<uint64_t, uint64_t> ParseResponses();
+  ParseState parse_state() const { return parse_state_; }
   void Close();
 
   /**
@@ -142,11 +161,39 @@ class HTTPParser {
   std::vector<HTTPMessage> ExtractHTTPMessages();
 
  private:
+  ParseState parse_state_ = ParseState::kUnknown;
+
+  uint64_t GetSeqNum(size_t pos) const;
+  // Returns the seq numbers being removed.
+  std::pair<uint64_t, uint64_t> RemovePrefix(size_t size);
+  std::string Combine() const;
+
+  uint64_t seq_begin_ = 0;
+  uint64_t seq_end_ = 0;
+  // The total size of all strings in msgs_. Used for reserve memory space for concatenation.
+  size_t msgs_size_ = 0;
+  std::vector<uint64_t> ts_nses_;
+  std::vector<std::string_view> msgs_;
+
   PicoHTTPParserWrapper pico_wrapper_;
   std::vector<HTTPMessage> msgs_complete_;
   // Map from an incomplete HTTPMessage's last sequence number to the partial message itself.
   std::map<uint64_t, HTTPMessage> msgs_incomplete_;
 };
+
+// Kept for exposing Parse() for testing.
+struct SeqHTTPMessage : public HTTPMessage {
+  size_t bytes_begin;
+  size_t bytes_end;
+};
+
+/*
+ * @brief Parses the input string as a sequence of HTTP responses, writes the messages in result.
+ *
+ * @return ParseState To indicate the final state of the parsing. The second return value is the
+ * bytes count of the parsed data.
+ */
+std::pair<ParseState, size_t> Parse(std::string_view buf, std::vector<SeqHTTPMessage>* result);
 
 }  // namespace stirling
 }  // namespace pl

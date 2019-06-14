@@ -142,7 +142,7 @@ class SourceConnector : public NotCopyable {
    */
   void InitClockRealTimeOffset();
 
-  uint64_t real_time_offset_;
+  uint64_t real_time_offset_ = 0;
 
  protected:
   // Example usage:

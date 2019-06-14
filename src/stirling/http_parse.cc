@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <picohttpparser.h>
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -158,7 +159,7 @@ bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
   return true;
 }
 
-bool PicoHTTPParserWrapper::ParseResponse(std::string_view buf) {
+ParseState PicoHTTPParserWrapper::ParseResponse(std::string_view buf) {
   // Reset header number to the size of the buffer.
   num_headers = kMaxNumHeaders;
   const int retval = phr_parse_response(buf.data(), buf.size(), &minor_version, &status, &msg,
@@ -166,32 +167,48 @@ bool PicoHTTPParserWrapper::ParseResponse(std::string_view buf) {
   if (retval >= 0) {
     unparsed_data = buf.substr(retval);
     header_map = GetHttpHeadersMap(headers, num_headers);
+    return ParseState::kSuccess;
   }
-  return retval >= 0;
+  if (retval == -2) {
+    return ParseState::kNeedsMoreData;
+  }
+  return ParseState::kInvalid;
 }
 
 namespace {
 
 // Mutates the input data.
-bool ParseChunk(std::string data, HTTPMessage* result) {
-  char* buf = const_cast<char*>(data.data());
-  size_t buf_size = data.size();
+ParseState ParseChunk(std::string_view* data, HTTPMessage* result) {
+  char* buf = const_cast<char*>(data->data());
+  size_t buf_size = data->size();
   ssize_t retval = phr_decode_chunked(&result->chunk_decoder, buf, &buf_size);
   if (retval == -1) {
     // Parse failed.
-    return false;
+    return ParseState::kInvalid;
   } else if (retval >= 0) {
     // Complete message.
     result->is_complete = true;
     result->http_resp_body.append(buf, buf_size);
-    return true;
+    *data = std::string_view(buf + buf_size, retval);
+    // Pico claims that the last \r\n are unparsed, manually remove them.
+    while (!data->empty() && (data->front() == '\r' || data->front() == '\n')) {
+      data->remove_prefix(1);
+    }
+    return ParseState::kSuccess;
   } else if (retval == -2) {
     // Incomplete message.
     result->is_complete = false;
     result->http_resp_body.append(buf, buf_size);
-    return true;
+    return ParseState::kNeedsMoreData;
   }
-  return false;
+  return ParseState::kUnknown;
+}
+
+// Mutates the input data.
+bool ParseChunk(std::string data, HTTPMessage* result) {
+  std::string_view buf = data;
+  ParseState s = ParseChunk(&buf, result);
+  return s == ParseState::kSuccess || s == ParseState::kNeedsMoreData;
 }
 
 }  // namespace
@@ -213,24 +230,25 @@ bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
     if (static_cast<size_t>(len) <= unparsed_data.size()) {
       result->is_complete = true;
       result->http_resp_body = unparsed_data.substr(0, len);
-      if (static_cast<size_t>(len) < unparsed_data.size()) {
-        LOG(WARNING) << "Have data left unparsed: " << unparsed_data.substr(len);
-      }
     } else {
       result->is_complete = false;
       result->http_resp_body.reserve(len);
       result->content_length = len;
       result->http_resp_body = unparsed_data;
     }
+    unparsed_data.remove_prefix(std::min(static_cast<size_t>(len), unparsed_data.size()));
     return true;
   }
 
   const auto transfer_encoding_iter = result->http_headers.find(http_headers::kTransferEncoding);
   if (transfer_encoding_iter != result->http_headers.end() &&
       transfer_encoding_iter->second == "chunked") {
+    // TODO(yzhao): Change to set default value in appending record batch instead of data for
+    // parsing.
     result->http_resp_body.clear();
     result->is_chunked = true;
-    if (!ParseChunk(std::string(unparsed_data), result)) {
+    ParseState s = ParseChunk(&unparsed_data, result);
+    if (s != ParseState::kSuccess && s != ParseState::kNeedsMoreData) {
       return false;
     }
     return true;
@@ -242,7 +260,11 @@ bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
   // TODO(yzhao): For now we just accumulate messages, let probe_close() submit a message to
   // perf buffer, so that we can terminate such messages.
   if (!unparsed_data.empty()) {
+    // TODO(yzhao): This assignment overwrites the default value "-". We should move the setting of
+    // default value outside of HTTP message parsing and into appending HTTP messages to record
+    // batch.
     result->http_resp_body = unparsed_data;
+    unparsed_data.remove_prefix(unparsed_data.size());
   }
   return true;
 }
@@ -250,25 +272,32 @@ bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
 // HTTP messages are sequentially written to the file descriptor, and their sequence numbers are
 // obtained accordingly. We rely on the consecutive sequence numbers to detect missing events and
 // order the events correctly.
-HTTPParser::ParseState HTTPParser::ParseResponse(const socket_data_event_t& event) {
+ParseState HTTPParser::ParseResponse(const socket_data_event_t& event) {
   const uint64_t seq_num = event.attr.seq_num;
   std::string_view buf(event.msg, event.attr.msg_size);
   if (absl::StartsWith(buf, "HTTP")) {
-    if (!pico_wrapper_.ParseResponse(buf)) {
-      return ParseState::kInvalid;
-    }
     HTTPMessage message;
-    if (!pico_wrapper_.WriteResponse(&message)) {
-      return ParseState::kInvalid;
-    }
-    // The message's time stamp is from its first event.
-    message.timestamp_ns = event.attr.timestamp_ns;
-    if (message.is_complete) {
-      msgs_complete_.push_back(std::move(message));
-      return ParseState::kSuccess;
-    } else {
-      msgs_incomplete_[seq_num] = std::move(message);
-      return ParseState::kNeedsMoreData;
+    switch (pico_wrapper_.ParseResponse(buf)) {
+      case ParseState::kSuccess:
+        message.is_header_complete = true;
+        if (!pico_wrapper_.WriteResponse(&message)) {
+          return ParseState::kInvalid;
+        }
+        // The message's time stamp is from its first event.
+        message.timestamp_ns = event.attr.timestamp_ns;
+        if (message.is_complete) {
+          msgs_complete_.push_back(std::move(message));
+          return ParseState::kSuccess;
+        } else {
+          msgs_incomplete_[seq_num] = std::move(message);
+          return ParseState::kNeedsMoreData;
+        }
+      case ParseState::kNeedsMoreData:
+        msgs_incomplete_[seq_num] = std::move(message);
+        return ParseState::kNeedsMoreData;
+      case ParseState::kInvalid:
+      case ParseState::kUnknown:
+        return ParseState::kInvalid;
     }
   }
   if (seq_num == 0) {
@@ -310,17 +339,130 @@ HTTPParser::ParseState HTTPParser::ParseResponse(const socket_data_event_t& even
   }
 }
 
+std::pair<uint64_t, uint64_t> HTTPParser::ParseResponses() {
+  std::string buf = Combine();
+  std::vector<SeqHTTPMessage> seq_msgs;
+  std::pair<ParseState, size_t> parse_result = Parse(buf, &seq_msgs);
+  for (auto& msg : seq_msgs) {
+    const uint64_t seq_num = GetSeqNum(msg.bytes_begin);
+    DCHECK(seq_num >= seq_begin_ && seq_num < seq_end_) << absl::Substitute(
+        "The sequence number must be in valid range of [$0, $1)", seq_begin_, seq_end_);
+    msg.timestamp_ns = ts_nses_[seq_num - seq_begin_];
+    if (msg.is_complete) {
+      msgs_complete_.push_back(std::move(msg));
+    } else {
+      msgs_incomplete_.emplace(GetSeqNum(msg.bytes_end - 1), std::move(msg));
+    }
+  }
+  parse_state_ = parse_result.first;
+  // Remove all processed data afterwards. This has to be after processing the messages, as the
+  // messages are needed to get the correct sequence number.
+  // TODO(yzhao): Recover from parse failure. Maybe looking for "HTTP" and restart parsing.
+  return RemovePrefix(parse_result.second);
+}
+
 std::vector<HTTPMessage> HTTPParser::ExtractHTTPMessages() { return std::move(msgs_complete_); }
 
 void HTTPParser::Close() {
   for (auto& [last_seq_num, message] : msgs_incomplete_) {
     PL_UNUSED(last_seq_num);
-    if (!message.is_chunked && message.content_length == -1) {
+    if (!message.is_chunked && message.content_length == -1 && message.is_header_complete) {
       message.is_complete = true;
       msgs_complete_.push_back(std::move(message));
     }
   }
   msgs_incomplete_.clear();
+}
+
+uint64_t HTTPParser::GetSeqNum(size_t pos) const {
+  uint64_t curr_seq = seq_begin_;
+  uint64_t size = 0;
+  for (auto msg : msgs_) {
+    size += msg.size();
+    if (pos < size) {
+      return curr_seq;
+    }
+    ++curr_seq;
+  }
+  return 0;
+}
+
+std::pair<uint64_t, uint64_t> HTTPParser::RemovePrefix(size_t size) {
+  DCHECK(size <= msgs_size_) << "Prefix size is too long, maximal size: " << msgs_size_
+                             << " got: " << size;
+  const uint64_t begin = seq_begin_;
+  msgs_size_ -= size;
+  while (size > 0 && !msgs_.empty()) {
+    const size_t l = std::min(size, msgs_.front().size());
+    msgs_.front().remove_prefix(l);
+    if (msgs_.front().empty()) {
+      msgs_.erase(msgs_.begin());
+      ts_nses_.erase(ts_nses_.begin());
+      ++seq_begin_;
+    }
+    size -= l;
+  }
+  return std::make_pair(begin, seq_begin_);
+}
+
+bool HTTPParser::Append(uint64_t seq_num, uint64_t ts_ns, std::string_view msg) {
+  // TODO(yzhao): Simplify this by resetting parser appropriately.
+  if (seq_num >= seq_begin_ && seq_num < seq_end_) {
+    // Skip duplicate events.
+    return true;
+  }
+  if (seq_begin_ >= seq_end_) {
+    seq_begin_ = seq_num;
+    seq_end_ = seq_num + 1;
+  } else if (seq_num != seq_end_) {
+    return false;
+  } else {
+    ++seq_end_;
+  }
+  msgs_.push_back(msg);
+  ts_nses_.push_back(ts_ns);
+  msgs_size_ += msg.size();
+  return true;
+}
+
+std::string HTTPParser::Combine() const {
+  std::string result;
+  result.reserve(msgs_size_);
+  for (auto msg : msgs_) {
+    result.append(msg);
+  }
+  return result;
+}
+
+std::pair<ParseState, size_t> Parse(std::string_view buf, std::vector<SeqHTTPMessage>* result) {
+  PicoHTTPParserWrapper pico;
+  const size_t buf_size = buf.size();
+  while (!buf.empty()) {
+    const ParseState s = pico.ParseResponse(buf);
+    switch (s) {
+      case ParseState::kSuccess:
+      case ParseState::kUnknown:
+        break;
+      case ParseState::kNeedsMoreData:
+        return {s, buf_size - buf.size()};
+      case ParseState::kInvalid:
+        // TODO(yzhao): If parse failed, just assume all are processed. This should be changed so
+        // that we can restart parsing from a later position in the bytes stream.
+        return {s, buf_size};
+    }
+    SeqHTTPMessage message;
+    if (s == ParseState::kSuccess) {
+      message.is_header_complete = true;
+    }
+    if (!pico.WriteResponse(&message)) {
+      return {ParseState::kInvalid, buf_size - pico.unparsed_data.size()};
+    }
+    message.bytes_begin = buf_size - buf.size();
+    message.bytes_end = buf_size - pico.unparsed_data.size();
+    buf = pico.unparsed_data;
+    result->push_back(std::move(message));
+  }
+  return {ParseState::kSuccess, buf_size - pico.unparsed_data.size()};
 }
 
 }  // namespace stirling

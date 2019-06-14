@@ -136,6 +136,7 @@ class SocketTraceConnector : public SourceConnector {
   static void HandleProbeLoss(void* cb_cookie, uint64_t lost);
 
   // Places the event into a stream buffer to deal with reorderings.
+  FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   void AcceptEvent(socket_data_event_t event);
 
   // Transfers the data from stream buffers (from AcceptEvent()) to record_batch.

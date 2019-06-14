@@ -231,10 +231,13 @@ void SocketTraceConnector::TransferHTTPResponseStreams(
 
     // Parse all recorded events.
     for (const auto& [seq_num, event] : events) {
-      if (parser.ParseResponse(event) != HTTPParser::ParseState::kUnknown) {
-        seq_num_to_remove.push_back(seq_num);
+      const bool succeeded = parser.Append(seq_num, event.attr.timestamp_ns + ClockRealTimeOffset(),
+                                           std::string_view(event.msg, event.attr.msg_size));
+      if (!succeeded) {
+        break;
       }
     }
+    const std::pair<uint64_t, uint64_t> removed_seqs_range = parser.ParseResponses();
 
     // Extract and output all complete messages.
     for (HTTPMessage& msg : parser.ExtractHTTPMessages()) {
@@ -245,8 +248,8 @@ void SocketTraceConnector::TransferHTTPResponseStreams(
     // TODO(yzhao): Add the capability to remove events that are too old.
     // TODO(yzhao): Consider change the data structure to a vector, and use sorting to order events
     // before stitching. That might be faster (verify with benchmark).
-    for (const uint64_t seq_num : seq_num_to_remove) {
-      events.erase(seq_num);
+    for (uint64_t s = removed_seqs_range.first; s < removed_seqs_range.second; ++s) {
+      events.erase(s);
     }
   }
 }
