@@ -140,4 +140,10 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/cameron314/concurrentqueue/" +
                 "archive/dea078cf5b6e742cd67a0d725e36f872feca4de4.tar.gz"],
     ),
+    # June 14, 2019.
+    com_github_nghttp2_nghttp2 = dict(
+        sha256 = "863e366c530d09d7cebce67c6d7449bdb85bccb5ae0ecff84295a80697a6c989",
+        strip_prefix = "nghttp2-ee4431344511886efc66395a38b9bf5dddd7151b",
+        urls = ["https://github.com/nghttp2/nghttp2/archive/ee4431344511886efc66395a38b9bf5dddd7151b.tar.gz"],
+    ),
 )

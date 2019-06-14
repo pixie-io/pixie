@@ -140,6 +140,19 @@ def _com_github_nats_io_natsc():
         actual = "//third_party/foreign_cc:natsc",
     )
 
+def _com_github_nghttp2_nghttp2():
+    location = REPOSITORY_LOCATIONS["com_github_nghttp2_nghttp2"]
+    http_archive(
+        name = "com_github_nghttp2_nghttp2",
+        build_file_content = BUILD_ALL_CONTENT,
+        **location
+    )
+
+    native.bind(
+        name = "nghttp2",
+        actual = "//third_party/foreign_cc:nghttp2",
+    )
+
 def _com_github_cameron314_concurrentqueue():
     name = "com_github_cameron314_concurrentqueue"
     location = REPOSITORY_LOCATIONS[name]
@@ -168,6 +181,7 @@ def _cc_deps():
     _com_github_gperftools_gperftools()
     _repository_impl(name = "com_google_boringssl")
     _com_github_nats_io_natsc()
+    _com_github_nghttp2_nghttp2()
     _com_github_cameron314_concurrentqueue()
 
 def _go_deps():
