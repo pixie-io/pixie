@@ -8,6 +8,7 @@ import (
 	"github.com/nats-io/go-nats"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 )
@@ -23,7 +24,16 @@ type MessageBusController struct {
 
 // NewTestMessageBusController creates a new message bus controller where you can specify a test clock.
 func NewTestMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, clock utils.Clock) (*MessageBusController, error) {
-	conn, err := nats.Connect(natsURL)
+	var conn *nats.Conn
+	var err error
+	if viper.GetBool("disable_ssl") {
+		conn, err = nats.Connect(natsURL)
+	} else {
+		conn, err = nats.Connect(natsURL,
+			nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
+			nats.RootCAs(viper.GetString("tls_ca_cert")))
+	}
+
 	if err != nil {
 		return nil, err
 	}

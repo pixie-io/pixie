@@ -5,6 +5,7 @@ import (
 
 	"github.com/nats-io/go-nats"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"pixielabs.ai/pixielabs/src/services/common"
 	"pixielabs.ai/pixielabs/src/services/common/healthz"
@@ -46,7 +47,14 @@ func main() {
 	mdsClient := metadatapb.NewMetadataServiceClient(mdsConn)
 
 	// Connect to NATS.
-	natsConn, err := nats.Connect("pl-nats")
+	var natsConn *nats.Conn
+	if viper.GetBool("disable_ssl") {
+		natsConn, err = nats.Connect("pl-nats")
+	} else {
+		natsConn, err = nats.Connect("pl-nats",
+			nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
+			nats.RootCAs(viper.GetString("tls_ca_cert")))
+	}
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to NATS.")
 	}

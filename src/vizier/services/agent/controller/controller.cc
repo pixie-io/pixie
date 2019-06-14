@@ -210,7 +210,8 @@ Status Controller::Run() {
     } else if (msg->has_heartbeat_ack() || msg->has_heartbeat_nack()) {
       PL_CHECK_OK(HandleHeartbeatMessage(std::move(msg)));
     } else {
-      LOG(FATAL) << "An unknown message: " << msg->DebugString();
+      // TODO(zasgar): Figure out why we are getting some unknown messages.
+      LOG(ERROR) << "Got an unknown message: " << msg->DebugString();
     }
   }
 

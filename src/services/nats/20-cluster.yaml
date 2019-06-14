@@ -5,3 +5,9 @@ metadata:
 spec:
   size: 3
   version: "1.3.0"
+
+  tls:
+    serverSecret: service-tls-certs
+    serverSecretCAFileName: ca.crt
+    serverSecretKeyFileName: server.key
+    serverSecretCertFileName: server.crt

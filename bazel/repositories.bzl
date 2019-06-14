@@ -130,6 +130,8 @@ def _com_github_nats_io_natsc():
     http_archive(
         name = "com_github_nats_io_natsc",
         build_file_content = BUILD_ALL_CONTENT,
+        patches = ["//third_party:natsc.patch"],
+        patch_args = ["-p1"],
         **location
     )
 
@@ -164,6 +166,7 @@ def _cc_deps():
     _com_github_tencent_rapidjson()
     _com_github_ariafallah_csv_parser()
     _com_github_gperftools_gperftools()
+    _repository_impl(name = "com_google_boringssl")
     _com_github_nats_io_natsc()
     _com_github_cameron314_concurrentqueue()
 
@@ -186,7 +189,7 @@ def pl_deps():
     _repository_impl(name = "com_efficient_libcuckoo", build_file = "@pl//third_party:libcuckoo.BUILD")
     _repository_impl(name = "com_google_farmhash", build_file = "@pl//third_party:farmhash.BUILD")
     _repository_impl(name = "com_github_h2o_picohttpparser", build_file = "@pl//third_party:picohttpparser.BUILD")
-    _repository_impl("rules_foreign_cc")
+    _repository_impl(name = "rules_foreign_cc")
 
     _cc_deps()
     _go_deps()

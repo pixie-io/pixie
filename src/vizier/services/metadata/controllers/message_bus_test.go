@@ -12,6 +12,7 @@ import (
 	"github.com/nats-io/go-nats"
 	"github.com/phayes/freeport"
 	uuid "github.com/satori/go.uuid"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
@@ -98,6 +99,7 @@ func getNATSURL(port int) string {
 }
 
 func getTestNATSInstance(t *testing.T, port int, agtMgr controllers.AgentManager) *nats.Conn {
+	viper.Set("disable_ssl", true)
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 
 	_, err := controllers.NewTestMessageBusController(getNATSURL(port), "agent_update", agtMgr, clock)

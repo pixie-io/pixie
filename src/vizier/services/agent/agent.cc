@@ -50,7 +50,6 @@ int main(int argc, char** argv) {
     ssl_opts.pem_private_key = pl::FileContentsOrDie(FLAGS_client_tls_key);
     channel_creds = grpc::SslCredentials(ssl_opts);
   }
-
   // Store the sirling ptr b/c we need a bit later to start the thread.
   auto stirling_ptr = stirling.get();
 
@@ -70,9 +69,19 @@ int main(int argc, char** argv) {
           chan);
 
   sole::uuid agent_id = sole::uuid4();
+
   auto agent_sub_topic = absl::StrFormat("/agent/%s", agent_id.str());
+  std::unique_ptr<Controller::VizierNATSTLSConfig> tls_config;
+  if (!FLAGS_disable_SSL) {
+    tls_config = std::make_unique<Controller::VizierNATSTLSConfig>();
+    tls_config->ca_cert = FLAGS_tls_ca_crt;
+    tls_config->tls_cert = FLAGS_client_tls_cert;
+    tls_config->tls_key = FLAGS_client_tls_key;
+  }
+
   auto nats_connector = std::make_unique<Controller::VizierNATSConnector>(
-      FLAGS_nats_url, "update_agent" /*pub_topic*/, agent_sub_topic);
+      FLAGS_nats_url, "update_agent" /*pub_topic*/, agent_sub_topic, std::move(tls_config));
+
   auto controller = Controller::Create(agent_id, std::move(stub), std::move(carnot),
                                        std::move(stirling), table_store, std::move(nats_connector))
                         .ConsumeValueOrDie();

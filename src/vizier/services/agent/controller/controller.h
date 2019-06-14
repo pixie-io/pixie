@@ -41,6 +41,7 @@ constexpr int kAgentHeartbeatIntervalSeconds = 5;
  */
 class Controller : public NotCopyable {
  public:
+  using VizierNATSTLSConfig = pl::nats::NATSTLSConfig;
   using VizierNATSConnector = pl::nats::NATSConnector<pl::vizier::messages::VizierMessage>;
   using QBStub =
       pl::vizier::services::query_broker::querybrokerpb::QueryBrokerService::StubInterface;

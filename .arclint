@@ -114,7 +114,11 @@
       ]
     },
     "spelling": {
-      "type": "spelling"
+      "type": "spelling",
+      "exclude": [
+        "(.*\\.crt)",
+        "(.*\\.key)"
+      ]
     },
     "text": {
       "type": "text",

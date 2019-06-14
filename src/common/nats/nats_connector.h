@@ -1,6 +1,6 @@
 #pragma once
 
-#include "third_party/foreign_cc/natsc/include/nats/nats.h"
+#include <nats/nats.h>
 
 #include <chrono>
 #include <memory>
@@ -18,6 +18,12 @@ PL_SUPPRESS_WARNINGS_END()
 namespace pl {
 namespace nats {
 
+struct NATSTLSConfig {
+  std::string ca_cert;
+  std::string tls_key;
+  std::string tls_cert;
+};
+
 /**
  * NATS connector for a single topic.
  * @tparam TMsg message type. Must be a protobuf.
@@ -26,18 +32,42 @@ template <typename TMsg>
 class NATSConnector {
  public:
   NATSConnector(std::string_view nats_server, std::string_view pub_topic,
-                std::string_view sub_topic)
+                std::string_view sub_topic, std::unique_ptr<NATSTLSConfig> tlsConfig)
       : nats_server_(std::string(nats_server)),
         pub_topic_(std::string(pub_topic)),
-        sub_topic_(std::string(sub_topic)) {}
-  virtual ~NATSConnector() {}
+        sub_topic_(std::string(sub_topic)),
+        tls_config_(std::move(tlsConfig)) {}
+  virtual ~NATSConnector() {
+    if (nats_connection_ != nullptr) {
+      natsConnection_Destroy(nats_connection_);
+    }
+
+    if (nats_subscription_ != nullptr) {
+      natsSubscription_Destroy(nats_subscription_);
+    }
+  }
 
   /**
    * Connect to the nats server.
    * @return Status of the connection.
    */
   virtual Status Connect() {
-    auto nats_status = natsConnection_ConnectTo(&nats_connection_, nats_server_.c_str());
+    natsOptions* nats_opts = nullptr;
+    natsOptions_Create(&nats_opts);
+
+    if (tls_config_ != nullptr) {
+      natsOptions_SetSecure(nats_opts, true);
+      natsOptions_LoadCATrustedCertificates(nats_opts, tls_config_->ca_cert.c_str());
+      natsOptions_LoadCertificatesChain(nats_opts, tls_config_->tls_cert.c_str(),
+                                        tls_config_->tls_key.c_str());
+    }
+
+    natsOptions_SetURL(nats_opts, nats_server_.c_str());
+
+    auto nats_status = natsConnection_Connect(&nats_connection_, nats_opts);
+    natsOptions_Destroy(nats_opts);
+    nats_opts = nullptr;
+
     if (nats_status != NATS_OK) {
       return error::Unknown("Failed to connect to NATS, nats_status=$0", nats_status);
     }
@@ -112,6 +142,7 @@ class NATSConnector {
   std::string nats_server_;
   std::string pub_topic_;
   std::string sub_topic_;
+  std::unique_ptr<NATSTLSConfig> tls_config_;
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<TMsg>> incoming_message_queue_;
 };
 

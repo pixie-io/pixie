@@ -32,10 +32,18 @@ cc_library(
 cmake_external(
     name = "natsc",
     cache_entries = {
-        "NATS_BUILD_WITH_TLS": "OFF",
         "NATS_BUILD_STREAMING": "OFF",
+        # This forces nats to link against boringssl instead of openssl.
+        # Since some of our services use both GRPC and nats, this lets
+        # us have a single SSL library.
+        "CMAKE_SYSTEM_PREFIX_PATH": "$EXT_BUILD_DEPS",
     },
     generate_crosstool_file = True,
+    lib_name = "libnats_static",
     lib_source = "@com_github_nats_io_natsc//:all",
-    static_libraries = ["libnats_static.a"],
+    make_commands = [
+        "make nats_static",
+        "make install",
+    ],
+    deps = ["@com_google_boringssl//:ssl"],
 )

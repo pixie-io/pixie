@@ -139,6 +139,9 @@ if [ ! ${BARE_CLUSTER} = true ]; then
   # TODO(oazizi/philkuz): Fix when we set-up RBAC.
   $PIXIE_ROOT_DIR/scripts/setup_cluster_role_bindings.sh
 
+  # Install default dev secrets and certs.
+  make -C $PIXIE_ROOT_DIR k8s-load-dev-secrets k8s-load-certs
+
   # Deploy Pixie prereqs (NATS, etcd).
   $PIXIE_ROOT_DIR/scripts/deploy_cluster_prereqs.sh
 
@@ -149,10 +152,4 @@ if [ ! ${BARE_CLUSTER} = true ]; then
 
   # TODO(oazizi/philkuz): Enable monitoring through this script.
   # $PIXIE_ROOT_DIR/demos/applications/sockshop/monitoring_manifests/create_monitoring.sh
-
-  # Load certs and secrets for required Pixie agent deployment.
-  pushd $PIXIE_ROOT_DIR > /dev/null
-  make k8s-load-certs
-  make k8s-load-dev-secrets
-  popd > /dev/null
 fi

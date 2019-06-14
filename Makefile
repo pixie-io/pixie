@@ -72,12 +72,13 @@ gazelle: gazelle-repos ## Run gazelle to update go build rules.
 go-setup: dep-ensure gazelle
 
 k8s-load-certs:
-	-$(KUBECTL) $(KUBECTL_FLAGS) delete secret proxy-tls-cert
-	-$(KUBECTL) $(KUBECTL_FLAGS) delete secret grpc-tls-cert
-	$(KUBECTL) $(KUBECTL_FLAGS) create secret tls proxy-tls-cert \
+	-$(KUBECTL) $(KUBECTL_FLAGS) delete secret proxy-tls-certs
+	-$(KUBECTL) $(KUBECTL_FLAGS) delete secret service-tls-certs
+
+	$(KUBECTL) $(KUBECTL_FLAGS) create secret tls proxy-tls-certs \
 		--key src/services/certs/server.key \
 		--cert src/services/certs/server.crt
-	$(KUBECTL) $(KUBECTL_FLAGS) create secret generic grpc-tls-cert \
+	$(KUBECTL) $(KUBECTL_FLAGS) create secret generic service-tls-certs \
 		--from-file=server.key=src/services/certs/server.key \
 		--from-file=server.crt=src/services/certs/server.crt \
 		--from-file=ca.crt=src/services/certs/ca.crt \
