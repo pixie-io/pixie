@@ -2,17 +2,12 @@ package controllers_test
 
 import (
 	"context"
-	"fmt"
-	"net/url"
 	"testing"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/embed"
 	"github.com/gogo/protobuf/proto"
-	"github.com/phayes/freeport"
 	uuid "github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
@@ -51,55 +46,10 @@ var existingAgentUUID = "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 var unhealthyAgentUUID = "8ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
 func setupAgentManager(t *testing.T) (*clientv3.Client, controllers.AgentManager, func()) {
-	// Find available port.
-	port, err := freeport.GetFreePort()
-	if err != nil {
-		t.Fatal("Could not find free port")
-	}
-
-	// Start up etcd server.
-	cfg := embed.NewConfig()
-	cfg.Dir = "default.etcd"
-	lcURL, err := url.Parse(fmt.Sprintf("http://localhost:%d", port))
-	if err != nil {
-		t.Fatal("Could not parse URL.")
-	}
-	cfg.LCUrls = []url.URL{*lcURL}
-	e, err := embed.StartEtcd(cfg)
-	if err != nil {
-		t.Fatal("Could not start etcd server.")
-	}
-
-	select {
-	case <-e.Server.ReadyNotify():
-		log.Info("Server is ready.")
-	case <-time.After(60 * time.Second):
-		e.Server.Stop()
-		t.Fatal("Server took too long to start, stopping server.")
-	}
-
-	// Add some existing agent data into etcd.
-	etcdClient, err := clientv3.New(clientv3.Config{
-		Endpoints:   []string{fmt.Sprintf("http://localhost:%d", port)},
-		DialTimeout: 5 * time.Second,
-	})
-
-	if err != nil {
-		t.Fatal("Failed to connect to etcd.")
-	}
-
-	_, err = etcdClient.Delete(context.Background(), "", clientv3.WithPrefix())
-	if err != nil {
-		t.Fatal("Failed to clear etcd data.")
-	}
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
 
 	createAgent(t, existingAgentUUID, etcdClient, existingAgentInfo)
 	createAgent(t, unhealthyAgentUUID, etcdClient, unhealthyAgentInfo)
-
-	cleanup := func() {
-		e.Close()
-		etcdClient.Close()
-	}
 
 	clock := testingutils.NewTestClock(time.Unix(0, clockNowNS))
 	agtMgr := controllers.NewAgentManagerWithClock(etcdClient, true, clock)

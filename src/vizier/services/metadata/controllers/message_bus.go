@@ -22,8 +22,7 @@ type MessageBusController struct {
 	agentManager      AgentManager
 }
 
-// NewTestMessageBusController creates a new message bus controller where you can specify a test clock.
-func NewTestMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, clock utils.Clock) (*MessageBusController, error) {
+func newMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, clock utils.Clock) (*MessageBusController, error) {
 	var conn *nats.Conn
 	var err error
 	if viper.GetBool("disable_ssl") {
@@ -54,10 +53,15 @@ func NewTestMessageBusController(natsURL string, agentTopic string, agentManager
 	return mc, err
 }
 
+// NewTestMessageBusController creates a new message bus controller where you can specify a test clock.
+func NewTestMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, clock utils.Clock) (*MessageBusController, error) {
+	return newMessageBusController(natsURL, agentTopic, agentManager, clock)
+}
+
 // NewMessageBusController creates a new message bus controller.
 func NewMessageBusController(natsURL string, agentTopic string, agentManager AgentManager) (*MessageBusController, error) {
 	clock := utils.SystemClock{}
-	return NewTestMessageBusController(natsURL, agentTopic, agentManager, clock)
+	return newMessageBusController(natsURL, agentTopic, agentManager, clock)
 }
 
 // AgentTopicListener handles any incoming messages on the controller's channel.

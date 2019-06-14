@@ -2,66 +2,18 @@ package controllers_test
 
 import (
 	"context"
-	"fmt"
-	"net/url"
 	"testing"
-	"time"
 
-	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/embed"
 	"github.com/gogo/protobuf/proto"
-	"github.com/phayes/freeport"
-	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 )
 
-func setupEtcd(t *testing.T) (*clientv3.Client, func()) {
-	// Find available port.
-	port, err := freeport.GetFreePort()
-	if err != nil {
-		t.Fatal("Could not find free port")
-	}
-
-	// Start up etcd server.
-	cfg := embed.NewConfig()
-	cfg.Dir = "default.etcd"
-	lcURL, err := url.Parse(fmt.Sprintf("http://localhost:%d", port))
-	if err != nil {
-		t.Fatal("Could not parse URL.")
-	}
-	cfg.LCUrls = []url.URL{*lcURL}
-	e, err := embed.StartEtcd(cfg)
-	if err != nil {
-		t.Fatal("Could not start etcd server.")
-	}
-
-	select {
-	case <-e.Server.ReadyNotify():
-		log.Info("Server is ready.")
-	case <-time.After(60 * time.Second):
-		e.Server.Stop()
-		t.Fatal("Server took too long to start, stopping server.")
-	}
-
-	// Add some existing agent data into etcd.
-	etcdClient, err := clientv3.New(clientv3.Config{
-		Endpoints:   []string{fmt.Sprintf("http://localhost:%d", port)},
-		DialTimeout: 5 * time.Second,
-	})
-
-	cleanup := func() {
-		e.Close()
-		etcdClient.Close()
-	}
-
-	return etcdClient, cleanup
-}
-
 func TestUpdateEndpoints(t *testing.T) {
-	etcdClient, cleanup := setupEtcd(t)
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
@@ -92,7 +44,7 @@ func TestUpdateEndpoints(t *testing.T) {
 }
 
 func TestUpdatePod(t *testing.T) {
-	etcdClient, cleanup := setupEtcd(t)
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
@@ -123,7 +75,7 @@ func TestUpdatePod(t *testing.T) {
 }
 
 func TestUpdateService(t *testing.T) {
-	etcdClient, cleanup := setupEtcd(t)
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
