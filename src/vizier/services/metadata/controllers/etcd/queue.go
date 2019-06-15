@@ -77,7 +77,7 @@ type Queue struct {
 
 // NewQueue creates a new queue.
 func NewQueue(client *v3.Client, keyPrefix string) *Queue {
-	return &Queue{client, context.TODO(), keyPrefix}
+	return &Queue{client, context.TODO(), keyPrefix + "/queue"}
 }
 
 // Enqueue adds a new value to the queue.
@@ -106,4 +106,33 @@ func (q *Queue) Dequeue() (string, error) {
 	}
 
 	return "", nil
+}
+
+// DequeueAll returns all items currently in the queue.
+func (q *Queue) DequeueAll() (*[]string, error) {
+	resp, err := q.client.Get(q.ctx, q.keyPrefix, v3.WithPrefix())
+	if err != nil {
+		return nil, err
+	}
+
+	vals := make([]string, len(resp.Kvs))
+	for i, kv := range resp.Kvs {
+		vals[i] = string(kv.Value)
+	}
+
+	if len(resp.Kvs) > 0 {
+		lastKey := string(resp.Kvs[len(resp.Kvs)-1].Key)
+		// Deletes [firstKey, lastKey).
+		_, err = q.client.Delete(q.ctx, q.keyPrefix, v3.WithRange(lastKey))
+		if err != nil {
+			return nil, err
+		}
+		// Delete lastKey.
+		_, err = q.client.Delete(q.ctx, lastKey)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &vals, nil
 }

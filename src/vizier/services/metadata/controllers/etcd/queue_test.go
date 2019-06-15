@@ -144,3 +144,42 @@ func TestDequeueEmpty(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "", resp)
 }
+
+func TestDequeueAll(t *testing.T) {
+	etcdClient, cleanup := setupEtcd(t)
+	defer cleanup()
+
+	q := etcd.NewQueue(etcdClient, "test")
+
+	err := q.Enqueue("abcd")
+	assert.Nil(t, err)
+
+	err = q.Enqueue("efgh")
+	assert.Nil(t, err)
+
+	err = q.Enqueue("ijkl")
+	assert.Nil(t, err)
+
+	q1 := etcd.NewQueue(etcdClient, "test2")
+
+	err = q1.Enqueue("abcd")
+	assert.Nil(t, err)
+
+	resp, err := q.DequeueAll()
+
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(*resp))
+	assert.Equal(t, "abcd", (*resp)[0])
+	assert.Equal(t, "efgh", (*resp)[1])
+	assert.Equal(t, "ijkl", (*resp)[2])
+
+	resp, err = q.DequeueAll()
+
+	assert.Nil(t, err)
+	assert.Equal(t, 0, len(*resp))
+
+	// Check that unrelated queue is unaffected.
+	resp1, err := q1.Dequeue()
+	assert.Nil(t, err)
+	assert.Equal(t, "abcd", resp1)
+}
