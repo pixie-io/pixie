@@ -101,7 +101,7 @@
   version = "v1.3.2"
 
 [[projects]]
-  digest = "1:4515acf54596c3c615aaf704ba962df0c23f1ecb359624bd348dda51a6796b9a"
+  digest = "1:2dfd8a6089367debfea9ad179ddba7510575cb7226e4e4c1da78273d86ff4fe4"
   name = "github.com/coreos/etcd"
   packages = [
     "alarm",
@@ -109,8 +109,10 @@
     "auth/authpb",
     "client",
     "clientv3",
+    "clientv3/clientv3util",
     "clientv3/concurrency",
     "compactor",
+    "contrib/recipes",
     "discovery",
     "embed",
     "error",
@@ -460,14 +462,6 @@
   pruneopts = "UT"
   revision = "8cb6e5b959231cc1119e43259c4a608f9c51a241"
   version = "v1.0.0"
-
-[[projects]]
-  digest = "1:a0cefd27d12712af4b5018dc7046f245e1e3b5760e2e848c30b171b570708f9b"
-  name = "github.com/imdario/mergo"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "7c29201646fa3de8506f701213473dd407f19646"
-  version = "v0.3.7"
 
 [[projects]]
   digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
@@ -834,6 +828,14 @@
   version = "v1.0"
 
 [[projects]]
+  digest = "1:2dfa0fd57fd375cea2cd5afb046c9df7f3fb4625e1befa3e8022af524f51d8c0"
+  name = "go.etcd.io/etcd"
+  packages = ["pkg/transport"]
+  pruneopts = "UT"
+  revision = "98d308426819d892e149fe45f6fd542464cb1f9d"
+  version = "v3.3.13"
+
+[[projects]]
   digest = "1:a5158647b553c61877aa9ae74f4015000294e47981e6b8b07525edcbb0747c81"
   name = "go.uber.org/atomic"
   packages = ["."]
@@ -1159,7 +1161,7 @@
 
 [[projects]]
   branch = "release-1.14"
-  digest = "1:1c177e481eeccea2b4f28ada71cdb671991b1fb3188a4f78967ee802fb6506eb"
+  digest = "1:d43bb672b3e811c5ea37b48a0a73bea7fcbcb348a45ce7ba349006145c76418d"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
@@ -1206,7 +1208,7 @@
   revision = "6a84e37a896db9780c75367af8d2ed2bb944022e"
 
 [[projects]]
-  digest = "1:181036db149b80f11649a9d4c6271a8723a604545969643794963eb8637e04b0"
+  digest = "1:a99390d8bbf951f96c1ed911413b35102f17e884b1616d6ce9e3d0b37674afe9"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1257,12 +1259,8 @@
     "rest",
     "rest/watch",
     "third_party/forked/golang/template",
-    "tools/auth",
     "tools/cache",
-    "tools/clientcmd",
     "tools/clientcmd/api",
-    "tools/clientcmd/api/latest",
-    "tools/clientcmd/api/v1",
     "tools/metrics",
     "tools/pager",
     "tools/reference",
@@ -1270,11 +1268,9 @@
     "util/cert",
     "util/connrotation",
     "util/flowcontrol",
-    "util/homedir",
     "util/jsonpath",
     "util/keyutil",
     "util/retry",
-    "util/workqueue",
   ]
   pruneopts = "UT"
   revision = "6ee68ca5fd8355d024d02f9db0b3b667e8357a0f"
@@ -1328,8 +1324,11 @@
     "github.com/bmatcuk/doublestar",
     "github.com/c9s/goprocinfo/linux",
     "github.com/coreos/etcd/clientv3",
+    "github.com/coreos/etcd/clientv3/clientv3util",
     "github.com/coreos/etcd/clientv3/concurrency",
+    "github.com/coreos/etcd/contrib/recipes",
     "github.com/coreos/etcd/embed",
+    "github.com/coreos/etcd/mvcc/mvccpb",
     "github.com/dgrijalva/jwt-go",
     "github.com/fatih/color",
     "github.com/gogo/protobuf/gogoproto",
@@ -1361,6 +1360,7 @@
     "github.com/stretchr/testify/assert",
     "github.com/x-cray/logrus-prefixed-formatter",
     "github.com/zenazn/goji/web/mutil",
+    "go.etcd.io/etcd/pkg/transport",
     "golang.org/x/net/context",
     "gonum.org/v1/plot",
     "gonum.org/v1/plot/plotter",
@@ -1377,15 +1377,10 @@
     "k8s.io/apimachinery/pkg/fields",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/types",
-    "k8s.io/apimachinery/pkg/util/runtime",
-    "k8s.io/apimachinery/pkg/util/wait",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
+    "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/cache",
-    "k8s.io/client-go/tools/clientcmd",
-    "k8s.io/client-go/util/homedir",
-    "k8s.io/client-go/util/workqueue",
-    "k8s.io/klog",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

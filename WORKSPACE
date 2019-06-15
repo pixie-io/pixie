@@ -694,3 +694,9 @@ go_repository(
     commit = "aaccbc9213b0974828f81aaac109d194880e3014",
     importpath = "golang.org/x/oauth2",
 )
+
+go_repository(
+    name = "io_etcd_go_etcd",
+    commit = "98d308426819d892e149fe45f6fd542464cb1f9d",
+    importpath = "go.etcd.io/etcd",
+)

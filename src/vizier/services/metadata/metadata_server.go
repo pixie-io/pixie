@@ -1,11 +1,15 @@
 package main
 
 import (
+	"crypto/tls"
 	"net/http"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+	"go.etcd.io/etcd/pkg/transport"
 	"pixielabs.ai/pixielabs/src/services/common"
 	"pixielabs.ai/pixielabs/src/services/common/healthz"
 	"pixielabs.ai/pixielabs/src/services/common/httpmiddleware"
@@ -15,17 +19,44 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 )
 
+func etcdTLSConfig() (*tls.Config, error) {
+	tlsCert := viper.GetString("client_tls_cert")
+	tlsKey := viper.GetString("client_tls_key")
+	tlsCACert := viper.GetString("tls_ca_cert")
+
+	tlsInfo := transport.TLSInfo{
+		CertFile:      tlsCert,
+		KeyFile:       tlsKey,
+		TrustedCAFile: tlsCACert,
+	}
+
+	return tlsInfo.ClientConfig()
+}
+
 func main() {
 	log.WithField("service", "metadata").Info("Starting service")
 
+	pflag.String("md_etcd_server", "https://pl-etcd-client.pl.svc.cluster.local:2379", "The address to metadata etcd server.")
 	common.SetupService("metadata", 50400)
+	common.SetupGRPCClientFlags()
 	common.PostFlagSetupAndParse()
 	common.CheckServiceFlags()
+	common.CheckGRPCClientFlags()
 	common.SetupServiceLogging()
 
+	var tlsConfig *tls.Config
+	if !viper.GetBool("disable_ssl") {
+		var err error
+		tlsConfig, err = etcdTLSConfig()
+		if err != nil {
+			log.WithError(err).Fatal("Failed to load SSL for ETCD")
+		}
+	}
+
 	etcdClient, err := clientv3.New(clientv3.Config{
-		Endpoints:   []string{"http://pl-etcd-client.pl.svc.cluster.local:2379"},
+		Endpoints:   []string{viper.GetString("md_etcd_server")},
 		DialTimeout: 5 * time.Second,
+		TLS:         tlsConfig,
 	})
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to etcd.")
