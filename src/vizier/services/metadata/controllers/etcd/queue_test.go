@@ -94,7 +94,7 @@ func TestDequeueEmpty(t *testing.T) {
 }
 
 func TestDequeueAll(t *testing.T) {
-	etcdClient, cleanup := setupEtcd(t)
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
 	q := etcd.NewQueue(etcdClient, "test")
