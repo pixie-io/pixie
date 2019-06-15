@@ -27,6 +27,14 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "rules_docker-0.7.0",
         urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.7.0.tar.gz"],
     ),
+    io_bazel_toolchains = dict(
+        sha256 = "e76afea244b1767e19fb38e1f1be448ebdf48d52ade0b3687c5794d8a1362fe8",
+        strip_prefix = "bazel-toolchains-0.26.3",
+        urls = [
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/0.26.3.tar.gz",
+            "https://github.com/bazelbuild/bazel-toolchains/archive/0.26.3.tar.gz",
+        ],
+    ),
     com_google_googletest = dict(
         sha256 = "9bf1fe5182a604b4135edc1a425ae356c9ad15e9b23f9f12a02e80184c3a249c",
         strip_prefix = "googletest-release-1.8.1",

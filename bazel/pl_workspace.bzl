@@ -3,15 +3,10 @@ load("@com_github_bazelbuild_buildtools//buildifier:deps.bzl", "buildifier_depen
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 load("@io_bazel_rules_docker//go:image.bzl", _go_image_repos = "repositories")
 load("@io_bazel_rules_docker//cc:image.bzl", _cc_image_repos = "repositories")
-load(
-    "@io_bazel_rules_docker//container:container.bzl",
-    "container_pull",
-)
+load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
+load("@io_bazel_toolchains//rules:gcs.bzl", "gcs_file")
 load("@distroless//package_manager:package_manager.bzl", "package_manager_repositories")
 load("@distroless//package_manager:dpkg.bzl", "dpkg_list", "dpkg_src")
-
-def _go_setup():
-    gazelle_dependencies()
 
 # Sets up package manager which we use build deploy images.
 def _package_manager_setup():
@@ -39,10 +34,9 @@ def _package_manager_setup():
         sources = ["@debian_stretch//file:Packages.json"],
     )
 
-def _docker_setup():
+def _docker_images_setup():
     _go_image_repos()
     _cc_image_repos()
-    _package_manager_setup()
 
     # Import NGINX repo.
     container_pull(
@@ -79,8 +73,19 @@ def _docker_setup():
         repository = "pl-dev-infra/dev_image",
     )
 
+def _artifacts_setup():
+    gcs_file(
+        name = "linux_headers.tar.gz",
+        bucket = "gs://pl-infra-dev-artifacts",
+        file = "linux-headers-4.14.104-pl1.tar.gz",
+        sha256 = "8eb734b957639cd2825d0d58f40230d67719013c897f54e9faf0a04d3457baa1",
+    )
+
 def pl_workspace_setup():
-    _go_setup()
+    gazelle_dependencies()
     buildifier_dependencies()
     grpc_deps()
-    _docker_setup()
+
+    _package_manager_setup()
+    _docker_images_setup()
+    _artifacts_setup()
