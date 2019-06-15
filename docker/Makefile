@@ -3,7 +3,7 @@
 DOCKER := docker
 
 ## SSH private key.
-SSH_PRIVATE_KEY_FILE := ${HOME}/.ssh/id_rsa
+SSH_PRIVATE_KEY_FILE := $(HOME)/.ssh/id_rsa
 SSH_PRIVATE_KEY := `cat $(SSH_PRIVATE_KEY_FILE)`
 
 ## BCC deb parameters
@@ -24,6 +24,13 @@ gperftools_deb_fname := "gperftools-pixie-$(GPERFTOOLS_DEB_IMAGE_VERSION).deb"
 gperftools_deb_gs_path :=  gs://pl-infra-dev-artifacts/$(gperftools_deb_fname)
 gperftools_deb_image_tag := "gcr.io/pl-dev-infra/gperftools_deb_image:$(GPERFTOOLS_DEB_IMAGE_VERSION)"
 
+## Linux image parameters
+LINUX_KERNEL_VERSION := 4.14.104
+LINUX_HEADERS_REV := pl1
+linux_headers_fname := linux-headers-$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV).tar.gz
+linux_headers_gs_path := gs://pl-infra-dev-artifacts/$(linux_headers_fname)
+linux_headers_image_tag := "gcr.io/pl-dev-infra/linux_headers_image:$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV)"
+
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
 
@@ -31,14 +38,14 @@ mkfile_dir := $(dir $(mkfile_path))
 .PHONY: build_bcc_deb_image
 build_bcc_deb_image:
 	cd $(mkfile_dir)/bcc_deb_image && \
-	$(DOCKER) build . --build-arg SSH_PRIVATE_KEY="${SSH_PRIVATE_KEY}" -t $(bcc_deb_image_tag)
+	$(DOCKER) build . --build-arg SSH_PRIVATE_KEY="$(SSH_PRIVATE_KEY)" -t $(bcc_deb_image_tag)
 
 .PHONY: upload_bcc_deb
 upload_bcc_deb: build_bcc_deb_image  ## Target to build and upload BCC deb image
-	$(DOCKER) run --rm -e deb_name=$(bcc_deb_fname) -e deb_version=$(BCC_DEB_IMAGE_VERSION) -v ${PWD}:/image $(bcc_deb_image_tag)
-	gsutil cp $(bcc_deb_fname)  gs://pl-infra-dev-artifacts/$(bcc_deb_fname)
-	gsutil acl ch -u allUsers:READER ${bcc_deb_gs_path}
-	@echo "SHA: $(shell sha256sum ${bcc_deb_fname})"
+	$(DOCKER) run --rm -e deb_name=$(bcc_deb_fname) -e deb_version=$(BCC_DEB_IMAGE_VERSION) -v $(PWD):/image $(bcc_deb_image_tag)
+	gsutil cp $(bcc_deb_fname) gs://pl-infra-dev-artifacts/$(bcc_deb_fname)
+	gsutil acl ch -u allUsers:READER $(bcc_deb_gs_path)
+	@echo "SHA: $(shell sha256sum $(bcc_deb_fname))"
 	rm -f $(bcc_deb_fname)
 
 # Clang DEB Image configuration.
@@ -49,9 +56,9 @@ build_clang_deb_image:
 
 .PHONY: upload_clang_deb
 upload_clang_deb: build_clang_deb_image ## Target to build and upload clang deb image
-	$(DOCKER) run --rm -e deb_name=$(clang_deb_fname) -v ${PWD}:/image $(clang_deb_image_tag)
-	gsutil cp $(clang_deb_fname)  ${clang_deb_gs_path}
-	gsutil acl ch -u allUsers:READER ${clang_deb_gs_path}
+	$(DOCKER) run --rm -e deb_name=$(clang_deb_fname) -v $(PWD):/image $(clang_deb_image_tag)
+	gsutil cp $(clang_deb_fname) $(clang_deb_gs_path)
+	gsutil acl ch -u allUsers:READER $(clang_deb_gs_path)
 	@echo "SHA: "
 	sha256sum $(clang_deb_fname)
 	rm -f $(clang_deb_fname)
@@ -63,12 +70,25 @@ build_gperftools_deb_image:
 
 .PHONY: upload_gperftools_deb
 upload_gperftools_deb: build_gperftools_deb_image ## Target to build and upload gperftools deb image
-	$(DOCKER) run --rm -e deb_name=$(gperftools_deb_fname) -v ${PWD}:/image $(gperftools_deb_image_tag)
-	gsutil cp $(gperftools_deb_fname)  ${gperftools_deb_gs_path}
-	gsutil acl ch -u allUsers:READER ${gperftools_deb_gs_path}
+	$(DOCKER) run --rm -e deb_name=$(gperftools_deb_fname) -v $(PWD):/image $(gperftools_deb_image_tag)
+	gsutil cp $(gperftools_deb_fname) $(gperftools_deb_gs_path)
+	gsutil acl ch -u allUsers:READER $(gperftools_deb_gs_path)
 	@echo "SHA: "
 	sha256sum $(gperftools_deb_fname)
 	rm -f $(gperftools_deb_fname)
+
+.PHONY: build_linux_headers_image
+build_linux_headers_image:
+	cd $(mkfile_dir)/linux_headers_image && \
+	$(DOCKER) build . -t $(linux_headers_image_tag)
+
+.PHONY: upload_linux_headers
+upload_linux_headers: build_linux_headers_image ## Target to build and upload linux headers image
+	scripts/docker-extract.sh $(linux_headers_image_tag) /pl/linux-headers-$(LINUX_KERNEL_VERSION).tar.gz $(linux_headers_fname)
+	gsutil cp $(linux_headers_fname) $(linux_headers_gs_path)
+	@echo "SHA: "
+	sha256sum $(linux_headers_fname)
+	rm -f $(linux_headers_fname)
 
 help: ## Print help for targets with comments.
 	@echo "Usage:"
