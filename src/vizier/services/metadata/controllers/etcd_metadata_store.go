@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 )
 
 // EtcdMetadataStore is the implementation of our metadata store in etcd.
@@ -99,4 +100,39 @@ func (mds *EtcdMetadataStore) updateValue(key string, value string) error {
 	}
 
 	return nil
+}
+
+func getAgentUpdateKey(agentID string) string {
+	return path.Join("/", "agents", agentID, "updates")
+}
+
+// GetAgentsForHostnames gets the agents running on the given hostnames.
+func (mds *EtcdMetadataStore) GetAgentsForHostnames(hostnames *[]string) (*[]string, error) {
+	cmps := make([]clientv3.Cmp, len(*hostnames))
+	ops := make([]clientv3.Op, len(*hostnames))
+	for i, hostname := range *hostnames {
+		cmps[i] = clientv3.Compare(clientv3.CreateRevision(GetHostnameAgentKey(hostname)), "=", 0)
+		ops[i] = clientv3.OpGet(GetHostnameAgentKey(hostname))
+	}
+
+	txnresp, err := mds.client.Txn(context.TODO()).If(cmps...).Then(ops...).Else(ops...).Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	var agents []string
+	for _, resp := range txnresp.Responses {
+		if len(resp.GetResponseRange().Kvs) > 0 {
+			agents = append(agents, string(resp.GetResponseRange().Kvs[0].Value))
+		}
+	}
+
+	return &agents, nil
+}
+
+// AddToAgentUpdateQueue adds the given value to the agent's update queue.
+func (mds *EtcdMetadataStore) AddToAgentUpdateQueue(agentID string, value string) error {
+	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
+
+	return q.Enqueue(value)
 }

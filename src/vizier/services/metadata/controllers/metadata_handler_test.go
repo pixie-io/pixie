@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 )
@@ -376,9 +377,27 @@ func TestObjectToPodProto(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
+	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
+		Uid:  "ijkl",
+		Name: "object_md",
+		Type: messagespb.POD,
+	}
+
+	update, err := updatePb.Marshal()
+
 	mockMds.
 		EXPECT().
 		UpdatePod(expectedPb).
+		Return(nil)
+
+	mockMds.
+		EXPECT().
+		GetAgentsForHostnames(&[]string{"hostname"}).
+		Return(&[]string{"agent-1"}, nil)
+
+	mockMds.
+		EXPECT().
+		AddToAgentUpdateQueue("agent-1", string(update)).
 		Return(nil)
 
 	// Create service object.

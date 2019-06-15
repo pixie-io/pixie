@@ -10,6 +10,7 @@ import (
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 )
 
 func TestUpdateEndpoints(t *testing.T) {
@@ -103,4 +104,93 @@ func TestUpdateService(t *testing.T) {
 	proto.Unmarshal(resp.Kvs[0].Value, pb)
 
 	assert.Equal(t, expectedPb, pb)
+}
+
+func TestGetAgentsForHostnames(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), controllers.GetHostnameAgentKey("test"), "agent1")
+	if err != nil {
+		t.Fatal("Unable to add agentData to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), controllers.GetHostnameAgentKey("test2"), "agent2")
+	if err != nil {
+		t.Fatal("Unable to add agentData to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), controllers.GetHostnameAgentKey("test3"), "agent3")
+	if err != nil {
+		t.Fatal("Unable to add agentData to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), controllers.GetHostnameAgentKey("test4"), "agent4")
+	if err != nil {
+		t.Fatal("Unable to add agentData to etcd.")
+	}
+
+	hostnames := []string{"test", "test2", "test3", "test4"}
+
+	agents, err := mds.GetAgentsForHostnames(&hostnames)
+	assert.Nil(t, err)
+
+	assert.Equal(t, 4, len(*agents))
+	assert.Equal(t, "agent1", (*agents)[0])
+	assert.Equal(t, "agent2", (*agents)[1])
+	assert.Equal(t, "agent3", (*agents)[2])
+	assert.Equal(t, "agent4", (*agents)[3])
+}
+
+func TestGetAgentsForMissingHostnames(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), controllers.GetHostnameAgentKey("test"), "agent1")
+	if err != nil {
+		t.Fatal("Unable to add agentData to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), controllers.GetHostnameAgentKey("test2"), "agent2")
+	if err != nil {
+		t.Fatal("Unable to add agentData to etcd.")
+	}
+
+	hostnames := []string{"test", "test2", "test3", "test4"}
+
+	agents, err := mds.GetAgentsForHostnames(&hostnames)
+	assert.Nil(t, err)
+
+	assert.Equal(t, 2, len(*agents))
+	assert.Equal(t, "agent1", (*agents)[0])
+	assert.Equal(t, "agent2", (*agents)[1])
+}
+
+func TestAddToAgentQueue(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	err = mds.AddToAgentUpdateQueue("agent1", "test")
+	assert.Nil(t, err)
+
+	q := etcd.NewQueue(etcdClient, "/agents/agent1/updates")
+	resp, err := q.Dequeue()
+	assert.Nil(t, err)
+	assert.Equal(t, "test", resp)
+
 }

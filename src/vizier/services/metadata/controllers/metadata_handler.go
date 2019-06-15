@@ -7,6 +7,7 @@ import (
 
 	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 )
 
 // MetadataStore is the interface for our metadata store.
@@ -14,6 +15,8 @@ type MetadataStore interface {
 	UpdateEndpoints(*metadatapb.Endpoints) error
 	UpdatePod(*metadatapb.Pod) error
 	UpdateService(*metadatapb.Service) error
+	GetAgentsForHostnames(*[]string) (*[]string, error)
+	AddToAgentUpdateQueue(string, string) error
 }
 
 // K8sMessage is a message for K8s metadata events/updates.
@@ -85,6 +88,7 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 	if err != nil {
 		log.WithError(err).Fatal("Could not write endpoints protobuf to metadata store.")
 	}
+
 }
 
 func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
@@ -97,6 +101,29 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 	err = mh.mds.UpdatePod(pb)
 	if err != nil {
 		log.WithError(err).Fatal("Could not write pod protobuf to metadata store.")
+	}
+
+	// Add pod update to agent update queue.
+	hostname := []string{e.Spec.Hostname}
+	agents, err := mh.mds.GetAgentsForHostnames(&hostname)
+
+	if len(*agents) != 1 {
+		log.Error("Could not get agent for hostname: " + e.Spec.Hostname)
+	}
+
+	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
+		Uid:  string(e.ObjectMeta.UID),
+		Name: e.ObjectMeta.Name,
+		Type: messagespb.POD,
+	}
+	update, err := updatePb.Marshal()
+	if err != nil {
+		log.WithError(err).Error("Could not marshall pod update message.")
+	}
+
+	err = mh.mds.AddToAgentUpdateQueue((*agents)[0], string(update))
+	if err != nil {
+		log.WithError(err).Error("Could not write pod update to agent update queue.")
 	}
 }
 

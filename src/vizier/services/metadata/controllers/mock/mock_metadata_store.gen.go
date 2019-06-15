@@ -33,6 +33,31 @@ func (m *MockMetadataStore) EXPECT() *MockMetadataStoreMockRecorder {
 	return m.recorder
 }
 
+// AddToAgentUpdateQueue mocks base method
+func (m *MockMetadataStore) AddToAgentUpdateQueue(arg0, arg1 string) error {
+	ret := m.ctrl.Call(m, "AddToAgentUpdateQueue", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddToAgentUpdateQueue indicates an expected call of AddToAgentUpdateQueue
+func (mr *MockMetadataStoreMockRecorder) AddToAgentUpdateQueue(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToAgentUpdateQueue", reflect.TypeOf((*MockMetadataStore)(nil).AddToAgentUpdateQueue), arg0, arg1)
+}
+
+// GetAgentsForHostnames mocks base method
+func (m *MockMetadataStore) GetAgentsForHostnames(arg0 *[]string) (*[]string, error) {
+	ret := m.ctrl.Call(m, "GetAgentsForHostnames", arg0)
+	ret0, _ := ret[0].(*[]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentsForHostnames indicates an expected call of GetAgentsForHostnames
+func (mr *MockMetadataStoreMockRecorder) GetAgentsForHostnames(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentsForHostnames", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentsForHostnames), arg0)
+}
+
 // UpdateEndpoints mocks base method
 func (m *MockMetadataStore) UpdateEndpoints(arg0 *metadatapb.Endpoints) error {
 	ret := m.ctrl.Call(m, "UpdateEndpoints", arg0)
