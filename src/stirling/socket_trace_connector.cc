@@ -190,15 +190,19 @@ void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
   event.attr.timestamp_ns += ClockRealTimeOffset();
   event.attr.conn_info.timestamp_ns += ClockRealTimeOffset();
   switch (event.attr.conn_info.protocol) {
+    case kProtocolHTTPRequest:
+      AppendToStream(std::move(event), &http_streams_);
+      break;
+    case kProtocolHTTPResponse:
+      AppendToStream(std::move(event), &http_streams_);
+      break;
     case kProtocolHTTP2:
       AppendToStream(std::move(event), &http2_streams_);
       break;
-      // TODO(oazizi/yzhao): Discuss what to do with MySQL events.
     default:
-      // TODO(yzhao): This is to preserve current behavior. Obviously this appears contradictory,
-      // and should be changed to not sending to HTTP streams.
-      AppendToStream(std::move(event), &http_streams_);
-      LOG(WARNING) << "Unknown protocol: " << event.attr.conn_info.protocol;
+      // TODO(oazizi/yzhao): Add MySQL when it goes through streams.
+      LOG(WARNING) << "AcceptEvent ignored due to unknown protocol: "
+                   << event.attr.conn_info.protocol;
   }
 }
 
