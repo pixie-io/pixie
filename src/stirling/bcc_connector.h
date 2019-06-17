@@ -26,7 +26,7 @@ DUMMY_SOURCE_CONNECTOR(PIDCPUUseBCCConnector);
 #include "src/stirling/bcc_bpf/pidruntime.h"
 #include "src/stirling/source_connector.h"
 
-OBJ_STRVIEW(pidruntime_bcc_script, _binary_src_stirling_bcc_bpf_pidruntime_c);
+OBJ_STRVIEW(pidruntime_bcc_script, _binary_bcc_bpf_pidruntime_c_preprocessed);
 
 namespace pl {
 namespace stirling {
@@ -95,7 +95,7 @@ class PIDCPUUseBCCConnector : public BCCConnector {
   uint32_t event_type_;
   uint32_t event_config_;
   std::map<uint16_t, uint64_t> prev_run_time_map_;
-  std::vector<std::pair<uint16_t, pl_stirling_bcc_pidruntime_val> > table_;
+  std::vector<std::pair<uint16_t, pidruntime_val_t> > table_;
   static constexpr uint64_t kSamplingFreq = 99;  // Freq. (in Hz) at which to trigger bpf func.
   ebpf::BPF bpf_;
 };

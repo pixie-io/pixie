@@ -29,7 +29,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 DECLARE_string(http_response_header_filters);
 
-OBJ_STRVIEW(http_trace_bcc_script, _binary_src_stirling_bcc_bpf_socket_trace_c);
+OBJ_STRVIEW(http_trace_bcc_script, _binary_bcc_bpf_socket_trace_c_preprocessed);
 
 namespace pl {
 namespace stirling {

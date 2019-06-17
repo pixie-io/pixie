@@ -1,54 +1,7 @@
 #include <uapi/linux/ptrace.h>
 #include <uapi/linux/in6.h>
 #include <linux/socket.h>
-
-/***********************************************************
- * External structs and definitions
- ***********************************************************/
-
-// This is copied from socket_trace.h, with comments removed, so that this whole file can be
-// hermetically installed as a BPF program.
-//
-// TODO(PL-451): The struct definitions that are reused in SocketTraceConnector should be shared from
-// the same header file.
-
-const uint32_t kEventTypeSyscallWriteEvent = 1;
-const uint32_t kEventTypeSyscallSendEvent = 2;
-const uint32_t kEventTypeSyscallReadEvent = 3;
-const uint32_t kEventTypeSyscallRecvEvent = 4;
-
-const uint32_t kProtocolUnknown = 0;
-const uint32_t kProtocolHTTPResponse = 1;
-const uint32_t kProtocolHTTPRequest = 2;
-const uint32_t kProtocolMySQL = 3;
-const uint32_t kProtocolHTTP2 = 4;
-
-struct conn_info_t {
-  uint64_t timestamp_ns;
-  struct sockaddr_in6 addr;
-  uint32_t conn_id;
-  uint32_t protocol;
-  // TODO(oazizi/yzhao): These sequence numbers are internal state only.
-  // They don't need to be sent to user-land when sending conn_info_t.
-  uint64_t wr_seq_num;
-  uint64_t rd_seq_num;
-} __attribute__((__packed__, aligned(8)));
-
-#define MAX_MSG_SIZE 4096
-struct socket_data_event_t {
-  struct attr_t {
-    // TODO(oazizi/yzhao/PL-609): Remove conn_info. It should be sent separately on accept/connect only.
-    struct conn_info_t conn_info;
-    uint64_t timestamp_ns;
-    // TODO(oazizi/yzhao): tgid & fd should move to conn_info.
-    uint32_t tgid;
-    uint32_t fd;
-    uint32_t event_type;
-    uint64_t seq_num;
-    uint32_t msg_size;
-  } attr;
-  char msg[MAX_MSG_SIZE];
-} __attribute__((__packed__));
+#include "src/stirling/bcc_bpf/socket_trace.h"
 
 // This is the perf buffer for BPF program to export data from kernel to user space.
 BPF_PERF_OUTPUT(socket_http_resp_events);

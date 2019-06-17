@@ -23,8 +23,8 @@ DUMMY_SOURCE_CONNECTOR(PIDCPUUseBPFTraceConnector);
 
 // The following are string_views into BT files that are included in the binary by the linker.
 // The BT files are permanently resident in memory, so the string view is permanent too.
-OBJ_STRVIEW(cpustat_bt_script, _binary_src_stirling_bt_cpustat_bt);
-OBJ_STRVIEW(pidruntime_bt_script, _binary_src_stirling_bt_pidruntime_bt);
+OBJ_STRVIEW(cpustat_bt_script, _binary_bt_cpustat_bt_copied);
+OBJ_STRVIEW(pidruntime_bt_script, _binary_bt_pidruntime_bt_copied);
 
 namespace pl {
 namespace stirling {

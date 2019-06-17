@@ -53,8 +53,7 @@ void PIDCPUUseBCCConnector::TransferDataImpl(uint32_t table_num,
 
   // TODO(kgandhi): PL-452 There is an extra copy when calling get_table_offline. We should extract
   // the key when it is a struct from the BPFHASHTable directly.
-  table_ = bpf_.get_hash_table<uint16_t, pl_stirling_bcc_pidruntime_val>("pid_cpu_time")
-               .get_table_offline();
+  table_ = bpf_.get_hash_table<uint16_t, pidruntime_val_t>("pid_cpu_time").get_table_offline();
 
   for (auto& item : table_) {
     // TODO(kgandhi): PL-460 Consider using other types of BPF tables to avoid a searching through

@@ -1,4 +1,37 @@
+load("//bazel:pl_bpf_preprocess.bzl", "pl_bpf_preprocess")
+
 def pl_cc_resource(
+        name,
+        srcs,
+        tags = [],
+        **kwargs):
+    out_files = []
+    for src in srcs:
+        out_file = src + ".copied"
+        native.genrule(
+            name = src + "_cp_genrule",
+            outs = [out_file],
+            srcs = [src],
+            tags = tags,
+            cmd = "cat $(location {0}) > $@".format(src),
+            **kwargs
+        )
+        out_files.append(out_file)
+    pl_cc_resource_impl(name, out_files, tags, **kwargs)
+
+def pl_bpf_cc_resource(
+        name,
+        hdrs,
+        srcs,
+        tags = [],
+        **kwargs):
+    out_files = []
+    for i in range(len(srcs)):
+        out_file = pl_bpf_preprocess(name, hdrs[i], srcs[i], tags)
+        out_files.append(out_file)
+    pl_cc_resource_impl(name, out_files, tags = [], **kwargs)
+
+def pl_cc_resource_impl(
         name,
         srcs,
         tags = [],
@@ -15,10 +48,13 @@ def pl_cc_resource(
             srcs = [src],
             tags = tags,
             toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
-            cmd = " $(OBJCOPY) --input binary" +
+            # This is because the preprocessed files are now in Bazel's rule dir and $(location)
+            # will return the path of the source file, not the preprocessed file. So we cd into
+            # $(RULEDIR) and use the original file name to find the files.
+            cmd = " cd $(RULEDIR) && $(OBJCOPY) --input binary" +
                   " --output elf64-x86-64" +
                   " --binary-architecture i386:x86-64" +
-                  " $(location {0}) $(location {1});".format(src, object_file),
+                  " {0} {1};".format(src, object_file),
             **kwargs
         )
         object_files.append(object_file)
