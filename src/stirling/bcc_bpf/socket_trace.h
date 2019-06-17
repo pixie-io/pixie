@@ -15,10 +15,16 @@ const uint32_t kEventTypeSyscallRecvEvent = 4;
 
 // Protocol being used on a connection (HTTP, MySQL, etc.).
 const uint32_t kProtocolUnknown = 0;
-const uint32_t kProtocolHTTPResponse = 1;
-const uint32_t kProtocolHTTPRequest = 2;
+const uint32_t kProtocolHTTPRequest = 1;
+const uint32_t kProtocolHTTPResponse = 2;
 const uint32_t kProtocolMySQL = 3;
 const uint32_t kProtocolHTTP2 = 4;
+
+// Which transactions to trace (direction and type).
+const uint64_t kSocketTraceSendReq = 1 << 0;
+const uint64_t kSocketTraceSendResp = 1 << 1;
+const uint64_t kSocketTraceRecvReq = 1 << 2;
+const uint64_t kSocketTraceRecvResp = 1 << 3;
 
 // This struct contains information collected when a connection is established,
 // via an accept() syscall.

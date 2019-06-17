@@ -54,9 +54,13 @@ Status SocketTraceConnector::InitImpl() {
                                           ", error message: ", open_status.msg()));
     }
   }
+
+  PL_RETURN_IF_ERROR(Configure(kSocketTraceRecvResp));
+
   // TODO(oazizi): if machine is ever suspended, this would have to be called again.
   InitClockRealTimeOffset();
-  return Status();
+
+  return Status::OK();
 }
 
 Status SocketTraceConnector::StopImpl() {
@@ -70,6 +74,7 @@ Status SocketTraceConnector::StopImpl() {
                        ", error message: ", detach_status.msg()));
     }
   }
+
   for (auto& perf_buffer_spec : kPerfBufferSpecs) {
     ebpf::StatusTuple close_status = bpf_.close_perf_buffer(perf_buffer_spec.name);
     if (close_status.code() != 0) {
@@ -77,7 +82,8 @@ Status SocketTraceConnector::StopImpl() {
                                           ", error message: ", close_status.msg()));
     }
   }
-  return Status();
+
+  return Status::OK();
 }
 
 void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
@@ -97,6 +103,17 @@ void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
   TransferStreamData(table_num, record_batch);
 }
 
+Status SocketTraceConnector::Configure(uint64_t config_mask) {
+  auto control_map_handle = bpf_.get_array_table<uint64_t>("control_map");
+
+  auto update_res = control_map_handle.update_value(0, config_mask);
+  if (update_res.code() != 0) {
+    return error::Internal("Failed to set control map");
+  }
+
+  return Status::OK();
+}
+
 //-----------------------------------------------------------------------------
 // Perf Buffer Polling and Callback functions.
 //-----------------------------------------------------------------------------
@@ -113,13 +130,6 @@ void SocketTraceConnector::HandleHTTPResponseProbeOutput(void* cb_cookie, void* 
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   auto* event = static_cast<socket_data_event_t*>(data);
-
-  // TODO(oazizi): This if statement to be removed soon,
-  // because we may need to capture responses from either direction.
-  if (event->attr.event_type != kEventTypeSyscallWriteEvent &&
-      event->attr.event_type != kEventTypeSyscallSendEvent) {
-    return;
-  }
 
   connector->AcceptEvent(*event);
 }
@@ -157,7 +167,7 @@ template <typename StreamType>
 void AppendToStream(socket_data_event_t event, std::map<uint64_t, StreamType>* streams) {
   const uint64_t stream_id =
       (static_cast<uint64_t>(event.attr.tgid) << 32) | event.attr.conn_info.conn_id;
-  const uint64_t seq_num = static_cast<uint64_t>(event.attr.seq_num);
+  const uint64_t seq_num = event.attr.seq_num;
   const auto iter = streams->find(stream_id);
 
   if (iter != streams->end()) {
@@ -174,8 +184,8 @@ void AppendToStream(socket_data_event_t event, std::map<uint64_t, StreamType>* s
   stream.conn.fd = event.attr.fd;
   auto ip_endpoint_or = ParseSockAddr(event);
   if (ip_endpoint_or.ok()) {
-    stream.conn.dst_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
-    stream.conn.dst_port = ip_endpoint_or.ValueOrDie().port;
+    stream.conn.remote_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
+    stream.conn.remote_port = ip_endpoint_or.ValueOrDie().port;
   } else {
     LOG(WARNING) << "Could not parse IP address.";
   }
@@ -310,10 +320,8 @@ void SocketTraceConnector::AppendHTTPResponse(HTTPTraceRecord record,
   r.Append<r.ColIndex("tgid")>(record.conn.tgid);
   r.Append<r.ColIndex("fd")>(record.conn.fd);
   r.Append<r.ColIndex("event_type")>(EventTypeToString(record.message.type));
-  r.Append<r.ColIndex("src_addr")>(std::move(record.conn.src_addr));
-  r.Append<r.ColIndex("src_port")>(record.conn.src_port);
-  r.Append<r.ColIndex("dst_addr")>(std::move(record.conn.dst_addr));
-  r.Append<r.ColIndex("dst_port")>(record.conn.dst_port);
+  r.Append<r.ColIndex("remote_addr")>(std::move(record.conn.remote_addr));
+  r.Append<r.ColIndex("remote_port")>(record.conn.remote_port);
   r.Append<r.ColIndex("http_minor_version")>(record.message.http_minor_version);
   r.Append<r.ColIndex("http_headers")>(
       absl::StrJoin(record.message.http_headers, "\n", absl::PairFormatter(": ")));
@@ -339,17 +347,15 @@ void SocketTraceConnector::TransferMySQLEvent(const socket_data_event_t& event,
   //  }
 
   auto s = ParseSockAddr(event);
-  IPEndpoint dst_sockaddr = s.ok() ? s.ConsumeValueOrDie() : IPEndpoint();
+  IPEndpoint remote_sockaddr = s.ok() ? s.ConsumeValueOrDie() : IPEndpoint();
 
   RecordBuilder<&kMySQLTable> r(record_batch);
   r.Append<r.ColIndex("time_")>(event.attr.timestamp_ns + ClockRealTimeOffset());
   r.Append<r.ColIndex("tgid")>(event.attr.tgid);
   r.Append<r.ColIndex("fd")>(event.attr.fd);
   r.Append<r.ColIndex("bpf_event")>(event.attr.event_type);
-  r.Append<r.ColIndex("src_addr")>("-");
-  r.Append<r.ColIndex("src_port")>(-1);
-  r.Append<r.ColIndex("dst_addr")>(std::move(dst_sockaddr.ip));
-  r.Append<r.ColIndex("dst_port")>(dst_sockaddr.port);
+  r.Append<r.ColIndex("remote_addr")>(std::move(remote_sockaddr.ip));
+  r.Append<r.ColIndex("remote_port")>(remote_sockaddr.port);
   r.Append<r.ColIndex("body")>(std::string(event.msg, event.attr.msg_size));
 }
 

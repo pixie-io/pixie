@@ -103,6 +103,11 @@ class HTTPTraceBPFTest : public ::testing::Test {
     std::thread server_thread;
   };
 
+  void ConfigureCapture(uint64_t mask) {
+    auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source.get());
+    ASSERT_OK(socket_trace_connector->Configure(mask));
+  }
+
   static constexpr std::string_view kHTTPReqMsg1 = R"(GET /endpoint1 HTTP/1.1
 User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:67.0) Gecko/20100101 Firefox/67.0
 
@@ -133,7 +138,7 @@ Content-Length: 0
   static constexpr DataTableSchema kHTTPTable = SocketTraceConnector::kHTTPTable;
   static constexpr uint64_t kHTTPHeaderIdx = kHTTPTable.ColIndex("http_headers");
   static constexpr uint64_t kHTTPTGIDIdx = kHTTPTable.ColIndex("tgid");
-  static constexpr uint64_t kHTTPDstAddrIdx = kHTTPTable.ColIndex("dst_addr");
+  static constexpr uint64_t kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
   static constexpr uint64_t kHTTPFdIdx = kHTTPTable.ColIndex("fd");
 
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
@@ -144,6 +149,8 @@ Content-Length: 0
 };
 
 TEST_F(HTTPTraceBPFTest, TestWriteRespCapture) {
+  ConfigureCapture(kSocketTraceSendResp);
+
   ClientServerSystem system;
   system.RunWriterReader({kHTTPRespMsg1, kHTTPRespMsg2});
 
@@ -164,13 +171,13 @@ TEST_F(HTTPTraceBPFTest, TestWriteRespCapture) {
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
               record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
     EXPECT_EQ(system.Server().sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(0).val);
-    EXPECT_EQ("127.0.0.1", record_batch[kHTTPDstAddrIdx]->Get<types::StringValue>(0));
+    EXPECT_EQ("127.0.0.1", record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(0));
 
     EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(1).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
               record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
     EXPECT_EQ(system.Server().sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(1).val);
-    EXPECT_EQ("127.0.0.1", record_batch[kHTTPDstAddrIdx]->Get<types::StringValue>(1));
+    EXPECT_EQ("127.0.0.1", record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(1));
   }
 
   // TODO(oazizi): Enable this (and similar cases below) once it is robust.
@@ -189,6 +196,8 @@ TEST_F(HTTPTraceBPFTest, TestWriteRespCapture) {
 }
 
 TEST_F(HTTPTraceBPFTest, TestSendRespCapture) {
+  ConfigureCapture(kSocketTraceSendResp);
+
   ClientServerSystem system;
   system.RunSenderReceiver({kHTTPRespMsg1, kHTTPRespMsg2});
 
@@ -230,7 +239,95 @@ TEST_F(HTTPTraceBPFTest, TestSendRespCapture) {
   EXPECT_OK(source->Stop());
 }
 
-TEST_F(HTTPTraceBPFTest, DISABLED_TestMySQLWriteCapturedData) {
+TEST_F(HTTPTraceBPFTest, TestReadRespCapture) {
+  ConfigureCapture(kSocketTraceRecvResp);
+
+  ClientServerSystem system;
+  system.RunWriterReader({kHTTPRespMsg1, kHTTPRespMsg2});
+
+  {
+    types::ColumnWrapperRecordBatch record_batch;
+    EXPECT_OK(InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch));
+    source->TransferData(kHTTPTableNum, &record_batch);
+
+    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
+      ASSERT_EQ(2, col->Size());
+    }
+
+    // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
+    // host machine are identical.
+    // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
+
+    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
+              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
+    EXPECT_EQ(system.Client().sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(0).val);
+
+    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
+              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
+    EXPECT_EQ(system.Client().sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(1).val);
+  }
+
+  // Check that MySQL table did not capture any data.
+  //  {
+  //    types::ColumnWrapperRecordBatch record_batch;
+  //    EXPECT_OK(InitRecordBatch(mysql_table_schema.elements(), /*target_capacity*/ 2,
+  //    &record_batch)); source->TransferData(mysql_table_num, &record_batch);
+  //
+  //    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
+  //      ASSERT_EQ(0, col->Size());
+  //    }
+  //  }
+
+  EXPECT_OK(source->Stop());
+}
+
+TEST_F(HTTPTraceBPFTest, TestRecvRespCapture) {
+  ConfigureCapture(kSocketTraceRecvResp);
+
+  ClientServerSystem system;
+  system.RunSenderReceiver({kHTTPRespMsg1, kHTTPRespMsg2});
+
+  {
+    types::ColumnWrapperRecordBatch record_batch;
+    EXPECT_OK(InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch));
+    source->TransferData(kHTTPTableNum, &record_batch);
+
+    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
+      ASSERT_EQ(2, col->Size());
+    }
+
+    // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
+    // host machine are identical.
+    // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
+
+    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
+              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
+    EXPECT_EQ(system.Client().sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(0).val);
+
+    EXPECT_EQ(getpid(), record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
+              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
+    EXPECT_EQ(system.Client().sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(1).val);
+  }
+
+  // Check that MySQL table did not capture any data.
+  //  {
+  //    types::ColumnWrapperRecordBatch record_batch;
+  //    EXPECT_OK(InitRecordBatch(mysql_table_schema.elements(), /*target_capacity*/ 2,
+  //    &record_batch)); source->TransferData(mysql_table_num, &record_batch);
+  //
+  //    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
+  //      ASSERT_EQ(0, col->Size());
+  //    }
+  //  }
+
+  EXPECT_OK(source->Stop());
+}
+
+TEST_F(HTTPTraceBPFTest, DISABLED_TestMySQLWriteCapture) {
   ClientServerSystem system;
   system.RunSenderReceiver({kMySQLMsg, kMySQLMsg});
 
@@ -265,6 +362,8 @@ TEST_F(HTTPTraceBPFTest, DISABLED_TestMySQLWriteCapturedData) {
 }
 
 TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
+  ConfigureCapture(kSocketTraceRecvResp | kSocketTraceSendResp);
+
   ClientServerSystem system;
   system.RunWriterReader({kNoProtocolMsg, "", kNoProtocolMsg, ""});
 
@@ -296,6 +395,8 @@ TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
 }
 
 TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
+  ConfigureCapture(kSocketTraceRecvResp);
+
   // Two separate connections.
   ClientServerSystem system1;
   system1.RunWriterReader({kHTTPRespMsg1});

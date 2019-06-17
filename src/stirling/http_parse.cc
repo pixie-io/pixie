@@ -86,8 +86,8 @@ StatusOr<IPEndpoint> ParseSockAddr(const socket_data_event_t& event) {
 bool ParseSockAddr(const socket_data_event_t& event, HTTPTraceRecord* record) {
   auto ip_endpoint_or = ParseSockAddr(event);
   if (ip_endpoint_or.ok()) {
-    record->conn.dst_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
-    record->conn.dst_port = ip_endpoint_or.ValueOrDie().port;
+    record->conn.remote_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
+    record->conn.remote_port = ip_endpoint_or.ValueOrDie().port;
     return true;
   }
   return false;

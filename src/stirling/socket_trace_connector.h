@@ -64,10 +64,8 @@ class SocketTraceConnector : public SourceConnector {
           {"event_type", types::DataType::STRING, types::PatternType::GENERAL_ENUM},
           // TODO(PL-519): Eventually, use the appropriate data type to
           // represent IP addresses, as will be resolved in the Jira issue.
-          {"src_addr", types::DataType::STRING, types::PatternType::GENERAL},
-          {"src_port", types::DataType::INT64, types::PatternType::GENERAL},
-          {"dst_addr", types::DataType::STRING, types::PatternType::GENERAL},
-          {"dst_port", types::DataType::INT64, types::PatternType::GENERAL},
+          {"remote_addr", types::DataType::STRING, types::PatternType::GENERAL},
+          {"remote_port", types::DataType::INT64, types::PatternType::GENERAL},
           {"http_minor_version", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
           {"http_headers", types::DataType::STRING, types::PatternType::STRUCTURED},
           {"http_req_method", types::DataType::STRING, types::PatternType::GENERAL_ENUM},
@@ -86,10 +84,8 @@ class SocketTraceConnector : public SourceConnector {
           {"tgid", types::DataType::INT64, types::PatternType::GENERAL},
           {"fd", types::DataType::INT64, types::PatternType::GENERAL},
           {"bpf_event", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
-          {"src_addr", types::DataType::STRING, types::PatternType::GENERAL},
-          {"src_port", types::DataType::INT64, types::PatternType::GENERAL},
-          {"dst_addr", types::DataType::STRING, types::PatternType::GENERAL},
-          {"dst_port", types::DataType::INT64, types::PatternType::GENERAL},
+          {"remote_addr", types::DataType::STRING, types::PatternType::GENERAL},
+          {"remote_port", types::DataType::INT64, types::PatternType::GENERAL},
           {"body", types::DataType::STRING, types::PatternType::STRUCTURED},
   };
   // clang-format on
@@ -101,7 +97,7 @@ class SocketTraceConnector : public SourceConnector {
   static constexpr uint32_t kMySQLTableNum = SourceConnector::TableNum(kTables, kMySQLTable);
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
-  static constexpr std::chrono::milliseconds kDefaultPushPeriod{5000};
+  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
@@ -110,6 +106,8 @@ class SocketTraceConnector : public SourceConnector {
   Status InitImpl() override;
   Status StopImpl() override;
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
+
+  Status Configure(uint64_t config_mask);
 
   const std::map<uint64_t, HTTPStream>& TestOnlyHTTPStreams() const { return http_streams_; }
   const std::map<uint64_t, HTTP2Stream>& TestOnlyHTTP2Streams() const { return http2_streams_; }
@@ -182,6 +180,8 @@ class SocketTraceConnector : public SourceConnector {
   };
 
   static inline const std::vector<ProbeSpec> kProbeSpecs = {
+      {"connect", "probe_entry_connect", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"connect", "probe_ret_connect", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"accept", "probe_entry_accept", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"accept", "probe_ret_accept", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"accept4", "probe_entry_accept4", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
@@ -207,7 +207,7 @@ class SocketTraceConnector : public SourceConnector {
 
   // Indexed by table_num from kTables (one-to-one mapping).
   static inline const std::vector<PerfBufferSpec> kPerfBufferSpecs = {
-      {"socket_http_resp_events", &SocketTraceConnector::HandleHTTPResponseProbeOutput,
+      {"socket_http_events", &SocketTraceConnector::HandleHTTPResponseProbeOutput,
        &SocketTraceConnector::HandleProbeLoss,
        /* num_pages */ 8},
       {"socket_mysql_events", &SocketTraceConnector::HandleMySQLProbeOutput,

@@ -15,10 +15,8 @@ struct SocketConnection {
   uint64_t timestamp_ns = 0;
   uint32_t tgid = 0;
   uint32_t fd = -1;
-  std::string src_addr = "-";
-  int src_port = -1;
-  std::string dst_addr = "-";
-  int dst_port = -1;
+  std::string remote_addr = "-";
+  int remote_port = -1;
 };
 
 }  // namespace stirling

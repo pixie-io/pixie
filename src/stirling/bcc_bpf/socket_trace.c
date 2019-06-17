@@ -4,7 +4,7 @@
 #include "src/stirling/bcc_bpf/socket_trace.h"
 
 // This is the perf buffer for BPF program to export data from kernel to user space.
-BPF_PERF_OUTPUT(socket_http_resp_events);
+BPF_PERF_OUTPUT(socket_http_events);
 BPF_PERF_OUTPUT(socket_mysql_events);
 BPF_PERF_OUTPUT(socket_http2_events);
 
@@ -12,7 +12,12 @@ BPF_PERF_OUTPUT(socket_http2_events);
  * Internal structs and definitions
  ***********************************************************/
 
-struct addr_info_t {
+struct connect_info_t {
+  struct sockaddr_in6 addr;
+  int fd;
+} __attribute__((__packed__, aligned(8)));
+
+struct accept_info_t {
   struct sockaddr *addr;
   size_t *addrlen;
 } __attribute__((__packed__, aligned(8)));
@@ -22,23 +27,39 @@ struct data_info_t {
   const char *buf;
 } __attribute__((__packed__, aligned(8)));
 
+// This control_map is a bit-mask that controls which directions are traced in a connection.
+// The four possibilities for a given protocol are:
+//  - Trace sent requests (client).
+//  - Trace received requests (server).
+//  - Trace sent responses (server).
+//  - Trace received responses (client).
+// The bits are defined in socket_trace.h (kSocketTraceSendReq, etc.).
+// TODO(oazizi): Currently only applies to HTTP, extend this to cover MySQL as well.
+BPF_ARRAY(control_map, u64, 1);
 
 // Map from user-space file descriptors to the connections obtained from accept() syscall.
 // Tracks connection from accept() -> close().
 // Key is {tgid, fd}.
 BPF_HASH(conn_info_map, u64, struct conn_info_t);
 
-// Map from threads to its ongoing accept() syscall's input argument.
+// Map from thread to its ongoing accept() syscall's input argument.
 // Tracks accept() call from entry -> exit.
 // Key is {tgid, pid}.
-BPF_HASH(active_sock_addr, u64, struct addr_info_t);
+BPF_HASH(active_accept_info_map, u64, struct accept_info_t);
 
-// Map from threads to its ongoing write() syscall's input argument.
+// Map from thread to its ongoing connect() syscall's input argument.
+// Tracks connect() call from entry -> exit.
+// Key is {tgid, pid}.
+BPF_HASH(active_connect_info_map, u64, struct connect_info_t);
+
+// Map from thread to its ongoing write() syscall's input argument.
 // Tracks write() call from entry -> exit.
 // Key is {tgid, pid}.
-//
-// TODO(yzhao): Consider merging this with active_sock_addr.
 BPF_HASH(active_write_info_map, u64, struct data_info_t);
+
+// Map from thread to its ongoing read() syscall's input argument.
+// Tracks read() call from entry -> exit.
+// Key is {tgid, pid}.
 BPF_HASH(active_read_info_map, u64, struct data_info_t);
 
 // TODO(yzhao): Change to use tgid+fd as the key.
@@ -54,6 +75,14 @@ uint32_t get_conn_id(u32 tgid) {
     conn_id = (*curr_conn_id)++;
   }
   return conn_id;
+}
+
+static inline __attribute__((__always_inline__))
+uint64_t get_control() {
+  u32 kZero = 0;
+  u64 kZero64 = 0;
+  u64* control_ptr = control_map.lookup_or_init(&kZero, &kZero64);
+  return *control_ptr;
 }
 
 // BPF programs are limited to a 512-byte stack. We store this value per CPU
@@ -173,18 +202,70 @@ static struct conn_info_t* get_conn_info(u64 lookup_fd, const char* buf, size_t 
  * BPF syscall probe functions
  ***********************************************************/
 
-// This function stores the address to the sockaddr struct in the active_sock_addr map.
+static int probe_entry_connect_impl(struct pt_regs *ctx, int sockfd, const struct sockaddr *addr, size_t addrlen) {
+  u64 id = bpf_get_current_pid_tgid();
+
+  // Only record IP (IPV4 and IPV6) connections.
+  if (!(addr->sa_family == AF_INET || addr->sa_family == AF_INET6)) {
+    return 0;
+  }
+
+  struct connect_info_t connect_info;
+
+  bpf_probe_read(&connect_info.addr, sizeof(struct sockaddr_in6), (const void*) addr);
+  connect_info.fd = sockfd;
+
+  active_connect_info_map.update(&id, &connect_info);
+
+  return 0;
+}
+
+static int probe_ret_connect_impl(struct pt_regs *ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  u32 tgid = id >> 32;
+
+  int ret_val = PT_REGS_RC(ctx);
+  if (ret_val < 0) {
+    goto done;
+  }
+
+  struct connect_info_t* connect_info = active_connect_info_map.lookup(&id);
+  if (connect_info == NULL) {
+    goto done;
+  }
+
+  // Prepend TGID to make the FD unique across processes.
+  u64 tgid_fd = ((u64)tgid << 32) | (u32)connect_info->fd;
+
+  struct conn_info_t conn_info;
+  memset(&conn_info, 0, sizeof(struct conn_info_t));
+  conn_info.timestamp_ns = bpf_ktime_get_ns();
+  conn_info.addr = connect_info->addr;
+  conn_info.conn_id = get_conn_id(tgid);
+  conn_info.protocol = kProtocolUnknown;
+  conn_info.wr_seq_num = 0;
+  conn_info.rd_seq_num = 0;
+  conn_info_map.update(&tgid_fd, &conn_info);
+
+ done:
+  // Regardless of what happened, after accept() returns, there is no need to track the sock_addr
+  // being accepted during the accept() call, therefore we can remove the entry.
+  active_connect_info_map.delete(&id);
+  return 0;
+}
+
+// This function stores the address to the sockaddr struct in the active_accept_info_map map.
 // The key is the current pid/tgid.
 //
 // TODO(yzhao): We are not able to trace the source address/port yet. We might need to probe the
 // socket() syscall.
 static int probe_entry_accept_impl(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t *addrlen) {
   u64 id = bpf_get_current_pid_tgid();
-  struct addr_info_t addr_info;
 
-  addr_info.addr = addr;
-  addr_info.addrlen = addrlen;
-  active_sock_addr.update(&id, &addr_info);
+  struct accept_info_t accept_info;
+  accept_info.addr = addr;
+  accept_info.addrlen = addrlen;
+  active_accept_info_map.update(&id, &accept_info);
 
   return 0;
 }
@@ -199,26 +280,24 @@ static int probe_ret_accept_impl(struct pt_regs *ctx) {
     goto done;
   }
 
-  struct addr_info_t *addr_info = active_sock_addr.lookup(&id);
-  if (addr_info == NULL) {
+  struct accept_info_t *accept_info = active_accept_info_map.lookup(&id);
+  if (accept_info == NULL) {
     goto done;
   }
 
   // Only record IP (IPV4 and IPV6) connections.
-  if (!(addr_info->addr->sa_family == AF_INET || addr_info->addr->sa_family == AF_INET6)) {
+  if (!(accept_info->addr->sa_family == AF_INET || accept_info->addr->sa_family == AF_INET6)) {
     goto done;
   }
 
   // Prepend TGID to make the FD unique across processes.
   u64 tgid_fd = ((u64)tgid << 32) | (u32)ret_fd;
 
-  u32 conn_id = get_conn_id(tgid);
-
   struct conn_info_t conn_info;
   memset(&conn_info, 0, sizeof(struct conn_info_t));
   conn_info.timestamp_ns = bpf_ktime_get_ns();
-  conn_info.addr = *((struct sockaddr_in6*) addr_info->addr);
-  conn_info.conn_id = conn_id;
+  conn_info.addr = *((struct sockaddr_in6*) accept_info->addr);
+  conn_info.conn_id = get_conn_id(tgid);
   conn_info.protocol = kProtocolUnknown;
   conn_info.wr_seq_num = 0;
   conn_info.rd_seq_num = 0;
@@ -227,7 +306,7 @@ static int probe_ret_accept_impl(struct pt_regs *ctx) {
  done:
   // Regardless of what happened, after accept() returns, there is no need to track the sock_addr
   // being accepted during the accept() call, therefore we can remove the entry.
-  active_sock_addr.delete(&id);
+  active_accept_info_map.delete(&id);
   return 0;
 }
 
@@ -245,6 +324,17 @@ static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
   if (conn_info->protocol == kProtocolUnknown) {
+    return 0;
+  }
+
+  // HTTP: filter for request or response based on control flags.
+  u64 control = get_control();
+
+  if ((conn_info->protocol == kProtocolHTTPResponse) && !(control & kSocketTraceSendResp)) {
+    return 0;
+  }
+
+  if ((conn_info->protocol == kProtocolHTTPRequest) && !(control & kSocketTraceSendReq)) {
     return 0;
   }
 
@@ -298,7 +388,8 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
   // Write snooped arguments to perf ring buffer.
   const uint32_t size_to_submit = sizeof(event->attr) + buf_size;
   switch (conn_info->protocol) {
-    case kProtocolHTTPResponse: socket_http_resp_events.perf_submit(ctx, event, size_to_submit); break;
+    case kProtocolHTTPRequest: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
+    case kProtocolHTTPResponse: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolHTTP2: socket_http2_events.perf_submit(ctx, event, size_to_submit); break;
   }
@@ -353,6 +444,17 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
     return 0;
   }
 
+  // HTTP: filter for request or response based on control flags.
+  u64 control = get_control();
+
+  if ((conn_info->protocol == kProtocolHTTPResponse) && !(control & kSocketTraceRecvResp)) {
+    return 0;
+  }
+
+  if ((conn_info->protocol == kProtocolHTTPRequest) && !(control & kSocketTraceRecvReq)) {
+    return 0;
+  }
+
   struct socket_data_event_t* event = data_buffer();
   if (event == NULL) {
     goto done;
@@ -373,7 +475,8 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
   // Write snooped arguments to perf ring buffer. Note that msg field is truncated.
   const uint32_t size_to_submit = sizeof(event->attr) + buf_size;
   switch (conn_info->protocol) {
-    case kProtocolHTTPResponse: socket_http_resp_events.perf_submit(ctx, event, size_to_submit); break;
+    case kProtocolHTTPRequest: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
+    case kProtocolHTTPResponse: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolHTTP2: socket_http2_events.perf_submit(ctx, event, size_to_submit); break;
   }
@@ -397,6 +500,14 @@ int probe_close(struct pt_regs *ctx, int fd) {
 /***********************************************************
  * BPF syscall probe function entry-points
  ***********************************************************/
+
+int probe_entry_connect(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t addrlen) {
+  return probe_entry_connect_impl(ctx, sockfd, addr, addrlen);
+}
+
+int probe_ret_connect(struct pt_regs *ctx) {
+  return probe_ret_connect_impl(ctx);
+}
 
 int probe_entry_accept(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t *addrlen) {
   return probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
