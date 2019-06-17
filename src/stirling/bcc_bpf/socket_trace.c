@@ -143,6 +143,32 @@ static u32 infer_protocol(const char *buf, size_t count) {
                                          kProtocolUnknown;
 }
 
+static struct conn_info_t* get_conn_info(u64 lookup_fd, const char* buf, size_t count) {
+  struct conn_info_t* conn_info = conn_info_map.lookup(&lookup_fd);
+
+  // Try to infer connection type (protocol) based on data.
+  // If protocol is detected, then let it through, even though accept()/connect() was not captured.
+  // Won't know remote endpoint (remote IP and port), but still let it through.
+  // TODO(oazizi): Future architecture should have user-land provide this information.
+  if (conn_info == NULL) {
+    u32 protocol = infer_protocol(buf, count);
+    if (protocol != kProtocolUnknown) {
+      struct conn_info_t new_conn_info;
+      memset(&new_conn_info, 0, sizeof(struct conn_info_t));
+      new_conn_info.protocol = protocol;
+      conn_info = conn_info_map.lookup_or_init(&lookup_fd, &new_conn_info);
+    }
+  }
+
+  // Attempt to classify protocol, if unknown.
+  if (conn_info != NULL && conn_info->protocol == kProtocolUnknown) {
+    // TODO(oazizi): Look for only certain protocols on write/send()?
+    conn_info->protocol = infer_protocol(buf, count);
+  }
+
+  return conn_info;
+}
+
 /***********************************************************
  * BPF syscall probe functions
  ***********************************************************/
@@ -212,31 +238,9 @@ static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t
   u32 tgid = id >> 32;
   u64 lookup_fd = ((u64)tgid << 32) | (u32)fd;
 
-  struct conn_info_t* conn_info = conn_info_map.lookup(&lookup_fd);
-
-  // Try to infer connection type (protocol) based on written data.
-  // If protocol is detected, then let it through, even though accept_info was not captured.
-  // Won't know remote endpoint (e.g. IP), but still let it through.
-  // TODO(oazizi): Future architecture could have user-land provide this information.
-  if (conn_info == NULL) {
-    u32 protocol = infer_protocol(buf, count);
-    if (protocol != kProtocolUnknown) {
-      struct conn_info_t new_conn_info;
-      memset(&new_conn_info, 0, sizeof(struct conn_info_t));
-      new_conn_info.protocol = protocol;
-      conn_info = conn_info_map.lookup_or_init(&lookup_fd, &new_conn_info);
-    }
-  }
-
-  // If connection info is still NULL, abort.
+  struct conn_info_t* conn_info = get_conn_info(lookup_fd, buf, count);
   if (conn_info == NULL) {
     return 0;
-  }
-
-  // Attempt to classify protocol, if unknown.
-  if (conn_info->protocol == kProtocolUnknown) {
-    // TODO(oazizi): Look for only certain protocols on write/send()?
-    conn_info->protocol = infer_protocol(buf, count);
   }
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
@@ -336,38 +340,18 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
   }
 
   u64 lookup_fd = read_info->lookup_fd;
-  struct conn_info_t* conn_info = conn_info_map.lookup(&lookup_fd);
 
   const char* buf = read_info->buf;
 
-  // Try to infer connection type.
-  if (conn_info == NULL) {
-    u32 protocol = infer_protocol(buf, bytes_read);
-    if (protocol != kProtocolUnknown) {
-      struct conn_info_t new_conn_info;
-      memset(&new_conn_info, 0, sizeof(struct conn_info_t));
-      new_conn_info.protocol = protocol;
-      conn_info = conn_info_map.lookup_or_init(&lookup_fd, &new_conn_info);
-    }
-  }
-
-  // If connection info is still NULL, abort.
+  struct conn_info_t* conn_info = get_conn_info(lookup_fd, buf, bytes_read);
   if (conn_info == NULL) {
     goto done;
   }
 
-  int protocol = conn_info->protocol;
-  // Attempt to classify protocol, if unknown.
-  if (protocol == kProtocolUnknown) {
-    // TODO(oazizi): Look for only certain protocols on read/recv()?
-    protocol = infer_protocol(buf, bytes_read);
-  }
-
   // If this connection has an unknown protocol, abort (to avoid pollution).
-  if (protocol == kProtocolUnknown) {
+  if (conn_info->protocol == kProtocolUnknown) {
     return 0;
   }
-  conn_info->protocol = protocol;
 
   struct socket_data_event_t* event = data_buffer();
   if (event == NULL) {
