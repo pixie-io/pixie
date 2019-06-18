@@ -136,15 +136,18 @@ static bool is_http_request(const char *buf, size_t count) {
 }
 
 static bool is_mysql_protocol(const char *buf, size_t count) {
-  if (count < 1){
+  // Need at least 7 bytes for COM_STMT_PREPARE + SELECT.
+  // Plus there needs to be some substance to the query after that.
+  // Here, expect at least 8 bytes.
+  if (count < 8){
     return false;
   }
 
-  // MySQL queries appear to start with this special SYN character (0x16).
-  // This was discovered experimentally, and is not guaranteed to be robust.
-  // TODO(oazizi): Find a better way.
-  // 0x16 represents COM_STMT_PREPARE in the MySQL protocol.
-  if (*buf == 0x16) {
+  // MySQL queries start with byte 0x16 (COM_STMT_PREPARE in the MySQL protocol).
+  // For now, we also expect the word SELECT to avoid pollution.
+  // TODO(oazizi): Make this more robust.
+  if (buf[0] == 0x16 &&
+      buf[1] == 'S' && buf[2] == 'E' && buf[3] == 'L' && buf[4] == 'E' && buf[5] == 'C'  && buf[6] == 'T') {
     return true;
   }
 
@@ -477,7 +480,7 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
   switch (conn_info->protocol) {
     case kProtocolHTTPRequest: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolHTTPResponse: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
-    case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
+    //case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolHTTP2: socket_http2_events.perf_submit(ctx, event, size_to_submit); break;
   }
 
