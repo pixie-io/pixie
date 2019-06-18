@@ -16,8 +16,10 @@ const config = {
     },
     "sidebar": {
         "forcedNavOrder": [
-            "/introduction",
-                    "/codeblock"
+             "/getting-started",
+             "/installation",
+             "/admin",
+             "/user-guides"
         ],
         "links": [
             { "text": "", "link": ""},
