@@ -34,8 +34,8 @@ struct data_info_t {
 //  - Trace sent responses (server).
 //  - Trace received responses (client).
 // The bits are defined in socket_trace.h (kSocketTraceSendReq, etc.).
-// TODO(oazizi): Currently only applies to HTTP, extend this to cover MySQL as well.
-BPF_ARRAY(control_map, u64, 1);
+// There is a control map element for each protocol.
+BPF_ARRAY(control_map, u64, kNumProtocols);
 
 // Map from user-space file descriptors to the connections obtained from accept() syscall.
 // Tracks connection from accept() -> close().
@@ -78,10 +78,9 @@ uint32_t get_conn_id(u32 tgid) {
 }
 
 static inline __attribute__((__always_inline__))
-uint64_t get_control() {
-  u32 kZero = 0;
-  u64 kZero64 = 0;
-  u64* control_ptr = control_map.lookup_or_init(&kZero, &kZero64);
+uint64_t get_control(u32 protocol) {
+  u64 kZero = 0;
+  u64* control_ptr = control_map.lookup_or_init(&protocol, &kZero);
   return *control_ptr;
 }
 
@@ -167,35 +166,56 @@ static bool is_http2_connection_preface(const char *buf, size_t count) {
   return buf[0] == 'P' && buf[1] == 'R' && buf[2] == 'I';
 }
 
-static u32 infer_protocol(const char *buf, size_t count) {
-  return is_http_response(buf, count)  ? kProtocolHTTPResponse :
-         is_http_request(buf, count)   ? kProtocolHTTPRequest :
-         is_mysql_protocol(buf, count) ? kProtocolMySQL :
-         is_http2_connection_preface(buf, count) ? kProtocolHTTP2 :
-                                         kProtocolUnknown;
+static struct traffic_class_t infer_traffic(const char *buf, size_t count) {
+  struct traffic_class_t traffic_class;
+  if (is_http_response(buf, count)) {
+    traffic_class.protocol = kProtocolHTTP;
+    traffic_class.message_type = kMessageTypeResponses;
+  }
+  else if (is_http_request(buf, count)) {
+    traffic_class.protocol = kProtocolHTTP;
+    traffic_class.message_type = kMessageTypeRequests;
+  }
+  else if (is_mysql_protocol(buf, count)) {
+    traffic_class.protocol = kProtocolMySQL;
+    traffic_class.message_type = kMessageTypeRequests;
+  }
+  else if (is_http2_connection_preface(buf, count)) {
+    traffic_class.protocol = kProtocolHTTP2;
+    traffic_class.message_type = kMessageTypeMixed;
+  }
+  else {
+    traffic_class.protocol = kProtocolUnknown;
+    traffic_class.message_type = kMessageTypeUnknown;
+  }
+  return traffic_class;
 }
 
 static struct conn_info_t* get_conn_info(u64 lookup_fd, const char* buf, size_t count) {
   struct conn_info_t* conn_info = conn_info_map.lookup(&lookup_fd);
 
+  // TODO(oazizi): Future architecture should have user-land provide the traffic_class.
+  // TODO(oazizi): conn_info currently works only if tracing on the send or recv side of a process,
+  //               but not both simultaneously, because we need to mark two traffic classes.
+
   // Try to infer connection type (protocol) based on data.
   // If protocol is detected, then let it through, even though accept()/connect() was not captured.
   // Won't know remote endpoint (remote IP and port), but still let it through.
-  // TODO(oazizi): Future architecture should have user-land provide this information.
   if (conn_info == NULL) {
-    u32 protocol = infer_protocol(buf, count);
-    if (protocol != kProtocolUnknown) {
+    struct traffic_class_t traffic_class = infer_traffic(buf, count);
+    if (traffic_class.protocol != kProtocolUnknown) {
       struct conn_info_t new_conn_info;
       memset(&new_conn_info, 0, sizeof(struct conn_info_t));
-      new_conn_info.protocol = protocol;
+      new_conn_info.traffic_class = traffic_class;
       conn_info = conn_info_map.lookup_or_init(&lookup_fd, &new_conn_info);
     }
   }
 
   // Attempt to classify protocol, if unknown.
-  if (conn_info != NULL && conn_info->protocol == kProtocolUnknown) {
+  if (conn_info != NULL && conn_info->traffic_class.protocol == kProtocolUnknown) {
     // TODO(oazizi): Look for only certain protocols on write/send()?
-    conn_info->protocol = infer_protocol(buf, count);
+    struct traffic_class_t traffic_class = infer_traffic(buf, count);
+    conn_info->traffic_class = traffic_class;
   }
 
   return conn_info;
@@ -245,7 +265,8 @@ static int probe_ret_connect_impl(struct pt_regs *ctx) {
   conn_info.timestamp_ns = bpf_ktime_get_ns();
   conn_info.addr = connect_info->addr;
   conn_info.conn_id = get_conn_id(tgid);
-  conn_info.protocol = kProtocolUnknown;
+  conn_info.traffic_class.protocol = kProtocolUnknown;
+  conn_info.traffic_class.message_type = kMessageTypeUnknown;
   conn_info.wr_seq_num = 0;
   conn_info.rd_seq_num = 0;
   conn_info_map.update(&tgid_fd, &conn_info);
@@ -301,7 +322,8 @@ static int probe_ret_accept_impl(struct pt_regs *ctx) {
   conn_info.timestamp_ns = bpf_ktime_get_ns();
   conn_info.addr = *((struct sockaddr_in6*) accept_info->addr);
   conn_info.conn_id = get_conn_id(tgid);
-  conn_info.protocol = kProtocolUnknown;
+  conn_info.traffic_class.protocol = kProtocolUnknown;
+  conn_info.traffic_class.message_type = kMessageTypeUnknown;
   conn_info.wr_seq_num = 0;
   conn_info.rd_seq_num = 0;
   conn_info_map.update(&tgid_fd, &conn_info);
@@ -326,18 +348,22 @@ static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t
   }
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
-  if (conn_info->protocol == kProtocolUnknown) {
+  if (conn_info->traffic_class.protocol == kProtocolUnknown) {
     return 0;
   }
 
-  // HTTP: filter for request or response based on control flags.
-  u64 control = get_control();
+  // Filter for request or response based on control flags and protocol type.
+  bool trace = false;
 
-  if ((conn_info->protocol == kProtocolHTTPResponse) && !(control & kSocketTraceSendResp)) {
-    return 0;
+  u64 control = get_control(conn_info->traffic_class.protocol);
+
+  switch (conn_info->traffic_class.message_type) {
+    case kMessageTypeRequests: trace = (control & kSocketTraceSendReq); break;
+    case kMessageTypeResponses: trace = (control & kSocketTraceSendResp); break;
+    case kMessageTypeMixed: trace = (control & (kSocketTraceSendReq | kSocketTraceSendResp)); break;
   }
 
-  if ((conn_info->protocol == kProtocolHTTPRequest) && !(control & kSocketTraceSendReq)) {
+  if (!trace) {
     return 0;
   }
 
@@ -390,11 +416,10 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
 
   // Write snooped arguments to perf ring buffer.
   const uint32_t size_to_submit = sizeof(event->attr) + buf_size;
-  switch (conn_info->protocol) {
-    case kProtocolHTTPRequest: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
-    case kProtocolHTTPResponse: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
-    case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
+  switch (conn_info->traffic_class.protocol) {
+    case kProtocolHTTP: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolHTTP2: socket_http2_events.perf_submit(ctx, event, size_to_submit); break;
+    case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
   }
 
  done:
@@ -443,19 +468,22 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
   }
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
-  if (conn_info->protocol == kProtocolUnknown) {
+  if (conn_info->traffic_class.protocol == kProtocolUnknown) {
     return 0;
   }
 
-  // HTTP: filter for request or response based on control flags.
-  u64 control = get_control();
+  // Filter for request or response based on control flags and protocol type.
+  bool trace = false;
 
-  if ((conn_info->protocol == kProtocolHTTPResponse) && !(control & kSocketTraceRecvResp)) {
-    return 0;
+  u64 control = get_control(conn_info->traffic_class.protocol);
+  switch (conn_info->traffic_class.message_type) {
+    case kMessageTypeRequests: trace = (control & kSocketTraceRecvReq); break;
+    case kMessageTypeResponses: trace = (control & kSocketTraceRecvResp); break;
+    case kMessageTypeMixed: trace = (control & (kSocketTraceRecvReq | kSocketTraceRecvResp)); break;
   }
 
-  if ((conn_info->protocol == kProtocolHTTPRequest) && !(control & kSocketTraceRecvReq)) {
-    return 0;
+  if (!trace) {
+    goto done;
   }
 
   struct socket_data_event_t* event = data_buffer();
@@ -477,11 +505,10 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
 
   // Write snooped arguments to perf ring buffer. Note that msg field is truncated.
   const uint32_t size_to_submit = sizeof(event->attr) + buf_size;
-  switch (conn_info->protocol) {
-    case kProtocolHTTPRequest: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
-    case kProtocolHTTPResponse: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
-    //case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
+  switch (conn_info->traffic_class.protocol) {
+    case kProtocolHTTP: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolHTTP2: socket_http2_events.perf_submit(ctx, event, size_to_submit); break;
+    case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
   }
 
   done:

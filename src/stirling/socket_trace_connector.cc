@@ -55,7 +55,9 @@ Status SocketTraceConnector::InitImpl() {
     }
   }
 
-  PL_RETURN_IF_ERROR(Configure(kSocketTraceRecvResp));
+  PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvResp));
+  PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kSocketTraceSendReq));
+  PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kSocketTraceSendReq | kSocketTraceRecvResp));
 
   // TODO(oazizi): if machine is ever suspended, this would have to be called again.
   InitClockRealTimeOffset();
@@ -103,10 +105,10 @@ void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
   TransferStreamData(table_num, record_batch);
 }
 
-Status SocketTraceConnector::Configure(uint64_t config_mask) {
+Status SocketTraceConnector::Configure(uint32_t protocol, uint64_t config_mask) {
   auto control_map_handle = bpf_.get_array_table<uint64_t>("control_map");
 
-  auto update_res = control_map_handle.update_value(0, config_mask);
+  auto update_res = control_map_handle.update_value(protocol, config_mask);
   if (update_res.code() != 0) {
     return error::Internal("Failed to set control map");
   }
@@ -199,11 +201,8 @@ void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
   // Need to adjust the clocks to convert to real time.
   event.attr.timestamp_ns += ClockRealTimeOffset();
   event.attr.conn_info.timestamp_ns += ClockRealTimeOffset();
-  switch (event.attr.conn_info.protocol) {
-    case kProtocolHTTPRequest:
-      AppendToStream(std::move(event), &http_streams_);
-      break;
-    case kProtocolHTTPResponse:
+  switch (event.attr.conn_info.traffic_class.protocol) {
+    case kProtocolHTTP:
       AppendToStream(std::move(event), &http_streams_);
       break;
     case kProtocolHTTP2:
@@ -212,7 +211,7 @@ void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
     default:
       // TODO(oazizi/yzhao): Add MySQL when it goes through streams.
       LOG(WARNING) << "AcceptEvent ignored due to unknown protocol: "
-                   << event.attr.conn_info.protocol;
+                   << event.attr.conn_info.traffic_class.protocol;
   }
 }
 

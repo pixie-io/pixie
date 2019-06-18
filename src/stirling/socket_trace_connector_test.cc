@@ -40,7 +40,8 @@ socket_data_event_t InitEvent(std::string_view msg, uint64_t ts_ns = 0) {
   event.attr.event_type = kEventTypeSyscallWriteEvent;
   event.attr.conn_info.addr.sin6_family = AF_INET;
   event.attr.conn_info.timestamp_ns = 0;
-  event.attr.conn_info.protocol = kProtocolHTTPResponse;
+  event.attr.conn_info.traffic_class.protocol = kProtocolHTTP;
+  event.attr.conn_info.traffic_class.message_type = kMessageTypeResponses;
   event.attr.timestamp_ns = ts_ns;
   event.attr.msg_size = msg.size();
   msg.copy(event.msg, msg.size());

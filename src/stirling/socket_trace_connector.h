@@ -107,7 +107,7 @@ class SocketTraceConnector : public SourceConnector {
   Status StopImpl() override;
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
-  Status Configure(uint64_t config_mask);
+  Status Configure(uint32_t protocol, uint64_t config_mask);
 
   const std::map<uint64_t, HTTPStream>& TestOnlyHTTPStreams() const { return http_streams_; }
   const std::map<uint64_t, HTTP2Stream>& TestOnlyHTTP2Streams() const { return http2_streams_; }

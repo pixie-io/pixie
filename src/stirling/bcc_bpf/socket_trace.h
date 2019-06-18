@@ -6,8 +6,10 @@
 
 #include <linux/in6.h>
 
-// Indicates that the event is for a write() syscall, whose msg field records the input data
-// to write().
+// TODO(oazizi/yzhao): Convert the below to enums.
+
+// Indicates the syscall that recorded an event.
+// TODO(oazizi/yzhao): Remove once no longer necessary.
 const uint32_t kEventTypeSyscallWriteEvent = 1;
 const uint32_t kEventTypeSyscallSendEvent = 2;
 const uint32_t kEventTypeSyscallReadEvent = 3;
@@ -15,16 +17,29 @@ const uint32_t kEventTypeSyscallRecvEvent = 4;
 
 // Protocol being used on a connection (HTTP, MySQL, etc.).
 const uint32_t kProtocolUnknown = 0;
-const uint32_t kProtocolHTTPRequest = 1;
-const uint32_t kProtocolHTTPResponse = 2;
+const uint32_t kProtocolHTTP = 1;
+const uint32_t kProtocolHTTP2 = 2;
 const uint32_t kProtocolMySQL = 3;
-const uint32_t kProtocolHTTP2 = 4;
+const uint32_t kNumProtocols = 4;
+
+// The direction of traffic expected on a probe.
+const uint32_t kMessageTypeUnknown = 0;
+const uint32_t kMessageTypeRequests = 1;
+const uint32_t kMessageTypeResponses = 2;
+const uint32_t kMessageTypeMixed = 3;
 
 // Which transactions to trace (direction and type).
 const uint64_t kSocketTraceSendReq = 1 << 0;
 const uint64_t kSocketTraceSendResp = 1 << 1;
 const uint64_t kSocketTraceRecvReq = 1 << 2;
 const uint64_t kSocketTraceRecvResp = 1 << 3;
+
+struct traffic_class_t {
+  // The protocol of traffic on the connection (HTTP, MySQL, etc.).
+  uint32_t protocol;
+  // Classify traffic as requests, responses or mixed.
+  uint32_t message_type;
+};
 
 // This struct contains information collected when a connection is established,
 // via an accept() syscall.
@@ -34,8 +49,9 @@ struct conn_info_t {
   struct sockaddr_in6 addr;
   // A 0-based number that uniquely identify a connection for a process.
   uint32_t conn_id;
-  // The protocol on the connection (HTTP, MySQL, etc.)
-  uint32_t protocol;
+  // The protocol and message type of traffic on the connection (HTTP/Req, HTTP/Resp, MySQL/Req,
+  // etc.).
+  struct traffic_class_t traffic_class;
   // A 0-based number for the next write event on this connection.
   // This number is incremented each time a new write event is recorded.
   uint64_t wr_seq_num;
