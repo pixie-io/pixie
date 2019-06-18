@@ -6,27 +6,34 @@
 
 #include <linux/in6.h>
 
-// TODO(oazizi/yzhao): Convert the below to enums.
+// TODO(oazizi): Fix style consistency. Enums use our C++ style, while structs are old C style.
 
 // Indicates the syscall that recorded an event.
 // TODO(oazizi/yzhao): Remove once no longer necessary.
-const uint32_t kEventTypeSyscallWriteEvent = 1;
-const uint32_t kEventTypeSyscallSendEvent = 2;
-const uint32_t kEventTypeSyscallReadEvent = 3;
-const uint32_t kEventTypeSyscallRecvEvent = 4;
+enum EventType {
+  kEventTypeUnknown,
+  kEventTypeSyscallWriteEvent,
+  kEventTypeSyscallSendEvent,
+  kEventTypeSyscallReadEvent,
+  kEventTypeSyscallRecvEvent,
+};
 
 // Protocol being used on a connection (HTTP, MySQL, etc.).
-const uint32_t kProtocolUnknown = 0;
-const uint32_t kProtocolHTTP = 1;
-const uint32_t kProtocolHTTP2 = 2;
-const uint32_t kProtocolMySQL = 3;
-const uint32_t kNumProtocols = 4;
+enum TrafficProtocol {
+  kProtocolUnknown,
+  kProtocolHTTP,
+  kProtocolHTTP2,
+  kProtocolMySQL,
+  kNumProtocols
+};
 
 // The direction of traffic expected on a probe.
-const uint32_t kMessageTypeUnknown = 0;
-const uint32_t kMessageTypeRequests = 1;
-const uint32_t kMessageTypeResponses = 2;
-const uint32_t kMessageTypeMixed = 3;
+enum TrafficMessageType {
+  kMessageTypeUnknown,
+  kMessageTypeRequests,
+  kMessageTypeResponses,
+  kMessageTypeMixed
+};
 
 // Which transactions to trace (direction and type).
 const uint64_t kSocketTraceSendReq = 1 << 0;
@@ -36,9 +43,9 @@ const uint64_t kSocketTraceRecvResp = 1 << 3;
 
 struct traffic_class_t {
   // The protocol of traffic on the connection (HTTP, MySQL, etc.).
-  uint32_t protocol;
+  enum TrafficProtocol protocol;
   // Classify traffic as requests, responses or mixed.
-  uint32_t message_type;
+  enum TrafficMessageType message_type;
 };
 
 // This struct contains information collected when a connection is established,

@@ -353,7 +353,7 @@ static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t
   }
 
   // Filter for request or response based on control flags and protocol type.
-  bool trace = false;
+  bool trace;
 
   u64 control = get_control(conn_info->traffic_class.protocol);
 
@@ -361,6 +361,7 @@ static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t
     case kMessageTypeRequests: trace = (control & kSocketTraceSendReq); break;
     case kMessageTypeResponses: trace = (control & kSocketTraceSendResp); break;
     case kMessageTypeMixed: trace = (control & (kSocketTraceSendReq | kSocketTraceSendResp)); break;
+    default: trace = false;
   }
 
   if (!trace) {
@@ -420,6 +421,7 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
     case kProtocolHTTP: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolHTTP2: socket_http2_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
+    default: break;
   }
 
  done:
@@ -473,13 +475,14 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
   }
 
   // Filter for request or response based on control flags and protocol type.
-  bool trace = false;
+  bool trace;
 
   u64 control = get_control(conn_info->traffic_class.protocol);
   switch (conn_info->traffic_class.message_type) {
     case kMessageTypeRequests: trace = (control & kSocketTraceRecvReq); break;
     case kMessageTypeResponses: trace = (control & kSocketTraceRecvResp); break;
     case kMessageTypeMixed: trace = (control & (kSocketTraceRecvReq | kSocketTraceRecvResp)); break;
+    default: trace = false;
   }
 
   if (!trace) {
@@ -509,6 +512,7 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
     case kProtocolHTTP: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolHTTP2: socket_http2_events.perf_submit(ctx, event, size_to_submit); break;
     case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
+    default: break;
   }
 
   done:
