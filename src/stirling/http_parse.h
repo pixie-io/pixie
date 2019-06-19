@@ -47,11 +47,11 @@ struct HTTPMessage {
 
   std::string http_req_method = "-";
   std::string http_req_path = "-";
-  std::string http_req_body = "-";
 
   int http_resp_status = -1;
   std::string http_resp_message = "-";
-  std::string http_resp_body = "-";
+
+  std::string http_msg_body = "-";
 };
 
 struct HTTPTraceRecord {
@@ -109,14 +109,45 @@ enum class ParseState {
 };
 
 struct PicoHTTPParserWrapper {
+  ParseState Parse(TrafficMessageType type, std::string_view buf) {
+    switch (type) {
+      case kMessageTypeRequests:
+        return ParseRequest(buf);
+      case kMessageTypeResponses:
+        return ParseResponse(buf);
+      default:
+        return ParseState::kInvalid;
+    }
+  }
+  bool Write(TrafficMessageType type, HTTPMessage* result) {
+    switch (type) {
+      case kMessageTypeRequests:
+        return WriteRequest(result);
+      case kMessageTypeResponses:
+        return WriteResponse(result);
+      default:
+        return false;
+    }
+  }
+  ParseState ParseRequest(std::string_view buf);
+  bool WriteRequest(HTTPMessage* result);
   ParseState ParseResponse(std::string_view buf);
   bool WriteResponse(HTTPMessage* result);
+  bool WriteBody(HTTPMessage* result);
+
+  // For parsing HTTP requests.
+  const char* method = nullptr;
+  size_t method_len;
+  const char* path = nullptr;
+  size_t path_len;
 
   // For parsing HTTP responses.
   const char* msg = nullptr;
   size_t msg_len = 0;
-  int minor_version = 0;
   int status = 0;
+
+  // For parsing HTTP requests/response (common).
+  int minor_version = 0;
   static constexpr size_t kMaxNumHeaders = 50;
   struct phr_header headers[kMaxNumHeaders];
 
@@ -151,7 +182,7 @@ class HTTPParser {
    * @brief Parses the accumulated text in the internal buffer, updates state and writes resultant
    * HTTPMessage into appropriate internal data structure for extraction.
    */
-  std::pair<uint64_t, uint64_t> ParseResponses();
+  std::pair<uint64_t, uint64_t> ParseMessages(TrafficMessageType type);
   ParseState parse_state() const { return parse_state_; }
   void Close();
 
@@ -193,7 +224,8 @@ struct SeqHTTPMessage : public HTTPMessage {
  * @return ParseState To indicate the final state of the parsing. The second return value is the
  * bytes count of the parsed data.
  */
-std::pair<ParseState, size_t> Parse(std::string_view buf, std::vector<SeqHTTPMessage>* result);
+std::pair<ParseState, size_t> Parse(TrafficMessageType type, std::string_view buf,
+                                    std::vector<SeqHTTPMessage>* result);
 
 }  // namespace stirling
 }  // namespace pl

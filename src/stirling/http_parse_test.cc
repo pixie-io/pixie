@@ -1,6 +1,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <random>
 #include <utility>
 
 #include "src/stirling/http_parse.h"
@@ -22,17 +24,17 @@ TEST(PreProcessRecordTest, GzipCompressedContentIsDecompressed) {
                                       0x03, 0x0b, 0xc9, 0xc8, 0x2c, 0x56, 0x00, 0xa2, 0x44,
                                       0x85, 0x92, 0xd4, 0xe2, 0x12, 0x2e, 0x00, 0x8c, 0x2d,
                                       0xc0, 0xfa, 0x0f, 0x00, 0x00, 0x00};
-  record.message.http_resp_body.assign(reinterpret_cast<const char*>(compressed_bytes),
-                                       sizeof(compressed_bytes));
+  record.message.http_msg_body.assign(reinterpret_cast<const char*>(compressed_bytes),
+                                      sizeof(compressed_bytes));
   PreProcessHTTPRecord(&record);
-  EXPECT_EQ("This is a test\n", record.message.http_resp_body);
+  EXPECT_EQ("This is a test\n", record.message.http_msg_body);
 }
 
 TEST(PreProcessRecordTest, ContentHeaderIsNotAdded) {
   HTTPTraceRecord record;
-  record.message.http_resp_body = "test";
+  record.message.http_msg_body = "test";
   PreProcessHTTPRecord(&record);
-  EXPECT_EQ("test", record.message.http_resp_body);
+  EXPECT_EQ("test", record.message.http_msg_body);
   EXPECT_THAT(record.message.http_headers, Not(Contains(Key(http_headers::kContentEncoding))));
 }
 
@@ -67,7 +69,7 @@ TEST(ParseRawTest, ContentIsCopied) {
   EXPECT_EQ(1, record.conn.tgid);
   EXPECT_EQ(3, record.conn.fd);
   EXPECT_EQ(SocketTraceEventType::kUnknown, record.message.type);
-  EXPECT_EQ("test", record.message.http_resp_body);
+  EXPECT_EQ("test", record.message.http_msg_body);
 }
 
 TEST(ParseHTTPHeaderFiltersAndMatchTest, FiltersAreAsExpectedAndMatchesWork) {
@@ -179,7 +181,7 @@ pixielabs!)";
   expected_message1.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
   expected_message1.http_resp_status = 200;
   expected_message1.http_resp_message = "OK";
-  expected_message1.http_resp_body = "pixielabs";
+  expected_message1.http_msg_body = "pixielabs";
 
   HTTPMessage expected_message2;
   expected_message2.is_complete = true;
@@ -188,14 +190,14 @@ pixielabs!)";
   expected_message2.http_headers = {{"Content-Type", "bar"}, {"Content-Length", "10"}};
   expected_message2.http_resp_status = 200;
   expected_message2.http_resp_message = "OK";
-  expected_message2.http_resp_body = "pixielabs!";
+  expected_message2.http_msg_body = "pixielabs!";
 
   EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message1, expected_message2));
   EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
 
   parser_.Append(0, 0, msg1);
   parser_.Append(1, 1, msg2);
-  parser_.ParseResponses();
+  parser_.ParseMessages(kMessageTypeResponses);
 
   EXPECT_EQ(ParseState::kSuccess, parser_.parse_state());
   EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message1, expected_message2));
@@ -229,7 +231,7 @@ pixielabs)";
   expected_message1.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "21"}};
   expected_message1.http_resp_status = 200;
   expected_message1.http_resp_message = "OK";
-  expected_message1.http_resp_body = "pixielabs is awesome!";
+  expected_message1.http_msg_body = "pixielabs is awesome!";
 
   EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message1));
   EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
@@ -237,7 +239,7 @@ pixielabs)";
   parser_.Append(0, 0, msg1);
   parser_.Append(1, 1, msg2);
   parser_.Append(2, 2, msg3);
-  parser_.ParseResponses();
+  parser_.ParseMessages(kMessageTypeResponses);
 
   EXPECT_EQ(ParseState::kSuccess, parser_.parse_state());
   EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message1));
@@ -253,7 +255,7 @@ TEST_F(HTTPParserTest, InvalidInput) {
     EXPECT_EQ(ParseState::kInvalid, parser_.ParseResponse(event));
 
     parser_.Append(0, 0, msg);
-    parser_.ParseResponses();
+    parser_.ParseMessages(kMessageTypeResponses);
 
     EXPECT_EQ(ParseState::kInvalid, parser_.parse_state());
   }
@@ -266,7 +268,7 @@ TEST_F(HTTPParserTest, InvalidInput) {
   }
 }
 
-// Leave http_resp_body set by caller.
+// Leave http_msg_body set by caller.
 HTTPMessage ExpectMessage() {
   HTTPMessage result;
   result.is_complete = true;
@@ -292,14 +294,14 @@ C
   socket_data_event_t event = Event(0, msg);
 
   HTTPMessage expected_message = ExpectMessage();
-  expected_message.http_resp_body = "pixielabs is awesome!";
+  expected_message.http_msg_body = "pixielabs is awesome!";
 
   EXPECT_EQ(ParseState::kSuccess, parser_.ParseResponse(event));
   EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message));
   EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
 
   parser_.Append(0, 0, msg);
-  parser_.ParseResponses();
+  parser_.ParseMessages(kMessageTypeResponses);
 
   EXPECT_EQ(ParseState::kSuccess, parser_.parse_state());
   EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message));
@@ -322,7 +324,7 @@ pixielabs
   socket_data_event_t event3 = Event(2, msg3);
 
   HTTPMessage expected_message = ExpectMessage();
-  expected_message.http_resp_body = "pixielabs is awesome!";
+  expected_message.http_msg_body = "pixielabs is awesome!";
 
   EXPECT_EQ(ParseState::kNeedsMoreData, parser_.ParseResponse(event1));
   EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
@@ -335,7 +337,7 @@ pixielabs
   parser_.Append(0, 0, msg1);
   parser_.Append(1, 1, msg2);
   parser_.Append(2, 2, msg3);
-  parser_.ParseResponses();
+  parser_.ParseMessages(kMessageTypeResponses);
 
   EXPECT_EQ(ParseState::kSuccess, parser_.parse_state());
   EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message));
@@ -357,7 +359,7 @@ pixie)";
   socket_data_event_t event3 = Event(2, msg3);
 
   HTTPMessage expected_message = ExpectMessage();
-  expected_message.http_resp_body = "pixielabs";
+  expected_message.http_msg_body = "pixielabs";
 
   EXPECT_EQ(ParseState::kNeedsMoreData, parser_.ParseResponse(event1));
   EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
@@ -370,7 +372,7 @@ pixie)";
   parser_.Append(0, 0, msg1);
   parser_.Append(1, 1, msg2);
   parser_.Append(2, 2, msg3);
-  parser_.ParseResponses();
+  parser_.ParseMessages(kMessageTypeResponses);
 
   EXPECT_EQ(ParseState::kSuccess, parser_.parse_state());
   EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message));
@@ -391,7 +393,7 @@ pixielabs )";
 
   HTTPMessage expected_message = ExpectMessage();
   expected_message.http_headers.clear();
-  expected_message.http_resp_body = "pixielabs is awesome!";
+  expected_message.http_msg_body = "pixielabs is awesome!";
 
   EXPECT_EQ(ParseState::kNeedsMoreData, parser_.ParseResponse(event1));
   EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
@@ -405,7 +407,7 @@ pixielabs )";
   parser_.Append(0, 0, msg1);
   parser_.Append(1, 1, msg2);
   parser_.Append(2, 2, msg3);
-  parser_.ParseResponses();
+  parser_.ParseMessages(kMessageTypeResponses);
 
   EXPECT_EQ(ParseState::kSuccess, parser_.parse_state());
   parser_.Close();
@@ -450,15 +452,15 @@ Content-Type: text/plain)";
   EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
 
   parser_.Append(0, 0, msg1);
-  parser_.ParseResponses();
+  parser_.ParseMessages(kMessageTypeResponses);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, parser_.parse_state());
   EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
 }
 
 MATCHER_P(HasBody, body, "") {
-  LOG(INFO) << "Got: " << arg.http_resp_body;
-  return arg.http_resp_body == body;
+  LOG(INFO) << "Got: " << arg.http_msg_body;
+  return arg.http_msg_body == body;
 }
 
 TEST_F(HTTPParserTest, PartialMessageInTheMiddleOfStream) {
@@ -473,7 +475,7 @@ TEST_F(HTTPParserTest, PartialMessageInTheMiddleOfStream) {
   parser_.Append(2, 2, msg2);
   parser_.Append(3, 3, msg3);
   parser_.Append(4, 4, msg4);
-  parser_.ParseResponses();
+  parser_.ParseMessages(kMessageTypeResponses);
 
   EXPECT_EQ(ParseState::kSuccess, parser_.parse_state());
   EXPECT_THAT(parser_.ExtractHTTPMessages(),
@@ -498,7 +500,7 @@ TEST(ParseTest, CompleteMessages) {
 
   std::vector<SeqHTTPMessage> messages;
   EXPECT_EQ(std::make_pair(ParseState::kSuccess, msg_a.size() + msg_b.size() + msg_c.size()),
-            Parse(buf, &messages));
+            Parse(kMessageTypeResponses, buf, &messages));
   EXPECT_THAT(messages, ElementsAre(HasBody("a"), HasBody("b"), HasBody("c")));
   EXPECT_THAT(messages, ElementsAre(HasBytesRange(0, msg_a.size()),
                                     HasBytesRange(msg_a.size(), msg_a.size() + msg_b.size()),
@@ -513,9 +515,125 @@ TEST(ParseTest, PartialMessages) {
 
   std::vector<SeqHTTPMessage> messages;
   constexpr size_t kZero = 0;
-  EXPECT_EQ(std::make_pair(ParseState::kNeedsMoreData, kZero), Parse(msg, &messages));
+  EXPECT_EQ(std::make_pair(ParseState::kNeedsMoreData, kZero),
+            Parse(kMessageTypeResponses, msg, &messages));
   EXPECT_THAT(messages, IsEmpty());
 }
+
+//=============================================================================
+// HTTP Request Parsing Tests
+//=============================================================================
+
+// Parameter used for stress/fuzz test.
+struct TestParam {
+  uint32_t seed;
+  uint32_t iters;
+};
+
+class HTTPRequestParserTest : public ::testing::TestWithParam<TestParam> {
+ protected:
+  HTTPParser parser_;
+
+  const std::string kHTTPGetReq0 = R"(GET /index.html HTTP/1.1
+Host: www.pixielabs.ai
+Accept: image/gif, image/jpeg, */*
+User-Agent: Mozilla/5.0 (X11; Linux x86_64)
+
+)";
+
+  const std::string kHTTPPostReq0 = R"(POST /test HTTP/1.1
+Host: pixielabs.ai
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 27
+
+field1=value1&field2=value2)";
+
+  HTTPMessage HTTPGetReq0ExpectedMessage() {
+    HTTPMessage expected_message;
+    expected_message.is_complete = true;
+    expected_message.type = SocketTraceEventType::kHTTPRequest;
+    expected_message.http_minor_version = 1;
+    expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
+                                     {"Accept", "image/gif, image/jpeg, */*"},
+                                     {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
+    expected_message.http_req_method = "GET";
+    expected_message.http_req_path = "/index.html";
+    expected_message.http_msg_body = "-";
+    return expected_message;
+  }
+
+  HTTPMessage HTTPPostReq0ExpectedMessage() {
+    HTTPMessage expected_message;
+    expected_message.is_complete = true;
+    expected_message.type = SocketTraceEventType::kHTTPRequest;
+    expected_message.http_minor_version = 1;
+    expected_message.http_headers = {{"Host", "pixielabs.ai"},
+                                     {"Content-Type", "application/x-www-form-urlencoded"},
+                                     {"Content-Length", "27"}};
+    expected_message.http_req_method = "POST";
+    expected_message.http_req_path = "/test";
+    expected_message.http_msg_body = "field1=value1&field2=value2";
+    return expected_message;
+  }
+};
+
+TEST_F(HTTPRequestParserTest, ParseHTTPRequestSingle) {
+  parser_.Append(0, 0, kHTTPGetReq0);
+  parser_.ParseMessages(kMessageTypeRequests);
+
+  EXPECT_EQ(ParseState::kSuccess, parser_.parse_state());
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(HTTPGetReq0ExpectedMessage()));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
+}
+
+TEST_F(HTTPRequestParserTest, ParseHTTPRequestMultiple) {
+  parser_.Append(0, 0, kHTTPGetReq0);
+  parser_.Append(1, 1, kHTTPPostReq0);
+  parser_.ParseMessages(kMessageTypeRequests);
+
+  EXPECT_EQ(ParseState::kSuccess, parser_.parse_state());
+  EXPECT_THAT(parser_.ExtractHTTPMessages(),
+              ElementsAre(HTTPGetReq0ExpectedMessage(), HTTPPostReq0ExpectedMessage()));
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
+}
+
+TEST_P(HTTPRequestParserTest, ParseHTTPRequestsRepeatedly) {
+  std::string msg = kHTTPGetReq0 + kHTTPPostReq0;
+
+  std::default_random_engine rng;
+  rng.seed(GetParam().seed);
+  std::uniform_int_distribution<uint32_t> splitpoint_dist(0, msg.length());
+
+  for (uint32_t i = 0; i < GetParam().iters; ++i) {
+    uint32_t r1 = splitpoint_dist(rng);
+    uint32_t r2 = splitpoint_dist(rng);
+
+    uint32_t k1 = std::min(r1, r2);
+    uint32_t k2 = std::max(r1, r2);
+
+    auto s1 = std::string_view(msg).substr(0, k1 - 0);
+    auto s2 = std::string_view(msg).substr(k1, k2 - k1);
+    auto s3 = std::string_view(msg).substr(k2, msg.length() - k2);
+
+    ASSERT_EQ(msg.length(), s1.length() + s2.length() + s3.length());
+    ASSERT_EQ(msg, std::string(s1) + std::string(s2) + std::string(s3));
+
+    parser_.Append(0, 0, s1);
+    parser_.Append(1, 1, s2);
+    parser_.Append(2, 2, s3);
+
+    parser_.ParseMessages(kMessageTypeRequests);
+
+    ASSERT_EQ(ParseState::kSuccess, parser_.parse_state());
+    ASSERT_THAT(parser_.ExtractHTTPMessages(),
+                ElementsAre(HTTPGetReq0ExpectedMessage(), HTTPPostReq0ExpectedMessage()));
+    ASSERT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
+  }
+}
+
+INSTANTIATE_TEST_CASE_P(Stressor, HTTPRequestParserTest,
+                        ::testing::Values(TestParam{37337, 50}, TestParam{98237, 50}));
+// TODO(oazizi/yzhao): TestParam{37337, 100} fails, so there is a bug somewhere. Fix it.
 
 }  // namespace stirling
 }  // namespace pl

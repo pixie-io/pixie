@@ -250,7 +250,8 @@ void SocketTraceConnector::TransferHTTPResponseStreams(
         break;
       }
     }
-    const std::pair<uint64_t, uint64_t> removed_seqs_range = parser.ParseResponses();
+    const std::pair<uint64_t, uint64_t> removed_seqs_range =
+        parser.ParseMessages(kMessageTypeResponses);
 
     // Extract and output all complete messages.
     for (HTTPMessage& msg : parser.ExtractHTTPMessages()) {
@@ -328,7 +329,7 @@ void SocketTraceConnector::AppendHTTPResponse(HTTPTraceRecord record,
   r.Append<r.ColIndex("http_req_path")>(std::move(record.message.http_req_path));
   r.Append<r.ColIndex("http_resp_status")>(record.message.http_resp_status);
   r.Append<r.ColIndex("http_resp_message")>(std::move(record.message.http_resp_message));
-  r.Append<r.ColIndex("http_resp_body")>(std::move(record.message.http_resp_body));
+  r.Append<r.ColIndex("http_resp_body")>(std::move(record.message.http_msg_body));
   r.Append<r.ColIndex("http_resp_latency_ns")>(record.message.timestamp_ns -
                                                record.conn.timestamp_ns);
 }

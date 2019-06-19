@@ -19,13 +19,13 @@ void PreProcessHTTPRecord(HTTPTraceRecord* record) {
   // Replace body with decompressed version, if required.
   if (content_encoding_iter != record->message.http_headers.end() &&
       content_encoding_iter->second == "gzip") {
-    std::string_view body_strview(record->message.http_resp_body);
+    std::string_view body_strview(record->message.http_msg_body);
     auto bodyOrErr = pl::zlib::StrInflate(body_strview);
     if (!bodyOrErr.ok()) {
       LOG(WARNING) << "Unable to gunzip HTTP body.";
-      record->message.http_resp_body = "<Stirling failed to gunzip body>";
+      record->message.http_msg_body = "<Stirling failed to gunzip body>";
     } else {
-      record->message.http_resp_body = bodyOrErr.ValueOrDie();
+      record->message.http_msg_body = bodyOrErr.ValueOrDie();
     }
   }
 }
@@ -97,7 +97,7 @@ bool ParseRaw(const socket_data_event_t& event, HTTPTraceRecord* record) {
   HTTPTraceRecord& result = *record;
   ParseEventAttr(event, &result);
   result.message.type = SocketTraceEventType::kUnknown;
-  result.message.http_resp_body = std::string(event.msg, event.attr.msg_size);
+  result.message.http_msg_body = std::string(event.msg, event.attr.msg_size);
   // Rest of the fields remain at default values.
   return true;
 }
@@ -159,6 +159,23 @@ bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
   return true;
 }
 
+ParseState PicoHTTPParserWrapper::ParseRequest(std::string_view buf) {
+  // Reset header number to the size of the buffer.
+  num_headers = kMaxNumHeaders;
+  const int retval =
+      phr_parse_request(buf.data(), buf.size(), &method, &method_len, &path, &path_len,
+                        &minor_version, headers, &num_headers, /*last_len*/ 0);
+  if (retval >= 0) {
+    unparsed_data = buf.substr(retval);
+    header_map = GetHttpHeadersMap(headers, num_headers);
+    return ParseState::kSuccess;
+  }
+  if (retval == -2) {
+    return ParseState::kNeedsMoreData;
+  }
+  return ParseState::kInvalid;
+}
+
 ParseState PicoHTTPParserWrapper::ParseResponse(std::string_view buf) {
   // Reset header number to the size of the buffer.
   num_headers = kMaxNumHeaders;
@@ -188,7 +205,7 @@ ParseState ParseChunk(std::string_view* data, HTTPMessage* result) {
   } else if (retval >= 0) {
     // Complete message.
     result->is_complete = true;
-    result->http_resp_body.append(buf, buf_size);
+    result->http_msg_body.append(buf, buf_size);
     *data = std::string_view(buf + buf_size, retval);
     // Pico claims that the last \r\n are unparsed, manually remove them.
     while (!data->empty() && (data->front() == '\r' || data->front() == '\n')) {
@@ -198,7 +215,7 @@ ParseState ParseChunk(std::string_view* data, HTTPMessage* result) {
   } else if (retval == -2) {
     // Incomplete message.
     result->is_complete = false;
-    result->http_resp_body.append(buf, buf_size);
+    result->http_msg_body.append(buf, buf_size);
     return ParseState::kNeedsMoreData;
   }
   return ParseState::kUnknown;
@@ -213,12 +230,41 @@ bool ParseChunk(std::string data, HTTPMessage* result) {
 
 }  // namespace
 
+bool PicoHTTPParserWrapper::WriteRequest(HTTPMessage* result) {
+  result->type = SocketTraceEventType::kHTTPRequest;
+  result->http_minor_version = minor_version;
+  result->http_headers = std::move(header_map);
+  result->http_req_method = std::string(method, method_len);
+  result->http_req_path = std::string(path, path_len);
+
+  return WriteBody(result);
+}
+
 bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
   result->type = SocketTraceEventType::kHTTPResponse;
   result->http_minor_version = minor_version;
   result->http_headers = std::move(header_map);
   result->http_resp_status = status;
   result->http_resp_message = std::string(msg, msg_len);
+
+  return WriteBody(result);
+}
+
+bool PicoHTTPParserWrapper::WriteBody(HTTPMessage* result) {
+  // Try to find boundary of message by looking at Content-Length and Transfer-Encoding.
+
+  // From https://tools.ietf.org/html/rfc7230:
+  //  A sender MUST NOT send a Content-Length header field in any message
+  //  that contains a Transfer-Encoding header field.
+  //
+  //  A user agent SHOULD send a Content-Length in a request message when
+  //  no Transfer-Encoding is sent and the request method defines a meaning
+  //  for an enclosed payload body.  For example, a Content-Length header
+  //  field is normally sent in a POST request even when the value is 0
+  //  (indicating an empty payload body).  A user agent SHOULD NOT send a
+  //  Content-Length header field when the request message does not contain
+  //  a payload body and the method semantics do not anticipate such a
+  //  body.
 
   const auto content_length_iter = result->http_headers.find(http_headers::kContentLength);
   if (content_length_iter != result->http_headers.end()) {
@@ -229,12 +275,12 @@ bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
     }
     if (static_cast<size_t>(len) <= unparsed_data.size()) {
       result->is_complete = true;
-      result->http_resp_body = unparsed_data.substr(0, len);
+      result->http_msg_body = unparsed_data.substr(0, len);
     } else {
       result->is_complete = false;
-      result->http_resp_body.reserve(len);
+      result->http_msg_body.reserve(len);
       result->content_length = len;
-      result->http_resp_body = unparsed_data;
+      result->http_msg_body = unparsed_data;
     }
     unparsed_data.remove_prefix(std::min(static_cast<size_t>(len), unparsed_data.size()));
     return true;
@@ -245,12 +291,23 @@ bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
       transfer_encoding_iter->second == "chunked") {
     // TODO(yzhao): Change to set default value in appending record batch instead of data for
     // parsing.
-    result->http_resp_body.clear();
+    result->http_msg_body.clear();
     result->is_chunked = true;
     ParseState s = ParseChunk(&unparsed_data, result);
     if (s != ParseState::kSuccess && s != ParseState::kNeedsMoreData) {
       return false;
     }
+    return true;
+  }
+
+  // An HTTP GET with no Content-Length and no Transfer-Encoding should not have a body
+  // when no Content-Length or Transfer-Encoding is set:
+  // "A user agent SHOULD NOT send a Content-Length header field when the request
+  // message does not contain a payload body and the method semantics do not anticipate such a
+  // body."
+  if (result->http_req_method == "GET") {
+    result->is_complete = true;
+    result->http_msg_body = "";
     return true;
   }
 
@@ -263,7 +320,7 @@ bool PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
     // TODO(yzhao): This assignment overwrites the default value "-". We should move the setting of
     // default value outside of HTTP message parsing and into appending HTTP messages to record
     // batch.
-    result->http_resp_body = unparsed_data;
+    result->http_msg_body = unparsed_data;
     unparsed_data.remove_prefix(unparsed_data.size());
   }
   return true;
@@ -314,18 +371,18 @@ ParseState HTTPParser::ParseResponse(const socket_data_event_t& event) {
 
   HTTPMessage& message = iter->second;
   if (message.content_length != -1) {
-    const int remaining_size = message.content_length - message.http_resp_body.size();
+    const int remaining_size = message.content_length - message.http_msg_body.size();
     if (remaining_size >= 0) {
-      message.http_resp_body.append(buf.substr(0, remaining_size));
+      message.http_msg_body.append(buf.substr(0, remaining_size));
       message.is_complete =
-          static_cast<size_t>(message.content_length) == message.http_resp_body.size();
+          static_cast<size_t>(message.content_length) == message.http_msg_body.size();
     }
   } else if (message.is_chunked) {
     if (!ParseChunk(std::string(buf), &message)) {
       return ParseState::kInvalid;
     }
   } else {
-    message.http_resp_body.append(buf);
+    message.http_msg_body.append(buf);
   }
 
   if (message.is_complete) {
@@ -339,10 +396,10 @@ ParseState HTTPParser::ParseResponse(const socket_data_event_t& event) {
   }
 }
 
-std::pair<uint64_t, uint64_t> HTTPParser::ParseResponses() {
+std::pair<uint64_t, uint64_t> HTTPParser::ParseMessages(TrafficMessageType type) {
   std::string buf = Combine();
   std::vector<SeqHTTPMessage> seq_msgs;
-  std::pair<ParseState, size_t> parse_result = Parse(buf, &seq_msgs);
+  std::pair<ParseState, size_t> parse_result = Parse(type, buf, &seq_msgs);
   for (auto& msg : seq_msgs) {
     const uint64_t seq_num = GetSeqNum(msg.bytes_begin);
     DCHECK(seq_num >= seq_begin_ && seq_num < seq_end_) << absl::Substitute(
@@ -434,11 +491,12 @@ std::string HTTPParser::Combine() const {
   return result;
 }
 
-std::pair<ParseState, size_t> Parse(std::string_view buf, std::vector<SeqHTTPMessage>* result) {
+std::pair<ParseState, size_t> Parse(TrafficMessageType type, std::string_view buf,
+                                    std::vector<SeqHTTPMessage>* result) {
   PicoHTTPParserWrapper pico;
   const size_t buf_size = buf.size();
   while (!buf.empty()) {
-    const ParseState s = pico.ParseResponse(buf);
+    const ParseState s = pico.Parse(type, buf);
     switch (s) {
       case ParseState::kSuccess:
       case ParseState::kUnknown:
@@ -454,7 +512,7 @@ std::pair<ParseState, size_t> Parse(std::string_view buf, std::vector<SeqHTTPMes
     if (s == ParseState::kSuccess) {
       message.is_header_complete = true;
     }
-    if (!pico.WriteResponse(&message)) {
+    if (!pico.Write(type, &message)) {
       return {ParseState::kInvalid, buf_size - pico.unparsed_data.size()};
     }
     message.bytes_begin = buf_size - buf.size();
