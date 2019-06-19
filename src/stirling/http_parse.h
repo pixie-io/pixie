@@ -171,13 +171,6 @@ class HTTPParser {
    */
   bool Append(uint64_t seq_num, uint64_t ts_ns, std::string_view msg);
 
-  // TODO(yzhao): Remove this function.
-  /**
-   * @brief Parses a possibly incomplete data chunk of a HTTP message, and combines it with any
-   * previous partial messages.
-   */
-  ParseState ParseResponse(const socket_data_event_t& event);
-
   /**
    * @brief Parses the accumulated text in the internal buffer, updates state and writes resultant
    * HTTPMessage into appropriate internal data structure for extraction.

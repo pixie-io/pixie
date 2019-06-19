@@ -221,13 +221,6 @@ ParseState ParseChunk(std::string_view* data, HTTPMessage* result) {
   return ParseState::kUnknown;
 }
 
-// Mutates the input data.
-bool ParseChunk(std::string data, HTTPMessage* result) {
-  std::string_view buf = data;
-  ParseState s = ParseChunk(&buf, result);
-  return s == ParseState::kSuccess || s == ParseState::kNeedsMoreData;
-}
-
 }  // namespace
 
 bool PicoHTTPParserWrapper::WriteRequest(HTTPMessage* result) {
@@ -324,76 +317,6 @@ bool PicoHTTPParserWrapper::WriteBody(HTTPMessage* result) {
     unparsed_data.remove_prefix(unparsed_data.size());
   }
   return true;
-}
-
-// HTTP messages are sequentially written to the file descriptor, and their sequence numbers are
-// obtained accordingly. We rely on the consecutive sequence numbers to detect missing events and
-// order the events correctly.
-ParseState HTTPParser::ParseResponse(const socket_data_event_t& event) {
-  const uint64_t seq_num = event.attr.seq_num;
-  std::string_view buf(event.msg, event.attr.msg_size);
-  if (absl::StartsWith(buf, "HTTP")) {
-    HTTPMessage message;
-    switch (pico_wrapper_.ParseResponse(buf)) {
-      case ParseState::kSuccess:
-        message.is_header_complete = true;
-        if (!pico_wrapper_.WriteResponse(&message)) {
-          return ParseState::kInvalid;
-        }
-        // The message's time stamp is from its first event.
-        message.timestamp_ns = event.attr.timestamp_ns;
-        if (message.is_complete) {
-          msgs_complete_.push_back(std::move(message));
-          return ParseState::kSuccess;
-        } else {
-          msgs_incomplete_[seq_num] = std::move(message);
-          return ParseState::kNeedsMoreData;
-        }
-      case ParseState::kNeedsMoreData:
-        msgs_incomplete_[seq_num] = std::move(message);
-        return ParseState::kNeedsMoreData;
-      case ParseState::kInvalid:
-      case ParseState::kUnknown:
-        return ParseState::kInvalid;
-    }
-  }
-  if (seq_num == 0) {
-    // This is the first event, and it does not start with a valid HTTP prefix, so we have no way to
-    // produce a complete HTTP response from this.
-    return ParseState::kInvalid;
-  }
-  const uint64_t prev_seq_num = seq_num - 1;
-  auto iter = msgs_incomplete_.find(prev_seq_num);
-  if (iter == msgs_incomplete_.end()) {
-    // There is no previous unfinished HTTP message, maybe we just missed it.
-    return ParseState::kUnknown;
-  }
-
-  HTTPMessage& message = iter->second;
-  if (message.content_length != -1) {
-    const int remaining_size = message.content_length - message.http_msg_body.size();
-    if (remaining_size >= 0) {
-      message.http_msg_body.append(buf.substr(0, remaining_size));
-      message.is_complete =
-          static_cast<size_t>(message.content_length) == message.http_msg_body.size();
-    }
-  } else if (message.is_chunked) {
-    if (!ParseChunk(std::string(buf), &message)) {
-      return ParseState::kInvalid;
-    }
-  } else {
-    message.http_msg_body.append(buf);
-  }
-
-  if (message.is_complete) {
-    msgs_complete_.push_back(std::move(message));
-    msgs_incomplete_.erase(iter);
-    return ParseState::kSuccess;
-  } else {
-    msgs_incomplete_[seq_num] = std::move(message);
-    msgs_incomplete_.erase(iter);
-    return ParseState::kNeedsMoreData;
-  }
 }
 
 std::pair<uint64_t, uint64_t> HTTPParser::ParseMessages(TrafficMessageType type) {
@@ -499,6 +422,7 @@ std::pair<ParseState, size_t> Parse(TrafficMessageType type, std::string_view bu
     const ParseState s = pico.Parse(type, buf);
     switch (s) {
       case ParseState::kSuccess:
+        break;
       case ParseState::kUnknown:
         break;
       case ParseState::kNeedsMoreData:

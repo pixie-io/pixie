@@ -162,17 +162,12 @@ Content-Type: foo
 Content-Length: 9
 
 pixielabs)";
-  socket_data_event_t event1 = Event(0, msg1);
 
   std::string_view msg2 = R"(HTTP/1.1 200 OK
 Content-Type: bar
 Content-Length: 10
 
 pixielabs!)";
-  socket_data_event_t event2 = Event(1, msg2);
-
-  EXPECT_EQ(ParseState::kSuccess, parser_.ParseResponse(event1));
-  EXPECT_EQ(ParseState::kSuccess, parser_.ParseResponse(event2));
 
   HTTPMessage expected_message1;
   expected_message1.is_complete = true;
@@ -192,9 +187,6 @@ pixielabs!)";
   expected_message2.http_resp_message = "OK";
   expected_message2.http_msg_body = "pixielabs!";
 
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message1, expected_message2));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
-
   parser_.Append(0, 0, msg1);
   parser_.Append(1, 1, msg2);
   parser_.ParseMessages(kMessageTypeResponses);
@@ -210,19 +202,8 @@ Content-Type: foo
 Content-Length: 21
 
 pixielabs)";
-  socket_data_event_t event1 = Event(0, msg1);
-
   const std::string_view msg2 = " is awesome";
-  socket_data_event_t event2 = Event(1, msg2);
-
   const std::string_view msg3 = "!";
-  socket_data_event_t event3 = Event(2, msg3);
-
-  EXPECT_EQ(ParseState::kNeedsMoreData, parser_.ParseResponse(event1));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
-  EXPECT_EQ(ParseState::kNeedsMoreData, parser_.ParseResponse(event2));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
-  EXPECT_EQ(ParseState::kSuccess, parser_.ParseResponse(event3));
 
   HTTPMessage expected_message1;
   expected_message1.is_complete = true;
@@ -232,9 +213,6 @@ pixielabs)";
   expected_message1.http_resp_status = 200;
   expected_message1.http_resp_message = "OK";
   expected_message1.http_msg_body = "pixielabs is awesome!";
-
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message1));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
 
   parser_.Append(0, 0, msg1);
   parser_.Append(1, 1, msg2);
@@ -247,25 +225,29 @@ pixielabs)";
 }
 
 TEST_F(HTTPParserTest, InvalidInput) {
-  {
-    socket_data_event_t event;
-    event.attr.seq_num = 0;
-    const std::string_view msg = " is awesome";
-    msg.copy(event.msg, msg.size());
-    EXPECT_EQ(ParseState::kInvalid, parser_.ParseResponse(event));
+  const std::string_view msg = " is awesome";
 
+  {
     parser_.Append(0, 0, msg);
     parser_.ParseMessages(kMessageTypeResponses);
 
     EXPECT_EQ(ParseState::kInvalid, parser_.parse_state());
+    EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
   }
   {
-    socket_data_event_t event;
-    event.attr.seq_num = 2;
-    const std::string_view msg = " is awesome";
-    msg.copy(event.msg, msg.size());
-    EXPECT_EQ(ParseState::kUnknown, parser_.ParseResponse(event));
+    parser_.Append(2, 0, msg);
+    parser_.ParseMessages(kMessageTypeResponses);
+
+    EXPECT_EQ(ParseState::kInvalid, parser_.parse_state());
+    EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
   }
+}
+
+TEST_F(HTTPParserTest, NoAppend) {
+  parser_.ParseMessages(kMessageTypeResponses);
+
+  EXPECT_EQ(ParseState::kSuccess, parser_.parse_state());
+  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
 }
 
 // Leave http_msg_body set by caller.
@@ -291,14 +273,8 @@ C
 0
 
 )";
-  socket_data_event_t event = Event(0, msg);
-
   HTTPMessage expected_message = ExpectMessage();
   expected_message.http_msg_body = "pixielabs is awesome!";
-
-  EXPECT_EQ(ParseState::kSuccess, parser_.ParseResponse(event));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
 
   parser_.Append(0, 0, msg);
   parser_.ParseMessages(kMessageTypeResponses);
@@ -315,24 +291,11 @@ Transfer-Encoding: chunked
 9
 pixielabs
 )";
-  socket_data_event_t event1 = Event(0, msg1);
-
   std::string msg2 = "C\r\n is awesome!\r\n";
-  socket_data_event_t event2 = Event(1, msg2);
-
   std::string msg3 = "0\r\n\r\n";
-  socket_data_event_t event3 = Event(2, msg3);
 
   HTTPMessage expected_message = ExpectMessage();
   expected_message.http_msg_body = "pixielabs is awesome!";
-
-  EXPECT_EQ(ParseState::kNeedsMoreData, parser_.ParseResponse(event1));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
-  EXPECT_EQ(ParseState::kNeedsMoreData, parser_.ParseResponse(event2));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
-  EXPECT_EQ(ParseState::kSuccess, parser_.ParseResponse(event3));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty()) << "Data should be empty after extraction";
 
   parser_.Append(0, 0, msg1);
   parser_.Append(1, 1, msg2);
@@ -350,24 +313,11 @@ Transfer-Encoding: chunked
 
 9
 pixie)";
-  socket_data_event_t event1 = Event(0, msg1);
-
   std::string msg2 = "labs\r\n";
-  socket_data_event_t event2 = Event(1, msg2);
-
   std::string msg3 = "0\r\n\r\n";
-  socket_data_event_t event3 = Event(2, msg3);
 
   HTTPMessage expected_message = ExpectMessage();
   expected_message.http_msg_body = "pixielabs";
-
-  EXPECT_EQ(ParseState::kNeedsMoreData, parser_.ParseResponse(event1));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
-  EXPECT_EQ(ParseState::kNeedsMoreData, parser_.ParseResponse(event2));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
-  EXPECT_EQ(ParseState::kSuccess, parser_.ParseResponse(event3));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty()) << "Data should be empty after extraction";
 
   parser_.Append(0, 0, msg1);
   parser_.Append(1, 1, msg2);
@@ -383,26 +333,12 @@ TEST_F(HTTPParserTest, ParseMessagesWithoutLengthOrChunking) {
   std::string msg1 = R"(HTTP/1.1 200 OK
 
 pixielabs )";
-  socket_data_event_t event1 = Event(0, msg1);
-
   std::string msg2 = "is ";
-  socket_data_event_t event2 = Event(1, msg2);
-
   std::string msg3 = "awesome!";
-  socket_data_event_t event3 = Event(2, msg3);
 
   HTTPMessage expected_message = ExpectMessage();
   expected_message.http_headers.clear();
   expected_message.http_msg_body = "pixielabs is awesome!";
-
-  EXPECT_EQ(ParseState::kNeedsMoreData, parser_.ParseResponse(event1));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
-  EXPECT_EQ(ParseState::kNeedsMoreData, parser_.ParseResponse(event2));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
-  EXPECT_EQ(ParseState::kNeedsMoreData, parser_.ParseResponse(event3));
-  parser_.Close();
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), ElementsAre(expected_message));
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty()) << "Data should be empty after extraction";
 
   parser_.Append(0, 0, msg1);
   parser_.Append(1, 1, msg2);
@@ -446,10 +382,6 @@ std::string HTTPRespWithChunkedBody(std::vector<std::string_view> chunk_bodys) {
 TEST_F(HTTPParserTest, MessagePartialHeaders) {
   std::string msg1 = R"(HTTP/1.1 200 OK
 Content-Type: text/plain)";
-  socket_data_event_t event1 = Event(0, msg1);
-  EXPECT_EQ(ParseState::kNeedsMoreData, parser_.ParseResponse(event1));
-  parser_.Close();
-  EXPECT_THAT(parser_.ExtractHTTPMessages(), IsEmpty());
 
   parser_.Append(0, 0, msg1);
   parser_.ParseMessages(kMessageTypeResponses);
