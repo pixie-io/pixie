@@ -1,0 +1,16 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 35c77d1d..3dc70e5c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -448,6 +448,11 @@ include_directories(
+ set(PKGDATADIR "${CMAKE_INSTALL_FULL_DATADIR}/${CMAKE_PROJECT_NAME}")
+ 
+ install(FILES README.rst DESTINATION "${CMAKE_INSTALL_DOCDIR}")
++# Copy headers under lib/, which are for parsing HTTP2 frames, to the target directory.
++install (
++    DIRECTORY ${CMAKE_SOURCE_DIR}/lib/
++    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/nghttp2"
++    FILES_MATCHING PATTERN "lib/nghttp2_*.h")
+ 
+ add_subdirectory(lib)
+ #add_subdirectory(lib/includes)

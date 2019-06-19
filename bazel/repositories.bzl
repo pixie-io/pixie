@@ -145,6 +145,8 @@ def _com_github_nghttp2_nghttp2():
     http_archive(
         name = "com_github_nghttp2_nghttp2",
         build_file_content = BUILD_ALL_CONTENT,
+        patches = ["//third_party:nghttp2.patch"],
+        patch_args = ["-p1"],
         **location
     )
 
