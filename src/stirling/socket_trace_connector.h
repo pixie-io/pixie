@@ -36,15 +36,21 @@ namespace stirling {
 
 struct EventStream {
   SocketConnection conn;
+  TrafficProtocol protocol;
   // Key: sequence number.
-  std::map<uint64_t, socket_data_event_t> events;
+  std::map<uint64_t, socket_data_event_t> recv_events;
+  std::map<uint64_t, socket_data_event_t> send_events;
 };
 
 struct HTTPStream : public EventStream {
+  HTTPStream() { protocol = kProtocolHTTP; }
+
+  // TODO(yzhao/oazizi): Make this parser stateless.
   HTTPParser parser;
 };
 
 struct HTTP2Stream : public EventStream {
+  HTTP2Stream() { protocol = kProtocolHTTP2; }
   // TODO(yzhao): Add HTTP2Parser, or gRPC parser.
 };
 
@@ -111,6 +117,9 @@ class SocketTraceConnector : public SourceConnector {
 
   const std::map<uint64_t, HTTPStream>& TestOnlyHTTPStreams() const { return http_streams_; }
   const std::map<uint64_t, HTTP2Stream>& TestOnlyHTTP2Streams() const { return http2_streams_; }
+  void TestOnlyConfigure(uint32_t protocol, uint64_t config_mask) {
+    config_mask_[protocol] = config_mask;
+  }
   static void TestOnlySetHTTPResponseHeaderFilter(HTTPHeaderFilter filter) {
     http_response_header_filter_ = std::move(filter);
   }
@@ -125,10 +134,11 @@ class SocketTraceConnector : public SourceConnector {
                         kDefaultPushPeriod) {
     // TODO(yzhao): Is there a better place/time to grab the flags?
     http_response_header_filter_ = ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
+    config_mask_.resize(kNumProtocols);
   }
 
   // ReadPerfBuffer poll callback functions (must be static).
-  static void HandleHTTPResponseProbeOutput(void* cb_cookie, void* data, int data_size);
+  static void HandleHTTPProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleMySQLProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleHTTP2ProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleProbeLoss(void* cb_cookie, uint64_t lost);
@@ -141,12 +151,12 @@ class SocketTraceConnector : public SourceConnector {
   void TransferStreamData(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch);
 
   // Transfer of an HTTP Response Event to the HTTP Response Table in the table store.
-  void TransferHTTPResponseStreams(types::ColumnWrapperRecordBatch* record_batch);
-  static void ConsumeHTTPResponse(HTTPTraceRecord record,
-                                  types::ColumnWrapperRecordBatch* record_batch);
-  static bool SelectHTTPResponse(const HTTPTraceRecord& record);
-  static void AppendHTTPResponse(HTTPTraceRecord record,
+  void TransferHTTPStreams(types::ColumnWrapperRecordBatch* record_batch);
+  static void ConsumeHTTPMessage(HTTPTraceRecord record,
                                  types::ColumnWrapperRecordBatch* record_batch);
+  static bool SelectHTTPMessage(const HTTPTraceRecord& record);
+  static void AppendHTTPMessage(HTTPTraceRecord record,
+                                types::ColumnWrapperRecordBatch* record_batch);
 
   // Transfer of a MySQL Event to the MySQL Table.
   void TransferMySQLEvent(const socket_data_event_t& event,
@@ -207,7 +217,7 @@ class SocketTraceConnector : public SourceConnector {
 
   // Indexed by table_num from kTables (one-to-one mapping).
   static inline const std::vector<PerfBufferSpec> kPerfBufferSpecs = {
-      {"socket_http_events", &SocketTraceConnector::HandleHTTPResponseProbeOutput,
+      {"socket_http_events", &SocketTraceConnector::HandleHTTPProbeOutput,
        &SocketTraceConnector::HandleProbeLoss,
        /* num_pages */ 8},
       {"socket_mysql_events", &SocketTraceConnector::HandleMySQLProbeOutput,
@@ -217,6 +227,8 @@ class SocketTraceConnector : public SourceConnector {
        &SocketTraceConnector::HandleProbeLoss,
        /* num_pages */ 32},
   };
+
+  std::vector<uint64_t> config_mask_;
 };
 
 }  // namespace stirling

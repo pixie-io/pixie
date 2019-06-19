@@ -113,6 +113,8 @@ Status SocketTraceConnector::Configure(uint32_t protocol, uint64_t config_mask) 
     return error::Internal("Failed to set control map");
   }
 
+  config_mask_[protocol] = config_mask;
+
   return Status::OK();
 }
 
@@ -127,8 +129,7 @@ void SocketTraceConnector::ReadPerfBuffer(uint32_t table_num) {
   }
 }
 
-void SocketTraceConnector::HandleHTTPResponseProbeOutput(void* cb_cookie, void* data,
-                                                         int /*data_size*/) {
+void SocketTraceConnector::HandleHTTPProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   auto* event = static_cast<socket_data_event_t*>(data);
@@ -165,34 +166,65 @@ void SocketTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
 
 namespace {
 
+enum class StreamDirection { kUnknown, kSend, kRecv };
+
+static StreamDirection EventStreamDirection(const uint32_t event_type) {
+  switch (event_type) {
+    case kEventTypeSyscallWriteEvent:
+      return StreamDirection::kSend;
+    case kEventTypeSyscallSendEvent:
+      return StreamDirection::kSend;
+    case kEventTypeSyscallReadEvent:
+      return StreamDirection::kRecv;
+    case kEventTypeSyscallRecvEvent:
+      return StreamDirection::kRecv;
+    default:
+      LOG(ERROR) << "Unexpected event type: " << event_type;
+      return StreamDirection::kUnknown;
+  }
+}
+
 template <typename StreamType>
 void AppendToStream(socket_data_event_t event, std::map<uint64_t, StreamType>* streams) {
   const uint64_t stream_id =
       (static_cast<uint64_t>(event.attr.tgid) << 32) | event.attr.conn_info.conn_id;
   const uint64_t seq_num = event.attr.seq_num;
-  const auto iter = streams->find(stream_id);
+  auto iter = streams->find(stream_id);
 
-  if (iter != streams->end()) {
-    iter->second.events.emplace(seq_num, std::move(event));
-    return;
+  // This is the first event of the stream, so create the stream object.
+  if (iter == streams->end()) {
+    StreamType new_stream;
+
+    // TODO(yzhao): We should explicitly capture the accept() event into user space to determine the
+    // time stamp when the stream is created.
+    new_stream.conn.timestamp_ns = event.attr.conn_info.timestamp_ns;
+    new_stream.conn.tgid = event.attr.tgid;
+    new_stream.conn.fd = event.attr.fd;
+    auto ip_endpoint_or = ParseSockAddr(event);
+    if (ip_endpoint_or.ok()) {
+      new_stream.conn.remote_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
+      new_stream.conn.remote_port = ip_endpoint_or.ValueOrDie().port;
+    } else {
+      LOG(WARNING) << "Could not parse IP address.";
+    }
+    const auto new_stream_ret = streams->emplace(stream_id, std::move(new_stream));
+    DCHECK(new_stream_ret.second) << absl::StrFormat(
+        "Tried to insert, but stream_id exists [stream_id = %d].", stream_id);
+    iter = new_stream_ret.first;
   }
 
-  // This is the first event of the stream.
-  StreamType stream;
-  // TODO(yzhao): We should explicitly capture the accept() event into user space to determine the
-  // time stamp when the stream is created.
-  stream.conn.timestamp_ns = event.attr.conn_info.timestamp_ns;
-  stream.conn.tgid = event.attr.tgid;
-  stream.conn.fd = event.attr.fd;
-  auto ip_endpoint_or = ParseSockAddr(event);
-  if (ip_endpoint_or.ok()) {
-    stream.conn.remote_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
-    stream.conn.remote_port = ip_endpoint_or.ValueOrDie().port;
-  } else {
-    LOG(WARNING) << "Could not parse IP address.";
+  StreamType& stream = iter->second;
+
+  switch (EventStreamDirection(event.attr.event_type)) {
+    case StreamDirection::kSend:
+      stream.send_events.emplace(seq_num, std::move(event));
+      break;
+    case StreamDirection::kRecv:
+      stream.recv_events.emplace(seq_num, std::move(event));
+      break;
+    default:
+      LOG(ERROR) << "AppendStream() could not find StreamDirection";
   }
-  stream.events.emplace(seq_num, std::move(event));
-  streams->emplace(stream_id, std::move(stream));
 }
 
 }  // namespace
@@ -219,7 +251,7 @@ void SocketTraceConnector::TransferStreamData(uint32_t table_num,
                                               types::ColumnWrapperRecordBatch* record_batch) {
   switch (table_num) {
     case kHTTPTableNum:
-      TransferHTTPResponseStreams(record_batch);
+      TransferHTTPStreams(record_batch);
       break;
     case kMySQLTableNum:
       // TODO(oazizi): Convert MySQL protocol to use streams.
@@ -234,12 +266,22 @@ void SocketTraceConnector::TransferStreamData(uint32_t table_num,
 // HTTP Specific TransferImpl Helpers
 //-----------------------------------------------------------------------------
 
-void SocketTraceConnector::TransferHTTPResponseStreams(
-    types::ColumnWrapperRecordBatch* record_batch) {
+void SocketTraceConnector::TransferHTTPStreams(types::ColumnWrapperRecordBatch* record_batch) {
   for (auto& [id, stream] : http_streams_) {
     PL_UNUSED(id);
     HTTPParser& parser = stream.parser;
-    std::map<uint64_t, socket_data_event_t>& events = stream.events;
+
+    // TODO(oazizi): I don't like this way of detecting requestor vs responder. But works
+    // temporarily.
+    bool is_requestor_side = (config_mask_[stream.protocol] & kSocketTraceSendReq) ||
+                             (config_mask_[stream.protocol] & kSocketTraceRecvResp);
+    bool is_responder_side = (config_mask_[stream.protocol] & kSocketTraceSendResp) ||
+                             (config_mask_[stream.protocol] & kSocketTraceRecvReq);
+    CHECK(is_requestor_side ^ is_responder_side)
+        << absl::StrFormat("Must be either requestor or responder (and not both)");
+
+    std::map<uint64_t, socket_data_event_t>& events =
+        is_requestor_side ? stream.recv_events : stream.send_events;
     std::vector<uint64_t> seq_num_to_remove;
 
     // Parse all recorded events.
@@ -256,7 +298,7 @@ void SocketTraceConnector::TransferHTTPResponseStreams(
     // Extract and output all complete messages.
     for (HTTPMessage& msg : parser.ExtractHTTPMessages()) {
       HTTPTraceRecord record{stream.conn, std::move(msg)};
-      ConsumeHTTPResponse(std::move(record), record_batch);
+      ConsumeHTTPMessage(std::move(record), record_batch);
     }
 
     // TODO(yzhao): Add the capability to remove events that are too old.
@@ -268,24 +310,25 @@ void SocketTraceConnector::TransferHTTPResponseStreams(
   }
 }
 
-void SocketTraceConnector::ConsumeHTTPResponse(HTTPTraceRecord record,
-                                               types::ColumnWrapperRecordBatch* record_batch) {
+void SocketTraceConnector::ConsumeHTTPMessage(HTTPTraceRecord record,
+                                              types::ColumnWrapperRecordBatch* record_batch) {
   // Only allow certain records to be transferred upstream.
-  if (SelectHTTPResponse(record)) {
+  if (SelectHTTPMessage(record)) {
     // Currently decompresses gzip content, but could handle other transformations too.
     // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
     PreProcessHTTPRecord(&record);
 
     // Push data to the TableStore.
-    AppendHTTPResponse(std::move(record), record_batch);
+    AppendHTTPMessage(std::move(record), record_batch);
   }
 }
 
-bool SocketTraceConnector::SelectHTTPResponse(const HTTPTraceRecord& record) {
+bool SocketTraceConnector::SelectHTTPMessage(const HTTPTraceRecord& record) {
   // Some of this function is currently a placeholder for the demo.
   // TODO(oazizi/yzhao): update this function further.
 
   // Rule: Exclude any HTTP requests.
+  // TODO(oazizi): Think about how requests should be handled by this function.
   if (record.message.type == SocketTraceEventType::kHTTPRequest) {
     return false;
   }
@@ -308,8 +351,8 @@ bool SocketTraceConnector::SelectHTTPResponse(const HTTPTraceRecord& record) {
   return true;
 }
 
-void SocketTraceConnector::AppendHTTPResponse(HTTPTraceRecord record,
-                                              types::ColumnWrapperRecordBatch* record_batch) {
+void SocketTraceConnector::AppendHTTPMessage(HTTPTraceRecord record,
+                                             types::ColumnWrapperRecordBatch* record_batch) {
   CHECK_EQ(kHTTPTable.elements().size(), record_batch->size());
 
   // Check for positive latencies.

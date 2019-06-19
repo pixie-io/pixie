@@ -37,7 +37,7 @@ auto Times(const RecordBatch& batch) {
 
 socket_data_event_t InitEvent(std::string_view msg, uint64_t ts_ns = 0) {
   socket_data_event_t event = {};
-  event.attr.event_type = kEventTypeSyscallWriteEvent;
+  event.attr.event_type = kEventTypeSyscallRecvEvent;
   event.attr.conn_info.addr.sin6_family = AF_INET;
   event.attr.conn_info.timestamp_ns = 0;
   event.attr.conn_info.traffic_class.protocol = kProtocolHTTP;
@@ -72,6 +72,7 @@ TEST(HandleProbeOutputTest, FilterMessages) {
   std::unique_ptr<SourceConnector> connector =
       SocketTraceConnector::Create("socket_trace_connector");
   auto* source = dynamic_cast<SocketTraceConnector*>(connector.get());
+  source->TestOnlyConfigure(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvResp);
   types::ColumnWrapperRecordBatch record_batch;
   EXPECT_OK(InitRecordBatch(SocketTraceConnector::kHTTPTable.elements(),
                             /*target_capacity*/ 1, &record_batch));
@@ -155,6 +156,7 @@ TEST(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   std::unique_ptr<SourceConnector> connector =
       SocketTraceConnector::Create("socket_trace_connector");
   auto* source = dynamic_cast<SocketTraceConnector*>(connector.get());
+  source->TestOnlyConfigure(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvResp);
   ASSERT_NE(nullptr, source);
 
   types::ColumnWrapperRecordBatch record_batch;
