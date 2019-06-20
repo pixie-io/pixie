@@ -3,6 +3,7 @@ apt_update 'update'
 apt_pkg_list = [
   'bash-completion',
   'build-essential',
+  'checkstyle',
   'curl',
   'doxygen',
   'git',
