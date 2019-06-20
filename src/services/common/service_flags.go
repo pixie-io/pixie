@@ -37,7 +37,6 @@ func SetupService(serviceName string, servicePortBase uint) {
 	pflag.Uint("http_port", servicePortBase+1, fmt.Sprintf("The port to run the %s HTTP server", serviceName))
 	pflag.String("server_tls_key", "../certs/server.key", "The TLS key to use.")
 	pflag.String("server_tls_cert", "../certs/server.crt", "The TLS certificate to use.")
-	pflag.String("external_addr", "", "The external address")
 }
 
 // PostFlagSetupAndParse does post setup flag config and parses them.
@@ -54,10 +53,6 @@ func PostFlagSetupAndParse() {
 func CheckServiceFlags() {
 	if len(viper.GetString("jwt_signing_key")) == 0 {
 		log.Panic("Flag --jwt_signing_key or ENV PL_JWT_SIGNING_KEY is required")
-	}
-
-	if len(viper.GetString("external_addr")) == 0 {
-		log.Panic("Flag --external_addr or ENV PL_EXTERNAL_ADDR is required")
 	}
 
 	if !viper.GetBool("disable_ssl") {
