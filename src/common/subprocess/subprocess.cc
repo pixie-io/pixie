@@ -4,7 +4,13 @@
 
 namespace pl {
 
-SubProcess::SubProcess(std::vector<std::string> args) : args_(std::move(args)), child_pid_(-1) {}
+SubProcess::SubProcess(std::vector<std::string> args) : args_(std::move(args)), child_pid_(-1) {
+  exec_args_.reserve(args_.size() + 1);
+  for (const std::string& arg : args_) {
+    exec_args_.push_back(const_cast<char*>(arg.c_str()));
+  }
+  exec_args_.push_back(nullptr);
+}
 
 Status SubProcess::Start() {
   child_pid_ = fork();
@@ -12,13 +18,14 @@ Status SubProcess::Start() {
     return error::Internal("Could not fork!");
   }
   if (child_pid_ == 0) {
-    const char* exe = args_[0].c_str();
-    std::vector<char*> args;
-    for (size_t i = 1; i < args_.size(); ++i) {
-      args.push_back(const_cast<char*>(args_[i].c_str()));
-    }
-    args.push_back(nullptr);
-    int retval = execvp(exe, args.data());
+    // This will run "ls -la" as if it were a command:
+    // char* cmd = "ls";
+    // char* argv[3];
+    // argv[0] = "ls";
+    // argv[1] = "-la";
+    // argv[2] = NULL;
+    // execvp(cmd, argv);
+    int retval = execvp(exec_args_[0], exec_args_.data());
     if (retval == -1) {
       exit(1);
     }

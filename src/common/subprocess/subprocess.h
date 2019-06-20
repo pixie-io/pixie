@@ -34,6 +34,7 @@ class SubProcess {
 
  private:
   const std::vector<std::string> args_;
+  std::vector<char*> exec_args_;
   int child_pid_;
 };
 
