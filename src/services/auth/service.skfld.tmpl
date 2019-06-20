@@ -31,8 +31,6 @@ sepc:
                secretKeyRef:
                  name: pl-app-secrets
                  key: jwt-signing-key
-           - name: PL_EXTERNAL_ADDR
-             value: {{.ExternalAddress}}
            - name: PL_TLS_CERT
              value: /certs/tls.crt
            - name: PL_TLS_KEY

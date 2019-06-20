@@ -30,8 +30,6 @@ spec:
               secretKeyRef:
                 name: pl-app-secrets
                 key: jwt-signing-key
-          - name: PL_EXTERNAL_ADDR
-            value: {{.ExternalAddress}}
           - name: PL_SERVER_TLS_CERT
             value: /certs/server.crt
           - name: PL_SERVER_TLS_KEY

@@ -36,12 +36,8 @@ spec:
         - name: PL_TLS_CA_CERT
           value: /certs/ca.crt
         # TODO(zasgar): Remove this.
-        - name: PL_EXTERNAL_ADDR
-          value: {{.ExternalAddress}}
         - name: PL_DISABLE_GRPC_AUTH
           value: "true"
-        - name: PL_DISABLE_SSL
-          value: "false"
         volumeMounts:
         - name: certs
           mountPath: /certs
