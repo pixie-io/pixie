@@ -30,12 +30,6 @@ void PreProcessHTTPRecord(HTTPTraceRecord* record) {
   }
 }
 
-void ParseEventAttr(const socket_data_event_t& event, HTTPTraceRecord* record) {
-  record->conn.tgid = event.attr.tgid;
-  record->conn.fd = event.attr.fd;
-  record->message.timestamp_ns = event.attr.timestamp_ns;
-}
-
 namespace {
 
 std::map<std::string, std::string> GetHttpHeadersMap(const phr_header* headers,
@@ -51,8 +45,8 @@ std::map<std::string, std::string> GetHttpHeadersMap(const phr_header* headers,
 
 }  // namespace
 
-StatusOr<IPEndpoint> ParseSockAddr(const socket_data_event_t& event) {
-  const auto* sa = reinterpret_cast<const struct sockaddr*>(&event.attr.conn_info.addr);
+StatusOr<IPEndpoint> ParseSockAddr(const conn_info_t& conn_info) {
+  const auto* sa = reinterpret_cast<const struct sockaddr*>(&conn_info.addr);
 
   char addr[INET6_ADDRSTRLEN] = "";
   int port = -1;
@@ -83,8 +77,8 @@ StatusOr<IPEndpoint> ParseSockAddr(const socket_data_event_t& event) {
 // Parses an IP:port pair from the event input into the provided record.
 // Returns false if an unexpected sockaddr family is provided.
 // Currently this function understands IPV4 and IPV6 sockaddr families.
-bool ParseSockAddr(const socket_data_event_t& event, HTTPTraceRecord* record) {
-  auto ip_endpoint_or = ParseSockAddr(event);
+bool ParseSockAddr(const conn_info_t& conn_info, HTTPTraceRecord* record) {
+  auto ip_endpoint_or = ParseSockAddr(conn_info);
   if (ip_endpoint_or.ok()) {
     record->conn.remote_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
     record->conn.remote_port = ip_endpoint_or.ValueOrDie().port;
@@ -93,9 +87,12 @@ bool ParseSockAddr(const socket_data_event_t& event, HTTPTraceRecord* record) {
   return false;
 }
 
-bool ParseRaw(const socket_data_event_t& event, HTTPTraceRecord* record) {
+bool ParseRaw(const socket_data_event_t& event, const conn_info_t& conn_info,
+              HTTPTraceRecord* record) {
   HTTPTraceRecord& result = *record;
-  ParseEventAttr(event, &result);
+  record->conn.tgid = event.attr.tgid;
+  record->conn.fd = conn_info.fd;
+  record->message.timestamp_ns = event.attr.timestamp_ns;
   result.message.type = SocketTraceEventType::kUnknown;
   result.message.http_msg_body = std::string(event.msg, event.attr.msg_size);
   // Rest of the fields remain at default values.

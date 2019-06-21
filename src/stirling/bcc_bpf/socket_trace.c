@@ -7,6 +7,8 @@
 BPF_PERF_OUTPUT(socket_http_events);
 BPF_PERF_OUTPUT(socket_mysql_events);
 BPF_PERF_OUTPUT(socket_http2_events);
+BPF_PERF_OUTPUT(socket_open_conns);
+BPF_PERF_OUTPUT(socket_close_conns);
 
 /***********************************************************
  * Internal structs and definitions
@@ -225,6 +227,25 @@ static struct conn_info_t* get_conn_info(u64 lookup_fd, const char* buf, size_t 
  * BPF syscall probe functions
  ***********************************************************/
 
+static void submit_new_conn(struct pt_regs *ctx, u32 tgid, u32 fd, struct sockaddr_in6 addr){
+  struct conn_info_t conn_info;
+  memset(&conn_info, 0, sizeof(struct conn_info_t));
+  conn_info.timestamp_ns = bpf_ktime_get_ns();
+  conn_info.addr = addr;
+  conn_info.conn_id = get_conn_id(tgid);
+  conn_info.traffic_class.protocol = kProtocolUnknown;
+  conn_info.traffic_class.message_type = kMessageTypeUnknown;
+  conn_info.wr_seq_num = 0;
+  conn_info.rd_seq_num = 0;
+  conn_info.tgid = tgid;
+  conn_info.fd = fd;
+
+  // Prepend TGID to make the FD unique across processes.
+  u64 tgid_fd = ((u64)tgid << 32) | fd;
+  conn_info_map.update(&tgid_fd, &conn_info);
+  socket_open_conns.perf_submit(ctx, &conn_info, sizeof(struct conn_info_t));
+}
+
 static int probe_entry_connect_impl(struct pt_regs *ctx, int sockfd, const struct sockaddr *addr, size_t addrlen) {
   u64 id = bpf_get_current_pid_tgid();
 
@@ -257,19 +278,7 @@ static int probe_ret_connect_impl(struct pt_regs *ctx) {
     goto done;
   }
 
-  // Prepend TGID to make the FD unique across processes.
-  u64 tgid_fd = ((u64)tgid << 32) | (u32)connect_info->fd;
-
-  struct conn_info_t conn_info;
-  memset(&conn_info, 0, sizeof(struct conn_info_t));
-  conn_info.timestamp_ns = bpf_ktime_get_ns();
-  conn_info.addr = connect_info->addr;
-  conn_info.conn_id = get_conn_id(tgid);
-  conn_info.traffic_class.protocol = kProtocolUnknown;
-  conn_info.traffic_class.message_type = kMessageTypeUnknown;
-  conn_info.wr_seq_num = 0;
-  conn_info.rd_seq_num = 0;
-  conn_info_map.update(&tgid_fd, &conn_info);
+  submit_new_conn(ctx, tgid, (u32)connect_info->fd, connect_info->addr);
 
  done:
   // Regardless of what happened, after accept() returns, there is no need to track the sock_addr
@@ -314,20 +323,7 @@ static int probe_ret_accept_impl(struct pt_regs *ctx) {
     goto done;
   }
 
-  // Prepend TGID to make the FD unique across processes.
-  u64 tgid_fd = ((u64)tgid << 32) | (u32)ret_fd;
-
-  struct conn_info_t conn_info;
-  memset(&conn_info, 0, sizeof(struct conn_info_t));
-  conn_info.timestamp_ns = bpf_ktime_get_ns();
-  conn_info.addr = *((struct sockaddr_in6*) accept_info->addr);
-  conn_info.conn_id = get_conn_id(tgid);
-  conn_info.traffic_class.protocol = kProtocolUnknown;
-  conn_info.traffic_class.message_type = kMessageTypeUnknown;
-  conn_info.wr_seq_num = 0;
-  conn_info.rd_seq_num = 0;
-  conn_info_map.update(&tgid_fd, &conn_info);
-
+  submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)accept_info->addr));
  done:
   // Regardless of what happened, after accept() returns, there is no need to track the sock_addr
   // being accepted during the accept() call, therefore we can remove the entry.
@@ -401,15 +397,14 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
   if (event == NULL) {
     goto done;
   }
-
-  event->attr.conn_info = *conn_info;
+  event->attr.conn_id = conn_info->conn_id;
   // Increment sequence number after copying so the index is 0-based.
   event->attr.seq_num = conn_info->wr_seq_num;
   ++conn_info->wr_seq_num;
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
-  event->attr.fd = (uint32_t)write_info->lookup_fd;
+  event->attr.protocol = conn_info->traffic_class.protocol;
 
   const uint32_t buf_size = bytes_written < sizeof(event->msg) ? bytes_written : sizeof(event->msg);
   event->attr.msg_size = buf_size;
@@ -494,13 +489,13 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
     goto done;
   }
 
-  event->attr.conn_info = *conn_info;
+  event->attr.conn_id = conn_info->conn_id;
   event->attr.seq_num = conn_info->rd_seq_num;
   ++conn_info->rd_seq_num;
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
-  event->attr.fd = (uint32_t)read_info->lookup_fd;
+  event->attr.protocol = conn_info->traffic_class.protocol;
 
   const uint32_t buf_size = bytes_read < sizeof(event->msg) ? bytes_read : sizeof(event->msg);
   event->attr.msg_size = buf_size;
@@ -527,6 +522,11 @@ int probe_close(struct pt_regs *ctx, int fd) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
   u64 lookup_fd = ((u64)tgid << 32) | fd;
+  struct conn_info_t* conn_info = conn_info_map.lookup(&lookup_fd);
+  if (conn_info == NULL) {
+    return 0;
+  }
+  socket_close_conns.perf_submit(ctx, conn_info, sizeof(struct conn_info_t));
   conn_info_map.delete(&lookup_fd);
   return 0;
 }

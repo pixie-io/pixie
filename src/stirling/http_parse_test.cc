@@ -38,33 +38,19 @@ TEST(PreProcessRecordTest, ContentHeaderIsNotAdded) {
   EXPECT_THAT(record.message.http_headers, Not(Contains(Key(http_headers::kContentEncoding))));
 }
 
-TEST(ParseEventAttrTest, DataIsCopied) {
-  socket_data_event_t event;
-  event.attr.timestamp_ns = 100;
-  event.attr.tgid = 1;
-  event.attr.fd = 3;
-
-  HTTPTraceRecord record;
-
-  ParseEventAttr(event, &record);
-
-  EXPECT_EQ(100, record.message.timestamp_ns);
-  EXPECT_EQ(1, record.conn.tgid);
-  EXPECT_EQ(3, record.conn.fd);
-}
-
 TEST(ParseRawTest, ContentIsCopied) {
   const std::string data = "test";
   socket_data_event_t event;
+  conn_info_t conn_info;
   event.attr.timestamp_ns = 100;
   event.attr.tgid = 1;
-  event.attr.fd = 3;
+  conn_info.fd = 3;
   event.attr.msg_size = data.size();
   data.copy(event.msg, data.size());
 
   HTTPTraceRecord record;
 
-  EXPECT_TRUE(ParseRaw(event, &record));
+  EXPECT_TRUE(ParseRaw(event, conn_info, &record));
   EXPECT_EQ(100, record.message.timestamp_ns);
   EXPECT_EQ(1, record.conn.tgid);
   EXPECT_EQ(3, record.conn.fd);

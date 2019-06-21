@@ -90,6 +90,16 @@ class SocketTraceConnector : public SourceConnector {
           {"http_resp_body", types::DataType::STRING, types::PatternType::STRUCTURED},
           {"http_resp_latency_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE}
   };
+
+  static constexpr ConstStrView kHTTPPerfBufferNames[] = {
+    "socket_open_conns",
+    "socket_http_events",
+    "socket_close_conns",
+  };
+
+  // Used in ReadPerfBuffer to drain the relevant perf buffers.
+  static constexpr auto kHTTPPerfBuffers = ConstVectorView<ConstStrView>(kHTTPPerfBufferNames);
+
   // clang-format on
   static constexpr auto kHTTPTable = DataTableSchema("http_events", kHTTPElements);
 
@@ -103,6 +113,23 @@ class SocketTraceConnector : public SourceConnector {
           {"remote_port", types::DataType::INT64, types::PatternType::GENERAL},
           {"body", types::DataType::STRING, types::PatternType::STRUCTURED},
   };
+
+  static constexpr ConstStrView kMySQLPerfBufferNames[] = {
+    "socket_open_conns",
+    "socket_mysql_events",
+    "socket_close_conns",
+  };
+
+  static constexpr auto kMySQLPerfBuffers = ConstVectorView<ConstStrView>(kMySQLPerfBufferNames);
+
+  static constexpr ConstStrView kHTTP2PerfBufferNames[] = {
+    "socket_open_conns",
+    "socket_http2_events",
+    "socket_close_conns",
+  };
+
+  static constexpr auto kHTTP2PerfBuffers = ConstVectorView<ConstStrView>(kHTTP2PerfBufferNames);
+
   // clang-format on
   static constexpr auto kMySQLTable = DataTableSchema("mysql_events", kMySQLElements);
 
@@ -137,6 +164,12 @@ class SocketTraceConnector : public SourceConnector {
   // TODO(oazizi): This function is only public for testing purposes. Make private?
   void ReadPerfBuffer(uint32_t table_num);
 
+  // Dim 0: DataTables; dim 1: perfBuffer Names
+  static constexpr ConstVectorView<ConstStrView> perfBufferNames[] = {
+      kHTTPPerfBuffers, kMySQLPerfBuffers, kHTTP2PerfBuffers};
+  static constexpr auto kTablePerfBufferMap =
+      ConstVectorView<ConstVectorView<ConstStrView> >(perfBufferNames);
+
  private:
   explicit SocketTraceConnector(std::string_view source_name)
       : SourceConnector(kSourceType, source_name, kTables, kDefaultSamplingPeriod,
@@ -151,10 +184,20 @@ class SocketTraceConnector : public SourceConnector {
   static void HandleMySQLProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleHTTP2ProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleProbeLoss(void* cb_cookie, uint64_t lost);
+  static void HandleCloseProbeOutput(void* cb_cookie, void* data, int data_size);
+  static void HandleOpenProbeOutput(void* cb_cookie, void* data, int data_size);
 
   // Places the event into a stream buffer to deal with reorderings.
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
+  template <typename StreamType>
+  void AppendToStream(socket_data_event_t event, std::map<uint64_t, StreamType>* streams);
+  template <typename StreamType>
+  auto RegisterStream(const conn_info_t& conn_info, std::map<uint64_t, StreamType>* streams,
+                      uint64_t stream_id);
   void AcceptEvent(socket_data_event_t event);
+  void OpenConn(const conn_info_t& conn_info);
+  void CloseConn(const conn_info_t& conn_info);
+  conn_info_t* GetConn(const socket_data_event_t& event);
 
   // Transfers the data from stream buffers (from AcceptEvent()) to record_batch.
   void TransferStreamData(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch);
@@ -178,6 +221,8 @@ class SocketTraceConnector : public SourceConnector {
 
   std::map<uint64_t, HTTPStream> http_streams_;
   std::map<uint64_t, HTTP2Stream> http2_streams_;
+  std::map<uint64_t, conn_info_t> connections_;
+  std::map<uint64_t, StatusOr<IPEndpoint> > ip_endpoints_;
 
   // For MySQL tracing only. Will go away when MySQL uses streams.
   types::ColumnWrapperRecordBatch* record_batch_;
@@ -224,7 +269,6 @@ class SocketTraceConnector : public SourceConnector {
   //               (https://filippo.io/linux-syscall-table/), but are defined as SYSCALL_DEFINE4 in
   //               https://elixir.bootlin.com/linux/latest/source/net/socket.c.
 
-  // Indexed by table_num from kTables (one-to-one mapping).
   static inline const std::vector<PerfBufferSpec> kPerfBufferSpecs = {
       {"socket_http_events", &SocketTraceConnector::HandleHTTPProbeOutput,
        &SocketTraceConnector::HandleProbeLoss,
@@ -235,6 +279,12 @@ class SocketTraceConnector : public SourceConnector {
       {"socket_http2_events", &SocketTraceConnector::HandleHTTP2ProbeOutput,
        &SocketTraceConnector::HandleProbeLoss,
        /* num_pages */ 32},
+      {"socket_open_conns", &SocketTraceConnector::HandleOpenProbeOutput,
+       &SocketTraceConnector::HandleProbeLoss,
+       /* num_pages */ 8},
+      {"socket_close_conns", &SocketTraceConnector::HandleCloseProbeOutput,
+       &SocketTraceConnector::HandleProbeLoss,
+       /* num_pages */ 8},
   };
 
   std::vector<uint64_t> config_mask_;

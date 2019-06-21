@@ -38,17 +38,29 @@ auto Times(const RecordBatch& batch) {
 socket_data_event_t InitEvent(std::string_view msg, uint64_t ts_ns = 0) {
   socket_data_event_t event = {};
   event.attr.event_type = kEventTypeSyscallRecvEvent;
-  event.attr.conn_info.addr.sin6_family = AF_INET;
-  event.attr.conn_info.timestamp_ns = 0;
-  event.attr.conn_info.traffic_class.protocol = kProtocolHTTP;
-  event.attr.conn_info.traffic_class.message_type = kMessageTypeResponses;
+  event.attr.protocol = kProtocolHTTP;
   event.attr.timestamp_ns = ts_ns;
+  event.attr.tgid = 12345;
+  event.attr.conn_id = 2;
   event.attr.msg_size = msg.size();
   msg.copy(event.msg, msg.size());
   return event;
 }
 
+conn_info_t InitConn() {
+  conn_info_t conn_info;
+  conn_info.addr.sin6_family = AF_INET;
+  conn_info.timestamp_ns = 0;
+  conn_info.tgid = 12345;
+  conn_info.conn_id = 2;
+  conn_info.fd = 3;
+  conn_info.traffic_class.protocol = kProtocolHTTP;
+  conn_info.traffic_class.message_type = kMessageTypeResponses;
+  return conn_info;
+}
+
 TEST(HandleProbeOutputTest, FilterMessages) {
+  conn_info_t conn_info = InitConn();
   const std::string msg1 =
       "HTTP/1.1 200 OK\r\n"
       "Content-Type: application/json; charset=utf-8\r\n"
@@ -66,9 +78,6 @@ TEST(HandleProbeOutputTest, FilterMessages) {
   socket_data_event_t event_text = InitEvent(msg2, 200);
   constexpr int kTableNum = SocketTraceConnector::kHTTPTableNum;
 
-  // FRIEND_TEST() does not grant std::make_unique() access to SocketTraceConnector's private ctor.
-  // We choose this style over the SocketTraceConnector::Create() + dynamic_cast<>, as this is
-  // clearer.
   std::unique_ptr<SourceConnector> connector =
       SocketTraceConnector::Create("socket_trace_connector");
   auto* source = dynamic_cast<SocketTraceConnector*>(connector.get());
@@ -76,6 +85,8 @@ TEST(HandleProbeOutputTest, FilterMessages) {
   types::ColumnWrapperRecordBatch record_batch;
   EXPECT_OK(InitRecordBatch(SocketTraceConnector::kHTTPTable.elements(),
                             /*target_capacity*/ 1, &record_batch));
+  // Registers a new connection
+  source->OpenConn(conn_info);
 
   event_json.attr.seq_num = 0;
   // AcceptEvent() puts data into the internal buffer of SocketTraceConnector. And then
@@ -144,6 +155,7 @@ TEST(SocketTraceConnectorTest, AppendNonContiguousEvents) {
       "Content-Length: 3\r\n"
       "\r\n"
       "doe";
+  conn_info_t conn_info = InitConn();
   socket_data_event_t event0 = InitEvent(msg0);
   event0.attr.seq_num = 0;
   socket_data_event_t event1 = InitEvent(msg1);
@@ -163,6 +175,7 @@ TEST(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   EXPECT_OK(InitRecordBatch(SocketTraceConnector::kHTTPTable.elements(),
                             /*target_capacity*/ 1, &record_batch));
 
+  source->OpenConn(conn_info);
   source->AcceptEvent(event0);
   source->AcceptEvent(event2);
   source->TransferData(kTableNum, &record_batch);

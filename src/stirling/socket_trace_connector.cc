@@ -123,9 +123,14 @@ Status SocketTraceConnector::Configure(uint32_t protocol, uint64_t config_mask) 
 //-----------------------------------------------------------------------------
 
 void SocketTraceConnector::ReadPerfBuffer(uint32_t table_num) {
-  auto perf_buffer = bpf_.get_perf_buffer(kPerfBufferSpecs[table_num].name);
-  if (perf_buffer != nullptr) {
-    perf_buffer->poll(1);
+  DCHECK_LT(table_num, kTablePerfBufferMap.size())
+      << "Index out of bound. Trying to read from perf buffer that doesn't exist.";
+  auto buffer_names = kTablePerfBufferMap[table_num];
+  for (auto& buffer_name : buffer_names) {
+    auto perf_buffer = bpf_.get_perf_buffer(buffer_name.get());
+    if (perf_buffer != nullptr) {
+      perf_buffer->poll(1);
+    }
   }
 }
 
@@ -160,12 +165,25 @@ void SocketTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
   // TODO(oazizi): Can we figure out which perf buffer lost the event?
 }
 
+void SocketTraceConnector::HandleOpenProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
+  auto* conn = static_cast<conn_info_t*>(data);
+  connector->OpenConn(*conn);
+}
+
+void SocketTraceConnector::HandleCloseProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
+  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
+  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
+  auto* conn = static_cast<conn_info_t*>(data);
+  connector->CloseConn(*conn);
+}
+
 //-----------------------------------------------------------------------------
 // Stream Functions
 //-----------------------------------------------------------------------------
 
 namespace {
-
 enum class StreamDirection { kUnknown, kSend, kRecv };
 
 static StreamDirection EventStreamDirection(const uint32_t event_type) {
@@ -184,37 +202,31 @@ static StreamDirection EventStreamDirection(const uint32_t event_type) {
   }
 }
 
+static uint64_t GetStreamId(uint32_t tgid, uint32_t conn_id) {
+  return (static_cast<uint64_t>(tgid) << 32) | conn_id;
+}
+
+}  // namespace
+
 template <typename StreamType>
-void AppendToStream(socket_data_event_t event, std::map<uint64_t, StreamType>* streams) {
-  const uint64_t stream_id =
-      (static_cast<uint64_t>(event.attr.tgid) << 32) | event.attr.conn_info.conn_id;
+void SocketTraceConnector::AppendToStream(socket_data_event_t event,
+                                          std::map<uint64_t, StreamType>* streams) {
+  const uint64_t stream_id = GetStreamId(event.attr.tgid, event.attr.conn_id);
   const uint64_t seq_num = event.attr.seq_num;
   auto iter = streams->find(stream_id);
 
-  // This is the first event of the stream, so create the stream object.
   if (iter == streams->end()) {
-    StreamType new_stream;
-
-    // TODO(yzhao): We should explicitly capture the accept() event into user space to determine the
-    // time stamp when the stream is created.
-    new_stream.conn.timestamp_ns = event.attr.conn_info.timestamp_ns;
-    new_stream.conn.tgid = event.attr.tgid;
-    new_stream.conn.fd = event.attr.fd;
-    auto ip_endpoint_or = ParseSockAddr(event);
-    if (ip_endpoint_or.ok()) {
-      new_stream.conn.remote_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
-      new_stream.conn.remote_port = ip_endpoint_or.ValueOrDie().port;
+    const auto conn_iter = connections_.find(stream_id);
+    // If connection exists and stream doesn't, this is the first event.
+    if (conn_iter != connections_.end()) {
+      iter = RegisterStream(conn_iter->second, streams, stream_id);
     } else {
-      LOG(WARNING) << "Could not parse IP address.";
+      // TODO(chengruizhe): Handle missing connect/accept in a more robust way.
+      LOG(WARNING) << "Did not record connect/accept for stream " << stream_id;
+      return;
     }
-    const auto new_stream_ret = streams->emplace(stream_id, std::move(new_stream));
-    DCHECK(new_stream_ret.second) << absl::StrFormat(
-        "Tried to insert, but stream_id exists [stream_id = %d].", stream_id);
-    iter = new_stream_ret.first;
   }
-
   StreamType& stream = iter->second;
-
   switch (EventStreamDirection(event.attr.event_type)) {
     case StreamDirection::kSend:
       stream.send_events.emplace(seq_num, std::move(event));
@@ -227,13 +239,33 @@ void AppendToStream(socket_data_event_t event, std::map<uint64_t, StreamType>* s
   }
 }
 
-}  // namespace
+template <typename StreamType>
+auto SocketTraceConnector::RegisterStream(const conn_info_t& conn_info,
+                                          std::map<uint64_t, StreamType>* streams,
+                                          uint64_t stream_id) {
+  StreamType new_stream;
+  new_stream.conn.timestamp_ns = conn_info.timestamp_ns + ClockRealTimeOffset();
+  new_stream.conn.tgid = conn_info.tgid;
+  new_stream.conn.fd = conn_info.fd;
+  auto ip_endpoint_or = ParseSockAddr(conn_info);
+  if (ip_endpoint_or.ok()) {
+    new_stream.conn.remote_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
+    new_stream.conn.remote_port = ip_endpoint_or.ValueOrDie().port;
+  } else {
+    LOG(WARNING) << "Could not parse IP address.";
+  }
+  ip_endpoints_.emplace(stream_id, ip_endpoint_or);
+  const auto new_stream_ret = streams->emplace(stream_id, std::move(new_stream));
+  DCHECK(new_stream_ret.second) << absl::StrFormat(
+      "Tried to insert, but stream_id exists [stream_id = %d].", stream_id);
+  return new_stream_ret.first;
+}
 
 void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
   // Need to adjust the clocks to convert to real time.
   event.attr.timestamp_ns += ClockRealTimeOffset();
-  event.attr.conn_info.timestamp_ns += ClockRealTimeOffset();
-  switch (event.attr.conn_info.traffic_class.protocol) {
+  // Event has protocol in case conn_info happened before deployment or was dropped by perf buffer.
+  switch (event.attr.protocol) {
     case kProtocolHTTP:
       AppendToStream(std::move(event), &http_streams_);
       break;
@@ -242,8 +274,7 @@ void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
       break;
     default:
       // TODO(oazizi/yzhao): Add MySQL when it goes through streams.
-      LOG(WARNING) << "AcceptEvent ignored due to unknown protocol: "
-                   << event.attr.conn_info.traffic_class.protocol;
+      LOG(WARNING) << "AcceptEvent ignored due to unknown protocol: " << event.attr.protocol;
   }
 }
 
@@ -260,6 +291,28 @@ void SocketTraceConnector::TransferStreamData(uint32_t table_num,
     default:
       CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
   }
+}
+
+void SocketTraceConnector::OpenConn(const conn_info_t& conn_info) {
+  const uint64_t stream_id = GetStreamId(conn_info.tgid, conn_info.conn_id);
+  connections_.emplace(stream_id, conn_info);
+}
+
+void SocketTraceConnector::CloseConn(const conn_info_t& conn_info) {
+  const uint64_t stream_id = GetStreamId(conn_info.tgid, conn_info.conn_id);
+  connections_.erase(stream_id);
+  ip_endpoints_.erase(stream_id);
+}
+
+conn_info_t* SocketTraceConnector::GetConn(const socket_data_event_t& event) {
+  // TODO(chengruizhe): Might want to merge tgid and conn_id into a single field (eg. tgid +
+  // conn_id)
+  const uint64_t stream_id = GetStreamId(event.attr.tgid, event.attr.conn_id);
+  auto stream_pair = connections_.find(stream_id);
+  if (stream_pair == connections_.end()) {
+    return nullptr;
+  }
+  return &stream_pair->second;
 }
 
 //-----------------------------------------------------------------------------
@@ -415,17 +468,32 @@ void SocketTraceConnector::TransferMySQLEvent(const socket_data_event_t& event,
   //      event.attr.event_type != kEventTypeSyscallSendEvent) {
   //    return;
   //  }
-
-  auto s = ParseSockAddr(event);
-  IPEndpoint remote_sockaddr = s.ok() ? s.ConsumeValueOrDie() : IPEndpoint();
+  // TODO(chengruizhe): Get stream_id only once, instead of twice
+  conn_info_t* conn_info = GetConn(event);
+  uint64_t stream_id = GetStreamId(event.attr.tgid, event.attr.conn_id);
+  int fd = -1;
+  std::string ip = "-";
+  int port = -1;
+  if (conn_info) {
+    auto s_iter = ip_endpoints_.find(stream_id);
+    if (s_iter != ip_endpoints_.end()) {
+      auto s = s_iter->second;
+      IPEndpoint remote_sockaddr = s.ok() ? s.ConsumeValueOrDie() : IPEndpoint();
+      fd = conn_info->fd;
+      ip = remote_sockaddr.ip;
+      port = remote_sockaddr.port;
+    } else {
+      LOG(WARNING) << "Could not find ipEndpoint for stream: " << stream_id;
+    }
+  }
 
   RecordBuilder<&kMySQLTable> r(record_batch);
   r.Append<r.ColIndex("time_")>(event.attr.timestamp_ns + ClockRealTimeOffset());
   r.Append<r.ColIndex("tgid")>(event.attr.tgid);
-  r.Append<r.ColIndex("fd")>(event.attr.fd);
+  r.Append<r.ColIndex("fd")>(fd);
   r.Append<r.ColIndex("bpf_event")>(event.attr.event_type);
-  r.Append<r.ColIndex("remote_addr")>(std::move(remote_sockaddr.ip));
-  r.Append<r.ColIndex("remote_port")>(remote_sockaddr.port);
+  r.Append<r.ColIndex("remote_addr")>(std::move(ip));
+  r.Append<r.ColIndex("remote_port")>(port);
   r.Append<r.ColIndex("body")>(std::string(event.msg, event.attr.msg_size));
 }
 

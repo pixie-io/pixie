@@ -65,6 +65,11 @@ struct conn_info_t {
   // A 0-based number for the next read event on this connection.
   // This number is incremented each time a new read event is recorded.
   uint64_t rd_seq_num;
+  // Comes from the process from which this is captured.
+  // See https://stackoverflow.com/a/9306150 for details.
+  uint32_t tgid;
+  // The file descriptor to the opened network connection.
+  uint32_t fd;
 } __attribute__((__packed__, aligned(8)));
 
 // This is the maximum value for the msg size.
@@ -77,14 +82,15 @@ struct socket_data_event_t {
   // size arithmetic. This makes it so that it's attributes followed by message.
   struct attr_t {
     // Information from the accept() syscall, including IP and port.
-    struct conn_info_t conn_info;
+    uint32_t conn_id;
+    // TODO(chengruizhe): Remove protocol once it's specified externally by metadata
+    // The protocol on the connection (HTTP, MySQL, etc.)
+    uint32_t protocol;
     // The time stamp as this is captured by BPF program.
     uint64_t timestamp_ns;
     // Comes from the process from which this is captured.
     // See https://stackoverflow.com/a/9306150 for details.
     uint32_t tgid;
-    // The file descriptor to the opened network connection.
-    uint32_t fd;
     // The type of the actual data that the msg field encodes, which is used by the caller
     // to determine how to interpret the data.
     uint32_t event_type;

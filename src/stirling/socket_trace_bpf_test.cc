@@ -326,7 +326,7 @@ TEST_F(HTTPTraceBPFTest, TestRecvRespCapture) {
   EXPECT_OK(source->Stop());
 }
 
-TEST_F(HTTPTraceBPFTest, DISABLED_TestMySQLWriteCapture) {
+TEST_F(HTTPTraceBPFTest, TestMySQLWriteCapture) {
   ClientServerSystem system;
   system.RunSenderReceiver({kMySQLMsg, kMySQLMsg});
 
