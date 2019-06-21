@@ -157,6 +157,34 @@ struct PicoHTTPParserWrapper {
   std::string_view unparsed_data;
 };
 
+struct BufferPosition {
+  uint64_t seq_num;
+  uint64_t offset;
+};
+
+// An HTTPParseResult returns a vector of parsed messages, and also some position markers.
+//
+// It is templated based on the position type, because we have two concepts of position:
+//    Position in a contiguous buffer: PositionType is uint64_t.
+//    Position in a set of disjoint buffers: PositionType is BufferPosition.
+//
+// The two concepts are used by two different parse functions we have:
+//
+// HTTPParseResult<uint64_t> Parse(TrafficMessageType type, std::string_view buf);
+// HTTPParseResult<BufferPosition> ParseMessages(TrafficMessageType type);
+template <typename PositionType>
+struct HTTPParseResult {
+  // The parsed HTTP messages.
+  std::vector<HTTPMessage> messages;
+  // Positions of message start positions in the source buffer.
+  std::vector<PositionType> start_positions;
+  // Position of where parsing ended consuming the source buffer.
+  // When PositionType is bytes, this is total bytes successfully consumed.
+  PositionType end_position;
+  // State of the last attempted message parse.
+  ParseState state;
+};
+
 /**
  * @brief Parses events traced from write/sendto syscalls,
  * and emits a complete HTTP message in the process.
@@ -166,59 +194,33 @@ class HTTPParser {
   /**
    * @brief Append a sequence message to the internal buffer, ts_ns stands for time stamp in
    * nanosecond.
-   *
-   * @return False if the message is not appended.
    */
-  bool Append(uint64_t seq_num, uint64_t ts_ns, std::string_view msg);
+  void Append(std::string_view msg, uint64_t ts_ns);
 
   /**
    * @brief Parses the accumulated text in the internal buffer, updates state and writes resultant
    * HTTPMessage into appropriate internal data structure for extraction.
+   *
+   * @return Parsed messages.
    */
-  std::pair<uint64_t, uint64_t> ParseMessages(TrafficMessageType type);
-  ParseState parse_state() const { return parse_state_; }
-  void Close();
-
-  /**
-   * @brief Extracts the current parsed HTTP messages, partial ones are not included.
-   */
-  std::vector<HTTPMessage> ExtractHTTPMessages();
+  HTTPParseResult<BufferPosition> ParseMessages(TrafficMessageType type);
 
  private:
-  ParseState parse_state_ = ParseState::kUnknown;
-
-  uint64_t GetSeqNum(size_t pos) const;
-  // Returns the seq numbers being removed.
-  std::pair<uint64_t, uint64_t> RemovePrefix(size_t size);
   std::string Combine() const;
 
-  uint64_t seq_begin_ = 0;
-  uint64_t seq_end_ = 0;
   // The total size of all strings in msgs_. Used for reserve memory space for concatenation.
   size_t msgs_size_ = 0;
   std::vector<uint64_t> ts_nses_;
   std::vector<std::string_view> msgs_;
-
-  PicoHTTPParserWrapper pico_wrapper_;
-  std::vector<HTTPMessage> msgs_complete_;
-  // Map from an incomplete HTTPMessage's last sequence number to the partial message itself.
-  std::map<uint64_t, HTTPMessage> msgs_incomplete_;
 };
 
-// Kept for exposing Parse() for testing.
-struct SeqHTTPMessage : public HTTPMessage {
-  size_t bytes_begin;
-  size_t bytes_end;
-};
-
-/*
+/**
  * @brief Parses the input string as a sequence of HTTP responses, writes the messages in result.
  *
  * @return ParseState To indicate the final state of the parsing. The second return value is the
  * bytes count of the parsed data.
  */
-std::pair<ParseState, size_t> Parse(TrafficMessageType type, std::string_view buf,
-                                    std::vector<SeqHTTPMessage>* result);
+HTTPParseResult<uint64_t> Parse(TrafficMessageType type, std::string_view buf);
 
 }  // namespace stirling
 }  // namespace pl

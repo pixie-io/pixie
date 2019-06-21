@@ -319,90 +319,62 @@ bool PicoHTTPParserWrapper::WriteBody(HTTPMessage* result) {
   return true;
 }
 
-std::pair<uint64_t, uint64_t> HTTPParser::ParseMessages(TrafficMessageType type) {
-  std::string buf = Combine();
-  std::vector<SeqHTTPMessage> seq_msgs;
-  std::pair<ParseState, size_t> parse_result = Parse(type, buf, &seq_msgs);
-  for (auto& msg : seq_msgs) {
-    const uint64_t seq_num = GetSeqNum(msg.bytes_begin);
-    DCHECK(seq_num >= seq_begin_ && seq_num < seq_end_) << absl::Substitute(
-        "The sequence number must be in valid range of [$0, $1)", seq_begin_, seq_end_);
-    msg.timestamp_ns = ts_nses_[seq_num - seq_begin_];
-    if (msg.is_complete) {
-      msgs_complete_.push_back(std::move(msg));
-    } else {
-      msgs_incomplete_.emplace(GetSeqNum(msg.bytes_end - 1), std::move(msg));
-    }
-  }
-  parse_state_ = parse_result.first;
-  // Remove all processed data afterwards. This has to be after processing the messages, as the
-  // messages are needed to get the correct sequence number.
-  // TODO(yzhao): Recover from parse failure. Maybe looking for "HTTP" and restart parsing.
-  return RemovePrefix(parse_result.second);
-}
+namespace {
 
-std::vector<HTTPMessage> HTTPParser::ExtractHTTPMessages() { return std::move(msgs_complete_); }
-
-void HTTPParser::Close() {
-  for (auto& [last_seq_num, message] : msgs_incomplete_) {
-    PL_UNUSED(last_seq_num);
-    if (!message.is_chunked && message.content_length == -1 && message.is_header_complete) {
-      message.is_complete = true;
-      msgs_complete_.push_back(std::move(message));
-    }
-  }
-  msgs_incomplete_.clear();
-}
-
-uint64_t HTTPParser::GetSeqNum(size_t pos) const {
-  uint64_t curr_seq = seq_begin_;
+// Utility to convert positions from a position within a set of combined buffers,
+// to the position within a set of matching content in disjoint buffers.
+// @param msgs The original set of disjoint buffers.
+// @param pos The position within the combined buffer.
+// @return Position within disjoint buffers, as buffer number and offset within the buffer.
+BufferPosition ConvertPosition(std::vector<std::string_view> msgs, size_t pos) {
+  uint64_t curr_seq = 0;
   uint64_t size = 0;
-  for (auto msg : msgs_) {
+  for (auto msg : msgs) {
     size += msg.size();
     if (pos < size) {
-      return curr_seq;
+      return {curr_seq, pos - (size - msg.size())};
     }
     ++curr_seq;
   }
-  return 0;
+  return {curr_seq, 0};
 }
 
-std::pair<uint64_t, uint64_t> HTTPParser::RemovePrefix(size_t size) {
-  DCHECK(size <= msgs_size_) << "Prefix size is too long, maximal size: " << msgs_size_
-                             << " got: " << size;
-  const uint64_t begin = seq_begin_;
-  msgs_size_ -= size;
-  while (size > 0 && !msgs_.empty()) {
-    const size_t l = std::min(size, msgs_.front().size());
-    msgs_.front().remove_prefix(l);
-    if (msgs_.front().empty()) {
-      msgs_.erase(msgs_.begin());
-      ts_nses_.erase(ts_nses_.begin());
-      ++seq_begin_;
-    }
-    size -= l;
+}  // namespace
+
+HTTPParseResult<BufferPosition> HTTPParser::ParseMessages(TrafficMessageType type) {
+  std::string buf = Combine();
+
+  HTTPParseResult<uint64_t> result = Parse(type, buf);
+  std::vector<BufferPosition> positions;
+
+  // Match timestamps with the parsed messages.
+  size_t i = 0;
+  for (auto& msg : result.messages) {
+    // TODO(oazizi): ConvertPosition is inefficient, because it starts searching from scratch
+    // everytime.
+    //               Could do better if ConvertPosition took a starting seq and size.
+    BufferPosition position = ConvertPosition(msgs_, result.start_positions[i]);
+    positions.push_back(position);
+    DCHECK(position.seq_num < msgs_.size())
+        << absl::Substitute("The sequence number must be in valid range of [0, $0)", msgs_.size());
+    msg.timestamp_ns = ts_nses_[position.seq_num];
+    CHECK(msg.is_complete || i == (result.messages.size() - 1)) << "Incomplete message!";
+    ++i;
   }
-  return std::make_pair(begin, seq_begin_);
+
+  BufferPosition end_position = ConvertPosition(msgs_, result.end_position);
+
+  msgs_.clear();
+  ts_nses_.clear();
+  msgs_size_ = 0;
+
+  return {std::move(result.messages), std::move(positions), end_position, result.state};
 }
 
-bool HTTPParser::Append(uint64_t seq_num, uint64_t ts_ns, std::string_view msg) {
-  // TODO(yzhao): Simplify this by resetting parser appropriately.
-  if (seq_num >= seq_begin_ && seq_num < seq_end_) {
-    // Skip duplicate events.
-    return true;
-  }
-  if (seq_begin_ >= seq_end_) {
-    seq_begin_ = seq_num;
-    seq_end_ = seq_num + 1;
-  } else if (seq_num != seq_end_) {
-    return false;
-  } else {
-    ++seq_end_;
-  }
+void HTTPParser::Append(std::string_view msg, uint64_t ts_ns) {
   msgs_.push_back(msg);
   ts_nses_.push_back(ts_ns);
   msgs_size_ += msg.size();
-  return true;
 }
 
 std::string HTTPParser::Combine() const {
@@ -414,37 +386,53 @@ std::string HTTPParser::Combine() const {
   return result;
 }
 
-std::pair<ParseState, size_t> Parse(TrafficMessageType type, std::string_view buf,
-                                    std::vector<SeqHTTPMessage>* result) {
+HTTPParseResult<uint64_t> Parse(TrafficMessageType type, std::string_view buf) {
   PicoHTTPParserWrapper pico;
+  std::vector<HTTPMessage> messages;
+  std::vector<uint64_t> start_position;
   const size_t buf_size = buf.size();
-  while (!buf.empty()) {
-    const ParseState s = pico.Parse(type, buf);
+  ParseState s = ParseState::kSuccess;
+  size_t bytes_processed = 0;
+  bool abort = false;
+
+  while (!buf.empty() && !abort) {
+    s = pico.Parse(type, buf);
+
     switch (s) {
-      case ParseState::kSuccess:
-        break;
-      case ParseState::kUnknown:
-        break;
+      case ParseState::kSuccess: {
+        HTTPMessage message;
+        message.is_header_complete = true;
+        if (!pico.Write(type, &message)) {
+          s = ParseState::kInvalid;
+          abort = true;
+          break;
+        }
+        if (!message.is_complete) {
+          s = ParseState::kNeedsMoreData;
+          abort = true;
+          break;
+        }
+        start_position.push_back(bytes_processed);
+        messages.push_back(std::move(message));
+        buf = pico.unparsed_data;
+        bytes_processed = (buf_size - buf.size());
+      } break;
       case ParseState::kNeedsMoreData:
-        return {s, buf_size - buf.size()};
+        abort = true;
+        break;
       case ParseState::kInvalid:
-        // TODO(yzhao): If parse failed, just assume all are processed. This should be changed so
-        // that we can restart parsing from a later position in the bytes stream.
-        return {s, buf_size};
+        abort = true;
+        break;
+      default:
+        LOG(ERROR) << absl::StrFormat("Unexpected pico parse state %d", s);
+        abort = true;
+        break;
     }
-    SeqHTTPMessage message;
-    if (s == ParseState::kSuccess) {
-      message.is_header_complete = true;
-    }
-    if (!pico.Write(type, &message)) {
-      return {ParseState::kInvalid, buf_size - pico.unparsed_data.size()};
-    }
-    message.bytes_begin = buf_size - buf.size();
-    message.bytes_end = buf_size - pico.unparsed_data.size();
-    buf = pico.unparsed_data;
-    result->push_back(std::move(message));
   }
-  return {ParseState::kSuccess, buf_size - pico.unparsed_data.size()};
+
+  HTTPParseResult<uint64_t> result{std::move(messages), std::move(start_position), bytes_processed,
+                                   s};
+  return result;
 }
 
 }  // namespace stirling

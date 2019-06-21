@@ -267,12 +267,12 @@ void SocketTraceConnector::TransferStreamData(uint32_t table_num,
 //-----------------------------------------------------------------------------
 
 void SocketTraceConnector::TransferHTTPStreams(types::ColumnWrapperRecordBatch* record_batch) {
+  HTTPParser parser;
+
   for (auto& [id, stream] : http_streams_) {
     PL_UNUSED(id);
-    HTTPParser& parser = stream.parser;
 
-    // TODO(oazizi): I don't like this way of detecting requestor vs responder. But works
-    // temporarily.
+    // TODO(oazizi): I don't like this way of detecting requestor vs responder. But works for now.
     bool is_requestor_side = (config_mask_[stream.protocol] & kSocketTraceSendReq) ||
                              (config_mask_[stream.protocol] & kSocketTraceRecvResp);
     bool is_responder_side = (config_mask_[stream.protocol] & kSocketTraceSendResp) ||
@@ -282,32 +282,59 @@ void SocketTraceConnector::TransferHTTPStreams(types::ColumnWrapperRecordBatch* 
 
     std::map<uint64_t, socket_data_event_t>& events =
         is_requestor_side ? stream.recv_events : stream.send_events;
-    std::vector<uint64_t> seq_num_to_remove;
+    uint64_t& offset = is_requestor_side ? stream.recv_offset : stream.send_offset;
 
-    // Parse all recorded events.
+    if (events.empty()) {
+      continue;
+    }
+
+    // Prepare all recorded events for parsing.
+    uint64_t next_seq_num = events.begin()->first;
     for (const auto& [seq_num, event] : events) {
-      const bool succeeded = parser.Append(seq_num, event.attr.timestamp_ns + ClockRealTimeOffset(),
-                                           std::string_view(event.msg, event.attr.msg_size));
-      if (!succeeded) {
+      // Found a discontinuity in sequence numbers. Stop submitting events to parser.
+      if (seq_num != next_seq_num) {
         break;
       }
+
+      // The main message to submit to parser.
+      std::string_view msg(event.msg, event.attr.msg_size);
+
+      // First message may have been partially processed by a previous call to this function.
+      // In such cases, the offset will be non-zero, and we need a sub-string of the first event.
+      if (offset != 0) {
+        CHECK(offset < event.attr.msg_size);
+        msg = msg.substr(offset, event.attr.msg_size - offset);
+        offset = 0;
+      }
+
+      parser.Append(msg, event.attr.timestamp_ns + ClockRealTimeOffset());
+      next_seq_num++;
     }
-    const std::pair<uint64_t, uint64_t> removed_seqs_range =
-        parser.ParseMessages(kMessageTypeResponses);
+
+    // Now parse all the appended events.
+    HTTPParseResult<BufferPosition> parse_result = parser.ParseMessages(kMessageTypeResponses);
 
     // Extract and output all complete messages.
-    for (HTTPMessage& msg : parser.ExtractHTTPMessages()) {
+    for (HTTPMessage& msg : parse_result.messages) {
       HTTPTraceRecord record{stream.conn, std::move(msg)};
       ConsumeHTTPMessage(std::move(record), record_batch);
     }
 
-    // TODO(yzhao): Add the capability to remove events that are too old.
-    // TODO(yzhao): Consider change the data structure to a vector, and use sorting to order events
-    // before stitching. That might be faster (verify with benchmark).
-    for (uint64_t s = removed_seqs_range.first; s < removed_seqs_range.second; ++s) {
-      events.erase(s);
+    // If we weren't able to process anything new, then the offset should be the same as last time.
+    if (offset != 0 && parse_result.end_position.seq_num == 0) {
+      CHECK_EQ(parse_result.end_position.offset, offset);
     }
+
+    // Find and erase events that have been fully processed.
+    auto erase_iter = events.begin();
+    std::advance(erase_iter, parse_result.end_position.seq_num);
+    events.erase(events.begin(), erase_iter);
+    offset = parse_result.end_position.offset;
   }
+
+  // TODO(yzhao): Add the capability to remove events that are too old.
+  // TODO(yzhao): Consider change the data structure to a vector, and use sorting to order events
+  // before stitching. That might be faster (verify with benchmark).
 }
 
 void SocketTraceConnector::ConsumeHTTPMessage(HTTPTraceRecord record,

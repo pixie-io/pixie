@@ -37,16 +37,25 @@ namespace stirling {
 struct EventStream {
   SocketConnection conn;
   TrafficProtocol protocol;
+
   // Key: sequence number.
   std::map<uint64_t, socket_data_event_t> recv_events;
   std::map<uint64_t, socket_data_event_t> send_events;
+
+  // For recv_events and send_events, respectively
+  // the offset to start processing in the first socket_data_event_t.
+  // Would be set only if it was already processed by a previous ParseMessages() call.
+  uint64_t recv_offset = 0;
+  uint64_t send_offset = 0;
+
+  // TODO(oazizi): Create an object that is a container of events plus the current offset.
+  // TODO(oazizi): Add a bool to say whether the stream has been touched since last transfer (to
+  // avoid useless computation).
+  // TODO(oazizi): Could also record a timestamp, so we could destroy old EventStreams completely.
 };
 
 struct HTTPStream : public EventStream {
   HTTPStream() { protocol = kProtocolHTTP; }
-
-  // TODO(yzhao/oazizi): Make this parser stateless.
-  HTTPParser parser;
 };
 
 struct HTTP2Stream : public EventStream {
