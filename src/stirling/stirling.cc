@@ -58,7 +58,7 @@ class StirlingImpl final : public Stirling {
   void GetPublishProto(stirlingpb::Publish* publish_pb) override;
   Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) override;
   void RegisterCallback(PushDataCallback f) override { agent_callback_ = f; }
-  std::unordered_map<uint64_t, std::string> TableIDToNameMap() override;
+  std::unordered_map<uint64_t, std::string> TableIDToNameMap() const override;
   void Run() override;
   Status RunAsThread() override;
   void Stop() override;
@@ -191,7 +191,7 @@ Status StirlingImpl::CreateSourceConnectors() {
   return Status::OK();
 }
 
-std::unordered_map<uint64_t, std::string> StirlingImpl::TableIDToNameMap() {
+std::unordered_map<uint64_t, std::string> StirlingImpl::TableIDToNameMap() const {
   std::unordered_map<uint64_t, std::string> map;
 
   for (auto& mgr : info_class_mgrs_) {

@@ -24,7 +24,7 @@ Status PubSubManager::UpdateSchemaFromSubscribe(const Subscribe& subscribe_proto
                                                 const InfoClassManagerVec& info_class_mgrs) {
   int num_info_classes = subscribe_proto.subscribed_info_classes_size();
   for (int info_class_idx = 0; info_class_idx < num_info_classes; ++info_class_idx) {
-    auto info_class_proto = subscribe_proto.subscribed_info_classes(info_class_idx);
+    const auto& info_class_proto = subscribe_proto.subscribed_info_classes(info_class_idx);
     uint64_t id = info_class_proto.id();
 
     auto it = std::find_if(info_class_mgrs.begin(), info_class_mgrs.end(),

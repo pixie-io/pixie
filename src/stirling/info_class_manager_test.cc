@@ -25,7 +25,7 @@ TEST(InfoClassInfoSchemaTest, infoclass_mgr_proto_getters_test) {
   InfoClassSchema elements = {};
   InfoClassManager info_class_mgr("sequences_mgr");
   auto source = SeqGenConnector::Create("sequences");
-  uint32_t source_table_id = 0;
+  uint64_t source_table_id = 0;
   info_class_mgr.SetSourceConnector(source.get(), source_table_id);
   ASSERT_OK(info_class_mgr.PopulateSchemaFromSource());
 

@@ -93,7 +93,7 @@ class Stirling : public NotCopyable {
   /**
    * @brief Return a map of table ID to InfoClassManager names.
    */
-  virtual std::unordered_map<uint64_t, std::string> TableIDToNameMap() = 0;
+  virtual std::unordered_map<uint64_t, std::string> TableIDToNameMap() const = 0;
 
   /**
    * @brief Main data collection call. This version blocks, so make sure to wrap a thread around it.

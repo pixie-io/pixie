@@ -54,9 +54,6 @@ class DataTable {
   // Table schema
   std::unique_ptr<std::vector<DataElement>> table_schema_;
 
-  // Pre-computed row size, according to schema.
-  uint32_t row_size_;
-
   // Active record batch.
   std::unique_ptr<types::ColumnWrapperRecordBatch> record_batch_;
 
@@ -64,7 +61,7 @@ class DataTable {
   std::unique_ptr<types::ColumnWrapperRecordBatchVec> sealed_batches_;
 
   // ColumnWrapper specific members
-  static constexpr uint64_t target_capacity_ = 1024;
+  static constexpr size_t target_capacity_ = 1024;
 };
 
 }  // namespace stirling

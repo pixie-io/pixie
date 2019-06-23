@@ -158,8 +158,8 @@ struct PicoHTTPParserWrapper {
 };
 
 struct BufferPosition {
-  uint64_t seq_num;
-  uint64_t offset;
+  size_t seq_num;
+  size_t offset;
 };
 
 // An HTTPParseResult returns a vector of parsed messages, and also some position markers.
@@ -170,7 +170,7 @@ struct BufferPosition {
 //
 // The two concepts are used by two different parse functions we have:
 //
-// HTTPParseResult<uint64_t> Parse(TrafficMessageType type, std::string_view buf);
+// HTTPParseResult<size_t> Parse(TrafficMessageType type, std::string_view buf);
 // HTTPParseResult<BufferPosition> ParseMessages(TrafficMessageType type);
 template <typename PositionType>
 struct HTTPParseResult {
@@ -220,7 +220,7 @@ class HTTPParser {
  * @return ParseState To indicate the final state of the parsing. The second return value is the
  * bytes count of the parsed data.
  */
-HTTPParseResult<uint64_t> Parse(TrafficMessageType type, std::string_view buf);
+HTTPParseResult<size_t> Parse(TrafficMessageType type, std::string_view buf);
 
 }  // namespace stirling
 }  // namespace pl

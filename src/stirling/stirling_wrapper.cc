@@ -42,17 +42,17 @@ DEFINE_string(source_name, "*", "The name of the source to report.");
 
 std::unordered_map<uint64_t, std::string> table_id_to_name_map;
 
-void PrintRecordBatch(std::string prefix, const ConstVectorView<DataElement>& schema,
-                      uint64_t num_records, const ColumnWrapperRecordBatch& record_batch) {
-  for (uint32_t i = 0; i < num_records; ++i) {
+void PrintRecordBatch(std::string_view prefix, const ConstVectorView<DataElement>& schema,
+                      size_t num_records, const ColumnWrapperRecordBatch& record_batch) {
+  for (size_t i = 0; i < num_records; ++i) {
     std::cout << "[" << prefix << "] ";
 
     uint32_t j = 0;
-    for (SharedColumnWrapper col : record_batch) {
+    for (const auto& col : record_batch) {
       switch (schema[j].type()) {
         case DataType::TIME64NS: {
           const auto val = col->Get<Time64NSValue>(i).val;
-          std::time_t time = val / 1000000000ULL;
+          std::time_t time = val / 1000000000UL;
           std::cout << std::put_time(std::localtime(&time), "%Y-%m-%d %X") << " | ";
         } break;
         case DataType::INT64: {
@@ -80,7 +80,7 @@ void PrintRecordBatch(std::string prefix, const ConstVectorView<DataElement>& sc
 void StirlingWrapperCallback(uint64_t table_id,
                              std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
   // Note: Implicit assumption (not checked here) is that all columns have the same size
-  uint64_t num_records = (*record_batch)[0]->Size();
+  size_t num_records = (*record_batch)[0]->Size();
 
   std::string name = table_id_to_name_map[table_id];
 

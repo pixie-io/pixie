@@ -324,8 +324,8 @@ namespace {
 // @param pos The position within the combined buffer.
 // @return Position within disjoint buffers, as buffer number and offset within the buffer.
 BufferPosition ConvertPosition(std::vector<std::string_view> msgs, size_t pos) {
-  uint64_t curr_seq = 0;
-  uint64_t size = 0;
+  size_t curr_seq = 0;
+  size_t size = 0;
   for (auto msg : msgs) {
     size += msg.size();
     if (pos < size) {
@@ -341,7 +341,7 @@ BufferPosition ConvertPosition(std::vector<std::string_view> msgs, size_t pos) {
 HTTPParseResult<BufferPosition> HTTPParser::ParseMessages(TrafficMessageType type) {
   std::string buf = Combine();
 
-  HTTPParseResult<uint64_t> result = Parse(type, buf);
+  HTTPParseResult<size_t> result = Parse(type, buf);
   std::vector<BufferPosition> positions;
 
   // Match timestamps with the parsed messages.
@@ -383,10 +383,10 @@ std::string HTTPParser::Combine() const {
   return result;
 }
 
-HTTPParseResult<uint64_t> Parse(TrafficMessageType type, std::string_view buf) {
+HTTPParseResult<size_t> Parse(TrafficMessageType type, std::string_view buf) {
   PicoHTTPParserWrapper pico;
   std::vector<HTTPMessage> messages;
-  std::vector<uint64_t> start_position;
+  std::vector<size_t> start_position;
   const size_t buf_size = buf.size();
   ParseState s = ParseState::kSuccess;
   size_t bytes_processed = 0;
@@ -427,8 +427,8 @@ HTTPParseResult<uint64_t> Parse(TrafficMessageType type, std::string_view buf) {
     }
   }
 
-  HTTPParseResult<uint64_t> result{std::move(messages), std::move(start_position), bytes_processed,
-                                   s};
+  HTTPParseResult<size_t> result{std::move(messages), std::move(start_position), bytes_processed,
+                                 s};
   return result;
 }
 

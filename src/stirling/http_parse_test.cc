@@ -536,7 +536,7 @@ C
   // Utility function that takes a string view of a buffer, and a set of N split points,
   // and returns a set of N+1 split string_views of the buffer.
   std::vector<std::string_view> MessageSplit(std::string_view msg,
-                                             std::vector<uint64_t> split_points) {
+                                             std::vector<size_t> split_points) {
     std::vector<std::string_view> splits;
 
     split_points.push_back(msg.length());
@@ -584,7 +584,7 @@ TEST_P(HTTPParserStressTest, ParseHTTPRequestsRepeatedly) {
 
   for (uint32_t i = 0; i < GetParam().iters; ++i) {
     // Choose two random split points for this iteration.
-    std::vector<uint64_t> split_points;
+    std::vector<size_t> split_points;
     split_points.push_back(splitpoint_dist(rng));
     split_points.push_back(splitpoint_dist(rng));
 
@@ -609,11 +609,11 @@ TEST_P(HTTPParserStressTest, ParseHTTPResponsesRepeatedly) {
 
   std::default_random_engine rng;
   rng.seed(GetParam().seed);
-  std::uniform_int_distribution<uint64_t> splitpoint_dist(0, msg.length());
+  std::uniform_int_distribution<size_t> splitpoint_dist(0, msg.length());
 
   for (uint32_t i = 0; i < GetParam().iters; ++i) {
     // Choose two random split points for this iteration.
-    std::vector<uint64_t> split_points;
+    std::vector<size_t> split_points;
     split_points.push_back(splitpoint_dist(rng));
     split_points.push_back(splitpoint_dist(rng));
 
@@ -640,7 +640,7 @@ TEST_P(HTTPParserStressTest, ParseHTTPResponsesRepeatedly) {
 TEST_F(HTTPParserStressTest, ParseHTTPResponsesWithLeftover) {
   std::string msg = kHTTPResp0 + kHTTPResp1 + kHTTPResp2;
 
-  std::vector<uint64_t> split_points;
+  std::vector<size_t> split_points;
   split_points.push_back(kHTTPResp0.length() - 5);
   split_points.push_back(msg.size() - 10);
   std::vector<std::string_view> msg_splits = MessageSplit(msg, split_points);
@@ -657,10 +657,10 @@ TEST_F(HTTPParserStressTest, ParseHTTPResponsesWithLeftover) {
   ASSERT_THAT(result.messages, ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage()));
 
   BufferPosition position = result.end_position;
-  uint64_t offset = position.offset;
+  size_t offset = position.offset;
 
   // Now append the unprocessed remainder, including msg_splits[2].
-  for (uint64_t i = position.seq_num; i < msg_splits.size(); ++i) {
+  for (size_t i = position.seq_num; i < msg_splits.size(); ++i) {
     std::string_view t = msg_splits[i].substr(offset);
     parser_.Append(t, 1);
     offset = 0;
@@ -679,11 +679,11 @@ TEST_P(HTTPParserStressTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
 
   std::default_random_engine rng;
   rng.seed(GetParam().seed);
-  std::uniform_int_distribution<uint64_t> splitpoint_dist(0, msg.length());
+  std::uniform_int_distribution<size_t> splitpoint_dist(0, msg.length());
 
   for (uint32_t j = 0; j < GetParam().iters; ++j) {
     // Choose two random split points for this iteration.
-    std::vector<uint64_t> split_points;
+    std::vector<size_t> split_points;
     split_points.push_back(splitpoint_dist(rng));
     split_points.push_back(splitpoint_dist(rng));
     std::vector<std::string_view> msg_splits = MessageSplit(msg, split_points);
@@ -697,8 +697,8 @@ TEST_P(HTTPParserStressTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
 
     // Now append the unprocessed remainder, including msg_splits[2].
     BufferPosition position = result1.end_position;
-    uint64_t offset = position.offset;
-    for (uint64_t i = position.seq_num; i < msg_splits.size(); ++i) {
+    size_t offset = position.offset;
+    for (size_t i = position.seq_num; i < msg_splits.size(); ++i) {
       std::string_view t = msg_splits[i].substr(offset);
       parser_.Append(t, 0);
       offset = 0;

@@ -136,14 +136,14 @@ Content-Length: 0
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
   static constexpr DataTableSchema kHTTPTable = SocketTraceConnector::kHTTPTable;
-  static constexpr uint64_t kHTTPHeaderIdx = kHTTPTable.ColIndex("http_headers");
-  static constexpr uint64_t kHTTPTGIDIdx = kHTTPTable.ColIndex("tgid");
-  static constexpr uint64_t kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
-  static constexpr uint64_t kHTTPFdIdx = kHTTPTable.ColIndex("fd");
+  static constexpr uint32_t kHTTPHeaderIdx = kHTTPTable.ColIndex("http_headers");
+  static constexpr uint32_t kHTTPTGIDIdx = kHTTPTable.ColIndex("tgid");
+  static constexpr uint32_t kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
+  static constexpr uint32_t kHTTPFdIdx = kHTTPTable.ColIndex("fd");
 
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
   static constexpr DataTableSchema kMySQLTable = SocketTraceConnector::kMySQLTable;
-  static constexpr uint64_t kMySQLBodyIdx = kMySQLTable.ColIndex("body");
+  static constexpr uint32_t kMySQLBodyIdx = kMySQLTable.ColIndex("body");
 
   std::unique_ptr<SourceConnector> source;
 };

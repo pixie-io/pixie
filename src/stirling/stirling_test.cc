@@ -36,9 +36,9 @@ using pl::ConstVectorView;
 
 // Test arguments, from the command line
 DEFINE_uint64(kRNGSeed, gflags::Uint64FromEnv("seed", 377), "Random Seed");
-DEFINE_uint64(kNumSources, gflags::Uint64FromEnv("num_sources", 2), "Number of sources");
-DEFINE_uint64(kNumIterMin, gflags::Uint64FromEnv("num_iter_min", 10), "Min number of iterations");
-DEFINE_uint64(kNumIterMax, gflags::Uint64FromEnv("num_iter_max", 20), "Max number of iterations");
+DEFINE_uint32(kNumSources, gflags::Uint64FromEnv("num_sources", 2), "Number of sources");
+DEFINE_uint32(kNumIterMin, gflags::Uint64FromEnv("num_iter_min", 10), "Min number of iterations");
+DEFINE_uint32(kNumIterMax, gflags::Uint64FromEnv("num_iter_max", 20), "Max number of iterations");
 DEFINE_uint64(kNumProcessedRequirement, gflags::Uint64FromEnv("num_processed_required", 5000),
               "Number of records required to be processed before test is allowed to end");
 
@@ -55,16 +55,15 @@ class StirlingTest : public ::testing::Test {
  private:
   std::unique_ptr<Stirling> stirling_;
   PubProto publish_proto_;
-  std::unordered_map<uint64_t, std::string> id_to_name_map_;
 
   // Schemas
-  std::unordered_map<uint64_t, const ConstVectorView<DataElement>*> schemas_;
+  std::unordered_map<uint32_t, const ConstVectorView<DataElement>*> schemas_;
 
   // Reference model (checkers).
   std::unordered_map<uint64_t, std::unique_ptr<pl::stirling::Sequence<int64_t>>> int_seq_checker_;
   std::unordered_map<uint64_t, std::unique_ptr<pl::stirling::Sequence<double>>> double_seq_checker_;
 
-  std::unordered_map<uint64_t, uint64_t> num_processed_per_table_;
+  std::unordered_map<uint32_t, uint64_t> num_processed_per_table_;
   std::atomic<uint64_t> num_processed_;
 
   // Random distributions for test parameters.
@@ -75,9 +74,9 @@ class StirlingTest : public ::testing::Test {
 
  public:
   inline static const uint64_t& kRNGSeed = FLAGS_kRNGSeed;
-  inline static const uint64_t& kNumSources = FLAGS_kNumSources;
-  inline static const uint64_t& kNumIterMin = FLAGS_kNumIterMin;
-  inline static const uint64_t& kNumIterMax = FLAGS_kNumIterMax;
+  inline static const uint32_t& kNumSources = FLAGS_kNumSources;
+  inline static const uint32_t& kNumIterMin = FLAGS_kNumIterMin;
+  inline static const uint32_t& kNumIterMax = FLAGS_kNumIterMax;
   inline static const uint64_t& kNumProcessedRequirement = FLAGS_kNumProcessedRequirement;
 
   StirlingTest()
@@ -102,9 +101,12 @@ class StirlingTest : public ::testing::Test {
 
     stirling_->GetPublishProto(&publish_proto_);
 
-    id_to_name_map_ = stirling_->TableIDToNameMap();
+    const auto& id_to_name_map = stirling_->TableIDToNameMap();
 
-    for (const auto& [id, name] : id_to_name_map_) {
+    for (auto iter = id_to_name_map.begin(); iter != id_to_name_map.end(); ++iter) {
+      uint64_t id = iter->first;
+      std::string name = iter->second;
+
       if (name[name.length() - 1] == '0') {
         schemas_.emplace(id, &SeqGenConnector::kSeq0Table.elements());
 
@@ -140,7 +142,7 @@ class StirlingTest : public ::testing::Test {
   }
 
   void TearDown() override {
-    for (const auto& [id, name] : id_to_name_map_) {
+    for (const auto& [id, name] : stirling_->TableIDToNameMap()) {
       LOG(INFO) << absl::StrFormat("Number of records processed: %u", num_processed_per_table_[id]);
       PL_UNUSED(name);
     }
@@ -166,19 +168,19 @@ class StirlingTest : public ::testing::Test {
 
   void AppendData(uint64_t table_id, std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
     // Note: Implicit assumption (not checked here) is that all columns have the same size
-    uint64_t num_records = (*record_batch)[0]->Size();
+    size_t num_records = (*record_batch)[0]->Size();
     CheckRecordBatch(table_id, num_records, *record_batch);
   }
 
-  void CheckRecordBatch(const uint32_t table_id, uint64_t num_records,
+  void CheckRecordBatch(const uint64_t table_id, size_t num_records,
                         const ColumnWrapperRecordBatch& record_batch) {
     auto table_schema = *(schemas_[table_id]);
 
-    for (uint32_t i = 0; i < num_records; ++i) {
+    for (size_t i = 0; i < num_records; ++i) {
       uint32_t j = 0;
 
-      for (auto col : record_batch) {
-        uint64_t key = static_cast<uint64_t>(table_id) << 32 | j;
+      for (const auto& col : record_batch) {
+        uint64_t key = table_id << 32 | j;
 
         switch (table_schema[j].type()) {
           case DataType::TIME64NS: {

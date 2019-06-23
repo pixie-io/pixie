@@ -19,10 +19,10 @@ class DataTableTest : public ::testing::Test {
   size_t record_size_;
 
   // Test parameter: number of records to write.
-  uint64_t num_records_ = 0;
+  size_t num_records_ = 0;
 
   // Test parameter: max number of records per append.
-  uint64_t max_append_size_;
+  size_t max_append_size_;
 
   // Test parameter: probability of a push.
   double push_probability_ = 0.1;
@@ -51,14 +51,14 @@ class DataTableTest : public ::testing::Test {
    */
   void SetSeed(uint64_t seed) { rng_.seed(seed); }
 
-  void InitRawData(uint64_t num_records) {
+  void InitRawData(size_t num_records) {
     num_records_ = num_records;
     InitRawData();
   }
 
   void SetPushProbability(double push_probability) { push_probability_ = push_probability; }
 
-  void SetMaxAppendSize(uint64_t max_append_size) { max_append_size_ = max_append_size; }
+  void SetMaxAppendSize(size_t max_append_size) { max_append_size_ = max_append_size; }
 
   void RunAndCheck() { RunAndCheckImpl(); }
 
@@ -97,7 +97,7 @@ class DataTableTest : public ::testing::Test {
     f1_seq_.Reset();
     f2_seq_.Reset();
 
-    for (uint32_t i = 0; i < num_records_; ++i) {
+    for (size_t i = 0; i < num_records_; ++i) {
       f0_vals_.push_back(f0_seq_());
       f1_vals_.push_back(f1_seq_());
       f2_vals_.push_back(f2_seq_());
@@ -111,8 +111,8 @@ class DataTableTest : public ::testing::Test {
                                 uint32_t end_record) {
     types::ColumnWrapperRecordBatch& columns = *col_arrays;
 
-    uint32_t f_idx;
-    uint32_t i;
+    size_t f_idx;
+    size_t i;
     for (f_idx = start_record, i = 0; f_idx < end_record; ++f_idx, ++i) {
       auto col0_val = columns[0]->Get<types::Int64Value>(i).val;
       auto col1_val = columns[1]->Get<types::Float64Value>(i).val;
@@ -138,15 +138,15 @@ class DataTableTest : public ::testing::Test {
     f1_seq_.Reset();
     f2_seq_.Reset();
 
-    std::uniform_int_distribution<uint32_t> append_num_rows_dist(0, max_append_size_);
+    std::uniform_int_distribution<size_t> append_num_rows_dist(0, max_append_size_);
     std::uniform_real_distribution<double> probability_dist(0, 1.0);
 
     // Keep track of progress through the data
-    uint32_t current_record = 0;  // Current position in source buffer
-    uint32_t check_record = 0;    // Position to which the data has been compared/checked
+    size_t current_record = 0;  // Current position in source buffer
+    size_t check_record = 0;    // Position to which the data has been compared/checked
 
     while (current_record < num_records_) {
-      uint32_t num_rows = append_num_rows_dist(rng_);
+      size_t num_rows = append_num_rows_dist(rng_);
       bool last_pass = false;
 
       // If we would go out of bounds of the source buffer
@@ -163,7 +163,7 @@ class DataTableTest : public ::testing::Test {
 
       auto& columns = *(data_table_->GetActiveRecordBatch());
 
-      for (uint32_t i = 0; i < num_rows; ++i) {
+      for (size_t i = 0; i < num_rows; ++i) {
         columns[0]->Append<types::Int64Value>(f0_vals_[current_record + i]);
         columns[1]->Append<types::Float64Value>(f1_vals_[current_record + i]);
         columns[2]->Append<types::Int64Value>(f2_vals_[current_record + i]);
@@ -184,10 +184,10 @@ class DataTableTest : public ::testing::Test {
   }
 };
 
-constexpr uint32_t kNumRecords = 1 << 16;
+constexpr size_t kNumRecords = 1 << 16;
 constexpr uint64_t kRNGSeed = 37;
 constexpr std::array<double, 3> kPushProbability = {0.01, 0.1, 0.5};
-constexpr std::array<uint64_t, 3> kMaxAppendSize = {20, 200, 2000};
+constexpr std::array<size_t, 3> kMaxAppendSize = {20, 200, 2000};
 
 /**
  * Test Data Tables.

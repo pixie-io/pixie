@@ -18,7 +18,6 @@ namespace stirling {
 
 class SourceConnector;
 class DataTable;
-struct RawDataBuf;
 
 /**
  * InfoClassElement is a basic structure that holds a single available data element from a source,
