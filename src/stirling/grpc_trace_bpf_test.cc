@@ -24,25 +24,17 @@ using ::pl::stirling::http2::Frame;
 using ::pl::stirling::http2::GRPCMessage;
 using ::pl::stirling::http2::UnpackFrames;
 using ::pl::stirling::http2::UnpackGRPCMessage;
+using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::Pair;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-// Returns a list of strings. Each string is joined from all of the messages in a stream.
-template <typename StreamType>
-auto JoinSendStreams(const std::map<uint64_t, StreamType>& streams) {
-  std::vector<std::string> result;
-  for (const auto& [id, stream] : streams) {
-    PL_UNUSED(id);
-    result.emplace_back();
-    for (const auto& [seq_num, event] : stream.send_events) {
-      PL_UNUSED(seq_num);
-      result.back().append(std::string_view(event.msg, event.attr.msg_size));
-    }
-    if (result.back().empty()) {
-      result.pop_back();
-    }
+std::string JoinStream(const std::map<uint64_t, socket_data_event_t>& stream) {
+  std::string result;
+  for (const auto& [seq_num, event] : stream) {
+    PL_UNUSED(seq_num);
+    result.append(event.msg, event.attr.msg_size);
   }
   return result;
 }
@@ -88,32 +80,71 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
 
   const int kTableNum = 2;
   socket_trace_connector->ReadPerfBuffer(kTableNum);
-  std::vector<std::string> stream_strings =
-      JoinSendStreams(socket_trace_connector->TestOnlyHTTP2Streams());
+  ASSERT_GE(socket_trace_connector->TestOnlyHTTP2Streams().size(), 1);
 
-  std::vector<std::unique_ptr<Frame>> frames;
-  std::string_view send_buf = stream_strings.front();
-  EXPECT_OK(UnpackFrames(&send_buf, &frames));
-  ASSERT_THAT(frames, SizeIs(3));
+  const HTTP2Stream h2_stream = socket_trace_connector->TestOnlyHTTP2Streams().begin()->second;
+  {
+    std::string send_string = JoinStream(h2_stream.send_events);
+    std::string_view send_buf = send_string;
+    std::vector<std::unique_ptr<Frame>> frames;
+    EXPECT_OK(UnpackFrames(&send_buf, &frames));
+    ASSERT_THAT(frames, SizeIs(3));
 
-  EXPECT_THAT(*frames[0], IsFrameType(NGHTTP2_HEADERS));
-  EXPECT_THAT(*frames[1], IsFrameType(NGHTTP2_DATA));
-  EXPECT_THAT(*frames[2], IsFrameType(NGHTTP2_HEADERS));
+    EXPECT_THAT(*frames[0], IsFrameType(NGHTTP2_HEADERS));
+    EXPECT_THAT(*frames[1], IsFrameType(NGHTTP2_DATA));
+    EXPECT_THAT(*frames[2], IsFrameType(NGHTTP2_HEADERS));
+    EXPECT_EQ(1, frames[0]->frame.hd.stream_id);
+    EXPECT_EQ(1, frames[1]->frame.hd.stream_id);
+    EXPECT_EQ(1, frames[2]->frame.hd.stream_id);
 
-  EXPECT_THAT(Headers(*frames[0]),
-              ElementsAre(Pair(":status", "200"), Pair("content-type", "application/grpc")));
-  EXPECT_THAT(Headers(*frames[2]), ElementsAre(Pair("grpc-message", ""), Pair("grpc-status", "0")));
+    EXPECT_THAT(Headers(*frames[0]),
+                ElementsAre(Pair(":status", "200"), Pair("content-type", "application/grpc")));
+    EXPECT_THAT(Headers(*frames[2]),
+                ElementsAre(Pair("grpc-message", ""), Pair("grpc-status", "0")));
 
-  std::string_view buf = frames[1]->payload;
-  GRPCMessage message = {};
-  EXPECT_OK(UnpackGRPCMessage(&buf, &message));
+    std::string_view buf = frames[1]->payload;
+    GRPCMessage message = {};
+    EXPECT_OK(UnpackGRPCMessage(&buf, &message));
 
-  testing::HelloReply got;
-  EXPECT_TRUE(got.ParseFromString(message.message));
+    testing::HelloReply received_reply;
+    EXPECT_TRUE(received_reply.ParseFromString(message.message));
 
-  testing::HelloReply expected;
-  expected.set_message("Hello PixieLabs");
-  EXPECT_TRUE(MessageDifferencer::Equals(got, expected));
+    testing::HelloReply expected_reply;
+    expected_reply.set_message("Hello PixieLabs");
+    EXPECT_TRUE(MessageDifferencer::Equals(received_reply, expected_reply));
+  }
+  {
+    std::string recv_string = JoinStream(h2_stream.recv_events);
+    std::string_view recv_buf = recv_string;
+    std::vector<std::unique_ptr<Frame>> frames;
+    constexpr size_t kHTTP2ClientConnectPrefaceSizeInBytes = 24;
+    recv_buf.remove_prefix(kHTTP2ClientConnectPrefaceSizeInBytes);
+    EXPECT_OK(UnpackFrames(&recv_buf, &frames));
+    ASSERT_THAT(frames, SizeIs(2));
+
+    EXPECT_THAT(*frames[0], IsFrameType(NGHTTP2_HEADERS));
+    EXPECT_THAT(*frames[1], IsFrameType(NGHTTP2_DATA));
+    EXPECT_EQ(1, frames[0]->frame.hd.stream_id);
+    EXPECT_EQ(1, frames[1]->frame.hd.stream_id);
+
+    EXPECT_THAT(Headers(*frames[0]),
+                ElementsAre(Pair(":authority", "localhost:50051"), Pair(":method", "POST"),
+                            Pair(":path", "/pl.stirling.testing.Greeter/SayHello"),
+                            Pair(":scheme", "http"), Pair("content-type", "application/grpc"),
+                            Pair("grpc-timeout", _),  // The value keeps changing, just ignore it.
+                            Pair("te", "trailers"), Pair("user-agent", "grpc-go/1.19.0")));
+
+    std::string_view buf = frames[1]->payload;
+    GRPCMessage message = {};
+    EXPECT_OK(UnpackGRPCMessage(&buf, &message));
+
+    testing::HelloRequest received_req;
+    EXPECT_TRUE(received_req.ParseFromString(message.message));
+
+    testing::HelloRequest expected_req;
+    expected_req.set_name("PixieLabs");
+    EXPECT_TRUE(MessageDifferencer::Equals(received_req, expected_req));
+  }
 }
 
 }  // namespace stirling
