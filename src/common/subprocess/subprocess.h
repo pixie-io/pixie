@@ -32,6 +32,8 @@ class SubProcess {
    */
   int Wait();
 
+  int child_pid() const { return child_pid_; }
+
  private:
   const std::vector<std::string> args_;
   std::vector<char*> exec_args_;
