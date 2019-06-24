@@ -17,4 +17,8 @@ pl_go_proto_library(
 pl_cc_proto_library(
     name = "greet_pl_cc_proto",
     proto = ":greet_pl_proto",
+    deps = [
+        # This proto defines a gRPC service, so it has to include gRPC dependency.
+        "@com_github_grpc_grpc//:grpc++",
+    ],
 )

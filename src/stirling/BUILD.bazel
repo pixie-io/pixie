@@ -32,6 +32,7 @@ pl_cc_library(
         "//third_party:arrow",
         "@com_github_h2o_picohttpparser//:picohttpparser",
         "//src/common/zlib:cc_library",
+        "//external:nghttp2",
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": [
             "//third_party:bpftrace",
@@ -181,5 +182,6 @@ pl_cc_test(
         ":cc_library",
         "//src/common/subprocess:cc_library",
         "//src/common/testing:cc_library",
+        "//src/stirling/testing/proto:greet_pl_cc_proto",
     ],
 )
