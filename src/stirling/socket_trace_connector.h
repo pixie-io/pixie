@@ -187,14 +187,16 @@ class SocketTraceConnector : public SourceConnector {
   static void HandleCloseProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleOpenProbeOutput(void* cb_cookie, void* data, int data_size);
 
+  // Data related events.
   // Places the event into a stream buffer to deal with reorderings.
-  FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
-  template <typename StreamType>
-  void AppendToStream(socket_data_event_t event, std::map<uint64_t, StreamType>* streams);
+  void AcceptEvent(socket_data_event_t event);
+
+  // Connection related events.
   template <typename StreamType>
   auto RegisterStream(const conn_info_t& conn_info, std::map<uint64_t, StreamType>* streams,
                       uint64_t stream_id);
-  void AcceptEvent(socket_data_event_t event);
+  template <typename StreamType>
+  void AppendToStream(socket_data_event_t event, std::map<uint64_t, StreamType>* streams);
   void OpenConn(const conn_info_t& conn_info);
   void CloseConn(const conn_info_t& conn_info);
   conn_info_t* GetConn(const socket_data_event_t& event);
@@ -204,6 +206,13 @@ class SocketTraceConnector : public SourceConnector {
 
   // Transfer of an HTTP Response Event to the HTTP Response Table in the table store.
   void TransferHTTPStreams(types::ColumnWrapperRecordBatch* record_batch);
+
+  // Takes an event stream (map of events), and parses as many HTTP messages of the
+  // specified type as it can. Returns a vector of the parsed messages.
+  std::vector<HTTPMessage> ParseEventStream(TrafficMessageType type,
+                                            std::map<uint64_t, socket_data_event_t>* events,
+                                            uint64_t* offset);
+
   static void ConsumeHTTPMessage(HTTPTraceRecord record,
                                  types::ColumnWrapperRecordBatch* record_batch);
   static bool SelectHTTPMessage(const HTTPTraceRecord& record);
@@ -214,7 +223,6 @@ class SocketTraceConnector : public SourceConnector {
   void TransferMySQLEvent(const socket_data_event_t& event,
                           types::ColumnWrapperRecordBatch* record_batch);
 
-  FRIEND_TEST(HandleProbeOutputTest, FilterMessages);
   inline static HTTPHeaderFilter http_response_header_filter_;
 
   ebpf::BPF bpf_;
@@ -288,6 +296,10 @@ class SocketTraceConnector : public SourceConnector {
   };
 
   std::vector<uint64_t> config_mask_;
+
+  FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
+  FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
+  FRIEND_TEST(SocketTraceConnectorTest, FilterMessages);
 };
 
 }  // namespace stirling
