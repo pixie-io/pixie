@@ -83,8 +83,8 @@ TEST(HandleProbeOutputTest, FilterMessages) {
   auto* source = dynamic_cast<SocketTraceConnector*>(connector.get());
   source->TestOnlyConfigure(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvResp);
   types::ColumnWrapperRecordBatch record_batch;
-  EXPECT_OK(InitRecordBatch(SocketTraceConnector::kHTTPTable.elements(),
-                            /*target_capacity*/ 1, &record_batch));
+  InitRecordBatch(SocketTraceConnector::kHTTPTable.elements(), /*target_capacity*/ 1,
+                  &record_batch);
   // Registers a new connection
   source->OpenConn(conn_info);
 
@@ -172,8 +172,8 @@ TEST(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   ASSERT_NE(nullptr, source);
 
   types::ColumnWrapperRecordBatch record_batch;
-  EXPECT_OK(InitRecordBatch(SocketTraceConnector::kHTTPTable.elements(),
-                            /*target_capacity*/ 1, &record_batch));
+  InitRecordBatch(SocketTraceConnector::kHTTPTable.elements(), /*target_capacity*/ 1,
+                  &record_batch);
 
   source->OpenConn(conn_info);
   source->AcceptEvent(event0);

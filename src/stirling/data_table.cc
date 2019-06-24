@@ -21,38 +21,34 @@ DataTable::DataTable(const InfoClassSchema& schema) {
   }
   sealed_batches_ =
       std::make_unique<std::vector<std::unique_ptr<types::ColumnWrapperRecordBatch>>>();
-  PL_CHECK_OK(InitBuffers());
+  InitBuffers();
 }
 
-Status DataTable::InitBuffers() {
+void DataTable::InitBuffers() {
   DCHECK(record_batch_ == nullptr);
 
   record_batch_ = std::make_unique<types::ColumnWrapperRecordBatch>();
 
-  return InitRecordBatch(*table_schema_, target_capacity_, record_batch_.get());
+  InitRecordBatch(*table_schema_, target_capacity_, record_batch_.get());
 }
 
-StatusOr<std::unique_ptr<types::ColumnWrapperRecordBatchVec>> DataTable::GetRecordBatches() {
-  Status s = SealActiveRecordBatch();
-  PL_RETURN_IF_ERROR(s);
+std::unique_ptr<types::ColumnWrapperRecordBatchVec> DataTable::GetRecordBatches() {
+  SealActiveRecordBatch();
 
-  auto sealed_batches_ptr = std::move(sealed_batches_);
+  auto sealed_batches_uptr = std::move(sealed_batches_);
 
   sealed_batches_ = std::make_unique<types::ColumnWrapperRecordBatchVec>();
 
-  return std::move(sealed_batches_ptr);
+  return sealed_batches_uptr;
 }
 
-Status DataTable::SealActiveRecordBatch() {
+void DataTable::SealActiveRecordBatch() {
   for (uint32_t i = 0; i < table_schema_->size(); ++i) {
     auto col = (*record_batch_)[i];
     col->ShrinkToFit();
   }
   sealed_batches_->push_back(std::move(record_batch_));
-  Status s = InitBuffers();
-  PL_RETURN_IF_ERROR(s);
-
-  return Status::OK();
+  InitBuffers();
 }
 
 }  // namespace stirling

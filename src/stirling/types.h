@@ -73,8 +73,8 @@ class DataTableSchema {
 // Template to cover both ConstVectorView<DataElement> and std::vector<InfoClassElement>.
 // TODO(oazizi): No point in returning a Status for this function.
 template <class T>
-Status InitRecordBatch(const T& data_elements, uint32_t target_capacity,
-                       types::ColumnWrapperRecordBatch* record_batch) {
+void InitRecordBatch(const T& data_elements, uint32_t target_capacity,
+                     types::ColumnWrapperRecordBatch* record_batch) {
   for (const auto& element : data_elements) {
     pl::types::DataType type = element.type();
 
@@ -85,7 +85,6 @@ Status InitRecordBatch(const T& data_elements, uint32_t target_capacity,
     PL_SWITCH_FOREACH_DATATYPE(type, TYPE_CASE);
 #undef TYPE_CASE
   }
-  return Status::OK();
 }
 
 }  // namespace stirling

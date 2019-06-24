@@ -156,7 +156,7 @@ TEST_F(HTTPTraceBPFTest, TestWriteRespCapture) {
 
   {
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch));
+    InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch);
     source->TransferData(kHTTPTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -183,7 +183,7 @@ TEST_F(HTTPTraceBPFTest, TestWriteRespCapture) {
   // Check that MySQL table did not capture any data.
   {
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch));
+    InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch);
     source->TransferData(kMySQLTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -202,7 +202,7 @@ TEST_F(HTTPTraceBPFTest, TestSendRespCapture) {
 
   {
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 2, &record_batch));
+    InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 2, &record_batch);
     source->TransferData(kHTTPTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -227,7 +227,7 @@ TEST_F(HTTPTraceBPFTest, TestSendRespCapture) {
   // Check that MySQL table did not capture any data.
   {
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch));
+    InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch);
     source->TransferData(kMySQLTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -246,7 +246,7 @@ TEST_F(HTTPTraceBPFTest, TestReadRespCapture) {
 
   {
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch));
+    InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch);
     source->TransferData(kHTTPTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -271,7 +271,7 @@ TEST_F(HTTPTraceBPFTest, TestReadRespCapture) {
   // Check that MySQL table did not capture any data.
   {
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch));
+    InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch);
     source->TransferData(kMySQLTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -290,7 +290,7 @@ TEST_F(HTTPTraceBPFTest, TestRecvRespCapture) {
 
   {
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch));
+    InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch);
     source->TransferData(kHTTPTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -315,7 +315,7 @@ TEST_F(HTTPTraceBPFTest, TestRecvRespCapture) {
   // Check that MySQL table did not capture any data.
   {
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch));
+    InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch);
     source->TransferData(kMySQLTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -333,7 +333,7 @@ TEST_F(HTTPTraceBPFTest, TestMySQLWriteCapture) {
   // Check that HTTP table did not capture any data.
   {
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 2, &record_batch));
+    InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 2, &record_batch);
     source->TransferData(kHTTPTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -344,7 +344,7 @@ TEST_F(HTTPTraceBPFTest, TestMySQLWriteCapture) {
   // Check that MySQL table did capture the appropriate data.
   {
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch));
+    InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch);
     source->TransferData(kMySQLTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -371,7 +371,7 @@ TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   // Check that HTTP table did not capture any data.
   {
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 2, &record_batch));
+    InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 2, &record_batch);
     source->TransferData(kHTTPTableNum, &record_batch);
 
     // Should not have captured anything.
@@ -383,7 +383,7 @@ TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   // Check that MySQL table did not capture any data.
   {
     types::ColumnWrapperRecordBatch record_batch;
-    EXPECT_OK(InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch));
+    InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch);
     source->TransferData(kMySQLTableNum, &record_batch);
 
     // Should not have captured anything.

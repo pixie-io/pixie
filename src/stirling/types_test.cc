@@ -12,7 +12,7 @@ TEST(InitRecordBatchTest, FieldsAreAdded) {
   };
   constexpr ConstVectorView<DataElement> elements(elements_array);
   const int target_capacity = 100;
-  EXPECT_OK(InitRecordBatch(elements, target_capacity, &record_batch));
+  InitRecordBatch(elements, target_capacity, &record_batch);
   ASSERT_EQ(3, record_batch.size());
 }
 

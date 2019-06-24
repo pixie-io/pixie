@@ -21,7 +21,7 @@ class DataTable {
    *
    * @return pointer to a vector of ColumnWrapperRecordBatch pointers.
    */
-  StatusOr<std::unique_ptr<types::ColumnWrapperRecordBatchVec>> GetRecordBatches();
+  std::unique_ptr<types::ColumnWrapperRecordBatchVec> GetRecordBatches();
 
   /**
    * @brief Get a pointer to the active record batch, for appending.
@@ -46,10 +46,10 @@ class DataTable {
 
  protected:
   // Initialize a new Active record batch.
-  Status InitBuffers();
+  void InitBuffers();
 
   // Close the active record batch, and call InitBuffers to set up new active record batch.
-  Status SealActiveRecordBatch();
+  void SealActiveRecordBatch();
 
   // Table schema
   std::unique_ptr<std::vector<DataElement>> table_schema_;

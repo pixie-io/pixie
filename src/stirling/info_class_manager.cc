@@ -66,7 +66,7 @@ Status InfoClassManager::SampleData() {
 }
 
 Status InfoClassManager::PushData(PushDataCallback agent_callback) {
-  PL_ASSIGN_OR_RETURN(auto record_batches, data_table_->GetRecordBatches());
+  auto record_batches = data_table_->GetRecordBatches();
   for (auto& record_batch : *record_batches) {
     if (!record_batch->empty()) {
       agent_callback(id(), std::move(record_batch));

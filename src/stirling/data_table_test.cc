@@ -173,9 +173,8 @@ class DataTableTest : public ::testing::Test {
 
       // Periodically consume the data
       if ((probability_dist(rng_) < push_probability_) || last_pass) {
-        auto data_batches_ptr = data_table_->GetRecordBatches();
-        auto data_batches_ptr_raw = data_batches_ptr.ValueOrDie().get();
-        for (const auto& data_batch : *data_batches_ptr_raw) {
+        auto data_batches_uptr = data_table_->GetRecordBatches();
+        for (const auto& data_batch : *data_batches_uptr) {
           CheckColumnWrapperResult(data_batch.get(), check_record, current_record);
         }
         check_record = current_record;
