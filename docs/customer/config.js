@@ -16,7 +16,9 @@ const config = {
     },
     "sidebar": {
         "forcedNavOrder": [
-             "/getting-started",
+             "/getting-started/system-overview",
+             "/getting-started/compatibility-requirements",
+             "/getting-started/support",
              "/installation",
              "/admin",
              "/user-guides"
