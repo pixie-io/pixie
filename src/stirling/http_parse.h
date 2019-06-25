@@ -2,6 +2,7 @@
 
 #include <picohttpparser.h>
 
+#include <deque>
 #include <map>
 #include <string>
 #include <string_view>
@@ -201,7 +202,7 @@ class HTTPParser {
    * @return Parsed messages.
    */
   HTTPParseResult<BufferPosition> ParseMessages(TrafficMessageType type,
-                                                std::vector<HTTPMessage>* messages);
+                                                std::deque<HTTPMessage>* messages);
 
  private:
   std::string Combine() const;
@@ -219,7 +220,7 @@ class HTTPParser {
  * bytes count of the parsed data.
  */
 HTTPParseResult<size_t> Parse(TrafficMessageType type, std::string_view buf,
-                              std::vector<HTTPMessage>* messages);
+                              std::deque<HTTPMessage>* messages);
 
 }  // namespace stirling
 }  // namespace pl

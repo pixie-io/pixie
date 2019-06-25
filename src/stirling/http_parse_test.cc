@@ -176,7 +176,7 @@ pixielabs!)";
   parser_.Append(msg1, 0);
   parser_.Append(msg2, 1);
 
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
   HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -205,7 +205,7 @@ pixielabs)";
   parser_.Append(msg2, 1);
   parser_.Append(msg3, 2);
 
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
   HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -217,7 +217,7 @@ TEST_F(HTTPParserTest, InvalidInput) {
 
   parser_.Append(msg, 0);
 
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
   HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kInvalid, result.state);
@@ -225,7 +225,7 @@ TEST_F(HTTPParserTest, InvalidInput) {
 }
 
 TEST_F(HTTPParserTest, NoAppend) {
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
   HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -260,7 +260,7 @@ C
 
   parser_.Append(msg, 0);
 
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
   HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -284,7 +284,7 @@ pixielabs
   parser_.Append(msg2, 1);
   parser_.Append(msg3, 2);
 
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
   HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -307,7 +307,7 @@ pixie)";
   parser_.Append(msg2, 1);
   parser_.Append(msg3, 2);
 
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
   HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -329,7 +329,7 @@ pixielabs )";
   parser_.Append(msg2, 1);
   parser_.Append(msg3, 2);
 
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
   HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -370,7 +370,7 @@ Content-Type: text/plain)";
 
   parser_.Append(msg1, 0);
 
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
   HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
@@ -395,7 +395,7 @@ TEST_F(HTTPParserTest, PartialMessageInTheMiddleOfStream) {
   parser_.Append(msg3, 3);
   parser_.Append(msg4, 4);
 
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
   HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -408,7 +408,7 @@ TEST(ParseTest, CompleteMessages) {
   std::string msg_c = HTTPRespWithSizedBody("c");
   std::string buf = absl::StrCat(msg_a, msg_b, msg_c);
 
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
   HTTPParseResult result = Parse(kMessageTypeResponses, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -422,7 +422,7 @@ TEST(ParseTest, PartialMessages) {
       "HTTP/1.1 200 OK\r\n"
       "Content-Length: $0\r\n";
 
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
   HTTPParseResult result = Parse(kMessageTypeResponses, msg, &parsed_messages);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
@@ -571,7 +571,7 @@ C
 TEST_F(HTTPParserStressTest, ParseHTTPRequestSingle) {
   parser_.Append(kHTTPGetReq0, 0);
 
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
   HTTPParseResult result = parser_.ParseMessages(kMessageTypeRequests, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -581,7 +581,7 @@ TEST_F(HTTPParserStressTest, ParseHTTPRequestSingle) {
 TEST_F(HTTPParserStressTest, ParseHTTPRequestMultiple) {
   parser_.Append(kHTTPGetReq0, 0);
   parser_.Append(kHTTPPostReq0, 1);
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
   HTTPParseResult result = parser_.ParseMessages(kMessageTypeRequests, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
@@ -610,7 +610,7 @@ TEST_P(HTTPParserStressTest, ParseHTTPRequestsRepeatedly) {
     parser_.Append(msg_splits[1], i * 3 + 1);
     parser_.Append(msg_splits[2], i * 3 + 2);
 
-    std::vector<HTTPMessage> parsed_messages;
+    std::deque<HTTPMessage> parsed_messages;
     HTTPParseResult result = parser_.ParseMessages(kMessageTypeRequests, &parsed_messages);
 
     ASSERT_EQ(ParseState::kSuccess, result.state);
@@ -640,7 +640,7 @@ TEST_P(HTTPParserStressTest, ParseHTTPResponsesRepeatedly) {
     parser_.Append(msg_splits[1], i * 3 + 1);
     parser_.Append(msg_splits[2], i * 3 + 2);
 
-    std::vector<HTTPMessage> parsed_messages;
+    std::deque<HTTPMessage> parsed_messages;
     HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
     ASSERT_EQ(ParseState::kSuccess, result.state);
@@ -663,7 +663,7 @@ TEST_F(HTTPParserStressTest, ParseHTTPResponsesWithLeftover) {
 
   ASSERT_EQ(msg, absl::StrCat(msg_splits[0], msg_splits[1], msg_splits[2]));
 
-  std::vector<HTTPMessage> parsed_messages;
+  std::deque<HTTPMessage> parsed_messages;
 
   parser_.Append(msg_splits[0], 0);
   parser_.Append(msg_splits[1], 1);
@@ -709,7 +709,7 @@ TEST_P(HTTPParserStressTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
 
     ASSERT_EQ(msg, absl::StrCat(msg_splits[0], msg_splits[1], msg_splits[2]));
 
-    std::vector<HTTPMessage> parsed_messages;
+    std::deque<HTTPMessage> parsed_messages;
 
     // Append and parse some--but not all--splits.
     parser_.Append(msg_splits[0], 0);

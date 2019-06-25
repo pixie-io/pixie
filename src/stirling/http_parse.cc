@@ -329,16 +329,13 @@ BufferPosition ConvertPosition(std::vector<std::string_view> msgs, size_t pos) {
 }  // namespace
 
 HTTPParseResult<BufferPosition> HTTPParser::ParseMessages(TrafficMessageType type,
-                                                          std::vector<HTTPMessage>* messages) {
+                                                          std::deque<HTTPMessage>* messages) {
   std::string buf = Combine();
 
   // Grab size before we start, so we know where the new parsed messages are.
   size_t prev_size = messages->size();
 
-  // Parse and append new messages to the messages vector.
   HTTPParseResult<size_t> result = Parse(type, buf, messages);
-  DCHECK(messages->size() >= prev_size);
-
   std::vector<BufferPosition> positions;
 
   // Match timestamps with the parsed messages.
@@ -379,7 +376,7 @@ std::string HTTPParser::Combine() const {
 }
 
 HTTPParseResult<size_t> Parse(TrafficMessageType type, std::string_view buf,
-                              std::vector<HTTPMessage>* messages) {
+                              std::deque<HTTPMessage>* messages) {
   PicoHTTPParserWrapper pico;
   std::vector<size_t> start_position;
   const size_t buf_size = buf.size();

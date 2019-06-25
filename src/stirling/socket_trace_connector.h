@@ -16,6 +16,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 #include <bcc/BPF.h>
 
+#include <deque>
 #include <map>
 #include <memory>
 #include <string>
@@ -45,7 +46,7 @@ struct DataStream {
 
   // Vector of parsed HTTP messages.
   // Once parsed, the raw data events should be discarded.
-  std::vector<HTTPMessage> messages;
+  std::deque<HTTPMessage> messages;
 };
 
 struct ConnectionTracker {
