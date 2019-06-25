@@ -65,7 +65,6 @@ struct IPEndpoint {
   int port;
 };
 StatusOr<IPEndpoint> ParseSockAddr(const conn_info_t& conn_info);
-bool ParseSockAddr(const conn_info_t& conn_info, HTTPTraceRecord* record);
 // TODO(oazizi): Enable to output all raw events on debug cases for particular protocols.
 bool ParseRaw(const socket_data_event_t& event, const conn_info_t& conn_info,
               HTTPTraceRecord* record);

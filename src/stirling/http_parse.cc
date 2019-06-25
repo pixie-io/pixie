@@ -45,6 +45,9 @@ std::map<std::string, std::string> GetHttpHeadersMap(const phr_header* headers,
 
 }  // namespace
 
+// Parses an IP:port pair from conn_info.
+// Returns an error if an unexpected sockaddr family is provided.
+// Currently this function understands IPV4 and IPV6 sockaddr families.
 StatusOr<IPEndpoint> ParseSockAddr(const conn_info_t& conn_info) {
   const auto* sa = reinterpret_cast<const struct sockaddr*>(&conn_info.addr);
 
@@ -72,19 +75,6 @@ StatusOr<IPEndpoint> ParseSockAddr(const conn_info_t& conn_info) {
   }
 
   return IPEndpoint{std::string(addr), port};
-}
-
-// Parses an IP:port pair from the event input into the provided record.
-// Returns false if an unexpected sockaddr family is provided.
-// Currently this function understands IPV4 and IPV6 sockaddr families.
-bool ParseSockAddr(const conn_info_t& conn_info, HTTPTraceRecord* record) {
-  auto ip_endpoint_or = ParseSockAddr(conn_info);
-  if (ip_endpoint_or.ok()) {
-    record->conn.remote_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
-    record->conn.remote_port = ip_endpoint_or.ValueOrDie().port;
-    return true;
-  }
-  return false;
 }
 
 bool ParseRaw(const socket_data_event_t& event, const conn_info_t& conn_info,
