@@ -319,8 +319,7 @@ conn_info_t* SocketTraceConnector::GetConn(const socket_data_event_t& event) {
 // HTTP Specific TransferImpl Helpers
 //-----------------------------------------------------------------------------
 
-std::vector<HTTPMessage> SocketTraceConnector::ParseEventStream(TrafficMessageType type,
-                                                                DataStream* data) {
+void SocketTraceConnector::ParseEventStream(TrafficMessageType type, DataStream* data) {
   HTTPParser parser;
 
   const size_t orig_offset = data->offset;
@@ -351,7 +350,7 @@ std::vector<HTTPMessage> SocketTraceConnector::ParseEventStream(TrafficMessageTy
   }
 
   // Now parse all the appended events.
-  HTTPParseResult<BufferPosition> parse_result = parser.ParseMessages(type);
+  HTTPParseResult<BufferPosition> parse_result = parser.ParseMessages(type, &data->messages);
 
   // If we weren't able to process anything new, then the offset should be the same as last time.
   if (data->offset != 0 && parse_result.end_position.seq_num == 0) {
@@ -363,8 +362,6 @@ std::vector<HTTPMessage> SocketTraceConnector::ParseEventStream(TrafficMessageTy
   std::advance(erase_iter, parse_result.end_position.seq_num);
   data->events.erase(data->events.begin(), erase_iter);
   data->offset = parse_result.end_position.offset;
-
-  return std::move(parse_result.messages);
 }
 
 void SocketTraceConnector::TransferHTTPStreams(types::ColumnWrapperRecordBatch* record_batch) {
@@ -379,22 +376,19 @@ void SocketTraceConnector::TransferHTTPStreams(types::ColumnWrapperRecordBatch* 
     CHECK(is_requestor_side ^ is_responder_side)
         << absl::StrFormat("Must be either requestor or responder (and not both)");
 
-    // TODO(oazizi): Potential optimization: send vector<HTTPMessage> as argument to
-    //               ParseEvenStream(), so we don't keep creating and destroying vectors.
-
     auto& resp_data = is_requestor_side ? stream.recv_data : stream.send_data;
-    std::vector<HTTPMessage> responses = ParseEventStream(kMessageTypeResponses, &resp_data);
+    ParseEventStream(kMessageTypeResponses, &resp_data);
 
     // TODO(oazizi): Request parsing coming in a future diff.
-    // auto& req_data = is_requestor_side ? stream.recv_data : stream.send_data;
-    // std::vector<HTTPMessage> requests  =
-    //    ParseEventStream(kMessageTypeRequests, &req_data);
+    // auto& req_data = is_requestor_side ? stream.send_data : stream.recv_data;
+    // ParseEventStream(kMessageTypeRequests, &req_data);
 
     // Extract and output all complete messages.
-    for (HTTPMessage& msg : responses) {
+    for (HTTPMessage& msg : resp_data.messages) {
       HTTPTraceRecord record{stream.conn, std::move(msg)};
       ConsumeHTTPMessage(std::move(record), record_batch);
     }
+    resp_data.messages.clear();
   }
 
   // TODO(yzhao): Add the capability to remove events that are too old.

@@ -176,10 +176,11 @@ pixielabs!)";
   parser_.Append(msg1, 0);
   parser_.Append(msg2, 1);
 
-  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses);
+  std::vector<HTTPMessage> parsed_messages;
+  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(result.messages, ElementsAre(expected_message1, expected_message2));
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
 }
 
 TEST_F(HTTPParserTest, ParseIncompleteHTTPResponseWithContentLengthHeader) {
@@ -204,10 +205,11 @@ pixielabs)";
   parser_.Append(msg2, 1);
   parser_.Append(msg3, 2);
 
-  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses);
+  std::vector<HTTPMessage> parsed_messages;
+  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(result.messages, ElementsAre(expected_message1));
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message1));
 }
 
 TEST_F(HTTPParserTest, InvalidInput) {
@@ -215,17 +217,19 @@ TEST_F(HTTPParserTest, InvalidInput) {
 
   parser_.Append(msg, 0);
 
-  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses);
+  std::vector<HTTPMessage> parsed_messages;
+  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kInvalid, result.state);
-  EXPECT_THAT(result.messages, ElementsAre());
+  EXPECT_THAT(parsed_messages, ElementsAre());
 }
 
 TEST_F(HTTPParserTest, NoAppend) {
-  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses);
+  std::vector<HTTPMessage> parsed_messages;
+  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(result.messages, ElementsAre());
+  EXPECT_THAT(parsed_messages, ElementsAre());
 }
 
 // Leave http_msg_body set by caller.
@@ -256,10 +260,11 @@ C
 
   parser_.Append(msg, 0);
 
-  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses);
+  std::vector<HTTPMessage> parsed_messages;
+  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(result.messages, ElementsAre(expected_message));
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
 }
 
 TEST_F(HTTPParserTest, ParseMultipleChunks) {
@@ -279,10 +284,11 @@ pixielabs
   parser_.Append(msg2, 1);
   parser_.Append(msg3, 2);
 
-  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses);
+  std::vector<HTTPMessage> parsed_messages;
+  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(result.messages, ElementsAre(expected_message));
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
 }
 
 TEST_F(HTTPParserTest, ParseIncompleteChunks) {
@@ -301,10 +307,11 @@ pixie)";
   parser_.Append(msg2, 1);
   parser_.Append(msg3, 2);
 
-  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses);
+  std::vector<HTTPMessage> parsed_messages;
+  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(result.messages, ElementsAre(expected_message));
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
 }
 
 TEST_F(HTTPParserTest, DISABLED_ParseMessagesWithoutLengthOrChunking) {
@@ -322,10 +329,11 @@ pixielabs )";
   parser_.Append(msg2, 1);
   parser_.Append(msg3, 2);
 
-  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses);
+  std::vector<HTTPMessage> parsed_messages;
+  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(result.messages, ElementsAre(expected_message));
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
 }
 
 std::string HTTPRespWithSizedBody(std::string_view body) {
@@ -362,10 +370,11 @@ Content-Type: text/plain)";
 
   parser_.Append(msg1, 0);
 
-  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses);
+  std::vector<HTTPMessage> parsed_messages;
+  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
-  EXPECT_THAT(result.messages, ElementsAre());
+  EXPECT_THAT(parsed_messages, ElementsAre());
 }
 
 MATCHER_P(HasBody, body, "") {
@@ -386,10 +395,11 @@ TEST_F(HTTPParserTest, PartialMessageInTheMiddleOfStream) {
   parser_.Append(msg3, 3);
   parser_.Append(msg4, 4);
 
-  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses);
+  std::vector<HTTPMessage> parsed_messages;
+  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(result.messages, ElementsAre(HasBody("foobar"), HasBody("pixielabs rocks!")));
+  EXPECT_THAT(parsed_messages, ElementsAre(HasBody("foobar"), HasBody("pixielabs rocks!")));
 }
 
 TEST(ParseTest, CompleteMessages) {
@@ -398,11 +408,12 @@ TEST(ParseTest, CompleteMessages) {
   std::string msg_c = HTTPRespWithSizedBody("c");
   std::string buf = absl::StrCat(msg_a, msg_b, msg_c);
 
-  HTTPParseResult result = Parse(kMessageTypeResponses, buf);
+  std::vector<HTTPMessage> parsed_messages;
+  HTTPParseResult result = Parse(kMessageTypeResponses, buf, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_EQ(msg_a.size() + msg_b.size() + msg_c.size(), result.end_position);
-  EXPECT_THAT(result.messages, ElementsAre(HasBody("a"), HasBody("b"), HasBody("c")));
+  EXPECT_THAT(parsed_messages, ElementsAre(HasBody("a"), HasBody("b"), HasBody("c")));
   EXPECT_THAT(result.start_positions, ElementsAre(0, msg_a.size(), msg_a.size() + msg_b.size()));
 }
 
@@ -411,11 +422,12 @@ TEST(ParseTest, PartialMessages) {
       "HTTP/1.1 200 OK\r\n"
       "Content-Length: $0\r\n";
 
-  HTTPParseResult result = Parse(kMessageTypeResponses, msg);
+  std::vector<HTTPMessage> parsed_messages;
+  HTTPParseResult result = Parse(kMessageTypeResponses, msg, &parsed_messages);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
   EXPECT_EQ(0, result.end_position);
-  EXPECT_THAT(result.messages, IsEmpty());
+  EXPECT_THAT(parsed_messages, IsEmpty());
 }
 
 //=============================================================================
@@ -559,19 +571,21 @@ C
 TEST_F(HTTPParserStressTest, ParseHTTPRequestSingle) {
   parser_.Append(kHTTPGetReq0, 0);
 
-  HTTPParseResult result = parser_.ParseMessages(kMessageTypeRequests);
+  std::vector<HTTPMessage> parsed_messages;
+  HTTPParseResult result = parser_.ParseMessages(kMessageTypeRequests, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(result.messages, ElementsAre(HTTPGetReq0ExpectedMessage()));
+  EXPECT_THAT(parsed_messages, ElementsAre(HTTPGetReq0ExpectedMessage()));
 }
 
 TEST_F(HTTPParserStressTest, ParseHTTPRequestMultiple) {
   parser_.Append(kHTTPGetReq0, 0);
   parser_.Append(kHTTPPostReq0, 1);
-  HTTPParseResult result = parser_.ParseMessages(kMessageTypeRequests);
+  std::vector<HTTPMessage> parsed_messages;
+  HTTPParseResult result = parser_.ParseMessages(kMessageTypeRequests, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(result.messages,
+  EXPECT_THAT(parsed_messages,
               ElementsAre(HTTPGetReq0ExpectedMessage(), HTTPPostReq0ExpectedMessage()));
 }
 
@@ -596,10 +610,11 @@ TEST_P(HTTPParserStressTest, ParseHTTPRequestsRepeatedly) {
     parser_.Append(msg_splits[1], i * 3 + 1);
     parser_.Append(msg_splits[2], i * 3 + 2);
 
-    HTTPParseResult result = parser_.ParseMessages(kMessageTypeRequests);
+    std::vector<HTTPMessage> parsed_messages;
+    HTTPParseResult result = parser_.ParseMessages(kMessageTypeRequests, &parsed_messages);
 
     ASSERT_EQ(ParseState::kSuccess, result.state);
-    ASSERT_THAT(result.messages,
+    ASSERT_THAT(parsed_messages,
                 ElementsAre(HTTPGetReq0ExpectedMessage(), HTTPPostReq0ExpectedMessage()));
   }
 }
@@ -625,10 +640,11 @@ TEST_P(HTTPParserStressTest, ParseHTTPResponsesRepeatedly) {
     parser_.Append(msg_splits[1], i * 3 + 1);
     parser_.Append(msg_splits[2], i * 3 + 2);
 
-    HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses);
+    std::vector<HTTPMessage> parsed_messages;
+    HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
     ASSERT_EQ(ParseState::kSuccess, result.state);
-    ASSERT_THAT(result.messages, ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage(),
+    ASSERT_THAT(parsed_messages, ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage(),
                                              HTTPResp2ExpectedMessage()));
   }
 }
@@ -647,14 +663,16 @@ TEST_F(HTTPParserStressTest, ParseHTTPResponsesWithLeftover) {
 
   ASSERT_EQ(msg, absl::StrCat(msg_splits[0], msg_splits[1], msg_splits[2]));
 
+  std::vector<HTTPMessage> parsed_messages;
+
   parser_.Append(msg_splits[0], 0);
   parser_.Append(msg_splits[1], 1);
   // Don't append last split, yet.
 
-  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses);
+  HTTPParseResult result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   ASSERT_EQ(ParseState::kNeedsMoreData, result.state);
-  ASSERT_THAT(result.messages, ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage()));
+  ASSERT_THAT(parsed_messages, ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage()));
 
   BufferPosition position = result.end_position;
   size_t offset = position.offset;
@@ -666,10 +684,11 @@ TEST_F(HTTPParserStressTest, ParseHTTPResponsesWithLeftover) {
     offset = 0;
   }
 
-  result = parser_.ParseMessages(kMessageTypeResponses);
+  result = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
   ASSERT_EQ(ParseState::kSuccess, result.state);
-  ASSERT_THAT(result.messages, ElementsAre(HTTPResp2ExpectedMessage()));
+  ASSERT_THAT(parsed_messages, ElementsAre(HTTPResp0ExpectedMessage(), HTTPResp1ExpectedMessage(),
+                                           HTTPResp2ExpectedMessage()));
 }
 
 // Like ParseHTTPResponsesWithLeftover, but repeats test many times,
@@ -690,10 +709,12 @@ TEST_P(HTTPParserStressTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
 
     ASSERT_EQ(msg, absl::StrCat(msg_splits[0], msg_splits[1], msg_splits[2]));
 
+    std::vector<HTTPMessage> parsed_messages;
+
     // Append and parse some--but not all--splits.
     parser_.Append(msg_splits[0], 0);
     parser_.Append(msg_splits[1], 0);
-    HTTPParseResult result1 = parser_.ParseMessages(kMessageTypeResponses);
+    HTTPParseResult result1 = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
     // Now append the unprocessed remainder, including msg_splits[2].
     BufferPosition position = result1.end_position;
@@ -703,13 +724,7 @@ TEST_P(HTTPParserStressTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
       parser_.Append(t, 0);
       offset = 0;
     }
-    HTTPParseResult result2 = parser_.ParseMessages(kMessageTypeResponses);
-
-    std::vector<HTTPMessage> parsed_messages;
-    parsed_messages.insert(parsed_messages.end(), std::make_move_iterator(result1.messages.begin()),
-                           std::make_move_iterator(result1.messages.end()));
-    parsed_messages.insert(parsed_messages.end(), std::make_move_iterator(result2.messages.begin()),
-                           std::make_move_iterator(result2.messages.end()));
+    HTTPParseResult result2 = parser_.ParseMessages(kMessageTypeResponses, &parsed_messages);
 
     ASSERT_EQ(ParseState::kSuccess, result2.state);
     ASSERT_THAT(parsed_messages,

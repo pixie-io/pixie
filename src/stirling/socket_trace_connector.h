@@ -35,11 +35,17 @@ namespace pl {
 namespace stirling {
 
 struct DataStream {
+  // Raw data events from BPF.
   // TODO(oazizi): Convert this to vector.
   std::map<uint64_t, socket_data_event_t> events;
 
-  // To support partially processed events, the stream may start at an offset in the first event.
+  // To support partially processed events,
+  // the stream may start at an offset in the first raw data event.
   uint64_t offset = 0;
+
+  // Vector of parsed HTTP messages.
+  // Once parsed, the raw data events should be discarded.
+  std::vector<HTTPMessage> messages;
 };
 
 struct ConnectionTracker {
@@ -48,9 +54,9 @@ struct ConnectionTracker {
   // TODO(oazizi): Will this be covered by conn?
   TrafficProtocol protocol;
 
-  // The data events collected by the stream, one per direction.
-  DataStream recv_data;
+  // The data collected by the stream, one per direction.
   DataStream send_data;
+  DataStream recv_data;
 
   // TODO(oazizi): Add a bool to say whether the stream has been touched since last transfer (to
   // avoid useless computation).
@@ -210,9 +216,10 @@ class SocketTraceConnector : public SourceConnector {
   // Transfer of an HTTP Response Event to the HTTP Response Table in the table store.
   void TransferHTTPStreams(types::ColumnWrapperRecordBatch* record_batch);
 
-  // Takes an event stream (map of events), and parses as many HTTP messages of the
-  // specified type as it can. Returns a vector of the parsed messages.
-  std::vector<HTTPMessage> ParseEventStream(TrafficMessageType type, DataStream* data);
+  // Takes a data stream, and parses as many HTTP messages of the specified type as it can.
+  // Input data: data->events.
+  // Output messages: data->messages.
+  void ParseEventStream(TrafficMessageType type, DataStream* data);
 
   static void ConsumeHTTPMessage(HTTPTraceRecord record,
                                  types::ColumnWrapperRecordBatch* record_batch);

@@ -173,8 +173,6 @@ struct BufferPosition {
 // HTTPParseResult<BufferPosition> ParseMessages(TrafficMessageType type);
 template <typename PositionType>
 struct HTTPParseResult {
-  // The parsed HTTP messages.
-  std::vector<HTTPMessage> messages;
   // Positions of message start positions in the source buffer.
   std::vector<PositionType> start_positions;
   // Position of where parsing ended consuming the source buffer.
@@ -202,7 +200,8 @@ class HTTPParser {
    *
    * @return Parsed messages.
    */
-  HTTPParseResult<BufferPosition> ParseMessages(TrafficMessageType type);
+  HTTPParseResult<BufferPosition> ParseMessages(TrafficMessageType type,
+                                                std::vector<HTTPMessage>* messages);
 
  private:
   std::string Combine() const;
@@ -219,7 +218,8 @@ class HTTPParser {
  * @return ParseState To indicate the final state of the parsing. The second return value is the
  * bytes count of the parsed data.
  */
-HTTPParseResult<size_t> Parse(TrafficMessageType type, std::string_view buf);
+HTTPParseResult<size_t> Parse(TrafficMessageType type, std::string_view buf,
+                              std::vector<HTTPMessage>* messages);
 
 }  // namespace stirling
 }  // namespace pl
