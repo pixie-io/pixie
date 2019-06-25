@@ -1,6 +1,7 @@
 apt_update 'update'
 
 apt_pkg_list = [
+  'autoconf',
   'bash-completion',
   'build-essential',
   'checkstyle',
