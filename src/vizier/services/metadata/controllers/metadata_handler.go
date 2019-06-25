@@ -104,11 +104,17 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 	}
 
 	// Add pod update to agent update queue.
-	hostname := []string{e.Spec.Hostname}
+	hostname := []string{e.Spec.NodeName}
 	agents, err := mh.mds.GetAgentsForHostnames(&hostname)
 
 	if len(*agents) != 1 {
-		log.Error("Could not get agent for hostname: " + e.Spec.Hostname)
+		log.Error("Could not get agent for hostname: " + e.Spec.NodeName)
+		// Add the message back to the queue to retry.
+		mh.ch <- &K8sMessage{
+			Object:     o,
+			ObjectType: "pods",
+		}
+		return
 	}
 
 	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{

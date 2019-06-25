@@ -392,7 +392,7 @@ func TestObjectToPodProto(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		GetAgentsForHostnames(&[]string{"hostname"}).
+		GetAgentsForHostnames(&[]string{"test"}).
 		Return(&[]string{"agent-1"}, nil)
 
 	mockMds.
