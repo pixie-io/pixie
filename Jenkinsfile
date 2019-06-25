@@ -170,7 +170,6 @@ def writeBazelRCFile() {
     'build --remote_local_fallback=true',
     'build --remote_local_fallback_strategy=local',
     'build --remote_timeout=10',
-    'build --experimental_remote_retry',
     // Test remote jobs setup.
     'test --remote_timeout=10',
     'test --remote_local_fallback=true',

@@ -1,8 +1,18 @@
 # Global bazelrc file, see https://docs.bazel.build/versions/master/guide.html#bazelrc.
 
-# This is a compatibility for bazel 0.25.3.
+# This is a compatibility for bazel 0.27.
 # TODO(zasgar): None of these should exists
+fetch --incompatible_depset_is_not_iterable=false
+fetch --incompatible_string_join_requires_strings=false
+fetch --incompatible_disable_deprecated_attr_params=false
+
+build --incompatible_depset_is_not_iterable=false
+build --incompatible_depset_union=false
+build --incompatible_disable_deprecated_attr_params=false
 build --incompatible_disable_legacy_cc_provider=false
+build --incompatible_string_join_requires_strings=false
+build --incompatible_require_ctx_in_configure_features=false
+build --host_force_python=PY2
 
 # Get version information into the build.
 build --workspace_status_command=bazel/get_workspace_status
