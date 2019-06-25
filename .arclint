@@ -147,6 +147,17 @@
         "(src/ui/.*\\.(ts)$)",
         "(src/ui/.*\\.(js)$)"
       ]
+    },
+    "tslint-docs": {
+      "type": "tslint",
+      "tslint.config": "./docs/customer/tslint.json",
+      "tslint.project": "./docs/customer/tsconfig.json",
+      "include": [
+        "(docs/.*\\.js$)",
+        "(docs/.*\\.jsx$)",
+        "(docs/.*\\.ts$)",
+        "(docs/.*\\.tsx$)"
+      ]
     }
   }
 }

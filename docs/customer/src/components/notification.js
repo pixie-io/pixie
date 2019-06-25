@@ -3,16 +3,16 @@ import styled from 'react-emotion';
 const notificationTypes = {
   warning: {
     dark: 'goldenrod',
-    light: 'papayawhip'
+    light: 'papayawhip',
   },
   error: {
     dark: 'firebrick',
-    light: 'rosybrown'
+    light: 'rosybrown',
   },
   info: {
     dark: '#663399',
-    light: '#FFFFFF'
-  }
+    light: '#FFFFFF',
+  },
 };
 
 const getColor = (type = 'info', shade = 'dark') =>

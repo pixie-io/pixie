@@ -5,9 +5,9 @@ const Container = system(
     is: 'div',
     px: 3,
     mx: 'auto',
-    maxWidth: 1024
+    maxWidth: 1024,
   },
-  'maxWidth'
+  'maxWidth',
 );
 Container.displayName = 'Container';
 

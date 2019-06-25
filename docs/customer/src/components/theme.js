@@ -1,7 +1,7 @@
 const theme = {
   fonts: {
-    mono: '"Roboto Mono", Menlo, monospace'
-  }
+    mono: '"Roboto Mono", Menlo, monospace',
+  },
 };
 
 export default theme;

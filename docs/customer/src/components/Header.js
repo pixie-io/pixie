@@ -34,28 +34,28 @@ const Header = ({ location }) => (
             githubUrl,
             helpUrl,
             tweetText,
-            headerLinks
-          }
-        }
+            headerLinks,
+          },
+        },
       } = data;
       return (
         <div className={'navBarWrapper'}>
           <nav className={'navbar navbar-default navBarDefault'}>
             <div className={'navbar-header'}>
-              <button type="button" className={'navbar-toggle collapsed navBarToggle'}
-                data-toggle="collapse" data-target="#navbar" aria-expanded="false"
-                aria-controls="navbar">
+              <button type='button' className={'navbar-toggle collapsed navBarToggle'}
+                data-toggle='collapse' data-target='#navbar' aria-expanded='false'
+                aria-controls='navbar'>
                 <span className={'sr-only'}>Toggle navigation</span>
                 <span className={'icon-bar'}></span>
                 <span className={'icon-bar'}></span>
                 <span className={'icon-bar'}></span>
               </button>
-              <Link to="/" className={'navbar-brand navBarBrand'}>
+              <Link to='/' className={'navbar-brand navBarBrand'}>
                 <img className={'img-responsive'} src={logoImg} alt={'logo'} />
                 {headerTitle}
               </Link>
             </div>
-            <div id="navbar" className={'navbar-collapse collapse navBarCollapse'}>
+            <div id='navbar' className={'navbar-collapse collapse navBarCollapse'}>
               <div className={'visible-xs'}>
                 <Sidebar location={location} />
                 <hr/>
@@ -64,8 +64,8 @@ const Header = ({ location }) => (
                 {githubUrl !== ''
                   ? (<li className={'githubBtn'}>
                     <GitHubButton href={githubUrl}
-                      data-show-count="true"
-                      aria-label="Star on GitHub">
+                      data-show-count='true'
+                      aria-label='Star on GitHub'>
                       Star
                     </GitHubButton>
                   </li>) : null}
@@ -76,7 +76,7 @@ const Header = ({ location }) => (
               <ul className={'nav navbar-nav navBarUL navbar-right'}>
                 {tweetText !== ''
                   ? (<li>
-                    <a href={'https://twitter.com/intent/tweet?&text=' + tweetText} target="_blank">
+                    <a href={'https://twitter.com/intent/tweet?&text=' + tweetText} target='_blank'>
                       <img className={'twitterIcon'} src={twitter} alt={'Twitter'} />
                     </a>
                   </li>) : null
@@ -85,7 +85,7 @@ const Header = ({ location }) => (
                   if (link.link !== '' && link.text !== '') {
                     return (
                       <li key={key}>
-                        <a href={link.link} target="_blank">{link.text}</a>
+                        <a href={link.link} target='_blank'>{link.text}</a>
                       </li>
                     );
                   }

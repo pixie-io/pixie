@@ -1,0 +1,35 @@
+{
+    "defaultSeverity": "error",
+    "extends": [
+        "tslint:recommended"
+    ],
+    "rules": {
+      "class-name": [true, "allow-leading-underscore"],
+      "indent": [
+        true,
+        2,
+        "spaces"
+      ],
+      "interface-name": [true, "never-prefix"],
+      "max-classes-per-file": false,
+      "member-access": false,
+      "quotemark": [
+        true,
+        "single"
+      ],
+      "object-literal-key-quotes": [true, "as-needed"],
+      "object-literal-sort-keys": false,
+      "variable-name": [true, "allow-leading-underscore", "allow-pascal-case"]
+    },
+    "jsRules": {
+      "quotemark": {
+        "options": [
+          "single"
+        ]
+      },
+      "max-classes-per-file": false,
+      "object-literal-key-quotes": [true, "as-needed"],
+      "object-literal-sort-keys": false
+    },
+    "rulesDirectory": []
+}

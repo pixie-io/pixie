@@ -2,7 +2,7 @@ import system from 'system-components/emotion';
 
 const Text = system(
   {
-    m: 0
+    m: 0,
   },
   'space',
   'color',
@@ -10,7 +10,7 @@ const Text = system(
   'fontSize',
   'fontWeight',
   'textAlign',
-  'lineHeight'
+  'lineHeight',
 );
 Text.displayName = 'Text';
 

@@ -7,7 +7,7 @@ import '../styles.css';
 import Pre from './pre';
 
 /** Removes the last token from a code example if it's empty. */
-function cleanTokens (tokens) {
+function cleanTokens(tokens) {
   const tokensLength = tokens.length;
   if (tokensLength === 0) {
     return tokens;
@@ -34,7 +34,7 @@ const CodeBlock = ({ children: exampleCode, ...props }) => {
       <Highlight
         {...defaultProps}
         code={exampleCode}
-        language="javascript"
+        language='javascript'
         theme={prismTheme}
       >
         {({ className, style, tokens, getLineProps, getTokenProps }) => (
@@ -43,31 +43,31 @@ const CodeBlock = ({ children: exampleCode, ...props }) => {
               let lineClass = {};
               let isDiff = false;
               if (line[0] && line[0].content.length && line[0].content[0] === '+') {
-                lineClass = { 'backgroundColor': 'rgba(76, 175, 80, 0.2)' };
+                lineClass = { backgroundColor: 'rgba(76, 175, 80, 0.2)' };
                 isDiff = true;
               } else if (line[0] && line[0].content.length && line[0].content[0] === '-') {
-                lineClass = { 'backgroundColor': 'rgba(244, 67, 54, 0.2)' };
+                lineClass = { backgroundColor: 'rgba(244, 67, 54, 0.2)' };
                 isDiff = true;
               } else if (line[0] && line[0].content === '' && line[1] && line[1].content === '+') {
-                lineClass = { 'backgroundColor': 'rgba(76, 175, 80, 0.2)' };
+                lineClass = { backgroundColor: 'rgba(76, 175, 80, 0.2)' };
                 isDiff = true;
               } else if (line[0] && line[0].content === '' && line[1] && line[1].content === '-') {
-                lineClass = { 'backgroundColor': 'rgba(244, 67, 54, 0.2)' };
+                lineClass = { backgroundColor: 'rgba(244, 67, 54, 0.2)' };
                 isDiff = true;
               }
               const lineProps = getLineProps({ line, key: i });
               lineProps.style = lineClass;
-              const diffStyle = { 'userSelect': 'none', '-moz-user-select': '-moz-none' };
+              const diffStyle = { userSelect: 'none', '-moz-user-select': '-moz-none' };
               let splitToken;
               return (
                 <div {...lineProps}>
                   {line.map((token, key) => {
                     if (isDiff) {
-                      if ((key === 0 || key === 1) & (token.content.charAt(0) === '+'
+                      if ((key === 0 || key === 1) && (token.content.charAt(0) === '+'
                           || token.content.charAt(0) === '-')) {
                         if (token.content.length > 1) {
-                          splitToken = { 'types': ['template-string', 'string'], 'content': token.content.slice(1) };
-                          const firstChar = { 'types': ['operator'], 'content': token.content.charAt(0) };
+                          splitToken = { types: ['template-string', 'string'], content: token.content.slice(1) };
+                          const firstChar = { types: ['operator'], content: token.content.charAt(0) };
                           return (
                             <React.Fragment>
                               <span {...getTokenProps({ token: firstChar, key })} style={diffStyle} />

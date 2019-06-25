@@ -136,9 +136,10 @@ const SidebarLayout = ({ location }) => (
               return { ...acc, items: [...acc.items, cur] };
             }
           },
-          { items: [] }
+          { items: [] },
         );
 
+      /* tslint:disable */
       const nav = forcedNavOrder
         .reduce((acc, cur) => {
           return acc.concat(navItems[cur]);
@@ -146,9 +147,8 @@ const SidebarLayout = ({ location }) => (
         .concat(navItems.items)
         .map((slug) => {
           const { node } = allMdx.edges.find(
-            ({ node }) => node.fields.slug === slug
+            ({ node }) => node.fields.slug === slug,
           );
-
           let isActive = false;
           if (location && (location.pathname === node.fields.slug
               || location.pathname === (config.gatsby.pathPrefix + node.fields.slug))) {
@@ -166,6 +166,7 @@ const SidebarLayout = ({ location }) => (
             </ListItem>
           );
         });
+      /* tslint:enable */
 
       return (
         <Sidebar>

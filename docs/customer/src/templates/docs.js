@@ -10,6 +10,7 @@ import config from '../../config';
 
 const forcedNavOrder = config.sidebar.forcedNavOrder;
 
+/* tslint:disable */
 injectGlobal`
   * {
     margin: 0;
@@ -42,9 +43,10 @@ injectGlobal`
     color: #663399;
   }
 `;
+/* tslint:enable */
 
 export default class MDXRuntimeTest extends Component {
-  render () {
+  render() {
     const { data } = this.props;
     const {
       allMdx,
@@ -69,9 +71,10 @@ export default class MDXRuntimeTest extends Component {
             return { ...acc, items: [...acc.items, cur] };
           }
         },
-        { items: [] }
+        { items: [] },
       );
 
+    /* tslint:disable */
     const nav = forcedNavOrder
       .reduce((acc, cur) => {
         return acc.concat(navItems[cur]);
@@ -79,11 +82,12 @@ export default class MDXRuntimeTest extends Component {
       .concat(navItems.items)
       .map((slug) => {
         const { node } = allMdx.edges.find(
-          ({ node }) => node.fields.slug === slug
+          ({ node }) => node.fields.slug === slug,
         );
 
         return { title: node.fields.title, url: node.fields.slug };
       });
+    /* tslint:enable */
 
     // meta tags
     const metaTitle = mdx.frontmatter.metaTitle;
@@ -96,13 +100,13 @@ export default class MDXRuntimeTest extends Component {
       <Layout {...this.props}>
         <Helmet>
           {metaTitle ? <title>{metaTitle}</title> : null }
-          {metaTitle ? <meta name="title" content={metaTitle} /> : null}
-          {metaDescription ? <meta name="description" content={metaDescription} /> : null}
-          {metaTitle ? <meta property="og:title" content={metaTitle} /> : null}
-          {metaDescription ? <meta property="og:description" content={metaDescription} /> : null}
-          {metaTitle ? <meta property="twitter:title" content={metaTitle} /> : null}
-          {metaDescription ? <meta property="twitter:description" content={metaDescription} /> : null}
-          <link rel="canonical" href={canonicalUrl} />
+          {metaTitle ? <meta name='title' content={metaTitle} /> : null}
+          {metaDescription ? <meta name='description' content={metaDescription} /> : null}
+          {metaTitle ? <meta property='og:title' content={metaTitle} /> : null}
+          {metaDescription ? <meta property='og:description' content={metaDescription} /> : null}
+          {metaTitle ? <meta property='twitter:title' content={metaTitle} /> : null}
+          {metaDescription ? <meta property='twitter:description' content={metaDescription} /> : null}
+          <link rel='canonical' href={canonicalUrl} />
         </Helmet>
         <div className={'titleWrapper'}>
           <h1 className={'title'}>
