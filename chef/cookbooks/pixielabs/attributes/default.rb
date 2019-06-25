@@ -26,10 +26,10 @@ default['golang']                    = {}
 
 if node[:platform] == 'ubuntu'
   default['bazel']['deb']        =
-    'https://github.com/bazelbuild/bazel/releases/download/0.27.0/bazel_0.27.0-linux-x86_64.deb'
+    'https://github.com/bazelbuild/bazel/releases/download/0.26.1/bazel_0.26.1-linux-x86_64.deb'
   default['bazel']['deb_sha256'] =
-    '489d2ea3f4dc0822bd049df8262ee5c9efa8eb22a55596bbb100c0b3e80a40e7'
-  default['bazel']['version'] = "0.27.0"
+    'c0b2b676ca7cc071a98f969aefb4a9d4b7db1858b7340d9db6f8076179e776cd'
+  default['bazel']['version'] = "0.26.1"
 
   default['golang']['download_path'] =
     'https://dl.google.com/go/go1.11.10.linux-amd64.tar.gz'
@@ -53,9 +53,9 @@ if node[:platform] == 'ubuntu'
   default['packer']['sha256']        = '5e51808299135fee7a2e664b09f401b5712b5ef18bd4bad5bc50f4dcd8b149a1'
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
-    'https://github.com/bazelbuild/bazel/releases/download/0.27.0/bazel-0.27.0-darwin-x86_64'
+    'https://github.com/bazelbuild/bazel/releases/download/0.26.1/bazel-0.26.1-darwin-x86_64'
   default['bazel']['sha256'] =
-    '8c222c7c8d6814341c556649ddfb6be2cf58ae483888a7b6675f96523e1107d0'
+    '9b416e0c9bde5fd59264eacc35d518d2465b5591fbaf3656e386970c045d4747'
 
   default['golang']['download_path'] =
     'https://dl.google.com/go/go1.11.10.darwin-amd64.tar.gz'
