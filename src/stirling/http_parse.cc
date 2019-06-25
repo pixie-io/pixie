@@ -14,18 +14,18 @@
 namespace pl {
 namespace stirling {
 
-void PreProcessHTTPRecord(HTTPTraceRecord* record) {
-  auto content_encoding_iter = record->message.http_headers.find(http_headers::kContentEncoding);
+void PreProcessMessage(HTTPMessage* message) {
+  auto content_encoding_iter = message->http_headers.find(http_headers::kContentEncoding);
   // Replace body with decompressed version, if required.
-  if (content_encoding_iter != record->message.http_headers.end() &&
+  if (content_encoding_iter != message->http_headers.end() &&
       content_encoding_iter->second == "gzip") {
-    std::string_view body_strview(record->message.http_msg_body);
+    std::string_view body_strview(message->http_msg_body);
     auto bodyOrErr = pl::zlib::StrInflate(body_strview);
     if (!bodyOrErr.ok()) {
       LOG(WARNING) << "Unable to gunzip HTTP body.";
-      record->message.http_msg_body = "<Stirling failed to gunzip body>";
+      message->http_msg_body = "<Stirling failed to gunzip body>";
     } else {
-      record->message.http_msg_body = bodyOrErr.ValueOrDie();
+      message->http_msg_body = bodyOrErr.ValueOrDie();
     }
   }
 }
@@ -75,18 +75,6 @@ StatusOr<IPEndpoint> ParseSockAddr(const conn_info_t& conn_info) {
   }
 
   return IPEndpoint{std::string(addr), port};
-}
-
-bool ParseRaw(const socket_data_event_t& event, const conn_info_t& conn_info,
-              HTTPTraceRecord* record) {
-  HTTPTraceRecord& result = *record;
-  record->conn.tgid = event.attr.tgid;
-  record->conn.fd = conn_info.fd;
-  record->message.timestamp_ns = event.attr.timestamp_ns;
-  result.message.type = SocketTraceEventType::kUnknown;
-  result.message.http_msg_body = std::string(event.msg, event.attr.msg_size);
-  // Rest of the fields remain at default values.
-  return true;
 }
 
 HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters) {

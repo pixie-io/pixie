@@ -386,7 +386,7 @@ void SocketTraceConnector::TransferHTTPStreams(types::ColumnWrapperRecordBatch* 
     // Extract and output all complete messages.
     for (HTTPMessage& msg : resp_data.messages) {
       HTTPTraceRecord record{stream.conn, std::move(msg)};
-      ConsumeHTTPMessage(std::move(record), record_batch);
+      ConsumeHTTPMessage(record, record_batch);
     }
     resp_data.messages.clear();
   }
@@ -402,7 +402,7 @@ void SocketTraceConnector::ConsumeHTTPMessage(HTTPTraceRecord record,
   if (SelectHTTPMessage(record)) {
     // Currently decompresses gzip content, but could handle other transformations too.
     // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
-    PreProcessHTTPRecord(&record);
+    PreProcessMessage(&record.message);
 
     // Push data to the TableStore.
     AppendHTTPMessage(std::move(record), record_batch);
@@ -413,23 +413,25 @@ bool SocketTraceConnector::SelectHTTPMessage(const HTTPTraceRecord& record) {
   // Some of this function is currently a placeholder for the demo.
   // TODO(oazizi/yzhao): update this function further.
 
+  const HTTPMessage& message = record.message;
+
   // Rule: Exclude any HTTP requests.
   // TODO(oazizi): Think about how requests should be handled by this function.
-  if (record.message.type == SocketTraceEventType::kHTTPRequest) {
+  if (message.type == SocketTraceEventType::kHTTPRequest) {
     return false;
   }
 
   // Rule: Exclude anything that doesn't specify its Content-Type.
-  auto content_type_iter = record.message.http_headers.find(http_headers::kContentType);
-  if (content_type_iter == record.message.http_headers.end()) {
+  auto content_type_iter = message.http_headers.find(http_headers::kContentType);
+  if (content_type_iter == message.http_headers.end()) {
     return false;
   }
 
   // Rule: Exclude anything that doesn't match the filter, if filter is active.
-  if (record.message.type == SocketTraceEventType::kHTTPResponse &&
+  if (message.type == SocketTraceEventType::kHTTPResponse &&
       (!http_response_header_filter_.inclusions.empty() ||
        !http_response_header_filter_.exclusions.empty())) {
-    if (!MatchesHTTPTHeaders(record.message.http_headers, http_response_header_filter_)) {
+    if (!MatchesHTTPTHeaders(message.http_headers, http_response_header_filter_)) {
       return false;
     }
   }
@@ -441,26 +443,31 @@ void SocketTraceConnector::AppendHTTPMessage(HTTPTraceRecord record,
                                              types::ColumnWrapperRecordBatch* record_batch) {
   CHECK_EQ(kHTTPTable.elements().size(), record_batch->size());
 
+  const SocketConnection& conn = record.conn;
+  HTTPMessage& message = record.message;
+
   // Check for positive latencies.
-  DCHECK_GE(record.message.timestamp_ns, record.conn.timestamp_ns);
+  DCHECK_GE(message.timestamp_ns, conn.timestamp_ns);
 
   RecordBuilder<&kHTTPTable> r(record_batch);
-  r.Append<r.ColIndex("time_")>(record.message.timestamp_ns);
-  r.Append<r.ColIndex("tgid")>(record.conn.tgid);
-  r.Append<r.ColIndex("fd")>(record.conn.fd);
-  r.Append<r.ColIndex("event_type")>(EventTypeToString(record.message.type));
-  r.Append<r.ColIndex("remote_addr")>(std::move(record.conn.remote_addr));
-  r.Append<r.ColIndex("remote_port")>(record.conn.remote_port);
-  r.Append<r.ColIndex("http_minor_version")>(record.message.http_minor_version);
+  r.Append<r.ColIndex("time_")>(message.timestamp_ns);
+  r.Append<r.ColIndex("tgid")>(conn.tgid);
+  r.Append<r.ColIndex("fd")>(conn.fd);
+  r.Append<r.ColIndex("event_type")>(EventTypeToString(message.type));
+  // Note that there is a string copy here,
+  // But std::move is not allowed because we re-use conn object.
+  // TODO(oazizi): Long-term need to make remote_addr a uint128.
+  r.Append<r.ColIndex("remote_addr")>(std::string(conn.remote_addr));
+  r.Append<r.ColIndex("remote_port")>(conn.remote_port);
+  r.Append<r.ColIndex("http_minor_version")>(message.http_minor_version);
   r.Append<r.ColIndex("http_headers")>(
-      absl::StrJoin(record.message.http_headers, "\n", absl::PairFormatter(": ")));
-  r.Append<r.ColIndex("http_req_method")>(std::move(record.message.http_req_method));
-  r.Append<r.ColIndex("http_req_path")>(std::move(record.message.http_req_path));
-  r.Append<r.ColIndex("http_resp_status")>(record.message.http_resp_status);
-  r.Append<r.ColIndex("http_resp_message")>(std::move(record.message.http_resp_message));
-  r.Append<r.ColIndex("http_resp_body")>(std::move(record.message.http_msg_body));
-  r.Append<r.ColIndex("http_resp_latency_ns")>(record.message.timestamp_ns -
-                                               record.conn.timestamp_ns);
+      absl::StrJoin(message.http_headers, "\n", absl::PairFormatter(": ")));
+  r.Append<r.ColIndex("http_req_method")>(std::move(message.http_req_method));
+  r.Append<r.ColIndex("http_req_path")>(std::move(message.http_req_path));
+  r.Append<r.ColIndex("http_resp_status")>(message.http_resp_status);
+  r.Append<r.ColIndex("http_resp_message")>(std::move(message.http_resp_message));
+  r.Append<r.ColIndex("http_resp_body")>(std::move(message.http_msg_body));
+  r.Append<r.ColIndex("http_resp_latency_ns")>(message.timestamp_ns - conn.timestamp_ns);
 }
 
 //-----------------------------------------------------------------------------

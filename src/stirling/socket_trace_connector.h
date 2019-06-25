@@ -73,6 +73,11 @@ struct HTTP2Stream : public ConnectionTracker {
   // TODO(yzhao): Add HTTP2Parser, or gRPC parser.
 };
 
+struct HTTPTraceRecord {
+  const SocketConnection& conn;
+  HTTPMessage message;
+};
+
 class SocketTraceConnector : public SourceConnector {
  public:
   inline static const std::string_view kBCCScript = http_trace_bcc_script;

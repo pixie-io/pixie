@@ -18,44 +18,24 @@ using ::testing::Not;
 using ::testing::Pair;
 
 TEST(PreProcessRecordTest, GzipCompressedContentIsDecompressed) {
-  HTTPTraceRecord record;
-  record.message.http_headers[http_headers::kContentEncoding] = "gzip";
+  HTTPMessage message;
+  message.http_headers[http_headers::kContentEncoding] = "gzip";
   const uint8_t compressed_bytes[] = {0x1f, 0x8b, 0x08, 0x00, 0x37, 0xf0, 0xbf, 0x5c, 0x00,
                                       0x03, 0x0b, 0xc9, 0xc8, 0x2c, 0x56, 0x00, 0xa2, 0x44,
                                       0x85, 0x92, 0xd4, 0xe2, 0x12, 0x2e, 0x00, 0x8c, 0x2d,
                                       0xc0, 0xfa, 0x0f, 0x00, 0x00, 0x00};
-  record.message.http_msg_body.assign(reinterpret_cast<const char*>(compressed_bytes),
-                                      sizeof(compressed_bytes));
-  PreProcessHTTPRecord(&record);
-  EXPECT_EQ("This is a test\n", record.message.http_msg_body);
+  message.http_msg_body.assign(reinterpret_cast<const char*>(compressed_bytes),
+                               sizeof(compressed_bytes));
+  PreProcessMessage(&message);
+  EXPECT_EQ("This is a test\n", message.http_msg_body);
 }
 
 TEST(PreProcessRecordTest, ContentHeaderIsNotAdded) {
-  HTTPTraceRecord record;
-  record.message.http_msg_body = "test";
-  PreProcessHTTPRecord(&record);
-  EXPECT_EQ("test", record.message.http_msg_body);
-  EXPECT_THAT(record.message.http_headers, Not(Contains(Key(http_headers::kContentEncoding))));
-}
-
-TEST(ParseRawTest, ContentIsCopied) {
-  const std::string data = "test";
-  socket_data_event_t event;
-  conn_info_t conn_info;
-  event.attr.timestamp_ns = 100;
-  event.attr.tgid = 1;
-  conn_info.fd = 3;
-  event.attr.msg_size = data.size();
-  data.copy(event.msg, data.size());
-
-  HTTPTraceRecord record;
-
-  EXPECT_TRUE(ParseRaw(event, conn_info, &record));
-  EXPECT_EQ(100, record.message.timestamp_ns);
-  EXPECT_EQ(1, record.conn.tgid);
-  EXPECT_EQ(3, record.conn.fd);
-  EXPECT_EQ(SocketTraceEventType::kUnknown, record.message.type);
-  EXPECT_EQ("test", record.message.http_msg_body);
+  HTTPMessage message;
+  message.http_msg_body = "test";
+  PreProcessMessage(&message);
+  EXPECT_EQ("test", message.http_msg_body);
+  EXPECT_THAT(message.http_headers, Not(Contains(Key(http_headers::kContentEncoding))));
 }
 
 TEST(ParseHTTPHeaderFiltersAndMatchTest, FiltersAreAsExpectedAndMatchesWork) {

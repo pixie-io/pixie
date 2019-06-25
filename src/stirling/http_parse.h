@@ -55,20 +55,13 @@ struct HTTPMessage {
   std::string http_msg_body = "-";
 };
 
-struct HTTPTraceRecord {
-  SocketConnection conn;
-  HTTPMessage message;
-};
+void PreProcessMessage(HTTPMessage* message);
 
-void PreProcessHTTPRecord(HTTPTraceRecord* record);
 struct IPEndpoint {
   std::string ip;
   int port;
 };
 StatusOr<IPEndpoint> ParseSockAddr(const conn_info_t& conn_info);
-// TODO(oazizi): Enable to output all raw events on debug cases for particular protocols.
-bool ParseRaw(const socket_data_event_t& event, const conn_info_t& conn_info,
-              HTTPTraceRecord* record);
 
 // For each HTTP message, inclusions are applied first; then exclusions, which can overturn the
 // selection done by the former. An empty inclusions results into any HTTP message being selected,
