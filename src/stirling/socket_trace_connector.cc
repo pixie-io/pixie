@@ -229,10 +229,10 @@ void SocketTraceConnector::AppendToStream(socket_data_event_t event,
   StreamType& stream = iter->second;
   switch (EventStreamDirection(event.attr.event_type)) {
     case StreamDirection::kSend:
-      stream.send_events.emplace(seq_num, std::move(event));
+      stream.send_data.events.emplace(seq_num, std::move(event));
       break;
     case StreamDirection::kRecv:
-      stream.recv_events.emplace(seq_num, std::move(event));
+      stream.recv_data.events.emplace(seq_num, std::move(event));
       break;
     default:
       LOG(ERROR) << "AppendStream() could not find StreamDirection";
@@ -319,16 +319,16 @@ conn_info_t* SocketTraceConnector::GetConn(const socket_data_event_t& event) {
 // HTTP Specific TransferImpl Helpers
 //-----------------------------------------------------------------------------
 
-std::vector<HTTPMessage> SocketTraceConnector::ParseEventStream(
-    TrafficMessageType type, std::map<uint64_t, socket_data_event_t>* events, uint64_t* offset) {
+std::vector<HTTPMessage> SocketTraceConnector::ParseEventStream(TrafficMessageType type,
+                                                                DataStream* data) {
   HTTPParser parser;
 
-  const size_t orig_offset = *offset;
+  const size_t orig_offset = data->offset;
 
   // Prepare all recorded events for parsing.
   std::vector<std::string_view> msgs;
-  uint64_t next_seq_num = events->begin()->first;
-  for (const auto& [seq_num, event] : *events) {
+  uint64_t next_seq_num = data->events.begin()->first;
+  for (const auto& [seq_num, event] : data->events) {
     // Found a discontinuity in sequence numbers. Stop submitting events to parser.
     if (seq_num != next_seq_num) {
       break;
@@ -339,10 +339,10 @@ std::vector<HTTPMessage> SocketTraceConnector::ParseEventStream(
 
     // First message may have been partially processed by a previous call to this function.
     // In such cases, the offset will be non-zero, and we need a sub-string of the first event.
-    if (*offset != 0) {
-      CHECK(*offset < event.attr.msg_size);
-      msg = msg.substr(*offset, event.attr.msg_size - *offset);
-      *offset = 0;
+    if (data->offset != 0) {
+      CHECK(data->offset < event.attr.msg_size);
+      msg = msg.substr(data->offset, event.attr.msg_size - data->offset);
+      data->offset = 0;
     }
 
     parser.Append(msg, event.attr.timestamp_ns + ClockRealTimeOffset());
@@ -354,15 +354,15 @@ std::vector<HTTPMessage> SocketTraceConnector::ParseEventStream(
   HTTPParseResult<BufferPosition> parse_result = parser.ParseMessages(type);
 
   // If we weren't able to process anything new, then the offset should be the same as last time.
-  if (*offset != 0 && parse_result.end_position.seq_num == 0) {
+  if (data->offset != 0 && parse_result.end_position.seq_num == 0) {
     CHECK_EQ(parse_result.end_position.offset, orig_offset);
   }
 
   // Find and erase events that have been fully processed.
-  auto erase_iter = events->begin();
+  auto erase_iter = data->events.begin();
   std::advance(erase_iter, parse_result.end_position.seq_num);
-  events->erase(events->begin(), erase_iter);
-  *offset = parse_result.end_position.offset;
+  data->events.erase(data->events.begin(), erase_iter);
+  data->offset = parse_result.end_position.offset;
 
   return std::move(parse_result.messages);
 }
@@ -382,19 +382,13 @@ void SocketTraceConnector::TransferHTTPStreams(types::ColumnWrapperRecordBatch* 
     // TODO(oazizi): Potential optimization: send vector<HTTPMessage> as argument to
     //               ParseEvenStream(), so we don't keep creating and destroying vectors.
 
-    std::map<uint64_t, socket_data_event_t>& resp_events =
-        is_requestor_side ? stream.recv_events : stream.send_events;
-    uint64_t& resp_offset = is_requestor_side ? stream.send_offset : stream.recv_offset;
-    std::vector<HTTPMessage> responses =
-        ParseEventStream(kMessageTypeResponses, &resp_events, &resp_offset);
+    auto& resp_data = is_requestor_side ? stream.recv_data : stream.send_data;
+    std::vector<HTTPMessage> responses = ParseEventStream(kMessageTypeResponses, &resp_data);
 
     // TODO(oazizi): Request parsing coming in a future diff.
-    // std::map<uint64_t, socket_data_event_t>& req_events =
-    //   is_requestor_side ? stream.recv_events : stream.send_events;
-    // uint64_t& req_offset =
-    //    is_requestor_side ? stream.send_offset : stream.recv_offset;
+    // auto& req_data = is_requestor_side ? stream.recv_data : stream.send_data;
     // std::vector<HTTPMessage> requests  =
-    //    ParseEventStream(kMessageTypeRequests, req_events, req_offset);
+    //    ParseEventStream(kMessageTypeRequests, &req_data);
 
     // Extract and output all complete messages.
     for (HTTPMessage& msg : responses) {

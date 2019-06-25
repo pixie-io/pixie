@@ -84,7 +84,7 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
 
   const HTTP2Stream h2_stream = socket_trace_connector->TestOnlyHTTP2Streams().begin()->second;
   {
-    std::string send_string = JoinStream(h2_stream.send_events);
+    std::string send_string = JoinStream(h2_stream.send_data.events);
     std::string_view send_buf = send_string;
     std::vector<std::unique_ptr<Frame>> frames;
     EXPECT_OK(UnpackFrames(&send_buf, &frames));
@@ -114,7 +114,7 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
     EXPECT_TRUE(MessageDifferencer::Equals(received_reply, expected_reply));
   }
   {
-    std::string recv_string = JoinStream(h2_stream.recv_events);
+    std::string recv_string = JoinStream(h2_stream.recv_data.events);
     std::string_view recv_buf = recv_string;
     std::vector<std::unique_ptr<Frame>> frames;
     constexpr size_t kHTTP2ClientConnectPrefaceSizeInBytes = 24;

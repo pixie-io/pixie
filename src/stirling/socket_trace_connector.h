@@ -34,31 +34,34 @@ OBJ_STRVIEW(http_trace_bcc_script, _binary_bcc_bpf_socket_trace_c_preprocessed);
 namespace pl {
 namespace stirling {
 
-struct EventStream {
+struct DataStream {
+  // TODO(oazizi): Convert this to vector.
+  std::map<uint64_t, socket_data_event_t> events;
+
+  // To support partially processed events, the stream may start at an offset in the first event.
+  uint64_t offset = 0;
+};
+
+struct ConnectionTracker {
   SocketConnection conn;
+
+  // TODO(oazizi): Will this be covered by conn?
   TrafficProtocol protocol;
 
-  // Key: sequence number.
-  std::map<uint64_t, socket_data_event_t> recv_events;
-  std::map<uint64_t, socket_data_event_t> send_events;
+  // The data events collected by the stream, one per direction.
+  DataStream recv_data;
+  DataStream send_data;
 
-  // For recv_events and send_events, respectively
-  // the offset to start processing in the first socket_data_event_t.
-  // Would be set only if it was already processed by a previous ParseMessages() call.
-  uint64_t recv_offset = 0;
-  uint64_t send_offset = 0;
-
-  // TODO(oazizi): Create an object that is a container of events plus the current offset.
   // TODO(oazizi): Add a bool to say whether the stream has been touched since last transfer (to
   // avoid useless computation).
   // TODO(oazizi): Could also record a timestamp, so we could destroy old EventStreams completely.
 };
 
-struct HTTPStream : public EventStream {
+struct HTTPStream : public ConnectionTracker {
   HTTPStream() { protocol = kProtocolHTTP; }
 };
 
-struct HTTP2Stream : public EventStream {
+struct HTTP2Stream : public ConnectionTracker {
   HTTP2Stream() { protocol = kProtocolHTTP2; }
   // TODO(yzhao): Add HTTP2Parser, or gRPC parser.
 };
@@ -209,9 +212,7 @@ class SocketTraceConnector : public SourceConnector {
 
   // Takes an event stream (map of events), and parses as many HTTP messages of the
   // specified type as it can. Returns a vector of the parsed messages.
-  std::vector<HTTPMessage> ParseEventStream(TrafficMessageType type,
-                                            std::map<uint64_t, socket_data_event_t>* events,
-                                            uint64_t* offset);
+  std::vector<HTTPMessage> ParseEventStream(TrafficMessageType type, DataStream* data);
 
   static void ConsumeHTTPMessage(HTTPTraceRecord record,
                                  types::ColumnWrapperRecordBatch* record_batch);
