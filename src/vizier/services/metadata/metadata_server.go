@@ -92,6 +92,8 @@ func main() {
 		log.WithError(err).Fatal("Failed to create metadata handler")
 	}
 
+	mdHandler.ProcessAgentUpdates()
+
 	mdCh := mdHandler.GetChannel()
 
 	_, err = controllers.NewK8sMetadataController(mdCh)

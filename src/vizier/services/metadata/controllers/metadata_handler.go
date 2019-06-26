@@ -10,6 +10,8 @@ import (
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 )
 
+const maxAgentUpdates = 10000
+
 // MetadataStore is the interface for our metadata store.
 type MetadataStore interface {
 	UpdateEndpoints(*metadatapb.Endpoints) error
@@ -25,19 +27,28 @@ type K8sMessage struct {
 	ObjectType string
 }
 
+// UpdateMessage is an update message for a specific hostname.
+type UpdateMessage struct {
+	Message   *messagespb.MetadataUpdateInfo_ResourceUpdate
+	Hostnames *[]string
+}
+
 // MetadataHandler processes messages in its channel.
 type MetadataHandler struct {
-	ch  chan *K8sMessage
-	mds MetadataStore
+	ch            chan *K8sMessage
+	mds           MetadataStore
+	agentUpdateCh chan *UpdateMessage
 }
 
 // NewMetadataHandler creates a new metadata handler.
 func NewMetadataHandler(mds MetadataStore) (*MetadataHandler, error) {
 	c := make(chan *K8sMessage)
+	agentUpdateCh := make(chan *UpdateMessage, maxAgentUpdates)
 
 	mh := &MetadataHandler{
-		ch:  c,
-		mds: mds,
+		ch:            c,
+		mds:           mds,
+		agentUpdateCh: agentUpdateCh,
 	}
 
 	go mh.MetadataListener()
@@ -48,6 +59,39 @@ func NewMetadataHandler(mds MetadataStore) (*MetadataHandler, error) {
 // GetChannel returns the channel the MetadataHandler is listening to.
 func (mh *MetadataHandler) GetChannel() chan *K8sMessage {
 	return mh.ch
+}
+
+// ProcessAgentUpdates starts the goroutine for processing the agent update channel.
+func (mh *MetadataHandler) ProcessAgentUpdates() {
+	go mh.processAgentUpdates()
+}
+
+func (mh *MetadataHandler) processAgentUpdates() {
+	for {
+		more := mh.ProcessNextAgentUpdate()
+		if !more {
+			return
+		}
+	}
+}
+
+// ProcessNextAgentUpdate processes the next agent update in the agent update channel. Returns true if there are no more
+// requests to be processed.
+func (mh *MetadataHandler) ProcessNextAgentUpdate() bool {
+	// If there are too many updates, something is probably very wrong.
+	if len(mh.agentUpdateCh) > maxAgentUpdates {
+		log.Fatal("Failed to queue maximum number of agent updates.")
+	}
+
+	msg, more := <-mh.agentUpdateCh
+	if !more {
+		return true
+	}
+
+	// Apply updates.
+	mh.updateAgentQueues(msg.Message, msg.Hostnames)
+
+	return false
 }
 
 // MetadataListener handles any updates on the metadata channel.
@@ -71,6 +115,43 @@ func (mh *MetadataHandler) MetadataListener() {
 	}
 }
 
+// updateAgentQueues appends the resource update to the relevant agent queues. If appending to the queue has failed,
+// it adds the update to the handler's retry channel.
+func (mh *MetadataHandler) updateAgentQueues(updatePb *messagespb.MetadataUpdateInfo_ResourceUpdate, hostnames *[]string) {
+	agents, err := mh.mds.GetAgentsForHostnames(hostnames)
+
+	if agents == nil || len(*agents) == 0 {
+		log.Error("Could not get any agents for hostnames.")
+		mh.agentUpdateCh <- &UpdateMessage{
+			Message:   updatePb,
+			Hostnames: hostnames,
+		}
+		return
+	}
+
+	update, err := updatePb.Marshal()
+	if err != nil {
+		log.WithError(err).Error("Could not marshall service update message.")
+		return
+	}
+
+	var failedHostnames []string
+	for i, agent := range *agents {
+		err = mh.mds.AddToAgentUpdateQueue(agent, string(update))
+		if err != nil {
+			log.WithError(err).Error("Could not write service update to agent update queue.")
+			failedHostnames = append(failedHostnames, (*hostnames)[i])
+		}
+	}
+
+	if len(failedHostnames) > 0 {
+		mh.agentUpdateCh <- &UpdateMessage{
+			Message:   updatePb,
+			Hostnames: &failedHostnames,
+		}
+	}
+}
+
 func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 	e := o.(*v1.Endpoints)
 
@@ -89,6 +170,24 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 		log.WithError(err).Fatal("Could not write endpoints protobuf to metadata store.")
 	}
 
+	// Add endpoint update to agent update queues.
+	var hostnames []string
+	for _, subset := range e.Subsets {
+		for _, addr := range subset.Addresses {
+			hostnames = append(hostnames, addr.Hostname)
+		}
+	}
+
+	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
+		Uid:  string(e.ObjectMeta.UID),
+		Name: e.ObjectMeta.Name,
+		Type: messagespb.SERVICE,
+	}
+
+	mh.agentUpdateCh <- &UpdateMessage{
+		Hostnames: &hostnames,
+		Message:   updatePb,
+	}
 }
 
 func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
@@ -105,31 +204,16 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 
 	// Add pod update to agent update queue.
 	hostname := []string{e.Spec.NodeName}
-	agents, err := mh.mds.GetAgentsForHostnames(&hostname)
-
-	if len(*agents) != 1 {
-		log.Error("Could not get agent for hostname: " + e.Spec.NodeName)
-		// Add the message back to the queue to retry.
-		mh.ch <- &K8sMessage{
-			Object:     o,
-			ObjectType: "pods",
-		}
-		return
-	}
 
 	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
 		Uid:  string(e.ObjectMeta.UID),
 		Name: e.ObjectMeta.Name,
 		Type: messagespb.POD,
 	}
-	update, err := updatePb.Marshal()
-	if err != nil {
-		log.WithError(err).Error("Could not marshall pod update message.")
-	}
 
-	err = mh.mds.AddToAgentUpdateQueue((*agents)[0], string(update))
-	if err != nil {
-		log.WithError(err).Error("Could not write pod update to agent update queue.")
+	mh.agentUpdateCh <- &UpdateMessage{
+		Hostnames: &hostname,
+		Message:   updatePb,
 	}
 }
 
