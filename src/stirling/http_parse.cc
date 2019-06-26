@@ -300,76 +300,8 @@ ParseState PicoHTTPParserWrapper::WriteBody(HTTPMessage* result) {
   return ParseState::kInvalid;
 }
 
-namespace {
-
-// Utility to convert positions from a position within a set of combined buffers,
-// to the position within a set of matching content in disjoint buffers.
-// @param msgs The original set of disjoint buffers.
-// @param pos The position within the combined buffer.
-// @return Position within disjoint buffers, as buffer number and offset within the buffer.
-BufferPosition ConvertPosition(std::vector<std::string_view> msgs, size_t pos) {
-  size_t curr_seq = 0;
-  size_t size = 0;
-  for (auto msg : msgs) {
-    size += msg.size();
-    if (pos < size) {
-      return {curr_seq, pos - (size - msg.size())};
-    }
-    ++curr_seq;
-  }
-  return {curr_seq, 0};
-}
-
-}  // namespace
-
-HTTPParseResult<BufferPosition> HTTPParser::ParseMessages(TrafficMessageType type,
-                                                          std::deque<HTTPMessage>* messages) {
-  std::string buf = Combine();
-
-  // Grab size before we start, so we know where the new parsed messages are.
-  size_t prev_size = messages->size();
-
-  HTTPParseResult<size_t> result = Parse(type, buf, messages);
-  std::vector<BufferPosition> positions;
-
-  // Match timestamps with the parsed messages.
-  for (size_t i = 0; i < result.start_positions.size(); ++i) {
-    auto& msg = (*messages)[prev_size + i];
-    // TODO(oazizi): ConvertPosition is inefficient, because it starts searching from scratch
-    // everytime. Could do better if ConvertPosition took a starting seq and size.
-    BufferPosition position = ConvertPosition(msgs_, result.start_positions[i]);
-    positions.push_back(position);
-    DCHECK(position.seq_num < msgs_.size())
-        << absl::Substitute("The sequence number must be in valid range of [0, $0)", msgs_.size());
-    msg.timestamp_ns = ts_nses_[position.seq_num];
-  }
-
-  BufferPosition end_position = ConvertPosition(msgs_, result.end_position);
-
-  msgs_.clear();
-  ts_nses_.clear();
-  msgs_size_ = 0;
-
-  return {std::move(positions), end_position, result.state};
-}
-
-void HTTPParser::Append(std::string_view msg, uint64_t ts_ns) {
-  msgs_.push_back(msg);
-  ts_nses_.push_back(ts_ns);
-  msgs_size_ += msg.size();
-}
-
-std::string HTTPParser::Combine() const {
-  std::string result;
-  result.reserve(msgs_size_);
-  for (auto msg : msgs_) {
-    result.append(msg);
-  }
-  return result;
-}
-
-HTTPParseResult<size_t> Parse(TrafficMessageType type, std::string_view buf,
-                              std::deque<HTTPMessage>* messages) {
+ParseResult<size_t> Parse(TrafficMessageType type, std::string_view buf,
+                          std::deque<HTTPMessage>* messages) {
   PicoHTTPParserWrapper pico;
   std::vector<size_t> start_position;
   const size_t buf_size = buf.size();
@@ -394,7 +326,7 @@ HTTPParseResult<size_t> Parse(TrafficMessageType type, std::string_view buf,
     bytes_processed = (buf_size - buf.size());
   }
 
-  HTTPParseResult<size_t> result{std::move(start_position), bytes_processed, s};
+  ParseResult<size_t> result{std::move(start_position), bytes_processed, s};
   return result;
 }
 

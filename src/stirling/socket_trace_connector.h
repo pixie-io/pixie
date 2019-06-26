@@ -24,6 +24,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include <vector>
 
 #include "src/stirling/bcc_bpf/socket_trace.h"
+#include "src/stirling/event_parser.h"
 #include "src/stirling/http_parse.h"
 #include "src/stirling/socket_connection.h"
 #include "src/stirling/source_connector.h"

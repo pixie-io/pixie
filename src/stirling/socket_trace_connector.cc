@@ -6,7 +6,7 @@
 #include "absl/strings/match.h"
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
-#include "src/stirling/http_parse.h"
+#include "src/stirling/event_parser.h"
 #include "src/stirling/socket_trace_connector.h"
 
 // TODO(yzhao): Consider simplify the semantic by filtering entirely on content type.
@@ -318,7 +318,8 @@ conn_info_t* SocketTraceConnector::GetConn(const socket_data_event_t& event) {
 //-----------------------------------------------------------------------------
 
 void SocketTraceConnector::ParseEventStream(TrafficMessageType type, DataStream* data) {
-  HTTPParser parser;
+  // TODO(oazizi): Continue to propagate the templating through this function.
+  EventParser<HTTPMessage> parser;
 
   const size_t orig_offset = data->offset;
 
@@ -348,7 +349,7 @@ void SocketTraceConnector::ParseEventStream(TrafficMessageType type, DataStream*
   }
 
   // Now parse all the appended events.
-  HTTPParseResult<BufferPosition> parse_result = parser.ParseMessages(type, &data->messages);
+  ParseResult<BufferPosition> parse_result = parser.ParseMessages(type, &data->messages);
 
   // If we weren't able to process anything new, then the offset should be the same as last time.
   if (data->offset != 0 && parse_result.end_position.seq_num == 0) {
