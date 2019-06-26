@@ -19,6 +19,8 @@ namespace pl {
 namespace stirling {
 namespace http_headers {
 
+// TODO(yzhao): HTTP/{1.x,2} headers are case insensitive. Our code does not work that way.
+// We'll need to update all code paths to match that.
 inline constexpr char kContentEncoding[] = "Content-Encoding";
 inline constexpr char kContentLength[] = "Content-Length";
 inline constexpr char kContentType[] = "Content-Type";

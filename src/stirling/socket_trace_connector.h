@@ -35,6 +35,13 @@ OBJ_STRVIEW(http_trace_bcc_script, _binary_bcc_bpf_socket_trace_c_preprocessed);
 namespace pl {
 namespace stirling {
 
+enum class HTTPContentType {
+  kUnknown = 0,
+  kJSON = 1,
+  // We use gRPC instead of PB to be consistent with the wording used in gRPC.
+  kGRPC = 2,
+};
+
 struct DataStream {
   // Raw data events from BPF.
   // TODO(oazizi): Convert this to vector.
@@ -96,8 +103,10 @@ class SocketTraceConnector : public SourceConnector {
           // represent IP addresses, as will be resolved in the Jira issue.
           {"remote_addr", types::DataType::STRING, types::PatternType::GENERAL},
           {"remote_port", types::DataType::INT64, types::PatternType::GENERAL},
+          {"http_major_version", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
           {"http_minor_version", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
           {"http_headers", types::DataType::STRING, types::PatternType::STRUCTURED},
+          {"http_content_type", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
           {"http_req_method", types::DataType::STRING, types::PatternType::GENERAL_ENUM},
           {"http_req_path", types::DataType::STRING, types::PatternType::STRUCTURED},
           {"http_resp_status", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
@@ -137,14 +146,6 @@ class SocketTraceConnector : public SourceConnector {
 
   static constexpr auto kMySQLPerfBuffers = ConstVectorView<ConstStrView>(kMySQLPerfBufferNames);
 
-  static constexpr ConstStrView kHTTP2PerfBufferNames[] = {
-    "socket_open_conns",
-    "socket_http2_events",
-    "socket_close_conns",
-  };
-
-  static constexpr auto kHTTP2PerfBuffers = ConstVectorView<ConstStrView>(kHTTP2PerfBufferNames);
-
   // clang-format on
   static constexpr auto kMySQLTable = DataTableSchema("mysql_events", kMySQLElements);
 
@@ -180,8 +181,8 @@ class SocketTraceConnector : public SourceConnector {
   void ReadPerfBuffer(uint32_t table_num);
 
   // Dim 0: DataTables; dim 1: perfBuffer Names
-  static constexpr ConstVectorView<ConstStrView> perfBufferNames[] = {
-      kHTTPPerfBuffers, kMySQLPerfBuffers, kHTTP2PerfBuffers};
+  static constexpr ConstVectorView<ConstStrView> perfBufferNames[] = {kHTTPPerfBuffers,
+                                                                      kMySQLPerfBuffers};
   static constexpr auto kTablePerfBufferMap =
       ConstVectorView<ConstVectorView<ConstStrView> >(perfBufferNames);
 
@@ -265,48 +266,46 @@ class SocketTraceConnector : public SourceConnector {
     uint32_t num_pages;
   };
 
+  static constexpr int kOffsetZero = 0;
   static inline const std::vector<ProbeSpec> kProbeSpecs = {
-      {"connect", "probe_entry_connect", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"connect", "probe_ret_connect", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"accept", "probe_entry_accept", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"accept", "probe_ret_accept", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"accept4", "probe_entry_accept4", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"accept4", "probe_ret_accept4", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"write", "probe_entry_write", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"write", "probe_ret_write", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"send", "probe_entry_send", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"send", "probe_ret_send", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"sendto", "probe_entry_sendto", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"sendto", "probe_ret_sendto", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"read", "probe_entry_read", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"read", "probe_ret_read", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"recv", "probe_entry_recv", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"recv", "probe_ret_recv", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"recvfrom", "probe_entry_recv", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"recvfrom", "probe_ret_recv", 0, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"close", "probe_close", 0, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"connect", "probe_entry_connect", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"connect", "probe_ret_connect", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"accept", "probe_entry_accept", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"accept", "probe_ret_accept", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"accept4", "probe_entry_accept4", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"accept4", "probe_ret_accept4", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"write", "probe_entry_write", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"write", "probe_ret_write", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"send", "probe_entry_send", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"send", "probe_ret_send", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"sendto", "probe_entry_sendto", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"sendto", "probe_ret_sendto", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"read", "probe_entry_read", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"read", "probe_ret_read", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"recv", "probe_entry_recv", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"recv", "probe_ret_recv", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"recvfrom", "probe_entry_recv", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"recvfrom", "probe_ret_recv", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"close", "probe_close", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
   };
   // TODO(oazizi): Remove send and recv probes once we are confident that they don't trace anything.
   //               Note that send/recv are not in the syscall table
   //               (https://filippo.io/linux-syscall-table/), but are defined as SYSCALL_DEFINE4 in
   //               https://elixir.bootlin.com/linux/latest/source/net/socket.c.
 
+  static constexpr uint32_t kDefaultPageCount = 8;
   static inline const std::vector<PerfBufferSpec> kPerfBufferSpecs = {
+      // For data events. The order must be consistent with output tables.
       {"socket_http_events", &SocketTraceConnector::HandleHTTPProbeOutput,
-       &SocketTraceConnector::HandleProbeLoss,
-       /* num_pages */ 8},
+       &SocketTraceConnector::HandleProbeLoss, kDefaultPageCount},
       {"socket_mysql_events", &SocketTraceConnector::HandleMySQLProbeOutput,
-       &SocketTraceConnector::HandleProbeLoss,
-       /* num_pages */ 8},
-      {"socket_http2_events", &SocketTraceConnector::HandleHTTP2ProbeOutput,
-       &SocketTraceConnector::HandleProbeLoss,
-       /* num_pages */ 32},
+       &SocketTraceConnector::HandleProbeLoss, kDefaultPageCount},
+
+      // For non-data events. Must not mix with the above perf buffers for data events.
       {"socket_open_conns", &SocketTraceConnector::HandleOpenProbeOutput,
-       &SocketTraceConnector::HandleProbeLoss,
-       /* num_pages */ 8},
+       &SocketTraceConnector::HandleProbeLoss, kDefaultPageCount},
       {"socket_close_conns", &SocketTraceConnector::HandleCloseProbeOutput,
-       &SocketTraceConnector::HandleProbeLoss,
-       /* num_pages */ 8},
+       &SocketTraceConnector::HandleProbeLoss, kDefaultPageCount},
   };
 
   std::vector<uint64_t> config_mask_;

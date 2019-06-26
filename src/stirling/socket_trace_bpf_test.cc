@@ -136,6 +136,8 @@ Content-Length: 0
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
   static constexpr DataTableSchema kHTTPTable = SocketTraceConnector::kHTTPTable;
+  static constexpr uint32_t kHTTPMajorVersionIdx = kHTTPTable.ColIndex("http_major_version");
+  static constexpr uint32_t kHTTPContentTypeIdx = kHTTPTable.ColIndex("http_content_type");
   static constexpr uint32_t kHTTPHeaderIdx = kHTTPTable.ColIndex("http_headers");
   static constexpr uint32_t kHTTPTGIDIdx = kHTTPTable.ColIndex("tgid");
   static constexpr uint32_t kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
@@ -178,6 +180,15 @@ TEST_F(HTTPTraceBPFTest, TestWriteRespCapture) {
               record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
     EXPECT_EQ(system.Server().sockfd(), record_batch[kHTTPFdIdx]->Get<types::Int64Value>(1).val);
     EXPECT_EQ("127.0.0.1", record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(1));
+
+    // Additional verifications. These are common to all HTTP1.x tracing, so we decide to not
+    // duplicate them on all relevant tests.
+    EXPECT_EQ(1, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kJSON),
+              record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(1, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kJSON),
+              record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(1).val);
   }
 
   // Check that MySQL table did not capture any data.

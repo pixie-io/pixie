@@ -78,8 +78,7 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(connector.get());
   ASSERT_NE(nullptr, socket_trace_connector);
 
-  const int kTableNum = 2;
-  socket_trace_connector->ReadPerfBuffer(kTableNum);
+  socket_trace_connector->ReadPerfBuffer(SocketTraceConnector::kHTTPTableNum);
   ASSERT_GE(socket_trace_connector->TestOnlyHTTP2Streams().size(), 1);
 
   const HTTP2Stream h2_stream = socket_trace_connector->TestOnlyHTTP2Streams().begin()->second;

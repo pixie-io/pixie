@@ -6,7 +6,6 @@
 // This is the perf buffer for BPF program to export data from kernel to user space.
 BPF_PERF_OUTPUT(socket_http_events);
 BPF_PERF_OUTPUT(socket_mysql_events);
-BPF_PERF_OUTPUT(socket_http2_events);
 BPF_PERF_OUTPUT(socket_open_conns);
 BPF_PERF_OUTPUT(socket_close_conns);
 
@@ -413,8 +412,10 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
   // Write snooped arguments to perf ring buffer.
   const uint32_t size_to_submit = sizeof(event->attr) + buf_size;
   switch (conn_info->traffic_class.protocol) {
-    case kProtocolHTTP: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
-    case kProtocolHTTP2: socket_http2_events.perf_submit(ctx, event, size_to_submit); break;
+    case kProtocolHTTP:
+    case kProtocolHTTP2:
+      socket_http_events.perf_submit(ctx, event, size_to_submit);
+      break;
     case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
     default: break;
   }
@@ -504,8 +505,10 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
   // Write snooped arguments to perf ring buffer. Note that msg field is truncated.
   const uint32_t size_to_submit = sizeof(event->attr) + buf_size;
   switch (conn_info->traffic_class.protocol) {
-    case kProtocolHTTP: socket_http_events.perf_submit(ctx, event, size_to_submit); break;
-    case kProtocolHTTP2: socket_http2_events.perf_submit(ctx, event, size_to_submit); break;
+    case kProtocolHTTP:
+    case kProtocolHTTP2:
+      socket_http_events.perf_submit(ctx, event, size_to_submit);
+      break;
     case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
     default: break;
   }

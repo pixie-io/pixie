@@ -8,10 +8,7 @@
 #include "src/stirling/http_parse.h"
 #include "src/stirling/socket_trace_connector.h"
 
-// TODO(yzhao): This is only for inclusion. We can add another flag for exclusion, or come up with a
-// filter format that support exclusion in the same flag (for example, we can add '-' at the
-// beginning of the filter to indicate it's a exclusion filter: -Content-Type:json, which means a
-// HTTP response with the 'Content-Type' header contains 'json' should *not* be selected.
+// TODO(yzhao): Consider simplify the semantic by filtering entirely on content type.
 DEFINE_string(http_response_header_filters, "Content-Type:json",
               "Comma-separated strings to specify the substrings should be included for a header. "
               "The format looks like <header-1>:<substr-1>,...,<header-n>:<substr-n>. "
@@ -439,6 +436,24 @@ bool SocketTraceConnector::SelectHTTPMessage(const HTTPTraceRecord& record) {
   return true;
 }
 
+namespace {
+
+HTTPContentType DetectContentType(const HTTPTraceRecord& record) {
+  auto content_type_iter = record.message.http_headers.find(http_headers::kContentType);
+  if (content_type_iter == record.message.http_headers.end()) {
+    return HTTPContentType::kUnknown;
+  }
+  if (absl::StrContains(content_type_iter->second, "json")) {
+    return HTTPContentType::kJSON;
+  }
+  if (absl::StrContains(content_type_iter->second, "grpc")) {
+    return HTTPContentType::kGRPC;
+  }
+  return HTTPContentType::kUnknown;
+}
+
+}  // namespace
+
 void SocketTraceConnector::AppendHTTPMessage(HTTPTraceRecord record,
                                              types::ColumnWrapperRecordBatch* record_batch) {
   CHECK_EQ(kHTTPTable.elements().size(), record_batch->size());
@@ -459,9 +474,11 @@ void SocketTraceConnector::AppendHTTPMessage(HTTPTraceRecord record,
   // TODO(oazizi): Long-term need to make remote_addr a uint128.
   r.Append<r.ColIndex("remote_addr")>(std::string(conn.remote_addr));
   r.Append<r.ColIndex("remote_port")>(conn.remote_port);
+  r.Append<r.ColIndex("http_major_version")>(1);
   r.Append<r.ColIndex("http_minor_version")>(message.http_minor_version);
   r.Append<r.ColIndex("http_headers")>(
       absl::StrJoin(message.http_headers, "\n", absl::PairFormatter(": ")));
+  r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(DetectContentType(record)));
   r.Append<r.ColIndex("http_req_method")>(std::move(message.http_req_method));
   r.Append<r.ColIndex("http_req_path")>(std::move(message.http_req_path));
   r.Append<r.ColIndex("http_resp_status")>(message.http_resp_status);
