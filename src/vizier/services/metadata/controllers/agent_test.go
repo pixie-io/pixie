@@ -7,11 +7,14 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/gogo/protobuf/proto"
+	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+
 	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 	data "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 )
 
@@ -48,11 +51,15 @@ var unhealthyAgentUUID = "8ba7b810-9dad-11d1-80b4-00c04fd430c8"
 func setupAgentManager(t *testing.T) (*clientv3.Client, controllers.AgentManager, func()) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
 	createAgent(t, existingAgentUUID, etcdClient, existingAgentInfo)
 	createAgent(t, unhealthyAgentUUID, etcdClient, unhealthyAgentInfo)
 
 	clock := testingutils.NewTestClock(time.Unix(0, clockNowNS))
-	agtMgr := controllers.NewAgentManagerWithClock(etcdClient, true, clock)
+	agtMgr := controllers.NewAgentManagerWithClock(etcdClient, mockMds, true, clock)
 
 	return etcdClient, agtMgr, cleanup
 }

@@ -114,22 +114,37 @@ func (mc *MessageBusController) sendMessageToAgent(agentID uuid.UUID, msg messag
 }
 
 func (mc *MessageBusController) onAgentHeartBeat(m *messages.Heartbeat) {
+	agentID, err := utils.UUIDFromProto(m.AgentID)
+	if err != nil {
+		log.WithError(err).Error("Could not parse UUID from proto.")
+	}
+
+	// Get any queued agent updates.
+	updates, err := mc.agentManager.GetFromAgentQueue(agentID.String())
+	updatePbs := make([]*messages.MetadataUpdateInfo_ResourceUpdate, len(*updates))
+	for i, updatePb := range *updates {
+		updatePbs[i] = &updatePb
+	}
+
 	// Create heartbeat ACK message.
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_HeartbeatAck{
 			HeartbeatAck: &messages.HeartbeatAck{
 				Time: mc.clock.Now().UnixNano(),
+				UpdateInfo: &messages.MetadataUpdateInfo{
+					Updates: updatePbs,
+				},
 			},
 		},
 	}
 
-	agentID, err := utils.UUIDFromProto(m.AgentID)
-	if err != nil {
-		log.WithError(err).Error("Could not parse UUID from proto.")
-	}
 	err = mc.sendMessageToAgent(agentID, resp)
 	if err != nil {
 		log.WithError(err).Error("Could not send heartbeat ack to agent.")
+		// Add updates back to the queue, so that they can be sent in the next ack.
+		for i := len(*updates) - 1; i >= 0; i-- {
+			mc.agentManager.AddToFrontOfAgentQueue(agentID.String(), &((*updates)[i]))
+		}
 	}
 
 	// Update agent's heartbeat in agent manager.

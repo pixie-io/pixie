@@ -49,6 +49,13 @@ update_agent_request {
 var heartbeatAckPB = `
 heartbeat_ack {
 	time: 10
+	update_info {
+		updates {
+			uid:  "podUid"
+			name: "podName"
+			type: 1
+		}
+	}
 }
 `
 
@@ -228,6 +235,18 @@ func TestAgentHeartbeat(t *testing.T) {
 		EXPECT().
 		UpdateHeartbeat(u).
 		Return(nil)
+
+	updatePb := messages.MetadataUpdateInfo_ResourceUpdate{
+		Uid:  "podUid",
+		Name: "podName",
+		Type: messages.POD,
+	}
+	updates := []messages.MetadataUpdateInfo_ResourceUpdate{updatePb}
+
+	mockAgtMgr.
+		EXPECT().
+		GetFromAgentQueue(uuidStr).
+		Return(&updates, nil)
 
 	// Create Metadata Service controller.
 	nc := getTestNATSInstance(t, port, mockAgtMgr)

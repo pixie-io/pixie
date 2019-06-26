@@ -7,9 +7,11 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"
+	"github.com/gogo/protobuf/proto"
 	log "github.com/sirupsen/logrus"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 )
 
@@ -135,4 +137,43 @@ func (mds *EtcdMetadataStore) AddToAgentUpdateQueue(agentID string, value string
 	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
 
 	return q.Enqueue(value)
+}
+
+// AddToFrontOfAgentQueue adds the given value to the front of the agent's update queue.
+func (mds *EtcdMetadataStore) AddToFrontOfAgentQueue(agentID string, value *messagespb.MetadataUpdateInfo_ResourceUpdate) error {
+	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
+
+	i, err := value.Marshal()
+	if err != nil {
+		log.WithError(err).Fatal("Unable to marshal update pb.")
+	}
+
+	return q.EnqueueAtFront(string(i))
+}
+
+// GetFromAgentQueue gets all items currently in the agent's update queue.
+func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error) {
+	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
+	resp, err := q.DequeueAll()
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert strings to pbs.
+	pbs := make([]messagespb.MetadataUpdateInfo_ResourceUpdate, len(*resp))
+	for i, update := range *resp {
+		updatePb := messagespb.MetadataUpdateInfo_ResourceUpdate{}
+		if err := proto.Unmarshal([]byte(update), &updatePb); err != nil {
+			// For whatever reason, the updatePb was invalid and could not be parsed. Realistically, this
+			// should never happen unless there are some corrupt values in etcd. Continue so that the agent
+			// atleast gets the other updates.
+			// TODO(michelle): PL-664: The agent may get out of sync. Think about how we can sync the agent + metadata service
+			// so that even if they do get out of sync, we can recover.
+			log.WithError(err).Error("Could not unmarshal resource update pb.")
+			continue
+		}
+		pbs[i] = updatePb
+	}
+
+	return &pbs, nil
 }

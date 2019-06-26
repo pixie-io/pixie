@@ -7,6 +7,7 @@ package mock_controllers
 import (
 	gomock "github.com/golang/mock/gomock"
 	go_uuid "github.com/satori/go.uuid"
+	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	reflect "reflect"
 )
@@ -34,6 +35,18 @@ func (m *MockAgentManager) EXPECT() *MockAgentManagerMockRecorder {
 	return m.recorder
 }
 
+// AddToFrontOfAgentQueue mocks base method
+func (m *MockAgentManager) AddToFrontOfAgentQueue(arg0 string, arg1 *messagespb.MetadataUpdateInfo_ResourceUpdate) error {
+	ret := m.ctrl.Call(m, "AddToFrontOfAgentQueue", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddToFrontOfAgentQueue indicates an expected call of AddToFrontOfAgentQueue
+func (mr *MockAgentManagerMockRecorder) AddToFrontOfAgentQueue(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToFrontOfAgentQueue", reflect.TypeOf((*MockAgentManager)(nil).AddToFrontOfAgentQueue), arg0, arg1)
+}
+
 // CreateAgent mocks base method
 func (m *MockAgentManager) CreateAgent(arg0 *controllers.AgentInfo) error {
 	ret := m.ctrl.Call(m, "CreateAgent", arg0)
@@ -57,6 +70,19 @@ func (m *MockAgentManager) GetActiveAgents() ([]controllers.AgentInfo, error) {
 // GetActiveAgents indicates an expected call of GetActiveAgents
 func (mr *MockAgentManagerMockRecorder) GetActiveAgents() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetActiveAgents", reflect.TypeOf((*MockAgentManager)(nil).GetActiveAgents))
+}
+
+// GetFromAgentQueue mocks base method
+func (m *MockAgentManager) GetFromAgentQueue(arg0 string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error) {
+	ret := m.ctrl.Call(m, "GetFromAgentQueue", arg0)
+	ret0, _ := ret[0].(*[]messagespb.MetadataUpdateInfo_ResourceUpdate)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFromAgentQueue indicates an expected call of GetFromAgentQueue
+func (mr *MockAgentManagerMockRecorder) GetFromAgentQueue(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromAgentQueue", reflect.TypeOf((*MockAgentManager)(nil).GetFromAgentQueue), arg0)
 }
 
 // UpdateAgent mocks base method

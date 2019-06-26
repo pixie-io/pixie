@@ -3,6 +3,8 @@ package etcd
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	v3 "github.com/coreos/etcd/clientv3"
@@ -90,7 +92,7 @@ func (q *Queue) Enqueue(val string) error {
 // Dequeue returns the first value in the queue. If there are no items in the queue, it will return an empty string.
 // Modified from https://github.com/etcd-io/etcd/blob/34bd797e6754911ee540e8c87f708f88ffe89f37/contrib/recipes/queue.go
 func (q *Queue) Dequeue() (string, error) {
-	resp, err := q.client.Get(q.ctx, q.keyPrefix, v3.WithFirstRev()...)
+	resp, err := q.client.Get(q.ctx, q.keyPrefix, v3.WithPrefix())
 	if err != nil {
 		return "", err
 	}
@@ -135,4 +137,31 @@ func (q *Queue) DequeueAll() (*[]string, error) {
 	}
 
 	return &vals, nil
+}
+
+// EnqueueAtFront adds the value to the front of the queue.
+func (q *Queue) EnqueueAtFront(val string) error {
+	// Get the key at the front of the queue.
+	resp, err := q.client.Get(q.ctx, q.keyPrefix, v3.WithPrefix())
+	if err != nil {
+		return err
+	}
+	kv, err := claimFirstKey(q.client, resp.Kvs)
+	if err != nil {
+		return err
+	}
+
+	// Get the timestamp of the first key.
+	key := string(kv.Key)
+	parts := strings.Split(key, "/")
+	timestamp, err := strconv.Atoi(parts[len(parts)-1])
+	if err != nil {
+		return err
+	}
+
+	// Give an earlier timestamp to the key we are inserting.
+	newKey := fmt.Sprintf("%s/%v", q.keyPrefix, timestamp-1)
+	_, err = putNewKV(q.client, newKey, val, v3.NoLease)
+
+	return err
 }

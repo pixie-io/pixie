@@ -10,6 +10,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
+        "//src/vizier/messages/messagespb:messages_pl_go_proto",
         "//src/vizier/services/metadata/controllers:go_default_library",
         "@com_github_golang_mock//gomock:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",

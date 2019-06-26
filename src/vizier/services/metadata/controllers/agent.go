@@ -12,6 +12,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/utils"
+	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	data "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 )
 
@@ -45,6 +46,9 @@ type AgentManager interface {
 
 	// GetActiveAgents gets all of the current active agents.
 	GetActiveAgents() ([]AgentInfo, error)
+
+	AddToFrontOfAgentQueue(string, *messagespb.MetadataUpdateInfo_ResourceUpdate) error
+	GetFromAgentQueue(string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error)
 }
 
 // AgentManagerImpl is an implementation for AgentManager which talks to etcd.
@@ -52,23 +56,25 @@ type AgentManagerImpl struct {
 	IsLeader bool
 	client   *clientv3.Client
 	clock    utils.Clock
+	mds      MetadataStore
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
-func NewAgentManagerWithClock(client *clientv3.Client, isLeader bool, clock utils.Clock) *AgentManagerImpl {
+func NewAgentManagerWithClock(client *clientv3.Client, mds MetadataStore, isLeader bool, clock utils.Clock) *AgentManagerImpl {
 	agentManager := &AgentManagerImpl{
 		client:   client,
 		IsLeader: isLeader,
 		clock:    clock,
+		mds:      mds,
 	}
 
 	return agentManager
 }
 
 // NewAgentManager creates a new agent manager.
-func NewAgentManager(client *clientv3.Client, isLeader bool) *AgentManagerImpl {
+func NewAgentManager(client *clientv3.Client, mds MetadataStore, isLeader bool) *AgentManagerImpl {
 	clock := utils.SystemClock{}
-	return NewAgentManagerWithClock(client, isLeader, clock)
+	return NewAgentManagerWithClock(client, mds, isLeader, clock)
 }
 
 // GetAgentKeyFromUUID gets the etcd key for the agent, given the id in a UUID format.
@@ -302,4 +308,14 @@ func (m *AgentManagerImpl) GetActiveAgents() ([]AgentInfo, error) {
 	}
 
 	return agents, nil
+}
+
+// AddToFrontOfAgentQueue adds the given value to the front of the agent's update queue.
+func (m *AgentManagerImpl) AddToFrontOfAgentQueue(agentID string, value *messagespb.MetadataUpdateInfo_ResourceUpdate) error {
+	return m.mds.AddToFrontOfAgentQueue(agentID, value)
+}
+
+// GetFromAgentQueue gets all items currently in the agent's update queue.
+func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error) {
+	return m.mds.GetFromAgentQueue(agentID)
 }

@@ -70,7 +70,7 @@ func main() {
 
 	// TODO(michelle): Add code for leader election. For now, since we only have one metadata
 	// service, it is always the leader.
-	agtMgr := controllers.NewAgentManager(etcdClient, true)
+	agtMgr := controllers.NewAgentManager(etcdClient, etcdMds, true)
 	keepAlive := true
 	go func() {
 		for keepAlive {

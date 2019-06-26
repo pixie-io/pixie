@@ -131,3 +131,55 @@ func TestDequeueAll(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "abcd", resp1)
 }
+
+func TestEnqueueAtFront(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	q := etcd.NewQueue(etcdClient, "test")
+
+	err := q.Enqueue("abcd")
+	assert.Nil(t, err)
+
+	resp, err := etcdClient.Get(context.Background(), "test", clientv3.WithFirstRev()...)
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, 1, len(resp.Kvs))
+	assert.Equal(t, "abcd", string(resp.Kvs[0].Value))
+
+	err = q.Enqueue("efgh")
+	assert.Nil(t, err)
+
+	// First revision should still be key with value abcd.
+	resp, err = etcdClient.Get(context.Background(), "test", clientv3.WithFirstRev()...)
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, 1, len(resp.Kvs))
+	assert.Equal(t, "abcd", string(resp.Kvs[0].Value))
+
+	// Last revision should be key with value efgh.
+	resp, err = etcdClient.Get(context.Background(), "test", clientv3.WithLastRev()...)
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, 1, len(resp.Kvs))
+	assert.Equal(t, "efgh", string(resp.Kvs[0].Value))
+
+	err = q.EnqueueAtFront("ijkl")
+	if err != nil {
+		t.Fatal("Failed to add item to front of queue.")
+	}
+
+	// First revision should now be key with value ijkl.
+	dequeueResp, err := q.Dequeue()
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, "ijkl", dequeueResp)
+}

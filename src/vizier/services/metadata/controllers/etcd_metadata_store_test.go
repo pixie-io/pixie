@@ -9,6 +9,7 @@ import (
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 )
@@ -193,4 +194,64 @@ func TestAddToAgentQueue(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "test", resp)
 
+}
+
+func TestAddToFrontOfAgentQueue(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	err = mds.AddToAgentUpdateQueue("agent1", "test")
+	assert.Nil(t, err)
+
+	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
+		Uid:  "podUid",
+		Name: "podName",
+		Type: messagespb.POD,
+	}
+
+	err = mds.AddToFrontOfAgentQueue("agent1", updatePb)
+	assert.Nil(t, err)
+
+	resp, err := mds.GetFromAgentQueue("agent1")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(*resp))
+	assert.Equal(t, "podUid", (*resp)[0].Uid)
+}
+
+func TestGetFromAgentQueue(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
+		Uid:  "podUid",
+		Name: "podName",
+		Type: messagespb.POD,
+	}
+	update, err := updatePb.Marshal()
+	if err != nil {
+		t.Fatal("Could not marshall pod update message.")
+	}
+
+	err = mds.AddToAgentUpdateQueue("agent1", string(update))
+	assert.Nil(t, err)
+
+	resp, err := mds.GetFromAgentQueue("agent1")
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(*resp))
+	assert.Equal(t, "podUid", (*resp)[0].Uid)
+
+	q := etcd.NewQueue(etcdClient, "/agents/agent1/updates")
+	dequeueResp, err := q.Dequeue()
+	assert.Nil(t, err)
+	assert.Equal(t, "", dequeueResp)
 }

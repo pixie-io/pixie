@@ -19,6 +19,8 @@ type MetadataStore interface {
 	UpdateService(*metadatapb.Service) error
 	GetAgentsForHostnames(*[]string) (*[]string, error)
 	AddToAgentUpdateQueue(string, string) error
+	AddToFrontOfAgentQueue(string, *messagespb.MetadataUpdateInfo_ResourceUpdate) error
+	GetFromAgentQueue(string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error)
 }
 
 // K8sMessage is a message for K8s metadata events/updates.

@@ -7,6 +7,7 @@ package mock_controllers
 import (
 	gomock "github.com/golang/mock/gomock"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	reflect "reflect"
 )
 
@@ -45,6 +46,18 @@ func (mr *MockMetadataStoreMockRecorder) AddToAgentUpdateQueue(arg0, arg1 interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToAgentUpdateQueue", reflect.TypeOf((*MockMetadataStore)(nil).AddToAgentUpdateQueue), arg0, arg1)
 }
 
+// AddToFrontOfAgentQueue mocks base method
+func (m *MockMetadataStore) AddToFrontOfAgentQueue(arg0 string, arg1 *messagespb.MetadataUpdateInfo_ResourceUpdate) error {
+	ret := m.ctrl.Call(m, "AddToFrontOfAgentQueue", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddToFrontOfAgentQueue indicates an expected call of AddToFrontOfAgentQueue
+func (mr *MockMetadataStoreMockRecorder) AddToFrontOfAgentQueue(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToFrontOfAgentQueue", reflect.TypeOf((*MockMetadataStore)(nil).AddToFrontOfAgentQueue), arg0, arg1)
+}
+
 // GetAgentsForHostnames mocks base method
 func (m *MockMetadataStore) GetAgentsForHostnames(arg0 *[]string) (*[]string, error) {
 	ret := m.ctrl.Call(m, "GetAgentsForHostnames", arg0)
@@ -56,6 +69,19 @@ func (m *MockMetadataStore) GetAgentsForHostnames(arg0 *[]string) (*[]string, er
 // GetAgentsForHostnames indicates an expected call of GetAgentsForHostnames
 func (mr *MockMetadataStoreMockRecorder) GetAgentsForHostnames(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentsForHostnames", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentsForHostnames), arg0)
+}
+
+// GetFromAgentQueue mocks base method
+func (m *MockMetadataStore) GetFromAgentQueue(arg0 string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error) {
+	ret := m.ctrl.Call(m, "GetFromAgentQueue", arg0)
+	ret0, _ := ret[0].(*[]messagespb.MetadataUpdateInfo_ResourceUpdate)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFromAgentQueue indicates an expected call of GetFromAgentQueue
+func (mr *MockMetadataStoreMockRecorder) GetFromAgentQueue(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromAgentQueue", reflect.TypeOf((*MockMetadataStore)(nil).GetFromAgentQueue), arg0)
 }
 
 // UpdateEndpoints mocks base method
