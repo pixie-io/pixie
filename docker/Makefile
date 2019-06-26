@@ -6,12 +6,6 @@ DOCKER := docker
 SSH_PRIVATE_KEY_FILE := $(HOME)/.ssh/id_rsa
 SSH_PRIVATE_KEY := `cat $(SSH_PRIVATE_KEY_FILE)`
 
-## BCC deb parameters
-BCC_DEB_IMAGE_VERSION := 1.1
-bcc_deb_fname := "bcc-pixie-$(BCC_DEB_IMAGE_VERSION).deb"
-bcc_deb_gs_path :=  gs://pl-infra-dev-artifacts/$(bcc_deb_fname)
-bcc_deb_image_tag := "gcr.io/pl-dev-infra/bcc_deb_image:$(BCC_DEB_IMAGE_VERSION)"
-
 ## Clang deb parameters
 CLANG_DEB_IMAGE_VERSION := 7.0-pl8
 clang_deb_fname := "clang-$(CLANG_DEB_IMAGE_VERSION).deb"
@@ -33,20 +27,6 @@ linux_headers_image_tag := "gcr.io/pl-dev-infra/linux_headers_image:$(LINUX_KERN
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
-
-# BCC DEB Image configuration.
-.PHONY: build_bcc_deb_image
-build_bcc_deb_image:
-	cd $(mkfile_dir)/bcc_deb_image && \
-	$(DOCKER) build . --build-arg SSH_PRIVATE_KEY="$(SSH_PRIVATE_KEY)" -t $(bcc_deb_image_tag)
-
-.PHONY: upload_bcc_deb
-upload_bcc_deb: build_bcc_deb_image  ## Target to build and upload BCC deb image
-	$(DOCKER) run --rm -e deb_name=$(bcc_deb_fname) -e deb_version=$(BCC_DEB_IMAGE_VERSION) -v $(PWD):/image $(bcc_deb_image_tag)
-	gsutil cp $(bcc_deb_fname) gs://pl-infra-dev-artifacts/$(bcc_deb_fname)
-	gsutil acl ch -u allUsers:READER $(bcc_deb_gs_path)
-	@echo "SHA: $(shell sha256sum $(bcc_deb_fname))"
-	rm -f $(bcc_deb_fname)
 
 # Clang DEB Image configuration.
 .PHONY: build_clang_deb_image

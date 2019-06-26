@@ -37,5 +37,4 @@ end
 
 include_recipe 'pixielabs::linux_java'
 include_recipe 'pixielabs::linux_bazel'
-include_recipe 'pixielabs::linux_bcc'
 include_recipe 'pixielabs::linux_clang'

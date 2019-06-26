@@ -1,10 +1,3 @@
-default['bcc']               = {}
-default['bcc']['deb']        =
-  'https://storage.googleapis.com/pl-infra-dev-artifacts/bcc-pixie-1.1.deb'
-default['bcc']['deb_sha256'] =
-  '9e4846adc6da8f042a3a846810145c2025cb08a1d412be91cd34c40912566e56'
-default['bcc']['version'] = "1.1"
-
 default['clang']               = {}
 default['clang']['deb']        =
   'https://storage.googleapis.com/pl-infra-dev-artifacts/clang-7.0-pl8.deb'
