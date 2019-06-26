@@ -33,12 +33,6 @@ inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
 // to define data schema and generate kTables array during runtime, based on proto schema.
 
 struct HTTPMessage {
-  bool is_complete = false;
-  bool is_header_complete = false;
-
-  // Only meaningful is is_chunked is true.
-  phr_chunked_decoder chunk_decoder = {};
-
   uint64_t timestamp_ns;
   SocketTraceEventType type = SocketTraceEventType::kUnknown;
 
@@ -46,7 +40,6 @@ struct HTTPMessage {
   std::map<std::string, std::string> http_headers = {};
   // -1 indicates this message does not have 'Content-Length' header.
   int content_length = -1;
-  bool is_chunked = false;
 
   std::string http_req_method = "-";
   std::string http_req_path = "-";
@@ -114,21 +107,21 @@ struct PicoHTTPParserWrapper {
         return ParseState::kInvalid;
     }
   }
-  bool Write(TrafficMessageType type, HTTPMessage* result) {
+  ParseState Write(TrafficMessageType type, HTTPMessage* result) {
     switch (type) {
       case kMessageTypeRequests:
         return WriteRequest(result);
       case kMessageTypeResponses:
         return WriteResponse(result);
       default:
-        return false;
+        return ParseState::kUnknown;
     }
   }
   ParseState ParseRequest(std::string_view buf);
-  bool WriteRequest(HTTPMessage* result);
+  ParseState WriteRequest(HTTPMessage* result);
   ParseState ParseResponse(std::string_view buf);
-  bool WriteResponse(HTTPMessage* result);
-  bool WriteBody(HTTPMessage* result);
+  ParseState WriteResponse(HTTPMessage* result);
+  ParseState WriteBody(HTTPMessage* result);
 
   // For parsing HTTP requests.
   const char* method = nullptr;
@@ -146,8 +139,6 @@ struct PicoHTTPParserWrapper {
   static constexpr size_t kMaxNumHeaders = 50;
   struct phr_header headers[kMaxNumHeaders];
 
-  // Needs explicit reset.
-  size_t num_headers = kMaxNumHeaders;
   std::map<std::string, std::string> header_map;
   std::string_view unparsed_data;
 };
@@ -160,7 +151,7 @@ struct BufferPosition {
 // An HTTPParseResult returns a vector of parsed messages, and also some position markers.
 //
 // It is templated based on the position type, because we have two concepts of position:
-//    Position in a contiguous buffer: PositionType is uint64_t.
+//    Position in a contiguous buffer: PositionType is size_t.
 //    Position in a set of disjoint buffers: PositionType is BufferPosition.
 //
 // The two concepts are used by two different parse functions we have:
