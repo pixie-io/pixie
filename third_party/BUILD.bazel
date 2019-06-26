@@ -3,6 +3,12 @@ load("//bazel:flex_bison.bzl", "genbison", "genflex")
 
 licenses(["notice"])
 
+filegroup(
+    name = "bcc_source",
+    srcs = glob(["bcc/**"]),
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "clang_tidy_stub",
     srcs = ["clang_tidy_stub.cc"],

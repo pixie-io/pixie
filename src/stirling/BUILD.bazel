@@ -37,7 +37,7 @@ pl_cc_library(
         "@bazel_tools//src/conditions:linux_x86_64": [
             ":bt_files",
             ":bcc_bpf_files",
-            "@com_iovisor_bcc//:bcc",
+            "//third_party/foreign_cc:bcc",
             "@com_llvm_lib//:llvm",
         ],
         "//conditions:default": [],

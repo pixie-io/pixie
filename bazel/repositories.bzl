@@ -47,13 +47,6 @@ def _com_llvm_lib():
         path = "/opt/clang-7.0",
     )
 
-def _com_iovisor_bcc():
-    native.new_local_repository(
-        name = "com_iovisor_bcc",
-        build_file = "third_party/bcc.BUILD",
-        path = "/opt/bcc",
-    )
-
 def _com_github_rlyeh_sole():
     name = "com_github_rlyeh_sole"
     location = REPOSITORY_LOCATIONS[name]
@@ -191,7 +184,6 @@ def _go_deps():
     pass
 
 def pl_deps():
-    _com_iovisor_bcc()
     _com_llvm_lib()
 
     _repository_impl(name = "bazel_gazelle")

@@ -49,6 +49,33 @@ cmake_external(
 )
 
 cmake_external(
+    name = "bcc",
+    generate_crosstool_file = True,
+    lib_name = "libbcc_static",
+    lib_source = "//third_party:bcc_source",
+    # These link opts are dependencies of bcc.
+    linkopts = [
+        # ELF binary parsing.
+        "-lelf",
+        # Terminal info.
+        "-ltinfo",
+    ],
+    make_commands = [
+        "make -j ${nproc} -C src/cc install",
+    ],
+    out_include_dir = "include",
+    static_libraries = [
+        "libapi-static.a",
+        "libbcc.a",
+        "libbpf.a",
+        "libbcc-loader-static.a",
+        "libb_frontend.a",
+        "libclang_frontend.a",
+        "libusdt-static.a",
+    ],
+)
+
+cmake_external(
     name = "nghttp2",
     cache_entries = {
         "WITH_JEMALLOC": "OFF",
