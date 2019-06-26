@@ -35,7 +35,6 @@ pl_cc_library(
         "//external:nghttp2",
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": [
-            "//third_party:bpftrace",
             ":bt_files",
             ":bcc_bpf_files",
             "@com_iovisor_bcc//:bcc",

@@ -4,7 +4,6 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_connector.h"
-#include "src/stirling/bpftrace_connector.h"
 #include "src/stirling/cgroup_stats_connector.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/seq_gen_connector.h"
@@ -28,9 +27,7 @@ using pl::types::StringValue;
 using pl::types::Time64NSValue;
 
 using pl::stirling::CGroupStatsConnector;
-using pl::stirling::CPUStatBPFTraceConnector;
 using pl::stirling::PIDCPUUseBCCConnector;
-using pl::stirling::PIDCPUUseBPFTraceConnector;
 using pl::stirling::SeqGenConnector;
 using pl::stirling::SocketTraceConnector;
 
@@ -85,17 +82,11 @@ void StirlingWrapperCallback(uint64_t table_id,
   std::string name = table_id_to_name_map[table_id];
 
   // Use assigned names, from registry.
-  if (name == CPUStatBPFTraceConnector::kTable.name().get()) {
-    PrintRecordBatch("CPUStat-BPFTrace", CPUStatBPFTraceConnector::kTable.elements(), num_records,
-                     *record_batch);
-  } else if (name == SeqGenConnector::kSeq0Table.name().get()) {
+  if (name == SeqGenConnector::kSeq0Table.name().get()) {
     PrintRecordBatch("SeqGen-0", SeqGenConnector::kSeq0Table.elements(), num_records,
                      *record_batch);
   } else if (name == SeqGenConnector::kSeq1Table.name().get()) {
     PrintRecordBatch("SeqGen-1", SeqGenConnector::kSeq1Table.elements(), num_records,
-                     *record_batch);
-  } else if (name == PIDCPUUseBPFTraceConnector::kTable.name().get()) {
-    PrintRecordBatch("PIDStat-BPFTrace", PIDCPUUseBPFTraceConnector::kTable.elements(), num_records,
                      *record_batch);
   } else if (name == SocketTraceConnector::kMySQLTable.name().get()) {
     PrintRecordBatch("MySQLTrace", SocketTraceConnector::kMySQLTable.elements(), num_records,

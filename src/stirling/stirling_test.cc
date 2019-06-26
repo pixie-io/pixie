@@ -7,7 +7,6 @@
 
 #include "absl/strings/str_format.h"
 #include "src/common/base/base.h"
-#include "src/stirling/bpftrace_connector.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/seq_gen_connector.h"
 #include "src/stirling/sequence_generator.h"
