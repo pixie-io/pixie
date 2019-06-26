@@ -5,6 +5,7 @@
 
 #include "absl/strings/match.h"
 #include "src/common/base/base.h"
+#include "src/common/base/utils.h"
 #include "src/stirling/http_parse.h"
 #include "src/stirling/socket_trace_connector.h"
 
@@ -165,15 +166,15 @@ void SocketTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
 void SocketTraceConnector::HandleOpenProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  auto* conn = static_cast<conn_info_t*>(data);
-  connector->OpenConn(*conn);
+  const auto conn = CopyFromBPF<conn_info_t>(data);
+  connector->OpenConn(conn);
 }
 
 void SocketTraceConnector::HandleCloseProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  auto* conn = static_cast<conn_info_t*>(data);
-  connector->CloseConn(*conn);
+  const auto conn = CopyFromBPF<conn_info_t>(data);
+  connector->CloseConn(conn);
 }
 
 //-----------------------------------------------------------------------------

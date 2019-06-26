@@ -68,7 +68,8 @@ build:tsan --cxxopt -std=c++17
 build:tsan --define tcmalloc=disabled
 
 # bazel build --config bpf
-build:bpf --test_tag_filters=requires_bpf
+build:bpf --build_tag_filters=requires_bpf
+test:bpf --test_tag_filters=requires_bpf
 
 # We need this to ensure that external projects are built with
 # C++17 support. This is needed in some libraries like absl which

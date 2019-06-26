@@ -344,11 +344,30 @@ builders['Build & Test (gcc:opt)'] = {
   dockerStepWithBazelCmd("CC=gcc CXX=g++ bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}", 'build-gcc-opt')
 }
 
+def dockerArgsForBPFTest = '--privileged --pid=host --volume /lib/modules:/lib/modules ' +
+                           '--volume /usr/src:/usr/src --volume /sys:/sys'
+
+def bazelBaseArgsForBPFTest = 'bazel test --compilation_mode=opt --strategy=TestRunner=standalone'
+
 builders['Build & Test (bpf)'] = {
   dockerStepWithBazelCmd(
-    '--privileged --pid=host --volume /lib/modules:/lib/modules --volume /usr/src:/usr/src --volume /sys:/sys',
-    "bazel test --compilation_mode=opt --strategy=TestRunner=standalone --config=bpf ${BAZEL_SRC_FILES_PATH}",
+    dockerArgsForBPFTest,
+    bazelBaseArgsForBPFTest + " --config=bpf ${BAZEL_SRC_FILES_PATH}",
     'build-bpf')
+}
+
+builders['Build & Test (bpf:asan)'] = {
+  dockerStepWithBazelCmd(
+    dockerArgsForBPFTest,
+    bazelBaseArgsForBPFTest + " --config=asan --config=bpf ${BAZEL_SRC_FILES_PATH}",
+    'build-bpf-asan')
+}
+
+builders['Build & Test (bpf:tsan)'] = {
+  dockerStepWithBazelCmd(
+    dockerArgsForBPFTest,
+    bazelBaseArgsForBPFTest + " --config=tsan --config=bpf ${BAZEL_SRC_FILES_PATH}",
+    'build-bpf-asan')
 }
 
 builders['Build & Test (clang-tidy)'] = {
