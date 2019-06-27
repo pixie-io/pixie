@@ -24,9 +24,9 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include <vector>
 
 #include "src/stirling/bcc_bpf/socket_trace.h"
+#include "src/stirling/connection_tracker.h"
 #include "src/stirling/event_parser.h"
 #include "src/stirling/http_parse.h"
-#include "src/stirling/socket_connection.h"
 #include "src/stirling/source_connector.h"
 
 DECLARE_string(http_response_header_filters);
@@ -41,44 +41,6 @@ enum class HTTPContentType {
   kJSON = 1,
   // We use gRPC instead of PB to be consistent with the wording used in gRPC.
   kGRPC = 2,
-};
-
-struct DataStream {
-  // Raw data events from BPF.
-  // TODO(oazizi): Convert this to vector.
-  std::map<uint64_t, socket_data_event_t> events;
-
-  // To support partially processed events,
-  // the stream may start at an offset in the first raw data event.
-  uint64_t offset = 0;
-
-  // Vector of parsed HTTP messages.
-  // Once parsed, the raw data events should be discarded.
-  std::deque<HTTPMessage> messages;
-};
-
-struct ConnectionTracker {
-  SocketConnection conn;
-
-  // TODO(oazizi): Will this be covered by conn?
-  TrafficProtocol protocol;
-
-  // The data collected by the stream, one per direction.
-  DataStream send_data;
-  DataStream recv_data;
-
-  // TODO(oazizi): Add a bool to say whether the stream has been touched since last transfer (to
-  // avoid useless computation).
-  // TODO(oazizi): Could also record a timestamp, so we could destroy old EventStreams completely.
-};
-
-struct HTTPStream : public ConnectionTracker {
-  HTTPStream() { protocol = kProtocolHTTP; }
-};
-
-struct HTTP2Stream : public ConnectionTracker {
-  HTTP2Stream() { protocol = kProtocolHTTP2; }
-  // TODO(yzhao): Add HTTP2Parser, or gRPC parser.
 };
 
 struct HTTPTraceRecord {

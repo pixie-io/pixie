@@ -13,7 +13,6 @@
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_bpf/socket_trace.h"
 #include "src/stirling/event_parser.h"
-#include "src/stirling/socket_connection.h"
 #include "src/stirling/socket_trace_event_type.h"
 
 namespace pl {
