@@ -162,19 +162,19 @@ TEST_F(SocketTraceConnectorTest, FilterMessages) {
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
   // Registers a new connection
-  source_->OpenConn(conn);
+  source_->AcceptOpenConnEvent(conn);
 
-  // AcceptEvent() puts data into the internal buffer of SocketTraceConnector. And then
+  // AcceptDataEvent() puts data into the internal buffer of SocketTraceConnector. And then
   // TransferData() polls perf buffer, which is no-op because we did not initialize probes, and the
   // data in the internal buffer is being processed and filtered.
-  source_->AcceptEvent(event0_json);
+  source_->AcceptDataEvent(event0_json);
   source_->TransferData(kTableNum, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size())
         << "event_json Content-Type does have 'json', and will be selected by the default filter";
   }
 
-  source_->AcceptEvent(event1_text);
+  source_->AcceptDataEvent(event1_text);
   source_->TransferData(kTableNum, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size())
@@ -185,7 +185,7 @@ TEST_F(SocketTraceConnectorTest, FilterMessages) {
       {{"Content-Type", "text/plain"}},
       {{"Content-Encoding", "gzip"}},
   });
-  source_->AcceptEvent(event2_text);
+  source_->AcceptDataEvent(event2_text);
   source_->TransferData(kTableNum, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(2, column->Size())
@@ -197,7 +197,7 @@ TEST_F(SocketTraceConnectorTest, FilterMessages) {
       {{"Content-Type", "application/json"}},
       {{"Content-Encoding", "gzip"}},
   });
-  source_->AcceptEvent(event3_json);
+  source_->AcceptDataEvent(event3_json);
   source_->TransferData(kTableNum, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(3, column->Size())
@@ -218,13 +218,13 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
-  source_->OpenConn(conn);
-  source_->AcceptEvent(event0);
-  source_->AcceptEvent(event2);
+  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptDataEvent(event0);
+  source_->AcceptDataEvent(event2);
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(1, record_batch[0]->Size());
 
-  source_->AcceptEvent(event1);
+  source_->AcceptDataEvent(event1);
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(3, record_batch[0]->Size()) << "Get 3 events after getting the missing one.";
 }
@@ -235,14 +235,14 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
-  source_->OpenConn(conn);
+  source_->AcceptOpenConnEvent(conn);
 
   // Check empty transfer.
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(0, record_batch[0]->Size());
 
   // Check empty transfer following a successful transfer.
-  source_->AcceptEvent(event0);
+  source_->AcceptDataEvent(event0);
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(1, record_batch[0]->Size());
   source_->TransferData(kTableNum, &record_batch);
@@ -260,13 +260,13 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
-  source_->OpenConn(conn);
-  source_->AcceptEvent(req_event0);
-  source_->AcceptEvent(req_event1);
-  source_->AcceptEvent(req_event2);
-  source_->AcceptEvent(resp_event0);
-  source_->AcceptEvent(resp_event1);
-  source_->AcceptEvent(resp_event2);
+  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptDataEvent(req_event0);
+  source_->AcceptDataEvent(req_event1);
+  source_->AcceptDataEvent(req_event2);
+  source_->AcceptDataEvent(resp_event0);
+  source_->AcceptDataEvent(resp_event1);
+  source_->AcceptDataEvent(resp_event2);
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(3, record_batch[0]->Size());
 

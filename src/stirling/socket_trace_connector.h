@@ -164,9 +164,10 @@ class SocketTraceConnector : public SourceConnector {
   static void HandleCloseProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleOpenProbeOutput(void* cb_cookie, void* data, int data_size);
 
-  // Data related events.
-  // Places the event into a stream buffer to deal with reorderings.
-  void AcceptEvent(socket_data_event_t event);
+  // Events from BPF.
+  void AcceptDataEvent(socket_data_event_t event);
+  void AcceptOpenConnEvent(const conn_info_t& conn_info);
+  void AcceptCloseConnEvent(const conn_info_t& conn_info);
 
   // Connection related events.
   template <typename StreamType>
@@ -174,8 +175,6 @@ class SocketTraceConnector : public SourceConnector {
                       uint64_t stream_id);
   template <typename StreamType>
   void AppendToStream(socket_data_event_t event, std::map<uint64_t, StreamType>* streams);
-  void OpenConn(const conn_info_t& conn_info);
-  void CloseConn(const conn_info_t& conn_info);
   conn_info_t* GetConn(const socket_data_event_t& event);
 
   // Transfers the data from stream buffers (from AcceptEvent()) to record_batch.

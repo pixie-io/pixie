@@ -137,7 +137,7 @@ void SocketTraceConnector::HandleHTTPProbeOutput(void* cb_cookie, void* data, in
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   auto* event = static_cast<socket_data_event_t*>(data);
 
-  connector->AcceptEvent(*event);
+  connector->AcceptDataEvent(*event);
 }
 
 void SocketTraceConnector::HandleMySQLProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
@@ -145,7 +145,7 @@ void SocketTraceConnector::HandleMySQLProbeOutput(void* cb_cookie, void* data, i
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   auto* event = static_cast<socket_data_event_t*>(data);
 
-  // TODO(oazizi): Use AcceptEvent() to handle reorderings.
+  // TODO(oazizi): Use AcceptDataEvent() to handle reorderings.
   connector->TransferMySQLEvent(*event, connector->record_batch_);
 }
 
@@ -153,7 +153,7 @@ void SocketTraceConnector::HandleHTTP2ProbeOutput(void* cb_cookie, void* data, i
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   auto* event = static_cast<socket_data_event_t*>(data);
-  connector->AcceptEvent(*event);
+  connector->AcceptDataEvent(*event);
 }
 
 // This function is invoked by BCC runtime when a item in the perf buffer is not read and lost.
@@ -167,14 +167,14 @@ void SocketTraceConnector::HandleOpenProbeOutput(void* cb_cookie, void* data, in
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   const auto conn = CopyFromBPF<conn_info_t>(data);
-  connector->OpenConn(conn);
+  connector->AcceptOpenConnEvent(conn);
 }
 
 void SocketTraceConnector::HandleCloseProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   const auto conn = CopyFromBPF<conn_info_t>(data);
-  connector->CloseConn(conn);
+  connector->AcceptCloseConnEvent(conn);
 }
 
 //-----------------------------------------------------------------------------
@@ -259,7 +259,7 @@ auto SocketTraceConnector::RegisterStream(const conn_info_t& conn_info,
   return new_stream_ret.first;
 }
 
-void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
+void SocketTraceConnector::AcceptDataEvent(socket_data_event_t event) {
   // Need to adjust the clocks to convert to real time.
   event.attr.timestamp_ns += ClockRealTimeOffset();
   // Event has protocol in case conn_info happened before deployment or was dropped by perf buffer.
@@ -272,7 +272,7 @@ void SocketTraceConnector::AcceptEvent(socket_data_event_t event) {
       break;
     default:
       // TODO(oazizi/yzhao): Add MySQL when it goes through streams.
-      LOG(WARNING) << "AcceptEvent ignored due to unknown protocol: " << event.attr.protocol;
+      LOG(WARNING) << "AcceptDataEvent ignored due to unknown protocol: " << event.attr.protocol;
   }
 }
 
@@ -291,12 +291,12 @@ void SocketTraceConnector::TransferStreamData(uint32_t table_num,
   }
 }
 
-void SocketTraceConnector::OpenConn(const conn_info_t& conn_info) {
+void SocketTraceConnector::AcceptOpenConnEvent(const conn_info_t& conn_info) {
   const uint64_t stream_id = GetStreamId(conn_info.tgid, conn_info.conn_id);
   connections_.emplace(stream_id, conn_info);
 }
 
-void SocketTraceConnector::CloseConn(const conn_info_t& conn_info) {
+void SocketTraceConnector::AcceptCloseConnEvent(const conn_info_t& conn_info) {
   const uint64_t stream_id = GetStreamId(conn_info.tgid, conn_info.conn_id);
   connections_.erase(stream_id);
   ip_endpoints_.erase(stream_id);
