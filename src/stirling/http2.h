@@ -36,6 +36,9 @@ class Frame : public NotCopyMoveable {
   std::string payload;
 };
 
+// TODO(yzhao): Move ParseState inside http_parse.h to utils/parse_state.h; and then use it as
+// return type for UnpackFrame{s}.
+Status UnpackFrame(std::string_view* buf, Frame* frame);
 Status UnpackFrames(std::string_view* buf, std::vector<std::unique_ptr<Frame>>* frames);
 
 // TODO(yzhao): Embed this in Frame or some other data structure.

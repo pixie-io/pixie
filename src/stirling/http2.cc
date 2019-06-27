@@ -37,6 +37,30 @@ void UnpackData(const uint8_t* buf, Frame* frame) {
                         frame_body_length - frame->frame.data.padlen);
 }
 
+namespace {
+
+class InflaterRAIIWrapper {
+ public:
+  explicit InflaterRAIIWrapper(nghttp2_hd_inflater* inflater) : inflater_(inflater) {}
+  ~InflaterRAIIWrapper() {
+    if (inflater_ != nullptr) {
+      nghttp2_hd_inflate_free(inflater_);
+    }
+  }
+  Status Init() {
+    int rv = nghttp2_hd_inflate_init(inflater_, nghttp2_mem_default());
+    if (rv != 0) {
+      return error::Internal("Failed to initialize nghttp2_hd_inflater");
+    }
+    return Status::OK();
+  }
+
+ private:
+  nghttp2_hd_inflater* inflater_;
+};
+
+}  // namespace
+
 Status UnpackHeaders(const uint8_t* buf, nghttp2_headers* frame) {
   int inflate_flags = 0;
   int rv = 0;
@@ -54,11 +78,11 @@ Status UnpackHeaders(const uint8_t* buf, nghttp2_headers* frame) {
   rv = nghttp2_frame_headers_payload_nv_offset(frame);
   buf += rv;
   frame_body_length -= rv;
+
   nghttp2_hd_inflater inflater = {};
-  rv = nghttp2_hd_inflate_init(&inflater, nghttp2_mem_default());
-  if (rv != 0) {
-    return error::Internal("Failed to initialize nghttp2_hd_inflater");
-  }
+  InflaterRAIIWrapper inflater_wrapper{&inflater};
+  PL_RETURN_IF_ERROR(inflater_wrapper.Init());
+
   nvs.clear();
   for (;;) {
     inflate_flags = 0;
@@ -90,7 +114,6 @@ Status UnpackHeaders(const uint8_t* buf, nghttp2_headers* frame) {
   // TODO(yzhao): Create a new C++-flavored data structure for HEADERS frame so that the headers can
   // be managed through RAII.
   rv = nghttp2_nv_array_copy(&frame->nva, nvs.data(), nvs.size(), nghttp2_mem_default());
-  nghttp2_hd_inflate_free(&inflater);
   if (rv != 0) {
     return error::Internal("Failed to copy nghttp_nv array");
   }
@@ -140,7 +163,7 @@ Frame::~Frame() {
 
 Status UnpackFrame(std::string_view* buf, Frame* frame) {
   if (buf->size() < kFrameHeaderSizeInBytes) {
-    return error::InvalidArgument(absl::Substitute(
+    return error::ResourceUnavailable(absl::Substitute(
         "Not enough data to parse, got: $0 must be >= $1", buf->size(), kFrameHeaderSizeInBytes));
   }
 
@@ -148,7 +171,7 @@ Status UnpackFrame(std::string_view* buf, Frame* frame) {
   nghttp2_frame_unpack_frame_hd(&frame->frame.hd, u8_buf);
 
   if (buf->size() < kFrameHeaderSizeInBytes + frame->frame.hd.length) {
-    return error::InvalidArgument(
+    return error::ResourceUnavailable(
         absl::Substitute("Not enough u8_buf to parse, got: $0 must be >= $1", buf->size(),
                          kFrameHeaderSizeInBytes + frame->frame.hd.length));
   }
@@ -187,7 +210,7 @@ Status UnpackFrames(std::string_view* buf, std::vector<std::unique_ptr<Frame>>* 
   while (!buf->empty()) {
     auto frame = std::make_unique<Frame>();
     Status s = UnpackFrame(buf, frame.get());
-    if (error::IsCancelled(s) || error::IsUnimplemented(s)) {
+    if (error::IsCancelled(s) || error::IsUnimplemented(s) || error::IsInternal(s)) {
       continue;
     }
     PL_RETURN_IF_ERROR(s);

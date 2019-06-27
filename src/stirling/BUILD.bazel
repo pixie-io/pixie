@@ -184,3 +184,9 @@ pl_cc_test(
         "//src/stirling/testing/proto:greet_pl_cc_proto",
     ],
 )
+
+pl_cc_test(
+    name = "http2_test",
+    srcs = ["http2_test.cc"],
+    deps = [":cc_library"],
+)
