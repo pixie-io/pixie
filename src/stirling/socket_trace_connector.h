@@ -16,7 +16,6 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 #include <bcc/BPF.h>
 
-#include <deque>
 #include <map>
 #include <memory>
 #include <string>
@@ -25,8 +24,6 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 #include "src/stirling/bcc_bpf/socket_trace.h"
 #include "src/stirling/connection_tracker.h"
-#include "src/stirling/event_parser.h"
-#include "src/stirling/http_parse.h"
 #include "src/stirling/source_connector.h"
 
 DECLARE_string(http_response_header_filters);
@@ -43,10 +40,11 @@ enum class HTTPContentType {
   kGRPC = 2,
 };
 
-struct HTTPTraceRecord {
+template <class TMessageType>
+struct TraceRecord {
   const SocketConnection& conn;
-  HTTPMessage req_message;
-  HTTPMessage resp_message;
+  TMessageType req_message;
+  TMessageType resp_message;
 };
 
 class SocketTraceConnector : public SourceConnector {
@@ -188,11 +186,16 @@ class SocketTraceConnector : public SourceConnector {
   // Output messages: data->messages.
   void ParseEventStream(TrafficMessageType type, DataStream* data);
 
-  static void ConsumeHTTPMessage(HTTPTraceRecord record,
-                                 types::ColumnWrapperRecordBatch* record_batch);
-  static bool SelectHTTPMessage(const HTTPTraceRecord& record);
-  static void AppendHTTPMessage(HTTPTraceRecord record,
-                                types::ColumnWrapperRecordBatch* record_batch);
+  template <class TMessageType>
+  static void ConsumeMessage(TraceRecord<TMessageType> record,
+                             types::ColumnWrapperRecordBatch* record_batch);
+
+  template <class TMessageType>
+  static bool SelectMessage(const TraceRecord<TMessageType>& record);
+
+  template <class TMessageType>
+  static void AppendMessage(TraceRecord<TMessageType> record,
+                            types::ColumnWrapperRecordBatch* record_batch);
 
   // Transfer of a MySQL Event to the MySQL Table.
   void TransferMySQLEvent(const socket_data_event_t& event,

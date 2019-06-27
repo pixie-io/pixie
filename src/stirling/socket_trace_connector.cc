@@ -1,6 +1,8 @@
 #ifdef __linux__
 
 #include <algorithm>
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/match.h"
@@ -369,12 +371,13 @@ void SocketTraceConnector::TransferHTTPStreams(types::ColumnWrapperRecordBatch* 
     // TODO(oazizi): If we stick with this approach, resp_data could be converted back to vector.
     for (HTTPMessage& msg : resp_data.messages) {
       if (!req_data.messages.empty()) {
-        HTTPTraceRecord record{stream.conn, std::move(req_data.messages.front()), std::move(msg)};
+        TraceRecord<HTTPMessage> record{stream.conn, std::move(req_data.messages.front()),
+                                        std::move(msg)};
         req_data.messages.pop_front();
-        ConsumeHTTPMessage(std::move(record), record_batch);
+        ConsumeMessage(std::move(record), record_batch);
       } else {
-        HTTPTraceRecord record{stream.conn, HTTPMessage(), std::move(msg)};
-        ConsumeHTTPMessage(std::move(record), record_batch);
+        TraceRecord<HTTPMessage> record{stream.conn, HTTPMessage(), std::move(msg)};
+        ConsumeMessage(std::move(record), record_batch);
       }
     }
     resp_data.messages.clear();
@@ -385,20 +388,22 @@ void SocketTraceConnector::TransferHTTPStreams(types::ColumnWrapperRecordBatch* 
   // before stitching. That might be faster (verify with benchmark).
 }
 
-void SocketTraceConnector::ConsumeHTTPMessage(HTTPTraceRecord record,
-                                              types::ColumnWrapperRecordBatch* record_batch) {
+template <class TMessageType>
+void SocketTraceConnector::ConsumeMessage(TraceRecord<TMessageType> record,
+                                          types::ColumnWrapperRecordBatch* record_batch) {
   // Only allow certain records to be transferred upstream.
-  if (SelectHTTPMessage(record)) {
+  if (SelectMessage(record)) {
     // Currently decompresses gzip content, but could handle other transformations too.
     // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
     PreProcessMessage(&record.resp_message);
 
     // Push data to the TableStore.
-    AppendHTTPMessage(std::move(record), record_batch);
+    AppendMessage(std::move(record), record_batch);
   }
 }
 
-bool SocketTraceConnector::SelectHTTPMessage(const HTTPTraceRecord& record) {
+template <>
+bool SocketTraceConnector::SelectMessage(const TraceRecord<HTTPMessage>& record) {
   // Some of this function is currently a placeholder for the demo.
   // TODO(oazizi/yzhao): update this function further.
 
@@ -446,8 +451,9 @@ HTTPContentType DetectContentType(const HTTPMessage& message) {
 
 }  // namespace
 
-void SocketTraceConnector::AppendHTTPMessage(HTTPTraceRecord record,
-                                             types::ColumnWrapperRecordBatch* record_batch) {
+template <>
+void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record,
+                                         types::ColumnWrapperRecordBatch* record_batch) {
   CHECK_EQ(kHTTPTable.elements().size(), record_batch->size());
 
   const SocketConnection& conn = record.conn;
