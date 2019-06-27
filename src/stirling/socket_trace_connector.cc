@@ -182,23 +182,6 @@ void SocketTraceConnector::HandleCloseProbeOutput(void* cb_cookie, void* data, i
 //-----------------------------------------------------------------------------
 
 namespace {
-enum class StreamDirection { kUnknown, kSend, kRecv };
-
-static StreamDirection EventStreamDirection(const uint32_t event_type) {
-  switch (event_type) {
-    case kEventTypeSyscallWriteEvent:
-      return StreamDirection::kSend;
-    case kEventTypeSyscallSendEvent:
-      return StreamDirection::kSend;
-    case kEventTypeSyscallReadEvent:
-      return StreamDirection::kRecv;
-    case kEventTypeSyscallRecvEvent:
-      return StreamDirection::kRecv;
-    default:
-      LOG(ERROR) << "Unexpected event type: " << event_type;
-      return StreamDirection::kUnknown;
-  }
-}
 
 static uint64_t GetStreamId(uint32_t tgid, uint32_t conn_id) {
   return (static_cast<uint64_t>(tgid) << 32) | conn_id;
@@ -225,15 +208,17 @@ void SocketTraceConnector::AppendToStream(socket_data_event_t event,
     }
   }
   StreamType& stream = iter->second;
-  switch (EventStreamDirection(event.attr.event_type)) {
-    case StreamDirection::kSend:
+  switch (event.attr.event_type) {
+    case kEventTypeSyscallSendEvent:
+    case kEventTypeSyscallWriteEvent:
       stream.send_data.events.emplace(seq_num, std::move(event));
       break;
-    case StreamDirection::kRecv:
+    case kEventTypeSyscallRecvEvent:
+    case kEventTypeSyscallReadEvent:
       stream.recv_data.events.emplace(seq_num, std::move(event));
       break;
     default:
-      LOG(ERROR) << "AppendStream() could not find StreamDirection";
+      LOG(ERROR) << "AppendToStream(): unrecognized event type";
   }
 }
 
