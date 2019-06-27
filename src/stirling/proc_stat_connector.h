@@ -11,8 +11,6 @@ namespace stirling {
 
 class ProcStatConnector : public SourceConnector {
  public:
-  static constexpr SourceType kSourceType = SourceType::kFile;
-
   // clang-format off
   static constexpr DataElement kElements[] = {
           {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
@@ -37,7 +35,7 @@ class ProcStatConnector : public SourceConnector {
 
  protected:
   explicit ProcStatConnector(std::string_view name)
-      : SourceConnector(kSourceType, name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {}
+      : SourceConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {}
   Status InitImpl() override;
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
   Status StopImpl() override { return Status::OK(); }

@@ -33,7 +33,6 @@ namespace stirling {
 
 class BCCConnector : public SourceConnector {
  public:
-  static constexpr SourceType kSourceType = SourceType::kEBPF;
   BCCConnector() = delete;
   ~BCCConnector() override = default;
 
@@ -43,8 +42,7 @@ class BCCConnector : public SourceConnector {
                         std::chrono::milliseconds default_sampling_period,
                         std::chrono::milliseconds default_push_period,
                         const std::string_view bpf_program)
-      : SourceConnector(kSourceType, source_name, schemas, default_sampling_period,
-                        default_push_period),
+      : SourceConnector(source_name, schemas, default_sampling_period, default_push_period),
         bpf_program_(bpf_program) {}
 
  private:
@@ -54,7 +52,6 @@ class BCCConnector : public SourceConnector {
 class PIDCPUUseBCCConnector : public BCCConnector {
  public:
   inline static const std::string_view kBCCScript = pidruntime_bcc_script;
-  static constexpr SourceType kSourceType = SourceType::kEBPF;
 
   // clang-format off
   static constexpr DataElement kElements[] = {

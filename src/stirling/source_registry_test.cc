@@ -30,11 +30,9 @@ TEST_F(SourceRegistryTest, register_sources) {
     auto s = registry_.GetRegistryElement("test_fake_proc_cpu_source");
     EXPECT_OK(s);
     auto& element = s.ValueOrDie();
-    EXPECT_EQ(SourceType::kFile, element.type);
     auto source_fn = element.create_source_fn;
     auto source = source_fn(name);
     EXPECT_EQ(name, source->source_name());
-    EXPECT_EQ(SourceType::kFile, source->type());
   }
 
   {
@@ -42,11 +40,9 @@ TEST_F(SourceRegistryTest, register_sources) {
     auto s = registry_.GetRegistryElement("test_proc_stat_source");
     EXPECT_OK(s);
     auto& element = s.ValueOrDie();
-    EXPECT_EQ(SourceType::kFile, element.type);
     auto source_fn = element.create_source_fn;
     auto source = source_fn(name);
     EXPECT_EQ(name, source->source_name());
-    EXPECT_EQ(SourceType::kFile, source->type());
   }
 
   // Unavailable source connectors should not make their way into the registry.

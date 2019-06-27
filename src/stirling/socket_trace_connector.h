@@ -91,8 +91,6 @@ class SocketTraceConnector : public SourceConnector {
  public:
   inline static const std::string_view kBCCScript = http_trace_bcc_script;
 
-  static constexpr SourceType kSourceType = SourceType::kEBPF;
-
   // clang-format off
   static constexpr DataElement kHTTPElements[] = {
           {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
@@ -190,8 +188,7 @@ class SocketTraceConnector : public SourceConnector {
 
  private:
   explicit SocketTraceConnector(std::string_view source_name)
-      : SourceConnector(kSourceType, source_name, kTables, kDefaultSamplingPeriod,
-                        kDefaultPushPeriod) {
+      : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {
     // TODO(yzhao): Is there a better place/time to grab the flags?
     http_response_header_filter_ = ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
     config_mask_.resize(kNumProtocols);

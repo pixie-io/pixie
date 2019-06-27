@@ -19,8 +19,6 @@ class SeqGenConnector : public SourceConnector {
  public:
   ~SeqGenConnector() override = default;
 
-  static constexpr SourceType kSourceType = SourceType::kUnknown;
-
   // clang-format off
   static constexpr DataElement kElementsSeq0[] = {
       {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
@@ -65,7 +63,7 @@ class SeqGenConnector : public SourceConnector {
 
  protected:
   explicit SeqGenConnector(std::string_view name)
-      : SourceConnector(kSourceType, name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod),
+      : SourceConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod),
         table0_lin_seq_(1, 1),
         table0_mod10_seq_(10),
         table0_square_seq_(1, 0, 0),

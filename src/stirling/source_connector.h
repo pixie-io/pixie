@@ -29,22 +29,12 @@ class InfoClassManager;
   class NAME : public SourceConnector {                                     \
    public:                                                                  \
     static constexpr bool kAvailable = false;                               \
-    static constexpr SourceType kSourceType = SourceType::kNotImplemented;  \
     static constexpr auto kTables = ConstVectorView<DataTableSchema>();     \
     static std::unique_ptr<SourceConnector> Create(std::string_view name) { \
       PL_UNUSED(name);                                                      \
       return nullptr;                                                       \
     }                                                                       \
   }
-
-enum class SourceType : uint8_t {
-  kEBPF = 1,
-  kOpenTracing,
-  kPrometheus,
-  kFile,
-  kUnknown,
-  kNotImplemented
-};
 
 class SourceConnector : public NotCopyable {
  public:
@@ -73,7 +63,6 @@ class SourceConnector : public NotCopyable {
   }
   Status Stop() { return StopImpl(); }
 
-  SourceType type() const { return type_; }
   const std::string& source_name() const { return source_name_; }
 
   uint32_t num_tables() const { return table_schemas_.size(); }
@@ -115,18 +104,16 @@ class SourceConnector : public NotCopyable {
 
  protected:
   template <std::size_t N>
-  explicit SourceConnector(SourceType type, std::string_view source_name,
-                           const DataTableSchema (&table_schemas)[N],
+  explicit SourceConnector(std::string_view source_name, const DataTableSchema (&table_schemas)[N],
                            std::chrono::milliseconds default_sampling_period,
                            std::chrono::milliseconds default_push_period)
-      : SourceConnector(type, std::move(source_name), ConstVectorView(table_schemas),
+      : SourceConnector(std::move(source_name), ConstVectorView(table_schemas),
                         default_sampling_period, default_push_period) {}
-  explicit SourceConnector(SourceType type, std::string_view source_name,
+  explicit SourceConnector(std::string_view source_name,
                            const ConstVectorView<DataTableSchema>& table_schemas,
                            std::chrono::milliseconds default_sampling_period,
                            std::chrono::milliseconds default_push_period)
-      : type_(type),
-        source_name_(source_name),
+      : source_name_(source_name),
         table_schemas_(table_schemas),
         default_sampling_period_(default_sampling_period),
         default_push_period_(default_push_period) {}
@@ -181,7 +168,6 @@ class SourceConnector : public NotCopyable {
   };
 
  private:
-  const SourceType type_;
   const std::string source_name_;
   const ConstVectorView<DataTableSchema> table_schemas_;
   const std::chrono::milliseconds default_sampling_period_;

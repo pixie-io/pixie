@@ -29,8 +29,6 @@ namespace stirling {
 
 class CGroupStatsConnector : public SourceConnector {
  public:
-  static constexpr SourceType kSourceType = SourceType::kFile;
-
   // clang-format off
   static constexpr DataElement kCPUElements[] = {
       {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
@@ -91,8 +89,7 @@ class CGroupStatsConnector : public SourceConnector {
 
  protected:
   explicit CGroupStatsConnector(std::string_view source_name)
-      : SourceConnector(kSourceType, source_name, kTables, kDefaultSamplingPeriod,
-                        kDefaultPushPeriod) {
+      : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {
     auto sysconfig = common::SystemConfig::Create();
     // TODO(zasgar): Make proc/sys paths configurable.
     cgroup_mgr_ = CGroupManager::Create(*sysconfig, "/proc", "/sys/fs");

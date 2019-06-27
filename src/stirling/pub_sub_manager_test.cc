@@ -69,8 +69,7 @@ class TestSourceConnector : public SourceConnector {
 
  protected:
   explicit TestSourceConnector(std::string_view name)
-      : SourceConnector(SourceType::kUnknown, name, kTables, kDefaultSamplingPeriod,
-                        kDefaultPushPeriod) {}
+      : SourceConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {}
 };
 
 class PubSubManagerTest : public ::testing::Test {

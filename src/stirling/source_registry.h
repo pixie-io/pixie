@@ -28,11 +28,9 @@ class SourceRegistry : public NotCopyable {
   struct RegistryElement {
     RegistryElement() : create_source_fn(nullptr), schema(ConstVectorView<DataTableSchema>()) {}
     explicit RegistryElement(
-        SourceType type,
         std::function<std::unique_ptr<SourceConnector>(std::string_view)> create_source_fn,
         const ConstVectorView<DataTableSchema>& schema)
-        : type(type), create_source_fn(std::move(create_source_fn)), schema(schema) {}
-    SourceType type{SourceType::kUnknown};
+        : create_source_fn(std::move(create_source_fn)), schema(schema) {}
     std::function<std::unique_ptr<SourceConnector>(std::string_view)> create_source_fn;
     ConstVectorView<DataTableSchema> schema;
   };
@@ -57,8 +55,7 @@ class SourceRegistry : public NotCopyable {
     }
 
     // Create registry element from template
-    SourceRegistry::RegistryElement element(TSourceConnector::kSourceType, TSourceConnector::Create,
-                                            TSourceConnector::kTables);
+    SourceRegistry::RegistryElement element(TSourceConnector::Create, TSourceConnector::kTables);
     if (sources_map_.find(name) != sources_map_.end()) {
       return error::AlreadyExists("The data source with name \"$0\" already exists", name);
     }

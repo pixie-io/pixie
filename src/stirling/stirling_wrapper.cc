@@ -13,7 +13,6 @@
 #include "src/stirling/types.h"
 
 using pl::stirling::SourceRegistry;
-using pl::stirling::SourceType;
 using pl::stirling::Stirling;
 using pl::stirling::stirlingpb::Publish;
 using pl::stirling::stirlingpb::Subscribe;
