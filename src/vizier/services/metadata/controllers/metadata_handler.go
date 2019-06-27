@@ -8,6 +8,7 @@ import (
 	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
+	datapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 )
 
 const maxAgentUpdates = 10000
@@ -21,6 +22,7 @@ type MetadataStore interface {
 	AddToAgentUpdateQueue(string, string) error
 	AddToFrontOfAgentQueue(string, *messagespb.MetadataUpdateInfo_ResourceUpdate) error
 	GetFromAgentQueue(string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error)
+	GetAgents() (*[]datapb.AgentData, error)
 }
 
 // K8sMessage is a message for K8s metadata events/updates.

@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/clientv3util"
@@ -75,21 +74,6 @@ func NewAgentManagerWithClock(client *clientv3.Client, mds MetadataStore, isLead
 func NewAgentManager(client *clientv3.Client, mds MetadataStore, isLeader bool) *AgentManagerImpl {
 	clock := utils.SystemClock{}
 	return NewAgentManagerWithClock(client, mds, isLeader, clock)
-}
-
-// GetAgentKeyFromUUID gets the etcd key for the agent, given the id in a UUID format.
-func GetAgentKeyFromUUID(agentID uuid.UUID) string {
-	return GetAgentKey(agentID.String())
-}
-
-// GetAgentKey gets the etcd key for the agent, given the id in a string format.
-func GetAgentKey(agentID string) string {
-	return "/agent/" + agentID
-}
-
-// GetHostnameAgentKey gets the etcd key for the hostname's agent.
-func GetHostnameAgentKey(hostname string) string {
-	return "/hostname/" + hostname + "/agent"
 }
 
 func updateAgentData(agentID uuid.UUID, data *data.AgentData, client *clientv3.Client) error {
@@ -237,6 +221,9 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 	if !m.IsLeader {
 		return nil
 	}
+
+	// TODO(michelle): PL-665 Move all etcd-specific functionality into etcd_metadata_store, so that the agent manager itself
+	// is not directly interfacing with etcd.
 	ctx := context.Background()
 	ss, err := concurrency.NewSession(m.client, concurrency.WithContext(ctx))
 	if err != nil {
@@ -246,23 +233,18 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 
 	currentTime := m.clock.Now().UnixNano()
 
-	// Get all agents.
-	resp, err := m.client.Get(ctx, GetAgentKey(""), clientv3.WithPrefix())
+	agentPbs, err := m.mds.GetAgents()
 	if err != nil {
-		log.WithError(err).Fatal("Failed to execute etcd Get")
 		return err
 	}
-	// Loop through all the agents, and then remove agents that are too old.
-	for _, kv := range resp.Kvs {
-		pb := &data.AgentData{}
-		proto.Unmarshal(kv.Value, pb)
 
-		if currentTime-pb.LastHeartbeatNS > AgentExpirationTimeout {
-			uid, err := utils.UUIDFromProto(pb.AgentID)
+	for _, agentPb := range *agentPbs {
+		if currentTime-agentPb.LastHeartbeatNS > AgentExpirationTimeout {
+			uid, err := utils.UUIDFromProto(agentPb.AgentID)
 			if err != nil {
 				log.WithError(err).Fatal("Could not convert UUID to proto")
 			}
-			err = m.deleteAgent(ctx, uid.String(), pb.HostInfo.Hostname, ss)
+			err = m.deleteAgent(ctx, uid.String(), agentPb.HostInfo.Hostname, ss)
 			if err != nil {
 				log.WithError(err).Fatal("Failed to delete agent from etcd")
 			}
@@ -275,34 +257,22 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 // GetActiveAgents gets all of the current active agents.
 func (m *AgentManagerImpl) GetActiveAgents() ([]AgentInfo, error) {
 	var agents []AgentInfo
-	ctx := context.Background()
 
-	// Get all agents.
-	resp, err := m.client.Get(ctx, GetAgentKey(""), clientv3.WithPrefix())
+	agentPbs, err := m.mds.GetAgents()
 	if err != nil {
-		log.WithError(err).Fatal("Failed to execute etcd Get")
 		return agents, err
 	}
-	for _, kv := range resp.Kvs {
 
-		// Filter out keys that aren't of the form /agent/<uuid>.
-		splitKey := strings.Split(string(kv.Key), "/")
-		if len(splitKey) != 3 {
-			continue
-		}
-
-		pb := &data.AgentData{}
-		proto.Unmarshal(kv.Value, pb)
-
-		uid, err := utils.UUIDFromProto(pb.AgentID)
+	for _, agentPb := range *agentPbs {
+		uid, err := utils.UUIDFromProto(agentPb.AgentID)
 		if err != nil {
 			log.WithError(err).Fatal("Could not convert UUID to proto")
 		}
 		info := &AgentInfo{
-			LastHeartbeatNS: pb.LastHeartbeatNS,
-			CreateTimeNS:    pb.CreateTimeNS,
+			LastHeartbeatNS: agentPb.LastHeartbeatNS,
+			CreateTimeNS:    agentPb.CreateTimeNS,
 			AgentID:         uid,
-			Hostname:        pb.HostInfo.Hostname,
+			Hostname:        agentPb.HostInfo.Hostname,
 		}
 		agents = append(agents, *info)
 	}

@@ -4,15 +4,18 @@ import (
 	"context"
 	"errors"
 	"path"
+	"strings"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/gogo/protobuf/proto"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
+	datapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 )
 
 // EtcdMetadataStore is the implementation of our metadata store in etcd.
@@ -83,6 +86,21 @@ func (mds *EtcdMetadataStore) UpdateService(s *metadatapb.Service) error {
 
 func getServiceKey(e *metadatapb.Service) string {
 	return path.Join("/", "service", getNamespaceFromMetadata(e.Metadata), e.Metadata.Uid)
+}
+
+// GetAgentKeyFromUUID gets the etcd key for the agent, given the id in a UUID format.
+func GetAgentKeyFromUUID(agentID uuid.UUID) string {
+	return GetAgentKey(agentID.String())
+}
+
+// GetAgentKey gets the etcd key for the agent, given the id in a string format.
+func GetAgentKey(agentID string) string {
+	return "/agent/" + agentID
+}
+
+// GetHostnameAgentKey gets the etcd key for the hostname's agent.
+func GetHostnameAgentKey(hostname string) string {
+	return "/hostname/" + hostname + "/agent"
 }
 
 func (mds *EtcdMetadataStore) updateValue(key string, value string) error {
@@ -176,4 +194,36 @@ func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) (*[]messagespb.M
 	}
 
 	return &pbs, nil
+}
+
+// GetAgents gets all of the current active agents.
+func (mds *EtcdMetadataStore) GetAgents() (*[]datapb.AgentData, error) {
+	var agents []datapb.AgentData
+
+	ctx := context.Background()
+	ss, err := concurrency.NewSession(mds.client, concurrency.WithContext(ctx))
+	if err != nil {
+		log.WithError(err).Fatal("Could not create new session")
+	}
+	defer ss.Close()
+
+	// Get all agents.
+	resp, err := mds.client.Get(ctx, GetAgentKey(""), clientv3.WithPrefix())
+	if err != nil {
+		log.WithError(err).Fatal("Failed to execute etcd Get")
+		return nil, err
+	}
+	for _, kv := range resp.Kvs {
+		// Filter out keys that aren't of the form /agent/<uuid>.
+		splitKey := strings.Split(string(kv.Key), "/")
+		if len(splitKey) != 3 {
+			continue
+		}
+
+		pb := &datapb.AgentData{}
+		proto.Unmarshal(kv.Value, pb)
+		agents = append(agents, *pb)
+	}
+
+	return &agents, nil
 }

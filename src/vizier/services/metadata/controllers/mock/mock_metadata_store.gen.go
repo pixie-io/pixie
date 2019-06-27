@@ -8,6 +8,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
+	datapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 	reflect "reflect"
 )
 
@@ -56,6 +57,19 @@ func (m *MockMetadataStore) AddToFrontOfAgentQueue(arg0 string, arg1 *messagespb
 // AddToFrontOfAgentQueue indicates an expected call of AddToFrontOfAgentQueue
 func (mr *MockMetadataStoreMockRecorder) AddToFrontOfAgentQueue(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToFrontOfAgentQueue", reflect.TypeOf((*MockMetadataStore)(nil).AddToFrontOfAgentQueue), arg0, arg1)
+}
+
+// GetAgents mocks base method
+func (m *MockMetadataStore) GetAgents() (*[]datapb.AgentData, error) {
+	ret := m.ctrl.Call(m, "GetAgents")
+	ret0, _ := ret[0].(*[]datapb.AgentData)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgents indicates an expected call of GetAgents
+func (mr *MockMetadataStoreMockRecorder) GetAgents() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgents", reflect.TypeOf((*MockMetadataStore)(nil).GetAgents))
 }
 
 // GetAgentsForHostnames mocks base method

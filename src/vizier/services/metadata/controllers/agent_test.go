@@ -2,6 +2,7 @@ package controllers_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -19,7 +20,7 @@ import (
 )
 
 // LastHeartBeatNS is 65 seconds, in NS.
-var existingAgentInfo = `
+var ExistingAgentInfo = `
 agent_id {
 	data: "7ba7b8109dad11d180b400c04fd430c8"
 }
@@ -33,7 +34,7 @@ last_heartbeat_ns: 65000000000
 const clockNowNS = 1E9 * 70                  // 70s in NS. This is slightly greater than the expiration time for the unhealthy agent.
 const healthyAgentLastHeartbeatNS = 1E9 * 65 // 65 seconds in NS. This is slightly less than the current time.
 
-var unhealthyAgentInfo = `
+var UnhealthyAgentInfo = `
 agent_id {
 	data: "8ba7b8109dad11d180b400c04fd430c8"
 }
@@ -44,27 +45,27 @@ create_time_ns: 0
 last_heartbeat_ns: 0
 `
 
-var newAgentUUID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-var existingAgentUUID = "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
-var unhealthyAgentUUID = "8ba7b810-9dad-11d1-80b4-00c04fd430c8"
+var NewAgentUUID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+var ExistingAgentUUID = "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+var UnhealthyAgentUUID = "8ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
-func setupAgentManager(t *testing.T) (*clientv3.Client, controllers.AgentManager, func()) {
+func setupAgentManager(t *testing.T) (*clientv3.Client, controllers.AgentManager, *mock_controllers.MockMetadataStore, func()) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
-	createAgent(t, existingAgentUUID, etcdClient, existingAgentInfo)
-	createAgent(t, unhealthyAgentUUID, etcdClient, unhealthyAgentInfo)
+	CreateAgent(t, ExistingAgentUUID, etcdClient, ExistingAgentInfo)
+	CreateAgent(t, UnhealthyAgentUUID, etcdClient, UnhealthyAgentInfo)
 
 	clock := testingutils.NewTestClock(time.Unix(0, clockNowNS))
 	agtMgr := controllers.NewAgentManagerWithClock(etcdClient, mockMds, true, clock)
 
-	return etcdClient, agtMgr, cleanup
+	return etcdClient, agtMgr, mockMds, cleanup
 }
 
-func createAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb string) {
+func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb string) {
 	info := new(data.AgentData)
 	if err := proto.UnmarshalText(agentPb, info); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
@@ -86,10 +87,10 @@ func createAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb 
 }
 
 func TestCreateAgent(t *testing.T) {
-	etcdClient, agtMgr, cleanup := setupAgentManager(t)
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
-	u, err := uuid.FromString(newAgentUUID)
+	u, err := uuid.FromString(NewAgentUUID)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
@@ -116,7 +117,7 @@ func TestCreateAgent(t *testing.T) {
 	assert.Equal(t, int64(clockNowNS), pb.CreateTimeNS)
 	uid, err := utils.UUIDFromProto(pb.AgentID)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, newAgentUUID, uid.String())
+	assert.Equal(t, NewAgentUUID, uid.String())
 	assert.Equal(t, "localhost", pb.HostInfo.Hostname)
 
 	resp, err = etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("localhost"))
@@ -124,18 +125,18 @@ func TestCreateAgent(t *testing.T) {
 		t.Fatal("Failed to get agent hostname.")
 	}
 	assert.Equal(t, 1, len(resp.Kvs))
-	assert.Equal(t, newAgentUUID, string(resp.Kvs[0].Value))
+	assert.Equal(t, NewAgentUUID, string(resp.Kvs[0].Value))
 }
 
 func TestCreateAgentWithExistingHostname(t *testing.T) {
-	etcdClient, agtMgr, cleanup := setupAgentManager(t)
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
-	u, err := uuid.FromString(newAgentUUID)
+	u, err := uuid.FromString(NewAgentUUID)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
-	u2, err := uuid.FromString(existingAgentUUID)
+	u2, err := uuid.FromString(ExistingAgentUUID)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
@@ -162,7 +163,7 @@ func TestCreateAgentWithExistingHostname(t *testing.T) {
 	assert.Equal(t, int64(clockNowNS), pb.CreateTimeNS)
 	uid, err := utils.UUIDFromProto(pb.AgentID)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, newAgentUUID, uid.String())
+	assert.Equal(t, NewAgentUUID, uid.String())
 	assert.Equal(t, "testhost", pb.HostInfo.Hostname)
 
 	resp, err = etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("testhost"))
@@ -170,7 +171,7 @@ func TestCreateAgentWithExistingHostname(t *testing.T) {
 		t.Fatal("Failed to get agent hostname.")
 	}
 	assert.Equal(t, 1, len(resp.Kvs))
-	assert.Equal(t, newAgentUUID, string(resp.Kvs[0].Value))
+	assert.Equal(t, NewAgentUUID, string(resp.Kvs[0].Value))
 
 	// Check that previous agent has been deleted.
 	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u2))
@@ -178,10 +179,10 @@ func TestCreateAgentWithExistingHostname(t *testing.T) {
 }
 
 func TestCreateExistingAgent(t *testing.T) {
-	etcdClient, agtMgr, cleanup := setupAgentManager(t)
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
-	u, err := uuid.FromString(existingAgentUUID)
+	u, err := uuid.FromString(ExistingAgentUUID)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
@@ -208,15 +209,15 @@ func TestCreateExistingAgent(t *testing.T) {
 	assert.Equal(t, int64(0), pb.CreateTimeNS)
 	uid, err := utils.UUIDFromProto(pb.AgentID)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, existingAgentUUID, uid.String())
+	assert.Equal(t, ExistingAgentUUID, uid.String())
 	assert.Equal(t, "testhost", pb.HostInfo.Hostname)
 }
 
 func TestUpdateHeartbeat(t *testing.T) {
-	etcdClient, agtMgr, cleanup := setupAgentManager(t)
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t)
 	defer cleanup()
 
-	u, err := uuid.FromString(existingAgentUUID)
+	u, err := uuid.FromString(ExistingAgentUUID)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
@@ -237,13 +238,32 @@ func TestUpdateHeartbeat(t *testing.T) {
 	assert.Equal(t, int64(0), pb.CreateTimeNS)
 	uid, err := utils.UUIDFromProto(pb.AgentID)
 	assert.Equal(t, nil, err)
-	assert.Equal(t, existingAgentUUID, uid.String())
+	assert.Equal(t, ExistingAgentUUID, uid.String())
 	assert.Equal(t, "testhost", pb.HostInfo.Hostname)
 }
 
 func TestUpdateAgentState(t *testing.T) {
-	etcdClient, agtMgr, cleanup := setupAgentManager(t)
+	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
+
+	agents := make([]data.AgentData, 2)
+
+	agent1 := &data.AgentData{}
+	if err := proto.UnmarshalText(ExistingAgentInfo, agent1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	agents[0] = *agent1
+
+	agent2 := &data.AgentData{}
+	if err := proto.UnmarshalText(UnhealthyAgentInfo, agent2); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	agents[1] = *agent2
+
+	mockMds.
+		EXPECT().
+		GetAgents().
+		Return(&agents, nil)
 
 	err := agtMgr.UpdateAgentState()
 	assert.Nil(t, err)
@@ -251,7 +271,7 @@ func TestUpdateAgentState(t *testing.T) {
 	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKey(""), clientv3.WithPrefix())
 	assert.Equal(t, 1, len(resp.Kvs))
 
-	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentKey(unhealthyAgentUUID))
+	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentKey(UnhealthyAgentUUID))
 	// Agent should no longer exist in etcd.
 	assert.Equal(t, 0, len(resp.Kvs))
 
@@ -260,16 +280,50 @@ func TestUpdateAgentState(t *testing.T) {
 	assert.Equal(t, 0, len(resp.Kvs))
 }
 
-func TestGetActiveAgents(t *testing.T) {
-	_, agtMgr, cleanup := setupAgentManager(t)
+func TestUpdateAgentStateGetAgentsFailed(t *testing.T) {
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
+
+	agents := make([]data.AgentData, 0)
+
+	mockMds.
+		EXPECT().
+		GetAgents().
+		Return(&agents, errors.New("could not get agents"))
+
+	err := agtMgr.UpdateAgentState()
+	assert.NotNil(t, err)
+}
+
+func TestGetActiveAgents(t *testing.T) {
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
+	defer cleanup()
+
+	agentsMock := make([]data.AgentData, 2)
+
+	agent1 := &data.AgentData{}
+	if err := proto.UnmarshalText(ExistingAgentInfo, agent1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	agentsMock[0] = *agent1
+
+	agent2 := &data.AgentData{}
+	if err := proto.UnmarshalText(UnhealthyAgentInfo, agent2); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	agentsMock[1] = *agent2
+
+	mockMds.
+		EXPECT().
+		GetAgents().
+		Return(&agentsMock, nil)
 
 	agents, err := agtMgr.GetActiveAgents()
 	assert.Nil(t, err)
 
 	assert.Equal(t, 2, len(agents))
 	// Check agents contain correct info.
-	u1, err := uuid.FromString(existingAgentUUID)
+	u1, err := uuid.FromString(ExistingAgentUUID)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
@@ -280,7 +334,7 @@ func TestGetActiveAgents(t *testing.T) {
 		Hostname:        "testhost",
 	}
 	assert.Equal(t, *agent1Info, agents[0])
-	u2, err := uuid.FromString(unhealthyAgentUUID)
+	u2, err := uuid.FromString(UnhealthyAgentUUID)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
@@ -293,41 +347,17 @@ func TestGetActiveAgents(t *testing.T) {
 	assert.Equal(t, *agent2Info, agents[1])
 }
 
-func TestGetActiveAgentsWithLock(t *testing.T) {
-	etcdClient, agtMgr, cleanup := setupAgentManager(t)
+func TestGetActiveAgentsGetAgentsFailed(t *testing.T) {
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
 	defer cleanup()
 
-	_, err := etcdClient.Put(context.Background(),
-		controllers.GetAgentKey("ae6f4648-c06b-470c-a01f-1209a3dfa4bc")+"/487f6ad73ac92645", "")
-	if err != nil {
-		t.Fatal("Unable to add fake agent key to etcd.")
-	}
+	agents := make([]data.AgentData, 0)
 
-	agents, err := agtMgr.GetActiveAgents()
-	assert.Nil(t, err)
+	mockMds.
+		EXPECT().
+		GetAgents().
+		Return(&agents, errors.New("could not get agents"))
 
-	assert.Equal(t, 2, len(agents))
-	// Check agents contain correct info.
-	u1, err := uuid.FromString(existingAgentUUID)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
-	agent1Info := &controllers.AgentInfo{
-		LastHeartbeatNS: healthyAgentLastHeartbeatNS,
-		CreateTimeNS:    0,
-		AgentID:         u1,
-		Hostname:        "testhost",
-	}
-	assert.Equal(t, *agent1Info, agents[0])
-	u2, err := uuid.FromString(unhealthyAgentUUID)
-	if err != nil {
-		t.Fatal("Could not generate UUID.")
-	}
-	agent2Info := &controllers.AgentInfo{
-		LastHeartbeatNS: 0,
-		CreateTimeNS:    0,
-		AgentID:         u2,
-		Hostname:        "anotherhost",
-	}
-	assert.Equal(t, *agent2Info, agents[1])
+	_, err := agtMgr.GetActiveAgents()
+	assert.NotNil(t, err)
 }

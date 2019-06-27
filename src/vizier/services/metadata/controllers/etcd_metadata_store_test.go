@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
@@ -254,4 +255,40 @@ func TestGetFromAgentQueue(t *testing.T) {
 	dequeueResp, err := q.Dequeue()
 	assert.Nil(t, err)
 	assert.Equal(t, "", dequeueResp)
+}
+
+func TestGetAgents(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	CreateAgent(t, ExistingAgentUUID, etcdClient, ExistingAgentInfo)
+	CreateAgent(t, UnhealthyAgentUUID, etcdClient, UnhealthyAgentInfo)
+
+	// Add agent lock key to etcd to make sure GetAgents filters it out.
+	_, err = etcdClient.Put(context.Background(),
+		controllers.GetAgentKey("ae6f4648-c06b-470c-a01f-1209a3dfa4bc")+"/487f6ad73ac92645", "")
+	if err != nil {
+		t.Fatal("Unable to add fake agent key to etcd.")
+	}
+
+	agents, err := mds.GetAgents()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(*agents))
+
+	uid, err := utils.UUIDFromProto((*agents)[0].AgentID)
+	if err != nil {
+		t.Fatal("Could not convert UUID to proto")
+	}
+	assert.Equal(t, ExistingAgentUUID, uid.String())
+
+	uid, err = utils.UUIDFromProto((*agents)[1].AgentID)
+	if err != nil {
+		t.Fatal("Could not convert UUID to proto")
+	}
+	assert.Equal(t, UnhealthyAgentUUID, uid.String())
 }
