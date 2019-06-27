@@ -36,9 +36,23 @@ class SocketTraceConnectorTest : public ::testing::Test {
     return conn_info;
   }
 
-  socket_data_event_t InitEvent(std::string_view msg, uint64_t ts_ns = 0) {
+  socket_data_event_t InitSendEvent(std::string_view msg, uint64_t ts_ns = 0) {
+    socket_data_event_t event = InitEvent(kEventTypeSyscallSendEvent, msg, ts_ns);
+    event.attr.seq_num = send_seq_num_;
+    send_seq_num_++;
+    return event;
+  }
+
+  socket_data_event_t InitRecvEvent(std::string_view msg, uint64_t ts_ns = 0) {
+    socket_data_event_t event = InitEvent(kEventTypeSyscallRecvEvent, msg, ts_ns);
+    event.attr.seq_num = recv_seq_num_;
+    recv_seq_num_++;
+    return event;
+  }
+
+  socket_data_event_t InitEvent(EventType event_type, std::string_view msg, uint64_t ts_ns = 0) {
     socket_data_event_t event = {};
-    event.attr.event_type = kEventTypeSyscallRecvEvent;
+    event.attr.event_type = event_type;
     event.attr.protocol = kProtocolHTTP;
     event.attr.timestamp_ns = ts_ns;
     event.attr.tgid = 12345;
@@ -54,43 +68,66 @@ class SocketTraceConnectorTest : public ::testing::Test {
     return record_batch;
   }
 
+  uint64_t send_seq_num_ = 0;
+  uint64_t recv_seq_num_ = 0;
+
   static constexpr int kTableNum = SocketTraceConnector::kHTTPTableNum;
-  static constexpr int kHTTPRespBodyIdx =
-      SocketTraceConnector::kHTTPTable.ColIndex("http_resp_body");
-  static constexpr int kTimeIdx = SocketTraceConnector::kHTTPTable.ColIndex("time_");
+  static constexpr DataTableSchema kHTTPTable = SocketTraceConnector::kHTTPTable;
+  static constexpr int kHTTPRespBodyIdx = kHTTPTable.ColIndex("http_resp_body");
+  static constexpr int kHTTPReqMethodIdx = kHTTPTable.ColIndex("http_req_method");
+  static constexpr int kHTTPReqPathIdx = kHTTPTable.ColIndex("http_req_path");
+  static constexpr int kTimeIdx = kHTTPTable.ColIndex("time_");
 
   std::unique_ptr<SourceConnector> connector_;
   SocketTraceConnector* source_;
 
-  const std::string kJSONMsg =
+  const std::string kReq0 =
+      "GET /index.html HTTP/1.1\r\n"
+      "Host: www.pixielabs.ai\r\n"
+      "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+      "\r\n";
+
+  const std::string kReq1 =
+      "GET /data.html HTTP/1.1\r\n"
+      "Host: www.pixielabs.ai\r\n"
+      "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+      "\r\n";
+
+  const std::string kReq2 =
+      "GET /logs.html HTTP/1.1\r\n"
+      "Host: www.pixielabs.ai\r\n"
+      "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+      "\r\n";
+
+  const std::string kJSONResp =
       "HTTP/1.1 200 OK\r\n"
       "Content-Type: application/json; charset=utf-8\r\n"
       "Content-Length: 3\r\n"
       "\r\n"
       "foo";
 
-  const std::string kTextMsg =
+  const std::string kTextResp =
       "HTTP/1.1 200 OK\r\n"
       "Content-Type: text/plain; charset=utf-8\r\n"
       "Content-Length: 3\r\n"
       "\r\n"
       "bar";
 
-  const std::string_view kMsg0 =
+  const std::string_view kResp0 =
       "HTTP/1.1 200 OK\r\n"
       "Content-Type: json\r\n"
       "Content-Length: 3\r\n"
       "\r\n"
-      "foo"
-      "HTTP/1.1 200 OK\r\n"
-      "Content-Type: json\r\n";
+      "foo";
 
-  const std::string_view kMsg1 =
+  const std::string_view kResp1 =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: json\r\n"
       "Content-Length: 3\r\n"
       "\r\n"
       "bar";
 
-  std::string_view kMsg2 =
+  std::string_view kResp2 =
       "HTTP/1.1 200 OK\r\n"
       "Content-Type: json\r\n"
       "Content-Length: 3\r\n"
@@ -117,27 +154,27 @@ auto ToIntVector(const types::SharedColumnWrapper& col) {
 
 TEST_F(SocketTraceConnectorTest, FilterMessages) {
   conn_info_t conn = InitConn();
-  socket_data_event_t event_json = InitEvent(kJSONMsg, 100);
-  socket_data_event_t event_text = InitEvent(kTextMsg, 200);
+  socket_data_event_t event0_json = InitRecvEvent(kJSONResp, 100);
+  socket_data_event_t event1_text = InitRecvEvent(kTextResp, 200);
+  socket_data_event_t event2_text = InitRecvEvent(kTextResp, 200);
+  socket_data_event_t event3_json = InitRecvEvent(kJSONResp, 100);
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
   // Registers a new connection
   source_->OpenConn(conn);
 
-  event_json.attr.seq_num = 0;
   // AcceptEvent() puts data into the internal buffer of SocketTraceConnector. And then
   // TransferData() polls perf buffer, which is no-op because we did not initialize probes, and the
   // data in the internal buffer is being processed and filtered.
-  source_->AcceptEvent(event_json);
+  source_->AcceptEvent(event0_json);
   source_->TransferData(kTableNum, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size())
         << "event_json Content-Type does have 'json', and will be selected by the default filter";
   }
 
-  event_text.attr.seq_num = 1;
-  source_->AcceptEvent(event_text);
+  source_->AcceptEvent(event1_text);
   source_->TransferData(kTableNum, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size())
@@ -148,8 +185,7 @@ TEST_F(SocketTraceConnectorTest, FilterMessages) {
       {{"Content-Type", "text/plain"}},
       {{"Content-Encoding", "gzip"}},
   });
-  event_text.attr.seq_num = 2;
-  source_->AcceptEvent(event_text);
+  source_->AcceptEvent(event2_text);
   source_->TransferData(kTableNum, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(2, column->Size())
@@ -161,8 +197,7 @@ TEST_F(SocketTraceConnectorTest, FilterMessages) {
       {{"Content-Type", "application/json"}},
       {{"Content-Encoding", "gzip"}},
   });
-  event_json.attr.seq_num = 3;
-  source_->AcceptEvent(event_json);
+  source_->AcceptEvent(event3_json);
   source_->TransferData(kTableNum, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(3, column->Size())
@@ -176,12 +211,10 @@ TEST_F(SocketTraceConnectorTest, FilterMessages) {
 
 TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   conn_info_t conn = InitConn();
-  socket_data_event_t event0 = InitEvent(kMsg0);
-  event0.attr.seq_num = 0;
-  socket_data_event_t event1 = InitEvent(kMsg1);
-  event1.attr.seq_num = 1;
-  socket_data_event_t event2 = InitEvent(kMsg2);
-  event2.attr.seq_num = 2;
+  socket_data_event_t event0 =
+      InitRecvEvent(absl::StrCat(kResp0, kResp1.substr(0, kResp1.length() / 2)));
+  socket_data_event_t event1 = InitRecvEvent(kResp1.substr(kResp1.length() / 2));
+  socket_data_event_t event2 = InitRecvEvent(kResp2);
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
@@ -198,7 +231,7 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
 
 TEST_F(SocketTraceConnectorTest, NoEvents) {
   conn_info_t conn = InitConn();
-  socket_data_event_t event0 = InitEvent(kMsg0);
+  socket_data_event_t event0 = InitRecvEvent(kResp0);
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
@@ -214,6 +247,33 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
   EXPECT_EQ(1, record_batch[0]->Size());
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(1, record_batch[0]->Size());
+}
+
+TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
+  conn_info_t conn = InitConn();
+  socket_data_event_t req_event0 = InitSendEvent(kReq0);
+  socket_data_event_t req_event1 = InitSendEvent(kReq1);
+  socket_data_event_t req_event2 = InitSendEvent(kReq2);
+  socket_data_event_t resp_event0 = InitRecvEvent(kResp0);
+  socket_data_event_t resp_event1 = InitRecvEvent(kResp1);
+  socket_data_event_t resp_event2 = InitRecvEvent(kResp2);
+
+  auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
+
+  source_->OpenConn(conn);
+  source_->AcceptEvent(req_event0);
+  source_->AcceptEvent(req_event1);
+  source_->AcceptEvent(req_event2);
+  source_->AcceptEvent(resp_event0);
+  source_->AcceptEvent(resp_event1);
+  source_->AcceptEvent(resp_event2);
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(3, record_batch[0]->Size());
+
+  EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo", "bar", "doe"));
+  EXPECT_THAT(ToStringVector(record_batch[kHTTPReqMethodIdx]), ElementsAre("GET", "GET", "GET"));
+  EXPECT_THAT(ToStringVector(record_batch[kHTTPReqPathIdx]),
+              ElementsAre("/index.html", "/data.html", "/logs.html"));
 }
 
 }  // namespace stirling

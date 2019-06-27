@@ -83,7 +83,8 @@ struct HTTP2Stream : public ConnectionTracker {
 
 struct HTTPTraceRecord {
   const SocketConnection& conn;
-  HTTPMessage message;
+  HTTPMessage req_message;
+  HTTPMessage resp_message;
 };
 
 class SocketTraceConnector : public SourceConnector {
@@ -314,6 +315,7 @@ class SocketTraceConnector : public SourceConnector {
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
   FRIEND_TEST(SocketTraceConnectorTest, FilterMessages);
+  FRIEND_TEST(SocketTraceConnectorTest, RequestResponseMatching);
 };
 
 }  // namespace stirling
