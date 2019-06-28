@@ -163,9 +163,14 @@ class SocketTraceConnector : public SourceConnector {
   static void HandleOpenProbeOutput(void* cb_cookie, void* data, int data_size);
 
   // Events from BPF.
+  // TODO(oazizi/yzhao): These all operate based on pass-by-value, which copies.
+  //                     The Handle* functions should call make_unique() of new corresponding
+  //                     objects, and these functions should take unique_ptrs.
   void AcceptDataEvent(socket_data_event_t event);
-  void AcceptOpenConnEvent(const conn_info_t& conn_info);
-  void AcceptCloseConnEvent(const conn_info_t& conn_info);
+  void AcceptOpenConnEvent(conn_info_t conn_info);
+  void AcceptCloseConnEvent(conn_info_t conn_info);
+
+  conn_info_t* GetConn(const socket_data_event_t& event);
 
   // Connection related events.
   template <typename StreamType>
@@ -173,18 +178,12 @@ class SocketTraceConnector : public SourceConnector {
                       uint64_t stream_id);
   template <typename StreamType>
   void AppendToStream(socket_data_event_t event, std::map<uint64_t, StreamType>* streams);
-  conn_info_t* GetConn(const socket_data_event_t& event);
 
   // Transfers the data from stream buffers (from AcceptEvent()) to record_batch.
   void TransferStreamData(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch);
 
   // Transfer of an HTTP Response Event to the HTTP Response Table in the table store.
   void TransferHTTPStreams(types::ColumnWrapperRecordBatch* record_batch);
-
-  // Takes a data stream, and parses as many HTTP messages of the specified type as it can.
-  // Input data: data->events.
-  // Output messages: data->messages.
-  void ParseEventStream(TrafficMessageType type, DataStream* data);
 
   template <class TMessageType>
   static void ConsumeMessage(TraceRecord<TMessageType> record,

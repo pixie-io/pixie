@@ -32,6 +32,7 @@ struct SocketConnection {
  * Events stay in the raw container until whole messages are parsed out and placed in the
  * container of parsed messaged.
  */
+// TODO(oazizi): Turn this into a class.
 struct DataStream {
   // Raw data events from BPF.
   // TODO(oazizi): Convert this to vector.
@@ -44,6 +45,13 @@ struct DataStream {
   // Vector of parsed HTTP messages.
   // Once parsed, the raw data events should be discarded.
   std::deque<HTTPMessage> messages;
+
+  /**
+   * @ brief Parses as many messages as it can from the raw events into the messages container.
+   *
+   * @param type whether to parse as requests, responses or mixed traffic.
+   */
+  void ExtractMessages(TrafficMessageType type);
 };
 
 /**

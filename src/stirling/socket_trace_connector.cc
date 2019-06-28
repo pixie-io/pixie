@@ -185,7 +185,7 @@ void SocketTraceConnector::HandleCloseProbeOutput(void* cb_cookie, void* data, i
 
 namespace {
 
-static uint64_t GetStreamId(uint32_t tgid, uint32_t conn_id) {
+uint64_t GetStreamId(uint32_t tgid, uint32_t conn_id) {
   return (static_cast<uint64_t>(tgid) << 32) | conn_id;
 }
 
@@ -210,7 +210,7 @@ void SocketTraceConnector::AppendToStream(socket_data_event_t event,
   }
 
   StreamType& stream = iter->second;
-  stream.AddDataEvent(std::move(event));
+  stream.AddDataEvent(event);
 }
 
 template <typename StreamType>
@@ -237,10 +237,10 @@ void SocketTraceConnector::AcceptDataEvent(socket_data_event_t event) {
   // Event has protocol in case conn_info happened before deployment or was dropped by perf buffer.
   switch (event.attr.protocol) {
     case kProtocolHTTP:
-      AppendToStream(std::move(event), &http_streams_);
+      AppendToStream(event, &http_streams_);
       break;
     case kProtocolHTTP2:
-      AppendToStream(std::move(event), &http2_streams_);
+      AppendToStream(event, &http2_streams_);
       break;
     default:
       // TODO(oazizi/yzhao): Add MySQL when it goes through streams.
@@ -248,28 +248,15 @@ void SocketTraceConnector::AcceptDataEvent(socket_data_event_t event) {
   }
 }
 
-void SocketTraceConnector::TransferStreamData(uint32_t table_num,
-                                              types::ColumnWrapperRecordBatch* record_batch) {
-  switch (table_num) {
-    case kHTTPTableNum:
-      TransferHTTPStreams(record_batch);
-      break;
-    case kMySQLTableNum:
-      // TODO(oazizi): Convert MySQL protocol to use streams.
-      // TransferMySQLStreams(record_batch);
-      break;
-    default:
-      CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
-  }
+void SocketTraceConnector::AcceptOpenConnEvent(conn_info_t conn_info) {
+  const uint64_t stream_id = GetStreamId(conn_info.tgid, conn_info.conn_id);
+  conn_info.timestamp_ns += ClockRealTimeOffset();
+  connections_.emplace(stream_id, std::move(conn_info));
 }
 
-void SocketTraceConnector::AcceptOpenConnEvent(const conn_info_t& conn_info) {
+void SocketTraceConnector::AcceptCloseConnEvent(conn_info_t conn_info) {
   const uint64_t stream_id = GetStreamId(conn_info.tgid, conn_info.conn_id);
-  connections_.emplace(stream_id, conn_info);
-}
-
-void SocketTraceConnector::AcceptCloseConnEvent(const conn_info_t& conn_info) {
-  const uint64_t stream_id = GetStreamId(conn_info.tgid, conn_info.conn_id);
+  conn_info.timestamp_ns += ClockRealTimeOffset();
   connections_.erase(stream_id);
   ip_endpoints_.erase(stream_id);
 }
@@ -289,50 +276,19 @@ conn_info_t* SocketTraceConnector::GetConn(const socket_data_event_t& event) {
 // HTTP Specific TransferImpl Helpers
 //-----------------------------------------------------------------------------
 
-void SocketTraceConnector::ParseEventStream(TrafficMessageType type, DataStream* data) {
-  // TODO(oazizi): Continue to propagate the templating through this function.
-  EventParser<HTTPMessage> parser;
-
-  const size_t orig_offset = data->offset;
-
-  // Prepare all recorded events for parsing.
-  std::vector<std::string_view> msgs;
-  uint64_t next_seq_num = data->events.begin()->first;
-  for (const auto& [seq_num, event] : data->events) {
-    // Found a discontinuity in sequence numbers. Stop submitting events to parser.
-    if (seq_num != next_seq_num) {
+void SocketTraceConnector::TransferStreamData(uint32_t table_num,
+                                              types::ColumnWrapperRecordBatch* record_batch) {
+  switch (table_num) {
+    case kHTTPTableNum:
+      TransferHTTPStreams(record_batch);
       break;
-    }
-
-    // The main message to submit to parser.
-    std::string_view msg(event.msg, event.attr.msg_size);
-
-    // First message may have been partially processed by a previous call to this function.
-    // In such cases, the offset will be non-zero, and we need a sub-string of the first event.
-    if (data->offset != 0) {
-      CHECK(data->offset < event.attr.msg_size);
-      msg = msg.substr(data->offset, event.attr.msg_size - data->offset);
-      data->offset = 0;
-    }
-
-    parser.Append(msg, event.attr.timestamp_ns + ClockRealTimeOffset());
-    msgs.push_back(msg);
-    next_seq_num++;
+    case kMySQLTableNum:
+      // TODO(oazizi): Convert MySQL protocol to use streams.
+      // TransferMySQLStreams(record_batch);
+      break;
+    default:
+      CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
   }
-
-  // Now parse all the appended events.
-  ParseResult<BufferPosition> parse_result = parser.ParseMessages(type, &data->messages);
-
-  // If we weren't able to process anything new, then the offset should be the same as last time.
-  if (data->offset != 0 && parse_result.end_position.seq_num == 0) {
-    CHECK_EQ(parse_result.end_position.offset, orig_offset);
-  }
-
-  // Find and erase events that have been fully processed.
-  auto erase_iter = data->events.begin();
-  std::advance(erase_iter, parse_result.end_position.seq_num);
-  data->events.erase(data->events.begin(), erase_iter);
-  data->offset = parse_result.end_position.offset;
 }
 
 void SocketTraceConnector::TransferHTTPStreams(types::ColumnWrapperRecordBatch* record_batch) {
@@ -350,10 +306,10 @@ void SocketTraceConnector::TransferHTTPStreams(types::ColumnWrapperRecordBatch* 
         << absl::StrFormat("Must be either requestor or responder (and not both)");
 
     auto& resp_data = is_requestor_side ? stream.recv_data() : stream.send_data();
-    ParseEventStream(kMessageTypeResponses, &resp_data);
+    resp_data.ExtractMessages(kMessageTypeResponses);
 
     auto& req_data = is_requestor_side ? stream.send_data() : stream.recv_data();
-    ParseEventStream(kMessageTypeRequests, &req_data);
+    req_data.ExtractMessages(kMessageTypeRequests);
 
     // TODO(oazizi): If we stick with this approach, resp_data could be converted back to vector.
     for (HTTPMessage& msg : resp_data.messages) {
