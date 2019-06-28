@@ -16,6 +16,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: checkoutservice
+  namespace: hipster-shop
 spec:
   template:
     metadata:
@@ -59,6 +60,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: checkoutservice
+  namespace: hipster-shop
 spec:
   type: ClusterIP
   selector:

@@ -16,6 +16,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: cartservice
+  namespace: hipster-shop
 spec:
   template:
     metadata:
@@ -56,6 +57,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: cartservice
+  namespace: hipster-shop
 spec:
   type: ClusterIP
   selector:

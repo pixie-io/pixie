@@ -16,6 +16,7 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: frontend
+  namespace: hipster-shop
 spec:
   template:
     metadata:
@@ -71,6 +72,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: frontend
+  namespace: hipster-shop
 spec:
   type: ClusterIP
   selector:
@@ -84,9 +86,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: frontend-external
+  namespace: hipster-shop
+  annotations:
+    cloud.google.com/load-balancer-type: "internal"
 spec:
-  loadBalancerSourceRanges:
-  - 68.251.138.177/32
   type: LoadBalancer
   selector:
     app: frontend
