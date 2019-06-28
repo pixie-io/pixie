@@ -66,7 +66,7 @@ func TestUpdatePod(t *testing.T) {
 	}
 
 	// Check that correct pod info is in etcd.
-	resp, err := etcdClient.Get(context.Background(), "/pod/a_namespace/ijkl")
+	resp, err := etcdClient.Get(context.Background(), "/pod/default/ijkl")
 	if err != nil {
 		t.Fatal("Failed to get pod.")
 	}

@@ -103,7 +103,6 @@ spec {
 const podPb = `
 metadata {
 	name: "object_md"
-	namespace: "a_namespace"
 	uid: "ijkl"
 	resource_version: "1",
 	cluster_name: "a_cluster",
@@ -675,7 +674,6 @@ func TestObjectToPodProto(t *testing.T) {
 	creationTime := metav1.Unix(0, 4)
 	metadata := metav1.ObjectMeta{
 		Name:              "object_md",
-		Namespace:         "a_namespace",
 		UID:               "ijkl",
 		ResourceVersion:   "1",
 		ClusterName:       "a_cluster",

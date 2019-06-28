@@ -49,7 +49,7 @@ var NewAgentUUID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 var ExistingAgentUUID = "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 var UnhealthyAgentUUID = "8ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
-func setupAgentManager(t *testing.T) (*clientv3.Client, controllers.AgentManager, *mock_controllers.MockMetadataStore, func()) {
+func setupAgentManager(t *testing.T, isLeader bool) (*clientv3.Client, controllers.AgentManager, *mock_controllers.MockMetadataStore, func()) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 
 	ctrl := gomock.NewController(t)
@@ -60,7 +60,7 @@ func setupAgentManager(t *testing.T) (*clientv3.Client, controllers.AgentManager
 	CreateAgent(t, UnhealthyAgentUUID, etcdClient, UnhealthyAgentInfo)
 
 	clock := testingutils.NewTestClock(time.Unix(0, clockNowNS))
-	agtMgr := controllers.NewAgentManagerWithClock(etcdClient, mockMds, true, clock)
+	agtMgr := controllers.NewAgentManagerWithClock(etcdClient, mockMds, isLeader, clock)
 
 	return etcdClient, agtMgr, mockMds, cleanup
 }
@@ -87,7 +87,7 @@ func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb 
 }
 
 func TestCreateAgent(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t)
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, true)
 	defer cleanup()
 
 	u, err := uuid.FromString(NewAgentUUID)
@@ -128,8 +128,34 @@ func TestCreateAgent(t *testing.T) {
 	assert.Equal(t, NewAgentUUID, string(resp.Kvs[0].Value))
 }
 
+func TestCreateAgentNotLeader(t *testing.T) {
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, false)
+	defer cleanup()
+
+	u, err := uuid.FromString(NewAgentUUID)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+
+	agentInfo := &controllers.AgentInfo{
+		LastHeartbeatNS: 1,
+		CreateTimeNS:    4,
+		Hostname:        "localhost",
+		AgentID:         u,
+	}
+	err = agtMgr.CreateAgent(agentInfo)
+	assert.Equal(t, nil, err)
+
+	// Check that agent info is not in etcd.
+	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
+	if err != nil {
+		t.Fatal("Failed to get agent.")
+	}
+	assert.Equal(t, 0, len(resp.Kvs))
+}
+
 func TestCreateAgentWithExistingHostname(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t)
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, true)
 	defer cleanup()
 
 	u, err := uuid.FromString(NewAgentUUID)
@@ -179,7 +205,7 @@ func TestCreateAgentWithExistingHostname(t *testing.T) {
 }
 
 func TestCreateExistingAgent(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t)
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, true)
 	defer cleanup()
 
 	u, err := uuid.FromString(ExistingAgentUUID)
@@ -214,7 +240,7 @@ func TestCreateExistingAgent(t *testing.T) {
 }
 
 func TestUpdateHeartbeat(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t)
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, true)
 	defer cleanup()
 
 	u, err := uuid.FromString(ExistingAgentUUID)
@@ -242,8 +268,51 @@ func TestUpdateHeartbeat(t *testing.T) {
 	assert.Equal(t, "testhost", pb.HostInfo.Hostname)
 }
 
+func TestUpdateHeartbeatNotLeader(t *testing.T) {
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, false)
+	defer cleanup()
+
+	u, err := uuid.FromString(ExistingAgentUUID)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+
+	err = agtMgr.UpdateHeartbeat(u)
+	assert.Nil(t, err)
+
+	// Check that correct agent info is in etcd.
+	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
+	if err != nil {
+		t.Fatal("Failed to get agent.")
+	}
+	assert.Equal(t, 1, len(resp.Kvs))
+	pb := &data.AgentData{}
+	proto.Unmarshal(resp.Kvs[0].Value, pb)
+
+	assert.Equal(t, int64(healthyAgentLastHeartbeatNS), pb.LastHeartbeatNS)
+}
+
+func TestUpdateHeartbeatForNonExistingAgent(t *testing.T) {
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, true)
+	defer cleanup()
+
+	u, err := uuid.FromString(NewAgentUUID)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+
+	err = agtMgr.UpdateHeartbeat(u)
+	assert.NotNil(t, err)
+
+	resp, err := etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("localhost"))
+	if err != nil {
+		t.Fatal("Failed to get agent hostname.")
+	}
+	assert.Equal(t, 0, len(resp.Kvs))
+}
+
 func TestUpdateAgentState(t *testing.T) {
-	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t)
+	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
 	defer cleanup()
 
 	agents := make([]data.AgentData, 2)
@@ -280,8 +349,27 @@ func TestUpdateAgentState(t *testing.T) {
 	assert.Equal(t, 0, len(resp.Kvs))
 }
 
+func TestUpdateAgentStateNotLeader(t *testing.T) {
+	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, false)
+	defer cleanup()
+
+	err := agtMgr.UpdateAgentState()
+	assert.Nil(t, err)
+
+	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKey(""), clientv3.WithPrefix())
+	assert.Equal(t, 2, len(resp.Kvs))
+
+	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentKey(UnhealthyAgentUUID))
+	// Agent should still exist in etcd.
+	assert.Equal(t, 1, len(resp.Kvs))
+
+	resp, err = etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("anotherhost"))
+	// Agent should still exist in etcd.
+	assert.Equal(t, 1, len(resp.Kvs))
+}
+
 func TestUpdateAgentStateGetAgentsFailed(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
 	defer cleanup()
 
 	agents := make([]data.AgentData, 0)
@@ -296,7 +384,7 @@ func TestUpdateAgentStateGetAgentsFailed(t *testing.T) {
 }
 
 func TestGetActiveAgents(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
 	defer cleanup()
 
 	agentsMock := make([]data.AgentData, 2)
@@ -348,7 +436,7 @@ func TestGetActiveAgents(t *testing.T) {
 }
 
 func TestGetActiveAgentsGetAgentsFailed(t *testing.T) {
-	_, agtMgr, mockMds, cleanup := setupAgentManager(t)
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
 	defer cleanup()
 
 	agents := make([]data.AgentData, 0)
