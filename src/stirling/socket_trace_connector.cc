@@ -195,7 +195,6 @@ template <typename StreamType>
 void SocketTraceConnector::AppendToStream(socket_data_event_t event,
                                           std::map<uint64_t, StreamType>* streams) {
   const uint64_t stream_id = GetStreamId(event.attr.tgid, event.attr.conn_id);
-  const uint64_t seq_num = event.attr.seq_num;
   auto iter = streams->find(stream_id);
 
   if (iter == streams->end()) {
@@ -209,19 +208,9 @@ void SocketTraceConnector::AppendToStream(socket_data_event_t event,
       return;
     }
   }
+
   StreamType& stream = iter->second;
-  switch (event.attr.event_type) {
-    case kEventTypeSyscallSendEvent:
-    case kEventTypeSyscallWriteEvent:
-      stream.send_data.events.emplace(seq_num, std::move(event));
-      break;
-    case kEventTypeSyscallRecvEvent:
-    case kEventTypeSyscallReadEvent:
-      stream.recv_data.events.emplace(seq_num, std::move(event));
-      break;
-    default:
-      LOG(ERROR) << "AppendToStream(): unrecognized event type";
-  }
+  stream.AddDataEvent(std::move(event));
 }
 
 template <typename StreamType>
@@ -229,17 +218,13 @@ auto SocketTraceConnector::RegisterStream(const conn_info_t& conn_info,
                                           std::map<uint64_t, StreamType>* streams,
                                           uint64_t stream_id) {
   StreamType new_stream;
-  new_stream.conn.timestamp_ns = conn_info.timestamp_ns + ClockRealTimeOffset();
-  new_stream.conn.tgid = conn_info.tgid;
-  new_stream.conn.fd = conn_info.fd;
+  new_stream.AddConnOpenEvent(conn_info);
+
+  // TODO(oazizi): AddConnOpenEvent() also calls ParseSockAddr, but the lines below will go away
+  // soon.
   auto ip_endpoint_or = ParseSockAddr(conn_info);
-  if (ip_endpoint_or.ok()) {
-    new_stream.conn.remote_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
-    new_stream.conn.remote_port = ip_endpoint_or.ValueOrDie().port;
-  } else {
-    LOG(WARNING) << "Could not parse IP address.";
-  }
   ip_endpoints_.emplace(stream_id, ip_endpoint_or);
+
   const auto new_stream_ret = streams->emplace(stream_id, std::move(new_stream));
   DCHECK(new_stream_ret.second) << absl::StrFormat(
       "Tried to insert, but stream_id exists [stream_id = %d].", stream_id);
@@ -354,29 +339,31 @@ void SocketTraceConnector::TransferHTTPStreams(types::ColumnWrapperRecordBatch* 
   for (auto& [id, stream] : http_streams_) {
     PL_UNUSED(id);
 
+    TrafficProtocol protocol = stream.protocol();
+
     // TODO(oazizi): I don't like this way of detecting requestor vs responder. But works for now.
-    bool is_requestor_side = (config_mask_[stream.protocol] & kSocketTraceSendReq) ||
-                             (config_mask_[stream.protocol] & kSocketTraceRecvResp);
-    bool is_responder_side = (config_mask_[stream.protocol] & kSocketTraceSendResp) ||
-                             (config_mask_[stream.protocol] & kSocketTraceRecvReq);
+    bool is_requestor_side = (config_mask_[protocol] & kSocketTraceSendReq) ||
+                             (config_mask_[protocol] & kSocketTraceRecvResp);
+    bool is_responder_side = (config_mask_[protocol] & kSocketTraceSendResp) ||
+                             (config_mask_[protocol] & kSocketTraceRecvReq);
     CHECK(is_requestor_side ^ is_responder_side)
         << absl::StrFormat("Must be either requestor or responder (and not both)");
 
-    auto& resp_data = is_requestor_side ? stream.recv_data : stream.send_data;
+    auto& resp_data = is_requestor_side ? stream.recv_data() : stream.send_data();
     ParseEventStream(kMessageTypeResponses, &resp_data);
 
-    auto& req_data = is_requestor_side ? stream.send_data : stream.recv_data;
+    auto& req_data = is_requestor_side ? stream.send_data() : stream.recv_data();
     ParseEventStream(kMessageTypeRequests, &req_data);
 
     // TODO(oazizi): If we stick with this approach, resp_data could be converted back to vector.
     for (HTTPMessage& msg : resp_data.messages) {
       if (!req_data.messages.empty()) {
-        TraceRecord<HTTPMessage> record{stream.conn, std::move(req_data.messages.front()),
+        TraceRecord<HTTPMessage> record{stream.conn(), std::move(req_data.messages.front()),
                                         std::move(msg)};
         req_data.messages.pop_front();
         ConsumeMessage(std::move(record), record_batch);
       } else {
-        TraceRecord<HTTPMessage> record{stream.conn, HTTPMessage(), std::move(msg)};
+        TraceRecord<HTTPMessage> record{stream.conn(), HTTPMessage(), std::move(msg)};
         ConsumeMessage(std::move(record), record_batch);
       }
     }

@@ -430,7 +430,7 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
   std::vector<std::pair<uint64_t, std::string_view>> seq_msgs;
   for (const auto& [id, http_stream] : socket_trace_connector->TestOnlyHTTPStreams()) {
     PL_UNUSED(id);
-    for (const auto& [seq_num, event] : http_stream.recv_data.events) {
+    for (const auto& [seq_num, event] : http_stream.recv_data().events) {
       seq_msgs.emplace_back(seq_num, get_message(event));
     }
   }
