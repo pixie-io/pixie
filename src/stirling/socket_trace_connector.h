@@ -127,8 +127,9 @@ class SocketTraceConnector : public SourceConnector {
 
   Status Configure(uint32_t protocol, uint64_t config_mask);
 
-  const std::map<uint64_t, HTTPStream>& TestOnlyHTTPStreams() const { return http_streams_; }
-  const std::map<uint64_t, HTTP2Stream>& TestOnlyHTTP2Streams() const { return http2_streams_; }
+  const std::map<uint64_t, ConnectionTracker>& TestOnlyStreams() const {
+    return connection_trackers_;
+  }
   void TestOnlyConfigure(uint32_t protocol, uint64_t config_mask) {
     config_mask_[protocol] = config_mask;
   }
@@ -170,20 +171,12 @@ class SocketTraceConnector : public SourceConnector {
   void AcceptOpenConnEvent(conn_info_t conn_info);
   void AcceptCloseConnEvent(conn_info_t conn_info);
 
-  conn_info_t* GetConn(const socket_data_event_t& event);
-
-  // Connection related events.
-  template <typename StreamType>
-  auto RegisterStream(const conn_info_t& conn_info, std::map<uint64_t, StreamType>* streams,
-                      uint64_t stream_id);
-  template <typename StreamType>
-  void AppendToStream(socket_data_event_t event, std::map<uint64_t, StreamType>* streams);
-
-  // Transfers the data from stream buffers (from AcceptEvent()) to record_batch.
+  // Transfers the data from stream buffers (from AcceptDataEvent()) to record_batch.
   void TransferStreamData(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch);
 
   // Transfer of an HTTP Response Event to the HTTP Response Table in the table store.
-  void TransferHTTPStreams(types::ColumnWrapperRecordBatch* record_batch);
+  template <class TMessageType>
+  void TransferStreams(TrafficProtocol protocol, types::ColumnWrapperRecordBatch* record_batch);
 
   template <class TMessageType>
   static void ConsumeMessage(TraceRecord<TMessageType> record,
@@ -204,10 +197,7 @@ class SocketTraceConnector : public SourceConnector {
 
   ebpf::BPF bpf_;
 
-  std::map<uint64_t, HTTPStream> http_streams_;
-  std::map<uint64_t, HTTP2Stream> http2_streams_;
-  std::map<uint64_t, conn_info_t> connections_;
-  std::map<uint64_t, StatusOr<IPEndpoint> > ip_endpoints_;
+  std::map<uint64_t, ConnectionTracker> connection_trackers_;
 
   // For MySQL tracing only. Will go away when MySQL uses streams.
   types::ColumnWrapperRecordBatch* record_batch_;

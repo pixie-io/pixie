@@ -79,9 +79,9 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   ASSERT_NE(nullptr, socket_trace_connector);
 
   socket_trace_connector->ReadPerfBuffer(SocketTraceConnector::kHTTPTableNum);
-  ASSERT_GE(socket_trace_connector->TestOnlyHTTP2Streams().size(), 1);
+  ASSERT_GE(socket_trace_connector->TestOnlyStreams().size(), 1);
 
-  const HTTP2Stream h2_stream = socket_trace_connector->TestOnlyHTTP2Streams().begin()->second;
+  const ConnectionTracker h2_stream = socket_trace_connector->TestOnlyStreams().begin()->second;
   {
     std::string send_string = JoinStream(h2_stream.send_data().events);
     std::string_view send_buf = send_string;

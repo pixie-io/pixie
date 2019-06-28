@@ -6,6 +6,8 @@ namespace pl {
 namespace stirling {
 
 void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
+  SetProtocol(conn_info.traffic_class.protocol);
+
   conn_.timestamp_ns = conn_info.timestamp_ns;
   conn_.tgid = conn_info.tgid;
   conn_.fd = conn_info.fd;
@@ -21,6 +23,8 @@ void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
 void ConnectionTracker::AddConnCloseEvent() { closed_ = true; }
 
 void ConnectionTracker::AddDataEvent(socket_data_event_t event) {
+  SetProtocol(TrafficProtocol(event.attr.protocol));
+
   const uint64_t seq_num = event.attr.seq_num;
 
   switch (event.attr.event_type) {
@@ -38,9 +42,18 @@ void ConnectionTracker::AddDataEvent(socket_data_event_t event) {
   }
 }
 
+void ConnectionTracker::SetProtocol(TrafficProtocol protocol) {
+  if (protocol_ == kProtocolUnknown) {
+    protocol_ = protocol;
+  } else if (protocol != kProtocolUnknown) {
+    DCHECK_EQ(protocol_, protocol)
+        << "Not allowed to change the protocol of an active ConnectionTracker";
+  }
+}
+
+template <class TMessageType>
 void DataStream::ExtractMessages(TrafficMessageType type) {
-  // TODO(oazizi): Continue to propagate the templating through this function.
-  EventParser<HTTPMessage> parser;
+  EventParser<TMessageType> parser;
 
   const size_t orig_offset = offset;
 
@@ -70,7 +83,8 @@ void DataStream::ExtractMessages(TrafficMessageType type) {
   }
 
   // Now parse all the appended events.
-  ParseResult<BufferPosition> parse_result = parser.ParseMessages(type, &messages);
+  auto& typed_messages = std::get<std::deque<TMessageType>>(messages);
+  ParseResult<BufferPosition> parse_result = parser.ParseMessages(type, &typed_messages);
 
   // If we weren't able to process anything new, then the offset should be the same as last time.
   if (offset != 0 && parse_result.end_position.seq_num == 0) {
@@ -83,6 +97,9 @@ void DataStream::ExtractMessages(TrafficMessageType type) {
   events.erase(events.begin(), erase_iter);
   offset = parse_result.end_position.offset;
 }
+
+// Explicit instantiation for HTTPMessage.
+template void DataStream::ExtractMessages<HTTPMessage>(TrafficMessageType type);
 
 }  // namespace stirling
 }  // namespace pl

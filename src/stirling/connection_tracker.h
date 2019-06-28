@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <utility>
+#include <variant>
 
 #include "src/stirling/bcc_bpf/socket_trace.h"
 #include "src/stirling/http_parse.h"
@@ -44,7 +45,19 @@ struct DataStream {
 
   // Vector of parsed HTTP messages.
   // Once parsed, the raw data events should be discarded.
-  std::deque<HTTPMessage> messages;
+  // std::variant adds 8 bytes of overhead (to 80->88 for deque)
+  std::variant<std::deque<HTTPMessage> > messages;
+
+  /**
+   * @ brief Parses as many messages as it can from the raw events into the messages container.
+   *
+   * @param type whether to parse as requests, responses or mixed traffic.
+   */
+  template <class TMessageType>
+  void ExtractMessages(TrafficMessageType type);
+
+  // TODO(oazizi): Add a bool to say whether the stream has been touched since last transfer (to
+  // avoid useless computation in ExtractMessages()).
 
   /**
    * @ brief Parses as many messages as it can from the raw events into the messages container.
@@ -131,20 +144,9 @@ class ConnectionTracker {
   DataStream send_data_;
   DataStream recv_data_;
 
-  // TODO(oazizi): Add a bool to say whether the stream has been touched since last transfer (to
-  // avoid useless computation).
-  // TODO(oazizi): Could also record a timestamp, so we could destroy old EventStreams completely.
-};
+  void SetProtocol(TrafficProtocol protocol);
 
-class HTTPStream : public ConnectionTracker {
- public:
-  HTTPStream() { protocol_ = kProtocolHTTP; }
-};
-
-class HTTP2Stream : public ConnectionTracker {
- public:
-  HTTP2Stream() { protocol_ = kProtocolHTTP2; }
-  // TODO(yzhao): Add HTTP2Parser, or gRPC parser.
+  // TODO(oazizi): Could record a timestamp, so we could destroy old EventStreams completely.
 };
 
 }  // namespace stirling

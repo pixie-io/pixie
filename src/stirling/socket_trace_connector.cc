@@ -1,9 +1,7 @@
 #ifdef __linux__
 
-#include <algorithm>
-#include <memory>
+#include <deque>
 #include <utility>
-#include <vector>
 
 #include "absl/strings/match.h"
 #include "src/common/base/base.h"
@@ -169,14 +167,14 @@ void SocketTraceConnector::HandleOpenProbeOutput(void* cb_cookie, void* data, in
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   const auto conn = CopyFromBPF<conn_info_t>(data);
-  connector->AcceptOpenConnEvent(conn);
+  connector->AcceptOpenConnEvent(std::move(conn));
 }
 
 void SocketTraceConnector::HandleCloseProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   const auto conn = CopyFromBPF<conn_info_t>(data);
-  connector->AcceptCloseConnEvent(conn);
+  connector->AcceptCloseConnEvent(std::move(conn));
 }
 
 //-----------------------------------------------------------------------------
@@ -191,85 +189,45 @@ uint64_t GetStreamId(uint32_t tgid, uint32_t conn_id) {
 
 }  // namespace
 
-template <typename StreamType>
-void SocketTraceConnector::AppendToStream(socket_data_event_t event,
-                                          std::map<uint64_t, StreamType>* streams) {
-  const uint64_t stream_id = GetStreamId(event.attr.tgid, event.attr.conn_id);
-  auto iter = streams->find(stream_id);
-
-  if (iter == streams->end()) {
-    const auto conn_iter = connections_.find(stream_id);
-    // If connection exists and stream doesn't, this is the first event.
-    if (conn_iter != connections_.end()) {
-      iter = RegisterStream(conn_iter->second, streams, stream_id);
-    } else {
-      // TODO(chengruizhe): Handle missing connect/accept in a more robust way.
-      LOG(WARNING) << "Did not record connect/accept for stream " << stream_id;
-      return;
-    }
-  }
-
-  StreamType& stream = iter->second;
-  stream.AddDataEvent(event);
-}
-
-template <typename StreamType>
-auto SocketTraceConnector::RegisterStream(const conn_info_t& conn_info,
-                                          std::map<uint64_t, StreamType>* streams,
-                                          uint64_t stream_id) {
-  StreamType new_stream;
-  new_stream.AddConnOpenEvent(conn_info);
-
-  // TODO(oazizi): AddConnOpenEvent() also calls ParseSockAddr, but the lines below will go away
-  // soon.
-  auto ip_endpoint_or = ParseSockAddr(conn_info);
-  ip_endpoints_.emplace(stream_id, ip_endpoint_or);
-
-  const auto new_stream_ret = streams->emplace(stream_id, std::move(new_stream));
-  DCHECK(new_stream_ret.second) << absl::StrFormat(
-      "Tried to insert, but stream_id exists [stream_id = %d].", stream_id);
-  return new_stream_ret.first;
-}
-
 void SocketTraceConnector::AcceptDataEvent(socket_data_event_t event) {
+  const uint64_t stream_id = GetStreamId(event.attr.tgid, event.attr.conn_id);
+
   // Need to adjust the clocks to convert to real time.
   event.attr.timestamp_ns += ClockRealTimeOffset();
-  // Event has protocol in case conn_info happened before deployment or was dropped by perf buffer.
+
   switch (event.attr.protocol) {
     case kProtocolHTTP:
-      AppendToStream(event, &http_streams_);
-      break;
     case kProtocolHTTP2:
-      AppendToStream(event, &http2_streams_);
+      // TODO(oazizi/yzhao): Add MySQL when it goes through streams.
       break;
     default:
-      // TODO(oazizi/yzhao): Add MySQL when it goes through streams.
       LOG(WARNING) << "AcceptDataEvent ignored due to unknown protocol: " << event.attr.protocol;
+      return;
   }
+
+  ConnectionTracker& tracker = connection_trackers_[stream_id];
+  tracker.AddDataEvent(std::move(event));
 }
 
 void SocketTraceConnector::AcceptOpenConnEvent(conn_info_t conn_info) {
   const uint64_t stream_id = GetStreamId(conn_info.tgid, conn_info.conn_id);
+
+  // Need to adjust the clocks to convert to real time.
   conn_info.timestamp_ns += ClockRealTimeOffset();
-  connections_.emplace(stream_id, std::move(conn_info));
+
+  ConnectionTracker& tracker = connection_trackers_[stream_id];
+  tracker.AddConnOpenEvent(std::move(conn_info));
 }
 
 void SocketTraceConnector::AcceptCloseConnEvent(conn_info_t conn_info) {
   const uint64_t stream_id = GetStreamId(conn_info.tgid, conn_info.conn_id);
   conn_info.timestamp_ns += ClockRealTimeOffset();
-  connections_.erase(stream_id);
-  ip_endpoints_.erase(stream_id);
-}
 
-conn_info_t* SocketTraceConnector::GetConn(const socket_data_event_t& event) {
-  // TODO(chengruizhe): Might want to merge tgid and conn_id into a single field (eg. tgid +
-  // conn_id)
-  const uint64_t stream_id = GetStreamId(event.attr.tgid, event.attr.conn_id);
-  auto stream_pair = connections_.find(stream_id);
-  if (stream_pair == connections_.end()) {
-    return nullptr;
-  }
-  return &stream_pair->second;
+  // Need to adjust the clocks to convert to real time.
+  conn_info.timestamp_ns += ClockRealTimeOffset();
+
+  ConnectionTracker& tracker = connection_trackers_[stream_id];
+  tracker.AddConnCloseEvent();
 }
 
 //-----------------------------------------------------------------------------
@@ -280,22 +238,31 @@ void SocketTraceConnector::TransferStreamData(uint32_t table_num,
                                               types::ColumnWrapperRecordBatch* record_batch) {
   switch (table_num) {
     case kHTTPTableNum:
-      TransferHTTPStreams(record_batch);
+      TransferStreams<HTTPMessage>(kProtocolHTTP, record_batch);
+      TransferStreams<HTTPMessage>(kProtocolHTTP2, record_batch);
       break;
     case kMySQLTableNum:
       // TODO(oazizi): Convert MySQL protocol to use streams.
-      // TransferMySQLStreams(record_batch);
+      // TransferStreams<MySQLMessage>(kProtocolMySQL, record_batch);
       break;
     default:
       CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
   }
 }
 
-void SocketTraceConnector::TransferHTTPStreams(types::ColumnWrapperRecordBatch* record_batch) {
-  for (auto& [id, stream] : http_streams_) {
+template <class TMessageType>
+void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
+                                           types::ColumnWrapperRecordBatch* record_batch) {
+  // TODO(oazizi): The single connection trackers model makes TransferStreams() inefficient,
+  //               because it will get called multiple times, looping through all connection
+  //               trackers, but selecting a mutually exclusive subset each time.
+  //               Possible solutions: 1) different pools, 2) auxiliary pool of pointers.
+  for (auto& [id, stream] : connection_trackers_) {
     PL_UNUSED(id);
 
-    TrafficProtocol protocol = stream.protocol();
+    if (stream.protocol() != protocol) {
+      continue;
+    }
 
     // TODO(oazizi): I don't like this way of detecting requestor vs responder. But works for now.
     bool is_requestor_side = (config_mask_[protocol] & kSocketTraceSendReq) ||
@@ -306,24 +273,32 @@ void SocketTraceConnector::TransferHTTPStreams(types::ColumnWrapperRecordBatch* 
         << absl::StrFormat("Must be either requestor or responder (and not both)");
 
     auto& resp_data = is_requestor_side ? stream.recv_data() : stream.send_data();
-    resp_data.ExtractMessages(kMessageTypeResponses);
+    resp_data.template ExtractMessages<TMessageType>(kMessageTypeResponses);
+    auto& resp_messages = std::get<std::deque<TMessageType>>(resp_data.messages);
 
     auto& req_data = is_requestor_side ? stream.send_data() : stream.recv_data();
-    req_data.ExtractMessages(kMessageTypeRequests);
+    req_data.template ExtractMessages<TMessageType>(kMessageTypeRequests);
+    auto& req_messages = std::get<std::deque<TMessageType>>(req_data.messages);
+
+    // TODO(oazizi): Section defined below may need to be split out
+    // by message type (e.g. HTTP1, GRPC, MySQL) to give flexibility.
+    //------- BEGIN SECTION --------
 
     // TODO(oazizi): If we stick with this approach, resp_data could be converted back to vector.
-    for (HTTPMessage& msg : resp_data.messages) {
-      if (!req_data.messages.empty()) {
-        TraceRecord<HTTPMessage> record{stream.conn(), std::move(req_data.messages.front()),
-                                        std::move(msg)};
-        req_data.messages.pop_front();
+    for (TMessageType& msg : resp_messages) {
+      if (!req_messages.empty()) {
+        TraceRecord<TMessageType> record{stream.conn(), std::move(req_messages.front()),
+                                         std::move(msg)};
+        req_messages.pop_front();
         ConsumeMessage(std::move(record), record_batch);
       } else {
-        TraceRecord<HTTPMessage> record{stream.conn(), HTTPMessage(), std::move(msg)};
+        TraceRecord<TMessageType> record{stream.conn(), HTTPMessage(), std::move(msg)};
         ConsumeMessage(std::move(record), record_batch);
       }
     }
-    resp_data.messages.clear();
+    resp_messages.clear();
+
+    //------- END SECTION --------
   }
 
   // TODO(yzhao): Add the capability to remove events that are too old.
@@ -442,24 +417,11 @@ void SocketTraceConnector::TransferMySQLEvent(const socket_data_event_t& event,
   //      event.attr.event_type != kEventTypeSyscallSendEvent) {
   //    return;
   //  }
-  // TODO(chengruizhe): Get stream_id only once, instead of twice
-  conn_info_t* conn_info = GetConn(event);
-  uint64_t stream_id = GetStreamId(event.attr.tgid, event.attr.conn_id);
+
+  // TODO(chengruizhe/oazizi): Add connection info back, once MySQL uses a ConnectionTracker.
   int fd = -1;
   std::string ip = "-";
   int port = -1;
-  if (conn_info) {
-    auto s_iter = ip_endpoints_.find(stream_id);
-    if (s_iter != ip_endpoints_.end()) {
-      auto s = s_iter->second;
-      IPEndpoint remote_sockaddr = s.ok() ? s.ConsumeValueOrDie() : IPEndpoint();
-      fd = conn_info->fd;
-      ip = remote_sockaddr.ip;
-      port = remote_sockaddr.port;
-    } else {
-      LOG(WARNING) << "Could not find ipEndpoint for stream: " << stream_id;
-    }
-  }
 
   RecordBuilder<&kMySQLTable> r(record_batch);
   r.Append<r.ColIndex("time_")>(event.attr.timestamp_ns + ClockRealTimeOffset());
