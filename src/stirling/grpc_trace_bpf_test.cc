@@ -53,7 +53,7 @@ std::map<std::string, std::string> Headers(const Frame& frame) {
 
 MATCHER_P(IsFrameType, t, "") { return arg.frame.hd.type == t; }
 
-TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
+TEST(GRPCTraceBPFTest, DISABLED_TestGolangGrpcService) {
   constexpr char kBaseDir[] = "src/stirling/testing";
   std::string s_path =
       TestEnvironment::PathToTestDataFile(absl::StrCat(kBaseDir, "/go_greeter_server"));
