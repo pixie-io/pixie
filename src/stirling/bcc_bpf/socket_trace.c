@@ -1,7 +1,8 @@
-#include <uapi/linux/ptrace.h>
-#include <uapi/linux/in6.h>
-#include <linux/socket.h>
 #include "src/stirling/bcc_bpf/socket_trace.h"
+
+#include <linux/socket.h>
+#include <uapi/linux/in6.h>
+#include <uapi/linux/ptrace.h>
 
 // This is the perf buffer for BPF program to export data from kernel to user space.
 BPF_PERF_OUTPUT(socket_http_events);
@@ -19,13 +20,13 @@ struct connect_info_t {
 } __attribute__((__packed__, aligned(8)));
 
 struct accept_info_t {
-  struct sockaddr *addr;
-  size_t *addrlen;
+  struct sockaddr* addr;
+  size_t* addrlen;
 } __attribute__((__packed__, aligned(8)));
 
 struct data_info_t {
   u64 lookup_fd;
-  const char *buf;
+  const char* buf;
 } __attribute__((__packed__, aligned(8)));
 
 // This control_map is a bit-mask that controls which directions are traced in a connection.
@@ -68,8 +69,7 @@ BPF_HASH(active_read_info_map, u64, struct data_info_t);
 // Key is tgid
 BPF_HASH(proc_conn_map, u32, u32);
 
-static inline __attribute__((__always_inline__))
-uint32_t get_conn_id(u32 tgid) {
+static inline __attribute__((__always_inline__)) uint32_t get_conn_id(u32 tgid) {
   u32 conn_id = 0;
   u32* curr_conn_id = proc_conn_map.lookup_or_init(&tgid, &conn_id);
   if (curr_conn_id != NULL) {
@@ -78,8 +78,7 @@ uint32_t get_conn_id(u32 tgid) {
   return conn_id;
 }
 
-static inline __attribute__((__always_inline__))
-uint64_t get_control(u32 protocol) {
+static inline __attribute__((__always_inline__)) uint64_t get_control(u32 protocol) {
   u64 kZero = 0;
   u64* control_ptr = control_map.lookup_or_init(&protocol, &kZero);
   return *control_ptr;
@@ -92,8 +91,7 @@ BPF_PERCPU_ARRAY(data_buffer_heap, struct socket_data_event_t, 1);
 // Attribute copied from:
 // https://github.com/iovisor/bcc/blob/ef9d83f289222df78f0b16a04ade7c393bf4d83d/\
 // examples/cpp/pyperf/PyPerfBPFProgram.cc#L168
-static inline __attribute__((__always_inline__))
-struct socket_data_event_t* data_buffer() {
+static inline __attribute__((__always_inline__)) struct socket_data_event_t* data_buffer() {
   u32 kZero = 0;
   return data_buffer_heap.lookup(&kZero);
 }
@@ -102,7 +100,7 @@ struct socket_data_event_t* data_buffer() {
  * Buffer processing helper functions
  ***********************************************************/
 
-static bool is_http_response(const char *buf, size_t count) {
+static bool is_http_response(const char* buf, size_t count) {
   // Smallest HTTP response is 17 characters:
   // HTTP/1.1 200 OK\r\n
   // Use 16 here to be conservative.
@@ -117,7 +115,7 @@ static bool is_http_response(const char *buf, size_t count) {
   return false;
 }
 
-static bool is_http_request(const char *buf, size_t count) {
+static bool is_http_request(const char* buf, size_t count) {
   // Smallest HTTP response is 16 characters:
   // GET x HTTP/1.1\r\n
   if (count < 16) {
@@ -135,19 +133,19 @@ static bool is_http_request(const char *buf, size_t count) {
   return false;
 }
 
-static bool is_mysql_protocol(const char *buf, size_t count) {
+static bool is_mysql_protocol(const char* buf, size_t count) {
   // Need at least 7 bytes for COM_STMT_PREPARE + SELECT.
   // Plus there needs to be some substance to the query after that.
   // Here, expect at least 8 bytes.
-  if (count < 8){
+  if (count < 8) {
     return false;
   }
 
   // MySQL queries start with byte 0x16 (COM_STMT_PREPARE in the MySQL protocol).
   // For now, we also expect the word SELECT to avoid pollution.
   // TODO(oazizi): Make this more robust.
-  if (buf[0] == 0x16 &&
-      buf[1] == 'S' && buf[2] == 'E' && buf[3] == 'L' && buf[4] == 'E' && buf[5] == 'C'  && buf[6] == 'T') {
+  if (buf[0] == 0x16 && buf[1] == 'S' && buf[2] == 'E' && buf[3] == 'L' && buf[4] == 'E' &&
+      buf[5] == 'C' && buf[6] == 'T') {
     return true;
   }
 
@@ -160,32 +158,28 @@ static bool is_mysql_protocol(const char *buf, size_t count) {
 // write()/sendto()/sendmsg().
 //
 // [1] https://http2.github.io/http2-spec/#ConnectionHeader
-static bool is_http2_connection_preface(const char *buf, size_t count) {
+static bool is_http2_connection_preface(const char* buf, size_t count) {
   if (count < 3) {
     return false;
   }
   return buf[0] == 'P' && buf[1] == 'R' && buf[2] == 'I';
 }
 
-static struct traffic_class_t infer_traffic(const char *buf, size_t count) {
+static struct traffic_class_t infer_traffic(const char* buf, size_t count) {
   struct traffic_class_t traffic_class;
   if (is_http_response(buf, count)) {
     traffic_class.protocol = kProtocolHTTP;
     traffic_class.message_type = kMessageTypeResponses;
-  }
-  else if (is_http_request(buf, count)) {
+  } else if (is_http_request(buf, count)) {
     traffic_class.protocol = kProtocolHTTP;
     traffic_class.message_type = kMessageTypeRequests;
-  }
-  else if (is_mysql_protocol(buf, count)) {
+  } else if (is_mysql_protocol(buf, count)) {
     traffic_class.protocol = kProtocolMySQL;
     traffic_class.message_type = kMessageTypeRequests;
-  }
-  else if (is_http2_connection_preface(buf, count)) {
+  } else if (is_http2_connection_preface(buf, count)) {
     traffic_class.protocol = kProtocolHTTP2;
     traffic_class.message_type = kMessageTypeMixed;
-  }
-  else {
+  } else {
     traffic_class.protocol = kProtocolUnknown;
     traffic_class.message_type = kMessageTypeUnknown;
   }
@@ -226,7 +220,7 @@ static struct conn_info_t* get_conn_info(u64 lookup_fd, const char* buf, size_t 
  * BPF syscall probe functions
  ***********************************************************/
 
-static void submit_new_conn(struct pt_regs *ctx, u32 tgid, u32 fd, struct sockaddr_in6 addr){
+static void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd, struct sockaddr_in6 addr) {
   struct conn_info_t conn_info;
   memset(&conn_info, 0, sizeof(struct conn_info_t));
   conn_info.timestamp_ns = bpf_ktime_get_ns();
@@ -245,7 +239,8 @@ static void submit_new_conn(struct pt_regs *ctx, u32 tgid, u32 fd, struct sockad
   socket_open_conns.perf_submit(ctx, &conn_info, sizeof(struct conn_info_t));
 }
 
-static int probe_entry_connect_impl(struct pt_regs *ctx, int sockfd, const struct sockaddr *addr, size_t addrlen) {
+static int probe_entry_connect_impl(struct pt_regs* ctx, int sockfd, const struct sockaddr* addr,
+                                    size_t addrlen) {
   u64 id = bpf_get_current_pid_tgid();
 
   // Only record IP (IPV4 and IPV6) connections.
@@ -255,7 +250,7 @@ static int probe_entry_connect_impl(struct pt_regs *ctx, int sockfd, const struc
 
   struct connect_info_t connect_info;
 
-  bpf_probe_read(&connect_info.addr, sizeof(struct sockaddr_in6), (const void*) addr);
+  bpf_probe_read(&connect_info.addr, sizeof(struct sockaddr_in6), (const void*)addr);
   connect_info.fd = sockfd;
 
   active_connect_info_map.update(&id, &connect_info);
@@ -263,7 +258,7 @@ static int probe_entry_connect_impl(struct pt_regs *ctx, int sockfd, const struc
   return 0;
 }
 
-static int probe_ret_connect_impl(struct pt_regs *ctx) {
+static int probe_ret_connect_impl(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
@@ -279,7 +274,7 @@ static int probe_ret_connect_impl(struct pt_regs *ctx) {
 
   submit_new_conn(ctx, tgid, (u32)connect_info->fd, connect_info->addr);
 
- done:
+done:
   // Regardless of what happened, after accept() returns, there is no need to track the sock_addr
   // being accepted during the accept() call, therefore we can remove the entry.
   active_connect_info_map.delete(&id);
@@ -291,7 +286,8 @@ static int probe_ret_connect_impl(struct pt_regs *ctx) {
 //
 // TODO(yzhao): We are not able to trace the source address/port yet. We might need to probe the
 // socket() syscall.
-static int probe_entry_accept_impl(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t *addrlen) {
+static int probe_entry_accept_impl(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
+                                   size_t* addrlen) {
   u64 id = bpf_get_current_pid_tgid();
 
   struct accept_info_t accept_info;
@@ -303,7 +299,7 @@ static int probe_entry_accept_impl(struct pt_regs *ctx, int sockfd, struct socka
 }
 
 // Read the sockaddr values and write to the output buffer.
-static int probe_ret_accept_impl(struct pt_regs *ctx) {
+static int probe_ret_accept_impl(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
@@ -312,7 +308,7 @@ static int probe_ret_accept_impl(struct pt_regs *ctx) {
     goto done;
   }
 
-  struct accept_info_t *accept_info = active_accept_info_map.lookup(&id);
+  struct accept_info_t* accept_info = active_accept_info_map.lookup(&id);
   if (accept_info == NULL) {
     goto done;
   }
@@ -323,15 +319,17 @@ static int probe_ret_accept_impl(struct pt_regs *ctx) {
   }
 
   submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)accept_info->addr));
- done:
+done:
   // Regardless of what happened, after accept() returns, there is no need to track the sock_addr
   // being accepted during the accept() call, therefore we can remove the entry.
   active_accept_info_map.delete(&id);
   return 0;
 }
 
-static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t count) {
-  if (fd < 0) { return 0; }
+static int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
+  if (fd < 0) {
+    return 0;
+  }
 
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
@@ -353,10 +351,17 @@ static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t
   u64 control = get_control(conn_info->traffic_class.protocol);
 
   switch (conn_info->traffic_class.message_type) {
-    case kMessageTypeRequests: trace = (control & kSocketTraceSendReq); break;
-    case kMessageTypeResponses: trace = (control & kSocketTraceSendResp); break;
-    case kMessageTypeMixed: trace = (control & (kSocketTraceSendReq | kSocketTraceSendResp)); break;
-    default: trace = false;
+    case kMessageTypeRequests:
+      trace = (control & kSocketTraceSendReq);
+      break;
+    case kMessageTypeResponses:
+      trace = (control & kSocketTraceSendResp);
+      break;
+    case kMessageTypeMixed:
+      trace = (control & (kSocketTraceSendReq | kSocketTraceSendResp));
+      break;
+    default:
+      trace = false;
   }
 
   if (!trace) {
@@ -372,7 +377,7 @@ static int probe_entry_write_send(struct pt_regs *ctx, int fd, char* buf, size_t
   return 0;
 }
 
-static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
+static int probe_ret_write_send(struct pt_regs* ctx, uint32_t event_type) {
   u64 id = bpf_get_current_pid_tgid();
 
   int32_t bytes_written = PT_REGS_RC(ctx);
@@ -416,18 +421,22 @@ static int probe_ret_write_send(struct pt_regs *ctx, uint32_t event_type) {
     case kProtocolHTTP2:
       socket_http_events.perf_submit(ctx, event, size_to_submit);
       break;
-    case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
-    default: break;
+    case kProtocolMySQL:
+      socket_mysql_events.perf_submit(ctx, event, size_to_submit);
+      break;
+    default:
+      break;
   }
 
- done:
-  // Regardless of what happened, after write/send/sendto() returns, there is no need to track the fd & buf
-  // being accepted by write/send/sendto() call, therefore we can remove the entry.
+done:
+  // Regardless of what happened, after write/send/sendto() returns, there is no need to track the
+  // fd & buf being accepted by write/send/sendto() call, therefore we can remove the entry.
   active_write_info_map.delete(&id);
   return 0;
 }
 
-static int probe_entry_read_recv(struct pt_regs *ctx, unsigned int fd, char* buf, size_t count, uint32_t event_type) {
+static int probe_entry_read_recv(struct pt_regs* ctx, unsigned int fd, char* buf, size_t count,
+                                 uint32_t event_type) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
   u64 lookup_fd = ((u64)tgid << 32) | (u32)fd;
@@ -441,7 +450,7 @@ static int probe_entry_read_recv(struct pt_regs *ctx, unsigned int fd, char* buf
   return 0;
 }
 
-static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
+static int probe_ret_read_recv(struct pt_regs* ctx, uint32_t event_type) {
   u64 id = bpf_get_current_pid_tgid();
 
   int32_t bytes_read = PT_REGS_RC(ctx);
@@ -475,10 +484,17 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
 
   u64 control = get_control(conn_info->traffic_class.protocol);
   switch (conn_info->traffic_class.message_type) {
-    case kMessageTypeRequests: trace = (control & kSocketTraceRecvReq); break;
-    case kMessageTypeResponses: trace = (control & kSocketTraceRecvResp); break;
-    case kMessageTypeMixed: trace = (control & (kSocketTraceRecvReq | kSocketTraceRecvResp)); break;
-    default: trace = false;
+    case kMessageTypeRequests:
+      trace = (control & kSocketTraceRecvReq);
+      break;
+    case kMessageTypeResponses:
+      trace = (control & kSocketTraceRecvResp);
+      break;
+    case kMessageTypeMixed:
+      trace = (control & (kSocketTraceRecvReq | kSocketTraceRecvResp));
+      break;
+    default:
+      trace = false;
   }
 
   if (!trace) {
@@ -509,19 +525,24 @@ static int probe_ret_read_recv(struct pt_regs *ctx, uint32_t event_type) {
     case kProtocolHTTP2:
       socket_http_events.perf_submit(ctx, event, size_to_submit);
       break;
-    case kProtocolMySQL: socket_mysql_events.perf_submit(ctx, event, size_to_submit); break;
-    default: break;
+    case kProtocolMySQL:
+      socket_mysql_events.perf_submit(ctx, event, size_to_submit);
+      break;
+    default:
+      break;
   }
 
-  done:
+done:
   // Regardless of what happened, after write/send() returns, there is no need to track the fd & buf
   // being accepted by write/send() call, therefore we can remove the entry.
   active_read_info_map.delete(&id);
   return 0;
 }
 
-int probe_close(struct pt_regs *ctx, int fd) {
-  if (fd < 0) { return 0; }
+int probe_close(struct pt_regs* ctx, int fd) {
+  if (fd < 0) {
+    return 0;
+  }
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
   u64 lookup_fd = ((u64)tgid << 32) | fd;
@@ -538,71 +559,66 @@ int probe_close(struct pt_regs *ctx, int fd) {
  * BPF syscall probe function entry-points
  ***********************************************************/
 
-int probe_entry_connect(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t addrlen) {
+int probe_entry_connect(struct pt_regs* ctx, int sockfd, struct sockaddr* addr, size_t addrlen) {
   return probe_entry_connect_impl(ctx, sockfd, addr, addrlen);
 }
 
-int probe_ret_connect(struct pt_regs *ctx) {
-  return probe_ret_connect_impl(ctx);
-}
+int probe_ret_connect(struct pt_regs* ctx) { return probe_ret_connect_impl(ctx); }
 
-int probe_entry_accept(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t *addrlen) {
+int probe_entry_accept(struct pt_regs* ctx, int sockfd, struct sockaddr* addr, size_t* addrlen) {
   return probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
 }
 
-int probe_ret_accept(struct pt_regs *ctx) {
-  return probe_ret_accept_impl(ctx);
-}
+int probe_ret_accept(struct pt_regs* ctx) { return probe_ret_accept_impl(ctx); }
 
-int probe_entry_accept4(struct pt_regs *ctx, int sockfd, struct sockaddr *addr, size_t *addrlen) {
+int probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockaddr* addr, size_t* addrlen) {
   return probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
 }
 
-int probe_ret_accept4(struct pt_regs *ctx) {
-  return probe_ret_accept_impl(ctx);
-}
+int probe_ret_accept4(struct pt_regs* ctx) { return probe_ret_accept_impl(ctx); }
 
-int probe_entry_write(struct pt_regs *ctx, int fd, char* buf, size_t count) {
+int probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_write_send(ctx, fd, buf, count);
 }
 
-int probe_ret_write(struct pt_regs *ctx) {
+int probe_ret_write(struct pt_regs* ctx) {
   return probe_ret_write_send(ctx, kEventTypeSyscallWriteEvent);
 }
 
-int probe_entry_send(struct pt_regs *ctx, int fd, char* buf, size_t count) {
+int probe_entry_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_write_send(ctx, fd, buf, count);
 }
 
-int probe_ret_send(struct pt_regs *ctx) {
+int probe_ret_send(struct pt_regs* ctx) {
   return probe_ret_write_send(ctx, kEventTypeSyscallSendEvent);
 }
 
-int probe_entry_read(struct pt_regs *ctx, int fd, char* buf, size_t count) {
+int probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_read_recv(ctx, fd, buf, count, kEventTypeSyscallReadEvent);
 }
 
-int probe_ret_read(struct pt_regs *ctx) {
+int probe_ret_read(struct pt_regs* ctx) {
   return probe_ret_read_recv(ctx, kEventTypeSyscallReadEvent);
 }
 
-int probe_entry_recv(struct pt_regs *ctx, int fd, char* buf, size_t count) {
+int probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_read_recv(ctx, fd, buf, count, kEventTypeSyscallRecvEvent);
 }
 
-int probe_ret_recv(struct pt_regs *ctx) {
+int probe_ret_recv(struct pt_regs* ctx) {
   return probe_ret_read_recv(ctx, kEventTypeSyscallRecvEvent);
 }
 
-int probe_entry_sendto(struct pt_regs *ctx, int fd, char* buf, size_t count) {
+int probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_write_send(ctx, fd, buf, count);
 }
 
-int probe_ret_sendto(struct pt_regs *ctx) {
+int probe_ret_sendto(struct pt_regs* ctx) {
   return probe_ret_write_send(ctx, kEventTypeSyscallSendEvent);
 }
 
 // TODO(oazizi): Look into the following opens:
 // 1) Should we trace sendmsg(), which is another syscall, but with a different interface?
-// 2) Why does the syscall table only include sendto, while Linux source code and man page list both sendto and send?
-// 3) What do we do when the sendto() is called with a dest_addr provided? I believe this overrides the conn_info.
+// 2) Why does the syscall table only include sendto, while Linux source code and man page list both
+// sendto and send? 3) What do we do when the sendto() is called with a dest_addr provided? I
+// believe this overrides the conn_info.

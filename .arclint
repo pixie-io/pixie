@@ -1,6 +1,7 @@
 {
   "exclude": [
     "(chef/site-cookbooks/.*$)",
+    "(experimental/.*$)",
     "(^linters/cpplint)",
     "(^src/ui/offline_package_cache)",
     "(\\.pb\\.gw\\.go$)",
@@ -33,7 +34,7 @@
     },
     "cpplint": {
       "type": "cpplint",
-      "include": ["(\\.cc$)", "(\\.h$)"],
+      "include": ["(\\.c$)", "(\\.cc$)", "(\\.h$)"],
       "exclude": ["(_objc\\.h)"],
       "bin": "./linters/cpplint/cpplint.py",
       "flags": [
@@ -45,7 +46,7 @@
     },
     "clang-format": {
       "type": "clang-format",
-      "include": "(\\.(m|h|mm|cc)$)"
+      "include": "(\\.(m|h|mm|c|cc)$)"
     },
     "filename": {
       "type": "filename"
