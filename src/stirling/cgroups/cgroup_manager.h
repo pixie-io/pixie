@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/common/fs/fs.h"
 #include "src/common/system_config/system_config.h"
 #include "src/stirling/cgroups/proc_parser.h"
 
@@ -167,31 +166,14 @@ class CGroupManager {
   Status UpdateQoSClassInfo(fs::path qos_path, CGroupQoS qos);
   Status UpdatePodInfo(fs::path pod_path, const std::string& pod_name, CGroupQoS qos);
   Status UpdateContainerInfo(const fs::path& container_path, PodInfo* pod_info);
-  Status HandleFSEvent(FSWatcher::FSEvent* fs_event);
-  void AddFSWatch(const fs::path& path);
-  void RemoveFSWatch(const fs::path& path);
-  Status HandleFSQoSEvent(const fs::path& path, FSWatcher::FSEventType event_type,
-                          const std::string& qos_name);
-  Status HandleFSPodEvent(const fs::path& path, FSWatcher::FSEventType event_type,
-                          const std::string& pod_name);
-  Status HandleFSContainerEvent(const fs::path& path, FSWatcher::FSEventType event_type,
-                                const std::string& container_name);
-
-  Status ScanFileSystem();
 
   ProcParser proc_parser_;
   fs::path sysfs_path_;
-
-  // Disable FSWatcher/inotify, since it doesn't work well on /sys/fs or /proc.
-  // TODO(oazizi/PL-617): Make this a knob or remove FSWatcher as it's currently dead code.
-  const bool fs_watcher_enabled_ = false;
-  std::unique_ptr<FSWatcher> fs_watcher_ = nullptr;
 
   // Map from pod name to group info. Pods are unique across QOS classes so we
   // don't need to track that in the key.
   std::unordered_map<std::string, PodInfo> cgroup_info_;
 
-  // Stat: number of times a full scan was performed.
   uint64_t full_scan_count_ = 0;
 };
 

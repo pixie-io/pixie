@@ -9,7 +9,6 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/strip.h"
 #include "src/common/base/base.h"
-#include "src/common/fs/fs.h"
 #include "src/stirling/cgroups/cgroup_manager.h"
 
 namespace pl {
@@ -62,30 +61,6 @@ std::unique_ptr<CGroupManager> CGroupManager::Create(const common::SystemConfig&
   return retval;
 }
 
-void CGroupManager::AddFSWatch(const fs::path& path) {
-  if (!fs_watcher_) {
-    return;
-  }
-  auto s = fs_watcher_->AddWatch(path);
-  if (!s.ok()) {
-    // Cannot rely on fs watcher anymore. Reset the unique pointer.
-    fs_watcher_.reset();
-    LOG(INFO) << absl::StrFormat("Could not add watcher for path: %s, error: %s", path.string(),
-                                 s.msg());
-  }
-}
-
-void CGroupManager::RemoveFSWatch(const fs::path& path) {
-  if (!fs_watcher_) {
-    return;
-  }
-  auto s = fs_watcher_->RemoveWatch(path);
-  if (!s.ok()) {
-    LOG(WARNING) << absl::StrFormat("Could not remove watcher for path: %s, error: %s",
-                                    path.string(), s.msg());
-  }
-}
-
 Status CGroupManager::UpdateQoSClassInfo(fs::path qos_path, CGroupQoS qos) {
   std::error_code ec;
 
@@ -100,7 +75,6 @@ Status CGroupManager::UpdateQoSClassInfo(fs::path qos_path, CGroupQoS qos) {
     return error::Unknown("Failed to open: $0: $1", qos_path.string(), ec.message());
   }
 
-  AddFSWatch(qos_path);
   for (const auto& p : dir_iter) {
     auto path_str = p.path().string();
     auto pod_name = p.path().filename().string();
@@ -119,7 +93,6 @@ Status CGroupManager::UpdatePodInfo(fs::path pod_path, const std::string& pod_na
     return error::Unknown("Failed to open: $0: $1", pod_path.string(), ec.message());
   }
 
-  AddFSWatch(pod_path);
   PodInfo pod_info;
   pod_info.qos = qos;
   for (const auto& container_path : pod_dir_iter) {
@@ -147,110 +120,13 @@ Status CGroupManager::UpdateContainerInfo(const fs::path& container_path, PodInf
   ContainerInfo info;
   // Read the pid list.
   PL_RETURN_IF_ERROR(ReadPIDList(container_path / kPidFile, &info.pids));
-  AddFSWatch(container_path / kPidFile);
   pod_info->container_info_by_name[container_name] = std::move(info);
   return Status::OK();
 }
 
-Status CGroupManager::HandleFSQoSEvent(const fs::path& path, FSWatcher::FSEventType event_type,
-                                       const std::string& qos_name) {
-  if (event_type == FSWatcher::FSEventType::kDeleteDir) {
-    cgroup_info_.erase(qos_name);
-    RemoveFSWatch(path / qos_name);
-    return Status::OK();
-  }
-
-  CGroupQoS qos = CGroupQoS::kGuaranteed;
-  if (qos_name == "besteffort") {
-    qos = CGroupQoS::kBestEffort;
-  } else if (qos_name == "burstable") {
-    qos = CGroupQoS::kBurstable;
-  }
-
-  return UpdateQoSClassInfo(path / qos_name, qos);
-}
-
-Status CGroupManager::HandleFSPodEvent(const fs::path& path, FSWatcher::FSEventType event_type,
-                                       const std::string& pod_name) {
-  if (event_type == FSWatcher::FSEventType::kDeleteDir) {
-    cgroup_info_.erase(pod_name);
-    RemoveFSWatch(path / pod_name);
-    return Status::OK();
-  }
-
-  // TODO(kgandhi): Since we know the exact path, we should use that to
-  // determine the qos instead of StrContains.
-  CGroupQoS qos = CGroupQoS::kGuaranteed;
-  if (absl::StrContains(path.string(), "besteffort")) {
-    qos = CGroupQoS::kBestEffort;
-  } else if (absl::StrContains(path.string(), "burstable")) {
-    qos = CGroupQoS::kBurstable;
-  }
-  return UpdatePodInfo(path / pod_name, pod_name, qos);
-}
-
-Status CGroupManager::HandleFSContainerEvent(const fs::path& path,
-                                             FSWatcher::FSEventType event_type,
-                                             const std::string& container_name) {
-  auto pod_name = path.filename().string();
-  auto& pod_info = cgroup_info_[pod_name];
-  if (event_type == FSWatcher::FSEventType::kDeleteDir) {
-    pod_info.container_info_by_name.erase(container_name);
-    RemoveFSWatch(path / container_name / kPidFile);
-    return Status::OK();
-  }
-
-  return UpdateContainerInfo(path / container_name, &pod_info);
-}
-
-Status CGroupManager::HandleFSEvent(FSWatcher::FSEvent* fs_event) {
-  auto path = fs_event->GetPath();
-  switch (fs_event->type) {
-    case FSWatcher::FSEventType::kCreateDir:
-      // fall through
-    case FSWatcher::FSEventType::kDeleteDir: {
-      auto dir_name = fs_event->name;
-      bool is_qos = (fs_event->name == "burstable") || (fs_event->name == "besteffort");
-      if (is_qos) {
-        return HandleFSQoSEvent(path, fs_event->type, fs_event->name);
-      }
-      bool is_pod = absl::StartsWith(fs_event->name, kPodPrefix);
-      if (is_pod) {
-        return HandleFSPodEvent(path, fs_event->type, dir_name);
-      }
-      return HandleFSContainerEvent(path, fs_event->type, dir_name);
-    }
-    case FSWatcher::FSEventType::kModifyFile: {
-      auto container_path = path.parent_path();
-      auto pod_name = container_path.parent_path().filename().string();
-      return UpdateContainerInfo(container_path, &(cgroup_info_[pod_name]));
-    }
-    case FSWatcher::FSEventType::kCreateFile: {
-      // We don't care about new files, just new directories.
-      return Status::OK();
-    }
-    case FSWatcher::FSEventType::kDeleteFile: {
-      // We don't care about deleted files, just deleted directories.
-      return Status::OK();
-    }
-    case FSWatcher::FSEventType::kIgnored: {
-      // A watched directory was deleted, and the watch is being automatically removed.
-      // There should also be a watch on the parent that will report a kDeleteDir,
-      // so no need to to take action here.
-      // Only exception is if the root watch on 'kubepods' disappears. Then we're in trouble.
-      if (fs_event->name == "kubepods") {
-        return error::Internal("Not expecting watch on 'kubepods' to be ignored.");
-      }
-      return Status::OK();
-    }
-    case FSWatcher::FSEventType::kUnknown:
-      // fall through
-    default:
-      return error::Unknown("Unknown FS watcher event type.");
-  }
-}
-
-Status CGroupManager::ScanFileSystem() {
+Status CGroupManager::UpdateCGroupInfo() {
+  // On cgroup update we need to rescan the entire filesystem and update
+  // the internal data structures.
   cgroup_info_.clear();
 
   auto base_path = sysfs_path_ / kSysfsCpuAcctPatch;
@@ -273,57 +149,6 @@ Status CGroupManager::ScanFileSystem() {
 
   full_scan_count_++;
 
-  return Status::OK();
-}
-
-Status CGroupManager::UpdateCGroupInfo() {
-  // No system support for inotify, or inotify disabled. Always scan file system.
-  if (!FSWatcher::SupportsInotify() || !fs_watcher_enabled_) {
-    return ScanFileSystem();
-  }
-
-  // There was potentially an error while adding or removing watchers
-  // in a previous iteration or needs to be created for the first time.
-  if (!fs_watcher_) {
-    fs_watcher_ = FSWatcher::Create();
-    return ScanFileSystem();
-  }
-
-  // Scan the filesystem: FS Watcher not initialized
-  if (fs_watcher_->NotInitialized()) {
-    return ScanFileSystem();
-  }
-
-  if (fs_watcher_->HasOverflow()) {
-    // To avoid race conditions on an existing inotify fd, destroy existing
-    // fs_watcher_ and recreate it.
-    fs_watcher_ = FSWatcher::Create();
-    return ScanFileSystem();
-  }
-
-  // Handle fs watcher events.
-  if (!fs_watcher_->ReadInotifyUpdates().ok()) {
-    LOG(INFO) << "Could not read inotify updated from FS Watcher.";
-    return ScanFileSystem();
-  }
-  while (fs_watcher_->HasEvents()) {
-    auto event_status = fs_watcher_->GetNextEvent();
-    if (!event_status.ok()) {
-      LOG(INFO) << "Could not get next event from FS Watcher.";
-      return ScanFileSystem();
-    }
-    auto fs_event = event_status.ConsumeValueOrDie();
-    if (fs_event.type == FSWatcher::FSEventType::kUnknown) {
-      LOG(INFO) << "FS Watcher reported an unknown event.";
-      return ScanFileSystem();
-    }
-    auto handle_status = HandleFSEvent(&fs_event);
-
-    if (!handle_status.ok()) {
-      LOG(INFO) << "Could not handle FS Watcher event: " << handle_status.msg();
-      return ScanFileSystem();
-    }
-  }
   return Status::OK();
 }
 
