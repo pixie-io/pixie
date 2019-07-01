@@ -6,8 +6,8 @@
 #include <utility>
 #include <variant>
 
-#include "src/stirling/bcc_bpf/socket_trace.h"
 #include "src/stirling/http_parse.h"
+#include "src/stirling/socket_trace.h"
 
 namespace pl {
 namespace stirling {
@@ -37,7 +37,7 @@ struct SocketConnection {
 struct DataStream {
   // Raw data events from BPF.
   // TODO(oazizi): Convert this to vector.
-  std::map<uint64_t, socket_data_event_t> events;
+  std::map<uint64_t, SocketDataEvent> events;
 
   // To support partially processed events,
   // the stream may start at an offset in the first raw data event.
@@ -94,7 +94,7 @@ class ConnectionTracker {
    *
    * @param event The data event from BPF.
    */
-  void AddDataEvent(socket_data_event_t event);
+  void AddDataEvent(SocketDataEvent event);
 
   /**
    * @brief Get the protocol for this connection.

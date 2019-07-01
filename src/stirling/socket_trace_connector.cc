@@ -135,25 +135,14 @@ void SocketTraceConnector::ReadPerfBuffer(uint32_t table_num) {
 void SocketTraceConnector::HandleHTTPProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  auto* event = static_cast<socket_data_event_t*>(data);
-
-  connector->AcceptDataEvent(*event);
+  connector->AcceptDataEvent(SocketDataEvent(data));
 }
 
 void SocketTraceConnector::HandleMySQLProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  auto* event = static_cast<socket_data_event_t*>(data);
-
   // TODO(oazizi): Use AcceptDataEvent() to handle reorderings.
-  connector->TransferMySQLEvent(*event, connector->record_batch_);
-}
-
-void SocketTraceConnector::HandleHTTP2ProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
-  DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
-  auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  auto* event = static_cast<socket_data_event_t*>(data);
-  connector->AcceptDataEvent(*event);
+  connector->TransferMySQLEvent(SocketDataEvent(data), connector->record_batch_);
 }
 
 // This function is invoked by BCC runtime when a item in the perf buffer is not read and lost.
@@ -189,7 +178,7 @@ uint64_t GetStreamId(uint32_t tgid, uint32_t conn_id) {
 
 }  // namespace
 
-void SocketTraceConnector::AcceptDataEvent(socket_data_event_t event) {
+void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
   const uint64_t stream_id = GetStreamId(event.attr.tgid, event.attr.conn_id);
 
   // Need to adjust the clocks to convert to real time.
@@ -410,7 +399,7 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record,
 // MySQL Specific TransferImpl Helpers
 //-----------------------------------------------------------------------------
 
-void SocketTraceConnector::TransferMySQLEvent(const socket_data_event_t& event,
+void SocketTraceConnector::TransferMySQLEvent(SocketDataEvent event,
                                               types::ColumnWrapperRecordBatch* record_batch) {
   // TODO(oazizi): Enable the below to only capture requestor-side messages.
   //  if (event.attr.event_type != kEventTypeSyscallWriteEvent &&
@@ -430,7 +419,7 @@ void SocketTraceConnector::TransferMySQLEvent(const socket_data_event_t& event,
   r.Append<r.ColIndex("bpf_event")>(event.attr.event_type);
   r.Append<r.ColIndex("remote_addr")>(std::move(ip));
   r.Append<r.ColIndex("remote_port")>(port);
-  r.Append<r.ColIndex("body")>(std::string(event.msg, event.attr.msg_size));
+  r.Append<r.ColIndex("body")>(std::move(event.msg));
 }
 
 }  // namespace stirling

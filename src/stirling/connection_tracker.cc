@@ -22,7 +22,7 @@ void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
 
 void ConnectionTracker::AddConnCloseEvent() { closed_ = true; }
 
-void ConnectionTracker::AddDataEvent(socket_data_event_t event) {
+void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
   SetProtocol(TrafficProtocol(event.attr.protocol));
 
   const uint64_t seq_num = event.attr.seq_num;
@@ -67,7 +67,7 @@ void DataStream::ExtractMessages(TrafficMessageType type) {
     }
 
     // The main message to submit to parser.
-    std::string_view msg(event.msg, event.attr.msg_size);
+    std::string_view msg = event.msg;
 
     // First message may have been partially processed by a previous call to this function.
     // In such cases, the offset will be non-zero, and we need a sub-string of the first event.

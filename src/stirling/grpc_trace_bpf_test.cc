@@ -30,11 +30,11 @@ using ::testing::Pair;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-std::string JoinStream(const std::map<uint64_t, socket_data_event_t>& stream) {
+std::string JoinStream(const std::map<uint64_t, SocketDataEvent>& stream) {
   std::string result;
   for (const auto& [seq_num, event] : stream) {
     PL_UNUSED(seq_num);
-    result.append(event.msg, event.attr.msg_size);
+    result.append(event.msg);
   }
   return result;
 }

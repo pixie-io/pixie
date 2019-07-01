@@ -36,21 +36,21 @@ class SocketTraceConnectorTest : public ::testing::Test {
     return conn_info;
   }
 
-  socket_data_event_t InitSendEvent(std::string_view msg, uint64_t ts_ns = 0) {
-    socket_data_event_t event = InitEvent(kEventTypeSyscallSendEvent, msg, ts_ns);
+  SocketDataEvent InitSendEvent(std::string_view msg, uint64_t ts_ns = 0) {
+    SocketDataEvent event = InitEvent(kEventTypeSyscallSendEvent, msg, ts_ns);
     event.attr.seq_num = send_seq_num_;
     send_seq_num_++;
     return event;
   }
 
-  socket_data_event_t InitRecvEvent(std::string_view msg, uint64_t ts_ns = 0) {
-    socket_data_event_t event = InitEvent(kEventTypeSyscallRecvEvent, msg, ts_ns);
+  SocketDataEvent InitRecvEvent(std::string_view msg, uint64_t ts_ns = 0) {
+    SocketDataEvent event = InitEvent(kEventTypeSyscallRecvEvent, msg, ts_ns);
     event.attr.seq_num = recv_seq_num_;
     recv_seq_num_++;
     return event;
   }
 
-  socket_data_event_t InitEvent(EventType event_type, std::string_view msg, uint64_t ts_ns = 0) {
+  SocketDataEvent InitEvent(EventType event_type, std::string_view msg, uint64_t ts_ns = 0) {
     socket_data_event_t event = {};
     event.attr.event_type = event_type;
     event.attr.protocol = kProtocolHTTP;
@@ -59,7 +59,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     event.attr.conn_id = 2;
     event.attr.msg_size = msg.size();
     msg.copy(event.msg, msg.size());
-    return event;
+    return SocketDataEvent(&event);
   }
 
   types::ColumnWrapperRecordBatch GetRecordBatch(DataTableSchema schema) {
@@ -154,10 +154,10 @@ auto ToIntVector(const types::SharedColumnWrapper& col) {
 
 TEST_F(SocketTraceConnectorTest, FilterMessages) {
   conn_info_t conn = InitConn();
-  socket_data_event_t event0_json = InitRecvEvent(kJSONResp, 100);
-  socket_data_event_t event1_text = InitRecvEvent(kTextResp, 200);
-  socket_data_event_t event2_text = InitRecvEvent(kTextResp, 200);
-  socket_data_event_t event3_json = InitRecvEvent(kJSONResp, 100);
+  SocketDataEvent event0_json = InitRecvEvent(kJSONResp, 100);
+  SocketDataEvent event1_text = InitRecvEvent(kTextResp, 200);
+  SocketDataEvent event2_text = InitRecvEvent(kTextResp, 200);
+  SocketDataEvent event3_json = InitRecvEvent(kJSONResp, 100);
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
@@ -211,10 +211,10 @@ TEST_F(SocketTraceConnectorTest, FilterMessages) {
 
 TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   conn_info_t conn = InitConn();
-  socket_data_event_t event0 =
+  SocketDataEvent event0 =
       InitRecvEvent(absl::StrCat(kResp0, kResp1.substr(0, kResp1.length() / 2)));
-  socket_data_event_t event1 = InitRecvEvent(kResp1.substr(kResp1.length() / 2));
-  socket_data_event_t event2 = InitRecvEvent(kResp2);
+  SocketDataEvent event1 = InitRecvEvent(kResp1.substr(kResp1.length() / 2));
+  SocketDataEvent event2 = InitRecvEvent(kResp2);
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
@@ -231,7 +231,7 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
 
 TEST_F(SocketTraceConnectorTest, NoEvents) {
   conn_info_t conn = InitConn();
-  socket_data_event_t event0 = InitRecvEvent(kResp0);
+  SocketDataEvent event0 = InitRecvEvent(kResp0);
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
@@ -251,12 +251,12 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
 
 TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
   conn_info_t conn = InitConn();
-  socket_data_event_t req_event0 = InitSendEvent(kReq0);
-  socket_data_event_t req_event1 = InitSendEvent(kReq1);
-  socket_data_event_t req_event2 = InitSendEvent(kReq2);
-  socket_data_event_t resp_event0 = InitRecvEvent(kResp0);
-  socket_data_event_t resp_event1 = InitRecvEvent(kResp1);
-  socket_data_event_t resp_event2 = InitRecvEvent(kResp2);
+  SocketDataEvent req_event0 = InitSendEvent(kReq0);
+  SocketDataEvent req_event1 = InitSendEvent(kReq1);
+  SocketDataEvent req_event2 = InitSendEvent(kReq2);
+  SocketDataEvent resp_event0 = InitRecvEvent(kResp0);
+  SocketDataEvent resp_event1 = InitRecvEvent(kResp1);
+  SocketDataEvent resp_event2 = InitRecvEvent(kResp2);
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 

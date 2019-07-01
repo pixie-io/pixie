@@ -8,6 +8,8 @@
 
 // TODO(oazizi): Fix style consistency. Enums use our C++ style, while structs are old C style.
 
+// TODO(yzhao): Investigate the performance cost of misaligned memory access (8 vs. 4 bytes).
+
 // Indicates the syscall that recorded an event.
 // TODO(oazizi/yzhao): Remove once no longer necessary.
 enum EventType {
@@ -70,7 +72,7 @@ struct conn_info_t {
   uint32_t tgid;
   // The file descriptor to the opened network connection.
   uint32_t fd;
-} __attribute__((__packed__, aligned(8)));
+};
 
 // This is the maximum value for the msg size.
 // This is use for experiment dealing with large message
@@ -102,4 +104,4 @@ struct socket_data_event_t {
     uint32_t msg_size;
   } attr;
   char msg[MAX_MSG_SIZE];
-} __attribute__((__packed__));
+};

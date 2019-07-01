@@ -22,8 +22,8 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include <utility>
 #include <vector>
 
-#include "src/stirling/bcc_bpf/socket_trace.h"
 #include "src/stirling/connection_tracker.h"
+#include "src/stirling/socket_trace.h"
 #include "src/stirling/source_connector.h"
 
 DECLARE_string(http_response_header_filters);
@@ -158,7 +158,6 @@ class SocketTraceConnector : public SourceConnector {
   // ReadPerfBuffer poll callback functions (must be static).
   static void HandleHTTPProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleMySQLProbeOutput(void* cb_cookie, void* data, int data_size);
-  static void HandleHTTP2ProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleProbeLoss(void* cb_cookie, uint64_t lost);
   static void HandleCloseProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleOpenProbeOutput(void* cb_cookie, void* data, int data_size);
@@ -167,7 +166,7 @@ class SocketTraceConnector : public SourceConnector {
   // TODO(oazizi/yzhao): These all operate based on pass-by-value, which copies.
   //                     The Handle* functions should call make_unique() of new corresponding
   //                     objects, and these functions should take unique_ptrs.
-  void AcceptDataEvent(socket_data_event_t event);
+  void AcceptDataEvent(SocketDataEvent event);
   void AcceptOpenConnEvent(conn_info_t conn_info);
   void AcceptCloseConnEvent(conn_info_t conn_info);
 
@@ -190,8 +189,8 @@ class SocketTraceConnector : public SourceConnector {
                             types::ColumnWrapperRecordBatch* record_batch);
 
   // Transfer of a MySQL Event to the MySQL Table.
-  void TransferMySQLEvent(const socket_data_event_t& event,
-                          types::ColumnWrapperRecordBatch* record_batch);
+  // TODO(oazizi/yzhao): Change to use std::unique_ptr.
+  void TransferMySQLEvent(SocketDataEvent event, types::ColumnWrapperRecordBatch* record_batch);
 
   inline static HTTPHeaderFilter http_response_header_filter_;
 
