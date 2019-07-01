@@ -17,15 +17,14 @@ PL_SUPPRESS_WARNINGS_END()
 
 namespace pl {
 namespace stirling {
+namespace http2 {
 
 using ::google::protobuf::Message;
 using ::google::protobuf::util::MessageDifferencer;
-using ::pl::stirling::http2::Frame;
-using ::pl::stirling::http2::GRPCMessage;
-using ::pl::stirling::http2::UnpackFrames;
-using ::pl::stirling::http2::UnpackGRPCMessage;
 using ::testing::_;
 using ::testing::ElementsAre;
+using ::testing::Eq;
+using ::testing::IsEmpty;
 using ::testing::Pair;
 using ::testing::SizeIs;
 using ::testing::StrEq;
@@ -69,6 +68,8 @@ TEST(GRPCTraceBPFTest, DISABLED_TestGolangGrpcService) {
       SocketTraceConnector::Create("socket_trace_connector");
   ASSERT_OK(connector->Init());
 
+  // TODO(yzhao): Add a --count flag to greeter client so we can test the case of multiple RPC calls
+  // (multiple HTTP2 streams).
   SubProcess c({c_path, "-name=PixieLabs", "-once"});
   EXPECT_OK(c.Start());
   EXPECT_EQ(0, c.Wait()) << "Client should exit normally.";
@@ -96,17 +97,20 @@ TEST(GRPCTraceBPFTest, DISABLED_TestGolangGrpcService) {
     EXPECT_EQ(1, frames[1]->frame.hd.stream_id);
     EXPECT_EQ(1, frames[2]->frame.hd.stream_id);
 
-    EXPECT_THAT(Headers(*frames[0]),
-                ElementsAre(Pair(":status", "200"), Pair("content-type", "application/grpc")));
-    EXPECT_THAT(Headers(*frames[2]),
-                ElementsAre(Pair("grpc-message", ""), Pair("grpc-status", "0")));
+    std::map<uint32_t, std::vector<GRPCMessage>> stream_msgs;
+    EXPECT_OK(StitchGRPCStreamFrames(&frames, &stream_msgs));
+    EXPECT_THAT(frames, IsEmpty());
+    ASSERT_THAT(stream_msgs, ElementsAre(Pair(1, SizeIs(1))));
 
-    std::string_view buf = frames[1]->payload;
-    GRPCMessage message = {};
-    EXPECT_OK(UnpackGRPCMessage(&buf, &message));
+    const GRPCMessage& resp = stream_msgs[1].front();
+    EXPECT_TRUE(resp.parse_succeeded);
+    EXPECT_THAT(resp.type, Eq(MessageType::kResponses));
+    EXPECT_THAT(resp.headers,
+                ElementsAre(Pair(":status", "200"), Pair("content-type", "application/grpc"),
+                            Pair("grpc-message", ""), Pair("grpc-status", "0")));
 
     testing::HelloReply received_reply;
-    EXPECT_TRUE(received_reply.ParseFromString(message.message));
+    EXPECT_TRUE(resp.ParseProtobuf(&received_reply));
 
     testing::HelloReply expected_reply;
     expected_reply.set_message("Hello PixieLabs");
@@ -126,19 +130,23 @@ TEST(GRPCTraceBPFTest, DISABLED_TestGolangGrpcService) {
     EXPECT_EQ(1, frames[0]->frame.hd.stream_id);
     EXPECT_EQ(1, frames[1]->frame.hd.stream_id);
 
-    EXPECT_THAT(Headers(*frames[0]),
+    std::map<uint32_t, std::vector<GRPCMessage>> stream_msgs;
+    EXPECT_OK(StitchGRPCStreamFrames(&frames, &stream_msgs));
+    EXPECT_THAT(frames, IsEmpty());
+    ASSERT_THAT(stream_msgs, ElementsAre(Pair(1, SizeIs(1))));
+
+    const GRPCMessage& req = stream_msgs[1].front();
+    EXPECT_TRUE(req.parse_succeeded);
+    EXPECT_THAT(req.type, Eq(MessageType::kRequests));
+    EXPECT_THAT(req.headers,
                 ElementsAre(Pair(":authority", "localhost:50051"), Pair(":method", "POST"),
                             Pair(":path", "/pl.stirling.testing.Greeter/SayHello"),
                             Pair(":scheme", "http"), Pair("content-type", "application/grpc"),
                             Pair("grpc-timeout", _),  // The value keeps changing, just ignore it.
                             Pair("te", "trailers"), Pair("user-agent", "grpc-go/1.19.0")));
 
-    std::string_view buf = frames[1]->payload;
-    GRPCMessage message = {};
-    EXPECT_OK(UnpackGRPCMessage(&buf, &message));
-
     testing::HelloRequest received_req;
-    EXPECT_TRUE(received_req.ParseFromString(message.message));
+    EXPECT_TRUE(req.ParseProtobuf(&received_req));
 
     testing::HelloRequest expected_req;
     expected_req.set_name("PixieLabs");
@@ -146,5 +154,6 @@ TEST(GRPCTraceBPFTest, DISABLED_TestGolangGrpcService) {
   }
 }
 
+}  // namespace http2
 }  // namespace stirling
 }  // namespace pl

@@ -30,7 +30,7 @@ TEST(UnpackFrameTest, TestVariousCases) {
       {std::string{"\x0\x0\x3\x1\x4\x0\x0\x0\x1"
                    "a:b",
                    12},
-       "", error::Internal("Failed to inflate header")},
+       "", Status::OK()},
       {std::string{"\x0\x0\x2\x1\x1\x0\x0\x0\x1", 9},
        {"\x0\x0\x2\x1\x1\x0\x0\x0\x1", 9},
        error::ResourceUnavailable("got: 9 must be >= 11")},
@@ -59,25 +59,33 @@ std::map<std::string, std::string> Headers(const Frame& frame) {
   return result;
 }
 
-MATCHER_P(IsDataFrame, t, "") { return arg->frame.hd.type == NGHTTP2_DATA && arg->payload == t; }
+u8string_view ToU8(std::string_view buf) {
+  return u8string_view(reinterpret_cast<const uint8_t*>(buf.data()), buf.size());
+}
 
-MATCHER(IsHeadersFrame, "") { return arg->frame.hd.type == NGHTTP2_HEADERS; }
+MATCHER_P2(MatchesTypePayload, t, p, "") {
+  return arg->frame.hd.type == t && arg->u8payload == ToU8(p);
+}
 
 TEST(UnpackFramesTest, BrokenAndIgnoredFramesAreSkipped) {
   std::string input{
       "\x0\x0\x3\x1\x4\x0\x0\x0\x1"
       "a:b"  // HEADERS
+      "\x0\x0\x3\x9\x4\x0\x0\x0\x1"
+      "c:d"  // CONTINUATION
       "\x0\x0\x4\x0\x1\x0\x0\x0\x2"
       "abcd"  // DATA
       "\x0\x0\x1\x1\x1\x0\x0\x0\x3",
-      3 * NGHTTP2_FRAME_HDLEN + 3 + 4};
+      4 * NGHTTP2_FRAME_HDLEN + 3 + 3 + 4};
   std::string_view buf = input;
 
   std::vector<std::unique_ptr<Frame>> frames;
   Status s = UnpackFrames(&buf, &frames);
   EXPECT_TRUE(error::IsResourceUnavailable(s));
   EXPECT_THAT(s.msg(), HasSubstr("got: 9 must be >= 10"));
-  EXPECT_THAT(frames, ElementsAre(IsDataFrame("abcd"))) << "First and last message is skipped";
+  EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "a:b"),
+                                  MatchesTypePayload(NGHTTP2_CONTINUATION, "c:d"),
+                                  MatchesTypePayload(NGHTTP2_DATA, "abcd")));
   EXPECT_EQ(buf, std::string_view("\x0\x0\x1\x1\x1\x0\x0\x0\x3", NGHTTP2_FRAME_HDLEN));
 }
 
