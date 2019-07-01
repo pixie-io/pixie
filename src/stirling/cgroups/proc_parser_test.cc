@@ -41,7 +41,7 @@ class ProcParserTest : public ::testing::Test {
   const std::string proc_path = "/pl/proc";
 
   std::unique_ptr<ProcParser> parser_;
-  int bytes_per_page_;
+  int bytes_per_page_ = 0;
 };
 
 TEST_F(ProcParserTest, GetProcPidStatFilePath) {

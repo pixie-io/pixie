@@ -79,7 +79,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
   static constexpr int kTimeIdx = kHTTPTable.ColIndex("time_");
 
   std::unique_ptr<SourceConnector> connector_;
-  SocketTraceConnector* source_;
+  SocketTraceConnector* source_ = nullptr;
 
   const std::string kReq0 =
       "GET /index.html HTTP/1.1\r\n"

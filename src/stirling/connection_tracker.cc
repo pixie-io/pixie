@@ -30,11 +30,11 @@ void ConnectionTracker::AddDataEvent(socket_data_event_t event) {
   switch (event.attr.event_type) {
     case kEventTypeSyscallWriteEvent:
     case kEventTypeSyscallSendEvent:
-      send_data_.events.emplace(seq_num, std::move(event));
+      send_data_.events.emplace(seq_num, event);
       break;
     case kEventTypeSyscallReadEvent:
     case kEventTypeSyscallRecvEvent:
-      recv_data_.events.emplace(seq_num, std::move(event));
+      recv_data_.events.emplace(seq_num, event);
       break;
     default:
       LOG(ERROR) << absl::StrFormat("AddDataEvent() unexpected event type %d",

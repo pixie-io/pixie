@@ -26,8 +26,6 @@ using ::testing::UnorderedElementsAre;
 
 class HTTPTraceBPFTest : public ::testing::Test {
  protected:
-  HTTPTraceBPFTest() {}
-
   void SetUp() override {
     source = SocketTraceConnector::Create("socket_trace_connector");
     ASSERT_OK(source->Init());

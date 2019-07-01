@@ -25,7 +25,7 @@ class DataElement {
  public:
   constexpr DataElement() = delete;
   constexpr DataElement(ConstStrView name, types::DataType type, types::PatternType ptype)
-      : name_(std::move(name)), type_(std::move(type)), ptype_(std::move(ptype)) {}
+      : name_(name), type_(type), ptype_(ptype) {}
 
   constexpr const ConstStrView& name() const { return name_; }
   constexpr const types::DataType& type() const { return type_; }
@@ -41,7 +41,7 @@ class DataTableSchema {
  public:
   template <std::size_t N>
   constexpr DataTableSchema(ConstStrView name, const DataElement (&elements)[N])
-      : name_(std::move(name)), elements_(elements) {}
+      : name_(name), elements_(elements) {}
   constexpr const ConstStrView& name() const { return name_; }
   constexpr const ConstVectorView<DataElement>& elements() const { return elements_; }
 

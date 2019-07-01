@@ -50,7 +50,7 @@ stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_pr
 class StirlingImpl final : public Stirling {
  public:
   StirlingImpl() = delete;
-  ~StirlingImpl();
+  ~StirlingImpl() override;
 
   static std::unique_ptr<StirlingImpl> Create();
   static std::unique_ptr<StirlingImpl> Create(std::unique_ptr<SourceRegistry> registry);

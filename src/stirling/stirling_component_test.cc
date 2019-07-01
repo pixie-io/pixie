@@ -37,7 +37,7 @@ TEST_F(StirlingComponentTest, registry_to_subscribe_test) {
   EXPECT_TRUE(subscribe_proto.subscribed_info_classes(0).subscribed());
   EXPECT_OK(data_collector_->SetSubscription(subscribe_proto));
   for (int i = 0; i < subscribe_proto.subscribed_info_classes_size(); ++i) {
-    auto info_class = subscribe_proto.subscribed_info_classes(i);
+    const stirlingpb::InfoClass& info_class = subscribe_proto.subscribed_info_classes(i);
     EXPECT_TRUE(info_class.subscribed());
   }
 }

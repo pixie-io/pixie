@@ -167,14 +167,14 @@ void SocketTraceConnector::HandleOpenProbeOutput(void* cb_cookie, void* data, in
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   const auto conn = CopyFromBPF<conn_info_t>(data);
-  connector->AcceptOpenConnEvent(std::move(conn));
+  connector->AcceptOpenConnEvent(conn);
 }
 
 void SocketTraceConnector::HandleCloseProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   const auto conn = CopyFromBPF<conn_info_t>(data);
-  connector->AcceptCloseConnEvent(std::move(conn));
+  connector->AcceptCloseConnEvent(conn);
 }
 
 //-----------------------------------------------------------------------------
@@ -206,7 +206,7 @@ void SocketTraceConnector::AcceptDataEvent(socket_data_event_t event) {
   }
 
   ConnectionTracker& tracker = connection_trackers_[stream_id];
-  tracker.AddDataEvent(std::move(event));
+  tracker.AddDataEvent(event);
 }
 
 void SocketTraceConnector::AcceptOpenConnEvent(conn_info_t conn_info) {
@@ -216,7 +216,7 @@ void SocketTraceConnector::AcceptOpenConnEvent(conn_info_t conn_info) {
   conn_info.timestamp_ns += ClockRealTimeOffset();
 
   ConnectionTracker& tracker = connection_trackers_[stream_id];
-  tracker.AddConnOpenEvent(std::move(conn_info));
+  tracker.AddConnOpenEvent(conn_info);
 }
 
 void SocketTraceConnector::AcceptCloseConnEvent(conn_info_t conn_info) {

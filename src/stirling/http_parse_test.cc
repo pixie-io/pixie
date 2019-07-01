@@ -114,7 +114,7 @@ bool operator==(const HTTPMessage& lhs, const HTTPMessage& rhs) {
 }
 
 socket_data_event_t Event(uint64_t seq_num, std::string_view msg) {
-  socket_data_event_t event;
+  socket_data_event_t event{};
   event.attr.seq_num = seq_num;
   event.attr.msg_size = msg.size();
   msg.copy(event.msg, msg.size());

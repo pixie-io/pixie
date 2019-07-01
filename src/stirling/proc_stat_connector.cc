@@ -45,8 +45,7 @@ Status ProcStatConnector::GetProcStat(const std::vector<std::string>& parsed_str
   }
 
   // parsed_str includes the string cpu at the front in addition to the stats.
-  if (parsed_str.size() !=
-      static_cast<std::vector<std::string>::size_type>(kNumCPUStatFields + 1)) {
+  if (parsed_str.size() != static_cast<size_t>(kNumCPUStatFields) + 1) {
     return error::InvalidArgument("parsed proc stat does not have the expected number of fields");
   }
 

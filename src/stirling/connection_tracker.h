@@ -132,7 +132,7 @@ class ConnectionTracker {
   //  whole stream.
 
  protected:
-  TrafficProtocol protocol_;
+  TrafficProtocol protocol_ = kProtocolUnknown;
 
  private:
   SocketConnection conn_;

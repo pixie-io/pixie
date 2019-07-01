@@ -102,10 +102,7 @@ class StirlingTest : public ::testing::Test {
 
     const auto& id_to_name_map = stirling_->TableIDToNameMap();
 
-    for (auto iter = id_to_name_map.begin(); iter != id_to_name_map.end(); ++iter) {
-      uint64_t id = iter->first;
-      std::string name = iter->second;
-
+    for (const auto& [id, name] : id_to_name_map) {
       if (name[name.length() - 1] == '0') {
         schemas_.emplace(id, &SeqGenConnector::kSeq0Table.elements());
 

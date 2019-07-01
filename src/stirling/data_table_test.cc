@@ -15,14 +15,11 @@ class DataTableTest : public ::testing::Test {
   // The test uses a pre-defined schema.
   InfoClassSchema schema_;
 
-  // The record size of the schema.
-  size_t record_size_;
-
   // Test parameter: number of records to write.
   size_t num_records_ = 0;
 
   // Test parameter: max number of records per append.
-  size_t max_append_size_;
+  size_t max_append_size_ = 10;
 
   // Test parameter: probability of a push.
   double push_probability_ = 0.1;
@@ -83,8 +80,6 @@ class DataTableTest : public ::testing::Test {
         InfoClassElement("f1", types::DataType::FLOAT64, types::PatternType::GENERAL));
     schema_.push_back(
         InfoClassElement("f2", types::DataType::INT64, types::PatternType::GENERAL_ENUM));
-
-    record_size_ = sizeof(int64_t) + sizeof(double) + sizeof(int64_t);
   }
 
   /**
@@ -107,8 +102,8 @@ class DataTableTest : public ::testing::Test {
   /**
    * Check that the output data matches the input functions.
    */
-  void CheckColumnWrapperResult(types::ColumnWrapperRecordBatch* col_arrays, uint32_t start_record,
-                                uint32_t end_record) {
+  void CheckColumnWrapperResult(types::ColumnWrapperRecordBatch* col_arrays, size_t start_record,
+                                size_t end_record) {
     types::ColumnWrapperRecordBatch& columns = *col_arrays;
 
     size_t f_idx;

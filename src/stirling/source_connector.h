@@ -22,7 +22,6 @@
 namespace pl {
 namespace stirling {
 
-class InfoClassElement;
 class InfoClassManager;
 
 #define DUMMY_SOURCE_CONNECTOR(NAME)                                        \
@@ -107,8 +106,8 @@ class SourceConnector : public NotCopyable {
   explicit SourceConnector(std::string_view source_name, const DataTableSchema (&table_schemas)[N],
                            std::chrono::milliseconds default_sampling_period,
                            std::chrono::milliseconds default_push_period)
-      : SourceConnector(std::move(source_name), ConstVectorView(table_schemas),
-                        default_sampling_period, default_push_period) {}
+      : SourceConnector(source_name, ConstVectorView(table_schemas), default_sampling_period,
+                        default_push_period) {}
   explicit SourceConnector(std::string_view source_name,
                            const ConstVectorView<DataTableSchema>& table_schemas,
                            std::chrono::milliseconds default_sampling_period,

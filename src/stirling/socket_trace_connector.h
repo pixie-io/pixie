@@ -200,7 +200,7 @@ class SocketTraceConnector : public SourceConnector {
   std::map<uint64_t, ConnectionTracker> connection_trackers_;
 
   // For MySQL tracing only. Will go away when MySQL uses streams.
-  types::ColumnWrapperRecordBatch* record_batch_;
+  types::ColumnWrapperRecordBatch* record_batch_ = nullptr;
 
   // Describes a kprobe that should be attached with the BPF::attach_kprobe().
   struct ProbeSpec {

@@ -52,7 +52,7 @@ StatusOr<IPEndpoint> ParseSockAddr(const conn_info_t& conn_info) {
   const auto* sa = reinterpret_cast<const struct sockaddr*>(&conn_info.addr);
 
   char addr[INET6_ADDRSTRLEN] = "";
-  int port = -1;
+  int port;
 
   switch (sa->sa_family) {
     case AF_INET: {
@@ -174,7 +174,7 @@ namespace {
 // Mutates the input data.
 ParseState ParseChunk(std::string_view* data, HTTPMessage* result) {
   phr_chunked_decoder chunk_decoder = {};
-  char* buf = const_cast<char*>(data->data());
+  auto buf = const_cast<char*>(data->data());
   size_t buf_size = data->size();
   ssize_t retval = phr_decode_chunked(&chunk_decoder, buf, &buf_size);
   if (retval == -1) {

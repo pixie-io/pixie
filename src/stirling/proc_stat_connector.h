@@ -71,7 +71,7 @@ class ProcStatConnector : public SourceConnector {
     uint64_t total, system, user, idle;
   };
 
-  CPUUsage cpu_usage_;
+  CPUUsage cpu_usage_ = {0, 0.0, 0.0, 0.0};
   CPUStat prev_cpu_usage_ = {0, 0, 0, 0};
   const char* kProcStatFileName = "/proc/stat";
   const int kUserIdx = 1;

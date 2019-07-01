@@ -149,7 +149,7 @@ auto CanonicalProtoProcessData(
   }
 
   // Serialize the proto message to a char array
-  int64_t message_size = canonical_stream.ByteSizeLong();
+  size_t message_size = canonical_stream.ByteSizeLong();
   auto serialized_message = std::make_unique<char[]>(message_size);
   canonical_stream.SerializeToArray(serialized_message.get(), message_size);
 
@@ -165,7 +165,7 @@ auto CanonicalProtoProcessData(
   int num_items = recvd_stream.data_stream_size();
 
   for (int i = 0; i < num_items; ++i) {
-    Canonical datum = recvd_stream.data_stream(i);
+    const Canonical& datum = recvd_stream.data_stream(i);
     time_stamp[i] = datum.time_stamp();
     data_0[i] = datum.data1();
     data_1[i] = datum.data2();
@@ -223,7 +223,7 @@ auto CanonicalProtoProcessDataRepeatedColumn(
 
 // Serialize and then deserialize an Arrow Record Batch.
 // Used to model the overheads of sending messages with Arrow format.
-auto ArrowProcessRecordBatch(const std::shared_ptr<arrow::RecordBatch> record_batch) {
+auto ArrowProcessRecordBatch(const std::shared_ptr<arrow::RecordBatch>& record_batch) {
   arrow::MemoryPool* pool = arrow::default_memory_pool();
 
   // Serialize Record Batch (flatbuffers under the hood).

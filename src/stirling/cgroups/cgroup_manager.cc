@@ -23,7 +23,7 @@ constexpr std::string_view kPidFile = "cgroup.procs";
 
 namespace {
 
-Status ReadPIDList(fs::path pid_file_path, std::vector<int64_t>* pid_list) {
+Status ReadPIDList(const fs::path& pid_file_path, std::vector<int64_t>* pid_list) {
   CHECK(pid_list != nullptr);
   std::ifstream ifs(pid_file_path);
   if (!ifs.good()) {

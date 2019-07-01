@@ -24,6 +24,8 @@ namespace fs = std::experimental::filesystem;
  */
 class CGroupManager {
  public:
+  CGroupManager() = delete;
+
   /**
    * Create makes a new CGroupManager.
    *
@@ -157,8 +159,6 @@ class CGroupManager {
   uint64_t full_scan_count() { return full_scan_count_; }
 
  protected:
-  CGroupManager() = delete;
-
   CGroupManager(const common::SystemConfig& cfg, std::string_view proc_path,
                 std::string_view sysfs_path)
       : proc_parser_(cfg, proc_path), sysfs_path_(sysfs_path) {}

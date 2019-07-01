@@ -28,7 +28,7 @@ class InfoClassElement : public DataElement {
   InfoClassElement() = delete;
   explicit InfoClassElement(DataElement element) : DataElement(std::move(element)) {}
   explicit InfoClassElement(ConstStrView name, types::DataType type, types::PatternType ptype)
-      : DataElement(std::move(name), std::move(type), std::move(ptype)) {}
+      : DataElement(name, type, ptype) {}
 
   /**
    * @brief Generate a proto message based on the InfoClassElement.
@@ -210,7 +210,7 @@ class InfoClassManager {
   bool subscribed() const { return subscribed_; }
 
  private:
-  static std::atomic<uint64_t> global_id_;
+  inline static std::atomic<uint64_t> global_id_ = 0;
 
   /**
    * Unique ID of the InfoClassManager instance. ID must never repeat, even after destruction.
@@ -235,7 +235,7 @@ class InfoClassManager {
   /**
    * Pointer back to the source connector providing the data.
    */
-  SourceConnector* source_;
+  SourceConnector* source_ = nullptr;
 
   /**
    * Table number within source connector for this info class.
@@ -245,7 +245,7 @@ class InfoClassManager {
   /**
    * Pointer to the data table where the data is stored.
    */
-  DataTable* data_table_;
+  DataTable* data_table_ = nullptr;
 
   /**
    * Sampling period.
@@ -270,7 +270,7 @@ class InfoClassManager {
   /**
    * Keep track of when the source was last sampled.
    */
-  std::chrono::milliseconds last_pushed_;
+  std::chrono::milliseconds last_pushed_{0};
 
   /**
    * Data push threshold, based number of records after which a push.

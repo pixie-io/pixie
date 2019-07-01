@@ -366,7 +366,7 @@ Status ProcParser::ParseFromKeyValueFile(
       }
 
       size_t offset = it->second;
-      int64_t* val_ptr = reinterpret_cast<int64_t*>(out_base + offset);
+      auto val_ptr = reinterpret_cast<int64_t*>(out_base + offset);
       bool ok = absl::SimpleAtoi(val, val_ptr);
       *val_ptr *= field_value_multiplier;
 
