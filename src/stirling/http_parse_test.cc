@@ -135,7 +135,7 @@ Content-Length: 10
 pixielabs!)";
 
   HTTPMessage expected_message1;
-  expected_message1.type = SocketTraceEventType::kHTTPResponse;
+  expected_message1.type = HTTPEventType::kHTTPResponse;
   expected_message1.http_minor_version = 1;
   expected_message1.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
   expected_message1.http_resp_status = 200;
@@ -143,7 +143,7 @@ pixielabs!)";
   expected_message1.http_msg_body = "pixielabs";
 
   HTTPMessage expected_message2;
-  expected_message2.type = SocketTraceEventType::kHTTPResponse;
+  expected_message2.type = HTTPEventType::kHTTPResponse;
   expected_message2.http_minor_version = 1;
   expected_message2.http_headers = {{"Content-Type", "bar"}, {"Content-Length", "10"}};
   expected_message2.http_resp_status = 200;
@@ -170,7 +170,7 @@ pixielabs)";
   const std::string_view msg3 = "!";
 
   HTTPMessage expected_message1;
-  expected_message1.type = SocketTraceEventType::kHTTPResponse;
+  expected_message1.type = HTTPEventType::kHTTPResponse;
   expected_message1.http_minor_version = 1;
   expected_message1.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "21"}};
   expected_message1.http_resp_status = 200;
@@ -211,7 +211,7 @@ TEST_F(HTTPParserTest, NoAppend) {
 // Leave http_msg_body set by caller.
 HTTPMessage ExpectMessage() {
   HTTPMessage result;
-  result.type = SocketTraceEventType::kHTTPResponse;
+  result.type = HTTPEventType::kHTTPResponse;
   result.http_minor_version = 1;
   result.http_headers = {{"Transfer-Encoding", "chunked"}};
   result.http_resp_status = 200;
@@ -428,7 +428,7 @@ User-Agent: Mozilla/5.0 (X11; Linux x86_64)
 
   HTTPMessage HTTPGetReq0ExpectedMessage() {
     HTTPMessage expected_message;
-    expected_message.type = SocketTraceEventType::kHTTPRequest;
+    expected_message.type = HTTPEventType::kHTTPRequest;
     expected_message.http_minor_version = 1;
     expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
                                      {"Accept", "image/gif, image/jpeg, */*"},
@@ -448,7 +448,7 @@ field1=value1&field2=value2)";
 
   HTTPMessage HTTPPostReq0ExpectedMessage() {
     HTTPMessage expected_message;
-    expected_message.type = SocketTraceEventType::kHTTPRequest;
+    expected_message.type = HTTPEventType::kHTTPRequest;
     expected_message.http_minor_version = 1;
     expected_message.http_headers = {{"Host", "pixielabs.ai"},
                                      {"Content-Type", "application/x-www-form-urlencoded"},
@@ -467,7 +467,7 @@ pixielabs)";
 
   HTTPMessage HTTPResp0ExpectedMessage() {
     HTTPMessage expected_message;
-    expected_message.type = SocketTraceEventType::kHTTPResponse;
+    expected_message.type = HTTPEventType::kHTTPResponse;
     expected_message.http_minor_version = 1;
     expected_message.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
     expected_message.http_resp_status = 200;
@@ -484,7 +484,7 @@ pixielabs is awesome!)";
 
   HTTPMessage HTTPResp1ExpectedMessage() {
     HTTPMessage expected_message;
-    expected_message.type = SocketTraceEventType::kHTTPResponse;
+    expected_message.type = HTTPEventType::kHTTPResponse;
     expected_message.http_minor_version = 1;
     expected_message.http_headers = {{"Content-Type", "bar"}, {"Content-Length", "21"}};
     expected_message.http_resp_status = 200;
@@ -506,7 +506,7 @@ C
 
   HTTPMessage HTTPResp2ExpectedMessage() {
     HTTPMessage expected_message;
-    expected_message.type = SocketTraceEventType::kHTTPResponse;
+    expected_message.type = HTTPEventType::kHTTPResponse;
     expected_message.http_minor_version = 1;
     expected_message.http_headers = {{"Transfer-Encoding", "chunked"}};
     expected_message.http_resp_status = 200;

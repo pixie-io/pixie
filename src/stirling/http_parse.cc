@@ -200,7 +200,7 @@ ParseState ParseChunk(std::string_view* data, HTTPMessage* result) {
 }  // namespace
 
 ParseState PicoHTTPParserWrapper::WriteRequest(HTTPMessage* result) {
-  result->type = SocketTraceEventType::kHTTPRequest;
+  result->type = HTTPEventType::kHTTPRequest;
   result->http_minor_version = minor_version;
   result->http_headers = std::move(header_map);
   result->http_req_method = std::string(method, method_len);
@@ -210,7 +210,7 @@ ParseState PicoHTTPParserWrapper::WriteRequest(HTTPMessage* result) {
 }
 
 ParseState PicoHTTPParserWrapper::WriteResponse(HTTPMessage* result) {
-  result->type = SocketTraceEventType::kHTTPResponse;
+  result->type = HTTPEventType::kHTTPResponse;
   result->http_minor_version = minor_version;
   result->http_headers = std::move(header_map);
   result->http_resp_status = status;

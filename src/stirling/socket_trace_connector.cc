@@ -318,7 +318,7 @@ bool SocketTraceConnector::SelectMessage(const TraceRecord<HTTPMessage>& record)
 
   // Rule: Exclude any HTTP requests.
   // TODO(oazizi): Think about how requests should be handled by this function.
-  if (message.type == SocketTraceEventType::kHTTPRequest) {
+  if (message.type == HTTPEventType::kHTTPRequest) {
     return false;
   }
 
@@ -329,7 +329,7 @@ bool SocketTraceConnector::SelectMessage(const TraceRecord<HTTPMessage>& record)
   }
 
   // Rule: Exclude anything that doesn't match the filter, if filter is active.
-  if (message.type == SocketTraceEventType::kHTTPResponse &&
+  if (message.type == HTTPEventType::kHTTPResponse &&
       (!http_response_header_filter_.inclusions.empty() ||
        !http_response_header_filter_.exclusions.empty())) {
     if (!MatchesHTTPTHeaders(message.http_headers, http_response_header_filter_)) {
@@ -375,7 +375,7 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record,
   r.Append<r.ColIndex("tgid")>(conn.tgid);
   r.Append<r.ColIndex("fd")>(conn.fd);
   // TODO(oazizi): Kill this?
-  r.Append<r.ColIndex("event_type")>(EventTypeToString(resp_message.type));
+  r.Append<r.ColIndex("event_type")>(HTTPEventTypeToString(resp_message.type));
   // Note that there is a string copy here,
   // But std::move is not allowed because we re-use conn object.
   // TODO(oazizi): Long-term need to make remote_addr a uint128.

@@ -34,7 +34,7 @@ inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
 
 struct HTTPMessage {
   uint64_t timestamp_ns;
-  SocketTraceEventType type = SocketTraceEventType::kUnknown;
+  HTTPEventType type = HTTPEventType::kUnknown;
 
   int http_minor_version = -1;
   std::map<std::string, std::string> http_headers = {};
