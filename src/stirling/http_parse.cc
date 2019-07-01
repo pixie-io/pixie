@@ -300,7 +300,7 @@ ParseState PicoHTTPParserWrapper::WriteBody(HTTPMessage* result) {
   return ParseState::kInvalid;
 }
 
-ParseResult<size_t> Parse(TrafficMessageType type, std::string_view buf,
+ParseResult<size_t> Parse(MessageType type, std::string_view buf,
                           std::deque<HTTPMessage>* messages) {
   PicoHTTPParserWrapper pico;
   std::vector<size_t> start_position;

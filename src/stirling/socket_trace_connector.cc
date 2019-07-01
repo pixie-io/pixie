@@ -262,11 +262,11 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
         << absl::StrFormat("Must be either requestor or responder (and not both)");
 
     auto& resp_data = is_requestor_side ? stream.recv_data() : stream.send_data();
-    resp_data.template ExtractMessages<TMessageType>(kMessageTypeResponses);
+    resp_data.template ExtractMessages<TMessageType>(MessageType::kResponses);
     auto& resp_messages = std::get<std::deque<TMessageType>>(resp_data.messages);
 
     auto& req_data = is_requestor_side ? stream.send_data() : stream.recv_data();
-    req_data.template ExtractMessages<TMessageType>(kMessageTypeRequests);
+    req_data.template ExtractMessages<TMessageType>(MessageType::kRequests);
     auto& req_messages = std::get<std::deque<TMessageType>>(req_data.messages);
 
     // TODO(oazizi): Section defined below may need to be split out

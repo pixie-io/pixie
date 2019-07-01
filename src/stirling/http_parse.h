@@ -88,21 +88,21 @@ bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
                          const HTTPHeaderFilter& filter);
 
 struct PicoHTTPParserWrapper {
-  ParseState Parse(TrafficMessageType type, std::string_view buf) {
+  ParseState Parse(MessageType type, std::string_view buf) {
     switch (type) {
-      case kMessageTypeRequests:
+      case MessageType::kRequests:
         return ParseRequest(buf);
-      case kMessageTypeResponses:
+      case MessageType::kResponses:
         return ParseResponse(buf);
       default:
         return ParseState::kInvalid;
     }
   }
-  ParseState Write(TrafficMessageType type, HTTPMessage* result) {
+  ParseState Write(MessageType type, HTTPMessage* result) {
     switch (type) {
-      case kMessageTypeRequests:
+      case MessageType::kRequests:
         return WriteRequest(result);
-      case kMessageTypeResponses:
+      case MessageType::kResponses:
         return WriteResponse(result);
       default:
         return ParseState::kUnknown;
@@ -140,7 +140,7 @@ struct PicoHTTPParserWrapper {
  * @return ParseState To indicate the final state of the parsing. The second return value is the
  * bytes count of the parsed data.
  */
-ParseResult<size_t> Parse(TrafficMessageType type, std::string_view buf,
+ParseResult<size_t> Parse(MessageType type, std::string_view buf,
                           std::deque<HTTPMessage>* messages);
 
 }  // namespace stirling

@@ -165,55 +165,77 @@ static bool is_http2_connection_preface(const char* buf, size_t count) {
   return buf[0] == 'P' && buf[1] == 'R' && buf[2] == 'I';
 }
 
-static struct traffic_class_t infer_traffic(const char* buf, size_t count) {
+static struct traffic_class_t infer_traffic(enum EventType event_type, const char* buf,
+                                            size_t count) {
   struct traffic_class_t traffic_class;
   if (is_http_response(buf, count)) {
     traffic_class.protocol = kProtocolHTTP;
-    traffic_class.message_type = kMessageTypeResponses;
+    switch (event_type) {
+      case kEventTypeSyscallSendEvent:
+        traffic_class.role = kRoleResponder;
+        break;
+      case kEventTypeSyscallRecvEvent:
+        traffic_class.role = kRoleRequestor;
+        break;
+      default:
+        break;
+    }
   } else if (is_http_request(buf, count)) {
     traffic_class.protocol = kProtocolHTTP;
-    traffic_class.message_type = kMessageTypeRequests;
+    switch (event_type) {
+      case kEventTypeSyscallSendEvent:
+        traffic_class.role = kRoleRequestor;
+        break;
+      case kEventTypeSyscallRecvEvent:
+        traffic_class.role = kRoleResponder;
+        break;
+      default:
+        break;
+    }
   } else if (is_mysql_protocol(buf, count)) {
     traffic_class.protocol = kProtocolMySQL;
-    traffic_class.message_type = kMessageTypeRequests;
+    switch (event_type) {
+      case kEventTypeSyscallSendEvent:
+        traffic_class.role = kRoleRequestor;
+        break;
+      case kEventTypeSyscallRecvEvent:
+        traffic_class.role = kRoleResponder;
+        break;
+      default:
+        break;
+    }
   } else if (is_http2_connection_preface(buf, count)) {
     traffic_class.protocol = kProtocolHTTP2;
-    traffic_class.message_type = kMessageTypeMixed;
+    traffic_class.role = kRoleMixed;
   } else {
     traffic_class.protocol = kProtocolUnknown;
-    traffic_class.message_type = kMessageTypeUnknown;
+    traffic_class.role = kRoleUnknown;
   }
   return traffic_class;
 }
 
-static struct conn_info_t* get_conn_info(u64 lookup_fd, const char* buf, size_t count) {
-  struct conn_info_t* conn_info = conn_info_map.lookup(&lookup_fd);
+static inline __attribute__((__always_inline__)) struct conn_info_t* get_conn_info(u64 lookup_fd) {
+  struct conn_info_t new_conn_info;
+  memset(&new_conn_info, 0, sizeof(struct conn_info_t));
+  struct conn_info_t* conn_info = conn_info_map.lookup_or_init(&lookup_fd, &new_conn_info);
+  return conn_info;
+}
 
+// TODO(oazizi): This function should go away once the protocol is identified externally.
+//               Also, could move this function into the header file, so we can test it.
+static inline __attribute__((__always_inline__)) void update_traffic_class(
+    struct conn_info_t* conn_info, enum EventType event_type, const char* buf, size_t count) {
   // TODO(oazizi): Future architecture should have user-land provide the traffic_class.
   // TODO(oazizi): conn_info currently works only if tracing on the send or recv side of a process,
   //               but not both simultaneously, because we need to mark two traffic classes.
 
   // Try to infer connection type (protocol) based on data.
   // If protocol is detected, then let it through, even though accept()/connect() was not captured.
-  // Won't know remote endpoint (remote IP and port), but still let it through.
-  if (conn_info == NULL) {
-    struct traffic_class_t traffic_class = infer_traffic(buf, count);
-    if (traffic_class.protocol != kProtocolUnknown) {
-      struct conn_info_t new_conn_info;
-      memset(&new_conn_info, 0, sizeof(struct conn_info_t));
-      new_conn_info.traffic_class = traffic_class;
-      conn_info = conn_info_map.lookup_or_init(&lookup_fd, &new_conn_info);
-    }
-  }
-
-  // Attempt to classify protocol, if unknown.
   if (conn_info != NULL && conn_info->traffic_class.protocol == kProtocolUnknown) {
     // TODO(oazizi): Look for only certain protocols on write/send()?
-    struct traffic_class_t traffic_class = infer_traffic(buf, count);
+    struct traffic_class_t traffic_class = infer_traffic(event_type, buf, count);
     conn_info->traffic_class = traffic_class;
   }
-
-  return conn_info;
 }
 
 /***********************************************************
@@ -227,7 +249,7 @@ static void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd, struct sockad
   conn_info.addr = addr;
   conn_info.conn_id = get_conn_id(tgid);
   conn_info.traffic_class.protocol = kProtocolUnknown;
-  conn_info.traffic_class.message_type = kMessageTypeUnknown;
+  conn_info.traffic_class.role = kRoleUnknown;
   conn_info.wr_seq_num = 0;
   conn_info.rd_seq_num = 0;
   conn_info.tgid = tgid;
@@ -335,10 +357,12 @@ static int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t
   u32 tgid = id >> 32;
   u64 lookup_fd = ((u64)tgid << 32) | (u32)fd;
 
-  struct conn_info_t* conn_info = get_conn_info(lookup_fd, buf, count);
+  struct conn_info_t* conn_info = get_conn_info(lookup_fd);
   if (conn_info == NULL) {
     return 0;
   }
+
+  update_traffic_class(conn_info, kEventTypeSyscallSendEvent, buf, count);
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
   if (conn_info->traffic_class.protocol == kProtocolUnknown) {
@@ -350,14 +374,14 @@ static int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t
 
   u64 control = get_control(conn_info->traffic_class.protocol);
 
-  switch (conn_info->traffic_class.message_type) {
-    case kMessageTypeRequests:
+  switch (conn_info->traffic_class.role) {
+    case kRoleRequestor:
       trace = (control & kSocketTraceSendReq);
       break;
-    case kMessageTypeResponses:
+    case kRoleResponder:
       trace = (control & kSocketTraceSendResp);
       break;
-    case kMessageTypeMixed:
+    case kRoleMixed:
       trace = (control & (kSocketTraceSendReq | kSocketTraceSendResp));
       break;
     default:
@@ -377,7 +401,7 @@ static int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t
   return 0;
 }
 
-static int probe_ret_write_send(struct pt_regs* ctx, uint32_t event_type) {
+static int probe_ret_write_send(struct pt_regs* ctx, enum EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
 
   int32_t bytes_written = PT_REGS_RC(ctx);
@@ -436,7 +460,7 @@ done:
 }
 
 static int probe_entry_read_recv(struct pt_regs* ctx, unsigned int fd, char* buf, size_t count,
-                                 uint32_t event_type) {
+                                 enum EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
   u64 lookup_fd = ((u64)tgid << 32) | (u32)fd;
@@ -450,7 +474,7 @@ static int probe_entry_read_recv(struct pt_regs* ctx, unsigned int fd, char* buf
   return 0;
 }
 
-static int probe_ret_read_recv(struct pt_regs* ctx, uint32_t event_type) {
+static int probe_ret_read_recv(struct pt_regs* ctx, enum EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
 
   int32_t bytes_read = PT_REGS_RC(ctx);
@@ -469,10 +493,12 @@ static int probe_ret_read_recv(struct pt_regs* ctx, uint32_t event_type) {
 
   const char* buf = read_info->buf;
 
-  struct conn_info_t* conn_info = get_conn_info(lookup_fd, buf, bytes_read);
+  struct conn_info_t* conn_info = get_conn_info(lookup_fd);
   if (conn_info == NULL) {
     goto done;
   }
+
+  update_traffic_class(conn_info, kEventTypeSyscallRecvEvent, buf, bytes_read);
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
   if (conn_info->traffic_class.protocol == kProtocolUnknown) {
@@ -483,14 +509,14 @@ static int probe_ret_read_recv(struct pt_regs* ctx, uint32_t event_type) {
   bool trace;
 
   u64 control = get_control(conn_info->traffic_class.protocol);
-  switch (conn_info->traffic_class.message_type) {
-    case kMessageTypeRequests:
-      trace = (control & kSocketTraceRecvReq);
-      break;
-    case kMessageTypeResponses:
+  switch (conn_info->traffic_class.role) {
+    case kRoleRequestor:
       trace = (control & kSocketTraceRecvResp);
       break;
-    case kMessageTypeMixed:
+    case kRoleResponder:
+      trace = (control & kSocketTraceRecvReq);
+      break;
+    case kRoleMixed:
       trace = (control & (kSocketTraceRecvReq | kSocketTraceRecvResp));
       break;
     default:

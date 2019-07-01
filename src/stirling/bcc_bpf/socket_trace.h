@@ -30,12 +30,7 @@ enum TrafficProtocol {
 };
 
 // The direction of traffic expected on a probe.
-enum TrafficMessageType {
-  kMessageTypeUnknown,
-  kMessageTypeRequests,
-  kMessageTypeResponses,
-  kMessageTypeMixed
-};
+enum ReqRespRole { kRoleUnknown, kRoleRequestor, kRoleResponder, kRoleMixed };
 
 // Which transactions to trace (direction and type).
 const uint64_t kSocketTraceSendReq = 1 << 0;
@@ -47,7 +42,7 @@ struct traffic_class_t {
   // The protocol of traffic on the connection (HTTP, MySQL, etc.).
   enum TrafficProtocol protocol;
   // Classify traffic as requests, responses or mixed.
-  enum TrafficMessageType message_type;
+  enum ReqRespRole role;
 };
 
 // This struct contains information collected when a connection is established,

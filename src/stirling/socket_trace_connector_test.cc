@@ -32,7 +32,8 @@ class SocketTraceConnectorTest : public ::testing::Test {
     conn_info.conn_id = 2;
     conn_info.fd = 3;
     conn_info.traffic_class.protocol = kProtocolHTTP;
-    conn_info.traffic_class.message_type = kMessageTypeResponses;
+    // socket_trace_connector does not depend on role, so set to unknown.
+    conn_info.traffic_class.role = kRoleUnknown;
     return conn_info;
   }
 

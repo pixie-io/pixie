@@ -52,7 +52,7 @@ void ConnectionTracker::SetProtocol(TrafficProtocol protocol) {
 }
 
 template <class TMessageType>
-void DataStream::ExtractMessages(TrafficMessageType type) {
+void DataStream::ExtractMessages(MessageType type) {
   EventParser<TMessageType> parser;
 
   const size_t orig_offset = offset;
@@ -99,7 +99,7 @@ void DataStream::ExtractMessages(TrafficMessageType type) {
 }
 
 // Explicit instantiation for HTTPMessage.
-template void DataStream::ExtractMessages<HTTPMessage>(TrafficMessageType type);
+template void DataStream::ExtractMessages<HTTPMessage>(MessageType type);
 
 }  // namespace stirling
 }  // namespace pl

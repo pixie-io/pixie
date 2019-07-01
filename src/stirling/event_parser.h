@@ -14,6 +14,9 @@
 namespace pl {
 namespace stirling {
 
+// The direction of traffic expected on a probe.
+enum class MessageType { kUnknown, kRequests, kResponses, kMixed };
+
 enum class ParseState {
   kUnknown,
   // The data is invalid.
@@ -36,8 +39,8 @@ struct BufferPosition {
 //
 // The two concepts are used by two different parse functions we have:
 //
-// ParseResult<size_t> Parse(TrafficMessageType type, std::string_view buf);
-// ParseResult<BufferPosition> ParseMessages(TrafficMessageType type);
+// ParseResult<size_t> Parse(MessageType type, std::string_view buf);
+// ParseResult<BufferPosition> ParseMessages(MessageType type);
 template <typename PositionType>
 struct ParseResult {
   // Positions of message start positions in the source buffer.
@@ -79,8 +82,7 @@ class EventParser {
    *
    * @return ParseResult with locations where parseable messages were found in the source buffer.
    */
-  ParseResult<BufferPosition> ParseMessages(TrafficMessageType type,
-                                            std::deque<TMessageType>* messages) {
+  ParseResult<BufferPosition> ParseMessages(MessageType type, std::deque<TMessageType>* messages) {
     std::string buf = Combine();
 
     // Grab size before we start, so we know where the new parsed messages are.

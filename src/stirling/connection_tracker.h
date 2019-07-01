@@ -54,7 +54,7 @@ struct DataStream {
    * @param type whether to parse as requests, responses or mixed traffic.
    */
   template <class TMessageType>
-  void ExtractMessages(TrafficMessageType type);
+  void ExtractMessages(MessageType type);
 
   // TODO(oazizi): Add a bool to say whether the stream has been touched since last transfer (to
   // avoid useless computation in ExtractMessages()).
@@ -64,7 +64,7 @@ struct DataStream {
    *
    * @param type whether to parse as requests, responses or mixed traffic.
    */
-  void ExtractMessages(TrafficMessageType type);
+  void ExtractMessages(MessageType type);
 };
 
 /**
