@@ -25,7 +25,7 @@ struct accept_info_t {
 } __attribute__((__packed__, aligned(8)));
 
 struct data_info_t {
-  u64 lookup_fd;
+  u32 fd;
   const char* buf;
 } __attribute__((__packed__, aligned(8)));
 
@@ -214,10 +214,19 @@ static struct traffic_class_t infer_traffic(enum EventType event_type, const cha
   return traffic_class;
 }
 
-static inline __attribute__((__always_inline__)) struct conn_info_t* get_conn_info(u64 lookup_fd) {
+static inline __attribute__((__always_inline__)) struct conn_info_t* get_conn_info(u32 tgid,
+                                                                                   u32 fd) {
+  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
   struct conn_info_t new_conn_info;
   memset(&new_conn_info, 0, sizeof(struct conn_info_t));
-  struct conn_info_t* conn_info = conn_info_map.lookup_or_init(&lookup_fd, &new_conn_info);
+  struct conn_info_t* conn_info = conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
+  // Use timestamp being zero to detect that a new conn_info was initialized.
+  if (conn_info->timestamp_ns == 0) {
+    // If lookup_or_init initialized a new conn_info, we need to set some fields.
+    conn_info->conn_id = get_conn_id(tgid);
+    conn_info->tgid = tgid;
+    conn_info->fd = fd;
+  }
   return conn_info;
 }
 
@@ -256,7 +265,7 @@ static void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd, struct sockad
   conn_info.fd = fd;
 
   // Prepend TGID to make the FD unique across processes.
-  u64 tgid_fd = ((u64)tgid << 32) | fd;
+  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
   conn_info_map.update(&tgid_fd, &conn_info);
   socket_open_conns.perf_submit(ctx, &conn_info, sizeof(struct conn_info_t));
 }
@@ -355,9 +364,8 @@ static int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t
 
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
-  u64 lookup_fd = ((u64)tgid << 32) | (u32)fd;
 
-  struct conn_info_t* conn_info = get_conn_info(lookup_fd);
+  struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
     return 0;
   }
@@ -394,7 +402,7 @@ static int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t
 
   struct data_info_t write_info;
   memset(&write_info, 0, sizeof(struct data_info_t));
-  write_info.lookup_fd = lookup_fd;
+  write_info.fd = fd;
   write_info.buf = buf;
 
   active_write_info_map.update(&id, &write_info);
@@ -403,6 +411,7 @@ static int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t
 
 static int probe_ret_write_send(struct pt_regs* ctx, enum EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
+  u32 tgid = id >> 32;
 
   int32_t bytes_written = PT_REGS_RC(ctx);
   if (bytes_written <= 0) {
@@ -415,8 +424,8 @@ static int probe_ret_write_send(struct pt_regs* ctx, enum EventType event_type) 
     goto done;
   }
 
-  uint64_t lookup_fd = write_info->lookup_fd;
-  struct conn_info_t* conn_info = conn_info_map.lookup(&lookup_fd);
+  u64 tgid_fd = ((u64)tgid << 32) | (u32)write_info->fd;
+  struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
   if (conn_info == NULL) {
     goto done;
   }
@@ -463,11 +472,10 @@ static int probe_entry_read_recv(struct pt_regs* ctx, unsigned int fd, char* buf
                                  enum EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
-  u64 lookup_fd = ((u64)tgid << 32) | (u32)fd;
 
   struct data_info_t read_info;
   memset(&read_info, 0, sizeof(struct data_info_t));
-  read_info.lookup_fd = lookup_fd;
+  read_info.fd = fd;
   read_info.buf = buf;
 
   active_read_info_map.update(&id, &read_info);
@@ -476,6 +484,7 @@ static int probe_entry_read_recv(struct pt_regs* ctx, unsigned int fd, char* buf
 
 static int probe_ret_read_recv(struct pt_regs* ctx, enum EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
+  u32 tgid = id >> 32;
 
   int32_t bytes_read = PT_REGS_RC(ctx);
 
@@ -489,11 +498,9 @@ static int probe_ret_read_recv(struct pt_regs* ctx, enum EventType event_type) {
     goto done;
   }
 
-  u64 lookup_fd = read_info->lookup_fd;
-
   const char* buf = read_info->buf;
 
-  struct conn_info_t* conn_info = get_conn_info(lookup_fd);
+  struct conn_info_t* conn_info = get_conn_info(tgid, read_info->fd);
   if (conn_info == NULL) {
     goto done;
   }
@@ -571,13 +578,13 @@ int probe_close(struct pt_regs* ctx, int fd) {
   }
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
-  u64 lookup_fd = ((u64)tgid << 32) | fd;
-  struct conn_info_t* conn_info = conn_info_map.lookup(&lookup_fd);
+  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+  struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
   if (conn_info == NULL) {
     return 0;
   }
   socket_close_conns.perf_submit(ctx, conn_info, sizeof(struct conn_info_t));
-  conn_info_map.delete(&lookup_fd);
+  conn_info_map.delete(&tgid_fd);
   return 0;
 }
 
