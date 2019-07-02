@@ -118,6 +118,12 @@ class SocketTraceConnector : public SourceConnector {
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
+  // Dim 0: DataTables; dim 1: perfBuffer Names
+  static constexpr ConstVectorView<ConstStrView> perfBufferNames[] = {kHTTPPerfBuffers,
+                                                                      kMySQLPerfBuffers};
+  static constexpr auto kTablePerfBufferMap =
+      ConstVectorView<ConstVectorView<ConstStrView> >(perfBufferNames);
+
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
   }
@@ -142,70 +148,14 @@ class SocketTraceConnector : public SourceConnector {
   // TODO(oazizi): This function is only public for testing purposes. Make private?
   void ReadPerfBuffer(uint32_t table_num);
 
-  // Dim 0: DataTables; dim 1: perfBuffer Names
-  static constexpr ConstVectorView<ConstStrView> perfBufferNames[] = {kHTTPPerfBuffers,
-                                                                      kMySQLPerfBuffers};
-  static constexpr auto kTablePerfBufferMap =
-      ConstVectorView<ConstVectorView<ConstStrView> >(perfBufferNames);
-
  private:
-  explicit SocketTraceConnector(std::string_view source_name)
-      : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {
-    // TODO(yzhao): Is there a better place/time to grab the flags?
-    http_response_header_filter_ = ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
-    config_mask_.resize(kNumProtocols);
-  }
-
   // ReadPerfBuffer poll callback functions (must be static).
+  // These are used by the static variables below, and have to be placed here.
   static void HandleHTTPProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleMySQLProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleProbeLoss(void* cb_cookie, uint64_t lost);
   static void HandleCloseProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleOpenProbeOutput(void* cb_cookie, void* data, int data_size);
-
-  // Events from BPF.
-  // TODO(oazizi/yzhao): These all operate based on pass-by-value, which copies.
-  //                     The Handle* functions should call make_unique() of new corresponding
-  //                     objects, and these functions should take unique_ptrs.
-  void AcceptDataEvent(SocketDataEvent event);
-  void AcceptOpenConnEvent(conn_info_t conn_info);
-  void AcceptCloseConnEvent(conn_info_t conn_info);
-
-  // Transfers the data from stream buffers (from AcceptDataEvent()) to record_batch.
-  void TransferStreamData(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch);
-
-  // Transfer of an HTTP Response Event to the HTTP Response Table in the table store.
-  template <class TMessageType>
-  void TransferStreams(TrafficProtocol protocol, types::ColumnWrapperRecordBatch* record_batch);
-
-  template <class TMessageType>
-  void ProcessMessages(const SocketConnection& conn, std::deque<TMessageType>* req_messages,
-                       std::deque<TMessageType>* resp_messages,
-                       types::ColumnWrapperRecordBatch* record_batch);
-
-  template <class TMessageType>
-  static void ConsumeMessage(TraceRecord<TMessageType> record,
-                             types::ColumnWrapperRecordBatch* record_batch);
-
-  template <class TMessageType>
-  static bool SelectMessage(const TraceRecord<TMessageType>& record);
-
-  template <class TMessageType>
-  static void AppendMessage(TraceRecord<TMessageType> record,
-                            types::ColumnWrapperRecordBatch* record_batch);
-
-  // Transfer of a MySQL Event to the MySQL Table.
-  // TODO(oazizi/yzhao): Change to use std::unique_ptr.
-  void TransferMySQLEvent(SocketDataEvent event, types::ColumnWrapperRecordBatch* record_batch);
-
-  inline static HTTPHeaderFilter http_response_header_filter_;
-
-  ebpf::BPF bpf_;
-
-  std::map<uint64_t, ConnectionTracker> connection_trackers_;
-
-  // For MySQL tracing only. Will go away when MySQL uses streams.
-  types::ColumnWrapperRecordBatch* record_batch_ = nullptr;
 
   // Describes a kprobe that should be attached with the BPF::attach_kprobe().
   struct ProbeSpec {
@@ -265,11 +215,62 @@ class SocketTraceConnector : public SourceConnector {
        &SocketTraceConnector::HandleProbeLoss, kDefaultPageCount},
   };
 
+  inline static HTTPHeaderFilter http_response_header_filter_;
+
+  explicit SocketTraceConnector(std::string_view source_name)
+      : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {
+    // TODO(yzhao): Is there a better place/time to grab the flags?
+    http_response_header_filter_ = ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
+    config_mask_.resize(kNumProtocols);
+  }
+
+  // Events from BPF.
+  // TODO(oazizi/yzhao): These all operate based on pass-by-value, which copies.
+  //                     The Handle* functions should call make_unique() of new corresponding
+  //                     objects, and these functions should take unique_ptrs.
+  void AcceptDataEvent(SocketDataEvent event);
+  void AcceptOpenConnEvent(conn_info_t conn_info);
+  void AcceptCloseConnEvent(conn_info_t conn_info);
+
+  // Transfers the data from stream buffers (from AcceptDataEvent()) to record_batch.
+  void TransferStreamData(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch);
+
+  // Transfer of an HTTP Response Event to the HTTP Response Table in the table store.
+  template <class TMessageType>
+  void TransferStreams(TrafficProtocol protocol, types::ColumnWrapperRecordBatch* record_batch);
+
+  template <class TMessageType>
+  void ProcessMessages(const SocketConnection& conn, std::deque<TMessageType>* req_messages,
+                       std::deque<TMessageType>* resp_messages,
+                       types::ColumnWrapperRecordBatch* record_batch);
+
+  template <class TMessageType>
+  static void ConsumeMessage(TraceRecord<TMessageType> record,
+                             types::ColumnWrapperRecordBatch* record_batch);
+
+  template <class TMessageType>
+  static bool SelectMessage(const TraceRecord<TMessageType>& record);
+
+  template <class TMessageType>
+  static void AppendMessage(TraceRecord<TMessageType> record,
+                            types::ColumnWrapperRecordBatch* record_batch);
+
+  // Transfer of a MySQL Event to the MySQL Table.
+  // TODO(oazizi/yzhao): Change to use std::unique_ptr.
+  void TransferMySQLEvent(SocketDataEvent event, types::ColumnWrapperRecordBatch* record_batch);
+
+  ebpf::BPF bpf_;
+
+  std::map<uint64_t, ConnectionTracker> connection_trackers_;
+
+  // For MySQL tracing only. Will go away when MySQL uses streams.
+  types::ColumnWrapperRecordBatch* record_batch_ = nullptr;
+
   std::vector<uint64_t> config_mask_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
-  FRIEND_TEST(SocketTraceConnectorTest, FilterMessages);
+  FRIEND_TEST(SocketTraceConnectorTest, End2end);
   FRIEND_TEST(SocketTraceConnectorTest, RequestResponseMatching);
 };
 

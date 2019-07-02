@@ -97,6 +97,11 @@ class SourceConnector : public NotCopyable {
   const std::chrono::milliseconds& default_push_period() { return default_push_period_; }
 
   /**
+   * @brief Init Helper function: calculates monotonic clock to real time clock offset.
+   */
+  void InitClockRealTimeOffset();
+
+  /**
    * @brief If recording nsecs in your bt file, this function can be used to find the offset for
    * convert the result into realtime.
    */
@@ -140,12 +145,6 @@ class SourceConnector : public NotCopyable {
   virtual void TransferDataImpl(uint32_t table_num,
                                 types::ColumnWrapperRecordBatch* record_batch) = 0;
   virtual Status StopImpl() = 0;
-
-  /**
-   * @brief Init Helper function: calculates monotonic clock to real time clock offset.
-   *
-   */
-  void InitClockRealTimeOffset();
 
   uint64_t real_time_offset_ = 0;
 

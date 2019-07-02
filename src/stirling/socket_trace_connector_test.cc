@@ -24,10 +24,10 @@ class SocketTraceConnectorTest : public ::testing::Test {
     source_->TestOnlyConfigure(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvResp);
   }
 
-  conn_info_t InitConn() {
+  conn_info_t InitConn(uint64_t ts_ns = 0) {
     conn_info_t conn_info{};
     conn_info.addr.sin6_family = AF_INET;
-    conn_info.timestamp_ns = 0;
+    conn_info.timestamp_ns = ts_ns;
     conn_info.tgid = 12345;
     conn_info.conn_id = 2;
     conn_info.fd = 3;
@@ -152,14 +152,17 @@ auto ToIntVector(const types::SharedColumnWrapper& col) {
   return result;
 }
 
-TEST_F(SocketTraceConnectorTest, FilterMessages) {
-  conn_info_t conn = InitConn();
+TEST_F(SocketTraceConnectorTest, End2end) {
+  conn_info_t conn = InitConn(50);
   SocketDataEvent event0_json = InitRecvEvent(kJSONResp, 100);
   SocketDataEvent event1_text = InitRecvEvent(kTextResp, 200);
   SocketDataEvent event2_text = InitRecvEvent(kTextResp, 200);
   SocketDataEvent event3_json = InitRecvEvent(kJSONResp, 100);
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
+
+  source_->InitClockRealTimeOffset();
+  EXPECT_NE(0, source_->ClockRealTimeOffset());
 
   // Registers a new connection
   source_->AcceptOpenConnEvent(conn);
@@ -205,8 +208,13 @@ TEST_F(SocketTraceConnectorTest, FilterMessages) {
            "and event_json Content-Type matches, and is selected";
   }
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo", "bar", "foo"));
-  EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kTimeIdx]),
-              ElementsAre(100, 200, 100));
+  EXPECT_THAT(
+      ToIntVector<types::Time64NSValue>(record_batch[kTimeIdx]),
+      ElementsAre(100 + source_->ClockRealTimeOffset(), 200 + source_->ClockRealTimeOffset(),
+                  100 + source_->ClockRealTimeOffset()));
+  ASSERT_THAT(source_->TestOnlyStreams(), testing::SizeIs(1));
+  EXPECT_EQ(50 + source_->ClockRealTimeOffset(),
+            source_->TestOnlyStreams().begin()->second.conn().timestamp_ns);
 }
 
 TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {

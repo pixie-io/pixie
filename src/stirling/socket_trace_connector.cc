@@ -98,8 +98,6 @@ void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
   ReadPerfBuffer(table_num);
   record_batch_ = nullptr;
 
-  // ReadPerfBuffer copies data into a reorder buffer called the write_stream_map_.
-  // This call transfers the data from the
   TransferStreamData(table_num, record_batch);
 }
 
@@ -214,8 +212,6 @@ void SocketTraceConnector::AcceptOpenConnEvent(conn_info_t conn_info) {
 void SocketTraceConnector::AcceptCloseConnEvent(conn_info_t conn_info) {
   const uint64_t stream_id = GetStreamId(conn_info.tgid, conn_info.conn_id);
   DCHECK(stream_id != 0) << "Stream ID cannot be 0, tgid must be wrong";
-
-  conn_info.timestamp_ns += ClockRealTimeOffset();
 
   // Need to adjust the clocks to convert to real time.
   conn_info.timestamp_ns += ClockRealTimeOffset();
