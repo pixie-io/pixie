@@ -18,6 +18,7 @@ type MetadataStore interface {
 	UpdateEndpoints(*metadatapb.Endpoints) error
 	UpdatePod(*metadatapb.Pod) error
 	UpdateService(*metadatapb.Service) error
+	UpdateContainers([]*metadatapb.ContainerInfo) error
 	GetAgentsForHostnames(*[]string) (*[]string, error)
 	AddToAgentUpdateQueue(string, string) error
 	AddToFrontOfAgentQueue(string, *messagespb.MetadataUpdateInfo_ResourceUpdate) error

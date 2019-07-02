@@ -15,6 +15,13 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 )
 
+var containerInfoPB = `
+name: "container_1"
+uid: "container1"
+pod_uid: "ijkl"
+namespace: "ns"
+`
+
 func TestUpdateEndpoints(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
@@ -111,6 +118,51 @@ func TestUpdateService(t *testing.T) {
 	proto.Unmarshal(resp.Kvs[0].Value, pb)
 
 	assert.Equal(t, expectedPb, pb)
+}
+
+func TestUpdateContainers(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	podInfo := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(podPb, podInfo); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	val, err := podInfo.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal pod pb")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/pod/ns/ijkl", string(val))
+	if err != nil {
+		t.Fatal("Unable to add agentData to etcd.")
+	}
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	containers := make([]*metadatapb.ContainerInfo, 1)
+
+	container1 := new(metadatapb.ContainerInfo)
+	if err := proto.UnmarshalText(containerInfoPB, container1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	containers[0] = container1
+
+	err = mds.UpdateContainers(containers)
+	assert.Nil(t, err)
+
+	containerResp, err := etcdClient.Get(context.Background(), "/pods/ns/object_md/containers/container_1/info")
+	if err != nil {
+		t.Fatal("Unable to get container from etcd")
+	}
+
+	assert.Equal(t, 1, len(containerResp.Kvs))
+	containerPb := &metadatapb.ContainerInfo{}
+	proto.Unmarshal(containerResp.Kvs[0].Value, containerPb)
+	assert.Equal(t, "container_1", containerPb.Name)
 }
 
 func TestGetAgentsForHostnames(t *testing.T) {

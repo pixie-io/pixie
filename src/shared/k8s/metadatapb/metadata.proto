@@ -309,8 +309,11 @@ message ContainerInfo {
   // The identifier of the pod that the container belongs to.
   string pod_uid =  5;
 
+  // The namespace of the pod that the container is running in.
+  string namespace = 6;
+
   // The processes running on the container.
-  repeated ProcessInfo processes = 6;
+  repeated ProcessInfo processes = 7;
 }
 
 // ProcessInfo contains info for a process running in a container.

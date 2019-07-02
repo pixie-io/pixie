@@ -3,6 +3,7 @@ package controllers_test
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -12,8 +13,10 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
+	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 	data "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
@@ -448,4 +451,66 @@ func TestGetActiveAgentsGetAgentsFailed(t *testing.T) {
 
 	_, err := agtMgr.GetActiveAgents()
 	assert.NotNil(t, err)
+}
+
+func TestAddToUpdateQueue(t *testing.T) {
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	defer cleanup()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	defer wg.Wait()
+
+	containers := make([]*metadatapb.ContainerInfo, 1)
+
+	container1 := new(metadatapb.ContainerInfo)
+	if err := proto.UnmarshalText(containerInfoPB, container1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	containers[0] = container1
+
+	mockMds.
+		EXPECT().
+		UpdateContainers(containers).
+		DoAndReturn(func(e []*metadatapb.ContainerInfo) error {
+			wg.Done()
+			return nil
+		})
+
+	update := &messagespb.AgentUpdateInfo{
+		Containers: containers,
+	}
+
+	agtMgr.AddToUpdateQueue(update)
+}
+
+func TestAddToUpdateQueueFailed(t *testing.T) {
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	defer cleanup()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	defer wg.Wait()
+
+	containers := make([]*metadatapb.ContainerInfo, 1)
+
+	container1 := new(metadatapb.ContainerInfo)
+	if err := proto.UnmarshalText(containerInfoPB, container1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	containers[0] = container1
+
+	mockMds.
+		EXPECT().
+		UpdateContainers(containers).
+		DoAndReturn(func(e []*metadatapb.ContainerInfo) error {
+			wg.Done()
+			return errors.New("Could not update containers")
+		})
+
+	update := &messagespb.AgentUpdateInfo{
+		Containers: containers,
+	}
+
+	agtMgr.AddToUpdateQueue(update)
 }

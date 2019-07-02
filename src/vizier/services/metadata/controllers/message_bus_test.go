@@ -15,6 +15,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
@@ -91,6 +92,12 @@ heartbeat {
 	time: 1,
 	agent_id: {
 		data: "11285cdd1de94ab1ae6a0ba08c8c676c"
+	}
+	update_info {
+		containers {
+			name: "container_1"
+			uid: "c_abcd"
+		}
 	}
 }
 `
@@ -400,6 +407,20 @@ func TestAgentHeartbeat(t *testing.T) {
 		GetFromAgentQueue(uuidStr).
 		Return(&updates, nil)
 
+	agentContainers := make([]*metadatapb.ContainerInfo, 1)
+	agentContainers[0] = &metadatapb.ContainerInfo{
+		Name: "container_1",
+		Uid:  "c_abcd",
+	}
+	agentUpdatePb := &messages.AgentUpdateInfo{
+		Containers: agentContainers,
+	}
+
+	mockAgtMgr.
+		EXPECT().
+		AddToUpdateQueue(agentUpdatePb).
+		Return()
+
 	// Create Metadata Service controller.
 	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
 
@@ -455,6 +476,7 @@ func TestAgentHeartbeatInvalidUUID(t *testing.T) {
 		EXPECT().
 		GetFromAgentQueue(uuidStr).
 		Return(&updates, nil)
+
 	// Create Metadata Service controller.
 	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
 
@@ -503,6 +525,20 @@ func TestUpdateHeartbeatFailed(t *testing.T) {
 		EXPECT().
 		GetFromAgentQueue(uuidStr).
 		Return(&updates, nil)
+
+	agentContainers := make([]*metadatapb.ContainerInfo, 1)
+	agentContainers[0] = &metadatapb.ContainerInfo{
+		Name: "container_1",
+		Uid:  "c_abcd",
+	}
+	agentUpdatePb := &messages.AgentUpdateInfo{
+		Containers: agentContainers,
+	}
+
+	mockAgtMgr.
+		EXPECT().
+		AddToUpdateQueue(agentUpdatePb).
+		Return()
 
 	// Create Metadata Service controller.
 	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)

@@ -48,6 +48,8 @@ type AgentManager interface {
 
 	AddToFrontOfAgentQueue(string, *messagespb.MetadataUpdateInfo_ResourceUpdate) error
 	GetFromAgentQueue(string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error)
+
+	AddToUpdateQueue(*messagespb.AgentUpdateInfo)
 }
 
 // AgentManagerImpl is an implementation for AgentManager which talks to etcd.
@@ -56,18 +58,49 @@ type AgentManagerImpl struct {
 	client   *clientv3.Client
 	clock    utils.Clock
 	mds      MetadataStore
+	updateCh chan *messagespb.AgentUpdateInfo
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
 func NewAgentManagerWithClock(client *clientv3.Client, mds MetadataStore, isLeader bool, clock utils.Clock) *AgentManagerImpl {
+	c := make(chan *messagespb.AgentUpdateInfo)
+
 	agentManager := &AgentManagerImpl{
 		client:   client,
 		IsLeader: isLeader,
 		clock:    clock,
 		mds:      mds,
+		updateCh: c,
 	}
 
+	go agentManager.processAgentUpdates()
+
 	return agentManager
+}
+
+func (m *AgentManagerImpl) processAgentUpdates() {
+	for {
+		msg, more := <-m.updateCh
+		if !more {
+			return
+		}
+
+		err := m.applyAgentUpdate(msg)
+		if err != nil {
+			// Add update back to the queue to retry.
+			m.updateCh <- msg
+		}
+	}
+}
+
+func (m *AgentManagerImpl) applyAgentUpdate(update *messagespb.AgentUpdateInfo) error {
+	// TODO(michelle): Also apply agent's schema updates. To follow in next diff.
+	return m.mds.UpdateContainers(update.Containers)
+}
+
+// AddToUpdateQueue adds the container/schema update to a queue for updates to the metadata store.
+func (m *AgentManagerImpl) AddToUpdateQueue(update *messagespb.AgentUpdateInfo) {
+	m.updateCh <- update
 }
 
 // NewAgentManager creates a new agent manager.

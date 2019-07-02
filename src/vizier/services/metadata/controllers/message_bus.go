@@ -158,6 +158,11 @@ func (mc *MessageBusController) onAgentHeartBeat(m *messages.Heartbeat) {
 	if err != nil {
 		log.WithError(err).Error("Could not update agent heartbeat.")
 	}
+
+	// Get agent's container/schema updates and add to update queue.
+	if m.UpdateInfo != nil {
+		mc.agentManager.AddToUpdateQueue(m.UpdateInfo)
+	}
 }
 
 func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgentRequest) {

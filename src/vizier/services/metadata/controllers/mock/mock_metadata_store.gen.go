@@ -98,6 +98,18 @@ func (mr *MockMetadataStoreMockRecorder) GetFromAgentQueue(arg0 interface{}) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromAgentQueue", reflect.TypeOf((*MockMetadataStore)(nil).GetFromAgentQueue), arg0)
 }
 
+// UpdateContainers mocks base method
+func (m *MockMetadataStore) UpdateContainers(arg0 []*metadatapb.ContainerInfo) error {
+	ret := m.ctrl.Call(m, "UpdateContainers", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateContainers indicates an expected call of UpdateContainers
+func (mr *MockMetadataStoreMockRecorder) UpdateContainers(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateContainers", reflect.TypeOf((*MockMetadataStore)(nil).UpdateContainers), arg0)
+}
+
 // UpdateEndpoints mocks base method
 func (m *MockMetadataStore) UpdateEndpoints(arg0 *metadatapb.Endpoints) error {
 	ret := m.ctrl.Call(m, "UpdateEndpoints", arg0)

@@ -61,7 +61,10 @@ func (mds *EtcdMetadataStore) UpdateEndpoints(e *metadatapb.Endpoints) error {
 }
 
 func getNamespaceFromMetadata(md *metadatapb.ObjectMetadata) string {
-	ns := md.Namespace
+	return getNamespaceFromString(md.Namespace)
+}
+
+func getNamespaceFromString(ns string) string {
 	if ns == "" {
 		ns = "default"
 	}
@@ -85,7 +88,15 @@ func (mds *EtcdMetadataStore) UpdatePod(p *metadatapb.Pod) error {
 }
 
 func getPodKey(e *metadatapb.Pod) string {
-	return path.Join("/", "pod", getNamespaceFromMetadata(e.Metadata), e.Metadata.Uid)
+	return getPodKeyFromStrings(e.Metadata.Uid, getNamespaceFromMetadata(e.Metadata))
+}
+
+func getPodKeyFromStrings(uid string, namespace string) string {
+	return path.Join("/", "pod", namespace, uid)
+}
+
+func getContainerKeyFromStrings(namespace string, podName string, containerName string) string {
+	return path.Join("/", "pods", namespace, podName, "containers", containerName, "info")
 }
 
 // UpdateService adds or updates the given service in the metadata store.
@@ -98,6 +109,43 @@ func (mds *EtcdMetadataStore) UpdateService(s *metadatapb.Service) error {
 	key := getServiceKey(s)
 
 	return mds.updateValue(key, string(val))
+}
+
+// UpdateContainers updates the given containers in the metadata store.
+func (mds *EtcdMetadataStore) UpdateContainers(containers []*metadatapb.ContainerInfo) error {
+	// Get all pods with the given pod ids.
+	podOps := make([]clientv3.Op, len(containers))
+	for i, container := range containers {
+		podOps[i] = clientv3.OpGet(getPodKeyFromStrings(container.PodUid, getNamespaceFromString(container.Namespace)))
+	}
+
+	txnresp, err := mds.client.Txn(context.TODO()).If().Then(podOps...).Commit()
+	if err != nil {
+		return err
+	}
+
+	// Update containers.
+	var containerOps []clientv3.Op
+	for i, resp := range txnresp.Responses {
+		if len(resp.GetResponseRange().Kvs) > 0 {
+			podPb := &metadatapb.Pod{}
+			proto.Unmarshal(resp.GetResponseRange().Kvs[0].Value, podPb)
+
+			container, err := containers[i].Marshal()
+			if err != nil {
+				log.WithError(err).Error("Could not marshall container update message.")
+				continue
+			}
+
+			// TODO(michelle): Add a Lease to the key, so that they expire after a certain period of time.
+			containerKey := getContainerKeyFromStrings(getNamespaceFromString(containers[i].Namespace), podPb.Metadata.Name, containers[i].Name)
+			containerOps = append(containerOps, clientv3.OpPut(containerKey, string(container)))
+		}
+	}
+
+	_, err = mds.client.Txn(context.TODO()).If().Then(containerOps...).Commit()
+
+	return err
 }
 
 func getServiceKey(e *metadatapb.Service) string {
