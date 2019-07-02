@@ -165,6 +165,7 @@ def pl_cc_test(
         deps = [],
         tags = [],
         size = "small",
+        timeout = "short",
         args = [],
         coverage = True,
         local = False):
@@ -192,6 +193,7 @@ def pl_cc_test(
         args = args,
         tags = tags + ["coverage_test"],
         size = size,
+        timeout = timeout,
         local = local,
     )
 

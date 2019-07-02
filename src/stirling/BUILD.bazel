@@ -161,6 +161,7 @@ pl_cc_test(
 
 pl_cc_test(
     name = "socket_trace_bpf_test",
+    timeout = "moderate",
     srcs = ["socket_trace_bpf_test.cc"],
     tags = ["requires_bpf"],
     deps = [
