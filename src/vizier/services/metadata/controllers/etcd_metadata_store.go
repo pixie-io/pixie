@@ -41,7 +41,23 @@ func (mds *EtcdMetadataStore) UpdateEndpoints(e *metadatapb.Endpoints) error {
 
 	key := getEndpointKey(e)
 
-	return mds.updateValue(key, string(val))
+	err = mds.updateValue(key, string(val))
+	if err != nil {
+		return err
+	}
+
+	// Update service -> pod map.
+	mapKey := getServicePodMapKey(e)
+	var podIds []string
+	for _, subset := range e.Subsets {
+		for _, addr := range subset.Addresses {
+			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
+				podIds = append(podIds, addr.TargetRef.Uid)
+			}
+		}
+	}
+
+	return mds.updateValue(mapKey, strings.Join(podIds, ","))
 }
 
 func getNamespaceFromMetadata(md *metadatapb.ObjectMetadata) string {
@@ -86,6 +102,10 @@ func (mds *EtcdMetadataStore) UpdateService(s *metadatapb.Service) error {
 
 func getServiceKey(e *metadatapb.Service) string {
 	return path.Join("/", "service", getNamespaceFromMetadata(e.Metadata), e.Metadata.Uid)
+}
+
+func getServicePodMapKey(e *metadatapb.Endpoints) string {
+	return path.Join("/", "services", getNamespaceFromMetadata(e.Metadata), e.Metadata.Name, "pods")
 }
 
 // GetAgentKeyFromUUID gets the etcd key for the agent, given the id in a UUID format.

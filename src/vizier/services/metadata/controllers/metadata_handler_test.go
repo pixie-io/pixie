@@ -22,8 +22,9 @@ subsets {
     hostname: "host"
     node_name: "this-is-a-node"
     target_ref {
-      kind: "pod"
+      kind: "Pod"
       namespace: "pl"
+      uid: "abcd"
     }
   }
   addresses {
@@ -151,7 +152,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		GetAgentsForHostnames(&[]string{"host", "host-2"}).
+		GetAgentsForHostnames(&[]string{"this-is-a-node", "node-a"}).
 		Return(&[]string{"agent-1", "agent-2"}, nil)
 
 	mockMds.
@@ -166,8 +167,9 @@ func TestObjectToEndpointsProto(t *testing.T) {
 
 	// Create endpoints object.
 	or := v1.ObjectReference{
-		Kind:      "pod",
+		Kind:      "Pod",
 		Namespace: "pl",
+		UID:       "abcd",
 	}
 
 	addrs := make([]v1.EndpointAddress, 2)
@@ -266,13 +268,14 @@ func TestNoHostnameResolvedProto(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		GetAgentsForHostnames(&[]string{"host", "host-2"}).
+		GetAgentsForHostnames(&[]string{"this-is-a-node", "node-a"}).
 		Return(nil, nil)
 
 	// Create endpoints object.
 	or := v1.ObjectReference{
-		Kind:      "pod",
+		Kind:      "Pod",
 		Namespace: "pl",
+		UID:       "abcd",
 	}
 
 	addrs := make([]v1.EndpointAddress, 2)
@@ -378,12 +381,12 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		GetAgentsForHostnames(&[]string{"host", "host-2"}).
+		GetAgentsForHostnames(&[]string{"this-is-a-node", "node-a"}).
 		Return(&[]string{"agent-1", "agent-2"}, nil)
 
 	mockMds.
 		EXPECT().
-		GetAgentsForHostnames(&[]string{"host-2"}).
+		GetAgentsForHostnames(&[]string{"node-a"}).
 		Return(&[]string{"agent-3"}, nil)
 
 	mockMds.
@@ -403,8 +406,9 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 
 	// Create endpoints object.
 	or := v1.ObjectReference{
-		Kind:      "pod",
+		Kind:      "Pod",
 		Namespace: "pl",
+		UID:       "abcd",
 	}
 
 	addrs := make([]v1.EndpointAddress, 2)

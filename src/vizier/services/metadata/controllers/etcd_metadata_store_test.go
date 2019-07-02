@@ -43,7 +43,12 @@ func TestUpdateEndpoints(t *testing.T) {
 	pb := &metadatapb.Endpoints{}
 	proto.Unmarshal(resp.Kvs[0].Value, pb)
 
-	assert.Equal(t, expectedPb, pb)
+	mapResp, err := etcdClient.Get(context.Background(), "/services/a_namespace/object_md/pods")
+	if err != nil {
+		t.Fatal("Failed to get service to pod mapping.")
+	}
+	assert.Equal(t, 1, len(mapResp.Kvs))
+	assert.Equal(t, "abcd", string(mapResp.Kvs[0].Value))
 }
 
 func TestUpdatePod(t *testing.T) {

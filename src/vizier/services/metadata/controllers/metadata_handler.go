@@ -178,7 +178,7 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 	var hostnames []string
 	for _, subset := range e.Subsets {
 		for _, addr := range subset.Addresses {
-			hostnames = append(hostnames, addr.Hostname)
+			hostnames = append(hostnames, *addr.NodeName)
 		}
 	}
 
