@@ -180,6 +180,7 @@ uint64_t GetStreamId(uint32_t tgid, uint32_t conn_id) {
 
 void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
   const uint64_t stream_id = GetStreamId(event.attr.tgid, event.attr.conn_id);
+  DCHECK(stream_id != 0) << "Stream ID cannot be 0, tgid must be wrong";
 
   // Need to adjust the clocks to convert to real time.
   event.attr.timestamp_ns += ClockRealTimeOffset();
@@ -200,6 +201,7 @@ void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
 
 void SocketTraceConnector::AcceptOpenConnEvent(conn_info_t conn_info) {
   const uint64_t stream_id = GetStreamId(conn_info.tgid, conn_info.conn_id);
+  DCHECK(stream_id != 0) << "Stream ID cannot be 0, tgid must be wrong";
 
   // Need to adjust the clocks to convert to real time.
   conn_info.timestamp_ns += ClockRealTimeOffset();
@@ -210,6 +212,8 @@ void SocketTraceConnector::AcceptOpenConnEvent(conn_info_t conn_info) {
 
 void SocketTraceConnector::AcceptCloseConnEvent(conn_info_t conn_info) {
   const uint64_t stream_id = GetStreamId(conn_info.tgid, conn_info.conn_id);
+  DCHECK(stream_id != 0) << "Stream ID cannot be 0, tgid must be wrong";
+
   conn_info.timestamp_ns += ClockRealTimeOffset();
 
   // Need to adjust the clocks to convert to real time.
