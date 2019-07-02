@@ -124,13 +124,11 @@ TEST(ToProto, memory_source_ir) {
 
   auto col_1 = graph->MakeNode<ColumnIR>().ValueOrDie();
   EXPECT_OK(col_1->Init("cpu0", ast));
-  col_1->SetColumnIdx(0);
-  col_1->SetColumnType(types::DataType::INT64);
+  col_1->ResolveColumn(0, types::DataType::INT64);
 
   auto col_2 = graph->MakeNode<ColumnIR>().ValueOrDie();
   EXPECT_OK(col_2->Init("cpu1", ast));
-  col_2->SetColumnIdx(2);
-  col_2->SetColumnType(types::DataType::FLOAT64);
+  col_2->ResolveColumn(2, types::DataType::FLOAT64);
 
   mem_src->SetColumns(std::vector<ColumnIR*>({col_1, col_2}));
   mem_src->SetTime(10, 20);
@@ -211,7 +209,7 @@ TEST(ToProto, map_ir) {
   auto constant = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(constant->Init(10, ast));
   auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
-  col->SetColumnIdx(4);
+  col->ResolveColumn(4, types::INT64);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(func->Init("add", std::vector<IRNode*>({constant, col}), ast));
@@ -267,7 +265,7 @@ TEST(ToProto, agg_ir) {
   auto constant = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(constant->Init(10, ast));
   auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
-  col->SetColumnIdx(4);
+  col->ResolveColumn(4, types::INT64);
 
   auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
@@ -277,7 +275,7 @@ TEST(ToProto, agg_ir) {
   auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   auto group1 = graph->MakeNode<ColumnIR>().ValueOrDie();
   EXPECT_OK(group1->Init("group1", ast));
-  group1->SetColumnIdx(1);
+  group1->ResolveColumn(1, types::INT64);
   EXPECT_OK(by_func_lambda->Init({"group1"}, group1, ast));
   ArgMap amap({{"by", by_func_lambda}, {"fn", agg_func_lambda}});
 

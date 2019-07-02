@@ -23,7 +23,7 @@ std::vector<Status> IRRelationHandler::VerifyIRColumnsReady(IR* ir_graph) {
     auto node = ir_graph->Get(i);
     if (node->type() == ColumnType) {
       auto col_node = static_cast<ColumnIR*>(node);
-      if (!col_node->col_idx_set()) {
+      if (!col_node->resolved()) {
         exprs.push_back(
             col_node->CreateIRNodeError("ColNode(id=$0) has not been validated.", col_node->id()));
       }
@@ -56,8 +56,7 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateColExpr(
   }
   types::DataType data_type = parent_rel.GetColumnType(expr->col_name());
   int64_t col_idx = parent_rel.GetColumnIndex(expr->col_name());
-  expr->SetColumnIdx(col_idx);
-  expr->SetColumnType(data_type);
+  expr->ResolveColumn(col_idx, data_type);
   return data_type;
 }
 
@@ -400,8 +399,7 @@ StatusOr<std::vector<ColumnIR*>> IRRelationHandler::GetColumnsFromRelation(
     int64_t i = relation.GetColumnIndex(col_name);
     PL_ASSIGN_OR_RETURN(auto col_node, graph->MakeNode<ColumnIR>());
     PL_RETURN_IF_ERROR(col_node->Init(col_name, node->ast_node()));
-    col_node->SetColumnIdx(i);
-    col_node->SetColumnType(relation.GetColumnType(i));
+    col_node->ResolveColumn(i, relation.GetColumnType(i));
     result.push_back(col_node);
   }
   return result;

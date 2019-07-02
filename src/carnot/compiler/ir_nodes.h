@@ -232,18 +232,14 @@ class ColumnIR : public IRNode {
   std::string col_name() const { return col_name_; }
   std::string DebugString(int64_t depth) const override;
   bool IsOp() const override { return false; }
-  void SetColumnIdx(int64_t col_idx) {
+  void ResolveColumn(int64_t col_idx, types::DataType type) {
     col_idx_ = col_idx;
-    col_idx_set_ = true;
-  }
-  bool col_idx_set() const { return col_idx_set_; }
-  int64_t col_idx() const { return col_idx_; }
-
-  void SetColumnType(types::DataType type) {
     type_ = type;
-    col_type_set_ = true;
+    resolved_ = true;
   }
-  bool col_type_set() const { return col_type_set_; }
+  bool resolved() const { return resolved_; }
+
+  int64_t col_idx() const { return col_idx_; }
   types::DataType type() const { return type_; }
 
  private:
@@ -252,8 +248,7 @@ class ColumnIR : public IRNode {
   int64_t col_idx_;
   // The data type in the relation.
   types::DataType type_;
-  bool col_idx_set_ = false;
-  bool col_type_set_ = false;
+  bool resolved_ = false;
 };
 
 /**
