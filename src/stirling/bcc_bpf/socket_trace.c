@@ -441,7 +441,7 @@ static int probe_ret_write_send(struct pt_regs* ctx, enum EventType event_type) 
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
-  event->attr.protocol = conn_info->traffic_class.protocol;
+  event->attr.traffic_class = conn_info->traffic_class;
 
   const uint32_t buf_size = bytes_written < sizeof(event->msg) ? bytes_written : sizeof(event->msg);
   event->attr.msg_size = buf_size;
@@ -545,7 +545,7 @@ static int probe_ret_read_recv(struct pt_regs* ctx, enum EventType event_type) {
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
-  event->attr.protocol = conn_info->traffic_class.protocol;
+  event->attr.traffic_class = conn_info->traffic_class;
 
   const uint32_t buf_size = bytes_read < sizeof(event->msg) ? bytes_read : sizeof(event->msg);
   event->attr.msg_size = buf_size;

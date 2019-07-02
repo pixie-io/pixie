@@ -32,8 +32,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     conn_info.conn_id = 2;
     conn_info.fd = 3;
     conn_info.traffic_class.protocol = kProtocolHTTP;
-    // socket_trace_connector does not depend on role, so set to unknown.
-    conn_info.traffic_class.role = kRoleUnknown;
+    conn_info.traffic_class.role = kRoleRequestor;
     return conn_info;
   }
 
@@ -54,7 +53,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
   SocketDataEvent InitEvent(EventType event_type, std::string_view msg, uint64_t ts_ns = 0) {
     socket_data_event_t event = {};
     event.attr.event_type = event_type;
-    event.attr.protocol = kProtocolHTTP;
+    event.attr.traffic_class.protocol = kProtocolHTTP;
     event.attr.timestamp_ns = ts_ns;
     event.attr.tgid = 12345;
     event.attr.conn_id = 2;

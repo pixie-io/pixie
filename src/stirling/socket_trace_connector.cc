@@ -185,13 +185,14 @@ void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
   // Need to adjust the clocks to convert to real time.
   event.attr.timestamp_ns += ClockRealTimeOffset();
 
-  switch (event.attr.protocol) {
+  switch (event.attr.traffic_class.protocol) {
     case kProtocolHTTP:
     case kProtocolHTTP2:
       // TODO(oazizi/yzhao): Add MySQL when it goes through streams.
       break;
     default:
-      LOG(WARNING) << "AcceptDataEvent ignored due to unknown protocol: " << event.attr.protocol;
+      LOG(WARNING) << absl::StrFormat("AcceptDataEvent ignored due to unknown protocol: %d",
+                                      event.attr.traffic_class.protocol);
       return;
   }
 
@@ -250,53 +251,61 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
   //               because it will get called multiple times, looping through all connection
   //               trackers, but selecting a mutually exclusive subset each time.
   //               Possible solutions: 1) different pools, 2) auxiliary pool of pointers.
-  for (auto& [id, stream] : connection_trackers_) {
+  for (auto& [id, tracker] : connection_trackers_) {
     PL_UNUSED(id);
 
-    if (stream.protocol() != protocol) {
+    if (tracker.protocol() != protocol) {
       continue;
     }
 
-    // TODO(oazizi): I don't like this way of detecting requestor vs responder. But works for now.
-    bool is_requestor_side = (config_mask_[protocol] & kSocketTraceSendReq) ||
-                             (config_mask_[protocol] & kSocketTraceRecvResp);
-    bool is_responder_side = (config_mask_[protocol] & kSocketTraceSendResp) ||
-                             (config_mask_[protocol] & kSocketTraceRecvReq);
-    CHECK(is_requestor_side ^ is_responder_side)
-        << absl::StrFormat("Must be either requestor or responder (and not both)");
-
-    auto& resp_data = is_requestor_side ? stream.recv_data() : stream.send_data();
-    resp_data.template ExtractMessages<TMessageType>(MessageType::kResponses);
-    auto& resp_messages = std::get<std::deque<TMessageType>>(resp_data.messages);
-
-    auto& req_data = is_requestor_side ? stream.send_data() : stream.recv_data();
-    req_data.template ExtractMessages<TMessageType>(MessageType::kRequests);
-    auto& req_messages = std::get<std::deque<TMessageType>>(req_data.messages);
-
-    // TODO(oazizi): Section defined below may need to be split out
-    // by message type (e.g. HTTP1, GRPC, MySQL) to give flexibility.
-    //------- BEGIN SECTION --------
-
-    // TODO(oazizi): If we stick with this approach, resp_data could be converted back to vector.
-    for (TMessageType& msg : resp_messages) {
-      if (!req_messages.empty()) {
-        TraceRecord<TMessageType> record{stream.conn(), std::move(req_messages.front()),
-                                         std::move(msg)};
-        req_messages.pop_front();
-        ConsumeMessage(std::move(record), record_batch);
-      } else {
-        TraceRecord<TMessageType> record{stream.conn(), HTTPMessage(), std::move(msg)};
-        ConsumeMessage(std::move(record), record_batch);
-      }
+    if (tracker.role() == kRoleMixed) {
+      // TODO(oazizi/yzhao): This case for HTTP2 is not covered yet.
+      continue;
     }
-    resp_messages.clear();
 
-    //------- END SECTION --------
+    DataStream* resp_data = tracker.resp_data();
+    if (resp_data == nullptr) {
+      // This temporarily handles nullptrs, which can arise due to kRoleMixed.
+      // TODO(oazizi): Convert this to a LOG(ERROR), once kRoleMixed is handled.
+      continue;
+    }
+    resp_data->template ExtractMessages<TMessageType>(MessageType::kResponses);
+    auto& resp_messages = std::get<std::deque<TMessageType>>(resp_data->messages);
+
+    DataStream* req_data = tracker.req_data();
+    if (req_data == nullptr) {
+      // This temporarily handles nullptrs, which can arise due to kRoleMixed.
+      // TODO(oazizi): Convert this to a LOG(ERROR), once kRoleMixed is handled.
+      continue;
+    }
+    req_data->template ExtractMessages<TMessageType>(MessageType::kRequests);
+    auto& req_messages = std::get<std::deque<TMessageType>>(req_data->messages);
+
+    ProcessMessages<TMessageType>(tracker.conn(), &req_messages, &resp_messages, record_batch);
   }
 
   // TODO(yzhao): Add the capability to remove events that are too old.
   // TODO(yzhao): Consider change the data structure to a vector, and use sorting to order events
   // before stitching. That might be faster (verify with benchmark).
+}
+
+template <class TMessageType>
+void SocketTraceConnector::ProcessMessages(const SocketConnection& conn,
+                                           std::deque<TMessageType>* req_messages,
+                                           std::deque<TMessageType>* resp_messages,
+                                           types::ColumnWrapperRecordBatch* record_batch) {
+  // TODO(oazizi): If we stick with this approach, resp_data could be converted back to vector.
+  for (TMessageType& msg : *resp_messages) {
+    if (!req_messages->empty()) {
+      TraceRecord<TMessageType> record{conn, std::move(req_messages->front()), std::move(msg)};
+      req_messages->pop_front();
+      ConsumeMessage(std::move(record), record_batch);
+    } else {
+      TraceRecord<TMessageType> record{conn, HTTPMessage(), std::move(msg)};
+      ConsumeMessage(std::move(record), record_batch);
+    }
+  }
+  resp_messages->clear();
 }
 
 template <class TMessageType>

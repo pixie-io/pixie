@@ -16,6 +16,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 #include <bcc/BPF.h>
 
+#include <deque>
 #include <map>
 #include <memory>
 #include <string>
@@ -176,6 +177,11 @@ class SocketTraceConnector : public SourceConnector {
   // Transfer of an HTTP Response Event to the HTTP Response Table in the table store.
   template <class TMessageType>
   void TransferStreams(TrafficProtocol protocol, types::ColumnWrapperRecordBatch* record_batch);
+
+  template <class TMessageType>
+  void ProcessMessages(const SocketConnection& conn, std::deque<TMessageType>* req_messages,
+                       std::deque<TMessageType>* resp_messages,
+                       types::ColumnWrapperRecordBatch* record_batch);
 
   template <class TMessageType>
   static void ConsumeMessage(TraceRecord<TMessageType> record,

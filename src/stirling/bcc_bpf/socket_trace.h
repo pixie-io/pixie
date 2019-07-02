@@ -81,8 +81,8 @@ struct socket_data_event_t {
     // Information from the accept() syscall, including IP and port.
     uint32_t conn_id;
     // TODO(chengruizhe): Remove protocol once it's specified externally by metadata
-    // The protocol on the connection (HTTP, MySQL, etc.)
-    uint32_t protocol;
+    // The protocol on the connection (HTTP, MySQL, etc.), and the server-client role.
+    struct traffic_class_t traffic_class;
     // The time stamp as this is captured by BPF program.
     uint64_t timestamp_ns;
     // Comes from the process from which this is captured.

@@ -6,7 +6,7 @@ namespace pl {
 namespace stirling {
 
 void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
-  SetProtocol(conn_info.traffic_class.protocol);
+  SetTrafficClass(conn_info.traffic_class);
 
   conn_.timestamp_ns = conn_info.timestamp_ns;
   conn_.tgid = conn_info.tgid;
@@ -23,7 +23,7 @@ void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
 void ConnectionTracker::AddConnCloseEvent() { closed_ = true; }
 
 void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
-  SetProtocol(TrafficProtocol(event.attr.protocol));
+  SetTrafficClass(event.attr.traffic_class);
 
   const uint64_t seq_num = event.attr.seq_num;
 
@@ -42,12 +42,38 @@ void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
   }
 }
 
-void ConnectionTracker::SetProtocol(TrafficProtocol protocol) {
-  if (protocol_ == kProtocolUnknown) {
-    protocol_ = protocol;
-  } else if (protocol != kProtocolUnknown) {
-    DCHECK_EQ(protocol_, protocol)
+void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {
+  DCHECK((traffic_class_.protocol == kProtocolUnknown) == (traffic_class_.role == kRoleUnknown));
+
+  if (traffic_class_.protocol == kProtocolUnknown) {
+    traffic_class_ = traffic_class;
+  } else if (traffic_class.protocol != kProtocolUnknown) {
+    DCHECK_EQ(traffic_class.protocol, traffic_class.protocol)
         << "Not allowed to change the protocol of an active ConnectionTracker";
+    DCHECK_EQ(traffic_class.role, traffic_class.role)
+        << "Not allowed to change the role of an active ConnectionTracker";
+  }
+}
+
+DataStream* ConnectionTracker::req_data() {
+  switch (traffic_class_.role) {
+    case kRoleRequestor:
+      return &send_data_;
+    case kRoleResponder:
+      return &recv_data_;
+    default:
+      return nullptr;
+  }
+}
+
+DataStream* ConnectionTracker::resp_data() {
+  switch (traffic_class_.role) {
+    case kRoleRequestor:
+      return &recv_data_;
+    case kRoleResponder:
+      return &send_data_;
+    default:
+      return nullptr;
   }
 }
 

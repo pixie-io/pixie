@@ -101,7 +101,14 @@ class ConnectionTracker {
    *
    * @return protocol.
    */
-  TrafficProtocol protocol() const { return protocol_; }
+  TrafficProtocol protocol() const { return traffic_class_.protocol; }
+
+  /**
+   * @brief Get the role (requestor/responder) for this connection.
+   *
+   * @return role.
+   */
+  ReqRespRole role() const { return traffic_class_.role; }
 
   /**
    * @brief Get the connection information (e.g. remote IP, port, PID, etc.) for this connection.
@@ -116,7 +123,6 @@ class ConnectionTracker {
    * @return Data stream of send data.
    */
   const DataStream& send_data() const { return send_data_; }
-  DataStream& send_data() { return send_data_; }
 
   /**
    * @brief Get the DataStream of received messages for this connection.
@@ -124,17 +130,29 @@ class ConnectionTracker {
    * @return Data stream of received data.
    */
   const DataStream& recv_data() const { return recv_data_; }
-  DataStream& recv_data() { return recv_data_; }
+
+  /**
+   * @brief Get the DataStream of requests for this connection.
+   *
+   * @return Data stream of requests.
+   */
+  DataStream* req_data();
+
+  /**
+   * @brief Get the DataStream of responses for this connection.
+   *
+   * @return Data stream of responses.
+   */
+  DataStream* resp_data();
 
   // TODO(oazizi): Clean-up accessors above.
   //  - Some of the accessors are only for testing purposes.
   //  - May want to give deeper access to certain substructures inside DataStream instead of the
   //  whole stream.
 
- protected:
-  TrafficProtocol protocol_ = kProtocolUnknown;
-
  private:
+  traffic_class_t traffic_class_{kProtocolUnknown, kRoleUnknown};
+
   SocketConnection conn_;
 
   // Whether the connection close() event has been observed.
@@ -144,7 +162,7 @@ class ConnectionTracker {
   DataStream send_data_;
   DataStream recv_data_;
 
-  void SetProtocol(TrafficProtocol protocol);
+  void SetTrafficClass(struct traffic_class_t traffic_class);
 
   // TODO(oazizi): Could record a timestamp, so we could destroy old EventStreams completely.
 };
