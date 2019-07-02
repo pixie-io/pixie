@@ -21,28 +21,28 @@ TEST(UnpackFrameTest, TestVariousCases) {
   struct TestCase {
     std::string input;
     std::string expected_result_buf;
-    Status expected_status;
+    ParseState expected_parse_state;
   };
 
   const std::vector<TestCase> test_cases = {
-      {std::string(8, ' '), std::string(8, ' '), error::ResourceUnavailable("got: 8 must be >= 9")},
+      {std::string(8, ' '), std::string(8, ' '), ParseState::kNeedsMoreData},
       // Non-compressed headers.
       {std::string{"\x0\x0\x3\x1\x4\x0\x0\x0\x1"
                    "a:b",
                    12},
-       "", Status::OK()},
+       "", ParseState::kSuccess},
       {std::string{"\x0\x0\x2\x1\x1\x0\x0\x0\x1", 9},
        {"\x0\x0\x2\x1\x1\x0\x0\x0\x1", 9},
-       error::ResourceUnavailable("got: 9 must be >= 11")},
-      {std::string{"\x0\x0\x0\x1\x1\x0\x0\x0\x1", 9}, "", Status::OK()},
+       ParseState::kNeedsMoreData},
+      {std::string{"\x0\x0\x0\x1\x1\x0\x0\x0\x1", 9}, "", ParseState::kSuccess},
+      {std::string{"\x0\x0\x0\x4\x1\x0\x0\x0\x1", 9}, "", ParseState::kIgnored},
   };
 
   for (const TestCase& c : test_cases) {
     std::string_view buf = c.input;
     Frame frame;
-    Status s = UnpackFrame(&buf, &frame);
-    EXPECT_THAT(s.code(), Eq(c.expected_status.code()));
-    EXPECT_THAT(s.msg(), HasSubstr(c.expected_status.msg()));
+    ParseState s = UnpackFrame(&buf, &frame);
+    EXPECT_THAT(s, Eq(c.expected_parse_state));
     EXPECT_THAT(std::string(buf), StrEq(c.expected_result_buf));
   }
 }
@@ -79,14 +79,13 @@ TEST(UnpackFramesTest, BrokenAndIgnoredFramesAreSkipped) {
       4 * NGHTTP2_FRAME_HDLEN + 3 + 3 + 4};
   std::string_view buf = input;
 
-  std::vector<std::unique_ptr<Frame>> frames;
-  Status s = UnpackFrames(&buf, &frames);
-  EXPECT_TRUE(error::IsResourceUnavailable(s));
-  EXPECT_THAT(s.msg(), HasSubstr("got: 9 must be >= 10"));
+  std::deque<std::unique_ptr<Frame>> frames;
+  ParseResult<size_t> res = Parse(MessageType::kUnknown, buf, &frames);
+  EXPECT_THAT(res.state, Eq(ParseState::kNeedsMoreData));
+  EXPECT_THAT(res.end_position, Eq(3 * NGHTTP2_FRAME_HDLEN + 3 + 3 + 4));
   EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "a:b"),
                                   MatchesTypePayload(NGHTTP2_CONTINUATION, "c:d"),
                                   MatchesTypePayload(NGHTTP2_DATA, "abcd")));
-  EXPECT_EQ(buf, std::string_view("\x0\x0\x1\x1\x1\x0\x0\x0\x3", NGHTTP2_FRAME_HDLEN));
 }
 
 }  // namespace http2

@@ -2,6 +2,7 @@
 
 #include <nghttp2/nghttp2.h>
 
+#include <deque>
 #include <map>
 #include <memory>
 #include <string>
@@ -50,12 +51,15 @@ struct Frame : public NotCopyMoveable {
 /**
  * @brief Extract HTTP2 frame from the input buffer, and removes the consumed data from the buffer.
  */
-Status UnpackFrame(std::string_view* buf, Frame* frame);
+ParseState UnpackFrame(std::string_view* buf, Frame* frame);
 
 /**
- * @brief Extract HTTP2 frames from the input buffer, and removes the consumed data from the buffer.
+ * @brief Unpacks the buf as HTTP2 frames. The results are put into messages.
+ * The parameter type is not used, but is required to matches the function used by
+ * EventParser<std::unique_ptr<Frame>>.
  */
-Status UnpackFrames(std::string_view* buf, std::vector<std::unique_ptr<Frame>>* frames);
+ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
+                          std::deque<std::unique_ptr<Frame>>* frames);
 
 struct GRPCMessage : public NotCopyable {
   GRPCMessage() = default;
@@ -91,7 +95,7 @@ struct GRPCMessage : public NotCopyable {
  * @param stream_msgs The gRPC messages for each stream, keyed by stream ID. Note this is HTTP2
  * stream ID, not our internal stream ID for TCP connections.
  */
-Status StitchGRPCStreamFrames(std::vector<std::unique_ptr<Frame>>* frames,
+Status StitchGRPCStreamFrames(std::deque<std::unique_ptr<Frame>>* frames,
                               std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs);
 }  // namespace http2
 }  // namespace stirling

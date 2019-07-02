@@ -50,9 +50,10 @@ std::map<std::string, std::string> Headers(const Frame& frame) {
   return result;
 }
 
-MATCHER_P(IsFrameType, t, "") { return arg.frame.hd.type == t; }
+MATCHER_P(IsFrameType, t, "") { return arg->frame.hd.type == t; }
+MATCHER_P(HasStreamID, t, "") { return arg->frame.hd.stream_id == t; }
 
-TEST(GRPCTraceBPFTest, DISABLED_TestGolangGrpcService) {
+TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   constexpr char kBaseDir[] = "src/stirling/testing";
   std::string s_path =
       TestEnvironment::PathToTestDataFile(absl::StrCat(kBaseDir, "/go_greeter_server"));
@@ -86,16 +87,14 @@ TEST(GRPCTraceBPFTest, DISABLED_TestGolangGrpcService) {
   {
     std::string send_string = JoinStream(h2_stream.send_data().events);
     std::string_view send_buf = send_string;
-    std::vector<std::unique_ptr<Frame>> frames;
-    EXPECT_OK(UnpackFrames(&send_buf, &frames));
-    ASSERT_THAT(frames, SizeIs(3));
+    std::deque<std::unique_ptr<Frame>> frames;
 
-    EXPECT_THAT(*frames[0], IsFrameType(NGHTTP2_HEADERS));
-    EXPECT_THAT(*frames[1], IsFrameType(NGHTTP2_DATA));
-    EXPECT_THAT(*frames[2], IsFrameType(NGHTTP2_HEADERS));
-    EXPECT_EQ(1, frames[0]->frame.hd.stream_id);
-    EXPECT_EQ(1, frames[1]->frame.hd.stream_id);
-    EXPECT_EQ(1, frames[2]->frame.hd.stream_id);
+    ParseResult<size_t> s = Parse(MessageType::kUnknown, send_buf, &frames);
+    EXPECT_EQ(ParseState::kSuccess, s.state);
+
+    EXPECT_THAT(frames, ElementsAre(IsFrameType(NGHTTP2_HEADERS), IsFrameType(NGHTTP2_DATA),
+                                    IsFrameType(NGHTTP2_HEADERS)));
+    EXPECT_THAT(frames, ElementsAre(HasStreamID(1), HasStreamID(1), HasStreamID(1)));
 
     std::map<uint32_t, std::vector<GRPCMessage>> stream_msgs;
     EXPECT_OK(StitchGRPCStreamFrames(&frames, &stream_msgs));
@@ -119,16 +118,16 @@ TEST(GRPCTraceBPFTest, DISABLED_TestGolangGrpcService) {
   {
     std::string recv_string = JoinStream(h2_stream.recv_data().events);
     std::string_view recv_buf = recv_string;
-    std::vector<std::unique_ptr<Frame>> frames;
+    std::deque<std::unique_ptr<Frame>> frames;
     constexpr size_t kHTTP2ClientConnectPrefaceSizeInBytes = 24;
     recv_buf.remove_prefix(kHTTP2ClientConnectPrefaceSizeInBytes);
-    EXPECT_OK(UnpackFrames(&recv_buf, &frames));
+
+    ParseResult<size_t> s = Parse(MessageType::kUnknown, recv_buf, &frames);
+    EXPECT_EQ(ParseState::kSuccess, s.state);
     ASSERT_THAT(frames, SizeIs(2));
 
-    EXPECT_THAT(*frames[0], IsFrameType(NGHTTP2_HEADERS));
-    EXPECT_THAT(*frames[1], IsFrameType(NGHTTP2_DATA));
-    EXPECT_EQ(1, frames[0]->frame.hd.stream_id);
-    EXPECT_EQ(1, frames[1]->frame.hd.stream_id);
+    EXPECT_THAT(frames, ElementsAre(IsFrameType(NGHTTP2_HEADERS), IsFrameType(NGHTTP2_DATA)));
+    EXPECT_THAT(frames, ElementsAre(HasStreamID(1), HasStreamID(1)));
 
     std::map<uint32_t, std::vector<GRPCMessage>> stream_msgs;
     EXPECT_OK(StitchGRPCStreamFrames(&frames, &stream_msgs));

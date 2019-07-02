@@ -177,19 +177,16 @@ Frame::~Frame() {
   }
 }
 
-Status UnpackFrame(std::string_view* buf, Frame* frame) {
+ParseState UnpackFrame(std::string_view* buf, Frame* frame) {
   if (buf->size() < kFrameHeaderSizeInBytes) {
-    return error::ResourceUnavailable(absl::Substitute(
-        "Not enough data to parse, got: $0 must be >= $1", buf->size(), kFrameHeaderSizeInBytes));
+    return ParseState::kNeedsMoreData;
   }
 
   const uint8_t* u8_buf = reinterpret_cast<const uint8_t*>(buf->data());
   nghttp2_frame_unpack_frame_hd(&frame->frame.hd, u8_buf);
 
   if (buf->size() < kFrameHeaderSizeInBytes + frame->frame.hd.length) {
-    return error::ResourceUnavailable(
-        absl::Substitute("Not enough u8_buf to parse, got: $0 must be >= $1", buf->size(),
-                         kFrameHeaderSizeInBytes + frame->frame.hd.length));
+    return ParseState::kNeedsMoreData;
   }
 
   buf->remove_prefix(kFrameHeaderSizeInBytes + frame->frame.hd.length);
@@ -206,33 +203,39 @@ Status UnpackFrame(std::string_view* buf, Frame* frame) {
     case NGHTTP2_CONTINUATION:
       UnpackContinuation(u8_buf, frame);
       break;
-    case NGHTTP2_PRIORITY:
-    case NGHTTP2_RST_STREAM:
-    case NGHTTP2_SETTINGS:
-    case NGHTTP2_PUSH_PROMISE:
-    case NGHTTP2_PING:
-    case NGHTTP2_GOAWAY:
-    case NGHTTP2_WINDOW_UPDATE:
-    case NGHTTP2_ALTSVC:
-    case NGHTTP2_ORIGIN:
-      return error::Cancelled(absl::StrCat("Ignored frame type: ", FrameTypeName(type)));
     default:
-      return error::Cancelled(absl::StrCat("Unknown frame type: ", type));
+      VLOG(1) << "Ignoring frame that is not DATA, HEADERS, or CONTINUATION, got: "
+              << FrameTypeName(type);
+      return ParseState::kIgnored;
   }
-  return Status::OK();
+  return ParseState::kSuccess;
 }
 
-Status UnpackFrames(std::string_view* buf, std::vector<std::unique_ptr<Frame>>* frames) {
-  while (!buf->empty()) {
+ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
+                          std::deque<std::unique_ptr<Frame>>* frames) {
+  PL_UNUSED(unused_type);
+
+  std::vector<size_t> start_position;
+  const size_t buf_size = buf.size();
+  ParseState s = ParseState::kSuccess;
+
+  while (!buf.empty()) {
+    const size_t frame_begin = buf.size();
     auto frame = std::make_unique<Frame>();
-    Status s = UnpackFrame(buf, frame.get());
-    if (error::IsCancelled(s)) {
+    s = UnpackFrame(&buf, frame.get());
+    if (s == ParseState::kNeedsMoreData) {
+      break;
+    }
+    if (s == ParseState::kIgnored) {
+      // Even if the last frame is ignored, the parse is still successful.
+      s = ParseState::kSuccess;
       continue;
     }
-    PL_RETURN_IF_ERROR(s);
+    DCHECK(s == ParseState::kSuccess);
+    start_position.push_back(frame_begin);
     frames->push_back(std::move(frame));
   }
-  return Status::OK();
+  return {std::move(start_position), buf_size - buf.size(), s};
 }
 
 namespace {
@@ -330,7 +333,7 @@ Status StitchFrames(const std::vector<Frame*>& frames, nghttp2_hd_inflater* infl
 
 }  // namespace
 
-Status StitchGRPCStreamFrames(std::vector<std::unique_ptr<Frame>>* frames,
+Status StitchGRPCStreamFrames(std::deque<std::unique_ptr<Frame>>* frames,
                               std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs) {
   // TODO(yzhao): In next diff, move inflater into part of ConnectionTracker or DataStream.
   nghttp2_hd_inflater inflater;

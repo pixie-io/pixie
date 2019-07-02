@@ -23,6 +23,8 @@ enum class ParseState {
   kInvalid,
   // The data appears to be an incomplete message - more data is needed.
   kNeedsMoreData,
+  // The data is valid but ignored.
+  kIgnored,
   kSuccess,
 };
 
