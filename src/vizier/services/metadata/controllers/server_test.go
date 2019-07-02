@@ -2,6 +2,7 @@ package controllers_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -109,4 +110,81 @@ func TestGetAgentInfo(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	assert.Equal(t, agentResp, resp.Info[1])
+}
+
+func TestGetAgentInfoGetActiveAgentsFailed(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+
+	mockAgtMgr.
+		EXPECT().
+		GetActiveAgents().
+		Return(nil, errors.New("could not get active agents"))
+
+	// Set up server.
+	env, err := metadataenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	clock := testingutils.NewTestClock(time.Unix(0, 70))
+
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, clock)
+
+	req := metadatapb.AgentInfoRequest{}
+
+	resp, err := s.GetAgentInfo(context.Background(), &req)
+
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+}
+
+func TestGetSchemas(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+
+	// Set up server.
+	env, err := metadataenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	clock := testingutils.NewTestClock(time.Unix(0, 70))
+
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, clock)
+
+	req := metadatapb.SchemaRequest{}
+
+	resp, err := s.GetSchemas(context.Background(), &req)
+
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+}
+
+func TestGetSchemaByAgent(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+
+	// Set up server.
+	env, err := metadataenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	clock := testingutils.NewTestClock(time.Unix(0, 70))
+
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, clock)
+
+	req := metadatapb.SchemaByAgentRequest{}
+
+	resp, err := s.GetSchemaByAgent(context.Background(), &req)
+
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
 }

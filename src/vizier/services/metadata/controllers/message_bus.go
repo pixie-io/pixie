@@ -74,6 +74,12 @@ func (mc *MessageBusController) AgentTopicListener() {
 		pb := &messages.VizierMessage{}
 		proto.Unmarshal(msg.Data, pb)
 
+		if pb.Msg == nil {
+			log.
+				Error("Received empty VizierMessage.")
+			continue
+		}
+
 		switch m := pb.Msg.(type) {
 		case *messages.VizierMessage_Heartbeat:
 			mc.onAgentHeartBeat(m.Heartbeat)
@@ -162,10 +168,12 @@ func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgent
 	agentID, err := utils.UUIDFromProto(m.Info.AgentID)
 	if err != nil {
 		log.WithError(err).Error("Could not parse UUID from proto.")
+		return
 	}
 	err = mc.sendMessageToAgent(agentID, resp)
 	if err != nil {
 		log.WithError(err).Error("Could not send registerAgentResponse to agent.")
+		return
 	}
 
 	// Create agent in agent manager.
@@ -189,6 +197,7 @@ func (mc *MessageBusController) onAgentUpdateRequest(m *messages.UpdateAgentRequ
 	agentID, err := utils.UUIDFromProto(m.Info.AgentID)
 	if err != nil {
 		log.WithError(err).Error("Could not parse UUID from proto.")
+		return
 	}
 	err = mc.sendMessageToAgent(agentID, resp)
 	if err != nil {

@@ -58,6 +58,7 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequ
 		uuidPb, err := utils.ProtoFromUUID(&agent.AgentID)
 		if err != nil {
 			log.WithError(err).Error("Could not parse proto from UUID")
+			continue
 		}
 		resp := metadatapb.AgentStatus{
 			Info: &metadatapb.AgentInfo{
