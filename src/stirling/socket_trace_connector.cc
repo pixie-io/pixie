@@ -7,6 +7,7 @@
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
 #include "src/stirling/event_parser.h"
+#include "src/stirling/http2.h"
 #include "src/stirling/mysql_parse.h"
 #include "src/stirling/socket_trace_connector.h"
 
@@ -361,6 +362,12 @@ bool SocketTraceConnector::SelectMessage(const TraceRecord<HTTPMessage>& record)
   return true;
 }
 
+template <>
+bool SocketTraceConnector::SelectMessage(const TraceRecord<http2::GRPCMessage>& grpc_record) {
+  PL_UNUSED(grpc_record);
+  return true;
+}
+
 namespace {
 
 HTTPContentType DetectContentType(const HTTPMessage& message) {
@@ -370,9 +377,6 @@ HTTPContentType DetectContentType(const HTTPMessage& message) {
   }
   if (absl::StrContains(content_type_iter->second, "json")) {
     return HTTPContentType::kJSON;
-  }
-  if (absl::StrContains(content_type_iter->second, "grpc")) {
-    return HTTPContentType::kGRPC;
   }
   return HTTPContentType::kUnknown;
 }
@@ -395,11 +399,9 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record,
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("tgid")>(conn.tgid);
   r.Append<r.ColIndex("fd")>(conn.fd);
-  // TODO(oazizi): Kill this?
   r.Append<r.ColIndex("event_type")>(HTTPEventTypeToString(resp_message.type));
   // Note that there is a string copy here,
   // But std::move is not allowed because we re-use conn object.
-  // TODO(oazizi): Long-term need to make remote_addr a uint128.
   r.Append<r.ColIndex("remote_addr")>(std::string(conn.remote_addr));
   r.Append<r.ColIndex("remote_port")>(conn.remote_port);
   r.Append<r.ColIndex("http_major_version")>(1);
@@ -414,6 +416,42 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record,
   r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.http_msg_body));
   r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns - conn.timestamp_ns);
   // TODO(oazizi): Change to req timestamp when it exists.
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(TraceRecord<http2::GRPCMessage> record,
+                                         types::ColumnWrapperRecordBatch* record_batch) {
+  CHECK_EQ(kHTTPTable.elements().size(), record_batch->size());
+
+  const SocketConnection& conn = record.conn;
+  http2::GRPCMessage& req_message = record.req_message;
+  http2::GRPCMessage& resp_message = record.resp_message;
+
+  DCHECK_GE(resp_message.timestamp_ns, conn.timestamp_ns);
+
+  RecordBuilder<&kHTTPTable> r(record_batch);
+  r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
+  r.Append<r.ColIndex("tgid")>(conn.tgid);
+  r.Append<r.ColIndex("fd")>(conn.fd);
+  r.Append<r.ColIndex("event_type")>("mixed");
+  r.Append<r.ColIndex("remote_addr")>(std::string(conn.remote_addr));
+  r.Append<r.ColIndex("remote_port")>(conn.remote_port);
+  r.Append<r.ColIndex("http_major_version")>(2);
+  // HTTP2 does not define minor version.
+  r.Append<r.ColIndex("http_minor_version")>(0);
+  // TODO(yzhao): Populate req_headers as well.
+  r.Append<r.ColIndex("http_headers")>(
+      absl::StrJoin(resp_message.headers, "\n", absl::PairFormatter(": ")));
+  r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
+  // TODO(yzhao): Populate the following 4 fields from headers.
+  r.Append<r.ColIndex("http_req_method")>("GET");
+  r.Append<r.ColIndex("http_req_path")>("PATH");
+  r.Append<r.ColIndex("http_resp_status")>(200);
+  r.Append<r.ColIndex("http_resp_message")>("OK");
+  // TODO(yzhao): Populate this field with hardcoded Hipster Shop proto descriptor database.
+  r.Append<r.ColIndex("http_resp_body")>("body");
+  r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns -
+                                               req_message.timestamp_ns);
 }
 
 //-----------------------------------------------------------------------------

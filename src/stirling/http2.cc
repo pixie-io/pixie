@@ -239,6 +239,10 @@ ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
   return {std::move(start_position), buf_size - buf.size(), s};
 }
 
+// TODO(yzhao): Similar to HTTP, we need to handle gzip, and possibly other features for gRPC
+// messages.
+void PreProcessMessage(GRPCMessage* message) { PL_UNUSED(message); }
+
 namespace {
 
 Status CheckGRPCMessage(u8string_view u8buf) {
@@ -297,6 +301,7 @@ Status StitchFrames(const std::vector<Frame*>& frames, nghttp2_hd_inflater* infl
         // END_STREAM is seen.
         if (IsEndStream(f->frame.hd)) {
           msg.type = MessageType::kRequests;
+          msg.timestamp_ns = f->timestamp_ns;
           msg.parse_succeeded = CheckGRPCMessage(msg.message).ok();
           msgs->emplace_back(std::move(msg));
         }
@@ -311,6 +316,7 @@ Status StitchFrames(const std::vector<Frame*>& frames, nghttp2_hd_inflater* infl
         // No CONTINUATION frame will be used.
         if (IsEndStream(f->frame.hd)) {
           msg.type = MessageType::kResponses;
+          msg.timestamp_ns = f->timestamp_ns;
           msg.parse_succeeded = CheckGRPCMessage(msg.message).ok();
           msgs->emplace_back(std::move(msg));
         }

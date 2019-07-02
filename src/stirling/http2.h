@@ -42,6 +42,8 @@ struct Frame {
   // TODO(yzhao): Consider use std::unique_ptr<nghttp2_frame> to avoid copy.
   nghttp2_frame frame;
   u8string u8payload;
+  // TODO(yzhao): This will be landed in D1081. Add this to make build pass. Will land only after
+  // D1081.
   uint64_t timestamp_ns;
 
   // If true, means this frame is processed and can be destroyed.
@@ -72,6 +74,7 @@ struct GRPCMessage : public NotCopyable {
         message(std::move(other.message)) {}
 
   MessageType type = MessageType::kUnknown;
+  uint64_t timestamp_ns = 0;
   // TODO(yzhao): We should not need this, as we'll be changing into a lazy parse pattern, where
   // incomplete messages will not be output, and the parser would restart from a known frame index.
   bool parse_succeeded = false;
@@ -90,6 +93,11 @@ struct GRPCMessage : public NotCopyable {
   }
 };
 
+/**
+ * @brief Required for fitting in the SocketTraceConnector::ConsumeMessage() template.
+ */
+void PreProcessMessage(GRPCMessage* message);
+
 /*
  * @brief Stitches frames as either request or response. Also removes consumed frames.
  *
@@ -99,6 +107,7 @@ struct GRPCMessage : public NotCopyable {
  */
 Status StitchGRPCStreamFrames(std::deque<Frame>* frames,
                               std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs);
+
 }  // namespace http2
 }  // namespace stirling
 }  // namespace pl
