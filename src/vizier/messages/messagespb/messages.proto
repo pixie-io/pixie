@@ -5,7 +5,6 @@ package pl.vizier.messages;
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/carnot/planpb/plan.proto";
 import "src/common/uuid/proto/uuid.proto";
-import "src/table_store/proto/schema.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/messages/messagespb;messages";
@@ -53,7 +52,7 @@ message UpdateAgentResponse {}
 
 message AgentUpdateInfo {
     repeated pl.shared.k8s.metadatapb.ContainerInfo containers = 1;
-    repeated pl.table_store.schemapb.Relation relations = 2;
+    repeated pl.shared.k8s.metadatapb.SchemaInfo schema = 2;
 }
 
 // The heart beat signal.
