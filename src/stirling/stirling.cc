@@ -205,6 +205,7 @@ Status StirlingImpl::AddSourceFromRegistry(
     const std::string& name, const SourceRegistry::RegistryElement& registry_element) {
   // Step 1: Create and init the source.
   auto source = registry_element.create_source_fn(name);
+  source->set_stirling(this);
   PL_RETURN_IF_ERROR(source->Init());
 
   for (uint32_t i = 0; i < source->num_tables(); ++i) {

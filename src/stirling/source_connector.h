@@ -23,6 +23,7 @@ namespace pl {
 namespace stirling {
 
 class InfoClassManager;
+class StirlingImpl;
 
 #define DUMMY_SOURCE_CONNECTOR(NAME)                                        \
   class NAME : public SourceConnector {                                     \
@@ -101,6 +102,24 @@ class SourceConnector : public NotCopyable {
    */
   uint64_t ClockRealTimeOffset();
 
+  /**
+   * Set pointer to stirling engine. This lifetime of the referenced value
+   * needs to exceed the lifetime of the source connector.
+   * @param stirling A pointer to the storling engine.
+   */
+  void set_stirling(const StirlingImpl* stirling) { stirling_ = stirling; }
+
+  /**
+   * Get the pointer to stirling engine. This pointers lifetime will be the greater than or equal
+   * to the lifetime of the source connector.
+   * @return a const pointer to stirling
+   */
+  const StirlingImpl* stirling() {
+    CHECK(stirling_ != nullptr)
+        << "Make sure set_stirling is called before running source connectors";
+    return stirling_;
+  }
+
  protected:
   template <std::size_t N>
   explicit SourceConnector(std::string_view source_name, const DataTableSchema (&table_schemas)[N],
@@ -167,6 +186,7 @@ class SourceConnector : public NotCopyable {
   };
 
  private:
+  const StirlingImpl* stirling_ = nullptr;
   const std::string source_name_;
   const ConstVectorView<DataTableSchema> table_schemas_;
   const std::chrono::milliseconds default_sampling_period_;
