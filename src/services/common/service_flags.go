@@ -18,21 +18,21 @@ var (
 	commonSetup sync.Once
 )
 
-func setupCommonServiceFlags() {
+func setupCommonFlags() {
 	pflag.Bool("disable_ssl", false, "Disable SSL on the server")
 	pflag.Bool("disable_grpc_auth", false, "Disable auth on the GRPC server")
 	pflag.String("tls_ca_cert", "../certs/ca.crt", "The CA cert.")
 	pflag.String("jwt_signing_key", "", "The signing key used for JWTs")
 }
 
-// SetupCommonServiceFlags sets flags that are used by every service, even non GRPC servers.
-func SetupCommonServiceFlags() {
-	commonSetup.Do(setupCommonServiceFlags)
+// SetupCommonFlags sets flags that are used by every service, even non GRPC servers.
+func SetupCommonFlags() {
+	commonSetup.Do(setupCommonFlags)
 }
 
 // SetupService configures basic flags and defaults required by all services.
 func SetupService(serviceName string, servicePortBase uint) {
-	commonSetup.Do(setupCommonServiceFlags)
+	commonSetup.Do(setupCommonFlags)
 	pflag.Uint("grpc_port", servicePortBase, fmt.Sprintf("The port to run the %s GRPC server", serviceName))
 	pflag.Uint("http_port", servicePortBase+1, fmt.Sprintf("The port to run the %s HTTP server", serviceName))
 	pflag.String("server_tls_key", "../certs/server.key", "The TLS key to use.")
@@ -74,15 +74,15 @@ func CheckServiceFlags() {
 	}
 }
 
-// SetupGRPCClientFlags sets up client specific GRPC flags.
-func SetupGRPCClientFlags() {
-	commonSetup.Do(setupCommonServiceFlags)
+// SetupSSLClientFlags sets up SSL client specific flags.
+func SetupSSLClientFlags() {
+	commonSetup.Do(setupCommonFlags)
 	pflag.String("client_tls_key", "../certs/client.key", "The TLS key to use.")
 	pflag.String("client_tls_cert", "../certs/client.crt", "The TLS certificate to use.")
 }
 
-// CheckGRPCClientFlags checks GRPC client specific flags.
-func CheckGRPCClientFlags() {
+// CheckSSLClientFlags checks SSL client specific flags.
+func CheckSSLClientFlags() {
 	if !viper.GetBool("disable_ssl") {
 		if len(viper.GetString("client_tls_key")) == 0 {
 			log.Panic("Flag --client_tls_key or ENV PL_CLIENT_TLS_KEY is required when ssl is enabled")

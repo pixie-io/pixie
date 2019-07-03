@@ -22,10 +22,10 @@ func main() {
 	log.WithField("service", "query-broker").Info("Starting service")
 
 	common.SetupService("query-broker", 50300)
-	common.SetupGRPCClientFlags()
+	common.SetupSSLClientFlags()
 	common.PostFlagSetupAndParse()
 	common.CheckServiceFlags()
-	common.CheckGRPCClientFlags()
+	common.CheckSSLClientFlags()
 	common.SetupServiceLogging()
 
 	env, err := querybrokerenv.New()

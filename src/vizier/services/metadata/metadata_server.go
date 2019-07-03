@@ -38,10 +38,10 @@ func main() {
 
 	pflag.String("md_etcd_server", "https://pl-etcd-client.pl.svc.cluster.local:2379", "The address to metadata etcd server.")
 	common.SetupService("metadata", 50400)
-	common.SetupGRPCClientFlags()
+	common.SetupSSLClientFlags()
 	common.PostFlagSetupAndParse()
 	common.CheckServiceFlags()
-	common.CheckGRPCClientFlags()
+	common.CheckSSLClientFlags()
 	common.SetupServiceLogging()
 
 	var tlsConfig *tls.Config

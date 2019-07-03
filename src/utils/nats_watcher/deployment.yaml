@@ -1,0 +1,45 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nats-watcher
+  namespace: pl
+  labels:
+    app: pl-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nats-watcher
+  template:
+    metadata:
+      name: nats-watcher
+      labels:
+        app: nats-watcher
+        name: nats-watcher
+    spec:
+      containers:
+      - image: gcr.io/pl-dev-infra/nats_watcher:latest
+        name: nats-watcher
+        env:
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: pl-app-secrets
+              key: jwt-signing-key
+        - name: PL_SERVER_TLS_CERT
+          value: /certs/server.crt
+        - name: PL_SERVER_TLS_KEY
+          value: /certs/server.key
+        - name: PL_CLIENT_TLS_CERT
+          value: /certs/client.crt
+        - name: PL_CLIENT_TLS_KEY
+          value: /certs/client.key
+        - name: PL_TLS_CA_CERT
+          value: /certs/ca.crt
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+      volumes:
+        - name: certs
+          secret:
+            secretName: service-tls-certs
