@@ -50,8 +50,8 @@ std::map<std::string, std::string> Headers(const Frame& frame) {
   return result;
 }
 
-MATCHER_P(IsFrameType, t, "") { return arg->frame.hd.type == t; }
-MATCHER_P(HasStreamID, t, "") { return arg->frame.hd.stream_id == t; }
+MATCHER_P(IsFrameType, t, "") { return arg.frame.hd.type == t; }
+MATCHER_P(HasStreamID, t, "") { return arg.frame.hd.stream_id == t; }
 
 TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   constexpr char kBaseDir[] = "src/stirling/testing";
@@ -87,9 +87,9 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   {
     std::string send_string = JoinStream(h2_stream.send_data().events);
     std::string_view send_buf = send_string;
-    std::deque<std::unique_ptr<Frame>> frames;
+    std::deque<Frame> frames;
 
-    ParseResult<size_t> s = Parse(MessageType::kUnknown, send_buf, &frames);
+    ParseResult<size_t> s = Parse(MessageType::kMixed, send_buf, &frames);
     EXPECT_EQ(ParseState::kSuccess, s.state);
 
     EXPECT_THAT(frames, ElementsAre(IsFrameType(NGHTTP2_HEADERS), IsFrameType(NGHTTP2_DATA),
@@ -118,7 +118,7 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   {
     std::string recv_string = JoinStream(h2_stream.recv_data().events);
     std::string_view recv_buf = recv_string;
-    std::deque<std::unique_ptr<Frame>> frames;
+    std::deque<Frame> frames;
     constexpr size_t kHTTP2ClientConnectPrefaceSizeInBytes = 24;
     recv_buf.remove_prefix(kHTTP2ClientConnectPrefaceSizeInBytes);
 

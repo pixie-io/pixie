@@ -173,7 +173,8 @@ std::string_view FrameTypeName(uint8_t type) {
 Frame::Frame() : frame{} {}
 Frame::~Frame() {
   if (frame.hd.type == NGHTTP2_HEADERS) {
-    nghttp2_frame_headers_free(&frame.headers, nghttp2_mem_default());
+    DCHECK(frame.headers.nva == nullptr);
+    DCHECK_EQ(frame.headers.nvlen, 0u);
   }
 }
 
@@ -212,7 +213,7 @@ ParseState UnpackFrame(std::string_view* buf, Frame* frame) {
 }
 
 ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
-                          std::deque<std::unique_ptr<Frame>>* frames) {
+                          std::deque<Frame>* frames) {
   PL_UNUSED(unused_type);
 
   std::vector<size_t> start_position;
@@ -221,8 +222,8 @@ ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
 
   while (!buf.empty()) {
     const size_t frame_begin = buf.size();
-    auto frame = std::make_unique<Frame>();
-    s = UnpackFrame(&buf, frame.get());
+    Frame frame;
+    s = UnpackFrame(&buf, &frame);
     if (s == ParseState::kNeedsMoreData) {
       break;
     }
@@ -333,7 +334,7 @@ Status StitchFrames(const std::vector<Frame*>& frames, nghttp2_hd_inflater* infl
 
 }  // namespace
 
-Status StitchGRPCStreamFrames(std::deque<std::unique_ptr<Frame>>* frames,
+Status StitchGRPCStreamFrames(std::deque<Frame>* frames,
                               std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs) {
   // TODO(yzhao): In next diff, move inflater into part of ConnectionTracker or DataStream.
   nghttp2_hd_inflater inflater;
@@ -343,16 +344,16 @@ Status StitchGRPCStreamFrames(std::deque<std::unique_ptr<Frame>>* frames,
   std::map<uint32_t, std::vector<Frame*>> stream_frames;
 
   // Collect frames for each stream.
-  for (const std::unique_ptr<Frame>& f : *frames) {
-    stream_frames[f->frame.hd.stream_id].push_back(f.get());
+  for (Frame& f : *frames) {
+    stream_frames[f.frame.hd.stream_id].push_back(&f);
   }
   for (auto& [stream_id, frame_ptrs] : stream_frames) {
     std::vector<GRPCMessage>* msgs = &(*stream_msgs)[stream_id];
     PL_RETURN_IF_ERROR(StitchFrames(frame_ptrs, &inflater, msgs));
   }
-  frames->erase(std::remove_if(frames->begin(), frames->end(),
-                               [](const std::unique_ptr<Frame>& f) { return f->consumed; }),
-                frames->end());
+  frames->erase(
+      std::remove_if(frames->begin(), frames->end(), [](const Frame& f) { return f.consumed; }),
+      frames->end());
   return Status::OK();
 }
 

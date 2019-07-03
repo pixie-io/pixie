@@ -35,12 +35,14 @@ std::string_view FrameTypeName(uint8_t type);
  * data body field in nghttp2_data. The payload is a name meant to be generic enough so that it can
  * be used to store such fields for different message types.
  */
-struct Frame : public NotCopyMoveable {
+struct Frame {
   Frame();
   ~Frame();
 
+  // TODO(yzhao): Consider use std::unique_ptr<nghttp2_frame> to avoid copy.
   nghttp2_frame frame;
   u8string u8payload;
+  uint64_t timestamp_ns;
 
   // If true, means this frame is processed and can be destroyed.
   bool consumed = false;
@@ -59,7 +61,7 @@ ParseState UnpackFrame(std::string_view* buf, Frame* frame);
  * EventParser<std::unique_ptr<Frame>>.
  */
 ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
-                          std::deque<std::unique_ptr<Frame>>* frames);
+                          std::deque<Frame>* messages);
 
 struct GRPCMessage : public NotCopyable {
   GRPCMessage() = default;
@@ -95,7 +97,7 @@ struct GRPCMessage : public NotCopyable {
  * @param stream_msgs The gRPC messages for each stream, keyed by stream ID. Note this is HTTP2
  * stream ID, not our internal stream ID for TCP connections.
  */
-Status StitchGRPCStreamFrames(std::deque<std::unique_ptr<Frame>>* frames,
+Status StitchGRPCStreamFrames(std::deque<Frame>* frames,
                               std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs);
 }  // namespace http2
 }  // namespace stirling

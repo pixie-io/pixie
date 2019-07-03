@@ -1,6 +1,7 @@
 #include <vector>
 
 #include "src/stirling/connection_tracker.h"
+#include "src/stirling/http2.h"
 
 namespace pl {
 namespace stirling {
@@ -138,6 +139,7 @@ void DataStream::ExtractMessages(MessageType type) {
 
 // Explicit instantiation for HTTPMessage.
 template void DataStream::ExtractMessages<HTTPMessage>(MessageType type);
+template void DataStream::ExtractMessages<http2::Frame>(MessageType type);
 
 }  // namespace stirling
 }  // namespace pl

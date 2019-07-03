@@ -6,6 +6,7 @@
 #include <utility>
 #include <variant>
 
+#include "src/stirling/http2.h"
 #include "src/stirling/http_parse.h"
 #include "src/stirling/socket_trace.h"
 
@@ -55,7 +56,7 @@ struct DataStream {
   // Vector of parsed HTTP messages.
   // Once parsed, the raw data events should be discarded.
   // std::variant adds 8 bytes of overhead (to 80->88 for deque)
-  std::variant<std::deque<HTTPMessage> > messages;
+  std::variant<std::deque<HTTPMessage>, std::deque<http2::Frame> > messages;
 
   /**
    * @ brief Parses as many messages as it can from the raw events into the messages container.

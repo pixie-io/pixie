@@ -64,7 +64,7 @@ u8string_view ToU8(std::string_view buf) {
 }
 
 MATCHER_P2(MatchesTypePayload, t, p, "") {
-  return arg->frame.hd.type == t && arg->u8payload == ToU8(p);
+  return arg.frame.hd.type == t && arg.u8payload == ToU8(p);
 }
 
 TEST(UnpackFramesTest, BrokenAndIgnoredFramesAreSkipped) {
@@ -79,7 +79,7 @@ TEST(UnpackFramesTest, BrokenAndIgnoredFramesAreSkipped) {
       4 * NGHTTP2_FRAME_HDLEN + 3 + 3 + 4};
   std::string_view buf = input;
 
-  std::deque<std::unique_ptr<Frame>> frames;
+  std::deque<Frame> frames;
   ParseResult<size_t> res = Parse(MessageType::kUnknown, buf, &frames);
   EXPECT_THAT(res.state, Eq(ParseState::kNeedsMoreData));
   EXPECT_THAT(res.end_position, Eq(3 * NGHTTP2_FRAME_HDLEN + 3 + 3 + 4));
