@@ -16,6 +16,10 @@ using RecordBatch = types::ColumnWrapperRecordBatch;
 
 class SocketTraceConnectorTest : public ::testing::Test {
  protected:
+  static constexpr uint32_t kPID = 12345;
+  static constexpr uint32_t kConnID = 2;
+  static constexpr uint32_t kFD = 3;
+
   void SetUp() override {
     // Create and configure the connector.
     connector_ = SocketTraceConnector::Create("socket_trace_connector");
@@ -28,38 +32,52 @@ class SocketTraceConnectorTest : public ::testing::Test {
     conn_info_t conn_info{};
     conn_info.addr.sin6_family = AF_INET;
     conn_info.timestamp_ns = ts_ns;
-    conn_info.tgid = 12345;
-    conn_info.conn_id = 2;
-    conn_info.fd = 3;
+    conn_info.tgid = kPID;
+    conn_info.conn_id = kConnID;
+    conn_info.fd = kFD;
     conn_info.traffic_class.protocol = kProtocolHTTP;
     conn_info.traffic_class.role = kRoleRequestor;
+    conn_info.rd_seq_num = 0;
+    conn_info.wr_seq_num = 0;
     return conn_info;
   }
 
   SocketDataEvent InitSendEvent(std::string_view msg, uint64_t ts_ns = 0) {
-    SocketDataEvent event = InitEvent(kEventTypeSyscallSendEvent, msg, ts_ns);
+    SocketDataEvent event = InitDataEvent(kEventTypeSyscallSendEvent, msg, ts_ns);
     event.attr.seq_num = send_seq_num_;
     send_seq_num_++;
     return event;
   }
 
   SocketDataEvent InitRecvEvent(std::string_view msg, uint64_t ts_ns = 0) {
-    SocketDataEvent event = InitEvent(kEventTypeSyscallRecvEvent, msg, ts_ns);
+    SocketDataEvent event = InitDataEvent(kEventTypeSyscallRecvEvent, msg, ts_ns);
     event.attr.seq_num = recv_seq_num_;
     recv_seq_num_++;
     return event;
   }
 
-  SocketDataEvent InitEvent(EventType event_type, std::string_view msg, uint64_t ts_ns = 0) {
+  SocketDataEvent InitDataEvent(EventType event_type, std::string_view msg, uint64_t ts_ns = 0) {
     socket_data_event_t event = {};
     event.attr.event_type = event_type;
     event.attr.traffic_class.protocol = kProtocolHTTP;
+    event.attr.traffic_class.role = kRoleRequestor;
     event.attr.timestamp_ns = ts_ns;
-    event.attr.tgid = 12345;
-    event.attr.conn_id = 2;
+    event.attr.tgid = kPID;
+    event.attr.conn_id = kConnID;
     event.attr.msg_size = msg.size();
     msg.copy(event.msg, msg.size());
     return SocketDataEvent(&event);
+  }
+
+  conn_info_t InitClose() {
+    conn_info_t conn_info{};
+    conn_info.timestamp_ns = 1;
+    conn_info.tgid = kPID;
+    conn_info.conn_id = kConnID;
+    conn_info.fd = kFD;
+    conn_info.rd_seq_num = recv_seq_num_;
+    conn_info.wr_seq_num = send_seq_num_;
+    return conn_info;
   }
 
   types::ColumnWrapperRecordBatch GetRecordBatch(DataTableSchema schema) {
@@ -158,6 +176,7 @@ TEST_F(SocketTraceConnectorTest, End2end) {
   SocketDataEvent event1_text = InitRecvEvent(kTextResp, 200);
   SocketDataEvent event2_text = InitRecvEvent(kTextResp, 200);
   SocketDataEvent event3_json = InitRecvEvent(kJSONResp, 100);
+  conn_info_t close_conn = InitClose();
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
@@ -166,6 +185,10 @@ TEST_F(SocketTraceConnectorTest, End2end) {
 
   // Registers a new connection
   source_->AcceptOpenConnEvent(conn);
+
+  ASSERT_THAT(source_->TestOnlyStreams(), testing::SizeIs(1));
+  EXPECT_EQ(50 + source_->ClockRealTimeOffset(),
+            source_->TestOnlyStreams().begin()->second.conn().timestamp_ns);
 
   // AcceptDataEvent() puts data into the internal buffer of SocketTraceConnector. And then
   // TransferData() polls perf buffer, which is no-op because we did not initialize probes, and the
@@ -201,6 +224,7 @@ TEST_F(SocketTraceConnectorTest, End2end) {
       {{"Content-Encoding", "gzip"}},
   });
   source_->AcceptDataEvent(event3_json);
+  source_->AcceptCloseConnEvent(close_conn);
   source_->TransferData(kTableNum, &record_batch);
   for (const auto& column : record_batch) {
     EXPECT_EQ(3, column->Size())
@@ -212,9 +236,8 @@ TEST_F(SocketTraceConnectorTest, End2end) {
       ToIntVector<types::Time64NSValue>(record_batch[kTimeIdx]),
       ElementsAre(100 + source_->ClockRealTimeOffset(), 200 + source_->ClockRealTimeOffset(),
                   100 + source_->ClockRealTimeOffset()));
-  ASSERT_THAT(source_->TestOnlyStreams(), testing::SizeIs(1));
-  EXPECT_EQ(50 + source_->ClockRealTimeOffset(),
-            source_->TestOnlyStreams().begin()->second.conn().timestamp_ns);
+
+  EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
 TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
@@ -223,6 +246,7 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
       InitRecvEvent(absl::StrCat(kResp0, kResp1.substr(0, kResp1.length() / 2)));
   SocketDataEvent event1 = InitRecvEvent(kResp1.substr(kResp1.length() / 2));
   SocketDataEvent event2 = InitRecvEvent(kResp2);
+  conn_info_t close_conn = InitClose();
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
@@ -233,13 +257,17 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   EXPECT_EQ(1, record_batch[0]->Size());
 
   source_->AcceptDataEvent(event1);
+  source_->AcceptCloseConnEvent(close_conn);
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(3, record_batch[0]->Size()) << "Get 3 events after getting the missing one.";
+
+  EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
 TEST_F(SocketTraceConnectorTest, NoEvents) {
   conn_info_t conn = InitConn();
   SocketDataEvent event0 = InitRecvEvent(kResp0);
+  conn_info_t close_conn = InitClose();
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
@@ -255,6 +283,11 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
   EXPECT_EQ(1, record_batch[0]->Size());
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(1, record_batch[0]->Size());
+
+  EXPECT_EQ(1, source_->NumActiveConnections());
+  source_->AcceptCloseConnEvent(close_conn);
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
 TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
@@ -265,6 +298,7 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
   SocketDataEvent resp_event0 = InitRecvEvent(kResp0);
   SocketDataEvent resp_event1 = InitRecvEvent(kResp1);
   SocketDataEvent resp_event2 = InitRecvEvent(kResp2);
+  conn_info_t close_conn = InitClose();
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
@@ -275,6 +309,7 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
   source_->AcceptDataEvent(resp_event0);
   source_->AcceptDataEvent(resp_event1);
   source_->AcceptDataEvent(resp_event2);
+  source_->AcceptCloseConnEvent(close_conn);
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(3, record_batch[0]->Size());
 
@@ -282,6 +317,73 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
   EXPECT_THAT(ToStringVector(record_batch[kHTTPReqMethodIdx]), ElementsAre("GET", "GET", "GET"));
   EXPECT_THAT(ToStringVector(record_batch[kHTTPReqPathIdx]),
               ElementsAre("/index.html", "/data.html", "/logs.html"));
+
+  EXPECT_EQ(0, source_->NumActiveConnections());
+}
+
+TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
+  conn_info_t conn = InitConn();
+  SocketDataEvent req_event0 = InitSendEvent(kReq0);
+  SocketDataEvent req_event1 = InitSendEvent(kReq1);
+  SocketDataEvent req_event2 = InitSendEvent(kReq2);
+  SocketDataEvent resp_event0 = InitRecvEvent(kResp0);
+  SocketDataEvent resp_event1 = InitRecvEvent(kResp1);
+  SocketDataEvent resp_event2 = InitRecvEvent(kResp2);
+  conn_info_t close_conn = InitClose();
+
+  auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
+
+  EXPECT_EQ(0, source_->NumActiveConnections());
+
+  source_->AcceptOpenConnEvent(conn);
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(1, source_->NumActiveConnections());
+
+  source_->AcceptDataEvent(req_event0);
+  source_->AcceptDataEvent(req_event2);
+  source_->AcceptDataEvent(req_event1);
+  source_->AcceptDataEvent(resp_event0);
+  source_->AcceptDataEvent(resp_event1);
+  source_->AcceptDataEvent(resp_event2);
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(1, source_->NumActiveConnections());
+
+  source_->AcceptCloseConnEvent(close_conn);
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(0, source_->NumActiveConnections());
+
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(0, source_->NumActiveConnections());
+}
+
+TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
+  conn_info_t conn = InitConn();
+  SocketDataEvent req_event0 = InitSendEvent(kReq0);
+  SocketDataEvent req_event1 = InitSendEvent(kReq1);
+  SocketDataEvent req_event2 = InitSendEvent(kReq2);
+  SocketDataEvent resp_event0 = InitRecvEvent(kResp0);
+  SocketDataEvent resp_event1 = InitRecvEvent(kResp1);
+  SocketDataEvent resp_event2 = InitRecvEvent(kResp2);
+  conn_info_t close_conn = InitClose();
+
+  auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
+
+  source_->AcceptDataEvent(req_event1);
+  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptDataEvent(req_event0);
+  source_->AcceptDataEvent(resp_event2);
+  source_->AcceptDataEvent(resp_event0);
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(1, source_->NumActiveConnections());
+
+  source_->AcceptCloseConnEvent(close_conn);
+  source_->AcceptDataEvent(resp_event1);
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(1, source_->NumActiveConnections());
+
+  source_->AcceptDataEvent(req_event2);
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
 }  // namespace stirling

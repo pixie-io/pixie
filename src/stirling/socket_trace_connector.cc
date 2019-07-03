@@ -217,7 +217,7 @@ void SocketTraceConnector::AcceptCloseConnEvent(conn_info_t conn_info) {
   conn_info.timestamp_ns += ClockRealTimeOffset();
 
   ConnectionTracker& tracker = connection_trackers_[stream_id];
-  tracker.AddConnCloseEvent();
+  tracker.AddConnCloseEvent(conn_info);
 }
 
 //-----------------------------------------------------------------------------
@@ -247,15 +247,18 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
   //               because it will get called multiple times, looping through all connection
   //               trackers, but selecting a mutually exclusive subset each time.
   //               Possible solutions: 1) different pools, 2) auxiliary pool of pointers.
-  for (auto& [id, tracker] : connection_trackers_) {
-    PL_UNUSED(id);
+  auto it = connection_trackers_.begin();
+  while (it != connection_trackers_.end()) {
+    auto& tracker = it->second;
 
     if (tracker.protocol() != protocol) {
+      ++it;
       continue;
     }
 
     if (tracker.role() == kRoleMixed) {
       // TODO(oazizi/yzhao): This case for HTTP2 is not covered yet.
+      ++it;
       continue;
     }
 
@@ -278,6 +281,11 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
     auto& req_messages = std::get<std::deque<TMessageType>>(req_data->messages);
 
     ProcessMessages<TMessageType>(tracker.conn(), &req_messages, &resp_messages, record_batch);
+
+    bool delete_tracker = tracker.AllEventsReceived();
+
+    // Update iterator, handling deletions as we go. This must be the last line in the loop.
+    it = delete_tracker ? connection_trackers_.erase(it) : ++it;
   }
 
   // TODO(yzhao): Add the capability to remove events that are too old.

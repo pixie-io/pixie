@@ -24,6 +24,15 @@ struct SocketConnection {
   int remote_port = -1;
 };
 
+struct SocketClose {
+  bool closed = false;
+  uint64_t timestamp_ns = 0;
+  // The send/write sequence number at time of close.
+  uint64_t send_seq_num = 0;
+  // The recv/read sequence number at time of close.
+  uint64_t recv_seq_num = 0;
+};
+
 /**
  * DataStream is an object that contains the captured data of either send or recv traffic
  * on a connection.
@@ -87,7 +96,7 @@ class ConnectionTracker {
   /**
    * @brief Registers a BPF connection close event into the tracker.
    */
-  void AddConnCloseEvent();
+  void AddConnCloseEvent(conn_info_t conn_info);
 
   /**
    * @brief Registers a BPF data event into the tracker.
@@ -145,22 +154,28 @@ class ConnectionTracker {
    */
   DataStream* resp_data();
 
-  // TODO(oazizi): Clean-up accessors above.
-  //  - Some of the accessors are only for testing purposes.
-  //  - May want to give deeper access to certain substructures inside DataStream instead of the
-  //  whole stream.
+  /**
+   * @brief Check if all events have been received on this stream.
+   * Implies that the Close() event has been received as well.
+   *
+   * @return whether all data events and connection close have been received.
+   */
+  bool AllEventsReceived() const;
 
  private:
   traffic_class_t traffic_class_{kProtocolUnknown, kRoleUnknown};
 
   SocketConnection conn_;
 
-  // Whether the connection close() event has been observed.
-  bool closed_ = false;
-
   // The data collected by the stream, one per direction.
   DataStream send_data_;
   DataStream recv_data_;
+
+  // The connection close info.
+  SocketClose close_info_;
+
+  uint32_t num_send_events_ = 0;
+  uint32_t num_recv_events_ = 0;
 
   void SetTrafficClass(struct traffic_class_t traffic_class);
 

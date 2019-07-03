@@ -134,6 +134,8 @@ class SocketTraceConnector : public SourceConnector {
 
   Status Configure(uint32_t protocol, uint64_t config_mask);
 
+  size_t NumActiveConnections() const { return connection_trackers_.size(); }
+
   const std::map<uint64_t, ConnectionTracker>& TestOnlyStreams() const {
     return connection_trackers_;
   }
@@ -272,6 +274,8 @@ class SocketTraceConnector : public SourceConnector {
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
   FRIEND_TEST(SocketTraceConnectorTest, End2end);
   FRIEND_TEST(SocketTraceConnectorTest, RequestResponseMatching);
+  FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInOrder);
+  FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder);
 };
 
 }  // namespace stirling

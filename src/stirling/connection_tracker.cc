@@ -20,7 +20,12 @@ void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
   }
 }
 
-void ConnectionTracker::AddConnCloseEvent() { closed_ = true; }
+void ConnectionTracker::AddConnCloseEvent(conn_info_t conn_info) {
+  close_info_.closed = true;
+  close_info_.timestamp_ns = conn_info.timestamp_ns;
+  close_info_.send_seq_num = conn_info.wr_seq_num;
+  close_info_.recv_seq_num = conn_info.rd_seq_num;
+}
 
 void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
   SetTrafficClass(event.attr.traffic_class);
@@ -31,15 +36,22 @@ void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
     case kEventTypeSyscallWriteEvent:
     case kEventTypeSyscallSendEvent:
       send_data_.events.emplace(seq_num, event);
+      ++num_send_events_;
       break;
     case kEventTypeSyscallReadEvent:
     case kEventTypeSyscallRecvEvent:
       recv_data_.events.emplace(seq_num, event);
+      ++num_recv_events_;
       break;
     default:
       LOG(ERROR) << absl::StrFormat("AddDataEvent() unexpected event type %d",
                                     event.attr.event_type);
   }
+}
+
+bool ConnectionTracker::AllEventsReceived() const {
+  return (close_info_.closed) && (num_send_events_ == close_info_.send_seq_num) &&
+         (num_recv_events_ == close_info_.recv_seq_num);
 }
 
 void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {
