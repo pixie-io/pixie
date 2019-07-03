@@ -7,6 +7,8 @@ namespace pl {
 namespace stirling {
 
 void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
+  LOG_IF(ERROR, conn_.tgid != 0) << "Clobbering existing ConnOpenEvent.";
+
   SetTrafficClass(conn_info.traffic_class);
 
   conn_.timestamp_ns = conn_info.timestamp_ns;
@@ -22,6 +24,7 @@ void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
 }
 
 void ConnectionTracker::AddConnCloseEvent(conn_info_t conn_info) {
+  LOG_IF(ERROR, close_info_.closed) << "Clobbering existing ConnCloseEvent";
   close_info_.closed = true;
   close_info_.timestamp_ns = conn_info.timestamp_ns;
   close_info_.send_seq_num = conn_info.wr_seq_num;
@@ -35,15 +38,17 @@ void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
 
   switch (event.attr.event_type) {
     case kEventTypeSyscallWriteEvent:
-    case kEventTypeSyscallSendEvent:
-      send_data_.events.emplace(seq_num, event);
+    case kEventTypeSyscallSendEvent: {
+      auto res = send_data_.events.emplace(seq_num, event);
+      LOG_IF(ERROR, !res.second) << "Duplicate data event";
       ++num_send_events_;
-      break;
+    } break;
     case kEventTypeSyscallReadEvent:
-    case kEventTypeSyscallRecvEvent:
-      recv_data_.events.emplace(seq_num, event);
+    case kEventTypeSyscallRecvEvent: {
+      auto res = recv_data_.events.emplace(seq_num, event);
+      LOG_IF(ERROR, !res.second) << "Duplicate data event";
       ++num_recv_events_;
-      break;
+    } break;
     default:
       LOG(ERROR) << absl::StrFormat("AddDataEvent() unexpected event type %d",
                                     event.attr.event_type);
