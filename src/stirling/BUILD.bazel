@@ -132,6 +132,12 @@ pl_cc_test(
     deps = [":cc_library"],
 )
 
+pl_cc_test(
+    name = "mysql_parse_test",
+    srcs = ["mysql_parse_test.cc"],
+    deps = [":cc_library"],
+)
+
 cc_image(
     name = "stirling_wrapper_image",
     base = "//:pl_cc_base_image",

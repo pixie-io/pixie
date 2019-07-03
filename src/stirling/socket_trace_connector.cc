@@ -7,6 +7,7 @@
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
 #include "src/stirling/event_parser.h"
+#include "src/stirling/mysql_parse.h"
 #include "src/stirling/socket_trace_connector.h"
 
 // TODO(yzhao): Consider simplify the semantic by filtering entirely on content type.
@@ -186,7 +187,6 @@ void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
   switch (event.attr.traffic_class.protocol) {
     case kProtocolHTTP:
     case kProtocolHTTP2:
-      // TODO(oazizi/yzhao): Add MySQL when it goes through streams.
       break;
     default:
       LOG(WARNING) << absl::StrFormat("AcceptDataEvent ignored due to unknown protocol: %d",
@@ -317,6 +317,10 @@ void SocketTraceConnector::ConsumeMessage(TraceRecord<TMessageType> record,
     AppendMessage(std::move(record), record_batch);
   }
 }
+
+//-----------------------------------------------------------------------------
+// HTTP Specific TransferImpl Helpers
+//-----------------------------------------------------------------------------
 
 template <>
 bool SocketTraceConnector::SelectMessage(const TraceRecord<HTTPMessage>& record) {

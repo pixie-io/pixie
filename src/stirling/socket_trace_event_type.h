@@ -27,5 +27,12 @@ inline std::string HTTPEventTypeToString(HTTPEventType event_type) {
   return event_type_str;
 }
 
+enum class MySQLEventType {
+  kMySQLUnknown,
+  kMySQLComStmtPrepare,
+  kMySQLComStmtExecute,
+  kMySQLComQuery
+};
+
 }  // namespace stirling
 }  // namespace pl
