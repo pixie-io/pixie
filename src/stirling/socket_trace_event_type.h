@@ -5,6 +5,8 @@
 namespace pl {
 namespace stirling {
 
+// TODO(yzhao): This seems duplicate with MessageType in event_parser.h. Maybe merge the two and put
+// the final type inside this header; or remove this header.
 enum class HTTPEventType { kUnknown, kHTTPRequest, kHTTPResponse };
 
 inline std::string HTTPEventTypeToString(HTTPEventType event_type) {
