@@ -67,8 +67,9 @@ MATCHER_P2(MatchesTypePayload, t, p, "") {
   return arg.frame.hd.type == t && arg.u8payload == ToU8(p);
 }
 
-TEST(UnpackFramesTest, BrokenAndIgnoredFramesAreSkipped) {
+TEST(UnpackFramesTest, ResultsAreAsExpected) {
   std::string input{
+      "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n"
       "\x0\x0\x3\x1\x4\x0\x0\x0\x1"
       "a:b"  // HEADERS
       "\x0\x0\x3\x9\x4\x0\x0\x0\x1"
@@ -76,13 +77,15 @@ TEST(UnpackFramesTest, BrokenAndIgnoredFramesAreSkipped) {
       "\x0\x0\x4\x0\x1\x0\x0\x0\x2"
       "abcd"  // DATA
       "\x0\x0\x1\x1\x1\x0\x0\x0\x3",
-      4 * NGHTTP2_FRAME_HDLEN + 3 + 3 + 4};
+      24 + 4 * NGHTTP2_FRAME_HDLEN + 3 + 3 + 4};
   std::string_view buf = input;
 
   std::deque<Frame> frames;
   ParseResult<size_t> res = Parse(MessageType::kUnknown, buf, &frames);
   EXPECT_THAT(res.state, Eq(ParseState::kNeedsMoreData));
-  EXPECT_THAT(res.end_position, Eq(3 * NGHTTP2_FRAME_HDLEN + 3 + 3 + 4));
+  EXPECT_THAT(res.start_positions, ElementsAre(24, 36, 48));
+  EXPECT_THAT(res.end_position, Eq(24 + 3 * NGHTTP2_FRAME_HDLEN + 3 + 3 + 4))
+      << "End position does not go into the incomplete frame";
   EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "a:b"),
                                   MatchesTypePayload(NGHTTP2_CONTINUATION, "c:d"),
                                   MatchesTypePayload(NGHTTP2_DATA, "abcd")));

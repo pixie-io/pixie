@@ -220,8 +220,18 @@ ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
   const size_t buf_size = buf.size();
   ParseState s = ParseState::kSuccess;
 
+  // Note that HTTP2 connection preface, or MAGIC as used in nghttp2, must be at the beginning of
+  // the stream. The following tries to detect complete or partial connection preface.
+  if (buf.size() < NGHTTP2_CLIENT_MAGIC_LEN &&
+      buf == std::string_view(NGHTTP2_CLIENT_MAGIC, buf.size())) {
+    return {{}, 0, ParseState::kNeedsMoreData};
+  }
+  if (absl::StartsWith(buf, NGHTTP2_CLIENT_MAGIC)) {
+    buf.remove_prefix(NGHTTP2_CLIENT_MAGIC_LEN);
+  }
+
   while (!buf.empty()) {
-    const size_t frame_begin = buf.size();
+    const size_t frame_begin = buf_size - buf.size();
     Frame frame;
     s = UnpackFrame(&buf, &frame);
     if (s == ParseState::kNeedsMoreData) {
