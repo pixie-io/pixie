@@ -74,14 +74,9 @@ enum MetadataResourceType {
 
 message MetadataUpdateInfo {
     message ResourceUpdate {
-        // The resource's unique identifier.
-        string uid = 1;
-
-        // The resource's name.
-        string name = 2;
-
-        // The type of the resource.
-        MetadataResourceType type = 3;
+        MetadataResourceType type = 1;
+        pl.shared.k8s.metadatapb.ObjectMetadata metadata  = 2;
+        repeated pl.shared.k8s.metadatapb.ObjectReference references = 3;
     }
     repeated ResourceUpdate updates = 4;
 }

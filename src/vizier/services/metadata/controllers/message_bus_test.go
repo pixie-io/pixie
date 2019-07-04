@@ -79,9 +79,11 @@ heartbeat_ack {
 	time: 10
 	update_info {
 		updates {
-			uid:  "podUid"
-			name: "podName"
 			type: 1
+			metadata {
+				uid:  "podUid"
+				name: "podName"			
+			}
 		}
 	}
 }
@@ -396,9 +398,11 @@ func TestAgentHeartbeat(t *testing.T) {
 		Return(nil)
 
 	updatePb := messages.MetadataUpdateInfo_ResourceUpdate{
-		Uid:  "podUid",
-		Name: "podName",
 		Type: messages.POD,
+		Metadata: &metadatapb.ObjectMetadata{
+			Uid:  "podUid",
+			Name: "podName",
+		},
 	}
 	updates := []messages.MetadataUpdateInfo_ResourceUpdate{updatePb}
 

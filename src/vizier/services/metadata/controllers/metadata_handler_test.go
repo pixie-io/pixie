@@ -138,11 +138,25 @@ func TestObjectToEndpointsProto(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
-		Uid:  "ijkl",
-		Name: "object_md",
-		Type: messagespb.SERVICE,
+	refs := make([]*metadatapb.ObjectReference, 1)
+	refs[0] = &metadatapb.ObjectReference{
+		Kind:      "Pod",
+		Namespace: "pl",
+		Uid:       "abcd",
 	}
+
+	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
+		Type: messagespb.SERVICE,
+		Metadata: &metadatapb.ObjectMetadata{
+			Uid:                 "ijkl",
+			Name:                "object_md",
+			Namespace:           "a_namespace",
+			CreationTimestampNs: 4,
+			DeletionTimestampNs: 6,
+		},
+		References: refs,
+	}
+
 	update, err := updatePb.Marshal()
 
 	mockMds.
@@ -367,10 +381,23 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
+	refs := make([]*metadatapb.ObjectReference, 1)
+	refs[0] = &metadatapb.ObjectReference{
+		Kind:      "Pod",
+		Namespace: "pl",
+		Uid:       "abcd",
+	}
+
 	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
-		Uid:  "ijkl",
-		Name: "object_md",
 		Type: messagespb.SERVICE,
+		Metadata: &metadatapb.ObjectMetadata{
+			Uid:                 "ijkl",
+			Name:                "object_md",
+			Namespace:           "a_namespace",
+			CreationTimestampNs: 4,
+			DeletionTimestampNs: 6,
+		},
+		References: refs,
 	}
 	update, err := updatePb.Marshal()
 
@@ -644,9 +671,13 @@ func TestObjectToPodProto(t *testing.T) {
 	}
 
 	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
-		Uid:  "ijkl",
-		Name: "object_md",
 		Type: messagespb.POD,
+		Metadata: &metadatapb.ObjectMetadata{
+			Uid:                 "ijkl",
+			Name:                "object_md",
+			CreationTimestampNs: 4,
+			DeletionTimestampNs: 6,
+		},
 	}
 
 	update, err := updatePb.Marshal()

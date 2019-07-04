@@ -26,7 +26,7 @@ type MetadataStore interface {
 	GetAgents() (*[]datapb.AgentData, error)
 }
 
-// K8sMessage is a message for K8s metadata events/updates.
+// K8sMessage is a message for K8s metadata events/updResourceUpdateates.
 type K8sMessage struct {
 	Object     runtime.Object
 	ObjectType string
@@ -177,21 +177,37 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 
 	// Add endpoint update to agent update queues.
 	var hostnames []string
-	for _, subset := range e.Subsets {
+	var references []*metadatapb.ObjectReference
+	for _, subset := range pb.Subsets {
 		for _, addr := range subset.Addresses {
-			hostnames = append(hostnames, *addr.NodeName)
+			hostnames = append(hostnames, addr.NodeName)
+			if addr.TargetRef != nil {
+				references = append(references, addr.TargetRef)
+			}
 		}
 	}
 
+	updateMd := mh.getUpdateMetadata(pb.Metadata)
+
 	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
-		Uid:  string(e.ObjectMeta.UID),
-		Name: e.ObjectMeta.Name,
-		Type: messagespb.SERVICE,
+		Metadata:   updateMd,
+		Type:       messagespb.SERVICE,
+		References: references,
 	}
 
 	mh.agentUpdateCh <- &UpdateMessage{
 		Hostnames: &hostnames,
 		Message:   updatePb,
+	}
+}
+
+func (mh *MetadataHandler) getUpdateMetadata(md *metadatapb.ObjectMetadata) *metadatapb.ObjectMetadata {
+	return &metadatapb.ObjectMetadata{
+		Name:                md.Name,
+		Namespace:           md.Namespace,
+		Uid:                 md.Uid,
+		CreationTimestampNs: md.CreationTimestampNs,
+		DeletionTimestampNs: md.DeletionTimestampNs,
 	}
 }
 
@@ -210,10 +226,11 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 	// Add pod update to agent update queue.
 	hostname := []string{e.Spec.NodeName}
 
+	updateMd := mh.getUpdateMetadata(pb.Metadata)
+
 	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
-		Uid:  string(e.ObjectMeta.UID),
-		Name: e.ObjectMeta.Name,
-		Type: messagespb.POD,
+		Metadata: updateMd,
+		Type:     messagespb.POD,
 	}
 
 	mh.agentUpdateCh <- &UpdateMessage{
