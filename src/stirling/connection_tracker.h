@@ -163,7 +163,23 @@ class ConnectionTracker {
    */
   bool AllEventsReceived() const;
 
+  /**
+   * @return Returns the latest timestamp of all BPF events received by this tracker (using BPF
+   * timestamp).
+   */
+  uint64_t last_bpf_timestamp_ns() { return last_bpf_timestamp_ns_; }
+
+  /**
+   * @return Returns the a timestamp the last time an event was added to this tracker (using
+   * steady_clock).
+   */
+  std::chrono::time_point<std::chrono::steady_clock> last_update_timestamp() {
+    return last_update_timestamp_;
+  }
+
  private:
+  void UpdateTimestamps(uint64_t bpf_timestamp);
+
   traffic_class_t traffic_class_{kProtocolUnknown, kRoleUnknown};
 
   SocketConnection conn_;
@@ -174,6 +190,16 @@ class ConnectionTracker {
 
   // The connection close info.
   SocketClose close_info_;
+
+  // The timestamp of the last activity on this connection.
+  // Recorded as the latest timestamp on a BPF event.
+  uint64_t last_bpf_timestamp_ns_ = 0;
+
+  // The timestamp of the last activity on this connection.
+  // Recorded as the latest touch time on the ConnectionTracker.
+  // Currently using steady clock, so cannot be used meaningfully for logging real times.
+  // This can be changed in the future if required.
+  std::chrono::time_point<std::chrono::steady_clock> last_update_timestamp_;
 
   uint32_t num_send_events_ = 0;
   uint32_t num_recv_events_ = 0;

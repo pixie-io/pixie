@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <chrono>
 #include <vector>
 
 #include "src/stirling/connection_tracker.h"
@@ -9,6 +11,7 @@ namespace stirling {
 void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
   LOG_IF(ERROR, conn_.tgid != 0) << "Clobbering existing ConnOpenEvent.";
 
+  UpdateTimestamps(conn_info.timestamp_ns);
   SetTrafficClass(conn_info.traffic_class);
 
   conn_.timestamp_ns = conn_info.timestamp_ns;
@@ -25,6 +28,9 @@ void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
 
 void ConnectionTracker::AddConnCloseEvent(conn_info_t conn_info) {
   LOG_IF(ERROR, close_info_.closed) << "Clobbering existing ConnCloseEvent";
+
+  UpdateTimestamps(conn_info.timestamp_ns);
+
   close_info_.closed = true;
   close_info_.timestamp_ns = conn_info.timestamp_ns;
   close_info_.send_seq_num = conn_info.wr_seq_num;
@@ -32,6 +38,7 @@ void ConnectionTracker::AddConnCloseEvent(conn_info_t conn_info) {
 }
 
 void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
+  UpdateTimestamps(event.attr.timestamp_ns);
   SetTrafficClass(event.attr.traffic_class);
 
   const uint64_t seq_num = event.attr.seq_num;
@@ -71,6 +78,12 @@ void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {
     DCHECK_EQ(traffic_class.role, traffic_class.role)
         << "Not allowed to change the role of an active ConnectionTracker";
   }
+}
+
+void ConnectionTracker::UpdateTimestamps(uint64_t bpf_timestamp) {
+  last_bpf_timestamp_ns_ = std::max(last_bpf_timestamp_ns_, bpf_timestamp);
+
+  last_update_timestamp_ = std::chrono::steady_clock::now();
 }
 
 DataStream* ConnectionTracker::req_data() {

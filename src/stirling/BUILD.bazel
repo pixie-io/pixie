@@ -160,6 +160,12 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "connection_tracker_test",
+    srcs = ["connection_tracker_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "types_test",
     srcs = ["types_test.cc"],
     deps = [":cc_library"],
