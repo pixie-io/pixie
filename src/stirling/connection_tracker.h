@@ -53,7 +53,14 @@ struct DataStream {
   // Vector of parsed HTTP messages.
   // Once parsed, the raw data events should be discarded.
   // std::variant adds 8 bytes of overhead (to 80->88 for deque)
-  std::variant<std::deque<HTTPMessage>, std::deque<http2::Frame> > messages;
+  //
+  // std::variant<> default constructs with the first type parameter. So by default,
+  // std::get<> will succeed only for the first type variant, if the variant has not been
+  // initialized after definition.
+  //
+  // Additionally, ConnectionTracker must not switch type during runtime, which indicates serious
+  // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
+  std::variant<std::monostate, std::deque<HTTPMessage>, std::deque<http2::Frame> > messages;
 
   /**
    * @ brief Parses as many messages as it can from the raw events into the messages container.
@@ -65,13 +72,6 @@ struct DataStream {
 
   // TODO(oazizi): Add a bool to say whether the stream has been touched since last transfer (to
   // avoid useless computation in ExtractMessages()).
-
-  /**
-   * @ brief Parses as many messages as it can from the raw events into the messages container.
-   *
-   * @param type whether to parse as requests, responses or mixed traffic.
-   */
-  void ExtractMessages(MessageType type);
 };
 
 /**

@@ -104,5 +104,12 @@ TEST_F(ConnectionTrackerTest, timestamp_test) {
   EXPECT_EQ(8, tracker.last_bpf_timestamp_ns());
 }
 
+TEST(DataStreamTest, CannotSwitchType) {
+  DataStream stream;
+  stream.ExtractMessages<HTTPMessage>(MessageType::kRequests);
+  EXPECT_DEATH(stream.ExtractMessages<http2::Frame>(MessageType::kRequests),
+               "ConnectionTracker cannot change the type it holds during runtime");
+}
+
 }  // namespace stirling
 }  // namespace pl

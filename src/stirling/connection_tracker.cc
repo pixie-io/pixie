@@ -179,6 +179,14 @@ void DataStream::ExtractMessages(MessageType type) {
     next_seq_num++;
   }
 
+  CHECK(std::holds_alternative<std::monostate>(messages) ||
+        std::holds_alternative<std::deque<TMessageType>>(messages))
+      << "Must hold the default std::monostate, or the same type as requested. "
+         "I.e., ConnectionTracker cannot change the type it holds during runtime.";
+  if (std::holds_alternative<std::monostate>(messages)) {
+    // Reset the type to the expected type.
+    messages = std::deque<TMessageType>();
+  }
   // Now parse all the appended events.
   auto& typed_messages = std::get<std::deque<TMessageType>>(messages);
   ParseResult<BufferPosition> parse_result = parser.ParseMessages(type, &typed_messages);
