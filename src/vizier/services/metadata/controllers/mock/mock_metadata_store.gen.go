@@ -6,6 +6,7 @@ package mock_controllers
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	go_uuid "github.com/satori/go.uuid"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	datapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
@@ -132,6 +133,18 @@ func (m *MockMetadataStore) UpdatePod(arg0 *metadatapb.Pod) error {
 // UpdatePod indicates an expected call of UpdatePod
 func (mr *MockMetadataStoreMockRecorder) UpdatePod(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePod", reflect.TypeOf((*MockMetadataStore)(nil).UpdatePod), arg0)
+}
+
+// UpdateSchemas mocks base method
+func (m *MockMetadataStore) UpdateSchemas(arg0 go_uuid.UUID, arg1 []*metadatapb.SchemaInfo) error {
+	ret := m.ctrl.Call(m, "UpdateSchemas", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateSchemas indicates an expected call of UpdateSchemas
+func (mr *MockMetadataStoreMockRecorder) UpdateSchemas(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSchemas", reflect.TypeOf((*MockMetadataStore)(nil).UpdateSchemas), arg0, arg1)
 }
 
 // UpdateService mocks base method

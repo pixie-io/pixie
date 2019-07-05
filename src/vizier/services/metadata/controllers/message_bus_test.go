@@ -422,7 +422,7 @@ func TestAgentHeartbeat(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		AddToUpdateQueue(agentUpdatePb).
+		AddToUpdateQueue(u, agentUpdatePb).
 		Return()
 
 	// Create Metadata Service controller.
@@ -541,7 +541,7 @@ func TestUpdateHeartbeatFailed(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		AddToUpdateQueue(agentUpdatePb).
+		AddToUpdateQueue(u, agentUpdatePb).
 		Return()
 
 	// Create Metadata Service controller.

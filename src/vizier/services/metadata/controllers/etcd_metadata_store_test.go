@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
@@ -20,6 +21,19 @@ name: "container_1"
 uid: "container1"
 pod_uid: "ijkl"
 namespace: "ns"
+`
+
+var schemaInfoPB = `
+name: "a_table"
+start_timestamp_ns: 2
+columns {
+	name: "column_1"
+	data_type: 2
+}
+columns {
+	name: "column_2"
+	data_type: 4
+}
 `
 
 func TestUpdateEndpoints(t *testing.T) {
@@ -163,6 +177,42 @@ func TestUpdateContainers(t *testing.T) {
 	containerPb := &metadatapb.ContainerInfo{}
 	proto.Unmarshal(containerResp.Kvs[0].Value, containerPb)
 	assert.Equal(t, "container_1", containerPb.Name)
+}
+
+func TestUpdateSchemas(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	u, err := uuid.FromString(NewAgentUUID)
+	if err != nil {
+		t.Fatal("Could not parse UUID from string.")
+	}
+
+	schemas := make([]*metadatapb.SchemaInfo, 1)
+
+	schema1 := new(metadatapb.SchemaInfo)
+	if err := proto.UnmarshalText(schemaInfoPB, schema1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	schemas[0] = schema1
+
+	err = mds.UpdateSchemas(u, schemas)
+	assert.Nil(t, err)
+
+	schemaResp, err := etcdClient.Get(context.Background(), "/agents/"+NewAgentUUID+"/schema/a_table")
+	if err != nil {
+		t.Fatal("Unable to get container from etcd")
+	}
+
+	assert.Equal(t, 1, len(schemaResp.Kvs))
+	schemaPb := &metadatapb.SchemaInfo{}
+	proto.Unmarshal(schemaResp.Kvs[0].Value, schemaPb)
+	assert.Equal(t, "a_table", schemaPb.Name)
 }
 
 func TestGetAgentsForHostnames(t *testing.T) {

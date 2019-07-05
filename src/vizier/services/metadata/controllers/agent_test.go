@@ -87,6 +87,21 @@ func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb 
 	if err != nil {
 		t.Fatal("Unable to add agentData to etcd.")
 	}
+
+	// Add schema info.
+	schema := new(metadatapb.SchemaInfo)
+	if err := proto.UnmarshalText(schemaInfoPB, schema); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	s, err := schema.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal schema pb.")
+	}
+
+	_, err = client.Put(context.Background(), controllers.GetAgentSchemaKey(agentID, schema.Name), string(s))
+	if err != nil {
+		t.Fatal("Unable to add agent schema to etcd.")
+	}
 }
 
 func TestCreateAgent(t *testing.T) {
@@ -350,6 +365,13 @@ func TestUpdateAgentState(t *testing.T) {
 	resp, err = etcdClient.Get(context.Background(), controllers.GetHostnameAgentKey("anotherhost"))
 	// Agent should no longer exist in etcd.
 	assert.Equal(t, 0, len(resp.Kvs))
+
+	// Unhealthy agent should no longer have any schemas.
+	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentSchemasKey(UnhealthyAgentUUID), clientv3.WithPrefix())
+	assert.Equal(t, 0, len(resp.Kvs))
+	// Healthy agent should still have a schema.
+	resp, err = etcdClient.Get(context.Background(), controllers.GetAgentSchemasKey(ExistingAgentUUID), clientv3.WithPrefix())
+	assert.Equal(t, 1, len(resp.Kvs))
 }
 
 func TestUpdateAgentStateNotLeader(t *testing.T) {
@@ -458,8 +480,13 @@ func TestAddToUpdateQueue(t *testing.T) {
 	defer cleanup()
 
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
 	defer wg.Wait()
+
+	u, err := uuid.FromString(NewAgentUUID)
+	if err != nil {
+		t.Fatal("Could not parse UUID from string.")
+	}
 
 	containers := make([]*metadatapb.ContainerInfo, 1)
 
@@ -469,6 +496,14 @@ func TestAddToUpdateQueue(t *testing.T) {
 	}
 	containers[0] = container1
 
+	schemas := make([]*metadatapb.SchemaInfo, 1)
+
+	schema1 := new(metadatapb.SchemaInfo)
+	if err := proto.UnmarshalText(schemaInfoPB, schema1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	schemas[0] = schema1
+
 	mockMds.
 		EXPECT().
 		UpdateContainers(containers).
@@ -477,11 +512,20 @@ func TestAddToUpdateQueue(t *testing.T) {
 			return nil
 		})
 
+	mockMds.
+		EXPECT().
+		UpdateSchemas(u, schemas).
+		DoAndReturn(func(u uuid.UUID, e []*metadatapb.SchemaInfo) error {
+			wg.Done()
+			return nil
+		})
+
 	update := &messagespb.AgentUpdateInfo{
 		Containers: containers,
+		Schema:     schemas,
 	}
 
-	agtMgr.AddToUpdateQueue(update)
+	agtMgr.AddToUpdateQueue(u, update)
 }
 
 func TestAddToUpdateQueueFailed(t *testing.T) {
@@ -491,6 +535,11 @@ func TestAddToUpdateQueueFailed(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	defer wg.Wait()
+
+	u, err := uuid.FromString(NewAgentUUID)
+	if err != nil {
+		t.Fatal("Could not parse UUID from string")
+	}
 
 	containers := make([]*metadatapb.ContainerInfo, 1)
 
@@ -512,5 +561,5 @@ func TestAddToUpdateQueueFailed(t *testing.T) {
 		Containers: containers,
 	}
 
-	agtMgr.AddToUpdateQueue(update)
+	agtMgr.AddToUpdateQueue(u, update)
 }

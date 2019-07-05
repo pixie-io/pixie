@@ -48,13 +48,13 @@ func (mr *MockAgentManagerMockRecorder) AddToFrontOfAgentQueue(arg0, arg1 interf
 }
 
 // AddToUpdateQueue mocks base method
-func (m *MockAgentManager) AddToUpdateQueue(arg0 *messagespb.AgentUpdateInfo) {
-	m.ctrl.Call(m, "AddToUpdateQueue", arg0)
+func (m *MockAgentManager) AddToUpdateQueue(arg0 go_uuid.UUID, arg1 *messagespb.AgentUpdateInfo) {
+	m.ctrl.Call(m, "AddToUpdateQueue", arg0, arg1)
 }
 
 // AddToUpdateQueue indicates an expected call of AddToUpdateQueue
-func (mr *MockAgentManagerMockRecorder) AddToUpdateQueue(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToUpdateQueue", reflect.TypeOf((*MockAgentManager)(nil).AddToUpdateQueue), arg0)
+func (mr *MockAgentManagerMockRecorder) AddToUpdateQueue(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToUpdateQueue", reflect.TypeOf((*MockAgentManager)(nil).AddToUpdateQueue), arg0, arg1)
 }
 
 // CreateAgent mocks base method

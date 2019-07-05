@@ -28,6 +28,12 @@ type AgentInfo struct {
 	Hostname        string
 }
 
+// AgentUpdate describes the update info for a given agent.
+type AgentUpdate struct {
+	UpdateInfo *messagespb.AgentUpdateInfo
+	AgentID    uuid.UUID
+}
+
 // AgentManager handles any agent updates and requests.
 type AgentManager interface {
 	// CreateAgent creates a new agent.
@@ -49,7 +55,7 @@ type AgentManager interface {
 	AddToFrontOfAgentQueue(string, *messagespb.MetadataUpdateInfo_ResourceUpdate) error
 	GetFromAgentQueue(string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error)
 
-	AddToUpdateQueue(*messagespb.AgentUpdateInfo)
+	AddToUpdateQueue(uuid.UUID, *messagespb.AgentUpdateInfo)
 }
 
 // AgentManagerImpl is an implementation for AgentManager which talks to etcd.
@@ -58,12 +64,12 @@ type AgentManagerImpl struct {
 	client   *clientv3.Client
 	clock    utils.Clock
 	mds      MetadataStore
-	updateCh chan *messagespb.AgentUpdateInfo
+	updateCh chan *AgentUpdate
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
 func NewAgentManagerWithClock(client *clientv3.Client, mds MetadataStore, isLeader bool, clock utils.Clock) *AgentManagerImpl {
-	c := make(chan *messagespb.AgentUpdateInfo)
+	c := make(chan *AgentUpdate)
 
 	agentManager := &AgentManagerImpl{
 		client:   client,
@@ -93,14 +99,24 @@ func (m *AgentManagerImpl) processAgentUpdates() {
 	}
 }
 
-func (m *AgentManagerImpl) applyAgentUpdate(update *messagespb.AgentUpdateInfo) error {
-	// TODO(michelle): Also apply agent's schema updates. To follow in next diff.
-	return m.mds.UpdateContainers(update.Containers)
+func (m *AgentManagerImpl) applyAgentUpdate(update *AgentUpdate) error {
+
+	err := m.mds.UpdateContainers(update.UpdateInfo.Containers)
+	if err != nil {
+		return err
+	}
+
+	// TODO(michelle): Update computed schemas.
+	return m.mds.UpdateSchemas(update.AgentID, update.UpdateInfo.Schema)
 }
 
 // AddToUpdateQueue adds the container/schema update to a queue for updates to the metadata store.
-func (m *AgentManagerImpl) AddToUpdateQueue(update *messagespb.AgentUpdateInfo) {
-	m.updateCh <- update
+func (m *AgentManagerImpl) AddToUpdateQueue(agentID uuid.UUID, update *messagespb.AgentUpdateInfo) {
+	agentUpdate := &AgentUpdate{
+		UpdateInfo: update,
+		AgentID:    agentID,
+	}
+	m.updateCh <- agentUpdate
 }
 
 // NewAgentManager creates a new agent manager.
@@ -241,9 +257,12 @@ func (m *AgentManagerImpl) deleteAgent(ctx context.Context, agentID string, host
 		return err
 	}
 	hostnameAgentMap := clientv3.Compare(clientv3.Value(GetHostnameAgentKey(hostname)), "=", agentID)
-	delHostname := clientv3.OpDelete(GetHostnameAgentKey(hostname))
 
-	_, err = m.client.Txn(ctx).If(hostnameAgentMap).Then(delHostname).Commit()
+	ops := make([]clientv3.Op, 2)
+	ops[0] = clientv3.OpDelete(GetHostnameAgentKey(hostname))
+	ops[1] = clientv3.OpDelete(GetAgentSchemasKey(agentID), clientv3.WithPrefix())
+
+	_, err = m.client.Txn(ctx).If(hostnameAgentMap).Then(ops...).Commit()
 
 	return nil
 }

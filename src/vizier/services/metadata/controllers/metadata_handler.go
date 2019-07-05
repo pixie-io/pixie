@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,6 +20,7 @@ type MetadataStore interface {
 	UpdatePod(*metadatapb.Pod) error
 	UpdateService(*metadatapb.Service) error
 	UpdateContainers([]*metadatapb.ContainerInfo) error
+	UpdateSchemas(uuid.UUID, []*metadatapb.SchemaInfo) error
 	GetAgentsForHostnames(*[]string) (*[]string, error)
 	AddToAgentUpdateQueue(string, string) error
 	AddToFrontOfAgentQueue(string, *messagespb.MetadataUpdateInfo_ResourceUpdate) error

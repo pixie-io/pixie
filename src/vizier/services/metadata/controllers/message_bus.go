@@ -161,7 +161,7 @@ func (mc *MessageBusController) onAgentHeartBeat(m *messages.Heartbeat) {
 
 	// Get agent's container/schema updates and add to update queue.
 	if m.UpdateInfo != nil {
-		mc.agentManager.AddToUpdateQueue(m.UpdateInfo)
+		mc.agentManager.AddToUpdateQueue(agentID, m.UpdateInfo)
 	}
 }
 

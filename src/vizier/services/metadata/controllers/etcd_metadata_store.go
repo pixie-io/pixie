@@ -99,6 +99,16 @@ func getContainerKeyFromStrings(namespace string, podName string, containerName 
 	return path.Join("/", "pods", namespace, podName, "containers", containerName, "info")
 }
 
+// GetAgentSchemaKey gets the etcd key for an agent's schema.
+func GetAgentSchemaKey(agentID string, schemaName string) string {
+	return path.Join(GetAgentSchemasKey(agentID), schemaName)
+}
+
+// GetAgentSchemasKey gets all schemas belonging to an agent.
+func GetAgentSchemasKey(agentID string) string {
+	return path.Join("/", "agents", agentID, "schema")
+}
+
 // UpdateService adds or updates the given service in the metadata store.
 func (mds *EtcdMetadataStore) UpdateService(s *metadatapb.Service) error {
 	val, err := s.Marshal()
@@ -144,6 +154,25 @@ func (mds *EtcdMetadataStore) UpdateContainers(containers []*metadatapb.Containe
 	}
 
 	_, err = mds.client.Txn(context.TODO()).If().Then(containerOps...).Commit()
+
+	return err
+}
+
+// UpdateSchemas updates the given schemas in the metadata store.
+func (mds *EtcdMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*metadatapb.SchemaInfo) error {
+	ops := make([]clientv3.Op, len(schemas))
+	for i, schemaPb := range schemas {
+		schema, err := schemaPb.Marshal()
+		if err != nil {
+			log.WithError(err).Error("Could not marshall schema update message.")
+			continue
+		}
+
+		schemaKey := GetAgentSchemaKey(agentID.String(), schemaPb.Name)
+		ops[i] = clientv3.OpPut(schemaKey, string(schema))
+	}
+
+	_, err := mds.client.Txn(context.TODO()).If().Then(ops...).Commit()
 
 	return err
 }
