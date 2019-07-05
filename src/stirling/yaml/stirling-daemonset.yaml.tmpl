@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: stirling-wrapper
+  namespace: pl-{{USER}}
+  labels:
+    app: pl-monitoring
+spec:
+  selector:
+    matchLabels:
+      name: stirling-wrapper
+  template:
+    metadata:
+      labels:
+        name: stirling-wrapper
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: stirling-wrapper
+        image: gcr.io/pl-dev-infra/stirling_wrapper:{{USER}}
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        securityContext:
+          capabilities:
+            add:
+              - SYS_PTRACE
+              - SYS_ADMIN
+          privileged: true
+        volumeMounts:
+        - name: sys # mount the debug filesystem
+          mountPath: /sys
+          readOnly: true
+        - name: linux-headers # mount the linux headers
+          mountPath: /usr/src
+          readOnly: true
+        - name: lib-modules # mount the linux headers
+          mountPath: /lib/modules
+          readOnly: true
+      hostPID: true
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: sys
+        hostPath:
+            path: /sys
+            type: Directory
+      - name: linux-headers
+        hostPath:
+            path: /usr/src
+            type: Directory
+      - name: lib-modules
+        hostPath:
+            path: /lib/modules
+            type: Directory
