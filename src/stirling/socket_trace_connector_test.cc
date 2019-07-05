@@ -236,8 +236,6 @@ TEST_F(SocketTraceConnectorTest, End2end) {
       ToIntVector<types::Time64NSValue>(record_batch[kTimeIdx]),
       ElementsAre(100 + source_->ClockRealTimeOffset(), 200 + source_->ClockRealTimeOffset(),
                   100 + source_->ClockRealTimeOffset()));
-
-  EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
 TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
@@ -260,8 +258,6 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   source_->AcceptCloseConnEvent(close_conn);
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(3, record_batch[0]->Size()) << "Get 3 events after getting the missing one.";
-
-  EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
 TEST_F(SocketTraceConnectorTest, NoEvents) {
@@ -287,7 +283,6 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
   EXPECT_EQ(1, source_->NumActiveConnections());
   source_->AcceptCloseConnEvent(close_conn);
   source_->TransferData(kTableNum, &record_batch);
-  EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
 TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
@@ -317,8 +312,6 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
   EXPECT_THAT(ToStringVector(record_batch[kHTTPReqMethodIdx]), ElementsAre("GET", "GET", "GET"));
   EXPECT_THAT(ToStringVector(record_batch[kHTTPReqPathIdx]),
               ElementsAre("/index.html", "/data.html", "/logs.html"));
-
-  EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
@@ -350,7 +343,11 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
 
   source_->AcceptCloseConnEvent(close_conn);
   source_->TransferData(kTableNum, &record_batch);
-  EXPECT_EQ(0, source_->NumActiveConnections());
+
+  for (uint32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
+    source_->TransferData(kTableNum, &record_batch);
+    EXPECT_EQ(1, source_->NumActiveConnections());
+  }
 
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(0, source_->NumActiveConnections());
@@ -378,10 +375,47 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
 
   source_->AcceptCloseConnEvent(close_conn);
   source_->AcceptDataEvent(resp_event1);
+  source_->AcceptDataEvent(req_event2);
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
+  for (uint32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
+    source_->TransferData(kTableNum, &record_batch);
+    EXPECT_EQ(1, source_->NumActiveConnections());
+  }
+
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(0, source_->NumActiveConnections());
+}
+
+TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
+  conn_info_t conn = InitConn();
+  SocketDataEvent req_event0 = InitSendEvent(kReq0);
+  SocketDataEvent req_event1 = InitSendEvent(kReq1);
+  SocketDataEvent req_event2 = InitSendEvent(kReq2);
+  SocketDataEvent resp_event0 = InitRecvEvent(kResp0);
+  SocketDataEvent resp_event1 = InitRecvEvent(kResp1);
+  SocketDataEvent resp_event2 = InitRecvEvent(kResp2);
+  conn_info_t close_conn = InitClose();
+
+  auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
+
+  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptDataEvent(req_event0);
+  source_->AcceptDataEvent(req_event1);
   source_->AcceptDataEvent(req_event2);
+  source_->AcceptDataEvent(resp_event0);
+  // Missing event: source_->AcceptDataEvent(resp_event1);
+  source_->AcceptDataEvent(resp_event2);
+  source_->AcceptCloseConnEvent(close_conn);
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(1, source_->NumActiveConnections());
+
+  for (uint32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
+    source_->TransferData(kTableNum, &record_batch);
+    EXPECT_EQ(1, source_->NumActiveConnections());
+  }
+
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(0, source_->NumActiveConnections());
 }

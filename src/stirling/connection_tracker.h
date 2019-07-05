@@ -156,14 +156,6 @@ class ConnectionTracker {
   DataStream* resp_data();
 
   /**
-   * @brief Check if all events have been received on this stream.
-   * Implies that the Close() event has been received as well.
-   *
-   * @return whether all data events and connection close have been received.
-   */
-  bool AllEventsReceived() const;
-
-  /**
    * @return Returns the latest timestamp of all BPF events received by this tracker (using BPF
    * timestamp).
    */
@@ -177,8 +169,36 @@ class ConnectionTracker {
     return last_update_timestamp_;
   }
 
+  /**
+   * @brief Check if all events have been received on this stream.
+   * Implies that the Close() event has been received as well.
+   *
+   * @return whether all data events and connection close have been received.
+   */
+  bool AllEventsReceived() const;
+
+  /**
+   * @brief Whether this ConnectionTracker can be destroyed.
+   * @return true if this ConnectionTracker is a candidate for destruction.
+   */
+  bool ReadyForDestruction() const;
+
+  /**
+   * @brief Updates the any state that changes per iteration on this connection tracker.
+   * Should be called once per sampling (PerfBuffer read).
+   */
+  void IterationTick();
+
+  /**
+   * @brief Number of TransferData() (i.e. PerfBuffer read) calls any ConnectionTracker persists
+   * after it has been marked for death. We keep ConnectionTrackers alive for debug purposes only,
+   * just to log spurious late events (which should not happen).
+   */
+  static constexpr uint64_t kDeathCountdownIters = 2;
+
  private:
   void UpdateTimestamps(uint64_t bpf_timestamp);
+  void MarkForDeath();
 
   traffic_class_t traffic_class_{kProtocolUnknown, kRoleUnknown};
 
@@ -203,6 +223,9 @@ class ConnectionTracker {
 
   uint32_t num_send_events_ = 0;
   uint32_t num_recv_events_ = 0;
+
+  // Iterations before the tracker can be killed.
+  int64_t death_countdown_ = -1;
 
   void SetTrafficClass(struct traffic_class_t traffic_class);
 

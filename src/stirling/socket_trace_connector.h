@@ -281,6 +281,7 @@ class SocketTraceConnector : public SourceConnector {
   FRIEND_TEST(SocketTraceConnectorTest, RequestResponseMatching);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInOrder);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder);
+  FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent);
 };
 
 }  // namespace stirling

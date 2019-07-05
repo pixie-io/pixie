@@ -279,10 +279,10 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
 
     ProcessMessages<TMessageType>(tracker.conn(), &req_messages, &resp_messages, record_batch);
 
-    bool delete_tracker = tracker.AllEventsReceived();
+    tracker.IterationTick();
 
     // Update iterator, handling deletions as we go. This must be the last line in the loop.
-    it = delete_tracker ? connection_trackers_.erase(it) : ++it;
+    it = tracker.ReadyForDestruction() ? connection_trackers_.erase(it) : ++it;
   }
 
   // TODO(yzhao): Add the capability to remove events that are too old.

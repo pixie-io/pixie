@@ -10,6 +10,8 @@ namespace stirling {
 
 void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
   LOG_IF(ERROR, conn_.tgid != 0) << "Clobbering existing ConnOpenEvent.";
+  LOG_IF(WARNING, death_countdown_ >= 0) << absl::StrFormat(
+      "Did not expect to receive Open event after Close [conn_id=%d].", conn_info.conn_id);
 
   UpdateTimestamps(conn_info.timestamp_ns);
   SetTrafficClass(conn_info.traffic_class);
@@ -35,9 +37,14 @@ void ConnectionTracker::AddConnCloseEvent(conn_info_t conn_info) {
   close_info_.timestamp_ns = conn_info.timestamp_ns;
   close_info_.send_seq_num = conn_info.wr_seq_num;
   close_info_.recv_seq_num = conn_info.rd_seq_num;
+
+  MarkForDeath();
 }
 
 void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
+  LOG_IF(WARNING, death_countdown_ >= 0) << absl::StrFormat(
+      "Did not expect to receive Data event after Close [conn_id=%d].", event.attr.conn_id);
+
   UpdateTimestamps(event.attr.timestamp_ns);
   SetTrafficClass(event.attr.traffic_class);
 
@@ -105,6 +112,27 @@ DataStream* ConnectionTracker::resp_data() {
       return &send_data_;
     default:
       return nullptr;
+  }
+}
+
+void ConnectionTracker::MarkForDeath() {
+  // We received the close event.
+  // Now give up to some more TransferData calls to receive trailing data events.
+  // We do this for logging/debug purposes only.
+  death_countdown_ = kDeathCountdownIters + 1;
+}
+
+bool ConnectionTracker::ReadyForDestruction() const {
+  // We delay destruction time by a few iterations.
+  // See also MarkForDeath().
+  return death_countdown_ == 0;
+}
+
+void ConnectionTracker::IterationTick() {
+  // Currently only updates death_countdown_,
+  // but other updates could also go in this function.
+  if (death_countdown_ > 0) {
+    death_countdown_--;
   }
 }
 
