@@ -30,7 +30,7 @@ enum TrafficProtocol {
 };
 
 // The direction of traffic expected on a probe.
-enum ReqRespRole { kRoleUnknown, kRoleRequestor, kRoleResponder, kRoleMixed };
+enum ReqRespRole { kRoleUnknown, kRoleRequestor, kRoleResponder };
 
 // Which transactions to trace (direction and type).
 const uint64_t kSocketTraceSendReq = 1 << 0;

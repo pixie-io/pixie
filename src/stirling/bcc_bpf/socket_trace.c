@@ -206,7 +206,16 @@ static struct traffic_class_t infer_traffic(enum EventType event_type, const cha
     }
   } else if (is_http2_connection_preface(buf, count)) {
     traffic_class.protocol = kProtocolHTTP2;
-    traffic_class.role = kRoleMixed;
+    switch (event_type) {
+      case kEventTypeSyscallSendEvent:
+      case kEventTypeSyscallWriteEvent:
+        traffic_class.role = kRoleRequestor;
+      case kEventTypeSyscallRecvEvent:
+      case kEventTypeSyscallReadEvent:
+        traffic_class.role = kRoleResponder;
+      default:
+        break;
+    }
   } else {
     traffic_class.protocol = kProtocolUnknown;
     traffic_class.role = kRoleUnknown;
@@ -389,9 +398,6 @@ static int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t
     case kRoleResponder:
       trace = (control & kSocketTraceSendResp);
       break;
-    case kRoleMixed:
-      trace = (control & (kSocketTraceSendReq | kSocketTraceSendResp));
-      break;
     default:
       trace = false;
   }
@@ -522,9 +528,6 @@ static int probe_ret_read_recv(struct pt_regs* ctx, enum EventType event_type) {
       break;
     case kRoleResponder:
       trace = (control & kSocketTraceRecvReq);
-      break;
-    case kRoleMixed:
-      trace = (control & (kSocketTraceRecvReq | kSocketTraceRecvResp));
       break;
     default:
       trace = false;

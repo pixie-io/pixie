@@ -57,7 +57,9 @@ Status SocketTraceConnector::InitImpl() {
 
   PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvResp));
   PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kSocketTraceSendReq));
-  PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kSocketTraceSendReq | kSocketTraceRecvResp));
+  // TODO(PL-659): connect() call might return non 0 value, making requester-side tracing
+  // unreliable. Switch to server-side for now.
+  PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kSocketTraceSendResp | kSocketTraceRecvReq));
 
   // TODO(oazizi): if machine is ever suspended, this would have to be called again.
   InitClockRealTimeOffset();
@@ -253,12 +255,6 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
     auto& tracker = it->second;
 
     if (tracker.protocol() != protocol) {
-      ++it;
-      continue;
-    }
-
-    if (tracker.role() == kRoleMixed) {
-      // TODO(oazizi/yzhao): This case for HTTP2 is not covered yet.
       ++it;
       continue;
     }

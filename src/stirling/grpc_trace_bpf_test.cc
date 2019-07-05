@@ -67,7 +67,13 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   // when fork() and execvp().
   std::unique_ptr<SourceConnector> connector =
       SocketTraceConnector::Create("socket_trace_connector");
+  auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(connector.get());
+  ASSERT_NE(nullptr, socket_trace_connector);
   ASSERT_OK(connector->Init());
+  // This resets the probe to server side, so this is not subject to update in
+  // SocketTraceConnector::InitImpl().
+  EXPECT_OK(socket_trace_connector->Configure(kProtocolHTTP2,
+                                              kSocketTraceSendResp | kSocketTraceRecvReq));
 
   // TODO(yzhao): Add a --count flag to greeter client so we can test the case of multiple RPC calls
   // (multiple HTTP2 streams).
@@ -76,9 +82,6 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   EXPECT_EQ(0, c.Wait()) << "Client should exit normally.";
   s.Kill();
   EXPECT_EQ(9, s.Wait()) << "Server should have been killed.";
-
-  auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(connector.get());
-  ASSERT_NE(nullptr, socket_trace_connector);
 
   socket_trace_connector->ReadPerfBuffer(SocketTraceConnector::kHTTPTableNum);
   ASSERT_GE(socket_trace_connector->TestOnlyStreams().size(), 1);
