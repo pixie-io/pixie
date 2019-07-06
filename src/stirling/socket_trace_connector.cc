@@ -174,14 +174,17 @@ void SocketTraceConnector::HandleCloseProbeOutput(void* cb_cookie, void* data, i
 
 namespace {
 
-uint64_t GetStreamId(uint32_t tgid, uint32_t conn_id) {
-  return (static_cast<uint64_t>(tgid) << 32) | conn_id;
+uint64_t GetStreamId(uint32_t tgid, uint32_t fd, uint32_t generation) {
+  // 22 bits for PID, 22 bits for FD, 20 bits for generation
+  // Don't worry, this will all change in next diff.
+  return (static_cast<uint64_t>(tgid) << 42) | (fd << 20) | generation;
 }
 
 }  // namespace
 
 void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
-  const uint64_t stream_id = GetStreamId(event.attr.tgid, event.attr.conn_id);
+  const uint64_t stream_id =
+      GetStreamId(event.attr.tgid, event.attr.fd, event.attr.tgid_fd_generation);
   DCHECK(stream_id != 0) << "Stream ID cannot be 0, tgid must be wrong";
 
   // Need to adjust the clocks to convert to real time.
@@ -202,7 +205,8 @@ void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
 }
 
 void SocketTraceConnector::AcceptOpenConnEvent(conn_info_t conn_info) {
-  const uint64_t stream_id = GetStreamId(conn_info.tgid, conn_info.conn_id);
+  const uint64_t stream_id =
+      GetStreamId(conn_info.tgid, conn_info.fd, conn_info.tgid_fd_generation);
   DCHECK(stream_id != 0) << "Stream ID cannot be 0, tgid must be wrong";
 
   // Need to adjust the clocks to convert to real time.
@@ -213,7 +217,8 @@ void SocketTraceConnector::AcceptOpenConnEvent(conn_info_t conn_info) {
 }
 
 void SocketTraceConnector::AcceptCloseConnEvent(conn_info_t conn_info) {
-  const uint64_t stream_id = GetStreamId(conn_info.tgid, conn_info.conn_id);
+  const uint64_t stream_id =
+      GetStreamId(conn_info.tgid, conn_info.fd, conn_info.tgid_fd_generation);
   DCHECK(stream_id != 0) << "Stream ID cannot be 0, tgid must be wrong";
 
   // Need to adjust the clocks to convert to real time.

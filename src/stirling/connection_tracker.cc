@@ -11,7 +11,8 @@ namespace stirling {
 void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
   LOG_IF(ERROR, conn_.tgid != 0) << "Clobbering existing ConnOpenEvent.";
   LOG_IF(WARNING, death_countdown_ >= 0) << absl::StrFormat(
-      "Did not expect to receive Open event after Close [conn_id=%d].", conn_info.conn_id);
+      "Did not expect to receive Open event after Close [PID=%d, FD=%d, generation=%d].",
+      conn_info.tgid, conn_info.fd, conn_info.tgid_fd_generation);
 
   UpdateTimestamps(conn_info.timestamp_ns);
   SetTrafficClass(conn_info.traffic_class);
@@ -43,7 +44,8 @@ void ConnectionTracker::AddConnCloseEvent(conn_info_t conn_info) {
 
 void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
   LOG_IF(WARNING, death_countdown_ >= 0) << absl::StrFormat(
-      "Did not expect to receive Data event after Close [conn_id=%d].", event.attr.conn_id);
+      "Did not expect to receive Data event after Close [PID=%d, FD=%d, generation=%d].",
+      event.attr.tgid, event.attr.fd, event.attr.tgid_fd_generation);
 
   UpdateTimestamps(event.attr.timestamp_ns);
   SetTrafficClass(event.attr.traffic_class);

@@ -64,18 +64,14 @@ BPF_HASH(active_write_info_map, u64, struct data_info_t);
 // Key is {tgid, pid}.
 BPF_HASH(active_read_info_map, u64, struct data_info_t);
 
-// TODO(yzhao): Change to use tgid+fd as the key.
-// Map from process to the next available connection ID.
-// Key is tgid
-BPF_HASH(proc_conn_map, u32, u32);
+// Map from TGID, FD pair to a unique identifier (generation) of that pair.
+// Key is {tgid, fd}.
+BPF_HASH(proc_conn_map, u64, u32);
 
-static inline __attribute__((__always_inline__)) uint32_t get_conn_id(u32 tgid) {
-  u32 conn_id = 0;
-  u32* curr_conn_id = proc_conn_map.lookup_or_init(&tgid, &conn_id);
-  if (curr_conn_id != NULL) {
-    conn_id = (*curr_conn_id)++;
-  }
-  return conn_id;
+static inline __attribute__((__always_inline__)) uint32_t get_tgid_fd_generation(u64 tgid_fd) {
+  u32 init_tgid_fd_generation = 0;
+  u32* tgid_fd_generation = proc_conn_map.lookup_or_init(&tgid_fd, &init_tgid_fd_generation);
+  return (*tgid_fd_generation)++;
 }
 
 static inline __attribute__((__always_inline__)) uint64_t get_control(u32 protocol) {
@@ -232,7 +228,7 @@ static inline __attribute__((__always_inline__)) struct conn_info_t* get_conn_in
   // Use timestamp being zero to detect that a new conn_info was initialized.
   if (conn_info->timestamp_ns == 0) {
     // If lookup_or_init initialized a new conn_info, we need to set some fields.
-    conn_info->conn_id = get_conn_id(tgid);
+    conn_info->tgid_fd_generation = get_tgid_fd_generation(tgid_fd);
     conn_info->tgid = tgid;
     conn_info->fd = fd;
 
@@ -265,11 +261,13 @@ static inline __attribute__((__always_inline__)) void update_traffic_class(
  ***********************************************************/
 
 static void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd, struct sockaddr_in6 addr) {
+  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+
   struct conn_info_t conn_info;
   memset(&conn_info, 0, sizeof(struct conn_info_t));
   conn_info.timestamp_ns = bpf_ktime_get_ns();
   conn_info.addr = addr;
-  conn_info.conn_id = get_conn_id(tgid);
+  conn_info.tgid_fd_generation = get_tgid_fd_generation(tgid_fd);
   conn_info.traffic_class.protocol = kProtocolUnknown;
   conn_info.traffic_class.role = kRoleUnknown;
   conn_info.wr_seq_num = 0;
@@ -277,8 +275,6 @@ static void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd, struct sockad
   conn_info.tgid = tgid;
   conn_info.fd = fd;
 
-  // Prepend TGID to make the FD unique across processes.
-  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
   conn_info_map.update(&tgid_fd, &conn_info);
   socket_open_conns.perf_submit(ctx, &conn_info, sizeof(struct conn_info_t));
 }
@@ -444,13 +440,14 @@ static int probe_ret_write_send(struct pt_regs* ctx, enum EventType event_type) 
   if (event == NULL) {
     goto done;
   }
-  event->attr.conn_id = conn_info->conn_id;
+  event->attr.tgid_fd_generation = conn_info->tgid_fd_generation;
   // Increment sequence number after copying so the index is 0-based.
   event->attr.seq_num = conn_info->wr_seq_num;
   ++conn_info->wr_seq_num;
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
+  event->attr.fd = write_info->fd;
   event->attr.traffic_class = conn_info->traffic_class;
 
   const uint32_t buf_size = bytes_written < sizeof(event->msg) ? bytes_written : sizeof(event->msg);
@@ -546,12 +543,13 @@ static int probe_ret_read_recv(struct pt_regs* ctx, enum EventType event_type) {
     goto done;
   }
 
-  event->attr.conn_id = conn_info->conn_id;
+  event->attr.tgid_fd_generation = conn_info->tgid_fd_generation;
   event->attr.seq_num = conn_info->rd_seq_num;
   ++conn_info->rd_seq_num;
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.tgid = id >> 32;
+  event->attr.fd = read_info->fd;
   event->attr.traffic_class = conn_info->traffic_class;
 
   const uint32_t buf_size = bytes_read < sizeof(event->msg) ? bytes_read : sizeof(event->msg);
