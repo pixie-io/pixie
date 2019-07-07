@@ -53,3 +53,9 @@ template '/opt/pixielabs/bin/tot' do
   mode '0755'
   action :create
 end
+
+remote_file '/opt/pixielabs/bin/kustomize' do
+  source node['kustomize']['download_path']
+  mode 0755
+  checksum node['kustomize']['sha256']
+end
