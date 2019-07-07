@@ -329,16 +329,7 @@ void SocketTraceConnector::ConsumeMessage(TraceRecord<TMessageType> record,
 
 template <>
 bool SocketTraceConnector::SelectMessage(const TraceRecord<HTTPMessage>& record) {
-  // Some of this function is currently a placeholder for the demo.
-  // TODO(oazizi/yzhao): update this function further.
-
   const HTTPMessage& message = record.resp_message;
-
-  // Rule: Exclude any HTTP requests.
-  // TODO(oazizi): Think about how requests should be handled by this function.
-  if (message.type == HTTPEventType::kHTTPRequest) {
-    return false;
-  }
 
   // Rule: Exclude anything that doesn't specify its Content-Type.
   auto content_type_iter = message.http_headers.find(http_headers::kContentType);
