@@ -235,6 +235,10 @@ static inline __attribute__((__always_inline__)) struct conn_info_t* get_conn_in
     conn_info->conn_id = get_conn_id(tgid);
     conn_info->tgid = tgid;
     conn_info->fd = fd;
+
+    // Unknown accept()/connect(), so no known timestamp either.
+    // But have to change timestamp, so set to 1ns.
+    conn_info->timestamp_ns = 1;
   }
   return conn_info;
 }
