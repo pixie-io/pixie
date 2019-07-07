@@ -1,4 +1,4 @@
-#include "src/carnot/compiler/ir_relation_handler.h"
+#include "src/carnot/compiler/analyzer.h"
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/shared/types/proto/types.pb.h"
@@ -7,9 +7,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-IRRelationHandler::IRRelationHandler(CompilerState* compiler_state) {
-  compiler_state_ = compiler_state;
-}
+Analyzer::Analyzer(CompilerState* compiler_state) { compiler_state_ = compiler_state; }
 /**
  * @brief Iterates through all of the IR columns and makes sure
  * that they are read to be transposed into the logical plan nodes.
@@ -17,7 +15,7 @@ IRRelationHandler::IRRelationHandler(CompilerState* compiler_state) {
  * @param ir_graph
  * @return Status
  */
-std::vector<Status> IRRelationHandler::VerifyIRColumnsReady(IR* ir_graph) {
+std::vector<Status> Analyzer::VerifyIRColumnsReady(IR* ir_graph) {
   std::vector<Status> exprs;
   for (auto& i : ir_graph->dag().TopologicalSort()) {
     auto node = ir_graph->Get(i);
@@ -32,9 +30,8 @@ std::vector<Status> IRRelationHandler::VerifyIRColumnsReady(IR* ir_graph) {
   return exprs;
 }
 
-Status IRRelationHandler::HasExpectedColumns(
-    const std::unordered_set<std::string>& expected_columns,
-    const table_store::schema::Relation& parent_relation) {
+Status Analyzer::HasExpectedColumns(const std::unordered_set<std::string>& expected_columns,
+                                    const table_store::schema::Relation& parent_relation) {
   std::vector<std::string> missing_cols;
   for (auto& c : expected_columns) {
     if (!parent_relation.HasColumn(c)) {
@@ -48,7 +45,7 @@ Status IRRelationHandler::HasExpectedColumns(
   return Status::OK();
 }
 
-StatusOr<types::DataType> IRRelationHandler::EvaluateColExpr(
+StatusOr<types::DataType> Analyzer::EvaluateColExpr(
     ColumnIR* expr, const table_store::schema::Relation& parent_rel) {
   // Update the column properties from the parent_rel
   if (!parent_rel.HasColumn(expr->col_name())) {
@@ -60,7 +57,7 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateColExpr(
   return data_type;
 }
 
-StatusOr<types::DataType> IRRelationHandler::EvaluateFuncExpr(
+StatusOr<types::DataType> Analyzer::EvaluateFuncExpr(
     FuncIR* expr, const table_store::schema::Relation& parent_rel, bool is_map) {
   // Evaluate the args
   std::vector<types::DataType> args_types;
@@ -85,7 +82,7 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateFuncExpr(
   return data_type;
 }
 
-StatusOr<types::DataType> IRRelationHandler::EvaluateExpression(
+StatusOr<types::DataType> Analyzer::EvaluateExpression(
     IRNode* expr, const table_store::schema::Relation& parent_rel, bool is_map) {
   types::DataType data_type;
   switch (expr->type()) {
@@ -129,7 +126,7 @@ StatusOr<types::DataType> IRRelationHandler::EvaluateExpression(
 }
 // Get the types of the children
 // Check the registry for function names
-StatusOr<table_store::schema::Relation> IRRelationHandler::BlockingAggHandler(
+StatusOr<table_store::schema::Relation> Analyzer::BlockingAggHandler(
     BlockingAggIR* agg_node, table_store::schema::Relation parent_rel) {
   LambdaIR* agg_func = agg_node->agg_func();
 
@@ -186,7 +183,7 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::BlockingAggHandler(
   return agg_rel;
 }
 
-StatusOr<table_store::schema::Relation> IRRelationHandler::MapHandler(
+StatusOr<table_store::schema::Relation> Analyzer::MapHandler(
     MapIR* map_node, table_store::schema::Relation parent_rel) {
   LambdaIR* lambda_func = map_node->lambda_func();
 
@@ -208,7 +205,7 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::MapHandler(
   return map_rel;
 }
 
-StatusOr<table_store::schema::Relation> IRRelationHandler::FilterHandler(
+StatusOr<table_store::schema::Relation> Analyzer::FilterHandler(
     FilterIR* filter_node, table_store::schema::Relation parent_rel) {
   LambdaIR* lambda_func = filter_node->filter_func();
 
@@ -227,19 +224,19 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::FilterHandler(
   return parent_rel;
 }
 
-StatusOr<table_store::schema::Relation> IRRelationHandler::LimitHandler(
+StatusOr<table_store::schema::Relation> Analyzer::LimitHandler(
     LimitIR*, table_store::schema::Relation parent_rel) {
   return parent_rel;
 }
 
-StatusOr<table_store::schema::Relation> IRRelationHandler::SinkHandler(
+StatusOr<table_store::schema::Relation> Analyzer::SinkHandler(
     MemorySinkIR*, table_store::schema::Relation parent_rel) {
   return parent_rel;
 }
 
-StatusOr<IntIR*> IRRelationHandler::EvaluateCompilerFunction(const std::string& name,
-                                                             std::vector<IntIR*> evaled_args,
-                                                             IRNode* parent_node) {
+StatusOr<IntIR*> Analyzer::EvaluateCompilerFunction(const std::string& name,
+                                                    std::vector<IntIR*> evaled_args,
+                                                    IRNode* parent_node) {
   if (evaled_args.size() != 2) {
     return parent_node->CreateIRNodeError("Expected 2 argument to $0 call, got $1.", name,
                                           evaled_args.size());
@@ -265,7 +262,7 @@ StatusOr<IntIR*> IRRelationHandler::EvaluateCompilerFunction(const std::string& 
   return ir_result;
 }
 
-StatusOr<IntIR*> IRRelationHandler::EvaluateCompilerExpression(IRNode* node) {
+StatusOr<IntIR*> Analyzer::EvaluateCompilerExpression(IRNode* node) {
   if (node->type() == IRNodeType::FuncType) {
     auto func_node = static_cast<FuncIR*>(node);
     std::vector<IntIR*> evaled_args;
@@ -292,7 +289,7 @@ StatusOr<IntIR*> IRRelationHandler::EvaluateCompilerExpression(IRNode* node) {
                                  node->type_string());
 }
 
-StatusOr<table_store::schema::Relation> IRRelationHandler::RangeHandler(
+StatusOr<table_store::schema::Relation> Analyzer::RangeHandler(
     RangeIR* range_ir, table_store::schema::Relation parent_rel) {
   PL_ASSIGN_OR_RETURN(IntIR * new_start_repr, EvaluateCompilerExpression(range_ir->start_repr()));
   PL_ASSIGN_OR_RETURN(IntIR * new_stop_repr, EvaluateCompilerExpression(range_ir->stop_repr()));
@@ -300,7 +297,7 @@ StatusOr<table_store::schema::Relation> IRRelationHandler::RangeHandler(
   return parent_rel;
 }
 
-Status IRRelationHandler::RelationUpdate(OperatorIR* node) {
+Status Analyzer::RelationUpdate(OperatorIR* node) {
   if (!node->HasParent()) {
     return node->CreateIRNodeError(
         "The $0 node (id=$1) has no parent. This means that the relation was not initialized "
@@ -350,8 +347,7 @@ Status IRRelationHandler::RelationUpdate(OperatorIR* node) {
   return node->SetRelation(rel);
 }
 
-StatusOr<std::vector<std::string>> IRRelationHandler::GetColumnNames(
-    std::vector<IRNode*> select_children) {
+StatusOr<std::vector<std::string>> Analyzer::GetColumnNames(std::vector<IRNode*> select_children) {
   std::vector<std::string> columns;
   for (size_t idx = 0; idx < select_children.size(); idx++) {
     IRNode* col_string_node = select_children[idx];
@@ -365,7 +361,7 @@ StatusOr<std::vector<std::string>> IRRelationHandler::GetColumnNames(
   return columns;
 }
 
-Status IRRelationHandler::SetSourceRelation(MemorySourceIR* mem_node) {
+Status Analyzer::SetSourceRelation(MemorySourceIR* mem_node) {
   ListIR* select = mem_node->select();
   auto table_str = mem_node->table_name();
   // get the table_str from the relation map
@@ -388,7 +384,7 @@ Status IRRelationHandler::SetSourceRelation(MemorySourceIR* mem_node) {
   return mem_node->SetRelation(select_relation);
 }
 
-StatusOr<std::vector<ColumnIR*>> IRRelationHandler::GetColumnsFromRelation(
+StatusOr<std::vector<ColumnIR*>> Analyzer::GetColumnsFromRelation(
     IRNode* node, std::vector<std::string> col_names,
     const table_store::schema::Relation& relation) {
   auto graph = node->graph_ptr();
@@ -405,7 +401,7 @@ StatusOr<std::vector<ColumnIR*>> IRRelationHandler::GetColumnsFromRelation(
   return result;
 }
 
-Status IRRelationHandler::SetAllSourceRelations(IR* ir_graph) {
+Status Analyzer::SetAllSourceRelations(IR* ir_graph) {
   for (auto& i : ir_graph->dag().TopologicalSort()) {
     auto node = ir_graph->Get(i);
     if (node->is_source()) {
@@ -415,7 +411,7 @@ Status IRRelationHandler::SetAllSourceRelations(IR* ir_graph) {
   return Status::OK();
 }
 
-Status IRRelationHandler::UpdateRelationsAndCheckFunctions(IR* ir_graph) {
+Status Analyzer::UpdateRelationsAndCheckFunctions(IR* ir_graph) {
   // Get the source relations.
   PL_RETURN_IF_ERROR(SetAllSourceRelations(ir_graph));
   // Start the relation update at the sink nodes.

@@ -8,9 +8,9 @@
 
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/compiler/analyzer.h"
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/compiler_state.h"
-#include "src/carnot/compiler/ir_relation_handler.h"
 #include "src/carnot/compiler/test_utils.h"
 
 namespace pl {
@@ -108,7 +108,7 @@ class RelationHandlerTest : public ::testing::Test {
     return result;
   }
   Status HandleRelation(std::shared_ptr<IR> ir_graph) {
-    auto relation_handler = IRRelationHandler(compiler_state_.get());
+    auto relation_handler = Analyzer(compiler_state_.get());
     return relation_handler.UpdateRelationsAndCheckFunctions(ir_graph.get());
   }
   bool RelationEquality(const table_store::schema::Relation& r1,

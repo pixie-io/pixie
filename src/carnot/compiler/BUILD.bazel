@@ -145,8 +145,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "ir_relation_handler_test",
-    srcs = ["ir_relation_handler_test.cc"],
+    name = "analyzer_test",
+    srcs = ["analyzer_test.cc"],
     deps = [":cc_library"],
 )
 

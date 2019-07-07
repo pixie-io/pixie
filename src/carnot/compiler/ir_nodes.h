@@ -477,7 +477,7 @@ class MemorySourceIR : public OperatorIR {
   std::vector<std::string> ArgKeys() override { return {"table", "select"}; }
 
   std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
-    // TODO(philkuz) allow default select value that selects all.
+    // TODO(philkuz) allow default select value for select all.
     return std::unordered_map<std::string, IRNode*>{{"select", nullptr}};
   }
   Status InitImpl(const ArgMap& args) override;

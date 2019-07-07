@@ -14,14 +14,14 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-class IRRelationHandler {
+class Analyzer {
  public:
-  IRRelationHandler() = delete;
-  explicit IRRelationHandler(CompilerState* compiler_state);
+  Analyzer() = delete;
+  explicit Analyzer(CompilerState* compiler_state);
   /**
-   * @brief Wrapper for all of the update functionality of the IRRelationHandler.
+   * @brief Wrapper for all of the update functionality of the Analyzer.
 
-   * @param ir_graph -> ptr to ir memorythat is managed by the caller of the IRRelationHandler. Will
+   * @param ir_graph -> ptr to ir memorythat is managed by the caller of the Analyzer. Will
    * be updat by this constructor.
    * @return Status
    */

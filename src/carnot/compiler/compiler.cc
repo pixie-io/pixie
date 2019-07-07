@@ -8,11 +8,11 @@
 #include <pypa/ast/tree_walker.hh>
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/compiler/analyzer.h"
 #include "src/carnot/compiler/ast_visitor.h"
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/ir_nodes.h"
-#include "src/carnot/compiler/ir_relation_handler.h"
 #include "src/carnot/compiler/ir_verifier.h"
 #include "src/carnot/compiler/optimize_ir.h"
 #include "src/carnot/compiler/string_reader.h"
@@ -35,8 +35,8 @@ Status Compiler::VerifyIRConnections(const IR& ir) {
   return Status::OK();
 }
 Status Compiler::UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_state) {
-  auto relation_handler = IRRelationHandler(compiler_state);
-  return relation_handler.UpdateRelationsAndCheckFunctions(ir);
+  auto analyzer = Analyzer(compiler_state);
+  return analyzer.UpdateRelationsAndCheckFunctions(ir);
 }
 
 StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
