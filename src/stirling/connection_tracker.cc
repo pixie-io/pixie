@@ -9,32 +9,31 @@ namespace pl {
 namespace stirling {
 
 void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
-  LOG_IF(ERROR, conn_.tgid != 0) << "Clobbering existing ConnOpenEvent.";
+  LOG_IF(ERROR, open_info_.timestamp_ns != 0) << "Clobbering existing ConnOpenEvent.";
   LOG_IF(WARNING, death_countdown_ >= 0) << absl::StrFormat(
       "Did not expect to receive Open event after Close [PID=%d, FD=%d, generation=%d].",
       conn_info.tgid, conn_info.fd, conn_info.tgid_fd_generation);
 
   UpdateTimestamps(conn_info.timestamp_ns);
   SetTrafficClass(conn_info.traffic_class);
+  SetPID(conn_info.tgid, conn_info.fd, conn_info.tgid_fd_generation);
 
-  conn_.timestamp_ns = conn_info.timestamp_ns;
-  conn_.tgid = conn_info.tgid;
-  conn_.fd = conn_info.fd;
+  open_info_.timestamp_ns = conn_info.timestamp_ns;
   auto ip_endpoint_or = ParseSockAddr(conn_info);
   if (ip_endpoint_or.ok()) {
-    conn_.remote_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
-    conn_.remote_port = ip_endpoint_or.ValueOrDie().port;
+    open_info_.remote_addr = std::move(ip_endpoint_or.ValueOrDie().ip);
+    open_info_.remote_port = ip_endpoint_or.ValueOrDie().port;
   } else {
     LOG(WARNING) << "Could not parse IP address.";
   }
 }
 
 void ConnectionTracker::AddConnCloseEvent(conn_info_t conn_info) {
-  LOG_IF(ERROR, close_info_.closed) << "Clobbering existing ConnCloseEvent";
+  LOG_IF(ERROR, close_info_.timestamp_ns != 0) << "Clobbering existing ConnCloseEvent";
 
   UpdateTimestamps(conn_info.timestamp_ns);
+  SetPID(conn_info.tgid, conn_info.fd, conn_info.tgid_fd_generation);
 
-  close_info_.closed = true;
   close_info_.timestamp_ns = conn_info.timestamp_ns;
   close_info_.send_seq_num = conn_info.wr_seq_num;
   close_info_.recv_seq_num = conn_info.rd_seq_num;
@@ -48,6 +47,7 @@ void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
       event.attr.tgid, event.attr.fd, event.attr.tgid_fd_generation);
 
   UpdateTimestamps(event.attr.timestamp_ns);
+  SetPID(event.attr.tgid, event.attr.fd, event.attr.tgid_fd_generation);
   SetTrafficClass(event.attr.traffic_class);
 
   const uint64_t seq_num = event.attr.seq_num;
@@ -72,8 +72,18 @@ void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
 }
 
 bool ConnectionTracker::AllEventsReceived() const {
-  return (close_info_.closed) && (num_send_events_ == close_info_.send_seq_num) &&
+  return (close_info_.timestamp_ns != 0) && (num_send_events_ == close_info_.send_seq_num) &&
          (num_recv_events_ == close_info_.recv_seq_num);
+}
+
+void ConnectionTracker::SetPID(uint32_t tgid, uint32_t fd, uint32_t generation) {
+  DCHECK(tgid_ == 0 || tgid_ == tgid);
+  DCHECK(fd_ == 0 || fd_ == fd);
+  DCHECK(generation_ == 0 || generation_ == generation);
+
+  tgid_ = tgid;
+  fd_ = fd;
+  generation_ = generation;
 }
 
 void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {

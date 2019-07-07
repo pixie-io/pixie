@@ -282,7 +282,7 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
     req_data->template ExtractMessages<TMessageType>(MessageType::kRequests);
     auto& req_messages = std::get<std::deque<TMessageType>>(req_data->messages);
 
-    ProcessMessages<TMessageType>(tracker.conn(), &req_messages, &resp_messages, record_batch);
+    ProcessMessages<TMessageType>(tracker, &req_messages, &resp_messages, record_batch);
 
     tracker.IterationTick();
 
@@ -296,18 +296,19 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
 }
 
 template <class TMessageType>
-void SocketTraceConnector::ProcessMessages(const SocketConnection& conn,
+void SocketTraceConnector::ProcessMessages(const ConnectionTracker& conn_tracker,
                                            std::deque<TMessageType>* req_messages,
                                            std::deque<TMessageType>* resp_messages,
                                            types::ColumnWrapperRecordBatch* record_batch) {
   // TODO(oazizi): If we stick with this approach, resp_data could be converted back to vector.
   for (TMessageType& msg : *resp_messages) {
     if (!req_messages->empty()) {
-      TraceRecord<TMessageType> record{conn, std::move(req_messages->front()), std::move(msg)};
+      TraceRecord<TMessageType> record{&conn_tracker, std::move(req_messages->front()),
+                                       std::move(msg)};
       req_messages->pop_front();
       ConsumeMessage(std::move(record), record_batch);
     } else {
-      TraceRecord<TMessageType> record{conn, HTTPMessage(), std::move(msg)};
+      TraceRecord<TMessageType> record{&conn_tracker, HTTPMessage(), std::move(msg)};
       ConsumeMessage(std::move(record), record_batch);
     }
   }
@@ -380,22 +381,22 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record,
                                          types::ColumnWrapperRecordBatch* record_batch) {
   CHECK_EQ(kHTTPTable.elements().size(), record_batch->size());
 
-  const SocketConnection& conn = record.conn;
+  const ConnectionTracker& conn_tracker = *record.tracker;
   HTTPMessage& req_message = record.req_message;
   HTTPMessage& resp_message = record.resp_message;
 
   // Check for positive latencies.
-  DCHECK_GE(resp_message.timestamp_ns, conn.timestamp_ns);
+  DCHECK_GE(resp_message.timestamp_ns, req_message.timestamp_ns);
 
   RecordBuilder<&kHTTPTable> r(record_batch);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
-  r.Append<r.ColIndex("tgid")>(conn.tgid);
-  r.Append<r.ColIndex("fd")>(conn.fd);
+  r.Append<r.ColIndex("tgid")>(conn_tracker.pid());
+  r.Append<r.ColIndex("fd")>(conn_tracker.fd());
   r.Append<r.ColIndex("event_type")>(HTTPEventTypeToString(resp_message.type));
   // Note that there is a string copy here,
   // But std::move is not allowed because we re-use conn object.
-  r.Append<r.ColIndex("remote_addr")>(std::string(conn.remote_addr));
-  r.Append<r.ColIndex("remote_port")>(conn.remote_port);
+  r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
   r.Append<r.ColIndex("http_major_version")>(1);
   r.Append<r.ColIndex("http_minor_version")>(resp_message.http_minor_version);
   r.Append<r.ColIndex("http_headers")>(
@@ -406,8 +407,8 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record,
   r.Append<r.ColIndex("http_resp_status")>(resp_message.http_resp_status);
   r.Append<r.ColIndex("http_resp_message")>(std::move(resp_message.http_resp_message));
   r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.http_msg_body));
-  r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns - conn.timestamp_ns);
-  // TODO(oazizi): Change to req timestamp when it exists.
+  r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns -
+                                               req_message.timestamp_ns);
 }
 
 template <>
@@ -415,19 +416,19 @@ void SocketTraceConnector::AppendMessage(TraceRecord<http2::GRPCMessage> record,
                                          types::ColumnWrapperRecordBatch* record_batch) {
   CHECK_EQ(kHTTPTable.elements().size(), record_batch->size());
 
-  const SocketConnection& conn = record.conn;
+  const ConnectionTracker& conn_tracker = *record.tracker;
   http2::GRPCMessage& req_message = record.req_message;
   http2::GRPCMessage& resp_message = record.resp_message;
 
-  DCHECK_GE(resp_message.timestamp_ns, conn.timestamp_ns);
+  DCHECK_GE(resp_message.timestamp_ns, req_message.timestamp_ns);
 
   RecordBuilder<&kHTTPTable> r(record_batch);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
-  r.Append<r.ColIndex("tgid")>(conn.tgid);
-  r.Append<r.ColIndex("fd")>(conn.fd);
+  r.Append<r.ColIndex("tgid")>(conn_tracker.pid());
+  r.Append<r.ColIndex("fd")>(conn_tracker.fd());
   r.Append<r.ColIndex("event_type")>("mixed");
-  r.Append<r.ColIndex("remote_addr")>(std::string(conn.remote_addr));
-  r.Append<r.ColIndex("remote_port")>(conn.remote_port);
+  r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
   r.Append<r.ColIndex("http_major_version")>(2);
   // HTTP2 does not define minor version.
   r.Append<r.ColIndex("http_minor_version")>(0);

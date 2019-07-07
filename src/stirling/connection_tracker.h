@@ -17,16 +17,13 @@ namespace stirling {
  * @brief Describes a connection from user space. This corresponds to struct conn_info_t in
  * src/stirling/bcc_bpf/socket_trace.h.
  */
-struct SocketConnection {
+struct SocketOpen {
   uint64_t timestamp_ns = 0;
-  uint32_t tgid = 0;
-  uint32_t fd = -1;
   std::string remote_addr = "-";
   int remote_port = -1;
 };
 
 struct SocketClose {
-  bool closed = false;
   uint64_t timestamp_ns = 0;
   // The send/write sequence number at time of close.
   uint64_t send_seq_num = 0;
@@ -121,11 +118,39 @@ class ConnectionTracker {
   ReqRespRole role() const { return traffic_class_.role; }
 
   /**
+   * Get PID (TGID) of the connection.
+   *
+   * @return PID.
+   */
+  uint64_t pid() const { return tgid_; }
+
+  /**
+   * Get FD of the connection.
+   *
+   * @return FD.
+   */
+  uint64_t fd() const { return fd_; }
+
+  /**
+   * Get remote IP addr of the connection.
+   *
+   * @return IP.
+   */
+  std::string_view remote_addr() const { return open_info_.remote_addr; }
+
+  /**
+   * Get remote IP addr of the connection.
+   *
+   * @return IP.
+   */
+  int remote_port() const { return open_info_.remote_port; }
+
+  /**
    * @brief Get the connection information (e.g. remote IP, port, PID, etc.) for this connection.
    *
    * @return connection information.
    */
-  const SocketConnection& conn() const { return conn_; }
+  const SocketOpen& conn() const { return open_info_; }
 
   /**
    * @brief Get the DataStream of sent messages for this connection.
@@ -197,12 +222,17 @@ class ConnectionTracker {
   static constexpr uint64_t kDeathCountdownIters = 2;
 
  private:
+  void SetPID(uint32_t tgid, uint32_t fd, uint32_t generation);
+  void SetTrafficClass(struct traffic_class_t traffic_class);
   void UpdateTimestamps(uint64_t bpf_timestamp);
   void MarkForDeath();
 
+  uint32_t tgid_ = 0;
+  uint32_t fd_ = 0;
+  uint32_t generation_ = 0;
   traffic_class_t traffic_class_{kProtocolUnknown, kRoleUnknown};
 
-  SocketConnection conn_;
+  SocketOpen open_info_;
 
   // The data collected by the stream, one per direction.
   DataStream send_data_;
@@ -226,8 +256,6 @@ class ConnectionTracker {
 
   // Iterations before the tracker can be killed.
   int64_t death_countdown_ = -1;
-
-  void SetTrafficClass(struct traffic_class_t traffic_class);
 
   // TODO(oazizi): Could record a timestamp, so we could destroy old EventStreams completely.
 };

@@ -43,7 +43,7 @@ enum class HTTPContentType {
 
 template <class TMessageType>
 struct TraceRecord {
-  const SocketConnection& conn;
+  const ConnectionTracker* tracker;
   TMessageType req_message;
   TMessageType resp_message;
 };
@@ -247,7 +247,8 @@ class SocketTraceConnector : public SourceConnector {
   void TransferStreams(TrafficProtocol protocol, types::ColumnWrapperRecordBatch* record_batch);
 
   template <class TMessageType>
-  void ProcessMessages(const SocketConnection& conn, std::deque<TMessageType>* req_messages,
+  void ProcessMessages(const ConnectionTracker& conn_tracker,
+                       std::deque<TMessageType>* req_messages,
                        std::deque<TMessageType>* resp_messages,
                        types::ColumnWrapperRecordBatch* record_batch);
 
