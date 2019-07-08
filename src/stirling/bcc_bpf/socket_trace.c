@@ -206,9 +206,11 @@ static struct traffic_class_t infer_traffic(enum EventType event_type, const cha
       case kEventTypeSyscallSendEvent:
       case kEventTypeSyscallWriteEvent:
         traffic_class.role = kRoleRequestor;
+        break;
       case kEventTypeSyscallRecvEvent:
       case kEventTypeSyscallReadEvent:
         traffic_class.role = kRoleResponder;
+        break;
       default:
         break;
     }
