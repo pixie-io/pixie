@@ -45,11 +45,24 @@ struct traffic_class_t {
   enum ReqRespRole role;
 };
 
+struct conn_id_t {
+  // Comes from the process from which this is captured.
+  // See https://stackoverflow.com/a/9306150 for details.
+  uint32_t tgid;
+  // The file descriptor to the opened network connection.
+  uint32_t fd;
+  // Generation number of the FD (increments on each FD reuse in the TGID).
+  uint32_t generation;
+};
+
 // This struct contains information collected when a connection is established,
 // via an accept() syscall.
 // This struct must be aligned, because BCC cannot currently handle unaligned structs.
 struct conn_info_t {
   uint64_t timestamp_ns;
+  // Connection identifier (PID, FD, etc.).
+  struct conn_id_t conn_id;
+  // IP address of the remote endpoint.
   struct sockaddr_in6 addr;
   // The protocol and message type of traffic on the connection (HTTP/Req, HTTP/Resp, MySQL/Req,
   // etc.).
@@ -60,13 +73,6 @@ struct conn_info_t {
   // A 0-based number for the next read event on this connection.
   // This number is incremented each time a new read event is recorded.
   uint64_t rd_seq_num;
-  // Comes from the process from which this is captured.
-  // See https://stackoverflow.com/a/9306150 for details.
-  uint32_t tgid;
-  // The file descriptor to the opened network connection.
-  uint32_t fd;
-  // Generation number of the FD (increments on each FD reuse in the TGID).
-  uint32_t tgid_fd_generation;
 };
 
 // This is the maximum value for the msg size.
@@ -78,18 +84,12 @@ struct socket_data_event_t {
   // We split attributes into a separate struct, because BPF gets upset if you do lots of
   // size arithmetic. This makes it so that it's attributes followed by message.
   struct attr_t {
-    // TODO(chengruizhe): Remove protocol once it's specified externally by metadata
-    // The protocol on the connection (HTTP, MySQL, etc.), and the server-client role.
-    struct traffic_class_t traffic_class;
     // The time stamp as this is captured by BPF program.
     uint64_t timestamp_ns;
-    // Comes from the process from which this is captured.
-    // See https://stackoverflow.com/a/9306150 for details.
-    uint32_t tgid;
-    // The file descriptor of the socket.
-    uint32_t fd;
-    // Generation number of the FD (increments on each FD reuse in the TGID).
-    uint32_t tgid_fd_generation;
+    // Connection identifier (PID, FD, etc.).
+    struct conn_id_t conn_id;
+    // The protocol on the connection (HTTP, MySQL, etc.), and the server-client role.
+    struct traffic_class_t traffic_class;
     // The type of the actual data that the msg field encodes, which is used by the caller
     // to determine how to interpret the data.
     uint32_t event_type;

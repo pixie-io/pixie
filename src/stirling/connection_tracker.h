@@ -122,14 +122,14 @@ class ConnectionTracker {
    *
    * @return PID.
    */
-  uint64_t pid() const { return tgid_; }
+  uint64_t pid() const { return conn_id_.tgid; }
 
   /**
    * Get FD of the connection.
    *
    * @return FD.
    */
-  uint64_t fd() const { return fd_; }
+  uint64_t fd() const { return conn_id_.fd; }
 
   /**
    * Get remote IP addr of the connection.
@@ -222,14 +222,14 @@ class ConnectionTracker {
   static constexpr uint64_t kDeathCountdownIters = 2;
 
  private:
-  void SetPID(uint32_t tgid, uint32_t fd, uint32_t generation);
+  void SetPID(struct conn_id_t conn_id);
   void SetTrafficClass(struct traffic_class_t traffic_class);
   void UpdateTimestamps(uint64_t bpf_timestamp);
   void MarkForDeath();
 
-  uint32_t tgid_ = 0;
-  uint32_t fd_ = 0;
-  uint32_t generation_ = 0;
+  struct conn_id_t conn_id_ {
+    0, 0, 0
+  };
   traffic_class_t traffic_class_{kProtocolUnknown, kRoleUnknown};
 
   SocketOpen open_info_;

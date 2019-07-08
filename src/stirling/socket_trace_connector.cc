@@ -174,17 +174,16 @@ void SocketTraceConnector::HandleCloseProbeOutput(void* cb_cookie, void* data, i
 
 namespace {
 
-uint64_t GetStreamId(uint32_t tgid, uint32_t fd, uint32_t generation) {
+uint64_t GetStreamId(struct conn_id_t conn_id) {
   // 22 bits for PID, 22 bits for FD, 20 bits for generation
   // Don't worry, this will all change in next diff.
-  return (static_cast<uint64_t>(tgid) << 42) | (fd << 20) | generation;
+  return (static_cast<uint64_t>(conn_id.tgid) << 42) | (conn_id.fd << 20) | conn_id.generation;
 }
 
 }  // namespace
 
 void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
-  const uint64_t stream_id =
-      GetStreamId(event.attr.tgid, event.attr.fd, event.attr.tgid_fd_generation);
+  const uint64_t stream_id = GetStreamId(event.attr.conn_id);
   DCHECK(stream_id != 0) << "Stream ID cannot be 0, tgid must be wrong";
 
   // Need to adjust the clocks to convert to real time.
@@ -205,8 +204,7 @@ void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
 }
 
 void SocketTraceConnector::AcceptOpenConnEvent(conn_info_t conn_info) {
-  const uint64_t stream_id =
-      GetStreamId(conn_info.tgid, conn_info.fd, conn_info.tgid_fd_generation);
+  const uint64_t stream_id = GetStreamId(conn_info.conn_id);
   DCHECK(stream_id != 0) << "Stream ID cannot be 0, tgid must be wrong";
 
   // Need to adjust the clocks to convert to real time.
@@ -217,8 +215,7 @@ void SocketTraceConnector::AcceptOpenConnEvent(conn_info_t conn_info) {
 }
 
 void SocketTraceConnector::AcceptCloseConnEvent(conn_info_t conn_info) {
-  const uint64_t stream_id =
-      GetStreamId(conn_info.tgid, conn_info.fd, conn_info.tgid_fd_generation);
+  const uint64_t stream_id = GetStreamId(conn_info.conn_id);
   DCHECK(stream_id != 0) << "Stream ID cannot be 0, tgid must be wrong";
 
   // Need to adjust the clocks to convert to real time.
@@ -466,7 +463,7 @@ void SocketTraceConnector::TransferMySQLEvent(SocketDataEvent event,
 
   RecordBuilder<&kMySQLTable> r(record_batch);
   r.Append<r.ColIndex("time_")>(event.attr.timestamp_ns + ClockRealTimeOffset());
-  r.Append<r.ColIndex("tgid")>(event.attr.tgid);
+  r.Append<r.ColIndex("tgid")>(event.attr.conn_id.tgid);
   r.Append<r.ColIndex("fd")>(fd);
   r.Append<r.ColIndex("bpf_event")>(event.attr.event_type);
   r.Append<r.ColIndex("remote_addr")>(std::move(ip));

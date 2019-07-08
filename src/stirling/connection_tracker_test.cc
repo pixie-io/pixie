@@ -18,9 +18,9 @@ class ConnectionTrackerTest : public ::testing::Test {
     conn_info_t conn_info{};
     conn_info.addr.sin6_family = AF_INET;
     conn_info.timestamp_ns = ts_ns;
-    conn_info.tgid = kPID;
-    conn_info.fd = kFD;
-    conn_info.tgid_fd_generation = kPIDFDGeneration;
+    conn_info.conn_id.tgid = kPID;
+    conn_info.conn_id.fd = kFD;
+    conn_info.conn_id.generation = kPIDFDGeneration;
     conn_info.traffic_class.protocol = kProtocolHTTP;
     conn_info.traffic_class.role = kRoleRequestor;
     conn_info.rd_seq_num = 0;
@@ -48,9 +48,9 @@ class ConnectionTrackerTest : public ::testing::Test {
     event.attr.traffic_class.protocol = kProtocolHTTP;
     event.attr.traffic_class.role = kRoleRequestor;
     event.attr.timestamp_ns = ts_ns;
-    event.attr.tgid = kPID;
-    event.attr.fd = kFD;
-    event.attr.tgid_fd_generation = kPIDFDGeneration;
+    event.attr.conn_id.tgid = kPID;
+    event.attr.conn_id.fd = kFD;
+    event.attr.conn_id.generation = kPIDFDGeneration;
     event.attr.msg_size = msg.size();
     msg.copy(event.msg, msg.size());
     return SocketDataEvent(&event);
@@ -59,9 +59,9 @@ class ConnectionTrackerTest : public ::testing::Test {
   conn_info_t InitClose(uint64_t ts_ns) {
     conn_info_t conn_info{};
     conn_info.timestamp_ns = ts_ns;
-    conn_info.tgid = kPID;
-    conn_info.fd = kFD;
-    conn_info.tgid_fd_generation = kPIDFDGeneration;
+    conn_info.conn_id.tgid = kPID;
+    conn_info.conn_id.fd = kFD;
+    conn_info.conn_id.generation = kPIDFDGeneration;
     conn_info.rd_seq_num = recv_seq_num_;
     conn_info.wr_seq_num = send_seq_num_;
     return conn_info;

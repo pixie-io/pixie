@@ -228,9 +228,9 @@ static inline __attribute__((__always_inline__)) struct conn_info_t* get_conn_in
   // Use timestamp being zero to detect that a new conn_info was initialized.
   if (conn_info->timestamp_ns == 0) {
     // If lookup_or_init initialized a new conn_info, we need to set some fields.
-    conn_info->tgid_fd_generation = get_tgid_fd_generation(tgid_fd);
-    conn_info->tgid = tgid;
-    conn_info->fd = fd;
+    conn_info->conn_id.generation = get_tgid_fd_generation(tgid_fd);
+    conn_info->conn_id.tgid = tgid;
+    conn_info->conn_id.fd = fd;
 
     // Unknown accept()/connect(), so no known timestamp either.
     // But have to change timestamp, so set to 1ns.
@@ -267,13 +267,13 @@ static void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd, struct sockad
   memset(&conn_info, 0, sizeof(struct conn_info_t));
   conn_info.timestamp_ns = bpf_ktime_get_ns();
   conn_info.addr = addr;
-  conn_info.tgid_fd_generation = get_tgid_fd_generation(tgid_fd);
   conn_info.traffic_class.protocol = kProtocolUnknown;
   conn_info.traffic_class.role = kRoleUnknown;
   conn_info.wr_seq_num = 0;
   conn_info.rd_seq_num = 0;
-  conn_info.tgid = tgid;
-  conn_info.fd = fd;
+  conn_info.conn_id.tgid = tgid;
+  conn_info.conn_id.fd = fd;
+  conn_info.conn_id.generation = get_tgid_fd_generation(tgid_fd);
 
   conn_info_map.update(&tgid_fd, &conn_info);
   socket_open_conns.perf_submit(ctx, &conn_info, sizeof(struct conn_info_t));
@@ -440,14 +440,14 @@ static int probe_ret_write_send(struct pt_regs* ctx, enum EventType event_type) 
   if (event == NULL) {
     goto done;
   }
-  event->attr.tgid_fd_generation = conn_info->tgid_fd_generation;
   // Increment sequence number after copying so the index is 0-based.
   event->attr.seq_num = conn_info->wr_seq_num;
   ++conn_info->wr_seq_num;
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
-  event->attr.tgid = id >> 32;
-  event->attr.fd = write_info->fd;
+  event->attr.conn_id.tgid = tgid;
+  event->attr.conn_id.fd = write_info->fd;
+  event->attr.conn_id.generation = conn_info->conn_id.generation;
   event->attr.traffic_class = conn_info->traffic_class;
 
   const uint32_t buf_size = bytes_written < sizeof(event->msg) ? bytes_written : sizeof(event->msg);
@@ -543,13 +543,13 @@ static int probe_ret_read_recv(struct pt_regs* ctx, enum EventType event_type) {
     goto done;
   }
 
-  event->attr.tgid_fd_generation = conn_info->tgid_fd_generation;
   event->attr.seq_num = conn_info->rd_seq_num;
   ++conn_info->rd_seq_num;
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
-  event->attr.tgid = id >> 32;
-  event->attr.fd = read_info->fd;
+  event->attr.conn_id.tgid = tgid;
+  event->attr.conn_id.fd = read_info->fd;
+  event->attr.conn_id.generation = conn_info->conn_id.generation;
   event->attr.traffic_class = conn_info->traffic_class;
 
   const uint32_t buf_size = bytes_read < sizeof(event->msg) ? bytes_read : sizeof(event->msg);
