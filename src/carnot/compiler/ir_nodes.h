@@ -336,13 +336,42 @@ class LambdaIR : public IRNode {
  */
 class FuncIR : public IRNode {
  public:
+  // TODO(philkuz) Create a container for the opcodes and strings
+  // and implement the AST visitor code to properly set this.
+  enum Opcode {
+    non_op = -1,
+    mult,
+    sub,
+    add,
+    div,
+    eq,
+    neq,
+    lteq,
+    gteq,
+    lt,
+    gt,
+    logand,
+    logor,
+    mod,
+    number_of_ops
+  };
+  struct Op {
+    Opcode op_code;
+    std::string python_op;
+    std::string carnot_op_name;
+  };
+  static std::unordered_map<std::string, Op> op_map;
+
   FuncIR() = delete;
+  Opcode opcode() const { return op_.op_code; }
   explicit FuncIR(int64_t id) : IRNode(id, FuncType, false) {}
-  Status Init(std::string func_name, const std::vector<IRNode*>& args,
+  Status Init(Op op, std::string func_prefix, const std::vector<IRNode*>& args,
               const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  std::string func_name() const { return func_name_; }
+  std::string func_name() const {
+    return absl::Substitute("$0.$1", func_prefix_, op_.carnot_op_name);
+  }
   int64_t func_id() const { return func_id_; }
   void set_func_id(int64_t func_id) { func_id_ = func_id; }
   const std::vector<IRNode*>& args() { return args_; }
@@ -352,6 +381,8 @@ class FuncIR : public IRNode {
   bool IsOp() const override { return false; }
 
  private:
+  std::string func_prefix_;
+  Op op_;
   std::string func_name_;
   std::vector<IRNode*> args_;
   std::vector<types::DataType> args_types_;

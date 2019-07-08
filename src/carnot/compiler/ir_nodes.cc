@@ -606,11 +606,26 @@ std::string LambdaIR::DebugString(int64_t depth) const {
   return DebugStringFmt(depth, absl::StrFormat("%d:LambdaIR", id()), childMap);
 }
 
+std::unordered_map<std::string, FuncIR::Op> FuncIR::op_map{
+    {"*", {FuncIR::Opcode::mult, "*", "multiply"}},
+    {"+", {FuncIR::Opcode::add, "+", "add"}},
+    {"%", {FuncIR::Opcode::mod, "%", "modulo"}},
+    {"-", {FuncIR::Opcode::sub, "-", "subtract"}},
+    {"/", {FuncIR::Opcode::div, "/", "divide"}},
+    {">", {FuncIR::Opcode::gt, ">", "greaterThan"}},
+    {"<", {FuncIR::Opcode::lt, "<", "lessThan"}},
+    {"==", {FuncIR::Opcode::eq, "==", "equal"}},
+    {"!=", {FuncIR::Opcode::neq, "!=", "notEqual"}},
+    {"<=", {FuncIR::Opcode::lteq, "<=", "lessThanEqual"}},
+    {">=", {FuncIR::Opcode::gteq, ">=", "greaterThanEqual"}},
+    {"and", {FuncIR::Opcode::logand, "and", "logicalAnd"}},
+    {"or", {FuncIR::Opcode::logor, "or", "logicalOr"}}};
 bool FuncIR::HasLogicalRepr() const { return false; }
-Status FuncIR::Init(std::string func_name, const std::vector<IRNode*>& args,
+Status FuncIR::Init(Op op, std::string func_prefix, const std::vector<IRNode*>& args,
                     const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
-  func_name_ = func_name;
+  op_ = op;
+  func_prefix_ = func_prefix;
   args_ = args;
   for (auto a : args_) {
     if (a == nullptr) {

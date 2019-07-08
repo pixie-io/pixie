@@ -183,7 +183,7 @@ const char* kExpectedMapPb = R"(
     expressions {
       func {
         id: 1
-        name: "add"
+        name: "pl.add"
         args {
           constant {
             data_type: INT64
@@ -212,7 +212,8 @@ TEST(ToProto, map_ir) {
   col->ResolveColumn(4, types::INT64);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-  EXPECT_OK(func->Init("add", std::vector<IRNode*>({constant, col}), ast));
+  EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, "pl",
+                       std::vector<IRNode*>({constant, col}), ast));
   func->set_func_id(1);
   EXPECT_OK(lambda->Init({"col_name"}, func, ast));
   ArgMap amap({{"fn", lambda}});
@@ -269,7 +270,8 @@ TEST(ToProto, agg_ir) {
 
   auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(agg_func->Init("pl.mean", std::vector<IRNode*>({constant, col}), ast));
+  EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"}, "pl",
+                           std::vector<IRNode*>({constant, col}), ast));
   EXPECT_OK(agg_func_lambda->Init({"meaned_column"}, {{"mean", agg_func}}, ast));
 
   auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
@@ -305,7 +307,8 @@ class DebugStringFunctionality : public ::testing::Test {
     EXPECT_OK(col_node_->Init("test_col", ast));
 
     func_node_ = graph_->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(func_node_->Init("test_fn", {time_node_, col_node_}, ast));
+    EXPECT_OK(func_node_->Init({FuncIR::Opcode::non_op, "", "test_fn"}, "pl",
+                               {time_node_, col_node_}, ast));
 
     lambda_node_ = graph_->MakeNode<LambdaIR>().ValueOrDie();
     EXPECT_OK(lambda_node_->Init({"test_col"}, {{"time", func_node_}}, ast));

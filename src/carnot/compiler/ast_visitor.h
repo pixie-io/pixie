@@ -371,7 +371,7 @@ class ASTWalker {
    * @param parent_node
    * @return StatusOr<LambdaExprReturn>
    */
-  StatusOr<LambdaExprReturn> BuildLambdaFunc(const std::string& fn_name,
+  StatusOr<LambdaExprReturn> BuildLambdaFunc(const FuncIR::Op& op, const std::string& prefix,
                                              const std::vector<LambdaExprReturn>& children_ret_expr,
                                              const pypa::AstPtr& parent_node);
 
@@ -485,15 +485,14 @@ class ASTWalker {
                                      const pypa::AstArguments& arglist,
                                      const pypa::AstPtr& arglist_parent);
   /**
-   * @brief Returns the udf name from an op.
+   * @brief Returns the FuncIR::Op struct that corresponds to a python_op
+   * representation. This includes the operator code and the full carnot-udf name.
    *
-   * @param op: the op representation to get.
-   * @param compile_time: whether this is a compile time function or not,
+   * @param python_op: the string representation as found in the AST to query on.
    * @param node: the pointer to ast.
    * @return StatusOr<std::string>
    */
-  StatusOr<std::string> ExpandOpString(const std::string& op, const std::string& prefix,
-                                       pypa::AstPtr node);
+  StatusOr<FuncIR::Op> GetOp(const std::string& python_op, pypa::AstPtr node);
   /**
    * @brief Handler for Binary operations that are run at compile time, not runtime.
    *
