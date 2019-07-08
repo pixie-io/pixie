@@ -10,7 +10,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/system_config/system_config.h"
-#include "src/stirling/cgroups/proc_parser.h"
+#include "src/shared/proc/proc.h"
 
 namespace pl {
 namespace stirling {

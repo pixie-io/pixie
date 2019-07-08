@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "src/stirling/cgroups/proc_parser.h"
+#include "src/shared/proc/proc_parser.h"
 
 namespace pl {
 namespace stirling {

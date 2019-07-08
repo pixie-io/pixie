@@ -14,9 +14,9 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
 #include "src/common/base/base.h"
+#include "src/shared/proc/proc_parser.h"
 #include "src/stirling/cgroup_stats_connector.h"
 #include "src/stirling/cgroups/cgroup_manager.h"
-#include "src/stirling/cgroups/proc_parser.h"
 
 namespace pl {
 namespace stirling {

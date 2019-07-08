@@ -9,7 +9,7 @@
 
 #include "src/common/system_config/system_config_mock.h"
 #include "src/common/testing/testing.h"
-#include "src/stirling/cgroups/proc_parser.h"
+#include "src/shared/proc/proc_parser.h"
 
 namespace pl {
 namespace stirling {
@@ -18,7 +18,7 @@ using std::string;
 using std::experimental::filesystem::path;
 using ::testing::Return;
 
-constexpr char kTestDataBasePath[] = "src/stirling/cgroups";
+constexpr char kTestDataBasePath[] = "src/shared/proc";
 
 namespace {
 string GetPathToTestDataFile(const string& fname) {
