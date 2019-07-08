@@ -24,7 +24,7 @@ using table_store::schema::RowDescriptor;
 const char* kGroupByNoneQuery =
     R"(
 queryDF = From(table='test_table', select=['col0', 'col1']))"
-    R"(.Agg(by=None, fn=lambda r: { 'sum': pl.sum(r.col1)}).Result(name='$0'))";
+    R"(.Agg(fn=lambda r: { 'sum': pl.sum(r.col1)}).Result(name='$0'))";
 
 const char* kGroupByOneQuery =
     R"(
@@ -102,7 +102,6 @@ void BM_Query(benchmark::State& state, std::vector<types::DataType> types,
   int i = 0;
   for (auto _ : state) {
     auto queryWithTableName = absl::Substitute(query, "results_" + std::to_string(i));
-    LOG(INFO) << queryWithTableName;
     auto res = carnot->ExecuteQuery(queryWithTableName, CurrentTimeNS()).ConsumeValueOrDie();
     bytes_processed += res.bytes_processed;
     ++i;
