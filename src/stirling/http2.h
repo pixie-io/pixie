@@ -65,14 +65,7 @@ ParseState UnpackFrame(std::string_view* buf, Frame* frame);
 ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
                           std::deque<Frame>* messages);
 
-struct GRPCMessage : public NotCopyable {
-  GRPCMessage() = default;
-  GRPCMessage(GRPCMessage&& other) noexcept
-      : type(other.type),
-        parse_succeeded(other.parse_succeeded),
-        headers(std::move(other.headers)),
-        message(std::move(other.message)) {}
-
+struct GRPCMessage {
   MessageType type = MessageType::kUnknown;
   uint64_t timestamp_ns = 0;
   // TODO(yzhao): We should not need this, as we'll be changing into a lazy parse pattern, where
@@ -107,6 +100,27 @@ void PreProcessMessage(GRPCMessage* message);
  */
 Status StitchGRPCStreamFrames(std::deque<Frame>* frames,
                               std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs);
+
+/**
+ * @brief Required for fitting in the SocketTraceConnector::ConsumeMessage() template.
+ */
+void PreProcessMessage(GRPCMessage* message);
+
+/**
+ * @brief A convenience holder of gRPC req & resp.
+ */
+// TODO(yzhao): Investigate converging with TraceRecord in event_parser.h.
+struct GRPCReqResp {
+  GRPCMessage req;
+  GRPCMessage resp;
+};
+
+/**
+ * @brief Matchs req & resp GRPCMessage of the same streams. The input arguments are moved to the
+ * returned result.
+ */
+std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, std::vector<GRPCMessage>> reqs,
+                                          std::map<uint32_t, std::vector<GRPCMessage>> resps);
 
 }  // namespace http2
 }  // namespace stirling

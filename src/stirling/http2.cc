@@ -373,6 +373,41 @@ Status StitchGRPCStreamFrames(std::deque<Frame>* frames,
   return Status::OK();
 }
 
+std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, std::vector<GRPCMessage>> reqs,
+                                          std::map<uint32_t, std::vector<GRPCMessage>> resps) {
+  std::vector<GRPCReqResp> res;
+
+  // Treat 2 maps as 2 lists ordered according to stream ID, then merge on common stream IDs.
+  // It probably will be faster than naive iteration and search.
+  for (auto req_iter = reqs.begin(), resp_iter = resps.begin();
+       req_iter != reqs.end() && resp_iter != resps.end();) {
+    const uint32_t req_stream_id = req_iter->first;
+    const uint32_t resp_stream_id = resp_iter->first;
+
+    std::vector<GRPCMessage>& stream_reqs = req_iter->second;
+    std::vector<GRPCMessage>& stream_resps = resp_iter->second;
+    DCHECK(stream_reqs.size() == 1)
+        << "Each stream should have exactly one request, stream ID: " << req_stream_id
+        << " got: " << stream_reqs.size();
+    DCHECK(stream_resps.size() == 1)
+        << "Each stream should have exactly one response, stream ID: " << resp_stream_id
+        << " got: " << stream_resps.size();
+    if (req_stream_id == resp_stream_id) {
+      DCHECK(stream_reqs.front().type != stream_resps.front().type)
+          << "gRPC messages from two streams should be different, got the same type: "
+          << static_cast<int>(stream_reqs.front().type);
+      res.push_back(GRPCReqResp{std::move(stream_reqs.front()), std::move(stream_resps.front())});
+      ++req_iter;
+      ++resp_iter;
+    } else if (req_stream_id < resp_stream_id) {
+      ++req_iter;
+    } else {
+      ++resp_iter;
+    }
+  }
+  return res;
+}
+
 }  // namespace http2
 }  // namespace stirling
 }  // namespace pl

@@ -15,6 +15,8 @@ namespace http2 {
 using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
+using ::testing::SizeIs;
 using ::testing::StrEq;
 
 TEST(UnpackFrameTest, TestVariousCases) {
@@ -89,6 +91,33 @@ TEST(UnpackFramesTest, ResultsAreAsExpected) {
   EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "a:b"),
                                   MatchesTypePayload(NGHTTP2_CONTINUATION, "c:d"),
                                   MatchesTypePayload(NGHTTP2_DATA, "abcd")));
+}
+
+// Returns a vector of single GRPCMessage constructed from the input.
+std::vector<GRPCMessage> GRPCMsgs(MessageType type, std::string_view msg, NVMap headers) {
+  GRPCMessage res;
+  res.type = type;
+  res.message = ToU8(msg);
+  res.headers = std::move(headers);
+  return {std::move(res)};
+}
+
+MATCHER_P2(HasMsgAndHdrs, msg, hdrs, "") { return arg.message == ToU8(msg) && arg.headers == hdrs; }
+
+TEST(MatchGRPCReqRespTest, InputsAreMoved) {
+  std::map<uint32_t, std::vector<GRPCMessage>> reqs{
+      {1u, GRPCMsgs(MessageType::kRequests, "a", {{"h1", "v1"}})},
+      {2u, GRPCMsgs(MessageType::kRequests, "b", {{"h2", "v2"}})}};
+  std::map<uint32_t, std::vector<GRPCMessage>> resps{
+      {0u, GRPCMsgs(MessageType::kResponses, "c", {{"h3", "v3"}})},
+      {1u, GRPCMsgs(MessageType::kResponses, "d", {{"h4", "v4"}})}};
+
+  std::vector<GRPCReqResp> matched_msgs = MatchGRPCReqResp(std::move(reqs), std::move(resps));
+  ASSERT_THAT(matched_msgs, SizeIs(1));
+  const GRPCMessage& req = matched_msgs.begin()->req;
+  const GRPCMessage& resp = matched_msgs.begin()->resp;
+  EXPECT_EQ(ToU8("a"), req.message);
+  EXPECT_EQ(ToU8("d"), resp.message);
 }
 
 }  // namespace http2
