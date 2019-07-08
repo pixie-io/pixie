@@ -13,7 +13,7 @@ namespace stirling {
 
 stirlingpb::Element InfoClassElement::ToProto() const {
   stirlingpb::Element element_proto;
-  element_proto.set_name(name_.get());
+  element_proto.set_name(name_.data());
   element_proto.set_type(type_);
   element_proto.set_ptype(ptype_);
   return element_proto;

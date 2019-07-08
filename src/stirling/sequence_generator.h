@@ -254,7 +254,7 @@ class StringSequence : public Sequence<std::string> {
     // Add line numbers to the lines.
     uint32_t line_number = 0;
     for (auto& line : text) {
-      tokens.push_back(absl::StrFormat("%3d %s", line_number, line.get()));
+      tokens.push_back(absl::StrFormat("%3d %s", line_number, line.data()));
       line_number++;
     }
     ResetImpl();

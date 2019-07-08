@@ -81,25 +81,25 @@ void StirlingWrapperCallback(uint64_t table_id,
   std::string name = table_id_to_name_map[table_id];
 
   // Use assigned names, from registry.
-  if (name == SeqGenConnector::kSeq0Table.name().get()) {
+  if (name == SeqGenConnector::kSeq0Table.name().data()) {
     PrintRecordBatch("SeqGen-0", SeqGenConnector::kSeq0Table.elements(), num_records,
                      *record_batch);
-  } else if (name == SeqGenConnector::kSeq1Table.name().get()) {
+  } else if (name == SeqGenConnector::kSeq1Table.name().data()) {
     PrintRecordBatch("SeqGen-1", SeqGenConnector::kSeq1Table.elements(), num_records,
                      *record_batch);
-  } else if (name == SocketTraceConnector::kMySQLTable.name().get()) {
+  } else if (name == SocketTraceConnector::kMySQLTable.name().data()) {
     PrintRecordBatch("MySQLTrace", SocketTraceConnector::kMySQLTable.elements(), num_records,
                      *record_batch);
-  } else if (name == PIDCPUUseBCCConnector::kTable.name().get()) {
+  } else if (name == PIDCPUUseBCCConnector::kTable.name().data()) {
     PrintRecordBatch("PIDStat-BCC", PIDCPUUseBCCConnector::kTable.elements(), num_records,
                      *record_batch);
-  } else if (name == SocketTraceConnector::kHTTPTable.name().get()) {
+  } else if (name == SocketTraceConnector::kHTTPTable.name().data()) {
     PrintRecordBatch("HTTPTrace", SocketTraceConnector::kHTTPTable.elements(), num_records,
                      *record_batch);
-  } else if (name == CGroupStatsConnector::kCPUTable.name().get()) {
+  } else if (name == CGroupStatsConnector::kCPUTable.name().data()) {
     PrintRecordBatch("CGroupStats", CGroupStatsConnector::kCPUTable.elements(), num_records,
                      *record_batch);
-  } else if (name == CGroupStatsConnector::kNetworkTable.name().get()) {
+  } else if (name == CGroupStatsConnector::kNetworkTable.name().data()) {
     PrintRecordBatch("NetStats", CGroupStatsConnector::kNetworkTable.elements(), num_records,
                      *record_batch);
   }

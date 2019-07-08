@@ -81,7 +81,7 @@ class SourceConnector : public NotCopyable {
                                      const DataTableSchema& key) {
     uint32_t i = 0;
     for (i = 0; i < tables.size(); i++) {
-      if (tables[i].name().equals(key.name())) {
+      if (tables[i].name() == key.name()) {
         break;
       }
     }
@@ -170,7 +170,7 @@ class SourceConnector : public NotCopyable {
       record_batch_[index]->Append(std::move(val));
       CHECK(!signature_[index]) << absl::StrFormat(
           "Attempt to Append() to column %d (name=%s) multiple times", index,
-          schema->elements()[index].name().get());
+          schema->elements()[index].name().data());
       signature_.set(index);
     }
 

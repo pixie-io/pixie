@@ -12,7 +12,7 @@ using types::PatternType;
 TEST(InfoClassElementTest, infoclass_element_proto_getters_test) {
   InfoClassElement element("user_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE);
 
-  EXPECT_EQ("user_percentage", std::string(element.name().get()));
+  EXPECT_EQ("user_percentage", std::string(element.name().data()));
   EXPECT_EQ(DataType::FLOAT64, element.type());
 
   stirlingpb::Element element_pb;

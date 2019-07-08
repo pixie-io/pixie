@@ -127,7 +127,7 @@ void SocketTraceConnector::ReadPerfBuffer(uint32_t table_num) {
       << "Index out of bound. Trying to read from perf buffer that doesn't exist.";
   auto buffer_names = kTablePerfBufferMap[table_num];
   for (auto& buffer_name : buffer_names) {
-    auto perf_buffer = bpf_.get_perf_buffer(buffer_name.get());
+    auto perf_buffer = bpf_.get_perf_buffer(buffer_name.data());
     if (perf_buffer != nullptr) {
       perf_buffer->poll(1);
     }

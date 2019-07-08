@@ -10,33 +10,13 @@ namespace pl {
  *
  * Inspired from https://gist.github.com/creative-quant/6aa863e1cb415cbb9056f3d86f23b2c4
  *
- * Essentially a constant char[N] array, stored as char* and size.
+ * Essentially string_view, but takes in c-style array
  */
-class ConstStrView {
- private:
-  const char* const p_;
-  const size_t size_;
-
+class ConstStrView : public std::string_view {
  public:
-  template <std::size_t N>
+  template <size_t N>
   // NOLINTNEXTLINE: implicit constructor.
-  constexpr ConstStrView(const char (&a)[N]) : p_(a), size_(N - 1) {}
-  constexpr const char* get() const { return p_; }
-  constexpr size_t size() const { return size_; }
-
-  constexpr bool equals(const ConstStrView& other) const {
-    if (size_ != other.size_) {
-      return false;
-    }
-
-    for (uint32_t i = 0; i < size_; i++) {
-      if (p_[i] != other.p_[i]) {
-        return false;
-      }
-    }
-
-    return true;
-  }
+  constexpr ConstStrView(const char (&a)[N]) : std::string_view(a, N - 1) {}
 };
 
 /**

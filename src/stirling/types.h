@@ -49,7 +49,7 @@ class DataTableSchema {
   constexpr uint32_t ColIndex(const ConstStrView& key) const {
     uint32_t i = 0;
     for (i = 0; i < elements_.size(); i++) {
-      if (elements_[i].name().equals(key)) {
+      if (elements_[i].name() == key) {
         break;
       }
     }

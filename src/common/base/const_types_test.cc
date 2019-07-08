@@ -9,22 +9,28 @@ TEST(ConstStringTest, compile_time_functions) {
   static constexpr ConstStrView const_str0 = "This is a constant string";
   static constexpr ConstStrView const_str1 = "It's really just a pointer and a size";
   static constexpr ConstStrView const_str0_again = "This is a constant string";
+  static constexpr ConstStrView const_str2 = "\x00null\x23\x00";
+  static constexpr std::string_view str2_strview = std::string_view("\x00null\x23\x00", 7);
+  std::string str2_string = std::string("\x00null\x23\x00", 7);
 
   // First, test in ways that may or may not be used at compile-time.
   EXPECT_EQ(25, const_str0.size());
   EXPECT_EQ(37, const_str1.size());
-  EXPECT_EQ("This is a constant string", const_str0.get());
-  EXPECT_EQ(std::string("It's really just a pointer and a size"), const_str1.get());
-  EXPECT_FALSE(const_str0.equals(const_str1));
-  EXPECT_FALSE(const_str1.equals(const_str0));
-  EXPECT_TRUE(const_str0.equals(const_str0_again));
+  EXPECT_EQ(7, const_str2.size());
+  EXPECT_EQ("This is a constant string", const_str0.data());
+  EXPECT_EQ(std::string("It's really just a pointer and a size"), const_str1.data());
+  EXPECT_FALSE(const_str0 == const_str1);
+  EXPECT_FALSE(const_str1 == const_str0);
+  EXPECT_TRUE(const_str0 == const_str0_again);
+  EXPECT_TRUE(const_str2 == str2_string);
+  EXPECT_TRUE(const_str2 == str2_strview);
 
   // Second, test in ways that must be used at compile-time.
   static_assert(25 == const_str0.size());
   static_assert(37 == const_str1.size());
-  static_assert(!const_str0.equals(const_str1));
-  static_assert(!const_str1.equals(const_str0));
-  static_assert(const_str0.equals(const_str0_again));
+  static_assert(const_str0 != const_str1);
+  static_assert(const_str1 != const_str0);
+  static_assert(const_str0 == const_str0_again);
 }
 
 struct StrIntStruct {
@@ -43,17 +49,17 @@ TEST(ConstVectorTest, compile_time_functions) {
   EXPECT_EQ(3, elements.size());
   EXPECT_EQ(2, elements[1].val);
   EXPECT_EQ(4, elements[2].val);
-  EXPECT_EQ("value2", elements[2].str.get());
+  EXPECT_EQ("value2", elements[2].str.data());
 
   static_assert(3 == elements.size());
   static_assert(2 == elements[1].val);
   static_assert(4 == elements[2].val);
-  static_assert('v' == elements[2].str.get()[0]);
-  static_assert('a' == elements[2].str.get()[1]);
-  static_assert('l' == elements[2].str.get()[2]);
-  static_assert('u' == elements[2].str.get()[3]);
-  static_assert('e' == elements[2].str.get()[4]);
-  static_assert('2' == elements[2].str.get()[5]);
+  static_assert('v' == elements[2].str.data()[0]);
+  static_assert('a' == elements[2].str.data()[1]);
+  static_assert('l' == elements[2].str.data()[2]);
+  static_assert('u' == elements[2].str.data()[3]);
+  static_assert('e' == elements[2].str.data()[4]);
+  static_assert('2' == elements[2].str.data()[5]);
 }
 
 TEST(ConstVectorTest, iterator_functions) {
@@ -68,7 +74,7 @@ TEST(ConstVectorTest, iterator_functions) {
   std::string s;
   for (auto& e : elements) {
     sum += e.val;
-    s += e.str.get();
+    s += e.str.data();
   }
   EXPECT_EQ(6, sum);
   EXPECT_EQ("value0value1value2", s);
@@ -97,7 +103,7 @@ TEST(ConstVectorTest, compile_time_lookup) {
     constexpr uint32_t StringIndex(const ConstStrView& key) const {
       uint32_t i = 0;
       for (i = 0; i < elements.size(); i++) {
-        if (elements[i].str.equals(key)) {
+        if (elements[i].str == key) {
           break;
         }
       }
