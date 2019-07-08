@@ -125,6 +125,14 @@ using PIDInfoUPtr = std::unique_ptr<PIDInfo>;
  * This class contains all kubernetes relate metadata.
  */
 class K8sMetadataState {
+  K8sMetadataState() = delete;
+  explicit K8sMetadataState(uint64_t epoch_id) : epoch_id_(epoch_id) {
+    create_ts_ns_ = CurrentTimeNS();
+  }
+
+  int64_t create_ts_ns() { return create_ts_ns_; }
+  uint64_t epoch_id() { return epoch_id_; }
+
   const absl::flat_hash_map<UID, K8sMetadataObjectUPtr>& k8s_objects() { return k8s_objects_; }
 
   const absl::flat_hash_map<std::string, UID>& pods_by_name() { return pods_by_name_; }
@@ -136,6 +144,19 @@ class K8sMetadataState {
   const absl::flat_hash_map<UPID, PIDInfoUPtr>& pids_by_upid() { return pids_by_upid_; }
 
  private:
+  /**
+   * Tracks the time that this K8s metadata object was created. The object should be periodically
+   * refreshed to get the latest version.
+   */
+  int64_t create_ts_ns_ = 0;
+
+  /**
+   * A monotonically increasing number that tracks the epoch of this K8s state.
+   * The epoch is incremented everytime a new MetadataState is create. MetadataState objects after
+   * creation should be immutable to allow concurrent read access without locks.
+   */
+  uint64_t epoch_id_ = 0;
+
   absl::flat_hash_map<UID, K8sMetadataObjectUPtr> k8s_objects_;
 
   /**
@@ -163,11 +184,18 @@ class AgentMetadataState {
 
   uint32_t agent_id() { return agent_id_; }
 
-  K8sMetadataState& k8s_metadata_state() { return k8s_metadata_state_; }
+  /**
+   * This returns the current valid K8sMetadataState. The state is periodically updated
+   * and returned pointers should not be held for a long time to avoid memory leaks and
+   * stale data.
+   *
+   * @return shared_ptr to the current K8sMetadataState.
+   */
+  std::shared_ptr<const K8sMetadataState> K8sMetadata();
 
  private:
   uint32_t agent_id_;
-  K8sMetadataState k8s_metadata_state_;
+  std::shared_ptr<K8sMetadataState> k8s_metadata_state_;
 };
 
 }  // namespace md
