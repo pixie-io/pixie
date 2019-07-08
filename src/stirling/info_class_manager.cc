@@ -33,13 +33,8 @@ Status InfoClassManager::PopulateSchemaFromSource() {
 bool InfoClassManager::SamplingRequired() const { return CurrentTime() > NextSamplingTime(); }
 
 bool InfoClassManager::PushRequired() const {
-  if (data_table_->Occupancy() == 0) {
-    return false;
-  }
-
-  if (CurrentTime() > NextPushTime()) {
-    return true;
-  }
+  // Note: It's okay to exercise an early Push, by returning true before the final return,
+  // but it is not okay to 'return false' in this function.
 
   if (data_table_->OccupancyPct() > occupancy_pct_threshold_) {
     return true;
@@ -49,21 +44,19 @@ bool InfoClassManager::PushRequired() const {
     return true;
   }
 
-  return false;
+  return CurrentTime() > NextPushTime();
 }
 
-Status InfoClassManager::SampleData() {
+void InfoClassManager::SampleData() {
   source_->TransferData(source_table_num_, data_table_->GetActiveRecordBatch());
 
   // Update the last sampling time.
   last_sampled_ = CurrentTime();
 
   sampling_count_++;
-
-  return Status::OK();
 }
 
-Status InfoClassManager::PushData(PushDataCallback agent_callback) {
+void InfoClassManager::PushData(PushDataCallback agent_callback) {
   auto record_batches = data_table_->GetRecordBatches();
   for (auto& record_batch : *record_batches) {
     if (!record_batch->empty()) {
@@ -75,8 +68,6 @@ Status InfoClassManager::PushData(PushDataCallback agent_callback) {
   last_pushed_ = CurrentTime();
 
   push_count_++;
-
-  return Status::OK();
 }
 
 stirlingpb::InfoClass InfoClassManager::ToProto() const {

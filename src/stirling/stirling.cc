@@ -143,6 +143,7 @@ class StirlingImpl final : public Stirling {
   std::unique_ptr<SourceRegistry> registry_;
 
   const std::chrono::milliseconds kMinSleepDuration{1};
+  const std::chrono::milliseconds kMaxSleepDuration{1000};
 
   /**
    * Function to call to push data to the agent.
@@ -239,7 +240,7 @@ Status StirlingImpl::SetSubscription(const stirlingpb::Subscribe& subscribe_prot
   // Last append before clearing tables from old subscriptions.
   for (const auto& mgr : info_class_mgrs_) {
     if (mgr->subscribed()) {
-      PL_CHECK_OK(mgr->PushData(agent_callback_));
+      mgr->PushData(agent_callback_);
     }
   }
   tables_.clear();
@@ -317,12 +318,12 @@ void StirlingImpl::RunCore() {
         if (mgr->subscribed()) {
           // Phase 1: Probe each source for its data.
           if (mgr->SamplingRequired()) {
-            PL_CHECK_OK(mgr->SampleData());
+            mgr->SampleData();
           }
 
           // Phase 2: Push Data upstream.
           if (mgr->PushRequired()) {
-            PL_CHECK_OK(mgr->PushData(agent_callback_));
+            mgr->PushData(agent_callback_);
           }
 
           // Optional: Update sampling periods if we are dropping data.
@@ -351,11 +352,15 @@ std::chrono::milliseconds StirlingImpl::TimeUntilNextTick() {
 
   for (const auto& mgr : info_class_mgrs_) {
     // TODO(oazizi): Make implementation of NextPushTime/NextSamplingTime low cost.
-    wakeup_time = std::min(wakeup_time, mgr->NextPushTime());
-    wakeup_time = std::min(wakeup_time, mgr->NextSamplingTime());
+    if (mgr->subscribed()) {
+      wakeup_time = std::min(wakeup_time, mgr->NextPushTime());
+      wakeup_time = std::min(wakeup_time, mgr->NextSamplingTime());
+    }
   }
 
-  return wakeup_time - now;
+  // Worst case, wake-up every so often.
+  // This is important if there are no subscribed info classes, to avoid sleeping eternally.
+  return std::min(wakeup_time - now, kMaxSleepDuration);
 }
 
 void StirlingImpl::SleepForDuration(std::chrono::milliseconds sleep_duration) {

@@ -154,17 +154,13 @@ class InfoClassManager {
 
   /**
    * @brief Samples the data from the Source and copies into local buffers.
-   *
-   * @return Status
    */
-  Status SampleData();
+  void SampleData();
 
   /**
    * @brief Push data by using the callback.
-   *
-   * @return Status.
    */
-  Status PushData(PushDataCallback agent_callback);
+  void PushData(PushDataCallback agent_callback);
 
   /**
    * @brief Notify function to update state after making changes to the schema.
