@@ -61,3 +61,8 @@ def pl_cc_resource_impl(
 
     # Create a cc_library with the .o files.
     native.cc_library(name = name, srcs = object_files, tags = tags, linkstatic = 1, **kwargs)
+
+def pl_exp_cc_resource(**kwargs):
+    tags = kwargs.get("tags", [])
+    kwargs["tags"] = tags + ["manual"]
+    pl_cc_resource(**kwargs)

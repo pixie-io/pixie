@@ -1,7 +1,3 @@
-# If you want to work on experimental you need to delete the following line.
-# Sadly bazel does not seem to provide an easy way to this automatically.
-experimental/
-
 src/ui/node_modules
 vendor
 third_party/bpftrace/build

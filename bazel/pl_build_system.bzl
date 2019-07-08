@@ -169,7 +169,7 @@ def pl_cc_test(
         args = [],
         coverage = True,
         local = False):
-    test_lib_tags = []
+    test_lib_tags = list(tags)
     if coverage:
         test_lib_tags.append("coverage_test_lib")
     pl_cc_test_library(
@@ -180,6 +180,7 @@ def pl_cc_test(
         repository = repository,
         tags = test_lib_tags,
     )
+
     native.cc_test(
         name = name,
         copts = pl_copts(repository, test = True),
@@ -254,3 +255,24 @@ def pl_go_library(**kwargs):
         kwargs["clinkopts"] = pl_linkopts()
         kwargs["toolchains"] = ["@bazel_tools//tools/cpp:current_cc_toolchain"]
     go_library(**kwargs)
+
+def append_manual_tag(kwargs):
+    tags = kwargs.get("tags", [])
+    kwargs["tags"] = tags + ["manual"]
+    return kwargs
+
+def pl_exp_cc_binary(**kwargs):
+    kwargs = append_manual_tag(kwargs)
+    pl_cc_binary(**kwargs)
+
+def pl_exp_cc_library(**kwargs):
+    kwargs = append_manual_tag(kwargs)
+    pl_cc_library(**kwargs)
+
+def pl_exp_cc_test(**kwargs):
+    kwargs = append_manual_tag(kwargs)
+    pl_cc_test(**kwargs)
+
+def pl_exp_cc_test_library(**kwargs):
+    kwargs = append_manual_tag(kwargs)
+    pl_cc_test_library(**kwargs)

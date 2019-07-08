@@ -91,3 +91,8 @@ def pl_go_proto_library(name, proto, importpath, deps = [], **kwargs):
         deps = deps,
         **kwargs
     )
+
+def pl_exp_cc_proto_library(**kwargs):
+    tags = kwargs.get("tags", [])
+    kwargs["tags"] = tags + ["manual"]
+    pl_cc_proto_library(**kwargs)
