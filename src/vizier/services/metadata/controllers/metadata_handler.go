@@ -207,9 +207,9 @@ func (mh *MetadataHandler) getUpdateMetadata(md *metadatapb.ObjectMetadata) *met
 	return &metadatapb.ObjectMetadata{
 		Name:                md.Name,
 		Namespace:           md.Namespace,
-		Uid:                 md.Uid,
-		CreationTimestampNs: md.CreationTimestampNs,
-		DeletionTimestampNs: md.DeletionTimestampNs,
+		UID:                 md.UID,
+		CreationTimestampNS: md.CreationTimestampNS,
+		DeletionTimestampNS: md.DeletionTimestampNS,
 	}
 }
 

@@ -319,7 +319,7 @@ func TestAddToFrontOfAgentQueue(t *testing.T) {
 	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
 		Type: messagespb.POD,
 		Metadata: &metadatapb.ObjectMetadata{
-			Uid:  "podUid",
+			UID:  "podUid",
 			Name: "podName",
 		},
 	}
@@ -330,7 +330,7 @@ func TestAddToFrontOfAgentQueue(t *testing.T) {
 	resp, err := mds.GetFromAgentQueue("agent1")
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(*resp))
-	assert.Equal(t, "podUid", (*resp)[0].Metadata.Uid)
+	assert.Equal(t, "podUid", (*resp)[0].Metadata.UID)
 }
 
 func TestGetFromAgentQueue(t *testing.T) {
@@ -345,7 +345,7 @@ func TestGetFromAgentQueue(t *testing.T) {
 	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
 		Type: messagespb.POD,
 		Metadata: &metadatapb.ObjectMetadata{
-			Uid:  "podUid",
+			UID:  "podUid",
 			Name: "podName",
 		},
 	}
@@ -360,7 +360,7 @@ func TestGetFromAgentQueue(t *testing.T) {
 	resp, err := mds.GetFromAgentQueue("agent1")
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(*resp))
-	assert.Equal(t, "podUid", (*resp)[0].Metadata.Uid)
+	assert.Equal(t, "podUid", (*resp)[0].Metadata.UID)
 
 	q := etcd.NewQueue(etcdClient, "/agents/agent1/updates")
 	dequeueResp, err := q.Dequeue()

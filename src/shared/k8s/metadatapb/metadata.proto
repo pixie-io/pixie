@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package pl.shared.k8s.metadatapb;
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/shared/types/proto/types.proto";
 
 // This file is mostly copied from
@@ -18,7 +19,9 @@ message ObjectMetadata {
   string namespace = 2;
 
   // UID is an identifier that is unique in time and space value for this object.
-  string uid = 3;
+  string uid = 3 [
+                  (gogoproto.customname) = "UID"
+                  ];
 
   // An opaque value that represents the internal version of this object that can
   // be used by clients to determine when objects have changed. May be used for optimistic
@@ -26,10 +29,14 @@ message ObjectMetadata {
   string resource_version = 4;
 
   // The server time in nanoseconds when this object was created.
-  int64 creation_timestamp_ns = 5;
+  int64 creation_timestamp_ns = 5 [
+                                  (gogoproto.customname) = "CreationTimestampNS"
+                                  ];
 
   // The time in nanoseconds at which this resource will be deleted.
-  int64 deletion_timestamp_ns = 6;
+  int64 deletion_timestamp_ns = 6 [
+                                  (gogoproto.customname) = "DeletionTimestampNS"
+                                  ];
 
   // Map of string keys and values that can be used to organize and categorize
   // (scope and select) objects.
@@ -50,7 +57,9 @@ message OwnerReference {
   string name = 3;
 
   // UID of the referent.
-  string uid = 4;
+  string uid = 4 [
+                  (gogoproto.customname) = "UID"
+                  ];
 }
 
 // Pod is a collection of containers that can run on a host. This resource is created
@@ -80,7 +89,9 @@ message PodSpec {
   // repeated Volume volumes = 1;
 
   // The DNS policy for the pod.
-  DNSPolicy dns_policy = 1;
+  DNSPolicy dns_policy = 1 [
+                  (gogoproto.customname) = "DNSPolicy"
+                  ];
 
   // A selector which must be true for the pod to fit on a node.
   map<string, string> node_selector = 2;
@@ -139,10 +150,14 @@ message PodStatus {
   string reason = 4;
 
   // IP address of the host to which the pod is assigned. Empty if not yet scheduled.
-  string host_ip = 5;
+  string host_ip = 5 [
+                  (gogoproto.customname) = "HostIP"
+                  ];
 
   // IP address allocated to the pod. Routable at least within the cluster.
-  string pod_ip = 6;
+  string pod_ip = 6 [
+                  (gogoproto.customname) = "PodIP"
+                  ];
 }
 
 enum PodConditionType {
@@ -176,7 +191,9 @@ message EndpointSubset {
 // EndpointAddress is a tuple that describes single IP address.
 message EndpointAddress {
   // The IP of this endpoint.
-  string ip = 1;
+  string ip = 1 [
+                  (gogoproto.customname) = "IP"
+                  ];
 
   // The hostname of this endpoint
   string hostname = 2;
@@ -219,7 +236,9 @@ message ObjectReference {
   string name = 3;
 
   // UID of the referent.
-  string uid = 4;
+  string uid = 4 [
+                  (gogoproto.customname) = "UID"
+                  ];
 
   // Specific resource version to which this reference is made, if any.
   string resourceVersion = 6;
@@ -255,18 +274,24 @@ message ServiceSpec {
   repeated ServicePort ports = 1;
 
   // The IP address of the service.
-  string cluster_ip = 2;
+  string cluster_ip = 2 [
+                  (gogoproto.customname) = "ClusterIP"
+                  ];
 
   // The type which determines how the Service is exposed.
   ServiceType type = 3;
 
   // List of IP addresses for which nodes in the cluster
   // will also accept traffic for this service.
-  repeated string external_ips = 4;
+  repeated string external_ips = 4 [
+                  (gogoproto.customname) = "ExternalIPs"
+                  ];
 
   // Only applies to Service Type: LoadBalancer
   // LoadBalancer will get created with the IP specified in this field.
-  string load_balancer_ip = 5;
+  string load_balancer_ip = 5 [
+                  (gogoproto.customname) = "LoadBalancerIP"
+                  ];
 
   // The external reference that kubedns or equivalent will
   // return as a CNAME record for this service.
@@ -298,16 +323,24 @@ message ContainerInfo {
   string name = 1;
 
   // UID is an identifier that is unique in time and space value for the container.
-  string uid = 2;
+  string uid = 2 [
+                  (gogoproto.customname) = "UID"
+                  ];
 
   // The server time in nanoseconds when the container started.
-  int64 start_timestamp_ns = 3;
+  int64 start_timestamp_ns = 3 [
+                  (gogoproto.customname) = "StartTimestampNS"
+                  ];
 
   // The time in nanoseconds when the container stopped.
-  int64 stop_timestamp_ns = 4;
+  int64 stop_timestamp_ns = 4 [
+                  (gogoproto.customname) = "StopTimestampNS"
+                  ];
 
   // The identifier of the pod that the container belongs to.
-  string pod_uid =  5;
+  string pod_uid =  5 [
+                  (gogoproto.customname) = "PodUID"
+                  ];
 
   // The namespace of the pod that the container is running in.
   string namespace = 6;
@@ -326,10 +359,14 @@ message ProcessInfo {
   int32 pid = 3;
 
   // The server time in nanoseconds when the process started.
-  int64 start_timestamp_ns = 4;
+  int64 start_timestamp_ns = 4 [
+                  (gogoproto.customname) = "StartTimestampNS"
+                  ];
 
   // The time in nanoseconds when the process stopped.
-  int64 stop_timestamp_ns = 5;
+  int64 stop_timestamp_ns = 5 [
+                  (gogoproto.customname) = "StopTimestampNS"
+                  ];
 
   string process_args = 6;
 }
@@ -340,10 +377,14 @@ message SchemaInfo {
   string name = 1;
 
   // The server unix time in nanoseconds when the schema was available.
-  int64 start_timestamp_ns = 2;
+  int64 start_timestamp_ns = 2 [
+                  (gogoproto.customname) = "StartTimestampNS"
+                  ];
 
   // The unix time in nanoseconds when the schema stopped being available. It will be 0 if there is no stop time.
-  int64 stop_timestamp_ns = 3;
+  int64 stop_timestamp_ns = 3 [
+                  (gogoproto.customname) = "StopTimestampNS"
+                  ];
 
   message ColumnInfo {
     string name = 1;

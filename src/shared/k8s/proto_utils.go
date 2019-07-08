@@ -91,7 +91,7 @@ func OwnerReferenceToProto(o *metav1.OwnerReference) (*metadatapb.OwnerReference
 	oPb := &metadatapb.OwnerReference{
 		Kind: o.Kind,
 		Name: o.Name,
-		Uid:  string(o.UID),
+		UID:  string(o.UID),
 	}
 	return oPb, nil
 }
@@ -101,7 +101,7 @@ func OwnerReferenceFromProto(pb *metadatapb.OwnerReference) (*metav1.OwnerRefere
 	obj := &metav1.OwnerReference{
 		Kind: pb.Kind,
 		Name: pb.Name,
-		UID:  types.UID(pb.Uid),
+		UID:  types.UID(pb.UID),
 	}
 	return obj, nil
 }
@@ -121,16 +121,16 @@ func ObjectMetadataToProto(o *metav1.ObjectMeta) (*metadatapb.ObjectMetadata, er
 	oPb := &metadatapb.ObjectMetadata{
 		Name:                o.Name,
 		Namespace:           o.Namespace,
-		Uid:                 string(o.UID),
+		UID:                 string(o.UID),
 		ResourceVersion:     o.ResourceVersion,
 		ClusterName:         o.ClusterName,
 		OwnerReferences:     ownerRefs,
 		Labels:              o.Labels,
-		CreationTimestampNs: o.CreationTimestamp.UnixNano(),
+		CreationTimestampNS: o.CreationTimestamp.UnixNano(),
 	}
 
 	if o.DeletionTimestamp != nil {
-		oPb.DeletionTimestampNs = o.DeletionTimestamp.UnixNano()
+		oPb.DeletionTimestampNS = o.DeletionTimestamp.UnixNano()
 	}
 
 	return oPb, nil
@@ -140,11 +140,11 @@ func ObjectMetadataToProto(o *metav1.ObjectMeta) (*metadatapb.ObjectMetadata, er
 func ObjectMetadataFromProto(pb *metadatapb.ObjectMetadata) (*metav1.ObjectMeta, error) {
 	var delTime metav1.Time
 	var creationTime metav1.Time
-	if pb.DeletionTimestampNs != 0 {
-		delTime = metav1.Unix(0, pb.DeletionTimestampNs)
+	if pb.DeletionTimestampNS != 0 {
+		delTime = metav1.Unix(0, pb.DeletionTimestampNS)
 	}
-	if pb.CreationTimestampNs != 0 {
-		creationTime = metav1.Unix(0, pb.CreationTimestampNs)
+	if pb.CreationTimestampNS != 0 {
+		creationTime = metav1.Unix(0, pb.CreationTimestampNS)
 	}
 
 	ownerRefs := make([]metav1.OwnerReference, len(pb.OwnerReferences))
@@ -159,7 +159,7 @@ func ObjectMetadataFromProto(pb *metadatapb.ObjectMetadata) (*metav1.ObjectMeta,
 	o := &metav1.ObjectMeta{
 		Name:              pb.Name,
 		Namespace:         pb.Namespace,
-		UID:               types.UID(pb.Uid),
+		UID:               types.UID(pb.UID),
 		ResourceVersion:   pb.ResourceVersion,
 		ClusterName:       pb.ClusterName,
 		Labels:            pb.Labels,
@@ -178,7 +178,7 @@ func PodSpecToProto(ps *v1.PodSpec) (*metadatapb.PodSpec, error) {
 		Hostname:          ps.Hostname,
 		Subdomain:         ps.Subdomain,
 		PriorityClassName: ps.PriorityClassName,
-		DnsPolicy:         dnsPolicyObjToPbMap[ps.DNSPolicy],
+		DNSPolicy:         dnsPolicyObjToPbMap[ps.DNSPolicy],
 	}
 	if ps.Priority != nil {
 		psPb.Priority = *ps.Priority
@@ -195,7 +195,7 @@ func PodSpecFromProto(pb *metadatapb.PodSpec) (*v1.PodSpec, error) {
 		Hostname:          pb.Hostname,
 		Subdomain:         pb.Subdomain,
 		PriorityClassName: pb.PriorityClassName,
-		DNSPolicy:         dnsPolicyPbToObjMap[pb.DnsPolicy],
+		DNSPolicy:         dnsPolicyPbToObjMap[pb.DNSPolicy],
 		Priority:          &pb.Priority,
 	}
 
@@ -212,8 +212,8 @@ func PodStatusToProto(ps *v1.PodStatus) (*metadatapb.PodStatus, error) {
 	psPb := &metadatapb.PodStatus{
 		Message:    ps.Message,
 		Reason:     ps.Reason,
-		HostIp:     ps.HostIP,
-		PodIp:      ps.PodIP,
+		HostIP:     ps.HostIP,
+		PodIP:      ps.PodIP,
 		Phase:      podPhaseObjToPbMap[ps.Phase],
 		Conditions: conditions,
 	}
@@ -234,8 +234,8 @@ func PodStatusFromProto(pb *metadatapb.PodStatus) (*v1.PodStatus, error) {
 	ps := &v1.PodStatus{
 		Message:    pb.Message,
 		Reason:     pb.Reason,
-		HostIP:     pb.HostIp,
-		PodIP:      pb.PodIp,
+		HostIP:     pb.HostIP,
+		PodIP:      pb.PodIP,
 		Phase:      podPhasePbToObjMap[pb.Phase],
 		Conditions: conditions,
 	}
@@ -300,7 +300,7 @@ func ObjectReferenceToProto(o *v1.ObjectReference) (*metadatapb.ObjectReference,
 		Kind:            o.Kind,
 		Namespace:       o.Namespace,
 		Name:            o.Name,
-		Uid:             string(o.UID),
+		UID:             string(o.UID),
 		ResourceVersion: o.ResourceVersion,
 	}
 	return oPb, nil
@@ -312,7 +312,7 @@ func ObjectReferenceFromProto(pb *metadatapb.ObjectReference) (*v1.ObjectReferen
 		Kind:            pb.Kind,
 		Namespace:       pb.Namespace,
 		Name:            pb.Name,
-		UID:             types.UID(pb.Uid),
+		UID:             types.UID(pb.UID),
 		ResourceVersion: pb.ResourceVersion,
 	}
 
@@ -348,7 +348,7 @@ func EndpointAddressToProto(e *v1.EndpointAddress) (*metadatapb.EndpointAddress,
 	}
 
 	ePb := &metadatapb.EndpointAddress{
-		Ip:       e.IP,
+		IP:       e.IP,
 		Hostname: e.Hostname,
 		NodeName: nodename,
 	}
@@ -365,7 +365,7 @@ func EndpointAddressToProto(e *v1.EndpointAddress) (*metadatapb.EndpointAddress,
 // EndpointAddressFromProto converts a proto message to a EndpointAddress.
 func EndpointAddressFromProto(pb *metadatapb.EndpointAddress) (*v1.EndpointAddress, error) {
 	e := &v1.EndpointAddress{
-		IP:       pb.Ip,
+		IP:       pb.IP,
 		Hostname: pb.Hostname,
 		NodeName: &pb.NodeName,
 	}
@@ -534,9 +534,9 @@ func ServiceSpecToProto(s *v1.ServiceSpec) (*metadatapb.ServiceSpec, error) {
 	}
 
 	sPb := &metadatapb.ServiceSpec{
-		ClusterIp:             s.ClusterIP,
-		ExternalIps:           s.ExternalIPs,
-		LoadBalancerIp:        s.LoadBalancerIP,
+		ClusterIP:             s.ClusterIP,
+		ExternalIPs:           s.ExternalIPs,
+		LoadBalancerIP:        s.LoadBalancerIP,
 		ExternalName:          s.ExternalName,
 		ExternalTrafficPolicy: externalPolicyObjToPbMap[s.ExternalTrafficPolicy],
 		Ports:                 ports,
@@ -558,9 +558,9 @@ func ServiceSpecFromProto(pb *metadatapb.ServiceSpec) (*v1.ServiceSpec, error) {
 	}
 
 	s := &v1.ServiceSpec{
-		ClusterIP:             pb.ClusterIp,
-		ExternalIPs:           pb.ExternalIps,
-		LoadBalancerIP:        pb.LoadBalancerIp,
+		ClusterIP:             pb.ClusterIP,
+		ExternalIPs:           pb.ExternalIPs,
+		LoadBalancerIP:        pb.LoadBalancerIP,
 		ExternalName:          pb.ExternalName,
 		ExternalTrafficPolicy: externalPolicyPbToObjMap[pb.ExternalTrafficPolicy],
 		Type:                  serviceTypePbToObjMap[pb.Type],

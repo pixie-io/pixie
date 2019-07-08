@@ -400,7 +400,7 @@ func TestAgentHeartbeat(t *testing.T) {
 	updatePb := messages.MetadataUpdateInfo_ResourceUpdate{
 		Type: messages.POD,
 		Metadata: &metadatapb.ObjectMetadata{
-			Uid:  "podUid",
+			UID:  "podUid",
 			Name: "podName",
 		},
 	}
@@ -414,7 +414,7 @@ func TestAgentHeartbeat(t *testing.T) {
 	agentContainers := make([]*metadatapb.ContainerInfo, 1)
 	agentContainers[0] = &metadatapb.ContainerInfo{
 		Name: "container_1",
-		Uid:  "c_abcd",
+		UID:  "c_abcd",
 	}
 	agentUpdatePb := &messages.AgentUpdateInfo{
 		Containers: agentContainers,
@@ -533,7 +533,7 @@ func TestUpdateHeartbeatFailed(t *testing.T) {
 	agentContainers := make([]*metadatapb.ContainerInfo, 1)
 	agentContainers[0] = &metadatapb.ContainerInfo{
 		Name: "container_1",
-		Uid:  "c_abcd",
+		UID:  "c_abcd",
 	}
 	agentUpdatePb := &messages.AgentUpdateInfo{
 		Containers: agentContainers,

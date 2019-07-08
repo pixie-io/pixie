@@ -142,17 +142,17 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	refs[0] = &metadatapb.ObjectReference{
 		Kind:      "Pod",
 		Namespace: "pl",
-		Uid:       "abcd",
+		UID:       "abcd",
 	}
 
 	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
 		Type: messagespb.SERVICE,
 		Metadata: &metadatapb.ObjectMetadata{
-			Uid:                 "ijkl",
+			UID:                 "ijkl",
 			Name:                "object_md",
 			Namespace:           "a_namespace",
-			CreationTimestampNs: 4,
-			DeletionTimestampNs: 6,
+			CreationTimestampNS: 4,
+			DeletionTimestampNS: 6,
 		},
 		References: refs,
 	}
@@ -385,17 +385,17 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 	refs[0] = &metadatapb.ObjectReference{
 		Kind:      "Pod",
 		Namespace: "pl",
-		Uid:       "abcd",
+		UID:       "abcd",
 	}
 
 	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
 		Type: messagespb.SERVICE,
 		Metadata: &metadatapb.ObjectMetadata{
-			Uid:                 "ijkl",
+			UID:                 "ijkl",
 			Name:                "object_md",
 			Namespace:           "a_namespace",
-			CreationTimestampNs: 4,
-			DeletionTimestampNs: 6,
+			CreationTimestampNS: 4,
+			DeletionTimestampNS: 6,
 		},
 		References: refs,
 	}
@@ -673,10 +673,10 @@ func TestObjectToPodProto(t *testing.T) {
 	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
 		Type: messagespb.POD,
 		Metadata: &metadatapb.ObjectMetadata{
-			Uid:                 "ijkl",
+			UID:                 "ijkl",
 			Name:                "object_md",
-			CreationTimestampNs: 4,
-			DeletionTimestampNs: 6,
+			CreationTimestampNS: 4,
+			DeletionTimestampNS: 6,
 		},
 	}
 

@@ -52,7 +52,7 @@ func (mds *EtcdMetadataStore) UpdateEndpoints(e *metadatapb.Endpoints) error {
 	for _, subset := range e.Subsets {
 		for _, addr := range subset.Addresses {
 			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
-				podIds = append(podIds, addr.TargetRef.Uid)
+				podIds = append(podIds, addr.TargetRef.UID)
 			}
 		}
 	}
@@ -72,7 +72,7 @@ func getNamespaceFromString(ns string) string {
 }
 
 func getEndpointKey(e *metadatapb.Endpoints) string {
-	return path.Join("/", "endpoints", getNamespaceFromMetadata(e.Metadata), e.Metadata.Uid)
+	return path.Join("/", "endpoints", getNamespaceFromMetadata(e.Metadata), e.Metadata.UID)
 }
 
 // UpdatePod adds or updates the given pod in the metadata store.
@@ -88,7 +88,7 @@ func (mds *EtcdMetadataStore) UpdatePod(p *metadatapb.Pod) error {
 }
 
 func getPodKey(e *metadatapb.Pod) string {
-	return getPodKeyFromStrings(e.Metadata.Uid, getNamespaceFromMetadata(e.Metadata))
+	return getPodKeyFromStrings(e.Metadata.UID, getNamespaceFromMetadata(e.Metadata))
 }
 
 func getPodKeyFromStrings(uid string, namespace string) string {
@@ -126,7 +126,7 @@ func (mds *EtcdMetadataStore) UpdateContainers(containers []*metadatapb.Containe
 	// Get all pods with the given pod ids.
 	podOps := make([]clientv3.Op, len(containers))
 	for i, container := range containers {
-		podOps[i] = clientv3.OpGet(getPodKeyFromStrings(container.PodUid, getNamespaceFromString(container.Namespace)))
+		podOps[i] = clientv3.OpGet(getPodKeyFromStrings(container.PodUID, getNamespaceFromString(container.Namespace)))
 	}
 
 	txnresp, err := mds.client.Txn(context.TODO()).If().Then(podOps...).Commit()
@@ -178,7 +178,7 @@ func (mds *EtcdMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*metada
 }
 
 func getServiceKey(e *metadatapb.Service) string {
-	return path.Join("/", "service", getNamespaceFromMetadata(e.Metadata), e.Metadata.Uid)
+	return path.Join("/", "service", getNamespaceFromMetadata(e.Metadata), e.Metadata.UID)
 }
 
 func getServicePodMapKey(e *metadatapb.Endpoints) string {
