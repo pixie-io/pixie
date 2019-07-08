@@ -419,7 +419,7 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
   socket_trace_connector->ReadPerfBuffer(kHTTPTableNum);
   EXPECT_OK(source->Stop());
 
-  // TODO(yzhao): Write a matcher for Stream.
+  // TODO(yzhao): Updates to verify that ConnectionTracker exists for the known <pid, fd> pairs.
   ASSERT_THAT(socket_trace_connector->TestOnlyStreams(), SizeIs(4));
 
   std::vector<std::pair<uint64_t, std::string_view>> seq_msgs;
