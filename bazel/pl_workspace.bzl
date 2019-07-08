@@ -64,15 +64,6 @@ def _docker_images_setup():
         repository = "distroless/cc",
     )
 
-    # Import dev image.
-    # Warning: Make sure to update the digest if you need an up-to-date version.
-    container_pull(
-        name = "dev_image",
-        digest = "sha256:e0f7ba46700d4eb0b823e4949cea3219e408f2443fc5612b22785be0ded46b96",
-        registry = "gcr.io",
-        repository = "pl-dev-infra/dev_image",
-    )
-
 def _artifacts_setup():
     gcs_file(
         name = "linux_headers.tar.gz",

@@ -67,12 +67,6 @@ container_image(
     visibility = ["//visibility:public"],
 )
 
-container_image(
-    name = "pl_cc_dev_image",
-    base = "@dev_image//image",
-    visibility = ["//visibility:public"],
-)
-
 container_bundle(
     name = "pl_image_bundle",
     images = {
