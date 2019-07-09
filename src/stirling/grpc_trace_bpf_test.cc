@@ -21,39 +21,38 @@ namespace http2 {
 
 using ::google::protobuf::Message;
 using ::google::protobuf::util::MessageDifferencer;
+using ::pl::stirling::testing::HelloReply;
+using ::pl::types::ColumnWrapperRecordBatch;
 using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::Eq;
+using ::testing::HasSubstr;
 using ::testing::IsEmpty;
+using ::testing::MatchesRegex;
 using ::testing::Pair;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-std::string JoinStream(const std::map<uint64_t, SocketDataEvent>& stream) {
-  std::string result;
-  for (const auto& [seq_num, event] : stream) {
-    PL_UNUSED(seq_num);
-    result.append(event.msg);
+constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
+constexpr DataTableSchema kHTTPTable = SocketTraceConnector::kHTTPTable;
+constexpr uint32_t kHTTPMajorVersionIdx = kHTTPTable.ColIndex("http_major_version");
+constexpr uint32_t kHTTPContentTypeIdx = kHTTPTable.ColIndex("http_content_type");
+constexpr uint32_t kHTTPHeaderIdx = kHTTPTable.ColIndex("http_headers");
+constexpr uint32_t kHTTPTGIDIdx = kHTTPTable.ColIndex("tgid");
+constexpr uint32_t kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
+constexpr uint32_t kHTTPRespBodyIdx = kHTTPTable.ColIndex("http_resp_body");
+
+std::vector<size_t> FindRecordIdxMatchesPid(const ColumnWrapperRecordBatch& http_record, int pid) {
+  std::vector<size_t> res;
+  for (size_t i = 0; i < http_record[kHTTPTGIDIdx]->Size(); ++i) {
+    if (http_record[kHTTPTGIDIdx]->Get<types::Int64Value>(i).val == pid) {
+      res.push_back(i);
+    }
   }
-  return result;
+  return res;
 }
 
-std::map<std::string, std::string> Headers(const Frame& frame) {
-  std::map<std::string, std::string> result;
-  for (size_t i = 0; i < frame.frame.headers.nvlen; ++i) {
-    std::string name(reinterpret_cast<const char*>(frame.frame.headers.nva[i].name),
-                     frame.frame.headers.nva[i].namelen);
-    std::string value(reinterpret_cast<const char*>(frame.frame.headers.nva[i].value),
-                      frame.frame.headers.nva[i].valuelen);
-    result[name] = value;
-  }
-  return result;
-}
-
-MATCHER_P(IsFrameType, t, "") { return arg.frame.hd.type == t; }
-MATCHER_P(HasStreamID, t, "") { return arg.frame.hd.stream_id == t; }
-
-TEST(GRPCTraceBPFTest, DISABLED_TestGolangGrpcService) {
+TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   constexpr char kBaseDir[] = "src/stirling/testing";
   std::string s_path =
       TestEnvironment::PathToTestDataFile(absl::StrCat(kBaseDir, "/go_greeter_server"));
@@ -83,78 +82,43 @@ TEST(GRPCTraceBPFTest, DISABLED_TestGolangGrpcService) {
   s.Kill();
   EXPECT_EQ(9, s.Wait()) << "Server should have been killed.";
 
-  socket_trace_connector->ReadPerfBuffer(SocketTraceConnector::kHTTPTableNum);
+  ColumnWrapperRecordBatch record_batch;
+  InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 1, &record_batch);
 
-  std::vector<const ConnectionTracker*> h2_streams = socket_trace_connector->TestOnlyStreams();
-  ASSERT_GE(h2_streams.size(), 1);
-  ConnectionTracker h2_stream = *h2_streams[0];
-  {
-    std::string send_string = JoinStream(h2_stream.send_data().events);
-    std::string_view send_buf = send_string;
-    std::deque<Frame> frames;
-
-    ParseResult<size_t> s = Parse(MessageType::kMixed, send_buf, &frames);
-    EXPECT_EQ(ParseState::kSuccess, s.state);
-
-    EXPECT_THAT(frames, ElementsAre(IsFrameType(NGHTTP2_HEADERS), IsFrameType(NGHTTP2_DATA),
-                                    IsFrameType(NGHTTP2_HEADERS)));
-    EXPECT_THAT(frames, ElementsAre(HasStreamID(1), HasStreamID(1), HasStreamID(1)));
-
-    std::map<uint32_t, std::vector<GRPCMessage>> stream_msgs;
-    EXPECT_OK(StitchGRPCStreamFrames(&frames, &stream_msgs));
-    EXPECT_THAT(frames, IsEmpty());
-    ASSERT_THAT(stream_msgs, ElementsAre(Pair(1, SizeIs(1))));
-
-    const GRPCMessage& resp = stream_msgs[1].front();
-    EXPECT_TRUE(resp.parse_succeeded);
-    EXPECT_THAT(resp.type, Eq(MessageType::kResponses));
-    EXPECT_THAT(resp.headers,
-                ElementsAre(Pair(":status", "200"), Pair("content-type", "application/grpc"),
-                            Pair("grpc-message", ""), Pair("grpc-status", "0")));
-
-    testing::HelloReply received_reply;
-    EXPECT_TRUE(resp.ParseProtobuf(&received_reply));
-
-    testing::HelloReply expected_reply;
-    expected_reply.set_message("Hello PixieLabs");
-    EXPECT_TRUE(MessageDifferencer::Equals(received_reply, expected_reply));
+  connector->TransferData(kHTTPTableNum, &record_batch);
+  for (const auto& col : record_batch) {
+    // Sometimes connect() returns 0, so we might have data from requester and responder.
+    ASSERT_GE(col->Size(), 1);
   }
-  {
-    std::string recv_string = JoinStream(h2_stream.recv_data().events);
-    std::string_view recv_buf = recv_string;
-    std::deque<Frame> frames;
-    constexpr size_t kHTTP2ClientConnectPrefaceSizeInBytes = 24;
-    recv_buf.remove_prefix(kHTTP2ClientConnectPrefaceSizeInBytes);
+  const std::vector<size_t> server_record_indices =
+      FindRecordIdxMatchesPid(record_batch, s.child_pid());
+  // We should get exactly one record.
+  ASSERT_THAT(server_record_indices, SizeIs(1));
+  const size_t server_record_idx = server_record_indices.front();
 
-    ParseResult<size_t> s = Parse(MessageType::kUnknown, recv_buf, &frames);
-    EXPECT_EQ(ParseState::kSuccess, s.state);
-    ASSERT_THAT(frames, SizeIs(2));
+  EXPECT_EQ(s.child_pid(),
+            record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(server_record_idx).val);
+  EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(server_record_idx)),
+              MatchesRegex(":authority: localhost:50051\n"
+                           ":method: POST\n"
+                           ":path: /pl.stirling.testing.Greeter/SayHello\n"
+                           ":scheme: http\n"
+                           "content-type: application/grpc\n"
+                           "grpc-timeout: [0-9]+u\n"
+                           "te: trailers\n"
+                           "user-agent: grpc-go/.+"));
+  EXPECT_THAT(
+      std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(server_record_idx)),
+      HasSubstr("127.0.0.1"));
+  EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(server_record_idx).val);
+  EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
+            record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(server_record_idx).val);
 
-    EXPECT_THAT(frames, ElementsAre(IsFrameType(NGHTTP2_HEADERS), IsFrameType(NGHTTP2_DATA)));
-    EXPECT_THAT(frames, ElementsAre(HasStreamID(1), HasStreamID(1)));
-
-    std::map<uint32_t, std::vector<GRPCMessage>> stream_msgs;
-    EXPECT_OK(StitchGRPCStreamFrames(&frames, &stream_msgs));
-    EXPECT_THAT(frames, IsEmpty());
-    ASSERT_THAT(stream_msgs, ElementsAre(Pair(1, SizeIs(1))));
-
-    const GRPCMessage& req = stream_msgs[1].front();
-    EXPECT_TRUE(req.parse_succeeded);
-    EXPECT_THAT(req.type, Eq(MessageType::kRequests));
-    EXPECT_THAT(req.headers,
-                ElementsAre(Pair(":authority", "localhost:50051"), Pair(":method", "POST"),
-                            Pair(":path", "/pl.stirling.testing.Greeter/SayHello"),
-                            Pair(":scheme", "http"), Pair("content-type", "application/grpc"),
-                            Pair("grpc-timeout", _),  // The value keeps changing, just ignore it.
-                            Pair("te", "trailers"), Pair("user-agent", "grpc-go/1.19.0")));
-
-    testing::HelloRequest received_req;
-    EXPECT_TRUE(req.ParseProtobuf(&received_req));
-
-    testing::HelloRequest expected_req;
-    expected_req.set_name("PixieLabs");
-    EXPECT_TRUE(MessageDifferencer::Equals(received_req, expected_req));
-  }
+  HelloReply received_reply, expected_reply;
+  expected_reply.set_message("Hello PixieLabs");
+  EXPECT_TRUE(ParseProtobuf(
+      record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(server_record_idx), &received_reply));
+  EXPECT_TRUE(MessageDifferencer::Equals(received_reply, expected_reply));
 }
 
 }  // namespace http2

@@ -23,6 +23,11 @@ DEFINE_string(http_response_header_filters, "Content-Type:json",
 namespace pl {
 namespace stirling {
 
+using ::pl::stirling::http2::Frame;
+using ::pl::stirling::http2::GRPCMessage;
+using ::pl::stirling::http2::GRPCReqResp;
+using ::pl::stirling::http2::MatchGRPCReqResp;
+
 Status SocketTraceConnector::InitImpl() {
   if (!IsRoot()) {
     return error::PermissionDenied("BCC currently only supported as the root user.");
@@ -250,7 +255,7 @@ void SocketTraceConnector::TransferStreamData(uint32_t table_num,
   switch (table_num) {
     case kHTTPTableNum:
       TransferStreams<HTTPMessage>(kProtocolHTTP, record_batch);
-      TransferStreams<HTTPMessage>(kProtocolHTTP2, record_batch);
+      TransferStreams<Frame>(kProtocolHTTP2, record_batch);
       break;
     case kMySQLTableNum:
       // TODO(oazizi): Convert MySQL protocol to use streams.
@@ -342,6 +347,34 @@ void SocketTraceConnector::ProcessMessages(const ConnectionTracker& conn_tracker
   resp_messages->clear();
 }
 
+template <>
+void SocketTraceConnector::ProcessMessages(const ConnectionTracker& conn_tracker,
+                                           std::deque<Frame>* req_messages,
+                                           std::deque<Frame>* resp_messages,
+                                           types::ColumnWrapperRecordBatch* record_batch) {
+  std::map<uint32_t, std::vector<GRPCMessage>> reqs;
+  std::map<uint32_t, std::vector<GRPCMessage>> resps;
+
+  // First stitch all frames to form gRPC messages.
+  Status s1 = StitchGRPCStreamFrames(*req_messages, &reqs);
+  Status s2 = StitchGRPCStreamFrames(*resp_messages, &resps);
+
+  LOG_IF(ERROR, !s1.ok()) << "Failed to stitch frames for requests, error: " << s1.msg();
+  LOG_IF(ERROR, !s2.ok()) << "Failed to stitch frames for responses, error: " << s2.msg();
+
+  std::vector<GRPCReqResp> records = MatchGRPCReqResp(std::move(reqs), std::move(resps));
+
+  for (auto& r : records) {
+    r.req.MarkFramesConsumed();
+    r.resp.MarkFramesConsumed();
+    TraceRecord<GRPCMessage> tmp{&conn_tracker, std::move(r.req), std::move(r.resp)};
+    ConsumeMessage(std::move(tmp), record_batch);
+  }
+
+  EraseConsumedFrames(req_messages);
+  EraseConsumedFrames(resp_messages);
+}
+
 template <class TMessageType>
 void SocketTraceConnector::ConsumeMessage(TraceRecord<TMessageType> record,
                                           types::ColumnWrapperRecordBatch* record_batch) {
@@ -383,7 +416,7 @@ bool SocketTraceConnector::SelectMessage(const TraceRecord<HTTPMessage>& record)
 }
 
 template <>
-bool SocketTraceConnector::SelectMessage(const TraceRecord<http2::GRPCMessage>& grpc_record) {
+bool SocketTraceConnector::SelectMessage(const TraceRecord<GRPCMessage>& grpc_record) {
   PL_UNUSED(grpc_record);
   return true;
 }
@@ -439,13 +472,13 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record,
 }
 
 template <>
-void SocketTraceConnector::AppendMessage(TraceRecord<http2::GRPCMessage> record,
+void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record,
                                          types::ColumnWrapperRecordBatch* record_batch) {
   CHECK_EQ(kHTTPTable.elements().size(), record_batch->size());
 
   const ConnectionTracker& conn_tracker = *record.tracker;
-  http2::GRPCMessage& req_message = record.req_message;
-  http2::GRPCMessage& resp_message = record.resp_message;
+  GRPCMessage& req_message = record.req_message;
+  GRPCMessage& resp_message = record.resp_message;
 
   DCHECK_GE(resp_message.timestamp_ns, req_message.timestamp_ns);
 
@@ -459,17 +492,18 @@ void SocketTraceConnector::AppendMessage(TraceRecord<http2::GRPCMessage> record,
   r.Append<r.ColIndex("http_major_version")>(2);
   // HTTP2 does not define minor version.
   r.Append<r.ColIndex("http_minor_version")>(0);
-  // TODO(yzhao): Populate req_headers as well.
+  // TODO(yzhao): Populate resp_headers as well.
+  // gRPC request headers are more interesting.
   r.Append<r.ColIndex("http_headers")>(
-      absl::StrJoin(resp_message.headers, "\n", absl::PairFormatter(": ")));
+      absl::StrJoin(req_message.headers, "\n", absl::PairFormatter(": ")));
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
   // TODO(yzhao): Populate the following 4 fields from headers.
   r.Append<r.ColIndex("http_req_method")>("GET");
   r.Append<r.ColIndex("http_req_path")>("PATH");
   r.Append<r.ColIndex("http_resp_status")>(200);
   r.Append<r.ColIndex("http_resp_message")>("OK");
-  // TODO(yzhao): Populate this field with hardcoded Hipster Shop proto descriptor database.
-  r.Append<r.ColIndex("http_resp_body")>("body");
+  // TODO(yzhao): Populate this field with parsed text format protobufs.
+  r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.message));
   r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns -
                                                req_message.timestamp_ns);
 }

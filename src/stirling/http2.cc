@@ -105,7 +105,7 @@ void UnpackContinuation(const uint8_t* buf, Frame* frame) {
  *
  * This code follows: https://github.com/nghttp2/nghttp2/blob/master/examples/deflate.c.
  */
-Status InflateHeaderBlock(u8string_view buf, nghttp2_hd_inflater* inflater, NVMap* nv_map) {
+ParseState InflateHeaderBlock(u8string_view buf, nghttp2_hd_inflater* inflater, NVMap* nv_map) {
   // TODO(yzhao): Experiment continuous parsing of multiple header block fragments from different
   // HTTP2 streams.
   constexpr bool in_final = true;
@@ -116,7 +116,7 @@ Status InflateHeaderBlock(u8string_view buf, nghttp2_hd_inflater* inflater, NVMa
     const int rv =
         nghttp2_hd_inflate_hd2(inflater, &nv, &inflate_flags, buf.data(), buf.size(), in_final);
     if (rv < 0) {
-      return error::Internal("Failed to inflate header");
+      return ParseState::kInvalid;
     }
     buf.remove_prefix(rv);
 
@@ -133,7 +133,7 @@ Status InflateHeaderBlock(u8string_view buf, nghttp2_hd_inflater* inflater, NVMa
       break;
     }
   }
-  return Status::OK();
+  return ParseState::kSuccess;
 }
 
 }  // namespace
@@ -255,84 +255,108 @@ void PreProcessMessage(GRPCMessage* message) { PL_UNUSED(message); }
 
 namespace {
 
-Status CheckGRPCMessage(u8string_view u8buf) {
-  if (u8buf.size() < kGRPCMessageHeaderSizeInBytes) {
-    return error::InvalidArgument(absl::StrCat("Needs at least 5 bytes, got: ", u8buf.size()));
+ParseState CheckGRPCMessage(std::string_view buf) {
+  if (buf.size() < kGRPCMessageHeaderSizeInBytes) {
+    return ParseState::kNeedsMoreData;
   }
-  if (u8buf[0] != 0) {
-    return error::Unimplemented("GRPC message decompression is unimplemented");
+  const uint32_t len = nghttp2_get_uint32(reinterpret_cast<const uint8_t*>(buf.data()) + 1);
+  if (buf.size() < kGRPCMessageHeaderSizeInBytes + len) {
+    return ParseState::kNeedsMoreData;
   }
-  const uint32_t len = nghttp2_get_uint32(u8buf.data() + 1);
-  if (u8buf.size() != kGRPCMessageHeaderSizeInBytes + len) {
-    return error::InvalidArgument(absl::Substitute(
-        "Expect bytes: $0, got: $1", kGRPCMessageHeaderSizeInBytes + len, u8buf.size()));
-  }
-  return Status::OK();
+  return ParseState::kSuccess;
 }
 
 /**
  * @brief Given a list of frames for one stream, stitches them together into gRPC request and
  * response messages. Also mark consumed frames, so the caller can destroy them afterwards.
  */
-Status StitchFrames(const std::vector<Frame*>& frames, nghttp2_hd_inflater* inflater,
-                    std::vector<GRPCMessage>* msgs) {
+// TODO(yzhao): Turn this into a class that parse frames one by one.
+void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* inflater,
+                  std::vector<GRPCMessage>* msgs) {
   size_t header_block_size = 0;
-  std::vector<Frame*> header_block_frames;
-  GRPCMessage msg;
-  bool header_block_started = false;
+  std::vector<const Frame*> header_block_frames;
 
-  auto handle_headers_or_continuation = [inflater, &header_block_size, &header_block_frames, &msg,
-                                         &header_block_started](Frame* f) {
+  size_t data_block_size = 0;
+  std::vector<const Frame*> data_block_frames;
+
+  GRPCMessage msg;
+  enum class Progress {
+    kUnknown,
+    kInDataBlock,
+    kInHeadersBlock,
+  };
+  Progress progress = Progress::kUnknown;
+
+  auto handle_headers_or_continuation = [&progress, &header_block_size, &header_block_frames, &msg,
+                                         inflater](const Frame* f) {
     header_block_size += f->u8payload.size();
     header_block_frames.push_back(f);
     if (IsEndHeaders(f->frame.hd)) {
-      header_block_started = false;
+      progress = Progress::kUnknown;
       u8string u8buf;
       u8buf.reserve(header_block_size);
       for (auto* f : header_block_frames) {
-        f->consumed = true;
         u8buf.append(f->u8payload);
       }
+      msg.frames.insert(msg.frames.end(), header_block_frames.begin(), header_block_frames.end());
       header_block_frames.clear();
       header_block_size = 0;
-      msg.parse_succeeded = InflateHeaderBlock(u8buf, inflater, &msg.headers).ok();
+      msg.parse_state = InflateHeaderBlock(u8buf, inflater, &msg.headers);
     }
   };
 
-  for (Frame* f : frames) {
+  auto handle_end_stream = [&progress, &data_block_size, &data_block_frames, &msg,
+                            msgs](const Frame* f) {
+    progress = Progress::kUnknown;
+    msg.timestamp_ns = f->timestamp_ns;
+
+    // Now join the messages scattered in the frames.
+    msg.message.reserve(data_block_size);
+    for (auto* f : data_block_frames) {
+      msg.message.append(reinterpret_cast<const char*>(f->u8payload.data()), f->u8payload.size());
+    }
+    msg.frames.insert(msg.frames.end(), data_block_frames.begin(), data_block_frames.end());
+    data_block_frames.clear();
+    data_block_size = 0;
+    msg.parse_state = CheckGRPCMessage(msg.message);
+    msgs->emplace_back(std::move(msg));
+  };
+
+  for (const Frame* f : frames) {
     const uint8_t type = f->frame.hd.type;
     switch (type) {
       case NGHTTP2_DATA:
-        DCHECK(!header_block_started) << "DATA frame must not follow a unended HEADERS frame.";
-        f->consumed = true;
-        msg.message.append(f->u8payload.data(), f->u8payload.size());
+        DCHECK(progress != Progress::kInHeadersBlock)
+            << "DATA frame must not follow a unended HEADERS frame.";
+        if (progress == Progress::kUnknown) {
+          // This is the first data frame. We must receive a payload with certain size.
+          progress = Progress::kInDataBlock;
+        }
+        data_block_size += f->u8payload.size();
+        data_block_frames.push_back(f);
         // gRPC request EOS (end-of-stream) is indicated by END_STREAM flag on the last DATA frame.
         // This also indicates this message is a request. Keep appending data, and then export when
         // END_STREAM is seen.
         if (IsEndStream(f->frame.hd)) {
           msg.type = MessageType::kRequests;
-          msg.timestamp_ns = f->timestamp_ns;
-          msg.parse_succeeded = CheckGRPCMessage(msg.message).ok();
-          msgs->emplace_back(std::move(msg));
+          handle_end_stream(f);
         }
         break;
       case NGHTTP2_HEADERS:
-        DCHECK(!header_block_started) << "HEADERS frame must not follow another unended HEADERS "
-                                         "frame.";
-        header_block_started = true;
+        DCHECK(progress != Progress::kInHeadersBlock)
+            << "HEADERS frame must not follow another unended HEADERS frame.";
+        progress = Progress::kInHeadersBlock;
         handle_headers_or_continuation(f);
         // gRPC response EOS (end-of-stream) is indicated by END_STREAM flag on the last HEADERS
         // frame. This also indicates this message is a response.
         // No CONTINUATION frame will be used.
         if (IsEndStream(f->frame.hd)) {
           msg.type = MessageType::kResponses;
-          msg.timestamp_ns = f->timestamp_ns;
-          msg.parse_succeeded = CheckGRPCMessage(msg.message).ok();
-          msgs->emplace_back(std::move(msg));
+          handle_end_stream(f);
         }
         break;
       case NGHTTP2_CONTINUATION:
-        DCHECK(header_block_started)
+        DCHECK(progress == Progress::kInHeadersBlock)
             << "CONTINUATION frame must follow a HEADERS or CONTINUATION frame.";
         handle_headers_or_continuation(f);
         // No need to handle END_STREAM as CONTINUATION frame does not define END_STREAM flag.
@@ -341,35 +365,36 @@ Status StitchFrames(const std::vector<Frame*>& frames, nghttp2_hd_inflater* infl
         constexpr char kErr[] =
             "This function does not accept any frame types other than "
             "DATA, HEADERS, and CONTINUATION";
-        DCHECK(false) << kErr;
-        return error::InvalidArgument(absl::StrCat(kErr, ". Got: ", FrameTypeName(type)));
+        CHECK(false) << kErr;
+        break;
     }
   }
-  return Status::OK();
 }
 
 }  // namespace
 
-Status StitchGRPCStreamFrames(std::deque<Frame>* frames,
+Status StitchGRPCStreamFrames(const std::deque<Frame>& frames,
                               std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs) {
-  // TODO(yzhao): In next diff, move inflater into part of ConnectionTracker or DataStream.
+  // TODO(yzhao): Consider moving inflater into part of ConnectionTracker or DataStream, or some
+  // other class that is persistent for a HTTP2 connection.
   nghttp2_hd_inflater inflater;
   InflaterRAIIWrapper inflater_wrapper{&inflater};
   PL_RETURN_IF_ERROR(inflater_wrapper.Init());
 
-  std::map<uint32_t, std::vector<Frame*>> stream_frames;
+  std::map<uint32_t, std::vector<const Frame*>> stream_frames;
 
   // Collect frames for each stream.
-  for (Frame& f : *frames) {
+  for (const Frame& f : frames) {
     stream_frames[f.frame.hd.stream_id].push_back(&f);
   }
   for (auto& [stream_id, frame_ptrs] : stream_frames) {
-    std::vector<GRPCMessage>* msgs = &(*stream_msgs)[stream_id];
-    PL_RETURN_IF_ERROR(StitchFrames(frame_ptrs, &inflater, msgs));
+    std::vector<GRPCMessage> msgs;
+    StitchFrames(frame_ptrs, &inflater, &msgs);
+    if (msgs.empty()) {
+      continue;
+    }
+    stream_msgs->emplace(stream_id, std::move(msgs));
   }
-  frames->erase(
-      std::remove_if(frames->begin(), frames->end(), [](const Frame& f) { return f.consumed; }),
-      frames->end());
   return Status::OK();
 }
 

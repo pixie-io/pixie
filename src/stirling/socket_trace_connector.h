@@ -72,9 +72,11 @@ class SocketTraceConnector : public SourceConnector {
           // TODO(yzhao): Replace http_headers with req_headers and resp_headers. As both req and
           // resp have headers. req_headers are particularly more meaningful for gRPC/HTTP2.
           {"http_headers", types::DataType::STRING, types::PatternType::STRUCTURED},
+          // Possible types are from HTTPContentType enum.
           {"http_content_type", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
           {"http_req_method", types::DataType::STRING, types::PatternType::GENERAL_ENUM},
           {"http_req_path", types::DataType::STRING, types::PatternType::STRUCTURED},
+          // TODO(yzhao): Add req_body for the payload of gRPC request.
           {"http_resp_status", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
           {"http_resp_message", types::DataType::STRING, types::PatternType::STRUCTURED},
           {"http_resp_body", types::DataType::STRING, types::PatternType::STRUCTURED},
@@ -153,22 +155,6 @@ class SocketTraceConnector : public SourceConnector {
    * @return Pointer to the ConnectionTracker, or nullptr if it does not exist.
    */
   const ConnectionTracker* GetConnectionTracker(struct conn_id_t connid) const;
-
-  // This function is deprecated. Use GetConnectionTracker instead.
-  // TODO(oazizi/yzhao): Remove calls to this function.
-  std::vector<const ConnectionTracker*> TestOnlyStreams() const {
-    std::vector<const ConnectionTracker*> trackers;
-    for (const auto& [pid_fd, tracker_set] : connection_trackers_) {
-      PL_UNUSED(pid_fd);
-      for (const auto& [generation, tracker] : tracker_set) {
-        PL_UNUSED(generation);
-        if (!tracker.IsZombie()) {
-          trackers.push_back(&tracker);
-        }
-      }
-    }
-    return trackers;
-  }
 
   void TestOnlyConfigure(uint32_t protocol, uint64_t config_mask) {
     config_mask_[protocol] = config_mask;

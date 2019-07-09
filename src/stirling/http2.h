@@ -47,7 +47,7 @@ struct Frame {
   uint64_t timestamp_ns;
 
   // If true, means this frame is processed and can be destroyed.
-  bool consumed = false;
+  mutable bool consumed = false;
 };
 
 // TODO(yzhao): Move ParseState inside http_parse.h to utils/parse_state.h; and then use it as
@@ -66,25 +66,30 @@ ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
                           std::deque<Frame>* messages);
 
 struct GRPCMessage {
+  // TODO(yzhao): We keep this field for easier testing. Update tests to not rely on input invalid
+  // data.
+  ParseState parse_state = ParseState::kUnknown;
   MessageType type = MessageType::kUnknown;
   uint64_t timestamp_ns = 0;
-  // TODO(yzhao): We should not need this, as we'll be changing into a lazy parse pattern, where
-  // incomplete messages will not be output, and the parser would restart from a known frame index.
-  bool parse_succeeded = false;
-  NVMap headers;
-  u8string message;
 
-  // TODO(yzhao): This will be changed into a free function that uses descriptor database APIs,
-  // which simulates the interface of gRPC reflection, to parse the gRPC messages.
-  template <typename ProtobufType>
-  bool ParseProtobuf(ProtobufType* pb) const {
-    if (!parse_succeeded) {
-      return false;
+  NVMap headers;
+  std::string message;
+  std::vector<const Frame*> frames;
+
+  void MarkFramesConsumed() const {
+    for (const auto* f : frames) {
+      f->consumed = true;
     }
-    return pb->ParseFromArray(message.data() + kGRPCMessageHeaderSizeInBytes,
-                              message.size() - kGRPCMessageHeaderSizeInBytes);
   }
 };
+
+// TODO(yzhao): This will be changed into a free function that uses descriptor database APIs,
+// which simulates the interface of gRPC reflection, to parse the gRPC messages.
+template <typename ProtobufType>
+inline bool ParseProtobuf(std::string message, ProtobufType* pb) {
+  return pb->ParseFromArray(message.data() + kGRPCMessageHeaderSizeInBytes,
+                            message.size() - kGRPCMessageHeaderSizeInBytes);
+}
 
 /**
  * @brief Required for fitting in the SocketTraceConnector::ConsumeMessage() template.
@@ -98,7 +103,7 @@ void PreProcessMessage(GRPCMessage* message);
  * @param stream_msgs The gRPC messages for each stream, keyed by stream ID. Note this is HTTP2
  * stream ID, not our internal stream ID for TCP connections.
  */
-Status StitchGRPCStreamFrames(std::deque<Frame>* frames,
+Status StitchGRPCStreamFrames(const std::deque<Frame>& frames,
                               std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs);
 
 /**
@@ -121,6 +126,15 @@ struct GRPCReqResp {
  */
 std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, std::vector<GRPCMessage>> reqs,
                                           std::map<uint32_t, std::vector<GRPCMessage>> resps);
+
+inline void EraseConsumedFrames(std::deque<Frame>* frames) {
+  frames->erase(
+      std::remove_if(frames->begin(), frames->end(), [](const Frame& f) { return f.consumed; }),
+      frames->end());
+}
+
+// TODO(yzhao): gRPC has a feature called bidirectional streaming:
+// https://grpc.io/docs/guides/concepts/. Investigate how to parse that off HTTP2 frames.
 
 }  // namespace http2
 }  // namespace stirling
