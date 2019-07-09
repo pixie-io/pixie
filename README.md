@@ -7,6 +7,7 @@
 *   docs/: Documentations for PixieLabs customers.
 *   experimental/: Sandbox for experimental code. Not reviewed or maintained as strictly as other
     code.
+*   k8s/: Kubernetes deploy yaml files.
 *   linters/: Linters. Their settings are in `.arclint`.
 *   scripts/: Scripts for one-off tasks.
 *   src/: Main sources of PixieLabs product.

@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: customer-docs
+  namespace: pl
+  labels:
+    app: pl-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: customer-docs
+  template:
+    metadata:
+      name: customer-docs
+      labels:
+        app: customer-docs
+        name: customer-docs
+    spec:
+      containers:
+      - name: customer-docs-server
+        image: gcr.io/pl-dev-infra/customer_docs_prod_image:latest
+        ports:
+          - containerPort: 56000
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 56000
+        volumeMounts:
+            - name: certs
+              mountPath: /certs
+      volumes:
+        - name: certs
+          secret:
+            secretName: custom-tls-cert
