@@ -34,7 +34,7 @@ TEST(CompilerTest, remove_range) {
   EXPECT_OK(sink->Init(range, amap, ast));
   EXPECT_FALSE(src->IsTimeSet());
 
-  EXPECT_EQ(std::vector<int64_t>({5, 0, 1, 2, 3, 4}), graph->dag().TopologicalSort());
+  EXPECT_EQ(std::vector<int64_t>({0, 1, 2, 3, 4, 5}), graph->dag().TopologicalSort());
 
   // Add dependencies.
   EXPECT_OK(graph->AddEdge(src, range));
@@ -44,7 +44,7 @@ TEST(CompilerTest, remove_range) {
 
   EXPECT_OK(IROptimizer().Optimize(graph.get()));
   // checks to make sure that all the edges related to range are removed.
-  EXPECT_EQ(std::vector<int64_t>({5, 0, 4}), graph->dag().TopologicalSort());
+  EXPECT_EQ(std::vector<int64_t>({0, 4, 5}), graph->dag().TopologicalSort());
   EXPECT_TRUE(src->IsTimeSet());
   EXPECT_EQ(stop_time_ns - start_time_ns, src->time_stop_ns() - src->time_start_ns());
   EXPECT_EQ(stop_time_ns, src->time_stop_ns());

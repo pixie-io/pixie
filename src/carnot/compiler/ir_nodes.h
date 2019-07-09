@@ -228,6 +228,26 @@ class ExpressionIR : public IRNode {
   bool IsExpression() const override { return true; }
   virtual types::DataType EvaluatedDataType() const = 0;
   virtual bool IsDataTypeEvaluated() const = 0;
+  StatusOr<OperatorIR*> ContainingOp() {
+    IR* graph = graph_ptr();
+    int64_t cur_id = id();
+    while (!graph->Get(cur_id)->IsOp()) {
+      std::vector<int64_t> parents = graph->dag().ParentsOf(cur_id);
+      if (parents.size() > 1) {
+        return CreateIRNodeError(
+            "Found more than one parent for node(id=$0,type=$1) while searching for parent "
+            "operator.",
+            cur_id, graph->Get(cur_id)->type_string());
+      }
+      if (parents.size() == 0) {
+        return CreateIRNodeError(
+            "Got no parents for node(id=$0,type=$1) while searching for parent operator. ", cur_id,
+            graph->Get(cur_id)->type_string());
+      }
+      cur_id = parents[0];
+    }
+    return static_cast<OperatorIR*>(graph->Get(cur_id));
+  }
 
  protected:
   ExpressionIR(int64_t id, IRNodeType type) : IRNode(id, type, false) {}
@@ -392,7 +412,7 @@ class FuncIR : public ExpressionIR {
   Opcode opcode() const { return op_.op_code; }
   explicit FuncIR(int64_t id) : ExpressionIR(id, FuncType) {}
   Status Init(Op op, std::string func_prefix, const std::vector<ExpressionIR*>& args,
-              const pypa::AstPtr& ast_node);
+              bool compile_time, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   std::string func_name() const {
@@ -403,12 +423,15 @@ class FuncIR : public ExpressionIR {
   const std::vector<ExpressionIR*>& args() { return args_; }
   const std::vector<types::DataType>& args_types() { return args_types_; }
   void SetArgsTypes(std::vector<types::DataType> args_types) { args_types_ = args_types; }
+  // TODO(philkuz) figure out how to combine this with set_func_id.
   void SetOutputDataType(types::DataType type) {
     evaluated_data_type_ = type;
     is_data_type_evaluated_ = true;
   }
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
   bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
+
+  bool is_compile_time() const { return is_compile_time_; }
 
  private:
   std::string func_prefix_;
@@ -419,6 +442,7 @@ class FuncIR : public ExpressionIR {
   int64_t func_id_ = 0;
   types::DataType evaluated_data_type_;
   bool is_data_type_evaluated_;
+  bool is_compile_time_;
 };
 
 /**

@@ -128,6 +128,7 @@ Status MemorySinkIR::InitImpl(const ArgMap& args) {
     return name_node->CreateIRNodeError("Expected string. Got $0", name_node->type_string());
   }
   name_ = static_cast<StringIR*>(name_node)->str();
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, name_node));
   name_set_ = true;
   return Status::OK();
 }
@@ -142,6 +143,7 @@ Status MemorySourceIR::InitImpl(const ArgMap& args) {
                              table_node->type());
   }
   table_name_ = static_cast<StringIR*>(table_node)->str();
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, table_node));
 
   IRNode* select_node = args.find("select")->second;
   if (select_node == nullptr) {
@@ -365,6 +367,7 @@ Status LimitIR::InitImpl(const ArgMap& args) {
   }
 
   SetLimitValue(static_cast<IntIR*>(limit_node)->val());
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, limit_node));
   return Status::OK();
 }
 
@@ -417,6 +420,7 @@ Status BlockingAggIR::InitImpl(const ArgMap& args) {
   }
 
   agg_func_ = static_cast<LambdaIR*>(agg_func);
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, agg_func_));
 
   return Status();
 }
@@ -568,6 +572,9 @@ Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names,
   SetLineCol(ast_node);
   expected_column_names_ = expected_column_names;
   col_exprs_ = col_exprs;
+  for (const ColumnExpression& col_expr : col_exprs) {
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, col_expr.node));
+  }
   has_dict_body_ = true;
   return Status::OK();
 }
@@ -577,6 +584,7 @@ Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names, IRN
   SetLineCol(ast_node);
   expected_column_names_ = expected_column_names;
   col_exprs_.push_back(ColumnExpression{"default_key", node});
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, node));
   has_dict_body_ = false;
   return Status::OK();
 }
@@ -622,15 +630,17 @@ std::unordered_map<std::string, FuncIR::Op> FuncIR::op_map{
     {"or", {FuncIR::Opcode::logor, "or", "logicalOr"}}};
 bool FuncIR::HasLogicalRepr() const { return false; }
 Status FuncIR::Init(Op op, std::string func_prefix, const std::vector<ExpressionIR*>& args,
-                    const pypa::AstPtr& ast_node) {
+                    bool compile_time, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   op_ = op;
   func_prefix_ = func_prefix;
   args_ = args;
+  is_compile_time_ = compile_time;
   for (auto a : args_) {
     if (a == nullptr) {
       return error::Internal("Argument for FuncIR is null.");
     }
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, a));
   }
   return Status::OK();
 }
