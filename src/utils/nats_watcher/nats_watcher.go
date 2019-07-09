@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/go-nats"
 	log "github.com/sirupsen/logrus"
@@ -60,5 +62,6 @@ func main() {
 
 	// Run forever to maintain subscription.
 	for {
+		time.Sleep(300 * time.Millisecond)
 	}
 }
