@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: vizier-api-service
+  namespace: pl
+spec:
+  type: ClusterIP
+  ports:
+    - port: 50200
+      protocol: TCP
+      targetPort: 50200
+      name: tcp-grpc
+    - port: 50201
+      protocol: TCP
+      targetPort: 50201
+      name: tcp-rest
+  selector:
+    name: vizier-api

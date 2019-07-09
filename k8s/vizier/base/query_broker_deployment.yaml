@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: vizier-query-broker
+  namespace: pl
+  labels:
+    app: pl-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vizier-query-broker
+  template:
+    metadata:
+      labels:
+        app: vizier-query-broker
+        name: vizier-query-broker
+    spec:
+      containers:
+      - image: gcr.io/pl-dev-infra/vizier_query_broker:latest
+        name: vizier-query-broker
+        ports:
+        - containerPort: 50300
+        env:
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: pl-app-secrets
+              key: jwt-signing-key
+        - name: PL_SERVER_TLS_CERT
+          value: /certs/server.crt
+        - name: PL_SERVER_TLS_KEY
+          value: /certs/server.key
+        - name: PL_CLIENT_TLS_CERT
+          value: /certs/client.crt
+        - name: PL_CLIENT_TLS_KEY
+          value: /certs/client.key
+        - name: PL_TLS_CA_CERT
+          value: /certs/ca.crt
+          # TODO(zasgar): Remove this.
+        - name: PL_DISABLE_GRPC_AUTH
+          value: "true"
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+      volumes:
+        - name: certs
+          secret:
+            secretName: service-tls-certs

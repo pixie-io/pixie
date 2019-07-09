@@ -1,0 +1,47 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vizier-metadata
+  namespace: pl
+  labels:
+    app: pl-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vizier-metadata
+  template:
+    metadata:
+      labels:
+        app: vizier-metadata
+        name: vizier-metadata
+    spec:
+      containers:
+      - image: gcr.io/pl-dev-infra/vizier_metadata:latest
+        name: vizier-metadata
+        env:
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              name: pl-app-secrets
+              key: jwt-signing-key
+        - name: PL_SERVER_TLS_CERT
+          value: /certs/server.crt
+        - name: PL_SERVER_TLS_KEY
+          value: /certs/server.key
+        - name: PL_CLIENT_TLS_CERT
+          value: /certs/client.crt
+        - name: PL_CLIENT_TLS_KEY
+          value: /certs/client.key
+        - name: PL_TLS_CA_CERT
+          value: /certs/ca.crt
+        # TODO(zasgar): Remove this.
+        - name: PL_DISABLE_GRPC_AUTH
+          value: "true"
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+      volumes:
+        - name: certs
+          secret:
+            secretName: service-tls-certs

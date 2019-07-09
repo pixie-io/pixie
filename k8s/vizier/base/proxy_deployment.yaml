@@ -1,0 +1,46 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vizier-proxy
+  namespace: pl
+  labels:
+    app: pl-monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vizier-proxy
+  template:
+    metadata:
+      name: vizier-proxy
+      labels:
+        app: vizier-proxy
+        name: vizier-proxy
+    spec:
+      containers:
+      - name: vizier-proxy-server
+        image: gcr.io/pl-dev-infra/proxy_image:latest
+        ports:
+          - containerPort: 55000
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 55000
+        env:
+          - name: PL_JWT_SIGNING_KEY
+            valueFrom:
+              secretKeyRef:
+                name: pl-app-secrets
+                key: jwt-signing-key
+          - name: PL_TLS_CERT
+            value: /certs/tls.crt
+          - name: PL_TLS_KEY
+            value: /certs/tls.key
+        volumeMounts:
+            - name: certs
+              mountPath: /certs
+      volumes:
+        - name: certs
+          secret:
+            secretName: proxy-tls-certs

@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: agent
+  namespace: pl
+  labels:
+    app: pl-monitoring
+spec:
+  selector:
+    matchLabels:
+      name: agent
+  template:
+    metadata:
+      labels:
+        name: agent
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
+      containers:
+      - name: agent
+        image: gcr.io/pl-dev-infra/agent_image:latest
+        env:
+        - name: PL_VIZIER_ADDR
+          value: vizier.pl.svc.cluster.local:40000
+        - name: PL_CLIENT_TLS_CERT
+          value: /certs/client.crt
+        - name: PL_CLIENT_TLS_KEY
+          value: /certs/client.key
+        - name: PL_TLS_CA_CERT
+          value: /certs/ca.crt
+        - name: PL_DISABLE_SSL
+          value: "false"
+        resources:
+          limits:
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        securityContext:
+          capabilities:
+            add:
+              - SYS_PTRACE
+              - SYS_ADMIN
+          privileged: true
+        volumeMounts:
+        - name: sys # mount the debug filesystem
+          mountPath: /sys
+          readOnly: true
+        - name: linux-headers # mount the linux headers
+          mountPath: /usr/src
+          readOnly: true
+        - name: lib-modules # mount the linux headers
+          mountPath: /lib/modules
+          readOnly: true
+        - name: certs
+          mountPath: /certs
+      hostPID: true
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: sys
+        hostPath:
+            path: /sys
+            type: Directory
+      - name: linux-headers
+        hostPath:
+            path: /usr/src
+            type: DirectoryOrCreate
+      - name: lib-modules
+        hostPath:
+            path: /lib/modules
+            type: DirectoryOrCreate
+      - name: certs
+        secret:
+            secretName: service-tls-certs
