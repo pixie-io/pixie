@@ -51,7 +51,8 @@ final class ExpCheckerTest {
 
         // Filter to only BUILD.bazel files in the experimental directory.
         $this->files = array_filter($this->files, function($f) {
-            return strpos($f, 'experimental') == 0 && substr($f, -11) == 'BUILD.bazel';
+            echo $f;
+            return strpos($f, 'experimental/') !== false && substr($f, -11) == 'BUILD.bazel';
         });
 
         foreach ($this->files as &$file) {
