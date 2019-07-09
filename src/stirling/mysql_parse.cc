@@ -1,33 +1,48 @@
 #include "src/stirling/mysql_parse.h"
+#include <arpa/inet.h>
 #include <deque>
 #include <string>
 #include <string_view>
 #include <utility>
 #include "src/stirling/event_parser.h"
 
+namespace pl {
+namespace stirling {
 namespace {
 template <size_t N>
 void EndianSwap(const char bytes[N], char result[N]) {
   if (N == 0) {
     return;
   }
-  for (size_t k = 0; k < N - 1; k++) {
-    result[k] = bytes[N - k - 2];
+  for (size_t k = 0; k < N; k++) {
+    result[k] = bytes[N - k - 1];
   }
-  result[N - 1] = '\x00';
 }
 
-int charArrToInt(const char arr[], int size) {
+// The input bytes are big endian.
+// TODO(chengruizhe): Convert to template with [N] to avoid DCHECK.
+int BEBytesToInt(const char arr[], size_t size) {
+  DCHECK(size < sizeof(int));
   int result = 0;
-  for (int i = 0; i < size; i++) {
-    result = arr[i] + (result << 4);
+  for (size_t i = 0; i < size; i++) {
+    result = arr[i] + (result << (i * 8));
   }
   return result;
 }
+
+MySQLEventType infer_mysql_protocol(std::string_view buf) {
+  if (buf.substr(0, 7) == absl::StrCat(MySQLParser::kComStmtPrepare, "SELECT")) {
+    return MySQLEventType::kMySQLComStmtPrepare;
+  } else if (buf[0] == MySQLParser::kComStmtExecute[0]) {
+    return MySQLEventType::kMySQLComStmtExecute;
+  } else if (buf.substr(0, 7) == absl::StrCat(MySQLParser::kComQuery, "SELECT")) {
+    return MySQLEventType::kMySQLComQuery;
+  } else {
+    return MySQLEventType::kMySQLUnknown;
+  }
+}
 }  // namespace
 
-namespace pl {
-namespace stirling {
 // TODO(chengruizhe): Could be templatized with HTTP Parser
 ParseResult<size_t> Parse(MessageType type, std::string_view buf,
                           std::deque<MySQLMessage>* messages) {
@@ -57,18 +72,6 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
   return result;
 }
 
-MySQLEventType infer_mysql_protocol(std::string_view buf) {
-  if (buf.substr(0, 7) == COM_STMT_PREPARE + "SELECT") {
-    return MySQLEventType::kMySQLComStmtPrepare;
-  } else if (buf[0] == COM_STMT_EXECUTE[0]) {
-    return MySQLEventType::kMySQLComStmtExecute;
-  } else if (buf.substr(0, 7) == COM_QUERY + "3SELECT") {
-    return MySQLEventType::kMySQLComQuery;
-  } else {
-    return MySQLEventType::kMySQLUnknown;
-  }
-}
-
 ParseState MySQLParser::ParseRequest(std::string_view buf) {
   if (buf.size() < 5) {
     return ParseState::kInvalid;
@@ -77,13 +80,13 @@ ParseState MySQLParser::ParseRequest(std::string_view buf) {
   if (type == MySQLEventType::kMySQLUnknown) {
     return ParseState::kInvalid;
   }
-  char len_char_BE[] = {buf[0], buf[1], buf[2], '\x00'};
-  char len_char_LE[4];
-  EndianSwap<4>(len_char_BE, len_char_LE);
-  int packet_length = charArrToInt(len_char_LE, 3);
+  char len_char_LE[] = {buf[0], buf[1], buf[2]};
+  char len_char_BE[3];
+  EndianSwap<3>(len_char_LE, len_char_BE);
+  int packet_length = BEBytesToInt(len_char_BE, 3);
   int buffer_length = buf.length();
 
-  // 3 bytes of packet length and 1 byte of packet number
+  // 3 bytes of packet length and 1 byte of packet number.
   if (buffer_length < 4 + packet_length) {
     return ParseState::kNeedsMoreData;
   }

@@ -6,13 +6,6 @@
 #include "src/stirling/connection_tracker.h"
 #include "src/stirling/event_parser.h"
 
-#define COM_STMT_PREPARE \
-  std::string { "\x16", 1 }
-#define COM_STMT_EXECUTE \
-  std::string { "\x17", 1 }
-#define COM_QUERY \
-  std::string { "\x03", 1 }
-
 namespace pl {
 namespace stirling {
 
@@ -50,6 +43,9 @@ struct MySQLParser {
   // ParseState WriteResponse(MySQLMessage* result);
 
   std::string_view unparsed_data;
+  inline static constexpr ConstStrView kComStmtPrepare = "\x16";
+  inline static constexpr ConstStrView kComStmtExecute = "\x17";
+  inline static constexpr ConstStrView kComQuery = "\x03";
 
  private:
   std::string_view curr_msg_;
