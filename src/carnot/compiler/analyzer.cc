@@ -21,7 +21,7 @@ std::vector<Status> Analyzer::VerifyIRColumnsReady(IR* ir_graph) {
     auto node = ir_graph->Get(i);
     if (node->type() == ColumnType) {
       auto col_node = static_cast<ColumnIR*>(node);
-      if (!col_node->resolved()) {
+      if (!col_node->IsDataTypeEvaluated()) {
         exprs.push_back(
             col_node->CreateIRNodeError("ColNode(id=$0) has not been validated.", col_node->id()));
       }
@@ -147,7 +147,7 @@ StatusOr<table_store::schema::Relation> Analyzer::BlockingAggHandler(
       // Make sure that the column is setup.
       PL_RETURN_IF_ERROR(EvaluateColExpr(col_expr, parent_rel));
       agg_node->SetGroups({col_expr});
-      agg_rel.AddColumn(col_expr->type(), col_expr->col_name());
+      agg_rel.AddColumn(col_expr->EvaluatedDataType(), col_expr->col_name());
     } else if (expr->type() == IRNodeType::ListType) {
       auto* list_expr = static_cast<ListIR*>(expr);
       std::vector<ColumnIR*> columns;
@@ -158,7 +158,7 @@ StatusOr<table_store::schema::Relation> Analyzer::BlockingAggHandler(
       }
       agg_node->SetGroups(columns);
       for (auto c : columns) {
-        agg_rel.AddColumn(c->type(), c->col_name());
+        agg_rel.AddColumn(c->EvaluatedDataType(), c->col_name());
       }
     } else {
       return agg_node->CreateIRNodeError(

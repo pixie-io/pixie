@@ -74,6 +74,7 @@ class IRNode {
   bool line_col_set() const { return line_col_set_; }
   virtual std::string DebugString(int64_t depth) const = 0;
   virtual bool IsOp() const = 0;
+  virtual bool IsExpression() const = 0;
   bool is_source() const { return is_source_; }
   IRNodeType type() const { return type_; }
   std::string type_string() const { return kIRNodeStrings[type()]; }
@@ -187,6 +188,7 @@ class OperatorIR : public IRNode {
  public:
   OperatorIR() = delete;
   bool IsOp() const override { return true; }
+  bool IsExpression() const override { return false; }
   table_store::schema::Relation relation() const { return relation_; }
   Status SetRelation(table_store::schema::Relation relation) {
     relation_init_ = true;
@@ -218,37 +220,60 @@ class OperatorIR : public IRNode {
   bool has_parent_;
   OperatorIR* parent_;
 };
+class ExpressionIR : public IRNode {
+ public:
+  ExpressionIR() = delete;
+
+  bool IsOp() const override { return false; }
+  bool IsExpression() const override { return true; }
+  virtual types::DataType EvaluatedDataType() const = 0;
+  virtual bool IsDataTypeEvaluated() const = 0;
+
+ protected:
+  ExpressionIR(int64_t id, IRNodeType type) : IRNode(id, type, false) {}
+};
+
+class DataIR : public ExpressionIR {
+ public:
+  types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
+  bool IsDataTypeEvaluated() const override { return true; }
+
+ protected:
+  DataIR(int64_t id, IRNodeType type, types::DataType data_type)
+      : ExpressionIR(id, type), evaluated_data_type_(data_type) {}
+
+ private:
+  types::DataType evaluated_data_type_;
+};
 
 /**
  * @brief ColumnIR wraps around columns found in the lambda functions.
  *
  */
-class ColumnIR : public IRNode {
+class ColumnIR : public ExpressionIR {
  public:
   ColumnIR() = delete;
-  explicit ColumnIR(int64_t id) : IRNode(id, ColumnType, false) {}
+  explicit ColumnIR(int64_t id) : ExpressionIR(id, ColumnType) {}
   Status Init(const std::string& col_name, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string col_name() const { return col_name_; }
   std::string DebugString(int64_t depth) const override;
-  bool IsOp() const override { return false; }
   void ResolveColumn(int64_t col_idx, types::DataType type) {
     col_idx_ = col_idx;
-    type_ = type;
-    resolved_ = true;
+    evaluated_data_type_ = type;
+    is_data_type_evaluated_ = true;
   }
-  bool resolved() const { return resolved_; }
+  types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
+  bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
 
   int64_t col_idx() const { return col_idx_; }
-  types::DataType type() const { return type_; }
 
  private:
   std::string col_name_;
   // The column index in the relation.
   int64_t col_idx_;
-  // The data type in the relation.
-  types::DataType type_;
-  bool resolved_ = false;
+  types::DataType evaluated_data_type_;
+  bool is_data_type_evaluated_ = false;
 };
 
 /**
@@ -256,15 +281,14 @@ class ColumnIR : public IRNode {
  * and only contains the value of that string.
  *
  */
-class StringIR : public IRNode {
+class StringIR : public DataIR {
  public:
   StringIR() = delete;
-  explicit StringIR(int64_t id) : IRNode(id, StringType, false) {}
+  explicit StringIR(int64_t id) : DataIR(id, StringType, types::DataType::STRING) {}
   Status Init(std::string str, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string str() const { return str_; }
   std::string DebugString(int64_t depth) const override;
-  bool IsOp() const override { return false; }
 
  private:
   std::string str_;
@@ -276,16 +300,17 @@ class StringIR : public IRNode {
  * list.
  *
  */
-class ListIR : public IRNode {
+class ListIR : public DataIR {
  public:
   ListIR() = delete;
-  explicit ListIR(int64_t id) : IRNode(id, ListType, false) {}
+  explicit ListIR(int64_t id) : DataIR(id, ListType, types::DataType::DATA_TYPE_UNKNOWN) {}
   bool HasLogicalRepr() const override;
   // TODO(philkuz) (PL-545) refactor lists
   Status Init(const pypa::AstPtr& ast_node, std::vector<IRNode*> children);
   std::string DebugString(int64_t depth) const override;
   std::vector<IRNode*> children() { return children_; }
   bool IsOp() const override { return false; }
+  bool IsExpression() const override { return false; }
 
  private:
   std::vector<IRNode*> children_;
@@ -321,6 +346,7 @@ class LambdaIR : public IRNode {
   bool HasDictBody() const;
   std::string DebugString(int64_t depth) const override;
   bool IsOp() const override { return false; }
+  bool IsExpression() const override { return false; }
   std::unordered_set<std::string> expected_column_names() const { return expected_column_names_; }
   ColExpressionVector col_exprs() const { return col_exprs_; }
 
@@ -334,7 +360,7 @@ class LambdaIR : public IRNode {
 /**
  * @brief Represents functions with arbitrary number of values
  */
-class FuncIR : public IRNode {
+class FuncIR : public ExpressionIR {
  public:
   // TODO(philkuz) Create a container for the opcodes and strings
   // and implement the AST visitor code to properly set this.
@@ -364,8 +390,8 @@ class FuncIR : public IRNode {
 
   FuncIR() = delete;
   Opcode opcode() const { return op_.op_code; }
-  explicit FuncIR(int64_t id) : IRNode(id, FuncType, false) {}
-  Status Init(Op op, std::string func_prefix, const std::vector<IRNode*>& args,
+  explicit FuncIR(int64_t id) : ExpressionIR(id, FuncType) {}
+  Status Init(Op op, std::string func_prefix, const std::vector<ExpressionIR*>& args,
               const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -374,75 +400,77 @@ class FuncIR : public IRNode {
   }
   int64_t func_id() const { return func_id_; }
   void set_func_id(int64_t func_id) { func_id_ = func_id; }
-  const std::vector<IRNode*>& args() { return args_; }
+  const std::vector<ExpressionIR*>& args() { return args_; }
   const std::vector<types::DataType>& args_types() { return args_types_; }
   void SetArgsTypes(std::vector<types::DataType> args_types) { args_types_ = args_types; }
-
-  bool IsOp() const override { return false; }
+  void SetOutputDataType(types::DataType type) {
+    evaluated_data_type_ = type;
+    is_data_type_evaluated_ = true;
+  }
+  types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
+  bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
 
  private:
   std::string func_prefix_;
   Op op_;
   std::string func_name_;
-  std::vector<IRNode*> args_;
+  std::vector<ExpressionIR*> args_;
   std::vector<types::DataType> args_types_;
   int64_t func_id_ = 0;
+  types::DataType evaluated_data_type_;
+  bool is_data_type_evaluated_;
 };
 
 /**
  * @brief Primitive values.
  */
-class FloatIR : public IRNode {
+class FloatIR : public DataIR {
  public:
   FloatIR() = delete;
-  explicit FloatIR(int64_t id) : IRNode(id, FloatType, false) {}
+  explicit FloatIR(int64_t id) : DataIR(id, FloatType, types::DataType::FLOAT64) {}
   Status Init(double val, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   double val() const { return val_; }
-  bool IsOp() const override { return false; }
 
  private:
   double val_;
 };
 
-class IntIR : public IRNode {
+class IntIR : public DataIR {
  public:
   IntIR() = delete;
-  explicit IntIR(int64_t id) : IRNode(id, IntType, false) {}
+  explicit IntIR(int64_t id) : DataIR(id, IntType, types::DataType::INT64) {}
   Status Init(int64_t val, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   int64_t val() const { return val_; }
-  bool IsOp() const override { return false; }
 
  private:
   int64_t val_;
 };
 
-class BoolIR : public IRNode {
+class BoolIR : public DataIR {
  public:
   BoolIR() = delete;
-  explicit BoolIR(int64_t id) : IRNode(id, BoolType, false) {}
+  explicit BoolIR(int64_t id) : DataIR(id, BoolType, types::DataType::BOOLEAN) {}
   Status Init(bool val, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   bool val() const { return val_; }
-  bool IsOp() const override { return false; }
 
  private:
   bool val_;
 };
 
-class TimeIR : public IRNode {
+class TimeIR : public DataIR {
  public:
   TimeIR() = delete;
-  explicit TimeIR(int64_t id) : IRNode(id, TimeType, false) {}
+  explicit TimeIR(int64_t id) : DataIR(id, TimeType, types::DataType::TIME64NS) {}
   Status Init(int64_t val, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   bool val() const { return val_ != 0; }
-  bool IsOp() const override { return false; }
 
  private:
   int64_t val_;

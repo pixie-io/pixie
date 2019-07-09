@@ -213,7 +213,7 @@ TEST(ToProto, map_ir) {
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, "pl",
-                       std::vector<IRNode*>({constant, col}), ast));
+                       std::vector<ExpressionIR*>({constant, col}), ast));
   func->set_func_id(1);
   EXPECT_OK(lambda->Init({"col_name"}, func, ast));
   ArgMap amap({{"fn", lambda}});
@@ -271,7 +271,7 @@ TEST(ToProto, agg_ir) {
   auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
   EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"}, "pl",
-                           std::vector<IRNode*>({constant, col}), ast));
+                           std::vector<ExpressionIR*>({constant, col}), ast));
   EXPECT_OK(agg_func_lambda->Init({"meaned_column"}, {{"mean", agg_func}}, ast));
 
   auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();

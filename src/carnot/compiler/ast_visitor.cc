@@ -278,17 +278,21 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
 
   // pl.mod(by_col, size).
   DCHECK(args["by"]->type() == IRNodeType::LambdaType);
-  auto by_col_ir_node = static_cast<LambdaIR*>(args["by"])->col_exprs()[0].node;
+  ExpressionIR* by_col_ir_node =
+      static_cast<ExpressionIR*>(static_cast<LambdaIR*>(args["by"])->col_exprs()[0].node);
   PL_ASSIGN_OR_RETURN(FuncIR * mod_ir_node, ir_graph_->MakeNode<FuncIR>());
   PL_ASSIGN_OR_RETURN(FuncIR::Op mod_op, GetOp("%", node));
-  PL_RETURN_IF_ERROR(mod_ir_node->Init(mod_op, kUDFPrefix,
-                                       std::vector<IRNode*>({by_col_ir_node, args["size"]}), node));
+  DCHECK(args["size"]->IsExpression());
+  PL_RETURN_IF_ERROR(mod_ir_node->Init(
+      mod_op, kUDFPrefix,
+      std::vector<ExpressionIR*>({by_col_ir_node, static_cast<ExpressionIR*>(args["size"])}),
+      node));
 
   // pl.subtract(by_col, pl.mod(by_col, size)).
   PL_ASSIGN_OR_RETURN(FuncIR * sub_ir_node, ir_graph_->MakeNode<FuncIR>());
   PL_ASSIGN_OR_RETURN(FuncIR::Op sub_op, GetOp("-", node));
-  PL_RETURN_IF_ERROR(sub_ir_node->Init(sub_op, kUDFPrefix,
-                                       std::vector<IRNode*>({by_col_ir_node, mod_ir_node}), node));
+  PL_RETURN_IF_ERROR(sub_ir_node->Init(
+      sub_op, kUDFPrefix, std::vector<ExpressionIR*>({by_col_ir_node, mod_ir_node}), node));
 
   // Map(lambda r: {'group': pl.subtract(by_col, pl.modulo(by_col, size))}.
   PL_ASSIGN_OR_RETURN(LambdaIR * map_lambda_ir_node, ir_graph_->MakeNode<LambdaIR>());
@@ -321,7 +325,7 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
   return agg_ir_node;
 }
 
-StatusOr<IRNode*> ASTWalker::ProcessStr(const pypa::AstStrPtr& ast) {
+StatusOr<ExpressionIR*> ASTWalker::ProcessStr(const pypa::AstStrPtr& ast) {
   PL_ASSIGN_OR_RETURN(StringIR * ir_node, ir_graph_->MakeNode<StringIR>());
   PL_ASSIGN_OR_RETURN(auto str_value, GetStrAstValue(ast));
   PL_RETURN_IF_ERROR(ir_node->Init(str_value, ast));
@@ -366,7 +370,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const std::string& 
   }
   return CreateAstError(node, "Couldn't find value $0", value);
 }
-StatusOr<IRNode*> ASTWalker::ProcessNumber(const pypa::AstNumberPtr& node) {
+StatusOr<ExpressionIR*> ASTWalker::ProcessNumber(const pypa::AstNumberPtr& node) {
   switch (node->num_type) {
     case pypa::AstNumber::Type::Float: {
       PL_ASSIGN_OR_RETURN(FloatIR * ir_node, ir_graph_->MakeNode<FloatIR>());
@@ -388,7 +392,7 @@ StatusOr<LambdaExprReturn> ASTWalker::BuildLambdaFunc(
     const FuncIR::Op& op, const std::string& prefix,
     const std::vector<LambdaExprReturn>& children_ret_expr, const pypa::AstPtr& parent_node) {
   PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->MakeNode<FuncIR>());
-  std::vector<IRNode*> expressions;
+  std::vector<ExpressionIR*> expressions;
   auto ret = LambdaExprReturn(ir_node);
   for (auto expr_ret : children_ret_expr) {
     if (expr_ret.StringOnly()) {
@@ -472,7 +476,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCall(const std::string& arg_n
  * @param node
  * @return StatusOr<LambdaExprReturn>
  */
-StatusOr<LambdaExprReturn> WrapLambdaExprReturn(StatusOr<IRNode*> node) {
+StatusOr<LambdaExprReturn> WrapLambdaExprReturn(StatusOr<ExpressionIR*> node) {
   PL_RETURN_IF_ERROR(node);
   return LambdaExprReturn(node.ValueOrDie());
 }
@@ -677,19 +681,34 @@ StatusOr<IntIR*> ASTWalker::EvalCompileTimeFn(const std::string& attr_fn_name,
   return ir_node;
 }
 
-StatusOr<IRNode*> ASTWalker::ProcessDataBinOp(const pypa::AstBinOpPtr& node) {
+StatusOr<ExpressionIR*> ASTWalker::ProcessDataBinOp(const pypa::AstBinOpPtr& node) {
   std::string op_str = pypa::to_string(node->op);
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
 
   PL_ASSIGN_OR_RETURN(IRNode * left, ProcessData(node->left));
   PL_ASSIGN_OR_RETURN(IRNode * right, ProcessData(node->right));
+  if (!left->IsExpression()) {
+    return CreateAstError(
+        node,
+        "Expected left side of operation to be an expression, but got $0, which is not an "
+        "expression..",
+        left->type_string());
+  }
+  if (!right->IsExpression()) {
+    return CreateAstError(
+        node,
+        "Expected right side of operation to be an expression, but got $0, which is not an "
+        "expression.",
+        right->type_string());
+  }
   PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->MakeNode<FuncIR>());
-  std::vector<IRNode*> expressions = {left, right};
+  std::vector<ExpressionIR*> expressions = {static_cast<ExpressionIR*>(left),
+                                            static_cast<ExpressionIR*>(right)};
   PL_RETURN_IF_ERROR(ir_node->Init(op, kCompileTimePrefix, expressions, node));
 
   return ir_node;
 }
-StatusOr<IRNode*> ASTWalker::ProcessDataCall(const pypa::AstCallPtr& node) {
+StatusOr<ExpressionIR*> ASTWalker::ProcessDataCall(const pypa::AstCallPtr& node) {
   auto fn = node->function;
   if (fn->type != AstType::Attribute) {
     return CreateAstError(fn, "Expected any function calls to be made an attribute, not as a $0",

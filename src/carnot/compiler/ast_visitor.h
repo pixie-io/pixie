@@ -47,10 +47,10 @@ struct LambdaExprReturn {
   explicit LambdaExprReturn(std::string str) : str_(std::move(str)) {}
   LambdaExprReturn(std::string str, bool is_pixie_attr)
       : str_(std::move(str)), is_pixie_attr_(is_pixie_attr) {}
-  explicit LambdaExprReturn(IRNode* expr) : expr_(expr) {}
-  LambdaExprReturn(IRNode* expr, std::unordered_set<std::string> column_names)
+  explicit LambdaExprReturn(ExpressionIR* expr) : expr_(expr) {}
+  LambdaExprReturn(ExpressionIR* expr, std::unordered_set<std::string> column_names)
       : input_relation_columns_(std::move(column_names)), expr_(expr) {}
-  LambdaExprReturn(IRNode* expr, const LambdaExprReturn& left_expr_ret,
+  LambdaExprReturn(ExpressionIR* expr, const LambdaExprReturn& left_expr_ret,
                    const LambdaExprReturn& right_expr_ret)
       : expr_(expr) {
     auto left_set = left_expr_ret.input_relation_columns_;
@@ -79,7 +79,7 @@ struct LambdaExprReturn {
 
   // The columns we expect to find in the lambda function.
   std::unordered_set<std::string> input_relation_columns_;
-  IRNode* expr_ = nullptr;
+  ExpressionIR* expr_ = nullptr;
   std::string str_;
   bool is_pixie_attr_ = false;
   bool StringOnly() const { return expr_ == nullptr && !str_.empty(); }
@@ -297,7 +297,7 @@ class ASTWalker {
    * @param node
    * @return StatusOr<LambdaExprReturn>
    */
-  StatusOr<IRNode*> ProcessNumber(const pypa::AstNumberPtr& node);
+  StatusOr<ExpressionIR*> ProcessNumber(const pypa::AstNumberPtr& node);
 
   /**
    * @brief Processes a str ast ptr into an IR node.
@@ -305,7 +305,7 @@ class ASTWalker {
    * @param ast
    * @return StatusOr<IRNode*>
    */
-  StatusOr<IRNode*> ProcessStr(const pypa::AstStrPtr& ast);
+  StatusOr<ExpressionIR*> ProcessStr(const pypa::AstStrPtr& ast);
 
   /**
    * @brief ProcessData takes in what are typically function arguments and returns the
@@ -497,9 +497,9 @@ class ASTWalker {
    * @brief Handler for Binary operations that are run at compile time, not runtime.
    *
    * @param ast
-   * @return StatusOr<IRNode*>
+   * @return StatusOr<ExpressionIR*>
    */
-  StatusOr<IRNode*> ProcessDataBinOp(const pypa::AstBinOpPtr& node);
+  StatusOr<ExpressionIR*> ProcessDataBinOp(const pypa::AstBinOpPtr& node);
   /**
    * @brief Handler for functions that are called as args in the data.
    * Calls nested within Lambda trees are not touched by this.
@@ -507,7 +507,7 @@ class ASTWalker {
    * @param ast
    * @return StatusOr<IRNode*>
    */
-  StatusOr<IRNode*> ProcessDataCall(const pypa::AstCallPtr& node);
+  StatusOr<ExpressionIR*> ProcessDataCall(const pypa::AstCallPtr& node);
 
   /**
    * @brief Create an error that incorporates line, column of ast node into the error message.
