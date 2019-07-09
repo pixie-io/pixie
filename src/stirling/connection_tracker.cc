@@ -10,9 +10,10 @@ namespace stirling {
 
 void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
   LOG_IF(ERROR, open_info_.timestamp_ns != 0) << "Clobbering existing ConnOpenEvent.";
-  LOG_IF(WARNING, death_countdown_ >= 0) << absl::StrFormat(
-      "Did not expect to receive Open event after Close [PID=%d, FD=%d, generation=%d].",
-      conn_info.conn_id.tgid, conn_info.conn_id.fd, conn_info.conn_id.generation);
+  LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ <= kDeathCountdownIters)
+      << absl::StrFormat(
+             "Did not expect to receive Open event after Close [PID=%d, FD=%d, generation=%d].",
+             conn_info.conn_id.tgid, conn_info.conn_id.fd, conn_info.conn_id.generation);
 
   UpdateTimestamps(conn_info.timestamp_ns);
   SetTrafficClass(conn_info.traffic_class);
@@ -42,9 +43,10 @@ void ConnectionTracker::AddConnCloseEvent(conn_info_t conn_info) {
 }
 
 void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
-  LOG_IF(WARNING, death_countdown_ >= 0) << absl::StrFormat(
-      "Did not expect to receive Data event after Close [PID=%d, FD=%d, generation=%d].",
-      event.attr.conn_id.tgid, event.attr.conn_id.fd, event.attr.conn_id.generation);
+  LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ <= kDeathCountdownIters)
+      << absl::StrFormat(
+             "Did not expect to receive Data event after Close [PID=%d, FD=%d, generation=%d].",
+             event.attr.conn_id.tgid, event.attr.conn_id.fd, event.attr.conn_id.generation);
 
   UpdateTimestamps(event.attr.timestamp_ns);
   SetPID(event.attr.conn_id);
@@ -131,8 +133,12 @@ void ConnectionTracker::MarkForDeath() {
   // We received the close event.
   // Now give up to some more TransferData calls to receive trailing data events.
   // We do this for logging/debug purposes only.
-  death_countdown_ = kDeathCountdownIters + 1;
+  if (!IsZombie()) {
+    death_countdown_ = kDeathCountdownIters + 1;
+  }
 }
+
+bool ConnectionTracker::IsZombie() const { return death_countdown_ >= 0; }
 
 bool ConnectionTracker::ReadyForDestruction() const {
   // We delay destruction time by a few iterations.

@@ -139,11 +139,37 @@ class SocketTraceConnector : public SourceConnector {
 
   Status Configure(uint32_t protocol, uint64_t config_mask);
 
+  /**
+   * @brief Number of active ConnectionTrackers.
+   *
+   * Note: Multiple ConnectionTrackers on same TGID+FD are counted as 1.
+   */
   size_t NumActiveConnections() const { return connection_trackers_.size(); }
 
-  const std::map<uint64_t, ConnectionTracker>& TestOnlyStreams() const {
-    return connection_trackers_;
+  /**
+   * @brief Gets a pointer to a ConnectionTracker by conn_id.
+   *
+   * @param connid The connection to get.
+   * @return Pointer to the ConnectionTracker, or nullptr if it does not exist.
+   */
+  const ConnectionTracker* GetConnectionTracker(struct conn_id_t connid) const;
+
+  // This function is deprecated. Use GetConnectionTracker instead.
+  // TODO(oazizi/yzhao): Remove calls to this function.
+  std::vector<const ConnectionTracker*> TestOnlyStreams() const {
+    std::vector<const ConnectionTracker*> trackers;
+    for (const auto& [pid_fd, tracker_set] : connection_trackers_) {
+      PL_UNUSED(pid_fd);
+      for (const auto& [generation, tracker] : tracker_set) {
+        PL_UNUSED(generation);
+        if (!tracker.IsZombie()) {
+          trackers.push_back(&tracker);
+        }
+      }
+    }
+    return trackers;
   }
+
   void TestOnlyConfigure(uint32_t protocol, uint64_t config_mask) {
     config_mask_[protocol] = config_mask;
   }
@@ -269,7 +295,11 @@ class SocketTraceConnector : public SourceConnector {
 
   ebpf::BPF bpf_;
 
-  std::map<uint64_t, ConnectionTracker> connection_trackers_;
+  // TODO(oazizi): Change inner map to priority_queue, if benchmark shows better performance.
+  // Note that the inner map cannot be a vector, because there is no guaranteed order
+  // in which events are read from perf buffers.
+  // Key is {PID, FD} for outer map (see GetStreamId()), and generation for inner map.
+  std::map<uint64_t, std::map<uint64_t, ConnectionTracker> > connection_trackers_;
 
   // For MySQL tracing only. Will go away when MySQL uses streams.
   types::ColumnWrapperRecordBatch* record_batch_ = nullptr;
@@ -283,6 +313,7 @@ class SocketTraceConnector : public SourceConnector {
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInOrder);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent);
+  FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupOldGenerations);
 };
 
 }  // namespace stirling

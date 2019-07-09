@@ -18,7 +18,6 @@ class SocketTraceConnectorTest : public ::testing::Test {
  protected:
   static constexpr uint32_t kPID = 12345;
   static constexpr uint32_t kFD = 3;
-  static constexpr uint32_t kPIDFDGeneration = 2;
 
   void SetUp() override {
     // Create and configure the connector.
@@ -29,12 +28,14 @@ class SocketTraceConnectorTest : public ::testing::Test {
   }
 
   conn_info_t InitConn(uint64_t ts_ns = 0) {
+    ++generation_;
+
     conn_info_t conn_info{};
     conn_info.addr.sin6_family = AF_INET;
     conn_info.timestamp_ns = ts_ns;
     conn_info.conn_id.tgid = kPID;
     conn_info.conn_id.fd = kFD;
-    conn_info.conn_id.generation = kPIDFDGeneration;
+    conn_info.conn_id.generation = generation_;
     conn_info.traffic_class.protocol = kProtocolHTTP;
     conn_info.traffic_class.role = kRoleRequestor;
     conn_info.rd_seq_num = 0;
@@ -64,7 +65,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     event.attr.timestamp_ns = ts_ns;
     event.attr.conn_id.tgid = kPID;
     event.attr.conn_id.fd = kFD;
-    event.attr.conn_id.generation = kPIDFDGeneration;
+    event.attr.conn_id.generation = generation_;
     event.attr.msg_size = msg.size();
     msg.copy(event.msg, msg.size());
     return SocketDataEvent(&event);
@@ -75,7 +76,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     conn_info.timestamp_ns = 1;
     conn_info.conn_id.tgid = kPID;
     conn_info.conn_id.fd = kFD;
-    conn_info.conn_id.generation = kPIDFDGeneration;
+    conn_info.conn_id.generation = generation_;
     conn_info.rd_seq_num = recv_seq_num_;
     conn_info.wr_seq_num = send_seq_num_;
     return conn_info;
@@ -87,6 +88,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     return record_batch;
   }
 
+  uint32_t generation_ = 0;
   uint64_t send_seq_num_ = 0;
   uint64_t recv_seq_num_ = 0;
 
@@ -187,9 +189,10 @@ TEST_F(SocketTraceConnectorTest, End2end) {
   // Registers a new connection
   source_->AcceptOpenConnEvent(conn);
 
-  ASSERT_THAT(source_->TestOnlyStreams(), testing::SizeIs(1));
-  EXPECT_EQ(50 + source_->ClockRealTimeOffset(),
-            source_->TestOnlyStreams().begin()->second.conn().timestamp_ns);
+  ASSERT_THAT(source_->NumActiveConnections(), 1);
+  const ConnectionTracker* tracker = source_->GetConnectionTracker({kPID, kFD, 1});
+  ASSERT_NE(nullptr, tracker);
+  EXPECT_EQ(50 + source_->ClockRealTimeOffset(), tracker->conn().timestamp_ns);
 
   // AcceptDataEvent() puts data into the internal buffer of SocketTraceConnector. And then
   // TransferData() polls perf buffer, which is no-op because we did not initialize probes, and the
@@ -409,6 +412,50 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
   // Missing event: source_->AcceptDataEvent(resp_event1);
   source_->AcceptDataEvent(resp_event2);
   source_->AcceptCloseConnEvent(close_conn);
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(1, source_->NumActiveConnections());
+
+  for (uint32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
+    source_->TransferData(kTableNum, &record_batch);
+    EXPECT_EQ(1, source_->NumActiveConnections());
+  }
+
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(0, source_->NumActiveConnections());
+}
+
+TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
+  conn_info_t conn0 = InitConn();
+  SocketDataEvent conn0_req_event = InitSendEvent(kReq0);
+  SocketDataEvent conn0_resp_event = InitRecvEvent(kResp0);
+  conn_info_t conn0_close = InitClose();
+
+  conn_info_t conn1 = InitConn();
+  SocketDataEvent conn1_req_event = InitSendEvent(kReq1);
+  SocketDataEvent conn1_resp_event = InitRecvEvent(kResp1);
+  conn_info_t conn1_close = InitClose();
+
+  conn_info_t conn2 = InitConn();
+  SocketDataEvent conn2_req_event = InitSendEvent(kReq2);
+  SocketDataEvent conn2_resp_event = InitRecvEvent(kResp2);
+  conn_info_t conn2_close = InitClose();
+
+  auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
+
+  // Simulating scrambled order due to perf buffer, with a couple missing events.
+  source_->AcceptDataEvent(conn0_req_event);
+  source_->AcceptOpenConnEvent(conn1);
+  source_->AcceptCloseConnEvent(conn2_close);
+  source_->AcceptDataEvent(conn0_resp_event);
+  source_->AcceptOpenConnEvent(conn0);
+  source_->AcceptDataEvent(conn2_req_event);
+  source_->AcceptDataEvent(conn1_resp_event);
+  source_->AcceptDataEvent(conn1_req_event);
+  source_->AcceptOpenConnEvent(conn2);
+  source_->AcceptDataEvent(conn2_resp_event);
+  PL_UNUSED(conn0_close);  // Missing close event.
+  PL_UNUSED(conn1_close);  // Missing close event.
+
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(1, source_->NumActiveConnections());
 

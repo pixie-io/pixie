@@ -53,6 +53,7 @@ class HTTPTraceBPFTest : public ::testing::Test {
         std::string data;
         while (client.Read(&data)) {
         }
+        client.Close();
       });
     }
 
@@ -62,6 +63,7 @@ class HTTPTraceBPFTest : public ::testing::Test {
         std::string data;
         while (client.Recv(&data)) {
         }
+        client.Close();
       });
     }
 
@@ -404,7 +406,7 @@ TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   EXPECT_OK(source->Stop());
 }
 
-TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
+TEST_F(HTTPTraceBPFTest, TestMultipleConnections) {
   ConfigureCapture(kProtocolHTTP, kSocketTraceRecvResp);
 
   // Two separate connections.
@@ -414,22 +416,31 @@ TEST_F(HTTPTraceBPFTest, TestConnectionCloseAndGenerationNumberAreInSync) {
   ClientServerSystem system2;
   system2.RunWriterReader({kHTTPRespMsg2});
 
-  auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source.get());
-  ASSERT_NE(nullptr, socket_trace_connector);
-  socket_trace_connector->ReadPerfBuffer(kHTTPTableNum);
-  EXPECT_OK(source->Stop());
+  {
+    types::ColumnWrapperRecordBatch record_batch;
+    InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch);
+    source->TransferData(kHTTPTableNum, &record_batch);
 
-  // TODO(yzhao): Updates to verify that ConnectionTracker exists for the known <pid, fd> pairs.
-  ASSERT_THAT(socket_trace_connector->TestOnlyStreams(), SizeIs(4));
-
-  std::vector<std::pair<uint64_t, std::string_view>> seq_msgs;
-  for (const auto& [id, http_stream] : socket_trace_connector->TestOnlyStreams()) {
-    PL_UNUSED(id);
-    for (const auto& [seq_num, event] : http_stream.recv_data().events) {
-      seq_msgs.emplace_back(seq_num, event.msg);
+    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
+      ASSERT_EQ(2, col->Size());
     }
+
+    std::vector<std::tuple<int64_t, std::string, int64_t>> results;
+    for (int i = 0; i < 2; ++i) {
+      results.emplace_back(
+          std::make_tuple(record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(i).val,
+                          record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(i),
+                          record_batch[kHTTPFdIdx]->Get<types::Int64Value>(i).val));
+    }
+
+    EXPECT_THAT(
+        results,
+        UnorderedElementsAre(
+            std::make_tuple(getpid(), "Content-Length: 0\nContent-Type: application/json; msg1",
+                            system1.Client().sockfd()),
+            std::make_tuple(getpid(), "Content-Length: 0\nContent-Type: application/json; msg2",
+                            system2.Client().sockfd())));
   }
-  EXPECT_THAT(seq_msgs, UnorderedElementsAre(Pair(0, kHTTPRespMsg1), Pair(0, kHTTPRespMsg2)));
 }
 
 }  // namespace stirling

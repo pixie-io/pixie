@@ -43,7 +43,7 @@ struct SocketClose {
 // TODO(oazizi): Turn this into a class.
 struct DataStream {
   // Raw data events from BPF.
-  // TODO(oazizi): Convert this to vector.
+  // TODO(oazizi/yzhao): Convert this to vector or deque.
   std::map<uint64_t, SocketDataEvent> events;
 
   // To support partially processed events,
@@ -203,6 +203,21 @@ class ConnectionTracker {
   bool AllEventsReceived() const;
 
   /**
+   * @brief Marks the ConnectionTracker for death.
+   *
+   * This indicates that the tracker should not receive any further events,
+   * otherwise an warning or error will be produced.
+   */
+  void MarkForDeath();
+
+  /**
+   * @brief Returns true if this tracker has been marked for death.
+   *
+   * @return true if this tracker is on its death countdown.
+   */
+  bool IsZombie() const;
+
+  /**
    * @brief Whether this ConnectionTracker can be destroyed.
    * @return true if this ConnectionTracker is a candidate for destruction.
    */
@@ -219,13 +234,12 @@ class ConnectionTracker {
    * after it has been marked for death. We keep ConnectionTrackers alive for debug purposes only,
    * just to log spurious late events (which should not happen).
    */
-  static constexpr uint64_t kDeathCountdownIters = 2;
+  static constexpr int64_t kDeathCountdownIters = 2;
 
  private:
   void SetPID(struct conn_id_t conn_id);
   void SetTrafficClass(struct traffic_class_t traffic_class);
   void UpdateTimestamps(uint64_t bpf_timestamp);
-  void MarkForDeath();
 
   struct conn_id_t conn_id_ {
     0, 0, 0

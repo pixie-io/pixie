@@ -175,9 +175,7 @@ void SocketTraceConnector::HandleCloseProbeOutput(void* cb_cookie, void* data, i
 namespace {
 
 uint64_t GetStreamId(struct conn_id_t conn_id) {
-  // 22 bits for PID, 22 bits for FD, 20 bits for generation
-  // Don't worry, this will all change in next diff.
-  return (static_cast<uint64_t>(conn_id.tgid) << 42) | (conn_id.fd << 20) | conn_id.generation;
+  return (static_cast<uint64_t>(conn_id.tgid) << 32) | conn_id.fd;
 }
 
 }  // namespace
@@ -199,7 +197,7 @@ void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
       return;
   }
 
-  ConnectionTracker& tracker = connection_trackers_[stream_id];
+  ConnectionTracker& tracker = connection_trackers_[stream_id][event.attr.conn_id.generation];
   tracker.AddDataEvent(event);
 }
 
@@ -210,7 +208,7 @@ void SocketTraceConnector::AcceptOpenConnEvent(conn_info_t conn_info) {
   // Need to adjust the clocks to convert to real time.
   conn_info.timestamp_ns += ClockRealTimeOffset();
 
-  ConnectionTracker& tracker = connection_trackers_[stream_id];
+  ConnectionTracker& tracker = connection_trackers_[stream_id][conn_info.conn_id.generation];
   tracker.AddConnOpenEvent(conn_info);
 }
 
@@ -221,8 +219,26 @@ void SocketTraceConnector::AcceptCloseConnEvent(conn_info_t conn_info) {
   // Need to adjust the clocks to convert to real time.
   conn_info.timestamp_ns += ClockRealTimeOffset();
 
-  ConnectionTracker& tracker = connection_trackers_[stream_id];
+  ConnectionTracker& tracker = connection_trackers_[stream_id][conn_info.conn_id.generation];
   tracker.AddConnCloseEvent(conn_info);
+}
+
+const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
+    struct conn_id_t conn_id) const {
+  const uint64_t stream_id = GetStreamId(conn_id);
+
+  auto tracker_set_it = connection_trackers_.find(stream_id);
+  if (tracker_set_it == connection_trackers_.end()) {
+    return nullptr;
+  }
+
+  const auto& tracker_generations = tracker_set_it->second;
+  auto tracker_it = tracker_generations.find(conn_id.generation);
+  if (tracker_it == tracker_generations.end()) {
+    return nullptr;
+  }
+
+  return &tracker_it->second;
 }
 
 //-----------------------------------------------------------------------------
@@ -252,44 +268,58 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
   //               because it will get called multiple times, looping through all connection
   //               trackers, but selecting a mutually exclusive subset each time.
   //               Possible solutions: 1) different pools, 2) auxiliary pool of pointers.
-  auto it = connection_trackers_.begin();
-  while (it != connection_trackers_.end()) {
-    auto& tracker = it->second;
 
-    if (tracker.protocol() != protocol) {
-      ++it;
-      continue;
+  // Outer loop iterates through tracker sets (keyed by PID+FD),
+  // while inner loop iterates through generations of trackers for that PID+FD pair.
+  auto tracker_set_it = connection_trackers_.begin();
+  while (tracker_set_it != connection_trackers_.end()) {
+    auto& tracker_generations = tracker_set_it->second;
+
+    auto generation_it = tracker_generations.begin();
+    while (generation_it != tracker_generations.end()) {
+      auto& tracker = generation_it->second;
+
+      if (tracker.protocol() != protocol) {
+        ++generation_it;
+        continue;
+      }
+
+      DataStream* resp_data = tracker.resp_data();
+      if (resp_data == nullptr) {
+        // This temporarily handles nullptrs, which can arise due to kRoleMixed.
+        // TODO(oazizi): Convert this to a LOG(ERROR), once kRoleMixed is handled.
+        continue;
+      }
+      resp_data->template ExtractMessages<TMessageType>(MessageType::kResponses);
+      auto& resp_messages = std::get<std::deque<TMessageType>>(resp_data->messages);
+
+      DataStream* req_data = tracker.req_data();
+      if (req_data == nullptr) {
+        // This temporarily handles nullptrs, which can arise due to kRoleMixed.
+        // TODO(oazizi): Convert this to a LOG(ERROR), once kRoleMixed is handled.
+        continue;
+      }
+      req_data->template ExtractMessages<TMessageType>(MessageType::kRequests);
+      auto& req_messages = std::get<std::deque<TMessageType>>(req_data->messages);
+
+      ProcessMessages<TMessageType>(tracker, &req_messages, &resp_messages, record_batch);
+
+      // Only the most recent generation of a connection on a PID+FD should be active.
+      // Mark all others for death (after having their data processed, of course).
+      if (generation_it != --tracker_generations.end()) {
+        tracker.MarkForDeath();
+      }
+
+      tracker.IterationTick();
+
+      // Update iterator, handling deletions as we go. This must be the last line in the loop.
+      generation_it = tracker.ReadyForDestruction() ? tracker_generations.erase(generation_it)
+                                                    : ++generation_it;
     }
 
-    DataStream* resp_data = tracker.resp_data();
-    if (resp_data == nullptr) {
-      // This temporarily handles nullptrs, which can arise due to kRoleMixed.
-      // TODO(oazizi): Convert this to a LOG(ERROR), once kRoleMixed is handled.
-      continue;
-    }
-    resp_data->template ExtractMessages<TMessageType>(MessageType::kResponses);
-    auto& resp_messages = std::get<std::deque<TMessageType>>(resp_data->messages);
-
-    DataStream* req_data = tracker.req_data();
-    if (req_data == nullptr) {
-      // This temporarily handles nullptrs, which can arise due to kRoleMixed.
-      // TODO(oazizi): Convert this to a LOG(ERROR), once kRoleMixed is handled.
-      continue;
-    }
-    req_data->template ExtractMessages<TMessageType>(MessageType::kRequests);
-    auto& req_messages = std::get<std::deque<TMessageType>>(req_data->messages);
-
-    ProcessMessages<TMessageType>(tracker, &req_messages, &resp_messages, record_batch);
-
-    tracker.IterationTick();
-
-    // Update iterator, handling deletions as we go. This must be the last line in the loop.
-    it = tracker.ReadyForDestruction() ? connection_trackers_.erase(it) : ++it;
+    tracker_set_it =
+        tracker_generations.empty() ? connection_trackers_.erase(tracker_set_it) : ++tracker_set_it;
   }
-
-  // TODO(yzhao): Add the capability to remove events that are too old.
-  // TODO(yzhao): Consider change the data structure to a vector, and use sorting to order events
-  // before stitching. That might be faster (verify with benchmark).
 }
 
 template <class TMessageType>

@@ -84,9 +84,10 @@ TEST(GRPCTraceBPFTest, DISABLED_TestGolangGrpcService) {
   EXPECT_EQ(9, s.Wait()) << "Server should have been killed.";
 
   socket_trace_connector->ReadPerfBuffer(SocketTraceConnector::kHTTPTableNum);
-  ASSERT_GE(socket_trace_connector->TestOnlyStreams().size(), 1);
 
-  const ConnectionTracker h2_stream = socket_trace_connector->TestOnlyStreams().begin()->second;
+  std::vector<const ConnectionTracker*> h2_streams = socket_trace_connector->TestOnlyStreams();
+  ASSERT_GE(h2_streams.size(), 1);
+  ConnectionTracker h2_stream = *h2_streams[0];
   {
     std::string send_string = JoinStream(h2_stream.send_data().events);
     std::string_view send_buf = send_string;
