@@ -10,7 +10,7 @@ metadata:
   name: load-test
   labels:
     name: load-test
-  namespace: loadtest
+  namespace: sock-shop-load
 spec:
   replicas: 1
   template:
@@ -22,8 +22,10 @@ spec:
       - name: load-test
         image: weaveworksdemos/load-test:0.1.1
         command: ["/bin/sh"]
-        args: ["-c", "while true; do locust --host http://10.32.0.106 --web-host=0.0.0.0 \
-                      -f /config/locustfile.py --clients 5 --hatch-rate 5 --num-request 100; done"]
+        # This runs locust in web-mode.
+        args: ["-c", "locust --host http://front-end.sock-shop.svc.cluster.local -f /config/locustfile.py"]
+        # The following form may be useful for batch mode, if we ever want to switch.
+        #locust --no-web --host http://front-end.sock-shop.svc.cluster.local -f /config/locustfile.py -c 100 -r 5
         ports:
         - containerPort: 8089
       nodeSelector:

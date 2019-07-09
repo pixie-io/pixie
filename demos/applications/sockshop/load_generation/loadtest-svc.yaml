@@ -5,7 +5,7 @@ metadata:
   name: load-test
   labels:
     name: load-test
-  namespace: loadtest
+  namespace: sock-shop-load
   annotations:
     cloud.google.com/load-balancer-type: "internal"
 spec:
