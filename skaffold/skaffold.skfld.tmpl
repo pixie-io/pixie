@@ -3,14 +3,9 @@
 apiVersion: skaffold/v1beta8
 kind: Config
 build:
-  # In nightly cluster we pass in the tag for the image.
-  # TODO(zasgar): This is probably similar to staging clusters in general
-  # and we should probably generalize this.
-  {{ if (eq .Deployment "nightly") }}
   tagPolicy:
     envTemplate:
       template: "{{`{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}`}}"
-  {{ end }}
   artifacts:
   - image: gcr.io/pl-dev-infra/agent_image
     context: .
@@ -36,14 +31,8 @@ build:
     context: .
     bazel:
       target: //src/services/proxy:proxy_prod_image.tar
-  {{ if (eq .Deployment "nightly") }}
-  - image: gcr.io/pl-dev-infra/customer_docs_prod_image
-    context: .
-    bazel:
-      target: //docs/customer:customer_docs_prod_image.tar
-  {{ end }}
   local:
-    push: {{.PushArtifacts}}
+    push: true
 deploy:
   kubectl:
     manifests:
@@ -53,6 +42,39 @@ deploy:
     - {{.BuildDir}}/src/services/api/service_{{.Deployment}}.yaml
     - {{.BuildDir}}/src/services/api/service_{{.Deployment}}.yaml
     - {{.BuildDir}}/src/services/proxy/service_{{.Deployment}}.yaml
-    {{ if (eq .Deployment "nightly") }}
-    - {{.BuildDir}}/docs/customer/service_{{.Deployment}}.yaml
-    {{ end }}
+profiles:
+  - name: dev
+    activation:
+      - command: dev
+    patches:
+      # Use default tag policy (hash) for dev builds.
+      - op: remove
+        path: /build/tagPolicy/envTemplate
+      # Don't push images in the dev build.
+      - op: replace
+        path: /build
+        value:
+          local:
+            push: false
+
+  - name: nightly
+    activation:
+      - env: PL_BUILD_TYPE=nightly
+    patches:
+      # Add customer docs to the nightly build.
+      - op: add
+        path: /build/artifacts/-
+        value:
+          image: gcr.io/pl-dev-infra/customer_docs_prod_image
+          context: .
+          bazel:
+            target: //docs/customer:customer_docs_prod_image.tar
+
+      - op: add
+        path: /deploy/kubectl/manifests/-
+        value: {{.BuildDir}}/docs/customer/service_{{.Deployment}}.yaml
+
+      # Set compilation to be opt build.
+      - op: add
+        path: /build/artifacts/context=./bazel/args
+        value: ["--compilation_mode=opt"]
