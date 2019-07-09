@@ -129,13 +129,13 @@ Status CGroupManager::UpdateCGroupInfo() {
   // the internal data structures.
   cgroup_info_.clear();
 
-  auto base_path = sysfs_path_ / kSysfsCpuAcctPatch;
-
   // Sysfs base path must be valid.
-  bool is_directory = fs::is_directory(base_path);
+  bool is_directory = fs::is_directory(sysfs_path_);
   if (!is_directory) {
     return error::Unknown("Sysfs path is not a directory: $0", sysfs_path_.string());
   }
+
+  auto base_path = sysfs_path_ / kSysfsCpuAcctPatch;
 
   // K8s has three different QoS classes and with the exception of the
   // guaranteed class they are placed in sub directories.
