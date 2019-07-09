@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
 
   auto table_store = std::make_shared<pl::table_store::TableStore>();
   auto carnot = pl::carnot::Carnot::Create(table_store).ConsumeValueOrDie();
-  auto stirling = pl::stirling::Stirling::Create();
+  auto stirling = pl::stirling::Stirling::Create(pl::stirling::CreateProdSourceRegistry());
 
   auto channel_creds = grpc::InsecureChannelCredentials();
   if (!FLAGS_disable_SSL) {

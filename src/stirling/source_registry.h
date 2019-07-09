@@ -82,7 +82,5 @@ class SourceRegistry : public NotCopyable {
   std::unordered_map<std::string, RegistryElement> sources_map_;
 };
 
-void RegisterAllSources(SourceRegistry* registry);
-
 }  // namespace stirling
 }  // namespace pl

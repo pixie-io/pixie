@@ -106,13 +106,6 @@ void StirlingWrapperCallback(uint64_t table_id,
   // Can add other connectors, if desired, here.
 }
 
-std::unique_ptr<SourceRegistry> CreateRegistry() {
-  // Create a registry of sources;
-  std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
-  RegisterAllSources(registry.get());
-  return registry;
-}
-
 // A simple wrapper that shows how the data collector is to be hooked up
 // In this case, agent and sources are fake.
 int main(int argc, char** argv) {
@@ -120,7 +113,7 @@ int main(int argc, char** argv) {
   LOG(INFO) << "Stirling Wrapper";
 
   // Create a registry of relevant sources.
-  std::unique_ptr<SourceRegistry> registry = CreateRegistry();
+  std::unique_ptr<SourceRegistry> registry = pl::stirling::CreateAllSourceRegistry();
 
   // Make Stirling.
   auto data_collector = Stirling::Create(std::move(registry));

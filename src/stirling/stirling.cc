@@ -18,8 +18,32 @@
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
 
+#include "src/stirling/bcc_connector.h"
+#include "src/stirling/cgroup_stats_connector.h"
+#include "src/stirling/proc_stat_connector.h"
+#include "src/stirling/seq_gen_connector.h"
+#include "src/stirling/socket_trace_connector.h"
+
 namespace pl {
 namespace stirling {
+
+std::unique_ptr<SourceRegistry> CreateAllSourceRegistry() {
+  auto registry = std::make_unique<SourceRegistry>();
+  registry->RegisterOrDie<SeqGenConnector>("sequences");
+  registry->RegisterOrDie<FakeProcStatConnector>("fake_proc_stat");
+  registry->RegisterOrDie<ProcStatConnector>("proc_stat");
+  registry->RegisterOrDie<PIDCPUUseBCCConnector>("bcc_cpu_stat");
+  registry->RegisterOrDie<SocketTraceConnector>("socket_tracer");
+  registry->RegisterOrDie<CGroupStatsConnector>("cgroup_stats");
+  return registry;
+}
+
+std::unique_ptr<SourceRegistry> CreateProdSourceRegistry() {
+  auto registry = std::make_unique<SourceRegistry>();
+  registry->RegisterOrDie<SocketTraceConnector>("socket_tracer");
+  registry->RegisterOrDie<CGroupStatsConnector>("cgroup_stats");
+  return registry;
+}
 
 // TODO(oazizi/kgandhi): Is there a better place for this function?
 stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto) {
@@ -370,9 +394,7 @@ void StirlingImpl::SleepForDuration(std::chrono::milliseconds sleep_duration) {
 }
 
 std::unique_ptr<StirlingImpl> StirlingImpl::Create() {
-  auto registry = std::make_unique<SourceRegistry>();
-  RegisterAllSources(registry.get());
-
+  auto registry = CreateProdSourceRegistry();
   return Create(std::move(registry));
 }
 

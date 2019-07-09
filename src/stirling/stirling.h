@@ -33,6 +33,23 @@ stirlingpb::Subscribe SubscribeToInfoClass(const stirlingpb::Publish& publish_pr
                                            std::string_view name);
 
 /**
+ * @brief Creates a registry of all the available source connectors, including
+ *        source connectors used in development only.
+ *        They will all be intialized, and consume memory, even if they are disabled.
+ *
+ * @param unique_ptr to the created registry.
+ */
+std::unique_ptr<SourceRegistry> CreateAllSourceRegistry();
+
+/**
+ * @brief Creates a registry of main production source connectors.
+ *        Does not include registries used for development (e.g. SeqGenConnector).
+ *
+ * @param unique_ptr to the created registry.
+ */
+std::unique_ptr<SourceRegistry> CreateProdSourceRegistry();
+
+/**
  * The data collector collects data from various different 'sources',
  * and makes them available via a structured API, where the data can then be used and queried as
  * needed (by Pixie or others). Its function is to unify various, disparate sources of data into a
