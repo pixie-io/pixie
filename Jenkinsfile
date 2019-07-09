@@ -318,9 +318,9 @@ builders['Build & Test (dbg)'] = {
   dockerStepWithBazelCmd("bazel test --compilation_mode=dbg ${BAZEL_SRC_FILES_PATH}", 'build-dbg')
 }
 
-builders['Build & Test (opt + UI)'] = {
+builders['Build & Test All (opt + UI)'] = {
   dockerStepWithBazelDeps {
-    sh "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH} //docs/..."
+    sh "bazel test --compilation_mode=opt //..."
     createBazelStash("build-opt-testlogs")
 
     // Untar and save the UI artifacts.
