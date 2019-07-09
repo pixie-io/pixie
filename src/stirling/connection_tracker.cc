@@ -79,11 +79,14 @@ bool ConnectionTracker::AllEventsReceived() const {
 }
 
 void ConnectionTracker::SetPID(struct conn_id_t conn_id) {
-  DCHECK(conn_id_.tgid == 0 || conn_id_.tgid == conn_id_.tgid);
+  DCHECK(conn_id_.tgid == 0 || conn_id_.tgid == conn_id.tgid);
+  DCHECK(conn_id_.tgid_start_time_ns == 0 ||
+         conn_id_.tgid_start_time_ns == conn_id.tgid_start_time_ns);
   DCHECK(conn_id_.fd == 0 || conn_id_.fd == conn_id.fd);
   DCHECK(conn_id_.generation == 0 || conn_id_.generation == conn_id.generation);
 
   conn_id_.tgid = conn_id.tgid;
+  conn_id_.tgid_start_time_ns = conn_id.tgid_start_time_ns;
   conn_id_.fd = conn_id.fd;
   conn_id_.generation = conn_id.generation;
 }

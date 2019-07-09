@@ -118,11 +118,18 @@ class ConnectionTracker {
   ReqRespRole role() const { return traffic_class_.role; }
 
   /**
-   * Get PID (TGID) of the connection.
+   * Get PID of the connection.
    *
    * @return PID.
    */
   uint64_t pid() const { return conn_id_.tgid; }
+
+  /**
+   * Get start_time of the PID. Used to disambiguate reusued PIDs.
+   *
+   * @return start time.
+   */
+  uint64_t pid_start_time() const { return conn_id_.tgid_start_time_ns; }
 
   /**
    * Get FD of the connection.
@@ -242,7 +249,7 @@ class ConnectionTracker {
   void UpdateTimestamps(uint64_t bpf_timestamp);
 
   struct conn_id_t conn_id_ {
-    0, 0, 0
+    0, 0, 0, 0
   };
   traffic_class_t traffic_class_{kProtocolUnknown, kRoleUnknown};
 

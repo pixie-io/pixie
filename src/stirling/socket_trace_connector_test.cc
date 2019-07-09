@@ -190,7 +190,7 @@ TEST_F(SocketTraceConnectorTest, End2end) {
   source_->AcceptOpenConnEvent(conn);
 
   ASSERT_THAT(source_->NumActiveConnections(), 1);
-  const ConnectionTracker* tracker = source_->GetConnectionTracker({kPID, kFD, 1});
+  const ConnectionTracker* tracker = source_->GetConnectionTracker({kPID, 0, kFD, 1});
   ASSERT_NE(nullptr, tracker);
   EXPECT_EQ(50 + source_->ClockRealTimeOffset(), tracker->conn().timestamp_ns);
 

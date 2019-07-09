@@ -49,6 +49,8 @@ struct conn_id_t {
   // Comes from the process from which this is captured.
   // See https://stackoverflow.com/a/9306150 for details.
   uint32_t tgid;
+  // The start time of the PID, so we can disambiguate PIDs.
+  uint64_t tgid_start_time_ns;
   // The file descriptor to the opened network connection.
   uint32_t fd;
   // Generation number of the FD (increments on each FD reuse in the TGID).

@@ -1,5 +1,6 @@
 #include "src/stirling/bcc_bpf/socket_trace.h"
 
+#include <linux/sched.h>
 #include <linux/socket.h>
 #include <uapi/linux/in6.h>
 #include <uapi/linux/ptrace.h>
@@ -67,6 +68,11 @@ BPF_HASH(active_read_info_map, u64, struct data_info_t);
 // Map from TGID, FD pair to a unique identifier (generation) of that pair.
 // Key is {tgid, fd}.
 BPF_HASH(proc_conn_map, u64, u32);
+
+static inline __attribute__((__always_inline__)) uint64_t get_tgid_start_time() {
+  struct task_struct* task = (struct task_struct*)bpf_get_current_task();
+  return task->group_leader->start_time;
+}
 
 static inline __attribute__((__always_inline__)) uint32_t get_tgid_fd_generation(u64 tgid_fd) {
   u32 init_tgid_fd_generation = 0;
@@ -230,9 +236,10 @@ static inline __attribute__((__always_inline__)) struct conn_info_t* get_conn_in
   // Use timestamp being zero to detect that a new conn_info was initialized.
   if (conn_info->timestamp_ns == 0) {
     // If lookup_or_init initialized a new conn_info, we need to set some fields.
-    conn_info->conn_id.generation = get_tgid_fd_generation(tgid_fd);
     conn_info->conn_id.tgid = tgid;
+    conn_info->conn_id.tgid_start_time_ns = get_tgid_start_time();
     conn_info->conn_id.fd = fd;
+    conn_info->conn_id.generation = get_tgid_fd_generation(tgid_fd);
 
     // Unknown accept()/connect(), so no known timestamp either.
     // But have to change timestamp, so set to 1ns.
@@ -274,6 +281,7 @@ static void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd, struct sockad
   conn_info.wr_seq_num = 0;
   conn_info.rd_seq_num = 0;
   conn_info.conn_id.tgid = tgid;
+  conn_info.conn_id.tgid_start_time_ns = get_tgid_start_time();
   conn_info.conn_id.fd = fd;
   conn_info.conn_id.generation = get_tgid_fd_generation(tgid_fd);
 
@@ -448,6 +456,7 @@ static int probe_ret_write_send(struct pt_regs* ctx, enum EventType event_type) 
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.conn_id.tgid = tgid;
+  event->attr.conn_id.tgid_start_time_ns = get_tgid_start_time();
   event->attr.conn_id.fd = write_info->fd;
   event->attr.conn_id.generation = conn_info->conn_id.generation;
   event->attr.traffic_class = conn_info->traffic_class;
@@ -550,6 +559,7 @@ static int probe_ret_read_recv(struct pt_regs* ctx, enum EventType event_type) {
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.conn_id.tgid = tgid;
+  event->attr.conn_id.tgid_start_time_ns = get_tgid_start_time();
   event->attr.conn_id.fd = read_info->fd;
   event->attr.conn_id.generation = conn_info->conn_id.generation;
   event->attr.traffic_class = conn_info->traffic_class;

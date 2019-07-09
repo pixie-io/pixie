@@ -450,7 +450,8 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record,
 
   RecordBuilder<&kHTTPTable> r(record_batch);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
-  r.Append<r.ColIndex("tgid")>(conn_tracker.pid());
+  r.Append<r.ColIndex("pid")>(conn_tracker.pid());
+  r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
   r.Append<r.ColIndex("fd")>(conn_tracker.fd());
   r.Append<r.ColIndex("event_type")>(HTTPEventTypeToString(resp_message.type));
   // Note that there is a string copy here,
@@ -484,7 +485,8 @@ void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record,
 
   RecordBuilder<&kHTTPTable> r(record_batch);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
-  r.Append<r.ColIndex("tgid")>(conn_tracker.pid());
+  r.Append<r.ColIndex("pid")>(conn_tracker.pid());
+  r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
   r.Append<r.ColIndex("fd")>(conn_tracker.fd());
   r.Append<r.ColIndex("event_type")>("mixed");
   r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
@@ -527,7 +529,8 @@ void SocketTraceConnector::TransferMySQLEvent(SocketDataEvent event,
 
   RecordBuilder<&kMySQLTable> r(record_batch);
   r.Append<r.ColIndex("time_")>(event.attr.timestamp_ns + ClockRealTimeOffset());
-  r.Append<r.ColIndex("tgid")>(event.attr.conn_id.tgid);
+  r.Append<r.ColIndex("pid")>(event.attr.conn_id.tgid);
+  r.Append<r.ColIndex("pid_start_time")>(event.attr.conn_id.tgid_start_time_ns);
   r.Append<r.ColIndex("fd")>(fd);
   r.Append<r.ColIndex("bpf_event")>(event.attr.event_type);
   r.Append<r.ColIndex("remote_addr")>(std::move(ip));

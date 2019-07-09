@@ -38,14 +38,14 @@ constexpr DataTableSchema kHTTPTable = SocketTraceConnector::kHTTPTable;
 constexpr uint32_t kHTTPMajorVersionIdx = kHTTPTable.ColIndex("http_major_version");
 constexpr uint32_t kHTTPContentTypeIdx = kHTTPTable.ColIndex("http_content_type");
 constexpr uint32_t kHTTPHeaderIdx = kHTTPTable.ColIndex("http_headers");
-constexpr uint32_t kHTTPTGIDIdx = kHTTPTable.ColIndex("tgid");
+constexpr uint32_t kHTTPPIDIdx = kHTTPTable.ColIndex("pid");
 constexpr uint32_t kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
 constexpr uint32_t kHTTPRespBodyIdx = kHTTPTable.ColIndex("http_resp_body");
 
 std::vector<size_t> FindRecordIdxMatchesPid(const ColumnWrapperRecordBatch& http_record, int pid) {
   std::vector<size_t> res;
-  for (size_t i = 0; i < http_record[kHTTPTGIDIdx]->Size(); ++i) {
-    if (http_record[kHTTPTGIDIdx]->Get<types::Int64Value>(i).val == pid) {
+  for (size_t i = 0; i < http_record[kHTTPPIDIdx]->Size(); ++i) {
+    if (http_record[kHTTPPIDIdx]->Get<types::Int64Value>(i).val == pid) {
       res.push_back(i);
     }
   }
@@ -97,7 +97,7 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   const size_t server_record_idx = server_record_indices.front();
 
   EXPECT_EQ(s.child_pid(),
-            record_batch[kHTTPTGIDIdx]->Get<types::Int64Value>(server_record_idx).val);
+            record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(server_record_idx).val);
   EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(server_record_idx)),
               MatchesRegex(":authority: localhost:50051\n"
                            ":method: POST\n"
