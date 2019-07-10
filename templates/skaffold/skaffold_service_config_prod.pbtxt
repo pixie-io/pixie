@@ -1,5 +1,0 @@
-deployment: "prod"
-push_artifacts: true
-bazel_services_proxy_target: "//services/proxy:proxy_prod.tar"
-external_address: "https://app.pixielabs.ai:8080"
-has_cloud_ingress: true

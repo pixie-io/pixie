@@ -1,5 +1,0 @@
-deployment: "staging"
-push_artifacts: true
-bazel_services_proxy_target: "//services/proxy:proxy_prod.tar"
-external_address: "https://app.staging.pixielabs.ai"
-has_cloud_ingress: true
