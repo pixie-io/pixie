@@ -4,6 +4,7 @@ vm_driver=kvm2
 memory=8192
 cpus=8
 
+namespace=pl
 workspace=$(bazel info workspace)
 
 # On Linux we need to start minikube if not running.
@@ -25,6 +26,12 @@ else
   if [ $? -ne 0 ]; then
     minikube start --cpus=${cpus} --memory=${memory} --vm-driver=${vm_driver}
   fi
+fi
+
+# Create namespace if it does not exist.
+kubectl get namespaces ${namespace} 2> /dev/null
+if [ $? -ne 0 ]; then
+  kubectl create namespace ${namespace}
 fi
 
 make -C ${workspace} k8s-load-dev-secrets k8s-load-certs
