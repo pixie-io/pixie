@@ -67,11 +67,7 @@ class InfoClassManager {
    * This is required to identify an InfoClassManager parent source and also to generate
    * the publish proto.
    */
-  explicit InfoClassManager(std::string name) : name_(std::move(name)) {
-    last_sampled_ = std::chrono::milliseconds::zero();
-    last_pushed_ = std::chrono::milliseconds::zero();
-    id_ = global_id_++;
-  }
+  explicit InfoClassManager(std::string name) : name_(std::move(name)) { id_ = global_id_++; }
   virtual ~InfoClassManager() = default;
 
   /**
@@ -173,7 +169,9 @@ class InfoClassManager {
    *
    * @return std::chrono::milliseconds
    */
-  std::chrono::milliseconds NextSamplingTime() const { return last_sampled_ + sampling_period_; }
+  std::chrono::steady_clock::time_point NextSamplingTime() const {
+    return last_sampled_ + sampling_period_;
+  }
 
   /**
    * @brief Returns the next time the data table needs to be pushed upstream, according to the push
@@ -181,16 +179,15 @@ class InfoClassManager {
    *
    * @return std::chrono::milliseconds
    */
-  std::chrono::milliseconds NextPushTime() const { return last_pushed_ + push_period_; }
+  std::chrono::steady_clock::time_point NextPushTime() const { return last_pushed_ + push_period_; }
 
   /**
    * @brief Convenience function to return current time in Milliseconds.
    *
    * @return milliseconds
    */
-  static std::chrono::milliseconds CurrentTime() {
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::high_resolution_clock::now().time_since_epoch());
+  static std::chrono::steady_clock::time_point CurrentTime() {
+    return std::chrono::steady_clock::now();
   }
 
   /**
@@ -251,7 +248,7 @@ class InfoClassManager {
   /**
    * Keep track of when the source was last sampled.
    */
-  std::chrono::milliseconds last_sampled_;
+  std::chrono::steady_clock::time_point last_sampled_;
 
   /**
    * Statistics: count number of samples.
@@ -266,7 +263,7 @@ class InfoClassManager {
   /**
    * Keep track of when the source was last sampled.
    */
-  std::chrono::milliseconds last_pushed_{0};
+  std::chrono::steady_clock::time_point last_pushed_;
 
   /**
    * Data push threshold, based number of records after which a push.
