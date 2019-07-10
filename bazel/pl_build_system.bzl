@@ -66,6 +66,8 @@ def _default_external_deps():
         "@com_google_absl//absl/base:base",
         "@com_google_absl//absl/strings:strings",
         "@com_google_absl//absl/strings:str_format",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
         "@com_google_absl//absl/debugging:symbolize",
         "@com_google_absl//absl/debugging:failure_signal_handler",
     ]
