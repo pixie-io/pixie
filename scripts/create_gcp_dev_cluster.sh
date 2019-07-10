@@ -99,7 +99,6 @@ PIXIE_ROOT_DIR=$(bazel info workspace 2> /dev/null)
 gcloud beta container --project "pl-dev-infra" clusters create ${CLUSTER_NAME} \
  --zone "us-west1-a" \
  --username "admin" \
- --cluster-version "1.11.8-gke.6" \
  --machine-type "${MACHINE_TYPE}" \
  --image-type ${IMAGE_NAME} \
  --disk-type "pd-standard" \
