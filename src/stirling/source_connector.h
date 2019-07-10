@@ -58,7 +58,7 @@ class SourceConnector : public NotCopyable {
   Status Init() { return InitImpl(); }
   void TransferData(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) {
     CHECK_LT(table_num, num_tables())
-        << absl::StrFormat("Access to table out of bounds: table_num=%d", table_num);
+        << absl::Substitute("Access to table out of bounds: table_num=$0", table_num);
     return TransferDataImpl(table_num, record_batch);
   }
   Status Stop() { return StopImpl(); }
@@ -68,12 +68,12 @@ class SourceConnector : public NotCopyable {
   uint32_t num_tables() const { return table_schemas_.size(); }
   const ConstVectorView<DataElement>& elements(uint32_t table_num) const {
     DCHECK_LT(table_num, num_tables())
-        << absl::StrFormat("Access to table out of bounds: table_num=%d", table_num);
+        << absl::Substitute("Access to table out of bounds: table_num=$0", table_num);
     return table_schemas_[table_num].elements();
   }
   const ConstStrView& table_name(uint32_t table_num) const {
     DCHECK_LT(table_num, num_tables())
-        << absl::StrFormat("Access to table out of bounds: table_num=%d", table_num);
+        << absl::Substitute("Access to table out of bounds: table_num=$0", table_num);
     return table_schemas_[table_num].name();
   }
 
@@ -168,15 +168,15 @@ class SourceConnector : public NotCopyable {
     inline void Append(
         typename types::DataTypeTraits<schema->elements()[index].type()>::value_type val) {
       record_batch_[index]->Append(std::move(val));
-      CHECK(!signature_[index]) << absl::StrFormat(
-          "Attempt to Append() to column %d (name=%s) multiple times", index,
+      CHECK(!signature_[index]) << absl::Substitute(
+          "Attempt to Append() to column $0 (name=$1) multiple times", index,
           schema->elements()[index].name().data());
       signature_.set(index);
     }
 
     ~RecordBuilder() {
-      CHECK(signature_.all()) << absl::StrFormat(
-          "Must call Append() on all columns. Column bitset = %s", signature_.to_string());
+      CHECK(signature_.all()) << absl::Substitute(
+          "Must call Append() on all columns. Column bitset = $0", signature_.to_string());
     }
 
    private:

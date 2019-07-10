@@ -171,7 +171,7 @@ Status CGroupManager::GetNetworkStatsForPod(const std::string& pod,
       if (s.ok()) {
         return Status::OK();
       }
-      LOG(ERROR) << absl::StrFormat("Failed to read stats for pid: %ld, trying next", pid);
+      LOG(ERROR) << absl::Substitute("Failed to read stats for pid: $0, trying next", pid);
     }
   }
 

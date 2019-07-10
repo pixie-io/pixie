@@ -11,8 +11,8 @@ namespace stirling {
 void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
   LOG_IF(ERROR, open_info_.timestamp_ns != 0) << "Clobbering existing ConnOpenEvent.";
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ <= kDeathCountdownIters)
-      << absl::StrFormat(
-             "Did not expect to receive Open event after Close [PID=%d, FD=%d, generation=%d].",
+      << absl::Substitute(
+             "Did not expect to receive Open event after Close [PID=$0, FD=$1, generation=$2].",
              conn_info.conn_id.pid, conn_info.conn_id.fd, conn_info.conn_id.generation);
 
   UpdateTimestamps(conn_info.timestamp_ns);
@@ -44,8 +44,8 @@ void ConnectionTracker::AddConnCloseEvent(conn_info_t conn_info) {
 
 void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ <= kDeathCountdownIters)
-      << absl::StrFormat(
-             "Did not expect to receive Data event after Close [PID=%d, FD=%d, generation=%d].",
+      << absl::Substitute(
+             "Did not expect to receive Data event after Close [PID=$0, FD=$1, generation=$2].",
              event.attr.conn_id.pid, event.attr.conn_id.fd, event.attr.conn_id.generation);
 
   UpdateTimestamps(event.attr.timestamp_ns);
@@ -68,8 +68,8 @@ void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
       ++num_recv_events_;
     } break;
     default:
-      LOG(ERROR) << absl::StrFormat("AddDataEvent() unexpected event type %d",
-                                    event.attr.event_type);
+      LOG(ERROR) << absl::Substitute("AddDataEvent() unexpected event type $0",
+                                     event.attr.event_type);
   }
 }
 

@@ -46,8 +46,8 @@ void CGroupStatsConnector::TransferCGroupStatsTable(types::ColumnWrapperRecordBa
         ProcParser::ProcessStats stats;
         auto s = cgroup_mgr_->GetProcessStats(pid, &stats);
         if (!s.ok()) {
-          LOG(ERROR) << absl::StrFormat(
-              "Failed to fetch info for PID (%ld). Error=\"%s\" skipping.", pid, s.msg());
+          LOG(ERROR) << absl::Substitute(
+              "Failed to fetch info for PID ($0). Error=\"$1\" skipping.", pid, s.msg());
           continue;
         }
 
@@ -91,8 +91,8 @@ void CGroupStatsConnector::TransferNetStatsTable(types::ColumnWrapperRecordBatch
     ProcParser::NetworkStats stats;
     auto s = cgroup_mgr_->GetNetworkStatsForPod(pod, &stats);
     if (!s.ok()) {
-      LOG(ERROR) << absl::StrFormat(
-          "Failed to fetch network stats for pod \"%s\". Error=\"%s\" skipping.", pod, s.msg());
+      LOG(ERROR) << absl::Substitute(
+          "Failed to fetch network stats for pod \"$0\". Error=\"$1\" skipping.", pod, s.msg());
       continue;
     }
 
@@ -116,7 +116,7 @@ void CGroupStatsConnector::TransferNetStatsTable(types::ColumnWrapperRecordBatch
 void CGroupStatsConnector::TransferDataImpl(uint32_t table_num,
                                             types::ColumnWrapperRecordBatch* record_batch) {
   CHECK_LT(table_num, num_tables())
-      << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
+      << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
 
   switch (table_num) {
     case 0:

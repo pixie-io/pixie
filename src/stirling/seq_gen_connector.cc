@@ -16,7 +16,7 @@ void SeqGenConnector::TransferDataImpl(uint32_t table_num,
       TransferDataTable1(num_records, record_batch);
       break;
     default:
-      LOG(ERROR) << absl::StrFormat("Cannot handle the specified table_num %d", table_num);
+      LOG(ERROR) << absl::Substitute("Cannot handle the specified table_num $0", table_num);
       ASSERT_TRUE(false);
   }
 }

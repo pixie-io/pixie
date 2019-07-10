@@ -47,8 +47,8 @@ class SourceRegistry : public NotCopyable {
   template <typename TSourceConnector>
   Status Register(const std::string& name) {
     if (!TSourceConnector::kAvailable) {
-      LOG(INFO) << absl::StrFormat(
-          "SourceConnector [%s] not registered because it is not available (not "
+      LOG(INFO) << absl::Substitute(
+          "SourceConnector [$0] not registered because it is not available (not "
           "compiled/implemented)",
           name);
       return Status::OK();

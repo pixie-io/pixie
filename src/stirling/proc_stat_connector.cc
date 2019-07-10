@@ -89,7 +89,7 @@ Status ProcStatConnector::GetProcStat(const std::vector<std::string>& parsed_str
 void ProcStatConnector::TransferDataImpl(uint32_t table_num,
                                          types::ColumnWrapperRecordBatch* record_batch) {
   CHECK_LT(table_num, num_tables())
-      << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
+      << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
 
   auto parsed_str = GetProcParams();
   PL_CHECK_OK(GetProcStat(parsed_str));

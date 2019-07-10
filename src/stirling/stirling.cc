@@ -209,7 +209,8 @@ Status StirlingImpl::CreateSourceConnectors() {
     Status s = AddSourceFromRegistry(name, registry_element);
 
     if (!s.ok()) {
-      LOG(WARNING) << absl::StrFormat("Source Connector (registry name=%s) not instantiated", name);
+      LOG(WARNING) << absl::Substitute("Source Connector (registry name=$0) not instantiated",
+                                       name);
       LOG(WARNING) << s.status().ToString();
     }
   }

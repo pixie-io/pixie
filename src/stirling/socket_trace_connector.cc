@@ -98,7 +98,7 @@ Status SocketTraceConnector::StopImpl() {
 void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
                                             types::ColumnWrapperRecordBatch* record_batch) {
   CHECK_LT(table_num, kTables.size())
-      << absl::StrFormat("Trying to access unexpected table: table_num=%d", table_num);
+      << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
   CHECK(record_batch != nullptr) << "record_batch cannot be nullptr";
 
   // TODO(oazizi): Should this run more frequently than TransferDataImpl?
@@ -208,8 +208,8 @@ void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
     case kProtocolHTTP2:
       break;
     default:
-      LOG(WARNING) << absl::StrFormat("AcceptDataEvent ignored due to unknown protocol: %d",
-                                      event.attr.traffic_class.protocol);
+      LOG(WARNING) << absl::Substitute("AcceptDataEvent ignored due to unknown protocol: $0",
+                                       event.attr.traffic_class.protocol);
       return;
   }
 

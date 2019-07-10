@@ -64,7 +64,7 @@ void PrintRecordBatch(std::string_view prefix, const ConstVectorView<DataElement
           std::cout << val << " ";
         } break;
         default:
-          CHECK(false) << absl::StrFormat("Unrecognized type: $%s", ToString(schema[j].type()));
+          CHECK(false) << absl::Substitute("Unrecognized type: $0", ToString(schema[j].type()));
       }
 
       j++;

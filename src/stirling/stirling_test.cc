@@ -88,7 +88,7 @@ class StirlingTest : public ::testing::Test {
     // Make registry with a number of SeqGenConnectors.
     std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
     for (uint32_t i = 0; i < kNumSources; ++i) {
-      registry->RegisterOrDie<SeqGenConnector>(absl::StrFormat("sequences%u", i));
+      registry->RegisterOrDie<SeqGenConnector>(absl::Substitute("sequences$0", i));
     }
 
     // Make Stirling.
@@ -139,7 +139,8 @@ class StirlingTest : public ::testing::Test {
 
   void TearDown() override {
     for (const auto& [id, name] : stirling_->TableIDToNameMap()) {
-      LOG(INFO) << absl::StrFormat("Number of records processed: %u", num_processed_per_table_[id]);
+      LOG(INFO) << absl::Substitute("Number of records processed: $0",
+                                    num_processed_per_table_[id]);
       PL_UNUSED(name);
     }
   }
@@ -192,8 +193,8 @@ class StirlingTest : public ::testing::Test {
             EXPECT_EQ(checker(), col->Get<Float64Value>(i).val);
           } break;
           default:
-            CHECK(false) << absl::StrFormat("Unrecognized type: $%s",
-                                            ToString(table_schema[j].type()));
+            CHECK(false) << absl::Substitute("Unrecognized type: $0",
+                                             ToString(table_schema[j].type()));
         }
 
         j++;
