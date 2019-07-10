@@ -106,7 +106,6 @@ func (m *AgentManagerImpl) applyAgentUpdate(update *AgentUpdate) error {
 		return err
 	}
 
-	// TODO(michelle): Update computed schemas.
 	return m.mds.UpdateSchemas(update.AgentID, update.UpdateInfo.Schema)
 }
 

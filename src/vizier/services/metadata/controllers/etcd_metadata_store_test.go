@@ -213,6 +213,16 @@ func TestUpdateSchemas(t *testing.T) {
 	schemaPb := &metadatapb.SchemaInfo{}
 	proto.Unmarshal(schemaResp.Kvs[0].Value, schemaPb)
 	assert.Equal(t, "a_table", schemaPb.Name)
+
+	schemaResp, err = etcdClient.Get(context.Background(), "/schema/computed/a_table")
+	if err != nil {
+		t.Fatal("Unable to get container from etcd")
+	}
+
+	assert.Equal(t, 1, len(schemaResp.Kvs))
+	schemaPb = &metadatapb.SchemaInfo{}
+	proto.Unmarshal(schemaResp.Kvs[0].Value, schemaPb)
+	assert.Equal(t, "a_table", schemaPb.Name)
 }
 
 func TestGetAgentsForHostnames(t *testing.T) {

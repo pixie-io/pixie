@@ -161,6 +161,7 @@ func (mds *EtcdMetadataStore) UpdateContainers(containers []*metadatapb.Containe
 // UpdateSchemas updates the given schemas in the metadata store.
 func (mds *EtcdMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*metadatapb.SchemaInfo) error {
 	ops := make([]clientv3.Op, len(schemas))
+	computedSchemaOps := make([]clientv3.Op, len(schemas))
 	for i, schemaPb := range schemas {
 		schema, err := schemaPb.Marshal()
 		if err != nil {
@@ -170,11 +171,25 @@ func (mds *EtcdMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*metada
 
 		schemaKey := GetAgentSchemaKey(agentID.String(), schemaPb.Name)
 		ops[i] = clientv3.OpPut(schemaKey, string(schema))
+
+		computedSchemaKey := getComputedSchemaKey(schemaPb.Name)
+		computedSchemaOps[i] = clientv3.OpPut(computedSchemaKey, string(schema))
 	}
 
 	_, err := mds.client.Txn(context.TODO()).If().Then(ops...).Commit()
+	if err != nil {
+		return err
+	}
+
+	// TODO(michelle): PL-695 This currently assumes that if a schema is available on one agent,
+	// then it is available on all agents. This should be updated so that we handle situations where that is not the case.
+	_, err = mds.client.Txn(context.TODO()).If().Then(computedSchemaOps...).Commit()
 
 	return err
+}
+
+func getComputedSchemaKey(schemaName string) string {
+	return path.Join("/", "schema", "computed", schemaName)
 }
 
 func getServiceKey(e *metadatapb.Service) string {
