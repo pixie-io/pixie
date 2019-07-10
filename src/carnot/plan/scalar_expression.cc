@@ -83,13 +83,13 @@ std::string ScalarValue::DebugString() const {
     case types::BOOLEAN:
       return BoolValue() ? "true" : "false";
     case types::INT64:
-      return absl::StrFormat("%d", Int64Value());
+      return absl::Substitute("$0", Int64Value());
     case types::FLOAT64:
-      return absl::StrFormat("%ff", Float64Value());
+      return absl::Substitute("$0f", Float64Value());
     case types::STRING:
-      return absl::StrFormat("\"%s\"", StringValue());
+      return absl::Substitute("\"$0\"", StringValue());
     case types::TIME64NS:
-      return absl::StrFormat("%d", Time64NSValue());
+      return absl::Substitute("$0", Time64NSValue());
     default:
       return "<Unknown>";
   }
@@ -129,7 +129,7 @@ int64_t Column::NodeID() const {
 }
 std::string Column::DebugString() const {
   DCHECK(is_initialized_) << "Not initialized";
-  return absl::StrFormat("node<%d>::col[%d]", NodeID(), Index());
+  return absl::Substitute("node<$0>::col[$1]", NodeID(), Index());
 }
 
 StatusOr<types::DataType> Column::OutputDataType(
@@ -253,7 +253,7 @@ std::string ScalarFunc::DebugString() const {
   for (const auto& arg : arg_deps_) {
     arg_strings.push_back(arg->DebugString());
   }
-  debug_string += absl::StrFormat("fn:%s(%s)", name_, absl::StrJoin(arg_strings, ","));
+  debug_string += absl::Substitute("fn:$0($1)", name_, absl::StrJoin(arg_strings, ","));
   return debug_string;
 }
 
@@ -321,7 +321,7 @@ std::string AggregateExpression::DebugString() const {
     arg_strings.push_back(arg->DebugString());
   }
   debug_string +=
-      absl::StrFormat("aggregate expression:%s(%s)", name_, absl::StrJoin(arg_strings, ","));
+      absl::Substitute("aggregate expression:$0($1)", name_, absl::StrJoin(arg_strings, ","));
   return debug_string;
 }
 

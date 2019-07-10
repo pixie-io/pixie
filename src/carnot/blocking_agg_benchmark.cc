@@ -57,7 +57,7 @@ StatusOr<std::shared_ptr<Table>> CreateTable(std::vector<types::DataType> types,
   RowDescriptor rd(types);
   std::vector<std::string> col_names;
   for (size_t col_idx = 0; col_idx < types.size(); col_idx++) {
-    col_names.push_back(absl::StrFormat("col%d", col_idx));
+    col_names.push_back(absl::Substitute("col$0", col_idx));
   }
 
   auto table = std::make_shared<Table>(table_store::schema::Relation(types, col_names));

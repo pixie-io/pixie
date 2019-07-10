@@ -23,7 +23,7 @@ TEST(CompilerErrorContextStatus, Default) {
 
     error->set_line(line + i);
     error->set_column(column + i);
-    error->set_message(absl::StrFormat("msg: %s, idx: %d", message, i));
+    error->set_message(absl::Substitute("msg: $0, idx: $1", message, i));
   }
   Status status(pl::statuspb::INVALID_ARGUMENT, "Issue",
                 std::make_unique<compilerpb::CompilerErrorGroup>(errorgroup_in));
@@ -38,7 +38,7 @@ TEST(CompilerErrorContextStatus, Default) {
     auto error_out = error_parent_out.line_col_error();
     EXPECT_EQ(error_out.line(), line + i);
     EXPECT_EQ(error_out.column(), column + i);
-    EXPECT_EQ(error_out.message(), absl::StrFormat("msg: %s, idx: %d", message, i));
+    EXPECT_EQ(error_out.message(), absl::Substitute("msg: $0, idx: $1", message, i));
   }
 }
 

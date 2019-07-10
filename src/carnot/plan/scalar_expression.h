@@ -45,7 +45,7 @@ inline std::string ToString(const planpb::ScalarExpression::ValueCase& exp) {
     case planpb::ScalarExpression::kConstant:
       return "Value";
     default:
-      std::string err_msg = absl::StrFormat("Unknown expression type: %d", static_cast<int>(exp));
+      std::string err_msg = absl::Substitute("Unknown expression type: $0", static_cast<int>(exp));
       DCHECK(0) << err_msg;
       LOG(ERROR) << err_msg;
       return "UnknownExp";

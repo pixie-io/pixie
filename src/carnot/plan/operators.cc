@@ -43,7 +43,7 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_
     case planpb::LIMIT_OPERATOR:
       return CreateOperator<LimitOperator>(id, pb.limit_op());
     default:
-      LOG(FATAL) << absl::StrFormat("Unknown operator type: %s", ToString(pb.op_type()));
+      LOG(FATAL) << absl::Substitute("Unknown operator type: $0", ToString(pb.op_type()));
   }
 }
 
@@ -90,7 +90,7 @@ std::string MapOperator::DebugString() const {
     if (i != 0u) {
       debug_string += ",";
     }
-    debug_string += absl::StrFormat("%s:%s", column_names_[i], expressions_[i]->DebugString());
+    debug_string += absl::Substitute("$0:$1", column_names_[i], expressions_[i]->DebugString());
   }
   debug_string += ")";
   return "Op:Map" + debug_string;
@@ -225,7 +225,7 @@ StatusOr<table_store::schema::Relation> MemorySinkOperator::OutputRelation(
  * Filter Operator Implementation.
  */
 std::string FilterOperator::DebugString() const {
-  std::string debug_string = absl::StrFormat("(%s)", expression_->DebugString());
+  std::string debug_string = absl::Substitute("($0)", expression_->DebugString());
   return "Op:Filter" + debug_string;
 }
 
@@ -261,7 +261,7 @@ StatusOr<table_store::schema::Relation> FilterOperator::OutputRelation(
  * Limit Operator Implementation.
  */
 std::string LimitOperator::DebugString() const {
-  std::string debug_string = absl::StrFormat("(%d)", record_limit_);
+  std::string debug_string = absl::Substitute("($0)", record_limit_);
   return "Op:Limit" + debug_string;
 }
 

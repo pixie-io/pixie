@@ -1,8 +1,8 @@
 #include <string>
 #include <vector>
 
-#include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/substitute.h"
 #include "src/carnot/exec/map_node.h"
 #include "src/carnot/planpb/plan.pb.h"
 
@@ -14,7 +14,7 @@ using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
 
 std::string MapNode::DebugStringImpl() {
-  return absl::StrFormat("Exec::MapNode<%s>", evaluator_->DebugString());
+  return absl::Substitute("Exec::MapNode<$0>", evaluator_->DebugString());
 }
 
 Status MapNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor& output_descriptor,

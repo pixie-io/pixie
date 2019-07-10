@@ -137,7 +137,7 @@ std::string ScalarExpressionEvaluator::DebugString() {
   std::vector<std::string> debug_strs(expressions_.size());
   std::transform(begin(expressions_), end(expressions_), begin(debug_strs),
                  [](auto val) { return val->DebugString(); });
-  return absl::StrFormat("ExpressionEvaluator<%s>", absl::StrJoin(debug_strs, ","));
+  return absl::Substitute("ExpressionEvaluator<$0>", absl::StrJoin(debug_strs, ","));
 }
 
 Status VectorNativeScalarExpressionEvaluator::Open(ExecState* exec_state) {

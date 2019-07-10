@@ -18,8 +18,8 @@ using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
 
 std::string MemorySinkNode::DebugStringImpl() {
-  return absl::StrFormat("Exec::MemorySinkNode: {name: %s, output: %s}", plan_node_->TableName(),
-                         input_descriptor_->DebugString());
+  return absl::Substitute("Exec::MemorySinkNode: {name: $0, output: $1}", plan_node_->TableName(),
+                          input_descriptor_->DebugString());
 }
 
 Status MemorySinkNode::InitImpl(

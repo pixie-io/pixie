@@ -831,8 +831,8 @@ class IRWalker {
         // MemorySource
         break;
       default:
-        LOG(WARNING) << absl::StrFormat("IRNode %s does not exist for CallWalkFn",
-                                        node.type_string());
+        LOG(WARNING) << absl::Substitute("IRNode $0 does not exist for CallWalkFn",
+                                         node.type_string());
     }
     return Status::OK();
   }

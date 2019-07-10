@@ -142,10 +142,10 @@ class Registry : public BaseUDFRegistry {
 
   std::string DebugString() override {
     std::string debug_string;
-    debug_string += absl::StrFormat("Registry(%s): %s\n", ToString(Type()), name_);
+    debug_string += absl::Substitute("Registry($0): $1\n", ToString(Type()), name_);
     for (const auto& entry : map_) {
       // TODO(zasgar): add arguments as well. Future Diff.
-      debug_string += absl::StrFormat("%s\n", entry.first.name());
+      debug_string += entry.first.name() + "\n";
     }
     return debug_string;
   }

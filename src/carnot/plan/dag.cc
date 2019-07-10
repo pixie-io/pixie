@@ -16,7 +16,7 @@ using std::end;
 using std::vector;
 
 void DAG::AddNode(int64_t node) {
-  DCHECK(!HasNode(node)) << absl::StrFormat("Node: %d already exists", node);
+  DCHECK(!HasNode(node)) << absl::Substitute("Node: $0 already exists", node);
   nodes_.insert(node);
 
   forward_edges_by_node_[node] = {};
@@ -143,7 +143,7 @@ std::string DAG::DebugString() {
   std::string debug_string;
   for (const auto& node : nodes_) {
     debug_string +=
-        absl::StrFormat("{%d} : [%s]\n", node, absl::StrJoin(forward_edges_by_node_[node], ", "));
+        absl::Substitute("{$0} : [$1]\n", node, absl::StrJoin(forward_edges_by_node_[node], ", "));
   }
   return debug_string;
 }

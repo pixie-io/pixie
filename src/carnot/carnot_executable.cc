@@ -48,13 +48,13 @@ pl::StatusOr<DataType> GetTypeFromHeaderString(const std::string& type) {
   return pl::error::InvalidArgument("Could not recognize type from header.");
 }
 
-std::string ValueToString(int64_t val) { return absl::StrFormat("%d", val); }
+std::string ValueToString(int64_t val) { return absl::Substitute("$0", val); }
 
 std::string ValueToString(double val) { return absl::StrFormat("%.2f", val); }
 
-std::string ValueToString(std::string val) { return absl::StrFormat("%s", val); }
+std::string ValueToString(std::string val) { return val; }
 
-std::string ValueToString(bool val) { return absl::StrFormat("%s", val ? "true" : "false"); }
+std::string ValueToString(bool val) { return val ? "true" : "false"; }
 
 /**
  * Takes the value and converts it to the string representation.
@@ -146,7 +146,7 @@ std::shared_ptr<pl::table_store::Table> GetTableFromCsv(const std::string& filen
           break;
         case DataType::STRING:
           static_cast<pl::types::StringValueColumnWrapper*>(batch->at(col_idx).get())
-              ->Append(absl::StrFormat("%s", field));
+              ->Append(std::string(field));
           break;
         case DataType::TIME64NS:
           static_cast<pl::types::Time64NSValueColumnWrapper*>(batch->at(col_idx).get())
@@ -188,7 +188,7 @@ void TableToCsv(const std::string& filename, pl::table_store::Table* table) {
   for (size_t i = 0; i < col_idxs.size(); i++) {
     output_col_names.push_back(table->GetColumn(i)->name());
   }
-  output_csv << absl::StrFormat("%s\n", absl::StrJoin(output_col_names, ","));
+  output_csv << absl::StrJoin(output_col_names, ",") << "\n";
 
   for (auto i = 0; i < table->NumBatches(); i++) {
     auto rb = table->GetRowBatch(i, col_idxs, arrow::default_memory_pool()).ConsumeValueOrDie();
@@ -199,7 +199,7 @@ void TableToCsv(const std::string& filename, pl::table_store::Table* table) {
         PL_SWITCH_FOREACH_DATATYPE(table->GetColumn(col_idx)->data_type(), TYPE_CASE);
 #undef TYPE_CASE
       }
-      output_csv << absl::StrFormat("%s\n", absl::StrJoin(row, ","));
+      output_csv << absl::StrJoin(row, ",") << "\n";
     }
   }
   output_csv.close();

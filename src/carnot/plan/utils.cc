@@ -20,7 +20,7 @@ std::string ToString(planpb::OperatorType op) {
       return "MemorySinkOperator";
     default:
       LOG(WARNING) << "Unknown operator in ToString function";
-      return absl::StrFormat("(UnknownOperator:%d)", static_cast<int>(op));
+      return absl::Substitute("(UnknownOperator:$0)", static_cast<int>(op));
   }
 }
 
@@ -39,7 +39,7 @@ std::string ToString(types::DataType dt) {
       return "time64ns";
     default:
       LOG(WARNING) << "Unknown datatype in ToStringFunction";
-      return absl::StrFormat("(UnknownDatatype:%d)", static_cast<int>(dt));
+      return absl::Substitute("(UnknownDatatype:$0)", static_cast<int>(dt));
   }
 }
 

@@ -2,8 +2,8 @@
 #include <utility>
 #include <vector>
 
-#include "absl/strings/str_format.h"
 #include "absl/strings/str_join.h"
+#include "absl/strings/substitute.h"
 #include "src/carnot/exec/filter_node.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/shared/types/arrow_adapter.h"
@@ -16,7 +16,7 @@ using table_store::schema::RowBatch;
 using table_store::schema::RowDescriptor;
 
 std::string FilterNode::DebugStringImpl() {
-  return absl::StrFormat("Exec::FilterNode<%s>", evaluator_->DebugString());
+  return absl::Substitute("Exec::FilterNode<$0>", evaluator_->DebugString());
 }
 
 Status FilterNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor& output_descriptor,

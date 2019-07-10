@@ -11,8 +11,8 @@ namespace carnot {
 namespace exec {
 
 std::string MemorySourceNode::DebugStringImpl() {
-  return absl::StrFormat("Exec::MemorySourceNode: <name: %s, output: %s>", plan_node_->TableName(),
-                         output_descriptor_->DebugString());
+  return absl::Substitute("Exec::MemorySourceNode: <name: $0, output: $1>", plan_node_->TableName(),
+                          output_descriptor_->DebugString());
 }
 
 Status MemorySourceNode::InitImpl(const plan::Operator& plan_node,

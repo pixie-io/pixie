@@ -133,8 +133,8 @@ struct RowTuple : public NotCopyable {
       if (types->at(idx) == types::STRING) {
         auto actual_seq_id = types::Get<types::Int64Value>(fixed_values[idx]).val;
         if (actual_seq_id != expected_seq_id) {
-          LOG(ERROR) << absl::StrFormat("Expected seq_id: %ld, got %ld", expected_seq_id,
-                                        actual_seq_id);
+          LOG(ERROR) << absl::Substitute("Expected seq_id: $0, got $1", expected_seq_id,
+                                         actual_seq_id);
           return false;
         }
         ++expected_seq_id;

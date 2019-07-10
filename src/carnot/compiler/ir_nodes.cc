@@ -18,9 +18,9 @@ void IR::DeleteEdge(int64_t from_node, int64_t to_node) { dag_.DeleteEdge(from_n
 void IR::DeleteNode(int64_t node) { dag_.DeleteNode(node); }
 
 std::string IR::DebugString() {
-  std::string debug_string = absl::StrFormat("%s\n", dag().DebugString());
+  std::string debug_string = dag().DebugString() + "\n";
   for (auto const& a : id_node_map_) {
-    debug_string += absl::StrFormat("%s\n", a.second->DebugString(0));
+    debug_string += a.second->DebugString(0) + "\n";
   }
   return debug_string;
 }
@@ -102,7 +102,7 @@ std::string DebugStringFmt(int64_t depth, std::string name,
   std::vector<std::string> property_strings;
   std::map<std::string, std::string>::iterator it;
   std::string depth_string = std::string(depth, '\t');
-  property_strings.push_back(absl::StrFormat("%s%s", depth_string, name));
+  property_strings.push_back(absl::Substitute("$0$1", depth_string, name));
 
   for (it = property_value_map.begin(); it != property_value_map.end(); it++) {
     std::string prop_str = absl::Substitute("$0 $1\t-$2", depth_string, it->first, it->second);
@@ -116,7 +116,7 @@ std::string MemorySourceIR::DebugString(int64_t depth) const {
     CHECK(select_ != nullptr);
     property_map["Select"] = select_->DebugString(depth + 1);
   }
-  return DebugStringFmt(depth, absl::StrFormat("%d:MemorySourceIR", id()), property_map);
+  return DebugStringFmt(depth, absl::Substitute("$0:MemorySourceIR", id()), property_map);
 }
 
 bool MemorySinkIR::HasLogicalRepr() const { return true; }
@@ -165,7 +165,7 @@ Status RangeIR::InitImpl(const ArgMap& args) {
 }
 
 std::string MemorySinkIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(depth, absl::StrFormat("%d:MemorySinkIR", id()),
+  return DebugStringFmt(depth, absl::Substitute("$0:MemorySinkIR", id()),
                         {{"Parent", parent()->DebugString(depth + 1)}});
 }
 
@@ -209,7 +209,7 @@ Status RangeIR::SetStartStop(IRNode* start_repr, IRNode* stop_repr) {
 bool RangeIR::HasLogicalRepr() const { return false; }
 
 std::string RangeIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(depth, absl::StrFormat("%d:RangeIR", id()),
+  return DebugStringFmt(depth, absl::Substitute("$0:RangeIR", id()),
                         {{"Parent", parent()->DebugString(depth + 1)},
                          {"Start", start_repr_->DebugString(depth + 1)},
                          {"Stop", stop_repr_->DebugString(depth + 1)}});
@@ -234,7 +234,7 @@ Status MapIR::InitImpl(const ArgMap& args) {
 bool MapIR::HasLogicalRepr() const { return true; }
 
 std::string MapIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(depth, absl::StrFormat("%d:MapIR", id()),
+  return DebugStringFmt(depth, absl::Substitute("$0:MapIR", id()),
                         {{"Parent", parent()->DebugString(depth + 1)},
                          {"Lambda", lambda_func_->DebugString(depth + 1)}});
 }
@@ -333,7 +333,7 @@ Status FilterIR::InitImpl(const ArgMap& args) {
 bool FilterIR::HasLogicalRepr() const { return true; }
 
 std::string FilterIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(depth, absl::StrFormat("%d:FilterIR", id()),
+  return DebugStringFmt(depth, absl::Substitute("$0:FilterIR", id()),
                         {{"Parent", parent()->DebugString(depth + 1)},
                          {"Filter", filter_func_->DebugString(depth + 1)}});
 }
@@ -371,7 +371,7 @@ Status LimitIR::InitImpl(const ArgMap& args) {
 bool LimitIR::HasLogicalRepr() const { return true; }
 
 std::string LimitIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(depth, absl::StrFormat("%d:LimitIR", id()),
+  return DebugStringFmt(depth, absl::Substitute("$0:LimitIR", id()),
                         {{"Parent", parent()->DebugString(depth + 1)},
                          {"Limit", absl::Substitute("$0", limit_value_)}});
 }
@@ -429,7 +429,7 @@ std::string BlockingAggIR::DebugString(int64_t depth) const {
   if (by_func_ != nullptr) {
     property_map["ByFn"] = by_func_->DebugString(depth + 1);
   }
-  return DebugStringFmt(depth, absl::StrFormat("%d:BlockingAggIR", id()), property_map);
+  return DebugStringFmt(depth, absl::Substitute("$0:BlockingAggIR", id()), property_map);
 }
 
 Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* expr,
@@ -525,7 +525,7 @@ Status ColumnIR::Init(const std::string& col_name, const pypa::AstPtr& ast_node)
 }
 
 std::string ColumnIR::DebugString(int64_t depth) const {
-  return absl::StrFormat("%s%d:%s\t-\t%s", std::string(depth, '\t'), id(), "Column", col_name());
+  return absl::Substitute("$0$1:$2\t-\t$3", std::string(depth, '\t'), id(), "Column", col_name());
 }
 
 bool StringIR::HasLogicalRepr() const { return false; }
@@ -536,7 +536,7 @@ Status StringIR::Init(std::string str, const pypa::AstPtr& ast_node) {
 }
 
 std::string StringIR::DebugString(int64_t depth) const {
-  return absl::StrFormat("%s%d:%s\t-\t%s", std::string(depth, '\t'), id(), "Str", str());
+  return absl::Substitute("$0$1:$2\t-\t$3", std::string(depth, '\t'), id(), "Str", str());
 }
 
 bool ListIR::HasLogicalRepr() const { return false; }
@@ -555,9 +555,9 @@ Status ListIR::Init(const pypa::AstPtr& ast_node, std::vector<IRNode*> children)
 std::string ListIR::DebugString(int64_t depth) const {
   std::map<std::string, std::string> childMap;
   for (size_t i = 0; i < children_.size(); i++) {
-    childMap[absl::StrFormat("child%d", i)] = children_[i]->DebugString(depth + 1);
+    childMap[absl::Substitute("child$0", i)] = children_[i]->DebugString(depth + 1);
   }
-  return DebugStringFmt(depth, absl::StrFormat("%d:ListIR", id()), childMap);
+  return DebugStringFmt(depth, absl::Substitute("$0:ListIR", id()), childMap);
 }
 
 bool LambdaIR::HasLogicalRepr() const { return false; }
@@ -599,11 +599,11 @@ StatusOr<IRNode*> LambdaIR::GetDefaultExpr() {
 std::string LambdaIR::DebugString(int64_t depth) const {
   std::map<std::string, std::string> childMap;
   childMap["ExpectedRelation"] =
-      absl::StrFormat("[%s]", absl::StrJoin(expected_column_names_, ","));
+      absl::Substitute("[$0]", absl::StrJoin(expected_column_names_, ","));
   for (auto const& x : col_exprs_) {
-    childMap[absl::StrFormat("ExprMap[\"%s\"]", x.name)] = x.node->DebugString(depth + 1);
+    childMap[absl::Substitute("ExprMap[\"$0\"]", x.name)] = x.node->DebugString(depth + 1);
   }
-  return DebugStringFmt(depth, absl::StrFormat("%d:LambdaIR", id()), childMap);
+  return DebugStringFmt(depth, absl::Substitute("$0:LambdaIR", id()), childMap);
 }
 
 std::unordered_map<std::string, FuncIR::Op> FuncIR::op_map{
@@ -638,9 +638,9 @@ Status FuncIR::Init(Op op, std::string func_prefix, const std::vector<Expression
 std::string FuncIR::DebugString(int64_t depth) const {
   std::map<std::string, std::string> childMap;
   for (size_t i = 0; i < args_.size(); i++) {
-    childMap.emplace(absl::StrFormat("arg%d", i), args_[i]->DebugString(depth + 1));
+    childMap.emplace(absl::Substitute("arg$0", i), args_[i]->DebugString(depth + 1));
   }
-  return DebugStringFmt(depth, absl::StrFormat("%d:FuncIR", id()), childMap);
+  return DebugStringFmt(depth, absl::Substitute("$0:FuncIR", id()), childMap);
 }
 
 /* Float IR */
@@ -651,7 +651,7 @@ Status FloatIR::Init(double val, const pypa::AstPtr& ast_node) {
   return Status::OK();
 }
 std::string FloatIR::DebugString(int64_t depth) const {
-  return absl::StrFormat("%s%d:%s\t-\t%f", std::string(depth, '\t'), id(), "Float", val());
+  return absl::Substitute("$0$1:$2\t-\t$3", std::string(depth, '\t'), id(), "Float", val());
 }
 
 /* Int IR */
@@ -662,7 +662,7 @@ Status IntIR::Init(int64_t val, const pypa::AstPtr& ast_node) {
   return Status::OK();
 }
 std::string IntIR::DebugString(int64_t depth) const {
-  return absl::StrFormat("%s%d:%s\t-\t%d", std::string(depth, '\t'), id(), "Int", val());
+  return absl::Substitute("$0$1:$2\t-\t$3", std::string(depth, '\t'), id(), "Int", val());
 }
 
 /* Bool IR */
@@ -673,7 +673,7 @@ Status BoolIR::Init(bool val, const pypa::AstPtr& ast_node) {
   return Status::OK();
 }
 std::string BoolIR::DebugString(int64_t depth) const {
-  return absl::StrFormat("%s%d:%s\t-\t%d", std::string(depth, '\t'), id(), "Bool", val());
+  return absl::Substitute("$0$1:$2\t-\t$3", std::string(depth, '\t'), id(), "Bool", val());
 }
 /* Time IR */
 bool TimeIR::HasLogicalRepr() const { return false; }
@@ -683,7 +683,7 @@ Status TimeIR::Init(int64_t val, const pypa::AstPtr& ast_node) {
   return Status::OK();
 }
 std::string TimeIR::DebugString(int64_t depth) const {
-  return absl::StrFormat("%s%d:%s\t-\t%d", std::string(depth, '\t'), id(), "Time", val());
+  return absl::Substitute("$0$1:$2\t-\t$3", std::string(depth, '\t'), id(), "Time", val());
 }
 }  // namespace compiler
 }  // namespace carnot
