@@ -486,8 +486,11 @@ done:
   return 0;
 }
 
-static int probe_entry_read_recv(struct pt_regs* ctx, unsigned int fd, char* buf, size_t count,
+static int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t count,
                                  enum EventType event_type) {
+  if (fd < 0) {
+    return 0;
+  }
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
