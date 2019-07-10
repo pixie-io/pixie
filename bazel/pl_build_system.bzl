@@ -70,6 +70,13 @@ def _default_external_deps():
         "@com_google_absl//absl/debugging:failure_signal_handler",
     ]
 
+def _default_internal_deps():
+    return [
+        "//src/common/base:cc_library",
+        "//src/common/memory:cc_library",
+        "//src/common/perf:cc_library",
+    ]
+
 def _default_link_deps():
     return select({
         "@bazel_tools//tools/osx:darwin": [],
@@ -114,14 +121,8 @@ def pl_cc_library_internal(
     )
 
 def pl_cc_library(**kwargs):
-    if "deps" in kwargs:
-        kwargs["deps"] = kwargs["deps"] + ["//src/common/base:cc_library"]
-        kwargs["deps"] = kwargs["deps"] + ["//src/common/memory:cc_library"]
-        kwargs["deps"] = kwargs["deps"] + ["//src/common/perf:cc_library"]
-    else:
-        kwargs["deps"] = ["//src/common/base:cc_library"]
-        kwargs["deps"] = kwargs["deps"] + ["//src/common/memory:cc_library"]
-        kwargs["deps"] = kwargs["deps"] + ["//src/common/perf:cc_library"]
+    kwargs["deps"] = kwargs.get("deps", [])
+    kwargs["deps"] = kwargs["deps"] + _default_internal_deps()
 
     pl_cc_library_internal(**kwargs)
 
@@ -153,7 +154,7 @@ def pl_cc_binary(
         malloc = tcmalloc_external_dep(repository),
         stamp = 1,
         tags = tags,
-        deps = deps + _default_link_deps() + _default_external_deps(),
+        deps = deps + _default_link_deps() + _default_external_deps() + _default_internal_deps(),
     )
 
 # PL C++ test targets should be specified with this function.
