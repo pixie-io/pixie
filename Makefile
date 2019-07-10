@@ -122,7 +122,7 @@ dev-env-teardown: dev-env-stop ## Clean up dev environment.
 	$(MINIKUBE) delete
 
 deploy-vizier-nightly: ## Deploy vizier in nightly environment.
-	PL_BUILD_TYPE=nightly $(SKAFFOLD) run -f $(SKAFFOLD_DIR)/skaffold_nightly.yaml
+	PL_BUILD_TYPE=nightly $(SKAFFOLD) run -f $(SKAFFOLD_DIR)/skaffold_vizier.yaml
 
 deploy-customer-docs-nightly: ## Deploy customer docs in nightly environment.
 	PL_BUILD_TYPE=nightly $(SKAFFOLD) run -f $(SKAFFOLD_DIR)/skaffold_customer_docs.yaml
