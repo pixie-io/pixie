@@ -1,11 +1,6 @@
-# Generated file: bazel run //templates/skaffold:skaffoldtemplate
-# DO NOT EDIT
 apiVersion: skaffold/v1beta8
 kind: Config
 build:
-  tagPolicy:
-    envTemplate:
-      template: "{{`{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}`}}"
   artifacts:
   - image: gcr.io/pl-dev-infra/agent_image
     context: .
@@ -34,22 +29,14 @@ build:
   local:
     push: true
 deploy:
-  kubectl:
-    manifests:
-    - {{.BuildDir}}/src/vizier/services/agent/agent_{{.Deployment}}.yaml
-    - {{.BuildDir}}/src/vizier/services/query_broker/service_{{.Deployment}}.yaml
-    - {{.BuildDir}}/src/vizier/services/metadata/service_{{.Deployment}}.yaml
-    - {{.BuildDir}}/src/services/api/service_{{.Deployment}}.yaml
-    - {{.BuildDir}}/src/services/api/service_{{.Deployment}}.yaml
-    - {{.BuildDir}}/src/services/proxy/service_{{.Deployment}}.yaml
+  kustomize:
+    path: k8s/vizier/dev
 profiles:
   - name: dev
     activation:
       - command: dev
     patches:
       # Use default tag policy (hash) for dev builds.
-      - op: remove
-        path: /build/tagPolicy/envTemplate
       # Don't push images in the dev build.
       - op: replace
         path: /build
@@ -61,20 +48,18 @@ profiles:
     activation:
       - env: PL_BUILD_TYPE=nightly
     patches:
-      # Add customer docs to the nightly build.
-      - op: add
-        path: /build/artifacts/-
-        value:
-          image: gcr.io/pl-dev-infra/customer_docs_prod_image
-          context: .
-          bazel:
-            target: //docs/customer:customer_docs_prod_image.tar
-
-      - op: add
-        path: /deploy/kubectl/manifests/-
-        value: {{.BuildDir}}/docs/customer/service_{{.Deployment}}.yaml
-
       # Set compilation to be opt build.
       - op: add
         path: /build/artifacts/context=./bazel/args
         value: ["--compilation_mode=opt"]
+
+      - op: set
+        path: /build/tagPolicy/envTemplate
+        value:
+          template: "{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}"
+
+# Set path to be nightly yamls.
+      - op: replace
+        path: /deploy/kustomize
+        value:
+          path: k8s/vizier/nightly

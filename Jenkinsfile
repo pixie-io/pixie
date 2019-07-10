@@ -474,7 +474,8 @@ def buildScriptForNightly = {
         dockerStepWithBazelDeps('', devDockerImageExtrasWithTag) {
           withKubeConfig([credentialsId: K8S_CREDS_NAME,
                           serverUrl: K8S_ADDR, namespace: K8S_NS]) {
-            sh 'PL_IMAGE_TAG=nightly-$(date +%s)-`cat SOURCE_VERSION` make skaffold-staging'
+            sh 'PL_IMAGE_TAG=nightly-$(date +%s)-`cat SOURCE_VERSION` make deploy-vizier-nightly'
+            sh 'PL_IMAGE_TAG=nightly-$(date +%s)-`cat SOURCE_VERSION` make deploy-customer-docs-nightly'
           }
         }
       }

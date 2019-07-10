@@ -18,8 +18,7 @@ KUBECTL_FLAGS := -n pl
 ## Skaffold command to use.
 SKAFFOLD := skaffold
 
-## The directory to write template files to for skaffold (with respect to bazel info workspace).
-SKAFFOLD_DIR := $$(bazel info workspace)/skaffold_build
+SKAFFOLD_DIR := $$(bazel info workspace)/skaffold
 
 ## Active operating system (Linux vs MacOS).
 UNAME_S := $(shell uname -s)
@@ -33,7 +32,6 @@ endif
 .PHONY: clean
 clean:
 	$(BAZEL) clean
-	rm -rf $(SKAFFOLD_DIR)
 
 .PHONY: pristine
 pristine:
@@ -126,21 +124,11 @@ dev-env-stop: ## Stop dev environment.
 dev-env-teardown: dev-env-stop ## Clean up dev environment.
 	$(MINIKUBE) delete
 
-skaffold-dev: ## Run Skaffold in the dev environment.
-	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --build_type dev
-	$(SKAFFOLD) dev -f $(SKAFFOLD_DIR)/skaffold/skaffold_dev.yaml
+deploy-vizier-nightly: ## Deploy vizier in nightly environment.
+	PL_BUILD_TYPE=nightly $(SKAFFOLD) run -f $(SKAFFOLD_DIR)/skaffold_nightly.yaml
 
-skaffold-prod: ## Run Skaffold in the prod environment.
-	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --build_type prod
-	$(SKAFFOLD) run -f $(SKAFFOLD_DIR)/skaffold/skaffold_prod.yaml
-
-skaffold-staging: ## Run Skaffold in the staging environment.
-	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --build_type staging
-	$(SKAFFOLD) run -f $(SKAFFOLD_DIR)/skaffold/skaffold_staging.yaml
-
-skaffold-nightly: ## Run Skaffold in the nightly environment.
-	$(BAZEL) run //templates/skaffold:skaffoldtemplate -- --build_dir $(SKAFFOLD_DIR) --build_type nightly
-	PL_BUILD_TYPE=nightly $(SKAFFOLD) run -f $(SKAFFOLD_DIR)/skaffold/skaffold_nightly.yaml
+deploy-customer-docs-nightly: ## Deploy customer docs in nightly environment.
+	PL_BUILD_TYPE=nightly $(SKAFFOLD) run -f $(SKAFFOLD_DIR)/skaffold_customer_docs.yaml
 
 gen-jwt: ## Generate a JWT for our demo cluster.
 	@JWT=$$(PL_JWT_SIGNING_KEY=ABCDEFG $(BAZEL) run //src/utils/gen_test_key); \

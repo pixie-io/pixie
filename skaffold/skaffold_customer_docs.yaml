@@ -1,0 +1,42 @@
+apiVersion: skaffold/v1beta8
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/pl-dev-infra/customer_docs_prod_image
+    context: .
+    bazel:
+      target: //docs/customer:customer_docs_prod_image.tar
+deploy:
+  kustomize:
+    path: k8s/customer_docs_dev
+profiles:
+  - name: dev
+    activation:
+      - command: dev
+    patches:
+      # Don't push images in the dev build.
+      - op: replace
+        path: /build
+        value:
+          local:
+            push: false
+
+  - name: nightly
+    activation:
+      - env: PL_BUILD_TYPE=nightly
+    patches:
+      # Set compilation to be opt build.
+      - op: add
+        path: /build/artifacts/context=./bazel/args
+        value: ["--compilation_mode=opt"]
+
+      - op: set
+        path: /build/tagPolicy/envTemplate
+        value:
+          template: "{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}"
+
+      # Set path to be nightly yamls.
+      - op: replace
+        path: /deploy/kustomize
+        value:
+          path: k8s/customer_docs/nightly
