@@ -1,0 +1,21 @@
+# gazelle:ignore
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+
+pl_proto_library(
+    name = "demo_pl_proto",
+    srcs = ["demo.proto"],
+)
+
+pl_cc_proto_library(
+    name = "demo_pl_cc_proto",
+    proto = ":demo_pl_proto",
+    deps = ["@com_github_grpc_grpc//:grpc++"],
+)
+
+pl_go_proto_library(
+    name = "demo_pl_go_proto",
+    importpath = "pixielabs.ai/pixielabs/demos/applications/hipster_shop/proto",
+    proto = ":demo_pl_proto",
+)
