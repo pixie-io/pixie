@@ -13,7 +13,7 @@ void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ <= kDeathCountdownIters)
       << absl::StrFormat(
              "Did not expect to receive Open event after Close [PID=%d, FD=%d, generation=%d].",
-             conn_info.conn_id.tgid, conn_info.conn_id.fd, conn_info.conn_id.generation);
+             conn_info.conn_id.pid, conn_info.conn_id.fd, conn_info.conn_id.generation);
 
   UpdateTimestamps(conn_info.timestamp_ns);
   SetTrafficClass(conn_info.traffic_class);
@@ -46,7 +46,7 @@ void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ <= kDeathCountdownIters)
       << absl::StrFormat(
              "Did not expect to receive Data event after Close [PID=%d, FD=%d, generation=%d].",
-             event.attr.conn_id.tgid, event.attr.conn_id.fd, event.attr.conn_id.generation);
+             event.attr.conn_id.pid, event.attr.conn_id.fd, event.attr.conn_id.generation);
 
   UpdateTimestamps(event.attr.timestamp_ns);
   SetPID(event.attr.conn_id);
@@ -79,14 +79,14 @@ bool ConnectionTracker::AllEventsReceived() const {
 }
 
 void ConnectionTracker::SetPID(struct conn_id_t conn_id) {
-  DCHECK(conn_id_.tgid == 0 || conn_id_.tgid == conn_id.tgid);
-  DCHECK(conn_id_.tgid_start_time_ns == 0 ||
-         conn_id_.tgid_start_time_ns == conn_id.tgid_start_time_ns);
+  DCHECK(conn_id_.pid == 0 || conn_id_.pid == conn_id.pid);
+  DCHECK(conn_id_.pid_start_time_ns == 0 ||
+         conn_id_.pid_start_time_ns == conn_id.pid_start_time_ns);
   DCHECK(conn_id_.fd == 0 || conn_id_.fd == conn_id.fd);
   DCHECK(conn_id_.generation == 0 || conn_id_.generation == conn_id.generation);
 
-  conn_id_.tgid = conn_id.tgid;
-  conn_id_.tgid_start_time_ns = conn_id.tgid_start_time_ns;
+  conn_id_.pid = conn_id.pid;
+  conn_id_.pid_start_time_ns = conn_id.pid_start_time_ns;
   conn_id_.fd = conn_id.fd;
   conn_id_.generation = conn_id.generation;
 }

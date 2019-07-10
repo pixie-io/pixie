@@ -33,7 +33,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     conn_info_t conn_info{};
     conn_info.addr.sin6_family = AF_INET;
     conn_info.timestamp_ns = ts_ns;
-    conn_info.conn_id.tgid = kPID;
+    conn_info.conn_id.pid = kPID;
     conn_info.conn_id.fd = kFD;
     conn_info.conn_id.generation = generation_;
     conn_info.traffic_class.protocol = kProtocolHTTP;
@@ -63,7 +63,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     event.attr.traffic_class.protocol = kProtocolHTTP;
     event.attr.traffic_class.role = kRoleRequestor;
     event.attr.timestamp_ns = ts_ns;
-    event.attr.conn_id.tgid = kPID;
+    event.attr.conn_id.pid = kPID;
     event.attr.conn_id.fd = kFD;
     event.attr.conn_id.generation = generation_;
     event.attr.msg_size = msg.size();
@@ -74,7 +74,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
   conn_info_t InitClose() {
     conn_info_t conn_info{};
     conn_info.timestamp_ns = 1;
-    conn_info.conn_id.tgid = kPID;
+    conn_info.conn_id.pid = kPID;
     conn_info.conn_id.fd = kFD;
     conn_info.conn_id.generation = generation_;
     conn_info.rd_seq_num = recv_seq_num_;
@@ -190,7 +190,12 @@ TEST_F(SocketTraceConnectorTest, End2end) {
   source_->AcceptOpenConnEvent(conn);
 
   ASSERT_THAT(source_->NumActiveConnections(), 1);
-  const ConnectionTracker* tracker = source_->GetConnectionTracker({kPID, 0, kFD, 1});
+
+  conn_id_t search_conn_id;
+  search_conn_id.pid = kPID;
+  search_conn_id.fd = kFD;
+  search_conn_id.generation = 1;
+  const ConnectionTracker* tracker = source_->GetConnectionTracker(search_conn_id);
   ASSERT_NE(nullptr, tracker);
   EXPECT_EQ(50 + source_->ClockRealTimeOffset(), tracker->conn().timestamp_ns);
 

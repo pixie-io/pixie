@@ -48,9 +48,16 @@ struct traffic_class_t {
 struct conn_id_t {
   // Comes from the process from which this is captured.
   // See https://stackoverflow.com/a/9306150 for details.
-  uint32_t tgid;
+  // Use union to give it two names. We use tgid in kernel-space, pid in user-space.
+  union {
+    uint32_t tgid;
+    uint32_t pid;
+  };
   // The start time of the PID, so we can disambiguate PIDs.
-  uint64_t tgid_start_time_ns;
+  union {
+    uint64_t tgid_start_time_ns;
+    uint64_t pid_start_time_ns;
+  };
   // The file descriptor to the opened network connection.
   uint32_t fd;
   // Generation number of the FD (increments on each FD reuse in the TGID).

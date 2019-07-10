@@ -107,7 +107,18 @@ void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
   ReadPerfBuffer(table_num);
   record_batch_ = nullptr;
 
-  TransferStreamData(table_num, record_batch);
+  switch (table_num) {
+    case kHTTPTableNum:
+      TransferStreams<HTTPMessage>(kProtocolHTTP, record_batch);
+      TransferStreams<Frame>(kProtocolHTTP2, record_batch);
+      break;
+    case kMySQLTableNum:
+      // TODO(oazizi): Convert MySQL protocol to use streams.
+      // TransferStreams<MySQLMessage>(kProtocolMySQL, record_batch);
+      break;
+    default:
+      CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
+  }
 }
 
 Status SocketTraceConnector::Configure(uint32_t protocol, uint64_t config_mask) {
@@ -174,20 +185,20 @@ void SocketTraceConnector::HandleCloseProbeOutput(void* cb_cookie, void* data, i
 }
 
 //-----------------------------------------------------------------------------
-// Stream Functions
+// Connection Tracker Events
 //-----------------------------------------------------------------------------
 
 namespace {
 
-uint64_t GetStreamId(struct conn_id_t conn_id) {
-  return (static_cast<uint64_t>(conn_id.tgid) << 32) | conn_id.fd;
+uint64_t GetConnMapKey(struct conn_id_t conn_id) {
+  return (static_cast<uint64_t>(conn_id.pid) << 32) | conn_id.fd;
 }
 
 }  // namespace
 
 void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
-  const uint64_t stream_id = GetStreamId(event.attr.conn_id);
-  DCHECK(stream_id != 0) << "Stream ID cannot be 0, tgid must be wrong";
+  const uint64_t conn_map_key = GetConnMapKey(event.attr.conn_id);
+  DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
 
   // Need to adjust the clocks to convert to real time.
   event.attr.timestamp_ns += ClockRealTimeOffset();
@@ -202,37 +213,37 @@ void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
       return;
   }
 
-  ConnectionTracker& tracker = connection_trackers_[stream_id][event.attr.conn_id.generation];
+  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event.attr.conn_id.generation];
   tracker.AddDataEvent(event);
 }
 
 void SocketTraceConnector::AcceptOpenConnEvent(conn_info_t conn_info) {
-  const uint64_t stream_id = GetStreamId(conn_info.conn_id);
-  DCHECK(stream_id != 0) << "Stream ID cannot be 0, tgid must be wrong";
+  const uint64_t conn_map_key = GetConnMapKey(conn_info.conn_id);
+  DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
 
   // Need to adjust the clocks to convert to real time.
   conn_info.timestamp_ns += ClockRealTimeOffset();
 
-  ConnectionTracker& tracker = connection_trackers_[stream_id][conn_info.conn_id.generation];
+  ConnectionTracker& tracker = connection_trackers_[conn_map_key][conn_info.conn_id.generation];
   tracker.AddConnOpenEvent(conn_info);
 }
 
 void SocketTraceConnector::AcceptCloseConnEvent(conn_info_t conn_info) {
-  const uint64_t stream_id = GetStreamId(conn_info.conn_id);
-  DCHECK(stream_id != 0) << "Stream ID cannot be 0, tgid must be wrong";
+  const uint64_t conn_map_key = GetConnMapKey(conn_info.conn_id);
+  DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
 
   // Need to adjust the clocks to convert to real time.
   conn_info.timestamp_ns += ClockRealTimeOffset();
 
-  ConnectionTracker& tracker = connection_trackers_[stream_id][conn_info.conn_id.generation];
+  ConnectionTracker& tracker = connection_trackers_[conn_map_key][conn_info.conn_id.generation];
   tracker.AddConnCloseEvent(conn_info);
 }
 
 const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
     struct conn_id_t conn_id) const {
-  const uint64_t stream_id = GetStreamId(conn_id);
+  const uint64_t conn_map_key = GetConnMapKey(conn_id);
 
-  auto tracker_set_it = connection_trackers_.find(stream_id);
+  auto tracker_set_it = connection_trackers_.find(conn_map_key);
   if (tracker_set_it == connection_trackers_.end()) {
     return nullptr;
   }
@@ -247,24 +258,8 @@ const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
 }
 
 //-----------------------------------------------------------------------------
-// HTTP Specific TransferImpl Helpers
+// Generic/Templatized TransferData Helpers
 //-----------------------------------------------------------------------------
-
-void SocketTraceConnector::TransferStreamData(uint32_t table_num,
-                                              types::ColumnWrapperRecordBatch* record_batch) {
-  switch (table_num) {
-    case kHTTPTableNum:
-      TransferStreams<HTTPMessage>(kProtocolHTTP, record_batch);
-      TransferStreams<Frame>(kProtocolHTTP2, record_batch);
-      break;
-    case kMySQLTableNum:
-      // TODO(oazizi): Convert MySQL protocol to use streams.
-      // TransferStreams<MySQLMessage>(kProtocolMySQL, record_batch);
-      break;
-    default:
-      CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
-  }
-}
 
 template <class TMessageType>
 void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
@@ -390,7 +385,7 @@ void SocketTraceConnector::ConsumeMessage(TraceRecord<TMessageType> record,
 }
 
 //-----------------------------------------------------------------------------
-// HTTP Specific TransferImpl Helpers
+// HTTP TransferData Helpers
 //-----------------------------------------------------------------------------
 
 template <>
@@ -511,7 +506,7 @@ void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record,
 }
 
 //-----------------------------------------------------------------------------
-// MySQL Specific TransferImpl Helpers
+// MySQL TransferData Helpers
 //-----------------------------------------------------------------------------
 
 void SocketTraceConnector::TransferMySQLEvent(SocketDataEvent event,
@@ -529,8 +524,8 @@ void SocketTraceConnector::TransferMySQLEvent(SocketDataEvent event,
 
   RecordBuilder<&kMySQLTable> r(record_batch);
   r.Append<r.ColIndex("time_")>(event.attr.timestamp_ns + ClockRealTimeOffset());
-  r.Append<r.ColIndex("pid")>(event.attr.conn_id.tgid);
-  r.Append<r.ColIndex("pid_start_time")>(event.attr.conn_id.tgid_start_time_ns);
+  r.Append<r.ColIndex("pid")>(event.attr.conn_id.pid);
+  r.Append<r.ColIndex("pid_start_time")>(event.attr.conn_id.pid_start_time_ns);
   r.Append<r.ColIndex("fd")>(fd);
   r.Append<r.ColIndex("bpf_event")>(event.attr.event_type);
   r.Append<r.ColIndex("remote_addr")>(std::move(ip));
