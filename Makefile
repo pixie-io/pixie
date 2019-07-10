@@ -15,10 +15,12 @@ MINIKUBE  := minikube
 KUBECTL := kubectl
 KUBECTL_FLAGS := -n pl
 
+WORKSPACE := $$(bazel info workspace)
+
 ## Skaffold command to use.
 SKAFFOLD := skaffold
 
-SKAFFOLD_DIR := $$(bazel info workspace)/skaffold
+SKAFFOLD_DIR := $(WORKSPACE)/skaffold
 
 ## Active operating system (Linux vs MacOS).
 UNAME_S := $(shell uname -s)
@@ -110,13 +112,8 @@ k8s-load-dev-secrets: #Loads the secrets used by the dev environment. At some po
 		--from-literal=auth0-client-id=qaAfEHQT7mRt6W0gMd9mcQwNANz9kRup \
 		--from-literal=auth0-client-secret=_rY9isTWtKgx2saBXNKZmzAf1y9pnKvlm-WdmSVZOFHb9OQtWHEX4Nrh3nWE5NNt
 
-dev-env-start: ## Start dev environment.
-	$(MINIKUBE) start $(MINIKUBE_START_FLAGS) --cpus 6 --memory 8192 --mount-string="$(HOME):$(HOME)" --mount
-	$(MAKE) k8s-load-certs
-	$(MAKE) k8s-load-dev-secrets
-
-dev-docker-start:
-	@eval $$(minikube docker-env); ./scripts/run_docker.sh --extra_args="$(DEV_DOCKER_EXTRA_ARGS)"
+dev-env-start: ## Start K8s dev environment.
+	$(WORKSPACE)/scripts/setup_dev_k8s.sh
 
 dev-env-stop: ## Stop dev environment.
 	$(MINIKUBE) stop
