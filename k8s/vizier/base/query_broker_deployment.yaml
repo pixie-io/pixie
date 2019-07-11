@@ -7,11 +7,10 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: vizier-query-broker
+      name: vizier-query-broker
   template:
     metadata:
       labels:
-        app: vizier-query-broker
         name: vizier-query-broker
     spec:
       containers:

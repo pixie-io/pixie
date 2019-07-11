@@ -6,12 +6,10 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: vizier-proxy
+      name: vizier-proxy
   template:
     metadata:
-      name: vizier-proxy
       labels:
-        app: vizier-proxy
         name: vizier-proxy
     spec:
       containers:

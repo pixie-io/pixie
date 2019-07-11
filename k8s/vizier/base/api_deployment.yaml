@@ -6,11 +6,10 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: vizier-api
+      name: vizier-api
   template:
     metadata:
       labels:
-        app: vizier-api
         name: vizier-api
     spec:
       containers:
