@@ -286,8 +286,7 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
 
       DataStream* resp_data = tracker.resp_data();
       if (resp_data == nullptr) {
-        // This temporarily handles nullptrs, which can arise due to kRoleMixed.
-        // TODO(oazizi): Convert this to a LOG(ERROR), once kRoleMixed is handled.
+        LOG(ERROR) << "Unexpected nullptr for resp_data";
         continue;
       }
       resp_data->template ExtractMessages<TMessageType>(MessageType::kResponses);
@@ -295,8 +294,7 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
 
       DataStream* req_data = tracker.req_data();
       if (req_data == nullptr) {
-        // This temporarily handles nullptrs, which can arise due to kRoleMixed.
-        // TODO(oazizi): Convert this to a LOG(ERROR), once kRoleMixed is handled.
+        LOG(ERROR) << "Unexpected nullptr for req_data";
         continue;
       }
       req_data->template ExtractMessages<TMessageType>(MessageType::kRequests);
