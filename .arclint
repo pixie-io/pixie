@@ -1,5 +1,6 @@
 {
   "exclude": [
+    "(Doxyfile$)",
     "(chef/site-cookbooks/.*$)",
     "(experimental/.*$)",
     "(^linters/cpplint)",

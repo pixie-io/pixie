@@ -151,6 +151,8 @@ def codeReviewPostBuild = {
   }
   phabConnector.addArtifactLink(env.BUILD_URL + '/ui-storybook', 'storybook.uri', 'Storybook')
 
+  phabConnector.addArtifactLink(env.BUILD_URL + '/doxygen', 'doxygen.uri', 'Doxygen')
+
   // Gatsby websites aren't portable to sub urls. So link to the download so we can host them locally.
   phabConnector.addArtifactLink(env.BUILD_URL + '/customer-docs/*zip*/customer-docs.zip',
                                 'customer-docs.uri', 'Customer Docs')
@@ -286,6 +288,16 @@ def publishCustomerDocs() {
   ])
 }
 
+def publishDoxygenDocs() {
+  publishHTML([allowMissing: false,
+    alwaysLinkToLastBuild: true,
+    keepAll: true,
+    reportDir: 'doxygen-docs/docs/html',
+    reportFiles: 'index.html',
+    reportName: 'doxygen'
+  ])
+}
+
 /**
  * Checkout the source code, record git info and stash sources.
  */
@@ -408,6 +420,15 @@ builders['Linting'] = {
   }
 }
 
+builders['Doxygen'] = {
+  def stashName = 'doxygen-docs'
+  dockerStepWithCode {
+    sh 'doxygen'
+    stash name: stashName, includes: 'docs/html/**'
+    stashList.add(stashName)
+  }
+}
+
 /*****************************************************************************
  * END BUILDERS
  *****************************************************************************/
@@ -443,6 +464,7 @@ def buildScriptForCommits = {
 
         publishStoryBook()
         publishCustomerDocs()
+        publishDoxygenDocs()
 
         archiveBazelLogs()
         archiveUILogs()
