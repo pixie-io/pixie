@@ -159,7 +159,8 @@ class RelationHandlerTest : public ::testing::Test {
         return node;
       }
     }
-    return error::NotFound("Couldn't find node of type $0 in ir_graph.", kIRNodeStrings[type]);
+    return error::NotFound("Couldn't find node of type $0 in ir_graph.",
+                           kIRNodeStrings[static_cast<int64_t>(type)]);
   }
 
   std::shared_ptr<RegistryInfo> registry_info_;
@@ -345,14 +346,14 @@ TEST_F(RelationHandlerTest, test_relation_results) {
   EXPECT_OK(handle_status);
 
   // Memory Source should copy the source relation.
-  auto source_node_status = FindNodeType(ir_graph, MemorySourceType);
+  auto source_node_status = FindNodeType(ir_graph, IRNodeType::kMemorySource);
   EXPECT_OK(source_node_status);
   auto source_node = static_cast<MemorySourceIR*>(source_node_status.ConsumeValueOrDie());
   EXPECT_TRUE(RelationEquality(source_node->relation(), (*compiler_state_->relation_map())["cpu"]));
-  auto mem_node_status = FindNodeType(ir_graph, MemorySinkType);
+  auto mem_node_status = FindNodeType(ir_graph, IRNodeType::kMemorySink);
 
   // Map relation should be contain cpu0, cpu1, and cpu_sum.
-  auto map_node_status = FindNodeType(ir_graph, MapType);
+  auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap);
   EXPECT_OK(map_node_status);
   auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
   auto test_map_relation_s =
@@ -363,7 +364,7 @@ TEST_F(RelationHandlerTest, test_relation_results) {
   EXPECT_TRUE(RelationEquality(map_node->relation(), test_map_relation));
 
   // Agg should be a new relation with one column.
-  auto agg_node_status = FindNodeType(ir_graph, BlockingAggType);
+  auto agg_node_status = FindNodeType(ir_graph, IRNodeType::kBlockingAgg);
   EXPECT_OK(agg_node_status);
   auto agg_node = static_cast<BlockingAggIR*>(agg_node_status.ConsumeValueOrDie());
   table_store::schema::Relation test_agg_relation;
@@ -373,7 +374,7 @@ TEST_F(RelationHandlerTest, test_relation_results) {
   EXPECT_TRUE(RelationEquality(agg_node->relation(), test_agg_relation));
 
   // Sink should have the same relation as before and be equivalent to its parent.
-  auto sink_node_status = FindNodeType(ir_graph, MemorySinkType);
+  auto sink_node_status = FindNodeType(ir_graph, IRNodeType::kMemorySink);
   EXPECT_OK(sink_node_status);
   auto sink_node = static_cast<MemorySinkIR*>(sink_node_status.ConsumeValueOrDie());
   EXPECT_TRUE(RelationEquality(sink_node->relation(), test_agg_relation));
@@ -399,7 +400,7 @@ TEST_F(RelationHandlerTest, test_relation_fails) {
   EXPECT_FALSE(handle_status.ok());
 
   // Map should result just be the cpu_sum column.
-  auto map_node_status = FindNodeType(ir_graph, MapType);
+  auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap);
   EXPECT_OK(map_node_status);
   auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
   table_store::schema::Relation test_map_relation;
@@ -419,7 +420,7 @@ TEST_F(RelationHandlerTest, test_relation_multi_col_agg) {
   VLOG(1) << handle_status.ToString();
   ASSERT_OK(handle_status);
 
-  auto agg_node_status = FindNodeType(ir_graph, BlockingAggType);
+  auto agg_node_status = FindNodeType(ir_graph, IRNodeType::kBlockingAgg);
   EXPECT_OK(agg_node_status);
   auto agg_node = static_cast<BlockingAggIR*>(agg_node_status.ConsumeValueOrDie());
   table_store::schema::Relation test_agg_relation;
@@ -441,7 +442,7 @@ TEST_F(RelationHandlerTest, test_from_select) {
   auto ir_graph_status = CompileGraph(chain_operators);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
-  auto sink_node_status = FindNodeType(ir_graph, MemorySinkType);
+  auto sink_node_status = FindNodeType(ir_graph, IRNodeType::kMemorySink);
   EXPECT_OK(sink_node_status);
   auto sink_node = static_cast<MemorySinkIR*>(sink_node_status.ConsumeValueOrDie());
   EXPECT_TRUE(RelationEquality(sink_node->relation(), test_relation));
@@ -637,7 +638,7 @@ TEST_F(RelationHandlerTest, assign_udf_func_ids) {
   EXPECT_OK(handle_status);
 
   // Map relation should be contain cpu0, cpu1, and cpu_sum.
-  auto map_node_status = FindNodeType(ir_graph, MapType);
+  auto map_node_status = FindNodeType(ir_graph, IRNodeType::kMap);
   EXPECT_OK(map_node_status);
   auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
 
@@ -663,7 +664,7 @@ TEST_F(RelationHandlerTest, assign_uda_func_ids) {
   EXPECT_OK(handle_status);
 
   // Map relation should be contain cpu0, cpu1, and cpu_sum.
-  auto agg_node_status = FindNodeType(ir_graph, BlockingAggType);
+  auto agg_node_status = FindNodeType(ir_graph, IRNodeType::kBlockingAgg);
   EXPECT_OK(agg_node_status);
   auto agg_node = static_cast<BlockingAggIR*>(agg_node_status.ConsumeValueOrDie());
 
@@ -682,7 +683,7 @@ TEST_F(RelationHandlerTest, select_all) {
   ASSERT_OK(HandleRelation(ir_graph));
 
   // Map relation should be contain cpu0, cpu1, and cpu_sum.
-  auto sink_node_status = FindNodeType(ir_graph, MemorySinkType);
+  auto sink_node_status = FindNodeType(ir_graph, IRNodeType::kMemorySink);
   EXPECT_OK(sink_node_status);
   auto sink_node = static_cast<MemorySinkIR*>(sink_node_status.ConsumeValueOrDie());
   auto relation_map = compiler_state_->relation_map();

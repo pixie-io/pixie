@@ -68,7 +68,7 @@ struct ParentMatch {
  * It evaluates to true no matter what you throw in there.
  */
 struct AllMatch : public ParentMatch {
-  AllMatch() : ParentMatch(IRNodeType::kAnyType) {}
+  AllMatch() : ParentMatch(IRNodeType::kAny) {}
   bool match(IRNode*) const override { return true; }
 };
 
@@ -89,17 +89,17 @@ struct ClassMatch : public ParentMatch {
 };
 
 // Match an arbitrary Int value.
-inline ClassMatch<IRNodeType::IntType> Int() { return ClassMatch<IRNodeType::IntType>(); }
+inline ClassMatch<IRNodeType::kInt> Int() { return ClassMatch<IRNodeType::kInt>(); }
 
 // Match an arbitrary String value.
-inline ClassMatch<IRNodeType::StringType> String() { return ClassMatch<IRNodeType::StringType>(); }
+inline ClassMatch<IRNodeType::kString> String() { return ClassMatch<IRNodeType::kString>(); }
 
 /**
  * @brief Match a specific integer value.
  */
 struct IntMatch : public ParentMatch {
   int64_t val;
-  explicit IntMatch(const int64_t v) : ParentMatch(IRNodeType::IntType), val(v) {}
+  explicit IntMatch(const int64_t v) : ParentMatch(IRNodeType::kInt), val(v) {}
 
   bool match(IRNode* V) const override {
     if (V->type() == type) {
@@ -133,10 +133,10 @@ struct BinaryOpMatch : public ParentMatch {
   // The evaluation order is always stable, regardless of Commutability.
   // The LHS is always matched first.
   BinaryOpMatch(const LHS_t& LHS, const RHS_t& RHS)
-      : ParentMatch(IRNodeType::FuncType), L(LHS), R(RHS) {}
+      : ParentMatch(IRNodeType::kFunc), L(LHS), R(RHS) {}
 
   bool match(IRNode* V) const override {
-    if (V->type() == IRNodeType::FuncType) {
+    if (V->type() == IRNodeType::kFunc) {
       auto* F = static_cast<FuncIR*>(V);
       if (F->opcode() == cur_op && F->args().size() == 2) {
         return (L.match(F->args()[0]) && R.match(F->args()[1])) ||
@@ -167,7 +167,7 @@ struct AnyBinaryOpMatch : public ParentMatch {
   // The evaluation order is always stable, regardless of Commutability.
   // The LHS is always matched first.
   AnyBinaryOpMatch(const LHS_t& LHS, const RHS_t& RHS)
-      : ParentMatch(IRNodeType::FuncType), L(LHS), R(RHS) {}
+      : ParentMatch(IRNodeType::kFunc), L(LHS), R(RHS) {}
 
   bool match(IRNode* V) const override {
     if (V->type() == type) {
@@ -200,7 +200,7 @@ inline AnyBinaryOpMatch<AllMatch, AllMatch, false> BinOp() { return BinOp(Value(
  */
 template <bool resolved>
 struct ExpressionMatch : public ParentMatch {
-  ExpressionMatch() : ParentMatch(IRNodeType::kAnyType) {}
+  ExpressionMatch() : ParentMatch(IRNodeType::kAny) {}
   bool match(IRNode* V) const override {
     if (V->IsExpression()) {
       return resolved == static_cast<ExpressionIR*>(V)->IsDataTypeEvaluated();
@@ -238,28 +238,28 @@ struct SpecificExpressionMatch : public ParentMatch {
 /**
  * @brief Match a column that is not resolved.
  */
-inline SpecificExpressionMatch<IRNodeType::ColumnType, false> UnresolvedColumn() {
-  return SpecificExpressionMatch<IRNodeType::ColumnType, false>();
+inline SpecificExpressionMatch<IRNodeType::kColumn, false> UnresolvedColumn() {
+  return SpecificExpressionMatch<IRNodeType::kColumn, false>();
 }
 /**
  * @brief Match a column that is resolved.
  */
-inline SpecificExpressionMatch<IRNodeType::ColumnType, true> ResolvedColumn() {
-  return SpecificExpressionMatch<IRNodeType::ColumnType, true>();
+inline SpecificExpressionMatch<IRNodeType::kColumn, true> ResolvedColumn() {
+  return SpecificExpressionMatch<IRNodeType::kColumn, true>();
 }
 
 /**
  * @brief Match a function that is not resolved.
  */
-inline SpecificExpressionMatch<IRNodeType::FuncType, false> UnresolvedFunc() {
-  return SpecificExpressionMatch<IRNodeType::FuncType, false>();
+inline SpecificExpressionMatch<IRNodeType::kFunc, false> UnresolvedFunc() {
+  return SpecificExpressionMatch<IRNodeType::kFunc, false>();
 }
 
 /**
  * @brief Match a function that is resolved.
  */
-inline SpecificExpressionMatch<IRNodeType::FuncType, true> ResolvedFunc() {
-  return SpecificExpressionMatch<IRNodeType::FuncType, true>();
+inline SpecificExpressionMatch<IRNodeType::kFunc, true> ResolvedFunc() {
+  return SpecificExpressionMatch<IRNodeType::kFunc, true>();
 }
 
 /**
@@ -275,7 +275,7 @@ struct AnyFuncAllArgsMatch : public ParentMatch {
   Arg_t argMatcher_;
 
   explicit AnyFuncAllArgsMatch(const Arg_t& argMatcher)
-      : ParentMatch(IRNodeType::FuncType), argMatcher_(argMatcher) {}
+      : ParentMatch(IRNodeType::kFunc), argMatcher_(argMatcher) {}
 
   bool match(IRNode* V) const override {
     if (V->type() == type) {
@@ -310,7 +310,7 @@ inline AnyFuncAllArgsMatch<Arg_t, false, false> UnresolvedRTFuncMatchAllArgs(
  * @brief Match any node that is an expression.
  */
 struct AnyExpressionMatch : public ParentMatch {
-  AnyExpressionMatch() : ParentMatch(IRNodeType::kAnyType) {}
+  AnyExpressionMatch() : ParentMatch(IRNodeType::kAny) {}
   bool match(IRNode* V) const override { return V->IsExpression(); }
 };
 

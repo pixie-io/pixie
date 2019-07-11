@@ -30,31 +30,30 @@ struct ColumnExpression {
 };
 using ColExpressionVector = std::vector<ColumnExpression>;
 
-enum IRNodeType {
-  kAnyType = -1,
-  MemorySourceType,
-  MemorySinkType,
-  RangeType,
-  MapType,
-  BlockingAggType,
-  FilterType,
-  LimitType,
-  StringType,
-  FloatType,
-  IntType,
-  BoolType,
-  FuncType,
-  ListType,
-  LambdaType,
-  ColumnType,
-  TimeType,
+enum class IRNodeType {
+  kAny = -1,
+  kMemorySource,
+  kMemorySink,
+  kRange,
+  kMap,
+  kBlockingAgg,
+  kFilter,
+  kLimit,
+  kString,
+  kFloat,
+  kInt,
+  kBool,
+  kFunc,
+  kList,
+  kLambda,
+  kColumn,
+  kTime,
   number_of_types  // This is not a real type, but is used to verify strings are inline
                    // with enums.
 };
 static constexpr const char* kIRNodeStrings[] = {
-    "MemorySourceType", "MemorySinkType", "RangeType",  "MapType", "BlockingAggType", "FilterType",
-    "LimitType",        "StringType",     "FloatType",  "IntType", "BoolType",        "FuncType",
-    "ListType",         "LambdaType",     "ColumnType", "TimeType"};
+    "MemorySource", "MemorySink", "Range", "Map",  "BlockingAgg", "Filter", "Limit",  "String",
+    "Float",        "Int",        "Bool",  "Func", "List",        "Lambda", "Column", "Time"};
 
 /**
  * @brief Node class for the IR.
@@ -78,7 +77,7 @@ class IRNode {
   virtual bool IsExpression() const = 0;
   bool is_source() const { return is_source_; }
   IRNodeType type() const { return type_; }
-  std::string type_string() const { return kIRNodeStrings[type()]; }
+  std::string type_string() const { return kIRNodeStrings[static_cast<int64_t>(type())]; }
   /**
    * @brief Set the pointer to the graph.
    * The pointer is passed in by the Node factory of the graph
@@ -165,7 +164,7 @@ class IR {
     std::vector<IRNode*> nodes;
     for (auto& i : dag().TopologicalSort()) {
       IRNode* node = Get(i);
-      if (node->type() == MemorySinkType) {
+      if (node->type() == IRNodeType::kMemorySink) {
         nodes.push_back(node);
         DCHECK(node->IsOp());
       }
@@ -274,7 +273,7 @@ class DataIR : public ExpressionIR {
 class ColumnIR : public ExpressionIR {
  public:
   ColumnIR() = delete;
-  explicit ColumnIR(int64_t id) : ExpressionIR(id, ColumnType) {}
+  explicit ColumnIR(int64_t id) : ExpressionIR(id, IRNodeType::kColumn) {}
   Status Init(const std::string& col_name, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string col_name() const { return col_name_; }
@@ -305,7 +304,7 @@ class ColumnIR : public ExpressionIR {
 class StringIR : public DataIR {
  public:
   StringIR() = delete;
-  explicit StringIR(int64_t id) : DataIR(id, StringType, types::DataType::STRING) {}
+  explicit StringIR(int64_t id) : DataIR(id, IRNodeType::kString, types::DataType::STRING) {}
   Status Init(std::string str, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string str() const { return str_; }
@@ -324,7 +323,7 @@ class StringIR : public DataIR {
 class ListIR : public DataIR {
  public:
   ListIR() = delete;
-  explicit ListIR(int64_t id) : DataIR(id, ListType, types::DataType::DATA_TYPE_UNKNOWN) {}
+  explicit ListIR(int64_t id) : DataIR(id, IRNodeType::kList, types::DataType::DATA_TYPE_UNKNOWN) {}
   bool HasLogicalRepr() const override;
   // TODO(philkuz) (PL-545) refactor lists
   Status Init(const pypa::AstPtr& ast_node, std::vector<IRNode*> children);
@@ -347,7 +346,7 @@ class ListIR : public DataIR {
 class LambdaIR : public IRNode {
  public:
   LambdaIR() = delete;
-  explicit LambdaIR(int64_t id) : IRNode(id, LambdaType, false) {}
+  explicit LambdaIR(int64_t id) : IRNode(id, IRNodeType::kLambda, false) {}
   Status Init(std::unordered_set<std::string> column_names, const ColExpressionVector& col_exprs,
               const pypa::AstPtr& ast_node);
   /**
@@ -411,7 +410,7 @@ class FuncIR : public ExpressionIR {
 
   FuncIR() = delete;
   Opcode opcode() const { return op_.op_code; }
-  explicit FuncIR(int64_t id) : ExpressionIR(id, FuncType) {}
+  explicit FuncIR(int64_t id) : ExpressionIR(id, IRNodeType::kFunc) {}
   Status Init(Op op, std::string func_prefix, const std::vector<ExpressionIR*>& args,
               bool compile_time, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
@@ -452,7 +451,7 @@ class FuncIR : public ExpressionIR {
 class FloatIR : public DataIR {
  public:
   FloatIR() = delete;
-  explicit FloatIR(int64_t id) : DataIR(id, FloatType, types::DataType::FLOAT64) {}
+  explicit FloatIR(int64_t id) : DataIR(id, IRNodeType::kFloat, types::DataType::FLOAT64) {}
   Status Init(double val, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -465,7 +464,7 @@ class FloatIR : public DataIR {
 class IntIR : public DataIR {
  public:
   IntIR() = delete;
-  explicit IntIR(int64_t id) : DataIR(id, IntType, types::DataType::INT64) {}
+  explicit IntIR(int64_t id) : DataIR(id, IRNodeType::kInt, types::DataType::INT64) {}
   Status Init(int64_t val, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -478,7 +477,7 @@ class IntIR : public DataIR {
 class BoolIR : public DataIR {
  public:
   BoolIR() = delete;
-  explicit BoolIR(int64_t id) : DataIR(id, BoolType, types::DataType::BOOLEAN) {}
+  explicit BoolIR(int64_t id) : DataIR(id, IRNodeType::kBool, types::DataType::BOOLEAN) {}
   Status Init(bool val, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -491,7 +490,7 @@ class BoolIR : public DataIR {
 class TimeIR : public DataIR {
  public:
   TimeIR() = delete;
-  explicit TimeIR(int64_t id) : DataIR(id, TimeType, types::DataType::TIME64NS) {}
+  explicit TimeIR(int64_t id) : DataIR(id, IRNodeType::kTime, types::DataType::TIME64NS) {}
   Status Init(int64_t val, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -508,7 +507,7 @@ class TimeIR : public DataIR {
 class MemorySourceIR : public OperatorIR {
  public:
   MemorySourceIR() = delete;
-  explicit MemorySourceIR(int64_t id) : OperatorIR(id, MemorySourceType, false, true) {}
+  explicit MemorySourceIR(int64_t id) : OperatorIR(id, IRNodeType::kMemorySource, false, true) {}
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   std::string table_name() { return table_name_; }
@@ -554,7 +553,7 @@ class MemorySourceIR : public OperatorIR {
 class MemorySinkIR : public OperatorIR {
  public:
   MemorySinkIR() = delete;
-  explicit MemorySinkIR(int64_t id) : OperatorIR(id, MemorySinkType, true, false) {}
+  explicit MemorySinkIR(int64_t id) : OperatorIR(id, IRNodeType::kMemorySink, true, false) {}
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   bool name_set() const { return name_set_; }
@@ -582,7 +581,7 @@ class MemorySinkIR : public OperatorIR {
 class RangeIR : public OperatorIR {
  public:
   RangeIR() = delete;
-  explicit RangeIR(int64_t id) : OperatorIR(id, RangeType, true, false) {}
+  explicit RangeIR(int64_t id) : OperatorIR(id, IRNodeType::kRange, true, false) {}
   Status Init(IRNode* parent, IRNode* start_repr, IRNode* stop_repr, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
@@ -617,7 +616,7 @@ class RangeIR : public OperatorIR {
 class MapIR : public OperatorIR {
  public:
   MapIR() = delete;
-  explicit MapIR(int64_t id) : OperatorIR(id, MapType, true, false) {}
+  explicit MapIR(int64_t id) : OperatorIR(id, IRNodeType::kMap, true, false) {}
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   LambdaIR* lambda_func() const { return lambda_func_; }
@@ -652,7 +651,7 @@ class MapIR : public OperatorIR {
 class BlockingAggIR : public OperatorIR {
  public:
   BlockingAggIR() = delete;
-  explicit BlockingAggIR(int64_t id) : OperatorIR(id, BlockingAggType, true, false) {}
+  explicit BlockingAggIR(int64_t id) : OperatorIR(id, IRNodeType::kBlockingAgg, true, false) {}
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   LambdaIR* by_func() const { return by_func_; }
@@ -693,7 +692,7 @@ class BlockingAggIR : public OperatorIR {
 class FilterIR : public OperatorIR {
  public:
   FilterIR() = delete;
-  explicit FilterIR(int64_t id) : OperatorIR(id, FilterType, true, false) {}
+  explicit FilterIR(int64_t id) : OperatorIR(id, IRNodeType::kFilter, true, false) {}
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   LambdaIR* filter_func() const { return filter_func_; }
@@ -713,7 +712,7 @@ class FilterIR : public OperatorIR {
 class LimitIR : public OperatorIR {
  public:
   LimitIR() = delete;
-  explicit LimitIR(int64_t id) : OperatorIR(id, LimitType, true, false) {}
+  explicit LimitIR(int64_t id) : OperatorIR(id, IRNodeType::kLimit, true, false) {}
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   Status ToProto(planpb::Operator*) const override;
@@ -839,19 +838,19 @@ class IRWalker {
   Status CallWalkFn(const IRNode& node) {
     const auto op_type = node.type();
     switch (op_type) {
-      case IRNodeType::MemorySourceType:
+      case IRNodeType::kMemorySource:
         return CallAs<MemorySourceIR>(memory_source_walk_fn_, node);
-      case IRNodeType::MapType:
+      case IRNodeType::kMap:
         return CallAs<MapIR>(map_walk_fn_, node);
-      case IRNodeType::BlockingAggType:
+      case IRNodeType::kBlockingAgg:
         return CallAs<BlockingAggIR>(agg_walk_fn_, node);
-      case IRNodeType::FilterType:
+      case IRNodeType::kFilter:
         return CallAs<FilterIR>(filter_walk_fn_, node);
-      case IRNodeType::LimitType:
+      case IRNodeType::kLimit:
         return CallAs<LimitIR>(limit_walk_fn_, node);
-      case IRNodeType::MemorySinkType:
+      case IRNodeType::kMemorySink:
         return CallAs<MemorySinkIR>(memory_sink_walk_fn_, node);
-      case IRNodeType::RangeType:
+      case IRNodeType::kRange:
         // Don't do anything with Range because we should have already combined Range with
         // MemorySource
         break;

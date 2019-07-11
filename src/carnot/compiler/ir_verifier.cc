@@ -18,7 +18,7 @@ Status IRVerifier::ExpectType(std::vector<IRNodeType> possible_types, const IRNo
     if (exp_type == actual_type) {
       return Status::OK();
     }
-    missing_exp_types_strings.push_back(kIRNodeStrings[exp_type]);
+    missing_exp_types_strings.push_back(kIRNodeStrings[static_cast<int64_t>(exp_type)]);
   }
   auto msg = absl::Substitute("$0: For node with id $3, Expected [$1] Got $2.", err_msg_prefix,
                               absl::StrJoin(missing_exp_types_strings, "\n"),
@@ -45,19 +45,21 @@ Status IRVerifier::VerifyMemorySource(MemorySourceIR* mem_node) {
         "Select value is not set, but the compiler thinks that it is.");
   }
   for (auto& c : select_node->children()) {
-    PL_RETURN_IF_ERROR(
-        ExpectType(StringType, c, ExpString("MemorySourceIR select", select_node->id(), "child")));
+    PL_RETURN_IF_ERROR(ExpectType(IRNodeType::kString, c,
+                                  ExpString("MemorySourceIR select", select_node->id(), "child")));
   }
   return Status::OK();
 }
 
 Status IRVerifier::VerifyRange(RangeIR* range_node) {
-  PL_RETURN_IF_ERROR(ExpectType({IntType, FuncType, StringType}, range_node->start_repr(),
+  PL_RETURN_IF_ERROR(ExpectType({IRNodeType::kInt, IRNodeType::kFunc, IRNodeType::kString},
+                                range_node->start_repr(),
                                 ExpString("RangeIR", range_node->id(), "start_repr")));
-  PL_RETURN_IF_ERROR(ExpectType({IntType, FuncType, StringType}, range_node->stop_repr(),
+  PL_RETURN_IF_ERROR(ExpectType({IRNodeType::kInt, IRNodeType::kFunc, IRNodeType::kString},
+                                range_node->stop_repr(),
                                 ExpString("RangeIR", range_node->id(), "stop_repr")));
 
-  PL_RETURN_IF_ERROR(ExpectType(MemorySourceType, range_node->parent(),
+  PL_RETURN_IF_ERROR(ExpectType(IRNodeType::kMemorySource, range_node->parent(),
                                 ExpString("RangeIR", range_node->id(), "parent")));
   return Status::OK();
 }
@@ -100,7 +102,7 @@ Status IRVerifier::VerifyBlockingAgg(BlockingAggIR* agg_node) {
     PL_ASSIGN_OR_RETURN(IRNode * by_body, agg_node->by_func()->GetDefaultExpr());
 
     auto actual_type = by_body->type();
-    if (ColumnType != actual_type && actual_type != ListType) {
+    if (IRNodeType::kColumn != actual_type && actual_type != IRNodeType::kList) {
       auto msg = absl::Substitute(
           "BlockingAggIR: For node with id $1, Expected ColumnType or ListType Got $0.",
           by_body->type_string(), by_body->id());
@@ -121,7 +123,7 @@ Status IRVerifier::VerifyBlockingAgg(BlockingAggIR* agg_node) {
   ColExpressionVector col_exprs = agg_func->col_exprs();
   for (const auto& entry : col_exprs) {
     // check that the expression type is a function and that it only has leaf nodes as children.
-    if (entry.node->type() != IRNodeType::FuncType) {
+    if (entry.node->type() != IRNodeType::kFunc) {
       return entry.node->CreateIRNodeError(
           "Expected agg fns of the format \"udf(r.column_name)\". Object "
           "of type $0 not allowed.",
@@ -129,7 +131,7 @@ Status IRVerifier::VerifyBlockingAgg(BlockingAggIR* agg_node) {
     }
     auto func = static_cast<FuncIR*>(entry.node);
     for (const auto& fn_child : func->args()) {
-      if (fn_child->type() == IRNodeType::FuncType) {
+      if (fn_child->type() == IRNodeType::kFunc) {
         return fn_child->CreateIRNodeError("Nested aggregate expressions not allowed.");
       }
     }
@@ -143,25 +145,25 @@ Status IRVerifier::VerifyNodeConnections(IRNode* node) {
     return Status::OK();
   }
   switch (node->type()) {
-    case IRNodeType::MemorySourceType: {
+    case IRNodeType::kMemorySource: {
       return VerifyMemorySource(static_cast<MemorySourceIR*>(node));
     }
-    case IRNodeType::RangeType: {
+    case IRNodeType::kRange: {
       return VerifyRange(static_cast<RangeIR*>(node));
     }
-    case IRNodeType::MapType: {
+    case IRNodeType::kMap: {
       return VerifyMap(static_cast<MapIR*>(node));
     }
-    case IRNodeType::BlockingAggType: {
+    case IRNodeType::kBlockingAgg: {
       return VerifyBlockingAgg(static_cast<BlockingAggIR*>(node));
     }
-    case IRNodeType::MemorySinkType: {
+    case IRNodeType::kMemorySink: {
       return VerifySink(static_cast<MemorySinkIR*>(node));
     }
-    case IRNodeType::FilterType: {
+    case IRNodeType::kFilter: {
       return VerifyFilter(static_cast<FilterIR*>(node));
     }
-    case IRNodeType::LimitType: {
+    case IRNodeType::kLimit: {
       return VerifyLimit(static_cast<LimitIR*>(node));
     }
     default: {
@@ -211,7 +213,7 @@ Status IRVerifier::VerifyGraphConnections(const IR& ir_graph) {
     if (!cur_status.ok()) {
       statuses.push_back(cur_status);
     }
-    if (node->type() == IRNodeType::MemorySinkType) {
+    if (node->type() == IRNodeType::kMemorySink) {
       has_sink = true;
     }
   }

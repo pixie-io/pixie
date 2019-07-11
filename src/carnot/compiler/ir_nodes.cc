@@ -124,7 +124,7 @@ bool MemorySinkIR::HasLogicalRepr() const { return true; }
 Status MemorySinkIR::InitImpl(const ArgMap& args) {
   DCHECK(args.find("name") != args.end());
   IRNode* name_node = args.find("name")->second;
-  if (name_node->type() != IRNodeType::StringType) {
+  if (name_node->type() != IRNodeType::kString) {
     return name_node->CreateIRNodeError("Expected string. Got $0", name_node->type_string());
   }
   name_ = static_cast<StringIR*>(name_node)->str();
@@ -138,9 +138,9 @@ Status MemorySourceIR::InitImpl(const ArgMap& args) {
   DCHECK(args.find("select") != args.end());
 
   IRNode* table_node = args.find("table")->second;
-  if (table_node->type() != IRNodeType::StringType) {
+  if (table_node->type() != IRNodeType::kString) {
     return CreateIRNodeError("Expected table argument to be a string, not a $0",
-                             table_node->type());
+                             table_node->type_string());
   }
   table_name_ = static_cast<StringIR*>(table_node)->str();
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, table_node));
@@ -150,7 +150,7 @@ Status MemorySourceIR::InitImpl(const ArgMap& args) {
     select_ = nullptr;
     return Status::OK();
   }
-  if (select_node->type() != IRNodeType::ListType) {
+  if (select_node->type() != IRNodeType::kList) {
     return CreateIRNodeError("Expected select argument to be a list, not a $0",
                              table_node->type_string());
   }
@@ -224,7 +224,7 @@ Status RangeIR::ToProto(planpb::Operator*) const {
 Status MapIR::InitImpl(const ArgMap& args) {
   DCHECK(args.find("fn") != args.end());
   IRNode* lambda_func_node = args.find("fn")->second;
-  if (lambda_func_node->type() != IRNodeType::LambdaType) {
+  if (lambda_func_node->type() != IRNodeType::kLambda) {
     return CreateIRNodeError("Expected 'fn' argument of Agg to be a lambda, got '$0'",
                              lambda_func_node->type_string());
   }
@@ -243,13 +243,13 @@ std::string MapIR::DebugString(int64_t depth) const {
 
 Status OperatorIR::EvaluateExpression(planpb::ScalarExpression* expr, const IRNode& ir_node) const {
   switch (ir_node.type()) {
-    case IRNodeType::ColumnType: {
+    case IRNodeType::kColumn: {
       auto col = expr->mutable_column();
       col->set_node(parent()->id());
       col->set_index(static_cast<const ColumnIR&>(ir_node).col_idx());
       break;
     }
-    case IRNodeType::FuncType: {
+    case IRNodeType::kFunc: {
       auto func = expr->mutable_func();
       auto casted_ir = static_cast<const FuncIR&>(ir_node);
       func->set_name(casted_ir.func_name());
@@ -263,35 +263,35 @@ Status OperatorIR::EvaluateExpression(planpb::ScalarExpression* expr, const IRNo
       }
       break;
     }
-    case IRNodeType::IntType: {
+    case IRNodeType::kInt: {
       auto value = expr->mutable_constant();
       auto casted_ir = static_cast<const IntIR&>(ir_node);
       value->set_data_type(types::DataType::INT64);
       value->set_int64_value(casted_ir.val());
       break;
     }
-    case IRNodeType::StringType: {
+    case IRNodeType::kString: {
       auto value = expr->mutable_constant();
       auto casted_ir = static_cast<const StringIR&>(ir_node);
       value->set_data_type(types::DataType::STRING);
       value->set_string_value(casted_ir.str());
       break;
     }
-    case IRNodeType::FloatType: {
+    case IRNodeType::kFloat: {
       auto value = expr->mutable_constant();
       auto casted_ir = static_cast<const FloatIR&>(ir_node);
       value->set_data_type(types::DataType::FLOAT64);
       value->set_float64_value(casted_ir.val());
       break;
     }
-    case IRNodeType::BoolType: {
+    case IRNodeType::kBool: {
       auto value = expr->mutable_constant();
       auto casted_ir = static_cast<const BoolIR&>(ir_node);
       value->set_data_type(types::DataType::BOOLEAN);
       value->set_bool_value(casted_ir.val());
       break;
     }
-    case IRNodeType::TimeType: {
+    case IRNodeType::kTime: {
       auto value = expr->mutable_constant();
       auto casted_ir = static_cast<const TimeIR&>(ir_node);
       value->set_data_type(types::DataType::TIME64NS);
@@ -323,7 +323,7 @@ Status MapIR::ToProto(planpb::Operator* op) const {
 Status FilterIR::InitImpl(const ArgMap& args) {
   DCHECK(args.find("fn") != args.end());
   IRNode* filter_func_node = args.find("fn")->second;
-  if (filter_func_node->type() != IRNodeType::LambdaType) {
+  if (filter_func_node->type() != IRNodeType::kLambda) {
     return CreateIRNodeError("Expected 'fn' argument of Filter to be a 'lambda', got '$0'",
                              filter_func_node->type_string());
   }
@@ -362,7 +362,7 @@ Status FilterIR::ToProto(planpb::Operator* op) const {
 Status LimitIR::InitImpl(const ArgMap& args) {
   DCHECK(args.find("rows") != args.end());
   IRNode* limit_node = args.find("rows")->second;
-  if (limit_node->type() != IRNodeType::IntType) {
+  if (limit_node->type() != IRNodeType::kInt) {
     return CreateIRNodeError("Expected 'int', got $0", limit_node->type_string());
   }
 
@@ -402,7 +402,7 @@ Status LimitIR::ToProto(planpb::Operator* op) const {
 Status BlockingAggIR::InitImpl(const ArgMap& args) {
   IRNode* by_func = args.find("by")->second;
   IRNode* agg_func = args.find("fn")->second;
-  if (agg_func->type() != IRNodeType::LambdaType) {
+  if (agg_func->type() != IRNodeType::kLambda) {
     return CreateIRNodeError("Expected 'agg' argument of Agg to be 'Lambda', got '$0'",
                              agg_func->type_string());
   }
@@ -411,7 +411,7 @@ Status BlockingAggIR::InitImpl(const ArgMap& args) {
   // onwards.
   if (by_func == nullptr) {
     by_func_ = nullptr;
-  } else if (by_func->type() == IRNodeType::LambdaType) {
+  } else if (by_func->type() == IRNodeType::kLambda) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, by_func));
     by_func_ = static_cast<LambdaIR*>(by_func);
   } else {
@@ -438,7 +438,7 @@ std::string BlockingAggIR::DebugString(int64_t depth) const {
 
 Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* expr,
                                                   const IRNode& ir_node) const {
-  DCHECK(ir_node.type() == IRNodeType::FuncType);
+  DCHECK(ir_node.type() == IRNodeType::kFunc);
   auto casted_ir = static_cast<const FuncIR&>(ir_node);
   expr->set_name(casted_ir.func_name());
   expr->set_id(casted_ir.func_id());
@@ -448,41 +448,41 @@ Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* e
   for (auto ir_arg : casted_ir.args()) {
     auto arg_pb = expr->add_args();
     switch (ir_arg->type()) {
-      case IRNodeType::ColumnType: {
+      case IRNodeType::kColumn: {
         auto col = arg_pb->mutable_column();
         col->set_node(parent()->id());
         col->set_index(static_cast<ColumnIR*>(ir_arg)->col_idx());
         break;
       }
-      case IRNodeType::IntType: {
+      case IRNodeType::kInt: {
         auto value = arg_pb->mutable_constant();
         auto casted_ir = static_cast<IntIR*>(ir_arg);
         value->set_data_type(types::DataType::INT64);
         value->set_int64_value(casted_ir->val());
         break;
       }
-      case IRNodeType::StringType: {
+      case IRNodeType::kString: {
         auto value = arg_pb->mutable_constant();
         auto casted_ir = static_cast<StringIR*>(ir_arg);
         value->set_data_type(types::DataType::STRING);
         value->set_string_value(casted_ir->str());
         break;
       }
-      case IRNodeType::FloatType: {
+      case IRNodeType::kFloat: {
         auto value = arg_pb->mutable_constant();
         auto casted_ir = static_cast<FloatIR*>(ir_arg);
         value->set_data_type(types::DataType::FLOAT64);
         value->set_float64_value(casted_ir->val());
         break;
       }
-      case IRNodeType::BoolType: {
+      case IRNodeType::kBool: {
         auto value = arg_pb->mutable_constant();
         auto casted_ir = static_cast<BoolIR*>(ir_arg);
         value->set_data_type(types::DataType::BOOLEAN);
         value->set_bool_value(casted_ir->val());
         break;
       }
-      case IRNodeType::TimeType: {
+      case IRNodeType::kTime: {
         auto value = arg_pb->mutable_constant();
         auto casted_ir = static_cast<const TimeIR&>(ir_node);
         value->set_data_type(types::DataType::TIME64NS);

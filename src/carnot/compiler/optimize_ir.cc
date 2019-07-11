@@ -26,7 +26,7 @@ Status IROptimizer::CollapseRange(IR* ir_graph) {
   IntIR* stop_time_ir;
   for (const auto& node_id : sorted_dag) {
     auto node = ir_graph->Get(node_id);
-    if (node->type() != IRNodeType::RangeType) {
+    if (node->type() != IRNodeType::kRange) {
       continue;
     }
     range_ir = static_cast<RangeIR*>(node);

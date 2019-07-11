@@ -64,7 +64,7 @@ TEST(CompileThenOptimize, query_test_start_stop) {
   IRNode* node;
   for (const auto idx : ir_graph->dag().TopologicalSort()) {
     node = ir_graph->Get(idx);
-    if (node->type() == IRNodeType::MemorySourceType) {
+    if (node->type() == IRNodeType::kMemorySource) {
       break;
     }
   }

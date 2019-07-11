@@ -277,7 +277,7 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(MapIR * map_ir_node, ir_graph_->MakeNode<MapIR>());
 
   // pl.mod(by_col, size).
-  DCHECK(args["by"]->type() == IRNodeType::LambdaType);
+  DCHECK(args["by"]->type() == IRNodeType::kLambda);
   ExpressionIR* by_col_ir_node =
       static_cast<ExpressionIR*>(static_cast<LambdaIR*>(args["by"])->col_exprs()[0].node);
   PL_ASSIGN_OR_RETURN(FuncIR * mod_ir_node, ir_graph_->MakeNode<FuncIR>());
@@ -489,7 +489,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaList(const std::string& arg_n
   std::vector<IRNode*> children;
   for (auto& child : node->elements) {
     PL_ASSIGN_OR_RETURN(auto child_attr, ProcessLambdaExpr(arg_name, child));
-    if (child_attr.StringOnly() || child_attr.expr_->type() != IRNodeType::ColumnType) {
+    if (child_attr.StringOnly() || child_attr.expr_->type() != IRNodeType::kColumn) {
       return CreateAstError(node, "Expect Lambda list to only contain column names.");
     }
     expr_return.MergeColumns(child_attr);
@@ -645,7 +645,7 @@ StatusOr<IntIR*> ASTWalker::EvalUnitTimeFn(const std::string& attr_fn_name,
 
   // evaluate the arguments
   PL_ASSIGN_OR_RETURN(auto number_node, ProcessNumber(PYPA_PTR_CAST(Number, argument)));
-  if (number_node->type() != IRNodeType::IntType) {
+  if (number_node->type() != IRNodeType::kInt) {
     return CreateAstError(arglist_parent, "Argument must be an integer for '$0.$1'",
                           kCompileTimePrefix, attr_fn_name);
   }

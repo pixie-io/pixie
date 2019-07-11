@@ -14,7 +14,8 @@ namespace compiler {
 
 TEST(IRTypes, types_enum_test) {
   // Quick test to make sure the enums test is inline with the type strings.
-  EXPECT_EQ(IRNodeType::number_of_types, sizeof(kIRNodeStrings) / sizeof(*kIRNodeStrings));
+  EXPECT_EQ(static_cast<int64_t>(IRNodeType::number_of_types),
+            sizeof(kIRNodeStrings) / sizeof(*kIRNodeStrings));
 }
 
 /**

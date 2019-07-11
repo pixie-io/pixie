@@ -19,7 +19,7 @@ std::vector<Status> Analyzer::VerifyIRColumnsReady(IR* ir_graph) {
   std::vector<Status> exprs;
   for (auto& i : ir_graph->dag().TopologicalSort()) {
     auto node = ir_graph->Get(i);
-    if (node->type() == ColumnType) {
+    if (node->type() == IRNodeType::kColumn) {
       auto col_node = static_cast<ColumnIR*>(node);
       if (!col_node->IsDataTypeEvaluated()) {
         exprs.push_back(
@@ -86,34 +86,34 @@ StatusOr<types::DataType> Analyzer::EvaluateExpression(
     IRNode* expr, const table_store::schema::Relation& parent_rel, bool is_map) {
   types::DataType data_type;
   switch (expr->type()) {
-    case IRNodeType::ColumnType: {
+    case IRNodeType::kColumn: {
       // Update the column properties from the parent_rel
       auto* col_expr = static_cast<ColumnIR*>(expr);
       PL_ASSIGN_OR_RETURN(data_type, EvaluateColExpr(col_expr, parent_rel));
       break;
     }
-    case IRNodeType::FuncType: {
+    case IRNodeType::kFunc: {
       auto* func_expr = static_cast<FuncIR*>(expr);
       PL_ASSIGN_OR_RETURN(data_type, EvaluateFuncExpr(func_expr, parent_rel, is_map));
       break;
     }
-    case IRNodeType::IntType: {
+    case IRNodeType::kInt: {
       data_type = types::DataType::INT64;
       break;
     }
-    case IRNodeType::StringType: {
+    case IRNodeType::kString: {
       data_type = types::DataType::STRING;
       break;
     }
-    case IRNodeType::FloatType: {
+    case IRNodeType::kFloat: {
       data_type = types::DataType::FLOAT64;
       break;
     }
-    case IRNodeType::BoolType: {
+    case IRNodeType::kBool: {
       data_type = types::DataType::BOOLEAN;
       break;
     }
-    case IRNodeType::TimeType: {
+    case IRNodeType::kTime: {
       data_type = types::DataType::TIME64NS;
       break;
     }
@@ -142,13 +142,13 @@ StatusOr<table_store::schema::Relation> Analyzer::BlockingAggHandler(
     PL_RETURN_IF_ERROR(HasExpectedColumns(by_expected, parent_rel));
     // Get the column to group by.
     PL_ASSIGN_OR_RETURN(IRNode * expr, by_func->GetDefaultExpr());
-    if (expr->type() == IRNodeType::ColumnType) {
+    if (expr->type() == IRNodeType::kColumn) {
       auto* col_expr = static_cast<ColumnIR*>(expr);
       // Make sure that the column is setup.
       PL_RETURN_IF_ERROR(EvaluateColExpr(col_expr, parent_rel));
       agg_node->SetGroups({col_expr});
       agg_rel.AddColumn(col_expr->EvaluatedDataType(), col_expr->col_name());
-    } else if (expr->type() == IRNodeType::ListType) {
+    } else if (expr->type() == IRNodeType::kList) {
       auto* list_expr = static_cast<ListIR*>(expr);
       std::vector<ColumnIR*> columns;
       for (auto ch : list_expr->children()) {
@@ -263,7 +263,7 @@ StatusOr<IntIR*> Analyzer::EvaluateCompilerFunction(const std::string& name,
 }
 
 StatusOr<IntIR*> Analyzer::EvaluateCompilerExpression(IRNode* node) {
-  if (node->type() == IRNodeType::FuncType) {
+  if (node->type() == IRNodeType::kFunc) {
     auto func_node = static_cast<FuncIR*>(node);
     std::vector<IntIR*> evaled_args;
     for (const auto ag : func_node->args()) {
@@ -274,9 +274,9 @@ StatusOr<IntIR*> Analyzer::EvaluateCompilerExpression(IRNode* node) {
                         EvaluateCompilerFunction(func_node->func_name(), evaled_args, node));
     return node_result;
   }
-  if (node->type() == IRNodeType::IntType) {
+  if (node->type() == IRNodeType::kInt) {
     return static_cast<IntIR*>(node);
-  } else if (node->type() == IRNodeType::StringType) {
+  } else if (node->type() == IRNodeType::kString) {
     // Do the string processing
     auto str_node = static_cast<StringIR*>(node);
     PL_ASSIGN_OR_RETURN(int64_t int_val, StringToTimeInt(str_node->str()));
@@ -316,27 +316,27 @@ Status Analyzer::RelationUpdate(OperatorIR* node) {
   // TODO(philkuz) (PL-466) update the arguments to each handler to only take in the specific
   // type so you don't have to recast it.
   switch (node->type()) {
-    case IRNodeType::MemorySinkType: {
+    case IRNodeType::kMemorySink: {
       PL_ASSIGN_OR_RETURN(rel, SinkHandler(static_cast<MemorySinkIR*>(node), parent_rel));
       break;
     }
-    case IRNodeType::BlockingAggType: {
+    case IRNodeType::kBlockingAgg: {
       PL_ASSIGN_OR_RETURN(rel, BlockingAggHandler(static_cast<BlockingAggIR*>(node), parent_rel));
       break;
     }
-    case IRNodeType::MapType: {
+    case IRNodeType::kMap: {
       PL_ASSIGN_OR_RETURN(rel, MapHandler(static_cast<MapIR*>(node), parent_rel));
       break;
     }
-    case IRNodeType::RangeType: {
+    case IRNodeType::kRange: {
       PL_ASSIGN_OR_RETURN(rel, RangeHandler(static_cast<RangeIR*>(node), parent_rel));
       break;
     }
-    case IRNodeType::FilterType: {
+    case IRNodeType::kFilter: {
       PL_ASSIGN_OR_RETURN(rel, FilterHandler(static_cast<FilterIR*>(node), parent_rel));
       break;
     }
-    case IRNodeType::LimitType: {
+    case IRNodeType::kLimit: {
       PL_ASSIGN_OR_RETURN(rel, LimitHandler(static_cast<LimitIR*>(node), parent_rel));
       break;
     }
@@ -351,7 +351,7 @@ StatusOr<std::vector<std::string>> Analyzer::GetColumnNames(std::vector<IRNode*>
   std::vector<std::string> columns;
   for (size_t idx = 0; idx < select_children.size(); idx++) {
     IRNode* col_string_node = select_children[idx];
-    if (col_string_node->type() != StringType) {
+    if (col_string_node->type() != IRNodeType::kString) {
       return col_string_node->CreateIRNodeError(
           "The elements of the select list must be of type `str`. Found a '$0' for idx $1.",
           col_string_node->type_string(), idx);

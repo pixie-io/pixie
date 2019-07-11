@@ -14,9 +14,9 @@ void VerifyMemorySource(IRNode* node) {
 
 void VerifyRange(IRNode* node) {
   auto range_node = static_cast<RangeIR*>(node);
-  EXPECT_EQ(range_node->parent()->type(), IRNodeType::MemorySourceType);
-  EXPECT_EQ(range_node->start_repr()->type(), IRNodeType::IntType);
-  EXPECT_EQ(range_node->stop_repr()->type(), IRNodeType::IntType);
+  EXPECT_EQ(range_node->parent()->type(), IRNodeType::kMemorySource);
+  EXPECT_EQ(range_node->start_repr()->type(), IRNodeType::kInt);
+  EXPECT_EQ(range_node->stop_repr()->type(), IRNodeType::kInt);
   EXPECT_FALSE(range_node->HasLogicalRepr());
 }
 
@@ -26,19 +26,19 @@ void VerifyString(IRNode* node) { EXPECT_FALSE(node->HasLogicalRepr()); }
 
 void VerifyNodeConnections(IRNode* node) {
   switch (node->type()) {
-    case IRNodeType::MemorySourceType: {
+    case IRNodeType::kMemorySource: {
       VerifyMemorySource(node);
       break;
     }
-    case IRNodeType::RangeType: {
+    case IRNodeType::kRange: {
       VerifyRange(node);
       break;
     }
-    case IRNodeType::ListType: {
+    case IRNodeType::kList: {
       VerifyList(node);
       break;
     }
-    case IRNodeType::StringType: {
+    case IRNodeType::kString: {
       VerifyString(node);
       break;
     }
