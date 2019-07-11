@@ -164,18 +164,18 @@ def writeBazelRCFile() {
     // Build arguments.
     'build --announce_rc',
     'build --verbose_failures',
-    'build --jobs=16',
+    'build --jobs=32',
+    '--experimental_remote_download_outputs=minimal',
+    '--remote_max_connections=256',
     // Build remote jobs setup.
     'build --google_default_credentials',
     // Use GCS as cache as this is more scalable than our machine.
     "build --remote_http_cache=https://storage.googleapis.com/bazel-cache-pl",
-    'build --remote_local_fallback=true',
-    'build --remote_local_fallback_strategy=local',
-    'build --remote_timeout=10',
+    'build --remote_timeout=5',
+    'build --remote_retries=2',
     // Test remote jobs setup.
-    'test --remote_timeout=10',
-    'test --remote_local_fallback=true',
-    'test --remote_local_fallback_strategy=local',
+    'test --remote_timeout=5',
+    'test --remote_retries=2',
     'test --test_output=errors',
     // Other test args.
     'test --verbose_failures',
