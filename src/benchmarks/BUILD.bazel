@@ -7,9 +7,6 @@ pl_cc_binary(
     testonly = 1,
     srcs = ["map_benchmark.cc"],
     deps = [
-        "//src/common/base:cc_library",
         "//src/common/benchmark:cc_library",
-        "//src/common/memory:cc_library",
-        "@com_google_absl//absl/container:flat_hash_map",
     ],
 )
