@@ -2,8 +2,6 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: agent
-  labels:
-    app: pl-monitoring
 spec:
   selector:
     matchLabels:

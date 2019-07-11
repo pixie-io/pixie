@@ -2,8 +2,6 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: vizier-proxy
-  labels:
-    app: pl-monitoring
 spec:
   replicas: 1
   selector:

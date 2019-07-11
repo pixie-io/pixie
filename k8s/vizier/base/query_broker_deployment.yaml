@@ -3,8 +3,6 @@ kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
   name: vizier-query-broker
-  labels:
-    app: pl-monitoring
 spec:
   replicas: 1
   selector:
