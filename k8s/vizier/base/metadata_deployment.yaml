@@ -2,7 +2,6 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: vizier-metadata
-  namespace: pl
   labels:
     app: pl-monitoring
 spec:
