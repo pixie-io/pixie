@@ -102,6 +102,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "pattern_match_test",
+    srcs = ["pattern_match_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+
+pl_cc_test(
     name = "ast_visitor_test",
     srcs = ["ast_visitor_test.cc"],
     deps = [

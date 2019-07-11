@@ -31,6 +31,7 @@ struct ColumnExpression {
 using ColExpressionVector = std::vector<ColumnExpression>;
 
 enum IRNodeType {
+  kAnyType = -1,
   MemorySourceType,
   MemorySinkType,
   RangeType,
@@ -440,9 +441,9 @@ class FuncIR : public ExpressionIR {
   std::vector<ExpressionIR*> args_;
   std::vector<types::DataType> args_types_;
   int64_t func_id_ = 0;
-  types::DataType evaluated_data_type_;
-  bool is_data_type_evaluated_;
-  bool is_compile_time_;
+  types::DataType evaluated_data_type_ = types::DataType::DATA_TYPE_UNKNOWN;
+  bool is_data_type_evaluated_ = false;
+  bool is_compile_time_ = false;
 };
 
 /**
