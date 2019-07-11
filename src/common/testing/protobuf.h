@@ -4,6 +4,7 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/message_differencer.h>
 
+#include <memory>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -20,8 +21,8 @@ struct EqualsProtoMatcher {
 
   template <typename PBType>
   bool MatchAndExplain(const PBType& pb, ::testing::MatchResultListener* listener) const {
-    PBType expected_pb;
-    if (!google::protobuf::TextFormat::ParseFromString(expected_text_pb_, &expected_pb)) {
+    std::unique_ptr<PBType> expected_pb(pb.New());
+    if (!google::protobuf::TextFormat::ParseFromString(expected_text_pb_, expected_pb.get())) {
       (*listener) << "The input cannot be parsed as protobuf!";
       return false;
     }
@@ -31,7 +32,7 @@ struct EqualsProtoMatcher {
     if (optional_scope_.has_value()) {
       differencer.set_scope(optional_scope_.value());
     }
-    if (!differencer.Compare(expected_pb, pb)) {
+    if (!differencer.Compare(*expected_pb, pb)) {
       (*listener) << diff_report << "result";
       return false;
     }
