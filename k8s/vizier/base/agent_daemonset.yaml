@@ -18,8 +18,6 @@ spec:
       - name: agent
         image: gcr.io/pl-dev-infra/agent_image:latest
         env:
-        - name: PL_VIZIER_ADDR
-          value: vizier.pl.svc.cluster.local:40000
         - name: PL_CLIENT_TLS_CERT
           value: /certs/client.crt
         - name: PL_CLIENT_TLS_KEY
