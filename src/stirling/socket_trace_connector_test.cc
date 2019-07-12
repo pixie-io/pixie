@@ -25,6 +25,9 @@ class SocketTraceConnectorTest : public ::testing::Test {
     source_ = dynamic_cast<SocketTraceConnector*>(connector_.get());
     ASSERT_NE(nullptr, source_);
     source_->TestOnlyConfigure(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvResp);
+
+    // Because some tests change the inactivity duration, make sure to reset it here for each test.
+    ConnectionTracker::SetDefaultInactivityDuration();
   }
 
   conn_info_t InitConn(uint64_t ts_ns = 0) {
@@ -338,6 +341,8 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
   EXPECT_EQ(0, source_->NumActiveConnections());
 
   source_->AcceptOpenConnEvent(conn);
+
+  EXPECT_EQ(1, source_->NumActiveConnections());
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
@@ -347,17 +352,21 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
   source_->AcceptDataEvent(resp_event0);
   source_->AcceptDataEvent(resp_event1);
   source_->AcceptDataEvent(resp_event2);
+
+  EXPECT_EQ(1, source_->NumActiveConnections());
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   source_->AcceptCloseConnEvent(close_conn);
-  source_->TransferData(kTableNum, &record_batch);
+  // CloseConnEvent results in countdown = kDeathCountdownIters.
 
-  for (uint32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
-    source_->TransferData(kTableNum, &record_batch);
+  // Death countdown period: keep calling Transfer Data to increment iterations.
+  for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
     EXPECT_EQ(1, source_->NumActiveConnections());
+    source_->TransferData(kTableNum, &record_batch);
   }
 
+  EXPECT_EQ(1, source_->NumActiveConnections());
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(0, source_->NumActiveConnections());
 }
@@ -379,16 +388,18 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
   source_->AcceptDataEvent(req_event0);
   source_->AcceptDataEvent(resp_event2);
   source_->AcceptDataEvent(resp_event0);
+
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   source_->AcceptCloseConnEvent(close_conn);
   source_->AcceptDataEvent(resp_event1);
   source_->AcceptDataEvent(req_event2);
-  source_->TransferData(kTableNum, &record_batch);
-  EXPECT_EQ(1, source_->NumActiveConnections());
 
-  for (uint32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
+  // CloseConnEvent results in countdown = kDeathCountdownIters.
+
+  // Death countdown period: keep calling Transfer Data to increment iterations.
+  for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
     source_->TransferData(kTableNum, &record_batch);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
@@ -417,10 +428,11 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
   // Missing event: source_->AcceptDataEvent(resp_event1);
   source_->AcceptDataEvent(resp_event2);
   source_->AcceptCloseConnEvent(close_conn);
-  source_->TransferData(kTableNum, &record_batch);
-  EXPECT_EQ(1, source_->NumActiveConnections());
 
-  for (uint32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
+  // CloseConnEvent results in countdown = kDeathCountdownIters.
+
+  // Death countdown period: keep calling Transfer Data to increment iterations.
+  for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
     source_->TransferData(kTableNum, &record_batch);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
@@ -464,13 +476,122 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
-  for (uint32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
+  // TransferData results in countdown = kDeathCountdownIters for old generations.
+
+  // Death countdown period: keep calling Transfer Data to increment iterations.
+  for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
     source_->TransferData(kTableNum, &record_batch);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
   source_->TransferData(kTableNum, &record_batch);
   EXPECT_EQ(0, source_->NumActiveConnections());
+}
+
+TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
+  ConnectionTracker::SetInactivityDuration(std::chrono::seconds(1));
+
+  // Inactive dead connections are determined by checking the /proc filesystem.
+  // Here we create a PID that is a valid number, but non-existent on any Linux system.
+  // Note that max PID bits in Linux is 22 bits.
+  uint32_t impossible_pid = 1 << 23;
+
+  conn_info_t conn0 = InitConn();
+  conn0.conn_id.pid = impossible_pid;
+
+  SocketDataEvent conn0_req_event = InitSendEvent(kReq0);
+  conn0_req_event.attr.conn_id.pid = impossible_pid;
+
+  SocketDataEvent conn0_resp_event = InitRecvEvent(kResp0);
+  conn0_resp_event.attr.conn_id.pid = impossible_pid;
+
+  conn_info_t conn0_close = InitClose();
+  conn0_close.conn_id.pid = impossible_pid;
+
+  auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
+
+  // Simulating events being emitted from BPF perf buffer.
+  source_->AcceptOpenConnEvent(conn0);
+  source_->AcceptDataEvent(conn0_req_event);
+  source_->AcceptDataEvent(conn0_resp_event);
+  PL_UNUSED(conn0_close);  // Missing close event.
+
+  for (int i = 0; i < 100; ++i) {
+    source_->TransferData(kTableNum, &record_batch);
+    EXPECT_EQ(1, source_->NumActiveConnections());
+  }
+
+  sleep(2);
+
+  // Connection should be timed out by now, and should be killed by one more TransferData() call.
+
+  EXPECT_EQ(1, source_->NumActiveConnections());
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(0, source_->NumActiveConnections());
+}
+
+TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
+  ConnectionTracker::SetInactivityDuration(std::chrono::seconds(1));
+
+  // Inactive alive connections are determined by checking the /proc filesystem.
+  // Here we create a PID that is a real PID, by using the test process itself.
+  // And we create a real FD, by using FD 1, which is stdout.
+
+  uint32_t real_pid = getpid();
+  uint32_t real_fd = 1;
+
+  conn_info_t conn0 = InitConn();
+  conn0.conn_id.pid = real_pid;
+  conn0.conn_id.fd = real_fd;
+
+  // An incomplete message means it shouldn't be parseable (we don't want TranfserData to succeed).
+  SocketDataEvent conn0_req_event = InitSendEvent("GET /index.html HTTP/1.1\r\n");
+  conn0_req_event.attr.conn_id.pid = real_pid;
+  conn0_req_event.attr.conn_id.fd = real_fd;
+
+  auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
+
+  // Simulating events being emitted from BPF perf buffer.
+  source_->AcceptOpenConnEvent(conn0);
+  source_->AcceptDataEvent(conn0_req_event);
+
+  for (int i = 0; i < 100; ++i) {
+    source_->TransferData(kTableNum, &record_batch);
+    EXPECT_EQ(1, source_->NumActiveConnections());
+  }
+
+  conn_id_t search_conn_id;
+  search_conn_id.pid = real_pid;
+  search_conn_id.fd = real_fd;
+  search_conn_id.generation = 1;
+  const ConnectionTracker* tracker = source_->GetConnectionTracker(search_conn_id);
+  ASSERT_NE(nullptr, tracker);
+
+  // We should find some raw events in send_data.
+  EXPECT_TRUE(tracker->recv_data().events.empty());
+  EXPECT_FALSE(tracker->send_data().events.empty());
+
+  sleep(2);
+
+  // Connection should be timed out by next TransferData,
+  // which should also cause events to be flushed.
+
+  EXPECT_EQ(1, source_->NumActiveConnections());
+  source_->TransferData(kTableNum, &record_batch);
+  EXPECT_EQ(1, source_->NumActiveConnections());
+
+  // Should not have transferred any data.
+  EXPECT_EQ(0, record_batch[0]->Size());
+
+  // Events should have been flushed.
+  EXPECT_TRUE(tracker->recv_data().events.empty());
+  EXPECT_TRUE(tracker->send_data().events.empty());
+
+  // Checks that nothing was parsed.
+  auto& recv_messages = tracker->recv_data().messages;
+  auto& send_messages = tracker->send_data().messages;
+  EXPECT_TRUE(std::holds_alternative<std::monostate>(recv_messages));
+  EXPECT_TRUE(std::holds_alternative<std::monostate>(send_messages));
 }
 
 }  // namespace stirling

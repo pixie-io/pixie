@@ -302,13 +302,13 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
 
       ProcessMessages<TMessageType>(tracker, &req_messages, &resp_messages, record_batch);
 
+      tracker.IterationTick();
+
       // Only the most recent generation of a connection on a PID+FD should be active.
       // Mark all others for death (after having their data processed, of course).
       if (generation_it != --tracker_generations.end()) {
         tracker.MarkForDeath();
       }
-
-      tracker.IterationTick();
 
       // Update iterator, handling deletions as we go. This must be the last line in the loop.
       generation_it = tracker.ReadyForDestruction() ? tracker_generations.erase(generation_it)

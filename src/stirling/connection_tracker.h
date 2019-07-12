@@ -70,6 +70,11 @@ struct DataStream {
   template <class TMessageType>
   void ExtractMessages(MessageType type);
 
+  /**
+   * @brief Clears all unparsed and parsed data from the Datastream.
+   */
+  void Reset();
+
   // TODO(oazizi): Add a bool to say whether the stream has been touched since last transfer (to
   // avoid useless computation in ExtractMessages()).
 };
@@ -215,7 +220,8 @@ class ConnectionTracker {
    * This indicates that the tracker should not receive any further events,
    * otherwise an warning or error will be produced.
    */
-  void MarkForDeath();
+  void MarkForDeath(int32_t countdown);
+  void MarkForDeath() { MarkForDeath(kDeathCountdownIters); }
 
   /**
    * @brief Returns true if this tracker has been marked for death.
@@ -237,6 +243,39 @@ class ConnectionTracker {
   void IterationTick();
 
   /**
+   * @brief Sets a the duration after which a connection is deemed to be inactive.
+   * After becoming inactive, the connection may either (1) have its buffers purged,
+   * where any unparsed messages are discarded or (2) be removed entirely from the
+   * set of tracked connections. The main difference between (1) and (2) are that
+   * in (1) some connection information is retained in case the connection becomes
+   * active again.
+   *
+   * NOTE: This function is static, because it is currently only intended to be
+   * used for testing purposes. If ever a need arises to have different inactivity
+   * durations per connection tracker, then this function (and related functions below)
+   * should be made into a member function.
+   *
+   * @param duration The duration in seconds, with no events, after which a connection
+   * is deemed to be inactive.
+   */
+  static void SetInactivityDuration(std::chrono::seconds duration) {
+    inactivity_duration_ = duration;
+  }
+
+  /**
+   * @bref Resets the inactivity duration to the default value.
+   *
+   * NOTE: This function is static because it is meant to be used for testing purposes only.
+   */
+  static void SetDefaultInactivityDuration() { SetInactivityDuration(kDefaultInactivityDuration); }
+
+  /**
+   * @brief Return the currently configured duration, after which a connection is deemed to be
+   * inactive.
+   */
+  std::chrono::seconds InactivityDuration() { return inactivity_duration_; }
+
+  /**
    * @brief Number of TransferData() (i.e. PerfBuffer read) calls any ConnectionTracker persists
    * after it has been marked for death. We keep ConnectionTrackers alive for debug purposes only,
    * just to log spurious late events (which should not happen).
@@ -247,6 +286,7 @@ class ConnectionTracker {
   void SetPID(struct conn_id_t conn_id);
   void SetTrafficClass(struct traffic_class_t traffic_class);
   void UpdateTimestamps(uint64_t bpf_timestamp);
+  void HandleInactivity();
 
   struct conn_id_t conn_id_ {
     {0}, {0}, 0, 0
@@ -275,8 +315,11 @@ class ConnectionTracker {
   uint32_t num_send_events_ = 0;
   uint32_t num_recv_events_ = 0;
 
+  static constexpr std::chrono::seconds kDefaultInactivityDuration{300};
+  inline static std::chrono::seconds inactivity_duration_ = kDefaultInactivityDuration;
+
   // Iterations before the tracker can be killed.
-  int64_t death_countdown_ = -1;
+  int32_t death_countdown_ = -1;
 
   // TODO(oazizi): Could record a timestamp, so we could destroy old EventStreams completely.
 };

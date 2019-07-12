@@ -1,3 +1,5 @@
+#include <experimental/filesystem>
+
 #include <algorithm>
 #include <chrono>
 #include <vector>
@@ -132,12 +134,14 @@ DataStream* ConnectionTracker::resp_data() {
   }
 }
 
-void ConnectionTracker::MarkForDeath() {
+void ConnectionTracker::MarkForDeath(int32_t countdown) {
   // We received the close event.
   // Now give up to some more TransferData calls to receive trailing data events.
   // We do this for logging/debug purposes only.
-  if (!IsZombie()) {
-    death_countdown_ = kDeathCountdownIters + 1;
+  if (death_countdown_ >= 0) {
+    death_countdown_ = std::min(death_countdown_, countdown);
+  } else {
+    death_countdown_ = countdown;
   }
 }
 
@@ -150,10 +154,26 @@ bool ConnectionTracker::ReadyForDestruction() const {
 }
 
 void ConnectionTracker::IterationTick() {
-  // Currently only updates death_countdown_,
-  // but other updates could also go in this function.
   if (death_countdown_ > 0) {
     death_countdown_--;
+  }
+
+  if (std::chrono::steady_clock::now() > last_update_timestamp_ + InactivityDuration()) {
+    HandleInactivity();
+  }
+}
+
+void ConnectionTracker::HandleInactivity() {
+  std::experimental::filesystem::path fd_file = absl::Substitute("/proc/$0/fd/$1", pid(), fd());
+
+  if (!std::experimental::filesystem::exists(fd_file)) {
+    // Connection seems to be dead. Mark for immediate death.
+    MarkForDeath(0);
+  } else {
+    // Connection may still be alive (though inactive), so flush the data buffers.
+    // It is unlikely any new data is a continuation of existing data in in any meaningful way.
+    send_data_.Reset();
+    recv_data_.Reset();
   }
 }
 
@@ -210,6 +230,12 @@ void DataStream::ExtractMessages(MessageType type) {
   std::advance(erase_iter, parse_result.end_position.seq_num);
   events.erase(events.begin(), erase_iter);
   offset = parse_result.end_position.offset;
+}
+
+void DataStream::Reset() {
+  events.clear();
+  messages = std::monostate();
+  offset = 0;
 }
 
 // Explicit instantiation for HTTPMessage.
