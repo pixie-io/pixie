@@ -6,6 +6,7 @@
 #include "absl/strings/match.h"
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
+#include "src/stirling/bpf_logging.h"
 #include "src/stirling/event_parser.h"
 #include "src/stirling/http2.h"
 #include "src/stirling/mysql_parse.h"
@@ -32,7 +33,11 @@ Status SocketTraceConnector::InitImpl() {
   if (!IsRoot()) {
     return error::PermissionDenied("BCC currently only supported as the root user.");
   }
-  auto init_res = bpf_.init(std::string(kBCCScript));
+  std::vector<std::string> cflags = {"-DNDEBUG"};
+  if (FLAGS_enable_bpf_logging) {
+    cflags.clear();
+  }
+  auto init_res = bpf_.init(std::string(kBCCScript), cflags);
   if (init_res.code() != 0) {
     return error::Internal(
         absl::StrCat("Failed to initialize BCC script, error message: ", init_res.msg()));
@@ -60,6 +65,7 @@ Status SocketTraceConnector::InitImpl() {
     }
   }
 
+  PL_RETURN_IF_ERROR(InitBPFLogging(&bpf_));
   PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvResp));
   PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kSocketTraceSendReq));
   // TODO(PL-659): connect() call might return non 0 value, making requester-side tracing
@@ -119,6 +125,7 @@ void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
     default:
       CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
   }
+  DumpBPFLog(&bpf_);
 }
 
 Status SocketTraceConnector::Configure(uint32_t protocol, uint64_t config_mask) {

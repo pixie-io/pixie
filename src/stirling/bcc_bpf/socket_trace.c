@@ -5,6 +5,9 @@
 #include <uapi/linux/in6.h>
 #include <uapi/linux/ptrace.h>
 
+#include "src/stirling/bcc_bpf/log_event.h"
+#include "src/stirling/bcc_bpf/logging.h"
+
 // This is the perf buffer for BPF program to export data from kernel to user space.
 BPF_PERF_OUTPUT(socket_http_events);
 BPF_PERF_OUTPUT(socket_mysql_events);
@@ -378,6 +381,7 @@ done:
 
 static int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   if (fd < 0) {
+    DLOG_TEXT(ctx, "probe_entry_write_send(), fd < 0");
     return 0;
   }
 
@@ -489,6 +493,7 @@ done:
 static int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t count,
                                  enum EventType event_type) {
   if (fd < 0) {
+    DLOG_TEXT(ctx, "probe_entry_read_recv(), fd < 0");
     return 0;
   }
   u64 id = bpf_get_current_pid_tgid();
@@ -594,6 +599,7 @@ done:
 
 int probe_close(struct pt_regs* ctx, int fd) {
   if (fd < 0) {
+    DLOG_TEXT(ctx, "probe_close(), fd < 0");
     return 0;
   }
   u64 id = bpf_get_current_pid_tgid();
