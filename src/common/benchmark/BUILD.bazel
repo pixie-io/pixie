@@ -11,5 +11,10 @@ pl_cc_library(
     ),
     hdrs = ["benchmark.h"],
     visibility = ["//visibility:public"],
-    deps = ["@com_google_benchmark//:benchmark"],
+    deps = [
+        "//src/shared/types:cc_library",
+        "@com_google_absl//absl/random",
+        "@com_google_benchmark//:benchmark",
+    ],
 )
+#
