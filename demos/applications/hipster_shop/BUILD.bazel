@@ -1,0 +1,24 @@
+package(default_visibility = ["//src/stirling:__pkg__"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_library_internal", "pl_cc_test")
+
+pl_cc_library_internal(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = ["**/*_test.cc"],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//demos/applications/hipster_shop/proto:demo_pl_cc_proto",
+    ],
+)
+
+pl_cc_test(
+    name = "reflection_test",
+    srcs = ["reflection_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing:cc_library",
+    ],
+)
