@@ -568,8 +568,8 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   ASSERT_NE(nullptr, tracker);
 
   // We should find some raw events in send_data.
-  EXPECT_TRUE(tracker->recv_data().events.empty());
-  EXPECT_FALSE(tracker->send_data().events.empty());
+  EXPECT_TRUE(tracker->recv_data().Empty<HTTPMessage>());
+  EXPECT_FALSE(tracker->send_data().Empty<HTTPMessage>());
 
   sleep(2);
 
@@ -584,14 +584,8 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   EXPECT_EQ(0, record_batch[0]->Size());
 
   // Events should have been flushed.
-  EXPECT_TRUE(tracker->recv_data().events.empty());
-  EXPECT_TRUE(tracker->send_data().events.empty());
-
-  // Checks that nothing was parsed.
-  auto& recv_messages = tracker->recv_data().messages;
-  auto& send_messages = tracker->send_data().messages;
-  EXPECT_TRUE(std::holds_alternative<std::monostate>(recv_messages));
-  EXPECT_TRUE(std::holds_alternative<std::monostate>(send_messages));
+  EXPECT_TRUE(tracker->recv_data().Empty<HTTPMessage>());
+  EXPECT_TRUE(tracker->send_data().Empty<HTTPMessage>());
 }
 
 }  // namespace stirling

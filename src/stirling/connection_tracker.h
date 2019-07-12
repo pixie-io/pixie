@@ -40,15 +40,46 @@ struct SocketClose {
  * Events stay in the raw container until whole messages are parsed out and placed in the
  * container of parsed messaged.
  */
-// TODO(oazizi): Turn this into a class.
-struct DataStream {
+class DataStream {
+ public:
+  /**
+   * @brief Adds a raw (unparsed) chunk of data into the stream at the specified sequence spot.
+   * @param seq_num The sequence number where to place the data.
+   * @param event The data.
+   */
+  void AddEvent(uint64_t seq_num, SocketDataEvent event);
+
+  /**
+   * @brief Parses as many messages as it can from the raw events into the messages container.
+   * @tparam TMessageType The parsed message type within the deque.
+   * @param type whether to parse as requests, responses or mixed traffic.
+   * @return deque parsed messages.
+   */
+  template <class TMessageType>
+  std::deque<TMessageType>& ExtractMessages(MessageType type);
+
+  /**
+   * @brief Clears all unparsed and parsed data from the Datastream.
+   */
+  void Reset();
+
+  /**
+   * @brief Checks if the DataStream is empty of both raw events and parsed messages.
+   * @return true if empty of all data.
+   */
+  template <class TMessageType>
+  bool Empty() const;
+
+ private:
   // Raw data events from BPF.
   // TODO(oazizi/yzhao): Convert this to vector or deque.
-  std::map<uint64_t, SocketDataEvent> events;
+  // TODO(oazizi): Instead of SocketDataEvent, we should only hold the actual data.
+  //               Currently we have a lot of repeated fields.
+  std::map<uint64_t, SocketDataEvent> events_;
 
   // To support partially processed events,
   // the stream may start at an offset in the first raw data event.
-  uint64_t offset = 0;
+  uint64_t offset_ = 0;
 
   // Vector of parsed HTTP messages.
   // Once parsed, the raw data events should be discarded.
@@ -60,23 +91,11 @@ struct DataStream {
   //
   // Additionally, ConnectionTracker must not switch type during runtime, which indicates serious
   // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
-  std::variant<std::monostate, std::deque<HTTPMessage>, std::deque<http2::Frame> > messages;
+  std::variant<std::monostate, std::deque<HTTPMessage>, std::deque<http2::Frame> > messages_;
 
-  /**
-   * @ brief Parses as many messages as it can from the raw events into the messages container.
-   *
-   * @param type whether to parse as requests, responses or mixed traffic.
-   */
-  template <class TMessageType>
-  void ExtractMessages(MessageType type);
-
-  /**
-   * @brief Clears all unparsed and parsed data from the Datastream.
-   */
-  void Reset();
-
-  // TODO(oazizi): Add a bool to say whether the stream has been touched since last transfer (to
-  // avoid useless computation in ExtractMessages()).
+  // TODO(oazizi): Use the following variable to skip work on ExtractMessages() when nothing has
+  // changed.
+  // bool touched_ = false;
 };
 
 /**

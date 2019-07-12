@@ -59,14 +59,12 @@ void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
   switch (event.attr.event_type) {
     case kEventTypeSyscallWriteEvent:
     case kEventTypeSyscallSendEvent: {
-      auto res = send_data_.events.emplace(seq_num, event);
-      LOG_IF(ERROR, !res.second) << "Duplicate data event";
+      send_data_.AddEvent(seq_num, std::move(event));
       ++num_send_events_;
     } break;
     case kEventTypeSyscallReadEvent:
     case kEventTypeSyscallRecvEvent: {
-      auto res = recv_data_.events.emplace(seq_num, event);
-      LOG_IF(ERROR, !res.second) << "Duplicate data event";
+      recv_data_.AddEvent(seq_num, std::move(event));
       ++num_recv_events_;
     } break;
     default:
@@ -177,16 +175,21 @@ void ConnectionTracker::HandleInactivity() {
   }
 }
 
+void DataStream::AddEvent(uint64_t seq_num, SocketDataEvent event) {
+  auto res = events_.emplace(seq_num, event);
+  LOG_IF(ERROR, !res.second) << "Clobbering data event";
+}
+
 template <class TMessageType>
-void DataStream::ExtractMessages(MessageType type) {
+std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
   EventParser<TMessageType> parser;
 
-  const size_t orig_offset = offset;
+  const size_t orig_offset = offset_;
 
   // Prepare all recorded events for parsing.
   std::vector<std::string_view> msgs;
-  uint64_t next_seq_num = events.begin()->first;
-  for (const auto& [seq_num, event] : events) {
+  uint64_t next_seq_num = events_.begin()->first;
+  for (const auto& [seq_num, event] : events_) {
     // Found a discontinuity in sequence numbers. Stop submitting events to parser.
     if (seq_num != next_seq_num) {
       break;
@@ -197,10 +200,10 @@ void DataStream::ExtractMessages(MessageType type) {
 
     // First message may have been partially processed by a previous call to this function.
     // In such cases, the offset will be non-zero, and we need a sub-string of the first event.
-    if (offset != 0) {
-      CHECK(offset < event.attr.msg_size);
-      msg = msg.substr(offset, event.attr.msg_size - offset);
-      offset = 0;
+    if (offset_ != 0) {
+      CHECK(offset_ < event.attr.msg_size);
+      msg = msg.substr(offset_, event.attr.msg_size - offset_);
+      offset_ = 0;
     }
 
     parser.Append(msg, event.attr.timestamp_ns);
@@ -208,39 +211,50 @@ void DataStream::ExtractMessages(MessageType type) {
     next_seq_num++;
   }
 
-  CHECK(std::holds_alternative<std::monostate>(messages) ||
-        std::holds_alternative<std::deque<TMessageType>>(messages))
+  CHECK(std::holds_alternative<std::monostate>(messages_) ||
+        std::holds_alternative<std::deque<TMessageType>>(messages_))
       << "Must hold the default std::monostate, or the same type as requested. "
          "I.e., ConnectionTracker cannot change the type it holds during runtime.";
-  if (std::holds_alternative<std::monostate>(messages)) {
+  if (std::holds_alternative<std::monostate>(messages_)) {
     // Reset the type to the expected type.
-    messages = std::deque<TMessageType>();
+    messages_ = std::deque<TMessageType>();
   }
   // Now parse all the appended events.
-  auto& typed_messages = std::get<std::deque<TMessageType>>(messages);
+  auto& typed_messages = std::get<std::deque<TMessageType>>(messages_);
   ParseResult<BufferPosition> parse_result = parser.ParseMessages(type, &typed_messages);
 
   // If we weren't able to process anything new, then the offset should be the same as last time.
-  if (offset != 0 && parse_result.end_position.seq_num == 0) {
+  if (offset_ != 0 && parse_result.end_position.seq_num == 0) {
     CHECK_EQ(parse_result.end_position.offset, orig_offset);
   }
 
   // Find and erase events that have been fully processed.
-  auto erase_iter = events.begin();
+  auto erase_iter = events_.begin();
   std::advance(erase_iter, parse_result.end_position.seq_num);
-  events.erase(events.begin(), erase_iter);
-  offset = parse_result.end_position.offset;
+  events_.erase(events_.begin(), erase_iter);
+  offset_ = parse_result.end_position.offset;
+
+  return typed_messages;
 }
 
 void DataStream::Reset() {
-  events.clear();
-  messages = std::monostate();
-  offset = 0;
+  events_.clear();
+  messages_ = std::monostate();
+  offset_ = 0;
 }
 
-// Explicit instantiation for HTTPMessage.
-template void DataStream::ExtractMessages<HTTPMessage>(MessageType type);
-template void DataStream::ExtractMessages<http2::Frame>(MessageType type);
+template <class TMessageType>
+bool DataStream::Empty() const {
+  return events_.empty() && (std::holds_alternative<std::monostate>(messages_) ||
+                             std::get<std::deque<TMessageType>>(messages_).empty());
+}
+
+// Explicit instantiation different message types.
+template std::deque<HTTPMessage>& DataStream::ExtractMessages<HTTPMessage>(MessageType type);
+template std::deque<http2::Frame>& DataStream::ExtractMessages<http2::Frame>(MessageType type);
+
+template bool DataStream::Empty<HTTPMessage>() const;
+template bool DataStream::Empty<http2::Frame>() const;
 
 }  // namespace stirling
 }  // namespace pl

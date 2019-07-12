@@ -214,7 +214,7 @@ void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
   }
 
   ConnectionTracker& tracker = connection_trackers_[conn_map_key][event.attr.conn_id.generation];
-  tracker.AddDataEvent(event);
+  tracker.AddDataEvent(std::move(event));
 }
 
 void SocketTraceConnector::AcceptOpenConnEvent(conn_info_t conn_info) {
@@ -289,16 +289,15 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
         LOG(ERROR) << "Unexpected nullptr for resp_data";
         continue;
       }
-      resp_data->template ExtractMessages<TMessageType>(MessageType::kResponses);
-      auto& resp_messages = std::get<std::deque<TMessageType>>(resp_data->messages);
+      auto& resp_messages =
+          resp_data->template ExtractMessages<TMessageType>(MessageType::kResponses);
 
       DataStream* req_data = tracker.req_data();
       if (req_data == nullptr) {
         LOG(ERROR) << "Unexpected nullptr for req_data";
         continue;
       }
-      req_data->template ExtractMessages<TMessageType>(MessageType::kRequests);
-      auto& req_messages = std::get<std::deque<TMessageType>>(req_data->messages);
+      auto& req_messages = req_data->template ExtractMessages<TMessageType>(MessageType::kRequests);
 
       ProcessMessages<TMessageType>(tracker, &req_messages, &resp_messages, record_batch);
 
