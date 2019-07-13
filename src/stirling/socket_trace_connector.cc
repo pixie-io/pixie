@@ -46,7 +46,7 @@ Status SocketTraceConnector::InitImpl() {
   for (const ProbeSpec& p : kProbeSpecs) {
     ebpf::StatusTuple attach_status =
         bpf_.attach_kprobe(bpf_.get_syscall_fnname(p.kernel_fn_short_name), p.trace_fn_name,
-                           p.kernel_fn_offset, p.attach_type);
+                           0 /* offset */, p.attach_type);
     if (attach_status.code() != 0) {
       return error::Internal(
           absl::StrCat("Failed to attach kprobe to kernel function: ", p.kernel_fn_short_name,

@@ -84,17 +84,17 @@ class SocketTraceConnector : public SourceConnector {
           {"http_resp_body", types::DataType::STRING, types::PatternType::STRUCTURED},
           {"http_resp_latency_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE}
   };
+  // clang-format on
 
   static constexpr ConstStrView kHTTPPerfBufferNames[] = {
-    "socket_open_conns",
-    "socket_http_events",
-    "socket_close_conns",
+      "socket_open_conns",
+      "socket_http_events",
+      "socket_close_conns",
   };
 
   // Used in ReadPerfBuffer to drain the relevant perf buffers.
   static constexpr auto kHTTPPerfBuffers = ConstVectorView<ConstStrView>(kHTTPPerfBufferNames);
 
-  // clang-format on
   static constexpr auto kHTTPTable = DataTableSchema("http_events", kHTTPElements);
 
   // clang-format off
@@ -108,16 +108,16 @@ class SocketTraceConnector : public SourceConnector {
           {"remote_port", types::DataType::INT64, types::PatternType::GENERAL},
           {"body", types::DataType::STRING, types::PatternType::STRUCTURED},
   };
+  // clang-format on
 
   static constexpr ConstStrView kMySQLPerfBufferNames[] = {
-    "socket_open_conns",
-    "socket_mysql_events",
-    "socket_close_conns",
+      "socket_open_conns",
+      "socket_mysql_events",
+      "socket_close_conns",
   };
 
   static constexpr auto kMySQLPerfBuffers = ConstVectorView<ConstStrView>(kMySQLPerfBufferNames);
 
-  // clang-format on
   static constexpr auto kMySQLTable = DataTableSchema("mysql_events", kMySQLElements);
 
   static constexpr DataTableSchema kTablesArray[] = {kHTTPTable, kMySQLTable};
@@ -183,7 +183,6 @@ class SocketTraceConnector : public SourceConnector {
   struct ProbeSpec {
     std::string kernel_fn_short_name;
     std::string trace_fn_name;
-    int kernel_fn_offset;
     bpf_probe_attach_type attach_type;
   };
 
@@ -195,28 +194,28 @@ class SocketTraceConnector : public SourceConnector {
     uint32_t num_pages;
   };
 
-  static constexpr int kOffsetZero = 0;
   static inline const std::vector<ProbeSpec> kProbeSpecs = {
-      {"connect", "probe_entry_connect", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"connect", "probe_ret_connect", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"accept", "probe_entry_accept", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"accept", "probe_ret_accept", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"accept4", "probe_entry_accept4", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"accept4", "probe_ret_accept4", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"write", "probe_entry_write", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"write", "probe_ret_write", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"send", "probe_entry_send", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"send", "probe_ret_send", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"sendto", "probe_entry_sendto", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"sendto", "probe_ret_sendto", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"read", "probe_entry_read", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"read", "probe_ret_read", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"recv", "probe_entry_recv", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"recv", "probe_ret_recv", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"recvfrom", "probe_entry_recv", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
-      {"recvfrom", "probe_ret_recv", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"close", "probe_close", kOffsetZero, bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"connect", "syscall__probe_entry_connect", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"connect", "syscall__probe_ret_connect", bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"accept", "syscall__probe_entry_accept", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"accept", "syscall__probe_ret_accept", bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"accept4", "syscall__probe_entry_accept4", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"accept4", "syscall__probe_ret_accept4", bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"write", "syscall__probe_entry_write", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"write", "syscall__probe_ret_write", bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"send", "syscall__probe_entry_send", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"send", "syscall__probe_ret_send", bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"sendto", "syscall__probe_entry_sendto", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"sendto", "syscall__probe_ret_sendto", bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"read", "syscall__probe_entry_read", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"read", "syscall__probe_ret_read", bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"recv", "syscall__probe_entry_recv", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"recv", "syscall__probe_ret_recv", bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"recvfrom", "syscall__probe_entry_recv", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"recvfrom", "syscall__probe_ret_recv", bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"close", "syscall__probe_close", bpf_probe_attach_type::BPF_PROBE_ENTRY},
   };
+
   // TODO(oazizi): Remove send and recv probes once we are confident that they don't trace anything.
   //               Note that send/recv are not in the syscall table
   //               (https://filippo.io/linux-syscall-table/), but are defined as SYSCALL_DEFINE4 in

@@ -597,7 +597,7 @@ done:
   return 0;
 }
 
-int probe_close(struct pt_regs* ctx, int fd) {
+static int probe_close_impl(struct pt_regs* ctx, int fd) {
   if (fd < 0) {
     DLOG_TEXT(ctx, "probe_close(), fd < 0");
     return 0;
@@ -618,63 +618,68 @@ int probe_close(struct pt_regs* ctx, int fd) {
  * BPF syscall probe function entry-points
  ***********************************************************/
 
-int probe_entry_connect(struct pt_regs* ctx, int sockfd, struct sockaddr* addr, size_t addrlen) {
+int syscall__probe_entry_connect(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
+                                 size_t addrlen) {
   return probe_entry_connect_impl(ctx, sockfd, addr, addrlen);
 }
 
-int probe_ret_connect(struct pt_regs* ctx) { return probe_ret_connect_impl(ctx); }
+int syscall__probe_ret_connect(struct pt_regs* ctx) { return probe_ret_connect_impl(ctx); }
 
-int probe_entry_accept(struct pt_regs* ctx, int sockfd, struct sockaddr* addr, size_t* addrlen) {
+int syscall__probe_entry_accept(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
+                                size_t* addrlen) {
   return probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
 }
 
-int probe_ret_accept(struct pt_regs* ctx) { return probe_ret_accept_impl(ctx); }
+int syscall__probe_ret_accept(struct pt_regs* ctx) { return probe_ret_accept_impl(ctx); }
 
-int probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockaddr* addr, size_t* addrlen) {
+int syscall__probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
+                                 size_t* addrlen) {
   return probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
 }
 
-int probe_ret_accept4(struct pt_regs* ctx) { return probe_ret_accept_impl(ctx); }
+int syscall__probe_ret_accept4(struct pt_regs* ctx) { return probe_ret_accept_impl(ctx); }
 
-int probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t count) {
+int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_write_send(ctx, fd, buf, count);
 }
 
-int probe_ret_write(struct pt_regs* ctx) {
+int syscall__probe_ret_write(struct pt_regs* ctx) {
   return probe_ret_write_send(ctx, kEventTypeSyscallWriteEvent);
 }
 
-int probe_entry_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
+int syscall__probe_entry_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_write_send(ctx, fd, buf, count);
 }
 
-int probe_ret_send(struct pt_regs* ctx) {
+int syscall__probe_ret_send(struct pt_regs* ctx) {
   return probe_ret_write_send(ctx, kEventTypeSyscallSendEvent);
 }
 
-int probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t count) {
+int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_read_recv(ctx, fd, buf, count, kEventTypeSyscallReadEvent);
 }
 
-int probe_ret_read(struct pt_regs* ctx) {
+int syscall__probe_ret_read(struct pt_regs* ctx) {
   return probe_ret_read_recv(ctx, kEventTypeSyscallReadEvent);
 }
 
-int probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
+int syscall__probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_read_recv(ctx, fd, buf, count, kEventTypeSyscallRecvEvent);
 }
 
-int probe_ret_recv(struct pt_regs* ctx) {
+int syscall__probe_ret_recv(struct pt_regs* ctx) {
   return probe_ret_read_recv(ctx, kEventTypeSyscallRecvEvent);
 }
 
-int probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t count) {
+int syscall__probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_write_send(ctx, fd, buf, count);
 }
 
-int probe_ret_sendto(struct pt_regs* ctx) {
+int syscall__probe_ret_sendto(struct pt_regs* ctx) {
   return probe_ret_write_send(ctx, kEventTypeSyscallSendEvent);
 }
+
+int syscall__probe_close(struct pt_regs* ctx, unsigned int fd) { return probe_close_impl(ctx, fd); }
 
 // TODO(oazizi): Look into the following opens:
 // 1) Should we trace sendmsg(), which is another syscall, but with a different interface?
