@@ -2,7 +2,9 @@
 
 #include <cstddef>
 #include <cstring>
+#include <memory>
 #include <string>
+#include <utility>
 
 extern "C" {
 #include "src/stirling/bcc_bpf/socket_trace.h"
@@ -38,6 +40,15 @@ struct SocketDataEvent {
   socket_data_event_t::attr_t attr;
   // TODO(oazizi/yzhao): Eventually, we will write the data into a buffer that can be used for later
   // parsing. By then, msg can be changed to string_view.
+  std::string msg;
+};
+
+struct TimestampedData {
+  explicit TimestampedData(std::unique_ptr<SocketDataEvent> event) {
+    timestamp_ns = event->attr.timestamp_ns;
+    msg = std::move(event->msg);
+  }
+  uint64_t timestamp_ns;
   std::string msg;
 };
 

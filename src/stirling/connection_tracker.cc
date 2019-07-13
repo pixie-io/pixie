@@ -44,19 +44,19 @@ void ConnectionTracker::AddConnCloseEvent(conn_info_t conn_info) {
   MarkForDeath();
 }
 
-void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
+void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ <= kDeathCountdownIters)
       << absl::Substitute(
              "Did not expect to receive Data event after Close [PID=$0, FD=$1, generation=$2].",
-             event.attr.conn_id.pid, event.attr.conn_id.fd, event.attr.conn_id.generation);
+             event->attr.conn_id.pid, event->attr.conn_id.fd, event->attr.conn_id.generation);
 
-  UpdateTimestamps(event.attr.timestamp_ns);
-  SetPID(event.attr.conn_id);
-  SetTrafficClass(event.attr.traffic_class);
+  UpdateTimestamps(event->attr.timestamp_ns);
+  SetPID(event->attr.conn_id);
+  SetTrafficClass(event->attr.traffic_class);
 
-  const uint64_t seq_num = event.attr.seq_num;
+  const uint64_t seq_num = event->attr.seq_num;
 
-  switch (event.attr.event_type) {
+  switch (event->attr.event_type) {
     case kEventTypeSyscallWriteEvent:
     case kEventTypeSyscallSendEvent: {
       send_data_.AddEvent(seq_num, std::move(event));
@@ -69,7 +69,7 @@ void ConnectionTracker::AddDataEvent(SocketDataEvent event) {
     } break;
     default:
       LOG(ERROR) << absl::Substitute("AddDataEvent() unexpected event type $0",
-                                     event.attr.event_type);
+                                     event->attr.event_type);
   }
 }
 
@@ -175,8 +175,8 @@ void ConnectionTracker::HandleInactivity() {
   }
 }
 
-void DataStream::AddEvent(uint64_t seq_num, SocketDataEvent event) {
-  auto res = events_.emplace(seq_num, event);
+void DataStream::AddEvent(uint64_t seq_num, std::unique_ptr<SocketDataEvent> event) {
+  auto res = events_.emplace(seq_num, TimestampedData(std::move(event)));
   LOG_IF(ERROR, !res.second) << "Clobbering data event";
   has_new_events_ = true;
 }
@@ -218,12 +218,12 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
     // First message may have been partially processed by a previous call to this function.
     // In such cases, the offset will be non-zero, and we need a sub-string of the first event.
     if (offset_ != 0) {
-      CHECK(offset_ < event.attr.msg_size);
-      msg = msg.substr(offset_, event.attr.msg_size - offset_);
+      CHECK(offset_ < event.msg.size());
+      msg = msg.substr(offset_, event.msg.size() - offset_);
       offset_ = 0;
     }
 
-    parser.Append(msg, event.attr.timestamp_ns);
+    parser.Append(msg, event.timestamp_ns);
     msgs.push_back(msg);
     next_seq_num++;
   }

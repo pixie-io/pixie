@@ -249,7 +249,7 @@ class SocketTraceConnector : public SourceConnector {
   // TODO(oazizi/yzhao): These all operate based on pass-by-value, which copies.
   //                     The Handle* functions should call make_unique() of new corresponding
   //                     objects, and these functions should take unique_ptrs.
-  void AcceptDataEvent(SocketDataEvent event);
+  void AcceptDataEvent(std::unique_ptr<SocketDataEvent> event);
   void AcceptOpenConnEvent(conn_info_t conn_info);
   void AcceptCloseConnEvent(conn_info_t conn_info);
 

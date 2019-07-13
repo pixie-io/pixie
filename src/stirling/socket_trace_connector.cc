@@ -160,7 +160,7 @@ void SocketTraceConnector::ReadPerfBuffer(uint32_t table_num) {
 void SocketTraceConnector::HandleHTTPProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  connector->AcceptDataEvent(SocketDataEvent(data));
+  connector->AcceptDataEvent(std::make_unique<SocketDataEvent>(data));
 }
 
 void SocketTraceConnector::HandleMySQLProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
@@ -203,24 +203,24 @@ uint64_t GetConnMapKey(struct conn_id_t conn_id) {
 
 }  // namespace
 
-void SocketTraceConnector::AcceptDataEvent(SocketDataEvent event) {
-  const uint64_t conn_map_key = GetConnMapKey(event.attr.conn_id);
+void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> event) {
+  const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
 
   // Need to adjust the clocks to convert to real time.
-  event.attr.timestamp_ns += ClockRealTimeOffset();
+  event->attr.timestamp_ns += ClockRealTimeOffset();
 
-  switch (event.attr.traffic_class.protocol) {
+  switch (event->attr.traffic_class.protocol) {
     case kProtocolHTTP:
     case kProtocolHTTP2:
       break;
     default:
       LOG(WARNING) << absl::Substitute("AcceptDataEvent ignored due to unknown protocol: $0",
-                                       event.attr.traffic_class.protocol);
+                                       event->attr.traffic_class.protocol);
       return;
   }
 
-  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event.attr.conn_id.generation];
+  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.generation];
   tracker.AddDataEvent(std::move(event));
 }
 

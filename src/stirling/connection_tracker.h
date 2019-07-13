@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <map>
+#include <memory>
 #include <string>
 #include <utility>
 #include <variant>
@@ -47,7 +48,7 @@ class DataStream {
    * @param seq_num The sequence number where to place the data.
    * @param event The data.
    */
-  void AddEvent(uint64_t seq_num, SocketDataEvent event);
+  void AddEvent(uint64_t seq_num, std::unique_ptr<SocketDataEvent> event);
 
   /**
    * @brief Parses as many messages as it can from the raw events into the messages container.
@@ -73,9 +74,7 @@ class DataStream {
  private:
   // Raw data events from BPF.
   // TODO(oazizi/yzhao): Convert this to vector or deque.
-  // TODO(oazizi): Instead of SocketDataEvent, we should only hold the actual data.
-  //               Currently we have a lot of repeated fields.
-  std::map<uint64_t, SocketDataEvent> events_;
+  std::map<uint64_t, TimestampedData> events_;
 
   // To support partially processed events,
   // the stream may start at an offset in the first raw data event.
@@ -125,7 +124,7 @@ class ConnectionTracker {
    *
    * @param event The data event from BPF.
    */
-  void AddDataEvent(SocketDataEvent event);
+  void AddDataEvent(std::unique_ptr<SocketDataEvent> event);
 
   /**
    * @brief Get the protocol for this connection.

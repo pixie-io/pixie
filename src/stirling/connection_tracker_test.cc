@@ -28,21 +28,22 @@ class ConnectionTrackerTest : public ::testing::Test {
     return conn_info;
   }
 
-  SocketDataEvent InitSendEvent(std::string_view msg, uint64_t ts_ns) {
-    SocketDataEvent event = InitDataEvent(kEventTypeSyscallSendEvent, msg, ts_ns);
-    event.attr.seq_num = send_seq_num_;
+  std::unique_ptr<SocketDataEvent> InitSendEvent(std::string_view msg, uint64_t ts_ns) {
+    std::unique_ptr<SocketDataEvent> event = InitDataEvent(kEventTypeSyscallSendEvent, msg, ts_ns);
+    event->attr.seq_num = send_seq_num_;
     send_seq_num_++;
     return event;
   }
 
-  SocketDataEvent InitRecvEvent(std::string_view msg, uint64_t ts_ns) {
-    SocketDataEvent event = InitDataEvent(kEventTypeSyscallRecvEvent, msg, ts_ns);
-    event.attr.seq_num = recv_seq_num_;
+  std::unique_ptr<SocketDataEvent> InitRecvEvent(std::string_view msg, uint64_t ts_ns) {
+    std::unique_ptr<SocketDataEvent> event = InitDataEvent(kEventTypeSyscallRecvEvent, msg, ts_ns);
+    event->attr.seq_num = recv_seq_num_;
     recv_seq_num_++;
     return event;
   }
 
-  SocketDataEvent InitDataEvent(EventType event_type, std::string_view msg, uint64_t ts_ns) {
+  std::unique_ptr<SocketDataEvent> InitDataEvent(EventType event_type, std::string_view msg,
+                                                 uint64_t ts_ns) {
     socket_data_event_t event = {};
     event.attr.event_type = event_type;
     event.attr.traffic_class.protocol = kProtocolHTTP;
@@ -53,7 +54,7 @@ class ConnectionTrackerTest : public ::testing::Test {
     event.attr.conn_id.generation = kPIDFDGeneration;
     event.attr.msg_size = msg.size();
     msg.copy(event.msg, msg.size());
-    return SocketDataEvent(&event);
+    return std::make_unique<SocketDataEvent>(&event);
   }
 
   conn_info_t InitClose(uint64_t ts_ns) {
@@ -77,28 +78,28 @@ TEST_F(ConnectionTrackerTest, timestamp_test) {
   uint64_t time = 0;
 
   conn_info_t conn = InitConn(++time);
-  SocketDataEvent event0 = InitSendEvent("event0", ++time);
-  SocketDataEvent event1 = InitRecvEvent("event1", ++time);
-  SocketDataEvent event2 = InitSendEvent("event2", ++time);
-  SocketDataEvent event3 = InitRecvEvent("event3", ++time);
-  SocketDataEvent event4 = InitSendEvent("event4", ++time);
-  SocketDataEvent event5 = InitRecvEvent("event5", ++time);
+  std::unique_ptr<SocketDataEvent> event0 = InitSendEvent("event0", ++time);
+  std::unique_ptr<SocketDataEvent> event1 = InitRecvEvent("event1", ++time);
+  std::unique_ptr<SocketDataEvent> event2 = InitSendEvent("event2", ++time);
+  std::unique_ptr<SocketDataEvent> event3 = InitRecvEvent("event3", ++time);
+  std::unique_ptr<SocketDataEvent> event4 = InitSendEvent("event4", ++time);
+  std::unique_ptr<SocketDataEvent> event5 = InitRecvEvent("event5", ++time);
   conn_info_t close_conn = InitClose(++time);
 
   EXPECT_EQ(0, tracker.last_bpf_timestamp_ns());
   tracker.AddConnOpenEvent(conn);
   EXPECT_EQ(1, tracker.last_bpf_timestamp_ns());
-  tracker.AddDataEvent(event0);
+  tracker.AddDataEvent(std::move(event0));
   EXPECT_EQ(2, tracker.last_bpf_timestamp_ns());
-  tracker.AddDataEvent(event1);
+  tracker.AddDataEvent(std::move(event1));
   EXPECT_EQ(3, tracker.last_bpf_timestamp_ns());
-  tracker.AddDataEvent(event5);
+  tracker.AddDataEvent(std::move(event5));
   EXPECT_EQ(7, tracker.last_bpf_timestamp_ns());
-  tracker.AddDataEvent(event2);
+  tracker.AddDataEvent(std::move(event2));
   EXPECT_EQ(7, tracker.last_bpf_timestamp_ns());
-  tracker.AddDataEvent(event3);
+  tracker.AddDataEvent(std::move(event3));
   EXPECT_EQ(7, tracker.last_bpf_timestamp_ns());
-  tracker.AddDataEvent(event4);
+  tracker.AddDataEvent(std::move(event4));
   EXPECT_EQ(7, tracker.last_bpf_timestamp_ns());
   tracker.AddConnCloseEvent(close_conn);
   EXPECT_EQ(8, tracker.last_bpf_timestamp_ns());
