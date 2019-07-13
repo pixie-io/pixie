@@ -93,9 +93,9 @@ class DataStream {
   // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
   std::variant<std::monostate, std::deque<HTTPMessage>, std::deque<http2::Frame> > messages_;
 
-  // TODO(oazizi): Use the following variable to skip work on ExtractMessages() when nothing has
-  // changed.
-  // bool touched_ = false;
+  // The following state keeps track of whether the raw events were touched or not since the last
+  // call to ExtractMessages(). It enables ExtractMessages() to exit early if nothing has changed.
+  bool has_new_events_ = false;
 };
 
 /**
@@ -282,7 +282,7 @@ class ConnectionTracker {
   }
 
   /**
-   * @bref Resets the inactivity duration to the default value.
+   * @brief Resets the inactivity duration to the default value.
    *
    * NOTE: This function is static because it is meant to be used for testing purposes only.
    */

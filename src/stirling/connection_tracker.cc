@@ -178,10 +178,27 @@ void ConnectionTracker::HandleInactivity() {
 void DataStream::AddEvent(uint64_t seq_num, SocketDataEvent event) {
   auto res = events_.emplace(seq_num, event);
   LOG_IF(ERROR, !res.second) << "Clobbering data event";
+  has_new_events_ = true;
 }
 
 template <class TMessageType>
 std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
+  CHECK(std::holds_alternative<std::monostate>(messages_) ||
+        std::holds_alternative<std::deque<TMessageType>>(messages_))
+      << "Must hold the default std::monostate, or the same type as requested. "
+         "I.e., ConnectionTracker cannot change the type it holds during runtime.";
+  if (std::holds_alternative<std::monostate>(messages_)) {
+    // Reset the type to the expected type.
+    messages_ = std::deque<TMessageType>();
+  }
+
+  auto& typed_messages = std::get<std::deque<TMessageType>>(messages_);
+
+  // If no new raw data, then nothing extra to extract. Exit early.
+  if (!has_new_events_) {
+    return typed_messages;
+  }
+
   EventParser<TMessageType> parser;
 
   const size_t orig_offset = offset_;
@@ -211,16 +228,7 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
     next_seq_num++;
   }
 
-  CHECK(std::holds_alternative<std::monostate>(messages_) ||
-        std::holds_alternative<std::deque<TMessageType>>(messages_))
-      << "Must hold the default std::monostate, or the same type as requested. "
-         "I.e., ConnectionTracker cannot change the type it holds during runtime.";
-  if (std::holds_alternative<std::monostate>(messages_)) {
-    // Reset the type to the expected type.
-    messages_ = std::deque<TMessageType>();
-  }
   // Now parse all the appended events.
-  auto& typed_messages = std::get<std::deque<TMessageType>>(messages_);
   ParseResult<BufferPosition> parse_result = parser.ParseMessages(type, &typed_messages);
 
   // If we weren't able to process anything new, then the offset should be the same as last time.
@@ -233,6 +241,8 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
   std::advance(erase_iter, parse_result.end_position.seq_num);
   events_.erase(events_.begin(), erase_iter);
   offset_ = parse_result.end_position.offset;
+
+  has_new_events_ = false;
 
   return typed_messages;
 }
