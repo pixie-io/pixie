@@ -26,7 +26,7 @@ class Rule {
    * @return false: if the rule does nothing to the graph.
    * @return Status: error if something goes wrong during the rule application.
    */
-  StatusOr<bool> Execute(IR* ir_graph) const;
+  virtual StatusOr<bool> Execute(IR* ir_graph) const;
 
  protected:
   /**
