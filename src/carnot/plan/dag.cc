@@ -23,7 +23,7 @@ void DAG::AddNode(int64_t node) {
   reverse_edges_by_node_[node] = {};
 }
 
-bool DAG::HasNode(int64_t node) { return nodes_.find(node) != end(nodes_); }
+bool DAG::HasNode(int64_t node) const { return nodes_.find(node) != end(nodes_); }
 
 void DAG::DeleteNode(int64_t node) {
   if (!HasNode(node)) {

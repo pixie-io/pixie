@@ -258,6 +258,75 @@ StatusOr<bool> OperatorRelationRule::SetOther(OperatorIR* operator_ir) const {
   return true;
 }
 
+StatusOr<bool> RangeArgExpressionRule::Apply(IRNode* ir_node) const {
+  PL_UNUSED(ir_node);
+  if (match(ir_node, Range(Int(), Int()))) {
+    return false;
+  } else if (match(ir_node, Range())) {
+    RangeIR* range = static_cast<RangeIR*>(ir_node);
+    IRNode* start = range->start_repr();
+    IRNode* stop = range->stop_repr();
+    PL_ASSIGN_OR_RETURN(start, EvalExpression(start));
+    PL_ASSIGN_OR_RETURN(stop, EvalExpression(stop));
+    PL_RETURN_IF_ERROR(range->SetStartStop(start, stop));
+    return true;
+  }
+  return false;
+}
+
+StatusOr<IntIR*> RangeArgExpressionRule::EvalExpression(IRNode* node) const {
+  if (match(node, Int())) {
+    return static_cast<IntIR*>(node);
+  } else if (match(node, CompileTimeFunc())) {
+    auto func_node = static_cast<FuncIR*>(node);
+    std::vector<IntIR*> evaled_args;
+    for (const auto ag : func_node->args()) {
+      PL_ASSIGN_OR_RETURN(auto eval_result, EvalExpression(ag));
+      evaled_args.push_back(eval_result);
+    }
+    PL_ASSIGN_OR_RETURN(auto node_result, EvalFunc(func_node->func_name(), evaled_args, func_node));
+    return node_result;
+  } else if (match(node, String())) {
+    // Do the string processing
+    auto str_node = static_cast<StringIR*>(node);
+    // TODO(philkuz) (PL-708) make StringToTimeInt also take time_now as an argument.
+    PL_ASSIGN_OR_RETURN(int64_t int_val, StringToTimeInt(str_node->str()));
+    int64_t time_repr = compiler_state_->time_now().val + int_val;
+    PL_ASSIGN_OR_RETURN(auto out_node, node->graph_ptr()->MakeNode<IntIR>());
+    PL_RETURN_IF_ERROR(out_node->Init(time_repr, node->ast_node()));
+    return out_node;
+  }
+  return node->CreateIRNodeError(
+      "Expected integer, time expression, or a string representation of time, not $0",
+      node->type_string());
+}
+StatusOr<IntIR*> RangeArgExpressionRule::EvalFunc(std::string name, std::vector<IntIR*> evaled_args,
+                                                  FuncIR* func) const {
+  if (evaled_args.size() != 2) {
+    return func->CreateIRNodeError("Expected 2 argument to $0 call, got $1.", name,
+                                   evaled_args.size());
+  }
+  int64_t result = 0;
+  // TODO(philkuz) (PL-709) Make a UDCF (C := CompileTime) to combine these together.
+  if (name == "plc.multiply") {
+    result = 1;
+    for (auto a : evaled_args) {
+      result *= a->val();
+    }
+  } else if (name == "plc.add") {
+    for (auto a : evaled_args) {
+      result += a->val();
+    }
+  } else if (name == "plc.subtract") {
+    result = evaled_args[0]->val() - evaled_args[1]->val();
+  } else {
+    return func->CreateIRNodeError("Only allowing [multiply, add, subtract], not $0", name);
+  }
+  PL_ASSIGN_OR_RETURN(IntIR * ir_result, func->graph_ptr()->MakeNode<IntIR>());
+  PL_RETURN_IF_ERROR(ir_result->Init(result, func->ast_node()));
+  return ir_result;
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

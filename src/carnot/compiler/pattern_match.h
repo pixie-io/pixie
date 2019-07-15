@@ -400,6 +400,77 @@ inline AnyRelationResolvedOpMatch<false, true> UnresolvedReadyOp() {
   return AnyRelationResolvedOpMatch<false, true>();
 }
 
+/**
+ * @brief Match Range based on the start stop arguments.
+ *
+ * @tparam LHS_t: the matcher of the lhs side.
+ * @tparam RHS_t: the matcher of the rhs side.
+ * @tparam Commutable: whether we can swap lhs and rhs.
+ */
+template <typename LHS_t, typename RHS_t, bool Commutable = false>
+struct RangeArgMatch : public ParentMatch {
+  LHS_t L;
+  RHS_t R;
+  bool is_commutable = Commutable;
+
+  // The evaluation order is always stable, regardless of Commutability.
+  // The LHS is always matched first.
+  RangeArgMatch(const LHS_t& LHS, const RHS_t& RHS)
+      : ParentMatch(IRNodeType::kRange), L(LHS), R(RHS) {}
+
+  bool match(IRNode* V) const override {
+    if (V->type() == IRNodeType::kRange) {
+      auto* r = static_cast<RangeIR*>(V);
+      return (L.match(r->start_repr()) && R.match(r->stop_repr())) ||
+             (is_commutable && L.match(r->start_repr()) && R.match(r->stop_repr()));
+    }
+    return false;
+  }
+};
+
+/**
+ * @brief Match range that has (start_repr,stop_repr) match (lhs, rhs).
+ */
+template <typename LHS_t, typename RHS_t>
+inline RangeArgMatch<LHS_t, RHS_t, false> Range(LHS_t lhs, RHS_t rhs) {
+  return RangeArgMatch<LHS_t, RHS_t, false>(lhs, rhs);
+}
+
+/**
+ * @brief Match range operator regardless of the
+ */
+inline ClassMatch<IRNodeType::kRange> Range() { return ClassMatch<IRNodeType::kRange>(); }
+
+/**
+ * @brief Match Range based on the start stop arguments.
+ *
+ * @tparam LHS_t: the matcher of the lhs side.
+ * @tparam RHS_t: the matcher of the rhs side.
+ * @tparam Commutable: whether we can swap lhs and rhs.
+ */
+template <bool CompileTime = false>
+struct FuncMatch : public ParentMatch {
+  bool compile_time = CompileTime;
+
+  // The evaluation order is always stable, regardless of Commutability.
+  // The LHS is always matched first.
+  FuncMatch() : ParentMatch(IRNodeType::kFunc) {}
+
+  bool match(IRNode* V) const override {
+    if (V->type() == IRNodeType::kFunc) {
+      auto* f = static_cast<FuncIR*>(V);
+      return f->is_compile_time() == compile_time;
+    }
+    return false;
+  }
+};
+
+/**
+ * @brief Match range operator regardless of the
+ */
+inline FuncMatch<true> CompileTimeFunc() { return FuncMatch<true>(); }
+inline FuncMatch<false> RunTimeFunc() { return FuncMatch<false>(); }
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

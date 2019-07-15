@@ -153,7 +153,10 @@ class IR {
   plan::DAG& dag() { return dag_; }
   const plan::DAG& dag() const { return dag_; }
   std::string DebugString();
-  IRNode* Get(int64_t id) const { return id_node_map_.at(id).get(); }
+  IRNode* Get(int64_t id) const {
+    DCHECK(dag_.HasNode(id)) << "DAG doesn't have node: " << id;
+    return id_node_map_.at(id).get();
+  }
   size_t size() const { return id_node_map_.size(); }
   StatusOr<std::vector<IRNode*>> GetSinks() {
     std::vector<IRNode*> nodes;

@@ -589,6 +589,229 @@ TEST_F(OperatorRelationTest, propogate_test) {
   ASSERT_OK(result);
   EXPECT_FALSE(result.ValueOrDie());
 }
+class CompilerTimeExpressionTest : public RulesTest {
+ protected:
+  void SetUp() override {
+    RulesTest::SetUp();
+    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
+  }
+  FuncIR* MakeConstantAddition(int64_t l, int64_t r) {
+    auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(constant1->Init(l, ast));
+
+    auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(constant2->Init(r, ast));
+    auto func = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, "plc",
+                         std::vector<ExpressionIR*>({constant1, constant2}),
+                         true /* compile_time */, ast));
+    return func;
+  }
+  RangeIR* MakeRange(IRNode* start, IRNode* stop) {
+    RangeIR* range = graph->MakeNode<RangeIR>().ValueOrDie();
+    EXPECT_OK(range->Init(mem_src, start, stop, ast));
+    return range;
+  }
+  MemorySourceIR* mem_src;
+};
+
+TEST_F(CompilerTimeExpressionTest, one_argument_function) {
+  auto start = MakeConstantAddition(4, 6);
+  auto stop = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(stop->Init(13, ast));
+
+  RangeIR* range = MakeRange(start, stop);
+  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  IRNode* res_start_repr = range->start_repr();
+  IRNode* res_stop_repr = range->stop_repr();
+  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
+  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
+  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 10);
+  // Make sure that we don't manipulate the start value.
+  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), 13);
+}
+
+TEST_F(CompilerTimeExpressionTest, two_argument_function) {
+  RangeIR* range = MakeRange(MakeConstantAddition(4, 6), MakeConstantAddition(123, 321));
+  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  IRNode* res_start_repr = range->start_repr();
+  IRNode* res_stop_repr = range->stop_repr();
+  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
+  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
+  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 10);
+  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), 444);
+}
+
+TEST_F(CompilerTimeExpressionTest, one_argument_string) {
+  int64_t num_minutes_ago = 2;
+  std::chrono::nanoseconds exp_time = std::chrono::minutes(num_minutes_ago);
+  int64_t expected_time = time_now - exp_time.count();
+  std::string stop_str_repr = absl::Substitute("-$0m", num_minutes_ago);
+
+  auto stop = graph->MakeNode<StringIR>().ValueOrDie();
+  EXPECT_OK(stop->Init(stop_str_repr, ast));
+
+  auto start = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(start->Init(10, ast));
+
+  RangeIR* range = MakeRange(start, stop);
+  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  IRNode* res_start_repr = range->start_repr();
+  IRNode* res_stop_repr = range->stop_repr();
+  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
+  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
+  // Make sure that we don't manipulate the start value.
+  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 10);
+  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), expected_time);
+}
+
+TEST_F(CompilerTimeExpressionTest, two_argument_string) {
+  int64_t start_num_minutes_ago = 2;
+  int64_t stop_num_minutes_ago = 1;
+  std::chrono::nanoseconds exp_stop_time = std::chrono::minutes(stop_num_minutes_ago);
+  int64_t expected_stop_time = time_now - exp_stop_time.count();
+  std::string stop_str_repr = absl::Substitute("-$0m", stop_num_minutes_ago);
+
+  std::chrono::nanoseconds exp_start_time = std::chrono::minutes(start_num_minutes_ago);
+  int64_t expected_start_time = time_now - exp_start_time.count();
+  std::string start_str_repr = absl::Substitute("-$0m", start_num_minutes_ago);
+
+  auto start = graph->MakeNode<StringIR>().ValueOrDie();
+  EXPECT_OK(start->Init(start_str_repr, ast));
+
+  auto stop = graph->MakeNode<StringIR>().ValueOrDie();
+  EXPECT_OK(stop->Init(stop_str_repr, ast));
+
+  RangeIR* range = MakeRange(start, stop);
+  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  IRNode* res_start_repr = range->start_repr();
+  IRNode* res_stop_repr = range->stop_repr();
+  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
+  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
+  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), expected_start_time);
+  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), expected_stop_time);
+}
+
+TEST_F(CompilerTimeExpressionTest, nested_function) {
+  IntIR* constant = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(constant->Init(111, ast));
+  IntIR* start = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(start->Init(10, ast));
+  FuncIR* stop = graph->MakeNode<FuncIR>().ValueOrDie();
+  EXPECT_OK(stop->Init({FuncIR::Opcode::add, "+", "add"}, "plc",
+                       std::vector<ExpressionIR*>({MakeConstantAddition(123, 321), constant}),
+                       true /* compile_time */, ast));
+
+  RangeIR* range = MakeRange(start, stop);
+  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  IRNode* res_start_repr = range->start_repr();
+  IRNode* res_stop_repr = range->stop_repr();
+  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
+  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
+  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 10);
+  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), 555);
+}
+
+TEST_F(CompilerTimeExpressionTest, subtraction_handling) {
+  IntIR* constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(constant1->Init(111, ast));
+  IntIR* constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(constant2->Init(11, ast));
+  IntIR* start = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(start->Init(10, ast));
+  FuncIR* stop = graph->MakeNode<FuncIR>().ValueOrDie();
+  EXPECT_OK(stop->Init({FuncIR::Opcode::sub, "-", "subtract"}, "plc",
+                       std::vector<ExpressionIR*>({constant1, constant2}), true /* compile_time */,
+                       ast));
+
+  RangeIR* range = MakeRange(start, stop);
+  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  IRNode* res_start_repr = range->start_repr();
+  IRNode* res_stop_repr = range->stop_repr();
+  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
+  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
+  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 10);
+  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), 100);
+}
+
+TEST_F(CompilerTimeExpressionTest, multiplication_handling) {
+  IntIR* constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(constant1->Init(3, ast));
+  IntIR* constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(constant2->Init(8, ast));
+  IntIR* start = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(start->Init(10, ast));
+  FuncIR* stop = graph->MakeNode<FuncIR>().ValueOrDie();
+  EXPECT_OK(stop->Init({FuncIR::Opcode::mult, "*", "multiply"}, "plc",
+                       std::vector<ExpressionIR*>({constant1, constant2}), true /* compile_time */,
+                       ast));
+
+  RangeIR* range = MakeRange(start, stop);
+  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  IRNode* res_start_repr = range->start_repr();
+  IRNode* res_stop_repr = range->stop_repr();
+  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
+  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
+  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 10);
+  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), 24);
+}
+
+TEST_F(CompilerTimeExpressionTest, already_completed) {
+  IntIR* constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(constant1->Init(24, ast));
+  IntIR* constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+  EXPECT_OK(constant2->Init(8, ast));
+
+  RangeIR* range = MakeRange(constant1, constant2);
+  RangeArgExpressionRule compiler_expr_rule(compiler_state_.get());
+
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+
+  IRNode* res_start_repr = range->start_repr();
+  IRNode* res_stop_repr = range->stop_repr();
+  ASSERT_EQ(res_start_repr->type(), IRNodeType::kInt);
+  ASSERT_EQ(res_stop_repr->type(), IRNodeType::kInt);
+  EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 24);
+  EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), 8);
+}
 
 }  // namespace compiler
 }  // namespace carnot

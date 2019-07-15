@@ -99,6 +99,26 @@ class OperatorRelationRule : public Rule {
   StatusOr<bool> SetOther(OperatorIR* op) const;
 };
 
+class RangeArgExpressionRule : public Rule {
+  /**
+   * @brief CompilerExpressionRule handles the execution of compiler functions
+   * for things like Range operator arguments.
+   *
+   * ie
+   * df.Range(start = plc.now() - plc.minutes(2), end = plc.now())
+   * should be evaluated to the integer values.
+   * df.Range(start = 15191289803, end = 15191500000)
+   *
+   */
+ public:
+  explicit RangeArgExpressionRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) const override;
+  StatusOr<IntIR*> EvalExpression(IRNode* ir_node) const;
+  StatusOr<IntIR*> EvalFunc(std::string name, std::vector<IntIR*> evaled_args, FuncIR* func) const;
+};
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
