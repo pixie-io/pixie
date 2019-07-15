@@ -1,4 +1,4 @@
-#include "src/shared/grpc/utils.h"
+#include "src/common/grpcutils/utils.h"
 
 #include "src/common/testing/testing.h"
 

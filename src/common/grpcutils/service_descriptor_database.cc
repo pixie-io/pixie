@@ -1,4 +1,4 @@
-#include "src/shared/grpc/service_descriptor_database.h"
+#include "src/common/grpcutils/service_descriptor_database.h"
 
 #include <string>
 

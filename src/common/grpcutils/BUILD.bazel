@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -11,8 +11,26 @@ pl_cc_library(
         ],
         exclude = ["**/*_test.cc"],
     ),
-    hdrs = ["grpcutils.h"],
+    hdrs = glob(["*.h"]),
     deps = [
         "@com_github_grpc_grpc//:grpc++",
+    ],
+)
+
+pl_cc_test(
+    name = "utils_test",
+    srcs = ["utils_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "service_descriptor_database_test",
+    srcs = ["service_descriptor_database_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing:cc_library",
     ],
 )
