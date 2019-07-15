@@ -67,6 +67,7 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create etcd metadata store")
 	}
+	defer etcdMds.Close()
 
 	// TODO(michelle): Add code for leader election. For now, since we only have one metadata
 	// service, it is always the leader.

@@ -65,11 +65,17 @@ type AgentManagerImpl struct {
 	clock    utils.Clock
 	mds      MetadataStore
 	updateCh chan *AgentUpdate
+	sess       *concurrency.Session
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
 func NewAgentManagerWithClock(client *clientv3.Client, mds MetadataStore, isLeader bool, clock utils.Clock) *AgentManagerImpl {
 	c := make(chan *AgentUpdate)
+
+	sess, err := concurrency.NewSession(client, concurrency.WithContext(context.Background()))
+	if err != nil {
+		log.WithError(err).Fatal("Could not create new session for etcd")
+	}
 
 	agentManager := &AgentManagerImpl{
 		client:   client,
@@ -77,6 +83,7 @@ func NewAgentManagerWithClock(client *clientv3.Client, mds MetadataStore, isLead
 		clock:    clock,
 		mds:      mds,
 		updateCh: c,
+		sess:       sess,
 	}
 
 	go agentManager.processAgentUpdates()
@@ -144,12 +151,6 @@ func (m *AgentManagerImpl) CreateAgent(info *AgentInfo) error {
 		return nil
 	}
 	ctx := context.Background()
-	ss, err := concurrency.NewSession(m.client, concurrency.WithContext(ctx))
-	if err != nil {
-		log.WithError(err).Fatal("Could not create new session")
-	}
-
-	defer ss.Close()
 
 	// Check if agent already exists.
 	resp, err := m.client.Get(ctx, GetAgentKeyFromUUID(info.AgentID))
@@ -165,7 +166,7 @@ func (m *AgentManagerImpl) CreateAgent(info *AgentInfo) error {
 		log.WithError(err).Fatal("Failed to execute etcd Get")
 	} else if len(resp.Kvs) != 0 {
 		// Another agent already exists for this hostname. Delete it.
-		m.deleteAgent(ctx, string(resp.Kvs[0].Value), info.Hostname, ss)
+		m.deleteAgent(ctx, string(resp.Kvs[0].Value), info.Hostname)
 	}
 
 	idPb, err := utils.ProtoFromUUID(&info.AgentID)
@@ -185,9 +186,9 @@ func (m *AgentManagerImpl) CreateAgent(info *AgentInfo) error {
 		return errors.New("Unable to marshal agentData pb")
 	}
 
-	mu := concurrency.NewMutex(ss, GetAgentKeyFromUUID(info.AgentID))
+	mu := concurrency.NewMutex(m.sess, GetUpdateKey())
 	mu.Lock(ctx)
-	defer mu.Unlock(ctx)
+	defer mu.Unlock(context.Background())
 
 	hostnameDNE := clientv3util.KeyMissing(GetHostnameAgentKey(info.Hostname))
 	createHostname := clientv3.OpPut(GetHostnameAgentKey(info.Hostname), info.AgentID.String())
@@ -207,11 +208,6 @@ func (m *AgentManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
 		return nil
 	}
 	ctx := context.Background()
-	ss, err := concurrency.NewSession(m.client, concurrency.WithContext(ctx))
-	if err != nil {
-		log.WithError(err).Fatal("Could not create new session")
-	}
-	defer ss.Close()
 
 	// Get current AgentData.
 	resp, err := m.client.Get(ctx, GetAgentKeyFromUUID(agentID))
@@ -228,9 +224,9 @@ func (m *AgentManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
 	proto.Unmarshal(resp.Kvs[0].Value, pb)
 	pb.LastHeartbeatNS = m.clock.Now().UnixNano()
 
-	mu := concurrency.NewMutex(ss, GetAgentKeyFromUUID(agentID))
+	mu := concurrency.NewMutex(m.sess, GetUpdateKey())
 	mu.Lock(ctx)
-	defer mu.Unlock(ctx)
+	defer mu.Unlock(context.Background())
 	err = updateAgentData(agentID, pb, m.client)
 	if err != nil {
 		log.WithError(err).Fatal("Could not update agent data in etcd")
@@ -245,11 +241,11 @@ func (m *AgentManagerImpl) UpdateAgent(info *AgentInfo) error {
 	return nil
 }
 
-func (m *AgentManagerImpl) deleteAgent(ctx context.Context, agentID string, hostname string, ss *concurrency.Session) error {
-	mu := concurrency.NewMutex(ss, GetAgentKey(agentID))
+func (m *AgentManagerImpl) deleteAgent(ctx context.Context, agentID string, hostname string) error {
+	mu := concurrency.NewMutex(m.sess, GetUpdateKey())
 	mu.Lock(ctx)
 
-	defer mu.Unlock(ctx)
+	defer mu.Unlock(context.Background())
 
 	_, err := m.client.Delete(ctx, GetAgentKey(agentID))
 	if err != nil {
@@ -276,11 +272,6 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 	// TODO(michelle): PL-665 Move all etcd-specific functionality into etcd_metadata_store, so that the agent manager itself
 	// is not directly interfacing with etcd.
 	ctx := context.Background()
-	ss, err := concurrency.NewSession(m.client, concurrency.WithContext(ctx))
-	if err != nil {
-		log.WithError(err).Fatal("Could not create new session")
-	}
-	defer ss.Close()
 
 	currentTime := m.clock.Now().UnixNano()
 
@@ -295,7 +286,7 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 			if err != nil {
 				log.WithError(err).Fatal("Could not convert UUID to proto")
 			}
-			err = m.deleteAgent(ctx, uid.String(), agentPb.HostInfo.Hostname, ss)
+			err = m.deleteAgent(ctx, uid.String(), agentPb.HostInfo.Hostname)
 			if err != nil {
 				log.WithError(err).Fatal("Failed to delete agent from etcd")
 			}

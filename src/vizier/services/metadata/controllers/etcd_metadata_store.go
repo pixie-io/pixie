@@ -21,12 +21,19 @@ import (
 // EtcdMetadataStore is the implementation of our metadata store in etcd.
 type EtcdMetadataStore struct {
 	client *clientv3.Client
+	sess     *concurrency.Session
 }
 
 // NewEtcdMetadataStore creates a new etcd metadata store.
 func NewEtcdMetadataStore(client *clientv3.Client) (*EtcdMetadataStore, error) {
+	sess, err := concurrency.NewSession(client, concurrency.WithContext(context.Background()))
+	if err != nil {
+		log.WithError(err).Fatal("Could not create new session for etcd")
+	}
+
 	mds := &EtcdMetadataStore{
 		client: client,
+		sess:     sess,
 	}
 
 	return mds, nil
@@ -136,6 +143,11 @@ func (mds *EtcdMetadataStore) UpdateContainers(containers []*metadatapb.Containe
 
 	// Update containers.
 	var containerOps []clientv3.Op
+
+	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
+	mu.Lock(context.Background())
+	defer mu.Unlock(context.Background())
+
 	for i, resp := range txnresp.Responses {
 		if len(resp.GetResponseRange().Kvs) > 0 {
 			podPb := &metadatapb.Pod{}
@@ -160,6 +172,10 @@ func (mds *EtcdMetadataStore) UpdateContainers(containers []*metadatapb.Containe
 
 // UpdateSchemas updates the given schemas in the metadata store.
 func (mds *EtcdMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*metadatapb.SchemaInfo) error {
+	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
+	mu.Lock(context.Background())
+	defer mu.Unlock(context.Background())
+
 	ops := make([]clientv3.Op, len(schemas))
 	computedSchemaOps := make([]clientv3.Op, len(schemas))
 	for i, schemaPb := range schemas {
@@ -215,18 +231,16 @@ func GetHostnameAgentKey(hostname string) string {
 	return "/hostname/" + hostname + "/agent"
 }
 
-func (mds *EtcdMetadataStore) updateValue(key string, value string) error {
-	ctx := context.Background()
-	ss, err := concurrency.NewSession(mds.client, concurrency.WithContext(ctx))
-	if err != nil {
-		log.WithError(err).Fatal("Could not create new session")
-	}
-	defer ss.Close()
+// GetUpdateKey gets the etcd key that the service should grab a lock on before updating any values in etcd.
+func GetUpdateKey() string {
+	return "/updateKey"
+}
 
-	mu := concurrency.NewMutex(ss, key)
-	mu.Lock(ctx)
-	defer mu.Unlock(ctx)
-	_, err = mds.client.Put(context.Background(), key, value)
+func (mds *EtcdMetadataStore) updateValue(key string, value string) error {
+	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
+	mu.Lock(context.Background())
+	defer mu.Unlock(context.Background())
+	_, err := mds.client.Put(context.Background(), key, value)
 	if err != nil {
 		return errors.New("Unable to update etcd")
 	}
@@ -312,15 +326,8 @@ func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) (*[]messagespb.M
 func (mds *EtcdMetadataStore) GetAgents() (*[]datapb.AgentData, error) {
 	var agents []datapb.AgentData
 
-	ctx := context.Background()
-	ss, err := concurrency.NewSession(mds.client, concurrency.WithContext(ctx))
-	if err != nil {
-		log.WithError(err).Fatal("Could not create new session")
-	}
-	defer ss.Close()
-
 	// Get all agents.
-	resp, err := mds.client.Get(ctx, GetAgentKey(""), clientv3.WithPrefix())
+	resp, err := mds.client.Get(context.Background(), GetAgentKey(""), clientv3.WithPrefix())
 	if err != nil {
 		log.WithError(err).Fatal("Failed to execute etcd Get")
 		return nil, err
@@ -338,4 +345,9 @@ func (mds *EtcdMetadataStore) GetAgents() (*[]datapb.AgentData, error) {
 	}
 
 	return &agents, nil
+}
+
+// Close cleans up the etcd metadata store, such as its etcd session.
+func (mds *EtcdMetadataStore) Close() {
+	mds.sess.Close()
 }
