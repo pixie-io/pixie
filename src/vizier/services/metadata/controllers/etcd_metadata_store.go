@@ -67,6 +67,23 @@ func (mds *EtcdMetadataStore) UpdateEndpoints(e *metadatapb.Endpoints) error {
 	return mds.updateValue(mapKey, strings.Join(podIds, ","))
 }
 
+// GetEndpoints gets all endpoints in the metadata store.
+func (mds *EtcdMetadataStore) GetEndpoints() ([]*metadatapb.Endpoints, error) {
+	resp, err := mds.client.Get(context.Background(), getEndpointsKey(), clientv3.WithPrefix())
+	if err != nil {
+		log.WithError(err).Fatal("Failed to execute etcd Get")
+		return nil, err
+	}
+
+	endpoints := make([]*metadatapb.Endpoints, len(resp.Kvs))
+	for i, kv := range resp.Kvs {
+		pb := &metadatapb.Endpoints{}
+		proto.Unmarshal(kv.Value, pb)
+		endpoints[i] = pb
+	}
+	return endpoints, nil
+}
+
 func getNamespaceFromMetadata(md *metadatapb.ObjectMetadata) string {
 	return getNamespaceFromString(md.Namespace)
 }
@@ -78,8 +95,12 @@ func getNamespaceFromString(ns string) string {
 	return ns
 }
 
+func getEndpointsKey() string {
+	return path.Join("/", "endpoints") + "/"
+}
+
 func getEndpointKey(e *metadatapb.Endpoints) string {
-	return path.Join("/", "endpoints", getNamespaceFromMetadata(e.Metadata), e.Metadata.UID)
+	return path.Join(getEndpointsKey(), getNamespaceFromMetadata(e.Metadata), e.Metadata.UID)
 }
 
 // UpdatePod adds or updates the given pod in the metadata store.
@@ -94,12 +115,33 @@ func (mds *EtcdMetadataStore) UpdatePod(p *metadatapb.Pod) error {
 	return mds.updateValue(key, string(val))
 }
 
+// GetPods gets all pods in the metadata store.
+func (mds *EtcdMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
+	resp, err := mds.client.Get(context.Background(), getPodsKey(), clientv3.WithPrefix())
+	if err != nil {
+		log.WithError(err).Fatal("Failed to execute etcd Get")
+		return nil, err
+	}
+
+	pods := make([]*metadatapb.Pod, len(resp.Kvs))
+	for i, kv := range resp.Kvs {
+		pb := &metadatapb.Pod{}
+		proto.Unmarshal(kv.Value, pb)
+		pods[i] = pb
+	}
+	return pods, nil
+}
+
+func getPodsKey() string {
+	return path.Join("/", "pod") + "/"
+}
+
 func getPodKey(e *metadatapb.Pod) string {
 	return getPodKeyFromStrings(e.Metadata.UID, getNamespaceFromMetadata(e.Metadata))
 }
 
 func getPodKeyFromStrings(uid string, namespace string) string {
-	return path.Join("/", "pod", namespace, uid)
+	return path.Join(getPodsKey(), namespace, uid)
 }
 
 func getContainerKeyFromStrings(namespace string, podName string, containerName string) string {

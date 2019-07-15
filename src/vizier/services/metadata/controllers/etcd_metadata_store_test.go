@@ -413,3 +413,107 @@ func TestGetAgents(t *testing.T) {
 	}
 	assert.Equal(t, UnhealthyAgentUUID, uid.String())
 }
+
+func TestGetPods(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	// Create pods.
+	pod1 := &metadatapb.Pod{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "abcd",
+			Namespace: "test",
+			UID:       "abcd-pod",
+		},
+	}
+	pod1Text, err := pod1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal pod pb")
+	}
+
+	pod2 := &metadatapb.Pod{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "efgh",
+			Namespace: "test",
+			UID:       "efgh-pod",
+		},
+	}
+	pod2Text, err := pod2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal pod pb")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/pod/test/abcd-pod", string(pod1Text))
+	if err != nil {
+		t.Fatal("Unable to add pod to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/pod/test/efgh-pod", string(pod2Text))
+	if err != nil {
+		t.Fatal("Unable to add pod to etcd.")
+	}
+
+	pods, err := mds.GetPods()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(pods))
+
+	assert.Equal(t, pod1.Metadata.Name, (*pods[0]).Metadata.Name)
+	assert.Equal(t, pod2.Metadata.Name, (*pods[1]).Metadata.Name)
+}
+
+func TestGetEndpoints(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	// Create endpoints.
+	e1 := &metadatapb.Endpoints{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "abcd",
+			Namespace: "test",
+			UID:       "abcd",
+		},
+	}
+	e1Text, err := e1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal endpoint pb")
+	}
+
+	e2 := &metadatapb.Endpoints{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "efgh",
+			Namespace: "test",
+			UID:       "efgh",
+		},
+	}
+	e2Text, err := e2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal endpoint pb")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/endpoints/test/abcd", string(e1Text))
+	if err != nil {
+		t.Fatal("Unable to add endpoint to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/endpoints/test/efgh", string(e2Text))
+	if err != nil {
+		t.Fatal("Unable to add endpoint to etcd.")
+	}
+
+	eps, err := mds.GetEndpoints()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(eps))
+
+	assert.Equal(t, e1.Metadata.Name, (*eps[0]).Metadata.Name)
+	assert.Equal(t, e2.Metadata.Name, (*eps[1]).Metadata.Name)
+}

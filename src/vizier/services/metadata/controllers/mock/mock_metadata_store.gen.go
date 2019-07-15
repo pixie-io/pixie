@@ -86,6 +86,19 @@ func (mr *MockMetadataStoreMockRecorder) GetAgentsForHostnames(arg0 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentsForHostnames", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentsForHostnames), arg0)
 }
 
+// GetEndpoints mocks base method
+func (m *MockMetadataStore) GetEndpoints() ([]*metadatapb.Endpoints, error) {
+	ret := m.ctrl.Call(m, "GetEndpoints")
+	ret0, _ := ret[0].([]*metadatapb.Endpoints)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEndpoints indicates an expected call of GetEndpoints
+func (mr *MockMetadataStoreMockRecorder) GetEndpoints() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEndpoints", reflect.TypeOf((*MockMetadataStore)(nil).GetEndpoints))
+}
+
 // GetFromAgentQueue mocks base method
 func (m *MockMetadataStore) GetFromAgentQueue(arg0 string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error) {
 	ret := m.ctrl.Call(m, "GetFromAgentQueue", arg0)
@@ -97,6 +110,19 @@ func (m *MockMetadataStore) GetFromAgentQueue(arg0 string) (*[]messagespb.Metada
 // GetFromAgentQueue indicates an expected call of GetFromAgentQueue
 func (mr *MockMetadataStoreMockRecorder) GetFromAgentQueue(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromAgentQueue", reflect.TypeOf((*MockMetadataStore)(nil).GetFromAgentQueue), arg0)
+}
+
+// GetPods mocks base method
+func (m *MockMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
+	ret := m.ctrl.Call(m, "GetPods")
+	ret0, _ := ret[0].([]*metadatapb.Pod)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPods indicates an expected call of GetPods
+func (mr *MockMetadataStoreMockRecorder) GetPods() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPods", reflect.TypeOf((*MockMetadataStore)(nil).GetPods))
 }
 
 // UpdateContainers mocks base method

@@ -26,6 +26,8 @@ type MetadataStore interface {
 	AddToFrontOfAgentQueue(string, *messagespb.MetadataUpdateInfo_ResourceUpdate) error
 	GetFromAgentQueue(string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error)
 	GetAgents() (*[]datapb.AgentData, error)
+	GetPods() ([]*metadatapb.Pod, error)
+	GetEndpoints() ([]*metadatapb.Endpoints, error)
 }
 
 // K8sMessage is a message for K8s metadata events/updResourceUpdateates.
