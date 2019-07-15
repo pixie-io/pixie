@@ -338,6 +338,68 @@ struct SourceHasRelationMatch : public ParentMatch {
 inline SourceHasRelationMatch<false> UnresolvedSource() { return SourceHasRelationMatch<false>(); }
 inline SourceHasRelationMatch<true> ResolvedSource() { return SourceHasRelationMatch<true>(); }
 
+/**
+ * @brief Match any operator that matches the Relation Init status and the parent's
+ * relation init status.
+ *
+ * @tparam ResolvedRelation: whether this operator should have a resolved relation.
+ * @tparam ParentsOpResolved: whether the parent op relation should be resolved.
+ */
+template <bool ResolvedRelation = false, bool ParentOpResolved = false>
+struct AnyRelationResolvedOpMatch : public ParentMatch {
+  AnyRelationResolvedOpMatch() : ParentMatch(IRNodeType::kAny) {}
+  bool match(IRNode* V) const override {
+    if (V->IsOp()) {
+      OperatorIR* op_ir = static_cast<OperatorIR*>(V);
+      if (op_ir->HasParent()) {
+        return op_ir->IsRelationInit() == ResolvedRelation &&
+               op_ir->parent()->IsRelationInit() == ParentOpResolved;
+      }
+    }
+    return false;
+  }
+};
+
+/**
+ * @brief Match a specific operator that matches the Relation Init status and the parent's
+ * relation init status.
+ *
+ * @tparam op: the type of operator.
+ * @tparam ResolvedRelation: whether this operator should have a resolved relation.
+ * @tparam ParentsOpResolved: whether the parent op relation should be resolved.
+ */
+template <IRNodeType op, bool ResolvedRelation = false, bool ParentOpResolved = false>
+struct RelationResolvedOpMatch : public ParentMatch {
+  RelationResolvedOpMatch() : ParentMatch(op) {}
+  bool match(IRNode* V) const override {
+    if (V->type() == op) {
+      return AnyRelationResolvedOpMatch<ResolvedRelation, ParentOpResolved>().match(V);
+    }
+    return false;
+  }
+};
+
+/**
+ * @brief Match a BlockingAggregate that doesn't have a relation but the parent does.
+ */
+inline RelationResolvedOpMatch<IRNodeType::kBlockingAgg, false, true> UnresolvedReadyBlockingAgg() {
+  return RelationResolvedOpMatch<IRNodeType::kBlockingAgg, false, true>();
+}
+
+/**
+ * @brief Match a Map that doesn't have a relation but the parent does.
+ */
+inline RelationResolvedOpMatch<IRNodeType::kMap, false, true> UnresolvedReadyMap() {
+  return RelationResolvedOpMatch<IRNodeType::kMap, false, true>();
+}
+
+/**
+ * @brief Match Any operator that doesn't have a relation but the parent does.
+ */
+inline AnyRelationResolvedOpMatch<false, true> UnresolvedReadyOp() {
+  return AnyRelationResolvedOpMatch<false, true>();
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -579,7 +579,7 @@ Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names,
   return Status::OK();
 }
 
-Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names, IRNode* node,
+Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names, ExpressionIR* node,
                       const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   expected_column_names_ = expected_column_names;

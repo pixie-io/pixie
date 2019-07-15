@@ -86,7 +86,7 @@ struct LambdaExprReturn {
 };
 
 struct LambdaBodyReturn {
-  Status AddExpr(const std::string& name, IRNode* expr) {
+  Status AddExpr(const std::string& name, ExpressionIR* expr) {
     col_exprs_.push_back(ColumnExpression{name, expr});
     return Status::OK();
   }

@@ -24,11 +24,6 @@ class IR;
 class IRNode;
 using IRNodePtr = std::unique_ptr<IRNode>;
 using ArgMap = std::unordered_map<std::string, IRNode*>;
-struct ColumnExpression {
-  std::string name;
-  IRNode* node;
-};
-using ColExpressionVector = std::vector<ColumnExpression>;
 
 enum class IRNodeType {
   kAny = -1,
@@ -336,6 +331,12 @@ class ListIR : public DataIR {
   std::vector<IRNode*> children_;
 };
 
+struct ColumnExpression {
+  std::string name;
+  ExpressionIR* node;
+};
+using ColExpressionVector = std::vector<ColumnExpression>;
+
 /**
  * @brief IR representation for a Lambda
  * function. Should contain an expected
@@ -353,7 +354,7 @@ class LambdaIR : public IRNode {
    * @brief Init for the Lambda called elsewhere. Uses a default value for the key to the expression
    * map.
    */
-  Status Init(std::unordered_set<std::string> expected_column_names, IRNode* node,
+  Status Init(std::unordered_set<std::string> expected_column_names, ExpressionIR* node,
               const pypa::AstPtr& ast_node);
   /**
    * @brief Returns the one_expr_ if it has only one expr in the col_expr_map, otherwise returns an
@@ -656,12 +657,15 @@ class BlockingAggIR : public OperatorIR {
   std::string DebugString(int64_t depth) const override;
   LambdaIR* by_func() const { return by_func_; }
   LambdaIR* agg_func() const { return agg_func_; }
+  // TODO(philkuz) combine setgroups and setaggvalmap into one call, it happens at the same time
+  // anyways.
   void SetGroups(std::vector<ColumnIR*> groups) {
     groups_ = groups;
     groups_set_ = true;
   }
   std::vector<ColumnIR*> groups() const { return groups_; }
   bool groups_set() const { return groups_set_; }
+  bool group_by_all() const { return by_func_ == nullptr; }
   void SetAggValMap(ColExpressionVector agg_val_vec) {
     agg_val_vector_ = agg_val_vec;
     agg_val_vector_set_ = true;

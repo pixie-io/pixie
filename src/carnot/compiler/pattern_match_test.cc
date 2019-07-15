@@ -98,6 +98,63 @@ TEST_F(PatternMatchTest, expression_data_type_resolution) {
   EXPECT_TRUE(match(func, ResolvedFunc()));
 }
 
+TEST_F(PatternMatchTest, relation_status_operator_match) {
+  table_store::schema::Relation test_relation;
+  test_relation.AddColumn(types::DataType::INT64, "col1");
+  test_relation.AddColumn(types::DataType::INT64, "col2");
+  auto mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  auto blocking_agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
+  EXPECT_OK(blocking_agg->SetParent(mem_src));
+  auto map = graph->MakeNode<MapIR>().ValueOrDie();
+  EXPECT_OK(map->SetParent(mem_src));
+  auto filter = graph->MakeNode<FilterIR>().ValueOrDie();
+  EXPECT_OK(filter->SetParent(mem_src));
+  // Unresolved blocking aggregate with unresolved parent.
+  EXPECT_FALSE(match(blocking_agg, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(match(blocking_agg, UnresolvedReadyMap()));
+  EXPECT_FALSE(match(blocking_agg, UnresolvedReadyOp()));
+  // Unesolved map with unresolved parent.
+  EXPECT_FALSE(match(map, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(match(map, UnresolvedReadyMap()));
+  EXPECT_FALSE(match(map, UnresolvedReadyOp()));
+  // Unresolved Filter with unresolved parent.
+  EXPECT_FALSE(match(filter, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(match(filter, UnresolvedReadyMap()));
+  EXPECT_FALSE(match(filter, UnresolvedReadyOp()));
+
+  // Resolve parent.
+  EXPECT_OK(mem_src->SetRelation(test_relation));
+  // Unresolved blocking aggregate with resolved parent.
+  EXPECT_TRUE(match(blocking_agg, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(match(blocking_agg, UnresolvedReadyMap()));
+  EXPECT_TRUE(match(blocking_agg, UnresolvedReadyOp()));
+  // Unresolved map with resolved parent.
+  EXPECT_FALSE(match(map, UnresolvedReadyBlockingAgg()));
+  EXPECT_TRUE(match(map, UnresolvedReadyMap()));
+  EXPECT_TRUE(match(map, UnresolvedReadyOp()));
+  // Unresolved Filter with resolved parent.
+  EXPECT_FALSE(match(filter, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(match(filter, UnresolvedReadyMap()));
+  EXPECT_TRUE(match(filter, UnresolvedReadyOp()));
+
+  // Resolve children.
+  EXPECT_OK(blocking_agg->SetRelation(test_relation));
+  EXPECT_OK(map->SetRelation(test_relation));
+  EXPECT_OK(filter->SetRelation(test_relation));
+  // Resolved blocking aggregate with resolved parent.
+  EXPECT_FALSE(match(blocking_agg, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(match(blocking_agg, UnresolvedReadyMap()));
+  EXPECT_FALSE(match(blocking_agg, UnresolvedReadyOp()));
+  // Resolved map with resolved parent.
+  EXPECT_FALSE(match(map, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(match(map, UnresolvedReadyMap()));
+  EXPECT_FALSE(match(map, UnresolvedReadyOp()));
+  // Resolved Filter with resolved parent.
+  EXPECT_FALSE(match(filter, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(match(filter, UnresolvedReadyMap()));
+  EXPECT_FALSE(match(filter, UnresolvedReadyOp()));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

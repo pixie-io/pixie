@@ -82,6 +82,23 @@ class SourceRelationRule : public Rule {
       IRNode* node, const table_store::schema::Relation& relation,
       const std::vector<std::string>& columns) const;
 };
+
+class OperatorRelationRule : public Rule {
+  /**
+   * @brief OperatorRelationRule sets up relations for non-source operators.
+   */
+ public:
+  explicit OperatorRelationRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) const override;
+
+ private:
+  StatusOr<bool> SetBlockingAgg(BlockingAggIR* agg_ir) const;
+  StatusOr<bool> SetMap(MapIR* map_ir) const;
+  StatusOr<bool> SetOther(OperatorIR* op) const;
+};
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -385,6 +385,211 @@ TEST_F(SourceRelationTest, missing_columns) {
   std::string error_string = absl::Substitute("Columns {$0} are missing in table.", missing_column);
   EXPECT_TRUE(StatusHasCompilerError(result.status(), error_string));
 }
+
+class BlockingAggRuleTest : public RulesTest {
+ protected:
+  void SetUp() override { RulesTest::SetUp(); }
+  void SetUpGraph(bool resolve_agg_func, bool resolve_agg_group) {
+    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
+    auto constant = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(constant->Init(10, ast));
+
+    auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"}, "pl",
+                             std::vector<ExpressionIR*>({constant}), false /* compile_time */,
+                             ast));
+    if (resolve_agg_func) {
+      agg_func->SetOutputDataType(func_data_type);
+    }
+
+    auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(agg_func_lambda->Init({}, {{agg_func_col, agg_func}}, ast));
+
+    auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    auto group = graph->MakeNode<ColumnIR>().ValueOrDie();
+    EXPECT_OK(group->Init(group_name, ast));
+    // Code to resolve column.
+    if (resolve_agg_group) {
+      group->ResolveColumn(1, group_data_type);
+    }
+    EXPECT_OK(by_func_lambda->Init({group_name}, group, ast));
+
+    agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
+    ArgMap amap({{"by", by_func_lambda}, {"fn", agg_func_lambda}});
+    ASSERT_OK(agg->Init(mem_src, amap, ast));
+  }
+  MemorySourceIR* mem_src;
+  BlockingAggIR* agg;
+  types::DataType func_data_type = types::DataType::FLOAT64;
+  types::DataType group_data_type = types::DataType::INT64;
+  std::string group_name = "group";
+  std::string agg_func_col = "meaned";
+};
+
+// Relation should resolve, all expressions in operator are resolved.
+TEST_F(BlockingAggRuleTest, successful_resolve) {
+  SetUpGraph(true /* resolve_agg_func */, true /* resolve_agg_group */);
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  EXPECT_FALSE(agg->IsRelationInit());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  ASSERT_TRUE(agg->IsRelationInit());
+
+  auto result_relation = agg->relation();
+  table_store::schema::Relation expected_relation(
+      {types::DataType::INT64, types::DataType::FLOAT64}, {group_name, agg_func_col});
+  EXPECT_TRUE(result_relation.col_types() == expected_relation.col_types());
+  EXPECT_TRUE(result_relation.col_names() == expected_relation.col_names());
+  EXPECT_TRUE(agg->agg_val_vector_set());
+  EXPECT_TRUE(agg->groups_set());
+}
+// Rule shouldn't work because column is not resolved.
+TEST_F(BlockingAggRuleTest, failed_resolve_column) {
+  SetUpGraph(true /* resolve_agg_func */, false /* resolve_agg_group */);
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  EXPECT_FALSE(agg->IsRelationInit());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+  EXPECT_FALSE(agg->IsRelationInit());
+}
+
+// Rule shouldn't work because function is not resolved.
+TEST_F(BlockingAggRuleTest, failed_resolve_function) {
+  SetUpGraph(false /* resolve_agg_func */, true /* resolve_agg_group */);
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  EXPECT_FALSE(agg->IsRelationInit());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+  EXPECT_FALSE(agg->IsRelationInit());
+}
+class MapRuleTest : public RulesTest {
+ protected:
+  void SetUp() override { RulesTest::SetUp(); }
+  void SetUpGraph(bool resolve_map_func) {
+    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
+    auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(constant1->Init(10, ast));
+
+    auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(constant2->Init(10, ast));
+
+    auto map_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(map_func->Init({FuncIR::Opcode::add, "+", "add"}, "pl",
+                             std::vector<ExpressionIR*>({constant1, constant2}),
+                             false /* compile_time */, ast));
+    if (resolve_map_func) {
+      map_func->SetOutputDataType(func_data_type);
+    }
+
+    auto map_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(map_func_lambda->Init({}, {{map_func_col, map_func}}, ast));
+
+    map = graph->MakeNode<MapIR>().ValueOrDie();
+    ArgMap amap({{"fn", map_func_lambda}});
+    ASSERT_OK(map->Init(mem_src, amap, ast));
+  }
+  MemorySourceIR* mem_src;
+  MapIR* map;
+  types::DataType func_data_type = types::DataType::INT64;
+  std::string map_func_col = "sum";
+};
+
+// Relation should resolve, all expressions in operator are resolved.
+TEST_F(MapRuleTest, successful_resolve) {
+  SetUpGraph(true /* resolve_map_func */);
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  EXPECT_FALSE(map->IsRelationInit());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  ASSERT_TRUE(map->IsRelationInit());
+
+  auto result_relation = map->relation();
+  table_store::schema::Relation expected_relation({types::DataType::INT64}, {map_func_col});
+  EXPECT_TRUE(result_relation.col_types() == expected_relation.col_types());
+  EXPECT_TRUE(result_relation.col_names() == expected_relation.col_names());
+  EXPECT_TRUE(map->col_exprs_set());
+}
+
+// Rule shouldn't work because function is not resolved.
+TEST_F(MapRuleTest, failed_resolve_function) {
+  SetUpGraph(false /* resolve_map_func */);
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  EXPECT_FALSE(map->IsRelationInit());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+  EXPECT_FALSE(map->IsRelationInit());
+}
+
+class OperatorRelationTest : public RulesTest {
+ protected:
+  void SetUp() override {
+    RulesTest::SetUp();
+    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
+  }
+  FilterIR* MakeFilter(OperatorIR* parent) {
+    auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(constant1->Init(10, ast));
+
+    auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(constant2->Init(10, ast));
+
+    auto column = graph->MakeNode<ColumnIR>().ValueOrDie();
+    EXPECT_OK(column->Init("column", ast));
+
+    auto filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"}, "pl",
+                                std::vector<ExpressionIR*>({constant1, column}),
+                                false /* compile_time */, ast));
+    filter_func->SetOutputDataType(types::DataType::BOOLEAN);
+
+    auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
+
+    FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
+    ArgMap amap({{"fn", filter_func_lambda}});
+    EXPECT_OK(filter->Init(parent, amap, ast));
+    return filter;
+  }
+  LimitIR* MakeLimit(OperatorIR* parent) {
+    auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(constant1->Init(10, ast));
+    LimitIR* limit = graph->MakeNode<LimitIR>().ValueOrDie();
+    ArgMap amap({{"rows", constant1}});
+    EXPECT_OK(limit->Init(parent, amap, ast));
+    return limit;
+  }
+  MemorySourceIR* mem_src;
+};
+
+// Make sure that relations are copied from node to node and the rule will execute consecutively.
+TEST_F(OperatorRelationTest, propogate_test) {
+  FilterIR* filter = MakeFilter(mem_src);
+  LimitIR* limit = MakeLimit(filter);
+  EXPECT_FALSE(filter->IsRelationInit());
+  EXPECT_FALSE(limit->IsRelationInit());
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  // Because limit comes after filter, it can actually evaluate in a single run.
+  EXPECT_TRUE(filter->IsRelationInit());
+  EXPECT_TRUE(limit->IsRelationInit());
+
+  // Should not have any work left.
+  result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

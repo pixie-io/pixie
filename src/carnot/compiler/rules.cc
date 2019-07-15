@@ -181,6 +181,83 @@ StatusOr<std::vector<std::string>> SourceRelationRule::GetColumnNames(
   }
   return columns;
 }
+
+StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) const {
+  if (match(ir_node, UnresolvedReadyBlockingAgg())) {
+    return SetBlockingAgg(static_cast<BlockingAggIR*>(ir_node));
+  } else if (match(ir_node, UnresolvedReadyMap())) {
+    return SetMap(static_cast<MapIR*>(ir_node));
+  } else if (match(ir_node, UnresolvedReadyOp())) {
+    return SetOther(static_cast<OperatorIR*>(ir_node));
+  }
+  return false;
+}
+bool UpdateColumn(ColumnIR* col_expr, std::vector<ColumnIR*>* columns,
+                  table_store::schema::Relation* relation_ptr) {
+  if (!col_expr->IsDataTypeEvaluated()) {
+    return false;
+  }
+  relation_ptr->AddColumn(col_expr->EvaluatedDataType(), col_expr->col_name());
+  columns->push_back(col_expr);
+  return true;
+}
+StatusOr<bool> OperatorRelationRule::SetBlockingAgg(BlockingAggIR* agg_ir) const {
+  table_store::schema::Relation agg_rel;
+  std::vector<ColumnIR*> groups;
+  if (!agg_ir->group_by_all()) {
+    PL_ASSIGN_OR_RETURN(IRNode * expr, agg_ir->by_func()->GetDefaultExpr());
+    if (expr->type() == IRNodeType::kColumn) {
+      if (!UpdateColumn(static_cast<ColumnIR*>(expr), &groups, &agg_rel)) {
+        return false;
+      }
+    } else if (expr->type() == IRNodeType::kList) {
+      for (auto ch : static_cast<ListIR*>(expr)->children()) {
+        DCHECK(ch->type() == IRNodeType::kColumn);
+        if (!UpdateColumn(static_cast<ColumnIR*>(ch), &groups, &agg_rel)) {
+          return false;
+        }
+      }
+    } else {
+      return agg_ir->CreateIRNodeError(
+          "Expected a 'Column' or 'List' for the by function body, got '$0", expr->type_string());
+    }
+  }
+
+  // Make a new relation with each of the expression key, type pairs.
+  ColExpressionVector col_exprs = agg_ir->agg_func()->col_exprs();
+  for (auto& entry : col_exprs) {
+    std::string col_name = entry.name;
+    if (!entry.node->IsDataTypeEvaluated()) {
+      return false;
+    }
+    agg_rel.AddColumn(entry.node->EvaluatedDataType(), col_name);
+  }
+
+  PL_RETURN_IF_ERROR(agg_ir->SetRelation(agg_rel));
+  agg_ir->SetGroups(groups);
+  agg_ir->SetAggValMap(col_exprs);
+  return true;
+}
+StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
+  table_store::schema::Relation map_rel;
+  // Make a new relation with each of the expression key, type pairs.
+  ColExpressionVector col_exprs = map_ir->lambda_func()->col_exprs();
+  for (auto& entry : col_exprs) {
+    std::string col_name = entry.name;
+    if (!entry.node->IsDataTypeEvaluated()) {
+      return false;
+    }
+    map_rel.AddColumn(entry.node->EvaluatedDataType(), col_name);
+  }
+  map_ir->SetColExprs(col_exprs);
+  PL_RETURN_IF_ERROR(map_ir->SetRelation(map_rel));
+  return true;
+}
+StatusOr<bool> OperatorRelationRule::SetOther(OperatorIR* operator_ir) const {
+  PL_RETURN_IF_ERROR(operator_ir->SetRelation(operator_ir->parent()->relation()));
+  return true;
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
