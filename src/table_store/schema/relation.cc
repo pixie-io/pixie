@@ -65,12 +65,18 @@ std::string Relation::DebugString() const {
 }
 StatusOr<Relation> Relation::MakeSubRelation(const std::vector<std::string>& columns) const {
   Relation new_relation;
+  std::vector<std::string> missing_columns;
   for (auto& c : columns) {
     if (!HasColumn(c)) {
-      return error::InvalidArgument("Column $0 is missing in relation", c);
+      missing_columns.push_back(c);
+      continue;
     }
     auto col_type = GetColumnType(c);
     new_relation.AddColumn(col_type, c);
+  }
+  if (missing_columns.size() > 0) {
+    return error::InvalidArgument("Columns {$0} are missing in table.",
+                                  absl::StrJoin(missing_columns, ","));
   }
   return new_relation;
 }

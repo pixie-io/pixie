@@ -62,6 +62,34 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   return ir;
 }
 
+bool StatusHasCompilerError(const Status& status, const std::string& expected_message) {
+  CHECK(status.has_context());
+  CHECK(status.context()->Is<compilerpb::CompilerErrorGroup>());
+  compilerpb::CompilerErrorGroup error_group;
+  CHECK(status.context()->UnpackTo(&error_group));
+  for (int64_t i = 0; i < error_group.errors_size(); i++) {
+    if (error_group.errors(i).line_col_error().message() == expected_message) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool StatusHasCompilerError(const Status& status, const std::string& expected_message,
+                            uint64_t line, uint64_t column) {
+  CHECK(status.has_context());
+  CHECK(status.context()->Is<compilerpb::CompilerErrorGroup>());
+  compilerpb::CompilerErrorGroup error_group;
+  CHECK(status.context()->UnpackTo(&error_group));
+  for (int64_t i = 0; i < error_group.errors_size(); i++) {
+    auto error = error_group.errors(i).line_col_error();
+    if (error.message() == expected_message && error.line() == line && error.column() == column) {
+      return true;
+    }
+  }
+  return false;
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

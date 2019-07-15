@@ -6,6 +6,7 @@
 
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/rules.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
@@ -16,13 +17,14 @@ namespace compiler {
 
 using testing::_;
 
-class DataTypeRuleTest : public ::testing::Test {
+class RulesTest : public ::testing::Test {
  protected:
   void SetUp() override {
+    ::testing::Test::SetUp();
     info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
 
     auto rel_map = std::make_unique<RelationMap>();
-    auto cpu_relation = table_store::schema::Relation(
+    cpu_relation = table_store::schema::Relation(
         std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
                                       types::DataType::FLOAT64, types::DataType::FLOAT64}),
         std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
@@ -32,9 +34,6 @@ class DataTypeRuleTest : public ::testing::Test {
     ast = MakeTestAstPtr();
     graph = std::make_shared<IR>();
     data_rule = std::make_shared<DataTypeRule>(compiler_state_.get());
-
-    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
   pypa::AstPtr ast;
   std::shared_ptr<IR> graph;
@@ -42,6 +41,15 @@ class DataTypeRuleTest : public ::testing::Test {
   std::unique_ptr<CompilerState> compiler_state_;
   std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
+  table_store::schema::Relation cpu_relation;
+};
+class DataTypeRuleTest : public RulesTest {
+ protected:
+  void SetUp() override {
+    RulesTest::SetUp();
+    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
+  }
   MemorySourceIR* mem_src;
 };
 
@@ -271,6 +279,112 @@ TEST_F(DataTypeRuleTest, nested_functions) {
 }
 // TODO(philkuz) try nested functions in the setup.
 
+class SourceRelationTest : public RulesTest {
+ protected:
+  void SetUp() override { RulesTest::SetUp(); }
+};
+
+// Simple check with select all.
+TEST_F(SourceRelationTest, set_source_select_all) {
+  StringIR* table_str_node = graph->MakeNode<StringIR>().ValueOrDie();
+  ASSERT_OK(table_str_node->Init("cpu", ast));
+
+  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  ArgMap memsrc_argmap({{"table", table_str_node}, {"select", nullptr}});
+  EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
+
+  EXPECT_FALSE(mem_src->IsRelationInit());
+
+  SourceRelationRule source_relation_rule(compiler_state_.get());
+  auto result = source_relation_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_TRUE(mem_src->IsRelationInit());
+  // Make sure the relations are the same after processing.
+  table_store::schema::Relation relation = mem_src->relation();
+  EXPECT_TRUE(relation.col_types() == cpu_relation.col_types());
+  EXPECT_TRUE(relation.col_names() == cpu_relation.col_names());
+}
+
+TEST_F(SourceRelationTest, set_source_variable_columns) {
+  std::vector<std::string> str_columns = {"cpu1", "cpu2"};
+  StringIR* table_str_node = graph->MakeNode<StringIR>().ValueOrDie();
+  std::vector<IRNode*> select_columns;
+  for (const std::string& c : str_columns) {
+    auto select_col = graph->MakeNode<StringIR>().ValueOrDie();
+    EXPECT_OK(select_col->Init(c, ast));
+    select_columns.push_back(select_col);
+  }
+  auto select_list = graph->MakeNode<ListIR>().ValueOrDie();
+  EXPECT_OK(select_list->Init(ast, select_columns));
+  ASSERT_OK(table_str_node->Init("cpu", ast));
+
+  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  ArgMap memsrc_argmap({{"table", table_str_node}, {"select", select_list}});
+  EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
+
+  EXPECT_FALSE(mem_src->IsRelationInit());
+
+  SourceRelationRule source_relation_rule(compiler_state_.get());
+  auto result = source_relation_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_TRUE(mem_src->IsRelationInit());
+  // Make sure the relations are the same after processing.
+  table_store::schema::Relation relation = mem_src->relation();
+  auto sub_relation_result = cpu_relation.MakeSubRelation(str_columns);
+  EXPECT_OK(sub_relation_result);
+  table_store::schema::Relation expected_relation = sub_relation_result.ValueOrDie();
+  EXPECT_TRUE(relation.col_types() == expected_relation.col_types());
+  EXPECT_TRUE(relation.col_names() == expected_relation.col_names());
+}
+
+TEST_F(SourceRelationTest, missing_table_name) {
+  StringIR* table_str_node = graph->MakeNode<StringIR>().ValueOrDie();
+  std::string table_name = "not_a_real_table_name";
+  ASSERT_OK(table_str_node->Init(table_name, ast));
+
+  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  ArgMap memsrc_argmap({{"table", table_str_node}, {"select", nullptr}});
+  EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
+
+  EXPECT_FALSE(mem_src->IsRelationInit());
+
+  SourceRelationRule source_relation_rule(compiler_state_.get());
+  auto result = source_relation_rule.Execute(graph.get());
+  EXPECT_NOT_OK(result);
+  std::string error_string = absl::Substitute("Table '$0' not found.", table_name);
+  EXPECT_TRUE(StatusHasCompilerError(result.status(), error_string));
+}
+
+TEST_F(SourceRelationTest, missing_columns) {
+  std::string missing_column = "blah_column";
+  std::vector<std::string> str_columns = {"cpu1", "cpu2", missing_column};
+  StringIR* table_str_node = graph->MakeNode<StringIR>().ValueOrDie();
+  std::vector<IRNode*> select_columns;
+  for (const std::string& c : str_columns) {
+    auto select_col = graph->MakeNode<StringIR>().ValueOrDie();
+    EXPECT_OK(select_col->Init(c, ast));
+    select_columns.push_back(select_col);
+  }
+  auto select_list = graph->MakeNode<ListIR>().ValueOrDie();
+  EXPECT_OK(select_list->Init(ast, select_columns));
+  ASSERT_OK(table_str_node->Init("cpu", ast));
+
+  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  ArgMap memsrc_argmap({{"table", table_str_node}, {"select", select_list}});
+  EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
+
+  EXPECT_FALSE(mem_src->IsRelationInit());
+
+  SourceRelationRule source_relation_rule(compiler_state_.get());
+  auto result = source_relation_rule.Execute(graph.get());
+  EXPECT_NOT_OK(result);
+  VLOG(1) << result.status().ToString();
+
+  std::string error_string = absl::Substitute("Columns {$0} are missing in table.", missing_column);
+  EXPECT_TRUE(StatusHasCompilerError(result.status(), error_string));
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

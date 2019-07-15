@@ -64,6 +64,24 @@ class DataTypeRule : public Rule {
   StatusOr<bool> EvaluateFunc(FuncIR* func) const;
   StatusOr<bool> EvaluateColumn(ColumnIR* column) const;
 };
+
+class SourceRelationRule : public Rule {
+ public:
+  explicit SourceRelationRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) const override;
+
+ private:
+  StatusOr<bool> GetSourceRelation(OperatorIR* source_op) const;
+  StatusOr<std::vector<std::string>> GetColumnNames(std::vector<IRNode*> select_children) const;
+  StatusOr<std::vector<ColumnIR*>> GetColumnsFromRelation(
+      IRNode* node, std::vector<std::string> col_names,
+      const table_store::schema::Relation& relation) const;
+  StatusOr<table_store::schema::Relation> GetSelectRelation(
+      IRNode* node, const table_store::schema::Relation& relation,
+      const std::vector<std::string>& columns) const;
+};
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

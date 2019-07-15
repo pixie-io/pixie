@@ -319,6 +319,25 @@ struct AnyExpressionMatch : public ParentMatch {
  */
 inline AnyExpressionMatch Expression() { return AnyExpressionMatch(); }
 
+/**
+ * @brief Match a MemorySource operation that has the expected relation status.
+ *
+ * @tparam HasRelation: whether the MemorySource should have a relation set or not.
+ */
+template <bool HasRelation = false>
+struct SourceHasRelationMatch : public ParentMatch {
+  SourceHasRelationMatch() : ParentMatch(IRNodeType::kAny) {}
+  bool match(IRNode* V) const override {
+    if (V->is_source()) {
+      return static_cast<OperatorIR*>(V)->IsRelationInit() == HasRelation;
+    }
+    return false;
+  }
+};
+
+inline SourceHasRelationMatch<false> UnresolvedSource() { return SourceHasRelationMatch<false>(); }
+inline SourceHasRelationMatch<true> ResolvedSource() { return SourceHasRelationMatch<true>(); }
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
