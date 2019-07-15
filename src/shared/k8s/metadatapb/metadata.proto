@@ -394,3 +394,15 @@ message SchemaInfo {
   // The column info of the schema.
   repeated ColumnInfo columns = 4;
 }
+
+enum MetadataResourceType {
+    METADATA_RESOURCE_TYPE_UNKNOWN = 0;
+    POD = 1;
+    SERVICE = 2;
+}
+
+message ResourceUpdate {
+    MetadataResourceType type = 1;
+    pl.shared.k8s.metadatapb.ObjectMetadata metadata  = 2;
+    repeated pl.shared.k8s.metadatapb.ObjectReference references = 3;
+}

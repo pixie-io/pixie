@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 )
@@ -145,8 +144,8 @@ func TestObjectToEndpointsProto(t *testing.T) {
 		UID:       "abcd",
 	}
 
-	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
-		Type: messagespb.SERVICE,
+	updatePb := &metadatapb.ResourceUpdate{
+		Type: metadatapb.SERVICE,
 		Metadata: &metadatapb.ObjectMetadata{
 			UID:                 "ijkl",
 			Name:                "object_md",
@@ -388,8 +387,8 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 		UID:       "abcd",
 	}
 
-	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
-		Type: messagespb.SERVICE,
+	updatePb := &metadatapb.ResourceUpdate{
+		Type: metadatapb.SERVICE,
 		Metadata: &metadatapb.ObjectMetadata{
 			UID:                 "ijkl",
 			Name:                "object_md",
@@ -670,8 +669,8 @@ func TestObjectToPodProto(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
-		Type: messagespb.POD,
+	updatePb := &metadatapb.ResourceUpdate{
+		Type: metadatapb.POD,
 		Metadata: &metadatapb.ObjectMetadata{
 			UID:                 "ijkl",
 			Name:                "object_md",

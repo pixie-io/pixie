@@ -11,7 +11,6 @@ import (
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
-	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 )
@@ -326,8 +325,8 @@ func TestAddToFrontOfAgentQueue(t *testing.T) {
 	err = mds.AddToAgentUpdateQueue("agent1", "test")
 	assert.Nil(t, err)
 
-	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
-		Type: messagespb.POD,
+	updatePb := &metadatapb.ResourceUpdate{
+		Type: metadatapb.POD,
 		Metadata: &metadatapb.ObjectMetadata{
 			UID:  "podUid",
 			Name: "podName",
@@ -352,8 +351,8 @@ func TestGetFromAgentQueue(t *testing.T) {
 		t.Fatal("Failed to create metadata store.")
 	}
 
-	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
-		Type: messagespb.POD,
+	updatePb := &metadatapb.ResourceUpdate{
+		Type: metadatapb.POD,
 		Metadata: &metadatapb.ObjectMetadata{
 			UID:  "podUid",
 			Name: "podName",

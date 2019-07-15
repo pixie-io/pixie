@@ -9,6 +9,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 )
@@ -127,7 +128,7 @@ func (mc *MessageBusController) onAgentHeartBeat(m *messages.Heartbeat) {
 
 	// Get any queued agent updates.
 	updates, err := mc.agentManager.GetFromAgentQueue(agentID.String())
-	updatePbs := make([]*messages.MetadataUpdateInfo_ResourceUpdate, len(*updates))
+	updatePbs := make([]*metadatapb.ResourceUpdate, len(*updates))
 	for i, updatePb := range *updates {
 		updatePbs[i] = &updatePb
 	}

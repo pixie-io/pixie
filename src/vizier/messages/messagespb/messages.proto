@@ -66,19 +66,8 @@ message Heartbeat {
     int64 sequence_number = 4;
 }
 
-enum MetadataResourceType {
-    METADATA_RESOURCE_TYPE_UNKNOWN = 0;
-    POD = 1;
-    SERVICE = 2;
-}
-
 message MetadataUpdateInfo {
-    message ResourceUpdate {
-        MetadataResourceType type = 1;
-        pl.shared.k8s.metadatapb.ObjectMetadata metadata  = 2;
-        repeated pl.shared.k8s.metadatapb.ObjectReference references = 3;
-    }
-    repeated ResourceUpdate updates = 4;
+    repeated pl.shared.k8s.metadatapb.ResourceUpdate updates = 1;
 }
 
 // Response sent for a successful heart beat.

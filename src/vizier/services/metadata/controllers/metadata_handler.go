@@ -8,7 +8,6 @@ import (
 
 	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	datapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 )
 
@@ -23,14 +22,14 @@ type MetadataStore interface {
 	UpdateSchemas(uuid.UUID, []*metadatapb.SchemaInfo) error
 	GetAgentsForHostnames(*[]string) (*[]string, error)
 	AddToAgentUpdateQueue(string, string) error
-	AddToFrontOfAgentQueue(string, *messagespb.MetadataUpdateInfo_ResourceUpdate) error
-	GetFromAgentQueue(string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error)
+	AddToFrontOfAgentQueue(string, *metadatapb.ResourceUpdate) error
+	GetFromAgentQueue(string) (*[]metadatapb.ResourceUpdate, error)
 	GetAgents() (*[]datapb.AgentData, error)
 	GetPods() ([]*metadatapb.Pod, error)
 	GetEndpoints() ([]*metadatapb.Endpoints, error)
 }
 
-// K8sMessage is a message for K8s metadata events/updResourceUpdateates.
+// K8sMessage is a message for K8s metadata events/updates.
 type K8sMessage struct {
 	Object     runtime.Object
 	ObjectType string
@@ -38,7 +37,7 @@ type K8sMessage struct {
 
 // UpdateMessage is an update message for a specific hostname.
 type UpdateMessage struct {
-	Message   *messagespb.MetadataUpdateInfo_ResourceUpdate
+	Message   *metadatapb.ResourceUpdate
 	Hostnames *[]string
 }
 
@@ -126,7 +125,7 @@ func (mh *MetadataHandler) MetadataListener() {
 
 // updateAgentQueues appends the resource update to the relevant agent queues. If appending to the queue has failed,
 // it adds the update to the handler's retry channel.
-func (mh *MetadataHandler) updateAgentQueues(updatePb *messagespb.MetadataUpdateInfo_ResourceUpdate, hostnames *[]string) {
+func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate, hostnames *[]string) {
 	agents, err := mh.mds.GetAgentsForHostnames(hostnames)
 
 	if agents == nil || len(*agents) == 0 {
@@ -193,9 +192,9 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 
 	updateMd := mh.getUpdateMetadata(pb.Metadata)
 
-	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
+	updatePb := &metadatapb.ResourceUpdate{
 		Metadata:   updateMd,
-		Type:       messagespb.SERVICE,
+		Type:       metadatapb.SERVICE,
 		References: references,
 	}
 
@@ -232,9 +231,9 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 
 	updateMd := mh.getUpdateMetadata(pb.Metadata)
 
-	updatePb := &messagespb.MetadataUpdateInfo_ResourceUpdate{
+	updatePb := &metadatapb.ResourceUpdate{
 		Metadata: updateMd,
-		Type:     messagespb.POD,
+		Type:     metadatapb.POD,
 	}
 
 	mh.agentUpdateCh <- &UpdateMessage{

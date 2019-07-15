@@ -8,7 +8,6 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	go_uuid "github.com/satori/go.uuid"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	datapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 	reflect "reflect"
 )
@@ -49,7 +48,7 @@ func (mr *MockMetadataStoreMockRecorder) AddToAgentUpdateQueue(arg0, arg1 interf
 }
 
 // AddToFrontOfAgentQueue mocks base method
-func (m *MockMetadataStore) AddToFrontOfAgentQueue(arg0 string, arg1 *messagespb.MetadataUpdateInfo_ResourceUpdate) error {
+func (m *MockMetadataStore) AddToFrontOfAgentQueue(arg0 string, arg1 *metadatapb.ResourceUpdate) error {
 	ret := m.ctrl.Call(m, "AddToFrontOfAgentQueue", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -100,9 +99,9 @@ func (mr *MockMetadataStoreMockRecorder) GetEndpoints() *gomock.Call {
 }
 
 // GetFromAgentQueue mocks base method
-func (m *MockMetadataStore) GetFromAgentQueue(arg0 string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error) {
+func (m *MockMetadataStore) GetFromAgentQueue(arg0 string) (*[]metadatapb.ResourceUpdate, error) {
 	ret := m.ctrl.Call(m, "GetFromAgentQueue", arg0)
-	ret0, _ := ret[0].(*[]messagespb.MetadataUpdateInfo_ResourceUpdate)
+	ret0, _ := ret[0].(*[]metadatapb.ResourceUpdate)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

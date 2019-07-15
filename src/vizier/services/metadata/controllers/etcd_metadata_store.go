@@ -13,7 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 	datapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 )
@@ -326,7 +325,7 @@ func (mds *EtcdMetadataStore) AddToAgentUpdateQueue(agentID string, value string
 }
 
 // AddToFrontOfAgentQueue adds the given value to the front of the agent's update queue.
-func (mds *EtcdMetadataStore) AddToFrontOfAgentQueue(agentID string, value *messagespb.MetadataUpdateInfo_ResourceUpdate) error {
+func (mds *EtcdMetadataStore) AddToFrontOfAgentQueue(agentID string, value *metadatapb.ResourceUpdate) error {
 	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
 
 	i, err := value.Marshal()
@@ -338,7 +337,7 @@ func (mds *EtcdMetadataStore) AddToFrontOfAgentQueue(agentID string, value *mess
 }
 
 // GetFromAgentQueue gets all items currently in the agent's update queue.
-func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error) {
+func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) (*[]metadatapb.ResourceUpdate, error) {
 	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
 	resp, err := q.DequeueAll()
 	if err != nil {
@@ -346,9 +345,9 @@ func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) (*[]messagespb.M
 	}
 
 	// Convert strings to pbs.
-	pbs := make([]messagespb.MetadataUpdateInfo_ResourceUpdate, len(*resp))
+	pbs := make([]metadatapb.ResourceUpdate, len(*resp))
 	for i, update := range *resp {
-		updatePb := messagespb.MetadataUpdateInfo_ResourceUpdate{}
+		updatePb := metadatapb.ResourceUpdate{}
 		if err := proto.Unmarshal([]byte(update), &updatePb); err != nil {
 			// For whatever reason, the updatePb was invalid and could not be parsed. Realistically, this
 			// should never happen unless there are some corrupt values in etcd. Continue so that the agent

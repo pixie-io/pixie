@@ -397,14 +397,14 @@ func TestAgentHeartbeat(t *testing.T) {
 		UpdateHeartbeat(u).
 		Return(nil)
 
-	updatePb := messages.MetadataUpdateInfo_ResourceUpdate{
-		Type: messages.POD,
+	updatePb := metadatapb.ResourceUpdate{
+		Type: metadatapb.POD,
 		Metadata: &metadatapb.ObjectMetadata{
 			UID:  "podUid",
 			Name: "podName",
 		},
 	}
-	updates := []messages.MetadataUpdateInfo_ResourceUpdate{updatePb}
+	updates := []metadatapb.ResourceUpdate{updatePb}
 
 	mockAgtMgr.
 		EXPECT().
@@ -475,7 +475,7 @@ func TestAgentHeartbeatInvalidUUID(t *testing.T) {
 		UpdateHeartbeat(u).
 		Return(nil)
 
-	updates := []messages.MetadataUpdateInfo_ResourceUpdate{}
+	updates := []metadatapb.ResourceUpdate{}
 	mockAgtMgr.
 		EXPECT().
 		GetFromAgentQueue(uuidStr).
@@ -524,7 +524,7 @@ func TestUpdateHeartbeatFailed(t *testing.T) {
 		UpdateHeartbeat(u).
 		Return(errors.New("could not update heartbeat"))
 
-	updates := []messages.MetadataUpdateInfo_ResourceUpdate{}
+	updates := []metadatapb.ResourceUpdate{}
 	mockAgtMgr.
 		EXPECT().
 		GetFromAgentQueue(uuidStr).

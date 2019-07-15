@@ -10,6 +10,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	data "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
@@ -52,8 +53,8 @@ type AgentManager interface {
 	// GetActiveAgents gets all of the current active agents.
 	GetActiveAgents() ([]AgentInfo, error)
 
-	AddToFrontOfAgentQueue(string, *messagespb.MetadataUpdateInfo_ResourceUpdate) error
-	GetFromAgentQueue(string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error)
+	AddToFrontOfAgentQueue(string, *metadatapb.ResourceUpdate) error
+	GetFromAgentQueue(string) (*[]metadatapb.ResourceUpdate, error)
 
 	AddToUpdateQueue(uuid.UUID, *messagespb.AgentUpdateInfo)
 }
@@ -323,11 +324,11 @@ func (m *AgentManagerImpl) GetActiveAgents() ([]AgentInfo, error) {
 }
 
 // AddToFrontOfAgentQueue adds the given value to the front of the agent's update queue.
-func (m *AgentManagerImpl) AddToFrontOfAgentQueue(agentID string, value *messagespb.MetadataUpdateInfo_ResourceUpdate) error {
+func (m *AgentManagerImpl) AddToFrontOfAgentQueue(agentID string, value *metadatapb.ResourceUpdate) error {
 	return m.mds.AddToFrontOfAgentQueue(agentID, value)
 }
 
 // GetFromAgentQueue gets all items currently in the agent's update queue.
-func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) (*[]messagespb.MetadataUpdateInfo_ResourceUpdate, error) {
+func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) (*[]metadatapb.ResourceUpdate, error) {
 	return m.mds.GetFromAgentQueue(agentID)
 }
