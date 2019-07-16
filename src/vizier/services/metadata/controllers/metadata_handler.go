@@ -180,23 +180,13 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 
 	// Add endpoint update to agent update queues.
 	var hostnames []string
-	var references []*metadatapb.ObjectReference
 	for _, subset := range pb.Subsets {
 		for _, addr := range subset.Addresses {
 			hostnames = append(hostnames, addr.NodeName)
-			if addr.TargetRef != nil {
-				references = append(references, addr.TargetRef)
-			}
 		}
 	}
 
-	updateMd := mh.getUpdateMetadata(pb.Metadata)
-
-	updatePb := &metadatapb.ResourceUpdate{
-		Metadata:   updateMd,
-		Type:       metadatapb.SERVICE,
-		References: references,
-	}
+	updatePb := GetResourceUpdateFromEndpoints(pb)
 
 	mh.agentUpdateCh <- &UpdateMessage{
 		Hostnames: &hostnames,
@@ -204,7 +194,7 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 	}
 }
 
-func (mh *MetadataHandler) getUpdateMetadata(md *metadatapb.ObjectMetadata) *metadatapb.ObjectMetadata {
+func getUpdateMetadata(md *metadatapb.ObjectMetadata) *metadatapb.ObjectMetadata {
 	return &metadatapb.ObjectMetadata{
 		Name:                md.Name,
 		Namespace:           md.Namespace,
@@ -229,12 +219,7 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 	// Add pod update to agent update queue.
 	hostname := []string{e.Spec.NodeName}
 
-	updateMd := mh.getUpdateMetadata(pb.Metadata)
-
-	updatePb := &metadatapb.ResourceUpdate{
-		Metadata: updateMd,
-		Type:     metadatapb.POD,
-	}
+	updatePb := GetResourceUpdateFromPod(pb)
 
 	mh.agentUpdateCh <- &UpdateMessage{
 		Hostnames: &hostname,
@@ -253,4 +238,36 @@ func (mh *MetadataHandler) handleServiceMetadata(o runtime.Object) {
 	if err != nil {
 		log.WithError(err).Fatal("Could not write service protobuf to metadata store.")
 	}
+}
+
+// GetResourceUpdateFromPod gets the update info from the given pod proto.
+func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
+	update := &metadatapb.ResourceUpdate{
+		Metadata: getUpdateMetadata(pod.Metadata),
+		Type:     metadatapb.POD,
+	}
+
+	return update
+}
+
+// GetResourceUpdateFromEndpoints gets the update info from the given pod proto.
+func GetResourceUpdateFromEndpoints(ep *metadatapb.Endpoints) *metadatapb.ResourceUpdate {
+	var references []*metadatapb.ObjectReference
+	for _, subset := range ep.Subsets {
+		for _, addr := range subset.Addresses {
+			if addr.TargetRef != nil {
+				references = append(references, addr.TargetRef)
+			}
+		}
+	}
+
+	updateMd := getUpdateMetadata(ep.Metadata)
+
+	update := &metadatapb.ResourceUpdate{
+		Metadata:   updateMd,
+		Type:       metadatapb.SERVICE,
+		References: references,
+	}
+
+	return update
 }

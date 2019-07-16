@@ -748,3 +748,27 @@ func TestObjectToPodProto(t *testing.T) {
 
 	mh.ProcessNextAgentUpdate()
 }
+
+func TestGetResourceUpdateFromPod(t *testing.T) {
+	pod := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(podPb, pod); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	update := controllers.GetResourceUpdateFromPod(pod)
+	assert.Equal(t, metadatapb.POD, update.Type)
+	assert.Equal(t, "object_md", update.Metadata.Name)
+}
+
+func TestGetResourceUpdateFromEndpoints(t *testing.T) {
+	ep := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(endpointsPb, ep); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	update := controllers.GetResourceUpdateFromEndpoints(ep)
+	assert.Equal(t, metadatapb.SERVICE, update.Type)
+	assert.Equal(t, "object_md", update.Metadata.Name)
+	assert.Equal(t, 1, len(update.References))
+	assert.Equal(t, "abcd", update.References[0].UID)
+}

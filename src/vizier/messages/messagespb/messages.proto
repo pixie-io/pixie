@@ -41,7 +41,12 @@ message RegisterAgentRequest {
     AgentUpdateInfo update_info = 2;
 }
 
-message RegisterAgentResponse {}
+message RegisterAgentResponse {
+    int32 agent_id = 1 [
+                      (gogoproto.customname) = "AgentID"
+                      ];
+    MetadataUpdateInfo update_info = 2;
+}
 
 message UpdateAgentRequest {
     AgentInfo info = 1;

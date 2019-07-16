@@ -192,6 +192,20 @@ func TestAgentRegisterRequest(t *testing.T) {
 		CreateAgent(agentInfo).
 		Return(nil)
 
+	updatePb := metadatapb.ResourceUpdate{
+		Type: metadatapb.POD,
+		Metadata: &metadatapb.ObjectMetadata{
+			UID:  "podUid",
+			Name: "podName",
+		},
+	}
+	updates := []*metadatapb.ResourceUpdate{&updatePb}
+
+	mockAgtMgr.
+		EXPECT().
+		GetMetadataUpdates().
+		Return(&updates, nil)
+
 	// Create Metadata Service controller.
 	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
 
@@ -208,7 +222,13 @@ func TestAgentRegisterRequest(t *testing.T) {
 	reqPb, err := req.Marshal()
 
 	resp := messages.VizierMessage{
-		Msg: &messages.VizierMessage_RegisterAgentResponse{},
+		Msg: &messages.VizierMessage_RegisterAgentResponse{
+			RegisterAgentResponse: &messages.RegisterAgentResponse{
+				UpdateInfo: &messages.MetadataUpdateInfo{
+					Updates: updates,
+				},
+			},
+		},
 	}
 	respPb, err := resp.Marshal()
 
@@ -218,6 +238,48 @@ func TestAgentRegisterRequest(t *testing.T) {
 	// Wait and read reponse.
 	m, err := sub.NextMsg(time.Second)
 	assert.Equal(t, m.Data, respPb)
+}
+
+func TestAgentMetadataUpdatesFailed(t *testing.T) {
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+	_, err := uuid.FromString(uuidStr)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+
+	mockAgtMgr.
+		EXPECT().
+		GetMetadataUpdates().
+		Return(nil, errors.New("Could not get metadata info"))
+
+	// Create Metadata Service controller.
+	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
+
+	// Listen for response.
+	sub, err := nc.SubscribeSync(controllers.GetAgentTopic(uuidStr))
+	if err != nil {
+		t.Fatal("Could not subscribe to NATS.")
+	}
+
+	req := new(messages.VizierMessage)
+	if err := proto.UnmarshalText(registerAgentRequestPB, req); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	reqPb, err := req.Marshal()
+
+	// Send update.
+	nc.Publish("agent_update", reqPb)
+
+	// Wait and read reponse.
+	_, err = sub.NextMsg(time.Second)
 }
 
 func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
@@ -279,6 +341,20 @@ func TestAgentCreateFailed(t *testing.T) {
 		EXPECT().
 		CreateAgent(agentInfo).
 		Return(errors.New("could not create agent"))
+
+	updatePb := metadatapb.ResourceUpdate{
+		Type: metadatapb.POD,
+		Metadata: &metadatapb.ObjectMetadata{
+			UID:  "podUid",
+			Name: "podName",
+		},
+	}
+	updates := []*metadatapb.ResourceUpdate{&updatePb}
+
+	mockAgtMgr.
+		EXPECT().
+		GetMetadataUpdates().
+		Return(&updates, nil)
 
 	// Create Metadata Service controller.
 	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)

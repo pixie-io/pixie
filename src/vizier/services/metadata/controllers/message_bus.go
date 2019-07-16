@@ -168,13 +168,26 @@ func (mc *MessageBusController) onAgentHeartBeat(m *messages.Heartbeat) {
 
 func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgentRequest) {
 	// Create RegisterAgentResponse.
-	resp := messages.VizierMessage{
-		Msg: &messages.VizierMessage_RegisterAgentResponse{},
-	}
 	agentID, err := utils.UUIDFromProto(m.Info.AgentID)
 	if err != nil {
 		log.WithError(err).Error("Could not parse UUID from proto.")
 		return
+	}
+
+	updates, err := mc.agentManager.GetMetadataUpdates()
+	if err != nil {
+		log.WithError(err).Error("Could not get metadata updates.")
+		return
+	}
+
+	resp := messages.VizierMessage{
+		Msg: &messages.VizierMessage_RegisterAgentResponse{
+			RegisterAgentResponse: &messages.RegisterAgentResponse{
+				UpdateInfo: &messages.MetadataUpdateInfo{
+					Updates: *updates,
+				},
+			},
+		},
 	}
 	err = mc.sendMessageToAgent(agentID, resp)
 	if err != nil {

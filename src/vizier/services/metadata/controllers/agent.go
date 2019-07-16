@@ -57,6 +57,8 @@ type AgentManager interface {
 	GetFromAgentQueue(string) (*[]metadatapb.ResourceUpdate, error)
 
 	AddToUpdateQueue(uuid.UUID, *messagespb.AgentUpdateInfo)
+
+	GetMetadataUpdates() (*[]*metadatapb.ResourceUpdate, error)
 }
 
 // AgentManagerImpl is an implementation for AgentManager which talks to etcd.
@@ -245,7 +247,6 @@ func (m *AgentManagerImpl) UpdateAgent(info *AgentInfo) error {
 func (m *AgentManagerImpl) deleteAgent(ctx context.Context, agentID string, hostname string) error {
 	mu := concurrency.NewMutex(m.sess, GetUpdateKey())
 	mu.Lock(ctx)
-
 	defer mu.Unlock(context.Background())
 
 	_, err := m.client.Delete(ctx, GetAgentKey(agentID))
@@ -331,4 +332,31 @@ func (m *AgentManagerImpl) AddToFrontOfAgentQueue(agentID string, value *metadat
 // GetFromAgentQueue gets all items currently in the agent's update queue.
 func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) (*[]metadatapb.ResourceUpdate, error) {
 	return m.mds.GetFromAgentQueue(agentID)
+}
+
+// GetMetadataUpdates gets all updates from the metadata store.
+func (m *AgentManagerImpl) GetMetadataUpdates() (*[]*metadatapb.ResourceUpdate, error) {
+	pods, err := m.mds.GetPods()
+	if err != nil {
+		return nil, err
+	}
+
+	endpoints, err := m.mds.GetEndpoints()
+	if err != nil {
+		return nil, err
+	}
+
+	updates := make([]*metadatapb.ResourceUpdate, len(pods)+len(endpoints))
+
+	for i, pod := range pods {
+		podUpdate := GetResourceUpdateFromPod(pod)
+		updates[i] = podUpdate
+	}
+
+	for j, endpoint := range endpoints {
+		epUpdate := GetResourceUpdateFromEndpoints(endpoint)
+		updates[j+len(pods)] = epUpdate
+	}
+
+	return &updates, nil
 }

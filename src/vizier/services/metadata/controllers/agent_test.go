@@ -563,3 +563,104 @@ func TestAddToUpdateQueueFailed(t *testing.T) {
 
 	agtMgr.AddToUpdateQueue(u, update)
 }
+
+func TestGetMetadataUpdates(t *testing.T) {
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	defer cleanup()
+
+	podMock := make([]*metadatapb.Pod, 2)
+
+	pod1 := &metadatapb.Pod{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name: "abcd",
+			UID:  "1234",
+		},
+	}
+	podMock[0] = pod1
+	pod2 := &metadatapb.Pod{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name: "efgh",
+			UID:  "5678",
+		},
+	}
+	podMock[1] = pod2
+
+	epMock := make([]*metadatapb.Endpoints, 1)
+	ep1 := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(endpointsPb, ep1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	epMock[0] = ep1
+
+	mockMds.
+		EXPECT().
+		GetPods().
+		Return(podMock, nil)
+
+	mockMds.
+		EXPECT().
+		GetEndpoints().
+		Return(epMock, nil)
+
+	updates, err := agtMgr.GetMetadataUpdates()
+	assert.Nil(t, err)
+
+	assert.Equal(t, 3, len(*updates))
+
+	assert.Equal(t, metadatapb.POD, (*updates)[0].Type)
+	assert.Equal(t, "1234", (*updates)[0].Metadata.UID)
+
+	assert.Equal(t, metadatapb.POD, (*updates)[1].Type)
+	assert.Equal(t, "5678", (*updates)[1].Metadata.UID)
+
+	assert.Equal(t, metadatapb.SERVICE, (*updates)[2].Type)
+	assert.Equal(t, "abcd", (*updates)[0].Metadata.Name)
+}
+
+func TestGetMetadataUpdatesGetPodsFailed(t *testing.T) {
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	defer cleanup()
+
+	mockMds.
+		EXPECT().
+		GetPods().
+		Return(nil, errors.New("Could not get pods"))
+
+	_, err := agtMgr.GetMetadataUpdates()
+	assert.NotNil(t, err)
+}
+
+func TestGetMetadataUpdatesGetEndpointsFailed(t *testing.T) {
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	defer cleanup()
+
+	podMock := make([]*metadatapb.Pod, 2)
+
+	pod1 := &metadatapb.Pod{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name: "abcd",
+			UID:  "1234",
+		},
+	}
+	podMock[0] = pod1
+	pod2 := &metadatapb.Pod{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name: "efgh",
+			UID:  "5678",
+		},
+	}
+	podMock[1] = pod2
+
+	mockMds.
+		EXPECT().
+		GetPods().
+		Return(podMock, nil)
+
+	mockMds.
+		EXPECT().
+		GetEndpoints().
+		Return(nil, errors.New("Get endpoints failed"))
+
+	_, err := agtMgr.GetMetadataUpdates()
+	assert.NotNil(t, err)
+}
