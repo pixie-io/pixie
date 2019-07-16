@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -19,7 +20,7 @@ enum class K8sObjectType { kUnknown, kPod, kService };
 /**
  * Base class for all K8s metadata objects.
  */
-class K8sMetadataObject : public NotCopyable {
+class K8sMetadataObject {
  public:
   K8sMetadataObject() = delete;
   virtual ~K8sMetadataObject() = default;
@@ -34,7 +35,16 @@ class K8sMetadataObject : public NotCopyable {
   const std::string name() { return name_; }
 
   int64_t start_time_ns() { return start_time_ns_; }
+  void set_start_time_ns(int64_t start_time_ns) { start_time_ns_ = start_time_ns; }
+
   int64_t stop_time_ns() { return stop_time_ns_; }
+  void set_stop_time_ns(int64_t stop_time_ns) { stop_time_ns_ = stop_time_ns; }
+
+  virtual std::unique_ptr<K8sMetadataObject> Clone() const = 0;
+
+ protected:
+  K8sMetadataObject(const K8sMetadataObject& other) = default;
+  K8sMetadataObject& operator=(const K8sMetadataObject& other) = delete;
 
  private:
   /**
@@ -73,7 +83,17 @@ class PodInfo : public K8sMetadataObject {
       : K8sMetadataObject(K8sObjectType::kPod, std::move(uid), std::move(name)) {}
   virtual ~PodInfo() = default;
 
+  void AddContainer(CID cid) { containers_.emplace(cid); }
+  void RmContainer(CID cid) { containers_.erase(cid); }
   const absl::flat_hash_set<std::string>& containers() { return containers_; }
+
+  std::unique_ptr<K8sMetadataObject> Clone() const override {
+    return std::unique_ptr<PodInfo>(new PodInfo(*this));
+  }
+
+ protected:
+  PodInfo(const PodInfo& other) = default;
+  PodInfo& operator=(const PodInfo& other) = delete;
 
  private:
   /**
@@ -90,14 +110,29 @@ class PodInfo : public K8sMetadataObject {
  * Though this is not strictly a K8s object, it's state is tracked by K8s
  * so we include it here.
  */
-struct ContainerInfo : public NotCopyable {
+struct ContainerInfo {
  public:
   explicit ContainerInfo(CID cid) : cid_(std::move(cid)) {}
   const CID& cid() { return cid_; }
+
+  void AddPID(UPID pid) { pids_.emplace(pid); }
+  void RmPID(UPID pid) { pids_.erase(pid); }
+
   const absl::flat_hash_set<UPID>& pids() { return pids_; }
 
   int64_t start_time_ns() { return start_time_ns_; }
+  void set_start_time_ns(int64_t start_time_ns) { start_time_ns_ = start_time_ns; }
+
   int64_t stop_time_ns() { return stop_time_ns_; }
+  void set_stop_time_ns(int64_t stop_time_ns) { stop_time_ns_ = stop_time_ns; }
+
+  std::unique_ptr<ContainerInfo> Clone() const {
+    return std::unique_ptr<ContainerInfo>(new ContainerInfo(*this));
+  }
+
+ protected:
+  ContainerInfo(const ContainerInfo& other) = default;
+  ContainerInfo& operator=(const ContainerInfo& other) = delete;
 
  private:
   CID cid_;

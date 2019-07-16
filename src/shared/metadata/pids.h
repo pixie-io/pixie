@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "src/common/base/base.h"
@@ -40,6 +41,12 @@ struct PIDInfo {
   int64_t last_update_time_ns = 0;
 
   void CloneFrom(const PIDInfo& other) { *this = other; }
+
+  std::unique_ptr<PIDInfo> Clone() {
+    auto pid_info = std::make_unique<PIDInfo>();
+    pid_info->CloneFrom(*this);
+    return pid_info;
+  }
 
  private:
   // Private copy constructor to make this class not implicitly copyable.

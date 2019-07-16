@@ -24,8 +24,29 @@ using PIDInfoUPtr = std::unique_ptr<PIDInfo>;
 /**
  * This class contains all kubernetes relate metadata.
  */
-class K8sMetadataState {
+class K8sMetadataState : NotCopyable {
+ public:
   const absl::flat_hash_map<std::string, UID>& pods_by_name() { return pods_by_name_; }
+
+  std::unique_ptr<K8sMetadataState> Clone() const {
+    auto other = std::make_unique<K8sMetadataState>();
+
+    other->k8s_objects_.reserve(k8s_objects_.size());
+    for (const auto& [k, v] : k8s_objects_) {
+      other->k8s_objects_[k] = v->Clone();
+    }
+
+    other->pods_by_name_.reserve(pods_by_name_.size());
+    for (const auto& [k, v] : pods_by_name_) {
+      other->pods_by_name_[k] = v;
+    }
+
+    other->containers_by_id_.reserve(containers_by_id_.size());
+    for (const auto& [k, v] : containers_by_id_) {
+      other->containers_by_id_[k] = v->Clone();
+    }
+    return other;
+  }
 
  private:
   // This stores K8s native objects (services, pods, etc).
@@ -42,10 +63,32 @@ class K8sMetadataState {
   absl::flat_hash_map<CID, ContainerInfoUPtr> containers_by_id_;
 };
 
-class AgentMetadataState {
-  uint32_t agent_id() { return agent_id_; }
-  int64_t last_update_ts_ns() { return last_update_ts_ns_; }
-  uint64_t epoch_id() { return epoch_id_; }
+class AgentMetadataState : NotCopyable {
+ public:
+  AgentMetadataState() = delete;
+  explicit AgentMetadataState(uint32_t agent_id) : agent_id_(agent_id) {}
+
+  uint32_t agent_id() const { return agent_id_; }
+
+  int64_t last_update_ts_ns() const { return last_update_ts_ns_; }
+  void set_last_update_ts_ns(int64_t last_update_ts_ns) { last_update_ts_ns_ = last_update_ts_ns; }
+
+  uint64_t epoch_id() const { return epoch_id_; }
+  void set_epoch_id(uint64_t id) { epoch_id_ = id; }
+
+  std::shared_ptr<AgentMetadataState> CloneToShared() const {
+    std::shared_ptr<AgentMetadataState> state;
+    state->last_update_ts_ns_ = last_update_ts_ns_;
+    state->epoch_id_ = epoch_id_;
+    state->agent_id_ = agent_id_;
+    state->k8s_metadata_state_ = k8s_metadata_state_->Clone();
+    state->pids_by_upid_.reserve(pids_by_upid_.size());
+
+    for (const auto& [k, v] : pids_by_upid_) {
+      state->pids_by_upid_[k] = v->Clone();
+    }
+    return state;
+  }
 
  private:
   /**
@@ -63,7 +106,7 @@ class AgentMetadataState {
 
   uint32_t agent_id_;
 
-  K8sMetadataState k8s_metadata_state_;
+  std::unique_ptr<K8sMetadataState> k8s_metadata_state_;
 
   /**
    * Mapping of PIDs by UPID for active pods on the system.

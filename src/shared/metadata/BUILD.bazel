@@ -24,3 +24,9 @@ pl_cc_test(
     srcs = ["state_manager_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "k8s_object_test",
+    srcs = ["k8s_objects_test.cc"],
+    deps = [":cc_library"],
+)
