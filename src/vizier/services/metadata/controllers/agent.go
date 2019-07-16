@@ -65,7 +65,7 @@ type AgentManagerImpl struct {
 	clock    utils.Clock
 	mds      MetadataStore
 	updateCh chan *AgentUpdate
-	sess       *concurrency.Session
+	sess     *concurrency.Session
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
@@ -83,7 +83,7 @@ func NewAgentManagerWithClock(client *clientv3.Client, mds MetadataStore, isLead
 		clock:    clock,
 		mds:      mds,
 		updateCh: c,
-		sess:       sess,
+		sess:     sess,
 	}
 
 	go agentManager.processAgentUpdates()
