@@ -24,10 +24,12 @@ final class FileCheckerTest {
 
             # Check that .pb.go is up-to-date.
             $updatedRes = new ArcanistUnitTestResult();
-            $updatedRes->setName($fileToCheck . ' up-to-date');
+            $updatedRes->setName($fileToCheck . ' is older than the .proto file from which it was generated');
             if (filemtime($this->project_root . '/' . $fileToCheck) >= filemtime($this->project_root . '/' . $file)) {
                 $updatedRes->setResult(ArcanistUnitTestResult::RESULT_PASS);
             } else {
+                print('To regenerate, run this command:' .
+                    'python $(bazel info workspace)/scripts/update_go_protos.py -r <.pb.go bazel directive>');
                 $updatedRes->setResult(ArcanistUnitTestResult::RESULT_FAIL);
             }
             $res[] = $updatedRes;
