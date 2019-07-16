@@ -1,0 +1,18 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["client.go"],
+    importpath = "pixielabs.ai/pixielabs/demos/applications/hipster_shop/load_generation",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//demos/applications/hipster_shop/proto:demo_pl_go_proto",
+        "@org_golang_google_grpc//:go_default_library",
+    ],
+)
+
+go_binary(
+    name = "load_generation",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)

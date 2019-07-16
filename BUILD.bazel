@@ -34,6 +34,7 @@ gazelle(
 # gazelle:resolve go pixielabs.ai/pixielabs/experimental/stirling/proto_data_model/proto //experimental/stirling/proto_data_model/proto:http_record_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/k8s/metadatapb //src/shared/k8s/metadatapb:metadata_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/testing/proto //src/stirling/testing/proto:greet_pl_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/demos/applications/hipster_shop/proto //demos/applications/hipster_shop/proto:demo_pl_go_proto
 
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 
