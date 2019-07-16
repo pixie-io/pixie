@@ -13,12 +13,14 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
+        "//src/shared/k8s/metadatapb:metadata_pl_cc_proto",
+        "@com_github_cameron314_concurrentqueue//:concurrentqueue",
         "@com_google_absl//absl/numeric:int128",
     ],
 )
 
 pl_cc_test(
-    name = "metadata_test",
-    srcs = ["metadata_test.cc"],
+    name = "state_manager_test",
+    srcs = ["state_manager_test.cc"],
     deps = [":cc_library"],
 )
