@@ -67,7 +67,7 @@ cmake_external(
     static_libraries = [
         "libapi-static.a",
         "libbcc.a",
-        "libbpf.a",
+        "libbcc_bpf.a",
         "libbcc-loader-static.a",
         "libb_frontend.a",
         "libclang_frontend.a",
