@@ -134,6 +134,37 @@ enum PodPhase {
   FAILED = 4;
 }
 
+enum PodQOSClass {
+  QOS_CLASS_UNKNOWN = 0;
+  QOS_CLASS_GUARANTEED = 1;
+  QOS_CLASS_BURSTABLE = 2;
+  QOS_CLASS_BEST_EFFORT = 3;
+}
+
+enum ContainerState {
+  CONTAINER_STATE_UNKNOWN = 0;
+  CONTAINER_STATE_RUNNING = 1;
+  CONTAINER_STATE_TERMINATED = 2;
+  CONTAINER_STATE_WAITING = 3;
+}
+
+message ContainerStatus {
+  string name = 1;
+  string container_id = 2 [
+                                  (gogoproto.customname) = "ContainerID"
+                                  ];
+  ContainerState container_state = 3;
+  // The server time in nanoseconds when the container started.
+  int64 start_timestamp_ns = 4 [
+                                  (gogoproto.customname) = "StartTimestampNS"
+                                  ];
+
+  // The time in nanoseconds at which the container finished.
+  int64 stop_timestamp_ns = 5 [
+                                  (gogoproto.customname) = "StopTimestampNS"
+                                  ];
+}
+
 // PodStatus represents information about the status of a pod.
 message PodStatus {
   // The phase of a Pod is a simple, high-level summary of where the Pod is in its lifecycle.
@@ -158,6 +189,13 @@ message PodStatus {
   string pod_ip = 6 [
                   (gogoproto.customname) = "PodIP"
                   ];
+
+
+  PodQOSClass qos_class = 7 [
+                  (gogoproto.customname) = "QOSClass"
+                  ];
+
+  repeated ContainerStatus container_statuses = 8;
 }
 
 enum PodConditionType {

@@ -86,6 +86,18 @@ var externalPolicyPbToObjMap = map[metadatapb.ExternalTrafficPolicyType]v1.Servi
 	metadatapb.TRAFFIC_CLUSTER: v1.ServiceExternalTrafficPolicyTypeCluster,
 }
 
+var qosClassObjToPbMap = map[v1.PodQOSClass]metadatapb.PodQOSClass{
+	v1.PodQOSGuaranteed: metadatapb.QOS_CLASS_GUARANTEED,
+	v1.PodQOSBurstable:  metadatapb.QOS_CLASS_BURSTABLE,
+	v1.PodQOSBestEffort: metadatapb.QOS_CLASS_BEST_EFFORT,
+}
+
+var qosClassPbToObjMap = map[metadatapb.PodQOSClass]v1.PodQOSClass{
+	metadatapb.QOS_CLASS_GUARANTEED:  v1.PodQOSGuaranteed,
+	metadatapb.QOS_CLASS_BURSTABLE:   v1.PodQOSBurstable,
+	metadatapb.QOS_CLASS_BEST_EFFORT: v1.PodQOSBestEffort,
+}
+
 // OwnerReferenceToProto converts an OwnerReference into a proto.
 func OwnerReferenceToProto(o *metav1.OwnerReference) (*metadatapb.OwnerReference, error) {
 	oPb := &metadatapb.OwnerReference{
@@ -209,6 +221,15 @@ func PodStatusToProto(ps *v1.PodStatus) (*metadatapb.PodStatus, error) {
 		conditions[i] = podConditionObjToPbMap[c.Type]
 	}
 
+	containers := make([]*metadatapb.ContainerStatus, len(ps.ContainerStatuses))
+	for i, c := range ps.ContainerStatuses {
+		cPb, err := ContainerStatusToProto(&c)
+		if err != nil {
+			return &metadatapb.PodStatus{}, err
+		}
+		containers[i] = cPb
+	}
+
 	psPb := &metadatapb.PodStatus{
 		Message:    ps.Message,
 		Reason:     ps.Reason,
@@ -216,6 +237,7 @@ func PodStatusToProto(ps *v1.PodStatus) (*metadatapb.PodStatus, error) {
 		PodIP:      ps.PodIP,
 		Phase:      podPhaseObjToPbMap[ps.Phase],
 		Conditions: conditions,
+		QOSClass:   qosClassObjToPbMap[ps.QOSClass],
 	}
 
 	return psPb, nil
@@ -238,6 +260,7 @@ func PodStatusFromProto(pb *metadatapb.PodStatus) (*v1.PodStatus, error) {
 		PodIP:      pb.PodIP,
 		Phase:      podPhasePbToObjMap[pb.Phase],
 		Conditions: conditions,
+		QOSClass:   qosClassPbToObjMap[pb.QOSClass],
 	}
 
 	return ps, nil
@@ -607,4 +630,24 @@ func ServiceFromProto(pb *metadatapb.Service) (*v1.Service, error) {
 	}
 
 	return s, nil
+}
+
+// ContainerStatusToProto converts a ContainerStatus into a proto.
+func ContainerStatusToProto(c *v1.ContainerStatus) (*metadatapb.ContainerStatus, error) {
+	cPb := &metadatapb.ContainerStatus{
+		Name:        c.Name,
+		ContainerID: c.ContainerID,
+	}
+	if c.State.Waiting != nil {
+		cPb.ContainerState = metadatapb.CONTAINER_STATE_WAITING
+	} else if c.State.Running != nil {
+		cPb.ContainerState = metadatapb.CONTAINER_STATE_RUNNING
+		cPb.StartTimestampNS = c.State.Running.StartedAt.UnixNano()
+	} else if c.State.Terminated != nil {
+		cPb.ContainerState = metadatapb.CONTAINER_STATE_TERMINATED
+		cPb.StartTimestampNS = c.State.Terminated.StartedAt.UnixNano()
+		cPb.StopTimestampNS = c.State.Terminated.FinishedAt.UnixNano()
+	}
+
+	return cPb, nil
 }
