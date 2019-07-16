@@ -21,12 +21,19 @@ import (
 // EtcdMetadataStore is the implementation of our metadata store in etcd.
 type EtcdMetadataStore struct {
 	client *clientv3.Client
+	sess   *concurrency.Session
 }
 
 // NewEtcdMetadataStore creates a new etcd metadata store.
 func NewEtcdMetadataStore(client *clientv3.Client) (*EtcdMetadataStore, error) {
+	sess, err := concurrency.NewSession(client, concurrency.WithContext(context.Background()))
+	if err != nil {
+		log.WithError(err).Fatal("Could not create new session for etcd")
+	}
+
 	mds := &EtcdMetadataStore{
 		client: client,
+		sess:   sess,
 	}
 
 	return mds, nil
@@ -60,6 +67,23 @@ func (mds *EtcdMetadataStore) UpdateEndpoints(e *metadatapb.Endpoints) error {
 	return mds.updateValue(mapKey, strings.Join(podIds, ","))
 }
 
+// GetEndpoints gets all endpoints in the metadata store.
+func (mds *EtcdMetadataStore) GetEndpoints() ([]*metadatapb.Endpoints, error) {
+	resp, err := mds.client.Get(context.Background(), getEndpointsKey(), clientv3.WithPrefix())
+	if err != nil {
+		log.WithError(err).Fatal("Failed to execute etcd Get")
+		return nil, err
+	}
+
+	endpoints := make([]*metadatapb.Endpoints, len(resp.Kvs))
+	for i, kv := range resp.Kvs {
+		pb := &metadatapb.Endpoints{}
+		proto.Unmarshal(kv.Value, pb)
+		endpoints[i] = pb
+	}
+	return endpoints, nil
+}
+
 func getNamespaceFromMetadata(md *metadatapb.ObjectMetadata) string {
 	return getNamespaceFromString(md.Namespace)
 }
@@ -71,12 +95,12 @@ func getNamespaceFromString(ns string) string {
 	return ns
 }
 
-func getEnd() string {
-	return path.Join("/", "pod") + "/"
+func getEndpointsKey() string {
+	return path.Join("/", "endpoints") + "/"
 }
 
 func getEndpointKey(e *metadatapb.Endpoints) string {
-	return path.Join("/", "endpoints", getNamespaceFromMetadata(e.Metadata), e.Metadata.UID)
+	return path.Join(getEndpointsKey(), getNamespaceFromMetadata(e.Metadata), e.Metadata.UID)
 }
 
 // UpdatePod adds or updates the given pod in the metadata store.
@@ -89,32 +113,6 @@ func (mds *EtcdMetadataStore) UpdatePod(p *metadatapb.Pod) error {
 	key := getPodKey(p)
 
 	return mds.updateValue(key, string(val))
-}
-
-func getPodsKey() string {
-	return path.Join("/", "pod") + "/"
-}
-
-func getPodKey(e *metadatapb.Pod) string {
-	return getPodKeyFromStrings(e.Metadata.UID, getNamespaceFromMetadata(e.Metadata))
-}
-
-func getPodKeyFromStrings(uid string, namespace string) string {
-	return path.Join(getPodsKey(), namespace, uid)
-}
-
-func getContainerKeyFromStrings(namespace string, podName string, containerName string) string {
-	return path.Join("/", "pods", namespace, podName, "containers", containerName, "info")
-}
-
-// GetAgentSchemaKey gets the etcd key for an agent's schema.
-func GetAgentSchemaKey(agentID string, schemaName string) string {
-	return path.Join(GetAgentSchemasKey(agentID), schemaName)
-}
-
-// GetAgentSchemasKey gets all schemas belonging to an agent.
-func GetAgentSchemasKey(agentID string) string {
-	return path.Join("/", "agents", agentID, "schema")
 }
 
 // GetPods gets all pods in the metadata store.
@@ -132,6 +130,32 @@ func (mds *EtcdMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
 		pods[i] = pb
 	}
 	return pods, nil
+}
+
+func getPodsKey() string {
+	return path.Join("/", "pod") + "/"
+}
+
+func getPodKey(e *metadatapb.Pod) string {
+	return getPodKeyFromStrings(e.Metadata.UID, getNamespaceFromMetadata(e.Metadata))
+}
+
+func getPodKeyFromStrings(uid string, namespace string) string {
+	return path.Join("/", "pod", namespace, uid)
+}
+
+func getContainerKeyFromStrings(namespace string, podName string, containerName string) string {
+	return path.Join("/", "pods", namespace, podName, "containers", containerName, "info")
+}
+
+// GetAgentSchemaKey gets the etcd key for an agent's schema.
+func GetAgentSchemaKey(agentID string, schemaName string) string {
+	return path.Join(GetAgentSchemasKey(agentID), schemaName)
+}
+
+// GetAgentSchemasKey gets all schemas belonging to an agent.
+func GetAgentSchemasKey(agentID string) string {
+	return path.Join("/", "agents", agentID, "schema")
 }
 
 // UpdateService adds or updates the given service in the metadata store.
@@ -161,6 +185,11 @@ func (mds *EtcdMetadataStore) UpdateContainers(containers []*metadatapb.Containe
 
 	// Update containers.
 	var containerOps []clientv3.Op
+
+	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
+	mu.Lock(context.Background())
+	defer mu.Unlock(context.Background())
+
 	for i, resp := range txnresp.Responses {
 		if len(resp.GetResponseRange().Kvs) > 0 {
 			podPb := &metadatapb.Pod{}
@@ -185,6 +214,10 @@ func (mds *EtcdMetadataStore) UpdateContainers(containers []*metadatapb.Containe
 
 // UpdateSchemas updates the given schemas in the metadata store.
 func (mds *EtcdMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*metadatapb.SchemaInfo) error {
+	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
+	mu.Lock(context.Background())
+	defer mu.Unlock(context.Background())
+
 	ops := make([]clientv3.Op, len(schemas))
 	computedSchemaOps := make([]clientv3.Op, len(schemas))
 	for i, schemaPb := range schemas {
@@ -240,18 +273,16 @@ func GetHostnameAgentKey(hostname string) string {
 	return "/hostname/" + hostname + "/agent"
 }
 
-func (mds *EtcdMetadataStore) updateValue(key string, value string) error {
-	ctx := context.Background()
-	ss, err := concurrency.NewSession(mds.client, concurrency.WithContext(ctx))
-	if err != nil {
-		log.WithError(err).Fatal("Could not create new session")
-	}
-	defer ss.Close()
+// GetUpdateKey gets the etcd key that the service should grab a lock on before updating any values in etcd.
+func GetUpdateKey() string {
+	return "/updateKey"
+}
 
-	mu := concurrency.NewMutex(ss, key)
-	mu.Lock(ctx)
-	defer mu.Unlock(ctx)
-	_, err = mds.client.Put(context.Background(), key, value)
+func (mds *EtcdMetadataStore) updateValue(key string, value string) error {
+	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
+	mu.Lock(context.Background())
+	defer mu.Unlock(context.Background())
+	_, err := mds.client.Put(context.Background(), key, value)
 	if err != nil {
 		return errors.New("Unable to update etcd")
 	}
@@ -337,15 +368,8 @@ func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) (*[]messagespb.M
 func (mds *EtcdMetadataStore) GetAgents() (*[]datapb.AgentData, error) {
 	var agents []datapb.AgentData
 
-	ctx := context.Background()
-	ss, err := concurrency.NewSession(mds.client, concurrency.WithContext(ctx))
-	if err != nil {
-		log.WithError(err).Fatal("Could not create new session")
-	}
-	defer ss.Close()
-
 	// Get all agents.
-	resp, err := mds.client.Get(ctx, GetAgentKey(""), clientv3.WithPrefix())
+	resp, err := mds.client.Get(context.Background(), GetAgentKey(""), clientv3.WithPrefix())
 	if err != nil {
 		log.WithError(err).Fatal("Failed to execute etcd Get")
 		return nil, err
@@ -363,4 +387,9 @@ func (mds *EtcdMetadataStore) GetAgents() (*[]datapb.AgentData, error) {
 	}
 
 	return &agents, nil
+}
+
+// Close cleans up the etcd metadata store, such as its etcd session.
+func (mds *EtcdMetadataStore) Close() {
+	mds.sess.Close()
 }
