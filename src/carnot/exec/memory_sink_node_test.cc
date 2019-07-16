@@ -62,7 +62,7 @@ TEST_F(MemorySinkNodeTest, basic) {
                          .AddColumn<types::Int64Value>({1, 2})
                          .AddColumn<types::BoolValue>({true, false})
                          .get(),
-                     false);
+                     false, 0);
 
   EXPECT_EQ(1, exec_state_->table_store()->GetTable("cpu_15s")->NumBatches());
   EXPECT_EQ(types::DataType::INT64,
@@ -80,7 +80,7 @@ TEST_F(MemorySinkNodeTest, basic) {
                        .AddColumn<types::Int64Value>({3, 4})
                        .AddColumn<types::BoolValue>({false, true})
                        .get(),
-                   false)
+                   false, 0)
       .Close();
 
   EXPECT_EQ(2, exec_state_->table_store()->GetTable("cpu_15s")->NumBatches());

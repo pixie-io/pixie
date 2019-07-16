@@ -35,7 +35,7 @@ Status LimitNode::OpenImpl(ExecState* /*exec_state*/) { return Status::OK(); }
 
 Status LimitNode::CloseImpl(ExecState* /*exec_state*/) { return Status::OK(); }
 
-Status LimitNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb) {
+Status LimitNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, int64_t) {
   size_t record_limit = plan_node_->record_limit();
   // Check if the entire row batch will fit.
   if (record_limit > (records_processed_ + rb.num_rows())) {

@@ -52,7 +52,8 @@ TEST_F(LimitNodeTest, single_batch) {
       .ConsumeNext(RowBatchBuilder(input_rd, 12, true)
                        .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6})
                        .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15, 1, 3, 6, 9, 12, 15})
-                       .get())
+                       .get(),
+                   0)
       .ExpectRowBatch(RowBatchBuilder(output_rd, 10, true)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6, 1, 2, 3, 4})
                           .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15, 1, 3, 6, 9})
@@ -70,7 +71,8 @@ TEST_F(LimitNodeTest, single_batch_exact_boundary) {
       .ConsumeNext(RowBatchBuilder(input_rd, 10, false)
                        .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6, 1, 2, 3, 4})
                        .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15, 1, 3, 6, 9})
-                       .get())
+                       .get(),
+                   0)
       .ExpectRowBatch(RowBatchBuilder(output_rd, 10, true)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6, 1, 2, 3, 4})
                           .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15, 1, 3, 6, 9})
@@ -89,7 +91,8 @@ TEST_F(LimitNodeTest, limits_records_split) {
       .ConsumeNext(RowBatchBuilder(input_rd, 6, false)
                        .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
                        .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15})
-                       .get())
+                       .get(),
+                   0)
       .ExpectRowBatch(RowBatchBuilder(output_rd, 6, false)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
                           .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15})
@@ -97,11 +100,13 @@ TEST_F(LimitNodeTest, limits_records_split) {
       .ConsumeNext(RowBatchBuilder(input_rd, 6, true)
                        .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
                        .AddColumn<types::Int64Value>({1, 4, 6, 8, 10, 12})
-                       .get())
+                       .get(),
+                   0)
       .ExpectRowBatch(RowBatchBuilder(output_rd, 4, true)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4})
                           .AddColumn<types::Int64Value>({1, 4, 6, 8})
-                          .get())
+                          .get(),
+                      0)
       .Close();
 }
 
@@ -115,15 +120,18 @@ TEST_F(LimitNodeTest, limits_exact_boundary) {
       .ConsumeNext(RowBatchBuilder(input_rd, 6, false)
                        .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
                        .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15})
-                       .get())
+                       .get(),
+                   0)
       .ExpectRowBatch(RowBatchBuilder(output_rd, 6, false)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
                           .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15})
-                          .get())
+                          .get(),
+                      0)
       .ConsumeNext(RowBatchBuilder(input_rd, 4, true)
                        .AddColumn<types::Int64Value>({1, 2, 3, 4})
                        .AddColumn<types::Int64Value>({1, 4, 6, 8})
-                       .get())
+                       .get(),
+                   0)
       .ExpectRowBatch(RowBatchBuilder(output_rd, 4, true)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4})
                           .AddColumn<types::Int64Value>({1, 4, 6, 8})
@@ -143,7 +151,7 @@ TEST_F(LimitNodeTest, child_fail) {
                                    .AddColumn<types::Int64Value>({1, 2, 3, 4})
                                    .AddColumn<types::Int64Value>({1, 3, 6, 9})
                                    .get(),
-                               error::InvalidArgument("args"));
+                               0, error::InvalidArgument("args"));
 }
 
 }  // namespace exec

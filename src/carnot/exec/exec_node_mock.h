@@ -24,7 +24,7 @@ class MockExecNode : public ExecNode {
   MOCK_METHOD1(OpenImpl, Status(ExecState* exec_state));
   MOCK_METHOD1(CloseImpl, Status(ExecState* exec_state));
   MOCK_METHOD1(GenerateNextImpl, Status(ExecState*));
-  MOCK_METHOD2(ConsumeNextImpl, Status(ExecState*, const table_store::schema::RowBatch&));
+  MOCK_METHOD3(ConsumeNextImpl, Status(ExecState*, const table_store::schema::RowBatch&, int64_t));
 };
 
 }  // namespace exec

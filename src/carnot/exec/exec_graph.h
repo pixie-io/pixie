@@ -84,13 +84,13 @@ class ExecutionGraph {
     nodes_.insert({node.id(), execNode});
 
     // Update parents' children.
-    for (const int64_t& parent_id : parents) {
-      auto parent = nodes_.find(parent_id);
+    for (size_t i = 0; i < parents.size(); ++i) {
+      auto parent = nodes_.find(parents[i]);
       // Error if can't find parent in nodes.
       if (parent == nodes_.end()) {
         return error::NotFound("Could not find parent ExecNode.");
       }
-      parent->second->AddChild(execNode);
+      parent->second->AddChild(execNode, i);
     }
     return Status::OK();
   }

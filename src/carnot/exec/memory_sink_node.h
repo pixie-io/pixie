@@ -24,7 +24,8 @@ class MemorySinkNode : public SinkNode {
   Status PrepareImpl(ExecState* exec_state) override;
   Status OpenImpl(ExecState* exec_state) override;
   Status CloseImpl(ExecState* exec_state) override;
-  Status ConsumeNextImpl(ExecState* exec_state, const table_store::schema::RowBatch& rb) override;
+  Status ConsumeNextImpl(ExecState* exec_state, const table_store::schema::RowBatch& rb,
+                         int64_t parent_index) override;
 
  private:
   std::unique_ptr<plan::MemorySinkOperator> plan_node_;

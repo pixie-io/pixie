@@ -128,7 +128,7 @@ Status BlockingAggNode::OpenImpl(ExecState* exec_state) {
   return Status::OK();
 }
 
-Status BlockingAggNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb) {
+Status BlockingAggNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, int64_t) {
   if (HasNoGroups()) {
     return AggregateGroupByNone(exec_state, rb);
   }

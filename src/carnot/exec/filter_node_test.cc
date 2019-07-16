@@ -70,7 +70,8 @@ TEST_F(FilterNodeTest, basic) {
                        .AddColumn<types::Int64Value>({1, 1, 3, 4})
                        .AddColumn<types::Int64Value>({1, 3, 6, 9})
                        .AddColumn<types::StringValue>({"ABC", "DEF", "HELLO", "WORLD"})
-                       .get())
+                       .get(),
+                   0)
       .ExpectRowBatch(RowBatchBuilder(output_rd, 2, false)
                           .AddColumn<types::Int64Value>({1, 1})
                           .AddColumn<types::Int64Value>({1, 3})
@@ -80,7 +81,8 @@ TEST_F(FilterNodeTest, basic) {
                        .AddColumn<types::Int64Value>({1, 2, 3})
                        .AddColumn<types::Int64Value>({1, 4, 6})
                        .AddColumn<types::StringValue>({"Hello", "world", "now"})
-                       .get())
+                       .get(),
+                   0)
       .ExpectRowBatch(RowBatchBuilder(output_rd, 1, true)
                           .AddColumn<types::Int64Value>({1})
                           .AddColumn<types::Int64Value>({1})
@@ -103,7 +105,8 @@ TEST_F(FilterNodeTest, string_pred) {
       .ConsumeNext(RowBatchBuilder(input_rd, 4, false)
                        .AddColumn<types::StringValue>({"A", "B", "A", "D"})
                        .AddColumn<types::Int64Value>({1, 3, 6, 9})
-                       .get())
+                       .get(),
+                   0)
       .ExpectRowBatch(RowBatchBuilder(output_rd, 2, false)
                           .AddColumn<types::StringValue>({"A", "A"})
                           .AddColumn<types::Int64Value>({1, 6})
@@ -111,7 +114,8 @@ TEST_F(FilterNodeTest, string_pred) {
       .ConsumeNext(RowBatchBuilder(input_rd, 3, true)
                        .AddColumn<types::StringValue>({"C", "B", "A"})
                        .AddColumn<types::Int64Value>({1, 4, 6})
-                       .get())
+                       .get(),
+                   0)
       .ExpectRowBatch(RowBatchBuilder(output_rd, 1, true)
                           .AddColumn<types::StringValue>({"A"})
                           .AddColumn<types::Int64Value>({6})
@@ -132,7 +136,7 @@ TEST_F(FilterNodeTest, child_fail) {
                                    .AddColumn<types::Int64Value>({1, 2, 3, 4})
                                    .AddColumn<types::Int64Value>({1, 3, 6, 9})
                                    .get(),
-                               error::InvalidArgument("args"));
+                               0, error::InvalidArgument("args"));
 }
 
 }  // namespace exec

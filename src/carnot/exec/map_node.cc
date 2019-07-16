@@ -42,7 +42,7 @@ Status MapNode::CloseImpl(ExecState* exec_state) {
   PL_RETURN_IF_ERROR(evaluator_->Close(exec_state));
   return Status::OK();
 }
-Status MapNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb) {
+Status MapNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, int64_t) {
   RowBatch output_rb(*output_descriptor_, rb.num_rows());
   PL_RETURN_IF_ERROR(evaluator_->Evaluate(exec_state, rb, &output_rb));
   output_rb.set_eos(rb.eos());

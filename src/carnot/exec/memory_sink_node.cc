@@ -50,7 +50,7 @@ Status MemorySinkNode::OpenImpl(ExecState*) { return Status::OK(); }
 
 Status MemorySinkNode::CloseImpl(ExecState*) { return Status::OK(); }
 
-Status MemorySinkNode::ConsumeNextImpl(ExecState*, const RowBatch& rb) {
+Status MemorySinkNode::ConsumeNextImpl(ExecState*, const RowBatch& rb, int64_t) {
   DCHECK_EQ(static_cast<size_t>(0), children().size());
   PL_RETURN_IF_ERROR(table_->WriteRowBatch(rb));
   return Status::OK();

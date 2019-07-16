@@ -19,7 +19,6 @@
 namespace pl {
 namespace carnot {
 namespace exec {
-
 class CarnotTestUtils {
  public:
   CarnotTestUtils() = default;
@@ -139,7 +138,7 @@ class RowBatchBuilder {
  *   node_tester.ConsumeNext(RowBatchBuilder(input_rd, 3, true)
  *                      .AddColumn<udf::Int64Value>({1, 2, 3})
  *                      .AddColumn<udf::Int64Value>({1, 4, 6})
- *                      .get())
+ *                      .get(), 5)
  *     .ExpectRowBatch(
  *         RowBatchBuilder(output_rd, 3, false).AddColumn<udf::Int64Value>({2, 6, 9}).get())
  *     .Close();
@@ -160,7 +159,7 @@ class ExecNodeTester {
     plan_node_ = std::make_unique<TPlanNode>(*casted_plan_node);
 
     if (!exec_node_->IsSink()) {
-      exec_node_->AddChild(&mock_child_);
+      exec_node_->AddChild(&mock_child_, 0);
     }
 
     EXPECT_OK(exec_node_->Init(*plan_node_, output_descriptor_, input_descriptors_));
@@ -188,11 +187,12 @@ class ExecNodeTester {
    * @return the ExecNodeTester, to allow for chaining.
    */
   ExecNodeTester& GenerateNextResult() {
-    auto check_result_batch = [&](ExecState*, const table_store::schema::RowBatch& child_rb) {
+    auto check_result_batch = [&](ExecState*, const table_store::schema::RowBatch& child_rb,
+                                  int64_t) {
       current_rb_ = std::make_unique<table_store::schema::RowBatch>(child_rb);
     };
 
-    EXPECT_CALL(mock_child_, ConsumeNextImpl(testing::_, testing::_))
+    EXPECT_CALL(mock_child_, ConsumeNextImpl(testing::_, testing::_, testing::_))
         .Times(1)
         .WillOnce(
             testing::DoAll(testing::Invoke(check_result_batch), testing::Return(Status::OK())))
@@ -208,12 +208,13 @@ class ExecNodeTester {
    * @param error The expected error that ConsumeNext should fail with.
    * @return the ExecNodeTester, to allow for chaining.
    */
-  ExecNodeTester& ConsumeNextShouldFail(const table_store::schema::RowBatch& rb, Status error) {
-    EXPECT_CALL(mock_child_, ConsumeNextImpl(testing::_, testing::_))
+  ExecNodeTester& ConsumeNextShouldFail(const table_store::schema::RowBatch& rb, int64_t parent_id,
+                                        Status error) {
+    EXPECT_CALL(mock_child_, ConsumeNextImpl(testing::_, testing::_, testing::_))
         .Times(1)
         .WillRepeatedly(testing::Return(error));
 
-    auto retval = exec_node_->ConsumeNext(exec_state_, rb);
+    auto retval = exec_node_->ConsumeNext(exec_state_, rb, parent_id);
     EXPECT_FALSE(retval.ok());
 
     return *this;
@@ -225,18 +226,20 @@ class ExecNodeTester {
    * @param child_called Whether the mock child's ConsumeNext should be called.
    * @return the ExecNodeTester, to allow for chaining.
    */
-  ExecNodeTester& ConsumeNext(const table_store::schema::RowBatch& rb, bool child_called = true) {
-    auto check_result_batch = [&](ExecState*, const table_store::schema::RowBatch& child_rb) {
+  ExecNodeTester& ConsumeNext(const table_store::schema::RowBatch& rb, int64_t parent_id,
+                              bool child_called = true) {
+    auto check_result_batch = [&](ExecState*, const table_store::schema::RowBatch& child_rb,
+                                  int64_t) {
       current_rb_ = std::make_unique<table_store::schema::RowBatch>(child_rb);
     };
 
     if (child_called) {
-      EXPECT_CALL(mock_child_, ConsumeNextImpl(testing::_, testing::_))
+      EXPECT_CALL(mock_child_, ConsumeNextImpl(testing::_, testing::_, testing::_))
           .Times(1)
           .WillOnce(
               testing::DoAll(testing::Invoke(check_result_batch), testing::Return(Status::OK())));
     }
-    EXPECT_OK(exec_node_->ConsumeNext(exec_state_, rb));
+    EXPECT_OK(exec_node_->ConsumeNext(exec_state_, rb, parent_id));
 
     return *this;
   }

@@ -63,13 +63,15 @@ TEST_F(MapNodeTest, basic) {
       .ConsumeNext(RowBatchBuilder(input_rd, 4, false)
                        .AddColumn<types::Int64Value>({1, 2, 3, 4})
                        .AddColumn<types::Int64Value>({1, 3, 6, 9})
-                       .get())
+                       .get(),
+                   0)
       .ExpectRowBatch(
           RowBatchBuilder(output_rd, 4, false).AddColumn<types::Int64Value>({2, 5, 9, 13}).get())
       .ConsumeNext(RowBatchBuilder(input_rd, 3, true)
                        .AddColumn<types::Int64Value>({1, 2, 3})
                        .AddColumn<types::Int64Value>({1, 4, 6})
-                       .get())
+                       .get(),
+                   0)
       .ExpectRowBatch(
           RowBatchBuilder(output_rd, 3, true).AddColumn<types::Int64Value>({2, 6, 9}).get())
       .Close();
@@ -85,7 +87,7 @@ TEST_F(MapNodeTest, child_fail) {
                                    .AddColumn<types::Int64Value>({1, 2, 3, 4})
                                    .AddColumn<types::Int64Value>({1, 3, 6, 9})
                                    .get(),
-                               error::InvalidArgument("args"));
+                               0, error::InvalidArgument("args"));
 }
 
 }  // namespace exec

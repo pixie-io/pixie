@@ -83,10 +83,11 @@ class ExecNode {
    * @param rb The input row batch.
    * @return The Status of consumption.
    */
-  Status ConsumeNext(ExecState* exec_state, const table_store::schema::RowBatch& rb) {
+  Status ConsumeNext(ExecState* exec_state, const table_store::schema::RowBatch& rb,
+                     int64_t parent_index) {
     DCHECK(type() == ExecNodeType::kSinkNode || type() == ExecNodeType::kProcessingNode);
 
-    return ConsumeNextImpl(exec_state, rb);
+    return ConsumeNextImpl(exec_state, rb, parent_index);
   }
 
   /**
@@ -114,10 +115,17 @@ class ExecNode {
    * Add a new child node where data is forwarded.
    * This node will not own the child. The lifetime of the child should
    * exceed the lifetime of this node.
+   * The node also needs to know which parent index it is for its child.
+   * A node that is the 2nd parent of a child needs to pass that information
+   * down when it sends that child row batches so the child can differentiate
+   * between the row batches of its various parents.
    *
    * @param child Another execution node.
    */
-  void AddChild(ExecNode* child) { children_.emplace_back(child); }
+  void AddChild(ExecNode* child, int64_t parent_index) {
+    children_.emplace_back(child);
+    parent_ids_for_children_.emplace_back(parent_index);
+  }
 
   /**
    * Get the type of the execution node.
@@ -138,8 +146,8 @@ class ExecNode {
    * @return Status of children execution.
    */
   Status SendRowBatchToChildren(ExecState* exec_state, const table_store::schema::RowBatch& rb) {
-    for (auto* child : children_) {
-      PL_RETURN_IF_ERROR(child->ConsumeNext(exec_state, rb));
+    for (size_t i = 0; i < children_.size(); ++i) {
+      PL_RETURN_IF_ERROR(children_[i]->ConsumeNext(exec_state, rb, parent_ids_for_children_[i]));
     }
     return Status::OK();
   }
@@ -161,7 +169,7 @@ class ExecNode {
     return error::Unimplemented("Implement in derived class (if source)");
   }
 
-  virtual Status ConsumeNextImpl(ExecState*, const table_store::schema::RowBatch&) {
+  virtual Status ConsumeNextImpl(ExecState*, const table_store::schema::RowBatch&, int64_t) {
     return error::Unimplemented("Implement in derived class (if sink or processing)");
   }
 
@@ -170,6 +178,9 @@ class ExecNode {
  private:
   // Unowned reference to the children. Must remain valid for the duration of query.
   std::vector<ExecNode*> children_;
+  // For each of the children (which may have multiple parents) which parent is this node?
+  // Parents 0, 1, and 2 would exist for a node with 3 parents.
+  std::vector<int64_t> parent_ids_for_children_;
   bool is_closed_ = false;
   // The type of execution node.
   ExecNodeType type_;
