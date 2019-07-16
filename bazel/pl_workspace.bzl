@@ -13,11 +13,11 @@ def _package_manager_setup():
     package_manager_repositories()
 
     dpkg_src(
-        name = "debian_stretch",
+        name = "debian_buster",
         arch = "amd64",
-        distro = "stretch",
-        sha256 = "9aea0e4c9ce210991c6edcb5370cb9b11e9e554a0f563e7754a4028a8fd0cb73",
-        snapshot = "20171101T160520Z",
+        distro = "buster",
+        sha256 = "bd1bed6b19bf173d60ac130edee47087203e873f3b0981f5987f77a91a2cba85",
+        snapshot = "20190716T085419Z",
         url = "http://snapshot.debian.org/archive",
     )
 
@@ -31,7 +31,7 @@ def _package_manager_setup():
             "libunwind8",
             "zlib1g",
         ],
-        sources = ["@debian_stretch//file:Packages.json"],
+        sources = ["@debian_buster//file:Packages.json"],
     )
 
 def _docker_images_setup():
