@@ -812,7 +812,61 @@ TEST_F(CompilerTimeExpressionTest, already_completed) {
   EXPECT_EQ(static_cast<IntIR*>(res_start_repr)->val(), 24);
   EXPECT_EQ(static_cast<IntIR*>(res_stop_repr)->val(), 8);
 }
+class VerifyFilterExpressionTest : public RulesTest {
+ protected:
+  void SetUp() override {
+    RulesTest::SetUp();
+    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
+  }
+  FuncIR* MakeFilter() {
+    auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(constant1->Init(10, ast));
 
+    auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(constant2->Init(10, ast));
+
+    filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"}, "pl",
+                                std::vector<ExpressionIR*>({constant1, constant2}),
+                                false /* compile_time */, ast));
+
+    auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
+
+    FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
+    ArgMap amap({{"fn", filter_func_lambda}});
+    EXPECT_OK(filter->Init(mem_src, amap, ast));
+    return filter_func;
+  }
+  MemorySourceIR* mem_src;
+  FuncIR* filter_func;
+};
+
+TEST_F(VerifyFilterExpressionTest, basic_test) {
+  FuncIR* filter_func = MakeFilter();
+  filter_func->SetOutputDataType(types::DataType::BOOLEAN);
+  VerifyFilterExpressionRule rule(compiler_state_.get());
+  auto status_or = rule.Execute(graph.get());
+  EXPECT_OK(status_or);
+  EXPECT_FALSE(status_or.ValueOrDie());
+}
+
+TEST_F(VerifyFilterExpressionTest, wrong_filter_func_type) {
+  FuncIR* filter_func = MakeFilter();
+  filter_func->SetOutputDataType(types::DataType::INT64);
+  VerifyFilterExpressionRule rule(compiler_state_.get());
+  auto status_or = rule.Execute(graph.get());
+  EXPECT_NOT_OK(status_or);
+}
+
+TEST_F(VerifyFilterExpressionTest, filter_func_not_set) {
+  FuncIR* filter_func = MakeFilter();
+  EXPECT_EQ(filter_func->EvaluatedDataType(), types::DataType::DATA_TYPE_UNKNOWN);
+  VerifyFilterExpressionRule rule(compiler_state_.get());
+  auto status_or = rule.Execute(graph.get());
+  EXPECT_NOT_OK(status_or);
+}
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

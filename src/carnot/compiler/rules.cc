@@ -327,6 +327,22 @@ StatusOr<IntIR*> RangeArgExpressionRule::EvalFunc(std::string name, std::vector<
   return ir_result;
 }
 
+StatusOr<bool> VerifyFilterExpressionRule::Apply(IRNode* ir_node) const {
+  if (match(ir_node, Filter())) {
+    // Match any function that has all args resolved.
+    FilterIR* filter = static_cast<FilterIR*>(ir_node);
+    LambdaIR* lambda = filter->filter_func();
+    PL_ASSIGN_OR_RETURN(IRNode * f, lambda->GetDefaultExpr());
+    DCHECK(f->IsExpression()) << "Expected expression, but didn't find it.";
+    types::DataType expr_type = static_cast<ExpressionIR*>(f)->EvaluatedDataType();
+    if (expr_type != types::DataType::BOOLEAN) {
+      return ir_node->CreateIRNodeError("Expected Boolean for Filter expression, got $0",
+                                        types::DataType_Name(expr_type));
+    }
+  }
+  return false;
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

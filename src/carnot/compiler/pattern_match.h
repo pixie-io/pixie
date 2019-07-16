@@ -437,7 +437,7 @@ inline RangeArgMatch<LHS_t, RHS_t, false> Range(LHS_t lhs, RHS_t rhs) {
 }
 
 /**
- * @brief Match range operator regardless of the
+ * @brief Match range operator.
  */
 inline ClassMatch<IRNodeType::kRange> Range() { return ClassMatch<IRNodeType::kRange>(); }
 
@@ -466,11 +466,19 @@ struct FuncMatch : public ParentMatch {
 };
 
 /**
- * @brief Match range operator regardless of the
+ * @brief Match compile-time function.
  */
 inline FuncMatch<true> CompileTimeFunc() { return FuncMatch<true>(); }
+
+/**
+ * @brief Match run-time function.
+ */
 inline FuncMatch<false> RunTimeFunc() { return FuncMatch<false>(); }
 
+/**
+ * @brief Match Filter operator.
+ */
+inline ClassMatch<IRNodeType::kFilter> Filter() { return ClassMatch<IRNodeType::kFilter>(); }
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

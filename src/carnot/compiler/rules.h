@@ -119,6 +119,18 @@ class RangeArgExpressionRule : public Rule {
   StatusOr<IntIR*> EvalFunc(std::string name, std::vector<IntIR*> evaled_args, FuncIR* func) const;
 };
 
+class VerifyFilterExpressionRule : public Rule {
+  /**
+   * @brief Quickly check to see whether filter expression returns True.
+   *
+   */
+ public:
+  explicit VerifyFilterExpressionRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) const override;
+};
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
