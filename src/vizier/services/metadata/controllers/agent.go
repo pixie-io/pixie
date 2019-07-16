@@ -346,16 +346,19 @@ func (m *AgentManagerImpl) GetMetadataUpdates() (*[]*metadatapb.ResourceUpdate, 
 		return nil, err
 	}
 
-	updates := make([]*metadatapb.ResourceUpdate, len(pods)+len(endpoints))
+	var updates []*metadatapb.ResourceUpdate
 
-	for i, pod := range pods {
+	for _, pod := range pods {
 		podUpdate := GetResourceUpdateFromPod(pod)
-		updates[i] = podUpdate
+		updates = append(updates, podUpdate)
+
+		containerUpdates := GetContainerResourceUpdatesFromPod(pod)
+		updates = append(updates, containerUpdates...)
 	}
 
-	for j, endpoint := range endpoints {
+	for _, endpoint := range endpoints {
 		epUpdate := GetResourceUpdateFromEndpoints(endpoint)
-		updates[j+len(pods)] = epUpdate
+		updates = append(updates, epUpdate)
 	}
 
 	return &updates, nil

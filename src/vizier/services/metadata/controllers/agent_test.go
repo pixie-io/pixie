@@ -569,11 +569,25 @@ func TestGetMetadataUpdates(t *testing.T) {
 	defer cleanup()
 
 	podMock := make([]*metadatapb.Pod, 2)
+	containers := make([]*metadatapb.ContainerStatus, 2)
+
+	containers[0] = &metadatapb.ContainerStatus{
+		Name:        "c1",
+		ContainerID: "0987",
+	}
+
+	containers[1] = &metadatapb.ContainerStatus{
+		Name:        "c2",
+		ContainerID: "2468",
+	}
 
 	pod1 := &metadatapb.Pod{
 		Metadata: &metadatapb.ObjectMetadata{
 			Name: "abcd",
 			UID:  "1234",
+		},
+		Status: &metadatapb.PodStatus{
+			ContainerStatuses: containers,
 		},
 	}
 	podMock[0] = pod1
@@ -582,6 +596,7 @@ func TestGetMetadataUpdates(t *testing.T) {
 			Name: "efgh",
 			UID:  "5678",
 		},
+		Status: &metadatapb.PodStatus{},
 	}
 	podMock[1] = pod2
 
@@ -605,16 +620,22 @@ func TestGetMetadataUpdates(t *testing.T) {
 	updates, err := agtMgr.GetMetadataUpdates()
 	assert.Nil(t, err)
 
-	assert.Equal(t, 3, len(*updates))
+	assert.Equal(t, 5, len(*updates))
 
 	assert.Equal(t, metadatapb.POD, (*updates)[0].Type)
 	assert.Equal(t, "1234", (*updates)[0].Metadata.UID)
 
-	assert.Equal(t, metadatapb.POD, (*updates)[1].Type)
-	assert.Equal(t, "5678", (*updates)[1].Metadata.UID)
+	assert.Equal(t, metadatapb.CONTAINER, (*updates)[1].Type)
+	assert.Equal(t, "0987", (*updates)[1].Metadata.UID)
 
-	assert.Equal(t, metadatapb.SERVICE, (*updates)[2].Type)
-	assert.Equal(t, "abcd", (*updates)[0].Metadata.Name)
+	assert.Equal(t, metadatapb.CONTAINER, (*updates)[2].Type)
+	assert.Equal(t, "2468", (*updates)[2].Metadata.UID)
+
+	assert.Equal(t, metadatapb.POD, (*updates)[3].Type)
+	assert.Equal(t, "5678", (*updates)[3].Metadata.UID)
+
+	assert.Equal(t, metadatapb.SERVICE, (*updates)[4].Type)
+	assert.Equal(t, "object_md", (*updates)[4].Metadata.Name)
 }
 
 func TestGetMetadataUpdatesGetPodsFailed(t *testing.T) {

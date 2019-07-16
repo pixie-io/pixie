@@ -77,13 +77,6 @@ message: "this is message"
 phase: 2
 conditions: 2
 qos_class: 3
-`
-
-const podStatusWithContainerPb = `
-message: "this is message"
-phase: 2
-conditions: 2
-qos_class: 3
 container_statuses {
    name: "test_container_2"
    container_id: "test_id_2"
@@ -117,6 +110,17 @@ status {
 	message: "this is message"
 	phase: 2
 	conditions: 2
+	container_statuses {
+	   name: "test_container_2"
+	   container_id: "test_id_2"
+	   container_state: 1
+	   start_timestamp_ns: 4	
+	}
+	container_statuses {
+	   name: "test_container"
+	   container_id: "test_id"
+	   container_state: 3
+	}
 }
 spec {
 	node_name: "test"
@@ -487,37 +491,14 @@ func TestPodStatusToProto(t *testing.T) {
 		Type: v1.PodReady,
 	}
 
-	o := v1.PodStatus{
-		Message:    "this is message",
-		Phase:      v1.PodRunning,
-		Conditions: conditions,
-		QOSClass:   v1.PodQOSBestEffort,
-	}
-
-	oPb, err := k8s.PodStatusToProto(&o)
-	assert.Nil(t, err, "must not have an error")
-
-	expectedPb := &metadatapb.PodStatus{}
-	if err := proto.UnmarshalText(podStatusPb, expectedPb); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	assert.Equal(t, expectedPb, oPb)
-}
-
-func TestPodStatusWithContainerToProto(t *testing.T) {
-	conditions := make([]v1.PodCondition, 1)
-	conditions[0] = v1.PodCondition{
-		Type: v1.PodReady,
-	}
-
 	containers := make([]v1.ContainerStatus, 2)
 	startTime := metav1.Unix(0, 4)
 	runningState := v1.ContainerStateRunning{
 		StartedAt: startTime,
 	}
 	containers[0] = v1.ContainerStatus{
-		Name:        "test_container",
-		ContainerID: "test_id",
+		Name:        "test_container_2",
+		ContainerID: "test_id_2",
 		State: v1.ContainerState{
 			Running: &runningState,
 		},
@@ -591,10 +572,32 @@ func TestPodToProto(t *testing.T) {
 		Type: v1.PodReady,
 	}
 
+	containers := make([]v1.ContainerStatus, 2)
+	startTime := metav1.Unix(0, 4)
+	runningState := v1.ContainerStateRunning{
+		StartedAt: startTime,
+	}
+	containers[0] = v1.ContainerStatus{
+		Name:        "test_container_2",
+		ContainerID: "test_id_2",
+		State: v1.ContainerState{
+			Running: &runningState,
+		},
+	}
+	waitingState := v1.ContainerStateWaiting{}
+	containers[1] = v1.ContainerStatus{
+		Name:        "test_container",
+		ContainerID: "test_id",
+		State: v1.ContainerState{
+			Waiting: &waitingState,
+		},
+	}
+
 	status := v1.PodStatus{
-		Message:    "this is message",
-		Phase:      v1.PodRunning,
-		Conditions: conditions,
+		Message:           "this is message",
+		Phase:             v1.PodRunning,
+		Conditions:        conditions,
+		ContainerStatuses: containers,
 	}
 
 	spec := v1.PodSpec{

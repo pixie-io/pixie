@@ -211,6 +211,7 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 	if err != nil {
 		log.WithError(err).Fatal("Could not convert pod object to protobuf.")
 	}
+
 	err = mh.mds.UpdatePod(pb)
 	if err != nil {
 		log.WithError(err).Fatal("Could not write pod protobuf to metadata store.")
@@ -224,6 +225,15 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 	mh.agentUpdateCh <- &UpdateMessage{
 		Hostnames: &hostname,
 		Message:   updatePb,
+	}
+
+	// Send container updates.
+	containerUpdates := GetContainerResourceUpdatesFromPod(pb)
+	for _, update := range containerUpdates {
+		mh.agentUpdateCh <- &UpdateMessage{
+			Hostnames: &hostname,
+			Message:   update,
+		}
 	}
 }
 
@@ -242,9 +252,22 @@ func (mh *MetadataHandler) handleServiceMetadata(o runtime.Object) {
 
 // GetResourceUpdateFromPod gets the update info from the given pod proto.
 func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
+	var containers []*metadatapb.ObjectReference
+	if pod.Status.ContainerStatuses != nil {
+		for _, s := range pod.Status.ContainerStatuses {
+			container := &metadatapb.ObjectReference{
+				Kind: "container",
+				Name: s.Name,
+				UID:  s.ContainerID,
+			}
+			containers = append(containers, container)
+		}
+	}
+
 	update := &metadatapb.ResourceUpdate{
-		Metadata: getUpdateMetadata(pod.Metadata),
-		Type:     metadatapb.POD,
+		Metadata:   getUpdateMetadata(pod.Metadata),
+		Type:       metadatapb.POD,
+		References: containers,
 	}
 
 	return update
@@ -270,4 +293,22 @@ func GetResourceUpdateFromEndpoints(ep *metadatapb.Endpoints) *metadatapb.Resour
 	}
 
 	return update
+}
+
+// GetContainerResourceUpdatesFromPod gets the container updates for the given pod.
+func GetContainerResourceUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.ResourceUpdate {
+	updates := make([]*metadatapb.ResourceUpdate, len(pod.Status.ContainerStatuses))
+
+	for i, s := range pod.Status.ContainerStatuses {
+		updates[i] = &metadatapb.ResourceUpdate{
+			Metadata: &metadatapb.ObjectMetadata{
+				Name:                s.Name,
+				UID:                 s.ContainerID,
+				CreationTimestampNS: s.StartTimestampNS,
+				DeletionTimestampNS: s.StopTimestampNS,
+			},
+			Type: metadatapb.CONTAINER,
+		}
+	}
+	return updates
 }

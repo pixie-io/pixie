@@ -126,6 +126,37 @@ spec {
 }
 `
 
+const podPbWithContainers = `
+metadata {
+	name: "object_md"
+	uid: "ijkl"
+	resource_version: "1",
+	cluster_name: "a_cluster",
+	owner_references {
+	  kind: "pod"
+	  name: "test"
+	  uid: "abcd"
+	}
+	creation_timestamp_ns: 4
+	deletion_timestamp_ns: 6
+}
+status {
+	message: "this is message"
+	phase: 2
+	conditions: 2
+	container_statuses {
+		name: "container1"
+		container_state: 3
+		container_id: "test"
+	}
+}
+spec {
+	node_name: "test"
+	hostname: "hostname"
+	dns_policy: 2
+}
+`
+
 func TestObjectToEndpointsProto(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
@@ -665,8 +696,15 @@ func TestObjectToPodProto(t *testing.T) {
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
 	expectedPb := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPb, expectedPb); err != nil {
+	if err := proto.UnmarshalText(podPbWithContainers, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	refs := make([]*metadatapb.ObjectReference, 1)
+	refs[0] = &metadatapb.ObjectReference{
+		Kind: "container",
+		Name: "container1",
+		UID:  "test",
 	}
 
 	updatePb := &metadatapb.ResourceUpdate{
@@ -677,6 +715,7 @@ func TestObjectToPodProto(t *testing.T) {
 			CreationTimestampNS: 4,
 			DeletionTimestampNS: 6,
 		},
+		References: refs,
 	}
 
 	update, err := updatePb.Marshal()
@@ -721,10 +760,22 @@ func TestObjectToPodProto(t *testing.T) {
 		Type: v1.PodReady,
 	}
 
+	containers := make([]v1.ContainerStatus, 1)
+	waitingState := v1.ContainerStateWaiting{}
+
+	containers[0] = v1.ContainerStatus{
+		Name:        "container1",
+		ContainerID: "test",
+		State: v1.ContainerState{
+			Waiting: &waitingState,
+		},
+	}
+
 	status := v1.PodStatus{
-		Message:    "this is message",
-		Phase:      v1.PodRunning,
-		Conditions: conditions,
+		Message:           "this is message",
+		Phase:             v1.PodRunning,
+		Conditions:        conditions,
+		ContainerStatuses: containers,
 	}
 
 	spec := v1.PodSpec{
@@ -751,13 +802,16 @@ func TestObjectToPodProto(t *testing.T) {
 
 func TestGetResourceUpdateFromPod(t *testing.T) {
 	pod := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPb, pod); err != nil {
+	if err := proto.UnmarshalText(podPbWithContainers, pod); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
 	update := controllers.GetResourceUpdateFromPod(pod)
 	assert.Equal(t, metadatapb.POD, update.Type)
 	assert.Equal(t, "object_md", update.Metadata.Name)
+	assert.Equal(t, 1, len(update.References))
+	assert.Equal(t, "container1", update.References[0].Name)
+	assert.Equal(t, "test", update.References[0].UID)
 }
 
 func TestGetResourceUpdateFromEndpoints(t *testing.T) {
@@ -771,4 +825,17 @@ func TestGetResourceUpdateFromEndpoints(t *testing.T) {
 	assert.Equal(t, "object_md", update.Metadata.Name)
 	assert.Equal(t, 1, len(update.References))
 	assert.Equal(t, "abcd", update.References[0].UID)
+}
+
+func TestGetContainerResourceUpdatesFromPod(t *testing.T) {
+	pod := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(podPbWithContainers, pod); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	updates := controllers.GetContainerResourceUpdatesFromPod(pod)
+	assert.Equal(t, 1, len(updates))
+	assert.Equal(t, "container1", (*updates[0]).Metadata.Name)
+	assert.Equal(t, metadatapb.CONTAINER, (*updates[0]).Type)
+
 }

@@ -437,6 +437,7 @@ enum MetadataResourceType {
     METADATA_RESOURCE_TYPE_UNKNOWN = 0;
     POD = 1;
     SERVICE = 2;
+    CONTAINER = 3;
 }
 
 message ResourceUpdate {

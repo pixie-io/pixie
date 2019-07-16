@@ -231,13 +231,14 @@ func PodStatusToProto(ps *v1.PodStatus) (*metadatapb.PodStatus, error) {
 	}
 
 	psPb := &metadatapb.PodStatus{
-		Message:    ps.Message,
-		Reason:     ps.Reason,
-		HostIP:     ps.HostIP,
-		PodIP:      ps.PodIP,
-		Phase:      podPhaseObjToPbMap[ps.Phase],
-		Conditions: conditions,
-		QOSClass:   qosClassObjToPbMap[ps.QOSClass],
+		Message:           ps.Message,
+		Reason:            ps.Reason,
+		HostIP:            ps.HostIP,
+		PodIP:             ps.PodIP,
+		Phase:             podPhaseObjToPbMap[ps.Phase],
+		Conditions:        conditions,
+		QOSClass:          qosClassObjToPbMap[ps.QOSClass],
+		ContainerStatuses: containers,
 	}
 
 	return psPb, nil
