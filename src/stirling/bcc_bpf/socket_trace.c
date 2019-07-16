@@ -433,7 +433,7 @@ static int probe_ret_write_send(struct pt_regs* ctx, enum EventType event_type) 
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
-  int32_t bytes_written = PT_REGS_RC(ctx);
+  ssize_t bytes_written = PT_REGS_RC(ctx);
   if (bytes_written <= 0) {
     // This write() call failed, or has nothing to write.
     goto done;
@@ -512,7 +512,7 @@ static int probe_ret_read_recv(struct pt_regs* ctx, enum EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
-  int32_t bytes_read = PT_REGS_RC(ctx);
+  ssize_t bytes_read = PT_REGS_RC(ctx);
 
   if (bytes_read <= 0) {
     // This read() call failed, or read nothing.
