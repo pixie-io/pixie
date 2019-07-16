@@ -29,6 +29,18 @@ using ::pl::stirling::http2::GRPCMessage;
 using ::pl::stirling::http2::GRPCReqResp;
 using ::pl::stirling::http2::MatchGRPCReqResp;
 
+// TODO(yzhao): Read CPU count during runtime and set maxactive to Multiplier * N_CPU. That way, we
+// can be relatively more secure against increase of CPU count. Note the default multiplier is 2,
+// which is not sufficient, as indicated in Hipster shop.
+//
+// AWS offers VMs with 96 vCPUs. We bump the number from 2X to 4X, and round up to 2's exponential,
+// which gives 4 * 96 == 384 => 512.
+//
+// The implication of this parameter is explained in the "How Does a Return Probe Work?" section of
+// https://www.kernel.org/doc/Documentation/kprobes.txt. In short, this controls the memory space
+// used for bookkeeping, which translate to equal number of struct kretprobe in memory.
+constexpr int kKprobeMaxActive = 512;
+
 Status SocketTraceConnector::InitImpl() {
   if (!IsRoot()) {
     return error::PermissionDenied("BCC currently only supported as the root user.");
@@ -46,7 +58,7 @@ Status SocketTraceConnector::InitImpl() {
   for (const ProbeSpec& p : kProbeSpecs) {
     ebpf::StatusTuple attach_status =
         bpf_.attach_kprobe(bpf_.get_syscall_fnname(p.kernel_fn_short_name), p.trace_fn_name,
-                           0 /* offset */, p.attach_type);
+                           0 /* offset */, p.attach_type, kKprobeMaxActive);
     if (attach_status.code() != 0) {
       return error::Internal(
           absl::StrCat("Failed to attach kprobe to kernel function: ", p.kernel_fn_short_name,
