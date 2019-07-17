@@ -433,6 +433,103 @@ message SchemaInfo {
   repeated ColumnInfo columns = 4;
 }
 
+
+// PodUpdate contains updated information about a Pod on K8s.
+message PodUpdate {
+  // The UID is a unique identifier in both space and time.
+  string uid = 1 [
+                 (gogoproto.customname) = "UID"
+                 ];
+  // Name is a unique identifier in space but not time.
+  string name = 2;
+
+  // The namespace that this POD belongs to.
+  string namespace = 3;
+
+  // The unix time in nanoseconds when the this pod was created.
+  int64 start_timestamp_ns = 4 [
+                               (gogoproto.customname) = "StartTimestampNS"
+                               ];
+
+  // The unix time in nanoseconds when the this pod was deleted. Still active if 0.
+  int64 stop_timestamp_ns = 5 [
+                              (gogoproto.customname) = "StopTimestampNS"
+                              ];
+
+  // List of container ids that this Pod has.
+  repeated string container_ids = 6 [
+                                    (gogoproto.customname) = "ContainerIDs"
+                                    ];
+
+  // The QoS class that this pod runs as.
+  PodQOSClass qos_class = 7 [
+                            (gogoproto.customname) = "QOSClass"
+                            ];
+}
+
+// ContainerUpdate contains information about running containers.
+message ContainerUpdate {
+  // CID is the unique container ID.
+  string cid = 1 [
+                 (gogoproto.customname) = "CID"
+                 ];
+
+  // The name of the container.
+  string name = 2;
+
+  // The unix time in nanoseconds when the this container was created.
+  int64 start_timestamp_ns = 3 [
+                               (gogoproto.customname) = "StartTimestampNS"
+                               ];
+  // The unix time in nanoseconds when the this container was deleted. Still active if 0.
+  int64 stop_timestamp_ns = 4 [
+                              (gogoproto.customname) = "StopTimestampNS"
+                              ];
+}
+
+// ServiceUpdate contains information about running services.
+message ServiceUpdate {
+  // UID is the unique ID of this service in both space and time.
+  string uid = 1 [
+                 (gogoproto.customname) = "UID"
+                 ];
+
+  // Name of the service, unique in space, but not time.
+  string name = 2;
+
+  // The namespace that this Service belongs to.
+  string namespace = 3;
+
+  // The unix time in nanoseconds when the this service was created.
+  int64 start_timestamp_ns = 4 [
+                               (gogoproto.customname) = "StartTimestampNS"
+                               ];
+  // The unix time in nanoseconds when the this service was deleted. Still active if 0.
+  int64 stop_timestamp_ns = 5 [
+                              (gogoproto.customname) = "StopTimestampNS"
+                              ];
+
+  // A list of Pods that are service this service.
+  repeated string pod_ids = 6 [
+                              (gogoproto.customname) = "PodIDs"
+                              ];
+}
+
+// Resource update is the message we send to the agent/compute nodes
+// from the metadata service (MDS).
+// These updates can contain cross references to other objects (ie. pods can refer to containers).
+// The MDS guarantees that updates from children will be send before the parent. For example,
+// MDS will always send a ContainerUpdate before sending the Pods that depend on that Container.
+message ResourceUpdate2 {
+  oneof update {
+    PodUpdate pod_update = 1;
+    ContainerUpdate container_update = 2;
+    ServiceUpdate service_update = 3;
+  }
+}
+
+
+// TODO(zasgar/michelle): Delete below when we finish the transition to new protos.
 enum MetadataResourceType {
     METADATA_RESOURCE_TYPE_UNKNOWN = 0;
     POD = 1;
@@ -442,6 +539,6 @@ enum MetadataResourceType {
 
 message ResourceUpdate {
     MetadataResourceType type = 1;
-    pl.shared.k8s.metadatapb.ObjectMetadata metadata  = 2;
+    pl.shared.k8s.metadatapb.ObjectMetadata metadata = 2;
     repeated pl.shared.k8s.metadatapb.ObjectReference references = 3;
 }
