@@ -43,6 +43,12 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "file_test",
+    srcs = ["file_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "const_types_test",
     srcs = ["const_types_test.cc"],
     deps = [":cc_library"],
