@@ -5,31 +5,11 @@
 #include <string_view>
 #include <utility>
 #include "src/stirling/event_parser.h"
+#include "src/stirling/utils.h"
 
 namespace pl {
 namespace stirling {
 namespace {
-template <size_t N>
-void EndianSwap(const char bytes[N], char result[N]) {
-  if (N == 0) {
-    return;
-  }
-  for (size_t k = 0; k < N; k++) {
-    result[k] = bytes[N - k - 1];
-  }
-}
-
-// The input bytes are big endian.
-// TODO(chengruizhe): Convert to template with [N] to avoid DCHECK.
-int BEBytesToInt(const char arr[], size_t size) {
-  DCHECK(size < sizeof(int));
-  int result = 0;
-  for (size_t i = 0; i < size; i++) {
-    result = arr[i] + (result << (i * 8));
-  }
-  return result;
-}
-
 MySQLEventType infer_mysql_protocol(std::string_view buf) {
   if (buf.substr(0, 7) == absl::StrCat(MySQLParser::kComStmtPrepare, "SELECT")) {
     return MySQLEventType::kMySQLComStmtPrepare;

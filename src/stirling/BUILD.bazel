@@ -142,6 +142,12 @@ pl_cc_test(
     deps = [":cc_library"],
 )
 
+pl_cc_test(
+    name = "utils_test",
+    srcs = ["utils_test.cc"],
+    deps = [":cc_library"],
+)
+
 cc_image(
     name = "stirling_wrapper_image",
     base = "//:pl_cc_base_image",

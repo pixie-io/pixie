@@ -6,25 +6,10 @@
 #include <random>
 #include <utility>
 #include "src/stirling/mysql_parse.h"
+#include "src/stirling/mysql_test_utils.h"
 
 namespace pl {
 namespace stirling {
-
-namespace {
-
-template <size_t N>
-void IntToLEBytes(int num, char result[N]) {
-  for (size_t i = 0; i < N; i++) {
-    result[i] = (num >> (i * 8));
-  }
-}
-
-std::string GenPacket(const std::string& msg, const ConstStrView& command) {
-  char len_bytes[4];
-  IntToLEBytes<4>(msg.size() + 1, len_bytes);
-  return absl::StrCat(std::string(len_bytes, 4), "\x00", command, msg);
-}
-}  // namespace
 
 using ::testing::ElementsAre;
 
@@ -40,16 +25,11 @@ bool operator==(const MySQLMessage& lhs, const MySQLMessage& rhs) {
   return false;
 }
 
-TEST_F(MySQLParserTest, IntToBytes) {
-  char result[4];
-  IntToLEBytes<4>(24, result);
-  char expected_bytes[] = {'\x18', '\x00', '\x00', '\x00'};
-  EXPECT_FALSE(strcmp(result, expected_bytes));
-}
-
 TEST_F(MySQLParserTest, ParseComStmtPrepare) {
-  std::string msg1 = GenPacket("SELECT name FROM users WHERE id = ?", MySQLParser::kComStmtPrepare);
-  std::string msg2 = GenPacket("SELECT age FROM users WHERE id = ?", MySQLParser::kComStmtPrepare);
+  std::string msg1 =
+      testutils::GenRequest(MySQLParser::kComStmtPrepare, "SELECT name FROM users WHERE id = ?");
+  std::string msg2 =
+      testutils::GenRequest(MySQLParser::kComStmtPrepare, "SELECT age FROM users WHERE id = ?");
 
   MySQLMessage expected_message1;
   expected_message1.type = MySQLEventType::kMySQLComStmtPrepare;
@@ -76,7 +56,7 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
   // https://dev.mysql.com/doc/internals/en/com-stmt-execute.html.
   const std::string body =
       std::string("\x01\x00\x00\x00\x00\x01\x00\x00\x00\x00\x01\x0f\x00\x03\x66\x6f\x6f", 17);
-  std::string msg1 = GenPacket(body, MySQLParser::kComStmtExecute);
+  std::string msg1 = testutils::GenRequest(MySQLParser::kComStmtExecute, body);
 
   MySQLMessage expected_message1;
   expected_message1.type = MySQLEventType::kMySQLComStmtExecute;
@@ -91,9 +71,9 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1));
 }
 
-TEST_F(MySQLParserTest, ParseComQuery) {
-  std::string msg1 = GenPacket("SELECT name FROM users", MySQLParser::kComQuery);
-  std::string msg2 = GenPacket("SELECT age FROM users", MySQLParser::kComQuery);
+TEST_F(MySQLParserTest, DISABLED_ParseComQuery) {
+  std::string msg1 = testutils::GenRequest(MySQLParser::kComQuery, "SELECT name FROM users");
+  std::string msg2 = testutils::GenRequest(MySQLParser::kComQuery, "SELECT age FROM users");
 
   MySQLMessage expected_message1;
   expected_message1.type = MySQLEventType::kMySQLComQuery;
