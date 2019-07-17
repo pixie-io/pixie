@@ -20,7 +20,7 @@ gperftools_deb_image_tag := "gcr.io/pl-dev-infra/gperftools_deb_image:$(GPERFTOO
 
 ## Linux image parameters
 LINUX_KERNEL_VERSION := 4.14.104
-LINUX_HEADERS_REV := pl1
+LINUX_HEADERS_REV := pl2
 linux_headers_fname := linux-headers-$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV).tar.gz
 linux_headers_gs_path := gs://pl-infra-dev-artifacts/$(linux_headers_fname)
 linux_headers_image_tag := "gcr.io/pl-dev-infra/linux_headers_image:$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV)"
@@ -66,6 +66,7 @@ build_linux_headers_image:
 upload_linux_headers: build_linux_headers_image ## Target to build and upload linux headers image
 	scripts/docker-extract.sh $(linux_headers_image_tag) /pl/linux-headers-$(LINUX_KERNEL_VERSION).tar.gz $(linux_headers_fname)
 	gsutil cp $(linux_headers_fname) $(linux_headers_gs_path)
+	gsutil acl ch -u allUsers:READER $(linux_headers_gs_path)
 	@echo "SHA: "
 	sha256sum $(linux_headers_fname)
 	rm -f $(linux_headers_fname)

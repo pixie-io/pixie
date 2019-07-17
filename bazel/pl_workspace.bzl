@@ -4,7 +4,7 @@ load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 load("@io_bazel_rules_docker//go:image.bzl", _go_image_repos = "repositories")
 load("@io_bazel_rules_docker//cc:image.bzl", _cc_image_repos = "repositories")
 load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
-load("@io_bazel_toolchains//rules:gcs.bzl", "gcs_file")
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 load("@distroless//package_manager:package_manager.bzl", "package_manager_repositories")
 load("@distroless//package_manager:dpkg.bzl", "dpkg_list", "dpkg_src")
 
@@ -65,11 +65,11 @@ def _docker_images_setup():
     )
 
 def _artifacts_setup():
-    gcs_file(
-        name = "linux_headers.tar.gz",
-        bucket = "gs://pl-infra-dev-artifacts",
-        file = "linux-headers-4.14.104-pl1.tar.gz",
-        sha256 = "8eb734b957639cd2825d0d58f40230d67719013c897f54e9faf0a04d3457baa1",
+    http_file(
+        name = "linux_headers_tar_gz",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.14.104-pl2.tar.gz"],
+        sha256 = "dacd190bd5a7cf3d8a38f53fe13ff077512a0146cbb78b9e77dfbab05fce03bd",
+        downloaded_file_path = "linux_headers.tar.gz",
     )
 
 def pl_workspace_setup():

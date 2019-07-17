@@ -152,7 +152,7 @@ pl_cc_test(
 
 cc_image(
     name = "stirling_wrapper_image",
-    base = "//:pl_cc_base_image",
+    base = "//:pl_cc_bpf_debug_image",
     binary = ":stirling_wrapper",
 )
 
