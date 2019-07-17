@@ -14,9 +14,11 @@ export function ResultsToCsv(results) {
         const colKey = Object.keys(rowBatch.cols[j])[0];
         let data = rowBatch.cols[j][colKey].data[i];
         if (typeof data === 'string') {
-          data = data.replace(/"/g, '\\\"');
-          data = data.replace(/{/g, '""{');
-          data = data.replace(/}/g, '}""');
+          data = data.replace(/"/g, '\\\\\"\"');
+          data = data.replace(/^{/g, '""{');
+          data = data.replace(/}$/g, '}""');
+          data = data.replace(/^\[/g, '""[');
+          data = data.replace(/\[$/g, ']""');
         }
         rowData.push('"' + data + '"');
       }
