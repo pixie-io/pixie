@@ -7,6 +7,9 @@
 namespace pl {
 namespace md {
 
+using pl::shared::k8s::metadatapb::MetadataResourceType;
+using pl::shared::k8s::metadatapb::ResourceUpdate;
+
 /**
  * kEpochsBetweenObjectDeletion is the interval between when we check if old objects should be
  * removed and are no longer queryable by the metadata.
@@ -65,7 +68,7 @@ Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
   int64_t ts = CurrentTimeNS();
   PL_RETURN_IF_ERROR(ApplyK8sUpdates(ts, shadow_state.get(), &incoming_k8s_updates_));
 
-  // Update pid information.
+  // Update PID information.
   PL_RETURN_IF_ERROR(ProcessPIDUpdates(ts, shadow_state.get(), &pid_updates_));
 
   // Increment epoch and update ts.
@@ -87,10 +90,25 @@ Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
 }
 
 Status AgentMetadataStateManager::ApplyK8sUpdates(
-    int64_t ts, AgentMetadataState*,
+    int64_t ts, AgentMetadataState* state,
     moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>* updates) {
+  std::unique_ptr<ResourceUpdate> update(nullptr);
   PL_UNUSED(ts);
-  PL_UNUSED(updates);
+
+  // Returns false when no more items.
+  while (updates->try_dequeue(update)) {
+    switch (update->update_case()) {
+      case ResourceUpdate::kPodUpdate:
+        PL_RETURN_IF_ERROR(HandlePodUpdate(update->pod_update(), state));
+        break;
+      case ResourceUpdate::kContainerUpdate:
+        PL_RETURN_IF_ERROR(HandleContainerUpdate(update->container_update(), state));
+        break;
+      default:
+        CHECK(0) << "Unhandled type";
+    }
+  }
+
   return Status::OK();
 }
 
@@ -106,6 +124,16 @@ Status AgentMetadataStateManager::DeleteMetadataForDeadObjects(AgentMetadataStat
   // TODO(zasgar/michelle): Implement this.
   PL_UNUSED(ttl);
   return Status::OK();
+}
+
+Status AgentMetadataStateManager::HandlePodUpdate(const PodUpdate& update,
+                                                  AgentMetadataState* state) {
+  return state->k8s_metadata_state()->HandlePodUpdate(update);
+}
+
+Status AgentMetadataStateManager::HandleContainerUpdate(const ContainerUpdate& update,
+                                                        AgentMetadataState* state) {
+  return state->k8s_metadata_state()->HandleContainerUpdate(update);
 }
 
 }  // namespace md

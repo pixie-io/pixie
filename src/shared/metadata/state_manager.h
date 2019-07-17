@@ -28,7 +28,10 @@ namespace md {
  */
 class AgentMetadataStateManager {
  public:
-  using ResourceUpdate = pl::shared::k8s::metadatapb::ResourceUpdate;
+  using ResourceUpdate = pl::shared::k8s::metadatapb::ResourceUpdate2;
+  using PodUpdate = pl::shared::k8s::metadatapb::PodUpdate;
+  using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
+
   explicit AgentMetadataStateManager(uint32_t agent_id) : agent_id_(agent_id) {}
 
   uint32_t agent_id() { return agent_id_; }
@@ -70,13 +73,6 @@ class AgentMetadataStateManager {
    */
   std::unique_ptr<PIDStatusEvent> GetNextPIDStatusEvent();
 
- private:
-  uint32_t agent_id_;
-  std::shared_ptr<AgentMetadataState> agent_metadata_state_;
-  absl::base_internal::SpinLock agent_metadata_state_lock_;
-
-  absl::base_internal::SpinLock metadata_state_update_lock_;
-
   static Status ApplyK8sUpdates(
       int64_t ts, AgentMetadataState* state,
       moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>* updates);
@@ -86,8 +82,18 @@ class AgentMetadataStateManager {
 
   static Status DeleteMetadataForDeadObjects(AgentMetadataState*, int64_t ttl);
 
+ private:
+  uint32_t agent_id_;
+  std::shared_ptr<AgentMetadataState> agent_metadata_state_;
+  absl::base_internal::SpinLock agent_metadata_state_lock_;
+
+  absl::base_internal::SpinLock metadata_state_update_lock_;
+
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> incoming_k8s_updates_;
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>> pid_updates_;
+
+  static Status HandlePodUpdate(const PodUpdate& update, AgentMetadataState* state);
+  static Status HandleContainerUpdate(const ContainerUpdate& update, AgentMetadataState* state);
 };
 
 }  // namespace md

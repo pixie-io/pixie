@@ -25,19 +25,20 @@ class K8sMetadataObject {
   K8sMetadataObject() = delete;
   virtual ~K8sMetadataObject() = default;
 
-  K8sMetadataObject(K8sObjectType type, UID uid, std::string_view name)
-      : type_(type), uid_(std::move(uid)), name_(name) {}
+  K8sMetadataObject(K8sObjectType type, UID uid, std::string_view ns, std::string_view name)
+      : type_(type), uid_(std::move(uid)), ns_(ns), name_(name) {}
 
   K8sObjectType type() { return type_; }
 
-  const UID& uid() { return uid_; }
+  const UID& uid() const { return uid_; }
 
-  const std::string name() { return name_; }
+  const std::string& name() const { return name_; }
+  const std::string& ns() const { return ns_; }
 
-  int64_t start_time_ns() { return start_time_ns_; }
+  int64_t start_time_ns() const { return start_time_ns_; }
   void set_start_time_ns(int64_t start_time_ns) { start_time_ns_ = start_time_ns; }
 
-  int64_t stop_time_ns() { return stop_time_ns_; }
+  int64_t stop_time_ns() const { return stop_time_ns_; }
   void set_stop_time_ns(int64_t stop_time_ns) { stop_time_ns_ = stop_time_ns; }
 
   virtual std::unique_ptr<K8sMetadataObject> Clone() const = 0;
@@ -56,6 +57,12 @@ class K8sMetadataObject {
    * The ID assigned by K8s that is unique in both space and time.
    */
   const UID uid_ = 0;
+
+  /**
+   * The namespace for this object.
+   */
+
+  std::string ns_;
 
   /**
    * The name which is unique in space but not time.
@@ -79,13 +86,13 @@ class K8sMetadataObject {
  */
 class PodInfo : public K8sMetadataObject {
  public:
-  PodInfo(UID uid, std::string_view name)
-      : K8sMetadataObject(K8sObjectType::kPod, std::move(uid), std::move(name)) {}
+  PodInfo(UID uid, std::string_view ns, std::string_view name)
+      : K8sMetadataObject(K8sObjectType::kPod, std::move(uid), std::move(ns), std::move(name)) {}
   virtual ~PodInfo() = default;
 
   void AddContainer(CID cid) { containers_.emplace(cid); }
   void RmContainer(CID cid) { containers_.erase(cid); }
-  const absl::flat_hash_set<std::string>& containers() { return containers_; }
+  const absl::flat_hash_set<std::string>& containers() const { return containers_; }
 
   std::unique_ptr<K8sMetadataObject> Clone() const override {
     return std::unique_ptr<PodInfo>(new PodInfo(*this));
@@ -113,7 +120,10 @@ class PodInfo : public K8sMetadataObject {
 struct ContainerInfo {
  public:
   explicit ContainerInfo(CID cid) : cid_(std::move(cid)) {}
-  const CID& cid() { return cid_; }
+
+  const CID& cid() const { return cid_; }
+  void set_pod_id(std::string_view pod_id) { pod_id_ = pod_id; }
+  const UID& pod_id() const { return pod_id_; }
 
   void AddPID(UPID pid) { pids_.emplace(pid); }
   void RmPID(UPID pid) { pids_.erase(pid); }
@@ -136,6 +146,11 @@ struct ContainerInfo {
 
  private:
   CID cid_;
+  UID pod_id_ = "";
+
+  /**
+   * The set of PIDs that are running on this container.
+   */
   absl::flat_hash_set<UPID> pids_;
 
   /**

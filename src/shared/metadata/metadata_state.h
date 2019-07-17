@@ -11,7 +11,6 @@
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
 #include "src/shared/metadata/base_types.h"
 #include "src/shared/metadata/k8s_objects.h"
-#include "src/shared/metadata/metadata_state.h"
 #include "src/shared/metadata/pids.h"
 
 namespace pl {
@@ -26,36 +25,50 @@ using PIDInfoUPtr = std::unique_ptr<PIDInfo>;
  */
 class K8sMetadataState : NotCopyable {
  public:
-  const absl::flat_hash_map<std::string, UID>& pods_by_name() { return pods_by_name_; }
+  using PodUpdate = pl::shared::k8s::metadatapb::PodUpdate;
+  using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
 
-  std::unique_ptr<K8sMetadataState> Clone() const {
-    auto other = std::make_unique<K8sMetadataState>();
+  // K8s names consist of both a namespace and name : <ns, name>.
+  using K8sNameIdent = std::pair<std::string, std::string>;
 
-    other->k8s_objects_.reserve(k8s_objects_.size());
-    for (const auto& [k, v] : k8s_objects_) {
-      other->k8s_objects_[k] = v->Clone();
-    }
+  const absl::flat_hash_map<K8sNameIdent, UID>& pods_by_name() { return pods_by_name_; }
 
-    other->pods_by_name_.reserve(pods_by_name_.size());
-    for (const auto& [k, v] : pods_by_name_) {
-      other->pods_by_name_[k] = v;
-    }
+  /**
+   * PodInfoByID gets an unowned pointer to the Pod. This pointer will remain active
+   * for the lifetime of this metadata state instance.
+   * @param pod_id the id of the POD.
+   * @return Pointer to the PodInfo.
+   */
+  const PodInfo* PodInfoByID(UID pod_id) const;
 
-    other->containers_by_id_.reserve(containers_by_id_.size());
-    for (const auto& [k, v] : containers_by_id_) {
-      other->containers_by_id_[k] = v->Clone();
-    }
-    return other;
-  }
+  /**
+   * PodIDByName returns the PodID for the pod of the given name.
+   * @param pod_name the pod name
+   * @return the pod id or empty string if the pod does not exist.
+   */
+  UID PodIDByName(K8sNameIdent pod_name) const;
+
+  /**
+   * ContainerInfoByID returns the container info by ID.
+   * @param id The ID of the container.
+   * @return ContainerInfo or nullptr if not found.
+   */
+  const ContainerInfo* ContainerInfoByID(const CID& id) const;
+
+  std::unique_ptr<K8sMetadataState> Clone() const;
+
+  Status HandlePodUpdate(const PodUpdate& update);
+  Status HandleContainerUpdate(const ContainerUpdate& update);
 
  private:
   // This stores K8s native objects (services, pods, etc).
   absl::flat_hash_map<UID, K8sMetadataObjectUPtr> k8s_objects_;
 
+  // TODO(zasgar/michelle): Add heterogeneous lookup from std::pair<string_view, string_view>.
   /**
    * Mapping of pods by name.
    */
-  absl::flat_hash_map<std::string, UID> pods_by_name_;
+  absl::flat_hash_map<K8sNameIdent, UID> pods_by_name_;
 
   /**
    * Mapping of containers by ID.
@@ -66,7 +79,8 @@ class K8sMetadataState : NotCopyable {
 class AgentMetadataState : NotCopyable {
  public:
   AgentMetadataState() = delete;
-  explicit AgentMetadataState(uint32_t agent_id) : agent_id_(agent_id) {}
+  explicit AgentMetadataState(uint32_t agent_id)
+      : agent_id_(agent_id), k8s_metadata_state_(new K8sMetadataState()) {}
 
   uint32_t agent_id() const { return agent_id_; }
 
@@ -76,19 +90,10 @@ class AgentMetadataState : NotCopyable {
   uint64_t epoch_id() const { return epoch_id_; }
   void set_epoch_id(uint64_t id) { epoch_id_ = id; }
 
-  std::shared_ptr<AgentMetadataState> CloneToShared() const {
-    std::shared_ptr<AgentMetadataState> state;
-    state->last_update_ts_ns_ = last_update_ts_ns_;
-    state->epoch_id_ = epoch_id_;
-    state->agent_id_ = agent_id_;
-    state->k8s_metadata_state_ = k8s_metadata_state_->Clone();
-    state->pids_by_upid_.reserve(pids_by_upid_.size());
+  // Returns an un-owned pointer to the underlying k8s state.
+  K8sMetadataState* k8s_metadata_state() { return k8s_metadata_state_.get(); }
 
-    for (const auto& [k, v] : pids_by_upid_) {
-      state->pids_by_upid_[k] = v->Clone();
-    }
-    return state;
-  }
+  std::shared_ptr<AgentMetadataState> CloneToShared() const;
 
  private:
   /**

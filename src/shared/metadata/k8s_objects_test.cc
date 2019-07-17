@@ -7,11 +7,12 @@ namespace pl {
 namespace md {
 
 TEST(PodInfo, basic_accessors) {
-  PodInfo pod_info("123", "pod1");
+  PodInfo pod_info("123", "pl", "pod1");
   pod_info.set_start_time_ns(123);
   pod_info.set_stop_time_ns(256);
 
   EXPECT_EQ("123", pod_info.uid());
+  EXPECT_EQ("pl", pod_info.ns());
   EXPECT_EQ("pod1", pod_info.name());
 
   EXPECT_EQ(123, pod_info.start_time_ns());
@@ -21,7 +22,7 @@ TEST(PodInfo, basic_accessors) {
 }
 
 TEST(PodInfo, add_delete_containers) {
-  PodInfo pod_info("123", "pod1");
+  PodInfo pod_info("123", "pl", "pod1");
   pod_info.AddContainer("ABCD");
   pod_info.AddContainer("ABCD2");
   pod_info.AddContainer("ABCD3");
@@ -34,7 +35,7 @@ TEST(PodInfo, add_delete_containers) {
 }
 
 TEST(PodInfo, clone) {
-  PodInfo pod_info("123", "pod1");
+  PodInfo pod_info("123", "pl", "pod1");
   pod_info.set_start_time_ns(123);
   pod_info.set_stop_time_ns(256);
   pod_info.AddContainer("ABCD");
@@ -51,8 +52,18 @@ TEST(PodInfo, clone) {
   EXPECT_EQ(cloned->containers(), pod_info.containers());
 }
 
+TEST(ContainerInfo, pod_id) {
+  ContainerInfo cinfo("container1");
+
+  EXPECT_EQ("", cinfo.pod_id());
+  cinfo.set_pod_id("pod1");
+  EXPECT_EQ("pod1", cinfo.pod_id());
+}
+
 TEST(ContainerInfo, add_delete_pids) {
   ContainerInfo cinfo("container1");
+  cinfo.set_pod_id("pod1");
+
   cinfo.AddPID(1);
   cinfo.AddPID(2);
   cinfo.AddPID(2);
@@ -67,6 +78,7 @@ TEST(ContainerInfo, add_delete_pids) {
 
 TEST(ContainerInfo, clone) {
   ContainerInfo orig("container1");
+  orig.set_pod_id("pod1");
 
   orig.AddPID(0);
   orig.AddPID(1);
@@ -77,6 +89,7 @@ TEST(ContainerInfo, clone) {
 
   auto cloned = orig.Clone();
 
+  EXPECT_EQ(cloned->pod_id(), orig.pod_id());
   EXPECT_EQ(cloned->cid(), orig.cid());
   EXPECT_EQ(cloned->pids(), orig.pids());
   EXPECT_EQ(cloned->start_time_ns(), orig.start_time_ns());
