@@ -1,4 +1,5 @@
 #include <memory>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -42,6 +43,8 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_
       return CreateOperator<FilterOperator>(id, pb.filter_op());
     case planpb::LIMIT_OPERATOR:
       return CreateOperator<LimitOperator>(id, pb.limit_op());
+    case planpb::ZIP_OPERATOR:
+      return CreateOperator<ZipOperator>(id, pb.zip_op());
     default:
       LOG(FATAL) << absl::Substitute("Unknown operator type: $0", ToString(pb.op_type()));
   }
@@ -291,6 +294,103 @@ StatusOr<table_store::schema::Relation> LimitOperator::OutputRelation(
 
   // Output relation is the same as the input relation.
   return input_relation;
+}
+
+/**
+ * Zip Operator Implementation.
+ */
+std::string ZipOperator::DebugString() const {
+  return absl::Substitute("Op:Zip(columns=($0), time_columns=($1))",
+                          absl::StrJoin(column_names_, ","),
+                          absl::StrJoin(time_column_indexes_, ","));
+}
+
+Status ZipOperator::Init(const planpb::ZipOperator& pb) {
+  pb_ = pb;
+
+  column_names_.reserve(static_cast<size_t>(pb_.column_names_size()));
+  for (int i = 0; i < pb_.column_names_size(); ++i) {
+    column_names_.emplace_back(pb_.column_names(i));
+  }
+
+  column_mappings_.reserve(static_cast<size_t>(pb_.column_mappings_size()));
+  bool has_time_column = false;
+
+  for (int i = 0; i < pb_.column_mappings_size(); ++i) {
+    if (i == 0) {
+      has_time_column = pb_.column_mappings(i).has_time_column();
+    } else if (has_time_column != pb_.column_mappings(i).has_time_column()) {
+      return error::InvalidArgument(
+          "Time column index must be set for either all tables or no tables.");
+    }
+
+    if (has_time_column) {
+      time_column_indexes_.emplace_back(pb_.column_mappings(i).time_column_index());
+    }
+
+    std::vector<int64_t> mapping;
+    for (int output_index : pb_.column_mappings(i).output_column_indexes()) {
+      if (output_index < 0 || static_cast<size_t>(output_index) > column_names_.size()) {
+        return error::InvalidArgument(
+            "Output index $0 out of bounds for parent relation $1 of ZipOperator", output_index, i);
+      }
+      mapping.emplace_back(output_index);
+    }
+    column_mappings_.emplace_back(mapping);
+  }
+
+  is_initialized_ = true;
+  return Status::OK();
+}
+
+StatusOr<table_store::schema::Relation> ZipOperator::OutputRelation(
+    const table_store::schema::Schema& schema, const PlanState& /*state*/,
+    const std::vector<int64_t>& input_ids) const {
+  DCHECK(is_initialized_) << "Not initialized";
+
+  if (input_ids.size() != column_mappings_.size()) {
+    return error::InvalidArgument("ZipOperator expected $0 input relations but received $1",
+                                  column_mappings_.size(), input_ids.size());
+  }
+
+  // Keep track of the expected types for each output column.
+  std::unordered_map<int64_t, types::DataType> type_map;
+
+  // Parse each input and make sure the contents match what we expected to see.
+  for (size_t i = 0; i < input_ids.size(); ++i) {
+    if (!schema.HasRelation(input_ids[i])) {
+      return error::NotFound("Missing relation ($0) for input of ZipOperator", input_ids[i]);
+    }
+
+    auto input_relation_s = schema.GetRelation(input_ids[i]);
+    PL_RETURN_IF_ERROR(input_relation_s);
+    PL_ASSIGN_OR_RETURN(const auto& input_relation, schema.GetRelation(input_ids[i]));
+
+    for (size_t j = 0; j < column_mapping(i).size(); ++j) {
+      auto output_index = column_mapping(i).at(j);      // Output index of column j
+      auto col_type = input_relation.GetColumnType(j);  // Type of output column j
+
+      // Add the column's type to the map if it isn't present so we can check for consistency.
+      // Make sure that the types match for columns with the same output index.
+      auto it = type_map.find(output_index);
+      if (it != type_map.end() && it->second != col_type) {
+        return error::InvalidArgument("Conflicting types for column ($0) in ZipOperator",
+                                      column_names_[output_index]);
+      }
+      type_map.emplace(output_index, col_type);
+    }
+  }
+
+  table_store::schema::Relation r;
+  for (size_t i = 0; i < column_names_.size(); ++i) {
+    auto found = type_map.find(i);
+    if (found == type_map.end()) {
+      return error::InvalidArgument("Output column $0 (name $1) of ZipOperator not defined", i,
+                                    column_names_[i]);
+    }
+    r.AddColumn(found->second, column_names_[i]);
+  }
+  return r;
 }
 
 }  // namespace plan

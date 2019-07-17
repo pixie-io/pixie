@@ -36,9 +36,25 @@ class OperatorTest : public ::testing::Test {
     rel1.AddColumn(types::INT64, "col0");
     rel1.AddColumn(types::FLOAT64, "col1");
 
+    Relation rel2;
+    rel2.AddColumn(types::DataType::FLOAT64, "abc");
+    rel2.AddColumn(types::DataType::INT64, "time_");
+
+    Relation rel3;
+    rel3.AddColumn(types::DataType::INT64, "time_");
+    rel3.AddColumn(types::DataType::INT64, "xyz");
+
+    Relation rel4;
+    rel4.AddColumn(types::DataType::FLOAT64, "time_");
+    rel4.AddColumn(types::DataType::INT64, "xyz");
+
     schema_.AddRelation(0, rel0);
     schema_.AddRelation(1, rel1);
+    schema_.AddRelation(2, rel2);
+    schema_.AddRelation(3, rel3);
+    schema_.AddRelation(4, rel4);
   }
+
   ~OperatorTest() override = default;
 
  protected:
@@ -86,6 +102,38 @@ TEST_F(OperatorTest, from_proto_filter) {
   EXPECT_EQ(1, filter_op->id());
   EXPECT_TRUE(filter_op->is_initialized());
   EXPECT_EQ(planpb::OperatorType::FILTER_OPERATOR, filter_op->op_type());
+}
+
+TEST_F(OperatorTest, from_proto_zip_time_column) {
+  auto zip_pb = planpb::testutils::CreateTestZip1PB();
+  auto zip_op = Operator::FromProto(zip_pb, 1);
+  EXPECT_EQ(1, zip_op->id());
+  EXPECT_TRUE(zip_op->is_initialized());
+  EXPECT_EQ(planpb::OperatorType::ZIP_OPERATOR, zip_op->op_type());
+}
+
+TEST_F(OperatorTest, from_proto_zip_no_time_column) {
+  auto zip_pb = planpb::testutils::CreateTestZip2PB();
+  auto zip_op = Operator::FromProto(zip_pb, 1);
+  EXPECT_EQ(1, zip_op->id());
+  EXPECT_TRUE(zip_op->is_initialized());
+  EXPECT_EQ(planpb::OperatorType::ZIP_OPERATOR, zip_op->op_type());
+}
+
+TEST_F(OperatorTest, from_proto_zip_out_of_range) {
+  auto zip_pb = planpb::testutils::CreateTestZipOutOfRange();
+  auto zip_op = std::make_unique<ZipOperator>(1);
+  auto s = zip_op->Init(zip_pb.zip_op());
+  EXPECT_FALSE(s.ok());
+  EXPECT_EQ(s.msg(), "Output index 5 out of bounds for parent relation 0 of ZipOperator");
+}
+
+TEST_F(OperatorTest, from_proto_zip_mismatched) {
+  auto zip_pb = planpb::testutils::CreateTestZipMismatched();
+  auto zip_op = std::make_unique<ZipOperator>(1);
+  auto s = zip_op->Init(zip_pb.zip_op());
+  EXPECT_FALSE(s.ok());
+  EXPECT_EQ(s.msg(), "Time column index must be set for either all tables or no tables.");
 }
 
 TEST_F(OperatorTest, from_proto_limit) {
@@ -141,9 +189,9 @@ TEST_F(OperatorTest, output_relation_map_no_input) {
 TEST_F(OperatorTest, output_relation_map_missing_rel) {
   auto map_pb = planpb::testutils::CreateTestMap1PB();
   auto map_op = Operator::FromProto(map_pb, 1);
-  auto rel = map_op->OutputRelation(schema_, *state_, std::vector<int64_t>({3}));
+  auto rel = map_op->OutputRelation(schema_, *state_, std::vector<int64_t>({10}));
   EXPECT_FALSE(rel.ok());
-  EXPECT_EQ(rel.msg(), "Missing relation (3) for input of Map");
+  EXPECT_EQ(rel.msg(), "Missing relation (10) for input of Map");
 }
 
 TEST_F(OperatorTest, output_relation_blocking_agg_no_input) {
@@ -157,9 +205,9 @@ TEST_F(OperatorTest, output_relation_blocking_agg_no_input) {
 TEST_F(OperatorTest, output_relation_blocking_agg_missing_rel) {
   auto agg_pb = planpb::testutils::CreateTestBlockingAgg1PB();
   auto agg_op = Operator::FromProto(agg_pb, 1);
-  auto rel = agg_op->OutputRelation(schema_, *state_, std::vector<int64_t>({3}));
+  auto rel = agg_op->OutputRelation(schema_, *state_, std::vector<int64_t>({10}));
   EXPECT_FALSE(rel.ok());
-  EXPECT_EQ(rel.msg(), "Missing relation (3) for input of BlockingAggregateOperator");
+  EXPECT_EQ(rel.msg(), "Missing relation (10) for input of BlockingAggregateOperator");
 }
 
 TEST_F(OperatorTest, output_relation_filter) {
@@ -180,6 +228,29 @@ TEST_F(OperatorTest, output_relation_limit) {
   EXPECT_EQ(2, rel.ValueOrDie().NumColumns());
   EXPECT_EQ(types::DataType::INT64, rel.ValueOrDie().GetColumnType(0));
   EXPECT_EQ(types::DataType::FLOAT64, rel.ValueOrDie().GetColumnType(1));
+}
+
+TEST_F(OperatorTest, output_relation_zip) {
+  auto zip_pb = planpb::testutils::CreateTestZip1PB();
+  auto zip_op = Operator::FromProto(zip_pb, 4);
+
+  auto rel = zip_op->OutputRelation(schema_, *state_, std::vector<int64_t>({2, 3}));
+  EXPECT_EQ(3, rel.ValueOrDie().NumColumns());
+  EXPECT_EQ(types::DataType::FLOAT64, rel.ValueOrDie().GetColumnType(0));
+  EXPECT_EQ(types::DataType::INT64, rel.ValueOrDie().GetColumnType(1));
+  EXPECT_EQ(types::DataType::INT64, rel.ValueOrDie().GetColumnType(2));
+  EXPECT_EQ("abc", rel.ValueOrDie().GetColumnName(0));
+  EXPECT_EQ("time_", rel.ValueOrDie().GetColumnName(1));
+  EXPECT_EQ("xyz", rel.ValueOrDie().GetColumnName(2));
+}
+
+TEST_F(OperatorTest, output_relation_zip_mismatched) {
+  auto zip_pb = planpb::testutils::CreateTestZip1PB();
+  auto zip_op = Operator::FromProto(zip_pb, 4);
+
+  auto rel = zip_op->OutputRelation(schema_, *state_, std::vector<int64_t>({2, 4}));
+  EXPECT_FALSE(rel.ok());
+  EXPECT_EQ(rel.msg(), "Conflicting types for column (time_) in ZipOperator");
 }
 
 }  // namespace plan

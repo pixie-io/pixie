@@ -234,6 +234,83 @@ columns {
 }
 )";
 
+// relation 1: [abc, time_]
+// relation 2: [time_, xyz]
+// maps to output relation:
+// [abc, time_, xyz]
+const char* kZipOperator1 = R"(
+  column_names: "abc"
+  column_names: "time_"
+  column_names: "xyz"
+  column_mappings {
+    has_time_column: true
+    time_column_index: 1
+    output_column_indexes: 0
+    output_column_indexes: 1
+  }
+  column_mappings {
+    has_time_column: true
+    time_column_index: 0
+    output_column_indexes: 1
+    output_column_indexes: 2
+  }
+)";
+
+const char* kZipOperator2 = R"(
+  column_names: "abc"
+  column_names: "not_time"
+  column_names: "xyz"
+  column_mappings {
+    has_time_column: false
+    output_column_indexes: 0
+    output_column_indexes: 1
+  }
+  column_mappings {
+    has_time_column: false
+    output_column_indexes: 1
+    output_column_indexes: 2
+  }
+)";
+
+// relation 1: [abc, time_]
+// relation 2: [time_, xyz]
+// maps to output relation:
+// [abc, time_, xyz]
+const char* kZipOperatorOutOfRange = R"(
+  column_names: "abc"
+  column_names: "time_"
+  column_names: "xyz"
+  column_mappings {
+    has_time_column: true
+    time_column_index: 1
+    output_column_indexes: 5
+    output_column_indexes: 1
+  }
+  column_mappings {
+    has_time_column: true
+    time_column_index: 0
+    output_column_indexes: 1
+    output_column_indexes: 2
+  }
+)";
+
+const char* kZipOperatorMismatched = R"(
+  column_names: "abc"
+  column_names: "time_"
+  column_names: "xyz"
+  column_mappings {
+    has_time_column: false
+    output_column_indexes: 0
+    output_column_indexes: 1
+  }
+  column_mappings {
+    has_time_column: true
+    time_column_index: 1
+    output_column_indexes: 1
+    output_column_indexes: 2
+  }
+)";
+
 /**
  * Template for Map Operator.
  *   $0 : the expressions
@@ -707,6 +784,36 @@ planpb::Operator CreateTestFilter1PB() {
   planpb::Operator op;
   auto op_proto =
       absl::Substitute(kOperatorProtoTmpl, "FILTER_OPERATOR", "filter_op", kFilterOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestZip1PB() {
+  planpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "ZIP_OPERATOR", "zip_op", kZipOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestZip2PB() {
+  planpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "ZIP_OPERATOR", "zip_op", kZipOperator2);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestZipOutOfRange() {
+  planpb::Operator op;
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "ZIP_OPERATOR", "zip_op", kZipOperatorOutOfRange);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestZipMismatched() {
+  planpb::Operator op;
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "ZIP_OPERATOR", "zip_op", kZipOperatorMismatched);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

@@ -179,6 +179,33 @@ class LimitOperator : public Operator {
   planpb::LimitOperator pb_;
 };
 
+class ZipOperator : public Operator {
+ public:
+  explicit ZipOperator(int64_t id) : Operator(id, planpb::ZIP_OPERATOR) {}
+  ~ZipOperator() override = default;
+
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::ZipOperator& pb);
+  std::string DebugString() const override;
+
+  const std::vector<std::string>& column_names() const { return column_names_; }
+  bool order_by_time() const { return time_column_indexes_.size() > 0; }
+  const std::vector<int64_t>& time_column_indexes() const { return time_column_indexes_; }
+  const std::vector<std::vector<int64_t>>& column_mappings() const { return column_mappings_; }
+  const std::vector<int64_t>& column_mapping(int64_t parent_index) const {
+    return column_mappings_.at(parent_index);
+  }
+
+ private:
+  std::vector<std::string> column_names_;
+  std::vector<int64_t> time_column_indexes_;
+  std::vector<std::vector<int64_t>> column_mappings_;
+
+  planpb::ZipOperator pb_;
+};
+
 }  // namespace plan
 }  // namespace carnot
 }  // namespace pl
