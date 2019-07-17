@@ -21,7 +21,7 @@ const PodInfo* K8sMetadataState::PodInfoByID(UID pod_id) const {
                                                      : static_cast<PodInfo*>(it->second.get());
 }
 
-UID K8sMetadataState::PodIDByName(K8sNameIdent pod_name) const {
+UID K8sMetadataState::PodIDByName(K8sNameIdentView pod_name) const {
   auto it = pods_by_name_.find(pod_name);
   return (it == pods_by_name_.end()) ? "" : it->second;
 }

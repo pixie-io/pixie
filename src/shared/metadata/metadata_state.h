@@ -30,8 +30,48 @@ class K8sMetadataState : NotCopyable {
 
   // K8s names consist of both a namespace and name : <ns, name>.
   using K8sNameIdent = std::pair<std::string, std::string>;
+  using K8sNameIdentView = std::pair<std::string_view, std::string_view>;
 
-  const absl::flat_hash_map<K8sNameIdent, UID>& pods_by_name() { return pods_by_name_; }
+  /**
+   * K8sIdentHashEq provides hash an ident functions to allow
+   * heterogeneous lookups of maps.
+   */
+  struct K8sIdentHashEq {
+    /**
+     * K8sIdentCheck validates that the template argument is one of the valid ident types.
+     */
+    template <typename T>
+    static constexpr void K8sIdentCheck() {
+      static_assert(
+          std::is_base_of<K8sNameIdent, T>::value || std::is_base_of<K8sNameIdentView, T>::value,
+          "T must be a K8s ident");
+    }
+
+    struct Hash {
+      using is_transparent = void;
+
+      template <typename T>
+      size_t operator()(const T& v) const {
+        K8sIdentCheck<T>();
+        return absl::Hash<K8sNameIdentView>{}(v);
+      }
+    };
+
+    struct Eq {
+      using is_transparent = void;
+
+      template <typename T1, typename T2>
+      size_t operator()(const T1& a, const T2& b) const {
+        K8sIdentCheck<T1>();
+        K8sIdentCheck<T2>();
+        return a.first == b.first && a.second == b.second;
+      }
+    };
+  };
+  using PodsByNameMap =
+      absl::flat_hash_map<K8sNameIdent, UID, K8sIdentHashEq::Hash, K8sIdentHashEq::Eq>;
+
+  const PodsByNameMap& pods_by_name() { return pods_by_name_; }
 
   /**
    * PodInfoByID gets an unowned pointer to the Pod. This pointer will remain active
@@ -46,7 +86,7 @@ class K8sMetadataState : NotCopyable {
    * @param pod_name the pod name
    * @return the pod id or empty string if the pod does not exist.
    */
-  UID PodIDByName(K8sNameIdent pod_name) const;
+  UID PodIDByName(K8sNameIdentView pod_name) const;
 
   /**
    * ContainerInfoByID returns the container info by ID.
@@ -68,7 +108,7 @@ class K8sMetadataState : NotCopyable {
   /**
    * Mapping of pods by name.
    */
-  absl::flat_hash_map<K8sNameIdent, UID> pods_by_name_;
+  PodsByNameMap pods_by_name_;
 
   /**
    * Mapping of containers by ID.
