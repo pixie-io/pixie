@@ -59,6 +59,7 @@ TEST(ApplyK8sUpdate, initialize_md_state) {
   EXPECT_EQ("pod_id1", pod_info->uid());
   EXPECT_EQ("pod1", pod_info->name());
   EXPECT_EQ("pl", pod_info->ns());
+  EXPECT_EQ(PodQOSClass::kBurstable, pod_info->qos_class());
   EXPECT_THAT(pod_info->containers(), UnorderedElementsAre("container_id1"));
 
   auto* container_info = state->ContainerInfoByID("container_id1");

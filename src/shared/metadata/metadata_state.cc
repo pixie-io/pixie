@@ -51,14 +51,31 @@ std::unique_ptr<K8sMetadataState> K8sMetadataState::Clone() const {
   return other;
 }
 
+namespace {
+PodQOSClass ConvertToPodQOsClass(pl::shared::k8s::metadatapb::PodQOSClass pb_enum) {
+  using qos_pb = pl::shared::k8s::metadatapb::PodQOSClass;
+  switch (pb_enum) {
+    case qos_pb::QOS_CLASS_BURSTABLE:
+      return PodQOSClass::kBurstable;
+    case qos_pb::QOS_CLASS_BEST_EFFORT:
+      return PodQOSClass::kBestEffort;
+    case qos_pb::QOS_CLASS_GUARANTEED:
+      return PodQOSClass::kGuaranteed;
+    default:
+      return PodQOSClass::kUnknown;
+  }
+}
+}  // namespace
+
 Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
   const auto& object_uid = update.uid();
   const std::string& name = update.name();
   const std::string& ns = update.namespace_();
+  PodQOSClass qos_class = ConvertToPodQOsClass(update.qos_class());
 
   auto it = k8s_objects_.find(object_uid);
   if (it == k8s_objects_.end()) {
-    auto pod = std::make_unique<PodInfo>(object_uid, ns, name);
+    auto pod = std::make_unique<PodInfo>(object_uid, ns, name, qos_class);
     it = k8s_objects_.try_emplace(object_uid, std::move(pod)).first;
   }
 

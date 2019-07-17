@@ -81,17 +81,22 @@ class K8sMetadataObject {
   int64_t stop_time_ns_ = 0;
 };
 
+enum class PodQOSClass : uint8_t { kUnknown = 0, kGuaranteed, kBestEffort, kBurstable };
+
 /**
  * PodInfo contains information about K8s pods.
  */
 class PodInfo : public K8sMetadataObject {
  public:
-  PodInfo(UID uid, std::string_view ns, std::string_view name)
-      : K8sMetadataObject(K8sObjectType::kPod, std::move(uid), std::move(ns), std::move(name)) {}
+  PodInfo(UID uid, std::string_view ns, std::string_view name, PodQOSClass qos_class)
+      : K8sMetadataObject(K8sObjectType::kPod, std::move(uid), std::move(ns), std::move(name)),
+        qos_class_(qos_class) {}
   virtual ~PodInfo() = default;
 
   void AddContainer(CID cid) { containers_.emplace(cid); }
   void RmContainer(CID cid) { containers_.erase(cid); }
+  PodQOSClass qos_class() const { return qos_class_; }
+
   const absl::flat_hash_set<std::string>& containers() const { return containers_; }
 
   std::unique_ptr<K8sMetadataObject> Clone() const override {
@@ -103,6 +108,7 @@ class PodInfo : public K8sMetadataObject {
   PodInfo& operator=(const PodInfo& other) = delete;
 
  private:
+  PodQOSClass qos_class_;
   /**
    * Set of containers that are running on this pod.
    *

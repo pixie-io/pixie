@@ -7,13 +7,14 @@ namespace pl {
 namespace md {
 
 TEST(PodInfo, basic_accessors) {
-  PodInfo pod_info("123", "pl", "pod1");
+  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed);
   pod_info.set_start_time_ns(123);
   pod_info.set_stop_time_ns(256);
 
   EXPECT_EQ("123", pod_info.uid());
   EXPECT_EQ("pl", pod_info.ns());
   EXPECT_EQ("pod1", pod_info.name());
+  EXPECT_EQ(PodQOSClass::kGuaranteed, pod_info.qos_class());
 
   EXPECT_EQ(123, pod_info.start_time_ns());
   EXPECT_EQ(256, pod_info.stop_time_ns());
@@ -22,7 +23,7 @@ TEST(PodInfo, basic_accessors) {
 }
 
 TEST(PodInfo, add_delete_containers) {
-  PodInfo pod_info("123", "pl", "pod1");
+  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed);
   pod_info.AddContainer("ABCD");
   pod_info.AddContainer("ABCD2");
   pod_info.AddContainer("ABCD3");
@@ -35,15 +36,19 @@ TEST(PodInfo, add_delete_containers) {
 }
 
 TEST(PodInfo, clone) {
-  PodInfo pod_info("123", "pl", "pod1");
+  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kBurstable);
   pod_info.set_start_time_ns(123);
   pod_info.set_stop_time_ns(256);
   pod_info.AddContainer("ABCD");
   pod_info.AddContainer("ABCD2");
 
+  EXPECT_EQ(PodQOSClass::kBurstable, pod_info.qos_class());
+
   std::unique_ptr<PodInfo> cloned(static_cast<PodInfo*>(pod_info.Clone().release()));
   EXPECT_EQ(cloned->uid(), pod_info.uid());
   EXPECT_EQ(cloned->name(), pod_info.name());
+  EXPECT_EQ(cloned->ns(), pod_info.ns());
+  EXPECT_EQ(cloned->qos_class(), pod_info.qos_class());
 
   EXPECT_EQ(cloned->start_time_ns(), pod_info.start_time_ns());
   EXPECT_EQ(cloned->stop_time_ns(), pod_info.stop_time_ns());
