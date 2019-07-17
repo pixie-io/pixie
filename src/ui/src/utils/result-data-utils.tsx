@@ -15,6 +15,8 @@ export function ResultsToCsv(results) {
         let data = rowBatch.cols[j][colKey].data[i];
         if (typeof data === 'string') {
           data = data.replace(/"/g, '\\\"');
+          data = data.replace(/{/g, '""{');
+          data = data.replace(/}/g, '}""');
         }
         rowData.push('"' + data + '"');
       }
