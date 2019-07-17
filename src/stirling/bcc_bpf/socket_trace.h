@@ -6,31 +6,29 @@
 
 #include <linux/in6.h>
 
-// TODO(oazizi): Fix style consistency. Enums use our C++ style, while structs are old C style.
-
 // TODO(yzhao): Investigate the performance cost of misaligned memory access (8 vs. 4 bytes).
 
 // Indicates the syscall that recorded an event.
 // TODO(oazizi/yzhao): Remove once no longer necessary.
-enum EventType {
+typedef enum {
   kEventTypeUnknown,
   kEventTypeSyscallWriteEvent,
   kEventTypeSyscallSendEvent,
   kEventTypeSyscallReadEvent,
   kEventTypeSyscallRecvEvent,
-};
+} EventType;
 
 // Protocol being used on a connection (HTTP, MySQL, etc.).
-enum TrafficProtocol {
+typedef enum {
   kProtocolUnknown,
   kProtocolHTTP,
   kProtocolHTTP2,
   kProtocolMySQL,
   kNumProtocols
-};
+} TrafficProtocol;
 
 // The direction of traffic expected on a probe.
-enum ReqRespRole { kRoleUnknown, kRoleRequestor, kRoleResponder };
+typedef enum { kRoleUnknown, kRoleRequestor, kRoleResponder } ReqRespRole;
 
 // Which transactions to trace (direction and type).
 const uint64_t kSocketTraceSendReq = 1 << 0;
@@ -40,9 +38,9 @@ const uint64_t kSocketTraceRecvResp = 1 << 3;
 
 struct traffic_class_t {
   // The protocol of traffic on the connection (HTTP, MySQL, etc.).
-  enum TrafficProtocol protocol;
+  TrafficProtocol protocol;
   // Classify traffic as requests, responses or mixed.
-  enum ReqRespRole role;
+  ReqRespRole role;
 };
 
 struct conn_id_t {

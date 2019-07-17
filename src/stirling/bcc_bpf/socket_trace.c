@@ -170,8 +170,7 @@ static bool is_http2_connection_preface(const char* buf, size_t count) {
   return buf[0] == 'P' && buf[1] == 'R' && buf[2] == 'I';
 }
 
-static struct traffic_class_t infer_traffic(enum EventType event_type, const char* buf,
-                                            size_t count) {
+static struct traffic_class_t infer_traffic(EventType event_type, const char* buf, size_t count) {
   struct traffic_class_t traffic_class;
   if (is_http_response(buf, count)) {
     traffic_class.protocol = kProtocolHTTP;
@@ -254,7 +253,7 @@ static inline __attribute__((__always_inline__)) struct conn_info_t* get_conn_in
 // TODO(oazizi): This function should go away once the protocol is identified externally.
 //               Also, could move this function into the header file, so we can test it.
 static inline __attribute__((__always_inline__)) void update_traffic_class(
-    struct conn_info_t* conn_info, enum EventType event_type, const char* buf, size_t count) {
+    struct conn_info_t* conn_info, EventType event_type, const char* buf, size_t count) {
   // TODO(oazizi): Future architecture should have user-land provide the traffic_class.
   // TODO(oazizi): conn_info currently works only if tracing on the send or recv side of a process,
   //               but not both simultaneously, because we need to mark two traffic classes.
@@ -429,7 +428,7 @@ static int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t
   return 0;
 }
 
-static int probe_ret_write_send(struct pt_regs* ctx, enum EventType event_type) {
+static int probe_ret_write_send(struct pt_regs* ctx, EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
@@ -491,7 +490,7 @@ done:
 }
 
 static int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t count,
-                                 enum EventType event_type) {
+                                 EventType event_type) {
   if (fd < 0) {
     DLOG_TEXT(ctx, "probe_entry_read_recv(), fd < 0");
     return 0;
@@ -508,7 +507,7 @@ static int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t 
   return 0;
 }
 
-static int probe_ret_read_recv(struct pt_regs* ctx, enum EventType event_type) {
+static int probe_ret_read_recv(struct pt_regs* ctx, EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
