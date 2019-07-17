@@ -2,7 +2,6 @@
 #include <gtest/gtest.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <experimental/filesystem>
 
 #include <cstdlib>
 #include <string_view>
@@ -20,20 +19,20 @@ namespace stirling {
 using ::pl::stirling::testing::TCPSocket;
 using ::pl::types::ColumnWrapper;
 using ::pl::types::ColumnWrapperRecordBatch;
-using ::testing::Pair;
-using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
-class HTTPTraceBPFTest : public ::testing::Test {
+class SocketTraceBPFTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    source = SocketTraceConnector::Create("socket_trace_connector");
-    ASSERT_OK(source->Init());
+    source_ = SocketTraceConnector::Create("socket_trace_connector");
+    ASSERT_OK(source_->Init());
   }
+
+  void TearDown() override { ASSERT_OK(source_->Stop()); }
 
   class ClientServerSystem {
    public:
-    ClientServerSystem() { server.Bind(); }
+    ClientServerSystem() { server_.Bind(); }
 
     void RunWriterReader(const std::vector<std::string_view>& write_data) {
       SpawnReaderClient();
@@ -48,63 +47,63 @@ class HTTPTraceBPFTest : public ::testing::Test {
     }
 
     void SpawnReaderClient() {
-      client_thread = std::thread([this]() {
-        client.Connect(server);
+      client_thread_ = std::thread([this]() {
+        client_.Connect(server_);
         std::string data;
-        while (client.Read(&data)) {
+        while (client_.Read(&data)) {
         }
-        client.Close();
+        client_.Close();
       });
     }
 
     void SpawnReceiverClient() {
-      client_thread = std::thread([this]() {
-        client.Connect(server);
+      client_thread_ = std::thread([this]() {
+        client_.Connect(server_);
         std::string data;
-        while (client.Recv(&data)) {
+        while (client_.Recv(&data)) {
         }
-        client.Close();
+        client_.Close();
       });
     }
 
     void SpawnWriterServer(const std::vector<std::string_view>& write_data) {
-      server_thread = std::thread([this, write_data]() {
-        server.Accept();
+      server_thread_ = std::thread([this, write_data]() {
+        server_.Accept();
         for (auto data : write_data) {
-          ASSERT_EQ(data.length(), server.Write(data));
+          ASSERT_EQ(data.length(), server_.Write(data));
         }
-        server.Close();
+        server_.Close();
       });
     }
 
     void SpawnSenderServer(const std::vector<std::string_view>& write_data) {
-      server_thread = std::thread([this, write_data]() {
-        server.Accept();
+      server_thread_ = std::thread([this, write_data]() {
+        server_.Accept();
         for (auto data : write_data) {
-          ASSERT_EQ(data.length(), server.Send(data));
+          ASSERT_EQ(data.length(), server_.Send(data));
         }
-        server.Close();
+        server_.Close();
       });
     }
 
     void JoinThreads() {
-      server_thread.join();
-      client_thread.join();
+      server_thread_.join();
+      client_thread_.join();
     }
 
-    TCPSocket& Server() { return server; }
-    TCPSocket& Client() { return client; }
+    TCPSocket& Server() { return server_; }
+    TCPSocket& Client() { return client_; }
 
    private:
-    TCPSocket client;
-    TCPSocket server;
+    TCPSocket client_;
+    TCPSocket server_;
 
-    std::thread client_thread;
-    std::thread server_thread;
+    std::thread client_thread_;
+    std::thread server_thread_;
   };
 
   void ConfigureCapture(uint32_t protocol, uint64_t mask) {
-    auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source.get());
+    auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
     ASSERT_OK(socket_trace_connector->Configure(protocol, mask));
   }
 
@@ -148,10 +147,10 @@ Content-Length: 0
   static constexpr DataTableSchema kMySQLTable = SocketTraceConnector::kMySQLTable;
   static constexpr uint32_t kMySQLBodyIdx = kMySQLTable.ColIndex("body");
 
-  std::unique_ptr<SourceConnector> source;
+  std::unique_ptr<SourceConnector> source_;
 };
 
-TEST_F(HTTPTraceBPFTest, TestWriteRespCapture) {
+TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
   ConfigureCapture(kProtocolHTTP, kSocketTraceSendResp);
 
   ClientServerSystem system;
@@ -160,7 +159,7 @@ TEST_F(HTTPTraceBPFTest, TestWriteRespCapture) {
   {
     types::ColumnWrapperRecordBatch record_batch;
     InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch);
-    source->TransferData(kHTTPTableNum, &record_batch);
+    source_->TransferData(kHTTPTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(2, col->Size());
@@ -196,17 +195,15 @@ TEST_F(HTTPTraceBPFTest, TestWriteRespCapture) {
   {
     types::ColumnWrapperRecordBatch record_batch;
     InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch);
-    source->TransferData(kMySQLTableNum, &record_batch);
+    source_->TransferData(kMySQLTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(0, col->Size());
     }
   }
-
-  EXPECT_OK(source->Stop());
 }
 
-TEST_F(HTTPTraceBPFTest, TestSendRespCapture) {
+TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
   ConfigureCapture(kProtocolHTTP, kSocketTraceSendResp);
 
   ClientServerSystem system;
@@ -215,7 +212,7 @@ TEST_F(HTTPTraceBPFTest, TestSendRespCapture) {
   {
     types::ColumnWrapperRecordBatch record_batch;
     InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 2, &record_batch);
-    source->TransferData(kHTTPTableNum, &record_batch);
+    source_->TransferData(kHTTPTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(2, col->Size());
@@ -240,17 +237,15 @@ TEST_F(HTTPTraceBPFTest, TestSendRespCapture) {
   {
     types::ColumnWrapperRecordBatch record_batch;
     InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch);
-    source->TransferData(kMySQLTableNum, &record_batch);
+    source_->TransferData(kMySQLTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(0, col->Size());
     }
   }
-
-  EXPECT_OK(source->Stop());
 }
 
-TEST_F(HTTPTraceBPFTest, TestReadRespCapture) {
+TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
   ConfigureCapture(kProtocolHTTP, kSocketTraceRecvResp);
 
   ClientServerSystem system;
@@ -259,7 +254,7 @@ TEST_F(HTTPTraceBPFTest, TestReadRespCapture) {
   {
     types::ColumnWrapperRecordBatch record_batch;
     InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch);
-    source->TransferData(kHTTPTableNum, &record_batch);
+    source_->TransferData(kHTTPTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(2, col->Size());
@@ -284,17 +279,15 @@ TEST_F(HTTPTraceBPFTest, TestReadRespCapture) {
   {
     types::ColumnWrapperRecordBatch record_batch;
     InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch);
-    source->TransferData(kMySQLTableNum, &record_batch);
+    source_->TransferData(kMySQLTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(0, col->Size());
     }
   }
-
-  EXPECT_OK(source->Stop());
 }
 
-TEST_F(HTTPTraceBPFTest, TestRecvRespCapture) {
+TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
   ConfigureCapture(kProtocolHTTP, kSocketTraceRecvResp);
 
   ClientServerSystem system;
@@ -303,7 +296,7 @@ TEST_F(HTTPTraceBPFTest, TestRecvRespCapture) {
   {
     types::ColumnWrapperRecordBatch record_batch;
     InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch);
-    source->TransferData(kHTTPTableNum, &record_batch);
+    source_->TransferData(kHTTPTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(2, col->Size());
@@ -328,17 +321,15 @@ TEST_F(HTTPTraceBPFTest, TestRecvRespCapture) {
   {
     types::ColumnWrapperRecordBatch record_batch;
     InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch);
-    source->TransferData(kMySQLTableNum, &record_batch);
+    source_->TransferData(kMySQLTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(0, col->Size());
     }
   }
-
-  EXPECT_OK(source->Stop());
 }
 
-TEST_F(HTTPTraceBPFTest, TestMySQLWriteCapture) {
+TEST_F(SocketTraceBPFTest, TestMySQLWriteCapture) {
   ClientServerSystem system;
   system.RunSenderReceiver({kMySQLMsg, kMySQLMsg});
 
@@ -346,7 +337,7 @@ TEST_F(HTTPTraceBPFTest, TestMySQLWriteCapture) {
   {
     types::ColumnWrapperRecordBatch record_batch;
     InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 2, &record_batch);
-    source->TransferData(kHTTPTableNum, &record_batch);
+    source_->TransferData(kHTTPTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(0, col->Size());
@@ -357,7 +348,7 @@ TEST_F(HTTPTraceBPFTest, TestMySQLWriteCapture) {
   {
     types::ColumnWrapperRecordBatch record_batch;
     InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch);
-    source->TransferData(kMySQLTableNum, &record_batch);
+    source_->TransferData(kMySQLTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(2, col->Size());
@@ -368,11 +359,9 @@ TEST_F(HTTPTraceBPFTest, TestMySQLWriteCapture) {
     EXPECT_EQ(std::string_view("\x16SELECT column FROM table"),
               record_batch[kMySQLBodyIdx]->Get<types::StringValue>(1));
   }
-
-  EXPECT_OK(source->Stop());
 }
 
-TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
+TEST_F(SocketTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   ConfigureCapture(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvReq);
   ConfigureCapture(kProtocolHTTP, kSocketTraceRecvResp | kSocketTraceSendResp);
   ConfigureCapture(kProtocolMySQL, kSocketTraceSendReq | kSocketTraceRecvResp);
@@ -384,7 +373,7 @@ TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   {
     types::ColumnWrapperRecordBatch record_batch;
     InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 2, &record_batch);
-    source->TransferData(kHTTPTableNum, &record_batch);
+    source_->TransferData(kHTTPTableNum, &record_batch);
 
     // Should not have captured anything.
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -396,18 +385,16 @@ TEST_F(HTTPTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   {
     types::ColumnWrapperRecordBatch record_batch;
     InitRecordBatch(kMySQLTable.elements(), /*target_capacity*/ 2, &record_batch);
-    source->TransferData(kMySQLTableNum, &record_batch);
+    source_->TransferData(kMySQLTableNum, &record_batch);
 
     // Should not have captured anything.
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(0, col->Size());
     }
   }
-
-  EXPECT_OK(source->Stop());
 }
 
-TEST_F(HTTPTraceBPFTest, TestMultipleConnections) {
+TEST_F(SocketTraceBPFTest, TestMultipleConnections) {
   ConfigureCapture(kProtocolHTTP, kSocketTraceRecvResp);
 
   // Two separate connections.
@@ -420,7 +407,7 @@ TEST_F(HTTPTraceBPFTest, TestMultipleConnections) {
   {
     types::ColumnWrapperRecordBatch record_batch;
     InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch);
-    source->TransferData(kHTTPTableNum, &record_batch);
+    source_->TransferData(kHTTPTableNum, &record_batch);
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
       ASSERT_EQ(2, col->Size());
@@ -444,7 +431,7 @@ TEST_F(HTTPTraceBPFTest, TestMultipleConnections) {
   }
 }
 
-TEST_F(HTTPTraceBPFTest, TestStartTime) {
+TEST_F(SocketTraceBPFTest, TestStartTime) {
   ConfigureCapture(kProtocolHTTP, kSocketTraceRecvResp);
 
   ClientServerSystem system;
@@ -460,7 +447,7 @@ TEST_F(HTTPTraceBPFTest, TestStartTime) {
 
   types::ColumnWrapperRecordBatch record_batch;
   InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch);
-  source->TransferData(kHTTPTableNum, &record_batch);
+  source_->TransferData(kHTTPTableNum, &record_batch);
 
   ASSERT_EQ(2, record_batch[0]->Size());
 
@@ -475,8 +462,6 @@ TEST_F(HTTPTraceBPFTest, TestStartTime) {
             record_batch[kHTTPStartTimeIdx]->Get<types::Int64Value>(1).val);
   EXPECT_GT(time_window_end.time_since_epoch().count(),
             record_batch[kHTTPStartTimeIdx]->Get<types::Int64Value>(1).val);
-
-  EXPECT_OK(source->Stop());
 }
 
 }  // namespace stirling
