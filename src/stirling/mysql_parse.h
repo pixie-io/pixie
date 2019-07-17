@@ -16,36 +16,27 @@ struct MySQLMessage {
 };
 
 struct MySQLParser {
-  ParseState Parse(MessageType type, std::string_view buf) {
-    switch (type) {
-      case MessageType::kRequests:
-        return ParseRequest(buf);
-      case MessageType::kResponses:
-        return ParseState::kInvalid;
-      default:
-        return ParseState::kInvalid;
-    }
-  }
+  ParseState Parse(MessageType type, std::string_view buf);
+
   ParseState Write(MessageType type, MySQLMessage* result) {
     switch (type) {
       case MessageType::kRequests:
         return WriteRequest(result);
       case MessageType::kResponses:
-        return ParseState::kInvalid;
+        return WriteResponse(result);
       default:
         return ParseState::kUnknown;
     }
   }
-  ParseState ParseRequest(std::string_view buf);
   ParseState WriteRequest(MySQLMessage* result);
-  // TODO(chengruizhe): Add mysql response parsing
-  // ParseState ParseResponse(std::string_view buf);
-  // ParseState WriteResponse(MySQLMessage* result);
+  ParseState WriteResponse(MySQLMessage* result);
 
   std::string_view unparsed_data;
   inline static constexpr ConstStrView kComStmtPrepare = "\x16";
   inline static constexpr ConstStrView kComStmtExecute = "\x17";
   inline static constexpr ConstStrView kComQuery = "\x03";
+
+  inline static constexpr int kPacketHeaderLength = 4;
 
  private:
   std::string_view curr_msg_;
