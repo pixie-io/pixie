@@ -150,6 +150,11 @@ inline ::testing::AssertionResult IsOK(const Status& status) {
 #define PL_RETURN_IF_ERROR(__status) \
   PL_RETURN_IF_ERROR_IMPL(PL_CONCAT_NAME(__status__, __COUNTER__), __status)
 
+#ifdef EXPECT_OK
+// There is a conflicting name in status.h in protobuf.
+#undef EXPECT_OK
+#endif
+// TODO(yzhao): Consider rename to PL_EXPECT_OK.
 #define EXPECT_OK(value) EXPECT_TRUE(IsOK(::pl::StatusAdapter(value)))
 #define EXPECT_NOT_OK(value) EXPECT_FALSE(IsOK(::pl::StatusAdapter(value)))
 #define ASSERT_OK(value) ASSERT_TRUE(IsOK(::pl::StatusAdapter(value)))

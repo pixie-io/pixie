@@ -1,5 +1,6 @@
 #ifdef __linux__
 
+#include <google/protobuf/util/json_util.h>
 #include <deque>
 #include <utility>
 
@@ -20,10 +21,14 @@ DEFINE_string(http_response_header_filters, "Content-Type:json",
               "therefore the headers can be duplicate. For example, "
               "'Content-Type:json,Content-Type:text' will select a HTTP response "
               "with a Content-Type header whose value contains 'json' *or* 'text'.");
+DEFINE_bool(enable_parsing_protobufs, false,
+            "If true, parses binary protobufs captured in gRPC messages. "
+            "As of 2019-07, the parser can only handle protobufs defined in Hipster Shop.");
 
 namespace pl {
 namespace stirling {
 
+using ::pl::grpc::MethodInputOutput;
 using ::pl::stirling::http2::Frame;
 using ::pl::stirling::http2::GRPCMessage;
 using ::pl::stirling::http2::GRPCReqResp;
@@ -516,7 +521,21 @@ void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record,
   r.Append<r.ColIndex("http_resp_status")>(200);
   r.Append<r.ColIndex("http_resp_message")>("OK");
   // TODO(yzhao): Populate this field with parsed text format protobufs.
-  r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.message));
+
+  if (FLAGS_enable_parsing_protobufs) {
+    MethodInputOutput in_out = ParseProtobufs(req_message, resp_message, &grpc_desc_db_);
+    std::string json;
+    if (in_out.output != nullptr &&
+        google::protobuf::util::MessageToJsonString(*in_out.output, &json).ok()) {
+      r.Append<r.ColIndex("http_resp_body")>(std::move(json));
+    } else {
+      constexpr char kErrorMessage[] = "Failed to parse binary protobuf";
+      r.Append<r.ColIndex("http_resp_body")>(kErrorMessage);
+      LOG(ERROR) << kErrorMessage;
+    }
+  } else {
+    r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.message));
+  }
   r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns -
                                                req_message.timestamp_ns);
 }

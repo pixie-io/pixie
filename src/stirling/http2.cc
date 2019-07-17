@@ -15,10 +15,15 @@ extern "C" {
 #include "absl/strings/str_cat.h"
 #include "src/common/base/error.h"
 #include "src/common/base/status.h"
+#include "src/common/grpcutils/utils.h"
 
 namespace pl {
 namespace stirling {
 namespace http2 {
+
+using ::pl::grpc::MethodInputOutput;
+using ::pl::grpc::MethodPath;
+using ::pl::grpc::ServiceDescriptorDatabase;
 
 namespace {
 
@@ -429,6 +434,30 @@ std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, std::vector<GRPCMes
     } else {
       ++resp_iter;
     }
+  }
+  return res;
+}
+
+MethodInputOutput ParseProtobufs(const GRPCMessage& req, const GRPCMessage& resp,
+                                 ServiceDescriptorDatabase* db) {
+  const char kPathHeader[] = ":path";
+  auto iter = req.headers.find(kPathHeader);
+  if (iter == req.headers.end()) {
+    // No call path specified, bail out.
+    return {};
+  }
+
+  DCHECK(req.message.size() >= kGRPCMessageHeaderSizeInBytes);
+  DCHECK(resp.message.size() >= kGRPCMessageHeaderSizeInBytes);
+
+  MethodInputOutput res = db->GetMethodInputOutput(MethodPath(iter->second));
+  if (res.input != nullptr) {
+    res.input->ParseFromArray(req.message.data() + kGRPCMessageHeaderSizeInBytes,
+                              req.message.size() - kGRPCMessageHeaderSizeInBytes);
+  }
+  if (res.output != nullptr) {
+    res.output->ParseFromArray(resp.message.data() + kGRPCMessageHeaderSizeInBytes,
+                               resp.message.size() - kGRPCMessageHeaderSizeInBytes);
   }
   return res;
 }

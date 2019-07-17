@@ -12,6 +12,7 @@
 
 #include "src/common/base/mixins.h"
 #include "src/common/base/status.h"
+#include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/stirling/bcc_bpf/socket_trace.h"
 #include "src/stirling/event_parser.h"
 
@@ -132,6 +133,13 @@ inline void EraseConsumedFrames(std::deque<Frame>* frames) {
       std::remove_if(frames->begin(), frames->end(), [](const Frame& f) { return f.consumed; }),
       frames->end());
 }
+
+/**
+ * @brief Parses gRPC message's protobuf payload. Uses the service descriptor database to assemble
+ * dynamic protobuf messages.
+ */
+::pl::grpc::MethodInputOutput ParseProtobufs(const GRPCMessage& req, const GRPCMessage& resp,
+                                             ::pl::grpc::ServiceDescriptorDatabase* db);
 
 // TODO(yzhao): gRPC has a feature called bidirectional streaming:
 // https://grpc.io/docs/guides/concepts/. Investigate how to parse that off HTTP2 frames.

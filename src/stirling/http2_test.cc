@@ -4,14 +4,25 @@
 #include <gtest/gtest.h>
 extern "C" {
 #include <nghttp2/nghttp2_frame.h>
+#include <nghttp2/nghttp2_helper.h>
 }
 
 #include "src/common/base/error.h"
+#include "src/common/base/status.h"
+#include "src/common/testing/testing.h"
+#include "src/stirling/testing/proto/greet.pb.h"
+#include "src/stirling/testing/utils.h"
 
 namespace pl {
 namespace stirling {
 namespace http2 {
 
+using ::pl::grpc::MethodInputOutput;
+using ::pl::grpc::ServiceDescriptorDatabase;
+using ::pl::stirling::testing::GreetServiceFDSet;
+using ::pl::stirling::testing::HelloReply;
+using ::pl::stirling::testing::HelloRequest;
+using ::pl::testing::proto::EqualsProto;
 using ::testing::_;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
@@ -185,6 +196,29 @@ TEST(StitchGRPCStreamFramesTest, InCompleteMessage) {
   std::map<uint32_t, std::vector<GRPCMessage>> stream_msgs;
   EXPECT_OK(StitchGRPCStreamFrames(frames, &stream_msgs));
   EXPECT_THAT(stream_msgs, IsEmpty()) << "There is no END_STREAM in frames, so there is no data";
+}
+
+void PackPayload(std::string_view msg, GRPCMessage* grpc_msg) {
+  grpc_msg->message.resize(kGRPCMessageHeaderSizeInBytes + msg.size(), '\0');
+  grpc_msg->message.replace(kGRPCMessageHeaderSizeInBytes, msg.size(), msg);
+}
+
+TEST(ParseProtobufsTest, HipsterShopReqResp) {
+  GRPCMessage req, resp;
+  req.headers.emplace(":path", "/pl.stirling.testing.Greeter/SayHello");
+
+  HelloRequest req_pb;
+  req_pb.set_name("pixielabs");
+  PackPayload(req_pb.SerializeAsString(), &req);
+
+  HelloReply resp_pb;
+  resp_pb.set_message("hello pixielabs!");
+  PackPayload(resp_pb.SerializeAsString(), &resp);
+
+  ServiceDescriptorDatabase db(GreetServiceFDSet());
+  MethodInputOutput in_out = ParseProtobufs(req, resp, &db);
+  EXPECT_THAT(*in_out.input, EqualsProto(R"proto(name: "pixielabs")proto"));
+  EXPECT_THAT(*in_out.output, EqualsProto(R"proto(message: "hello pixielabs!")proto"));
 }
 
 }  // namespace http2

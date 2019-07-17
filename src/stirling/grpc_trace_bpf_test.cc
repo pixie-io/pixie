@@ -53,6 +53,10 @@ std::vector<size_t> FindRecordIdxMatchesPid(const ColumnWrapperRecordBatch& http
 }
 
 TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
+  // Force disable protobuf parsing to output the binary protobuf in record batch.
+  // Also ensure test remain passing when the default changes.
+  FLAGS_enable_parsing_protobufs = false;
+
   constexpr char kBaseDir[] = "src/stirling/testing";
   std::string s_path =
       TestEnvironment::PathToTestDataFile(absl::StrCat(kBaseDir, "/go_greeter_server"));

@@ -24,11 +24,14 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include <utility>
 #include <vector>
 
+#include "demos/applications/hipster_shop/reflection.h"
+#include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/stirling/connection_tracker.h"
 #include "src/stirling/socket_trace.h"
 #include "src/stirling/source_connector.h"
 
 DECLARE_string(http_response_header_filters);
+DECLARE_bool(enable_parsing_protobufs);
 
 OBJ_STRVIEW(http_trace_bcc_script, _binary_bcc_bpf_socket_trace_c_preprocessed);
 
@@ -237,6 +240,9 @@ class SocketTraceConnector : public SourceConnector {
   };
 
   inline static HTTPHeaderFilter http_response_header_filter_;
+  // TODO(yzhao): We will remove this once finalized the mechanism of lazy protobuf parse.
+  inline static grpc::ServiceDescriptorDatabase grpc_desc_db_{
+      demos::hipster_shop::GetFileDescriptorSet()};
 
   explicit SocketTraceConnector(std::string_view source_name)
       : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {
