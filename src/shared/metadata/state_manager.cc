@@ -7,9 +7,6 @@
 namespace pl {
 namespace md {
 
-using pl::shared::k8s::metadatapb::MetadataResourceType;
-using pl::shared::k8s::metadatapb::ResourceUpdate;
-
 /**
  * kEpochsBetweenObjectDeletion is the interval between when we check if old objects should be
  * removed and are no longer queryable by the metadata.
