@@ -42,8 +42,7 @@ Status AgentMetadataStateManager::AddK8sUpdate(std::unique_ptr<ResourceUpdate> u
 
 Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
   // There should never be more than one updated, but this just here for safety.
-  // TODO(zasgar): Change this to a mutex lock.
-  absl::base_internal::SpinLockHolder state_update_lock(&metadata_state_update_lock_);
+  std::lock_guard<std::mutex> state_update_lock(metadata_state_update_lock_);
 
   /*
    * Performing a state update involves:

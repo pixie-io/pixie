@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <mutex>
 #include <utility>
 
 #include "absl/base/internal/spinlock.h"
@@ -87,7 +88,7 @@ class AgentMetadataStateManager {
   std::shared_ptr<AgentMetadataState> agent_metadata_state_;
   absl::base_internal::SpinLock agent_metadata_state_lock_;
 
-  absl::base_internal::SpinLock metadata_state_update_lock_;
+  std::mutex metadata_state_update_lock_;
 
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> incoming_k8s_updates_;
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>> pid_updates_;
