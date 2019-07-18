@@ -12,6 +12,7 @@ class MockSystemConfig : public SystemConfig {
   MOCK_CONST_METHOD0(HasSystemConfig, bool());
   MOCK_CONST_METHOD0(PageSize, int());
   MOCK_CONST_METHOD0(KernelTicksPerSecond, int());
+  MOCK_CONST_METHOD0(ClockRealTimeOffset, uint64_t());
 };
 
 }  // namespace common

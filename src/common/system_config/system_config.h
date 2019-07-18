@@ -38,6 +38,12 @@ class SystemConfig : public NotCopyable {
    */
   virtual int KernelTicksPerSecond() const = 0;
 
+  /**
+   * @brief If recording nsecs in your bt file, this function can be used to find the offset for
+   * convert the result into realtime.
+   */
+  virtual uint64_t ClockRealTimeOffset() const = 0;
+
  protected:
   SystemConfig() {}
 };
