@@ -170,56 +170,52 @@ static bool is_http2_connection_preface(const char* buf, size_t count) {
   return buf[0] == 'P' && buf[1] == 'R' && buf[2] == 'I';
 }
 
-static struct traffic_class_t infer_traffic(EventType event_type, const char* buf, size_t count) {
+typedef enum {
+  kEgress,
+  kIngress,
+} TrafficDirection;
+
+static struct traffic_class_t infer_traffic(TrafficDirection direction, const char* buf,
+                                            size_t count) {
   struct traffic_class_t traffic_class;
   if (is_http_response(buf, count)) {
     traffic_class.protocol = kProtocolHTTP;
-    switch (event_type) {
-      case kEventTypeSyscallSendEvent:
+    switch (direction) {
+      case kEgress:
         traffic_class.role = kRoleResponder;
         break;
-      case kEventTypeSyscallRecvEvent:
+      case kIngress:
         traffic_class.role = kRoleRequestor;
-        break;
-      default:
         break;
     }
   } else if (is_http_request(buf, count)) {
     traffic_class.protocol = kProtocolHTTP;
-    switch (event_type) {
-      case kEventTypeSyscallSendEvent:
+    switch (direction) {
+      case kEgress:
         traffic_class.role = kRoleRequestor;
         break;
-      case kEventTypeSyscallRecvEvent:
+      case kIngress:
         traffic_class.role = kRoleResponder;
-        break;
-      default:
         break;
     }
   } else if (is_mysql_protocol(buf, count)) {
     traffic_class.protocol = kProtocolMySQL;
-    switch (event_type) {
-      case kEventTypeSyscallSendEvent:
+    switch (direction) {
+      case kEgress:
         traffic_class.role = kRoleRequestor;
         break;
-      case kEventTypeSyscallRecvEvent:
+      case kIngress:
         traffic_class.role = kRoleResponder;
-        break;
-      default:
         break;
     }
   } else if (is_http2_connection_preface(buf, count)) {
     traffic_class.protocol = kProtocolHTTP2;
-    switch (event_type) {
-      case kEventTypeSyscallSendEvent:
-      case kEventTypeSyscallWriteEvent:
+    switch (direction) {
+      case kEgress:
         traffic_class.role = kRoleRequestor;
         break;
-      case kEventTypeSyscallRecvEvent:
-      case kEventTypeSyscallReadEvent:
+      case kIngress:
         traffic_class.role = kRoleResponder;
-        break;
-      default:
         break;
     }
   } else {
@@ -253,7 +249,7 @@ static inline __attribute__((__always_inline__)) struct conn_info_t* get_conn_in
 // TODO(oazizi): This function should go away once the protocol is identified externally.
 //               Also, could move this function into the header file, so we can test it.
 static inline __attribute__((__always_inline__)) void update_traffic_class(
-    struct conn_info_t* conn_info, EventType event_type, const char* buf, size_t count) {
+    struct conn_info_t* conn_info, TrafficDirection direction, const char* buf, size_t count) {
   // TODO(oazizi): Future architecture should have user-land provide the traffic_class.
   // TODO(oazizi): conn_info currently works only if tracing on the send or recv side of a process,
   //               but not both simultaneously, because we need to mark two traffic classes.
@@ -262,7 +258,7 @@ static inline __attribute__((__always_inline__)) void update_traffic_class(
   // If protocol is detected, then let it through, even though accept()/connect() was not captured.
   if (conn_info != NULL && conn_info->traffic_class.protocol == kProtocolUnknown) {
     // TODO(oazizi): Look for only certain protocols on write/send()?
-    struct traffic_class_t traffic_class = infer_traffic(event_type, buf, count);
+    struct traffic_class_t traffic_class = infer_traffic(direction, buf, count);
     conn_info->traffic_class = traffic_class;
   }
 }
@@ -392,7 +388,7 @@ static int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t
     return 0;
   }
 
-  update_traffic_class(conn_info, kEventTypeSyscallSendEvent, buf, count);
+  update_traffic_class(conn_info, kEgress, buf, count);
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
   if (conn_info->traffic_class.protocol == kProtocolUnknown) {
@@ -529,7 +525,7 @@ static int probe_ret_read_recv(struct pt_regs* ctx, EventType event_type) {
     goto done;
   }
 
-  update_traffic_class(conn_info, kEventTypeSyscallRecvEvent, buf, bytes_read);
+  update_traffic_class(conn_info, kIngress, buf, bytes_read);
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
   if (conn_info->traffic_class.protocol == kProtocolUnknown) {
