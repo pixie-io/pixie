@@ -30,3 +30,13 @@ pl_cc_test(
     srcs = ["k8s_objects_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "cgroup_metadata_reader_test",
+    srcs = ["cgroup_metadata_reader_test.cc"],
+    data = glob(["testdata/**/*"]),
+    deps = [
+        ":cc_library",
+        "//src/common/testing:cc_library",
+    ],
+)
