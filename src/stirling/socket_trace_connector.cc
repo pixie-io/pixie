@@ -546,12 +546,6 @@ void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record,
 
 void SocketTraceConnector::TransferMySQLEvent(SocketDataEvent event,
                                               types::ColumnWrapperRecordBatch* record_batch) {
-  // TODO(oazizi): Enable the below to only capture requestor-side messages.
-  //  if (event.attr.event_type != kEventTypeSyscallWriteEvent &&
-  //      event.attr.event_type != kEventTypeSyscallSendEvent) {
-  //    return;
-  //  }
-
   // TODO(chengruizhe/oazizi): Add connection info back, once MySQL uses a ConnectionTracker.
   int fd = -1;
   std::string ip = "-";
