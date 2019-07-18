@@ -38,20 +38,19 @@ TEST_F(CGroupMetadataReaderTest, read_pid_list) {
   EXPECT_THAT(pid_set, ::testing::UnorderedElementsAre(123, 456, 789));
 }
 
-TEST_F(CGroupMetadataReaderTest, read_pid_metadata) {
-  PIDMetadata md;
-  ASSERT_OK(md_reader_->ReadPIDMetadata(32391, &md));
-  EXPECT_EQ(32391, md.pid);
+TEST_F(CGroupMetadataReaderTest, read_pid_start_time) {
   // This is the time from the file * 100 + 128.
-  EXPECT_EQ(8001981028, md.start_time_ns);
-  EXPECT_THAT(md.cmdline_args,
-              "/usr/lib/slack/slack --force-device-scale-factor=1.5 --high-dpi-support=1");
+  EXPECT_EQ(8001981028, md_reader_->ReadPIDStartTime(32391));
+}
+
+TEST_F(CGroupMetadataReaderTest, read_pid_cmdline) {
+  EXPECT_THAT("/usr/lib/slack/slack --force-device-scale-factor=1.5 --high-dpi-support=1",
+              md_reader_->ReadPIDCmdline(32391));
 }
 
 TEST_F(CGroupMetadataReaderTest, read_pid_metadata_null) {
-  PIDMetadata md;
-  ASSERT_OK(md_reader_->ReadPIDMetadata(79690, &md));
-  EXPECT_THAT(md.cmdline_args, "/usr/lib/at-spi2-core/at-spi2-registryd --use-gnome-session");
+  EXPECT_THAT("/usr/lib/at-spi2-core/at-spi2-registryd --use-gnome-session",
+              md_reader_->ReadPIDCmdline(79690));
 }
 
 TEST_F(CGroupMetadataReaderTest, cgroup_proc_file_path) {

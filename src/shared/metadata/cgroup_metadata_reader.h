@@ -12,17 +12,6 @@ namespace pl {
 namespace md {
 
 /**
- * Structure to capture process related metadata.
- * This includes any values that are sent upstream, but not any process metrics that change
- * over time.
- */
-struct PIDMetadata {
-  uint32_t pid;
-  std::string cmdline_args;
-  int64_t start_time_ns;
-};
-
-/**
  * CGroupMetadataReader is responsible for reading metsdata such as process info from
  * sys/fs and proc.
  *
@@ -53,15 +42,25 @@ class CGroupMetadataReader : public NotCopyable {
                           absl::flat_hash_set<uint32_t>* pid_set) const;
 
   /**
-   * ReadPIDMetadata reads the metadata for a given PID.
-   * @return Status of the read.
+   * @note With any of the PID functions there is an inherent race since the system is operating
+   * independently of these functions. The Linux kernel is free to recycle PIDs so it's possible
+   * (but unlikely) that multiple functions on the same PID will return inconsistent data.
    */
-  virtual Status ReadPIDMetadata(uint32_t pid, PIDMetadata* pid_md) const;
+
+  /**
+   * ReadPIDStartTime gets the start time for given PID.
+   * @return the start time stamp in ns since unix epoch.
+   * A time of zero means the read failed, or the process died.
+   */
+  virtual int64_t ReadPIDStartTime(uint32_t pid) const;
+
+  /**
+   * ReadPIDCmdline gets the command line for a given pid.
+   * @return the cmdline with spaces. Empty string means the read failed or the process died.
+   */
+  virtual std::string ReadPIDCmdline(uint32_t pid) const;
 
  private:
-  Status ReadPIDStatFile(uint32_t pid, PIDMetadata* out) const;
-  Status ReadPIDCmdLineFile(uint32_t pid, PIDMetadata* out) const;
-
   static std::string CGroupProcFilePath(std::string_view sysfs_prefix, PodQOSClass qos_class,
                                         std::string_view pod_id, std::string_view container_id);
 

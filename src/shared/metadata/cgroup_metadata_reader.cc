@@ -16,7 +16,6 @@ namespace md {
  * Constants for the /proc/<pid>/stat file
  *************************************************/
 constexpr int kProcStatNumFields = 52;
-constexpr int kProcStatPIDField = 0;
 constexpr int kProcStatStartTimeField = 21;
 
 /**
@@ -77,19 +76,11 @@ Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view po
 }
 
 // TODO(zasgar/michelle): cleanup and merge with proc_parser.
-Status CGroupMetadataReader::ReadPIDMetadata(uint32_t pid, PIDMetadata* out) const {
-  CHECK(out != nullptr);
-  PL_RETURN_IF_ERROR(ReadPIDStatFile(pid, out));
-  return ReadPIDCmdLineFile(pid, out);
-}
-
-Status CGroupMetadataReader::ReadPIDCmdLineFile(uint32_t pid, PIDMetadata* out) const {
-  CHECK(out != nullptr);
-
+std::string CGroupMetadataReader::ReadPIDCmdline(uint32_t pid) const {
   std::string fpath = absl::Substitute("$0/$1/cmdline", proc_path_, pid);
   std::ifstream ifs(fpath);
   if (!ifs) {
-    return error::Internal("Failed to open file $0", fpath);
+    return "";
   }
 
   std::string line = "";
@@ -108,44 +99,36 @@ Status CGroupMetadataReader::ReadPIDCmdLineFile(uint32_t pid, PIDMetadata* out) 
   // and leave it to upstream code to tokenize properly.
   std::replace(cmdline.begin(), cmdline.end(), static_cast<char>(0), ' ');
 
-  out->cmdline_args = std::move(cmdline);
-
-  return Status::OK();
+  return cmdline;
 }
 
-Status CGroupMetadataReader::ReadPIDStatFile(uint32_t pid, PIDMetadata* out) const {
-  CHECK(out != nullptr);
+int64_t CGroupMetadataReader::ReadPIDStartTime(uint32_t pid) const {
   std::string fpath = absl::Substitute("$0/$1/stat", proc_path_, pid);
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
-    return error::Internal("Failed to open file $0", fpath);
+    return 0;
   }
 
   std::string line;
-  bool ok = true;
   if (!std::getline(ifs, line)) {
-    return error::Internal("Failed to read file $0", fpath);
+    return 0;
   }
 
   std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
   // We check less than in case more fields are added later.
   if (split.size() < kProcStatNumFields) {
-    return error::Unknown("Incorrect number of fields in stat file: $0", fpath);
-  }
-  ok &= absl::SimpleAtoi(split[kProcStatPIDField], &out->pid);
-  ok &= absl::SimpleAtoi(split[kProcStatStartTimeField], &out->start_time_ns);
-
-  out->start_time_ns *= ns_per_kernel_tick_;
-  out->start_time_ns += clock_realtime_offset_;
-
-  if (!ok) {
-    // This should never happen since it requires the file to be ill-formed
-    // by the kernel.
-    return error::Internal("failed to parse stat file ($0). ATOI failed.", fpath);
+    return 0;
   }
 
-  return Status::OK();
+  int64_t start_time_ns;
+  if (!absl::SimpleAtoi(split[kProcStatStartTimeField], &start_time_ns)) {
+    return 0;
+  }
+
+  start_time_ns *= ns_per_kernel_tick_;
+  start_time_ns += clock_realtime_offset_;
+  return start_time_ns;
 }
 
 }  // namespace md
