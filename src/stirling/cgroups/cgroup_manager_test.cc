@@ -31,10 +31,6 @@ class CGroupManagerTest : public ::testing::Test {
   void SetUp() override {
     common::MockSystemConfig sysconfig;
 
-    EXPECT_CALL(sysconfig, HasSystemConfig()).WillRepeatedly(Return(true));
-    EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
-    EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
-
     std::string prefix = "cgroup_test";
     char dir_template[] = "/tmp/cgroup_test_XXXXXX";
     char* dir_name = mkdtemp(dir_template);
@@ -44,7 +40,13 @@ class CGroupManagerTest : public ::testing::Test {
     std::string proc = tmp_dir_ + "/proc";
     std::string sysfs = tmp_dir_ + "/sysfs";
 
-    mgr_ = CGroupManager::Create(sysconfig, proc, sysfs);
+    EXPECT_CALL(sysconfig, HasSystemConfig()).WillRepeatedly(Return(true));
+    EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
+    EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
+    EXPECT_CALL(sysconfig, sysfs_path()).WillRepeatedly(Return(sysfs));
+    EXPECT_CALL(sysconfig, proc_path()).WillRepeatedly(Return(proc));
+
+    mgr_ = CGroupManager::Create(sysconfig);
   }
 
   void TearDown() override { fs::remove_all(tmp_dir_); }

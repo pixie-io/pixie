@@ -6,6 +6,12 @@
 namespace pl {
 namespace common {
 
+DEFINE_string(sysfs_path, gflags::StringFromEnv("PL_SYSFS_PATH", "/sys/fs"),
+              "The path to the sysfs directory.");
+
+DEFINE_string(proc_path, gflags::StringFromEnv("PL_PROC_PATH", "/proc"),
+              "The path to the proc directory.");
+
 #ifdef __linux__
 #include <cstring>
 #include <ctime>
@@ -21,6 +27,10 @@ class SystemConfigImpl final : public SystemConfig {
   int KernelTicksPerSecond() const override { return sysconf(_SC_CLK_TCK); }
 
   uint64_t ClockRealTimeOffset() const override { return real_time_offset_; }
+
+  std::string_view sysfs_path() const override { return FLAGS_sysfs_path; }
+
+  std::string_view proc_path() const override { return FLAGS_proc_path; }
 
  private:
   uint64_t real_time_offset_ = 0;
@@ -55,6 +65,10 @@ class SystemConfigImpl final : public SystemConfig {
   uint64_t ClockRealTimeOffset() const override {
     LOG(FATAL) << "ClockRealTimeOffset() is not implemented on this OS.";
   }
+
+  std::string_view sysfs_path() const override { return FLAGS_sysfs_path; }
+
+  std::string_view proc_path() const override { return FLAGS_proc_path; }
 };
 
 #endif

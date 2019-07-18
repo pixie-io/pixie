@@ -44,20 +44,17 @@ Status ReadPIDList(const fs::path& pid_file_path, std::vector<int64_t>* pid_list
 
 }  // namespace
 
-std::unique_ptr<CGroupManager> CGroupManager::Create(std::string_view proc_path,
-                                                     std::string_view sysfs_path) {
+std::unique_ptr<CGroupManager> CGroupManager::Create() {
   auto syscfg = common::SystemConfig::GetInstance();
   if (!syscfg->HasSystemConfig()) {
     LOG(ERROR) << "CGroupManager requires SystemConfig";
     return nullptr;
   }
-  return CGroupManager::Create(*syscfg, proc_path, sysfs_path);
+  return CGroupManager::Create(*syscfg);
 }
 
-std::unique_ptr<CGroupManager> CGroupManager::Create(const common::SystemConfig& cfg,
-                                                     std::string_view proc_path,
-                                                     std::string_view sysfs_path) {
-  std::unique_ptr<CGroupManager> retval(new CGroupManager(cfg, proc_path, sysfs_path));
+std::unique_ptr<CGroupManager> CGroupManager::Create(const common::SystemConfig& cfg) {
+  std::unique_ptr<CGroupManager> retval(new CGroupManager(cfg));
   return retval;
 }
 

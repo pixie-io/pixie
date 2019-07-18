@@ -44,6 +44,18 @@ class SystemConfig : public NotCopyable {
    */
   virtual uint64_t ClockRealTimeOffset() const = 0;
 
+  /**
+   * Get the sysfs path.
+   * @return string the sysfs path.
+   */
+  virtual std::string_view sysfs_path() const = 0;
+
+  /**
+   * Get the proc path.
+   * @return string the proc path.
+   */
+  virtual std::string_view proc_path() const = 0;
+
  protected:
   SystemConfig() {}
 };

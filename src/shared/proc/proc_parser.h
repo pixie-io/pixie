@@ -24,11 +24,11 @@ class ProcParser {
    * duration of the constructor call.
    * @param proc_base_path The base path to the proc files.
    */
-  ProcParser(const common::SystemConfig& cfg, std::string_view proc_base_path)
-      : proc_base_path_(proc_base_path) {
+  explicit ProcParser(const common::SystemConfig& cfg) {
     CHECK(cfg.HasSystemConfig()) << "System config is required for the ProcParser";
     ns_per_kernel_tick_ = static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond());
     bytes_per_page_ = cfg.PageSize();
+    proc_base_path_ = cfg.proc_path();
   }
 
   /**

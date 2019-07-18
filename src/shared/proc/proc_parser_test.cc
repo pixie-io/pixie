@@ -34,11 +34,10 @@ class ProcParserTest : public ::testing::Test {
     EXPECT_CALL(sysconfig, HasSystemConfig()).WillRepeatedly(Return(true));
     EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
     EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
-
-    parser_ = std::make_unique<ProcParser>(sysconfig, proc_path);
+    EXPECT_CALL(sysconfig, proc_path()).WillRepeatedly(Return("/pl/proc"));
+    parser_ = std::make_unique<ProcParser>(sysconfig);
     bytes_per_page_ = sysconfig.PageSize();
   }
-  const std::string proc_path = "/pl/proc";
 
   std::unique_ptr<ProcParser> parser_;
   int bytes_per_page_ = 0;

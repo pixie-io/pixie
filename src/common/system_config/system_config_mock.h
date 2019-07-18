@@ -13,6 +13,8 @@ class MockSystemConfig : public SystemConfig {
   MOCK_CONST_METHOD0(PageSize, int());
   MOCK_CONST_METHOD0(KernelTicksPerSecond, int());
   MOCK_CONST_METHOD0(ClockRealTimeOffset, uint64_t());
+  MOCK_CONST_METHOD0(sysfs_path, std::string_view());
+  MOCK_CONST_METHOD0(proc_path, std::string_view());
 };
 
 }  // namespace common

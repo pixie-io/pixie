@@ -30,12 +30,9 @@ class CGroupManager {
    *
    * This function only works on Linux.
    *
-   * @param proc_Path path to the proc files system.
-   * @param sysfs_path Path the sys file system.
    * @return unique_ptr to the CGroupManager.
    */
-  static std::unique_ptr<CGroupManager> Create(std::string_view proc_path,
-                                               std::string_view sysfs_path);
+  static std::unique_ptr<CGroupManager> Create();
 
   /**
    * Create makes a new CGroupManager.
@@ -44,14 +41,10 @@ class CGroupManager {
    *
    * @param cfg is a system config reference. Needs to be valid for the duration
    * of the Create call.
-   * @param proc_path Path to the proc file system.
-   * @param sysfs_path Path to the sysfs file system.
    * @return unique_ptr to the CGroupManager, returns null if it can't construct
    * a valid CGroupManager.
    */
-  static std::unique_ptr<CGroupManager> Create(const common::SystemConfig& cfg,
-                                               std::string_view proc_path,
-                                               std::string_view sysfs_path);
+  static std::unique_ptr<CGroupManager> Create(const common::SystemConfig& cfg);
 
   /**
    * CGroupQoS store the K8S QoS levels.
@@ -158,9 +151,9 @@ class CGroupManager {
   uint64_t full_scan_count() { return full_scan_count_; }
 
  protected:
-  CGroupManager(const common::SystemConfig& cfg, std::string_view proc_path,
-                std::string_view sysfs_path)
-      : proc_parser_(cfg, proc_path), sysfs_path_(sysfs_path) {}
+  explicit CGroupManager(const common::SystemConfig& cfg) : proc_parser_(cfg) {
+    sysfs_path_ = cfg.sysfs_path();
+  }
 
  private:
   Status UpdateQoSClassInfo(fs::path qos_path, CGroupQoS qos);
