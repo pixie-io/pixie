@@ -3,18 +3,17 @@
 
 package schemapb
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import proto1 "pixielabs.ai/pixielabs/src/shared/types/proto"
-
-import strings "strings"
-import reflect "reflect"
-import github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
-
-import encoding_binary "encoding/binary"
-
-import io "io"
+import (
+	encoding_binary "encoding/binary"
+	fmt "fmt"
+	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
+	io "io"
+	math "math"
+	proto1 "pixielabs.ai/pixielabs/src/shared/types/proto"
+	reflect "reflect"
+	strings "strings"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -34,7 +33,7 @@ type BooleanColumn struct {
 func (m *BooleanColumn) Reset()      { *m = BooleanColumn{} }
 func (*BooleanColumn) ProtoMessage() {}
 func (*BooleanColumn) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_cb0b3ca1a14c8ecf, []int{0}
+	return fileDescriptor_ce184cc4e6678cf8, []int{0}
 }
 func (m *BooleanColumn) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -51,8 +50,8 @@ func (m *BooleanColumn) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return b[:n], nil
 	}
 }
-func (dst *BooleanColumn) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BooleanColumn.Merge(dst, src)
+func (m *BooleanColumn) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BooleanColumn.Merge(m, src)
 }
 func (m *BooleanColumn) XXX_Size() int {
 	return m.Size()
@@ -77,7 +76,7 @@ type Int64Column struct {
 func (m *Int64Column) Reset()      { *m = Int64Column{} }
 func (*Int64Column) ProtoMessage() {}
 func (*Int64Column) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_cb0b3ca1a14c8ecf, []int{1}
+	return fileDescriptor_ce184cc4e6678cf8, []int{1}
 }
 func (m *Int64Column) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -94,8 +93,8 @@ func (m *Int64Column) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) 
 		return b[:n], nil
 	}
 }
-func (dst *Int64Column) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Int64Column.Merge(dst, src)
+func (m *Int64Column) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Int64Column.Merge(m, src)
 }
 func (m *Int64Column) XXX_Size() int {
 	return m.Size()
@@ -120,7 +119,7 @@ type Float64Column struct {
 func (m *Float64Column) Reset()      { *m = Float64Column{} }
 func (*Float64Column) ProtoMessage() {}
 func (*Float64Column) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_cb0b3ca1a14c8ecf, []int{2}
+	return fileDescriptor_ce184cc4e6678cf8, []int{2}
 }
 func (m *Float64Column) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -137,8 +136,8 @@ func (m *Float64Column) XXX_Marshal(b []byte, deterministic bool) ([]byte, error
 		return b[:n], nil
 	}
 }
-func (dst *Float64Column) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Float64Column.Merge(dst, src)
+func (m *Float64Column) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Float64Column.Merge(m, src)
 }
 func (m *Float64Column) XXX_Size() int {
 	return m.Size()
@@ -163,7 +162,7 @@ type Time64NSColumn struct {
 func (m *Time64NSColumn) Reset()      { *m = Time64NSColumn{} }
 func (*Time64NSColumn) ProtoMessage() {}
 func (*Time64NSColumn) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_cb0b3ca1a14c8ecf, []int{3}
+	return fileDescriptor_ce184cc4e6678cf8, []int{3}
 }
 func (m *Time64NSColumn) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -180,8 +179,8 @@ func (m *Time64NSColumn) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return b[:n], nil
 	}
 }
-func (dst *Time64NSColumn) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Time64NSColumn.Merge(dst, src)
+func (m *Time64NSColumn) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Time64NSColumn.Merge(m, src)
 }
 func (m *Time64NSColumn) XXX_Size() int {
 	return m.Size()
@@ -206,7 +205,7 @@ type StringColumn struct {
 func (m *StringColumn) Reset()      { *m = StringColumn{} }
 func (*StringColumn) ProtoMessage() {}
 func (*StringColumn) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_cb0b3ca1a14c8ecf, []int{4}
+	return fileDescriptor_ce184cc4e6678cf8, []int{4}
 }
 func (m *StringColumn) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -223,8 +222,8 @@ func (m *StringColumn) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return b[:n], nil
 	}
 }
-func (dst *StringColumn) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StringColumn.Merge(dst, src)
+func (m *StringColumn) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StringColumn.Merge(m, src)
 }
 func (m *StringColumn) XXX_Size() int {
 	return m.Size()
@@ -255,7 +254,7 @@ type Column struct {
 func (m *Column) Reset()      { *m = Column{} }
 func (*Column) ProtoMessage() {}
 func (*Column) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_cb0b3ca1a14c8ecf, []int{5}
+	return fileDescriptor_ce184cc4e6678cf8, []int{5}
 }
 func (m *Column) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -272,8 +271,8 @@ func (m *Column) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *Column) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Column.Merge(dst, src)
+func (m *Column) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Column.Merge(m, src)
 }
 func (m *Column) XXX_Size() int {
 	return m.Size()
@@ -489,12 +488,13 @@ func _Column_OneofSizer(msg proto.Message) (n int) {
 type RowBatchData struct {
 	Cols    []*Column `protobuf:"bytes,1,rep,name=cols,proto3" json:"cols,omitempty"`
 	NumRows int64     `protobuf:"varint,2,opt,name=num_rows,json=numRows,proto3" json:"num_rows,omitempty"`
+	Eos     bool      `protobuf:"varint,3,opt,name=eos,proto3" json:"eos,omitempty"`
 }
 
 func (m *RowBatchData) Reset()      { *m = RowBatchData{} }
 func (*RowBatchData) ProtoMessage() {}
 func (*RowBatchData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_cb0b3ca1a14c8ecf, []int{6}
+	return fileDescriptor_ce184cc4e6678cf8, []int{6}
 }
 func (m *RowBatchData) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -511,8 +511,8 @@ func (m *RowBatchData) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return b[:n], nil
 	}
 }
-func (dst *RowBatchData) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RowBatchData.Merge(dst, src)
+func (m *RowBatchData) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RowBatchData.Merge(m, src)
 }
 func (m *RowBatchData) XXX_Size() int {
 	return m.Size()
@@ -537,6 +537,13 @@ func (m *RowBatchData) GetNumRows() int64 {
 	return 0
 }
 
+func (m *RowBatchData) GetEos() bool {
+	if m != nil {
+		return m.Eos
+	}
+	return false
+}
+
 type Relation struct {
 	Columns []*Relation_ColumnInfo `protobuf:"bytes,1,rep,name=columns,proto3" json:"columns,omitempty"`
 }
@@ -544,7 +551,7 @@ type Relation struct {
 func (m *Relation) Reset()      { *m = Relation{} }
 func (*Relation) ProtoMessage() {}
 func (*Relation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_cb0b3ca1a14c8ecf, []int{7}
+	return fileDescriptor_ce184cc4e6678cf8, []int{7}
 }
 func (m *Relation) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -561,8 +568,8 @@ func (m *Relation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *Relation) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Relation.Merge(dst, src)
+func (m *Relation) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Relation.Merge(m, src)
 }
 func (m *Relation) XXX_Size() int {
 	return m.Size()
@@ -588,7 +595,7 @@ type Relation_ColumnInfo struct {
 func (m *Relation_ColumnInfo) Reset()      { *m = Relation_ColumnInfo{} }
 func (*Relation_ColumnInfo) ProtoMessage() {}
 func (*Relation_ColumnInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_cb0b3ca1a14c8ecf, []int{7, 0}
+	return fileDescriptor_ce184cc4e6678cf8, []int{7, 0}
 }
 func (m *Relation_ColumnInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -605,8 +612,8 @@ func (m *Relation_ColumnInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte,
 		return b[:n], nil
 	}
 }
-func (dst *Relation_ColumnInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Relation_ColumnInfo.Merge(dst, src)
+func (m *Relation_ColumnInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Relation_ColumnInfo.Merge(m, src)
 }
 func (m *Relation_ColumnInfo) XXX_Size() int {
 	return m.Size()
@@ -639,7 +646,7 @@ type Table struct {
 func (m *Table) Reset()      { *m = Table{} }
 func (*Table) ProtoMessage() {}
 func (*Table) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_cb0b3ca1a14c8ecf, []int{8}
+	return fileDescriptor_ce184cc4e6678cf8, []int{8}
 }
 func (m *Table) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -656,8 +663,8 @@ func (m *Table) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *Table) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Table.Merge(dst, src)
+func (m *Table) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Table.Merge(m, src)
 }
 func (m *Table) XXX_Size() int {
 	return m.Size()
@@ -689,7 +696,7 @@ type Schema struct {
 func (m *Schema) Reset()      { *m = Schema{} }
 func (*Schema) ProtoMessage() {}
 func (*Schema) Descriptor() ([]byte, []int) {
-	return fileDescriptor_schema_cb0b3ca1a14c8ecf, []int{9}
+	return fileDescriptor_ce184cc4e6678cf8, []int{9}
 }
 func (m *Schema) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -706,8 +713,8 @@ func (m *Schema) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (dst *Schema) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Schema.Merge(dst, src)
+func (m *Schema) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Schema.Merge(m, src)
 }
 func (m *Schema) XXX_Size() int {
 	return m.Size()
@@ -739,6 +746,53 @@ func init() {
 	proto.RegisterType((*Schema)(nil), "pl.table_store.schemapb.Schema")
 	proto.RegisterMapType((map[string]*Relation)(nil), "pl.table_store.schemapb.Schema.RelationMapEntry")
 }
+
+func init() { proto.RegisterFile("src/table_store/proto/schema.proto", fileDescriptor_ce184cc4e6678cf8) }
+
+var fileDescriptor_ce184cc4e6678cf8 = []byte{
+	// 635 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x94, 0x41, 0x53, 0xd3, 0x40,
+	0x14, 0xc7, 0xb3, 0x94, 0x42, 0x78, 0x29, 0x0c, 0xb3, 0x17, 0x91, 0xc3, 0x22, 0x01, 0x95, 0x83,
+	0xd3, 0x3a, 0xc0, 0xa0, 0xe3, 0x8c, 0x1e, 0xaa, 0x30, 0x65, 0x18, 0x39, 0x6c, 0x39, 0x79, 0xe9,
+	0x6c, 0xcb, 0x22, 0x1d, 0x93, 0x6c, 0x26, 0x9b, 0xda, 0xe9, 0xcd, 0x4f, 0xa0, 0x7e, 0x0c, 0x3f,
+	0x81, 0x67, 0x8f, 0x1e, 0x39, 0x72, 0x94, 0x70, 0xf1, 0xc8, 0x47, 0x70, 0xf2, 0x76, 0x03, 0xc5,
+	0x69, 0xc4, 0xdb, 0x26, 0xfb, 0xff, 0xff, 0xf6, 0xbd, 0xff, 0xcb, 0x06, 0x7c, 0x9d, 0xf4, 0x1a,
+	0xa9, 0xe8, 0x06, 0xb2, 0xa3, 0x53, 0x95, 0xc8, 0x46, 0x9c, 0xa8, 0x54, 0x35, 0x74, 0xef, 0x54,
+	0x86, 0xa2, 0x8e, 0x0f, 0xf4, 0x5e, 0x1c, 0xd4, 0xc7, 0x24, 0x75, 0xb3, 0x19, 0x77, 0x97, 0xd1,
+	0xac, 0x4f, 0x45, 0x22, 0x8f, 0x1b, 0xe9, 0x28, 0x96, 0xda, 0xba, 0x71, 0x6d, 0xcc, 0xfe, 0x1a,
+	0xcc, 0x37, 0x95, 0x0a, 0xa4, 0x88, 0x5e, 0xab, 0x60, 0x10, 0x46, 0x94, 0xc2, 0xf4, 0xb1, 0x48,
+	0xc5, 0x12, 0x79, 0x50, 0xd9, 0x70, 0x39, 0xae, 0xfd, 0x55, 0xf0, 0xf6, 0xa3, 0x74, 0x67, 0x7b,
+	0x82, 0xa4, 0x62, 0x25, 0x6b, 0x30, 0xbf, 0x17, 0x28, 0x31, 0x59, 0x44, 0xac, 0x68, 0x1d, 0x16,
+	0x8e, 0xfa, 0xa1, 0xdc, 0xd9, 0x3e, 0x6c, 0xff, 0x03, 0xe5, 0x43, 0xad, 0x9d, 0x26, 0xfd, 0xe8,
+	0xfd, 0x04, 0xcd, 0x9c, 0xd5, 0x7c, 0xa9, 0xc0, 0x8c, 0xdd, 0x3e, 0x80, 0x5a, 0xd7, 0x74, 0xd0,
+	0xb1, 0x32, 0xb2, 0xe1, 0x6d, 0x3e, 0xaa, 0x97, 0xa4, 0x52, 0xbf, 0xd5, 0x6e, 0xcb, 0xe1, 0x9e,
+	0x75, 0xbf, 0x11, 0xa9, 0xa0, 0xbb, 0x00, 0xfd, 0xbc, 0x53, 0x83, 0x9a, 0x42, 0xd4, 0x7a, 0x29,
+	0x6a, 0x2c, 0x94, 0x96, 0xc3, 0xe7, 0xd0, 0x89, 0x98, 0x43, 0x98, 0x4f, 0xb1, 0xd1, 0x48, 0x1b,
+	0x52, 0x05, 0x49, 0x8f, 0x4b, 0x49, 0xb7, 0x63, 0x69, 0x39, 0xbc, 0x56, 0xf8, 0x91, 0x77, 0x00,
+	0xb5, 0x13, 0x93, 0xae, 0xc1, 0x4d, 0xdf, 0xd1, 0xe3, 0xad, 0x51, 0xe4, 0x3d, 0x5a, 0x37, 0xc2,
+	0x5a, 0xe0, 0x69, 0xcc, 0xd7, 0xb0, 0xaa, 0xc8, 0x7a, 0x58, 0xca, 0x1a, 0x9f, 0x45, 0xcb, 0xe1,
+	0x60, 0xbc, 0x39, 0xa9, 0x09, 0xe0, 0xf6, 0x54, 0x80, 0x18, 0x3f, 0x86, 0x1a, 0x57, 0xc3, 0xa6,
+	0x48, 0x7b, 0xa7, 0x78, 0xca, 0x16, 0x4c, 0xf7, 0x54, 0xa0, 0x71, 0x6a, 0xde, 0xe6, 0x4a, 0x29,
+	0xde, 0x80, 0x39, 0x8a, 0xe9, 0x7d, 0x70, 0xa3, 0x41, 0xd8, 0x49, 0xd4, 0x50, 0x63, 0xf8, 0x15,
+	0x3e, 0x1b, 0x0d, 0x42, 0xae, 0x86, 0x9a, 0x2e, 0x42, 0x45, 0x2a, 0x8d, 0x41, 0xba, 0x3c, 0x5f,
+	0xfa, 0xdf, 0x09, 0xb8, 0x5c, 0x06, 0x22, 0xed, 0xab, 0x88, 0xee, 0xc1, 0x6c, 0x0f, 0x49, 0xc5,
+	0x89, 0x4f, 0x4a, 0x4f, 0x2c, 0x3c, 0xf6, 0xe8, 0xfd, 0xe8, 0x44, 0xf1, 0xc2, 0xbc, 0xdc, 0x05,
+	0xb8, 0x79, 0x4d, 0x57, 0xc0, 0x33, 0x1b, 0x9d, 0x48, 0x84, 0x12, 0x3f, 0xad, 0x39, 0x0e, 0xe6,
+	0xd5, 0xa1, 0x08, 0x25, 0xdd, 0xba, 0x16, 0xe4, 0x97, 0x0a, 0x6b, 0x5e, 0xd8, 0xa4, 0x78, 0x34,
+	0x5e, 0xb2, 0x3c, 0x8a, 0xa3, 0x51, 0x2c, 0x0b, 0x53, 0xbe, 0xf6, 0x3f, 0x13, 0xa8, 0x1e, 0xe5,
+	0x95, 0xd1, 0x97, 0xe0, 0x26, 0xb6, 0x1a, 0x3b, 0xd3, 0xd5, 0x3b, 0xcb, 0xe6, 0xd7, 0x16, 0xba,
+	0x07, 0x5e, 0xa2, 0x86, 0x9d, 0x6e, 0x1e, 0xba, 0xd4, 0x4b, 0x55, 0x6c, 0xbc, 0x7c, 0x92, 0xe3,
+	0xf3, 0xe1, 0x90, 0xd8, 0x27, 0xa9, 0xfd, 0x1f, 0x04, 0x66, 0xda, 0xa8, 0xa2, 0x6d, 0xa8, 0x15,
+	0xf8, 0x4e, 0x28, 0x62, 0x1b, 0xe6, 0xd3, 0xf2, 0xaf, 0xc3, 0xfc, 0x89, 0x8a, 0xe2, 0xde, 0x8a,
+	0x78, 0x37, 0x4a, 0x93, 0x11, 0xf7, 0x92, 0x9b, 0x37, 0xcb, 0x02, 0x16, 0xff, 0x16, 0xe4, 0xf3,
+	0xfc, 0x20, 0x47, 0x36, 0xd2, 0x7c, 0x49, 0x9f, 0x41, 0xf5, 0xa3, 0x08, 0x06, 0xd2, 0x5e, 0xbb,
+	0xff, 0x48, 0xc2, 0xe8, 0x5f, 0x4c, 0x3d, 0x27, 0xcd, 0x57, 0x67, 0x17, 0xcc, 0x39, 0xbf, 0x60,
+	0xce, 0xd5, 0x05, 0x23, 0x9f, 0x32, 0x46, 0xbe, 0x65, 0x8c, 0xfc, 0xcc, 0x18, 0x39, 0xcb, 0x18,
+	0xf9, 0x95, 0x31, 0xf2, 0x3b, 0x63, 0xce, 0x55, 0xc6, 0xc8, 0xd7, 0x4b, 0xe6, 0x9c, 0x5d, 0x32,
+	0xe7, 0xfc, 0x92, 0x39, 0xef, 0xdc, 0x82, 0xd9, 0x9d, 0xc1, 0xdf, 0xe1, 0xd6, 0x9f, 0x00, 0x00,
+	0x00, 0xff, 0xff, 0x97, 0xf3, 0x8c, 0xfa, 0x71, 0x05, 0x00, 0x00,
+}
+
 func (this *BooleanColumn) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1064,6 +1118,9 @@ func (this *RowBatchData) Equal(that interface{}) bool {
 	if this.NumRows != that1.NumRows {
 		return false
 	}
+	if this.Eos != that1.Eos {
+		return false
+	}
 	return true
 }
 func (this *Relation) Equal(that interface{}) bool {
@@ -1289,12 +1346,13 @@ func (this *RowBatchData) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
+	s := make([]string, 0, 7)
 	s = append(s, "&schemapb.RowBatchData{")
 	if this.Cols != nil {
 		s = append(s, "Cols: "+fmt.Sprintf("%#v", this.Cols)+",\n")
 	}
 	s = append(s, "NumRows: "+fmt.Sprintf("%#v", this.NumRows)+",\n")
+	s = append(s, "Eos: "+fmt.Sprintf("%#v", this.Eos)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1657,6 +1715,16 @@ func (m *RowBatchData) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintSchema(dAtA, i, uint64(m.NumRows))
 	}
+	if m.Eos {
+		dAtA[i] = 0x18
+		i++
+		if m.Eos {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
 	return i, nil
 }
 
@@ -1972,6 +2040,9 @@ func (m *RowBatchData) Size() (n int) {
 	if m.NumRows != 0 {
 		n += 1 + sovSchema(uint64(m.NumRows))
 	}
+	if m.Eos {
+		n += 2
+	}
 	return n
 }
 
@@ -2177,6 +2248,7 @@ func (this *RowBatchData) String() string {
 	s := strings.Join([]string{`&RowBatchData{`,
 		`Cols:` + strings.Replace(fmt.Sprintf("%v", this.Cols), "Column", "Column", 1) + `,`,
 		`NumRows:` + fmt.Sprintf("%v", this.NumRows) + `,`,
+		`Eos:` + fmt.Sprintf("%v", this.Eos) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2256,7 +2328,7 @@ func (m *BooleanColumn) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2282,7 +2354,7 @@ func (m *BooleanColumn) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (int(b) & 0x7F) << shift
+					v |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -2299,7 +2371,7 @@ func (m *BooleanColumn) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
+					packedLen |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -2308,6 +2380,9 @@ func (m *BooleanColumn) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthSchema
 				}
 				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthSchema
+				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
@@ -2327,7 +2402,7 @@ func (m *BooleanColumn) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (int(b) & 0x7F) << shift
+						v |= int(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -2344,6 +2419,9 @@ func (m *BooleanColumn) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthSchema
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthSchema
 			}
 			if (iNdEx + skippy) > l {
@@ -2373,7 +2451,7 @@ func (m *Int64Column) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2399,7 +2477,7 @@ func (m *Int64Column) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (int64(b) & 0x7F) << shift
+					v |= int64(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -2416,7 +2494,7 @@ func (m *Int64Column) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
+					packedLen |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -2425,12 +2503,15 @@ func (m *Int64Column) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthSchema
 				}
 				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthSchema
+				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
 				var elementCount int
 				var count int
-				for _, integer := range dAtA {
+				for _, integer := range dAtA[iNdEx:postIndex] {
 					if integer < 128 {
 						count++
 					}
@@ -2450,7 +2531,7 @@ func (m *Int64Column) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (int64(b) & 0x7F) << shift
+						v |= int64(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -2467,6 +2548,9 @@ func (m *Int64Column) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthSchema
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthSchema
 			}
 			if (iNdEx + skippy) > l {
@@ -2496,7 +2580,7 @@ func (m *Float64Column) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2531,7 +2615,7 @@ func (m *Float64Column) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
+					packedLen |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -2540,6 +2624,9 @@ func (m *Float64Column) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthSchema
 				}
 				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthSchema
+				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
@@ -2570,6 +2657,9 @@ func (m *Float64Column) Unmarshal(dAtA []byte) error {
 			if skippy < 0 {
 				return ErrInvalidLengthSchema
 			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthSchema
+			}
 			if (iNdEx + skippy) > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2597,7 +2687,7 @@ func (m *Time64NSColumn) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2623,7 +2713,7 @@ func (m *Time64NSColumn) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					v |= (int64(b) & 0x7F) << shift
+					v |= int64(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -2640,7 +2730,7 @@ func (m *Time64NSColumn) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					packedLen |= (int(b) & 0x7F) << shift
+					packedLen |= int(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -2649,12 +2739,15 @@ func (m *Time64NSColumn) Unmarshal(dAtA []byte) error {
 					return ErrInvalidLengthSchema
 				}
 				postIndex := iNdEx + packedLen
+				if postIndex < 0 {
+					return ErrInvalidLengthSchema
+				}
 				if postIndex > l {
 					return io.ErrUnexpectedEOF
 				}
 				var elementCount int
 				var count int
-				for _, integer := range dAtA {
+				for _, integer := range dAtA[iNdEx:postIndex] {
 					if integer < 128 {
 						count++
 					}
@@ -2674,7 +2767,7 @@ func (m *Time64NSColumn) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						v |= (int64(b) & 0x7F) << shift
+						v |= int64(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -2691,6 +2784,9 @@ func (m *Time64NSColumn) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthSchema
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthSchema
 			}
 			if (iNdEx + skippy) > l {
@@ -2720,7 +2816,7 @@ func (m *StringColumn) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2748,7 +2844,7 @@ func (m *StringColumn) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2758,6 +2854,9 @@ func (m *StringColumn) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthSchema
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthSchema
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2770,6 +2869,9 @@ func (m *StringColumn) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthSchema
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthSchema
 			}
 			if (iNdEx + skippy) > l {
@@ -2799,7 +2901,7 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -2827,7 +2929,7 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2836,6 +2938,9 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthSchema
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSchema
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2859,7 +2964,7 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2868,6 +2973,9 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthSchema
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSchema
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2891,7 +2999,7 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2900,6 +3008,9 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthSchema
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSchema
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2923,7 +3034,7 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2932,6 +3043,9 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthSchema
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSchema
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2955,7 +3069,7 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2964,6 +3078,9 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthSchema
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSchema
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -2980,6 +3097,9 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthSchema
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthSchema
 			}
 			if (iNdEx + skippy) > l {
@@ -3009,7 +3129,7 @@ func (m *RowBatchData) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3037,7 +3157,7 @@ func (m *RowBatchData) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3046,6 +3166,9 @@ func (m *RowBatchData) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthSchema
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSchema
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3068,11 +3191,31 @@ func (m *RowBatchData) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.NumRows |= (int64(b) & 0x7F) << shift
+				m.NumRows |= int64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Eos", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSchema
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Eos = bool(v != 0)
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSchema(dAtA[iNdEx:])
@@ -3080,6 +3223,9 @@ func (m *RowBatchData) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthSchema
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthSchema
 			}
 			if (iNdEx + skippy) > l {
@@ -3109,7 +3255,7 @@ func (m *Relation) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3137,7 +3283,7 @@ func (m *Relation) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3146,6 +3292,9 @@ func (m *Relation) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthSchema
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSchema
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3161,6 +3310,9 @@ func (m *Relation) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthSchema
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthSchema
 			}
 			if (iNdEx + skippy) > l {
@@ -3190,7 +3342,7 @@ func (m *Relation_ColumnInfo) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3218,7 +3370,7 @@ func (m *Relation_ColumnInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= (uint64(b) & 0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3228,6 +3380,9 @@ func (m *Relation_ColumnInfo) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthSchema
 			}
 			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthSchema
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3247,7 +3402,7 @@ func (m *Relation_ColumnInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.ColumnType |= (proto1.DataType(b) & 0x7F) << shift
+				m.ColumnType |= proto1.DataType(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3259,6 +3414,9 @@ func (m *Relation_ColumnInfo) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthSchema
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthSchema
 			}
 			if (iNdEx + skippy) > l {
@@ -3288,7 +3446,7 @@ func (m *Table) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3316,7 +3474,7 @@ func (m *Table) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3325,6 +3483,9 @@ func (m *Table) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthSchema
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSchema
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3349,7 +3510,7 @@ func (m *Table) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3358,6 +3519,9 @@ func (m *Table) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthSchema
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSchema
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3373,6 +3537,9 @@ func (m *Table) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthSchema
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthSchema
 			}
 			if (iNdEx + skippy) > l {
@@ -3402,7 +3569,7 @@ func (m *Schema) Unmarshal(dAtA []byte) error {
 			}
 			b := dAtA[iNdEx]
 			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
+			wire |= uint64(b&0x7F) << shift
 			if b < 0x80 {
 				break
 			}
@@ -3430,7 +3597,7 @@ func (m *Schema) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -3439,6 +3606,9 @@ func (m *Schema) Unmarshal(dAtA []byte) error {
 				return ErrInvalidLengthSchema
 			}
 			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSchema
+			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
@@ -3459,7 +3629,7 @@ func (m *Schema) Unmarshal(dAtA []byte) error {
 					}
 					b := dAtA[iNdEx]
 					iNdEx++
-					wire |= (uint64(b) & 0x7F) << shift
+					wire |= uint64(b&0x7F) << shift
 					if b < 0x80 {
 						break
 					}
@@ -3476,7 +3646,7 @@ func (m *Schema) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						stringLenmapkey |= (uint64(b) & 0x7F) << shift
+						stringLenmapkey |= uint64(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -3486,6 +3656,9 @@ func (m *Schema) Unmarshal(dAtA []byte) error {
 						return ErrInvalidLengthSchema
 					}
 					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthSchema
+					}
 					if postStringIndexmapkey > l {
 						return io.ErrUnexpectedEOF
 					}
@@ -3502,7 +3675,7 @@ func (m *Schema) Unmarshal(dAtA []byte) error {
 						}
 						b := dAtA[iNdEx]
 						iNdEx++
-						mapmsglen |= (int(b) & 0x7F) << shift
+						mapmsglen |= int(b&0x7F) << shift
 						if b < 0x80 {
 							break
 						}
@@ -3511,7 +3684,7 @@ func (m *Schema) Unmarshal(dAtA []byte) error {
 						return ErrInvalidLengthSchema
 					}
 					postmsgIndex := iNdEx + mapmsglen
-					if mapmsglen < 0 {
+					if postmsgIndex < 0 {
 						return ErrInvalidLengthSchema
 					}
 					if postmsgIndex > l {
@@ -3546,6 +3719,9 @@ func (m *Schema) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			if skippy < 0 {
+				return ErrInvalidLengthSchema
+			}
+			if (iNdEx + skippy) < 0 {
 				return ErrInvalidLengthSchema
 			}
 			if (iNdEx + skippy) > l {
@@ -3614,8 +3790,11 @@ func skipSchema(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			iNdEx += length
 			if length < 0 {
+				return 0, ErrInvalidLengthSchema
+			}
+			iNdEx += length
+			if iNdEx < 0 {
 				return 0, ErrInvalidLengthSchema
 			}
 			return iNdEx, nil
@@ -3646,6 +3825,9 @@ func skipSchema(dAtA []byte) (n int, err error) {
 					return 0, err
 				}
 				iNdEx = start + next
+				if iNdEx < 0 {
+					return 0, ErrInvalidLengthSchema
+				}
 			}
 			return iNdEx, nil
 		case 4:
@@ -3664,51 +3846,3 @@ var (
 	ErrInvalidLengthSchema = fmt.Errorf("proto: negative length found during unmarshaling")
 	ErrIntOverflowSchema   = fmt.Errorf("proto: integer overflow")
 )
-
-func init() {
-	proto.RegisterFile("src/table_store/proto/schema.proto", fileDescriptor_schema_cb0b3ca1a14c8ecf)
-}
-
-var fileDescriptor_schema_cb0b3ca1a14c8ecf = []byte{
-	// 628 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x94, 0x41, 0x53, 0xd3, 0x4e,
-	0x18, 0xc6, 0xb3, 0x94, 0x42, 0x79, 0x53, 0x18, 0x66, 0x2f, 0x7f, 0xfe, 0x1c, 0x16, 0x09, 0xa8,
-	0x1c, 0x9c, 0xd6, 0x01, 0x06, 0x1d, 0x67, 0xf4, 0x50, 0x85, 0x29, 0xc3, 0xc8, 0x61, 0xcb, 0xc9,
-	0x83, 0x9d, 0x6d, 0x58, 0xa4, 0x63, 0x92, 0xcd, 0x24, 0x5b, 0x3b, 0xbd, 0xf9, 0x09, 0xd4, 0x8f,
-	0xe1, 0x27, 0xf0, 0xec, 0xd1, 0x23, 0x47, 0x8e, 0x12, 0x2e, 0x1e, 0xf9, 0x08, 0x4e, 0xde, 0xdd,
-	0x40, 0x71, 0x1a, 0xf1, 0xb6, 0xc9, 0x3e, 0xcf, 0x6f, 0xdf, 0xf7, 0x79, 0xb3, 0x01, 0x2f, 0x4d,
-	0xfc, 0xa6, 0x16, 0xbd, 0x40, 0x76, 0x53, 0xad, 0x12, 0xd9, 0x8c, 0x13, 0xa5, 0x55, 0x33, 0xf5,
-	0x4f, 0x65, 0x28, 0x1a, 0xf8, 0x40, 0xff, 0x8b, 0x83, 0xc6, 0x98, 0xa4, 0x61, 0x36, 0xe3, 0xde,
-	0x32, 0x9a, 0xd3, 0x53, 0x91, 0xc8, 0xe3, 0xa6, 0x1e, 0xc5, 0x32, 0xb5, 0x6e, 0x5c, 0x1b, 0xb3,
-	0xb7, 0x06, 0xf3, 0x2d, 0xa5, 0x02, 0x29, 0xa2, 0x97, 0x2a, 0x18, 0x84, 0x11, 0xa5, 0x30, 0x7d,
-	0x2c, 0xb4, 0x58, 0x22, 0xf7, 0x2a, 0x1b, 0x35, 0x8e, 0x6b, 0x6f, 0x15, 0xdc, 0xfd, 0x48, 0xef,
-	0x6c, 0x4f, 0x90, 0x54, 0xac, 0x64, 0x0d, 0xe6, 0xf7, 0x02, 0x25, 0x26, 0x8b, 0x88, 0x15, 0xad,
-	0xc3, 0xc2, 0x51, 0x3f, 0x94, 0x3b, 0xdb, 0x87, 0x9d, 0xbf, 0xa0, 0x3c, 0xa8, 0x77, 0x74, 0xd2,
-	0x8f, 0xde, 0x4d, 0xd0, 0xcc, 0x59, 0xcd, 0xe7, 0x0a, 0xcc, 0xd8, 0xed, 0x03, 0xa8, 0xf7, 0x4c,
-	0x07, 0x5d, 0x2b, 0x23, 0x1b, 0xee, 0xe6, 0x83, 0x46, 0x49, 0x2a, 0x8d, 0x5b, 0xed, 0xb6, 0x1d,
-	0xee, 0x5a, 0xf7, 0x2b, 0xa1, 0x05, 0xdd, 0x05, 0xe8, 0xe7, 0x9d, 0x1a, 0xd4, 0x14, 0xa2, 0xd6,
-	0x4b, 0x51, 0x63, 0xa1, 0xb4, 0x1d, 0x3e, 0x87, 0x4e, 0xc4, 0x1c, 0xc2, 0xbc, 0xc6, 0x46, 0xa3,
-	0xd4, 0x90, 0x2a, 0x48, 0x7a, 0x58, 0x4a, 0xba, 0x1d, 0x4b, 0xdb, 0xe1, 0xf5, 0xc2, 0x8f, 0xbc,
-	0x03, 0xa8, 0x9f, 0x98, 0x74, 0x0d, 0x6e, 0xfa, 0x8e, 0x1e, 0x6f, 0x8d, 0x22, 0xef, 0xd1, 0xba,
-	0x11, 0xd6, 0x06, 0x37, 0xc5, 0x7c, 0x0d, 0xab, 0x8a, 0xac, 0xfb, 0xa5, 0xac, 0xf1, 0x59, 0xb4,
-	0x1d, 0x0e, 0xc6, 0x9b, 0x93, 0x5a, 0x00, 0x35, 0x5f, 0x05, 0x88, 0xf1, 0xde, 0x42, 0x9d, 0xab,
-	0x61, 0x4b, 0x68, 0xff, 0x14, 0x4f, 0xd9, 0x82, 0x69, 0x5f, 0x05, 0x29, 0x4e, 0xcd, 0xdd, 0x5c,
-	0x29, 0xc5, 0x1b, 0x30, 0x47, 0x31, 0xfd, 0x1f, 0x6a, 0xd1, 0x20, 0xec, 0x26, 0x6a, 0x98, 0x62,
-	0xf8, 0x15, 0x3e, 0x1b, 0x0d, 0x42, 0xae, 0x86, 0xa9, 0xf7, 0x8d, 0x40, 0x8d, 0xcb, 0x40, 0xe8,
-	0xbe, 0x8a, 0xe8, 0x1e, 0xcc, 0xfa, 0xe8, 0x2b, 0xf8, 0x8f, 0x4a, 0xf9, 0x85, 0xc7, 0x1e, 0xb4,
-	0x1f, 0x9d, 0x28, 0x5e, 0x98, 0x97, 0x7b, 0x00, 0x37, 0xaf, 0xe9, 0x0a, 0xb8, 0x66, 0xa3, 0x1b,
-	0x89, 0x50, 0xe2, 0x87, 0x34, 0xc7, 0xc1, 0xbc, 0x3a, 0x14, 0xa1, 0xa4, 0x5b, 0xd7, 0x82, 0xfc,
-	0x0a, 0x61, 0x85, 0x0b, 0x9b, 0x14, 0x8f, 0xc6, 0x2b, 0x95, 0x37, 0x7e, 0x34, 0x8a, 0x65, 0x61,
-	0xca, 0xd7, 0xde, 0x27, 0x02, 0xd5, 0xa3, 0xbc, 0x32, 0xfa, 0x1c, 0x6a, 0x89, 0xad, 0xc6, 0x4e,
-	0x70, 0xf5, 0xce, 0xb2, 0xf9, 0xb5, 0x85, 0xee, 0x81, 0x9b, 0xa8, 0x61, 0xb7, 0x97, 0x47, 0x2c,
-	0xd3, 0xa5, 0x2a, 0x36, 0x5e, 0x3e, 0xb7, 0xf1, 0x69, 0x70, 0x48, 0xec, 0x93, 0x4c, 0xbd, 0xef,
-	0x04, 0x66, 0x3a, 0xa8, 0xa2, 0x1d, 0xa8, 0x17, 0xf8, 0x6e, 0x28, 0x62, 0x1b, 0xe6, 0xe3, 0xf2,
-	0x6f, 0xc1, 0xfc, 0x77, 0x8a, 0xe2, 0x5e, 0x8b, 0x78, 0x37, 0xd2, 0xc9, 0x88, 0xbb, 0xc9, 0xcd,
-	0x9b, 0x65, 0x01, 0x8b, 0x7f, 0x0a, 0xe8, 0x22, 0x54, 0xde, 0xcb, 0x91, 0x8d, 0x34, 0x5f, 0xd2,
-	0x27, 0x50, 0xfd, 0x20, 0x82, 0x81, 0xb4, 0x97, 0xec, 0x1f, 0x92, 0x30, 0xfa, 0x67, 0x53, 0x4f,
-	0x49, 0xeb, 0xc5, 0xd9, 0x05, 0x73, 0xce, 0x2f, 0x98, 0x73, 0x75, 0xc1, 0xc8, 0xc7, 0x8c, 0x91,
-	0xaf, 0x19, 0x23, 0x3f, 0x32, 0x46, 0xce, 0x32, 0x46, 0x7e, 0x66, 0x8c, 0xfc, 0xca, 0x98, 0x73,
-	0x95, 0x31, 0xf2, 0xe5, 0x92, 0x39, 0x67, 0x97, 0xcc, 0x39, 0xbf, 0x64, 0xce, 0x9b, 0x5a, 0xc1,
-	0xec, 0xcd, 0xe0, 0xcf, 0x6f, 0xeb, 0x77, 0x00, 0x00, 0x00, 0xff, 0xff, 0xdc, 0xcf, 0x40, 0x67,
-	0x5f, 0x05, 0x00, 0x00,
-}

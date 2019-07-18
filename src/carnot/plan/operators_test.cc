@@ -72,7 +72,7 @@ TEST_F(OperatorTest, from_proto_map) {
   EXPECT_EQ(planpb::OperatorType::MAP_OPERATOR, map_op->op_type());
 }
 
-TEST_F(OperatorTest, from_proto_src) {
+TEST_F(OperatorTest, from_proto_mem_src) {
   auto src_pb = planpb::testutils::CreateTestSource1PB();
   auto src_op = Operator::FromProto(src_pb, 1);
   EXPECT_EQ(1, src_op->id());
@@ -80,12 +80,28 @@ TEST_F(OperatorTest, from_proto_src) {
   EXPECT_EQ(planpb::OperatorType::MEMORY_SOURCE_OPERATOR, src_op->op_type());
 }
 
-TEST_F(OperatorTest, from_proto_sink) {
+TEST_F(OperatorTest, from_proto_mem_sink) {
   auto sink_pb = planpb::testutils::CreateTestSink1PB();
   auto sink_op = Operator::FromProto(sink_pb, 1);
   EXPECT_EQ(1, sink_op->id());
   EXPECT_TRUE(sink_op->is_initialized());
   EXPECT_EQ(planpb::OperatorType::MEMORY_SINK_OPERATOR, sink_op->op_type());
+}
+
+TEST_F(OperatorTest, from_proto_grpc_source) {
+  auto sink_pb = planpb::testutils::CreateTestGrpcSource1PB();
+  auto sink_op = Operator::FromProto(sink_pb, 1);
+  EXPECT_EQ(1, sink_op->id());
+  EXPECT_TRUE(sink_op->is_initialized());
+  EXPECT_EQ(planpb::OperatorType::GRPC_SOURCE_OPERATOR, sink_op->op_type());
+}
+
+TEST_F(OperatorTest, from_proto_grpc_sink) {
+  auto sink_pb = planpb::testutils::CreateTestGrpcSink1PB();
+  auto sink_op = Operator::FromProto(sink_pb, 1);
+  EXPECT_EQ(1, sink_op->id());
+  EXPECT_TRUE(sink_op->is_initialized());
+  EXPECT_EQ(planpb::OperatorType::GRPC_SINK_OPERATOR, sink_op->op_type());
 }
 
 TEST_F(OperatorTest, from_proto_blocking_agg) {

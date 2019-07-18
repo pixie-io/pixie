@@ -141,6 +141,41 @@ class MemorySinkOperator : public Operator {
   planpb::MemorySinkOperator pb_;
 };
 
+class GrpcSourceOperator : public Operator {
+ public:
+  explicit GrpcSourceOperator(int64_t id) : Operator(id, planpb::GRPC_SOURCE_OPERATOR) {}
+  ~GrpcSourceOperator() override = default;
+
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::GrpcSourceOperator& pb);
+  std::string DebugString() const override;
+
+  int64_t source_id() const { return pb_.source_id(); }
+
+ private:
+  planpb::GrpcSourceOperator pb_;
+};
+
+class GrpcSinkOperator : public Operator {
+ public:
+  explicit GrpcSinkOperator(int64_t id) : Operator(id, planpb::GRPC_SINK_OPERATOR) {}
+  ~GrpcSinkOperator() override = default;
+
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::GrpcSinkOperator& pb);
+  std::string DebugString() const override;
+
+  std::string address() const { return pb_.address(); }
+  int64_t destination_id() const { return pb_.destination_id(); }
+
+ private:
+  planpb::GrpcSinkOperator pb_;
+};
+
 class FilterOperator : public Operator {
  public:
   explicit FilterOperator(int64_t id) : Operator(id, planpb::FILTER_OPERATOR) {}

@@ -52,6 +52,7 @@ enum OperatorType {
   OPERATOR_TYPE_UNKNOWN = 0;
   // Source operators are rangs 1000 - 2000.
   MEMORY_SOURCE_OPERATOR = 1000;
+  GRPC_SOURCE_OPERATOR = 1100;
   // Regular operators are range 2000 - 10000.
   MAP_OPERATOR = 2000;
   BLOCKING_AGGREGATE_OPERATOR = 2100;
@@ -60,6 +61,7 @@ enum OperatorType {
   ZIP_OPERATOR = 2400;
   // Sink operators are range 9000-10000.
   MEMORY_SINK_OPERATOR = 9000;
+  GRPC_SINK_OPERATOR = 9100;
 }
 
 // The Logical operation performed. Each operator needs and entry in this
@@ -81,6 +83,10 @@ message Operator {
     LimitOperator limit_op = 7;
     // Operator that performs an ordered union across multiple inputs.
     ZipOperator zip_op = 8;
+    // Operator that reads data from a remote node via grpc.
+    GrpcSourceOperator grpc_source_op = 9;
+    // Operator that stores data to a remote node via grpc.
+    GrpcSinkOperator grpc_sink_op = 10;
   }
 }
 
@@ -108,6 +114,24 @@ message MemorySinkOperator {
   repeated pl.types.DataType column_types = 2;
   // The names of the columns.
   repeated string column_names = 3;
+}
+
+// Reads from a GRPC service that other machines send RowBatches to.
+message GrpcSourceOperator {
+  // The ID matching the destination_id of the GrpcSinkOperator
+  int64 source_id = 1;
+  // The types of the columns that the source generates.
+  repeated pl.types.DataType column_types = 2;
+  // The names of the columns that the source generates.
+  repeated string column_names = 3;
+}
+
+// Writes to a remote machine via GRPC.
+message GrpcSinkOperator {
+  // The address of the GRPC service.
+  string address = 1;
+  // The ID of the node that should receive the RowBatches from this sink.
+  int64 destination_id = 2;
 }
 
 // Performs map operation.

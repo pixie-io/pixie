@@ -49,6 +49,7 @@ message Column {
 message RowBatchData {
   repeated Column cols = 1;
   int64 num_rows = 2;
+  bool eos = 3;
 }
 
 message Relation {

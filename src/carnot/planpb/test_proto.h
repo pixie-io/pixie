@@ -199,6 +199,15 @@ column_names: "test_col2"
 column_types: BOOLEAN
 )";
 
+const char* kGrpcSourceOperator1 = R"(
+source_id: 2
+)";
+
+const char* kGrpcSinkOperator1 = R"(
+address: "localhost:1234"
+destination_id: 2
+)";
+
 const char* kMapOperator1 = R"(
 expressions {
   func {
@@ -768,6 +777,22 @@ planpb::Operator CreateTestSink2PB() {
   planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SINK_OPERATOR", "mem_sink_op",
                                    kMemSinkOperator2);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestGrpcSource1PB() {
+  planpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "GRPC_SOURCE_OPERATOR", "grpc_source_op",
+                                   kGrpcSourceOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestGrpcSink1PB() {
+  planpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "GRPC_SINK_OPERATOR", "grpc_sink_op",
+                                   kGrpcSinkOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
