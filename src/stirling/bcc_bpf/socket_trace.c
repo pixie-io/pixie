@@ -489,8 +489,7 @@ done:
   return 0;
 }
 
-static int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t count,
-                                 EventType event_type) {
+static int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   if (fd < 0) {
     DLOG_TEXT(ctx, "probe_entry_read_recv(), fd < 0");
     return 0;
@@ -655,7 +654,7 @@ int syscall__probe_ret_send(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_read_recv(ctx, fd, buf, count, kEventTypeSyscallReadEvent);
+  return probe_entry_read_recv(ctx, fd, buf, count);
 }
 
 int syscall__probe_ret_read(struct pt_regs* ctx) {
@@ -663,7 +662,7 @@ int syscall__probe_ret_read(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_read_recv(ctx, fd, buf, count, kEventTypeSyscallRecvEvent);
+  return probe_entry_read_recv(ctx, fd, buf, count);
 }
 
 int syscall__probe_ret_recv(struct pt_regs* ctx) {
