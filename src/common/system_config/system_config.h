@@ -2,19 +2,21 @@
 
 #include <memory>
 
+#include "src/common/base/base.h"
+
 namespace pl {
 namespace common {
 
 /**
  * This interface provides access to global system config.
  */
-class SystemConfig {
+class SystemConfig : public NotCopyable {
  public:
   /**
    * Create an OS specific SystemConfig instance.
    * @return unique_ptr to SystemConfig.
    */
-  static std::unique_ptr<SystemConfig> Create();
+  static SystemConfig* GetInstance();
 
   virtual ~SystemConfig() {}
 
@@ -35,6 +37,9 @@ class SystemConfig {
    * @return int kernel ticks per second.
    */
   virtual int KernelTicksPerSecond() const = 0;
+
+ protected:
+  SystemConfig() {}
 };
 
 }  // namespace common

@@ -90,7 +90,7 @@ class CGroupStatsConnector : public SourceConnector {
  protected:
   explicit CGroupStatsConnector(std::string_view source_name)
       : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {
-    auto sysconfig = common::SystemConfig::Create();
+    auto sysconfig = common::SystemConfig::GetInstance();
     // TODO(zasgar): Make proc/sys paths configurable.
     cgroup_mgr_ = CGroupManager::Create(*sysconfig, "/proc", "/sys/fs");
   }

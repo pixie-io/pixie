@@ -32,8 +32,9 @@ class SystemConfigImpl final : public SystemConfig {
 
 #endif
 
-std::unique_ptr<SystemConfig> SystemConfig::Create() {
-  return std::make_unique<SystemConfigImpl>();
+SystemConfig* SystemConfig::GetInstance() {
+  static SystemConfigImpl instance;
+  return &instance;
 }
 
 }  // namespace common
