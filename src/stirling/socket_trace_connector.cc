@@ -83,6 +83,7 @@ Status SocketTraceConnector::InitImpl() {
   }
 
   PL_RETURN_IF_ERROR(InitBPFLogging(&bpf_));
+  PL_RETURN_IF_ERROR(Configure(kProtocolUnknown, kSocketTraceNothing));
   PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvResp));
   PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kSocketTraceSendReq));
   // TODO(PL-659): connect() call might return non 0 value, making requester-side tracing
@@ -145,14 +146,15 @@ void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
   DumpBPFLog(&bpf_);
 }
 
-Status SocketTraceConnector::Configure(uint32_t protocol, uint64_t config_mask) {
-  auto control_map_handle = bpf_.get_array_table<uint64_t>("control_map");
-
-  auto update_res = control_map_handle.update_value(protocol, config_mask);
+Status SocketTraceConnector::Configure(TrafficProtocol protocol, uint64_t config_mask) {
+  auto control_map_handle = bpf_.get_percpu_array_table<uint64_t>(kControlMapName);
+  std::vector<uint64_t> config_mask_allcpus(kCPUCount, config_mask);
+  auto update_res =
+      control_map_handle.update_value(static_cast<int>(protocol), config_mask_allcpus);
   if (update_res.code() != 0) {
-    return error::Internal("Failed to set control map");
+    return error::Internal(
+        absl::StrCat("Failed to update control map, error message: ", update_res.msg()));
   }
-
   config_mask_[protocol] = config_mask;
 
   return Status::OK();

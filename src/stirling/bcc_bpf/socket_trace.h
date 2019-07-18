@@ -6,6 +6,9 @@
 
 #include <linux/in6.h>
 
+const char kControlMapName[] = "control_map";
+const uint64_t kSocketTraceNothing = 0;
+
 // TODO(yzhao): Investigate the performance cost of misaligned memory access (8 vs. 4 bytes).
 
 // Indicates the syscall that recorded an event.

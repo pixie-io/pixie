@@ -41,7 +41,7 @@ struct data_info_t {
 //  - Trace received responses (client).
 // The bits are defined in socket_trace.h (kSocketTraceSendReq, etc.).
 // There is a control map element for each protocol.
-BPF_ARRAY(control_map, u64, kNumProtocols);
+BPF_PERCPU_ARRAY(control_map, u64, kNumProtocols);
 
 // Map from user-space file descriptors to the connections obtained from accept() syscall.
 // Tracks connection from accept() -> close().
@@ -85,6 +85,9 @@ static inline __attribute__((__always_inline__)) uint32_t get_tgid_fd_generation
 
 static inline __attribute__((__always_inline__)) uint64_t get_control(u32 protocol) {
   u64 kZero = 0;
+  // TODO(yzhao): BCC doc states BPF_PERCPU_ARRAY: all array elements are **pre-allocated with zero
+  // values** (https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md). That suggests
+  // lookup() suffices. But this seems more robust, as BCC behavior is often not intuitive.
   u64* control_ptr = control_map.lookup_or_init(&protocol, &kZero);
   return *control_ptr;
 }
@@ -391,6 +394,8 @@ static int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t
   update_traffic_class(conn_info, kEgress, buf, count);
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
+  // TODO(oazizi/yzhao): We can remove this after we have the ability to identify connections of
+  // interests, through tgid + fd.
   if (conn_info->traffic_class.protocol == kProtocolUnknown) {
     return 0;
   }

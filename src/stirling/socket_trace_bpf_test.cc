@@ -102,7 +102,7 @@ class SocketTraceBPFTest : public ::testing::Test {
     std::thread server_thread_;
   };
 
-  void ConfigureCapture(uint32_t protocol, uint64_t mask) {
+  void ConfigureCapture(TrafficProtocol protocol, uint64_t mask) {
     auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
     ASSERT_OK(socket_trace_connector->Configure(protocol, mask));
   }
@@ -204,7 +204,7 @@ TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
 }
 
 TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
-  ConfigureCapture(kProtocolHTTP, kSocketTraceSendResp);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kSocketTraceSendResp);
 
   ClientServerSystem system;
   system.RunSenderReceiver({kHTTPRespMsg1, kHTTPRespMsg2});
@@ -246,7 +246,7 @@ TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
 }
 
 TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
-  ConfigureCapture(kProtocolHTTP, kSocketTraceRecvResp);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kSocketTraceRecvResp);
 
   ClientServerSystem system;
   system.RunWriterReader({kHTTPRespMsg1, kHTTPRespMsg2});
@@ -288,7 +288,7 @@ TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
 }
 
 TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
-  ConfigureCapture(kProtocolHTTP, kSocketTraceRecvResp);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kSocketTraceRecvResp);
 
   ClientServerSystem system;
   system.RunSenderReceiver({kHTTPRespMsg1, kHTTPRespMsg2});
@@ -362,9 +362,9 @@ TEST_F(SocketTraceBPFTest, TestMySQLWriteCapture) {
 }
 
 TEST_F(SocketTraceBPFTest, TestNoProtocolWritesNotCaptured) {
-  ConfigureCapture(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvReq);
-  ConfigureCapture(kProtocolHTTP, kSocketTraceRecvResp | kSocketTraceSendResp);
-  ConfigureCapture(kProtocolMySQL, kSocketTraceSendReq | kSocketTraceRecvResp);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvReq);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kSocketTraceRecvResp | kSocketTraceSendResp);
+  ConfigureCapture(TrafficProtocol::kProtocolMySQL, kSocketTraceSendReq | kSocketTraceRecvResp);
 
   ClientServerSystem system;
   system.RunWriterReader({kNoProtocolMsg, "", kNoProtocolMsg, ""});
@@ -395,7 +395,7 @@ TEST_F(SocketTraceBPFTest, TestNoProtocolWritesNotCaptured) {
 }
 
 TEST_F(SocketTraceBPFTest, TestMultipleConnections) {
-  ConfigureCapture(kProtocolHTTP, kSocketTraceRecvResp);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kSocketTraceRecvResp);
 
   // Two separate connections.
   ClientServerSystem system1;
@@ -432,7 +432,7 @@ TEST_F(SocketTraceBPFTest, TestMultipleConnections) {
 }
 
 TEST_F(SocketTraceBPFTest, TestStartTime) {
-  ConfigureCapture(kProtocolHTTP, kSocketTraceRecvResp);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kSocketTraceRecvResp);
 
   ClientServerSystem system;
   system.RunSenderReceiver({kHTTPRespMsg1, kHTTPRespMsg2});
