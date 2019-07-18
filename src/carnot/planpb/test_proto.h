@@ -244,79 +244,88 @@ columns {
 )";
 
 // relation 1: [abc, time_]
-// relation 2: [time_, xyz]
+// relation 2: [time_, abc]
 // maps to output relation:
 // [abc, time_, xyz]
-const char* kZipOperator1 = R"(
+const char* kUnionOperator1 = R"(
   column_names: "abc"
   column_names: "time_"
-  column_names: "xyz"
   column_mappings {
     has_time_column: true
     time_column_index: 1
-    output_column_indexes: 0
-    output_column_indexes: 1
+    column_indexes: 0
+    column_indexes: 1
   }
   column_mappings {
     has_time_column: true
     time_column_index: 0
-    output_column_indexes: 1
-    output_column_indexes: 2
+    column_indexes: 1
+    column_indexes: 0
   }
 )";
 
-const char* kZipOperator2 = R"(
+const char* kUnionOperator2 = R"(
   column_names: "abc"
-  column_names: "not_time"
   column_names: "xyz"
   column_mappings {
     has_time_column: false
-    output_column_indexes: 0
-    output_column_indexes: 1
+    column_indexes: 0
+    column_indexes: 1
   }
   column_mappings {
     has_time_column: false
-    output_column_indexes: 1
-    output_column_indexes: 2
+    column_indexes: 1
+    column_indexes: 0
   }
 )";
 
-// relation 1: [abc, time_]
-// relation 2: [time_, xyz]
-// maps to output relation:
-// [abc, time_, xyz]
-const char* kZipOperatorOutOfRange = R"(
+const char* kUnionOperatorOutOfRange1 = R"(
   column_names: "abc"
   column_names: "time_"
-  column_names: "xyz"
   column_mappings {
     has_time_column: true
     time_column_index: 1
-    output_column_indexes: 5
-    output_column_indexes: 1
+    column_indexes: 0
   }
   column_mappings {
     has_time_column: true
     time_column_index: 0
-    output_column_indexes: 1
-    output_column_indexes: 2
+    column_indexes: 1
   }
 )";
 
-const char* kZipOperatorMismatched = R"(
+const char* kUnionOperatorOutOfRange2 = R"(
   column_names: "abc"
   column_names: "time_"
+  column_mappings {
+    has_time_column: true
+    time_column_index: 1
+    column_indexes: 0
+    column_indexes: 1
+    column_indexes: 2
+  }
+  column_mappings {
+    has_time_column: true
+    time_column_index: 0
+    column_indexes: 1
+    column_indexes: 2
+    column_indexes: 3
+  }
+)";
+
+const char* kUnionOperatorMismatched = R"(
+  column_names: "abc"
   column_names: "xyz"
   column_mappings {
     has_time_column: false
-    output_column_indexes: 0
-    output_column_indexes: 1
+    column_indexes: 0
+    column_indexes: 1
   }
   column_mappings {
     has_time_column: true
     time_column_index: 1
-    output_column_indexes: 1
-    output_column_indexes: 2
+    column_indexes: 1
+    column_indexes: 2
   }
 )";
 
@@ -813,32 +822,42 @@ planpb::Operator CreateTestFilter1PB() {
   return op;
 }
 
-planpb::Operator CreateTestZip1PB() {
-  planpb::Operator op;
-  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "ZIP_OPERATOR", "zip_op", kZipOperator1);
-  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
-  return op;
-}
-
-planpb::Operator CreateTestZip2PB() {
-  planpb::Operator op;
-  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "ZIP_OPERATOR", "zip_op", kZipOperator2);
-  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
-  return op;
-}
-
-planpb::Operator CreateTestZipOutOfRange() {
+planpb::Operator CreateTestUnion1PB() {
   planpb::Operator op;
   auto op_proto =
-      absl::Substitute(kOperatorProtoTmpl, "ZIP_OPERATOR", "zip_op", kZipOperatorOutOfRange);
+      absl::Substitute(kOperatorProtoTmpl, "UNION_OPERATOR", "union_op", kUnionOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-planpb::Operator CreateTestZipMismatched() {
+planpb::Operator CreateTestUnion2PB() {
   planpb::Operator op;
   auto op_proto =
-      absl::Substitute(kOperatorProtoTmpl, "ZIP_OPERATOR", "zip_op", kZipOperatorMismatched);
+      absl::Substitute(kOperatorProtoTmpl, "UNION_OPERATOR", "union_op", kUnionOperator2);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestUnionOutOfRange1() {
+  planpb::Operator op;
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "UNION_OPERATOR", "union_op", kUnionOperatorOutOfRange1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestUnionOutOfRange2() {
+  planpb::Operator op;
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "UNION_OPERATOR", "union_op", kUnionOperatorOutOfRange2);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestUnionMismatched() {
+  planpb::Operator op;
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "UNION_OPERATOR", "union_op", kUnionOperatorMismatched);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

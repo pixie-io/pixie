@@ -58,7 +58,7 @@ enum OperatorType {
   BLOCKING_AGGREGATE_OPERATOR = 2100;
   FILTER_OPERATOR = 2200;
   LIMIT_OPERATOR = 2300;
-  ZIP_OPERATOR = 2400;
+  UNION_OPERATOR = 2400;
   // Sink operators are range 9000-10000.
   MEMORY_SINK_OPERATOR = 9000;
   GRPC_SINK_OPERATOR = 9100;
@@ -82,7 +82,7 @@ message Operator {
     // Operator that performs a limit.
     LimitOperator limit_op = 7;
     // Operator that performs an ordered union across multiple inputs.
-    ZipOperator zip_op = 8;
+    UnionOperator union_op = 8;
     // Operator that reads data from a remote node via grpc.
     GrpcSourceOperator grpc_source_op = 9;
     // Operator that stores data to a remote node via grpc.
@@ -174,17 +174,18 @@ message LimitOperator {
   repeated Column columns = 2;
 }
 
-// Zip merges multiple inputs into a single output result.
-// It takes the union of the input schemas as the output schemas.
-// Input relations [a:int, b:str],[a:int, c:float] would produce [a:int, b:str, c:float].
+// Union merges multiple inputs into a single output result.
+// It supports reordering of columns across the inputs.
+// Input relations [a:int, b:str],[b:str, a:int] would produce [a:int, b:str].
 // Columns with the same name must share the same type.
-// Zip preserves the time_ order in the output if all of the inputs have a time_ column.
-message ZipOperator {
+// Union preserves the time_ order in the output if all of the inputs have a time_ column.
+message UnionOperator {
   // Each ColumnMapping corresponds to a single input relation.
-  // It tells the Zip operator how to transform the relation to the expected result.
+  // It tells the Union operator how to transform the relation to the expected result.
   message ColumnMapping {
     // The mapping instructions, one for each input stream.
-    repeated int64 output_column_indexes = 1;
+    // column_indexes=[4] would signify that input column 4 becomes output column 0.
+    repeated int64 column_indexes = 1;
     bool has_time_column = 2;
     int64 time_column_index = 3;
   }

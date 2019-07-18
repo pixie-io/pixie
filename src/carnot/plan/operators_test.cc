@@ -42,17 +42,21 @@ class OperatorTest : public ::testing::Test {
 
     Relation rel3;
     rel3.AddColumn(types::DataType::INT64, "time_");
-    rel3.AddColumn(types::DataType::INT64, "xyz");
+    rel3.AddColumn(types::DataType::FLOAT64, "abc");
 
     Relation rel4;
     rel4.AddColumn(types::DataType::FLOAT64, "time_");
     rel4.AddColumn(types::DataType::INT64, "xyz");
+
+    Relation rel5;
+    rel5.AddColumn(types::DataType::INT64, "time_");
 
     schema_.AddRelation(0, rel0);
     schema_.AddRelation(1, rel1);
     schema_.AddRelation(2, rel2);
     schema_.AddRelation(3, rel3);
     schema_.AddRelation(4, rel4);
+    schema_.AddRelation(5, rel5);
   }
 
   ~OperatorTest() override = default;
@@ -120,34 +124,46 @@ TEST_F(OperatorTest, from_proto_filter) {
   EXPECT_EQ(planpb::OperatorType::FILTER_OPERATOR, filter_op->op_type());
 }
 
-TEST_F(OperatorTest, from_proto_zip_time_column) {
-  auto zip_pb = planpb::testutils::CreateTestZip1PB();
-  auto zip_op = Operator::FromProto(zip_pb, 1);
-  EXPECT_EQ(1, zip_op->id());
-  EXPECT_TRUE(zip_op->is_initialized());
-  EXPECT_EQ(planpb::OperatorType::ZIP_OPERATOR, zip_op->op_type());
+TEST_F(OperatorTest, from_proto_union_time_column) {
+  auto union_pb = planpb::testutils::CreateTestUnion1PB();
+  auto union_op = Operator::FromProto(union_pb, 1);
+  EXPECT_EQ(1, union_op->id());
+  EXPECT_TRUE(union_op->is_initialized());
+  EXPECT_EQ(planpb::OperatorType::UNION_OPERATOR, union_op->op_type());
 }
 
-TEST_F(OperatorTest, from_proto_zip_no_time_column) {
-  auto zip_pb = planpb::testutils::CreateTestZip2PB();
-  auto zip_op = Operator::FromProto(zip_pb, 1);
-  EXPECT_EQ(1, zip_op->id());
-  EXPECT_TRUE(zip_op->is_initialized());
-  EXPECT_EQ(planpb::OperatorType::ZIP_OPERATOR, zip_op->op_type());
+TEST_F(OperatorTest, from_proto_union_no_time_column) {
+  auto union_pb = planpb::testutils::CreateTestUnion2PB();
+  auto union_op = Operator::FromProto(union_pb, 1);
+  EXPECT_EQ(1, union_op->id());
+  EXPECT_TRUE(union_op->is_initialized());
+  EXPECT_EQ(planpb::OperatorType::UNION_OPERATOR, union_op->op_type());
 }
 
-TEST_F(OperatorTest, from_proto_zip_out_of_range) {
-  auto zip_pb = planpb::testutils::CreateTestZipOutOfRange();
-  auto zip_op = std::make_unique<ZipOperator>(1);
-  auto s = zip_op->Init(zip_pb.zip_op());
+TEST_F(OperatorTest, from_proto_union_out_of_range_1) {
+  auto union_pb = planpb::testutils::CreateTestUnionOutOfRange1();
+  auto union_op = std::make_unique<UnionOperator>(1);
+  auto s = union_op->Init(union_pb.union_op());
   EXPECT_FALSE(s.ok());
-  EXPECT_EQ(s.msg(), "Output index 5 out of bounds for parent relation 0 of ZipOperator");
+  EXPECT_EQ(
+      s.msg(),
+      "Inconsistent number of columns in UnionOperator, expected 2 but received 1 for input 0.");
 }
 
-TEST_F(OperatorTest, from_proto_zip_mismatched) {
-  auto zip_pb = planpb::testutils::CreateTestZipMismatched();
-  auto zip_op = std::make_unique<ZipOperator>(1);
-  auto s = zip_op->Init(zip_pb.zip_op());
+TEST_F(OperatorTest, from_proto_union_out_of_range_2) {
+  auto union_pb = planpb::testutils::CreateTestUnionOutOfRange2();
+  auto union_op = std::make_unique<UnionOperator>(1);
+  auto s = union_op->Init(union_pb.union_op());
+  EXPECT_FALSE(s.ok());
+  EXPECT_EQ(
+      s.msg(),
+      "Inconsistent number of columns in UnionOperator, expected 2 but received 3 for input 0.");
+}
+
+TEST_F(OperatorTest, from_proto_union_mismatched) {
+  auto union_pb = planpb::testutils::CreateTestUnionMismatched();
+  auto union_op = std::make_unique<UnionOperator>(1);
+  auto s = union_op->Init(union_pb.union_op());
   EXPECT_FALSE(s.ok());
   EXPECT_EQ(s.msg(), "Time column index must be set for either all tables or no tables.");
 }
@@ -246,27 +262,34 @@ TEST_F(OperatorTest, output_relation_limit) {
   EXPECT_EQ(types::DataType::FLOAT64, rel.ValueOrDie().GetColumnType(1));
 }
 
-TEST_F(OperatorTest, output_relation_zip) {
-  auto zip_pb = planpb::testutils::CreateTestZip1PB();
-  auto zip_op = Operator::FromProto(zip_pb, 4);
+TEST_F(OperatorTest, output_relation_union) {
+  auto union_pb = planpb::testutils::CreateTestUnion1PB();
+  auto union_op = Operator::FromProto(union_pb, 4);
 
-  auto rel = zip_op->OutputRelation(schema_, *state_, std::vector<int64_t>({2, 3}));
-  EXPECT_EQ(3, rel.ValueOrDie().NumColumns());
+  auto rel = union_op->OutputRelation(schema_, *state_, std::vector<int64_t>({2, 3}));
+  EXPECT_EQ(2, rel.ValueOrDie().NumColumns());
   EXPECT_EQ(types::DataType::FLOAT64, rel.ValueOrDie().GetColumnType(0));
   EXPECT_EQ(types::DataType::INT64, rel.ValueOrDie().GetColumnType(1));
-  EXPECT_EQ(types::DataType::INT64, rel.ValueOrDie().GetColumnType(2));
   EXPECT_EQ("abc", rel.ValueOrDie().GetColumnName(0));
   EXPECT_EQ("time_", rel.ValueOrDie().GetColumnName(1));
-  EXPECT_EQ("xyz", rel.ValueOrDie().GetColumnName(2));
 }
 
-TEST_F(OperatorTest, output_relation_zip_mismatched) {
-  auto zip_pb = planpb::testutils::CreateTestZip1PB();
-  auto zip_op = Operator::FromProto(zip_pb, 4);
+TEST_F(OperatorTest, output_relation_union_mismatched) {
+  auto union_pb = planpb::testutils::CreateTestUnion1PB();
+  auto union_op = Operator::FromProto(union_pb, 4);
 
-  auto rel = zip_op->OutputRelation(schema_, *state_, std::vector<int64_t>({2, 4}));
+  auto rel = union_op->OutputRelation(schema_, *state_, std::vector<int64_t>({2, 4}));
   EXPECT_FALSE(rel.ok());
-  EXPECT_EQ(rel.msg(), "Conflicting types for column (time_) in ZipOperator");
+  EXPECT_EQ(rel.msg(), "Conflicting types for column (abc) in UnionOperator");
+}
+
+TEST_F(OperatorTest, output_relation_union_out_of_range) {
+  auto union_pb = planpb::testutils::CreateTestUnion1PB();
+  auto union_op = Operator::FromProto(union_pb, 4);
+
+  auto rel = union_op->OutputRelation(schema_, *state_, std::vector<int64_t>({2, 5}));
+  EXPECT_FALSE(rel.ok());
+  EXPECT_EQ(rel.msg(), "Missing column 1 of input 1 in UnionOperator");
 }
 
 }  // namespace plan
