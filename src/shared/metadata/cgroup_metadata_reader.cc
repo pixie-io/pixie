@@ -45,10 +45,10 @@ std::string CGroupMetadataReader::CGroupProcFilePath(std::string_view sysfs_pref
 
 // TODO(zasgar/michelle): Reconcile this code with cgroup manager. We should delete the cgroup
 // manager version of the code after the transition to the new metadata scheme is complete.
-Status CGroupMetadataReader::ReadPIDList(PodQOSClass qos_class, std::string_view pod_id,
-                                         std::string_view container_id,
-                                         std::vector<uint32_t>* pid_list) const {
-  CHECK(pid_list != nullptr);
+Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view pod_id,
+                                      std::string_view container_id,
+                                      absl::flat_hash_set<uint32_t>* pid_set) const {
+  CHECK(pid_set != nullptr);
 
   // The container files need to be recursively read and the PID needs be merge across all
   // containers.
@@ -71,8 +71,7 @@ Status CGroupMetadataReader::ReadPIDList(PodQOSClass qos_class, std::string_view
       LOG(WARNING) << absl::Substitute("Failed to parse pid file: $0", fpath);
       continue;
     }
-
-    pid_list->emplace_back(pid);
+    pid_set->emplace(pid);
   }
   return Status::OK();
 }

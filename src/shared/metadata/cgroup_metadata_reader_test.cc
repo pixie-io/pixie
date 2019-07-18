@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/metadata/cgroup_metadata_reader.h"
 
@@ -32,9 +33,9 @@ class CGroupMetadataReaderTest : public ::testing::Test {
 };
 
 TEST_F(CGroupMetadataReaderTest, read_pid_list) {
-  std::vector<uint32_t> pid_list;
-  ASSERT_OK(md_reader_->ReadPIDList(PodQOSClass::kBestEffort, "abcd", "c123", &pid_list));
-  EXPECT_THAT(pid_list, ::testing::ElementsAre(123, 456, 789));
+  absl::flat_hash_set<uint32_t> pid_set;
+  ASSERT_OK(md_reader_->ReadPIDs(PodQOSClass::kBestEffort, "abcd", "c123", &pid_set));
+  EXPECT_THAT(pid_set, ::testing::UnorderedElementsAre(123, 456, 789));
 }
 
 TEST_F(CGroupMetadataReaderTest, read_pid_metadata) {
