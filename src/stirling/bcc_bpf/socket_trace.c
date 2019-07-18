@@ -72,18 +72,18 @@ BPF_HASH(active_read_info_map, u64, struct data_info_t);
 // Key is {tgid, fd}.
 BPF_HASH(proc_conn_map, u64, u32);
 
-static inline __attribute__((__always_inline__)) uint64_t get_tgid_start_time() {
+static __inline uint64_t get_tgid_start_time() {
   struct task_struct* task = (struct task_struct*)bpf_get_current_task();
   return task->group_leader->start_time;
 }
 
-static inline __attribute__((__always_inline__)) uint32_t get_tgid_fd_generation(u64 tgid_fd) {
+static __inline uint32_t get_tgid_fd_generation(u64 tgid_fd) {
   u32 init_tgid_fd_generation = 0;
   u32* tgid_fd_generation = proc_conn_map.lookup_or_init(&tgid_fd, &init_tgid_fd_generation);
   return (*tgid_fd_generation)++;
 }
 
-static inline __attribute__((__always_inline__)) uint64_t get_control(u32 protocol) {
+static __inline uint64_t get_control(u32 protocol) {
   u64 kZero = 0;
   // TODO(yzhao): BCC doc states BPF_PERCPU_ARRAY: all array elements are **pre-allocated with zero
   // values** (https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md). That suggests
@@ -99,7 +99,7 @@ BPF_PERCPU_ARRAY(data_buffer_heap, struct socket_data_event_t, 1);
 // Attribute copied from:
 // https://github.com/iovisor/bcc/blob/ef9d83f289222df78f0b16a04ade7c393bf4d83d/\
 // examples/cpp/pyperf/PyPerfBPFProgram.cc#L168
-static inline __attribute__((__always_inline__)) struct socket_data_event_t* data_buffer() {
+static __inline struct socket_data_event_t* data_buffer() {
   u32 kZero = 0;
   return data_buffer_heap.lookup(&kZero);
 }
@@ -108,7 +108,7 @@ static inline __attribute__((__always_inline__)) struct socket_data_event_t* dat
  * Buffer processing helper functions
  ***********************************************************/
 
-static bool is_http_response(const char* buf, size_t count) {
+static __inline bool is_http_response(const char* buf, size_t count) {
   // Smallest HTTP response is 17 characters:
   // HTTP/1.1 200 OK\r\n
   // Use 16 here to be conservative.
@@ -123,7 +123,7 @@ static bool is_http_response(const char* buf, size_t count) {
   return false;
 }
 
-static bool is_http_request(const char* buf, size_t count) {
+static __inline bool is_http_request(const char* buf, size_t count) {
   // Smallest HTTP response is 16 characters:
   // GET x HTTP/1.1\r\n
   if (count < 16) {
@@ -141,7 +141,7 @@ static bool is_http_request(const char* buf, size_t count) {
   return false;
 }
 
-static bool is_mysql_protocol(const char* buf, size_t count) {
+static __inline bool is_mysql_protocol(const char* buf, size_t count) {
   // Need at least 7 bytes for COM_STMT_PREPARE + SELECT.
   // Plus there needs to be some substance to the query after that.
   // Here, expect at least 8 bytes.
@@ -166,7 +166,7 @@ static bool is_mysql_protocol(const char* buf, size_t count) {
 // write()/sendto()/sendmsg().
 //
 // [1] https://http2.github.io/http2-spec/#ConnectionHeader
-static bool is_http2_connection_preface(const char* buf, size_t count) {
+static __inline bool is_http2_connection_preface(const char* buf, size_t count) {
   if (count < 3) {
     return false;
   }
@@ -178,8 +178,8 @@ typedef enum {
   kIngress,
 } TrafficDirection;
 
-static struct traffic_class_t infer_traffic(TrafficDirection direction, const char* buf,
-                                            size_t count) {
+static __inline struct traffic_class_t infer_traffic(TrafficDirection direction, const char* buf,
+                                                     size_t count) {
   struct traffic_class_t traffic_class;
   if (is_http_response(buf, count)) {
     traffic_class.protocol = kProtocolHTTP;
@@ -228,8 +228,7 @@ static struct traffic_class_t infer_traffic(TrafficDirection direction, const ch
   return traffic_class;
 }
 
-static inline __attribute__((__always_inline__)) struct conn_info_t* get_conn_info(u32 tgid,
-                                                                                   u32 fd) {
+static __inline struct conn_info_t* get_conn_info(u32 tgid, u32 fd) {
   u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
   struct conn_info_t new_conn_info;
   memset(&new_conn_info, 0, sizeof(struct conn_info_t));
@@ -251,8 +250,8 @@ static inline __attribute__((__always_inline__)) struct conn_info_t* get_conn_in
 
 // TODO(oazizi): This function should go away once the protocol is identified externally.
 //               Also, could move this function into the header file, so we can test it.
-static inline __attribute__((__always_inline__)) void update_traffic_class(
-    struct conn_info_t* conn_info, TrafficDirection direction, const char* buf, size_t count) {
+static __inline void update_traffic_class(struct conn_info_t* conn_info, TrafficDirection direction,
+                                          const char* buf, size_t count) {
   // TODO(oazizi): Future architecture should have user-land provide the traffic_class.
   // TODO(oazizi): conn_info currently works only if tracing on the send or recv side of a process,
   //               but not both simultaneously, because we need to mark two traffic classes.
@@ -270,7 +269,8 @@ static inline __attribute__((__always_inline__)) void update_traffic_class(
  * BPF syscall probe functions
  ***********************************************************/
 
-static void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd, struct sockaddr_in6 addr) {
+static __inline void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd,
+                                     struct sockaddr_in6 addr) {
   u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
 
   struct conn_info_t conn_info;
@@ -290,8 +290,8 @@ static void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd, struct sockad
   socket_open_conns.perf_submit(ctx, &conn_info, sizeof(struct conn_info_t));
 }
 
-static int probe_entry_connect_impl(struct pt_regs* ctx, int sockfd, const struct sockaddr* addr,
-                                    size_t addrlen) {
+static __inline int probe_entry_connect_impl(struct pt_regs* ctx, int sockfd,
+                                             const struct sockaddr* addr, size_t addrlen) {
   u64 id = bpf_get_current_pid_tgid();
 
   // Only record IP (IPV4 and IPV6) connections.
@@ -309,7 +309,7 @@ static int probe_entry_connect_impl(struct pt_regs* ctx, int sockfd, const struc
   return 0;
 }
 
-static int probe_ret_connect_impl(struct pt_regs* ctx) {
+static __inline int probe_ret_connect_impl(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
@@ -337,8 +337,8 @@ done:
 //
 // TODO(yzhao): We are not able to trace the source address/port yet. We might need to probe the
 // socket() syscall.
-static int probe_entry_accept_impl(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
-                                   size_t* addrlen) {
+static __inline int probe_entry_accept_impl(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
+                                            size_t* addrlen) {
   u64 id = bpf_get_current_pid_tgid();
 
   struct accept_info_t accept_info;
@@ -350,7 +350,7 @@ static int probe_entry_accept_impl(struct pt_regs* ctx, int sockfd, struct socka
 }
 
 // Read the sockaddr values and write to the output buffer.
-static int probe_ret_accept_impl(struct pt_regs* ctx) {
+static __inline int probe_ret_accept_impl(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
@@ -377,7 +377,7 @@ done:
   return 0;
 }
 
-static int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
+static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   if (fd < 0) {
     DLOG_TEXT(ctx, "probe_entry_write_send(), fd < 0");
     return 0;
@@ -429,7 +429,7 @@ static int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t
   return 0;
 }
 
-static int probe_ret_write_send(struct pt_regs* ctx, EventType event_type) {
+static __inline int probe_ret_write_send(struct pt_regs* ctx, EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
@@ -490,7 +490,7 @@ done:
   return 0;
 }
 
-static int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
+static __inline int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   if (fd < 0) {
     DLOG_TEXT(ctx, "probe_entry_read_recv(), fd < 0");
     return 0;
@@ -507,7 +507,7 @@ static int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t 
   return 0;
 }
 
-static int probe_ret_read_recv(struct pt_regs* ctx, EventType event_type) {
+static __inline int probe_ret_read_recv(struct pt_regs* ctx, EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
@@ -596,7 +596,7 @@ done:
   return 0;
 }
 
-static int probe_close_impl(struct pt_regs* ctx, int fd) {
+static __inline int probe_close_impl(struct pt_regs* ctx, int fd) {
   if (fd < 0) {
     DLOG_TEXT(ctx, "probe_close(), fd < 0");
     return 0;
