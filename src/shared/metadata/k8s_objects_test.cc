@@ -69,26 +69,37 @@ TEST(ContainerInfo, add_delete_pids) {
   ContainerInfo cinfo("container1");
   cinfo.set_pod_id("pod1");
 
-  cinfo.AddPID(UPID(1, 1, 123));
-  cinfo.AddPID(UPID(1, 2, 123));
-  cinfo.AddPID(UPID(1, 2, 123));
-  cinfo.AddPID(UPID(1, 5, 123));
-  cinfo.RmPID(UPID(1, 3, 123));
+  cinfo.AddUPID(UPID(1, 1, 123));
+  cinfo.AddUPID(UPID(1, 2, 123));
+  cinfo.AddUPID(UPID(1, 2, 123));
+  cinfo.AddUPID(UPID(1, 5, 123));
 
-  EXPECT_THAT(cinfo.pids(),
+  EXPECT_THAT(cinfo.active_upids(),
               testing::UnorderedElementsAre(UPID(1, 1, 123), UPID(1, 2, 123), UPID(1, 5, 123)));
+  EXPECT_THAT(cinfo.inactive_upids(), testing::UnorderedElementsAre());
 
-  cinfo.RmPID(UPID(1, 2, 123));
-  EXPECT_THAT(cinfo.pids(), testing::UnorderedElementsAre(UPID(1, 1, 123), UPID(1, 5, 123)));
+  cinfo.DeactivateUPID(UPID(1, 2, 123));
+  EXPECT_THAT(cinfo.active_upids(),
+              testing::UnorderedElementsAre(UPID(1, 1, 123), UPID(1, 5, 123)));
+  EXPECT_THAT(cinfo.inactive_upids(), testing::UnorderedElementsAre(UPID(1, 2, 123)));
+}
+
+TEST(ContainerInfo, deactive_non_existing_pid_ignored) {
+  ContainerInfo cinfo("container1");
+  cinfo.set_pod_id("pod1");
+  cinfo.DeactivateUPID(UPID(1, 3, 123));
+
+  EXPECT_THAT(cinfo.active_upids(), testing::UnorderedElementsAre());
+  EXPECT_THAT(cinfo.inactive_upids(), testing::UnorderedElementsAre());
 }
 
 TEST(ContainerInfo, clone) {
   ContainerInfo orig("container1");
   orig.set_pod_id("pod1");
 
-  orig.AddPID(UPID(1, 0, 123));
-  orig.AddPID(UPID(1, 1, 123));
-  orig.AddPID(UPID(1, 15, 123));
+  orig.AddUPID(UPID(1, 0, 123));
+  orig.AddUPID(UPID(1, 1, 123));
+  orig.AddUPID(UPID(1, 15, 123));
 
   orig.set_start_time_ns(128);
   orig.set_start_time_ns(256);
@@ -97,7 +108,7 @@ TEST(ContainerInfo, clone) {
 
   EXPECT_EQ(cloned->pod_id(), orig.pod_id());
   EXPECT_EQ(cloned->cid(), orig.cid());
-  EXPECT_EQ(cloned->pids(), orig.pids());
+  EXPECT_EQ(cloned->active_upids(), orig.active_upids());
   EXPECT_EQ(cloned->start_time_ns(), orig.start_time_ns());
   EXPECT_EQ(cloned->stop_time_ns(), orig.stop_time_ns());
 }

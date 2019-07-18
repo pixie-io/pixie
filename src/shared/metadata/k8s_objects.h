@@ -131,10 +131,21 @@ struct ContainerInfo {
   void set_pod_id(std::string_view pod_id) { pod_id_ = pod_id; }
   const UID& pod_id() const { return pod_id_; }
 
-  void AddPID(UPID pid) { pids_.emplace(pid); }
-  void RmPID(UPID pid) { pids_.erase(pid); }
+  void AddUPID(UPID upid) { active_upids_.emplace(upid); }
+  void DeactivateUPID(UPID upid) {
+    auto it = active_upids_.find(upid);
+    if (it != active_upids_.end()) {
+      inactive_upids_.emplace(*it);
+      active_upids_.erase(it);
+    }
+  }
 
-  const absl::flat_hash_set<UPID>& pids() { return pids_; }
+  bool HasActiveUPID(UPID upid) { return active_upids_.contains(upid); }
+  bool HasInActiveUPID(UPID upid) { return inactive_upids_.contains(upid); }
+  bool HasUPID(UPID upid) { return HasActiveUPID(upid) || HasInActiveUPID(upid); }
+
+  const absl::flat_hash_set<UPID>& active_upids() { return active_upids_; }
+  const absl::flat_hash_set<UPID>& inactive_upids() { return inactive_upids_; }
 
   int64_t start_time_ns() { return start_time_ns_; }
   void set_start_time_ns(int64_t start_time_ns) { start_time_ns_ = start_time_ns; }
@@ -155,9 +166,15 @@ struct ContainerInfo {
   UID pod_id_ = "";
 
   /**
-   * The set of PIDs that are running on this container.
+   * The set of UPIDs that are running on this container.
    */
-  absl::flat_hash_set<UPID> pids_;
+  absl::flat_hash_set<UPID> active_upids_;
+
+  /**
+   * The set of UPIDs that used to run on this container but have since been killed.
+   * We maintain them for a while so that they remain queryable.
+   */
+  absl::flat_hash_set<UPID> inactive_upids_;
 
   /**
    * Start time of this K8s object.
