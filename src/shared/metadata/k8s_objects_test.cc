@@ -69,25 +69,26 @@ TEST(ContainerInfo, add_delete_pids) {
   ContainerInfo cinfo("container1");
   cinfo.set_pod_id("pod1");
 
-  cinfo.AddPID(1);
-  cinfo.AddPID(2);
-  cinfo.AddPID(2);
-  cinfo.AddPID(5);
-  cinfo.RmPID(3);
+  cinfo.AddPID(UPID(1, 1, 123));
+  cinfo.AddPID(UPID(1, 2, 123));
+  cinfo.AddPID(UPID(1, 2, 123));
+  cinfo.AddPID(UPID(1, 5, 123));
+  cinfo.RmPID(UPID(1, 3, 123));
 
-  EXPECT_THAT(cinfo.pids(), testing::UnorderedElementsAre(1, 2, 5));
+  EXPECT_THAT(cinfo.pids(),
+              testing::UnorderedElementsAre(UPID(1, 1, 123), UPID(1, 2, 123), UPID(1, 5, 123)));
 
-  cinfo.RmPID(2);
-  EXPECT_THAT(cinfo.pids(), testing::UnorderedElementsAre(1, 5));
+  cinfo.RmPID(UPID(1, 2, 123));
+  EXPECT_THAT(cinfo.pids(), testing::UnorderedElementsAre(UPID(1, 1, 123), UPID(1, 5, 123)));
 }
 
 TEST(ContainerInfo, clone) {
   ContainerInfo orig("container1");
   orig.set_pod_id("pod1");
 
-  orig.AddPID(0);
-  orig.AddPID(1);
-  orig.AddPID(15);
+  orig.AddPID(UPID(1, 0, 123));
+  orig.AddPID(UPID(1, 1, 123));
+  orig.AddPID(UPID(1, 15, 123));
 
   orig.set_start_time_ns(128);
   orig.set_start_time_ns(256);

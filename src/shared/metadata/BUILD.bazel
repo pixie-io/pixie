@@ -40,3 +40,12 @@ pl_cc_test(
         "//src/common/testing:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "base_types_test",
+    srcs = ["base_types_test.cc"],
+    deps = [
+        ":cc_library",
+        "@com_google_absl//absl/hash:hash_testing",
+    ],
+)
