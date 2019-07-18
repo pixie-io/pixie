@@ -520,7 +520,7 @@ message ServiceUpdate {
 // These updates can contain cross references to other objects (ie. pods can refer to containers).
 // The MDS guarantees that updates from children will be send before the parent. For example,
 // MDS will always send a ContainerUpdate before sending the Pods that depend on that Container.
-message ResourceUpdate2 {
+message ResourceUpdate {
   oneof update {
     PodUpdate pod_update = 1;
     ContainerUpdate container_update = 2;
@@ -535,10 +535,4 @@ enum MetadataResourceType {
     POD = 1;
     SERVICE = 2;
     CONTAINER = 3;
-}
-
-message ResourceUpdate {
-    MetadataResourceType type = 1;
-    pl.shared.k8s.metadatapb.ObjectMetadata metadata = 2;
-    repeated pl.shared.k8s.metadatapb.ObjectReference references = 3;
 }

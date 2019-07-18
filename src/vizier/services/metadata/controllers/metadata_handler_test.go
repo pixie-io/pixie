@@ -149,6 +149,7 @@ status {
 		container_state: 3
 		container_id: "test"
 	}
+	qos_class: QOS_CLASS_BURSTABLE
 }
 spec {
 	node_name: "test"
@@ -168,23 +169,17 @@ func TestObjectToEndpointsProto(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	refs := make([]*metadatapb.ObjectReference, 1)
-	refs[0] = &metadatapb.ObjectReference{
-		Kind:      "Pod",
-		Namespace: "pl",
-		UID:       "abcd",
-	}
-
 	updatePb := &metadatapb.ResourceUpdate{
-		Type: metadatapb.SERVICE,
-		Metadata: &metadatapb.ObjectMetadata{
-			UID:                 "ijkl",
-			Name:                "object_md",
-			Namespace:           "a_namespace",
-			CreationTimestampNS: 4,
-			DeletionTimestampNS: 6,
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:              "ijkl",
+				Name:             "object_md",
+				Namespace:        "a_namespace",
+				StartTimestampNS: 4,
+				StopTimestampNS:  6,
+				PodIDs:           []string{"abcd"},
+			},
 		},
-		References: refs,
 	}
 
 	update, err := updatePb.Marshal()
@@ -419,15 +414,16 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 	}
 
 	updatePb := &metadatapb.ResourceUpdate{
-		Type: metadatapb.SERVICE,
-		Metadata: &metadatapb.ObjectMetadata{
-			UID:                 "ijkl",
-			Name:                "object_md",
-			Namespace:           "a_namespace",
-			CreationTimestampNS: 4,
-			DeletionTimestampNS: 6,
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:              "ijkl",
+				Name:             "object_md",
+				Namespace:        "a_namespace",
+				StartTimestampNS: 4,
+				StopTimestampNS:  6,
+				PodIDs:           []string{"abcd"},
+			},
 		},
-		References: refs,
 	}
 	update, err := updatePb.Marshal()
 
@@ -700,22 +696,13 @@ func TestObjectToPodProto(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	refs := make([]*metadatapb.ObjectReference, 1)
-	refs[0] = &metadatapb.ObjectReference{
-		Kind: "container",
-		Name: "container1",
-		UID:  "test",
-	}
-
 	updatePb := &metadatapb.ResourceUpdate{
-		Type: metadatapb.POD,
-		Metadata: &metadatapb.ObjectMetadata{
-			UID:                 "ijkl",
-			Name:                "object_md",
-			CreationTimestampNS: 4,
-			DeletionTimestampNS: 6,
+		Update: &metadatapb.ResourceUpdate_ContainerUpdate{
+			ContainerUpdate: &metadatapb.ContainerUpdate{
+				CID:  "test",
+				Name: "container1",
+			},
 		},
-		References: refs,
 	}
 
 	update, err := updatePb.Marshal()
@@ -776,6 +763,7 @@ func TestObjectToPodProto(t *testing.T) {
 		Phase:             v1.PodRunning,
 		Conditions:        conditions,
 		ContainerStatuses: containers,
+		QOSClass:          v1.PodQOSBurstable,
 	}
 
 	spec := v1.PodSpec{
@@ -807,11 +795,15 @@ func TestGetResourceUpdateFromPod(t *testing.T) {
 	}
 
 	update := controllers.GetResourceUpdateFromPod(pod)
-	assert.Equal(t, metadatapb.POD, update.Type)
-	assert.Equal(t, "object_md", update.Metadata.Name)
-	assert.Equal(t, 1, len(update.References))
-	assert.Equal(t, "container1", update.References[0].Name)
-	assert.Equal(t, "test", update.References[0].UID)
+	podUpdate := update.GetPodUpdate()
+	assert.NotNil(t, podUpdate)
+	assert.Equal(t, "ijkl", podUpdate.UID)
+	assert.Equal(t, "object_md", podUpdate.Name)
+	assert.Equal(t, 1, len(podUpdate.ContainerIDs))
+	assert.Equal(t, int64(4), podUpdate.StartTimestampNS)
+	assert.Equal(t, int64(6), podUpdate.StopTimestampNS)
+	assert.Equal(t, "test", podUpdate.ContainerIDs[0])
+	assert.Equal(t, metadatapb.QOS_CLASS_BURSTABLE, podUpdate.QOSClass)
 }
 
 func TestGetResourceUpdateFromEndpoints(t *testing.T) {
@@ -821,10 +813,14 @@ func TestGetResourceUpdateFromEndpoints(t *testing.T) {
 	}
 
 	update := controllers.GetResourceUpdateFromEndpoints(ep)
-	assert.Equal(t, metadatapb.SERVICE, update.Type)
-	assert.Equal(t, "object_md", update.Metadata.Name)
-	assert.Equal(t, 1, len(update.References))
-	assert.Equal(t, "abcd", update.References[0].UID)
+	serviceUpdate := update.GetServiceUpdate()
+	assert.NotNil(t, serviceUpdate)
+	assert.Equal(t, "object_md", serviceUpdate.Name)
+	assert.Equal(t, "ijkl", serviceUpdate.UID)
+	assert.Equal(t, int64(4), serviceUpdate.StartTimestampNS)
+	assert.Equal(t, int64(6), serviceUpdate.StopTimestampNS)
+	assert.Equal(t, 1, len(serviceUpdate.PodIDs))
+	assert.Equal(t, "abcd", serviceUpdate.PodIDs[0])
 }
 
 func TestGetContainerResourceUpdatesFromPod(t *testing.T) {
@@ -835,7 +831,9 @@ func TestGetContainerResourceUpdatesFromPod(t *testing.T) {
 
 	updates := controllers.GetContainerResourceUpdatesFromPod(pod)
 	assert.Equal(t, 1, len(updates))
-	assert.Equal(t, "container1", (*updates[0]).Metadata.Name)
-	assert.Equal(t, metadatapb.CONTAINER, (*updates[0]).Type)
+	cUpdate := updates[0].GetContainerUpdate()
+	assert.NotNil(t, cUpdate)
+	assert.Equal(t, "container1", cUpdate.Name)
+	assert.Equal(t, "test", cUpdate.CID)
 
 }

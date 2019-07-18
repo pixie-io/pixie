@@ -79,11 +79,10 @@ heartbeat_ack {
 	time: 10
 	update_info {
 		updates {
-			type: 1
-			metadata {
+			pod_update {
 				uid:  "podUid"
-				name: "podName"			
-			}
+				name: "podName"	
+			}		
 		}
 	}
 }
@@ -193,12 +192,14 @@ func TestAgentRegisterRequest(t *testing.T) {
 		Return(nil)
 
 	updatePb := metadatapb.ResourceUpdate{
-		Type: metadatapb.POD,
-		Metadata: &metadatapb.ObjectMetadata{
-			UID:  "podUid",
-			Name: "podName",
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid",
+				Name: "podName",
+			},
 		},
 	}
+
 	updates := []*metadatapb.ResourceUpdate{&updatePb}
 
 	mockAgtMgr.
@@ -343,10 +344,11 @@ func TestAgentCreateFailed(t *testing.T) {
 		Return(errors.New("could not create agent"))
 
 	updatePb := metadatapb.ResourceUpdate{
-		Type: metadatapb.POD,
-		Metadata: &metadatapb.ObjectMetadata{
-			UID:  "podUid",
-			Name: "podName",
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid",
+				Name: "podName",
+			},
 		},
 	}
 	updates := []*metadatapb.ResourceUpdate{&updatePb}
@@ -474,10 +476,11 @@ func TestAgentHeartbeat(t *testing.T) {
 		Return(nil)
 
 	updatePb := metadatapb.ResourceUpdate{
-		Type: metadatapb.POD,
-		Metadata: &metadatapb.ObjectMetadata{
-			UID:  "podUid",
-			Name: "podName",
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid",
+				Name: "podName",
+			},
 		},
 	}
 	updates := []metadatapb.ResourceUpdate{updatePb}

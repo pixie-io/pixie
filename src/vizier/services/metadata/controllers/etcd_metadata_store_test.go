@@ -326,10 +326,11 @@ func TestAddToFrontOfAgentQueue(t *testing.T) {
 	assert.Nil(t, err)
 
 	updatePb := &metadatapb.ResourceUpdate{
-		Type: metadatapb.POD,
-		Metadata: &metadatapb.ObjectMetadata{
-			UID:  "podUid",
-			Name: "podName",
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid",
+				Name: "podName",
+			},
 		},
 	}
 
@@ -339,7 +340,7 @@ func TestAddToFrontOfAgentQueue(t *testing.T) {
 	resp, err := mds.GetFromAgentQueue("agent1")
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(*resp))
-	assert.Equal(t, "podUid", (*resp)[0].Metadata.UID)
+	assert.Equal(t, "podUid", (*resp)[0].GetPodUpdate().UID)
 }
 
 func TestGetFromAgentQueue(t *testing.T) {
@@ -352,12 +353,14 @@ func TestGetFromAgentQueue(t *testing.T) {
 	}
 
 	updatePb := &metadatapb.ResourceUpdate{
-		Type: metadatapb.POD,
-		Metadata: &metadatapb.ObjectMetadata{
-			UID:  "podUid",
-			Name: "podName",
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid",
+				Name: "podName",
+			},
 		},
 	}
+
 	update, err := updatePb.Marshal()
 	if err != nil {
 		t.Fatal("Could not marshall pod update message.")
@@ -369,7 +372,7 @@ func TestGetFromAgentQueue(t *testing.T) {
 	resp, err := mds.GetFromAgentQueue("agent1")
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(*resp))
-	assert.Equal(t, "podUid", (*resp)[0].Metadata.UID)
+	assert.Equal(t, "podUid", (*resp)[0].GetPodUpdate().UID)
 
 	q := etcd.NewQueue(etcdClient, "/agents/agent1/updates")
 	dequeueResp, err := q.Dequeue()

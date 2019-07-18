@@ -622,20 +622,25 @@ func TestGetMetadataUpdates(t *testing.T) {
 
 	assert.Equal(t, 5, len(*updates))
 
-	assert.Equal(t, metadatapb.POD, (*updates)[0].Type)
-	assert.Equal(t, "1234", (*updates)[0].Metadata.UID)
+	update1 := (*updates)[0].GetContainerUpdate()
+	assert.NotNil(t, update1)
+	assert.Equal(t, "0987", update1.CID)
 
-	assert.Equal(t, metadatapb.CONTAINER, (*updates)[1].Type)
-	assert.Equal(t, "0987", (*updates)[1].Metadata.UID)
+	update2 := (*updates)[1].GetContainerUpdate()
+	assert.NotNil(t, update2)
+	assert.Equal(t, "2468", update2.CID)
 
-	assert.Equal(t, metadatapb.CONTAINER, (*updates)[2].Type)
-	assert.Equal(t, "2468", (*updates)[2].Metadata.UID)
+	update3 := (*updates)[2].GetPodUpdate()
+	assert.NotNil(t, update3)
+	assert.Equal(t, "1234", update3.UID)
 
-	assert.Equal(t, metadatapb.POD, (*updates)[3].Type)
-	assert.Equal(t, "5678", (*updates)[3].Metadata.UID)
+	update4 := (*updates)[3].GetPodUpdate()
+	assert.NotNil(t, update4)
+	assert.Equal(t, "5678", update4.UID)
 
-	assert.Equal(t, metadatapb.SERVICE, (*updates)[4].Type)
-	assert.Equal(t, "object_md", (*updates)[4].Metadata.Name)
+	update5 := (*updates)[4].GetServiceUpdate()
+	assert.NotNil(t, update5)
+	assert.Equal(t, "object_md", update5.Name)
 }
 
 func TestGetMetadataUpdatesGetPodsFailed(t *testing.T) {

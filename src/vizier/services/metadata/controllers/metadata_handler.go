@@ -194,16 +194,6 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object) {
 	}
 }
 
-func getUpdateMetadata(md *metadatapb.ObjectMetadata) *metadatapb.ObjectMetadata {
-	return &metadatapb.ObjectMetadata{
-		Name:                md.Name,
-		Namespace:           md.Namespace,
-		UID:                 md.UID,
-		CreationTimestampNS: md.CreationTimestampNS,
-		DeletionTimestampNS: md.DeletionTimestampNS,
-	}
-}
-
 func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 	e := o.(*v1.Pod)
 
@@ -220,13 +210,6 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 	// Add pod update to agent update queue.
 	hostname := []string{e.Spec.NodeName}
 
-	updatePb := GetResourceUpdateFromPod(pb)
-
-	mh.agentUpdateCh <- &UpdateMessage{
-		Hostnames: &hostname,
-		Message:   updatePb,
-	}
-
 	// Send container updates.
 	containerUpdates := GetContainerResourceUpdatesFromPod(pb)
 	for _, update := range containerUpdates {
@@ -234,6 +217,13 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 			Hostnames: &hostname,
 			Message:   update,
 		}
+	}
+
+	updatePb := GetResourceUpdateFromPod(pb)
+
+	mh.agentUpdateCh <- &UpdateMessage{
+		Hostnames: &hostname,
+		Message:   updatePb,
 	}
 }
 
@@ -252,22 +242,25 @@ func (mh *MetadataHandler) handleServiceMetadata(o runtime.Object) {
 
 // GetResourceUpdateFromPod gets the update info from the given pod proto.
 func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
-	var containers []*metadatapb.ObjectReference
+	var containers []string
 	if pod.Status.ContainerStatuses != nil {
 		for _, s := range pod.Status.ContainerStatuses {
-			container := &metadatapb.ObjectReference{
-				Kind: "container",
-				Name: s.Name,
-				UID:  s.ContainerID,
-			}
-			containers = append(containers, container)
+			containers = append(containers, s.ContainerID)
 		}
 	}
 
 	update := &metadatapb.ResourceUpdate{
-		Metadata:   getUpdateMetadata(pod.Metadata),
-		Type:       metadatapb.POD,
-		References: containers,
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:              pod.Metadata.UID,
+				Name:             pod.Metadata.Name,
+				Namespace:        pod.Metadata.Namespace,
+				StartTimestampNS: pod.Metadata.CreationTimestampNS,
+				StopTimestampNS:  pod.Metadata.DeletionTimestampNS,
+				QOSClass:         pod.Status.QOSClass,
+				ContainerIDs:     containers,
+			},
+		},
 	}
 
 	return update
@@ -275,23 +268,27 @@ func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
 
 // GetResourceUpdateFromEndpoints gets the update info from the given pod proto.
 func GetResourceUpdateFromEndpoints(ep *metadatapb.Endpoints) *metadatapb.ResourceUpdate {
-	var references []*metadatapb.ObjectReference
+	var pods []string
 	for _, subset := range ep.Subsets {
 		for _, addr := range subset.Addresses {
-			if addr.TargetRef != nil {
-				references = append(references, addr.TargetRef)
+			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
+				pods = append(pods, addr.TargetRef.UID)
 			}
 		}
 	}
 
-	updateMd := getUpdateMetadata(ep.Metadata)
-
 	update := &metadatapb.ResourceUpdate{
-		Metadata:   updateMd,
-		Type:       metadatapb.SERVICE,
-		References: references,
+		Update: &metadatapb.ResourceUpdate_ServiceUpdate{
+			ServiceUpdate: &metadatapb.ServiceUpdate{
+				UID:              ep.Metadata.UID,
+				Name:             ep.Metadata.Name,
+				Namespace:        ep.Metadata.Namespace,
+				StartTimestampNS: ep.Metadata.CreationTimestampNS,
+				StopTimestampNS:  ep.Metadata.DeletionTimestampNS,
+				PodIDs:           pods,
+			},
+		},
 	}
-
 	return update
 }
 
@@ -301,13 +298,14 @@ func GetContainerResourceUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.Resou
 
 	for i, s := range pod.Status.ContainerStatuses {
 		updates[i] = &metadatapb.ResourceUpdate{
-			Metadata: &metadatapb.ObjectMetadata{
-				Name:                s.Name,
-				UID:                 s.ContainerID,
-				CreationTimestampNS: s.StartTimestampNS,
-				DeletionTimestampNS: s.StopTimestampNS,
+			Update: &metadatapb.ResourceUpdate_ContainerUpdate{
+				ContainerUpdate: &metadatapb.ContainerUpdate{
+					CID:              s.ContainerID,
+					Name:             s.Name,
+					StartTimestampNS: s.StartTimestampNS,
+					StopTimestampNS:  s.StopTimestampNS,
+				},
 			},
-			Type: metadatapb.CONTAINER,
 		}
 	}
 	return updates

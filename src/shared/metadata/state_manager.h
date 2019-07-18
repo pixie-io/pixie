@@ -29,7 +29,7 @@ namespace md {
  */
 class AgentMetadataStateManager {
  public:
-  using ResourceUpdate = pl::shared::k8s::metadatapb::ResourceUpdate2;
+  using ResourceUpdate = pl::shared::k8s::metadatapb::ResourceUpdate;
   using PodUpdate = pl::shared::k8s::metadatapb::PodUpdate;
   using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
 
