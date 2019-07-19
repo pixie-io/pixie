@@ -47,69 +47,65 @@ struct FixedSizedValueType : BaseValueType {
 
   template <class T2>
   // Overload the equality to make it easier to write code with value types.
-  bool operator==(const FixedSizedValueType<T2>& lhs) const {
-    return val == lhs.val;
-  }
-  template <class T2>
-  bool operator==(const T2& lhs) const {
-    return val == lhs;
+  constexpr bool operator==(T2 rhs) const {
+    return val == ExtractBaseValue(rhs);
   }
 
   template <class T2>
   // Overload the not equality to make it easier to write code with value types.
-  bool operator!=(const FixedSizedValueType<T2>& lhs) const {
-    return val != lhs.val;
-  }
-  template <class T2>
-  bool operator!=(const T2& lhs) const {
-    return val != lhs;
+  constexpr bool operator!=(T2 rhs) const {
+    return val != ExtractBaseValue(rhs);
   }
 
   // Overload > and < to make it easier to write code with value types.
   template <class T2>
-  bool operator<(const FixedSizedValueType<T2>& lhs) const {
-    return val < lhs.val;
+  constexpr bool operator<(T2 rhs) const {
+    return val < ExtractBaseValue(rhs);
   }
+
   template <class T2>
-  bool operator<(const T2& lhs) const {
-    return val < lhs;
+  constexpr bool operator<=(T2 rhs) const {
+    return val <= ExtractBaseValue(rhs);
   }
+
   template <class T2>
-  bool operator<=(const T2& lhs) const {
-    return val <= lhs;
+  constexpr bool operator>(T2 rhs) const {
+    return val > ExtractBaseValue(rhs);
   }
+
   template <class T2>
-  bool operator<=(const FixedSizedValueType<T2>& lhs) const {
-    return val <= lhs.val;
-  }
-  template <class T2>
-  bool operator>(const FixedSizedValueType<T2>& lhs) const {
-    return val > lhs.val;
-  }
-  template <class T2>
-  bool operator>(const T2& lhs) const {
-    return val > lhs;
-  }
-  template <class T2>
-  bool operator>=(const T2& lhs) const {
-    return val >= lhs;
-  }
-  template <class T2>
-  bool operator>=(const FixedSizedValueType<T2>& lhs) const {
-    return val >= lhs.val;
+  constexpr bool operator>=(T2 rhs) const {
+    return val >= ExtractBaseValue(rhs);
   }
 
   // Overload assignment to make it easier to write code with value types.
-  FixedSizedValueType<T>& operator=(FixedSizedValueType<T> lhs) {
-    val = lhs.val;
+  FixedSizedValueType<T>& operator=(FixedSizedValueType<T> rhs) {
+    val = rhs.val;
     return *this;
   }
-  FixedSizedValueType<T>& operator=(T lhs) {
-    val = lhs;
+
+  FixedSizedValueType<T>& operator=(T rhs) {
+    val = rhs;
     return *this;
   }
 
   int64_t bytes() const { return sizeof(T); }
+
+ private:
+  /**
+   * Extracts the value type based on if it's an integral type (int, float, etc.) or one of our
+   * value types.
+   */
+  template <typename TExt>
+  constexpr auto ExtractBaseValue(TExt v) const {
+    if constexpr (std::is_arithmetic_v<TExt>) {
+      return v;
+    } else if constexpr (std::is_base_of_v<BaseValueType, TExt>) {
+      return v.val;
+    } else {
+      static_assert(sizeof(TExt) == 0, "Unsupported extract type");
+    }
+  }
 };
 
 using BoolValue = FixedSizedValueType<bool>;
