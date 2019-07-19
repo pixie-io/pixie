@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -79,6 +80,37 @@ ssize_t TCPSocket::SendMsg(const std::vector<std::string_view>& data) const {
     msg.msg_iov[i].iov_len = data[i].size();
   }
   return sendmsg(sockfd_, &msg, /*flags*/ 0);
+}
+
+ssize_t TCPSocket::RecvMsg(std::vector<std::string>* data) const {
+  // HTTP response detection requires at least 16 bytes to see the HTTP header, any buffer size
+  // less than that will causes BPF unable to detect HTTP responses. Here we round up to 20.
+  constexpr size_t kBufSize = 20;
+  char buf[kBufSize];
+
+  struct iovec iov;
+  iov.iov_base = buf;
+  iov.iov_len = kBufSize;
+
+  struct msghdr msg = {};
+  msg.msg_name = nullptr;
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
+
+  const ssize_t size = recvmsg(sockfd_, &msg, /*flags*/ 0);
+  if (size <= 0) {
+    return size;
+  }
+
+  ssize_t copied_size = 0;
+  for (size_t i = 0; i < msg.msg_iovlen && copied_size < size; ++i) {
+    // recvmsg() will fill each buffer one after another. But do not rewrite iov_len to the actually
+    // written data. Therefore, we need to track through the total written data.
+    const size_t size_to_copy = std::min<size_t>(msg.msg_iov[i].iov_len, size - copied_size);
+    data->emplace_back(static_cast<const char*>(msg.msg_iov[i].iov_base), size_to_copy);
+    copied_size += size_to_copy;
+  }
+  return size;
 }
 
 void TCPSocket::Connect(const TCPSocket& addr) {

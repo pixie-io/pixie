@@ -26,6 +26,7 @@ class TCPSocket {
   void Connect(const TCPSocket& addr);
   bool Read(std::string* data);
   bool Recv(std::string* data);
+  ssize_t RecvMsg(std::vector<std::string>* data) const;
   int sockfd() const { return sockfd_; }
 
  private:

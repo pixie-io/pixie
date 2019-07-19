@@ -37,6 +37,26 @@ TEST(TCPSocketTest, DataIsWrittenAndReceivedCorrectly) {
   EXPECT_EQ("a,bc,END,sendmsg", absl::StrJoin(received_data, ""));
 }
 
+TEST(TCPSocketTest, SendMsgAndRecvMsg) {
+  TCPSocket server;
+  server.Bind();
+
+  std::vector<std::string> received_data;
+  TCPSocket client;
+  std::thread client_thread([&server, &client, &received_data]() {
+    client.Connect(server);
+    while (client.RecvMsg(&received_data) > 0) {
+    }
+  });
+  server.Accept();
+  EXPECT_EQ(14, server.SendMsg({"sendmsg", "recvmsg"}));
+
+  server.Close();
+  client_thread.join();
+
+  EXPECT_EQ("sendmsgrecvmsg", absl::StrJoin(received_data, ""));
+}
+
 }  // namespace testing
 }  // namespace stirling
 }  // namespace pl
