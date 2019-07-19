@@ -8,7 +8,7 @@ namespace md {
 
 TEST(UPID, check_upid_components) {
   auto upid = UPID(123, 456, 78910);
-  EXPECT_EQ(123, upid.agent_id());
+  EXPECT_EQ(123, upid.asid());
   EXPECT_EQ(456, upid.pid());
   EXPECT_EQ(78910ULL, upid.start_ts());
 }
