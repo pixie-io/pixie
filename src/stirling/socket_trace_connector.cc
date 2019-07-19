@@ -93,6 +93,7 @@ Status SocketTraceConnector::InitImpl() {
   // TODO(PL-659): connect() call might return non 0 value, making requester-side tracing
   // unreliable. Switch to server-side for now.
   PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kSocketTraceSendResp | kSocketTraceRecvReq));
+  PL_RETURN_IF_ERROR(TestOnlySetTargetPID(kTraceAllTGIDs));
 
   // TODO(oazizi): if machine is ever suspended, this would have to be called again.
   InitClockRealTimeOffset();
@@ -161,6 +162,17 @@ Status SocketTraceConnector::Configure(TrafficProtocol protocol, uint64_t config
   }
   config_mask_[protocol] = config_mask;
 
+  return Status::OK();
+}
+
+Status SocketTraceConnector::TestOnlySetTargetPID(int64_t pid) {
+  auto control_map_handle = bpf_.get_percpu_array_table<uint64_t>(kTargetTGIDArrayName);
+  std::vector<uint64_t> target_pids(kCPUCount, pid);
+  auto update_res = control_map_handle.update_value(/*index*/ 0, target_pids);
+  if (update_res.code() != 0) {
+    return error::Internal(
+        absl::StrCat("Failed to set target PID, error message: ", update_res.msg()));
+  }
   return Status::OK();
 }
 

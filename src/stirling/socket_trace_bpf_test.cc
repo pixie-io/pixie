@@ -27,6 +27,7 @@ class SocketTraceBPFTest : public ::testing::Test {
   void SetUp() override {
     source_ = SocketTraceConnector::Create("socket_trace_connector");
     ASSERT_OK(source_->Init());
+    TestOnlySetTargetPID(getpid());
   }
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }
@@ -122,6 +123,11 @@ class SocketTraceBPFTest : public ::testing::Test {
   void ConfigureCapture(TrafficProtocol protocol, uint64_t mask) {
     auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
     ASSERT_OK(socket_trace_connector->Configure(protocol, mask));
+  }
+
+  void TestOnlySetTargetPID(int64_t pid) {
+    auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
+    ASSERT_OK(socket_trace_connector->TestOnlySetTargetPID(pid));
   }
 
   static constexpr std::string_view kHTTPReqMsg1 = R"(GET /endpoint1 HTTP/1.1

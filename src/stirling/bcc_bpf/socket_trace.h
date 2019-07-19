@@ -21,6 +21,9 @@
 const char kControlMapName[] = "control_map";
 const uint64_t kSocketTraceNothing = 0;
 
+const char kTargetTGIDArrayName[] = "test_only_target_tgid";
+const int64_t kTraceAllTGIDs = -1;
+
 // TODO(yzhao): Investigate the performance cost of misaligned memory access (8 vs. 4 bytes).
 
 // Indicates the syscall that recorded an event.

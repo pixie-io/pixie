@@ -144,6 +144,7 @@ class SocketTraceConnector : public SourceConnector {
   void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
 
   Status Configure(TrafficProtocol protocol, uint64_t config_mask);
+  Status TestOnlySetTargetPID(int64_t pid);
 
   /**
    * @brief Number of active ConnectionTrackers.

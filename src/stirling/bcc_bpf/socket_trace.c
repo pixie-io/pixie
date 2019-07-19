@@ -273,6 +273,23 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info, Traffic
   }
 }
 
+// This specify one pid to monitor. This is used during test to eliminate noise.
+// TODO(yzhao): We need a more robust mechanism for production use, which should be able to:
+// * Specify multiple pids up to a certain limit, let's say 1024.
+// * Support efficient lookup inside bpf to minimize overhead.
+BPF_PERCPU_ARRAY(test_only_target_tgid, s64, 1);
+static __inline bool test_only_should_trace_tgid(const u32 tgid) {
+  int kZero = 0;
+  s64* target_tgid = test_only_target_tgid.lookup(&kZero);
+  if (target_tgid == NULL) {
+    return true;
+  }
+  if (*target_tgid < 0) {
+    return true;
+  }
+  return *target_tgid == tgid;
+}
+
 /***********************************************************
  * BPF syscall probe functions
  ***********************************************************/
@@ -348,6 +365,11 @@ done:
 static __inline int probe_entry_accept_impl(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                             size_t* addrlen) {
   u64 id = bpf_get_current_pid_tgid();
+  u32 tgid = id >> 32;
+
+  if (!test_only_should_trace_tgid(tgid)) {
+    return 0;
+  }
 
   struct accept_info_t accept_info;
   accept_info.addr = addr;
@@ -361,6 +383,10 @@ static __inline int probe_entry_accept_impl(struct pt_regs* ctx, int sockfd, str
 static __inline int probe_ret_accept_impl(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
+
+  if (!test_only_should_trace_tgid(tgid)) {
+    return 0;
+  }
 
   int ret_fd = PT_REGS_RC(ctx);
   if (ret_fd < 0) {
@@ -394,6 +420,10 @@ static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* bu
 
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
+
+  if (!test_only_should_trace_tgid(tgid)) {
+    return 0;
+  }
 
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
@@ -453,6 +483,10 @@ static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* bu
 static __inline int probe_ret_write_send(struct pt_regs* ctx, EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
+
+  if (!test_only_should_trace_tgid(tgid)) {
+    return 0;
+  }
 
   ssize_t bytes_written = PT_REGS_RC(ctx);
   if (bytes_written <= 0) {
@@ -563,6 +597,10 @@ static __inline int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
+  if (!test_only_should_trace_tgid(tgid)) {
+    return 0;
+  }
+
   struct data_info_t read_info;
   memset(&read_info, 0, sizeof(struct data_info_t));
   read_info.fd = fd;
@@ -575,6 +613,10 @@ static __inline int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf
 static __inline int probe_ret_read_recv(struct pt_regs* ctx, EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
+
+  if (!test_only_should_trace_tgid(tgid)) {
+    return 0;
+  }
 
   ssize_t bytes_read = PT_REGS_RC(ctx);
 
@@ -668,6 +710,11 @@ static __inline int probe_close_impl(struct pt_regs* ctx, int fd) {
   }
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
+
+  if (!test_only_should_trace_tgid(tgid)) {
+    return 0;
+  }
+
   u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
   struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
   if (conn_info == NULL) {
