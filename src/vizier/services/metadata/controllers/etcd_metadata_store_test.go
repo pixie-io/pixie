@@ -339,8 +339,8 @@ func TestAddToFrontOfAgentQueue(t *testing.T) {
 
 	resp, err := mds.GetFromAgentQueue("agent1")
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(*resp))
-	assert.Equal(t, "podUid", (*resp)[0].GetPodUpdate().UID)
+	assert.Equal(t, 1, len(resp))
+	assert.Equal(t, "podUid", resp[0].GetPodUpdate().UID)
 }
 
 func TestGetFromAgentQueue(t *testing.T) {
@@ -371,8 +371,8 @@ func TestGetFromAgentQueue(t *testing.T) {
 
 	resp, err := mds.GetFromAgentQueue("agent1")
 	assert.Nil(t, err)
-	assert.Equal(t, 1, len(*resp))
-	assert.Equal(t, "podUid", (*resp)[0].GetPodUpdate().UID)
+	assert.Equal(t, 1, len(resp))
+	assert.Equal(t, "podUid", resp[0].GetPodUpdate().UID)
 
 	q := etcd.NewQueue(etcdClient, "/agents/agent1/updates")
 	dequeueResp, err := q.Dequeue()

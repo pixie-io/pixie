@@ -54,7 +54,7 @@ type AgentManager interface {
 	GetActiveAgents() ([]AgentInfo, error)
 
 	AddToFrontOfAgentQueue(string, *metadatapb.ResourceUpdate) error
-	GetFromAgentQueue(string) (*[]metadatapb.ResourceUpdate, error)
+	GetFromAgentQueue(string) ([]*metadatapb.ResourceUpdate, error)
 
 	AddToUpdateQueue(uuid.UUID, *messagespb.AgentUpdateInfo)
 
@@ -330,7 +330,7 @@ func (m *AgentManagerImpl) AddToFrontOfAgentQueue(agentID string, value *metadat
 }
 
 // GetFromAgentQueue gets all items currently in the agent's update queue.
-func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) (*[]metadatapb.ResourceUpdate, error) {
+func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) ([]*metadatapb.ResourceUpdate, error) {
 	return m.mds.GetFromAgentQueue(agentID)
 }
 

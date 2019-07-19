@@ -9,7 +9,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 )
@@ -128,10 +127,6 @@ func (mc *MessageBusController) onAgentHeartBeat(m *messages.Heartbeat) {
 
 	// Get any queued agent updates.
 	updates, err := mc.agentManager.GetFromAgentQueue(agentID.String())
-	updatePbs := make([]*metadatapb.ResourceUpdate, len(*updates))
-	for i, updatePb := range *updates {
-		updatePbs[i] = &updatePb
-	}
 
 	// Create heartbeat ACK message.
 	resp := messages.VizierMessage{
@@ -139,7 +134,7 @@ func (mc *MessageBusController) onAgentHeartBeat(m *messages.Heartbeat) {
 			HeartbeatAck: &messages.HeartbeatAck{
 				Time: mc.clock.Now().UnixNano(),
 				UpdateInfo: &messages.MetadataUpdateInfo{
-					Updates: updatePbs,
+					Updates: updates,
 				},
 			},
 		},
@@ -149,8 +144,8 @@ func (mc *MessageBusController) onAgentHeartBeat(m *messages.Heartbeat) {
 	if err != nil {
 		log.WithError(err).Error("Could not send heartbeat ack to agent.")
 		// Add updates back to the queue, so that they can be sent in the next ack.
-		for i := len(*updates) - 1; i >= 0; i-- {
-			mc.agentManager.AddToFrontOfAgentQueue(agentID.String(), &((*updates)[i]))
+		for i := len(updates) - 1; i >= 0; i-- {
+			mc.agentManager.AddToFrontOfAgentQueue(agentID.String(), updates[i])
 		}
 	}
 

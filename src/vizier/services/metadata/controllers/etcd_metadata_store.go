@@ -337,16 +337,17 @@ func (mds *EtcdMetadataStore) AddToFrontOfAgentQueue(agentID string, value *meta
 }
 
 // GetFromAgentQueue gets all items currently in the agent's update queue.
-func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) (*[]metadatapb.ResourceUpdate, error) {
+func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) ([]*metadatapb.ResourceUpdate, error) {
+	var pbs []*metadatapb.ResourceUpdate
+
 	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
 	resp, err := q.DequeueAll()
 	if err != nil {
-		return nil, err
+		return pbs, err
 	}
 
 	// Convert strings to pbs.
-	pbs := make([]metadatapb.ResourceUpdate, len(*resp))
-	for i, update := range *resp {
+	for _, update := range *resp {
 		updatePb := metadatapb.ResourceUpdate{}
 		if err := proto.Unmarshal([]byte(update), &updatePb); err != nil {
 			// For whatever reason, the updatePb was invalid and could not be parsed. Realistically, this
@@ -357,10 +358,10 @@ func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) (*[]metadatapb.R
 			log.WithError(err).Error("Could not unmarshal resource update pb.")
 			continue
 		}
-		pbs[i] = updatePb
+		pbs = append(pbs, &updatePb)
 	}
 
-	return &pbs, nil
+	return pbs, nil
 }
 
 // GetAgents gets all of the current active agents.

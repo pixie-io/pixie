@@ -99,9 +99,9 @@ func (mr *MockMetadataStoreMockRecorder) GetEndpoints() *gomock.Call {
 }
 
 // GetFromAgentQueue mocks base method
-func (m *MockMetadataStore) GetFromAgentQueue(arg0 string) (*[]metadatapb.ResourceUpdate, error) {
+func (m *MockMetadataStore) GetFromAgentQueue(arg0 string) ([]*metadatapb.ResourceUpdate, error) {
 	ret := m.ctrl.Call(m, "GetFromAgentQueue", arg0)
-	ret0, _ := ret[0].(*[]metadatapb.ResourceUpdate)
+	ret0, _ := ret[0].([]*metadatapb.ResourceUpdate)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

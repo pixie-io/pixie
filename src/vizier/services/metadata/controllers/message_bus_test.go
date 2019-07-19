@@ -82,6 +82,12 @@ heartbeat_ack {
 			pod_update {
 				uid:  "podUid"
 				name: "podName"	
+			}
+		}
+		updates {
+			pod_update {
+				uid:  "podUid2"
+				name: "podName2"	
 			}		
 		}
 	}
@@ -475,7 +481,7 @@ func TestAgentHeartbeat(t *testing.T) {
 		UpdateHeartbeat(u).
 		Return(nil)
 
-	updatePb := metadatapb.ResourceUpdate{
+	updatePb1 := metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_PodUpdate{
 			PodUpdate: &metadatapb.PodUpdate{
 				UID:  "podUid",
@@ -483,12 +489,20 @@ func TestAgentHeartbeat(t *testing.T) {
 			},
 		},
 	}
-	updates := []metadatapb.ResourceUpdate{updatePb}
+	updatePb2 := metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid2",
+				Name: "podName2",
+			},
+		},
+	}
+	updates := []*metadatapb.ResourceUpdate{&updatePb1, &updatePb2}
 
 	mockAgtMgr.
 		EXPECT().
 		GetFromAgentQueue(uuidStr).
-		Return(&updates, nil)
+		Return(updates, nil)
 
 	agentContainers := make([]*metadatapb.ContainerInfo, 1)
 	agentContainers[0] = &metadatapb.ContainerInfo{
@@ -554,11 +568,11 @@ func TestAgentHeartbeatInvalidUUID(t *testing.T) {
 		UpdateHeartbeat(u).
 		Return(nil)
 
-	updates := []metadatapb.ResourceUpdate{}
+	updates := []*metadatapb.ResourceUpdate{}
 	mockAgtMgr.
 		EXPECT().
 		GetFromAgentQueue(uuidStr).
-		Return(&updates, nil)
+		Return(updates, nil)
 
 	// Create Metadata Service controller.
 	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
@@ -603,11 +617,11 @@ func TestUpdateHeartbeatFailed(t *testing.T) {
 		UpdateHeartbeat(u).
 		Return(errors.New("could not update heartbeat"))
 
-	updates := []metadatapb.ResourceUpdate{}
+	updates := []*metadatapb.ResourceUpdate{}
 	mockAgtMgr.
 		EXPECT().
 		GetFromAgentQueue(uuidStr).
-		Return(&updates, nil)
+		Return(updates, nil)
 
 	agentContainers := make([]*metadatapb.ContainerInfo, 1)
 	agentContainers[0] = &metadatapb.ContainerInfo{

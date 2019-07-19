@@ -286,7 +286,8 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	msg := &controllers.K8sMessage{Object: &o, ObjectType: "endpoints"}
 	ch <- msg
 
-	mh.ProcessNextAgentUpdate()
+	more := mh.ProcessNextAgentUpdate()
+	assert.Equal(t, true, more)
 }
 
 func TestNoHostnameResolvedProto(t *testing.T) {
@@ -392,7 +393,8 @@ func TestNoHostnameResolvedProto(t *testing.T) {
 	msg := &controllers.K8sMessage{Object: &o, ObjectType: "endpoints"}
 	ch <- msg
 
-	mh.ProcessNextAgentUpdate()
+	more := mh.ProcessNextAgentUpdate()
+	assert.Equal(t, true, more)
 }
 
 func TestAddToAgentUpdateQueueFailed(t *testing.T) {
@@ -539,8 +541,11 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 	msg := &controllers.K8sMessage{Object: &o, ObjectType: "endpoints"}
 	ch <- msg
 
-	mh.ProcessNextAgentUpdate()
-	mh.ProcessNextAgentUpdate()
+	more := mh.ProcessNextAgentUpdate()
+	assert.Equal(t, true, more)
+
+	more = mh.ProcessNextAgentUpdate()
+	assert.Equal(t, true, more)
 }
 
 func TestKubernetesEndpointHandler(t *testing.T) {

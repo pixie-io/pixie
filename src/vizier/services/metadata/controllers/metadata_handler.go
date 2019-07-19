@@ -25,7 +25,7 @@ type MetadataStore interface {
 	GetAgentsForHostnames(*[]string) (*[]string, error)
 	AddToAgentUpdateQueue(string, string) error
 	AddToFrontOfAgentQueue(string, *metadatapb.ResourceUpdate) error
-	GetFromAgentQueue(string) (*[]metadatapb.ResourceUpdate, error)
+	GetFromAgentQueue(string) ([]*metadatapb.ResourceUpdate, error)
 	GetAgents() (*[]datapb.AgentData, error)
 	GetPods() ([]*metadatapb.Pod, error)
 	GetEndpoints() ([]*metadatapb.Endpoints, error)
@@ -85,7 +85,7 @@ func (mh *MetadataHandler) processAgentUpdates() {
 	}
 }
 
-// ProcessNextAgentUpdate processes the next agent update in the agent update channel. Returns true if there are no more
+// ProcessNextAgentUpdate processes the next agent update in the agent update channel. Returns true if there are more
 // requests to be processed.
 func (mh *MetadataHandler) ProcessNextAgentUpdate() bool {
 	// If there are too many updates, something is probably very wrong.
@@ -95,13 +95,13 @@ func (mh *MetadataHandler) ProcessNextAgentUpdate() bool {
 
 	msg, more := <-mh.agentUpdateCh
 	if !more {
-		return true
+		return more
 	}
 
 	// Apply updates.
 	mh.updateAgentQueues(msg.Message, msg.Hostnames)
 
-	return false
+	return more
 }
 
 // MetadataListener handles any updates on the metadata channel.
