@@ -5,7 +5,7 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 go_library(
     name = "go_default_library",
     srcs = ["nats_watcher.go"],
-    importpath = "pixielabs.ai/pixielabs/src/utils/nats_watcher",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/utils/nats_watcher",
     visibility = ["//visibility:private"],
     deps = [
         "//src/services/common:go_default_library",
