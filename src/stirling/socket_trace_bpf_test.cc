@@ -19,6 +19,7 @@ namespace stirling {
 using ::pl::stirling::testing::TCPSocket;
 using ::pl::types::ColumnWrapper;
 using ::pl::types::ColumnWrapperRecordBatch;
+using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
 class SocketTraceBPFTest : public ::testing::Test {
@@ -43,6 +44,12 @@ class SocketTraceBPFTest : public ::testing::Test {
     void RunSenderReceiver(const std::vector<std::string_view>& write_data) {
       SpawnReceiverClient();
       SpawnSenderServer(write_data);
+      JoinThreads();
+    }
+
+    void RunSendMsgerReader(const std::vector<std::vector<std::string_view>>& write_data) {
+      SpawnReaderClient();
+      SpawnSendMsgerServer(write_data);
       JoinThreads();
     }
 
@@ -81,6 +88,16 @@ class SocketTraceBPFTest : public ::testing::Test {
         server_.Accept();
         for (auto data : write_data) {
           ASSERT_EQ(data.length(), server_.Send(data));
+        }
+        server_.Close();
+      });
+    }
+
+    void SpawnSendMsgerServer(const std::vector<std::vector<std::string_view>>& write_data) {
+      server_thread_ = std::thread([this, write_data]() {
+        server_.Accept();
+        for (const auto& data : write_data) {
+          server_.SendMsg(data);
         }
         server_.Close();
       });
@@ -137,6 +154,9 @@ Content-Length: 0
   static constexpr DataTableSchema kHTTPTable = SocketTraceConnector::kHTTPTable;
   static constexpr uint32_t kHTTPMajorVersionIdx = kHTTPTable.ColIndex("http_major_version");
   static constexpr uint32_t kHTTPContentTypeIdx = kHTTPTable.ColIndex("http_content_type");
+  static constexpr uint32_t kHTTPRespStatusIdx = kHTTPTable.ColIndex("http_resp_status");
+  static constexpr uint32_t kHTTPRespBodyIdx = kHTTPTable.ColIndex("http_resp_body");
+  static constexpr uint32_t kHTTPRespMessageIdx = kHTTPTable.ColIndex("http_resp_message");
   static constexpr uint32_t kHTTPHeaderIdx = kHTTPTable.ColIndex("http_headers");
   static constexpr uint32_t kHTTPPIDIdx = kHTTPTable.ColIndex("pid");
   static constexpr uint32_t kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
@@ -450,6 +470,33 @@ TEST_F(SocketTraceBPFTest, TestStartTime) {
             record_batch[kHTTPStartTimeIdx]->Get<types::Int64Value>(1).val);
   EXPECT_GT(time_window_end.time_since_epoch().count(),
             record_batch[kHTTPStartTimeIdx]->Get<types::Int64Value>(1).val);
+}
+
+TEST_F(SocketTraceBPFTest, SendMsgIsCapatured) {
+  ConfigureCapture(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceSendResp);
+  ClientServerSystem system;
+  system.RunSendMsgerReader(
+      {{"HTTP/1.1 200 OK\r\n", "Content-Type: json\r\n", "Content-Length: 1\r\n\r\na"},
+       {"HTTP/1.1 404 Not Found\r\n", "Content-Type: json\r\n", "Content-Length: 2\r\n\r\nbc"}});
+  types::ColumnWrapperRecordBatch record_batch;
+  InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch);
+  source_->TransferData(kHTTPTableNum, &record_batch);
+  for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
+    ASSERT_EQ(2, col->Size());
+  }
+  EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0)),
+              StrEq("Content-Length: 1\nContent-Type: json"));
+  EXPECT_EQ(200, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(0).val);
+  EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0)), StrEq("a"));
+  EXPECT_THAT(std::string(record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(0)),
+              StrEq("OK"));
+
+  EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1)),
+              StrEq("Content-Length: 2\nContent-Type: json"));
+  EXPECT_EQ(404, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(1).val);
+  EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(1)), StrEq("bc"));
+  EXPECT_THAT(std::string(record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(1)),
+              StrEq("Not Found"));
 }
 
 }  // namespace stirling

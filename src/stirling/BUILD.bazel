@@ -207,6 +207,7 @@ pl_cc_test(
         ":cc_library",
         "//src/common/subprocess:cc_library",
         "//src/common/testing:cc_library",
+        "//src/stirling/testing:cc_library",
         "//src/stirling/testing/proto:greet_pl_cc_proto",
     ],
 )

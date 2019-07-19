@@ -16,17 +16,17 @@ namespace testing {
 
 class GreeterService final : public Greeter::Service {
  public:
-  grpc::Status SayHello(grpc::ServerContext* context, const HelloRequest* request,
-                        HelloReply* response) override;
+  ::grpc::Status SayHello(::grpc::ServerContext* context, const HelloRequest* request,
+                          HelloReply* response) override;
 };
 
 class ServiceRunner {
  public:
-  std::unique_ptr<grpc::Server> RunService(grpc::Service* service);
+  std::unique_ptr<::grpc::Server> RunService(::grpc::Service* service);
   const std::vector<int>& ports() const { return ports_; }
 
  private:
-  grpc::ServerBuilder server_builder_;
+  ::grpc::ServerBuilder server_builder_;
   std::vector<int> ports_;
 };
 

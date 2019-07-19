@@ -16,7 +16,7 @@ namespace testing {
 class GreeterClient {
  public:
   explicit GreeterClient(std::string endpoint);
-  grpc::Status SayHello(const HelloRequest& request, HelloReply* reply);
+  ::grpc::Status SayHello(const HelloRequest& request, HelloReply* reply);
 
  private:
   std::unique_ptr<Greeter::Stub> stub_;

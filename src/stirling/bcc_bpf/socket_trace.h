@@ -29,8 +29,10 @@ typedef enum {
   kEventTypeUnknown,
   kEventTypeSyscallWriteEvent,
   kEventTypeSyscallSendEvent,
+  kEventTypeSyscallSendMsgEvent,
   kEventTypeSyscallReadEvent,
   kEventTypeSyscallRecvEvent,
+  kEventTypeSyscallRecvMsgEvent,
 } EventType;
 
 // Protocol being used on a connection (HTTP, MySQL, etc.).

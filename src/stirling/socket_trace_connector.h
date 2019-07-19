@@ -208,6 +208,8 @@ class SocketTraceConnector : public SourceConnector {
       {"send", "syscall__probe_ret_send", bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"sendto", "syscall__probe_entry_sendto", bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"sendto", "syscall__probe_ret_sendto", bpf_probe_attach_type::BPF_PROBE_RETURN},
+      {"sendmsg", "syscall__probe_entry_sendmsg", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"sendmsg", "syscall__probe_ret_sendmsg", bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"read", "syscall__probe_entry_read", bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"read", "syscall__probe_ret_read", bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"recv", "syscall__probe_entry_recv", bpf_probe_attach_type::BPF_PROBE_ENTRY},

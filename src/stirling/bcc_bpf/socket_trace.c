@@ -8,6 +8,10 @@
 #include "src/stirling/bcc_bpf/log_event.h"
 #include "src/stirling/bcc_bpf/logging.h"
 
+// This keeps instruction count below BPF's limit of 4096 per probe.
+// TODO(yzhao): Investigate using tail call to reuse stack space to support loop.
+#define LOOP_LIMIT 20
+
 // This is the perf buffer for BPF program to export data from kernel to user space.
 BPF_PERF_OUTPUT(socket_http_events);
 BPF_PERF_OUTPUT(socket_mysql_events);
@@ -31,6 +35,10 @@ struct accept_info_t {
 struct data_info_t {
   u32 fd;
   const char* buf;
+  // For sendmsg()/recvmsg().
+  // TODO(yzhao): We can merge buf as a special case of len==1 with msghdr, so we can use one field
+  // instead of two.
+  const struct user_msghdr* msghdr;
 } __attribute__((__packed__, aligned(8)));
 
 // This control_map is a bit-mask that controls which directions are traced in a connection.
@@ -377,7 +385,8 @@ done:
   return 0;
 }
 
-static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
+static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t count,
+                                           const struct user_msghdr* msghdr) {
   if (fd < 0) {
     DLOG_TEXT(ctx, "probe_entry_write_send(), fd < 0");
     return 0;
@@ -391,7 +400,18 @@ static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* bu
     return 0;
   }
 
-  update_traffic_class(conn_info, kEgress, buf, count);
+  if (buf != NULL) {
+    update_traffic_class(conn_info, kEgress, buf, count);
+  } else if (msghdr != NULL) {
+    const struct iovec* msg_iov = NULL;
+    bpf_probe_read(&msg_iov, sizeof(void*), &msghdr->msg_iov);
+    if (msg_iov == NULL) {
+      return 0;
+    }
+    struct iovec iov;
+    bpf_probe_read(&iov, sizeof(struct iovec), &msg_iov[0]);
+    update_traffic_class(conn_info, kEgress, iov.iov_base, iov.iov_len);
+  }
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
   // TODO(oazizi/yzhao): We can remove this after we have the ability to identify connections of
@@ -424,6 +444,7 @@ static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* bu
   memset(&write_info, 0, sizeof(struct data_info_t));
   write_info.fd = fd;
   write_info.buf = buf;
+  write_info.msghdr = msghdr;
 
   active_write_info_map.update(&id, &write_info);
   return 0;
@@ -454,9 +475,6 @@ static __inline int probe_ret_write_send(struct pt_regs* ctx, EventType event_ty
   if (event == NULL) {
     goto done;
   }
-  // Increment sequence number after copying so the index is 0-based.
-  event->attr.seq_num = conn_info->wr_seq_num;
-  ++conn_info->wr_seq_num;
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.conn_id.tgid = tgid;
@@ -465,22 +483,68 @@ static __inline int probe_ret_write_send(struct pt_regs* ctx, EventType event_ty
   event->attr.conn_id.generation = conn_info->conn_id.generation;
   event->attr.traffic_class = conn_info->traffic_class;
 
-  const uint32_t buf_size = bytes_written < sizeof(event->msg) ? bytes_written : sizeof(event->msg);
-  event->attr.msg_size = buf_size;
-  bpf_probe_read(&event->msg, buf_size, write_info->buf);
+  if (write_info->buf != NULL) {
+    event->attr.seq_num = conn_info->wr_seq_num;
+    // Increment sequence number after copying so the index is 0-based.
+    ++conn_info->wr_seq_num;
 
-  // Write snooped arguments to perf ring buffer.
-  const uint32_t size_to_submit = sizeof(event->attr) + buf_size;
-  switch (conn_info->traffic_class.protocol) {
-    case kProtocolHTTP:
-    case kProtocolHTTP2:
-      socket_http_events.perf_submit(ctx, event, size_to_submit);
-      break;
-    case kProtocolMySQL:
-      socket_mysql_events.perf_submit(ctx, event, size_to_submit);
-      break;
-    default:
-      break;
+    const uint32_t buf_size =
+        bytes_written < sizeof(event->msg) ? bytes_written : sizeof(event->msg);
+    event->attr.msg_size = buf_size;
+    bpf_probe_read(&event->msg, buf_size, write_info->buf);
+
+    // Write snooped arguments to perf ring buffer.
+    const uint32_t size_to_submit = sizeof(event->attr) + buf_size;
+    switch (conn_info->traffic_class.protocol) {
+      case kProtocolHTTP:
+      case kProtocolHTTP2:
+        socket_http_events.perf_submit(ctx, event, size_to_submit);
+        break;
+      case kProtocolMySQL:
+        socket_mysql_events.perf_submit(ctx, event, size_to_submit);
+        break;
+      default:
+        break;
+    }
+  } else if (write_info->msghdr != NULL) {
+    // TODO(yzhao): Put this into a function and write test.
+    size_t msg_iovlen = 0;
+    bpf_probe_read(&msg_iovlen, sizeof(size_t), &write_info->msghdr->msg_iovlen);
+    const struct iovec* iov_src = NULL;
+    bpf_probe_read(&iov_src, sizeof(void*), &write_info->msghdr->msg_iov);
+    ssize_t bytes_copied = 0;
+
+#pragma unroll
+    for (int i = 0; i < LOOP_LIMIT && i < msg_iovlen && bytes_copied < bytes_written; ++i) {
+      // Direct assignment wont be rewritten correctly by BCC.
+      // TODO(yzhao): Experiment if sendmsg() on the same pid and fd can interleave. If so, we need
+      // to maintain secondary sequence number for the multiple events seen by the same sendmsg()
+      // call.
+      bpf_probe_read(&event->attr.seq_num, sizeof(uint64_t), &conn_info->wr_seq_num);
+      ++conn_info->wr_seq_num;
+
+      struct iovec iov;
+      bpf_probe_read(&iov, sizeof(struct iovec), &iov_src[i]);
+      const size_t bytes_remain = bytes_written - bytes_copied;
+      const size_t iov_len = iov.iov_len < bytes_remain ? iov.iov_len : bytes_remain;
+      event->attr.msg_size = iov_len;
+      const size_t len = iov_len < sizeof(event->msg) ? iov_len : sizeof(event->msg);
+      bpf_probe_read(event->msg, len, iov.iov_base);
+      bytes_copied += len;
+
+      const uint32_t size_to_submit = sizeof(event->attr) + len;
+      switch (conn_info->traffic_class.protocol) {
+        case kProtocolHTTP:
+        case kProtocolHTTP2:
+          socket_http_events.perf_submit(ctx, event, size_to_submit);
+          break;
+        case kProtocolMySQL:
+          socket_mysql_events.perf_submit(ctx, event, size_to_submit);
+          break;
+        default:
+          break;
+      }
+    }
   }
 
 done:
@@ -490,7 +554,8 @@ done:
   return 0;
 }
 
-static __inline int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
+static __inline int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t count,
+                                          const struct user_msghdr* msghdr) {
   if (fd < 0) {
     DLOG_TEXT(ctx, "probe_entry_read_recv(), fd < 0");
     return 0;
@@ -639,7 +704,7 @@ int syscall__probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockadd
 int syscall__probe_ret_accept4(struct pt_regs* ctx) { return probe_ret_accept_impl(ctx); }
 
 int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_write_send(ctx, fd, buf, count);
+  return probe_entry_write_send(ctx, fd, buf, count, NULL);
 }
 
 int syscall__probe_ret_write(struct pt_regs* ctx) {
@@ -647,7 +712,7 @@ int syscall__probe_ret_write(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_write_send(ctx, fd, buf, count);
+  return probe_entry_write_send(ctx, fd, buf, count, NULL);
 }
 
 int syscall__probe_ret_send(struct pt_regs* ctx) {
@@ -655,7 +720,7 @@ int syscall__probe_ret_send(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_read_recv(ctx, fd, buf, count);
+  return probe_entry_read_recv(ctx, fd, buf, count, /*msghdr*/ NULL);
 }
 
 int syscall__probe_ret_read(struct pt_regs* ctx) {
@@ -663,7 +728,7 @@ int syscall__probe_ret_read(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_read_recv(ctx, fd, buf, count);
+  return probe_entry_read_recv(ctx, fd, buf, count, /*msghdr*/ NULL);
 }
 
 int syscall__probe_ret_recv(struct pt_regs* ctx) {
@@ -671,11 +736,19 @@ int syscall__probe_ret_recv(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_write_send(ctx, fd, buf, count);
+  return probe_entry_write_send(ctx, fd, buf, count, /*msghdr*/ NULL);
 }
 
 int syscall__probe_ret_sendto(struct pt_regs* ctx) {
   return probe_ret_write_send(ctx, kEventTypeSyscallSendEvent);
+}
+
+int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int fd, const struct user_msghdr* msghdr) {
+  return probe_entry_write_send(ctx, fd, /*buf*/ NULL, /*count*/ 0, msghdr);
+}
+
+int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
+  return probe_ret_write_send(ctx, kEventTypeSyscallSendMsgEvent);
 }
 
 int syscall__probe_close(struct pt_regs* ctx, unsigned int fd) { return probe_close_impl(ctx, fd); }

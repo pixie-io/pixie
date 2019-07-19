@@ -14,6 +14,7 @@ namespace testing {
 
 using ::grpc::Server;
 using ::grpc::ServerContext;
+using ::grpc::Service;
 using ::grpc::Status;
 
 Status GreeterService::SayHello(ServerContext*, const HelloRequest* request, HelloReply* response) {
@@ -21,7 +22,7 @@ Status GreeterService::SayHello(ServerContext*, const HelloRequest* request, Hel
   return Status::OK;
 }
 
-std::unique_ptr<Server> ServiceRunner::RunService(grpc::Service* service) {
+std::unique_ptr<Server> ServiceRunner::RunService(Service* service) {
   ports_.push_back(0);
   int* port_ptr = &ports_.back();
   server_builder_.AddListeningPort("localhost:0", grpc::InsecureServerCredentials(), port_ptr);
