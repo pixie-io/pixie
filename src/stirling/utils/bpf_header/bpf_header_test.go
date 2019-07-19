@@ -2,7 +2,7 @@ package main_test
 
 import (
 	"github.com/stretchr/testify/assert"
-	"pixielabs.ai/pixielabs/src/stirling/utils"
+	"pixielabs.ai/pixielabs/src/stirling/utils/bpf_header"
 	"strings"
 	"testing"
 )

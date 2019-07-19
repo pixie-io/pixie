@@ -5,7 +5,7 @@ def pl_bpf_preprocess(
         tags = [],
         *kwargs):
     out_file = src + ".preprocessed"
-    cmd = "$(location //src/stirling/utils:bpf_header) " + \
+    cmd = "$(location //src/stirling/utils/bpf_header:bpf_header) " + \
           "--input_file=$(location {0}) ".format(src)
     for h in hdrs:
         cmd += "--header_files=$(location {0}) ".format(h)
@@ -16,6 +16,6 @@ def pl_bpf_preprocess(
         srcs = hdrs + [src],
         tags = tags,
         cmd = cmd,
-        tools = ["//src/stirling/utils:bpf_header"],
+        tools = ["//src/stirling/utils/bpf_header:bpf_header"],
     )
     return out_file
