@@ -9,6 +9,7 @@
 
 namespace pl {
 namespace stirling {
+namespace utils {
 
 /**
  * Parses a the Linux version code from a uname release string (e.g. 'uname -r').
@@ -49,6 +50,7 @@ Status ModifyKernelVersion(const std::experimental::filesystem::path& linux_head
  */
 Status FindOrInstallLinuxHeaders();
 
+}  // namespace utils
 }  // namespace stirling
 }  // namespace pl
 

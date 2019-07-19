@@ -10,6 +10,7 @@
 
 namespace pl {
 namespace stirling {
+namespace utils {
 
 namespace fs = std::experimental::filesystem;
 
@@ -107,6 +108,7 @@ Status FindOrInstallLinuxHeaders() {
   return Status::OK();
 }
 
+}  // namespace utils
 }  // namespace stirling
 }  // namespace pl
 

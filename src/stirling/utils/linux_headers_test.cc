@@ -4,6 +4,7 @@
 
 namespace pl {
 namespace stirling {
+namespace utils {
 
 namespace fs = std::experimental::filesystem;
 
@@ -67,5 +68,6 @@ TEST(LinuxHeadersUtils, ModifyVersion) {
   fs::remove_all(tmp_dir);
 }
 
+}  // namespace utils
 }  // namespace stirling
 }  // namespace pl

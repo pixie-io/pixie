@@ -52,7 +52,7 @@ Status SocketTraceConnector::InitImpl() {
     return error::PermissionDenied("BCC currently only supported as the root user.");
   }
 
-  PL_RETURN_IF_ERROR(FindOrInstallLinuxHeaders());
+  PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders());
 
   std::vector<std::string> cflags = {"-DNDEBUG"};
   if (FLAGS_enable_bpf_logging) {
