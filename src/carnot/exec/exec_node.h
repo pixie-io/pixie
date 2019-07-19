@@ -84,7 +84,7 @@ class ExecNode {
    * @return The Status of consumption.
    */
   Status ConsumeNext(ExecState* exec_state, const table_store::schema::RowBatch& rb,
-                     int64_t parent_index) {
+                     size_t parent_index) {
     DCHECK(type() == ExecNodeType::kSinkNode || type() == ExecNodeType::kProcessingNode);
 
     return ConsumeNextImpl(exec_state, rb, parent_index);
@@ -122,7 +122,7 @@ class ExecNode {
    *
    * @param child Another execution node.
    */
-  void AddChild(ExecNode* child, int64_t parent_index) {
+  void AddChild(ExecNode* child, size_t parent_index) {
     children_.emplace_back(child);
     parent_ids_for_children_.emplace_back(parent_index);
   }
@@ -169,7 +169,7 @@ class ExecNode {
     return error::Unimplemented("Implement in derived class (if source)");
   }
 
-  virtual Status ConsumeNextImpl(ExecState*, const table_store::schema::RowBatch&, int64_t) {
+  virtual Status ConsumeNextImpl(ExecState*, const table_store::schema::RowBatch&, size_t) {
     return error::Unimplemented("Implement in derived class (if sink or processing)");
   }
 
@@ -180,7 +180,7 @@ class ExecNode {
   std::vector<ExecNode*> children_;
   // For each of the children (which may have multiple parents) which parent is this node?
   // Parents 0, 1, and 2 would exist for a node with 3 parents.
-  std::vector<int64_t> parent_ids_for_children_;
+  std::vector<size_t> parent_ids_for_children_;
   bool is_closed_ = false;
   // The type of execution node.
   ExecNodeType type_;

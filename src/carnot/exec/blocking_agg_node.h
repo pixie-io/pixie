@@ -56,7 +56,7 @@ class BlockingAggNode : public ProcessingNode {
   Status OpenImpl(ExecState* exec_state) override;
   Status CloseImpl(ExecState* exec_state) override;
   Status ConsumeNextImpl(ExecState* exec_state, const table_store::schema::RowBatch& rb,
-                         int64_t parent_index) override;
+                         size_t parent_index) override;
 
  private:
   AggHashMap agg_hash_map_;

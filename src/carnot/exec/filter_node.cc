@@ -99,7 +99,7 @@ Status PredicateCopyValues<types::STRING>(const types::BoolValueColumnWrapper& p
   return Status::OK();
 }
 
-Status FilterNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, int64_t) {
+Status FilterNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
   // TODO(zasgar/michelle): Current implementation does not merge across row batches, which is
   // something we should consider in case the filter has really low selectivity.
 
