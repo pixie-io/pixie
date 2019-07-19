@@ -470,7 +470,6 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record,
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("pid")>(conn_tracker.pid());
   r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
-  r.Append<r.ColIndex("fd")>(conn_tracker.fd());
   r.Append<r.ColIndex("event_type")>(HTTPEventTypeToString(resp_message.type));
   // Note that there is a string copy here,
   // But std::move is not allowed because we re-use conn object.
@@ -505,7 +504,6 @@ void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record,
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("pid")>(conn_tracker.pid());
   r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
-  r.Append<r.ColIndex("fd")>(conn_tracker.fd());
   r.Append<r.ColIndex("event_type")>("mixed");
   r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());

@@ -62,8 +62,6 @@ class SocketTraceConnector : public SourceConnector {
           {"pid", types::DataType::INT64, types::PatternType::GENERAL},
           // TODO(oazizi): Merge with pid, and use INT128, when available.
           {"pid_start_time", types::DataType::INT64, types::PatternType::GENERAL},
-          // TODO(yzhao): Remove 'fd'.
-          {"fd", types::DataType::INT64, types::PatternType::GENERAL},
           // TODO(yzhao): Remove 'event_type'. Now each record includes both req and resp.
           // 'event_type', which was added one each record includes only req or resp, is no longer
           // meaningful.
