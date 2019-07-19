@@ -36,13 +36,18 @@ profiles:
     activation:
       - command: dev
     patches:
+      # Set compilation to debug so we get symbols.
+      - op: add
+        path: /build/artifacts/context=./bazel/args
+        value: ["--compilation_mode=dbg"]
+
       # Use default tag policy (hash) for dev builds.
       # Don't push images in the dev build.
       - op: replace
-        path: /build
+        path: /build/local
         value:
-          local:
-            push: false
+          push: false
+
 
   - name: nightly
     activation:
