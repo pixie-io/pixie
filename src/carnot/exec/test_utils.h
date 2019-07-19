@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <queue>
 #include <string>
 #include <utility>
 #include <vector>
@@ -189,7 +190,7 @@ class ExecNodeTester {
   ExecNodeTester& GenerateNextResult() {
     auto check_result_batch = [&](ExecState*, const table_store::schema::RowBatch& child_rb,
                                   int64_t) {
-      current_rb_ = std::make_unique<table_store::schema::RowBatch>(child_rb);
+      current_row_batches_.push(std::make_unique<table_store::schema::RowBatch>(child_rb));
     };
 
     EXPECT_CALL(mock_child_, ConsumeNextImpl(testing::_, testing::_, testing::_))
@@ -227,16 +228,16 @@ class ExecNodeTester {
    * @return the ExecNodeTester, to allow for chaining.
    */
   ExecNodeTester& ConsumeNext(const table_store::schema::RowBatch& rb, int64_t parent_id,
-                              bool child_called = true) {
+                              size_t child_called_times = 1) {
     auto check_result_batch = [&](ExecState*, const table_store::schema::RowBatch& child_rb,
                                   int64_t) {
-      current_rb_ = std::make_unique<table_store::schema::RowBatch>(child_rb);
+      current_row_batches_.push(std::make_unique<table_store::schema::RowBatch>(child_rb));
     };
 
-    if (child_called) {
+    if (child_called_times > 0) {
       EXPECT_CALL(mock_child_, ConsumeNextImpl(testing::_, testing::_, testing::_))
-          .Times(1)
-          .WillOnce(
+          .Times(child_called_times)
+          .WillRepeatedly(
               testing::DoAll(testing::Invoke(check_result_batch), testing::Return(Status::OK())));
     }
     EXPECT_OK(exec_node_->ConsumeNext(exec_state_, rb, parent_id));
@@ -253,9 +254,11 @@ class ExecNodeTester {
   ExecNodeTester& ExpectRowBatch(const table_store::schema::RowBatch& expected_rb,
                                  bool ordered = true) {
     if (ordered) {
-      ValidateRowBatch(expected_rb, *current_rb_.get());
+      ValidateRowBatch(expected_rb, *current_row_batches_.front().get());
+      current_row_batches_.pop();
     } else {
-      ValidateUnorderedRowBatch(expected_rb, *current_rb_.get());
+      ValidateUnorderedRowBatch(expected_rb, *current_row_batches_.front().get());
+      current_row_batches_.pop();
     }
 
     return *this;
@@ -332,7 +335,7 @@ class ExecNodeTester {
   table_store::schema::RowDescriptor output_descriptor_;
   std::vector<table_store::schema::RowDescriptor> input_descriptors_;
   ExecState* exec_state_;
-  std::unique_ptr<table_store::schema::RowBatch> current_rb_;
+  std::queue<std::unique_ptr<table_store::schema::RowBatch>> current_row_batches_;
 };
 }  // namespace exec
 }  // namespace carnot

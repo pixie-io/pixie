@@ -155,7 +155,7 @@ TEST_F(BlockingAggNodeTest, no_groups) {
                        .AddColumn<types::Int64Value>({1, 2, 3, 4})
                        .AddColumn<types::Int64Value>({2, 5, 6, 8})
                        .get(),
-                   0, false)
+                   0, 0)
       .ConsumeNext(RowBatchBuilder(input_rd, 4, true)
                        .AddColumn<types::Int64Value>({5, 6, 3, 4})
                        .AddColumn<types::Int64Value>({1, 5, 3, 8})
@@ -181,7 +181,7 @@ TEST_F(BlockingAggNodeTest, single_group) {
                        .AddColumn<types::Int64Value>({1, 1, 2, 2})
                        .AddColumn<types::Int64Value>({2, 3, 3, 1})
                        .get(),
-                   0, false)
+                   0, 0)
       .ConsumeNext(RowBatchBuilder(input_rd, 4, true)
                        .AddColumn<types::Int64Value>({5, 6, 3, 4})
                        .AddColumn<types::Int64Value>({1, 5, 3, 8})
@@ -210,7 +210,7 @@ TEST_F(BlockingAggNodeTest, multiple_groups) {
                        .AddColumn<types::Int64Value>({2, 1, 3, 1})
                        .AddColumn<types::Int64Value>({2, 5, 3, 1})
                        .get(),
-                   0, false)
+                   0, 0)
       .ConsumeNext(RowBatchBuilder(input_rd, 4, true)
                        .AddColumn<types::Int64Value>({5, 1, 3, 3})
                        .AddColumn<types::Int64Value>({1, 2, 3, 3})
@@ -242,7 +242,7 @@ TEST_F(BlockingAggNodeTest, multiple_groups_with_string) {
                        .AddColumn<types::Int64Value>({2, 1, 3, 1})
                        .AddColumn<types::Int64Value>({2, 5, 3, 1})
                        .get(),
-                   0, false)
+                   0, 0)
       .ConsumeNext(RowBatchBuilder(input_rd, 4, true)
                        .AddColumn<types::StringValue>({"ijk", "abc", "abc", "def"})
                        .AddColumn<types::Int64Value>({1, 2, 3, 3})
