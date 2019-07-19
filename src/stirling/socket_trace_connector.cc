@@ -12,6 +12,7 @@
 #include "src/stirling/http2.h"
 #include "src/stirling/mysql_parse.h"
 #include "src/stirling/socket_trace_connector.h"
+#include "src/stirling/utils/linux_headers.h"
 
 // TODO(yzhao): Consider simplify the semantic by filtering entirely on content type.
 DEFINE_string(http_response_header_filters, "Content-Type:json",
@@ -50,6 +51,9 @@ Status SocketTraceConnector::InitImpl() {
   if (!IsRoot()) {
     return error::PermissionDenied("BCC currently only supported as the root user.");
   }
+
+  PL_RETURN_IF_ERROR(FindOrInstallLinuxHeaders());
+
   std::vector<std::string> cflags = {"-DNDEBUG"};
   if (FLAGS_enable_bpf_logging) {
     cflags.clear();

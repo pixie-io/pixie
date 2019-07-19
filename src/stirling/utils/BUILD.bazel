@@ -1,4 +1,7 @@
+package(default_visibility = ["//visibility:public"])
+
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 go_library(
     name = "go_default_library",
@@ -27,4 +30,20 @@ go_binary(
     name = "bpf_header",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+)
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = ["**/*_test.cc"],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [],
+)
+
+pl_cc_test(
+    name = "linux_headers_test",
+    srcs = ["linux_headers_test.cc"],
+    deps = [":cc_library"],
 )
