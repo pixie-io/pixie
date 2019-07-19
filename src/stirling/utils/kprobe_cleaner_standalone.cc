@@ -5,7 +5,6 @@
 
 // This is the string inserted by our modified BCC into the name
 // of all kprobes. We use it to look for leaked probes.
-// TODO(oazizi): Change BCC to use the __pixie__.
 const char kPixieMarker[] = "__pixie__";
 
 DEFINE_string(cleanup_marker, kPixieMarker, "Marker to search for when deleting probes.");
