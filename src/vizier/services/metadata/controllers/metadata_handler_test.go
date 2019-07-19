@@ -147,7 +147,7 @@ status {
 	container_statuses {
 		name: "container1"
 		container_state: 3
-		container_id: "test"
+		container_id: "docker://test"
 	}
 	qos_class: QOS_CLASS_BURSTABLE
 }
@@ -752,7 +752,7 @@ func TestObjectToPodProto(t *testing.T) {
 
 	containers[0] = v1.ContainerStatus{
 		Name:        "container1",
-		ContainerID: "test",
+		ContainerID: "docker://test",
 		State: v1.ContainerState{
 			Waiting: &waitingState,
 		},

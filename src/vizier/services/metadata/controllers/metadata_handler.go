@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"strings"
+
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -240,12 +242,16 @@ func (mh *MetadataHandler) handleServiceMetadata(o runtime.Object) {
 	}
 }
 
+func formatContainerID(cid string) string {
+	return strings.Replace(cid, "docker://", "", 1)
+}
+
 // GetResourceUpdateFromPod gets the update info from the given pod proto.
 func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
 	var containers []string
 	if pod.Status.ContainerStatuses != nil {
 		for _, s := range pod.Status.ContainerStatuses {
-			containers = append(containers, s.ContainerID)
+			containers = append(containers, formatContainerID(s.ContainerID))
 		}
 	}
 
@@ -300,7 +306,7 @@ func GetContainerResourceUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.Resou
 		updates[i] = &metadatapb.ResourceUpdate{
 			Update: &metadatapb.ResourceUpdate_ContainerUpdate{
 				ContainerUpdate: &metadatapb.ContainerUpdate{
-					CID:              s.ContainerID,
+					CID:              formatContainerID(s.ContainerID),
 					Name:             s.Name,
 					StartTimestampNS: s.StartTimestampNS,
 					StopTimestampNS:  s.StopTimestampNS,
