@@ -1,0 +1,62 @@
+#pragma once
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+
+#include "src/carnot/compiler/ir_nodes.h"
+#include "src/common/base/error.h"
+#include "src/common/base/status.h"
+#include "src/common/base/statusor.h"
+#include "src/shared/types/proto/types.pb.h"
+
+namespace pl {
+namespace carnot {
+namespace compiler {
+
+class NameMetadataProperty : public MetadataProperty {
+ public:
+  explicit NameMetadataProperty(std::string attr_name, std::vector<std::string> key_columns)
+      : MetadataProperty(types::DataType::STRING, attr_name, key_columns) {}
+  // Expect format to be "<namespace>/<value>"
+  bool FitsFormat(ExpressionIR* ir_node) const override {
+    DCHECK(ir_node->type() == IRNodeType::kString);
+    std::string value = static_cast<StringIR*>(ir_node)->str();
+    std::vector<std::string> split_str = absl::StrSplit(value, "/");
+    return split_str.size() == 2;
+  }
+  std::string ExplainFormat() const override { return "String with format <namespace>/<name>."; }
+};
+
+class IdMetadataProperty : public MetadataProperty {
+ public:
+  explicit IdMetadataProperty(std::string attr_name, std::vector<std::string> key_columns)
+      : MetadataProperty(types::DataType::STRING, attr_name, key_columns) {}
+  // TODO(philkuz) udate this fits format when we have a better idea what the format should be.
+  // FitsFormat always evaluates to true because id format is not yet defined.
+  bool FitsFormat(ExpressionIR*) const override { return true; }
+  std::string ExplainFormat() const override { return ""; }
+};
+
+class MetadataHandler {
+ public:
+  StatusOr<MetadataProperty*> GetProperty(const std::string& md_name) const;
+  bool HasProperty(const std::string& md_name) const;
+  static std::unique_ptr<MetadataHandler> Create();
+
+ private:
+  MetadataHandler() {}
+  MetadataProperty* AddProperty(std::unique_ptr<MetadataProperty> md_property);
+  void AddMapping(const std::string& name, MetadataProperty* property);
+  template <typename Property>
+  void AddObject(const std::string& md_name, const std::vector<std::string>& aliases,
+                 const std::vector<std::string>& key_columns);
+
+  std::vector<std::unique_ptr<MetadataProperty>> property_pool;
+  std::unordered_map<std::string, MetadataProperty*> metadata_map;
+};
+
+}  // namespace compiler
+}  // namespace carnot
+}  // namespace pl

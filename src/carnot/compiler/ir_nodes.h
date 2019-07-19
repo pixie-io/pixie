@@ -256,6 +256,63 @@ class ExpressionIR : public IRNode {
   ExpressionIR(int64_t id, IRNodeType type) : IRNode(id, type, false) {}
 };
 
+class MetadataProperty {
+ public:
+  MetadataProperty() = delete;
+  virtual ~MetadataProperty() = default;
+  virtual bool FitsFormat(ExpressionIR* value) const = 0;
+  virtual std::string ExplainFormat() const = 0;
+  inline std::string name() const { return name_; }
+  inline std::string column_name_repr() const { return FormatMetadataColumn(name_); }
+  inline types::DataType column_type() const { return column_type_; }
+  std::vector<std::string> KeyColumns() const {
+    std::vector<std::string> columns;
+    for (const auto& c : key_columns_) {
+      if (c == kUniquePIDColumn) {
+        columns.push_back(c);
+        continue;
+      }
+      columns.push_back(FormatMetadataColumn(c));
+    }
+    return columns;
+  }
+
+  inline static std::string ColumnToMetadataName(const std::string& column) {
+    return std::string(absl::StripPrefix(column, kMetadataColumnPrefix));
+  }
+
+  inline bool HasKeyColumn(const std::string& key) {
+    auto columns = KeyColumns();
+    return std::find(columns.begin(), columns.end(), key) != columns.end();
+  }
+
+  StatusOr<std::string> UDFName(const std::string& key) {
+    if (!HasKeyColumn(key)) {
+      return error::InvalidArgument(
+          "Key column $0 invalid for metadata value $1. Expected one of [$2].", key, name_,
+          absl::StrJoin(key_columns_, ","));
+    }
+    return absl::Substitute("$1_to_$0", name_, ColumnToMetadataName(key));
+  }
+
+  inline static std::string FormatMetadataColumn(const std::string& col_name) {
+    return absl::Substitute("$0$1", kMetadataColumnPrefix, col_name);
+  }
+
+  inline static const std::string kMetadataColumnPrefix = "_attr_";
+  inline static const std::string kUniquePIDColumn = "upid";
+
+ protected:
+  MetadataProperty(types::DataType column_type, std::string name,
+                   std::vector<std::string> key_columns)
+      : column_type_(column_type), name_(name), key_columns_(key_columns) {}
+
+ private:
+  types::DataType column_type_;
+  std::string name_;
+  std::vector<std::string> key_columns_;
+};
+
 class DataIR : public ExpressionIR {
  public:
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
@@ -340,6 +397,7 @@ class ListIR : public DataIR {
 };
 
 struct ColumnExpression {
+  ColumnExpression(std::string col_name, ExpressionIR* expr) : name(col_name), node(expr) {}
   std::string name;
   ExpressionIR* node;
 };
@@ -419,6 +477,7 @@ class FuncIR : public ExpressionIR {
 
   FuncIR() = delete;
   Opcode opcode() const { return op_.op_code; }
+  Op op() const { return op_; }
   explicit FuncIR(int64_t id) : ExpressionIR(id, IRNodeType::kFunc) {}
   Status Init(Op op, std::string func_prefix, const std::vector<ExpressionIR*>& args,
               bool compile_time, const pypa::AstPtr& ast_node);
@@ -626,6 +685,13 @@ class MapIR : public OperatorIR {
  public:
   MapIR() = delete;
   explicit MapIR(int64_t id) : OperatorIR(id, IRNodeType::kMap, true, false) {}
+  std::vector<std::string> ArgKeys() override { return {"fn"}; }
+
+  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
+    return std::unordered_map<std::string, IRNode*>();
+  }
+  Status InitImpl(const ArgMap& args) override;
+
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   LambdaIR* lambda_func() const { return lambda_func_; }
@@ -634,14 +700,8 @@ class MapIR : public OperatorIR {
     col_exprs_set_ = true;
   }
   bool col_exprs_set() const { return col_exprs_set_; }
+  ColExpressionVector col_exprs() const { return col_exprs_; }
   Status ToProto(planpb::Operator*) const override;
-
-  std::vector<std::string> ArgKeys() override { return {"fn"}; }
-
-  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
-    return std::unordered_map<std::string, IRNode*>();
-  }
-  Status InitImpl(const ArgMap& args) override;
 
  private:
   LambdaIR* lambda_func_;

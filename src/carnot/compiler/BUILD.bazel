@@ -186,3 +186,11 @@ pl_cc_test(
         "//src/carnot/udf_exporter:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "metadata_handler_test",
+    srcs = ["metadata_handler_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
