@@ -42,9 +42,10 @@ message RegisterAgentRequest {
 }
 
 message RegisterAgentResponse {
-    int32 agent_id = 1 [
-                      (gogoproto.customname) = "AgentID"
-                      ];
+    // ASID is the agent short ID.
+    uint32 asid = 1 [
+                    (gogoproto.customname) = "ASID"
+                    ];
     MetadataUpdateInfo update_info = 2;
 }
 
@@ -56,8 +57,10 @@ message UpdateAgentRequest {
 message UpdateAgentResponse {}
 
 message AgentUpdateInfo {
+    // TODO(zasgar/michelle): Delete and cleanup.
     repeated pl.shared.k8s.metadatapb.ContainerInfo containers = 1;
     repeated pl.shared.k8s.metadatapb.SchemaInfo schema = 2;
+    repeated pl.shared.k8s.metadatapb.ProcessInfo process = 3;
 }
 
 // The heart beat signal.
