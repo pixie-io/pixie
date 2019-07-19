@@ -387,6 +387,7 @@ message ContainerInfo {
   repeated ProcessInfo processes = 7;
 }
 
+// TODO(zasgar/michelle): We need to cleanup this proto b/c some of these fields aren't needed.
 // ProcessInfo contains info for a process running in a container.
 message ProcessInfo {
   // Name of the process.
@@ -407,6 +408,8 @@ message ProcessInfo {
                   ];
 
   string process_args = 6;
+
+  string cid = 7;
 }
 
 // SchemaInfo contains info for a schema that is available on an agent or agents.
