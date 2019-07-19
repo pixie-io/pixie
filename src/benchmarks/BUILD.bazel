@@ -10,3 +10,14 @@ pl_cc_binary(
         "//src/common/benchmark:cc_library",
     ],
 )
+
+pl_cc_binary(
+    name = "pb_parsing_benchmark",
+    testonly = 1,
+    srcs = ["pb_parsing_benchmark.cc"],
+    deps = [
+        "//src/benchmarks/proto:benchmark_pl_cc_proto",
+        "//src/common/benchmark:cc_library",
+        "//src/common/grpcutils:cc_library",
+    ],
+)

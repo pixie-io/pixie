@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package pl.benchmarks;
+
+option go_package = "pixielabs.ai/pixielabs/src/benchmarks/proto;benchmarkpb";
+
+// This is extracted from Hipster Shop's proto. Names are kept for convenience, and have no
+// particular meaning.
+
+service PaymentService {
+    rpc Charge(ChargeRequest) returns (ChargeResponse) {}
+}
+
+message ChargeRequest {
+    Money amount = 1;
+    CreditCardInfo credit_card = 2;
+}
+
+message ChargeResponse {
+    string transaction_id = 1;
+}
+
+message Money {
+    string currency_code = 1;
+    int64 units = 2;
+    int32 nanos = 3;
+}
+
+message CreditCardInfo {
+    string credit_card_number = 1;
+    int32 credit_card_cvv = 2;
+    int32 credit_card_expiration_year = 3;
+    int32 credit_card_expiration_month = 4;
+}

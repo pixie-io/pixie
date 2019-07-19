@@ -1,0 +1,21 @@
+# gazelle:ignore
+package(default_visibility = ["//src/benchmarks:__pkg__"])
+
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+
+pl_proto_library(
+    name = "benchmark_pl_proto",
+    srcs = ["benchmark.proto"],
+)
+
+pl_cc_proto_library(
+    name = "benchmark_pl_cc_proto",
+    proto = ":benchmark_pl_proto",
+    deps = ["@com_github_grpc_grpc//:grpc++"],
+)
+
+pl_go_proto_library(
+    name = "benchmark_pl_go_proto",
+    importpath = "pixielabs.ai/pixielabs/src/benchmarks/proto",
+    proto = ":benchmark_pl_proto",
+)

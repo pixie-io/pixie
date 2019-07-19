@@ -7,6 +7,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "bpf_header.go",
+        "linux_headers.h",
         "test.h",
     ],
     importpath = "pixielabs.ai/pixielabs/src/stirling/utils",
