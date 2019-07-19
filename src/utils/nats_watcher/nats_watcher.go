@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/gogo/protobuf/proto"
 	"github.com/nats-io/go-nats"
 	log "github.com/sirupsen/logrus"
@@ -40,8 +42,18 @@ func connectNATS() *nats.Conn {
 
 func handleNATSMessage(m *nats.Msg) {
 	pb := &messages.VizierMessage{}
-	proto.Unmarshal(m.Data, pb)
-	log.WithField("Subject", string(m.Subject)).WithField("Message", (*pb).String()).Info("Received message")
+	err := proto.Unmarshal(m.Data, pb)
+
+	if err != nil {
+		log.WithError(err).Error("Failed to Unmarshal proto message.")
+	}
+
+	red := color.New(color.FgRed).SprintfFunc()
+
+	fmt.Printf("----------------------------------------------------------\n")
+	fmt.Printf("%s=%s\n", red("Subject"), m.Subject)
+	fmt.Printf("%s\n", proto.MarshalTextString(pb))
+	fmt.Printf("----------------------------------------------------------\n")
 }
 
 func main() {
