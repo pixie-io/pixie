@@ -95,9 +95,6 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kSocketTraceSendResp | kSocketTraceRecvReq));
   PL_RETURN_IF_ERROR(TestOnlySetTargetPID(kTraceAllTGIDs));
 
-  // TODO(oazizi): if machine is ever suspended, this would have to be called again.
-  InitClockRealTimeOffset();
-
   return Status::OK();
 }
 

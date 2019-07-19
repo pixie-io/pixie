@@ -187,7 +187,6 @@ TEST_F(SocketTraceConnectorTest, End2end) {
 
   auto record_batch = GetRecordBatch(SocketTraceConnector::kHTTPTable);
 
-  source_->InitClockRealTimeOffset();
   EXPECT_NE(0, source_->ClockRealTimeOffset());
 
   // Registers a new connection

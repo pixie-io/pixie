@@ -21,10 +21,7 @@
 namespace pl {
 namespace stirling {
 
-Status CGroupStatsConnector::InitImpl() {
-  InitClockRealTimeOffset();
-  return cgroup_mgr_->UpdateCGroupInfo();
-}
+Status CGroupStatsConnector::InitImpl() { return cgroup_mgr_->UpdateCGroupInfo(); }
 
 Status CGroupStatsConnector::StopImpl() { return Status::OK(); }
 

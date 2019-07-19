@@ -25,9 +25,9 @@ class SystemConfigImpl final : public SystemConfig {
  private:
   uint64_t real_time_offset_ = 0;
 
-  // Utility function to convert time as recorded by bpftrace through the 'nsecs' built-in to
-  // real-time. BPF provides only access to CLOCK_MONOTONIC values (through nsecs), so have to
-  // determine the offset.
+  // Utility function to convert time as recorded by in monotonic clock (aka steady_clock)
+  // to real time (aka system_clock).
+  // TODO(oazizi): if machine is ever suspended, this Init would have to be called again.
   void InitClockRealTimeOffset() {
     static constexpr uint64_t kSecToNanosecFactor = 1000000000;
 

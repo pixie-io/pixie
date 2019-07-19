@@ -5,8 +5,8 @@
 #include <utility>
 #include <vector>
 
-#include "absl/strings/str_format.h"
 #include "src/common/base/base.h"
+#include "src/common/system_config/system_config.h"
 #include "src/shared/types/types.h"
 #include "src/stirling/info_class_manager.h"
 
@@ -97,15 +97,13 @@ class SourceConnector : public NotCopyable {
   const std::chrono::milliseconds& default_push_period() { return default_push_period_; }
 
   /**
-   * @brief Init Helper function: calculates monotonic clock to real time clock offset.
+   * @brief Utility function to convert time as recorded by in monotonic clock to real time.
+   * This is especially useful for converting times from BPF, which are all in monotonic clock.
    */
-  void InitClockRealTimeOffset();
-
-  /**
-   * @brief If recording nsecs in your bt file, this function can be used to find the offset for
-   * convert the result into realtime.
-   */
-  uint64_t ClockRealTimeOffset();
+  uint64_t ClockRealTimeOffset() {
+    DCHECK(sysconfig_ != nullptr);
+    return sysconfig_->ClockRealTimeOffset();
+  }
 
   /**
    * Set pointer to stirling engine. This lifetime of the referenced value
@@ -190,6 +188,8 @@ class SourceConnector : public NotCopyable {
   const ConstVectorView<DataTableSchema> table_schemas_;
   const std::chrono::milliseconds default_sampling_period_;
   const std::chrono::milliseconds default_push_period_;
+
+  const common::SystemConfig* sysconfig_ = common::SystemConfig::GetInstance();
 };
 
 }  // namespace stirling

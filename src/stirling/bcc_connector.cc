@@ -29,8 +29,6 @@ Status PIDCPUUseBCCConnector::InitImpl() {
   if (attach_res.code() != 0) {
     return error::Internal("Unable to execute BCC BPF program: $0", attach_res.msg());
   }
-  // TODO(oazizi): if machine is ever suspended, this would have to be called again.
-  InitClockRealTimeOffset();
   return Status::OK();
 }
 
