@@ -11,7 +11,6 @@ pl_cc_library(
         ["*.cc"],
         exclude = [
             "**/*_test.cc",
-            "**/*_benchmark.cc",
             "**/*_wrapper.cc",
         ],
     ),
@@ -75,16 +74,6 @@ pl_bpf_cc_resource(
             "bcc_bpf/log_event.h",
             "bcc_bpf/logging.h",
         ],
-    ],
-)
-
-pl_cc_binary(
-    name = "data_collector_benchmark",
-    srcs = ["data_collector_benchmark.cc"],
-    deps = [
-        "//src/stirling/proto:canonical_pl_cc_proto",
-        "//third_party:arrow",
-        "@com_google_benchmark//:benchmark_main",
     ],
 )
 
