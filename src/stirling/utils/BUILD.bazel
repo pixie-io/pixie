@@ -6,7 +6,10 @@ pl_cc_library(
     name = "cc_library",
     srcs = glob(
         ["*.cc"],
-        exclude = ["**/*_test.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_standalone.cc",
+        ],
     ),
     hdrs = glob(["*.h"]),
     deps = [],
@@ -15,5 +18,11 @@ pl_cc_library(
 pl_cc_test(
     name = "linux_headers_test",
     srcs = ["linux_headers_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_binary(
+    name = "kprobe_cleaner_standalone",
+    srcs = ["kprobe_cleaner_standalone.cc"],
     deps = [":cc_library"],
 )

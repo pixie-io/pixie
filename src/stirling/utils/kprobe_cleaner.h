@@ -1,0 +1,48 @@
+#pragma once
+
+#include <string>
+#include <vector>
+
+#include "src/common/base/base.h"
+
+namespace pl {
+namespace stirling {
+namespace utils {
+
+/**
+ * Reads sysfs to create a list of currently deployed probes with the specified marker in the name.
+ *
+ * Stirling probes are determined by a special marker in the probe name,
+ * so this function is primarily used to search for leaked Stirling probes.
+ *
+ * @param marker a marker that must be in the probe name for it be returned.
+ *
+ * @return vector of probe names.
+ */
+StatusOr<std::vector<std::string>> SearchForAttachedProbes(std::string_view marker);
+
+/**
+ * Removes the specified probes using the provided names.
+ *
+ * Note that this does not confirm that the probes exist,
+ * or even that they were successfully removed.
+ * It simply issues the commands to the sysfs file to remove the probes.
+ *
+ * @param probes vector of probes to remove.
+ * @return error if there were issues accessing sysfs.
+ */
+Status RemoveProbes(std::vector<std::string> probes);
+
+/**
+ * Searches for and removes any kprobe with the specified marker.
+ *
+ * @param marker a marker that must be in the probe name for it be returned.
+ *
+ * @return error if issues accessing sysfs, or if there are still probes leftover after the cleanup
+ * process.
+ */
+Status KprobeCleaner(std::string_view marker);
+
+}  // namespace utils
+}  // namespace stirling
+}  // namespace pl
