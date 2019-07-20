@@ -41,7 +41,7 @@ Controller* g_controller = nullptr;
 // Include any clean-up items after a signal.
 void SignalHandler(int signum) {
   if (g_stirling != nullptr) {
-    g_stirling->PrepareToDie();
+    g_stirling->Stop();
   }
   if (g_controller != nullptr) {
     // Give a limited amount of time for the signal to stop,
