@@ -123,6 +123,13 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "stirling_bpf_test",
+    srcs = ["stirling_bpf_test.cc"],
+    tags = ["requires_bpf"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "http_parse_test",
     srcs = ["http_parse_test.cc"],
     deps = [":cc_library"],
@@ -217,3 +224,10 @@ pl_cc_test(
     srcs = ["event_parser_test.cc"],
     deps = [":cc_library"],
 )
+
+# TODO(oazizi): Currently test needs to be run manually with sudo.
+#sh_test(
+#    name = "stirling_wrapper_test",
+#    srcs = ["stirling_wrapper_test.sh"],
+#    data = [":stirling_wrapper"],
+#)

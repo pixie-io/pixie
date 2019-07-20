@@ -55,13 +55,27 @@ class SourceConnector : public NotCopyable {
   SourceConnector() = delete;
   virtual ~SourceConnector() = default;
 
-  Status Init() { return InitImpl(); }
-  void TransferData(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) {
-    CHECK_LT(table_num, num_tables())
-        << absl::Substitute("Access to table out of bounds: table_num=$0", table_num);
-    return TransferDataImpl(table_num, record_batch);
-  }
-  Status Stop() { return StopImpl(); }
+  /**
+   * @brief Initializes the source connector. Can only be called once.
+   * @return Status of whether initialization was successful.
+   */
+  Status Init();
+
+  /**
+   * @brief Transfers any collected data, for the specified table, into the provided record_batch.
+   * @param table_num The table number (id) of the data. See DataTableSchemas in individual
+   * connectors.
+   * @param record_batch The target to move the data into.
+   */
+  void TransferData(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch);
+
+  /**
+   * @brief Stops the source connector and releases any acquired resources.
+   * May only be called after a successful Init().
+   *
+   * @return Status of whether stop was successful.
+   */
+  Status Stop();
 
   const std::string& source_name() const { return source_name_; }
 
@@ -183,6 +197,16 @@ class SourceConnector : public NotCopyable {
   };
 
  private:
+  /**
+   * Track state of connector. A connector's lifetime typically progresses sequentially
+   * from kUninitialized -> kActive -> KStopped.
+   *
+   * kErrors is a special state to track a bad state.
+   */
+  enum class State { kUninitialized, kActive, kStopped, kErrors };
+
+  State state_ = State::kUninitialized;
+
   const StirlingImpl* stirling_ = nullptr;
   const std::string source_name_;
   const ConstVectorView<DataTableSchema> table_schemas_;

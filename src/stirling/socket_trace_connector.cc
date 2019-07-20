@@ -73,6 +73,7 @@ Status SocketTraceConnector::InitImpl() {
           absl::StrCat("Failed to attach kprobe to kernel function: ", p.kernel_fn_short_name,
                        ", error message: ", attach_status.msg()));
     }
+    ++num_attached_probes_;
   }
   for (auto& perf_buffer_spec : kPerfBufferSpecs) {
     ebpf::StatusTuple open_status = bpf_.open_perf_buffer(
@@ -84,6 +85,7 @@ Status SocketTraceConnector::InitImpl() {
       return error::Internal(absl::StrCat("Failed to open perf buffer: ", perf_buffer_spec.name,
                                           ", error message: ", open_status.msg()));
     }
+    ++num_open_perf_buffers_;
   }
 
   PL_RETURN_IF_ERROR(InitBPFLogging(&bpf_));
@@ -108,6 +110,7 @@ Status SocketTraceConnector::StopImpl() {
           absl::StrCat("Failed to detach kprobe to kernel function: ", p.kernel_fn_short_name,
                        ", error message: ", detach_status.msg()));
     }
+    --num_attached_probes_;
   }
 
   for (auto& perf_buffer_spec : kPerfBufferSpecs) {
@@ -116,6 +119,7 @@ Status SocketTraceConnector::StopImpl() {
       return error::Internal(absl::StrCat("Failed to close perf buffer: ", perf_buffer_spec.name,
                                           ", error message: ", close_status.msg()));
     }
+    --num_open_perf_buffers_;
   }
 
   return Status::OK();

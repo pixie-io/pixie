@@ -230,7 +230,6 @@ TEST_F(StirlingTest, hammer_time_on_stirling_synchronized_subscriptions) {
     std::this_thread::sleep_for(kDurationPerIter);
 
     stirling->Stop();
-    stirling->WaitForThreadJoin();
 
     i++;
 
@@ -252,8 +251,7 @@ TEST_F(StirlingTest, hammer_time_on_stirling_on_the_fly_subs) {
   Stirling* stirling = GetStirling();
 
   // Run Stirling data collector.
-  s = stirling->RunAsThread();
-  ASSERT_TRUE(s.ok());
+  ASSERT_OK(stirling->RunAsThread());
 
   std::this_thread::sleep_for(kDurationPerIter);
 
@@ -278,7 +276,6 @@ TEST_F(StirlingTest, hammer_time_on_stirling_on_the_fly_subs) {
   }
 
   stirling->Stop();
-  stirling->WaitForThreadJoin();
 
   EXPECT_GT(NumProcessed(), 0);
 }

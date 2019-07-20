@@ -172,6 +172,11 @@ class SocketTraceConnector : public SourceConnector {
   // TODO(oazizi): This function is only public for testing purposes. Make private?
   void ReadPerfBuffer(uint32_t table_num);
 
+  // These are static counters of attached/open probes across all instances.
+  // It is meant for verification that we have cleaned-up all resources in tests.
+  static size_t NumAttachedProbes() { return num_attached_probes_; }
+  static size_t NumOpenPerfBuffers() { return num_open_perf_buffers_; }
+
  private:
   // ReadPerfBuffer poll callback functions (must be static).
   // These are used by the static variables below, and have to be placed here.
@@ -290,6 +295,14 @@ class SocketTraceConnector : public SourceConnector {
   void TransferMySQLEvent(SocketDataEvent event, types::ColumnWrapperRecordBatch* record_batch);
 
   ebpf::BPF bpf_;
+
+  // These are static counters across all instances, because:
+  // 1) We want to ensure we have cleaned all BPF resources up across *all* instances (no leaks).
+  // 2) It is for verification only, and it doesn't make sense to create accessors from stirling to
+  // here.
+  // TODO(oazizi): These are a better fit for refactoring solution in D1190.
+  inline static size_t num_attached_probes_;
+  inline static size_t num_open_perf_buffers_;
 
   // Note that the inner map cannot be a vector, because there is no guaranteed order
   // in which events are read from perf buffers.

@@ -106,21 +106,41 @@ void StirlingWrapperCallback(uint64_t table_id,
   // Can add other connectors, if desired, here.
 }
 
+// Put this in global space, so we can kill it in the signal handler.
+Stirling* g_stirling = nullptr;
+
+void SignalHandler(int signum) {
+  // Important to call Stop(), because it releases BPF resources,
+  // which would otherwise leak.
+  if (g_stirling != nullptr) {
+    g_stirling->Stop();
+  }
+  exit(signum);
+}
+
 // A simple wrapper that shows how the data collector is to be hooked up
 // In this case, agent and sources are fake.
 int main(int argc, char** argv) {
-  pl::InitEnvironmentOrDie(&argc, argv);
-  LOG(INFO) << "Stirling Wrapper";
+  // Register signal handlers to clean-up on exit.
+  // TODO(oazizi): Create a separate signal handling thread.
+  // For now this is okay, because all these signals will be handled by the main thread,
+  // which is just waiting for the worker thread to return.
+  signal(SIGINT, SignalHandler);
+  signal(SIGQUIT, SignalHandler);
+  signal(SIGTERM, SignalHandler);
+  signal(SIGHUP, SignalHandler);
 
-  // Create a registry of relevant sources.
-  std::unique_ptr<SourceRegistry> registry = pl::stirling::CreateAllSourceRegistry();
+  pl::InitEnvironmentOrDie(&argc, argv);
+  LOG(INFO) << "Stirling Wrapper PID: " << getpid() << " TID: " << std::this_thread::get_id();
 
   // Make Stirling.
-  auto data_collector = Stirling::Create(std::move(registry));
+  std::unique_ptr<SourceRegistry> registry = pl::stirling::CreateAllSourceRegistry();
+  std::unique_ptr<Stirling> stirling = Stirling::Create(std::move(registry));
+  g_stirling = stirling.get();
 
   // Get a publish proto message to subscribe from.
   Publish publish_proto;
-  data_collector->GetPublishProto(&publish_proto);
+  stirling->GetPublishProto(&publish_proto);
 
   // Subscribe to all elements.
   // Stirling will update its schemas and sets up the data tables.
@@ -130,24 +150,24 @@ int main(int argc, char** argv) {
   } else {
     subscribe_proto = pl::stirling::SubscribeToInfoClass(publish_proto, FLAGS_source_name);
   }
-  PL_CHECK_OK(data_collector->SetSubscription(subscribe_proto));
+  PL_CHECK_OK(stirling->SetSubscription(subscribe_proto));
 
   // Get a map from InfoClassManager names to Table IDs
-  table_id_to_name_map = data_collector->TableIDToNameMap();
+  table_id_to_name_map = stirling->TableIDToNameMap();
 
   // Set a dummy callback function (normally this would be in the agent).
-  data_collector->RegisterCallback(StirlingWrapperCallback);
+  stirling->RegisterCallback(StirlingWrapperCallback);
 
   // Run Data Collector.
-  std::thread run_thread = std::thread(&Stirling::Run, data_collector.get());
+  std::thread run_thread = std::thread(&Stirling::Run, stirling.get());
 
   // Wait for the thread to return. This should never happen in this example.
   // But don't want the program to terminate.
   run_thread.join();
 
-  // Another model of how to run the Data Collector:
-  // data_collector->RunAsThread();
-  // data_collector->WaitForThreadJoin();
+  // Another model of how to run Stirling:
+  // stirling->RunAsThread();
+  // stirling->WaitForThreadJoin();
 
   pl::ShutdownEnvironmentOrDie();
 

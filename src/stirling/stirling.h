@@ -123,14 +123,21 @@ class Stirling : public NotCopyable {
   virtual Status RunAsThread() = 0;
 
   /**
-   * @brief Stop the running thread. Return will not be immediate.
-   */
-  virtual void Stop() = 0;
-
-  /**
-   * @brief Wait for the running thread to terminate. Assuming you ran RunThread().
+   * @brief Wait for the running thread to terminate. Assumes previous call to RunThread().
    */
   virtual void WaitForThreadJoin() = 0;
+
+  /**
+   * @brief Stop Stirling data collection, and perform any final clean-up actions.
+   * Blocking, so will only return once the main loop has stopped.
+   *
+   * If Stirling is managing the thread, it will wait for thread to exit.
+   * If external agent is managing the thread, it will wait until the main loop has exited.
+   *
+   * Note: this should be called in the case of a signal (e.g. SIGINT, SIGTERM, etc.)
+   * to clean-up BPF deployed resources.
+   */
+  virtual void Stop() = 0;
 };
 
 }  // namespace stirling

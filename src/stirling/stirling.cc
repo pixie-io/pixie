@@ -116,6 +116,11 @@ class StirlingImpl final : public Stirling {
   void RunCore();
 
   /**
+   * Wait for Stirling to stop its main loop.
+   */
+  void WaitForStop();
+
+  /**
    * Helper function to figure out how much to sleep between polling iterations.
    */
   std::chrono::milliseconds TimeUntilNextTick();
@@ -134,6 +139,11 @@ class StirlingImpl final : public Stirling {
    * Whether thread should be running.
    */
   std::atomic<bool> run_enable_;
+
+  /**
+   * Whether Stirling is running.
+   */
+  std::atomic<bool> running_ = false;
 
   /**
    * Vector of all Source Connectors.
@@ -190,10 +200,7 @@ StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
   }
 }
 
-StirlingImpl::~StirlingImpl() {
-  Stop();
-  WaitForThreadJoin();
-}
+StirlingImpl::~StirlingImpl() { Stop(); }
 
 Status StirlingImpl::Init() {
   PL_RETURN_IF_ERROR(CreateSourceConnectors());
@@ -306,6 +313,20 @@ Status StirlingImpl::RunAsThread() {
 void StirlingImpl::WaitForThreadJoin() {
   if (run_thread_.joinable()) {
     run_thread_.join();
+    ASSERT_FALSE(running_);
+  }
+}
+
+void StirlingImpl::WaitForStop() {
+  CHECK(!run_enable_) << "Should only be called from Stop().";
+
+  // If Stirling is managing the thread, this should be sufficient.
+  WaitForThreadJoin();
+
+  // If Stirling is not managing the thread,
+  // then wait until we're not running anymore.
+  // We should have come here through Stop().
+  while (running_) {
   }
 }
 
@@ -330,6 +351,7 @@ void StirlingImpl::Run() {
 // Poll on Data Source Through connectors, when appropriate, then go to sleep.
 // Must run as a thread, so only call from Run() as a thread.
 void StirlingImpl::RunCore() {
+  running_ = true;
   while (run_enable_) {
     auto sleep_duration = std::chrono::milliseconds::zero();
 
@@ -361,9 +383,22 @@ void StirlingImpl::RunCore() {
 
     SleepForDuration(sleep_duration);
   }
+  running_ = false;
 }
 
-void StirlingImpl::Stop() { run_enable_ = false; }
+void StirlingImpl::Stop() {
+  run_enable_ = false;
+  WaitForStop();
+
+  // Stop all sources.
+  // This is important to release any BPF resources that were acquired.
+  for (auto& source : sources_) {
+    Status s = source->Stop();
+
+    // Forge on, because death is imminent!
+    LOG_IF(ERROR, !s.ok()) << s.msg();
+  }
+}
 
 // Helper function: Figure out when to wake up next.
 std::chrono::milliseconds StirlingImpl::TimeUntilNextTick() {
