@@ -54,7 +54,7 @@ class Controller : public NotCopyable {
       std::shared_ptr<table_store::TableStore> table_store,
       std::unique_ptr<VizierNATSConnector> nats_connector);
 
-  ~Controller() = default;
+  ~Controller();
 
   /**
    * Main run loop for the agent. It blocks until the stop signal is sent.
@@ -63,11 +63,14 @@ class Controller : public NotCopyable {
   Status Run();
 
   /**
-   * Stop all executing threads.
+   * Stop main execution thread.
+   * This is a blocking call that waits only for the main thread to stop.
+   * It does not check on the state of any worker threads.
    *
+   * @param timeout Duration after which the call will return, even if thread is not stopped.
    * @return Status of stopping.
    */
-  Status Stop();
+  Status Stop(std::chrono::milliseconds timeout);
 
   // TODO(zasgar): Remove me. Throwaway code for demo. We can't call this from Init because
   // it will break tests and there is no way to stub out stirling.
@@ -116,7 +119,8 @@ class Controller : public NotCopyable {
 
   std::unique_ptr<VizierNATSConnector> nats_connector_;
   std::unique_ptr<std::thread> heartbeat_thread_;
-  bool keepAlive_ = true;
+  std::atomic<bool> keep_alive_ = true;
+  std::atomic<bool> running_ = false;
 };
 
 }  // namespace agent

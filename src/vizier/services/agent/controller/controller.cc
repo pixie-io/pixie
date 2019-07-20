@@ -64,6 +64,16 @@ Controller::Controller(sole::uuid agent_id, std::unique_ptr<QBStub> qb_stub,
       agent_id_(agent_id),
       nats_connector_(std::move(nats_connector)) {}
 
+Controller::~Controller() {
+  // Don't expect this to happen.
+  // But if it does, give a good chunk of time for final queries to terminate.
+  // Note that kill signals go through a Signal handler, not through here,
+  // and those cases will have a different (smaller) amount of time to live.
+  static const std::chrono::milliseconds kTimeout{10000};
+  Status s = Stop(kTimeout);
+  LOG_IF(WARNING, !s.ok()) << s.msg();
+}
+
 Status Controller::Init() {
   char hostname[kMaxHostnameSize];
   int err = gethostname(hostname, kMaxHostnameSize);
@@ -129,7 +139,7 @@ void Controller::RunHeartbeat() {
   double hb_latency_moving_average = 0;
   double alpha = 0.25;
 
-  while (keepAlive_) {
+  while (keep_alive_) {
     // Send a heartbeat on a fixed interval.
     messages::VizierMessage req;
     auto hb = req.mutable_heartbeat();
@@ -162,7 +172,7 @@ void Controller::RunHeartbeat() {
                                              hb_latency_moving_average / 1.0E6);
 
     uint64_t sleep_interval_ms =
-        static_cast<int64_t>(((kAgentHeartbeatIntervalSeconds * 1E9) - elapsed_time) / 1.0E6);
+        static_cast<uint64_t>(((kAgentHeartbeatIntervalSeconds * 1E9) - elapsed_time) / 1.0E6);
     std::this_thread::sleep_for(std::chrono::milliseconds(sleep_interval_ms));
   }
 }
@@ -191,11 +201,13 @@ Status Controller::ExecuteQuery(
 }
 
 Status Controller::Run() {
+  running_ = true;
+
   // Start the heartbeat thread.
   // TODO(zasgar): Consider moving the thread creation outside this function.
   heartbeat_thread_ = std::make_unique<std::thread>(&Controller::RunHeartbeat, this);
 
-  while (keepAlive_) {
+  while (keep_alive_) {
     auto msg = nats_connector_->GetNextMessage(std::chrono::seconds(kNextMessageTimeoutS));
     if (msg == nullptr) {
       continue;
@@ -218,6 +230,8 @@ Status Controller::Run() {
   if (heartbeat_thread_ && heartbeat_thread_->joinable()) {
     heartbeat_thread_->join();
   }
+
+  running_ = false;
 
   return Status::OK();
 }
@@ -249,8 +263,15 @@ Status Controller::InitThrowaway() {
   return Status::OK();
 }
 
-Status Controller::Stop() {
-  keepAlive_ = false;
+Status Controller::Stop(std::chrono::milliseconds timeout) {
+  keep_alive_ = false;
+
+  // Wait for a limited amount of time for main thread to stop processing.
+  std::chrono::time_point expiration_time = std::chrono::steady_clock::now() + timeout;
+  while (running_ && std::chrono::steady_clock::now() < expiration_time) {
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+  }
+
   return Status::OK();
 }
 
@@ -258,7 +279,7 @@ Status Controller::HandleHeartbeatMessage(std::unique_ptr<messages::VizierMessag
   DCHECK(msg->has_heartbeat_ack() || msg->has_heartbeat_nack());
   if (msg->has_heartbeat_nack()) {
     // TODO(zasgar): Handle heartbeat NACKs.
-    LOG(FATAL) << "Got a hearbeat NACK ..., this is currenttly unsupported";
+    LOG(FATAL) << "Got a hearbeat NACK ..., this is currently unsupported";
   }
   incoming_heartbeat_queue_.enqueue(std::move(msg));
   return Status::OK();

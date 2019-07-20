@@ -32,15 +32,44 @@ DEFINE_string(tls_ca_crt, gflags::StringFromEnv("PL_TLS_CA_CERT", "../../service
 
 DEFINE_bool(disable_SSL, gflags::BoolFromEnv("PL_DISABLE_SSL", false), "Disable GRPC SSL");
 
+using pl::stirling::Stirling;
 using pl::vizier::agent::Controller;
 
+Stirling* g_stirling = nullptr;
+Controller* g_controller = nullptr;
+
+// Include any clean-up items after a signal.
+void SignalHandler(int signum) {
+  if (g_stirling != nullptr) {
+    g_stirling->PrepareToDie();
+  }
+  if (g_controller != nullptr) {
+    // Give a limited amount of time for the signal to stop,
+    // since our death is imminent.
+    static const std::chrono::milliseconds kTimeout{1000};
+    pl::Status s = g_controller->Stop(kTimeout);
+
+    // Log and forge on, since our death is imminent.
+    LOG_IF(ERROR, !s.ok()) << s.msg();
+  }
+  exit(signum);
+}
+
 int main(int argc, char** argv) {
+  signal(SIGINT, SignalHandler);
+  signal(SIGQUIT, SignalHandler);
+  signal(SIGTERM, SignalHandler);
+  signal(SIGHUP, SignalHandler);
+  // TODO(oazizi): Handle cases like SIGSEGV, and similar.
+  // TODO(oazizi): Create a separate signal handler thread.
+
   pl::InitEnvironmentOrDie(&argc, argv);
   LOG(INFO) << "Pixie Lab Agent: " << pl::VersionInfo::VersionString();
 
   auto table_store = std::make_shared<pl::table_store::TableStore>();
   auto carnot = pl::carnot::Carnot::Create(table_store).ConsumeValueOrDie();
   auto stirling = pl::stirling::Stirling::Create(pl::stirling::CreateProdSourceRegistry());
+  g_stirling = stirling.get();
 
   auto channel_creds = grpc::InsecureChannelCredentials();
   if (!FLAGS_disable_SSL) {
@@ -85,6 +114,7 @@ int main(int argc, char** argv) {
   auto controller = Controller::Create(agent_id, std::move(stub), std::move(carnot),
                                        std::move(stirling), table_store, std::move(nats_connector))
                         .ConsumeValueOrDie();
+  g_controller = controller.get();
 
   PL_CHECK_OK(controller->InitThrowaway());
   PL_CHECK_OK(stirling_ptr->RunAsThread());

@@ -449,5 +449,18 @@ std::unique_ptr<Stirling> Stirling::Create(std::unique_ptr<SourceRegistry> regis
   return StirlingImpl::Create(std::move(registry));
 }
 
+void StirlingImpl::PrepareToDie() {
+  Stop();
+
+  // Stop all sources.
+  // This is important to release any BPF resources that were acquired.
+  for (auto& source : sources_) {
+    Status s = source->Stop();
+
+    // Forge on, because death is imminent!
+    LOG_IF(ERROR, !s.ok()) << s.msg();
+  }
+}
+
 }  // namespace stirling
 }  // namespace pl
