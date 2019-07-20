@@ -165,17 +165,26 @@ def writeBazelRCFile() {
     'build --announce_rc',
     'build --verbose_failures',
     'build --jobs=32',
-    '--experimental_remote_download_outputs=minimal',
+    '--experimental_remote_download_outputs=toplevel',
+    '--experimental_inmemory_jdeps_files',
+    '--experimental_inmemory_dotd_files',
     '--remote_max_connections=256',
+
     // Build remote jobs setup.
     'build --google_default_credentials',
+
     // Use GCS as cache as this is more scalable than our machine.
     "build --remote_http_cache=https://storage.googleapis.com/bazel-cache-pl",
+    'build --remote_local_fallback=true',
+    'build --remote_local_fallback_strategy=local',
     'build --remote_timeout=5',
     'build --remote_retries=2',
+
     // Test remote jobs setup.
     'test --remote_timeout=5',
     'test --remote_retries=2',
+    'test --remote_local_fallback=true',
+    'test --remote_local_fallback_strategy=local',
     'test --test_output=errors',
     // Other test args.
     'test --verbose_failures',
@@ -202,7 +211,9 @@ def dockerStepWithCode(String dockerConfig = '', String dockerImage = devDockerI
       deleteDir()
       unstash SRC_STASH_NAME
       docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        docker.image(dockerImage).inside(dockerConfig) {
+        // This change speeds up the build considerably but prevents us from running more than
+        // one executor on a jenkins worker.
+        docker.image(dockerImage).inside(dockerConfig + ' -v /mnt/jenkins/root/cache:/root/.cache') {
           body()
         }
       }
@@ -215,7 +226,6 @@ def dockerStepWithCode(String dockerConfig = '', String dockerImage = devDockerI
   */
 def dockerStepWithBazelDeps(String dockerConfig = '', String dockerImage = devDockerImageWithTag, Closure body) {
   dockerStepWithCode(dockerConfig, dockerImage) {
-    sh 'scripts/bazel_fetch_retry.sh'
     body()
   }
 }
