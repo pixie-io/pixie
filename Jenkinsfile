@@ -102,8 +102,10 @@ devDockerImageExtrasWithTag = ''
 stashList = [];
 
 // Flag controlling if coverage job is enabled.
-runCoverageJob = (env.JOB_NAME == "pixielabs-master") ? true : false;
-isNightlyRun = (env.JOB_NAME == "pixielabs-master-nightly") ? true : false;
+isMasterRun =  (env.JOB_NAME == "pixielabs-master")
+isNightlyRun = (env.JOB_NAME == "pixielabs-master-nightly")
+
+runCoverageJob = isMasterRun
 
 /**
   * @brief Add build info to harbormaster and badge to Jenkins.
@@ -315,10 +317,13 @@ def checkoutAndInitialize() {
   checkout scm
   sh '''
     printenv
+
     # Store the GIT commit in a file, since the git plugin has issues with
     # the Jenkins pipeline system.
     git rev-parse HEAD > GIT_COMMIT
     echo ${BUILD_NUMBER} > SOURCE_VERSION
+
+    git diff -U0 origin/master > diff_origin_master
   '''
   writeBazelRCFile()
 
@@ -395,7 +400,12 @@ builders['Build & Test (bpf:tsan)'] = {
 builders['Build & Test (clang-tidy)'] = {
   dockerStepWithBazelDeps {
     def stashName = 'build-clang-tidy-logs'
-    sh 'scripts/run_clang_tidy.sh'
+    if (isMasterRun) {
+      sh 'scripts/run_clang_tidy.sh'
+    } else {
+      // For code review builds only run on diff.
+      sh 'scripts/run_clang_tidy.sh -f diff_origin_master'
+    }
     stash name: stashName, includes: 'clang_tidy.log'
     stashList.add(stashName)
   }
