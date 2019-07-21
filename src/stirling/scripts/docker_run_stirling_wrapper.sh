@@ -36,20 +36,16 @@ parse_args "$@"
 
 bazel run //src/stirling:stirling_wrapper_image
 
-echo $INTERACTIVE
-
 flags=""
 if [ "$INTERACTIVE" -eq "1" ]; then
   flags="--entrypoint sh"
 fi
 
-echo $flags
-
 docker run -it --init --rm \
  --mount type=bind,source=/proc,target=/proc \
  --mount type=bind,source=/sys,target=/sys \
- --mount type=bind,source=/usr/src,target=/usr/src \
- --mount type=bind,source=/lib/modules,target=/lib/modules \
+ --mount type=bind,source=/usr/src,target=/host/usr/src \
+ --mount type=bind,source=/lib/modules,target=/host/lib/modules \
  --privileged \
  $flags \
  bazel/src/stirling:stirling_wrapper_image

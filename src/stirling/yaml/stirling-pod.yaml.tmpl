@@ -23,23 +23,30 @@ spec:
           - SYS_ADMIN
       privileged: true
     volumeMounts:
-       - name: sys # mount the debug filesystem
+       - name: proc
+         mountPath: /proc
+         readOnly: true
+       - name: sys
          mountPath: /sys
          readOnly: true
-       - name: linux-headers # mount the linux headers
-         mountPath: /usr/src
+       - name: usr-src # for linux headers
+         mountPath: /host/usr/src
          readOnly: true
-       - name: lib-modules # mount the linux headers
-         mountPath: /lib/modules
+       - name: lib-modules # for linux headers
+         mountPath: /host/lib/modules
          readOnly: true
   terminationGracePeriodSeconds: 30
   restartPolicy: Never
   volumes:
+      - name: proc
+        hostPath:
+            path: /proc
+            type: Directory
       - name: sys
         hostPath:
             path: /sys
             type: Directory
-      - name: linux-headers
+      - name: usr-src
         hostPath:
             path: /usr/src
             type: Directory

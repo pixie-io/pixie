@@ -42,10 +42,10 @@ spec:
         - name: sys # mount the debug filesystem
           mountPath: /sys
           readOnly: true
-        - name: linux-headers # mount the linux headers
+        - name: usr-src # for linux headers
           mountPath: /usr/src
           readOnly: true
-        - name: lib-modules # mount the linux headers
+        - name: lib-modules # for linux headers
           mountPath: /lib/modules
           readOnly: true
         - name: certs
@@ -59,14 +59,14 @@ spec:
         hostPath:
             path: /sys
             type: Directory
-      - name: linux-headers
+      - name: usr-src
         hostPath:
             path: /usr/src
-            type: DirectoryOrCreate
+            type: Directory
       - name: lib-modules
         hostPath:
             path: /lib/modules
-            type: DirectoryOrCreate
+            type: Directory
       - name: certs
         secret:
             secretName: service-tls-certs

@@ -6,6 +6,7 @@
 
 #include "absl/strings/numbers.h"
 #include "src/common/base/file.h"
+#include "src/stirling/utils/fs_wrapper.h"
 #include "src/stirling/utils/linux_headers.h"
 
 namespace pl {
@@ -56,8 +57,6 @@ Status ModifyKernelVersion(const fs::path& linux_headers_base, const std::string
 }
 
 Status FindOrInstallLinuxHeaders() {
-  std::error_code ec;
-
   // The following effectively runs `uname -r`.
   struct utsname buffer;
   if (uname(&buffer) != 0) {
@@ -67,45 +66,45 @@ Status FindOrInstallLinuxHeaders() {
   std::string uname = buffer.release;
   LOG(INFO) << absl::Substitute("Detected kernel release (name -r): $0", uname);
 
-  // TODO(oazizi): linux_headers_pl is tied to our packaged headers. Too brittle.
-  fs::path linux_headers_pl = "/usr/src/linux-headers-4.14.104-pl";
-  fs::path linux_headers_host = "/usr/src/linux-headers-" + uname;
-  fs::path lib_modules_dir = "/lib/modules";
-  lib_modules_dir = lib_modules_dir / uname;
+  // /lib/modules/<uname>/build is where BCC looks for Linux headers.
+  fs::path lib_modules_dir = "/lib/modules/" + uname;
+  fs::path lib_modules_build_dir = lib_modules_dir / "build";
 
-  if (fs::exists(linux_headers_host)) {
-    LOG(INFO) << absl::Substitute("Using linux headers found at $0", linux_headers_host.string());
+  // Case 1: Linux headers are already accessible (we must be running directly on host).
+  if (fs::exists(lib_modules_build_dir)) {
+    LOG(INFO) << absl::Substitute("Using linux headers found at $0",
+                                  lib_modules_build_dir.string());
     return Status::OK();
   }
 
-  LOG(INFO) << "No host linux headers found. Looking to see if packaged copy exists.";
-  if (!fs::exists(linux_headers_pl)) {
-    return error::Internal("Could not find packaged headers to install. Search location: $0",
-                           linux_headers_pl.string());
+  // Case 2: Linux headers found in /host (we must be running in a container).
+  fs::path mounted_usr_src_headers = "/host/usr/src/linux-headers-" + uname;
+  LOG(INFO) << absl::Substitute("Looking for host mounted headers at $0",
+                                mounted_usr_src_headers.string());
+  if (fs::exists(mounted_usr_src_headers)) {
+    PL_RETURN_IF_ERROR(CreateDirectories(lib_modules_dir));
+    PL_RETURN_IF_ERROR(CreateSymlink(mounted_usr_src_headers, lib_modules_build_dir));
+    LOG(INFO) << absl::Substitute("Using linked linux headers found at $0",
+                                  mounted_usr_src_headers.string());
+    return Status::OK();
   }
 
-  PL_RETURN_IF_ERROR(ModifyKernelVersion(linux_headers_pl, uname));
-
-  fs::create_symlink(linux_headers_pl, linux_headers_host, ec);
-  if (ec) {
-    return error::Internal("Failed to create symlink $0 -> $1. Message: $2",
-                           linux_headers_host.string(), linux_headers_pl.string(), ec.message());
+  // Case 3: No Linux headers found (we may or may not be running in container).
+  // Try to install packaged headers (will only work if we're in a container image with packaged
+  // headers).
+  // TODO(oazizi): /usr/src/linux-headers-4.14.104-pl is tied to our container build. Too brittle.
+  fs::path packaged_headers = "/usr/src/linux-headers-4.14.104-pl";
+  LOG(INFO) << absl::Substitute("Looking for packed headers at $0", packaged_headers.string());
+  if (fs::exists(packaged_headers)) {
+    PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers, uname));
+    PL_RETURN_IF_ERROR(CreateDirectories(lib_modules_dir));
+    PL_RETURN_IF_ERROR(CreateSymlink(packaged_headers, lib_modules_build_dir));
+    LOG(INFO) << "Successfully installed packaged copy of headers.";
+    return Status::OK();
   }
 
-  fs::create_directories(lib_modules_dir, ec);
-  if (ec) {
-    return error::Internal("Failed to create directory $0. Message: $0", lib_modules_dir.string(),
-                           ec.message());
-  }
-
-  lib_modules_dir = lib_modules_dir / "build";
-  fs::create_symlink(linux_headers_host, lib_modules_dir.string(), ec);
-  if (ec) {
-    return error::Internal("Failed to create symlink $0 -> $1. Message: $0",
-                           lib_modules_dir.string(), linux_headers_host.string(), ec.message());
-  }
-  LOG(INFO) << "Successfully installed packaged copy of headers.";
-  return Status::OK();
+  return error::Internal("Could not find packaged headers to install. Search location: $0",
+                         packaged_headers.string());
 }
 
 }  // namespace utils
