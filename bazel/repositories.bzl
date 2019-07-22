@@ -44,7 +44,7 @@ def _com_llvm_lib():
     native.new_local_repository(
         name = "com_llvm_lib",
         build_file = "third_party/llvm.BUILD",
-        path = "/opt/clang-7.0",
+        path = "/opt/clang-8.0",
     )
 
 def _com_github_rlyeh_sole():

@@ -196,7 +196,9 @@ StatusOr<IRNode*> ASTWalker::ProcessAttribute(const pypa::AstAttributePtr& node)
     case AstType::Name: {
       return LookupName(PYPA_PTR_CAST(Name, node->value));
     }
-    default: { return CreateAstError(node->value, "Can't handle the attribute of this type"); }
+    default: {
+      return CreateAstError(node->value, "Can't handle the attribute of this type");
+    }
   }
 }
 

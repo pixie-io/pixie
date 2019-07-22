@@ -59,8 +59,10 @@ inline std::shared_ptr<arrow::DataType> DataTypeToArrowType(DataType type) {
   } break
 
 // Internal utility macro to generate the default case.
-#define PL_SWITCH_FOREACH_DATATYPE_DEFAULT_CASE(_dt_) \
-  default: { CHECK(0) << "Unknown Type: " << ::pl::types::ToString(_dt_); }
+#define PL_SWITCH_FOREACH_DATATYPE_DEFAULT_CASE(_dt_)            \
+  default: {                                                     \
+    CHECK(0) << "Unknown Type: " << ::pl::types::ToString(_dt_); \
+  }
 
 /**
  * PL_SWITCH_FOREACH_DATATYPE can be use to run a macro func over each data type we have. For

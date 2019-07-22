@@ -42,7 +42,9 @@ void VerifyNodeConnections(IRNode* node) {
       VerifyString(node);
       break;
     }
-    default: { break; }
+    default: {
+      break;
+    }
   }
 }
 

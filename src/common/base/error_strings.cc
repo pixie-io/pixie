@@ -27,7 +27,9 @@ std::string CodeToString(pl::statuspb::Code code) {
       return "Internal";
     case pl::statuspb::UNIMPLEMENTED:
       return "Unimplemented";
-    default: { return absl::Substitute("Unknown error_code($0)", static_cast<int>(code)); }
+    default: {
+      return absl::Substitute("Unknown error_code($0)", static_cast<int>(code));
+    }
   }
 }
 

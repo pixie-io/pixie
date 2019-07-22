@@ -7,13 +7,13 @@ SSH_PRIVATE_KEY_FILE := $(HOME)/.ssh/id_rsa
 SSH_PRIVATE_KEY := `cat $(SSH_PRIVATE_KEY_FILE)`
 
 ## Clang deb parameters
-CLANG_DEB_IMAGE_VERSION := 7.0-pl8
+CLANG_DEB_IMAGE_VERSION := 8.0-pl1
 clang_deb_fname := "clang-$(CLANG_DEB_IMAGE_VERSION).deb"
 clang_deb_gs_path :=  gs://pl-infra-dev-artifacts/$(clang_deb_fname)
 clang_deb_image_tag := "gcr.io/pl-dev-infra/clang_deb_image:$(CLANG_DEB_IMAGE_VERSION)"
 
 ## Clang deb parameters
-GPERFTOOLS_DEB_IMAGE_VERSION := 2.7-pl1
+GPERFTOOLS_DEB_IMAGE_VERSION := 2.7-pl2
 gperftools_deb_fname := "gperftools-pixie-$(GPERFTOOLS_DEB_IMAGE_VERSION).deb"
 gperftools_deb_gs_path :=  gs://pl-infra-dev-artifacts/$(gperftools_deb_fname)
 gperftools_deb_image_tag := "gcr.io/pl-dev-infra/gperftools_deb_image:$(GPERFTOOLS_DEB_IMAGE_VERSION)"

@@ -1,16 +1,16 @@
 default['clang']               = {}
 default['clang']['deb']        =
-  'https://storage.googleapis.com/pl-infra-dev-artifacts/clang-7.0-pl8.deb'
+  'https://storage.googleapis.com/pl-infra-dev-artifacts/clang-8.0-pl1.deb'
 default['clang']['deb_sha256'] =
-  'bddb994b2851210ba70c202b67a92f67f710b9fc878fe1af4e77a2be0f75833c'
-default['clang']['version'] = "7.0-pl8"
+  'fe4c6d291de55a5963a4cf328ffbc7f6416082396a2014cfe827feae02a17f57'
+default['clang']['version'] = "8.0-pl1"
 
 default['gperftools']               = {}
 default['gperftools']['deb']        =
-  'https://storage.googleapis.com/pl-infra-dev-artifacts/gperftools-pixie-2.7-pl1.deb'
+  'https://storage.googleapis.com/pl-infra-dev-artifacts/gperftools-pixie-2.7-pl2.deb'
 default['gperftools']['deb_sha256'] =
-  '8b215251c3514504f04fbf4673edd26aa7c37663f4109bad6f9fa0f2adff427e'
-default['gperftools']['version'] = "2.7-pl1"
+  'f43a343a6eae52dfd9ef1a3e3a9fe14347587d05fa7397f9444b473a4a65e959'
+default['gperftools']['version'] = "2.7-pl2"
 
 
 default['skaffold']                  = {}
