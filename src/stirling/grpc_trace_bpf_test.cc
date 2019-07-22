@@ -13,7 +13,7 @@ extern "C" {
 
 #include "src/common/subprocess/subprocess.h"
 #include "src/common/testing/testing.h"
-#include "src/stirling/http2.h"
+#include "src/stirling/grpc.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/testing/greeter_client.h"
 #include "src/stirling/testing/greeter_server.h"
@@ -21,7 +21,7 @@ extern "C" {
 
 namespace pl {
 namespace stirling {
-namespace http2 {
+namespace grpc {
 
 using ::pl::stirling::testing::GreeterClient;
 using ::pl::stirling::testing::GreeterService;
@@ -121,8 +121,8 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
             record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(server_record_idx).val);
 
   HelloReply received_reply;
-  EXPECT_TRUE(ParseProtobuf(
-      record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(server_record_idx), &received_reply));
+  std::string msg = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(server_record_idx);
+  EXPECT_TRUE(received_reply.ParseFromString(msg.substr(kGRPCMessageHeaderSizeInBytes)));
   EXPECT_THAT(received_reply, EqualsProto(R"proto(message: "Hello PixieLabs")proto"));
 }
 
@@ -192,11 +192,11 @@ TEST_F(GRPCTest, BasicTracingForCPP) {
             record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(server_record_idx).val);
 
   HelloReply received_reply;
-  EXPECT_TRUE(ParseProtobuf(
-      record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(server_record_idx), &received_reply));
+  std::string msg = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(server_record_idx);
+  EXPECT_TRUE(received_reply.ParseFromString(msg.substr(kGRPCMessageHeaderSizeInBytes)));
   EXPECT_THAT(received_reply, EqualsProto(R"proto(message: "Hello pixielabs!")proto"));
 }
 
-}  // namespace http2
+}  // namespace grpc
 }  // namespace stirling
 }  // namespace pl

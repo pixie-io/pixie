@@ -9,6 +9,7 @@
 #include "src/common/base/utils.h"
 #include "src/stirling/bpf_logging.h"
 #include "src/stirling/event_parser.h"
+#include "src/stirling/grpc.h"
 #include "src/stirling/http2.h"
 #include "src/stirling/mysql_parse.h"
 #include "src/stirling/socket_trace_connector.h"
@@ -30,6 +31,7 @@ namespace pl {
 namespace stirling {
 
 using ::pl::grpc::MethodInputOutput;
+using ::pl::stirling::grpc::ParseProtobuf;
 using ::pl::stirling::http2::Frame;
 using ::pl::stirling::http2::GRPCMessage;
 using ::pl::stirling::http2::GRPCReqResp;
@@ -541,15 +543,15 @@ void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record,
   // TODO(yzhao): Populate this field with parsed text format protobufs.
 
   if (FLAGS_enable_parsing_protobufs) {
-    MethodInputOutput in_out = ParseProtobufs(req_message, resp_message, &grpc_desc_db_);
+    MethodInputOutput in_out = GetProtobufMessages(req_message, &grpc_desc_db_);
     std::string json;
-    if (in_out.output != nullptr &&
-        google::protobuf::util::MessageToJsonString(*in_out.output, &json).ok()) {
+    Status s = ParseProtobuf(resp_message.message, in_out.output.get(), &json);
+    if (s.ok()) {
       r.Append<r.ColIndex("http_resp_body")>(std::move(json));
     } else {
-      constexpr char kErrorMessage[] = "Failed to parse binary protobuf";
-      r.Append<r.ColIndex("http_resp_body")>(kErrorMessage);
-      LOG(ERROR) << kErrorMessage;
+      std::string msg = s.ToString();
+      LOG(ERROR) << msg;
+      r.Append<r.ColIndex("http_resp_body")>(std::move(msg));
     }
   } else {
     r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.message));

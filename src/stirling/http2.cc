@@ -16,6 +16,7 @@ extern "C" {
 #include "src/common/base/error.h"
 #include "src/common/base/status.h"
 #include "src/common/grpcutils/utils.h"
+#include "src/stirling/grpc.h"
 
 namespace pl {
 namespace stirling {
@@ -24,6 +25,7 @@ namespace http2 {
 using ::pl::grpc::MethodInputOutput;
 using ::pl::grpc::MethodPath;
 using ::pl::grpc::ServiceDescriptorDatabase;
+using ::pl::stirling::grpc::kGRPCMessageHeaderSizeInBytes;
 
 namespace {
 
@@ -438,28 +440,14 @@ std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, std::vector<GRPCMes
   return res;
 }
 
-MethodInputOutput ParseProtobufs(const GRPCMessage& req, const GRPCMessage& resp,
-                                 ServiceDescriptorDatabase* db) {
+MethodInputOutput GetProtobufMessages(const GRPCMessage& req, ServiceDescriptorDatabase* db) {
   const char kPathHeader[] = ":path";
   auto iter = req.headers.find(kPathHeader);
   if (iter == req.headers.end()) {
     // No call path specified, bail out.
     return {};
   }
-
-  DCHECK(req.message.size() >= kGRPCMessageHeaderSizeInBytes);
-  DCHECK(resp.message.size() >= kGRPCMessageHeaderSizeInBytes);
-
-  MethodInputOutput res = db->GetMethodInputOutput(MethodPath(iter->second));
-  if (res.input != nullptr) {
-    res.input->ParseFromArray(req.message.data() + kGRPCMessageHeaderSizeInBytes,
-                              req.message.size() - kGRPCMessageHeaderSizeInBytes);
-  }
-  if (res.output != nullptr) {
-    res.output->ParseFromArray(resp.message.data() + kGRPCMessageHeaderSizeInBytes,
-                               resp.message.size() - kGRPCMessageHeaderSizeInBytes);
-  }
-  return res;
+  return db->GetMethodInputOutput(MethodPath(iter->second));
 }
 
 }  // namespace http2

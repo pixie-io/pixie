@@ -209,6 +209,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "grpc_test",
+    srcs = ["grpc_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing/proto:greet_pl_cc_proto",
+    ],
+)
+
+pl_cc_test(
     name = "http2_test",
     srcs = ["http2_test.cc"],
     deps = [

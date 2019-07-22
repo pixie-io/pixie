@@ -1,6 +1,8 @@
 #pragma once
 
+extern "C" {
 #include <nghttp2/nghttp2.h>
+}
 
 #include <deque>
 #include <map>
@@ -19,8 +21,6 @@
 namespace pl {
 namespace stirling {
 namespace http2 {
-
-constexpr size_t kGRPCMessageHeaderSizeInBytes = 5;
 
 using u8string = std::basic_string<uint8_t>;
 using u8string_view = std::basic_string_view<uint8_t>;
@@ -84,14 +84,6 @@ struct GRPCMessage {
   }
 };
 
-// TODO(yzhao): This will be changed into a free function that uses descriptor database APIs,
-// which simulates the interface of gRPC reflection, to parse the gRPC messages.
-template <typename ProtobufType>
-inline bool ParseProtobuf(std::string message, ProtobufType* pb) {
-  return pb->ParseFromArray(message.data() + kGRPCMessageHeaderSizeInBytes,
-                            message.size() - kGRPCMessageHeaderSizeInBytes);
-}
-
 /**
  * @brief Required for fitting in the SocketTraceConnector::ConsumeMessage() template.
  */
@@ -135,11 +127,10 @@ inline void EraseConsumedFrames(std::deque<Frame>* frames) {
 }
 
 /**
- * @brief Parses gRPC message's protobuf payload. Uses the service descriptor database to assemble
- * dynamic protobuf messages.
+ * @brief Returns the dynamic protobuf messages for the called method in the request.
  */
-::pl::grpc::MethodInputOutput ParseProtobufs(const GRPCMessage& req, const GRPCMessage& resp,
-                                             ::pl::grpc::ServiceDescriptorDatabase* db);
+::pl::grpc::MethodInputOutput GetProtobufMessages(const GRPCMessage& req,
+                                                  ::pl::grpc::ServiceDescriptorDatabase* db);
 
 // TODO(yzhao): gRPC has a feature called bidirectional streaming:
 // https://grpc.io/docs/guides/concepts/. Investigate how to parse that off HTTP2 frames.

@@ -252,7 +252,7 @@ class SocketTraceConnector : public SourceConnector {
 
   inline static HTTPHeaderFilter http_response_header_filter_;
   // TODO(yzhao): We will remove this once finalized the mechanism of lazy protobuf parse.
-  inline static grpc::ServiceDescriptorDatabase grpc_desc_db_{
+  inline static ::pl::grpc::ServiceDescriptorDatabase grpc_desc_db_{
       demos::hipster_shop::GetFileDescriptorSet()};
   inline static const size_t kCPUCount = ebpf::BPFTable::get_possible_cpu_count();
 
