@@ -152,8 +152,6 @@ class SourceConnector : public NotCopyable {
                                 types::ColumnWrapperRecordBatch* record_batch) = 0;
   virtual Status StopImpl() = 0;
 
-  uint64_t real_time_offset_ = 0;
-
  protected:
   // Example usage:
   // RecordBuilder<&kTable> r(record_batch);
