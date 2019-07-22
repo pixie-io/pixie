@@ -59,6 +59,18 @@ func (mr *MockMetadataStoreMockRecorder) AddToFrontOfAgentQueue(arg0, arg1 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToFrontOfAgentQueue", reflect.TypeOf((*MockMetadataStore)(nil).AddToFrontOfAgentQueue), arg0, arg1)
 }
 
+// AddUpdatesToAgentQueue mocks base method
+func (m *MockMetadataStore) AddUpdatesToAgentQueue(arg0 string, arg1 []*metadatapb.ResourceUpdate) error {
+	ret := m.ctrl.Call(m, "AddUpdatesToAgentQueue", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddUpdatesToAgentQueue indicates an expected call of AddUpdatesToAgentQueue
+func (mr *MockMetadataStoreMockRecorder) AddUpdatesToAgentQueue(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUpdatesToAgentQueue", reflect.TypeOf((*MockMetadataStore)(nil).AddUpdatesToAgentQueue), arg0, arg1)
+}
+
 // GetASID mocks base method
 func (m *MockMetadataStore) GetASID() (uint32, error) {
 	ret := m.ctrl.Call(m, "GetASID")

@@ -46,7 +46,6 @@ message RegisterAgentResponse {
     uint32 asid = 1 [
                     (gogoproto.customname) = "ASID"
                     ];
-    MetadataUpdateInfo update_info = 2;
 }
 
 message UpdateAgentRequest {

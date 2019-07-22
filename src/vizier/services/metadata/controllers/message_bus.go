@@ -169,12 +169,6 @@ func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgent
 		return
 	}
 
-	updates, err := mc.agentManager.GetMetadataUpdates()
-	if err != nil {
-		log.WithError(err).Error("Could not get metadata updates.")
-		return
-	}
-
 	// Create agent in agent manager.
 	agentInfo := &AgentInfo{
 		LastHeartbeatNS: mc.clock.Now().UnixNano(),
@@ -192,9 +186,6 @@ func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgent
 		Msg: &messages.VizierMessage_RegisterAgentResponse{
 			RegisterAgentResponse: &messages.RegisterAgentResponse{
 				ASID: asid,
-				UpdateInfo: &messages.MetadataUpdateInfo{
-					Updates: *updates,
-				},
 			},
 		},
 	}
@@ -203,6 +194,17 @@ func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgent
 	if err != nil {
 		log.WithError(err).Error("Could not send registerAgentResponse to agent.")
 		return
+	}
+
+	updates, err := mc.agentManager.GetMetadataUpdates()
+	if err != nil {
+		log.WithError(err).Error("Could not get metadata updates.")
+		return
+	}
+
+	err = mc.agentManager.AddUpdatesToAgentQueue(agentID, updates)
+	if err != nil {
+		log.WithError(err).Error("Could not add initial metadata updates to agent's queue")
 	}
 }
 

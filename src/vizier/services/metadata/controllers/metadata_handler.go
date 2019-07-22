@@ -24,6 +24,7 @@ type MetadataStore interface {
 	UpdateSchemas(uuid.UUID, []*metadatapb.SchemaInfo) error
 	GetAgentsForHostnames(*[]string) (*[]string, error)
 	AddToAgentUpdateQueue(string, string) error
+	AddUpdatesToAgentQueue(string, []*metadatapb.ResourceUpdate) error
 	AddToFrontOfAgentQueue(string, *metadatapb.ResourceUpdate) error
 	GetFromAgentQueue(string) ([]*metadatapb.ResourceUpdate, error)
 	GetAgents() (*[]datapb.AgentData, error)

@@ -207,7 +207,12 @@ func TestAgentRegisterRequest(t *testing.T) {
 	mockAgtMgr.
 		EXPECT().
 		GetMetadataUpdates().
-		Return(&updates, nil)
+		Return(updates, nil)
+
+	mockAgtMgr.
+		EXPECT().
+		AddUpdatesToAgentQueue(u, updates).
+		Return(nil)
 
 	// Create Metadata Service controller.
 	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
@@ -228,9 +233,6 @@ func TestAgentRegisterRequest(t *testing.T) {
 		Msg: &messages.VizierMessage_RegisterAgentResponse{
 			RegisterAgentResponse: &messages.RegisterAgentResponse{
 				ASID: 1,
-				UpdateInfo: &messages.MetadataUpdateInfo{
-					Updates: updates,
-				},
 			},
 		},
 	}
@@ -262,7 +264,7 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	defer cleanup()
 
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-	_, err := uuid.FromString(uuidStr)
+	u, err := uuid.FromString(uuidStr)
 	if err != nil {
 		t.Fatal("Could not generate UUID.")
 	}
@@ -272,10 +274,33 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 
+	agentInfo := &controllers.AgentInfo{
+		LastHeartbeatNS: 10,
+		CreateTimeNS:    10,
+		Hostname:        "test-host",
+		AgentID:         u,
+	}
+
+	mockAgtMgr.
+		EXPECT().
+		RegisterAgent(agentInfo).
+		Return(uint32(1), nil)
+
+	updatePb := metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid",
+				Name: "podName",
+			},
+		},
+	}
+
+	updates := []*metadatapb.ResourceUpdate{&updatePb}
+
 	mockAgtMgr.
 		EXPECT().
 		GetMetadataUpdates().
-		Return(nil, errors.New("Could not get metadata info"))
+		Return(updates, errors.New("Could not get metadata info"))
 
 	// Create Metadata Service controller.
 	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
@@ -292,11 +317,21 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	}
 	reqPb, err := req.Marshal()
 
+	resp := messages.VizierMessage{
+		Msg: &messages.VizierMessage_RegisterAgentResponse{
+			RegisterAgentResponse: &messages.RegisterAgentResponse{
+				ASID: 1,
+			},
+		},
+	}
+	respPb, err := resp.Marshal()
+
 	// Send update.
 	nc.Publish("agent_update", reqPb)
 
 	// Wait and read reponse.
-	_, err = sub.NextMsg(time.Second)
+	m, err := sub.NextMsg(time.Second)
+	assert.Equal(t, m.Data, respPb)
 }
 
 func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
@@ -354,16 +389,6 @@ func TestAgentCreateFailed(t *testing.T) {
 		AgentID:         u,
 	}
 
-	updatePb := metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &metadatapb.PodUpdate{
-				UID:  "podUid",
-				Name: "podName",
-			},
-		},
-	}
-	updates := []*metadatapb.ResourceUpdate{&updatePb}
-
 	// Create Metadata Service controller.
 	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
 
@@ -384,15 +409,7 @@ func TestAgentCreateFailed(t *testing.T) {
 
 	// Wait and read reponse.
 	var wg sync.WaitGroup
-	wg.Add(2)
-
-	mockAgtMgr.
-		EXPECT().
-		GetMetadataUpdates().
-		DoAndReturn(func() (*[]*metadatapb.ResourceUpdate, error) {
-			wg.Done()
-			return &updates, nil
-		})
+	wg.Add(1)
 
 	mockAgtMgr.
 		EXPECT().
@@ -402,6 +419,7 @@ func TestAgentCreateFailed(t *testing.T) {
 			return uint32(0), errors.New("could not create agent")
 		})
 
+	defer wg.Wait()
 	_, err = sub.NextMsg(time.Second)
 }
 
@@ -619,6 +637,9 @@ func TestUpdateHeartbeatFailed(t *testing.T) {
 	port, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
 
+	var wg sync.WaitGroup
+	wg.Add(3)
+
 	// Create request and expected response protos.
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	u, err := uuid.FromString(uuidStr)
@@ -634,13 +655,19 @@ func TestUpdateHeartbeatFailed(t *testing.T) {
 	mockAgtMgr.
 		EXPECT().
 		UpdateHeartbeat(u).
-		Return(errors.New("could not update heartbeat"))
+		DoAndReturn(func(agentID uuid.UUID) error {
+			wg.Done()
+			return errors.New("could not update heartbeat")
+		})
 
 	updates := []*metadatapb.ResourceUpdate{}
 	mockAgtMgr.
 		EXPECT().
 		GetFromAgentQueue(uuidStr).
-		Return(updates, nil)
+		DoAndReturn(func(string) ([]*metadatapb.ResourceUpdate, error) {
+			wg.Done()
+			return updates, nil
+		})
 
 	agentContainers := make([]*metadatapb.ContainerInfo, 1)
 	agentContainers[0] = &metadatapb.ContainerInfo{
@@ -654,7 +681,10 @@ func TestUpdateHeartbeatFailed(t *testing.T) {
 	mockAgtMgr.
 		EXPECT().
 		AddToUpdateQueue(u, agentUpdatePb).
-		Return()
+		DoAndReturn(func(uuid.UUID, *messages.AgentUpdateInfo) {
+			wg.Done()
+			return
+		})
 
 	// Create Metadata Service controller.
 	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
@@ -675,6 +705,7 @@ func TestUpdateHeartbeatFailed(t *testing.T) {
 	nc.Publish("agent_update", reqPb)
 
 	// Wait and read reponse.
+	wg.Wait()
 	_, err = sub.NextMsg(time.Second)
 }
 

@@ -58,7 +58,9 @@ type AgentManager interface {
 
 	AddToUpdateQueue(uuid.UUID, *messagespb.AgentUpdateInfo)
 
-	GetMetadataUpdates() (*[]*metadatapb.ResourceUpdate, error)
+	GetMetadataUpdates() ([]*metadatapb.ResourceUpdate, error)
+
+	AddUpdatesToAgentQueue(uuid.UUID, []*metadatapb.ResourceUpdate) error
 }
 
 // AgentManagerImpl is an implementation for AgentManager which talks to etcd.
@@ -340,8 +342,15 @@ func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) ([]*metadatapb.Reso
 	return m.mds.GetFromAgentQueue(agentID)
 }
 
+// AddUpdatesToAgentQueue adds the given updates in order to the agent's update queue.
+func (m *AgentManagerImpl) AddUpdatesToAgentQueue(agentID uuid.UUID, updates []*metadatapb.ResourceUpdate) error {
+	return m.mds.AddUpdatesToAgentQueue(agentID.String(), updates)
+}
+
 // GetMetadataUpdates gets all updates from the metadata store.
-func (m *AgentManagerImpl) GetMetadataUpdates() (*[]*metadatapb.ResourceUpdate, error) {
+func (m *AgentManagerImpl) GetMetadataUpdates() ([]*metadatapb.ResourceUpdate, error) {
+	var updates []*metadatapb.ResourceUpdate
+
 	pods, err := m.mds.GetPods()
 	if err != nil {
 		return nil, err
@@ -351,8 +360,6 @@ func (m *AgentManagerImpl) GetMetadataUpdates() (*[]*metadatapb.ResourceUpdate, 
 	if err != nil {
 		return nil, err
 	}
-
-	var updates []*metadatapb.ResourceUpdate
 
 	for _, pod := range pods {
 		containerUpdates := GetContainerResourceUpdatesFromPod(pod)
@@ -367,5 +374,5 @@ func (m *AgentManagerImpl) GetMetadataUpdates() (*[]*metadatapb.ResourceUpdate, 
 		updates = append(updates, epUpdate)
 	}
 
-	return &updates, nil
+	return updates, nil
 }

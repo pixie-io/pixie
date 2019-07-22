@@ -325,14 +325,14 @@ func (mds *EtcdMetadataStore) GetAgentsForHostnames(hostnames *[]string) (*[]str
 
 // AddToAgentUpdateQueue adds the given value to the agent's update queue.
 func (mds *EtcdMetadataStore) AddToAgentUpdateQueue(agentID string, value string) error {
-	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
+	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID), mds.sess, GetUpdateKey())
 
 	return q.Enqueue(value)
 }
 
 // AddToFrontOfAgentQueue adds the given value to the front of the agent's update queue.
 func (mds *EtcdMetadataStore) AddToFrontOfAgentQueue(agentID string, value *metadatapb.ResourceUpdate) error {
-	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
+	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID), mds.sess, GetUpdateKey())
 
 	i, err := value.Marshal()
 	if err != nil {
@@ -346,7 +346,7 @@ func (mds *EtcdMetadataStore) AddToFrontOfAgentQueue(agentID string, value *meta
 func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) ([]*metadatapb.ResourceUpdate, error) {
 	var pbs []*metadatapb.ResourceUpdate
 
-	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID))
+	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID), mds.sess, GetUpdateKey())
 	resp, err := q.DequeueAll()
 	if err != nil {
 		return pbs, err
@@ -368,6 +368,23 @@ func (mds *EtcdMetadataStore) GetFromAgentQueue(agentID string) ([]*metadatapb.R
 	}
 
 	return pbs, nil
+}
+
+// AddUpdatesToAgentQueue adds all updates to the agent's queue in etcd.
+func (mds *EtcdMetadataStore) AddUpdatesToAgentQueue(agentID string, updates []*metadatapb.ResourceUpdate) error {
+	q := etcd.NewQueue(mds.client, getAgentUpdateKey(agentID), mds.sess, GetUpdateKey())
+
+	var updateStrs []string
+	for _, update := range updates {
+		updateBytes, err := update.Marshal()
+		if err != nil {
+			log.WithError(err).Fatal("Unable to marshal update pb.")
+		} else {
+			updateStrs = append(updateStrs, string(updateBytes))
+		}
+	}
+
+	return q.EnqueueAll(updateStrs)
 }
 
 // GetAgents gets all of the current active agents.

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/stretchr/testify/assert"
 
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
@@ -15,9 +16,13 @@ func TestEnqueue(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
-	q := etcd.NewQueue(etcdClient, "test")
+	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
+	if err != nil {
+		t.Fatal("Could not create new session for etcd")
+	}
+	q := etcd.NewQueue(etcdClient, "test", sess, "/updateKey")
 
-	err := q.Enqueue("abcd")
+	err = q.Enqueue("abcd")
 	assert.Nil(t, err)
 
 	resp, err := etcdClient.Get(context.Background(), "test", clientv3.WithFirstRev()...)
@@ -54,9 +59,13 @@ func TestDequeueMultiple(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
-	q := etcd.NewQueue(etcdClient, "test")
+	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
+	if err != nil {
+		t.Fatal("Could not create new session for etcd")
+	}
+	q := etcd.NewQueue(etcdClient, "test", sess, "/updateKey")
 
-	err := q.Enqueue("abcd")
+	err = q.Enqueue("abcd")
 	assert.Nil(t, err)
 
 	err = q.Enqueue("efgh")
@@ -86,7 +95,11 @@ func TestDequeueEmpty(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
-	q := etcd.NewQueue(etcdClient, "test")
+	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
+	if err != nil {
+		t.Fatal("Could not create new session for etcd")
+	}
+	q := etcd.NewQueue(etcdClient, "test", sess, "/updateKey")
 
 	resp, err := q.Dequeue()
 	assert.Nil(t, err)
@@ -97,9 +110,13 @@ func TestDequeueAll(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
-	q := etcd.NewQueue(etcdClient, "test")
+	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
+	if err != nil {
+		t.Fatal("Could not create new session for etcd")
+	}
+	q := etcd.NewQueue(etcdClient, "test", sess, "/updateKey")
 
-	err := q.Enqueue("abcd")
+	err = q.Enqueue("abcd")
 	assert.Nil(t, err)
 
 	err = q.Enqueue("efgh")
@@ -108,7 +125,7 @@ func TestDequeueAll(t *testing.T) {
 	err = q.Enqueue("ijkl")
 	assert.Nil(t, err)
 
-	q1 := etcd.NewQueue(etcdClient, "test2")
+	q1 := etcd.NewQueue(etcdClient, "test2", sess, "/updateKey")
 
 	err = q1.Enqueue("abcd")
 	assert.Nil(t, err)
@@ -136,9 +153,13 @@ func TestEnqueueAtFront(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
 
-	q := etcd.NewQueue(etcdClient, "test")
+	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
+	if err != nil {
+		t.Fatal("Could not create new session for etcd")
+	}
+	q := etcd.NewQueue(etcdClient, "test", sess, "/updateKey")
 
-	err := q.Enqueue("abcd")
+	err = q.Enqueue("abcd")
 	assert.Nil(t, err)
 
 	resp, err := etcdClient.Get(context.Background(), "test", clientv3.WithFirstRev()...)
@@ -182,4 +203,141 @@ func TestEnqueueAtFront(t *testing.T) {
 	}
 
 	assert.Equal(t, "ijkl", dequeueResp)
+}
+
+func TestEnqueueAll(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
+	if err != nil {
+		t.Fatal("Could not create new session for etcd")
+	}
+	q := etcd.NewQueue(etcdClient, "test", sess, "/updateKey")
+
+	err = q.Enqueue("abcd")
+	assert.Nil(t, err)
+
+	resp, err := etcdClient.Get(context.Background(), "test", clientv3.WithFirstRev()...)
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, 1, len(resp.Kvs))
+	assert.Equal(t, "abcd", string(resp.Kvs[0].Value))
+
+	err = q.Enqueue("efgh")
+	assert.Nil(t, err)
+
+	// First revision should still be key with value abcd.
+	resp, err = etcdClient.Get(context.Background(), "test", clientv3.WithFirstRev()...)
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, 1, len(resp.Kvs))
+	assert.Equal(t, "abcd", string(resp.Kvs[0].Value))
+
+	// Last revision should be key with value efgh.
+	resp, err = etcdClient.Get(context.Background(), "test", clientv3.WithLastRev()...)
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, 1, len(resp.Kvs))
+	assert.Equal(t, "efgh", string(resp.Kvs[0].Value))
+
+	err = q.EnqueueAll([]string{"1", "2", "3"})
+	assert.Nil(t, err)
+
+	dequeueResp, err := q.Dequeue()
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, "abcd", dequeueResp)
+
+	dequeueResp, err = q.Dequeue()
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, "efgh", dequeueResp)
+
+	dequeueResp, err = q.Dequeue()
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, "1", dequeueResp)
+
+	dequeueResp, err = q.Dequeue()
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, "2", dequeueResp)
+
+	dequeueResp, err = q.Dequeue()
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, "3", dequeueResp)
+}
+
+func TestEnqueueAllDequeueAll(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
+	if err != nil {
+		t.Fatal("Could not create new session for etcd")
+	}
+	q := etcd.NewQueue(etcdClient, "test", sess, "/updateKey")
+
+	err = q.Enqueue("abcd")
+	assert.Nil(t, err)
+
+	resp, err := etcdClient.Get(context.Background(), "test", clientv3.WithFirstRev()...)
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, 1, len(resp.Kvs))
+	assert.Equal(t, "abcd", string(resp.Kvs[0].Value))
+
+	err = q.Enqueue("efgh")
+	assert.Nil(t, err)
+
+	// First revision should still be key with value abcd.
+	resp, err = etcdClient.Get(context.Background(), "test", clientv3.WithFirstRev()...)
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, 1, len(resp.Kvs))
+	assert.Equal(t, "abcd", string(resp.Kvs[0].Value))
+
+	// Last revision should be key with value efgh.
+	resp, err = etcdClient.Get(context.Background(), "test", clientv3.WithLastRev()...)
+	if err != nil {
+		t.Fatal("Failed to get item in queue.")
+	}
+
+	assert.Equal(t, 1, len(resp.Kvs))
+	assert.Equal(t, "efgh", string(resp.Kvs[0].Value))
+
+	err = q.EnqueueAll([]string{"1", "2", "3"})
+	assert.Nil(t, err)
+
+	dequeueResp, err := q.DequeueAll()
+
+	assert.Nil(t, err)
+	assert.Equal(t, 5, len(*dequeueResp))
+	assert.Equal(t, "abcd", (*dequeueResp)[0])
+	assert.Equal(t, "efgh", (*dequeueResp)[1])
+	assert.Equal(t, "1", (*dequeueResp)[2])
+	assert.Equal(t, "2", (*dequeueResp)[3])
+	assert.Equal(t, "3", (*dequeueResp)[4])
 }

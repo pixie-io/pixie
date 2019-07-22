@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/gogo/protobuf/proto"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -306,7 +307,12 @@ func TestAddToAgentQueue(t *testing.T) {
 	err = mds.AddToAgentUpdateQueue("agent1", "test")
 	assert.Nil(t, err)
 
-	q := etcd.NewQueue(etcdClient, "/agents/agent1/updates")
+	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
+	if err != nil {
+		t.Fatal("Could not create new session for etcd")
+	}
+
+	q := etcd.NewQueue(etcdClient, "/agents/agent1/updates", sess, controllers.GetUpdateKey())
 	resp, err := q.Dequeue()
 	assert.Nil(t, err)
 	assert.Equal(t, "test", resp)
@@ -343,6 +349,43 @@ func TestAddToFrontOfAgentQueue(t *testing.T) {
 	assert.Equal(t, "podUid", resp[0].GetPodUpdate().UID)
 }
 
+func TestAddUpdatesToAgentQueue(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	updatePb1 := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid",
+				Name: "podName",
+			},
+		},
+	}
+
+	updatePb2 := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid2",
+				Name: "podName2",
+			},
+		},
+	}
+
+	err = mds.AddUpdatesToAgentQueue("agent1", []*metadatapb.ResourceUpdate{updatePb1, updatePb2})
+	assert.Nil(t, err)
+
+	resp, err := mds.GetFromAgentQueue("agent1")
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(resp))
+	assert.Equal(t, "podUid", resp[0].GetPodUpdate().UID)
+	assert.Equal(t, "podUid2", resp[1].GetPodUpdate().UID)
+}
+
 func TestGetFromAgentQueue(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
@@ -374,7 +417,12 @@ func TestGetFromAgentQueue(t *testing.T) {
 	assert.Equal(t, 1, len(resp))
 	assert.Equal(t, "podUid", resp[0].GetPodUpdate().UID)
 
-	q := etcd.NewQueue(etcdClient, "/agents/agent1/updates")
+	sess, err := concurrency.NewSession(etcdClient, concurrency.WithContext(context.Background()))
+	if err != nil {
+		t.Fatal("Could not create new session for etcd")
+	}
+
+	q := etcd.NewQueue(etcdClient, "/agents/agent1/updates", sess, controllers.GetUpdateKey())
 	dequeueResp, err := q.Dequeue()
 	assert.Nil(t, err)
 	assert.Equal(t, "", dequeueResp)

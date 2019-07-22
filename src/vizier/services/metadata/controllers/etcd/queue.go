@@ -8,6 +8,7 @@ import (
 	"time"
 
 	v3 "github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/coreos/etcd/contrib/recipes"
 	spb "github.com/coreos/etcd/mvcc/mvccpb"
 )
@@ -16,7 +17,7 @@ import (
 // newUniqueKV puts a new key-value into etcd with the current timestamp as the key's suffix.
 func newUniqueKV(kv v3.KV, prefix string, val string) error {
 	for {
-		newKey := fmt.Sprintf("%s/%v", prefix, time.Now().UnixNano())
+		newKey := fmt.Sprintf("%s/%v_0", prefix, time.Now().UnixNano())
 		_, err := putNewKV(kv, newKey, val, v3.NoLease)
 
 		if err != recipe.ErrKeyExists {
@@ -71,20 +72,26 @@ func claimFirstKey(kv v3.KV, kvs []*spb.KeyValue) (*spb.KeyValue, error) {
 
 // Queue implements a multi-reader, multi-writer distributed queue.
 type Queue struct {
-	client *v3.Client
-	ctx    context.Context
+	client    *v3.Client
+	ctx       context.Context
+	sess      *concurrency.Session
+	updateKey string
 
 	keyPrefix string
 }
 
 // NewQueue creates a new queue.
-func NewQueue(client *v3.Client, keyPrefix string) *Queue {
-	return &Queue{client, context.TODO(), keyPrefix + "/queue"}
+func NewQueue(client *v3.Client, keyPrefix string, sess *concurrency.Session, updateKey string) *Queue {
+	return &Queue{client, context.TODO(), sess, updateKey, keyPrefix + "/queue"}
 }
 
 // Enqueue adds a new value to the queue.
 // Modified from https://github.com/etcd-io/etcd/blob/34bd797e6754911ee540e8c87f708f88ffe89f37/contrib/recipes/queue.go
 func (q *Queue) Enqueue(val string) error {
+	mu := concurrency.NewMutex(q.sess, q.updateKey)
+	mu.Lock(context.Background())
+	defer mu.Unlock(context.Background())
+
 	err := newUniqueKV(q.client, q.keyPrefix, val)
 	return err
 }
@@ -92,6 +99,10 @@ func (q *Queue) Enqueue(val string) error {
 // Dequeue returns the first value in the queue. If there are no items in the queue, it will return an empty string.
 // Modified from https://github.com/etcd-io/etcd/blob/34bd797e6754911ee540e8c87f708f88ffe89f37/contrib/recipes/queue.go
 func (q *Queue) Dequeue() (string, error) {
+	mu := concurrency.NewMutex(q.sess, q.updateKey)
+	mu.Lock(context.Background())
+	defer mu.Unlock(context.Background())
+
 	resp, err := q.client.Get(q.ctx, q.keyPrefix, v3.WithPrefix())
 	if err != nil {
 		return "", err
@@ -112,6 +123,10 @@ func (q *Queue) Dequeue() (string, error) {
 
 // DequeueAll returns all items currently in the queue.
 func (q *Queue) DequeueAll() (*[]string, error) {
+	mu := concurrency.NewMutex(q.sess, q.updateKey)
+	mu.Lock(context.Background())
+	defer mu.Unlock(context.Background())
+
 	resp, err := q.client.Get(q.ctx, q.keyPrefix, v3.WithPrefix())
 	if err != nil {
 		return nil, err
@@ -141,6 +156,10 @@ func (q *Queue) DequeueAll() (*[]string, error) {
 
 // EnqueueAtFront adds the value to the front of the queue.
 func (q *Queue) EnqueueAtFront(val string) error {
+	mu := concurrency.NewMutex(q.sess, q.updateKey)
+	mu.Lock(context.Background())
+	defer mu.Unlock(context.Background())
+
 	// Get the key at the front of the queue.
 	resp, err := q.client.Get(q.ctx, q.keyPrefix, v3.WithPrefix())
 	if err != nil {
@@ -154,14 +173,33 @@ func (q *Queue) EnqueueAtFront(val string) error {
 	// Get the timestamp of the first key.
 	key := string(kv.Key)
 	parts := strings.Split(key, "/")
-	timestamp, err := strconv.Atoi(parts[len(parts)-1])
+	timestampSplit := strings.Split(parts[len(parts)-1], "_")
+	timestamp, err := strconv.Atoi(timestampSplit[0])
 	if err != nil {
 		return err
 	}
 
 	// Give an earlier timestamp to the key we are inserting.
-	newKey := fmt.Sprintf("%s/%v", q.keyPrefix, timestamp-1)
+	newKey := fmt.Sprintf("%s/%v_0", q.keyPrefix, timestamp-1)
 	_, err = putNewKV(q.client, newKey, val, v3.NoLease)
+
+	return err
+}
+
+// EnqueueAll enqueues multiple items to the queue in a single transaction.
+func (q *Queue) EnqueueAll(vals []string) error {
+	ops := make([]v3.Op, len(vals))
+
+	for i, val := range vals {
+		newKey := fmt.Sprintf("%s/%v_%v", q.keyPrefix, time.Now().UnixNano(), i)
+		ops[i] = v3.OpPut(newKey, val)
+	}
+
+	mu := concurrency.NewMutex(q.sess, q.updateKey)
+	mu.Lock(context.Background())
+	defer mu.Unlock(context.Background())
+
+	_, err := q.client.Txn(context.TODO()).If().Then(ops...).Commit()
 
 	return err
 }

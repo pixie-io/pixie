@@ -633,27 +633,63 @@ func TestGetMetadataUpdates(t *testing.T) {
 	updates, err := agtMgr.GetMetadataUpdates()
 	assert.Nil(t, err)
 
-	assert.Equal(t, 5, len(*updates))
+	assert.Equal(t, 5, len(updates))
 
-	update1 := (*updates)[0].GetContainerUpdate()
+	update1 := updates[0].GetContainerUpdate()
 	assert.NotNil(t, update1)
 	assert.Equal(t, "0987", update1.CID)
 
-	update2 := (*updates)[1].GetContainerUpdate()
+	update2 := updates[1].GetContainerUpdate()
 	assert.NotNil(t, update2)
 	assert.Equal(t, "2468", update2.CID)
 
-	update3 := (*updates)[2].GetPodUpdate()
+	update3 := updates[2].GetPodUpdate()
 	assert.NotNil(t, update3)
 	assert.Equal(t, "1234", update3.UID)
 
-	update4 := (*updates)[3].GetPodUpdate()
+	update4 := updates[3].GetPodUpdate()
 	assert.NotNil(t, update4)
 	assert.Equal(t, "5678", update4.UID)
 
-	update5 := (*updates)[4].GetServiceUpdate()
+	update5 := updates[4].GetServiceUpdate()
 	assert.NotNil(t, update5)
 	assert.Equal(t, "object_md", update5.Name)
+}
+
+func TestAgentAddUpdatesToAgentQueue(t *testing.T) {
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	defer cleanup()
+
+	u, err := uuid.FromString(NewAgentUUID)
+	if err != nil {
+		t.Fatal("Could not generate UUID.")
+	}
+
+	updatePb1 := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid",
+				Name: "podName",
+			},
+		},
+	}
+
+	updatePb2 := &metadatapb.ResourceUpdate{
+		Update: &metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &metadatapb.PodUpdate{
+				UID:  "podUid2",
+				Name: "podName2",
+			},
+		},
+	}
+
+	mockMds.
+		EXPECT().
+		AddUpdatesToAgentQueue(NewAgentUUID, []*metadatapb.ResourceUpdate{updatePb1, updatePb2}).
+		Return(nil)
+
+	err = agtMgr.AddUpdatesToAgentQueue(u, []*metadatapb.ResourceUpdate{updatePb1, updatePb2})
+	assert.Nil(t, err)
 }
 
 func TestGetMetadataUpdatesGetPodsFailed(t *testing.T) {
