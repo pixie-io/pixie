@@ -58,18 +58,6 @@ func (mr *MockAgentManagerMockRecorder) AddToUpdateQueue(arg0, arg1 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToUpdateQueue", reflect.TypeOf((*MockAgentManager)(nil).AddToUpdateQueue), arg0, arg1)
 }
 
-// CreateAgent mocks base method
-func (m *MockAgentManager) CreateAgent(arg0 *controllers.AgentInfo) error {
-	ret := m.ctrl.Call(m, "CreateAgent", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateAgent indicates an expected call of CreateAgent
-func (mr *MockAgentManagerMockRecorder) CreateAgent(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAgent", reflect.TypeOf((*MockAgentManager)(nil).CreateAgent), arg0)
-}
-
 // GetActiveAgents mocks base method
 func (m *MockAgentManager) GetActiveAgents() ([]controllers.AgentInfo, error) {
 	ret := m.ctrl.Call(m, "GetActiveAgents")
@@ -107,6 +95,19 @@ func (m *MockAgentManager) GetMetadataUpdates() (*[]*metadatapb.ResourceUpdate, 
 // GetMetadataUpdates indicates an expected call of GetMetadataUpdates
 func (mr *MockAgentManagerMockRecorder) GetMetadataUpdates() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadataUpdates", reflect.TypeOf((*MockAgentManager)(nil).GetMetadataUpdates))
+}
+
+// RegisterAgent mocks base method
+func (m *MockAgentManager) RegisterAgent(arg0 *controllers.AgentInfo) (uint32, error) {
+	ret := m.ctrl.Call(m, "RegisterAgent", arg0)
+	ret0, _ := ret[0].(uint32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RegisterAgent indicates an expected call of RegisterAgent
+func (mr *MockAgentManagerMockRecorder) RegisterAgent(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterAgent", reflect.TypeOf((*MockAgentManager)(nil).RegisterAgent), arg0)
 }
 
 // UpdateAgent mocks base method

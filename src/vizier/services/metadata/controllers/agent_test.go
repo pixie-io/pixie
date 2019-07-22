@@ -104,8 +104,8 @@ func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb 
 	}
 }
 
-func TestCreateAgent(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, true)
+func TestRegisterAgent(t *testing.T) {
+	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
 	defer cleanup()
 
 	u, err := uuid.FromString(NewAgentUUID)
@@ -113,14 +113,20 @@ func TestCreateAgent(t *testing.T) {
 		t.Fatal("Could not generate UUID.")
 	}
 
+	mockMds.
+		EXPECT().
+		GetASID().
+		Return(uint32(1), nil)
+
 	agentInfo := &controllers.AgentInfo{
 		LastHeartbeatNS: 1,
 		CreateTimeNS:    4,
 		Hostname:        "localhost",
 		AgentID:         u,
 	}
-	err = agtMgr.CreateAgent(agentInfo)
+	id, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
+	assert.Equal(t, uint32(1), id)
 
 	// Check that correct agent info is in etcd.
 	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
@@ -146,7 +152,7 @@ func TestCreateAgent(t *testing.T) {
 	assert.Equal(t, NewAgentUUID, string(resp.Kvs[0].Value))
 }
 
-func TestCreateAgentNotLeader(t *testing.T) {
+func TestRegisterAgentNotLeader(t *testing.T) {
 	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, false)
 	defer cleanup()
 
@@ -161,8 +167,9 @@ func TestCreateAgentNotLeader(t *testing.T) {
 		Hostname:        "localhost",
 		AgentID:         u,
 	}
-	err = agtMgr.CreateAgent(agentInfo)
-	assert.Equal(t, nil, err)
+	id, err := agtMgr.RegisterAgent(agentInfo)
+	assert.NotNil(t, err)
+	assert.Equal(t, uint32(0), id)
 
 	// Check that agent info is not in etcd.
 	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
@@ -172,8 +179,8 @@ func TestCreateAgentNotLeader(t *testing.T) {
 	assert.Equal(t, 0, len(resp.Kvs))
 }
 
-func TestCreateAgentWithExistingHostname(t *testing.T) {
-	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, true)
+func TestRegisterAgentWithExistingHostname(t *testing.T) {
+	etcdClient, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
 	defer cleanup()
 
 	u, err := uuid.FromString(NewAgentUUID)
@@ -185,14 +192,20 @@ func TestCreateAgentWithExistingHostname(t *testing.T) {
 		t.Fatal("Could not generate UUID.")
 	}
 
+	mockMds.
+		EXPECT().
+		GetASID().
+		Return(uint32(1), nil)
+
 	agentInfo := &controllers.AgentInfo{
 		LastHeartbeatNS: 1,
 		CreateTimeNS:    4,
 		Hostname:        "testhost",
 		AgentID:         u,
 	}
-	err = agtMgr.CreateAgent(agentInfo)
-	assert.Nil(t, err)
+	id, err := agtMgr.RegisterAgent(agentInfo)
+	assert.Equal(t, nil, err)
+	assert.Equal(t, uint32(1), id)
 
 	// Check that correct agent info is in etcd.
 	resp, err := etcdClient.Get(context.Background(), controllers.GetAgentKeyFromUUID(u))
@@ -222,7 +235,7 @@ func TestCreateAgentWithExistingHostname(t *testing.T) {
 	assert.Equal(t, 0, len(resp.Kvs))
 }
 
-func TestCreateExistingAgent(t *testing.T) {
+func TestRegisterExistingAgent(t *testing.T) {
 	etcdClient, agtMgr, _, cleanup := setupAgentManager(t, true)
 	defer cleanup()
 
@@ -237,7 +250,7 @@ func TestCreateExistingAgent(t *testing.T) {
 		Hostname:        "localhost",
 		AgentID:         u,
 	}
-	err = agtMgr.CreateAgent(agentInfo)
+	_, err = agtMgr.RegisterAgent(agentInfo)
 	assert.NotNil(t, err)
 
 	// Check that correct agent info is in etcd.

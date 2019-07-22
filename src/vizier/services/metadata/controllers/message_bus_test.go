@@ -3,6 +3,7 @@ package controllers_test
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -192,11 +193,6 @@ func TestAgentRegisterRequest(t *testing.T) {
 		AgentID:         u,
 	}
 
-	mockAgtMgr.
-		EXPECT().
-		CreateAgent(agentInfo).
-		Return(nil)
-
 	updatePb := metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_PodUpdate{
 			PodUpdate: &metadatapb.PodUpdate{
@@ -231,6 +227,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_RegisterAgentResponse{
 			RegisterAgentResponse: &messages.RegisterAgentResponse{
+				ASID: 1,
 				UpdateInfo: &messages.MetadataUpdateInfo{
 					Updates: updates,
 				},
@@ -243,6 +240,19 @@ func TestAgentRegisterRequest(t *testing.T) {
 	nc.Publish("agent_update", reqPb)
 
 	// Wait and read reponse.
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	mockAgtMgr.
+		EXPECT().
+		RegisterAgent(agentInfo).
+		DoAndReturn(func(info *controllers.AgentInfo) (uint32, error) {
+			wg.Done()
+			return uint32(1), nil
+		})
+
+	wg.Wait()
+
 	m, err := sub.NextMsg(time.Second)
 	assert.Equal(t, m.Data, respPb)
 }
@@ -344,11 +354,6 @@ func TestAgentCreateFailed(t *testing.T) {
 		AgentID:         u,
 	}
 
-	mockAgtMgr.
-		EXPECT().
-		CreateAgent(agentInfo).
-		Return(errors.New("could not create agent"))
-
 	updatePb := metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_PodUpdate{
 			PodUpdate: &metadatapb.PodUpdate{
@@ -358,11 +363,6 @@ func TestAgentCreateFailed(t *testing.T) {
 		},
 	}
 	updates := []*metadatapb.ResourceUpdate{&updatePb}
-
-	mockAgtMgr.
-		EXPECT().
-		GetMetadataUpdates().
-		Return(&updates, nil)
 
 	// Create Metadata Service controller.
 	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
@@ -383,6 +383,25 @@ func TestAgentCreateFailed(t *testing.T) {
 	nc.Publish("agent_update", reqPb)
 
 	// Wait and read reponse.
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	mockAgtMgr.
+		EXPECT().
+		GetMetadataUpdates().
+		DoAndReturn(func() (*[]*metadatapb.ResourceUpdate, error) {
+			wg.Done()
+			return &updates, nil
+		})
+
+	mockAgtMgr.
+		EXPECT().
+		RegisterAgent(agentInfo).
+		DoAndReturn(func(info *controllers.AgentInfo) (uint32, error) {
+			wg.Done()
+			return uint32(0), errors.New("could not create agent")
+		})
+
 	_, err = sub.NextMsg(time.Second)
 }
 

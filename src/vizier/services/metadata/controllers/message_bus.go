@@ -175,21 +175,6 @@ func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgent
 		return
 	}
 
-	resp := messages.VizierMessage{
-		Msg: &messages.VizierMessage_RegisterAgentResponse{
-			RegisterAgentResponse: &messages.RegisterAgentResponse{
-				UpdateInfo: &messages.MetadataUpdateInfo{
-					Updates: *updates,
-				},
-			},
-		},
-	}
-	err = mc.sendMessageToAgent(agentID, resp)
-	if err != nil {
-		log.WithError(err).Error("Could not send registerAgentResponse to agent.")
-		return
-	}
-
 	// Create agent in agent manager.
 	agentInfo := &AgentInfo{
 		LastHeartbeatNS: mc.clock.Now().UnixNano(),
@@ -197,9 +182,27 @@ func (mc *MessageBusController) onAgentRegisterRequest(m *messages.RegisterAgent
 		Hostname:        m.Info.HostInfo.Hostname,
 		AgentID:         agentID,
 	}
-	err = mc.agentManager.CreateAgent(agentInfo)
+	asid, err := mc.agentManager.RegisterAgent(agentInfo)
 	if err != nil {
 		log.WithError(err).Error("Could not create agent.")
+		return
+	}
+
+	resp := messages.VizierMessage{
+		Msg: &messages.VizierMessage_RegisterAgentResponse{
+			RegisterAgentResponse: &messages.RegisterAgentResponse{
+				ASID: asid,
+				UpdateInfo: &messages.MetadataUpdateInfo{
+					Updates: *updates,
+				},
+			},
+		},
+	}
+
+	err = mc.sendMessageToAgent(agentID, resp)
+	if err != nil {
+		log.WithError(err).Error("Could not send registerAgentResponse to agent.")
+		return
 	}
 }
 

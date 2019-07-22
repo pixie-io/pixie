@@ -519,3 +519,25 @@ func TestGetEndpoints(t *testing.T) {
 	assert.Equal(t, e1.Metadata.Name, (*eps[0]).Metadata.Name)
 	assert.Equal(t, e2.Metadata.Name, (*eps[1]).Metadata.Name)
 }
+
+func TestGetASID(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	id1, err := mds.GetASID()
+	assert.Nil(t, err)
+	assert.Equal(t, uint32(1), id1)
+
+	id2, err := mds.GetASID()
+	assert.Nil(t, err)
+	assert.Equal(t, uint32(2), id2)
+
+	id3, err := mds.GetASID()
+	assert.Nil(t, err)
+	assert.Equal(t, uint32(3), id3)
+}

@@ -37,8 +37,8 @@ type AgentUpdate struct {
 
 // AgentManager handles any agent updates and requests.
 type AgentManager interface {
-	// CreateAgent creates a new agent.
-	CreateAgent(info *AgentInfo) error
+	// RegisterAgent registers a new agent.
+	RegisterAgent(info *AgentInfo) (uint32, error)
 
 	// UpdateHeartbeat updates the agent heartbeat with the current time.
 	UpdateHeartbeat(agentID uuid.UUID) error
@@ -148,10 +148,10 @@ func updateAgentData(agentID uuid.UUID, data *data.AgentData, client *clientv3.C
 	return nil
 }
 
-// CreateAgent creates a new agent.
-func (m *AgentManagerImpl) CreateAgent(info *AgentInfo) error {
+// RegisterAgent creates a new agent.
+func (m *AgentManagerImpl) RegisterAgent(info *AgentInfo) (asid uint32, err error) {
 	if !m.IsLeader { // Only write to etcd if current service is a leader.
-		return nil
+		return 0, errors.New("Non-leader can't create agent")
 	}
 	ctx := context.Background()
 
@@ -160,7 +160,7 @@ func (m *AgentManagerImpl) CreateAgent(info *AgentInfo) error {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to execute etcd Get")
 	} else if len(resp.Kvs) != 0 {
-		return errors.New("Agent already exists")
+		return 0, errors.New("Agent already exists")
 	}
 
 	// Check there's an existing agent for the hostname.
@@ -186,7 +186,7 @@ func (m *AgentManagerImpl) CreateAgent(info *AgentInfo) error {
 	}
 	i, err := infoPb.Marshal()
 	if err != nil {
-		return errors.New("Unable to marshal agentData pb")
+		return 0, errors.New("Unable to marshal agentData pb")
 	}
 
 	mu := concurrency.NewMutex(m.sess, GetUpdateKey())
@@ -202,7 +202,13 @@ func (m *AgentManagerImpl) CreateAgent(info *AgentInfo) error {
 		log.WithError(err).Fatal("Could not update agent data in etcd")
 	}
 
-	return nil
+	// Get ASID for the new agent.
+	asid, err = m.mds.GetASID()
+	if err != nil {
+		return 0, err
+	}
+
+	return asid, nil
 }
 
 // UpdateHeartbeat updates the agent heartbeat with the current time.

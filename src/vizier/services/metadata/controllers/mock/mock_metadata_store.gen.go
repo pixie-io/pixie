@@ -59,6 +59,19 @@ func (mr *MockMetadataStoreMockRecorder) AddToFrontOfAgentQueue(arg0, arg1 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToFrontOfAgentQueue", reflect.TypeOf((*MockMetadataStore)(nil).AddToFrontOfAgentQueue), arg0, arg1)
 }
 
+// GetASID mocks base method
+func (m *MockMetadataStore) GetASID() (uint32, error) {
+	ret := m.ctrl.Call(m, "GetASID")
+	ret0, _ := ret[0].(uint32)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetASID indicates an expected call of GetASID
+func (mr *MockMetadataStoreMockRecorder) GetASID() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetASID", reflect.TypeOf((*MockMetadataStore)(nil).GetASID))
+}
+
 // GetAgents mocks base method
 func (m *MockMetadataStore) GetAgents() (*[]datapb.AgentData, error) {
 	ret := m.ctrl.Call(m, "GetAgents")

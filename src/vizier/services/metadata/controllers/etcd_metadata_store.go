@@ -3,7 +3,9 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/coreos/etcd/clientv3"
@@ -277,6 +279,10 @@ func GetUpdateKey() string {
 	return "/updateKey"
 }
 
+func getAsidKey() string {
+	return "/asid"
+}
+
 func (mds *EtcdMetadataStore) updateValue(key string, value string) error {
 	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
 	mu.Lock(context.Background())
@@ -387,6 +393,35 @@ func (mds *EtcdMetadataStore) GetAgents() (*[]datapb.AgentData, error) {
 	}
 
 	return &agents, nil
+}
+
+// GetASID gets the next assignable ASID.
+func (mds *EtcdMetadataStore) GetASID() (uint32, error) {
+	asid := "1" // Starting ASID.
+
+	resp, err := mds.client.Get(context.Background(), getAsidKey())
+
+	if err != nil {
+		return 0, err
+	} else if len(resp.Kvs) != 0 {
+		asid = string(resp.Kvs[0].Value)
+	}
+
+	// Convert ASID from etcd into uint32.
+	asidInt, err := strconv.ParseUint(asid, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+
+	// Increment ASID in etcd.
+	updatedAsid := asidInt + 1
+
+	_, err = mds.client.Put(context.Background(), getAsidKey(), fmt.Sprint(updatedAsid))
+	if err != nil {
+		return 0, errors.New("Unable to update asid in etcd")
+	}
+
+	return uint32(asidInt), nil
 }
 
 // Close cleans up the etcd metadata store, such as its etcd session.

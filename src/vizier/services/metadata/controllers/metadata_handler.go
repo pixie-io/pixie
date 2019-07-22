@@ -29,6 +29,7 @@ type MetadataStore interface {
 	GetAgents() (*[]datapb.AgentData, error)
 	GetPods() ([]*metadatapb.Pod, error)
 	GetEndpoints() ([]*metadatapb.Endpoints, error)
+	GetASID() (uint32, error)
 }
 
 // K8sMessage is a message for K8s metadata events/updates.
