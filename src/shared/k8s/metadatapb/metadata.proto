@@ -518,6 +518,36 @@ message ServiceUpdate {
                               ];
 }
 
+message ProcessCreated {
+  // The unique PID for this process. This PID is cluster unique in both space and time.
+  pl.types.int128 upid = 1;
+
+  // The PID for this process which is unique on this machine in space, but not time.
+  int32 pid = 2;
+
+  // The server time in nanoseconds when the process started.
+  int64 start_timestamp_ns = 3 [
+                  (gogoproto.customname) = "StartTimestampNS"
+                  ];
+
+
+  // The command line that this process is running.
+  string cmdline = 4;
+
+  // The container ID where under for container where this process is running.
+  string cid = 5;
+}
+
+message ProcessTerminated {
+  // The unique PID for this process. This PID is cluster unique in both space and time.
+  pl.types.int128 upid = 1;
+
+  // The time in nanoseconds when the process stopped.
+  int64 stop_timestamp_ns = 2 [
+                              (gogoproto.customname) = "StopTimestampNS"
+                              ];
+}
+
 // Resource update is the message we send to the agent/compute nodes
 // from the metadata service (MDS).
 // These updates can contain cross references to other objects (ie. pods can refer to containers).

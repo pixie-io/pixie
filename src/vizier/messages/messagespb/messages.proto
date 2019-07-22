@@ -60,7 +60,11 @@ message AgentUpdateInfo {
     // TODO(zasgar/michelle): Delete and cleanup.
     repeated pl.shared.k8s.metadatapb.ContainerInfo containers = 1;
     repeated pl.shared.k8s.metadatapb.SchemaInfo schema = 2;
+    // TODO(zasgar/michelle): Delete this.
     repeated pl.shared.k8s.metadatapb.ProcessInfo process = 3;
+
+    repeated pl.shared.k8s.metadatapb.ProcessCreated process_created= 4;
+    repeated pl.shared.k8s.metadatapb.ProcessTerminated process_terminated = 5;
 }
 
 // The heart beat signal.
