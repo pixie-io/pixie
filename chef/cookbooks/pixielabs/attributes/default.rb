@@ -30,9 +30,9 @@ if node[:platform] == 'ubuntu'
     'aefaa228b68641e266d1f23f1d95dba33f17552ba132878b65bb798ffa37e6d0'
 
   default['skaffold']['download_path'] =
-    'https://storage.googleapis.com/skaffold/releases/v0.27.0/skaffold-linux-amd64'
+    'https://storage.googleapis.com/skaffold/releases/v0.34.0/skaffold-linux-amd64'
   default['skaffold']['sha256']        =
-    'd40e9fb9a9a62d962537a0d02ca5966b7c63541f7c769e19c02848653393a941'
+    '5867f2e92c3694da3d7ef2d9240416d693557af5caf56b13bfc1533c7940b341'
 
   default['minikube']['download_path'] =
     'https://storage.googleapis.com/minikube/releases/v1.0.0/minikube-linux-amd64'
@@ -61,8 +61,8 @@ elsif node[:platform] == 'mac_os_x'
     '194d7ce2b88a791147be64860f21bac8eeec8f372c9e9caab6c72c3bd525a039'
 
   default['skaffold']['download_path'] =
-    'https://storage.googleapis.com/skaffold/releases/v0.27.0/skaffold-darwin-amd64'
-  default['skaffold']['sha256']        = 'bc20412b585106ed742ca7fa1d43e117597f85e5c162b69e6ce64cd4d8278d5e'
+    'https://storage.googleapis.com/skaffold/releases/v0.34.0/skaffold-darwin-amd64'
+  default['skaffold']['sha256']        = '71cf275a40c0c2763b66e0c975ac781d65202b1e355f3447b839439dfd01b27b'
 
   default['minikube']['download_path'] =
     'https://storage.googleapis.com/minikube/releases/v1.0.0/minikube-darwin-amd64'
