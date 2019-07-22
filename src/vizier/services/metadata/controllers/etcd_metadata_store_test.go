@@ -134,41 +134,24 @@ func TestUpdateService(t *testing.T) {
 	assert.Equal(t, expectedPb, pb)
 }
 
-func TestUpdateContainers(t *testing.T) {
+func TestUpdateContainersFromPod(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
-
-	podInfo := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPb, podInfo); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	val, err := podInfo.Marshal()
-	if err != nil {
-		t.Fatal("Unable to marshal pod pb")
-	}
-
-	_, err = etcdClient.Put(context.Background(), "/pod/ns/ijkl", string(val))
-	if err != nil {
-		t.Fatal("Unable to add agentData to etcd.")
-	}
 
 	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
 	if err != nil {
 		t.Fatal("Failed to create metadata store.")
 	}
 
-	containers := make([]*metadatapb.ContainerInfo, 1)
-
-	container1 := new(metadatapb.ContainerInfo)
-	if err := proto.UnmarshalText(containerInfoPB, container1); err != nil {
+	podInfo := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(podPbWithContainers, podInfo); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	containers[0] = container1
 
-	err = mds.UpdateContainers(containers)
+	err = mds.UpdateContainersFromPod(podInfo)
 	assert.Nil(t, err)
 
-	containerResp, err := etcdClient.Get(context.Background(), "/pods/ns/object_md/containers/container_1/info")
+	containerResp, err := etcdClient.Get(context.Background(), "/containers/test/info")
 	if err != nil {
 		t.Fatal("Unable to get container from etcd")
 	}
@@ -176,7 +159,9 @@ func TestUpdateContainers(t *testing.T) {
 	assert.Equal(t, 1, len(containerResp.Kvs))
 	containerPb := &metadatapb.ContainerInfo{}
 	proto.Unmarshal(containerResp.Kvs[0].Value, containerPb)
-	assert.Equal(t, "container_1", containerPb.Name)
+	assert.Equal(t, "container1", containerPb.Name)
+	assert.Equal(t, "test", containerPb.UID)
+	assert.Equal(t, "ijkl", containerPb.PodUID)
 }
 
 func TestUpdateSchemas(t *testing.T) {

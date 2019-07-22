@@ -149,16 +149,16 @@ func (mr *MockMetadataStoreMockRecorder) GetPods() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPods", reflect.TypeOf((*MockMetadataStore)(nil).GetPods))
 }
 
-// UpdateContainers mocks base method
-func (m *MockMetadataStore) UpdateContainers(arg0 []*metadatapb.ContainerInfo) error {
-	ret := m.ctrl.Call(m, "UpdateContainers", arg0)
+// UpdateContainersFromPod mocks base method
+func (m *MockMetadataStore) UpdateContainersFromPod(arg0 *metadatapb.Pod) error {
+	ret := m.ctrl.Call(m, "UpdateContainersFromPod", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// UpdateContainers indicates an expected call of UpdateContainers
-func (mr *MockMetadataStoreMockRecorder) UpdateContainers(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateContainers", reflect.TypeOf((*MockMetadataStore)(nil).UpdateContainers), arg0)
+// UpdateContainersFromPod indicates an expected call of UpdateContainersFromPod
+func (mr *MockMetadataStoreMockRecorder) UpdateContainersFromPod(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateContainersFromPod", reflect.TypeOf((*MockMetadataStore)(nil).UpdateContainersFromPod), arg0)
 }
 
 // UpdateEndpoints mocks base method

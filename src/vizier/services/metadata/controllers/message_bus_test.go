@@ -102,9 +102,8 @@ heartbeat {
 		data: "11285cdd1de94ab1ae6a0ba08c8c676c"
 	}
 	update_info {
-		containers {
-			name: "container_1"
-			uid: "c_abcd"
+		process_created {
+			pid: 1
 		}
 	}
 }
@@ -541,13 +540,12 @@ func TestAgentHeartbeat(t *testing.T) {
 		GetFromAgentQueue(uuidStr).
 		Return(updates, nil)
 
-	agentContainers := make([]*metadatapb.ContainerInfo, 1)
-	agentContainers[0] = &metadatapb.ContainerInfo{
-		Name: "container_1",
-		UID:  "c_abcd",
+	createdProcesses := make([]*metadatapb.ProcessCreated, 1)
+	createdProcesses[0] = &metadatapb.ProcessCreated{
+		Pid: 1,
 	}
 	agentUpdatePb := &messages.AgentUpdateInfo{
-		Containers: agentContainers,
+		ProcessCreated: createdProcesses,
 	}
 
 	mockAgtMgr.
@@ -669,13 +667,12 @@ func TestUpdateHeartbeatFailed(t *testing.T) {
 			return updates, nil
 		})
 
-	agentContainers := make([]*metadatapb.ContainerInfo, 1)
-	agentContainers[0] = &metadatapb.ContainerInfo{
-		Name: "container_1",
-		UID:  "c_abcd",
+	createdProcesses := make([]*metadatapb.ProcessCreated, 1)
+	createdProcesses[0] = &metadatapb.ProcessCreated{
+		Pid: 1,
 	}
 	agentUpdatePb := &messages.AgentUpdateInfo{
-		Containers: agentContainers,
+		ProcessCreated: createdProcesses,
 	}
 
 	mockAgtMgr.

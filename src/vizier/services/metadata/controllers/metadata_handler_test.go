@@ -719,6 +719,11 @@ func TestObjectToPodProto(t *testing.T) {
 
 	mockMds.
 		EXPECT().
+		UpdateContainersFromPod(expectedPb).
+		Return(nil)
+
+	mockMds.
+		EXPECT().
 		GetAgentsForHostnames(&[]string{"test"}).
 		Return(&[]string{"agent-1"}, nil)
 

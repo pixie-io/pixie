@@ -112,12 +112,6 @@ func (m *AgentManagerImpl) processAgentUpdates() {
 }
 
 func (m *AgentManagerImpl) applyAgentUpdate(update *AgentUpdate) error {
-
-	err := m.mds.UpdateContainers(update.UpdateInfo.Containers)
-	if err != nil {
-		return err
-	}
-
 	return m.mds.UpdateSchemas(update.AgentID, update.UpdateInfo.Schema)
 }
 

@@ -493,21 +493,13 @@ func TestAddToUpdateQueue(t *testing.T) {
 	defer cleanup()
 
 	var wg sync.WaitGroup
-	wg.Add(2)
+	wg.Add(1)
 	defer wg.Wait()
 
 	u, err := uuid.FromString(NewAgentUUID)
 	if err != nil {
 		t.Fatal("Could not parse UUID from string.")
 	}
-
-	containers := make([]*metadatapb.ContainerInfo, 1)
-
-	container1 := new(metadatapb.ContainerInfo)
-	if err := proto.UnmarshalText(containerInfoPB, container1); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-	containers[0] = container1
 
 	schemas := make([]*metadatapb.SchemaInfo, 1)
 
@@ -519,14 +511,6 @@ func TestAddToUpdateQueue(t *testing.T) {
 
 	mockMds.
 		EXPECT().
-		UpdateContainers(containers).
-		DoAndReturn(func(e []*metadatapb.ContainerInfo) error {
-			wg.Done()
-			return nil
-		})
-
-	mockMds.
-		EXPECT().
 		UpdateSchemas(u, schemas).
 		DoAndReturn(func(u uuid.UUID, e []*metadatapb.SchemaInfo) error {
 			wg.Done()
@@ -534,8 +518,7 @@ func TestAddToUpdateQueue(t *testing.T) {
 		})
 
 	update := &messagespb.AgentUpdateInfo{
-		Containers: containers,
-		Schema:     schemas,
+		Schema: schemas,
 	}
 
 	agtMgr.AddToUpdateQueue(u, update)
@@ -551,27 +534,27 @@ func TestAddToUpdateQueueFailed(t *testing.T) {
 
 	u, err := uuid.FromString(NewAgentUUID)
 	if err != nil {
-		t.Fatal("Could not parse UUID from string")
+		t.Fatal("Could not parse UUID from string.")
 	}
 
-	containers := make([]*metadatapb.ContainerInfo, 1)
+	schemas := make([]*metadatapb.SchemaInfo, 1)
 
-	container1 := new(metadatapb.ContainerInfo)
-	if err := proto.UnmarshalText(containerInfoPB, container1); err != nil {
+	schema1 := new(metadatapb.SchemaInfo)
+	if err := proto.UnmarshalText(schemaInfoPB, schema1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	containers[0] = container1
+	schemas[0] = schema1
 
 	mockMds.
 		EXPECT().
-		UpdateContainers(containers).
-		DoAndReturn(func(e []*metadatapb.ContainerInfo) error {
+		UpdateSchemas(u, schemas).
+		DoAndReturn(func(u uuid.UUID, e []*metadatapb.SchemaInfo) error {
 			wg.Done()
 			return errors.New("Could not update containers")
 		})
 
 	update := &messagespb.AgentUpdateInfo{
-		Containers: containers,
+		Schema: schemas,
 	}
 
 	agtMgr.AddToUpdateQueue(u, update)

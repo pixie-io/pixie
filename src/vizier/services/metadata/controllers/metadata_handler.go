@@ -20,7 +20,7 @@ type MetadataStore interface {
 	UpdateEndpoints(*metadatapb.Endpoints) error
 	UpdatePod(*metadatapb.Pod) error
 	UpdateService(*metadatapb.Service) error
-	UpdateContainers([]*metadatapb.ContainerInfo) error
+	UpdateContainersFromPod(*metadatapb.Pod) error
 	UpdateSchemas(uuid.UUID, []*metadatapb.SchemaInfo) error
 	GetAgentsForHostnames(*[]string) (*[]string, error)
 	AddToAgentUpdateQueue(string, string) error
@@ -209,6 +209,11 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object) {
 	err = mh.mds.UpdatePod(pb)
 	if err != nil {
 		log.WithError(err).Fatal("Could not write pod protobuf to metadata store.")
+	}
+
+	err = mh.mds.UpdateContainersFromPod(pb)
+	if err != nil {
+		log.WithError(err).Fatal("Could not write container protobufs to metadata store.")
 	}
 
 	// Add pod update to agent update queue.

@@ -145,8 +145,8 @@ func getPodKeyFromStrings(uid string, namespace string) string {
 	return path.Join("/", "pod", namespace, uid)
 }
 
-func getContainerKeyFromStrings(namespace string, podName string, containerName string) string {
-	return path.Join("/", "pods", namespace, podName, "containers", containerName, "info")
+func getContainerKeyFromStrings(containerID string) string {
+	return path.Join("/", "containers", containerID, "info")
 }
 
 // GetAgentSchemaKey gets the etcd key for an agent's schema.
@@ -171,44 +171,33 @@ func (mds *EtcdMetadataStore) UpdateService(s *metadatapb.Service) error {
 	return mds.updateValue(key, string(val))
 }
 
-// UpdateContainers updates the given containers in the metadata store.
-func (mds *EtcdMetadataStore) UpdateContainers(containers []*metadatapb.ContainerInfo) error {
-	// Get all pods with the given pod ids.
-	podOps := make([]clientv3.Op, len(containers))
-	for i, container := range containers {
-		podOps[i] = clientv3.OpGet(getPodKeyFromStrings(container.PodUID, getNamespaceFromString(container.Namespace)))
-	}
-
-	txnresp, err := mds.client.Txn(context.TODO()).If().Then(podOps...).Commit()
-	if err != nil {
-		return err
-	}
-
-	// Update containers.
-	var containerOps []clientv3.Op
-
+// UpdateContainersFromPod updates the containers from the given pod in the metadata store.
+func (mds *EtcdMetadataStore) UpdateContainersFromPod(pod *metadatapb.Pod) error {
 	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
 	mu.Lock(context.Background())
 	defer mu.Unlock(context.Background())
 
-	for i, resp := range txnresp.Responses {
-		if len(resp.GetResponseRange().Kvs) > 0 {
-			podPb := &metadatapb.Pod{}
-			proto.Unmarshal(resp.GetResponseRange().Kvs[0].Value, podPb)
-
-			container, err := containers[i].Marshal()
-			if err != nil {
-				log.WithError(err).Error("Could not marshall container update message.")
-				continue
-			}
-
-			// TODO(michelle): Add a Lease to the key, so that they expire after a certain period of time.
-			containerKey := getContainerKeyFromStrings(getNamespaceFromString(containers[i].Namespace), podPb.Metadata.Name, containers[i].Name)
-			containerOps = append(containerOps, clientv3.OpPut(containerKey, string(container)))
+	cOps := make([]clientv3.Op, len(pod.Status.ContainerStatuses))
+	for i, container := range pod.Status.ContainerStatuses {
+		cid := formatContainerID(container.ContainerID)
+		key := getContainerKeyFromStrings(cid)
+		cInfo := metadatapb.ContainerInfo{
+			Name:             container.Name,
+			UID:              cid,
+			StartTimestampNS: container.StartTimestampNS,
+			StopTimestampNS:  container.StopTimestampNS,
+			PodUID:           pod.Metadata.UID,
+			Namespace:        getNamespaceFromMetadata(pod.Metadata),
 		}
+		val, err := cInfo.Marshal()
+		if err != nil {
+			return errors.New("Unable to marshal containerInfo pb")
+		}
+
+		cOps[i] = clientv3.OpPut(key, string(val))
 	}
 
-	_, err = mds.client.Txn(context.TODO()).If().Then(containerOps...).Commit()
+	_, err := mds.client.Txn(context.TODO()).If().Then(cOps...).Commit()
 
 	return err
 }
