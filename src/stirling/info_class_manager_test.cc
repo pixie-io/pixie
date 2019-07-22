@@ -29,7 +29,7 @@ TEST(InfoClassInfoSchemaTest, infoclass_mgr_proto_getters_test) {
   info_class_mgr.SetSourceConnector(source.get(), source_table_id);
   ASSERT_OK(info_class_mgr.PopulateSchemaFromSource());
 
-  auto& data_elements = SeqGenConnector::kTables[source_table_id].elements();
+  ConstVectorView<DataElement> data_elements = SeqGenConnector::kTables[source_table_id].elements();
 
   EXPECT_EQ(data_elements.size(), info_class_mgr.Schema().size());
   EXPECT_EQ("sequences_mgr", info_class_mgr.name());

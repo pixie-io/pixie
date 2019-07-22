@@ -289,7 +289,7 @@ class StringSequence : public Sequence<std::string> {
 
   std::vector<std::string> tokens;
 
-  static constexpr ConstStrView text[] = {
+  static constexpr std::string_view text[] = {
       "To be, or not to be, that is the question:  ",
       "Whether 'tis nobler in the mind to suffer  ",
       "The slings and arrows of outrageous fortune,  ",

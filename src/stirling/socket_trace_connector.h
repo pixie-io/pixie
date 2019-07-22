@@ -87,14 +87,14 @@ class SocketTraceConnector : public SourceConnector {
   };
   // clang-format on
 
-  static constexpr ConstStrView kHTTPPerfBufferNames[] = {
+  static constexpr std::string_view kHTTPPerfBufferNames[] = {
       "socket_open_conns",
       "socket_http_events",
       "socket_close_conns",
   };
 
   // Used in ReadPerfBuffer to drain the relevant perf buffers.
-  static constexpr auto kHTTPPerfBuffers = ConstVectorView<ConstStrView>(kHTTPPerfBufferNames);
+  static constexpr auto kHTTPPerfBuffers = ConstVectorView<std::string_view>(kHTTPPerfBufferNames);
 
   static constexpr auto kHTTPTable = DataTableSchema("http_events", kHTTPElements);
 
@@ -111,13 +111,14 @@ class SocketTraceConnector : public SourceConnector {
   };
   // clang-format on
 
-  static constexpr ConstStrView kMySQLPerfBufferNames[] = {
+  static constexpr std::string_view kMySQLPerfBufferNames[] = {
       "socket_open_conns",
       "socket_mysql_events",
       "socket_close_conns",
   };
 
-  static constexpr auto kMySQLPerfBuffers = ConstVectorView<ConstStrView>(kMySQLPerfBufferNames);
+  static constexpr auto kMySQLPerfBuffers =
+      ConstVectorView<std::string_view>(kMySQLPerfBufferNames);
 
   static constexpr auto kMySQLTable = DataTableSchema("mysql_events", kMySQLElements);
 
@@ -130,10 +131,10 @@ class SocketTraceConnector : public SourceConnector {
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   // Dim 0: DataTables; dim 1: perfBuffer Names
-  static constexpr ConstVectorView<ConstStrView> perfBufferNames[] = {kHTTPPerfBuffers,
-                                                                      kMySQLPerfBuffers};
+  static constexpr ConstVectorView<std::string_view> perfBufferNames[] = {kHTTPPerfBuffers,
+                                                                          kMySQLPerfBuffers};
   static constexpr auto kTablePerfBufferMap =
-      ConstVectorView<ConstVectorView<ConstStrView> >(perfBufferNames);
+      ConstVectorView<ConstVectorView<std::string_view> >(perfBufferNames);
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
@@ -188,20 +189,20 @@ class SocketTraceConnector : public SourceConnector {
 
   // Describes a kprobe that should be attached with the BPF::attach_kprobe().
   struct ProbeSpec {
-    std::string kernel_fn_short_name;
-    std::string trace_fn_name;
+    std::string_view kernel_fn_short_name;
+    std::string_view trace_fn_name;
     bpf_probe_attach_type attach_type;
   };
 
   struct PerfBufferSpec {
     // Name is same as the perf buffer inside bcc_bpf/socket_trace.c.
-    std::string name;
+    std::string_view name;
     perf_reader_raw_cb probe_output_fn;
     perf_reader_lost_cb probe_loss_fn;
     uint32_t num_pages;
   };
 
-  static inline const std::vector<ProbeSpec> kProbeSpecs = {
+  static constexpr ProbeSpec kProbeSpecsArray[] = {
       {"connect", "syscall__probe_entry_connect", bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"connect", "syscall__probe_ret_connect", bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"accept", "syscall__probe_entry_accept", bpf_probe_attach_type::BPF_PROBE_ENTRY},
@@ -224,6 +225,7 @@ class SocketTraceConnector : public SourceConnector {
       {"recvfrom", "syscall__probe_ret_recv", bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"close", "syscall__probe_close", bpf_probe_attach_type::BPF_PROBE_ENTRY},
   };
+  static constexpr auto kProbeSpecs = ConstVectorView<ProbeSpec>(kProbeSpecsArray);
 
   // TODO(oazizi): Remove send and recv probes once we are confident that they don't trace anything.
   //               Note that send/recv are not in the syscall table
@@ -231,7 +233,7 @@ class SocketTraceConnector : public SourceConnector {
   //               https://elixir.bootlin.com/linux/latest/source/net/socket.c.
 
   static constexpr uint32_t kDefaultPageCount = 8;
-  static inline const std::vector<PerfBufferSpec> kPerfBufferSpecs = {
+  static constexpr PerfBufferSpec kPerfBufferSpecsArray[] = {
       // For data events. The order must be consistent with output tables.
       {"socket_http_events", &SocketTraceConnector::HandleHTTPProbeOutput,
        &SocketTraceConnector::HandleProbeLoss, kDefaultPageCount},
@@ -244,6 +246,7 @@ class SocketTraceConnector : public SourceConnector {
       {"socket_close_conns", &SocketTraceConnector::HandleCloseProbeOutput,
        &SocketTraceConnector::HandleProbeLoss, kDefaultPageCount},
   };
+  static constexpr auto kPerfBufferSpecs = ConstVectorView<PerfBufferSpec>(kPerfBufferSpecsArray);
 
   inline static HTTPHeaderFilter http_response_header_filter_;
   // TODO(yzhao): We will remove this once finalized the mechanism of lazy protobuf parse.

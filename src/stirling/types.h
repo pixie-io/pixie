@@ -24,29 +24,30 @@ using InfoClassManagerVec = std::vector<std::unique_ptr<InfoClassManager>>;
 class DataElement {
  public:
   constexpr DataElement() = delete;
-  constexpr DataElement(ConstStrView name, types::DataType type, types::PatternType ptype)
+  constexpr DataElement(std::string_view name, types::DataType type, types::PatternType ptype)
       : name_(name), type_(type), ptype_(ptype) {}
 
-  constexpr const ConstStrView& name() const { return name_; }
+  constexpr const std::string_view& name() const { return name_; }
   constexpr const types::DataType& type() const { return type_; }
   std::shared_ptr<arrow::DataType> arrow_type() { return types::DataTypeToArrowType(type()); }
 
  protected:
-  const ConstStrView name_;
+  const std::string_view name_;
   types::DataType type_;
   types::PatternType ptype_;
 };
 
 class DataTableSchema {
  public:
+  // TODO(oazizi): This constructor should only be called at compile-time. Need to enforce this.
   template <std::size_t N>
-  constexpr DataTableSchema(ConstStrView name, const DataElement (&elements)[N])
+  constexpr DataTableSchema(std::string_view name, const DataElement (&elements)[N])
       : name_(name), elements_(elements) {}
-  constexpr const ConstStrView& name() const { return name_; }
-  constexpr const ConstVectorView<DataElement>& elements() const { return elements_; }
+  constexpr std::string_view name() const { return name_; }
+  constexpr ConstVectorView<DataElement> elements() const { return elements_; }
 
   // Warning: use at compile-time only!
-  constexpr uint32_t ColIndex(const ConstStrView& key) const {
+  constexpr uint32_t ColIndex(std::string_view key) const {
     uint32_t i = 0;
     for (i = 0; i < elements_.size(); i++) {
       if (elements_[i].name() == key) {
@@ -65,7 +66,7 @@ class DataTableSchema {
   }
 
  private:
-  const ConstStrView name_;
+  const std::string_view name_;
   const ConstVectorView<DataElement> elements_;
 };
 

@@ -56,7 +56,7 @@ class StirlingTest : public ::testing::Test {
   PubProto publish_proto_;
 
   // Schemas
-  std::unordered_map<uint32_t, const ConstVectorView<DataElement>*> schemas_;
+  std::unordered_map<uint32_t, const ConstVectorView<DataElement>> schemas_;
 
   // Reference model (checkers).
   std::unordered_map<uint64_t, std::unique_ptr<pl::stirling::Sequence<int64_t>>> int_seq_checker_;
@@ -104,7 +104,7 @@ class StirlingTest : public ::testing::Test {
 
     for (const auto& [id, name] : id_to_name_map) {
       if (name[name.length() - 1] == '0') {
-        schemas_.emplace(id, &SeqGenConnector::kSeq0Table.elements());
+        schemas_.emplace(id, SeqGenConnector::kSeq0Table.elements());
 
         uint32_t col_idx = 1;  // Start at 1, because column 0 is time.
         int_seq_checker_.emplace((id << 32) | col_idx++,
@@ -122,7 +122,7 @@ class StirlingTest : public ::testing::Test {
 
         num_processed_per_table_.emplace(id, 0);
       } else if (name[name.length() - 1] == '1') {
-        schemas_.emplace(id, &SeqGenConnector::kSeq1Table.elements());
+        schemas_.emplace(id, SeqGenConnector::kSeq1Table.elements());
 
         uint32_t col_idx = 1;  // Start at 1, because column 0 is time.
         int_seq_checker_.emplace((id << 32) | col_idx++,
@@ -171,7 +171,7 @@ class StirlingTest : public ::testing::Test {
 
   void CheckRecordBatch(const uint64_t table_id, size_t num_records,
                         const ColumnWrapperRecordBatch& record_batch) {
-    auto table_schema = *(schemas_[table_id]);
+    auto table_schema = schemas_[table_id];
 
     for (size_t i = 0; i < num_records; ++i) {
       uint32_t j = 0;

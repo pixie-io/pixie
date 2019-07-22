@@ -65,9 +65,9 @@ Status SocketTraceConnector::InitImpl() {
   }
   // TODO(yzhao): We need to clean the already attached probes after encountering a failure.
   for (const ProbeSpec& p : kProbeSpecs) {
-    ebpf::StatusTuple attach_status =
-        bpf_.attach_kprobe(bpf_.get_syscall_fnname(p.kernel_fn_short_name), p.trace_fn_name,
-                           0 /* offset */, p.attach_type, kKprobeMaxActive);
+    ebpf::StatusTuple attach_status = bpf_.attach_kprobe(
+        bpf_.get_syscall_fnname(std::string(p.kernel_fn_short_name)), std::string(p.trace_fn_name),
+        0 /* offset */, p.attach_type, kKprobeMaxActive);
     if (attach_status.code() != 0) {
       return error::Internal(
           absl::StrCat("Failed to attach kprobe to kernel function: ", p.kernel_fn_short_name,
@@ -76,11 +76,12 @@ Status SocketTraceConnector::InitImpl() {
     ++num_attached_probes_;
   }
   for (auto& perf_buffer_spec : kPerfBufferSpecs) {
-    ebpf::StatusTuple open_status = bpf_.open_perf_buffer(
-        perf_buffer_spec.name, perf_buffer_spec.probe_output_fn, perf_buffer_spec.probe_loss_fn,
-        // TODO(yzhao): We sort of are not unified around how record_batch and
-        // cb_cookie is passed to the callback. Consider unifying them.
-        /*cb_cookie*/ this, perf_buffer_spec.num_pages);
+    ebpf::StatusTuple open_status =
+        bpf_.open_perf_buffer(std::string(perf_buffer_spec.name), perf_buffer_spec.probe_output_fn,
+                              perf_buffer_spec.probe_loss_fn,
+                              // TODO(yzhao): We sort of are not unified around how record_batch and
+                              // cb_cookie is passed to the callback. Consider unifying them.
+                              /*cb_cookie*/ this, perf_buffer_spec.num_pages);
     if (open_status.code() != 0) {
       return error::Internal(absl::StrCat("Failed to open perf buffer: ", perf_buffer_spec.name,
                                           ", error message: ", open_status.msg()));
@@ -103,8 +104,8 @@ Status SocketTraceConnector::InitImpl() {
 Status SocketTraceConnector::StopImpl() {
   // TODO(yzhao): We should continue to detach after encountering a failure.
   for (const ProbeSpec& p : kProbeSpecs) {
-    ebpf::StatusTuple detach_status =
-        bpf_.detach_kprobe(bpf_.get_syscall_fnname(p.kernel_fn_short_name), p.attach_type);
+    ebpf::StatusTuple detach_status = bpf_.detach_kprobe(
+        bpf_.get_syscall_fnname(std::string(p.kernel_fn_short_name)), p.attach_type);
     if (detach_status.code() != 0) {
       return error::Internal(
           absl::StrCat("Failed to detach kprobe to kernel function: ", p.kernel_fn_short_name,
@@ -114,7 +115,7 @@ Status SocketTraceConnector::StopImpl() {
   }
 
   for (auto& perf_buffer_spec : kPerfBufferSpecs) {
-    ebpf::StatusTuple close_status = bpf_.close_perf_buffer(perf_buffer_spec.name);
+    ebpf::StatusTuple close_status = bpf_.close_perf_buffer(std::string(perf_buffer_spec.name));
     if (close_status.code() != 0) {
       return error::Internal(absl::StrCat("Failed to close perf buffer: ", perf_buffer_spec.name,
                                           ", error message: ", close_status.msg()));
@@ -186,7 +187,7 @@ void SocketTraceConnector::ReadPerfBuffer(uint32_t table_num) {
       << "Index out of bound. Trying to read from perf buffer that doesn't exist.";
   auto buffer_names = kTablePerfBufferMap[table_num];
   for (auto& buffer_name : buffer_names) {
-    auto perf_buffer = bpf_.get_perf_buffer(buffer_name.data());
+    auto perf_buffer = bpf_.get_perf_buffer(std::string(buffer_name));
     if (perf_buffer != nullptr) {
       perf_buffer->poll(1);
     }

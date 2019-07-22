@@ -80,12 +80,12 @@ class SourceConnector : public NotCopyable {
   const std::string& source_name() const { return source_name_; }
 
   uint32_t num_tables() const { return table_schemas_.size(); }
-  const ConstVectorView<DataElement>& elements(uint32_t table_num) const {
+  const ConstVectorView<DataElement> elements(uint32_t table_num) const {
     DCHECK_LT(table_num, num_tables())
         << absl::Substitute("Access to table out of bounds: table_num=$0", table_num);
     return table_schemas_[table_num].elements();
   }
-  const ConstStrView& table_name(uint32_t table_num) const {
+  const std::string_view table_name(uint32_t table_num) const {
     DCHECK_LT(table_num, num_tables())
         << absl::Substitute("Access to table out of bounds: table_num=$0", table_num);
     return table_schemas_[table_num].name();
@@ -138,12 +138,6 @@ class SourceConnector : public NotCopyable {
   }
 
  protected:
-  template <std::size_t N>
-  explicit SourceConnector(std::string_view source_name, const DataTableSchema (&table_schemas)[N],
-                           std::chrono::milliseconds default_sampling_period,
-                           std::chrono::milliseconds default_push_period)
-      : SourceConnector(source_name, ConstVectorView(table_schemas), default_sampling_period,
-                        default_push_period) {}
   explicit SourceConnector(std::string_view source_name,
                            const ConstVectorView<DataTableSchema>& table_schemas,
                            std::chrono::milliseconds default_sampling_period,
@@ -173,7 +167,7 @@ class SourceConnector : public NotCopyable {
         : record_batch_(*record_batch) {}
 
     // For convenience, a wrapper around ColIndex() in the DataTableSchema class.
-    constexpr uint32_t ColIndex(ConstStrView name) { return schema->ColIndex(name); }
+    constexpr uint32_t ColIndex(std::string_view name) { return schema->ColIndex(name); }
 
     // The argument type is inferred by the table schema and the column index.
     template <const uint32_t index>

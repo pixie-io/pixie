@@ -27,7 +27,7 @@ class InfoClassElement : public DataElement {
  public:
   InfoClassElement() = delete;
   explicit InfoClassElement(DataElement element) : DataElement(std::move(element)) {}
-  explicit InfoClassElement(ConstStrView name, types::DataType type, types::PatternType ptype)
+  explicit InfoClassElement(std::string_view name, types::DataType type, types::PatternType ptype)
       : DataElement(name, type, ptype) {}
 
   /**
