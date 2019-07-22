@@ -2,12 +2,14 @@
 
 diff_mode=false
 diff_file=""
+build=true
 
 # Print out the usage information and exit.
 usage() {
   echo "Usage $0 [-d] [-h]" 1>&2;
   echo "   -d    Run only diff against master branch"
   echo "   -f    Use a diff file"
+  echo "   -n    Don't run the build"
   echo "   -h    Print help and exit"
   exit 1;
 }
@@ -15,10 +17,13 @@ usage() {
 parse_args() {
   local OPTIND
   # Process the command line arguments.
-  while getopts "d:fh" opt; do
+  while getopts "d:fhn" opt; do
     case ${opt} in
       d)
         diff_mode=true
+        ;;
+      n)
+        build=false
         ;;
       f)
         diff_mode=true
@@ -81,9 +86,14 @@ pushd $SRCDIR
 # This is a bit ugly, but limits the bazel build targets to only C++ code.
 bazel_targets=`bazel query 'kind("cc_(binary|test) rule", src/...)' | grep -v '_cgo_.o\$'`
 
+flags="--include_headers"
+if [ "$build" = true ] ; then
+  flags="$flags --run_bazel_build"
+fi
+
 # Bazel build need to be run to setup virtual includes, generating files which are consumed
 # by clang-tidy.
-"${SRCDIR}/scripts/gen_compilation_database.py" --include_headers --run_bazel_build ${bazel_targets}
+"${SRCDIR}/scripts/gen_compilation_database.py" ${flags} ${bazel_targets}
 
 # Actually invoke clang-tidy.
 if [ "$diff_mode" = true ] ; then

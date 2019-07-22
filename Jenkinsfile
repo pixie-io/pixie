@@ -3,6 +3,7 @@
  */
 import java.net.URLEncoder;
 import groovy.json.JsonBuilder
+import jenkins.model.Jenkins
 
 
 /**
@@ -201,51 +202,81 @@ def createBazelStash(String stashName) {
 }
 
 /**
-  * Our default docker step :
-  *   1. Deletes old directory.
-  *   2. Checks out new code stash.
-  *   3. Starts docker container.
-  *   4. Runs the passed in body.
+  * This function checks out the source code and wraps the builds steps.
   */
-def dockerStepWithCode(String dockerConfig = '', String dockerImage = devDockerImageWithTag, Closure body) {
+def WithSourceCode(Closure body) {
   retry(JENKINS_RETRIES) {
     node {
       deleteDir()
       unstash SRC_STASH_NAME
-      docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
-        // This change speeds up the build considerably but prevents us from running more than
-        // one executor on a jenkins worker.
-        docker.image(dockerImage).inside(dockerConfig + ' -v /mnt/jenkins/root/cache:/root/.cache') {
-          body()
-        }
-      }
+      body()
     }
   }
 }
 
 /**
-  * dockerStepWithCode but also has all the bazel dependencies.
+  * Our default docker step :
+  *   3. Starts docker container.
+  *   4. Runs the passed in body.
   */
-def dockerStepWithBazelDeps(String dockerConfig = '', String dockerImage = devDockerImageWithTag, Closure body) {
-  dockerStepWithCode(dockerConfig, dockerImage) {
-    body()
+def dockerStep(String dockerConfig = '', String dockerImage = devDockerImageWithTag, Closure body) {
+  docker.withRegistry('https://gcr.io', 'gcr:pl-dev-infra') {
+    // Check to see if there is a local cache we can use for the downloads and pass that in
+    // to docker so that Bazel can access it.
+    // This change speeds up the build considerably but prevents us from running more than
+    // one executor on a jenkins worker. This is because multiple Bazel instances running in docker
+    // containers will concurrently write to the cache and cause breakages.
+    // If more than one worker is present we
+    // automatically disable the cache.
+    //
+    // The cache is located on the GCP Jenkins image and will contain data from when it
+    // was snapshotted. The more up to date this data is the faster the instance warm-up
+    // will be. Stale data in this cache does not cause any breakages though. Data in the
+    // cache is presisted across runs, but does not persist if the worker is deleted.
+    //
+    // We also can have the worker and cache located either on the local SSD (/mnt/jenkins),
+    // or the persistent SSD (/root/cache). We prefer to use the local SSD version if available
+    // since it's a lot faster.
+    cacheString = ''
+    // TODO(zasgar): When the Bazel repository cache is better we should consider using that
+    // to cache the downloads. Disabling the cache currently leads to a 1-2 min increase in
+    // runtime for each bazel job.
+    if (params.LOCAL_CACHE_DISABLED || Jenkins.getInstance().getNumExecutors() > 1) {
+      cacheString = ''
+    } else if (fileExists("/mnt/jenkins/cache")) {
+      cacheString = ' -v /mnt/jenkins/cache:/root/.cache'
+    } else if (fileExists('/root/cache')) {
+      cacheString = ' -v /root/cache:/root/.cache'
+    }
+    print "Cache String ${cacheString}"
+    docker.image(dockerImage).inside(dockerConfig + cacheString) {
+      body()
+    }
   }
 }
+
+/**
+  * Runs bazel and creates a stash of the test output
+  */
+def bazelCmd(String bazelCmd, String name) {
+  sh "${bazelCmd}"
+  createBazelStash("${name}-testlogs")
+}
+
 
 /**
   * dockerStepWithBazelDeps with stashing of logs for the passed in Bazel command.
   */
 def dockerStepWithBazelCmd(String dockerConfig = '', String dockerImage = devDockerImageWithTag,
-                           String bazelCmd, String name) {
-  dockerStepWithBazelDeps(dockerConfig, dockerImage) {
-    sh "${bazelCmd}"
-    createBazelStash("${name}-testlogs")
+                           String bazelCmdStr, String name) {
+  dockerStep(dockerConfig, dockerImage) {
+    bazelCmd(bazelCmdStr, "${name}-testlogs")
   }
 }
 
-def archiveBazelLogs() {
+def archiveBazelLogs(String logBase) {
   step([
-    $class: 'XUnitBuilder',
+    $class: 'XUnitPublisher',
     thresholds: [
       [
         $class: 'FailedThreshold',
@@ -255,7 +286,7 @@ def archiveBazelLogs() {
     tools: [
       [
         $class: 'GoogleTestType',
-        pattern: "build*/bazel-testlogs-archive/**/*.xml"
+        pattern: "${logBase}/bazel-testlogs-archive/**/*.xml"
       ]
     ]
   ])
@@ -341,34 +372,68 @@ def checkoutAndInitialize() {
  *****************************************************************************/
 def builders = [:]
 
-builders['Build & Test (dbg)'] = {
-  dockerStepWithBazelCmd("bazel test --compilation_mode=dbg ${BAZEL_SRC_FILES_PATH}", 'build-dbg')
+builders['Build & Test (dbg & tidy)'] = {
+  WithSourceCode {
+    dockerStep {
+      bazelCmd("bazel test --compilation_mode=dbg ${BAZEL_SRC_FILES_PATH}", 'build-dbg')
+    }
+  }
+}
+
+builders['Clang-tidy'] = {
+  WithSourceCode {
+    dockerStep {
+      def stashName = 'build-clang-tidy-logs'
+      if (isMasterRun) {
+        sh 'scripts/run_clang_tidy.sh'
+      } else {
+        // For code review builds only run on diff.
+        sh 'scripts/run_clang_tidy.sh -f diff_origin_master'
+      }
+      stash name: stashName, includes: 'clang_tidy.log'
+      stashList.add(stashName)
+    }
+  }
+}
+
+builders['Build & Test (sanitizers)'] = {
+  WithSourceCode {
+    dockerStep('--cap-add=SYS_PTRACE', {
+      bazelCmd("bazel test --config=asan ${BAZEL_CC_QUERY}", 'build-asan')
+      bazelCmd("bazel test --config=tsan ${BAZEL_CC_QUERY}", 'build-tsan')
+    })
+
+  }
 }
 
 builders['Build & Test All (opt + UI)'] = {
-  dockerStepWithBazelDeps {
-    sh "bazel test --compilation_mode=opt //..."
-    createBazelStash("build-opt-testlogs")
+  WithSourceCode {
+    dockerStep {
+      sh "bazel test --compilation_mode=opt //..."
+      createBazelStash("build-opt-testlogs")
 
-    // Untar and save the UI artifacts.
-    sh 'tar -zxvf bazel-bin/src/ui/bundle_storybook.tar.gz'
-    sh 'mkdir testlogs && cp -a bazel-bin/src/ui/*.xml testlogs'
+      // Untar and save the UI artifacts.
+      sh 'tar -zxf bazel-bin/src/ui/bundle_storybook.tar.gz'
+      sh 'mkdir testlogs && cp -a bazel-bin/src/ui/*.xml testlogs'
 
-    // Untar the customer docs.
-    sh 'tar -zxvf bazel-bin/docs/customer/bundle.tar.gz'
+      // Untar the customer docs.
+      sh 'tar -zxf bazel-bin/docs/customer/bundle.tar.gz'
 
-    stash name: 'build-ui-storybook-static', includes: 'storybook_static/**'
-    stash name: 'build-ui-testlogs', includes: 'testlogs/**'
-    stash name: 'build-customer-docs', includes: 'public/**'
+      stash name: 'build-ui-storybook-static', includes: 'storybook_static/**'
+      stash name: 'build-ui-testlogs', includes: 'testlogs/**'
+      stash name: 'build-customer-docs', includes: 'public/**'
 
-    stashList.add('build-ui-storybook-static')
-    stashList.add('build-ui-testlogs')
-    stashList.add('build-customer-docs')
+      stashList.add('build-ui-storybook-static')
+      stashList.add('build-ui-testlogs')
+      stashList.add('build-customer-docs')
+    }
   }
 }
 
 builders['Build & Test (gcc:opt)'] = {
-  dockerStepWithBazelCmd("CC=gcc CXX=g++ bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}", 'build-gcc-opt')
+  WithSourceCode {
+    dockerStepWithBazelCmd("CC=gcc CXX=g++ bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}", 'build-gcc-opt')
+  }
 }
 
 def dockerArgsForBPFTest = '--privileged --pid=host --volume /lib/modules:/lib/modules ' +
@@ -376,47 +441,32 @@ def dockerArgsForBPFTest = '--privileged --pid=host --volume /lib/modules:/lib/m
 
 def bazelBaseArgsForBPFTest = 'bazel test --compilation_mode=opt --strategy=TestRunner=standalone'
 
-builders['Build & Test (bpf)'] = {
-  dockerStepWithBazelCmd(
-    dockerArgsForBPFTest,
-    bazelBaseArgsForBPFTest + " --config=bpf ${BAZEL_SRC_FILES_PATH}",
-    'build-bpf')
-}
+builders['Build & Test (bpf tests)'] = {
+  WithSourceCode {
+    dockerStep(dockerArgsForBPFTest, {
+      bazelCmd(
+        bazelBaseArgsForBPFTest + " --config=bpf ${BAZEL_SRC_FILES_PATH}",
+        'build-bpf')
 
-builders['Build & Test (bpf:asan)'] = {
-  dockerStepWithBazelCmd(
-    dockerArgsForBPFTest,
-    bazelBaseArgsForBPFTest + " --config=asan --config=bpf ${BAZEL_SRC_FILES_PATH}",
-    'build-bpf-asan')
-}
+      bazelCmd(
+        bazelBaseArgsForBPFTest + " --config=asan --config=bpf ${BAZEL_SRC_FILES_PATH}",
+        'build-bpf-asan')
 
-builders['Build & Test (bpf:tsan)'] = {
-  dockerStepWithBazelCmd(
-    dockerArgsForBPFTest,
-    bazelBaseArgsForBPFTest + " --config=tsan --config=bpf ${BAZEL_SRC_FILES_PATH}",
-    'build-bpf-asan')
-}
-
-builders['Build & Test (clang-tidy)'] = {
-  dockerStepWithBazelDeps {
-    def stashName = 'build-clang-tidy-logs'
-    if (isMasterRun) {
-      sh 'scripts/run_clang_tidy.sh'
-    } else {
-      // For code review builds only run on diff.
-      sh 'scripts/run_clang_tidy.sh -f diff_origin_master'
-    }
-    stash name: stashName, includes: 'clang_tidy.log'
-    stashList.add(stashName)
+      bazelCmd(
+        bazelBaseArgsForBPFTest + " --config=tsan --config=bpf ${BAZEL_SRC_FILES_PATH}",
+        'build-bpf-tsan')
+    })
   }
 }
 
 // Only run coverage on master test.
 if (runCoverageJob) {
   builders['Build & Test (gcc:coverage)'] = {
-    dockerStepWithBazelDeps {
-      sh "scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b master -c `cat GIT_COMMIT`"
-      createBazelStash('build-gcc-coverage-testlogs')
+    WithSourceCode {
+      dockerStep {
+        sh "scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b master -c `cat GIT_COMMIT`"
+        createBazelStash('build-gcc-coverage-testlogs')
+      }
     }
   }
 }
@@ -426,28 +476,22 @@ if (runCoverageJob) {
  * https://github.com/golang/go/issues/27110
  * TODO(zasgar): Fix after above is resolved.
  ********************************************/
-builders['Build & Test (asan)'] = {
-  dockerStepWithBazelCmd('--cap-add=SYS_PTRACE', "bazel test --config=asan ${BAZEL_CC_QUERY}", 'build-asan')
-}
 
-builders['Build & Test (tsan)'] = {
-  dockerStepWithBazelCmd("bazel test --config=tsan ${BAZEL_CC_QUERY}", 'build-tsan')
-}
+builders['Lint & Docs'] = {
+  WithSourceCode {
+    dockerStep {
+      sh 'arc lint'
+    }
 
-builders['Linting'] = {
-  dockerStepWithCode {
-    sh 'arc lint --everything'
+    def stashName = 'doxygen-docs'
+    dockerStep {
+      sh 'doxygen'
+      stash name: stashName, includes: 'docs/html/**'
+      stashList.add(stashName)
+    }
   }
 }
 
-builders['Doxygen'] = {
-  def stashName = 'doxygen-docs'
-  dockerStepWithCode {
-    sh 'doxygen'
-    stash name: stashName, includes: 'docs/html/**'
-    stashList.add(stashName)
-  }
-}
 
 /*****************************************************************************
  * END BUILDERS
@@ -486,7 +530,11 @@ def buildScriptForCommits = {
         publishCustomerDocs()
         publishDoxygenDocs()
 
-        archiveBazelLogs()
+        stashList.each({stashName ->
+          if (stashName.contains('testlogs') && !stashName.contains('-ui')) {
+            archiveBazelLogs(stashName)
+          }
+        })
         archiveUILogs()
       }
     }
@@ -513,7 +561,7 @@ def buildScriptForNightly = {
         checkoutAndInitialize()
       }
       stage('Deploy to K8s Nightly') {
-        dockerStepWithBazelDeps('', devDockerImageExtrasWithTag) {
+        dockerStep('', devDockerImageExtrasWithTag) {
           withKubeConfig([credentialsId: K8S_CREDS_NAME,
                           serverUrl: K8S_ADDR, namespace: K8S_NS]) {
             sh 'PL_IMAGE_TAG=nightly-$(date +%s)-`cat SOURCE_VERSION` make deploy-vizier-nightly'
