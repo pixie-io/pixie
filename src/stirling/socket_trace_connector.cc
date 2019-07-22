@@ -27,6 +27,7 @@ DEFINE_string(http_response_header_filters, "Content-Type:json",
 DEFINE_bool(enable_parsing_protobufs, false,
             "If true, parses binary protobufs captured in gRPC messages. "
             "As of 2019-07, the parser can only handle protobufs defined in Hipster Shop.");
+DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs, "The process to trace.");
 
 namespace pl {
 namespace stirling {
@@ -54,7 +55,7 @@ Status SocketTraceConnector::InitImpl() {
   // TODO(PL-659): connect() call might return non 0 value, making requester-side tracing
   // unreliable. Switch to server-side for now.
   PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kRoleResponder));
-  PL_RETURN_IF_ERROR(TestOnlySetTargetPID(kTraceAllTGIDs));
+  PL_RETURN_IF_ERROR(TestOnlySetTargetPID(FLAGS_test_only_socket_trace_target_pid));
 
   return Status::OK();
 }
