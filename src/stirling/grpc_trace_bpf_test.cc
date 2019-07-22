@@ -1,37 +1,38 @@
 #include <gmock/gmock.h>
 #include <google/protobuf/util/message_differencer.h>
+#include <grpcpp/grpcpp.h>
 #include <gtest/gtest.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 extern "C" {
 #include <nghttp2/nghttp2_frame.h>
 }
 
+#include <thread>
+
 #include "src/common/subprocess/subprocess.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/http2.h"
 #include "src/stirling/socket_trace_connector.h"
-
-PL_SUPPRESS_WARNINGS_START()
+#include "src/stirling/testing/greeter_client.h"
+#include "src/stirling/testing/greeter_server.h"
 #include "src/stirling/testing/proto/greet.grpc.pb.h"
-PL_SUPPRESS_WARNINGS_END()
 
 namespace pl {
 namespace stirling {
 namespace http2 {
 
-using ::google::protobuf::Message;
-using ::google::protobuf::util::MessageDifferencer;
+using ::pl::stirling::testing::GreeterClient;
+using ::pl::stirling::testing::GreeterService;
 using ::pl::stirling::testing::HelloReply;
+using ::pl::stirling::testing::HelloRequest;
+using ::pl::stirling::testing::ServiceRunner;
+using ::pl::testing::proto::EqualsProto;
 using ::pl::types::ColumnWrapperRecordBatch;
-using ::testing::_;
-using ::testing::ElementsAre;
-using ::testing::Eq;
 using ::testing::HasSubstr;
-using ::testing::IsEmpty;
 using ::testing::MatchesRegex;
-using ::testing::Pair;
 using ::testing::SizeIs;
-using ::testing::StrEq;
 
 constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
 constexpr DataTableSchema kHTTPTable = SocketTraceConnector::kHTTPTable;
@@ -119,11 +120,81 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
             record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(server_record_idx).val);
 
-  HelloReply received_reply, expected_reply;
-  expected_reply.set_message("Hello PixieLabs");
+  HelloReply received_reply;
   EXPECT_TRUE(ParseProtobuf(
       record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(server_record_idx), &received_reply));
-  EXPECT_TRUE(MessageDifferencer::Equals(received_reply, expected_reply));
+  EXPECT_THAT(received_reply, EqualsProto(R"proto(message: "Hello PixieLabs")proto"));
+}
+
+class GRPCTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    // Force disable protobuf parsing to output the binary protobuf in record batch.
+    // Also ensure test remain passing when the default changes.
+    FLAGS_enable_parsing_protobufs = false;
+    source_ = SocketTraceConnector::Create("bcc_grpc_trace");
+    ASSERT_OK(source_->Init());
+
+    server_ = runner_.RunService(&service_);
+    auto* server_ptr = server_.get();
+    server_thread_ = std::thread([server_ptr]() { server_ptr->Wait(); });
+    client_ = std::make_unique<GreeterClient>(absl::StrCat("0.0.0.0:", runner_.ports().back()));
+  }
+
+  void TearDown() override {
+    ASSERT_OK(source_->Stop());
+    server_->Shutdown();
+    if (server_thread_.joinable()) {
+      server_thread_.join();
+    }
+  }
+
+  std::unique_ptr<SourceConnector> source_;
+  GreeterService service_;
+  ServiceRunner runner_;
+  std::unique_ptr<::grpc::Server> server_;
+  std::thread server_thread_;
+  std::unique_ptr<GreeterClient> client_;
+};
+
+TEST_F(GRPCTest, BasicTracingForCPP) {
+  HelloRequest req;
+  HelloReply resp;
+
+  req.set_name("pixielabs");
+  ::grpc::Status st = client_->SayHello(req, &resp);
+  EXPECT_OK(st) << st.error_message();
+
+  ColumnWrapperRecordBatch record_batch;
+  InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 1, &record_batch);
+  source_->TransferData(kHTTPTableNum, &record_batch);
+
+  const std::vector<size_t> server_record_indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  // We should get exactly one record.
+  ASSERT_THAT(server_record_indices, SizeIs(1));
+  const size_t server_record_idx = server_record_indices.front();
+
+  EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(server_record_idx)),
+              MatchesRegex(":authority: 0.0.0.0:[0-9]+\n"
+                           ":method: POST\n"
+                           ":path: /pl.stirling.testing.Greeter/SayHello\n"
+                           ":scheme: http\n"
+                           "accept-encoding: identity,gzip\n"
+                           "content-type: application/grpc\n"
+                           "grpc-accept-encoding: identity,deflate,gzip\n"
+                           "te: trailers\n"
+                           "user-agent: .*"));
+  EXPECT_THAT(
+      std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(server_record_idx)),
+      HasSubstr("127.0.0.1"));
+  EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(server_record_idx).val);
+  EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
+            record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(server_record_idx).val);
+
+  HelloReply received_reply;
+  EXPECT_TRUE(ParseProtobuf(
+      record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(server_record_idx), &received_reply));
+  EXPECT_THAT(received_reply, EqualsProto(R"proto(message: "Hello pixielabs!")proto"));
 }
 
 }  // namespace http2

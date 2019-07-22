@@ -411,6 +411,24 @@ done:
   return 0;
 }
 
+static __inline void update_traffic_class_for_msghdr(struct conn_info_t* conn_info,
+                                                     TrafficDirection direction,
+                                                     const struct user_msghdr* msghdr) {
+  size_t msg_iovlen = 0;
+  bpf_probe_read(&msg_iovlen, sizeof(msg_iovlen), &msghdr->msg_iovlen);
+  if (msg_iovlen == 0) {
+    return;
+  }
+  const struct iovec* msg_iov = NULL;
+  bpf_probe_read(&msg_iov, sizeof(void*), &msghdr->msg_iov);
+  if (msg_iov == NULL) {
+    return;
+  }
+  struct iovec iov;
+  bpf_probe_read(&iov, sizeof(struct iovec), &msg_iov[0]);
+  update_traffic_class(conn_info, direction, iov.iov_base, iov.iov_len);
+}
+
 static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t count,
                                            const struct user_msghdr* msghdr) {
   if (fd < 0) {
@@ -430,17 +448,13 @@ static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* bu
     return 0;
   }
 
+  // TODO(yzhao): Split the interface such that the singular buf case and multiple bufs in msghdr
+  // are handled separately without mixed interface. The plan is to factor out helper functions for
+  // lower-level functionalities, and call them separately for each case.
   if (buf != NULL) {
     update_traffic_class(conn_info, kEgress, buf, count);
   } else if (msghdr != NULL) {
-    const struct iovec* msg_iov = NULL;
-    bpf_probe_read(&msg_iov, sizeof(void*), &msghdr->msg_iov);
-    if (msg_iov == NULL) {
-      return 0;
-    }
-    struct iovec iov;
-    bpf_probe_read(&iov, sizeof(struct iovec), &msg_iov[0]);
-    update_traffic_class(conn_info, kEgress, iov.iov_base, iov.iov_len);
+    update_traffic_class_for_msghdr(conn_info, kEgress, msghdr);
   }
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
@@ -480,6 +494,72 @@ static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* bu
   return 0;
 }
 
+// TODO(yzhao): We can write a test for this, by define a dummy bpf_probe_read() function. Similar
+// in idea to a mock in normal C++ code.
+//
+// Writes the input buf to event, and submits the event to the corresponding perf buffer.
+//
+// Returns the bytes output from the input buf. Note that is not the total bytes submitted to the
+// perf buffer, which includes additional metadata.
+static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirection direction,
+                                       const char* buf, const size_t buf_size,
+                                       struct conn_info_t* conn_info,
+                                       struct socket_data_event_t* event) {
+  switch (direction) {
+    case kEgress:
+      event->attr.seq_num = conn_info->wr_seq_num;
+      ++conn_info->wr_seq_num;
+      break;
+    case kIngress:
+      event->attr.seq_num = conn_info->rd_seq_num;
+      ++conn_info->rd_seq_num;
+      break;
+  }
+
+  const size_t msg_size = buf_size < sizeof(event->msg) ? buf_size : sizeof(event->msg);
+  event->attr.msg_size = msg_size;
+  bpf_probe_read(&event->msg, msg_size, buf);
+
+  // Write snooped arguments to perf ring buffer.
+  const size_t size_to_submit = sizeof(event->attr) + msg_size;
+  switch (conn_info->traffic_class.protocol) {
+    case kProtocolHTTP:
+    case kProtocolHTTP2:
+      socket_http_events.perf_submit(ctx, event, size_to_submit);
+      break;
+    case kProtocolMySQL:
+      socket_mysql_events.perf_submit(ctx, event, size_to_submit);
+      break;
+    default:
+      break;
+  }
+  return msg_size;
+}
+
+static __inline void perf_submit_msghdr(struct pt_regs* ctx, const TrafficDirection direction,
+                                        const ssize_t total_size, const struct user_msghdr* msghdr,
+                                        struct conn_info_t* conn_info,
+                                        struct socket_data_event_t* event) {
+  size_t msg_iovlen = 0;
+  bpf_probe_read(&msg_iovlen, sizeof(size_t), &msghdr->msg_iovlen);
+
+  const struct iovec* iov_src = NULL;
+  bpf_probe_read(&iov_src, sizeof(void*), &msghdr->msg_iov);
+
+#pragma unroll
+  for (int i = 0, bytes_copied = 0; i < LOOP_LIMIT && i < msg_iovlen && bytes_copied < total_size;
+       ++i) {
+    struct iovec iov;
+    bpf_probe_read(&iov, sizeof(struct iovec), &iov_src[i]);
+    const size_t bytes_remain = total_size - bytes_copied;
+    const size_t iov_len = iov.iov_len < bytes_remain ? iov.iov_len : bytes_remain;
+
+    const size_t msg_size =
+        perf_submit_buf(ctx, direction, iov.iov_base, iov_len, conn_info, event);
+    bytes_copied += msg_size;
+  }
+}
+
 static __inline int probe_ret_write_send(struct pt_regs* ctx, EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
@@ -509,6 +589,7 @@ static __inline int probe_ret_write_send(struct pt_regs* ctx, EventType event_ty
   if (event == NULL) {
     goto done;
   }
+
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.conn_id.tgid = tgid;
@@ -517,68 +598,11 @@ static __inline int probe_ret_write_send(struct pt_regs* ctx, EventType event_ty
   event->attr.conn_id.generation = conn_info->conn_id.generation;
   event->attr.traffic_class = conn_info->traffic_class;
 
+  // TODO(yzhao): Same TODO for split the interface.
   if (write_info->buf != NULL) {
-    event->attr.seq_num = conn_info->wr_seq_num;
-    // Increment sequence number after copying so the index is 0-based.
-    ++conn_info->wr_seq_num;
-
-    const uint32_t buf_size =
-        bytes_written < sizeof(event->msg) ? bytes_written : sizeof(event->msg);
-    event->attr.msg_size = buf_size;
-    bpf_probe_read(&event->msg, buf_size, write_info->buf);
-
-    // Write snooped arguments to perf ring buffer.
-    const uint32_t size_to_submit = sizeof(event->attr) + buf_size;
-    switch (conn_info->traffic_class.protocol) {
-      case kProtocolHTTP:
-      case kProtocolHTTP2:
-        socket_http_events.perf_submit(ctx, event, size_to_submit);
-        break;
-      case kProtocolMySQL:
-        socket_mysql_events.perf_submit(ctx, event, size_to_submit);
-        break;
-      default:
-        break;
-    }
+    perf_submit_buf(ctx, kEgress, write_info->buf, bytes_written, conn_info, event);
   } else if (write_info->msghdr != NULL) {
-    // TODO(yzhao): Put this into a function and write test.
-    size_t msg_iovlen = 0;
-    bpf_probe_read(&msg_iovlen, sizeof(size_t), &write_info->msghdr->msg_iovlen);
-    const struct iovec* iov_src = NULL;
-    bpf_probe_read(&iov_src, sizeof(void*), &write_info->msghdr->msg_iov);
-    ssize_t bytes_copied = 0;
-
-#pragma unroll
-    for (int i = 0; i < LOOP_LIMIT && i < msg_iovlen && bytes_copied < bytes_written; ++i) {
-      // Direct assignment wont be rewritten correctly by BCC.
-      // TODO(yzhao): Experiment if sendmsg() on the same pid and fd can interleave. If so, we need
-      // to maintain secondary sequence number for the multiple events seen by the same sendmsg()
-      // call.
-      bpf_probe_read(&event->attr.seq_num, sizeof(uint64_t), &conn_info->wr_seq_num);
-      ++conn_info->wr_seq_num;
-
-      struct iovec iov;
-      bpf_probe_read(&iov, sizeof(struct iovec), &iov_src[i]);
-      const size_t bytes_remain = bytes_written - bytes_copied;
-      const size_t iov_len = iov.iov_len < bytes_remain ? iov.iov_len : bytes_remain;
-      event->attr.msg_size = iov_len;
-      const size_t len = iov_len < sizeof(event->msg) ? iov_len : sizeof(event->msg);
-      bpf_probe_read(event->msg, len, iov.iov_base);
-      bytes_copied += len;
-
-      const uint32_t size_to_submit = sizeof(event->attr) + len;
-      switch (conn_info->traffic_class.protocol) {
-        case kProtocolHTTP:
-        case kProtocolHTTP2:
-          socket_http_events.perf_submit(ctx, event, size_to_submit);
-          break;
-        case kProtocolMySQL:
-          socket_mysql_events.perf_submit(ctx, event, size_to_submit);
-          break;
-        default:
-          break;
-      }
-    }
+    perf_submit_msghdr(ctx, kEgress, bytes_written, write_info->msghdr, conn_info, event);
   }
 
 done:
@@ -605,6 +629,7 @@ static __inline int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf
   memset(&read_info, 0, sizeof(struct data_info_t));
   read_info.fd = fd;
   read_info.buf = buf;
+  read_info.msghdr = msghdr;
 
   active_read_info_map.update(&id, &read_info);
   return 0;
@@ -637,7 +662,12 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx, EventType event_typ
     goto done;
   }
 
-  update_traffic_class(conn_info, kIngress, buf, bytes_read);
+  // TODO(yzhao): Same TODO for split the interface.
+  if (buf != NULL) {
+    update_traffic_class(conn_info, kIngress, buf, bytes_read);
+  } else if (read_info->msghdr != NULL) {
+    update_traffic_class_for_msghdr(conn_info, kIngress, read_info->msghdr);
+  }
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
   if (conn_info->traffic_class.protocol == kProtocolUnknown) {
@@ -668,8 +698,6 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx, EventType event_typ
     goto done;
   }
 
-  event->attr.seq_num = conn_info->rd_seq_num;
-  ++conn_info->rd_seq_num;
   event->attr.event_type = event_type;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.conn_id.tgid = tgid;
@@ -678,22 +706,11 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx, EventType event_typ
   event->attr.conn_id.generation = conn_info->conn_id.generation;
   event->attr.traffic_class = conn_info->traffic_class;
 
-  const uint32_t buf_size = bytes_read < sizeof(event->msg) ? bytes_read : sizeof(event->msg);
-  event->attr.msg_size = buf_size;
-  bpf_probe_read(&event->msg, buf_size, buf);
-
-  // Write snooped arguments to perf ring buffer. Note that msg field is truncated.
-  const uint32_t size_to_submit = sizeof(event->attr) + buf_size;
-  switch (conn_info->traffic_class.protocol) {
-    case kProtocolHTTP:
-    case kProtocolHTTP2:
-      socket_http_events.perf_submit(ctx, event, size_to_submit);
-      break;
-    case kProtocolMySQL:
-      socket_mysql_events.perf_submit(ctx, event, size_to_submit);
-      break;
-    default:
-      break;
+  // TODO(yzhao): Same TODO for split the interface.
+  if (read_info->buf != NULL) {
+    perf_submit_buf(ctx, kIngress, read_info->buf, bytes_read, conn_info, event);
+  } else if (read_info->msghdr != NULL) {
+    perf_submit_msghdr(ctx, kIngress, bytes_read, read_info->msghdr, conn_info, event);
   }
 
 done:
@@ -796,6 +813,14 @@ int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int fd, const struct user_
 
 int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
   return probe_ret_write_send(ctx, kEventTypeSyscallSendMsgEvent);
+}
+
+int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int fd, struct user_msghdr* msghdr) {
+  return probe_entry_read_recv(ctx, fd, /*buf*/ NULL, /*count*/ 0, msghdr);
+}
+
+int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
+  return probe_ret_read_recv(ctx, kEventTypeSyscallRecvMsgEvent);
 }
 
 int syscall__probe_close(struct pt_regs* ctx, unsigned int fd) { return probe_close_impl(ctx, fd); }

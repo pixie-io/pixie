@@ -48,8 +48,8 @@ class SocketTraceBPFTest : public ::testing::Test {
       JoinThreads();
     }
 
-    void RunSendMsgerReader(const std::vector<std::vector<std::string_view>>& write_data) {
-      SpawnReaderClient();
+    void RunSendMsgerRecvMsger(const std::vector<std::vector<std::string_view>>& write_data) {
+      SpawnRecvMsgerClient();
       SpawnSendMsgerServer(write_data);
       JoinThreads();
     }
@@ -101,6 +101,16 @@ class SocketTraceBPFTest : public ::testing::Test {
           server_.SendMsg(data);
         }
         server_.Close();
+      });
+    }
+
+    void SpawnRecvMsgerClient() {
+      client_thread_ = std::thread([this]() {
+        client_.Connect(server_);
+        std::vector<std::string> msgs;
+        while (client_.RecvMsg(&msgs) > 0) {
+        }
+        client_.Close();
       });
     }
 
@@ -478,31 +488,39 @@ TEST_F(SocketTraceBPFTest, TestStartTime) {
             record_batch[kHTTPStartTimeIdx]->Get<types::Int64Value>(1).val);
 }
 
-TEST_F(SocketTraceBPFTest, SendMsgIsCapatured) {
-  ConfigureCapture(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceSendResp);
+TEST_F(SocketTraceBPFTest, SendMsgAndRecvMsgAreCapatured) {
+  ConfigureCapture(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceSendResp | kSocketTraceRecvReq |
+                                      kSocketTraceRecvResp);
   ClientServerSystem system;
-  system.RunSendMsgerReader(
+  system.RunSendMsgerRecvMsger(
       {{"HTTP/1.1 200 OK\r\n", "Content-Type: json\r\n", "Content-Length: 1\r\n\r\na"},
        {"HTTP/1.1 404 Not Found\r\n", "Content-Type: json\r\n", "Content-Length: 2\r\n\r\nbc"}});
   types::ColumnWrapperRecordBatch record_batch;
   InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch);
   source_->TransferData(kHTTPTableNum, &record_batch);
   for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-    ASSERT_EQ(2, col->Size());
+    // 2 for sendmsg() and 2 for recvmsg().
+    ASSERT_EQ(4, col->Size());
   }
-  EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0)),
-              StrEq("Content-Length: 1\nContent-Type: json"));
-  EXPECT_EQ(200, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(0).val);
-  EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0)), StrEq("a"));
-  EXPECT_THAT(std::string(record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(0)),
-              StrEq("OK"));
+  for (int i : {0, 2}) {
+    EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(i)),
+                StrEq("Content-Length: 1\nContent-Type: json"));
+    EXPECT_EQ(200, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(i).val);
+    EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(i)),
+                StrEq("a"));
+    EXPECT_THAT(std::string(record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(i)),
+                StrEq("OK"));
+  }
 
-  EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1)),
-              StrEq("Content-Length: 2\nContent-Type: json"));
-  EXPECT_EQ(404, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(1).val);
-  EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(1)), StrEq("bc"));
-  EXPECT_THAT(std::string(record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(1)),
-              StrEq("Not Found"));
+  for (int i : {1, 3}) {
+    EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(i)),
+                StrEq("Content-Length: 2\nContent-Type: json"));
+    EXPECT_EQ(404, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(i).val);
+    EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(i)),
+                StrEq("bc"));
+    EXPECT_THAT(std::string(record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(i)),
+                StrEq("Not Found"));
+  }
 }
 
 }  // namespace stirling

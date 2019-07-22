@@ -64,7 +64,8 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
       ++num_send_events_;
     } break;
     case kEventTypeSyscallReadEvent:
-    case kEventTypeSyscallRecvEvent: {
+    case kEventTypeSyscallRecvEvent:
+    case kEventTypeSyscallRecvMsgEvent: {
       recv_data_.AddEvent(seq_num, std::move(event));
       ++num_recv_events_;
     } break;
