@@ -79,11 +79,12 @@ phabConnector = PhabConnector.newInstance(this, 'https://phab.pixielabs.ai' /*ur
 
 // Restrict build to source code, since otherwise bazel seems to build all our deps.
 BAZEL_SRC_FILES_PATH = "//src/..."
-// ASAN/TSAN only work for CC code.
+// ASAN/TSAN only work for CC code. This will find all the CC code and exclude manual tags from the list.
 // TODO(zasgar): This query selects only cc binaries. After GO ASAN/TSAN works, we can update the ASAN/TSAN builds
 // to include all binaries.
-// This line also contains a hack to filter out cgo object files, assuming the object files have the _cgo_.o suffix.
-BAZEL_CC_QUERY = "`bazel query 'kind(\"cc_(binary|test) rule\", src/...)' | grep -v '_cgo_.o\$'`"
+BAZEL_EXCEPT_CLAUSE='attr(\"tags\", \"manual\", //...)'
+BAZEL_KIND_CLAUSE='kind(\"cc_(binary|test) rule\", //... -//third_party/...)'
+BAZEL_CC_QUERY = "`bazel query '${BAZEL_KIND_CLAUSE} except ${BAZEL_EXCEPT_CLAUSE}'`"
 SRC_STASH_NAME = "${BUILD_TAG}_src"
 DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image'
 DEV_DOCKER_IMAGE_EXTRAS = 'pl-dev-infra/dev_image_with_extras'
