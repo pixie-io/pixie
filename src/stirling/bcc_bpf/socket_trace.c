@@ -101,12 +101,21 @@ static __inline bool should_trace(const struct traffic_class_t* traffic_class) {
 // and use it as a heap allocated value.
 BPF_PERCPU_ARRAY(data_buffer_heap, struct socket_data_event_t, 1);
 
-// Attribute copied from:
-// https://github.com/iovisor/bcc/blob/ef9d83f289222df78f0b16a04ade7c393bf4d83d/\
-// examples/cpp/pyperf/PyPerfBPFProgram.cc#L168
-static __inline struct socket_data_event_t* data_buffer() {
+static __inline struct socket_data_event_t* fill_event(EventType event_type,
+                                                       const struct conn_info_t* conn_info) {
   u32 kZero = 0;
-  return data_buffer_heap.lookup(&kZero);
+  struct socket_data_event_t* event = data_buffer_heap.lookup(&kZero);
+  if (event == NULL) {
+    return NULL;
+  }
+  event->attr.event_type = event_type;
+  event->attr.timestamp_ns = bpf_ktime_get_ns();
+  event->attr.conn_id.tgid = conn_info->conn_id.tgid;
+  event->attr.conn_id.tgid_start_time_ns = conn_info->conn_id.tgid_start_time_ns;
+  event->attr.conn_id.fd = conn_info->conn_id.fd;
+  event->attr.conn_id.generation = conn_info->conn_id.generation;
+  event->attr.traffic_class = conn_info->traffic_class;
+  return event;
 }
 
 /***********************************************************
@@ -567,18 +576,10 @@ static __inline int probe_ret_write_send(struct pt_regs* ctx, EventType event_ty
     goto done;
   }
 
-  struct socket_data_event_t* event = data_buffer();
+  struct socket_data_event_t* event = fill_event(event_type, conn_info);
   if (event == NULL) {
     goto done;
   }
-
-  event->attr.event_type = event_type;
-  event->attr.timestamp_ns = bpf_ktime_get_ns();
-  event->attr.conn_id.tgid = tgid;
-  event->attr.conn_id.tgid_start_time_ns = get_tgid_start_time();
-  event->attr.conn_id.fd = write_info->fd;
-  event->attr.conn_id.generation = conn_info->conn_id.generation;
-  event->attr.traffic_class = conn_info->traffic_class;
 
   // TODO(yzhao): Same TODO for split the interface.
   if (write_info->buf != NULL) {
@@ -661,18 +662,10 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx, EventType event_typ
     goto done;
   }
 
-  struct socket_data_event_t* event = data_buffer();
+  struct socket_data_event_t* event = fill_event(event_type, conn_info);
   if (event == NULL) {
     goto done;
   }
-
-  event->attr.event_type = event_type;
-  event->attr.timestamp_ns = bpf_ktime_get_ns();
-  event->attr.conn_id.tgid = tgid;
-  event->attr.conn_id.tgid_start_time_ns = get_tgid_start_time();
-  event->attr.conn_id.fd = read_info->fd;
-  event->attr.conn_id.generation = conn_info->conn_id.generation;
-  event->attr.traffic_class = conn_info->traffic_class;
 
   // TODO(yzhao): Same TODO for split the interface.
   if (read_info->buf != NULL) {
