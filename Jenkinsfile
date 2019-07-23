@@ -105,7 +105,8 @@ stashList = [];
 
 // Flag controlling if coverage job is enabled.
 isMasterRun =  (env.JOB_NAME == "pixielabs-master")
-isNightlyRun = (env.JOB_NAME == "pixielabs-master-nightly")
+isNightlyDeployRun = (env.JOB_NAME == "pixielabs-master-nightly-deploy")
+isNightlyTestRegressionRun = (env.JOB_NAME == "pixielabs-master-nightly-test-regression")
 
 runCoverageJob = isMasterRun
 
@@ -577,8 +578,49 @@ def buildScriptForNightly = {
   }
 }
 
-if (isNightlyRun) {
+def buildScriptForNightlyTestRegression = {
+  node {
+    currentBuild.result = 'SUCCESS'
+    deleteDir()
+    try {
+      stage('Checkout code') {
+        checkoutAndInitialize()
+      }
+      stage('Test (opt)') {
+        WithSourceCode {
+          dockerStepWithBazelCmd(
+            "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH} --runs_per_test 1000",
+            'build-opt')
+        }
+      }
+      stage('Test (ASAN)') {
+        WithSourceCode {
+          dockerStep('--cap-add=SYS_PTRACE', {
+            bazelCmd("bazel test --config=asan ${BAZEL_CC_QUERY} --runs_per_test 1000", 'build-asan')
+          })
+        }
+      }
+      stage('Test (TSAN)') {
+        WithSourceCode {
+          dockerStep('--cap-add=SYS_PTRACE', {
+            bazelCmd("bazel test --config=tsan ${BAZEL_CC_QUERY} --runs_per_test 1000", 'build-tsan')
+          })
+        }
+      }
+    }
+    catch(err) {
+      currentBuild.result = 'FAILURE'
+      echo "Exception thrown:\n ${err}"
+      echo "Stacktrace:"
+      err.printStackTrace()
+    }
+  }
+}
+
+if (isNightlyDeployRun) {
   buildScriptForNightly()
+} else if(isNightlyTestRegressionRun) {
+  buildScriptForNightlyTestRegression()
 } else {
   buildScriptForCommits()
 }
