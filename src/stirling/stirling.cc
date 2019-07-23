@@ -17,6 +17,7 @@
 #include "src/stirling/source_connector.h"
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
+#include "src/stirling/utils/kprobe_cleaner.h"
 
 #include "src/stirling/bcc_connector.h"
 #include "src/stirling/cgroup_stats_connector.h"
@@ -203,6 +204,10 @@ StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
 StirlingImpl::~StirlingImpl() { Stop(); }
 
 Status StirlingImpl::Init() {
+  // Clean up any probes from a previous instance.
+  static constexpr char kPixieBPFProbeMarker[] = "__pixie__";
+  Status s = utils::KprobeCleaner(kPixieBPFProbeMarker);
+  LOG_IF(WARNING, !s.ok()) << absl::Substitute("Kprobe Cleaner failed. Message $0", s.msg());
   PL_RETURN_IF_ERROR(CreateSourceConnectors());
   return Status::OK();
 }
