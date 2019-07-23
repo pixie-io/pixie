@@ -3,9 +3,9 @@
 #include <thread>
 
 #include "src/common/base/base.h"
-#include "src/stirling/bcc_connector.h"
 #include "src/stirling/cgroup_stats_connector.h"
 #include "src/stirling/info_class_manager.h"
+#include "src/stirling/pid_runtime_connector.h"
 #include "src/stirling/seq_gen_connector.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/source_registry.h"
@@ -26,7 +26,7 @@ using pl::types::StringValue;
 using pl::types::Time64NSValue;
 
 using pl::stirling::CGroupStatsConnector;
-using pl::stirling::PIDCPUUseBCCConnector;
+using pl::stirling::PIDRuntimeConnector;
 using pl::stirling::SeqGenConnector;
 using pl::stirling::SocketTraceConnector;
 
@@ -90,8 +90,8 @@ void StirlingWrapperCallback(uint64_t table_id,
   } else if (name == SocketTraceConnector::kMySQLTable.name().data()) {
     PrintRecordBatch("MySQLTrace", SocketTraceConnector::kMySQLTable.elements(), num_records,
                      *record_batch);
-  } else if (name == PIDCPUUseBCCConnector::kTable.name().data()) {
-    PrintRecordBatch("PIDStat-BCC", PIDCPUUseBCCConnector::kTable.elements(), num_records,
+  } else if (name == PIDRuntimeConnector::kTable.name().data()) {
+    PrintRecordBatch("PIDStat-BCC", PIDRuntimeConnector::kTable.elements(), num_records,
                      *record_batch);
   } else if (name == SocketTraceConnector::kHTTPTable.name().data()) {
     PrintRecordBatch("HTTPTrace", SocketTraceConnector::kHTTPTable.elements(), num_records,

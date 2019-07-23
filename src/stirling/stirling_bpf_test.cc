@@ -57,14 +57,14 @@ TEST_F(StirlingBPFTest, CleanupTest) {
   // TODO(oazizi): This is not good. How do we know how much time is enough?
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  EXPECT_GT(SocketTraceConnector::NumAttachedProbes(), 0);
-  EXPECT_GT(SocketTraceConnector::NumOpenPerfBuffers(), 0);
+  EXPECT_GT(SocketTraceConnector::num_attached_probes(), 0);
+  EXPECT_GT(SocketTraceConnector::num_open_perf_buffers(), 0);
 
   std::thread killer_thread = std::thread(&AsyncKill, stirling_.get());
 
   ASSERT_TRUE(killer_thread.joinable());
   killer_thread.join();
 
-  EXPECT_EQ(SocketTraceConnector::NumAttachedProbes(), 0);
-  EXPECT_EQ(SocketTraceConnector::NumOpenPerfBuffers(), 0);
+  EXPECT_EQ(SocketTraceConnector::num_attached_probes(), 0);
+  EXPECT_EQ(SocketTraceConnector::num_open_perf_buffers(), 0);
 }

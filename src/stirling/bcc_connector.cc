@@ -16,63 +16,148 @@
 namespace pl {
 namespace stirling {
 
-Status PIDCPUUseBCCConnector::InitImpl() {
+// TODO(yzhao): Read CPU count during runtime and set maxactive to Multiplier * N_CPU. That way, we
+// can be relatively more secure against increase of CPU count. Note the default multiplier is 2,
+// which is not sufficient, as indicated in Hipster shop.
+//
+// AWS offers VMs with 96 vCPUs. We bump the number from 2X to 4X, and round up to 2's exponential,
+// which gives 4 * 96 == 384 => 512.
+//
+// The implication of this parameter is explained in the "How Does a Return Probe Work?" section of
+// https://www.kernel.org/doc/Documentation/kprobes.txt. In short, this controls the memory space
+// used for bookkeeping, which translate to equal number of struct kretprobe in memory.
+constexpr int kKprobeMaxActive = 512;
+
+Status BCCWrapper::InitBPFCode(const std::vector<std::string>& cflags) {
   if (!IsRoot()) {
     return error::PermissionDenied("BCC currently only supported as the root user.");
   }
-  auto init_res = bpf_.init(std::string(kBCCScript));
+  auto init_res = bpf_.init(std::string(bpf_program_), cflags);
   if (init_res.code() != 0) {
     return error::Internal("Unable to initialize BCC BPF program: $0", init_res.msg());
-  }
-  auto attach_res =
-      bpf_.attach_perf_event(event_type_, event_config_, kFunctionName, 0, kSamplingFreq);
-  if (attach_res.code() != 0) {
-    return error::Internal("Unable to execute BCC BPF program: $0", attach_res.msg());
   }
   return Status::OK();
 }
 
-Status PIDCPUUseBCCConnector::StopImpl() {
+Status BCCWrapper::AttachProbe(const ProbeSpec& probe) {
+  ebpf::StatusTuple attach_status = bpf_.attach_kprobe(
+      bpf_.get_syscall_fnname(std::string(probe.kernel_fn_short_name)),
+      std::string(probe.trace_fn_name), 0 /* offset */, probe.attach_type, kKprobeMaxActive);
+  if (attach_status.code() != 0) {
+    return error::Internal("Failed to attach kprobe to kernel function: $0, error message: $1",
+                           probe.kernel_fn_short_name, attach_status.msg());
+  }
+  probes_.push_back(probe);
+  ++num_attached_probes_;
+  return Status::OK();
+}
+
+Status BCCWrapper::AttachProbes(const ConstVectorView<ProbeSpec>& probes) {
+  // TODO(yzhao): We need to clean the already attached probes after encountering a failure.
+  for (const ProbeSpec& p : probes) {
+    PL_RETURN_IF_ERROR(AttachProbe(p));
+  }
+  return Status::OK();
+}
+
+Status BCCWrapper::DetachProbe(const ProbeSpec& probe) {
+  ebpf::StatusTuple detach_status = bpf_.detach_kprobe(
+      bpf_.get_syscall_fnname(std::string(probe.kernel_fn_short_name)), probe.attach_type);
+
+  if (detach_status.code() != 0) {
+    return error::Internal("Failed to detach kprobe to kernel function: $0, error message: $1",
+                           probe.kernel_fn_short_name, detach_status.msg());
+  }
+  --num_attached_probes_;
+  return Status::OK();
+}
+
+void BCCWrapper::DetachProbes() {
+  for (const ProbeSpec& p : probes_) {
+    auto res = DetachProbe(p);
+    LOG_IF(ERROR, !res.ok()) << res.msg();
+  }
+  probes_.clear();
+}
+
+Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie) {
+  ebpf::StatusTuple open_status =
+      bpf_.open_perf_buffer(std::string(perf_buffer.name), perf_buffer.probe_output_fn,
+                            perf_buffer.probe_loss_fn, cb_cookie, perf_buffer.num_pages);
+  if (open_status.code() != 0) {
+    return error::Internal("Failed to open perf buffer: $0, error message: $1", perf_buffer.name,
+                           open_status.msg());
+  }
+  perf_buffers_.push_back(perf_buffer);
+  ++num_open_perf_buffers_;
+  return Status::OK();
+}
+
+Status BCCWrapper::OpenPerfBuffers(const ConstVectorView<PerfBufferSpec>& perf_buffers,
+                                   void* cb_cookie) {
+  for (const PerfBufferSpec& p : perf_buffers) {
+    PL_RETURN_IF_ERROR(OpenPerfBuffer(p, cb_cookie));
+  }
+  return Status::OK();
+}
+
+Status BCCWrapper::ClosePerfBuffer(const PerfBufferSpec& perf_buffer) {
+  ebpf::StatusTuple close_status = bpf_.close_perf_buffer(std::string(perf_buffer.name));
+  if (close_status.code() != 0) {
+    return error::Internal("Failed to close perf buffer: $0, error message: $1", perf_buffer.name,
+                           close_status.msg());
+  }
+  --num_open_perf_buffers_;
+  return Status::OK();
+}
+
+void BCCWrapper::ClosePerfBuffers() {
+  for (const PerfBufferSpec& p : perf_buffers_) {
+    auto res = ClosePerfBuffer(p);
+    LOG_IF(ERROR, !res.ok()) << res.msg();
+  }
+  perf_buffers_.clear();
+}
+
+Status BCCWrapper::AttachPerfEvent(const PerfEventSpec& perf_event) {
+  auto attach_res = bpf_.attach_perf_event(perf_event.event_type, perf_event.event_config,
+                                           std::string(perf_event.probe_func),
+                                           perf_event.sample_period, perf_event.sample_freq);
+  if (attach_res.code() != 0) {
+    return error::Internal("Unable to attach perf event, error message $0", attach_res.msg());
+  }
+  perf_events_.push_back(perf_event);
+  ++num_attached_perf_events_;
+  return Status::OK();
+}
+
+Status BCCWrapper::AttachPerfEvents(const ConstVectorView<PerfEventSpec>& perf_events) {
+  for (const PerfEventSpec& p : perf_events) {
+    PL_RETURN_IF_ERROR(AttachPerfEvent(p));
+  }
+  return Status::OK();
+}
+
+Status BCCWrapper::DetachPerfEvent(const PerfEventSpec& perf_event) {
+  auto detach_res = bpf_.detach_perf_event(perf_event.event_type, perf_event.event_config);
+  if (detach_res.code() != 0) {
+    return error::Internal("Unable to detach perf event, error_message $0", detach_res.msg());
+  }
+  --num_attached_perf_events_;
+  return Status::OK();
+}
+
+void BCCWrapper::DetachPerfEvents() {
   // TODO(kgandhi): PL-453  Figure out a fix for below warning.
   // WARNING: Detaching perf events based on event_type_ and event_config_ might
   // end up removing the perf event if there was another source with the same perf event and
   // config. Should be rare but may still be an issue.
-  auto detach_res = bpf_.detach_perf_event(event_type_, event_config_);
-  if (detach_res.code() != 0) {
-    return error::Internal("Unable to STOP BCC BPF program: $0", detach_res.msg());
+
+  for (const PerfEventSpec& p : perf_events_) {
+    auto res = DetachPerfEvent(p);
+    LOG_IF(ERROR, !res.ok()) << res.msg();
   }
-  return Status::OK();
-}
-
-void PIDCPUUseBCCConnector::TransferDataImpl(uint32_t table_num,
-                                             types::ColumnWrapperRecordBatch* record_batch) {
-  CHECK_LT(table_num, kTables.size())
-      << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
-
-  // TODO(kgandhi): PL-452 There is an extra copy when calling get_table_offline. We should extract
-  // the key when it is a struct from the BPFHASHTable directly.
-  table_ = bpf_.get_hash_table<uint16_t, pidruntime_val_t>("pid_cpu_time").get_table_offline();
-
-  for (auto& item : table_) {
-    // TODO(kgandhi): PL-460 Consider using other types of BPF tables to avoid a searching through
-    // a map for the previously recorded run-time. Alternatively, calculate delta in the bpf code
-    // if that is more efficient.
-    auto it = prev_run_time_map_.find({item.first});
-    uint64_t prev_run_time = 0;
-    if (it == prev_run_time_map_.end()) {
-      prev_run_time_map_.insert({item.first, item.second.run_time});
-    } else {
-      prev_run_time = it->second;
-    }
-
-    RecordBuilder<&kTable> r(record_batch);
-    r.Append<r.ColIndex("time_")>(item.second.timestamp + ClockRealTimeOffset());
-    r.Append<r.ColIndex("pid")>(item.first);
-    r.Append<r.ColIndex("runtime_ns")>(item.second.run_time - prev_run_time);
-    r.Append<r.ColIndex("cmd")>(item.second.name);
-
-    prev_run_time_map_[item.first] = item.second.run_time;
-  }
+  perf_events_.clear();
 }
 
 }  // namespace stirling

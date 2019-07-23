@@ -37,62 +37,17 @@ using ::pl::stirling::http2::GRPCMessage;
 using ::pl::stirling::http2::GRPCReqResp;
 using ::pl::stirling::http2::MatchGRPCReqResp;
 
-// TODO(yzhao): Read CPU count during runtime and set maxactive to Multiplier * N_CPU. That way, we
-// can be relatively more secure against increase of CPU count. Note the default multiplier is 2,
-// which is not sufficient, as indicated in Hipster shop.
-//
-// AWS offers VMs with 96 vCPUs. We bump the number from 2X to 4X, and round up to 2's exponential,
-// which gives 4 * 96 == 384 => 512.
-//
-// The implication of this parameter is explained in the "How Does a Return Probe Work?" section of
-// https://www.kernel.org/doc/Documentation/kprobes.txt. In short, this controls the memory space
-// used for bookkeeping, which translate to equal number of struct kretprobe in memory.
-constexpr int kKprobeMaxActive = 512;
-
 Status SocketTraceConnector::InitImpl() {
-  if (!IsRoot()) {
-    return error::PermissionDenied("BCC currently only supported as the root user.");
-  }
-
   PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders());
 
   std::vector<std::string> cflags = {"-DNDEBUG"};
   if (FLAGS_enable_bpf_logging) {
     cflags.clear();
   }
-  auto init_res = bpf_.init(std::string(kBCCScript), cflags);
-  if (init_res.code() != 0) {
-    return error::Internal(
-        absl::StrCat("Failed to initialize BCC script, error message: ", init_res.msg()));
-  }
-  // TODO(yzhao): We need to clean the already attached probes after encountering a failure.
-  for (const ProbeSpec& p : kProbeSpecs) {
-    ebpf::StatusTuple attach_status = bpf_.attach_kprobe(
-        bpf_.get_syscall_fnname(std::string(p.kernel_fn_short_name)), std::string(p.trace_fn_name),
-        0 /* offset */, p.attach_type, kKprobeMaxActive);
-    if (attach_status.code() != 0) {
-      return error::Internal(
-          absl::StrCat("Failed to attach kprobe to kernel function: ", p.kernel_fn_short_name,
-                       ", error message: ", attach_status.msg()));
-    }
-    ++num_attached_probes_;
-  }
-  for (auto& perf_buffer_spec : kPerfBufferSpecs) {
-    ebpf::StatusTuple open_status =
-        bpf_.open_perf_buffer(std::string(perf_buffer_spec.name), perf_buffer_spec.probe_output_fn,
-                              perf_buffer_spec.probe_loss_fn,
-                              // TODO(yzhao): We sort of are not unified around how record_batch and
-                              // cb_cookie is passed to the callback. Consider unifying them.
-                              /*cb_cookie*/ this, perf_buffer_spec.num_pages);
-    if (open_status.code() != 0) {
-      return error::Internal(absl::StrCat("Failed to open perf buffer: ", perf_buffer_spec.name,
-                                          ", error message: ", open_status.msg()));
-    }
-    ++num_open_perf_buffers_;
-  }
-
-  PL_RETURN_IF_ERROR(InitBPFLogging(&bpf_));
-  PL_RETURN_IF_ERROR(Configure(kProtocolUnknown, kSocketTraceNothing));
+  PL_RETURN_IF_ERROR(InitBPFCode(cflags));
+  PL_RETURN_IF_ERROR(AttachProbes(kProbeSpecs));
+  PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
+  PL_RETURN_IF_ERROR(InitBPFLogging(&bpf()));
   PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvResp));
   PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kSocketTraceSendReq));
   // TODO(PL-659): connect() call might return non 0 value, making requester-side tracing
@@ -104,27 +59,8 @@ Status SocketTraceConnector::InitImpl() {
 }
 
 Status SocketTraceConnector::StopImpl() {
-  // TODO(yzhao): We should continue to detach after encountering a failure.
-  for (const ProbeSpec& p : kProbeSpecs) {
-    ebpf::StatusTuple detach_status = bpf_.detach_kprobe(
-        bpf_.get_syscall_fnname(std::string(p.kernel_fn_short_name)), p.attach_type);
-    if (detach_status.code() != 0) {
-      return error::Internal(
-          absl::StrCat("Failed to detach kprobe to kernel function: ", p.kernel_fn_short_name,
-                       ", error message: ", detach_status.msg()));
-    }
-    --num_attached_probes_;
-  }
-
-  for (auto& perf_buffer_spec : kPerfBufferSpecs) {
-    ebpf::StatusTuple close_status = bpf_.close_perf_buffer(std::string(perf_buffer_spec.name));
-    if (close_status.code() != 0) {
-      return error::Internal(absl::StrCat("Failed to close perf buffer: ", perf_buffer_spec.name,
-                                          ", error message: ", close_status.msg()));
-    }
-    --num_open_perf_buffers_;
-  }
-
+  DetachProbes();
+  ClosePerfBuffers();
   return Status::OK();
 }
 
@@ -152,11 +88,11 @@ void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
     default:
       CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
   }
-  DumpBPFLog(&bpf_);
+  DumpBPFLog(&bpf());
 }
 
 Status SocketTraceConnector::Configure(TrafficProtocol protocol, uint64_t config_mask) {
-  auto control_map_handle = bpf_.get_percpu_array_table<uint64_t>(kControlMapName);
+  auto control_map_handle = bpf().get_percpu_array_table<uint64_t>(kControlMapName);
   std::vector<uint64_t> config_mask_allcpus(kCPUCount, config_mask);
   auto update_res =
       control_map_handle.update_value(static_cast<int>(protocol), config_mask_allcpus);
@@ -170,7 +106,7 @@ Status SocketTraceConnector::Configure(TrafficProtocol protocol, uint64_t config
 }
 
 Status SocketTraceConnector::TestOnlySetTargetPID(int64_t pid) {
-  auto control_map_handle = bpf_.get_percpu_array_table<uint64_t>(kTargetTGIDArrayName);
+  auto control_map_handle = bpf().get_percpu_array_table<uint64_t>(kTargetTGIDArrayName);
   std::vector<uint64_t> target_pids(kCPUCount, pid);
   auto update_res = control_map_handle.update_value(/*index*/ 0, target_pids);
   if (update_res.code() != 0) {
@@ -189,7 +125,7 @@ void SocketTraceConnector::ReadPerfBuffer(uint32_t table_num) {
       << "Index out of bound. Trying to read from perf buffer that doesn't exist.";
   auto buffer_names = kTablePerfBufferMap[table_num];
   for (auto& buffer_name : buffer_names) {
-    auto perf_buffer = bpf_.get_perf_buffer(std::string(buffer_name));
+    auto perf_buffer = bpf().get_perf_buffer(std::string(buffer_name.data()));
     if (perf_buffer != nullptr) {
       perf_buffer->poll(1);
     }

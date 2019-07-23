@@ -26,9 +26,9 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 #include "demos/applications/hipster_shop/reflection.h"
 #include "src/common/grpcutils/service_descriptor_database.h"
+#include "src/stirling/bcc_connector.h"
 #include "src/stirling/connection_tracker.h"
 #include "src/stirling/socket_trace.h"
-#include "src/stirling/source_connector.h"
 
 DECLARE_string(http_response_header_filters);
 DECLARE_bool(enable_parsing_protobufs);
@@ -52,7 +52,7 @@ struct TraceRecord {
   TMessageType resp_message;
 };
 
-class SocketTraceConnector : public SourceConnector {
+class SocketTraceConnector : public SourceConnector, public BCCWrapper {
  public:
   inline static const std::string_view kBCCScript = http_trace_bcc_script;
 
@@ -173,11 +173,6 @@ class SocketTraceConnector : public SourceConnector {
   // TODO(oazizi): This function is only public for testing purposes. Make private?
   void ReadPerfBuffer(uint32_t table_num);
 
-  // These are static counters of attached/open probes across all instances.
-  // It is meant for verification that we have cleaned-up all resources in tests.
-  static size_t NumAttachedProbes() { return num_attached_probes_; }
-  static size_t NumOpenPerfBuffers() { return num_open_perf_buffers_; }
-
  private:
   // ReadPerfBuffer poll callback functions (must be static).
   // These are used by the static variables below, and have to be placed here.
@@ -186,21 +181,6 @@ class SocketTraceConnector : public SourceConnector {
   static void HandleProbeLoss(void* cb_cookie, uint64_t lost);
   static void HandleCloseProbeOutput(void* cb_cookie, void* data, int data_size);
   static void HandleOpenProbeOutput(void* cb_cookie, void* data, int data_size);
-
-  // Describes a kprobe that should be attached with the BPF::attach_kprobe().
-  struct ProbeSpec {
-    std::string_view kernel_fn_short_name;
-    std::string_view trace_fn_name;
-    bpf_probe_attach_type attach_type;
-  };
-
-  struct PerfBufferSpec {
-    // Name is same as the perf buffer inside bcc_bpf/socket_trace.c.
-    std::string_view name;
-    perf_reader_raw_cb probe_output_fn;
-    perf_reader_lost_cb probe_loss_fn;
-    uint32_t num_pages;
-  };
 
   static constexpr ProbeSpec kProbeSpecsArray[] = {
       {"connect", "syscall__probe_entry_connect", bpf_probe_attach_type::BPF_PROBE_ENTRY},
@@ -257,7 +237,8 @@ class SocketTraceConnector : public SourceConnector {
   inline static const size_t kCPUCount = ebpf::BPFTable::get_possible_cpu_count();
 
   explicit SocketTraceConnector(std::string_view source_name)
-      : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {
+      : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod),
+        BCCWrapper(kBCCScript) {
     // TODO(yzhao): Is there a better place/time to grab the flags?
     http_response_header_filter_ = ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
     config_mask_.resize(kNumProtocols);
@@ -298,16 +279,6 @@ class SocketTraceConnector : public SourceConnector {
   // Transfer of a MySQL Event to the MySQL Table.
   // TODO(oazizi/yzhao): Change to use std::unique_ptr.
   void TransferMySQLEvent(SocketDataEvent event, types::ColumnWrapperRecordBatch* record_batch);
-
-  ebpf::BPF bpf_;
-
-  // These are static counters across all instances, because:
-  // 1) We want to ensure we have cleaned all BPF resources up across *all* instances (no leaks).
-  // 2) It is for verification only, and it doesn't make sense to create accessors from stirling to
-  // here.
-  // TODO(oazizi): These are a better fit for refactoring solution in D1190.
-  inline static size_t num_attached_probes_;
-  inline static size_t num_open_perf_buffers_;
 
   // Note that the inner map cannot be a vector, because there is no guaranteed order
   // in which events are read from perf buffers.

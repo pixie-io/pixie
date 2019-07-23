@@ -1,17 +1,6 @@
 #pragma once
 
-#ifndef __linux__
-
-#include "src/stirling/source_connector.h"
-
-namespace pl {
-namespace stirling {
-
-DUMMY_SOURCE_CONNECTOR(PIDCPUUseBCCConnector);
-
-}  // namespace stirling
-}  // namespace pl
-#else
+#ifdef __linux__
 
 #include <bcc/BPF.h>
 #include <linux/perf_event.h>
@@ -26,75 +15,193 @@ DUMMY_SOURCE_CONNECTOR(PIDCPUUseBCCConnector);
 #include "src/stirling/bcc_bpf/pidruntime.h"
 #include "src/stirling/source_connector.h"
 
-OBJ_STRVIEW(pidruntime_bcc_script, _binary_bcc_bpf_pidruntime_c_preprocessed);
-
 namespace pl {
 namespace stirling {
 
-class BCCConnector : public SourceConnector {
- public:
-  BCCConnector() = delete;
-  ~BCCConnector() override = default;
+/**
+ * Describes a kernel probe (kprobe).
+ * Currently only works for syscalls.
+ */
+struct ProbeSpec {
+  // Name of kernel function to probe (currently must be syscall).
+  std::string_view kernel_fn_short_name;
 
- protected:
-  explicit BCCConnector(std::string_view source_name,
-                        const ConstVectorView<DataTableSchema>& schemas,
-                        std::chrono::milliseconds default_sampling_period,
-                        std::chrono::milliseconds default_push_period,
-                        const std::string_view bpf_program)
-      : SourceConnector(source_name, schemas, default_sampling_period, default_push_period),
-        bpf_program_(bpf_program) {}
+  // Name of user-provided function to run when event is triggered.
+  std::string_view trace_fn_name;
 
- private:
-  std::string_view bpf_program_;
+  // Whether this is an ENTRY or RETURN probe.
+  bpf_probe_attach_type attach_type;
 };
 
-class PIDCPUUseBCCConnector : public BCCConnector {
+/**
+ * Describes a perf buffer used in BCC code, through which data is returned to user-space.
+ */
+struct PerfBufferSpec {
+  // Name of the perf buffer.
+  // Must be the same as the perf buffer name declared in the probe code with BPF_PERF_OUTPUT.
+  std::string_view name;
+
+  // Function that will be called for every event in the perf buffer,
+  // when perf buffer read is triggered.
+  perf_reader_raw_cb probe_output_fn;
+
+  // Function that will be called if there are lost/clobbered perf events.
+  perf_reader_lost_cb probe_loss_fn;
+
+  // Size of the perf buffer, in pages.
+  uint32_t num_pages;
+};
+
+/**
+ * Describes a perf event to attach.
+ * This can be run stand-alone and is not dependent on kProbes.
+ */
+struct PerfEventSpec {
+  // The type of perf event (e.g. PERF_TYPE_HARDWARE, PERF_TYPE_SOFTWARE, etc.)
+  uint32_t event_type;
+
+  // The actual event to be counted (e.g. PERF_COUNT_HW_CPU_CYCLES).
+  uint32_t event_config;
+
+  // Name of user-provided function to run when event is triggered.
+  std::string_view probe_func;
+
+  // Sampling period in number of events.
+  // Mutually exclusive with sample_freq.
+  // TODO(oazizi): Even though BCC does it this way, we can have a better scheme.
+  uint64_t sample_period;
+
+  // Sampling frequency in Hz to trigger the probe.
+  // Kernel will try to modulate the sample period to achieve the desired frequency.
+  // Mutually exclusive with sample_period.
+  uint64_t sample_freq;
+};
+
+/**
+ * Wrapper around BCC, as a convenience.
+ */
+class BCCWrapper {
  public:
-  inline static const std::string_view kBCCScript = pidruntime_bcc_script;
+  BCCWrapper() = delete;
 
-  // clang-format off
-  static constexpr DataElement kElements[] = {
-      {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
-      {"pid", types::DataType::INT64, types::PatternType::GENERAL},
-      // TODO(chengruizhe): runtime_ns: Will be converted to counter
-      {"runtime_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE},
-      {"cmd", types::DataType::STRING, types::PatternType::GENERAL},
-  };
-  // clang-format on
-  static constexpr auto kTable = DataTableSchema("bcc_pid_cpu_usage", kElements);
+  /**
+   * Constructor, which takes source code as an input.
+   * @param bpf_program a string_view to the source code to compile.
+   */
+  explicit BCCWrapper(const std::string_view bpf_program) : bpf_program_(bpf_program) {}
 
-  static constexpr DataTableSchema kTablesArray[] = {kTable};
-  static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
-
-  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
-  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
-
-  static std::unique_ptr<SourceConnector> Create(std::string_view name) {
-    return std::unique_ptr<SourceConnector>(new PIDCPUUseBCCConnector(name));
+  ~BCCWrapper() {
+    // Not really required, because BPF destructor handles these.
+    // But we do it anyways.
+    DetachPerfEvents();
+    ClosePerfBuffers();
+    DetachProbes();
   }
 
-  Status InitImpl() override;
+  /**
+   * @brief Compiles the BPF code.
+   * @param cflags compiler flags.
+   * @return error if no root access, or code could not be compiled.
+   */
+  Status InitBPFCode(const std::vector<std::string>& cflags);
+  Status InitBPFCode() { return InitBPFCode(std::vector<std::string>()); }
 
-  Status StopImpl() override;
+  /**
+   * @ brief Attaches a single kernel probe (kprobe).
+   * @param probe Specifications
+   * @return Error if probe failed to attach.
+   */
+  Status AttachProbe(const ProbeSpec& probe);
 
-  void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
+  /**
+   * @brief Convenience function that attaches multiple probes.
+   * @param probes Vector of probes.
+   * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
+   */
+  Status AttachProbes(const ConstVectorView<ProbeSpec>& probes);
 
- protected:
-  explicit PIDCPUUseBCCConnector(std::string_view name)
-      : BCCConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod, kBCCScript),
-        event_type_(perf_type_id::PERF_TYPE_SOFTWARE),
-        event_config_(perf_sw_ids::PERF_COUNT_SW_CPU_CLOCK) {}
+  /**
+   * @brief Detaches all probes that were attached by the wrapper.
+   * If any probe fails to detach, an error is logged, and the function continues.
+   */
+  void DetachProbes();
+
+  /**
+   * @brief Opens a perf buffer.
+   * @param perf_buffer Descriptor of the perf buffer to open.
+   * @param cb_cookie Raw pointer returned on callback, typically used for tracking context.
+   * @return Error if perf buffer open fails.
+   */
+  Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie);
+
+  /**
+   * @brief Convenience function that opens multiple perf buffers.
+   * @param probes Vector of perf buffer descriptors.
+   * @param cb_cookie Raw pointer returned on callback, typically used for tracking context.
+   * @return Error of first failure (remaining perf buffer opens are not attempted).
+   */
+  Status OpenPerfBuffers(const ConstVectorView<PerfBufferSpec>& perf_buffers, void* cb_cookie);
+
+  /**
+   * @brief Detaches all perf buffers that were opened by the wrapper.
+   * If any perf buffer fails to close, an error is logged, and the function continues.
+   */
+  void ClosePerfBuffers();
+
+  /**
+   * @brief Attaches a single perf event.
+   * @param perf_event Descriptor of the perf event.
+   * @return Error if perf event fails to attach.
+   */
+  Status AttachPerfEvent(const PerfEventSpec& perf_event);
+
+  /**
+   * @brief Convenience function that opens multiple perf events.
+   * @param probes Vector of perf event descriptors.
+   * @return Error of first failure (remaining perf event attaches are not attempted).
+   */
+  Status AttachPerfEvents(const ConstVectorView<PerfEventSpec>& perf_events);
+
+  /**
+   * @brief Detaches all perf buffers that were opened by the wrapper.
+   * If any perf buffer fails to close, an error is logged, and the function continues.
+   */
+  void DetachPerfEvents();
+
+  /**
+   * Provide access to the BPF instance, for direct access.
+   * Eventually, this should go away, and everything should
+   * go through the API in the rest of this class.
+   *
+   * @return reference to the underlying BPF instance.
+   */
+  // TODO(oazizi): Try to get rid of this function.
+  ebpf::BPF& bpf() { return bpf_; }
+
+  // These are static counters of attached/open probes across all instances.
+  // It is meant for verification that we have cleaned-up all resources in tests.
+  static size_t num_attached_probes() { return num_attached_probes_; }
+  static size_t num_open_perf_buffers() { return num_open_perf_buffers_; }
+  static size_t num_attached_perf_events() { return num_attached_perf_events_; }
 
  private:
-  static constexpr char kFunctionName[] = "trace_pid_runtime";
+  Status DetachProbe(const ProbeSpec& probe);
+  Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer);
+  Status DetachPerfEvent(const PerfEventSpec& perf_event);
 
-  uint32_t event_type_;
-  uint32_t event_config_;
-  std::map<uint16_t, uint64_t> prev_run_time_map_;
-  std::vector<std::pair<uint16_t, pidruntime_val_t> > table_;
-  static constexpr uint64_t kSamplingFreq = 99;  // Freq. (in Hz) at which to trigger bpf func.
+  std::string_view bpf_program_;
+  std::vector<ProbeSpec> probes_;
+  std::vector<PerfBufferSpec> perf_buffers_;
+  std::vector<PerfEventSpec> perf_events_;
   ebpf::BPF bpf_;
+
+  // These are static counters across all instances, because:
+  // 1) We want to ensure we have cleaned all BPF resources up across *all* instances (no leaks).
+  // 2) It is for verification only, and it doesn't make sense to create accessors from stirling to
+  // here.
+  inline static size_t num_attached_probes_;
+  inline static size_t num_open_perf_buffers_;
+  inline static size_t num_attached_perf_events_;
 };
 
 }  // namespace stirling
