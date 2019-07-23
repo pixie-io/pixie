@@ -390,10 +390,6 @@ static __inline int probe_ret_accept_impl(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
-  if (!test_only_should_trace_tgid(tgid)) {
-    return 0;
-  }
-
   int ret_fd = PT_REGS_RC(ctx);
   if (ret_fd < 0) {
     goto done;
@@ -555,10 +551,6 @@ static __inline int probe_ret_write_send(struct pt_regs* ctx, EventType event_ty
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
-  if (!test_only_should_trace_tgid(tgid)) {
-    goto done;
-  }
-
   ssize_t bytes_written = PT_REGS_RC(ctx);
   if (bytes_written <= 0) {
     // This write() call failed, or has nothing to write.
@@ -621,10 +613,6 @@ static __inline int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf
 static __inline int probe_ret_read_recv(struct pt_regs* ctx, EventType event_type) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
-
-  if (!test_only_should_trace_tgid(tgid)) {
-    return 0;
-  }
 
   ssize_t bytes_read = PT_REGS_RC(ctx);
 
