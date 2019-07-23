@@ -52,6 +52,7 @@ Status LimitNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, siz
     auto col = rb.ColumnAt(col_idx);
     PL_RETURN_IF_ERROR(output_rb.AddColumn(col->Slice(0, remainder_records)));
   }
+  output_rb.set_eow(true);
   output_rb.set_eos(true);
   records_processed_ += remainder_records;
 

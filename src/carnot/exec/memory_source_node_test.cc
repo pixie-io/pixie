@@ -64,10 +64,14 @@ TEST_F(MemorySourceNodeTest, basic) {
       *plan_node, output_rd, std::vector<RowDescriptor>({}), exec_state_.get());
   EXPECT_TRUE(tester.node()->HasBatchesRemaining());
   tester.GenerateNextResult().ExpectRowBatch(
-      RowBatchBuilder(output_rd, 3, false).AddColumn<types::Time64NSValue>({1, 2, 3}).get());
+      RowBatchBuilder(output_rd, 3, /*eow*/ false, /*eos*/ false)
+          .AddColumn<types::Time64NSValue>({1, 2, 3})
+          .get());
   EXPECT_TRUE(tester.node()->HasBatchesRemaining());
   tester.GenerateNextResult().ExpectRowBatch(
-      RowBatchBuilder(output_rd, 2, true).AddColumn<types::Time64NSValue>({5, 6}).get());
+      RowBatchBuilder(output_rd, 2, /*eow*/ true, /*eos*/ true)
+          .AddColumn<types::Time64NSValue>({5, 6})
+          .get());
   EXPECT_FALSE(tester.node()->HasBatchesRemaining());
   tester.Close();
   EXPECT_EQ(5, tester.node()->RowsProcessed());
@@ -85,10 +89,14 @@ TEST_F(MemorySourceNodeTest, DISABLED_range) {
   EXPECT_TRUE(tester.node()->HasBatchesRemaining());
 
   tester.GenerateNextResult().ExpectRowBatch(
-      RowBatchBuilder(output_rd, 1, false).AddColumn<types::Time64NSValue>({3}).get());
+      RowBatchBuilder(output_rd, 1, /*eow*/ false, /*eos*/ false)
+          .AddColumn<types::Time64NSValue>({3})
+          .get());
   EXPECT_TRUE(tester.node()->HasBatchesRemaining());
   tester.GenerateNextResult().ExpectRowBatch(
-      RowBatchBuilder(output_rd, 1, true).AddColumn<types::Time64NSValue>({5}).get());
+      RowBatchBuilder(output_rd, 1, /*eow*/ true, /*eos*/ true)
+          .AddColumn<types::Time64NSValue>({5})
+          .get());
   EXPECT_FALSE(tester.node()->HasBatchesRemaining());
   tester.Close();
 }
@@ -114,10 +122,14 @@ TEST_F(MemorySourceNodeTest, all_range) {
   EXPECT_TRUE(tester.node()->HasBatchesRemaining());
 
   tester.GenerateNextResult().ExpectRowBatch(
-      RowBatchBuilder(output_rd, 1, false).AddColumn<types::Time64NSValue>({3}).get());
+      RowBatchBuilder(output_rd, 1, /*eow*/ false, /*eos*/ false)
+          .AddColumn<types::Time64NSValue>({3})
+          .get());
   EXPECT_TRUE(tester.node()->HasBatchesRemaining());
   tester.GenerateNextResult().ExpectRowBatch(
-      RowBatchBuilder(output_rd, 2, true).AddColumn<types::Time64NSValue>({5, 6}).get());
+      RowBatchBuilder(output_rd, 2, /*eow*/ true, /*eos*/ true)
+          .AddColumn<types::Time64NSValue>({5, 6})
+          .get());
   EXPECT_FALSE(tester.node()->HasBatchesRemaining());
   tester.Close();
 }

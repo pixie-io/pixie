@@ -58,7 +58,7 @@ TEST_F(MemorySinkNodeTest, basic) {
   auto tester = exec::ExecNodeTester<MemorySinkNode, plan::MemorySinkOperator>(
       *plan_node_, output_rd, {input_rd}, exec_state_.get());
 
-  tester.ConsumeNext(RowBatchBuilder(input_rd, 2, false)
+  tester.ConsumeNext(RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
                          .AddColumn<types::Int64Value>({1, 2})
                          .AddColumn<types::BoolValue>({true, false})
                          .get(),
@@ -76,7 +76,7 @@ TEST_F(MemorySinkNodeTest, basic) {
       col2_rb1_arrow));
 
   tester
-      .ConsumeNext(RowBatchBuilder(input_rd, 2, false)
+      .ConsumeNext(RowBatchBuilder(input_rd, 2, /*eow*/ false, /*eos*/ false)
                        .AddColumn<types::Int64Value>({3, 4})
                        .AddColumn<types::BoolValue>({false, true})
                        .get(),

@@ -163,6 +163,7 @@ Status BlockingAggNode::AggregateGroupByNone(ExecState* exec_state, const RowBat
       PL_RETURN_IF_ERROR(builder->Finish(&out_col));
       PL_RETURN_IF_ERROR(output_rb.AddColumn(out_col));
     }
+    output_rb.set_eow(rb.eow());
     output_rb.set_eos(true);
     PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, output_rb));
   }
@@ -327,6 +328,7 @@ Status BlockingAggNode::AggregateGroupByClause(ExecState* exec_state, const RowB
   if (rb.eos()) {
     RowBatch output_rb(*output_descriptor_, agg_hash_map_.size());
     PL_RETURN_IF_ERROR(ConvertAggHashMapToRowBatch(exec_state, &output_rb));
+    output_rb.set_eow(rb.eow());
     output_rb.set_eos(rb.eos());
     return SendRowBatchToChildren(exec_state, output_rb);
   }

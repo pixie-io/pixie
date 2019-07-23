@@ -151,19 +151,20 @@ TEST_F(BlockingAggNodeTest, no_groups) {
       *plan_node, output_rd, {input_rd}, exec_state_.get());
 
   tester
-      .ConsumeNext(RowBatchBuilder(input_rd, 4, false)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, false, false)
                        .AddColumn<types::Int64Value>({1, 2, 3, 4})
                        .AddColumn<types::Int64Value>({2, 5, 6, 8})
                        .get(),
                    0, 0)
-      .ConsumeNext(RowBatchBuilder(input_rd, 4, true)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true, true)
                        .AddColumn<types::Int64Value>({5, 6, 3, 4})
                        .AddColumn<types::Int64Value>({1, 5, 3, 8})
                        .get(),
                    0)
-      .ExpectRowBatch(
-          RowBatchBuilder(output_rd, 1, true).AddColumn<types::Int64Value>({Int64Value(23)}).get(),
-          false)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 1, true, true)
+                          .AddColumn<types::Int64Value>({Int64Value(23)})
+                          .get(),
+                      false)
       .Close();
 }
 
@@ -177,17 +178,17 @@ TEST_F(BlockingAggNodeTest, single_group) {
       *plan_node, output_rd, {input_rd}, exec_state_.get());
 
   tester
-      .ConsumeNext(RowBatchBuilder(input_rd, 4, false)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, false, false)
                        .AddColumn<types::Int64Value>({1, 1, 2, 2})
                        .AddColumn<types::Int64Value>({2, 3, 3, 1})
                        .get(),
                    0, 0)
-      .ConsumeNext(RowBatchBuilder(input_rd, 4, true)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true, true)
                        .AddColumn<types::Int64Value>({5, 6, 3, 4})
                        .AddColumn<types::Int64Value>({1, 5, 3, 8})
                        .get(),
                    0)
-      .ExpectRowBatch(RowBatchBuilder(output_rd, 6, true)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 6, true, true)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
                           .AddColumn<types::Int64Value>({2, 3, 3, 4, 1, 5})
                           .get(),
@@ -205,19 +206,19 @@ TEST_F(BlockingAggNodeTest, multiple_groups) {
       *plan_node, output_rd, {input_rd}, exec_state_.get());
 
   tester
-      .ConsumeNext(RowBatchBuilder(input_rd, 4, false)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, false, false)
                        .AddColumn<types::Int64Value>({1, 5, 1, 2})
                        .AddColumn<types::Int64Value>({2, 1, 3, 1})
                        .AddColumn<types::Int64Value>({2, 5, 3, 1})
                        .get(),
                    0, 0)
-      .ConsumeNext(RowBatchBuilder(input_rd, 4, true)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true, true)
                        .AddColumn<types::Int64Value>({5, 1, 3, 3})
                        .AddColumn<types::Int64Value>({1, 2, 3, 3})
                        .AddColumn<types::Int64Value>({1, 3, 3, 8})
                        .get(),
                    0)
-      .ExpectRowBatch(RowBatchBuilder(output_rd, 5, true)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 5, true, true)
                           .AddColumn<types::Int64Value>({1, 1, 2, 5, 3})
                           .AddColumn<types::Int64Value>({2, 3, 1, 1, 3})
                           .AddColumn<types::Int64Value>({4, 3, 1, 2, 6})
@@ -237,19 +238,19 @@ TEST_F(BlockingAggNodeTest, multiple_groups_with_string) {
       *plan_node, output_rd, {input_rd}, exec_state_.get());
 
   tester
-      .ConsumeNext(RowBatchBuilder(input_rd, 4, false)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, false, false)
                        .AddColumn<types::StringValue>({"abc", "def", "abc", "fgh"})
                        .AddColumn<types::Int64Value>({2, 1, 3, 1})
                        .AddColumn<types::Int64Value>({2, 5, 3, 1})
                        .get(),
                    0, 0)
-      .ConsumeNext(RowBatchBuilder(input_rd, 4, true)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true, true)
                        .AddColumn<types::StringValue>({"ijk", "abc", "abc", "def"})
                        .AddColumn<types::Int64Value>({1, 2, 3, 3})
                        .AddColumn<types::Int64Value>({1, 3, 3, 8})
                        .get(),
                    0)
-      .ExpectRowBatch(RowBatchBuilder(output_rd, 6, true)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 6, true, true)
                           .AddColumn<types::StringValue>({"abc", "def", "abc", "fgh", "ijk", "def"})
                           .AddColumn<types::Int64Value>({2, 1, 3, 1, 1, 3})
                           .AddColumn<types::Int64Value>({4, 1, 6, 1, 1, 3})

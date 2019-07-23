@@ -137,6 +137,7 @@ Status FilterNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, si
 #undef TYPE_CASE
   }
 
+  output_rb.set_eow(rb.eow());
   output_rb.set_eos(rb.eos());
   PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, output_rb));
   return Status::OK();

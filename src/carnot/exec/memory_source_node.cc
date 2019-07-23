@@ -66,6 +66,7 @@ Status MemorySourceNode::GenerateNextImpl(ExecState* exec_state) {
   rows_processed_ += row_batch->num_rows();
   bytes_processed_ += row_batch->NumBytes();
   current_batch_++;
+  row_batch->set_eow(!HasBatchesRemaining());
   row_batch->set_eos(!HasBatchesRemaining());
   PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *row_batch));
   return Status::OK();

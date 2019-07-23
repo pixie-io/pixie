@@ -66,7 +66,7 @@ void CopyIntoOutputPB(table_store::schemapb::Column* data_col, arrow::Array* col
  * @param rb_data_pb The output proto.
  * @return Status of conversion.
  */
-Status ConvertRecordBatchToProto(arrow::RecordBatch* rb, bool eos,
+Status ConvertRecordBatchToProto(arrow::RecordBatch* rb, bool eow, bool eos,
                                  const pl::table_store::schema::Relation& relation,
                                  table_store::schemapb::RowBatchData* rb_data_pb) {
   int64_t num_rows_in_batch = rb->num_rows();
@@ -80,6 +80,7 @@ Status ConvertRecordBatchToProto(arrow::RecordBatch* rb, bool eos,
     PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
 #undef TYPE_CASE
   }
+  rb_data_pb->set_eow(eow);
   rb_data_pb->set_eos(eos);
   rb_data_pb->set_num_rows(num_rows_in_batch);
   return Status::OK();
@@ -154,8 +155,10 @@ Status Table::ToProto(table_store::schemapb::Table* table_proto) const {
   PL_ASSIGN_OR_RETURN(auto batches, GetTableAsRecordBatches());
   for (auto i = 0; i < NumBatches(); ++i) {
     auto row_batch_proto = table_proto->add_row_batches();
-    PL_RETURN_IF_ERROR(ConvertRecordBatchToProto(batches[i].get(), i == NumBatches() - 1, relation,
-                                                 row_batch_proto));
+    auto eow = i == NumBatches() - 1;
+    auto eos = i == NumBatches() - 1;
+    PL_RETURN_IF_ERROR(
+        ConvertRecordBatchToProto(batches[i].get(), eow, eos, relation, row_batch_proto));
   }
   PL_RETURN_IF_ERROR(relation.ToProto(table_proto->mutable_relation()));
   return Status::OK();

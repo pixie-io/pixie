@@ -497,6 +497,7 @@ row_batches {
       data: 3
     }
   }
+  eow: false
   eos: false
   num_rows: 3
 }
@@ -513,6 +514,7 @@ row_batches {
       data: 6
     }
   }
+  eow: true
   eos: true
   num_rows: 2
 })";

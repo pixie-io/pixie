@@ -37,7 +37,7 @@ std::string RowBatch::DebugString() const {
   if (columns_.empty()) {
     return "RowBatch: <empty>";
   }
-  std::string debug_string = "RowBatch:\n";
+  std::string debug_string = absl::StrFormat("RowBatch(eow=%d, eos=%d):\n", eow_, eos_);
   for (const auto& col : columns_) {
     debug_string += absl::StrFormat("  %s\n", col->ToString());
   }

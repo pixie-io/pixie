@@ -50,7 +50,8 @@ TEST_F(RowBatchTest, basic_test) {
   EXPECT_EQ(3, rb_->num_rows());
   EXPECT_EQ(3, rb_->num_columns());
   EXPECT_EQ(
-      "RowBatch:\n  [\n  true,\n  false,\n  true\n]\n  [\n  3,\n  4,\n  5\n]\n  [\n  3.3,\n  "
+      "RowBatch(eow=0, eos=0):\n  [\n  true,\n  false,\n  true\n]\n  [\n  3,\n  4,\n  5\n]\n  [\n  "
+      "3.3,\n  "
       "4.1,\n  5.6\n]\n",
       rb_->DebugString());
 }

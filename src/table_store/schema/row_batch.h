@@ -58,6 +58,10 @@ class RowBatch {
    */
   int64_t num_columns() const { return desc_.size(); }
 
+  // eow (end of window) denotes whether the row batch is the last batch for its window.
+  bool eow() const { return eow_; }
+  void set_eow(bool val) { eow_ = val; }
+
   bool eos() const { return eos_; }
   void set_eos(bool val) { eos_ = val; }
   /**
@@ -73,6 +77,7 @@ class RowBatch {
  private:
   RowDescriptor desc_;
   int64_t num_rows_;
+  bool eow_ = false;
   bool eos_ = false;
   std::vector<std::shared_ptr<arrow::Array>> columns_;
 };

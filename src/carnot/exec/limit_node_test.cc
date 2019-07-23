@@ -49,12 +49,12 @@ TEST_F(LimitNodeTest, single_batch) {
   auto tester = exec::ExecNodeTester<LimitNode, plan::LimitOperator>(*plan_node_, output_rd,
                                                                      {input_rd}, exec_state_.get());
   tester
-      .ConsumeNext(RowBatchBuilder(input_rd, 12, true)
+      .ConsumeNext(RowBatchBuilder(input_rd, 12, /*eow*/ true, /*eos*/ true)
                        .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6})
                        .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15, 1, 3, 6, 9, 12, 15})
                        .get(),
                    0)
-      .ExpectRowBatch(RowBatchBuilder(output_rd, 10, true)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 10, true, true)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6, 1, 2, 3, 4})
                           .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15, 1, 3, 6, 9})
                           .get())
@@ -68,12 +68,12 @@ TEST_F(LimitNodeTest, single_batch_exact_boundary) {
   auto tester = exec::ExecNodeTester<LimitNode, plan::LimitOperator>(*plan_node_, output_rd,
                                                                      {input_rd}, exec_state_.get());
   tester
-      .ConsumeNext(RowBatchBuilder(input_rd, 10, false)
+      .ConsumeNext(RowBatchBuilder(input_rd, 10, /*eow*/ false, /*eos*/ false)
                        .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6, 1, 2, 3, 4})
                        .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15, 1, 3, 6, 9})
                        .get(),
                    0)
-      .ExpectRowBatch(RowBatchBuilder(output_rd, 10, true)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 10, true, true)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6, 1, 2, 3, 4})
                           .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15, 1, 3, 6, 9})
                           .get())
@@ -88,21 +88,21 @@ TEST_F(LimitNodeTest, limits_records_split) {
   auto tester = exec::ExecNodeTester<LimitNode, plan::LimitOperator>(*plan_node_, output_rd,
                                                                      {input_rd}, exec_state_.get());
   tester
-      .ConsumeNext(RowBatchBuilder(input_rd, 6, false)
+      .ConsumeNext(RowBatchBuilder(input_rd, 6, /*eow*/ false, /*eos*/ false)
                        .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
                        .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15})
                        .get(),
                    0)
-      .ExpectRowBatch(RowBatchBuilder(output_rd, 6, false)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 6, false, false)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
                           .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15})
                           .get())
-      .ConsumeNext(RowBatchBuilder(input_rd, 6, true)
+      .ConsumeNext(RowBatchBuilder(input_rd, 6, true, true)
                        .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
                        .AddColumn<types::Int64Value>({1, 4, 6, 8, 10, 12})
                        .get(),
                    0)
-      .ExpectRowBatch(RowBatchBuilder(output_rd, 4, true)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 4, true, true)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4})
                           .AddColumn<types::Int64Value>({1, 4, 6, 8})
                           .get(),
@@ -117,22 +117,22 @@ TEST_F(LimitNodeTest, limits_exact_boundary) {
   auto tester = exec::ExecNodeTester<LimitNode, plan::LimitOperator>(*plan_node_, output_rd,
                                                                      {input_rd}, exec_state_.get());
   tester
-      .ConsumeNext(RowBatchBuilder(input_rd, 6, false)
+      .ConsumeNext(RowBatchBuilder(input_rd, 6, /*eow*/ false, /*eos*/ false)
                        .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
                        .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15})
                        .get(),
                    0)
-      .ExpectRowBatch(RowBatchBuilder(output_rd, 6, false)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 6, false, false)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6})
                           .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15})
                           .get(),
                       0)
-      .ConsumeNext(RowBatchBuilder(input_rd, 4, true)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, true, true)
                        .AddColumn<types::Int64Value>({1, 2, 3, 4})
                        .AddColumn<types::Int64Value>({1, 4, 6, 8})
                        .get(),
                    0)
-      .ExpectRowBatch(RowBatchBuilder(output_rd, 4, true)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 4, true, true)
                           .AddColumn<types::Int64Value>({1, 2, 3, 4})
                           .AddColumn<types::Int64Value>({1, 4, 6, 8})
                           .get())
@@ -147,7 +147,7 @@ TEST_F(LimitNodeTest, child_fail) {
 
   auto tester = exec::ExecNodeTester<LimitNode, plan::LimitOperator>(*plan_node_, output_rd,
                                                                      {input_rd}, exec_state_.get());
-  tester.ConsumeNextShouldFail(RowBatchBuilder(input_rd, 4, false)
+  tester.ConsumeNextShouldFail(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
                                    .AddColumn<types::Int64Value>({1, 2, 3, 4})
                                    .AddColumn<types::Int64Value>({1, 3, 6, 9})
                                    .get(),

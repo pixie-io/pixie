@@ -104,8 +104,10 @@ const std::vector<std::pair<int64_t, int64_t>> CarnotTestUtils::split_idx({{0, 3
  */
 class RowBatchBuilder {
  public:
-  RowBatchBuilder(const table_store::schema::RowDescriptor& rd, int64_t size, bool eos_set) {
+  RowBatchBuilder(const table_store::schema::RowDescriptor& rd, int64_t size, bool eow_set,
+                  bool eos_set) {
     rb_ = std::make_unique<table_store::schema::RowBatch>(rd, size);
+    rb_->set_eow(eow_set);
     rb_->set_eos(eos_set);
   }
 
@@ -136,12 +138,12 @@ class RowBatchBuilder {
  * Test wrapper for testing execution nodes.
  * Example usage:
  *   auto node_tester = exec::ExecNodeTester<MapNode, plan::MapOperator>();
- *   node_tester.ConsumeNext(RowBatchBuilder(input_rd, 3, true)
+ *   node_tester.ConsumeNext(RowBatchBuilder(input_rd, 3, true, true)
  *                      .AddColumn<udf::Int64Value>({1, 2, 3})
  *                      .AddColumn<udf::Int64Value>({1, 4, 6})
  *                      .get(), 5)
  *     .ExpectRowBatch(
- *         RowBatchBuilder(output_rd, 3, false).AddColumn<udf::Int64Value>({2, 6, 9}).get())
+ *         RowBatchBuilder(output_rd, 3, false, false).AddColumn<udf::Int64Value>({2, 6, 9}).get())
  *     .Close();
  */
 template <typename TExecNode, typename TPlanNode>
@@ -276,6 +278,7 @@ class ExecNodeTester {
     for (int64_t i = 0; i < actual_rb.num_columns(); i++) {
       EXPECT_TRUE(expected_rb.ColumnAt(i)->Equals(actual_rb.ColumnAt(i)));
     }
+    EXPECT_EQ(actual_rb.eow(), expected_rb.eow());
     EXPECT_EQ(actual_rb.eos(), expected_rb.eos());
   }
 
@@ -292,6 +295,8 @@ class ExecNodeTester {
                                  const table_store::schema::RowBatch& actual_rb) {
     EXPECT_EQ(actual_rb.num_rows(), expected_rb.num_rows());
     EXPECT_EQ(actual_rb.num_columns(), expected_rb.num_columns());
+    EXPECT_EQ(actual_rb.eow(), expected_rb.eow());
+    EXPECT_EQ(actual_rb.eos(), expected_rb.eos());
 
     // Convert row batches to hashable row tuples.
     std::vector<std::unique_ptr<RowTuple>> expected_rt;

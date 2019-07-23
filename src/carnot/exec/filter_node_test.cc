@@ -66,24 +66,24 @@ TEST_F(FilterNodeTest, basic) {
   auto tester = exec::ExecNodeTester<FilterNode, plan::FilterOperator>(
       *plan_node_, output_rd, {input_rd}, exec_state_.get());
   tester
-      .ConsumeNext(RowBatchBuilder(input_rd, 4, false)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
                        .AddColumn<types::Int64Value>({1, 1, 3, 4})
                        .AddColumn<types::Int64Value>({1, 3, 6, 9})
                        .AddColumn<types::StringValue>({"ABC", "DEF", "HELLO", "WORLD"})
                        .get(),
                    0)
-      .ExpectRowBatch(RowBatchBuilder(output_rd, 2, false)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 2, false, false)
                           .AddColumn<types::Int64Value>({1, 1})
                           .AddColumn<types::Int64Value>({1, 3})
                           .AddColumn<types::StringValue>({"ABC", "DEF"})
                           .get())
-      .ConsumeNext(RowBatchBuilder(input_rd, 3, true)
+      .ConsumeNext(RowBatchBuilder(input_rd, 3, true, true)
                        .AddColumn<types::Int64Value>({1, 2, 3})
                        .AddColumn<types::Int64Value>({1, 4, 6})
                        .AddColumn<types::StringValue>({"Hello", "world", "now"})
                        .get(),
                    0)
-      .ExpectRowBatch(RowBatchBuilder(output_rd, 1, true)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 1, true, true)
                           .AddColumn<types::Int64Value>({1})
                           .AddColumn<types::Int64Value>({1})
                           .AddColumn<types::StringValue>({"Hello"})
@@ -102,21 +102,21 @@ TEST_F(FilterNodeTest, string_pred) {
   auto tester = exec::ExecNodeTester<FilterNode, plan::FilterOperator>(
       *plan_node_, output_rd, {input_rd}, exec_state_.get());
   tester
-      .ConsumeNext(RowBatchBuilder(input_rd, 4, false)
+      .ConsumeNext(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
                        .AddColumn<types::StringValue>({"A", "B", "A", "D"})
                        .AddColumn<types::Int64Value>({1, 3, 6, 9})
                        .get(),
                    0)
-      .ExpectRowBatch(RowBatchBuilder(output_rd, 2, false)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 2, false, false)
                           .AddColumn<types::StringValue>({"A", "A"})
                           .AddColumn<types::Int64Value>({1, 6})
                           .get())
-      .ConsumeNext(RowBatchBuilder(input_rd, 3, true)
+      .ConsumeNext(RowBatchBuilder(input_rd, 3, true, true)
                        .AddColumn<types::StringValue>({"C", "B", "A"})
                        .AddColumn<types::Int64Value>({1, 4, 6})
                        .get(),
                    0)
-      .ExpectRowBatch(RowBatchBuilder(output_rd, 1, true)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 1, true, true)
                           .AddColumn<types::StringValue>({"A"})
                           .AddColumn<types::Int64Value>({6})
                           .get())
@@ -132,7 +132,7 @@ TEST_F(FilterNodeTest, child_fail) {
 
   auto tester = exec::ExecNodeTester<FilterNode, plan::FilterOperator>(
       *plan_node_, output_rd, {input_rd}, exec_state_.get());
-  tester.ConsumeNextShouldFail(RowBatchBuilder(input_rd, 4, false)
+  tester.ConsumeNextShouldFail(RowBatchBuilder(input_rd, 4, /*eow*/ false, /*eos*/ false)
                                    .AddColumn<types::Int64Value>({1, 2, 3, 4})
                                    .AddColumn<types::Int64Value>({1, 3, 6, 9})
                                    .get(),
