@@ -14,7 +14,9 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
+	"pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/shared/types"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 	datapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 )
@@ -272,6 +274,10 @@ func getAsidKey() string {
 	return "/asid"
 }
 
+func getProcessKey(upid string) string {
+	return path.Join("/", "processes", upid)
+}
+
 func (mds *EtcdMetadataStore) updateValue(key string, value string) error {
 	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
 	mu.Lock(context.Background())
@@ -428,6 +434,35 @@ func (mds *EtcdMetadataStore) GetASID() (uint32, error) {
 	}
 
 	return uint32(asidInt), nil
+}
+
+// GetProcesses gets the process infos for the given process upids.
+func (mds *EtcdMetadataStore) GetProcesses(upids []*types.UInt128) ([]*metadatapb.ProcessInfo, error) {
+	getOps := make([]clientv3.Op, len(upids))
+	for i, upid := range upids {
+		getOps[i] = clientv3.OpGet(getProcessKey(k8s.StringFromUPID(upid)))
+	}
+
+	txnresp, err := mds.client.Txn(context.TODO()).If().Then(getOps...).Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	var processes []*metadatapb.ProcessInfo
+	for _, resp := range txnresp.Responses {
+		if len(resp.GetResponseRange().Kvs) > 0 {
+			processPb := metadatapb.ProcessInfo{}
+			if err := proto.Unmarshal([]byte(resp.GetResponseRange().Kvs[0].Value), &processPb); err != nil {
+				log.WithError(err).Error("Could not unmarshal process pb.")
+				processes = append(processes, nil)
+				continue
+			}
+			processes = append(processes, &processPb)
+		} else {
+			processes = append(processes, nil)
+		}
+	}
+	return processes, nil
 }
 
 // Close cleans up the etcd metadata store, such as its etcd session.

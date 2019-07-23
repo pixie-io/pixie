@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/shared/types"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
@@ -573,4 +574,58 @@ func TestGetASID(t *testing.T) {
 	id3, err := mds.GetASID()
 	assert.Nil(t, err)
 	assert.Equal(t, uint32(3), id3)
+}
+
+func TestGetProcesses(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	upid1 := &types.UInt128{
+		Low:  uint64(89101),
+		High: uint64(528280977975),
+	}
+
+	p1 := &metadatapb.ProcessInfo{
+		Name: "process1",
+		Pid:  123,
+		Cid:  "567",
+	}
+	p1Text, err := p1.Marshal()
+	_, err = etcdClient.Put(context.Background(), "/processes/123:567:89101", string(p1Text))
+	if err != nil {
+		t.Fatal("Unable to add process to etcd.")
+	}
+
+	upid2 := &types.UInt128{
+		Low:  uint64(123),
+		High: uint64(1056561955185),
+	}
+
+	upid3 := &types.UInt128{
+		Low:  uint64(135),
+		High: uint64(1056561955185),
+	}
+
+	p3 := &metadatapb.ProcessInfo{
+		Name: "process2",
+		Pid:  246,
+		Cid:  "369",
+	}
+	p3Text, err := p3.Marshal()
+	_, err = etcdClient.Put(context.Background(), "/processes/246:369:135", string(p3Text))
+	if err != nil {
+		t.Fatal("Unable to add process to etcd.")
+	}
+
+	processes, err := mds.GetProcesses([]*types.UInt128{upid1, upid2, upid3})
+	assert.Nil(t, err)
+	assert.Equal(t, 3, len(processes))
+	assert.Equal(t, "process1", processes[0].Name)
+	assert.Equal(t, (*metadatapb.ProcessInfo)(nil), processes[1])
+	assert.Equal(t, "process2", processes[2].Name)
 }

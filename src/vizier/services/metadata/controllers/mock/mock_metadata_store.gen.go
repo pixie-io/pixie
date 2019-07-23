@@ -8,6 +8,7 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	go_uuid "github.com/satori/go.uuid"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	types "pixielabs.ai/pixielabs/src/shared/types"
 	datapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 	reflect "reflect"
 )
@@ -147,6 +148,19 @@ func (m *MockMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
 // GetPods indicates an expected call of GetPods
 func (mr *MockMetadataStoreMockRecorder) GetPods() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPods", reflect.TypeOf((*MockMetadataStore)(nil).GetPods))
+}
+
+// GetProcesses mocks base method
+func (m *MockMetadataStore) GetProcesses(arg0 []*types.UInt128) ([]*metadatapb.ProcessInfo, error) {
+	ret := m.ctrl.Call(m, "GetProcesses", arg0)
+	ret0, _ := ret[0].([]*metadatapb.ProcessInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProcesses indicates an expected call of GetProcesses
+func (mr *MockMetadataStoreMockRecorder) GetProcesses(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProcesses", reflect.TypeOf((*MockMetadataStore)(nil).GetProcesses), arg0)
 }
 
 // UpdateContainersFromPod mocks base method

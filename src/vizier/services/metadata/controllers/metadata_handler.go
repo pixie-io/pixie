@@ -10,6 +10,7 @@ import (
 
 	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/shared/types"
 	datapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 )
 
@@ -31,6 +32,7 @@ type MetadataStore interface {
 	GetPods() ([]*metadatapb.Pod, error)
 	GetEndpoints() ([]*metadatapb.Endpoints, error)
 	GetASID() (uint32, error)
+	GetProcesses([]*types.UInt128) ([]*metadatapb.ProcessInfo, error)
 }
 
 // K8sMessage is a message for K8s metadata events/updates.
@@ -134,10 +136,6 @@ func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate
 
 	if agents == nil || len(*agents) == 0 {
 		log.Error("Could not get any agents for hostnames.")
-		mh.agentUpdateCh <- &UpdateMessage{
-			Message:   updatePb,
-			Hostnames: hostnames,
-		}
 		return
 	}
 
