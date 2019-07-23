@@ -530,11 +530,7 @@ def buildScriptForCommits = {
         publishCustomerDocs()
         publishDoxygenDocs()
 
-        stashList.each({stashName ->
-          if (stashName.contains('testlogs') && !stashName.contains('-ui')) {
-            archiveBazelLogs(stashName)
-          }
-        })
+        archiveBazelLogs('build-opt-testlogs')
         archiveUILogs()
       }
     }
