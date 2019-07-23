@@ -31,7 +31,7 @@ usage() {
   echo " -b          : bare cluster (do not deploy any services)"
   echo " -n <int>    : number of nodes in the cluster [default: ${NUM_NODES}]"
   echo " -m string>> : machine type [default: ${MACHINE_TYPE}]"
-  echo " -i <string> : base image [default: ${IMAGE_NAME}]"
+  echo " -i <string> : base image [default: ${IMAGE_NAME}] (can also use COS)"
   echo " -d <int>    : disk size per node (GB) [default: ${DISK_SIZE}]"
   echo "Example: $0 dev-cluster-000 -n 4 -i UBUNTU"
   exit
@@ -91,7 +91,6 @@ print_config
 
 PIXIE_ROOT_DIR=$(bazel info workspace 2> /dev/null)
 
-
 ##################
 # Start the cluster
 ##################
@@ -128,9 +127,9 @@ else
   echo "  gcloud beta container --project "pl-dev-infra" clusters delete ${CLUSTER_NAME}"
 fi
 
-##################
-# Deploy standard services
-##################
+############################
+# Deploy Pixie prereqs
+############################
 
 if [ ! ${BARE_CLUSTER} = true ]; then
   # Make the current user a cluster-admin
@@ -138,13 +137,17 @@ if [ ! ${BARE_CLUSTER} = true ]; then
   # TODO(oazizi/philkuz): Fix when we set-up RBAC.
   $PIXIE_ROOT_DIR/scripts/setup_cluster_role_bindings.sh
 
-  # Install default dev secrets and certs.
-  make -C $PIXIE_ROOT_DIR k8s-load-dev-secrets k8s-load-certs
-
-  # Deploy Pixie prereqs (NATS, etcd).
+  # Deploy Pixie prereqs (secrets, NATS, etcd).
   $PIXIE_ROOT_DIR/scripts/deploy_cluster_prereqs.sh
+fi
 
-  # Deploy Sockshop Demo app
+
+############################
+# Deploy Demo applications
+############################
+
+if [ ! ${BARE_CLUSTER} = true ]; then
+    # Deploy Sockshop Demo app
   kubectl apply -f $PIXIE_ROOT_DIR/demos/applications/sockshop/kubernetes_manifests/sock-shop-ns.yaml && sleep 5
   kubectl apply -f $PIXIE_ROOT_DIR/demos/applications/sockshop/kubernetes_manifests
   kubectl apply -f $PIXIE_ROOT_DIR/demos/applications/sockshop/load_generation
