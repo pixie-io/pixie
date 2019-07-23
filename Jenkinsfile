@@ -586,25 +586,27 @@ def buildScriptForNightlyTestRegression = {
       stage('Checkout code') {
         checkoutAndInitialize()
       }
-      stage('Test (opt)') {
-        WithSourceCode {
-          dockerStepWithBazelCmd(
-            "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH} --runs_per_test 1000",
-            'build-opt')
+      parallel {
+        stage('Test (opt)') {
+          WithSourceCode {
+            dockerStepWithBazelCmd(
+              "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH} --runs_per_test 1000",
+              'build-opt')
+          }
         }
-      }
-      stage('Test (ASAN)') {
-        WithSourceCode {
-          dockerStep('--cap-add=SYS_PTRACE', {
-            bazelCmd("bazel test --config=asan ${BAZEL_CC_QUERY} --runs_per_test 1000", 'build-asan')
-          })
+        stage('Test (ASAN)') {
+          WithSourceCode {
+            dockerStep('--cap-add=SYS_PTRACE', {
+              bazelCmd("bazel test --config=asan ${BAZEL_CC_QUERY} --runs_per_test 1000", 'build-asan')
+            })
+          }
         }
-      }
-      stage('Test (TSAN)') {
-        WithSourceCode {
-          dockerStep('--cap-add=SYS_PTRACE', {
-            bazelCmd("bazel test --config=tsan ${BAZEL_CC_QUERY} --runs_per_test 1000", 'build-tsan')
-          })
+        stage('Test (TSAN)') {
+          WithSourceCode {
+            dockerStep('--cap-add=SYS_PTRACE', {
+              bazelCmd("bazel test --config=tsan ${BAZEL_CC_QUERY} --runs_per_test 1000", 'build-tsan')
+            })
+          }
         }
       }
     }
