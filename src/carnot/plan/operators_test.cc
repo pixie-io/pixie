@@ -134,9 +134,11 @@ TEST_F(OperatorTest, from_proto_filter) {
 
 TEST_F(OperatorTest, from_proto_union_time_column) {
   auto union_pb = planpb::testutils::CreateTestUnion1PB();
-  auto union_op = Operator::FromProto(union_pb, 1);
+  auto union_op = std::make_unique<UnionOperator>(1);
+  auto s = union_op->Init(union_pb.union_op());
   EXPECT_EQ(1, union_op->id());
   EXPECT_TRUE(union_op->is_initialized());
+  EXPECT_EQ(5, union_op->rows_per_batch());
   EXPECT_EQ(planpb::OperatorType::UNION_OPERATOR, union_op->op_type());
 }
 

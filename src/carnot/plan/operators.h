@@ -235,6 +235,7 @@ class UnionOperator : public Operator {
   const std::vector<int64_t>& column_mapping(int64_t parent_index) const {
     return column_mappings_.at(parent_index);
   }
+  size_t rows_per_batch() const { return pb_.rows_per_batch(); }
 
  private:
   std::vector<std::string> column_names_;

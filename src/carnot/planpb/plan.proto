@@ -193,8 +193,8 @@ message UnionOperator {
   }
   // Output column names
   repeated string column_names = 1;
-
   repeated ColumnMapping column_mappings = 2;
+  int64 rows_per_batch = 3;
 }
 
 // Scalar expression is any single valued expression.

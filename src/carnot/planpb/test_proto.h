@@ -268,6 +268,7 @@ columns {
 // maps to output relation:
 // [abc, time_, xyz]
 const char* kUnionOperator1 = R"(
+  rows_per_batch: 5
   column_names: "abc"
   column_names: "time_"
   column_mappings {
@@ -300,6 +301,7 @@ const char* kUnionOperator2 = R"(
 )";
 
 const char* kUnionOperatorOutOfRange1 = R"(
+  rows_per_batch: 3
   column_names: "abc"
   column_names: "time_"
   column_mappings {
