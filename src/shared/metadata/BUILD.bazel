@@ -26,6 +26,12 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "pids_test",
+    srcs = ["pids_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "k8s_object_test",
     srcs = ["k8s_objects_test.cc"],
     deps = [":cc_library"],
