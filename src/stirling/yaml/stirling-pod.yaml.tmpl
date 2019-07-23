@@ -24,16 +24,16 @@ spec:
       privileged: true
     volumeMounts:
        - name: proc
-         mountPath: /proc
+         mountPath: /host/proc
          readOnly: true
        - name: sys
          mountPath: /sys
          readOnly: true
-       - name: usr-src # for linux headers
-         mountPath: /host/usr/src
+       - name: usr
+         mountPath: /host/usr
          readOnly: true
-       - name: lib-modules # for linux headers
-         mountPath: /host/lib/modules
+       - name: lib
+         mountPath: /host/lib
          readOnly: true
   terminationGracePeriodSeconds: 30
   restartPolicy: Never
@@ -46,11 +46,11 @@ spec:
         hostPath:
             path: /sys
             type: Directory
-      - name: usr-src
+      - name: usr # for /usr/src (linux headers)
         hostPath:
-            path: /usr/src
+            path: /usr
             type: Directory
-      - name: lib-modules
+      - name: lib # for /lib/modules (linux headers)
         hostPath:
-            path: /lib/modules
+            path: /lib
             type: Directory

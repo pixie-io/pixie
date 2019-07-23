@@ -10,8 +10,8 @@ create_namespace: namespace.yaml.tmpl
 deploy_stirling_pod: stirling-pod.yaml.tmpl create_namespace
 	cat $< | $(EVAL_TMPL) | $(KUBECTL) apply -f -
 
-.PHONY: deploy_stirling_daemonset create_namespace
-deploy_stirling_daemonset: stirling-daemonset.yaml.tmpl
+.PHONY: deploy_stirling_daemonset
+deploy_stirling_daemonset: stirling-daemonset.yaml.tmpl create_namespace
 	cat $< | $(EVAL_TMPL) | $(KUBECTL) apply -f -
 
 .PHONY: delete_namespace

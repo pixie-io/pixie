@@ -39,14 +39,17 @@ spec:
               - SYS_ADMIN
           privileged: true
         volumeMounts:
-        - name: sys # mount the debug filesystem
+        - name: proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: sys
           mountPath: /sys
           readOnly: true
-        - name: usr-src # for linux headers
-          mountPath: /usr/src
+        - name: usr
+          mountPath: /host/usr
           readOnly: true
-        - name: lib-modules # for linux headers
-          mountPath: /lib/modules
+        - name: lib
+          mountPath: /host/lib
           readOnly: true
         - name: certs
           mountPath: /certs
@@ -55,15 +58,19 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       terminationGracePeriodSeconds: 30
       volumes:
+      - name: proc
+        hostPath:
+            path: /proc
+            type: Directory
       - name: sys
         hostPath:
             path: /sys
             type: Directory
-      - name: usr-src
+      - name: usr  # for /usr/src (linux headers)
         hostPath:
-            path: /usr/src
+            path: /usr
             type: Directory
-      - name: lib-modules
+      - name: lib # for /lib/modules (linux headers)
         hostPath:
             path: /lib/modules
             type: Directory

@@ -42,7 +42,7 @@ if [ "$INTERACTIVE" -eq "1" ]; then
 fi
 
 docker run -it --init --rm \
- --mount type=bind,source=/proc,target=/proc \
+ --mount type=bind,source=/proc,target=/host/proc \
  --mount type=bind,source=/sys,target=/sys \
  --mount type=bind,source=/usr/src,target=/host/usr/src \
  --mount type=bind,source=/lib/modules,target=/host/lib/modules \
