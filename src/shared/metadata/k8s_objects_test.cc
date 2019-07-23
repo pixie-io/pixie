@@ -22,6 +22,17 @@ TEST(PodInfo, basic_accessors) {
   EXPECT_EQ(K8sObjectType::kPod, pod_info.type());
 }
 
+TEST(PodInfo, debug_string) {
+  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed);
+  for (int i = 0; i < 5; ++i) {
+    EXPECT_EQ(absl::Substitute("$0<Pod:ns=pl:name=pod1:uid=123:state=R>", Indent(i)),
+              pod_info.DebugString(i));
+  }
+
+  pod_info.set_stop_time_ns(1000);
+  EXPECT_EQ("<Pod:ns=pl:name=pod1:uid=123:state=S>", pod_info.DebugString());
+}
+
 TEST(PodInfo, add_delete_containers) {
   PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed);
   pod_info.AddContainer("ABCD");
@@ -58,15 +69,26 @@ TEST(PodInfo, clone) {
 }
 
 TEST(ContainerInfo, pod_id) {
-  ContainerInfo cinfo("container1");
+  ContainerInfo cinfo("container1", 128 /*start_time*/);
 
   EXPECT_EQ("", cinfo.pod_id());
   cinfo.set_pod_id("pod1");
   EXPECT_EQ("pod1", cinfo.pod_id());
 }
 
+TEST(ContainerInfo, debug_string) {
+  ContainerInfo cinfo("container1", 128);
+  for (int i = 0; i < 5; ++i) {
+    EXPECT_EQ(absl::Substitute("$0<Container:cid=container1:pod_id=:state=R>", Indent(i)),
+              cinfo.DebugString(i));
+  }
+
+  cinfo.set_stop_time_ns(1000);
+  EXPECT_EQ("<Container:cid=container1:pod_id=:state=S>", cinfo.DebugString());
+}
+
 TEST(ContainerInfo, add_delete_pids) {
-  ContainerInfo cinfo("container1");
+  ContainerInfo cinfo("container1", 128 /*start_time*/);
   cinfo.set_pod_id("pod1");
 
   cinfo.AddUPID(UPID(1, 1, 123));
@@ -85,7 +107,7 @@ TEST(ContainerInfo, add_delete_pids) {
 }
 
 TEST(ContainerInfo, deactive_non_existing_pid_ignored) {
-  ContainerInfo cinfo("container1");
+  ContainerInfo cinfo("container1", 128 /*start_time*/);
   cinfo.set_pod_id("pod1");
   cinfo.DeactivateUPID(UPID(1, 3, 123));
 
@@ -94,15 +116,12 @@ TEST(ContainerInfo, deactive_non_existing_pid_ignored) {
 }
 
 TEST(ContainerInfo, clone) {
-  ContainerInfo orig("container1");
+  ContainerInfo orig("container1", 128 /*start_time*/);
   orig.set_pod_id("pod1");
 
   orig.AddUPID(UPID(1, 0, 123));
   orig.AddUPID(UPID(1, 1, 123));
   orig.AddUPID(UPID(1, 15, 123));
-
-  orig.set_start_time_ns(128);
-  orig.set_start_time_ns(256);
 
   auto cloned = orig.Clone();
 

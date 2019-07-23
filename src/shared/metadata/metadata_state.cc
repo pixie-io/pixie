@@ -105,12 +105,11 @@ Status K8sMetadataState::HandleContainerUpdate(const ContainerUpdate& update) {
 
   auto it = containers_by_id_.find(cid);
   if (it == containers_by_id_.end()) {
-    auto container = std::make_unique<ContainerInfo>(cid);
+    auto container = std::make_unique<ContainerInfo>(cid, update.start_timestamp_ns());
     it = containers_by_id_.try_emplace(cid, std::move(container)).first;
   }
 
   auto* container_info = it->second.get();
-  container_info->set_start_time_ns(update.start_timestamp_ns());
   container_info->set_stop_time_ns(update.stop_timestamp_ns());
 
   return Status::OK();

@@ -42,6 +42,7 @@ class K8sMetadataObject {
   void set_stop_time_ns(int64_t stop_time_ns) { stop_time_ns_ = stop_time_ns; }
 
   virtual std::unique_ptr<K8sMetadataObject> Clone() const = 0;
+  virtual std::string DebugString(int indent = 0) const = 0;
 
  protected:
   K8sMetadataObject(const K8sMetadataObject& other) = default;
@@ -103,6 +104,8 @@ class PodInfo : public K8sMetadataObject {
     return std::unique_ptr<PodInfo>(new PodInfo(*this));
   }
 
+  std::string DebugString(int indent = 0) const override;
+
  protected:
   PodInfo(const PodInfo& other) = default;
   PodInfo& operator=(const PodInfo& other) = delete;
@@ -123,11 +126,14 @@ class PodInfo : public K8sMetadataObject {
  * Though this is not strictly a K8s object, it's state is tracked by K8s
  * so we include it here.
  */
-struct ContainerInfo {
+class ContainerInfo {
  public:
-  explicit ContainerInfo(CID cid) : cid_(std::move(cid)) {}
+  ContainerInfo() = delete;
+  explicit ContainerInfo(CID cid, int64_t start_time_ns)
+      : cid_(std::move(cid)), start_time_ns_(start_time_ns), stop_time_ns_(0) {}
 
   const CID& cid() const { return cid_; }
+
   void set_pod_id(std::string_view pod_id) { pod_id_ = pod_id; }
   const UID& pod_id() const { return pod_id_; }
 
@@ -147,22 +153,23 @@ struct ContainerInfo {
   const absl::flat_hash_set<UPID>& active_upids() { return active_upids_; }
   const absl::flat_hash_set<UPID>& inactive_upids() { return inactive_upids_; }
 
-  int64_t start_time_ns() { return start_time_ns_; }
-  void set_start_time_ns(int64_t start_time_ns) { start_time_ns_ = start_time_ns; }
+  int64_t start_time_ns() const { return start_time_ns_; }
 
-  int64_t stop_time_ns() { return stop_time_ns_; }
+  int64_t stop_time_ns() const { return stop_time_ns_; }
   void set_stop_time_ns(int64_t stop_time_ns) { stop_time_ns_ = stop_time_ns; }
 
   std::unique_ptr<ContainerInfo> Clone() const {
     return std::unique_ptr<ContainerInfo>(new ContainerInfo(*this));
   }
 
+  std::string DebugString(int indent = 0) const;
+
  protected:
   ContainerInfo(const ContainerInfo& other) = default;
   ContainerInfo& operator=(const ContainerInfo& other) = delete;
 
  private:
-  CID cid_;
+  const CID cid_;
   UID pod_id_ = "";
 
   /**
@@ -179,7 +186,7 @@ struct ContainerInfo {
   /**
    * Start time of this K8s object.
    */
-  int64_t start_time_ns_ = 0;
+  const int64_t start_time_ns_ = 0;
 
   /**
    * Stop time of this K8s object.
