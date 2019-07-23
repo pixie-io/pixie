@@ -91,7 +91,6 @@ class CGroupStatsConnector : public SourceConnector {
   explicit CGroupStatsConnector(std::string_view source_name)
       : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {
     auto sysconfig = common::SystemConfig::GetInstance();
-    // TODO(zasgar): Make proc/sys paths configurable.
     cgroup_mgr_ = CGroupManager::Create(*sysconfig);
   }
 

@@ -66,6 +66,14 @@ class SystemConfigImpl final : public SystemConfig {
     LOG(FATAL) << "ClockRealTimeOffset() is not implemented on this OS.";
   }
 
+  std::string_view ProcPath() const override {
+    LOG(FATAL) << "ProcPath() is not implemented on this OS.";
+  }
+
+  std::string_view SysFSPath() const override {
+    LOG(FATAL) << "SysFSPath() is not implemented on this OS.";
+  }
+
   std::string_view sysfs_path() const override { return FLAGS_sysfs_path; }
 
   std::string_view proc_path() const override { return FLAGS_proc_path; }

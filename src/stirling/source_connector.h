@@ -188,6 +188,9 @@ class SourceConnector : public NotCopyable {
     std::bitset<schema->elements().size()> signature_;
   };
 
+ protected:
+  const common::SystemConfig* sysconfig_ = common::SystemConfig::GetInstance();
+
  private:
   /**
    * Track state of connector. A connector's lifetime typically progresses sequentially
@@ -204,8 +207,6 @@ class SourceConnector : public NotCopyable {
   const ConstVectorView<DataTableSchema> table_schemas_;
   const std::chrono::milliseconds default_sampling_period_;
   const std::chrono::milliseconds default_push_period_;
-
-  const common::SystemConfig* sysconfig_ = common::SystemConfig::GetInstance();
 };
 
 }  // namespace stirling
