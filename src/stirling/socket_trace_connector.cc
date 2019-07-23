@@ -7,6 +7,7 @@
 #include "absl/strings/match.h"
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
+#include "src/stirling/bcc_bpf/socket_trace.h"
 #include "src/stirling/bpf_logging.h"
 #include "src/stirling/event_parser.h"
 #include "src/stirling/grpc.h"
@@ -48,11 +49,11 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(AttachProbes(kProbeSpecs));
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   PL_RETURN_IF_ERROR(InitBPFLogging(&bpf()));
-  PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvResp));
-  PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kSocketTraceSendReq));
+  PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kRoleRequestor));
+  PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kRoleRequestor));
   // TODO(PL-659): connect() call might return non 0 value, making requester-side tracing
   // unreliable. Switch to server-side for now.
-  PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kSocketTraceSendResp | kSocketTraceRecvReq));
+  PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kRoleResponder));
   PL_RETURN_IF_ERROR(TestOnlySetTargetPID(kTraceAllTGIDs));
 
   return Status::OK();

@@ -47,14 +47,12 @@ typedef enum {
   kNumProtocols
 } TrafficProtocol;
 
-// The direction of traffic expected on a probe.
-typedef enum { kRoleUnknown, kRoleRequestor, kRoleResponder } ReqRespRole;
-
-// Which transactions to trace (direction and type).
-const uint64_t kSocketTraceSendReq = 1 << 0;
-const uint64_t kSocketTraceSendResp = 1 << 1;
-const uint64_t kSocketTraceRecvReq = 1 << 2;
-const uint64_t kSocketTraceRecvResp = 1 << 3;
+// The direction of traffic expected on a probe. Values are used in bit masks.
+typedef enum {
+  kRoleUnknown = 1 << 0,
+  kRoleRequestor = 1 << 1,
+  kRoleResponder = 1 << 2
+} ReqRespRole;
 
 struct traffic_class_t {
   // The protocol of traffic on the connection (HTTP, MySQL, etc.).

@@ -186,7 +186,7 @@ Content-Length: 0
 };
 
 TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
-  ConfigureCapture(kProtocolHTTP, kSocketTraceSendResp);
+  ConfigureCapture(kProtocolHTTP, kRoleResponder);
 
   ClientServerSystem system;
   system.RunWriterReader({kHTTPRespMsg1, kHTTPRespMsg2});
@@ -237,7 +237,7 @@ TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
 }
 
 TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kSocketTraceSendResp);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleResponder);
 
   ClientServerSystem system;
   system.RunSenderReceiver({kHTTPRespMsg1, kHTTPRespMsg2});
@@ -277,7 +277,7 @@ TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
 }
 
 TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kSocketTraceRecvResp);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
 
   ClientServerSystem system;
   system.RunWriterReader({kHTTPRespMsg1, kHTTPRespMsg2});
@@ -317,7 +317,7 @@ TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
 }
 
 TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kSocketTraceRecvResp);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
 
   ClientServerSystem system;
   system.RunSenderReceiver({kHTTPRespMsg1, kHTTPRespMsg2});
@@ -389,9 +389,8 @@ TEST_F(SocketTraceBPFTest, TestMySQLWriteCapture) {
 }
 
 TEST_F(SocketTraceBPFTest, TestNoProtocolWritesNotCaptured) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvReq);
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kSocketTraceRecvResp | kSocketTraceSendResp);
-  ConfigureCapture(TrafficProtocol::kProtocolMySQL, kSocketTraceSendReq | kSocketTraceRecvResp);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor | kRoleResponder);
+  ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleRequestor);
 
   ClientServerSystem system;
   system.RunWriterReader({kNoProtocolMsg, "", kNoProtocolMsg, ""});
@@ -422,7 +421,7 @@ TEST_F(SocketTraceBPFTest, TestNoProtocolWritesNotCaptured) {
 }
 
 TEST_F(SocketTraceBPFTest, TestMultipleConnections) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kSocketTraceRecvResp);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
 
   // Two separate connections.
   ClientServerSystem system1;
@@ -456,7 +455,7 @@ TEST_F(SocketTraceBPFTest, TestMultipleConnections) {
 }
 
 TEST_F(SocketTraceBPFTest, TestStartTime) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kSocketTraceRecvResp);
+  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
 
   ClientServerSystem system;
   system.RunSenderReceiver({kHTTPRespMsg1, kHTTPRespMsg2});
@@ -489,8 +488,7 @@ TEST_F(SocketTraceBPFTest, TestStartTime) {
 }
 
 TEST_F(SocketTraceBPFTest, SendMsgAndRecvMsgAreCapatured) {
-  ConfigureCapture(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceSendResp | kSocketTraceRecvReq |
-                                      kSocketTraceRecvResp);
+  ConfigureCapture(kProtocolHTTP, kRoleRequestor | kRoleResponder);
   ClientServerSystem system;
   system.RunSendMsgerRecvMsger(
       {{"HTTP/1.1 200 OK\r\n", "Content-Type: json\r\n", "Content-Length: 1\r\n\r\na"},

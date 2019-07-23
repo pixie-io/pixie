@@ -24,7 +24,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     connector_ = SocketTraceConnector::Create("socket_trace_connector");
     source_ = dynamic_cast<SocketTraceConnector*>(connector_.get());
     ASSERT_NE(nullptr, source_);
-    source_->TestOnlyConfigure(kProtocolHTTP, kSocketTraceSendReq | kSocketTraceRecvResp);
+    source_->TestOnlyConfigure(kProtocolHTTP, kRoleRequestor);
 
     // Because some tests change the inactivity duration, make sure to reset it here for each test.
     ConnectionTracker::SetDefaultInactivityDuration();

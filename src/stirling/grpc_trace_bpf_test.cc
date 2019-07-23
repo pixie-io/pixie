@@ -76,8 +76,7 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   ASSERT_OK(connector->Init());
   // This resets the probe to server side, so this is not subject to update in
   // SocketTraceConnector::InitImpl().
-  EXPECT_OK(socket_trace_connector->Configure(kProtocolHTTP2,
-                                              kSocketTraceSendResp | kSocketTraceRecvReq));
+  EXPECT_OK(socket_trace_connector->Configure(kProtocolHTTP2, kRoleResponder));
   EXPECT_OK(socket_trace_connector->TestOnlySetTargetPID(s.child_pid()));
 
   // TODO(yzhao): Add a --count flag to greeter client so we can test the case of multiple RPC calls

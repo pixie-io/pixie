@@ -41,13 +41,9 @@ struct data_info_t {
   const struct user_msghdr* msghdr;
 } __attribute__((__packed__, aligned(8)));
 
-// This control_map is a bit-mask that controls which directions are traced in a connection.
-// The four possibilities for a given protocol are:
-//  - Trace sent requests (client).
-//  - Trace received requests (server).
-//  - Trace sent responses (server).
-//  - Trace received responses (client).
-// The bits are defined in socket_trace.h (kSocketTraceSendReq, etc.).
+// This control_map is a bit-mask that controls which endpoints are traced in a connection.
+// The bits are defined in ReqRespRole enum, kRoleRequestor or kRoleResponder. kRoleUnknown is not
+// really used, but is defined for completeness.
 // There is a control map element for each protocol.
 BPF_PERCPU_ARRAY(control_map, u64, kNumProtocols);
 
@@ -91,13 +87,14 @@ static __inline uint32_t get_tgid_fd_generation(u64 tgid_fd) {
   return (*tgid_fd_generation)++;
 }
 
-static __inline uint64_t get_control(u32 protocol) {
+static __inline bool should_trace(const struct traffic_class_t* traffic_class) {
+  u32 protocol = traffic_class->protocol;
   u64 kZero = 0;
   // TODO(yzhao): BCC doc states BPF_PERCPU_ARRAY: all array elements are **pre-allocated with zero
   // values** (https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md). That suggests
   // lookup() suffices. But this seems more robust, as BCC behavior is often not intuitive.
-  u64* control_ptr = control_map.lookup_or_init(&protocol, &kZero);
-  return *control_ptr;
+  u64 control = *control_map.lookup_or_init(&protocol, &kZero);
+  return control & traffic_class->role;
 }
 
 // BPF programs are limited to a 512-byte stack. We store this value per CPU
@@ -465,22 +462,7 @@ static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* bu
   }
 
   // Filter for request or response based on control flags and protocol type.
-  bool trace;
-
-  u64 control = get_control(conn_info->traffic_class.protocol);
-
-  switch (conn_info->traffic_class.role) {
-    case kRoleRequestor:
-      trace = (control & kSocketTraceSendReq);
-      break;
-    case kRoleResponder:
-      trace = (control & kSocketTraceSendResp);
-      break;
-    default:
-      trace = false;
-  }
-
-  if (!trace) {
+  if (!should_trace(&conn_info->traffic_class)) {
     return 0;
   }
 
@@ -675,21 +657,7 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx, EventType event_typ
   }
 
   // Filter for request or response based on control flags and protocol type.
-  bool trace;
-
-  u64 control = get_control(conn_info->traffic_class.protocol);
-  switch (conn_info->traffic_class.role) {
-    case kRoleRequestor:
-      trace = (control & kSocketTraceRecvResp);
-      break;
-    case kRoleResponder:
-      trace = (control & kSocketTraceRecvReq);
-      break;
-    default:
-      trace = false;
-  }
-
-  if (!trace) {
+  if (!should_trace(&conn_info->traffic_class)) {
     goto done;
   }
 
