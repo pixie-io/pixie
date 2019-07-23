@@ -86,8 +86,10 @@ class ExecNode {
   Status ConsumeNext(ExecState* exec_state, const table_store::schema::RowBatch& rb,
                      size_t parent_index) {
     DCHECK(type() == ExecNodeType::kSinkNode || type() == ExecNodeType::kProcessingNode);
+
     if (rb.eos() && !rb.eow()) {
-      LOG(DFATAL) << "ConsumeNext received row batch with end of stream set but not end of window.";
+      return error::Internal(
+          "ConsumeNext received row batch with end of stream set but not end of window.");
     }
     return ConsumeNextImpl(exec_state, rb, parent_index);
   }
