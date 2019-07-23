@@ -23,34 +23,20 @@ spec:
           - SYS_ADMIN
       privileged: true
     volumeMounts:
-       - name: proc
-         mountPath: /host/proc
+       - name: host-root
+         mountPath: /host
          readOnly: true
        - name: sys
          mountPath: /sys
          readOnly: true
-       - name: usr
-         mountPath: /host/usr
-         readOnly: true
-       - name: lib
-         mountPath: /host/lib
-         readOnly: true
   terminationGracePeriodSeconds: 30
   restartPolicy: Never
   volumes:
-      - name: proc
+      - name: host-root
         hostPath:
-            path: /proc
+            path: /
             type: Directory
       - name: sys
         hostPath:
             path: /sys
-            type: Directory
-      - name: usr # for /usr/src (linux headers)
-        hostPath:
-            path: /usr
-            type: Directory
-      - name: lib # for /lib/modules (linux headers)
-        hostPath:
-            path: /lib
             type: Directory
