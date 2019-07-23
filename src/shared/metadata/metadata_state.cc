@@ -51,6 +51,22 @@ std::unique_ptr<K8sMetadataState> K8sMetadataState::Clone() const {
   return other;
 }
 
+std::string K8sMetadataState::DebugString(int indent_level) const {
+  std::string str;
+  std::string prefix = Indent(indent_level);
+
+  str += prefix + "K8s Objects:\n";
+  for (const auto& it : k8s_objects_) {
+    str += absl::Substitute("$0\n", it.second->DebugString(indent_level + 1));
+  }
+  str += "\n";
+  str += prefix + "Containers:\n";
+  for (const auto& it : containers_by_id_) {
+    str += absl::Substitute("$0\n", it.second->DebugString(indent_level + 1));
+  }
+  return str;
+}
+
 namespace {
 PodQOSClass ConvertToPodQOsClass(pl::shared::k8s::metadatapb::PodQOSClass pb_enum) {
   using qos_pb = pl::shared::k8s::metadatapb::PodQOSClass;
@@ -76,6 +92,7 @@ Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
   auto it = k8s_objects_.find(object_uid);
   if (it == k8s_objects_.end()) {
     auto pod = std::make_unique<PodInfo>(object_uid, ns, name, qos_class);
+    VLOG(1) << "Adding POD: " << pod->DebugString();
     it = k8s_objects_.try_emplace(object_uid, std::move(pod)).first;
   }
 
@@ -116,10 +133,10 @@ Status K8sMetadataState::HandleContainerUpdate(const ContainerUpdate& update) {
 }
 
 std::shared_ptr<AgentMetadataState> AgentMetadataState::CloneToShared() const {
-  std::shared_ptr<AgentMetadataState> state;
+  auto state = std::make_shared<AgentMetadataState>(asid_);
   state->last_update_ts_ns_ = last_update_ts_ns_;
   state->epoch_id_ = epoch_id_;
-  state->agent_id_ = agent_id_;
+  state->asid_ = asid_;
   state->k8s_metadata_state_ = k8s_metadata_state_->Clone();
   state->pids_by_upid_.reserve(pids_by_upid_.size());
 
@@ -127,6 +144,20 @@ std::shared_ptr<AgentMetadataState> AgentMetadataState::CloneToShared() const {
     state->pids_by_upid_[k] = v->Clone();
   }
   return state;
+}
+
+std::string AgentMetadataState::DebugString(int indent_level) const {
+  std::string str;
+  std::string prefix = Indent(indent_level);
+  str += prefix + "--------------------------------------------\n";
+  str += prefix + "Agent Metadata State:\n";
+  str += prefix + absl::Substitute("ASID: $0\n", asid_);
+  str += prefix + absl::Substitute("EpochID: $0\n", epoch_id_);
+  str += prefix + absl::Substitute("LastUpdateTS: $0\n", last_update_ts_ns_);
+  str += prefix + k8s_metadata_state_->DebugString(indent_level);
+  str += prefix + "\n";
+  str += prefix + "--------------------------------------------\n";
+  return str;
 }
 
 }  // namespace md

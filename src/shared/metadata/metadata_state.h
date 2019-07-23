@@ -100,6 +100,9 @@ class K8sMetadataState : NotCopyable {
   Status HandlePodUpdate(const PodUpdate& update);
   Status HandleContainerUpdate(const ContainerUpdate& update);
 
+  absl::flat_hash_map<CID, ContainerInfoUPtr>& containers_by_id() { return containers_by_id_; }
+  std::string DebugString(int indent_level = 0) const;
+
  private:
   // This stores K8s native objects (services, pods, etc).
   absl::flat_hash_map<UID, K8sMetadataObjectUPtr> k8s_objects_;
@@ -119,10 +122,10 @@ class K8sMetadataState : NotCopyable {
 class AgentMetadataState : NotCopyable {
  public:
   AgentMetadataState() = delete;
-  explicit AgentMetadataState(uint32_t agent_id)
-      : agent_id_(agent_id), k8s_metadata_state_(new K8sMetadataState()) {}
+  explicit AgentMetadataState(uint32_t asid)
+      : asid_(asid), k8s_metadata_state_(new K8sMetadataState()) {}
 
-  uint32_t agent_id() const { return agent_id_; }
+  uint32_t asid() const { return asid_; }
 
   int64_t last_update_ts_ns() const { return last_update_ts_ns_; }
   void set_last_update_ts_ns(int64_t last_update_ts_ns) { last_update_ts_ns_ = last_update_ts_ns; }
@@ -134,6 +137,16 @@ class AgentMetadataState : NotCopyable {
   K8sMetadataState* k8s_metadata_state() { return k8s_metadata_state_.get(); }
 
   std::shared_ptr<AgentMetadataState> CloneToShared() const;
+
+  PIDInfo* GetPIDByUPID(UPID upid) {
+    auto it = pids_by_upid_.find(upid);
+    if (it != pids_by_upid_.end()) {
+      return it->second.get();
+    }
+    return nullptr;
+  }
+
+  std::string DebugString(int indent_level = 0) const;
 
  private:
   /**
@@ -149,7 +162,7 @@ class AgentMetadataState : NotCopyable {
    */
   uint64_t epoch_id_ = 0;
 
-  uint32_t agent_id_;
+  uint32_t asid_;
 
   std::unique_ptr<K8sMetadataState> k8s_metadata_state_;
 

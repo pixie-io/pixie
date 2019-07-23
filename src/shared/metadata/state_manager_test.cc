@@ -35,7 +35,7 @@ constexpr char kUpdate1_1Pbtxt[] = R"(
 
 TEST(ApplyK8sUpdate, initialize_md_state) {
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
-  AgentMetadataState metadata_state(123 /*agent_id*/);
+  AgentMetadataState metadata_state(123 /*asid*/);
 
   auto update1_0 = std::make_unique<ResourceUpdate>();
   auto update1_1 = std::make_unique<ResourceUpdate>();
@@ -47,7 +47,7 @@ TEST(ApplyK8sUpdate, initialize_md_state) {
   EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state, &updates));
   EXPECT_EQ(0, updates.size_approx());
 
-  EXPECT_EQ(123, metadata_state.agent_id());
+  EXPECT_EQ(123, metadata_state.asid());
 
   K8sMetadataState* state = metadata_state.k8s_metadata_state();
   EXPECT_THAT(state->pods_by_name(), UnorderedElementsAre(Pair(Pair("pl", "pod1"), "pod_id1")));
