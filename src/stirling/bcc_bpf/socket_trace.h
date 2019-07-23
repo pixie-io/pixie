@@ -102,10 +102,23 @@ struct conn_info_t {
   uint64_t rd_seq_num;
 };
 
-// This is the maximum value for the msg size.
-// This is use for experiment dealing with large message
-// tracing on a vfs_write.
-#define MAX_MSG_SIZE 4096
+// Data buffer message size. BPF can submit at most this amount of data to a perf buffer.
+//
+// NOTE: This size does not directly affect the size of perf buffer submits, as the actual data
+// submitted to perf buffers are determined by attr.msg_size. In cases where socket_data_event_t
+// is defined as stack variable, the size can be problematic. Currently we only have a few instances
+// in *_test.cc files.
+//
+// TODO(yzhao): We do not yet have a good sense of the desired size. Things to consider:
+// * Overhead. This single instance is small. However, we should consider this in the context of all
+// possible overhead in BPF program.
+// * Complexity. If this buffer is not sufficiently large. We'll need to handle chunked message
+// inside user space parsing code.
+// ATM, we saw in one case, when gRPC reflection RPC itself is invoked, it can send one
+// FileDescriptorProto [1], which often become large. That's the only data point we have right now.
+//
+// [1] https://github.com/grpc/grpc-go/blob/master/reflection/serverreflection.go
+#define MAX_MSG_SIZE 16384  // 16KiB
 
 struct socket_data_event_t {
   // We split attributes into a separate struct, because BPF gets upset if you do lots of
