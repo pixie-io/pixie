@@ -85,8 +85,9 @@ const char* kPlanFragmentWithAllNodes = R"(
   nodes {
     id: 4
     op {
-      op_type: BLOCKING_AGGREGATE_OPERATOR
-      blocking_agg_op {
+      op_type: AGGREGATE_OPERATOR
+      agg_op {
+        windowed: false
         values {
           name: "blocking_agg"
         }
@@ -150,7 +151,7 @@ TEST_F(PlanFragmentWalkerTest, basic_tests) {
   std::vector<int64_t> col_order;
   int mem_src_call_count = 0;
   int map_call_count = 0;
-  int blocking_agg_call_count = 0;
+  int agg_call_count = 0;
   int mem_sink_call_count = 0;
   int filter_call_count = 0;
   int limit_call_count = 0;
@@ -164,9 +165,9 @@ TEST_F(PlanFragmentWalkerTest, basic_tests) {
         col_order.push_back(map.id());
         map_call_count++;
       })
-      .OnBlockingAggregate([&](auto& blocking_agg) {
-        col_order.push_back(blocking_agg.id());
-        blocking_agg_call_count++;
+      .OnAggregate([&](auto& agg) {
+        col_order.push_back(agg.id());
+        agg_call_count++;
       })
       .OnMemorySink([&](auto& mem_sink) {
         col_order.push_back(mem_sink.id());
@@ -183,7 +184,7 @@ TEST_F(PlanFragmentWalkerTest, basic_tests) {
       .Walk(&plan_fragment_);
   EXPECT_EQ(1, mem_src_call_count);
   EXPECT_EQ(1, mem_sink_call_count);
-  EXPECT_EQ(1, blocking_agg_call_count);
+  EXPECT_EQ(1, agg_call_count);
   EXPECT_EQ(2, map_call_count);
   EXPECT_EQ(1, filter_call_count);
   EXPECT_EQ(1, limit_call_count);

@@ -38,11 +38,11 @@ struct GroupArgs {
   AggHashValue* av;
 };
 
-class BlockingAggNode : public ProcessingNode {
+class AggNode : public ProcessingNode {
   using AggHashMap = cuckoohash_map<RowTuple*, AggHashValue*, RowTuplePtrHasher, RowTuplePtrEq>;
 
  public:
-  BlockingAggNode() = default;
+  AggNode() = default;
 
  protected:
   Status AggregateGroupByNone(ExecState* exec_state, const table_store::schema::RowBatch& rb);
@@ -61,6 +61,12 @@ class BlockingAggNode : public ProcessingNode {
  private:
   AggHashMap agg_hash_map_;
   bool HasNoGroups() const { return plan_node_->groups().empty(); }
+  // ReadyToEmitBatches returns true when the input stream has reached a point where output batches
+  // can be emitted. In the windowed aggregate case, this happens whenever end of window (eow) is
+  // reached. In the blocking aggregate case, this happens at eos only.
+  bool ReadyToEmitBatches(const table_store::schema::RowBatch& rb) const;
+  // When we see a new window, we need to be able to clear the aggregate state.
+  Status ClearAggState(ExecState* exec_state);
 
   Status EvaluateSingleExpressionNoGroups(ExecState* exec_state, const UDAInfo& uda_info,
                                           plan::AggregateExpression* expr,
@@ -69,7 +75,7 @@ class BlockingAggNode : public ProcessingNode {
   StatusOr<types::DataType> GetTypeOfDep(const plan::ScalarExpression& expr) const;
 
   // Store information about aggregate node from the query planner.
-  std::unique_ptr<plan::BlockingAggregateOperator> plan_node_;
+  std::unique_ptr<plan::AggregateOperator> plan_node_;
   std::unique_ptr<table_store::schema::RowDescriptor> output_descriptor_;
   std::unique_ptr<table_store::schema::RowDescriptor> input_descriptor_;
 

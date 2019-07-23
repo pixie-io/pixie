@@ -145,8 +145,9 @@ nodes {
   nodes {
     id: 13
     op {
-      op_type: BLOCKING_AGGREGATE_OPERATOR
-      blocking_agg_op {
+      op_type: AGGREGATE_OPERATOR
+      agg_op {
+        windowed: false
         values {
           name: "pl.mean"
           args {
@@ -460,8 +461,9 @@ nodes {
   nodes {
     id: 6
     op {
-      op_type: BLOCKING_AGGREGATE_OPERATOR
-      blocking_agg_op {
+      op_type: AGGREGATE_OPERATOR
+      agg_op {
+        windowed: false
         values {
           name: "pl.mean"
           args {
@@ -620,8 +622,9 @@ nodes {
   nodes {
     id: 18
     op {
-      op_type: BLOCKING_AGGREGATE_OPERATOR
-      blocking_agg_op {
+      op_type: AGGREGATE_OPERATOR
+      agg_op {
+        windowed: false
         values {
           name: "pl.mean"
           args {

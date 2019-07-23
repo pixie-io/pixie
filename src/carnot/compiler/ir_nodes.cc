@@ -499,7 +499,7 @@ Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* e
 }
 
 Status BlockingAggIR::ToProto(planpb::Operator* op) const {
-  auto pb = new planpb::BlockingAggregateOperator();
+  auto pb = new planpb::AggregateOperator();
 
   for (const auto& agg_expr : agg_val_vector_) {
     auto expr = pb->add_values();
@@ -516,8 +516,11 @@ Status BlockingAggIR::ToProto(planpb::Operator* op) const {
     }
   }
 
-  op->set_op_type(planpb::BLOCKING_AGGREGATE_OPERATOR);
-  op->set_allocated_blocking_agg_op(pb);
+  // TODO(nserrino/philkuz): Add support for streaming aggregates in the compiler.
+  pb->set_windowed(false);
+
+  op->set_op_type(planpb::AGGREGATE_OPERATOR);
+  op->set_allocated_agg_op(pb);
   return Status::OK();
 }
 

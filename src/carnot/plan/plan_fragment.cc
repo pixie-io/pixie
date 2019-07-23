@@ -36,8 +36,8 @@ void PlanFragmentWalker::CallWalkFn(const Operator& op) {
     case planpb::OperatorType::MAP_OPERATOR:
       CallAs<MapOperator>(on_map_walk_fn_, op);
       break;
-    case planpb::OperatorType::BLOCKING_AGGREGATE_OPERATOR:
-      CallAs<BlockingAggregateOperator>(on_blocking_aggregate_walk_fn_, op);
+    case planpb::OperatorType::AGGREGATE_OPERATOR:
+      CallAs<AggregateOperator>(on_aggregate_walk_fn_, op);
       break;
     case planpb::OperatorType::MEMORY_SINK_OPERATOR:
       CallAs<MemorySinkOperator>(on_memory_sink_walk_fn_, op);

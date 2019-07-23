@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "src/carnot/exec/blocking_agg_node.h"
+#include "src/carnot/exec/agg_node.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/plan/utils.h"
 #include "src/carnot/planpb/plan.pb.h"
@@ -58,19 +58,18 @@ void ExtractToColumnWrapper(const std::vector<GroupArgs>& group_args,
 
 }  // namespace
 
-std::string BlockingAggNode::DebugStringImpl() {
+std::string AggNode::DebugStringImpl() {
   // TODO(zasgar): implement.
   return "";
 }
 
-Status BlockingAggNode::InitImpl(const plan::Operator& plan_node,
-                                 const RowDescriptor& output_descriptor,
-                                 const std::vector<RowDescriptor>& input_descriptors) {
-  CHECK(plan_node.op_type() == planpb::OperatorType::BLOCKING_AGGREGATE_OPERATOR);
-  const auto* agg_plan_node = static_cast<const plan::BlockingAggregateOperator*>(&plan_node);
+Status AggNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor& output_descriptor,
+                         const std::vector<RowDescriptor>& input_descriptors) {
+  CHECK(plan_node.op_type() == planpb::OperatorType::AGGREGATE_OPERATOR);
+  const auto* agg_plan_node = static_cast<const plan::AggregateOperator*>(&plan_node);
 
   // Copy the plan node to local object.
-  plan_node_ = std::make_unique<plan::BlockingAggregateOperator>(*agg_plan_node);
+  plan_node_ = std::make_unique<plan::AggregateOperator>(*agg_plan_node);
   output_descriptor_ = std::make_unique<RowDescriptor>(output_descriptor);
 
   // Check and store the input_descriptors.
@@ -119,23 +118,23 @@ Status BlockingAggNode::InitImpl(const plan::Operator& plan_node,
   return CreateColumnMapping();
 }
 
-Status BlockingAggNode::PrepareImpl(ExecState*) { return Status::OK(); }
+Status AggNode::PrepareImpl(ExecState*) { return Status::OK(); }
 
-Status BlockingAggNode::OpenImpl(ExecState* exec_state) {
+Status AggNode::OpenImpl(ExecState* exec_state) {
   if (HasNoGroups()) {
     PL_RETURN_IF_ERROR(CreateUDAInfoValues(&udas_no_groups_, exec_state));
   }
   return Status::OK();
 }
 
-Status BlockingAggNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
+Status AggNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
   if (HasNoGroups()) {
     return AggregateGroupByNone(exec_state, rb);
   }
   return AggregateGroupByClause(exec_state, rb);
 }
 
-Status BlockingAggNode::CloseImpl(ExecState*) {
+Status AggNode::CloseImpl(ExecState*) {
   udas_no_groups_.clear();
   group_args_chunk_.clear();
   group_args_pool_.Clear();
@@ -144,14 +143,27 @@ Status BlockingAggNode::CloseImpl(ExecState*) {
   return Status::OK();
 }
 
-Status BlockingAggNode::AggregateGroupByNone(ExecState* exec_state, const RowBatch& rb) {
+bool AggNode::ReadyToEmitBatches(const RowBatch& rb) const {
+  return rb.eos() || (rb.eow() && plan_node_->windowed());
+}
+
+Status AggNode::ClearAggState(ExecState* exec_state) {
+  if (HasNoGroups()) {
+    udas_no_groups_.clear();
+    PL_RETURN_IF_ERROR(CreateUDAInfoValues(&udas_no_groups_, exec_state));
+  }
+  agg_hash_map_.clear();
+  return Status::OK();
+}
+
+Status AggNode::AggregateGroupByNone(ExecState* exec_state, const RowBatch& rb) {
   auto values = plan_node_->values();
   for (size_t i = 0; i < values.size(); ++i) {
     PL_RETURN_IF_ERROR(
         EvaluateSingleExpressionNoGroups(exec_state, udas_no_groups_[i], values[i].get(), rb));
   }
 
-  if (rb.eos()) {
+  if (ReadyToEmitBatches(rb)) {
     RowBatch output_rb(*output_descriptor_, 1);
     for (size_t i = 0; i < values.size(); ++i) {
       const auto& uda_info = udas_no_groups_[i];
@@ -164,13 +176,14 @@ Status BlockingAggNode::AggregateGroupByNone(ExecState* exec_state, const RowBat
       PL_RETURN_IF_ERROR(output_rb.AddColumn(out_col));
     }
     output_rb.set_eow(rb.eow());
-    output_rb.set_eos(true);
+    output_rb.set_eos(rb.eos());
     PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, output_rb));
+    PL_RETURN_IF_ERROR(ClearAggState(exec_state));
   }
   return Status::OK();
 }
 
-Status BlockingAggNode::ExtractRowTupleForBatch(const RowBatch& rb) {
+Status AggNode::ExtractRowTupleForBatch(const RowBatch& rb) {
   // Grow the group_args_chunk_ to be the size of the RowBatch.
   size_t num_rows = rb.num_rows();
   if (group_args_chunk_.size() < num_rows) {
@@ -196,7 +209,7 @@ Status BlockingAggNode::ExtractRowTupleForBatch(const RowBatch& rb) {
   return Status::OK();
 }
 
-Status BlockingAggNode::HashRowBatch(ExecState* exec_state, const RowBatch& rb) {
+Status AggNode::HashRowBatch(ExecState* exec_state, const RowBatch& rb) {
   PL_UNUSED(exec_state);
   // Loop through all the row and basically store the values into column chunk based on which
   // group they belong to.
@@ -232,7 +245,7 @@ Status BlockingAggNode::HashRowBatch(ExecState* exec_state, const RowBatch& rb) 
   return Status::OK();
 }
 
-Status BlockingAggNode::EvaluatePartialAggregates(ExecState* exec_state, size_t num_records) {
+Status AggNode::EvaluatePartialAggregates(ExecState* exec_state, size_t num_records) {
   PL_UNUSED(exec_state);
   // TODO(zasgar): This only needs to run for unique groups. We should find
   // a way to optimize this.
@@ -247,7 +260,7 @@ Status BlockingAggNode::EvaluatePartialAggregates(ExecState* exec_state, size_t 
   return Status::OK();
 }
 
-Status BlockingAggNode::ResetGroupArgs() {
+Status AggNode::ResetGroupArgs() {
   // Reset the group args. If the row tuple is null it has been consumed, so
   // we can replace it with a new RowTuple. We also reset the
   // agg hash value to nullptr.
@@ -262,7 +275,7 @@ Status BlockingAggNode::ResetGroupArgs() {
   return Status::OK();
 }
 
-Status BlockingAggNode::ConvertAggHashMapToRowBatch(ExecState* exec_state, RowBatch* output_rb) {
+Status AggNode::ConvertAggHashMapToRowBatch(ExecState* exec_state, RowBatch* output_rb) {
   PL_UNUSED(exec_state);
   DCHECK(output_rb != nullptr);
   std::vector<std::unique_ptr<arrow::ArrayBuilder>> group_builders;
@@ -312,7 +325,7 @@ Status BlockingAggNode::ConvertAggHashMapToRowBatch(ExecState* exec_state, RowBa
   return Status::OK();
 }
 
-Status BlockingAggNode::AggregateGroupByClause(ExecState* exec_state, const RowBatch& rb) {
+Status AggNode::AggregateGroupByClause(ExecState* exec_state, const RowBatch& rb) {
   // Extracts the row tuples (column wise).
   // TODO(zasgar): PL-455 - Chunk this so we don't create a crazy number of row tuples if the batch
   // is large. The process is as follows:
@@ -325,17 +338,18 @@ Status BlockingAggNode::AggregateGroupByClause(ExecState* exec_state, const RowB
   PL_RETURN_IF_ERROR(HashRowBatch(exec_state, rb));
   PL_RETURN_IF_ERROR(EvaluatePartialAggregates(exec_state, rb.num_rows()));
   PL_RETURN_IF_ERROR(ResetGroupArgs());
-  if (rb.eos()) {
+  if (ReadyToEmitBatches(rb)) {
     RowBatch output_rb(*output_descriptor_, agg_hash_map_.size());
     PL_RETURN_IF_ERROR(ConvertAggHashMapToRowBatch(exec_state, &output_rb));
     output_rb.set_eow(rb.eow());
     output_rb.set_eos(rb.eos());
-    return SendRowBatchToChildren(exec_state, output_rb);
+    PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, output_rb));
+    PL_RETURN_IF_ERROR(ClearAggState(exec_state));
   }
   return Status::OK();
 }
 
-StatusOr<types::DataType> BlockingAggNode::GetTypeOfDep(const plan::ScalarExpression& expr) const {
+StatusOr<types::DataType> AggNode::GetTypeOfDep(const plan::ScalarExpression& expr) const {
   // Agg exprs can only be of type col, or  const.
   switch (expr.ExpressionType()) {
     case plan::Expression::kColumn: {
@@ -350,10 +364,9 @@ StatusOr<types::DataType> BlockingAggNode::GetTypeOfDep(const plan::ScalarExpres
   }
 }
 
-Status BlockingAggNode::EvaluateSingleExpressionNoGroups(ExecState* exec_state,
-                                                         const UDAInfo& uda_info,
-                                                         plan::AggregateExpression* expr,
-                                                         const RowBatch& input_rb) {
+Status AggNode::EvaluateSingleExpressionNoGroups(ExecState* exec_state, const UDAInfo& uda_info,
+                                                 plan::AggregateExpression* expr,
+                                                 const RowBatch& input_rb) {
   plan::ExpressionWalker<StatusOr<SharedArray>> walker;
   walker.OnScalarValue(
       [&](const plan::ScalarValue& val,
@@ -393,7 +406,7 @@ Status BlockingAggNode::EvaluateSingleExpressionNoGroups(ExecState* exec_state,
   return Status::OK();
 }
 
-Status BlockingAggNode::EvaluateAggHashValue(ExecState* exec_state, AggHashValue* val) {
+Status AggNode::EvaluateAggHashValue(ExecState* exec_state, AggHashValue* val) {
   size_t values_size = plan_node_->values().size();
   for (size_t i = 0; i < values_size; ++i) {
     const auto& uda_info = val->udas[i];
@@ -442,7 +455,7 @@ Status BlockingAggNode::EvaluateAggHashValue(ExecState* exec_state, AggHashValue
   return Status::OK();
 }
 
-Status BlockingAggNode::CreateColumnMapping() {
+Status AggNode::CreateColumnMapping() {
   for (const auto& expr : plan_node_->values()) {
     plan::ExpressionWalker<int> walker;
 
@@ -468,7 +481,7 @@ Status BlockingAggNode::CreateColumnMapping() {
   return Status::OK();
 }
 
-AggHashValue* BlockingAggNode::CreateAggHashValue(ExecState* exec_state) {
+AggHashValue* AggNode::CreateAggHashValue(ExecState* exec_state) {
   auto* val = udas_pool_.Add(new AggHashValue);
   PL_CHECK_OK(CreateUDAInfoValues(&(val->udas), exec_state));
   for (const auto& dt : stored_cols_data_types_) {
@@ -477,7 +490,7 @@ AggHashValue* BlockingAggNode::CreateAggHashValue(ExecState* exec_state) {
   return val;
 }
 
-Status BlockingAggNode::CreateUDAInfoValues(std::vector<UDAInfo>* val, ExecState* exec_state) {
+Status AggNode::CreateUDAInfoValues(std::vector<UDAInfo>* val, ExecState* exec_state) {
   CHECK(val != nullptr);
   CHECK_EQ(val->size(), 0ULL);
 

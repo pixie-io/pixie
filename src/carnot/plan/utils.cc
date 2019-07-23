@@ -14,8 +14,8 @@ std::string ToString(planpb::OperatorType op) {
       return "MemorySourceOperator";
     case planpb::MAP_OPERATOR:
       return "MapOperator";
-    case planpb::BLOCKING_AGGREGATE_OPERATOR:
-      return "BlockingAggregateOperator";
+    case planpb::AGGREGATE_OPERATOR:
+      return "AggregateOperator";
     case planpb::MEMORY_SINK_OPERATOR:
       return "MemorySinkOperator";
     default:

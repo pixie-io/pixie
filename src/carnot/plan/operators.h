@@ -98,16 +98,15 @@ class MapOperator : public Operator {
   planpb::MapOperator pb_;
 };
 
-class BlockingAggregateOperator : public Operator {
+class AggregateOperator : public Operator {
  public:
-  explicit BlockingAggregateOperator(int64_t id)
-      : Operator(id, planpb::BLOCKING_AGGREGATE_OPERATOR) {}
-  ~BlockingAggregateOperator() override = default;
+  explicit AggregateOperator(int64_t id) : Operator(id, planpb::AGGREGATE_OPERATOR) {}
+  ~AggregateOperator() override = default;
 
   StatusOr<table_store::schema::Relation> OutputRelation(
       const table_store::schema::Schema& schema, const PlanState& state,
       const std::vector<int64_t>& input_ids) const override;
-  Status Init(const planpb::BlockingAggregateOperator& pb);
+  Status Init(const planpb::AggregateOperator& pb);
   std::string DebugString() const override;
 
   struct GroupInfo {
@@ -117,11 +116,12 @@ class BlockingAggregateOperator : public Operator {
 
   const std::vector<GroupInfo>& groups() const { return groups_; }
   const std::vector<std::shared_ptr<AggregateExpression>>& values() const { return values_; }
+  bool windowed() const { return pb_.windowed(); }
 
  private:
   std::vector<std::shared_ptr<AggregateExpression>> values_;
   std::vector<GroupInfo> groups_;
-  planpb::BlockingAggregateOperator pb_;
+  planpb::AggregateOperator pb_;
 };
 
 class MemorySinkOperator : public Operator {

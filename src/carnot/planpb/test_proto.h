@@ -145,6 +145,26 @@ column_names: "usage"
 )";
 
 const char* kBlockingAggOperator1 = R"(
+windowed: false
+values {
+  name: "testUdf"
+  args {
+    constant {
+      data_type: BOOLEAN,
+      bool_value: false
+    }
+  }
+}
+groups {
+  node: 1
+  index: 1
+}
+group_names: "group1"
+value_names: "value1"
+)";
+
+const char* kWindowedAggOperator1 = R"(
+windowed: true
 values {
   name: "testUdf"
   args {
@@ -808,8 +828,16 @@ planpb::Operator CreateTestGrpcSink1PB() {
 
 planpb::Operator CreateTestBlockingAgg1PB() {
   planpb::Operator op;
-  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "BLOCKING_AGGREGATE_OPERATOR",
-                                   "blocking_agg_op", kBlockingAggOperator1);
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "AGGREGATE_OPERATOR", "agg_op", kBlockingAggOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestWindowedAgg1PB() {
+  planpb::Operator op;
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "AGGREGATE_OPERATOR", "agg_op", kWindowedAggOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

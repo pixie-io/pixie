@@ -10,7 +10,7 @@ namespace plan {
 TEST(OpToString, basic_tests) {
   EXPECT_EQ("MemorySourceOperator", ToString(planpb::MEMORY_SOURCE_OPERATOR));
   EXPECT_EQ("MapOperator", ToString(planpb::MAP_OPERATOR));
-  EXPECT_EQ("BlockingAggregateOperator", ToString(planpb::BLOCKING_AGGREGATE_OPERATOR));
+  EXPECT_EQ("AggregateOperator", ToString(planpb::AGGREGATE_OPERATOR));
   EXPECT_EQ("MemorySinkOperator", ToString(planpb::MEMORY_SINK_OPERATOR));
 }
 

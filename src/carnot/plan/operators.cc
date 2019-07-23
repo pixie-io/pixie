@@ -35,8 +35,8 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_
       return CreateOperator<MemorySourceOperator>(id, pb.mem_source_op());
     case planpb::MAP_OPERATOR:
       return CreateOperator<MapOperator>(id, pb.map_op());
-    case planpb::BLOCKING_AGGREGATE_OPERATOR:
-      return CreateOperator<BlockingAggregateOperator>(id, pb.blocking_agg_op());
+    case planpb::AGGREGATE_OPERATOR:
+      return CreateOperator<AggregateOperator>(id, pb.agg_op());
     case planpb::MEMORY_SINK_OPERATOR:
       return CreateOperator<MemorySinkOperator>(id, pb.mem_sink_op());
     case planpb::GRPC_SOURCE_OPERATOR:
@@ -143,12 +143,12 @@ StatusOr<table_store::schema::Relation> MapOperator::OutputRelation(
 }
 
 /**
- * Blocking Aggregate Operator Implementation.
+ * Aggregate Operator Implementation.
  */
 
-std::string BlockingAggregateOperator::DebugString() const { return "Operator: BlockingAggregate"; }
+std::string AggregateOperator::DebugString() const { return "Operator: Aggregate"; }
 
-Status BlockingAggregateOperator::Init(const planpb::BlockingAggregateOperator& pb) {
+Status AggregateOperator::Init(const planpb::AggregateOperator& pb) {
   pb_ = pb;
   if (pb_.groups_size() != pb_.group_names_size()) {
     return error::InvalidArgument("group names/exp size mismatch");
@@ -172,7 +172,7 @@ Status BlockingAggregateOperator::Init(const planpb::BlockingAggregateOperator& 
   return Status::OK();
 }
 
-StatusOr<table_store::schema::Relation> BlockingAggregateOperator::OutputRelation(
+StatusOr<table_store::schema::Relation> AggregateOperator::OutputRelation(
     const table_store::schema::Schema& schema, const PlanState& state,
     const std::vector<int64_t>& input_ids) const {
   DCHECK(is_initialized_) << "Not initialized";

@@ -2,7 +2,7 @@
 #include <memory>
 #include <unordered_map>
 
-#include "src/carnot/exec/blocking_agg_node.h"
+#include "src/carnot/exec/agg_node.h"
 #include "src/carnot/exec/exec_graph.h"
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/filter_node.h"
@@ -38,8 +38,8 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
         sinks_.push_back(node.id());
         return OnOperatorImpl<plan::MemorySinkOperator, MemorySinkNode>(node, &descriptors);
       })
-      .OnBlockingAggregate([&](auto& node) {
-        return OnOperatorImpl<plan::BlockingAggregateOperator, BlockingAggNode>(node, &descriptors);
+      .OnAggregate([&](auto& node) {
+        return OnOperatorImpl<plan::AggregateOperator, AggNode>(node, &descriptors);
       })
       .OnMemorySource([&](auto& node) {
         sources_.push_back(node.id());

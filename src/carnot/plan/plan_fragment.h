@@ -33,8 +33,8 @@ class PlanFragment final : public PlanGraph<planpb::PlanFragment, Operator, plan
  *     .OnMap([&](auto& map) {
  *       map_call_count += 1;
  *     })
- *     .OnBlockingAggregate([&](auto& blocking_agg) {
- *       blocking_agg_call_count += 1;
+ *     .OnAggregate([&](auto& blocking_agg) {
+ *       agg_call_count += 1;
  *     })
  *     .OnMemorySink([&](auto& mem_sink) {
  *       mem_sink_call_count += 1;
@@ -45,7 +45,7 @@ class PlanFragmentWalker {
  public:
   using MemorySourceWalkFn = std::function<void(const MemorySourceOperator&)>;
   using MapWalkFn = std::function<void(const MapOperator&)>;
-  using BlockingAggregateWalkFn = std::function<void(const BlockingAggregateOperator&)>;
+  using AggregateWalkFn = std::function<void(const AggregateOperator&)>;
   using MemorySinkWalkFn = std::function<void(const MemorySinkOperator&)>;
   using FilterWalkFn = std::function<void(const FilterOperator&)>;
   using LimitWalkFn = std::function<void(const LimitOperator&)>;
@@ -71,12 +71,12 @@ class PlanFragmentWalker {
   }
 
   /**
-   * Register callback for when a blocking aggregate operator is encountered.
-   * @param fn The function to call when a BlockingAggregateOperator is encountered.
+   * Register callback for when an aggregate operator is encountered.
+   * @param fn The function to call when a AggregateOperator is encountered.
    * @return self to allow chaining
    */
-  PlanFragmentWalker& OnBlockingAggregate(const BlockingAggregateWalkFn& fn) {
-    on_blocking_aggregate_walk_fn_ = fn;
+  PlanFragmentWalker& OnAggregate(const AggregateWalkFn& fn) {
+    on_aggregate_walk_fn_ = fn;
     return *this;
   }
 
@@ -124,7 +124,7 @@ class PlanFragmentWalker {
 
   MemorySourceWalkFn on_memory_source_walk_fn_;
   MapWalkFn on_map_walk_fn_;
-  BlockingAggregateWalkFn on_blocking_aggregate_walk_fn_;
+  AggregateWalkFn on_aggregate_walk_fn_;
   MemorySinkWalkFn on_memory_sink_walk_fn_;
   FilterWalkFn on_filter_walk_fn_;
   LimitWalkFn on_limit_walk_fn_;

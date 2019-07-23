@@ -105,7 +105,7 @@ Status CarnotImpl::RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan:
         }
         return Status::OK();
       })
-      .OnBlockingAggregate([&](const plan::BlockingAggregateOperator& agg) {
+      .OnAggregate([&](const plan::AggregateOperator& agg) {
         for (const auto& expr : agg.values()) {
           PL_RETURN_IF_ERROR(WalkExpression(exec_state, *expr));
         }

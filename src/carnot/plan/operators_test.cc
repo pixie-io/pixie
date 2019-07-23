@@ -113,7 +113,15 @@ TEST_F(OperatorTest, from_proto_blocking_agg) {
   auto agg_op = Operator::FromProto(agg_pb, 1);
   EXPECT_EQ(1, agg_op->id());
   EXPECT_TRUE(agg_op->is_initialized());
-  EXPECT_EQ(planpb::OperatorType::BLOCKING_AGGREGATE_OPERATOR, agg_op->op_type());
+  EXPECT_EQ(planpb::OperatorType::AGGREGATE_OPERATOR, agg_op->op_type());
+}
+
+TEST_F(OperatorTest, from_proto_windowed_agg) {
+  auto agg_pb = planpb::testutils::CreateTestWindowedAgg1PB();
+  auto agg_op = Operator::FromProto(agg_pb, 1);
+  EXPECT_EQ(1, agg_op->id());
+  EXPECT_TRUE(agg_op->is_initialized());
+  EXPECT_EQ(planpb::OperatorType::AGGREGATE_OPERATOR, agg_op->op_type());
 }
 
 TEST_F(OperatorTest, from_proto_filter) {

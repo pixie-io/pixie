@@ -55,7 +55,7 @@ enum OperatorType {
   GRPC_SOURCE_OPERATOR = 1100;
   // Regular operators are range 2000 - 10000.
   MAP_OPERATOR = 2000;
-  BLOCKING_AGGREGATE_OPERATOR = 2100;
+  AGGREGATE_OPERATOR = 2100;
   FILTER_OPERATOR = 2200;
   LIMIT_OPERATOR = 2300;
   UNION_OPERATOR = 2400;
@@ -73,8 +73,8 @@ message Operator {
     MemorySourceOperator mem_source_op = 2;
     // Performs a simple Map operation.
     MapOperator map_op = 3;
-    // Performs a blocking aggregate (instead of streaming/non-blocking aggregate).
-    BlockingAggregateOperator blocking_agg_op = 4;
+    // Performs a windowed or blocking aggregate.
+    AggregateOperator agg_op = 4;
     // Operator that stores data to memory.
     MemorySinkOperator mem_sink_op = 5;
     // Performs a compacting Filter operation.
@@ -146,7 +146,7 @@ message MapOperator {
 // Aggregate does a group by the "group" Columns and computes
 // the aggregates based on aggregate expression. Number of
 // output columns is equal to the len(values).
-message BlockingAggregateOperator {
+message AggregateOperator {
   // The functions to execute for this aggregate.
   // Note that only agg funcs are valid here.
   repeated AggregateExpression values = 1;
@@ -157,6 +157,8 @@ message BlockingAggregateOperator {
   repeated string group_names = 3;
   // The names of values.
   repeated string value_names = 4;
+  // Whether to do a windowed (streaming) aggregate or a blocking aggregate.
+  bool windowed = 5;
 }
 
 // Performs a compacting filter
