@@ -578,6 +578,42 @@ def buildScriptForNightly = {
   }
 }
 
+
+
+/*****************************************************************************
+ * REGRESSION_BUILDERS: This sections defines all the test regressions steps
+ * that will happen in parallel.
+ *****************************************************************************/
+def regressionBuilders = [:]
+
+regressionBuilders['Test (opt)'] = {
+  WithSourceCode {
+    dockerStepWithBazelCmd(
+      "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH} --runs_per_test 1000",
+      'build-opt')
+  }
+}
+
+regressionBuilders['Test (ASAN)'] = {
+  WithSourceCode {
+    dockerStep('--cap-add=SYS_PTRACE', {
+      bazelCmd("bazel test --config=asan ${BAZEL_CC_QUERY} --runs_per_test 1000", 'build-asan')
+    })
+  }
+}
+
+regressionBuilders['Test (TSAN)'] = {
+  WithSourceCode {
+    dockerStep('--cap-add=SYS_PTRACE', {
+      bazelCmd("bazel test --config=tsan ${BAZEL_CC_QUERY} --runs_per_test 1000", 'build-tsan')
+    })
+  }
+}
+
+/*****************************************************************************
+ * END REGRESSION_BUILDERS
+ *****************************************************************************/
+
 def buildScriptForNightlyTestRegression = {
   node {
     currentBuild.result = 'SUCCESS'
@@ -587,29 +623,7 @@ def buildScriptForNightlyTestRegression = {
         checkoutAndInitialize()
       }
       stage('Testing') {
-        parallel {
-          stage('Test (opt)') {
-            WithSourceCode {
-              dockerStepWithBazelCmd(
-                "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH} --runs_per_test 1000",
-                'build-opt')
-            }
-          }
-          stage('Test (ASAN)') {
-            WithSourceCode {
-              dockerStep('--cap-add=SYS_PTRACE', {
-                bazelCmd("bazel test --config=asan ${BAZEL_CC_QUERY} --runs_per_test 1000", 'build-asan')
-              })
-            }
-          }
-          stage('Test (TSAN)') {
-            WithSourceCode {
-              dockerStep('--cap-add=SYS_PTRACE', {
-                bazelCmd("bazel test --config=tsan ${BAZEL_CC_QUERY} --runs_per_test 1000", 'build-tsan')
-              })
-            }
-          }
-        }
+        parallel(regressionBuilders)
       }
     }
     catch(err) {
