@@ -34,8 +34,8 @@ enum PatternType {
    METRIC_GAUGE = 301;
 }
 
-// Represents a 128-bit int.
-message int128 {
-  int64 low = 1;
-  int64 high = 2;
+// Represents an unsigned 128-bit int.
+message UInt128 {
+  uint64 low = 1;
+  uint64 high = 2;
 }

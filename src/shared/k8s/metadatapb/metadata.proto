@@ -393,7 +393,7 @@ message ProcessInfo {
   // Name of the process.
   string name = 1;
 
-  pl.types.int128 upid = 2;
+  pl.types.UInt128 upid = 2;
 
   int32 pid = 3;
 
@@ -520,7 +520,7 @@ message ServiceUpdate {
 
 message ProcessCreated {
   // The unique PID for this process. This PID is cluster unique in both space and time.
-  pl.types.int128 upid = 1;
+  pl.types.UInt128 upid = 1;
 
   // The PID for this process which is unique on this machine in space, but not time.
   int32 pid = 2;
@@ -540,7 +540,7 @@ message ProcessCreated {
 
 message ProcessTerminated {
   // The unique PID for this process. This PID is cluster unique in both space and time.
-  pl.types.int128 upid = 1;
+  pl.types.UInt128 upid = 1;
 
   // The time in nanoseconds when the process stopped.
   int64 stop_timestamp_ns = 2 [
