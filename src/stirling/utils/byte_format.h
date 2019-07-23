@@ -2,13 +2,14 @@
 #include <string>
 #include <utility>
 #include "src/common/base/base.h"
-#include "src/common/base/status.h"
-#include "src/stirling/socket_trace_event_type.h"
 
 namespace pl {
 namespace stirling {
+namespace utils {
+
 // TODO(chengruizhe/oazizi): Move to common someday.
 int BEBytesToInt(const char arr[], size_t size);
+
 int LEStrToInt(const std::string str);
 
 template <size_t N>
@@ -27,5 +28,6 @@ void IntToLEBytes(int num, char result[N]) {
     result[i] = (num >> (i * 8));
   }
 }
+}  // namespace utils
 }  // namespace stirling
 }  // namespace pl

@@ -5,7 +5,7 @@
 #include <string_view>
 #include <utility>
 #include "src/stirling/event_parser.h"
-#include "src/stirling/utils.h"
+#include "src/stirling/utils/byte_format.h"
 
 namespace pl {
 namespace stirling {
@@ -71,8 +71,8 @@ ParseState MySQLParser::Parse(MessageType type, std::string_view buf) {
 
   char len_char_LE[] = {buf[0], buf[1], buf[2]};
   char len_char_BE[3];
-  EndianSwap<3>(len_char_LE, len_char_BE);
-  int packet_length = BEBytesToInt(len_char_BE, 3);
+  utils::EndianSwap<3>(len_char_LE, len_char_BE);
+  int packet_length = utils::BEBytesToInt(len_char_BE, 3);
   int buffer_length = buf.length();
 
   // 3 bytes of packet length and 1 byte of packet number.

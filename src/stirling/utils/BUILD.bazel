@@ -21,6 +21,12 @@ pl_cc_test(
     deps = [":cc_library"],
 )
 
+pl_cc_test(
+    name = "byte_format_test",
+    srcs = ["byte_format_test.cc"],
+    deps = [":cc_library"],
+)
+
 pl_cc_binary(
     name = "kprobe_cleaner_standalone",
     srcs = ["kprobe_cleaner_standalone.cc"],

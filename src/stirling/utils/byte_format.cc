@@ -1,8 +1,9 @@
-#include "src/stirling/utils.h"
+#include "src/stirling/utils/byte_format.h"
 #include <glog/logging.h>
 
 namespace pl {
 namespace stirling {
+namespace utils {
 
 // The input bytes are big endian.
 // TODO(chengruizhe): Convert to template with [N] to avoid DCHECK.
@@ -24,5 +25,6 @@ int LEStrToInt(const std::string str) {
   return result;
 }
 
+}  // namespace utils
 }  // namespace stirling
 }  // namespace pl

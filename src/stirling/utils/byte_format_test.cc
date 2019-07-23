@@ -1,9 +1,10 @@
-#include "src/stirling/utils.h"
+#include "src/stirling/utils/byte_format.h"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 namespace pl {
 namespace stirling {
+namespace utils {
 
 class UtilsTest : public ::testing::Test {};
 
@@ -39,5 +40,6 @@ TEST_F(UtilsTest, TestLEStrToInt) {
   EXPECT_EQ(LEStrToInt(input), 305419896);
 }
 
+}  // namespace utils
 }  // namespace stirling
 }  // namespace pl

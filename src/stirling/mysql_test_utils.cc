@@ -1,6 +1,6 @@
 #include "src/stirling/mysql_test_utils.h"
 #include <string>
-#include "src/stirling/utils.h"
+#include "src/stirling/utils/byte_format.h"
 
 namespace pl {
 namespace stirling {
@@ -21,7 +21,7 @@ std::string GenOk(const std::string& msg) {
 
 std::string GenPacket(int packet_num, const std::string& msg) {
   char len_bytes[3];
-  IntToLEBytes<3>(msg.size(), len_bytes);
+  utils::IntToLEBytes<3>(msg.size(), len_bytes);
   return absl::StrCat(std::string(len_bytes, 3), packet_num, msg);
 }
 }  // namespace testutils
