@@ -519,7 +519,7 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirecti
 }
 
 static __inline void perf_submit_msghdr(struct pt_regs* ctx, const TrafficDirection direction,
-                                        const ssize_t total_size, const struct user_msghdr* msghdr,
+                                        const struct user_msghdr* msghdr, const ssize_t total_size,
                                         struct conn_info_t* conn_info,
                                         struct socket_data_event_t* event) {
   size_t msg_iovlen = 0;
@@ -584,7 +584,7 @@ static __inline int probe_ret_write_send(struct pt_regs* ctx, EventType event_ty
   if (write_info->buf != NULL) {
     perf_submit_buf(ctx, kEgress, write_info->buf, bytes_written, conn_info, event);
   } else if (write_info->msghdr != NULL) {
-    perf_submit_msghdr(ctx, kEgress, bytes_written, write_info->msghdr, conn_info, event);
+    perf_submit_msghdr(ctx, kEgress, write_info->msghdr, bytes_written, conn_info, event);
   }
 
 done:
@@ -678,7 +678,7 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx, EventType event_typ
   if (read_info->buf != NULL) {
     perf_submit_buf(ctx, kIngress, read_info->buf, bytes_read, conn_info, event);
   } else if (read_info->msghdr != NULL) {
-    perf_submit_msghdr(ctx, kIngress, bytes_read, read_info->msghdr, conn_info, event);
+    perf_submit_msghdr(ctx, kIngress, read_info->msghdr, bytes_read, conn_info, event);
   }
 
 done:
