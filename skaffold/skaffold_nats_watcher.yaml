@@ -1,0 +1,21 @@
+apiVersion: skaffold/v1beta13
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/pl-dev-infra/vizier/nats_watcher_image
+    context: .
+    bazel:
+      target: //src/vizier/utils/nats_watcher:nats_watcher_image.tar
+deploy:
+  kustomize:
+    path: k8s/utils/dev
+profiles:
+  - name: minikube
+    activation:
+      - kubeContext: minikube
+    patches:
+      # Don't push images in the minikube build.
+      - op: replace
+        path: /build/local
+        value:
+          push: false
