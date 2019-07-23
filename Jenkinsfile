@@ -356,6 +356,7 @@ def checkoutAndInitialize() {
     echo ${BUILD_NUMBER} > SOURCE_VERSION
 
     git diff -U0 origin/master > diff_origin_master
+    git diff -U0 origin/master -- '***.cc' '***.h' '***.c' > diff_origin_master_cc
   '''
   writeBazelRCFile()
 
@@ -389,7 +390,7 @@ builders['Clang-tidy'] = {
         sh 'scripts/run_clang_tidy.sh'
       } else {
         // For code review builds only run on diff.
-        sh 'scripts/run_clang_tidy.sh -f diff_origin_master'
+        sh 'scripts/run_clang_tidy.sh -f diff_origin_master_cc'
       }
       stash name: stashName, includes: 'clang_tidy.log'
       stashList.add(stashName)

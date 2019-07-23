@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 diff_mode=false
 diff_file=""
@@ -6,7 +6,7 @@ build=true
 
 # Print out the usage information and exit.
 usage() {
-  echo "Usage $0 [-d] [-h]" 1>&2;
+  echo "Usage $0 [-d] [-h] [-f file_name] [-n]" 1>&2;
   echo "   -d    Run only diff against master branch"
   echo "   -f    Use a diff file"
   echo "   -n    Don't run the build"
@@ -17,7 +17,7 @@ usage() {
 parse_args() {
   local OPTIND
   # Process the command line arguments.
-  while getopts "d:fhn" opt; do
+  while getopts "df:hn" opt; do
     case ${opt} in
       d)
         diff_mode=true
@@ -44,6 +44,13 @@ parse_args() {
 }
 
 parse_args "$@"
+
+if [[ "${diff_mode}" = true && ! -z "${diff_file}" && ! -s "${diff_file}" ]]; then
+    echo "Diff file is empty, exiting"
+    echo "Diff file ${diff_file} empty" > clang_tidy.log
+    exit 0
+fi
+
 
 # We can have the Clang tidy script in a few different places. Check them in priority
 # order.
@@ -78,13 +85,12 @@ fi
 
 echo "Selected: ${clang_tidy_script}"
 
-set -e
 SRCDIR=$(bazel info workspace)
 echo "Generating compilation database..."
 pushd $SRCDIR
 
 # This is a bit ugly, but limits the bazel build targets to only C++ code.
-bazel_targets=`bazel query 'kind("cc_(binary|test) rule", src/...)' | grep -v '_cgo_.o\$'`
+bazel_targets=`bazel query 'kind("cc_(binary|test) rule",//... //third_party/...) except attr("tags", "manual", //...)'`
 
 flags="--include_headers"
 if [ "$build" = true ] ; then

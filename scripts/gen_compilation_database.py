@@ -99,8 +99,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
     generateCompilationDatabase(args)
     fixCompilationDatabase(args)
-    parser.add_argument(
-        'bazel_targets', nargs='*', default=["//src/..."])
-    args = parser.parse_args()
-    generateCompilationDatabase(args)
-    fixCompilationDatabase(args)
