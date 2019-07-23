@@ -565,7 +565,7 @@ static __inline int probe_ret_write_send(struct pt_regs* ctx, EventType event_ty
   u32 tgid = id >> 32;
 
   if (!test_only_should_trace_tgid(tgid)) {
-    return 0;
+    goto done;
   }
 
   ssize_t bytes_written = PT_REGS_RC(ctx);
