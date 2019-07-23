@@ -1,5 +1,7 @@
+# gazelle:ignore
 package(default_visibility = ["//visibility:public"])
 
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
@@ -50,5 +52,29 @@ pl_cc_binary(
         ":cc_library",
         "//src/common/benchmark:cc_library",
         "@com_google_benchmark//:benchmark_main",
+    ],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = glob(
+        ["*.go"],
+        exclude = [
+            "**/*_test.go",
+        ],
+    ),
+    importpath = "pixielabs.ai/pixielabs/src/shared/types",
+    deps = ["//src/shared/types/proto:types_pl_go_proto"],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = glob(
+        ["**/*_test.go"],
+    ),
+    embed = [":go_default_library"],
+    deps = [
+        "//src/shared/types/proto:types_pl_go_proto",
+        "@com_github_stretchr_testify//assert:go_default_library",
     ],
 )
