@@ -35,8 +35,8 @@ Status Compiler::VerifyIRConnections(const IR& ir) {
   return Status::OK();
 }
 Status Compiler::UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_state) {
-  auto analyzer = Analyzer(compiler_state);
-  return analyzer.UpdateRelationsAndCheckFunctions(ir);
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<Analyzer> analyzer, Analyzer::Create(compiler_state));
+  return analyzer->Execute(ir);
 }
 
 StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,

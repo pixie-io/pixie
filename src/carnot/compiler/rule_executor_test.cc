@@ -114,72 +114,55 @@ using ::testing::Return;
 // Tests that rule execution works as expected in simple 1 batch case.
 TEST_F(RuleExecutorTest, rule_executor_test) {
   std::unique_ptr<TestExecutor> executor = std::move(TestExecutor::Create().ValueOrDie());
-  RuleBatch* rule_batch = executor->CreateRuleBatch("resolve", std::make_unique<FailOnMax>(10));
-  auto rule1_og = std::make_unique<MockRule>(compiler_state_.get());
-  MockRule* rule1 = rule1_og.get();
-
+  RuleBatch* rule_batch = executor->CreateRuleBatch<FailOnMax>("resolve", 10);
+  MockRule* rule1 = rule_batch->AddRule<MockRule>(compiler_state_.get());
   EXPECT_CALL(*rule1, Execute(_)).Times(2).WillOnce(Return(true)).WillRepeatedly(Return(false));
-  EXPECT_OK(rule_batch->AddRule(std::move(rule1_og)));
   ASSERT_OK(executor->Execute(graph.get()));
 }
 
-// Tests to see that rules in different batches can run.
+// // Tests to see that rules in different batches can run.
 TEST_F(RuleExecutorTest, multiple_rule_batches) {
   std::unique_ptr<TestExecutor> executor = std::move(TestExecutor::Create().ValueOrDie());
-  RuleBatch* rule_batch1 = executor->CreateRuleBatch("resolve", std::make_unique<FailOnMax>(10));
-  auto rule1_1_og = std::make_unique<MockRule>(compiler_state_.get());
-  MockRule* rule1_1 = rule1_1_og.get();
+  RuleBatch* rule_batch1 = executor->CreateRuleBatch<FailOnMax>("resolve", 10);
+  MockRule* rule1_1 = rule_batch1->AddRule<MockRule>(compiler_state_.get());
   EXPECT_CALL(*rule1_1, Execute(_)).Times(2).WillRepeatedly(Return(false));
-  auto rule1_2_og = std::make_unique<MockRule>(compiler_state_.get());
-  MockRule* rule1_2 = rule1_2_og.get();
+  MockRule* rule1_2 = rule_batch1->AddRule<MockRule>(compiler_state_.get());
   EXPECT_CALL(*rule1_2, Execute(_)).Times(2).WillOnce(Return(true)).WillRepeatedly(Return(false));
 
-  EXPECT_OK(rule_batch1->AddRule(std::move(rule1_1_og)));
-  EXPECT_OK(rule_batch1->AddRule(std::move(rule1_2_og)));
-
-  RuleBatch* rule_batch2 = executor->CreateRuleBatch("resolve", std::make_unique<FailOnMax>(10));
-  auto rule2_1_og = std::make_unique<MockRule>(compiler_state_.get());
-  MockRule* rule2_1 = rule2_1_og.get();
+  RuleBatch* rule_batch2 = executor->CreateRuleBatch<FailOnMax>("resolve", 10);
+  MockRule* rule2_1 = rule_batch2->AddRule<MockRule>(compiler_state_.get());
   EXPECT_CALL(*rule2_1, Execute(_)).Times(2).WillOnce(Return(true)).WillRepeatedly(Return(false));
-  EXPECT_OK(rule_batch2->AddRule(std::move(rule2_1_og)));
   EXPECT_OK(executor->Execute(graph.get()));
 }
 
 // Tests to see that within a rule batch, rules will run if their sibling rule changes the graph.
 TEST_F(RuleExecutorTest, rules_in_batch_correspond) {
   std::unique_ptr<TestExecutor> executor = std::move(TestExecutor::Create().ValueOrDie());
-  RuleBatch* rule_batch1 = executor->CreateRuleBatch("resolve", std::make_unique<FailOnMax>(10));
-  auto rule1_1_og = std::make_unique<MockRule>(compiler_state_.get());
-  MockRule* rule1_1 = rule1_1_og.get();
+  RuleBatch* rule_batch1 = executor->CreateRuleBatch<FailOnMax>("resolve", 10);
+  MockRule* rule1_1 = rule_batch1->AddRule<MockRule>(compiler_state_.get());
   EXPECT_CALL(*rule1_1, Execute(_))
       .Times(3)
       .WillOnce(Return(false))
       .WillOnce(Return(true))
       .WillOnce(Return(false));
-  auto rule1_2_og = std::make_unique<MockRule>(compiler_state_.get());
-  MockRule* rule1_2 = rule1_2_og.get();
+
+  MockRule* rule1_2 = rule_batch1->AddRule<MockRule>(compiler_state_.get());
   EXPECT_CALL(*rule1_2, Execute(_)).Times(3).WillOnce(Return(true)).WillRepeatedly(Return(false));
 
-  EXPECT_OK(rule_batch1->AddRule(std::move(rule1_1_og)));
-  EXPECT_OK(rule_batch1->AddRule(std::move(rule1_2_og)));
   EXPECT_OK(executor->Execute(graph.get()));
 }
 
 // Test to see that if the strategy exits, then following batches don't run.
 TEST_F(RuleExecutorTest, exit_early) {
   std::unique_ptr<TestExecutor> executor = std::move(TestExecutor::Create().ValueOrDie());
-  RuleBatch* rule_batch1 = executor->CreateRuleBatch("resolve", std::make_unique<FailOnMax>(10));
-  auto rule1_1_og = std::make_unique<MockRule>(compiler_state_.get());
-  MockRule* rule1_1 = rule1_1_og.get();
+  RuleBatch* rule_batch1 = executor->CreateRuleBatch<FailOnMax>("resolve", 10);
+  MockRule* rule1_1 = rule_batch1->AddRule<MockRule>(compiler_state_.get());
   EXPECT_CALL(*rule1_1, Execute(_)).Times(10).WillRepeatedly(Return(true));
 
-  EXPECT_OK(rule_batch1->AddRule(std::move(rule1_1_og)));
-
-  RuleBatch* rule_batch2 = executor->CreateRuleBatch("resolve", std::make_unique<FailOnMax>(10));
-  auto rule2_1_og = std::make_unique<MockRule>(compiler_state_.get());
-  MockRule* rule2_1 = rule2_1_og.get();
+  RuleBatch* rule_batch2 = executor->CreateRuleBatch<FailOnMax>("resolve", 10);
+  MockRule* rule2_1 = rule_batch2->AddRule<MockRule>(compiler_state_.get());
   EXPECT_CALL(*rule2_1, Execute(_)).Times(0);
-  EXPECT_OK(rule_batch2->AddRule(std::move(rule2_1_og)));
+
   EXPECT_NOT_OK(executor->Execute(graph.get()));
 }
 

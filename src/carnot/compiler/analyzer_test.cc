@@ -108,8 +108,9 @@ class RelationHandlerTest : public ::testing::Test {
     return result;
   }
   Status HandleRelation(std::shared_ptr<IR> ir_graph) {
-    auto relation_handler = Analyzer(compiler_state_.get());
-    return relation_handler.UpdateRelationsAndCheckFunctions(ir_graph.get());
+    PL_ASSIGN_OR_RETURN(std::unique_ptr<Analyzer> analyzer,
+                        Analyzer::Create(compiler_state_.get()));
+    return analyzer->Execute(ir_graph.get());
   }
   bool RelationEquality(const table_store::schema::Relation& r1,
                         const table_store::schema::Relation& r2) {

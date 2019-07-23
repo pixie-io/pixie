@@ -8,141 +8,37 @@
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/registry_info.h"
+#include "src/carnot/compiler/rule_executor.h"
+#include "src/carnot/compiler/rules.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
 
-class Analyzer {
- public:
-  Analyzer() = delete;
-  explicit Analyzer(CompilerState* compiler_state);
-  /**
-   * @brief Wrapper for all of the update functionality of the Analyzer.
+class Analyzer : public RuleExecutor {
+ private:
+  explicit Analyzer(CompilerState* compiler_state) : compiler_state_(compiler_state) {}
+  Status Init() {
+    RuleBatch* rule_batch0 = CreateRuleBatch<FailOnMax>("TableResolution", 2);
+    rule_batch0->AddRule<SourceRelationRule>(compiler_state_);
+    RuleBatch* rule_batch1 = CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
+    rule_batch1->AddRule<DataTypeRule>(compiler_state_);
+    rule_batch1->AddRule<OperatorRelationRule>(compiler_state_);
+    rule_batch1->AddRule<RangeArgExpressionRule>(compiler_state_);
+    RuleBatch* rule_batch3 = CreateRuleBatch<FailOnMax>("Verification", 1);
+    rule_batch3->AddRule<VerifyFilterExpressionRule>(compiler_state_);
+    return Status::OK();
+  }
 
-   * @param ir_graph -> ptr to ir memorythat is managed by the caller of the Analyzer. Will
-   * be updat by this constructor.
-   * @return Status
-   */
-  Status UpdateRelationsAndCheckFunctions(IR* ir_graph);
+ public:
+  static StatusOr<std::unique_ptr<Analyzer>> Create(CompilerState* compiler_state) {
+    std::unique_ptr<Analyzer> analyzer(new Analyzer(compiler_state));
+    PL_RETURN_IF_ERROR(analyzer->Init());
+    return analyzer;
+  }
 
  private:
-  /**
-   * @brief Finds the sources in the graph, then gets the relation from the appropriate places.
-   *
-   * @param ir_graph
-   * @param compiler_state
-   * @return Status
-   */
-  Status UpdateSourceRelations(IR* ir_graph, CompilerState* compiler_state);
-
-  /**
-   * @brief Iterates through all of the IR columns and makes sure
-   * that they are read to be transposed into the logical plan nodes.
-   *
-   * @param ir_graph
-   * @return Status
-   */
-  std::vector<Status> VerifyIRColumnsReady(IR* ir_graph);
-
-  Status RelationUpdate(OperatorIR* node);
-
-  /**
-   * @brief Handle sinks. Just copies the parent_relation.
-   *
-   * @param the node operating on.
-   * @param parent_rel - the parent relation of the node.
-   * @return StatusOr <table_store::schema::Relation> the resultant relation.
-   */
-  StatusOr<table_store::schema::Relation> SinkHandler(MemorySinkIR* node,
-                                                      table_store::schema::Relation parent_rel);
-
-  /**
-   * @brief Handle Agg Operator.
-   * Creates a new relation based on the expressions of the Agg.
-   * Returns an error if it can't find expected columns in the parent_relation.
-   *
-   * @param the node operating on.
-   * @param parent_rel - the parent relation of the node.
-   * @return StatusOr <table_store::schema::Relation> the resultant relation.
-   */
-  StatusOr<table_store::schema::Relation> BlockingAggHandler(
-      BlockingAggIR* node, table_store::schema::Relation parent_rel);
-
-  /**
-   * @brief Handle Map operator.
-   * Adds columns to the parent relation according to each expression.
-   * Returns an error if it can't find expected columns in the parent_relation.
-   *
-   * @param the node operating on.
-   * @param parent_rel - the parent relation of the node.
-   * @return StatusOr <table_store::schema::Relation> the resultant relation.
-   */
-  StatusOr<table_store::schema::Relation> MapHandler(MapIR* node,
-                                                     table_store::schema::Relation parent_rel);
-
-  /**
-   * @brief Handle Range Operator. Just copies the parent_relation.
-   *
-   * @param the node operating on.
-   * @param parent_rel - the parent relation of the node.
-   * @return StatusOr <table_store::schema::Relation> the resultant relation.
-   */
-  StatusOr<table_store::schema::Relation> RangeHandler(RangeIR* node,
-                                                       table_store::schema::Relation parent_rel);
-
-  /**
-   * @brief Handle Filter operator.
-   * Really should just copy the parent relation for now.
-   *
-   * @param the node operating on.
-   * @param parent_rel - the parent relation of the node.
-   * @return StatusOr <table_store::schema::Relation> the resultant relation.
-   */
-  StatusOr<table_store::schema::Relation> FilterHandler(FilterIR* node,
-                                                        table_store::schema::Relation parent_rel);
-
-  /**
-   * @brief Handle LimitOperator
-   * Really should just copy the parent relation for now.
-   *
-   * @param the node operating on.
-   * @param parent_rel - the parent relation of the node.
-   * @return StatusOr <table_store::schema::Relation> the resultant relation.
-   */
-  StatusOr<table_store::schema::Relation> LimitHandler(LimitIR* node,
-                                                       table_store::schema::Relation parent_rel);
-
-  Status HasExpectedColumns(const std::unordered_set<std::string>& expected_columns,
-                            const table_store::schema::Relation& parent_relation);
-  /**
-   * @brief Evaluates the expression to get the data.
-   *
-   * @param expr -> the expression to evaluate on
-   * @param parent_rel -> the parent relation to use for evaluation.
-   * @param is_map -> true if this is for a map, false if this is for agg. Used to select UDF vs UDA
-   * @return StatusOr<types::DataType> The datatype output by this expression.
-   */
-  StatusOr<types::DataType> EvaluateExpression(IRNode* expr,
-                                               const table_store::schema::Relation& parent_rel,
-                                               bool is_map);
-  StatusOr<types::DataType> EvaluateFuncExpr(FuncIR* expr,
-                                             const table_store::schema::Relation& parent_rel,
-                                             bool is_map);
-  StatusOr<types::DataType> EvaluateColExpr(ColumnIR* expr,
-                                            const table_store::schema::Relation& parent_rel);
-  Status SetSourceRelation(MemorySourceIR* node);
-  Status SetAllSourceRelations(IR* ir_graph);
-  StatusOr<std::vector<ColumnIR*>> GetColumnsFromRelation(
-      IRNode* node, std::vector<std::string> col_names,
-      const table_store::schema::Relation& relation);
-
-  StatusOr<IntIR*> EvaluateCompilerExpression(IRNode* node);
-  StatusOr<IntIR*> EvaluateCompilerFunction(const std::string& name,
-                                            std::vector<IntIR*> evaled_args, IRNode* parent_node);
-  StatusOr<std::vector<std::string>> GetColumnNames(std::vector<IRNode*> select_children);
-  /** Variables **/
   CompilerState* compiler_state_;
 };
 }  // namespace compiler

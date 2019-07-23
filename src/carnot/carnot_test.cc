@@ -858,8 +858,26 @@ TEST_F(CarnotTest, reused_result) {
       "\n");
   auto s = carnot_->ExecuteQuery(query, 0);
   VLOG(1) << s.ToString();
-  // This used to segfault according to PL-525, should just send compiler error.
-  EXPECT_NOT_OK(s);
+  // This used to segfault according to PL-525, should now run without problems.
+  ASSERT_OK(s);
+  auto output_table = table_store_->GetTable("test_output");
+  EXPECT_EQ(3, output_table->NumBatches());
+  EXPECT_EQ(2, output_table->NumColumns());
+
+  auto rb1 =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  auto col3 = CarnotTestUtils::big_test_col3;
+  auto col_num_groups = CarnotTestUtils::big_test_groups;
+  std::vector<types::BoolValue> gt_exp;
+  std::vector<types::Int64Value> num_groups;
+
+  for (int64_t i = 0; i < rb1->num_rows(); i++) {
+    gt_exp.emplace_back(col3[i] > 30);
+    num_groups.emplace_back(col_num_groups[i]);
+  }
+  EXPECT_TRUE(rb1->ColumnAt(0)->Equals(types::ToArrow(gt_exp, arrow::default_memory_pool())));
+  EXPECT_TRUE(rb1->ColumnAt(1)->Equals(types::ToArrow(num_groups, arrow::default_memory_pool())));
 }
 
 TEST_F(CarnotTest, multiple_result_calls) {
@@ -879,7 +897,6 @@ TEST_F(CarnotTest, multiple_result_calls) {
   query = absl::Substitute(query, col3_lt_val, num_groups_gt_val, groups_val);
   auto s = carnot_->ExecuteQuery(query, 0);
   VLOG(1) << s.ToString();
-  // This used to segfault according to PL-525, should just send compiler error.
   ASSERT_OK(s);
 
   // test the original output

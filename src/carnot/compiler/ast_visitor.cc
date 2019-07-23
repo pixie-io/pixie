@@ -280,21 +280,30 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
 
   // pl.mod(by_col, size).
   DCHECK(args["by"]->type() == IRNodeType::kLambda);
-  ExpressionIR* by_col_ir_node =
-      static_cast<ExpressionIR*>(static_cast<LambdaIR*>(args["by"])->col_exprs()[0].node);
+  VLOG(1) << absl::Substitute("by lambda, $0($1)", args["by"]->type_string(), args["by"]->id());
+  VLOG(1) << absl::Substitute("fn lambda, $0($1)", args["fn"]->type_string(), args["fn"]->id());
+  LambdaIR* by_lambda = static_cast<LambdaIR*>(args["by"]);
+  if (by_lambda->col_exprs().size() > 1) {
+    return by_lambda->CreateIRNodeError(
+        "Too many arguments for by argument of RangeAgg, only 1 is supported. ");
+  }
+  ColumnIR* by_col = static_cast<ColumnIR*>(by_lambda->col_exprs()[0].node);
+  ir_graph_->DeleteEdge(by_lambda->id(), by_col->id());
   PL_ASSIGN_OR_RETURN(FuncIR * mod_ir_node, ir_graph_->MakeNode<FuncIR>());
   PL_ASSIGN_OR_RETURN(FuncIR::Op mod_op, GetOp("%", node));
   DCHECK(args["size"]->IsExpression());
   PL_RETURN_IF_ERROR(mod_ir_node->Init(
       mod_op, kUDFPrefix,
-      std::vector<ExpressionIR*>({by_col_ir_node, static_cast<ExpressionIR*>(args["size"])}),
+      std::vector<ExpressionIR*>({by_col, static_cast<ExpressionIR*>(args["size"])}),
       false /*compile_time */, node));
 
+  PL_ASSIGN_OR_RETURN(ColumnIR * by_col_copy, ir_graph_->MakeNode<ColumnIR>());
+  PL_RETURN_IF_ERROR(by_col_copy->Init(by_col->col_name(), by_col->ast_node()));
   // pl.subtract(by_col, pl.mod(by_col, size)).
   PL_ASSIGN_OR_RETURN(FuncIR * sub_ir_node, ir_graph_->MakeNode<FuncIR>());
   PL_ASSIGN_OR_RETURN(FuncIR::Op sub_op, GetOp("-", node));
   PL_RETURN_IF_ERROR(sub_ir_node->Init(sub_op, kUDFPrefix,
-                                       std::vector<ExpressionIR*>({by_col_ir_node, mod_ir_node}),
+                                       std::vector<ExpressionIR*>({by_col_copy, mod_ir_node}),
                                        false /*compile_time */, node));
 
   // Map(lambda r: {'group': pl.subtract(by_col, pl.modulo(by_col, size))}.
@@ -306,9 +315,8 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
     PL_RETURN_IF_ERROR(col_node->Init(name, node));
     map_exprs.push_back(ColumnExpression{name, col_node});
   }
-  PL_RETURN_IF_ERROR(map_lambda_ir_node->Init(
-      std::unordered_set<std::string>({static_cast<ColumnIR*>(by_col_ir_node)->col_name()}),
-      map_exprs, node));
+  PL_RETURN_IF_ERROR(map_lambda_ir_node->Init(std::unordered_set<std::string>({by_col->col_name()}),
+                                              map_exprs, node));
   ArgMap map_args{{"fn", map_lambda_ir_node}};
   PL_RETURN_IF_ERROR(map_ir_node->Init(call_result, map_args, node));
 

@@ -75,9 +75,12 @@ class RuleBatch {
   int64_t max_iterations() const { return strategy_->max_iterations(); }
   Status MaxIterationsHandler() const { return strategy_->MaxIterationsHandler(); }
 
-  Status AddRule(std::unique_ptr<Rule> rule) {
+  template <typename R, typename... Args>
+  R* AddRule(Args... args) {
+    std::unique_ptr<R> rule = std::make_unique<R>(args...);
+    R* raw_rule = rule.get();
     rules_.push_back(std::move(rule));
-    return Status::OK();
+    return raw_rule;
   }
 
  private:
@@ -118,8 +121,9 @@ class RuleExecutor {
     }
     return Status::OK();
   }
-  RuleBatch* CreateRuleBatch(std::string name, std::unique_ptr<Strategy> strategy) {
-    std::unique_ptr<RuleBatch> rb(new RuleBatch(name, std::move(strategy)));
+  template <typename S, typename... Args>
+  RuleBatch* CreateRuleBatch(std::string name, Args... args) {
+    std::unique_ptr<RuleBatch> rb(new RuleBatch(name, std::make_unique<S>(args...)));
     RuleBatch* out_ptr = rb.get();
     rule_batches.push_back(std::move(rb));
     return out_ptr;

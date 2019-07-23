@@ -232,10 +232,15 @@ class ExpressionIR : public IRNode {
     while (!graph->Get(cur_id)->IsOp()) {
       std::vector<int64_t> parents = graph->dag().ParentsOf(cur_id);
       if (parents.size() > 1) {
+        std::vector<std::string> parent_strs;
+        for (const int64_t& p : parents) {
+          IRNode* parent = graph->Get(p);
+          parent_strs.push_back(absl::Substitute("$0(id=$1)", parent->type_string(), p));
+        }
         return CreateIRNodeError(
             "Found more than one parent for node(id=$0,type=$1) while searching for parent "
-            "operator.",
-            cur_id, graph->Get(cur_id)->type_string());
+            "operator. Parents:[$2]",
+            cur_id, graph->Get(cur_id)->type_string(), absl::StrJoin(parent_strs, ","));
       }
       if (parents.size() == 0) {
         return CreateIRNodeError(

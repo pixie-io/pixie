@@ -14,13 +14,15 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
 
+using ::pl::testing::proto::EqualsProto;
 using planpb::testutils::CompareLogicalPlans;
-using testing::_;
+using ::testing::_;
 
 class CompilerTest : public ::testing::Test {
  protected:
@@ -106,30 +108,23 @@ nodes {
       map_op {
         expressions {
           column {
-            node: 0
-            index: 0
           }
         }
         expressions {
           column {
-            node: 0
             index: 1
           }
         }
         expressions {
           func {
             name: "pl.divide"
-            id: 0
             args {
               column {
-                node: 0
                 index: 1
               }
             }
             args {
               column {
-                node: 0
-                index: 0
               }
             }
             args_data_types: FLOAT64
@@ -194,7 +189,6 @@ nodes {
   }
 }
 )";
-
 TEST_F(CompilerTest, test_general_compilation) {
   auto query = absl::StrJoin(
       {
@@ -214,7 +208,6 @@ TEST_F(CompilerTest, test_general_compilation) {
   VLOG(2) << logical_plan.DebugString();
 
   planpb::Plan expected_logical_plan;
-
   ASSERT_TRUE(
       google::protobuf::TextFormat::MergeFromString(kExpectedLogicalPlan, &expected_logical_plan));
   EXPECT_TRUE(CompareLogicalPlans(expected_logical_plan, logical_plan, false /*ignore_ids*/));
@@ -537,22 +530,21 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 7
       sorted_deps: 13
     }
     nodes {
       id: 13
-      sorted_deps: 18
+      sorted_deps: 19
     }
     nodes {
-      id: 18
-      sorted_deps: 0
+      id: 19
+      sorted_deps: 6
     }
     nodes {
+      id: 6
     }
   }
   nodes {
-    id: 7
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -580,7 +572,6 @@ nodes {
             id: 1
             args {
               column {
-                node: 7
                 index: 1
               }
             }
@@ -590,7 +581,6 @@ nodes {
                 id: 0
                 args {
                   column {
-                    node: 7
                     index: 1
                   }
                 }
@@ -610,7 +600,6 @@ nodes {
         }
         expressions {
           column {
-            node: 7
             index: 2
           }
         }
@@ -620,7 +609,7 @@ nodes {
     }
   }
   nodes {
-    id: 18
+    id: 19
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -644,6 +633,7 @@ nodes {
     }
   }
   nodes {
+    id: 6
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -660,8 +650,9 @@ nodes {
 TEST_F(CompilerTest, range_agg_test) {
   auto query = absl::StrJoin(
       {
-          "queryDF = From(table='cpu', select=['cpu2', 'count', 'cpu1']).RangeAgg(by=lambda r: "
-          "r.count, size=2, fn= lambda r: { 'mean': pl.mean(r.cpu1)}).Result(name='cpu_out')",
+          "queryDF = From(table='cpu', select=['cpu2', 'count', 'cpu1'])",
+          "queryDF.RangeAgg(by=lambda r: r.count, size=2, fn= lambda r: { 'mean': "
+          "pl.mean(r.cpu1)}).Result(name='cpu_out')",
       },
       "\n");
 
@@ -1035,7 +1026,8 @@ TEST_F(CompilerTest, reused_result) {
       "\n");
   auto plan_status = compiler_.Compile(query, compiler_state_.get());
   VLOG(2) << plan_status.ToString();
-  EXPECT_NOT_OK(plan_status);
+  // This used to not work, but with rearchitecture this actually works.
+  EXPECT_OK(plan_status);
 }
 
 TEST_F(CompilerTest, multiple_result_sinks) {
