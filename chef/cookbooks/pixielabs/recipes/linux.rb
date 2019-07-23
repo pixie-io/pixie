@@ -8,6 +8,7 @@ apt_pkg_list = [
   'curl',
   'doxygen',
   'git',
+  'graphviz',
   'lcov',
   'php',
   'php-curl',
