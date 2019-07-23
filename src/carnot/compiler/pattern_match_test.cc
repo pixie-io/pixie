@@ -30,9 +30,9 @@ TEST_F(PatternMatchTest, equals_test) {
   EXPECT_OK(agg_func->Init({FuncIR::Opcode::eq, "==", "equals"}, "pl",
                            std::vector<ExpressionIR*>({c1, c2}), false /* compile_time */, ast));
 
-  EXPECT_TRUE(match(agg_func, Equals(Int(10), Value())));
-  EXPECT_TRUE(match(agg_func, Equals(Value(), Int())));
-  EXPECT_FALSE(match(agg_func, Equals(Value(), Int(9))));
+  EXPECT_TRUE(Match(agg_func, Equals(Int(10), Value())));
+  EXPECT_TRUE(Match(agg_func, Equals(Value(), Int())));
+  EXPECT_FALSE(Match(agg_func, Equals(Value(), Int(9))));
 }
 
 // This bin op test makes sure that non_op doesn't throw errors
@@ -46,9 +46,9 @@ TEST_F(PatternMatchTest, arbitrary_bin_op_test) {
   EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "op"}, "pl",
                        std::vector<ExpressionIR*>({c1, c2}), false /* compile_time */, ast));
 
-  EXPECT_FALSE(match(func, Equals(Int(10), Value())));
-  EXPECT_TRUE(match(func, BinOp(Value(), Value())));
-  EXPECT_TRUE(match(func, BinOp()));
+  EXPECT_FALSE(Match(func, Equals(Int(10), Value())));
+  EXPECT_TRUE(Match(func, BinOp(Value(), Value())));
+  EXPECT_TRUE(Match(func, BinOp()));
 }
 
 TEST_F(PatternMatchTest, expression_data_type_resolution) {
@@ -61,41 +61,41 @@ TEST_F(PatternMatchTest, expression_data_type_resolution) {
                        std::vector<ExpressionIR*>({int1, col1}), false /* compile_time */, ast));
 
   // Make sure expression works.
-  EXPECT_TRUE(match(int1, Expression()));
-  EXPECT_TRUE(match(col1, Expression()));
-  EXPECT_TRUE(match(func, Expression()));
+  EXPECT_TRUE(Match(int1, Expression()));
+  EXPECT_TRUE(Match(col1, Expression()));
+  EXPECT_TRUE(Match(func, Expression()));
 
   // Make sure unresolved expression works.
-  EXPECT_FALSE(match(int1, UnresolvedExpression()));
-  EXPECT_TRUE(match(col1, UnresolvedExpression()));
-  EXPECT_TRUE(match(func, UnresolvedExpression()));
+  EXPECT_FALSE(Match(int1, UnresolvedExpression()));
+  EXPECT_TRUE(Match(col1, UnresolvedExpression()));
+  EXPECT_TRUE(Match(func, UnresolvedExpression()));
 
   // Make sure resolved expression works.
-  EXPECT_TRUE(match(int1, ResolvedExpression()));
-  EXPECT_FALSE(match(col1, ResolvedExpression()));
-  EXPECT_FALSE(match(func, ResolvedExpression()));
+  EXPECT_TRUE(Match(int1, ResolvedExpression()));
+  EXPECT_FALSE(Match(col1, ResolvedExpression()));
+  EXPECT_FALSE(Match(func, ResolvedExpression()));
 
   // Specific expressions
-  EXPECT_TRUE(match(col1, UnresolvedColumnType()));
-  EXPECT_FALSE(match(func, UnresolvedColumnType()));
-  EXPECT_FALSE(match(col1, UnresolvedFuncType()));
-  EXPECT_TRUE(match(func, UnresolvedFuncType()));
+  EXPECT_TRUE(Match(col1, UnresolvedColumnType()));
+  EXPECT_FALSE(Match(func, UnresolvedColumnType()));
+  EXPECT_FALSE(Match(col1, UnresolvedFuncType()));
+  EXPECT_TRUE(Match(func, UnresolvedFuncType()));
 
   // Test out UnresolvedRTFuncMatchAllArgs.
-  EXPECT_FALSE(match(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression())));
+  EXPECT_FALSE(Match(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression())));
 
   // Resolve column and check whether test works.
   col1->ResolveColumn(0, types::DataType::INT64);
-  EXPECT_TRUE(match(col1, ResolvedExpression()));
-  EXPECT_TRUE(match(col1, ResolvedColumnType()));
+  EXPECT_TRUE(Match(col1, ResolvedExpression()));
+  EXPECT_TRUE(Match(col1, ResolvedColumnType()));
 
   // Should Pass now
-  EXPECT_TRUE(match(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression())));
+  EXPECT_TRUE(Match(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression())));
 
   // Make sure that resolution works
   func->SetOutputDataType(types::DataType::INT64);
-  EXPECT_TRUE(match(func, ResolvedExpression()));
-  EXPECT_TRUE(match(func, ResolvedFuncType()));
+  EXPECT_TRUE(Match(func, ResolvedExpression()));
+  EXPECT_TRUE(Match(func, ResolvedFuncType()));
 }
 
 TEST_F(PatternMatchTest, relation_status_operator_match) {
@@ -110,49 +110,49 @@ TEST_F(PatternMatchTest, relation_status_operator_match) {
   auto filter = graph->MakeNode<FilterIR>().ValueOrDie();
   EXPECT_OK(filter->SetParent(mem_src));
   // Unresolved blocking aggregate with unresolved parent.
-  EXPECT_FALSE(match(blocking_agg, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(match(blocking_agg, UnresolvedReadyMap()));
-  EXPECT_FALSE(match(blocking_agg, UnresolvedReadyOp()));
+  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyMap()));
+  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyOp()));
   // Unesolved map with unresolved parent.
-  EXPECT_FALSE(match(map, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(match(map, UnresolvedReadyMap()));
-  EXPECT_FALSE(match(map, UnresolvedReadyOp()));
+  EXPECT_FALSE(Match(map, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(Match(map, UnresolvedReadyMap()));
+  EXPECT_FALSE(Match(map, UnresolvedReadyOp()));
   // Unresolved Filter with unresolved parent.
-  EXPECT_FALSE(match(filter, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(match(filter, UnresolvedReadyMap()));
-  EXPECT_FALSE(match(filter, UnresolvedReadyOp()));
+  EXPECT_FALSE(Match(filter, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(Match(filter, UnresolvedReadyMap()));
+  EXPECT_FALSE(Match(filter, UnresolvedReadyOp()));
 
   // Resolve parent.
   EXPECT_OK(mem_src->SetRelation(test_relation));
   // Unresolved blocking aggregate with resolved parent.
-  EXPECT_TRUE(match(blocking_agg, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(match(blocking_agg, UnresolvedReadyMap()));
-  EXPECT_TRUE(match(blocking_agg, UnresolvedReadyOp()));
+  EXPECT_TRUE(Match(blocking_agg, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyMap()));
+  EXPECT_TRUE(Match(blocking_agg, UnresolvedReadyOp()));
   // Unresolved map with resolved parent.
-  EXPECT_FALSE(match(map, UnresolvedReadyBlockingAgg()));
-  EXPECT_TRUE(match(map, UnresolvedReadyMap()));
-  EXPECT_TRUE(match(map, UnresolvedReadyOp()));
+  EXPECT_FALSE(Match(map, UnresolvedReadyBlockingAgg()));
+  EXPECT_TRUE(Match(map, UnresolvedReadyMap()));
+  EXPECT_TRUE(Match(map, UnresolvedReadyOp()));
   // Unresolved Filter with resolved parent.
-  EXPECT_FALSE(match(filter, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(match(filter, UnresolvedReadyMap()));
-  EXPECT_TRUE(match(filter, UnresolvedReadyOp()));
+  EXPECT_FALSE(Match(filter, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(Match(filter, UnresolvedReadyMap()));
+  EXPECT_TRUE(Match(filter, UnresolvedReadyOp()));
 
   // Resolve children.
   EXPECT_OK(blocking_agg->SetRelation(test_relation));
   EXPECT_OK(map->SetRelation(test_relation));
   EXPECT_OK(filter->SetRelation(test_relation));
   // Resolved blocking aggregate with resolved parent.
-  EXPECT_FALSE(match(blocking_agg, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(match(blocking_agg, UnresolvedReadyMap()));
-  EXPECT_FALSE(match(blocking_agg, UnresolvedReadyOp()));
+  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyMap()));
+  EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyOp()));
   // Resolved map with resolved parent.
-  EXPECT_FALSE(match(map, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(match(map, UnresolvedReadyMap()));
-  EXPECT_FALSE(match(map, UnresolvedReadyOp()));
+  EXPECT_FALSE(Match(map, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(Match(map, UnresolvedReadyMap()));
+  EXPECT_FALSE(Match(map, UnresolvedReadyOp()));
   // Resolved Filter with resolved parent.
-  EXPECT_FALSE(match(filter, UnresolvedReadyBlockingAgg()));
-  EXPECT_FALSE(match(filter, UnresolvedReadyMap()));
-  EXPECT_FALSE(match(filter, UnresolvedReadyOp()));
+  EXPECT_FALSE(Match(filter, UnresolvedReadyBlockingAgg()));
+  EXPECT_FALSE(Match(filter, UnresolvedReadyMap()));
+  EXPECT_FALSE(Match(filter, UnresolvedReadyOp()));
 }
 
 }  // namespace compiler

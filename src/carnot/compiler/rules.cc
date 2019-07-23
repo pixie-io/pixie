@@ -19,17 +19,17 @@ StatusOr<bool> Rule::Execute(IR* ir_graph) const {
 }
 
 StatusOr<bool> DataTypeRule::Apply(IRNode* ir_node) const {
-  if (match(ir_node, UnresolvedRTFuncMatchAllArgs(ResolvedExpression()))) {
+  if (Match(ir_node, UnresolvedRTFuncMatchAllArgs(ResolvedExpression()))) {
     // Match any function that has all args resolved.
     return EvaluateFunc(static_cast<FuncIR*>(ir_node));
-  } else if (match(ir_node, UnresolvedFuncType())) {
+  } else if (Match(ir_node, UnresolvedFuncType())) {
     // Matches any function that has some unresolved args.
     VLOG(1) << absl::Substitute("$1(id=$0) has unresolved args.", ir_node->id(),
                                 ir_node->type_string());
-  } else if (match(ir_node, UnresolvedColumnType())) {
+  } else if (Match(ir_node, UnresolvedColumnType())) {
     // Evaluate any unresolved columns.
     return EvaluateColumn(static_cast<ColumnIR*>(ir_node));
-  } else if (match(ir_node, UnresolvedMetadataType())) {
+  } else if (Match(ir_node, UnresolvedMetadataType())) {
     // Evaluate any unresolved columns.
     return EvaluateColumn(static_cast<ColumnIR*>(ir_node));
   }
@@ -96,7 +96,7 @@ StatusOr<bool> DataTypeRule::EvaluateColumn(ColumnIR* column) const {
 }
 
 StatusOr<bool> SourceRelationRule::Apply(IRNode* ir_node) const {
-  if (match(ir_node, UnresolvedSource())) {
+  if (Match(ir_node, UnresolvedSource())) {
     return GetSourceRelation(static_cast<OperatorIR*>(ir_node));
   }
   return false;
@@ -187,13 +187,13 @@ StatusOr<std::vector<std::string>> SourceRelationRule::GetColumnNames(
 }
 
 StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) const {
-  if (match(ir_node, UnresolvedReadyBlockingAgg())) {
+  if (Match(ir_node, UnresolvedReadyBlockingAgg())) {
     return SetBlockingAgg(static_cast<BlockingAggIR*>(ir_node));
-  } else if (match(ir_node, UnresolvedReadyMap())) {
+  } else if (Match(ir_node, UnresolvedReadyMap())) {
     return SetMap(static_cast<MapIR*>(ir_node));
-  } else if (match(ir_node, UnresolvedReadyMetadataResolver())) {
+  } else if (Match(ir_node, UnresolvedReadyMetadataResolver())) {
     return SetMetadataResolver(static_cast<MetadataResolverIR*>(ir_node));
-  } else if (match(ir_node, UnresolvedReadyOp())) {
+  } else if (Match(ir_node, UnresolvedReadyOp())) {
     return SetOther(static_cast<OperatorIR*>(ir_node));
   }
   return false;
@@ -282,9 +282,10 @@ StatusOr<bool> OperatorRelationRule::SetOther(OperatorIR* operator_ir) const {
 }
 
 StatusOr<bool> RangeArgExpressionRule::Apply(IRNode* ir_node) const {
-  if (match(ir_node, Range(Int(), Int()))) {
+  if (Match(ir_node, Range(Int(), Int()))) {
+    // If Range matches this format, don't do any work.
     return false;
-  } else if (match(ir_node, Range())) {
+  } else if (Match(ir_node, Range())) {
     RangeIR* range = static_cast<RangeIR*>(ir_node);
     IRNode* start = range->start_repr();
     IRNode* stop = range->stop_repr();
@@ -297,9 +298,9 @@ StatusOr<bool> RangeArgExpressionRule::Apply(IRNode* ir_node) const {
 }
 
 StatusOr<IntIR*> RangeArgExpressionRule::EvalExpression(IRNode* node) const {
-  if (match(node, Int())) {
+  if (Match(node, Int())) {
     return static_cast<IntIR*>(node);
-  } else if (match(node, CompileTimeFunc())) {
+  } else if (Match(node, CompileTimeFunc())) {
     auto func_node = static_cast<FuncIR*>(node);
     std::vector<IntIR*> evaled_args;
     for (const auto ag : func_node->args()) {
@@ -308,7 +309,7 @@ StatusOr<IntIR*> RangeArgExpressionRule::EvalExpression(IRNode* node) const {
     }
     PL_ASSIGN_OR_RETURN(auto node_result, EvalFunc(func_node->func_name(), evaled_args, func_node));
     return node_result;
-  } else if (match(node, String())) {
+  } else if (Match(node, String())) {
     // Do the string processing
     auto str_node = static_cast<StringIR*>(node);
     // TODO(philkuz) (PL-708) make StringToTimeInt also take time_now as an argument.
@@ -350,7 +351,7 @@ StatusOr<IntIR*> RangeArgExpressionRule::EvalFunc(std::string name, std::vector<
 }
 
 StatusOr<bool> VerifyFilterExpressionRule::Apply(IRNode* ir_node) const {
-  if (match(ir_node, Filter())) {
+  if (Match(ir_node, Filter())) {
     // Match any function that has all args resolved.
     FilterIR* filter = static_cast<FilterIR*>(ir_node);
     LambdaIR* lambda = filter->filter_func();
@@ -366,7 +367,7 @@ StatusOr<bool> VerifyFilterExpressionRule::Apply(IRNode* ir_node) const {
 }
 
 StatusOr<bool> ResolveMetadataRule::Apply(IRNode* ir_node) const {
-  if (match(ir_node, UnresolvedMetadataIR())) {
+  if (Match(ir_node, UnresolvedMetadataIR())) {
     // Match any function that has all args resolved.
     return HandleMetadata(static_cast<MetadataIR*>(ir_node));
   }
@@ -414,16 +415,16 @@ StatusOr<bool> ResolveMetadataRule::HandleMetadata(MetadataIR* metadata) const {
 }
 
 StatusOr<bool> MetadataFunctionFormatRule::Apply(IRNode* ir_node) const {
-  if (match(ir_node, Equals(Metadata(), MetadataLiteral()))) {
+  if (Match(ir_node, Equals(Metadata(), MetadataLiteral()))) {
     // If the literal already matches, then no need to do any work.
     return false;
-  } else if (match(ir_node, Equals(Metadata(), String()))) {
+  } else if (Match(ir_node, Equals(Metadata(), String()))) {
     FuncIR* func = static_cast<FuncIR*>(ir_node);
     StringIR* out_expr;
     MetadataIR* md_expr;
     int64_t update_idx;
     DCHECK_EQ(func->args().size(), 2UL);
-    if (match(func->args()[1], Metadata())) {
+    if (Match(func->args()[1], Metadata())) {
       update_idx = 0;
       out_expr = static_cast<StringIR*>(func->args()[0]);
       md_expr = static_cast<MetadataIR*>(func->args()[1]);
@@ -440,11 +441,11 @@ StatusOr<bool> MetadataFunctionFormatRule::Apply(IRNode* ir_node) const {
                         WrapLiteral(out_expr, md_expr->property()));
     PL_RETURN_IF_ERROR(func->UpdateArg(update_idx, metadata_literal));
     return true;
-  } else if (match(ir_node, FuncAnyArg(Metadata()))) {
+  } else if (Match(ir_node, FuncAnyArg(Metadata()))) {
     FuncIR* func = static_cast<FuncIR*>(ir_node);
     std::vector<std::string> other_args;
     for (ExpressionIR* arg : func->args()) {
-      if (match(arg, Metadata())) {
+      if (Match(arg, Metadata())) {
         continue;
       }
       other_args.push_back(arg->type_string());
@@ -469,10 +470,10 @@ StatusOr<MetadataLiteralIR*> MetadataFunctionFormatRule::WrapLiteral(
   return literal;
 }
 StatusOr<bool> CheckMetadataColumnNamingRule::Apply(IRNode* ir_node) const {
-  if (match(ir_node, MetadataResolver())) {
+  if (Match(ir_node, MetadataResolver())) {
     // If the MetadataResolver, then don't do anything.
     return false;
-  } else if (match(ir_node, Operator())) {
+  } else if (Match(ir_node, Operator())) {
     return CheckRelation(static_cast<OperatorIR*>(ir_node));
   }
   return false;
@@ -490,7 +491,7 @@ StatusOr<bool> CheckMetadataColumnNamingRule::CheckRelation(OperatorIR* op) cons
   return false;
 }
 StatusOr<bool> MetadataResolverConversionRule::Apply(IRNode* ir_node) const {
-  if (match(ir_node, MetadataResolver())) {
+  if (Match(ir_node, MetadataResolver())) {
     return ReplaceMetadataResolver(static_cast<MetadataResolverIR*>(ir_node));
   }
   return false;

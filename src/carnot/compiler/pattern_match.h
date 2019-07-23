@@ -11,17 +11,17 @@
  * ```
  * IRNode* expr; // initialized in the ASTvisitor as a FuncIR.
  * // Most specific
- * if (match(expr, Equals(Column(), Int(10)))) {
+ * if (Match(expr, Equals(Column(), Int(10)))) {
  *    // handle case
  *    ...
  * }
  * // Match any int value
- * else if (match(expr, Equals(Column(), Int()))) {
+ * else if (Match(expr, Equals(Column(), Int()))) {
  *    // handle case
  *    ...
  * }
  * // Match any arbitrary value
- * else if (match(expr, Equals(Column(), Value()))) {
+ * else if (Match(expr, Equals(Column(), Value()))) {
  *    // handle case
  *    ...
  * }
@@ -30,7 +30,7 @@
  * New patterns must fit a specific structure.
  * 1. They must inherit from ParentMatch.
  * 2. They must call the ParentMatch constructor in their own constructor.
- * 3. They must implement match()
+ * 3. They must implement Match()
  * 4. To be used properly, they must be specified with a function
  *    - see the Int() fns for an example of what this looks like.
  *
@@ -47,8 +47,8 @@ namespace compiler {
  * @brief Match function that aliases the match function attribute of a pattern.
  */
 template <typename Val, typename Pattern>
-bool match(Val* V, const Pattern& P) {
-  return const_cast<Pattern&>(P).match(V);
+bool Match(Val* node, const Pattern& P) {
+  return const_cast<Pattern&>(P).Match(node);
 }
 
 /**
@@ -59,7 +59,13 @@ bool match(Val* V, const Pattern& P) {
 struct ParentMatch {
   virtual ~ParentMatch() = default;
   explicit ParentMatch(IRNodeType t) : type(t) {}
-  virtual bool match(IRNode* V) const = 0;
+
+  /**
+   * @brief Match returns true if the node passed in fits the pattern defined by the struct.
+   * @param node: IRNode argument to examine.
+   */
+  virtual bool Match(IRNode* node) const = 0;
+
   IRNodeType type;
 };
 
@@ -69,7 +75,7 @@ struct ParentMatch {
  */
 struct AllMatch : public ParentMatch {
   AllMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool match(IRNode*) const override { return true; }
+  bool Match(IRNode*) const override { return true; }
 };
 
 /**
@@ -85,7 +91,7 @@ inline AllMatch Value() { return AllMatch(); }
 template <IRNodeType t>
 struct ClassMatch : public ParentMatch {
   ClassMatch() : ParentMatch(t) {}
-  bool match(IRNode* V) const override { return V->type() == type; }
+  bool Match(IRNode* node) const override { return node->type() == type; }
 };
 
 // Match an arbitrary Int value.
@@ -111,16 +117,17 @@ inline ClassMatch<IRNodeType::kMetadataResolver> MetadataResolver() {
  * @brief Match a specific integer value.
  */
 struct IntMatch : public ParentMatch {
-  int64_t val;
   explicit IntMatch(const int64_t v) : ParentMatch(IRNodeType::kInt), val(v) {}
 
-  bool match(IRNode* V) const override {
-    if (V->type() == type) {
-      auto iVal = static_cast<IntIR*>(V);
+  bool Match(IRNode* node) const override {
+    if (node->type() == type) {
+      auto iVal = static_cast<IntIR*>(node);
       return iVal->val() == val;
     }
     return false;
   }
+
+  int64_t val;
 };
 
 /**
@@ -138,26 +145,24 @@ inline IntMatch Int(const int64_t val) { return IntMatch(val); }
  */
 template <typename LHS_t, typename RHS_t, FuncIR::Opcode op, bool Commutable = false>
 struct BinaryOpMatch : public ParentMatch {
-  LHS_t L;
-  RHS_t R;
-  bool is_commutable = Commutable;
-  FuncIR::Opcode cur_op = op;
-
   // The evaluation order is always stable, regardless of Commutability.
   // The LHS is always matched first.
   BinaryOpMatch(const LHS_t& LHS, const RHS_t& RHS)
       : ParentMatch(IRNodeType::kFunc), L(LHS), R(RHS) {}
 
-  bool match(IRNode* V) const override {
-    if (V->type() == IRNodeType::kFunc) {
-      auto* F = static_cast<FuncIR*>(V);
-      if (F->opcode() == cur_op && F->args().size() == 2) {
-        return (L.match(F->args()[0]) && R.match(F->args()[1])) ||
-               (is_commutable && L.match(F->args()[1]) && R.match(F->args()[0]));
+  bool Match(IRNode* node) const override {
+    if (node->type() == IRNodeType::kFunc) {
+      auto* F = static_cast<FuncIR*>(node);
+      if (F->opcode() == op && F->args().size() == 2) {
+        return (L.Match(F->args()[0]) && R.Match(F->args()[1])) ||
+               (Commutable && L.Match(F->args()[1]) && R.Match(F->args()[0]));
       }
     }
     return false;
   }
+
+  LHS_t L;
+  RHS_t R;
 };
 
 /**
@@ -173,25 +178,24 @@ inline BinaryOpMatch<LHS, RHS, FuncIR::Opcode::eq, true> Equals(const LHS& L, co
  */
 template <typename LHS_t, typename RHS_t, bool Commutable = false>
 struct AnyBinaryOpMatch : public ParentMatch {
-  LHS_t L;
-  RHS_t R;
-  bool is_commutable = Commutable;
-
   // The evaluation order is always stable, regardless of Commutability.
   // The LHS is always matched first.
   AnyBinaryOpMatch(const LHS_t& LHS, const RHS_t& RHS)
       : ParentMatch(IRNodeType::kFunc), L(LHS), R(RHS) {}
 
-  bool match(IRNode* V) const override {
-    if (V->type() == type) {
-      auto* F = static_cast<FuncIR*>(V);
+  bool Match(IRNode* node) const override {
+    if (node->type() == type) {
+      auto* F = static_cast<FuncIR*>(node);
       if (F->args().size() == 2) {
-        return (L.match(F->args()[0]) && R.match(F->args()[1])) ||
-               (is_commutable && L.match(F->args()[1]) && R.match(F->args()[0]));
+        return (L.Match(F->args()[0]) && R.Match(F->args()[1])) ||
+               (Commutable && L.Match(F->args()[1]) && R.Match(F->args()[0]));
       }
     }
     return false;
   }
+
+  LHS_t L;
+  RHS_t R;
 };
 
 /**
@@ -214,9 +218,9 @@ inline AnyBinaryOpMatch<AllMatch, AllMatch, false> BinOp() { return BinOp(Value(
 template <bool resolved>
 struct ExpressionMatch : public ParentMatch {
   ExpressionMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool match(IRNode* V) const override {
-    if (V->IsExpression()) {
-      return resolved == static_cast<ExpressionIR*>(V)->IsDataTypeEvaluated();
+  bool Match(IRNode* node) const override {
+    if (node->IsExpression()) {
+      return resolved == static_cast<ExpressionIR*>(node)->IsDataTypeEvaluated();
     }
     return false;
   }
@@ -240,9 +244,9 @@ inline ExpressionMatch<false> UnresolvedExpression() { return ExpressionMatch<fa
 template <IRNodeType expression_type, bool Resolved>
 struct SpecificExpressionMatch : public ParentMatch {
   SpecificExpressionMatch() : ParentMatch(expression_type) {}
-  bool match(IRNode* V) const override {
-    if (V->IsExpression() && V->type() == expression_type) {
-      return Resolved == static_cast<ExpressionIR*>(V)->IsDataTypeEvaluated();
+  bool Match(IRNode* node) const override {
+    if (node->IsExpression() && node->type() == expression_type) {
+      return Resolved == static_cast<ExpressionIR*>(node)->IsDataTypeEvaluated();
     }
     return false;
   }
@@ -292,9 +296,9 @@ inline SpecificExpressionMatch<IRNodeType::kMetadata, false> UnresolvedMetadataT
 template <bool Resolved>
 struct MetadataIRMatch : public ParentMatch {
   MetadataIRMatch() : ParentMatch(IRNodeType::kMetadata) {}
-  bool match(IRNode* V) const override {
-    if (V->type() == IRNodeType::kMetadata) {
-      return Resolved == static_cast<MetadataIR*>(V)->HasMetadataResolver();
+  bool Match(IRNode* node) const override {
+    if (node->type() == IRNodeType::kMetadata) {
+      return Resolved == static_cast<MetadataIR*>(node)->HasMetadataResolver();
     }
     return false;
   }
@@ -315,17 +319,15 @@ inline MetadataIRMatch<false> UnresolvedMetadataIR() { return MetadataIRMatch<fa
  */
 template <typename Arg_t, bool Resolved = false, bool CompileTime = false>
 struct AnyFuncAllArgsMatch : public ParentMatch {
-  Arg_t argMatcher_;
-
   explicit AnyFuncAllArgsMatch(const Arg_t& argMatcher)
       : ParentMatch(IRNodeType::kFunc), argMatcher_(argMatcher) {}
 
-  bool match(IRNode* V) const override {
-    if (V->type() == type) {
-      auto* F = static_cast<FuncIR*>(V);
+  bool Match(IRNode* node) const override {
+    if (node->type() == type) {
+      auto* F = static_cast<FuncIR*>(node);
       if (Resolved == F->IsDataTypeEvaluated() && CompileTime == F->is_compile_time()) {
         for (const auto a : F->args()) {
-          if (!argMatcher_.match(a)) {
+          if (!argMatcher_.Match(a)) {
             return false;
           }
         }
@@ -334,6 +336,8 @@ struct AnyFuncAllArgsMatch : public ParentMatch {
     }
     return false;
   }
+
+  Arg_t argMatcher_;
 };
 
 /**
@@ -356,17 +360,15 @@ inline AnyFuncAllArgsMatch<Arg_t, false, false> UnresolvedRTFuncMatchAllArgs(
  */
 template <typename Arg_t, bool CompileTime = false>
 struct AnyFuncAnyArgsMatch : public ParentMatch {
-  Arg_t argMatcher_;
-
   explicit AnyFuncAnyArgsMatch(const Arg_t& argMatcher)
       : ParentMatch(IRNodeType::kFunc), argMatcher_(argMatcher) {}
 
-  bool match(IRNode* V) const override {
-    if (V->type() == type) {
-      auto* F = static_cast<FuncIR*>(V);
+  bool Match(IRNode* node) const override {
+    if (node->type() == type) {
+      auto* F = static_cast<FuncIR*>(node);
       if (CompileTime == F->is_compile_time()) {
         for (const auto a : F->args()) {
-          if (argMatcher_.match(a)) {
+          if (argMatcher_.Match(a)) {
             return true;
           }
         }
@@ -374,6 +376,7 @@ struct AnyFuncAnyArgsMatch : public ParentMatch {
     }
     return false;
   }
+  Arg_t argMatcher_;
 };
 
 /**
@@ -393,7 +396,7 @@ inline AnyFuncAnyArgsMatch<Arg_t, false> FuncAnyArg(const Arg_t& argMatcher) {
  */
 struct AnyExpressionMatch : public ParentMatch {
   AnyExpressionMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool match(IRNode* V) const override { return V->IsExpression(); }
+  bool Match(IRNode* node) const override { return node->IsExpression(); }
 };
 
 /**
@@ -409,9 +412,9 @@ inline AnyExpressionMatch Expression() { return AnyExpressionMatch(); }
 template <bool HasRelation = false>
 struct SourceHasRelationMatch : public ParentMatch {
   SourceHasRelationMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool match(IRNode* V) const override {
-    if (V->is_source()) {
-      return static_cast<OperatorIR*>(V)->IsRelationInit() == HasRelation;
+  bool Match(IRNode* node) const override {
+    if (node->is_source()) {
+      return static_cast<OperatorIR*>(node)->IsRelationInit() == HasRelation;
     }
     return false;
   }
@@ -430,9 +433,9 @@ inline SourceHasRelationMatch<true> ResolvedSource() { return SourceHasRelationM
 template <bool ResolvedRelation = false, bool ParentOpResolved = false>
 struct AnyRelationResolvedOpMatch : public ParentMatch {
   AnyRelationResolvedOpMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool match(IRNode* V) const override {
-    if (V->IsOp()) {
-      OperatorIR* op_ir = static_cast<OperatorIR*>(V);
+  bool Match(IRNode* node) const override {
+    if (node->IsOp()) {
+      OperatorIR* op_ir = static_cast<OperatorIR*>(node);
       if (op_ir->HasParent()) {
         return op_ir->IsRelationInit() == ResolvedRelation &&
                op_ir->parent()->IsRelationInit() == ParentOpResolved;
@@ -453,9 +456,9 @@ struct AnyRelationResolvedOpMatch : public ParentMatch {
 template <IRNodeType op, bool ResolvedRelation = false, bool ParentOpResolved = false>
 struct RelationResolvedOpMatch : public ParentMatch {
   RelationResolvedOpMatch() : ParentMatch(op) {}
-  bool match(IRNode* V) const override {
-    if (V->type() == op) {
-      return AnyRelationResolvedOpMatch<ResolvedRelation, ParentOpResolved>().match(V);
+  bool Match(IRNode* node) const override {
+    if (node->type() == op) {
+      return AnyRelationResolvedOpMatch<ResolvedRelation, ParentOpResolved>().Match(node);
     }
     return false;
   }
@@ -495,7 +498,7 @@ struct MatchAnyOp : public ParentMatch {
   // The LHS is always matched first.
   MatchAnyOp() : ParentMatch(IRNodeType::kAny) {}
 
-  bool match(IRNode* V) const override { return V->IsOp(); }
+  bool Match(IRNode* node) const override { return node->IsOp(); }
 };
 
 inline MatchAnyOp Operator() { return MatchAnyOp(); }
@@ -509,23 +512,21 @@ inline MatchAnyOp Operator() { return MatchAnyOp(); }
  */
 template <typename LHS_t, typename RHS_t, bool Commutable = false>
 struct RangeArgMatch : public ParentMatch {
-  LHS_t L;
-  RHS_t R;
-  bool is_commutable = Commutable;
-
   // The evaluation order is always stable, regardless of Commutability.
   // The LHS is always matched first.
   RangeArgMatch(const LHS_t& LHS, const RHS_t& RHS)
       : ParentMatch(IRNodeType::kRange), L(LHS), R(RHS) {}
 
-  bool match(IRNode* V) const override {
-    if (V->type() == IRNodeType::kRange) {
-      auto* r = static_cast<RangeIR*>(V);
-      return (L.match(r->start_repr()) && R.match(r->stop_repr())) ||
-             (is_commutable && L.match(r->start_repr()) && R.match(r->stop_repr()));
+  bool Match(IRNode* node) const override {
+    if (node->type() == IRNodeType::kRange) {
+      auto* r = static_cast<RangeIR*>(node);
+      return (L.Match(r->start_repr()) && R.Match(r->stop_repr())) ||
+             (Commutable && L.Match(r->start_repr()) && R.Match(r->stop_repr()));
     }
     return false;
   }
+  LHS_t L;
+  RHS_t R;
 };
 
 /**
@@ -556,9 +557,9 @@ struct FuncMatch : public ParentMatch {
   // The LHS is always matched first.
   FuncMatch() : ParentMatch(IRNodeType::kFunc) {}
 
-  bool match(IRNode* V) const override {
-    if (V->type() == IRNodeType::kFunc) {
-      auto* f = static_cast<FuncIR*>(V);
+  bool Match(IRNode* node) const override {
+    if (node->type() == IRNodeType::kFunc) {
+      auto* f = static_cast<FuncIR*>(node);
       return f->is_compile_time() == compile_time;
     }
     return false;
