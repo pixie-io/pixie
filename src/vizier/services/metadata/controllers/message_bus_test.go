@@ -174,6 +174,9 @@ func TestAgentRegisterRequest(t *testing.T) {
 	port, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
 
+	var wg sync.WaitGroup
+	wg.Add(3)
+
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	u, err := uuid.FromString(uuidStr)
 	if err != nil {
@@ -206,12 +209,18 @@ func TestAgentRegisterRequest(t *testing.T) {
 	mockAgtMgr.
 		EXPECT().
 		GetMetadataUpdates().
-		Return(updates, nil)
+		DoAndReturn(func() ([]*metadatapb.ResourceUpdate, error) {
+			wg.Done()
+			return updates, nil
+		})
 
 	mockAgtMgr.
 		EXPECT().
 		AddUpdatesToAgentQueue(u, updates).
-		Return(nil)
+		DoAndReturn(func(uuid.UUID, []*metadatapb.ResourceUpdate) error {
+			wg.Done()
+			return nil
+		})
 
 	// Create Metadata Service controller.
 	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
@@ -239,10 +248,6 @@ func TestAgentRegisterRequest(t *testing.T) {
 
 	// Send update.
 	nc.Publish("agent_update", reqPb)
-
-	// Wait and read reponse.
-	var wg sync.WaitGroup
-	wg.Add(1)
 
 	mockAgtMgr.
 		EXPECT().
@@ -262,6 +267,9 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	port, cleanup := testingutils.StartNATS(t)
 	defer cleanup()
 
+	var wg sync.WaitGroup
+	wg.Add(2)
+
 	uuidStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	u, err := uuid.FromString(uuidStr)
 	if err != nil {
@@ -283,7 +291,10 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	mockAgtMgr.
 		EXPECT().
 		RegisterAgent(agentInfo).
-		Return(uint32(1), nil)
+		DoAndReturn(func(info *controllers.AgentInfo) (uint32, error) {
+			wg.Done()
+			return uint32(1), nil
+		})
 
 	updatePb := metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_PodUpdate{
@@ -299,7 +310,10 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	mockAgtMgr.
 		EXPECT().
 		GetMetadataUpdates().
-		Return(updates, errors.New("Could not get metadata info"))
+		DoAndReturn(func() ([]*metadatapb.ResourceUpdate, error) {
+			wg.Done()
+			return updates, errors.New("Could not get metadata info")
+		})
 
 	// Create Metadata Service controller.
 	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
@@ -329,6 +343,7 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	nc.Publish("agent_update", reqPb)
 
 	// Wait and read reponse.
+	wg.Wait()
 	m, err := sub.NextMsg(time.Second)
 	assert.Equal(t, m.Data, respPb)
 }
@@ -507,6 +522,9 @@ func TestAgentHeartbeat(t *testing.T) {
 		t.Fatal("Could not generate UUID.")
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(3)
+
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -515,7 +533,10 @@ func TestAgentHeartbeat(t *testing.T) {
 	mockAgtMgr.
 		EXPECT().
 		UpdateHeartbeat(u).
-		Return(nil)
+		DoAndReturn(func(agentID uuid.UUID) error {
+			wg.Done()
+			return nil
+		})
 
 	updatePb1 := metadatapb.ResourceUpdate{
 		Update: &metadatapb.ResourceUpdate_PodUpdate{
@@ -538,7 +559,10 @@ func TestAgentHeartbeat(t *testing.T) {
 	mockAgtMgr.
 		EXPECT().
 		GetFromAgentQueue(uuidStr).
-		Return(updates, nil)
+		DoAndReturn(func(string) ([]*metadatapb.ResourceUpdate, error) {
+			wg.Done()
+			return updates, nil
+		})
 
 	createdProcesses := make([]*metadatapb.ProcessCreated, 1)
 	createdProcesses[0] = &metadatapb.ProcessCreated{
@@ -551,7 +575,10 @@ func TestAgentHeartbeat(t *testing.T) {
 	mockAgtMgr.
 		EXPECT().
 		AddToUpdateQueue(u, agentUpdatePb).
-		Return()
+		DoAndReturn(func(uuid.UUID, *messages.AgentUpdateInfo) {
+			wg.Done()
+			return
+		})
 
 	// Create Metadata Service controller.
 	nc, _ := getTestNATSInstance(t, port, mockAgtMgr)
@@ -578,6 +605,7 @@ func TestAgentHeartbeat(t *testing.T) {
 	nc.Publish("agent_update", reqPb)
 
 	// Wait and read reponse.
+	wg.Wait()
 	m, err := sub.NextMsg(time.Second)
 	assert.Equal(t, m.Data, respPb)
 }
