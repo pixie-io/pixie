@@ -37,6 +37,24 @@ columns {
 }
 `
 
+var process1PB = `
+name: 'p1'
+upid {
+	low: 89101
+	high: 528280977975
+}
+cid: "container_1"
+`
+
+var process2PB = `
+name: 'p2'
+upid {
+	low: 246
+	high: 528280977975
+}
+cid: "container_2"
+`
+
 func TestUpdateEndpoints(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
@@ -592,8 +610,8 @@ func TestGetProcesses(t *testing.T) {
 
 	p1 := &metadatapb.ProcessInfo{
 		Name: "process1",
-		Pid:  123,
-		Cid:  "567",
+		PID:  123,
+		CID:  "567",
 	}
 	p1Text, err := p1.Marshal()
 	_, err = etcdClient.Put(context.Background(), "/processes/123:567:89101", string(p1Text))
@@ -613,8 +631,8 @@ func TestGetProcesses(t *testing.T) {
 
 	p3 := &metadatapb.ProcessInfo{
 		Name: "process2",
-		Pid:  246,
-		Cid:  "369",
+		PID:  246,
+		CID:  "369",
 	}
 	p3Text, err := p3.Marshal()
 	_, err = etcdClient.Put(context.Background(), "/processes/246:369:135", string(p3Text))
@@ -628,4 +646,65 @@ func TestGetProcesses(t *testing.T) {
 	assert.Equal(t, "process1", processes[0].Name)
 	assert.Equal(t, (*metadatapb.ProcessInfo)(nil), processes[1])
 	assert.Equal(t, "process2", processes[2].Name)
+}
+
+func TestUpdateProcesses(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	processes := make([]*metadatapb.ProcessInfo, 2)
+
+	p1 := new(metadatapb.ProcessInfo)
+	if err := proto.UnmarshalText(process1PB, p1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	processes[0] = p1
+
+	p2 := new(metadatapb.ProcessInfo)
+	if err := proto.UnmarshalText(process2PB, p2); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	processes[1] = p2
+
+	err = mds.UpdateProcesses(processes)
+	assert.Nil(t, err)
+
+	resp, err := etcdClient.Get(context.Background(), "/processes/123:567:89101")
+	if err != nil {
+		t.Fatal("Unable to get container from etcd")
+	}
+
+	assert.Equal(t, 1, len(resp.Kvs))
+	p1Pb := &metadatapb.ProcessInfo{}
+	proto.Unmarshal(resp.Kvs[0].Value, p1Pb)
+	assert.Equal(t, "p1", p1Pb.Name)
+
+	resp, err = etcdClient.Get(context.Background(), "/processes/123:567:246")
+	if err != nil {
+		t.Fatal("Unable to get container from etcd")
+	}
+
+	assert.Equal(t, 1, len(resp.Kvs))
+	p2Pb := &metadatapb.ProcessInfo{}
+	proto.Unmarshal(resp.Kvs[0].Value, p2Pb)
+	assert.Equal(t, "p2", p2Pb.Name)
+
+	// Update Process.
+	p2Pb.Name = "new name"
+	err = mds.UpdateProcesses([]*metadatapb.ProcessInfo{p2Pb})
+
+	resp, err = etcdClient.Get(context.Background(), "/processes/123:567:246")
+	if err != nil {
+		t.Fatal("Unable to get container from etcd")
+	}
+
+	assert.Equal(t, 1, len(resp.Kvs))
+	p2Pb = &metadatapb.ProcessInfo{}
+	proto.Unmarshal(resp.Kvs[0].Value, p2Pb)
+	assert.Equal(t, "new name", p2Pb.Name)
 }

@@ -23,6 +23,7 @@ type MetadataStore interface {
 	UpdateService(*metadatapb.Service) error
 	UpdateContainersFromPod(*metadatapb.Pod) error
 	UpdateSchemas(uuid.UUID, []*metadatapb.SchemaInfo) error
+	UpdateProcesses([]*metadatapb.ProcessInfo) error
 	GetAgentsForHostnames(*[]string) (*[]string, error)
 	AddToAgentUpdateQueue(string, string) error
 	AddUpdatesToAgentQueue(string, []*metadatapb.ResourceUpdate) error

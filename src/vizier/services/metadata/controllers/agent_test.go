@@ -48,6 +48,66 @@ create_time_ns: 0
 last_heartbeat_ns: 0
 `
 
+var processCreated1PB = `
+upid {
+	low: 89101
+	high: 528280977975
+}
+pid: 123
+start_timestamp_ns: 4
+cmdline: "./bin/bash"
+cid: "container_1"
+`
+
+var processInfo1PB = `
+upid {
+	low: 89101
+	high: 528280977975
+}
+pid: 123
+start_timestamp_ns: 4
+process_args: "./bin/bash"
+cid: "container_1"
+`
+
+var processCreated2PB = `
+upid {
+	low: 468
+	high: 528280977975
+}
+pid: 456
+start_timestamp_ns: 4
+cmdline: "test"
+cid: "container_2"
+`
+
+var processInfo2PB = `
+upid {
+	low: 468
+	high: 528280977975
+}
+pid: 456
+start_timestamp_ns: 4
+process_args: "test"
+cid: "container_2"
+`
+
+var processTerminated1PB = `
+upid {
+	low: 89101
+	high: 528280977975
+}
+stop_timestamp_ns: 6
+`
+
+var processTerminated2PB = `
+upid {
+	low:  468
+	high: 528280977975
+}
+stop_timestamp_ns: 10
+`
+
 var NewAgentUUID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 var ExistingAgentUUID = "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 var UnhealthyAgentUUID = "8ba7b810-9dad-11d1-80b4-00c04fd430c8"
@@ -493,7 +553,7 @@ func TestAddToUpdateQueue(t *testing.T) {
 	defer cleanup()
 
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2)
 	defer wg.Wait()
 
 	u, err := uuid.FromString(NewAgentUUID)
@@ -509,6 +569,32 @@ func TestAddToUpdateQueue(t *testing.T) {
 	}
 	schemas[0] = schema1
 
+	createdProcesses := make([]*metadatapb.ProcessCreated, 2)
+
+	cp1 := new(metadatapb.ProcessCreated)
+	if err := proto.UnmarshalText(processCreated1PB, cp1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	createdProcesses[0] = cp1
+	cp2 := new(metadatapb.ProcessCreated)
+	if err := proto.UnmarshalText(processCreated2PB, cp2); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	createdProcesses[1] = cp2
+
+	cProcessInfo := make([]*metadatapb.ProcessInfo, 2)
+
+	cpi1 := new(metadatapb.ProcessInfo)
+	if err := proto.UnmarshalText(processInfo1PB, cpi1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	cProcessInfo[0] = cpi1
+	cpi2 := new(metadatapb.ProcessInfo)
+	if err := proto.UnmarshalText(processInfo2PB, cpi2); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	cProcessInfo[1] = cpi2
+
 	mockMds.
 		EXPECT().
 		UpdateSchemas(u, schemas).
@@ -517,8 +603,106 @@ func TestAddToUpdateQueue(t *testing.T) {
 			return nil
 		})
 
+	mockMds.
+		EXPECT().
+		UpdateProcesses(cProcessInfo).
+		DoAndReturn(func(p []*metadatapb.ProcessInfo) error {
+			wg.Done()
+			return nil
+		})
+
 	update := &messagespb.AgentUpdateInfo{
-		Schema: schemas,
+		Schema:         schemas,
+		ProcessCreated: createdProcesses,
+	}
+
+	agtMgr.AddToUpdateQueue(u, update)
+}
+
+func TestAgentQueueTerminatedProcesses(t *testing.T) {
+	_, agtMgr, mockMds, cleanup := setupAgentManager(t, true)
+	defer cleanup()
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	defer wg.Wait()
+
+	u, err := uuid.FromString(NewAgentUUID)
+	if err != nil {
+		t.Fatal("Could not parse UUID from string.")
+	}
+
+	schemas := make([]*metadatapb.SchemaInfo, 1)
+
+	schema1 := new(metadatapb.SchemaInfo)
+	if err := proto.UnmarshalText(schemaInfoPB, schema1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	schemas[0] = schema1
+
+	terminatedProcesses := make([]*metadatapb.ProcessTerminated, 2)
+
+	tp1 := new(metadatapb.ProcessTerminated)
+	if err := proto.UnmarshalText(processTerminated1PB, tp1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	terminatedProcesses[0] = tp1
+	tp2 := new(metadatapb.ProcessTerminated)
+	if err := proto.UnmarshalText(processTerminated2PB, tp2); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	terminatedProcesses[1] = tp2
+
+	processInfo := make([]*metadatapb.ProcessInfo, 2)
+	pi1 := new(metadatapb.ProcessInfo)
+	if err := proto.UnmarshalText(processInfo1PB, pi1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	processInfo[0] = pi1
+	pi2 := new(metadatapb.ProcessInfo)
+	if err := proto.UnmarshalText(processInfo2PB, pi2); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	processInfo[1] = pi2
+
+	updatedInfo := make([]*metadatapb.ProcessInfo, 2)
+	upi1 := new(metadatapb.ProcessInfo)
+	if err := proto.UnmarshalText(processInfo1PB, upi1); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	upi1.StopTimestampNS = 6
+	updatedInfo[0] = upi1
+	upi2 := new(metadatapb.ProcessInfo)
+	if err := proto.UnmarshalText(processInfo2PB, upi2); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	upi2.StopTimestampNS = 10
+	updatedInfo[1] = upi2
+
+	mockMds.
+		EXPECT().
+		UpdateSchemas(u, schemas).
+		DoAndReturn(func(u uuid.UUID, e []*metadatapb.SchemaInfo) error {
+			wg.Done()
+			return nil
+		})
+
+	mockMds.
+		EXPECT().
+		GetProcesses(gomock.Any()).
+		Return(processInfo, nil)
+
+	mockMds.
+		EXPECT().
+		UpdateProcesses(updatedInfo).
+		DoAndReturn(func(p []*metadatapb.ProcessInfo) error {
+			wg.Done()
+			return nil
+		})
+
+	update := &messagespb.AgentUpdateInfo{
+		Schema:            schemas,
+		ProcessTerminated: terminatedProcesses,
 	}
 
 	agtMgr.AddToUpdateQueue(u, update)

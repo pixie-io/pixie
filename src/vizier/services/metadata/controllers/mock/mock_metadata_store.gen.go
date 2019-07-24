@@ -199,6 +199,18 @@ func (mr *MockMetadataStoreMockRecorder) UpdatePod(arg0 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePod", reflect.TypeOf((*MockMetadataStore)(nil).UpdatePod), arg0)
 }
 
+// UpdateProcesses mocks base method
+func (m *MockMetadataStore) UpdateProcesses(arg0 []*metadatapb.ProcessInfo) error {
+	ret := m.ctrl.Call(m, "UpdateProcesses", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateProcesses indicates an expected call of UpdateProcesses
+func (mr *MockMetadataStoreMockRecorder) UpdateProcesses(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProcesses", reflect.TypeOf((*MockMetadataStore)(nil).UpdateProcesses), arg0)
+}
+
 // UpdateSchemas mocks base method
 func (m *MockMetadataStore) UpdateSchemas(arg0 go_uuid.UUID, arg1 []*metadatapb.SchemaInfo) error {
 	ret := m.ctrl.Call(m, "UpdateSchemas", arg0, arg1)

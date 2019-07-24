@@ -8,9 +8,11 @@ import (
 	"github.com/coreos/etcd/clientv3/clientv3util"
 	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/gogo/protobuf/proto"
+
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/shared/types"
 	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	data "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
@@ -112,7 +114,64 @@ func (m *AgentManagerImpl) processAgentUpdates() {
 }
 
 func (m *AgentManagerImpl) applyAgentUpdate(update *AgentUpdate) error {
+	err := m.handleCreatedProcesses(update.UpdateInfo.ProcessCreated)
+	if err != nil {
+		log.WithError(err).Error("Error when creating new processes")
+	}
+
+	err = m.handleTerminatedProcesses(update.UpdateInfo.ProcessTerminated)
+	if err != nil {
+		log.WithError(err).Error("Error when updating terminated processes")
+	}
+
 	return m.mds.UpdateSchemas(update.AgentID, update.UpdateInfo.Schema)
+}
+
+func (m *AgentManagerImpl) handleCreatedProcesses(processes []*metadatapb.ProcessCreated) error {
+	if processes == nil || len(processes) == 0 {
+		return nil
+	}
+
+	processInfos := make([]*metadatapb.ProcessInfo, len(processes))
+	for i, p := range processes {
+		pPb := &metadatapb.ProcessInfo{
+			UPID:             p.UPID,
+			PID:              p.PID,
+			StartTimestampNS: p.StartTimestampNS,
+			ProcessArgs:      p.Cmdline,
+			CID:              p.CID,
+		}
+		processInfos[i] = pPb
+	}
+
+	return m.mds.UpdateProcesses(processInfos)
+}
+
+func (m *AgentManagerImpl) handleTerminatedProcesses(processes []*metadatapb.ProcessTerminated) error {
+	if processes == nil || len(processes) == 0 {
+		return nil
+	}
+
+	upids := make([]*types.UInt128, len(processes))
+	for i, p := range processes {
+		upids[i] = types.UInt128FromProto(p.UPID)
+	}
+
+	pInfos, err := m.mds.GetProcesses(upids)
+	if err != nil {
+		log.WithError(err).Error("Could not get processes when trying to update terminated processes")
+		return err
+	}
+
+	var updatedProcesses []*metadatapb.ProcessInfo
+	for i, p := range pInfos {
+		if p != (*metadatapb.ProcessInfo)(nil) {
+			p.StopTimestampNS = processes[i].StopTimestampNS
+			updatedProcesses = append(updatedProcesses, p)
+		}
+	}
+
+	return m.mds.UpdateProcesses(updatedProcesses)
 }
 
 // AddToUpdateQueue adds the container/schema update to a queue for updates to the metadata store.

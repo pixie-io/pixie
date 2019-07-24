@@ -465,6 +465,30 @@ func (mds *EtcdMetadataStore) GetProcesses(upids []*types.UInt128) ([]*metadatap
 	return processes, nil
 }
 
+// UpdateProcesses updates the given processes in the metadata store.
+func (mds *EtcdMetadataStore) UpdateProcesses(processes []*metadatapb.ProcessInfo) error {
+	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
+	mu.Lock(context.Background())
+	defer mu.Unlock(context.Background())
+
+	ops := make([]clientv3.Op, len(processes))
+
+	for i, processPb := range processes {
+		process, err := processPb.Marshal()
+		if err != nil {
+			log.WithError(err).Error("Could not marshall processInfo.")
+			continue
+		}
+		upid := types.UInt128FromProto(processPb.UPID)
+
+		processKey := getProcessKey(k8s.StringFromUPID(upid))
+		ops[i] = clientv3.OpPut(processKey, string(process))
+	}
+
+	_, err := mds.client.Txn(context.TODO()).If().Then(ops...).Commit()
+	return err
+}
+
 // Close cleans up the etcd metadata store, such as its etcd session.
 func (mds *EtcdMetadataStore) Close() {
 	mds.sess.Close()

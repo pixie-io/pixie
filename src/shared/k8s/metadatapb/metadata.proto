@@ -393,9 +393,13 @@ message ProcessInfo {
   // Name of the process.
   string name = 1;
 
-  pl.types.UInt128 upid = 2;
+  pl.types.UInt128 upid = 2 [
+                  (gogoproto.customname) = "UPID"
+                  ];
 
-  int32 pid = 3;
+  int32 pid = 3 [
+                  (gogoproto.customname) = "PID"
+                  ];
 
   // The server time in nanoseconds when the process started.
   int64 start_timestamp_ns = 4 [
@@ -409,7 +413,9 @@ message ProcessInfo {
 
   string process_args = 6;
 
-  string cid = 7;
+  string cid = 7 [
+                  (gogoproto.customname) = "CID"
+                  ];
 }
 
 // SchemaInfo contains info for a schema that is available on an agent or agents.
@@ -520,10 +526,14 @@ message ServiceUpdate {
 
 message ProcessCreated {
   // The unique PID for this process. This PID is cluster unique in both space and time.
-  pl.types.UInt128 upid = 1;
+  pl.types.UInt128 upid = 1 [
+                  (gogoproto.customname) = "UPID"
+                  ];
 
   // The PID for this process which is unique on this machine in space, but not time.
-  int32 pid = 2;
+  int32 pid = 2 [
+                  (gogoproto.customname) = "PID"
+                  ];
 
   // The server time in nanoseconds when the process started.
   int64 start_timestamp_ns = 3 [
@@ -535,12 +545,16 @@ message ProcessCreated {
   string cmdline = 4;
 
   // The container ID where under for container where this process is running.
-  string cid = 5;
+  string cid = 5 [
+                  (gogoproto.customname) = "CID"
+                  ];
 }
 
 message ProcessTerminated {
   // The unique PID for this process. This PID is cluster unique in both space and time.
-  pl.types.UInt128 upid = 1;
+  pl.types.UInt128 upid = 1 [
+                  (gogoproto.customname) = "UPID"
+                  ];
 
   // The time in nanoseconds when the process stopped.
   int64 stop_timestamp_ns = 2 [
