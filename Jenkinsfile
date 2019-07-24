@@ -185,6 +185,12 @@ def writeBazelRCFile() {
     'build --remote_timeout=5',
     'build --remote_retries=2',
 
+    // Keep the build going even with failures.
+    // This makes it easier to find multiple issues in
+    // a given Jenkins runs.
+    'build --keep_going',
+    'test --keep_going',
+
     // Test remote jobs setup.
     'test --remote_timeout=5',
     'test --remote_retries=2',
