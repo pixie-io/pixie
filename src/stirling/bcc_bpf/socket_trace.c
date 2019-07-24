@@ -497,9 +497,33 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirecti
       break;
   }
 
-  const size_t msg_size = buf_size < sizeof(event->msg) ? buf_size : sizeof(event->msg);
+  // This part of the code has been written carefully to keep the BPF verifier happy in older
+  // kernels, so please take care when modifying.
+  //
+  // Logically, what we'd like is the following:
+  //    size_t msg_size = buf_size < sizeof(event->msg) ? buf_size : sizeof(event->msg);
+  //    bpf_probe_read(&event->msg, msg_size, buf);
+  //
+  // But this does not work in kernel versions 4.14 or older, because the verifier does not like
+  // a bpf_probe_read with size 0, and it can't prove that the size won't be zero. This
+  // is true even if we include a 'if (msg_size > 0)' around the code.
+  //
+  // Tested to work on GKE node with 4.14.127+ kernel.
+  //
+  // Useful link: https://www.mail-archive.com/netdev@vger.kernel.org/msg199918.html
+
+  size_t msg_size = 0;
+  if (buf_size >= sizeof(event->msg)) {
+    msg_size = sizeof(event->msg);
+    bpf_probe_read(&event->msg, msg_size, buf);
+  } else if (buf_size > 0) {
+    msg_size = buf_size;
+    // Read one extra byte, because older kernels (4.14) don't accept 0 as the second argument,
+    // And their verifier can't prove that it won't be zero (despite the obvious if-statement).
+    bpf_probe_read(&event->msg, msg_size + 1, buf);
+  }
+
   event->attr.msg_size = msg_size;
-  bpf_probe_read(&event->msg, msg_size, buf);
 
   // Write snooped arguments to perf ring buffer.
   const size_t size_to_submit = sizeof(event->attr) + msg_size;
