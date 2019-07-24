@@ -47,6 +47,9 @@ spec:
           readOnly: true
         - name: certs
           mountPath: /certs
+        env:
+        - name: PL_PROC_PATH
+          value: "/host/proc"
       hostPID: true
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet

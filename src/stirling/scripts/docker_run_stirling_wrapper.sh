@@ -46,6 +46,7 @@ docker run -it --init --rm \
  --mount type=bind,source=/sys,target=/sys \
  --mount type=bind,source=/usr/src,target=/host/usr/src \
  --mount type=bind,source=/lib/modules,target=/host/lib/modules \
+ --env PL_PROC_PATH=/host/proc \
  --privileged \
  $flags \
  bazel/src/stirling:stirling_wrapper_image

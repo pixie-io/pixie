@@ -204,6 +204,10 @@ StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
 StirlingImpl::~StirlingImpl() { Stop(); }
 
 Status StirlingImpl::Init() {
+  const common::SystemConfig* sysconfig = common::SystemConfig::GetInstance();
+  LOG(INFO) << absl::StrCat("Location of proc: ", sysconfig->proc_path());
+  LOG(INFO) << absl::StrCat("Location of sysfs: ", sysconfig->sysfs_path());
+
   // Clean up any probes from a previous instance.
   static constexpr char kPixieBPFProbeMarker[] = "__pixie__";
   Status s = utils::KprobeCleaner(kPixieBPFProbeMarker);
