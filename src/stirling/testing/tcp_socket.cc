@@ -119,21 +119,23 @@ void TCPSocket::Connect(const TCPSocket& addr) {
   CHECK(retval == 0) << "Failed to connect, error message: " << strerror(errno);
 }
 
-bool TCPSocket::Read(std::string* data) {
-  ssize_t size = read(sockfd_, static_cast<void*>(buf_), kBufSize);
+bool TCPSocket::Read(std::string* data) const {
+  char buf[kBufSize];
+  ssize_t size = read(sockfd_, static_cast<void*>(buf), sizeof(buf));
   if (size <= 0) {
     return false;
   }
-  data->assign(buf_, size);
+  data->assign(buf, size);
   return true;
 }
 
-bool TCPSocket::Recv(std::string* data) {
-  ssize_t size = recv(sockfd_, static_cast<void*>(buf_), kBufSize, /*flags*/ 0);
+bool TCPSocket::Recv(std::string* data) const {
+  char buf[kBufSize];
+  ssize_t size = recv(sockfd_, static_cast<void*>(buf), sizeof(buf), /*flags*/ 0);
   if (size <= 0) {
     return false;
   }
-  data->assign(buf_, size);
+  data->assign(buf, size);
   return true;
 }
 
