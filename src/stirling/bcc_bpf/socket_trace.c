@@ -503,7 +503,7 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirecti
 
   // Write snooped arguments to perf ring buffer.
   const size_t size_to_submit = sizeof(event->attr) + msg_size;
-  switch (conn_info->traffic_class.protocol) {
+  switch (event->attr.traffic_class.protocol) {
     case kProtocolHTTP:
     case kProtocolHTTP2:
       socket_http_events.perf_submit(ctx, event, size_to_submit);
