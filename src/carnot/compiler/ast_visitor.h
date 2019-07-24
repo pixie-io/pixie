@@ -20,23 +20,6 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-// Constants for the run-time (UDF) and compile-time fn prefixes.
-constexpr const char* kUDFPrefix = "pl";
-constexpr const char* kCompileTimePrefix = "plc";
-
-// Constant for the metadata attribute keyword.
-constexpr const char* kMDKeyword = "attr";
-
-// Constants for operators in the query language.
-constexpr const char* kFromOpId = "From";
-constexpr const char* kRangeOpId = "Range";
-constexpr const char* kMapOpId = "Map";
-constexpr const char* kBlockingAggOpId = "Agg";
-constexpr const char* kRangeAggOpId = "RangeAgg";
-constexpr const char* kSinkOpId = "Result";
-constexpr const char* kFilterOpId = "Filter";
-constexpr const char* kLimitOpId = "Limit";
-
 using VarTable = std::unordered_map<std::string, IRNode*>;
 
 #define PYPA_PTR_CAST(TYPE, VAL) \
@@ -127,6 +110,23 @@ class ASTWalker {
    * @return Status
    */
   Status ProcessModuleNode(const pypa::AstModulePtr& m);
+
+  // Constants for the run-time (UDF) and compile-time fn prefixes.
+  inline static constexpr char kRunTimeFuncPrefix[] = "pl";
+  inline static constexpr char kCompileTimeFuncPrefix[] = "plc";
+
+  // Constant for the metadata attribute keyword.
+  inline static constexpr char kMDKeyword[] = "attr";
+
+  // Constants for operators in the query language.
+  inline static constexpr char kFromOpId[] = "From";
+  inline static constexpr char kRangeOpId[] = "Range";
+  inline static constexpr char kMapOpId[] = "Map";
+  inline static constexpr char kBlockingAggOpId[] = "Agg";
+  inline static constexpr char kRangeAggOpId[] = "RangeAgg";
+  inline static constexpr char kSinkOpId[] = "Result";
+  inline static constexpr char kFilterOpId[] = "Filter";
+  inline static constexpr char kLimitOpId[] = "Limit";
 
  private:
   /**
@@ -539,11 +539,11 @@ class ASTWalker {
   /**
    * @brief Processes functions that are argless.
    *
-   * @param kUDFPrefix: the prefix of the calling function.
+   * @param function_prefix: the prefix of the calling function.
    * @param function_name: the string representation of the function.
    * @return StatusOr<LambdaExprReturn> container of the function expression.
    */
-  StatusOr<LambdaExprReturn> ProcessArglessFunction(const std::string& kUDFPrefix,
+  StatusOr<LambdaExprReturn> ProcessArglessFunction(const std::string& function_prefix,
                                                     const std::string& function_name);
 
   /**

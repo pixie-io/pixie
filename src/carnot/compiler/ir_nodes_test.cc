@@ -214,7 +214,7 @@ TEST(ToProto, map_ir) {
   col->ResolveColumn(4, types::INT64);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-  EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, "pl",
+  EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({constant, col}), false /* compile_time */, ast));
   func->set_func_id(1);
   EXPECT_OK(lambda->Init({"col_name"}, func, ast));
@@ -273,7 +273,7 @@ TEST(ToProto, agg_ir) {
 
   auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"}, "pl",
+  EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
                            std::vector<ExpressionIR*>({constant, col}), false /* compile_time */,
                            ast));
   EXPECT_OK(agg_func_lambda->Init({"meaned_column"}, {{"mean", agg_func}}, ast));
@@ -311,8 +311,9 @@ class DebugStringFunctionality : public ::testing::Test {
     EXPECT_OK(col_node_->Init("test_col", ast));
 
     func_node_ = graph_->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(func_node_->Init({FuncIR::Opcode::non_op, "", "test_fn"}, "pl",
-                               {time_node_, col_node_}, false /* compile_time */, ast));
+    EXPECT_OK(func_node_->Init({FuncIR::Opcode::non_op, "", "test_fn"},
+                               ASTWalker::kRunTimeFuncPrefix, {time_node_, col_node_},
+                               false /* compile_time */, ast));
 
     lambda_node_ = graph_->MakeNode<LambdaIR>().ValueOrDie();
     EXPECT_OK(lambda_node_->Init({"test_col"}, {{"time", func_node_}}, ast));

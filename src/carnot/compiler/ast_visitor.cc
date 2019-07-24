@@ -291,7 +291,7 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(FuncIR::Op mod_op, GetOp("%", node));
   DCHECK(args["size"]->IsExpression());
   PL_RETURN_IF_ERROR(mod_ir_node->Init(
-      mod_op, kUDFPrefix,
+      mod_op, kRunTimeFuncPrefix,
       std::vector<ExpressionIR*>({by_col, static_cast<ExpressionIR*>(args["size"])}),
       false /*compile_time */, node));
 
@@ -300,7 +300,7 @@ StatusOr<IRNode*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node) {
   // pl.subtract(by_col, pl.mod(by_col, size)).
   PL_ASSIGN_OR_RETURN(FuncIR * sub_ir_node, ir_graph_->MakeNode<FuncIR>());
   PL_ASSIGN_OR_RETURN(FuncIR::Op sub_op, GetOp("-", node));
-  PL_RETURN_IF_ERROR(sub_ir_node->Init(sub_op, kUDFPrefix,
+  PL_RETURN_IF_ERROR(sub_ir_node->Init(sub_op, kRunTimeFuncPrefix,
                                        std::vector<ExpressionIR*>({by_col_copy, mod_ir_node}),
                                        false /*compile_time */, node));
 
@@ -423,9 +423,10 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const std::string& 
   if (parent == lambda_arg) {
     // If the value is equal to the lambda_arg, then the attribute is a column.
     return ProcessRecordColumn(GetNameID(node->attribute), node);
-  } else if (parent == kUDFPrefix) {
-    // If the value of the attribute is kUDFPrefix, then we have a function without arguments.
-    return ProcessArglessFunction(kUDFPrefix, GetNameID(node->attribute));
+  } else if (parent == kRunTimeFuncPrefix) {
+    // If the value of the attribute is kRunTimeFuncPrefix, then we have a function without
+    // arguments.
+    return ProcessArglessFunction(kRunTimeFuncPrefix, GetNameID(node->attribute));
   }
   return CreateAstError(node, "Attribute parent value '$0' can't be found.", parent);
 }
@@ -439,9 +440,9 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessRecordColumn(const std::string& col
   return LambdaExprReturn(column, column_names);
 }
 
-StatusOr<LambdaExprReturn> ASTWalker::ProcessArglessFunction(const std::string& kUDFPrefix,
+StatusOr<LambdaExprReturn> ASTWalker::ProcessArglessFunction(const std::string& function_prefix,
                                                              const std::string& function_name) {
-  PL_UNUSED(kUDFPrefix);
+  PL_UNUSED(function_prefix);
   // TODO(philkuz) (PL-733) use this to remove the is_pixie_attr from LambdaExprReturn.
   return LambdaExprReturn(function_name, true /*is_pixie_attr */);
 }
@@ -473,7 +474,7 @@ StatusOr<LambdaExprReturn> ASTWalker::BuildLambdaFunc(
   for (auto expr_ret : children_ret_expr) {
     if (expr_ret.StringOnly()) {
       return CreateAstError(parent_node, "Attribute call with '$0' prefix not allowed in lambda.",
-                            kCompileTimePrefix);
+                            kCompileTimeFuncPrefix);
     } else {
       expressions.push_back(expr_ret.expr_);
       ret.MergeColumns(expr_ret);
@@ -492,7 +493,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaBinOp(const std::string& lamb
   PL_ASSIGN_OR_RETURN(auto right_expr_ret, ProcessLambdaExpr(lambda_arg, node->right));
   children_ret_expr.push_back(left_expr_ret);
   children_ret_expr.push_back(right_expr_ret);
-  return BuildLambdaFunc(op, kUDFPrefix, children_ret_expr, node);
+  return BuildLambdaFunc(op, kRunTimeFuncPrefix, children_ret_expr, node);
 }
 
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaBoolOp(const std::string& lambda_arg,
@@ -504,7 +505,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaBoolOp(const std::string& lam
     PL_ASSIGN_OR_RETURN(auto rt, ProcessLambdaExpr(lambda_arg, comp));
     children_ret_expr.push_back(rt);
   }
-  return BuildLambdaFunc(op, kUDFPrefix, children_ret_expr, node);
+  return BuildLambdaFunc(op, kRunTimeFuncPrefix, children_ret_expr, node);
 }
 
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCompare(const std::string& lambda_arg,
@@ -522,7 +523,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCompare(const std::string& la
     PL_ASSIGN_OR_RETURN(auto rt, ProcessLambdaExpr(lambda_arg, comp));
     children_ret_expr.push_back(rt);
   }
-  return BuildLambdaFunc(op, kUDFPrefix, children_ret_expr, node);
+  return BuildLambdaFunc(op, kRunTimeFuncPrefix, children_ret_expr, node);
 }
 
 StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCall(const std::string& lambda_arg,
@@ -543,7 +544,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaCall(const std::string& lambd
     children_ret_expr.push_back(rt);
   }
   FuncIR::Op op{FuncIR::Opcode::non_op, "", fn_name};
-  return BuildLambdaFunc(op, kUDFPrefix, children_ret_expr, node);
+  return BuildLambdaFunc(op, kRunTimeFuncPrefix, children_ret_expr, node);
 }
 
 /**
@@ -654,7 +655,7 @@ StatusOr<LambdaBodyReturn> ASTWalker::ProcessLambdaDict(const std::string& lambd
     PL_ASSIGN_OR_RETURN(auto expr_ret, ProcessLambdaExpr(lambda_arg, value_ast));
     if (expr_ret.is_pixie_attr_) {
       PL_ASSIGN_OR_RETURN(expr_ret, BuildLambdaFunc({FuncIR::Opcode::non_op, "", expr_ret.str_},
-                                                    kUDFPrefix, {}, body_dict));
+                                                    kRunTimeFuncPrefix, {}, body_dict));
     }
     PL_RETURN_IF_ERROR(return_val.AddExprResult(key_string, expr_ret));
   }
@@ -693,7 +694,7 @@ StatusOr<IntIR*> ASTWalker::EvalCompileTimeNow(const pypa::AstArguments& arglist
                                                const pypa::AstPtr& arglist_parent) {
   if (!arglist.arguments.empty() || !arglist.keywords.empty()) {
     return CreateAstError(arglist_parent, "No Arguments expected for '$0.$1' fn",
-                          kCompileTimePrefix, "now");
+                          kCompileTimeFuncPrefix, "now");
   }
   PL_ASSIGN_OR_RETURN(IntIR * ir_node, MakeTimeNow(arglist_parent));
   return ir_node;
@@ -704,28 +705,28 @@ StatusOr<IntIR*> ASTWalker::EvalUnitTimeFn(const std::string& attr_fn_name,
                                            const pypa::AstPtr& arglist_parent) {
   auto fn_type_iter = kUnitTimeFnStr.find(attr_fn_name);
   if (fn_type_iter == kUnitTimeFnStr.end()) {
-    return CreateAstError(arglist_parent, "Function '$0.$1' not found", kCompileTimePrefix,
+    return CreateAstError(arglist_parent, "Function '$0.$1' not found", kCompileTimeFuncPrefix,
                           attr_fn_name);
   }
   if (!arglist.keywords.empty()) {
     return CreateAstError(arglist_parent, "No Keyword args expected for '$0.$1' fn",
-                          kCompileTimePrefix, attr_fn_name);
+                          kCompileTimeFuncPrefix, attr_fn_name);
   }
   if (arglist.arguments.size() != 1) {
     return CreateAstError(arglist_parent, "Only expected one arg for '$0.$1' fn",
-                          kCompileTimePrefix, attr_fn_name);
+                          kCompileTimeFuncPrefix, attr_fn_name);
   }
   auto argument = arglist.arguments[0];
   if (argument->type != AstType::Number) {
     return CreateAstError(arglist_parent, "Argument must be an integer for '$0.$1'",
-                          kCompileTimePrefix, attr_fn_name);
+                          kCompileTimeFuncPrefix, attr_fn_name);
   }
 
   // evaluate the arguments
   PL_ASSIGN_OR_RETURN(auto number_node, ProcessNumber(PYPA_PTR_CAST(Number, argument)));
   if (number_node->type() != IRNodeType::kInt) {
     return CreateAstError(arglist_parent, "Argument must be an integer for '$0.$1'",
-                          kCompileTimePrefix, attr_fn_name);
+                          kCompileTimeFuncPrefix, attr_fn_name);
   }
   int64_t time_val = static_cast<IntIR*>(number_node)->val();
 
@@ -754,7 +755,7 @@ StatusOr<IntIR*> ASTWalker::EvalCompileTimeFn(const std::string& attr_fn_name,
     PL_ASSIGN_OR_RETURN(ir_node, EvalUnitTimeFn(attr_fn_name, arglist, arglist_parent));
   } else {
     return CreateAstError(arglist_parent, "Couldn't find function with name '$0.$1'",
-                          kCompileTimePrefix, attr_fn_name);
+                          kCompileTimeFuncPrefix, attr_fn_name);
   }
 
   return ir_node;
@@ -784,7 +785,7 @@ StatusOr<ExpressionIR*> ASTWalker::ProcessDataBinOp(const pypa::AstBinOpPtr& nod
   std::vector<ExpressionIR*> expressions = {static_cast<ExpressionIR*>(left),
                                             static_cast<ExpressionIR*>(right)};
   PL_RETURN_IF_ERROR(
-      ir_node->Init(op, kCompileTimePrefix, expressions, true /* compile_time */, node));
+      ir_node->Init(op, kCompileTimeFuncPrefix, expressions, true /* compile_time */, node));
 
   return ir_node;
 }
@@ -806,7 +807,7 @@ StatusOr<ExpressionIR*> ASTWalker::ProcessDataCall(const pypa::AstCallPtr& node)
   }
   // attr parent must be plc.
   auto attr_parent_str = GetNameID(attr_parent);
-  if (attr_parent_str != kCompileTimePrefix) {
+  if (attr_parent_str != kCompileTimeFuncPrefix) {
     return CreateAstError(attr_parent, "Namespace '$0' not found.", attr_parent_str);
   }
   auto attr_fn_str = GetNameID(attr_fn_name);

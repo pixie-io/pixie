@@ -27,7 +27,7 @@ TEST_F(PatternMatchTest, equals_test) {
   auto c2 = graph->MakeNode<IntIR>().ValueOrDie();
 
   auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(agg_func->Init({FuncIR::Opcode::eq, "==", "equals"}, "pl",
+  EXPECT_OK(agg_func->Init({FuncIR::Opcode::eq, "==", "equals"}, ASTWalker::kRunTimeFuncPrefix,
                            std::vector<ExpressionIR*>({c1, c2}), false /* compile_time */, ast));
 
   EXPECT_TRUE(Match(agg_func, Equals(Int(10), Value())));
@@ -43,7 +43,7 @@ TEST_F(PatternMatchTest, arbitrary_bin_op_test) {
   auto c2 = graph->MakeNode<IntIR>().ValueOrDie();
 
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "op"}, "pl",
+  EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "op"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({c1, c2}), false /* compile_time */, ast));
 
   EXPECT_FALSE(Match(func, Equals(Int(10), Value())));
@@ -57,7 +57,7 @@ TEST_F(PatternMatchTest, expression_data_type_resolution) {
   auto col1 = graph->MakeNode<ColumnIR>().ValueOrDie();
   EXPECT_OK(col1->Init("col1", ast));
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-  EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "op"}, "pl",
+  EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "op"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({int1, col1}), false /* compile_time */, ast));
 
   // Make sure expression works.

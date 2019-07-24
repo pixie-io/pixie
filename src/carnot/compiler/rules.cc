@@ -3,6 +3,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "src/carnot/compiler/ast_visitor.h"
 #include "src/carnot/compiler/rules.h"
 namespace pl {
 namespace carnot {
@@ -528,8 +529,9 @@ StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_
     PL_ASSIGN_OR_RETURN(std::string key_column,
                         FindKeyColumn(parent_relation, md_property, column_ir));
     PL_ASSIGN_OR_RETURN(std::string func_name, md_property->UDFName(key_column));
-    PL_RETURN_IF_ERROR(conversion_func->Init({FuncIR::Opcode::non_op, "", func_name}, "pl",
-                                             {column_ir}, false, md_resolver->ast_node()));
+    PL_RETURN_IF_ERROR(conversion_func->Init({FuncIR::Opcode::non_op, "", func_name},
+                                             ASTWalker::kRunTimeFuncPrefix, {column_ir}, false,
+                                             md_resolver->ast_node()));
     col_exprs.emplace_back(md_property->GetColumnRepr(), conversion_func);
   }
 
