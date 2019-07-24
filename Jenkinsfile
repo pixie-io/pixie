@@ -298,6 +298,7 @@ def archiveBazelLogs(String logBase) {
       ]
     ]
   ])
+  archiveArtifacts "${logBase}/**"
 }
 
 def archiveUILogs() {
@@ -592,10 +593,12 @@ def buildScriptForNightly = {
  *****************************************************************************/
 def regressionBuilders = [:]
 
+TEST_ITERATIONS=1000
+
 regressionBuilders['Test (opt)'] = {
   WithSourceCode {
     dockerStepWithBazelCmd(
-      "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH} --runs_per_test 1000",
+      "bazel test --compilation_mode=opt ${BAZEL_SRC_FILES_PATH} --runs_per_test ${TEST_ITERATIONS}",
       'build-opt')
   }
 }
@@ -603,7 +606,7 @@ regressionBuilders['Test (opt)'] = {
 regressionBuilders['Test (ASAN)'] = {
   WithSourceCode {
     dockerStep('--cap-add=SYS_PTRACE', {
-      bazelCmd("bazel test --config=asan ${BAZEL_CC_QUERY} --runs_per_test 1000", 'build-asan')
+      bazelCmd("bazel test --config=asan ${BAZEL_CC_QUERY} --runs_per_test ${TEST_ITERATIONS}", 'build-asan')
     })
   }
 }
@@ -611,7 +614,7 @@ regressionBuilders['Test (ASAN)'] = {
 regressionBuilders['Test (TSAN)'] = {
   WithSourceCode {
     dockerStep('--cap-add=SYS_PTRACE', {
-      bazelCmd("bazel test --config=tsan ${BAZEL_CC_QUERY} --runs_per_test 1000", 'build-tsan')
+      bazelCmd("bazel test --config=tsan ${BAZEL_CC_QUERY} --runs_per_test ${TEST_ITERATIONS}", 'build-tsan')
     })
   }
 }
@@ -631,6 +634,15 @@ def buildScriptForNightlyTestRegression = {
       stage('Testing') {
         parallel(regressionBuilders)
       }
+      stage('Archive') {
+        // Unstash and archive build logs.
+        stashList.each({stashName ->
+          dir(stashName) {
+            unstash stashName
+          }
+          archiveBazelLogs(stashName)
+        })
+      }
     }
     catch(err) {
       currentBuild.result = 'FAILURE'
@@ -644,6 +656,8 @@ def buildScriptForNightlyTestRegression = {
 if (isNightlyDeployRun) {
   buildScriptForNightly()
 } else if(isNightlyTestRegressionRun) {
+  // Disable retries for regression run.
+  JENKINS_RETRIES=1
   buildScriptForNightlyTestRegression()
 } else {
   buildScriptForCommits()
