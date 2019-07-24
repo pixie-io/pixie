@@ -29,23 +29,23 @@ class ConnectionTrackerTest : public ::testing::Test {
   }
 
   std::unique_ptr<SocketDataEvent> InitSendEvent(std::string_view msg, uint64_t ts_ns) {
-    std::unique_ptr<SocketDataEvent> event = InitDataEvent(kEventTypeSyscallSendEvent, msg, ts_ns);
+    std::unique_ptr<SocketDataEvent> event = InitDataEvent(TrafficDirection::kEgress, msg, ts_ns);
     event->attr.seq_num = send_seq_num_;
     send_seq_num_++;
     return event;
   }
 
   std::unique_ptr<SocketDataEvent> InitRecvEvent(std::string_view msg, uint64_t ts_ns) {
-    std::unique_ptr<SocketDataEvent> event = InitDataEvent(kEventTypeSyscallRecvEvent, msg, ts_ns);
+    std::unique_ptr<SocketDataEvent> event = InitDataEvent(TrafficDirection::kIngress, msg, ts_ns);
     event->attr.seq_num = recv_seq_num_;
     recv_seq_num_++;
     return event;
   }
 
-  std::unique_ptr<SocketDataEvent> InitDataEvent(EventType event_type, std::string_view msg,
+  std::unique_ptr<SocketDataEvent> InitDataEvent(TrafficDirection direction, std::string_view msg,
                                                  uint64_t ts_ns) {
     socket_data_event_t event = {};
-    event.attr.event_type = event_type;
+    event.attr.direction = direction;
     event.attr.traffic_class.protocol = kProtocolHTTP;
     event.attr.traffic_class.role = kRoleRequestor;
     event.attr.timestamp_ns = ts_ns;

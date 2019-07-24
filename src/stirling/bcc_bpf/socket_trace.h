@@ -26,17 +26,10 @@ const int64_t kTraceAllTGIDs = -1;
 
 // TODO(yzhao): Investigate the performance cost of misaligned memory access (8 vs. 4 bytes).
 
-// Indicates the syscall that recorded an event.
-// TODO(oazizi/yzhao): Remove once no longer necessary.
 typedef enum {
-  kEventTypeUnknown,
-  kEventTypeSyscallWriteEvent,
-  kEventTypeSyscallSendEvent,
-  kEventTypeSyscallSendMsgEvent,
-  kEventTypeSyscallReadEvent,
-  kEventTypeSyscallRecvEvent,
-  kEventTypeSyscallRecvMsgEvent,
-} EventType;
+  kEgress,
+  kIngress,
+} TrafficDirection;
 
 // Protocol being used on a connection (HTTP, MySQL, etc.).
 typedef enum {
@@ -130,7 +123,7 @@ struct socket_data_event_t {
     struct traffic_class_t traffic_class;
     // The type of the actual data that the msg field encodes, which is used by the caller
     // to determine how to interpret the data.
-    uint32_t event_type;
+    uint32_t direction;
     // A 0-based sequence number for this event on the connection.
     // Note that write/send have separate sequences than read/recv.
     uint64_t seq_num;

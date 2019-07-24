@@ -101,14 +101,14 @@ static __inline bool should_trace(const struct traffic_class_t* traffic_class) {
 // and use it as a heap allocated value.
 BPF_PERCPU_ARRAY(data_buffer_heap, struct socket_data_event_t, 1);
 
-static __inline struct socket_data_event_t* fill_event(EventType event_type,
+static __inline struct socket_data_event_t* fill_event(TrafficDirection direction,
                                                        const struct conn_info_t* conn_info) {
   u32 kZero = 0;
   struct socket_data_event_t* event = data_buffer_heap.lookup(&kZero);
   if (event == NULL) {
     return NULL;
   }
-  event->attr.event_type = event_type;
+  event->attr.direction = direction;
   event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.conn_id.tgid = conn_info->conn_id.tgid;
   event->attr.conn_id.tgid_start_time_ns = conn_info->conn_id.tgid_start_time_ns;
@@ -186,11 +186,6 @@ static __inline bool is_http2_connection_preface(const char* buf, size_t count) 
   }
   return buf[0] == 'P' && buf[1] == 'R' && buf[2] == 'I';
 }
-
-typedef enum {
-  kEgress,
-  kIngress,
-} TrafficDirection;
 
 static __inline struct traffic_class_t infer_traffic(TrafficDirection direction, const char* buf,
                                                      size_t count) {
@@ -546,7 +541,7 @@ static __inline void perf_submit_msghdr(struct pt_regs* ctx, const TrafficDirect
   }
 }
 
-static __inline int probe_ret_write_send(struct pt_regs* ctx, EventType event_type) {
+static __inline int probe_ret_write_send(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
@@ -567,7 +562,7 @@ static __inline int probe_ret_write_send(struct pt_regs* ctx, EventType event_ty
     goto done;
   }
 
-  struct socket_data_event_t* event = fill_event(event_type, conn_info);
+  struct socket_data_event_t* event = fill_event(kEgress, conn_info);
   if (event == NULL) {
     goto done;
   }
@@ -608,7 +603,7 @@ static __inline int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf
   return 0;
 }
 
-static __inline int probe_ret_read_recv(struct pt_regs* ctx, EventType event_type) {
+static __inline int probe_ret_read_recv(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
@@ -648,7 +643,7 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx, EventType event_typ
     goto done;
   }
 
-  struct socket_data_event_t* event = fill_event(event_type, conn_info);
+  struct socket_data_event_t* event = fill_event(kIngress, conn_info);
   if (event == NULL) {
     goto done;
   }
@@ -717,57 +712,43 @@ int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t co
   return probe_entry_write_send(ctx, fd, buf, count, NULL);
 }
 
-int syscall__probe_ret_write(struct pt_regs* ctx) {
-  return probe_ret_write_send(ctx, kEventTypeSyscallWriteEvent);
-}
+int syscall__probe_ret_write(struct pt_regs* ctx) { return probe_ret_write_send(ctx); }
 
 int syscall__probe_entry_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_write_send(ctx, fd, buf, count, NULL);
 }
 
-int syscall__probe_ret_send(struct pt_regs* ctx) {
-  return probe_ret_write_send(ctx, kEventTypeSyscallSendEvent);
-}
+int syscall__probe_ret_send(struct pt_regs* ctx) { return probe_ret_write_send(ctx); }
 
 int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_read_recv(ctx, fd, buf, count, /*msghdr*/ NULL);
 }
 
-int syscall__probe_ret_read(struct pt_regs* ctx) {
-  return probe_ret_read_recv(ctx, kEventTypeSyscallReadEvent);
-}
+int syscall__probe_ret_read(struct pt_regs* ctx) { return probe_ret_read_recv(ctx); }
 
 int syscall__probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_read_recv(ctx, fd, buf, count, /*msghdr*/ NULL);
 }
 
-int syscall__probe_ret_recv(struct pt_regs* ctx) {
-  return probe_ret_read_recv(ctx, kEventTypeSyscallRecvEvent);
-}
+int syscall__probe_ret_recv(struct pt_regs* ctx) { return probe_ret_read_recv(ctx); }
 
 int syscall__probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_write_send(ctx, fd, buf, count, /*msghdr*/ NULL);
 }
 
-int syscall__probe_ret_sendto(struct pt_regs* ctx) {
-  return probe_ret_write_send(ctx, kEventTypeSyscallSendEvent);
-}
+int syscall__probe_ret_sendto(struct pt_regs* ctx) { return probe_ret_write_send(ctx); }
 
 int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int fd, const struct user_msghdr* msghdr) {
   return probe_entry_write_send(ctx, fd, /*buf*/ NULL, /*count*/ 0, msghdr);
 }
 
-int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
-  return probe_ret_write_send(ctx, kEventTypeSyscallSendMsgEvent);
-}
+int syscall__probe_ret_sendmsg(struct pt_regs* ctx) { return probe_ret_write_send(ctx); }
 
 int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int fd, struct user_msghdr* msghdr) {
   return probe_entry_read_recv(ctx, fd, /*buf*/ NULL, /*count*/ 0, msghdr);
 }
 
-int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
-  return probe_ret_read_recv(ctx, kEventTypeSyscallRecvMsgEvent);
-}
+int syscall__probe_ret_recvmsg(struct pt_regs* ctx) { return probe_ret_read_recv(ctx); }
 
 int syscall__probe_close(struct pt_regs* ctx, unsigned int fd) { return probe_close_impl(ctx, fd); }
 

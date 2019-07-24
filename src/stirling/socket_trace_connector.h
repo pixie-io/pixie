@@ -62,10 +62,6 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
           {"pid", types::DataType::INT64, types::PatternType::GENERAL},
           // TODO(oazizi): Merge with pid, and use INT128, when available.
           {"pid_start_time", types::DataType::INT64, types::PatternType::GENERAL},
-          // TODO(yzhao): Remove 'event_type'. Now each record includes both req and resp.
-          // 'event_type', which was added one each record includes only req or resp, is no longer
-          // meaningful.
-          {"event_type", types::DataType::STRING, types::PatternType::GENERAL_ENUM},
           // TODO(PL-519): Eventually, use uint128 to represent IP addresses, as will be resolved in
           // the Jira issue.
           {"remote_addr", types::DataType::STRING, types::PatternType::GENERAL},
@@ -104,7 +100,6 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
           {"pid", types::DataType::INT64, types::PatternType::GENERAL},
           {"pid_start_time", types::DataType::INT64, types::PatternType::GENERAL},
           {"fd", types::DataType::INT64, types::PatternType::GENERAL},
-          {"bpf_event", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
           {"remote_addr", types::DataType::STRING, types::PatternType::GENERAL},
           {"remote_port", types::DataType::INT64, types::PatternType::GENERAL},
           {"body", types::DataType::STRING, types::PatternType::STRUCTURED},

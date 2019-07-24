@@ -428,7 +428,6 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record,
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("pid")>(conn_tracker.pid());
   r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
-  r.Append<r.ColIndex("event_type")>(HTTPEventTypeToString(resp_message.type));
   // Note that there is a string copy here,
   // But std::move is not allowed because we re-use conn object.
   r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
@@ -462,7 +461,6 @@ void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record,
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("pid")>(conn_tracker.pid());
   r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
-  r.Append<r.ColIndex("event_type")>("mixed");
   r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
   r.Append<r.ColIndex("http_major_version")>(2);
@@ -514,7 +512,6 @@ void SocketTraceConnector::TransferMySQLEvent(SocketDataEvent event,
   r.Append<r.ColIndex("pid")>(event.attr.conn_id.pid);
   r.Append<r.ColIndex("pid_start_time")>(event.attr.conn_id.pid_start_time_ns);
   r.Append<r.ColIndex("fd")>(fd);
-  r.Append<r.ColIndex("bpf_event")>(event.attr.event_type);
   r.Append<r.ColIndex("remote_addr")>(std::move(ip));
   r.Append<r.ColIndex("remote_port")>(port);
   r.Append<r.ColIndex("body")>(std::move(event.msg));

@@ -57,22 +57,15 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 
   const uint64_t seq_num = event->attr.seq_num;
 
-  switch (event->attr.event_type) {
-    case kEventTypeSyscallWriteEvent:
-    case kEventTypeSyscallSendEvent:
-    case kEventTypeSyscallSendMsgEvent: {
+  switch (event->attr.direction) {
+    case TrafficDirection::kEgress: {
       send_data_.AddEvent(seq_num, std::move(event));
       ++num_send_events_;
     } break;
-    case kEventTypeSyscallReadEvent:
-    case kEventTypeSyscallRecvEvent:
-    case kEventTypeSyscallRecvMsgEvent: {
+    case TrafficDirection::kIngress: {
       recv_data_.AddEvent(seq_num, std::move(event));
       ++num_recv_events_;
     } break;
-    default:
-      LOG(ERROR) << absl::Substitute("AddDataEvent() unexpected event type $0",
-                                     event->attr.event_type);
   }
 }
 
