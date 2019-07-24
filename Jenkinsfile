@@ -208,7 +208,7 @@ def createBazelStash(String stashName) {
   * This function checks out the source code and wraps the builds steps.
   */
 def WithSourceCode(Closure body) {
-  retry(JENKINS_RETRIES) {
+  warnError('Script failed') {
     node {
       deleteDir()
       unstash SRC_STASH_NAME
@@ -262,22 +262,18 @@ def dockerStep(String dockerConfig = '', String dockerImage = devDockerImageWith
   * Runs bazel and creates a stash of the test output
   */
 def bazelCmd(String bazelCmd, String name) {
-  sh "${bazelCmd}"
+  warnError('Bazel command failed') {
+    sh "${bazelCmd}"
+  }
   createBazelStash("${name}-testlogs")
 }
 
 
-/**
-  * dockerStepWithBazelDeps with stashing of logs for the passed in Bazel command.
-  */
-def dockerStepWithBazelCmd(String dockerConfig = '', String dockerImage = devDockerImageWithTag,
-                           String bazelCmdStr, String name) {
-  dockerStep(dockerConfig, dockerImage) {
-    bazelCmd(bazelCmdStr, "${name}-testlogs")
-  }
+def archiveBazelLogs(String logBase) {
+  archiveArtifacts "${logBase}/**"
 }
 
-def archiveBazelLogs(String logBase) {
+def processBazelLogs(String logBase) {
   step([
     $class: 'XUnitPublisher',
     thresholds: [
@@ -293,8 +289,26 @@ def archiveBazelLogs(String logBase) {
       ]
     ]
   ])
-  archiveArtifacts "${logBase}/**"
 }
+
+def processAllExtractedBazelLogs() {
+  stashList.each({stashName ->
+    if (stashName.endsWith('testlogs') && !stashName.contains('-ui-')) {
+      processBazelLogs(stashName)
+    }
+  })
+}
+
+/**
+  * dockerStepWithBazelDeps with stashing of logs for the passed in Bazel command.
+  */
+def dockerStepWithBazelCmd(String dockerConfig = '', String dockerImage = devDockerImageWithTag,
+                           String bazelCmdStr, String name) {
+  dockerStep(dockerConfig, dockerImage) {
+    bazelCmd(bazelCmdStr, "${name}-testlogs")
+  }
+}
+
 
 def archiveUILogs() {
   step([
@@ -414,8 +428,10 @@ builders['Build & Test (sanitizers)'] = {
 builders['Build & Test All (opt + UI)'] = {
   WithSourceCode {
     dockerStep {
-      sh "bazel test --compilation_mode=opt //..."
-      createBazelStash("build-opt-testlogs")
+      // Intercept bazel failure to make sure we continue to archive files.
+      warnError('Bazel test failed') {
+        sh("bazel test --compilation_mode=opt //...")
+      }
 
       // Untar and save the UI artifacts.
       sh 'tar -zxf bazel-bin/src/ui/bundle_storybook.tar.gz'
@@ -527,15 +543,20 @@ def buildScriptForCommits = {
           dir(stashName) {
             unstash stashName
           }
+          archiveBazelLogs(stashName)
+
         })
-        // Archive clang-tidy logs.
-        archiveArtifacts artifacts: 'build-clang-tidy-logs/**', fingerprint: true
 
         publishStoryBook()
         publishCustomerDocs()
         publishDoxygenDocs()
 
-        archiveBazelLogs('build-opt-testlogs')
+        // Archive clang-tidy logs.
+        archiveArtifacts artifacts: 'build-clang-tidy-logs/**', fingerprint: true
+
+        // Actually process the bazel logs to look for test failures.
+        processAllExtractedBazelLogs()
+
         archiveUILogs()
       }
     }
@@ -576,6 +597,12 @@ def buildScriptForNightly = {
       echo "Exception thrown:\n ${err}"
       echo "Stacktrace:"
       err.printStackTrace()
+    }
+    finally {
+      if (currentBuild.result == 'FAILURE') {
+        // TODO(zasgar): Actually add alerts to this.
+        echo "BUILD HAS FAILED!"
+      }
     }
   }
 }
@@ -630,13 +657,16 @@ def buildScriptForNightlyTestRegression = {
         parallel(regressionBuilders)
       }
       stage('Archive') {
-        // Unstash and archive build logs.
+        // Unstash and save the builds logs.
         stashList.each({stashName ->
           dir(stashName) {
             unstash stashName
           }
-          archiveBazelLogs(stashName)
+          archiveBazelLogs(stashName);
         })
+
+        // Actually process the bazel logs to look for test failures.
+        processAllExtractedBazelLogs()
       }
     }
     catch(err) {
@@ -644,6 +674,12 @@ def buildScriptForNightlyTestRegression = {
       echo "Exception thrown:\n ${err}"
       echo "Stacktrace:"
       err.printStackTrace()
+    }
+    finally {
+      if (currentBuild.result == 'FAILURE') {
+        // TODO(zasgar): Actually add alerts to this.
+        echo "BUILD HAS FAILED!"
+      }
     }
   }
 }
