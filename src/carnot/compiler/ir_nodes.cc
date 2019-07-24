@@ -727,7 +727,7 @@ Status MetadataIR::Init(std::string metadata_str, const pypa::AstPtr& ast_node) 
 
 Status MetadataIR::ResolveMetadataColumn(MetadataResolverIR* resolver_op,
                                          MetadataProperty* property) {
-  PL_RETURN_IF_ERROR(ColumnIR::Init(property->column_name_repr(), ast_node()));
+  PL_RETURN_IF_ERROR(ColumnIR::Init(property->GetColumnRepr(), ast_node()));
   resolver_ = resolver_op;
   property_ = property;
   has_metadata_resolver_ = true;

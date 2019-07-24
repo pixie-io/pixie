@@ -1,4 +1,7 @@
 #include "src/carnot/compiler/metadata_handler.h"
+
+#include <algorithm>
+
 namespace pl {
 namespace carnot {
 namespace compiler {
@@ -7,7 +10,7 @@ StatusOr<MetadataProperty*> MetadataHandler::GetProperty(const std::string& md_n
   // figures out what's available
   auto md_map_it = metadata_map.find(md_name);
   if (md_map_it == metadata_map.end()) {
-    return error::InvalidArgument("Metadata '$0' not found");
+    return error::InvalidArgument("Metadata '$0' not found", md_name);
   }
   return md_map_it->second;
 }
@@ -17,11 +20,19 @@ bool MetadataHandler::HasProperty(const std::string& md_name) const {
 }
 std::unique_ptr<MetadataHandler> MetadataHandler::Create() {
   std::unique_ptr<MetadataHandler> handler(new MetadataHandler());
-  handler->AddObject<IdMetadataProperty>("service_id", {}, {});
-  handler->AddObject<IdMetadataProperty>("pod_id", {}, {});
-  handler->AddObject<IdMetadataProperty>("container", {}, {});
-  handler->AddObject<NameMetadataProperty>("service_name", {"service"}, {"service_id"});
-  handler->AddObject<NameMetadataProperty>("pod_name", {"pod"}, {"pod_id"});
+  handler->AddObject<IdMetadataProperty>(MetadataType::CONTAINER_ID, {}, {MetadataType::UPID});
+  handler->AddObject<IdMetadataProperty>(MetadataType::SERVICE_ID, {},
+                                         {MetadataType::UPID, MetadataType::SERVICE_NAME});
+  handler->AddObject<IdMetadataProperty>(MetadataType::POD_ID, {},
+                                         {MetadataType::UPID, MetadataType::POD_NAME});
+  handler->AddObject<IdMetadataProperty>(MetadataType::DEPLOYMENT_ID, {},
+                                         {MetadataType::UPID, MetadataType::DEPLOYMENT_NAME});
+  handler->AddObject<NameMetadataProperty>(MetadataType::SERVICE_NAME, {"service"},
+                                           {MetadataType::UPID, MetadataType::SERVICE_ID});
+  handler->AddObject<NameMetadataProperty>(MetadataType::POD_NAME, {"pod"},
+                                           {MetadataType::UPID, MetadataType::POD_ID});
+  handler->AddObject<NameMetadataProperty>(MetadataType::DEPLOYMENT_NAME, {"deployment"},
+                                           {MetadataType::UPID, MetadataType::DEPLOYMENT_ID});
   return handler;
 }
 
@@ -34,9 +45,12 @@ void MetadataHandler::AddMapping(const std::string& name, MetadataProperty* prop
   metadata_map.emplace(name, property);
 }
 template <typename Property>
-void MetadataHandler::AddObject(const std::string& md_name, const std::vector<std::string>& aliases,
-                                const std::vector<std::string>& key_columns) {
-  MetadataProperty* raw_property = AddProperty(std::make_unique<Property>(md_name, key_columns));
+void MetadataHandler::AddObject(MetadataType md_type, const std::vector<std::string>& aliases,
+                                const std::vector<MetadataType>& key_metadata) {
+  MetadataProperty* raw_property = AddProperty(std::make_unique<Property>(md_type, key_metadata));
+  std::string md_name = MetadataProperty::GetMetadataString(md_type);
+  std::transform(md_name.begin(), md_name.end(), md_name.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
   DCHECK(!HasProperty(md_name)) << absl::Substitute("Metadata already exists for key '$0'.",
                                                     md_name);
   AddMapping(md_name, raw_property);

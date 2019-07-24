@@ -32,8 +32,8 @@ TEST_P(MetadataGetPropertyTests, has_property) {
   EXPECT_OK(property_status);
 }
 
-std::vector<std::string> metadata_strs = {"service_name", "service_id", "pod_name", "pod_id",
-                                          "container"};
+std::vector<std::string> metadata_strs = {"service_name", "service_id",   "pod_name",
+                                          "pod_id",       "container_id", "deployment_id"};
 
 INSTANTIATE_TEST_CASE_P(GetPropertyTestSuites, MetadataGetPropertyTests,
                         ::testing::ValuesIn(metadata_strs));
@@ -54,8 +54,8 @@ TEST_P(MetadataAliasPropertyTests, has_property) {
   EXPECT_OK(alias_status);
   EXPECT_EQ(alias_status.ValueOrDie(), property_status.ValueOrDie());
 }
-std::vector<std::tuple<std::string, std::string>> alias_to_original = {{"service", "service_name"},
-                                                                       {"pod", "pod_name"}};
+std::vector<std::tuple<std::string, std::string>> alias_to_original = {
+    {"service", "service_name"}, {"pod", "pod_name"}, {"deployment", "deployment_name"}};
 
 INSTANTIATE_TEST_CASE_P(AliasPropertyTestSuites, MetadataAliasPropertyTests,
                         ::testing::ValuesIn(alias_to_original));

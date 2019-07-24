@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "src/carnot/compiler/ir_nodes.h"
+#include "src/carnot/metadatapb/metadata.pb.h"
 #include "src/common/base/error.h"
 #include "src/common/base/status.h"
 #include "src/common/base/statusor.h"
@@ -15,12 +16,14 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
+using ::pl::carnot::metadatapb::MetadataType;
+
 class NameMetadataProperty : public MetadataProperty {
  public:
-  explicit NameMetadataProperty(std::string attr_name, std::vector<std::string> key_columns)
-      : MetadataProperty(types::DataType::STRING, attr_name, key_columns) {}
+  explicit NameMetadataProperty(MetadataType metadata_type, std::vector<MetadataType> key_columns)
+      : MetadataProperty(metadata_type, types::DataType::STRING, key_columns) {}
   // Expect format to be "<namespace>/<value>"
-  bool FitsFormat(ExpressionIR* ir_node) const override {
+  bool ExprFitsFormat(ExpressionIR* ir_node) const override {
     DCHECK(ir_node->type() == IRNodeType::kString);
     std::string value = static_cast<StringIR*>(ir_node)->str();
     std::vector<std::string> split_str = absl::StrSplit(value, "/");
@@ -31,11 +34,11 @@ class NameMetadataProperty : public MetadataProperty {
 
 class IdMetadataProperty : public MetadataProperty {
  public:
-  explicit IdMetadataProperty(std::string attr_name, std::vector<std::string> key_columns)
-      : MetadataProperty(types::DataType::STRING, attr_name, key_columns) {}
+  explicit IdMetadataProperty(MetadataType metadata_type, std::vector<MetadataType> key_columns)
+      : MetadataProperty(metadata_type, types::DataType::STRING, key_columns) {}
   // TODO(philkuz) udate this fits format when we have a better idea what the format should be.
-  // FitsFormat always evaluates to true because id format is not yet defined.
-  bool FitsFormat(ExpressionIR*) const override { return true; }
+  // ExprFitsFormat always evaluates to true because id format is not yet defined.
+  bool ExprFitsFormat(ExpressionIR*) const override { return true; }
   std::string ExplainFormat() const override { return ""; }
 };
 
@@ -50,8 +53,8 @@ class MetadataHandler {
   MetadataProperty* AddProperty(std::unique_ptr<MetadataProperty> md_property);
   void AddMapping(const std::string& name, MetadataProperty* property);
   template <typename Property>
-  void AddObject(const std::string& md_name, const std::vector<std::string>& aliases,
-                 const std::vector<std::string>& key_columns);
+  void AddObject(MetadataType md_type, const std::vector<std::string>& aliases,
+                 const std::vector<MetadataType>& key_columns);
 
   std::vector<std::unique_ptr<MetadataProperty>> property_pool;
   std::unordered_map<std::string, MetadataProperty*> metadata_map;

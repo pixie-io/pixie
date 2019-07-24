@@ -11,6 +11,7 @@
 
 #include "src/carnot/compiler/compiler_error_context.h"
 #include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
+#include "src/carnot/metadatapb/metadata.pb.h"
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/operators.h"
 #include "src/common/base/base.h"
@@ -160,7 +161,9 @@ class IR {
   std::string DebugString();
   IRNode* Get(int64_t id) const {
     DCHECK(dag_.HasNode(id)) << "DAG doesn't have node: " << id;
-    return id_node_map_.at(id).get();
+    auto iterator = id_node_map_.find(id);
+    DCHECK(iterator != id_node_map_.end()) << "id to node map doesn't contain id: " << id;
+    return iterator->second.get();
   }
   size_t size() const { return id_node_map_.size(); }
   StatusOr<std::vector<IRNode*>> GetSinks() {
@@ -264,61 +267,127 @@ class ExpressionIR : public IRNode {
   ExpressionIR(int64_t id, IRNodeType type) : IRNode(id, type, false) {}
 };
 
-class MetadataProperty {
+class MetadataProperty : public NotCopyable {
  public:
   MetadataProperty() = delete;
   virtual ~MetadataProperty() = default;
-  virtual bool FitsFormat(ExpressionIR* value) const = 0;
+
+  /**
+   * @brief Returns a bool that notifies whether an expression fits the expected format for this
+   * property when comparing.  This is used to make sure comparison operations (==, >, <, !=) are
+   * pre-checked during compilation, preventing unnecssary operations during execution and exposing
+   * query errors to the user.
+   *
+   * For example, we expect values compared to POD_NAMES to be Strings of the format
+   * `<namespace>/<pod-name>`.
+   *
+   * ExplainFormat should describe the expected format of this method in string form.
+   *
+   * @param value: the ExpressionIR node that
+   */
+  virtual bool ExprFitsFormat(ExpressionIR* value) const = 0;
+
+  /**
+   * @brief Describes the Expression format that ExprFitsFormat expects.
+   * This will be passed up to query writing users so you should prioritize pythonic descriptions
+   * over internal compiler jargon.
+   */
   virtual std::string ExplainFormat() const = 0;
-  inline std::string name() const { return name_; }
-  inline std::string column_name_repr() const { return FormatMetadataColumn(name_); }
-  inline types::DataType column_type() const { return column_type_; }
-  std::vector<std::string> KeyColumns() const {
+
+  /**
+   * @brief Returns the Carnot column-name as a string.
+   */
+  inline std::string GetColumnRepr() const { return FormatMetadataColumn(name_); }
+
+  /**
+   * @brief Returns the key columns formatted as metadata columns.
+   */
+  std::vector<std::string> GetKeyColumnReprs() const {
     std::vector<std::string> columns;
     for (const auto& c : key_columns_) {
-      if (c == kUniquePIDColumn) {
-        columns.push_back(c);
-        continue;
-      }
       columns.push_back(FormatMetadataColumn(c));
     }
     return columns;
   }
 
-  inline static std::string ColumnToMetadataName(const std::string& column) {
-    return std::string(absl::StripPrefix(column, kMetadataColumnPrefix));
-  }
-
-  inline bool HasKeyColumn(const std::string& key) {
-    auto columns = KeyColumns();
+  /**
+   * @brief Returns whether this metadata key can be obtained by the provided key column.
+   * @param key: the column name string as seen in Carnot.
+   */
+  inline bool HasKeyColumn(const std::string_view key) {
+    auto columns = GetKeyColumnReprs();
     return std::find(columns.begin(), columns.end(), key) != columns.end();
   }
 
-  StatusOr<std::string> UDFName(const std::string& key) {
+  /**
+   * @brief Returns the udf-string that converts a given key column to the Metadata
+   * represented by this property.
+   */
+  StatusOr<std::string> UDFName(const std::string_view key) {
     if (!HasKeyColumn(key)) {
       return error::InvalidArgument(
           "Key column $0 invalid for metadata value $1. Expected one of [$2].", key, name_,
           absl::StrJoin(key_columns_, ","));
     }
-    return absl::Substitute("$1_to_$0", name_, ColumnToMetadataName(key));
+    return absl::Substitute("$1_to_$0", name_, ExtractMetadataFromColumnName(key));
   }
 
-  inline static std::string FormatMetadataColumn(const std::string& col_name) {
+  // Getters.
+  inline std::string name() const { return name_; }
+  inline metadatapb::MetadataType metadata_type() const { return metadata_type_; }
+  inline types::DataType column_type() const { return column_type_; }
+
+  /**
+   * @brief Return a string that adds the Metadata column prefix to the passed in argument.
+   */
+  inline static std::string FormatMetadataColumn(const std::string_view col_name) {
     return absl::Substitute("$0$1", kMetadataColumnPrefix, col_name);
   }
+  inline static std::string GetMetadataString(metadatapb::MetadataType metadata_type) {
+    if (metadata_type == metadatapb::MetadataType::UPID) {
+      return kUniquePIDColumn;
+    }
+    std::string name = metadatapb::MetadataType_Name(metadata_type);
+    absl::AsciiStrToLower(&name);
+    return name;
+  }
+  inline static std::string FormatMetadataColumn(metadatapb::MetadataType metadata_type) {
+    if (metadata_type == metadatapb::MetadataType::UPID) {
+      return kUniquePIDColumn;
+    }
+    return FormatMetadataColumn(GetMetadataString(metadata_type));
+  }
 
-  inline static const std::string kMetadataColumnPrefix = "_attr_";
-  inline static const std::string kUniquePIDColumn = "upid";
+  /**
+   * @brief Strips the Metadata prefix from a given Carnot, column-name representation.
+   * If you pass in a column without the prefix, it _does not_ throw an error.
+   * @param column_name
+   */
+  inline static std::string ExtractMetadataFromColumnName(const std::string_view column_name) {
+    return std::string(absl::StripPrefix(column_name, kMetadataColumnPrefix));
+  }
+
+  /**
+   * @brief The metadata prefix for columns in Carnot.
+   */
+  inline static const char kMetadataColumnPrefix[] = "_attr_";
+  /**
+   * @brief The string representation of the unique pid column.
+   */
+  inline static constexpr char kUniquePIDColumn[] = "upid";
 
  protected:
-  MetadataProperty(types::DataType column_type, std::string name,
-                   std::vector<std::string> key_columns)
-      : column_type_(column_type), name_(name), key_columns_(key_columns) {}
+  MetadataProperty(metadatapb::MetadataType metadata_type, types::DataType column_type,
+                   std::vector<metadatapb::MetadataType> key_columns)
+      : metadata_type_(metadata_type), column_type_(column_type), key_columns_(key_columns) {
+    name_ = GetMetadataString(metadata_type);
+  }
 
  private:
+  metadatapb::MetadataType metadata_type_;
   types::DataType column_type_;
   std::string name_;
-  std::vector<std::string> key_columns_;
+  std::vector<metadatapb::MetadataType> key_columns_;
 };
 
 class DataIR : public ExpressionIR {
@@ -491,7 +560,7 @@ class FuncIR : public ExpressionIR {
 
   FuncIR() = delete;
   Opcode opcode() const { return op_.op_code; }
-  Op op() const { return op_; }
+  const Op& op() const { return op_; }
   explicit FuncIR(int64_t id) : ExpressionIR(id, IRNodeType::kFunc) {}
   Status Init(Op op, std::string func_prefix, const std::vector<ExpressionIR*>& args,
               bool compile_time, const pypa::AstPtr& ast_node);
@@ -797,7 +866,7 @@ class MapIR : public OperatorIR {
     col_exprs_set_ = true;
   }
   bool col_exprs_set() const { return col_exprs_set_; }
-  ColExpressionVector col_exprs() const { return col_exprs_; }
+  const ColExpressionVector& col_exprs() const { return col_exprs_; }
   Status ToProto(planpb::Operator*) const override;
 
  private:

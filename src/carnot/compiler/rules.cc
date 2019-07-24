@@ -270,7 +270,7 @@ StatusOr<bool> OperatorRelationRule::SetMetadataResolver(MetadataResolverIR* md_
   table_store::schema::Relation md_rel = md_ir->parent()->relation();
   // Iterate through the columns and add them in.
   for (const auto& col_entry : md_ir->metadata_columns()) {
-    md_rel.AddColumn(col_entry.second->column_type(), col_entry.second->column_name_repr());
+    md_rel.AddColumn(col_entry.second->column_type(), col_entry.second->GetColumnRepr());
   }
   PL_RETURN_IF_ERROR(md_ir->SetRelation(md_rel));
   return true;
@@ -458,7 +458,7 @@ StatusOr<bool> MetadataFunctionFormatRule::Apply(IRNode* ir_node) const {
 
 StatusOr<MetadataLiteralIR*> MetadataFunctionFormatRule::WrapLiteral(
     DataIR* data, MetadataProperty* md_property) const {
-  if (!md_property->FitsFormat(data)) {
+  if (!md_property->ExprFitsFormat(data)) {
     return data->CreateIRNodeError("$0 not formatted properly for metadata operation. Expected $1.",
                                    data->type_string(), md_property->ExplainFormat());
   }
@@ -519,7 +519,7 @@ StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_
   for (const auto& md_col_iter : md_resolver->metadata_columns()) {
     MetadataProperty* md_property = md_col_iter.second;
     PL_ASSIGN_OR_RETURN(ColumnIR * column_ir, graph->MakeNode<ColumnIR>());
-    PL_RETURN_IF_ERROR(column_ir->Init(md_property->column_name_repr(), md_resolver->ast_node()));
+    PL_RETURN_IF_ERROR(column_ir->Init(md_property->GetColumnRepr(), md_resolver->ast_node()));
     column_ir->ResolveColumn(column_idx, md_property->column_type());
     ++column_idx;
 
@@ -529,7 +529,7 @@ StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_
     PL_ASSIGN_OR_RETURN(std::string func_name, md_property->UDFName(key_column));
     PL_RETURN_IF_ERROR(conversion_func->Init({FuncIR::Opcode::non_op, "", func_name}, "pl",
                                              {column_ir}, false, md_resolver->ast_node()));
-    col_exprs.emplace_back(md_property->column_name_repr(), conversion_func);
+    col_exprs.emplace_back(md_property->GetColumnRepr(), conversion_func);
   }
 
   table_store::schema::Relation relation = md_resolver->relation();
@@ -547,7 +547,7 @@ StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_
 StatusOr<std::string> MetadataResolverConversionRule::FindKeyColumn(
     const table_store::schema::Relation& parent_relation, MetadataProperty* property,
     ColumnIR* col) const {
-  for (const std::string& key_col : property->KeyColumns()) {
+  for (const std::string& key_col : property->GetKeyColumnReprs()) {
     if (parent_relation.HasColumn(key_col)) {
       return key_col;
     }
@@ -555,7 +555,7 @@ StatusOr<std::string> MetadataResolverConversionRule::FindKeyColumn(
   return col->CreateIRNodeError(
       "Can't resolve metadata because of lack of converting columns in the parent. Need one of "
       "[$0].",
-      absl::StrJoin(property->KeyColumns(), ","));
+      absl::StrJoin(property->GetKeyColumnReprs(), ","));
 }
 StatusOr<bool> MetadataResolverConversionRule::SwapInMap(MetadataResolverIR* md_resolver,
                                                          MapIR* map) const {

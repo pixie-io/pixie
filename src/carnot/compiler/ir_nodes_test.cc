@@ -370,7 +370,7 @@ TEST_F(MetadataTests, metadata_ir) {
   MetadataResolverIR* metadata_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
   EXPECT_OK(metadata_resolver->Init(MakeMemSource(), {{}}, ast));
   auto property = std::make_unique<NameMetadataProperty>(
-      "pod_name", std::vector<std::string>({MetadataProperty::kUniquePIDColumn}));
+      MetadataType::POD_NAME, std::vector<MetadataType>({MetadataType::POD_ID}));
   EXPECT_OK(metadata_ir->ResolveMetadataColumn(metadata_resolver, property.get()));
   EXPECT_TRUE(metadata_ir->HasMetadataResolver());
 }

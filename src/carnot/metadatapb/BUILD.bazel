@@ -1,0 +1,28 @@
+# gazelle:ignore
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library")
+
+pl_proto_library(
+    name = "metadata_pl_proto",
+    srcs = ["metadata.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
+    ],
+)
+
+pl_cc_proto_library(
+    name = "metadata_pl_cc_proto",
+    proto = ":metadata_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+    ],
+)
+
+pl_go_proto_library(
+    name = "metadata_pl_go_proto",
+    importpath = "pixielabs.ai/pixielabs/src/carnot/metadatapb",
+    proto = ":metadata_pl_proto",
+    visibility = ["//visibility:public"],
+)

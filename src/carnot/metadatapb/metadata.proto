@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package pl.carnot.metadatapb;
+
+option go_package = "metadatapb";
+
+// The list of metadata types supported by our metadata service.
+enum MetadataType {
+  // Definite types in the 1-1000 range.
+  METADATA_TYPE_UNKNOWN = 0;
+  UPID = 1;
+  // IDs are 1000-1999
+  CONTAINER_ID = 1000;
+  POD_ID = 1001;
+  SERVICE_ID = 1002;
+  DEPLOYMENT_ID = 1003;
+  // NAMES are 2000-2999
+  POD_NAME = 2001;
+  SERVICE_NAME = 2002;
+  DEPLOYMENT_NAME = 2003;
+}

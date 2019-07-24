@@ -370,7 +370,7 @@ TEST_F(DataTypeRuleTest, metadata_column) {
   MetadataResolverIR* md = MakeMetadataResolver(mem_src);
   std::string metadata_name = "pod_name";
   MetadataProperty* property = md_handler->GetProperty(metadata_name).ValueOrDie();
-  table_store::schema::Relation relation({property->column_type()}, {property->column_name_repr()});
+  table_store::schema::Relation relation({property->column_type()}, {property->GetColumnRepr()});
   EXPECT_OK(md->SetRelation(relation));
   MetadataIR* metadata_ir = MakeMetadataIR(metadata_name);
   EXPECT_OK(metadata_ir->ResolveMetadataColumn(md, property));
@@ -661,8 +661,8 @@ TEST_F(MetadataResolverRuleTest, make_sure_metadata_columns_show_up) {
   PL_CHECK_OK(md_resolver->AddMetadata(pod_property));
   std::vector<types::DataType> expected_col_types = cpu_relation.col_types();
   std::vector<std::string> expected_col_names = cpu_relation.col_names();
-  expected_col_names.push_back(pod_property->column_name_repr());
-  expected_col_names.push_back(service_property->column_name_repr());
+  expected_col_names.push_back(pod_property->GetColumnRepr());
+  expected_col_names.push_back(service_property->GetColumnRepr());
   expected_col_types.push_back(pod_property->column_type());
   expected_col_types.push_back(service_property->column_type());
 
@@ -1350,16 +1350,17 @@ class MetadataResolverConversionTest : public RulesTest {
 // Test to make sure that joining of metadata works with upid, most common case.
 TEST_F(MetadataResolverConversionTest, upid_conversion) {
   auto relation = table_store::schema::Relation(cpu_relation);
-  std::string conversion_column = MetadataProperty::kUniquePIDColumn;
+  MetadataType conversion_column = MetadataType::UPID;
+  std::string conversion_column_str = MetadataProperty::GetMetadataString(conversion_column);
   // TODO(philkuz) with the addition of INT128 update this.
-  relation.AddColumn(types::DataType::INT64, conversion_column);
+  relation.AddColumn(types::DataType::INT64, conversion_column_str);
   EXPECT_OK(mem_src->SetRelation(relation));
-  NameMetadataProperty property("pod_name", {MetadataProperty::kUniquePIDColumn});
+  NameMetadataProperty property(MetadataType::POD_NAME, {MetadataType::UPID});
   MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);
   ASSERT_OK(md_resolver->AddMetadata(&property));
 
   auto md_relation = table_store::schema::Relation(relation);
-  md_relation.AddColumn(property.column_type(), property.column_name_repr());
+  md_relation.AddColumn(property.column_type(), property.GetColumnRepr());
   EXPECT_OK(md_resolver->SetRelation(md_relation));
 
   MetadataIR* metadata_ir = MakeMetadataIR("pod_name");
@@ -1406,31 +1407,32 @@ TEST_F(MetadataResolverConversionTest, upid_conversion) {
     ASSERT_EQ(expr_pair.node->type(), IRNodeType::kFunc) << absl::Substitute(
         "Expected function for idx $0, got $1.", cur_idx, expr_pair.node->type_string());
     FuncIR* func = static_cast<FuncIR*>(expr_pair.node);
-    std::string udf_name = absl::Substitute("pl.$0_to_$1", conversion_column, md_col_name);
+    std::string udf_name = absl::Substitute(
+        "pl.$0_to_$1", MetadataProperty::GetMetadataString(conversion_column), md_col_name);
     EXPECT_EQ(udf_name, func->func_name());
     ASSERT_EQ(func->args().size(), 1) << absl::Substitute("for idx $0.", cur_idx);
     ExpressionIR* func_arg = func->args()[0];
     ASSERT_EQ(func_arg->type(), IRNodeType::kColumn) << absl::Substitute(
         "Expected column for idx $0, got $1.", cur_idx, func_arg->type_string());
     ColumnIR* col_ir = static_cast<ColumnIR*>(func_arg);
-    EXPECT_EQ(col_ir->col_name(), md_property->column_name_repr());
+    EXPECT_EQ(col_ir->col_name(), md_property->GetColumnRepr());
     cur_idx += 1;
   }
 }
 
 TEST_F(MetadataResolverConversionTest, alternative_column) {
   auto relation = table_store::schema::Relation(cpu_relation);
-  std::string key_column_value = "pod_id";
-  std::string conversion_column = MetadataProperty::FormatMetadataColumn(key_column_value);
+  MetadataType conversion_column = MetadataType::POD_ID;
+  std::string conversion_column_str = MetadataProperty::FormatMetadataColumn(conversion_column);
   // TODO(philkuz) with the addition of INT128 update this.
-  relation.AddColumn(types::DataType::INT64, conversion_column);
+  relation.AddColumn(types::DataType::INT64, conversion_column_str);
   EXPECT_OK(mem_src->SetRelation(relation));
-  NameMetadataProperty property("pod_name", {MetadataProperty::kUniquePIDColumn, key_column_value});
+  NameMetadataProperty property(MetadataType::POD_NAME, {MetadataType::UPID, MetadataType::POD_ID});
   MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);
   ASSERT_OK(md_resolver->AddMetadata(&property));
 
   auto md_relation = table_store::schema::Relation(relation);
-  md_relation.AddColumn(property.column_type(), property.column_name_repr());
+  md_relation.AddColumn(property.column_type(), property.GetColumnRepr());
   EXPECT_OK(md_resolver->SetRelation(md_relation));
 
   MetadataIR* metadata_ir = MakeMetadataIR("pod_name");
@@ -1458,14 +1460,15 @@ TEST_F(MetadataResolverConversionTest, alternative_column) {
     ASSERT_EQ(expr_pair.node->type(), IRNodeType::kFunc) << absl::Substitute(
         "Expected function for idx $0, got $1.", cur_idx, expr_pair.node->type_string());
     FuncIR* func = static_cast<FuncIR*>(expr_pair.node);
-    std::string udf_name = absl::Substitute("pl.$0_to_$1", key_column_value, md_col_name);
+    std::string udf_name = absl::Substitute(
+        "pl.$0_to_$1", MetadataProperty::GetMetadataString(conversion_column), md_col_name);
     EXPECT_EQ(udf_name, func->func_name());
     ASSERT_EQ(func->args().size(), 1) << absl::Substitute("for idx $0.", cur_idx);
     ExpressionIR* func_arg = func->args()[0];
     ASSERT_EQ(func_arg->type(), IRNodeType::kColumn) << absl::Substitute(
         "Expected column for idx $0, got $1.", cur_idx, func_arg->type_string());
     ColumnIR* col_ir = static_cast<ColumnIR*>(func_arg);
-    EXPECT_EQ(col_ir->col_name(), md_property->column_name_repr());
+    EXPECT_EQ(col_ir->col_name(), md_property->GetColumnRepr());
     cur_idx += 1;
   }
 }
@@ -1473,12 +1476,12 @@ TEST_F(MetadataResolverConversionTest, alternative_column) {
 TEST_F(MetadataResolverConversionTest, missing_conversion_column) {
   auto relation = table_store::schema::Relation(cpu_relation);
   EXPECT_OK(mem_src->SetRelation(relation));
-  NameMetadataProperty property("pod_name", {MetadataProperty::kUniquePIDColumn});
+  NameMetadataProperty property(MetadataType::POD_NAME, {MetadataType::UPID});
   MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);
   ASSERT_OK(md_resolver->AddMetadata(&property));
 
   auto md_relation = table_store::schema::Relation(relation);
-  md_relation.AddColumn(property.column_type(), property.column_name_repr());
+  md_relation.AddColumn(property.column_type(), property.GetColumnRepr());
   EXPECT_OK(md_resolver->SetRelation(md_relation));
 
   MetadataIR* metadata_ir = MakeMetadataIR("pod_name");
@@ -1498,19 +1501,20 @@ TEST_F(MetadataResolverConversionTest, missing_conversion_column) {
 // columns, the compiler makes a choice on which column to replace.
 TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
   auto relation = table_store::schema::Relation(cpu_relation);
-  std::string conversion_column1 = MetadataProperty::kUniquePIDColumn;
-  std::string key_column2 = "pod_id";
-  std::string conversion_column2 = MetadataProperty::FormatMetadataColumn(key_column2);
+  MetadataType conversion_column1 = MetadataType::UPID;
+  MetadataType conversion_column2 = MetadataType::POD_ID;
   // TODO(philkuz) with the addition of INT128 update this.
-  relation.AddColumn(types::DataType::INT64, conversion_column1);
-  relation.AddColumn(types::DataType::STRING, conversion_column2);
+  relation.AddColumn(types::DataType::INT64,
+                     MetadataProperty::FormatMetadataColumn(conversion_column1));
+  relation.AddColumn(types::DataType::STRING,
+                     MetadataProperty::FormatMetadataColumn(conversion_column2));
   EXPECT_OK(mem_src->SetRelation(relation));
-  NameMetadataProperty property("pod_name", {conversion_column1, key_column2});
+  NameMetadataProperty property(MetadataType::POD_NAME, {conversion_column1, conversion_column2});
   MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);
   ASSERT_OK(md_resolver->AddMetadata(&property));
 
   auto md_relation = table_store::schema::Relation(relation);
-  md_relation.AddColumn(property.column_type(), property.column_name_repr());
+  md_relation.AddColumn(property.column_type(), property.GetColumnRepr());
   EXPECT_OK(md_resolver->SetRelation(md_relation));
 
   MetadataIR* metadata_ir = MakeMetadataIR("pod_name");
@@ -1546,7 +1550,7 @@ TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
     ASSERT_EQ(func_arg->type(), IRNodeType::kColumn) << absl::Substitute(
         "Expected column for idx $0, got $1.", cur_idx, func_arg->type_string());
     ColumnIR* col_ir = static_cast<ColumnIR*>(func_arg);
-    EXPECT_EQ(col_ir->col_name(), md_property->column_name_repr());
+    EXPECT_EQ(col_ir->col_name(), md_property->GetColumnRepr());
     cur_idx += 1;
   }
 }
@@ -1554,19 +1558,20 @@ TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
 // Make sure that the mapping works for multiple columns.
 TEST_F(MetadataResolverConversionTest, multiple_metadata_columns) {
   auto relation = table_store::schema::Relation(cpu_relation);
-  std::string conversion_column = MetadataProperty::kUniquePIDColumn;
+  MetadataType conversion_column = MetadataType::UPID;
+  std::string conversion_column_str = MetadataProperty::GetMetadataString(conversion_column);
   // TODO(philkuz) with the addition of INT128 update this.
-  relation.AddColumn(types::DataType::INT64, conversion_column);
+  relation.AddColumn(types::DataType::INT64, conversion_column_str);
   EXPECT_OK(mem_src->SetRelation(relation));
-  NameMetadataProperty property1("pod_name", {conversion_column});
-  NameMetadataProperty property2("service_name", {conversion_column});
+  NameMetadataProperty property1(MetadataType::POD_NAME, {conversion_column});
+  NameMetadataProperty property2(MetadataType::SERVICE_NAME, {conversion_column});
   MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);
   ASSERT_OK(md_resolver->AddMetadata(&property1));
   ASSERT_OK(md_resolver->AddMetadata(&property2));
 
   auto md_relation = table_store::schema::Relation(relation);
-  md_relation.AddColumn(property1.column_type(), property1.column_name_repr());
-  md_relation.AddColumn(property2.column_type(), property2.column_name_repr());
+  md_relation.AddColumn(property1.column_type(), property1.GetColumnRepr());
+  md_relation.AddColumn(property2.column_type(), property2.GetColumnRepr());
   EXPECT_OK(md_resolver->SetRelation(md_relation));
 
   FilterIR* filter = MakeFilter(md_resolver);
@@ -1600,7 +1605,7 @@ TEST_F(MetadataResolverConversionTest, multiple_metadata_columns) {
     ASSERT_EQ(func_arg->type(), IRNodeType::kColumn) << absl::Substitute(
         "Expected column for idx $0, got $1.", cur_idx, func_arg->type_string());
     ColumnIR* col_ir = static_cast<ColumnIR*>(func_arg);
-    EXPECT_EQ(col_ir->col_name(), md_property->column_name_repr());
+    EXPECT_EQ(col_ir->col_name(), md_property->GetColumnRepr());
     cur_idx += 1;
   }
 }
