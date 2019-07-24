@@ -94,6 +94,14 @@ inline ClassMatch<IRNodeType::kInt> Int() { return ClassMatch<IRNodeType::kInt>(
 // Match an arbitrary String value.
 inline ClassMatch<IRNodeType::kString> String() { return ClassMatch<IRNodeType::kString>(); }
 
+// Match an arbitrary Metadata value.
+inline ClassMatch<IRNodeType::kMetadata> Metadata() { return ClassMatch<IRNodeType::kMetadata>(); }
+
+// Match an arbitrary MetadataLiteral value.
+inline ClassMatch<IRNodeType::kMetadataLiteral> MetadataLiteral() {
+  return ClassMatch<IRNodeType::kMetadataLiteral>();
+}
+
 /**
  * @brief Match a specific integer value.
  */
@@ -334,6 +342,45 @@ template <typename Arg_t>
 inline AnyFuncAllArgsMatch<Arg_t, false, false> UnresolvedRTFuncMatchAllArgs(
     const Arg_t& argMatcher) {
   return AnyFuncAllArgsMatch<Arg_t, false, false>(argMatcher);
+}
+
+/**
+ * @brief Matches any function that has an argument that matches the passed
+ * in matcher and is a compile time function.
+ *
+ */
+template <typename Arg_t, bool CompileTime = false>
+struct AnyFuncAnyArgsMatch : public ParentMatch {
+  Arg_t argMatcher_;
+
+  explicit AnyFuncAnyArgsMatch(const Arg_t& argMatcher)
+      : ParentMatch(IRNodeType::kFunc), argMatcher_(argMatcher) {}
+
+  bool match(IRNode* V) const override {
+    if (V->type() == type) {
+      auto* F = static_cast<FuncIR*>(V);
+      if (CompileTime == F->is_compile_time()) {
+        for (const auto a : F->args()) {
+          if (argMatcher_.match(a)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+};
+
+/**
+ * @brief Matches runtime functions with any arg that satisfies
+ * argMatcher.
+ *
+ * @tparam Arg_t: The type of the argMatcher.
+ * @param argMatcher: The pattern that must be satisfied for all arguments.
+ */
+template <typename Arg_t>
+inline AnyFuncAnyArgsMatch<Arg_t, false> FuncAnyArg(const Arg_t& argMatcher) {
+  return AnyFuncAnyArgsMatch<Arg_t, false>(argMatcher);
 }
 
 /**

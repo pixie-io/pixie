@@ -47,6 +47,34 @@ class RulesTest : public ::testing::Test {
     EXPECT_OK(metadata->Init(name, ast));
     return metadata;
   }
+  StringIR* MakeString(const std::string& name) {
+    auto string_ir = graph->MakeNode<StringIR>().ValueOrDie();
+    EXPECT_OK(string_ir->Init(name, ast));
+    return string_ir;
+  }
+
+  IntIR* MakeInt(int64_t val) {
+    auto int_ir = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(int_ir->Init(val, ast));
+    return int_ir;
+  }
+
+  FuncIR* MakeEqualsFunc(ExpressionIR* left, ExpressionIR* right) {
+    FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
+    PL_CHECK_OK(func->Init({FuncIR::Opcode::eq, "==", "equals"}, "pl",
+                           std::vector<ExpressionIR*>({left, right}), false /* compile_time */,
+                           ast));
+    return func;
+  }
+
+  FuncIR* MakeAddFunc(ExpressionIR* left, ExpressionIR* right) {
+    FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
+    PL_CHECK_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, "pl",
+                           std::vector<ExpressionIR*>({left, right}), false /* compile_time */,
+                           ast));
+    return func;
+  }
+
   MetadataResolverIR* MakeMetadataResolver(OperatorIR* parent) {
     MetadataResolverIR* md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
     EXPECT_OK(md_resolver->Init(parent, {{}}, ast));
@@ -990,6 +1018,21 @@ class ResolveMetadataTest : public RulesTest {
     EXPECT_OK(filter->Init(parent, amap, ast));
     return filter;
   }
+  ColumnIR* MakeColumn(const std::string& name) {
+    auto column = graph->MakeNode<ColumnIR>().ValueOrDie();
+    EXPECT_OK(column->Init(name, ast));
+    return column;
+  }
+  MetadataIR* MakeMetadataIR(const std::string& name) {
+    auto metadata = graph->MakeNode<MetadataIR>().ValueOrDie();
+    EXPECT_OK(metadata->Init(name, ast));
+    return metadata;
+  }
+  MetadataResolverIR* MakeMetadataResolver(OperatorIR* parent) {
+    md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
+    EXPECT_OK(md_resolver->Init(parent, {{}}, ast));
+    return md_resolver;
+  }
   BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, ColumnIR* by_column, ColumnIR* fn_column) {
     auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
     EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"}, "pl",
@@ -1055,6 +1098,7 @@ TEST_F(ResolveMetadataTest, update_metadata_resolver) {
   EXPECT_TRUE(metadata->HasMetadataResolver());
   EXPECT_EQ(metadata->resolver(), og_resolver);
 }
+
 TEST_F(ResolveMetadataTest, multiple_mds_in_one_op) {
   // Two metadata callsin one operation.
   MetadataIR* metadata1 = MakeMetadataIR("service_name");
@@ -1079,6 +1123,7 @@ TEST_F(ResolveMetadataTest, multiple_mds_in_one_op) {
   EXPECT_TRUE(metadata2->HasMetadataResolver());
   EXPECT_EQ(metadata2->resolver(), md_resolver);
 }
+
 TEST_F(ResolveMetadataTest, no_change_metadata_resolver) {
   // MetadataIR where the metadataresolver node already has an entry lined up properly[]
   // a MetadataIR unresovled updates an existing metadata resolver, that has one entry
@@ -1101,6 +1146,97 @@ TEST_F(ResolveMetadataTest, no_change_metadata_resolver) {
   EXPECT_EQ(md_resolver, og_resolver);
   EXPECT_TRUE(md_resolver->HasMetadataColumn("pod_name"));
   EXPECT_TRUE(metadata->HasMetadataResolver());
+}
+
+class FormatMetadataTest : public RulesTest {
+ protected:
+  void SetUp() override {
+    RulesTest::SetUp();
+    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
+    md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
+    PL_CHECK_OK(md_resolver->Init(mem_src, {{}}, ast));
+  }
+
+  MetadataIR* MakeMetadataIR(const std::string& name) {
+    auto metadata = graph->MakeNode<MetadataIR>().ValueOrDie();
+    PL_CHECK_OK(metadata->Init(name, ast));
+    MetadataProperty* property = md_handler->GetProperty(name).ValueOrDie();
+    PL_CHECK_OK(metadata->ResolveMetadataColumn(md_resolver, property));
+    return metadata;
+  }
+
+  MemorySourceIR* mem_src;
+  MetadataResolverIR* md_resolver;
+};
+
+TEST_F(FormatMetadataTest, string_matches_format) {
+  // equiv to `r.attr.pod_name == pod-xyzx`
+  FuncIR* equals_func =
+      MakeEqualsFunc(MakeMetadataIR("pod_name"), MakeString("namespace/pod-xyzx"));
+  EXPECT_EQ(equals_func->args()[0]->type(), IRNodeType::kMetadata);
+  EXPECT_EQ(equals_func->args()[1]->type(), IRNodeType::kString);
+
+  MetadataFunctionFormatRule rule(compiler_state_.get());
+  auto status = rule.Execute(graph.get());
+
+  EXPECT_OK(status);
+  EXPECT_TRUE(status.ValueOrDie());
+
+  ASSERT_EQ(equals_func->args().size(), 2UL);
+  EXPECT_EQ(equals_func->args()[0]->type(), IRNodeType::kMetadata);
+  EXPECT_EQ(equals_func->args()[1]->type(), IRNodeType::kMetadataLiteral);
+
+  // Rule should do nothing.
+  status = rule.Execute(graph.get());
+
+  EXPECT_OK(status);
+  EXPECT_FALSE(status.ValueOrDie());
+  ASSERT_EQ(equals_func->args().size(), 2UL);
+  EXPECT_EQ(equals_func->args()[0]->type(), IRNodeType::kMetadata);
+  EXPECT_EQ(equals_func->args()[1]->type(), IRNodeType::kMetadataLiteral);
+}
+
+TEST_F(FormatMetadataTest, bad_format) {
+  FuncIR* equals_func = MakeEqualsFunc(MakeMetadataIR("pod_name"), MakeString("pod-xyzx"));
+  EXPECT_EQ(equals_func->args()[0]->type(), IRNodeType::kMetadata);
+  EXPECT_EQ(equals_func->args()[1]->type(), IRNodeType::kString);
+
+  MetadataFunctionFormatRule rule(compiler_state_.get());
+  auto status = rule.Execute(graph.get());
+
+  EXPECT_NOT_OK(status);
+  EXPECT_TRUE(StatusHasCompilerError(status.status(),
+                                     "String not formatted properly for metadata operation. "
+                                     "Expected String with format <namespace>/<name>.."));
+}
+
+TEST_F(FormatMetadataTest, equals_fails_when_not_string) {
+  // equiv to `r.attr.pod_name == 10`
+  FuncIR* equals_func = MakeEqualsFunc(MakeMetadataIR("pod_name"), MakeInt(10));
+  MetadataFunctionFormatRule rule(compiler_state_.get());
+  EXPECT_EQ(equals_func->args()[0]->type(), IRNodeType::kMetadata);
+  EXPECT_EQ(equals_func->args()[1]->type(), IRNodeType::kInt);
+  auto status = rule.Execute(graph.get());
+
+  EXPECT_NOT_OK(status);
+  EXPECT_TRUE(StatusHasCompilerError(
+      status.status(),
+      "Function \'pl.equals\' with metadata arg in conjunction with \'[Int]\' is not supported."));
+}
+
+TEST_F(FormatMetadataTest, only_equal_supported) {
+  // equiv to `r.attr.pod_name == 10`
+  FuncIR* add_func = MakeAddFunc(MakeMetadataIR("pod_name"), MakeString("pod-xyzx"));
+  MetadataFunctionFormatRule rule(compiler_state_.get());
+  EXPECT_EQ(add_func->args()[0]->type(), IRNodeType::kMetadata);
+  EXPECT_EQ(add_func->args()[1]->type(), IRNodeType::kString);
+  auto status = rule.Execute(graph.get());
+
+  EXPECT_NOT_OK(status);
+  EXPECT_TRUE(StatusHasCompilerError(
+      status.status(),
+      "Function \'pl.add\' with metadata arg in conjunction with \'[String]\' is not supported."));
 }
 }  // namespace compiler
 }  // namespace carnot

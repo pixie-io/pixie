@@ -281,7 +281,6 @@ StatusOr<bool> OperatorRelationRule::SetOther(OperatorIR* operator_ir) const {
 }
 
 StatusOr<bool> RangeArgExpressionRule::Apply(IRNode* ir_node) const {
-  PL_UNUSED(ir_node);
   if (match(ir_node, Range(Int(), Int()))) {
     return false;
   } else if (match(ir_node, Range())) {
@@ -411,6 +410,62 @@ StatusOr<bool> ResolveMetadataRule::HandleMetadata(MetadataIR* metadata) const {
   PL_RETURN_IF_ERROR(md_resolver_op->AddMetadata(md_property));
 
   return true;
+}
+
+StatusOr<bool> MetadataFunctionFormatRule::Apply(IRNode* ir_node) const {
+  if (match(ir_node, Equals(Metadata(), MetadataLiteral()))) {
+    // If the literal already matches, then no need to do any work.
+    return false;
+  } else if (match(ir_node, Equals(Metadata(), String()))) {
+    FuncIR* func = static_cast<FuncIR*>(ir_node);
+    StringIR* out_expr;
+    MetadataIR* md_expr;
+    int64_t update_idx;
+    DCHECK_EQ(func->args().size(), 2UL);
+    if (match(func->args()[1], Metadata())) {
+      update_idx = 0;
+      out_expr = static_cast<StringIR*>(func->args()[0]);
+      md_expr = static_cast<MetadataIR*>(func->args()[1]);
+    } else {
+      update_idx = 1;
+      out_expr = static_cast<StringIR*>(func->args()[1]);
+      md_expr = static_cast<MetadataIR*>(func->args()[0]);
+    }
+
+    DCHECK(md_expr->type() == IRNodeType::kMetadata) << absl::Substitute(
+        "Expected Metadata at idx $1, found '$0.'", md_expr->type_string(), update_idx);
+
+    PL_ASSIGN_OR_RETURN(MetadataLiteralIR * metadata_literal,
+                        WrapLiteral(out_expr, md_expr->property()));
+    PL_RETURN_IF_ERROR(func->UpdateArg(update_idx, metadata_literal));
+    return true;
+  } else if (match(ir_node, FuncAnyArg(Metadata()))) {
+    FuncIR* func = static_cast<FuncIR*>(ir_node);
+    std::vector<std::string> other_args;
+    for (ExpressionIR* arg : func->args()) {
+      if (match(arg, Metadata())) {
+        continue;
+      }
+      other_args.push_back(arg->type_string());
+    }
+    return func->CreateIRNodeError(
+        "Function '$0' with metadata arg in conjunction with '[$1]' is not supported.",
+        func->func_name(), absl::StrJoin(other_args, ""));
+  }
+  return false;
+}
+
+StatusOr<MetadataLiteralIR*> MetadataFunctionFormatRule::WrapLiteral(
+    DataIR* data, MetadataProperty* md_property) const {
+  if (!md_property->FitsFormat(data)) {
+    return data->CreateIRNodeError("$0 not formatted properly for metadata operation. Expected $1.",
+                                   data->type_string(), md_property->ExplainFormat());
+  }
+  PL_ASSIGN_OR_RETURN(MetadataLiteralIR * literal,
+                      data->graph_ptr()->MakeNode<MetadataLiteralIR>());
+  PL_RETURN_IF_ERROR(literal->Init(data, data->ast_node()));
+
+  return literal;
 }
 
 }  // namespace compiler
