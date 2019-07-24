@@ -181,6 +181,23 @@ class CheckMetadataColumnNamingRule : public Rule {
 
   MetadataHandler* md_handler_;
 };
+
+class MetadataResolverConversionRule : public Rule {
+  /**
+   * @brief Converts the metadata resolver into a Map after everything is done.
+   */
+ public:
+  explicit MetadataResolverConversionRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) const override;
+  StatusOr<bool> ReplaceMetadataResolver(MetadataResolverIR* md_resolver) const;
+
+  StatusOr<MapIR*> MakeMap(MetadataResolverIR* md_resolver) const;
+  StatusOr<bool> SwapInMap(MetadataResolverIR* md_resolver, MapIR* map) const;
+  StatusOr<std::string> FindKeyColumn(const table_store::schema::Relation& parent_relation,
+                                      MetadataProperty* property, ColumnIR* col) const;
+};
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

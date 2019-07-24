@@ -104,6 +104,23 @@ class RulesTest : public ::testing::Test {
     EXPECT_OK(filter->Init(parent, amap, ast));
     return filter;
   }
+  FilterIR* MakeFilter(OperatorIR* parent, ColumnIR* filter_value) {
+    auto constant1 = graph->MakeNode<StringIR>().ValueOrDie();
+    EXPECT_OK(constant1->Init("value", ast));
+
+    FuncIR* filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"}, "pl",
+                                std::vector<ExpressionIR*>({constant1, filter_value}),
+                                false /* compile_time */, ast));
+
+    auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
+
+    FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
+    ArgMap amap({{"fn", filter_func_lambda}});
+    EXPECT_OK(filter->Init(parent, amap, ast));
+    return filter;
+  }
 
   pypa::AstPtr ast;
   std::shared_ptr<IR> graph;
@@ -122,23 +139,6 @@ class DataTypeRuleTest : public RulesTest {
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
   MemorySourceIR* mem_src;
-  FilterIR* MakeFilter(OperatorIR* parent, ColumnIR* filter_value) {
-    auto constant1 = graph->MakeNode<StringIR>().ValueOrDie();
-    EXPECT_OK(constant1->Init("value", ast));
-
-    FuncIR* filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"}, "pl",
-                                std::vector<ExpressionIR*>({constant1, filter_value}),
-                                false /* compile_time */, ast));
-
-    auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-    EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
-
-    FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
-    ArgMap amap({{"fn", filter_func_lambda}});
-    EXPECT_OK(filter->Init(parent, amap, ast));
-    return filter;
-  }
 };
 
 // Simple map function.
@@ -1319,6 +1319,292 @@ TEST_F(CheckRelationRule, find_map_issue) {
           "Map operator cannot have a column with prefix \'$0\'. \'$0_pod_name\' is in violation.",
           MetadataProperty::kMetadataColumnPrefix)));
 }
+
+class MetadataResolverConversionTest : public RulesTest {
+ protected:
+  void SetUp() override {
+    RulesTest::SetUp();
+    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    // TODO(philkuz) add some converting columns to the mix.
+    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
+  }
+
+  MapIR* MakeMap(OperatorIR* parent) {
+    auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(agg_func->Init({FuncIR::Opcode::add, "+", "add"}, "pl",
+                             std::vector<ExpressionIR*>({MakeInt(10), MakeInt(12)}),
+                             false /* compile_time */, ast));
+
+    auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(agg_func_lambda->Init({}, {{"agg_fn", agg_func}}, ast));
+
+    MapIR* agg = graph->MakeNode<MapIR>().ValueOrDie();
+    ArgMap amap({{"fn", agg_func_lambda}});
+    EXPECT_OK(agg->Init(parent, amap, ast));
+    return agg;
+  }
+
+  MemorySourceIR* mem_src;
+};
+
+// Test to make sure that joining of metadata works with upid, most common case.
+TEST_F(MetadataResolverConversionTest, upid_conversion) {
+  auto relation = table_store::schema::Relation(cpu_relation);
+  std::string conversion_column = MetadataProperty::kUniquePIDColumn;
+  // TODO(philkuz) with the addition of INT128 update this.
+  relation.AddColumn(types::DataType::INT64, conversion_column);
+  EXPECT_OK(mem_src->SetRelation(relation));
+  NameMetadataProperty property("pod_name", {MetadataProperty::kUniquePIDColumn});
+  MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);
+  ASSERT_OK(md_resolver->AddMetadata(&property));
+
+  auto md_relation = table_store::schema::Relation(relation);
+  md_relation.AddColumn(property.column_type(), property.column_name_repr());
+  EXPECT_OK(md_resolver->SetRelation(md_relation));
+
+  MetadataIR* metadata_ir = MakeMetadataIR("pod_name");
+  ASSERT_OK(metadata_ir->ResolveMetadataColumn(md_resolver, &property));
+  FilterIR* filter = MakeFilter(md_resolver, metadata_ir);
+
+  MetadataResolverConversionRule rule(compiler_state_.get());
+  auto status = rule.Execute(graph.get());
+  ASSERT_OK(status);
+  EXPECT_TRUE(status.ValueOrDie());
+
+  OperatorIR* new_op = filter->parent();
+  EXPECT_NE(new_op, md_resolver);
+  ASSERT_EQ(new_op->type(), IRNodeType::kMap) << "Expected Map, got " << new_op->type_string();
+  EXPECT_EQ(new_op->parent(), mem_src);
+
+  // Check to make sure there are no edges between the mem_src and md_resolver.
+  // Check to make sure there are no edges between the filter and md_resolver.
+  EXPECT_FALSE(graph->dag().HasEdge(mem_src->id(), md_resolver->id()));
+  EXPECT_FALSE(graph->dag().HasEdge(md_resolver->id(), filter->id()));
+
+  // Check to make sure new edges are referenced.
+  EXPECT_TRUE(graph->dag().HasEdge(mem_src->id(), new_op->id()));
+  EXPECT_TRUE(graph->dag().HasEdge(new_op->id(), filter->id()));
+
+  MapIR* md_mapper = static_cast<MapIR*>(new_op);
+  ColExpressionVector vec = md_mapper->col_exprs();
+  ASSERT_EQ(relation.NumColumns() + md_resolver->metadata_columns().size(), vec.size());
+  // Check to see that all of the parent columns are there
+  int64_t cur_idx = 0;
+  for (const std::string& parent_col_name : relation.col_names()) {
+    ColumnExpression expr_pair = vec[cur_idx];
+    EXPECT_EQ(expr_pair.name, parent_col_name);
+    ASSERT_EQ(expr_pair.node->type(), IRNodeType::kColumn);
+    ColumnIR* col_ir = static_cast<ColumnIR*>(expr_pair.node);
+    EXPECT_EQ(col_ir->col_name(), parent_col_name);
+    cur_idx += 1;
+  }
+
+  // Check to see that the metadata columns have the correct format.
+  for (const auto& [md_col_name, md_property] : md_resolver->metadata_columns()) {
+    ColumnExpression expr_pair = vec[cur_idx];
+    EXPECT_EQ(expr_pair.name, MetadataProperty::FormatMetadataColumn(md_col_name));
+    ASSERT_EQ(expr_pair.node->type(), IRNodeType::kFunc) << absl::Substitute(
+        "Expected function for idx $0, got $1.", cur_idx, expr_pair.node->type_string());
+    FuncIR* func = static_cast<FuncIR*>(expr_pair.node);
+    std::string udf_name = absl::Substitute("pl.$0_to_$1", conversion_column, md_col_name);
+    EXPECT_EQ(udf_name, func->func_name());
+    ASSERT_EQ(func->args().size(), 1) << absl::Substitute("for idx $0.", cur_idx);
+    ExpressionIR* func_arg = func->args()[0];
+    ASSERT_EQ(func_arg->type(), IRNodeType::kColumn) << absl::Substitute(
+        "Expected column for idx $0, got $1.", cur_idx, func_arg->type_string());
+    ColumnIR* col_ir = static_cast<ColumnIR*>(func_arg);
+    EXPECT_EQ(col_ir->col_name(), md_property->column_name_repr());
+    cur_idx += 1;
+  }
+}
+
+TEST_F(MetadataResolverConversionTest, alternative_column) {
+  auto relation = table_store::schema::Relation(cpu_relation);
+  std::string key_column_value = "pod_id";
+  std::string conversion_column = MetadataProperty::FormatMetadataColumn(key_column_value);
+  // TODO(philkuz) with the addition of INT128 update this.
+  relation.AddColumn(types::DataType::INT64, conversion_column);
+  EXPECT_OK(mem_src->SetRelation(relation));
+  NameMetadataProperty property("pod_name", {MetadataProperty::kUniquePIDColumn, key_column_value});
+  MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);
+  ASSERT_OK(md_resolver->AddMetadata(&property));
+
+  auto md_relation = table_store::schema::Relation(relation);
+  md_relation.AddColumn(property.column_type(), property.column_name_repr());
+  EXPECT_OK(md_resolver->SetRelation(md_relation));
+
+  MetadataIR* metadata_ir = MakeMetadataIR("pod_name");
+  ASSERT_OK(metadata_ir->ResolveMetadataColumn(md_resolver, &property));
+  FilterIR* filter = MakeFilter(md_resolver, metadata_ir);
+
+  MetadataResolverConversionRule rule(compiler_state_.get());
+  auto status = rule.Execute(graph.get());
+  ASSERT_OK(status);
+  EXPECT_TRUE(status.ValueOrDie());
+
+  OperatorIR* new_op = filter->parent();
+  EXPECT_NE(new_op, md_resolver);
+  ASSERT_EQ(new_op->type(), IRNodeType::kMap) << "Expected Map, got " << new_op->type_string();
+
+  MapIR* md_mapper = static_cast<MapIR*>(new_op);
+  ColExpressionVector vec = md_mapper->col_exprs();
+
+  int64_t cur_idx = static_cast<int64_t>(relation.col_names().size());
+
+  // Check to see that the metadata columns have the correct format.
+  for (const auto& [md_col_name, md_property] : md_resolver->metadata_columns()) {
+    ColumnExpression expr_pair = vec[cur_idx];
+    EXPECT_EQ(expr_pair.name, MetadataProperty::FormatMetadataColumn(md_col_name));
+    ASSERT_EQ(expr_pair.node->type(), IRNodeType::kFunc) << absl::Substitute(
+        "Expected function for idx $0, got $1.", cur_idx, expr_pair.node->type_string());
+    FuncIR* func = static_cast<FuncIR*>(expr_pair.node);
+    std::string udf_name = absl::Substitute("pl.$0_to_$1", key_column_value, md_col_name);
+    EXPECT_EQ(udf_name, func->func_name());
+    ASSERT_EQ(func->args().size(), 1) << absl::Substitute("for idx $0.", cur_idx);
+    ExpressionIR* func_arg = func->args()[0];
+    ASSERT_EQ(func_arg->type(), IRNodeType::kColumn) << absl::Substitute(
+        "Expected column for idx $0, got $1.", cur_idx, func_arg->type_string());
+    ColumnIR* col_ir = static_cast<ColumnIR*>(func_arg);
+    EXPECT_EQ(col_ir->col_name(), md_property->column_name_repr());
+    cur_idx += 1;
+  }
+}
+
+TEST_F(MetadataResolverConversionTest, missing_conversion_column) {
+  auto relation = table_store::schema::Relation(cpu_relation);
+  EXPECT_OK(mem_src->SetRelation(relation));
+  NameMetadataProperty property("pod_name", {MetadataProperty::kUniquePIDColumn});
+  MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);
+  ASSERT_OK(md_resolver->AddMetadata(&property));
+
+  auto md_relation = table_store::schema::Relation(relation);
+  md_relation.AddColumn(property.column_type(), property.column_name_repr());
+  EXPECT_OK(md_resolver->SetRelation(md_relation));
+
+  MetadataIR* metadata_ir = MakeMetadataIR("pod_name");
+  ASSERT_OK(metadata_ir->ResolveMetadataColumn(md_resolver, &property));
+  MakeFilter(md_resolver, metadata_ir);
+
+  MetadataResolverConversionRule rule(compiler_state_.get());
+  auto status = rule.Execute(graph.get());
+  EXPECT_NOT_OK(status);
+  VLOG(1) << status.ToString();
+  EXPECT_TRUE(StatusHasCompilerError(status.status(),
+                                     "Can\'t resolve metadata because of lack of converting "
+                                     "columns in the parent. Need one of [upid]."));
+}
+
+// When the parent relation has multiple columns that can be converted into
+// columns, the compiler makes a choice on which column to replace.
+TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
+  auto relation = table_store::schema::Relation(cpu_relation);
+  std::string conversion_column1 = MetadataProperty::kUniquePIDColumn;
+  std::string key_column2 = "pod_id";
+  std::string conversion_column2 = MetadataProperty::FormatMetadataColumn(key_column2);
+  // TODO(philkuz) with the addition of INT128 update this.
+  relation.AddColumn(types::DataType::INT64, conversion_column1);
+  relation.AddColumn(types::DataType::STRING, conversion_column2);
+  EXPECT_OK(mem_src->SetRelation(relation));
+  NameMetadataProperty property("pod_name", {conversion_column1, key_column2});
+  MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);
+  ASSERT_OK(md_resolver->AddMetadata(&property));
+
+  auto md_relation = table_store::schema::Relation(relation);
+  md_relation.AddColumn(property.column_type(), property.column_name_repr());
+  EXPECT_OK(md_resolver->SetRelation(md_relation));
+
+  MetadataIR* metadata_ir = MakeMetadataIR("pod_name");
+  ASSERT_OK(metadata_ir->ResolveMetadataColumn(md_resolver, &property));
+  FilterIR* filter = MakeFilter(md_resolver, metadata_ir);
+
+  MetadataResolverConversionRule rule(compiler_state_.get());
+  auto status = rule.Execute(graph.get());
+  ASSERT_OK(status);
+  EXPECT_TRUE(status.ValueOrDie());
+
+  OperatorIR* new_op = filter->parent();
+  EXPECT_NE(new_op, md_resolver);
+  ASSERT_EQ(new_op->type(), IRNodeType::kMap) << "Expected Map, got " << new_op->type_string();
+
+  MapIR* md_mapper = static_cast<MapIR*>(new_op);
+  ColExpressionVector vec = md_mapper->col_exprs();
+
+  int64_t cur_idx = static_cast<int64_t>(relation.col_names().size());
+
+  // Check to see that the metadata columns have the correct format.
+  for (const auto& [md_col_name, md_property] : md_resolver->metadata_columns()) {
+    ColumnExpression expr_pair = vec[cur_idx];
+    EXPECT_EQ(expr_pair.name, MetadataProperty::FormatMetadataColumn(md_col_name));
+    ASSERT_EQ(expr_pair.node->type(), IRNodeType::kFunc) << absl::Substitute(
+        "Expected function for idx $0, got $1.", cur_idx, expr_pair.node->type_string());
+    FuncIR* func = static_cast<FuncIR*>(expr_pair.node);
+    std::string udf_name =
+        absl::Substitute("pl.$0_to_$1", MetadataProperty::kUniquePIDColumn, md_col_name);
+    EXPECT_EQ(udf_name, func->func_name());
+    ASSERT_EQ(func->args().size(), 1) << absl::Substitute("for idx $0.", cur_idx);
+    ExpressionIR* func_arg = func->args()[0];
+    ASSERT_EQ(func_arg->type(), IRNodeType::kColumn) << absl::Substitute(
+        "Expected column for idx $0, got $1.", cur_idx, func_arg->type_string());
+    ColumnIR* col_ir = static_cast<ColumnIR*>(func_arg);
+    EXPECT_EQ(col_ir->col_name(), md_property->column_name_repr());
+    cur_idx += 1;
+  }
+}
+
+// Make sure that the mapping works for multiple columns.
+TEST_F(MetadataResolverConversionTest, multiple_metadata_columns) {
+  auto relation = table_store::schema::Relation(cpu_relation);
+  std::string conversion_column = MetadataProperty::kUniquePIDColumn;
+  // TODO(philkuz) with the addition of INT128 update this.
+  relation.AddColumn(types::DataType::INT64, conversion_column);
+  EXPECT_OK(mem_src->SetRelation(relation));
+  NameMetadataProperty property1("pod_name", {conversion_column});
+  NameMetadataProperty property2("service_name", {conversion_column});
+  MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);
+  ASSERT_OK(md_resolver->AddMetadata(&property1));
+  ASSERT_OK(md_resolver->AddMetadata(&property2));
+
+  auto md_relation = table_store::schema::Relation(relation);
+  md_relation.AddColumn(property1.column_type(), property1.column_name_repr());
+  md_relation.AddColumn(property2.column_type(), property2.column_name_repr());
+  EXPECT_OK(md_resolver->SetRelation(md_relation));
+
+  FilterIR* filter = MakeFilter(md_resolver);
+
+  MetadataResolverConversionRule rule(compiler_state_.get());
+  auto status = rule.Execute(graph.get());
+  ASSERT_OK(status);
+  EXPECT_TRUE(status.ValueOrDie());
+
+  OperatorIR* new_op = filter->parent();
+  EXPECT_NE(new_op, md_resolver);
+  ASSERT_EQ(new_op->type(), IRNodeType::kMap) << "Expected Map, got " << new_op->type_string();
+
+  MapIR* md_mapper = static_cast<MapIR*>(new_op);
+  ColExpressionVector vec = md_mapper->col_exprs();
+
+  int64_t cur_idx = static_cast<int64_t>(relation.col_names().size());
+
+  // Check to see that the metadata columns have the correct format.
+  for (const auto& [md_col_name, md_property] : md_resolver->metadata_columns()) {
+    ColumnExpression expr_pair = vec[cur_idx];
+    EXPECT_EQ(expr_pair.name, MetadataProperty::FormatMetadataColumn(md_col_name));
+    ASSERT_EQ(expr_pair.node->type(), IRNodeType::kFunc) << absl::Substitute(
+        "Expected function for idx $0, got $1.", cur_idx, expr_pair.node->type_string());
+    FuncIR* func = static_cast<FuncIR*>(expr_pair.node);
+    std::string udf_name =
+        absl::Substitute("pl.$0_to_$1", MetadataProperty::kUniquePIDColumn, md_col_name);
+    EXPECT_EQ(udf_name, func->func_name());
+    ASSERT_EQ(func->args().size(), 1) << absl::Substitute("for idx $0.", cur_idx);
+    ExpressionIR* func_arg = func->args()[0];
+    ASSERT_EQ(func_arg->type(), IRNodeType::kColumn) << absl::Substitute(
+        "Expected column for idx $0, got $1.", cur_idx, func_arg->type_string());
+    ColumnIR* col_ir = static_cast<ColumnIR*>(func_arg);
+    EXPECT_EQ(col_ir->col_name(), md_property->column_name_repr());
+    cur_idx += 1;
+  }
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

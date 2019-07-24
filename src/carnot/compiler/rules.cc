@@ -1,5 +1,6 @@
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "src/carnot/compiler/rules.h"
@@ -469,7 +470,7 @@ StatusOr<MetadataLiteralIR*> MetadataFunctionFormatRule::WrapLiteral(
 }
 StatusOr<bool> CheckMetadataColumnNamingRule::Apply(IRNode* ir_node) const {
   if (match(ir_node, MetadataResolver())) {
-    // If the MetadataResovler, then don't do anything.
+    // If the MetadataResolver, then don't do anything.
     return false;
   } else if (match(ir_node, Operator())) {
     return CheckRelation(static_cast<OperatorIR*>(ir_node));
@@ -487,6 +488,90 @@ StatusOr<bool> CheckMetadataColumnNamingRule::CheckRelation(OperatorIR* op) cons
     }
   }
   return false;
+}
+StatusOr<bool> MetadataResolverConversionRule::Apply(IRNode* ir_node) const {
+  if (match(ir_node, MetadataResolver())) {
+    return ReplaceMetadataResolver(static_cast<MetadataResolverIR*>(ir_node));
+  }
+  return false;
+}
+
+StatusOr<bool> MetadataResolverConversionRule::ReplaceMetadataResolver(
+    MetadataResolverIR* md_resolver) const {
+  PL_ASSIGN_OR_RETURN(MapIR * map, MakeMap(md_resolver));
+  return SwapInMap(md_resolver, map);
+}
+
+StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_resolver) const {
+  IR* graph = md_resolver->graph_ptr();
+  table_store::schema::Relation parent_relation = md_resolver->parent()->relation();
+  ColExpressionVector col_exprs;
+  for (size_t i = 0; i < parent_relation.NumColumns(); ++i) {
+    // Make Column
+    PL_ASSIGN_OR_RETURN(ColumnIR * column_ir, graph->MakeNode<ColumnIR>());
+    std::string column_name = parent_relation.GetColumnName(i);
+    PL_RETURN_IF_ERROR(column_ir->Init(column_name, md_resolver->ast_node()));
+    column_ir->ResolveColumn(i, parent_relation.GetColumnType(i));
+    col_exprs.emplace_back(column_name, column_ir);
+  }
+
+  int64_t column_idx = parent_relation.NumColumns();
+  for (const auto& md_col_iter : md_resolver->metadata_columns()) {
+    MetadataProperty* md_property = md_col_iter.second;
+    PL_ASSIGN_OR_RETURN(ColumnIR * column_ir, graph->MakeNode<ColumnIR>());
+    PL_RETURN_IF_ERROR(column_ir->Init(md_property->column_name_repr(), md_resolver->ast_node()));
+    column_ir->ResolveColumn(column_idx, md_property->column_type());
+    ++column_idx;
+
+    PL_ASSIGN_OR_RETURN(FuncIR * conversion_func, graph->MakeNode<FuncIR>());
+    PL_ASSIGN_OR_RETURN(std::string key_column,
+                        FindKeyColumn(parent_relation, md_property, column_ir));
+    PL_ASSIGN_OR_RETURN(std::string func_name, md_property->UDFName(key_column));
+    PL_RETURN_IF_ERROR(conversion_func->Init({FuncIR::Opcode::non_op, "", func_name}, "pl",
+                                             {column_ir}, false, md_resolver->ast_node()));
+    col_exprs.emplace_back(md_property->column_name_repr(), conversion_func);
+  }
+
+  table_store::schema::Relation relation = md_resolver->relation();
+  std::unordered_set<std::string> col_names(std::make_move_iterator(relation.col_names().begin()),
+                                            std::make_move_iterator(relation.col_names().end()));
+  DCHECK_EQ(col_exprs.size(), md_resolver->relation().NumColumns());
+  PL_ASSIGN_OR_RETURN(MapIR * map, graph->MakeNode<MapIR>());
+  PL_ASSIGN_OR_RETURN(LambdaIR * lambda, graph->MakeNode<LambdaIR>());
+  PL_RETURN_IF_ERROR(lambda->Init(col_names, col_exprs, md_resolver->ast_node()));
+  PL_RETURN_IF_ERROR(map->Init(md_resolver->parent(), {{"fn", lambda}}, md_resolver->ast_node()));
+  map->SetColExprs(col_exprs);
+  return map;
+}
+
+StatusOr<std::string> MetadataResolverConversionRule::FindKeyColumn(
+    const table_store::schema::Relation& parent_relation, MetadataProperty* property,
+    ColumnIR* col) const {
+  for (const std::string& key_col : property->KeyColumns()) {
+    if (parent_relation.HasColumn(key_col)) {
+      return key_col;
+    }
+  }
+  return col->CreateIRNodeError(
+      "Can't resolve metadata because of lack of converting columns in the parent. Need one of "
+      "[$0].",
+      absl::StrJoin(property->KeyColumns(), ","));
+}
+StatusOr<bool> MetadataResolverConversionRule::SwapInMap(MetadataResolverIR* md_resolver,
+                                                         MapIR* map) const {
+  IR* graph = md_resolver->graph_ptr();
+  PL_RETURN_IF_ERROR(graph->DeleteEdge(md_resolver->parent()->id(), md_resolver->id()));
+  std::vector<int64_t> dependent_nodes = graph->dag().DependenciesOf(md_resolver->id());
+  DCHECK_EQ(dependent_nodes.size(), 1UL);
+  PL_RETURN_IF_ERROR(graph->DeleteEdge(md_resolver->id(), dependent_nodes[0]));
+  PL_RETURN_IF_ERROR(graph->AddEdge(map->id(), dependent_nodes[0]));
+  IRNode* node = graph->Get(dependent_nodes[0]);
+  DCHECK(node->IsOp()) << "Expected node to be operator.";
+  OperatorIR* op = static_cast<OperatorIR*>(node);
+  DCHECK_EQ(op->parent(), md_resolver);
+  PL_RETURN_IF_ERROR(op->SetParent(map));
+
+  return true;
 }
 
 }  // namespace compiler
