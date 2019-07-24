@@ -7,6 +7,7 @@
 
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/ir_nodes.h"
+#include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/registry_info.h"
 #include "src/carnot/compiler/rule_executor.h"
 #include "src/carnot/compiler/rules.h"
@@ -40,6 +41,7 @@ class Analyzer : public RuleExecutor {
 
  private:
   CompilerState* compiler_state_;
+  std::unique_ptr<MetadataHandler> md_handler_;
 };
 }  // namespace compiler
 }  // namespace carnot

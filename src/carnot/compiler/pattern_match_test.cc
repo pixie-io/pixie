@@ -76,10 +76,10 @@ TEST_F(PatternMatchTest, expression_data_type_resolution) {
   EXPECT_FALSE(match(func, ResolvedExpression()));
 
   // Specific expressions
-  EXPECT_TRUE(match(col1, UnresolvedColumn()));
-  EXPECT_FALSE(match(func, UnresolvedColumn()));
-  EXPECT_FALSE(match(col1, UnresolvedFunc()));
-  EXPECT_TRUE(match(func, UnresolvedFunc()));
+  EXPECT_TRUE(match(col1, UnresolvedColumnType()));
+  EXPECT_FALSE(match(func, UnresolvedColumnType()));
+  EXPECT_FALSE(match(col1, UnresolvedFuncType()));
+  EXPECT_TRUE(match(func, UnresolvedFuncType()));
 
   // Test out UnresolvedRTFuncMatchAllArgs.
   EXPECT_FALSE(match(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression())));
@@ -87,7 +87,7 @@ TEST_F(PatternMatchTest, expression_data_type_resolution) {
   // Resolve column and check whether test works.
   col1->ResolveColumn(0, types::DataType::INT64);
   EXPECT_TRUE(match(col1, ResolvedExpression()));
-  EXPECT_TRUE(match(col1, ResolvedColumn()));
+  EXPECT_TRUE(match(col1, ResolvedColumnType()));
 
   // Should Pass now
   EXPECT_TRUE(match(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression())));
@@ -95,7 +95,7 @@ TEST_F(PatternMatchTest, expression_data_type_resolution) {
   // Make sure that resolution works
   func->SetOutputDataType(types::DataType::INT64);
   EXPECT_TRUE(match(func, ResolvedExpression()));
-  EXPECT_TRUE(match(func, ResolvedFunc()));
+  EXPECT_TRUE(match(func, ResolvedFuncType()));
 }
 
 TEST_F(PatternMatchTest, relation_status_operator_match) {

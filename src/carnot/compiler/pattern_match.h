@@ -219,7 +219,7 @@ inline ExpressionMatch<true> ResolvedExpression() { return ExpressionMatch<true>
 inline ExpressionMatch<false> UnresolvedExpression() { return ExpressionMatch<false>(); }
 
 /**
- * @brief Match a specifically typed expression that has a given
+ * @brief Match a specifically typed expression that has a given resolution state.
  *
  * @tparam expression_type: the type of the node to match (must be an expression).
  * @tparam Resolved: expected resolution of pattern.
@@ -238,29 +238,59 @@ struct SpecificExpressionMatch : public ParentMatch {
 /**
  * @brief Match a column that is not resolved.
  */
-inline SpecificExpressionMatch<IRNodeType::kColumn, false> UnresolvedColumn() {
+inline SpecificExpressionMatch<IRNodeType::kColumn, false> UnresolvedColumnType() {
   return SpecificExpressionMatch<IRNodeType::kColumn, false>();
 }
+
 /**
  * @brief Match a column that is resolved.
  */
-inline SpecificExpressionMatch<IRNodeType::kColumn, true> ResolvedColumn() {
+inline SpecificExpressionMatch<IRNodeType::kColumn, true> ResolvedColumnType() {
   return SpecificExpressionMatch<IRNodeType::kColumn, true>();
 }
 
 /**
  * @brief Match a function that is not resolved.
  */
-inline SpecificExpressionMatch<IRNodeType::kFunc, false> UnresolvedFunc() {
+inline SpecificExpressionMatch<IRNodeType::kFunc, false> UnresolvedFuncType() {
   return SpecificExpressionMatch<IRNodeType::kFunc, false>();
 }
 
 /**
  * @brief Match a function that is resolved.
  */
-inline SpecificExpressionMatch<IRNodeType::kFunc, true> ResolvedFunc() {
+inline SpecificExpressionMatch<IRNodeType::kFunc, true> ResolvedFuncType() {
   return SpecificExpressionMatch<IRNodeType::kFunc, true>();
 }
+
+/**
+ * @brief Match metadata ir that has yet to resolve data type.
+ */
+inline SpecificExpressionMatch<IRNodeType::kMetadata, false> UnresolvedMetadataType() {
+  return SpecificExpressionMatch<IRNodeType::kMetadata, false>();
+}
+
+/**
+ * @brief Match a metadataIR node that has either been Resolved by a metadata
+ * resolver node, or not.
+ *
+ * @tparam Resolved: whether the metadata has been resolved with a resovler node.
+ */
+template <bool Resolved>
+struct MetadataIRMatch : public ParentMatch {
+  MetadataIRMatch() : ParentMatch(IRNodeType::kMetadata) {}
+  bool match(IRNode* V) const override {
+    if (V->type() == IRNodeType::kMetadata) {
+      return Resolved == static_cast<MetadataIR*>(V)->HasMetadataResolver();
+    }
+    return false;
+  }
+};
+
+/**
+ * @brief Match a MetadataIR that doesn't have an associated MetadataResolver node.
+ */
+inline MetadataIRMatch<false> UnresolvedMetadataIR() { return MetadataIRMatch<false>(); }
 
 /**
  * @brief Match any function with arguments that satisfy argMatcher and matches the specified
@@ -391,6 +421,14 @@ inline RelationResolvedOpMatch<IRNodeType::kBlockingAgg, false, true> Unresolved
  */
 inline RelationResolvedOpMatch<IRNodeType::kMap, false, true> UnresolvedReadyMap() {
   return RelationResolvedOpMatch<IRNodeType::kMap, false, true>();
+}
+
+/**
+ * @brief Match a MetadataResolver node that doesn't have a relation but the parent does.
+ */
+inline RelationResolvedOpMatch<IRNodeType::kMetadataResolver, false, true>
+UnresolvedReadyMetadataResolver() {
+  return RelationResolvedOpMatch<IRNodeType::kMetadataResolver, false, true>();
 }
 
 /**

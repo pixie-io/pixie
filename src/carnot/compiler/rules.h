@@ -5,6 +5,7 @@
 
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/ir_nodes.h"
+#include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/pattern_match.h"
 #include "src/carnot/compiler/registry_info.h"
 
@@ -97,6 +98,7 @@ class OperatorRelationRule : public Rule {
  private:
   StatusOr<bool> SetBlockingAgg(BlockingAggIR* agg_ir) const;
   StatusOr<bool> SetMap(MapIR* map_ir) const;
+  StatusOr<bool> SetMetadataResolver(MetadataResolverIR* map_ir) const;
   StatusOr<bool> SetOther(OperatorIR* op) const;
 };
 
@@ -132,6 +134,27 @@ class VerifyFilterExpressionRule : public Rule {
   StatusOr<bool> Apply(IRNode* ir_node) const override;
 };
 
+class ResolveMetadataRule : public Rule {
+  /**
+   * @brief Resolve metadata makes sure that metadata is properly added as a column in the table.
+   * The job of this rule is to create, or map to a MetadataResolver for any MetadataIR in the
+   * graph.
+   */
+
+ public:
+  explicit ResolveMetadataRule(CompilerState* compiler_state, MetadataHandler* md_handler)
+      : Rule(compiler_state), md_handler_(md_handler) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) const override;
+  StatusOr<bool> HandleMetadata(MetadataIR* md_node) const;
+  /** @brief Inserts a metadata resolver between the container op and parent op. */
+  StatusOr<MetadataResolverIR*> InsertMetadataResolver(OperatorIR* container_op,
+                                                       OperatorIR* parent_op) const;
+
+ private:
+  MetadataHandler* md_handler_;
+};
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

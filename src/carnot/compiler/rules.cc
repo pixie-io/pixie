@@ -21,11 +21,14 @@ StatusOr<bool> DataTypeRule::Apply(IRNode* ir_node) const {
   if (match(ir_node, UnresolvedRTFuncMatchAllArgs(ResolvedExpression()))) {
     // Match any function that has all args resolved.
     return EvaluateFunc(static_cast<FuncIR*>(ir_node));
-  } else if (match(ir_node, UnresolvedFunc())) {
+  } else if (match(ir_node, UnresolvedFuncType())) {
     // Matches any function that has some unresolved args.
     VLOG(1) << absl::Substitute("$1(id=$0) has unresolved args.", ir_node->id(),
                                 ir_node->type_string());
-  } else if (match(ir_node, UnresolvedColumn())) {
+  } else if (match(ir_node, UnresolvedColumnType())) {
+    // Evaluate any unresolved columns.
+    return EvaluateColumn(static_cast<ColumnIR*>(ir_node));
+  } else if (match(ir_node, UnresolvedMetadataType())) {
     // Evaluate any unresolved columns.
     return EvaluateColumn(static_cast<ColumnIR*>(ir_node));
   }
@@ -187,6 +190,8 @@ StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) const {
     return SetBlockingAgg(static_cast<BlockingAggIR*>(ir_node));
   } else if (match(ir_node, UnresolvedReadyMap())) {
     return SetMap(static_cast<MapIR*>(ir_node));
+  } else if (match(ir_node, UnresolvedReadyMetadataResolver())) {
+    return SetMetadataResolver(static_cast<MetadataResolverIR*>(ir_node));
   } else if (match(ir_node, UnresolvedReadyOp())) {
     return SetOther(static_cast<OperatorIR*>(ir_node));
   }
@@ -201,6 +206,7 @@ bool UpdateColumn(ColumnIR* col_expr, std::vector<ColumnIR*>* columns,
   columns->push_back(col_expr);
   return true;
 }
+
 StatusOr<bool> OperatorRelationRule::SetBlockingAgg(BlockingAggIR* agg_ir) const {
   table_store::schema::Relation agg_rel;
   std::vector<ColumnIR*> groups;
@@ -258,6 +264,17 @@ StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
   PL_RETURN_IF_ERROR(map_ir->SetRelation(map_rel));
   return true;
 }
+
+StatusOr<bool> OperatorRelationRule::SetMetadataResolver(MetadataResolverIR* md_ir) const {
+  table_store::schema::Relation md_rel = md_ir->parent()->relation();
+  // Iterate through the columns and add them in.
+  for (const auto& col_entry : md_ir->metadata_columns()) {
+    md_rel.AddColumn(col_entry.second->column_type(), col_entry.second->column_name_repr());
+  }
+  PL_RETURN_IF_ERROR(md_ir->SetRelation(md_rel));
+  return true;
+}
+
 StatusOr<bool> OperatorRelationRule::SetOther(OperatorIR* operator_ir) const {
   PL_RETURN_IF_ERROR(operator_ir->SetRelation(operator_ir->parent()->relation()));
   return true;
@@ -346,6 +363,54 @@ StatusOr<bool> VerifyFilterExpressionRule::Apply(IRNode* ir_node) const {
     }
   }
   return false;
+}
+
+StatusOr<bool> ResolveMetadataRule::Apply(IRNode* ir_node) const {
+  if (match(ir_node, UnresolvedMetadataIR())) {
+    // Match any function that has all args resolved.
+    return HandleMetadata(static_cast<MetadataIR*>(ir_node));
+  }
+  return false;
+}
+
+StatusOr<MetadataResolverIR*> ResolveMetadataRule::InsertMetadataResolver(
+    OperatorIR* container_op, OperatorIR* parent_op) const {
+  DCHECK_EQ(container_op->parent()->id(), parent_op->id())
+      << "Parent arg should be the actual parent of the container_op.";
+  IR* graph = container_op->graph_ptr();
+  PL_ASSIGN_OR_RETURN(auto md_resolver, graph->MakeNode<MetadataResolverIR>());
+  PL_RETURN_IF_ERROR(md_resolver->Init(parent_op, {{}}, container_op->ast_node()));
+  PL_RETURN_IF_ERROR(container_op->RemoveParent(parent_op));
+  PL_RETURN_IF_ERROR(container_op->SetParent(md_resolver));
+  return md_resolver;
+}
+
+StatusOr<bool> ResolveMetadataRule::HandleMetadata(MetadataIR* metadata) const {
+  // Get containing operator.
+  PL_ASSIGN_OR_RETURN(OperatorIR * container_op, metadata->ContainingOp());
+  if (!container_op->HasParent()) {
+    return metadata->CreateIRNodeError(
+        "No parent for operator $1(id=$2). Can't resolve column '$0'.", metadata->col_name(),
+        container_op->type_string(), container_op->id());
+  }
+
+  OperatorIR* parent_op = container_op->parent();
+  if (parent_op->type() != IRNodeType::kMetadataResolver) {
+    // If the parent is not a metadata resolver, add a parent metadata resolver node.
+    PL_ASSIGN_OR_RETURN(parent_op, InsertMetadataResolver(container_op, parent_op));
+  }
+  auto md_resolver_op = static_cast<MetadataResolverIR*>(parent_op);
+
+  // Check to see whether metadata is valid.
+  if (!md_handler_->HasProperty(metadata->name())) {
+    return metadata->CreateIRNodeError("Specified metadata value '$0' is not properly handled.",
+                                       metadata->name());
+  }
+  PL_ASSIGN_OR_RETURN(MetadataProperty * md_property, md_handler_->GetProperty(metadata->name()));
+  PL_RETURN_IF_ERROR(metadata->ResolveMetadataColumn(md_resolver_op, md_property));
+  PL_RETURN_IF_ERROR(md_resolver_op->AddMetadata(md_property));
+
+  return true;
 }
 
 }  // namespace compiler

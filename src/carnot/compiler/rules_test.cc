@@ -7,6 +7,7 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/compiler/ir_nodes.h"
+#include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/rules.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
@@ -34,6 +35,22 @@ class RulesTest : public ::testing::Test {
     ast = MakeTestAstPtr();
     graph = std::make_shared<IR>();
     data_rule = std::make_shared<DataTypeRule>(compiler_state_.get());
+    md_handler = MetadataHandler::Create();
+  }
+  ColumnIR* MakeColumn(const std::string& name) {
+    auto column = graph->MakeNode<ColumnIR>().ValueOrDie();
+    EXPECT_OK(column->Init(name, ast));
+    return column;
+  }
+  MetadataIR* MakeMetadataIR(const std::string& name) {
+    auto metadata = graph->MakeNode<MetadataIR>().ValueOrDie();
+    EXPECT_OK(metadata->Init(name, ast));
+    return metadata;
+  }
+  MetadataResolverIR* MakeMetadataResolver(OperatorIR* parent) {
+    MetadataResolverIR* md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
+    EXPECT_OK(md_resolver->Init(parent, {{}}, ast));
+    return md_resolver;
   }
   pypa::AstPtr ast;
   std::shared_ptr<IR> graph;
@@ -42,6 +59,7 @@ class RulesTest : public ::testing::Test {
   std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
   table_store::schema::Relation cpu_relation;
+  std::unique_ptr<MetadataHandler> md_handler;
 };
 class DataTypeRuleTest : public RulesTest {
  protected:
@@ -51,6 +69,23 @@ class DataTypeRuleTest : public RulesTest {
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
   MemorySourceIR* mem_src;
+  FilterIR* MakeFilter(OperatorIR* parent, ColumnIR* filter_value) {
+    auto constant1 = graph->MakeNode<StringIR>().ValueOrDie();
+    EXPECT_OK(constant1->Init("value", ast));
+
+    FuncIR* filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"}, "pl",
+                                std::vector<ExpressionIR*>({constant1, filter_value}),
+                                false /* compile_time */, ast));
+
+    auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
+
+    FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
+    ArgMap amap({{"fn", filter_func_lambda}});
+    EXPECT_OK(filter->Init(parent, amap, ast));
+    return filter;
+  }
 };
 
 // Simple map function.
@@ -277,7 +312,24 @@ TEST_F(DataTypeRuleTest, nested_functions) {
   ASSERT_OK(result);
   EXPECT_FALSE(result.ValueOrDie());
 }
-// TODO(philkuz) try nested functions in the setup.
+
+TEST_F(DataTypeRuleTest, metadata_column) {
+  MetadataResolverIR* md = MakeMetadataResolver(mem_src);
+  std::string metadata_name = "pod_name";
+  MetadataProperty* property = md_handler->GetProperty(metadata_name).ValueOrDie();
+  table_store::schema::Relation relation({property->column_type()}, {property->column_name_repr()});
+  EXPECT_OK(md->SetRelation(relation));
+  MetadataIR* metadata_ir = MakeMetadataIR(metadata_name);
+  EXPECT_OK(metadata_ir->ResolveMetadataColumn(md, property));
+  MakeFilter(md, metadata_ir);
+  EXPECT_FALSE(metadata_ir->IsDataTypeEvaluated());
+  // Expect the data_rule to do nothing, no more work left.
+  auto result = data_rule->Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_TRUE(metadata_ir->IsDataTypeEvaluated());
+  EXPECT_EQ(metadata_ir->EvaluatedDataType(), types::DataType::STRING);
+}
 
 class SourceRelationTest : public RulesTest {
  protected:
@@ -525,6 +577,52 @@ TEST_F(MapRuleTest, failed_resolve_function) {
   ASSERT_OK(result);
   EXPECT_FALSE(result.ValueOrDie());
   EXPECT_FALSE(map->IsRelationInit());
+}
+
+class MetadataResolverRuleTest : public RulesTest {
+ protected:
+  void SetUp() override { RulesTest::SetUp(); }
+  MetadataProperty* GetProperty(const std::string& name) {
+    auto property_status = md_handler->GetProperty(name);
+    PL_CHECK_OK(property_status);
+    return property_status.ValueOrDie();
+  }
+  void SetUpGraph() {
+    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
+
+    md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
+    ArgMap amap({{}});
+    PL_CHECK_OK(md_resolver->Init(mem_src, amap, ast));
+  }
+  MemorySourceIR* mem_src;
+  MetadataResolverIR* md_resolver;
+  types::DataType func_data_type = types::DataType::INT64;
+};
+
+TEST_F(MetadataResolverRuleTest, make_sure_metadata_columns_show_up) {
+  SetUpGraph();
+  MetadataProperty* service_property = GetProperty("service_name");
+  MetadataProperty* pod_property = GetProperty("pod_name");
+  PL_CHECK_OK(md_resolver->AddMetadata(service_property));
+  PL_CHECK_OK(md_resolver->AddMetadata(pod_property));
+  std::vector<types::DataType> expected_col_types = cpu_relation.col_types();
+  std::vector<std::string> expected_col_names = cpu_relation.col_names();
+  expected_col_names.push_back(pod_property->column_name_repr());
+  expected_col_names.push_back(service_property->column_name_repr());
+  expected_col_types.push_back(pod_property->column_type());
+  expected_col_types.push_back(service_property->column_type());
+
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  EXPECT_FALSE(md_resolver->IsRelationInit());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  ASSERT_TRUE(md_resolver->IsRelationInit());
+
+  auto result_relation = md_resolver->relation();
+  EXPECT_TRUE(result_relation.col_types() == expected_col_types);
+  EXPECT_TRUE(result_relation.col_names() == expected_col_names);
 }
 
 class OperatorRelationTest : public RulesTest {
@@ -866,6 +964,143 @@ TEST_F(VerifyFilterExpressionTest, filter_func_not_set) {
   VerifyFilterExpressionRule rule(compiler_state_.get());
   auto status_or = rule.Execute(graph.get());
   EXPECT_NOT_OK(status_or);
+}
+
+class ResolveMetadataTest : public RulesTest {
+ protected:
+  void SetUp() override {
+    RulesTest::SetUp();
+    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
+  }
+  FilterIR* MakeFilter(OperatorIR* parent, ColumnIR* filter_value) {
+    auto constant1 = graph->MakeNode<StringIR>().ValueOrDie();
+    EXPECT_OK(constant1->Init("value", ast));
+
+    FuncIR* filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"}, "pl",
+                                std::vector<ExpressionIR*>({constant1, filter_value}),
+                                false /* compile_time */, ast));
+
+    auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
+
+    FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
+    ArgMap amap({{"fn", filter_func_lambda}});
+    EXPECT_OK(filter->Init(parent, amap, ast));
+    return filter;
+  }
+  BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, ColumnIR* by_column, ColumnIR* fn_column) {
+    auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"}, "pl",
+                             std::vector<ExpressionIR*>({fn_column}), false /* compile_time */,
+                             ast));
+
+    auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(agg_func_lambda->Init({}, {{"agg_fn", agg_func}}, ast));
+
+    auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(by_func_lambda->Init({"group"}, by_column, ast));
+
+    BlockingAggIR* agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
+    ArgMap amap({{"by", by_func_lambda}, {"fn", agg_func_lambda}});
+    EXPECT_OK(agg->Init(parent, amap, ast));
+    return agg;
+  }
+  MemorySourceIR* mem_src;
+  MetadataResolverIR* md_resolver;
+};
+
+TEST_F(ResolveMetadataTest, create_metadata_resolver) {
+  // a MetadataIR unresovled creates a new metadata node.
+  MetadataIR* metadata = MakeMetadataIR("service_name");
+  EXPECT_FALSE(metadata->HasMetadataResolver());
+  FilterIR* filter = MakeFilter(mem_src, metadata);
+  EXPECT_EQ(filter->parent()->id(), mem_src->id());
+
+  ResolveMetadataRule rule(compiler_state_.get(), md_handler.get());
+  rule.Execute(graph.get());
+  EXPECT_NE(filter->parent()->id(), mem_src->id());
+  ASSERT_EQ(filter->parent()->type(), IRNodeType::kMetadataResolver);
+  auto md_resolver = static_cast<MetadataResolverIR*>(filter->parent());
+  EXPECT_TRUE(md_resolver->HasMetadataColumn("service_name"));
+  EXPECT_TRUE(metadata->HasMetadataResolver());
+  EXPECT_EQ(metadata->resolver(), md_resolver);
+}
+
+TEST_F(ResolveMetadataTest, update_metadata_resolver) {
+  // a MetadataIR unresovled updates an existing metadata resolver, that has one entry
+  MetadataResolverIR* og_resolver = MakeMetadataResolver(mem_src);
+  // prepopulate the og_resolver.
+  auto property = md_handler->GetProperty("pod_name").ValueOrDie();
+  ASSERT_OK(og_resolver->AddMetadata(property));
+  EXPECT_TRUE(og_resolver->HasMetadataColumn("pod_name"));
+  // Should not have service_name yet.
+  EXPECT_FALSE(og_resolver->HasMetadataColumn("service_name"));
+
+  MetadataIR* metadata = MakeMetadataIR("service_name");
+  EXPECT_FALSE(metadata->HasMetadataResolver());
+  FilterIR* filter = MakeFilter(og_resolver, metadata);
+  EXPECT_EQ(filter->parent()->id(), og_resolver->id());
+
+  ResolveMetadataRule rule(compiler_state_.get(), md_handler.get());
+  rule.Execute(graph.get());
+  // no changes.
+  EXPECT_EQ(filter->parent()->id(), og_resolver->id());
+
+  auto md_resolver = static_cast<MetadataResolverIR*>(filter->parent());
+  EXPECT_EQ(md_resolver, og_resolver);
+  EXPECT_TRUE(md_resolver->HasMetadataColumn("service_name"));
+  EXPECT_TRUE(md_resolver->HasMetadataColumn("pod_name"));
+  EXPECT_TRUE(metadata->HasMetadataResolver());
+  EXPECT_EQ(metadata->resolver(), og_resolver);
+}
+TEST_F(ResolveMetadataTest, multiple_mds_in_one_op) {
+  // Two metadata callsin one operation.
+  MetadataIR* metadata1 = MakeMetadataIR("service_name");
+  MetadataIR* metadata2 = MakeMetadataIR("pod_name");
+  EXPECT_FALSE(metadata1->HasMetadataResolver());
+  EXPECT_FALSE(metadata2->HasMetadataResolver());
+  BlockingAggIR* agg = MakeBlockingAgg(mem_src, metadata1, metadata2);
+  EXPECT_EQ(agg->parent()->id(), mem_src->id());
+
+  ResolveMetadataRule rule(compiler_state_.get(), md_handler.get());
+  rule.Execute(graph.get());
+  EXPECT_NE(agg->parent()->id(), mem_src->id());
+  ASSERT_EQ(agg->parent()->type(), IRNodeType::kMetadataResolver);
+  // no layers of md.
+  ASSERT_EQ(agg->parent()->parent()->type(), IRNodeType::kMemorySource);
+  auto md_resolver = static_cast<MetadataResolverIR*>(agg->parent());
+  EXPECT_TRUE(md_resolver->HasMetadataColumn("service_name"));
+  EXPECT_TRUE(md_resolver->HasMetadataColumn("pod_name"));
+  EXPECT_TRUE(metadata1->HasMetadataResolver());
+  EXPECT_EQ(metadata1->resolver(), md_resolver);
+
+  EXPECT_TRUE(metadata2->HasMetadataResolver());
+  EXPECT_EQ(metadata2->resolver(), md_resolver);
+}
+TEST_F(ResolveMetadataTest, no_change_metadata_resolver) {
+  // MetadataIR where the metadataresolver node already has an entry lined up properly[]
+  // a MetadataIR unresovled updates an existing metadata resolver, that has one entry
+  MetadataResolverIR* og_resolver = MakeMetadataResolver(mem_src);
+  auto property = md_handler->GetProperty("pod_name").ValueOrDie();
+  ASSERT_OK(og_resolver->AddMetadata(property));
+  EXPECT_TRUE(og_resolver->HasMetadataColumn("pod_name"));
+
+  MetadataIR* metadata = MakeMetadataIR("pod_name");
+  EXPECT_FALSE(metadata->HasMetadataResolver());
+  FilterIR* filter = MakeFilter(og_resolver, metadata);
+  EXPECT_EQ(filter->parent()->id(), og_resolver->id());
+
+  ResolveMetadataRule rule(compiler_state_.get(), md_handler.get());
+  rule.Execute(graph.get());
+  // no changes.
+  EXPECT_EQ(filter->parent()->id(), og_resolver->id());
+
+  auto md_resolver = static_cast<MetadataResolverIR*>(filter->parent());
+  EXPECT_EQ(md_resolver, og_resolver);
+  EXPECT_TRUE(md_resolver->HasMetadataColumn("pod_name"));
+  EXPECT_TRUE(metadata->HasMetadataResolver());
 }
 }  // namespace compiler
 }  // namespace carnot
