@@ -46,18 +46,17 @@ std::shared_ptr<arrow::Array> GenerateInt64Batch(bmutils::DistributionType dist_
   return types::ToArrow(data, arrow::default_memory_pool());
 }
 
-std::shared_ptr<arrow::Array> GenerateStringBatch(int size, bmutils::DistributionType val_dist_type,
+std::shared_ptr<arrow::Array> GenerateStringBatch(int size,
                                                   const bmutils::DistributionParams* dist_vars,
-                                                  bmutils::DistributionType len_type,
                                                   const bmutils::DistributionParams* len_vars) {
-  auto data = bmutils::CreateLargeStringData(size, val_dist_type, dist_vars, len_type, len_vars);
+  auto data = bmutils::CreateLargeStringData(size, dist_vars, len_vars);
   return types::ToArrow<types::StringValue>(data.ConsumeValueOrDie(), arrow::default_memory_pool());
 }
 
 StatusOr<std::shared_ptr<Table>> CreateTable(
     std::vector<types::DataType> types, std::vector<bmutils::DistributionType> distribution_types,
     int64_t rb_size, int64_t num_batches, const bmutils::DistributionParams* dist_vars,
-    bmutils::DistributionType len_dist_type, const bmutils::DistributionParams* len_vars) {
+    const bmutils::DistributionParams* len_vars) {
   RowDescriptor rd(types);
   std::vector<std::string> col_names;
   for (size_t col_idx = 0; col_idx < types.size(); col_idx++) {
@@ -73,8 +72,7 @@ StatusOr<std::shared_ptr<Table>> CreateTable(
       if (types.at(col_idx) == types::DataType::INT64) {
         batch = GenerateInt64Batch(distribution_types.at(col_idx), rb_size);
       } else if (types.at(col_idx) == types::DataType::STRING) {
-        batch = GenerateStringBatch(rb_size, distribution_types.at(col_idx), dist_vars,
-                                    len_dist_type, len_vars);
+        batch = GenerateStringBatch(rb_size, dist_vars, len_vars);
       } else {
         return error::InvalidArgument("We only support int and str types.");
       }
@@ -98,13 +96,12 @@ std::unique_ptr<Carnot> SetUpCarnot(std::shared_ptr<table_store::TableStore> tab
 void BM_Query(benchmark::State& state, std::vector<types::DataType> types,
               std::vector<bmutils::DistributionType> distribution_types, const std::string& query,
               int64_t num_batches, const bmutils::DistributionParams* dist_vars,
-              bmutils::DistributionType len_dist_type,
               const bmutils::DistributionParams* len_vars) {
   auto table_store = std::make_shared<table_store::TableStore>();
   auto carnot = SetUpCarnot(table_store);
-  auto table = CreateTable(types, distribution_types, state.range(0), num_batches, dist_vars,
-                           len_dist_type, len_vars)
-                   .ConsumeValueOrDie();
+  auto table =
+      CreateTable(types, distribution_types, state.range(0), num_batches, dist_vars, len_vars)
+          .ConsumeValueOrDie();
   table_store->AddTable("test_table", table);
 
   int64_t bytes_processed = 0;
@@ -124,10 +121,8 @@ void BM_Query_String(benchmark::State& state, std::vector<types::DataType> types
                      std::vector<bmutils::DistributionType> distribution_types,
                      const std::string& query, int64_t num_batches,
                      const bmutils::DistributionParams* dist_vars,
-                     bmutils::DistributionType len_dist_type,
                      const bmutils::DistributionParams* len_vars) {
-  BM_Query(state, types, distribution_types, query, num_batches, dist_vars, len_dist_type,
-           len_vars);
+  BM_Query(state, types, distribution_types, query, num_batches, dist_vars, len_vars);
 }
 
 // NOLINTNEXTLINE : runtime/references.
@@ -135,45 +130,41 @@ void BM_Query_Int(benchmark::State& state, std::vector<types::DataType> types,
                   std::vector<bmutils::DistributionType> distribution_types,
                   const std::string& query, int64_t num_batches) {
   const bmutils::DistributionParams* default_params = nullptr;
-  BM_Query(state, types, distribution_types, query, num_batches, default_params,
-           bmutils::DistributionType::kUnknown, default_params);
+  BM_Query(state, types, distribution_types, query, num_batches, default_params, default_params);
 }
 
-const bmutils::DistributionParams* sample_selection_params =
-    new const bmutils::ZipfianParams(2, 2, 1000);
-const bmutils::DistributionParams* sample_length_params = new const bmutils::UniformParams(0, 255);
+const std::unique_ptr<const bmutils::DistributionParams> sample_selection_params =
+    std::make_unique<const bmutils::ZipfianParams>(2, 2, 999);
+const std::unique_ptr<const bmutils::DistributionParams> sample_length_params =
+    std::make_unique<const bmutils::UniformParams>(0, 255);
 
 BENCHMARK_CAPTURE(BM_Query_String, eval_group_by_one_uniform_string,
                   {types::DataType::STRING, types::DataType::INT64},
                   {bmutils::DistributionType::kZipfian, bmutils::DistributionType::kUniform},
-                  kGroupByOneQuery, 20, sample_selection_params,
-                  bmutils::DistributionType::kUniform, sample_length_params)
+                  kGroupByOneQuery, 20, sample_selection_params.get(), sample_length_params.get())
     ->RangeMultiplier(2)
     ->Range(1, 1 << 16);
 
 // Group By String Tests
 BENCHMARK_CAPTURE(BM_Query_String, eval_group_by_none_string,
                   {types::DataType::STRING, types::DataType::INT64},
-                  {bmutils::DistributionType::kUniform, bmutils::DistributionType::kUniform},
-                  kGroupByNoneQuery, 20, sample_selection_params,
-                  bmutils::DistributionType::kUniform, sample_length_params)
+                  {bmutils::DistributionType::kZipfian, bmutils::DistributionType::kUniform},
+                  kGroupByNoneQuery, 20, sample_selection_params.get(), sample_length_params.get())
     ->RangeMultiplier(2)
     ->Range(1, 1 << 16);
 
 BENCHMARK_CAPTURE(BM_Query_String, eval_group_by_one_uniform_string,
                   {types::DataType::STRING, types::DataType::INT64},
-                  {bmutils::DistributionType::kNormal, bmutils::DistributionType::kUniform},
-                  kGroupByOneQuery, 20, sample_selection_params,
-                  bmutils::DistributionType::kUniform, sample_length_params)
+                  {bmutils::DistributionType::kZipfian, bmutils::DistributionType::kUniform},
+                  kGroupByOneQuery, 20, sample_selection_params.get(), sample_length_params.get())
     ->RangeMultiplier(2)
     ->Range(1, 1 << 16);
 
 BENCHMARK_CAPTURE(BM_Query_String, eval_group_by_one_uniform_string,
                   {types::DataType::STRING, types::DataType::STRING, types::DataType::INT64},
-                  {bmutils::DistributionType::kNormal, bmutils::DistributionType::kUniform,
+                  {bmutils::DistributionType::kZipfian, bmutils::DistributionType::kUniform,
                    bmutils::DistributionType::kUniform},
-                  kGroupByTwoQuery, 20, sample_selection_params,
-                  bmutils::DistributionType::kUniform, sample_length_params)
+                  kGroupByTwoQuery, 20, sample_selection_params.get(), sample_length_params.get())
     ->RangeMultiplier(2)
     ->Range(1, 1 << 16);
 

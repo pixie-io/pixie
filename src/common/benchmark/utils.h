@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <memory>
 #include <random>
 #include <string>
 #include <variant>
@@ -67,10 +68,13 @@ enum class DistributionType { kUnknown, kUniform, kExponential, kZipfian, kNorma
 
 class DistributionParams {
  public:
-  explicit DistributionParams(double new_max) : max_(new_max) {}
   double max() const { return max_; }
+  DistributionType type() const { return type_; }
 
  protected:
+  explicit DistributionParams(DistributionType type, double new_max) : type_(type), max_(new_max) {}
+
+  DistributionType type_;
   double max_;
 };
 
@@ -80,7 +84,7 @@ class ZipfianParams : public DistributionParams {
   double v() const { return v_; }
 
   ZipfianParams(double zipf_q, double zipf_v, double max_index)
-      : DistributionParams(max_index), q_(zipf_q), v_(zipf_v) {}
+      : DistributionParams(DistributionType::kZipfian, max_index), q_(zipf_q), v_(zipf_v) {}
 
  private:
   double q_;
@@ -93,7 +97,9 @@ class NormalParams : public DistributionParams {
   double sigma() const { return sigma_; }
 
   NormalParams(double normal_sigma, double max_index)
-      : DistributionParams(max_index), mu_(max_index / 2), sigma_(normal_sigma) {}
+      : DistributionParams(DistributionType::kNormal, max_index),
+        mu_(max_index / 2),
+        sigma_(normal_sigma) {}
 
  private:
   double mu_;
@@ -105,7 +111,7 @@ class UniformParams : public DistributionParams {
   double min() const { return min_; }
 
   UniformParams(double min_index, double max_index)
-      : DistributionParams(max_index), min_(min_index) {}
+      : DistributionParams(DistributionType::kUniform, max_index), min_(min_index) {}
 
  private:
   double min_;
@@ -182,7 +188,7 @@ class NormalGenerator : public IntGenerator {
 class StringGenerator {
  public:
   explicit StringGenerator(IntGenerator* len_gen, IntGenerator* index_gen, double n_strings)
-      : strings_(static_cast<int64_t>(n_strings)) {
+      : strings_(static_cast<int64_t>(n_strings) + 1) {
     len_gen_ = len_gen;
     index_gen_ = index_gen;
     auto gen = [&len_gen]() { return RandomString(len_gen->Generate()); };
@@ -191,6 +197,8 @@ class StringGenerator {
 
   std::string NextString() {
     int idx = index_gen_->Generate();
+    CHECK_GT(idx, -1);
+    CHECK_GT(static_cast<int64_t>(strings_.size()), idx);
     return strings_[idx];
   }
 
@@ -202,34 +210,31 @@ class StringGenerator {
   std::mt19937 mersenne_engine{rnd_device_()};  // Generates random integers
 };
 
-StatusOr<IntGenerator*> IntGenWrapper(DistributionType dist_type,
-                                      const DistributionParams* params) {
-  IntGenerator* int_gen;
-  switch (dist_type) {
+std::unique_ptr<IntGenerator> IntGenWrapper(const DistributionParams* params) {
+  std::unique_ptr<IntGenerator> int_gen;
+  switch (params->type()) {
     case DistributionType::kZipfian:
-      int_gen = new ZipfianGenerator(static_cast<const ZipfianParams*>(params));
+      int_gen = std::make_unique<ZipfianGenerator>(static_cast<const ZipfianParams*>(params));
       break;
     case DistributionType::kUniform:
-      int_gen = new UniformGenerator(static_cast<const UniformParams*>(params));
+      int_gen = std::make_unique<UniformGenerator>(static_cast<const UniformParams*>(params));
       break;
     case DistributionType::kNormal:
-      int_gen = new NormalGenerator(static_cast<const NormalParams*>(params));
+      int_gen = std::make_unique<NormalGenerator>(static_cast<const NormalParams*>(params));
       break;
     default:
-      return error::InvalidArgument(
-          "We only support Zipf, Normal, and Uniform value distributions.");
+      return nullptr;
   }
   return int_gen;
 }
 
 StatusOr<std::vector<types::StringValue>> CreateLargeStringData(
-    int size, DistributionType val_dist_type, const DistributionParams* val_dist_vars,
-    DistributionType len_type, const DistributionParams* len_dist_vars) {
+    int size, const DistributionParams* val_dist_vars, const DistributionParams* len_dist_vars) {
   std::vector<types::StringValue> data(size);
 
-  IntGenerator* length_generator = IntGenWrapper(len_type, len_dist_vars).ConsumeValueOrDie();
-  IntGenerator* index_generator = IntGenWrapper(val_dist_type, val_dist_vars).ConsumeValueOrDie();
-  StringGenerator string_gen{length_generator, index_generator,
+  std::unique_ptr<IntGenerator> length_generator = IntGenWrapper(len_dist_vars);
+  std::unique_ptr<IntGenerator> index_generator = IntGenWrapper(val_dist_vars);
+  StringGenerator string_gen{length_generator.get(), index_generator.get(),
                              static_cast<double>(val_dist_vars->max())};
 
   auto gen = [&string_gen]() { return string_gen.NextString(); };
