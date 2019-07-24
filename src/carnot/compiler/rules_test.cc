@@ -80,6 +80,31 @@ class RulesTest : public ::testing::Test {
     EXPECT_OK(md_resolver->Init(parent, {{}}, ast));
     return md_resolver;
   }
+  FilterIR* MakeFilter(OperatorIR* parent) {
+    auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(constant1->Init(10, ast));
+
+    auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(constant2->Init(10, ast));
+
+    auto column = graph->MakeNode<ColumnIR>().ValueOrDie();
+    EXPECT_OK(column->Init("column", ast));
+
+    auto filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"}, "pl",
+                                std::vector<ExpressionIR*>({constant1, column}),
+                                false /* compile_time */, ast));
+    filter_func->SetOutputDataType(types::DataType::BOOLEAN);
+
+    auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
+
+    FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
+    ArgMap amap({{"fn", filter_func_lambda}});
+    EXPECT_OK(filter->Init(parent, amap, ast));
+    return filter;
+  }
+
   pypa::AstPtr ast;
   std::shared_ptr<IR> graph;
   std::shared_ptr<Rule> data_rule;
@@ -660,30 +685,6 @@ class OperatorRelationTest : public RulesTest {
     mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
-  FilterIR* MakeFilter(OperatorIR* parent) {
-    auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
-    EXPECT_OK(constant1->Init(10, ast));
-
-    auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
-    EXPECT_OK(constant2->Init(10, ast));
-
-    auto column = graph->MakeNode<ColumnIR>().ValueOrDie();
-    EXPECT_OK(column->Init("column", ast));
-
-    auto filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"}, "pl",
-                                std::vector<ExpressionIR*>({constant1, column}),
-                                false /* compile_time */, ast));
-    filter_func->SetOutputDataType(types::DataType::BOOLEAN);
-
-    auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-    EXPECT_OK(filter_func_lambda->Init({}, filter_func, ast));
-
-    FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
-    ArgMap amap({{"fn", filter_func_lambda}});
-    EXPECT_OK(filter->Init(parent, amap, ast));
-    return filter;
-  }
   LimitIR* MakeLimit(OperatorIR* parent) {
     auto constant1 = graph->MakeNode<IntIR>().ValueOrDie();
     EXPECT_OK(constant1->Init(10, ast));
@@ -1237,6 +1238,86 @@ TEST_F(FormatMetadataTest, only_equal_supported) {
   EXPECT_TRUE(StatusHasCompilerError(
       status.status(),
       "Function \'pl.add\' with metadata arg in conjunction with \'[String]\' is not supported."));
+}
+
+class CheckRelationRule : public RulesTest {
+ protected:
+  void SetUp() override {
+    RulesTest::SetUp();
+    mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
+  }
+
+  MapIR* MakeMap(OperatorIR* parent) {
+    auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(agg_func->Init({FuncIR::Opcode::add, "+", "add"}, "pl",
+                             std::vector<ExpressionIR*>({MakeInt(10), MakeInt(12)}),
+                             false /* compile_time */, ast));
+
+    auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(agg_func_lambda->Init({}, {{"agg_fn", agg_func}}, ast));
+
+    MapIR* agg = graph->MakeNode<MapIR>().ValueOrDie();
+    ArgMap amap({{"fn", agg_func_lambda}});
+    EXPECT_OK(agg->Init(parent, amap, ast));
+    return agg;
+  }
+
+  table_store::schema::Relation ViolatingRelation() {
+    auto relation = mem_src->relation();
+    relation.AddColumn(types::DataType::STRING,
+                       absl::Substitute("$0_pod_name", MetadataProperty::kMetadataColumnPrefix));
+    return relation;
+  }
+  table_store::schema::Relation PassingRelation() { return mem_src->relation(); }
+
+  MemorySourceIR* mem_src;
+};
+
+// Should not have any violations or exceptions in this case.
+TEST_F(CheckRelationRule, properly_formatted_no_problems) {
+  FilterIR* filter = MakeFilter(mem_src);
+  EXPECT_OK(filter->SetRelation(PassingRelation()));
+  MapIR* map = MakeMap(filter);
+  EXPECT_OK(map->SetRelation(PassingRelation()));
+
+  CheckMetadataColumnNamingRule rule(compiler_state_.get(), md_handler.get());
+
+  auto status = rule.Execute(graph.get());
+  ASSERT_OK(status);
+  // Should not change anything.
+  EXPECT_FALSE(status.ValueOrDie());
+}
+
+// Metadata would be violated if it wasn't evaluated correctly, but it is the only node that has an
+// exception.
+TEST_F(CheckRelationRule, skip_metadata_resolver) {
+  MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);
+  EXPECT_OK(md_resolver->SetRelation(ViolatingRelation()));
+  MapIR* map = MakeMap(md_resolver);
+  EXPECT_OK(map->SetRelation(PassingRelation()));
+
+  CheckMetadataColumnNamingRule rule(compiler_state_.get(), md_handler.get());
+
+  auto status = rule.Execute(graph.get());
+  ASSERT_OK(status);
+  // Should not change anything.
+  EXPECT_FALSE(status.ValueOrDie());
+}
+// Should find an issue with the map function.
+TEST_F(CheckRelationRule, find_map_issue) {
+  MapIR* map = MakeMap(mem_src);
+  EXPECT_OK(map->SetRelation(ViolatingRelation()));
+
+  CheckMetadataColumnNamingRule rule(compiler_state_.get(), md_handler.get());
+
+  auto status = rule.Execute(graph.get());
+  EXPECT_NOT_OK(status);
+  EXPECT_TRUE(StatusHasCompilerError(
+      status.status(),
+      absl::Substitute(
+          "Map operator cannot have a column with prefix \'$0\'. \'$0_pod_name\' is in violation.",
+          MetadataProperty::kMetadataColumnPrefix)));
 }
 }  // namespace compiler
 }  // namespace carnot

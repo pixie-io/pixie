@@ -164,6 +164,23 @@ class MetadataFunctionFormatRule : public Rule {
   StatusOr<bool> Apply(IRNode* ir_node) const override;
   StatusOr<MetadataLiteralIR*> WrapLiteral(DataIR* data, MetadataProperty* md_property) const;
 };
+
+class CheckMetadataColumnNamingRule : public Rule {
+  /**
+   * @brief Checks to make sure that the column naming scheme doesn't collide with metadata.
+   *
+   * Never modifies the graph, so should always return false.
+   */
+ public:
+  explicit CheckMetadataColumnNamingRule(CompilerState* compiler_state, MetadataHandler* md_handler)
+      : Rule(compiler_state), md_handler_(md_handler) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) const override;
+  StatusOr<bool> CheckRelation(OperatorIR* op) const;
+
+  MetadataHandler* md_handler_;
+};
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

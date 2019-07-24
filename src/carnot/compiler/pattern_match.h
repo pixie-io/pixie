@@ -102,6 +102,11 @@ inline ClassMatch<IRNodeType::kMetadataLiteral> MetadataLiteral() {
   return ClassMatch<IRNodeType::kMetadataLiteral>();
 }
 
+// Match an arbitrary MetadataResolver operator.
+inline ClassMatch<IRNodeType::kMetadataResolver> MetadataResolver() {
+  return ClassMatch<IRNodeType::kMetadataResolver>();
+}
+
 /**
  * @brief Match a specific integer value.
  */
@@ -484,6 +489,16 @@ UnresolvedReadyMetadataResolver() {
 inline AnyRelationResolvedOpMatch<false, true> UnresolvedReadyOp() {
   return AnyRelationResolvedOpMatch<false, true>();
 }
+
+struct MatchAnyOp : public ParentMatch {
+  // The evaluation order is always stable, regardless of Commutability.
+  // The LHS is always matched first.
+  MatchAnyOp() : ParentMatch(IRNodeType::kAny) {}
+
+  bool match(IRNode* V) const override { return V->IsOp(); }
+};
+
+inline MatchAnyOp Operator() { return MatchAnyOp(); }
 
 /**
  * @brief Match Range based on the start stop arguments.

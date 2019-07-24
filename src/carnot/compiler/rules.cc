@@ -467,6 +467,27 @@ StatusOr<MetadataLiteralIR*> MetadataFunctionFormatRule::WrapLiteral(
 
   return literal;
 }
+StatusOr<bool> CheckMetadataColumnNamingRule::Apply(IRNode* ir_node) const {
+  if (match(ir_node, MetadataResolver())) {
+    // If the MetadataResovler, then don't do anything.
+    return false;
+  } else if (match(ir_node, Operator())) {
+    return CheckRelation(static_cast<OperatorIR*>(ir_node));
+  }
+  return false;
+}
+StatusOr<bool> CheckMetadataColumnNamingRule::CheckRelation(OperatorIR* op) const {
+  DCHECK(op->IsRelationInit());
+  table_store::schema::Relation relation = op->relation();
+  for (const auto& c_name : relation.col_names()) {
+    if (absl::StartsWith(c_name, IdMetadataProperty::kMetadataColumnPrefix)) {
+      return op->CreateIRNodeError(
+          "$0 operator cannot have a column with prefix '$1'. \'$2\' is in violation.",
+          op->type_string(), MetadataProperty::kMetadataColumnPrefix, c_name);
+    }
+  }
+  return false;
+}
 
 }  // namespace compiler
 }  // namespace carnot
