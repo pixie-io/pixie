@@ -20,9 +20,14 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
+// Constants for the run-time (UDF) and compile-time fn prefixes.
 constexpr const char* kUDFPrefix = "pl";
 constexpr const char* kCompileTimePrefix = "plc";
 
+// Constant for the metadata attribute keyword.
+constexpr const char* kMDKeyword = "attr";
+
+// Constants for operators in the query language.
 constexpr const char* kFromOpId = "From";
 constexpr const char* kRangeOpId = "Range";
 constexpr const char* kMapOpId = "Map";
@@ -343,22 +348,24 @@ class ASTWalker {
    * evaluates the values in that dictionary, which should just be expressions,
    * then returns the Expression map and the Body return.
    *
-   * @param arg_name : the name of the input argument passed into the lambda.
+   * @param lambda_arg: the string repr of  the lambda argument that is currently being traversed.
+   * Used to connect Columns as references to the parent operator.
    * @param node : the node that body points to
    * @return StatusOr<ColExprMap> a map from new column name to expression.
    */
-  StatusOr<LambdaBodyReturn> ProcessLambdaDict(const std::string& arg_name,
+  StatusOr<LambdaBodyReturn> ProcessLambdaDict(const std::string& lambda_arg,
                                                const pypa::AstDictPtr& body_dict);
 
   /**
    * @brief Takes in an attribute contained within a lambda and maps it to either a column or a
    * function call.
    *
-   * @param arg_name
+   * @param lambda_arg: the string repr of  the lambda argument that is currently being traversed.
+   * Used to connect Columns as references to the parent operator.
    * @param node
    * @return StatusOr<LambdaExprReturn>
    */
-  StatusOr<LambdaExprReturn> ProcessLambdaAttribute(const std::string& arg_name,
+  StatusOr<LambdaExprReturn> ProcessLambdaAttribute(const std::string& lambda_arg,
                                                     const pypa::AstAttributePtr& node);
 
   /**
@@ -378,62 +385,67 @@ class ASTWalker {
   /**
    * @brief Takes a binary operation node and translates it to an IRNode expression.
    *
-   * @param arg_name
+   * @param lambda_arg: the string repr of  the lambda argument that is currently being traversed.
+   * Used to connect Columns as references to the parent operator.
    * @param node
    * @return StatusOr<LambdaExprReturn>
    */
-  StatusOr<LambdaExprReturn> ProcessLambdaBinOp(const std::string& arg_name,
+  StatusOr<LambdaExprReturn> ProcessLambdaBinOp(const std::string& lambda_arg,
                                                 const pypa::AstBinOpPtr& node);
   /**
    * @brief Takes a bool op node and translates it to an IRNode expression.
    *
-   * @param arg_name
+   * @param lambda_arg: the string repr of  the lambda argument that is currently being traversed.
+   * Used to connect Columns as references to the parent operator.
    * @param node
    * @return StatusOr<LambdaExprReturn> bool op contained in the return value.
    */
-  StatusOr<LambdaExprReturn> ProcessLambdaBoolOp(const std::string& arg_name,
+  StatusOr<LambdaExprReturn> ProcessLambdaBoolOp(const std::string& lambda_arg,
                                                  const pypa::AstBoolOpPtr& node);
 
   /**
    * @brief Takes a comparison (<,=,<=,>=,>) node and translates it to an IRNode expression.
    *
-   * @param arg_name
+   * @param lambda_arg: the string repr of  the lambda argument that is currently being traversed.
+   * Used to connect Columns as references to the parent operator.
    * @param node
    * @return StatusOr<LambdaExprReturn>
    */
-  StatusOr<LambdaExprReturn> ProcessLambdaCompare(const std::string& arg_name,
+  StatusOr<LambdaExprReturn> ProcessLambdaCompare(const std::string& lambda_arg,
                                                   const pypa::AstComparePtr& node);
   /**
-   * @brief Processes a call node with the lambda context (arg_name) that helps identify and
+   * @brief Processes a call node with the lambda context (lambda_arg) that helps identify and
    * return the column names we want, and notifies us when there is a column name being used
    *
-   * @param arg_name the name of the argument of the lambda function which represents a record.
-   * Used to identify column names.
+   * @param lambda_arg: the string repr of  the lambda argument that is currently being traversed.
+   * Used to connect Columns as references to the parent operator. Used to identify column names.
    * @param node the node we call.
    * @return StatusOr<LambdaExprReturn>
    */
-  StatusOr<LambdaExprReturn> ProcessLambdaCall(const std::string& arg_name,
+  StatusOr<LambdaExprReturn> ProcessLambdaCall(const std::string& lambda_arg,
                                                const pypa::AstCallPtr& node);
   /**
    * @brief Takes in a list and converts it to what's expected in the lambda.
    *
    * Currently restricted to only allow columns in there.
    *
-   * @param arg_name
+   * @param lambda_arg: the string repr of  the lambda argument that is currently being traversed.
+   * Used to connect Columns as references to the parent operator.
    * @param node
    * @return StatusOr<LambdaExprReturn>
    */
-  StatusOr<LambdaExprReturn> ProcessLambdaList(const std::string& arg_name,
+  StatusOr<LambdaExprReturn> ProcessLambdaList(const std::string& lambda_arg,
                                                const pypa::AstListPtr& node);
   /**
    * @brief Takes an expression and the lambda arg name, processses the expression into an
    * IRNode, and extracts any expected relation values.
    *
-   * @param arg_name
+   * @param lambda_arg: the string repr of  the lambda argument that is currently being traversed.
+   * Used to connect Columns as references to the parent operator.
    * @param node
    * @return StatusOr<LambdaExprReturn>
    */
-  StatusOr<LambdaExprReturn> ProcessLambdaExpr(const std::string& arg_name,
+  StatusOr<LambdaExprReturn> ProcessLambdaExpr(const std::string& lambda_arg,
                                                const pypa::AstPtr& node);
 
   /**
@@ -509,6 +521,51 @@ class ASTWalker {
    */
   StatusOr<ExpressionIR*> ProcessDataCall(const pypa::AstCallPtr& node);
 
+  /**
+   * @brief Processes nested attributes in the lambda function. For now this is just metadata
+   * references.
+   *
+   * @param lambda_arg: the string repr of the lambda argument that is currently being traversed.
+   * Used to connect Columns as references to the parent operator.
+   * @param attribute_value: the string representation of the attribute that calls on the
+   * preant_attribute
+   * @param parent_attr: the parent attribute that the original attribute is called upon.
+   * @return StatusOr<LambdaExprReturn>
+   */
+  StatusOr<LambdaExprReturn> ProcessLambdaNestedAttribute(const std::string& lambda_arg,
+                                                          const std::string& attribute_str,
+                                                          const pypa::AstAttributePtr& parent_attr);
+
+  /**
+   * @brief Processes functions that are argless.
+   *
+   * @param kUDFPrefix: the prefix of the calling function.
+   * @param function_name: the string representation of the function.
+   * @return StatusOr<LambdaExprReturn> container of the function expression.
+   */
+  StatusOr<LambdaExprReturn> ProcessArglessFunction(const std::string& kUDFPrefix,
+                                                    const std::string& function_name);
+
+  /**
+   * @brief Creates and returns an IR representation of a column given a column name.
+   *
+   * @param column_name: the column name string.
+   * @param column_ast_node: the referring ast_node of the column.
+   * @return StatusOr<LambdaExprReturn>: container of the expression.
+   */
+  StatusOr<LambdaExprReturn> ProcessRecordColumn(const std::string& column_name,
+                                                 const pypa::AstPtr& column_ast_node);
+  /**
+   * @brief Processes a metadata attribute.
+   *
+   * @param lambda_arg: the argument of the containing lambda.
+   * @param attribute_value: the value of the attribute.
+   * @param val_attr: the containing attribute ptr fo the
+   * @return StatusOr<LambdaExprReturn>
+   */
+  StatusOr<LambdaExprReturn> ProcessMetadataAttribute(const std::string& lambda_arg,
+                                                      const std::string& attribute_value,
+                                                      const pypa::AstAttributePtr& val_attr);
   /**
    * @brief Create an error that incorporates line, column of ast node into the error message.
    *

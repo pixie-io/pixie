@@ -168,7 +168,7 @@ StatusOr<std::vector<ColumnIR*>> SourceRelationRule::GetColumnsFromRelation(
 }
 
 StatusOr<std::vector<std::string>> SourceRelationRule::GetColumnNames(
-    std::vector<IRNode*> select_children) const {
+    std::vector<ExpressionIR*> select_children) const {
   std::vector<std::string> columns;
   for (size_t idx = 0; idx < select_children.size(); idx++) {
     IRNode* col_string_node = select_children[idx];
@@ -205,14 +205,19 @@ StatusOr<bool> OperatorRelationRule::SetBlockingAgg(BlockingAggIR* agg_ir) const
   table_store::schema::Relation agg_rel;
   std::vector<ColumnIR*> groups;
   if (!agg_ir->group_by_all()) {
-    PL_ASSIGN_OR_RETURN(IRNode * expr, agg_ir->by_func()->GetDefaultExpr());
-    if (expr->type() == IRNodeType::kColumn) {
+    PL_ASSIGN_OR_RETURN(IRNode * default_expr, agg_ir->by_func()->GetDefaultExpr());
+    if (!default_expr->IsExpression()) {
+      return agg_ir->CreateIRNodeError("Expected an expression, not a '$0'.",
+                                       default_expr->type_string());
+    }
+    ExpressionIR* expr = static_cast<ExpressionIR*>(default_expr);
+    if (expr->IsColumn()) {
       if (!UpdateColumn(static_cast<ColumnIR*>(expr), &groups, &agg_rel)) {
         return false;
       }
     } else if (expr->type() == IRNodeType::kList) {
       for (auto ch : static_cast<ListIR*>(expr)->children()) {
-        DCHECK(ch->type() == IRNodeType::kColumn);
+        DCHECK(ch->IsColumn()) << "Expect group by to be column.";
         if (!UpdateColumn(static_cast<ColumnIR*>(ch), &groups, &agg_rel)) {
           return false;
         }

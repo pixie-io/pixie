@@ -102,10 +102,11 @@ Status IRVerifier::VerifyBlockingAgg(BlockingAggIR* agg_node) {
     PL_ASSIGN_OR_RETURN(IRNode * by_body, agg_node->by_func()->GetDefaultExpr());
 
     auto actual_type = by_body->type();
-    if (IRNodeType::kColumn != actual_type && actual_type != IRNodeType::kList) {
-      auto msg = absl::Substitute(
-          "BlockingAggIR: For node with id $1, Expected ColumnType or ListType Got $0.",
-          by_body->type_string(), by_body->id());
+    if (!by_body->IsExpression() ||
+        (actual_type != IRNodeType::kList && !static_cast<ExpressionIR*>(by_body)->IsColumn())) {
+      auto msg =
+          absl::Substitute("BlockingAggIR: For node with id $1, Expected Column or List Got $0.",
+                           by_body->type_string(), by_body->id());
       return agg_node->CreateIRNodeError(msg);
     }
   } else if (agg_node->groups_set() || !agg_node->groups().empty()) {

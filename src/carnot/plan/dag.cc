@@ -62,6 +62,12 @@ void DAG::DeleteEdge(int64_t from_node, int64_t to_node) {
   }
 }
 
+bool DAG::HasEdge(int64_t from_node, int64_t to_node) {
+  auto& forward_edges = forward_edges_by_node_[from_node];
+  const auto& node = std::find(begin(forward_edges), end(forward_edges), to_node);
+  return node != end(forward_edges);
+}
+
 std::unordered_set<int64_t> DAG::TransitiveDepsFrom(int64_t node) {
   enum VisitStatus { kVisitStarted, kVisitComplete };
   enum NodeColor { kWhite = 0, kGray, kBlack };

@@ -337,6 +337,44 @@ TEST_F(DebugStringFunctionality, debug_string_lambda_test) {
   ASSERT_EXIT((lambda_node_->DebugString(0), exit(0)), ::testing::ExitedWithCode(0), ".*");
 }
 
+class MetadataTests : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    ast = MakeTestAstPtr();
+    graph = std::make_shared<IR>();
+    md_handler = MetadataHandler::Create();
+  }
+  MemorySourceIR* MakeMemSource() { return graph->MakeNode<MemorySourceIR>().ValueOrDie(); }
+  pypa::AstPtr ast;
+  std::shared_ptr<IR> graph;
+  std::unique_ptr<MetadataHandler> md_handler;
+};
+
+TEST_F(MetadataTests, metadata_resolver) {
+  MetadataResolverIR* metadata_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
+  EXPECT_OK(metadata_resolver->Init(MakeMemSource(), {{}}, ast));
+  MetadataProperty* md_property = md_handler->GetProperty("pod_name").ValueOrDie();
+  EXPECT_FALSE(metadata_resolver->HasMetadataColumn("pod_name"));
+  EXPECT_OK(metadata_resolver->AddMetadata(md_property));
+  EXPECT_TRUE(metadata_resolver->HasMetadataColumn("pod_name"));
+  EXPECT_EQ(metadata_resolver->metadata_columns().size(), 1);
+  EXPECT_EQ(metadata_resolver->metadata_columns().find("pod_name")->second, md_property);
+}
+
+TEST_F(MetadataTests, metadata_ir) {
+  MetadataIR* metadata_ir = graph->MakeNode<MetadataIR>().ValueOrDie();
+  EXPECT_OK(metadata_ir->Init("pod_name", ast));
+  EXPECT_TRUE(metadata_ir->IsColumn());
+  EXPECT_FALSE(metadata_ir->HasMetadataResolver());
+  EXPECT_EQ(metadata_ir->name(), "pod_name");
+  MetadataResolverIR* metadata_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
+  EXPECT_OK(metadata_resolver->Init(MakeMemSource(), {{}}, ast));
+  auto property = std::make_unique<NameMetadataProperty>(
+      "pod_name", std::vector<std::string>({MetadataProperty::kUniquePIDColumn}));
+  EXPECT_OK(metadata_ir->ResolveMetadataColumn(metadata_resolver, property.get()));
+  EXPECT_TRUE(metadata_ir->HasMetadataResolver());
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

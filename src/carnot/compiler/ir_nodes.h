@@ -43,12 +43,17 @@ enum class IRNodeType {
   kLambda,
   kColumn,
   kTime,
+  kMetadata,
+  kMetadataResolver,
+  kMetadataLiteral,
   number_of_types  // This is not a real type, but is used to verify strings are inline
                    // with enums.
 };
 static constexpr const char* kIRNodeStrings[] = {
-    "MemorySource", "MemorySink", "Range", "Map",  "BlockingAgg", "Filter", "Limit",  "String",
-    "Float",        "Int",        "Bool",  "Func", "List",        "Lambda", "Column", "Time"};
+    "MemorySource",   "MemorySink", "Range",  "Map",  "BlockingAgg", "Filter",
+    "Limit",          "String",     "Float",  "Int",  "Bool",        "Func",
+    "List",           "Lambda",     "Column", "Time", "Metadata",    "MetadataResolver",
+    "MetadataLiteral"};
 
 /**
  * @brief Node class for the IR.
@@ -148,8 +153,8 @@ class IR {
 
   Status AddEdge(int64_t from_node, int64_t to_node);
   Status AddEdge(IRNode* from_node, IRNode* to_node);
-  void DeleteEdge(int64_t from_node, int64_t to_node);
-  void DeleteNode(int64_t node);
+  Status DeleteEdge(int64_t from_node, int64_t to_node);
+  Status DeleteNode(int64_t node);
   plan::DAG& dag() { return dag_; }
   const plan::DAG& dag() const { return dag_; }
   std::string DebugString();
@@ -197,6 +202,7 @@ class OperatorIR : public IRNode {
   bool HasParent() const { return has_parent_; }
   OperatorIR* parent() const { return parent_; }
   Status SetParent(IRNode* node);
+  Status RemoveParent(OperatorIR* op);
   Status Init(IRNode* parent, const ArgMap& args, const pypa::AstPtr& ast_node);
   virtual Status InitImpl(const ArgMap& args) = 0;
   virtual std::vector<std::string> ArgKeys() = 0;
@@ -218,6 +224,7 @@ class OperatorIR : public IRNode {
   bool has_parent_;
   OperatorIR* parent_;
 };
+
 class ExpressionIR : public IRNode {
  public:
   ExpressionIR() = delete;
@@ -226,6 +233,7 @@ class ExpressionIR : public IRNode {
   bool IsExpression() const override { return true; }
   virtual types::DataType EvaluatedDataType() const = 0;
   virtual bool IsDataTypeEvaluated() const = 0;
+  virtual bool IsColumn() const { return false; }
   StatusOr<OperatorIR*> ContainingOp() {
     IR* graph = graph_ptr();
     int64_t cur_id = id();
@@ -338,6 +346,7 @@ class ColumnIR : public ExpressionIR {
   bool HasLogicalRepr() const override;
   std::string col_name() const { return col_name_; }
   std::string DebugString(int64_t depth) const override;
+  bool IsColumn() const override { return true; }
   void ResolveColumn(int64_t col_idx, types::DataType type) {
     col_idx_ = col_idx;
     evaluated_data_type_ = type;
@@ -347,6 +356,12 @@ class ColumnIR : public ExpressionIR {
   bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
 
   int64_t col_idx() const { return col_idx_; }
+
+ protected:
+  /**
+   * @brief Optional protected constructor for children types.
+   */
+  ColumnIR(int64_t id, IRNodeType type) : ExpressionIR(id, type) {}
 
  private:
   std::string col_name_;
@@ -386,14 +401,13 @@ class ListIR : public DataIR {
   explicit ListIR(int64_t id) : DataIR(id, IRNodeType::kList, types::DataType::DATA_TYPE_UNKNOWN) {}
   bool HasLogicalRepr() const override;
   // TODO(philkuz) (PL-545) refactor lists
-  Status Init(const pypa::AstPtr& ast_node, std::vector<IRNode*> children);
+  Status Init(const pypa::AstPtr& ast_node, std::vector<ExpressionIR*> children);
   std::string DebugString(int64_t depth) const override;
-  std::vector<IRNode*> children() { return children_; }
+  std::vector<ExpressionIR*> children() { return children_; }
   bool IsOp() const override { return false; }
-  bool IsExpression() const override { return false; }
 
  private:
-  std::vector<IRNode*> children_;
+  std::vector<ExpressionIR*> children_;
 };
 
 struct ColumnExpression {
@@ -496,6 +510,14 @@ class FuncIR : public ExpressionIR {
     evaluated_data_type_ = type;
     is_data_type_evaluated_ = true;
   }
+  Status UpdateArg(int64_t idx, ExpressionIR* arg) {
+    CHECK_LT(idx, static_cast<int64_t>(args_.size()))
+        << "Tried to update arg of index greater than number of args.";
+    ExpressionIR* old_arg = args_[idx];
+    args_[idx] = arg;
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(id(), old_arg->id()));
+    return Status::OK();
+  }
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
   bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
 
@@ -566,6 +588,50 @@ class TimeIR : public DataIR {
 
  private:
   int64_t val_;
+};
+
+class MetadataResolverIR;
+
+class MetadataIR : public ColumnIR {
+ public:
+  MetadataIR() = delete;
+  explicit MetadataIR(int64_t id) : ColumnIR(id, IRNodeType::kMetadata) {}
+  Status Init(std::string metadata_val, const pypa::AstPtr& ast_node);
+  bool HasLogicalRepr() const override { return false; };
+  std::string DebugString(int64_t depth) const override;
+  std::string name() const { return metadata_name_; }
+  bool HasMetadataResolver() const { return has_metadata_resolver_; }
+
+  Status ResolveMetadataColumn(MetadataResolverIR* resolver_op, MetadataProperty* property);
+  MetadataResolverIR* resolver() const { return resolver_; }
+  MetadataProperty* property() const { return property_; }
+
+ private:
+  std::string metadata_name_;
+  bool has_metadata_resolver_ = false;
+  MetadataResolverIR* resolver_;
+  MetadataProperty* property_;
+};
+
+/**
+ * @brief MetadataLiteral is a representation for any literal (DataIR)
+ * that we know is properly formatted for some function.
+ */
+class MetadataLiteralIR : public ExpressionIR {
+ public:
+  MetadataLiteralIR() = delete;
+  explicit MetadataLiteralIR(int64_t id) : ExpressionIR(id, IRNodeType::kMetadataLiteral) {}
+  Status Init(DataIR* literal, const pypa::AstPtr& ast_node);
+  bool HasLogicalRepr() const override { return false; }
+  std::string DebugString(int64_t depth) const override;
+  IRNodeType literal_type() const { return literal_type_; }
+  DataIR* literal() const { return literal_; }
+  bool IsDataTypeEvaluated() const override { return literal_->IsDataTypeEvaluated(); }
+  types::DataType EvaluatedDataType() const override { return literal_->EvaluatedDataType(); }
+
+ private:
+  DataIR* literal_;
+  IRNodeType literal_type_;
 };
 
 /**
@@ -672,6 +738,37 @@ class RangeIR : public OperatorIR {
   // Start and Stop eventually evaluate to integers, but might be expressions.
   IRNode* start_repr_ = nullptr;
   IRNode* stop_repr_ = nullptr;
+};
+
+/**
+ * @brief The MetadataResolverIR is a IR-only operation that
+ * adds metadata as a column into the query.
+ * At the end of the analyzer stage of the compiler this becomes a map node.
+ */
+class MetadataResolverIR : public OperatorIR {
+ public:
+  MetadataResolverIR() = delete;
+  explicit MetadataResolverIR(int64_t id)
+      : OperatorIR(id, IRNodeType::kMetadataResolver, true, false) {}
+  Status InitImpl(const ArgMap& args) override;
+  bool HasLogicalRepr() const override { return false; }
+  Status ToProto(planpb::Operator*) const override {
+    return error::Unimplemented("Calling ToProto on $0, which lacks a Protobuf representation.",
+                                type_string());
+  }
+
+  std::vector<std::string> ArgKeys() override { return {}; }
+
+  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
+    return std::unordered_map<std::string, IRNode*>();
+  }
+  std::string DebugString(int64_t depth) const override;
+  Status AddMetadata(MetadataProperty* md_property);
+  bool HasMetadataColumn(const std::string& type);
+  std::map<std::string, MetadataProperty*> metadata_columns() const { return metadata_columns_; }
+
+ private:
+  std::map<std::string, MetadataProperty*> metadata_columns_;
 };
 
 // TODO(philkuz) adjust the documentation for map.

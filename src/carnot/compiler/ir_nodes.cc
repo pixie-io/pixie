@@ -13,9 +13,21 @@ Status IR::AddEdge(IRNode* from_node, IRNode* to_node) {
   return AddEdge(from_node->id(), to_node->id());
 }
 
-void IR::DeleteEdge(int64_t from_node, int64_t to_node) { dag_.DeleteEdge(from_node, to_node); }
+Status IR::DeleteEdge(int64_t from_node, int64_t to_node) {
+  if (!dag_.HasEdge(from_node, to_node)) {
+    return error::InvalidArgument("No edge ($0, $1) exists.", from_node, to_node);
+  }
+  dag_.DeleteEdge(from_node, to_node);
+  return Status::OK();
+}
 
-void IR::DeleteNode(int64_t node) { dag_.DeleteNode(node); }
+Status IR::DeleteNode(int64_t node) {
+  if (!dag_.HasNode(node)) {
+    return error::InvalidArgument("No node $0 exists in graph.", node);
+  }
+  dag_.DeleteNode(node);
+  return Status::OK();
+}
 
 std::string IR::DebugString() {
   std::string debug_string = dag().DebugString() + "\n";
@@ -34,7 +46,8 @@ void IRNode::SetLineCol(const pypa::AstPtr& ast_node) {
   ast_node_ = ast_node;
   SetLineCol(ast_node->line, ast_node->column);
 }
-
+// TODO(philkuz) refactor this into AddParent, add expected_num_parents for each operator, and add
+// RemoveParent().
 Status OperatorIR::SetParent(IRNode* node) {
   if (!node->IsOp()) {
     return error::InvalidArgument("Expected Op, got $0 instead", node->type_string());
@@ -42,6 +55,10 @@ Status OperatorIR::SetParent(IRNode* node) {
   parent_ = static_cast<OperatorIR*>(node);
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent_, this));
   return Status::OK();
+}
+
+Status OperatorIR::RemoveParent(OperatorIR* parent) {
+  return graph_ptr()->DeleteEdge(parent->id(), id());
 }
 
 Status OperatorIR::ArgMapContainsKeys(const ArgMap& args) {
@@ -196,10 +213,10 @@ Status RangeIR::Init(IRNode* parent_node, IRNode* start_repr, IRNode* stop_repr,
 }
 Status RangeIR::SetStartStop(IRNode* start_repr, IRNode* stop_repr) {
   if (start_repr_ != nullptr) {
-    graph_ptr()->DeleteEdge(id(), start_repr_->id());
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(id(), start_repr_->id()));
   }
   if (stop_repr_ != nullptr) {
-    graph_ptr()->DeleteEdge(id(), stop_repr_->id());
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(id(), stop_repr_->id()));
   }
   start_repr_ = start_repr;
   stop_repr_ = stop_repr;
@@ -243,6 +260,7 @@ std::string MapIR::DebugString(int64_t depth) const {
 
 Status OperatorIR::EvaluateExpression(planpb::ScalarExpression* expr, const IRNode& ir_node) const {
   switch (ir_node.type()) {
+    case IRNodeType::kMetadata:
     case IRNodeType::kColumn: {
       auto col = expr->mutable_column();
       col->set_node(parent()->id());
@@ -448,6 +466,7 @@ Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* e
   for (auto ir_arg : casted_ir.args()) {
     auto arg_pb = expr->add_args();
     switch (ir_arg->type()) {
+      case IRNodeType::kMetadata:
       case IRNodeType::kColumn: {
         auto col = arg_pb->mutable_column();
         col->set_node(parent()->id());
@@ -547,7 +566,7 @@ std::string StringIR::DebugString(int64_t depth) const {
 }
 
 bool ListIR::HasLogicalRepr() const { return false; }
-Status ListIR::Init(const pypa::AstPtr& ast_node, std::vector<IRNode*> children) {
+Status ListIR::Init(const pypa::AstPtr& ast_node, std::vector<ExpressionIR*> children) {
   if (!children_.empty()) {
     return error::AlreadyExists("ListIR already has children and likely has been created already.");
   }
@@ -586,7 +605,7 @@ Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names, Exp
                       const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   expected_column_names_ = expected_column_names;
-  col_exprs_.push_back(ColumnExpression{"default_key", node});
+  col_exprs_.push_back(ColumnExpression{default_key, node});
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, node));
   has_dict_body_ = false;
   return Status::OK();
@@ -598,7 +617,7 @@ StatusOr<IRNode*> LambdaIR::GetDefaultExpr() {
         "Couldn't return the default expression, Lambda initialized as dict.");
   }
   for (const auto& col_expr : col_exprs_) {
-    if (col_expr.name == "default_key") {
+    if (col_expr.name == default_key) {
       return col_expr.node;
     }
   }
@@ -698,6 +717,69 @@ Status TimeIR::Init(int64_t val, const pypa::AstPtr& ast_node) {
 std::string TimeIR::DebugString(int64_t depth) const {
   return absl::Substitute("$0$1:$2\t-\t$3", std::string(depth, '\t'), id(), "Time", val());
 }
+
+/* Metadata IR */
+Status MetadataIR::Init(std::string metadata_str, const pypa::AstPtr& ast_node) {
+  SetLineCol(ast_node);
+  metadata_name_ = metadata_str;
+  return Status::OK();
+}
+
+Status MetadataIR::ResolveMetadataColumn(MetadataResolverIR* resolver_op,
+                                         MetadataProperty* property) {
+  PL_RETURN_IF_ERROR(ColumnIR::Init(property->column_name_repr(), ast_node()));
+  resolver_ = resolver_op;
+  property_ = property;
+  has_metadata_resolver_ = true;
+  return Status::OK();
+}
+
+std::string MetadataIR::DebugString(int64_t depth) const {
+  return absl::StrFormat("%s%d:%s\t-\t%s", std::string(depth, '\t'), id(), "Metadata", name());
+}
+
+/* MetadataLiteral IR */
+Status MetadataLiteralIR::Init(DataIR* literal, const pypa::AstPtr& ast_node) {
+  SetLineCol(ast_node);
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, literal));
+  literal_ = literal;
+  literal_type_ = literal->type();
+  return Status::OK();
+}
+
+std::string MetadataLiteralIR::DebugString(int64_t depth) const {
+  return absl::StrFormat("%s%d:%s\t-\t%s", std::string(depth, '\t'), id(), "MetadataLiteral",
+                         literal_->DebugString(0));
+}
+
+std::string MetadataResolverIR::DebugString(int64_t depth) const {
+  std::vector<std::string> cols;
+  for (const auto& c : metadata_columns()) {
+    cols.push_back(c.first);
+  }
+  return absl::StrFormat("%s%d:%s\t-\tColumns:[%s]", std::string(depth, '\t'), id(),
+                         "MetadataResolver", absl::StrJoin(cols, ","));
+}
+
+bool MetadataResolverIR::HasMetadataColumn(const std::string& col_name) {
+  auto md_map_it = metadata_columns_.find(col_name);
+  return md_map_it != metadata_columns_.end();
+}
+
+Status MetadataResolverIR::AddMetadata(MetadataProperty* md_property) {
+  // Check to make sure that name is a valid attribute name
+  // TODO(philkuz) grab the type from metadata handler, if it's invalid, it'll return an error.
+  // Check if metadata column exists
+  if (HasMetadataColumn(md_property->name())) {
+    return Status::OK();
+  }
+
+  metadata_columns_.emplace(md_property->name(), md_property);
+  return Status::OK();
+}
+
+Status MetadataResolverIR::InitImpl(const ArgMap&) { return Status::OK(); }
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

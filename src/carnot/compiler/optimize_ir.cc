@@ -32,20 +32,20 @@ Status IROptimizer::CollapseRange(IR* ir_graph) {
     range_ir = static_cast<RangeIR*>(node);
     // Already preverified that range_ir is child of MemSourceIR.
     src_ir = static_cast<MemorySourceIR*>(range_ir->parent());
-    ir_graph->DeleteEdge(src_ir->id(), range_ir->id());
+    PL_RETURN_IF_ERROR(ir_graph->DeleteEdge(src_ir->id(), range_ir->id()));
 
     start_time_ir = static_cast<IntIR*>(range_ir->start_repr());
     stop_time_ir = static_cast<IntIR*>(range_ir->stop_repr());
 
     src_ir->SetTime(start_time_ir->val(), stop_time_ir->val());
 
-    ir_graph->DeleteNode(start_time_ir->id());
-    ir_graph->DeleteNode(stop_time_ir->id());
+    PL_RETURN_IF_ERROR(ir_graph->DeleteNode(start_time_ir->id()));
+    PL_RETURN_IF_ERROR(ir_graph->DeleteNode(stop_time_ir->id()));
 
     // Update all of range's dependencies to point to src.
     for (const auto& dep_id : ir_graph->dag().DependenciesOf(range_ir->id())) {
       auto dep = ir_graph->Get(dep_id);
-      ir_graph->DeleteEdge(range_ir->id(), dep_id);
+      PL_RETURN_IF_ERROR(ir_graph->DeleteEdge(range_ir->id(), dep_id));
       if (!dep->IsOp()) {
         PL_RETURN_IF_ERROR(ir_graph->AddEdge(src_ir->id(), dep_id));
         continue;
@@ -56,7 +56,7 @@ Status IROptimizer::CollapseRange(IR* ir_graph) {
     break;
   }
   if (range_ir != nullptr) {
-    ir_graph->DeleteNode(range_ir->id());
+    PL_RETURN_IF_ERROR(ir_graph->DeleteNode(range_ir->id()));
   }
   return Status::OK();
 }

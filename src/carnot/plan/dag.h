@@ -23,6 +23,7 @@ class DAG {
   void DeleteNode(int64_t node);
 
   bool HasNode(int64_t node) const;
+  bool HasEdge(int64_t from_node, int64_t to_node);
 
   void AddEdge(int64_t from_node, int64_t to_node);
   void DeleteEdge(int64_t from_node, int64_t to_node);

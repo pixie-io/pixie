@@ -309,7 +309,7 @@ TEST_F(SourceRelationTest, set_source_select_all) {
 TEST_F(SourceRelationTest, set_source_variable_columns) {
   std::vector<std::string> str_columns = {"cpu1", "cpu2"};
   StringIR* table_str_node = graph->MakeNode<StringIR>().ValueOrDie();
-  std::vector<IRNode*> select_columns;
+  std::vector<ExpressionIR*> select_columns;
   for (const std::string& c : str_columns) {
     auto select_col = graph->MakeNode<StringIR>().ValueOrDie();
     EXPECT_OK(select_col->Init(c, ast));
@@ -361,7 +361,7 @@ TEST_F(SourceRelationTest, missing_columns) {
   std::string missing_column = "blah_column";
   std::vector<std::string> str_columns = {"cpu1", "cpu2", missing_column};
   StringIR* table_str_node = graph->MakeNode<StringIR>().ValueOrDie();
-  std::vector<IRNode*> select_columns;
+  std::vector<ExpressionIR*> select_columns;
   for (const std::string& c : str_columns) {
     auto select_col = graph->MakeNode<StringIR>().ValueOrDie();
     EXPECT_OK(select_col->Init(c, ast));
