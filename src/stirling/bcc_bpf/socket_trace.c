@@ -434,7 +434,6 @@ static __inline void update_traffic_class_for_msghdr(struct conn_info_t* conn_in
 static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t count,
                                            const struct user_msghdr* msghdr) {
   if (fd < 0) {
-    DLOG_TEXT(ctx, "probe_entry_write_send(), fd < 0");
     return 0;
   }
 
@@ -590,7 +589,6 @@ done:
 static __inline int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t count,
                                           const struct user_msghdr* msghdr) {
   if (fd < 0) {
-    DLOG_TEXT(ctx, "probe_entry_read_recv(), fd < 0");
     return 0;
   }
   u64 id = bpf_get_current_pid_tgid();
@@ -671,7 +669,6 @@ done:
 
 static __inline int probe_close_impl(struct pt_regs* ctx, int fd) {
   if (fd < 0) {
-    DLOG_TEXT(ctx, "probe_close(), fd < 0");
     return 0;
   }
   u64 id = bpf_get_current_pid_tgid();
