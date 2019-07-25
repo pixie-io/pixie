@@ -2,7 +2,6 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 load("@com_github_bazelbuild_buildtools//buildifier:deps.bzl", "buildifier_dependencies")
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 load("@io_bazel_rules_docker//go:image.bzl", _go_image_repos = "repositories")
-load("@io_bazel_rules_docker//cc:image.bzl", _cc_image_repos = "repositories")
 load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 load("@distroless//package_manager:package_manager.bzl", "package_manager_repositories")
@@ -26,7 +25,10 @@ def _package_manager_setup():
         packages = [
             "libc6",
             "libelf1",
+            "libgcc1",
+            "libgomp1",
             "liblzma5",
+            "libstdc++6",
             "libtinfo5",
             "libunwind8",
             "zlib1g",
@@ -36,7 +38,6 @@ def _package_manager_setup():
 
 def _docker_images_setup():
     _go_image_repos()
-    _cc_image_repos()
 
     # Import NGINX repo.
     container_pull(
@@ -46,22 +47,18 @@ def _docker_images_setup():
         repository = "library/nginx",
     )
 
-    # Import CC base image.
     container_pull(
-        name = "cc_base",
-        # From : March 27, 2019
-        digest = "sha256:482e7efb3245ded60e9ced05909551fc14d39b47e2cc643830f4466010c25372",
+        name = "base_image",
+        digest = "sha256:e37cf3289c1332c5123cbf419a1657c8dad0811f2f8572433b668e13747718f8",
         registry = "gcr.io",
-        repository = "distroless/cc",
+        repository = "distroless/base",
     )
 
-    # Import CC base debug image.
     container_pull(
-        name = "cc_base_debug",
-        # From : April 22, 2019
-        digest = "sha256:8bd401c66e7bf2432a8f22052060021ceb485d00b78e916149a5b3738f24c787",
+        name = "base_image_debug",
+        digest = "sha256:f989df6099c5efb498021c7f01b74f484b46d2f5e1cdb862e508569d87569f2b",
         registry = "gcr.io",
-        repository = "distroless/cc",
+        repository = "distroless/base",
     )
 
 def _artifacts_setup():

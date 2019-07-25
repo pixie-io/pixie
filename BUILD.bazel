@@ -47,23 +47,26 @@ load("@package_bundle//file:packages.bzl", "packages")
 
 pl_cc_base_packages = [
     packages["libc6"],
-    packages["libunwind8"],
-    packages["liblzma5"],
     packages["libelf1"],
+    packages["libgcc1"],
+    packages["libgomp1"],
+    packages["liblzma5"],
+    packages["libstdc++6"],
     packages["libtinfo5"],
+    packages["libunwind8"],
     packages["zlib1g"],
 ]
 
 container_image(
     name = "pl_cc_base_image",
-    base = "@cc_base//image",
+    base = "@base_image//image",
     debs = pl_cc_base_packages,
     visibility = ["//visibility:public"],
 )
 
 container_image(
     name = "pl_cc_base_debug_image",
-    base = "@cc_base_debug//image",
+    base = "@base_image_debug//image",
     debs = pl_cc_base_packages,
     visibility = ["//visibility:public"],
 )
