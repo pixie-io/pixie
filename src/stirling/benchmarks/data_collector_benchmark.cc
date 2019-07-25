@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/stirling/proto/canonical_message.pb.h"
+#include "src/stirling/benchmarks/proto/canonical_message.pb.h"
 
 using arrow::DoubleBuilder;
 using arrow::Int64Builder;

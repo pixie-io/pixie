@@ -8,7 +8,7 @@ pl_cc_binary(
     # TODO(oazizi): We can remove this tag once Arrow ipc is restored.
     tags = ["manual"],
     deps = [
-        "//src/stirling/proto:canonical_pl_cc_proto",
+        "//src/stirling/benchmarks/proto:canonical_pl_cc_proto",
         "//third_party:arrow",
         "@com_google_benchmark//:benchmark_main",
     ],
