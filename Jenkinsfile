@@ -309,7 +309,6 @@ def dockerStepWithBazelCmd(String dockerConfig = '', String dockerImage = devDoc
   }
 }
 
-
 def archiveUILogs() {
   step([
     $class: 'XUnitBuilder',
@@ -357,6 +356,28 @@ def publishDoxygenDocs() {
     reportFiles: 'index.html',
     reportName: 'doxygen'
   ])
+}
+
+def sendSlackNotification() {
+  if (currentBuild.result != 'SUCCESS') {
+    slackSend color: '#FF0000', message: "FAILED: Build - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
+  }
+  else if (currentBuild.getPreviousBuild() &&
+            currentBuild.getPreviousBuild().getResult().toString() != "SUCCESS") {
+    slackSend color: '#00FF00', message: "PASSED(Recovered): Build - ${env.BUILD_TAG} -- URL: ${env.BUILD_URL}."
+  }
+}
+
+def postBuildActions = {
+  if (isPhabricatorTriggeredBuild()) {
+    codeReviewPostBuild()
+  }
+
+  // Master runs are triggered by Phabricator, but we still want
+  // notifications on failure.
+  if (!isPhabricatorTriggeredBuild() || isMasterRun) {
+    sendSlackNotification()
+  }
 }
 
 /**
@@ -566,11 +587,7 @@ def buildScriptForCommits = {
       echo "Stacktrace:"
       err.printStackTrace()
     }
-    finally {
-      if (isPhabricatorTriggeredBuild()) {
-        codeReviewPostBuild()
-      }
-    }
+    postBuildActions()
   }
 }
 
@@ -598,12 +615,7 @@ def buildScriptForNightly = {
       echo "Stacktrace:"
       err.printStackTrace()
     }
-    finally {
-      if (currentBuild.result == 'FAILURE') {
-        // TODO(zasgar): Actually add alerts to this.
-        echo "BUILD HAS FAILED!"
-      }
-    }
+    postBuildActions()
   }
 }
 
@@ -675,12 +687,8 @@ def buildScriptForNightlyTestRegression = {
       echo "Stacktrace:"
       err.printStackTrace()
     }
-    finally {
-      if (currentBuild.result == 'FAILURE') {
-        // TODO(zasgar): Actually add alerts to this.
-        echo "BUILD HAS FAILED!"
-      }
-    }
+
+    postBuildActions()
   }
 }
 
