@@ -2,6 +2,7 @@
 
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "src/common/base/base.h"
@@ -55,6 +56,28 @@ TEST(TCPSocketTest, SendMsgAndRecvMsg) {
   client_thread.join();
 
   EXPECT_EQ("sendmsgrecvmsg", absl::StrJoin(received_data, ""));
+}
+
+TEST(TCPSocketTest, WriteVandReadV) {
+  TCPSocket server;
+  server.Bind();
+
+  std::vector<std::string> received_data;
+  TCPSocket client;
+  std::thread client_thread([&server, &client, &received_data]() {
+    client.Connect(server);
+    std::string buf;
+    while (client.ReadV(&buf) > 0) {
+      received_data.emplace_back(std::move(buf));
+    }
+  });
+  server.Accept();
+  EXPECT_EQ(11, server.WriteV({"writev", "readv"}));
+
+  server.Close();
+  client_thread.join();
+
+  EXPECT_EQ("writevreadv", absl::StrJoin(received_data, ""));
 }
 
 }  // namespace testing

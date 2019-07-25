@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 #include <unistd.h>
 
 #include <algorithm>
@@ -83,9 +84,6 @@ ssize_t TCPSocket::SendMsg(const std::vector<std::string_view>& data) const {
 }
 
 ssize_t TCPSocket::RecvMsg(std::vector<std::string>* data) const {
-  // HTTP response detection requires at least 16 bytes to see the HTTP header, any buffer size
-  // less than that will causes BPF unable to detect HTTP responses. Here we round up to 20.
-  constexpr size_t kBufSize = 20;
   char buf[kBufSize];
 
   struct iovec iov;
@@ -109,6 +107,28 @@ ssize_t TCPSocket::RecvMsg(std::vector<std::string>* data) const {
     const size_t size_to_copy = std::min<size_t>(msg.msg_iov[i].iov_len, size - copied_size);
     data->emplace_back(static_cast<const char*>(msg.msg_iov[i].iov_base), size_to_copy);
     copied_size += size_to_copy;
+  }
+  return size;
+}
+
+ssize_t TCPSocket::WriteV(const std::vector<std::string_view>& data) const {
+  auto iov = std::make_unique<struct iovec[]>(data.size());
+  for (size_t i = 0; i < data.size(); ++i) {
+    iov[i].iov_base = const_cast<char*>(data[i].data());
+    iov[i].iov_len = data[i].size();
+  }
+  return writev(sockfd_, iov.get(), data.size());
+}
+
+ssize_t TCPSocket::ReadV(std::string* data) const {
+  char buf[kBufSize];
+  struct iovec iov;
+  iov.iov_base = buf;
+  iov.iov_len = sizeof(buf);
+
+  const ssize_t size = readv(sockfd_, &iov, 1);
+  if (size > 0) {
+    data->assign(buf, size);
   }
   return size;
 }

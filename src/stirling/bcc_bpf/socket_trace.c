@@ -35,10 +35,9 @@ struct accept_info_t {
 struct data_info_t {
   u32 fd;
   const char* buf;
-  // For sendmsg()/recvmsg().
-  // TODO(yzhao): We can merge buf as a special case of len==1 with msghdr, so we can use one field
-  // instead of two.
-  const struct user_msghdr* msghdr;
+  // For sendmsg()/recvmsg()/writev()/readv().
+  const struct iovec* iov;
+  size_t iovlen;
 } __attribute__((__packed__, aligned(8)));
 
 // This control_map is a bit-mask that controls which endpoints are traced in a connection.
@@ -408,26 +407,8 @@ done:
   return 0;
 }
 
-static __inline void update_traffic_class_for_msghdr(struct conn_info_t* conn_info,
-                                                     TrafficDirection direction,
-                                                     const struct user_msghdr* msghdr) {
-  size_t msg_iovlen = 0;
-  bpf_probe_read(&msg_iovlen, sizeof(msg_iovlen), &msghdr->msg_iovlen);
-  if (msg_iovlen == 0) {
-    return;
-  }
-  const struct iovec* msg_iov = NULL;
-  bpf_probe_read(&msg_iov, sizeof(void*), &msghdr->msg_iov);
-  if (msg_iov == NULL) {
-    return;
-  }
-  struct iovec iov;
-  bpf_probe_read(&iov, sizeof(struct iovec), &msg_iov[0]);
-  update_traffic_class(conn_info, direction, iov.iov_base, iov.iov_len);
-}
-
 static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t count,
-                                           const struct user_msghdr* msghdr) {
+                                           const struct iovec* iov, size_t iovlen) {
   if (fd < 0) {
     return 0;
   }
@@ -444,13 +425,22 @@ static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* bu
     return 0;
   }
 
+  struct data_info_t write_info;
+  memset(&write_info, 0, sizeof(struct data_info_t));
+  write_info.fd = fd;
+  write_info.buf = buf;
+  write_info.iov = iov;
+  write_info.iovlen = iovlen;
+
   // TODO(yzhao): Split the interface such that the singular buf case and multiple bufs in msghdr
   // are handled separately without mixed interface. The plan is to factor out helper functions for
   // lower-level functionalities, and call them separately for each case.
   if (buf != NULL) {
     update_traffic_class(conn_info, kEgress, buf, count);
-  } else if (msghdr != NULL) {
-    update_traffic_class_for_msghdr(conn_info, kEgress, msghdr);
+  } else if (write_info.iov != NULL && write_info.iovlen > 0) {
+    struct iovec iov_cpy;
+    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &write_info.iov[0]);
+    update_traffic_class(conn_info, kEgress, iov_cpy.iov_base, iov_cpy.iov_len);
   }
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
@@ -464,12 +454,6 @@ static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* bu
   if (!should_trace(&conn_info->traffic_class)) {
     return 0;
   }
-
-  struct data_info_t write_info;
-  memset(&write_info, 0, sizeof(struct data_info_t));
-  write_info.fd = fd;
-  write_info.buf = buf;
-  write_info.msghdr = msghdr;
 
   active_write_info_map.update(&id, &write_info);
   return 0;
@@ -541,26 +525,35 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirecti
   return msg_size;
 }
 
-static __inline void perf_submit_msghdr(struct pt_regs* ctx, const TrafficDirection direction,
-                                        const struct user_msghdr* msghdr, const ssize_t total_size,
-                                        struct conn_info_t* conn_info,
+static __inline void perf_submit_iovecs(struct pt_regs* ctx, const TrafficDirection direction,
+                                        const struct iovec* iov, const size_t iovlen,
+                                        const size_t total_size, struct conn_info_t* conn_info,
                                         struct socket_data_event_t* event) {
-  size_t msg_iovlen = 0;
-  bpf_probe_read(&msg_iovlen, sizeof(size_t), &msghdr->msg_iovlen);
-
-  const struct iovec* iov_src = NULL;
-  bpf_probe_read(&iov_src, sizeof(void*), &msghdr->msg_iov);
-
+  // NOTE: The loop index 'i' used to be int. BPF verifier somehow conclude that msg_size inside
+  // perf_submit_buf(), after a series of assignment, and passed into a function call, can be
+  // negative.
+  //
+  // The issue can be fixed by changing the loop index, or msg_size inside
+  // perf_submit_buf(), to unsigned int (changing to size_t does not work either).
+  //
+  // We prefer changing loop index, as it appears to be the source of triggering BPF verifier's
+  // confusion.
+  //
+  // NOTE: The syscalls for scatter buffers, {send,recv}msg()/{write,read}v(), access buffers in
+  // array order. That means they read or fill iov[0], then iov[1], and so on. They return the total
+  // size of the written or read data. Therefore, when loop through the buffers, both the number of
+  // buffers and the total size need to be checked. More details can be found on their man pages.
 #pragma unroll
-  for (int i = 0, bytes_copied = 0; i < LOOP_LIMIT && i < msg_iovlen && bytes_copied < total_size;
-       ++i) {
-    struct iovec iov;
-    bpf_probe_read(&iov, sizeof(struct iovec), &iov_src[i]);
+  for (unsigned int i = 0, bytes_copied = 0;
+       i < LOOP_LIMIT && i < iovlen && bytes_copied < total_size; ++i) {
+    struct iovec iov_cpy;
+    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &iov[i]);
+
     const size_t bytes_remain = total_size - bytes_copied;
-    const size_t iov_len = iov.iov_len < bytes_remain ? iov.iov_len : bytes_remain;
+    const size_t iov_size = iov_cpy.iov_len < bytes_remain ? iov_cpy.iov_len : bytes_remain;
 
     const size_t msg_size =
-        perf_submit_buf(ctx, direction, iov.iov_base, iov_len, conn_info, event);
+        perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, conn_info, event);
     bytes_copied += msg_size;
   }
 }
@@ -594,8 +587,9 @@ static __inline int probe_ret_write_send(struct pt_regs* ctx) {
   // TODO(yzhao): Same TODO for split the interface.
   if (write_info->buf != NULL) {
     perf_submit_buf(ctx, kEgress, write_info->buf, bytes_written, conn_info, event);
-  } else if (write_info->msghdr != NULL) {
-    perf_submit_msghdr(ctx, kEgress, write_info->msghdr, bytes_written, conn_info, event);
+  } else if (write_info->iov != NULL && write_info->iovlen > 0) {
+    perf_submit_iovecs(ctx, kEgress, write_info->iov, write_info->iovlen, bytes_written, conn_info,
+                       event);
   }
 
 done:
@@ -606,7 +600,7 @@ done:
 }
 
 static __inline int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t count,
-                                          const struct user_msghdr* msghdr) {
+                                          const struct iovec* iov, size_t iovlen) {
   if (fd < 0) {
     return 0;
   }
@@ -621,7 +615,8 @@ static __inline int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf
   memset(&read_info, 0, sizeof(struct data_info_t));
   read_info.fd = fd;
   read_info.buf = buf;
-  read_info.msghdr = msghdr;
+  read_info.iov = iov;
+  read_info.iovlen = iovlen;
 
   active_read_info_map.update(&id, &read_info);
   return 0;
@@ -653,8 +648,12 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx) {
   // TODO(yzhao): Same TODO for split the interface.
   if (buf != NULL) {
     update_traffic_class(conn_info, kIngress, buf, bytes_read);
-  } else if (read_info->msghdr != NULL) {
-    update_traffic_class_for_msghdr(conn_info, kIngress, read_info->msghdr);
+  } else if (read_info->iov != NULL && read_info->iovlen > 0) {
+    struct iovec iov_cpy;
+    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &read_info->iov[0]);
+    // Ensure we are not reading beyond the available data.
+    const size_t buf_size = iov_cpy.iov_len < bytes_read ? iov_cpy.iov_len : bytes_read;
+    update_traffic_class(conn_info, kIngress, iov_cpy.iov_base, buf_size);
   }
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
@@ -675,8 +674,12 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx) {
   // TODO(yzhao): Same TODO for split the interface.
   if (read_info->buf != NULL) {
     perf_submit_buf(ctx, kIngress, read_info->buf, bytes_read, conn_info, event);
-  } else if (read_info->msghdr != NULL) {
-    perf_submit_msghdr(ctx, kIngress, read_info->msghdr, bytes_read, conn_info, event);
+  } else if (read_info->iov != NULL && read_info->iovlen > 0) {
+    // TODO(yzhao): iov[0] is copied twice, once in calling update_traffic_class(), and here.
+    // This happens to the write probes as well, but the calls are placed in the entry and return
+    // probes respectively. Consider remove one copy.
+    perf_submit_iovecs(ctx, kIngress, read_info->iov, read_info->iovlen, bytes_read, conn_info,
+                       event);
   }
 
 done:
@@ -733,46 +736,72 @@ int syscall__probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockadd
 int syscall__probe_ret_accept4(struct pt_regs* ctx) { return probe_ret_accept_impl(ctx); }
 
 int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_write_send(ctx, fd, buf, count, NULL);
+  return probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
 }
 
 int syscall__probe_ret_write(struct pt_regs* ctx) { return probe_ret_write_send(ctx); }
 
 int syscall__probe_entry_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_write_send(ctx, fd, buf, count, NULL);
+  return probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
 }
 
 int syscall__probe_ret_send(struct pt_regs* ctx) { return probe_ret_write_send(ctx); }
 
 int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_read_recv(ctx, fd, buf, count, /*msghdr*/ NULL);
+  return probe_entry_read_recv(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
 }
 
 int syscall__probe_ret_read(struct pt_regs* ctx) { return probe_ret_read_recv(ctx); }
 
 int syscall__probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_read_recv(ctx, fd, buf, count, /*msghdr*/ NULL);
+  return probe_entry_read_recv(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
 }
 
 int syscall__probe_ret_recv(struct pt_regs* ctx) { return probe_ret_read_recv(ctx); }
 
 int syscall__probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_write_send(ctx, fd, buf, count, /*msghdr*/ NULL);
+  return probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
 }
 
 int syscall__probe_ret_sendto(struct pt_regs* ctx) { return probe_ret_write_send(ctx); }
 
 int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int fd, const struct user_msghdr* msghdr) {
-  return probe_entry_write_send(ctx, fd, /*buf*/ NULL, /*count*/ 0, msghdr);
+  if (msghdr == NULL) {
+    return 0;
+  }
+  return probe_entry_write_send(ctx, fd, /*buf*/ NULL, /*count*/ 0, msghdr->msg_iov,
+                                msghdr->msg_iovlen);
 }
 
 int syscall__probe_ret_sendmsg(struct pt_regs* ctx) { return probe_ret_write_send(ctx); }
 
 int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int fd, struct user_msghdr* msghdr) {
-  return probe_entry_read_recv(ctx, fd, /*buf*/ NULL, /*count*/ 0, msghdr);
+  if (msghdr == NULL) {
+    return 0;
+  }
+  return probe_entry_read_recv(ctx, fd, /*buf*/ NULL, /*count*/ 0, msghdr->msg_iov,
+                               msghdr->msg_iovlen);
 }
 
 int syscall__probe_ret_recvmsg(struct pt_regs* ctx) { return probe_ret_read_recv(ctx); }
+
+int syscall__probe_entry_writev(struct pt_regs* ctx, int fd, const struct iovec* iov, int iovlen) {
+  if (iov == NULL || iovlen <= 0) {
+    return 0;
+  }
+  return probe_entry_write_send(ctx, fd, /*buf*/ NULL, /*count*/ 0, iov, iovlen);
+}
+
+int syscall__probe_ret_writev(struct pt_regs* ctx) { return probe_ret_write_send(ctx); }
+
+int syscall__probe_entry_readv(struct pt_regs* ctx, int fd, struct iovec* iov, int iovlen) {
+  if (iov == NULL || iovlen <= 0) {
+    return 0;
+  }
+  return probe_entry_read_recv(ctx, fd, /*buf*/ NULL, /*count*/ 0, iov, iovlen);
+}
+
+int syscall__probe_ret_readv(struct pt_regs* ctx) { return probe_ret_read_recv(ctx); }
 
 int syscall__probe_close(struct pt_regs* ctx, unsigned int fd) { return probe_close_impl(ctx, fd); }
 

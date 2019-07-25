@@ -36,25 +36,31 @@ class SocketTraceBPFTest : public ::testing::Test {
    public:
     ClientServerSystem() { server_.Bind(); }
 
-    void RunWriterReader(const std::vector<std::string_view>& write_data) {
-      SpawnReaderClient();
-      SpawnWriterServer(write_data);
+    void RunWriteRead(const std::vector<std::string_view>& write_data) {
+      SpawnReadClient();
+      SpawnWriteServer(write_data);
       JoinThreads();
     }
 
-    void RunSenderReceiver(const std::vector<std::string_view>& write_data) {
-      SpawnReceiverClient();
-      SpawnSenderServer(write_data);
+    void RunSendRecv(const std::vector<std::string_view>& write_data) {
+      SpawnRecvClient();
+      SpawnSendServer(write_data);
       JoinThreads();
     }
 
-    void RunSendMsgerRecvMsger(const std::vector<std::vector<std::string_view>>& write_data) {
-      SpawnRecvMsgerClient();
-      SpawnSendMsgerServer(write_data);
+    void RunSendMsgRecvMsg(const std::vector<std::vector<std::string_view>>& write_data) {
+      SpawnRecvMsgClient();
+      SpawnSendMsgServer(write_data);
       JoinThreads();
     }
 
-    void SpawnReaderClient() {
+    void RunWriteVReadV(const std::vector<std::vector<std::string_view>>& write_data) {
+      SpawnReadVClient();
+      SpawnWriteVServer(write_data);
+      JoinThreads();
+    }
+
+    void SpawnReadClient() {
       client_thread_ = std::thread([this]() {
         client_.Connect(server_);
         std::string data;
@@ -64,7 +70,7 @@ class SocketTraceBPFTest : public ::testing::Test {
       });
     }
 
-    void SpawnReceiverClient() {
+    void SpawnRecvClient() {
       client_thread_ = std::thread([this]() {
         client_.Connect(server_);
         std::string data;
@@ -74,7 +80,7 @@ class SocketTraceBPFTest : public ::testing::Test {
       });
     }
 
-    void SpawnWriterServer(const std::vector<std::string_view>& write_data) {
+    void SpawnWriteServer(const std::vector<std::string_view>& write_data) {
       server_thread_ = std::thread([this, write_data]() {
         server_.Accept();
         for (auto data : write_data) {
@@ -84,7 +90,7 @@ class SocketTraceBPFTest : public ::testing::Test {
       });
     }
 
-    void SpawnSenderServer(const std::vector<std::string_view>& write_data) {
+    void SpawnSendServer(const std::vector<std::string_view>& write_data) {
       server_thread_ = std::thread([this, write_data]() {
         server_.Accept();
         for (auto data : write_data) {
@@ -94,7 +100,7 @@ class SocketTraceBPFTest : public ::testing::Test {
       });
     }
 
-    void SpawnSendMsgerServer(const std::vector<std::vector<std::string_view>>& write_data) {
+    void SpawnSendMsgServer(const std::vector<std::vector<std::string_view>>& write_data) {
       server_thread_ = std::thread([this, write_data]() {
         server_.Accept();
         for (const auto& data : write_data) {
@@ -104,11 +110,31 @@ class SocketTraceBPFTest : public ::testing::Test {
       });
     }
 
-    void SpawnRecvMsgerClient() {
+    void SpawnRecvMsgClient() {
       client_thread_ = std::thread([this]() {
         client_.Connect(server_);
         std::vector<std::string> msgs;
         while (client_.RecvMsg(&msgs) > 0) {
+        }
+        client_.Close();
+      });
+    }
+
+    void SpawnWriteVServer(const std::vector<std::vector<std::string_view>>& write_data) {
+      server_thread_ = std::thread([this, write_data]() {
+        server_.Accept();
+        for (const auto& data : write_data) {
+          server_.WriteV(data);
+        }
+        server_.Close();
+      });
+    }
+
+    void SpawnReadVClient() {
+      client_thread_ = std::thread([this]() {
+        client_.Connect(server_);
+        std::string msg;
+        while (client_.ReadV(&msg) > 0) {
         }
         client_.Close();
       });
@@ -189,7 +215,7 @@ TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
   ConfigureCapture(kProtocolHTTP, kRoleResponder);
 
   ClientServerSystem system;
-  system.RunWriterReader({kHTTPRespMsg1, kHTTPRespMsg2});
+  system.RunWriteRead({kHTTPRespMsg1, kHTTPRespMsg2});
 
   {
     types::ColumnWrapperRecordBatch record_batch;
@@ -240,7 +266,7 @@ TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleResponder);
 
   ClientServerSystem system;
-  system.RunSenderReceiver({kHTTPRespMsg1, kHTTPRespMsg2});
+  system.RunSendRecv({kHTTPRespMsg1, kHTTPRespMsg2});
 
   {
     types::ColumnWrapperRecordBatch record_batch;
@@ -280,7 +306,7 @@ TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
 
   ClientServerSystem system;
-  system.RunWriterReader({kHTTPRespMsg1, kHTTPRespMsg2});
+  system.RunWriteRead({kHTTPRespMsg1, kHTTPRespMsg2});
 
   {
     types::ColumnWrapperRecordBatch record_batch;
@@ -320,7 +346,7 @@ TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
 
   ClientServerSystem system;
-  system.RunSenderReceiver({kHTTPRespMsg1, kHTTPRespMsg2});
+  system.RunSendRecv({kHTTPRespMsg1, kHTTPRespMsg2});
 
   {
     types::ColumnWrapperRecordBatch record_batch;
@@ -358,7 +384,7 @@ TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
 
 TEST_F(SocketTraceBPFTest, TestMySQLWriteCapture) {
   ClientServerSystem system;
-  system.RunSenderReceiver({kMySQLMsg, kMySQLMsg});
+  system.RunSendRecv({kMySQLMsg, kMySQLMsg});
 
   // Check that HTTP table did not capture any data.
   {
@@ -393,7 +419,7 @@ TEST_F(SocketTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleRequestor);
 
   ClientServerSystem system;
-  system.RunWriterReader({kNoProtocolMsg, "", kNoProtocolMsg, ""});
+  system.RunWriteRead({kNoProtocolMsg, "", kNoProtocolMsg, ""});
 
   // Check that HTTP table did not capture any data.
   {
@@ -425,10 +451,10 @@ TEST_F(SocketTraceBPFTest, TestMultipleConnections) {
 
   // Two separate connections.
   ClientServerSystem system1;
-  system1.RunWriterReader({kHTTPRespMsg1});
+  system1.RunWriteRead({kHTTPRespMsg1});
 
   ClientServerSystem system2;
-  system2.RunWriterReader({kHTTPRespMsg2});
+  system2.RunWriteRead({kHTTPRespMsg2});
 
   {
     types::ColumnWrapperRecordBatch record_batch;
@@ -458,7 +484,7 @@ TEST_F(SocketTraceBPFTest, TestStartTime) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
 
   ClientServerSystem system;
-  system.RunSenderReceiver({kHTTPRespMsg1, kHTTPRespMsg2});
+  system.RunSendRecv({kHTTPRespMsg1, kHTTPRespMsg2});
 
   // Kernel uses monotonic clock as start_time, so we must do the same.
   auto now = std::chrono::steady_clock::now();
@@ -487,12 +513,33 @@ TEST_F(SocketTraceBPFTest, TestStartTime) {
             record_batch[kHTTPStartTimeIdx]->Get<types::Int64Value>(1).val);
 }
 
-TEST_F(SocketTraceBPFTest, SendMsgAndRecvMsgAreCapatured) {
+// TODO(yzhao): Apply this pattern to other syscall pairs. An issue is that other syscalls do not
+// use scatter buffer. One approach would be to concatenate inner vector to a single string, and
+// then feed to the syscall. Another caution is that value-parameterized tests actually discourage
+// changing functions being tested according to test parameters. The canonical pattern is using test
+// parameters as inputs, but keep the function being tested fixed.
+enum class SyscallPair {
+  kSendRecvMsg,
+  kWriteReadv,
+};
+
+class SyscallPairBPFTest : public SocketTraceBPFTest,
+                           public ::testing::WithParamInterface<SyscallPair> {};
+
+TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
   ConfigureCapture(kProtocolHTTP, kRoleRequestor | kRoleResponder);
   ClientServerSystem system;
-  system.RunSendMsgerRecvMsger(
-      {{"HTTP/1.1 200 OK\r\n", "Content-Type: json\r\n", "Content-Length: 1\r\n\r\na"},
-       {"HTTP/1.1 404 Not Found\r\n", "Content-Type: json\r\n", "Content-Length: 2\r\n\r\nbc"}});
+  const std::vector<std::vector<std::string_view>> data = {
+      {"HTTP/1.1 200 OK\r\n", "Content-Type: json\r\n", "Content-Length: 1\r\n\r\na"},
+      {"HTTP/1.1 404 Not Found\r\n", "Content-Type: json\r\n", "Content-Length: 2\r\n\r\nbc"}};
+  switch (GetParam()) {
+    case SyscallPair::kSendRecvMsg:
+      system.RunSendMsgRecvMsg(data);
+      break;
+    case SyscallPair::kWriteReadv:
+      system.RunWriteVReadV(data);
+      break;
+  }
   types::ColumnWrapperRecordBatch record_batch;
   InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 4, &record_batch);
   source_->TransferData(kHTTPTableNum, &record_batch);
@@ -509,7 +556,6 @@ TEST_F(SocketTraceBPFTest, SendMsgAndRecvMsgAreCapatured) {
     EXPECT_THAT(std::string(record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(i)),
                 StrEq("OK"));
   }
-
   for (int i : {1, 3}) {
     EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(i)),
                 StrEq("Content-Length: 2\nContent-Type: json"));
@@ -520,6 +566,9 @@ TEST_F(SocketTraceBPFTest, SendMsgAndRecvMsgAreCapatured) {
                 StrEq("Not Found"));
   }
 }
+
+INSTANTIATE_TEST_CASE_P(IOVecSyscalls, SyscallPairBPFTest,
+                        ::testing::Values(SyscallPair::kSendRecvMsg, SyscallPair::kWriteReadv));
 
 }  // namespace stirling
 }  // namespace pl
