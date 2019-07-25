@@ -4,7 +4,7 @@
 #include "src/shared/types/proto/types.pb.h"
 #include "src/stirling/data_table.h"
 #include "src/stirling/proc_stat_connector.h"
-#include "src/stirling/proto/collector_config.pb.h"
+#include "src/stirling/proto/stirling.pb.h"
 #include "src/stirling/pub_sub_manager.h"
 #include "src/stirling/stirling.h"
 #include "src/stirling/types.h"

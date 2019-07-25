@@ -29,7 +29,7 @@ pl_cc_library(
         "//src/common/grpcutils:cc_library",
         "//src/stirling/cgroups:cc_library",
         "//src/stirling/utils:cc_library",
-        "//src/stirling/proto:collector_config_pl_cc_proto",
+        "//src/stirling/proto:stirling_pl_cc_proto",
         "//third_party:arrow",
         "@com_github_h2o_picohttpparser//:picohttpparser",
         "//src/common/zlib:cc_library",

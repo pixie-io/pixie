@@ -15,7 +15,7 @@ pl_cc_library(
     deps = [
         "//src/carnot/plan:cc_library",
         "//src/shared/types/proto:types_pl_cc_proto",
-        "//src/stirling/proto:collector_config_pl_cc_proto",
+        "//src/stirling/proto:stirling_pl_cc_proto",
         "//third_party:arrow",
     ],
 )

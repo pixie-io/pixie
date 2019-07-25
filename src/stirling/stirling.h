@@ -5,7 +5,7 @@
 #include <unordered_map>
 
 #include "src/common/base/base.h"
-#include "src/stirling/proto/collector_config.pb.h"
+#include "src/stirling/proto/stirling.pb.h"
 #include "src/stirling/source_registry.h"
 
 namespace pl {
@@ -83,7 +83,7 @@ class Stirling : public NotCopyable {
    * proto message. The proto publish message contains information (InfoClassSchema) on
    * all the Source Connectors that can be run to gather data and information on the types
    * for the data. The agent can then subscribe to a subset of the published message. The proto
-   * is defined in //src/stirling/proto/collector_config.proto.
+   * is defined in //src/stirling/proto/stirling.proto.
    *
    */
   virtual void GetPublishProto(stirlingpb::Publish* publish_pb) = 0;

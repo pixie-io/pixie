@@ -12,7 +12,7 @@
 #include "absl/base/internal/spinlock.h"
 #include "src/common/base/base.h"
 #include "src/stirling/data_table.h"
-#include "src/stirling/proto/collector_config.pb.h"
+#include "src/stirling/proto/stirling.pb.h"
 #include "src/stirling/pub_sub_manager.h"
 #include "src/stirling/source_connector.h"
 #include "src/stirling/source_registry.h"

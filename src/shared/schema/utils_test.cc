@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "src/shared/schema/utils.h"
-#include "src/stirling/proto/collector_config.pb.h"
+#include "src/stirling/proto/stirling.pb.h"
 
 namespace pl {
 

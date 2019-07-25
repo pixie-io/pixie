@@ -14,7 +14,7 @@
 #include "src/stirling/stirling.h"
 #include "src/stirling/types.h"
 
-#include "src/stirling/proto/collector_config.pb.h"
+#include "src/stirling/proto/stirling.pb.h"
 
 using PubProto = pl::stirling::stirlingpb::Publish;
 using SubProto = pl::stirling::stirlingpb::Subscribe;

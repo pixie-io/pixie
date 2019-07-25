@@ -10,7 +10,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/types/proto/types.pb.h"
 #include "src/shared/types/type_utils.h"
-#include "src/stirling/proto/collector_config.pb.h"
+#include "src/stirling/proto/stirling.pb.h"
 #include "src/stirling/types.h"
 
 namespace pl {

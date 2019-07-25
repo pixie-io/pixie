@@ -3,7 +3,7 @@
 #include <utility>
 #include <vector>
 
-#include "src/stirling/proto/collector_config.pb.h"
+#include "src/stirling/proto/stirling.pb.h"
 #include "src/table_store/schema/relation.h"
 
 namespace pl {
