@@ -26,6 +26,8 @@ spec:
           value: /certs/ca.crt
         - name: PL_DISABLE_SSL
           value: "false"
+        - name: PL_PROC_PATH
+          value: "/host/proc"
         resources:
           limits:
             memory: 256Mi
@@ -47,9 +49,6 @@ spec:
           readOnly: true
         - name: certs
           mountPath: /certs
-        env:
-        - name: PL_PROC_PATH
-          value: "/host/proc"
       hostPID: true
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
