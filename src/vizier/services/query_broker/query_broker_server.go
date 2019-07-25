@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	"github.com/nats-io/go-nats"
 	log "github.com/sirupsen/logrus"
@@ -40,7 +42,11 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Could not get dial opts.")
 	}
-	mdsConn, err := grpc.Dial(plMDSAddr, dialOpts...)
+	dialOpts = append(dialOpts, grpc.WithBlock())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	mdsConn, err := grpc.DialContext(ctx, plMDSAddr, dialOpts...)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to Metadata Service.")
 	}
