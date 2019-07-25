@@ -160,6 +160,7 @@ class StirlingImpl final : public Stirling {
    * Vector of all the InfoClassManagers.
    */
   InfoClassManagerVec info_class_mgrs_;
+
   /**
    * Spin lock to lock updates to info_class_mgrs_.
    *

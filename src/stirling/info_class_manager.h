@@ -292,5 +292,7 @@ class InfoClassManager {
   static constexpr uint32_t kDefaultPushPeriod = 1000;
 };
 
+using InfoClassManagerVec = std::vector<std::unique_ptr<InfoClassManager>>;
+
 }  // namespace stirling
 }  // namespace pl
