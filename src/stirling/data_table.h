@@ -56,7 +56,7 @@ class DataTable {
   void SealActiveRecordBatch();
 
   // Table schema
-  std::unique_ptr<std::vector<DataElement>> table_schema_;
+  std::vector<DataElement> table_schema_;
 
   // Active record batch.
   std::unique_ptr<types::ColumnWrapperRecordBatch> record_batch_;
