@@ -2,20 +2,27 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
-    srcs = ["queue.go"],
+    srcs = [
+        "queue.go",
+        "utils.go",
+    ],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd",
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_coreos_etcd//clientv3:go_default_library",
         "@com_github_coreos_etcd//clientv3/concurrency:go_default_library",
         "@com_github_coreos_etcd//contrib/recipes:go_default_library",
+        "@com_github_coreos_etcd//etcdserver/etcdserverpb:go_default_library",
         "@com_github_coreos_etcd//mvcc/mvccpb:go_default_library",
     ],
 )
 
 go_test(
     name = "go_default_test",
-    srcs = ["queue_test.go"],
+    srcs = [
+        "queue_test.go",
+        "utils_test.go",
+    ],
     embed = [":go_default_library"],
     deps = [
         "//src/utils/testingutils:go_default_library",

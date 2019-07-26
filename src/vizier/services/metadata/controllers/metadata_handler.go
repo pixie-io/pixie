@@ -136,7 +136,6 @@ func (mh *MetadataHandler) updateAgentQueues(updatePb *metadatapb.ResourceUpdate
 	agents, err := mh.mds.GetAgentsForHostnames(hostnames)
 
 	if agents == nil || len(*agents) == 0 {
-		log.Error("Could not get any agents for hostnames.")
 		return
 	}
 

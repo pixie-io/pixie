@@ -378,7 +378,6 @@ func (mds *EtcdMetadataStore) AddUpdatesToAgentQueue(agentID string, updates []*
 			updateStrs = append(updateStrs, string(updateBytes))
 		}
 	}
-
 	return q.EnqueueAll(updateStrs)
 }
 

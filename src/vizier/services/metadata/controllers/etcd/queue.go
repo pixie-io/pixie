@@ -199,7 +199,7 @@ func (q *Queue) EnqueueAll(vals []string) error {
 	mu.Lock(context.Background())
 	defer mu.Unlock(context.Background())
 
-	_, err := q.client.Txn(context.TODO()).If().Then(ops...).Commit()
+	_, err := BatchOps(q.client, ops)
 
 	return err
 }
