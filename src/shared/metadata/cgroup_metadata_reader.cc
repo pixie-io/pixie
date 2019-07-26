@@ -57,7 +57,7 @@ Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view po
   if (!ifs) {
     // This might not be a real error since the pod could have disappeared.
     LOG(WARNING) << absl::Substitute("Failed to open file $0", fpath);
-    return error::Unknown("Failed to open file $0", fpath);
+    return error::NotFound("Failed to open file $0", fpath);
   }
 
   std::string line;

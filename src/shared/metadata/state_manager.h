@@ -9,8 +9,10 @@
 #include "absl/container/flat_hash_set.h"
 
 #include "src/common/base/base.h"
+#include "src/common/system_config/system_config.h"
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
 #include "src/shared/metadata/base_types.h"
+#include "src/shared/metadata/cgroup_metadata_reader.h"
 #include "src/shared/metadata/k8s_objects.h"
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/metadata/pids.h"
@@ -33,9 +35,16 @@ class AgentMetadataStateManager {
   using PodUpdate = pl::shared::k8s::metadatapb::PodUpdate;
   using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
 
-  explicit AgentMetadataStateManager(uint32_t agent_id) : agent_id_(agent_id) {}
+  explicit AgentMetadataStateManager(uint32_t asid, pl::common::SystemConfig* config)
+      : asid_(asid) {
+    CHECK_NOTNULL(config);
+    md_reader_ = std::make_unique<CGroupMetadataReader>(
+        config->sysfs_path(), config->proc_path(), config->KernelTicksPerSecond() * 1'000'000'000,
+        config->ClockRealTimeOffset());
+    agent_metadata_state_ = std::make_shared<AgentMetadataState>(asid);
+  }
 
-  uint32_t agent_id() { return agent_id_; }
+  uint32_t asid() { return asid_; }
 
   /**
    * This returns the current valid K8sMetadataState. The state is periodically updated
@@ -78,13 +87,14 @@ class AgentMetadataStateManager {
       int64_t ts, AgentMetadataState* state,
       moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>* updates);
   static Status ProcessPIDUpdates(
-      int64_t ts, AgentMetadataState*,
+      int64_t ts, AgentMetadataState*, CGroupMetadataReader*,
       moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>>* pid_updates);
 
   static Status DeleteMetadataForDeadObjects(AgentMetadataState*, int64_t ttl);
 
  private:
-  uint32_t agent_id_;
+  uint32_t asid_;
+  std::unique_ptr<CGroupMetadataReader> md_reader_;
   std::shared_ptr<AgentMetadataState> agent_metadata_state_;
   absl::base_internal::SpinLock agent_metadata_state_lock_;
 

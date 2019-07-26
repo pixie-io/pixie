@@ -1,5 +1,6 @@
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include "absl/base/internal/spinlock.h"
 #include "src/shared/metadata/state_manager.h"
@@ -40,7 +41,6 @@ Status AgentMetadataStateManager::AddK8sUpdate(std::unique_ptr<ResourceUpdate> u
 Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
   // There should never be more than one updated, but this just here for safety.
   std::lock_guard<std::mutex> state_update_lock(metadata_state_update_lock_);
-
   /*
    * Performing a state update involves:
    *   1. Create a copy of the current metadata state.
@@ -59,13 +59,16 @@ Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
     epoch_id = agent_metadata_state_->epoch_id();
   }
 
+  VLOG(1) << absl::Substitute("Starting update of current MDS, epoch_id=$0", epoch_id);
+  VLOG(2) << "Current State: \n" << shadow_state->DebugString(1 /* indent_level */);
+
   // Get timestamp so all updates happen at the same timestamp.
   // TODO(zasgar): Change this to an injected clock.
   int64_t ts = CurrentTimeNS();
   PL_RETURN_IF_ERROR(ApplyK8sUpdates(ts, shadow_state.get(), &incoming_k8s_updates_));
 
   // Update PID information.
-  PL_RETURN_IF_ERROR(ProcessPIDUpdates(ts, shadow_state.get(), &pid_updates_));
+  PL_RETURN_IF_ERROR(ProcessPIDUpdates(ts, shadow_state.get(), md_reader_.get(), &pid_updates_));
 
   // Increment epoch and update ts.
   ++epoch_id;
@@ -82,6 +85,9 @@ Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
     agent_metadata_state_ = std::move(shadow_state);
     shadow_state.reset();
   }
+
+  VLOG(1) << "State Update Complete";
+  VLOG(2) << "New MDS State: " << agent_metadata_state_->DebugString();
   return Status::OK();
 }
 
@@ -101,7 +107,7 @@ Status AgentMetadataStateManager::ApplyK8sUpdates(
         PL_RETURN_IF_ERROR(HandleContainerUpdate(update->container_update(), state));
         break;
       default:
-        CHECK(0) << "Unhandled type";
+        LOG(ERROR) << "Unhandled Update Type: " << update->update_case() << " (ignoring)";
     }
   }
 
@@ -109,10 +115,90 @@ Status AgentMetadataStateManager::ApplyK8sUpdates(
 }
 
 Status AgentMetadataStateManager::ProcessPIDUpdates(
-    int64_t ts, AgentMetadataState*,
+    int64_t ts, AgentMetadataState* md, CGroupMetadataReader* md_reader,
     moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>>* pid_updates) {
-  PL_UNUSED(ts);
-  PL_UNUSED(pid_updates);
+  // For every container:
+  //    1. Read the current PIDs (from cgroups).
+  //    2. Get the list of current PIDs (for metadata).
+  //    3. For each in metadata collect a list of deactivated PIDs. Delete active PIDs from cgroup
+  //    version.
+  //    4. For each new PID create metadata object and attach to container.
+  //    5. For each old pid deactivate it and set time of death.
+  absl::flat_hash_set<uint32_t> cgroups_active_pids;
+  std::vector<uint32_t> dead_pids;
+  absl::flat_hash_set<UPID> cgroups_active_upids;
+
+  const auto& md_state = md->k8s_metadata_state();
+  const auto& container_by_cid = md_state->containers_by_id();
+  auto asid = md->asid();
+
+  for (const auto& [cid, cinfo] : container_by_cid) {
+    if (cinfo->stop_time_ns() != 0) {
+      // Ignore dead containers.
+      // TODO(zasgar): Come up with a cleaner way of doing this. Probably by using active/inactive
+      // containers.
+      LOG(INFO) << "Ignore dead container: " << cinfo->DebugString();
+      continue;
+    }
+
+    cgroups_active_pids.clear();
+    dead_pids.clear();
+    cgroups_active_upids.clear();
+
+    auto pod_id = cinfo->pod_id();
+    if (pod_id == "") {
+      // No pod id implies it has not synced yet.
+      VLOG(1) << "Ignoring Container due to missing pod: \n" << cinfo->DebugString(1);
+      continue;
+    }
+    auto pod_info = md_state->PodInfoByID(pod_id);
+    auto pod_qos_class = pod_info->qos_class();
+
+    Status s = md_reader->ReadPIDs(pod_qos_class, pod_id, cid, &cgroups_active_pids);
+    if (!s.ok()) {
+      // Container probably died, we will eventually get a message from MDS and everything in that
+      // container will be marked dead.
+      VLOG(1) << absl::Substitute("Failed to read PID info for pod=$0, cid=$1", pod_id, cid);
+      continue;
+    }
+
+    // We convert all the cgroup_active_pids to the UPIDs so that we can easily convert and check.
+    for (uint32_t pid : cgroups_active_pids) {
+      cgroups_active_upids.emplace(asid, pid, md_reader->ReadPIDStartTime(pid));
+    }
+
+    const auto& active_upids = cinfo->active_upids();
+    for (const auto& upid : active_upids) {
+      auto it = cgroups_active_upids.find(upid);
+      if (it != cgroups_active_upids.end()) {
+        // Both have the pid so we just need to delete it from the other set.
+        cgroups_active_upids.erase(it);
+      } else {
+        // It does not exist in the new set, but does in the old. Which means that the PID has died.
+        // We mark the time of death as current and mark the PID as inactive.
+        cinfo->DeactivateUPID(upid);
+        auto* pid_info = md->GetPIDByUPID(upid);
+        if (pid_info != nullptr) {
+          pid_info->set_stop_time_ns(ts);
+        }
+
+        // Push deletion events to the queue.
+        auto pid_status_event = std::make_unique<PIDTerminatedEvent>(upid, ts);
+        pid_updates->enqueue(std::move(pid_status_event));
+      }
+    }
+
+    // The pids left over in the cgroups upids are new processes.
+    for (const auto& upid : cgroups_active_upids) {
+      auto pid_info = std::make_unique<PIDInfo>(upid, md_reader->ReadPIDCmdline(upid.pid()), cid);
+      cinfo->AddUPID(upid);
+
+      // Push creation events to the queue.
+      auto pid_status_event = std::make_unique<PIDStartedEvent>(*pid_info);
+      pid_updates->enqueue(std::move(pid_status_event));
+    }
+  }
+
   return Status::OK();
 }
 
@@ -124,11 +210,13 @@ Status AgentMetadataStateManager::DeleteMetadataForDeadObjects(AgentMetadataStat
 
 Status AgentMetadataStateManager::HandlePodUpdate(const PodUpdate& update,
                                                   AgentMetadataState* state) {
+  VLOG(2) << "Pod Update: " << update.DebugString();
   return state->k8s_metadata_state()->HandlePodUpdate(update);
 }
 
 Status AgentMetadataStateManager::HandleContainerUpdate(const ContainerUpdate& update,
                                                         AgentMetadataState* state) {
+  VLOG(2) << "Container Update: " << update.DebugString();
   return state->k8s_metadata_state()->HandleContainerUpdate(update);
 }
 

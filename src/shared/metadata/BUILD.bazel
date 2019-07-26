@@ -11,8 +11,12 @@ pl_cc_library(
             "**/*_benchmark.cc",
         ],
     ),
-    hdrs = glob(["*.h"]),
+    hdrs = glob(
+        ["*.h"],
+        exclude = ["**/*_mock.h"],
+    ),
     deps = [
+        "//src/common/system_config:cc_library",
         "//src/shared/k8s/metadatapb:metadata_pl_cc_proto",
         "@com_github_cameron314_concurrentqueue//:concurrentqueue",
         "@com_google_absl//absl/numeric:int128",
@@ -21,7 +25,10 @@ pl_cc_library(
 
 pl_cc_test(
     name = "state_manager_test",
-    srcs = ["state_manager_test.cc"],
+    srcs = [
+        "cgroup_metadata_reader_mock.h",
+        "state_manager_test.cc",
+    ],
     deps = [":cc_library"],
 )
 

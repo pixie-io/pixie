@@ -44,6 +44,8 @@ class PIDInfo {
 
   bool operator!=(const PIDInfo& other) const { return !(other == *this); }
 
+  std::string DebugString() const;
+
  private:
   UPID upid_;
 
@@ -78,8 +80,12 @@ enum class PIDStatusEventType : uint8_t { kUnknown = 0, kStarted, kTerminated };
  */
 struct PIDStatusEvent {
   PIDStatusEvent() = delete;
+  virtual ~PIDStatusEvent() = default;
+
   explicit PIDStatusEvent(PIDStatusEventType type) : type(type) {}
   PIDStatusEventType type = PIDStatusEventType::kUnknown;
+
+  virtual std::string DebugString() const = 0;
 };
 
 /**
@@ -89,6 +95,8 @@ struct PIDStatusEvent {
 struct PIDStartedEvent : public PIDStatusEvent {
   explicit PIDStartedEvent(const PIDInfo& other)
       : PIDStatusEvent(PIDStatusEventType::kStarted), pid_info(other) {}
+
+  std::string DebugString() const override;
 
   const PIDInfo pid_info;
 };
@@ -103,9 +111,20 @@ struct PIDTerminatedEvent : public PIDStatusEvent {
         upid(stopped_pid),
         stop_time_ns(_stop_time_ns) {}
 
+  std::string DebugString() const override;
+
   const UPID upid;
   const int64_t stop_time_ns;
 };
+
+/**
+ * Print and compare functions.
+ */
+std::ostream& operator<<(std::ostream& os, const PIDInfo& info);
+std::ostream& operator<<(std::ostream& os, const PIDStatusEvent& ev);
+
+bool operator==(const PIDStartedEvent& lhs, const PIDStartedEvent& rhs);
+bool operator==(const PIDTerminatedEvent& lhs, const PIDTerminatedEvent& rhs);
 
 }  // namespace md
 }  // namespace pl

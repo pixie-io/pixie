@@ -1,8 +1,11 @@
 #include <gmock/gmock.h>
 #include <google/protobuf/text_format.h>
 #include <gtest/gtest.h>
+#include <string>
+#include <vector>
 
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
+#include "src/shared/metadata/cgroup_metadata_reader_mock.h"
 #include "src/shared/metadata/state_manager.h"
 
 namespace pl {
@@ -66,6 +69,91 @@ TEST(ApplyK8sUpdate, initialize_md_state) {
   ASSERT_NE(nullptr, container_info);
   EXPECT_EQ("container_id1", container_info->cid());
   EXPECT_EQ("pod_id1", container_info->pod_id());
+}
+
+class FakePIDData : public MockCGroupMetadataReader {
+ public:
+  Status ReadPIDs(PodQOSClass qos, std::string_view pod_id, std::string_view container_id,
+                  absl::flat_hash_set<uint32_t>* pid_set) const override {
+    if (qos == PodQOSClass::kBurstable && pod_id == "pod_id1" && container_id == "container_id1") {
+      *pid_set = {100, 200};
+      return Status::OK();
+    }
+
+    return error::NotFound("no found");
+  }
+
+  int64_t ReadPIDStartTime(uint32_t pid) const override {
+    if (pid == 100) {
+      return 1000;
+    }
+
+    if (pid == 200) {
+      return 2000;
+    }
+
+    return 0;
+  }
+
+  std::string ReadPIDCmdline(uint32_t pid) const override {
+    if (pid == 100) {
+      return "cmdline100";
+    }
+
+    if (pid == 200) {
+      return "cmdline200";
+    }
+
+    return "";
+  }
+};
+
+class ProcessPIDUpdatesTest : public ::testing::Test {
+ public:
+  ProcessPIDUpdatesTest() : metadata_state_(123 /* asid */) {}
+
+ protected:
+  virtual void SetUp() {
+    moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
+
+    // Create a POD and container.
+    auto update1_0 = std::make_unique<ResourceUpdate>();
+    auto update1_1 = std::make_unique<ResourceUpdate>();
+    ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUpdate1_0Pbtxt, update1_0.get()));
+    ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUpdate1_1Pbtxt, update1_1.get()));
+    updates.enqueue(std::move(update1_0));
+    updates.enqueue(std::move(update1_1));
+
+    EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &updates));
+  }
+
+  AgentMetadataState metadata_state_;
+};
+
+TEST_F(ProcessPIDUpdatesTest, pid_created) {
+  moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>> events;
+  FakePIDData md_reader;
+  LOG(INFO) << metadata_state_.DebugString();
+  EXPECT_OK(
+      AgentMetadataStateManager::ProcessPIDUpdates(1000, &metadata_state_, &md_reader, &events));
+
+  std::unique_ptr<PIDStatusEvent> event;
+  std::vector<PIDStartedEvent> pids_started;
+
+  while (events.try_dequeue(event)) {
+    if (event->type == PIDStatusEventType::kStarted) {
+      pids_started.emplace_back(*static_cast<PIDStartedEvent*>(event.get()));
+    } else {
+      FAIL() << "Only expected started events";
+    }
+  }
+
+  PIDInfo pid1(UPID(123 /*asid*/, 100 /*pid*/, 1000 /*ts*/), "cmdline100", "container_id1");
+  PIDInfo pid2(UPID(123 /*asid*/, 200 /*pid*/, 2000 /*ts*/), "cmdline200", "container_id1");
+
+  EXPECT_EQ(2, pids_started.size());
+  EXPECT_THAT(pids_started,
+              testing::UnorderedElementsAre(PIDStartedEvent{pid1}, PIDStartedEvent{pid2}));
 }
 
 }  // namespace md
