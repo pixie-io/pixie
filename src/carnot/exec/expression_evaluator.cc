@@ -29,13 +29,13 @@ using types::StringValueColumnWrapper;
 using types::Time64NSValueColumnWrapper;
 
 std::unique_ptr<ScalarExpressionEvaluator> ScalarExpressionEvaluator::Create(
-    const plan::ConstScalarExpressionVector& expressions,
-    const ScalarExpressionEvaluatorType& type) {
+    const plan::ConstScalarExpressionVector& expressions, const ScalarExpressionEvaluatorType& type,
+    udf::FunctionContext* function_ctx) {
   switch (type) {
     case ScalarExpressionEvaluatorType::kVectorNative:
-      return std::make_unique<VectorNativeScalarExpressionEvaluator>(expressions);
+      return std::make_unique<VectorNativeScalarExpressionEvaluator>(expressions, function_ctx);
     case ScalarExpressionEvaluatorType::kArrowNative:
-      return std::make_unique<ArrowNativeScalarExpressionEvaluator>(expressions);
+      return std::make_unique<ArrowNativeScalarExpressionEvaluator>(expressions, function_ctx);
     default:
       CHECK(0) << "Unknown expression type";
   }
@@ -198,7 +198,7 @@ VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
         }
         auto output = types::ColumnWrapper::Make(def->exec_return_type(), num_rows);
         // TODO(zasgar): need a better way to handle errors.
-        PL_CHECK_OK(def->ExecBatch(udf, function_ctx_.get(), raw_children, output.get(), num_rows));
+        PL_CHECK_OK(def->ExecBatch(udf, function_ctx_, raw_children, output.get(), num_rows));
         return output;
       });
 
@@ -290,8 +290,7 @@ Status exec::ArrowNativeScalarExpressionEvaluator::EvaluateSingleExpression(
           raw_children.push_back(child.get());
         }
 
-        PL_CHECK_OK(
-            def->ExecBatchArrow(udf, function_ctx_.get(), raw_children, output.get(), num_rows));
+        PL_CHECK_OK(def->ExecBatchArrow(udf, function_ctx_, raw_children, output.get(), num_rows));
 
         std::shared_ptr<arrow::Array> output_array;
         PL_CHECK_OK(output->Finish(&output_array));

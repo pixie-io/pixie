@@ -87,7 +87,8 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
   std::unique_ptr<ScalarExpressionEvaluator> RunEvaluator(
       const std::vector<std::shared_ptr<const plan::ScalarExpression>>& exprs,
       RowBatch* output_rb) {
-    auto evaluator = ScalarExpressionEvaluator::Create(exprs, GetParam());
+    function_ctx_ = std::make_unique<udf::FunctionContext>();
+    auto evaluator = ScalarExpressionEvaluator::Create(exprs, GetParam(), function_ctx_.get());
     EXPECT_TRUE(evaluator->Open(exec_state_.get()).ok());
     EXPECT_TRUE(evaluator->Evaluate(exec_state_.get(), *input_rb_, output_rb).ok());
     EXPECT_TRUE(evaluator->Close(exec_state_.get()).ok());
@@ -99,6 +100,7 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
   std::unique_ptr<RowBatch> input_rb_;
   std::unique_ptr<udf::UDARegistry> uda_registry_;
   std::unique_ptr<udf::ScalarUDFRegistry> udf_registry_;
+  std::unique_ptr<udf::FunctionContext> function_ctx_;
 };
 
 INSTANTIATE_TEST_CASE_P(TestVecAndArrow, ScalarExpressionTest,

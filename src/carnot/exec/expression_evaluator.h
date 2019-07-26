@@ -73,10 +73,9 @@ enum class ScalarExpressionEvaluatorType : uint8_t {
  */
 class ScalarExpressionEvaluator : public ExpressionEvaluator {
  public:
-  explicit ScalarExpressionEvaluator(plan::ConstScalarExpressionVector expressions)
-      : expressions_(std::move(expressions)) {
-    function_ctx_ = std::make_unique<udf::FunctionContext>();
-  }
+  explicit ScalarExpressionEvaluator(plan::ConstScalarExpressionVector expressions,
+                                     udf::FunctionContext* function_ctx)
+      : expressions_(std::move(expressions)), function_ctx_(function_ctx) {}
 
   /**
    * Creates a new Scalar expression evaluator.
@@ -86,7 +85,7 @@ class ScalarExpressionEvaluator : public ExpressionEvaluator {
    */
   static std::unique_ptr<ScalarExpressionEvaluator> Create(
       const plan::ConstScalarExpressionVector& expressions,
-      const ScalarExpressionEvaluatorType& type);
+      const ScalarExpressionEvaluatorType& type, udf::FunctionContext* function_ctx);
 
   Status Evaluate(ExecState* exec_state, const table_store::schema::RowBatch& input,
                   table_store::schema::RowBatch* output) override;
@@ -100,7 +99,7 @@ class ScalarExpressionEvaluator : public ExpressionEvaluator {
                                           const plan::ScalarExpression& expr,
                                           table_store::schema::RowBatch* output) = 0;
   plan::ConstScalarExpressionVector expressions_;
-  std::unique_ptr<udf::FunctionContext> function_ctx_;
+  udf::FunctionContext* function_ctx_ = nullptr;
   std::map<int64_t, std::unique_ptr<udf::ScalarUDF>> id_to_udf_map_;
 };
 
@@ -111,8 +110,8 @@ class ScalarExpressionEvaluator : public ExpressionEvaluator {
 class VectorNativeScalarExpressionEvaluator : public ScalarExpressionEvaluator {
  public:
   explicit VectorNativeScalarExpressionEvaluator(
-      const plan::ConstScalarExpressionVector& expressions)
-      : ScalarExpressionEvaluator(expressions) {}
+      const plan::ConstScalarExpressionVector& expressions, udf::FunctionContext* function_ctx)
+      : ScalarExpressionEvaluator(expressions, function_ctx) {}
 
   Status Open(ExecState* exec_state) override;
   Status Close(ExecState* exec_state) override;
@@ -133,8 +132,8 @@ class VectorNativeScalarExpressionEvaluator : public ScalarExpressionEvaluator {
 class ArrowNativeScalarExpressionEvaluator : public ScalarExpressionEvaluator {
  public:
   explicit ArrowNativeScalarExpressionEvaluator(
-      const plan::ConstScalarExpressionVector& expressions)
-      : ScalarExpressionEvaluator(expressions) {}
+      const plan::ConstScalarExpressionVector& expressions, udf::FunctionContext* function_ctx)
+      : ScalarExpressionEvaluator(expressions, function_ctx) {}
 
   Status Open(ExecState* exec_state) override;
   Status Close(ExecState* exec_state) override;

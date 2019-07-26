@@ -32,6 +32,7 @@ class MapNode : public ProcessingNode {
   std::unique_ptr<ExpressionEvaluator> evaluator_;
   std::unique_ptr<plan::MapOperator> plan_node_;
   std::unique_ptr<table_store::schema::RowDescriptor> output_descriptor_;
+  std::unique_ptr<udf::FunctionContext> function_ctx_;
 };
 
 }  // namespace exec

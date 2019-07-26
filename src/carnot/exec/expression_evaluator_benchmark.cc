@@ -66,7 +66,8 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
     RowDescriptor rd_output({DataType::INT64});
     RowBatch output_rb(rd_output, input_rb->num_rows());
 
-    auto evaluator = ScalarExpressionEvaluator::Create({se}, eval_type);
+    auto function_ctx = std::make_unique<pl::carnot::udf::FunctionContext>();
+    auto evaluator = ScalarExpressionEvaluator::Create({se}, eval_type, function_ctx.get());
     PL_CHECK_OK(evaluator->Open(exec_state.get()));
     PL_CHECK_OK(evaluator->Evaluate(exec_state.get(), *input_rb, &output_rb));
     PL_CHECK_OK(evaluator->Close(exec_state.get()));

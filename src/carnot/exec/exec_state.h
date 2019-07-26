@@ -63,6 +63,11 @@ class ExecState {
 
   udf::UDADefinition* GetUDADefinition(int64_t id) { return id_to_uda_map_[id]; }
 
+  std::unique_ptr<udf::FunctionContext> CreateFunctionContext() {
+    auto ctx = std::make_unique<udf::FunctionContext>();
+    return ctx;
+  }
+
   // A node can call this method to say no more records will be processed (ie. Limit).
   // That node is responsible for setting eos.
   void StopLimitReached() { keep_running_ = false; }

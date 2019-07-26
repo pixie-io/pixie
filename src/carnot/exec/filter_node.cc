@@ -29,9 +29,10 @@ Status FilterNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor
   PL_UNUSED(input_descriptors);
   return Status::OK();
 }
-Status FilterNode::PrepareImpl(ExecState*) {
+Status FilterNode::PrepareImpl(ExecState* exec_state) {
+  function_ctx_ = exec_state->CreateFunctionContext();
   evaluator_ = std::make_unique<VectorNativeScalarExpressionEvaluator>(
-      plan::ConstScalarExpressionVector{plan_node_->expression()});
+      plan::ConstScalarExpressionVector{plan_node_->expression()}, function_ctx_.get());
   return Status::OK();
 }
 

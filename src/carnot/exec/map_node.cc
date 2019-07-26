@@ -1,4 +1,5 @@
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_join.h"
@@ -27,9 +28,10 @@ Status MapNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor& o
   PL_UNUSED(input_descriptors);
   return Status::OK();
 }
-Status MapNode::PrepareImpl(ExecState*) {
-  evaluator_ = ScalarExpressionEvaluator::Create(plan_node_->expressions(),
-                                                 ScalarExpressionEvaluatorType::kArrowNative);
+Status MapNode::PrepareImpl(ExecState* exec_state) {
+  function_ctx_ = exec_state->CreateFunctionContext();
+  evaluator_ = ScalarExpressionEvaluator::Create(
+      plan_node_->expressions(), ScalarExpressionEvaluatorType::kArrowNative, function_ctx_.get());
   return Status::OK();
 }
 
