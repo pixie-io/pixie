@@ -85,7 +85,8 @@ StatusOr<std::shared_ptr<Table>> CreateTable(
 }
 
 std::unique_ptr<Carnot> SetUpCarnot(std::shared_ptr<table_store::TableStore> table_store) {
-  auto carnot_or_s = Carnot::Create(table_store);
+  std::shared_ptr<exec::RowBatchQueue> row_batch_queue;
+  auto carnot_or_s = Carnot::Create(table_store, row_batch_queue);
   if (!carnot_or_s.ok()) {
     LOG(FATAL) << "Failed to initialize Carnot.";
   }

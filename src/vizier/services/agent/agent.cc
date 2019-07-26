@@ -67,7 +67,8 @@ int main(int argc, char** argv) {
   LOG(INFO) << "Pixie Lab Agent: " << pl::VersionInfo::VersionString();
 
   auto table_store = std::make_shared<pl::table_store::TableStore>();
-  auto carnot = pl::carnot::Carnot::Create(table_store).ConsumeValueOrDie();
+  auto row_batch_queue = std::make_shared<pl::carnot::exec::RowBatchQueue>();
+  auto carnot = pl::carnot::Carnot::Create(table_store, row_batch_queue).ConsumeValueOrDie();
   auto stirling = pl::stirling::Stirling::Create(pl::stirling::CreateProdSourceRegistry());
   g_stirling = stirling.get();
 

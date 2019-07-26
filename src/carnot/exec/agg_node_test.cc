@@ -166,7 +166,8 @@ agg_op {
 std::unique_ptr<ExecState> MakeTestExecState(udf::ScalarUDFRegistry* udf_registry,
                                              udf::UDARegistry* uda_registry) {
   auto table_store = std::make_shared<TableStore>();
-  return std::make_unique<ExecState>(udf_registry, uda_registry, table_store);
+  auto row_batch_queue = std::make_shared<RowBatchQueue>();
+  return std::make_unique<ExecState>(udf_registry, uda_registry, table_store, row_batch_queue);
 }
 
 std::unique_ptr<plan::Operator> PlanNodeFromPbtxt(const std::string& pbtxt) {

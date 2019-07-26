@@ -225,7 +225,8 @@ int main(int argc, char* argv[]) {
 
   // Execute query.
   auto table_store = std::make_shared<pl::table_store::TableStore>();
-  auto carnot_or_s = pl::carnot::Carnot::Create(table_store);
+  auto row_batch_queue = std::make_shared<pl::carnot::exec::RowBatchQueue>();
+  auto carnot_or_s = pl::carnot::Carnot::Create(table_store, row_batch_queue);
   if (!carnot_or_s.ok()) {
     LOG(FATAL) << "Carnot failed to init.";
   }

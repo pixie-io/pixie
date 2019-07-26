@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "src/carnot/compiler/compiler.h"
+#include "src/carnot/exec/exec_state.h"
 #include "src/carnot/queryresultspb/query_results.pb.h"
 #include "src/common/base/base.h"
 #include "src/table_store/table_store.h"
@@ -43,9 +44,11 @@ struct CarnotQueryResult {
 class Carnot : public NotCopyable {
  public:
   static StatusOr<std::unique_ptr<Carnot>> Create(
-      std::shared_ptr<table_store::TableStore> table_store);
+      std::shared_ptr<table_store::TableStore> table_store,
+      std::shared_ptr<exec::RowBatchQueue> row_batch_queue);
 
   using AgentMetadataCallbackFunc = std::function<std::shared_ptr<const md::AgentMetadataState>()>;
+
   virtual ~Carnot() = default;
 
   /**

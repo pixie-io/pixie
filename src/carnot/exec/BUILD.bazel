@@ -24,10 +24,12 @@ pl_cc_library(
         "//src/carnot/plan:cc_library",
         "//src/carnot/planpb:plan_pl_cc_proto",
         "//src/carnot/udf:cc_library",
+        "//src/carnotpb:carnot_pl_cc_proto",
         "//src/shared/types:cc_library",
         "//src/table_store/table:cc_library",
         "//third_party:arrow",
         "@com_efficient_libcuckoo//:libcuckoo",
+        "@com_github_cameron314_concurrentqueue//:concurrentqueue",
     ],
 )
 

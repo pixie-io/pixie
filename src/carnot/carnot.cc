@@ -38,10 +38,12 @@ class CarnotImpl final : public Carnot {
  public:
   /**
    * Initializes the engine with the state necessary to compile and execute a query.
-   * This includes the tables and udf registries.
+   * This includes the tables, udf registries, and row batch queue for passing row batches
+   * outside of the current execution.
    * @return a status of whether initialization was successful.
    */
-  Status Init(std::shared_ptr<table_store::TableStore> table_store);
+  Status Init(std::shared_ptr<table_store::TableStore> table_store,
+              std::shared_ptr<exec::RowBatchQueue> row_batch_queue);
 
   StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query,
                                            types::Time64NSValue time_now) override;
@@ -74,8 +76,9 @@ class CarnotImpl final : public Carnot {
   std::unique_ptr<EngineState> engine_state_;
 };
 
-Status CarnotImpl::Init(std::shared_ptr<table_store::TableStore> table_store) {
-  PL_ASSIGN_OR_RETURN(engine_state_, EngineState::CreateDefault(table_store));
+Status CarnotImpl::Init(std::shared_ptr<table_store::TableStore> table_store,
+                        std::shared_ptr<exec::RowBatchQueue> row_batch_queue) {
+  PL_ASSIGN_OR_RETURN(engine_state_, EngineState::CreateDefault(table_store, row_batch_queue));
   return Status::OK();
 }
 
@@ -210,9 +213,11 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
 }
 
 StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
-    std::shared_ptr<table_store::TableStore> table_store) {
+    std::shared_ptr<table_store::TableStore> table_store,
+    std::shared_ptr<exec::RowBatchQueue> row_batch_queue) {
   std::unique_ptr<Carnot> carnot_impl(new CarnotImpl());
-  PL_RETURN_IF_ERROR(static_cast<CarnotImpl*>(carnot_impl.get())->Init(table_store));
+  PL_RETURN_IF_ERROR(
+      static_cast<CarnotImpl*>(carnot_impl.get())->Init(table_store, row_batch_queue));
   return carnot_impl;
 }
 

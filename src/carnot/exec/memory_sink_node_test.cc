@@ -30,8 +30,9 @@ class MemorySinkNodeTest : public ::testing::Test {
     uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
 
     auto table_store = std::make_shared<TableStore>();
-    exec_state_ =
-        std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store);
+    auto row_batch_queue = std::make_shared<RowBatchQueue>();
+    exec_state_ = std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store,
+                                              row_batch_queue);
   }
 
  protected:

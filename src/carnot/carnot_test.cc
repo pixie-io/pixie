@@ -25,7 +25,8 @@ class CarnotTest : public ::testing::Test {
   void SetUp() override {
     Test::SetUp();
     table_store_ = std::make_shared<table_store::TableStore>();
-    carnot_ = Carnot::Create(table_store_).ConsumeValueOrDie();
+    row_batch_queue_ = std::make_shared<exec::RowBatchQueue>();
+    carnot_ = Carnot::Create(table_store_, row_batch_queue_).ConsumeValueOrDie();
     auto table = CarnotTestUtils::TestTable();
     table_store_->AddTable("test_table", table);
     big_table_ = CarnotTestUtils::BigTestTable();
@@ -33,6 +34,7 @@ class CarnotTest : public ::testing::Test {
   }
 
   std::shared_ptr<table_store::TableStore> table_store_;
+  std::shared_ptr<exec::RowBatchQueue> row_batch_queue_;
   std::shared_ptr<table_store::Table> big_table_;
   std::unique_ptr<Carnot> carnot_;
 };
