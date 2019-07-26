@@ -29,8 +29,8 @@ BPF_FN void log_text(struct pt_regs* ctx, const char* text) {
 // Note that pl_bpf_cc_resource() replaces the include with the content of this header.
 // So the line number will be different from the raw source code. Anyhow, the line number still
 // provides a rough idea on where each logging statement is.
-#ifdef NDEBUG
-#define DLOG_TEXT(ctx, text)
-#else
+#ifdef ENABLE_BPF_LOGGING
 #define DLOG_TEXT(ctx, text) log_text(ctx, LOC text)
+#else
+#define DLOG_TEXT(ctx, text)
 #endif

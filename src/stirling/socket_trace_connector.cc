@@ -42,9 +42,9 @@ using ::pl::stirling::http2::MatchGRPCReqResp;
 Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders());
 
-  std::vector<std::string> cflags = {"-DNDEBUG"};
+  std::vector<std::string> cflags;
   if (FLAGS_enable_bpf_logging) {
-    cflags.clear();
+    cflags.emplace_back("-DENABLE_BPF_LOGGING");
   }
   PL_RETURN_IF_ERROR(InitBPFCode(cflags));
   PL_RETURN_IF_ERROR(AttachProbes(kProbeSpecs));

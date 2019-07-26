@@ -9,6 +9,10 @@ extern "C" {
 
 DECLARE_bool(enable_bpf_logging);
 
+// TODO(oazizi): Should this be part of BCCConnector? Or to make it work closer with BCCConnector?
+// For example, it seems we should expose ProbeSpec instead of providing APIs to work with BPF
+// object directly.
+
 namespace pl {
 namespace stirling {
 
