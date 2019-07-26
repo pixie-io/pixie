@@ -32,6 +32,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 DECLARE_string(http_response_header_filters);
 DECLARE_bool(enable_parsing_protobufs);
+DECLARE_uint32(stirling_socket_trace_sampling_period_millis);
 
 OBJ_STRVIEW(http_trace_bcc_script, _binary_bcc_bpf_socket_trace_c_preprocessed);
 
@@ -122,7 +123,6 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   static constexpr uint32_t kHTTPTableNum = SourceConnector::TableNum(kTables, kHTTPTable);
   static constexpr uint32_t kMySQLTableNum = SourceConnector::TableNum(kTables, kMySQLTable);
 
-  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   // Dim 0: DataTables; dim 1: perfBuffer Names
@@ -236,7 +236,10 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   inline static const size_t kCPUCount = ebpf::BPFTable::get_possible_cpu_count();
 
   explicit SocketTraceConnector(std::string_view source_name)
-      : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod),
+      : SourceConnector(
+            source_name, kTables,
+            std::chrono::milliseconds(FLAGS_stirling_socket_trace_sampling_period_millis),
+            kDefaultPushPeriod),
         BCCWrapper(kBCCScript) {
     // TODO(yzhao): Is there a better place/time to grab the flags?
     http_response_header_filter_ = ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);

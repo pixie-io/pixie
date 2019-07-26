@@ -28,6 +28,10 @@ DEFINE_bool(enable_parsing_protobufs, false,
             "If true, parses binary protobufs captured in gRPC messages. "
             "As of 2019-07, the parser can only handle protobufs defined in Hipster Shop.");
 DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs, "The process to trace.");
+// TODO(oazizi): Consolidate with dynamic sampling period though SetSamplingPeriod().
+DEFINE_uint32(stirling_socket_trace_sampling_period_millis, 100,
+              "The sampling period, in milliseconds, at which Stirling reads the BPF perf buffers "
+              "for events.");
 
 namespace pl {
 namespace stirling {
