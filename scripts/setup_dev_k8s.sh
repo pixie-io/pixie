@@ -34,8 +34,6 @@ if [ $? -ne 0 ]; then
   kubectl create namespace ${namespace}
 fi
 
-make -C ${workspace} k8s-load-dev-secrets k8s-load-certs
-
 ${workspace}/scripts/deploy_cluster_prereqs.sh
 
 echo "K8s cluster setup complete!"
