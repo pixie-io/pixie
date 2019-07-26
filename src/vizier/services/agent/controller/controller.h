@@ -11,6 +11,7 @@
 #include <sole.hpp>
 
 #include "src/carnot/carnot.h"
+#include "src/shared/metadata/metadata.h"
 #include "src/stirling/stirling.h"
 
 #include "src/common/base/base.h"
@@ -105,6 +106,14 @@ class Controller : public NotCopyable {
   Status HandleHeartbeatMessage(std::unique_ptr<messages::VizierMessage> msg);
   Status HandleExecuteQueryMessage(std::unique_ptr<messages::VizierMessage> msg);
 
+  Status HandleMDSUpdates(const messages::MetadataUpdateInfo& update_info);
+  void ConsumeAgentPIDUpdates(messages::AgentUpdateInfo* update_info);
+
+  static void ProcessPIDStartedEvent(const pl::md::PIDStartedEvent& ev,
+                                     messages::AgentUpdateInfo* update_info);
+  static void ProcessPIDTerminatedEvent(const pl::md::PIDTerminatedEvent& ev,
+                                        messages::AgentUpdateInfo* update_info);
+
   // We direct heartbeat messages to this queue.
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<messages::VizierMessage>>
       incoming_heartbeat_queue_;
@@ -115,12 +124,18 @@ class Controller : public NotCopyable {
   std::shared_ptr<table_store::TableStore> table_store_;
 
   sole::uuid agent_id_;
+  // Agent short Id.
+  uint32_t asid_ = 0;
   std::string hostname_;
 
   std::unique_ptr<VizierNATSConnector> nats_connector_;
   std::unique_ptr<std::thread> heartbeat_thread_;
+
   std::atomic<bool> keep_alive_ = true;
   std::atomic<bool> running_ = false;
+
+  std::unique_ptr<pl::md::AgentMetadataStateManager> mds_manager_;
+  std::unique_ptr<std::thread> mds_thread;
 };
 
 }  // namespace agent

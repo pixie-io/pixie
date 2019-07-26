@@ -13,6 +13,7 @@ pl_cc_library(
         "//src/carnot",
         "//src/common/nats:cc_library",
         "//src/common/uuid:cc_library",
+        "//src/shared/metadata:cc_library",
         "//src/shared/schema:cc_library",
         "//src/stirling:cc_library",
         "//src/vizier/messages/messagespb:messages_pl_cc_proto",

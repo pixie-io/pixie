@@ -14,6 +14,7 @@
 #include "src/common/base/base.h"
 #include "src/common/nats/nats.h"
 #include "src/common/perf/perf.h"
+#include "src/common/system_config/system_config.h"
 #include "src/common/uuid/uuid.h"
 #include "src/shared/schema/utils.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
@@ -94,6 +95,18 @@ Status Controller::Init() {
   // Send the agent info.
   PL_RETURN_IF_ERROR(RegisterAgent());
 
+  LOG(INFO) << "Creating new metadata state manager and thread";
+  mds_manager_ = std::make_unique<pl::md::AgentMetadataStateManager>(
+      asid_, pl::common::SystemConfig::GetInstance());
+
+  mds_thread = std::make_unique<std::thread>([this]() {
+    while (keep_alive_) {
+      LOG(INFO) << "State Update";
+      CHECK(mds_manager_->PerformMetadataStateUpdate().ok());
+      std::this_thread::sleep_for(std::chrono::seconds(5));
+    }
+  });
+
   return Status::OK();
 }
 
@@ -120,10 +133,13 @@ Status Controller::RegisterAgent() {
   bool got_mds_response = false;
   do {
     auto msg = nats_connector_->GetNextMessage(kRegistrationPeriod);
-    if (msg != nullptr) {
+    if (msg != nullptr &&
+        msg->msg_case() == messages::VizierMessage::MsgCase::kRegisterAgentResponse) {
+      asid_ = msg->register_agent_response().asid();
       got_mds_response = true;
       break;
     }
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     ++num_tries;
   } while (num_tries < kRegistrationRetries);
 
@@ -131,6 +147,61 @@ Status Controller::RegisterAgent() {
     LOG(FATAL) << "Failed to register agent. Terminating.";
   }
 
+  return Status::OK();
+}
+
+void Controller::ProcessPIDStartedEvent(const pl::md::PIDStartedEvent& ev,
+                                        messages::AgentUpdateInfo* update_info) {
+  auto* process_info = update_info->add_process_created();
+
+  auto upid = ev.pid_info.upid();
+  auto* mu_upid = process_info->mutable_upid();
+  mu_upid->set_high(absl::Uint128High64(upid.value()));
+  mu_upid->set_low(absl::Uint128Low64(upid.value()));
+
+  // TODO(zasgar/michelle): We should remove pid since it's already in UPID.
+  process_info->set_pid(upid.pid());
+  process_info->set_start_timestamp_ns(ev.pid_info.start_time_ns());
+  process_info->set_cmdline(ev.pid_info.cmdline());
+  process_info->set_cid(ev.pid_info.cid());
+}
+
+void Controller::ProcessPIDTerminatedEvent(const pl::md::PIDTerminatedEvent& ev,
+                                           messages::AgentUpdateInfo* update_info) {
+  auto process_info = update_info->add_process_terminated();
+  process_info->set_stop_timestamp_ns(ev.stop_time_ns);
+
+  auto upid = ev.upid;
+  // TODO(zasgar): Move this into ToProto function.
+  auto* mu_pid = process_info->mutable_upid();
+  mu_pid->set_high(absl::Uint128High64(upid.value()));
+  mu_pid->set_low(absl::Uint128Low64(upid.value()));
+}
+
+void Controller::ConsumeAgentPIDUpdates(messages::AgentUpdateInfo* update_info) {
+  while (auto pid_event = mds_manager_->GetNextPIDStatusEvent()) {
+    switch (pid_event->type) {
+      case pl::md::PIDStatusEventType::kStarted: {
+        auto* ev = static_cast<pl::md::PIDStartedEvent*>(pid_event.get());
+        ProcessPIDStartedEvent(*ev, update_info);
+        break;
+      }
+      case pl::md::PIDStatusEventType::kTerminated: {
+        auto* ev = static_cast<pl::md::PIDTerminatedEvent*>(pid_event.get());
+        ProcessPIDTerminatedEvent(*ev, update_info);
+        break;
+      }
+      default:
+        CHECK(0) << "Unknown PID event";
+    }
+  }
+}
+
+Status Controller::HandleMDSUpdates(const messages::MetadataUpdateInfo& update_info) {
+  for (const auto& update : update_info.updates()) {
+    auto resource_update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>(update);
+    PL_RETURN_IF_ERROR(mds_manager_->AddK8sUpdate(std::move(resource_update)));
+  }
   return Status::OK();
 }
 
@@ -148,6 +219,12 @@ void Controller::RunHeartbeat() {
     int64_t current_time = CurrentTimeNS();
     hb->set_time(current_time);
 
+    auto* update_info = hb->mutable_update_info();
+
+    // Grab the PID updates and put it into the heartbeat message.
+    ConsumeAgentPIDUpdates(update_info);
+
+    LOG(INFO) << "Sending heartbeat message: " << req.DebugString();
     auto s = nats_connector_->Publish(req);
     if (!s.ok()) {
       LOG(ERROR) << absl::StrFormat("Failed to publish heartbeat (will retry): %s", s.msg());
@@ -164,6 +241,11 @@ void Controller::RunHeartbeat() {
 
     if (resp == nullptr) {
       LOG(FATAL) << "Failed to receive heartbeat ACK. terminating";
+    }
+
+    using pl::shared::k8s::metadatapb::ResourceUpdate;
+    if (resp->heartbeat_ack().has_update_info()) {
+      PL_CHECK_OK(HandleMDSUpdates(resp->heartbeat_ack().update_info()));
     }
 
     int64_t elapsed_time = std::max<int64_t>(0, CurrentTimeNS() - current_time);
