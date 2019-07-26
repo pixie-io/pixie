@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "src/shared/types/type_utils.h"
 #include "src/shared/types/types.h"
 
 namespace pl {
@@ -113,6 +114,22 @@ TYPED_TEST(FixedSizedValueTypesOperatorTest, neq_operator) {
   EXPECT_FALSE(TypeParam(1000) != 1000.0f);              // NOLINT(readability/check)
   EXPECT_FALSE(TypeParam(1000) != 1000.0L);              // NOLINT(readability/check)
   EXPECT_FALSE(TypeParam(1000) != Int64Value(1000));     // NOLINT(readability/check)
+}
+
+TEST(UInt128Value, eq_operator) {
+  EXPECT_EQ(UInt128Value(absl::MakeUint128(100, 200)), absl::MakeUint128(100, 200));
+  EXPECT_EQ(UInt128Value(absl::MakeUint128(0, 200)), 200);
+}
+
+TEST(UInt128Value, neq_operator) {
+  EXPECT_NE(UInt128Value(absl::MakeUint128(100, 200)), absl::MakeUint128(200, 200));
+  EXPECT_NE(UInt128Value(absl::MakeUint128(0, 200)), 300);
+}
+
+TEST(UInt128Value, high_low_funcs) {
+  auto v1 = UInt128Value(absl::MakeUint128(100, 200));
+  EXPECT_EQ(200, v1.Low64());
+  EXPECT_EQ(100, v1.High64());
 }
 
 }  // namespace types

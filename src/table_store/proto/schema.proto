@@ -18,6 +18,11 @@ message Int64Column {
   repeated int64 data = 1;
 }
 
+// Uint128 column data.
+message UInt128Column {
+  repeated types.UInt128 data = 1;
+}
+
 // Float64 column data.
 message Float64Column {
   repeated double data = 1;
@@ -38,9 +43,10 @@ message Column {
   oneof col_data {
     BooleanColumn boolean_data = 1;
     Int64Column int64_data = 2;
-    Time64NSColumn time64ns_data = 3;
-    Float64Column float64_data = 4;
-    StringColumn string_data = 5;
+    UInt128Column uint128_data = 3;
+    Time64NSColumn time64ns_data = 4;
+    Float64Column float64_data = 5;
+    StringColumn string_data = 6;
   }
 }
 

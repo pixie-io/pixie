@@ -38,6 +38,11 @@ auto GetPBDataColumn<DataType::INT64>(table_store::schemapb::Column* data_col) {
 }
 
 template <>
+auto GetPBDataColumn<DataType::UINT128>(table_store::schemapb::Column* data_col) {
+  return data_col->mutable_uint128_data();
+}
+
+template <>
 auto GetPBDataColumn<DataType::FLOAT64>(table_store::schemapb::Column* data_col) {
   return data_col->mutable_float64_data();
 }
@@ -49,13 +54,29 @@ auto GetPBDataColumn<DataType::STRING>(table_store::schemapb::Column* data_col) 
 
 template <DataType T>
 void CopyIntoOutputPB(table_store::schemapb::Column* data_col, arrow::Array* col) {
-  CHECK(data_col != nullptr);
-  CHECK(col != nullptr);
+  CHECK_NOTNULL(data_col);
+  CHECK_NOTNULL(col);
 
   size_t col_length = col->length();
   auto casted_output_data = GetPBDataColumn<T>(data_col);
   for (size_t i = 0; i < col_length; ++i) {
     casted_output_data->add_data(types::GetValueFromArrowArray<T>(col, i));
+  }
+}
+
+template <>
+void CopyIntoOutputPB<DataType::UINT128>(table_store::schemapb::Column* data_col,
+                                         arrow::Array* col) {
+  CHECK_NOTNULL(data_col);
+  CHECK_NOTNULL(col);
+
+  size_t col_length = col->length();
+  auto casted_output_data = GetPBDataColumn<DataType::UINT128>(data_col);
+  for (size_t i = 0; i < col_length; ++i) {
+    auto out_datum = casted_output_data->add_data();
+    auto val = types::GetValueFromArrowArray<DataType::UINT128>(col, i);
+    out_datum->set_high(absl::Uint128High64(val));
+    out_datum->set_low(absl::Uint128Low64(val));
   }
 }
 

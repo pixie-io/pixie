@@ -9,9 +9,10 @@ enum DataType {
   DATA_TYPE_UNKNOWN = 0;
   BOOLEAN = 1;
   INT64 = 2;
-  FLOAT64 = 3;
-  STRING = 4;
-  TIME64NS = 5;
+  UINT128 = 3;
+  FLOAT64 = 4;
+  STRING = 5;
+  TIME64NS = 6;
 }
 
 // The types of patterns for the different data elements.

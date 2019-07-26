@@ -18,6 +18,8 @@ inline std::string ToString(DataType type) {
       return "bool";
     case DataType::INT64:
       return "int64";
+    case DataType::UINT128:
+      return "uint128";
     case DataType::FLOAT64:
       return "float64";
     case DataType::TIME64NS:
@@ -34,6 +36,8 @@ inline std::shared_ptr<arrow::DataType> DataTypeToArrowType(DataType type) {
   switch (type) {
     case DataType::INT64:
       return arrow::int64();
+    case DataType::UINT128:
+      return arrow::uint128();
     case DataType::FLOAT64:
       return arrow::float64();
     case DataType::TIME64NS:
@@ -82,6 +86,7 @@ inline std::shared_ptr<arrow::DataType> DataTypeToArrowType(DataType type) {
     switch (__dt_var__) {                                                             \
       PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::BOOLEAN, _CASE_MACRO_);  \
       PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::INT64, _CASE_MACRO_);    \
+      PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::UINT128, _CASE_MACRO_);  \
       PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::TIME64NS, _CASE_MACRO_); \
       PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::FLOAT64, _CASE_MACRO_);  \
       PL_SWITCH_FOREACH_DATATYPE_CASE(::pl::types::DataType::STRING, _CASE_MACRO_);   \

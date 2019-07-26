@@ -12,6 +12,7 @@
 
 #include <functional>
 
+#include "absl/numeric/int128.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/proto/types.pb.h"
 
@@ -112,6 +113,23 @@ using BoolValue = FixedSizedValueType<bool>;
 using Int64Value = FixedSizedValueType<int64_t>;
 using Float64Value = FixedSizedValueType<double>;
 
+struct UInt128Value : public FixedSizedValueType<absl::uint128> {
+  using FixedSizedValueType::FixedSizedValueType;
+  UInt128Value(uint64_t high, uint64_t low) { val = absl::MakeUint128(high, low); }
+
+  uint64_t High64() { return absl::Uint128High64(val); }
+
+  uint64_t Low64() { return absl::Uint128Low64(val); }
+
+  bool operator==(const absl::uint128 other) const { return other == val; }
+
+  bool operator==(const UInt128Value& other) const { return other.val == val; }
+
+  bool operator!=(const absl::uint128 other) const { return other != val; }
+
+  bool operator!=(const UInt128Value& other) const { return other.val != val; }
+};
+
 struct Time64NSValue : public Int64Value {
   using Int64Value::Int64Value;
   // Allow implicit construction to make it easier/more natural to return values
@@ -127,13 +145,14 @@ union FixedSizeValueUnion {
   FixedSizeValueUnion(){};
   BoolValue bool_value;
   Int64Value int64_value;
+  UInt128Value uint128_value;
   Float64Value float64_value;
   Time64NSValue time64ns_value;
 };
 
 const uint8_t kFixedSizeBytes = sizeof(FixedSizeValueUnion);
 
-static_assert(kFixedSizeBytes == 8,
+static_assert(kFixedSizeBytes == 16,
               "Please re-consider bloating fixed size values since it might have significant "
               "performance impact");
 /**
@@ -171,6 +190,11 @@ inline const Int64Value& Get<Int64Value>(const FixedSizeValueUnion& u) {
 }
 
 template <>
+inline const UInt128Value& Get<UInt128Value>(const FixedSizeValueUnion& u) {
+  return u.uint128_value;
+}
+
+template <>
 inline const Float64Value& Get<Float64Value>(const FixedSizeValueUnion& u) {
   return u.float64_value;
 }
@@ -197,6 +221,12 @@ template <>
 inline void SetValue<Int64Value>(FixedSizeValueUnion* u, Int64Value val) {
   DCHECK(u != nullptr);
   u->int64_value = val;
+}
+
+template <>
+inline void SetValue<UInt128Value>(FixedSizeValueUnion* u, UInt128Value val) {
+  DCHECK(u != nullptr);
+  u->uint128_value = val;
 }
 
 template <>
@@ -255,6 +285,16 @@ struct ValueTypeTraits<Int64Value> {
 };
 
 template <>
+struct ValueTypeTraits<UInt128Value> {
+  static constexpr bool is_fixed_size = true;
+  static constexpr DataType data_type = types::UINT128;
+  using arrow_type = arrow::UInt128Type;
+  using arrow_builder_type = arrow::UInt128Builder;
+  using arrow_array_type = arrow::UInt128Type;
+  using native_type = int64_t;
+};
+
+template <>
 struct ValueTypeTraits<Float64Value> {
   static constexpr bool is_fixed_size = true;
   static constexpr DataType data_type = types::FLOAT64;
@@ -309,6 +349,16 @@ struct DataTypeTraits<DataType::INT64> {
   using arrow_array_type = arrow::Int64Array;
   using native_type = int64_t;
   static constexpr arrow::Type::type arrow_type_id = arrow::Type::INT64;
+};
+
+template <>
+struct DataTypeTraits<DataType::UINT128> {
+  using value_type = UInt128Value;
+  using arrow_type = arrow::UInt128Type;
+  using arrow_builder_type = arrow::UInt128Builder;
+  using arrow_array_type = arrow::UInt128Array;
+  using native_type = absl::uint128;
+  static constexpr arrow::Type::type arrow_type_id = arrow::Type::UINT128;
 };
 
 template <>

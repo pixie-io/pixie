@@ -124,6 +124,7 @@ inline int64_t ColumnWrapperTmpl<StringValue>::Bytes() const {
 // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
 using BoolValueColumnWrapper = ColumnWrapperTmpl<BoolValue>;
 using Int64ValueColumnWrapper = ColumnWrapperTmpl<Int64Value>;
+using UInt128ValueColumnWrapper = ColumnWrapperTmpl<UInt128Value>;
 using Float64ValueColumnWrapper = ColumnWrapperTmpl<Float64Value>;
 using StringValueColumnWrapper = ColumnWrapperTmpl<StringValue>;
 using Time64NSValueColumnWrapper = ColumnWrapperTmpl<Time64NSValue>;
@@ -185,6 +186,8 @@ inline SharedColumnWrapper ColumnWrapper::FromArrow(const std::shared_ptr<arrow:
       return FromArrowImpl<BoolValueColumnWrapper, DataType::BOOLEAN>(arr);
     case arrow::Type::INT64:
       return FromArrowImpl<Int64ValueColumnWrapper, DataType::INT64>(arr);
+    case arrow::Type::UINT128:
+      return FromArrowImpl<UInt128ValueColumnWrapper, DataType::UINT128>(arr);
     case arrow::Type::DOUBLE:
       return FromArrowImpl<Float64ValueColumnWrapper, DataType::FLOAT64>(arr);
     case arrow::Type::STRING:
@@ -209,6 +212,8 @@ inline SharedColumnWrapper ColumnWrapper::Make(DataType data_type, size_t size) 
       return std::make_shared<BoolValueColumnWrapper>(size);
     case DataType::INT64:
       return std::make_shared<Int64ValueColumnWrapper>(size);
+    case DataType::UINT128:
+      return std::make_shared<UInt128ValueColumnWrapper>(size);
     case DataType::FLOAT64:
       return std::make_shared<Float64ValueColumnWrapper>(size);
     case DataType::STRING:
@@ -269,6 +274,11 @@ struct ColumnWrapperType<DataType::BOOLEAN> {
 template <>
 struct ColumnWrapperType<DataType::INT64> {
   using type = Int64ValueColumnWrapper;
+};
+
+template <>
+struct ColumnWrapperType<DataType::UINT128> {
+  using type = UInt128ValueColumnWrapper;
 };
 
 template <>

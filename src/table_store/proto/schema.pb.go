@@ -112,6 +112,49 @@ func (m *Int64Column) GetData() []int64 {
 	return nil
 }
 
+type UInt128Column struct {
+	Data []*proto1.UInt128 `protobuf:"bytes,1,rep,name=data,proto3" json:"data,omitempty"`
+}
+
+func (m *UInt128Column) Reset()      { *m = UInt128Column{} }
+func (*UInt128Column) ProtoMessage() {}
+func (*UInt128Column) Descriptor() ([]byte, []int) {
+	return fileDescriptor_ce184cc4e6678cf8, []int{2}
+}
+func (m *UInt128Column) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *UInt128Column) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_UInt128Column.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *UInt128Column) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UInt128Column.Merge(m, src)
+}
+func (m *UInt128Column) XXX_Size() int {
+	return m.Size()
+}
+func (m *UInt128Column) XXX_DiscardUnknown() {
+	xxx_messageInfo_UInt128Column.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_UInt128Column proto.InternalMessageInfo
+
+func (m *UInt128Column) GetData() []*proto1.UInt128 {
+	if m != nil {
+		return m.Data
+	}
+	return nil
+}
+
 type Float64Column struct {
 	Data []float64 `protobuf:"fixed64,1,rep,packed,name=data,proto3" json:"data,omitempty"`
 }
@@ -119,7 +162,7 @@ type Float64Column struct {
 func (m *Float64Column) Reset()      { *m = Float64Column{} }
 func (*Float64Column) ProtoMessage() {}
 func (*Float64Column) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ce184cc4e6678cf8, []int{2}
+	return fileDescriptor_ce184cc4e6678cf8, []int{3}
 }
 func (m *Float64Column) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -162,7 +205,7 @@ type Time64NSColumn struct {
 func (m *Time64NSColumn) Reset()      { *m = Time64NSColumn{} }
 func (*Time64NSColumn) ProtoMessage() {}
 func (*Time64NSColumn) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ce184cc4e6678cf8, []int{3}
+	return fileDescriptor_ce184cc4e6678cf8, []int{4}
 }
 func (m *Time64NSColumn) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -205,7 +248,7 @@ type StringColumn struct {
 func (m *StringColumn) Reset()      { *m = StringColumn{} }
 func (*StringColumn) ProtoMessage() {}
 func (*StringColumn) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ce184cc4e6678cf8, []int{4}
+	return fileDescriptor_ce184cc4e6678cf8, []int{5}
 }
 func (m *StringColumn) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -245,6 +288,7 @@ type Column struct {
 	// Types that are valid to be assigned to ColData:
 	//	*Column_BooleanData
 	//	*Column_Int64Data
+	//	*Column_Uint128Data
 	//	*Column_Time64NsData
 	//	*Column_Float64Data
 	//	*Column_StringData
@@ -254,7 +298,7 @@ type Column struct {
 func (m *Column) Reset()      { *m = Column{} }
 func (*Column) ProtoMessage() {}
 func (*Column) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ce184cc4e6678cf8, []int{5}
+	return fileDescriptor_ce184cc4e6678cf8, []int{6}
 }
 func (m *Column) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -296,18 +340,22 @@ type Column_BooleanData struct {
 type Column_Int64Data struct {
 	Int64Data *Int64Column `protobuf:"bytes,2,opt,name=int64_data,json=int64Data,proto3,oneof"`
 }
+type Column_Uint128Data struct {
+	Uint128Data *UInt128Column `protobuf:"bytes,3,opt,name=uint128_data,json=uint128Data,proto3,oneof"`
+}
 type Column_Time64NsData struct {
-	Time64NsData *Time64NSColumn `protobuf:"bytes,3,opt,name=time64ns_data,json=time64nsData,proto3,oneof"`
+	Time64NsData *Time64NSColumn `protobuf:"bytes,4,opt,name=time64ns_data,json=time64nsData,proto3,oneof"`
 }
 type Column_Float64Data struct {
-	Float64Data *Float64Column `protobuf:"bytes,4,opt,name=float64_data,json=float64Data,proto3,oneof"`
+	Float64Data *Float64Column `protobuf:"bytes,5,opt,name=float64_data,json=float64Data,proto3,oneof"`
 }
 type Column_StringData struct {
-	StringData *StringColumn `protobuf:"bytes,5,opt,name=string_data,json=stringData,proto3,oneof"`
+	StringData *StringColumn `protobuf:"bytes,6,opt,name=string_data,json=stringData,proto3,oneof"`
 }
 
 func (*Column_BooleanData) isColumn_ColData()  {}
 func (*Column_Int64Data) isColumn_ColData()    {}
+func (*Column_Uint128Data) isColumn_ColData()  {}
 func (*Column_Time64NsData) isColumn_ColData() {}
 func (*Column_Float64Data) isColumn_ColData()  {}
 func (*Column_StringData) isColumn_ColData()   {}
@@ -329,6 +377,13 @@ func (m *Column) GetBooleanData() *BooleanColumn {
 func (m *Column) GetInt64Data() *Int64Column {
 	if x, ok := m.GetColData().(*Column_Int64Data); ok {
 		return x.Int64Data
+	}
+	return nil
+}
+
+func (m *Column) GetUint128Data() *UInt128Column {
+	if x, ok := m.GetColData().(*Column_Uint128Data); ok {
+		return x.Uint128Data
 	}
 	return nil
 }
@@ -359,6 +414,7 @@ func (*Column) XXX_OneofFuncs() (func(msg proto.Message, b *proto.Buffer) error,
 	return _Column_OneofMarshaler, _Column_OneofUnmarshaler, _Column_OneofSizer, []interface{}{
 		(*Column_BooleanData)(nil),
 		(*Column_Int64Data)(nil),
+		(*Column_Uint128Data)(nil),
 		(*Column_Time64NsData)(nil),
 		(*Column_Float64Data)(nil),
 		(*Column_StringData)(nil),
@@ -379,18 +435,23 @@ func _Column_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 		if err := b.EncodeMessage(x.Int64Data); err != nil {
 			return err
 		}
-	case *Column_Time64NsData:
+	case *Column_Uint128Data:
 		_ = b.EncodeVarint(3<<3 | proto.WireBytes)
+		if err := b.EncodeMessage(x.Uint128Data); err != nil {
+			return err
+		}
+	case *Column_Time64NsData:
+		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.Time64NsData); err != nil {
 			return err
 		}
 	case *Column_Float64Data:
-		_ = b.EncodeVarint(4<<3 | proto.WireBytes)
+		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.Float64Data); err != nil {
 			return err
 		}
 	case *Column_StringData:
-		_ = b.EncodeVarint(5<<3 | proto.WireBytes)
+		_ = b.EncodeVarint(6<<3 | proto.WireBytes)
 		if err := b.EncodeMessage(x.StringData); err != nil {
 			return err
 		}
@@ -420,7 +481,15 @@ func _Column_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer)
 		err := b.DecodeMessage(msg)
 		m.ColData = &Column_Int64Data{msg}
 		return true, err
-	case 3: // col_data.time64ns_data
+	case 3: // col_data.uint128_data
+		if wire != proto.WireBytes {
+			return true, proto.ErrInternalBadWireType
+		}
+		msg := new(UInt128Column)
+		err := b.DecodeMessage(msg)
+		m.ColData = &Column_Uint128Data{msg}
+		return true, err
+	case 4: // col_data.time64ns_data
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -428,7 +497,7 @@ func _Column_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer)
 		err := b.DecodeMessage(msg)
 		m.ColData = &Column_Time64NsData{msg}
 		return true, err
-	case 4: // col_data.float64_data
+	case 5: // col_data.float64_data
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -436,7 +505,7 @@ func _Column_OneofUnmarshaler(msg proto.Message, tag, wire int, b *proto.Buffer)
 		err := b.DecodeMessage(msg)
 		m.ColData = &Column_Float64Data{msg}
 		return true, err
-	case 5: // col_data.string_data
+	case 6: // col_data.string_data
 		if wire != proto.WireBytes {
 			return true, proto.ErrInternalBadWireType
 		}
@@ -460,6 +529,11 @@ func _Column_OneofSizer(msg proto.Message) (n int) {
 		n += s
 	case *Column_Int64Data:
 		s := proto.Size(x.Int64Data)
+		n += 1 // tag and wire
+		n += proto.SizeVarint(uint64(s))
+		n += s
+	case *Column_Uint128Data:
+		s := proto.Size(x.Uint128Data)
 		n += 1 // tag and wire
 		n += proto.SizeVarint(uint64(s))
 		n += s
@@ -495,7 +569,7 @@ type RowBatchData struct {
 func (m *RowBatchData) Reset()      { *m = RowBatchData{} }
 func (*RowBatchData) ProtoMessage() {}
 func (*RowBatchData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ce184cc4e6678cf8, []int{6}
+	return fileDescriptor_ce184cc4e6678cf8, []int{7}
 }
 func (m *RowBatchData) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -559,7 +633,7 @@ type Relation struct {
 func (m *Relation) Reset()      { *m = Relation{} }
 func (*Relation) ProtoMessage() {}
 func (*Relation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ce184cc4e6678cf8, []int{7}
+	return fileDescriptor_ce184cc4e6678cf8, []int{8}
 }
 func (m *Relation) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -603,7 +677,7 @@ type Relation_ColumnInfo struct {
 func (m *Relation_ColumnInfo) Reset()      { *m = Relation_ColumnInfo{} }
 func (*Relation_ColumnInfo) ProtoMessage() {}
 func (*Relation_ColumnInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ce184cc4e6678cf8, []int{7, 0}
+	return fileDescriptor_ce184cc4e6678cf8, []int{8, 0}
 }
 func (m *Relation_ColumnInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -654,7 +728,7 @@ type Table struct {
 func (m *Table) Reset()      { *m = Table{} }
 func (*Table) ProtoMessage() {}
 func (*Table) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ce184cc4e6678cf8, []int{8}
+	return fileDescriptor_ce184cc4e6678cf8, []int{9}
 }
 func (m *Table) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -704,7 +778,7 @@ type Schema struct {
 func (m *Schema) Reset()      { *m = Schema{} }
 func (*Schema) ProtoMessage() {}
 func (*Schema) Descriptor() ([]byte, []int) {
-	return fileDescriptor_ce184cc4e6678cf8, []int{9}
+	return fileDescriptor_ce184cc4e6678cf8, []int{10}
 }
 func (m *Schema) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -743,6 +817,7 @@ func (m *Schema) GetRelationMap() map[string]*Relation {
 func init() {
 	proto.RegisterType((*BooleanColumn)(nil), "pl.table_store.schemapb.BooleanColumn")
 	proto.RegisterType((*Int64Column)(nil), "pl.table_store.schemapb.Int64Column")
+	proto.RegisterType((*UInt128Column)(nil), "pl.table_store.schemapb.UInt128Column")
 	proto.RegisterType((*Float64Column)(nil), "pl.table_store.schemapb.Float64Column")
 	proto.RegisterType((*Time64NSColumn)(nil), "pl.table_store.schemapb.Time64NSColumn")
 	proto.RegisterType((*StringColumn)(nil), "pl.table_store.schemapb.StringColumn")
@@ -758,48 +833,50 @@ func init() {
 func init() { proto.RegisterFile("src/table_store/proto/schema.proto", fileDescriptor_ce184cc4e6678cf8) }
 
 var fileDescriptor_ce184cc4e6678cf8 = []byte{
-	// 644 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x94, 0x41, 0x4f, 0xd4, 0x4e,
-	0x18, 0xc6, 0x3b, 0x2c, 0x0b, 0xe5, 0xed, 0x42, 0xc8, 0x5c, 0xfe, 0xfc, 0x39, 0x0c, 0x52, 0x50,
-	0x39, 0x98, 0x5d, 0x03, 0x04, 0x8d, 0x89, 0x1e, 0x56, 0x21, 0x4b, 0x88, 0x1c, 0x66, 0x39, 0x79,
-	0xd9, 0xcc, 0x2e, 0x83, 0x6c, 0x6c, 0x3b, 0x4d, 0xa7, 0xeb, 0x66, 0x6f, 0xc6, 0x0f, 0xa0, 0x7e,
-	0x0c, 0x3f, 0x81, 0x67, 0x8f, 0x1e, 0x39, 0x72, 0x94, 0x72, 0xf1, 0xc8, 0x47, 0x30, 0x7d, 0x67,
-	0x0a, 0x8b, 0xd9, 0x8a, 0xb7, 0xe9, 0xcc, 0xf3, 0xfc, 0xfa, 0xbe, 0xcf, 0xdb, 0x29, 0xf8, 0x3a,
-	0xe9, 0x35, 0x52, 0xd1, 0x0d, 0x64, 0x47, 0xa7, 0x2a, 0x91, 0x8d, 0x38, 0x51, 0xa9, 0x6a, 0xe8,
-	0xde, 0xa9, 0x0c, 0x45, 0x1d, 0x1f, 0xe8, 0x7f, 0x71, 0x50, 0x1f, 0x93, 0xd4, 0xcd, 0x61, 0xdc,
-	0x5d, 0x46, 0xb3, 0x3e, 0x15, 0x89, 0x3c, 0x6e, 0xa4, 0xa3, 0x58, 0x6a, 0xeb, 0xc6, 0xb5, 0x31,
-	0xfb, 0x6b, 0x30, 0xdf, 0x54, 0x2a, 0x90, 0x22, 0x7a, 0xa9, 0x82, 0x41, 0x18, 0x51, 0x0a, 0xd3,
-	0xc7, 0x22, 0x15, 0x4b, 0xe4, 0x5e, 0x65, 0xc3, 0xe5, 0xb8, 0xf6, 0x57, 0xc1, 0xdb, 0x8f, 0xd2,
-	0x9d, 0xed, 0x09, 0x92, 0x8a, 0x95, 0xac, 0xc1, 0xfc, 0x5e, 0xa0, 0xc4, 0x64, 0x11, 0xb1, 0xa2,
-	0x75, 0x58, 0x38, 0xea, 0x87, 0x72, 0x67, 0xfb, 0xb0, 0xfd, 0x17, 0x94, 0x0f, 0xb5, 0x76, 0x9a,
-	0xf4, 0xa3, 0xb7, 0x13, 0x34, 0x73, 0x56, 0xf3, 0xb9, 0x02, 0x33, 0xf6, 0xf8, 0x00, 0x6a, 0x5d,
-	0xd3, 0x41, 0xc7, 0xca, 0xc8, 0x86, 0xb7, 0xf9, 0xa0, 0x5e, 0x92, 0x4a, 0xfd, 0x56, 0xbb, 0x2d,
-	0x87, 0x7b, 0xd6, 0xfd, 0x4a, 0xa4, 0x82, 0xee, 0x02, 0xf4, 0xf3, 0x4e, 0x0d, 0x6a, 0x0a, 0x51,
-	0xeb, 0xa5, 0xa8, 0xb1, 0x50, 0x5a, 0x0e, 0x9f, 0x43, 0x27, 0x62, 0x0e, 0x61, 0x3e, 0xc5, 0x46,
-	0x23, 0x6d, 0x48, 0x15, 0x24, 0x3d, 0x2c, 0x25, 0xdd, 0x8e, 0xa5, 0xe5, 0xf0, 0x5a, 0xe1, 0x47,
-	0xde, 0x01, 0xd4, 0x4e, 0x4c, 0xba, 0x06, 0x37, 0x7d, 0x47, 0x8f, 0xb7, 0x46, 0x91, 0xf7, 0x68,
-	0xdd, 0x08, 0x6b, 0x81, 0xa7, 0x31, 0x5f, 0xc3, 0xaa, 0x22, 0xeb, 0x7e, 0x29, 0x6b, 0x7c, 0x16,
-	0x2d, 0x87, 0x83, 0xf1, 0xe6, 0xa4, 0x26, 0x80, 0xdb, 0x53, 0x01, 0x62, 0xfc, 0x8f, 0x04, 0x6a,
-	0x5c, 0x0d, 0x9b, 0x22, 0xed, 0x9d, 0xe2, 0x6b, 0xb6, 0x60, 0xba, 0xa7, 0x02, 0x8d, 0x63, 0xf3,
-	0x36, 0x57, 0x4a, 0xf9, 0x86, 0xcc, 0x51, 0x4c, 0xff, 0x07, 0x37, 0x1a, 0x84, 0x9d, 0x44, 0x0d,
-	0x35, 0xa6, 0x5f, 0xe1, 0xb3, 0xd1, 0x20, 0xe4, 0x6a, 0xa8, 0xe9, 0x22, 0x54, 0xa4, 0x1a, 0x62,
-	0x92, 0x2e, 0xcf, 0x97, 0x66, 0x47, 0x63, 0x18, 0xb8, 0xa3, 0xfd, 0x6f, 0x04, 0x5c, 0x2e, 0x03,
-	0x91, 0xf6, 0x55, 0x44, 0xf7, 0x60, 0xb6, 0x87, 0xec, 0xa2, 0x86, 0x47, 0xa5, 0x35, 0x14, 0x1e,
-	0x5b, 0xcc, 0x7e, 0x74, 0xa2, 0x78, 0x61, 0x5e, 0xee, 0x02, 0xdc, 0x6c, 0xd3, 0x15, 0xf0, 0xcc,
-	0x41, 0x27, 0x12, 0xa1, 0xc4, 0xaf, 0x6d, 0x8e, 0x83, 0xd9, 0x3a, 0x14, 0xa1, 0xa4, 0x5b, 0xd7,
-	0x82, 0xfc, 0x9e, 0x61, 0x17, 0x0b, 0x9b, 0x14, 0x5f, 0x8d, 0xf7, 0x2e, 0x0f, 0xe7, 0x68, 0x14,
-	0xcb, 0xc2, 0x94, 0xaf, 0xfd, 0x4f, 0x04, 0xaa, 0x47, 0x79, 0x65, 0xf4, 0x39, 0xb8, 0x89, 0xad,
-	0xc6, 0x8e, 0x79, 0xf5, 0xce, 0xb2, 0xf9, 0xb5, 0x85, 0xee, 0x81, 0x97, 0xa8, 0x61, 0xa7, 0x9b,
-	0x8f, 0x41, 0xea, 0xa5, 0x2a, 0x36, 0x5e, 0x3e, 0xdc, 0xf1, 0x89, 0x71, 0x48, 0xec, 0x93, 0xd4,
-	0xfe, 0x77, 0x02, 0x33, 0x6d, 0x54, 0xd1, 0x36, 0xd4, 0x0a, 0x7c, 0x27, 0x14, 0xb1, 0x0d, 0xf3,
-	0x71, 0xf9, 0x07, 0x63, 0x7e, 0x4e, 0x45, 0x71, 0xaf, 0x45, 0xbc, 0x1b, 0xa5, 0xc9, 0x88, 0x7b,
-	0xc9, 0xcd, 0xce, 0xb2, 0x80, 0xc5, 0x3f, 0x05, 0xf9, 0x3c, 0xdf, 0xc9, 0x91, 0x8d, 0x34, 0x5f,
-	0xd2, 0x27, 0x50, 0x7d, 0x2f, 0x82, 0x81, 0xb4, 0x37, 0xf1, 0x1f, 0x92, 0x30, 0xfa, 0x67, 0x53,
-	0x4f, 0x49, 0xf3, 0xc5, 0xd9, 0x05, 0x73, 0xce, 0x2f, 0x98, 0x73, 0x75, 0xc1, 0xc8, 0x87, 0x8c,
-	0x91, 0xaf, 0x19, 0x23, 0x3f, 0x32, 0x46, 0xce, 0x32, 0x46, 0x7e, 0x66, 0x8c, 0xfc, 0xca, 0x98,
-	0x73, 0x95, 0x31, 0xf2, 0xe5, 0x92, 0x39, 0x67, 0x97, 0xcc, 0x39, 0xbf, 0x64, 0xce, 0x1b, 0xb7,
-	0x60, 0x76, 0x67, 0xf0, 0x0f, 0xb9, 0xf5, 0x3b, 0x00, 0x00, 0xff, 0xff, 0x9c, 0xb6, 0x08, 0x0c,
-	0x84, 0x05, 0x00, 0x00,
+	// 683 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x94, 0xc1, 0x52, 0xd3, 0x40,
+	0x1c, 0xc6, 0xb3, 0x94, 0x96, 0xf2, 0x4f, 0xcb, 0xe0, 0x5e, 0x44, 0x0e, 0x41, 0x02, 0x28, 0x07,
+	0xa7, 0xd5, 0xc2, 0x20, 0xe3, 0x8c, 0x1e, 0xaa, 0x30, 0x65, 0x18, 0x39, 0x6c, 0xf1, 0xe2, 0xa5,
+	0xb3, 0x2d, 0x8b, 0x74, 0x4c, 0xb2, 0x99, 0x6c, 0x6a, 0xa7, 0x37, 0xc7, 0x07, 0x70, 0x7c, 0x0c,
+	0x9f, 0xc0, 0xb3, 0x47, 0x8f, 0x1c, 0x39, 0x78, 0x90, 0x70, 0xf1, 0xc8, 0x23, 0x38, 0xf9, 0xef,
+	0x06, 0x5a, 0x87, 0x88, 0xb7, 0xcd, 0xe6, 0xfb, 0x7e, 0xf9, 0xf2, 0xfd, 0x37, 0x01, 0x57, 0x45,
+	0xbd, 0x7a, 0xcc, 0xbb, 0x9e, 0xe8, 0xa8, 0x58, 0x46, 0xa2, 0x1e, 0x46, 0x32, 0x96, 0x75, 0xd5,
+	0x3b, 0x11, 0x3e, 0xaf, 0xe1, 0x05, 0xbd, 0x1b, 0x7a, 0xb5, 0x31, 0x49, 0x4d, 0xdf, 0x0c, 0xbb,
+	0x8b, 0x68, 0x56, 0x27, 0x3c, 0x12, 0x47, 0xf5, 0x78, 0x14, 0x0a, 0x65, 0xdc, 0xb8, 0xd6, 0x66,
+	0x77, 0x05, 0xaa, 0x4d, 0x29, 0x3d, 0xc1, 0x83, 0x97, 0xd2, 0x1b, 0xf8, 0x01, 0xa5, 0x30, 0x7d,
+	0xc4, 0x63, 0xbe, 0x40, 0xee, 0x17, 0xd6, 0xcb, 0x0c, 0xd7, 0xee, 0x32, 0xd8, 0x7b, 0x41, 0xbc,
+	0xb5, 0x79, 0x83, 0xa4, 0x60, 0x24, 0x5b, 0x50, 0x7d, 0xb3, 0x17, 0xc4, 0x4f, 0x1a, 0xdb, 0x46,
+	0xb4, 0x36, 0x26, 0xb2, 0x1b, 0x77, 0x6a, 0x69, 0x48, 0x7c, 0xae, 0x91, 0x19, 0xdf, 0x0a, 0x54,
+	0x77, 0x3d, 0xc9, 0x6f, 0x86, 0x13, 0x23, 0x5a, 0x85, 0xb9, 0xc3, 0xbe, 0x2f, 0xb6, 0x36, 0x0f,
+	0xda, 0xff, 0x88, 0xe0, 0x42, 0xa5, 0x1d, 0x47, 0xfd, 0xe0, 0xdd, 0x0d, 0x9a, 0x59, 0xa3, 0xf9,
+	0x59, 0x80, 0x92, 0xb9, 0xbd, 0x0f, 0x95, 0xae, 0x7e, 0xf3, 0x8e, 0x91, 0x91, 0x75, 0xbb, 0xf1,
+	0xa0, 0x96, 0xd3, 0x66, 0x6d, 0xa2, 0xa6, 0x96, 0xc5, 0x6c, 0xe3, 0x7e, 0xc5, 0x63, 0x4e, 0x77,
+	0x00, 0xfa, 0x69, 0x43, 0x1a, 0x35, 0x85, 0xa8, 0xd5, 0x5c, 0xd4, 0x58, 0x99, 0x2d, 0x8b, 0xcd,
+	0xa2, 0x13, 0x31, 0xfb, 0x50, 0x19, 0xf4, 0xb1, 0x1e, 0x0d, 0x2a, 0xdc, 0x92, 0x69, 0xa2, 0xf2,
+	0x34, 0x93, 0x71, 0x23, 0xec, 0x00, 0xaa, 0x31, 0xb6, 0x16, 0x28, 0x4d, 0x9b, 0x46, 0xda, 0xc3,
+	0x5c, 0xda, 0x64, 0xc7, 0x2d, 0x8b, 0x55, 0x32, 0x7f, 0x16, 0xee, 0x58, 0x8f, 0x4a, 0xe3, 0x8a,
+	0xb7, 0x84, 0x9b, 0x98, 0x6b, 0x1a, 0xce, 0xb8, 0x11, 0xd6, 0x02, 0x5b, 0xe1, 0xb0, 0x34, 0xab,
+	0x84, 0xac, 0xb5, 0x5c, 0xd6, 0xf8, 0x60, 0x5b, 0x16, 0x03, 0xed, 0x4d, 0x49, 0x4d, 0x80, 0x72,
+	0x4f, 0x7a, 0x88, 0x71, 0x3f, 0x11, 0xa8, 0x30, 0x39, 0x6c, 0xf2, 0xb8, 0x77, 0x82, 0x8f, 0xd9,
+	0x80, 0xe9, 0x9e, 0xf4, 0x94, 0x39, 0x85, 0x4b, 0xb9, 0x7c, 0x4d, 0x66, 0x28, 0xa6, 0xf7, 0xa0,
+	0x1c, 0x0c, 0xfc, 0x4e, 0x24, 0x87, 0x0a, 0x47, 0x59, 0x60, 0x33, 0xc1, 0xc0, 0x67, 0x72, 0xa8,
+	0xe8, 0x3c, 0x14, 0x84, 0x1c, 0xe2, 0x5c, 0xca, 0x2c, 0x5d, 0xea, 0x1d, 0x85, 0xdd, 0xe2, 0x8e,
+	0x72, 0xbf, 0x11, 0x28, 0x33, 0xe1, 0xf1, 0xb8, 0x2f, 0x03, 0xba, 0x0b, 0x33, 0x3d, 0x64, 0x67,
+	0x19, 0x1e, 0xe5, 0x66, 0xc8, 0x3c, 0x26, 0xcc, 0x5e, 0x70, 0x2c, 0x59, 0x66, 0x5e, 0xec, 0x02,
+	0x5c, 0x6f, 0xd3, 0x25, 0xb0, 0xf5, 0x8d, 0x4e, 0xc0, 0x7d, 0x81, 0x47, 0x77, 0x96, 0x81, 0xde,
+	0x3a, 0xe0, 0xbe, 0xa0, 0x1b, 0x57, 0x82, 0xf4, 0xa3, 0xc3, 0xb7, 0x98, 0x6b, 0xd0, 0xeb, 0x8f,
+	0x30, 0x2d, 0xe7, 0x70, 0x14, 0x8a, 0xcc, 0x94, 0xae, 0xdd, 0xcf, 0x04, 0x8a, 0x87, 0x69, 0x32,
+	0xfa, 0x1c, 0xca, 0x91, 0x49, 0x63, 0x4e, 0xcd, 0xf2, 0xad, 0xb1, 0xd9, 0x95, 0x85, 0xee, 0x82,
+	0x1d, 0xc9, 0x61, 0xa7, 0x9b, 0x8e, 0x41, 0xa8, 0x85, 0x22, 0xbe, 0x78, 0xfe, 0x70, 0xc7, 0x27,
+	0xc6, 0x20, 0x32, 0x57, 0x42, 0xb9, 0xdf, 0x09, 0x94, 0xda, 0xa8, 0xa2, 0x6d, 0xa8, 0x64, 0xf8,
+	0x8e, 0xcf, 0x43, 0x53, 0xe6, 0xe3, 0xfc, 0x03, 0xa3, 0xff, 0x90, 0x59, 0xb8, 0xd7, 0x3c, 0xdc,
+	0x09, 0xe2, 0x68, 0xc4, 0xec, 0xe8, 0x7a, 0x67, 0x91, 0xc3, 0xfc, 0xdf, 0x82, 0x74, 0x9e, 0xef,
+	0xc5, 0xc8, 0x54, 0x9a, 0x2e, 0xe9, 0x53, 0x28, 0x7e, 0xe0, 0xde, 0x40, 0x98, 0xcf, 0xfa, 0x3f,
+	0x9a, 0xd0, 0xfa, 0x67, 0x53, 0xdb, 0xa4, 0xf9, 0xe2, 0xf4, 0xdc, 0xb1, 0xce, 0xce, 0x1d, 0xeb,
+	0xf2, 0xdc, 0x21, 0x1f, 0x13, 0x87, 0x7c, 0x4d, 0x1c, 0xf2, 0x23, 0x71, 0xc8, 0x69, 0xe2, 0x90,
+	0x5f, 0x89, 0x43, 0x7e, 0x27, 0x8e, 0x75, 0x99, 0x38, 0xe4, 0xcb, 0x85, 0x63, 0x9d, 0x5e, 0x38,
+	0xd6, 0xd9, 0x85, 0x63, 0xbd, 0x2d, 0x67, 0xcc, 0x6e, 0x09, 0x7f, 0xd3, 0x1b, 0x7f, 0x02, 0x00,
+	0x00, 0xff, 0xff, 0xe9, 0xf3, 0x20, 0xd7, 0x09, 0x06, 0x00, 0x00,
 }
 
 func (this *BooleanColumn) Equal(that interface{}) bool {
@@ -855,6 +932,35 @@ func (this *Int64Column) Equal(that interface{}) bool {
 	}
 	for i := range this.Data {
 		if this.Data[i] != that1.Data[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *UInt128Column) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*UInt128Column)
+	if !ok {
+		that2, ok := that.(UInt128Column)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Data) != len(that1.Data) {
+		return false
+	}
+	for i := range this.Data {
+		if !this.Data[i].Equal(that1.Data[i]) {
 			return false
 		}
 	}
@@ -1021,6 +1127,30 @@ func (this *Column_Int64Data) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.Int64Data.Equal(that1.Int64Data) {
+		return false
+	}
+	return true
+}
+func (this *Column_Uint128Data) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Column_Uint128Data)
+	if !ok {
+		that2, ok := that.(Column_Uint128Data)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Uint128Data.Equal(that1.Uint128Data) {
 		return false
 	}
 	return true
@@ -1272,6 +1402,18 @@ func (this *Int64Column) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *UInt128Column) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&schemapb.UInt128Column{")
+	if this.Data != nil {
+		s = append(s, "Data: "+fmt.Sprintf("%#v", this.Data)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *Float64Column) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1306,7 +1448,7 @@ func (this *Column) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 9)
+	s := make([]string, 0, 10)
 	s = append(s, "&schemapb.Column{")
 	if this.ColData != nil {
 		s = append(s, "ColData: "+fmt.Sprintf("%#v", this.ColData)+",\n")
@@ -1328,6 +1470,14 @@ func (this *Column_Int64Data) GoString() string {
 	}
 	s := strings.Join([]string{`&schemapb.Column_Int64Data{` +
 		`Int64Data:` + fmt.Sprintf("%#v", this.Int64Data) + `}`}, ", ")
+	return s
+}
+func (this *Column_Uint128Data) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&schemapb.Column_Uint128Data{` +
+		`Uint128Data:` + fmt.Sprintf("%#v", this.Uint128Data) + `}`}, ", ")
 	return s
 }
 func (this *Column_Time64NsData) GoString() string {
@@ -1504,6 +1654,36 @@ func (m *Int64Column) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *UInt128Column) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *UInt128Column) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Data) > 0 {
+		for _, msg := range m.Data {
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintSchema(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	return i, nil
+}
+
 func (m *Float64Column) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1654,13 +1834,13 @@ func (m *Column_Int64Data) MarshalTo(dAtA []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Column_Time64NsData) MarshalTo(dAtA []byte) (int, error) {
+func (m *Column_Uint128Data) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
-	if m.Time64NsData != nil {
+	if m.Uint128Data != nil {
 		dAtA[i] = 0x1a
 		i++
-		i = encodeVarintSchema(dAtA, i, uint64(m.Time64NsData.Size()))
-		n9, err := m.Time64NsData.MarshalTo(dAtA[i:])
+		i = encodeVarintSchema(dAtA, i, uint64(m.Uint128Data.Size()))
+		n9, err := m.Uint128Data.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1668,13 +1848,13 @@ func (m *Column_Time64NsData) MarshalTo(dAtA []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Column_Float64Data) MarshalTo(dAtA []byte) (int, error) {
+func (m *Column_Time64NsData) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
-	if m.Float64Data != nil {
+	if m.Time64NsData != nil {
 		dAtA[i] = 0x22
 		i++
-		i = encodeVarintSchema(dAtA, i, uint64(m.Float64Data.Size()))
-		n10, err := m.Float64Data.MarshalTo(dAtA[i:])
+		i = encodeVarintSchema(dAtA, i, uint64(m.Time64NsData.Size()))
+		n10, err := m.Time64NsData.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
@@ -1682,17 +1862,31 @@ func (m *Column_Float64Data) MarshalTo(dAtA []byte) (int, error) {
 	}
 	return i, nil
 }
-func (m *Column_StringData) MarshalTo(dAtA []byte) (int, error) {
+func (m *Column_Float64Data) MarshalTo(dAtA []byte) (int, error) {
 	i := 0
-	if m.StringData != nil {
+	if m.Float64Data != nil {
 		dAtA[i] = 0x2a
 		i++
-		i = encodeVarintSchema(dAtA, i, uint64(m.StringData.Size()))
-		n11, err := m.StringData.MarshalTo(dAtA[i:])
+		i = encodeVarintSchema(dAtA, i, uint64(m.Float64Data.Size()))
+		n11, err := m.Float64Data.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n11
+	}
+	return i, nil
+}
+func (m *Column_StringData) MarshalTo(dAtA []byte) (int, error) {
+	i := 0
+	if m.StringData != nil {
+		dAtA[i] = 0x32
+		i++
+		i = encodeVarintSchema(dAtA, i, uint64(m.StringData.Size()))
+		n12, err := m.StringData.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
+		}
+		i += n12
 	}
 	return i, nil
 }
@@ -1829,11 +2023,11 @@ func (m *Table) MarshalTo(dAtA []byte) (int, error) {
 		dAtA[i] = 0x22
 		i++
 		i = encodeVarintSchema(dAtA, i, uint64(m.Relation.Size()))
-		n12, err := m.Relation.MarshalTo(dAtA[i:])
+		n13, err := m.Relation.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
-		i += n12
+		i += n13
 	}
 	if len(m.RowBatches) > 0 {
 		for _, msg := range m.RowBatches {
@@ -1885,11 +2079,11 @@ func (m *Schema) MarshalTo(dAtA []byte) (int, error) {
 				dAtA[i] = 0x12
 				i++
 				i = encodeVarintSchema(dAtA, i, uint64(v.Size()))
-				n13, err := v.MarshalTo(dAtA[i:])
+				n14, err := v.MarshalTo(dAtA[i:])
 				if err != nil {
 					return 0, err
 				}
-				i += n13
+				i += n14
 			}
 		}
 	}
@@ -1929,6 +2123,21 @@ func (m *Int64Column) Size() (n int) {
 			l += sovSchema(uint64(e))
 		}
 		n += 1 + sovSchema(uint64(l)) + l
+	}
+	return n
+}
+
+func (m *UInt128Column) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Data) > 0 {
+		for _, e := range m.Data {
+			l = e.Size()
+			n += 1 + l + sovSchema(uint64(l))
+		}
 	}
 	return n
 }
@@ -2008,6 +2217,18 @@ func (m *Column_Int64Data) Size() (n int) {
 	_ = l
 	if m.Int64Data != nil {
 		l = m.Int64Data.Size()
+		n += 1 + l + sovSchema(uint64(l))
+	}
+	return n
+}
+func (m *Column_Uint128Data) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Uint128Data != nil {
+		l = m.Uint128Data.Size()
 		n += 1 + l + sovSchema(uint64(l))
 	}
 	return n
@@ -2177,6 +2398,16 @@ func (this *Int64Column) String() string {
 	}, "")
 	return s
 }
+func (this *UInt128Column) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&UInt128Column{`,
+		`Data:` + strings.Replace(fmt.Sprintf("%v", this.Data), "UInt128", "proto1.UInt128", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *Float64Column) String() string {
 	if this == nil {
 		return "nil"
@@ -2233,6 +2464,16 @@ func (this *Column_Int64Data) String() string {
 	}
 	s := strings.Join([]string{`&Column_Int64Data{`,
 		`Int64Data:` + strings.Replace(fmt.Sprintf("%v", this.Int64Data), "Int64Column", "Int64Column", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Column_Uint128Data) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Column_Uint128Data{`,
+		`Uint128Data:` + strings.Replace(fmt.Sprintf("%v", this.Uint128Data), "UInt128Column", "UInt128Column", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2568,6 +2809,93 @@ func (m *Int64Column) Unmarshal(dAtA []byte) error {
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
 			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipSchema(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthSchema
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthSchema
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *UInt128Column) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowSchema
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: UInt128Column: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: UInt128Column: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSchema
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSchema
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSchema
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Data = append(m.Data, &proto1.UInt128{})
+			if err := m.Data[len(m.Data)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipSchema(dAtA[iNdEx:])
@@ -3014,6 +3342,41 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Uint128Data", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowSchema
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthSchema
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthSchema
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &UInt128Column{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.ColData = &Column_Uint128Data{v}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Time64NsData", wireType)
 			}
 			var msglen int
@@ -3047,7 +3410,7 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 			}
 			m.ColData = &Column_Time64NsData{v}
 			iNdEx = postIndex
-		case 4:
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Float64Data", wireType)
 			}
@@ -3082,7 +3445,7 @@ func (m *Column) Unmarshal(dAtA []byte) error {
 			}
 			m.ColData = &Column_Float64Data{v}
 			iNdEx = postIndex
-		case 5:
+		case 6:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field StringData", wireType)
 			}

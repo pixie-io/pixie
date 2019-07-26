@@ -33,6 +33,9 @@ pl::StatusOr<DataType> GetTypeFromHeaderString(const std::string& type) {
   if (type == "int64") {
     return DataType::INT64;
   }
+  if (type == "uint128") {
+    return DataType::UINT128;
+  }
   if (type == "float64") {
     return DataType::FLOAT64;
   }
@@ -49,6 +52,9 @@ pl::StatusOr<DataType> GetTypeFromHeaderString(const std::string& type) {
 }
 
 std::string ValueToString(int64_t val) { return absl::Substitute("$0", val); }
+std::string ValueToString(absl::uint128 val) {
+  return absl::Substitute("$0:$1", absl::Uint128High64(val), absl::Uint128Low64(val));
+}
 
 std::string ValueToString(double val) { return absl::StrFormat("%.2f", val); }
 

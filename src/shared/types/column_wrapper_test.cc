@@ -33,6 +33,16 @@ TEST(ColumnWrapperTest, make_test_int64) {
   EXPECT_EQ(DataTypeTraits<DataType::INT64>::arrow_type_id, arrow_arr->type_id());
 }
 
+TEST(ColumnWrapperTest, make_test_uint128) {
+  auto wrapper = ColumnWrapper::Make(DataType::UINT128, 10);
+  EXPECT_EQ(10, wrapper->Size());
+  EXPECT_EQ(DataType::UINT128, wrapper->data_type());
+  EXPECT_NE(nullptr, wrapper->UnsafeRawData());
+
+  auto arrow_arr = wrapper->ConvertToArrow(arrow::default_memory_pool());
+  EXPECT_EQ(DataTypeTraits<DataType::UINT128>::arrow_type_id, arrow_arr->type_id());
+}
+
 TEST(ColumnWrapperTest, make_test_float64) {
   auto wrapper = ColumnWrapper::Make(DataType::FLOAT64, 10);
   EXPECT_EQ(10, wrapper->Size());
@@ -81,6 +91,20 @@ TEST(ColumnWrapper, FromArrowInt64) {
   EXPECT_TRUE(converted_to_arrow->Equals(arr));
 }
 
+TEST(ColumnWrapper, FromArrowUInt128) {
+  arrow::UInt128Builder builder;
+  PL_CHECK_OK(builder.Append(absl::MakeUint128(100, 200)));
+  PL_CHECK_OK(builder.Append(absl::MakeUint128(200, 300)));
+  PL_CHECK_OK(builder.Append(absl::MakeUint128(300, 400)));
+
+  std::shared_ptr<arrow::Array> arr;
+  PL_CHECK_OK(builder.Finish(&arr));
+
+  auto wrapper = ColumnWrapper::FromArrow(arr);
+  auto converted_to_arrow = wrapper->ConvertToArrow(arrow::default_memory_pool());
+  EXPECT_TRUE(converted_to_arrow->Equals(arr));
+}
+
 TEST(ColumnWrapper, FromArrowFloat64) {
   arrow::DoubleBuilder builder;
   PL_CHECK_OK(builder.Append(1));
@@ -113,7 +137,7 @@ TEST(ColumnWrapperTest, AppendTypeMismatches) {
   auto wrapper = ColumnWrapper::Make(DataType::BOOLEAN, 1);
   ASSERT_EQ(1, wrapper->Size());
   EXPECT_DEATH(wrapper->Append<types::StringValue>("abc"),
-               R"(\(1 vs\. 4\) Expect bool got string)");
+               R"(\(1 vs\. 5\) Expect bool got string)");
 }
 
 }  // namespace types
