@@ -714,8 +714,20 @@ TEST_P(MetadataSingleOps, valid_metadata_calls) {
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   ASSERT_OK(HandleRelation(ir_graph));
 }
-TEST_P(MetadataSingleOps, metadata_fails_no_upid) {
-  std::string op_call = GetParam();
+std::vector<std::string> metadata_operators{
+    "Filter(fn=lambda r : r.attr.service == 'pl/orders')",
+    "Map(fn=lambda r: {'service': r.attr.service})",
+    "Agg(fn=lambda r: pl.mean(r.cpu0), by=lambda r: r.attr.service)",
+    "Agg(fn=lambda r: pl.count(r.cpu0), by=lambda r: [r.cpu0, r.attr.service])",
+    "Agg(fn=lambda r: pl.count(r.cpu0), by=lambda r: r.attr.service).Filter(fn=lambda r: "
+    "r.attr.service == 'pl/orders')",
+    "Agg(fn=lambda r: pl.count(r.cpu0), by=lambda r: r.attr.service_id).Filter(fn=lambda r: "
+    "r.attr.service == 'pl/orders')"};
+
+INSTANTIATE_TEST_CASE_P(MetadataAttributesSuite, MetadataSingleOps,
+                        ::testing::ValuesIn(metadata_operators));
+TEST_F(AnalyzerTest, metadata_fails_no_upid) {
+  std::string op_call = "Map(fn=lambda r: {'service': r.attr.service})";
   std::string valid_query = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0']) ",
                                            "opDF = queryDF.$0", "opDF.Result(name='out')"},
                                           "\n");
@@ -727,19 +739,9 @@ TEST_P(MetadataSingleOps, metadata_fails_no_upid) {
   EXPECT_THAT(
       HandleRelation(ir_graph),
       HasCompilerError("Can't resolve metadata because of lack of converting columns in the "
-                       "parent. Need one of [upid,_attr_service_id]."));
+                       "parent. Need one of [upid,_attr_service_id]. Parent relation has "
+                       "columns [cpu0] available."));
 }
-std::vector<std::string> metadata_operators{
-    "Filter(fn=lambda r : r.attr.service == 'pl/orders')",
-    "Map(fn=lambda r: {'service': r.attr.service})",
-    "Agg(fn=lambda r: pl.mean(r.cpu0), by=lambda r: r.attr.service)",
-    "Agg(fn=lambda r: pl.count(r.cpu0), by=lambda r: [r.cpu0, r.attr.service])"};
-// TODO(philkuz) add support for pass through.
-// "Agg(fn=lambda r: pl.count(r.cpu0), by=lambda r: r.attr.service).Filter(fn=lambda r: "
-// "r.attr.service == 'pl/orders')"};
-
-INSTANTIATE_TEST_CASE_P(MetadataAttributesSuite, MetadataSingleOps,
-                        ::testing::ValuesIn(metadata_operators));
 
 TEST_F(AnalyzerTest, define_column_metadata) {
   std::string valid_query =
@@ -748,7 +750,6 @@ TEST_F(AnalyzerTest, define_column_metadata) {
                      "opDF.Result(name='out')"},
                     "\n");
   valid_query = absl::Substitute(valid_query, MetadataProperty::kMetadataColumnPrefix);
-  VLOG(1) << valid_query;
   auto ir_graph_status = CompileGraph(valid_query);
   ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
@@ -756,6 +757,21 @@ TEST_F(AnalyzerTest, define_column_metadata) {
               HasCompilerError("Column name '$0service' violates naming rules. The '$0' prefix is "
                                "reserved for internal use.",
                                MetadataProperty::kMetadataColumnPrefix));
+}
+
+// Test to make sure that copying the metadata key column still works.
+TEST_F(AnalyzerTest, copy_metadata_key_and_og_column) {
+  std::string valid_query = absl::StrJoin(
+      {"queryDF = From(table='cpu') ",
+       "opDF = queryDF.Agg(by=lambda r: [r.$0, r.attr.service],  fn=lambda "
+       "r:{'mean_cpu': pl.mean(r.cpu0)}).Filter(fn=lambda r: r.attr.service=='pl/service-name')",
+       "opDF.Result(name='out')"},
+      "\n");
+  valid_query = absl::Substitute(valid_query, MetadataProperty::kUniquePIDColumn);
+  auto ir_graph_status = CompileGraph(valid_query);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  EXPECT_OK(HandleRelation(ir_graph));
 }
 
 }  // namespace compiler

@@ -121,6 +121,23 @@ class RulesTest : public ::testing::Test {
     EXPECT_OK(filter->Init(parent, amap, ast));
     return filter;
   }
+  BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, ColumnIR* by_column, ColumnIR* fn_column) {
+    auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(agg_func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
+                             std::vector<ExpressionIR*>({fn_column}), false /* compile_time */,
+                             ast));
+
+    auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(agg_func_lambda->Init({}, {{"agg_fn", agg_func}}, ast));
+
+    auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(by_func_lambda->Init({"group"}, by_column, ast));
+
+    BlockingAggIR* agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
+    ArgMap amap({{"by", by_func_lambda}, {"fn", agg_func_lambda}});
+    EXPECT_OK(agg->Init(parent, amap, ast));
+    return agg;
+  }
 
   pypa::AstPtr ast;
   std::shared_ptr<IR> graph;
@@ -1503,8 +1520,10 @@ TEST_F(MetadataResolverConversionTest, missing_conversion_column) {
   EXPECT_NOT_OK(status);
   VLOG(1) << status.ToString();
   EXPECT_THAT(status.status(),
-              HasCompilerError("Can\'t resolve metadata because of lack of converting "
-                               "columns in the parent. Need one of [upid]."));
+              HasCompilerError(
+                  "Can\'t resolve metadata because of lack of converting columns in the parent. "
+                  "Need one of "
+                  "[upid]. Parent relation has columns [count,cpu0,cpu1,cpu2] available."));
 }
 
 // When the parent relation has multiple columns that can be converted into
@@ -1625,6 +1644,51 @@ TEST_F(MetadataResolverConversionTest, multiple_metadata_columns) {
     EXPECT_EQ(col_ir->col_name(), conversion_column_str);
     cur_idx += 1;
   }
+}
+
+// Test to make sure that the rule gets rid of extra metadata resolvers if the parent
+// already has the appropriate column.
+TEST_F(MetadataResolverConversionTest, remove_extra_resolver) {
+  auto relation = table_store::schema::Relation(cpu_relation);
+  MetadataType conversion_column = MetadataType::UPID;
+  std::string conversion_column_str = MetadataProperty::GetMetadataString(conversion_column);
+  // TODO(philkuz) with the addition of INT128 update this.
+  relation.AddColumn(types::DataType::INT64, conversion_column_str);
+  EXPECT_OK(mem_src->SetRelation(relation));
+  NameMetadataProperty property(MetadataType::POD_NAME, {conversion_column});
+
+  MetadataResolverIR* md_resolver1 = MakeMetadataResolver(mem_src);
+  ASSERT_OK(md_resolver1->AddMetadata(&property));
+
+  auto md_relation = table_store::schema::Relation(relation);
+  md_relation.AddColumn(property.column_type(), property.GetColumnRepr());
+  EXPECT_OK(md_resolver1->SetRelation(md_relation));
+
+  MetadataIR* metadata_ir1 = MakeMetadataIR("pod_name");
+  ASSERT_OK(metadata_ir1->ResolveMetadataColumn(md_resolver1, &property));
+
+  FilterIR* filter = MakeFilter(md_resolver1, metadata_ir1);
+  // Filter just copies columns, so relation is the same.
+  EXPECT_OK(filter->SetRelation(md_relation));
+
+  MetadataResolverIR* md_resolver2 = MakeMetadataResolver(filter);
+  ASSERT_OK(md_resolver2->AddMetadata(&property));
+  // Filter just copies columns, so relation is the same.
+  EXPECT_OK(md_resolver2->SetRelation(md_relation));
+  MetadataIR* metadata_ir2 = MakeMetadataIR("pod_name");
+  ASSERT_OK(metadata_ir2->ResolveMetadataColumn(md_resolver2, &property));
+
+  BlockingAggIR* agg = MakeBlockingAgg(md_resolver2, metadata_ir2, MakeColumn("cpu0"));
+  // Filter just copies columns, so relation is the same.
+  EXPECT_OK(agg->SetRelation(relation));
+
+  MetadataResolverConversionRule rule(compiler_state_.get());
+  auto status = rule.Execute(graph.get());
+  ASSERT_OK(status);
+  EXPECT_TRUE(status.ValueOrDie());
+
+  EXPECT_EQ(agg->parent(), filter);
+  EXPECT_EQ(graph->dag().DependenciesOf(md_resolver2->id()).size(), 0UL);
 }
 
 }  // namespace compiler

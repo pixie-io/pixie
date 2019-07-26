@@ -12,6 +12,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
+using table_store::schema::Relation;
 class Rule {
  public:
   Rule() = delete;
@@ -77,12 +78,11 @@ class SourceRelationRule : public Rule {
   StatusOr<bool> GetSourceRelation(OperatorIR* source_op) const;
   StatusOr<std::vector<std::string>> GetColumnNames(
       std::vector<ExpressionIR*> select_children) const;
-  StatusOr<std::vector<ColumnIR*>> GetColumnsFromRelation(
-      IRNode* node, std::vector<std::string> col_names,
-      const table_store::schema::Relation& relation) const;
-  StatusOr<table_store::schema::Relation> GetSelectRelation(
-      IRNode* node, const table_store::schema::Relation& relation,
-      const std::vector<std::string>& columns) const;
+  StatusOr<std::vector<ColumnIR*>> GetColumnsFromRelation(IRNode* node,
+                                                          std::vector<std::string> col_names,
+                                                          const Relation& relation) const;
+  StatusOr<Relation> GetSelectRelation(IRNode* node, const Relation& relation,
+                                       const std::vector<std::string>& columns) const;
 };
 
 class OperatorRelationRule : public Rule {
@@ -192,9 +192,32 @@ class MetadataResolverConversionRule : public Rule {
   StatusOr<bool> ReplaceMetadataResolver(MetadataResolverIR* md_resolver) const;
 
   StatusOr<MapIR*> MakeMap(MetadataResolverIR* md_resolver) const;
-  StatusOr<bool> SwapInMap(MetadataResolverIR* md_resolver, MapIR* map) const;
-  StatusOr<std::string> FindKeyColumn(const table_store::schema::Relation& parent_relation,
-                                      MetadataProperty* property, IRNode* node_for_error) const;
+  Status SwapInMap(MetadataResolverIR* md_resolver, MapIR* map) const;
+  StatusOr<std::string> FindKeyColumn(const Relation& parent_relation, MetadataProperty* property,
+                                      IRNode* node_for_error) const;
+  Status CopyParentColumns(IR* graph, ColExpressionVector* col_exprs,
+                           const Relation& parent_relation, pypa::AstPtr ast_node) const;
+
+  Status AddMetadataConversionFns(IR* graph, MetadataResolverIR* md_resolver,
+                                  const Relation& parent_relation,
+                                  ColExpressionVector* col_exprs) const;
+
+  /**
+   * @brief Removes the metadata resolver and pushes all of it's dependencies to depend on the
+   * Metadata Resolver operator's parent.
+   *
+   * @param md_resolver: the metadata to remove from the graph.
+   * @return Status: Error if there are issues with removing the node.
+   */
+  Status RemoveMetadataResolver(MetadataResolverIR* md_resolver) const;
+  Status RemoveMap(MapIR* map) const;
+  /**
+   * @brief Returns true if the Map only copies the parent operation's columns.
+   *
+   * @param map: map_node
+   * @return true: if the map returns a copy of the parent.
+   */
+  bool DoesMapOnlyCopy(MapIR* map) const;
 };
 }  // namespace compiler
 }  // namespace carnot

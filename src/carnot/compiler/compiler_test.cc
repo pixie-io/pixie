@@ -44,6 +44,12 @@ class CompilerTest : public ::testing::Test {
                                                  types::DataType::FLOAT64, types::DataType::FLOAT64,
                                                  types::DataType::INT64}),
                    std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2", "upid"})));
+    cgroups_relation_ = table_store::schema::Relation(
+        std::vector<types::DataType>(
+            {types::DataType::TIME64NS, types::DataType::STRING, types::DataType::STRING}),
+        std::vector<std::string>({"time_", "qos", "_attr_pod_id"}));
+
+    rel_map->emplace("cgroups", cgroups_relation_);
 
     rel_map->emplace(
         "http_table",
@@ -61,6 +67,7 @@ class CompilerTest : public ::testing::Test {
   std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
   Compiler compiler_;
+  table_store::schema::Relation cgroups_relation_;
 };
 
 const char* kExpectedLogicalPlan = R"(
@@ -1675,6 +1682,413 @@ nodes {
 }
 )proto";
 
+const char* kExpectedAggFilter1MetadataPlan = R"proto(
+nodes {
+  id: 1
+  dag {
+    nodes {
+      sorted_deps: 32
+    }
+    nodes {
+      id: 32
+      sorted_deps: 3
+    }
+    nodes {
+      id: 3
+      sorted_deps: 2
+    }
+    nodes {
+      id: 2
+      sorted_deps: 15
+    }
+    nodes {
+      id: 15
+    }
+  }
+  nodes {
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+      }
+    }
+  }
+  nodes {
+    id: 32
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+      }
+    }
+  }
+  nodes {
+    id: 3
+    op {
+      op_type: AGGREGATE_OPERATOR
+      agg_op {
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: FILTER_OPERATOR
+      filter_op {
+      }
+    }
+  }
+  nodes {
+    id: 15
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "out"
+        column_types: INT64
+        column_types: STRING
+        column_types: FLOAT64
+        column_names: "upid"
+        column_names: "_attr_service_name"
+        column_names: "mean_cpu"
+      }
+    }
+  }
+}
+)proto";
+
+const char* kExpectedAggFilter2MetadataPlan = R"proto(
+nodes {
+  id: 1
+  dag {
+    nodes {
+      sorted_deps: 32
+    }
+    nodes {
+      id: 32
+      sorted_deps: 3
+    }
+    nodes {
+      id: 3
+      sorted_deps: 2
+    }
+    nodes {
+      id: 2
+      sorted_deps: 15
+    }
+    nodes {
+      id: 15
+    }
+  }
+  nodes {
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+      }
+    }
+  }
+  nodes {
+    id: 32
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+      }
+    }
+  }
+  nodes {
+    id: 3
+    op {
+      op_type: AGGREGATE_OPERATOR
+      agg_op {
+        values {
+          name: "pl.mean"
+          args {
+            column {
+              node: 32
+              index: 1
+            }
+          }
+          args_data_types: FLOAT64
+        }
+        groups {
+          node: 32
+        }
+        groups {
+          node: 32
+          index: 5
+        }
+        group_names: "count"
+        group_names: "_attr_service_name"
+        value_names: "mean_cpu"
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: FILTER_OPERATOR
+      filter_op {
+        expression {
+          func {
+            name: "pl.equal"
+            args {
+              column {
+                node: 3
+                index: 1
+              }
+            }
+            args {
+              constant {
+                data_type: STRING
+                string_value: "pl/orders"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  nodes {
+    id: 15
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "out"
+        column_types: INT64
+        column_types: STRING
+        column_types: FLOAT64
+        column_names: "count"
+        column_names: "_attr_service_name"
+        column_names: "mean_cpu"
+      }
+    }
+  }
+})proto";
+
+const char* kExpectedAliasingMetadataPlan = R"proto(
+nodes {
+  id: 1
+  dag {
+    nodes {
+      sorted_deps: 32
+    }
+    nodes {
+      id: 32
+      sorted_deps: 3
+    }
+    nodes {
+      id: 3
+      sorted_deps: 39
+    }
+    nodes {
+      id: 39
+      sorted_deps: 2
+    }
+    nodes {
+      id: 2
+      sorted_deps: 15
+    }
+    nodes {
+      id: 15
+    }
+  }
+  nodes {
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 0
+        column_idxs: 1
+        column_idxs: 2
+        column_idxs: 3
+        column_idxs: 4
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+        column_names: "upid"
+        column_types: INT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: INT64
+      }
+    }
+  }
+  nodes {
+    id: 32
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          column {
+          }
+        }
+        expressions {
+          column {
+            index: 1
+          }
+        }
+        expressions {
+          column {
+            index: 2
+          }
+        }
+        expressions {
+          column {
+            index: 3
+          }
+        }
+        expressions {
+          column {
+            index: 4
+          }
+        }
+        expressions {
+          func {
+            name: "pl.upid_to_service_id"
+            args {
+              column {
+                index: 4
+              }
+            }
+          }
+        }
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+        column_names: "upid"
+        column_names: "_attr_service_id"
+      }
+    }
+  }
+  nodes {
+    id: 3
+    op {
+      op_type: AGGREGATE_OPERATOR
+      agg_op {
+        values {
+          name: "pl.mean"
+          args {
+            column {
+              node: 32
+              index: 1
+            }
+          }
+          args_data_types: FLOAT64
+        }
+        groups {
+          node: 32
+        }
+        groups {
+          node: 32
+          index: 5
+        }
+        group_names: "count"
+        group_names: "_attr_service_id"
+        value_names: "mean_cpu"
+      }
+    }
+  }
+  nodes {
+    id: 39
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          column {
+            node: 3
+          }
+        }
+        expressions {
+          column {
+            node: 3
+            index: 1
+          }
+        }
+        expressions {
+          column {
+            node: 3
+            index: 2
+          }
+        }
+        expressions {
+          func {
+            name: "pl.service_id_to_service_name"
+            args {
+              column {
+                node: 3
+                index: 1
+              }
+            }
+          }
+        }
+        column_names: "count"
+        column_names: "_attr_service_id"
+        column_names: "mean_cpu"
+        column_names: "_attr_service_name"
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: FILTER_OPERATOR
+      filter_op {
+        expression {
+          func {
+            name: "pl.equal"
+            args {
+              column {
+                node: 39
+                index: 3
+              }
+            }
+            args {
+              constant {
+                data_type: STRING
+                string_value: "pl/orders"
+              }
+            }
+            args_data_types: STRING
+            args_data_types: STRING
+          }
+        }
+        columns {
+          node: 39
+        }
+        columns {
+          node: 39
+          index: 1
+        }
+        columns {
+          node: 39
+          index: 2
+        }
+        columns {
+          node: 39
+          index: 3
+        }
+      }
+    }
+  }
+  nodes {
+    id: 15
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "out"
+        column_types: INT64
+        column_types: STRING
+        column_types: FLOAT64
+        column_types: STRING
+        column_names: "count"
+        column_names: "_attr_service_id"
+        column_names: "mean_cpu"
+        column_names: "_attr_service_name"
+      }
+    }
+  }
+})proto";
+
 class MetadataSingleOps
     : public CompilerTest,
       public ::testing::WithParamInterface<std::tuple<std::string, std::string>> {};
@@ -1689,7 +2103,7 @@ TEST_P(MetadataSingleOps, valid_filter_metadata_proto) {
   auto plan_status = compiler_.Compile(valid_query, compiler_state_.get());
   ASSERT_OK(plan_status);
   auto plan = plan_status.ConsumeValueOrDie();
-  VLOG(1) << plan.DebugString();
+  VLOG(2) << plan.DebugString();
 
   // Check the select columns match the expected values.
   EXPECT_THAT(plan, Partially(EqualsProto(expected_pb)));
@@ -1701,14 +2115,31 @@ std::vector<std::tuple<std::string, std::string>> metadata_operators{
      kExpectedAgg1MetadataPlan},
     {"Agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : [r.count, "
      "r.attr.service])",
-     kExpectedAgg2MetadataPlan}};
-// TODO(philkuz) add support for pass through column names.
-// {"Agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : [r.count, "
-//   "r.attr.service]).Filter(fn=lambda r : r.attr.service == 'pl/orders')",
-//       kExpectedAgg2MetadataPlan}};
+     kExpectedAgg2MetadataPlan},
+    {"Agg(by=lambda r: [r.upid, r.attr.service],  fn=lambda "
+     "r:{'mean_cpu': pl.mean(r.cpu0)}).Filter(fn=lambda r: r.attr.service=='pl/service-name')",
+     kExpectedAggFilter1MetadataPlan},
+    {"Agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : [r.count, "
+     "r.attr.service]).Filter(fn=lambda r : r.attr.service == 'pl/orders')",
+     kExpectedAggFilter2MetadataPlan},
+    {"Agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : [r.count, "
+     "r.attr.service_id]).Filter(fn=lambda r : r.attr.service == 'pl/orders')",
+     kExpectedAliasingMetadataPlan}};
 
 INSTANTIATE_TEST_CASE_P(MetadataAttributesSuite, MetadataSingleOps,
                         ::testing::ValuesIn(metadata_operators));
+
+TEST_F(CompilerTest, cgroups_pod_id) {
+  std::string query =
+      absl::StrJoin({"queryDF = From(table='cgroups')",
+                     "range_out = queryDF.Filter(fn=lambda r: r.attr.pod_name == 'pl/pl-nats-1')",
+                     "range_out.Result(name='out')"},
+                    "\n");
+  auto plan_status = compiler_.Compile(query, compiler_state_.get());
+  VLOG(1) << plan_status.ToString();
+  EXPECT_OK(plan_status);
+  VLOG(1) << plan_status.ValueOrDie().DebugString();
+}
 
 }  // namespace compiler
 }  // namespace carnot

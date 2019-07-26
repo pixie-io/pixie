@@ -84,7 +84,7 @@ StatusOr<bool> DataTypeRule::EvaluateColumn(ColumnIR* column) const {
   }
 
   // Get the parent relation and find the column in it.
-  table_store::schema::Relation relation = parent_op->relation();
+  Relation relation = parent_op->relation();
   if (!relation.HasColumn(column->col_name())) {
     return column->CreateIRNodeError("Column '$0' not found in relation of $1(id=$2)",
                                      column->col_name(), parent_op->type_string(), parent_op->id());
@@ -117,10 +117,10 @@ StatusOr<bool> SourceRelationRule::GetSourceRelation(OperatorIR* source_op) cons
   if (relation_map_it == compiler_state_->relation_map()->end()) {
     return mem_node->CreateIRNodeError("Table '$0' not found.", table_str);
   }
-  table_store::schema::Relation table_relation = relation_map_it->second;
+  Relation table_relation = relation_map_it->second;
   // get the children.
   std::vector<std::string> columns;
-  table_store::schema::Relation select_relation;
+  Relation select_relation;
   if (!mem_node->select_all()) {
     PL_ASSIGN_OR_RETURN(columns, GetColumnNames(select->children()));
     PL_ASSIGN_OR_RETURN(select_relation, GetSelectRelation(select, table_relation, columns));
@@ -135,10 +135,9 @@ StatusOr<bool> SourceRelationRule::GetSourceRelation(OperatorIR* source_op) cons
   return true;
 }
 
-StatusOr<table_store::schema::Relation> SourceRelationRule::GetSelectRelation(
-    IRNode* node, const table_store::schema::Relation& relation,
-    const std::vector<std::string>& columns) const {
-  table_store::schema::Relation new_relation;
+StatusOr<Relation> SourceRelationRule::GetSelectRelation(
+    IRNode* node, const Relation& relation, const std::vector<std::string>& columns) const {
+  Relation new_relation;
   std::vector<std::string> missing_columns;
   for (auto& c : columns) {
     if (!relation.HasColumn(c)) {
@@ -156,8 +155,7 @@ StatusOr<table_store::schema::Relation> SourceRelationRule::GetSelectRelation(
 }
 
 StatusOr<std::vector<ColumnIR*>> SourceRelationRule::GetColumnsFromRelation(
-    IRNode* node, std::vector<std::string> col_names,
-    const table_store::schema::Relation& relation) const {
+    IRNode* node, std::vector<std::string> col_names, const Relation& relation) const {
   auto graph = node->graph_ptr();
   auto result = std::vector<ColumnIR*>();
   // iterates through the columns, finds their relation position,
@@ -199,8 +197,7 @@ StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) const {
   }
   return false;
 }
-bool UpdateColumn(ColumnIR* col_expr, std::vector<ColumnIR*>* columns,
-                  table_store::schema::Relation* relation_ptr) {
+bool UpdateColumn(ColumnIR* col_expr, std::vector<ColumnIR*>* columns, Relation* relation_ptr) {
   if (!col_expr->IsDataTypeEvaluated()) {
     return false;
   }
@@ -210,7 +207,7 @@ bool UpdateColumn(ColumnIR* col_expr, std::vector<ColumnIR*>* columns,
 }
 
 StatusOr<bool> OperatorRelationRule::SetBlockingAgg(BlockingAggIR* agg_ir) const {
-  table_store::schema::Relation agg_rel;
+  Relation agg_rel;
   std::vector<ColumnIR*> groups;
   if (!agg_ir->group_by_all()) {
     PL_ASSIGN_OR_RETURN(IRNode * default_expr, agg_ir->by_func()->GetDefaultExpr());
@@ -252,7 +249,7 @@ StatusOr<bool> OperatorRelationRule::SetBlockingAgg(BlockingAggIR* agg_ir) const
   return true;
 }
 StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
-  table_store::schema::Relation map_rel;
+  Relation map_rel;
   // Make a new relation with each of the expression key, type pairs.
   ColExpressionVector col_exprs = map_ir->lambda_func()->col_exprs();
   for (auto& entry : col_exprs) {
@@ -268,10 +265,16 @@ StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
 }
 
 StatusOr<bool> OperatorRelationRule::SetMetadataResolver(MetadataResolverIR* md_ir) const {
-  table_store::schema::Relation md_rel = md_ir->parent()->relation();
+  Relation md_rel = md_ir->parent()->relation();
   // Iterate through the columns and add them in.
   for (const auto& col_entry : md_ir->metadata_columns()) {
-    md_rel.AddColumn(col_entry.second->column_type(), col_entry.second->GetColumnRepr());
+    std::string column_name = col_entry.second->GetColumnRepr();
+    if (md_rel.HasColumn(column_name)) {
+      VLOG(2) << absl::Substitute(
+          "Skipping '$0' in setting metadata resolver relation, already in relation", column_name);
+      continue;
+    }
+    md_rel.AddColumn(col_entry.second->column_type(), column_name);
   }
   PL_RETURN_IF_ERROR(md_ir->SetRelation(md_rel));
   return true;
@@ -515,27 +518,107 @@ StatusOr<bool> MetadataResolverConversionRule::Apply(IRNode* ir_node) const {
   return false;
 }
 
+Status MetadataResolverConversionRule::RemoveMetadataResolver(
+    MetadataResolverIR* md_resolver) const {
+  IR* graph = md_resolver->graph_ptr();
+  // Get the parent of the metadsata resolver
+  OperatorIR* parent = md_resolver->parent();
+  PL_RETURN_IF_ERROR(md_resolver->RemoveParent(parent));
+
+  // Get the child of the metadata operator.
+  std::vector<int64_t> dependent_nodes = graph->dag().DependenciesOf(md_resolver->id());
+  DCHECK_EQ(dependent_nodes.size(), 1UL);
+  int64_t child_op = dependent_nodes[0];
+  PL_RETURN_IF_ERROR(graph->DeleteEdge(md_resolver->id(), child_op));
+  IRNode* node = graph->Get(child_op);
+  DCHECK(node->IsOp()) << "Expected node to be operator.";
+  OperatorIR* op = static_cast<OperatorIR*>(node);
+
+  // Set the parent of the child_op to the md_resolver parent.
+  DCHECK_EQ(op->parent(), md_resolver);
+  PL_RETURN_IF_ERROR(op->SetParent(parent));
+
+  // delete metadata_resolver
+  PL_RETURN_IF_ERROR(graph->DeleteNode(md_resolver->id()));
+  return Status::OK();
+}
+
+Status MetadataResolverConversionRule::RemoveMap(MapIR* map) const {
+  IR* graph = map->graph_ptr();
+  PL_RETURN_IF_ERROR(map->RemoveParent(map->parent()));
+
+  // Get the child of the metadata operator.
+  std::vector<int64_t> map_dependent_nodes = graph->dag().DependenciesOf(map->id());
+  CHECK_EQ(map_dependent_nodes.size(), 1UL);
+  int64_t lambda_idx = map_dependent_nodes[0];
+  IRNode* map_child = graph->Get(lambda_idx);
+  CHECK(map_child->type() == IRNodeType::kLambda) << "Map child should be a lambda.";
+  PL_RETURN_IF_ERROR(graph->DeleteEdge(map->id(), lambda_idx));
+  LambdaIR* map_fn_lambda = static_cast<LambdaIR*>(map_child);
+  std::vector<int64_t> dependent_nodes = graph->dag().DependenciesOf(map_fn_lambda->id());
+  for (const int64_t& child_node_idx : dependent_nodes) {
+    PL_RETURN_IF_ERROR(graph->DeleteEdge(lambda_idx, child_node_idx));
+    IRNode* node = graph->Get(child_node_idx);
+    DCHECK(node->type() == IRNodeType::kColumn)
+        << "Got: " << node->type_string() << "Expected: Column.";
+    PL_RETURN_IF_ERROR(graph->DeleteNode(node->id()));
+  }
+
+  // Delete map.
+  PL_RETURN_IF_ERROR(graph->DeleteNode(lambda_idx));
+  PL_RETURN_IF_ERROR(graph->DeleteNode(map->id()));
+  return Status::OK();
+}
+
+bool MetadataResolverConversionRule::DoesMapOnlyCopy(MapIR* map) const {
+  Relation rel = map->parent()->relation();
+  if (rel.NumColumns() != map->col_exprs().size()) {
+    return false;
+  }
+  int64_t idx = 0;
+  for (auto const& col_expr : map->col_exprs()) {
+    if (col_expr.node->type() != IRNodeType::kColumn && rel.GetColumnName(idx) != col_expr.name) {
+      return false;
+    }
+    ++idx;
+  }
+  return true;
+}
 StatusOr<bool> MetadataResolverConversionRule::ReplaceMetadataResolver(
     MetadataResolverIR* md_resolver) const {
   PL_ASSIGN_OR_RETURN(MapIR * map, MakeMap(md_resolver));
-  return SwapInMap(md_resolver, map);
+  if (DoesMapOnlyCopy(map)) {
+    PL_RETURN_IF_ERROR(RemoveMetadataResolver(md_resolver));
+    PL_RETURN_IF_ERROR(RemoveMap(map));
+    return true;
+  }
+  PL_RETURN_IF_ERROR(SwapInMap(md_resolver, map));
+  return true;
 }
 
-StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_resolver) const {
-  IR* graph = md_resolver->graph_ptr();
-  table_store::schema::Relation parent_relation = md_resolver->parent()->relation();
-  ColExpressionVector col_exprs;
+Status MetadataResolverConversionRule::CopyParentColumns(IR* graph, ColExpressionVector* col_exprs,
+                                                         const Relation& parent_relation,
+                                                         pypa::AstPtr ast_node) const {
   for (size_t i = 0; i < parent_relation.NumColumns(); ++i) {
     // Make Column
     PL_ASSIGN_OR_RETURN(ColumnIR * column_ir, graph->MakeNode<ColumnIR>());
     std::string column_name = parent_relation.GetColumnName(i);
-    PL_RETURN_IF_ERROR(column_ir->Init(column_name, md_resolver->ast_node()));
+    PL_RETURN_IF_ERROR(column_ir->Init(column_name, ast_node));
     column_ir->ResolveColumn(i, parent_relation.GetColumnType(i));
-    col_exprs.emplace_back(column_name, column_ir);
+    col_exprs->emplace_back(column_name, column_ir);
   }
+  return Status::OK();
+}
 
+Status MetadataResolverConversionRule::AddMetadataConversionFns(
+    IR* graph, MetadataResolverIR* md_resolver, const Relation& parent_relation,
+    ColExpressionVector* col_exprs) const {
   for (const auto& md_col_iter : md_resolver->metadata_columns()) {
     MetadataProperty* md_property = md_col_iter.second;
+    // If parent relation has the column, we've already copied it, skip over.
+    if (parent_relation.HasColumn(md_property->GetColumnRepr())) {
+      continue;
+    }
     PL_ASSIGN_OR_RETURN(FuncIR * conversion_func, graph->MakeNode<FuncIR>());
     PL_ASSIGN_OR_RETURN(std::string key_column,
                         FindKeyColumn(parent_relation, md_property, md_resolver));
@@ -547,10 +630,20 @@ StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_
     PL_RETURN_IF_ERROR(conversion_func->Init({FuncIR::Opcode::non_op, "", func_name},
                                              ASTWalker::kRunTimeFuncPrefix, {column_ir}, false,
                                              md_resolver->ast_node()));
-    col_exprs.emplace_back(md_property->GetColumnRepr(), conversion_func);
+    col_exprs->emplace_back(md_property->GetColumnRepr(), conversion_func);
   }
+  return Status::OK();
+}
 
-  table_store::schema::Relation relation = md_resolver->relation();
+StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_resolver) const {
+  IR* graph = md_resolver->graph_ptr();
+  Relation parent_relation = md_resolver->parent()->relation();
+  ColExpressionVector col_exprs;
+  PL_RETURN_IF_ERROR(
+      CopyParentColumns(graph, &col_exprs, parent_relation, md_resolver->ast_node()));
+
+  PL_RETURN_IF_ERROR(AddMetadataConversionFns(graph, md_resolver, parent_relation, &col_exprs));
+  Relation relation = md_resolver->relation();
   std::unordered_set<std::string> col_names(std::make_move_iterator(relation.col_names().begin()),
                                             std::make_move_iterator(relation.col_names().end()));
   DCHECK_EQ(col_exprs.size(), md_resolver->relation().NumColumns());
@@ -562,9 +655,9 @@ StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_
   return map;
 }
 
-StatusOr<std::string> MetadataResolverConversionRule::FindKeyColumn(
-    const table_store::schema::Relation& parent_relation, MetadataProperty* property,
-    IRNode* node_for_error) const {
+StatusOr<std::string> MetadataResolverConversionRule::FindKeyColumn(const Relation& parent_relation,
+                                                                    MetadataProperty* property,
+                                                                    IRNode* node_for_error) const {
   for (const std::string& key_col : property->GetKeyColumnReprs()) {
     if (parent_relation.HasColumn(key_col)) {
       return key_col;
@@ -572,11 +665,12 @@ StatusOr<std::string> MetadataResolverConversionRule::FindKeyColumn(
   }
   return node_for_error->CreateIRNodeError(
       "Can't resolve metadata because of lack of converting columns in the parent. Need one of "
-      "[$0].",
-      absl::StrJoin(property->GetKeyColumnReprs(), ","));
+      "[$0]. Parent relation has columns [$1] available.",
+      absl::StrJoin(property->GetKeyColumnReprs(), ","),
+      absl::StrJoin(parent_relation.col_names(), ","));
 }
-StatusOr<bool> MetadataResolverConversionRule::SwapInMap(MetadataResolverIR* md_resolver,
-                                                         MapIR* map) const {
+Status MetadataResolverConversionRule::SwapInMap(MetadataResolverIR* md_resolver,
+                                                 MapIR* map) const {
   IR* graph = md_resolver->graph_ptr();
   PL_RETURN_IF_ERROR(md_resolver->RemoveParent(md_resolver->parent()));
   std::vector<int64_t> dependent_nodes = graph->dag().DependenciesOf(md_resolver->id());
@@ -594,8 +688,7 @@ StatusOr<bool> MetadataResolverConversionRule::SwapInMap(MetadataResolverIR* md_
   PL_RETURN_IF_ERROR(map->SetRelation(md_resolver->relation()));
   // delete metadata_resolver
   PL_RETURN_IF_ERROR(graph->DeleteNode(md_resolver->id()));
-
-  return true;
+  return Status::OK();
 }
 
 }  // namespace compiler
