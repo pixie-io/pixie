@@ -48,7 +48,7 @@ bool InfoClassManager::PushRequired() const {
 }
 
 void InfoClassManager::SampleData() {
-  source_->TransferData(source_table_num_, data_table_->GetActiveRecordBatch());
+  source_->TransferData(source_table_num_, data_table_->ActiveRecordBatch());
 
   // Update the last sampling time.
   last_sampled_ = CurrentTime();
@@ -57,7 +57,7 @@ void InfoClassManager::SampleData() {
 }
 
 void InfoClassManager::PushData(PushDataCallback agent_callback) {
-  auto record_batches = data_table_->GetRecordBatches();
+  auto record_batches = data_table_->ConsumeRecordBatches();
   for (auto& record_batch : *record_batches) {
     if (!record_batch->empty()) {
       agent_callback(id(), std::move(record_batch));

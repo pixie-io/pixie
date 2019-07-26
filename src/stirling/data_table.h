@@ -21,28 +21,32 @@ class DataTable {
    *
    * @return pointer to a vector of ColumnWrapperRecordBatch pointers.
    */
-  std::unique_ptr<types::ColumnWrapperRecordBatchVec> GetRecordBatches();
+  std::unique_ptr<types::ColumnWrapperRecordBatchVec> ConsumeRecordBatches();
 
   /**
    * @brief Get a pointer to the active record batch, for appending.
    *
-   * @return Pointer to active record batch
+   * Note that while this function is const, because it doesn't change the DataTable members
+   * directly, the pointer that is returned is meant for appending, and so logically the contents of
+   * DataTable can (and likely will) change.
+   *
+   * @return Pointer to active record batch.
    */
-  types::ColumnWrapperRecordBatch* GetActiveRecordBatch() { return record_batch_.get(); }
+  types::ColumnWrapperRecordBatch* ActiveRecordBatch() const { return record_batch_.get(); }
 
   /**
    * @brief Return current occupancy of the Data Table.
    *
    * @return size_t occupancy
    */
-  size_t Occupancy() { return record_batch_->at(0)->Size(); }
+  size_t Occupancy() const { return record_batch_->at(0)->Size(); }
 
   /**
    * @brief Occupancy of the Data Table as a percentage of size.
    *
    * @return double percent occupancy
    */
-  double OccupancyPct() { return 1.0 * Occupancy() / target_capacity_; }
+  double OccupancyPct() const { return 1.0 * Occupancy() / kTargetCapacity; }
 
  protected:
   // Initialize a new Active record batch.
@@ -61,7 +65,7 @@ class DataTable {
   std::unique_ptr<types::ColumnWrapperRecordBatchVec> sealed_batches_;
 
   // ColumnWrapper specific members
-  static constexpr size_t target_capacity_ = 1024;
+  static constexpr size_t kTargetCapacity = 1024;
 };
 
 }  // namespace stirling

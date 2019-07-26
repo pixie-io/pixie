@@ -29,10 +29,10 @@ void DataTable::InitBuffers() {
 
   record_batch_ = std::make_unique<types::ColumnWrapperRecordBatch>();
 
-  InitRecordBatch(*table_schema_, target_capacity_, record_batch_.get());
+  InitRecordBatch(*table_schema_, kTargetCapacity, record_batch_.get());
 }
 
-std::unique_ptr<types::ColumnWrapperRecordBatchVec> DataTable::GetRecordBatches() {
+std::unique_ptr<types::ColumnWrapperRecordBatchVec> DataTable::ConsumeRecordBatches() {
   SealActiveRecordBatch();
 
   auto sealed_batches_uptr = std::move(sealed_batches_);

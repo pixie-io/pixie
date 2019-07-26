@@ -156,7 +156,7 @@ class DataTableTest : public ::testing::Test {
         last_pass = true;
       }
 
-      auto& columns = *(data_table_->GetActiveRecordBatch());
+      auto& columns = *(data_table_->ActiveRecordBatch());
 
       for (size_t i = 0; i < num_rows; ++i) {
         columns[0]->Append<types::Int64Value>(f0_vals_[current_record + i]);
@@ -168,7 +168,7 @@ class DataTableTest : public ::testing::Test {
 
       // Periodically consume the data
       if ((probability_dist(rng_) < push_probability_) || last_pass) {
-        auto data_batches_uptr = data_table_->GetRecordBatches();
+        auto data_batches_uptr = data_table_->ConsumeRecordBatches();
         for (const auto& data_batch : *data_batches_uptr) {
           CheckColumnWrapperResult(data_batch.get(), check_record, current_record);
         }
