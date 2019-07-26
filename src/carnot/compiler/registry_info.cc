@@ -55,8 +55,12 @@ StatusOr<types::DataType> RegistryInfo::GetUDF(std::string name,
                                                std::vector<types::DataType> exec_arg_types) {
   auto udf = udf_map_.find(RegistryKey(name, exec_arg_types));
   if (udf == udf_map_.end()) {
-    return error::InvalidArgument("Could not find UDF '$0' with exec arg types [$1].", name,
-                                  absl::StrJoin(exec_arg_types, ","));
+    std::vector<std::string> arg_data_type_strs;
+    for (const types::DataType& arg_data_type : exec_arg_types) {
+      arg_data_type_strs.push_back(types::DataType_Name(arg_data_type));
+    }
+    return error::InvalidArgument("Could not find function '$0' with arguments [$1].", name,
+                                  absl::StrJoin(arg_data_type_strs, ","));
   }
   return udf->second;
 }

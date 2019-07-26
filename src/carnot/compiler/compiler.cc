@@ -9,7 +9,6 @@
 #include <pypa/parser/parser.hh>
 
 #include "src/carnot/compiler/analyzer.h"
-#include "src/carnot/compiler/ast_visitor.h"
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/ir_nodes.h"

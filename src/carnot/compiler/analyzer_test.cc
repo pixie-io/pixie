@@ -33,6 +33,12 @@ scalar_udfs {
   return_type:  FLOAT64
 }
 scalar_udfs {
+  name: "pl.equal"
+  exec_arg_types: STRING
+  exec_arg_types: STRING
+  return_type: BOOLEAN
+}
+scalar_udfs {
   name: "pl.multiply"
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64
@@ -71,7 +77,7 @@ udas {
 }
 )";
 
-class RelationHandlerTest : public ::testing::Test {
+class AnalyzerTest : public ::testing::Test {
  protected:
   void SetUp() override {
     Test::SetUp();
@@ -86,6 +92,7 @@ class RelationHandlerTest : public ::testing::Test {
     cpu_relation.AddColumn(types::FLOAT64, "cpu0");
     cpu_relation.AddColumn(types::FLOAT64, "cpu1");
     cpu_relation.AddColumn(types::FLOAT64, "cpu2");
+    cpu_relation.AddColumn(types::INT64, MetadataProperty::kUniquePIDColumn);
     relation_map_->emplace("cpu", cpu_relation);
 
     table_store::schema::Relation non_float_relation;
@@ -170,7 +177,7 @@ class RelationHandlerTest : public ::testing::Test {
   int64_t time_now = 1552607213931245000;
 };
 
-TEST_F(RelationHandlerTest, test_utils) {
+TEST_F(AnalyzerTest, test_utils) {
   table_store::schema::Relation cpu2_relation;
   cpu2_relation.AddColumn(types::FLOAT64, "cpu0");
   cpu2_relation.AddColumn(types::FLOAT64, "cpu1");
@@ -179,7 +186,7 @@ TEST_F(RelationHandlerTest, test_utils) {
                                (*compiler_state_->relation_map())["cpu"]));
 }
 
-TEST_F(RelationHandlerTest, no_special_relation) {
+TEST_F(AnalyzerTest, no_special_relation) {
   std::string from_expr = "From(table='cpu', select=['cpu0', 'cpu1']).Result(name='cpu')";
   auto ir_graph_status = CompileGraph(from_expr);
   ASSERT_OK(ir_graph_status);
@@ -199,7 +206,7 @@ TEST_F(RelationHandlerTest, no_special_relation) {
   VLOG(1) << handle_status.status().ToString();
 }
 
-TEST_F(RelationHandlerTest, assign_functionality) {
+TEST_F(AnalyzerTest, assign_functionality) {
   std::string assign_and_use =
       absl::StrJoin({"queryDF = From(table = 'cpu', select = [ 'cpu0', 'cpu1' ])",
                      "queryDF.Range(start=0,stop=10).Result(name='cpu_out')"},
@@ -214,7 +221,7 @@ TEST_F(RelationHandlerTest, assign_functionality) {
 }
 
 // Map Tests
-TEST_F(RelationHandlerTest, single_col_map) {
+TEST_F(AnalyzerTest, single_col_map) {
   std::string single_col_map_sum =
       absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=0,stop=10)",
                      "mapDF = queryDF.Map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1})",
@@ -240,7 +247,7 @@ TEST_F(RelationHandlerTest, single_col_map) {
   VLOG(1) << handle_status.status().ToString();
 }
 
-TEST_F(RelationHandlerTest, multi_col_map) {
+TEST_F(AnalyzerTest, multi_col_map) {
   std::string multi_col = absl::StrJoin(
       {
           "queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0,stop=10)",
@@ -256,7 +263,7 @@ TEST_F(RelationHandlerTest, multi_col_map) {
   VLOG(1) << handle_status.status().ToString();
 }
 
-TEST_F(RelationHandlerTest, bin_op_test) {
+TEST_F(AnalyzerTest, bin_op_test) {
   std::string single_col_map_sum =
       absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=0,stop=10)",
                      "mapDF = queryDF.Map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1})",
@@ -306,7 +313,7 @@ TEST_F(RelationHandlerTest, bin_op_test) {
   VLOG(1) << handle_status.status().ToString();
 }
 
-TEST_F(RelationHandlerTest, single_col_agg) {
+TEST_F(AnalyzerTest, single_col_agg) {
   std::string single_col_agg =
       absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=0,stop=10)",
                      "aggDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
@@ -332,10 +339,11 @@ TEST_F(RelationHandlerTest, single_col_agg) {
 }
 
 // Make sure the relations match the expected values.
-TEST_F(RelationHandlerTest, test_relation_results) {
+TEST_F(AnalyzerTest, test_relation_results) {
   // operators don't use generated columns, are just chained.
   std::string chain_operators = absl::StrJoin(
-      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0,stop=10)",
+      {"queryDF = From(table='cpu', select=['upid', 'cpu0', 'cpu1', "
+       "'cpu2']).Range(start=0,stop=10)",
        "mapDF = queryDF.Map(fn=lambda r : {'cpu0' : r.cpu0, 'cpu1' : r.cpu1, 'cpu_sum' : "
        "r.cpu0+r.cpu1})",
        "aggDF = mapDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
@@ -383,7 +391,7 @@ TEST_F(RelationHandlerTest, test_relation_results) {
 }  // namespace compiler
 
 // Make sure the compiler exits when calling columns that aren't explicitly called.
-TEST_F(RelationHandlerTest, test_relation_fails) {
+TEST_F(AnalyzerTest, test_relation_fails) {
   // operators don't use generated columns, are just chained.
   std::string chain_operators = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0,stop=10)",
@@ -409,7 +417,7 @@ TEST_F(RelationHandlerTest, test_relation_fails) {
   EXPECT_TRUE(RelationEquality(map_node->relation(), test_map_relation));
 }
 
-TEST_F(RelationHandlerTest, test_relation_multi_col_agg) {
+TEST_F(AnalyzerTest, test_relation_multi_col_agg) {
   std::string chain_operators = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0,stop=10)",
        "aggDF = queryDF.Agg(by=lambda r : [r.cpu0, r.cpu2], fn=lambda r : {'cpu_count' : "
@@ -432,7 +440,7 @@ TEST_F(RelationHandlerTest, test_relation_multi_col_agg) {
   EXPECT_TRUE(RelationEquality(agg_node->relation(), test_agg_relation));
 }
 
-TEST_F(RelationHandlerTest, test_from_select) {
+TEST_F(AnalyzerTest, test_from_select) {
   // operators don't use generated columns, are just chained.
   std::string chain_operators =
       "queryDF = From(table='cpu', select=['cpu0', "
@@ -450,7 +458,7 @@ TEST_F(RelationHandlerTest, test_from_select) {
 }
 
 // Test to make sure the system detects udfs/udas that don't exist.
-TEST_F(RelationHandlerTest, nonexistant_udfs) {
+TEST_F(AnalyzerTest, nonexistant_udfs) {
   std::string missing_udf =
       absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=0,stop=10)",
                      "mapDF = queryDF.Map(fn=lambda r : {'cpu_sum' : "
@@ -475,7 +483,7 @@ TEST_F(RelationHandlerTest, nonexistant_udfs) {
   EXPECT_FALSE(handle_status.ok());
 }
 
-TEST_F(RelationHandlerTest, nonexistant_cols) {
+TEST_F(AnalyzerTest, nonexistant_cols) {
   // Test for columns used in map function that don't exist in relation.
   std::string wrong_column_map_func =
       absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=0,stop=10)",
@@ -519,7 +527,7 @@ TEST_F(RelationHandlerTest, nonexistant_cols) {
 }
 
 // Use results of created columns in later parts of the pipeline.
-TEST_F(RelationHandlerTest, created_columns) {
+TEST_F(AnalyzerTest, created_columns) {
   std::string agg_use_map_col_fn = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0,stop=10)",
        "mapDF = queryDF.Map(fn=lambda r : {'cpu2' : r.cpu2, 'cpu_sum' : r.cpu0+r.cpu1})",
@@ -590,7 +598,7 @@ TEST_F(RelationHandlerTest, created_columns) {
   VLOG(1) << handle_status.status().ToString();
 }
 
-TEST_F(RelationHandlerTest, non_float_columns) {
+TEST_F(AnalyzerTest, non_float_columns) {
   std::string agg_fn_count_all = absl::StrJoin(
       {
           "queryDF = From(table='non_float_table', select=['float_col', 'int_col', 'bool_col', "
@@ -626,7 +634,7 @@ TEST_F(RelationHandlerTest, non_float_columns) {
   VLOG(1) << handle_status.status().ToString();
 }
 
-TEST_F(RelationHandlerTest, assign_udf_func_ids) {
+TEST_F(AnalyzerTest, assign_udf_func_ids) {
   std::string chain_operators = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0,stop=10)",
        "mapDF = queryDF.Map(fn=lambda r : {'cpu_sub': r.cpu0 - r.cpu1, 'cpu_sum': r.cpu0+r.cpu1, "
@@ -652,7 +660,7 @@ TEST_F(RelationHandlerTest, assign_udf_func_ids) {
   EXPECT_EQ(1, func_node->func_id());
 }
 
-TEST_F(RelationHandlerTest, assign_uda_func_ids) {
+TEST_F(AnalyzerTest, assign_uda_func_ids) {
   std::string chain_operators = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['cpu0', 'cpu1', 'cpu2']).Range(start=0,stop=10)",
        "aggDF = queryDF.Agg(by=lambda r: r.cpu0, fn=lambda r: {'cnt': pl.count(r.cpu1), 'mean': "
@@ -676,7 +684,7 @@ TEST_F(RelationHandlerTest, assign_uda_func_ids) {
   EXPECT_EQ(1, func_node->func_id());
 }
 
-TEST_F(RelationHandlerTest, select_all) {
+TEST_F(AnalyzerTest, select_all) {
   std::string select_all = "queryDF = From(table='cpu').Result(name='cpu_out')";
   auto ir_graph_status = CompileGraph(select_all);
   ASSERT_OK(ir_graph_status);
@@ -692,6 +700,62 @@ TEST_F(RelationHandlerTest, select_all) {
   auto expected_relation = relation_map->find("cpu")->second;
   EXPECT_EQ(expected_relation.col_types(), sink_node->relation().col_types());
   EXPECT_EQ(expected_relation.col_names(), sink_node->relation().col_names());
+}
+
+class MetadataSingleOps : public AnalyzerTest, public ::testing::WithParamInterface<std::string> {};
+TEST_P(MetadataSingleOps, valid_metadata_calls) {
+  std::string op_call = GetParam();
+  std::string valid_query = absl::StrJoin(
+      {"queryDF = From(table='cpu') ", "opDF = queryDF.$0", "opDF.Result(name='out')"}, "\n");
+  valid_query = absl::Substitute(valid_query, op_call);
+  VLOG(1) << valid_query;
+  auto ir_graph_status = CompileGraph(valid_query);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  ASSERT_OK(HandleRelation(ir_graph));
+}
+TEST_P(MetadataSingleOps, metadata_fails_no_upid) {
+  std::string op_call = GetParam();
+  std::string valid_query = absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0']) ",
+                                           "opDF = queryDF.$0", "opDF.Result(name='out')"},
+                                          "\n");
+  valid_query = absl::Substitute(valid_query, op_call);
+  VLOG(1) << valid_query;
+  auto ir_graph_status = CompileGraph(valid_query);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  EXPECT_THAT(
+      HandleRelation(ir_graph),
+      HasCompilerError("Can't resolve metadata because of lack of converting columns in the "
+                       "parent. Need one of [upid,_attr_service_id]."));
+}
+std::vector<std::string> metadata_operators{
+    "Filter(fn=lambda r : r.attr.service == 'pl/orders')",
+    "Map(fn=lambda r: {'service': r.attr.service})",
+    "Agg(fn=lambda r: pl.mean(r.cpu0), by=lambda r: r.attr.service)",
+    "Agg(fn=lambda r: pl.count(r.cpu0), by=lambda r: [r.cpu0, r.attr.service])"};
+// TODO(philkuz) add support for pass through.
+// "Agg(fn=lambda r: pl.count(r.cpu0), by=lambda r: r.attr.service).Filter(fn=lambda r: "
+// "r.attr.service == 'pl/orders')"};
+
+INSTANTIATE_TEST_CASE_P(MetadataAttributesSuite, MetadataSingleOps,
+                        ::testing::ValuesIn(metadata_operators));
+
+TEST_F(AnalyzerTest, define_column_metadata) {
+  std::string valid_query =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0']) ",
+                     "opDF = queryDF.Map(fn=lambda r:{'$0service': pl.add(r.cpu0, 1)})",
+                     "opDF.Result(name='out')"},
+                    "\n");
+  valid_query = absl::Substitute(valid_query, MetadataProperty::kMetadataColumnPrefix);
+  VLOG(1) << valid_query;
+  auto ir_graph_status = CompileGraph(valid_query);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  EXPECT_THAT(HandleRelation(ir_graph),
+              HasCompilerError("Column name '$0service' violates naming rules. The '$0' prefix is "
+                               "reserved for internal use.",
+                               MetadataProperty::kMetadataColumnPrefix));
 }
 
 }  // namespace compiler

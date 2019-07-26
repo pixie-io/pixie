@@ -1,5 +1,9 @@
 #pragma once
 
+#include <gmock/gmock.h>
+#include <utility>
+#include <vector>
+
 #include <cstdio>
 #include <fstream>
 #include <memory>
@@ -62,32 +66,63 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   return ir;
 }
 
-bool StatusHasCompilerError(const Status& status, const std::string& expected_message) {
-  CHECK(status.has_context());
-  CHECK(status.context()->Is<compilerpb::CompilerErrorGroup>());
-  compilerpb::CompilerErrorGroup error_group;
-  CHECK(status.context()->UnpackTo(&error_group));
-  for (int64_t i = 0; i < error_group.errors_size(); i++) {
-    if (error_group.errors(i).line_col_error().message() == expected_message) {
-      return true;
-    }
-  }
-  return false;
-}
+struct CompilerErrorMatcher {
+  explicit CompilerErrorMatcher(std::string text_pb)
+      : expected_compiler_error_(std::move(text_pb)) {}
 
-bool StatusHasCompilerError(const Status& status, const std::string& expected_message,
-                            uint64_t line, uint64_t column) {
-  CHECK(status.has_context());
-  CHECK(status.context()->Is<compilerpb::CompilerErrorGroup>());
-  compilerpb::CompilerErrorGroup error_group;
-  CHECK(status.context()->UnpackTo(&error_group));
-  for (int64_t i = 0; i < error_group.errors_size(); i++) {
-    auto error = error_group.errors(i).line_col_error();
-    if (error.message() == expected_message && error.line() == line && error.column() == column) {
-      return true;
+  bool MatchAndExplain(const Status& status, ::testing::MatchResultListener* listener) const {
+    if (status.ok()) {
+      (*listener) << "Status is ok, no compiler error found.";
     }
+    if (!status.has_context()) {
+      (*listener) << "Status does not have a context.";
+      return false;
+    }
+    if (!status.context()->Is<compilerpb::CompilerErrorGroup>()) {
+      (*listener) << "Status context is not a CompilerErrorGroup.";
+      return false;
+    }
+    compilerpb::CompilerErrorGroup error_group;
+    if (!status.context()->UnpackTo(&error_group)) {
+      (*listener) << "Couldn't unpack the error to a compiler error group.";
+      return false;
+    }
+
+    if (error_group.errors_size() == 0) {
+      (*listener) << "No compile errors found.";
+      return false;
+    }
+
+    std::vector<std::string> error_messages;
+    for (int64_t i = 0; i < error_group.errors_size(); i++) {
+      auto error = error_group.errors(i).line_col_error();
+      std::string msg = error.message();
+      if (msg == expected_compiler_error_) {
+        return true;
+      }
+      error_messages.push_back(msg);
+    }
+    (*listener) << absl::Substitute("Expected compiler error '$0' not found. Have '$1'",
+                                    expected_compiler_error_, absl::StrJoin(error_messages, ","));
+    return false;
   }
-  return false;
+
+  void DescribeTo(::std::ostream* os) const {
+    *os << "equals message: " << expected_compiler_error_;
+  }
+
+  void DescribeNegationTo(::std::ostream* os) const {
+    *os << "does not equal message: " << expected_compiler_error_;
+  }
+
+  std::string expected_compiler_error_;
+};
+
+template <typename... Args>
+inline ::testing::PolymorphicMatcher<CompilerErrorMatcher> HasCompilerError(
+    Args... substitute_args) {
+  return ::testing::MakePolymorphicMatcher(
+      CompilerErrorMatcher(std::move(absl::Substitute(substitute_args...))));
 }
 
 }  // namespace compiler

@@ -39,11 +39,11 @@ class CompilerTest : public ::testing::Test {
                                       std::vector<std::string>({"_time", "xmod10", "PIx"})));
 
     rel_map->emplace(
-        "cpu",
-        table_store::schema::Relation(
-            std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
-                                          types::DataType::FLOAT64, types::DataType::FLOAT64}),
-            std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"})));
+        "cpu", table_store::schema::Relation(
+                   std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
+                                                 types::DataType::FLOAT64, types::DataType::FLOAT64,
+                                                 types::DataType::INT64}),
+                   std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2", "upid"})));
 
     rel_map->emplace(
         "http_table",
@@ -1072,14 +1072,17 @@ nodes {
         column_idxs: 1
         column_idxs: 2
         column_idxs: 3
+        column_idxs: 4
         column_names: "count"
         column_names: "cpu0"
         column_names: "cpu1"
         column_names: "cpu2"
+        column_names: "upid"
         column_types: INT64
         column_types: FLOAT64
         column_types: FLOAT64
         column_types: FLOAT64
+        column_types: INT64
       }
     }
   }
@@ -1092,10 +1095,12 @@ nodes {
         column_types: FLOAT64
         column_types: FLOAT64
         column_types: FLOAT64
+        column_types: INT64
         column_names: "count"
         column_names: "cpu0"
         column_names: "cpu1"
         column_names: "cpu2"
+        column_names: "upid"
       }
     }
   }
@@ -1115,6 +1120,595 @@ TEST_F(CompilerTest, from_select_default_arg) {
       google::protobuf::TextFormat::MergeFromString(kExpectedSelectDefaultArg, &expected_plan_pb));
   EXPECT_TRUE(CompareLogicalPlans(expected_plan_pb, plan, true /*ignore_ids*/));
 }
+
+const char* kExpectedFilterMetadataPlan = R"proto(
+nodes {
+  dag {
+    nodes {
+      sorted_deps: 23
+    }
+    nodes {
+      id: 23
+      sorted_deps: 2
+    }
+    nodes {
+      id: 2
+      sorted_deps: 7
+    }
+    nodes {
+      id: 7
+    }
+  }
+  nodes {
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 0
+        column_idxs: 1
+        column_idxs: 2
+        column_idxs: 3
+        column_idxs: 4
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+        column_names: "upid"
+        column_types: INT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: INT64
+      }
+    }
+  }
+  nodes {
+    id: 23
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          column {
+          }
+        }
+        expressions {
+          column {
+            index: 1
+          }
+        }
+        expressions {
+          column {
+            index: 2
+          }
+        }
+        expressions {
+          column {
+            index: 3
+          }
+        }
+        expressions {
+          column {
+            index: 4
+          }
+        }
+        expressions {
+          func {
+            name: "pl.upid_to_service_name"
+            args {
+              column {
+                index: 4
+              }
+            }
+          }
+        }
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+        column_names: "upid"
+        column_names: "_attr_service_name"
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: FILTER_OPERATOR
+      filter_op {
+        expression {
+          func {
+            name: "pl.equal"
+            args {
+              column {
+                node: 23
+                index: 5
+              }
+            }
+            args {
+              constant {
+                data_type: STRING
+                string_value: "pl/orders"
+              }
+            }
+            args_data_types: STRING
+            args_data_types: STRING
+          }
+        }
+        columns {
+          node: 23
+        }
+        columns {
+          node: 23
+          index: 1
+        }
+        columns {
+          node: 23
+          index: 2
+        }
+        columns {
+          node: 23
+          index: 3
+        }
+        columns {
+          node: 23
+          index: 4
+        }
+        columns {
+          node: 23
+          index: 5
+        }
+      }
+    }
+  }
+  nodes {
+    id: 7
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "out"
+        column_types: INT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: INT64
+        column_types: STRING
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+        column_names: "upid"
+        column_names: "_attr_service_name"
+      }
+    }
+  }
+}
+)proto";
+const char* kExpectedMapMetadataPlan = R"proto(
+nodes {
+  id: 1
+  dag {
+    nodes {
+      sorted_deps: 20
+    }
+    nodes {
+      id: 20
+      sorted_deps: 2
+    }
+    nodes {
+      id: 2
+      sorted_deps: 5
+    }
+    nodes {
+      id: 5
+    }
+  }
+  nodes {
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 0
+        column_idxs: 1
+        column_idxs: 2
+        column_idxs: 3
+        column_idxs: 4
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+        column_names: "upid"
+        column_types: INT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: INT64
+      }
+    }
+  }
+  nodes {
+    id: 20
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          column {
+          }
+        }
+        expressions {
+          column {
+            index: 1
+          }
+        }
+        expressions {
+          column {
+            index: 2
+          }
+        }
+        expressions {
+          column {
+            index: 3
+          }
+        }
+        expressions {
+          column {
+            index: 4
+          }
+        }
+        expressions {
+          func {
+            name: "pl.upid_to_service_name"
+            args {
+              column {
+                index: 4
+              }
+            }
+          }
+        }
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+        column_names: "upid"
+        column_names: "_attr_service_name"
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          column {
+            node: 20
+            index: 5
+          }
+        }
+        column_names: "service"
+      }
+    }
+  }
+  nodes {
+    id: 5
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "out"
+        column_types: STRING
+        column_names: "service"
+      }
+    }
+  }
+}
+)proto";
+
+const char* kExpectedAgg1MetadataPlan = R"proto(dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      sorted_deps: 23
+    }
+    nodes {
+      id: 23
+      sorted_deps: 2
+    }
+    nodes {
+      id: 2
+      sorted_deps: 8
+    }
+    nodes {
+      id: 8
+    }
+  }
+  nodes {
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 0
+        column_idxs: 1
+        column_idxs: 2
+        column_idxs: 3
+        column_idxs: 4
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+        column_names: "upid"
+        column_types: INT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: INT64
+      }
+    }
+  }
+  nodes {
+    id: 23
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          column {
+          }
+        }
+        expressions {
+          column {
+            index: 1
+          }
+        }
+        expressions {
+          column {
+            index: 2
+          }
+        }
+        expressions {
+          column {
+            index: 3
+          }
+        }
+        expressions {
+          column {
+            index: 4
+          }
+        }
+        expressions {
+          func {
+            name: "pl.upid_to_service_name"
+            args {
+              column {
+                index: 4
+              }
+            }
+          }
+        }
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+        column_names: "upid"
+        column_names: "_attr_service_name"
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: AGGREGATE_OPERATOR
+      agg_op {
+        values {
+          name: "pl.mean"
+          args {
+            column {
+              node: 23
+              index: 1
+            }
+          }
+          args_data_types: FLOAT64
+        }
+        groups {
+          node: 23
+          index: 5
+        }
+        group_names: "_attr_service_name"
+        value_names: "mean_cpu"
+      }
+    }
+  }
+  nodes {
+    id: 8
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "out"
+        column_types: STRING
+        column_types: FLOAT64
+        column_names: "_attr_service_name"
+        column_names: "mean_cpu"
+      }
+    }
+  }
+})proto";
+const char* kExpectedAgg2MetadataPlan = R"proto(
+  dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      sorted_deps: 25
+    }
+    nodes {
+      id: 25
+      sorted_deps: 2
+    }
+    nodes {
+      id: 2
+      sorted_deps: 10
+    }
+    nodes {
+      id: 10
+    }
+  }
+  nodes {
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 0
+        column_idxs: 1
+        column_idxs: 2
+        column_idxs: 3
+        column_idxs: 4
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+        column_names: "upid"
+        column_types: INT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: INT64
+      }
+    }
+  }
+  nodes {
+    id: 25
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          column {
+          }
+        }
+        expressions {
+          column {
+            index: 1
+          }
+        }
+        expressions {
+          column {
+            index: 2
+          }
+        }
+        expressions {
+          column {
+            index: 3
+          }
+        }
+        expressions {
+          column {
+            index: 4
+          }
+        }
+        expressions {
+          func {
+            name: "pl.upid_to_service_name"
+            args {
+              column {
+                index: 4
+              }
+            }
+          }
+        }
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+        column_names: "upid"
+        column_names: "_attr_service_name"
+      }
+    }
+  }
+  nodes {
+    id: 2
+    op {
+      op_type: AGGREGATE_OPERATOR
+      agg_op {
+        values {
+          name: "pl.mean"
+          args {
+            column {
+              node: 25
+              index: 1
+            }
+          }
+          args_data_types: FLOAT64
+        }
+        groups {
+          node: 25
+        }
+        groups {
+          node: 25
+          index: 5
+        }
+        group_names: "count"
+        group_names: "_attr_service_name"
+        value_names: "mean_cpu"
+      }
+    }
+  }
+  nodes {
+    id: 10
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "out"
+        column_types: INT64
+        column_types: STRING
+        column_types: FLOAT64
+        column_names: "count"
+        column_names: "_attr_service_name"
+        column_names: "mean_cpu"
+      }
+    }
+  }
+}
+)proto";
+
+class MetadataSingleOps
+    : public CompilerTest,
+      public ::testing::WithParamInterface<std::tuple<std::string, std::string>> {};
+
+TEST_P(MetadataSingleOps, valid_filter_metadata_proto) {
+  std::string op_call, expected_pb;
+  std::tie(op_call, expected_pb) = GetParam();
+  std::string valid_query = absl::StrJoin(
+      {"queryDF = From(table='cpu') ", "opDF = queryDF.$0", "opDF.Result(name='out')"}, "\n");
+  valid_query = absl::Substitute(valid_query, op_call);
+  VLOG(2) << valid_query;
+  auto plan_status = compiler_.Compile(valid_query, compiler_state_.get());
+  ASSERT_OK(plan_status);
+  auto plan = plan_status.ConsumeValueOrDie();
+  VLOG(1) << plan.DebugString();
+
+  // Check the select columns match the expected values.
+  EXPECT_THAT(plan, Partially(EqualsProto(expected_pb)));
+}
+std::vector<std::tuple<std::string, std::string>> metadata_operators{
+    {"Filter(fn=lambda r : r.attr.service == 'pl/orders')", kExpectedFilterMetadataPlan},
+    {"Map(fn=lambda r: {'service': r.attr.service})", kExpectedMapMetadataPlan},
+    {"Agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : r.attr.service)",
+     kExpectedAgg1MetadataPlan},
+    {"Agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : [r.count, "
+     "r.attr.service])",
+     kExpectedAgg2MetadataPlan}};
+// TODO(philkuz) add support for pass through column names.
+// {"Agg(fn=lambda r: {'mean_cpu': pl.mean(r.cpu0)}, by=lambda r : [r.count, "
+//   "r.attr.service]).Filter(fn=lambda r : r.attr.service == 'pl/orders')",
+//       kExpectedAgg2MetadataPlan}};
+
+INSTANTIATE_TEST_CASE_P(MetadataAttributesSuite, MetadataSingleOps,
+                        ::testing::ValuesIn(metadata_operators));
 
 }  // namespace compiler
 }  // namespace carnot

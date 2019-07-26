@@ -543,6 +543,18 @@ inline RangeArgMatch<LHS_t, RHS_t, false> Range(LHS_t lhs, RHS_t rhs) {
 inline ClassMatch<IRNodeType::kRange> Range() { return ClassMatch<IRNodeType::kRange>(); }
 
 /**
+ * @brief Match map operator.
+ */
+inline ClassMatch<IRNodeType::kMap> Map() { return ClassMatch<IRNodeType::kMap>(); }
+
+/**
+ * @brief Match blocking_agg operator.
+ */
+inline ClassMatch<IRNodeType::kBlockingAgg> BlockingAgg() {
+  return ClassMatch<IRNodeType::kBlockingAgg>();
+}
+
+/**
  * @brief Match Range based on the start stop arguments.
  *
  * @tparam LHS_t: the matcher of the lhs side.

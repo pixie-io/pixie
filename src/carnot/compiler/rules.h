@@ -172,14 +172,12 @@ class CheckMetadataColumnNamingRule : public Rule {
    * Never modifies the graph, so should always return false.
    */
  public:
-  explicit CheckMetadataColumnNamingRule(CompilerState* compiler_state, MetadataHandler* md_handler)
-      : Rule(compiler_state), md_handler_(md_handler) {}
+  explicit CheckMetadataColumnNamingRule(CompilerState* compiler_state) : Rule(compiler_state) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) const override;
-  StatusOr<bool> CheckRelation(OperatorIR* op) const;
-
-  MetadataHandler* md_handler_;
+  StatusOr<bool> CheckMapColumns(MapIR* op) const;
+  StatusOr<bool> CheckAggColumns(BlockingAggIR* op) const;
 };
 
 class MetadataResolverConversionRule : public Rule {
@@ -196,7 +194,7 @@ class MetadataResolverConversionRule : public Rule {
   StatusOr<MapIR*> MakeMap(MetadataResolverIR* md_resolver) const;
   StatusOr<bool> SwapInMap(MetadataResolverIR* md_resolver, MapIR* map) const;
   StatusOr<std::string> FindKeyColumn(const table_store::schema::Relation& parent_relation,
-                                      MetadataProperty* property, ColumnIR* col) const;
+                                      MetadataProperty* property, IRNode* node_for_error) const;
 };
 }  // namespace compiler
 }  // namespace carnot

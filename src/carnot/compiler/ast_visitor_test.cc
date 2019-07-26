@@ -544,8 +544,8 @@ TEST(MetadataAttributes, nested_attribute_logical_errors) {
   EXPECT_NOT_OK(failed_query_status);
   VLOG(1) << failed_query_status.status().ToString();
   // TODO(philkuz) update statusHasCompilerError to be friendly with EXPECT_THAT.
-  EXPECT_TRUE(StatusHasCompilerError(failed_query_status.status(),
-                                     "Nested \'attr\' not supported with parent \'pl\'."));
+  EXPECT_THAT(failed_query_status.status(),
+              HasCompilerError("Nested \'attr\' not supported with parent \'pl\'."));
 }
 
 }  // namespace compiler

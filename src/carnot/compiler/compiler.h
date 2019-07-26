@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/carnot/compiler/ast_visitor.h"
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/planpb/plan.pb.h"
@@ -37,8 +38,9 @@ class Compiler {
     // a Sink.
     if (!ir_node.IsRelationInit()) {
       return ir_node.CreateIRNodeError(
-          "Call doesn't connect to a Sink and thus isn't used. Please remove this call or add a "
-          "`Result()` call on this.");
+          "$0(id=$1) doesn't have a relation. Please remove this call or add "
+          "a `$2()` call on this.",
+          ir_node.type_string(), ir_node.id(), ASTWalker::kSinkOpId);
     }
 
     // Add PlanNode.

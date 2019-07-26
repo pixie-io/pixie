@@ -470,27 +470,44 @@ StatusOr<MetadataLiteralIR*> MetadataFunctionFormatRule::WrapLiteral(
 
   return literal;
 }
+
 StatusOr<bool> CheckMetadataColumnNamingRule::Apply(IRNode* ir_node) const {
   if (Match(ir_node, MetadataResolver())) {
     // If the MetadataResolver, then don't do anything.
     return false;
-  } else if (Match(ir_node, Operator())) {
-    return CheckRelation(static_cast<OperatorIR*>(ir_node));
+  } else if (Match(ir_node, Map())) {
+    return CheckMapColumns(static_cast<MapIR*>(ir_node));
+  } else if (Match(ir_node, BlockingAgg())) {
+    return CheckAggColumns(static_cast<BlockingAggIR*>(ir_node));
   }
   return false;
-}
-StatusOr<bool> CheckMetadataColumnNamingRule::CheckRelation(OperatorIR* op) const {
-  DCHECK(op->IsRelationInit());
-  table_store::schema::Relation relation = op->relation();
-  for (const auto& c_name : relation.col_names()) {
-    if (absl::StartsWith(c_name, IdMetadataProperty::kMetadataColumnPrefix)) {
+}  // namespace compiler
+
+StatusOr<bool> CheckMetadataColumnNamingRule::CheckMapColumns(MapIR* op) const {
+  LambdaIR* lambda = op->lambda_func();
+  for (const auto& col_expr : lambda->col_exprs()) {
+    if (absl::StartsWith(col_expr.name, IdMetadataProperty::kMetadataColumnPrefix)) {
       return op->CreateIRNodeError(
-          "$0 operator cannot have a column with prefix '$1'. \'$2\' is in violation.",
-          op->type_string(), MetadataProperty::kMetadataColumnPrefix, c_name);
+          "Column name '$1' violates naming rules. The '$0' prefix is reserved for internal "
+          "use.",
+          MetadataProperty::kMetadataColumnPrefix, col_expr.name);
     }
   }
   return false;
 }
+StatusOr<bool> CheckMetadataColumnNamingRule::CheckAggColumns(BlockingAggIR* op) const {
+  LambdaIR* lambda = op->agg_func();
+  for (const auto& col_expr : lambda->col_exprs()) {
+    if (absl::StartsWith(col_expr.name, IdMetadataProperty::kMetadataColumnPrefix)) {
+      return op->CreateIRNodeError(
+          "Column name '$1' violates naming rules. The '$0' prefix is reserved for internal "
+          "use.",
+          MetadataProperty::kMetadataColumnPrefix, col_expr.name);
+    }
+  }
+  return false;
+}
+
 StatusOr<bool> MetadataResolverConversionRule::Apply(IRNode* ir_node) const {
   if (Match(ir_node, MetadataResolver())) {
     return ReplaceMetadataResolver(static_cast<MetadataResolverIR*>(ir_node));
@@ -517,18 +534,16 @@ StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_
     col_exprs.emplace_back(column_name, column_ir);
   }
 
-  int64_t column_idx = parent_relation.NumColumns();
   for (const auto& md_col_iter : md_resolver->metadata_columns()) {
     MetadataProperty* md_property = md_col_iter.second;
-    PL_ASSIGN_OR_RETURN(ColumnIR * column_ir, graph->MakeNode<ColumnIR>());
-    PL_RETURN_IF_ERROR(column_ir->Init(md_property->GetColumnRepr(), md_resolver->ast_node()));
-    column_ir->ResolveColumn(column_idx, md_property->column_type());
-    ++column_idx;
-
     PL_ASSIGN_OR_RETURN(FuncIR * conversion_func, graph->MakeNode<FuncIR>());
     PL_ASSIGN_OR_RETURN(std::string key_column,
-                        FindKeyColumn(parent_relation, md_property, column_ir));
+                        FindKeyColumn(parent_relation, md_property, md_resolver));
+    PL_ASSIGN_OR_RETURN(ColumnIR * column_ir, graph->MakeNode<ColumnIR>());
+    PL_RETURN_IF_ERROR(column_ir->Init(key_column, md_resolver->ast_node()));
+    int64_t parent_relation_idx = parent_relation.GetColumnIndex(key_column);
     PL_ASSIGN_OR_RETURN(std::string func_name, md_property->UDFName(key_column));
+    column_ir->ResolveColumn(parent_relation_idx, md_property->column_type());
     PL_RETURN_IF_ERROR(conversion_func->Init({FuncIR::Opcode::non_op, "", func_name},
                                              ASTWalker::kRunTimeFuncPrefix, {column_ir}, false,
                                              md_resolver->ast_node()));
@@ -549,13 +564,13 @@ StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_
 
 StatusOr<std::string> MetadataResolverConversionRule::FindKeyColumn(
     const table_store::schema::Relation& parent_relation, MetadataProperty* property,
-    ColumnIR* col) const {
+    IRNode* node_for_error) const {
   for (const std::string& key_col : property->GetKeyColumnReprs()) {
     if (parent_relation.HasColumn(key_col)) {
       return key_col;
     }
   }
-  return col->CreateIRNodeError(
+  return node_for_error->CreateIRNodeError(
       "Can't resolve metadata because of lack of converting columns in the parent. Need one of "
       "[$0].",
       absl::StrJoin(property->GetKeyColumnReprs(), ","));
@@ -563,16 +578,22 @@ StatusOr<std::string> MetadataResolverConversionRule::FindKeyColumn(
 StatusOr<bool> MetadataResolverConversionRule::SwapInMap(MetadataResolverIR* md_resolver,
                                                          MapIR* map) const {
   IR* graph = md_resolver->graph_ptr();
-  PL_RETURN_IF_ERROR(graph->DeleteEdge(md_resolver->parent()->id(), md_resolver->id()));
+  PL_RETURN_IF_ERROR(md_resolver->RemoveParent(md_resolver->parent()));
   std::vector<int64_t> dependent_nodes = graph->dag().DependenciesOf(md_resolver->id());
   DCHECK_EQ(dependent_nodes.size(), 1UL);
   PL_RETURN_IF_ERROR(graph->DeleteEdge(md_resolver->id(), dependent_nodes[0]));
-  PL_RETURN_IF_ERROR(graph->AddEdge(map->id(), dependent_nodes[0]));
+
   IRNode* node = graph->Get(dependent_nodes[0]);
   DCHECK(node->IsOp()) << "Expected node to be operator.";
   OperatorIR* op = static_cast<OperatorIR*>(node);
+
   DCHECK_EQ(op->parent(), md_resolver);
+  DCHECK(md_resolver->IsRelationInit());
+
   PL_RETURN_IF_ERROR(op->SetParent(map));
+  PL_RETURN_IF_ERROR(map->SetRelation(md_resolver->relation()));
+  // delete metadata_resolver
+  PL_RETURN_IF_ERROR(graph->DeleteNode(md_resolver->id()));
 
   return true;
 }

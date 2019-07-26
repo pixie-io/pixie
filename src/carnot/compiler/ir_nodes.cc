@@ -14,6 +14,8 @@ Status IR::AddEdge(IRNode* from_node, IRNode* to_node) {
 }
 
 Status IR::DeleteEdge(int64_t from_node, int64_t to_node) {
+  DCHECK(dag_.HasEdge(from_node, to_node))
+      << absl::Substitute("No edge ($0, $1) exists.", from_node, to_node);
   if (!dag_.HasEdge(from_node, to_node)) {
     return error::InvalidArgument("No edge ($0, $1) exists.", from_node, to_node);
   }
@@ -316,8 +318,14 @@ Status OperatorIR::EvaluateExpression(planpb::ScalarExpression* expr, const IRNo
       value->set_time64_ns_value(static_cast<::google::protobuf::int64>(casted_ir.val()));
       break;
     }
+    case IRNodeType::kMetadataLiteral: {
+      // MetadataLiteral is just a container.
+      auto casted_ir = static_cast<const MetadataLiteralIR&>(ir_node);
+      PL_RETURN_IF_ERROR(EvaluateExpression(expr, *casted_ir.literal()));
+      break;
+    }
     default: {
-      return error::InvalidArgument("Didn't expect node of type $0 in expression evaluator.",
+      return error::InvalidArgument("Didn't expect $0 in expression evaluator.",
                                     ir_node.type_string());
     }
   }

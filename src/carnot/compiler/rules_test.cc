@@ -459,7 +459,7 @@ TEST_F(SourceRelationTest, missing_table_name) {
   auto result = source_relation_rule.Execute(graph.get());
   EXPECT_NOT_OK(result);
   std::string error_string = absl::Substitute("Table '$0' not found.", table_name);
-  EXPECT_TRUE(StatusHasCompilerError(result.status(), error_string));
+  EXPECT_THAT(result.status(), HasCompilerError(error_string));
 }
 
 TEST_F(SourceRelationTest, missing_columns) {
@@ -488,7 +488,7 @@ TEST_F(SourceRelationTest, missing_columns) {
   VLOG(1) << result.status().ToString();
 
   std::string error_string = absl::Substitute("Columns {$0} are missing in table.", missing_column);
-  EXPECT_TRUE(StatusHasCompilerError(result.status(), error_string));
+  EXPECT_THAT(result.status(), HasCompilerError(error_string));
 }
 
 class BlockingAggRuleTest : public RulesTest {
@@ -1207,9 +1207,9 @@ TEST_F(FormatMetadataTest, bad_format) {
   auto status = rule.Execute(graph.get());
 
   EXPECT_NOT_OK(status);
-  EXPECT_TRUE(StatusHasCompilerError(status.status(),
-                                     "String not formatted properly for metadata operation. "
-                                     "Expected String with format <namespace>/<name>.."));
+  EXPECT_THAT(status.status(),
+              HasCompilerError("String not formatted properly for metadata operation. "
+                               "Expected String with format <namespace>/<name>.."));
 }
 
 TEST_F(FormatMetadataTest, equals_fails_when_not_string) {
@@ -1221,9 +1221,8 @@ TEST_F(FormatMetadataTest, equals_fails_when_not_string) {
   auto status = rule.Execute(graph.get());
 
   EXPECT_NOT_OK(status);
-  EXPECT_TRUE(StatusHasCompilerError(
-      status.status(),
-      "Function \'pl.equals\' with metadata arg in conjunction with \'[Int]\' is not supported."));
+  EXPECT_THAT(status.status(), HasCompilerError("Function \'pl.equals\' with metadata arg in "
+                                                "conjunction with \'[Int]\' is not supported."));
 }
 
 TEST_F(FormatMetadataTest, only_equal_supported) {
@@ -1235,9 +1234,8 @@ TEST_F(FormatMetadataTest, only_equal_supported) {
   auto status = rule.Execute(graph.get());
 
   EXPECT_NOT_OK(status);
-  EXPECT_TRUE(StatusHasCompilerError(
-      status.status(),
-      "Function \'pl.add\' with metadata arg in conjunction with \'[String]\' is not supported."));
+  EXPECT_THAT(status.status(), HasCompilerError("Function \'pl.add\' with metadata arg in "
+                                                "conjunction with \'[String]\' is not supported."));
 }
 
 class CheckRelationRule : public RulesTest {
@@ -1248,20 +1246,22 @@ class CheckRelationRule : public RulesTest {
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
 
-  MapIR* MakeMap(OperatorIR* parent) {
-    auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(agg_func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
+  MapIR* MakeMap(OperatorIR* parent, std::string column_name) {
+    auto map_func = graph->MakeNode<FuncIR>().ValueOrDie();
+    EXPECT_OK(map_func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
                              std::vector<ExpressionIR*>({MakeInt(10), MakeInt(12)}),
                              false /* compile_time */, ast));
 
-    auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-    EXPECT_OK(agg_func_lambda->Init({}, {{"agg_fn", agg_func}}, ast));
+    auto map_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(map_func_lambda->Init({}, {{column_name, map_func}}, ast));
 
-    MapIR* agg = graph->MakeNode<MapIR>().ValueOrDie();
-    ArgMap amap({{"fn", agg_func_lambda}});
-    EXPECT_OK(agg->Init(parent, amap, ast));
-    return agg;
+    MapIR* map = graph->MakeNode<MapIR>().ValueOrDie();
+    ArgMap amap({{"fn", map_func_lambda}});
+    EXPECT_OK(map->Init(parent, amap, ast));
+    return map;
   }
+
+  MapIR* MakeMap(OperatorIR* parent) { return MakeMap(parent, "map_fn"); }
 
   table_store::schema::Relation ViolatingRelation() {
     auto relation = mem_src->relation();
@@ -1281,7 +1281,7 @@ TEST_F(CheckRelationRule, properly_formatted_no_problems) {
   MapIR* map = MakeMap(filter);
   EXPECT_OK(map->SetRelation(PassingRelation()));
 
-  CheckMetadataColumnNamingRule rule(compiler_state_.get(), md_handler.get());
+  CheckMetadataColumnNamingRule rule(compiler_state_.get());
 
   auto status = rule.Execute(graph.get());
   ASSERT_OK(status);
@@ -1297,7 +1297,7 @@ TEST_F(CheckRelationRule, skip_metadata_resolver) {
   MapIR* map = MakeMap(md_resolver);
   EXPECT_OK(map->SetRelation(PassingRelation()));
 
-  CheckMetadataColumnNamingRule rule(compiler_state_.get(), md_handler.get());
+  CheckMetadataColumnNamingRule rule(compiler_state_.get());
 
   auto status = rule.Execute(graph.get());
   ASSERT_OK(status);
@@ -1305,19 +1305,20 @@ TEST_F(CheckRelationRule, skip_metadata_resolver) {
   EXPECT_FALSE(status.ValueOrDie());
 }
 // Should find an issue with the map function.
+// TODO(philkuz) fix this test to actually fail.
 TEST_F(CheckRelationRule, find_map_issue) {
-  MapIR* map = MakeMap(mem_src);
-  EXPECT_OK(map->SetRelation(ViolatingRelation()));
+  std::string column_name = absl::Substitute("$0service", MetadataProperty::kMetadataColumnPrefix);
+  MakeMap(mem_src, column_name);
 
-  CheckMetadataColumnNamingRule rule(compiler_state_.get(), md_handler.get());
+  CheckMetadataColumnNamingRule rule(compiler_state_.get());
 
   auto status = rule.Execute(graph.get());
-  EXPECT_NOT_OK(status);
-  EXPECT_TRUE(StatusHasCompilerError(
+  ASSERT_NOT_OK(status) << "Expected rule execution to fail.";
+  EXPECT_THAT(
       status.status(),
-      absl::Substitute(
-          "Map operator cannot have a column with prefix \'$0\'. \'$0_pod_name\' is in violation.",
-          MetadataProperty::kMetadataColumnPrefix)));
+      HasCompilerError(
+          "Column name '$1' violates naming rules. The '$0' prefix is reserved for internal use.",
+          MetadataProperty::kMetadataColumnPrefix, column_name));
 }
 
 class MetadataResolverConversionTest : public RulesTest {
@@ -1387,6 +1388,10 @@ TEST_F(MetadataResolverConversionTest, upid_conversion) {
   EXPECT_TRUE(graph->dag().HasEdge(new_op->id(), filter->id()));
 
   MapIR* md_mapper = static_cast<MapIR*>(new_op);
+
+  std::vector<int64_t> mapper_dependencies = graph->dag().DependenciesOf(md_mapper->id());
+  EXPECT_EQ(mapper_dependencies, std::vector<int64_t>({md_mapper->id() + 1, filter->id()}));
+
   ColExpressionVector vec = md_mapper->col_exprs();
   ASSERT_EQ(relation.NumColumns() + md_resolver->metadata_columns().size(), vec.size());
   // Check to see that all of the parent columns are there
@@ -1401,7 +1406,8 @@ TEST_F(MetadataResolverConversionTest, upid_conversion) {
   }
 
   // Check to see that the metadata columns have the correct format.
-  for (const auto& [md_col_name, md_property] : md_resolver->metadata_columns()) {
+  for (const auto& md_iter : md_resolver->metadata_columns()) {
+    std::string md_col_name = md_iter.first;
     ColumnExpression expr_pair = vec[cur_idx];
     EXPECT_EQ(expr_pair.name, MetadataProperty::FormatMetadataColumn(md_col_name));
     ASSERT_EQ(expr_pair.node->type(), IRNodeType::kFunc) << absl::Substitute(
@@ -1415,7 +1421,7 @@ TEST_F(MetadataResolverConversionTest, upid_conversion) {
     ASSERT_EQ(func_arg->type(), IRNodeType::kColumn) << absl::Substitute(
         "Expected column for idx $0, got $1.", cur_idx, func_arg->type_string());
     ColumnIR* col_ir = static_cast<ColumnIR*>(func_arg);
-    EXPECT_EQ(col_ir->col_name(), md_property->GetColumnRepr());
+    EXPECT_EQ(col_ir->col_name(), conversion_column_str);
     cur_idx += 1;
   }
 }
@@ -1449,12 +1455,16 @@ TEST_F(MetadataResolverConversionTest, alternative_column) {
   ASSERT_EQ(new_op->type(), IRNodeType::kMap) << "Expected Map, got " << new_op->type_string();
 
   MapIR* md_mapper = static_cast<MapIR*>(new_op);
+
+  std::vector<int64_t> mapper_dependencies = graph->dag().DependenciesOf(md_mapper->id());
+  EXPECT_EQ(mapper_dependencies, std::vector<int64_t>({md_mapper->id() + 1, filter->id()}));
   ColExpressionVector vec = md_mapper->col_exprs();
 
   int64_t cur_idx = static_cast<int64_t>(relation.col_names().size());
 
   // Check to see that the metadata columns have the correct format.
-  for (const auto& [md_col_name, md_property] : md_resolver->metadata_columns()) {
+  for (const auto& md_iter : md_resolver->metadata_columns()) {
+    std::string md_col_name = md_iter.first;
     ColumnExpression expr_pair = vec[cur_idx];
     EXPECT_EQ(expr_pair.name, MetadataProperty::FormatMetadataColumn(md_col_name));
     ASSERT_EQ(expr_pair.node->type(), IRNodeType::kFunc) << absl::Substitute(
@@ -1468,7 +1478,7 @@ TEST_F(MetadataResolverConversionTest, alternative_column) {
     ASSERT_EQ(func_arg->type(), IRNodeType::kColumn) << absl::Substitute(
         "Expected column for idx $0, got $1.", cur_idx, func_arg->type_string());
     ColumnIR* col_ir = static_cast<ColumnIR*>(func_arg);
-    EXPECT_EQ(col_ir->col_name(), md_property->GetColumnRepr());
+    EXPECT_EQ(col_ir->col_name(), conversion_column_str);
     cur_idx += 1;
   }
 }
@@ -1492,9 +1502,9 @@ TEST_F(MetadataResolverConversionTest, missing_conversion_column) {
   auto status = rule.Execute(graph.get());
   EXPECT_NOT_OK(status);
   VLOG(1) << status.ToString();
-  EXPECT_TRUE(StatusHasCompilerError(status.status(),
-                                     "Can\'t resolve metadata because of lack of converting "
-                                     "columns in the parent. Need one of [upid]."));
+  EXPECT_THAT(status.status(),
+              HasCompilerError("Can\'t resolve metadata because of lack of converting "
+                               "columns in the parent. Need one of [upid]."));
 }
 
 // When the parent relation has multiple columns that can be converted into
@@ -1502,6 +1512,7 @@ TEST_F(MetadataResolverConversionTest, missing_conversion_column) {
 TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
   auto relation = table_store::schema::Relation(cpu_relation);
   MetadataType conversion_column1 = MetadataType::UPID;
+  std::string conversion_column1_str = MetadataProperty::FormatMetadataColumn(conversion_column1);
   MetadataType conversion_column2 = MetadataType::POD_ID;
   // TODO(philkuz) with the addition of INT128 update this.
   relation.AddColumn(types::DataType::INT64,
@@ -1533,10 +1544,14 @@ TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
   MapIR* md_mapper = static_cast<MapIR*>(new_op);
   ColExpressionVector vec = md_mapper->col_exprs();
 
+  std::vector<int64_t> mapper_dependencies = graph->dag().DependenciesOf(md_mapper->id());
+  EXPECT_EQ(mapper_dependencies, std::vector<int64_t>({md_mapper->id() + 1, filter->id()}));
+
   int64_t cur_idx = static_cast<int64_t>(relation.col_names().size());
 
   // Check to see that the metadata columns have the correct format.
-  for (const auto& [md_col_name, md_property] : md_resolver->metadata_columns()) {
+  for (const auto& md_iter : md_resolver->metadata_columns()) {
+    std::string md_col_name = md_iter.first;
     ColumnExpression expr_pair = vec[cur_idx];
     EXPECT_EQ(expr_pair.name, MetadataProperty::FormatMetadataColumn(md_col_name));
     ASSERT_EQ(expr_pair.node->type(), IRNodeType::kFunc) << absl::Substitute(
@@ -1550,7 +1565,7 @@ TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
     ASSERT_EQ(func_arg->type(), IRNodeType::kColumn) << absl::Substitute(
         "Expected column for idx $0, got $1.", cur_idx, func_arg->type_string());
     ColumnIR* col_ir = static_cast<ColumnIR*>(func_arg);
-    EXPECT_EQ(col_ir->col_name(), md_property->GetColumnRepr());
+    EXPECT_EQ(col_ir->col_name(), conversion_column1_str);
     cur_idx += 1;
   }
 }
@@ -1586,12 +1601,14 @@ TEST_F(MetadataResolverConversionTest, multiple_metadata_columns) {
   ASSERT_EQ(new_op->type(), IRNodeType::kMap) << "Expected Map, got " << new_op->type_string();
 
   MapIR* md_mapper = static_cast<MapIR*>(new_op);
+  EXPECT_EQ(graph->dag().DependenciesOf(md_mapper->id()), std::vector<int64_t>({18, filter->id()}));
   ColExpressionVector vec = md_mapper->col_exprs();
 
   int64_t cur_idx = static_cast<int64_t>(relation.col_names().size());
 
   // Check to see that the metadata columns have the correct format.
-  for (const auto& [md_col_name, md_property] : md_resolver->metadata_columns()) {
+  for (const auto& md_iter : md_resolver->metadata_columns()) {
+    std::string md_col_name = md_iter.first;
     ColumnExpression expr_pair = vec[cur_idx];
     EXPECT_EQ(expr_pair.name, MetadataProperty::FormatMetadataColumn(md_col_name));
     ASSERT_EQ(expr_pair.node->type(), IRNodeType::kFunc) << absl::Substitute(
@@ -1605,7 +1622,7 @@ TEST_F(MetadataResolverConversionTest, multiple_metadata_columns) {
     ASSERT_EQ(func_arg->type(), IRNodeType::kColumn) << absl::Substitute(
         "Expected column for idx $0, got $1.", cur_idx, func_arg->type_string());
     ColumnIR* col_ir = static_cast<ColumnIR*>(func_arg);
-    EXPECT_EQ(col_ir->col_name(), md_property->GetColumnRepr());
+    EXPECT_EQ(col_ir->col_name(), conversion_column_str);
     cur_idx += 1;
   }
 }
