@@ -91,7 +91,7 @@ StatusOr<bool> DataTypeRule::EvaluateColumn(ColumnIR* column) const {
   }
   types::DataType col_type = relation.GetColumnType(column->col_name());
   int64_t col_idx = relation.GetColumnIndex(column->col_name());
-  column->ResolveColumn(col_idx, col_type);
+  column->ResolveColumn(col_idx, col_type, parent_op);
 
   return true;
 }
@@ -155,7 +155,7 @@ StatusOr<Relation> SourceRelationRule::GetSelectRelation(
 }
 
 StatusOr<std::vector<ColumnIR*>> SourceRelationRule::GetColumnsFromRelation(
-    IRNode* node, std::vector<std::string> col_names, const Relation& relation) const {
+    OperatorIR* node, std::vector<std::string> col_names, const Relation& relation) const {
   auto graph = node->graph_ptr();
   auto result = std::vector<ColumnIR*>();
   // iterates through the columns, finds their relation position,
@@ -164,7 +164,7 @@ StatusOr<std::vector<ColumnIR*>> SourceRelationRule::GetColumnsFromRelation(
     int64_t i = relation.GetColumnIndex(col_name);
     PL_ASSIGN_OR_RETURN(auto col_node, graph->MakeNode<ColumnIR>());
     PL_RETURN_IF_ERROR(col_node->Init(col_name, node->ast_node()));
-    col_node->ResolveColumn(i, relation.GetColumnType(i));
+    col_node->ResolveColumn(i, relation.GetColumnType(i), node);
     result.push_back(col_node);
   }
   return result;
@@ -596,23 +596,25 @@ StatusOr<bool> MetadataResolverConversionRule::ReplaceMetadataResolver(
   return true;
 }
 
-Status MetadataResolverConversionRule::CopyParentColumns(IR* graph, ColExpressionVector* col_exprs,
-                                                         const Relation& parent_relation,
+Status MetadataResolverConversionRule::CopyParentColumns(IR* graph, OperatorIR* parent_op,
+                                                         ColExpressionVector* col_exprs,
                                                          pypa::AstPtr ast_node) const {
+  Relation parent_relation = parent_op->relation();
   for (size_t i = 0; i < parent_relation.NumColumns(); ++i) {
     // Make Column
     PL_ASSIGN_OR_RETURN(ColumnIR * column_ir, graph->MakeNode<ColumnIR>());
     std::string column_name = parent_relation.GetColumnName(i);
     PL_RETURN_IF_ERROR(column_ir->Init(column_name, ast_node));
-    column_ir->ResolveColumn(i, parent_relation.GetColumnType(i));
+    column_ir->ResolveColumn(i, parent_relation.GetColumnType(i), parent_op);
     col_exprs->emplace_back(column_name, column_ir);
   }
   return Status::OK();
 }
 
 Status MetadataResolverConversionRule::AddMetadataConversionFns(
-    IR* graph, MetadataResolverIR* md_resolver, const Relation& parent_relation,
+    IR* graph, MetadataResolverIR* md_resolver, OperatorIR* parent_op,
     ColExpressionVector* col_exprs) const {
+  Relation parent_relation = parent_op->relation();
   for (const auto& md_col_iter : md_resolver->metadata_columns()) {
     MetadataProperty* md_property = md_col_iter.second;
     // If parent relation has the column, we've already copied it, skip over.
@@ -627,7 +629,7 @@ Status MetadataResolverConversionRule::AddMetadataConversionFns(
     PL_RETURN_IF_ERROR(column_ir->Init(key_column, md_resolver->ast_node()));
     int64_t parent_relation_idx = parent_relation.GetColumnIndex(key_column);
     PL_ASSIGN_OR_RETURN(std::string func_name, md_property->UDFName(key_column));
-    column_ir->ResolveColumn(parent_relation_idx, md_property->column_type());
+    column_ir->ResolveColumn(parent_relation_idx, md_property->column_type(), parent_op);
 
     std::vector<types::DataType> children_data_types = {
         parent_relation.GetColumnType(parent_relation_idx)};
@@ -653,12 +655,11 @@ Status MetadataResolverConversionRule::AddMetadataConversionFns(
 
 StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_resolver) const {
   IR* graph = md_resolver->graph_ptr();
-  Relation parent_relation = md_resolver->parent()->relation();
+  OperatorIR* parent_op = md_resolver->parent();
   ColExpressionVector col_exprs;
-  PL_RETURN_IF_ERROR(
-      CopyParentColumns(graph, &col_exprs, parent_relation, md_resolver->ast_node()));
+  PL_RETURN_IF_ERROR(CopyParentColumns(graph, parent_op, &col_exprs, md_resolver->ast_node()));
 
-  PL_RETURN_IF_ERROR(AddMetadataConversionFns(graph, md_resolver, parent_relation, &col_exprs));
+  PL_RETURN_IF_ERROR(AddMetadataConversionFns(graph, md_resolver, parent_op, &col_exprs));
   Relation relation = md_resolver->relation();
   std::unordered_set<std::string> col_names(std::make_move_iterator(relation.col_names().begin()),
                                             std::make_move_iterator(relation.col_names().end()));
@@ -702,6 +703,11 @@ Status MetadataResolverConversionRule::SwapInMap(MetadataResolverIR* md_resolver
 
   PL_RETURN_IF_ERROR(op->SetParent(map));
   PL_RETURN_IF_ERROR(map->SetRelation(md_resolver->relation()));
+  // transfer ownership of columns.
+  for (ColumnIR* col : md_resolver->referencing_columns()) {
+    col->SetParentOperator(map);
+  }
+
   // delete metadata_resolver
   PL_RETURN_IF_ERROR(graph->DeleteNode(md_resolver->id()));
   return Status::OK();

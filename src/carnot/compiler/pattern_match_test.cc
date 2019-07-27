@@ -57,6 +57,7 @@ TEST_F(PatternMatchTest, expression_data_type_resolution) {
   auto col1 = graph->MakeNode<ColumnIR>().ValueOrDie();
   EXPECT_OK(col1->Init("col1", ast));
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
+  auto dumb_operator = graph->MakeNode<MemorySourceIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "op"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({int1, col1}), false /* compile_time */, ast));
 
@@ -85,7 +86,7 @@ TEST_F(PatternMatchTest, expression_data_type_resolution) {
   EXPECT_FALSE(Match(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression())));
 
   // Resolve column and check whether test works.
-  col1->ResolveColumn(0, types::DataType::INT64);
+  col1->ResolveColumn(0, types::DataType::INT64, dumb_operator);
   EXPECT_TRUE(Match(col1, ResolvedExpression()));
   EXPECT_TRUE(Match(col1, ResolvedColumnType()));
 

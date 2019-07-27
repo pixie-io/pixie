@@ -476,9 +476,10 @@ Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* e
     switch (ir_arg->type()) {
       case IRNodeType::kMetadata:
       case IRNodeType::kColumn: {
+        ColumnIR* col_ir = static_cast<ColumnIR*>(ir_arg);
         auto col = arg_pb->mutable_column();
-        col->set_node(parent()->id());
-        col->set_index(static_cast<ColumnIR*>(ir_arg)->col_idx());
+        col->set_node(col_ir->ParentId());
+        col->set_index(col_ir->col_idx());
         break;
       }
       case IRNodeType::kInt: {
@@ -535,9 +536,9 @@ Status BlockingAggIR::ToProto(planpb::Operator* op) const {
   }
 
   if (by_func_ != nullptr) {
-    for (const auto& group : groups_) {
+    for (ColumnIR* group : groups_) {
       auto group_pb = pb->add_groups();
-      group_pb->set_node(parent()->id());
+      group_pb->set_node(group->ParentId());
       group_pb->set_index(group->col_idx());
       pb->add_group_names(group->col_name());
     }

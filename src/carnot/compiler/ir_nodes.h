@@ -186,6 +186,8 @@ class IR {
   std::unordered_map<int64_t, IRNodePtr> id_node_map_;
 };
 
+class ColumnIR;
+
 /**
  * @brief Node class for the operator
  *
@@ -206,6 +208,8 @@ class OperatorIR : public IRNode {
   OperatorIR* parent() const { return parent_; }
   Status SetParent(IRNode* node);
   Status RemoveParent(OperatorIR* op);
+  void AddReferencingColumn(ColumnIR* column) { referencing_columns_.push_back(column); }
+  const std::vector<ColumnIR*>& referencing_columns() const { return referencing_columns_; }
   Status Init(IRNode* parent, const ArgMap& args, const pypa::AstPtr& ast_node);
   virtual Status InitImpl(const ArgMap& args) = 0;
   virtual std::vector<std::string> ArgKeys() = 0;
@@ -226,6 +230,8 @@ class OperatorIR : public IRNode {
   bool relation_init_ = false;
   bool has_parent_;
   OperatorIR* parent_;
+  // The vector of columns that reference this Operator.
+  std::vector<ColumnIR*> referencing_columns_;
 };
 
 class ExpressionIR : public IRNode {
@@ -416,11 +422,18 @@ class ColumnIR : public ExpressionIR {
   std::string col_name() const { return col_name_; }
   std::string DebugString(int64_t depth) const override;
   bool IsColumn() const override { return true; }
-  void ResolveColumn(int64_t col_idx, types::DataType type) {
+  void ResolveColumn(int64_t col_idx, types::DataType type, OperatorIR* parent_operator) {
     col_idx_ = col_idx;
     evaluated_data_type_ = type;
     is_data_type_evaluated_ = true;
+    SetParentOperator(parent_operator);
   }
+  void SetParentOperator(OperatorIR* parent_operator) {
+    parent_op_ = parent_operator;
+    parent_op_->AddReferencingColumn(this);
+  }
+  OperatorIR* parent_op() const { return parent_op_; }
+  int64_t ParentId() const { return parent_op_->id(); }
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
   bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
 
@@ -438,6 +451,7 @@ class ColumnIR : public ExpressionIR {
   int64_t col_idx_;
   types::DataType evaluated_data_type_;
   bool is_data_type_evaluated_ = false;
+  OperatorIR* parent_op_;
 };
 
 /**

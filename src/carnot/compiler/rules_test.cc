@@ -584,7 +584,7 @@ class BlockingAggRuleTest : public RulesTest {
     EXPECT_OK(group->Init(group_name, ast));
     // Code to resolve column.
     if (resolve_agg_group) {
-      group->ResolveColumn(1, group_data_type);
+      group->ResolveColumn(1, group_data_type, mem_src);
     }
     EXPECT_OK(by_func_lambda->Init({group_name}, group, ast));
 

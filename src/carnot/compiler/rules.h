@@ -78,7 +78,7 @@ class SourceRelationRule : public Rule {
   StatusOr<bool> GetSourceRelation(OperatorIR* source_op) const;
   StatusOr<std::vector<std::string>> GetColumnNames(
       std::vector<ExpressionIR*> select_children) const;
-  StatusOr<std::vector<ColumnIR*>> GetColumnsFromRelation(IRNode* node,
+  StatusOr<std::vector<ColumnIR*>> GetColumnsFromRelation(OperatorIR* node,
                                                           std::vector<std::string> col_names,
                                                           const Relation& relation) const;
   StatusOr<Relation> GetSelectRelation(IRNode* node, const Relation& relation,
@@ -195,11 +195,10 @@ class MetadataResolverConversionRule : public Rule {
   Status SwapInMap(MetadataResolverIR* md_resolver, MapIR* map) const;
   StatusOr<std::string> FindKeyColumn(const Relation& parent_relation, MetadataProperty* property,
                                       IRNode* node_for_error) const;
-  Status CopyParentColumns(IR* graph, ColExpressionVector* col_exprs,
-                           const Relation& parent_relation, pypa::AstPtr ast_node) const;
+  Status CopyParentColumns(IR* graph, OperatorIR* parent_op, ColExpressionVector* col_exprs,
+                           pypa::AstPtr ast_node) const;
 
-  Status AddMetadataConversionFns(IR* graph, MetadataResolverIR* md_resolver,
-                                  const Relation& parent_relation,
+  Status AddMetadataConversionFns(IR* graph, MetadataResolverIR* md_resolver, OperatorIR* parent_op,
                                   ColExpressionVector* col_exprs) const;
 
   /**
