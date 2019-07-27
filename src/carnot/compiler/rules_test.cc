@@ -1,4 +1,5 @@
 #include <gmock/gmock.h>
+#include <google/protobuf/text_format.h>
 #include <gtest/gtest.h>
 
 #include <utility>
@@ -18,11 +19,61 @@ namespace compiler {
 
 using testing::_;
 
+const char* kExtraScalarUDFs = R"proto(
+scalar_udfs {
+  name: "pl.upid_to_service_id"
+  exec_arg_types: INT64
+  return_type: STRING
+}
+scalar_udfs {
+  name: "pl.upid_to_service_name"
+  exec_arg_types: INT64
+  return_type: STRING
+}
+scalar_udfs {
+  name: "pl.service_id_to_service_name"
+  exec_arg_types: STRING
+  return_type: STRING
+}
+scalar_udfs {
+  name: "pl.upid_to_pod_id"
+  exec_arg_types: INT64
+  return_type: STRING
+}
+scalar_udfs {
+  name: "pl.upid_to_pod_name"
+  exec_arg_types: INT64
+  return_type: STRING
+}
+scalar_udfs {
+  name: "pl.pod_id_to_pod_name"
+  exec_arg_types: STRING
+  return_type: STRING
+}
+)proto";
 class RulesTest : public ::testing::Test {
  protected:
+  void SetUpRegistryInfo() {
+    // TODO(philkuz) replace the following call info_
+    // info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
+    auto scalar_udf_registry = std::make_unique<udf::ScalarUDFRegistry>("udf_registry");
+    auto uda_registry = std::make_unique<udf::UDARegistry>("uda_registry");
+    builtins::RegisterBuiltinsOrDie(scalar_udf_registry.get());
+    builtins::RegisterBuiltinsOrDie(uda_registry.get());
+    auto udf_proto = udf::RegistryInfoExporter()
+                         .Registry(*uda_registry)
+                         .Registry(*scalar_udf_registry)
+                         .ToProto();
+
+    std::string new_udf_info = absl::Substitute("$0$1", udf_proto.DebugString(), kExtraScalarUDFs);
+    google::protobuf::TextFormat::MergeFromString(new_udf_info, &udf_proto);
+
+    info_ = std::make_unique<compiler::RegistryInfo>();
+    PL_CHECK_OK(info_->Init(udf_proto));
+  }
   void SetUp() override {
     ::testing::Test::SetUp();
-    info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
+    SetUpRegistryInfo();
 
     auto rel_map = std::make_unique<RelationMap>();
     cpu_relation = table_store::schema::Relation(
@@ -1226,7 +1277,7 @@ TEST_F(FormatMetadataTest, bad_format) {
   EXPECT_NOT_OK(status);
   EXPECT_THAT(status.status(),
               HasCompilerError("String not formatted properly for metadata operation. "
-                               "Expected String with format <namespace>/<name>.."));
+                               "Expected String with format <namespace>/<name>."));
 }
 
 TEST_F(FormatMetadataTest, equals_fails_when_not_string) {
@@ -1322,7 +1373,6 @@ TEST_F(CheckRelationRule, skip_metadata_resolver) {
   EXPECT_FALSE(status.ValueOrDie());
 }
 // Should find an issue with the map function.
-// TODO(philkuz) fix this test to actually fail.
 TEST_F(CheckRelationRule, find_map_issue) {
   std::string column_name = absl::Substitute("$0service", MetadataProperty::kMetadataColumnPrefix);
   MakeMap(mem_src, column_name);
@@ -1343,7 +1393,6 @@ class MetadataResolverConversionTest : public RulesTest {
   void SetUp() override {
     RulesTest::SetUp();
     mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-    // TODO(philkuz) add some converting columns to the mix.
     PL_CHECK_OK(mem_src->SetRelation(cpu_relation));
   }
 
@@ -1448,7 +1497,7 @@ TEST_F(MetadataResolverConversionTest, alternative_column) {
   MetadataType conversion_column = MetadataType::POD_ID;
   std::string conversion_column_str = MetadataProperty::FormatMetadataColumn(conversion_column);
   // TODO(philkuz) with the addition of INT128 update this.
-  relation.AddColumn(types::DataType::INT64, conversion_column_str);
+  relation.AddColumn(types::DataType::STRING, conversion_column_str);
   EXPECT_OK(mem_src->SetRelation(relation));
   NameMetadataProperty property(MetadataType::POD_NAME, {MetadataType::UPID, MetadataType::POD_ID});
   MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);

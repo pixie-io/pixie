@@ -50,6 +50,14 @@ class RegistryKey {
    */
   const std::string& name() const { return name_; }
 
+  std::string DebugString() const {
+    std::vector<std::string> name_vector;
+    for (auto const& type : registry_arg_types_) {
+      name_vector.push_back(types::DataType_Name(type));
+    }
+    return absl::Substitute("$0($1)", name_, absl::StrJoin(name_vector, ","));
+  }
+
   const std::vector<types::DataType> registry_arg_types() { return registry_arg_types_; }
 
   /**
@@ -135,7 +143,7 @@ class Registry : public BaseUDFRegistry {
     auto key = RegistryKey(name, registry_arg_types);
     auto it = map_.find(key);
     if (it == map_.end()) {
-      return error::NotFound("No UDF with provided arguments");
+      return error::NotFound("No UDF matching $0 found.", key.DebugString());
     }
     return it->second.get();
   }

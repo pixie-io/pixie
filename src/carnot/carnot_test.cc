@@ -1004,5 +1004,52 @@ TEST_F(CarnotTest, pass_logical_plan) {
   }
 }
 
+// TODO(philkuz) enable when we add the udfs for metadata. This works if you define the
+// pod_id_to_pod_name udf.
+TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
+  // Test to make sure that metadata can actually compile and work in the executor.
+  // This test does not actually test to make sure that the AgentMetadataState works properly.
+  std::string query = absl::StrJoin(
+      {
+          "df = From(table='big_test_table', select=['string_groups', '_attr_pod_id'])",
+          "bdf = df.Filter(fn=lambda r: r.attr.pod_name == 'pl/name')",
+          "cdf = bdf.Result(name='logical_plan')",
+      },
+      "\n");
+  compiler::Compiler compiler;
+  int64_t current_time = 0;
+  std::string table_name = "logical_plan";
+
+  // Create a CompilerState obj using the relation map and grabbing the current time.
+
+  pl::StatusOr<std::unique_ptr<compiler::RegistryInfo>> registry_info_status =
+      udfexporter::ExportUDFInfo();
+  ASSERT_OK(registry_info_status);
+  std::unique_ptr<compiler::RegistryInfo> registry_info = registry_info_status.ConsumeValueOrDie();
+
+  std::unique_ptr<compiler::CompilerState> compiler_state =
+      std::make_unique<compiler::CompilerState>(table_store_->GetRelationMap(), registry_info.get(),
+                                                current_time);
+  StatusOr<planpb::Plan> logical_plan_status =
+      compiler.Compile(absl::Substitute(query, table_name), compiler_state.get());
+  ASSERT_OK(logical_plan_status);
+  planpb::Plan plan = logical_plan_status.ConsumeValueOrDie();
+  ASSERT_OK(carnot_->ExecutePlan(plan));
+
+  auto table = table_store_->GetTable(table_name);
+  std::vector<int64_t> column_selector_vec({0, 1, 2});
+  ASSERT_EQ(table->NumColumns(), column_selector_vec.size());
+
+  for (int64_t i = 0; i < table->NumBatches(); i++) {
+    auto rb = table->GetRowBatch(i, column_selector_vec, arrow::default_memory_pool())
+                  .ConsumeValueOrDie();
+    for (int64_t j = 0; j < table->NumColumns(); j++) {
+      // Filters currently don't get rid of batches, but do keep around empty batches.
+      EXPECT_TRUE(rb->ColumnAt(j)->Equals(
+          types::ToArrow(std::vector<types::StringValue>({}), arrow::default_memory_pool())));
+    }
+  }
+}
+
 }  // namespace carnot
 }  // namespace pl

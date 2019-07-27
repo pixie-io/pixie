@@ -50,6 +50,21 @@ scalar_udfs {
   exec_arg_types: FLOAT64
   return_type:  FLOAT64
 }
+scalar_udfs {
+  name: "pl.upid_to_service_id"
+  exec_arg_types: INT64
+  return_type: STRING
+}
+scalar_udfs {
+  name: "pl.upid_to_service_name"
+  exec_arg_types: INT64
+  return_type: STRING
+}
+scalar_udfs {
+  name: "pl.service_id_to_service_name"
+  exec_arg_types: STRING
+  return_type: STRING
+}
 udas {
   name: "pl.count"
   update_arg_types: FLOAT64

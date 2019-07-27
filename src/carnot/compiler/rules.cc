@@ -464,7 +464,7 @@ StatusOr<bool> MetadataFunctionFormatRule::Apply(IRNode* ir_node) const {
 StatusOr<MetadataLiteralIR*> MetadataFunctionFormatRule::WrapLiteral(
     DataIR* data, MetadataProperty* md_property) const {
   if (!md_property->ExprFitsFormat(data)) {
-    return data->CreateIRNodeError("$0 not formatted properly for metadata operation. Expected $1.",
+    return data->CreateIRNodeError("$0 not formatted properly for metadata operation. Expected $1",
                                    data->type_string(), md_property->ExplainFormat());
   }
   PL_ASSIGN_OR_RETURN(MetadataLiteralIR * literal,
@@ -622,14 +622,30 @@ Status MetadataResolverConversionRule::AddMetadataConversionFns(
     PL_ASSIGN_OR_RETURN(FuncIR * conversion_func, graph->MakeNode<FuncIR>());
     PL_ASSIGN_OR_RETURN(std::string key_column,
                         FindKeyColumn(parent_relation, md_property, md_resolver));
+
     PL_ASSIGN_OR_RETURN(ColumnIR * column_ir, graph->MakeNode<ColumnIR>());
     PL_RETURN_IF_ERROR(column_ir->Init(key_column, md_resolver->ast_node()));
     int64_t parent_relation_idx = parent_relation.GetColumnIndex(key_column);
     PL_ASSIGN_OR_RETURN(std::string func_name, md_property->UDFName(key_column));
     column_ir->ResolveColumn(parent_relation_idx, md_property->column_type());
+
+    std::vector<types::DataType> children_data_types = {
+        parent_relation.GetColumnType(parent_relation_idx)};
     PL_RETURN_IF_ERROR(conversion_func->Init({FuncIR::Opcode::non_op, "", func_name},
                                              ASTWalker::kRunTimeFuncPrefix, {column_ir}, false,
                                              md_resolver->ast_node()));
+    PL_ASSIGN_OR_RETURN(types::DataType out_type,
+                        compiler_state_->registry_info()->GetUDF(conversion_func->func_name(),
+                                                                 children_data_types));
+    conversion_func->set_func_id(
+        compiler_state_->GetUDFID(RegistryKey(conversion_func->func_name(), children_data_types)));
+
+    // Conversion Func.
+    DCHECK_EQ(out_type, md_property->column_type())
+        << "Expected the parent_relation key column type and metadata property type to match.";
+
+    conversion_func->SetOutputDataType(out_type);
+    conversion_func->SetArgsTypes(children_data_types);
     col_exprs->emplace_back(md_property->GetColumnRepr(), conversion_func);
   }
   return Status::OK();

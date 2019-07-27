@@ -53,8 +53,8 @@ class CarnotTestUtils {
   static std::shared_ptr<table_store::Table> BigTestTable() {
     table_store::schema::Relation rel(
         {types::DataType::TIME64NS, types::DataType::FLOAT64, types::DataType::INT64,
-         types::DataType::INT64, types::DataType::STRING},
-        {"time_", "col2", "col3", "num_groups", "string_groups"});
+         types::DataType::INT64, types::DataType::STRING, types::DataType::STRING},
+        {"time_", "col2", "col3", "num_groups", "string_groups", "_attr_pod_id"});
 
     auto table = std::make_shared<table_store::Table>(rel);
 
@@ -63,6 +63,7 @@ class CarnotTestUtils {
     auto col3 = table->GetColumn(2);
     auto col4 = table->GetColumn(3);
     auto col5 = table->GetColumn(4);
+    auto col6 = table->GetColumn(5);
 
     for (const auto& pair : split_idx) {
       std::vector<types::Int64Value> col1_batch(big_test_col1.begin() + pair.first,
@@ -84,6 +85,9 @@ class CarnotTestUtils {
       std::vector<types::StringValue> col5_batch(big_test_strings.begin() + pair.first,
                                                  big_test_strings.begin() + pair.second);
       EXPECT_OK(col5->AddBatch(types::ToArrow(col5_batch, arrow::default_memory_pool())));
+      // Column 6 coopies the same value from string value, it just makes sure that everything
+      // works.
+      EXPECT_OK(col6->AddBatch(types::ToArrow(col5_batch, arrow::default_memory_pool())));
     }
     return table;
   }
