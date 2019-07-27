@@ -27,12 +27,12 @@ using ::testing::_;
 const char* kExtraScalarUDFs = R"proto(
 scalar_udfs {
   name: "pl.upid_to_service_id"
-  exec_arg_types: INT64
+  exec_arg_types: UINT128
   return_type: STRING
 }
 scalar_udfs {
   name: "pl.upid_to_service_name"
-  exec_arg_types: INT64
+  exec_arg_types: UINT128
   return_type: STRING
 }
 scalar_udfs {
@@ -42,12 +42,12 @@ scalar_udfs {
 }
 scalar_udfs {
   name: "pl.upid_to_pod_id"
-  exec_arg_types: INT64
+  exec_arg_types: UINT128
   return_type: STRING
 }
 scalar_udfs {
   name: "pl.upid_to_pod_name"
-  exec_arg_types: INT64
+  exec_arg_types: UINT128
   return_type: STRING
 }
 scalar_udfs {
@@ -93,7 +93,7 @@ class CompilerTest : public ::testing::Test {
         "cpu", table_store::schema::Relation(
                    std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
                                                  types::DataType::FLOAT64, types::DataType::FLOAT64,
-                                                 types::DataType::INT64}),
+                                                 types::DataType::UINT128}),
                    std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2", "upid"})));
     cgroups_relation_ = table_store::schema::Relation(
         std::vector<types::DataType>(
@@ -1140,7 +1140,7 @@ nodes {
         column_types: FLOAT64
         column_types: FLOAT64
         column_types: FLOAT64
-        column_types: INT64
+        column_types: UINT128
       }
     }
   }
@@ -1153,7 +1153,7 @@ nodes {
         column_types: FLOAT64
         column_types: FLOAT64
         column_types: FLOAT64
-        column_types: INT64
+        column_types: UINT128
         column_names: "count"
         column_names: "cpu0"
         column_names: "cpu1"
@@ -1216,7 +1216,7 @@ nodes {
         column_types: FLOAT64
         column_types: FLOAT64
         column_types: FLOAT64
-        column_types: INT64
+        column_types: UINT128
       }
     }
   }
@@ -1258,7 +1258,7 @@ nodes {
               }
             }
             id: 1
-            args_data_types: INT64
+            args_data_types: UINT128
           }
         }
         column_names: "count"
@@ -1330,7 +1330,7 @@ nodes {
         column_types: FLOAT64
         column_types: FLOAT64
         column_types: FLOAT64
-        column_types: INT64
+        column_types: UINT128
         column_types: STRING
         column_names: "count"
         column_names: "cpu0"
@@ -1381,7 +1381,7 @@ nodes {
         column_types: FLOAT64
         column_types: FLOAT64
         column_types: FLOAT64
-        column_types: INT64
+        column_types: UINT128
       }
     }
   }
@@ -1422,7 +1422,7 @@ nodes {
                 index: 4
               }
             }
-            args_data_types: INT64
+            args_data_types: UINT128
             id: 0
           }
         }
@@ -1506,7 +1506,7 @@ nodes {
         column_types: FLOAT64
         column_types: FLOAT64
         column_types: FLOAT64
-        column_types: INT64
+        column_types: UINT128
       }
     }
   }
@@ -1547,7 +1547,7 @@ nodes {
                 index: 4
               }
             }
-            args_data_types: INT64
+            args_data_types: UINT128
             id: 0
           }
         }
@@ -1641,7 +1641,7 @@ nodes {
         column_types: FLOAT64
         column_types: FLOAT64
         column_types: FLOAT64
-        column_types: INT64
+        column_types: UINT128
       }
     }
   }
@@ -1683,7 +1683,7 @@ nodes {
               }
             }
             id: 0
-            args_data_types: INT64
+            args_data_types: UINT128
           }
         }
         column_names: "count"
@@ -1801,7 +1801,7 @@ nodes {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
         name: "out"
-        column_types: INT64
+        column_types: UINT128
         column_types: STRING
         column_types: FLOAT64
         column_names: "upid"
@@ -1967,7 +1967,7 @@ nodes {
         column_types: FLOAT64
         column_types: FLOAT64
         column_types: FLOAT64
-        column_types: INT64
+        column_types: UINT128
       }
     }
   }
@@ -2009,7 +2009,7 @@ nodes {
               }
             }
             id: 1
-            args_data_types: INT64
+            args_data_types: UINT128
           }
         }
         column_names: "count"

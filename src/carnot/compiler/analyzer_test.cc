@@ -52,12 +52,12 @@ scalar_udfs {
 }
 scalar_udfs {
   name: "pl.upid_to_service_id"
-  exec_arg_types: INT64
+  exec_arg_types: UINT128
   return_type: STRING
 }
 scalar_udfs {
   name: "pl.upid_to_service_name"
-  exec_arg_types: INT64
+  exec_arg_types: UINT128
   return_type: STRING
 }
 scalar_udfs {
@@ -107,7 +107,7 @@ class AnalyzerTest : public ::testing::Test {
     cpu_relation.AddColumn(types::FLOAT64, "cpu0");
     cpu_relation.AddColumn(types::FLOAT64, "cpu1");
     cpu_relation.AddColumn(types::FLOAT64, "cpu2");
-    cpu_relation.AddColumn(types::INT64, MetadataProperty::kUniquePIDColumn);
+    cpu_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
     relation_map_->emplace("cpu", cpu_relation);
 
     table_store::schema::Relation non_float_relation;

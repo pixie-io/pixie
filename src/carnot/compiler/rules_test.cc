@@ -22,12 +22,12 @@ using testing::_;
 const char* kExtraScalarUDFs = R"proto(
 scalar_udfs {
   name: "pl.upid_to_service_id"
-  exec_arg_types: INT64
+  exec_arg_types: UINT128
   return_type: STRING
 }
 scalar_udfs {
   name: "pl.upid_to_service_name"
-  exec_arg_types: INT64
+  exec_arg_types: UINT128
   return_type: STRING
 }
 scalar_udfs {
@@ -37,12 +37,12 @@ scalar_udfs {
 }
 scalar_udfs {
   name: "pl.upid_to_pod_id"
-  exec_arg_types: INT64
+  exec_arg_types: UINT128
   return_type: STRING
 }
 scalar_udfs {
   name: "pl.upid_to_pod_name"
-  exec_arg_types: INT64
+  exec_arg_types: UINT128
   return_type: STRING
 }
 scalar_udfs {
@@ -1419,8 +1419,7 @@ TEST_F(MetadataResolverConversionTest, upid_conversion) {
   auto relation = table_store::schema::Relation(cpu_relation);
   MetadataType conversion_column = MetadataType::UPID;
   std::string conversion_column_str = MetadataProperty::GetMetadataString(conversion_column);
-  // TODO(philkuz) with the addition of INT128 update this.
-  relation.AddColumn(types::DataType::INT64, conversion_column_str);
+  relation.AddColumn(types::DataType::UINT128, conversion_column_str);
   EXPECT_OK(mem_src->SetRelation(relation));
   NameMetadataProperty property(MetadataType::POD_NAME, {MetadataType::UPID});
   MetadataResolverIR* md_resolver = MakeMetadataResolver(mem_src);
@@ -1496,7 +1495,6 @@ TEST_F(MetadataResolverConversionTest, alternative_column) {
   auto relation = table_store::schema::Relation(cpu_relation);
   MetadataType conversion_column = MetadataType::POD_ID;
   std::string conversion_column_str = MetadataProperty::FormatMetadataColumn(conversion_column);
-  // TODO(philkuz) with the addition of INT128 update this.
   relation.AddColumn(types::DataType::STRING, conversion_column_str);
   EXPECT_OK(mem_src->SetRelation(relation));
   NameMetadataProperty property(MetadataType::POD_NAME, {MetadataType::UPID, MetadataType::POD_ID});
@@ -1582,8 +1580,7 @@ TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
   MetadataType conversion_column1 = MetadataType::UPID;
   std::string conversion_column1_str = MetadataProperty::FormatMetadataColumn(conversion_column1);
   MetadataType conversion_column2 = MetadataType::POD_ID;
-  // TODO(philkuz) with the addition of INT128 update this.
-  relation.AddColumn(types::DataType::INT64,
+  relation.AddColumn(types::DataType::UINT128,
                      MetadataProperty::FormatMetadataColumn(conversion_column1));
   relation.AddColumn(types::DataType::STRING,
                      MetadataProperty::FormatMetadataColumn(conversion_column2));
@@ -1643,8 +1640,7 @@ TEST_F(MetadataResolverConversionTest, multiple_metadata_columns) {
   auto relation = table_store::schema::Relation(cpu_relation);
   MetadataType conversion_column = MetadataType::UPID;
   std::string conversion_column_str = MetadataProperty::GetMetadataString(conversion_column);
-  // TODO(philkuz) with the addition of INT128 update this.
-  relation.AddColumn(types::DataType::INT64, conversion_column_str);
+  relation.AddColumn(types::DataType::UINT128, conversion_column_str);
   EXPECT_OK(mem_src->SetRelation(relation));
   NameMetadataProperty property1(MetadataType::POD_NAME, {conversion_column});
   NameMetadataProperty property2(MetadataType::SERVICE_NAME, {conversion_column});
@@ -1701,8 +1697,7 @@ TEST_F(MetadataResolverConversionTest, remove_extra_resolver) {
   auto relation = table_store::schema::Relation(cpu_relation);
   MetadataType conversion_column = MetadataType::UPID;
   std::string conversion_column_str = MetadataProperty::GetMetadataString(conversion_column);
-  // TODO(philkuz) with the addition of INT128 update this.
-  relation.AddColumn(types::DataType::INT64, conversion_column_str);
+  relation.AddColumn(types::DataType::UINT128, conversion_column_str);
   EXPECT_OK(mem_src->SetRelation(relation));
   NameMetadataProperty property(MetadataType::POD_NAME, {conversion_column});
 
