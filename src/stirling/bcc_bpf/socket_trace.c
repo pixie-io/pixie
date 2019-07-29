@@ -8,6 +8,10 @@
 #include "src/stirling/bcc_bpf/log_event.h"
 #include "src/stirling/bcc_bpf/logging.h"
 
+// TODO(yzhao): Investigate the performance overhead of active_*_info_map.delete(id), when id is not
+// in the map. If it's significant, change to only call delete() after knowing that id is in the
+// map.
+
 // This keeps instruction count below BPF's limit of 4096 per probe.
 // TODO(yzhao): Investigate using tail call to reuse stack space to support loop.
 #define LOOP_LIMIT 20
@@ -24,11 +28,14 @@ BPF_PERF_OUTPUT(socket_close_conns);
 
 struct connect_info_t {
   struct sockaddr_in6 addr;
-  int fd;
+  // TODO(PL-693): Use bpf_getsockopt() to detect socket type and address family. So we can unify
+  // the entry probes of accept() & connect().
+  u32 fd;
 } __attribute__((__packed__, aligned(8)));
 
 struct accept_info_t {
   struct sockaddr* addr;
+  // TODO(yzhao): This is not used, remove.
   size_t* addrlen;
 } __attribute__((__packed__, aligned(8)));
 
@@ -317,43 +324,39 @@ static __inline void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd,
 
 static __inline int probe_entry_connect_impl(struct pt_regs* ctx, int sockfd,
                                              const struct sockaddr* addr, size_t addrlen) {
-  u64 id = bpf_get_current_pid_tgid();
+  if (sockfd < 0) {
+    return 0;
+  }
 
   // Only record IP (IPV4 and IPV6) connections.
   if (!(addr->sa_family == AF_INET || addr->sa_family == AF_INET6)) {
     return 0;
   }
 
+  u64 id = bpf_get_current_pid_tgid();
   struct connect_info_t connect_info;
-
-  bpf_probe_read(&connect_info.addr, sizeof(struct sockaddr_in6), (const void*)addr);
+  memset(&connect_info, 0, sizeof(struct connect_info_t));
   connect_info.fd = sockfd;
+  bpf_probe_read(&connect_info.addr, sizeof(struct sockaddr_in6), (const void*)addr);
 
   active_connect_info_map.update(&id, &connect_info);
 
   return 0;
 }
 
-static __inline int probe_ret_connect_impl(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
-  u32 tgid = id >> 32;
-
+static __inline int probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
   int ret_val = PT_REGS_RC(ctx);
   if (ret_val < 0) {
-    goto done;
+    return 0;
   }
 
-  struct connect_info_t* connect_info = active_connect_info_map.lookup(&id);
+  const struct connect_info_t* connect_info = active_connect_info_map.lookup(&id);
   if (connect_info == NULL) {
-    goto done;
+    return 0;
   }
 
+  u32 tgid = id >> 32;
   submit_new_conn(ctx, tgid, (u32)connect_info->fd, connect_info->addr);
-
-done:
-  // Regardless of what happened, after accept() returns, there is no need to track the sock_addr
-  // being accepted during the accept() call, therefore we can remove the entry.
-  active_connect_info_map.delete(&id);
   return 0;
 }
 
@@ -372,6 +375,7 @@ static __inline int probe_entry_accept_impl(struct pt_regs* ctx, int sockfd, str
   }
 
   struct accept_info_t accept_info;
+  memset(&accept_info, 0, sizeof(struct accept_info_t));
   accept_info.addr = addr;
   accept_info.addrlen = addrlen;
   active_accept_info_map.update(&id, &accept_info);
@@ -380,30 +384,24 @@ static __inline int probe_entry_accept_impl(struct pt_regs* ctx, int sockfd, str
 }
 
 // Read the sockaddr values and write to the output buffer.
-static __inline int probe_ret_accept_impl(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
-  u32 tgid = id >> 32;
-
+static __inline int probe_ret_accept_impl(struct pt_regs* ctx, u64 id) {
   int ret_fd = PT_REGS_RC(ctx);
   if (ret_fd < 0) {
-    goto done;
+    return 0;
   }
 
   struct accept_info_t* accept_info = active_accept_info_map.lookup(&id);
   if (accept_info == NULL) {
-    goto done;
+    return 0;
   }
 
   // Only record IP (IPV4 and IPV6) connections.
   if (!(accept_info->addr->sa_family == AF_INET || accept_info->addr->sa_family == AF_INET6)) {
-    goto done;
+    return 0;
   }
 
+  u32 tgid = id >> 32;
   submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)accept_info->addr));
-done:
-  // Regardless of what happened, after accept() returns, there is no need to track the sock_addr
-  // being accepted during the accept() call, therefore we can remove the entry.
-  active_accept_info_map.delete(&id);
   return 0;
 }
 
@@ -558,30 +556,27 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const TrafficDirect
   }
 }
 
-static __inline int probe_ret_write_send(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
-  u32 tgid = id >> 32;
-
+static __inline int probe_ret_write_send(struct pt_regs* ctx, u64 id) {
   ssize_t bytes_written = PT_REGS_RC(ctx);
   if (bytes_written <= 0) {
     // This write() call failed, or has nothing to write.
-    goto done;
+    return 0;
   }
 
   const struct data_info_t* write_info = active_write_info_map.lookup(&id);
   if (write_info == NULL) {
-    goto done;
+    return 0;
   }
 
-  u64 tgid_fd = ((u64)tgid << 32) | (u32)write_info->fd;
+  u64 tgid_fd = ((id >> 32) << 32) | write_info->fd;
   struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
   if (conn_info == NULL) {
-    goto done;
+    return 0;
   }
 
   struct socket_data_event_t* event = fill_event(kEgress, conn_info);
   if (event == NULL) {
-    goto done;
+    return 0;
   }
 
   // TODO(yzhao): Same TODO for split the interface.
@@ -591,11 +586,6 @@ static __inline int probe_ret_write_send(struct pt_regs* ctx) {
     perf_submit_iovecs(ctx, kEgress, write_info->iov, write_info->iovlen, bytes_written, conn_info,
                        event);
   }
-
-done:
-  // Regardless of what happened, after write/send/sendto() returns, there is no need to track the
-  // fd & buf being accepted by write/send/sendto() call, therefore we can remove the entry.
-  active_write_info_map.delete(&id);
   return 0;
 }
 
@@ -622,27 +612,25 @@ static __inline int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf
   return 0;
 }
 
-static __inline int probe_ret_read_recv(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
-  u32 tgid = id >> 32;
-
+static __inline int probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
   ssize_t bytes_read = PT_REGS_RC(ctx);
 
   if (bytes_read <= 0) {
     // This read() call failed, or read nothing.
-    goto done;
+    return 0;
   }
 
   const struct data_info_t* read_info = active_read_info_map.lookup(&id);
   if (read_info == NULL) {
-    goto done;
+    return 0;
   }
 
   const char* buf = read_info->buf;
 
+  u32 tgid = id >> 32;
   struct conn_info_t* conn_info = get_conn_info(tgid, read_info->fd);
   if (conn_info == NULL) {
-    goto done;
+    return 0;
   }
 
   // TODO(yzhao): Same TODO for split the interface.
@@ -663,12 +651,12 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx) {
 
   // Filter for request or response based on control flags and protocol type.
   if (!should_trace(&conn_info->traffic_class)) {
-    goto done;
+    return 0;
   }
 
   struct socket_data_event_t* event = fill_event(kIngress, conn_info);
   if (event == NULL) {
-    goto done;
+    return 0;
   }
 
   // TODO(yzhao): Same TODO for split the interface.
@@ -681,11 +669,6 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx) {
     perf_submit_iovecs(ctx, kIngress, read_info->iov, read_info->iovlen, bytes_read, conn_info,
                        event);
   }
-
-done:
-  // Regardless of what happened, after write/send() returns, there is no need to track the fd & buf
-  // being accepted by write/send() call, therefore we can remove the entry.
-  active_read_info_map.delete(&id);
   return 0;
 }
 
@@ -719,51 +702,91 @@ int syscall__probe_entry_connect(struct pt_regs* ctx, int sockfd, struct sockadd
   return probe_entry_connect_impl(ctx, sockfd, addr, addrlen);
 }
 
-int syscall__probe_ret_connect(struct pt_regs* ctx) { return probe_ret_connect_impl(ctx); }
+int syscall__probe_ret_connect(struct pt_regs* ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  probe_ret_connect_impl(ctx, id);
+  active_accept_info_map.delete(&id);
+  return 0;
+}
 
 int syscall__probe_entry_accept(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                 size_t* addrlen) {
   return probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
 }
 
-int syscall__probe_ret_accept(struct pt_regs* ctx) { return probe_ret_accept_impl(ctx); }
+int syscall__probe_ret_accept(struct pt_regs* ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  probe_ret_accept_impl(ctx, id);
+  active_accept_info_map.delete(&id);
+  return 0;
+}
 
 int syscall__probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                  size_t* addrlen) {
   return probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
 }
 
-int syscall__probe_ret_accept4(struct pt_regs* ctx) { return probe_ret_accept_impl(ctx); }
+int syscall__probe_ret_accept4(struct pt_regs* ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  probe_ret_accept_impl(ctx, id);
+  active_accept_info_map.delete(&id);
+  return 0;
+}
 
 int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
 }
 
-int syscall__probe_ret_write(struct pt_regs* ctx) { return probe_ret_write_send(ctx); }
+int syscall__probe_ret_write(struct pt_regs* ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  probe_ret_write_send(ctx, id);
+  active_write_info_map.delete(&id);
+  return 0;
+}
 
 int syscall__probe_entry_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
 }
 
-int syscall__probe_ret_send(struct pt_regs* ctx) { return probe_ret_write_send(ctx); }
+int syscall__probe_ret_send(struct pt_regs* ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  probe_ret_write_send(ctx, id);
+  active_write_info_map.delete(&id);
+  return 0;
+}
 
 int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_read_recv(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
 }
 
-int syscall__probe_ret_read(struct pt_regs* ctx) { return probe_ret_read_recv(ctx); }
+int syscall__probe_ret_read(struct pt_regs* ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  probe_ret_read_recv(ctx, id);
+  active_read_info_map.delete(&id);
+  return 0;
+}
 
 int syscall__probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_read_recv(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
 }
 
-int syscall__probe_ret_recv(struct pt_regs* ctx) { return probe_ret_read_recv(ctx); }
+int syscall__probe_ret_recv(struct pt_regs* ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  probe_ret_read_recv(ctx, id);
+  active_read_info_map.delete(&id);
+  return 0;
+}
 
 int syscall__probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   return probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
 }
 
-int syscall__probe_ret_sendto(struct pt_regs* ctx) { return probe_ret_write_send(ctx); }
+int syscall__probe_ret_sendto(struct pt_regs* ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  probe_ret_write_send(ctx, id);
+  active_write_info_map.delete(&id);
+  return 0;
+}
 
 int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int fd, const struct user_msghdr* msghdr) {
   if (msghdr == NULL) {
@@ -773,7 +796,12 @@ int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int fd, const struct user_
                                 msghdr->msg_iovlen);
 }
 
-int syscall__probe_ret_sendmsg(struct pt_regs* ctx) { return probe_ret_write_send(ctx); }
+int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  probe_ret_write_send(ctx, id);
+  active_write_info_map.delete(&id);
+  return 0;
+}
 
 int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int fd, struct user_msghdr* msghdr) {
   if (msghdr == NULL) {
@@ -783,7 +811,12 @@ int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int fd, struct user_msghdr
                                msghdr->msg_iovlen);
 }
 
-int syscall__probe_ret_recvmsg(struct pt_regs* ctx) { return probe_ret_read_recv(ctx); }
+int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  probe_ret_read_recv(ctx, id);
+  active_read_info_map.delete(&id);
+  return 0;
+}
 
 int syscall__probe_entry_writev(struct pt_regs* ctx, int fd, const struct iovec* iov, int iovlen) {
   if (iov == NULL || iovlen <= 0) {
@@ -792,7 +825,12 @@ int syscall__probe_entry_writev(struct pt_regs* ctx, int fd, const struct iovec*
   return probe_entry_write_send(ctx, fd, /*buf*/ NULL, /*count*/ 0, iov, iovlen);
 }
 
-int syscall__probe_ret_writev(struct pt_regs* ctx) { return probe_ret_write_send(ctx); }
+int syscall__probe_ret_writev(struct pt_regs* ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  probe_ret_write_send(ctx, id);
+  active_write_info_map.delete(&id);
+  return 0;
+}
 
 int syscall__probe_entry_readv(struct pt_regs* ctx, int fd, struct iovec* iov, int iovlen) {
   if (iov == NULL || iovlen <= 0) {
@@ -801,7 +839,12 @@ int syscall__probe_entry_readv(struct pt_regs* ctx, int fd, struct iovec* iov, i
   return probe_entry_read_recv(ctx, fd, /*buf*/ NULL, /*count*/ 0, iov, iovlen);
 }
 
-int syscall__probe_ret_readv(struct pt_regs* ctx) { return probe_ret_read_recv(ctx); }
+int syscall__probe_ret_readv(struct pt_regs* ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  probe_ret_read_recv(ctx, id);
+  active_read_info_map.delete(&id);
+  return 0;
+}
 
 int syscall__probe_close(struct pt_regs* ctx, unsigned int fd) { return probe_close_impl(ctx, fd); }
 
