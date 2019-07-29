@@ -13,6 +13,9 @@
 #include "src/table_store/table/table_store.h"
 
 namespace pl {
+namespace md {
+class AgentMetadataState;
+}
 namespace carnot {
 namespace exec {
 
@@ -74,10 +77,15 @@ class ExecState {
 
   bool keep_running() { return keep_running_; }
 
+  void set_metadata_state(std::shared_ptr<const md::AgentMetadataState> metadata_state) {
+    metadata_state_ = metadata_state;
+  }
+
  private:
   udf::ScalarUDFRegistry* scalar_udf_registry_;
   udf::UDARegistry* uda_registry_;
   std::shared_ptr<TableStore> table_store_;
+  std::shared_ptr<const md::AgentMetadataState> metadata_state_;
   std::map<int64_t, udf::ScalarUDFDefinition*> id_to_scalar_udf_map_;
   std::map<int64_t, udf::UDADefinition*> id_to_uda_map_;
   bool keep_running_ = true;

@@ -73,6 +73,26 @@ TEST_F(CarnotTest, basic) {
   EXPECT_TRUE(rb2->ColumnAt(1)->Equals(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 }
 
+TEST_F(CarnotTest, register_metadata) {
+  auto callback_calls = 0;
+  carnot_->RegisterAgentMetadataCallback(
+      [&callback_calls]() -> std::shared_ptr<const md::AgentMetadataState> {
+        callback_calls++;
+        return nullptr;
+      });
+
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='test_table', select=['col1', 'col2']).Result(name='test_output')",
+      },
+      "\n");
+  auto s = carnot_->ExecuteQuery(query, 0);
+  ASSERT_OK(s);
+  // Check that the function was registered correctly and that it is called once during query
+  // execution.
+  EXPECT_EQ(1, callback_calls);
+}
+
 TEST_F(CarnotTest, map_test) {
   std::vector<types::Float64Value> col1_in1 = {1.5, 3.2, 8.3};
   std::vector<types::Float64Value> col1_in2 = {5.1, 11.1};

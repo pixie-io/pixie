@@ -48,6 +48,10 @@ class CarnotImpl final : public Carnot {
 
   StatusOr<CarnotQueryResult> ExecutePlan(const planpb::Plan& plan) override;
 
+  void RegisterAgentMetadataCallback(AgentMetadataCallbackFunc func) override {
+    agent_md_callback_ = func;
+  };
+
  private:
   Status RegisterUDFs(exec::ExecState* exec_state, plan::Plan* plan);
 
@@ -58,6 +62,14 @@ class CarnotImpl final : public Carnot {
    */
   exec::TableStore* table_store() { return engine_state_->table_store(); }
 
+  std::shared_ptr<const md::AgentMetadataState> GetMetadataState() {
+    if (!agent_md_callback_) {
+      return nullptr;
+    }
+    return agent_md_callback_();
+  }
+
+  AgentMetadataCallbackFunc agent_md_callback_;
   compiler::Compiler compiler_;
   std::unique_ptr<EngineState> engine_state_;
 };
@@ -150,6 +162,14 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
   // For each of the plan fragments in the plan, execute the query.
   std::vector<std::string> output_table_strs;
   auto exec_state = engine_state_->CreateExecState();
+
+  // TODO(michelle/zasgar): We should periodically update the metadata state for long-running
+  // queries after a certain time duration or number of row batches processed. For now, we use a
+  // single metadata state throughout the entire length of the query.
+  auto metadata_state = GetMetadataState();
+  if (metadata_state) {
+    exec_state->set_metadata_state(metadata_state);
+  }
 
   PL_RETURN_IF_ERROR(RegisterUDFs(exec_state.get(), &plan));
 

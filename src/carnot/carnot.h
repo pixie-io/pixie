@@ -12,6 +12,9 @@
 #include "src/table_store/table_store.h"
 
 namespace pl {
+namespace md {
+class AgentMetadataState;
+}
 namespace carnot {
 
 struct CarnotQueryResult {
@@ -41,6 +44,8 @@ class Carnot : public NotCopyable {
  public:
   static StatusOr<std::unique_ptr<Carnot>> Create(
       std::shared_ptr<table_store::TableStore> table_store);
+
+  using AgentMetadataCallbackFunc = std::function<std::shared_ptr<const md::AgentMetadataState>()>;
   virtual ~Carnot() = default;
 
   /**
@@ -59,6 +64,11 @@ class Carnot : public NotCopyable {
    * @return a Carnot Return with output_tables if successful. Error status otherwise.
    */
   virtual StatusOr<CarnotQueryResult> ExecutePlan(const planpb::Plan& plan) = 0;
+
+  /**
+   * Registers the callback for updating the agents metadata state.
+   */
+  virtual void RegisterAgentMetadataCallback(AgentMetadataCallbackFunc func) = 0;
 };
 
 }  // namespace carnot

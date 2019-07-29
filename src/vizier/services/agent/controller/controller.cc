@@ -107,6 +107,10 @@ Status Controller::Init() {
     }
   });
 
+  // Register the Carnot callback for metadata.
+  carnot_->RegisterAgentMetadataCallback(
+      std::bind(&pl::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));
+
   return Status::OK();
 }
 
