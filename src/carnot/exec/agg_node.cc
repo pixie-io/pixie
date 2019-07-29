@@ -118,7 +118,10 @@ Status AggNode::InitImpl(const plan::Operator& plan_node, const RowDescriptor& o
   return CreateColumnMapping();
 }
 
-Status AggNode::PrepareImpl(ExecState*) { return Status::OK(); }
+Status AggNode::PrepareImpl(ExecState* exec_state) {
+  function_ctx_ = exec_state->CreateFunctionContext();
+  return Status::OK();
+}
 
 Status AggNode::OpenImpl(ExecState* exec_state) {
   if (HasNoGroups()) {
@@ -170,7 +173,7 @@ Status AggNode::AggregateGroupByNone(ExecState* exec_state, const RowBatch& rb) 
       auto builder = types::MakeArrowBuilder(uda_info.def->finalize_return_type(),
                                              exec_state->exec_mem_pool());
       PL_RETURN_IF_ERROR(
-          uda_info.def->FinalizeArrow(uda_info.uda.get(), nullptr /*ctx*/, builder.get()));
+          uda_info.def->FinalizeArrow(uda_info.uda.get(), function_ctx_.get(), builder.get()));
       SharedArray out_col;
       PL_RETURN_IF_ERROR(builder->Finish(&out_col));
       PL_RETURN_IF_ERROR(output_rb.AddColumn(out_col));
@@ -304,7 +307,7 @@ Status AggNode::ConvertAggHashMapToRowBatch(ExecState* exec_state, RowBatch* out
     PL_RETURN_IF_ERROR(EvaluateAggHashValue(exec_state, val));
     for (size_t i = 0; i < val->udas.size(); ++i) {
       const auto& uda_info = val->udas[i];
-      PL_RETURN_IF_ERROR(uda_info.def->FinalizeArrow(uda_info.uda.get(), nullptr /*ctx*/,
+      PL_RETURN_IF_ERROR(uda_info.def->FinalizeArrow(uda_info.uda.get(), function_ctx_.get(),
                                                      value_builders[i].get()));
     }
   }

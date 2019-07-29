@@ -79,6 +79,8 @@ class AggNode : public ProcessingNode {
   std::unique_ptr<table_store::schema::RowDescriptor> output_descriptor_;
   std::unique_ptr<table_store::schema::RowDescriptor> input_descriptor_;
 
+  std::unique_ptr<udf::FunctionContext> function_ctx_;
+
   // Variables specific to GroupByNone Agg.
   std::vector<UDAInfo> udas_no_groups_;
   // END: Variables specific to GroupByNone Agg.
