@@ -5,6 +5,7 @@
 #include <array>
 #include <cstdint>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -17,6 +18,9 @@
 #include "src/shared/types/types.h"
 
 namespace pl {
+namespace md {
+class AgentMetadataState;
+}
 namespace carnot {
 namespace udf {
 
@@ -24,7 +28,15 @@ namespace udf {
  * Function context contains contextual resources such as mempools that functions
  * can use while executing.
  */
-class FunctionContext {};
+class FunctionContext {
+ public:
+  explicit FunctionContext(std::shared_ptr<const md::AgentMetadataState> metadata_state)
+      : metadata_state_(metadata_state) {}
+  const pl::md::AgentMetadataState* metadata_state() const { return metadata_state_.get(); }
+
+ private:
+  std::shared_ptr<const pl::md::AgentMetadataState> metadata_state_;
+};
 
 /**
  * AnyUDF is the base class for all UDFs in carnot.

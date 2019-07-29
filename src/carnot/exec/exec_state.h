@@ -67,7 +67,7 @@ class ExecState {
   udf::UDADefinition* GetUDADefinition(int64_t id) { return id_to_uda_map_[id]; }
 
   std::unique_ptr<udf::FunctionContext> CreateFunctionContext() {
-    auto ctx = std::make_unique<udf::FunctionContext>();
+    auto ctx = std::make_unique<udf::FunctionContext>(metadata_state_);
     return ctx;
   }
 
