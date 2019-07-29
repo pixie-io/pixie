@@ -70,26 +70,25 @@ Status SocketTraceConnector::StopImpl() {
   return Status::OK();
 }
 
-void SocketTraceConnector::TransferDataImpl(uint32_t table_num,
-                                            types::ColumnWrapperRecordBatch* record_batch) {
+void SocketTraceConnector::TransferDataImpl(uint32_t table_num, DataTable* data_table) {
   CHECK_LT(table_num, kTables.size())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
-  CHECK(record_batch != nullptr) << "record_batch cannot be nullptr";
+  CHECK(data_table != nullptr);
 
   // TODO(oazizi): Should this run more frequently than TransferDataImpl?
   // This drains the relevant perf buffer, and causes Handle() callback functions to get called.
-  record_batch_ = record_batch;
+  data_table_ = data_table;
   ReadPerfBuffer(table_num);
-  record_batch_ = nullptr;
+  data_table_ = nullptr;
 
   switch (table_num) {
     case kHTTPTableNum:
-      TransferStreams<HTTPMessage>(kProtocolHTTP, record_batch);
-      TransferStreams<Frame>(kProtocolHTTP2, record_batch);
+      TransferStreams<HTTPMessage>(kProtocolHTTP, data_table);
+      TransferStreams<Frame>(kProtocolHTTP2, data_table);
       break;
     case kMySQLTableNum:
       // TODO(oazizi): Convert MySQL protocol to use streams.
-      // TransferStreams<MySQLMessage>(kProtocolMySQL, record_batch);
+      // TransferStreams<MySQLMessage>(kProtocolMySQL, data_table);
       break;
     default:
       CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
@@ -148,7 +147,7 @@ void SocketTraceConnector::HandleMySQLProbeOutput(void* cb_cookie, void* data, i
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   // TODO(oazizi): Use AcceptDataEvent() to handle reorderings.
-  connector->TransferMySQLEvent(SocketDataEvent(data), connector->record_batch_);
+  connector->TransferMySQLEvent(SocketDataEvent(data), connector->data_table_);
 }
 
 // This function is invoked by BCC runtime when a item in the perf buffer is not read and lost.
@@ -250,8 +249,7 @@ const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
 //-----------------------------------------------------------------------------
 
 template <class TMessageType>
-void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
-                                           types::ColumnWrapperRecordBatch* record_batch) {
+void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* data_table) {
   // TODO(oazizi): The single connection trackers model makes TransferStreams() inefficient,
   //               because it will get called multiple times, looping through all connection
   //               trackers, but selecting a mutually exclusive subset each time.
@@ -287,7 +285,7 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol,
       }
       auto& req_messages = req_data->template ExtractMessages<TMessageType>(MessageType::kRequests);
 
-      ProcessMessages<TMessageType>(tracker, &req_messages, &resp_messages, record_batch);
+      ProcessMessages<TMessageType>(tracker, &req_messages, &resp_messages, data_table);
 
       tracker.IterationTick();
 
@@ -311,17 +309,17 @@ template <class TMessageType>
 void SocketTraceConnector::ProcessMessages(const ConnectionTracker& conn_tracker,
                                            std::deque<TMessageType>* req_messages,
                                            std::deque<TMessageType>* resp_messages,
-                                           types::ColumnWrapperRecordBatch* record_batch) {
+                                           DataTable* data_table) {
   // TODO(oazizi): If we stick with this approach, resp_data could be converted back to vector.
   for (TMessageType& msg : *resp_messages) {
     if (!req_messages->empty()) {
       TraceRecord<TMessageType> record{&conn_tracker, std::move(req_messages->front()),
                                        std::move(msg)};
       req_messages->pop_front();
-      ConsumeMessage(std::move(record), record_batch);
+      ConsumeMessage(std::move(record), data_table);
     } else {
       TraceRecord<TMessageType> record{&conn_tracker, HTTPMessage(), std::move(msg)};
-      ConsumeMessage(std::move(record), record_batch);
+      ConsumeMessage(std::move(record), data_table);
     }
   }
   resp_messages->clear();
@@ -331,7 +329,7 @@ template <>
 void SocketTraceConnector::ProcessMessages(const ConnectionTracker& conn_tracker,
                                            std::deque<Frame>* req_messages,
                                            std::deque<Frame>* resp_messages,
-                                           types::ColumnWrapperRecordBatch* record_batch) {
+                                           DataTable* data_table) {
   std::map<uint32_t, std::vector<GRPCMessage>> reqs;
   std::map<uint32_t, std::vector<GRPCMessage>> resps;
 
@@ -348,7 +346,7 @@ void SocketTraceConnector::ProcessMessages(const ConnectionTracker& conn_tracker
     r.req.MarkFramesConsumed();
     r.resp.MarkFramesConsumed();
     TraceRecord<GRPCMessage> tmp{&conn_tracker, std::move(r.req), std::move(r.resp)};
-    ConsumeMessage(std::move(tmp), record_batch);
+    ConsumeMessage(std::move(tmp), data_table);
   }
 
   EraseConsumedFrames(req_messages);
@@ -356,8 +354,7 @@ void SocketTraceConnector::ProcessMessages(const ConnectionTracker& conn_tracker
 }
 
 template <class TMessageType>
-void SocketTraceConnector::ConsumeMessage(TraceRecord<TMessageType> record,
-                                          types::ColumnWrapperRecordBatch* record_batch) {
+void SocketTraceConnector::ConsumeMessage(TraceRecord<TMessageType> record, DataTable* data_table) {
   // Only allow certain records to be transferred upstream.
   if (SelectMessage(record)) {
     // Currently decompresses gzip content, but could handle other transformations too.
@@ -365,7 +362,7 @@ void SocketTraceConnector::ConsumeMessage(TraceRecord<TMessageType> record,
     PreProcessMessage(&record.resp_message);
 
     // Push data to the TableStore.
-    AppendMessage(std::move(record), record_batch);
+    AppendMessage(std::move(record), data_table);
   }
 }
 
@@ -417,9 +414,8 @@ HTTPContentType DetectContentType(const HTTPMessage& message) {
 }  // namespace
 
 template <>
-void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record,
-                                         types::ColumnWrapperRecordBatch* record_batch) {
-  CHECK_EQ(kHTTPTable.elements().size(), record_batch->size());
+void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record, DataTable* data_table) {
+  CHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
   const ConnectionTracker& conn_tracker = *record.tracker;
   HTTPMessage& req_message = record.req_message;
@@ -428,7 +424,7 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record,
   // Check for positive latencies.
   DCHECK_GE(resp_message.timestamp_ns, req_message.timestamp_ns);
 
-  RecordBuilder<&kHTTPTable> r(record_batch);
+  RecordBuilder<&kHTTPTable> r(data_table);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("pid")>(conn_tracker.pid());
   r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
@@ -451,9 +447,8 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record,
 }
 
 template <>
-void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record,
-                                         types::ColumnWrapperRecordBatch* record_batch) {
-  CHECK_EQ(kHTTPTable.elements().size(), record_batch->size());
+void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record, DataTable* data_table) {
+  CHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
   const ConnectionTracker& conn_tracker = *record.tracker;
   GRPCMessage& req_message = record.req_message;
@@ -461,7 +456,7 @@ void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record,
 
   DCHECK_GE(resp_message.timestamp_ns, req_message.timestamp_ns);
 
-  RecordBuilder<&kHTTPTable> r(record_batch);
+  RecordBuilder<&kHTTPTable> r(data_table);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("pid")>(conn_tracker.pid());
   r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
@@ -504,14 +499,13 @@ void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record,
 // MySQL TransferData Helpers
 //-----------------------------------------------------------------------------
 
-void SocketTraceConnector::TransferMySQLEvent(SocketDataEvent event,
-                                              types::ColumnWrapperRecordBatch* record_batch) {
+void SocketTraceConnector::TransferMySQLEvent(SocketDataEvent event, DataTable* data_table) {
   // TODO(chengruizhe/oazizi): Add connection info back, once MySQL uses a ConnectionTracker.
   int fd = -1;
   std::string ip = "-";
   int port = -1;
 
-  RecordBuilder<&kMySQLTable> r(record_batch);
+  RecordBuilder<&kMySQLTable> r(data_table);
   r.Append<r.ColIndex("time_")>(event.attr.timestamp_ns + ClockRealTimeOffset());
   r.Append<r.ColIndex("pid")>(event.attr.conn_id.pid);
   r.Append<r.ColIndex("pid_start_time")>(event.attr.conn_id.pid_start_time_ns);

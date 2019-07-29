@@ -67,23 +67,5 @@ class DataTableSchema {
   const ConstVectorView<DataElement> elements_;
 };
 
-// Initializes record_batch so that it has data fields that matches data_elements' spec.
-// Template to cover both ConstVectorView<DataElement> and std::vector<InfoClassElement>.
-// TODO(oazizi): No point in returning a Status for this function.
-template <class T>
-void InitRecordBatch(const T& data_elements, uint32_t target_capacity,
-                     types::ColumnWrapperRecordBatch* record_batch) {
-  for (const auto& element : data_elements) {
-    pl::types::DataType type = element.type();
-
-#define TYPE_CASE(_dt_)                           \
-  auto col = types::ColumnWrapper::Make(_dt_, 0); \
-  col->Reserve(target_capacity);                  \
-  record_batch->push_back(col);
-    PL_SWITCH_FOREACH_DATATYPE(type, TYPE_CASE);
-#undef TYPE_CASE
-  }
-}
-
 }  // namespace stirling
 }  // namespace pl

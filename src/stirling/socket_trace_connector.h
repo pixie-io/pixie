@@ -137,7 +137,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   Status InitImpl() override;
   Status StopImpl() override;
-  void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
+  void TransferDataImpl(uint32_t table_num, DataTable* data_table) override;
 
   Status Configure(TrafficProtocol protocol, uint64_t config_mask);
   Status TestOnlySetTargetPID(int64_t pid);
@@ -255,32 +255,29 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   void AcceptCloseConnEvent(conn_info_t conn_info);
 
   // Transfers the data from stream buffers (from AcceptDataEvent()) to record_batch.
-  void TransferStreamData(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch);
+  void TransferStreamData(uint32_t table_num, DataTable* data_table);
 
   // Transfer of an HTTP Response Event to the HTTP Response Table in the table store.
   template <class TMessageType>
-  void TransferStreams(TrafficProtocol protocol, types::ColumnWrapperRecordBatch* record_batch);
+  void TransferStreams(TrafficProtocol protocol, DataTable* data_table);
 
   template <class TMessageType>
   void ProcessMessages(const ConnectionTracker& conn_tracker,
                        std::deque<TMessageType>* req_messages,
-                       std::deque<TMessageType>* resp_messages,
-                       types::ColumnWrapperRecordBatch* record_batch);
+                       std::deque<TMessageType>* resp_messages, DataTable* data_table);
 
   template <class TMessageType>
-  static void ConsumeMessage(TraceRecord<TMessageType> record,
-                             types::ColumnWrapperRecordBatch* record_batch);
+  static void ConsumeMessage(TraceRecord<TMessageType> record, DataTable* data_table);
 
   template <class TMessageType>
   static bool SelectMessage(const TraceRecord<TMessageType>& record);
 
   template <class TMessageType>
-  static void AppendMessage(TraceRecord<TMessageType> record,
-                            types::ColumnWrapperRecordBatch* record_batch);
+  static void AppendMessage(TraceRecord<TMessageType> record, DataTable* data_table);
 
   // Transfer of a MySQL Event to the MySQL Table.
   // TODO(oazizi/yzhao): Change to use std::unique_ptr.
-  void TransferMySQLEvent(SocketDataEvent event, types::ColumnWrapperRecordBatch* record_batch);
+  void TransferMySQLEvent(SocketDataEvent event, DataTable* data_table);
 
   // Note that the inner map cannot be a vector, because there is no guaranteed order
   // in which events are read from perf buffers.
@@ -289,7 +286,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   std::unordered_map<uint64_t, std::map<uint64_t, ConnectionTracker> > connection_trackers_;
 
   // For MySQL tracing only. Will go away when MySQL uses streams.
-  types::ColumnWrapperRecordBatch* record_batch_ = nullptr;
+  DataTable* data_table_ = nullptr;
 
   std::vector<uint64_t> config_mask_;
 

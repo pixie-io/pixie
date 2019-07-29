@@ -25,7 +25,7 @@ Status CGroupStatsConnector::InitImpl() { return cgroup_mgr_->UpdateCGroupInfo()
 
 Status CGroupStatsConnector::StopImpl() { return Status::OK(); }
 
-void CGroupStatsConnector::TransferCGroupStatsTable(types::ColumnWrapperRecordBatch* record_batch) {
+void CGroupStatsConnector::TransferCGroupStatsTable(DataTable* data_table) {
   auto status = cgroup_mgr_->UpdateCGroupInfo();
   if (!status.ok()) {
     LOG(ERROR) << "Failed to get the latest cgroup stat files: " << status.msg();
@@ -48,7 +48,7 @@ void CGroupStatsConnector::TransferCGroupStatsTable(types::ColumnWrapperRecordBa
           continue;
         }
 
-        RecordBuilder<&kCPUTable> r(record_batch);
+        RecordBuilder<&kCPUTable> r(data_table);
         r.Append<r.ColIndex("time_")>(timestamp);
         r.Append<r.ColIndex("qos")>(CGroupManager::CGroupQoSToString(pod_info.qos));
         r.Append<r.ColIndex("pod")>(std::string(pod));
@@ -71,7 +71,7 @@ void CGroupStatsConnector::TransferCGroupStatsTable(types::ColumnWrapperRecordBa
   }
 }
 
-void CGroupStatsConnector::TransferNetStatsTable(types::ColumnWrapperRecordBatch* record_batch) {
+void CGroupStatsConnector::TransferNetStatsTable(DataTable* data_table) {
   auto status = cgroup_mgr_->UpdateCGroupInfo();
   if (!status.ok()) {
     LOG(ERROR) << "Failed to get the latest cgroup stat files: " << status.msg();
@@ -93,7 +93,7 @@ void CGroupStatsConnector::TransferNetStatsTable(types::ColumnWrapperRecordBatch
       continue;
     }
 
-    RecordBuilder<&kNetworkTable> r(record_batch);
+    RecordBuilder<&kNetworkTable> r(data_table);
 
     r.Append<r.ColIndex("time_")>(timestamp);
     r.Append<r.ColIndex("pod")>(std::string(pod));
@@ -110,17 +110,16 @@ void CGroupStatsConnector::TransferNetStatsTable(types::ColumnWrapperRecordBatch
   }
 }
 
-void CGroupStatsConnector::TransferDataImpl(uint32_t table_num,
-                                            types::ColumnWrapperRecordBatch* record_batch) {
+void CGroupStatsConnector::TransferDataImpl(uint32_t table_num, DataTable* data_table) {
   CHECK_LT(table_num, num_tables())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
 
   switch (table_num) {
     case 0:
-      TransferCGroupStatsTable(record_batch);
+      TransferCGroupStatsTable(data_table);
       break;
     case 1:
-      TransferNetStatsTable(record_batch);
+      TransferNetStatsTable(data_table);
       break;
     default:
       LOG(ERROR) << "Unknown table: " << table_num;

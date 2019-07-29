@@ -85,7 +85,7 @@ class CGroupStatsConnector : public SourceConnector {
 
   Status StopImpl() override;
 
-  void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
+  void TransferDataImpl(uint32_t table_num, DataTable* data_table) override;
 
  protected:
   explicit CGroupStatsConnector(std::string_view source_name)
@@ -95,8 +95,8 @@ class CGroupStatsConnector : public SourceConnector {
   }
 
  private:
-  void TransferCGroupStatsTable(types::ColumnWrapperRecordBatch* record_batch);
-  void TransferNetStatsTable(types::ColumnWrapperRecordBatch* record_batch);
+  void TransferCGroupStatsTable(DataTable* data_table);
+  void TransferNetStatsTable(DataTable* data_table);
 
   std::unique_ptr<CGroupManager> cgroup_mgr_;
 };

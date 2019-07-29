@@ -8,6 +8,7 @@
 #include "src/common/base/base.h"
 #include "src/common/system_config/system_config.h"
 #include "src/shared/types/types.h"
+#include "src/stirling/data_table.h"
 #include "src/stirling/info_class_manager.h"
 
 /**
@@ -67,7 +68,7 @@ class SourceConnector : public NotCopyable {
    * connectors.
    * @param record_batch The target to move the data into.
    */
-  void TransferData(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch);
+  void TransferData(uint32_t table_num, DataTable* data_table);
 
   /**
    * @brief Stops the source connector and releases any acquired resources.
@@ -148,21 +149,20 @@ class SourceConnector : public NotCopyable {
         default_push_period_(default_push_period) {}
 
   virtual Status InitImpl() = 0;
-  virtual void TransferDataImpl(uint32_t table_num,
-                                types::ColumnWrapperRecordBatch* record_batch) = 0;
+  virtual void TransferDataImpl(uint32_t table_num, DataTable* data_table) = 0;
   virtual Status StopImpl() = 0;
 
  protected:
   // Example usage:
-  // RecordBuilder<&kTable> r(record_batch);
+  // RecordBuilder<&kTable> r(record_batch.RecordBatch());
   // r.Append<r.ColIndex("field0")>(val0);
   // r.Append<r.ColIndex("field1")>(val1);
   // r.Append<r.ColIndex("field2")>(val2);
   template <const DataTableSchema* schema>
   class RecordBuilder {
    public:
-    explicit RecordBuilder(types::ColumnWrapperRecordBatch* record_batch)
-        : record_batch_(*record_batch) {}
+    explicit RecordBuilder(DataTable* data_table)
+        : record_batch_(*data_table->ActiveRecordBatch()) {}
 
     // For convenience, a wrapper around ColIndex() in the DataTableSchema class.
     constexpr uint32_t ColIndex(std::string_view name) { return schema->ColIndex(name); }

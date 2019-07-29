@@ -13,6 +13,7 @@ extern "C" {
 
 #include "src/common/subprocess/subprocess.h"
 #include "src/common/testing/testing.h"
+#include "src/stirling/data_table.h"
 #include "src/stirling/grpc.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/testing/greeter_client.h"
@@ -87,10 +88,10 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   s.Kill();
   EXPECT_EQ(9, s.Wait()) << "Server should have been killed.";
 
-  ColumnWrapperRecordBatch record_batch;
-  InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 1, &record_batch);
+  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-  connector->TransferData(kHTTPTableNum, &record_batch);
+  connector->TransferData(kHTTPTableNum, &data_table);
   for (const auto& col : record_batch) {
     // Sometimes connect() returns 0, so we might have data from requester and responder.
     ASSERT_GE(col->Size(), 1);
@@ -164,9 +165,10 @@ TEST_F(GRPCTest, BasicTracingForCPP) {
   ::grpc::Status st = client_->SayHello(req, &resp);
   EXPECT_OK(st) << st.error_message();
 
-  ColumnWrapperRecordBatch record_batch;
-  InitRecordBatch(kHTTPTable.elements(), /*target_capacity*/ 1, &record_batch);
-  source_->TransferData(kHTTPTableNum, &record_batch);
+  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+  source_->TransferData(kHTTPTableNum, &data_table);
 
   const std::vector<size_t> server_record_indices = FindRecordIdxMatchesPid(record_batch, getpid());
   // We should get exactly one record.

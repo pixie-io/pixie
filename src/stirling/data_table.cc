@@ -24,12 +24,23 @@ DataTable::DataTable(const InfoClassSchema& schema) {
   InitBuffers();
 }
 
+DataTable::DataTable(const DataTableSchema& schema) : DataTable(InfoClassSchema(schema)) {}
+
 void DataTable::InitBuffers() {
   DCHECK(record_batch_ == nullptr);
 
   record_batch_ = std::make_unique<types::ColumnWrapperRecordBatch>();
 
-  InitRecordBatch(table_schema_, kTargetCapacity, record_batch_.get());
+  for (const auto& element : table_schema_) {
+    pl::types::DataType type = element.type();
+
+#define TYPE_CASE(_dt_)                           \
+  auto col = types::ColumnWrapper::Make(_dt_, 0); \
+  col->Reserve(kTargetCapacity);                  \
+  record_batch_->push_back(col);
+    PL_SWITCH_FOREACH_DATATYPE(type, TYPE_CASE);
+#undef TYPE_CASE
+  }
 }
 
 std::unique_ptr<types::ColumnWrapperRecordBatchVec> DataTable::ConsumeRecordBatches() {

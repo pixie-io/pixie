@@ -74,13 +74,13 @@ class SeqGenConnector : public SourceConnector {
 
   Status InitImpl() override { return Status::OK(); }
 
-  void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
+  void TransferDataImpl(uint32_t table_num, DataTable* data_table) override;
 
   Status StopImpl() override { return Status::OK(); }
 
  private:
-  void TransferDataTable0(uint32_t num_records, types::ColumnWrapperRecordBatch* record_batch);
-  void TransferDataTable1(uint32_t num_records, types::ColumnWrapperRecordBatch* record_batch);
+  void TransferDataTable0(uint32_t num_records, DataTable* data_table);
+  void TransferDataTable1(uint32_t num_records, DataTable* data_table);
 
   TimeSequence<int64_t> table0_time_seq_;
   LinearSequence<int64_t> table0_lin_seq_;

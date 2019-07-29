@@ -19,8 +19,7 @@ Status PIDRuntimeConnector::StopImpl() {
   return Status::OK();
 }
 
-void PIDRuntimeConnector::TransferDataImpl(uint32_t table_num,
-                                           types::ColumnWrapperRecordBatch* record_batch) {
+void PIDRuntimeConnector::TransferDataImpl(uint32_t table_num, DataTable* data_table) {
   CHECK_LT(table_num, kTables.size())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
 
@@ -40,7 +39,7 @@ void PIDRuntimeConnector::TransferDataImpl(uint32_t table_num,
       prev_run_time = it->second;
     }
 
-    RecordBuilder<&kTable> r(record_batch);
+    RecordBuilder<&kTable> r(data_table);
     r.Append<r.ColIndex("time_")>(item.second.timestamp + ClockRealTimeOffset());
     r.Append<r.ColIndex("pid")>(item.first);
     r.Append<r.ColIndex("runtime_ns")>(item.second.run_time - prev_run_time);

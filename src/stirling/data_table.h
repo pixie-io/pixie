@@ -15,6 +15,7 @@ class DataTable {
   DataTable() = delete;
   virtual ~DataTable() = default;
   explicit DataTable(const InfoClassSchema& schema);
+  explicit DataTable(const DataTableSchema& schema);
 
   /**
    * @brief Get the data collected so far and relinquish ownership.

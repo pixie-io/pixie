@@ -55,7 +55,7 @@ class PIDRuntimeConnector : public SourceConnector, public BCCWrapper {
 
   Status InitImpl() override;
   Status StopImpl() override;
-  void TransferDataImpl(uint32_t table_num, types::ColumnWrapperRecordBatch* record_batch) override;
+  void TransferDataImpl(uint32_t table_num, DataTable* data_table) override;
 
  protected:
   explicit PIDRuntimeConnector(std::string_view name)

@@ -48,7 +48,7 @@ bool InfoClassManager::PushRequired() const {
 }
 
 void InfoClassManager::SampleData() {
-  source_->TransferData(source_table_num_, data_table_->ActiveRecordBatch());
+  source_->TransferData(source_table_num_, data_table_);
 
   // Update the last sampling time.
   last_sampled_ = CurrentTime();

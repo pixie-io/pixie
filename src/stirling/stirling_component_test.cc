@@ -61,7 +61,7 @@ class SourceToTableTest : public ::testing::Test {
 TEST_F(SourceToTableTest, source_to_table) {
   EXPECT_OK(fake_proc_stat_->Init());
   uint32_t table_num = 0;
-  fake_proc_stat_->TransferData(table_num, table_->ActiveRecordBatch());
+  fake_proc_stat_->TransferData(table_num, table_.get());
   auto record_batches_uptr = table_->ConsumeRecordBatches();
   ASSERT_TRUE(record_batches_uptr != nullptr);
   for (const auto& record_batch : *record_batches_uptr) {

@@ -86,15 +86,14 @@ Status ProcStatConnector::GetProcStat(const std::vector<std::string>& parsed_str
   return Status::OK();
 }
 
-void ProcStatConnector::TransferDataImpl(uint32_t table_num,
-                                         types::ColumnWrapperRecordBatch* record_batch) {
+void ProcStatConnector::TransferDataImpl(uint32_t table_num, DataTable* data_table) {
   CHECK_LT(table_num, num_tables())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
 
   auto parsed_str = GetProcParams();
   PL_CHECK_OK(GetProcStat(parsed_str));
 
-  RecordBuilder<&kTable> r(record_batch);
+  RecordBuilder<&kTable> r(data_table);
   r.Append<r.ColIndex("time_")>(cpu_usage_.timestamp);
   r.Append<r.ColIndex("system_percent")>(cpu_usage_.system_percent);
   r.Append<r.ColIndex("user_percent")>(cpu_usage_.user_percent);

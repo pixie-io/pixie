@@ -23,6 +23,8 @@ class DataTable;
  * InfoClassElement is a basic structure that holds a single available data element from a source,
  * and its type.
  */
+// TODO(oazizi): Consolidate InfoClassElement and DataElement. Reason for separate classes is no
+// longer valid.
 class InfoClassElement : public DataElement {
  public:
   InfoClassElement() = delete;
@@ -43,7 +45,15 @@ class InfoClassElement : public DataElement {
  *
  * Each element in the vector represents a column in the schema.
  */
-using InfoClassSchema = std::vector<InfoClassElement>;
+class InfoClassSchema : public std::vector<InfoClassElement> {
+ public:
+  InfoClassSchema() = default;
+  explicit InfoClassSchema(const DataTableSchema& schema) {
+    for (const auto& element : schema.elements()) {
+      emplace_back(element);
+    }
+  }
+};
 
 /**
  * InfoClassManager consists af a collection of related InfoClassElements, that are sampled

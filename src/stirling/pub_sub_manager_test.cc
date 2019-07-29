@@ -64,8 +64,7 @@ class TestSourceConnector : public SourceConnector {
 
   Status StopImpl() override { return Status::OK(); }
 
-  void TransferDataImpl(uint32_t /*table_num*/,
-                        types::ColumnWrapperRecordBatch* /*record_batch*/) override{};
+  void TransferDataImpl(uint32_t /* table_num */, DataTable* /* data_table */) override{};
 
  protected:
   explicit TestSourceConnector(std::string_view name)
