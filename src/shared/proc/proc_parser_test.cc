@@ -31,6 +31,8 @@ class ProcParserTest : public ::testing::Test {
     EXPECT_CALL(sysconfig, HasSystemConfig()).WillRepeatedly(Return(true));
     EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
     EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
+    EXPECT_CALL(sysconfig, ClockRealTimeOffset()).WillRepeatedly(Return(128));
+
     EXPECT_CALL(sysconfig, proc_path())
         .WillRepeatedly(Return(GetPathToTestDataFile("testdata/proc")));
     parser_ = std::make_unique<ProcParser>(sysconfig);
@@ -106,6 +108,21 @@ TEST_F(ProcParserTest, ParseMemInfo) {
 
   EXPECT_EQ(28388524032, stats.mem_active_bytes);
   EXPECT_EQ(15734595584, stats.mem_inactive_bytes);
+}
+
+TEST_F(ProcParserTest, read_pid_start_time) {
+  // This is the time from the file * 100 + 128.
+  EXPECT_EQ(1433028, parser_->GetPIDStartTime(123));
+}
+
+TEST_F(ProcParserTest, read_pid_cmdline) {
+  EXPECT_THAT("/usr/lib/slack/slack --force-device-scale-factor=1.5 --high-dpi-support=1",
+              parser_->GetPIDCmdline(123));
+}
+
+TEST_F(ProcParserTest, read_pid_metadata_null) {
+  EXPECT_THAT("/usr/lib/at-spi2-core/at-spi2-registryd --use-gnome-session",
+              parser_->GetPIDCmdline(456));
 }
 
 }  // namespace stirling

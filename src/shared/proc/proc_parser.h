@@ -21,12 +21,7 @@ class ProcParser {
    * duration of the constructor call.
    * @param proc_base_path The base path to the proc files.
    */
-  explicit ProcParser(const common::SystemConfig& cfg) {
-    CHECK(cfg.HasSystemConfig()) << "System config is required for the ProcParser";
-    ns_per_kernel_tick_ = static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond());
-    bytes_per_page_ = cfg.PageSize();
-    proc_base_path_ = cfg.proc_path();
-  }
+  explicit ProcParser(const common::SystemConfig& cfg);
 
   /**
    * NetworkStats is a struct used to store aggregated network statistics.
@@ -106,6 +101,20 @@ class ProcParser {
   Status ParseProcPIDStat(int32_t pid, ProcessStats* out) const;
 
   /**
+   * Specialization of ParseProcPIDStat to just extract the start time.
+   * @param pid is the pid for which we want the start time.
+   * @return start time in unix time since epoch. A time of 0 implies it failed to read the time.
+   */
+  int64_t GetPIDStartTime(int32_t pid) const;
+
+  /**
+   * Gets the command line for a given pid.
+   * @param pid is the pid for which we want the command line.
+   * @return The command line string. Empty string implies we failed to read the file.
+   */
+  std::string GetPIDCmdline(int32_t pid) const;
+
+  /**
    * Parses /proc/<pid>/io files.
    * @param pid is the pid for which to read IO data.
    * @param out A valid pointer to an output struct.
@@ -149,6 +158,7 @@ class ProcParser {
       uint8_t* out_base, int64_t field_value_multiplier);
   int64_t ns_per_kernel_tick_;
   int32_t bytes_per_page_;
+  int64_t clock_realtime_offset_;
   std::string proc_base_path_;
 };
 

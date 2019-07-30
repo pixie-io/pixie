@@ -2,6 +2,7 @@
 #include <limits>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/numbers.h"
@@ -23,43 +24,53 @@ const std::vector<std::string> kNetIFaceIgnorePrefix = {
 /*************************************************
  * Constants for the /proc/stat file
  *************************************************/
-const int kProcStatCPUNumFields = 11;
-const int KProcStatCPUUTimeField = 1;
-const int KProcStatCPUKTimeField = 3;
+constexpr int kProcStatCPUNumFields = 11;
+constexpr int KProcStatCPUUTimeField = 1;
+constexpr int KProcStatCPUKTimeField = 3;
 
 /*************************************************
  * Constants for the /proc/<pid>/net/dev file
  *************************************************/
-const int kProcNetDevNumFields = 17;
+constexpr int kProcNetDevNumFields = 17;
 
-const int kProcNetDevIFaceField = 0;
-const int kProcNetDevRxBytesField = 1;
-const int kProcNetDevRxPacketsField = 2;
-const int kProcNetDevRxErrsField = 3;
-const int kProcNetDevRxDropField = 4;
+constexpr int kProcNetDevIFaceField = 0;
+constexpr int kProcNetDevRxBytesField = 1;
+constexpr int kProcNetDevRxPacketsField = 2;
+constexpr int kProcNetDevRxErrsField = 3;
+constexpr int kProcNetDevRxDropField = 4;
 
-const int kProcNetDevTxBytesField = 10;
-const int kProcNetDevTxPacketsField = 11;
-const int kProcNetDevTxErrsField = 12;
-const int kProcNetDevTxDropField = 13;
+constexpr int kProcNetDevTxBytesField = 10;
+constexpr int kProcNetDevTxPacketsField = 11;
+constexpr int kProcNetDevTxErrsField = 12;
+constexpr int kProcNetDevTxDropField = 13;
 
 /*************************************************
- * Constants for the /proc/<pid>/stat file
+ * constexprants for the /proc/<pid>/stat file
  *************************************************/
-const int kProcStatNumFields = 52;
+constexpr int kProcStatNumFields = 52;
 
-const int kProcStatPIDField = 0;
-const int kProcStatProcessNameField = 1;
+constexpr int kProcStatPIDField = 0;
+constexpr int kProcStatProcessNameField = 1;
 
-const int kProcStatMinorFaultsField = 9;
-const int kProcStatMajorFaultsField = 11;
+constexpr int kProcStatMinorFaultsField = 9;
+constexpr int kProcStatMajorFaultsField = 11;
 
-const int kProcStatUTimeField = 13;
-const int kProcStatKTimeField = 14;
-const int kProcStatNumThreadsField = 19;
+constexpr int kProcStatUTimeField = 13;
+constexpr int kProcStatKTimeField = 14;
+constexpr int kProcStatNumThreadsField = 19;
 
-const int kProcStatVSizeField = 22;
-const int kProcStatRSSField = 23;
+constexpr int kProcStatStartTimeField = 21;
+
+constexpr int kProcStatVSizeField = 22;
+constexpr int kProcStatRSSField = 23;
+
+ProcParser::ProcParser(const common::SystemConfig& cfg) {
+  CHECK(cfg.HasSystemConfig()) << "System config is required for the ProcParser";
+  ns_per_kernel_tick_ = static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond());
+  clock_realtime_offset_ = cfg.ClockRealTimeOffset();
+  bytes_per_page_ = cfg.PageSize();
+  proc_base_path_ = cfg.proc_path();
+}
 
 Status ProcParser::ParseNetworkStatAccumulateIFaceData(
     const std::vector<std::string_view>& dev_stat_record, NetworkStats* out) {
@@ -374,6 +385,62 @@ Status ProcParser::ParseFromKeyValueFile(
   }
 
   return Status::OK();
+}
+
+// TODO(zasgar/michelle): cleanup and merge with proc_parser.
+std::string ProcParser::GetPIDCmdline(int32_t pid) const {
+  std::string fpath = absl::Substitute("$0/$1/cmdline", proc_base_path_, pid);
+  std::ifstream ifs(fpath);
+  if (!ifs) {
+    return "";
+  }
+
+  std::string line = "";
+  std::string cmdline = "";
+  while (std::getline(ifs, line)) {
+    cmdline += std::move(line);
+  }
+
+  // Strip out extra null character at the end of the string.
+  if (!cmdline.empty() && cmdline[cmdline.size() - 1] == 0) {
+    cmdline.pop_back();
+  }
+
+  // Replace all nulls with spaces. Sometimes the command line has
+  // null to separate arguments and others it has spaces. We just make them all spaces
+  // and leave it to upstream code to tokenize properly.
+  std::replace(cmdline.begin(), cmdline.end(), static_cast<char>(0), ' ');
+
+  return cmdline;
+}
+
+int64_t ProcParser::GetPIDStartTime(int32_t pid) const {
+  std::string fpath = absl::Substitute("$0/$1/stat", proc_base_path_, pid);
+  std::ifstream ifs;
+  ifs.open(fpath);
+  if (!ifs) {
+    return 0;
+  }
+
+  std::string line;
+  if (!std::getline(ifs, line)) {
+    return 0;
+  }
+
+  std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
+  // We check less than in case more fields are added later.
+  if (split.size() < kProcStatNumFields) {
+    return 0;
+  }
+
+  int64_t start_time_ns;
+  if (!absl::SimpleAtoi(split[kProcStatStartTimeField], &start_time_ns)) {
+    return 0;
+  }
+
+  start_time_ns *= ns_per_kernel_tick_;
+  start_time_ns += clock_realtime_offset_;
+  return start_time_ns;
 }
 
 }  // namespace stirling
