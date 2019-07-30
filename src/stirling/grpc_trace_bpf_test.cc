@@ -42,6 +42,7 @@ constexpr uint32_t kHTTPContentTypeIdx = kHTTPTable.ColIndex("http_content_type"
 constexpr uint32_t kHTTPHeaderIdx = kHTTPTable.ColIndex("http_headers");
 constexpr uint32_t kHTTPPIDIdx = kHTTPTable.ColIndex("pid");
 constexpr uint32_t kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
+constexpr uint32_t kHTTPRemotePortIdx = kHTTPTable.ColIndex("remote_port");
 constexpr uint32_t kHTTPRespBodyIdx = kHTTPTable.ColIndex("http_resp_body");
 
 std::vector<size_t> FindRecordIdxMatchesPid(const ColumnWrapperRecordBatch& http_record, int pid) {
@@ -72,18 +73,17 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   // when fork() and execvp().
   std::unique_ptr<SourceConnector> connector =
       SocketTraceConnector::Create("socket_trace_connector");
-  auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(connector.get());
+  auto* socket_trace_connector = static_cast<SocketTraceConnector*>(connector.get());
   ASSERT_NE(nullptr, socket_trace_connector);
   ASSERT_OK(connector->Init());
-  // This resets the probe to server side, so this is not subject to update in
-  // SocketTraceConnector::InitImpl().
-  EXPECT_OK(socket_trace_connector->Configure(kProtocolHTTP2, kRoleResponder));
-  EXPECT_OK(socket_trace_connector->TestOnlySetTargetPID(s.child_pid()));
 
   // TODO(yzhao): Add a --count flag to greeter client so we can test the case of multiple RPC calls
   // (multiple HTTP2 streams).
   SubProcess c({c_path, "-name=PixieLabs", "-once"});
   EXPECT_OK(c.Start());
+
+  EXPECT_OK(socket_trace_connector->TestOnlySetTargetPID(c.child_pid()));
+
   EXPECT_EQ(0, c.Wait()) << "Client should exit normally.";
   s.Kill();
   EXPECT_EQ(9, s.Wait()) << "Server should have been killed.";
@@ -96,15 +96,13 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
     // Sometimes connect() returns 0, so we might have data from requester and responder.
     ASSERT_GE(col->Size(), 1);
   }
-  const std::vector<size_t> server_record_indices =
-      FindRecordIdxMatchesPid(record_batch, s.child_pid());
+  const std::vector<size_t> target_record_indices =
+      FindRecordIdxMatchesPid(record_batch, c.child_pid());
   // We should get exactly one record.
-  ASSERT_THAT(server_record_indices, SizeIs(1));
-  const size_t server_record_idx = server_record_indices.front();
+  ASSERT_THAT(target_record_indices, SizeIs(1));
+  const size_t target_record_idx = target_record_indices.front();
 
-  EXPECT_EQ(s.child_pid(),
-            record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(server_record_idx).val);
-  EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(server_record_idx)),
+  EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(target_record_idx)),
               MatchesRegex(":authority: localhost:50051\n"
                            ":method: POST\n"
                            ":path: /pl.stirling.testing.Greeter/SayHello\n"
@@ -114,14 +112,15 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
                            "te: trailers\n"
                            "user-agent: grpc-go/.+"));
   EXPECT_THAT(
-      std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(server_record_idx)),
+      std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(target_record_idx)),
       HasSubstr("127.0.0.1"));
-  EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(server_record_idx).val);
+  EXPECT_EQ(50051, record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(target_record_idx).val);
+  EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(target_record_idx).val);
   EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
-            record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(server_record_idx).val);
+            record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(target_record_idx).val);
 
   HelloReply received_reply;
-  std::string msg = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(server_record_idx);
+  std::string msg = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(target_record_idx);
   EXPECT_TRUE(received_reply.ParseFromString(msg.substr(kGRPCMessageHeaderSizeInBytes)));
   EXPECT_THAT(received_reply, EqualsProto(R"proto(message: "Hello PixieLabs")proto"));
 }
@@ -135,10 +134,14 @@ class GRPCTest : public ::testing::Test {
     source_ = SocketTraceConnector::Create("bcc_grpc_trace");
     ASSERT_OK(source_->Init());
 
+    auto* socket_trace_connector = static_cast<SocketTraceConnector*>(source_.get());
+    ASSERT_NE(nullptr, socket_trace_connector);
+    EXPECT_OK(socket_trace_connector->TestOnlySetTargetPID(getpid()));
+
     server_ = runner_.RunService(&service_);
     auto* server_ptr = server_.get();
     server_thread_ = std::thread([server_ptr]() { server_ptr->Wait(); });
-    client_ = std::make_unique<GreeterClient>(absl::StrCat("0.0.0.0:", runner_.ports().back()));
+    client_ = std::make_unique<GreeterClient>(absl::StrCat("127.0.0.1:", runner_.ports().back()));
   }
 
   void TearDown() override {
@@ -170,13 +173,13 @@ TEST_F(GRPCTest, BasicTracingForCPP) {
 
   source_->TransferData(kHTTPTableNum, &data_table);
 
-  const std::vector<size_t> server_record_indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  const std::vector<size_t> target_record_indices = FindRecordIdxMatchesPid(record_batch, getpid());
   // We should get exactly one record.
-  ASSERT_THAT(server_record_indices, SizeIs(1));
-  const size_t server_record_idx = server_record_indices.front();
+  ASSERT_THAT(target_record_indices, SizeIs(1));
+  const size_t target_record_idx = target_record_indices.front();
 
-  EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(server_record_idx)),
-              MatchesRegex(":authority: 0.0.0.0:[0-9]+\n"
+  EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(target_record_idx)),
+              MatchesRegex(":authority: 127.0.0.1:[0-9]+\n"
                            ":method: POST\n"
                            ":path: /pl.stirling.testing.Greeter/SayHello\n"
                            ":scheme: http\n"
@@ -186,14 +189,16 @@ TEST_F(GRPCTest, BasicTracingForCPP) {
                            "te: trailers\n"
                            "user-agent: .*"));
   EXPECT_THAT(
-      std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(server_record_idx)),
+      std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(target_record_idx)),
       HasSubstr("127.0.0.1"));
-  EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(server_record_idx).val);
+  EXPECT_EQ(runner_.ports().back(),
+            record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(target_record_idx).val);
+  EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(target_record_idx).val);
   EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
-            record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(server_record_idx).val);
+            record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(target_record_idx).val);
 
   HelloReply received_reply;
-  std::string msg = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(server_record_idx);
+  std::string msg = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(target_record_idx);
   EXPECT_TRUE(received_reply.ParseFromString(msg.substr(kGRPCMessageHeaderSizeInBytes)));
   EXPECT_THAT(received_reply, EqualsProto(R"proto(message: "Hello pixielabs!")proto"));
 }

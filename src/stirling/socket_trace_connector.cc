@@ -56,9 +56,7 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(InitBPFLogging(&bpf()));
   PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kRoleRequestor));
   PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kRoleRequestor));
-  // TODO(PL-659): connect() call might return non 0 value, making requester-side tracing
-  // unreliable. Switch to server-side for now.
-  PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kRoleResponder));
+  PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kRoleRequestor));
   PL_RETURN_IF_ERROR(TestOnlySetTargetPID(FLAGS_test_only_socket_trace_target_pid));
 
   return Status::OK();

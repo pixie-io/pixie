@@ -57,14 +57,14 @@ StatusOr<IPEndpoint> ParseSockAddr(const conn_info_t& conn_info) {
   switch (sa->sa_family) {
     case AF_INET: {
       const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
-      port = sa_in->sin_port;
+      port = ntohs(sa_in->sin_port);
       if (inet_ntop(AF_INET, &sa_in->sin_addr, addr, INET_ADDRSTRLEN) == nullptr) {
         return error::InvalidArgument("Could not parse sockaddr (AF_INET)");
       }
     } break;
     case AF_INET6: {
       const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);
-      port = sa_in6->sin6_port;
+      port = ntohs(sa_in6->sin6_port);
       if (inet_ntop(AF_INET6, &sa_in6->sin6_addr, addr, INET6_ADDRSTRLEN) == nullptr) {
         return error::InvalidArgument("Could not parse sockaddr (AF_INET6)");
       }

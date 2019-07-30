@@ -2,6 +2,7 @@
 
 #include <linux/sched.h>
 #include <linux/socket.h>
+#include <uapi/linux/errno.h>
 #include <uapi/linux/in6.h>
 #include <uapi/linux/ptrace.h>
 
@@ -14,7 +15,8 @@
 
 // This keeps instruction count below BPF's limit of 4096 per probe.
 // TODO(yzhao): Investigate using tail call to reuse stack space to support loop.
-#define LOOP_LIMIT 20
+// TODO(yzhao): Optimize the code to remove unneeded code, and increase the loop count.
+#define LOOP_LIMIT 35
 
 // This is the perf buffer for BPF program to export data from kernel to user space.
 BPF_PERF_OUTPUT(socket_http_events);
@@ -328,12 +330,18 @@ static __inline int probe_entry_connect_impl(struct pt_regs* ctx, int sockfd,
     return 0;
   }
 
+  u64 id = bpf_get_current_pid_tgid();
+  u32 tgid = id >> 32;
+
+  if (!test_only_should_trace_tgid(tgid)) {
+    return 0;
+  }
+
   // Only record IP (IPV4 and IPV6) connections.
   if (!(addr->sa_family == AF_INET || addr->sa_family == AF_INET6)) {
     return 0;
   }
 
-  u64 id = bpf_get_current_pid_tgid();
   struct connect_info_t connect_info;
   memset(&connect_info, 0, sizeof(struct connect_info_t));
   connect_info.fd = sockfd;
@@ -346,7 +354,17 @@ static __inline int probe_entry_connect_impl(struct pt_regs* ctx, int sockfd,
 
 static __inline int probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
   int ret_val = PT_REGS_RC(ctx);
-  if (ret_val < 0) {
+  // We allow EINPROGRESS to go through, which indicates that a NON_BLOCK socket is undergoing
+  // handshake.
+  //
+  // In case connect() eventually fails, any write or read on the fd would fail nonetheless, and we
+  // wont's see spurious events.
+  //
+  // In case a separate connect() is called concurrently in another thread, and succeeds
+  // immediately, any write or read on the fd would be attributed to the new connection, which would
+  // have a new generation number. That is harmless, and only result into inflated generation
+  // numbers.
+  if (ret_val < 0 && ret_val != -EINPROGRESS) {
     return 0;
   }
 
