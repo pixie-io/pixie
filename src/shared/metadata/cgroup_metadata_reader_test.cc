@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
+#include "src/common/system_config/system_config_mock.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/metadata/cgroup_metadata_reader.h"
 
@@ -12,6 +13,8 @@ namespace pl {
 namespace md {
 
 constexpr char kTestDataBasePath[] = "src/shared/metadata";
+
+using ::testing::Return;
 
 namespace {
 std::string GetPathToTestDataFile(const std::string& fname) {
@@ -22,11 +25,19 @@ std::string GetPathToTestDataFile(const std::string& fname) {
 class CGroupMetadataReaderTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    std::string proc = GetPathToTestDataFile("testdata/proc1");
-    std::string sysfs = GetPathToTestDataFile("testdata/sysfs1");
+    common::MockSystemConfig sysconfig;
 
-    md_reader_.reset(new CGroupMetadataReader(sysfs, proc, 100 /*ns_per_kernel_tick*/,
-                                              128 /*clock_realtime_offset*/));
+    EXPECT_CALL(sysconfig, HasSystemConfig()).WillRepeatedly(Return(true));
+    EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
+    EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
+    EXPECT_CALL(sysconfig, ClockRealTimeOffset()).WillRepeatedly(Return(128));
+
+    EXPECT_CALL(sysconfig, proc_path())
+        .WillRepeatedly(Return(GetPathToTestDataFile("testdata/proc1")));
+    EXPECT_CALL(sysconfig, sysfs_path())
+        .WillRepeatedly(Return(GetPathToTestDataFile("testdata/sysfs1")));
+
+    md_reader_.reset(new CGroupMetadataReader(sysconfig));
   }
 
   std::unique_ptr<CGroupMetadataReader> md_reader_;

@@ -50,6 +50,7 @@ pl_cc_test(
     data = glob(["testdata/**/*"]),
     deps = [
         ":cc_library",
+        "//src/common/system_config:cc_library_mock",
         "//src/common/testing:cc_library",
     ],
 )

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/common/system_config/system_config.h"
 #include "src/shared/metadata/k8s_objects.h"
 
 namespace pl {
@@ -24,12 +25,11 @@ class CGroupMetadataReader : public NotCopyable {
   virtual ~CGroupMetadataReader() = default;
 
   // TODO(zasgar/michelle): Reconcile this constructor with the SysConfig changes when ready.
-  CGroupMetadataReader(std::string_view sysfs_path, std::string_view proc_path,
-                       int64_t ns_per_kernel_tick, int64_t clock_realtime_offset)
-      : sysfs_path_(sysfs_path),
-        proc_path_(proc_path),
-        ns_per_kernel_tick_(ns_per_kernel_tick),
-        clock_realtime_offset_(clock_realtime_offset) {}
+  explicit CGroupMetadataReader(const common::SystemConfig& cfg)
+      : sysfs_path_(cfg.sysfs_path()),
+        proc_path_(cfg.proc_path()),
+        ns_per_kernel_tick_(static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond())),
+        clock_realtime_offset_(cfg.ClockRealTimeOffset()) {}
 
   /**
    * ReadPIDList reads pids for a container running as part of a given pod.

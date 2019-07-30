@@ -38,9 +38,7 @@ class AgentMetadataStateManager {
   explicit AgentMetadataStateManager(uint32_t asid, pl::common::SystemConfig* config)
       : asid_(asid) {
     CHECK_NOTNULL(config);
-    md_reader_ = std::make_unique<CGroupMetadataReader>(
-        config->sysfs_path(), config->proc_path(), config->KernelTicksPerSecond() * 1'000'000'000,
-        config->ClockRealTimeOffset());
+    md_reader_ = std::make_unique<CGroupMetadataReader>(*common::SystemConfig::GetInstance());
     agent_metadata_state_ = std::make_shared<AgentMetadataState>(asid);
   }
 

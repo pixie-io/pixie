@@ -3,6 +3,7 @@
 #include <string>
 
 #include "absl/container/flat_hash_set.h"
+#include "src/common/system_config/system_config.h"
 #include "src/shared/metadata/base_types.h"
 #include "src/shared/metadata/cgroup_metadata_reader.h"
 
@@ -11,7 +12,7 @@ namespace md {
 
 class MockCGroupMetadataReader : public CGroupMetadataReader {
  public:
-  MockCGroupMetadataReader() : CGroupMetadataReader("/sysfs", "/proc", 100, 1000) {}
+  MockCGroupMetadataReader() : CGroupMetadataReader(*common::SystemConfig::GetInstance()) {}
   ~MockCGroupMetadataReader() override = default;
 
   MOCK_CONST_METHOD4(ReadPIDs,
