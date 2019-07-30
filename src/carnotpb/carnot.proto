@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/common/uuid/proto/uuid.proto";
+import "src/table_store/proto/schema.proto";
+
+package pl.carnotpb;
+
+option go_package = "carnotpb";
+
+message QueuedRowBatch {
+  // This field represents the address that the row batch should be sent to.
+  string address = 1;
+  // The ID of the remote query ID on the address that should receive this RowBatch.
+  uuidpb.UUID query_id = 2 [
+    (gogoproto.customname) = "QueryID"
+  ];
+  // 'destination_id' identifies the source node within the query that should receive this RowBatch.
+  int64 destination_id = 3;
+  // TODO(nserrino): Fix this to flat buffers/feather for better performance.
+  pl.table_store.schemapb.RowBatchData row_batch = 4;
+}

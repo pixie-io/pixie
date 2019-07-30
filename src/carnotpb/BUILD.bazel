@@ -1,0 +1,36 @@
+# gazelle:ignore
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library")
+
+pl_proto_library(
+    name = "carnot_pl_proto",
+    srcs = ["carnot.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/common/uuid/proto:uuid_pl_proto",
+        "//src/table_store/proto:schema_pl_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
+    ],
+)
+
+pl_cc_proto_library(
+    name = "carnot_pl_cc_proto",
+    proto = ":carnot_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/common/uuid/proto:uuid_pl_cc_proto",
+        "//src/table_store/proto:schema_pl_cc_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+    ],
+)
+
+pl_go_proto_library(
+    name = "carnot_pl_go_proto",
+    importpath = "pixielabs.ai/pixielabs/src/carnotpb",
+    proto = ":carnot_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/common/uuid/proto:uuid_pl_go_proto",
+        "//src/table_store/proto:schema_pl_go_proto",
+    ],
+)
