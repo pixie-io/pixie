@@ -133,7 +133,7 @@ TEST_F(OperatorTest, from_proto_filter) {
 }
 
 TEST_F(OperatorTest, from_proto_union_time_column) {
-  auto union_pb = planpb::testutils::CreateTestUnion1PB();
+  auto union_pb = planpb::testutils::CreateTestUnionOrderedPB();
   auto union_op = std::make_unique<UnionOperator>(1);
   auto s = union_op->Init(union_pb.union_op());
   EXPECT_EQ(1, union_op->id());
@@ -143,7 +143,7 @@ TEST_F(OperatorTest, from_proto_union_time_column) {
 }
 
 TEST_F(OperatorTest, from_proto_union_no_time_column) {
-  auto union_pb = planpb::testutils::CreateTestUnion2PB();
+  auto union_pb = planpb::testutils::CreateTestUnionUnorderedPB();
   auto union_op = Operator::FromProto(union_pb, 1);
   EXPECT_EQ(1, union_op->id());
   EXPECT_TRUE(union_op->is_initialized());
@@ -273,7 +273,7 @@ TEST_F(OperatorTest, output_relation_limit) {
 }
 
 TEST_F(OperatorTest, output_relation_union) {
-  auto union_pb = planpb::testutils::CreateTestUnion1PB();
+  auto union_pb = planpb::testutils::CreateTestUnionOrderedPB();
   auto union_op = Operator::FromProto(union_pb, 4);
 
   auto rel = union_op->OutputRelation(schema_, *state_, std::vector<int64_t>({2, 3}));
@@ -285,7 +285,7 @@ TEST_F(OperatorTest, output_relation_union) {
 }
 
 TEST_F(OperatorTest, output_relation_union_mismatched) {
-  auto union_pb = planpb::testutils::CreateTestUnion1PB();
+  auto union_pb = planpb::testutils::CreateTestUnionOrderedPB();
   auto union_op = Operator::FromProto(union_pb, 4);
 
   auto rel = union_op->OutputRelation(schema_, *state_, std::vector<int64_t>({2, 4}));
@@ -294,7 +294,7 @@ TEST_F(OperatorTest, output_relation_union_mismatched) {
 }
 
 TEST_F(OperatorTest, output_relation_union_out_of_range) {
-  auto union_pb = planpb::testutils::CreateTestUnion1PB();
+  auto union_pb = planpb::testutils::CreateTestUnionOrderedPB();
   auto union_op = Operator::FromProto(union_pb, 4);
 
   auto rel = union_op->OutputRelation(schema_, *state_, std::vector<int64_t>({2, 5}));

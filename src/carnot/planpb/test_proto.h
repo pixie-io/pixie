@@ -266,8 +266,7 @@ columns {
 // relation 1: [abc, time_]
 // relation 2: [time_, abc]
 // maps to output relation:
-// [abc, time_, xyz]
-const char* kUnionOperator1 = R"(
+const char* kUnionOperatorOrdered = R"(
   rows_per_batch: 5
   column_names: "abc"
   column_names: "time_"
@@ -285,7 +284,7 @@ const char* kUnionOperator1 = R"(
   }
 )";
 
-const char* kUnionOperator2 = R"(
+const char* kUnionOperatorUnordered = R"(
   column_names: "abc"
   column_names: "xyz"
   column_mappings {
@@ -870,18 +869,18 @@ planpb::Operator CreateTestFilter1PB() {
   return op;
 }
 
-planpb::Operator CreateTestUnion1PB() {
+planpb::Operator CreateTestUnionOrderedPB() {
   planpb::Operator op;
   auto op_proto =
-      absl::Substitute(kOperatorProtoTmpl, "UNION_OPERATOR", "union_op", kUnionOperator1);
+      absl::Substitute(kOperatorProtoTmpl, "UNION_OPERATOR", "union_op", kUnionOperatorOrdered);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
 
-planpb::Operator CreateTestUnion2PB() {
+planpb::Operator CreateTestUnionUnorderedPB() {
   planpb::Operator op;
   auto op_proto =
-      absl::Substitute(kOperatorProtoTmpl, "UNION_OPERATOR", "union_op", kUnionOperator2);
+      absl::Substitute(kOperatorProtoTmpl, "UNION_OPERATOR", "union_op", kUnionOperatorUnordered);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
