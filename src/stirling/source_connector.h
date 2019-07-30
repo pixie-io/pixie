@@ -16,7 +16,7 @@
  * 1. If required, create a new SourceConnector class.
  * 2. Add a new Create function with the following signature:
  *    static std::unique_ptr<SourceConnector> Create().
- *    In this function create an InfoClassSchema (vector of InfoClassElement)
+ *    In this function create an InfoClassSchema (vector of DataElement)
  * 3. Register the data source in the appropriate registry.
  */
 

@@ -11,21 +11,13 @@
 namespace pl {
 namespace stirling {
 
-stirlingpb::Element InfoClassElement::ToProto() const {
-  stirlingpb::Element element_proto;
-  element_proto.set_name(name_.data());
-  element_proto.set_type(type_);
-  element_proto.set_ptype(ptype_);
-  return element_proto;
-}
-
 Status InfoClassManager::PopulateSchemaFromSource() {
   if (source_ == nullptr) {
     return error::ResourceUnavailable("Source connector has not been initialized.");
   }
   auto elements = source_->elements(source_table_num_);
   for (const auto& element : elements) {
-    elements_.emplace_back(InfoClassElement(element));
+    elements_.emplace_back(DataElement(element));
   }
   return Status::OK();
 }

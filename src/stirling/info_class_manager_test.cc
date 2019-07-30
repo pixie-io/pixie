@@ -9,8 +9,8 @@ namespace stirling {
 using types::DataType;
 using types::PatternType;
 
-TEST(InfoClassElementTest, infoclass_element_proto_getters_test) {
-  InfoClassElement element("user_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE);
+TEST(DataElementTest, infoclass_element_proto_getters_test) {
+  DataElement element("user_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE);
 
   EXPECT_EQ("user_percentage", std::string(element.name().data()));
   EXPECT_EQ(DataType::FLOAT64, element.type());

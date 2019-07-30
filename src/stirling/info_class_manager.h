@@ -20,32 +20,11 @@ class SourceConnector;
 class DataTable;
 
 /**
- * InfoClassElement is a basic structure that holds a single available data element from a source,
- * and its type.
- */
-// TODO(oazizi): Consolidate InfoClassElement and DataElement. Reason for separate classes is no
-// longer valid.
-class InfoClassElement : public DataElement {
- public:
-  InfoClassElement() = delete;
-  explicit InfoClassElement(DataElement element) : DataElement(std::move(element)) {}
-  explicit InfoClassElement(std::string_view name, types::DataType type, types::PatternType ptype)
-      : DataElement(name, type, ptype) {}
-
-  /**
-   * @brief Generate a proto message based on the InfoClassElement.
-   *
-   * @return stirlingpb::Element
-   */
-  stirlingpb::Element ToProto() const;
-};
-
-/**
- * @brief InfoClassSchema is simply a vector of InfoClassElements.
+ * @brief InfoClassSchema is simply a vector of DataElements.
  *
  * Each element in the vector represents a column in the schema.
  */
-class InfoClassSchema : public std::vector<InfoClassElement> {
+class InfoClassSchema : public std::vector<DataElement> {
  public:
   InfoClassSchema() = default;
   explicit InfoClassSchema(const DataTableSchema& schema) {
@@ -56,8 +35,10 @@ class InfoClassSchema : public std::vector<InfoClassElement> {
 };
 
 /**
- * InfoClassManager consists af a collection of related InfoClassElements, that are sampled
- * together. By definition, the elements should be collected together (with a common timestamp).
+ * InfoClassManager is the unit responsible for managing a data source, and its data transfers.
+ *
+ * InfoClassManager samples the data from the source, transferring the data to an internal table.
+ * It also initiates data transfers to the TableStore.
  *
  * The InfoClassManager also serves as the State Manager for the entire data collector.
  *  - The Config unit uses the Schemas to publish available data to the Agent.
@@ -108,9 +89,9 @@ class InfoClassManager {
    * @brief Get an Element object
    *
    * @param index
-   * @return InfoClassElement
+   * @return DataElement
    */
-  const InfoClassElement& GetElement(size_t index) const {
+  const DataElement& GetElement(size_t index) const {
     DCHECK(index < elements_.size());
     return elements_[index];
   }

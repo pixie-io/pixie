@@ -8,6 +8,7 @@
 
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/type_utils.h"
+#include "src/stirling/proto/stirling.pb.h"
 
 namespace pl {
 namespace stirling {
@@ -27,6 +28,13 @@ class DataElement {
   constexpr const std::string_view& name() const { return name_; }
   constexpr const types::DataType& type() const { return type_; }
   std::shared_ptr<arrow::DataType> arrow_type() { return types::DataTypeToArrowType(type()); }
+
+  /**
+   * @brief Generate a proto message based on the DataElement.
+   *
+   * @return stirlingpb::Element
+   */
+  stirlingpb::Element ToProto() const;
 
  protected:
   const std::string_view name_;

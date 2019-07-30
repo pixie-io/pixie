@@ -75,11 +75,9 @@ class DataTableTest : public ::testing::Test {
    * Schema for our test table
    */
   void SetUpSchema() {
-    schema_.push_back(InfoClassElement("f0", types::DataType::INT64, types::PatternType::GENERAL));
-    schema_.push_back(
-        InfoClassElement("f1", types::DataType::FLOAT64, types::PatternType::GENERAL));
-    schema_.push_back(
-        InfoClassElement("f2", types::DataType::INT64, types::PatternType::GENERAL_ENUM));
+    schema_.push_back(DataElement("f0", types::DataType::INT64, types::PatternType::GENERAL));
+    schema_.push_back(DataElement("f1", types::DataType::FLOAT64, types::PatternType::GENERAL));
+    schema_.push_back(DataElement("f2", types::DataType::INT64, types::PatternType::GENERAL_ENUM));
   }
 
   /**
