@@ -36,6 +36,7 @@ DEFINE_uint32(stirling_socket_trace_sampling_period_millis, 100,
 namespace pl {
 namespace stirling {
 
+using ::google::protobuf::Message;
 using ::pl::grpc::MethodInputOutput;
 using ::pl::stirling::grpc::ParseProtobuf;
 using ::pl::stirling::http2::Frame;
@@ -433,11 +434,14 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record, DataTa
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
   r.Append<r.ColIndex("http_major_version")>(1);
   r.Append<r.ColIndex("http_minor_version")>(resp_message.http_minor_version);
-  r.Append<r.ColIndex("http_headers")>(
-      absl::StrJoin(resp_message.http_headers, "\n", absl::PairFormatter(": ")));
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(DetectContentType(resp_message)));
+  r.Append<r.ColIndex("http_req_headers")>(
+      absl::StrJoin(req_message.http_headers, "\n", absl::PairFormatter(": ")));
   r.Append<r.ColIndex("http_req_method")>(std::move(req_message.http_req_method));
   r.Append<r.ColIndex("http_req_path")>(std::move(req_message.http_req_path));
+  r.Append<r.ColIndex("http_req_body")>("-");
+  r.Append<r.ColIndex("http_resp_headers")>(
+      absl::StrJoin(resp_message.http_headers, "\n", absl::PairFormatter(": ")));
   r.Append<r.ColIndex("http_resp_status")>(resp_message.http_resp_status);
   r.Append<r.ColIndex("http_resp_message")>(std::move(resp_message.http_resp_message));
   r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.http_msg_body));
@@ -464,30 +468,32 @@ void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record, DataTa
   r.Append<r.ColIndex("http_major_version")>(2);
   // HTTP2 does not define minor version.
   r.Append<r.ColIndex("http_minor_version")>(0);
-  // TODO(yzhao): Populate resp_headers as well.
-  // gRPC request headers are more interesting.
-  r.Append<r.ColIndex("http_headers")>(
+  r.Append<r.ColIndex("http_req_headers")>(
       absl::StrJoin(req_message.headers, "\n", absl::PairFormatter(": ")));
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
+  r.Append<r.ColIndex("http_resp_headers")>(
+      absl::StrJoin(resp_message.headers, "\n", absl::PairFormatter(": ")));
   // TODO(yzhao): Populate the following 4 fields from headers.
   r.Append<r.ColIndex("http_req_method")>("GET");
   r.Append<r.ColIndex("http_req_path")>("PATH");
   r.Append<r.ColIndex("http_resp_status")>(200);
   r.Append<r.ColIndex("http_resp_message")>("OK");
-  // TODO(yzhao): Populate this field with parsed text format protobufs.
 
   if (FLAGS_enable_parsing_protobufs) {
     MethodInputOutput in_out = GetProtobufMessages(req_message, &grpc_desc_db_);
-    std::string json;
-    Status s = ParseProtobuf(resp_message.message, in_out.output.get(), &json);
-    if (s.ok()) {
-      r.Append<r.ColIndex("http_resp_body")>(std::move(json));
-    } else {
-      std::string msg = s.ToString();
-      LOG(ERROR) << msg;
-      r.Append<r.ColIndex("http_resp_body")>(std::move(msg));
-    }
+    auto parse_pb = [](std::string_view str, Message* pb) -> std::string {
+      std::string json;
+      Status s = ParseProtobuf(str, pb, &json);
+      if (s.ok()) {
+        return json;
+      } else {
+        return s.ToString();
+      }
+    };
+    r.Append<r.ColIndex("http_req_body")>(parse_pb(req_message.message, in_out.input.get()));
+    r.Append<r.ColIndex("http_resp_body")>(parse_pb(resp_message.message, in_out.output.get()));
   } else {
+    r.Append<r.ColIndex("http_req_body")>(std::move(req_message.message));
     r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.message));
   }
   r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns -

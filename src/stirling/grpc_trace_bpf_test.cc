@@ -39,7 +39,8 @@ constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
 constexpr DataTableSchema kHTTPTable = SocketTraceConnector::kHTTPTable;
 constexpr uint32_t kHTTPMajorVersionIdx = kHTTPTable.ColIndex("http_major_version");
 constexpr uint32_t kHTTPContentTypeIdx = kHTTPTable.ColIndex("http_content_type");
-constexpr uint32_t kHTTPHeaderIdx = kHTTPTable.ColIndex("http_headers");
+constexpr uint32_t kHTTPReqHeadersIdx = kHTTPTable.ColIndex("http_req_headers");
+constexpr uint32_t kHTTPRespHeadersIdx = kHTTPTable.ColIndex("http_resp_headers");
 constexpr uint32_t kHTTPPIDIdx = kHTTPTable.ColIndex("pid");
 constexpr uint32_t kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
 constexpr uint32_t kHTTPRemotePortIdx = kHTTPTable.ColIndex("remote_port");
@@ -102,15 +103,22 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   ASSERT_THAT(target_record_indices, SizeIs(1));
   const size_t target_record_idx = target_record_indices.front();
 
-  EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(target_record_idx)),
-              MatchesRegex(":authority: localhost:50051\n"
-                           ":method: POST\n"
-                           ":path: /pl.stirling.testing.Greeter/SayHello\n"
-                           ":scheme: http\n"
-                           "content-type: application/grpc\n"
-                           "grpc-timeout: [0-9]+u\n"
-                           "te: trailers\n"
-                           "user-agent: grpc-go/.+"));
+  EXPECT_THAT(
+      std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(target_record_idx)),
+      MatchesRegex(":authority: localhost:50051\n"
+                   ":method: POST\n"
+                   ":path: /pl.stirling.testing.Greeter/SayHello\n"
+                   ":scheme: http\n"
+                   "content-type: application/grpc\n"
+                   "grpc-timeout: [0-9]+u\n"
+                   "te: trailers\n"
+                   "user-agent: grpc-go/.+"));
+  EXPECT_THAT(
+      std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(target_record_idx)),
+      MatchesRegex(":status: 200\n"
+                   "content-type: application/grpc\n"
+                   "grpc-message: \n"
+                   "grpc-status: 0"));
   EXPECT_THAT(
       std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(target_record_idx)),
       HasSubstr("127.0.0.1"));
@@ -178,16 +186,24 @@ TEST_F(GRPCTest, BasicTracingForCPP) {
   ASSERT_THAT(target_record_indices, SizeIs(1));
   const size_t target_record_idx = target_record_indices.front();
 
-  EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(target_record_idx)),
-              MatchesRegex(":authority: 127.0.0.1:[0-9]+\n"
-                           ":method: POST\n"
-                           ":path: /pl.stirling.testing.Greeter/SayHello\n"
-                           ":scheme: http\n"
-                           "accept-encoding: identity,gzip\n"
-                           "content-type: application/grpc\n"
-                           "grpc-accept-encoding: identity,deflate,gzip\n"
-                           "te: trailers\n"
-                           "user-agent: .*"));
+  EXPECT_THAT(
+      std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(target_record_idx)),
+      MatchesRegex(":authority: 127.0.0.1:[0-9]+\n"
+                   ":method: POST\n"
+                   ":path: /pl.stirling.testing.Greeter/SayHello\n"
+                   ":scheme: http\n"
+                   "accept-encoding: identity,gzip\n"
+                   "content-type: application/grpc\n"
+                   "grpc-accept-encoding: identity,deflate,gzip\n"
+                   "te: trailers\n"
+                   "user-agent: .*"));
+  EXPECT_THAT(
+      std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(target_record_idx)),
+      MatchesRegex(":status: 200\n"
+                   "accept-encoding: identity,gzip\n"
+                   "content-type: application/grpc\n"
+                   "grpc-accept-encoding: identity,deflate,gzip\n"
+                   "grpc-status: 0"));
   EXPECT_THAT(
       std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(target_record_idx)),
       HasSubstr("127.0.0.1"));

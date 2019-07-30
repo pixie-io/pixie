@@ -69,14 +69,12 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
           {"remote_port", types::DataType::INT64, types::PatternType::GENERAL},
           {"http_major_version", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
           {"http_minor_version", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
-          // TODO(yzhao): Replace http_headers with req_headers and resp_headers. As both req and
-          // resp have headers. req_headers are particularly more meaningful for gRPC/HTTP2.
-          {"http_headers", types::DataType::STRING, types::PatternType::STRUCTURED},
-          // Possible types are from HTTPContentType enum.
           {"http_content_type", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
+          {"http_req_headers", types::DataType::STRING, types::PatternType::STRUCTURED},
           {"http_req_method", types::DataType::STRING, types::PatternType::GENERAL_ENUM},
           {"http_req_path", types::DataType::STRING, types::PatternType::STRUCTURED},
-          // TODO(yzhao): Add req_body for the payload of gRPC request.
+          {"http_req_body", types::DataType::STRING, types::PatternType::STRUCTURED},
+          {"http_resp_headers", types::DataType::STRING, types::PatternType::STRUCTURED},
           {"http_resp_status", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
           {"http_resp_message", types::DataType::STRING, types::PatternType::STRUCTURED},
           {"http_resp_body", types::DataType::STRING, types::PatternType::STRUCTURED},

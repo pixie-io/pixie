@@ -200,7 +200,7 @@ Content-Length: 0
   static constexpr uint32_t kHTTPRespStatusIdx = kHTTPTable.ColIndex("http_resp_status");
   static constexpr uint32_t kHTTPRespBodyIdx = kHTTPTable.ColIndex("http_resp_body");
   static constexpr uint32_t kHTTPRespMessageIdx = kHTTPTable.ColIndex("http_resp_message");
-  static constexpr uint32_t kHTTPHeaderIdx = kHTTPTable.ColIndex("http_headers");
+  static constexpr uint32_t kHTTPRespHeadersIdx = kHTTPTable.ColIndex("http_resp_headers");
   static constexpr uint32_t kHTTPPIDIdx = kHTTPTable.ColIndex("pid");
   static constexpr uint32_t kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
   static constexpr uint32_t kHTTPStartTimeIdx = kHTTPTable.ColIndex("pid_start_time");
@@ -233,12 +233,12 @@ TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
 
     EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(0).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
-              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
+              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0));
     EXPECT_EQ("127.0.0.1", record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(0));
 
     EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(1).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
-              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
+              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1));
     EXPECT_EQ("127.0.0.1", record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(1));
 
     // Additional verifications. These are common to all HTTP1.x tracing, so we decide to not
@@ -284,11 +284,11 @@ TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
 
     EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(0).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
-              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
+              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0));
 
     EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(1).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
-              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
+              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1));
   }
 
   // Check that MySQL table did not capture any data.
@@ -324,11 +324,11 @@ TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
 
     EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(0).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
-              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
+              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0));
 
     EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(1).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
-              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
+              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1));
   }
 
   // Check that MySQL table did not capture any data.
@@ -364,11 +364,11 @@ TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
 
     EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(0).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
-              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(0));
+              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0));
 
     EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(1).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
-              record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(1));
+              record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1));
   }
 
   // Check that MySQL table did not capture any data.
@@ -470,7 +470,7 @@ TEST_F(SocketTraceBPFTest, TestMultipleConnections) {
     for (int i = 0; i < 2; ++i) {
       results.emplace_back(
           std::make_tuple(record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(i).val,
-                          record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(i)));
+                          record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(i)));
     }
 
     EXPECT_THAT(
@@ -552,7 +552,7 @@ TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
   }
 
   for (int i : {0, 2}) {
-    EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(i)),
+    EXPECT_THAT(std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(i)),
                 StrEq("Content-Length: 1\nContent-Type: json"));
     EXPECT_EQ(200, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(i).val);
     EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(i)),
@@ -561,7 +561,7 @@ TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
                 StrEq("OK"));
   }
   for (int i : {1, 3}) {
-    EXPECT_THAT(std::string(record_batch[kHTTPHeaderIdx]->Get<types::StringValue>(i)),
+    EXPECT_THAT(std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(i)),
                 StrEq("Content-Length: 2\nContent-Type: json"));
     EXPECT_EQ(404, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(i).val);
     EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(i)),
