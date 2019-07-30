@@ -1,8 +1,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <experimental/filesystem>
-
 #include <istream>
 #include <memory>
 #include <sstream>
@@ -15,7 +13,6 @@ namespace pl {
 namespace stirling {
 
 using std::string;
-using std::experimental::filesystem::path;
 using ::testing::Return;
 
 constexpr char kTestDataBasePath[] = "src/shared/proc";
@@ -34,7 +31,8 @@ class ProcParserTest : public ::testing::Test {
     EXPECT_CALL(sysconfig, HasSystemConfig()).WillRepeatedly(Return(true));
     EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
     EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
-    EXPECT_CALL(sysconfig, proc_path()).WillRepeatedly(Return("/pl/proc"));
+    EXPECT_CALL(sysconfig, proc_path())
+        .WillRepeatedly(Return(GetPathToTestDataFile("testdata/proc")));
     parser_ = std::make_unique<ProcParser>(sysconfig);
     bytes_per_page_ = sysconfig.PageSize();
   }
@@ -43,22 +41,9 @@ class ProcParserTest : public ::testing::Test {
   int bytes_per_page_ = 0;
 };
 
-TEST_F(ProcParserTest, GetProcPidStatFilePath) {
-  EXPECT_EQ("/pl/proc/123/stat", parser_->GetProcPidStatFilePath(123));
-}
-
-TEST_F(ProcParserTest, GetProcPidStatIOFile) {
-  EXPECT_EQ("/pl/proc/123/io", parser_->GetProcPidStatIOFile(123));
-}
-
-TEST_F(ProcParserTest, ParseProcPIDNetDev) {
-  EXPECT_EQ("/pl/proc/123/net/dev", parser_->GetProcPidNetDevFile(123));
-}
-
 TEST_F(ProcParserTest, ParseNetworkStat) {
   ProcParser::NetworkStats stats;
-  auto test_file = GetPathToTestDataFile("testdata/proc/sample_net_dev");
-  PL_CHECK_OK(parser_->ParseProcPIDNetDev(test_file, &stats));
+  PL_CHECK_OK(parser_->ParseProcPIDNetDev(123, &stats));
 
   // The expeted values are from the test file above.
   EXPECT_EQ(54504114, stats.rx_bytes);
@@ -69,8 +54,7 @@ TEST_F(ProcParserTest, ParseNetworkStat) {
 
 TEST_F(ProcParserTest, ParseStatIO) {
   ProcParser::ProcessStats stats;
-  auto test_file = GetPathToTestDataFile("testdata/proc/sample_proc_io");
-  PL_CHECK_OK(parser_->ParseProcPIDStatIO(test_file, &stats));
+  PL_CHECK_OK(parser_->ParseProcPIDStatIO(123, &stats));
 
   // The expeted values are from the test file above.
   EXPECT_EQ(5405203, stats.rchar_bytes);
@@ -81,8 +65,7 @@ TEST_F(ProcParserTest, ParseStatIO) {
 
 TEST_F(ProcParserTest, ParsePidStat) {
   ProcParser::ProcessStats stats;
-  auto test_file = GetPathToTestDataFile("testdata/proc/sample_proc_pid_stat");
-  PL_CHECK_OK(parser_->ParseProcPIDStat(test_file, &stats));
+  PL_CHECK_OK(parser_->ParseProcPIDStat(123, &stats));
 
   // The expeted values are from the test file above.
   EXPECT_EQ("ibazel", stats.process_name);
@@ -100,8 +83,7 @@ TEST_F(ProcParserTest, ParsePidStat) {
 
 TEST_F(ProcParserTest, ParseStat) {
   ProcParser::SystemStats stats;
-  auto test_file = GetPathToTestDataFile("testdata/proc/sample_proc_stat");
-  PL_CHECK_OK(parser_->ParseProcStat(test_file, &stats));
+  PL_CHECK_OK(parser_->ParseProcStat(&stats));
 
   // The expected values are from the test file above.
   EXPECT_EQ(248758, stats.cpu_utime_ns);
@@ -111,7 +93,7 @@ TEST_F(ProcParserTest, ParseStat) {
 TEST_F(ProcParserTest, ParseMemInfo) {
   ProcParser::SystemStats stats;
   auto test_file = GetPathToTestDataFile("testdata/proc/sample_proc_meminfo");
-  PL_CHECK_OK(parser_->ParseProcMemInfo(test_file, &stats));
+  PL_CHECK_OK(parser_->ParseProcMemInfo(&stats));
 
   // The expected values are from the test file above.
   EXPECT_EQ(67228110848, stats.mem_total_bytes);

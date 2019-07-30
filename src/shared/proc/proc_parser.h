@@ -1,6 +1,5 @@
 #pragma once
 
-#include <experimental/filesystem>
 #include <istream>
 #include <string>
 #include <unordered_map>
@@ -11,8 +10,6 @@
 
 namespace pl {
 namespace stirling {
-
-namespace fs = std::experimental::filesystem;
 
 class ProcParser {
  public:
@@ -100,26 +97,21 @@ class ProcParser {
     void Clear() { *this = SystemStats(); }
   };
 
-  fs::path GetProcStatFilePath();
-  fs::path GetProcPidStatFilePath(int64_t pid);
-  fs::path GetProcPidStatIOFile(int64_t pid);
-  fs::path GetProcPidNetDevFile(int64_t pid);
-
   /**
    * Parses /proc/<pid>/stat files
-   * @param fpath the path to the proc file.
+   * @param pid is the pid for which we want stat data..
    * @param out A valid pointer to the output.
    * @return Status of parsing.
    */
-  Status ParseProcPIDStat(const fs::path& fpath, ProcessStats* out);
+  Status ParseProcPIDStat(int32_t pid, ProcessStats* out) const;
 
   /**
    * Parses /proc/<pid>/io files.
-   * @param fpath the path to the proc file.
+   * @param pid is the pid for which to read IO data.
    * @param out A valid pointer to an output struct.
    * @return Status of the parsing.
    */
-  Status ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out);
+  Status ParseProcPIDStatIO(int32_t pid, ProcessStats* out) const;
 
   /**
    * Parses /proc/<pid>/net/dev
@@ -127,39 +119,37 @@ class ProcParser {
    * It accumulates the results from all network devices into the output. This
    * will ignore virtual, docker and lo interfaces.
    *
-   * @param fpath The path to the proc file.
+   * @param pid is the pid for which we want net data..
    * @param out A valid pointer to an output struct.
    * @return Status of the parsing.
    */
-  static Status ParseProcPIDNetDev(const fs::path& fpath, NetworkStats* out);
+  Status ParseProcPIDNetDev(int32_t pid, NetworkStats* out) const;
 
   /**
    * Parses /proc/stat
-   * @param fpath The path to the proc stat file.
    * @param out a valid pointer to an output struct.
    * @return status of parsing.
    */
-  static Status ParseProcStat(const fs::path& fpath, SystemStats* out);
+  Status ParseProcStat(SystemStats* out) const;
 
   /**
    * Parses /proc/meminfo
-   * @param fpath the path to the proc file.
    * @param out A valid pointer to the output struct.
    * @return status of parsing
    */
-  Status ParseProcMemInfo(const fs::path& fpath, SystemStats* out);
+  Status ParseProcMemInfo(SystemStats* out) const;
 
  private:
   static Status ParseNetworkStatAccumulateIFaceData(
       const std::vector<std::string_view>& dev_stat_record, NetworkStats* out);
 
   static Status ParseFromKeyValueFile(
-      const fs::path& fpath,
+      const std::string& fpath,
       const std::unordered_map<std::string_view, size_t>& field_name_to_value_map,
       uint8_t* out_base, int64_t field_value_multiplier);
   int64_t ns_per_kernel_tick_;
   int32_t bytes_per_page_;
-  fs::path proc_base_path_;
+  std::string proc_base_path_;
 };
 
 }  // namespace stirling

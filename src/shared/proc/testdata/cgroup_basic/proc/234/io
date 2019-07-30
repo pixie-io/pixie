@@ -1,7 +1,0 @@
-rchar: 1000
-wchar: 1001
-syscr: 1002
-syscw: 1003
-read_bytes: 1004
-write_bytes: 1005
-cancelled_write_bytes: 1006

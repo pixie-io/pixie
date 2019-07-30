@@ -155,7 +155,7 @@ Status CGroupManager::GetNetworkStatsForPod(const std::string& pod,
   PL_ASSIGN_OR_RETURN(const auto* cgroup_info, GetCGroupInfoForPod(pod));
   for (const auto& container_info : cgroup_info->container_info_by_name) {
     for (const int64_t pid : container_info.second.pids) {
-      auto s = proc_parser_.ParseProcPIDNetDev(proc_parser_.GetProcPidNetDevFile(pid), stats);
+      auto s = proc_parser_.ParseProcPIDNetDev(pid, stats);
       // Since all the containers running in a K8s pod use the same network
       // namespace we only, need to pull stats from a single PID. The stats
       // themselves are the same for each PID since Linux only tracks networks
@@ -177,11 +177,9 @@ Status CGroupManager::GetNetworkStatsForPod(const std::string& pod,
 
 Status CGroupManager::GetProcessStats(int64_t pid, ProcParser::ProcessStats* stats) {
   DCHECK(stats != nullptr);
-  auto proc_stat_path = proc_parser_.GetProcPidStatFilePath(pid);
-  auto proc_io_path = proc_parser_.GetProcPidStatIOFile(pid);
 
-  PL_RETURN_IF_ERROR(proc_parser_.ParseProcPIDStat(proc_stat_path, stats));
-  PL_RETURN_IF_ERROR(proc_parser_.ParseProcPIDStatIO(proc_io_path, stats));
+  PL_RETURN_IF_ERROR(proc_parser_.ParseProcPIDStat(pid, stats));
+  PL_RETURN_IF_ERROR(proc_parser_.ParseProcPIDStatIO(pid, stats));
 
   return Status::OK();
 }

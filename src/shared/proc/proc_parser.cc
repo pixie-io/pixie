@@ -1,10 +1,11 @@
-#include <experimental/filesystem>
 #include <fstream>
 #include <limits>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+#include "absl/strings/numbers.h"
+#include "absl/strings/substitute.h"
 #include "src/shared/proc/proc_parser.h"
 
 namespace pl {
@@ -111,21 +112,7 @@ bool ShouldSkipNetIFace(const std::string_view iface) {
   return false;
 }
 
-fs::path ProcParser::GetProcStatFilePath() { return proc_base_path_ / fs::path("stat"); }
-
-fs::path ProcParser::GetProcPidStatFilePath(int64_t pid) {
-  return proc_base_path_ / std::to_string(pid) / fs::path("stat");
-}
-
-fs::path ProcParser::GetProcPidStatIOFile(int64_t pid) {
-  return proc_base_path_ / std::to_string(pid) / fs::path("io");
-}
-
-fs::path ProcParser::GetProcPidNetDevFile(int64_t pid) {
-  return proc_base_path_ / std::to_string(pid) / fs::path("net") / fs::path("dev");
-}
-
-Status ProcParser::ParseProcPIDNetDev(const fs::path& fpath, NetworkStats* out) {
+Status ProcParser::ParseProcPIDNetDev(int32_t pid, NetworkStats* out) const {
   /**
    * Sample file:
    * Inter-|   Receive                                                | Transmit
@@ -138,10 +125,11 @@ Status ProcParser::ParseProcPIDNetDev(const fs::path& fpath, NetworkStats* out) 
    */
   DCHECK(out != nullptr);
 
+  std::string fpath = absl::Substitute("$0/$1/net/dev", proc_base_path_, pid);
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
-    return error::Internal("Failed to open file $0", fpath.string());
+    return error::Internal("Failed to open file $0", fpath);
   }
 
   // Ignore the first two lines since they are just headers;
@@ -173,7 +161,7 @@ Status ProcParser::ParseProcPIDNetDev(const fs::path& fpath, NetworkStats* out) 
   return Status::OK();
 }
 
-Status ProcParser::ParseProcPIDStat(const fs::path& fpath, ProcessStats* out) {
+Status ProcParser::ParseProcPIDStat(int32_t pid, ProcessStats* out) const {
   /**
    * Sample file:
    * 4602 (ibazel) S 3260 4602 3260 34818 4602 1077936128 1799 174589 \
@@ -183,11 +171,12 @@ Status ProcParser::ParseProcPIDStat(const fs::path& fpath, ProcessStats* out) {
    * 140730842488200 140730842492896 0
    */
   DCHECK(out != nullptr);
+  std::string fpath = absl::Substitute("$0/$1/stat", proc_base_path_, pid);
 
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
-    return error::Internal("Failed to open file $0", fpath.string());
+    return error::Internal("Failed to open file $0", fpath);
   }
 
   std::string line;
@@ -196,7 +185,7 @@ Status ProcParser::ParseProcPIDStat(const fs::path& fpath, ProcessStats* out) {
     std::vector<std::string_view> split = absl::StrSplit(line, " ", absl::SkipWhitespace());
     // We check less than in case more fields are added later.
     if (split.size() < kProcStatNumFields) {
-      return error::Unknown("Incorrect number of fields in stat file: $0", fpath.string());
+      return error::Unknown("Incorrect number of fields in stat file: $0", fpath);
     }
     ok &= absl::SimpleAtoi(split[kProcStatPIDField], &out->pid);
     // The name is surrounded by () we remove it here.
@@ -223,19 +212,19 @@ Status ProcParser::ParseProcPIDStat(const fs::path& fpath, ProcessStats* out) {
     out->rss_bytes *= bytes_per_page_;
 
   } else {
-    return error::Internal("Failed to read proc stat file: $0", fpath.string());
+    return error::Internal("Failed to read proc stat file: $0", fpath);
   }
 
   if (!ok) {
     // This should never happen since it requires the file to be ill-formed
     // by the kernel.
-    return error::Internal("failed to parse stat file ($0). ATOI failed.", fpath.string());
+    return error::Internal("failed to parse stat file ($0). ATOI failed.", fpath);
   }
   return Status::OK();
 }
 
 // WARNING: since this function uses a static variable, it is not thread-safe.
-Status ProcParser::ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out) {
+Status ProcParser::ParseProcPIDStatIO(int32_t pid, ProcessStats* out) const {
   /**
    * Sample file:
    *   rchar: 5405203
@@ -247,6 +236,7 @@ Status ProcParser::ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out) 
    *   cancelled_write_bytes: 192512
    */
   DCHECK(out != nullptr);
+  std::string fpath = absl::Substitute("$0/$1/io", proc_base_path_, pid);
 
   // Just to be safe when using offsetof, make sure object is standard layout.
   static_assert(std::is_standard_layout<ProcessStats>::value);
@@ -262,7 +252,7 @@ Status ProcParser::ParseProcPIDStatIO(const fs::path& fpath, ProcessStats* out) 
                                1 /*field_value_multipler*/);
 }
 
-Status ProcParser::ParseProcStat(const fs::path& fpath, SystemStats* out) {
+Status ProcParser::ParseProcStat(SystemStats* out) const {
   /**
    * Sample file:
    * cpu  248758 4995 78314 12965346 10040 0 5498 0 0 0
@@ -270,11 +260,11 @@ Status ProcParser::ParseProcStat(const fs::path& fpath, SystemStats* out) {
    * ...
    */
   CHECK(out != nullptr);
-
+  std::string fpath = absl::Substitute("$0/stat", proc_base_path_);
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
-    return error::Internal("Failed to open file $0", fpath.string());
+    return error::Internal("Failed to open file $0", fpath);
   }
 
   std::string line;
@@ -303,7 +293,7 @@ Status ProcParser::ParseProcStat(const fs::path& fpath, SystemStats* out) {
 }
 
 // WARNING: since this function uses a static variable, it is not thread-safe.
-Status ProcParser::ParseProcMemInfo(const fs::path& fpath, SystemStats* out) {
+Status ProcParser::ParseProcMemInfo(SystemStats* out) const {
   /**
    * Sample file:
    *   MemTotal:       65652452 kB
@@ -312,6 +302,7 @@ Status ProcParser::ParseProcMemInfo(const fs::path& fpath, SystemStats* out) {
    * ...
    */
   CHECK(out != nullptr);
+  std::string fpath = absl::Substitute("$0/meminfo", proc_base_path_);
 
   // Just to be safe when using offsetof, make sure object is standard layout.
   static_assert(std::is_standard_layout<SystemStats>::value);
@@ -336,13 +327,13 @@ Status ProcParser::ParseProcMemInfo(const fs::path& fpath, SystemStats* out) {
 }
 
 Status ProcParser::ParseFromKeyValueFile(
-    const fs::path& fpath,
+    const std::string& fpath,
     const std::unordered_map<std::string_view, size_t>& field_name_to_value_map, uint8_t* out_base,
     int64_t field_value_multiplier) {
   std::ifstream ifs;
   ifs.open(fpath);
   if (!ifs) {
-    return error::Internal("Failed to open file $0", fpath.string());
+    return error::Internal("Failed to open file $0", fpath);
   }
 
   std::string line;
