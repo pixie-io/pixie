@@ -5,21 +5,24 @@
 #include <string_view>
 #include <utility>
 #include "src/stirling/event_parser.h"
+#include "src/stirling/mysql/mysql.h"
 #include "src/stirling/utils/byte_format.h"
 
 namespace pl {
 namespace stirling {
+namespace mysql {
+
 namespace {
 MySQLEventType infer_mysql_event_type(std::string_view buf) {
   std::string_view command = buf.substr(0, 1);
   if (command == MySQLParser::kComStmtPrepare) {
-    return MySQLEventType::kMySQLComStmtPrepare;
+    return MySQLEventType::kComStmtPrepare;
   } else if (command == MySQLParser::kComStmtExecute) {
-    return MySQLEventType::kMySQLComStmtExecute;
+    return MySQLEventType::kComStmtExecute;
   } else if (command == MySQLParser::kComQuery) {
-    return MySQLEventType::kMySQLComQuery;
+    return MySQLEventType::kComQuery;
   } else {
-    return MySQLEventType::kMySQLUnknown;
+    return MySQLEventType::kUnknown;
   }
 }
 }  // namespace
@@ -63,7 +66,7 @@ ParseState MySQLParser::Parse(MessageType type, std::string_view buf) {
   }
   if (type == MessageType::kRequests) {
     MySQLEventType event_type = infer_mysql_event_type(buf.substr(4));
-    if (event_type == MySQLEventType::kMySQLUnknown) {
+    if (event_type == MySQLEventType::kUnknown) {
       return ParseState::kInvalid;
     }
     curr_type_ = event_type;
@@ -95,5 +98,6 @@ ParseState MySQLParser::WriteResponse(MySQLMessage* result) {
   return ParseState::kSuccess;
 }
 
+}  // namespace mysql
 }  // namespace stirling
 }  // namespace pl

@@ -5,14 +5,16 @@
 #include <vector>
 #include "src/stirling/connection_tracker.h"
 #include "src/stirling/event_parser.h"
+#include "src/stirling/mysql/mysql.h"
 
 namespace pl {
 namespace stirling {
+namespace mysql {
 
 struct MySQLMessage {
   uint64_t timestamp_ns;
   std::string msg;
-  MySQLEventType type = MySQLEventType::kMySQLUnknown;
+  MySQLEventType type = MySQLEventType::kUnknown;
 };
 
 struct MySQLParser {
@@ -51,5 +53,7 @@ struct MySQLParser {
  */
 ParseResult<size_t> Parse(MessageType type, std::string_view buf,
                           std::deque<MySQLMessage>* messages);
+
+}  // namespace mysql
 }  // namespace stirling
 }  // namespace pl

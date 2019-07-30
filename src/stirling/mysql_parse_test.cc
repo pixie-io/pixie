@@ -5,11 +5,13 @@
 #include <deque>
 #include <random>
 #include <utility>
+#include "src/stirling/mysql/test_utils.h"
 #include "src/stirling/mysql_parse.h"
-#include "src/stirling/mysql_test_utils.h"
 
 namespace pl {
 namespace stirling {
+namespace mysql {
+
 struct MySQLReqResp {
   std::string request;
   std::string response;
@@ -37,7 +39,7 @@ class MySQLParserTest : public ::testing::Test {
                       54),
           // EOF packet
           std::string("\x05\x00\x00\x03\xfe\x00\x00\x02\x00", 9)),
-      MySQLEventType::kMySQLComStmtPrepare};
+      MySQLEventType::kComStmtPrepare};
   EventParser<MySQLMessage> parser_;
 };
 
@@ -55,12 +57,12 @@ TEST_F(MySQLParserTest, ParseComStmtPrepare) {
       testutils::GenRequest(MySQLParser::kComStmtPrepare, "SELECT age FROM users WHERE id = ?");
 
   MySQLMessage expected_message1;
-  expected_message1.type = MySQLEventType::kMySQLComStmtPrepare;
+  expected_message1.type = MySQLEventType::kComStmtPrepare;
   expected_message1.msg =
       absl::StrCat(MySQLParser::kComStmtPrepare, "SELECT name FROM users WHERE id = ?");
 
   MySQLMessage expected_message2;
-  expected_message2.type = MySQLEventType::kMySQLComStmtPrepare;
+  expected_message2.type = MySQLEventType::kComStmtPrepare;
   expected_message2.msg =
       absl::StrCat(MySQLParser::kComStmtPrepare, "SELECT age FROM users WHERE id = ?");
 
@@ -82,7 +84,7 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
   std::string msg1 = testutils::GenRequest(MySQLParser::kComStmtExecute, body);
 
   MySQLMessage expected_message1;
-  expected_message1.type = MySQLEventType::kMySQLComStmtExecute;
+  expected_message1.type = MySQLEventType::kComStmtExecute;
   expected_message1.msg = absl::StrCat(MySQLParser::kComStmtExecute, body);
 
   parser_.Append(msg1, 0);
@@ -99,11 +101,11 @@ TEST_F(MySQLParserTest, ParseComQuery) {
   std::string msg2 = testutils::GenRequest(MySQLParser::kComQuery, "SELECT age FROM users");
 
   MySQLMessage expected_message1;
-  expected_message1.type = MySQLEventType::kMySQLComQuery;
+  expected_message1.type = MySQLEventType::kComQuery;
   expected_message1.msg = absl::StrCat(MySQLParser::kComQuery, "SELECT name FROM users");
 
   MySQLMessage expected_message2;
-  expected_message2.type = MySQLEventType::kMySQLComQuery;
+  expected_message2.type = MySQLEventType::kComQuery;
   expected_message2.msg = absl::StrCat(MySQLParser::kComQuery, "SELECT age FROM users");
 
   parser_.Append(msg1, 0);
@@ -140,5 +142,6 @@ TEST_F(MySQLParserTest, ParseResponse) {
   EXPECT_THAT(parsed_messages, ElementsAre(expected_header, expected_col_def, expected_eof));
 }
 
+}  // namespace mysql
 }  // namespace stirling
 }  // namespace pl

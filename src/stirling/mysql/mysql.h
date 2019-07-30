@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace stirling {
@@ -24,6 +25,10 @@ namespace mysql {
  * this entry. A Stmt Prepare Event can be followed by multiple Stmt Execute Events, each generating
  * a new query with different params.
  */
+
+inline constexpr char kEOFPrefix = '\xfe';
+inline constexpr char kErrPrefix = '\xff';
+inline constexpr char kOKPrefix = '\x00';
 
 enum class MySQLEventType { kUnknown, kComStmtPrepare, kComStmtExecute, kComQuery };
 
@@ -111,6 +116,8 @@ enum class ResponseType {
 class Response {
  public:
   virtual ~Response() = default;
+  // TODO(chengruizhe): Remove default ctor when handle functions are implemented. Same below.
+  Response() = default;
   ResponseType type() const { return type_; }
 
  protected:
@@ -125,6 +132,7 @@ class Response {
  */
 class StmtPrepareOKResponse : public Response {
  public:
+  StmtPrepareOKResponse() = default;
   StmtPrepareOKResponse(StmtPrepareRespHeader resp_header,
                         const std::vector<ColDefinition>& col_defs,
                         const std::vector<ColDefinition>& param_defs)
@@ -150,6 +158,7 @@ class StmtPrepareOKResponse : public Response {
 // TODO(chengruizhe): Same as above. Differentiate binary Resultset and text Resultset.
 class Resultset : public Response {
  public:
+  Resultset() = default;
   // num_col could diverge from size of col_defs if packet is lost. Keeping it for detection
   // purposes.
   explicit Resultset(const int num_col, const std::vector<ColDefinition>& col_defs,
@@ -175,6 +184,7 @@ class Resultset : public Response {
  */
 class ErrResponse : public Response {
  public:
+  ErrResponse() = default;
   ErrResponse(int error_code, std::string_view msg)
       : Response(ResponseType::kErrResponse), error_code_(error_code), error_message_(msg) {}
 
@@ -201,6 +211,7 @@ class OKResponse : public Response {
 class Request {
  public:
   virtual ~Request() = default;
+  Request() = default;
   RequestType type() const { return type_; }
 
  protected:
@@ -216,6 +227,7 @@ class Request {
  */
 class StringRequest : public Request {
  public:
+  StringRequest() = default;
   explicit StringRequest(std::string_view msg) : Request(RequestType::kStringRequest), msg_(msg) {}
 
   const std::string_view msg() const { return msg_; }
@@ -226,6 +238,7 @@ class StringRequest : public Request {
 
 class StmtExecuteRequest : public Request {
  public:
+  StmtExecuteRequest() = default;
   explicit StmtExecuteRequest(int stmt_id, const std::vector<ParamPacket>& params)
       : Request(RequestType::kStmtExecuteRequest), stmt_id_(stmt_id), params_(std::move(params)) {}
 
@@ -262,6 +275,33 @@ class ReqRespEvent {
   std::unique_ptr<Request> request_ = nullptr;
   std::unique_ptr<Response> response_ = nullptr;
 };
+
+//-----------------------------------------------------------------------------
+// Table Store Entry Level Structs
+//-----------------------------------------------------------------------------
+
+/**
+ *  MySQL Entry is emitted by Stitch functions, and will be appended to the table store.
+ */
+enum class MySQLEntryStatus { kUnknown, kOK, kErr };
+
+struct Entry {
+  std::string msg;
+  MySQLEntryStatus status;
+};
+
+/**
+ * The following functions check whether a Packet is of a certain type, based on the prefixed
+ * defined in mysql.h.
+ */
+bool IsEOFPacket(const Packet& packet);
+bool IsErrPacket(const Packet& packet);
+bool IsOKPacket(const Packet& packet);
+
+/**
+ * Checks whether an EOF packet is present and pops it off if it is.
+ */
+void ProcessEOFPacket(std::deque<Packet>* resp_packets);
 
 }  // namespace mysql
 }  // namespace stirling

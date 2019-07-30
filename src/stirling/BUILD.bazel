@@ -35,6 +35,7 @@ pl_cc_library(
         "//src/common/zlib:cc_library",
         "//external:nghttp2",
         "//demos/applications/hipster_shop:cc_library",
+        "//src/stirling/mysql:cc_library",
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": [
             ":bt_files",
