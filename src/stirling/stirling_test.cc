@@ -34,11 +34,11 @@ using pl::types::Time64NSValue;
 using pl::ConstVectorView;
 
 // Test arguments, from the command line
-DEFINE_uint64(kRNGSeed, gflags::Uint64FromEnv("seed", 377), "Random Seed");
-DEFINE_uint32(kNumSources, gflags::Uint64FromEnv("num_sources", 2), "Number of sources");
-DEFINE_uint32(kNumIterMin, gflags::Uint64FromEnv("num_iter_min", 10), "Min number of iterations");
-DEFINE_uint32(kNumIterMax, gflags::Uint64FromEnv("num_iter_max", 20), "Max number of iterations");
-DEFINE_uint64(kNumProcessedRequirement, gflags::Uint64FromEnv("num_processed_required", 5000),
+DEFINE_uint64(kRNGSeed, 377, "Random Seed");
+DEFINE_uint32(kNumSources, 2, "Number of sources");
+DEFINE_uint32(kNumIterMin, 10, "Min number of iterations");
+DEFINE_uint32(kNumIterMax, 20, "Max number of iterations");
+DEFINE_uint64(kNumProcessedRequirement, 5000,
               "Number of records required to be processed before test is allowed to end");
 
 // This is the duration for which a subscription will be valid.
