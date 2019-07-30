@@ -150,7 +150,7 @@ Status CGroupManager::UpdateCGroupInfo() {
 }
 
 Status CGroupManager::GetNetworkStatsForPod(const std::string& pod,
-                                            ProcParser::NetworkStats* stats) {
+                                            system::ProcParser::NetworkStats* stats) {
   DCHECK(stats != nullptr);
   PL_ASSIGN_OR_RETURN(const auto* cgroup_info, GetCGroupInfoForPod(pod));
   for (const auto& container_info : cgroup_info->container_info_by_name) {
@@ -175,7 +175,7 @@ Status CGroupManager::GetNetworkStatsForPod(const std::string& pod,
   return error::Unknown("failed to read network stats.");
 }
 
-Status CGroupManager::GetProcessStats(int64_t pid, ProcParser::ProcessStats* stats) {
+Status CGroupManager::GetProcessStats(int64_t pid, system::ProcParser::ProcessStats* stats) {
   DCHECK(stats != nullptr);
 
   PL_RETURN_IF_ERROR(proc_parser_.ParseProcPIDStat(pid, stats));

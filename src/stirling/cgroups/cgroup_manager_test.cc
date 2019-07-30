@@ -16,6 +16,7 @@ namespace stirling {
 
 namespace fs = std::experimental::filesystem;
 using std::string;
+using system::ProcParser;
 using ::testing::Return;
 
 constexpr char kTestDataBasePath[] = "src/stirling/cgroups";

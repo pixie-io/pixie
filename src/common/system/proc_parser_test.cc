@@ -6,16 +6,16 @@
 #include <sstream>
 
 #include "src/common/system/config_mock.h"
+#include "src/common/system/proc_parser.h"
 #include "src/common/testing/testing.h"
-#include "src/shared/proc/proc_parser.h"
 
 namespace pl {
-namespace stirling {
+namespace system {
 
 using std::string;
 using ::testing::Return;
 
-constexpr char kTestDataBasePath[] = "src/shared/proc";
+constexpr char kTestDataBasePath[] = "src/common/system";
 
 namespace {
 string GetPathToTestDataFile(const string& fname) {
@@ -125,5 +125,5 @@ TEST_F(ProcParserTest, read_pid_metadata_null) {
               parser_->GetPIDCmdline(456));
 }
 
-}  // namespace stirling
+}  // namespace system
 }  // namespace pl

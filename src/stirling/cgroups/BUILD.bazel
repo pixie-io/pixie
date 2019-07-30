@@ -18,7 +18,6 @@ pl_cc_library(
     deps = [
         "//src/common/fs:cc_library",
         "//src/common/system:cc_library",
-        "//src/shared/proc:cc_library",
     ],
 )
 

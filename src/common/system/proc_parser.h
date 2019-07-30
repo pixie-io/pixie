@@ -9,7 +9,7 @@
 #include "src/common/system/system.h"
 
 namespace pl {
-namespace stirling {
+namespace system {
 
 /*
  * ProcParser is use to parse system proc psuedo filesystem.
@@ -168,5 +168,5 @@ class ProcParser {
   std::string proc_base_path_;
 };
 
-}  // namespace stirling
+}  // namespace system
 }  // namespace pl

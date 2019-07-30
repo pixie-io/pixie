@@ -10,7 +10,6 @@
 
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
-#include "src/shared/proc/proc.h"
 
 namespace pl {
 namespace stirling {
@@ -100,7 +99,7 @@ class CGroupManager {
    * @param stats The network stats.
    * @return Status of getting the network data.
    */
-  Status GetNetworkStatsForPod(const std::string& pod, ProcParser::NetworkStats* stats);
+  Status GetNetworkStatsForPod(const std::string& pod, system::ProcParser::NetworkStats* stats);
 
   /**
    * Get the procs stats per pod.
@@ -108,7 +107,7 @@ class CGroupManager {
    * @param stats The stats to be filled in.
    * @return Status of getting process stats.
    */
-  Status GetProcessStats(int64_t pid, ProcParser::ProcessStats* stats);
+  Status GetProcessStats(int64_t pid, system::ProcParser::ProcessStats* stats);
 
   /**
    * Get the information for a particular pod.
@@ -160,7 +159,7 @@ class CGroupManager {
   Status UpdatePodInfo(fs::path pod_path, const std::string& pod_name, CGroupQoS qos);
   Status UpdateContainerInfo(const fs::path& container_path, PodInfo* pod_info);
 
-  ProcParser proc_parser_;
+  system::ProcParser proc_parser_;
   fs::path sysfs_path_;
 
   // Map from pod name to group info. Pods are unique across QOS classes so we

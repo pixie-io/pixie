@@ -7,10 +7,10 @@
 
 #include "absl/strings/numbers.h"
 #include "absl/strings/substitute.h"
-#include "src/shared/proc/proc_parser.h"
+#include "src/common/system/proc_parser.h"
 
 namespace pl {
-namespace stirling {
+namespace system {
 
 /**
  * These constants are used to ignore virtual and local network interfaces.
@@ -443,5 +443,5 @@ int64_t ProcParser::GetPIDStartTime(int32_t pid) const {
   return start_time_ns;
 }
 
-}  // namespace stirling
+}  // namespace system
 }  // namespace pl

@@ -14,12 +14,14 @@
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
 #include "src/common/base/base.h"
-#include "src/shared/proc/proc_parser.h"
+#include "src/common/system/proc_parser.h"
 #include "src/stirling/cgroup_stats_connector.h"
 #include "src/stirling/cgroups/cgroup_manager.h"
 
 namespace pl {
 namespace stirling {
+
+using system::ProcParser;
 
 Status CGroupStatsConnector::InitImpl() { return cgroup_mgr_->UpdateCGroupInfo(); }
 

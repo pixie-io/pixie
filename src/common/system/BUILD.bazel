@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -9,7 +9,10 @@ pl_cc_library(
             "*.h",
             "*.cc",
         ],
-        exclude = ["**/*_mock.h"],
+        exclude = [
+            "**/*_mock.h",
+            "**/*_test.cc",
+        ],
     ),
     hdrs = ["system.h"],
 )
@@ -22,5 +25,16 @@ pl_cc_library(
     ]),
     deps = [
         ":cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "proc_parser_test",
+    srcs = ["proc_parser_test.cc"],
+    data = glob(["testdata/**/*"]),
+    deps = [
+        ":cc_library",
+        ":cc_library_mock",
+        "//src/common/testing:cc_library",
     ],
 )
