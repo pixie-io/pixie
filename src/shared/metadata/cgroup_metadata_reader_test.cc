@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
-#include "src/common/system_config/system_config_mock.h"
+#include "src/common/system/config_mock.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/metadata/cgroup_metadata_reader.h"
 
@@ -25,9 +25,9 @@ std::string GetPathToTestDataFile(const std::string& fname) {
 class CGroupMetadataReaderTest : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    common::MockSystemConfig sysconfig;
+    system::MockConfig sysconfig;
 
-    EXPECT_CALL(sysconfig, HasSystemConfig()).WillRepeatedly(Return(true));
+    EXPECT_CALL(sysconfig, HasConfig()).WillRepeatedly(Return(true));
     EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
     EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
     EXPECT_CALL(sysconfig, ClockRealTimeOffset()).WillRepeatedly(Return(128));

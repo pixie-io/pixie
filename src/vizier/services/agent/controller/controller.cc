@@ -14,7 +14,7 @@
 #include "src/common/base/base.h"
 #include "src/common/nats/nats.h"
 #include "src/common/perf/perf.h"
-#include "src/common/system_config/system_config.h"
+#include "src/common/system/system.h"
 #include "src/common/uuid/uuid.h"
 #include "src/shared/schema/utils.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
@@ -97,8 +97,8 @@ Status Controller::Init() {
   PL_RETURN_IF_ERROR(RegisterAgent());
 
   LOG(INFO) << "Creating new metadata state manager and thread";
-  mds_manager_ = std::make_unique<pl::md::AgentMetadataStateManager>(
-      asid_, pl::common::SystemConfig::GetInstance());
+  mds_manager_ =
+      std::make_unique<pl::md::AgentMetadataStateManager>(asid_, pl::system::Config::GetInstance());
 
   mds_thread = std::make_unique<std::thread>([this]() {
     while (keep_alive_) {

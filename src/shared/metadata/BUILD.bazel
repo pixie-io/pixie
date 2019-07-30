@@ -16,7 +16,7 @@ pl_cc_library(
         exclude = ["**/*_mock.h"],
     ),
     deps = [
-        "//src/common/system_config:cc_library",
+        "//src/common/system:cc_library",
         "//src/shared/k8s/metadatapb:metadata_pl_cc_proto",
         "@com_github_cameron314_concurrentqueue//:concurrentqueue",
         "@com_google_absl//absl/numeric:int128",
@@ -50,7 +50,7 @@ pl_cc_test(
     data = glob(["testdata/**/*"]),
     deps = [
         ":cc_library",
-        "//src/common/system_config:cc_library_mock",
+        "//src/common/system:cc_library_mock",
         "//src/common/testing:cc_library",
     ],
 )

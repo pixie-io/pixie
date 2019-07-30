@@ -15,7 +15,7 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/common/fs:cc_library",
-        "//src/common/system_config:cc_library",
+        "//src/common/system:cc_library",
     ],
 )
 
@@ -25,7 +25,7 @@ pl_cc_test(
     data = glob(["testdata/**/*"]),
     deps = [
         ":cc_library",
-        "//src/common/system_config:cc_library_mock",
+        "//src/common/system:cc_library_mock",
         "//src/common/testing:cc_library",
     ],
 )

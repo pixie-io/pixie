@@ -7,7 +7,7 @@
 #include <memory>
 #include <sstream>
 
-#include "src/common/system_config/system_config_mock.h"
+#include "src/common/system/config_mock.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/cgroups/cgroup_manager.h"
 
@@ -29,7 +29,7 @@ string GetPathToTestDataFile(const string& fname) {
 class CGroupManagerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    common::MockSystemConfig sysconfig;
+    system::MockConfig sysconfig;
 
     std::string prefix = "cgroup_test";
     char dir_template[] = "/tmp/cgroup_test_XXXXXX";
@@ -40,7 +40,7 @@ class CGroupManagerTest : public ::testing::Test {
     std::string proc = tmp_dir_ + "/proc";
     std::string sysfs = tmp_dir_ + "/sysfs";
 
-    EXPECT_CALL(sysconfig, HasSystemConfig()).WillRepeatedly(Return(true));
+    EXPECT_CALL(sysconfig, HasConfig()).WillRepeatedly(Return(true));
     EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
     EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
     EXPECT_CALL(sysconfig, sysfs_path()).WillRepeatedly(Return(sysfs));

@@ -64,8 +64,8 @@ constexpr int kProcStatStartTimeField = 21;
 constexpr int kProcStatVSizeField = 22;
 constexpr int kProcStatRSSField = 23;
 
-ProcParser::ProcParser(const common::SystemConfig& cfg) {
-  CHECK(cfg.HasSystemConfig()) << "System config is required for the ProcParser";
+ProcParser::ProcParser(const system::Config& cfg) {
+  CHECK(cfg.HasConfig()) << "System config is required for the ProcParser";
   ns_per_kernel_tick_ = static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond());
   clock_realtime_offset_ = cfg.ClockRealTimeOffset();
   bytes_per_page_ = cfg.PageSize();

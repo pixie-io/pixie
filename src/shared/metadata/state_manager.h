@@ -9,7 +9,7 @@
 #include "absl/container/flat_hash_set.h"
 
 #include "src/common/base/base.h"
-#include "src/common/system_config/system_config.h"
+#include "src/common/system/system.h"
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
 #include "src/shared/metadata/base_types.h"
 #include "src/shared/metadata/cgroup_metadata_reader.h"
@@ -35,10 +35,9 @@ class AgentMetadataStateManager {
   using PodUpdate = pl::shared::k8s::metadatapb::PodUpdate;
   using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
 
-  explicit AgentMetadataStateManager(uint32_t asid, pl::common::SystemConfig* config)
-      : asid_(asid) {
+  explicit AgentMetadataStateManager(uint32_t asid, pl::system::Config* config) : asid_(asid) {
     CHECK_NOTNULL(config);
-    md_reader_ = std::make_unique<CGroupMetadataReader>(*common::SystemConfig::GetInstance());
+    md_reader_ = std::make_unique<CGroupMetadataReader>(*system::Config::GetInstance());
     agent_metadata_state_ = std::make_shared<AgentMetadataState>(asid);
   }
 

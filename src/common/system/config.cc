@@ -1,10 +1,10 @@
 #include <unistd.h>
 
 #include "src/common/base/base.h"
-#include "src/common/system_config/system_config.h"
+#include "src/common/system/system.h"
 
 namespace pl {
-namespace common {
+namespace system {
 
 DEFINE_string(sysfs_path, gflags::StringFromEnv("PL_SYSFS_PATH", "/sys/fs"),
               "The path to the sysfs directory.");
@@ -16,11 +16,11 @@ DEFINE_string(proc_path, gflags::StringFromEnv("PL_PROC_PATH", "/proc"),
 #include <cstring>
 #include <ctime>
 
-class SystemConfigImpl final : public SystemConfig {
+class ConfigImpl final : public Config {
  public:
-  SystemConfigImpl() { InitClockRealTimeOffset(); }
+  ConfigImpl() { InitClockRealTimeOffset(); }
 
-  bool HasSystemConfig() const override { return true; }
+  bool HasConfig() const override { return true; }
 
   int PageSize() const override { return sysconf(_SC_PAGESIZE); }
 
@@ -52,9 +52,9 @@ class SystemConfigImpl final : public SystemConfig {
 
 #else
 
-class SystemConfigImpl final : public SystemConfig {
+class ConfigImpl final : public Config {
  public:
-  bool HasSystemConfig() const override { return false; }
+  bool HasConfig() const override { return false; }
 
   int PageSize() const override { LOG(FATAL) << "PageSize() is not implemented on this OS."; }
 
@@ -81,10 +81,10 @@ class SystemConfigImpl final : public SystemConfig {
 
 #endif
 
-SystemConfig* SystemConfig::GetInstance() {
-  static SystemConfigImpl instance;
+Config* Config::GetInstance() {
+  static ConfigImpl instance;
   return &instance;
 }
 
-}  // namespace common
+}  // namespace system
 }  // namespace pl

@@ -2,14 +2,14 @@
 
 #include <gmock/gmock.h>
 
-#include "src/common/system_config/system_config.h"
+#include "src/common/system/config.h"
 
 namespace pl {
-namespace common {
+namespace system {
 
-class MockSystemConfig : public SystemConfig {
+class MockConfig : public Config {
  public:
-  MOCK_CONST_METHOD0(HasSystemConfig, bool());
+  MOCK_CONST_METHOD0(HasConfig, bool());
   MOCK_CONST_METHOD0(PageSize, int());
   MOCK_CONST_METHOD0(KernelTicksPerSecond, int());
   MOCK_CONST_METHOD0(ClockRealTimeOffset, uint64_t());
@@ -17,5 +17,5 @@ class MockSystemConfig : public SystemConfig {
   MOCK_CONST_METHOD0(proc_path, std::string_view());
 };
 
-}  // namespace common
+}  // namespace system
 }  // namespace pl

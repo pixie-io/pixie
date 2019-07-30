@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/common/system_config/system_config.h"
+#include "src/common/system/system.h"
 #include "src/shared/proc/proc.h"
 
 namespace pl {
@@ -44,7 +44,7 @@ class CGroupManager {
    * @return unique_ptr to the CGroupManager, returns null if it can't construct
    * a valid CGroupManager.
    */
-  static std::unique_ptr<CGroupManager> Create(const common::SystemConfig& cfg);
+  static std::unique_ptr<CGroupManager> Create(const system::Config& cfg);
 
   /**
    * CGroupQoS store the K8S QoS levels.
@@ -151,7 +151,7 @@ class CGroupManager {
   uint64_t full_scan_count() { return full_scan_count_; }
 
  protected:
-  explicit CGroupManager(const common::SystemConfig& cfg) : proc_parser_(cfg) {
+  explicit CGroupManager(const system::Config& cfg) : proc_parser_(cfg) {
     sysfs_path_ = cfg.sysfs_path();
   }
 

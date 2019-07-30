@@ -4,7 +4,7 @@
 #include <chrono>
 #include <vector>
 
-#include "src/common/system_config/system_config.h"
+#include "src/common/system/system.h"
 #include "src/stirling/connection_tracker.h"
 #include "src/stirling/http2.h"
 
@@ -158,7 +158,7 @@ void ConnectionTracker::IterationTick() {
 }
 
 void ConnectionTracker::HandleInactivity() {
-  static auto sysconfig = common::SystemConfig::GetInstance();
+  static auto sysconfig = system::Config::GetInstance();
   std::experimental::filesystem::path fd_file =
       absl::StrCat(sysconfig->proc_path(), absl::Substitute("/$0/fd/$1", pid(), fd()));
 

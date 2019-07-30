@@ -5,7 +5,7 @@
 #include <memory>
 #include <sstream>
 
-#include "src/common/system_config/system_config_mock.h"
+#include "src/common/system/config_mock.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/proc/proc_parser.h"
 
@@ -26,9 +26,9 @@ string GetPathToTestDataFile(const string& fname) {
 class ProcParserTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    common::MockSystemConfig sysconfig;
+    system::MockConfig sysconfig;
 
-    EXPECT_CALL(sysconfig, HasSystemConfig()).WillRepeatedly(Return(true));
+    EXPECT_CALL(sysconfig, HasConfig()).WillRepeatedly(Return(true));
     EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
     EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
     EXPECT_CALL(sysconfig, ClockRealTimeOffset()).WillRepeatedly(Return(128));

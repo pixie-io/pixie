@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/common/system_config/system_config.h"
+#include "src/common/system/system.h"
 #include "src/shared/metadata/k8s_objects.h"
 
 namespace pl {
@@ -25,7 +25,7 @@ class CGroupMetadataReader : public NotCopyable {
   virtual ~CGroupMetadataReader() = default;
 
   // TODO(zasgar/michelle): Reconcile this constructor with the SysConfig changes when ready.
-  explicit CGroupMetadataReader(const common::SystemConfig& cfg)
+  explicit CGroupMetadataReader(const system::Config& cfg)
       : sysfs_path_(cfg.sysfs_path()),
         proc_path_(cfg.proc_path()),
         ns_per_kernel_tick_(static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond())),

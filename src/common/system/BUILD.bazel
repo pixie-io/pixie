@@ -11,7 +11,7 @@ pl_cc_library(
         ],
         exclude = ["**/*_mock.h"],
     ),
-    hdrs = ["system_config.h"],
+    hdrs = ["system.h"],
 )
 
 pl_cc_library(

@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/common/system_config/system_config.h"
+#include "src/common/system/system.h"
 #include "src/shared/types/types.h"
 #include "src/stirling/data_table.h"
 #include "src/stirling/info_class_manager.h"
@@ -189,7 +189,7 @@ class SourceConnector : public NotCopyable {
   };
 
  protected:
-  const common::SystemConfig* sysconfig_ = common::SystemConfig::GetInstance();
+  const system::Config* sysconfig_ = system::Config::GetInstance();
 
  private:
   /**

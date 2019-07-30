@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/common/system_config/system_config.h"
+#include "src/common/system/system.h"
 
 namespace pl {
 namespace stirling {
@@ -27,7 +27,7 @@ class ProcParser {
    * duration of the constructor call.
    * @param proc_base_path The base path to the proc files.
    */
-  explicit ProcParser(const common::SystemConfig& cfg);
+  explicit ProcParser(const system::Config& cfg);
 
   /**
    * NetworkStats is a struct used to store aggregated network statistics.
