@@ -35,9 +35,9 @@ class AgentMetadataStateManager {
   using PodUpdate = pl::shared::k8s::metadatapb::PodUpdate;
   using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
 
-  explicit AgentMetadataStateManager(uint32_t asid, pl::system::Config* config) : asid_(asid) {
-    CHECK_NOTNULL(config);
-    md_reader_ = std::make_unique<CGroupMetadataReader>(*system::Config::GetInstance());
+  explicit AgentMetadataStateManager(uint32_t asid, const pl::system::Config& config)
+      : asid_(asid) {
+    md_reader_ = std::make_unique<CGroupMetadataReader>(config);
     agent_metadata_state_ = std::make_shared<AgentMetadataState>(asid);
   }
 

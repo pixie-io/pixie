@@ -12,7 +12,7 @@ namespace md {
 
 class MockCGroupMetadataReader : public CGroupMetadataReader {
  public:
-  MockCGroupMetadataReader() : CGroupMetadataReader(*system::Config::GetInstance()) {}
+  MockCGroupMetadataReader() : CGroupMetadataReader(system::Config::GetInstance()) {}
   ~MockCGroupMetadataReader() override = default;
 
   MOCK_CONST_METHOD4(ReadPIDs,

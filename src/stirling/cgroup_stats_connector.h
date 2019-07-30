@@ -90,8 +90,8 @@ class CGroupStatsConnector : public SourceConnector {
  protected:
   explicit CGroupStatsConnector(std::string_view source_name)
       : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {
-    auto sysconfig = system::Config::GetInstance();
-    cgroup_mgr_ = CGroupManager::Create(*sysconfig);
+    const auto& sysconfig = system::Config::GetInstance();
+    cgroup_mgr_ = CGroupManager::Create(sysconfig);
   }
 
  private:

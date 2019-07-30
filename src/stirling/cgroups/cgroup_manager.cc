@@ -45,12 +45,12 @@ Status ReadPIDList(const fs::path& pid_file_path, std::vector<int64_t>* pid_list
 }  // namespace
 
 std::unique_ptr<CGroupManager> CGroupManager::Create() {
-  auto syscfg = system::Config::GetInstance();
-  if (!syscfg->HasConfig()) {
+  const auto& syscfg = system::Config::GetInstance();
+  if (!syscfg.HasConfig()) {
     LOG(ERROR) << "CGroupManager requires Config";
     return nullptr;
   }
-  return CGroupManager::Create(*syscfg);
+  return CGroupManager::Create(syscfg);
 }
 
 std::unique_ptr<CGroupManager> CGroupManager::Create(const system::Config& cfg) {

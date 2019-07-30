@@ -14,9 +14,9 @@ class Config : public NotCopyable {
  public:
   /**
    * Create an OS specific SystemConfig instance.
-   * @return unique_ptr to SystemConfig.
+   * @return const reference to SystemConfig.
    */
-  static Config* GetInstance();
+  static const Config& GetInstance();
 
   virtual ~Config() {}
 

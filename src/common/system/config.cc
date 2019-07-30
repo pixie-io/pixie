@@ -81,9 +81,9 @@ class ConfigImpl final : public Config {
 
 #endif
 
-Config* Config::GetInstance() {
+const Config& Config::GetInstance() {
   static ConfigImpl instance;
-  return &instance;
+  return instance;
 }
 
 }  // namespace system

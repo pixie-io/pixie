@@ -115,10 +115,7 @@ class SourceConnector : public NotCopyable {
    * @brief Utility function to convert time as recorded by in monotonic clock to real time.
    * This is especially useful for converting times from BPF, which are all in monotonic clock.
    */
-  uint64_t ClockRealTimeOffset() {
-    DCHECK(sysconfig_ != nullptr);
-    return sysconfig_->ClockRealTimeOffset();
-  }
+  uint64_t ClockRealTimeOffset() { return sysconfig_.ClockRealTimeOffset(); }
 
   /**
    * Set pointer to stirling engine. This lifetime of the referenced value
@@ -189,7 +186,7 @@ class SourceConnector : public NotCopyable {
   };
 
  protected:
-  const system::Config* sysconfig_ = system::Config::GetInstance();
+  const system::Config& sysconfig_ = system::Config::GetInstance();
 
  private:
   /**
