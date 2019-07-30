@@ -26,7 +26,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 #include "demos/applications/hipster_shop/reflection.h"
 #include "src/common/grpcutils/service_descriptor_database.h"
-#include "src/stirling/bcc_connector.h"
+#include "src/stirling/bcc_wrapper.h"
 #include "src/stirling/connection_tracker.h"
 #include "src/stirling/socket_trace.h"
 

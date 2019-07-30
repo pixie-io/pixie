@@ -11,7 +11,7 @@ pl_cc_library(
         ["*.cc"],
         exclude = [
             "**/*_test.cc",
-            "**/*_wrapper.cc",
+            "stirling_wrapper.cc",
         ],
     ),
     hdrs = glob(

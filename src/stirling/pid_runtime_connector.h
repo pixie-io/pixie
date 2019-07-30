@@ -21,7 +21,7 @@ DUMMY_SOURCE_CONNECTOR(PIDRuntimeConnector);
 
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_bpf/pidruntime.h"
-#include "src/stirling/bcc_connector.h"
+#include "src/stirling/bcc_wrapper.h"
 
 OBJ_STRVIEW(pidruntime_bcc_script, _binary_bcc_bpf_pidruntime_c_preprocessed);
 

@@ -11,7 +11,7 @@
 #include <string>
 
 #include "src/common/base/base.h"
-#include "src/stirling/bcc_connector.h"
+#include "src/stirling/bcc_wrapper.h"
 
 namespace pl {
 namespace stirling {
