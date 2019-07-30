@@ -28,6 +28,9 @@ startup --host_jvm_args=-Xmx1g
 # Which reset the filter to empty.
 build --test_tag_filters=-requires_root,-requires_bpf
 
+# Default build opts:
+build --linkopt -fuse-ld=lld
+
 # bazel build --config asan ...
 build:asan --define PL_CONFIG_ASAN=1
 build:asan --copt -D__SANITIZE_ADDRESS__
