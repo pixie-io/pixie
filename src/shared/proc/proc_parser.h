@@ -11,9 +11,15 @@
 namespace pl {
 namespace stirling {
 
+/*
+ * ProcParser is use to parse system proc psuedo filesystem.
+ *
+ * Note: Methods in here are virtual to make it easy to make.
+ */
 class ProcParser {
  public:
   ProcParser() = delete;
+  virtual ~ProcParser() = default;
 
   /**
    * ProcParser constructor.
@@ -98,21 +104,21 @@ class ProcParser {
    * @param out A valid pointer to the output.
    * @return Status of parsing.
    */
-  Status ParseProcPIDStat(int32_t pid, ProcessStats* out) const;
+  virtual Status ParseProcPIDStat(int32_t pid, ProcessStats* out) const;
 
   /**
    * Specialization of ParseProcPIDStat to just extract the start time.
    * @param pid is the pid for which we want the start time.
    * @return start time in unix time since epoch. A time of 0 implies it failed to read the time.
    */
-  int64_t GetPIDStartTime(int32_t pid) const;
+  virtual int64_t GetPIDStartTime(int32_t pid) const;
 
   /**
    * Gets the command line for a given pid.
    * @param pid is the pid for which we want the command line.
    * @return The command line string. Empty string implies we failed to read the file.
    */
-  std::string GetPIDCmdline(int32_t pid) const;
+  virtual std::string GetPIDCmdline(int32_t pid) const;
 
   /**
    * Parses /proc/<pid>/io files.
@@ -120,7 +126,7 @@ class ProcParser {
    * @param out A valid pointer to an output struct.
    * @return Status of the parsing.
    */
-  Status ParseProcPIDStatIO(int32_t pid, ProcessStats* out) const;
+  virtual Status ParseProcPIDStatIO(int32_t pid, ProcessStats* out) const;
 
   /**
    * Parses /proc/<pid>/net/dev
@@ -132,21 +138,21 @@ class ProcParser {
    * @param out A valid pointer to an output struct.
    * @return Status of the parsing.
    */
-  Status ParseProcPIDNetDev(int32_t pid, NetworkStats* out) const;
+  virtual Status ParseProcPIDNetDev(int32_t pid, NetworkStats* out) const;
 
   /**
    * Parses /proc/stat
    * @param out a valid pointer to an output struct.
    * @return status of parsing.
    */
-  Status ParseProcStat(SystemStats* out) const;
+  virtual Status ParseProcStat(SystemStats* out) const;
 
   /**
    * Parses /proc/meminfo
    * @param out A valid pointer to the output struct.
    * @return status of parsing
    */
-  Status ParseProcMemInfo(SystemStats* out) const;
+  virtual Status ParseProcMemInfo(SystemStats* out) const;
 
  private:
   static Status ParseNetworkStatAccumulateIFaceData(
