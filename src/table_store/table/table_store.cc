@@ -16,7 +16,7 @@ TableStore::GetRelationMap() {
   return map;
 }
 
-Status TableStore::AppendData(uint64_t table_id,
+Status TableStore::AppendData(uint64_t table_id, size_t /* tablet_id */,
                               std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch) {
   auto table = table_id_to_table_map_[table_id];
   PL_RETURN_IF_ERROR(table->TransferRecordBatch(std::move(record_batch)));

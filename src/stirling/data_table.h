@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "src/common/base/base.h"
@@ -9,6 +10,11 @@
 
 namespace pl {
 namespace stirling {
+
+struct TaggedRecordBatch {
+  size_t tablet_id;
+  std::unique_ptr<types::ColumnWrapperRecordBatch> records_uptr;
+};
 
 class DataTable {
  public:
@@ -22,7 +28,7 @@ class DataTable {
    *
    * @return pointer to a vector of ColumnWrapperRecordBatch pointers.
    */
-  std::unique_ptr<types::ColumnWrapperRecordBatchVec> ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> ConsumeRecordBatches();
 
   /**
    * @brief Get a pointer to the active record batch, for appending.
@@ -33,14 +39,22 @@ class DataTable {
    *
    * @return Pointer to active record batch.
    */
-  types::ColumnWrapperRecordBatch* ActiveRecordBatch() const { return record_batch_.get(); }
+  types::ColumnWrapperRecordBatch* ActiveRecordBatch(size_t tablet_id = 0);
 
   /**
    * @brief Return current occupancy of the Data Table.
    *
    * @return size_t occupancy
    */
-  size_t Occupancy() const { return record_batch_->at(0)->Size(); }
+  size_t Occupancy() const {
+    size_t occupancy = 0;
+    for (auto& [tablet_id, tablet] : tablets_) {
+      PL_UNUSED(tablet_id);
+      DCHECK(tablet != nullptr);
+      occupancy += tablet->at(0)->Size();
+    }
+    return occupancy;
+  }
 
   /**
    * @brief Occupancy of the Data Table as a percentage of size.
@@ -51,19 +65,20 @@ class DataTable {
 
  protected:
   // Initialize a new Active record batch.
-  void InitBuffers();
+  void InitBuffers(types::ColumnWrapperRecordBatch* record_batch_ptr);
 
   // Close the active record batch, and call InitBuffers to set up new active record batch.
   void SealActiveRecordBatch();
 
-  // Table schema
+  // Table schema: a DataElement to describe each column.
   std::vector<DataElement> table_schema_;
 
   // Active record batch.
-  std::unique_ptr<types::ColumnWrapperRecordBatch> record_batch_;
+  // Key is tablet id, value is tablet active record batch.
+  std::unordered_map<size_t, std::unique_ptr<types::ColumnWrapperRecordBatch>> tablets_;
 
   // Sealed record batches that have been collected, but need to be pushed upstream.
-  std::unique_ptr<types::ColumnWrapperRecordBatchVec> sealed_batches_;
+  std::vector<TaggedRecordBatch> sealed_batches_;
 
   // ColumnWrapper specific members
   static constexpr size_t kTargetCapacity = 1024;

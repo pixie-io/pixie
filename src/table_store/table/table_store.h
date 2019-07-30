@@ -52,7 +52,7 @@ class TableStore {
    */
   std::unique_ptr<RelationMap> GetRelationMap();
 
-  Status AppendData(uint64_t table_id,
+  Status AppendData(uint64_t table_id, size_t tablet_id,
                     std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch);
 
   Status SchemaAsProto(schemapb::Schema* schema) const;

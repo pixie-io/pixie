@@ -35,7 +35,6 @@ class SeqGenConnector : public SourceConnector {
   static constexpr DataElement kElementsSeq1[] = {
       {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
       {"x", types::DataType::INT64, types::PatternType::GENERAL},
-      {"xmod8", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
   };
   // clang-format on
   static constexpr auto kSeq1Table = DataTableSchema("sequence_generator1", kElementsSeq1);

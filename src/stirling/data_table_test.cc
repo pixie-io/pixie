@@ -168,9 +168,9 @@ class DataTableTest : public ::testing::Test {
 
       // Periodically consume the data
       if ((probability_dist(rng_) < push_probability_) || last_pass) {
-        auto data_batches_uptr = data_table_->ConsumeRecordBatches();
-        for (const auto& data_batch : *data_batches_uptr) {
-          CheckColumnWrapperResult(data_batch.get(), check_record, current_record);
+        auto data_batches = data_table_->ConsumeRecordBatches();
+        for (const auto& data_batch : data_batches) {
+          CheckColumnWrapperResult(data_batch.records_uptr.get(), check_record, current_record);
         }
         check_record = current_record;
       }

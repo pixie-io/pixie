@@ -87,7 +87,8 @@ Status Controller::Init() {
   if (stirling_) {
     // Register the Stirling Callback.
     stirling_->RegisterCallback(std::bind(&table_store::TableStore::AppendData, table_store_.get(),
-                                          std::placeholders::_1, std::placeholders::_2));
+                                          std::placeholders::_1, std::placeholders::_2,
+                                          std::placeholders::_3));
   }
 
   PL_RETURN_IF_ERROR(nats_connector_->Connect());

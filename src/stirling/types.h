@@ -16,7 +16,7 @@ using ArrowArrayBuilderUPtrVec = std::vector<std::unique_ptr<arrow::ArrayBuilder
 using ArrowRecordBatchSPtrVec = std::vector<std::shared_ptr<arrow::RecordBatch>>;
 
 using PushDataCallback =
-    std::function<void(uint64_t, std::unique_ptr<types::ColumnWrapperRecordBatch>)>;
+    std::function<void(uint32_t, size_t, std::unique_ptr<types::ColumnWrapperRecordBatch>)>;
 
 class DataElement {
  public:

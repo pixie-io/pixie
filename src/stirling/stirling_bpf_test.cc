@@ -31,11 +31,13 @@ class StirlingBPFTest : public ::testing::Test {
 
     // Set a dummy callback function (normally this would be in the agent).
     stirling_->RegisterCallback(std::bind(&StirlingBPFTest::AppendData, this, std::placeholders::_1,
-                                          std::placeholders::_2));
+                                          std::placeholders::_2, std::placeholders::_3));
   }
 
-  void AppendData(uint64_t table_id, std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
+  void AppendData(uint64_t table_id, size_t tablet_id,
+                  std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
     PL_UNUSED(table_id);
+    PL_UNUSED(tablet_id);
     PL_UNUSED(record_batch);
     // A black hole.
   }

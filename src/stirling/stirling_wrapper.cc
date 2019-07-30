@@ -73,7 +73,7 @@ void PrintRecordBatch(std::string_view prefix, const ConstVectorView<DataElement
   }
 }
 
-void StirlingWrapperCallback(uint64_t table_id,
+void StirlingWrapperCallback(uint64_t table_id, size_t /* tablet_id */,
                              std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
   // Note: Implicit assumption (not checked here) is that all columns have the same size
   size_t num_records = (*record_batch)[0]->Size();

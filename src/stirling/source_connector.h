@@ -161,8 +161,8 @@ class SourceConnector : public NotCopyable {
   template <const DataTableSchema* schema>
   class RecordBuilder {
    public:
-    explicit RecordBuilder(DataTable* data_table)
-        : record_batch_(*data_table->ActiveRecordBatch()) {}
+    explicit RecordBuilder(DataTable* data_table, size_t tablet_id = 0)
+        : record_batch_(*data_table->ActiveRecordBatch(tablet_id)) {}
 
     // For convenience, a wrapper around ColIndex() in the DataTableSchema class.
     constexpr uint32_t ColIndex(std::string_view name) { return schema->ColIndex(name); }

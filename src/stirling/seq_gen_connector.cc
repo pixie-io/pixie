@@ -34,10 +34,10 @@ void SeqGenConnector::TransferDataTable0(uint32_t num_records, DataTable* data_t
 
 void SeqGenConnector::TransferDataTable1(uint32_t num_records, DataTable* data_table) {
   for (uint32_t irecord = 0; irecord < num_records; ++irecord) {
-    RecordBuilder<&kSeq1Table> r(data_table);
+    auto tablet_id = table1_mod8_seq_();
+    RecordBuilder<&kSeq1Table> r(data_table, tablet_id);
     r.Append<r.ColIndex("time_")>(table1_time_seq_());
     r.Append<r.ColIndex("x")>(table1_lin_seq_());
-    r.Append<r.ColIndex("xmod8")>(table1_mod8_seq_());
   }
 }
 

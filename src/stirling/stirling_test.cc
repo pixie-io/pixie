@@ -7,6 +7,7 @@
 
 #include "absl/strings/str_format.h"
 #include "src/common/base/base.h"
+#include "src/common/base/hash_utils.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/seq_gen_connector.h"
 #include "src/stirling/sequence_generator.h"
@@ -50,6 +51,39 @@ const double kSubscribeProb = 0.7;
 // If test typically takes too long, you may want to reduce kNumIterMin or kNumProcessedRequirement.
 // Note that kNumIterMax * kDurationPerIter defines the maximum time the test can take.
 
+// This struct is used as a unordered_map key, to uniquely identify a sequence.
+// Each column in each tablet of each table is mapped to a unique, deterministic sequence of values.
+struct TableTabletCol {
+  uint64_t table;
+  size_t tablet;
+  size_t col;
+
+  bool operator==(const TableTabletCol& other) const {
+    return (table == other.table) && (tablet == other.tablet) && (col == other.col);
+  }
+};
+
+// Hash function required to use TableTabletCol as an unorered_map key.
+class TableTabletColHashFn {
+ public:
+  size_t operator()(const TableTabletCol& val) const {
+    size_t hash = 0;
+    hash = pl::HashCombine(hash, val.table);
+    hash = pl::HashCombine(hash, val.tablet);
+    hash = pl::HashCombine(hash, val.col);
+    return hash;
+  }
+};
+
+/**
+ * StringTest is an end-to-end test of Stirling. It uses the Sequence Generator connector
+ * as a deterministic data source. It then periodically samples this data source,
+ * and also periodically pushes the data through the registered callback.
+ *
+ * The registered callback ensures that the sequence of data values pushed matches
+ * the expected sequence. If any value in the sequence is missing, or no data is pushed
+ * at all, then it means that something is busted.
+ */
 class StirlingTest : public ::testing::Test {
  private:
   std::unique_ptr<Stirling> stirling_;
@@ -59,8 +93,12 @@ class StirlingTest : public ::testing::Test {
   std::unordered_map<uint32_t, const ConstVectorView<DataElement>> schemas_;
 
   // Reference model (checkers).
-  std::unordered_map<uint64_t, std::unique_ptr<pl::stirling::Sequence<int64_t>>> int_seq_checker_;
-  std::unordered_map<uint64_t, std::unique_ptr<pl::stirling::Sequence<double>>> double_seq_checker_;
+  std::unordered_map<TableTabletCol, std::unique_ptr<pl::stirling::Sequence<int64_t>>,
+                     TableTabletColHashFn>
+      int_seq_checker_;
+  std::unordered_map<TableTabletCol, std::unique_ptr<pl::stirling::Sequence<double>>,
+                     TableTabletColHashFn>
+      double_seq_checker_;
 
   std::unordered_map<uint32_t, uint64_t> num_processed_per_table_;
   std::atomic<uint64_t> num_processed_;
@@ -95,40 +133,52 @@ class StirlingTest : public ::testing::Test {
     stirling_ = Stirling::Create(std::move(registry));
 
     // Set a dummy callback function (normally this would be in the agent).
-    stirling_->RegisterCallback(
-        std::bind(&StirlingTest::AppendData, this, std::placeholders::_1, std::placeholders::_2));
+    stirling_->RegisterCallback(std::bind(&StirlingTest::AppendData, this, std::placeholders::_1,
+                                          std::placeholders::_2, std::placeholders::_3));
 
     stirling_->GetPublishProto(&publish_proto_);
 
     const auto& id_to_name_map = stirling_->TableIDToNameMap();
 
+    // Create reference model
     for (const auto& [id, name] : id_to_name_map) {
+
       if (name[name.length() - 1] == '0') {
+        // Table 0 is a simple (non-tabletized) table with multiple columns.
+        // Here we append checkers that mimics the sequences from kSeq0Table from seq_gen_connector.h.
+
         schemas_.emplace(id, SeqGenConnector::kSeq0Table.elements());
 
         uint32_t col_idx = 1;  // Start at 1, because column 0 is time.
-        int_seq_checker_.emplace((id << 32) | col_idx++,
+        int_seq_checker_.emplace(TableTabletCol{id, 0, col_idx++},
                                  std::make_unique<pl::stirling::LinearSequence<int64_t>>(1, 1));
-        int_seq_checker_.emplace((id << 32) | col_idx++,
+        int_seq_checker_.emplace(TableTabletCol{id, 0, col_idx++},
                                  std::make_unique<pl::stirling::ModuloSequence<int64_t>>(10));
         int_seq_checker_.emplace(
-            (id << 32) | col_idx++,
+            TableTabletCol{id, 0, col_idx++},
             std::make_unique<pl::stirling::QuadraticSequence<int64_t>>(1, 0, 0));
-        int_seq_checker_.emplace((id << 32) | col_idx++,
+        int_seq_checker_.emplace(TableTabletCol{id, 0, col_idx++},
                                  std::make_unique<pl::stirling::FibonacciSequence<int64_t>>());
         double_seq_checker_.emplace(
-            (id << 32) | col_idx++,
+            TableTabletCol{id, 0, col_idx++},
             std::make_unique<pl::stirling::LinearSequence<double>>(3.14159, 0));
 
         num_processed_per_table_.emplace(id, 0);
       } else if (name[name.length() - 1] == '1') {
+        // Table 0 is a tabletized table.
+        // Here we append checkers that mimics the sequences from kSeq1Table from seq_gen_connector.h.
+        // The modulo column from the table is used to form 8 distinct tablets.
+
         schemas_.emplace(id, SeqGenConnector::kSeq1Table.elements());
 
-        uint32_t col_idx = 1;  // Start at 1, because column 0 is time.
-        int_seq_checker_.emplace((id << 32) | col_idx++,
-                                 std::make_unique<pl::stirling::LinearSequence<int64_t>>(2, 2));
-        int_seq_checker_.emplace((id << 32) | col_idx++,
-                                 std::make_unique<pl::stirling::ModuloSequence<int64_t>>(8));
+        // Spread seq_gen's second table into tablets, based on its modulo column (mod 8).
+        static const uint32_t kModulo = 8;
+        for (uint32_t t = 0; t < kModulo; ++t) {
+          uint32_t col_idx = 1;  // Start at 1, because column 0 is time.
+          int_seq_checker_.emplace(
+              TableTabletCol{id, t, col_idx++},
+              std::make_unique<pl::stirling::LinearSequence<int64_t>>(2 * kModulo, 2 + (2 * t)));
+        }
 
         num_processed_per_table_.emplace(id, 0);
       }
@@ -163,13 +213,14 @@ class StirlingTest : public ::testing::Test {
 
   SubProto GenerateRandomSubscription() { return GenerateRandomSubscription(publish_proto_); }
 
-  void AppendData(uint64_t table_id, std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
+  void AppendData(uint64_t table_id, uint32_t tablet_id,
+                  std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
     // Note: Implicit assumption (not checked here) is that all columns have the same size
     size_t num_records = (*record_batch)[0]->Size();
-    CheckRecordBatch(table_id, num_records, *record_batch);
+    CheckRecordBatch(table_id, tablet_id, num_records, *record_batch);
   }
 
-  void CheckRecordBatch(const uint64_t table_id, size_t num_records,
+  void CheckRecordBatch(uint64_t table_id, uint32_t tablet_id, size_t num_records,
                         const ColumnWrapperRecordBatch& record_batch) {
     auto table_schema = schemas_[table_id];
 
@@ -177,7 +228,7 @@ class StirlingTest : public ::testing::Test {
       uint32_t j = 0;
 
       for (const auto& col : record_batch) {
-        uint64_t key = table_id << 32 | j;
+        TableTabletCol key{table_id, tablet_id, j};
 
         switch (table_schema[j].type()) {
           case DataType::TIME64NS: {

@@ -58,9 +58,9 @@ void InfoClassManager::SampleData() {
 
 void InfoClassManager::PushData(PushDataCallback agent_callback) {
   auto record_batches = data_table_->ConsumeRecordBatches();
-  for (auto& record_batch : *record_batches) {
-    if (!record_batch->empty()) {
-      agent_callback(id(), std::move(record_batch));
+  for (auto& record_batch : record_batches) {
+    if (!record_batch.records_uptr->empty()) {
+      agent_callback(id(), record_batch.tablet_id, std::move(record_batch.records_uptr));
     }
   }
 

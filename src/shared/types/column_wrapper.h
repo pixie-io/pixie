@@ -17,7 +17,6 @@ namespace types {
 class ColumnWrapper;
 using SharedColumnWrapper = std::shared_ptr<ColumnWrapper>;
 using ColumnWrapperRecordBatch = std::vector<types::SharedColumnWrapper>;
-using ColumnWrapperRecordBatchVec = std::vector<std::unique_ptr<ColumnWrapperRecordBatch>>;
 
 template <typename T>
 class ColumnWrapperTmpl;

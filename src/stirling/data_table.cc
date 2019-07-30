@@ -19,17 +19,13 @@ DataTable::DataTable(const InfoClassSchema& schema) {
   for (const auto& info_class_element : schema) {
     table_schema_.emplace_back(info_class_element);
   }
-  sealed_batches_ =
-      std::make_unique<std::vector<std::unique_ptr<types::ColumnWrapperRecordBatch>>>();
-  InitBuffers();
 }
 
 DataTable::DataTable(const DataTableSchema& schema) : DataTable(InfoClassSchema(schema)) {}
 
-void DataTable::InitBuffers() {
-  DCHECK(record_batch_ == nullptr);
-
-  record_batch_ = std::make_unique<types::ColumnWrapperRecordBatch>();
+void DataTable::InitBuffers(types::ColumnWrapperRecordBatch* record_batch_ptr) {
+  DCHECK(record_batch_ptr != nullptr);
+  DCHECK(record_batch_ptr->empty());
 
   for (const auto& element : table_schema_) {
     pl::types::DataType type = element.type();
@@ -37,29 +33,40 @@ void DataTable::InitBuffers() {
 #define TYPE_CASE(_dt_)                           \
   auto col = types::ColumnWrapper::Make(_dt_, 0); \
   col->Reserve(kTargetCapacity);                  \
-  record_batch_->push_back(col);
+  record_batch_ptr->push_back(col);
     PL_SWITCH_FOREACH_DATATYPE(type, TYPE_CASE);
 #undef TYPE_CASE
   }
 }
 
-std::unique_ptr<types::ColumnWrapperRecordBatchVec> DataTable::ConsumeRecordBatches() {
+types::ColumnWrapperRecordBatch* DataTable::ActiveRecordBatch(size_t tablet_id) {
+  auto& tablet_ptr = tablets_[tablet_id];
+  if (tablet_ptr == nullptr) {
+    tablet_ptr = std::make_unique<types::ColumnWrapperRecordBatch>();
+    InitBuffers(tablet_ptr.get());
+  }
+  return tablet_ptr.get();
+}
+
+std::vector<TaggedRecordBatch> DataTable::ConsumeRecordBatches() {
   SealActiveRecordBatch();
 
-  auto sealed_batches_uptr = std::move(sealed_batches_);
-
-  sealed_batches_ = std::make_unique<types::ColumnWrapperRecordBatchVec>();
-
-  return sealed_batches_uptr;
+  std::vector<TaggedRecordBatch> return_batches;
+  return_batches = std::move(sealed_batches_);
+  sealed_batches_.clear();
+  return return_batches;
 }
 
 void DataTable::SealActiveRecordBatch() {
-  for (uint32_t i = 0; i < table_schema_.size(); ++i) {
-    auto col = (*record_batch_)[i];
-    col->ShrinkToFit();
+  for (auto& [tablet_id, tablet] : tablets_) {
+    PL_UNUSED(tablet_id);
+    for (size_t j = 0; j < table_schema_.size(); ++j) {
+      auto col = (*tablet)[j];
+      col->ShrinkToFit();
+    }
+    sealed_batches_.push_back(TaggedRecordBatch{tablet_id, std::move(tablet)});
   }
-  sealed_batches_->push_back(std::move(record_batch_));
-  InitBuffers();
+  tablets_.clear();
 }
 
 }  // namespace stirling
