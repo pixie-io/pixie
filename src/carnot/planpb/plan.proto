@@ -59,6 +59,7 @@ enum OperatorType {
   FILTER_OPERATOR = 2200;
   LIMIT_OPERATOR = 2300;
   UNION_OPERATOR = 2400;
+  JOIN_OPERATOR = 2500;
   // Sink operators are range 9000-10000.
   MEMORY_SINK_OPERATOR = 9000;
   GRPC_SINK_OPERATOR = 9100;
@@ -87,6 +88,8 @@ message Operator {
     GrpcSourceOperator grpc_source_op = 9;
     // Operator that stores data to a remote node via grpc.
     GrpcSinkOperator grpc_sink_op = 10;
+    // Operator that performs a join based on column equality and/or time_ columns within a certain range of each other.
+    JoinOperator join_op = 11;
   }
 }
 
@@ -195,6 +198,38 @@ message UnionOperator {
   repeated string column_names = 1;
   repeated ColumnMapping column_mappings = 2;
   int64 rows_per_batch = 3;
+}
+
+// Join performs an equijoin join across two input tables.
+// It specifies the output columns as well as the join type.
+// It preserves order across the output time_ column, if there is one.
+message JoinOperator {
+  enum JoinType {
+    INNER = 0;
+    // Right outer joins should be mapped into left outer joins by the compiler.
+    LEFT_OUTER = 1;
+    FULL_OUTER = 3;
+  }
+
+  // Equality condition represents one particular condition in an equijoin.
+  message EqualityCondition {
+    int64 left_column_index = 1;
+    int64 right_column_index = 2;
+  }
+
+  // This message represents a column that is outputted by the join.
+  message OutputColumn {
+    // parent_index indicates which parent table this column comes from.
+    // So 0 means it comes from the left table, 1 means it comes from the right table.
+    int64 parent_index = 1;
+    int64 column_index = 2;
+  }
+
+  JoinType type = 1;
+  repeated EqualityCondition equality_conditions = 2;
+  repeated OutputColumn output_columns = 3;
+  // These are the names are the output columns.
+  repeated string column_names = 4;
 }
 
 // Scalar expression is any single valued expression.

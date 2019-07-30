@@ -351,6 +351,24 @@ const char* kUnionOperatorMismatched = R"(
   }
 )";
 
+const char* kJoinOperator1 = R"(
+  type: INNER
+  equality_conditions {
+    left_column_index: 0
+    right_column_index: 1
+  }
+  output_columns: {
+    parent_index: 0
+    column_index: 1
+  }
+  output_columns: {
+    parent_index: 1
+    column_index: 0
+  }
+  column_names: "abc"
+  column_names: "time_"
+)";
+
 /**
  * Template for Map Operator.
  *   $0 : the expressions
@@ -896,6 +914,13 @@ planpb::Operator CreateTestLimit1PB() {
   planpb::Operator op;
   auto op_proto =
       absl::Substitute(kOperatorProtoTmpl, "LIMIT_OPERATOR", "limit_op", kLimitOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestJoin() {
+  planpb::Operator op;
+  auto op_proto = absl::Substitute(kOperatorProtoTmpl, "JOIN_OPERATOR", "join_op", kJoinOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }
