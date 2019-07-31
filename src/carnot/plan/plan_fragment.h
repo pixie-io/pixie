@@ -49,6 +49,7 @@ class PlanFragmentWalker {
   using MemorySinkWalkFn = std::function<void(const MemorySinkOperator&)>;
   using FilterWalkFn = std::function<void(const FilterOperator&)>;
   using LimitWalkFn = std::function<void(const LimitOperator&)>;
+  using UnionWalkFn = std::function<void(const UnionOperator&)>;
 
   /**
    * Register callback for when a memory source operator is encountered.
@@ -111,6 +112,16 @@ class PlanFragmentWalker {
   }
 
   /**
+   * Register callback for when a union operator is encountered.
+   * @param fn The function to call when a UnionOperator is encountered.
+   * @return self to allow chaining
+   */
+  PlanFragmentWalker& OnUnion(const UnionWalkFn& fn) {
+    on_union_walk_fn_ = fn;
+    return *this;
+  }
+
+  /**
    * Perform a walk of the plan fragment operators in a topologically-sorted order.
    * @param plan_fragment The plan fragment to walk.
    */
@@ -128,6 +139,7 @@ class PlanFragmentWalker {
   MemorySinkWalkFn on_memory_sink_walk_fn_;
   FilterWalkFn on_filter_walk_fn_;
   LimitWalkFn on_limit_walk_fn_;
+  UnionWalkFn on_union_walk_fn_;
 };
 
 }  // namespace plan

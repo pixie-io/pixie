@@ -10,6 +10,7 @@
 #include "src/carnot/exec/map_node.h"
 #include "src/carnot/exec/memory_sink_node.h"
 #include "src/carnot/exec/memory_source_node.h"
+#include "src/carnot/exec/union_node.h"
 #include "src/carnot/plan/plan_state.h"
 #include "src/common/memory/memory.h"
 #include "src/table_store/table_store.h"
@@ -50,6 +51,9 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
       })
       .OnLimit([&](auto& node) {
         return OnOperatorImpl<plan::LimitOperator, LimitNode>(node, &descriptors);
+      })
+      .OnUnion([&](auto& node) {
+        return OnOperatorImpl<plan::UnionOperator, UnionNode>(node, &descriptors);
       })
       .Walk(pf_);
   return Status::OK();

@@ -132,6 +132,7 @@ Status CarnotImpl::RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan:
       .OnLimit([&](const auto&) {})
       .OnMemorySink([&](const auto&) {})
       .OnMemorySource([&](const auto&) {})
+      .OnUnion([&](const auto&) {})
       .Walk(pf);
   return Status::OK();
 }
