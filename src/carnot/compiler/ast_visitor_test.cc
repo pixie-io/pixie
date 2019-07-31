@@ -477,8 +477,8 @@ TEST_P(OpsAsAttributes, valid_attributes) {
 }
 std::vector<std::string> operators{
     "Filter(fn=lambda r : r.bool_col)", "Map(fn=lambda r : r.bool_col)",
-    "Agg(fn=lambda r : pl.count(r.bool_col),by=lambda r : r.bool_col)", "Limit(rows=1000)",
-    "Range(start=plc.now() - plc.minutes(2), stop=plc.now())"};
+    "Agg(fn=lambda r : {'count': pl.count(r.bool_col)},by=lambda r : r.bool_col)",
+    "Limit(rows=1000)", "Range(start=plc.now() - plc.minutes(2), stop=plc.now())"};
 
 INSTANTIATE_TEST_CASE_P(OpsAsAttributesSuite, OpsAsAttributes, ::testing::ValuesIn(operators));
 
@@ -496,18 +496,20 @@ TEST_P(MetadataAttributes, valid_metadata_calls) {
 std::vector<std::string> metadata_operators{
     "Filter(fn=lambda r : r.attr.services == 'orders')",
     "Map(fn=lambda r : {'services': r.attr.services})",
-    "Agg(fn=lambda r : pl.count(r.bool_col),by=lambda r : r.attr.services)",
-    "Agg(fn=lambda r : pl.count(r.bool_col),by=lambda r : [r.not_bool_col, r.attr.services])"};
+    "Agg(fn=lambda r : {'count': pl.count(r.bool_col)},by=lambda r : r.attr.services)",
+    "Agg(fn=lambda r : {'count': pl.count(r.bool_col)},by=lambda r : [r.not_bool_col, "
+    "r.attr.services])"};
 
 INSTANTIATE_TEST_CASE_P(MetadataAttributesSuite, MetadataAttributes,
                         ::testing::ValuesIn(metadata_operators));
 
 TEST(MetadataAttributes, metadata_columns_added) {
-  std::string valid_query = absl::StrJoin(
-      {"queryDF = From(table='cpu', select=['bool_col', 'not_bool_col']) ",
-       "opDF = queryDF.Agg(fn=lambda r : pl.count(r.bool_col),by=lambda r : r.attr.services)",
-       "opDF.Result(name='out')"},
-      "\n");
+  std::string valid_query =
+      absl::StrJoin({"queryDF = From(table='cpu', select=['bool_col', 'not_bool_col']) ",
+                     "opDF = queryDF.Agg(fn=lambda r :{'count': pl.count(r.bool_col)},by=lambda r "
+                     ": r.attr.services)",
+                     "opDF.Result(name='out')"},
+                    "\n");
   VLOG(1) << valid_query;
   std::shared_ptr<IR> graph = ParseQuery(valid_query).ValueOrDie();
   IRNode* current_node = nullptr;
@@ -522,11 +524,10 @@ TEST(MetadataAttributes, metadata_columns_added) {
       << absl::Substitute("Found $0 instead of BlockingAGg", current_node->type_string());
 
   BlockingAggIR* agg_node = static_cast<BlockingAggIR*>(current_node);
-  LambdaIR* by_lambda = agg_node->by_func();
-  ASSERT_FALSE(by_lambda->HasDictBody());
-  IRNode* group_by = by_lambda->GetDefaultExpr().ValueOrDie();
-  EXPECT_EQ(group_by->type(), IRNodeType::kMetadata);
-  MetadataIR* metadata_node = static_cast<MetadataIR*>(group_by);
+  std::vector<ColumnIR*> groups = agg_node->groups();
+  EXPECT_EQ(groups.size(), 1UL);
+  EXPECT_EQ(groups[0]->type(), IRNodeType::kMetadata);
+  MetadataIR* metadata_node = static_cast<MetadataIR*>(groups[0]);
   EXPECT_EQ(metadata_node->name(), "services");
 }
 
@@ -546,6 +547,54 @@ TEST(MetadataAttributes, nested_attribute_logical_errors) {
   // TODO(philkuz) update statusHasCompilerError to be friendly with EXPECT_THAT.
   EXPECT_THAT(failed_query_status.status(),
               HasCompilerError("Nested \'attr\' not supported with parent \'pl\'."));
+}
+TEST(AggTest, not_allowed_by_arguments) {
+  std::string single_col_bad_by_fn_expr = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=0,stop=10)",
+          "rangeDF = queryDF.Agg(by=lambda r : 1+2, fn=lambda r: {'cpu_count' : "
+          "pl.count(r.cpu0)}).Result(name='cpu2')",
+      },
+      "\n");
+  auto ir_graph_status = ParseQuery(single_col_bad_by_fn_expr);
+  VLOG(1) << ir_graph_status.ToString();
+  ASSERT_NOT_OK(ir_graph_status);
+
+  std::string single_col_dict_by_fn = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=0,stop=10)",
+          "rangeDF = queryDF.Agg(by=lambda r : {'cpu' : r.cpu0}, fn=lambda r : {'cpu_count' : "
+          "pl.count(r.cpu0)}).Result(name='cpu2')",
+      },
+      "\n");
+
+  ir_graph_status = ParseQuery(single_col_dict_by_fn);
+  VLOG(1) << ir_graph_status.ToString();
+  ASSERT_NOT_OK(ir_graph_status);
+}
+
+TEST(AggTest, nested_agg_expression_should_fail) {
+  std::string nested_agg_fn = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=0, stop=10)",
+          "rangeDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
+          "pl.sum(pl.mean(r.cpu0))}).Result(name='cpu2')",
+      },
+      "\n");
+  auto ir_graph_status = ParseQuery(nested_agg_fn);
+  VLOG(1) << ir_graph_status.ToString();
+  EXPECT_NOT_OK(ir_graph_status);
+
+  std::string add_combination = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu0', 'cpu1']).Range(start=0, stop=10)",
+          "rangeDF = queryDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
+          "pl.mean(r.cpu0)+2}).Result(name='cpu2')",
+      },
+      "\n");
+  ir_graph_status = ParseQuery(add_combination);
+  VLOG(1) << ir_graph_status.ToString();
+  EXPECT_NOT_OK(ir_graph_status);
 }
 
 }  // namespace compiler

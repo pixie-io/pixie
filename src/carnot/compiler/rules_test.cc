@@ -343,7 +343,7 @@ TEST_F(DataTypeRuleTest, function_in_agg) {
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({col}), false /* compile_time */, ast));
-  EXPECT_OK(lambda->Init({col->col_name()}, func, ast));
+  EXPECT_OK(lambda->Init({col->col_name()}, ColExpressionVector({{"func", func}}), ast));
   ArgMap amap({{"fn", lambda}, {"by", nullptr}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
 
@@ -1180,7 +1180,7 @@ TEST_F(ResolveMetadataTest, multiple_mds_in_one_op) {
   ResolveMetadataRule rule(compiler_state_.get(), md_handler.get());
   rule.Execute(graph.get());
   EXPECT_NE(agg->parent()->id(), mem_src->id());
-  ASSERT_EQ(agg->parent()->type(), IRNodeType::kMetadataResolver);
+  ASSERT_EQ(agg->parent()->type(), IRNodeType::kMetadataResolver) << agg->parent()->type_string();
   // no layers of md.
   ASSERT_EQ(agg->parent()->parent()->type(), IRNodeType::kMemorySource);
   auto md_resolver = static_cast<MetadataResolverIR*>(agg->parent());

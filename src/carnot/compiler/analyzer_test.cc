@@ -692,10 +692,9 @@ TEST_F(AnalyzerTest, assign_uda_func_ids) {
   EXPECT_OK(agg_node_status);
   auto agg_node = static_cast<BlockingAggIR*>(agg_node_status.ConsumeValueOrDie());
 
-  auto lambda_func = static_cast<LambdaIR*>(agg_node->agg_func());
-  auto func_node = static_cast<FuncIR*>(lambda_func->col_exprs()[0].node);
+  auto func_node = static_cast<FuncIR*>(agg_node->aggregate_expressions()[0].node);
   EXPECT_EQ(0, func_node->func_id());
-  func_node = static_cast<FuncIR*>(lambda_func->col_exprs()[1].node);
+  func_node = static_cast<FuncIR*>(agg_node->aggregate_expressions()[1].node);
   EXPECT_EQ(1, func_node->func_id());
 }
 
@@ -732,11 +731,12 @@ TEST_P(MetadataSingleOps, valid_metadata_calls) {
 std::vector<std::string> metadata_operators{
     "Filter(fn=lambda r : r.attr.service == 'pl/orders')",
     "Map(fn=lambda r: {'service': r.attr.service})",
-    "Agg(fn=lambda r: pl.mean(r.cpu0), by=lambda r: r.attr.service)",
-    "Agg(fn=lambda r: pl.count(r.cpu0), by=lambda r: [r.cpu0, r.attr.service])",
-    "Agg(fn=lambda r: pl.count(r.cpu0), by=lambda r: r.attr.service).Filter(fn=lambda r: "
+    "Agg(fn=lambda r: {'mean': pl.mean(r.cpu0)}, by=lambda r: r.attr.service)",
+    "Agg(fn=lambda r: {'mean': pl.count(r.cpu0)}, by=lambda r: [r.cpu0, r.attr.service])",
+    "Agg(fn=lambda r: {'mean': pl.count(r.cpu0)}, by=lambda r: r.attr.service).Filter(fn=lambda r: "
     "r.attr.service == 'pl/orders')",
-    "Agg(fn=lambda r: pl.count(r.cpu0), by=lambda r: r.attr.service_id).Filter(fn=lambda r: "
+    "Agg(fn=lambda r: {'mean': pl.count(r.cpu0)}, by=lambda r: r.attr.service_id).Filter(fn=lambda "
+    "r: "
     "r.attr.service == 'pl/orders')"};
 
 INSTANTIATE_TEST_CASE_P(MetadataAttributesSuite, MetadataSingleOps,

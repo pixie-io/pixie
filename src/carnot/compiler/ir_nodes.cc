@@ -443,32 +443,111 @@ Status BlockingAggIR::InitImpl(const ArgMap& args) {
                              agg_func->type_string());
   }
 
-  // If by_func_ is not a null pointer, then update the graph with it. Otherwise, continue
-  // onwards.
-  if (by_func == nullptr) {
-    by_func_ = nullptr;
-  } else if (by_func->type() == IRNodeType::kLambda) {
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, by_func));
-    by_func_ = static_cast<LambdaIR*>(by_func);
-  } else {
+  // By_func is either nullptr or a lambda.
+  if (by_func != nullptr && by_func->type() != IRNodeType::kLambda) {
     return CreateIRNodeError("Expected 'by' argument of Agg to be 'Lambda', got '$0'",
                              by_func->type_string());
+  } else if (by_func != nullptr) {
+    PL_RETURN_IF_ERROR(SetupGroupBy(static_cast<LambdaIR*>(by_func)));
   }
 
-  agg_func_ = static_cast<LambdaIR*>(agg_func);
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, agg_func_));
+  PL_RETURN_IF_ERROR(SetupAggFunctions(static_cast<LambdaIR*>(agg_func)));
 
-  return Status();
+  return Status::OK();
+}
+
+Status BlockingAggIR::SetupGroupBy(LambdaIR* by_lambda) {
+  // Make sure default expr
+  // Convert to list of groups.
+  if (by_lambda->HasDictBody()) {
+    return CreateIRNodeError(
+        "Expected `by` argument lambda body of Agg to be a single column or a list of columns. A "
+        "dictionary is not allowed.");
+  }
+  PL_ASSIGN_OR_RETURN(ExpressionIR * by_expr, by_lambda->GetDefaultExpr());
+  std::vector<ColumnIR*> groups;
+  if (by_expr->type() == IRNodeType::kList) {
+    for (ExpressionIR* child : static_cast<ListIR*>(by_expr)->children()) {
+      if (!child->IsColumn()) {
+        return child->CreateIRNodeError(
+            "Expected `by` argument lambda body of Agg to be a single column or a list of columns. "
+            "A list containing a '$0' is not allowed.",
+            child->type_string());
+      }
+      groups.push_back(static_cast<ColumnIR*>(child));
+      // Delete the list->column edge.
+      PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(by_expr->id(), child->id()));
+    }
+    // Delete the lambda edge.
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(by_lambda->id(), by_expr->id()));
+    // Delete list.
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteNode(by_expr->id()));
+  } else if (by_expr->IsColumn()) {
+    groups.push_back(static_cast<ColumnIR*>(by_expr));
+    // Delete the lambda edge.
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(by_lambda->id(), by_expr->id()));
+  } else {
+    return CreateIRNodeError(
+        "Expected `by` argument lambda body of Agg to be a single column or a list of columns, not "
+        "a '$0'.",
+        by_expr->type_string());
+  }
+  SetGroups(groups);
+  // Clean up the pointer to parent
+  for (ColumnIR* g : groups) {
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(id(), g->id()));
+  }
+  return Status::OK();
+}
+Status BlockingAggIR::SetupAggFunctions(LambdaIR* agg_func) {
+  // Make a new relation with each of the expression key, type pairs.
+  if (!agg_func->HasDictBody()) {
+    return agg_func->CreateIRNodeError(
+        "Expected `fn` arg to be a dictionary mapping string column names to aggregate expression. "
+        "Expression is not allowed.");
+  }
+
+  ColExpressionVector col_exprs = agg_func->col_exprs();
+  for (const auto& expr_struct : col_exprs) {
+    ExpressionIR* expr = expr_struct.node;
+    // check that the expression type is a function and that it only has leaf nodes as children.
+    if (expr->type() != IRNodeType::kFunc) {
+      return expr->CreateIRNodeError(
+          "Expected aggregate expression '$0' to be an aggregate function of the format "
+          "\"<fn-name>(r.column_name)\". $0 not allowed.",
+          expr->type_string());
+    }
+    auto func = static_cast<FuncIR*>(expr);
+    for (const auto& fn_child : func->args()) {
+      if (fn_child->type() == IRNodeType::kFunc) {
+        return fn_child->CreateIRNodeError("Nested aggregate expressions not allowed.");
+      }
+    }
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(agg_func->id(), expr->id()));
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(id(), expr->id()));
+  }
+  SetAggValMap(col_exprs);
+  // Remove the node.
+  PL_RETURN_IF_ERROR(graph_ptr()->DeleteNode(agg_func->id()));
+  return Status::OK();
 }
 
 bool BlockingAggIR::HasLogicalRepr() const { return true; }
 
 std::string BlockingAggIR::DebugString(int64_t depth) const {
-  std::map<std::string, std::string> property_map = {{"Parent", parent()->DebugString(depth + 1)},
-                                                     {"AggFn", agg_func_->DebugString(depth + 1)}};
-  if (by_func_ != nullptr) {
-    property_map["ByFn"] = by_func_->DebugString(depth + 1);
+  std::map<std::string, std::string> property_map = {{"Parent", parent()->DebugString(depth + 1)}};
+  std::vector<std::string> column_debug_strings;
+  for (ColumnIR* group_column : groups_) {
+    column_debug_strings.push_back(group_column->DebugString(depth + 1));
   }
+  property_map["GroupBy"] = absl::StrJoin(column_debug_strings, ",");
+
+  std::vector<std::string> agg_fn_debug_strings;
+  for (const ColumnExpression& col_expr : aggregate_expressions_) {
+    agg_fn_debug_strings.push_back(
+        absl::Substitute("$0 : '$1'", col_expr.name, col_expr.node->DebugString(depth + 1)));
+  }
+  property_map["AggFn"] = absl::StrJoin(agg_fn_debug_strings, ",");
   return DebugStringFmt(depth, absl::Substitute("$0:BlockingAggIR", id()), property_map);
 }
 
@@ -539,19 +618,17 @@ Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* e
 Status BlockingAggIR::ToProto(planpb::Operator* op) const {
   auto pb = new planpb::AggregateOperator();
 
-  for (const auto& agg_expr : agg_val_vector_) {
+  for (const auto& agg_expr : aggregate_expressions_) {
     auto expr = pb->add_values();
     PL_RETURN_IF_ERROR(EvaluateAggregateExpression(expr, *agg_expr.node));
     pb->add_value_names(agg_expr.name);
   }
 
-  if (by_func_ != nullptr) {
-    for (ColumnIR* group : groups_) {
-      auto group_pb = pb->add_groups();
-      group_pb->set_node(group->ParentId());
-      group_pb->set_index(group->col_idx());
-      pb->add_group_names(group->col_name());
-    }
+  for (ColumnIR* group : groups_) {
+    auto group_pb = pb->add_groups();
+    group_pb->set_node(group->ParentId());
+    group_pb->set_index(group->col_idx());
+    pb->add_group_names(group->col_name());
   }
 
   // TODO(nserrino/philkuz): Add support for streaming aggregates in the compiler.

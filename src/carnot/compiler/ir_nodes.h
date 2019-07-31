@@ -903,8 +903,6 @@ class BlockingAggIR : public OperatorIR {
   explicit BlockingAggIR(int64_t id) : OperatorIR(id, IRNodeType::kBlockingAgg, true, false) {}
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  LambdaIR* by_func() const { return by_func_; }
-  LambdaIR* agg_func() const { return agg_func_; }
   // TODO(philkuz) combine setgroups and setaggvalmap into one call, it happens at the same time
   // anyways.
   void SetGroups(std::vector<ColumnIR*> groups) {
@@ -913,12 +911,13 @@ class BlockingAggIR : public OperatorIR {
   }
   std::vector<ColumnIR*> groups() const { return groups_; }
   bool groups_set() const { return groups_set_; }
-  bool group_by_all() const { return by_func_ == nullptr; }
+  bool group_by_all() const { return groups_.size() == 0; }
   void SetAggValMap(ColExpressionVector agg_val_vec) {
-    agg_val_vector_ = agg_val_vec;
+    aggregate_expressions_ = agg_val_vec;
     agg_val_vector_set_ = true;
   }
   bool agg_val_vector_set() const { return agg_val_vector_set_; }
+  ColExpressionVector aggregate_expressions() const { return aggregate_expressions_; }
   Status ToProto(planpb::Operator*) const override;
   Status EvaluateAggregateExpression(planpb::AggregateExpression* expr,
                                      const IRNode& ir_node) const;
@@ -931,13 +930,14 @@ class BlockingAggIR : public OperatorIR {
   Status InitImpl(const ArgMap& args) override;
 
  private:
-  LambdaIR* by_func_;
-  LambdaIR* agg_func_;
+  Status SetupGroupBy(LambdaIR* by_lambda);
+  Status SetupAggFunctions(LambdaIR* agg_lambda);
+
   // contains group_names and groups columns.
   std::vector<ColumnIR*> groups_;
   bool groups_set_ = false;
   // The map from value_names to values
-  ColExpressionVector agg_val_vector_;
+  ColExpressionVector aggregate_expressions_;
   bool agg_val_vector_set_ = false;
 };
 

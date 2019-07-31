@@ -197,44 +197,22 @@ StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) const {
   }
   return false;
 }
-bool UpdateColumn(ColumnIR* col_expr, std::vector<ColumnIR*>* columns, Relation* relation_ptr) {
+bool UpdateColumn(ColumnIR* col_expr, Relation* relation_ptr) {
   if (!col_expr->IsDataTypeEvaluated()) {
     return false;
   }
   relation_ptr->AddColumn(col_expr->EvaluatedDataType(), col_expr->col_name());
-  columns->push_back(col_expr);
   return true;
 }
 
 StatusOr<bool> OperatorRelationRule::SetBlockingAgg(BlockingAggIR* agg_ir) const {
   Relation agg_rel;
-  std::vector<ColumnIR*> groups;
-  if (!agg_ir->group_by_all()) {
-    PL_ASSIGN_OR_RETURN(IRNode * default_expr, agg_ir->by_func()->GetDefaultExpr());
-    if (!default_expr->IsExpression()) {
-      return agg_ir->CreateIRNodeError("Expected an expression, not a '$0'.",
-                                       default_expr->type_string());
-    }
-    ExpressionIR* expr = static_cast<ExpressionIR*>(default_expr);
-    if (expr->IsColumn()) {
-      if (!UpdateColumn(static_cast<ColumnIR*>(expr), &groups, &agg_rel)) {
-        return false;
-      }
-    } else if (expr->type() == IRNodeType::kList) {
-      for (auto ch : static_cast<ListIR*>(expr)->children()) {
-        DCHECK(ch->IsColumn()) << "Expect group by to be column.";
-        if (!UpdateColumn(static_cast<ColumnIR*>(ch), &groups, &agg_rel)) {
-          return false;
-        }
-      }
-    } else {
-      return agg_ir->CreateIRNodeError(
-          "Expected a 'Column' or 'List' for the by function body, got '$0", expr->type_string());
+  for (ColumnIR* group : agg_ir->groups()) {
+    if (!UpdateColumn(group, &agg_rel)) {
+      return false;
     }
   }
-
-  // Make a new relation with each of the expression key, type pairs.
-  ColExpressionVector col_exprs = agg_ir->agg_func()->col_exprs();
+  ColExpressionVector col_exprs = agg_ir->aggregate_expressions();
   for (auto& entry : col_exprs) {
     std::string col_name = entry.name;
     if (!entry.node->IsDataTypeEvaluated()) {
@@ -244,8 +222,6 @@ StatusOr<bool> OperatorRelationRule::SetBlockingAgg(BlockingAggIR* agg_ir) const
   }
 
   PL_RETURN_IF_ERROR(agg_ir->SetRelation(agg_rel));
-  agg_ir->SetGroups(groups);
-  agg_ir->SetAggValMap(col_exprs);
   return true;
 }
 StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
@@ -497,8 +473,7 @@ StatusOr<bool> CheckMetadataColumnNamingRule::CheckMapColumns(MapIR* op) const {
   return false;
 }
 StatusOr<bool> CheckMetadataColumnNamingRule::CheckAggColumns(BlockingAggIR* op) const {
-  LambdaIR* lambda = op->agg_func();
-  for (const auto& col_expr : lambda->col_exprs()) {
+  for (const auto& col_expr : op->aggregate_expressions()) {
     if (absl::StartsWith(col_expr.name, IdMetadataProperty::kMetadataColumnPrefix)) {
       return op->CreateIRNodeError(
           "Column name '$1' violates naming rules. The '$0' prefix is reserved for internal "

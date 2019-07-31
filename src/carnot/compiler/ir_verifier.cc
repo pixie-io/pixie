@@ -85,53 +85,7 @@ Status IRVerifier::VerifySink(MemorySinkIR* sink_node) {
   return Status::OK();
 }
 
-Status IRVerifier::VerifyBlockingAgg(BlockingAggIR* agg_node) {
-  // Only check if by_func is not a nullptr.
-  if (agg_node->by_func() != nullptr) {
-    if (agg_node->by_func()->HasDictBody()) {
-      return agg_node->by_func()->CreateIRNodeError(
-          "Expected by function to only contain columns.");
-    }
-    PL_ASSIGN_OR_RETURN(IRNode * by_body, agg_node->by_func()->GetDefaultExpr());
-
-    auto actual_type = by_body->type();
-    if (!by_body->IsExpression() ||
-        (actual_type != IRNodeType::kList && !static_cast<ExpressionIR*>(by_body)->IsColumn())) {
-      auto msg =
-          absl::Substitute("BlockingAggIR: For node with id $1, Expected Column or List Got $0.",
-                           by_body->type_string(), by_body->id());
-      return agg_node->CreateIRNodeError(msg);
-    }
-  } else if (agg_node->groups_set() || !agg_node->groups().empty()) {
-    // Groups shouldn't be set.
-    return agg_node->CreateIRNodeError("AggIR: by function is not set, shouldn't have groups set.");
-  }
-
-  // Check whether the `agg` fn is a dict body
-  LambdaIR* agg_func = agg_node->agg_func();
-  if (!agg_func->HasDictBody()) {
-    return agg_func->CreateIRNodeError(
-        "Expected agg function to map resulting column names to the expression that generates "
-        "them.");
-  }
-  ColExpressionVector col_exprs = agg_func->col_exprs();
-  for (const auto& entry : col_exprs) {
-    // check that the expression type is a function and that it only has leaf nodes as children.
-    if (entry.node->type() != IRNodeType::kFunc) {
-      return entry.node->CreateIRNodeError(
-          "Expected agg fns of the format \"udf(r.column_name)\". Object "
-          "of type $0 not allowed.",
-          entry.node->type_string());
-    }
-    auto func = static_cast<FuncIR*>(entry.node);
-    for (const auto& fn_child : func->args()) {
-      if (fn_child->type() == IRNodeType::kFunc) {
-        return fn_child->CreateIRNodeError("Nested aggregate expressions not allowed.");
-      }
-    }
-  }
-  return Status::OK();
-}
+Status IRVerifier::VerifyBlockingAgg(BlockingAggIR*) { return Status::OK(); }
 
 Status IRVerifier::VerifyNodeConnections(IRNode* node) {
   // Should only look at ops.
