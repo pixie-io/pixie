@@ -5,9 +5,9 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - name: vizier-query-broker
+  - name: tcp-grpc
     port: 50300
     protocol: TCP
     targetPort: 50300
   selector:
-    app: vizier-query-broker
+    name: vizier-query-broker

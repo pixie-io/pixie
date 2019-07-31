@@ -5,9 +5,9 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - name: vizier-metadata
+  - name: tcp-grpc
     port: 50400
     protocol: TCP
     targetPort: 50400
   selector:
-    app: vizier-metadata
+    name: vizier-metadata
