@@ -17,34 +17,6 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 )
 
-const agent1StatusPB = `
-info {
-  agent_id {
-    data: "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-  }
-  host_info {
-    hostname: "test_host"
-  }
-}
-last_heartbeat_ns: 60
-create_time_ns: 5
-state: 1
-`
-
-const agent2StatusPB = `
-info {
-  agent_id {
-    data: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-  }
-  host_info {
-    hostname: "another_host"
-  }
-}
-last_heartbeat_ns: 50
-create_time_ns: 0
-state: 1
-`
-
 func TestGetAgentInfo(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)

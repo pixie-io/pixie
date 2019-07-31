@@ -7,156 +7,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sync"
 	"testing"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 )
-
-const endpointsPb = `
-subsets {
-  addresses {
-    ip: "127.0.0.1"
-    hostname: "host"
-    node_name: "this-is-a-node"
-    target_ref {
-      kind: "Pod"
-      namespace: "pl"
-      uid: "abcd"
-    }
-  }
-  addresses {
-    ip: "127.0.0.2"
-    hostname: "host-2"
-    node_name: "node-a"
-  }
-  not_ready_addresses {
-    ip: "127.0.0.3"
-    hostname: "host-3"
-    node_name: "node-b"
-  }
-  ports {
-    name: "endpt"
-    port: 10,
-    protocol: 1
-  }
-  ports {
-    name: "abcd"
-    port: 500,
-    protocol: 1
-  }
-}
-metadata {
-  name: "object_md"
-  namespace: "a_namespace"
-  uid: "ijkl"
-  resource_version: "1"
-  creation_timestamp_ns: 4
-  deletion_timestamp_ns: 6
-  owner_references {
-    kind: "pod"
-    name: "test"
-    uid: "abcd"
-  }
-}
-`
-
-const servicePb = `
-metadata {
-	name: "object_md"
-	namespace: "a_namespace"
-	uid: "ijkl"
-	resource_version: "1",
-	cluster_name: "a_cluster",
-	owner_references {
-	  kind: "pod"
-	  name: "test"
-	  uid: "abcd"
-	}
-	creation_timestamp_ns: 4
-	deletion_timestamp_ns: 6
-}
-spec {
-	cluster_ip: "127.0.0.1"
-	external_ips: "127.0.0.2"
-	external_ips: "127.0.0.3"
-	load_balancer_ip: "127.0.0.4"
-	external_name: "hello"
-	external_traffic_policy: 1
-	ports {
-		name: "endpt"
-		port: 10
-		protocol: 1
-		node_port: 20
-	}
-	ports {
-		name: "another_port"
-		port: 50
-		protocol: 1
-		node_port: 60
-	}
-	type: 1
-}
-`
-
-const podPb = `
-metadata {
-	name: "object_md"
-	uid: "ijkl"
-	resource_version: "1",
-	cluster_name: "a_cluster",
-	owner_references {
-	  kind: "pod"
-	  name: "test"
-	  uid: "abcd"
-	}
-	creation_timestamp_ns: 4
-	deletion_timestamp_ns: 6
-}
-status {
-	message: "this is message"
-	phase: 2
-	conditions: 2
-}
-spec {
-	node_name: "test"
-	hostname: "hostname"
-	dns_policy: 2
-}
-`
-
-const podPbWithContainers = `
-metadata {
-	name: "object_md"
-	uid: "ijkl"
-	resource_version: "1",
-	cluster_name: "a_cluster",
-	owner_references {
-	  kind: "pod"
-	  name: "test"
-	  uid: "abcd"
-	}
-	creation_timestamp_ns: 4
-	deletion_timestamp_ns: 6
-}
-status {
-	message: "this is message"
-	phase: 2
-	conditions: 2
-	container_statuses {
-		name: "container1"
-		container_state: 3
-		container_id: "docker://test"
-	}
-	qos_class: QOS_CLASS_BURSTABLE
-}
-spec {
-	node_name: "test"
-	hostname: "hostname"
-	dns_policy: 2
-}
-`
 
 func TestObjectToEndpointsProto(t *testing.T) {
 	// Set up mock.
@@ -194,15 +51,25 @@ func TestObjectToEndpointsProto(t *testing.T) {
 		GetAgentsForHostnames(&[]string{"this-is-a-node", "node-a"}).
 		Return(&[]string{"agent-1", "agent-2"}, nil)
 
+	var wg sync.WaitGroup
+	wg.Add(2)
+	defer wg.Wait()
+
 	mockMds.
 		EXPECT().
 		AddToAgentUpdateQueue("agent-1", string(update)).
-		Return(nil)
+		DoAndReturn(func(agent string, update string) error {
+			wg.Done()
+			return nil
+		})
 
 	mockMds.
 		EXPECT().
 		AddToAgentUpdateQueue("agent-2", string(update)).
-		Return(nil)
+		DoAndReturn(func(agent string, update string) error {
+			wg.Done()
+			return nil
+		})
 
 	// Create endpoints object.
 	or := v1.ObjectReference{
@@ -306,10 +173,17 @@ func TestNoHostnameResolvedProto(t *testing.T) {
 		UpdateEndpoints(expectedPb).
 		Return(nil)
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+	defer wg.Wait()
+
 	mockMds.
 		EXPECT().
 		GetAgentsForHostnames(&[]string{"this-is-a-node", "node-a"}).
-		Return(nil, nil)
+		DoAndReturn(func(hostnames *[]string) (*[]string, error) {
+			wg.Done()
+			return nil, nil
+		})
 
 	// Create endpoints object.
 	or := v1.ObjectReference{
@@ -444,20 +318,33 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 		GetAgentsForHostnames(&[]string{"node-a"}).
 		Return(&[]string{"agent-3"}, nil)
 
+	var wg sync.WaitGroup
+	wg.Add(3)
+	defer wg.Wait()
+
 	mockMds.
 		EXPECT().
 		AddToAgentUpdateQueue("agent-1", string(update)).
-		Return(nil)
+		DoAndReturn(func(agent string, update string) error {
+			wg.Done()
+			return nil
+		})
 
 	mockMds.
 		EXPECT().
 		AddToAgentUpdateQueue("agent-2", string(update)).
-		Return(errors.New("Could not add to agent queue"))
+		DoAndReturn(func(agent string, update string) error {
+			wg.Done()
+			return errors.New("Could not add to agent queue")
+		})
 
 	mockMds.
 		EXPECT().
 		AddToAgentUpdateQueue("agent-3", string(update)).
-		Return(nil)
+		DoAndReturn(func(agent string, update string) error {
+			wg.Done()
+			return nil
+		})
 
 	// Create endpoints object.
 	or := v1.ObjectReference{
@@ -625,10 +512,17 @@ func TestObjectToServiceProto(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+	defer wg.Wait()
+
 	mockMds.
 		EXPECT().
 		UpdateService(expectedPb).
-		Return(nil)
+		DoAndReturn(func(*metadatapb.Service) error {
+			wg.Done()
+			return nil
+		})
 
 	// Create service object.
 	ports := make([]v1.ServicePort, 2)
@@ -727,10 +621,17 @@ func TestObjectToPodProto(t *testing.T) {
 		GetAgentsForHostnames(&[]string{"test"}).
 		Return(&[]string{"agent-1"}, nil)
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+	defer wg.Wait()
+
 	mockMds.
 		EXPECT().
 		AddToAgentUpdateQueue("agent-1", string(update)).
-		Return(nil)
+		DoAndReturn(func(agent string, update string) error {
+			wg.Done()
+			return nil
+		})
 
 	// Create service object.
 	ownerRefs := make([]metav1.OwnerReference, 1)

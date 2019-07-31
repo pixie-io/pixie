@@ -23,101 +23,6 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 )
 
-var registerAgentRequestPB = `
-register_agent_request {
-	info {
-		agent_id {
-			data: "11285cdd1de94ab1ae6a0ba08c8c676c"
-		}
-		host_info {
-			hostname: "test-host"
-		}
-	}
-}
-`
-
-var invalidRegisterAgentRequestPB = `
-register_agent_request {
-	info {
-		agent_id {
-			data: "11285cdd1de94ab1ae6a0ba08c8c676c11285cdd1de94ab1ae6a0ba08c8c676c"
-		}
-		host_info {
-			hostname: "test-host"
-		}
-	}
-}
-`
-
-var updateAgentRequestPB = `
-update_agent_request {
-	info {
-		agent_id {
-			data: "11285cdd1de94ab1ae6a0ba08c8c676c"
-		}
-		host_info {
-			hostname: "test-host"
-		}
-	}
-}
-`
-
-var invalidUpdateAgentRequestPB = `
-update_agent_request {
-	info {
-		agent_id {
-			data: "11285cdd1de94ab1ae6a0ba08c8c676c11285cdd1de94ab1ae6a0ba08c8c676c"
-		}
-		host_info {
-			hostname: "test-host"
-		}
-	}
-}
-`
-
-var heartbeatAckPB = `
-heartbeat_ack {
-	time: 10
-	update_info {
-		updates {
-			pod_update {
-				uid:  "podUid"
-				name: "podName"	
-			}
-		}
-		updates {
-			pod_update {
-				uid:  "podUid2"
-				name: "podName2"	
-			}		
-		}
-	}
-}
-`
-
-var heartbeatPB = `
-heartbeat {
-	time: 1,
-	agent_id: {
-		data: "11285cdd1de94ab1ae6a0ba08c8c676c"
-	}
-	update_info {
-		process_created {
-			pid: 1
-		}
-	}
-}
-`
-
-var invalidHeartbeatPB = `
-heartbeat {
-	time: 1,
-	agent_id: {
-		data: "11285cdd1de94ab1ae6a0ba08c8c676c"
-	}
-}
-`
-
 var testOptions = server.Options{
 	Host:   "localhost",
 	NoLog:  true,
@@ -246,9 +151,6 @@ func TestAgentRegisterRequest(t *testing.T) {
 	}
 	respPb, err := resp.Marshal()
 
-	// Send update.
-	nc.Publish("agent_update", reqPb)
-
 	mockAgtMgr.
 		EXPECT().
 		RegisterAgent(agentInfo).
@@ -256,6 +158,9 @@ func TestAgentRegisterRequest(t *testing.T) {
 			wg.Done()
 			return uint32(1), nil
 		})
+
+	// Send update.
+	nc.Publish("agent_update", reqPb)
 
 	wg.Wait()
 
@@ -418,9 +323,6 @@ func TestAgentCreateFailed(t *testing.T) {
 	}
 	reqPb, err := req.Marshal()
 
-	// Send update.
-	nc.Publish("agent_update", reqPb)
-
 	// Wait and read reponse.
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -432,6 +334,9 @@ func TestAgentCreateFailed(t *testing.T) {
 			wg.Done()
 			return uint32(0), errors.New("could not create agent")
 		})
+
+	// Send update.
+	nc.Publish("agent_update", reqPb)
 
 	defer wg.Wait()
 	_, err = sub.NextMsg(time.Second)

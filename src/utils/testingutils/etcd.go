@@ -15,41 +15,53 @@ import (
 
 // SetupEtcd starts up an embedded etcd server on some free ports.
 func SetupEtcd(t *testing.T) (*clientv3.Client, func()) {
-	// Find available port.
-	clientPort, err := freeport.GetFreePort()
-	if err != nil {
-		t.Fatal("Could not find free port")
-	}
+	var clientPort int
+	var e *embed.Etcd
+	var err error
 
-	peerPort, err := freeport.GetFreePort()
-	if err != nil {
-		t.Fatal("Could not find free port")
-	}
+	tries := 0
+	for {
+		tries++
+		if tries == 5 {
+			t.Fatal("Could not start etcd server")
+		}
+		// Find available port.
+		clientPort, err = freeport.GetFreePort()
+		if err != nil {
+			continue
+		}
 
-	// Start up etcd server.
-	cfg := embed.NewConfig()
-	cfg.Dir = "default.etcd"
-	lcURL, err := url.Parse(fmt.Sprintf("http://localhost:%d", clientPort))
-	if err != nil {
-		t.Fatal("Could not parse URL.")
-	}
-	lpURL, err := url.Parse(fmt.Sprintf("http://localhost:%d", peerPort))
-	if err != nil {
-		t.Fatal("Could not parse URL.")
-	}
-	cfg.LCUrls = []url.URL{*lcURL}
-	cfg.LPUrls = []url.URL{*lpURL}
-	e, err := embed.StartEtcd(cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
+		peerPort, err := freeport.GetFreePort()
+		if err != nil {
+			continue
+		}
 
-	select {
-	case <-e.Server.ReadyNotify():
-		log.Info("Server is ready.")
-	case <-time.After(60 * time.Second):
-		e.Server.Stop()
-		t.Fatal("Server took too long to start, stopping server.")
+		// Start up etcd server.
+		cfg := embed.NewConfig()
+		cfg.Dir = "default.etcd"
+		lcURL, err := url.Parse(fmt.Sprintf("http://localhost:%d", clientPort))
+		if err != nil {
+			t.Fatal("Could not parse URL.")
+		}
+		lpURL, err := url.Parse(fmt.Sprintf("http://localhost:%d", peerPort))
+		if err != nil {
+			t.Fatal("Could not parse URL.")
+		}
+		cfg.LCUrls = []url.URL{*lcURL}
+		cfg.LPUrls = []url.URL{*lpURL}
+		e, err = embed.StartEtcd(cfg)
+		if err != nil {
+			continue
+		}
+
+		select {
+		case <-e.Server.ReadyNotify():
+			log.Info("Server is ready.")
+		case <-time.After(60 * time.Second):
+			e.Server.Stop()
+			continue
+		}
+		break
 	}
 
 	// Add some existing agent data into etcd.

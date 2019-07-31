@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/gogo/protobuf/proto"
 	uuid "github.com/satori/go.uuid"
@@ -15,45 +16,44 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
+	data "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 )
 
-var containerInfoPB = `
-name: "container_1"
-uid: "container1"
-pod_uid: "ijkl"
-namespace: "ns"
-`
+func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb string) {
+	info := new(data.AgentData)
+	if err := proto.UnmarshalText(agentPb, info); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	i, err := info.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal agentData pb.")
+	}
 
-var schemaInfoPB = `
-name: "a_table"
-start_timestamp_ns: 2
-columns {
-	name: "column_1"
-	data_type: 2
-}
-columns {
-	name: "column_2"
-	data_type: 4
-}
-`
+	_, err = client.Put(context.Background(), controllers.GetAgentKey(agentID), string(i))
+	if err != nil {
+		t.Fatal("Unable to add agentData to etcd.")
+	}
 
-var process1PB = `
-name: 'p1'
-upid {
-	low: 89101
-	high: 528280977975
-}
-cid: "container_1"
-`
+	_, err = client.Put(context.Background(), controllers.GetHostnameAgentKey(info.HostInfo.Hostname), agentID)
+	if err != nil {
+		t.Fatal("Unable to add agentData to etcd.")
+	}
 
-var process2PB = `
-name: 'p2'
-upid {
-	low: 246
-	high: 528280977975
+	// Add schema info.
+	schema := new(metadatapb.SchemaInfo)
+	if err := proto.UnmarshalText(schemaInfoPB, schema); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	s, err := schema.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal schema pb.")
+	}
+
+	_, err = client.Put(context.Background(), controllers.GetAgentSchemaKey(agentID, schema.Name), string(s))
+	if err != nil {
+		t.Fatal("Unable to add agent schema to etcd.")
+	}
 }
-cid: "container_2"
-`
 
 func TestUpdateEndpoints(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
@@ -192,7 +192,7 @@ func TestUpdateSchemas(t *testing.T) {
 		t.Fatal("Failed to create metadata store.")
 	}
 
-	u, err := uuid.FromString(NewAgentUUID)
+	u, err := uuid.FromString(newAgentUUID)
 	if err != nil {
 		t.Fatal("Could not parse UUID from string.")
 	}
@@ -208,7 +208,7 @@ func TestUpdateSchemas(t *testing.T) {
 	err = mds.UpdateSchemas(u, schemas)
 	assert.Nil(t, err)
 
-	schemaResp, err := etcdClient.Get(context.Background(), "/agents/"+NewAgentUUID+"/schema/a_table")
+	schemaResp, err := etcdClient.Get(context.Background(), "/agents/"+newAgentUUID+"/schema/a_table")
 	if err != nil {
 		t.Fatal("Unable to get container from etcd")
 	}
@@ -441,8 +441,8 @@ func TestGetAgents(t *testing.T) {
 		t.Fatal("Failed to create metadata store.")
 	}
 
-	CreateAgent(t, ExistingAgentUUID, etcdClient, ExistingAgentInfo)
-	CreateAgent(t, UnhealthyAgentUUID, etcdClient, UnhealthyAgentInfo)
+	CreateAgent(t, existingAgentUUID, etcdClient, existingAgentInfo)
+	CreateAgent(t, unhealthyAgentUUID, etcdClient, unhealthyAgentInfo)
 
 	// Add agent lock key to etcd to make sure GetAgents filters it out.
 	_, err = etcdClient.Put(context.Background(),
@@ -459,13 +459,13 @@ func TestGetAgents(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not convert UUID to proto")
 	}
-	assert.Equal(t, ExistingAgentUUID, uid.String())
+	assert.Equal(t, existingAgentUUID, uid.String())
 
 	uid, err = utils.UUIDFromProto((*agents)[1].AgentID)
 	if err != nil {
 		t.Fatal("Could not convert UUID to proto")
 	}
-	assert.Equal(t, UnhealthyAgentUUID, uid.String())
+	assert.Equal(t, unhealthyAgentUUID, uid.String())
 }
 
 func TestGetPods(t *testing.T) {

@@ -1,6 +1,7 @@
 package testingutils
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -16,24 +17,55 @@ var testOptions = server.Options{
 	NoSigs: true,
 }
 
-// StartNATS starts up a NATS server at an open port.
-func StartNATS(t *testing.T) (int, func()) {
+func startNATS() (gnatsd *server.Server, conn *nats.Conn, port int, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New("Could not run NATS server")
+		}
+	}()
 	// Find available port.
-	port, err := freeport.GetFreePort()
+	port, err = freeport.GetFreePort()
 	if err != nil {
-		t.Fatal("Could not find free port.")
+		return nil, nil, 0, err
 	}
 
 	testOptions.Port = port
-	gnatsd := test.RunServer(&testOptions)
+	gnatsd = test.RunServer(&testOptions)
 	if gnatsd == nil {
-		t.Fail()
+		return nil, nil, 0, errors.New("Could not run NATS server")
 	}
 
 	url := GetNATSURL(port)
-	conn, err := nats.Connect(url)
+	conn, err = nats.Connect(url)
 	if err != nil {
-		t.Fatal("Could not connect to NATS.")
+		gnatsd.Shutdown()
+		return nil, nil, 0, err
+	}
+
+	return gnatsd, conn, port, nil
+}
+
+// StartNATS starts up a NATS server at an open port.
+func StartNATS(t *testing.T) (int, func()) {
+	tries := 0
+
+	var gnatsd *server.Server
+	var conn *nats.Conn
+	var port int
+	var err error
+
+	for {
+		tries++
+		if tries == 5 {
+			t.Fatal("Could not connect to NATS")
+		}
+
+		gnatsd, conn, port, err = startNATS()
+		if err != nil {
+			continue
+		}
+
+		break
 	}
 
 	cleanup := func() {
