@@ -113,6 +113,8 @@ class Controller : public NotCopyable {
                                      messages::AgentUpdateInfo* update_info);
   static void ProcessPIDTerminatedEvent(const pl::md::PIDTerminatedEvent& ev,
                                         messages::AgentUpdateInfo* update_info);
+  Status StartHelperThreads();
+  Status WaitForHelperThreads();
 
   // We direct heartbeat messages to this queue.
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<messages::VizierMessage>>
@@ -135,7 +137,7 @@ class Controller : public NotCopyable {
   std::atomic<bool> running_ = false;
 
   std::unique_ptr<pl::md::AgentMetadataStateManager> mds_manager_;
-  std::unique_ptr<std::thread> mds_thread;
+  std::unique_ptr<std::thread> mds_thread_;
 };
 
 }  // namespace agent

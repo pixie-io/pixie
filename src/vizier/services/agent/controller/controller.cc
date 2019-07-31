@@ -84,6 +84,18 @@ Status Controller::Init() {
   hostname_ = hostname;
   LOG(INFO) << "Hostname: " << hostname_;
 
+  // The first step is to connect to stats and register the agent.
+  // Downstream dependencies like stirling/carnot depend on knowing
+  // ASID and metadata state, which is only available after registration is
+  // complete.
+  PL_RETURN_IF_ERROR(nats_connector_->Connect());
+
+  // Send the agent info.
+  PL_RETURN_IF_ERROR(RegisterAgent());
+
+  mds_manager_ =
+      std::make_unique<pl::md::AgentMetadataStateManager>(asid_, pl::system::Config::GetInstance());
+
   if (stirling_) {
     // Register the Stirling Callback.
     stirling_->RegisterCallback(std::bind(&table_store::TableStore::AppendData, table_store_.get(),
@@ -91,27 +103,23 @@ Status Controller::Init() {
                                           std::placeholders::_3));
   }
 
-  PL_RETURN_IF_ERROR(nats_connector_->Connect());
+  // Register the Carnot callback for metadata.
+  carnot_->RegisterAgentMetadataCallback(
+      std::bind(&pl::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));
 
-  // Send the agent info.
-  PL_RETURN_IF_ERROR(RegisterAgent());
+  return Status::OK();
+}
 
-  LOG(INFO) << "Creating new metadata state manager and thread";
-  mds_manager_ =
-      std::make_unique<pl::md::AgentMetadataStateManager>(asid_, pl::system::Config::GetInstance());
+Status Controller::StartHelperThreads() {
+  heartbeat_thread_ = std::make_unique<std::thread>(&Controller::RunHeartbeat, this);
 
-  mds_thread = std::make_unique<std::thread>([this]() {
+  mds_thread_ = std::make_unique<std::thread>([this]() {
     while (keep_alive_) {
       LOG(INFO) << "State Update";
       CHECK(mds_manager_->PerformMetadataStateUpdate().ok());
       std::this_thread::sleep_for(std::chrono::seconds(5));
     }
   });
-
-  // Register the Carnot callback for metadata.
-  carnot_->RegisterAgentMetadataCallback(
-      std::bind(&pl::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));
-
   return Status::OK();
 }
 
@@ -210,6 +218,23 @@ Status Controller::HandleMDSUpdates(const messages::MetadataUpdateInfo& update_i
   return Status::OK();
 }
 
+Status Controller::WaitForHelperThreads() {
+  if (keep_alive_) {
+    return error::Internal(
+        "Wait for threads called while keep alive is set. This is disallowed as it might cause "
+        "deadlock.");
+  }
+
+  if (heartbeat_thread_ && heartbeat_thread_->joinable()) {
+    heartbeat_thread_->join();
+  }
+
+  if (mds_thread_ && mds_thread_->joinable()) {
+    mds_thread_->join();
+  }
+  return Status::OK();
+}
+
 void Controller::RunHeartbeat() {
   // Store the exponential moving average so we can report it.
   double hb_latency_moving_average = 0;
@@ -288,11 +313,9 @@ Status Controller::ExecuteQuery(
 }
 
 Status Controller::Run() {
-  running_ = true;
+  PL_RETURN_IF_ERROR(StartHelperThreads());
 
-  // Start the heartbeat thread.
-  // TODO(zasgar): Consider moving the thread creation outside this function.
-  heartbeat_thread_ = std::make_unique<std::thread>(&Controller::RunHeartbeat, this);
+  running_ = true;
 
   while (keep_alive_) {
     auto msg = nats_connector_->GetNextMessage(std::chrono::seconds(kNextMessageTimeoutS));
@@ -314,9 +337,7 @@ Status Controller::Run() {
     }
   }
 
-  if (heartbeat_thread_ && heartbeat_thread_->joinable()) {
-    heartbeat_thread_->join();
-  }
+  PL_RETURN_IF_ERROR(WaitForHelperThreads());
 
   running_ = false;
 
