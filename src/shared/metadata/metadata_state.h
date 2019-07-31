@@ -71,7 +71,7 @@ class K8sMetadataState : NotCopyable {
   using PodsByNameMap =
       absl::flat_hash_map<K8sNameIdent, UID, K8sIdentHashEq::Hash, K8sIdentHashEq::Eq>;
 
-  const PodsByNameMap& pods_by_name() { return pods_by_name_; }
+  const PodsByNameMap& pods_by_name() const { return pods_by_name_; }
 
   /**
    * PodInfoByID gets an unowned pointer to the Pod. This pointer will remain active
@@ -135,6 +135,7 @@ class AgentMetadataState : NotCopyable {
 
   // Returns an un-owned pointer to the underlying k8s state.
   K8sMetadataState* k8s_metadata_state() { return k8s_metadata_state_.get(); }
+  const K8sMetadataState& k8s_metadata_state() const { return *k8s_metadata_state_; }
 
   std::shared_ptr<AgentMetadataState> CloneToShared() const;
 
@@ -145,6 +146,8 @@ class AgentMetadataState : NotCopyable {
     }
     return nullptr;
   }
+
+  const absl::flat_hash_map<UPID, PIDInfoUPtr>& pids_by_upid() const { return pids_by_upid_; }
 
   std::string DebugString(int indent_level = 0) const;
 

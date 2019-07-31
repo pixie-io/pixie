@@ -146,12 +146,12 @@ class ContainerInfo {
     }
   }
 
-  bool HasActiveUPID(UPID upid) { return active_upids_.contains(upid); }
-  bool HasInActiveUPID(UPID upid) { return inactive_upids_.contains(upid); }
-  bool HasUPID(UPID upid) { return HasActiveUPID(upid) || HasInActiveUPID(upid); }
+  bool HasActiveUPID(UPID upid) const { return active_upids_.contains(upid); }
+  bool HasInActiveUPID(UPID upid) const { return inactive_upids_.contains(upid); }
+  bool HasUPID(UPID upid) const { return HasActiveUPID(upid) || HasInActiveUPID(upid); }
 
-  const absl::flat_hash_set<UPID>& active_upids() { return active_upids_; }
-  const absl::flat_hash_set<UPID>& inactive_upids() { return inactive_upids_; }
+  const absl::flat_hash_set<UPID>& active_upids() const { return active_upids_; }
+  const absl::flat_hash_set<UPID>& inactive_upids() const { return inactive_upids_; }
 
   int64_t start_time_ns() const { return start_time_ns_; }
 
