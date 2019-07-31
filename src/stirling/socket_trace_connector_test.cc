@@ -203,14 +203,14 @@ TEST_F(SocketTraceConnectorTest, End2end) {
   // th)en TransferData() polls perf buffer, which is no-op because we did not initialize probes,
   // and the data in the internal buffer is being processed and filtered.
   source_->AcceptDataEvent(std::move(event0_json));
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size())
         << "event_json Content-Type does have 'json', and will be selected by the default filter";
   }
 
   source_->AcceptDataEvent(std::move(event1_text));
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size())
         << "event_text Content-Type has no 'json', and won't be selected by the default filter";
@@ -221,7 +221,7 @@ TEST_F(SocketTraceConnectorTest, End2end) {
       {{"Content-Encoding", "gzip"}},
   });
   source_->AcceptDataEvent(std::move(event2_text));
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   for (const auto& column : record_batch) {
     EXPECT_EQ(2, column->Size())
         << "The filter is changed to require 'text/plain' in Content-Type header, "
@@ -234,7 +234,7 @@ TEST_F(SocketTraceConnectorTest, End2end) {
   });
   source_->AcceptDataEvent(std::move(event3_json));
   source_->AcceptCloseConnEvent(close_conn);
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   for (const auto& column : record_batch) {
     EXPECT_EQ(3, column->Size())
         << "The filter is changed to require 'application/json' in Content-Type header, "
@@ -261,12 +261,12 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   source_->AcceptOpenConnEvent(conn);
   source_->AcceptDataEvent(std::move(event0));
   source_->AcceptDataEvent(std::move(event2));
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(1, record_batch[0]->Size());
 
   source_->AcceptDataEvent(std::move(event1));
   source_->AcceptCloseConnEvent(close_conn);
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(3, record_batch[0]->Size()) << "Get 3 events after getting the missing one.";
 }
 
@@ -281,19 +281,19 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
   source_->AcceptOpenConnEvent(conn);
 
   // Check empty transfer.
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(0, record_batch[0]->Size());
 
   // Check empty transfer following a successful transfer.
   source_->AcceptDataEvent(std::move(event0));
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(1, record_batch[0]->Size());
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(1, record_batch[0]->Size());
 
   EXPECT_EQ(1, source_->NumActiveConnections());
   source_->AcceptCloseConnEvent(close_conn);
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
 }
 
 TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
@@ -317,7 +317,7 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
   source_->AcceptDataEvent(std::move(resp_event1));
   source_->AcceptDataEvent(std::move(resp_event2));
   source_->AcceptCloseConnEvent(close_conn);
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(3, record_batch[0]->Size());
 
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo", "bar", "doe"));
@@ -343,7 +343,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
   source_->AcceptOpenConnEvent(conn);
 
   EXPECT_EQ(1, source_->NumActiveConnections());
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   source_->AcceptDataEvent(std::move(req_event0));
@@ -354,7 +354,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
   source_->AcceptDataEvent(std::move(resp_event2));
 
   EXPECT_EQ(1, source_->NumActiveConnections());
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   source_->AcceptCloseConnEvent(close_conn);
@@ -363,11 +363,11 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
   // Death countdown period: keep calling Transfer Data to increment iterations.
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
     EXPECT_EQ(1, source_->NumActiveConnections());
-    source_->TransferData(kTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   }
 
   EXPECT_EQ(1, source_->NumActiveConnections());
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
@@ -389,7 +389,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
   source_->AcceptDataEvent(std::move(resp_event2));
   source_->AcceptDataEvent(std::move(resp_event0));
 
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   source_->AcceptCloseConnEvent(close_conn);
@@ -400,11 +400,11 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
 
   // Death countdown period: keep calling Transfer Data to increment iterations.
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
-    source_->TransferData(kTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
@@ -433,11 +433,11 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
 
   // Death countdown period: keep calling Transfer Data to increment iterations.
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
-    source_->TransferData(kTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
@@ -473,18 +473,18 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
   PL_UNUSED(conn0_close);  // Missing close event.
   PL_UNUSED(conn1_close);  // Missing close event.
 
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   // TransferData results in countdown = kDeathCountdownIters for old generations.
 
   // Death countdown period: keep calling Transfer Data to increment iterations.
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
-    source_->TransferData(kTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
@@ -517,7 +517,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   PL_UNUSED(conn0_close);  // Missing close event.
 
   for (int i = 0; i < 100; ++i) {
-    source_->TransferData(kTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
@@ -526,7 +526,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   // Connection should be timed out by now, and should be killed by one more TransferData() call.
 
   EXPECT_EQ(1, source_->NumActiveConnections());
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
@@ -557,7 +557,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   source_->AcceptDataEvent(std::move(conn0_req_event));
 
   for (int i = 0; i < 100; ++i) {
-    source_->TransferData(kTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
@@ -578,7 +578,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   // which should also cause events to be flushed.
 
   EXPECT_EQ(1, source_->NumActiveConnections());
-  source_->TransferData(kTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   // Should not have transferred any data.

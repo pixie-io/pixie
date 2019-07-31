@@ -86,7 +86,8 @@ Status ProcStatConnector::GetProcStat(const std::vector<std::string>& parsed_str
   return Status::OK();
 }
 
-void ProcStatConnector::TransferDataImpl(uint32_t table_num, DataTable* data_table) {
+void ProcStatConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
+                                         DataTable* data_table) {
   CHECK_LT(table_num, num_tables())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
 

@@ -21,6 +21,12 @@
  */
 
 namespace pl {
+
+namespace md {
+// Forward declaring AgentMetadataState to remove dependence on metadata headers.
+class AgentMetadataState;
+}  // namespace md
+
 namespace stirling {
 
 class InfoClassManager;
@@ -35,6 +41,37 @@ class InfoClassManager;
       return nullptr;                                                       \
     }                                                                       \
   }
+
+/**
+ * ConnectorContext is the information passed on every Transfer call to source connectors.
+ */
+class ConnectorContext {
+ public:
+  ConnectorContext() = default;
+  ~ConnectorContext() = default;
+
+  /**
+   * ConntectoContext with metadata state.
+   * @param agent_metadata_state A read-only snapshot view of the metadata state. This state
+   * should not be held onto for extended periods of time.
+   */
+  explicit ConnectorContext(std::shared_ptr<const md::AgentMetadataState> agent_metadata_state)
+      : agent_metadata_state_(std::move(agent_metadata_state)) {}
+
+  /**
+   * Get an unowned pointer to the internal agent metadata state.
+   * @return either the agent metadata state or null ptr if the state is not valid.
+   */
+  const md::AgentMetadataState* AgentMetadataState() const {
+    if (!agent_metadata_state_) {
+      return nullptr;
+    }
+    return agent_metadata_state_.get();
+  }
+
+ private:
+  std::shared_ptr<const md::AgentMetadataState> agent_metadata_state_;
+};
 
 class SourceConnector : public NotCopyable {
  public:
@@ -67,7 +104,7 @@ class SourceConnector : public NotCopyable {
    * connectors.
    * @param record_batch The target to move the data into.
    */
-  void TransferData(uint32_t table_num, DataTable* data_table);
+  void TransferData(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table);
 
   /**
    * @brief Stops the source connector and releases any acquired resources.
@@ -127,7 +164,8 @@ class SourceConnector : public NotCopyable {
         default_push_period_(default_push_period) {}
 
   virtual Status InitImpl() = 0;
-  virtual void TransferDataImpl(uint32_t table_num, DataTable* data_table) = 0;
+  virtual void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
+                                DataTable* data_table) = 0;
   virtual Status StopImpl() = 0;
 
  protected:

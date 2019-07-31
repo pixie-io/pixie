@@ -220,7 +220,7 @@ TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
 
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(kHTTPTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -254,7 +254,7 @@ TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
   // Check that MySQL table did not capture any data.
   {
     DataTable data_table(kMySQLTable);
-    source_->TransferData(kMySQLTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -271,7 +271,7 @@ TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
 
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(kHTTPTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -294,7 +294,7 @@ TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
   // Check that MySQL table did not capture any data.
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(kHTTPTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -311,7 +311,7 @@ TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
 
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(kHTTPTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -334,7 +334,7 @@ TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
   // Check that MySQL table did not capture any data.
   {
     DataTable data_table(kMySQLTable);
-    source_->TransferData(kMySQLTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -351,7 +351,7 @@ TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
 
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(kHTTPTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -374,7 +374,7 @@ TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
   // Check that MySQL table did not capture any data.
   {
     DataTable data_table(kMySQLTable);
-    source_->TransferData(kMySQLTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -390,7 +390,7 @@ TEST_F(SocketTraceBPFTest, TestMySQLWriteCapture) {
   // Check that HTTP table did not capture any data.
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(kHTTPTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -401,7 +401,7 @@ TEST_F(SocketTraceBPFTest, TestMySQLWriteCapture) {
   // Check that MySQL table did capture the appropriate data.
   {
     DataTable data_table(kMySQLTable);
-    source_->TransferData(kMySQLTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -425,7 +425,7 @@ TEST_F(SocketTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   // Check that HTTP table did not capture any data.
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(kHTTPTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     // Should not have captured anything.
@@ -437,7 +437,7 @@ TEST_F(SocketTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   // Check that MySQL table did not capture any data.
   {
     DataTable data_table(kMySQLTable);
-    source_->TransferData(kMySQLTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     // Should not have captured anything.
@@ -459,7 +459,7 @@ TEST_F(SocketTraceBPFTest, TestMultipleConnections) {
 
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(kHTTPTableNum, &data_table);
+    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -496,7 +496,7 @@ TEST_F(SocketTraceBPFTest, TestStartTime) {
   auto time_window_end = now + std::chrono::minutes(5);
 
   DataTable data_table(kHTTPTable);
-  source_->TransferData(kHTTPTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   ASSERT_EQ(2, record_batch[0]->Size());
@@ -543,7 +543,7 @@ TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
   }
 
   DataTable data_table(kHTTPTable);
-  source_->TransferData(kHTTPTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {

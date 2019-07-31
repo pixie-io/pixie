@@ -3,7 +3,8 @@
 namespace pl {
 namespace stirling {
 
-void SeqGenConnector::TransferDataImpl(uint32_t table_num, DataTable* data_table) {
+void SeqGenConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
+                                       DataTable* data_table) {
   std::uniform_int_distribution<uint32_t> num_rows_dist(num_rows_min_, num_rows_max_);
   uint32_t num_records = num_rows_dist(rng_);
 

@@ -384,8 +384,7 @@ void StirlingImpl::RunCore() {
     {
       // Update the metadata state on each run of the info classes.
       // Note that if no changes are present, the same pointer will be returned back.
-      agent_metadata_ = agent_metadata_callback_();
-
+      ConnectorContext ctx(agent_metadata_callback_());
       // Acquire spin lock to go through one iteration of sampling and pushing data.
       // Needed to avoid race with main thread update info_class_mgrs_ on new subscription.
       absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
@@ -395,7 +394,7 @@ void StirlingImpl::RunCore() {
         if (mgr->subscribed()) {
           // Phase 1: Probe each source for its data.
           if (mgr->SamplingRequired()) {
-            mgr->SampleData();
+            mgr->SampleData(&ctx);
           }
 
           // Phase 2: Push Data upstream.

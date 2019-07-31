@@ -137,7 +137,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   Status InitImpl() override;
   Status StopImpl() override;
-  void TransferDataImpl(uint32_t table_num, DataTable* data_table) override;
+  void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
 
   Status Configure(TrafficProtocol protocol, uint64_t config_mask);
   Status TestOnlySetTargetPID(int64_t pid);

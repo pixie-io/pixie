@@ -39,8 +39,8 @@ bool InfoClassManager::PushRequired() const {
   return CurrentTime() > NextPushTime();
 }
 
-void InfoClassManager::SampleData() {
-  source_->TransferData(source_table_num_, data_table_);
+void InfoClassManager::SampleData(ConnectorContext* ctx) {
+  source_->TransferData(ctx, source_table_num_, data_table_);
 
   // Update the last sampling time.
   last_sampled_ = CurrentTime();

@@ -85,7 +85,7 @@ class CGroupStatsConnector : public SourceConnector {
 
   Status StopImpl() override;
 
-  void TransferDataImpl(uint32_t table_num, DataTable* data_table) override;
+  void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
 
  protected:
   explicit CGroupStatsConnector(std::string_view source_name)

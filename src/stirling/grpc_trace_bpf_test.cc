@@ -91,7 +91,7 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   DataTable data_table(SocketTraceConnector::kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-  connector->TransferData(kHTTPTableNum, &data_table);
+  connector->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
   for (const auto& col : record_batch) {
     // Sometimes connect() returns 0, so we might have data from requester and responder.
     ASSERT_GE(col->Size(), 1);
@@ -171,7 +171,7 @@ TEST_F(GRPCTest, BasicTracingForCPP) {
   DataTable data_table(SocketTraceConnector::kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-  source_->TransferData(kHTTPTableNum, &data_table);
+  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
 
   const std::vector<size_t> target_record_indices = FindRecordIdxMatchesPid(record_batch, getpid());
   // We should get exactly one record.

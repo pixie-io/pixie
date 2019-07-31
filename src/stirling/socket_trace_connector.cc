@@ -68,7 +68,8 @@ Status SocketTraceConnector::StopImpl() {
   return Status::OK();
 }
 
-void SocketTraceConnector::TransferDataImpl(uint32_t table_num, DataTable* data_table) {
+void SocketTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
+                                            DataTable* data_table) {
   CHECK_LT(table_num, kTables.size())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
   CHECK(data_table != nullptr);

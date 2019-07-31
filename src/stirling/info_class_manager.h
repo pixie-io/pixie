@@ -16,6 +16,7 @@
 namespace pl {
 namespace stirling {
 
+class ConnectorContext;
 class SourceConnector;
 class DataTable;
 
@@ -142,7 +143,7 @@ class InfoClassManager {
   /**
    * @brief Samples the data from the Source and copies into local buffers.
    */
-  void SampleData();
+  void SampleData(ConnectorContext* ctx);
 
   /**
    * @brief Push data by using the callback.

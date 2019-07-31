@@ -37,7 +37,7 @@ class ProcStatConnector : public SourceConnector {
   explicit ProcStatConnector(std::string_view name)
       : SourceConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {}
   Status InitImpl() override;
-  void TransferDataImpl(uint32_t table_num, DataTable* data_table) override;
+  void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
   Status StopImpl() override { return Status::OK(); }
 
   /**

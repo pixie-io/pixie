@@ -17,10 +17,11 @@ Status SourceConnector::Init() {
   return s;
 }
 
-void SourceConnector::TransferData(uint32_t table_num, DataTable* data_table) {
+void SourceConnector::TransferData(ConnectorContext* ctx, uint32_t table_num,
+                                   DataTable* data_table) {
   CHECK_LT(table_num, num_tables())
       << absl::Substitute("Access to table out of bounds: table_num=$0", table_num);
-  return TransferDataImpl(table_num, data_table);
+  return TransferDataImpl(ctx, table_num, data_table);
 }
 
 Status SourceConnector::Stop() {
