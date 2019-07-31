@@ -74,14 +74,7 @@ Status IRVerifier::VerifyMap(MapIR* map_node) {
   return Status::OK();
 }
 
-Status IRVerifier::VerifyFilter(FilterIR* filter_node) {
-  // verify properties of the filter_func
-  if (filter_node->filter_func()->HasDictBody()) {
-    return filter_node->filter_func()->CreateIRNodeError(
-        "Expected filter function to only contain an expression, not a dictionary.");
-  }
-  return Status::OK();
-}
+Status IRVerifier::VerifyFilter(FilterIR*) { return Status::OK(); }
 
 Status IRVerifier::VerifyLimit(LimitIR*) { return Status::OK(); }
 

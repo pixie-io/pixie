@@ -353,8 +353,19 @@ Status FilterIR::InitImpl(const ArgMap& args) {
     return CreateIRNodeError("Expected 'fn' argument of Filter to be a 'lambda', got '$0'",
                              filter_func_node->type_string());
   }
-  filter_func_ = static_cast<LambdaIR*>(filter_func_node);
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, filter_func_));
+  LambdaIR* filter_func = static_cast<LambdaIR*>(filter_func_node);
+
+  if (filter_func->HasDictBody()) {
+    return CreateIRNodeError(
+        "Expected lambda of the Filter to contain a single expression, not a dictionary.");
+  }
+
+  PL_ASSIGN_OR_RETURN(filter_expr_, filter_func->GetDefaultExpr());
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, filter_expr_));
+
+  // Clean up the lambda.
+  PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(filter_func->id(), filter_expr_->id()));
+  PL_RETURN_IF_ERROR(graph_ptr()->DeleteNode(filter_func->id()));
   return Status::OK();
 }
 
@@ -363,7 +374,7 @@ bool FilterIR::HasLogicalRepr() const { return true; }
 std::string FilterIR::DebugString(int64_t depth) const {
   return DebugStringFmt(depth, absl::Substitute("$0:FilterIR", id()),
                         {{"Parent", parent()->DebugString(depth + 1)},
-                         {"Filter", filter_func_->DebugString(depth + 1)}});
+                         {"Filter", filter_expr_->DebugString(depth + 1)}});
 }
 
 Status FilterIR::ToProto(planpb::Operator* op) const {
@@ -376,8 +387,7 @@ Status FilterIR::ToProto(planpb::Operator* op) const {
   }
 
   auto expr = new planpb::ScalarExpression();
-  PL_ASSIGN_OR_RETURN(auto lambda_expr, static_cast<LambdaIR*>(filter_func_)->GetDefaultExpr());
-  PL_RETURN_IF_ERROR(EvaluateExpression(expr, *lambda_expr));
+  PL_RETURN_IF_ERROR(EvaluateExpression(expr, *filter_expr_));
   pb->set_allocated_expression(expr);
 
   op->set_op_type(planpb::FILTER_OPERATOR);
@@ -620,7 +630,7 @@ Status LambdaIR::Init(std::unordered_set<std::string> expected_column_names, Exp
   return Status::OK();
 }
 
-StatusOr<IRNode*> LambdaIR::GetDefaultExpr() {
+StatusOr<ExpressionIR*> LambdaIR::GetDefaultExpr() {
   if (HasDictBody()) {
     return error::InvalidArgument(
         "Couldn't return the default expression, Lambda initialized as dict.");

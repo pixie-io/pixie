@@ -525,7 +525,7 @@ class LambdaIR : public IRNode {
    *
    * @return StatusOr<IRNode*>
    */
-  StatusOr<IRNode*> GetDefaultExpr();
+  StatusOr<ExpressionIR*> GetDefaultExpr();
   bool HasLogicalRepr() const override;
   bool HasDictBody() const;
   std::string DebugString(int64_t depth) const override;
@@ -947,7 +947,7 @@ class FilterIR : public OperatorIR {
   explicit FilterIR(int64_t id) : OperatorIR(id, IRNodeType::kFilter, true, false) {}
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  LambdaIR* filter_func() const { return filter_func_; }
+  ExpressionIR* filter_expr() const { return filter_expr_; }
   Status ToProto(planpb::Operator*) const override;
 
   std::vector<std::string> ArgKeys() override { return {"fn"}; }
@@ -958,7 +958,7 @@ class FilterIR : public OperatorIR {
   Status InitImpl(const ArgMap& args) override;
 
  private:
-  LambdaIR* filter_func_;
+  ExpressionIR* filter_expr_;
 };
 
 class LimitIR : public OperatorIR {
