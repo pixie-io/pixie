@@ -21,21 +21,6 @@ class SourceConnector;
 class DataTable;
 
 /**
- * @brief InfoClassSchema is simply a vector of DataElements.
- *
- * Each element in the vector represents a column in the schema.
- */
-class InfoClassSchema : public std::vector<DataElement> {
- public:
-  InfoClassSchema() = default;
-  explicit InfoClassSchema(const DataTableSchema& schema) {
-    for (const auto& element : schema.elements()) {
-      emplace_back(element);
-    }
-  }
-};
-
-/**
  * InfoClassManager is the unit responsible for managing a data source, and its data transfers.
  *
  * InfoClassManager samples the data from the source, transferring the data to an internal table.
@@ -59,7 +44,7 @@ class InfoClassManager {
    * This is required to identify an InfoClassManager parent source and also to generate
    * the publish proto.
    */
-  explicit InfoClassManager(std::string name) : name_(std::move(name)) { id_ = global_id_++; }
+  explicit InfoClassManager(const DataTableSchema& schema) : schema_(schema) { id_ = global_id_++; }
   virtual ~InfoClassManager() = default;
 
   /**
@@ -82,9 +67,9 @@ class InfoClassManager {
   /**
    * @brief Get the schema of the InfoClass.
    *
-   * @return InfoClassSchema schema
+   * @return DataTableSchema schema
    */
-  InfoClassSchema& Schema() { return elements_; }
+  const DataTableSchema& Schema() const { return schema_; }
 
   /**
    * @brief Get an Element object
@@ -93,8 +78,8 @@ class InfoClassManager {
    * @return DataElement
    */
   const DataElement& GetElement(size_t index) const {
-    DCHECK(index < elements_.size());
-    return elements_[index];
+    DCHECK(index < schema_.elements().size());
+    return schema_.elements()[index];
   }
 
   /**
@@ -103,13 +88,6 @@ class InfoClassManager {
    * @return stirlingpb::InfoClass
    */
   stirlingpb::InfoClass ToProto() const;
-
-  /**
-   * @brief Populates the schema from the SourceConnector.
-   *
-   * @return Status
-   */
-  Status PopulateSchemaFromSource();
 
   /**
    * @brief Configure sampling period.
@@ -189,7 +167,7 @@ class InfoClassManager {
    */
   void SetSubscription(bool subscribed) { subscribed_ = subscribed; }
 
-  const std::string& name() const { return name_; }
+  std::string_view name() const { return schema_.name(); }
   const SourceConnector* source() const { return source_; }
   uint64_t id() { return id_; }
   bool subscribed() const { return subscribed_; }
@@ -203,14 +181,9 @@ class InfoClassManager {
   uint64_t id_;
 
   /**
-   * Name of the Info Class.
+   * The schema of table associated with this Info Class manager.
    */
-  std::string name_;
-
-  /**
-   * Vector of all the elements provided by this Info Class.
-   */
-  InfoClassSchema elements_;
+  const DataTableSchema& schema_;
 
   /**
    * Boolean indicating whether an agent has subscribed to the Info Class.

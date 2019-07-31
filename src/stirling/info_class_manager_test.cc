@@ -22,22 +22,18 @@ TEST(DataElementTest, infoclass_element_proto_getters_test) {
 }
 
 TEST(InfoClassInfoSchemaTest, infoclass_mgr_proto_getters_test) {
-  InfoClassSchema elements = {};
-  InfoClassManager info_class_mgr("sequences_mgr");
+  InfoClassManager info_class_mgr(SeqGenConnector::kSeq0Table);
   auto source = SeqGenConnector::Create("sequences");
-  uint64_t source_table_id = 0;
-  info_class_mgr.SetSourceConnector(source.get(), source_table_id);
-  ASSERT_OK(info_class_mgr.PopulateSchemaFromSource());
+  info_class_mgr.SetSourceConnector(source.get(), SeqGenConnector::kSeq0TableNum);
 
-  ConstVectorView<DataElement> data_elements = SeqGenConnector::kTables[source_table_id].elements();
-
-  EXPECT_EQ(data_elements.size(), info_class_mgr.Schema().size());
-  EXPECT_EQ("sequences_mgr", info_class_mgr.name());
+  EXPECT_EQ(SeqGenConnector::kSeq0Table.elements().size(),
+            info_class_mgr.Schema().elements().size());
+  EXPECT_EQ(SeqGenConnector::kSeq0Table.name(), info_class_mgr.name());
 
   stirlingpb::InfoClass info_class_pb;
   info_class_pb = info_class_mgr.ToProto();
-  EXPECT_EQ(data_elements.size(), info_class_pb.elements_size());
-  EXPECT_EQ("sequences_mgr", info_class_pb.name());
+  EXPECT_EQ(SeqGenConnector::kSeq0Table.elements().size(), info_class_pb.elements_size());
+  EXPECT_EQ(SeqGenConnector::kSeq0Table.name(), info_class_pb.name());
   EXPECT_EQ(0, info_class_pb.id());
 
   info_class_mgr.SetSubscription(true);

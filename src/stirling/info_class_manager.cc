@@ -11,17 +11,6 @@
 namespace pl {
 namespace stirling {
 
-Status InfoClassManager::PopulateSchemaFromSource() {
-  if (source_ == nullptr) {
-    return error::ResourceUnavailable("Source connector has not been initialized.");
-  }
-  auto elements = source_->elements(source_table_num_);
-  for (const auto& element : elements) {
-    elements_.emplace_back(DataElement(element));
-  }
-  return Status::OK();
-}
-
 bool InfoClassManager::SamplingRequired() const { return CurrentTime() > NextSamplingTime(); }
 
 bool InfoClassManager::PushRequired() const {
@@ -65,13 +54,13 @@ void InfoClassManager::PushData(PushDataCallback agent_callback) {
 stirlingpb::InfoClass InfoClassManager::ToProto() const {
   stirlingpb::InfoClass info_class_proto;
   // Populate the proto with Elements.
-  for (auto element : elements_) {
+  for (auto element : schema_.elements()) {
     stirlingpb::Element* element_proto_ptr = info_class_proto.add_elements();
     element_proto_ptr->MergeFrom(element.ToProto());
   }
 
   // Add all the other fields for the proto.
-  info_class_proto.set_name(name_);
+  info_class_proto.set_name(std::string(schema_.name()));
   info_class_proto.set_id(id_);
   info_class_proto.set_subscribed(subscribed_);
   info_class_proto.set_sampling_period_millis(sampling_period_.count());

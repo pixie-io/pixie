@@ -41,7 +41,7 @@ Status PubSubManager::UpdateSchemaFromSubscribe(const Subscribe& subscribe_proto
     // and the InfoClassManager object.
 
     size_t num_elements = info_class_proto.elements_size();
-    if (num_elements != (*it)->Schema().size()) {
+    if (num_elements != (*it)->Schema().elements().size()) {
       return error::Internal("Number of elements in InfoClassManager does not match");
     }
 

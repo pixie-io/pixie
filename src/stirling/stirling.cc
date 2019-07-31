@@ -245,7 +245,7 @@ std::unordered_map<uint64_t, std::string> StirlingImpl::TableIDToNameMap() const
   std::unordered_map<uint64_t, std::string> map;
 
   for (auto& mgr : info_class_mgrs_) {
-    map.insert({mgr->id(), mgr->name()});
+    map.insert({mgr->id(), std::string(mgr->name())});
   }
 
   return map;
@@ -259,12 +259,11 @@ Status StirlingImpl::AddSourceFromRegistry(
 
   for (uint32_t i = 0; i < source->num_tables(); ++i) {
     // Step 2: Create the info class manager.
-    auto mgr = std::make_unique<InfoClassManager>(source->table_name(i).data());
+    auto mgr = std::make_unique<InfoClassManager>(source->TableSchema(i));
     auto mgr_ptr = mgr.get();
     mgr->SetSourceConnector(source.get(), i);
 
     // Step 3: Setup the manager.
-    PL_CHECK_OK(mgr_ptr->PopulateSchemaFromSource());
     mgr_ptr->SetSamplingPeriod(source->default_sampling_period());
     mgr_ptr->SetPushPeriod(source->default_push_period());
 

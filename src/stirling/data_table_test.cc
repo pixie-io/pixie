@@ -13,7 +13,12 @@ class DataTableTest : public ::testing::Test {
   std::default_random_engine rng_;
 
   // The test uses a pre-defined schema.
-  InfoClassSchema schema_;
+  static constexpr DataElement kElements[] = {
+      {"f0", types::DataType::INT64, types::PatternType::GENERAL},
+      {"f1", types::DataType::FLOAT64, types::PatternType::GENERAL},
+      {"f2", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
+  };
+  static constexpr auto kSchema = DataTableSchema("test_table", kElements);
 
   // Test parameter: number of records to write.
   size_t num_records_ = 0;
@@ -33,15 +38,12 @@ class DataTableTest : public ::testing::Test {
   /**
    * @brief Sets up the test environment, by initializing the Schema for the test.
    */
-  void SetUp() override {
-    // Schema for the test
-    SetUpSchema();
-  }
+  void SetUp() override {}
 
   /**
    * @brief Setup the data type.
    */
-  void SetUpTable() { data_table_ = std::make_unique<DataTable>(schema_); }
+  void SetUpTable() { data_table_ = std::make_unique<DataTable>(kSchema); }
 
   /**
    * @brief Change the random seed of the RNG.
@@ -70,15 +72,6 @@ class DataTableTest : public ::testing::Test {
   std::vector<int64_t> f0_vals_;
   std::vector<double> f1_vals_;
   std::vector<int64_t> f2_vals_;
-
-  /**
-   * Schema for our test table
-   */
-  void SetUpSchema() {
-    schema_.push_back(DataElement("f0", types::DataType::INT64, types::PatternType::GENERAL));
-    schema_.push_back(DataElement("f1", types::DataType::FLOAT64, types::PatternType::GENERAL));
-    schema_.push_back(DataElement("f2", types::DataType::INT64, types::PatternType::GENERAL_ENUM));
-  }
 
   /**
    * Create a row-based table in memory.

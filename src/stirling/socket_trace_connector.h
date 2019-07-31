@@ -83,6 +83,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
           {"http_resp_latency_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE}
   };
   // clang-format on
+  static constexpr auto kHTTPTable = DataTableSchema("http_events", kHTTPElements);
 
   static constexpr std::string_view kHTTPPerfBufferNames[] = {
       "socket_open_conns",
@@ -92,8 +93,6 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   // Used in ReadPerfBuffer to drain the relevant perf buffers.
   static constexpr auto kHTTPPerfBuffers = ConstVectorView<std::string_view>(kHTTPPerfBufferNames);
-
-  static constexpr auto kHTTPTable = DataTableSchema("http_events", kHTTPElements);
 
   // clang-format off
   static constexpr DataElement kMySQLElements[] = {
@@ -106,6 +105,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
           {"body", types::DataType::STRING, types::PatternType::STRUCTURED},
   };
   // clang-format on
+  static constexpr auto kMySQLTable = DataTableSchema("mysql_events", kMySQLElements);
 
   static constexpr std::string_view kMySQLPerfBufferNames[] = {
       "socket_open_conns",
@@ -115,8 +115,6 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   static constexpr auto kMySQLPerfBuffers =
       ConstVectorView<std::string_view>(kMySQLPerfBufferNames);
-
-  static constexpr auto kMySQLTable = DataTableSchema("mysql_events", kMySQLElements);
 
   static constexpr DataTableSchema kTablesArray[] = {kHTTPTable, kMySQLTable};
   static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);

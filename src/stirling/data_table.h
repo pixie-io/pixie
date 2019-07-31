@@ -23,7 +23,6 @@ class DataTable {
  public:
   DataTable() = delete;
   virtual ~DataTable() = default;
-  explicit DataTable(const InfoClassSchema& schema);
   explicit DataTable(const DataTableSchema& schema);
 
   /**
@@ -74,7 +73,7 @@ class DataTable {
   void SealActiveRecordBatch();
 
   // Table schema: a DataElement to describe each column.
-  std::vector<DataElement> table_schema_;
+  const DataTableSchema& table_schema_;
 
   // Active record batch.
   // Key is tablet id, value is tablet active record batch.

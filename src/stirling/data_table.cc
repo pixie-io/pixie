@@ -14,20 +14,13 @@ namespace stirling {
 using types::ColumnWrapper;
 using types::DataType;
 
-DataTable::DataTable(const InfoClassSchema& schema) {
-  DCHECK_EQ(table_schema_.size(), 0ULL);
-  for (const auto& info_class_element : schema) {
-    table_schema_.emplace_back(info_class_element);
-  }
-}
-
-DataTable::DataTable(const DataTableSchema& schema) : DataTable(InfoClassSchema(schema)) {}
+DataTable::DataTable(const DataTableSchema& schema) : table_schema_(schema) {}
 
 void DataTable::InitBuffers(types::ColumnWrapperRecordBatch* record_batch_ptr) {
   DCHECK(record_batch_ptr != nullptr);
   DCHECK(record_batch_ptr->empty());
 
-  for (const auto& element : table_schema_) {
+  for (const auto& element : table_schema_.elements()) {
     pl::types::DataType type = element.type();
 
 #define TYPE_CASE(_dt_)                           \
@@ -60,7 +53,7 @@ std::vector<TaggedRecordBatch> DataTable::ConsumeRecordBatches() {
 void DataTable::SealActiveRecordBatch() {
   for (auto& [tablet_id, tablet] : tablets_) {
     PL_UNUSED(tablet_id);
-    for (size_t j = 0; j < table_schema_.size(); ++j) {
+    for (size_t j = 0; j < table_schema_.elements().size(); ++j) {
       auto col = (*tablet)[j];
       col->ShrinkToFit();
     }

@@ -44,15 +44,13 @@ TEST_F(StirlingComponentTest, registry_to_subscribe_test) {
 
 class SourceToTableTest : public ::testing::Test {
  protected:
-  SourceToTableTest() : info_class_mgr_("proc_stats_mgr") {}
+  SourceToTableTest() : info_class_mgr_(FakeProcStatConnector::kTable) {}
   void SetUp() override {
     fake_proc_stat_ = FakeProcStatConnector::Create("fake_proc_stat_source");
-    info_class_mgr_.SetSourceConnector(fake_proc_stat_.get(), 0);
-    EXPECT_OK(info_class_mgr_.PopulateSchemaFromSource());
+    info_class_mgr_.SetSourceConnector(fake_proc_stat_.get(), /* table_num */ 0);
     table_ = std::make_unique<DataTable>(info_class_mgr_.Schema());
   }
 
-  InfoClassSchema elements_;
   std::unique_ptr<SourceConnector> fake_proc_stat_;
   InfoClassManager info_class_mgr_;
   std::unique_ptr<DataTable> table_;

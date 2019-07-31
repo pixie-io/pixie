@@ -19,7 +19,7 @@ using types::DataType;
 using types::PatternType;
 
 const char* kInfoClassManager = R"(
-  name : "cpu_usage",
+  name : "cpu",
   elements {
     name: "user_percentage",
     type: FLOAT64,
@@ -79,9 +79,9 @@ class PubSubManagerTest : public ::testing::Test {
     std::string name = "cpu_usage";
     source_ = TestSourceConnector::Create(name);
     auto source_table_num = 0;
-    info_class_mgrs_.push_back(std::make_unique<InfoClassManager>(name));
+    info_class_mgrs_.push_back(
+        std::make_unique<InfoClassManager>(TestSourceConnector::kTables[source_table_num]));
     info_class_mgrs_[0]->SetSourceConnector(source_.get(), source_table_num);
-    ASSERT_OK(info_class_mgrs_[0]->PopulateSchemaFromSource());
     pub_sub_manager_ = std::make_unique<PubSubManager>();
   }
   std::unique_ptr<SourceConnector> source_;
