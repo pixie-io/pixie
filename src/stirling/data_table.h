@@ -11,6 +11,9 @@
 namespace pl {
 namespace stirling {
 
+/**
+ * A tagged record batch is simply a record_batch that is tagged with a tablet_id.
+ */
 struct TaggedRecordBatch {
   size_t tablet_id;
   std::unique_ptr<types::ColumnWrapperRecordBatch> records_uptr;
