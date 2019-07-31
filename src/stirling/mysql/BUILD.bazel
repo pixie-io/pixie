@@ -21,3 +21,9 @@ pl_cc_library(
         "//src/stirling/utils:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "mysql_handler_test",
+    srcs = ["mysql_handler_test.cc"],
+    deps = [":cc_library"],
+)

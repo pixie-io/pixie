@@ -22,7 +22,7 @@ StatusOr<std::unique_ptr<OKResponse>> HandleOKMessage(std::deque<Packet>* resp_p
 StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_packets);
 
 StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
-    std::deque<Packet>* resp_packets, std::map<int, ReqRespEvent>* prepare_map);
+    std::deque<Packet>* resp_packets);
 
 /**
  * MySQL Request can only have one packet, but StmtExecuteRequest is special. It needs to

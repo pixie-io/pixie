@@ -83,9 +83,10 @@ StatusOr<Entry> StitchStmtPrepare(const Packet& req_packet, std::deque<Packet>* 
     return Entry{CreateErrorJSON(req->msg(), resp->error_message()), MySQLEntryStatus::kErr};
 
   } else {
-    PL_ASSIGN_OR_RETURN(auto resp, HandleStmtPrepareOKResponse(resp_packets, prepare_events));
-
-    ReqRespEvent event(MySQLEventType::kComStmtPrepare, std::move(req), std::move(resp));
+    PL_ASSIGN_OR_RETURN(auto resp, HandleStmtPrepareOKResponse(resp_packets));
+    int stmt_id = resp->resp_header().stmt_id;
+    prepare_events->emplace(
+        stmt_id, ReqRespEvent(MySQLEventType::kComStmtPrepare, std::move(req), std::move(resp)));
     return Entry{"", MySQLEntryStatus::kUnknown};
   }
 }
