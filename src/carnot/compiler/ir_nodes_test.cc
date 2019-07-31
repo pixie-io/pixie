@@ -7,11 +7,13 @@
 #include "src/carnot/compiler/ir_test_utils.h"
 #include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/test_utils.h"
+#include "src/common/testing/protobuf.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
+using ::pl::testing::proto::EqualsProto;
 
 TEST(IRTypes, types_enum_test) {
   // Quick test to make sure the enums test is inline with the type strings.
@@ -217,12 +219,9 @@ TEST(ToProto, map_ir) {
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({constant, col}), false /* compile_time */, ast));
   func->set_func_id(1);
-  EXPECT_OK(lambda->Init({"col_name"}, {{"func", func}}, ast));
+  EXPECT_OK(lambda->Init({"col_name"}, {{"col_name", func}}, ast));
   ArgMap amap({{"fn", lambda}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
-  auto expr_map = std::unordered_map<std::string, IRNode*>();
-  auto exprs = std::vector<ColumnExpression>({ColumnExpression({"col_name", func})});
-  map->SetColExprs(exprs);
 
   planpb::Operator pb;
   EXPECT_OK(map->ToProto(&pb));
@@ -257,7 +256,7 @@ const char* kExpectedAggPb = R"(
       index: 1
     }
     group_names: "group1"
-    value_names: "value1"
+    value_names: "mean"
   }
 )";
 
@@ -288,8 +287,6 @@ TEST(ToProto, agg_ir) {
   ASSERT_OK(agg->Init(mem_src, amap, ast));
   ColExpressionVector exprs;
   exprs.push_back(ColumnExpression({"value1", agg_func}));
-  agg->SetAggValMap(exprs);
-  agg->SetGroups(std::vector<ColumnIR*>({group1}));
 
   planpb::Operator pb;
   ASSERT_OK(agg->ToProto(&pb));
@@ -297,6 +294,7 @@ TEST(ToProto, agg_ir) {
   planpb::Operator expected_pb;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedAggPb, &expected_pb));
   EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_pb, pb));
+  EXPECT_THAT(pb, EqualsProto(kExpectedAggPb));
 }
 
 class DebugStringFunctionality : public ::testing::Test {

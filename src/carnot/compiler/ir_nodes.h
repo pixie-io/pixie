@@ -483,7 +483,6 @@ class ListIR : public DataIR {
   ListIR() = delete;
   explicit ListIR(int64_t id) : DataIR(id, IRNodeType::kList, types::DataType::DATA_TYPE_UNKNOWN) {}
   bool HasLogicalRepr() const override;
-  // TODO(philkuz) (PL-545) refactor lists
   Status Init(const pypa::AstPtr& ast_node, std::vector<ExpressionIR*> children);
   std::string DebugString(int64_t depth) const override;
   std::vector<ExpressionIR*> children() { return children_; }
@@ -546,8 +545,6 @@ class LambdaIR : public IRNode {
  */
 class FuncIR : public ExpressionIR {
  public:
-  // TODO(philkuz) Create a container for the opcodes and strings
-  // and implement the AST visitor code to properly set this.
   enum Opcode {
     non_op = -1,
     mult,
@@ -746,7 +743,6 @@ class MemorySourceIR : public OperatorIR {
   std::vector<std::string> ArgKeys() override { return {"table", "select"}; }
 
   std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
-    // TODO(philkuz) allow default select value for select all.
     return std::unordered_map<std::string, IRNode*>{{"select", nullptr}};
   }
   Status InitImpl(const ArgMap& args) override;
@@ -854,12 +850,9 @@ class MetadataResolverIR : public OperatorIR {
   std::map<std::string, MetadataProperty*> metadata_columns_;
 };
 
-// TODO(philkuz) adjust the documentation for map.
 /**
- * @brief The RangeIR describe the range()
- * operator, which is combined with a Source
- * when converted to the Logical Plan.
- *
+ * @brief The MapIR is a container for Map operators.
+ * Describes a projection, which is describe in col_exprs().
  */
 class MapIR : public OperatorIR {
  public:
@@ -874,11 +867,6 @@ class MapIR : public OperatorIR {
 
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  void SetColExprs(ColExpressionVector col_exprs) {
-    col_exprs_ = col_exprs;
-    col_exprs_set_ = true;
-  }
-  bool col_exprs_set() const { return col_exprs_set_; }
   const ColExpressionVector& col_exprs() const { return col_exprs_; }
   Status ToProto(planpb::Operator*) const override;
 
@@ -886,15 +874,11 @@ class MapIR : public OperatorIR {
   Status SetupMapExpressions(LambdaIR* map_func);
   // The map from new column_names to expressions.
   ColExpressionVector col_exprs_;
-  bool col_exprs_set_ = false;
 };
 
-// TODO(philkuz) adjust the documentation for blocking agg.
 /**
- * @brief The RangeIR describe the range()
- * operator, which is combined with a Source
- * when converted to the Logical Plan.
- *
+ * @brief The BlockingAggIR is the IR representation for the Agg operator.
+ * GroupBy groups() and Aggregate columns according to aggregate_expressions().
  */
 class BlockingAggIR : public OperatorIR {
  public:
@@ -902,20 +886,8 @@ class BlockingAggIR : public OperatorIR {
   explicit BlockingAggIR(int64_t id) : OperatorIR(id, IRNodeType::kBlockingAgg, true, false) {}
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  // TODO(philkuz) combine setgroups and setaggvalmap into one call, it happens at the same time
-  // anyways.
-  void SetGroups(std::vector<ColumnIR*> groups) {
-    groups_ = groups;
-    groups_set_ = true;
-  }
   std::vector<ColumnIR*> groups() const { return groups_; }
-  bool groups_set() const { return groups_set_; }
   bool group_by_all() const { return groups_.size() == 0; }
-  void SetAggValMap(ColExpressionVector agg_val_vec) {
-    aggregate_expressions_ = agg_val_vec;
-    agg_val_vector_set_ = true;
-  }
-  bool agg_val_vector_set() const { return agg_val_vector_set_; }
   ColExpressionVector aggregate_expressions() const { return aggregate_expressions_; }
   Status ToProto(planpb::Operator*) const override;
   Status EvaluateAggregateExpression(planpb::AggregateExpression* expr,
@@ -934,10 +906,8 @@ class BlockingAggIR : public OperatorIR {
 
   // contains group_names and groups columns.
   std::vector<ColumnIR*> groups_;
-  bool groups_set_ = false;
   // The map from value_names to values
   ColExpressionVector aggregate_expressions_;
-  bool agg_val_vector_set_ = false;
 };
 
 class FilterIR : public OperatorIR {

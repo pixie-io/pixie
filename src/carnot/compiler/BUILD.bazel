@@ -99,6 +99,7 @@ pl_cc_test(
     deps = [
         ":cc_library",
         ":test_utils",
+        "//src/common/testing:cc_library",
     ],
 )
 

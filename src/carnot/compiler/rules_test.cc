@@ -615,8 +615,6 @@ TEST_F(BlockingAggRuleTest, successful_resolve) {
       {types::DataType::INT64, types::DataType::FLOAT64}, {group_name, agg_func_col});
   EXPECT_TRUE(result_relation.col_types() == expected_relation.col_types());
   EXPECT_TRUE(result_relation.col_names() == expected_relation.col_names());
-  EXPECT_TRUE(agg->agg_val_vector_set());
-  EXPECT_TRUE(agg->groups_set());
 }
 // Rule shouldn't work because column is not resolved.
 TEST_F(BlockingAggRuleTest, failed_resolve_column) {
@@ -686,7 +684,6 @@ TEST_F(MapRuleTest, successful_resolve) {
   table_store::schema::Relation expected_relation({types::DataType::INT64}, {map_func_col});
   EXPECT_TRUE(result_relation.col_types() == expected_relation.col_types());
   EXPECT_TRUE(result_relation.col_names() == expected_relation.col_names());
-  EXPECT_TRUE(map->col_exprs_set());
 }
 
 // Rule shouldn't work because function is not resolved.

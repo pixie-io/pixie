@@ -250,13 +250,12 @@ Status MapIR::SetupMapExpressions(LambdaIR* map_func) {
   if (!map_func->HasDictBody()) {
     return map_func->CreateIRNodeError("Expected lambda func to have dictionary body.");
   }
-  ColExpressionVector col_exprs = map_func->col_exprs();
-  for (const ColumnExpression& mapped_expression : col_exprs) {
+  col_exprs_ = map_func->col_exprs();
+  for (const ColumnExpression& mapped_expression : col_exprs_) {
     ExpressionIR* expr = mapped_expression.node;
     PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(map_func->id(), expr->id()));
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, expr));
   }
-  SetColExprs(col_exprs);
   return graph_ptr()->DeleteNode(map_func->id());
 }
 
@@ -476,7 +475,6 @@ Status BlockingAggIR::SetupGroupBy(LambdaIR* by_lambda) {
         "dictionary is not allowed.");
   }
   PL_ASSIGN_OR_RETURN(ExpressionIR * by_expr, by_lambda->GetDefaultExpr());
-  std::vector<ColumnIR*> groups;
   if (by_expr->type() == IRNodeType::kList) {
     for (ExpressionIR* child : static_cast<ListIR*>(by_expr)->children()) {
       if (!child->IsColumn()) {
@@ -485,7 +483,7 @@ Status BlockingAggIR::SetupGroupBy(LambdaIR* by_lambda) {
             "A list containing a '$0' is not allowed.",
             child->type_string());
       }
-      groups.push_back(static_cast<ColumnIR*>(child));
+      groups_.push_back(static_cast<ColumnIR*>(child));
       // Delete the list->column edge.
       PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(by_expr->id(), child->id()));
     }
@@ -494,7 +492,7 @@ Status BlockingAggIR::SetupGroupBy(LambdaIR* by_lambda) {
     // Delete list.
     PL_RETURN_IF_ERROR(graph_ptr()->DeleteNode(by_expr->id()));
   } else if (by_expr->IsColumn()) {
-    groups.push_back(static_cast<ColumnIR*>(by_expr));
+    groups_.push_back(static_cast<ColumnIR*>(by_expr));
     // Delete the lambda edge.
     PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(by_lambda->id(), by_expr->id()));
   } else {
@@ -503,9 +501,8 @@ Status BlockingAggIR::SetupGroupBy(LambdaIR* by_lambda) {
         "a '$0'.",
         by_expr->type_string());
   }
-  SetGroups(groups);
   // Clean up the pointer to parent
-  for (ColumnIR* g : groups) {
+  for (ColumnIR* g : groups_) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(id(), g->id()));
   }
   return Status::OK();
@@ -537,7 +534,7 @@ Status BlockingAggIR::SetupAggFunctions(LambdaIR* agg_func) {
     PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(agg_func->id(), expr->id()));
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(id(), expr->id()));
   }
-  SetAggValMap(col_exprs);
+  aggregate_expressions_ = std::move(col_exprs);
   // Remove the node.
   return graph_ptr()->DeleteNode(agg_func->id());
 }

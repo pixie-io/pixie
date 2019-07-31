@@ -631,7 +631,6 @@ StatusOr<MapIR*> MetadataResolverConversionRule::MakeMap(MetadataResolverIR* md_
   PL_ASSIGN_OR_RETURN(LambdaIR * lambda, graph->MakeNode<LambdaIR>());
   PL_RETURN_IF_ERROR(lambda->Init(col_names, col_exprs, md_resolver->ast_node()));
   PL_RETURN_IF_ERROR(map->Init(md_resolver->parent(), {{"fn", lambda}}, md_resolver->ast_node()));
-  map->SetColExprs(col_exprs);
   return map;
 }
 
