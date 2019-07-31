@@ -28,13 +28,9 @@ message InfoClass {
   // message.
   uint64 id = 2;
   repeated Element elements = 3;
-  // Metadata contains information about the data source that provided data (eBPF,
-  // opentracing, prometheus, etc.), the host on which the data source was running (
-  // k8s node, aws node, etc.), pods on the host node, services running on a node, etc.
-  map<string, string> metadata = 4;
-  bool subscribed = 5;
-  uint32 sampling_period_millis = 6;
-  uint32 push_period_millis = 7;
+  bool subscribed = 4;
+  uint32 sampling_period_millis = 5;
+  uint32 push_period_millis = 6;
 }
 
 // Publish message contains information on
