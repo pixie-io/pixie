@@ -108,6 +108,14 @@ class Stirling : public NotCopyable {
   virtual void RegisterCallback(PushDataCallback f) = 0;
 
   /**
+   * @brief Register a callback from the agent to fetch the latest metadata state.
+   * This state is returned is constant and valid for the duration of the shared_ptr
+   * lifetime. It should be periodically refreshed to update the metadata and release old
+   * versions of the metadata to allow deletion of stale state.
+   */
+  virtual void RegisterAgentMetadataCallback(AgentMetadataCallback f) = 0;
+
+  /**
    * @brief Return a map of table ID to InfoClassManager names.
    */
   virtual std::unordered_map<uint64_t, std::string> TableIDToNameMap() const = 0;

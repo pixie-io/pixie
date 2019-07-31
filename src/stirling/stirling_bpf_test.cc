@@ -12,6 +12,7 @@
 #include "src/stirling/stirling.h"
 #include "src/stirling/types.h"
 
+using pl::stirling::AgentMetadataType;
 using pl::stirling::SocketTraceConnector;
 using pl::stirling::SourceRegistry;
 using pl::stirling::Stirling;
@@ -29,9 +30,11 @@ class StirlingBPFTest : public ::testing::Test {
     // Make Stirling.
     stirling_ = Stirling::Create(std::move(registry));
 
-    // Set a dummy callback function (normally this would be in the agent).
+    // Set dummy callbacks for agent function.
     stirling_->RegisterCallback(std::bind(&StirlingBPFTest::AppendData, this, std::placeholders::_1,
                                           std::placeholders::_2, std::placeholders::_3));
+    stirling_->RegisterAgentMetadataCallback(
+        std::bind(&StirlingBPFTest::DummyMetadataCallback, this));
   }
 
   void AppendData(uint64_t table_id, size_t tablet_id,
@@ -41,6 +44,8 @@ class StirlingBPFTest : public ::testing::Test {
     PL_UNUSED(record_batch);
     // A black hole.
   }
+
+  AgentMetadataType DummyMetadataCallback() { return nullptr; }
 
   std::unique_ptr<Stirling> stirling_;
 };

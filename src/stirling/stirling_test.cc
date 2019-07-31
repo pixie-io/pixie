@@ -20,6 +20,7 @@
 using PubProto = pl::stirling::stirlingpb::Publish;
 using SubProto = pl::stirling::stirlingpb::Subscribe;
 
+using pl::stirling::AgentMetadataType;
 using pl::stirling::DataElement;
 using pl::stirling::SeqGenConnector;
 using pl::stirling::SourceRegistry;
@@ -135,6 +136,9 @@ class StirlingTest : public ::testing::Test {
     // Set a dummy callback function (normally this would be in the agent).
     stirling_->RegisterCallback(std::bind(&StirlingTest::AppendData, this, std::placeholders::_1,
                                           std::placeholders::_2, std::placeholders::_3));
+    // Set a dummy callback for the agent metadata (normally done by the agent).
+    stirling_->RegisterAgentMetadataCallback(
+        std::bind(&StirlingTest::DummyAgentMetadataCallback, this));
 
     stirling_->GetPublishProto(&publish_proto_);
 
@@ -142,10 +146,10 @@ class StirlingTest : public ::testing::Test {
 
     // Create reference model
     for (const auto& [id, name] : id_to_name_map) {
-
       if (name[name.length() - 1] == '0') {
         // Table 0 is a simple (non-tabletized) table with multiple columns.
-        // Here we append checkers that mimics the sequences from kSeq0Table from seq_gen_connector.h.
+        // Here we append checkers that mimics the sequences from kSeq0Table from
+        // seq_gen_connector.h.
 
         schemas_.emplace(id, SeqGenConnector::kSeq0Table.elements());
 
@@ -166,8 +170,8 @@ class StirlingTest : public ::testing::Test {
         num_processed_per_table_.emplace(id, 0);
       } else if (name[name.length() - 1] == '1') {
         // Table 0 is a tabletized table.
-        // Here we append checkers that mimics the sequences from kSeq1Table from seq_gen_connector.h.
-        // The modulo column from the table is used to form 8 distinct tablets.
+        // Here we append checkers that mimics the sequences from kSeq1Table from
+        // seq_gen_connector.h. The modulo column from the table is used to form 8 distinct tablets.
 
         schemas_.emplace(id, SeqGenConnector::kSeq1Table.elements());
 
@@ -220,7 +224,9 @@ class StirlingTest : public ::testing::Test {
     CheckRecordBatch(table_id, tablet_id, num_records, *record_batch);
   }
 
-  void CheckRecordBatch(uint64_t table_id, uint32_t tablet_id, size_t num_records,
+  AgentMetadataType DummyAgentMetadataCallback() { return nullptr; }
+
+  void CheckRecordBatch(const uint64_t table_id, uint32_t tablet_id, size_t num_records,
                         const ColumnWrapperRecordBatch& record_batch) {
     auto table_schema = schemas_[table_id];
 
@@ -331,9 +337,27 @@ TEST_F(StirlingTest, hammer_time_on_stirling_on_the_fly_subs) {
   EXPECT_GT(NumProcessed(), 0);
 }
 
-TEST_F(StirlingTest, no_callback_defined) {
+TEST_F(StirlingTest, no_data_callback_defined) {
   Stirling* stirling = GetStirling();
   stirling->RegisterCallback(nullptr);
+  stirling->RegisterAgentMetadataCallback(
+      std::bind(&StirlingTest::DummyAgentMetadataCallback, this));
+
+  // Should fail to run as a Stirling-managed thread.
+  EXPECT_NOT_OK(stirling->RunAsThread());
+
+  // Should also fail to run as a caller-managed thread,
+  // which means it should be immediately joinable.
+  std::thread run_thread = std::thread(&Stirling::Run, stirling);
+  ASSERT_TRUE(run_thread.joinable());
+  run_thread.join();
+}
+
+TEST_F(StirlingTest, no_metadata_callback_defined) {
+  Stirling* stirling = GetStirling();
+  stirling->RegisterCallback(std::bind(&StirlingTest::AppendData, this, std::placeholders::_1,
+                                       std::placeholders::_2, std::placeholders::_3));
+  stirling->RegisterAgentMetadataCallback(nullptr);
 
   // Should fail to run as a Stirling-managed thread.
   EXPECT_NOT_OK(stirling->RunAsThread());

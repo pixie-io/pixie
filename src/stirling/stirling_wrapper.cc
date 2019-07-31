@@ -12,6 +12,7 @@
 #include "src/stirling/stirling.h"
 #include "src/stirling/types.h"
 
+using pl::stirling::AgentMetadataType;
 using pl::stirling::SourceRegistry;
 using pl::stirling::Stirling;
 using pl::stirling::stirlingpb::Publish;
@@ -106,6 +107,8 @@ void StirlingWrapperCallback(uint64_t table_id, size_t /* tablet_id */,
   // Can add other connectors, if desired, here.
 }
 
+AgentMetadataType AgentMetadataCallback() { return nullptr; }
+
 // Put this in global space, so we can kill it in the signal handler.
 Stirling* g_stirling = nullptr;
 
@@ -157,6 +160,10 @@ int main(int argc, char** argv) {
 
   // Set a dummy callback function (normally this would be in the agent).
   stirling->RegisterCallback(StirlingWrapperCallback);
+
+  // TODO(zasgar/oazizi): We need to inject a valid metadata state here
+  // after we port over the cgroups connector.
+  stirling->RegisterAgentMetadataCallback(AgentMetadataCallback);
 
   // Run Data Collector.
   std::thread run_thread = std::thread(&Stirling::Run, stirling.get());

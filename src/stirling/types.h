@@ -11,6 +11,12 @@
 #include "src/stirling/proto/stirling.pb.h"
 
 namespace pl {
+
+namespace md {
+// Forward declaring AgentMetadataState to remove dependence on metadata headers.
+class AgentMetadataState;
+}  // namespace md
+
 namespace stirling {
 
 using ArrowArrayBuilderUPtrVec = std::vector<std::unique_ptr<arrow::ArrayBuilder>>;
@@ -18,6 +24,12 @@ using ArrowRecordBatchSPtrVec = std::vector<std::shared_ptr<arrow::RecordBatch>>
 
 using PushDataCallback =
     std::function<void(uint32_t, size_t, std::unique_ptr<types::ColumnWrapperRecordBatch>)>;
+
+using AgentMetadataType = std::shared_ptr<const pl::md::AgentMetadataState>;
+/**
+ * The callback function signature to fetch new metadata.
+ */
+using AgentMetadataCallback = std::function<AgentMetadataType()>;
 
 class DataElement {
  public:

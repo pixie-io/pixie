@@ -83,6 +83,10 @@ class StirlingImpl final : public Stirling {
   void GetPublishProto(stirlingpb::Publish* publish_pb) override;
   Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) override;
   void RegisterCallback(PushDataCallback f) override { agent_callback_ = f; }
+  void RegisterAgentMetadataCallback(AgentMetadataCallback f) override {
+    agent_metadata_callback_ = f;
+  }
+
   std::unordered_map<uint64_t, std::string> TableIDToNameMap() const override;
   void Run() override;
   Status RunAsThread() override;
@@ -188,6 +192,9 @@ class StirlingImpl final : public Stirling {
    *   std::unique_ptr<ColumnWrapperRecordBatch> data
    */
   PushDataCallback agent_callback_;
+
+  AgentMetadataCallback agent_metadata_callback_;
+  AgentMetadataType agent_metadata_;
 };
 
 StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
@@ -310,6 +317,11 @@ Status StirlingImpl::RunAsThread() {
     return error::Internal("No callback function is registered in Stirling. Refusing to run.");
   }
 
+  if (agent_metadata_callback_ == nullptr) {
+    return error::Internal(
+        "No metadata callback function is registered in Stirling. Refusing to run.");
+  }
+
   bool prev_run_enable_ = run_enable_.exchange(true);
   if (prev_run_enable_) {
     return error::AlreadyExists("A Stirling thread is already running.");
@@ -346,6 +358,11 @@ void StirlingImpl::Run() {
     return;
   }
 
+  if (agent_metadata_callback_ == nullptr) {
+    LOG(ERROR) << "No metadata callback function is registered in Stirling. Refusing to run.";
+    return;
+  }
+
   // Make sure multiple instances of Run() are not active,
   // which would be possible if the caller created multiple threads.
   bool prev_run_enable_ = run_enable_.exchange(true);
@@ -366,6 +383,10 @@ void StirlingImpl::RunCore() {
     auto sleep_duration = std::chrono::milliseconds::zero();
 
     {
+      // Update the metadata state on each run of the info classes.
+      // Note that if no changes are present, the same pointer will be returned back.
+      agent_metadata_ = agent_metadata_callback_();
+
       // Acquire spin lock to go through one iteration of sampling and pushing data.
       // Needed to avoid race with main thread update info_class_mgrs_ on new subscription.
       absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);

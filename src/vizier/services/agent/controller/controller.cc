@@ -101,6 +101,10 @@ Status Controller::Init() {
     stirling_->RegisterCallback(std::bind(&table_store::TableStore::AppendData, table_store_.get(),
                                           std::placeholders::_1, std::placeholders::_2,
                                           std::placeholders::_3));
+
+    // Register the metadata callback for Stirling.
+    stirling_->RegisterAgentMetadataCallback(std::bind(
+        &pl::md::AgentMetadataStateManager::CurrentAgentMetadataState, mds_manager_.get()));
   }
 
   // Register the Carnot callback for metadata.
