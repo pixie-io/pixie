@@ -50,7 +50,7 @@ class TestSourceConnector : public SourceConnector {
       {"user_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE},
       {"system_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE},
       {"io_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE}};
-  static constexpr DataTableSchema kTablesArray[] = {DataTableSchema("", kElements)};
+  static constexpr DataTableSchema kTablesArray[] = {DataTableSchema("cpu", kElements)};
   static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};

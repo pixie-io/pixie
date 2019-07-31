@@ -27,6 +27,7 @@ class DataElement {
 
   constexpr const std::string_view& name() const { return name_; }
   constexpr const types::DataType& type() const { return type_; }
+  constexpr const types::PatternType& ptype() const { return ptype_; }
   std::shared_ptr<arrow::DataType> arrow_type() { return types::DataTypeToArrowType(type()); }
 
   /**
@@ -47,7 +48,9 @@ class DataTableSchema {
   // TODO(oazizi): This constructor should only be called at compile-time. Need to enforce this.
   template <std::size_t N>
   constexpr DataTableSchema(std::string_view name, const DataElement (&elements)[N])
-      : name_(name), elements_(elements) {}
+      : name_(name), elements_(elements) {
+    CheckSchema();
+  }
   constexpr std::string_view name() const { return name_; }
   constexpr ConstVectorView<DataElement> elements() const { return elements_; }
 
@@ -71,6 +74,18 @@ class DataTableSchema {
   }
 
  private:
+  constexpr void CheckSchema() {
+    COMPILE_TIME_ASSERT(!name_.empty(), "Table name may not be empty.");
+
+    for (size_t i = 0; i < elements_.size(); ++i) {
+      COMPILE_TIME_ASSERT(elements_[i].name() != "", "Element name may not be empty.");
+      COMPILE_TIME_ASSERT(elements_[i].type() != types::DataType::DATA_TYPE_UNKNOWN,
+                          "Element may not have unknown data type.");
+      COMPILE_TIME_ASSERT(elements_[i].ptype() != types::PatternType::UNSPECIFIED,
+                          "Element may not have unspecified pattern type.");
+    }
+  }
+
   const std::string_view name_;
   const ConstVectorView<DataElement> elements_;
 };
