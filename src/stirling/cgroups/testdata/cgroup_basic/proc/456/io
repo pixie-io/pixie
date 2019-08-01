@@ -1,7 +1,0 @@
-rchar: 2000
-wchar: 2001
-syscr: 2002
-syscw: 2003
-read_bytes: 2004
-write_bytes: 2005
-cancelled_write_bytes: 2006
