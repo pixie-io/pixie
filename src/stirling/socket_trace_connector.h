@@ -168,10 +168,13 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   // ReadPerfBuffer poll callback functions (must be static).
   // These are used by the static variables below, and have to be placed here.
   static void HandleHTTPProbeOutput(void* cb_cookie, void* data, int data_size);
+  static void HandleHTTPProbeLoss(void* cb_cookie, uint64_t lost);
   static void HandleMySQLProbeOutput(void* cb_cookie, void* data, int data_size);
-  static void HandleProbeLoss(void* cb_cookie, uint64_t lost);
+  static void HandleMySQLProbeLoss(void* cb_cookie, uint64_t lost);
   static void HandleCloseProbeOutput(void* cb_cookie, void* data, int data_size);
+  static void HandleCloseProbeLoss(void* cb_cookie, uint64_t lost);
   static void HandleOpenProbeOutput(void* cb_cookie, void* data, int data_size);
+  static void HandleOpenProbeLoss(void* cb_cookie, uint64_t lost);
 
   static constexpr ProbeSpec kProbeSpecsArray[] = {
       {"connect", "syscall__probe_entry_connect", bpf_probe_attach_type::BPF_PROBE_ENTRY},
@@ -213,15 +216,15 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   static constexpr PerfBufferSpec kPerfBufferSpecsArray[] = {
       // For data events. The order must be consistent with output tables.
       {"socket_http_events", &SocketTraceConnector::HandleHTTPProbeOutput,
-       &SocketTraceConnector::HandleProbeLoss, kDefaultPageCount},
+       &SocketTraceConnector::HandleHTTPProbeLoss, kDefaultPageCount},
       {"socket_mysql_events", &SocketTraceConnector::HandleMySQLProbeOutput,
-       &SocketTraceConnector::HandleProbeLoss, kDefaultPageCount},
+       &SocketTraceConnector::HandleMySQLProbeLoss, kDefaultPageCount},
 
       // For non-data events. Must not mix with the above perf buffers for data events.
       {"socket_open_conns", &SocketTraceConnector::HandleOpenProbeOutput,
-       &SocketTraceConnector::HandleProbeLoss, kDefaultPageCount},
+       &SocketTraceConnector::HandleOpenProbeLoss, kDefaultPageCount},
       {"socket_close_conns", &SocketTraceConnector::HandleCloseProbeOutput,
-       &SocketTraceConnector::HandleProbeLoss, kDefaultPageCount},
+       &SocketTraceConnector::HandleCloseProbeLoss, kDefaultPageCount},
   };
   static constexpr auto kPerfBufferSpecs = ConstVectorView<PerfBufferSpec>(kPerfBufferSpecsArray);
 

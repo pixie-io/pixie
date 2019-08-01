@@ -143,6 +143,18 @@ void SocketTraceConnector::HandleHTTPProbeOutput(void* cb_cookie, void* data, in
   connector->AcceptDataEvent(std::make_unique<SocketDataEvent>(data));
 }
 
+namespace {
+
+std::string ProbeLossMessage(std::string_view perf_buffer_name, uint64_t lost) {
+  return absl::Substitute("$0 lost $1 samples.", perf_buffer_name, lost);
+}
+
+}  // namespace
+
+void SocketTraceConnector::HandleHTTPProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
+  LOG(WARNING) << ProbeLossMessage("socket_http_events", lost);
+}
+
 void SocketTraceConnector::HandleMySQLProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
@@ -150,11 +162,8 @@ void SocketTraceConnector::HandleMySQLProbeOutput(void* cb_cookie, void* data, i
   connector->TransferMySQLEvent(SocketDataEvent(data), connector->data_table_);
 }
 
-// This function is invoked by BCC runtime when a item in the perf buffer is not read and lost.
-// For now we do nothing.
-void SocketTraceConnector::HandleProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
-  VLOG(1) << "Possibly lost " << lost << " samples";
-  // TODO(oazizi): Can we figure out which perf buffer lost the event?
+void SocketTraceConnector::HandleMySQLProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
+  LOG(WARNING) << ProbeLossMessage("socket_mysql_events", lost);
 }
 
 void SocketTraceConnector::HandleOpenProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
@@ -164,11 +173,19 @@ void SocketTraceConnector::HandleOpenProbeOutput(void* cb_cookie, void* data, in
   connector->AcceptOpenConnEvent(conn);
 }
 
+void SocketTraceConnector::HandleOpenProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
+  LOG(WARNING) << ProbeLossMessage("socket_open_events", lost);
+}
+
 void SocketTraceConnector::HandleCloseProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
   const auto conn = CopyFromBPF<conn_info_t>(data);
   connector->AcceptCloseConnEvent(conn);
+}
+
+void SocketTraceConnector::HandleCloseProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
+  LOG(WARNING) << ProbeLossMessage("socket_close_events", lost);
 }
 
 //-----------------------------------------------------------------------------
