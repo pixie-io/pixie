@@ -16,6 +16,32 @@ export interface QueryResultViewerProps {
   data: GQLQueryResult;
 }
 
+// TODO(zasgar/michelle): remove when we upgrade to TS 3.2.
+declare function BigInt(string): any;
+
+// Converts UInt128 to UUID formatted string.
+function formatUInt128(high: string, low: string): string {
+  // TODO(zasgar/michelle): Revisit this to check and make sure endianness is correct.
+  // Each segment of the UUID is a hex value of 16 nibbles.
+  // Note: BigInt support only available in Chrome > 67, FF > 68.
+  const hexStrHigh = BigInt(high).toString(16).padStart(16, '0');
+  const hexStrLow = BigInt(low).toString(16).padStart(16, '0');
+
+  // Sample UUID: 123e4567-e89b-12d3-a456-426655440000.
+  // Format is 8-4-4-4-12.
+  let uuidStr = '';
+  uuidStr += hexStrHigh.substr(0, 8);
+  uuidStr += '-';
+  uuidStr += hexStrHigh.substr(8, 4);
+  uuidStr += '-';
+  uuidStr += hexStrHigh.substr(12, 4);
+  uuidStr += '-';
+  uuidStr += hexStrLow.substr(0, 4);
+  uuidStr += '-';
+  uuidStr += hexStrLow.substr(4);
+  return uuidStr;
+}
+
 function extractData(colType: string, col: any, rowIdx): string {
   switch (colType) {
     case 'STRING':
@@ -27,6 +53,9 @@ function extractData(colType: string, col: any, rowIdx): string {
       return new Date(parseFloat(data) / 1000000).toLocaleString();
     case 'INT64':
       return '' + col.int64Data.data[rowIdx];
+    case 'UINT128':
+      const v = col.uint128Data.data[rowIdx];
+      return formatUInt128(v.high, v.low);
     case 'FLOAT64':
       return col.float64Data.data[rowIdx].toFixed(2);
     case 'BOOLEAN':
