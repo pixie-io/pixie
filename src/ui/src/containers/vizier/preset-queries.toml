@@ -50,9 +50,16 @@ t2 = t1.Map(fn=lambda r: {'time_': r.time_,
                        'Alert': r.remote_addr == '::ffff:10.44.10.10'})
 t4 = t2.Result(name='resp_table')
 """],
-["Cgroups",
+["CPU Stats",
 """
-t1 = From(table='cgroup_cpu_stats', select=['time_', 'qos', 'pod', 'num_threads', 'cpu_utime_ns', 'cpu_ktime_ns']).Range(start='-30s')
-t2 = t1.Limit(rows=100).Result(name='cpu_stats')
+t1 = From(table='process_stats', select=['time_', 'upid', 'major_faults', 'minor_faults', 'cpu_utime_ns', 'cpu_ktime_ns',
+                                         'num_threads', 'vsize_bytes', 'rss_bytes', 'rchar_bytes', 'wchar_bytes', 'read_bytes', 'write_bytes'] ).Range(start='-30s')
+t2 = t1.Limit(rows=100).Result(name='stats')
+"""],
+["Network Stats",
+"""
+t1 = From(table='network_stats', select=['time_', 'pod_id', 'rx_bytes', 'rx_packets', 'rx_errors',
+                                         'rx_drops', 'tx_bytes', 'tx_packets', 'tx_errors', 'tx_drops']).Range(start='-30s')
+t2 = t1.Limit(rows=100).Result(name='stats')
 """]
 ]

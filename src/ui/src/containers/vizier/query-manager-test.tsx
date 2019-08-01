@@ -22,7 +22,7 @@ describe('<QueryManager/> test', () => {
     const dropdown = wrapper.find(DropdownButton).find('button').at(0);
     dropdown.simulate('click');
 
-    expect(wrapper.find(Dropdown.Item)).toHaveLength(5);
+    expect(wrapper.find(Dropdown.Item)).toHaveLength(6);
     const dropdownItem = wrapper.find(Dropdown.Item).at(1);
     dropdownItem.simulate('click');
 
