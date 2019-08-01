@@ -166,15 +166,32 @@ class SourceConnector : public NotCopyable {
 
  protected:
   // Example usage:
-  // RecordBuilder<&kTable> r(record_batch.RecordBatch());
+  // RecordBuilder<&kTable> r(data_table);
   // r.Append<r.ColIndex("field0")>(val0);
   // r.Append<r.ColIndex("field1")>(val1);
   // r.Append<r.ColIndex("field2")>(val2);
+  //
+  // NOTE: Today, the tabletization key must appear as replicated in a column.
+  // This is technically redundant information, as the column will simply contain a constant value.
+  // This is being done to keep Carnot simple. This way, Carnot does not to have to convert tablet
+  // keys into dynamically generated columns. For example, if the tablet key was a PID,
+  // the memory source from table store would have to add the PID when selecting multiple tablets,
+  // if the tablet key was not an explicit column.
+  // TODO(oazizi): Look into the optimization of avoiding replication.
+  // See https://phab.pixielabs.ai/D1428 for an abandoned implementation.
+
   template <const DataTableSchema* schema>
   class RecordBuilder {
    public:
-    explicit RecordBuilder(DataTable* data_table, size_t tablet_id = 0)
-        : record_batch_(*data_table->ActiveRecordBatch(tablet_id)) {}
+    explicit RecordBuilder(DataTable* data_table, types::TabletID tablet_id)
+        : RecordBuilder(data_table->ActiveRecordBatch(tablet_id)) {
+      static_assert(schema->tabletized());
+      tablet_id_ = tablet_id;
+    }
+
+    explicit RecordBuilder(DataTable* data_table) : RecordBuilder(data_table->ActiveRecordBatch()) {
+      static_assert(!schema->tabletized());
+    }
 
     // For convenience, a wrapper around ColIndex() in the DataTableSchema class.
     constexpr uint32_t ColIndex(std::string_view name) { return schema->ColIndex(name); }
@@ -183,6 +200,10 @@ class SourceConnector : public NotCopyable {
     template <const uint32_t index>
     inline void Append(
         typename types::DataTypeTraits<schema->elements()[index].type()>::value_type val) {
+      if constexpr (index == schema->tabletization_key()) {
+        CHECK(val == static_cast<int64_t>(tablet_id_));
+      }
+
       record_batch_[index]->Append(std::move(val));
       CHECK(!signature_[index]) << absl::Substitute(
           "Attempt to Append() to column $0 (name=$1) multiple times", index,
@@ -196,8 +217,12 @@ class SourceConnector : public NotCopyable {
     }
 
    private:
+    explicit RecordBuilder(types::ColumnWrapperRecordBatch* active_record_batch)
+        : record_batch_(*active_record_batch) {}
+
     types::ColumnWrapperRecordBatch& record_batch_;
     std::bitset<schema->elements().size()> signature_;
+    types::TabletID tablet_id_ = 0;
   };
 
  protected:

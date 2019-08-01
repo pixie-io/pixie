@@ -47,6 +47,11 @@ class SystemStatsConnector : public SourceConnector {
   // clang-format on
   static constexpr auto kProcessStatsTable =
       DataTableSchema("process_stats", kProcessStatsElements);
+  // TODO(oazizi): Enable version below, once rest of the agent supports tabletization.
+  //               Can't enable yet because it would result in time-scrambling.
+  //  static constexpr std::string_view kProcessStatsTabletizationKey = "upid";
+  //  static constexpr auto kProcessStatsTable =
+  //      DataTableSchema("process_stats", kProcessStatsElements, kProcessStatsTabletizationKey);
 
   // clang-format off
   static constexpr DataElement kNetworkStatsElements[] = {

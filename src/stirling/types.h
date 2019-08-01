@@ -1,6 +1,7 @@
 #pragma once
 
 #include <arrow/type.h>
+#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
@@ -22,8 +23,8 @@ namespace stirling {
 using ArrowArrayBuilderUPtrVec = std::vector<std::unique_ptr<arrow::ArrayBuilder>>;
 using ArrowRecordBatchSPtrVec = std::vector<std::shared_ptr<arrow::RecordBatch>>;
 
-using PushDataCallback =
-    std::function<void(uint32_t, size_t, std::unique_ptr<types::ColumnWrapperRecordBatch>)>;
+using PushDataCallback = std::function<void(uint32_t, types::TabletID,
+                                            std::unique_ptr<types::ColumnWrapperRecordBatch>)>;
 
 using AgentMetadataType = std::shared_ptr<const pl::md::AgentMetadataState>;
 /**
@@ -60,10 +61,23 @@ class DataTableSchema {
   // TODO(oazizi): This constructor should only be called at compile-time. Need to enforce this.
   template <std::size_t N>
   constexpr DataTableSchema(std::string_view name, const DataElement (&elements)[N])
-      : name_(name), elements_(elements) {
+      : name_(name), elements_(elements), tabletized_(false) {
     CheckSchema();
   }
+
+  template <std::size_t N>
+  constexpr DataTableSchema(std::string_view name, const DataElement (&elements)[N],
+                            std::string_view tabletization_key_name)
+      : name_(name),
+        elements_(elements),
+        tabletized_(true),
+        tabletization_key_(ColIndex(tabletization_key_name)) {
+    CheckSchema();
+  }
+
   constexpr std::string_view name() const { return name_; }
+  constexpr bool tabletized() const { return tabletized_; }
+  constexpr size_t tabletization_key() const { return tabletization_key_; }
   constexpr ConstVectorView<DataElement> elements() const { return elements_; }
 
   // Warning: use at compile-time only!
@@ -89,6 +103,16 @@ class DataTableSchema {
   constexpr void CheckSchema() {
     COMPILE_TIME_ASSERT(!name_.empty(), "Table name may not be empty.");
 
+    if (tabletized_) {
+      COMPILE_TIME_ASSERT(tabletization_key_ != std::numeric_limits<size_t>::max(),
+                          "Tabletization key name must be initialized.");
+      //      // TODO(oazizi): Add support for other types of tabletization keys.
+      //      COMPILE_TIME_ASSERT(tabletization_element_.type() == types::DataType::INT64,
+      //                          "Tabletization key must currently be of type INT64.");
+      //      COMPILE_TIME_ASSERT(tabletization_element_.ptype() != types::PatternType::UNSPECIFIED,
+      //                          "Tabletization key must have a pattern type");
+    }
+
     for (size_t i = 0; i < elements_.size(); ++i) {
       COMPILE_TIME_ASSERT(elements_[i].name() != "", "Element name may not be empty.");
       COMPILE_TIME_ASSERT(elements_[i].type() != types::DataType::DATA_TYPE_UNKNOWN,
@@ -100,6 +124,8 @@ class DataTableSchema {
 
   const std::string_view name_;
   const ConstVectorView<DataElement> elements_;
+  const bool tabletized_ = false;
+  size_t tabletization_key_ = std::numeric_limits<size_t>::max();
 };
 
 }  // namespace stirling

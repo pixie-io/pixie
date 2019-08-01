@@ -32,7 +32,7 @@ void DataTable::InitBuffers(types::ColumnWrapperRecordBatch* record_batch_ptr) {
   }
 }
 
-types::ColumnWrapperRecordBatch* DataTable::ActiveRecordBatch(size_t tablet_id) {
+types::ColumnWrapperRecordBatch* DataTable::ActiveRecordBatch(types::TabletID tablet_id) {
   auto& tablet_ptr = tablets_[tablet_id];
   if (tablet_ptr == nullptr) {
     tablet_ptr = std::make_unique<types::ColumnWrapperRecordBatch>();

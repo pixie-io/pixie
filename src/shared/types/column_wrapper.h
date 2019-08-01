@@ -18,6 +18,10 @@ class ColumnWrapper;
 using SharedColumnWrapper = std::shared_ptr<ColumnWrapper>;
 using ColumnWrapperRecordBatch = std::vector<types::SharedColumnWrapper>;
 
+// TODO(oazizi): This should change to std::string/std::string_view.
+// TODO(oazizi): Find a better place for this.
+using TabletID = size_t;
+
 template <typename T>
 class ColumnWrapperTmpl;
 

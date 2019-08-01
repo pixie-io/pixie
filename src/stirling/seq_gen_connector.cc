@@ -39,6 +39,9 @@ void SeqGenConnector::TransferDataTable1(uint32_t num_records, DataTable* data_t
     RecordBuilder<&kSeq1Table> r(data_table, tablet_id);
     r.Append<r.ColIndex("time_")>(table1_time_seq_());
     r.Append<r.ColIndex("x")>(table1_lin_seq_());
+    // Tabletization key must also be appended as a column value.
+    // See note in RecordBuilder class.
+    r.Append<r.ColIndex("xmod8")>(tablet_id);
   }
 }
 

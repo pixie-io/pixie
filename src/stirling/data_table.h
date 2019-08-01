@@ -4,6 +4,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "absl/container/flat_hash_map.h"
+
 #include "src/common/base/base.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/types.h"
@@ -15,7 +17,7 @@ namespace stirling {
  * A tagged record batch is simply a record_batch that is tagged with a tablet_id.
  */
 struct TaggedRecordBatch {
-  size_t tablet_id;
+  types::TabletID tablet_id;
   std::unique_ptr<types::ColumnWrapperRecordBatch> records_uptr;
 };
 
@@ -41,7 +43,7 @@ class DataTable {
    *
    * @return Pointer to active record batch.
    */
-  types::ColumnWrapperRecordBatch* ActiveRecordBatch(size_t tablet_id = 0);
+  types::ColumnWrapperRecordBatch* ActiveRecordBatch(types::TabletID tablet_id = 0);
 
   /**
    * @brief Return current occupancy of the Data Table.
@@ -77,7 +79,7 @@ class DataTable {
 
   // Active record batch.
   // Key is tablet id, value is tablet active record batch.
-  std::unordered_map<size_t, std::unique_ptr<types::ColumnWrapperRecordBatch>> tablets_;
+  absl::flat_hash_map<types::TabletID, std::unique_ptr<types::ColumnWrapperRecordBatch>> tablets_;
 
   // Sealed record batches that have been collected, but need to be pushed upstream.
   std::vector<TaggedRecordBatch> sealed_batches_;

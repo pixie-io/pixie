@@ -65,7 +65,11 @@ void SystemStatsConnector::TransferProcessStatsTable(ConnectorContext* ctx, Data
     }
 
     RecordBuilder<&kProcessStatsTable> r(data_table);
+    // TODO(oazizi): Enable version below, once rest of the agent supports tabletization.
+    //  RecordBuilder<&kProcessStatsTable> r(data_table, upid.value());
     r.Append<r.ColIndex("time_")>(timestamp);
+    // Tabletization key must also be appended as a column value.
+    // See note in RecordBuilder class.
     r.Append<r.ColIndex("upid")>(upid.value());
     r.Append<r.ColIndex("major_faults")>(stats.major_faults);
     r.Append<r.ColIndex("minor_faults")>(stats.minor_faults);

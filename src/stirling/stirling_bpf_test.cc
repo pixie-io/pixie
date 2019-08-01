@@ -18,6 +18,7 @@ using pl::stirling::SourceRegistry;
 using pl::stirling::Stirling;
 
 using pl::types::ColumnWrapperRecordBatch;
+using pl::types::TabletID;
 
 using pl::ConstVectorView;
 
@@ -37,7 +38,7 @@ class StirlingBPFTest : public ::testing::Test {
         std::bind(&StirlingBPFTest::DummyMetadataCallback, this));
   }
 
-  void AppendData(uint64_t table_id, size_t tablet_id,
+  void AppendData(uint64_t table_id, TabletID tablet_id,
                   std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
     PL_UNUSED(table_id);
     PL_UNUSED(tablet_id);

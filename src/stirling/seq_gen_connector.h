@@ -35,9 +35,12 @@ class SeqGenConnector : public SourceConnector {
   static constexpr DataElement kElementsSeq1[] = {
       {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
       {"x", types::DataType::INT64, types::PatternType::GENERAL},
+      {"xmod8", types::DataType::INT64, types::PatternType::GENERAL}
   };
   // clang-format on
-  static constexpr auto kSeq1Table = DataTableSchema("sequence_generator1", kElementsSeq1);
+  static constexpr std::string_view kSeq1TabletizationKey = "xmod8";
+  static constexpr auto kSeq1Table =
+      DataTableSchema("sequence_generator1", kElementsSeq1, kSeq1TabletizationKey);
 
   static constexpr DataTableSchema kTablesArray[] = {kSeq0Table, kSeq1Table};
   static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);

@@ -22,6 +22,7 @@ using SubProto = pl::stirling::stirlingpb::Subscribe;
 
 using pl::stirling::AgentMetadataType;
 using pl::stirling::DataElement;
+using pl::stirling::DataTableSchema;
 using pl::stirling::SeqGenConnector;
 using pl::stirling::SourceRegistry;
 using pl::stirling::Stirling;
@@ -31,6 +32,7 @@ using pl::types::DataType;
 using pl::types::Float64Value;
 using pl::types::Int64Value;
 using pl::types::StringValue;
+using pl::types::TabletID;
 using pl::types::Time64NSValue;
 
 using pl::ConstVectorView;
@@ -56,7 +58,7 @@ const double kSubscribeProb = 0.7;
 // Each column in each tablet of each table is mapped to a unique, deterministic sequence of values.
 struct TableTabletCol {
   uint64_t table;
-  size_t tablet;
+  TabletID tablet;
   size_t col;
 
   bool operator==(const TableTabletCol& other) const {
@@ -70,7 +72,8 @@ class TableTabletColHashFn {
   size_t operator()(const TableTabletCol& val) const {
     size_t hash = 0;
     hash = pl::HashCombine(hash, val.table);
-    hash = pl::HashCombine(hash, val.tablet);
+    hash = pl::HashCombine(hash, absl::Uint128Low64(val.tablet));
+    hash = pl::HashCombine(hash, absl::Uint128High64(val.tablet));
     hash = pl::HashCombine(hash, val.col);
     return hash;
   }
@@ -91,7 +94,7 @@ class StirlingTest : public ::testing::Test {
   PubProto publish_proto_;
 
   // Schemas
-  std::unordered_map<uint32_t, const ConstVectorView<DataElement>> schemas_;
+  std::unordered_map<uint32_t, DataTableSchema> schemas_;
 
   // Reference model (checkers).
   std::unordered_map<TableTabletCol, std::unique_ptr<pl::stirling::Sequence<int64_t>>,
@@ -151,7 +154,7 @@ class StirlingTest : public ::testing::Test {
         // Here we append checkers that mimics the sequences from kSeq0Table from
         // seq_gen_connector.h.
 
-        schemas_.emplace(id, SeqGenConnector::kSeq0Table.elements());
+        schemas_.emplace(id, SeqGenConnector::kSeq0Table);
 
         uint32_t col_idx = 1;  // Start at 1, because column 0 is time.
         int_seq_checker_.emplace(TableTabletCol{id, 0, col_idx++},
@@ -173,7 +176,7 @@ class StirlingTest : public ::testing::Test {
         // Here we append checkers that mimics the sequences from kSeq1Table from
         // seq_gen_connector.h. The modulo column from the table is used to form 8 distinct tablets.
 
-        schemas_.emplace(id, SeqGenConnector::kSeq1Table.elements());
+        schemas_.emplace(id, SeqGenConnector::kSeq1Table);
 
         // Spread seq_gen's second table into tablets, based on its modulo column (mod 8).
         static const uint32_t kModulo = 8;
@@ -182,6 +185,11 @@ class StirlingTest : public ::testing::Test {
           int_seq_checker_.emplace(
               TableTabletCol{id, t, col_idx++},
               std::make_unique<pl::stirling::LinearSequence<int64_t>>(2 * kModulo, 2 + (2 * t)));
+
+          // The modulo is the tablet id, so after tabletization, it will appear as a constant.
+          // So use a Linear Sequence with slope 0 to specify a constant expectation.
+          int_seq_checker_.emplace(TableTabletCol{id, t, col_idx++},
+                                   std::make_unique<pl::stirling::LinearSequence<int64_t>>(0, t));
         }
 
         num_processed_per_table_.emplace(id, 0);
@@ -217,7 +225,7 @@ class StirlingTest : public ::testing::Test {
 
   SubProto GenerateRandomSubscription() { return GenerateRandomSubscription(publish_proto_); }
 
-  void AppendData(uint64_t table_id, uint32_t tablet_id,
+  void AppendData(uint64_t table_id, TabletID tablet_id,
                   std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
     // Note: Implicit assumption (not checked here) is that all columns have the same size
     size_t num_records = (*record_batch)[0]->Size();
@@ -226,9 +234,9 @@ class StirlingTest : public ::testing::Test {
 
   AgentMetadataType DummyAgentMetadataCallback() { return nullptr; }
 
-  void CheckRecordBatch(const uint64_t table_id, uint32_t tablet_id, size_t num_records,
+  void CheckRecordBatch(const uint64_t table_id, TabletID tablet_id, size_t num_records,
                         const ColumnWrapperRecordBatch& record_batch) {
-    auto table_schema = schemas_[table_id];
+    auto schema_elements = schemas_.at(table_id).elements();
 
     for (size_t i = 0; i < num_records; ++i) {
       uint32_t j = 0;
@@ -236,7 +244,7 @@ class StirlingTest : public ::testing::Test {
       for (const auto& col : record_batch) {
         TableTabletCol key{table_id, tablet_id, j};
 
-        switch (table_schema[j].type()) {
+        switch (schema_elements[j].type()) {
           case DataType::TIME64NS: {
             auto val = col->Get<Time64NSValue>(i).val;
             PL_UNUSED(val);
@@ -251,7 +259,7 @@ class StirlingTest : public ::testing::Test {
           } break;
           default:
             CHECK(false) << absl::Substitute("Unrecognized type: $0",
-                                             ToString(table_schema[j].type()));
+                                             ToString(schema_elements[j].type()));
         }
 
         j++;
