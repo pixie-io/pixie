@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/numeric/int128.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
@@ -23,6 +24,8 @@ DataType ArrowToDataType(const arrow::Type::type& arrow_type) {
       return DataType::BOOLEAN;
     case Type::INT64:
       return DataType::INT64;
+    case Type::UINT128:
+      return DataType::UINT128;
     case Type::DOUBLE:
       return DataType::FLOAT64;
     case Type::STRING:
@@ -41,6 +44,8 @@ arrow::Type::type ToArrowType(const DataType& udf_type) {
       return Type::BOOL;
     case DataType::INT64:
       return Type::INT64;
+    case DataType::UINT128:
+      return Type::UINT128;
     case DataType::FLOAT64:
       return Type::DOUBLE;
     case DataType::STRING:
@@ -58,6 +63,8 @@ int64_t ArrowTypeToBytes(const arrow::Type::type& arrow_type) {
       return sizeof(bool);
     case Type::INT64:
       return sizeof(int64_t);
+    case Type::UINT128:
+      return sizeof(absl::uint128);
     case Type::FLOAT:
       return sizeof(float);
     case Type::TIME64:
@@ -79,6 +86,7 @@ std::unique_ptr<arrow::ArrayBuilder> MakeArrowBuilder(const DataType& data_type,
     // PL_CARNOT_UPDATE_FOR_NEW_TYPES
     BUILDER_CASE(DataType::BOOLEAN, mem_pool);
     BUILDER_CASE(DataType::INT64, mem_pool);
+    BUILDER_CASE(DataType::UINT128, mem_pool);
     BUILDER_CASE(DataType::FLOAT64, mem_pool);
     BUILDER_CASE(DataType::STRING, mem_pool);
     BUILDER_CASE(DataType::TIME64NS, mem_pool);
