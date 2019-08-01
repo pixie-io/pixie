@@ -13,6 +13,10 @@
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_wrapper.h"
 
+// TODO(yzhao): Do we need make this flag able to specify size for individual perf buffers?
+DEFINE_uint32(stirling_bpf_perf_buffer_page_count, 8,
+              "The size of the perf buffers, in number of memory pages.");
+
 namespace pl {
 namespace stirling {
 
@@ -81,9 +85,9 @@ void BCCWrapper::DetachProbes() {
 }
 
 Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie) {
-  ebpf::StatusTuple open_status =
-      bpf_.open_perf_buffer(std::string(perf_buffer.name), perf_buffer.probe_output_fn,
-                            perf_buffer.probe_loss_fn, cb_cookie, perf_buffer.num_pages);
+  ebpf::StatusTuple open_status = bpf_.open_perf_buffer(
+      std::string(perf_buffer.name), perf_buffer.probe_output_fn, perf_buffer.probe_loss_fn,
+      cb_cookie, FLAGS_stirling_bpf_perf_buffer_page_count);
   if (open_status.code() != 0) {
     return error::Internal("Failed to open perf buffer: $0, error message: $1", perf_buffer.name,
                            open_status.msg());

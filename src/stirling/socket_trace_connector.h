@@ -212,19 +212,18 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   //               (https://filippo.io/linux-syscall-table/), but are defined as SYSCALL_DEFINE4 in
   //               https://elixir.bootlin.com/linux/latest/source/net/socket.c.
 
-  static constexpr uint32_t kDefaultPageCount = 8;
   static constexpr PerfBufferSpec kPerfBufferSpecsArray[] = {
       // For data events. The order must be consistent with output tables.
       {"socket_http_events", &SocketTraceConnector::HandleHTTPProbeOutput,
-       &SocketTraceConnector::HandleHTTPProbeLoss, kDefaultPageCount},
+       &SocketTraceConnector::HandleHTTPProbeLoss},
       {"socket_mysql_events", &SocketTraceConnector::HandleMySQLProbeOutput,
-       &SocketTraceConnector::HandleMySQLProbeLoss, kDefaultPageCount},
+       &SocketTraceConnector::HandleMySQLProbeLoss},
 
       // For non-data events. Must not mix with the above perf buffers for data events.
       {"socket_open_conns", &SocketTraceConnector::HandleOpenProbeOutput,
-       &SocketTraceConnector::HandleOpenProbeLoss, kDefaultPageCount},
+       &SocketTraceConnector::HandleOpenProbeLoss},
       {"socket_close_conns", &SocketTraceConnector::HandleCloseProbeOutput,
-       &SocketTraceConnector::HandleCloseProbeLoss, kDefaultPageCount},
+       &SocketTraceConnector::HandleCloseProbeLoss},
   };
   static constexpr auto kPerfBufferSpecs = ConstVectorView<PerfBufferSpec>(kPerfBufferSpecsArray);
 

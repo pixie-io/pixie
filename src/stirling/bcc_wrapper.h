@@ -15,6 +15,8 @@
 #include "src/stirling/bcc_bpf/pidruntime.h"
 #include "src/stirling/source_connector.h"
 
+DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
+
 namespace pl {
 namespace stirling {
 
@@ -47,9 +49,6 @@ struct PerfBufferSpec {
 
   // Function that will be called if there are lost/clobbered perf events.
   perf_reader_lost_cb probe_loss_fn;
-
-  // Size of the perf buffer, in pages.
-  uint32_t num_pages;
 };
 
 /**
