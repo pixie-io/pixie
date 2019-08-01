@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <rapidjson/document.h>
 
-#include "src/carnot/builtins/math_sketches.h"
+#include "src/carnot/funcs/builtins/math_sketches.h"
 #include "src/carnot/udf/test_utils.h"
 #include "src/common/base/base.h"
 

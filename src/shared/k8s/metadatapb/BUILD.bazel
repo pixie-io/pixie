@@ -31,3 +31,13 @@ pl_go_proto_library(
         "//src/shared/types/proto:types_pl_go_proto",
     ],
 )
+
+pl_cc_library(
+    name = "metadata_testutils",
+    testonly = 1,
+    hdrs = ["test_proto.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":metadata_pl_cc_proto",
+    ],
+)

@@ -1,0 +1,26 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = ["**/*_test.cc"],
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//src/carnot/udf:cc_library",
+        "//src/shared/metadata:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "metadata_ops_test",
+    srcs = ["metadata_ops_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf:udf_testutils",
+        "//src/shared/k8s/metadatapb:metadata_testutils",
+    ],
+)

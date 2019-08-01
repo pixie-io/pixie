@@ -1,4 +1,4 @@
-#include "src/carnot/builtins/string_ops.h"
+#include "src/carnot/funcs/builtins/string_ops.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
 

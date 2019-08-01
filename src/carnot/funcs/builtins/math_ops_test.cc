@@ -3,7 +3,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "src/carnot/builtins/math_ops.h"
+#include "src/carnot/funcs/builtins/math_ops.h"
 #include "src/carnot/udf/test_utils.h"
 #include "src/common/base/base.h"
 

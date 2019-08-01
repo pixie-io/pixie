@@ -4,9 +4,10 @@
 #include <memory>
 #include <utility>
 
-#include "src/carnot/builtins/builtins.h"
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/exec/exec_state.h"
+#include "src/carnot/funcs/builtins/builtins.h"
+#include "src/carnot/funcs/metadata/metadata_ops.h"
 #include "src/carnot/plan/plan_state.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
@@ -44,6 +45,7 @@ class EngineState : public NotCopyable {
     auto uda_registry = std::make_unique<udf::UDARegistry>("uda_registry");
     builtins::RegisterBuiltinsOrDie(scalar_udf_registry.get());
     builtins::RegisterBuiltinsOrDie(uda_registry.get());
+    funcs::metadata::RegisterMetadataOpsOrDie(scalar_udf_registry.get());
 
     auto schema = std::make_shared<table_store::schema::Schema>();
 

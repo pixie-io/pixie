@@ -1,8 +1,8 @@
 #pragma once
 #include <memory>
 
-#include "src/carnot/builtins/builtins.h"
 #include "src/carnot/compiler/registry_info.h"
+#include "src/carnot/funcs/builtins/builtins.h"
 #include "src/carnot/udf/registry.h"
 
 namespace pl {

@@ -2,7 +2,9 @@
 #include <gtest/gtest.h>
 
 #include <iostream>
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "absl/strings/str_format.h"
 #include "src/carnot/udf/udf.h"
@@ -42,6 +44,11 @@ class UDFTester {
   static constexpr auto udf_data_type = ScalarUDFTraits<TUDF>::ReturnType();
 
  public:
+  UDFTester() {}
+
+  explicit UDFTester(std::unique_ptr<udf::FunctionContext> function_ctx)
+      : function_ctx_(std::move(function_ctx)) {}
+
   /*
    * Execute the UDF on the given arguments and store the result to be checked by Expect.
    * Arguments must be of a type that can usually be passed into the UDF's Exec function,
@@ -49,7 +56,7 @@ class UDFTester {
    */
   template <typename... Args>
   UDFTester& ForInput(Args... args) {
-    res_ = udf_.Exec(nullptr, args...);
+    res_ = udf_.Exec(function_ctx_.get(), args...);
 
     return *this;
   }
@@ -66,6 +73,7 @@ class UDFTester {
 
  private:
   TUDF udf_;
+  std::unique_ptr<udf::FunctionContext> function_ctx_ = nullptr;
   typename types::DataTypeTraits<udf_data_type>::value_type res_;
 };
 

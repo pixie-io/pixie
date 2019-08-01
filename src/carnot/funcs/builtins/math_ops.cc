@@ -1,4 +1,4 @@
-#include "src/carnot/builtins/math_ops.h"
+#include "src/carnot/funcs/builtins/math_ops.h"
 #include "src/carnot/udf/registry.h"
 #include "src/common/base/base.h"
 

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "src/carnot/builtins/json_ops.h"
+#include "src/carnot/funcs/builtins/json_ops.h"
 #include "src/carnot/udf/test_utils.h"
 
 namespace pl {
