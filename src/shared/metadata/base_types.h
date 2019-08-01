@@ -15,15 +15,18 @@ namespace md {
  * unique in both space and time.
  *
  * K8s stores UID as both regular strings and UUIDs.
+ * The view equivalents are used to provide heterogeneous lookups.
  */
 using UID = std::string;
+using UIDView = std::string_view;
 
 /**
  * CID refers to a unique container ID. This ID is unique in both
  * space and time.
+ * The view equivalents are used to provide heterogeneous lookups.
  */
 using CID = std::string;
-
+using CIDView = std::string_view;
 /**
  * Unique PIDs refers to uniquefied pids. They are unique in both
  * space and time. The format for a unique PID is:

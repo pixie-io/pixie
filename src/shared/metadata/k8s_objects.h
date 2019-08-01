@@ -94,8 +94,8 @@ class PodInfo : public K8sMetadataObject {
         qos_class_(qos_class) {}
   virtual ~PodInfo() = default;
 
-  void AddContainer(CID cid) { containers_.emplace(cid); }
-  void RmContainer(CID cid) { containers_.erase(cid); }
+  void AddContainer(CIDView cid) { containers_.emplace(cid); }
+  void RmContainer(CIDView cid) { containers_.erase(cid); }
   PodQOSClass qos_class() const { return qos_class_; }
 
   const absl::flat_hash_set<std::string>& containers() const { return containers_; }

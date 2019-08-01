@@ -10,7 +10,7 @@
 namespace pl {
 namespace md {
 
-const PodInfo* K8sMetadataState::PodInfoByID(UID pod_id) const {
+const PodInfo* K8sMetadataState::PodInfoByID(UIDView pod_id) const {
   auto it = k8s_objects_.find(pod_id);
 
   if (it == k8s_objects_.end()) {
@@ -26,7 +26,7 @@ UID K8sMetadataState::PodIDByName(K8sNameIdentView pod_name) const {
   return (it == pods_by_name_.end()) ? "" : it->second;
 }
 
-const ContainerInfo* K8sMetadataState::ContainerInfoByID(const CID& id) const {
+const ContainerInfo* K8sMetadataState::ContainerInfoByID(CIDView id) const {
   auto it = containers_by_id_.find(id);
   return it == containers_by_id_.end() ? nullptr : it->second.get();
 }

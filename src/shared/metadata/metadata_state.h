@@ -79,7 +79,7 @@ class K8sMetadataState : NotCopyable {
    * @param pod_id the id of the POD.
    * @return Pointer to the PodInfo.
    */
-  const PodInfo* PodInfoByID(UID pod_id) const;
+  const PodInfo* PodInfoByID(UIDView pod_id) const;
 
   /**
    * PodIDByName returns the PodID for the pod of the given name.
@@ -93,7 +93,7 @@ class K8sMetadataState : NotCopyable {
    * @param id The ID of the container.
    * @return ContainerInfo or nullptr if not found.
    */
-  const ContainerInfo* ContainerInfoByID(const CID& id) const;
+  const ContainerInfo* ContainerInfoByID(CIDView id) const;
 
   std::unique_ptr<K8sMetadataState> Clone() const;
 
