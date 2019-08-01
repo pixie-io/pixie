@@ -192,10 +192,11 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
     for (const auto& upid : cgroups_active_upids) {
       auto pid_info = std::make_unique<PIDInfo>(upid, md_reader->ReadPIDCmdline(upid.pid()), cid);
       cinfo->AddUPID(upid);
-
       // Push creation events to the queue.
       auto pid_status_event = std::make_unique<PIDStartedEvent>(*pid_info);
       pid_updates->enqueue(std::move(pid_status_event));
+
+      md->AddUPID(upid, std::move(pid_info));
     }
   }
 

@@ -155,6 +155,11 @@ std::string AgentMetadataState::DebugString(int indent_level) const {
   str += prefix + absl::Substitute("EpochID: $0\n", epoch_id_);
   str += prefix + absl::Substitute("LastUpdateTS: $0\n", last_update_ts_ns_);
   str += prefix + k8s_metadata_state_->DebugString(indent_level);
+  str += prefix + absl::Substitute("PIDS($0)\n", pids_by_upid_.size());
+  for (const auto& [upid, upid_info] : pids_by_upid_) {
+    PL_UNUSED(upid);
+    str += prefix + absl::Substitute("$0\n", upid_info->DebugString());
+  }
   str += prefix + "\n";
   str += prefix + "--------------------------------------------\n";
   return str;

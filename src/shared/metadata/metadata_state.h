@@ -147,6 +147,10 @@ class AgentMetadataState : NotCopyable {
     return nullptr;
   }
 
+  void AddUPID(UPID upid, std::unique_ptr<PIDInfo> pid_info) {
+    pids_by_upid_[upid] = std::move(pid_info);
+  }
+
   const absl::flat_hash_map<UPID, PIDInfoUPtr>& pids_by_upid() const { return pids_by_upid_; }
 
   std::string DebugString(int indent_level = 0) const;
