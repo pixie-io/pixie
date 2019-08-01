@@ -19,11 +19,11 @@
 #include "src/stirling/stirling.h"
 #include "src/stirling/utils/kprobe_cleaner.h"
 
-#include "src/stirling/cgroup_stats_connector.h"
 #include "src/stirling/pid_runtime_connector.h"
 #include "src/stirling/proc_stat_connector.h"
 #include "src/stirling/seq_gen_connector.h"
 #include "src/stirling/socket_trace_connector.h"
+#include "src/stirling/system_stats_connector.h"
 
 namespace pl {
 namespace stirling {
@@ -35,14 +35,14 @@ std::unique_ptr<SourceRegistry> CreateAllSourceRegistry() {
   registry->RegisterOrDie<ProcStatConnector>("proc_stat");
   registry->RegisterOrDie<PIDRuntimeConnector>("bcc_cpu_stat");
   registry->RegisterOrDie<SocketTraceConnector>("socket_tracer");
-  registry->RegisterOrDie<CGroupStatsConnector>("cgroup_stats");
+  registry->RegisterOrDie<SystemStatsConnector>("system_stats");
   return registry;
 }
 
 std::unique_ptr<SourceRegistry> CreateProdSourceRegistry() {
   auto registry = std::make_unique<SourceRegistry>();
   registry->RegisterOrDie<SocketTraceConnector>("socket_tracer");
-  registry->RegisterOrDie<CGroupStatsConnector>("cgroup_stats");
+  registry->RegisterOrDie<SystemStatsConnector>("system_stats");
   return registry;
 }
 

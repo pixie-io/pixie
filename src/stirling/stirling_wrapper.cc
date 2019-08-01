@@ -3,13 +3,14 @@
 #include <thread>
 
 #include "src/common/base/base.h"
-#include "src/stirling/cgroup_stats_connector.h"
+#include "src/shared/metadata/metadata.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/pid_runtime_connector.h"
 #include "src/stirling/seq_gen_connector.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
+#include "src/stirling/system_stats_connector.h"
 #include "src/stirling/types.h"
 
 using pl::stirling::AgentMetadataType;
@@ -26,10 +27,10 @@ using pl::types::SharedColumnWrapper;
 using pl::types::StringValue;
 using pl::types::Time64NSValue;
 
-using pl::stirling::CGroupStatsConnector;
 using pl::stirling::PIDRuntimeConnector;
 using pl::stirling::SeqGenConnector;
 using pl::stirling::SocketTraceConnector;
+using pl::stirling::SystemStatsConnector;
 
 using pl::stirling::DataElement;
 
@@ -97,17 +98,21 @@ void StirlingWrapperCallback(uint64_t table_id, size_t /* tablet_id */,
   } else if (name == SocketTraceConnector::kHTTPTable.name().data()) {
     PrintRecordBatch("HTTPTrace", SocketTraceConnector::kHTTPTable.elements(), num_records,
                      *record_batch);
-  } else if (name == CGroupStatsConnector::kCPUTable.name().data()) {
-    PrintRecordBatch("CGroupStats", CGroupStatsConnector::kCPUTable.elements(), num_records,
-                     *record_batch);
-  } else if (name == CGroupStatsConnector::kNetworkTable.name().data()) {
-    PrintRecordBatch("NetStats", CGroupStatsConnector::kNetworkTable.elements(), num_records,
+  } else if (name == SystemStatsConnector::kProcessStatsTable.name().data()) {
+    PrintRecordBatch("ProcessStats", SystemStatsConnector::kProcessStatsTable.elements(),
+                     num_records, *record_batch);
+  } else if (name == SystemStatsConnector::kNetworkStatsTable.name().data()) {
+    PrintRecordBatch("NetStats", SystemStatsConnector::kNetworkStatsTable.elements(), num_records,
                      *record_batch);
   }
   // Can add other connectors, if desired, here.
 }
 
-AgentMetadataType AgentMetadataCallback() { return nullptr; }
+AgentMetadataType AgentMetadataCallback() {
+  // Injecting empty state here. If we want to monitor some pids we can directly add them to this
+  // data structure.
+  return std::make_shared<const pl::md::AgentMetadataState>(/* asid */ 1);
+}
 
 // Put this in global space, so we can kill it in the signal handler.
 Stirling* g_stirling = nullptr;
@@ -161,8 +166,6 @@ int main(int argc, char** argv) {
   // Set a dummy callback function (normally this would be in the agent).
   stirling->RegisterCallback(StirlingWrapperCallback);
 
-  // TODO(zasgar/oazizi): We need to inject a valid metadata state here
-  // after we port over the cgroups connector.
   stirling->RegisterAgentMetadataCallback(AgentMetadataCallback);
 
   // Run Data Collector.
