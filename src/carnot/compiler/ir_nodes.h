@@ -874,7 +874,6 @@ class MapIR : public OperatorIR {
 
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
-  LambdaIR* lambda_func() const { return lambda_func_; }
   void SetColExprs(ColExpressionVector col_exprs) {
     col_exprs_ = col_exprs;
     col_exprs_set_ = true;
@@ -884,7 +883,7 @@ class MapIR : public OperatorIR {
   Status ToProto(planpb::Operator*) const override;
 
  private:
-  LambdaIR* lambda_func_;
+  Status SetupMapExpressions(LambdaIR* map_func);
   // The map from new column_names to expressions.
   ColExpressionVector col_exprs_;
   bool col_exprs_set_ = false;

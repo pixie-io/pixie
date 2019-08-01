@@ -55,7 +55,7 @@ class RuleExecutorTest : public ::testing::Test {
     PL_CHECK_OK(func2->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
                             std::vector<ExpressionIR*>({int_constant2, func}),
                             false /* compile_time */, ast));
-    PL_CHECK_OK(lambda->Init({"count"}, func2, ast));
+    PL_CHECK_OK(lambda->Init({"count"}, {{"func", func2}}, ast));
     ArgMap amap({{"fn", lambda}});
     PL_CHECK_OK(map->Init(mem_src, amap, ast));
   }

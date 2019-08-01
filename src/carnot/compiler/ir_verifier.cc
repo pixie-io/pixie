@@ -64,15 +64,7 @@ Status IRVerifier::VerifyRange(RangeIR* range_node) {
   return Status::OK();
 }
 
-Status IRVerifier::VerifyMap(MapIR* map_node) {
-  // verify properties of the lambda_func
-  LambdaIR* lambda_func = map_node->lambda_func();
-
-  if (!lambda_func->HasDictBody()) {
-    return lambda_func->CreateIRNodeError("Expected lambda func to have dictionary body.");
-  }
-  return Status::OK();
-}
+Status IRVerifier::VerifyMap(MapIR*) { return Status::OK(); }
 
 Status IRVerifier::VerifyFilter(FilterIR*) { return Status::OK(); }
 

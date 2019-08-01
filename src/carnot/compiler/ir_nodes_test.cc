@@ -217,7 +217,7 @@ TEST(ToProto, map_ir) {
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({constant, col}), false /* compile_time */, ast));
   func->set_func_id(1);
-  EXPECT_OK(lambda->Init({"col_name"}, func, ast));
+  EXPECT_OK(lambda->Init({"col_name"}, {{"func", func}}, ast));
   ArgMap amap({{"fn", lambda}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
   auto expr_map = std::unordered_map<std::string, IRNode*>();

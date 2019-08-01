@@ -666,12 +666,11 @@ TEST_F(AnalyzerTest, assign_udf_func_ids) {
   EXPECT_OK(map_node_status);
   auto map_node = static_cast<MapIR*>(map_node_status.ConsumeValueOrDie());
 
-  auto lambda_func = static_cast<LambdaIR*>(map_node->lambda_func());
-  auto func_node = static_cast<FuncIR*>(lambda_func->col_exprs()[0].node);
+  auto func_node = static_cast<FuncIR*>(map_node->col_exprs()[0].node);
   EXPECT_EQ(0, func_node->func_id());
-  func_node = static_cast<FuncIR*>(lambda_func->col_exprs()[1].node);
+  func_node = static_cast<FuncIR*>(map_node->col_exprs()[1].node);
   EXPECT_EQ(1, func_node->func_id());
-  func_node = static_cast<FuncIR*>(lambda_func->col_exprs()[2].node);
+  func_node = static_cast<FuncIR*>(map_node->col_exprs()[2].node);
   EXPECT_EQ(1, func_node->func_id());
 }
 

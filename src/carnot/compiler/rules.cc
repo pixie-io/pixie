@@ -227,15 +227,13 @@ StatusOr<bool> OperatorRelationRule::SetBlockingAgg(BlockingAggIR* agg_ir) const
 StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
   Relation map_rel;
   // Make a new relation with each of the expression key, type pairs.
-  ColExpressionVector col_exprs = map_ir->lambda_func()->col_exprs();
-  for (auto& entry : col_exprs) {
+  for (auto& entry : map_ir->col_exprs()) {
     std::string col_name = entry.name;
     if (!entry.node->IsDataTypeEvaluated()) {
       return false;
     }
     map_rel.AddColumn(entry.node->EvaluatedDataType(), col_name);
   }
-  map_ir->SetColExprs(col_exprs);
   PL_RETURN_IF_ERROR(map_ir->SetRelation(map_rel));
   return true;
 }
@@ -461,8 +459,7 @@ StatusOr<bool> CheckMetadataColumnNamingRule::Apply(IRNode* ir_node) const {
 }  // namespace compiler
 
 StatusOr<bool> CheckMetadataColumnNamingRule::CheckMapColumns(MapIR* op) const {
-  LambdaIR* lambda = op->lambda_func();
-  for (const auto& col_expr : lambda->col_exprs()) {
+  for (const auto& col_expr : op->col_exprs()) {
     if (absl::StartsWith(col_expr.name, IdMetadataProperty::kMetadataColumnPrefix)) {
       return op->CreateIRNodeError(
           "Column name '$1' violates naming rules. The '$0' prefix is reserved for internal "
@@ -522,15 +519,9 @@ Status MetadataResolverConversionRule::RemoveMap(MapIR* map) const {
 
   // Get the child of the metadata operator.
   std::vector<int64_t> map_dependent_nodes = graph->dag().DependenciesOf(map->id());
-  CHECK_EQ(map_dependent_nodes.size(), 1UL);
-  int64_t lambda_idx = map_dependent_nodes[0];
-  IRNode* map_child = graph->Get(lambda_idx);
-  CHECK(map_child->type() == IRNodeType::kLambda) << "Map child should be a lambda.";
-  PL_RETURN_IF_ERROR(graph->DeleteEdge(map->id(), lambda_idx));
-  LambdaIR* map_fn_lambda = static_cast<LambdaIR*>(map_child);
-  std::vector<int64_t> dependent_nodes = graph->dag().DependenciesOf(map_fn_lambda->id());
-  for (const int64_t& child_node_idx : dependent_nodes) {
-    PL_RETURN_IF_ERROR(graph->DeleteEdge(lambda_idx, child_node_idx));
+  CHECK_EQ(map_dependent_nodes.size(), map->col_exprs().size());
+  for (const int64_t& child_node_idx : map_dependent_nodes) {
+    PL_RETURN_IF_ERROR(graph->DeleteEdge(map->id(), child_node_idx));
     IRNode* node = graph->Get(child_node_idx);
     DCHECK(node->type() == IRNodeType::kColumn)
         << "Got: " << node->type_string() << "Expected: Column.";
@@ -538,7 +529,6 @@ Status MetadataResolverConversionRule::RemoveMap(MapIR* map) const {
   }
 
   // Delete map.
-  PL_RETURN_IF_ERROR(graph->DeleteNode(lambda_idx));
   PL_RETURN_IF_ERROR(graph->DeleteNode(map->id()));
   return Status::OK();
 }

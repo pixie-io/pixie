@@ -220,7 +220,7 @@ TEST_F(DataTypeRuleTest, map_function) {
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({constant, col}), false /* compile_time */, ast));
-  EXPECT_OK(lambda->Init({"col_name"}, func, ast));
+  EXPECT_OK(lambda->Init({"col_name"}, {{"func", func}}, ast));
   ArgMap amap({{"fn", lambda}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
 
@@ -317,7 +317,7 @@ TEST_F(DataTypeRuleTest, missing_udf_name) {
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "gobeldy"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({constant, col}), false /* compile_time */, ast));
-  EXPECT_OK(lambda->Init({"col_name"}, func, ast));
+  EXPECT_OK(lambda->Init({"col_name"}, {{"func", func}}, ast));
   ArgMap amap({{"fn", lambda}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
 
@@ -343,7 +343,7 @@ TEST_F(DataTypeRuleTest, function_in_agg) {
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({col}), false /* compile_time */, ast));
-  EXPECT_OK(lambda->Init({col->col_name()}, ColExpressionVector({{"func", func}}), ast));
+  EXPECT_OK(lambda->Init({col->col_name()}, {{"func", func}}, ast));
   ArgMap amap({{"fn", lambda}, {"by", nullptr}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
 
@@ -383,7 +383,7 @@ TEST_F(DataTypeRuleTest, nested_functions) {
   EXPECT_OK(func2->Init({FuncIR::Opcode::add, "-", "subtract"}, ASTWalker::kRunTimeFuncPrefix,
                         std::vector<ExpressionIR*>({constant2, func}), false /* compile_time */,
                         ast));
-  EXPECT_OK(lambda->Init({"col_name"}, func2, ast));
+  EXPECT_OK(lambda->Init({"col_name"}, {{"col_name", func2}}, ast));
   ArgMap amap({{"fn", lambda}});
   EXPECT_OK(map->Init(mem_src, amap, ast));
 
@@ -1454,9 +1454,6 @@ TEST_F(MetadataResolverConversionTest, upid_conversion) {
 
   MapIR* md_mapper = static_cast<MapIR*>(new_op);
 
-  std::vector<int64_t> mapper_dependencies = graph->dag().DependenciesOf(md_mapper->id());
-  EXPECT_EQ(mapper_dependencies, std::vector<int64_t>({md_mapper->id() + 1, filter->id()}));
-
   ColExpressionVector vec = md_mapper->col_exprs();
   ASSERT_EQ(relation.NumColumns() + md_resolver->metadata_columns().size(), vec.size());
   // Check to see that all of the parent columns are there
@@ -1520,8 +1517,6 @@ TEST_F(MetadataResolverConversionTest, alternative_column) {
 
   MapIR* md_mapper = static_cast<MapIR*>(new_op);
 
-  std::vector<int64_t> mapper_dependencies = graph->dag().DependenciesOf(md_mapper->id());
-  EXPECT_EQ(mapper_dependencies, std::vector<int64_t>({md_mapper->id() + 1, filter->id()}));
   ColExpressionVector vec = md_mapper->col_exprs();
 
   int64_t cur_idx = static_cast<int64_t>(relation.col_names().size());
@@ -1609,9 +1604,6 @@ TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
   MapIR* md_mapper = static_cast<MapIR*>(new_op);
   ColExpressionVector vec = md_mapper->col_exprs();
 
-  std::vector<int64_t> mapper_dependencies = graph->dag().DependenciesOf(md_mapper->id());
-  EXPECT_EQ(mapper_dependencies, std::vector<int64_t>({md_mapper->id() + 1, filter->id()}));
-
   int64_t cur_idx = static_cast<int64_t>(relation.col_names().size());
 
   // Check to see that the metadata columns have the correct format.
@@ -1665,7 +1657,6 @@ TEST_F(MetadataResolverConversionTest, multiple_metadata_columns) {
   ASSERT_EQ(new_op->type(), IRNodeType::kMap) << "Expected Map, got " << new_op->type_string();
 
   MapIR* md_mapper = static_cast<MapIR*>(new_op);
-  EXPECT_EQ(graph->dag().DependenciesOf(md_mapper->id()), std::vector<int64_t>({18, filter->id()}));
   ColExpressionVector vec = md_mapper->col_exprs();
 
   int64_t cur_idx = static_cast<int64_t>(relation.col_names().size());

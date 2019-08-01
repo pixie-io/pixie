@@ -55,8 +55,7 @@ Status OperatorIR::SetParent(IRNode* node) {
     return error::InvalidArgument("Expected Op, got $0 instead", node->type_string());
   }
   parent_ = static_cast<OperatorIR*>(node);
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(parent_, this));
-  return Status::OK();
+  return graph_ptr()->AddEdge(parent_, this);
 }
 
 Status OperatorIR::RemoveParent(OperatorIR* parent) {
@@ -82,8 +81,7 @@ Status OperatorIR::Init(IRNode* parent, const ArgMap& args, const pypa::AstPtr& 
   if (parent != nullptr) {
     PL_RETURN_IF_ERROR(SetParent(parent));
   }
-  PL_RETURN_IF_ERROR(InitImpl(args));
-  return Status::OK();
+  return InitImpl(args);
 }
 
 bool MemorySourceIR::HasLogicalRepr() const { return true; }
@@ -175,8 +173,7 @@ Status MemorySourceIR::InitImpl(const ArgMap& args) {
   }
   select_ = static_cast<ListIR*>(select_node);
 
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, select_));
-  return Status::OK();
+  return graph_ptr()->AddEdge(this, select_);
 }
 
 // TODO(philkuz) impl
@@ -223,8 +220,7 @@ Status RangeIR::SetStartStop(IRNode* start_repr, IRNode* stop_repr) {
   start_repr_ = start_repr;
   stop_repr_ = stop_repr;
   PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, start_repr_));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, stop_repr_));
-  return Status::OK();
+  return graph_ptr()->AddEdge(this, stop_repr_);
 }
 
 bool RangeIR::HasLogicalRepr() const { return false; }
@@ -247,17 +243,34 @@ Status MapIR::InitImpl(const ArgMap& args) {
     return CreateIRNodeError("Expected 'fn' argument of Agg to be a lambda, got '$0'",
                              lambda_func_node->type_string());
   }
-  lambda_func_ = static_cast<LambdaIR*>(lambda_func_node);
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, lambda_func_));
-  return Status::OK();
+  return SetupMapExpressions(static_cast<LambdaIR*>(lambda_func_node));
+}
+
+Status MapIR::SetupMapExpressions(LambdaIR* map_func) {
+  if (!map_func->HasDictBody()) {
+    return map_func->CreateIRNodeError("Expected lambda func to have dictionary body.");
+  }
+  ColExpressionVector col_exprs = map_func->col_exprs();
+  for (const ColumnExpression& mapped_expression : col_exprs) {
+    ExpressionIR* expr = mapped_expression.node;
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(map_func->id(), expr->id()));
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, expr));
+  }
+  SetColExprs(col_exprs);
+  return graph_ptr()->DeleteNode(map_func->id());
 }
 
 bool MapIR::HasLogicalRepr() const { return true; }
 
 std::string MapIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(depth, absl::Substitute("$0:MapIR", id()),
-                        {{"Parent", parent()->DebugString(depth + 1)},
-                         {"Lambda", lambda_func_->DebugString(depth + 1)}});
+  std::map<std::string, std::string> property_map = {{"Parent", parent()->DebugString(depth + 1)}};
+  std::vector<std::string> map_fn_debug_strings;
+  for (const ColumnExpression& col_expr : col_exprs_) {
+    map_fn_debug_strings.push_back(
+        absl::Substitute("$0 : '$1'", col_expr.name, col_expr.node->DebugString(depth + 1)));
+  }
+  property_map["MapFn"] = absl::StrJoin(map_fn_debug_strings, ",");
+  return DebugStringFmt(depth, absl::Substitute("$0:MapIR", id()), property_map);
 }
 
 Status OperatorIR::EvaluateExpression(planpb::ScalarExpression* expr, const IRNode& ir_node) const {
@@ -365,8 +378,7 @@ Status FilterIR::InitImpl(const ArgMap& args) {
 
   // Clean up the lambda.
   PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(filter_func->id(), filter_expr_->id()));
-  PL_RETURN_IF_ERROR(graph_ptr()->DeleteNode(filter_func->id()));
-  return Status::OK();
+  return graph_ptr()->DeleteNode(filter_func->id());
 }
 
 bool FilterIR::HasLogicalRepr() const { return true; }
@@ -403,8 +415,7 @@ Status LimitIR::InitImpl(const ArgMap& args) {
   }
 
   SetLimitValue(static_cast<IntIR*>(limit_node)->val());
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, limit_node));
-  return Status::OK();
+  return graph_ptr()->AddEdge(this, limit_node);
 }
 
 bool LimitIR::HasLogicalRepr() const { return true; }
@@ -528,8 +539,7 @@ Status BlockingAggIR::SetupAggFunctions(LambdaIR* agg_func) {
   }
   SetAggValMap(col_exprs);
   // Remove the node.
-  PL_RETURN_IF_ERROR(graph_ptr()->DeleteNode(agg_func->id()));
-  return Status::OK();
+  return graph_ptr()->DeleteNode(agg_func->id());
 }
 
 bool BlockingAggIR::HasLogicalRepr() const { return true; }

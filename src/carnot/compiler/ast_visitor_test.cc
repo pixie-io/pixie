@@ -476,7 +476,7 @@ TEST_P(OpsAsAttributes, valid_attributes) {
   EXPECT_OK(ParseQuery(valid_query));
 }
 std::vector<std::string> operators{
-    "Filter(fn=lambda r : r.bool_col)", "Map(fn=lambda r : r.bool_col)",
+    "Filter(fn=lambda r : r.bool_col)", "Map(fn=lambda r : {'boolin': r.bool_col})",
     "Agg(fn=lambda r : {'count': pl.count(r.bool_col)},by=lambda r : r.bool_col)",
     "Limit(rows=1000)", "Range(start=plc.now() - plc.minutes(2), stop=plc.now())"};
 
