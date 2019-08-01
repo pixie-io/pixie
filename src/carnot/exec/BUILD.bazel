@@ -30,6 +30,7 @@ pl_cc_library(
         "//third_party:arrow",
         "@com_efficient_libcuckoo//:libcuckoo",
         "@com_github_cameron314_concurrentqueue//:concurrentqueue",
+        "@com_github_rlyeh_sole//:sole",
     ],
 )
 

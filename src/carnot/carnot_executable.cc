@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <sole.hpp>
 #include <string>
 
 #include <parser.hpp>
@@ -232,7 +233,7 @@ int main(int argc, char* argv[]) {
   }
   auto carnot = carnot_or_s.ConsumeValueOrDie();
   table_store->AddTable("csv_table", table);
-  auto exec_status = carnot->ExecuteQuery(query, pl::CurrentTimeNS());
+  auto exec_status = carnot->ExecuteQuery(query, sole::uuid4(), pl::CurrentTimeNS());
   auto res = exec_status.ConsumeValueOrDie();
 
   // Write output table to CSV.

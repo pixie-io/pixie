@@ -1,5 +1,6 @@
 #include <benchmark/benchmark.h>
 #include <google/protobuf/text_format.h>
+#include <sole.hpp>
 
 #include <algorithm>
 #include <random>
@@ -109,7 +110,8 @@ void BM_Query(benchmark::State& state, std::vector<types::DataType> types,
   int i = 0;
   for (auto _ : state) {
     auto queryWithTableName = absl::Substitute(query, "results_" + std::to_string(i));
-    auto res = carnot->ExecuteQuery(queryWithTableName, CurrentTimeNS()).ConsumeValueOrDie();
+    auto res = carnot->ExecuteQuery(queryWithTableName, sole::uuid4(), CurrentTimeNS())
+                   .ConsumeValueOrDie();
     bytes_processed += res.bytes_processed;
     ++i;
   }

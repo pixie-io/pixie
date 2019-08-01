@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <sole.hpp>
 
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/test_utils.h"
@@ -30,7 +31,7 @@ class UnionNodeTest : public ::testing::Test {
     auto table_store = std::make_shared<TableStore>();
     auto row_batch_queue = std::make_shared<RowBatchQueue>();
     exec_state_ = std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store,
-                                              row_batch_queue);
+                                              row_batch_queue, sole::uuid4());
   }
 
  protected:

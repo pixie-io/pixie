@@ -3,6 +3,7 @@
 #include <google/protobuf/text_format.h>
 #include <iostream>
 #include <memory>
+#include <sole.hpp>
 #include <string>
 
 #include "src/carnot/planpb/plan.pb.h"
@@ -70,7 +71,7 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
 
     EXPECT_TRUE(udf_registry_->Register<AddUDF>("add").ok());
     exec_state_ = std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store,
-                                              row_batch_queue);
+                                              row_batch_queue, sole::uuid4());
     EXPECT_OK(exec_state_->AddScalarUDF(
         0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::INT64})));
 

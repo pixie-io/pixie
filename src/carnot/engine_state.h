@@ -63,9 +63,9 @@ class EngineState : public NotCopyable {
 
   exec::TableStore* table_store() { return table_store_.get(); }
 
-  std::unique_ptr<exec::ExecState> CreateExecState() {
+  std::unique_ptr<exec::ExecState> CreateExecState(const sole::uuid& query_id) {
     return std::make_unique<exec::ExecState>(scalar_udf_registry_.get(), uda_registry_.get(),
-                                             table_store_, row_batch_queue_);
+                                             table_store_, row_batch_queue_, query_id);
   }
 
   std::unique_ptr<plan::PlanState> CreatePlanState() {

@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <sole.hpp>
 
 #include <algorithm>
 #include <unordered_map>
@@ -167,7 +168,8 @@ std::unique_ptr<ExecState> MakeTestExecState(udf::ScalarUDFRegistry* udf_registr
                                              udf::UDARegistry* uda_registry) {
   auto table_store = std::make_shared<TableStore>();
   auto row_batch_queue = std::make_shared<RowBatchQueue>();
-  return std::make_unique<ExecState>(udf_registry, uda_registry, table_store, row_batch_queue);
+  return std::make_unique<ExecState>(udf_registry, uda_registry, table_store, row_batch_queue,
+                                     sole::uuid4());
 }
 
 std::unique_ptr<plan::Operator> PlanNodeFromPbtxt(const std::string& pbtxt) {

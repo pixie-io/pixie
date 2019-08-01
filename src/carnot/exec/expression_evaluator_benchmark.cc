@@ -1,5 +1,6 @@
 #include <benchmark/benchmark.h>
 #include <google/protobuf/text_format.h>
+#include <sole.hpp>
 
 #include "src/carnot/exec/expression_evaluator.h"
 #include "src/carnot/plan/scalar_expression.h"
@@ -52,7 +53,7 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
   auto row_batch_queue = std::make_shared<pl::carnot::exec::RowBatchQueue>();
   PL_CHECK_OK(udf_registry->Register<AddUDF>("add"));
   auto exec_state = std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), table_store,
-                                                row_batch_queue);
+                                                row_batch_queue, sole::uuid4());
 
   auto in1 = pl::bmutils::CreateLargeData<Int64Value>(data_size);
   auto in2 = pl::bmutils::CreateLargeData<Int64Value>(data_size);

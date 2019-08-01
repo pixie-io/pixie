@@ -59,6 +59,7 @@ class Carnot : public NotCopyable {
    * @return a Carnot Return with output_tables if successful. Error status otherwise.
    */
   virtual StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query,
+                                                   const sole::uuid& query_id,
                                                    types::Time64NSValue time_now) = 0;
   /**
    * Executes the given logical plan.
@@ -66,7 +67,8 @@ class Carnot : public NotCopyable {
    * @param plan the plan protobuf describing what should be compiled.
    * @return a Carnot Return with output_tables if successful. Error status otherwise.
    */
-  virtual StatusOr<CarnotQueryResult> ExecutePlan(const planpb::Plan& plan) = 0;
+  virtual StatusOr<CarnotQueryResult> ExecutePlan(const planpb::Plan& plan,
+                                                  const sole::uuid& query_id) = 0;
 
   /**
    * Registers the callback for updating the agents metadata state.

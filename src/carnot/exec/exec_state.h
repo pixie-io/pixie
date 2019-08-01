@@ -1,6 +1,7 @@
 #pragma once
 
 #include <arrow/memory_pool.h>
+#include <sole.hpp>
 
 #include <map>
 #include <memory>
@@ -41,11 +42,12 @@ class ExecState {
  public:
   explicit ExecState(udf::ScalarUDFRegistry* scalar_udf_registry, udf::UDARegistry* uda_registry,
                      std::shared_ptr<TableStore> table_store,
-                     std::shared_ptr<RowBatchQueue> row_batch_queue)
+                     std::shared_ptr<RowBatchQueue> row_batch_queue, const sole::uuid& query_id)
       : scalar_udf_registry_(scalar_udf_registry),
         uda_registry_(uda_registry),
         table_store_(std::move(table_store)),
-        row_batch_queue_(std::move(row_batch_queue)) {}
+        row_batch_queue_(std::move(row_batch_queue)),
+        query_id_(query_id) {}
   arrow::MemoryPool* exec_mem_pool() {
     // TOOD(zasgar): Make this the correct pool.
     return arrow::default_memory_pool();
@@ -55,6 +57,8 @@ class ExecState {
   udf::UDARegistry* uda_registry() { return uda_registry_; }
 
   TableStore* table_store() { return table_store_.get(); }
+
+  const sole::uuid& query_id() const { return query_id_; }
 
   Status AddScalarUDF(int64_t id, const std::string& name,
                       const std::vector<types::DataType> arg_types) {
@@ -106,6 +110,7 @@ class ExecState {
   std::shared_ptr<RowBatchQueue> row_batch_queue_;
   std::map<int64_t, udf::ScalarUDFDefinition*> id_to_scalar_udf_map_;
   std::map<int64_t, udf::UDADefinition*> id_to_uda_map_;
+  const sole::uuid query_id_;
   bool keep_running_ = true;
 };
 

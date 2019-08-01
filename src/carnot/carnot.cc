@@ -45,10 +45,11 @@ class CarnotImpl final : public Carnot {
   Status Init(std::shared_ptr<table_store::TableStore> table_store,
               std::shared_ptr<exec::RowBatchQueue> row_batch_queue);
 
-  StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query,
+  StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query, const sole::uuid& query_id,
                                            types::Time64NSValue time_now) override;
 
-  StatusOr<CarnotQueryResult> ExecutePlan(const planpb::Plan& plan) override;
+  StatusOr<CarnotQueryResult> ExecutePlan(const planpb::Plan& plan,
+                                          const sole::uuid& query_id) override;
 
   void RegisterAgentMetadataCallback(AgentMetadataCallbackFunc func) override {
     agent_md_callback_ = func;
@@ -83,6 +84,7 @@ Status CarnotImpl::Init(std::shared_ptr<table_store::TableStore> table_store,
 }
 
 StatusOr<CarnotQueryResult> CarnotImpl::ExecuteQuery(const std::string& query,
+                                                     const sole::uuid& query_id,
                                                      types::Time64NSValue time_now) {
   // Compile the query.
   auto timer = ElapsedTimer();
@@ -92,7 +94,7 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecuteQuery(const std::string& query,
   timer.Stop();
   int64_t compile_time_ns = timer.ElapsedTime_us() * 1000;
   // Get the output table names from the plan.
-  PL_ASSIGN_OR_RETURN(CarnotQueryResult plan_result, ExecutePlan(logical_plan));
+  PL_ASSIGN_OR_RETURN(CarnotQueryResult plan_result, ExecutePlan(logical_plan, query_id));
   plan_result.compile_time_ns = compile_time_ns;
   return plan_result;
 }
@@ -159,13 +161,14 @@ Status CarnotImpl::WalkExpression(exec::ExecState* exec_state, const plan::Scala
   return Status::OK();
 }
 
-StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan) {
+StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan,
+                                                    const sole::uuid& query_id) {
   auto timer = ElapsedTimer();
   plan::Plan plan;
   PL_RETURN_IF_ERROR(plan.Init(logical_plan));
   // For each of the plan fragments in the plan, execute the query.
   std::vector<std::string> output_table_strs;
-  auto exec_state = engine_state_->CreateExecState();
+  auto exec_state = engine_state_->CreateExecState(query_id);
 
   // TODO(michelle/zasgar): We should periodically update the metadata state for long-running
   // queries after a certain time duration or number of row batches processed. For now, we use a

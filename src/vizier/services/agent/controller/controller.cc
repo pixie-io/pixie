@@ -296,15 +296,15 @@ void Controller::RunHeartbeat() {
 Status Controller::ExecuteQuery(
     const messages::ExecuteQueryRequest& req,
     pl::vizier::services::query_broker::querybrokerpb::AgentQueryResponse* resp) {
+  auto query_id = ParseUUID(req.query_id()).ConsumeValueOrDie();
   VLOG(1) << "Executing query: "
-          << absl::StrFormat("id=%s, query=%s", ParseUUID(req.query_id()).ConsumeValueOrDie().str(),
-                             req.query_str());
+          << absl::StrFormat("id=%s, query=%s", query_id.str(), req.query_str());
   CHECK(resp != nullptr);
   *resp->mutable_query_id() = req.query_id();
 
   {
     ScopedTimer query_timer("query timer");
-    auto result_or_s = carnot_->ExecuteQuery(req.query_str(), CurrentTimeNS());
+    auto result_or_s = carnot_->ExecuteQuery(req.query_str(), query_id, CurrentTimeNS());
     if (!result_or_s.ok()) {
       *resp->mutable_status() = result_or_s.status().ToProto();
       return result_or_s.status();

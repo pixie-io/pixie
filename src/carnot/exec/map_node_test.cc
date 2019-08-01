@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <memory>
+#include <sole.hpp>
 #include <vector>
 
 #include "src/common/base/base.h"
@@ -42,7 +43,7 @@ class MapNodeTest : public ::testing::Test {
     auto row_batch_queue = std::make_shared<RowBatchQueue>();
 
     exec_state_ = std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store,
-                                              row_batch_queue);
+                                              row_batch_queue, sole::uuid4());
     EXPECT_OK(exec_state_->AddScalarUDF(
         0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::INT64})));
   }

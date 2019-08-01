@@ -2,6 +2,7 @@
 #include <google/protobuf/text_format.h>
 #include <gtest/gtest.h>
 #include <memory>
+#include <sole.hpp>
 #include <string>
 #include <vector>
 
@@ -50,7 +51,7 @@ class ExecGraphTest : public ::testing::Test {
     auto row_batch_queue = std::make_shared<RowBatchQueue>();
 
     exec_state_ = std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), table_store,
-                                              row_batch_queue);
+                                              row_batch_queue, sole::uuid4());
   }
   std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
   std::unique_ptr<ExecState> exec_state_ = nullptr;
@@ -135,7 +136,7 @@ TEST_F(ExecGraphTest, execute) {
   table_store->AddTable("numbers", table);
   auto row_batch_queue = std::make_shared<RowBatchQueue>();
   auto exec_state_ = std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(),
-                                                 table_store, row_batch_queue);
+                                                 table_store, row_batch_queue, sole::uuid4());
 
   EXPECT_OK(exec_state_->AddScalarUDF(
       0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64})));
@@ -213,7 +214,7 @@ TEST_F(ExecGraphTest, execute_time) {
   auto row_batch_queue = std::make_shared<RowBatchQueue>();
 
   auto exec_state_ = std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(),
-                                                 table_store, row_batch_queue);
+                                                 table_store, row_batch_queue, sole::uuid4());
 
   EXPECT_OK(exec_state_->AddScalarUDF(
       0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64})));

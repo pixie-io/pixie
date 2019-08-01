@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <sole.hpp>
 
 #include "src/carnot/exec/exec_node_mock.h"
 #include "src/carnot/exec/filter_node.h"
@@ -42,7 +43,7 @@ class FilterNodeTest : public ::testing::Test {
     auto row_batch_queue = std::make_shared<RowBatchQueue>();
 
     exec_state_ = std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store,
-                                              row_batch_queue);
+                                              row_batch_queue, sole::uuid4());
     EXPECT_OK(exec_state_->AddScalarUDF(
         0, "eq", std::vector<types::DataType>({types::DataType::INT64, types::DataType::INT64})));
     EXPECT_OK(exec_state_->AddScalarUDF(

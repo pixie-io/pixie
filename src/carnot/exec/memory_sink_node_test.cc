@@ -2,6 +2,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <memory>
+#include <sole.hpp>
 #include <vector>
 
 #include "src/common/base/base.h"
@@ -32,7 +33,7 @@ class MemorySinkNodeTest : public ::testing::Test {
     auto table_store = std::make_shared<TableStore>();
     auto row_batch_queue = std::make_shared<RowBatchQueue>();
     exec_state_ = std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store,
-                                              row_batch_queue);
+                                              row_batch_queue, sole::uuid4());
   }
 
  protected:
