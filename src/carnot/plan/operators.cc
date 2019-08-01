@@ -49,6 +49,8 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_
       return CreateOperator<LimitOperator>(id, pb.limit_op());
     case planpb::UNION_OPERATOR:
       return CreateOperator<UnionOperator>(id, pb.union_op());
+    case planpb::JOIN_OPERATOR:
+      return CreateOperator<JoinOperator>(id, pb.join_op());
     default:
       LOG(FATAL) << absl::Substitute("Unknown operator type: $0", ToString(pb.op_type()));
   }
@@ -441,6 +443,102 @@ StatusOr<table_store::schema::Relation> UnionOperator::OutputRelation(
   }
 
   return r;
+}
+
+/**
+ * Join Operator Implementation.
+ */
+
+std::string JoinOperator::DebugString(planpb::JoinOperator::JoinType type) {
+  switch (type) {
+    case planpb::JoinOperator::INNER:
+      return "inner";
+    case planpb::JoinOperator::LEFT_OUTER:
+      return "left outer";
+    case planpb::JoinOperator::FULL_OUTER:
+      return "full outer";
+    default:
+      LOG(ERROR) << absl::Substitute("Unknown Join Type: $0", static_cast<int>(type));
+      return absl::Substitute("UnknownJoinType:$0", static_cast<int>(type));
+  }
+}
+
+std::string JoinOperator::DebugString(
+    const std::vector<planpb::JoinOperator::EqualityCondition>& conditions) {
+  std::vector<std::string> strs(conditions.size());
+  for (const auto& condition : conditions) {
+    strs.push_back(absl::Substitute("parent[0][$0] == parent[1][$1]", condition.left_column_index(),
+                                    condition.right_column_index()));
+  }
+  return absl::StrJoin(strs, " && ");
+}
+
+std::string JoinOperator::DebugString() const {
+  return absl::Substitute("Op:JoinOperator(type='$0', condition=($1), output_columns=($2))",
+                          DebugString(type()), DebugString(equality_conditions()),
+                          absl::StrJoin(column_names_, ","));
+}
+
+Status JoinOperator::Init(const planpb::JoinOperator& pb) {
+  pb_ = pb;
+  is_initialized_ = true;
+
+  DCHECK_EQ(pb_.column_names_size(), pb_.output_columns_size());
+
+  column_names_.reserve(static_cast<size_t>(pb_.column_names_size()));
+  output_columns_.reserve(static_cast<size_t>(pb_.column_names_size()));
+  for (auto i = 0; i < pb_.column_names_size(); ++i) {
+    column_names_.emplace_back(pb_.column_names(i));
+    output_columns_.emplace_back(pb_.output_columns(i));
+  }
+
+  equality_conditions_.reserve(static_cast<size_t>(pb_.equality_conditions_size()));
+  for (auto i = 0; i < pb_.equality_conditions_size(); ++i) {
+    equality_conditions_.emplace_back(pb_.equality_conditions(i));
+  }
+
+  return Status::OK();
+}
+
+StatusOr<table_store::schema::Relation> JoinOperator::OutputRelation(
+    const table_store::schema::Schema& schema, const PlanState&,
+    const std::vector<int64_t>& input_ids) const {
+  DCHECK(is_initialized_) << "Not initialized";
+  if (input_ids.size() != 2) {
+    return error::InvalidArgument("Join operator must have two input tables.");
+  }
+  if (!schema.HasRelation(input_ids[0])) {
+    return error::NotFound("Missing left table relation ($0) for input of Join operator",
+                           input_ids[0]);
+  }
+  if (!schema.HasRelation(input_ids[1])) {
+    return error::NotFound("Missing right table relation ($0) for input of Join operator",
+                           input_ids[1]);
+  }
+
+  PL_ASSIGN_OR_RETURN(const auto& left_relation, schema.GetRelation(input_ids[0]));
+  PL_ASSIGN_OR_RETURN(const auto& right_relation, schema.GetRelation(input_ids[1]));
+
+  table_store::schema::Relation r;
+  for (int i = 0; i < pb_.column_names_size(); ++i) {
+    const auto& input_column = pb_.output_columns(i);
+    auto type = input_column.parent_index() == 0
+                    ? left_relation.GetColumnType(input_column.column_index())
+                    : right_relation.GetColumnType(input_column.column_index());
+    r.AddColumn(type, pb_.column_names(i));
+  }
+  return r;
+}
+
+bool JoinOperator::order_by_time() const {
+  return std::find(column_names().begin(), column_names().end(), "time_") != column_names().end();
+}
+
+planpb::JoinOperator::ParentColumn JoinOperator::time_column() const {
+  DCHECK(order_by_time());
+  auto pos = std::distance(column_names().begin(),
+                           std::find(column_names().begin(), column_names().end(), "time_"));
+  return output_columns()[pos];
 }
 
 }  // namespace plan

@@ -245,6 +245,42 @@ class UnionOperator : public Operator {
   planpb::UnionOperator pb_;
 };
 
+class JoinOperator : public Operator {
+ public:
+  explicit JoinOperator(int64_t id) : Operator(id, planpb::JOIN_OPERATOR) {}
+  ~JoinOperator() override = default;
+
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema& schema, const PlanState& state,
+      const std::vector<int64_t>& input_ids) const override;
+  Status Init(const planpb::JoinOperator& pb);
+  std::string DebugString() const override;
+
+  // Static debug functions on the helper classes.
+  // These can also be for printing debug information in both the operator and exec node.
+  static std::string DebugString(planpb::JoinOperator::JoinType type);
+  static std::string DebugString(
+      const std::vector<planpb::JoinOperator::EqualityCondition>& conditions);
+
+  const std::vector<std::string>& column_names() const { return column_names_; }
+  planpb::JoinOperator::JoinType type() const { return pb_.type(); }
+  std::vector<planpb::JoinOperator::EqualityCondition> equality_conditions() const {
+    return equality_conditions_;
+  }
+  std::vector<planpb::JoinOperator::ParentColumn> output_columns() const { return output_columns_; }
+  size_t rows_per_batch() const { return pb_.rows_per_batch(); }
+
+  bool order_by_time() const;
+  planpb::JoinOperator::ParentColumn time_column() const;
+
+ private:
+  std::vector<std::string> column_names_;
+  std::vector<planpb::JoinOperator::EqualityCondition> equality_conditions_;
+  std::vector<planpb::JoinOperator::ParentColumn> output_columns_;
+
+  planpb::JoinOperator pb_;
+};
+
 }  // namespace plan
 }  // namespace carnot
 }  // namespace pl

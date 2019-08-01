@@ -366,6 +366,26 @@ const char* kJoinOperator1 = R"(
   }
   column_names: "abc"
   column_names: "time_"
+  rows_per_batch: 10
+)";
+
+const char* kJoinOperatorNoTime1 = R"(
+  type: INNER
+  equality_conditions {
+    left_column_index: 0
+    right_column_index: 1
+  }
+  output_columns: {
+    parent_index: 0
+    column_index: 1
+  }
+  output_columns: {
+    parent_index: 1
+    column_index: 0
+  }
+  column_names: "abc"
+  column_names: "def"
+  rows_per_batch: 10
 )";
 
 /**
@@ -917,9 +937,17 @@ planpb::Operator CreateTestLimit1PB() {
   return op;
 }
 
-planpb::Operator CreateTestJoin() {
+planpb::Operator CreateTestJoinWithTimePB() {
   planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "JOIN_OPERATOR", "join_op", kJoinOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestJoinNoTimePB() {
+  planpb::Operator op;
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "JOIN_OPERATOR", "join_op", kJoinOperatorNoTime1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

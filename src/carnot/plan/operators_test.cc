@@ -186,6 +186,32 @@ TEST_F(OperatorTest, from_proto_limit) {
   EXPECT_EQ(planpb::OperatorType::LIMIT_OPERATOR, limit_op->op_type());
 }
 
+TEST_F(OperatorTest, from_proto_join_with_time) {
+  auto join_pb = planpb::testutils::CreateTestJoinWithTimePB();
+  auto join_op = std::make_unique<JoinOperator>(1);
+  auto s = join_op->Init(join_pb.join_op());
+  EXPECT_EQ(1, join_op->id());
+  EXPECT_TRUE(join_op->is_initialized());
+  EXPECT_EQ(planpb::OperatorType::JOIN_OPERATOR, join_op->op_type());
+
+  EXPECT_EQ(10, join_op->rows_per_batch());
+  EXPECT_TRUE(join_op->order_by_time());
+  EXPECT_EQ(1, join_op->time_column().parent_index());
+  EXPECT_EQ(0, join_op->time_column().column_index());
+}
+
+TEST_F(OperatorTest, from_proto_join_no_time) {
+  auto join_pb = planpb::testutils::CreateTestJoinNoTimePB();
+  auto join_op = std::make_unique<JoinOperator>(1);
+  auto s = join_op->Init(join_pb.join_op());
+  EXPECT_EQ(1, join_op->id());
+  EXPECT_TRUE(join_op->is_initialized());
+  EXPECT_EQ(planpb::OperatorType::JOIN_OPERATOR, join_op->op_type());
+
+  EXPECT_EQ(10, join_op->rows_per_batch());
+  EXPECT_FALSE(join_op->order_by_time());
+}
+
 TEST_F(OperatorTest, output_relation_source) {
   auto src_pb = planpb::testutils::CreateTestSource1PB();
   auto src_op = Operator::FromProto(src_pb, 1);

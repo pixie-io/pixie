@@ -197,7 +197,7 @@ message UnionOperator {
   // Output column names
   repeated string column_names = 1;
   repeated ColumnMapping column_mappings = 2;
-  int64 rows_per_batch = 3;
+  uint64 rows_per_batch = 3;
 }
 
 // Join performs an equijoin join across two input tables.
@@ -213,23 +213,25 @@ message JoinOperator {
 
   // Equality condition represents one particular condition in an equijoin.
   message EqualityCondition {
-    int64 left_column_index = 1;
-    int64 right_column_index = 2;
+    uint64 left_column_index = 1;
+    uint64 right_column_index = 2;
   }
 
-  // This message represents a column that is outputted by the join.
-  message OutputColumn {
+  // This message represents a column from the parent table.
+  message ParentColumn {
     // parent_index indicates which parent table this column comes from.
     // So 0 means it comes from the left table, 1 means it comes from the right table.
-    int64 parent_index = 1;
-    int64 column_index = 2;
+    uint64 parent_index = 1;
+    uint64 column_index = 2;
   }
 
   JoinType type = 1;
+  // These are the conditions for the equijoin, which are ANDed together.
   repeated EqualityCondition equality_conditions = 2;
-  repeated OutputColumn output_columns = 3;
+  repeated ParentColumn output_columns = 3;
   // These are the names are the output columns.
   repeated string column_names = 4;
+  uint64 rows_per_batch = 5;
 }
 
 // Scalar expression is any single valued expression.
