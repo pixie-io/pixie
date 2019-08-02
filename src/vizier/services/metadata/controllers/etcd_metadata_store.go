@@ -135,6 +135,23 @@ func (mds *EtcdMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
 	return pods, nil
 }
 
+// GetContainers gets all containers in the metadata store.
+func (mds *EtcdMetadataStore) GetContainers() ([]*metadatapb.ContainerInfo, error) {
+	resp, err := mds.client.Get(context.Background(), getContainersKey(), clientv3.WithPrefix())
+	if err != nil {
+		log.WithError(err).Fatal("Failed to execute etcd Get")
+		return nil, err
+	}
+
+	containers := make([]*metadatapb.ContainerInfo, len(resp.Kvs))
+	for i, kv := range resp.Kvs {
+		pb := &metadatapb.ContainerInfo{}
+		proto.Unmarshal(kv.Value, pb)
+		containers[i] = pb
+	}
+	return containers, nil
+}
+
 func getPodsKey() string {
 	return path.Join("/", "pod") + "/"
 }
@@ -145,6 +162,14 @@ func getPodKey(e *metadatapb.Pod) string {
 
 func getPodKeyFromStrings(uid string, namespace string) string {
 	return path.Join("/", "pod", namespace, uid)
+}
+
+func getContainersKey() string {
+	return path.Join("/", "containers") + "/"
+}
+
+func getContainerKey(c *metadatapb.ContainerInfo) string {
+	return getContainerKeyFromStrings(c.UID)
 }
 
 func getContainerKeyFromStrings(containerID string) string {
@@ -169,6 +194,18 @@ func (mds *EtcdMetadataStore) UpdateService(s *metadatapb.Service) error {
 	}
 
 	key := getServiceKey(s)
+
+	return mds.updateValue(key, string(val))
+}
+
+// UpdateContainer adds or updates the given container in the metadata store.
+func (mds *EtcdMetadataStore) UpdateContainer(c *metadatapb.ContainerInfo) error {
+	val, err := c.Marshal()
+	if err != nil {
+		return errors.New("Unable to marshal containerInfo pb")
+	}
+
+	key := getContainerKey(c)
 
 	return mds.updateValue(key, string(val))
 }

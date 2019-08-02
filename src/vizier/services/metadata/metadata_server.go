@@ -95,9 +95,7 @@ func main() {
 
 	mdHandler.ProcessAgentUpdates()
 
-	mdCh := mdHandler.GetChannel()
-
-	_, err = controllers.NewK8sMetadataController(mdCh)
+	_, err = controllers.NewK8sMetadataController(mdHandler)
 
 	env, err := metadataenv.New()
 	if err != nil {

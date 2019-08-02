@@ -11,6 +11,7 @@ import (
 	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/types"
+	"pixielabs.ai/pixielabs/src/utils"
 	datapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 )
 
@@ -21,6 +22,7 @@ type MetadataStore interface {
 	UpdateEndpoints(*metadatapb.Endpoints) error
 	UpdatePod(*metadatapb.Pod) error
 	UpdateService(*metadatapb.Service) error
+	UpdateContainer(*metadatapb.ContainerInfo) error
 	UpdateContainersFromPod(*metadatapb.Pod) error
 	UpdateSchemas(uuid.UUID, []*metadatapb.SchemaInfo) error
 	UpdateProcesses([]*metadatapb.ProcessInfo) error
@@ -31,6 +33,7 @@ type MetadataStore interface {
 	GetFromAgentQueue(string) ([]*metadatapb.ResourceUpdate, error)
 	GetAgents() (*[]datapb.AgentData, error)
 	GetPods() ([]*metadatapb.Pod, error)
+	GetContainers() ([]*metadatapb.ContainerInfo, error)
 	GetEndpoints() ([]*metadatapb.Endpoints, error)
 	GetASID() (uint32, error)
 	GetProcesses([]*types.UInt128) ([]*metadatapb.ProcessInfo, error)
@@ -53,10 +56,11 @@ type MetadataHandler struct {
 	ch            chan *K8sMessage
 	mds           MetadataStore
 	agentUpdateCh chan *UpdateMessage
+	clock         utils.Clock
 }
 
-// NewMetadataHandler creates a new metadata handler.
-func NewMetadataHandler(mds MetadataStore) (*MetadataHandler, error) {
+// NewMetadataHandlerWithClock creates a new metadata handler with a clock.
+func NewMetadataHandlerWithClock(mds MetadataStore, clock utils.Clock) (*MetadataHandler, error) {
 	c := make(chan *K8sMessage)
 	agentUpdateCh := make(chan *UpdateMessage, maxAgentUpdates)
 
@@ -64,11 +68,18 @@ func NewMetadataHandler(mds MetadataStore) (*MetadataHandler, error) {
 		ch:            c,
 		mds:           mds,
 		agentUpdateCh: agentUpdateCh,
+		clock:         clock,
 	}
 
 	go mh.MetadataListener()
 
 	return mh, nil
+}
+
+// NewMetadataHandler creates a new metadata handler.
+func NewMetadataHandler(mds MetadataStore) (*MetadataHandler, error) {
+	clock := utils.SystemClock{}
+	return NewMetadataHandlerWithClock(mds, clock)
 }
 
 // GetChannel returns the channel the MetadataHandler is listening to.
@@ -320,4 +331,55 @@ func GetContainerResourceUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.Resou
 		}
 	}
 	return updates
+}
+
+// SyncPodData syncs the data in etcd according to the current active pods.
+func (mh *MetadataHandler) SyncPodData(podList *v1.PodList) {
+	activePods := map[string]bool{}
+	activeContainers := map[string]bool{}
+
+	currentTime := mh.clock.Now().UnixNano()
+
+	// Create a map so that we can easily check which pods and containers are currently active by ID.
+	for _, item := range podList.Items {
+		activePods[string(item.ObjectMeta.UID)] = true
+		for _, container := range item.Status.ContainerStatuses {
+			activeContainers[formatContainerID(container.ContainerID)] = true
+		}
+	}
+
+	// Find all pods in etcd.
+	pods, err := mh.mds.GetPods()
+	if err != nil {
+		log.WithError(err).Error("Could not get all pods from etcd.")
+	}
+
+	for _, pod := range pods {
+		_, exists := activePods[pod.Metadata.UID]
+		// If there a pod in etcd that is not active, and is not marked as dead, mark it as dead.
+		if !exists && pod.Metadata.DeletionTimestampNS == 0 {
+			pod.Metadata.DeletionTimestampNS = currentTime
+			err := mh.mds.UpdatePod(pod)
+			if err != nil {
+				log.WithError(err).Error("Could not update pod during sync.")
+			}
+		}
+	}
+
+	containers, err := mh.mds.GetContainers()
+	if err != nil {
+		log.WithError(err).Error("Could not get all containers from etcd.")
+	}
+
+	for _, container := range containers {
+		_, exists := activeContainers[container.UID]
+		// If there a container in etcd that is not active, and is not marked as dead, mark it as dead.
+		if !exists && container.StopTimestampNS == 0 {
+			container.StopTimestampNS = currentTime
+			err := mh.mds.UpdateContainer(container)
+			if err != nil {
+				log.WithError(err).Error("Could not update container during sync.")
+			}
+		}
+	}
 }

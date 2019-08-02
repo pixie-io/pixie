@@ -153,6 +153,37 @@ func TestUpdateService(t *testing.T) {
 	assert.Equal(t, expectedPb, pb)
 }
 
+func TestUpdateContainer(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	expectedPb := &metadatapb.ContainerInfo{}
+	if err := proto.UnmarshalText(containerInfoPB, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	err = mds.UpdateContainer(expectedPb)
+	if err != nil {
+		t.Fatal("Could not update service.")
+	}
+
+	// Check that correct service info is in etcd.
+	resp, err := etcdClient.Get(context.Background(), "/containers/container1/info")
+	if err != nil {
+		t.Fatal("Failed to get container.")
+	}
+	assert.Equal(t, 1, len(resp.Kvs))
+	pb := &metadatapb.ContainerInfo{}
+	proto.Unmarshal(resp.Kvs[0].Value, pb)
+
+	assert.Equal(t, expectedPb, pb)
+}
+
 func TestUpdateContainersFromPod(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()
@@ -518,6 +549,52 @@ func TestGetPods(t *testing.T) {
 
 	assert.Equal(t, pod1.Metadata.Name, (*pods[0]).Metadata.Name)
 	assert.Equal(t, pod2.Metadata.Name, (*pods[1]).Metadata.Name)
+}
+
+func TestGetContainers(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	// Create containers.
+	c1 := &metadatapb.ContainerInfo{
+		Name: "container_1",
+		UID:  "container_id_1",
+	}
+	c1Text, err := c1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal container pb")
+	}
+
+	c2 := &metadatapb.ContainerInfo{
+		Name: "container_2",
+		UID:  "container_id_2",
+	}
+	c2Text, err := c2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal container pb")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/containers/container_id_1/info", string(c1Text))
+	if err != nil {
+		t.Fatal("Unable to add container to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/containers/container_id_2/info", string(c2Text))
+	if err != nil {
+		t.Fatal("Unable to add container to etcd.")
+	}
+
+	containers, err := mds.GetContainers()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(containers))
+
+	assert.Equal(t, c1.UID, (*containers[0]).UID)
+	assert.Equal(t, c2.UID, (*containers[1]).UID)
 }
 
 func TestGetEndpoints(t *testing.T) {

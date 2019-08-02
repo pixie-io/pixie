@@ -2,15 +2,18 @@ package controllers_test
 
 import (
 	"errors"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sync"
-	"testing"
 
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 )
@@ -747,4 +750,134 @@ func TestGetContainerResourceUpdatesFromPod(t *testing.T) {
 	assert.Equal(t, "container1", cUpdate.Name)
 	assert.Equal(t, "test", cUpdate.CID)
 
+}
+
+func TestSyncPodData(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	pods := make([]v1.Pod, 1)
+
+	creationTime := metav1.Unix(0, 4)
+	p1Md := metav1.ObjectMeta{
+		Name:              "object_md",
+		UID:               "active_pod",
+		ResourceVersion:   "1",
+		ClusterName:       "a_cluster",
+		CreationTimestamp: creationTime,
+	}
+
+	p1Containers := make([]v1.ContainerStatus, 1)
+	waitingState := v1.ContainerStateWaiting{}
+
+	p1Containers[0] = v1.ContainerStatus{
+		Name:        "container1",
+		ContainerID: "docker://active_container",
+		State: v1.ContainerState{
+			Waiting: &waitingState,
+		},
+	}
+
+	p1Status := v1.PodStatus{
+		Message:           "this is message",
+		Phase:             v1.PodRunning,
+		ContainerStatuses: p1Containers,
+		QOSClass:          v1.PodQOSBurstable,
+	}
+
+	activePod := v1.Pod{
+		ObjectMeta: p1Md,
+		Status:     p1Status,
+	}
+	pods[0] = activePod
+
+	podList := v1.PodList{
+		Items: pods,
+	}
+
+	etcdPods := make([](*metadatapb.Pod), 3)
+	activePodPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(podPbWithContainers, activePodPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	activePodPb.Metadata.UID = "active_pod"
+	activePodPb.Metadata.DeletionTimestampNS = 0
+	etcdPods[0] = activePodPb
+
+	deadPodPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(podPbWithContainers, deadPodPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	etcdPods[1] = deadPodPb
+
+	undeadPodPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(podPbWithContainers, undeadPodPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	undeadPodPb.Metadata.UID = "undead_pod"
+	undeadPodPb.Metadata.DeletionTimestampNS = 0
+	etcdPods[2] = undeadPodPb
+
+	deletedUndeadPodPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(podPbWithContainers, deletedUndeadPodPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	deletedUndeadPodPb.Metadata.UID = "undead_pod"
+	deletedUndeadPodPb.Metadata.DeletionTimestampNS = 10
+
+	etcdContainers := make([](*metadatapb.ContainerInfo), 3)
+	activeContainerPb := &metadatapb.ContainerInfo{
+		Name:             "active_container_name",
+		UID:              "active_container",
+		StartTimestampNS: 4,
+	}
+	etcdContainers[0] = activeContainerPb
+	undeadContainerPb := &metadatapb.ContainerInfo{
+		Name:             "undead_container_name",
+		UID:              "undead_container",
+		StartTimestampNS: 4,
+	}
+	etcdContainers[1] = undeadContainerPb
+	deletedContainerPb := &metadatapb.ContainerInfo{
+		Name:             "deleted_container_name",
+		UID:              "deleted_container",
+		StartTimestampNS: 4,
+		StopTimestampNS:  10,
+	}
+	etcdContainers[2] = deletedContainerPb
+
+	deletedUndeadContainerPb := &metadatapb.ContainerInfo{
+		Name:             "undead_container_name",
+		UID:              "undead_container",
+		StartTimestampNS: 4,
+		StopTimestampNS:  10,
+	}
+
+	mockMds.
+		EXPECT().
+		GetPods().
+		Return(etcdPods, nil)
+
+	mockMds.
+		EXPECT().
+		UpdatePod(deletedUndeadPodPb).
+		Return(nil)
+
+	mockMds.
+		EXPECT().
+		GetContainers().
+		Return(etcdContainers, nil)
+
+	mockMds.
+		EXPECT().
+		UpdateContainer(deletedUndeadContainerPb).
+		Return(nil)
+
+	clock := testingutils.NewTestClock(time.Unix(0, 10))
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, clock)
+	assert.Nil(t, err)
+
+	mh.SyncPodData(&podList)
 }

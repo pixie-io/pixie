@@ -5,6 +5,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	// Blank import necessary for kubeConfig to work.
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -14,11 +15,12 @@ import (
 
 // K8sMetadataController listens to any metadata updates from the K8s API.
 type K8sMetadataController struct {
-	events chan *K8sMessage
+	mdHandler *MetadataHandler
+	clientset *kubernetes.Clientset
 }
 
 // NewK8sMetadataController creates a new K8sMetadataController.
-func NewK8sMetadataController(c chan *K8sMessage) (*K8sMetadataController, error) {
+func NewK8sMetadataController(mdh *MetadataHandler) (*K8sMetadataController, error) {
 	// There is a specific config for services running in the cluster.
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
@@ -31,19 +33,32 @@ func NewK8sMetadataController(c chan *K8sMessage) (*K8sMetadataController, error
 		return nil, err
 	}
 
-	mc := &K8sMetadataController{events: c}
+	mc := &K8sMetadataController{mdHandler: mdh, clientset: clientset}
+
+	// Clean up current metadata store state.
+	pods, err := mc.listObject("pods")
+	if err != nil {
+		log.Info("Could not list all pods")
+	}
+	mdh.SyncPodData(pods.(*v1.PodList))
 
 	// Start up Watchers.
-	go mc.startWatcher(clientset.CoreV1().RESTClient(), "pods")
-	go mc.startWatcher(clientset.CoreV1().RESTClient(), "endpoints")
-	go mc.startWatcher(clientset.CoreV1().RESTClient(), "services")
+	go mc.startWatcher("pods")
+	go mc.startWatcher("endpoints")
+	go mc.startWatcher("services")
 
 	return mc, nil
 }
 
-func (mc *K8sMetadataController) startWatcher(client cache.Getter, resource string) {
+func (mc *K8sMetadataController) listObject(resource string) (runtime.Object, error) {
+	watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), resource, v1.NamespaceAll, fields.Everything())
+	opts := metav1.ListOptions{}
+	return watcher.List(opts)
+}
+
+func (mc *K8sMetadataController) startWatcher(resource string) {
 	// Start up watcher for the given resource.
-	watcher := cache.NewListWatchFromClient(client, resource, v1.NamespaceAll, fields.Everything())
+	watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), resource, v1.NamespaceAll, fields.Everything())
 	opts := metav1.ListOptions{}
 	watch, err := watcher.Watch(opts)
 	if err != nil {
@@ -55,6 +70,6 @@ func (mc *K8sMetadataController) startWatcher(client cache.Getter, resource stri
 			Object:     c.Object,
 			ObjectType: resource,
 		}
-		mc.events <- msg
+		mc.mdHandler.GetChannel() <- msg
 	}
 }
