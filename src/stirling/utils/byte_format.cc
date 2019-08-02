@@ -16,7 +16,7 @@ int BEBytesToInt(const char arr[], size_t size) {
   return result;
 }
 
-int LEStrToInt(const std::string str) {
+int LEStrToInt(const std::string_view str) {
   DCHECK(str.size() <= sizeof(int));
   int result = 0;
   for (size_t i = 0; i < str.size(); i++) {

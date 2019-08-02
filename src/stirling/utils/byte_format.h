@@ -10,7 +10,7 @@ namespace utils {
 // TODO(chengruizhe/oazizi): Move to common someday.
 int BEBytesToInt(const char arr[], size_t size);
 
-int LEStrToInt(const std::string str);
+int LEStrToInt(const std::string_view str);
 
 template <size_t N>
 void EndianSwap(const char bytes[N], char result[N]) {

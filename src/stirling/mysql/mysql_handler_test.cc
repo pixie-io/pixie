@@ -1,5 +1,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <utility>
 
 #include "src/stirling/mysql/mysql.h"
 #include "src/stirling/mysql/mysql_handler.h"
@@ -126,6 +127,20 @@ TEST_F(HandlerTest, TestHandleStmtPrepareOKResponse) {
   auto result_response = s.ValueOrDie().get();
   EXPECT_EQ(testutils::kStmtPrepareResponse, *result_response);
 }
+
+TEST_F(HandlerTest, TestHandleStmtExecuteRequest) {
+  Packet req_packet = testutils::GenStmtExecuteRequest(testutils::kStmtExecuteRequest);
+  ReqRespEvent e = testutils::InitStmtPrepare();
+  int stmt_id = static_cast<StmtPrepareOKResponse*>(e.response())->resp_header().stmt_id;
+  std::map<int, ReqRespEvent> prepare_map;
+  prepare_map.emplace(stmt_id, std::move(e));
+  auto s = HandleStmtExecuteRequest(req_packet, &prepare_map);
+  EXPECT_TRUE(s.ok());
+  auto result_request = s.ValueOrDie().get();
+  EXPECT_EQ(testutils::kStmtExecuteRequest, *result_request);
+}
+
+// TODO(chengruizhe): Add failure test cases.
 
 }  // namespace mysql
 }  // namespace stirling

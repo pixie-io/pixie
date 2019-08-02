@@ -139,6 +139,36 @@ std::deque<Packet> GenStmtPrepareOKResponse(const StmtPrepareOKResponse& resp) {
   return result;
 }
 
+Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
+  char statement_id[4];
+  utils::IntToLEBytes<4>(req.stmt_id(), statement_id);
+  std::string msg =
+      absl::StrCat("\x17", std::string(statement_id, 4), ConstStrView("\x00\x01\x00\x00\x00"));
+  int num_params = req.params().size();
+  if (num_params > 0) {
+    for (int i = 0; i < (num_params + 7) / 8; i++) {
+      msg += std::string("\x00", 1);
+    }
+    msg += "\x01";
+  }
+  for (ParamPacket param : req.params()) {
+    switch (param.type) {
+      // TODO(chengruizhe): Add more types.
+      case StmtExecuteParamType::kString:
+        msg += std::string("\xfe\x00", 2);
+        break;
+      default:
+        msg += std::string("\xfe\x00", 2);
+        break;
+    }
+  }
+  for (ParamPacket param : req.params()) {
+    msg += GenLengthEncodedInt(param.value.size());
+    msg += param.value;
+  }
+  return Packet{0, std::move(msg), MySQLEventType::kComStmtExecute};
+}
+
 /**
  * Generates a Err packet.
  */

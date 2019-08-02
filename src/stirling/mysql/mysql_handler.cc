@@ -24,17 +24,49 @@ namespace {
 
  * If it is 0xfe, it is followed by a 8-byte integer.
  */
-int ProcessLengthEncodedInt(const std::string s) {
-  switch (s[0]) {
-    case '\xfc':
-    case '\xfd':
-      return utils::LEStrToInt(s.substr(1));
-    case '\xfe':
+int ProcessLengthEncodedInt(const std::string_view s, int* param_offset) {
+  int result;
+  switch (s[*param_offset]) {
+    case kLencIntPrefix2b:
+      *param_offset += 1;
+      result = utils::LEStrToInt(s.substr(*param_offset, 2));
+      *param_offset += 2;
+      break;
+    case kLencIntPrefix3b:
+      *param_offset += 1;
+      result = utils::LEStrToInt(s.substr(*param_offset, 3));
+      *param_offset += 3;
+      break;
+    case kLencIntPrefix8b:
       CHECK_GE(static_cast<int>(s.size()), 8);
-      return utils::LEStrToInt(s.substr(1));
+      *param_offset += 1;
+      result = utils::LEStrToInt(s.substr(*param_offset, 8));
+      *param_offset += 8;
+      break;
+    default:
+      result = utils::LEStrToInt(s.substr(*param_offset, 1));
+      *param_offset += 1;
+      break;
   }
-  return utils::LEStrToInt(s);
+  return result;
 }
+
+/**
+ * Dissects String parameters
+ *
+ */
+void DissectStringParam(const std::string_view msg, int* param_offset, ParamPacket* packet) {
+  int param_length = ProcessLengthEncodedInt(msg, param_offset);
+  packet->type = StmtExecuteParamType::kString;
+  packet->value = msg.substr(*param_offset, param_length);
+  *param_offset += param_length;
+}
+
+// TODO(chengruizhe): Currently dissecting unknown param as if it's a string. Make it more robust.
+void DissectUnknownParam(const std::string_view msg, int* param_offset, ParamPacket* packet) {
+  DissectStringParam(msg, param_offset, packet);
+}
+
 }  // namespace
 
 //-----------------------------------------------------------------------------
@@ -60,7 +92,9 @@ StatusOr<std::unique_ptr<OKResponse>> HandleOKMessage(std::deque<Packet>* resp_p
 
 StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_packets) {
   Packet packet = resp_packets->front();
-  int num_col = ProcessLengthEncodedInt(packet.msg);
+
+  int param_offset = 0;
+  int num_col = ProcessLengthEncodedInt(packet.msg, &param_offset);
 
   // TODO(chengruizhe): Add a cache so that don't need to iterate through to check if complete.
   // header + col * n + eof(if n != 0 && !CLIENT_DEPRECATE_EOF) + result_set_row * m + eof(if
@@ -180,9 +214,54 @@ StatusOr<std::unique_ptr<StringRequest>> HandleStringRequest(const Packet& req_p
 
 StatusOr<std::unique_ptr<StmtExecuteRequest>> HandleStmtExecuteRequest(
     const Packet& req_packet, std::map<int, ReqRespEvent>* prepare_map) {
-  PL_UNUSED(req_packet);
-  PL_UNUSED(prepare_map);
-  return error::Unimplemented("Placeholder. Will be implemented soon.");
+  int offset = kStmtIDStartOffset;
+  int stmt_id = utils::LEStrToInt(req_packet.msg.substr(offset, kStmtIDBytes));
+
+  int bytes_parsed = kStmtIDBytes + kFlagsBytes + kIterationCountBytes;
+  offset += bytes_parsed;
+
+  auto iter = prepare_map->find(stmt_id);
+  if (iter == prepare_map->end()) {
+    return error::Cancelled("Can not find Stmt Prepare Event in tracker.");
+  }
+
+  auto prepare_resp = static_cast<StmtPrepareOKResponse*>(iter->second.response());
+
+  int num_params = prepare_resp->resp_header().num_params;
+
+  // This is copied directly from the MySQL spec.
+  const int null_bitmap_length = (num_params + 7) / 8;
+  offset += null_bitmap_length;
+  uint8_t stmt_bound = req_packet.msg[offset];
+  offset += 1;
+
+  std::vector<ParamPacket> params;
+  if (stmt_bound == 1) {
+    int param_offset = offset + 2 * num_params;
+
+    for (int i = 0; i < num_params; ++i) {
+      char param_type = req_packet.msg[offset];
+      offset += 2;
+
+      ParamPacket param;
+      switch (param_type) {
+        // TODO(chengruizhe): Add more exec param types (short, long, float, double, datetime etc.)
+        // https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnType
+        case kNewDecimalPrefix:
+        case kBlobPrefix:
+        case kVarStringPrefix:
+        case kStringPrefix:
+          DissectStringParam(req_packet.msg, &param_offset, &param);
+          break;
+        default:
+          DissectUnknownParam(req_packet.msg, &param_offset, &param);
+          break;
+      }
+      params.emplace_back(param);
+    }
+  }
+  // If stmt_bound = 1, assume no params.
+  return std::make_unique<StmtExecuteRequest>(StmtExecuteRequest(stmt_id, std::move(params)));
 }
 
 }  // namespace mysql

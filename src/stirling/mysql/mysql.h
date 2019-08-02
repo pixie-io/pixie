@@ -30,6 +30,20 @@ inline constexpr char kEOFPrefix = '\xfe';
 inline constexpr char kErrPrefix = '\xff';
 inline constexpr char kOKPrefix = '\x00';
 
+inline constexpr int kStmtIDStartOffset = 1;
+inline constexpr int kStmtIDBytes = 4;
+inline constexpr int kFlagsBytes = 1;
+inline constexpr int kIterationCountBytes = 4;
+
+inline constexpr char kNewDecimalPrefix = '\xf6';
+inline constexpr char kBlobPrefix = '\xfc';
+inline constexpr char kVarStringPrefix = '\xfd';
+inline constexpr char kStringPrefix = '\xfe';
+
+inline constexpr char kLencIntPrefix2b = '\xfc';
+inline constexpr char kLencIntPrefix3b = '\xfd';
+inline constexpr char kLencIntPrefix8b = '\xfe';
+
 enum class MySQLEventType { kUnknown, kComStmtPrepare, kComStmtExecute, kComQuery };
 
 /**
