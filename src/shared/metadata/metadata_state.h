@@ -139,7 +139,7 @@ class AgentMetadataState : NotCopyable {
 
   std::shared_ptr<AgentMetadataState> CloneToShared() const;
 
-  PIDInfo* GetPIDByUPID(UPID upid) {
+  PIDInfo* GetPIDByUPID(UPID upid) const {
     auto it = pids_by_upid_.find(upid);
     if (it != pids_by_upid_.end()) {
       return it->second.get();

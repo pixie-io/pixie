@@ -46,6 +46,8 @@ class UPID {
     value_ = absl::MakeUint128(upper, ts_ns);
   }
 
+  explicit UPID(absl::uint128 value) : value_(value) {}
+
   uint32_t pid() const { return static_cast<uint32_t>(absl::Uint128High64(value_)); }
 
   uint32_t asid() const { return static_cast<uint32_t>(absl::Uint128High64(value_) >> 32U); }
