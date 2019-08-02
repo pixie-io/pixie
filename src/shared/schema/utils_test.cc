@@ -17,11 +17,11 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_basic_subscription) {
   info_class->set_id(0);
   info_class->set_subscribed(false);
 
-  auto* elem0 = info_class->add_elements();
+  auto* elem0 = info_class->mutable_schema()->add_elements();
   elem0->set_type(types::INT64);
   elem0->set_name("col1");
 
-  auto* elem1 = info_class->add_elements();
+  auto* elem1 = info_class->mutable_schema()->add_elements();
   elem1->set_type(types::STRING);
   elem1->set_name("col2");
 
@@ -30,7 +30,7 @@ TEST(ConvertSubscribeProtoToRelationInfo, test_for_basic_subscription) {
   info_class->set_name("rel2");
   info_class->set_id(1);
   info_class->set_subscribed(false);
-  elem0 = info_class->add_elements();
+  elem0 = info_class->mutable_schema()->add_elements();
   elem0->set_type(types::INT64);
   elem0->set_name("col1_2");
 

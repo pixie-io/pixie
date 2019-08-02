@@ -53,14 +53,12 @@ void InfoClassManager::PushData(PushDataCallback agent_callback) {
 
 stirlingpb::InfoClass InfoClassManager::ToProto() const {
   stirlingpb::InfoClass info_class_proto;
-  // Populate the proto with Elements.
-  for (auto element : schema_.elements()) {
-    stirlingpb::Element* element_proto_ptr = info_class_proto.add_elements();
-    element_proto_ptr->MergeFrom(element.ToProto());
-  }
+  stirlingpb::TableSchema* table_schema_proto = info_class_proto.mutable_schema();
+  // TODO(oazizi): This copies, which is inefficient. A populate() model would work better.
+  table_schema_proto->MergeFrom(schema_.ToProto());
 
   // Add all the other fields for the proto.
-  info_class_proto.set_name(std::string(schema_.name()));
+  info_class_proto.set_name(std::string(name()));
   info_class_proto.set_id(id_);
   info_class_proto.set_subscribed(subscribed_);
   info_class_proto.set_sampling_period_millis(sampling_period_.count());

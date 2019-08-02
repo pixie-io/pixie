@@ -8,7 +8,7 @@ namespace {
 table_store::schema::Relation InfoClassProtoToRelation(
     const stirling::stirlingpb::InfoClass& info_class_pb) {
   table_store::schema::Relation relation;
-  for (const auto& element : info_class_pb.elements()) {
+  for (const auto& element : info_class_pb.schema().elements()) {
     relation.AddColumn(element.type(), element.name());
   }
   return relation;

@@ -17,6 +17,13 @@ message Element {
   types.PatternType ptype = 3;
 }
 
+message TableSchema {
+  string name = 1;
+  repeated Element elements = 2;
+  bool tabletized = 3;
+  uint64 tabletization_key = 4;
+}
+
 // InfoClass stores a set of Elements that share common timestamps (i.e., they are
 // typically collected together). For example, cpu_usage which could comprise of
 // Elements such as user%, system%, io%, that are collected together in the same
@@ -27,7 +34,7 @@ message InfoClass {
   // This id will be assigned by the data collector's config block when creating a Publish
   // message.
   uint64 id = 2;
-  repeated Element elements = 3;
+  TableSchema schema = 3;
   bool subscribed = 4;
   uint32 sampling_period_millis = 5;
   uint32 push_period_millis = 6;

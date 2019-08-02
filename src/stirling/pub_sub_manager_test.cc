@@ -19,24 +19,28 @@ using types::DataType;
 using types::PatternType;
 
 const char* kInfoClassManager = R"(
-  name : "cpu",
-  elements {
-    name: "user_percentage",
-    type: FLOAT64,
-    ptype: METRIC_GAUGE,
+  name: "cpu"
+  schema {
+    name: "cpu"
+    elements {
+      name: "user_percentage"
+      type: FLOAT64
+      ptype: METRIC_GAUGE
+    }
+    elements {
+      name: "system_percentage"
+      type: FLOAT64
+      ptype: METRIC_GAUGE
+    }
+    elements {
+      name: "io_percentage"
+      type: FLOAT64
+      ptype: METRIC_GAUGE
+    }
+    tabletized: false
+    tabletization_key: 18446744073709551615
   }
-  elements {
-    name: "system_percentage",
-    type: FLOAT64,
-    ptype: METRIC_GAUGE,
-  }
-  elements {
-    name: "io_percentage",
-    type: FLOAT64,
-    ptype: METRIC_GAUGE,
-  }
-  subscribed: false,
-  sampling_period_millis: 100,
+  sampling_period_millis: 100
   push_period_millis: 1000
 )";
 
@@ -78,10 +82,10 @@ class PubSubManagerTest : public ::testing::Test {
   void SetUp() override {
     std::string name = "cpu_usage";
     source_ = TestSourceConnector::Create(name);
-    auto source_table_num = 0;
+    size_t table_num = 0;
     info_class_mgrs_.push_back(
-        std::make_unique<InfoClassManager>(TestSourceConnector::kTables[source_table_num]));
-    info_class_mgrs_[0]->SetSourceConnector(source_.get(), source_table_num);
+        std::make_unique<InfoClassManager>(TestSourceConnector::kTables[table_num]));
+    info_class_mgrs_[0]->SetSourceConnector(source_.get(), table_num);
     pub_sub_manager_ = std::make_unique<PubSubManager>();
   }
   std::unique_ptr<SourceConnector> source_;

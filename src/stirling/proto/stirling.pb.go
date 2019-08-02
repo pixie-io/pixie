@@ -83,19 +83,86 @@ func (m *Element) GetPtype() proto1.PatternType {
 	return proto1.UNSPECIFIED
 }
 
+type TableSchema struct {
+	Name             string     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Elements         []*Element `protobuf:"bytes,2,rep,name=elements,proto3" json:"elements,omitempty"`
+	Tabletized       bool       `protobuf:"varint,3,opt,name=tabletized,proto3" json:"tabletized,omitempty"`
+	TabletizationKey uint64     `protobuf:"varint,4,opt,name=tabletization_key,json=tabletizationKey,proto3" json:"tabletization_key,omitempty"`
+}
+
+func (m *TableSchema) Reset()      { *m = TableSchema{} }
+func (*TableSchema) ProtoMessage() {}
+func (*TableSchema) Descriptor() ([]byte, []int) {
+	return fileDescriptor_76a03eaf7e6ff887, []int{1}
+}
+func (m *TableSchema) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *TableSchema) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_TableSchema.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *TableSchema) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TableSchema.Merge(m, src)
+}
+func (m *TableSchema) XXX_Size() int {
+	return m.Size()
+}
+func (m *TableSchema) XXX_DiscardUnknown() {
+	xxx_messageInfo_TableSchema.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TableSchema proto.InternalMessageInfo
+
+func (m *TableSchema) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *TableSchema) GetElements() []*Element {
+	if m != nil {
+		return m.Elements
+	}
+	return nil
+}
+
+func (m *TableSchema) GetTabletized() bool {
+	if m != nil {
+		return m.Tabletized
+	}
+	return false
+}
+
+func (m *TableSchema) GetTabletizationKey() uint64 {
+	if m != nil {
+		return m.TabletizationKey
+	}
+	return 0
+}
+
 type InfoClass struct {
-	Name                 string     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Id                   uint64     `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
-	Elements             []*Element `protobuf:"bytes,3,rep,name=elements,proto3" json:"elements,omitempty"`
-	Subscribed           bool       `protobuf:"varint,4,opt,name=subscribed,proto3" json:"subscribed,omitempty"`
-	SamplingPeriodMillis uint32     `protobuf:"varint,5,opt,name=sampling_period_millis,json=samplingPeriodMillis,proto3" json:"sampling_period_millis,omitempty"`
-	PushPeriodMillis     uint32     `protobuf:"varint,6,opt,name=push_period_millis,json=pushPeriodMillis,proto3" json:"push_period_millis,omitempty"`
+	Name                 string       `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Id                   uint64       `protobuf:"varint,2,opt,name=id,proto3" json:"id,omitempty"`
+	Schema               *TableSchema `protobuf:"bytes,3,opt,name=schema,proto3" json:"schema,omitempty"`
+	Subscribed           bool         `protobuf:"varint,4,opt,name=subscribed,proto3" json:"subscribed,omitempty"`
+	SamplingPeriodMillis uint32       `protobuf:"varint,5,opt,name=sampling_period_millis,json=samplingPeriodMillis,proto3" json:"sampling_period_millis,omitempty"`
+	PushPeriodMillis     uint32       `protobuf:"varint,6,opt,name=push_period_millis,json=pushPeriodMillis,proto3" json:"push_period_millis,omitempty"`
 }
 
 func (m *InfoClass) Reset()      { *m = InfoClass{} }
 func (*InfoClass) ProtoMessage() {}
 func (*InfoClass) Descriptor() ([]byte, []int) {
-	return fileDescriptor_76a03eaf7e6ff887, []int{1}
+	return fileDescriptor_76a03eaf7e6ff887, []int{2}
 }
 func (m *InfoClass) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -138,9 +205,9 @@ func (m *InfoClass) GetId() uint64 {
 	return 0
 }
 
-func (m *InfoClass) GetElements() []*Element {
+func (m *InfoClass) GetSchema() *TableSchema {
 	if m != nil {
-		return m.Elements
+		return m.Schema
 	}
 	return nil
 }
@@ -173,7 +240,7 @@ type Publish struct {
 func (m *Publish) Reset()      { *m = Publish{} }
 func (*Publish) ProtoMessage() {}
 func (*Publish) Descriptor() ([]byte, []int) {
-	return fileDescriptor_76a03eaf7e6ff887, []int{2}
+	return fileDescriptor_76a03eaf7e6ff887, []int{3}
 }
 func (m *Publish) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -216,7 +283,7 @@ type Subscribe struct {
 func (m *Subscribe) Reset()      { *m = Subscribe{} }
 func (*Subscribe) ProtoMessage() {}
 func (*Subscribe) Descriptor() ([]byte, []int) {
-	return fileDescriptor_76a03eaf7e6ff887, []int{3}
+	return fileDescriptor_76a03eaf7e6ff887, []int{4}
 }
 func (m *Subscribe) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -254,6 +321,7 @@ func (m *Subscribe) GetSubscribedInfoClasses() []*InfoClass {
 
 func init() {
 	proto.RegisterType((*Element)(nil), "pl.stirling.stirlingpb.Element")
+	proto.RegisterType((*TableSchema)(nil), "pl.stirling.stirlingpb.TableSchema")
 	proto.RegisterType((*InfoClass)(nil), "pl.stirling.stirlingpb.InfoClass")
 	proto.RegisterType((*Publish)(nil), "pl.stirling.stirlingpb.Publish")
 	proto.RegisterType((*Subscribe)(nil), "pl.stirling.stirlingpb.Subscribe")
@@ -262,33 +330,38 @@ func init() {
 func init() { proto.RegisterFile("src/stirling/proto/stirling.proto", fileDescriptor_76a03eaf7e6ff887) }
 
 var fileDescriptor_76a03eaf7e6ff887 = []byte{
-	// 416 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x92, 0xbd, 0xee, 0xd3, 0x30,
-	0x14, 0xc5, 0xe3, 0x36, 0xfd, 0xba, 0x88, 0x0a, 0x59, 0x6d, 0x89, 0x18, 0x4c, 0x9a, 0x01, 0x45,
-	0x02, 0xa5, 0x52, 0x61, 0x63, 0x41, 0x7c, 0x0c, 0x0c, 0x48, 0x55, 0x40, 0x42, 0xb0, 0x44, 0x49,
-	0xe3, 0x52, 0x4b, 0x4e, 0x62, 0xd9, 0xe9, 0xd0, 0x8d, 0x47, 0xe0, 0x31, 0x78, 0x14, 0xc6, 0x8e,
-	0x1d, 0x69, 0xba, 0x30, 0xf6, 0x11, 0x50, 0x9c, 0x36, 0xa9, 0x50, 0x59, 0xfe, 0xdb, 0xf5, 0x3d,
-	0xe7, 0xe7, 0x93, 0x63, 0x05, 0xa6, 0x4a, 0x2e, 0x67, 0x2a, 0x67, 0x92, 0xb3, 0xf4, 0xdb, 0x4c,
-	0xc8, 0x2c, 0xcf, 0xea, 0xa3, 0xa7, 0x8f, 0x78, 0x22, 0xb8, 0x57, 0xaf, 0x2e, 0x83, 0x88, 0x1e,
-	0x39, 0x1a, 0x5d, 0x87, 0x92, 0xc6, 0xb3, 0x7c, 0x2b, 0xa8, 0x3a, 0xe3, 0x7a, 0xae, 0x58, 0x47,
-	0x42, 0xef, 0x1d, 0xa7, 0x09, 0x4d, 0x73, 0x8c, 0xc1, 0x4c, 0xc3, 0x84, 0x5a, 0xc8, 0x46, 0xee,
-	0xc0, 0xd7, 0x33, 0x7e, 0x02, 0x66, 0xe9, 0xb6, 0x5a, 0x36, 0x72, 0x87, 0x73, 0xec, 0x09, 0xee,
-	0x55, 0xf4, 0xdb, 0x30, 0x0f, 0x3f, 0x6d, 0x05, 0xf5, 0xb5, 0x8e, 0x9f, 0x42, 0x47, 0x68, 0x63,
-	0x5b, 0x1b, 0xc7, 0x8d, 0x71, 0x11, 0xe6, 0x39, 0x95, 0xa9, 0xf6, 0x56, 0x1e, 0xe7, 0x84, 0x60,
-	0xf0, 0x3e, 0x5d, 0x65, 0x6f, 0x78, 0xa8, 0xd4, 0xcd, 0xd8, 0x21, 0xb4, 0x58, 0xac, 0x43, 0x4d,
-	0xbf, 0xc5, 0x62, 0xfc, 0x12, 0xfa, 0xb4, 0xfa, 0x4a, 0x65, 0xb5, 0xed, 0xb6, 0x7b, 0x6f, 0xfe,
-	0xd8, 0xbb, 0x5d, 0xda, 0x3b, 0xb7, 0xf1, 0x6b, 0x00, 0x13, 0x00, 0xb5, 0x89, 0xd4, 0x52, 0xb2,
-	0x88, 0xc6, 0x96, 0x69, 0x23, 0xb7, 0xef, 0x5f, 0x6d, 0xf0, 0x0b, 0x98, 0xa8, 0x30, 0x11, 0x25,
-	0x1f, 0x08, 0x2a, 0x59, 0x16, 0x07, 0x09, 0xe3, 0x9c, 0x29, 0xab, 0x63, 0x23, 0xf7, 0xbe, 0x3f,
-	0xba, 0xa8, 0x0b, 0x2d, 0x7e, 0xd0, 0x1a, 0x7e, 0x06, 0x58, 0x6c, 0xd4, 0xfa, 0x1f, 0xa2, 0xab,
-	0x89, 0x07, 0xa5, 0x72, 0xed, 0x76, 0x22, 0xe8, 0x2d, 0x36, 0x11, 0x67, 0x6a, 0x8d, 0x3f, 0xc3,
-	0x44, 0x54, 0x23, 0x8d, 0x03, 0x96, 0xae, 0xb2, 0x60, 0x59, 0xbe, 0x03, 0x55, 0x16, 0xd2, 0xcd,
-	0xa6, 0xff, 0x6b, 0x56, 0x3f, 0x99, 0x3f, 0xaa, 0x2f, 0xa8, 0x77, 0x54, 0x39, 0x2b, 0x18, 0x7c,
-	0xbc, 0xb4, 0xc2, 0x5f, 0xe0, 0x61, 0x53, 0xf1, 0x8e, 0x31, 0xe3, 0xe6, 0x86, 0xab, 0x9c, 0xd7,
-	0xaf, 0x76, 0x07, 0x62, 0xec, 0x0f, 0xc4, 0x38, 0x1d, 0x08, 0xfa, 0x5e, 0x10, 0xf4, 0xb3, 0x20,
-	0xe8, 0x57, 0x41, 0xd0, 0xae, 0x20, 0xe8, 0x77, 0x41, 0xd0, 0x9f, 0x82, 0x18, 0xa7, 0x82, 0xa0,
-	0x1f, 0x47, 0x62, 0xec, 0x8e, 0xc4, 0xd8, 0x1f, 0x89, 0xf1, 0x15, 0x9a, 0x88, 0xa8, 0xab, 0xff,
-	0xbd, 0xe7, 0x7f, 0x03, 0x00, 0x00, 0xff, 0xff, 0xd9, 0xb7, 0x40, 0xcd, 0xdc, 0x02, 0x00, 0x00,
+	// 489 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x53, 0x4d, 0x6f, 0xd3, 0x40,
+	0x10, 0xf5, 0xa6, 0x69, 0x9a, 0x4c, 0x44, 0x55, 0x56, 0x6d, 0xb0, 0x38, 0x2c, 0xa9, 0x91, 0x90,
+	0xa5, 0x22, 0x47, 0x0a, 0xdc, 0x7a, 0x41, 0x7c, 0x1c, 0x10, 0x42, 0x8a, 0xb6, 0x95, 0x10, 0x5c,
+	0xac, 0x75, 0xbc, 0x21, 0x2b, 0xfc, 0xb1, 0xf2, 0x6e, 0x0e, 0xe1, 0xc4, 0x4f, 0xe0, 0x67, 0x20,
+	0xf1, 0x47, 0x38, 0xe6, 0xd8, 0x23, 0x71, 0x2e, 0x1c, 0xf3, 0x13, 0x90, 0xd7, 0x89, 0x63, 0x50,
+	0x7a, 0xe9, 0x6d, 0x76, 0xde, 0x7b, 0x33, 0xef, 0x8d, 0x65, 0x38, 0x57, 0xd9, 0x78, 0xa0, 0xb4,
+	0xc8, 0x22, 0x91, 0x7c, 0x1e, 0xc8, 0x2c, 0xd5, 0x69, 0xf5, 0xf4, 0xcc, 0x13, 0xf7, 0x64, 0xe4,
+	0x55, 0xad, 0x6d, 0x21, 0x83, 0x87, 0x8e, 0x91, 0x4e, 0x59, 0xc6, 0xc3, 0x81, 0x9e, 0x4b, 0xae,
+	0x36, 0x72, 0x53, 0x97, 0x5a, 0x27, 0x83, 0xa3, 0x37, 0x11, 0x8f, 0x79, 0xa2, 0x31, 0x86, 0x66,
+	0xc2, 0x62, 0x6e, 0xa3, 0x3e, 0x72, 0x3b, 0xd4, 0xd4, 0xf8, 0x09, 0x34, 0x0b, 0xb6, 0xdd, 0xe8,
+	0x23, 0xf7, 0x78, 0x88, 0x3d, 0x19, 0x79, 0xa5, 0xfa, 0x35, 0xd3, 0xec, 0x7a, 0x2e, 0x39, 0x35,
+	0x38, 0xbe, 0x80, 0x43, 0x69, 0x88, 0x07, 0x86, 0x78, 0xb6, 0x23, 0x8e, 0x98, 0xd6, 0x3c, 0x4b,
+	0x0c, 0xb7, 0xe4, 0x38, 0x3f, 0x11, 0x74, 0xaf, 0x59, 0x10, 0xf1, 0xab, 0xf1, 0x94, 0xc7, 0x6c,
+	0xef, 0xe2, 0x4b, 0x68, 0xf3, 0xd2, 0x97, 0xb2, 0x1b, 0xfd, 0x03, 0xb7, 0x3b, 0x7c, 0xe4, 0xed,
+	0x8f, 0xe9, 0x6d, 0xfc, 0xd3, 0x4a, 0x80, 0x09, 0x80, 0x2e, 0xe6, 0x6b, 0xf1, 0x95, 0x87, 0xc6,
+	0x52, 0x9b, 0xd6, 0x3a, 0xf8, 0x02, 0xee, 0x6f, 0x5f, 0x4c, 0x8b, 0x34, 0xf1, 0xbf, 0xf0, 0xb9,
+	0xdd, 0xec, 0x23, 0xb7, 0x49, 0x4f, 0xfe, 0x01, 0xde, 0xf1, 0xb9, 0xb3, 0x46, 0xd0, 0x79, 0x9b,
+	0x4c, 0xd2, 0x57, 0x11, 0x53, 0x6a, 0xaf, 0xd7, 0x63, 0x68, 0x88, 0xd0, 0x9c, 0xa8, 0x49, 0x1b,
+	0x22, 0xc4, 0x97, 0xd0, 0x52, 0x26, 0x99, 0x59, 0xdd, 0x1d, 0x3e, 0xbe, 0xcd, 0x79, 0xed, 0x08,
+	0x74, 0x23, 0x29, 0xbc, 0xab, 0x59, 0xa0, 0xc6, 0x99, 0x08, 0x78, 0x68, 0x4c, 0xb5, 0x69, 0xad,
+	0x83, 0x9f, 0x43, 0x4f, 0xb1, 0x58, 0x16, 0x13, 0x7c, 0xc9, 0x33, 0x91, 0x86, 0x7e, 0x2c, 0xa2,
+	0x48, 0x28, 0xfb, 0xb0, 0x8f, 0xdc, 0x7b, 0xf4, 0x74, 0x8b, 0x8e, 0x0c, 0xf8, 0xde, 0x60, 0xf8,
+	0x29, 0x60, 0x39, 0x53, 0xd3, 0xff, 0x14, 0x2d, 0xa3, 0x38, 0x29, 0x90, 0x3a, 0xdb, 0x09, 0xe0,
+	0x68, 0x34, 0x0b, 0x22, 0xa1, 0xa6, 0xf8, 0x03, 0xf4, 0x64, 0x59, 0xf2, 0xd0, 0x17, 0xc9, 0x24,
+	0xf5, 0xc7, 0xc5, 0x1d, 0xb8, 0xb2, 0x91, 0xf9, 0x2a, 0xe7, 0xb7, 0x65, 0xab, 0x4e, 0x46, 0x4f,
+	0xab, 0x01, 0x55, 0x8f, 0x2b, 0x67, 0x02, 0x9d, 0xab, 0x6d, 0x2a, 0xfc, 0x11, 0x1e, 0xec, 0x22,
+	0xde, 0x71, 0xcd, 0xd9, 0x6e, 0x42, 0x6d, 0xcf, 0xcb, 0x17, 0x8b, 0x25, 0xb1, 0x6e, 0x96, 0xc4,
+	0x5a, 0x2f, 0x09, 0xfa, 0x96, 0x13, 0xf4, 0x23, 0x27, 0xe8, 0x57, 0x4e, 0xd0, 0x22, 0x27, 0xe8,
+	0x77, 0x4e, 0xd0, 0x9f, 0x9c, 0x58, 0xeb, 0x9c, 0xa0, 0xef, 0x2b, 0x62, 0x2d, 0x56, 0xc4, 0xba,
+	0x59, 0x11, 0xeb, 0x13, 0xec, 0x56, 0x04, 0x2d, 0xf3, 0xa7, 0x3c, 0xfb, 0x1b, 0x00, 0x00, 0xff,
+	0xff, 0xa0, 0xf3, 0x5a, 0xf3, 0x8a, 0x03, 0x00, 0x00,
 }
 
 func (this *Element) Equal(that interface{}) bool {
@@ -321,6 +394,44 @@ func (this *Element) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *TableSchema) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*TableSchema)
+	if !ok {
+		that2, ok := that.(TableSchema)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if len(this.Elements) != len(that1.Elements) {
+		return false
+	}
+	for i := range this.Elements {
+		if !this.Elements[i].Equal(that1.Elements[i]) {
+			return false
+		}
+	}
+	if this.Tabletized != that1.Tabletized {
+		return false
+	}
+	if this.TabletizationKey != that1.TabletizationKey {
+		return false
+	}
+	return true
+}
 func (this *InfoClass) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -346,13 +457,8 @@ func (this *InfoClass) Equal(that interface{}) bool {
 	if this.Id != that1.Id {
 		return false
 	}
-	if len(this.Elements) != len(that1.Elements) {
+	if !this.Schema.Equal(that1.Schema) {
 		return false
-	}
-	for i := range this.Elements {
-		if !this.Elements[i].Equal(that1.Elements[i]) {
-			return false
-		}
 	}
 	if this.Subscribed != that1.Subscribed {
 		return false
@@ -435,6 +541,21 @@ func (this *Element) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *TableSchema) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&stirlingpb.TableSchema{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	if this.Elements != nil {
+		s = append(s, "Elements: "+fmt.Sprintf("%#v", this.Elements)+",\n")
+	}
+	s = append(s, "Tabletized: "+fmt.Sprintf("%#v", this.Tabletized)+",\n")
+	s = append(s, "TabletizationKey: "+fmt.Sprintf("%#v", this.TabletizationKey)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *InfoClass) GoString() string {
 	if this == nil {
 		return "nil"
@@ -443,8 +564,8 @@ func (this *InfoClass) GoString() string {
 	s = append(s, "&stirlingpb.InfoClass{")
 	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
 	s = append(s, "Id: "+fmt.Sprintf("%#v", this.Id)+",\n")
-	if this.Elements != nil {
-		s = append(s, "Elements: "+fmt.Sprintf("%#v", this.Elements)+",\n")
+	if this.Schema != nil {
+		s = append(s, "Schema: "+fmt.Sprintf("%#v", this.Schema)+",\n")
 	}
 	s = append(s, "Subscribed: "+fmt.Sprintf("%#v", this.Subscribed)+",\n")
 	s = append(s, "SamplingPeriodMillis: "+fmt.Sprintf("%#v", this.SamplingPeriodMillis)+",\n")
@@ -518,6 +639,57 @@ func (m *Element) MarshalTo(dAtA []byte) (int, error) {
 	return i, nil
 }
 
+func (m *TableSchema) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *TableSchema) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		dAtA[i] = 0xa
+		i++
+		i = encodeVarintStirling(dAtA, i, uint64(len(m.Name)))
+		i += copy(dAtA[i:], m.Name)
+	}
+	if len(m.Elements) > 0 {
+		for _, msg := range m.Elements {
+			dAtA[i] = 0x12
+			i++
+			i = encodeVarintStirling(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
+	}
+	if m.Tabletized {
+		dAtA[i] = 0x18
+		i++
+		if m.Tabletized {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i++
+	}
+	if m.TabletizationKey != 0 {
+		dAtA[i] = 0x20
+		i++
+		i = encodeVarintStirling(dAtA, i, uint64(m.TabletizationKey))
+	}
+	return i, nil
+}
+
 func (m *InfoClass) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -544,17 +716,15 @@ func (m *InfoClass) MarshalTo(dAtA []byte) (int, error) {
 		i++
 		i = encodeVarintStirling(dAtA, i, uint64(m.Id))
 	}
-	if len(m.Elements) > 0 {
-		for _, msg := range m.Elements {
-			dAtA[i] = 0x1a
-			i++
-			i = encodeVarintStirling(dAtA, i, uint64(msg.Size()))
-			n, err := msg.MarshalTo(dAtA[i:])
-			if err != nil {
-				return 0, err
-			}
-			i += n
+	if m.Schema != nil {
+		dAtA[i] = 0x1a
+		i++
+		i = encodeVarintStirling(dAtA, i, uint64(m.Schema.Size()))
+		n1, err := m.Schema.MarshalTo(dAtA[i:])
+		if err != nil {
+			return 0, err
 		}
+		i += n1
 	}
 	if m.Subscribed {
 		dAtA[i] = 0x20
@@ -667,6 +837,31 @@ func (m *Element) Size() (n int) {
 	return n
 }
 
+func (m *TableSchema) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovStirling(uint64(l))
+	}
+	if len(m.Elements) > 0 {
+		for _, e := range m.Elements {
+			l = e.Size()
+			n += 1 + l + sovStirling(uint64(l))
+		}
+	}
+	if m.Tabletized {
+		n += 2
+	}
+	if m.TabletizationKey != 0 {
+		n += 1 + sovStirling(uint64(m.TabletizationKey))
+	}
+	return n
+}
+
 func (m *InfoClass) Size() (n int) {
 	if m == nil {
 		return 0
@@ -680,11 +875,9 @@ func (m *InfoClass) Size() (n int) {
 	if m.Id != 0 {
 		n += 1 + sovStirling(uint64(m.Id))
 	}
-	if len(m.Elements) > 0 {
-		for _, e := range m.Elements {
-			l = e.Size()
-			n += 1 + l + sovStirling(uint64(l))
-		}
+	if m.Schema != nil {
+		l = m.Schema.Size()
+		n += 1 + l + sovStirling(uint64(l))
 	}
 	if m.Subscribed {
 		n += 2
@@ -753,6 +946,19 @@ func (this *Element) String() string {
 	}, "")
 	return s
 }
+func (this *TableSchema) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&TableSchema{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Elements:` + strings.Replace(fmt.Sprintf("%v", this.Elements), "Element", "Element", 1) + `,`,
+		`Tabletized:` + fmt.Sprintf("%v", this.Tabletized) + `,`,
+		`TabletizationKey:` + fmt.Sprintf("%v", this.TabletizationKey) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *InfoClass) String() string {
 	if this == nil {
 		return "nil"
@@ -760,7 +966,7 @@ func (this *InfoClass) String() string {
 	s := strings.Join([]string{`&InfoClass{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
 		`Id:` + fmt.Sprintf("%v", this.Id) + `,`,
-		`Elements:` + strings.Replace(fmt.Sprintf("%v", this.Elements), "Element", "Element", 1) + `,`,
+		`Schema:` + strings.Replace(fmt.Sprintf("%v", this.Schema), "TableSchema", "TableSchema", 1) + `,`,
 		`Subscribed:` + fmt.Sprintf("%v", this.Subscribed) + `,`,
 		`SamplingPeriodMillis:` + fmt.Sprintf("%v", this.SamplingPeriodMillis) + `,`,
 		`PushPeriodMillis:` + fmt.Sprintf("%v", this.PushPeriodMillis) + `,`,
@@ -919,6 +1125,164 @@ func (m *Element) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *TableSchema) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowStirling
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: TableSchema: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: TableSchema: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStirling
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStirling
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthStirling
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Elements", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStirling
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthStirling
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthStirling
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Elements = append(m.Elements, &Element{})
+			if err := m.Elements[len(m.Elements)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Tabletized", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStirling
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Tabletized = bool(v != 0)
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TabletizationKey", wireType)
+			}
+			m.TabletizationKey = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStirling
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TabletizationKey |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipStirling(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthStirling
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthStirling
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *InfoClass) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -1001,7 +1365,7 @@ func (m *InfoClass) Unmarshal(dAtA []byte) error {
 			}
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Elements", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Schema", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1028,8 +1392,10 @@ func (m *InfoClass) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Elements = append(m.Elements, &Element{})
-			if err := m.Elements[len(m.Elements)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if m.Schema == nil {
+				m.Schema = &TableSchema{}
+			}
+			if err := m.Schema.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

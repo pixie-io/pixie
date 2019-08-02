@@ -41,13 +41,6 @@ class DataElement {
   constexpr const std::string_view& name() const { return name_; }
   constexpr const types::DataType& type() const { return type_; }
   constexpr const types::PatternType& ptype() const { return ptype_; }
-  std::shared_ptr<arrow::DataType> arrow_type() { return types::DataTypeToArrowType(type()); }
-
-  /**
-   * @brief Generate a proto message based on the DataElement.
-   *
-   * @return stirlingpb::Element
-   */
   stirlingpb::Element ToProto() const;
 
  protected:
@@ -98,6 +91,8 @@ class DataTableSchema {
 
     return i;
   }
+
+  stirlingpb::TableSchema ToProto() const;
 
  private:
   constexpr void CheckSchema() {

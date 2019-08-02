@@ -9,18 +9,6 @@ namespace stirling {
 using types::DataType;
 using types::PatternType;
 
-TEST(DataElementTest, infoclass_element_proto_getters_test) {
-  DataElement element("user_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE);
-
-  EXPECT_EQ("user_percentage", std::string(element.name().data()));
-  EXPECT_EQ(DataType::FLOAT64, element.type());
-
-  stirlingpb::Element element_pb;
-  element_pb = element.ToProto();
-  EXPECT_EQ("user_percentage", element_pb.name());
-  EXPECT_EQ(DataType::FLOAT64, element_pb.type());
-}
-
 TEST(InfoClassInfoSchemaTest, infoclass_mgr_proto_getters_test) {
   InfoClassManager info_class_mgr(SeqGenConnector::kSeq0Table);
   auto source = SeqGenConnector::Create("sequences");
@@ -32,7 +20,7 @@ TEST(InfoClassInfoSchemaTest, infoclass_mgr_proto_getters_test) {
 
   stirlingpb::InfoClass info_class_pb;
   info_class_pb = info_class_mgr.ToProto();
-  EXPECT_EQ(SeqGenConnector::kSeq0Table.elements().size(), info_class_pb.elements_size());
+  EXPECT_EQ(SeqGenConnector::kSeq0Table.elements().size(), info_class_pb.schema().elements_size());
   EXPECT_EQ(SeqGenConnector::kSeq0Table.name(), info_class_pb.name());
   EXPECT_EQ(0, info_class_pb.id());
 
