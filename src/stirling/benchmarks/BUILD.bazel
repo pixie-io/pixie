@@ -13,3 +13,13 @@ pl_cc_binary(
         "@com_google_benchmark//:benchmark_main",
     ],
 )
+
+pl_cc_binary(
+    name = "tracker_structure_benchmark",
+    srcs = ["tracker_structure_benchmark.cc"],
+    deps = [
+        "//src/stirling:cc_library",
+        "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_benchmark//:benchmark_main",
+    ],
+)

@@ -162,6 +162,13 @@ class ConnectionTracker {
   uint64_t fd() const { return conn_id_.fd; }
 
   /**
+   * Get generation of the connection.
+   *
+   * @return generation.
+   */
+  uint32_t generation() const { return conn_id_.generation; }
+
+  /**
    * Get remote IP addr of the connection.
    *
    * @return IP.
@@ -300,8 +307,10 @@ class ConnectionTracker {
    */
   static constexpr int64_t kDeathCountdownIters = 2;
 
- private:
+ protected:
   void SetPID(struct conn_id_t conn_id);
+
+ private:
   void SetTrafficClass(struct traffic_class_t traffic_class);
   void UpdateTimestamps(uint64_t bpf_timestamp);
   void HandleInactivity();
