@@ -36,12 +36,6 @@ TEST(CompilerTest, remove_range) {
 
   EXPECT_EQ(std::vector<int64_t>({0, 1, 2, 3, 4, 5}), graph->dag().TopologicalSort());
 
-  // Add dependencies.
-  EXPECT_OK(graph->AddEdge(src, range));
-  EXPECT_OK(graph->AddEdge(range, sink));
-  EXPECT_OK(graph->AddEdge(range, start_time));
-  EXPECT_OK(graph->AddEdge(range, stop_time));
-
   EXPECT_OK(IROptimizer().Optimize(graph.get()));
   // checks to make sure that all the edges related to range are removed.
   EXPECT_EQ(std::vector<int64_t>({0, 4, 5}), graph->dag().TopologicalSort());

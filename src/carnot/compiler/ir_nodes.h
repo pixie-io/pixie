@@ -204,13 +204,16 @@ class OperatorIR : public IRNode {
     return Status::OK();
   }
   bool IsRelationInit() const { return relation_init_; }
-  bool HasParent() const { return has_parent_; }
-  OperatorIR* parent() const { return parent_; }
-  Status SetParent(IRNode* node);
+  bool HasParents() const { return parents_.size() != 0; }
+  Status AddParent(OperatorIR* node);
+  bool IsChildOf(OperatorIR* parent) {
+    return std::find(parents_.begin(), parents_.end(), parent) != parents_.end();
+  }
+  const std::vector<OperatorIR*>& parents() const { return parents_; }
   Status RemoveParent(OperatorIR* op);
   void AddReferencingColumn(ColumnIR* column) { referencing_columns_.push_back(column); }
   const std::vector<ColumnIR*>& referencing_columns() const { return referencing_columns_; }
-  Status Init(IRNode* parent, const ArgMap& args, const pypa::AstPtr& ast_node);
+  Status Init(OperatorIR* parent, const ArgMap& args, const pypa::AstPtr& ast_node);
   virtual Status InitImpl(const ArgMap& args) = 0;
   virtual std::vector<std::string> ArgKeys() = 0;
   virtual std::unordered_map<std::string, IRNode*> DefaultArgValues(
@@ -221,15 +224,23 @@ class OperatorIR : public IRNode {
 
   Status EvaluateExpression(planpb::ScalarExpression* expr, const IRNode& ir_node) const;
 
+  /**
+   * @brief Updates all of the columns contained by this operator to point
+   * to the new_parent.
+   *
+   * @param new_parent: the new_parent operator.
+   */
+  void UpdateColumnReferences(OperatorIR* new_parent);
+
  protected:
-  explicit OperatorIR(int64_t id, IRNodeType type, bool has_parent, bool is_source)
-      : IRNode(id, type, is_source), has_parent_(has_parent) {}
+  explicit OperatorIR(int64_t id, IRNodeType type, bool has_parents, bool is_source)
+      : IRNode(id, type, is_source), can_have_parents_(has_parents) {}
 
  private:
   table_store::schema::Relation relation_;
   bool relation_init_ = false;
-  bool has_parent_;
-  OperatorIR* parent_;
+  bool can_have_parents_;
+  std::vector<OperatorIR*> parents_;
   // The vector of columns that reference this Operator.
   std::vector<ColumnIR*> referencing_columns_;
 };
@@ -417,27 +428,28 @@ class ColumnIR : public ExpressionIR {
  public:
   ColumnIR() = delete;
   explicit ColumnIR(int64_t id) : ExpressionIR(id, IRNodeType::kColumn) {}
-  Status Init(const std::string& col_name, const pypa::AstPtr& ast_node);
+  Status Init(const std::string& col_name, OperatorIR* parent, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string col_name() const { return col_name_; }
   std::string DebugString(int64_t depth) const override;
   bool IsColumn() const override { return true; }
-  void ResolveColumn(int64_t col_idx, types::DataType type, OperatorIR* parent_operator) {
+  void ResolveColumn(int64_t col_idx, types::DataType type) {
     col_idx_ = col_idx;
     evaluated_data_type_ = type;
     is_data_type_evaluated_ = true;
-    SetParentOperator(parent_operator);
   }
-  void SetParentOperator(OperatorIR* parent_operator) {
-    parent_op_ = parent_operator;
-    parent_op_->AddReferencingColumn(this);
+  void SetReferencedOperator(OperatorIR* op) {
+    referenced_op_ = op;
+    op->AddReferencingColumn(this);
   }
-  OperatorIR* parent_op() const { return parent_op_; }
-  int64_t ParentId() const { return parent_op_->id(); }
+  OperatorIR* referenced_op() const { return referenced_op_; }
+  int64_t ReferenceID() const { return referenced_op_->id(); }
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
   bool IsDataTypeEvaluated() const override { return is_data_type_evaluated_; }
 
   int64_t col_idx() const { return col_idx_; }
+  static void UpdateReferencedOperatorColumns(IRNode* parent_ir_node,
+                                              OperatorIR* new_referenced_operator);
 
  protected:
   /**
@@ -451,7 +463,7 @@ class ColumnIR : public ExpressionIR {
   int64_t col_idx_;
   types::DataType evaluated_data_type_;
   bool is_data_type_evaluated_ = false;
-  OperatorIR* parent_op_;
+  OperatorIR* referenced_op_;
 };
 
 /**
@@ -676,7 +688,7 @@ class MetadataIR : public ColumnIR {
  public:
   MetadataIR() = delete;
   explicit MetadataIR(int64_t id) : ColumnIR(id, IRNodeType::kMetadata) {}
-  Status Init(std::string metadata_val, const pypa::AstPtr& ast_node);
+  Status Init(const std::string& metadata_val, OperatorIR* parent_op, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override { return false; };
   std::string DebugString(int64_t depth) const override;
   std::string name() const { return metadata_name_; }
@@ -795,7 +807,8 @@ class RangeIR : public OperatorIR {
  public:
   RangeIR() = delete;
   explicit RangeIR(int64_t id) : OperatorIR(id, IRNodeType::kRange, true, false) {}
-  Status Init(IRNode* parent, IRNode* start_repr, IRNode* stop_repr, const pypa::AstPtr& ast_node);
+  Status Init(OperatorIR* parent, IRNode* start_repr, IRNode* stop_repr,
+              const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
   std::string DebugString(int64_t depth) const override;
   IRNode* start_repr() { return start_repr_; }

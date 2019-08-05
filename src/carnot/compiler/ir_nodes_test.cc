@@ -46,7 +46,7 @@ TEST(IRTest, check_connection) {
   ArgMap memsrc_argmap({{"table", table_str_node}, {"select", select_list}});
   EXPECT_OK(src->Init(nullptr, memsrc_argmap, ast));
   EXPECT_OK(range->Init(src, start_rng_str, stop_rng_str, ast));
-  EXPECT_EQ(range->parent(), src);
+  EXPECT_EQ(range->parents()[0], src);
   EXPECT_EQ(range->start_repr(), start_rng_str);
   EXPECT_EQ(range->stop_repr(), stop_rng_str);
   EXPECT_EQ(src->table_name(), table_str);
@@ -127,12 +127,12 @@ TEST(ToProto, memory_source_ir) {
   EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
 
   auto col_1 = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col_1->Init("cpu0", ast));
-  col_1->ResolveColumn(0, types::DataType::INT64, mem_src);
+  EXPECT_OK(col_1->Init("cpu0", mem_src, ast));
+  col_1->ResolveColumn(0, types::DataType::INT64);
 
   auto col_2 = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col_2->Init("cpu1", ast));
-  col_2->ResolveColumn(2, types::DataType::FLOAT64, mem_src);
+  EXPECT_OK(col_2->Init("cpu1", mem_src, ast));
+  col_2->ResolveColumn(2, types::DataType::FLOAT64);
 
   mem_src->SetColumns(std::vector<ColumnIR*>({col_1, col_2}));
   mem_src->SetTime(10, 20);
@@ -213,7 +213,8 @@ TEST(ToProto, map_ir) {
   auto constant = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(constant->Init(10, ast));
   auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
-  col->ResolveColumn(4, types::INT64, mem_src);
+  EXPECT_OK(col->Init("col_name", mem_src, ast));
+  col->ResolveColumn(4, types::INT64);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
@@ -268,7 +269,8 @@ TEST(ToProto, agg_ir) {
   auto constant = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(constant->Init(10, ast));
   auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
-  col->ResolveColumn(4, types::INT64, mem_src);
+  EXPECT_OK(col->Init("column", mem_src, ast));
+  col->ResolveColumn(4, types::INT64);
 
   auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   auto agg_func = graph->MakeNode<FuncIR>().ValueOrDie();
@@ -279,8 +281,8 @@ TEST(ToProto, agg_ir) {
 
   auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   auto group1 = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(group1->Init("group1", ast));
-  group1->ResolveColumn(1, types::INT64, mem_src);
+  EXPECT_OK(group1->Init("group1", mem_src, ast));
+  group1->ResolveColumn(1, types::INT64);
   EXPECT_OK(by_func_lambda->Init({"group1"}, group1, ast));
   ArgMap amap({{"by", by_func_lambda}, {"fn", agg_func_lambda}});
 
@@ -302,11 +304,12 @@ class DebugStringFunctionality : public ::testing::Test {
   void SetUp() override {
     auto ast = MakeTestAstPtr();
     graph_ = std::make_shared<IR>();
+    mem_src_ = graph_->MakeNode<MemorySourceIR>().ValueOrDie();
     time_node_ = graph_->MakeNode<TimeIR>().ValueOrDie();
     EXPECT_OK(time_node_->Init(12345, ast));
 
     col_node_ = graph_->MakeNode<ColumnIR>().ValueOrDie();
-    EXPECT_OK(col_node_->Init("test_col", ast));
+    EXPECT_OK(col_node_->Init("test_col", mem_src_, ast));
 
     func_node_ = graph_->MakeNode<FuncIR>().ValueOrDie();
     EXPECT_OK(func_node_->Init({FuncIR::Opcode::non_op, "", "test_fn"},
@@ -318,6 +321,7 @@ class DebugStringFunctionality : public ::testing::Test {
   }
   std::shared_ptr<IR> graph_;
   TimeIR* time_node_;
+  MemorySourceIR* mem_src_;
   ColumnIR* col_node_;
   FuncIR* func_node_;
   LambdaIR* lambda_node_;
@@ -361,12 +365,12 @@ TEST_F(MetadataTests, metadata_resolver) {
 }
 
 TEST_F(MetadataTests, metadata_ir) {
+  MetadataResolverIR* metadata_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
   MetadataIR* metadata_ir = graph->MakeNode<MetadataIR>().ValueOrDie();
-  EXPECT_OK(metadata_ir->Init("pod_name", ast));
+  EXPECT_OK(metadata_ir->Init("pod_name", metadata_resolver, ast));
   EXPECT_TRUE(metadata_ir->IsColumn());
   EXPECT_FALSE(metadata_ir->HasMetadataResolver());
   EXPECT_EQ(metadata_ir->name(), "pod_name");
-  MetadataResolverIR* metadata_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
   EXPECT_OK(metadata_resolver->Init(MakeMemSource(), {{}}, ast));
   auto property = std::make_unique<NameMetadataProperty>(
       MetadataType::POD_NAME, std::vector<MetadataType>({MetadataType::POD_ID}));

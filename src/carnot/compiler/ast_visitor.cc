@@ -308,7 +308,7 @@ StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node)
       false /*compile_time */, node));
 
   PL_ASSIGN_OR_RETURN(ColumnIR * by_col_copy, ir_graph_->MakeNode<ColumnIR>());
-  PL_RETURN_IF_ERROR(by_col_copy->Init(by_col->col_name(), by_col->ast_node()));
+  PL_RETURN_IF_ERROR(by_col_copy->Init(by_col->col_name(), parent_op, by_col->ast_node()));
   // pl.subtract(by_col, pl.mod(by_col, size)).
   PL_ASSIGN_OR_RETURN(FuncIR * sub_ir_node, ir_graph_->MakeNode<FuncIR>());
   PL_ASSIGN_OR_RETURN(FuncIR::Op sub_op, GetOp("-", node));
@@ -322,7 +322,7 @@ StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node)
   ColExpressionVector map_exprs = ColExpressionVector({ColumnExpression{"group", sub_ir_node}});
   for (const auto& name : static_cast<LambdaIR*>(args["fn"])->expected_column_names()) {
     PL_ASSIGN_OR_RETURN(ColumnIR * col_node, ir_graph_->MakeNode<ColumnIR>());
-    PL_RETURN_IF_ERROR(col_node->Init(name, node));
+    PL_RETURN_IF_ERROR(col_node->Init(name, parent_op, node));
     map_exprs.push_back(ColumnExpression{name, col_node});
   }
   PL_RETURN_IF_ERROR(map_lambda_ir_node->Init(std::unordered_set<std::string>({by_col->col_name()}),
@@ -330,18 +330,21 @@ StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node)
   ArgMap map_args{{"fn", map_lambda_ir_node}};
   PL_RETURN_IF_ERROR(map_ir_node->Init(parent_op, map_args, node));
 
-  // Create BlockingAggIR.
+  // Create BlockingAggIR
   PL_ASSIGN_OR_RETURN(BlockingAggIR * agg_ir_node, ir_graph_->MakeNode<BlockingAggIR>());
 
   // by = lambda r: r.group.
   PL_ASSIGN_OR_RETURN(ColumnIR * agg_col_ir_node, ir_graph_->MakeNode<ColumnIR>());
-  PL_RETURN_IF_ERROR(agg_col_ir_node->Init("group", node));
+  PL_RETURN_IF_ERROR(agg_col_ir_node->Init("group", map_ir_node, node));
   PL_ASSIGN_OR_RETURN(LambdaIR * agg_by_ir_node, ir_graph_->MakeNode<LambdaIR>());
   PL_RETURN_IF_ERROR(
       agg_by_ir_node->Init(std::unordered_set<std::string>({"group"}), agg_col_ir_node, node));
 
   // Agg(fn = fn, by = lambda r: r.group).
-  ArgMap agg_args{{"by", agg_by_ir_node}, {"fn", args["fn"]}};
+  IRNode* fn_node = args["fn"];
+  ColumnIR::UpdateReferencedOperatorColumns(fn_node, map_ir_node);
+
+  ArgMap agg_args{{"by", agg_by_ir_node}, {"fn", fn_node}};
   PL_RETURN_IF_ERROR(agg_ir_node->Init(map_ir_node, agg_args, node));
   return agg_ir_node;
 }
@@ -415,8 +418,8 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessMetadataAttribute(
                           value);
   }
   PL_ASSIGN_OR_RETURN(MetadataIR * md_node, ir_graph_->MakeNode<MetadataIR>());
-  // TODO(philkuz) in following commit, add the Operator result of arg_op_iter to the metadata init.
-  PL_RETURN_IF_ERROR(md_node->Init(attribute_value, val_attr->attribute));
+  OperatorIR* parent_op = arg_op_iter->second;
+  PL_RETURN_IF_ERROR(md_node->Init(attribute_value, parent_op, val_attr->attribute));
   return LambdaExprReturn(md_node, {attribute_value});
 }
 
@@ -464,9 +467,7 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessRecordColumn(const std::string& col
   std::unordered_set<std::string> column_names;
   column_names.insert(column_name);
   PL_ASSIGN_OR_RETURN(ColumnIR * column, ir_graph_->MakeNode<ColumnIR>());
-  // TODO(philkuz) following commit add support for parent_op in the init of the column.
-  PL_UNUSED(parent_op);
-  PL_RETURN_IF_ERROR(column->Init(column_name, column_ast_node));
+  PL_RETURN_IF_ERROR(column->Init(column_name, parent_op, column_ast_node));
   return LambdaExprReturn(column, column_names);
 }
 

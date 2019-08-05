@@ -402,7 +402,7 @@ TEST_F(AnalyzerTest, test_relation_results) {
   EXPECT_OK(sink_node_status);
   auto sink_node = static_cast<MemorySinkIR*>(sink_node_status.ConsumeValueOrDie());
   EXPECT_TRUE(RelationEquality(sink_node->relation(), test_agg_relation));
-  EXPECT_TRUE(RelationEquality(sink_node->relation(), sink_node->parent()->relation()));
+  EXPECT_TRUE(RelationEquality(sink_node->relation(), sink_node->parents()[0]->relation()));
 }  // namespace compiler
 
 // Make sure the compiler exits when calling columns that aren't explicitly called.

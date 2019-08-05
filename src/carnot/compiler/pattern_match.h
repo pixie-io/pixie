@@ -436,9 +436,13 @@ struct AnyRelationResolvedOpMatch : public ParentMatch {
   bool Match(IRNode* node) const override {
     if (node->IsOp()) {
       OperatorIR* op_ir = static_cast<OperatorIR*>(node);
-      if (op_ir->HasParent()) {
-        return op_ir->IsRelationInit() == ResolvedRelation &&
-               op_ir->parent()->IsRelationInit() == ParentOpResolved;
+      if (op_ir->HasParents() && op_ir->IsRelationInit() == ResolvedRelation) {
+        for (OperatorIR* parent : op_ir->parents()) {
+          if (parent->IsRelationInit() != ParentOpResolved) {
+            return false;
+          }
+        }
+        return true;
       }
     }
     return false;

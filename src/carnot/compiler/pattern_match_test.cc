@@ -54,10 +54,10 @@ TEST_F(PatternMatchTest, arbitrary_bin_op_test) {
 TEST_F(PatternMatchTest, expression_data_type_resolution) {
   auto int1 = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(int1->Init(10, ast));
-  auto col1 = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col1->Init("col1", ast));
-  auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto dumb_operator = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  auto col1 = graph->MakeNode<ColumnIR>().ValueOrDie();
+  EXPECT_OK(col1->Init("col1", dumb_operator, ast));
+  auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "op"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({int1, col1}), false /* compile_time */, ast));
 
@@ -86,7 +86,7 @@ TEST_F(PatternMatchTest, expression_data_type_resolution) {
   EXPECT_FALSE(Match(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression())));
 
   // Resolve column and check whether test works.
-  col1->ResolveColumn(0, types::DataType::INT64, dumb_operator);
+  col1->ResolveColumn(0, types::DataType::INT64);
   EXPECT_TRUE(Match(col1, ResolvedExpression()));
   EXPECT_TRUE(Match(col1, ResolvedColumnType()));
 
@@ -105,11 +105,11 @@ TEST_F(PatternMatchTest, relation_status_operator_match) {
   test_relation.AddColumn(types::DataType::INT64, "col2");
   auto mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
   auto blocking_agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
-  EXPECT_OK(blocking_agg->SetParent(mem_src));
+  EXPECT_OK(blocking_agg->AddParent(mem_src));
   auto map = graph->MakeNode<MapIR>().ValueOrDie();
-  EXPECT_OK(map->SetParent(mem_src));
+  EXPECT_OK(map->AddParent(mem_src));
   auto filter = graph->MakeNode<FilterIR>().ValueOrDie();
-  EXPECT_OK(filter->SetParent(mem_src));
+  EXPECT_OK(filter->AddParent(mem_src));
   // Unresolved blocking aggregate with unresolved parent.
   EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyBlockingAgg()));
   EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyMap()));

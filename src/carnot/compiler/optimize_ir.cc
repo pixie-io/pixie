@@ -30,8 +30,13 @@ Status IROptimizer::CollapseRange(IR* ir_graph) {
       continue;
     }
     range_ir = static_cast<RangeIR*>(node);
-    // Already preverified that range_ir is child of MemSourceIR.
-    src_ir = static_cast<MemorySourceIR*>(range_ir->parent());
+
+    DCHECK_EQ(range_ir->parents().size(), 1UL);
+    OperatorIR* range_parent = range_ir->parents()[0];
+
+    DCHECK(range_parent->type() == IRNodeType::kMemorySource)
+        << "Expected range parent to be a MemorySource, not a " << range_parent->type_string();
+    src_ir = static_cast<MemorySourceIR*>(range_parent);
     PL_RETURN_IF_ERROR(ir_graph->DeleteEdge(src_ir->id(), range_ir->id()));
 
     start_time_ir = static_cast<IntIR*>(range_ir->start_repr());
@@ -45,13 +50,14 @@ Status IROptimizer::CollapseRange(IR* ir_graph) {
     // Update all of range's dependencies to point to src.
     for (const auto& dep_id : ir_graph->dag().DependenciesOf(range_ir->id())) {
       auto dep = ir_graph->Get(dep_id);
-      PL_RETURN_IF_ERROR(ir_graph->DeleteEdge(range_ir->id(), dep_id));
       if (!dep->IsOp()) {
+        PL_RETURN_IF_ERROR(ir_graph->DeleteEdge(range_ir->id(), dep_id));
         PL_RETURN_IF_ERROR(ir_graph->AddEdge(src_ir->id(), dep_id));
         continue;
       }
       auto casted_node = static_cast<OperatorIR*>(dep);
-      PL_RETURN_IF_ERROR(casted_node->SetParent(dynamic_cast<IRNode*>(src_ir)));
+      PL_RETURN_IF_ERROR(casted_node->RemoveParent(range_ir));
+      PL_RETURN_IF_ERROR(casted_node->AddParent(src_ir));
     }
     break;
   }

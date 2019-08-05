@@ -88,14 +88,14 @@ class RulesTest : public ::testing::Test {
     data_rule = std::make_shared<DataTypeRule>(compiler_state_.get());
     md_handler = MetadataHandler::Create();
   }
-  ColumnIR* MakeColumn(const std::string& name) {
+  ColumnIR* MakeColumn(const std::string& name, OperatorIR* parent_op) {
     auto column = graph->MakeNode<ColumnIR>().ValueOrDie();
-    EXPECT_OK(column->Init(name, ast));
+    EXPECT_OK(column->Init(name, parent_op, ast));
     return column;
   }
-  MetadataIR* MakeMetadataIR(const std::string& name) {
+  MetadataIR* MakeMetadataIR(const std::string& name, OperatorIR* parent_op) {
     auto metadata = graph->MakeNode<MetadataIR>().ValueOrDie();
-    EXPECT_OK(metadata->Init(name, ast));
+    EXPECT_OK(metadata->Init(name, parent_op, ast));
     return metadata;
   }
   StringIR* MakeString(const std::string& name) {
@@ -139,7 +139,7 @@ class RulesTest : public ::testing::Test {
     EXPECT_OK(constant2->Init(10, ast));
 
     auto column = graph->MakeNode<ColumnIR>().ValueOrDie();
-    EXPECT_OK(column->Init("column", ast));
+    EXPECT_OK(column->Init("column", parent, ast));
 
     auto filter_func = graph->MakeNode<FuncIR>().ValueOrDie();
     EXPECT_OK(filter_func->Init({FuncIR::Opcode::eq, "==", "equals"}, ASTWalker::kRunTimeFuncPrefix,
@@ -214,8 +214,7 @@ TEST_F(DataTypeRuleTest, map_function) {
   auto map = graph->MakeNode<MapIR>().ValueOrDie();
   auto constant = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(constant->Init(10, ast));
-  auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col->Init("count", ast));
+  auto col = MakeColumn("count", mem_src);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
@@ -288,31 +287,12 @@ TEST_F(DataTypeRuleTest, compiler_function_no_match) {
   EXPECT_FALSE(func2->IsDataTypeEvaluated());
 }
 
-// The rule should fail when an expression doesn't have a parent.
-TEST_F(DataTypeRuleTest, function_no_parent) {
-  // Compiler function should not get resolved.
-  auto constant = graph->MakeNode<IntIR>().ValueOrDie();
-  EXPECT_OK(constant->Init(10, ast));
-  auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col->Init("count", ast));
-  auto func = graph->MakeNode<FuncIR>().ValueOrDie();
-  auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-  EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
-                       std::vector<ExpressionIR*>({constant, col}), false /* compile_time */, ast));
-  EXPECT_OK(lambda->Init({"col_name"}, func, ast));
-
-  // Expect the data_rule to fail, with parents not found.
-  auto result = data_rule->Execute(graph.get());
-  EXPECT_NOT_OK(result);
-}
-
 // The DataType shouldn't be resolved for a function without a name.
 TEST_F(DataTypeRuleTest, missing_udf_name) {
   auto map = graph->MakeNode<MapIR>().ValueOrDie();
   auto constant = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(constant->Init(10, ast));
-  auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col->Init("count", ast));
+  auto col = MakeColumn("count", mem_src);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::add, "+", "gobeldy"}, ASTWalker::kRunTimeFuncPrefix,
@@ -337,8 +317,7 @@ TEST_F(DataTypeRuleTest, missing_udf_name) {
 // Checks to make sure that agg functions work properly.
 TEST_F(DataTypeRuleTest, function_in_agg) {
   auto map = graph->MakeNode<BlockingAggIR>().ValueOrDie();
-  auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col->Init("count", ast));
+  auto col = MakeColumn("count", mem_src);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
@@ -372,8 +351,7 @@ TEST_F(DataTypeRuleTest, nested_functions) {
   EXPECT_OK(constant->Init(10, ast));
   auto constant2 = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(constant2->Init(12, ast));
-  auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col->Init("count", ast));
+  auto col = MakeColumn("count", mem_src);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto func2 = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
@@ -440,7 +418,7 @@ TEST_F(DataTypeRuleTest, metadata_column) {
   MetadataProperty* property = md_handler->GetProperty(metadata_name).ValueOrDie();
   table_store::schema::Relation relation({property->column_type()}, {property->GetColumnRepr()});
   EXPECT_OK(md->SetRelation(relation));
-  MetadataIR* metadata_ir = MakeMetadataIR(metadata_name);
+  MetadataIR* metadata_ir = MakeMetadataIR(metadata_name, md);
   EXPECT_OK(metadata_ir->ResolveMetadataColumn(md, property));
   MakeFilter(md, metadata_ir);
   EXPECT_FALSE(metadata_ir->IsDataTypeEvaluated());
@@ -580,11 +558,10 @@ class BlockingAggRuleTest : public RulesTest {
     EXPECT_OK(agg_func_lambda->Init({}, {{agg_func_col, agg_func}}, ast));
 
     auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-    auto group = graph->MakeNode<ColumnIR>().ValueOrDie();
-    EXPECT_OK(group->Init(group_name, ast));
+    auto group = MakeColumn(group_name, mem_src);
     // Code to resolve column.
     if (resolve_agg_group) {
-      group->ResolveColumn(1, group_data_type, mem_src);
+      group->ResolveColumn(1, group_data_type);
     }
     EXPECT_OK(by_func_lambda->Init({group_name}, group, ast));
 
@@ -1084,16 +1061,7 @@ class ResolveMetadataTest : public RulesTest {
     EXPECT_OK(filter->Init(parent, amap, ast));
     return filter;
   }
-  ColumnIR* MakeColumn(const std::string& name) {
-    auto column = graph->MakeNode<ColumnIR>().ValueOrDie();
-    EXPECT_OK(column->Init(name, ast));
-    return column;
-  }
-  MetadataIR* MakeMetadataIR(const std::string& name) {
-    auto metadata = graph->MakeNode<MetadataIR>().ValueOrDie();
-    EXPECT_OK(metadata->Init(name, ast));
-    return metadata;
-  }
+
   MetadataResolverIR* MakeMetadataResolver(OperatorIR* parent) {
     md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
     EXPECT_OK(md_resolver->Init(parent, {{}}, ast));
@@ -1122,18 +1090,19 @@ class ResolveMetadataTest : public RulesTest {
 
 TEST_F(ResolveMetadataTest, create_metadata_resolver) {
   // a MetadataIR unresovled creates a new metadata node.
-  MetadataIR* metadata = MakeMetadataIR("service_name");
+  MetadataIR* metadata = MakeMetadataIR("service_name", mem_src);
   EXPECT_FALSE(metadata->HasMetadataResolver());
   FilterIR* filter = MakeFilter(mem_src, metadata);
-  EXPECT_EQ(filter->parent()->id(), mem_src->id());
+  EXPECT_EQ(filter->parents()[0]->id(), mem_src->id());
 
   ResolveMetadataRule rule(compiler_state_.get(), md_handler.get());
   rule.Execute(graph.get());
-  EXPECT_NE(filter->parent()->id(), mem_src->id());
-  ASSERT_EQ(filter->parent()->type(), IRNodeType::kMetadataResolver);
-  auto md_resolver = static_cast<MetadataResolverIR*>(filter->parent());
+  EXPECT_NE(filter->parents()[0]->id(), mem_src->id());
+  ASSERT_EQ(filter->parents()[0]->type(), IRNodeType::kMetadataResolver);
+  auto md_resolver = static_cast<MetadataResolverIR*>(filter->parents()[0]);
   EXPECT_TRUE(md_resolver->HasMetadataColumn("service_name"));
   EXPECT_TRUE(metadata->HasMetadataResolver());
+  EXPECT_EQ(metadata->referenced_op(), md_resolver);
   EXPECT_EQ(metadata->resolver(), md_resolver);
 }
 
@@ -1147,40 +1116,42 @@ TEST_F(ResolveMetadataTest, update_metadata_resolver) {
   // Should not have service_name yet.
   EXPECT_FALSE(og_resolver->HasMetadataColumn("service_name"));
 
-  MetadataIR* metadata = MakeMetadataIR("service_name");
+  MetadataIR* metadata = MakeMetadataIR("service_name", og_resolver);
   EXPECT_FALSE(metadata->HasMetadataResolver());
   FilterIR* filter = MakeFilter(og_resolver, metadata);
-  EXPECT_EQ(filter->parent()->id(), og_resolver->id());
+  EXPECT_EQ(filter->parents()[0]->id(), og_resolver->id());
 
   ResolveMetadataRule rule(compiler_state_.get(), md_handler.get());
   rule.Execute(graph.get());
   // no changes.
-  EXPECT_EQ(filter->parent()->id(), og_resolver->id());
+  EXPECT_EQ(filter->parents()[0]->id(), og_resolver->id());
 
-  auto md_resolver = static_cast<MetadataResolverIR*>(filter->parent());
+  auto md_resolver = static_cast<MetadataResolverIR*>(filter->parents()[0]);
   EXPECT_EQ(md_resolver, og_resolver);
   EXPECT_TRUE(md_resolver->HasMetadataColumn("service_name"));
   EXPECT_TRUE(md_resolver->HasMetadataColumn("pod_name"));
   EXPECT_TRUE(metadata->HasMetadataResolver());
+  EXPECT_EQ(metadata->referenced_op(), md_resolver);
   EXPECT_EQ(metadata->resolver(), og_resolver);
 }
 
 TEST_F(ResolveMetadataTest, multiple_mds_in_one_op) {
   // Two metadata callsin one operation.
-  MetadataIR* metadata1 = MakeMetadataIR("service_name");
-  MetadataIR* metadata2 = MakeMetadataIR("pod_name");
+  MetadataIR* metadata1 = MakeMetadataIR("service_name", mem_src);
+  MetadataIR* metadata2 = MakeMetadataIR("pod_name", mem_src);
   EXPECT_FALSE(metadata1->HasMetadataResolver());
   EXPECT_FALSE(metadata2->HasMetadataResolver());
   BlockingAggIR* agg = MakeBlockingAgg(mem_src, metadata1, metadata2);
-  EXPECT_EQ(agg->parent()->id(), mem_src->id());
+  EXPECT_EQ(agg->parents()[0]->id(), mem_src->id());
 
   ResolveMetadataRule rule(compiler_state_.get(), md_handler.get());
   rule.Execute(graph.get());
-  EXPECT_NE(agg->parent()->id(), mem_src->id());
-  ASSERT_EQ(agg->parent()->type(), IRNodeType::kMetadataResolver) << agg->parent()->type_string();
+  EXPECT_NE(agg->parents()[0]->id(), mem_src->id());
+  ASSERT_EQ(agg->parents()[0]->type(), IRNodeType::kMetadataResolver)
+      << agg->parents()[0]->type_string();
   // no layers of md.
-  ASSERT_EQ(agg->parent()->parent()->type(), IRNodeType::kMemorySource);
-  auto md_resolver = static_cast<MetadataResolverIR*>(agg->parent());
+  ASSERT_EQ(agg->parents()[0]->parents()[0]->type(), IRNodeType::kMemorySource);
+  auto md_resolver = static_cast<MetadataResolverIR*>(agg->parents()[0]);
   EXPECT_TRUE(md_resolver->HasMetadataColumn("service_name"));
   EXPECT_TRUE(md_resolver->HasMetadataColumn("pod_name"));
   EXPECT_TRUE(metadata1->HasMetadataResolver());
@@ -1188,6 +1159,11 @@ TEST_F(ResolveMetadataTest, multiple_mds_in_one_op) {
 
   EXPECT_TRUE(metadata2->HasMetadataResolver());
   EXPECT_EQ(metadata2->resolver(), md_resolver);
+
+  EXPECT_EQ(metadata1->referenced_op(), md_resolver)
+      << metadata1->referenced_op()->type_string() << " vs " << md_resolver->type_string();
+  EXPECT_EQ(metadata2->referenced_op(), md_resolver)
+      << metadata2->referenced_op()->type_string() << " vs " << md_resolver->type_string();
 }
 
 TEST_F(ResolveMetadataTest, no_change_metadata_resolver) {
@@ -1198,20 +1174,22 @@ TEST_F(ResolveMetadataTest, no_change_metadata_resolver) {
   ASSERT_OK(og_resolver->AddMetadata(property));
   EXPECT_TRUE(og_resolver->HasMetadataColumn("pod_name"));
 
-  MetadataIR* metadata = MakeMetadataIR("pod_name");
+  MetadataIR* metadata = MakeMetadataIR("pod_name", og_resolver);
   EXPECT_FALSE(metadata->HasMetadataResolver());
   FilterIR* filter = MakeFilter(og_resolver, metadata);
-  EXPECT_EQ(filter->parent()->id(), og_resolver->id());
+  EXPECT_EQ(filter->parents()[0]->id(), og_resolver->id());
 
   ResolveMetadataRule rule(compiler_state_.get(), md_handler.get());
   rule.Execute(graph.get());
   // no changes.
-  EXPECT_EQ(filter->parent()->id(), og_resolver->id());
+  EXPECT_EQ(filter->parents()[0]->id(), og_resolver->id());
 
-  auto md_resolver = static_cast<MetadataResolverIR*>(filter->parent());
+  auto md_resolver = static_cast<MetadataResolverIR*>(filter->parents()[0]);
   EXPECT_EQ(md_resolver, og_resolver);
   EXPECT_TRUE(md_resolver->HasMetadataColumn("pod_name"));
   EXPECT_TRUE(metadata->HasMetadataResolver());
+  EXPECT_EQ(metadata->referenced_op(), og_resolver)
+      << metadata->referenced_op()->type_string() << " vs " << og_resolver->type_string();
 }
 
 class FormatMetadataTest : public RulesTest {
@@ -1224,9 +1202,9 @@ class FormatMetadataTest : public RulesTest {
     PL_CHECK_OK(md_resolver->Init(mem_src, {{}}, ast));
   }
 
-  MetadataIR* MakeMetadataIR(const std::string& name) {
+  MetadataIR* MakeMetadataIR(const std::string& name, OperatorIR* parent_op) {
     auto metadata = graph->MakeNode<MetadataIR>().ValueOrDie();
-    PL_CHECK_OK(metadata->Init(name, ast));
+    PL_CHECK_OK(metadata->Init(name, parent_op, ast));
     MetadataProperty* property = md_handler->GetProperty(name).ValueOrDie();
     PL_CHECK_OK(metadata->ResolveMetadataColumn(md_resolver, property));
     return metadata;
@@ -1239,7 +1217,7 @@ class FormatMetadataTest : public RulesTest {
 TEST_F(FormatMetadataTest, string_matches_format) {
   // equiv to `r.attr.pod_name == pod-xyzx`
   FuncIR* equals_func =
-      MakeEqualsFunc(MakeMetadataIR("pod_name"), MakeString("namespace/pod-xyzx"));
+      MakeEqualsFunc(MakeMetadataIR("pod_name", mem_src), MakeString("namespace/pod-xyzx"));
   EXPECT_EQ(equals_func->args()[0]->type(), IRNodeType::kMetadata);
   EXPECT_EQ(equals_func->args()[1]->type(), IRNodeType::kString);
 
@@ -1264,7 +1242,7 @@ TEST_F(FormatMetadataTest, string_matches_format) {
 }
 
 TEST_F(FormatMetadataTest, bad_format) {
-  FuncIR* equals_func = MakeEqualsFunc(MakeMetadataIR("pod_name"), MakeString("pod-xyzx"));
+  FuncIR* equals_func = MakeEqualsFunc(MakeMetadataIR("pod_name", mem_src), MakeString("pod-xyzx"));
   EXPECT_EQ(equals_func->args()[0]->type(), IRNodeType::kMetadata);
   EXPECT_EQ(equals_func->args()[1]->type(), IRNodeType::kString);
 
@@ -1279,7 +1257,7 @@ TEST_F(FormatMetadataTest, bad_format) {
 
 TEST_F(FormatMetadataTest, equals_fails_when_not_string) {
   // equiv to `r.attr.pod_name == 10`
-  FuncIR* equals_func = MakeEqualsFunc(MakeMetadataIR("pod_name"), MakeInt(10));
+  FuncIR* equals_func = MakeEqualsFunc(MakeMetadataIR("pod_name", mem_src), MakeInt(10));
   MetadataFunctionFormatRule rule(compiler_state_.get());
   EXPECT_EQ(equals_func->args()[0]->type(), IRNodeType::kMetadata);
   EXPECT_EQ(equals_func->args()[1]->type(), IRNodeType::kInt);
@@ -1292,7 +1270,7 @@ TEST_F(FormatMetadataTest, equals_fails_when_not_string) {
 
 TEST_F(FormatMetadataTest, only_equal_supported) {
   // equiv to `r.attr.pod_name == 10`
-  FuncIR* add_func = MakeAddFunc(MakeMetadataIR("pod_name"), MakeString("pod-xyzx"));
+  FuncIR* add_func = MakeAddFunc(MakeMetadataIR("pod_name", mem_src), MakeString("pod-xyzx"));
   MetadataFunctionFormatRule rule(compiler_state_.get());
   EXPECT_EQ(add_func->args()[0]->type(), IRNodeType::kMetadata);
   EXPECT_EQ(add_func->args()[1]->type(), IRNodeType::kString);
@@ -1426,7 +1404,7 @@ TEST_F(MetadataResolverConversionTest, upid_conversion) {
   md_relation.AddColumn(property.column_type(), property.GetColumnRepr());
   EXPECT_OK(md_resolver->SetRelation(md_relation));
 
-  MetadataIR* metadata_ir = MakeMetadataIR("pod_name");
+  MetadataIR* metadata_ir = MakeMetadataIR("pod_name", mem_src);
   ASSERT_OK(metadata_ir->ResolveMetadataColumn(md_resolver, &property));
   FilterIR* filter = MakeFilter(md_resolver, metadata_ir);
 
@@ -1435,10 +1413,10 @@ TEST_F(MetadataResolverConversionTest, upid_conversion) {
   ASSERT_OK(status);
   EXPECT_TRUE(status.ValueOrDie());
 
-  OperatorIR* new_op = filter->parent();
+  OperatorIR* new_op = filter->parents()[0];
   EXPECT_NE(new_op, md_resolver);
   ASSERT_EQ(new_op->type(), IRNodeType::kMap) << "Expected Map, got " << new_op->type_string();
-  EXPECT_EQ(new_op->parent(), mem_src);
+  EXPECT_EQ(new_op->parents()[0], mem_src);
 
   // Check to make sure there are no edges between the mem_src and md_resolver.
   // Check to make sure there are no edges between the filter and md_resolver.
@@ -1499,7 +1477,7 @@ TEST_F(MetadataResolverConversionTest, alternative_column) {
   md_relation.AddColumn(property.column_type(), property.GetColumnRepr());
   EXPECT_OK(md_resolver->SetRelation(md_relation));
 
-  MetadataIR* metadata_ir = MakeMetadataIR("pod_name");
+  MetadataIR* metadata_ir = MakeMetadataIR("pod_name", mem_src);
   ASSERT_OK(metadata_ir->ResolveMetadataColumn(md_resolver, &property));
   FilterIR* filter = MakeFilter(md_resolver, metadata_ir);
 
@@ -1508,7 +1486,7 @@ TEST_F(MetadataResolverConversionTest, alternative_column) {
   ASSERT_OK(status);
   EXPECT_TRUE(status.ValueOrDie());
 
-  OperatorIR* new_op = filter->parent();
+  OperatorIR* new_op = filter->parents()[0];
   EXPECT_NE(new_op, md_resolver);
   ASSERT_EQ(new_op->type(), IRNodeType::kMap) << "Expected Map, got " << new_op->type_string();
 
@@ -1550,7 +1528,7 @@ TEST_F(MetadataResolverConversionTest, missing_conversion_column) {
   md_relation.AddColumn(property.column_type(), property.GetColumnRepr());
   EXPECT_OK(md_resolver->SetRelation(md_relation));
 
-  MetadataIR* metadata_ir = MakeMetadataIR("pod_name");
+  MetadataIR* metadata_ir = MakeMetadataIR("pod_name", mem_src);
   ASSERT_OK(metadata_ir->ResolveMetadataColumn(md_resolver, &property));
   MakeFilter(md_resolver, metadata_ir);
 
@@ -1585,7 +1563,7 @@ TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
   md_relation.AddColumn(property.column_type(), property.GetColumnRepr());
   EXPECT_OK(md_resolver->SetRelation(md_relation));
 
-  MetadataIR* metadata_ir = MakeMetadataIR("pod_name");
+  MetadataIR* metadata_ir = MakeMetadataIR("pod_name", mem_src);
   ASSERT_OK(metadata_ir->ResolveMetadataColumn(md_resolver, &property));
   FilterIR* filter = MakeFilter(md_resolver, metadata_ir);
 
@@ -1594,7 +1572,7 @@ TEST_F(MetadataResolverConversionTest, multiple_conversion_columns) {
   ASSERT_OK(status);
   EXPECT_TRUE(status.ValueOrDie());
 
-  OperatorIR* new_op = filter->parent();
+  OperatorIR* new_op = filter->parents()[0];
   EXPECT_NE(new_op, md_resolver);
   ASSERT_EQ(new_op->type(), IRNodeType::kMap) << "Expected Map, got " << new_op->type_string();
 
@@ -1649,7 +1627,7 @@ TEST_F(MetadataResolverConversionTest, multiple_metadata_columns) {
   ASSERT_OK(status);
   EXPECT_TRUE(status.ValueOrDie());
 
-  OperatorIR* new_op = filter->parent();
+  OperatorIR* new_op = filter->parents()[0];
   EXPECT_NE(new_op, md_resolver);
   ASSERT_EQ(new_op->type(), IRNodeType::kMap) << "Expected Map, got " << new_op->type_string();
 
@@ -1696,7 +1674,7 @@ TEST_F(MetadataResolverConversionTest, remove_extra_resolver) {
   md_relation.AddColumn(property.column_type(), property.GetColumnRepr());
   EXPECT_OK(md_resolver1->SetRelation(md_relation));
 
-  MetadataIR* metadata_ir1 = MakeMetadataIR("pod_name");
+  MetadataIR* metadata_ir1 = MakeMetadataIR("pod_name", mem_src);
   ASSERT_OK(metadata_ir1->ResolveMetadataColumn(md_resolver1, &property));
 
   FilterIR* filter = MakeFilter(md_resolver1, metadata_ir1);
@@ -1707,10 +1685,10 @@ TEST_F(MetadataResolverConversionTest, remove_extra_resolver) {
   ASSERT_OK(md_resolver2->AddMetadata(&property));
   // Filter just copies columns, so relation is the same.
   EXPECT_OK(md_resolver2->SetRelation(md_relation));
-  MetadataIR* metadata_ir2 = MakeMetadataIR("pod_name");
+  MetadataIR* metadata_ir2 = MakeMetadataIR("pod_name", mem_src);
   ASSERT_OK(metadata_ir2->ResolveMetadataColumn(md_resolver2, &property));
 
-  BlockingAggIR* agg = MakeBlockingAgg(md_resolver2, metadata_ir2, MakeColumn("cpu0"));
+  BlockingAggIR* agg = MakeBlockingAgg(md_resolver2, metadata_ir2, MakeColumn("cpu0", filter));
   // Filter just copies columns, so relation is the same.
   EXPECT_OK(agg->SetRelation(relation));
 
@@ -1719,7 +1697,7 @@ TEST_F(MetadataResolverConversionTest, remove_extra_resolver) {
   ASSERT_OK(status);
   EXPECT_TRUE(status.ValueOrDie());
 
-  EXPECT_EQ(agg->parent(), filter);
+  EXPECT_EQ(agg->parents()[0], filter);
   EXPECT_EQ(graph->dag().DependenciesOf(md_resolver2->id()).size(), 0UL);
 }
 

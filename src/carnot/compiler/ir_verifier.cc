@@ -59,7 +59,7 @@ Status IRVerifier::VerifyRange(RangeIR* range_node) {
                                 range_node->stop_repr(),
                                 ExpString("RangeIR", range_node->id(), "stop_repr")));
 
-  PL_RETURN_IF_ERROR(ExpectType(IRNodeType::kMemorySource, range_node->parent(),
+  PL_RETURN_IF_ERROR(ExpectType(IRNodeType::kMemorySource, range_node->parents()[0],
                                 ExpString("RangeIR", range_node->id(), "parent")));
   return Status::OK();
 }

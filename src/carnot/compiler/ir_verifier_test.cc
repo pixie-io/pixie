@@ -63,37 +63,6 @@ TEST(ASTVisitor, assign_functionality) {
   EXPECT_OK(verifier.VerifyLineColGraph(*ir_graph_status.ValueOrDie()));
 }
 
-// Range can only be after From, not after any other ops.
-TEST(RangeTest, order_test) {
-  std::string range_order_fail_map =
-      absl::StrJoin({"queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
-                     "mapDF = queryDF.Map(fn=lambda r : {'sum' : r.cpu0 + r.cpu1})",
-                     "rangeDF = mapDF.Range(start=0,stop=10).Result(name='cpu2')"},
-                    "\n");
-  auto ir_graph_status = ParseQuery(range_order_fail_map);
-  VLOG(1) << ir_graph_status.ToString();
-  ASSERT_OK(ir_graph_status);
-  auto verifier = IRVerifier();
-  auto status_connection = verifier.VerifyGraphConnections(*ir_graph_status.ValueOrDie());
-  VLOG(1) << status_connection.ToString();
-  EXPECT_NOT_OK(status_connection);
-  EXPECT_OK(verifier.VerifyLineColGraph(*ir_graph_status.ValueOrDie()));
-
-  std::string range_order_fail_agg = absl::StrJoin(
-      {"queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
-       "mapDF = queryDF.Agg(fn=lambda r : {'sum' : pl.mean(r.cpu0)}, by=lambda r: r.cpu0)",
-       "rangeDF = mapDF.Range(start=0,stop=10).Result(name='cpu2')"},
-      "\n");
-  ir_graph_status = ParseQuery(range_order_fail_agg);
-  VLOG(1) << ir_graph_status.ToString();
-  ASSERT_OK(ir_graph_status);
-  verifier = IRVerifier();
-  status_connection = verifier.VerifyGraphConnections(*ir_graph_status.ValueOrDie());
-  VLOG(1) << status_connection.ToString();
-  EXPECT_NOT_OK(status_connection);
-  EXPECT_OK(verifier.VerifyLineColGraph(*ir_graph_status.ValueOrDie()));
-}
-
 // Map Tests
 TEST(MapTest, single_col_map) {
   std::string single_col_map_sum = absl::StrJoin(

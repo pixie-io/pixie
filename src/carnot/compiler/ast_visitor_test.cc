@@ -627,6 +627,21 @@ TEST(LambdaTest, DISABLED_duplicate_arguments) {
               HasCompilerError("Duplicate argument 'r' in lambda definition."));
 }
 
+TEST(RangeTest, test_parent_is_memory_source) {
+  std::string add_combination = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
+          "queryDF.Map(fn=lambda r: {'cpu_plus_2' : r.cpu0+2}).Range(start=10, "
+          "stop=12).Result(name='cpu2')",
+      },
+      "\n");
+  auto ir_graph_status = ParseQuery(add_combination);
+  VLOG(1) << ir_graph_status.ToString();
+  EXPECT_NOT_OK(ir_graph_status);
+  EXPECT_THAT(ir_graph_status.status(),
+              HasCompilerError("Expected parent of Range to be a Memory Source, not a Map."));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -14,7 +14,7 @@ void VerifyMemorySource(IRNode* node) {
 
 void VerifyRange(IRNode* node) {
   auto range_node = static_cast<RangeIR*>(node);
-  EXPECT_EQ(range_node->parent()->type(), IRNodeType::kMemorySource);
+  EXPECT_EQ(range_node->parents()[0]->type(), IRNodeType::kMemorySource);
   EXPECT_EQ(range_node->start_repr()->type(), IRNodeType::kInt);
   EXPECT_EQ(range_node->stop_repr()->type(), IRNodeType::kInt);
   EXPECT_FALSE(range_node->HasLogicalRepr());
