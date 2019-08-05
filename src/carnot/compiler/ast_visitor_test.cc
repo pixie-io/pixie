@@ -544,9 +544,10 @@ TEST(MetadataAttributes, nested_attribute_logical_errors) {
   auto failed_query_status = ParseQuery(valid_query);
   EXPECT_NOT_OK(failed_query_status);
   VLOG(1) << failed_query_status.status().ToString();
-  // TODO(philkuz) update statusHasCompilerError to be friendly with EXPECT_THAT.
-  EXPECT_THAT(failed_query_status.status(),
-              HasCompilerError("Nested \'attr\' not supported with parent \'pl\'."));
+  EXPECT_THAT(
+      failed_query_status.status(),
+      HasCompilerError(
+          "Metadata call not allowed on \'pl\'. Must use a lambda argument to access Metadata."));
 }
 TEST(AggTest, not_allowed_by_arguments) {
   std::string single_col_bad_by_fn_expr = absl::StrJoin(
@@ -595,6 +596,35 @@ TEST(AggTest, nested_agg_expression_should_fail) {
   ir_graph_status = ParseQuery(add_combination);
   VLOG(1) << ir_graph_status.ToString();
   EXPECT_NOT_OK(ir_graph_status);
+}
+
+TEST(LambdaTest, test_wrong_number_of_arguments) {
+  std::string add_combination = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
+          "queryDF.Map(fn=lambda r, b: {'cpu_plus_2' : r.cpu0+2}).Result(name='cpu2')",
+      },
+      "\n");
+  auto ir_graph_status = ParseQuery(add_combination);
+  VLOG(1) << ir_graph_status.ToString();
+  EXPECT_NOT_OK(ir_graph_status);
+  EXPECT_THAT(ir_graph_status.status(),
+              HasCompilerError("Got 2 lambda arguments, expected 1 for the Map Operator."));
+}
+
+// TODO(philkuz/nserrino) add this test when we add an operator with multiple parents.
+TEST(LambdaTest, DISABLED_duplicate_arguments) {
+  std::string add_combination = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
+          "queryDF.Map(fn=lambda r, r: {'cpu_plus_2' : r.cpu0+2}).Result(name='cpu2')",
+      },
+      "\n");
+  auto ir_graph_status = ParseQuery(add_combination);
+  VLOG(1) << ir_graph_status.ToString();
+  EXPECT_NOT_OK(ir_graph_status);
+  EXPECT_THAT(ir_graph_status.status(),
+              HasCompilerError("Duplicate argument 'r' in lambda definition."));
 }
 
 }  // namespace compiler
