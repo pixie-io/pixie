@@ -1,0 +1,30 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "gql.go",
+        "user_resolver.go",
+    ],
+    importpath = "pixielabs.ai/pixielabs/src/services/api/controller",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/services/api/apienv:go_default_library",
+        "//src/services/api/controller/schema:go_default_library",
+        "//src/services/common/sessioncontext:go_default_library",
+        "@com_github_graph_gophers_graphql_go//:go_default_library",
+        "@com_github_graph_gophers_graphql_go//relay:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["user_resolver_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//src/services/common/proto:jwt_go_proto",
+        "//src/services/common/sessioncontext:go_default_library",
+        "@com_github_graph_gophers_graphql_go//:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+    ],
+)
