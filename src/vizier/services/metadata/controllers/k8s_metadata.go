@@ -42,6 +42,18 @@ func NewK8sMetadataController(mdh *MetadataHandler) (*K8sMetadataController, err
 	}
 	mdh.SyncPodData(pods.(*v1.PodList))
 
+	eps, err := mc.listObject("endpoints")
+	if err != nil {
+		log.Info("Could not list all endpoints")
+	}
+	mdh.SyncEndpointsData(eps.(*v1.EndpointsList))
+
+	services, err := mc.listObject("services")
+	if err != nil {
+		log.Info("Could not list all services")
+	}
+	mdh.SyncServiceData(services.(*v1.ServiceList))
+
 	// Start up Watchers.
 	go mc.startWatcher("pods")
 	go mc.startWatcher("endpoints")

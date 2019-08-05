@@ -176,6 +176,19 @@ func (mr *MockMetadataStoreMockRecorder) GetProcesses(arg0 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProcesses", reflect.TypeOf((*MockMetadataStore)(nil).GetProcesses), arg0)
 }
 
+// GetServices mocks base method
+func (m *MockMetadataStore) GetServices() ([]*metadatapb.Service, error) {
+	ret := m.ctrl.Call(m, "GetServices")
+	ret0, _ := ret[0].([]*metadatapb.Service)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetServices indicates an expected call of GetServices
+func (mr *MockMetadataStoreMockRecorder) GetServices() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServices", reflect.TypeOf((*MockMetadataStore)(nil).GetServices))
+}
+
 // UpdateContainer mocks base method
 func (m *MockMetadataStore) UpdateContainer(arg0 *metadatapb.ContainerInfo) error {
 	ret := m.ctrl.Call(m, "UpdateContainer", arg0)

@@ -881,3 +881,153 @@ func TestSyncPodData(t *testing.T) {
 
 	mh.SyncPodData(&podList)
 }
+
+func TestSyncEndpointsData(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	endpoints := make([]v1.Endpoints, 1)
+	// Create endpoints object.
+	creationTime := metav1.Unix(0, 4)
+	md := metav1.ObjectMeta{
+		Name:              "kubernetes",
+		Namespace:         "default",
+		UID:               "active_ep",
+		ResourceVersion:   "1",
+		CreationTimestamp: creationTime,
+	}
+
+	activeEndpoint := v1.Endpoints{
+		ObjectMeta: md,
+	}
+	endpoints[0] = activeEndpoint
+
+	epList := v1.EndpointsList{
+		Items: endpoints,
+	}
+
+	etcdEps := make([](*metadatapb.Endpoints), 3)
+	activeEpPb := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(endpointsPb, activeEpPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	activeEpPb.Metadata.UID = "active_ep"
+	activeEpPb.Metadata.DeletionTimestampNS = 0
+	etcdEps[0] = activeEpPb
+
+	deadEpPb := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(endpointsPb, deadEpPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	deadEpPb.Metadata.UID = "dead_ep"
+	deadEpPb.Metadata.DeletionTimestampNS = 5
+	etcdEps[1] = deadEpPb
+
+	undeadEpPb := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(endpointsPb, undeadEpPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	undeadEpPb.Metadata.UID = "undead_ep"
+	undeadEpPb.Metadata.DeletionTimestampNS = 0
+	etcdEps[2] = undeadEpPb
+
+	deletedUndeadEpPb := &metadatapb.Endpoints{}
+	if err := proto.UnmarshalText(endpointsPb, deletedUndeadEpPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	deletedUndeadEpPb.Metadata.UID = "undead_ep"
+	deletedUndeadEpPb.Metadata.DeletionTimestampNS = 10
+
+	mockMds.
+		EXPECT().
+		GetEndpoints().
+		Return(etcdEps, nil)
+
+	mockMds.
+		EXPECT().
+		UpdateEndpoints(deletedUndeadEpPb).
+		Return(nil)
+
+	clock := testingutils.NewTestClock(time.Unix(0, 10))
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, clock)
+	assert.Nil(t, err)
+
+	mh.SyncEndpointsData(&epList)
+}
+
+func TestSyncServicesData(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	services := make([]v1.Service, 1)
+	// Create endpoints object.
+	creationTime := metav1.Unix(0, 4)
+	md := metav1.ObjectMeta{
+		Name:              "kubernetes",
+		Namespace:         "default",
+		UID:               "active_service",
+		ResourceVersion:   "1",
+		CreationTimestamp: creationTime,
+	}
+
+	activeService := v1.Service{
+		ObjectMeta: md,
+	}
+	services[0] = activeService
+
+	sList := v1.ServiceList{
+		Items: services,
+	}
+
+	etcdServices := make([](*metadatapb.Service), 3)
+	activeServicePb := &metadatapb.Service{}
+	if err := proto.UnmarshalText(servicePb, activeServicePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	activeServicePb.Metadata.UID = "active_service"
+	activeServicePb.Metadata.DeletionTimestampNS = 0
+	etcdServices[0] = activeServicePb
+
+	deadServicePb := &metadatapb.Service{}
+	if err := proto.UnmarshalText(servicePb, deadServicePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	deadServicePb.Metadata.UID = "dead_service"
+	deadServicePb.Metadata.DeletionTimestampNS = 5
+	etcdServices[1] = deadServicePb
+
+	undeadServicePb := &metadatapb.Service{}
+	if err := proto.UnmarshalText(servicePb, undeadServicePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	undeadServicePb.Metadata.UID = "undead_service"
+	undeadServicePb.Metadata.DeletionTimestampNS = 0
+	etcdServices[2] = undeadServicePb
+
+	deletedUndeadServicePb := &metadatapb.Service{}
+	if err := proto.UnmarshalText(servicePb, deletedUndeadServicePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	deletedUndeadServicePb.Metadata.UID = "undead_service"
+	deletedUndeadServicePb.Metadata.DeletionTimestampNS = 10
+
+	mockMds.
+		EXPECT().
+		GetServices().
+		Return(etcdServices, nil)
+
+	mockMds.
+		EXPECT().
+		UpdateService(deletedUndeadServicePb).
+		Return(nil)
+
+	clock := testingutils.NewTestClock(time.Unix(0, 10))
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, clock)
+	assert.Nil(t, err)
+
+	mh.SyncServiceData(&sList)
+}

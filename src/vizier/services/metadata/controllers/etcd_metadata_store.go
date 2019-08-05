@@ -160,6 +160,23 @@ func (mds *EtcdMetadataStore) GetContainers() ([]*metadatapb.ContainerInfo, erro
 	return containers, nil
 }
 
+// GetServices gets all services in the metadata store.
+func (mds *EtcdMetadataStore) GetServices() ([]*metadatapb.Service, error) {
+	resp, err := mds.client.Get(context.Background(), getServicesKey(), clientv3.WithPrefix())
+	if err != nil {
+		log.WithError(err).Fatal("Failed to execute etcd Get")
+		return nil, err
+	}
+
+	services := make([]*metadatapb.Service, len(resp.Kvs))
+	for i, kv := range resp.Kvs {
+		pb := &metadatapb.Service{}
+		proto.Unmarshal(kv.Value, pb)
+		services[i] = pb
+	}
+	return services, nil
+}
+
 func getPodsKey() string {
 	return path.Join("/", "pod") + "/"
 }
@@ -294,6 +311,10 @@ func (mds *EtcdMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*metada
 
 func getComputedSchemaKey(schemaName string) string {
 	return path.Join("/", "schema", "computed", schemaName)
+}
+
+func getServicesKey() string {
+	return path.Join("/", "service") + "/"
 }
 
 func getServiceKey(e *metadatapb.Service) string {

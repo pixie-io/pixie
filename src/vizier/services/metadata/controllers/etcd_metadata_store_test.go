@@ -649,6 +649,58 @@ func TestGetEndpoints(t *testing.T) {
 	assert.Equal(t, e2.Metadata.Name, (*eps[1]).Metadata.Name)
 }
 
+func TestGetServices(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	// Create services.
+	s1 := &metadatapb.Service{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "abcd",
+			Namespace: "test",
+			UID:       "abcd-service",
+		},
+	}
+	s1Text, err := s1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal service pb")
+	}
+
+	s2 := &metadatapb.Service{
+		Metadata: &metadatapb.ObjectMetadata{
+			Name:      "efgh",
+			Namespace: "test",
+			UID:       "efgh-service",
+		},
+	}
+	s2Text, err := s2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal service pb")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/service/test/abcd-service", string(s1Text))
+	if err != nil {
+		t.Fatal("Unable to add service to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/service/test/efgh-service", string(s2Text))
+	if err != nil {
+		t.Fatal("Unable to add service to etcd.")
+	}
+
+	services, err := mds.GetServices()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(services))
+
+	assert.Equal(t, s1.Metadata.Name, (*services[0]).Metadata.Name)
+	assert.Equal(t, s2.Metadata.Name, (*services[1]).Metadata.Name)
+}
+
 func TestGetASID(t *testing.T) {
 	etcdClient, cleanup := testingutils.SetupEtcd(t)
 	defer cleanup()

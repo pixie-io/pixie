@@ -35,6 +35,7 @@ type MetadataStore interface {
 	GetPods() ([]*metadatapb.Pod, error)
 	GetContainers() ([]*metadatapb.ContainerInfo, error)
 	GetEndpoints() ([]*metadatapb.Endpoints, error)
+	GetServices() ([]*metadatapb.Service, error)
 	GetASID() (uint32, error)
 	GetProcesses([]*types.UInt128) ([]*metadatapb.ProcessInfo, error)
 }
@@ -379,6 +380,66 @@ func (mh *MetadataHandler) SyncPodData(podList *v1.PodList) {
 			err := mh.mds.UpdateContainer(container)
 			if err != nil {
 				log.WithError(err).Error("Could not update container during sync.")
+			}
+		}
+	}
+}
+
+// SyncEndpointsData syncs the data in etcd according to the current active pods.
+func (mh *MetadataHandler) SyncEndpointsData(epList *v1.EndpointsList) {
+	activeEps := map[string]bool{}
+
+	currentTime := mh.clock.Now().UnixNano()
+
+	// Create a map so that we can easily check which endpoints are currently active by ID.
+	for _, item := range epList.Items {
+		activeEps[string(item.ObjectMeta.UID)] = true
+	}
+
+	// Find all endpoints in etcd.
+	eps, err := mh.mds.GetEndpoints()
+	if err != nil {
+		log.WithError(err).Error("Could not get all endpoints from etcd.")
+	}
+
+	for _, ep := range eps {
+		_, exists := activeEps[ep.Metadata.UID]
+		// If there an endpoint in etcd that is not active, and is not marked as dead, mark it as dead.
+		if !exists && ep.Metadata.DeletionTimestampNS == 0 {
+			ep.Metadata.DeletionTimestampNS = currentTime
+			err := mh.mds.UpdateEndpoints(ep)
+			if err != nil {
+				log.WithError(err).Error("Could not update endpoint during sync.")
+			}
+		}
+	}
+}
+
+// SyncServiceData syncs the data in etcd according to the current active pods.
+func (mh *MetadataHandler) SyncServiceData(sList *v1.ServiceList) {
+	activeServices := map[string]bool{}
+
+	currentTime := mh.clock.Now().UnixNano()
+
+	// Create a map so that we can easily check which services are currently active by ID.
+	for _, item := range sList.Items {
+		activeServices[string(item.ObjectMeta.UID)] = true
+	}
+
+	// Find all services in etcd.
+	services, err := mh.mds.GetServices()
+	if err != nil {
+		log.WithError(err).Error("Could not get all services from etcd.")
+	}
+
+	for _, service := range services {
+		_, exists := activeServices[service.Metadata.UID]
+		// If there a service in etcd that is not active, and is not marked as dead, mark it as dead.
+		if !exists && service.Metadata.DeletionTimestampNS == 0 {
+			service.Metadata.DeletionTimestampNS = currentTime
+			err := mh.mds.UpdateService(service)
+			if err != nil {
+				log.WithError(err).Error("Could not update service during sync.")
 			}
 		}
 	}
