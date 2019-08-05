@@ -8,7 +8,7 @@ package pl.carnotpb;
 
 option go_package = "carnotpb";
 
-message QueuedRowBatch {
+message RowBatchRequest {
   // This field represents the address that the row batch should be sent to.
   string address = 1;
   // The ID of the remote query ID on the address that should receive this RowBatch.
@@ -19,4 +19,16 @@ message QueuedRowBatch {
   int64 destination_id = 3;
   // TODO(nserrino): Fix this to flat buffers/feather for better performance.
   pl.table_store.schemapb.RowBatchData row_batch = 4;
+}
+
+message RowBatchResponse {
+  // This field indicates whether or not the RowBatch was successfully transferred.
+  bool success = 1;
+  // This field has any error message, if applicable.
+  string message = 2;
+}
+
+service KelvinService {
+  // Transfer a RowBatch from an agent or Kelvin node to the current Kelvin node.
+  rpc TransferRowBatch(stream RowBatchRequest) returns (RowBatchResponse) {}
 }

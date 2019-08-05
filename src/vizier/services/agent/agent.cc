@@ -11,6 +11,10 @@
 #include "src/common/nats/nats.h"
 #include "src/shared/version/version.h"
 
+PL_SUPPRESS_WARNINGS_START()
+#include "src/carnotpb/carnot.grpc.pb.h"
+PL_SUPPRESS_WARNINGS_END();
+
 DEFINE_string(nats_url, gflags::StringFromEnv("PL_NATS_URL", "pl-nats"),
               "The host address of the nats cluster");
 
@@ -66,12 +70,6 @@ int main(int argc, char** argv) {
   pl::InitEnvironmentOrDie(&argc, argv);
   LOG(INFO) << "Pixie Lab Agent: " << pl::VersionInfo::VersionString();
 
-  auto table_store = std::make_shared<pl::table_store::TableStore>();
-  auto row_batch_queue = std::make_shared<pl::carnot::exec::RowBatchQueue>();
-  auto carnot = pl::carnot::Carnot::Create(table_store, row_batch_queue).ConsumeValueOrDie();
-  auto stirling = pl::stirling::Stirling::Create(pl::stirling::CreateProdSourceRegistry());
-  g_stirling = stirling.get();
-
   auto channel_creds = grpc::InsecureChannelCredentials();
   if (!FLAGS_disable_SSL) {
     auto ssl_opts = grpc::SslCredentialsOptions();
@@ -80,6 +78,17 @@ int main(int argc, char** argv) {
     ssl_opts.pem_private_key = pl::FileContentsOrDie(FLAGS_client_tls_key);
     channel_creds = grpc::SslCredentials(ssl_opts);
   }
+
+  auto table_store = std::make_shared<pl::table_store::TableStore>();
+  auto stub_generator = [channel_creds](const std::string& remote_addr)
+      -> std::unique_ptr<pl::carnotpb::KelvinService::StubInterface> {
+    return pl::carnotpb::KelvinService::NewStub(grpc::CreateChannel(remote_addr, channel_creds));
+  };
+
+  auto carnot = pl::carnot::Carnot::Create(table_store, stub_generator).ConsumeValueOrDie();
+  auto stirling = pl::stirling::Stirling::Create(pl::stirling::CreateProdSourceRegistry());
+  g_stirling = stirling.get();
+
   // Store the sirling ptr b/c we need a bit later to start the thread.
   auto stirling_ptr = stirling.get();
 

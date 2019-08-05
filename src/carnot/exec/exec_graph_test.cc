@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "src/carnot/exec/exec_graph.h"
+#include "src/carnot/exec/test_utils.h"
 #include "src/carnot/plan/plan_fragment.h"
 #include "src/carnot/plan/plan_state.h"
 #include "src/carnot/planpb/plan.pb.h"
@@ -48,10 +49,9 @@ class ExecGraphTest : public ::testing::Test {
     auto udf_registry = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
     auto uda_registry = std::make_unique<udf::UDARegistry>("test_registry");
     auto table_store = std::make_shared<TableStore>();
-    auto row_batch_queue = std::make_shared<RowBatchQueue>();
 
     exec_state_ = std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), table_store,
-                                              row_batch_queue, sole::uuid4());
+                                              MockKelvinStubGenerator, sole::uuid4());
   }
   std::shared_ptr<plan::PlanFragment> plan_fragment_ = std::make_shared<plan::PlanFragment>(1);
   std::unique_ptr<ExecState> exec_state_ = nullptr;
@@ -134,9 +134,8 @@ TEST_F(ExecGraphTest, execute) {
 
   auto table_store = std::make_shared<TableStore>();
   table_store->AddTable("numbers", table);
-  auto row_batch_queue = std::make_shared<RowBatchQueue>();
-  auto exec_state_ = std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(),
-                                                 table_store, row_batch_queue, sole::uuid4());
+  auto exec_state_ = std::make_unique<ExecState>(
+      udf_registry.get(), uda_registry.get(), table_store, MockKelvinStubGenerator, sole::uuid4());
 
   EXPECT_OK(exec_state_->AddScalarUDF(
       0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64})));
@@ -211,10 +210,9 @@ TEST_F(ExecGraphTest, execute_time) {
 
   auto table_store = std::make_shared<TableStore>();
   table_store->AddTable("numbers", table);
-  auto row_batch_queue = std::make_shared<RowBatchQueue>();
 
-  auto exec_state_ = std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(),
-                                                 table_store, row_batch_queue, sole::uuid4());
+  auto exec_state_ = std::make_unique<ExecState>(
+      udf_registry.get(), uda_registry.get(), table_store, MockKelvinStubGenerator, sole::uuid4());
 
   EXPECT_OK(exec_state_->AddScalarUDF(
       0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64})));

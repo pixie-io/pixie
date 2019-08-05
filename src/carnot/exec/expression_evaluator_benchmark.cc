@@ -3,6 +3,7 @@
 #include <sole.hpp>
 
 #include "src/carnot/exec/expression_evaluator.h"
+#include "src/carnot/exec/test_utils.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
@@ -15,6 +16,7 @@
 using ScalarExpression = pl::carnot::plan::ScalarExpression;
 using ScalarExpressionVector = std::vector<std::shared_ptr<ScalarExpression>>;
 using pl::carnot::exec::ExecState;
+using pl::carnot::exec::MockKelvinStubGenerator;
 using pl::carnot::exec::ScalarExpressionEvaluator;
 using pl::carnot::exec::ScalarExpressionEvaluatorType;
 using pl::carnot::planpb::testutils::kAddScalarFuncNestedPbtxt;
@@ -50,10 +52,9 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
   auto udf_registry = std::make_unique<ScalarUDFRegistry>("test_registry");
   auto uda_registry = std::make_unique<UDARegistry>("test_registry");
   auto table_store = std::make_shared<pl::carnot::exec::TableStore>();
-  auto row_batch_queue = std::make_shared<pl::carnot::exec::RowBatchQueue>();
   PL_CHECK_OK(udf_registry->Register<AddUDF>("add"));
   auto exec_state = std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), table_store,
-                                                row_batch_queue, sole::uuid4());
+                                                MockKelvinStubGenerator, sole::uuid4());
 
   auto in1 = pl::bmutils::CreateLargeData<Int64Value>(data_size);
   auto in2 = pl::bmutils::CreateLargeData<Int64Value>(data_size);

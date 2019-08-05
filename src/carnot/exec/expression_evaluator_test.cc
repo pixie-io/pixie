@@ -10,6 +10,7 @@
 
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/expression_evaluator.h"
+#include "src/carnot/exec/test_utils.h"
 #include "src/carnot/plan/scalar_expression.h"
 #include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf/registry.h"
@@ -67,11 +68,10 @@ class ScalarExpressionTest : public ::testing::TestWithParam<ScalarExpressionEva
     uda_registry_ = std::make_unique<udf::UDARegistry>("test_registry");
     udf_registry_ = std::make_unique<udf::ScalarUDFRegistry>("test_registry");
     auto table_store = std::make_shared<TableStore>();
-    auto row_batch_queue = std::make_shared<RowBatchQueue>();
 
     EXPECT_TRUE(udf_registry_->Register<AddUDF>("add").ok());
     exec_state_ = std::make_unique<ExecState>(udf_registry_.get(), uda_registry_.get(), table_store,
-                                              row_batch_queue, sole::uuid4());
+                                              MockKelvinStubGenerator, sole::uuid4());
     EXPECT_OK(exec_state_->AddScalarUDF(
         0, "add", std::vector<types::DataType>({types::DataType::INT64, types::DataType::INT64})));
 

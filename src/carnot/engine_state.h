@@ -29,17 +29,17 @@ class EngineState : public NotCopyable {
               std::shared_ptr<exec::TableStore> table_store,
               std::shared_ptr<table_store::schema::Schema> schema,
               std::unique_ptr<compiler::RegistryInfo> registry_info,
-              std::shared_ptr<exec::RowBatchQueue> row_batch_queue)
+              const exec::KelvinStubGenerator& stub_generator)
       : uda_registry_(std::move(uda_registry)),
         scalar_udf_registry_(std::move(udf_registry)),
         table_store_(std::move(table_store)),
         schema_(std::move(schema)),
         registry_info_(std::move(registry_info)),
-        row_batch_queue_(std::move(row_batch_queue)) {}
+        stub_generator_(stub_generator) {}
 
   static StatusOr<std::unique_ptr<EngineState>> CreateDefault(
       std::shared_ptr<table_store::TableStore> table_store,
-      std::shared_ptr<exec::RowBatchQueue> row_batch_queue) {
+      const exec::KelvinStubGenerator& stub_generator) {
     // Initialize state.
     auto scalar_udf_registry = std::make_unique<udf::ScalarUDFRegistry>("udf_registry");
     auto uda_registry = std::make_unique<udf::UDARegistry>("uda_registry");
@@ -58,7 +58,7 @@ class EngineState : public NotCopyable {
 
     return std::make_unique<EngineState>(std::move(scalar_udf_registry), std::move(uda_registry),
                                          table_store, schema, std::move(registry_info),
-                                         row_batch_queue);
+                                         stub_generator);
   }
 
   std::shared_ptr<table_store::schema::Schema> schema() { return schema_; }
@@ -67,7 +67,7 @@ class EngineState : public NotCopyable {
 
   std::unique_ptr<exec::ExecState> CreateExecState(const sole::uuid& query_id) {
     return std::make_unique<exec::ExecState>(scalar_udf_registry_.get(), uda_registry_.get(),
-                                             table_store_, row_batch_queue_, query_id);
+                                             table_store_, stub_generator_, query_id);
   }
 
   std::unique_ptr<plan::PlanState> CreatePlanState() {
@@ -86,7 +86,7 @@ class EngineState : public NotCopyable {
   std::shared_ptr<exec::TableStore> table_store_;
   std::shared_ptr<table_store::schema::Schema> schema_;
   std::unique_ptr<compiler::RegistryInfo> registry_info_;
-  std::shared_ptr<exec::RowBatchQueue> row_batch_queue_;
+  const exec::KelvinStubGenerator stub_generator_;
 };
 
 }  // namespace carnot

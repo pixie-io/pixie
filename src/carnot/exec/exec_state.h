@@ -15,6 +15,7 @@
 #include "src/table_store/table/table_store.h"
 
 PL_SUPPRESS_WARNINGS_START()
+#include "src/carnotpb/carnot.grpc.pb.h"
 // TODO(michelle/nserrino): Fix this so that we don't need to the NOLINT.
 // NOLINTNEXTLINE(build/include_subdir)
 #include "blockingconcurrentqueue.h"
@@ -35,18 +36,18 @@ namespace exec {
  * and provide common resources (UDFs, UDA, etc) the operators within the query.
  */
 using table_store::TableStore;
-using RowBatchQueue =
-    moodycamel::BlockingConcurrentQueue<std::unique_ptr<carnotpb::QueuedRowBatch>>;
+using KelvinStubGenerator = std::function<std::unique_ptr<carnotpb::KelvinService::StubInterface>(
+    const std::string& address)>;
 
 class ExecState {
  public:
   explicit ExecState(udf::ScalarUDFRegistry* scalar_udf_registry, udf::UDARegistry* uda_registry,
                      std::shared_ptr<TableStore> table_store,
-                     std::shared_ptr<RowBatchQueue> row_batch_queue, const sole::uuid& query_id)
+                     const KelvinStubGenerator& stub_generator, const sole::uuid& query_id)
       : scalar_udf_registry_(scalar_udf_registry),
         uda_registry_(uda_registry),
         table_store_(std::move(table_store)),
-        row_batch_queue_(std::move(row_batch_queue)),
+        stub_generator_(stub_generator),
         query_id_(query_id) {}
   arrow::MemoryPool* exec_mem_pool() {
     // TOOD(zasgar): Make this the correct pool.
@@ -73,10 +74,10 @@ class ExecState {
     return Status::OK();
   }
 
-  Status EnqueueRowBatch(std::unique_ptr<carnotpb::QueuedRowBatch> row_batch_message) {
-    bool success = row_batch_queue_->enqueue(std::move(row_batch_message));
-    DCHECK(success);
-    return success ? Status::OK() : error::Internal("ExecState: Error enqueuing RowBatch");
+  // This function returns a stub to the Kelvin GRPC Service.
+  std::unique_ptr<carnotpb::KelvinService::StubInterface> KelvinServiceStub(
+      const std::string& remote_address) {
+    return stub_generator_(remote_address);
   }
 
   udf::ScalarUDFDefinition* GetScalarUDFDefinition(int64_t id) { return id_to_scalar_udf_map_[id]; }
@@ -107,7 +108,7 @@ class ExecState {
   udf::UDARegistry* uda_registry_;
   std::shared_ptr<TableStore> table_store_;
   std::shared_ptr<const md::AgentMetadataState> metadata_state_;
-  std::shared_ptr<RowBatchQueue> row_batch_queue_;
+  const KelvinStubGenerator stub_generator_;
   std::map<int64_t, udf::ScalarUDFDefinition*> id_to_scalar_udf_map_;
   std::map<int64_t, udf::UDADefinition*> id_to_uda_map_;
   const sole::uuid query_id_;

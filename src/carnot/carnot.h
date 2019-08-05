@@ -45,7 +45,7 @@ class Carnot : public NotCopyable {
  public:
   static StatusOr<std::unique_ptr<Carnot>> Create(
       std::shared_ptr<table_store::TableStore> table_store,
-      std::shared_ptr<exec::RowBatchQueue> row_batch_queue);
+      const exec::KelvinStubGenerator& stub_generator);
 
   using AgentMetadataCallbackFunc = std::function<std::shared_ptr<const md::AgentMetadataState>()>;
 

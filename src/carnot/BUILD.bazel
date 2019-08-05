@@ -54,6 +54,7 @@ pl_cc_binary(
     srcs = ["blocking_agg_benchmark.cc"],
     deps = [
         ":cc_library",
+        "//src/carnot/exec:test_utils",
         "//src/common/benchmark:cc_library",
         "//third_party:arrow",
     ],

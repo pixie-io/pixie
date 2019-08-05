@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "src/carnot/carnot.h"
+#include "src/carnot/exec/test_utils.h"
 #include "src/carnot/udf/udf.h"
 #include "src/common/base/base.h"
 #include "src/common/benchmark/benchmark.h"
@@ -86,8 +87,7 @@ StatusOr<std::shared_ptr<Table>> CreateTable(
 }
 
 std::unique_ptr<Carnot> SetUpCarnot(std::shared_ptr<table_store::TableStore> table_store) {
-  std::shared_ptr<exec::RowBatchQueue> row_batch_queue;
-  auto carnot_or_s = Carnot::Create(table_store, row_batch_queue);
+  auto carnot_or_s = Carnot::Create(table_store, exec::MockKelvinStubGenerator);
   if (!carnot_or_s.ok()) {
     LOG(FATAL) << "Failed to initialize Carnot.";
   }
