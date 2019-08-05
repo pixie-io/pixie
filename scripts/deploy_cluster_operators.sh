@@ -11,11 +11,11 @@ workspace=$(bazel info workspace 2> /dev/null)
 source ${workspace}/scripts/script_utils.sh
 
 nats_deploy() {
-  kubectl apply -n ${namespace} -f ${workspace}/src/services/nats
+  kubectl apply -n ${namespace} -k ${workspace}/k8s/vizier_deps/base/nats
 }
 
 etcd_deploy() {
-  kubectl apply -n ${namespace} -f ${workspace}/src/services/etcd
+  kubectl apply -n ${namespace} -k ${workspace}/k8s/vizier_deps/base/etcd
 }
 
 # Load nats and etcd, we need to run our services.
