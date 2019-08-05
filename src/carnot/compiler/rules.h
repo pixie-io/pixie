@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <queue>
 #include <string>
 #include <vector>
 
@@ -28,7 +29,7 @@ class Rule {
    * @return false: if the rule does nothing to the graph.
    * @return Status: error if something goes wrong during the rule application.
    */
-  virtual StatusOr<bool> Execute(IR* ir_graph) const;
+  virtual StatusOr<bool> Execute(IR* ir_graph);
 
  protected:
   /**
@@ -42,9 +43,13 @@ class Rule {
    * @return Status: error if something goes wrong during the rule application.
    */
 
-  virtual StatusOr<bool> Apply(IRNode* ir_node) const = 0;
+  virtual StatusOr<bool> Apply(IRNode* ir_node) = 0;
+  void DeferNodeDeletion(int64_t);
 
   CompilerState* compiler_state_;
+
+  // The queue containing nodes to delete.
+  std::queue<int64_t> node_delete_q;
 };
 
 class DataTypeRule : public Rule {
@@ -60,7 +65,7 @@ class DataTypeRule : public Rule {
   explicit DataTypeRule(CompilerState* compiler_state) : Rule(compiler_state) {}
 
  protected:
-  StatusOr<bool> Apply(IRNode* ir_node) const override;
+  StatusOr<bool> Apply(IRNode* ir_node) override;
 
  private:
   StatusOr<bool> EvaluateFunc(FuncIR* func) const;
@@ -72,7 +77,7 @@ class SourceRelationRule : public Rule {
   explicit SourceRelationRule(CompilerState* compiler_state) : Rule(compiler_state) {}
 
  protected:
-  StatusOr<bool> Apply(IRNode* ir_node) const override;
+  StatusOr<bool> Apply(IRNode* ir_node) override;
 
  private:
   StatusOr<bool> GetSourceRelation(OperatorIR* source_op) const;
@@ -93,7 +98,7 @@ class OperatorRelationRule : public Rule {
   explicit OperatorRelationRule(CompilerState* compiler_state) : Rule(compiler_state) {}
 
  protected:
-  StatusOr<bool> Apply(IRNode* ir_node) const override;
+  StatusOr<bool> Apply(IRNode* ir_node) override;
 
  private:
   StatusOr<bool> SetBlockingAgg(BlockingAggIR* agg_ir) const;
@@ -117,7 +122,7 @@ class RangeArgExpressionRule : public Rule {
   explicit RangeArgExpressionRule(CompilerState* compiler_state) : Rule(compiler_state) {}
 
  protected:
-  StatusOr<bool> Apply(IRNode* ir_node) const override;
+  StatusOr<bool> Apply(IRNode* ir_node) override;
   StatusOr<IntIR*> EvalExpression(IRNode* ir_node) const;
   StatusOr<IntIR*> EvalFunc(std::string name, std::vector<IntIR*> evaled_args, FuncIR* func) const;
 };
@@ -131,7 +136,7 @@ class VerifyFilterExpressionRule : public Rule {
   explicit VerifyFilterExpressionRule(CompilerState* compiler_state) : Rule(compiler_state) {}
 
  protected:
-  StatusOr<bool> Apply(IRNode* ir_node) const override;
+  StatusOr<bool> Apply(IRNode* ir_node) override;
 };
 
 class ResolveMetadataRule : public Rule {
@@ -146,7 +151,7 @@ class ResolveMetadataRule : public Rule {
       : Rule(compiler_state), md_handler_(md_handler) {}
 
  protected:
-  StatusOr<bool> Apply(IRNode* ir_node) const override;
+  StatusOr<bool> Apply(IRNode* ir_node) override;
   StatusOr<bool> HandleMetadata(MetadataIR* md_node) const;
   /** @brief Inserts a metadata resolver between the container op and parent op. */
   StatusOr<MetadataResolverIR*> InsertMetadataResolver(OperatorIR* container_op,
@@ -161,7 +166,7 @@ class MetadataFunctionFormatRule : public Rule {
   explicit MetadataFunctionFormatRule(CompilerState* compiler_state) : Rule(compiler_state) {}
 
  protected:
-  StatusOr<bool> Apply(IRNode* ir_node) const override;
+  StatusOr<bool> Apply(IRNode* ir_node) override;
   StatusOr<MetadataLiteralIR*> WrapLiteral(DataIR* data, MetadataProperty* md_property) const;
 };
 
@@ -175,7 +180,7 @@ class CheckMetadataColumnNamingRule : public Rule {
   explicit CheckMetadataColumnNamingRule(CompilerState* compiler_state) : Rule(compiler_state) {}
 
  protected:
-  StatusOr<bool> Apply(IRNode* ir_node) const override;
+  StatusOr<bool> Apply(IRNode* ir_node) override;
   StatusOr<bool> CheckMapColumns(MapIR* op) const;
   StatusOr<bool> CheckAggColumns(BlockingAggIR* op) const;
 };
@@ -188,7 +193,7 @@ class MetadataResolverConversionRule : public Rule {
   explicit MetadataResolverConversionRule(CompilerState* compiler_state) : Rule(compiler_state) {}
 
  protected:
-  StatusOr<bool> Apply(IRNode* ir_node) const override;
+  StatusOr<bool> Apply(IRNode* ir_node) override;
   StatusOr<bool> ReplaceMetadataResolver(MetadataResolverIR* md_resolver) const;
 
   StatusOr<MapIR*> MakeMap(MetadataResolverIR* md_resolver) const;
@@ -218,6 +223,22 @@ class MetadataResolverConversionRule : public Rule {
    */
   bool DoesMapOnlyCopy(MapIR* map) const;
 };
+
+class MergeRangeOperatorRule : public Rule {
+  /**
+   * @brief Takes a Range Operator and merges it with a MemorySource, removing the Range Operator
+   * from the plan tree.
+   */
+ public:
+  explicit MergeRangeOperatorRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+
+ private:
+  StatusOr<bool> MergeRange(RangeIR* range_ir);
+};
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

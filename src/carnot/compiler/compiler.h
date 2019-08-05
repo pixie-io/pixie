@@ -62,13 +62,6 @@ class Compiler {
   }
   Status UpdateColumnsAndVerifyUDFs(IR* ir, CompilerState* compiler_state);
   Status VerifyIRConnections(const IR& ir);
-  /**
-   * Optimize the query by updating the IR. This may mutate the IR, such as updating nodes,
-   * removing nodes or adding/removing edges.
-   * @param ir the ir to optimize
-   * @return a status of whether optimization was successful.
-   */
-  Status OptimizeIR(IR* ir);
 };
 
 }  // namespace compiler

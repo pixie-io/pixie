@@ -9,17 +9,23 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
-StatusOr<bool> Rule::Execute(IR* ir_graph) const {
+StatusOr<bool> Rule::Execute(IR* ir_graph) {
   std::vector<int64_t> topo_graph = ir_graph->dag().TopologicalSort();
   bool any_changed = false;
   for (int64_t node_i : topo_graph) {
     PL_ASSIGN_OR_RETURN(bool node_is_changed, Apply(ir_graph->Get(node_i)));
     any_changed = any_changed || node_is_changed;
   }
+  while (!node_delete_q.empty()) {
+    PL_RETURN_IF_ERROR(ir_graph->DeleteNode(node_delete_q.front()));
+    node_delete_q.pop();
+  }
   return any_changed;
 }
 
-StatusOr<bool> DataTypeRule::Apply(IRNode* ir_node) const {
+void Rule::DeferNodeDeletion(int64_t node) { node_delete_q.push(node); }
+
+StatusOr<bool> DataTypeRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, UnresolvedRTFuncMatchAllArgs(ResolvedExpression()))) {
     // Match any function that has all args resolved.
     return EvaluateFunc(static_cast<FuncIR*>(ir_node));
@@ -88,7 +94,7 @@ StatusOr<bool> DataTypeRule::EvaluateColumn(ColumnIR* column) const {
   return true;
 }
 
-StatusOr<bool> SourceRelationRule::Apply(IRNode* ir_node) const {
+StatusOr<bool> SourceRelationRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, UnresolvedSource())) {
     return GetSourceRelation(static_cast<OperatorIR*>(ir_node));
   }
@@ -177,7 +183,7 @@ StatusOr<std::vector<std::string>> SourceRelationRule::GetColumnNames(
   return columns;
 }
 
-StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) const {
+StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, UnresolvedReadyBlockingAgg())) {
     return SetBlockingAgg(static_cast<BlockingAggIR*>(ir_node));
   } else if (Match(ir_node, UnresolvedReadyMap())) {
@@ -253,7 +259,7 @@ StatusOr<bool> OperatorRelationRule::SetOther(OperatorIR* operator_ir) const {
   return true;
 }
 
-StatusOr<bool> RangeArgExpressionRule::Apply(IRNode* ir_node) const {
+StatusOr<bool> RangeArgExpressionRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, Range(Int(), Int()))) {
     // If Range matches this format, don't do any work.
     return false;
@@ -322,7 +328,7 @@ StatusOr<IntIR*> RangeArgExpressionRule::EvalFunc(std::string name, std::vector<
   return ir_result;
 }
 
-StatusOr<bool> VerifyFilterExpressionRule::Apply(IRNode* ir_node) const {
+StatusOr<bool> VerifyFilterExpressionRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, Filter())) {
     // Match any function that has all args resolved.
     FilterIR* filter = static_cast<FilterIR*>(ir_node);
@@ -336,7 +342,7 @@ StatusOr<bool> VerifyFilterExpressionRule::Apply(IRNode* ir_node) const {
   return false;
 }
 
-StatusOr<bool> ResolveMetadataRule::Apply(IRNode* ir_node) const {
+StatusOr<bool> ResolveMetadataRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, UnresolvedMetadataIR())) {
     // Match any function that has all args resolved.
     return HandleMetadata(static_cast<MetadataIR*>(ir_node));
@@ -393,7 +399,7 @@ StatusOr<bool> ResolveMetadataRule::HandleMetadata(MetadataIR* metadata) const {
   return true;
 }
 
-StatusOr<bool> MetadataFunctionFormatRule::Apply(IRNode* ir_node) const {
+StatusOr<bool> MetadataFunctionFormatRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, Equals(Metadata(), MetadataLiteral()))) {
     // If the literal already matches, then no need to do any work.
     return false;
@@ -449,7 +455,7 @@ StatusOr<MetadataLiteralIR*> MetadataFunctionFormatRule::WrapLiteral(
   return literal;
 }
 
-StatusOr<bool> CheckMetadataColumnNamingRule::Apply(IRNode* ir_node) const {
+StatusOr<bool> CheckMetadataColumnNamingRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, MetadataResolver())) {
     // If the MetadataResolver, then don't do anything.
     return false;
@@ -484,7 +490,7 @@ StatusOr<bool> CheckMetadataColumnNamingRule::CheckAggColumns(BlockingAggIR* op)
   return false;
 }
 
-StatusOr<bool> MetadataResolverConversionRule::Apply(IRNode* ir_node) const {
+StatusOr<bool> MetadataResolverConversionRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, MetadataResolver())) {
     return ReplaceMetadataResolver(static_cast<MetadataResolverIR*>(ir_node));
   }
@@ -686,6 +692,48 @@ Status MetadataResolverConversionRule::SwapInMap(MetadataResolverIR* md_resolver
   // delete metadata_resolver
   PL_RETURN_IF_ERROR(graph->DeleteNode(md_resolver->id()));
   return Status::OK();
+}
+
+StatusOr<bool> MergeRangeOperatorRule::Apply(IRNode* ir_node) {
+  if (Match(ir_node, Range())) {
+    return MergeRange(static_cast<RangeIR*>(ir_node));
+  }
+  return false;
+}
+StatusOr<bool> MergeRangeOperatorRule::MergeRange(RangeIR* range_ir) {
+  IR* ir_graph = range_ir->graph_ptr();
+  DCHECK_EQ(range_ir->parents().size(), 1UL);
+  OperatorIR* range_parent = range_ir->parents()[0];
+
+  if (range_parent->type() != IRNodeType::kMemorySource) {
+    return range_parent->CreateIRNodeError("Expected range parent to be a MemorySource, not a $0.",
+                                           range_parent->type_string());
+  }
+
+  MemorySourceIR* src_ir = static_cast<MemorySourceIR*>(range_parent);
+  IntIR* start_time_ir = static_cast<IntIR*>(range_ir->start_repr());
+  IntIR* stop_time_ir = static_cast<IntIR*>(range_ir->stop_repr());
+
+  src_ir->SetTime(start_time_ir->val(), stop_time_ir->val());
+
+  DeferNodeDeletion(start_time_ir->id());
+  DeferNodeDeletion(stop_time_ir->id());
+
+  // Update all of range's dependencies to point to src.
+  for (const auto& dep_id : ir_graph->dag().DependenciesOf(range_ir->id())) {
+    auto dep = ir_graph->Get(dep_id);
+    if (!dep->IsOp()) {
+      PL_RETURN_IF_ERROR(ir_graph->DeleteEdge(range_ir->id(), dep_id));
+      PL_RETURN_IF_ERROR(ir_graph->AddEdge(src_ir->id(), dep_id));
+      continue;
+    }
+    auto casted_node = static_cast<OperatorIR*>(dep);
+    PL_RETURN_IF_ERROR(casted_node->RemoveParent(range_ir));
+    PL_RETURN_IF_ERROR(casted_node->AddParent(src_ir));
+  }
+  PL_RETURN_IF_ERROR(range_ir->RemoveParent(src_ir));
+  DeferNodeDeletion(range_ir->id());
+  return true;
 }
 
 }  // namespace compiler

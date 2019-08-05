@@ -9,6 +9,7 @@
 
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
+#include "src/carnot/compiler/rule_mock.h"
 #include "src/carnot/compiler/rules.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
@@ -85,7 +86,6 @@ class RulesTest : public ::testing::Test {
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
     ast = MakeTestAstPtr();
     graph = std::make_shared<IR>();
-    data_rule = std::make_shared<DataTypeRule>(compiler_state_.get());
     md_handler = MetadataHandler::Create();
   }
   ColumnIR* MakeColumn(const std::string& name, OperatorIR* parent_op) {
@@ -192,7 +192,6 @@ class RulesTest : public ::testing::Test {
 
   pypa::AstPtr ast;
   std::shared_ptr<IR> graph;
-  std::shared_ptr<Rule> data_rule;
   std::unique_ptr<CompilerState> compiler_state_;
   std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
@@ -228,7 +227,8 @@ TEST_F(DataTypeRuleTest, map_function) {
   EXPECT_FALSE(col->IsDataTypeEvaluated());
 
   // Expect the data_rule to change something.
-  auto result = data_rule->Execute(graph.get());
+  DataTypeRule data_rule(compiler_state_.get());
+  auto result = data_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
@@ -238,7 +238,7 @@ TEST_F(DataTypeRuleTest, map_function) {
   EXPECT_TRUE(col->IsDataTypeEvaluated());
 
   // Expect the data_rule to change something.
-  result = data_rule->Execute(graph.get());
+  result = data_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
@@ -251,7 +251,7 @@ TEST_F(DataTypeRuleTest, map_function) {
   EXPECT_EQ(func->EvaluatedDataType(), types::DataType::INT64);
 
   // Expect the data_rule to do nothing, no more work left.
-  result = data_rule->Execute(graph.get());
+  result = data_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_FALSE(result.ValueOrDie());
 
@@ -280,7 +280,8 @@ TEST_F(DataTypeRuleTest, compiler_function_no_match) {
   // No rule has been run, don't expect any of these to be evaluated.
   EXPECT_FALSE(func2->IsDataTypeEvaluated());
   // Expect the data_rule to do nothing, compiler function shouldn't be matched.
-  auto result = data_rule->Execute(graph.get());
+  DataTypeRule data_rule(compiler_state_.get());
+  auto result = data_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_FALSE(result.ValueOrDie());
   // No rule has been run, don't expect any of these to be evaluated.
@@ -302,12 +303,13 @@ TEST_F(DataTypeRuleTest, missing_udf_name) {
   EXPECT_OK(map->Init(mem_src, amap, ast));
 
   // Expect the data_rule to successfully change columnir.
-  auto result = data_rule->Execute(graph.get());
+  DataTypeRule data_rule(compiler_state_.get());
+  auto result = data_rule.Execute(graph.get());
   EXPECT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
   // Expect the data_rule to change something.
-  result = data_rule->Execute(graph.get());
+  result = data_rule.Execute(graph.get());
   EXPECT_NOT_OK(result);
 
   // The function should not be evaluated, the function was not matched.
@@ -327,7 +329,8 @@ TEST_F(DataTypeRuleTest, function_in_agg) {
   EXPECT_OK(map->Init(mem_src, amap, ast));
 
   // Expect the data_rule to successfully evaluate the column.
-  auto result = data_rule->Execute(graph.get());
+  DataTypeRule data_rule(compiler_state_.get());
+  auto result = data_rule.Execute(graph.get());
   EXPECT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
@@ -335,7 +338,7 @@ TEST_F(DataTypeRuleTest, function_in_agg) {
   EXPECT_FALSE(func->IsDataTypeEvaluated());
 
   // Expect the data_rule to change the function.
-  result = data_rule->Execute(graph.get());
+  result = data_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
@@ -371,7 +374,8 @@ TEST_F(DataTypeRuleTest, nested_functions) {
   EXPECT_FALSE(col->IsDataTypeEvaluated());
 
   // Expect the data_rule to change something.
-  auto result = data_rule->Execute(graph.get());
+  DataTypeRule data_rule(compiler_state_.get());
+  auto result = data_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
@@ -382,7 +386,7 @@ TEST_F(DataTypeRuleTest, nested_functions) {
   EXPECT_TRUE(col->IsDataTypeEvaluated());
 
   // Expect the data_rule to change something.
-  result = data_rule->Execute(graph.get());
+  result = data_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
@@ -392,7 +396,7 @@ TEST_F(DataTypeRuleTest, nested_functions) {
   EXPECT_TRUE(col->IsDataTypeEvaluated());
 
   // Everything should be evaluated, func2 changes.
-  result = data_rule->Execute(graph.get());
+  result = data_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
 
@@ -407,7 +411,7 @@ TEST_F(DataTypeRuleTest, nested_functions) {
   EXPECT_EQ(func2->EvaluatedDataType(), types::DataType::INT64);
 
   // Expect the data_rule to do nothing, no more work left.
-  result = data_rule->Execute(graph.get());
+  result = data_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_FALSE(result.ValueOrDie());
 }
@@ -423,7 +427,8 @@ TEST_F(DataTypeRuleTest, metadata_column) {
   MakeFilter(md, metadata_ir);
   EXPECT_FALSE(metadata_ir->IsDataTypeEvaluated());
   // Expect the data_rule to do nothing, no more work left.
-  auto result = data_rule->Execute(graph.get());
+  DataTypeRule data_rule(compiler_state_.get());
+  auto result = data_rule.Execute(graph.get());
   ASSERT_OK(result);
   EXPECT_TRUE(result.ValueOrDie());
   EXPECT_TRUE(metadata_ir->IsDataTypeEvaluated());
@@ -1699,6 +1704,45 @@ TEST_F(MetadataResolverConversionTest, remove_extra_resolver) {
 
   EXPECT_EQ(agg->parents()[0], filter);
   EXPECT_EQ(graph->dag().DependenciesOf(md_resolver2->id()).size(), 0UL);
+}
+
+TEST_F(RulesTest, remove_range) {
+  // Create nodes.
+  int64_t start_time_ns = 2;
+  int64_t stop_time_ns = 4;
+
+  MemorySourceIR* mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  RangeIR* range = graph->MakeNode<RangeIR>().ValueOrDie();
+  IntIR* start_time = MakeInt(start_time_ns);
+  IntIR* stop_time = MakeInt(stop_time_ns);
+  MemorySinkIR* sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
+  StringIR* sink_name = MakeString("sink");
+
+  EXPECT_OK(mem_src->SetRelation(cpu_relation));
+  EXPECT_OK(range->Init(mem_src, start_time, stop_time, ast));
+
+  ArgMap amap;
+  amap["name"] = sink_name;
+  EXPECT_OK(sink->Init(range, amap, ast));
+  EXPECT_FALSE(mem_src->IsTimeSet());
+  EXPECT_EQ(std::vector<int64_t>({0, 1, 2, 3, 4, 5}), graph->dag().TopologicalSort());
+
+  // Apply the rule.
+  MergeRangeOperatorRule rule(compiler_state_.get());
+  auto status = rule.Execute(graph.get());
+  ASSERT_OK(status);
+  EXPECT_TRUE(status.ValueOrDie());
+
+  // checks to make sure that all the edges related to range are removed.
+  EXPECT_EQ(std::vector<int64_t>({0, 4, 5}), graph->dag().TopologicalSort());
+  EXPECT_TRUE(mem_src->IsTimeSet());
+  EXPECT_EQ(stop_time_ns - start_time_ns, mem_src->time_stop_ns() - mem_src->time_start_ns());
+  EXPECT_EQ(stop_time_ns, mem_src->time_stop_ns());
+  EXPECT_EQ(start_time_ns, mem_src->time_start_ns());
+
+  EXPECT_FALSE(graph->dag().HasNode(range->id()));
+  EXPECT_FALSE(graph->dag().HasNode(start_time->id()));
+  EXPECT_FALSE(graph->dag().HasNode(start_time->id()));
 }
 
 }  // namespace compiler

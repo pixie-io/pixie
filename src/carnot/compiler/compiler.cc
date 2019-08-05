@@ -13,7 +13,6 @@
 #include "src/carnot/compiler/compiler_state.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/ir_verifier.h"
-#include "src/carnot/compiler/optimize_ir.h"
 #include "src/carnot/compiler/string_reader.h"
 #include "src/carnot/planpb/plan.pb.h"
 
@@ -24,7 +23,6 @@ StatusOr<planpb::Plan> Compiler::Compile(const std::string& query, CompilerState
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state));
   PL_RETURN_IF_ERROR(VerifyIRConnections(*ir));
   PL_RETURN_IF_ERROR(UpdateColumnsAndVerifyUDFs(ir.get(), compiler_state));
-  PL_RETURN_IF_ERROR(OptimizeIR(ir.get()));
   return IRToLogicalPlan(*ir);
 }
 Status Compiler::VerifyIRConnections(const IR& ir) {
@@ -96,12 +94,6 @@ StatusOr<planpb::Plan> Compiler::IRToLogicalPlan(const IR& ir) {
                .Walk(ir);
   PL_RETURN_IF_ERROR(s);
   return plan;
-}
-
-Status Compiler::OptimizeIR(IR* ir) {
-  IROptimizer optimizer;
-  PL_RETURN_IF_ERROR(optimizer.Optimize(ir));
-  return Status::OK();
 }
 
 }  // namespace compiler
