@@ -15,98 +15,6 @@
 namespace pl {
 namespace table_store {
 
-using types::DataType;
-
-template <DataType T>
-auto GetPBDataColumn(table_store::schemapb::Column* /*data_col*/) {
-  static_assert(sizeof(T) != 0, "Unsupported data type");
-}
-
-template <>
-auto GetPBDataColumn<DataType::BOOLEAN>(table_store::schemapb::Column* data_col) {
-  return data_col->mutable_boolean_data();
-}
-
-template <>
-auto GetPBDataColumn<DataType::TIME64NS>(table_store::schemapb::Column* data_col) {
-  return data_col->mutable_time64ns_data();
-}
-
-template <>
-auto GetPBDataColumn<DataType::INT64>(table_store::schemapb::Column* data_col) {
-  return data_col->mutable_int64_data();
-}
-
-template <>
-auto GetPBDataColumn<DataType::UINT128>(table_store::schemapb::Column* data_col) {
-  return data_col->mutable_uint128_data();
-}
-
-template <>
-auto GetPBDataColumn<DataType::FLOAT64>(table_store::schemapb::Column* data_col) {
-  return data_col->mutable_float64_data();
-}
-
-template <>
-auto GetPBDataColumn<DataType::STRING>(table_store::schemapb::Column* data_col) {
-  return data_col->mutable_string_data();
-}
-
-template <DataType T>
-void CopyIntoOutputPB(table_store::schemapb::Column* data_col, arrow::Array* col) {
-  CHECK_NOTNULL(data_col);
-  CHECK_NOTNULL(col);
-
-  size_t col_length = col->length();
-  auto casted_output_data = GetPBDataColumn<T>(data_col);
-  for (size_t i = 0; i < col_length; ++i) {
-    casted_output_data->add_data(types::GetValueFromArrowArray<T>(col, i));
-  }
-}
-
-template <>
-void CopyIntoOutputPB<DataType::UINT128>(table_store::schemapb::Column* data_col,
-                                         arrow::Array* col) {
-  CHECK_NOTNULL(data_col);
-  CHECK_NOTNULL(col);
-
-  size_t col_length = col->length();
-  auto casted_output_data = GetPBDataColumn<DataType::UINT128>(data_col);
-  for (size_t i = 0; i < col_length; ++i) {
-    auto out_datum = casted_output_data->add_data();
-    auto val = types::GetValueFromArrowArray<DataType::UINT128>(col, i);
-    out_datum->set_high(absl::Uint128High64(val));
-    out_datum->set_low(absl::Uint128Low64(val));
-  }
-}
-
-/**
- * Converts an arrow batch to a proto row batch.
- * @param rb The rowbatch.
- * @param relation The relation.
- * @param rb_data_pb The output proto.
- * @return Status of conversion.
- */
-Status ConvertRecordBatchToProto(arrow::RecordBatch* rb, bool eow, bool eos,
-                                 const pl::table_store::schema::Relation& relation,
-                                 table_store::schemapb::RowBatchData* rb_data_pb) {
-  int64_t num_rows_in_batch = rb->num_rows();
-  for (int col_idx = 0; col_idx < rb->num_columns(); ++col_idx) {
-    auto col = rb->column(col_idx);
-    auto output_col_data = rb_data_pb->add_cols();
-    auto dt = relation.GetColumnType(col_idx);
-
-#define TYPE_CASE(_dt_) CopyIntoOutputPB<_dt_>(output_col_data, col.get());
-
-    PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
-#undef TYPE_CASE
-  }
-  rb_data_pb->set_eow(eow);
-  rb_data_pb->set_eos(eos);
-  rb_data_pb->set_num_rows(num_rows_in_batch);
-  return Status::OK();
-}
-
 Table::Table(const schema::Relation& relation, int64_t max_table_size)
     : desc_(relation.col_types()), max_table_size_(max_table_size) {
   uint64_t num_cols = desc_.size();
@@ -172,15 +80,19 @@ Status Table::AddColumn(std::shared_ptr<Column> col) {
 Status Table::ToProto(table_store::schemapb::Table* table_proto) const {
   CHECK(table_proto != nullptr);
   auto relation = GetRelation();
-  // TODO(zasgar): Table should store record batches, that way we can reduce conversions.
-  PL_ASSIGN_OR_RETURN(auto batches, GetTableAsRecordBatches());
-  for (auto i = 0; i < NumBatches(); ++i) {
-    auto row_batch_proto = table_proto->add_row_batches();
-    auto eow = i == NumBatches() - 1;
-    auto eos = i == NumBatches() - 1;
-    PL_RETURN_IF_ERROR(
-        ConvertRecordBatchToProto(batches[i].get(), eow, eos, relation, row_batch_proto));
+
+  std::vector<int64_t> col_selector;
+  for (int64_t i = 0; i < NumColumns(); i++) {
+    col_selector.push_back(i);
   }
+
+  for (auto i = 0; i < NumBatches(); ++i) {
+    PL_ASSIGN_OR_RETURN(auto cur_rb, GetRowBatch(i, col_selector, arrow::default_memory_pool()));
+    cur_rb->set_eow(i == NumBatches() - 1);
+    cur_rb->set_eos(i == NumBatches() - 1);
+    PL_RETURN_IF_ERROR(cur_rb->ToProto(table_proto->add_row_batches()));
+  }
+
   PL_RETURN_IF_ERROR(relation.ToProto(table_proto->mutable_relation()));
   return Status::OK();
 }
@@ -451,29 +363,6 @@ schema::Relation Table::GetRelation() const {
   }
 
   return schema::Relation(types, names);
-}
-
-StatusOr<std::vector<RecordBatchSPtr>> Table::GetTableAsRecordBatches() const {
-  std::vector<int64_t> col_selector;
-  // Set up the schema.
-  std::vector<std::shared_ptr<arrow::Field>> schema_vector = {};
-  for (int64_t i = 0; i < NumColumns(); i++) {
-    auto col = GetColumn(i);
-    col_selector.push_back(i);
-    schema_vector.push_back(arrow::field(col->name(), DataTypeToArrowType(col->data_type())));
-  }
-  auto schema = std::make_shared<arrow::Schema>(schema_vector);
-
-  // Setup the records.
-  std::vector<RecordBatchSPtr> record_batches;
-  for (int64_t i = 0; i < NumBatches(); i++) {
-    // Get the row batch.
-    PL_ASSIGN_OR_RETURN(auto cur_rb, GetRowBatch(i, col_selector, arrow::default_memory_pool()));
-    // Break apart the row batch to get the columns.
-    auto record_batch = arrow::RecordBatch::Make(schema, cur_rb->num_rows(), cur_rb->columns());
-    record_batches.push_back(record_batch);
-  }
-  return record_batches;
 }
 
 }  // namespace table_store

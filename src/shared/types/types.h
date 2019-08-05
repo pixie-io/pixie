@@ -115,6 +115,10 @@ using Float64Value = FixedSizedValueType<double>;
 
 struct UInt128Value : public FixedSizedValueType<absl::uint128> {
   using FixedSizedValueType::FixedSizedValueType;
+
+  // NOLINTNEXTLINE: implicit constructor.
+  UInt128Value(const UInt128& lhs) { val = absl::MakeUint128(lhs.high(), lhs.low()); }
+
   UInt128Value(uint64_t high, uint64_t low) { val = absl::MakeUint128(high, low); }
 
   uint64_t High64() { return absl::Uint128High64(val); }

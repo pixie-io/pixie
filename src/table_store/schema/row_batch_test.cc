@@ -1,10 +1,13 @@
 #include <arrow/array.h>
+#include <google/protobuf/text_format.h>
+#include <google/protobuf/util/message_differencer.h>
 #include <gtest/gtest.h>
 #include <vector>
 
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/proto/types.pb.h"
 #include "src/shared/types/types.h"
+#include "src/table_store/proto/schema.pb.h"
 #include "src/table_store/schema/row_batch.h"
 #include "src/table_store/schema/row_descriptor.h"
 
@@ -99,6 +102,62 @@ TEST_F(RowBatchTest, num_bytes) {
   auto expected_bytes =
       3 * sizeof(bool) + 3 * sizeof(int64_t) + 3 * sizeof(double) + sizeof(char) * 18;
   EXPECT_EQ(expected_bytes, rb_->NumBytes());
+}
+
+TEST_F(RowBatchTest, to_from_proto) {
+  std::string input_proto_string = R"(
+cols {
+  uint128_data {
+    data {
+      low: 1
+      high: 2
+    }
+    data {
+      low: 3
+      high: 4
+    }
+    data {
+      low: 5
+      high: 6
+    }
+  }
+}
+cols {
+  int64_data {
+    data: 1
+    data: 2
+    data: 3
+  }
+}
+cols {
+  string_data {
+    data: "ABC"
+    data: "DEF"
+    data: "12345"
+  }
+}
+eow: true
+eos: false
+num_rows: 3
+)";
+
+  table_store::schemapb::RowBatchData input_proto;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(input_proto_string, &input_proto));
+
+  auto rb = RowBatch::FromProto(input_proto).ConsumeValueOrDie();
+  EXPECT_TRUE(rb->eow());
+  EXPECT_FALSE(rb->eos());
+  EXPECT_EQ(3, rb->num_rows());
+  // Check the types of the output columns.
+  EXPECT_EQ(types::DataType::UINT128, rb->desc().type(0));
+  EXPECT_EQ(types::DataType::INT64, rb->desc().type(1));
+  EXPECT_EQ(types::DataType::STRING, rb->desc().type(2));
+
+  table_store::schemapb::RowBatchData output_proto;
+  EXPECT_OK(rb->ToProto(&output_proto));
+
+  google::protobuf::util::MessageDifferencer differ;
+  EXPECT_TRUE(differ.Compare(input_proto, output_proto));
 }
 
 }  // namespace schema

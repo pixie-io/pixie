@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "src/table_store/proto/schema.pb.h"
 #include "src/table_store/schema/row_descriptor.h"
 
 namespace pl {
@@ -29,6 +30,12 @@ class RowBatch {
   RowBatch(RowDescriptor desc, int64_t num_rows) : desc_(std::move(desc)), num_rows_(num_rows) {
     columns_.reserve(desc_.size());
   }
+
+  // TODO(nserrino): Replace these conversion funcs when RowBatchData is deprecated
+  // and proper serialization is implemented.
+  Status ToProto(table_store::schemapb::RowBatchData* row_batch_proto);
+  static StatusOr<std::unique_ptr<RowBatch>> FromProto(
+      const table_store::schemapb::RowBatchData& row_batch_proto);
 
   /**
    * Adds the given column to the row batch, given that it correctly fits the schema.
@@ -81,6 +88,24 @@ class RowBatch {
   bool eos_ = false;
   std::vector<std::shared_ptr<arrow::Array>> columns_;
 };
+
+// Append a scalar value to an arrow::Array.
+template <types::DataType T>
+Status CopyValue(arrow::ArrayBuilder* output_col_builder,
+                 const typename pl::types::DataTypeTraits<T>::native_type& value) {
+  auto* typed_col_builder =
+      static_cast<typename types::DataTypeTraits<T>::arrow_builder_type*>(output_col_builder);
+
+  if constexpr (T == types::DataType::STRING) {
+    int64_t size = value.size() + typed_col_builder->value_data_length();
+    if (size >= typed_col_builder->value_data_capacity()) {
+      PL_RETURN_IF_ERROR(typed_col_builder->ReserveData(std::lrint(1.5 * size)));
+    }
+  }
+
+  typed_col_builder->UnsafeAppend(value);
+  return Status::OK();
+}
 
 }  // namespace schema
 }  // namespace table_store

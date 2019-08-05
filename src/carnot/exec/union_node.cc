@@ -102,30 +102,13 @@ types::Time64NSValue UnionNode::GetTimeAtParentCursor(size_t parent_index) const
       time_columns_[parent_index], row_cursors_[parent_index]));
 }
 
-template <types::DataType T>
-Status CopyValue(const arrow::Array* input_col, size_t row,
-                 arrow::ArrayBuilder* output_col_builder) {
-  auto* typed_col_builder =
-      static_cast<typename types::DataTypeTraits<T>::arrow_builder_type*>(output_col_builder);
-  auto res = types::GetValueFromArrowArray<T>(input_col, row);
-
-  if constexpr (std::is_same_v<arrow::StringBuilder,
-                               typename types::DataTypeTraits<T>::arrow_builder_type>) {
-    int64_t size = res.size() + typed_col_builder->value_data_length();
-    if (size >= typed_col_builder->value_data_capacity()) {
-      PL_RETURN_IF_ERROR(typed_col_builder->ReserveData(std::lrint(1.5 * size)));
-    }
-  }
-
-  typed_col_builder->UnsafeAppend(res);
-  return Status::OK();
-}
-
 Status UnionNode::AppendRow(size_t parent) {
+  auto row = row_cursors_[parent];
   for (size_t i = 0; i < output_descriptor_->size(); ++i) {
-#define TYPE_CASE(_dt_) \
-  PL_RETURN_IF_ERROR(   \
-      CopyValue<_dt_>(data_columns_[parent][i], row_cursors_[parent], column_builders_[i].get()));
+    auto input_col = data_columns_[parent][i];
+#define TYPE_CASE(_dt_)                                    \
+  PL_RETURN_IF_ERROR(table_store::schema::CopyValue<_dt_>( \
+      column_builders_[i].get(), types::GetValueFromArrowArray<_dt_>(input_col, row)));
     PL_SWITCH_FOREACH_DATATYPE(output_descriptor_->type(i), TYPE_CASE);
 #undef TYPE_CASE
   }

@@ -33,6 +33,7 @@ pl_cc_test(
     srcs = ["row_batch_test.cc"],
     deps = [
         ":cc_library",
+        "//src/table_store/proto:schema_pl_cc_proto",
         "//third_party:arrow",
     ],
 )
