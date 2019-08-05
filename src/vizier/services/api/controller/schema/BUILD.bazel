@@ -12,6 +12,6 @@ go_library(
         "bindata.gen.go",
         "schema.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/services/api/controller/schema",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/services/api/controller/schema",
     visibility = ["//visibility:public"],
 )

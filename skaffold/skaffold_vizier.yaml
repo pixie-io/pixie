@@ -13,7 +13,7 @@ build:
   - image: gcr.io/pl-dev-infra/api_server_image
     context: .
     bazel:
-      target: //src/services/api:api_server_image.tar
+      target: //src/vizier/services/api:api_server_image.tar
   - image: gcr.io/pl-dev-infra/vizier_query_broker
     context: .
     bazel:
@@ -21,7 +21,7 @@ build:
   - image: gcr.io/pl-dev-infra/api_server_image
     context: .
     bazel:
-      target: //src/services/api:api_server_image.tar
+      target: //src/vizier/services/api:api_server_image.tar
   - image: gcr.io/pl-dev-infra/proxy_image
     context: .
     bazel:

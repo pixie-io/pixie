@@ -8,7 +8,7 @@ import {
   GQLDataTableRelation,
   GQLQuery,
   GQLQueryResult,
-} from '../../../../services/api/controller/schema/schema';
+} from '../../../../vizier/services/api/controller/schema/schema';
 
 import './vizier.scss';
 

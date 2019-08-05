@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["env.go"],
-    importpath = "pixielabs.ai/pixielabs/src/services/api/apienv",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/services/api/apienv",
     visibility = ["//visibility:public"],
     deps = [
         "//src/services/common:go_default_library",

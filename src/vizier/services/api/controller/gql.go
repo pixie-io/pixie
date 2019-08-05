@@ -6,9 +6,9 @@ import (
 
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
-	"pixielabs.ai/pixielabs/src/services/api/apienv"
-	"pixielabs.ai/pixielabs/src/services/api/controller/schema"
 	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
+	"pixielabs.ai/pixielabs/src/vizier/services/api/apienv"
+	"pixielabs.ai/pixielabs/src/vizier/services/api/controller/schema"
 )
 
 // QueryResolver resolves queries for GQL.

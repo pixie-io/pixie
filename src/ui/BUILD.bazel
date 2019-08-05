@@ -15,7 +15,7 @@ genrule(
         "src/**",
         "assets/**",
         "offline_package_cache/**",
-    ]) + ["//src/services/api/controller/schema:schema"],
+    ]) + ["//src/vizier/services/api/controller/schema:schema"],
     outs = [
         "bundle.tar.gz",
         "bundle_storybook.tar.gz",

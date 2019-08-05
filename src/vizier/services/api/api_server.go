@@ -4,11 +4,11 @@ import (
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
-	"pixielabs.ai/pixielabs/src/services/api/apienv"
-	"pixielabs.ai/pixielabs/src/services/api/controller"
 	"pixielabs.ai/pixielabs/src/services/common"
 	"pixielabs.ai/pixielabs/src/services/common/healthz"
 	"pixielabs.ai/pixielabs/src/services/common/httpmiddleware"
+	"pixielabs.ai/pixielabs/src/vizier/services/api/apienv"
+	"pixielabs.ai/pixielabs/src/vizier/services/api/controller"
 )
 
 func main() {

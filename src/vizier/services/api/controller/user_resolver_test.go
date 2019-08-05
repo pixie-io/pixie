@@ -5,9 +5,9 @@ import (
 
 	"github.com/graph-gophers/graphql-go"
 	"github.com/stretchr/testify/assert"
-	"pixielabs.ai/pixielabs/src/services/api/controller"
 	pb "pixielabs.ai/pixielabs/src/services/common/proto"
 	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
+	"pixielabs.ai/pixielabs/src/vizier/services/api/controller"
 )
 
 func TestUserInfoResolver(t *testing.T) {

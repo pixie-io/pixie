@@ -20,7 +20,7 @@ import {QueryResultViewer} from './query-result-viewer';
 // @ts-ignore : TS does not like image files.
 import * as loadingSvg from 'images/icons/Loading.svg';
 // TODO(zasgar/michelle): Figure out how to impor schema properly
-import {GQLQueryResult} from '../../../../services/api/controller/schema/schema';
+import {GQLQueryResult} from '../../../../vizier/services/api/controller/schema/schema';
 
 const HOT_KEY_MAP = {
   EXECUTE_QUERY: ['ctrl+enter', 'command+enter'],
