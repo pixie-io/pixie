@@ -559,6 +559,7 @@ def buildScriptForCommits = {
         parallel(builders)
       }
       stage('Archive') {
+        deleteDir()
         // Unstash the build artifacts.
         stashList.each({stashName ->
           dir(stashName) {
