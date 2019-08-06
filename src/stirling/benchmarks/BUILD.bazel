@@ -23,3 +23,11 @@ pl_cc_binary(
         "@com_google_benchmark//:benchmark_main",
     ],
 )
+
+pl_cc_binary(
+    name = "str_replace_benchmark",
+    srcs = ["str_replace_benchmark.cc"],
+    deps = [
+        "@com_google_benchmark//:benchmark_main",
+    ],
+)
