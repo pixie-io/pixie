@@ -80,19 +80,11 @@ type AgentStatus {
   state: AgentState!
 }
 
-type UserInfo {
-  id: ID!
-  name: String!
-  email: String!
-  picture: String!
-}
-
 type VizierInfo {
   agents: [AgentStatus]
 }
 
 type Query {
-  user: UserInfo!
   vizier: VizierInfo
 }
 

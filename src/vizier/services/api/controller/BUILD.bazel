@@ -4,7 +4,6 @@ go_library(
     name = "go_default_library",
     srcs = [
         "gql.go",
-        "user_resolver.go",
         "vizier_resolver.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/api/controller",
@@ -27,10 +26,7 @@ go_library(
 
 go_test(
     name = "go_default_test",
-    srcs = [
-        "user_resolver_test.go",
-        "vizier_resolver_test.go",
-    ],
+    srcs = ["vizier_resolver_test.go"],
     embed = [":go_default_library"],
     deps = [
         "//src/carnot/queryresultspb:query_results_pl_go_proto",
@@ -50,7 +46,6 @@ go_test(
         "@com_github_graph_gophers_graphql_go//errors:go_default_library",
         "@com_github_graph_gophers_graphql_go//gqltesting:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
         "@org_golang_google_grpc//codes:go_default_library",
         "@org_golang_google_grpc//status:go_default_library",
     ],

@@ -12,15 +12,7 @@ import { GraphQLResolveInfo } from 'graphql';
  *                             *
  *******************************/
 export interface GQLQuery {
-  user: GQLUserInfo;
   vizier?: GQLVizierInfo;
-}
-
-export interface GQLUserInfo {
-  id: string;
-  name: string;
-  email: string;
-  picture: string;
 }
 
 export interface GQLVizierInfo {

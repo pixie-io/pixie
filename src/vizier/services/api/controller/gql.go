@@ -21,15 +21,6 @@ type MutationResolver struct {
 	Env apienv.APIEnv
 }
 
-// User resolves user information.
-func (*QueryResolver) User(ctx context.Context) (*UserInfoResolver, error) {
-	sCtx, err := sessioncontext.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &UserInfoResolver{sCtx}, nil
-}
-
 // Vizier resolves vizier information.
 func (q *QueryResolver) Vizier(ctx context.Context) (*VizierInfoResolver, error) {
 	sCtx, err := sessioncontext.FromContext(ctx)
