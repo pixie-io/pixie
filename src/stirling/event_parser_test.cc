@@ -26,7 +26,7 @@ TEST(EventParserTest, ParsesMessagesConsumeNoDataFromBuf) {
   EventParser<Frame> parser;
   std::deque<Frame> frames;
   parser.Append("PRI * HTTP/2.0", 0u);
-  ParseResult<BufferPosition> res = parser.ParseMessages(MessageType::kRequests, &frames);
+  ParseResult<BufferPosition> res = parser.ParseMessages(MessageType::kRequest, &frames);
 
   EXPECT_EQ(ParseState::kNeedsMoreData, res.state);
   EXPECT_THAT(res.start_positions, IsEmpty());

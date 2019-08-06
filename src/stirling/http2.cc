@@ -345,7 +345,7 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
         // This also indicates this message is a request. Keep appending data, and then export when
         // END_STREAM is seen.
         if (IsEndStream(f->frame.hd)) {
-          msg.type = MessageType::kRequests;
+          msg.type = MessageType::kRequest;
           handle_end_stream(f);
         }
         break;
@@ -358,7 +358,7 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
         // frame. This also indicates this message is a response.
         // No CONTINUATION frame will be used.
         if (IsEndStream(f->frame.hd)) {
-          msg.type = MessageType::kResponses;
+          msg.type = MessageType::kResponse;
           handle_end_stream(f);
         }
         break;

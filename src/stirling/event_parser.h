@@ -15,7 +15,7 @@ namespace pl {
 namespace stirling {
 
 // The direction of traffic expected on a probe.
-enum class MessageType { kUnknown, kRequests, kResponses, kMixed };
+enum class MessageType { kUnknown, kRequest, kResponse };
 
 enum class ParseState {
   kUnknown,

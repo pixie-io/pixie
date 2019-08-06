@@ -22,9 +22,9 @@ struct MySQLParser {
 
   ParseState Write(MessageType type, MySQLMessage* result) {
     switch (type) {
-      case MessageType::kRequests:
+      case MessageType::kRequest:
         return WriteRequest(result);
-      case MessageType::kResponses:
+      case MessageType::kResponse:
         return WriteResponse(result);
       default:
         return ParseState::kUnknown;

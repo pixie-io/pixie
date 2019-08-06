@@ -90,9 +90,9 @@ bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
 struct PicoHTTPParserWrapper {
   ParseState Parse(MessageType type, std::string_view buf) {
     switch (type) {
-      case MessageType::kRequests:
+      case MessageType::kRequest:
         return ParseRequest(buf);
-      case MessageType::kResponses:
+      case MessageType::kResponse:
         return ParseResponse(buf);
       default:
         return ParseState::kInvalid;
@@ -100,9 +100,9 @@ struct PicoHTTPParserWrapper {
   }
   ParseState Write(MessageType type, HTTPMessage* result) {
     switch (type) {
-      case MessageType::kRequests:
+      case MessageType::kRequest:
         return WriteRequest(result);
-      case MessageType::kResponses:
+      case MessageType::kResponse:
         return WriteResponse(result);
       default:
         return ParseState::kUnknown;

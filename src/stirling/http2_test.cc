@@ -117,11 +117,11 @@ MATCHER_P2(HasMsgAndHdrs, msg, hdrs, "") { return arg.message == msg && arg.head
 
 TEST(MatchGRPCReqRespTest, InputsAreMoved) {
   std::map<uint32_t, std::vector<GRPCMessage>> reqs{
-      {1u, GRPCMsgs(MessageType::kRequests, "a", {{"h1", "v1"}})},
-      {2u, GRPCMsgs(MessageType::kRequests, "b", {{"h2", "v2"}})}};
+      {1u, GRPCMsgs(MessageType::kRequest, "a", {{"h1", "v1"}})},
+      {2u, GRPCMsgs(MessageType::kRequest, "b", {{"h2", "v2"}})}};
   std::map<uint32_t, std::vector<GRPCMessage>> resps{
-      {0u, GRPCMsgs(MessageType::kResponses, "c", {{"h3", "v3"}})},
-      {1u, GRPCMsgs(MessageType::kResponses, "d", {{"h4", "v4"}})}};
+      {0u, GRPCMsgs(MessageType::kResponse, "c", {{"h3", "v3"}})},
+      {1u, GRPCMsgs(MessageType::kResponse, "d", {{"h4", "v4"}})}};
 
   std::vector<GRPCReqResp> matched_msgs = MatchGRPCReqResp(std::move(reqs), std::move(resps));
   ASSERT_THAT(matched_msgs, SizeIs(1));
@@ -173,12 +173,12 @@ TEST(StitchGRPCStreamFramesTest, StitchReqsRespsOfDifferentStreams) {
   ASSERT_THAT(stream_msgs, ElementsAre(Pair(1, SizeIs(1)), Pair(2, SizeIs(1))));
 
   const GRPCMessage& req_msg = stream_msgs[2][0];
-  EXPECT_EQ(MessageType::kRequests, req_msg.type);
+  EXPECT_EQ(MessageType::kRequest, req_msg.type);
   EXPECT_EQ("abcd", req_msg.message);
   EXPECT_THAT(req_msg.frames, ElementsAre(&frames[1], &frames[3]));
 
   const GRPCMessage& resp_msg = stream_msgs[1][0];
-  EXPECT_EQ(MessageType::kResponses, resp_msg.type);
+  EXPECT_EQ(MessageType::kResponse, resp_msg.type);
   EXPECT_EQ("abcd", resp_msg.message);
   // Note we put the HEADERS frames first, and then DATA frames.
   EXPECT_THAT(resp_msg.frames, ElementsAre(&frames[0], &frames[4], &frames[2]));

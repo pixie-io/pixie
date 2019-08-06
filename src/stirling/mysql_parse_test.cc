@@ -70,7 +70,7 @@ TEST_F(MySQLParserTest, ParseComStmtPrepare) {
   parser_.Append(msg2, 1);
 
   std::deque<MySQLMessage> parsed_messages;
-  ParseResult result = parser_.ParseMessages(MessageType::kRequests, &parsed_messages);
+  ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
@@ -90,7 +90,7 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
   parser_.Append(msg1, 0);
 
   std::deque<MySQLMessage> parsed_messages;
-  ParseResult result = parser_.ParseMessages(MessageType::kRequests, &parsed_messages);
+  ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1));
@@ -112,7 +112,7 @@ TEST_F(MySQLParserTest, ParseComQuery) {
   parser_.Append(msg2, 1);
 
   std::deque<MySQLMessage> parsed_messages;
-  ParseResult result = parser_.ParseMessages(MessageType::kRequests, &parsed_messages);
+  ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
@@ -123,7 +123,7 @@ TEST_F(MySQLParserTest, ParseResponse) {
   parser_.Append(kMySQLStmtPrepareMessage.response, 0);
 
   std::deque<MySQLMessage> parsed_messages;
-  ParseResult result = parser_.ParseMessages(MessageType::kResponses, &parsed_messages);
+  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
   EXPECT_EQ(ParseState::kSuccess, result.state);
 
   MySQLMessage expected_header;

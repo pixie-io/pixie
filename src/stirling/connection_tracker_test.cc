@@ -107,8 +107,8 @@ TEST_F(ConnectionTrackerTest, timestamp_test) {
 
 TEST(DataStreamTest, CannotSwitchType) {
   DataStream stream;
-  stream.ExtractMessages<HTTPMessage>(MessageType::kRequests);
-  EXPECT_DEATH(stream.ExtractMessages<http2::Frame>(MessageType::kRequests),
+  stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
+  EXPECT_DEATH(stream.ExtractMessages<http2::Frame>(MessageType::kRequest),
                "ConnectionTracker cannot change the type it holds during runtime");
 }
 

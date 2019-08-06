@@ -291,14 +291,14 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* 
         continue;
       }
       auto& resp_messages =
-          resp_data->template ExtractMessages<TMessageType>(MessageType::kResponses);
+          resp_data->template ExtractMessages<TMessageType>(MessageType::kResponse);
 
       DataStream* req_data = tracker.req_data();
       if (req_data == nullptr) {
         LOG(ERROR) << "Unexpected nullptr for req_data";
         continue;
       }
-      auto& req_messages = req_data->template ExtractMessages<TMessageType>(MessageType::kRequests);
+      auto& req_messages = req_data->template ExtractMessages<TMessageType>(MessageType::kRequest);
 
       ProcessMessages<TMessageType>(tracker, &req_messages, &resp_messages, data_table);
 

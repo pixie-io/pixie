@@ -57,14 +57,14 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
 }
 
 ParseState MySQLParser::Parse(MessageType type, std::string_view buf) {
-  if (type != MessageType::kRequests && type != MessageType::kResponses) {
+  if (type != MessageType::kRequest && type != MessageType::kResponse) {
     return ParseState::kInvalid;
   }
 
   if (buf.size() <= kPacketHeaderLength) {
     return ParseState::kInvalid;
   }
-  if (type == MessageType::kRequests) {
+  if (type == MessageType::kRequest) {
     MySQLEventType event_type = infer_mysql_event_type(buf.substr(4));
     if (event_type == MySQLEventType::kUnknown) {
       return ParseState::kInvalid;
