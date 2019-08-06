@@ -142,7 +142,7 @@ Status CopyFromInputPB(std::shared_ptr<arrow::Array>* output_column,
   return Status::OK();
 }
 
-Status RowBatch::ToProto(table_store::schemapb::RowBatchData* proto) {
+Status RowBatch::ToProto(table_store::schemapb::RowBatchData* proto) const {
   proto->set_num_rows(num_rows_);
   proto->set_eow(eow_);
   proto->set_eos(eos_);
