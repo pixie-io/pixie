@@ -26,6 +26,16 @@ spec:
               secretKeyRef:
                 name: pl-app-secrets
                 key: jwt-signing-key
+          - name: PL_AUTH0_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: pl-app-secrets
+                key: auth0-client-id
+          - name: PL_AUTH0_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: pl-app-secrets
+                key: auth0-client-secret
           - name: PL_SERVER_TLS_CERT
             value: /certs/server.crt
           - name: PL_SERVER_TLS_KEY

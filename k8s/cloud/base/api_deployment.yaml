@@ -26,6 +26,13 @@ spec:
               secretKeyRef:
                 name: pl-app-secrets
                 key: jwt-signing-key
+          - name: PL_SESSION_KEY
+            valueFrom:
+              secretKeyRef:
+                name: pl-app-secrets
+                key: session-key
+          - name: PL_AUTH_SERVICE
+            value: auth-service.plc.svc.cluster.local:50101
           - name: PL_SERVER_TLS_CERT
             value: /certs/server.crt
           - name: PL_SERVER_TLS_KEY
