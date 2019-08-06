@@ -627,7 +627,7 @@ def buildScriptForNightly = {
  *****************************************************************************/
 def regressionBuilders = [:]
 
-TEST_ITERATIONS=1000
+TEST_ITERATIONS=100
 
 regressionBuilders['Test (opt)'] = {
   WithSourceCode {
