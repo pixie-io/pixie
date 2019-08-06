@@ -16,4 +16,6 @@ create_namespace ${vizier_namespace}
 create_namespace ${cloud_namespace}
 
 ${workspace}/scripts/load_secrets.sh ${vizier_namespace}
+${workspace}/scripts/load_secrets.sh ${cloud_namespace}
+
 ${workspace}/scripts/deploy_cluster_operators.sh ${vizier_namespace}
