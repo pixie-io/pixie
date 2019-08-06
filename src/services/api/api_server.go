@@ -7,6 +7,7 @@ import (
 	"pixielabs.ai/pixielabs/src/services/api/apienv"
 	"pixielabs.ai/pixielabs/src/services/api/controller"
 	"pixielabs.ai/pixielabs/src/services/common"
+	"pixielabs.ai/pixielabs/src/services/common/handler"
 	"pixielabs.ai/pixielabs/src/services/common/healthz"
 	"pixielabs.ai/pixielabs/src/services/common/httpmiddleware"
 )
@@ -21,19 +22,27 @@ func main() {
 	common.CheckSSLClientFlags()
 	common.SetupServiceLogging()
 
-	env, err := apienv.New()
+	ac, err := controller.NewAuthClient()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to init auth client")
+	}
+
+	env, err := apienv.New(ac)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}
-	h := http.Handler(controller.NewGraphQLHandler(env))
+
 	mux := http.NewServeMux()
-	mux.Handle("/graphql", h)
+	mux.Handle("/api/auth/login", handler.New(env, controller.AuthLoginHandler))
+	mux.Handle("/api/auth/logout", handler.New(env, controller.AuthLogoutHandler))
+	mux.Handle("/api/graphql",
+		httpmiddleware.WithNewSessionMiddleware(
+			controller.WithSessionAuthMiddleware(env,
+				controller.WithAugmentedAuthMiddleware(env,
+					controller.NewGraphQLHandler(env)))))
 
 	healthz.RegisterDefaultChecks(mux)
-
-	s := common.NewPLServer(env,
-		httpmiddleware.WithNewSessionMiddleware(
-			httpmiddleware.WithBearerAuthMiddleware(env, mux)))
+	s := common.NewPLServer(env, mux)
 	s.Start()
 	s.StopOnInterrupt()
 }

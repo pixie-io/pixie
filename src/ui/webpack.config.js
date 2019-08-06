@@ -147,12 +147,12 @@ module.exports = (env) => {
         'http' + (sslDisabled ? '' : 's') + '://' + utils.findGatewayProxyPath();
   }
 
-  var proxyEntry = {
-    context: ['/graphql'],
+  var proxyEntryAPI = {
+    context: ['/api'],
     target: gatewayPath,
     secure: false,
   };
 
-  webpackConfig.devServer.proxy.push(proxyEntry);
+  webpackConfig.devServer.proxy.push(proxyEntryAPI);
   return webpackConfig;
 };

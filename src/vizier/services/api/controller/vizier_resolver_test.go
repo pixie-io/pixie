@@ -26,7 +26,7 @@ import (
 	mock_proto "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb/mock"
 )
 
-// Impl is an implementation of the ApiEnv interface
+// Impl is an implementation of the APIEnv interface
 type FakeAPIEnv struct {
 	*env.BaseEnv
 	client *mock_proto.MockQueryBrokerServiceClient
