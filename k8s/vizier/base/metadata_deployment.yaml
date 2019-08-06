@@ -13,7 +13,7 @@ spec:
         name: vizier-metadata
     spec:
       containers:
-      - image: gcr.io/pl-dev-infra/vizier_metadata:latest
+      - image: gcr.io/pl-dev-infra/vizier/metadata_server_image:latest
         name: vizier-metadata
         env:
         - name: PL_JWT_SIGNING_KEY

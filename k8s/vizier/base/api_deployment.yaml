@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: vizier-api-server
-        image: gcr.io/pl-dev-infra/api_server_image
+        image: gcr.io/pl-dev-infra/vizier/api_server_image:latest
         ports:
           - containerPort: 50200
             hostPort: 50200

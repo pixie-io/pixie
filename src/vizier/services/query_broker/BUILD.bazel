@@ -29,16 +29,16 @@ go_binary(
 )
 
 go_image(
-    name = "vizier_query_broker_image",
+    name = "query_broker_server_image",
     binary = ":query_broker",
     visibility = ["//visibility:public"],
 )
 
 container_push(
-    name = "push_vizier_query_broker_image",
+    name = "push_query_broker_server_image",
     format = "Docker",
-    image = ":vizier_query_broker_image",
+    image = ":query_broker_server_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/vizier_query_broker",
+    repository = "pl-dev-infra/vizier/query_broker_server_image",
     tag = "{STABLE_BUILD_TAG}",
 )

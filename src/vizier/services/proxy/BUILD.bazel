@@ -15,7 +15,7 @@ container_layer(
 )
 
 container_image(
-    name = "proxy_prod_image",
+    name = "proxy_server_prod_image",
     base = "@nginx_base//image",
     layers = [
         ":conf",
@@ -25,7 +25,7 @@ container_image(
 )
 
 container_image(
-    name = "proxy_dev_image",
+    name = "proxy_server_dev_image",
     base = "@nginx_base//image",
     layers = [
         ":conf",
@@ -36,8 +36,8 @@ container_image(
 container_push(
     name = "push_proxy_dev_image",
     format = "Docker",
-    image = ":proxy_dev_image",
+    image = ":proxy_server_dev_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/proxy_dev",
+    repository = "pl-dev-infra/vizier/proxy_server_dev_image",
     tag = "{STABLE_BUILD_TAG}",
 )

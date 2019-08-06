@@ -30,16 +30,16 @@ go_binary(
 )
 
 go_image(
-    name = "vizier_metadata_image",
+    name = "metadata_server_image",
     binary = ":metadata",
     visibility = ["//visibility:public"],
 )
 
 container_push(
-    name = "push_vizier_metadata_image",
+    name = "push_vizier_metadata_server_image",
     format = "Docker",
-    image = ":vizier_metadata_image",
+    image = ":metadata_server_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/vizier_metadata",
+    repository = "pl-dev-infra/vizier/metadata_server_image",
     tag = "{STABLE_BUILD_TAG}",
 )

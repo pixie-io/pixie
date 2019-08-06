@@ -13,7 +13,7 @@ spec:
         name: vizier-query-broker
     spec:
       containers:
-      - image: gcr.io/pl-dev-infra/vizier_query_broker:latest
+      - image: gcr.io/pl-dev-infra/vizier/query_broker_server_image:latest
         name: vizier-query-broker
         ports:
         - containerPort: 50300
