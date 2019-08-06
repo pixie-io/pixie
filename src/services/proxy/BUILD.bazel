@@ -1,0 +1,43 @@
+load("@io_bazel_rules_docker//container:image.bzl", "container_image")
+load("@io_bazel_rules_docker//container:layer.bzl", "container_layer")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+
+container_layer(
+    name = "conf",
+    directory = "/etc/nginx/conf.d",
+    files = ["default.conf"],
+)
+
+container_layer(
+    name = "ui_assets",
+    directory = "/assets",
+    tars = ["//src/ui:bundle.tar.gz"],
+)
+
+container_image(
+    name = "proxy_prod_image",
+    base = "@nginx_base//image",
+    layers = [
+        ":conf",
+        ":ui_assets",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+container_image(
+    name = "proxy_dev_image",
+    base = "@nginx_base//image",
+    layers = [
+        ":conf",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+container_push(
+    name = "push_proxy_dev_image",
+    format = "Docker",
+    image = ":proxy_dev_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/proxy_dev",
+    tag = "{STABLE_BUILD_TAG}",
+)

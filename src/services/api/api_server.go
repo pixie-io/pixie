@@ -14,7 +14,7 @@ import (
 func main() {
 	log.WithField("service", "api-service(cloud)").Info("Starting service")
 
-	common.SetupService("api-service", 50200)
+	common.SetupService("api-service", 51200)
 	common.SetupSSLClientFlags()
 	common.PostFlagSetupAndParse()
 	common.CheckServiceFlags()
