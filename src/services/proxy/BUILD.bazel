@@ -38,6 +38,6 @@ container_push(
     format = "Docker",
     image = ":proxy_dev_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/proxy_dev",
+    repository = "pl-dev-infra/cloud/proxy_dev_image",
     tag = "{STABLE_BUILD_TAG}",
 )
