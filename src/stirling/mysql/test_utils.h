@@ -25,6 +25,8 @@ Packet GenStmtPrepareRespHeader(const StmtPrepareRespHeader& header);
 
 Packet GenStmtExecuteRequest(const StmtExecuteRequest& req);
 
+Packet GenStringRequest(const StringRequest& req, MySQLEventType type);
+
 std::deque<Packet> GenResultset(const Resultset& resultset);
 
 std::deque<Packet> GenStmtPrepareOKResponse(const StmtPrepareOKResponse& resp);

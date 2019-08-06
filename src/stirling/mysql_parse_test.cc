@@ -25,7 +25,7 @@ class MySQLParserTest : public ::testing::Test {
   // TODO(chengruizhe): Define GenResponse to generate responses.
   MySQLReqResp kMySQLStmtPrepareMessage = {
       testutils::GenRequest(
-          MySQLParser::kComStmtPrepare,
+          kComStmtPrepare,
           "SELECT COUNT(DISTINCT sock.sock_id) FROM sock JOIN sock_tag ON "
           "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id;"),
       // Response
@@ -51,20 +51,16 @@ bool operator==(const MySQLMessage& lhs, const MySQLMessage& rhs) {
 }
 
 TEST_F(MySQLParserTest, ParseComStmtPrepare) {
-  std::string msg1 =
-      testutils::GenRequest(MySQLParser::kComStmtPrepare, "SELECT name FROM users WHERE id = ?");
-  std::string msg2 =
-      testutils::GenRequest(MySQLParser::kComStmtPrepare, "SELECT age FROM users WHERE id = ?");
+  std::string msg1 = testutils::GenRequest(kComStmtPrepare, "SELECT name FROM users WHERE id = ?");
+  std::string msg2 = testutils::GenRequest(kComStmtPrepare, "SELECT age FROM users WHERE id = ?");
 
   MySQLMessage expected_message1;
   expected_message1.type = MySQLEventType::kComStmtPrepare;
-  expected_message1.msg =
-      absl::StrCat(MySQLParser::kComStmtPrepare, "SELECT name FROM users WHERE id = ?");
+  expected_message1.msg = absl::StrCat(kComStmtPrepare, "SELECT name FROM users WHERE id = ?");
 
   MySQLMessage expected_message2;
   expected_message2.type = MySQLEventType::kComStmtPrepare;
-  expected_message2.msg =
-      absl::StrCat(MySQLParser::kComStmtPrepare, "SELECT age FROM users WHERE id = ?");
+  expected_message2.msg = absl::StrCat(kComStmtPrepare, "SELECT age FROM users WHERE id = ?");
 
   parser_.Append(msg1, 0);
   parser_.Append(msg2, 1);
@@ -81,11 +77,11 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
   // https://dev.mysql.com/doc/internals/en/com-stmt-execute.html.
   const std::string body =
       std::string("\x01\x00\x00\x00\x00\x01\x00\x00\x00\x00\x01\x0f\x00\x03\x66\x6f\x6f", 17);
-  std::string msg1 = testutils::GenRequest(MySQLParser::kComStmtExecute, body);
+  std::string msg1 = testutils::GenRequest(kComStmtExecute, body);
 
   MySQLMessage expected_message1;
   expected_message1.type = MySQLEventType::kComStmtExecute;
-  expected_message1.msg = absl::StrCat(MySQLParser::kComStmtExecute, body);
+  expected_message1.msg = absl::StrCat(kComStmtExecute, body);
 
   parser_.Append(msg1, 0);
 
@@ -97,16 +93,16 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
 }
 
 TEST_F(MySQLParserTest, ParseComQuery) {
-  std::string msg1 = testutils::GenRequest(MySQLParser::kComQuery, "SELECT name FROM users");
-  std::string msg2 = testutils::GenRequest(MySQLParser::kComQuery, "SELECT age FROM users");
+  std::string msg1 = testutils::GenRequest(kComQuery, "SELECT name FROM users");
+  std::string msg2 = testutils::GenRequest(kComQuery, "SELECT age FROM users");
 
   MySQLMessage expected_message1;
   expected_message1.type = MySQLEventType::kComQuery;
-  expected_message1.msg = absl::StrCat(MySQLParser::kComQuery, "SELECT name FROM users");
+  expected_message1.msg = absl::StrCat(kComQuery, "SELECT name FROM users");
 
   MySQLMessage expected_message2;
   expected_message2.type = MySQLEventType::kComQuery;
-  expected_message2.msg = absl::StrCat(MySQLParser::kComQuery, "SELECT age FROM users");
+  expected_message2.msg = absl::StrCat(kComQuery, "SELECT age FROM users");
 
   parser_.Append(msg1, 0);
   parser_.Append(msg2, 1);

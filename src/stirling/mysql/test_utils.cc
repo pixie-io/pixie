@@ -170,6 +170,28 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
 }
 
 /**
+ * Generates a String Request packet. Takes in an eventType for now.
+ * TODO(chengruizhe): Remove MySQLEventType once type is inferred in stitcher.
+ */
+Packet GenStringRequest(const StringRequest& req, MySQLEventType type) {
+  ConstStrView command = "";
+  switch (type) {
+    case MySQLEventType::kComStmtPrepare:
+      command = kComStmtPrepare;
+      break;
+    case MySQLEventType::kComStmtExecute:
+      command = kComStmtExecute;
+      break;
+    case MySQLEventType::kComQuery:
+      command = kComQuery;
+      break;
+    default:
+      break;
+  }
+  return Packet{0, absl::StrCat(command, req.msg()), type};
+}
+
+/**
  * Generates a Err packet.
  */
 Packet GenErr(const ErrResponse& err) {

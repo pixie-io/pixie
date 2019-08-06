@@ -34,9 +34,6 @@ struct MySQLParser {
   ParseState WriteResponse(MySQLMessage* result);
 
   std::string_view unparsed_data;
-  inline static constexpr ConstStrView kComStmtPrepare = "\x16";
-  inline static constexpr ConstStrView kComStmtExecute = "\x17";
-  inline static constexpr ConstStrView kComQuery = "\x03";
 
   inline static constexpr int kPacketHeaderLength = 4;
 

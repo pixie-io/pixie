@@ -40,6 +40,10 @@ inline constexpr char kBlobPrefix = '\xfc';
 inline constexpr char kVarStringPrefix = '\xfd';
 inline constexpr char kStringPrefix = '\xfe';
 
+inline constexpr ConstStrView kComStmtPrepare = "\x16";
+inline constexpr ConstStrView kComStmtExecute = "\x17";
+inline constexpr ConstStrView kComQuery = "\x03";
+
 inline constexpr char kLencIntPrefix2b = '\xfc';
 inline constexpr char kLencIntPrefix3b = '\xfd';
 inline constexpr char kLencIntPrefix8b = '\xfe';

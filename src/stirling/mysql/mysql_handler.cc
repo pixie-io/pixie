@@ -209,7 +209,7 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
 }
 
 StatusOr<std::unique_ptr<StringRequest>> HandleStringRequest(const Packet& req_packet) {
-  return std::make_unique<StringRequest>(StringRequest(req_packet.msg));
+  return std::make_unique<StringRequest>(StringRequest(req_packet.msg.substr(1)));
 }
 
 StatusOr<std::unique_ptr<StmtExecuteRequest>> HandleStmtExecuteRequest(

@@ -68,6 +68,10 @@ bool operator==(const StmtExecuteRequest& lhs, const StmtExecuteRequest& rhs) {
   return true;
 }
 
+bool operator==(const StringRequest& lhs, const StringRequest& rhs) {
+  return lhs.msg() == rhs.msg() && lhs.type() == rhs.type();
+}
+
 bool operator==(const Resultset& lhs, const Resultset& rhs) {
   if (lhs.num_col() != rhs.num_col()) {
     return false;
@@ -138,6 +142,15 @@ TEST_F(HandlerTest, TestHandleStmtExecuteRequest) {
   EXPECT_TRUE(s.ok());
   auto result_request = s.ValueOrDie().get();
   EXPECT_EQ(testutils::kStmtExecuteRequest, *result_request);
+}
+
+TEST_F(HandlerTest, TestHandleStringRequest) {
+  Packet req_packet =
+      testutils::GenStringRequest(testutils::kStmtPrepareRequest, MySQLEventType::kComStmtPrepare);
+  auto s = HandleStringRequest(req_packet);
+  EXPECT_TRUE(s.ok());
+  auto result_request = s.ValueOrDie().get();
+  EXPECT_EQ(testutils::kStmtPrepareRequest, *result_request);
 }
 
 // TODO(chengruizhe): Add failure test cases.

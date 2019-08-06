@@ -15,11 +15,11 @@ namespace mysql {
 namespace {
 MySQLEventType infer_mysql_event_type(std::string_view buf) {
   std::string_view command = buf.substr(0, 1);
-  if (command == MySQLParser::kComStmtPrepare) {
+  if (command == kComStmtPrepare) {
     return MySQLEventType::kComStmtPrepare;
-  } else if (command == MySQLParser::kComStmtExecute) {
+  } else if (command == kComStmtExecute) {
     return MySQLEventType::kComStmtExecute;
-  } else if (command == MySQLParser::kComQuery) {
+  } else if (command == kComQuery) {
     return MySQLEventType::kComQuery;
   } else {
     return MySQLEventType::kUnknown;

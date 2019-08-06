@@ -93,6 +93,24 @@ ReqRespEvent InitStmtExecute() {
   return ReqRespEvent(MySQLEventType::kComStmtExecute, std::move(req_ptr), std::move(resp_ptr));
 }
 
+/**
+ * Query Event with 1 column and 3 resultset rows.
+ */
+const StringRequest kQueryRequest("SELECT name FROM tag;");
+
+const std::vector<ColDefinition> kQueryColDefs = {ColDefinition{
+    std::string(ConstStrView("\x2b\x00\x00\x02\x03\x64\x65\x66\x07\x73\x6f\x63\x6b\x73\x64\x62"
+                             "\x03\x74\x61\x67\x03\x74\x61\x67\x04\x6e\x61\x6d\x65\x04\x6e\x61"
+                             "\x6d\x65\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\x00"))}};
+
+const std::vector<ResultsetRow> kQueryResultsetRows = {
+    ResultsetRow{std::string(ConstStrView("\x05brown"))},
+    ResultsetRow{std::string(ConstStrView("\x04geek"))},
+    ResultsetRow{std::string(ConstStrView("\x06formal"))},
+};
+
+const Resultset kQueryResultset(1, kQueryColDefs, kQueryResultsetRows);
+
 }  // namespace testutils
 }  // namespace mysql
 }  // namespace stirling

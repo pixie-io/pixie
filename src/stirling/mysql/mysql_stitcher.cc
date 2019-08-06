@@ -12,12 +12,34 @@ namespace stirling {
 namespace mysql {
 
 namespace {
-// TODO(chengruizhe): Implement in next diff.
 std::string CombinePrepareExecute(const StmtExecuteRequest* req,
                                   std::map<int, ReqRespEvent>* prepare_events) {
-  PL_UNUSED(req);
-  PL_UNUSED(prepare_events);
-  return "pixie";
+  auto iter = prepare_events->find(req->stmt_id());
+  if (iter == prepare_events->end()) {
+    return "";
+  }
+
+  std::string_view stmt_prepare_request =
+      static_cast<StringRequest*>(iter->second.request())->msg();
+
+  size_t offset = 0;
+  size_t count = 0;
+  std::string result = "";
+
+  for (size_t index = stmt_prepare_request.find("?", offset); index != std::string::npos;
+       index = stmt_prepare_request.find("?", offset)) {
+    if (count >= req->params().size()) {
+      LOG(WARNING) << "Unequal number of stmt exec parameters for stmt prepare.";
+      break;
+    }
+    absl::StrAppend(&result, stmt_prepare_request.substr(offset, index - offset),
+                    req->params()[count].value);
+    count++;
+    offset = index + 1;
+  }
+  result += stmt_prepare_request.substr(offset);
+
+  return result;
 }
 
 // TODO(chengruizhe): Use RapidJSON to generate JSON.
