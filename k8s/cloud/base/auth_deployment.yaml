@@ -1,0 +1,45 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: auth-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: auth-server
+  template:
+    metadata:
+      labels:
+        name: auth-server
+    spec:
+      containers:
+      - name: auth-server
+        image: gcr.io/pl-dev-infra/cloud/auth_server_image:latest
+        ports:
+          - containerPort: 50100
+            hostPort: 50100
+          - containerPort: 50101
+            hostPort: 50101
+        env:
+          - name: PL_JWT_SIGNING_KEY
+            valueFrom:
+              secretKeyRef:
+                name: pl-app-secrets
+                key: jwt-signing-key
+          - name: PL_SERVER_TLS_CERT
+            value: /certs/server.crt
+          - name: PL_SERVER_TLS_KEY
+            value: /certs/server.key
+          - name: PL_CLIENT_TLS_CERT
+            value: /certs/client.crt
+          - name: PL_CLIENT_TLS_KEY
+            value: /certs/client.key
+          - name: PL_TLS_CA_CERT
+            value: /certs/ca.crt
+        volumeMounts:
+            - name: certs
+              mountPath: /certs
+      volumes:
+        - name: certs
+          secret:
+            secretName: service-tls-certs

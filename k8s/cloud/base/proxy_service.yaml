@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud-proxy-service
+  annotations:
+    cloud.google.com/load-balancer-type: internal
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 443
+      protocol: TCP
+      targetPort: 56000
+      name: tcp-https
+  selector:
+    name: cloud-proxy-server
