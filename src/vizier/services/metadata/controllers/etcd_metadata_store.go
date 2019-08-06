@@ -7,6 +7,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/clientv3/concurrency"
@@ -23,20 +24,27 @@ import (
 
 // EtcdMetadataStore is the implementation of our metadata store in etcd.
 type EtcdMetadataStore struct {
-	client *clientv3.Client
-	sess   *concurrency.Session
+	client         *clientv3.Client
+	sess           *concurrency.Session
+	expiryDuration time.Duration
 }
 
 // NewEtcdMetadataStore creates a new etcd metadata store.
 func NewEtcdMetadataStore(client *clientv3.Client) (*EtcdMetadataStore, error) {
+	return NewEtcdMetadataStoreWithExpiryTime(client, 24*time.Hour)
+}
+
+// NewEtcdMetadataStoreWithExpiryTime creates a new etcd metadata store with the given expiry time.
+func NewEtcdMetadataStoreWithExpiryTime(client *clientv3.Client, expiryDuration time.Duration) (*EtcdMetadataStore, error) {
 	sess, err := concurrency.NewSession(client, concurrency.WithContext(context.Background()))
 	if err != nil {
 		log.WithError(err).Fatal("Could not create new session for etcd")
 	}
 
 	mds := &EtcdMetadataStore{
-		client: client,
-		sess:   sess,
+		client:         client,
+		sess:           sess,
+		expiryDuration: expiryDuration,
 	}
 
 	return mds, nil
@@ -51,7 +59,7 @@ func (mds *EtcdMetadataStore) UpdateEndpoints(e *metadatapb.Endpoints) error {
 
 	key := getEndpointKey(e)
 
-	err = mds.updateValue(key, string(val))
+	err = mds.updateValue(key, string(val), e.Metadata.DeletionTimestampNS > 0)
 	if err != nil {
 		return err
 	}
@@ -67,7 +75,7 @@ func (mds *EtcdMetadataStore) UpdateEndpoints(e *metadatapb.Endpoints) error {
 		}
 	}
 
-	return mds.updateValue(mapKey, strings.Join(podIds, ","))
+	return mds.updateValue(mapKey, strings.Join(podIds, ","), e.Metadata.DeletionTimestampNS > 0)
 }
 
 // GetEndpoints gets all endpoints in the metadata store.
@@ -115,7 +123,7 @@ func (mds *EtcdMetadataStore) UpdatePod(p *metadatapb.Pod) error {
 
 	key := getPodKey(p)
 
-	return mds.updateValue(key, string(val))
+	return mds.updateValue(key, string(val), p.Metadata.DeletionTimestampNS > 0)
 }
 
 // GetPods gets all pods in the metadata store.
@@ -195,7 +203,7 @@ func (mds *EtcdMetadataStore) UpdateService(s *metadatapb.Service) error {
 
 	key := getServiceKey(s)
 
-	return mds.updateValue(key, string(val))
+	return mds.updateValue(key, string(val), s.Metadata.DeletionTimestampNS > 0)
 }
 
 // UpdateContainer adds or updates the given container in the metadata store.
@@ -207,7 +215,7 @@ func (mds *EtcdMetadataStore) UpdateContainer(c *metadatapb.ContainerInfo) error
 
 	key := getContainerKey(c)
 
-	return mds.updateValue(key, string(val))
+	return mds.updateValue(key, string(val), c.StopTimestampNS > 0)
 }
 
 // UpdateContainersFromPod updates the containers from the given pod in the metadata store.
@@ -233,7 +241,16 @@ func (mds *EtcdMetadataStore) UpdateContainersFromPod(pod *metadatapb.Pod) error
 			return errors.New("Unable to marshal containerInfo pb")
 		}
 
-		cOps[i] = clientv3.OpPut(key, string(val))
+		leaseID := clientv3.NoLease
+		if container.StopTimestampNS > 0 {
+			resp, err := mds.client.Grant(context.TODO(), int64(mds.expiryDuration.Seconds()))
+			if err != nil {
+				return errors.New("Could not get grant")
+			}
+			leaseID = resp.ID
+		}
+
+		cOps[i] = clientv3.OpPut(key, string(val), clientv3.WithLease(leaseID))
 	}
 
 	_, err := mds.client.Txn(context.TODO()).If().Then(cOps...).Commit()
@@ -315,11 +332,21 @@ func getProcessKey(upid string) string {
 	return path.Join("/", "processes", upid)
 }
 
-func (mds *EtcdMetadataStore) updateValue(key string, value string) error {
+func (mds *EtcdMetadataStore) updateValue(key string, value string, expire bool) error {
 	mu := concurrency.NewMutex(mds.sess, GetUpdateKey())
 	mu.Lock(context.Background())
 	defer mu.Unlock(context.Background())
-	_, err := mds.client.Put(context.Background(), key, value)
+
+	leaseID := clientv3.NoLease
+	if expire {
+		resp, err := mds.client.Grant(context.TODO(), int64(mds.expiryDuration.Seconds()))
+		if err != nil {
+			return errors.New("Could not get grant")
+		}
+		leaseID = resp.ID
+	}
+
+	_, err := mds.client.Put(context.Background(), key, value, clientv3.WithLease(leaseID))
 	if err != nil {
 		return errors.New("Unable to update etcd")
 	}
@@ -518,7 +545,17 @@ func (mds *EtcdMetadataStore) UpdateProcesses(processes []*metadatapb.ProcessInf
 		upid := types.UInt128FromProto(processPb.UPID)
 
 		processKey := getProcessKey(k8s.StringFromUPID(upid))
-		ops[i] = clientv3.OpPut(processKey, string(process))
+
+		leaseID := clientv3.NoLease
+		if processPb.StopTimestampNS > 0 {
+			resp, err := mds.client.Grant(context.TODO(), int64(mds.expiryDuration.Seconds()))
+			if err != nil {
+				return errors.New("Could not get grant")
+			}
+			leaseID = resp.ID
+		}
+
+		ops[i] = clientv3.OpPut(processKey, string(process), clientv3.WithLease(leaseID))
 	}
 
 	_, err := mds.client.Txn(context.TODO()).If().Then(ops...).Commit()
