@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "src/stirling/http2.h"
 #include "src/stirling/http_parse.h"
@@ -300,6 +301,24 @@ class ConnectionTracker {
    */
   std::chrono::seconds InactivityDuration() { return inactivity_duration_; }
 
+  enum class CountStats {
+    kDataEvent = 0,
+    kNumCountStats,
+  };
+
+  /**
+   * Increment a stats event counter for this tracker.
+   * @param stat stat selector.
+   */
+  void IncrementStat(CountStats stat) { ++stats_[static_cast<int>(stat)]; }
+
+  /**
+   * Get current value of a stats event counter for this tracker.
+   * @param stat stat selector.
+   * @return stat count value.
+   */
+  int64_t Stat(CountStats stat) { return stats_[static_cast<int>(stat)]; }
+
   /**
    * @brief Number of TransferData() (i.e. PerfBuffer read) calls any ConnectionTracker persists
    * after it has been marked for death. We keep ConnectionTrackers alive for debug purposes only,
@@ -348,7 +367,7 @@ class ConnectionTracker {
   // Iterations before the tracker can be killed.
   int32_t death_countdown_ = -1;
 
-  // TODO(oazizi): Could record a timestamp, so we could destroy old EventStreams completely.
+  std::vector<int64_t> stats_ = std::vector<int64_t>(static_cast<int>(CountStats::kNumCountStats));
 };
 
 }  // namespace stirling

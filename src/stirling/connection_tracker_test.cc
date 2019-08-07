@@ -105,6 +105,18 @@ TEST_F(ConnectionTrackerTest, timestamp_test) {
   EXPECT_EQ(8, tracker.last_bpf_timestamp_ns());
 }
 
+TEST_F(ConnectionTrackerTest, stats_counter) {
+  ConnectionTracker tracker;
+
+  EXPECT_EQ(0, tracker.Stat(ConnectionTracker::CountStats::kDataEvent));
+
+  tracker.IncrementStat(ConnectionTracker::CountStats::kDataEvent);
+  EXPECT_EQ(1, tracker.Stat(ConnectionTracker::CountStats::kDataEvent));
+
+  tracker.IncrementStat(ConnectionTracker::CountStats::kDataEvent);
+  EXPECT_EQ(2, tracker.Stat(ConnectionTracker::CountStats::kDataEvent));
+}
+
 TEST(DataStreamTest, CannotSwitchType) {
   DataStream stream;
   stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
