@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package pl.services;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/services/site_manager/sitemanagerpb;sitemanagerpb";
+
+
+service SiteManagerService {
+  // Checks to see a particular subdomain is available for registration.
+  rpc IsSiteAvailable(IsSiteAvailableRequest) returns (IsSiteAvailableResponse) {}
+}
+
+message IsSiteAvailableRequest {
+  // The domain name to check. For example, if we want to check that walmart.pixie.ai is available we will check
+  // the domain name walmart.
+  string domain_name = 1;
+}
+
+message IsSiteAvailableResponse {
+  bool available = 1;
+}
