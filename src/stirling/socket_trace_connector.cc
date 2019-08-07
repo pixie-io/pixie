@@ -8,7 +8,6 @@
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
 #include "src/stirling/bcc_bpf/socket_trace.h"
-#include "src/stirling/bpf_logging.h"
 #include "src/stirling/event_parser.h"
 #include "src/stirling/grpc.h"
 #include "src/stirling/http2.h"
@@ -48,13 +47,12 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders());
 
   std::vector<std::string> cflags;
-  if (FLAGS_enable_bpf_logging) {
+  if (FLAGS_stirling_bpf_enable_logging) {
     cflags.emplace_back("-DENABLE_BPF_LOGGING");
   }
   PL_RETURN_IF_ERROR(InitBPFCode(cflags));
   PL_RETURN_IF_ERROR(AttachProbes(kProbeSpecs));
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
-  PL_RETURN_IF_ERROR(InitBPFLogging(&bpf()));
   PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kRoleRequestor));
   PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kRoleRequestor));
   PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kRoleRequestor));
@@ -93,7 +91,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_
     default:
       CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
   }
-  DumpBPFLog(&bpf());
+  DumpBPFLog();
 }
 
 Status SocketTraceConnector::Configure(TrafficProtocol protocol, uint64_t config_mask) {
@@ -130,7 +128,7 @@ void SocketTraceConnector::ReadPerfBuffer(uint32_t table_num) {
       << "Index out of bound. Trying to read from perf buffer that doesn't exist.";
   auto buffer_names = kTablePerfBufferMap[table_num];
   for (auto& buffer_name : buffer_names) {
-    auto perf_buffer = bpf().get_perf_buffer(std::string(buffer_name.data()));
+    auto perf_buffer = bpf().get_perf_buffer(std::string(buffer_name));
     if (perf_buffer != nullptr) {
       perf_buffer->poll(1);
     }

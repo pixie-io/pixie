@@ -2,6 +2,10 @@
 
 #ifdef __linux__
 
+extern "C" {
+#include "src/stirling/bcc_bpf/log_event.h"
+}
+
 #include <bcc/BPF.h>
 #include <linux/perf_event.h>
 
@@ -16,6 +20,7 @@
 #include "src/stirling/source_connector.h"
 
 DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
+DECLARE_bool(stirling_bpf_enable_logging);
 
 namespace pl {
 namespace stirling {
@@ -168,6 +173,11 @@ class BCCWrapper {
   void DetachPerfEvents();
 
   /**
+   * @brief Dumps BPF logging events through GLOG logging facility.
+   */
+  void DumpBPFLog();
+
+  /**
    * Provide access to the BPF instance, for direct access.
    * Eventually, this should go away, and everything should
    * go through the API in the rest of this class.
@@ -184,6 +194,7 @@ class BCCWrapper {
   static size_t num_attached_perf_events() { return num_attached_perf_events_; }
 
  private:
+  Status InitLogging();
   Status DetachProbe(const ProbeSpec& probe);
   Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer);
   Status DetachPerfEvent(const PerfEventSpec& perf_event);
@@ -192,6 +203,8 @@ class BCCWrapper {
   std::vector<ProbeSpec> probes_;
   std::vector<PerfBufferSpec> perf_buffers_;
   std::vector<PerfEventSpec> perf_events_;
+  bool logging_enabled_ = false;
+
   ebpf::BPF bpf_;
 
   // These are static counters across all instances, because:
