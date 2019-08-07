@@ -246,8 +246,7 @@ class ConnectionTracker {
    * This indicates that the tracker should not receive any further events,
    * otherwise an warning or error will be produced.
    */
-  void MarkForDeath(int32_t countdown);
-  void MarkForDeath() { MarkForDeath(kDeathCountdownIters); }
+  void MarkForDeath(int32_t countdown = kDeathCountdownIters);
 
   /**
    * @brief Returns true if this tracker has been marked for death.
@@ -326,10 +325,8 @@ class ConnectionTracker {
    */
   static constexpr int64_t kDeathCountdownIters = 2;
 
- protected:
-  void SetPID(struct conn_id_t conn_id);
-
  private:
+  void SetPID(struct conn_id_t conn_id);
   void SetTrafficClass(struct traffic_class_t traffic_class);
   void UpdateTimestamps(uint64_t bpf_timestamp);
   void HandleInactivity();
