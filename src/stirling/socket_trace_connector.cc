@@ -83,6 +83,13 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_
     case kHTTPTableNum:
       TransferStreams<HTTPMessage>(kProtocolHTTP, data_table);
       TransferStreams<Frame>(kProtocolHTTP2, data_table);
+
+      // Also call transfer streams on kProtocolUnknown to clean up any closed connections.
+      // Since there will be no InfoClassManager to call TransferData on unknown protocols,
+      // we are sneaking this in with HTTP table transfers.
+      // TODO(oazizi): If we disable the HTTP table dynamically, this code won't run, which will
+      // cause memory leaks.
+      TransferStreams<std::nullptr_t>(kProtocolUnknown, nullptr);
       break;
     case kMySQLTableNum:
       // TODO(oazizi): Convert MySQL protocol to use streams.
@@ -91,6 +98,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_
     default:
       CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
   }
+
   DumpBPFLog();
 }
 
@@ -282,22 +290,34 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* 
         continue;
       }
 
-      DataStream* resp_data = tracker.resp_data();
-      if (resp_data == nullptr) {
-        LOG(ERROR) << "Unexpected nullptr for resp_data";
-        continue;
-      }
-      auto& resp_messages =
-          resp_data->template ExtractMessages<TMessageType>(MessageType::kResponse);
+      // Don't try to extract and parse messages when template type is nullptr_t.
+      // Template parameter of nullptr_t is used to process connections with unknown protocols.
+      // This is required to clean-up old connections.
+      // TODO(oazizi): Consider refactoring the connection tracker clean-up from transfer streams.
+      // This will cause us to iterate through all connection trackers an extra time, but may be
+      // worth it.
+      if constexpr (!std::is_same_v<TMessageType, std::nullptr_t>) {
+        DataStream* resp_data = tracker.resp_data();
+        if (resp_data == nullptr) {
+          LOG(ERROR) << "Unexpected nullptr for resp_data";
+          continue;
+        }
+        auto& resp_messages =
+            resp_data->template ExtractMessages<TMessageType>(MessageType::kResponse);
 
-      DataStream* req_data = tracker.req_data();
-      if (req_data == nullptr) {
-        LOG(ERROR) << "Unexpected nullptr for req_data";
-        continue;
-      }
-      auto& req_messages = req_data->template ExtractMessages<TMessageType>(MessageType::kRequest);
+        DataStream* req_data = tracker.req_data();
+        if (req_data == nullptr) {
+          LOG(ERROR) << "Unexpected nullptr for req_data";
+          continue;
+        }
+        auto& req_messages =
+            req_data->template ExtractMessages<TMessageType>(MessageType::kRequest);
 
-      ProcessMessages<TMessageType>(tracker, &req_messages, &resp_messages, data_table);
+        ProcessMessages<TMessageType>(tracker, &req_messages, &resp_messages, data_table);
+      } else {
+        // Needed to keep GCC happy.
+        PL_UNUSED(data_table);
+      }
 
       tracker.IterationTick();
 

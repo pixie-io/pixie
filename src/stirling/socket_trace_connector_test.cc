@@ -488,6 +488,31 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
   EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
+TEST_F(SocketTraceConnectorTest, ConnectionCleanupNoProtocol) {
+  conn_info_t conn0 = InitConn();
+  conn_info_t conn0_close = InitClose();
+
+  conn0.traffic_class.protocol = kProtocolUnknown;
+  conn0_close.traffic_class.protocol = kProtocolUnknown;
+
+  DataTable data_table(SocketTraceConnector::kHTTPTable);
+
+  source_->AcceptOpenConnEvent(conn0);
+  source_->AcceptCloseConnEvent(conn0_close);
+
+  // TransferData results in countdown = kDeathCountdownIters for old generations.
+
+  // Death countdown period: keep calling Transfer Data to increment iterations.
+  for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
+    std::cout << i << std::endl;
+    source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
+    EXPECT_EQ(1, source_->NumActiveConnections());
+  }
+
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
+  EXPECT_EQ(0, source_->NumActiveConnections());
+}
+
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   ConnectionTracker::SetInactivityDuration(std::chrono::seconds(1));
 
