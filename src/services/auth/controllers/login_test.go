@@ -14,14 +14,14 @@ import (
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/services/auth/authenv"
 	"pixielabs.ai/pixielabs/src/services/auth/controllers"
-	"pixielabs.ai/pixielabs/src/services/auth/controllers/mock"
+	mock_controllers "pixielabs.ai/pixielabs/src/services/auth/controllers/mock"
 	pb "pixielabs.ai/pixielabs/src/services/auth/proto"
-	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
+	"pixielabs.ai/pixielabs/src/services/common/authcontext"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
 func getTestContext() context.Context {
-	return sessioncontext.NewContext(context.Background(), sessioncontext.New())
+	return authcontext.NewContext(context.Background(), authcontext.New())
 }
 
 func TestServer_Login(t *testing.T) {
@@ -134,18 +134,70 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 	req := &pb.GetAugmentedAuthTokenRequest{
 		Token: token,
 	}
-	sCtx := sessioncontext.New()
+	sCtx := authcontext.New()
 	sCtx.Claims = claims
-	resp, err := s.GetAugmentedToken(
-		sessioncontext.NewContext(context.Background(), sCtx),
-		req)
+	resp, err := s.GetAugmentedToken(context.Background(), req)
 
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 
-	assert.Equal(t, token, resp.Token)
-	assert.NotNil(t, resp.Claims)
-	assert.Equal(t, "test@test.com", resp.Claims.Email)
+	// Make sure expiry time is in the future & > 0.
+	currentTime := time.Now().Unix()
+	maxExpiryTime := time.Now().Add(60 * time.Minute).Unix()
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	assert.True(t, resp.ExpiresAt > 0)
+
+	verifyToken(t, resp.Token, "test", resp.ExpiresAt, "jwtkey")
+}
+
+func TestServer_GetAugmentedTokenBadSigningKey(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New()
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	claims := testingutils.GenerateTestClaims(t)
+	token := testingutils.SignPBClaims(t, claims, "jwtkey1")
+	req := &pb.GetAugmentedAuthTokenRequest{
+		Token: token,
+	}
+	resp, err := s.GetAugmentedToken(context.Background(), req)
+
+	assert.NotNil(t, err)
+	assert.Nil(t, resp)
+
+	e, ok := status.FromError(err)
+	assert.True(t, ok)
+	assert.Equal(t, e.Code(), codes.Unauthenticated)
+}
+
+func TestServer_GetAugmentedTokenBadToken(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New()
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	claims := testingutils.GenerateTestClaims(t)
+	token := testingutils.SignPBClaims(t, claims, "jwtkey")
+	req := &pb.GetAugmentedAuthTokenRequest{
+		Token: token + "a",
+	}
+	resp, err := s.GetAugmentedToken(context.Background(), req)
+
+	assert.NotNil(t, err)
+	assert.Nil(t, resp)
+
+	e, ok := status.FromError(err)
+	assert.True(t, ok)
+	assert.Equal(t, e.Code(), codes.Unauthenticated)
 }
 
 func verifyToken(t *testing.T, token, expectedUserID string, expectedExpiry int64, key string) {

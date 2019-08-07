@@ -7,34 +7,17 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"pixielabs.ai/pixielabs/src/services/common/authcontext"
 	commonenv "pixielabs.ai/pixielabs/src/services/common/env"
 	"pixielabs.ai/pixielabs/src/services/common/httpmiddleware"
-	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
-
-func TestWithNewSessionMiddleware(t *testing.T) {
-	checkNewSessionHandler := func(w http.ResponseWriter, r *http.Request) {
-		sCtx, err := sessioncontext.FromContext(r.Context())
-		assert.Nil(t, err)
-		assert.NotNil(t, sCtx)
-		w.WriteHeader(http.StatusOK)
-	}
-
-	req, err := http.NewRequest("GET", "/api/users", nil)
-	assert.Nil(t, err)
-	rr := httptest.NewRecorder()
-
-	handler := httpmiddleware.WithNewSessionMiddleware(http.HandlerFunc(checkNewSessionHandler))
-	handler.ServeHTTP(rr, req)
-	assert.Equal(t, http.StatusOK, rr.Code)
-}
 
 func TestWithBearerAuthMiddleware(t *testing.T) {
 	viper.Set("jwt_signing_key", "jwt-key")
 	env := commonenv.New()
 	testHandler := func(w http.ResponseWriter, r *http.Request) {
-		sCtx, err := sessioncontext.FromContext(r.Context())
+		sCtx, err := authcontext.FromContext(r.Context())
 		assert.Nil(t, err)
 		assert.NotNil(t, sCtx)
 		assert.Equal(t, "test", sCtx.Claims.UserID)
@@ -46,9 +29,8 @@ func TestWithBearerAuthMiddleware(t *testing.T) {
 	assert.Nil(t, err)
 	rr := httptest.NewRecorder()
 
-	handler := httpmiddleware.WithNewSessionMiddleware(
-		httpmiddleware.WithBearerAuthMiddleware(
-			env, http.HandlerFunc(testHandler)))
+	handler := httpmiddleware.WithBearerAuthMiddleware(
+		env, http.HandlerFunc(testHandler))
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusOK, rr.Code)
 }
@@ -65,9 +47,8 @@ func TestWithBearerAuthMiddleware_BadBearer(t *testing.T) {
 	assert.Nil(t, err)
 	rr := httptest.NewRecorder()
 
-	handler := httpmiddleware.WithNewSessionMiddleware(
-		httpmiddleware.WithBearerAuthMiddleware(
-			env, http.HandlerFunc(testHandler)))
+	handler := httpmiddleware.WithBearerAuthMiddleware(
+		env, http.HandlerFunc(testHandler))
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 }
@@ -82,9 +63,8 @@ func TestWithBearerAuthMiddleware_MissingAuthorization(t *testing.T) {
 	assert.Nil(t, err)
 	rr := httptest.NewRecorder()
 
-	handler := httpmiddleware.WithNewSessionMiddleware(
-		httpmiddleware.WithBearerAuthMiddleware(
-			env, http.HandlerFunc(testHandler)))
+	handler := httpmiddleware.WithBearerAuthMiddleware(
+		env, http.HandlerFunc(testHandler))
 	handler.ServeHTTP(rr, req)
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 }

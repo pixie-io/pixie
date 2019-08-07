@@ -9,7 +9,6 @@ import (
 	"pixielabs.ai/pixielabs/src/services/common"
 	"pixielabs.ai/pixielabs/src/services/common/handler"
 	"pixielabs.ai/pixielabs/src/services/common/healthz"
-	"pixielabs.ai/pixielabs/src/services/common/httpmiddleware"
 )
 
 func main() {
@@ -36,10 +35,8 @@ func main() {
 	mux.Handle("/api/auth/login", handler.New(env, controller.AuthLoginHandler))
 	mux.Handle("/api/auth/logout", handler.New(env, controller.AuthLogoutHandler))
 	mux.Handle("/api/graphql",
-		httpmiddleware.WithNewSessionMiddleware(
-			controller.WithSessionAuthMiddleware(env,
-				controller.WithAugmentedAuthMiddleware(env,
-					controller.NewGraphQLHandler(env)))))
+		controller.WithAugmentedAuthMiddleware(env,
+			controller.NewGraphQLHandler(env)))
 
 	healthz.RegisterDefaultChecks(mux)
 	s := common.NewPLServer(env, mux)

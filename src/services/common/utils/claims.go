@@ -12,7 +12,7 @@ func PBToMapClaims(pb *pb.JWTClaims) jwt.MapClaims {
 	// Standard claims.
 	claims["aud"] = pb.Audience
 	claims["exp"] = pb.ExpiresAt
-	claims["jti"] = pb.ID
+	claims["jti"] = pb.JTI
 	claims["iat"] = pb.IssuedAt
 	claims["iss"] = pb.Issuer
 	claims["nbf"] = pb.NotBefore
@@ -32,7 +32,7 @@ func MapClaimsToPB(claims jwt.MapClaims) *pb.JWTClaims {
 	// Standard claims.
 	p.Audience = claims["aud"].(string)
 	p.ExpiresAt = int64(claims["exp"].(float64))
-	p.ID = claims["jti"].(string)
+	p.JTI = claims["jti"].(string)
 	p.IssuedAt = int64(claims["iat"].(float64))
 	p.Issuer = claims["iss"].(string)
 	p.NotBefore = int64(claims["nbf"].(float64))

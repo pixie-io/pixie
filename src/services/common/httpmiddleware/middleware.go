@@ -5,52 +5,51 @@ import (
 	"net/http"
 	"strings"
 
+	"pixielabs.ai/pixielabs/src/services/common/authcontext"
 	commonenv "pixielabs.ai/pixielabs/src/services/common/env"
-	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
 )
 
-// WithNewSessionMiddleware adds a new sessioncontext to the request context.
-func WithNewSessionMiddleware(next http.Handler) http.Handler {
-	f := func(w http.ResponseWriter, r *http.Request) {
-		newCtx := sessioncontext.NewContext(r.Context(), sessioncontext.New())
-		next.ServeHTTP(w, r.WithContext(newCtx))
+// GetTokenFromBearer extracts a bearer token from the authorization header.
+func GetTokenFromBearer(r *http.Request) (string, bool) {
+	bearerSchema := "Bearer "
+	// Try to get creds from the request.
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		// Must have auth header.
+		return "", false
 	}
-	return http.HandlerFunc(f)
+	if !strings.HasPrefix(authHeader, bearerSchema) {
+		// Must have Bearer in authorization.
+		return "", false
+	}
+
+	return authHeader[len(bearerSchema):], true
 }
 
 // WithBearerAuthMiddleware checks for valid bearer auth or rejects the request.
-// Must have session context middleware inserted before.
+// This middleware should be use on all services (except auth/api) to validate our tokens.
 func WithBearerAuthMiddleware(env commonenv.Env, next http.Handler) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
-		bearerSchema := "Bearer "
-		sCtx, err := sessioncontext.FromContext(r.Context())
-		if err != nil {
-			http.Error(w, "cannot get session context, likely a configuration error.", http.StatusInternalServerError)
+		token, ok := GetTokenFromBearer(r)
+		if !ok {
+			http.Error(w, "Must have bearer auth", http.StatusUnauthorized)
 			return
 		}
 
-		// Try to get creds from the request.
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "Authorization header is required", http.StatusUnauthorized)
-			return
-		}
-		if !strings.HasPrefix(authHeader, bearerSchema) {
-			http.Error(w, "Bearer authorization is required", http.StatusUnauthorized)
-			return
-		}
-		err = sCtx.UseJWTAuth(env.JWTSigningKey(), authHeader[len(bearerSchema):])
+		aCtx := authcontext.New()
+		err := aCtx.UseJWTAuth(env.JWTSigningKey(), token)
 		if err != nil {
-			http.Error(w, "Invalid auth", http.StatusUnauthorized)
+			http.Error(w, "Failed to parse token", http.StatusInternalServerError)
 			return
 		}
 
-		if !sCtx.ValidUser() {
+		if !aCtx.ValidUser() {
 			http.Error(w, "Invalid user", http.StatusUnauthorized)
 			return
 		}
-		// Valid Auth.
-		next.ServeHTTP(w, r)
+
+		newCtx := authcontext.NewContext(r.Context(), aCtx)
+		next.ServeHTTP(w, r.WithContext(newCtx))
 	}
 	return http.HandlerFunc(f)
 }

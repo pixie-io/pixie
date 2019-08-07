@@ -52,10 +52,19 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 
 	// Bail early if the session is valid.
 	if len(session.Values) != 0 && session.Values["_at"] != nil {
-		w.WriteHeader(http.StatusOK)
-		return nil
+		expiresAt, ok := session.Values["_expires_at"].(int64)
+		if !ok {
+			http.Error(w, "failed to get session expiration", http.StatusInternalServerError)
+			return nil
+		}
+		// Check if token is still valid.
+		if expiresAt > time.Now().Unix() {
+			w.WriteHeader(http.StatusOK)
+			return nil
+		}
 	}
-	// Extract params.
+
+	// Extract params from the body which consists of the Auth0 ID token.
 	var params struct {
 		AccessToken string
 		State       string
@@ -92,8 +101,12 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 
 	// Set session cookie.
 	session.Values["_at"] = resp.Token
+	session.Values["_expires_at"] = resp.ExpiresAt
+	session.Options.MaxAge = int(time.Unix(0, resp.ExpiresAt).Sub(time.Now()).Seconds())
 	session.Options.HttpOnly = true
 	session.Options.Secure = true
+	session.Options.SameSite = http.SameSiteStrictMode
+
 	session.Save(r, w)
 
 	var payload struct {
@@ -127,6 +140,7 @@ func AuthLogoutHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	}
 	// Delete the cookie.
 	session.Values["_at"] = ""
+	session.Values["_expires_at"] = 0
 	session.Options.MaxAge = -1
 	session.Save(r, w)
 	w.WriteHeader(http.StatusOK)

@@ -6,12 +6,12 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/services/api/controller"
+	"pixielabs.ai/pixielabs/src/services/common/authcontext"
 	pb "pixielabs.ai/pixielabs/src/services/common/proto"
-	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
 )
 
 func TestUserInfoResolver(t *testing.T) {
-	sCtx := sessioncontext.New()
+	sCtx := authcontext.New()
 	sCtx.Claims = &pb.JWTClaims{}
 	sCtx.Claims.Email = "test@test.com"
 	sCtx.Claims.UserID = "abcdef"

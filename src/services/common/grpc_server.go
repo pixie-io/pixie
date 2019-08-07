@@ -14,14 +14,14 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
+	"pixielabs.ai/pixielabs/src/services/common/authcontext"
 	commonenv "pixielabs.ai/pixielabs/src/services/common/env"
-	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
 )
 
 func grpcInjectSession() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		sCtx := sessioncontext.New()
-		return handler(sessioncontext.NewContext(ctx, sCtx), req)
+		sCtx := authcontext.New()
+		return handler(authcontext.NewContext(ctx, sCtx), req)
 	}
 }
 
@@ -35,7 +35,7 @@ func createGRPCAuthFunc(env commonenv.Env) func(context.Context) (context.Contex
 			return nil, err
 		}
 
-		sCtx, err := sessioncontext.FromContext(ctx)
+		sCtx, err := authcontext.FromContext(ctx)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "missing session context: %v", err)
 		}

@@ -4,68 +4,59 @@ import (
 	"fmt"
 	"net/http"
 
-	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/services/api/apienv"
 	authpb "pixielabs.ai/pixielabs/src/services/auth/proto"
-	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
+	"pixielabs.ai/pixielabs/src/services/common/authcontext"
+	"pixielabs.ai/pixielabs/src/services/common/httpmiddleware"
 )
 
-// WithSessionAuthMiddleware verifies that valid auth is present on the session.
-// This needs to be included after the environment middleware
-func WithSessionAuthMiddleware(env apienv.APIEnv, next http.Handler) http.Handler {
-	f := func(w http.ResponseWriter, r *http.Request) {
-		sess, err := sessioncontext.FromContext(r.Context())
-		if err != nil {
-			log.WithError(err).Error("Failed to extract session from context")
-			http.Error(w, "internal environment error", http.StatusInternalServerError)
-			return
-		}
-
-		session, err := GetDefaultSession(env, r)
-		if err != nil {
-			http.Error(w, "internal session error", http.StatusInternalServerError)
-			return
-		}
-
-		accessToken, ok := session.Values["_at"].(string)
-		err = sess.UseJWTAuth(env.JWTSigningKey(), accessToken)
-		if err != nil || !ok {
-			http.Error(w, "Invalid session credentials", http.StatusUnauthorized)
-			return
-		}
-
-		next.ServeHTTP(w, r)
+// GetTokenFromSession gets a token from the session store using cookies.
+func GetTokenFromSession(env apienv.APIEnv, r *http.Request) (string, bool) {
+	session, err := GetDefaultSession(env, r)
+	if err != nil {
+		return "", false
 	}
 
-	return http.HandlerFunc(f)
+	accessToken, ok := session.Values["_at"].(string)
+	if !ok {
+		return "", ok
+	}
+
+	return accessToken, true
 }
 
 // WithAugmentedAuthMiddleware augments auth by send minimal token to the auth server and
-// using returned data to augment the sesison.
+// using returned data to augment the session.
 func WithAugmentedAuthMiddleware(env apienv.APIEnv, next http.Handler) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
-		sess, err := sessioncontext.FromContext(r.Context())
-		if err != nil {
-			log.WithError(err).Error("Failed to extract session from context")
-			http.Error(w, "internal environment error", http.StatusInternalServerError)
-			return
+
+		// Steps:
+		// 1. Try to get the token out of session.
+		// 2. If not try to get the session out bearer
+		// 3. Generate augmented auth.
+
+		token, ok := GetTokenFromSession(env, r)
+		if !ok {
+			// Try to get it from bearer.
+			token, ok = httpmiddleware.GetTokenFromBearer(r)
+			if !ok {
+				http.Error(w, "failed to get auth token: either a bearer auth or valid cookie session must exist", http.StatusUnauthorized)
+				return
+			}
 		}
 
-		if len(sess.AuthToken) == 0 {
-			log.Errorf("missing auth, this is likely a bug or config error in the middleware.")
-			http.Error(w, "missing auth", http.StatusUnauthorized)
-			return
-		}
-
+		// Make a request to the Auth service to get an augmented token.
+		// We don't need to check the token validity since the Auth service will just reject bad tokens.
 		req := &authpb.GetAugmentedAuthTokenRequest{
-			Token: sess.AuthToken,
+			Token: token,
 		}
 
 		ctxWithCreds := metadata.AppendToOutgoingContext(r.Context(), "authorization",
-			fmt.Sprintf("bearer %s", sess.AuthToken))
+			fmt.Sprintf("bearer %s", token))
+
 		resp, err := env.AuthClient().GetAugmentedToken(ctxWithCreds, req)
 		if err != nil {
 			grpcCode := status.Code(err)
@@ -77,14 +68,15 @@ func WithAugmentedAuthMiddleware(env apienv.APIEnv, next http.Handler) http.Hand
 			return
 		}
 
-		err = sess.UseJWTAuth(env.JWTSigningKey(), resp.Token)
+		aCtx := authcontext.New()
+		err = aCtx.UseJWTAuth(env.JWTSigningKey(), resp.Token)
 		if err != nil {
 			http.Error(w, "Failed to parse token", http.StatusInternalServerError)
 			return
 		}
 
-		next.ServeHTTP(w, r)
-
+		newCtx := authcontext.NewContext(r.Context(), aCtx)
+		next.ServeHTTP(w, r.WithContext(newCtx))
 	}
 	return http.HandlerFunc(f)
 }

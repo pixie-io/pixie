@@ -5,18 +5,20 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	pb "pixielabs.ai/pixielabs/src/services/auth/proto"
+	"pixielabs.ai/pixielabs/src/services/common/authcontext"
 	jwtpb "pixielabs.ai/pixielabs/src/services/common/proto"
-	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
 	"pixielabs.ai/pixielabs/src/services/common/utils"
 )
 
 const (
-	// TokenValidDuration is duration that the token is valid from current time.
-	TokenValidDuration = 5 * 24 * time.Hour
+	// RefreshTokenValidDuration is duration that the refresh token is valid from current time.
+	RefreshTokenValidDuration = 5 * 24 * time.Hour
+	// AugmentedTokenValidDuration is the duration that the augmented token is valid from the current time.
+	AugmentedTokenValidDuration = 30 * time.Minute
 )
 
 // Login uses auth0 to authenticate and login the user.
@@ -53,7 +55,7 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		}
 	}
 
-	expiresAt := time.Now().Add(TokenValidDuration)
+	expiresAt := time.Now().Add(RefreshTokenValidDuration)
 	claims := generateJWTClaimsForUser(userInfo, expiresAt)
 	token, err := signJWTClaims(claims, s.env.JWTSigningKey())
 
@@ -71,14 +73,32 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 func (s *Server) GetAugmentedToken(
 	ctx context.Context, in *pb.GetAugmentedAuthTokenRequest) (
 	*pb.GetAugmentedAuthTokenResponse, error) {
-	sessionCtx, err := sessioncontext.FromContext(ctx)
+
+	// Check the incoming token and make sure it's valid.
+	aCtx := authcontext.New()
+
+	if err := aCtx.UseJWTAuth(s.env.JWTSigningKey(), in.Token); err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "Invalid auth token")
+	}
+
+	if !aCtx.ValidUser() {
+		return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
+	}
+
+	// TODO(zasgar): This step should be to generate a new token base on what we get from a database.
+	claims := *aCtx.Claims
+	claims.IssuedAt = time.Now().Unix()
+	claims.ExpiresAt = time.Now().Add(AugmentedTokenValidDuration).Unix()
+
+	augmentedToken, err := signJWTClaims(&claims, s.env.JWTSigningKey())
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Internal, "failed to generate auth token")
 	}
 	// TODO(zasgar): This should actually do ACL's, etc. at some point.
+	// Generate a new augmented auth token with additional information.
 	resp := &pb.GetAugmentedAuthTokenResponse{
-		Token:  in.Token,
-		Claims: sessionCtx.Claims,
+		Token:     augmentedToken,
+		ExpiresAt: claims.ExpiresAt,
 	}
 	return resp, nil
 }

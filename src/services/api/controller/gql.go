@@ -8,7 +8,7 @@ import (
 	"github.com/graph-gophers/graphql-go/relay"
 	"pixielabs.ai/pixielabs/src/services/api/apienv"
 	"pixielabs.ai/pixielabs/src/services/api/controller/schema"
-	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
+	"pixielabs.ai/pixielabs/src/services/common/authcontext"
 )
 
 // QueryResolver resolves queries for GQL.
@@ -23,7 +23,7 @@ type MutationResolver struct {
 
 // User resolves user information.
 func (*QueryResolver) User(ctx context.Context) (*UserInfoResolver, error) {
-	sCtx, err := sessioncontext.FromContext(ctx)
+	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}

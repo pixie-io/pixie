@@ -32,8 +32,7 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	s := common.NewPLServer(env,
-		httpmiddleware.WithNewSessionMiddleware(
-			httpmiddleware.WithBearerAuthMiddleware(env, mux)))
+		httpmiddleware.WithBearerAuthMiddleware(env, mux))
 	s.Start()
 	s.StopOnInterrupt()
 }

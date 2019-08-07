@@ -112,8 +112,7 @@ func main() {
 	log.Info("Metadata Server: " + version.GetVersion().ToString())
 
 	s := common.NewPLServer(env,
-		httpmiddleware.WithNewSessionMiddleware(
-			httpmiddleware.WithBearerAuthMiddleware(env, mux)))
+		httpmiddleware.WithBearerAuthMiddleware(env, mux))
 	metadatapb.RegisterMetadataServiceServer(s.GRPCServer(), server)
 	s.Start()
 	s.StopOnInterrupt()

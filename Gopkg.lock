@@ -77,14 +77,6 @@
   version = "v3.5.1"
 
 [[projects]]
-  digest = "1:2aaf2cc045d0219bba79655e4df795b973168c310574669cb75786684f7287d3"
-  name = "github.com/bmatcuk/doublestar"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "85a78806aa1b4707d1dbace9be592cf1ece91ab3"
-  version = "v1.1.1"
-
-[[projects]]
   branch = "master"
   digest = "1:080689a7cb710dc8f694005f8e5b3aab861d01e885eaf53fae54431c4635bfe6"
   name = "github.com/c9s/goprocinfo"
@@ -319,6 +311,14 @@
   pruneopts = "UT"
   revision = "4030bb1f1f0c35b30ca7009e9ebd06849dd45306"
   version = "v1.0.0"
+
+[[projects]]
+  digest = "1:e02b687ade0c19c038ecce3ea326d756519adc4bba1203a9e76d620b12354892"
+  name = "github.com/google/flatbuffers"
+  packages = ["go"]
+  pruneopts = "UT"
+  revision = "bf9eb67ab9371755c6bcece13cadc7693bcbf264"
+  version = "1.11.0"
 
 [[projects]]
   digest = "1:a6181aca1fd5e27103f9a920876f29ac72854df7345a39f3b01e61c8c94cc8af"
@@ -660,6 +660,14 @@
   pruneopts = "UT"
   revision = "b8543db493a5ed890c5499e935e2cad7504f3a04"
   version = "1.0.2"
+
+[[projects]]
+  digest = "1:cf31692c14422fa27c83a05292eb5cbe0fb2775972e8f1f8446a71549bd8980b"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ba968bfe8b2f7e042a574c888954fccecfa385b4"
+  version = "v0.8.1"
 
 [[projects]]
   digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
@@ -1321,13 +1329,13 @@
     "github.com/apache/arrow/go/arrow/memory",
     "github.com/apache/arrow/go/arrow/tensor",
     "github.com/blang/semver",
-    "github.com/bmatcuk/doublestar",
     "github.com/c9s/goprocinfo/linux",
     "github.com/coreos/etcd/clientv3",
     "github.com/coreos/etcd/clientv3/clientv3util",
     "github.com/coreos/etcd/clientv3/concurrency",
     "github.com/coreos/etcd/contrib/recipes",
     "github.com/coreos/etcd/embed",
+    "github.com/coreos/etcd/etcdserver/etcdserverpb",
     "github.com/coreos/etcd/mvcc/mvccpb",
     "github.com/dgrijalva/jwt-go",
     "github.com/fatih/color",
@@ -1338,6 +1346,7 @@
     "github.com/golang/mock/gomock",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
+    "github.com/google/flatbuffers/go",
     "github.com/gorilla/sessions",
     "github.com/graph-gophers/graphql-go",
     "github.com/graph-gophers/graphql-go/errors",
@@ -1352,6 +1361,7 @@
     "github.com/nats-io/go-nats",
     "github.com/olekukonko/tablewriter",
     "github.com/phayes/freeport",
+    "github.com/pkg/errors",
     "github.com/satori/go.uuid",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",

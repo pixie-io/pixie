@@ -700,3 +700,87 @@ go_repository(
     commit = "98d308426819d892e149fe45f6fd542464cb1f9d",
     importpath = "go.etcd.io/etcd",
 )
+
+go_repository(
+    name = "com_github_azure_go_ansiterm",
+    commit = "d6e3b3328b783f23731bc4d058875b0371ff8109",
+    importpath = "github.com/Azure/go-ansiterm",
+)
+
+go_repository(
+    name = "com_github_cenkalti_backoff",
+    commit = "5267b6dd4d2666b980a911bf235efa276222cbe2",
+    importpath = "github.com/cenkalti/backoff",
+)
+
+go_repository(
+    name = "com_github_containerd_continuity",
+    commit = "aaeac12a7ffcd198ae25440a9dff125c2e2703a7",
+    importpath = "github.com/containerd/continuity",
+)
+
+go_repository(
+    name = "com_github_docker_go_connections",
+    commit = "3ede32e2033de7505e6500d6c868c2b9ed9f169d",
+    importpath = "github.com/docker/go-connections",
+)
+
+go_repository(
+    name = "com_github_docker_go_units",
+    commit = "47565b4f722fb6ceae66b95f853feed578a4a51c",
+    importpath = "github.com/docker/go-units",
+)
+
+go_repository(
+    name = "com_github_google_flatbuffers",
+    commit = "bf9eb67ab9371755c6bcece13cadc7693bcbf264",
+    importpath = "github.com/google/flatbuffers",
+)
+
+go_repository(
+    name = "com_github_microsoft_go_winio",
+    commit = "6c72808b55902eae4c5943626030429ff20f3b63",
+    importpath = "github.com/Microsoft/go-winio",
+)
+
+go_repository(
+    name = "com_github_nvveen_gotty",
+    commit = "cd527374f1e5bff4938207604a14f2e38a9cf512",
+    importpath = "github.com/Nvveen/Gotty",
+)
+
+go_repository(
+    name = "com_github_opencontainers_go_digest",
+    commit = "279bed98673dd5bef374d3b6e4b09e2af76183bf",
+    importpath = "github.com/opencontainers/go-digest",
+)
+
+go_repository(
+    name = "com_github_opencontainers_image_spec",
+    commit = "d60099175f88c47cd379c4738d158884749ed235",
+    importpath = "github.com/opencontainers/image-spec",
+)
+
+go_repository(
+    name = "com_github_opencontainers_runc",
+    commit = "425e105d5a03fabd737a126ad93d62a9eeede87f",
+    importpath = "github.com/opencontainers/runc",
+)
+
+go_repository(
+    name = "com_github_ory_dockertest",
+    commit = "f76851ed013cf03f376b6580c834467187bb7148",
+    importpath = "github.com/ory/dockertest",
+)
+
+go_repository(
+    name = "com_github_pkg_errors",
+    commit = "ba968bfe8b2f7e042a574c888954fccecfa385b4",
+    importpath = "github.com/pkg/errors",
+)
+
+go_repository(
+    name = "com_github_go_sql_driver_mysql",
+    commit = "72cd26f257d44c1114970e19afddcd812016007e",
+    importpath = "github.com/go-sql-driver/mysql",
+)

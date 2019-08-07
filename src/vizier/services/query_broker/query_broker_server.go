@@ -71,8 +71,7 @@ func main() {
 	}
 
 	s := common.NewPLServer(env,
-		httpmiddleware.WithNewSessionMiddleware(
-			httpmiddleware.WithBearerAuthMiddleware(env, mux)))
+		httpmiddleware.WithBearerAuthMiddleware(env, mux))
 	querybrokerpb.RegisterQueryBrokerServiceServer(s.GRPCServer(), server)
 	s.Start()
 	s.StopOnInterrupt()

@@ -1,4 +1,4 @@
-package sessioncontext
+package authcontext
 
 import (
 	"context"
@@ -11,21 +11,21 @@ import (
 	"pixielabs.ai/pixielabs/src/services/common/utils"
 )
 
-type sessionContextKey struct{}
+type authContextKey struct{}
 
-// SessionContext stores sessions specific information.
-type SessionContext struct {
+// AuthContext stores sessions specific information.
+type AuthContext struct {
 	AuthToken string
 	Claims    *pb.JWTClaims
 }
 
 // New creates a new sesion context.
-func New() *SessionContext {
-	return &SessionContext{}
+func New() *AuthContext {
+	return &AuthContext{}
 }
 
 // UseJWTAuth takes a token and sets claims, etc.
-func (s *SessionContext) UseJWTAuth(signingKey string, tokenString string) error {
+func (s *AuthContext) UseJWTAuth(signingKey string, tokenString string) error {
 	secret := signingKey
 	token, err := jwt.ParseWithClaims(tokenString, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
 		// validate that the signing method is correct
@@ -45,7 +45,7 @@ func (s *SessionContext) UseJWTAuth(signingKey string, tokenString string) error
 }
 
 // ValidUser returns true if the user is logged in and valid.
-func (s *SessionContext) ValidUser() bool {
+func (s *AuthContext) ValidUser() bool {
 	if s.Claims == nil {
 		return false
 	}
@@ -60,15 +60,15 @@ func (s *SessionContext) ValidUser() bool {
 }
 
 // NewContext returns a new context with session context.
-func NewContext(ctx context.Context, s *SessionContext) context.Context {
-	return context.WithValue(ctx, sessionContextKey{}, s)
+func NewContext(ctx context.Context, s *AuthContext) context.Context {
+	return context.WithValue(ctx, authContextKey{}, s)
 }
 
 // FromContext returns a session context from the passed in Context.
-func FromContext(ctx context.Context) (*SessionContext, error) {
-	s, ok := ctx.Value(sessionContextKey{}).(*SessionContext)
+func FromContext(ctx context.Context) (*AuthContext, error) {
+	s, ok := ctx.Value(authContextKey{}).(*AuthContext)
 	if !ok {
-		return nil, errors.New("failed to get session info from context")
+		return nil, errors.New("failed to get auth info from context")
 	}
 	return s, nil
 }

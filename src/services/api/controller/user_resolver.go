@@ -2,12 +2,12 @@ package controller
 
 import (
 	"github.com/graph-gophers/graphql-go"
-	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
+	"pixielabs.ai/pixielabs/src/services/common/authcontext"
 )
 
 // UserInfoResolver resolves user information.
 type UserInfoResolver struct {
-	SessionCtx *sessioncontext.SessionContext
+	SessionCtx *authcontext.AuthContext
 }
 
 // ID returns the user id.

@@ -1,16 +1,16 @@
-package sessioncontext_test
+package authcontext_test
 
 import (
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
+	"pixielabs.ai/pixielabs/src/services/common/authcontext"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
 func TestNew(t *testing.T) {
-	ctx := sessioncontext.New()
+	ctx := authcontext.New()
 
 	assert.Nil(t, ctx.Claims)
 	assert.False(t, ctx.ValidUser())
@@ -19,7 +19,7 @@ func TestNew(t *testing.T) {
 func TestSessionCtx_UseJWTAuth(t *testing.T) {
 	token := testingutils.GenerateTestJWTToken(t, "signing_key")
 
-	ctx := sessioncontext.New()
+	ctx := authcontext.New()
 	err := ctx.UseJWTAuth("signing_key", token)
 	assert.Nil(t, err)
 
@@ -30,7 +30,7 @@ func TestSessionCtx_UseJWTAuth(t *testing.T) {
 func TestSessionCtx_ValidUser(t *testing.T) {
 	token := testingutils.GenerateTestJWTToken(t, "signing_key")
 
-	ctx := sessioncontext.New()
+	ctx := authcontext.New()
 	err := ctx.UseJWTAuth("signing_key", token)
 	assert.Nil(t, err)
 
@@ -40,7 +40,7 @@ func TestSessionCtx_ValidUser(t *testing.T) {
 func TestSessionCtx_ValidUser_Expired(t *testing.T) {
 	token := testingutils.GenerateTestJWTToken(t, "signing_key")
 
-	ctx := sessioncontext.New()
+	ctx := authcontext.New()
 	err := ctx.UseJWTAuth("signing_key", token)
 	assert.Nil(t, err)
 

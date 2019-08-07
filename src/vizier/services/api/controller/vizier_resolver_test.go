@@ -13,9 +13,9 @@ import (
 	"google.golang.org/grpc/status"
 	qrpb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	"pixielabs.ai/pixielabs/src/services/common/authcontext"
 	"pixielabs.ai/pixielabs/src/services/common/env"
 	jwt "pixielabs.ai/pixielabs/src/services/common/proto"
-	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -44,11 +44,11 @@ func (c *FakeAPIEnv) QueryBrokerClient() service.QueryBrokerServiceClient {
 }
 
 func CreateTestContext() context.Context {
-	sCtx := sessioncontext.New()
+	sCtx := authcontext.New()
 	sCtx.Claims = &jwt.JWTClaims{}
 	sCtx.Claims.Email = "test@test.com"
 	sCtx.Claims.UserID = "abcdef"
-	return sessioncontext.NewContext(context.Background(), sCtx)
+	return authcontext.NewContext(context.Background(), sCtx)
 }
 
 func LoadSchema(env apienv.APIEnv) *graphql.Schema {

@@ -13,7 +13,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	qrpb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	"pixielabs.ai/pixielabs/src/services/common/sessioncontext"
+	"pixielabs.ai/pixielabs/src/services/common/authcontext"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/api/apienv"
@@ -75,7 +75,7 @@ func (q *QueryResolver) ExecuteQuery(ctx context.Context, args *executeQueryArgs
 
 // VizierInfoResolver is the resolver responsible for getting metadata from vizier.
 type VizierInfoResolver struct {
-	SessionCtx *sessioncontext.SessionContext
+	SessionCtx *authcontext.AuthContext
 	Env        apienv.APIEnv
 }
 
