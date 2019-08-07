@@ -152,7 +152,7 @@ class GrpcSourceOperator : public Operator {
   Status Init(const planpb::GrpcSourceOperator& pb);
   std::string DebugString() const override;
 
-  int64_t source_id() const { return pb_.source_id(); }
+  std::string source_id() const { return pb_.source_id(); }
 
  private:
   planpb::GrpcSourceOperator pb_;
@@ -170,7 +170,7 @@ class GrpcSinkOperator : public Operator {
   std::string DebugString() const override;
 
   std::string address() const { return pb_.address(); }
-  int64_t destination_id() const { return pb_.destination_id(); }
+  std::string destination_id() const { return pb_.destination_id(); }
 
  private:
   planpb::GrpcSinkOperator pb_;

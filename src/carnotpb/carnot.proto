@@ -16,7 +16,7 @@ message RowBatchRequest {
     (gogoproto.customname) = "QueryID"
   ];
   // 'destination_id' identifies the source node within the query that should receive this RowBatch.
-  int64 destination_id = 3;
+  string destination_id = 3;
   // TODO(nserrino): Fix this to flat buffers/feather for better performance.
   pl.table_store.schemapb.RowBatchData row_batch = 4;
 }
