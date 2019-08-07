@@ -169,6 +169,13 @@ void BCCWrapper::DetachPerfEvents() {
   perf_events_.clear();
 }
 
+void BCCWrapper::PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms) {
+  auto perf_buffer = bpf().get_perf_buffer(std::string(perf_buffer_name));
+  if (perf_buffer != nullptr) {
+    perf_buffer->poll(timeout_ms);
+  }
+}
+
 namespace {
 
 void HandleLog(void* /*cb_cookie*/, void* data, int /*data_size*/) {
@@ -190,10 +197,7 @@ Status BCCWrapper::InitLogging() {
 
 void BCCWrapper::DumpBPFLog() {
   if (logging_enabled_) {
-    auto perf_buffer = bpf_.get_perf_buffer(std::string(kLogPerfBufferSpec.name));
-    if (perf_buffer != nullptr) {
-      perf_buffer->poll(1);
-    }
+    PollPerfBuffer(kLogPerfBufferSpec.name);
   }
 }
 

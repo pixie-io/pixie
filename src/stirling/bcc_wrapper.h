@@ -178,13 +178,19 @@ class BCCWrapper {
   void DumpBPFLog();
 
   /**
+   * @brief Drains the perf buffer, calling the handle function that was
+   * specified in the PerfBufferSpec when OpenPerfBuffer was called.
+   */
+  void PollPerfBuffer(std::string_view perf_buffer_name, int timeout_ms = 1);
+
+  /**
    * Provide access to the BPF instance, for direct access.
    * Eventually, this should go away, and everything should
    * go through the API in the rest of this class.
    *
    * @return reference to the underlying BPF instance.
    */
-  // TODO(oazizi): Try to get rid of this function.
+  // TODO(oazizi): Try to get rid of this function, since it bypasses the wrapper.
   ebpf::BPF& bpf() { return bpf_; }
 
   // These are static counters of attached/open probes across all instances.
