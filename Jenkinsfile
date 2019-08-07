@@ -252,7 +252,11 @@ def dockerStep(String dockerConfig = '', String dockerImage = devDockerImageWith
       cacheString = ' -v /root/cache:/root/.cache'
     }
     print "Cache String ${cacheString}"
-    docker.image(dockerImage).inside(dockerConfig + cacheString) {
+
+    // This allows us to create sibling docker containers which we need to
+    // run tests that need to launch docker containers (for example DB tests).
+    dockerSock = ' -v /var/run/docker.sock:/var/run/docker.sock'
+    docker.image(dockerImage).inside(dockerConfig + cacheString + dockerSock) {
       body()
     }
   }
