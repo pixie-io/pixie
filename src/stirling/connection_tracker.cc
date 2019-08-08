@@ -69,6 +69,23 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 }
 
+template <class TMessageType>
+Status ConnectionTracker::ExtractMessages() {
+  DataStream* resp_data_ptr = resp_data();
+  if (resp_data_ptr == nullptr) {
+    return error::Internal("Unexpected nullptr for resp_data");
+  }
+  resp_data_ptr->template ExtractMessages<TMessageType>(MessageType::kResponse);
+
+  DataStream* req_data_ptr = req_data();
+  if (req_data_ptr == nullptr) {
+    return error::Internal("Unexpected nullptr for req_data");
+  }
+  req_data_ptr->template ExtractMessages<TMessageType>(MessageType::kRequest);
+
+  return Status::OK();
+}
+
 bool ConnectionTracker::AllEventsReceived() const {
   return (close_info_.timestamp_ns != 0) && (num_send_events_ == close_info_.send_seq_num) &&
          (num_recv_events_ == close_info_.recv_seq_num);
@@ -180,7 +197,7 @@ void DataStream::AddEvent(uint64_t seq_num, std::unique_ptr<SocketDataEvent> eve
 }
 
 template <class TMessageType>
-std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
+std::deque<TMessageType>& DataStream::Messages() {
   CHECK(std::holds_alternative<std::monostate>(messages_) ||
         std::holds_alternative<std::deque<TMessageType>>(messages_))
       << "Must hold the default std::monostate, or the same type as requested. "
@@ -190,7 +207,12 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
     messages_ = std::deque<TMessageType>();
   }
 
-  auto& typed_messages = std::get<std::deque<TMessageType>>(messages_);
+  return std::get<std::deque<TMessageType>>(messages_);
+}
+
+template <class TMessageType>
+std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
+  auto& typed_messages = Messages<TMessageType>();
 
   // If no new raw data, then nothing extra to extract. Exit early.
   if (!has_new_events_) {
@@ -258,8 +280,14 @@ bool DataStream::Empty() const {
 }
 
 // Explicit instantiation different message types.
+template Status ConnectionTracker::ExtractMessages<HTTPMessage>();
+template Status ConnectionTracker::ExtractMessages<http2::Frame>();
+
 template std::deque<HTTPMessage>& DataStream::ExtractMessages<HTTPMessage>(MessageType type);
 template std::deque<http2::Frame>& DataStream::ExtractMessages<http2::Frame>(MessageType type);
+
+template std::deque<HTTPMessage>& DataStream::Messages<HTTPMessage>();
+template std::deque<http2::Frame>& DataStream::Messages<http2::Frame>();
 
 template bool DataStream::Empty<HTTPMessage>() const;
 template bool DataStream::Empty<http2::Frame>() const;

@@ -297,22 +297,16 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* 
       // This will cause us to iterate through all connection trackers an extra time, but may be
       // worth it.
       if constexpr (!std::is_same_v<TMessageType, std::nullptr_t>) {
-        DataStream* resp_data = tracker.resp_data();
-        if (resp_data == nullptr) {
-          LOG(ERROR) << "Unexpected nullptr for resp_data";
+        Status s = tracker.ExtractMessages<TMessageType>();
+        if (!s.ok()) {
+          LOG(ERROR) << s.msg();
           continue;
         }
-        auto& resp_messages =
-            resp_data->template ExtractMessages<TMessageType>(MessageType::kResponse);
 
-        DataStream* req_data = tracker.req_data();
-        if (req_data == nullptr) {
-          LOG(ERROR) << "Unexpected nullptr for req_data";
-          continue;
-        }
-        auto& req_messages =
-            req_data->template ExtractMessages<TMessageType>(MessageType::kRequest);
+        std::deque<TMessageType>& req_messages = tracker.req_messages<TMessageType>();
+        std::deque<TMessageType>& resp_messages = tracker.resp_messages<TMessageType>();
 
+        // TODO(oazizi): Refactor ProcessMessages into ConnectionTracker.
         ProcessMessages<TMessageType>(tracker, &req_messages, &resp_messages, data_table);
       } else {
         // Needed to keep GCC happy.

@@ -55,10 +55,18 @@ class DataStream {
    * @brief Parses as many messages as it can from the raw events into the messages container.
    * @tparam TMessageType The parsed message type within the deque.
    * @param type whether to parse as requests, responses or mixed traffic.
-   * @return deque parsed messages.
+   * @return deque of parsed messages.
    */
   template <class TMessageType>
   std::deque<TMessageType>& ExtractMessages(MessageType type);
+
+  /**
+   * Returns the current set of parsed messages.
+   * @tparam TMessageType The parsed message type within the deque.
+   * @return deque of messages.
+   */
+  template <class TMessageType>
+  std::deque<TMessageType>& Messages();
 
   /**
    * @brief Clears all unparsed and parsed data from the Datastream.
@@ -126,6 +134,30 @@ class ConnectionTracker {
    * @param event The data event from BPF.
    */
   void AddDataEvent(std::unique_ptr<SocketDataEvent> event);
+
+  /**
+   * @brief Parses raw events in both request and response data streams into messages.
+   */
+  template <class TMessageType>
+  Status ExtractMessages();
+
+  /**
+   * @brief Returns reference to current set of unconsumed requests.
+   * Note: A call to ExtractMessages() is required to parse new requests.
+   */
+  template <class TMessageType>
+  std::deque<TMessageType>& req_messages() {
+    return req_data()->Messages<TMessageType>();
+  }
+
+  /**
+   * @brief Returns reference to current set of unconsumed responses.
+   * Note: A call to ExtractMessages() is required to parse new responses.
+   */
+  template <class TMessageType>
+  std::deque<TMessageType>& resp_messages() {
+    return resp_data()->Messages<TMessageType>();
+  }
 
   /**
    * @brief Get the protocol for this connection.
