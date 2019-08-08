@@ -53,3 +53,9 @@ pl_cc_test(
     srcs = ["const_types_test.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "utils_test",
+    srcs = ["utils_test.cc"],
+    deps = [":cc_library"],
+)

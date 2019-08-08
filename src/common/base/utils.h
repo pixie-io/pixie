@@ -3,6 +3,9 @@
 #include <unistd.h>
 
 #include <cstring>
+#include <string>
+
+#include "absl/strings/str_format.h"
 
 namespace pl {
 
@@ -30,3 +33,15 @@ inline MemAlignedType CopyFromBPF(const void* data) {
   extern char objname##_end;              \
   inline const std::string_view varname = \
       std::string_view(&objname##_start, &objname##_end - &objname##_start);
+
+inline std::string ToHexString(std::string_view buf) {
+  std::string res;
+  for (char c : buf) {
+    if (std::isprint(c)) {
+      res.append(1, c);
+    } else {
+      res.append(absl::StrFormat("\\x%02X", c));
+    }
+  }
+  return res;
+}
