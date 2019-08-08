@@ -784,3 +784,15 @@ go_repository(
     commit = "72cd26f257d44c1114970e19afddcd812016007e",
     importpath = "github.com/go-sql-driver/mysql",
 )
+
+go_repository(
+    name = "com_github_jackc_pgx",
+    commit = "a1d6202434aa40c3624688f6c2cacbc27eef5472",
+    importpath = "github.com/jackc/pgx",
+)
+
+go_repository(
+    name = "com_github_jmoiron_sqlx",
+    commit = "d161d7a76b5661016ad0b085869f77fd410f3e6a",
+    importpath = "github.com/jmoiron/sqlx",
+)
