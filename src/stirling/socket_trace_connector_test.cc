@@ -34,6 +34,8 @@ class SocketTraceConnectorTest : public ::testing::Test {
 
   conn_info_t InitConn(uint64_t ts_ns = 0) {
     ++generation_;
+    send_seq_num_ = 0;
+    recv_seq_num_ = 0;
 
     conn_info_t conn_info{};
     conn_info.addr.sin6_family = AF_INET;
@@ -148,7 +150,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
       "\r\n"
       "bar";
 
-  std::string_view kResp2 =
+  const std::string_view kResp2 =
       "HTTP/1.1 200 OK\r\n"
       "Content-Type: json\r\n"
       "Content-Length: 3\r\n"
@@ -267,7 +269,7 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   source_->AcceptDataEvent(std::move(event1));
   source_->AcceptCloseConnEvent(close_conn);
   source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
-  EXPECT_EQ(3, record_batch[0]->Size()) << "Get 3 events after getting the missing one.";
+  EXPECT_EQ(3, record_batch[0]->Size()) << "Expect 3 events after getting the missing one.";
 }
 
 TEST_F(SocketTraceConnectorTest, NoEvents) {

@@ -14,10 +14,16 @@ class ConnectionTrackerTest : public ::testing::Test {
   static constexpr uint32_t kFD = 3;
   static constexpr uint32_t kPIDFDGeneration = 2;
 
-  conn_info_t InitConn(uint64_t ts_ns = 0) {
+  void SetUp() {
+    send_seq_num_ = 0;
+    recv_seq_num_ = 0;
+    current_ts_ns_ = 0;
+  }
+
+  conn_info_t InitConn() {
     conn_info_t conn_info{};
     conn_info.addr.sin6_family = AF_INET;
-    conn_info.timestamp_ns = ts_ns;
+    conn_info.timestamp_ns = ++current_ts_ns_;
     conn_info.conn_id.pid = kPID;
     conn_info.conn_id.fd = kFD;
     conn_info.conn_id.generation = kPIDFDGeneration;
@@ -28,27 +34,26 @@ class ConnectionTrackerTest : public ::testing::Test {
     return conn_info;
   }
 
-  std::unique_ptr<SocketDataEvent> InitSendEvent(std::string_view msg, uint64_t ts_ns) {
-    std::unique_ptr<SocketDataEvent> event = InitDataEvent(TrafficDirection::kEgress, msg, ts_ns);
+  std::unique_ptr<SocketDataEvent> InitSendEvent(std::string_view msg) {
+    std::unique_ptr<SocketDataEvent> event = InitDataEvent(TrafficDirection::kEgress, msg);
     event->attr.seq_num = send_seq_num_;
     send_seq_num_++;
     return event;
   }
 
-  std::unique_ptr<SocketDataEvent> InitRecvEvent(std::string_view msg, uint64_t ts_ns) {
-    std::unique_ptr<SocketDataEvent> event = InitDataEvent(TrafficDirection::kIngress, msg, ts_ns);
+  std::unique_ptr<SocketDataEvent> InitRecvEvent(std::string_view msg) {
+    std::unique_ptr<SocketDataEvent> event = InitDataEvent(TrafficDirection::kIngress, msg);
     event->attr.seq_num = recv_seq_num_;
     recv_seq_num_++;
     return event;
   }
 
-  std::unique_ptr<SocketDataEvent> InitDataEvent(TrafficDirection direction, std::string_view msg,
-                                                 uint64_t ts_ns) {
+  std::unique_ptr<SocketDataEvent> InitDataEvent(TrafficDirection direction, std::string_view msg) {
     socket_data_event_t event = {};
     event.attr.direction = direction;
     event.attr.traffic_class.protocol = kProtocolHTTP;
     event.attr.traffic_class.role = kRoleRequestor;
-    event.attr.timestamp_ns = ts_ns;
+    event.attr.timestamp_ns = ++current_ts_ns_;
     event.attr.conn_id.pid = kPID;
     event.attr.conn_id.fd = kFD;
     event.attr.conn_id.generation = kPIDFDGeneration;
@@ -57,9 +62,9 @@ class ConnectionTrackerTest : public ::testing::Test {
     return std::make_unique<SocketDataEvent>(&event);
   }
 
-  conn_info_t InitClose(uint64_t ts_ns) {
+  conn_info_t InitClose() {
     conn_info_t conn_info{};
-    conn_info.timestamp_ns = ts_ns;
+    conn_info.timestamp_ns = ++current_ts_ns_;
     conn_info.conn_id.pid = kPID;
     conn_info.conn_id.fd = kFD;
     conn_info.conn_id.generation = kPIDFDGeneration;
@@ -70,21 +75,20 @@ class ConnectionTrackerTest : public ::testing::Test {
 
   uint64_t send_seq_num_ = 0;
   uint64_t recv_seq_num_ = 0;
+  uint64_t current_ts_ns_ = 0;
 };
 
 TEST_F(ConnectionTrackerTest, timestamp_test) {
   ConnectionTracker tracker;
 
-  uint64_t time = 0;
-
-  conn_info_t conn = InitConn(++time);
-  std::unique_ptr<SocketDataEvent> event0 = InitSendEvent("event0", ++time);
-  std::unique_ptr<SocketDataEvent> event1 = InitRecvEvent("event1", ++time);
-  std::unique_ptr<SocketDataEvent> event2 = InitSendEvent("event2", ++time);
-  std::unique_ptr<SocketDataEvent> event3 = InitRecvEvent("event3", ++time);
-  std::unique_ptr<SocketDataEvent> event4 = InitSendEvent("event4", ++time);
-  std::unique_ptr<SocketDataEvent> event5 = InitRecvEvent("event5", ++time);
-  conn_info_t close_conn = InitClose(++time);
+  conn_info_t conn = InitConn();
+  std::unique_ptr<SocketDataEvent> event0 = InitSendEvent("event0");
+  std::unique_ptr<SocketDataEvent> event1 = InitRecvEvent("event1");
+  std::unique_ptr<SocketDataEvent> event2 = InitSendEvent("event2");
+  std::unique_ptr<SocketDataEvent> event3 = InitRecvEvent("event3");
+  std::unique_ptr<SocketDataEvent> event4 = InitSendEvent("event4");
+  std::unique_ptr<SocketDataEvent> event5 = InitRecvEvent("event5");
+  conn_info_t close_conn = InitClose();
 
   EXPECT_EQ(0, tracker.last_bpf_timestamp_ns());
   tracker.AddConnOpenEvent(conn);
