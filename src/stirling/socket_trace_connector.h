@@ -292,6 +292,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
   FRIEND_TEST(SocketTraceConnectorTest, End2end);
   FRIEND_TEST(SocketTraceConnectorTest, RequestResponseMatching);
+  FRIEND_TEST(SocketTraceConnectorTest, MissingEventInStream);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInOrder);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent);

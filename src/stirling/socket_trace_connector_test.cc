@@ -328,6 +328,47 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
               ElementsAre("/index.html", "/data.html", "/logs.html"));
 }
 
+TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
+  conn_info_t conn = InitConn();
+  std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent(kReq0);
+  std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent(kResp0);
+  std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent(kReq1);
+  std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent(kResp1);
+  std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent(kReq2);
+  std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent(kResp2);
+  std::unique_ptr<SocketDataEvent> req_event3 = InitSendEvent(kReq0);
+  std::unique_ptr<SocketDataEvent> resp_event3 = InitRecvEvent(kResp0);
+  // No Close event (connection still active).
+
+  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptDataEvent(std::move(req_event0));
+  source_->AcceptDataEvent(std::move(req_event1));
+  source_->AcceptDataEvent(std::move(req_event2));
+  source_->AcceptDataEvent(std::move(resp_event0));
+  PL_UNUSED(resp_event1);  // Missing event.
+  source_->AcceptDataEvent(std::move(resp_event2));
+
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
+  EXPECT_EQ(1, source_->NumActiveConnections());
+  EXPECT_EQ(1, record_batch[0]->Size());
+
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
+  EXPECT_EQ(1, source_->NumActiveConnections());
+  EXPECT_EQ(1, record_batch[0]->Size());
+
+  source_->AcceptDataEvent(std::move(req_event3));
+  source_->AcceptDataEvent(std::move(resp_event3));
+
+  // Currently, we expect to remain blocked because of missing resp_event1.
+  // TODO(oazizi): When stream recovery is implemented, update this test.
+  source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
+  EXPECT_EQ(1, source_->NumActiveConnections());
+  EXPECT_EQ(1, record_batch[0]->Size());
+}
+
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
   conn_info_t conn = InitConn();
   std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent(kReq0);
@@ -415,19 +456,22 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
   std::unique_ptr<SocketDataEvent> req_event0 = InitSendEvent(kReq0);
   std::unique_ptr<SocketDataEvent> req_event1 = InitSendEvent(kReq1);
   std::unique_ptr<SocketDataEvent> req_event2 = InitSendEvent(kReq2);
+  std::unique_ptr<SocketDataEvent> req_event3 = InitSendEvent(kReq0);
   std::unique_ptr<SocketDataEvent> resp_event0 = InitRecvEvent(kResp0);
   std::unique_ptr<SocketDataEvent> resp_event1 = InitRecvEvent(kResp1);
   std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent(kResp2);
+  std::unique_ptr<SocketDataEvent> resp_event3 = InitRecvEvent(kResp2);
   conn_info_t close_conn = InitClose();
 
   DataTable data_table(SocketTraceConnector::kHTTPTable);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   source_->AcceptOpenConnEvent(conn);
   source_->AcceptDataEvent(std::move(req_event0));
   source_->AcceptDataEvent(std::move(req_event1));
   source_->AcceptDataEvent(std::move(req_event2));
   source_->AcceptDataEvent(std::move(resp_event0));
-  // Missing event: source_->AcceptDataEvent(std::move(resp_event1));
+  PL_UNUSED(resp_event1);  // Missing event.
   source_->AcceptDataEvent(std::move(resp_event2));
   source_->AcceptCloseConnEvent(close_conn);
 
@@ -437,10 +481,12 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
     source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
+    EXPECT_EQ(1, record_batch[0]->Size());
   }
 
   source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(0, source_->NumActiveConnections());
+  EXPECT_EQ(1, record_batch[0]->Size());
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {

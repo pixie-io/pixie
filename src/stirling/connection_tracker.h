@@ -85,6 +85,10 @@ class DataStream {
   // TODO(oazizi/yzhao): Convert this to vector or deque.
   std::map<uint64_t, TimestampedData> events_;
 
+  // Keep track of the sequence number of the stream.
+  // This is used to identify missing events.
+  size_t next_seq_num_ = 0;
+
   // To support partially processed events,
   // the stream may start at an offset in the first raw data event.
   uint64_t offset_ = 0;

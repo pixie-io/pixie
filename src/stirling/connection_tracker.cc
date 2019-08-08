@@ -191,6 +191,12 @@ void ConnectionTracker::HandleInactivity() {
 }
 
 void DataStream::AddEvent(uint64_t seq_num, std::unique_ptr<SocketDataEvent> event) {
+  if (seq_num < next_seq_num_) {
+    LOG(WARNING) << absl::Substitute(
+        "Ignoring event has already been skipped [event seq_num=$0, current seq_num=$1].", seq_num,
+        next_seq_num_);
+    return;
+  }
   auto res = events_.emplace(seq_num, TimestampedData(std::move(event)));
   LOG_IF(ERROR, !res.second) << "Clobbering data event";
   has_new_events_ = true;
@@ -225,9 +231,9 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
 
   // Prepare all recorded events for parsing.
   std::vector<std::string_view> msgs;
-  uint64_t next_seq_num = events_.begin()->first;
+  size_t next_seq_num = next_seq_num_;
   for (const auto& [seq_num, event] : events_) {
-    // Found a discontinuity in sequence numbers. Stop submitting events to parser.
+    // Not at expected seq_num. Stop submitting events to parser.
     if (seq_num != next_seq_num) {
       break;
     }
@@ -245,7 +251,7 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
 
     parser.Append(msg, event.timestamp_ns);
     msgs.push_back(msg);
-    next_seq_num++;
+    ++next_seq_num;
   }
 
   // Now parse all the appended events.
@@ -257,9 +263,12 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
   }
 
   // Find and erase events that have been fully processed.
+  // Note that parse_result seq_nums are based on events added to parser,
+  // not seq_nums from BPF.
   auto erase_iter = events_.begin();
   std::advance(erase_iter, parse_result.end_position.seq_num);
   events_.erase(events_.begin(), erase_iter);
+  next_seq_num_ += parse_result.end_position.seq_num;
   offset_ = parse_result.end_position.offset;
 
   has_new_events_ = false;
