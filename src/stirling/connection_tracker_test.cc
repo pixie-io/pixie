@@ -76,6 +76,19 @@ class ConnectionTrackerTest : public ::testing::Test {
   uint64_t send_seq_num_ = 0;
   uint64_t recv_seq_num_ = 0;
   uint64_t current_ts_ns_ = 0;
+
+  const std::string kHTTPReq =
+      "GET /index.html HTTP/1.1\r\n"
+      "Host: www.pixielabs.ai\r\n"
+      "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+      "\r\n";
+
+  const std::string kHTTPResp =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: application/json; charset=utf-8\r\n"
+      "Content-Length: 3\r\n"
+      "\r\n"
+      "foo";
 };
 
 TEST_F(ConnectionTrackerTest, timestamp_test) {
@@ -107,6 +120,55 @@ TEST_F(ConnectionTrackerTest, timestamp_test) {
   EXPECT_EQ(7, tracker.last_bpf_timestamp_ns());
   tracker.AddConnCloseEvent(close_conn);
   EXPECT_EQ(8, tracker.last_bpf_timestamp_ns());
+}
+
+TEST_F(ConnectionTrackerTest, lost_event_test) {
+  DataStream stream;
+
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq);
+  std::unique_ptr<SocketDataEvent> req3 = InitSendEvent(kHTTPReq);
+  std::unique_ptr<SocketDataEvent> req4 = InitSendEvent(kHTTPReq);
+  std::unique_ptr<SocketDataEvent> req5 = InitSendEvent(kHTTPReq);
+
+  std::deque<HTTPMessage> requests;
+
+  // Start off with no lost events.
+  stream.AddEvent(std::move(req0));
+  requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
+  EXPECT_EQ(requests.size(), 1ULL);
+  EXPECT_FALSE(stream.Stuck());
+
+  // Now add some lost events.
+  PL_UNUSED(req1);  // Lost event.
+  stream.AddEvent(std::move(req2));
+  requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
+  EXPECT_EQ(requests.size(), 1ULL);
+  EXPECT_TRUE(stream.Stuck());
+
+  // One more iteration should cause it to unblock.
+  requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
+  EXPECT_EQ(requests.size(), 2ULL);
+  EXPECT_FALSE(stream.Stuck());
+
+  // Some more requests, and another lost request (this time undetectable).
+  stream.AddEvent(std::move(req3));
+  PL_UNUSED(req4);
+  requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
+  EXPECT_EQ(requests.size(), 3ULL);
+  EXPECT_FALSE(stream.Stuck());
+
+  // Now the lost event should be detected.
+  stream.AddEvent(std::move(req5));
+  requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
+  EXPECT_EQ(requests.size(), 3ULL);
+  EXPECT_TRUE(stream.Stuck());
+
+  // One more iteration should unblock the request stream again.
+  requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
+  EXPECT_EQ(requests.size(), 4ULL);
+  EXPECT_FALSE(stream.Stuck());
 }
 
 TEST_F(ConnectionTrackerTest, stats_counter) {

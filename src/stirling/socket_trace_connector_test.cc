@@ -355,18 +355,20 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   EXPECT_EQ(1, source_->NumActiveConnections());
   EXPECT_EQ(1, record_batch[0]->Size());
 
+  // This call should cause stream recovery to trigger,
+  // skipping resp_event1 and releasing event resp_event2.
   source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
-  EXPECT_EQ(1, record_batch[0]->Size());
+  EXPECT_EQ(2, record_batch[0]->Size());
 
   source_->AcceptDataEvent(std::move(req_event3));
   source_->AcceptDataEvent(std::move(resp_event3));
 
-  // Currently, we expect to remain blocked because of missing resp_event1.
-  // TODO(oazizi): When stream recovery is implemented, update this test.
+  // Processing of resp_event3 will result in one more record.
+  // TODO(oazizi): Update this when req-resp matching algorithm is updated.
   source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
-  EXPECT_EQ(1, record_batch[0]->Size());
+  EXPECT_EQ(3, record_batch[0]->Size());
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
@@ -464,7 +466,6 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
   conn_info_t close_conn = InitClose();
 
   DataTable data_table(SocketTraceConnector::kHTTPTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   source_->AcceptOpenConnEvent(conn);
   source_->AcceptDataEvent(std::move(req_event0));
@@ -481,12 +482,10 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
     source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
-    EXPECT_EQ(1, record_batch[0]->Size());
   }
 
   source_->TransferData(/* ctx */ nullptr, kTableNum, &data_table);
   EXPECT_EQ(0, source_->NumActiveConnections());
-  EXPECT_EQ(1, record_batch[0]->Size());
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {

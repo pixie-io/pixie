@@ -55,15 +55,13 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   SetPID(event->attr.conn_id);
   SetTrafficClass(event->attr.traffic_class);
 
-  const uint64_t seq_num = event->attr.seq_num;
-
   switch (event->attr.direction) {
     case TrafficDirection::kEgress: {
-      send_data_.AddEvent(seq_num, std::move(event));
+      send_data_.AddEvent(std::move(event));
       ++num_send_events_;
     } break;
     case TrafficDirection::kIngress: {
-      recv_data_.AddEvent(seq_num, std::move(event));
+      recv_data_.AddEvent(std::move(event));
       ++num_recv_events_;
     } break;
   }
@@ -190,13 +188,22 @@ void ConnectionTracker::HandleInactivity() {
   }
 }
 
-void DataStream::AddEvent(uint64_t seq_num, std::unique_ptr<SocketDataEvent> event) {
+void DataStream::AddEvent(std::unique_ptr<SocketDataEvent> event) {
+  uint64_t seq_num = event->attr.seq_num;
+
   if (seq_num < next_seq_num_) {
     LOG(WARNING) << absl::Substitute(
         "Ignoring event has already been skipped [event seq_num=$0, current seq_num=$1].", seq_num,
         next_seq_num_);
     return;
   }
+
+  if (seq_num == next_seq_num_) {
+    // If stream was stuck waiting for the next event,
+    // it should no longer be stuck.
+    stuck_count_ = 0;
+  }
+
   auto res = events_.emplace(seq_num, TimestampedData(std::move(event)));
   LOG_IF(ERROR, !res.second) << "Clobbering data event";
   has_new_events_ = true;
@@ -220,8 +227,13 @@ template <class TMessageType>
 std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
   auto& typed_messages = Messages<TMessageType>();
 
+  // If stream is in a good state, this should do nothing.
+  // Otherwise it will attempt to put the stream into a good state.
+  CheckAndAttemptRecovery<TMessageType>();
+
   // If no new raw data, then nothing extra to extract. Exit early.
   if (!has_new_events_) {
+    UpdateState(/* parsed_messages */ false);
     return typed_messages;
   }
 
@@ -271,6 +283,9 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
   next_seq_num_ += parse_result.end_position.seq_num;
   offset_ = parse_result.end_position.offset;
 
+  bool parsed_messages = !parse_result.start_positions.empty();
+  UpdateState(parsed_messages);
+
   has_new_events_ = false;
 
   return typed_messages;
@@ -280,6 +295,7 @@ void DataStream::Reset() {
   events_.clear();
   messages_ = std::monostate();
   offset_ = 0;
+  stuck_count_ = 0;
   inflater_.reset(nullptr);
 }
 
@@ -287,6 +303,76 @@ template <class TMessageType>
 bool DataStream::Empty() const {
   return events_.empty() && (std::holds_alternative<std::monostate>(messages_) ||
                              std::get<std::deque<TMessageType>>(messages_).empty());
+}
+
+void DataStream::UpdateState(bool parsed_messages) {
+  if (parsed_messages) {
+    stuck_count_ = 0;
+  }
+
+  if (events_.empty()) {
+    CHECK_EQ(stuck_count_, 0);
+    return;
+  }
+
+  ++stuck_count_;
+}
+
+template <class TMessageType>
+void DataStream::CheckAndAttemptRecovery() {
+  // This is and its helper functions are a placeholder implementation.
+  // Ultimately, this needs to search for a message boundary from which to resume.
+
+  // An empty stream is a clean stream.
+  if (events_.empty()) {
+    return;
+  }
+
+  // Check for a missing event at the head which is blocking progress.
+  size_t head_seq_num = events_.begin()->first;
+  if (next_seq_num_ != head_seq_num) {
+    AttemptMissingEventRecovery<TMessageType>();
+    return;
+  }
+
+  // No missing events, but we appear unable to parse the head.
+  if (stuck_count_ != 0) {
+    AttemptParseFailureRecovery<TMessageType>();
+    return;
+  }
+}
+
+template <class TMessageType>
+void DataStream::AttemptMissingEventRecovery() {
+  // Scenario: There is a missing event at the head that is blocking progress.
+
+  // Want to give a chance for the event to arrive,
+  // so don't recover any streams until it's been stuck for at least one iteration.
+  if (stuck_count_ == 0) {
+    return;
+  }
+
+  // For now, just skip to the next available sequence number.
+  // TODO(oazizi): Implement something better, and search for a recovery point.
+  size_t head_seq_num = events_.begin()->first;
+  CHECK_LT(next_seq_num_, head_seq_num);
+  next_seq_num_ = head_seq_num;
+  offset_ = 0;
+  stuck_count_ = 0;
+  has_new_events_ = true;
+}
+
+template <class TMessageType>
+void DataStream::AttemptParseFailureRecovery() {
+  // Scenario: There is an event at the head, but we haven't been able to parse the stream.
+
+  // Head event is missing, but want to give a chance for the event to arrive,
+  // so don't recover any streams until it's been stuck for at least one iteration.
+  if (stuck_count_ <= 1) {
+    return;
+  }
+
+  // TODO(oazizi): Implement something for this case.
 }
 
 // Explicit instantiation different message types.

@@ -45,11 +45,11 @@ struct SocketClose {
 class DataStream {
  public:
   /**
-   * @brief Adds a raw (unparsed) chunk of data into the stream at the specified sequence spot.
-   * @param seq_num The sequence number where to place the data.
+   * @brief Adds a raw (unparsed) chunk of data into the stream.
+   * Uses seq_num inside the SocketDataEvent to determine the sequence spot.
    * @param event The data.
    */
-  void AddEvent(uint64_t seq_num, std::unique_ptr<SocketDataEvent> event);
+  void AddEvent(std::unique_ptr<SocketDataEvent> event);
 
   /**
    * @brief Parses as many messages as it can from the raw events into the messages container.
@@ -80,6 +80,23 @@ class DataStream {
   template <class TMessageType>
   bool Empty() const;
 
+  /**
+   * @brief Checks if the DataStream is in a Stuck state, which means that it has
+   * raw events, but that it cannot parse any of them.
+   *
+   * There are two separate stuck cases:
+   * 1) Missing Events: a stream is considered stuck if there is any detectable gap in the received
+   * events sequence. Any successful parse resets the stuck state. Note, however, that the stream
+   * may immediately re-enter a stuck state if a different missing event is discovered after it
+   * unblocks.
+   *
+   * 2) Parse failure of the head: a stream is also considered stuck if the messages at the head
+   * cannot be consumed because they cannot be parsed.
+   *
+   * @return true if DataStream is stuck.
+   */
+  bool Stuck() { return stuck_count_ != 0; }
+
   http2::Inflater* Inflater() {
     if (inflater_ == nullptr) {
       inflater_ = std::make_unique<http2::Inflater>();
@@ -88,9 +105,25 @@ class DataStream {
   }
 
  private:
+  // Update the stuck state, based on whether messages were parsed or not.
+  void UpdateState(bool parsed_messages);
+
+  // Check a stream for stuck-ness. If it appears stuck, attempt to unblock it.
+  // The recovery algorithm is case and protocol specific.
+  template <class TMessageType>
+  void CheckAndAttemptRecovery();
+
+  // Attempt to recover a stream with a missing event at the head.
+  template <class TMessageType>
+  void AttemptMissingEventRecovery();
+
+  // Attempt to recover a stream with an unparseable series of events at the head.
+  template <class TMessageType>
+  void AttemptParseFailureRecovery();
+
   // Raw data events from BPF.
   // TODO(oazizi/yzhao): Convert this to vector or deque.
-  std::map<uint64_t, TimestampedData> events_;
+  std::map<size_t, TimestampedData> events_;
 
   // Keep track of the sequence number of the stream.
   // This is used to identify missing events.
@@ -115,6 +148,10 @@ class DataStream {
   // The following state keeps track of whether the raw events were touched or not since the last
   // call to ExtractMessages(). It enables ExtractMessages() to exit early if nothing has changed.
   bool has_new_events_ = false;
+
+  // Number of consecutive calls to ExtractMessages(), where there are a non-zero number of events,
+  // but either no parsed messages are produced, or parsing stopped due to a gap in events.
+  int64_t stuck_count_ = 0;
 
   // Only meaningful for HTTP2. See also Inflater().
   // TODO(yzhao): We can put this into a std::variant.
