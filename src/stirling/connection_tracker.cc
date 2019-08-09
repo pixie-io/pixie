@@ -7,6 +7,7 @@
 #include "src/common/system/system.h"
 #include "src/stirling/connection_tracker.h"
 #include "src/stirling/http2.h"
+#include "src/stirling/mysql/mysql.h"
 
 namespace pl {
 namespace stirling {
@@ -320,22 +321,27 @@ void DataStream::UpdateState(bool parsed_messages) {
 
 template <class TMessageType>
 void DataStream::CheckAndAttemptRecovery() {
-  // This is and its helper functions are a placeholder implementation.
-  // Ultimately, this needs to search for a message boundary from which to resume.
-
   // An empty stream is a clean stream.
   if (events_.empty()) {
     return;
   }
 
-  // Check for a missing event at the head which is blocking progress.
+  // Two possible faults with the stream, but we handle one at a time.
+  // It is possible that there is a missing event that is preventing any parsing,
+  // and that skipping over it would then result in a parse failure because we have
+  // a partial message, but we let the algorithm handle these separately.
+  // In other words, we discard the missing event, and then let partial messages
+  // get discovered in a different iteration.
+  // TODO(oazizi): Potential optimization to handle both simultaneously.
+
+  // Case 1: A missing event at the head which is blocking progress.
   size_t head_seq_num = events_.begin()->first;
   if (next_seq_num_ != head_seq_num) {
     AttemptMissingEventRecovery<TMessageType>();
     return;
   }
 
-  // No missing events, but we appear unable to parse the head.
+  // Case 2: No missing events, but we appear unable to parse the head.
   if (stuck_count_ != 0) {
     AttemptParseFailureRecovery<TMessageType>();
     return;
@@ -347,17 +353,19 @@ void DataStream::AttemptMissingEventRecovery() {
   // Scenario: There is a missing event at the head that is blocking progress.
 
   // Want to give a chance for the event to arrive,
-  // so don't recover any streams until it's been stuck for at least one iteration.
+  // so don't recover any stream until it's been stuck for at least one iteration.
   if (stuck_count_ == 0) {
     return;
   }
 
-  // For now, just skip to the next available sequence number.
-  // TODO(oazizi): Implement something better, and search for a recovery point.
+  // First, skip to the next available sequence number.
   size_t head_seq_num = events_.begin()->first;
   CHECK_LT(next_seq_num_, head_seq_num);
   next_seq_num_ = head_seq_num;
   offset_ = 0;
+
+  // Reset stuck state to give the stream a chance.
+  // Note that it may get stuck again if recovery wasn't done properly.
   stuck_count_ = 0;
   has_new_events_ = true;
 }
@@ -372,7 +380,89 @@ void DataStream::AttemptParseFailureRecovery() {
     return;
   }
 
-  // TODO(oazizi): Implement something for this case.
+  bool recovered = AttemptSyncToMessageBoundary<TMessageType>();
+
+  if (recovered) {
+    // Reset stuck state to give the stream a chance.
+    // Note that it may get stuck again if recovery wasn't done properly.
+    stuck_count_ = 0;
+    has_new_events_ = true;
+  }
+}
+
+template <>
+bool DataStream::AttemptSyncToMessageBoundary<HTTPMessage>() {
+  // Don't call this unless the stream is known to be stuck,
+  // otherwise it may discard messages.
+  CHECK_NE(stuck_count_, 0);
+  CHECK(!events_.empty());
+  CHECK_EQ(events_.begin()->first, next_seq_num_);
+
+  // Look for \r\n\r\n
+  static const std::string kBoundaryMarker = "\r\n\r\n";
+
+  size_t next_seq_num = next_seq_num_;
+  for (auto iter = events_.begin(); iter != events_.end(); ++iter) {
+    auto& event_seq_num = iter->first;
+    auto& event = iter->second;
+
+    // Found a gap, stop searching.
+    if (event_seq_num != next_seq_num) {
+      break;
+    }
+
+    // TODO(oazizi): This won't find the marker if it spans two events.
+    size_t pos = event.msg.find(kBoundaryMarker, offset_);
+
+    // Found a message boundary!
+    // TODO(oazizi): This actually finds the header-body boundary too, so needs adjustment.
+    if (pos != std::string::npos) {
+      next_seq_num_ = event_seq_num;
+      offset_ = pos + kBoundaryMarker.size();
+
+      if (offset_ >= event.msg.size()) {
+        CHECK_EQ(offset_, event.msg.size());
+        ++iter;
+        ++next_seq_num_;
+        offset_ = 0;
+      }
+
+      events_.erase(events_.begin(), iter);
+      return true;
+    }
+
+    next_seq_num++;
+  }
+
+  return false;
+}
+
+template <>
+bool DataStream::AttemptSyncToMessageBoundary<http2::Frame>() {
+  // Assuming a stream with an event at the head, attempt to find the next message boundary.
+
+  // Don't call this unless the stream is known to be stuck,
+  // otherwise it may discard messages.
+  CHECK_NE(stuck_count_, 0);
+  CHECK(!events_.empty());
+  CHECK_EQ(events_.begin()->first, next_seq_num_);
+
+  // TODO(yzhao): Implement search algorithm for message boundary.
+  return false;
+}
+
+template <>
+bool DataStream::AttemptSyncToMessageBoundary<mysql::Packet>() {
+  // Assuming a stream with an event at the head, attempt to find the next message boundary.
+
+  // Don't call this unless the stream is known to be stuck,
+  // otherwise it may discard messages.
+  CHECK_NE(stuck_count_, 0);
+  CHECK(!events_.empty());
+  CHECK_EQ(events_.begin()->first, next_seq_num_);
+
+  // TODO(chengruizhe/oazizi): Implement search algorithm for message boundary.
+  return false;
 }
 
 // Explicit instantiation different message types.

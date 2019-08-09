@@ -121,6 +121,11 @@ class DataStream {
   template <class TMessageType>
   void AttemptParseFailureRecovery();
 
+  // Assuming a stream with an event at the head, attempt to find the next message boundary.
+  // Updates seq_num_ and offset_ to the next boundary position.
+  template <class TMessageType>
+  bool AttemptSyncToMessageBoundary();
+
   // Raw data events from BPF.
   // TODO(oazizi/yzhao): Convert this to vector or deque.
   std::map<size_t, TimestampedData> events_;
