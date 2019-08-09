@@ -90,8 +90,8 @@ Status ConnectionTracker::ExtractMessages() {
 }
 
 template <class TMessageType>
-std::vector<TraceRecord<TMessageType>> ConnectionTracker::ProcessMessages() {
-  std::vector<TraceRecord<TMessageType>> trace_records;
+std::vector<ReqRespPair<TMessageType>> ConnectionTracker::ProcessMessages() {
+  std::vector<ReqRespPair<TMessageType>> trace_records;
 
   Status s = ExtractMessages<TMessageType>();
   if (!s.ok()) {
@@ -105,11 +105,11 @@ std::vector<TraceRecord<TMessageType>> ConnectionTracker::ProcessMessages() {
   // TODO(oazizi): If we stick with this approach, resp_data could be converted back to vector.
   for (TMessageType& msg : resp_messages) {
     if (!req_messages.empty()) {
-      TraceRecord<TMessageType> record{this, std::move(req_messages.front()), std::move(msg)};
+      ReqRespPair<TMessageType> record{std::move(req_messages.front()), std::move(msg)};
       req_messages.pop_front();
       trace_records.push_back(std::move(record));
     } else {
-      TraceRecord<TMessageType> record{this, HTTPMessage(), std::move(msg)};
+      ReqRespPair<TMessageType> record{HTTPMessage(), std::move(msg)};
       trace_records.push_back(std::move(record));
     }
   }
@@ -119,8 +119,8 @@ std::vector<TraceRecord<TMessageType>> ConnectionTracker::ProcessMessages() {
 }
 
 template <>
-std::vector<TraceRecord<http2::GRPCMessage>> ConnectionTracker::ProcessMessages() {
-  std::vector<TraceRecord<http2::GRPCMessage>> trace_records;
+std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessages() {
+  std::vector<ReqRespPair<http2::GRPCMessage>> trace_records;
 
   Status s = ExtractMessages<http2::Frame>();
   if (!s.ok()) {
@@ -149,7 +149,7 @@ std::vector<TraceRecord<http2::GRPCMessage>> ConnectionTracker::ProcessMessages(
   for (auto& r : records) {
     r.req.MarkFramesConsumed();
     r.resp.MarkFramesConsumed();
-    TraceRecord<http2::GRPCMessage> tmp{this, std::move(r.req), std::move(r.resp)};
+    ReqRespPair<http2::GRPCMessage> tmp{std::move(r.req), std::move(r.resp)};
     trace_records.push_back(tmp);
   }
 
@@ -544,7 +544,7 @@ bool DataStream::AttemptSyncToMessageBoundary<mysql::Packet>() {
 }
 
 // Explicit instantiation different message types.
-template std::vector<TraceRecord<HTTPMessage>> ConnectionTracker::ProcessMessages();
+template std::vector<ReqRespPair<HTTPMessage>> ConnectionTracker::ProcessMessages();
 
 template bool DataStream::Empty<HTTPMessage>() const;
 template bool DataStream::Empty<http2::Frame>() const;

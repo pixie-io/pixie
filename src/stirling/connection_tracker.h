@@ -33,11 +33,9 @@ struct SocketClose {
   uint64_t recv_seq_num = 0;
 };
 
-class ConnectionTracker;
-
+// TODO(oazizi): Convert ReqRespPair to hold unique_ptrs to messages.
 template <class TMessageType>
-struct TraceRecord {
-  const ConnectionTracker* tracker;
+struct ReqRespPair {
   TMessageType req_message;
   TMessageType resp_message;
 };
@@ -213,7 +211,7 @@ class ConnectionTracker {
    * @param data_table
    */
   template <class TMessageType>
-  std::vector<TraceRecord<TMessageType>> ProcessMessages();
+  std::vector<ReqRespPair<TMessageType>> ProcessMessages();
 
   /**
    * @brief Returns reference to current set of unconsumed requests.

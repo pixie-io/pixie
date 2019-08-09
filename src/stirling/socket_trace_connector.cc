@@ -299,7 +299,7 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* 
       if constexpr (!std::is_same_v<TMessageType, std::nullptr_t>) {
         auto messages = tracker.ProcessMessages<TMessageType>();
         for (auto& msg : messages) {
-          AppendMessage(msg, data_table);
+          AppendMessage(tracker, msg, data_table);
         }
       } else {
         // Needed to keep GCC happy.
@@ -343,7 +343,7 @@ HTTPContentType DetectContentType(const HTTPMessage& message) {
 
 }  // namespace
 
-bool SocketTraceConnector::SelectMessage(const TraceRecord<HTTPMessage>& record) {
+bool SocketTraceConnector::SelectMessage(const ReqRespPair<HTTPMessage>& record) {
   const HTTPMessage& message = record.resp_message;
 
   // Rule: Exclude anything that doesn't specify its Content-Type.
@@ -365,7 +365,8 @@ bool SocketTraceConnector::SelectMessage(const TraceRecord<HTTPMessage>& record)
 }
 
 template <>
-void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record, DataTable* data_table) {
+void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
+                                         ReqRespPair<HTTPMessage> record, DataTable* data_table) {
   // Only allow certain records to be transferred upstream.
   if (!SelectMessage(record)) {
     return;
@@ -377,7 +378,6 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record, DataTa
 
   CHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
-  const ConnectionTracker& conn_tracker = *record.tracker;
   HTTPMessage& req_message = record.req_message;
   HTTPMessage& resp_message = record.resp_message;
 
@@ -410,10 +410,10 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record, DataTa
 }
 
 template <>
-void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record, DataTable* data_table) {
+void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
+                                         ReqRespPair<GRPCMessage> record, DataTable* data_table) {
   CHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
-  const ConnectionTracker& conn_tracker = *record.tracker;
   GRPCMessage& req_message = record.req_message;
   GRPCMessage& resp_message = record.resp_message;
 

@@ -250,10 +250,11 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   void TransferStreams(TrafficProtocol protocol, DataTable* data_table);
 
   template <class TMessageType>
-  static void AppendMessage(TraceRecord<TMessageType> record, DataTable* data_table);
+  static void AppendMessage(const ConnectionTracker& conn_tracker, ReqRespPair<TMessageType> record,
+                            DataTable* data_table);
 
   // HTTP-specific helper function.
-  static bool SelectMessage(const TraceRecord<HTTPMessage>& record);
+  static bool SelectMessage(const ReqRespPair<HTTPMessage>& record);
 
   // Transfer of a MySQL Event to the MySQL Table.
   // TODO(oazizi/yzhao): Change to use std::unique_ptr.

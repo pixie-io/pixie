@@ -123,7 +123,7 @@ void PreProcessMessage(GRPCMessage* message);
 /**
  * @brief A convenience holder of gRPC req & resp.
  */
-// TODO(yzhao): Investigate converging with TraceRecord in event_parser.h.
+// TODO(yzhao): Investigate converging with ReqRespPair in socket_trace_connector.h.
 struct GRPCReqResp {
   GRPCMessage req;
   GRPCMessage resp;
