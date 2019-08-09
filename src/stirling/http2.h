@@ -84,11 +84,6 @@ struct GRPCMessage {
   }
 };
 
-/**
- * @brief Required for fitting in the SocketTraceConnector::ConsumeMessage() template.
- */
-void PreProcessMessage(GRPCMessage* message);
-
 /*
  * @brief Stitches frames as either request or response. Also removes consumed frames.
  *

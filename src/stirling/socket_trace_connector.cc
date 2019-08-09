@@ -352,6 +352,57 @@ void SocketTraceConnector::ProcessMessages(const ConnectionTracker& conn_tracker
 }
 
 template <>
+void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record, DataTable* data_table) {
+  CHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
+
+  const ConnectionTracker& conn_tracker = *record.tracker;
+  GRPCMessage& req_message = record.req_message;
+  GRPCMessage& resp_message = record.resp_message;
+
+  DCHECK_GE(resp_message.timestamp_ns, req_message.timestamp_ns);
+
+  RecordBuilder<&kHTTPTable> r(data_table);
+  r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
+  r.Append<r.ColIndex("pid")>(conn_tracker.pid());
+  r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
+  r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
+  r.Append<r.ColIndex("http_major_version")>(2);
+  // HTTP2 does not define minor version.
+  r.Append<r.ColIndex("http_minor_version")>(0);
+  r.Append<r.ColIndex("http_req_headers")>(
+      absl::StrJoin(req_message.headers, "\n", absl::PairFormatter(": ")));
+  r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
+  r.Append<r.ColIndex("http_resp_headers")>(
+      absl::StrJoin(resp_message.headers, "\n", absl::PairFormatter(": ")));
+  // TODO(yzhao): Populate the following 4 fields from headers.
+  r.Append<r.ColIndex("http_req_method")>("GET");
+  r.Append<r.ColIndex("http_req_path")>("PATH");
+  r.Append<r.ColIndex("http_resp_status")>(200);
+  r.Append<r.ColIndex("http_resp_message")>("OK");
+
+  if (FLAGS_enable_parsing_protobufs) {
+    MethodInputOutput in_out = GetProtobufMessages(req_message, &grpc_desc_db_);
+    auto parse_pb = [](std::string_view str, Message* pb) -> std::string {
+      std::string json;
+      Status s = ParseProtobuf(str, pb, &json);
+      if (s.ok()) {
+        return json;
+      } else {
+        return s.ToString();
+      }
+    };
+    r.Append<r.ColIndex("http_req_body")>(parse_pb(req_message.message, in_out.input.get()));
+    r.Append<r.ColIndex("http_resp_body")>(parse_pb(resp_message.message, in_out.output.get()));
+  } else {
+    r.Append<r.ColIndex("http_req_body")>(std::move(req_message.message));
+    r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.message));
+  }
+  r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns -
+                                               req_message.timestamp_ns);
+}
+
+template <>
 void SocketTraceConnector::ProcessMessages(const ConnectionTracker& conn_tracker,
                                            std::deque<Frame>* req_messages,
                                            std::deque<Frame>* resp_messages,
@@ -372,7 +423,7 @@ void SocketTraceConnector::ProcessMessages(const ConnectionTracker& conn_tracker
     r.req.MarkFramesConsumed();
     r.resp.MarkFramesConsumed();
     TraceRecord<GRPCMessage> tmp{&conn_tracker, std::move(r.req), std::move(r.resp)};
-    ConsumeMessage(std::move(tmp), data_table);
+    AppendMessage(std::move(tmp), data_table);
   }
 
   EraseConsumedFrames(req_messages);
@@ -415,12 +466,6 @@ bool SocketTraceConnector::SelectMessage(const TraceRecord<HTTPMessage>& record)
     }
   }
 
-  return true;
-}
-
-template <>
-bool SocketTraceConnector::SelectMessage(const TraceRecord<GRPCMessage>& grpc_record) {
-  PL_UNUSED(grpc_record);
   return true;
 }
 
@@ -471,57 +516,6 @@ void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record, DataTa
   r.Append<r.ColIndex("http_resp_status")>(resp_message.http_resp_status);
   r.Append<r.ColIndex("http_resp_message")>(std::move(resp_message.http_resp_message));
   r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.http_msg_body));
-  r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns -
-                                               req_message.timestamp_ns);
-}
-
-template <>
-void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record, DataTable* data_table) {
-  CHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
-
-  const ConnectionTracker& conn_tracker = *record.tracker;
-  GRPCMessage& req_message = record.req_message;
-  GRPCMessage& resp_message = record.resp_message;
-
-  DCHECK_GE(resp_message.timestamp_ns, req_message.timestamp_ns);
-
-  RecordBuilder<&kHTTPTable> r(data_table);
-  r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
-  r.Append<r.ColIndex("pid")>(conn_tracker.pid());
-  r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
-  r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
-  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
-  r.Append<r.ColIndex("http_major_version")>(2);
-  // HTTP2 does not define minor version.
-  r.Append<r.ColIndex("http_minor_version")>(0);
-  r.Append<r.ColIndex("http_req_headers")>(
-      absl::StrJoin(req_message.headers, "\n", absl::PairFormatter(": ")));
-  r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
-  r.Append<r.ColIndex("http_resp_headers")>(
-      absl::StrJoin(resp_message.headers, "\n", absl::PairFormatter(": ")));
-  // TODO(yzhao): Populate the following 4 fields from headers.
-  r.Append<r.ColIndex("http_req_method")>("GET");
-  r.Append<r.ColIndex("http_req_path")>("PATH");
-  r.Append<r.ColIndex("http_resp_status")>(200);
-  r.Append<r.ColIndex("http_resp_message")>("OK");
-
-  if (FLAGS_enable_parsing_protobufs) {
-    MethodInputOutput in_out = GetProtobufMessages(req_message, &grpc_desc_db_);
-    auto parse_pb = [](std::string_view str, Message* pb) -> std::string {
-      std::string json;
-      Status s = ParseProtobuf(str, pb, &json);
-      if (s.ok()) {
-        return json;
-      } else {
-        return s.ToString();
-      }
-    };
-    r.Append<r.ColIndex("http_req_body")>(parse_pb(req_message.message, in_out.input.get()));
-    r.Append<r.ColIndex("http_resp_body")>(parse_pb(resp_message.message, in_out.output.get()));
-  } else {
-    r.Append<r.ColIndex("http_req_body")>(std::move(req_message.message));
-    r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.message));
-  }
   r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns -
                                                req_message.timestamp_ns);
 }

@@ -256,10 +256,6 @@ ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
   return {std::move(start_position), buf_size - buf.size(), s};
 }
 
-// TODO(yzhao): Similar to HTTP, we need to handle gzip, and possibly other features for gRPC
-// messages.
-void PreProcessMessage(GRPCMessage* message) { PL_UNUSED(message); }
-
 namespace {
 
 ParseState CheckGRPCMessage(std::string_view buf) {
