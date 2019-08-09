@@ -10,3 +10,5 @@ resources:
 - api_service.yaml
 - proxy_deployment.yaml
 - proxy_service.yaml
+- site_manager_deployment.yaml
+- site_manager_service.yaml

@@ -14,7 +14,7 @@ import (
 func main() {
 	log.WithField("service", "site-manager-service").Info("Starting service")
 
-	common.SetupService("site-manager-service", 50100)
+	common.SetupService("site-manager-service", 50300)
 	common.PostFlagSetupAndParse()
 	common.CheckServiceFlags()
 	common.SetupServiceLogging()

@@ -1,0 +1,55 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: site-manager-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: site-manager-server
+  template:
+    metadata:
+      labels:
+        name: site-manager-server
+    spec:
+      containers:
+      - name: site-manager-server
+        image: gcr.io/pl-dev-infra/cloud/site_manager_server_image:latest
+        ports:
+          - containerPort: 50300
+            hostPort: 50300
+          - containerPort: 50301
+            hostPort: 50301
+        env:
+          - name: PL_POSTGRES_PORT
+            value: "5432"
+          - name: PL_POSTGRES_HOSTNAME
+            value: postgres.plc.svc.cluster.local
+          - name: PL_POSTGRES_DB
+            value: pl
+          - name: PL_POSTGRES_USERNAME
+            value: pl
+          - name: PL_POSTGRES_PASSWORD
+            value: pl
+          - name: PL_SERVER_TLS_CERT
+            value: /certs/server.crt
+          - name: PL_SERVER_TLS_KEY
+            value: /certs/server.key
+          - name: PL_CLIENT_TLS_CERT
+            value: /certs/client.crt
+          - name: PL_CLIENT_TLS_KEY
+            value: /certs/client.key
+          - name: PL_TLS_CA_CERT
+            value: /certs/ca.crt
+          - name: PL_JWT_SIGNING_KEY
+            valueFrom:
+              secretKeyRef:
+                name: pl-app-secrets
+                key: jwt-signing-key
+        volumeMounts:
+            - name: certs
+              mountPath: /certs
+      volumes:
+        - name: certs
+          secret:
+            secretName: service-tls-certs
