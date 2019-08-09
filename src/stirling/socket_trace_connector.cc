@@ -82,7 +82,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_
   switch (table_num) {
     case kHTTPTableNum:
       TransferStreams<HTTPMessage>(kProtocolHTTP, data_table);
-      TransferStreams<Frame>(kProtocolHTTP2, data_table);
+      TransferStreams<GRPCMessage>(kProtocolHTTP2, data_table);
 
       // Also call transfer streams on kProtocolUnknown to clean up any closed connections.
       // Since there will be no InfoClassManager to call TransferData on unknown protocols,
@@ -297,17 +297,10 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* 
       // This will cause us to iterate through all connection trackers an extra time, but may be
       // worth it.
       if constexpr (!std::is_same_v<TMessageType, std::nullptr_t>) {
-        Status s = tracker.ExtractMessages<TMessageType>();
-        if (!s.ok()) {
-          LOG(ERROR) << s.msg();
-          continue;
+        auto messages = tracker.ProcessMessages<TMessageType>();
+        for (auto& msg : messages) {
+          AppendMessage(msg, data_table);
         }
-
-        std::deque<TMessageType>& req_messages = tracker.req_messages<TMessageType>();
-        std::deque<TMessageType>& resp_messages = tracker.resp_messages<TMessageType>();
-
-        // TODO(oazizi): Refactor ProcessMessages into ConnectionTracker.
-        ProcessMessages<TMessageType>(&tracker, &req_messages, &resp_messages, data_table);
       } else {
         // Needed to keep GCC happy.
         PL_UNUSED(data_table);
@@ -331,24 +324,89 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* 
   }
 }
 
-template <class TMessageType>
-void SocketTraceConnector::ProcessMessages(ConnectionTracker* conn_tracker,
-                                           std::deque<TMessageType>* req_messages,
-                                           std::deque<TMessageType>* resp_messages,
-                                           DataTable* data_table) {
-  // TODO(oazizi): If we stick with this approach, resp_data could be converted back to vector.
-  for (TMessageType& msg : *resp_messages) {
-    if (!req_messages->empty()) {
-      TraceRecord<TMessageType> record{conn_tracker, std::move(req_messages->front()),
-                                       std::move(msg)};
-      req_messages->pop_front();
-      ConsumeMessage(std::move(record), data_table);
-    } else {
-      TraceRecord<TMessageType> record{conn_tracker, HTTPMessage(), std::move(msg)};
-      ConsumeMessage(std::move(record), data_table);
+//-----------------------------------------------------------------------------
+// Append-Related Functions
+//-----------------------------------------------------------------------------
+
+namespace {
+
+HTTPContentType DetectContentType(const HTTPMessage& message) {
+  auto content_type_iter = message.http_headers.find(http_headers::kContentType);
+  if (content_type_iter == message.http_headers.end()) {
+    return HTTPContentType::kUnknown;
+  }
+  if (absl::StrContains(content_type_iter->second, "json")) {
+    return HTTPContentType::kJSON;
+  }
+  return HTTPContentType::kUnknown;
+}
+
+}  // namespace
+
+bool SocketTraceConnector::SelectMessage(const TraceRecord<HTTPMessage>& record) {
+  const HTTPMessage& message = record.resp_message;
+
+  // Rule: Exclude anything that doesn't specify its Content-Type.
+  auto content_type_iter = message.http_headers.find(http_headers::kContentType);
+  if (content_type_iter == message.http_headers.end()) {
+    return false;
+  }
+
+  // Rule: Exclude anything that doesn't match the filter, if filter is active.
+  if (message.type == HTTPEventType::kHTTPResponse &&
+      (!http_response_header_filter_.inclusions.empty() ||
+       !http_response_header_filter_.exclusions.empty())) {
+    if (!MatchesHTTPTHeaders(message.http_headers, http_response_header_filter_)) {
+      return false;
     }
   }
-  resp_messages->clear();
+
+  return true;
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record, DataTable* data_table) {
+  // Only allow certain records to be transferred upstream.
+  if (!SelectMessage(record)) {
+    return;
+  }
+
+  // Currently decompresses gzip content, but could handle other transformations too.
+  // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
+  PreProcessMessage(&record.resp_message);
+
+  CHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
+
+  const ConnectionTracker& conn_tracker = *record.tracker;
+  HTTPMessage& req_message = record.req_message;
+  HTTPMessage& resp_message = record.resp_message;
+
+  // Check for positive latencies.
+  DCHECK_GE(resp_message.timestamp_ns, req_message.timestamp_ns);
+
+  RecordBuilder<&kHTTPTable> r(data_table);
+  r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
+  r.Append<r.ColIndex("pid")>(conn_tracker.pid());
+  r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
+  // Note that there is a string copy here,
+  // But std::move is not allowed because we re-use conn object.
+  r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
+  r.Append<r.ColIndex("http_major_version")>(1);
+  r.Append<r.ColIndex("http_minor_version")>(resp_message.http_minor_version);
+  r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(DetectContentType(resp_message)));
+  r.Append<r.ColIndex("http_req_headers")>(
+      absl::StrJoin(req_message.http_headers, "\n", absl::PairFormatter(": ")));
+  r.Append<r.ColIndex("http_req_method")>(std::move(req_message.http_req_method));
+  r.Append<r.ColIndex("http_req_path")>(std::move(req_message.http_req_path));
+  r.Append<r.ColIndex("http_req_body")>("-");
+  r.Append<r.ColIndex("http_resp_headers")>(
+      absl::StrJoin(resp_message.http_headers, "\n", absl::PairFormatter(": ")));
+  r.Append<r.ColIndex("http_resp_status")>(resp_message.http_resp_status);
+  r.Append<r.ColIndex("http_resp_message")>(std::move(resp_message.http_resp_message));
+  r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.http_msg_body));
+  r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns -
+                                               req_message.timestamp_ns);
 }
 
 template <>
@@ -398,124 +456,6 @@ void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record, DataTa
     r.Append<r.ColIndex("http_req_body")>(std::move(req_message.message));
     r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.message));
   }
-  r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns -
-                                               req_message.timestamp_ns);
-}
-
-template <>
-void SocketTraceConnector::ProcessMessages(ConnectionTracker* conn_tracker,
-                                           std::deque<Frame>* req_messages,
-                                           std::deque<Frame>* resp_messages,
-                                           DataTable* data_table) {
-  std::map<uint32_t, std::vector<GRPCMessage>> reqs;
-  std::map<uint32_t, std::vector<GRPCMessage>> resps;
-
-  // First stitch all frames to form gRPC messages.
-  Status s1 = StitchGRPCStreamFrames(*req_messages, conn_tracker->req_data()->Inflater(), &reqs);
-  Status s2 = StitchGRPCStreamFrames(*resp_messages, conn_tracker->resp_data()->Inflater(), &resps);
-
-  LOG_IF(ERROR, !s1.ok()) << "Failed to stitch frames for requests, error: " << s1.msg();
-  LOG_IF(ERROR, !s2.ok()) << "Failed to stitch frames for responses, error: " << s2.msg();
-
-  std::vector<GRPCReqResp> records = MatchGRPCReqResp(std::move(reqs), std::move(resps));
-
-  for (auto& r : records) {
-    r.req.MarkFramesConsumed();
-    r.resp.MarkFramesConsumed();
-    TraceRecord<GRPCMessage> tmp{conn_tracker, std::move(r.req), std::move(r.resp)};
-    AppendMessage(std::move(tmp), data_table);
-  }
-
-  EraseConsumedFrames(req_messages);
-  EraseConsumedFrames(resp_messages);
-}
-
-template <class TMessageType>
-void SocketTraceConnector::ConsumeMessage(TraceRecord<TMessageType> record, DataTable* data_table) {
-  // Only allow certain records to be transferred upstream.
-  if (SelectMessage(record)) {
-    // Currently decompresses gzip content, but could handle other transformations too.
-    // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
-    PreProcessMessage(&record.resp_message);
-
-    // Push data to the TableStore.
-    AppendMessage(std::move(record), data_table);
-  }
-}
-
-//-----------------------------------------------------------------------------
-// HTTP TransferData Helpers
-//-----------------------------------------------------------------------------
-
-template <>
-bool SocketTraceConnector::SelectMessage(const TraceRecord<HTTPMessage>& record) {
-  const HTTPMessage& message = record.resp_message;
-
-  // Rule: Exclude anything that doesn't specify its Content-Type.
-  auto content_type_iter = message.http_headers.find(http_headers::kContentType);
-  if (content_type_iter == message.http_headers.end()) {
-    return false;
-  }
-
-  // Rule: Exclude anything that doesn't match the filter, if filter is active.
-  if (message.type == HTTPEventType::kHTTPResponse &&
-      (!http_response_header_filter_.inclusions.empty() ||
-       !http_response_header_filter_.exclusions.empty())) {
-    if (!MatchesHTTPTHeaders(message.http_headers, http_response_header_filter_)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-namespace {
-
-HTTPContentType DetectContentType(const HTTPMessage& message) {
-  auto content_type_iter = message.http_headers.find(http_headers::kContentType);
-  if (content_type_iter == message.http_headers.end()) {
-    return HTTPContentType::kUnknown;
-  }
-  if (absl::StrContains(content_type_iter->second, "json")) {
-    return HTTPContentType::kJSON;
-  }
-  return HTTPContentType::kUnknown;
-}
-
-}  // namespace
-
-template <>
-void SocketTraceConnector::AppendMessage(TraceRecord<HTTPMessage> record, DataTable* data_table) {
-  CHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
-
-  const ConnectionTracker& conn_tracker = *record.tracker;
-  HTTPMessage& req_message = record.req_message;
-  HTTPMessage& resp_message = record.resp_message;
-
-  // Check for positive latencies.
-  DCHECK_GE(resp_message.timestamp_ns, req_message.timestamp_ns);
-
-  RecordBuilder<&kHTTPTable> r(data_table);
-  r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
-  r.Append<r.ColIndex("pid")>(conn_tracker.pid());
-  r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
-  // Note that there is a string copy here,
-  // But std::move is not allowed because we re-use conn object.
-  r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
-  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
-  r.Append<r.ColIndex("http_major_version")>(1);
-  r.Append<r.ColIndex("http_minor_version")>(resp_message.http_minor_version);
-  r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(DetectContentType(resp_message)));
-  r.Append<r.ColIndex("http_req_headers")>(
-      absl::StrJoin(req_message.http_headers, "\n", absl::PairFormatter(": ")));
-  r.Append<r.ColIndex("http_req_method")>(std::move(req_message.http_req_method));
-  r.Append<r.ColIndex("http_req_path")>(std::move(req_message.http_req_path));
-  r.Append<r.ColIndex("http_req_body")>("-");
-  r.Append<r.ColIndex("http_resp_headers")>(
-      absl::StrJoin(resp_message.http_headers, "\n", absl::PairFormatter(": ")));
-  r.Append<r.ColIndex("http_resp_status")>(resp_message.http_resp_status);
-  r.Append<r.ColIndex("http_resp_message")>(std::move(resp_message.http_resp_message));
-  r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.http_msg_body));
   r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns -
                                                req_message.timestamp_ns);
 }

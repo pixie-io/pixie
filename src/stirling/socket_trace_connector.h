@@ -46,13 +46,6 @@ enum class HTTPContentType {
   kGRPC = 2,
 };
 
-template <class TMessageType>
-struct TraceRecord {
-  const ConnectionTracker* tracker;
-  TMessageType req_message;
-  TMessageType resp_message;
-};
-
 class SocketTraceConnector : public SourceConnector, public BCCWrapper {
  public:
   inline static const std::string_view kBCCScript = http_trace_bcc_script;
@@ -252,22 +245,15 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   void AcceptOpenConnEvent(conn_info_t conn_info);
   void AcceptCloseConnEvent(conn_info_t conn_info);
 
-  // Transfer of an HTTP Response Event to the HTTP Response Table in the table store.
+  // Transfer of messages to the data table.
   template <class TMessageType>
   void TransferStreams(TrafficProtocol protocol, DataTable* data_table);
 
   template <class TMessageType>
-  void ProcessMessages(ConnectionTracker* conn_tracker, std::deque<TMessageType>* req_messages,
-                       std::deque<TMessageType>* resp_messages, DataTable* data_table);
-
-  template <class TMessageType>
-  static void ConsumeMessage(TraceRecord<TMessageType> record, DataTable* data_table);
-
-  template <class TMessageType>
-  static bool SelectMessage(const TraceRecord<TMessageType>& record);
-
-  template <class TMessageType>
   static void AppendMessage(TraceRecord<TMessageType> record, DataTable* data_table);
+
+  // HTTP-specific helper function.
+  static bool SelectMessage(const TraceRecord<HTTPMessage>& record);
 
   // Transfer of a MySQL Event to the MySQL Table.
   // TODO(oazizi/yzhao): Change to use std::unique_ptr.

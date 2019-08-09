@@ -12,6 +12,10 @@
 namespace pl {
 namespace stirling {
 
+//--------------------------------------------------------------
+// ConnectionTracker
+//--------------------------------------------------------------
+
 void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
   LOG_IF(ERROR, open_info_.timestamp_ns != 0) << "Clobbering existing ConnOpenEvent.";
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ <= kDeathCountdownIters)
@@ -83,6 +87,76 @@ Status ConnectionTracker::ExtractMessages() {
   req_data_ptr->template ExtractMessages<TMessageType>(MessageType::kRequest);
 
   return Status::OK();
+}
+
+template <class TMessageType>
+std::vector<TraceRecord<TMessageType>> ConnectionTracker::ProcessMessages() {
+  std::vector<TraceRecord<TMessageType>> trace_records;
+
+  Status s = ExtractMessages<TMessageType>();
+  if (!s.ok()) {
+    LOG(ERROR) << s.msg();
+    return trace_records;
+  }
+
+  auto& req_messages = req_data()->Messages<TMessageType>();
+  auto& resp_messages = resp_data()->Messages<TMessageType>();
+
+  // TODO(oazizi): If we stick with this approach, resp_data could be converted back to vector.
+  for (TMessageType& msg : resp_messages) {
+    if (!req_messages.empty()) {
+      TraceRecord<TMessageType> record{this, std::move(req_messages.front()), std::move(msg)};
+      req_messages.pop_front();
+      trace_records.push_back(std::move(record));
+    } else {
+      TraceRecord<TMessageType> record{this, HTTPMessage(), std::move(msg)};
+      trace_records.push_back(std::move(record));
+    }
+  }
+  resp_messages.clear();
+
+  return trace_records;
+}
+
+template <>
+std::vector<TraceRecord<http2::GRPCMessage>> ConnectionTracker::ProcessMessages() {
+  std::vector<TraceRecord<http2::GRPCMessage>> trace_records;
+
+  Status s = ExtractMessages<http2::Frame>();
+  if (!s.ok()) {
+    LOG(ERROR) << s.msg();
+    return trace_records;
+  }
+
+  std::map<uint32_t, std::vector<http2::GRPCMessage>> reqs;
+  std::map<uint32_t, std::vector<http2::GRPCMessage>> resps;
+
+  DataStream* req_stream = req_data();
+  DataStream* resp_stream = resp_data();
+
+  auto& req_messages = req_stream->Messages<http2::Frame>();
+  auto& resp_messages = resp_stream->Messages<http2::Frame>();
+
+  // First stitch all frames to form gRPC messages.
+  Status s1 = StitchGRPCStreamFrames(req_messages, req_stream->Inflater(), &reqs);
+  Status s2 = StitchGRPCStreamFrames(resp_messages, resp_stream->Inflater(), &resps);
+
+  LOG_IF(ERROR, !s1.ok()) << "Failed to stitch frames for requests, error: " << s1.msg();
+  LOG_IF(ERROR, !s2.ok()) << "Failed to stitch frames for responses, error: " << s2.msg();
+
+  std::vector<http2::GRPCReqResp> records = MatchGRPCReqResp(std::move(reqs), std::move(resps));
+
+  for (auto& r : records) {
+    r.req.MarkFramesConsumed();
+    r.resp.MarkFramesConsumed();
+    TraceRecord<http2::GRPCMessage> tmp{this, std::move(r.req), std::move(r.resp)};
+    trace_records.push_back(tmp);
+  }
+
+  http2::EraseConsumedFrames(&req_messages);
+  http2::EraseConsumedFrames(&resp_messages);
+
+  return trace_records;
 }
 
 bool ConnectionTracker::AllEventsReceived() const {
@@ -188,6 +262,10 @@ void ConnectionTracker::HandleInactivity() {
     recv_data_.Reset();
   }
 }
+
+//--------------------------------------------------------------
+// DataStream
+//--------------------------------------------------------------
 
 void DataStream::AddEvent(std::unique_ptr<SocketDataEvent> event) {
   uint64_t seq_num = event->attr.seq_num;
@@ -466,14 +544,7 @@ bool DataStream::AttemptSyncToMessageBoundary<mysql::Packet>() {
 }
 
 // Explicit instantiation different message types.
-template Status ConnectionTracker::ExtractMessages<HTTPMessage>();
-template Status ConnectionTracker::ExtractMessages<http2::Frame>();
-
-template std::deque<HTTPMessage>& DataStream::ExtractMessages<HTTPMessage>(MessageType type);
-template std::deque<http2::Frame>& DataStream::ExtractMessages<http2::Frame>(MessageType type);
-
-template std::deque<HTTPMessage>& DataStream::Messages<HTTPMessage>();
-template std::deque<http2::Frame>& DataStream::Messages<http2::Frame>();
+template std::vector<TraceRecord<HTTPMessage>> ConnectionTracker::ProcessMessages();
 
 template bool DataStream::Empty<HTTPMessage>() const;
 template bool DataStream::Empty<http2::Frame>() const;

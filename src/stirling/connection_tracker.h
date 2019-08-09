@@ -33,6 +33,15 @@ struct SocketClose {
   uint64_t recv_seq_num = 0;
 };
 
+class ConnectionTracker;
+
+template <class TMessageType>
+struct TraceRecord {
+  const ConnectionTracker* tracker;
+  TMessageType req_message;
+  TMessageType resp_message;
+};
+
 /**
  * DataStream is an object that contains the captured data of either send or recv traffic
  * on a connection.
@@ -148,7 +157,7 @@ class DataStream {
   //
   // Additionally, ConnectionTracker must not switch type during runtime, which indicates serious
   // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
-  std::variant<std::monostate, std::deque<HTTPMessage>, std::deque<http2::Frame> > messages_;
+  std::variant<std::monostate, std::deque<HTTPMessage>, std::deque<http2::Frame>> messages_;
 
   // The following state keeps track of whether the raw events were touched or not since the last
   // call to ExtractMessages(). It enables ExtractMessages() to exit early if nothing has changed.
@@ -197,6 +206,14 @@ class ConnectionTracker {
    */
   template <class TMessageType>
   Status ExtractMessages();
+
+  /**
+   *
+   * @tparam TMessageType
+   * @param data_table
+   */
+  template <class TMessageType>
+  std::vector<TraceRecord<TMessageType>> ProcessMessages();
 
   /**
    * @brief Returns reference to current set of unconsumed requests.
