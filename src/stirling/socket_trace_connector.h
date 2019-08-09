@@ -252,9 +252,6 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   void AcceptOpenConnEvent(conn_info_t conn_info);
   void AcceptCloseConnEvent(conn_info_t conn_info);
 
-  // Transfers the data from stream buffers (from AcceptDataEvent()) to record_batch.
-  void TransferStreamData(uint32_t table_num, DataTable* data_table);
-
   // Transfer of an HTTP Response Event to the HTTP Response Table in the table store.
   template <class TMessageType>
   void TransferStreams(TrafficProtocol protocol, DataTable* data_table);
