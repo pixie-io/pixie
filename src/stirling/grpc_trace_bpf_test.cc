@@ -16,24 +16,27 @@ extern "C" {
 #include "src/stirling/data_table.h"
 #include "src/stirling/grpc.h"
 #include "src/stirling/socket_trace_connector.h"
-#include "src/stirling/testing/greeter_client.h"
 #include "src/stirling/testing/greeter_server.h"
+#include "src/stirling/testing/grpc_stub.h"
 #include "src/stirling/testing/proto/greet.grpc.pb.h"
 
 namespace pl {
 namespace stirling {
 namespace grpc {
 
-using ::pl::stirling::testing::GreeterClient;
+using ::pl::stirling::testing::Greeter;
 using ::pl::stirling::testing::GreeterService;
+using ::pl::stirling::testing::GRPCStub;
 using ::pl::stirling::testing::HelloReply;
 using ::pl::stirling::testing::HelloRequest;
 using ::pl::stirling::testing::ServiceRunner;
 using ::pl::testing::proto::EqualsProto;
 using ::pl::types::ColumnWrapperRecordBatch;
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
 using ::testing::MatchesRegex;
 using ::testing::SizeIs;
+using ::testing::StrEq;
 
 constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
 constexpr DataTableSchema kHTTPTable = SocketTraceConnector::kHTTPTable;
@@ -54,6 +57,13 @@ std::vector<size_t> FindRecordIdxMatchesPid(const ColumnWrapperRecordBatch& http
     }
   }
   return res;
+}
+
+HelloReply GetHelloReply(const ColumnWrapperRecordBatch& record_batch, const size_t idx) {
+  HelloReply received_reply;
+  std::string msg = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
+  CHECK(received_reply.ParseFromString(msg.substr(kGRPCMessageHeaderSizeInBytes)));
+  return received_reply;
 }
 
 TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
@@ -127,13 +137,11 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
             record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(target_record_idx).val);
 
-  HelloReply received_reply;
-  std::string msg = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(target_record_idx);
-  EXPECT_TRUE(received_reply.ParseFromString(msg.substr(kGRPCMessageHeaderSizeInBytes)));
-  EXPECT_THAT(received_reply, EqualsProto(R"proto(message: "Hello PixieLabs")proto"));
+  EXPECT_THAT(GetHelloReply(record_batch, target_record_idx),
+              EqualsProto(R"proto(message: "Hello PixieLabs")proto"));
 }
 
-class GRPCTest : public ::testing::Test {
+class GRPCCppTest : public ::testing::Test {
  protected:
   void SetUp() override {
     // Force disable protobuf parsing to output the binary protobuf in record batch.
@@ -149,7 +157,9 @@ class GRPCTest : public ::testing::Test {
     server_ = runner_.RunService(&service_);
     auto* server_ptr = server_.get();
     server_thread_ = std::thread([server_ptr]() { server_ptr->Wait(); });
-    client_ = std::make_unique<GreeterClient>(absl::StrCat("127.0.0.1:", runner_.ports().back()));
+    stub_ = std::make_unique<GRPCStub<Greeter>>(absl::StrCat("127.0.0.1:", runner_.port()));
+
+    data_table_ = std::make_unique<DataTable>(SocketTraceConnector::kHTTPTable);
   }
 
   void TearDown() override {
@@ -160,63 +170,67 @@ class GRPCTest : public ::testing::Test {
     }
   }
 
+  template <typename StubType, typename RPCMethodType>
+  std::vector<size_t> CallRPC(StubType* stub, RPCMethodType method,
+                              const std::vector<std::string>& names) {
+    HelloRequest req;
+    HelloReply resp;
+    for (const auto& n : names) {
+      req.set_name(n);
+      ::grpc::Status st = stub->CallRPC(method, req, &resp);
+      CHECK(st.ok()) << st.error_message();
+    }
+
+    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
+    types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
+    const std::vector<size_t> target_record_indices =
+        FindRecordIdxMatchesPid(record_batch, getpid());
+    return target_record_indices;
+  }
+
   std::unique_ptr<SourceConnector> source_;
   GreeterService service_;
   ServiceRunner runner_;
   std::unique_ptr<::grpc::Server> server_;
   std::thread server_thread_;
-  std::unique_ptr<GreeterClient> client_;
+  std::unique_ptr<GRPCStub<Greeter>> stub_;
+
+  std::unique_ptr<DataTable> data_table_;
 };
 
-TEST_F(GRPCTest, BasicTracingForCPP) {
-  HelloRequest req;
-  HelloReply resp;
+TEST_F(GRPCCppTest, BasicTracing) {
+  CallRPC(stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"});
+  std::vector<size_t> indices =
+      CallRPC(stub_.get(), &Greeter::Stub::SayHelloAgain, {"pixielabs", "pixielabs", "pixielabs"});
+  EXPECT_THAT(indices, SizeIs(6));
 
-  req.set_name("pixielabs");
-  ::grpc::Status st = client_->SayHello(req, &resp);
-  EXPECT_OK(st) << st.error_message();
-
-  DataTable data_table(SocketTraceConnector::kHTTPTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
-
-  const std::vector<size_t> target_record_indices = FindRecordIdxMatchesPid(record_batch, getpid());
-  // We should get exactly one record.
-  ASSERT_THAT(target_record_indices, SizeIs(1));
-  const size_t target_record_idx = target_record_indices.front();
-
-  EXPECT_THAT(
-      std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(target_record_idx)),
-      MatchesRegex(":authority: 127.0.0.1:[0-9]+\n"
-                   ":method: POST\n"
-                   ":path: /pl.stirling.testing.Greeter/SayHello\n"
-                   ":scheme: http\n"
-                   "accept-encoding: identity,gzip\n"
-                   "content-type: application/grpc\n"
-                   "grpc-accept-encoding: identity,deflate,gzip\n"
-                   "te: trailers\n"
-                   "user-agent: .*"));
-  EXPECT_THAT(
-      std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(target_record_idx)),
-      MatchesRegex(":status: 200\n"
-                   "accept-encoding: identity,gzip\n"
-                   "content-type: application/grpc\n"
-                   "grpc-accept-encoding: identity,deflate,gzip\n"
-                   "grpc-status: 0"));
-  EXPECT_THAT(
-      std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(target_record_idx)),
-      HasSubstr("127.0.0.1"));
-  EXPECT_EQ(runner_.ports().back(),
-            record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(target_record_idx).val);
-  EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(target_record_idx).val);
-  EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
-            record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(target_record_idx).val);
-
-  HelloReply received_reply;
-  std::string msg = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(target_record_idx);
-  EXPECT_TRUE(received_reply.ParseFromString(msg.substr(kGRPCMessageHeaderSizeInBytes)));
-  EXPECT_THAT(received_reply, EqualsProto(R"proto(message: "Hello pixielabs!")proto"));
+  types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
+  for (size_t idx : indices) {
+    EXPECT_THAT(std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(idx)),
+                MatchesRegex(":authority: 127.0.0.1:[0-9]+\n"
+                             ":method: POST\n"
+                             ":path: /pl.stirling.testing.Greeter/SayHello(|Again)\n"
+                             ":scheme: http\n"
+                             "accept-encoding: identity,gzip\n"
+                             "content-type: application/grpc\n"
+                             "grpc-accept-encoding: identity,deflate,gzip\n"
+                             "te: trailers\n"
+                             "user-agent: .*"));
+    EXPECT_THAT(std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(idx)),
+                MatchesRegex(":status: 200\n"
+                             "accept-encoding: identity,gzip\n"
+                             "content-type: application/grpc\n"
+                             "grpc-accept-encoding: identity,deflate,gzip\n"
+                             "grpc-status: 0"));
+    EXPECT_THAT(std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(idx)),
+                HasSubstr("127.0.0.1"));
+    EXPECT_EQ(runner_.port(), record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(idx).val);
+    EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(idx).val);
+    EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
+              record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(idx).val);
+    EXPECT_THAT(GetHelloReply(record_batch, idx),
+                EqualsProto(R"proto(message: "Hello pixielabs!")proto"));
+  }
 }
 
 }  // namespace grpc

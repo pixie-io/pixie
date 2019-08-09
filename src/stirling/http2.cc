@@ -56,26 +56,6 @@ void UnpackData(const uint8_t* buf, Frame* f) {
   }
 }
 
-class InflaterRAIIWrapper {
- public:
-  explicit InflaterRAIIWrapper(nghttp2_hd_inflater* inflater) : inflater_(inflater) {}
-  ~InflaterRAIIWrapper() {
-    if (inflater_ != nullptr) {
-      nghttp2_hd_inflate_free(inflater_);
-    }
-  }
-  Status Init() {
-    int rv = nghttp2_hd_inflate_init(inflater_, nghttp2_mem_default());
-    if (rv != 0) {
-      return error::Internal("Failed to initialize nghttp2_hd_inflater");
-    }
-    return Status::OK();
-  }
-
- private:
-  nghttp2_hd_inflater* inflater_;
-};
-
 void UnpackHeaders(const uint8_t* buf, Frame* f) {
   nghttp2_headers& frame = f->frame.headers;
   size_t frame_body_length = frame.hd.length;
@@ -305,6 +285,7 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
       header_block_frames.clear();
       header_block_size = 0;
       msg.parse_state = InflateHeaderBlock(u8buf, inflater, &msg.headers);
+      LOG_IF(DFATAL, msg.parse_state != ParseState::kSuccess) << "Header parsing failed.";
     }
   };
 
@@ -376,14 +357,8 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
 
 }  // namespace
 
-Status StitchGRPCStreamFrames(const std::deque<Frame>& frames,
+Status StitchGRPCStreamFrames(const std::deque<Frame>& frames, Inflater* inflater,
                               std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs) {
-  // TODO(yzhao): Consider moving inflater into part of ConnectionTracker or DataStream, or some
-  // other class that is persistent for a HTTP2 connection.
-  nghttp2_hd_inflater inflater;
-  InflaterRAIIWrapper inflater_wrapper{&inflater};
-  PL_RETURN_IF_ERROR(inflater_wrapper.Init());
-
   std::map<uint32_t, std::vector<const Frame*>> stream_frames;
 
   // Collect frames for each stream.
@@ -392,7 +367,7 @@ Status StitchGRPCStreamFrames(const std::deque<Frame>& frames,
   }
   for (auto& [stream_id, frame_ptrs] : stream_frames) {
     std::vector<GRPCMessage> msgs;
-    StitchFrames(frame_ptrs, &inflater, &msgs);
+    StitchFrames(frame_ptrs, inflater->inflater(), &msgs);
     if (msgs.empty()) {
       continue;
     }

@@ -80,6 +80,13 @@ class DataStream {
   template <class TMessageType>
   bool Empty() const;
 
+  http2::Inflater* Inflater() {
+    if (inflater_ == nullptr) {
+      inflater_ = std::make_unique<http2::Inflater>();
+    }
+    return inflater_.get();
+  }
+
  private:
   // Raw data events from BPF.
   // TODO(oazizi/yzhao): Convert this to vector or deque.
@@ -108,6 +115,10 @@ class DataStream {
   // The following state keeps track of whether the raw events were touched or not since the last
   // call to ExtractMessages(). It enables ExtractMessages() to exit early if nothing has changed.
   bool has_new_events_ = false;
+
+  // Only meaningful for HTTP2. See also Inflater().
+  // TODO(yzhao): We can put this into a std::variant.
+  std::unique_ptr<http2::Inflater> inflater_;
 };
 
 /**

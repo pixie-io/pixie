@@ -3,8 +3,8 @@
 #include <thread>
 
 #include "absl/strings/str_cat.h"
-#include "src/stirling/testing/greeter_client.h"
 #include "src/stirling/testing/greeter_server.h"
+#include "src/stirling/testing/grpc_stub.h"
 
 namespace pl {
 namespace stirling {
@@ -17,14 +17,14 @@ TEST(GreeterTest, SayHelloWorks) {
   auto* server_ptr = server.get();
   std::thread server_thread([server_ptr]() { server_ptr->Wait(); });
 
-  GreeterClient client(absl::StrCat("0.0.0.0:", runner.ports().back()));
+  auto stub = std::make_unique<GRPCStub<Greeter>>(absl::StrCat("127.0.0.1:", runner.port()));
 
   HelloRequest req;
   HelloReply resp;
 
   req.set_name("pixielabs");
-  grpc::Status st = client.SayHello(req, &resp);
-  EXPECT_OK(st) << st.error_message();
+  grpc::Status st = stub->CallRPC(&Greeter::Stub::SayHello, req, &resp);
+  EXPECT_TRUE(st.ok()) << st.error_message();
   std::string resp_text;
   EXPECT_TRUE(google::protobuf::TextFormat::PrintToString(resp, &resp_text));
   EXPECT_EQ("message: \"Hello pixielabs!\"\n", resp_text);

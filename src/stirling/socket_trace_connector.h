@@ -257,8 +257,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   void TransferStreams(TrafficProtocol protocol, DataTable* data_table);
 
   template <class TMessageType>
-  void ProcessMessages(const ConnectionTracker& conn_tracker,
-                       std::deque<TMessageType>* req_messages,
+  void ProcessMessages(ConnectionTracker* conn_tracker, std::deque<TMessageType>* req_messages,
                        std::deque<TMessageType>* resp_messages, DataTable* data_table);
 
   template <class TMessageType>

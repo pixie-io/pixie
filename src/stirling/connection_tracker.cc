@@ -280,6 +280,7 @@ void DataStream::Reset() {
   events_.clear();
   messages_ = std::monostate();
   offset_ = 0;
+  inflater_.reset(nullptr);
 }
 
 template <class TMessageType>

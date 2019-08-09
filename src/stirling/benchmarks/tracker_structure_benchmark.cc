@@ -84,7 +84,7 @@ void AddConnectionTrackers(Tcontainer* connection_trackers, const std::vector<ui
     conn_info.conn_id.generation = gen_num;
     tracker.AddConnOpenEvent(conn_info);
 #if defined(INNER_MAP)
-    container.emplace(gen_num, tracker);
+    container.emplace(gen_num, std::move(tracker));
 #elif defined(INNER_PRIQUEUE)
     container.push(tracker);
 #endif

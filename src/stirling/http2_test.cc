@@ -157,6 +157,7 @@ std::string PackDataFrame(std::string_view msg, uint8_t flags, uint32_t stream_i
 }
 
 TEST(StitchGRPCStreamFramesTest, StitchReqsRespsOfDifferentStreams) {
+  Inflater inflater;
   std::string input =
       absl::StrCat(PackEmptyHeadersFrame(NGHTTP2_FLAG_END_HEADERS, 1),
                    PackEmptyHeadersFrame(NGHTTP2_FLAG_END_HEADERS, 2), PackDataFrame("abcd", 0, 1),
@@ -168,7 +169,7 @@ TEST(StitchGRPCStreamFramesTest, StitchReqsRespsOfDifferentStreams) {
   EXPECT_EQ(ParseState::kSuccess, res.state);
   ASSERT_THAT(frames, SizeIs(5));
 
-  EXPECT_OK(StitchGRPCStreamFrames(frames, &stream_msgs));
+  EXPECT_OK(StitchGRPCStreamFrames(frames, &inflater, &stream_msgs));
   // There should be one gRPC request and response.
   ASSERT_THAT(stream_msgs, ElementsAre(Pair(1, SizeIs(1)), Pair(2, SizeIs(1))));
 
@@ -185,13 +186,14 @@ TEST(StitchGRPCStreamFramesTest, StitchReqsRespsOfDifferentStreams) {
 }
 
 TEST(StitchGRPCStreamFramesTest, InCompleteMessage) {
+  Inflater inflater;
   std::string input =
       absl::StrCat(PackEmptyHeadersFrame(NGHTTP2_FLAG_END_HEADERS, 1), PackDataFrame("abcd", 0, 2));
   std::deque<Frame> frames;
   ParseResult<size_t> res = Parse(MessageType::kUnknown, input, &frames);
   EXPECT_EQ(ParseState::kSuccess, res.state);
   std::map<uint32_t, std::vector<GRPCMessage>> stream_msgs;
-  EXPECT_OK(StitchGRPCStreamFrames(frames, &stream_msgs));
+  EXPECT_OK(StitchGRPCStreamFrames(frames, &inflater, &stream_msgs));
   EXPECT_THAT(stream_msgs, IsEmpty()) << "There is no END_STREAM in frames, so there is no data";
 }
 

@@ -307,7 +307,7 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* 
         std::deque<TMessageType>& resp_messages = tracker.resp_messages<TMessageType>();
 
         // TODO(oazizi): Refactor ProcessMessages into ConnectionTracker.
-        ProcessMessages<TMessageType>(tracker, &req_messages, &resp_messages, data_table);
+        ProcessMessages<TMessageType>(&tracker, &req_messages, &resp_messages, data_table);
       } else {
         // Needed to keep GCC happy.
         PL_UNUSED(data_table);
@@ -332,19 +332,19 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* 
 }
 
 template <class TMessageType>
-void SocketTraceConnector::ProcessMessages(const ConnectionTracker& conn_tracker,
+void SocketTraceConnector::ProcessMessages(ConnectionTracker* conn_tracker,
                                            std::deque<TMessageType>* req_messages,
                                            std::deque<TMessageType>* resp_messages,
                                            DataTable* data_table) {
   // TODO(oazizi): If we stick with this approach, resp_data could be converted back to vector.
   for (TMessageType& msg : *resp_messages) {
     if (!req_messages->empty()) {
-      TraceRecord<TMessageType> record{&conn_tracker, std::move(req_messages->front()),
+      TraceRecord<TMessageType> record{conn_tracker, std::move(req_messages->front()),
                                        std::move(msg)};
       req_messages->pop_front();
       ConsumeMessage(std::move(record), data_table);
     } else {
-      TraceRecord<TMessageType> record{&conn_tracker, HTTPMessage(), std::move(msg)};
+      TraceRecord<TMessageType> record{conn_tracker, HTTPMessage(), std::move(msg)};
       ConsumeMessage(std::move(record), data_table);
     }
   }
@@ -403,7 +403,7 @@ void SocketTraceConnector::AppendMessage(TraceRecord<GRPCMessage> record, DataTa
 }
 
 template <>
-void SocketTraceConnector::ProcessMessages(const ConnectionTracker& conn_tracker,
+void SocketTraceConnector::ProcessMessages(ConnectionTracker* conn_tracker,
                                            std::deque<Frame>* req_messages,
                                            std::deque<Frame>* resp_messages,
                                            DataTable* data_table) {
@@ -411,8 +411,8 @@ void SocketTraceConnector::ProcessMessages(const ConnectionTracker& conn_tracker
   std::map<uint32_t, std::vector<GRPCMessage>> resps;
 
   // First stitch all frames to form gRPC messages.
-  Status s1 = StitchGRPCStreamFrames(*req_messages, &reqs);
-  Status s2 = StitchGRPCStreamFrames(*resp_messages, &resps);
+  Status s1 = StitchGRPCStreamFrames(*req_messages, conn_tracker->req_data()->Inflater(), &reqs);
+  Status s2 = StitchGRPCStreamFrames(*resp_messages, conn_tracker->resp_data()->Inflater(), &resps);
 
   LOG_IF(ERROR, !s1.ok()) << "Failed to stitch frames for requests, error: " << s1.msg();
   LOG_IF(ERROR, !s2.ok()) << "Failed to stitch frames for responses, error: " << s2.msg();
@@ -422,7 +422,7 @@ void SocketTraceConnector::ProcessMessages(const ConnectionTracker& conn_tracker
   for (auto& r : records) {
     r.req.MarkFramesConsumed();
     r.resp.MarkFramesConsumed();
-    TraceRecord<GRPCMessage> tmp{&conn_tracker, std::move(r.req), std::move(r.resp)};
+    TraceRecord<GRPCMessage> tmp{conn_tracker, std::move(r.req), std::move(r.resp)};
     AppendMessage(std::move(tmp), data_table);
   }
 

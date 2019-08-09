@@ -2,6 +2,9 @@
 
 extern "C" {
 #include <nghttp2/nghttp2.h>
+#include <nghttp2/nghttp2_frame.h>
+#include <nghttp2/nghttp2_hd.h>
+#include <nghttp2/nghttp2_helper.h>
 }
 
 #include <deque>
@@ -25,6 +28,24 @@ namespace http2 {
 using u8string = std::basic_string<uint8_t>;
 using u8string_view = std::basic_string_view<uint8_t>;
 using NVMap = std::multimap<std::string, std::string>;
+
+/**
+ * @brief Inflater wraps nghttp2_hd_inflater and implements RAII.
+ */
+class Inflater {
+ public:
+  Inflater() {
+    int rv = nghttp2_hd_inflate_init(&inflater_, nghttp2_mem_default());
+    LOG_IF(DFATAL, rv != 0) << "Failed to initialize nghttp2_hd_inflater!";
+  }
+
+  ~Inflater() { nghttp2_hd_inflate_free(&inflater_); }
+
+  nghttp2_hd_inflater* inflater() { return &inflater_; }
+
+ private:
+  nghttp2_hd_inflater inflater_;
+};
 
 /**
  * @brief Returns a string for a particular type.
@@ -91,7 +112,7 @@ struct GRPCMessage {
  * @param stream_msgs The gRPC messages for each stream, keyed by stream ID. Note this is HTTP2
  * stream ID, not our internal stream ID for TCP connections.
  */
-Status StitchGRPCStreamFrames(const std::deque<Frame>& frames,
+Status StitchGRPCStreamFrames(const std::deque<Frame>& frames, Inflater* inflater,
                               std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs);
 
 /**
