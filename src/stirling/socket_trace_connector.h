@@ -196,7 +196,8 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
       {"recvfrom", "syscall__probe_ret_recv", bpf_probe_attach_type::BPF_PROBE_RETURN},
       {"recvmsg", "syscall__probe_entry_recvmsg", bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"recvmsg", "syscall__probe_ret_recvmsg", bpf_probe_attach_type::BPF_PROBE_RETURN},
-      {"close", "syscall__probe_close", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"close", "syscall__probe_entry_close", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      {"close", "syscall__probe_ret_close", bpf_probe_attach_type::BPF_PROBE_RETURN},
   };
   static constexpr auto kProbeSpecs = ConstVectorView<ProbeSpec>(kProbeSpecsArray);
 

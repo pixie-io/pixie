@@ -49,6 +49,10 @@ struct data_info_t {
   size_t iovlen;
 } __attribute__((__packed__, aligned(8)));
 
+struct close_info_t {
+  u32 fd;
+} __attribute__((__packed__, aligned(8)));
+
 // This control_map is a bit-mask that controls which endpoints are traced in a connection.
 // The bits are defined in ReqRespRole enum, kRoleRequestor or kRoleResponder. kRoleUnknown is not
 // really used, but is defined for completeness.
@@ -79,6 +83,11 @@ BPF_HASH(active_write_info_map, u64, struct data_info_t);
 // Tracks read() call from entry -> exit.
 // Key is {tgid, pid}.
 BPF_HASH(active_read_info_map, u64, struct data_info_t);
+
+// Map from thread to its ongoing close() syscall's input argument.
+// Tracks close() call from entry -> exit.
+// Key is {tgid, pid}.
+BPF_HASH(active_close_info_map, u64, struct close_info_t);
 
 // Map from TGID, FD pair to a unique identifier (generation) of that pair.
 // Key is {tgid, fd}.
@@ -690,7 +699,7 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
   return 0;
 }
 
-static __inline int probe_close_impl(struct pt_regs* ctx, int fd) {
+static __inline int probe_entry_close(struct pt_regs* ctx, int fd) {
   if (fd < 0) {
     return 0;
   }
@@ -706,6 +715,37 @@ static __inline int probe_close_impl(struct pt_regs* ctx, int fd) {
   if (conn_info == NULL) {
     return 0;
   }
+
+  struct close_info_t close_info;
+  memset(&close_info, 0, sizeof(struct close_info_t));
+  close_info.fd = fd;
+
+  active_close_info_map.update(&id, &close_info);
+
+  return 0;
+}
+
+static __inline int probe_ret_close(struct pt_regs* ctx, u64 id) {
+  int ret_val = PT_REGS_RC(ctx);
+  if (ret_val < 0) {
+    // This close() call failed.
+    return 0;
+  }
+
+  const struct close_info_t* close_info = active_close_info_map.lookup(&id);
+  if (close_info == NULL) {
+    return 0;
+  }
+
+  u64 tgid_fd = ((id >> 32) << 32) | close_info->fd;
+  struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
+  if (conn_info == NULL) {
+    return 0;
+  }
+
+  // Update timestamp to reflect the close event.
+  conn_info->timestamp_ns = bpf_ktime_get_ns();
+
   socket_close_conns.perf_submit(ctx, conn_info, sizeof(struct conn_info_t));
   conn_info_map.delete(&tgid_fd);
   return 0;
@@ -864,7 +904,16 @@ int syscall__probe_ret_readv(struct pt_regs* ctx) {
   return 0;
 }
 
-int syscall__probe_close(struct pt_regs* ctx, unsigned int fd) { return probe_close_impl(ctx, fd); }
+int syscall__probe_entry_close(struct pt_regs* ctx, unsigned int fd) {
+  return probe_entry_close(ctx, fd);
+}
+
+int syscall__probe_ret_close(struct pt_regs* ctx) {
+  u64 id = bpf_get_current_pid_tgid();
+  probe_ret_close(ctx, id);
+  active_close_info_map.delete(&id);
+  return 0;
+}
 
 // TODO(oazizi): Look into the following opens:
 // 1) Should we trace sendmsg(), which is another syscall, but with a different interface?
