@@ -25,13 +25,3 @@ pl_cc_test(
     srcs = ["tcp_socket_test.cc"],
     deps = [":cc_library"],
 )
-
-pl_cc_test(
-    name = "greeter_test",
-    srcs = ["greeter_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/stirling/testing/proto:greet_pl_cc_proto",
-        "@com_github_grpc_grpc//:grpc++",
-    ],
-)
