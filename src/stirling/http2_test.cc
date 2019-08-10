@@ -169,7 +169,7 @@ TEST(StitchGRPCStreamFramesTest, StitchReqsRespsOfDifferentStreams) {
   EXPECT_EQ(ParseState::kSuccess, res.state);
   ASSERT_THAT(frames, SizeIs(5));
 
-  EXPECT_OK(StitchGRPCStreamFrames(frames, &inflater, &stream_msgs));
+  StitchGRPCStreamFrames(frames, &inflater, &stream_msgs);
   // There should be one gRPC request and response.
   ASSERT_THAT(stream_msgs, ElementsAre(Pair(1, SizeIs(1)), Pair(2, SizeIs(1))));
 
@@ -193,7 +193,7 @@ TEST(StitchGRPCStreamFramesTest, InCompleteMessage) {
   ParseResult<size_t> res = Parse(MessageType::kUnknown, input, &frames);
   EXPECT_EQ(ParseState::kSuccess, res.state);
   std::map<uint32_t, std::vector<GRPCMessage>> stream_msgs;
-  EXPECT_OK(StitchGRPCStreamFrames(frames, &inflater, &stream_msgs));
+  StitchGRPCStreamFrames(frames, &inflater, &stream_msgs);
   EXPECT_THAT(stream_msgs, IsEmpty()) << "There is no END_STREAM in frames, so there is no data";
 }
 

@@ -357,8 +357,8 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
 
 }  // namespace
 
-Status StitchGRPCStreamFrames(const std::deque<Frame>& frames, Inflater* inflater,
-                              std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs) {
+void StitchGRPCStreamFrames(const std::deque<Frame>& frames, Inflater* inflater,
+                            std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs) {
   std::map<uint32_t, std::vector<const Frame*>> stream_frames;
 
   // Collect frames for each stream.
@@ -373,7 +373,6 @@ Status StitchGRPCStreamFrames(const std::deque<Frame>& frames, Inflater* inflate
     }
     stream_msgs->emplace(stream_id, std::move(msgs));
   }
-  return Status::OK();
 }
 
 std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, std::vector<GRPCMessage>> reqs,

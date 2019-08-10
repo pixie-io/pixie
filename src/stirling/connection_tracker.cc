@@ -138,11 +138,8 @@ std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessages(
   auto& resp_messages = resp_stream->Messages<http2::Frame>();
 
   // First stitch all frames to form gRPC messages.
-  Status s1 = StitchGRPCStreamFrames(req_messages, req_stream->Inflater(), &reqs);
-  Status s2 = StitchGRPCStreamFrames(resp_messages, resp_stream->Inflater(), &resps);
-
-  LOG_IF(ERROR, !s1.ok()) << "Failed to stitch frames for requests, error: " << s1.msg();
-  LOG_IF(ERROR, !s2.ok()) << "Failed to stitch frames for responses, error: " << s2.msg();
+  StitchGRPCStreamFrames(req_messages, req_stream->Inflater(), &reqs);
+  StitchGRPCStreamFrames(resp_messages, resp_stream->Inflater(), &resps);
 
   std::vector<http2::GRPCReqResp> records = MatchGRPCReqResp(std::move(reqs), std::move(resps));
 

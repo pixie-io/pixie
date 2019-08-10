@@ -112,8 +112,8 @@ struct GRPCMessage {
  * @param stream_msgs The gRPC messages for each stream, keyed by stream ID. Note this is HTTP2
  * stream ID, not our internal stream ID for TCP connections.
  */
-Status StitchGRPCStreamFrames(const std::deque<Frame>& frames, Inflater* inflater,
-                              std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs);
+void StitchGRPCStreamFrames(const std::deque<Frame>& frames, Inflater* inflater,
+                            std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs);
 
 /**
  * @brief Required for fitting in the SocketTraceConnector::ConsumeMessage() template.
