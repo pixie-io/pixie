@@ -3,6 +3,7 @@
 include 'FileCheckerTestEngine.php';
 include 'GazelleCheckerTestEngine.php';
 include 'ExpCheckerTestEngine.php';
+include 'GoGenerateCheckerTestEngine.php';
 
 final class PLTestEngine extends ArcanistUnitTestEngine {
     private $project_root;
@@ -23,6 +24,9 @@ final class PLTestEngine extends ArcanistUnitTestEngine {
 
         $exp_checker = new ExpCheckerTest($this->project_root, $this->files);
         $test_results = array_merge($test_results, $exp_checker->run());
+
+        $go_generate_checker = new GoGenerateCheckerTest($this->project_root, $this->files);
+        $test_results = array_merge($test_results, $go_generate_checker->run());
 
         return $test_results;
     }

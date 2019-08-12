@@ -5,8 +5,8 @@
 package mock_auth
 
 import (
+	context "context"
 	gomock "github.com/golang/mock/gomock"
-	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
 	proto "pixielabs.ai/pixielabs/src/services/auth/proto"
 	reflect "reflect"
