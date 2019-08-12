@@ -915,7 +915,6 @@ int syscall__probe_ret_close(struct pt_regs* ctx) {
 }
 
 // TODO(oazizi): Look into the following opens:
-// 1) Should we trace sendmsg(), which is another syscall, but with a different interface?
-// 2) Why does the syscall table only include sendto, while Linux source code and man page list both
-// sendto and send? 3) What do we do when the sendto() is called with a dest_addr provided? I
+// 1) Why does the syscall table only include sendto, while Linux source code and man page list both
+// sendto and send? 2) What do we do when the sendto() is called with a dest_addr provided? I
 // believe this overrides the conn_info.
