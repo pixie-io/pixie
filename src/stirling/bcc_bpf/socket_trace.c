@@ -106,6 +106,14 @@ static __inline uint32_t get_tgid_fd_generation(u64 tgid_fd) {
 
 static __inline bool should_trace(const struct traffic_class_t* traffic_class) {
   u32 protocol = traffic_class->protocol;
+
+  // If this connection has an unknown protocol, abort (to avoid pollution).
+  // TODO(oazizi/yzhao): Remove this after we implement connections of interests through tgid + fd.
+  // NOTE: This check is covered by control_map below too, but keeping it around for explicitness.
+  if (protocol == kProtocolUnknown) {
+    return false;
+  }
+
   u64 kZero = 0;
   // TODO(yzhao): BCC doc states BPF_PERCPU_ARRAY: all array elements are **pre-allocated with zero
   // values** (https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md). That suggests
@@ -468,13 +476,6 @@ static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* bu
     update_traffic_class(conn_info, kEgress, iov_cpy.iov_base, iov_cpy.iov_len);
   }
 
-  // If this connection has an unknown protocol, abort (to avoid pollution).
-  // TODO(oazizi/yzhao): We can remove this after we have the ability to identify connections of
-  // interests, through tgid + fd.
-  if (conn_info->traffic_class.protocol == kProtocolUnknown) {
-    return 0;
-  }
-
   // Filter for request or response based on control flags and protocol type.
   if (!should_trace(&conn_info->traffic_class)) {
     return 0;
@@ -669,11 +670,6 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
     // Ensure we are not reading beyond the available data.
     const size_t buf_size = iov_cpy.iov_len < bytes_read ? iov_cpy.iov_len : bytes_read;
     update_traffic_class(conn_info, kIngress, iov_cpy.iov_base, buf_size);
-  }
-
-  // If this connection has an unknown protocol, abort (to avoid pollution).
-  if (conn_info->traffic_class.protocol == kProtocolUnknown) {
-    return 0;
   }
 
   // Filter for request or response based on control flags and protocol type.
