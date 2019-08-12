@@ -2,7 +2,6 @@
 #include <gtest/gtest.h>
 #include <sys/types.h>
 #include <unistd.h>
-
 #include <cstdlib>
 #include <string_view>
 #include <thread>
@@ -23,6 +22,8 @@ using ::pl::types::ColumnWrapperRecordBatch;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
+using SendRecvScript = std::vector<std::vector<std::string_view>>;
+
 class SocketTraceBPFTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -37,106 +38,159 @@ class SocketTraceBPFTest : public ::testing::Test {
    public:
     ClientServerSystem() { server_.Bind(); }
 
-    void RunWriteRead(const std::vector<std::string_view>& write_data) {
-      SpawnReadClient();
-      SpawnWriteServer(write_data);
+    static void WriteData(const TCPSocket& socket, const std::vector<std::string_view>& data) {
+      for (auto d : data) {
+        ASSERT_EQ(d.length(), socket.Write(d));
+      }
+    }
+
+    static void ReadData(const TCPSocket& socket, size_t expected_size) {
+      std::string msg;
+      size_t s = 0;
+      while (s < expected_size) {
+        socket.Read(&msg);
+        s += msg.size();
+      }
+    }
+
+    static void SendData(const TCPSocket& socket, const std::vector<std::string_view>& data) {
+      for (auto d : data) {
+        ASSERT_EQ(d.length(), socket.Send(d));
+      }
+    }
+
+    static void RecvData(const TCPSocket& socket, size_t expected_size) {
+      std::string msg;
+      size_t s = 0;
+      while (s < expected_size) {
+        socket.Recv(&msg);
+        s += msg.size();
+      }
+    }
+
+    static void ReadVData(const TCPSocket& socket) {
+      std::string msg;
+      while (socket.ReadV(&msg) > 0) {
+      }
+    }
+
+    static void RecvMsg(const TCPSocket& socket) {
+      std::vector<std::string> msgs;
+      while (socket.RecvMsg(&msgs) > 0) {
+      }
+    }
+
+    static void WriteVData(const TCPSocket& socket,
+                           const std::vector<std::vector<std::string_view>>& write_data) {
+      std::string msg;
+      for (const auto& data : write_data) {
+        socket.WriteV(data);
+      }
+    }
+
+    static void SendMsg(const TCPSocket& socket,
+                        const std::vector<std::vector<std::string_view>>& write_data) {
+      std::string msg;
+      for (const auto& data : write_data) {
+        socket.SendMsg(data);
+      }
+    }
+
+    /**
+     * Run the script in an alternating order, client sends and server receives during even phase,
+     * and vice versa.
+     * @param socket: client or server socket
+     * @param is_client: whether it's the client or server
+     * @param ingressFunc: read/recv
+     * @param egressFunc: write/send
+     */
+    void Run(
+        const SendRecvScript& script, const TCPSocket& socket, bool is_client,
+        std::function<void(const TCPSocket&, size_t)> ingressFunc,
+        std::function<void(const TCPSocket&, const std::vector<std::string_view>&)> egressFunc) {
+      size_t phase = 0;
+
+      while (phase != script.size()) {
+        // phase%2 == 0 |  client   | is_sender
+        //      1       |     1     |  1
+        //      1       |     0     |  0
+        //      0       |     0     |  1
+        //      0       |     1     |  0
+        if (!((phase % 2 == 0) ^ is_client)) {
+          egressFunc(socket, script[phase]);
+          phase++;
+        } else {
+          size_t expected_size = 0;
+          for (size_t i = 0; i < script[phase].size(); ++i) {
+            expected_size += script[phase][i].size();
+          }
+          ingressFunc(socket, expected_size);
+          phase++;
+        }
+      }
+    }
+
+    void RunWriteRead(const SendRecvScript& script) {
+      SpawnClient(script, ReadData, WriteData);
+      SpawnServer(script, ReadData, WriteData);
       JoinThreads();
     }
 
-    void RunSendRecv(const std::vector<std::string_view>& write_data) {
-      SpawnRecvClient();
-      SpawnSendServer(write_data);
+    void RunSendRecv(const SendRecvScript& script) {
+      SpawnClient(script, RecvData, SendData);
+      SpawnServer(script, RecvData, SendData);
       JoinThreads();
     }
 
     void RunSendMsgRecvMsg(const std::vector<std::vector<std::string_view>>& write_data) {
-      SpawnRecvMsgClient();
-      SpawnSendMsgServer(write_data);
+      SpawnMsgClient(RecvMsg);
+      SpawnMsgServer(write_data, SendMsg);
       JoinThreads();
     }
 
     void RunWriteVReadV(const std::vector<std::vector<std::string_view>>& write_data) {
-      SpawnReadVClient();
-      SpawnWriteVServer(write_data);
+      SpawnMsgClient(ReadVData);
+      SpawnMsgServer(write_data, WriteVData);
       JoinThreads();
     }
 
-    void SpawnReadClient() {
-      client_thread_ = std::thread([this]() {
+    void SpawnClient(
+        const SendRecvScript& script, std::function<void(const TCPSocket&, size_t)> ingressFunc,
+        std::function<void(const TCPSocket&, const std::vector<std::string_view>&)> egressFunc) {
+      client_thread_ = std::thread([this, script, ingressFunc, egressFunc]() {
         client_.Connect(server_);
-        std::string data;
-        while (client_.Read(&data)) {
-        }
+        Run(script, client_, true, ingressFunc, egressFunc);
         client_.Close();
       });
     }
 
-    void SpawnRecvClient() {
-      client_thread_ = std::thread([this]() {
+    void SpawnServer(
+        const SendRecvScript& script, std::function<void(const TCPSocket&, size_t)> ingressFunc,
+        std::function<void(const TCPSocket&, const std::vector<std::string_view>&)> egressFunc) {
+      server_thread_ = std::thread([this, script, ingressFunc, egressFunc]() {
+        server_.Accept();
+        Run(script, server_, false, ingressFunc, egressFunc);
+        server_.Close();
+      });
+    }
+
+    // TODO(chengruizhe): Currently SendMsg/RecvMsg & WriteV/ReadV doesn't follow the script and
+    // multi-round communiation model. Fix this.
+    void SpawnMsgServer(
+        const std::vector<std::vector<std::string_view>>& write_data,
+        std::function<void(const TCPSocket&, const std::vector<std::vector<std::string_view>>&)>
+            egressFunc) {
+      server_thread_ = std::thread([this, write_data, egressFunc]() {
+        server_.Accept();
+        egressFunc(server_, write_data);
+        server_.Close();
+      });
+    }
+
+    void SpawnMsgClient(std::function<void(const TCPSocket&)> ingressFunc) {
+      client_thread_ = std::thread([this, ingressFunc]() {
         client_.Connect(server_);
-        std::string data;
-        while (client_.Recv(&data)) {
-        }
-        client_.Close();
-      });
-    }
-
-    void SpawnWriteServer(const std::vector<std::string_view>& write_data) {
-      server_thread_ = std::thread([this, write_data]() {
-        server_.Accept();
-        for (auto data : write_data) {
-          ASSERT_EQ(data.length(), server_.Write(data));
-        }
-        server_.Close();
-      });
-    }
-
-    void SpawnSendServer(const std::vector<std::string_view>& write_data) {
-      server_thread_ = std::thread([this, write_data]() {
-        server_.Accept();
-        for (auto data : write_data) {
-          ASSERT_EQ(data.length(), server_.Send(data));
-        }
-        server_.Close();
-      });
-    }
-
-    void SpawnSendMsgServer(const std::vector<std::vector<std::string_view>>& write_data) {
-      server_thread_ = std::thread([this, write_data]() {
-        server_.Accept();
-        for (const auto& data : write_data) {
-          server_.SendMsg(data);
-        }
-        server_.Close();
-      });
-    }
-
-    void SpawnRecvMsgClient() {
-      client_thread_ = std::thread([this]() {
-        client_.Connect(server_);
-        std::vector<std::string> msgs;
-        while (client_.RecvMsg(&msgs) > 0) {
-        }
-        client_.Close();
-      });
-    }
-
-    void SpawnWriteVServer(const std::vector<std::vector<std::string_view>>& write_data) {
-      server_thread_ = std::thread([this, write_data]() {
-        server_.Accept();
-        for (const auto& data : write_data) {
-          server_.WriteV(data);
-        }
-        server_.Close();
-      });
-    }
-
-    void SpawnReadVClient() {
-      client_thread_ = std::thread([this]() {
-        client_.Connect(server_);
-        std::string msg;
-        while (client_.ReadV(&msg) > 0) {
-        }
+        ingressFunc(client_);
         client_.Close();
       });
     }
@@ -212,11 +266,34 @@ Content-Length: 0
   std::unique_ptr<SourceConnector> source_;
 };
 
+TEST_F(SocketTraceBPFTest, TestFramework) {
+  ConfigureCapture(kProtocolHTTP, kRoleRequestor | kRoleResponder);
+
+  SendRecvScript script({
+      {kHTTPReqMsg1},
+      {kHTTPRespMsg1},
+      {kHTTPReqMsg2},
+      {kHTTPRespMsg2},
+  });
+  ClientServerSystem system;
+  system.RunWriteRead(script);
+
+  DataTable data_table(kHTTPTable);
+  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+  for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
+    ASSERT_EQ(4, col->Size());
+  }
+}
+
+// TODO(chengruizhe): Add test targeted at checking IPs.
+
 TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
   ConfigureCapture(kProtocolHTTP, kRoleResponder);
 
   ClientServerSystem system;
-  system.RunWriteRead({kHTTPRespMsg1, kHTTPRespMsg2});
+  system.RunWriteRead({{kHTTPRespMsg1, kHTTPRespMsg2}});
 
   {
     DataTable data_table(kHTTPTable);
@@ -234,12 +311,10 @@ TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
     EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(0).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
               record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0));
-    EXPECT_EQ("127.0.0.1", record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(0));
 
     EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(1).val);
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
               record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1));
-    EXPECT_EQ("127.0.0.1", record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(1));
 
     // Additional verifications. These are common to all HTTP1.x tracing, so we decide to not
     // duplicate them on all relevant tests.
@@ -267,7 +342,7 @@ TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleResponder);
 
   ClientServerSystem system;
-  system.RunSendRecv({kHTTPRespMsg1, kHTTPRespMsg2});
+  system.RunSendRecv({{kHTTPRespMsg1, kHTTPRespMsg2}});
 
   {
     DataTable data_table(kHTTPTable);
@@ -307,7 +382,7 @@ TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
 
   ClientServerSystem system;
-  system.RunWriteRead({kHTTPRespMsg1, kHTTPRespMsg2});
+  system.RunWriteRead({{kHTTPRespMsg1, kHTTPRespMsg2}});
 
   {
     DataTable data_table(kHTTPTable);
@@ -347,7 +422,7 @@ TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
 
   ClientServerSystem system;
-  system.RunSendRecv({kHTTPRespMsg1, kHTTPRespMsg2});
+  system.RunSendRecv({{kHTTPRespMsg1, kHTTPRespMsg2}});
 
   {
     DataTable data_table(kHTTPTable);
@@ -384,8 +459,9 @@ TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
 }
 
 TEST_F(SocketTraceBPFTest, TestMySQLWriteCapture) {
+  ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleRequestor);
   ClientServerSystem system;
-  system.RunSendRecv({kMySQLMsg, kMySQLMsg});
+  system.RunWriteRead({{kMySQLMsg, kMySQLMsg}});
 
   // Check that HTTP table did not capture any data.
   {
@@ -420,7 +496,7 @@ TEST_F(SocketTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleRequestor);
 
   ClientServerSystem system;
-  system.RunWriteRead({kNoProtocolMsg, "", kNoProtocolMsg, ""});
+  system.RunWriteRead({{kNoProtocolMsg, "", kNoProtocolMsg, ""}});
 
   // Check that HTTP table did not capture any data.
   {
@@ -452,10 +528,10 @@ TEST_F(SocketTraceBPFTest, TestMultipleConnections) {
 
   // Two separate connections.
   ClientServerSystem system1;
-  system1.RunWriteRead({kHTTPRespMsg1});
+  system1.RunWriteRead({{kHTTPRespMsg1}});
 
   ClientServerSystem system2;
-  system2.RunWriteRead({kHTTPRespMsg2});
+  system2.RunWriteRead({{kHTTPRespMsg2}});
 
   {
     DataTable data_table(kHTTPTable);
@@ -485,7 +561,7 @@ TEST_F(SocketTraceBPFTest, TestStartTime) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleRequestor);
 
   ClientServerSystem system;
-  system.RunSendRecv({kHTTPRespMsg1, kHTTPRespMsg2});
+  system.RunSendRecv({{kHTTPRespMsg1, kHTTPRespMsg2}});
 
   // Kernel uses monotonic clock as start_time, so we must do the same.
   auto now = std::chrono::steady_clock::now();
