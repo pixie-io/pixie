@@ -341,22 +341,22 @@ static __inline void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd,
   socket_open_conns.perf_submit(ctx, &conn_info, sizeof(struct conn_info_t));
 }
 
-static __inline int probe_entry_connect_impl(struct pt_regs* ctx, int sockfd,
-                                             const struct sockaddr* addr, size_t addrlen) {
+static __inline void probe_entry_connect_impl(struct pt_regs* ctx, int sockfd,
+                                              const struct sockaddr* addr, size_t addrlen) {
   if (sockfd < 0) {
-    return 0;
+    return;
   }
 
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
   if (!test_only_should_trace_tgid(tgid)) {
-    return 0;
+    return;
   }
 
   // Only record IP (IPV4 and IPV6) connections.
   if (!(addr->sa_family == AF_INET || addr->sa_family == AF_INET6)) {
-    return 0;
+    return;
   }
 
   struct connect_info_t connect_info;
@@ -365,11 +365,9 @@ static __inline int probe_entry_connect_impl(struct pt_regs* ctx, int sockfd,
   bpf_probe_read(&connect_info.addr, sizeof(struct sockaddr_in6), (const void*)addr);
 
   active_connect_info_map.update(&id, &connect_info);
-
-  return 0;
 }
 
-static __inline int probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
+static __inline void probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
   int ret_val = PT_REGS_RC(ctx);
   // We allow EINPROGRESS to go through, which indicates that a NON_BLOCK socket is undergoing
   // handshake.
@@ -382,17 +380,16 @@ static __inline int probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
   // have a new generation number. That is harmless, and only result into inflated generation
   // numbers.
   if (ret_val < 0 && ret_val != -EINPROGRESS) {
-    return 0;
+    return;
   }
 
   const struct connect_info_t* connect_info = active_connect_info_map.lookup(&id);
   if (connect_info == NULL) {
-    return 0;
+    return;
   }
 
   u32 tgid = id >> 32;
   submit_new_conn(ctx, tgid, (u32)connect_info->fd, connect_info->addr);
-  return 0;
 }
 
 // This function stores the address to the sockaddr struct in the active_accept_info_map map.
@@ -400,13 +397,13 @@ static __inline int probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
 //
 // TODO(yzhao): We are not able to trace the source address/port yet. We might need to probe the
 // socket() syscall.
-static __inline int probe_entry_accept_impl(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
-                                            size_t* addrlen) {
+static __inline void probe_entry_accept_impl(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
+                                             size_t* addrlen) {
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
   if (!test_only_should_trace_tgid(tgid)) {
-    return 0;
+    return;
   }
 
   struct accept_info_t accept_info;
@@ -414,48 +411,45 @@ static __inline int probe_entry_accept_impl(struct pt_regs* ctx, int sockfd, str
   accept_info.addr = addr;
   accept_info.addrlen = addrlen;
   active_accept_info_map.update(&id, &accept_info);
-
-  return 0;
 }
 
 // Read the sockaddr values and write to the output buffer.
-static __inline int probe_ret_accept_impl(struct pt_regs* ctx, u64 id) {
+static __inline void probe_ret_accept_impl(struct pt_regs* ctx, u64 id) {
   int ret_fd = PT_REGS_RC(ctx);
   if (ret_fd < 0) {
-    return 0;
+    return;
   }
 
   struct accept_info_t* accept_info = active_accept_info_map.lookup(&id);
   if (accept_info == NULL) {
-    return 0;
+    return;
   }
 
   // Only record IP (IPV4 and IPV6) connections.
   if (!(accept_info->addr->sa_family == AF_INET || accept_info->addr->sa_family == AF_INET6)) {
-    return 0;
+    return;
   }
 
   u32 tgid = id >> 32;
   submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)accept_info->addr));
-  return 0;
 }
 
-static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t count,
-                                           const struct iovec* iov, size_t iovlen) {
+static __inline void probe_entry_write_send(struct pt_regs* ctx, int fd, char* buf, size_t count,
+                                            const struct iovec* iov, size_t iovlen) {
   if (fd < 0) {
-    return 0;
+    return;
   }
 
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
   if (!test_only_should_trace_tgid(tgid)) {
-    return 0;
+    return;
   }
 
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
-    return 0;
+    return;
   }
 
   struct data_info_t write_info;
@@ -478,11 +472,10 @@ static __inline int probe_entry_write_send(struct pt_regs* ctx, int fd, char* bu
 
   // Filter for request or response based on control flags and protocol type.
   if (!should_trace(&conn_info->traffic_class)) {
-    return 0;
+    return;
   }
 
   active_write_info_map.update(&id, &write_info);
-  return 0;
 }
 
 // TODO(yzhao): We can write a test for this, by define a dummy bpf_probe_read() function. Similar
@@ -584,27 +577,27 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const TrafficDirect
   }
 }
 
-static __inline int probe_ret_write_send(struct pt_regs* ctx, u64 id) {
+static __inline void probe_ret_write_send(struct pt_regs* ctx, u64 id) {
   ssize_t bytes_written = PT_REGS_RC(ctx);
   if (bytes_written <= 0) {
     // This write() call failed, or has nothing to write.
-    return 0;
+    return;
   }
 
   const struct data_info_t* write_info = active_write_info_map.lookup(&id);
   if (write_info == NULL) {
-    return 0;
+    return;
   }
 
   u64 tgid_fd = ((id >> 32) << 32) | write_info->fd;
   struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
   if (conn_info == NULL) {
-    return 0;
+    return;
   }
 
   struct socket_data_event_t* event = fill_event(kEgress, conn_info);
   if (event == NULL) {
-    return 0;
+    return;
   }
 
   // TODO(yzhao): Same TODO for split the interface.
@@ -614,19 +607,18 @@ static __inline int probe_ret_write_send(struct pt_regs* ctx, u64 id) {
     perf_submit_iovecs(ctx, kEgress, write_info->iov, write_info->iovlen, bytes_written, conn_info,
                        event);
   }
-  return 0;
 }
 
-static __inline int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t count,
-                                          const struct iovec* iov, size_t iovlen) {
+static __inline void probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf, size_t count,
+                                           const struct iovec* iov, size_t iovlen) {
   if (fd < 0) {
-    return 0;
+    return;
   }
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
   if (!test_only_should_trace_tgid(tgid)) {
-    return 0;
+    return;
   }
 
   struct data_info_t read_info;
@@ -637,20 +629,19 @@ static __inline int probe_entry_read_recv(struct pt_regs* ctx, int fd, char* buf
   read_info.iovlen = iovlen;
 
   active_read_info_map.update(&id, &read_info);
-  return 0;
 }
 
-static __inline int probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
+static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
   ssize_t bytes_read = PT_REGS_RC(ctx);
 
   if (bytes_read <= 0) {
     // This read() call failed, or read nothing.
-    return 0;
+    return;
   }
 
   const struct data_info_t* read_info = active_read_info_map.lookup(&id);
   if (read_info == NULL) {
-    return 0;
+    return;
   }
 
   const char* buf = read_info->buf;
@@ -658,7 +649,7 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
   u32 tgid = id >> 32;
   struct conn_info_t* conn_info = get_conn_info(tgid, read_info->fd);
   if (conn_info == NULL) {
-    return 0;
+    return;
   }
 
   // TODO(yzhao): Same TODO for split the interface.
@@ -674,12 +665,12 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
 
   // Filter for request or response based on control flags and protocol type.
   if (!should_trace(&conn_info->traffic_class)) {
-    return 0;
+    return;
   }
 
   struct socket_data_event_t* event = fill_event(kIngress, conn_info);
   if (event == NULL) {
-    return 0;
+    return;
   }
 
   // TODO(yzhao): Same TODO for split the interface.
@@ -692,24 +683,24 @@ static __inline int probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
     perf_submit_iovecs(ctx, kIngress, read_info->iov, read_info->iovlen, bytes_read, conn_info,
                        event);
   }
-  return 0;
+  return;
 }
 
-static __inline int probe_entry_close(struct pt_regs* ctx, int fd) {
+static __inline void probe_entry_close(struct pt_regs* ctx, int fd) {
   if (fd < 0) {
-    return 0;
+    return;
   }
   u64 id = bpf_get_current_pid_tgid();
   u32 tgid = id >> 32;
 
   if (!test_only_should_trace_tgid(tgid)) {
-    return 0;
+    return;
   }
 
   u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
   struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
   if (conn_info == NULL) {
-    return 0;
+    return;
   }
 
   struct close_info_t close_info;
@@ -717,26 +708,24 @@ static __inline int probe_entry_close(struct pt_regs* ctx, int fd) {
   close_info.fd = fd;
 
   active_close_info_map.update(&id, &close_info);
-
-  return 0;
 }
 
-static __inline int probe_ret_close(struct pt_regs* ctx, u64 id) {
+static __inline void probe_ret_close(struct pt_regs* ctx, u64 id) {
   int ret_val = PT_REGS_RC(ctx);
   if (ret_val < 0) {
     // This close() call failed.
-    return 0;
+    return;
   }
 
   const struct close_info_t* close_info = active_close_info_map.lookup(&id);
   if (close_info == NULL) {
-    return 0;
+    return;
   }
 
   u64 tgid_fd = ((id >> 32) << 32) | close_info->fd;
   struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
   if (conn_info == NULL) {
-    return 0;
+    return;
   }
 
   // Update timestamp to reflect the close event.
@@ -744,7 +733,6 @@ static __inline int probe_ret_close(struct pt_regs* ctx, u64 id) {
 
   socket_close_conns.perf_submit(ctx, conn_info, sizeof(struct conn_info_t));
   conn_info_map.delete(&tgid_fd);
-  return 0;
 }
 
 /***********************************************************
@@ -753,7 +741,8 @@ static __inline int probe_ret_close(struct pt_regs* ctx, u64 id) {
 
 int syscall__probe_entry_connect(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                  size_t addrlen) {
-  return probe_entry_connect_impl(ctx, sockfd, addr, addrlen);
+  probe_entry_connect_impl(ctx, sockfd, addr, addrlen);
+  return 0;
 }
 
 int syscall__probe_ret_connect(struct pt_regs* ctx) {
@@ -765,7 +754,8 @@ int syscall__probe_ret_connect(struct pt_regs* ctx) {
 
 int syscall__probe_entry_accept(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                 size_t* addrlen) {
-  return probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
+  probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
+  return 0;
 }
 
 int syscall__probe_ret_accept(struct pt_regs* ctx) {
@@ -777,7 +767,8 @@ int syscall__probe_ret_accept(struct pt_regs* ctx) {
 
 int syscall__probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                  size_t* addrlen) {
-  return probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
+  probe_entry_accept_impl(ctx, sockfd, addr, addrlen);
+  return 0;
 }
 
 int syscall__probe_ret_accept4(struct pt_regs* ctx) {
@@ -788,7 +779,8 @@ int syscall__probe_ret_accept4(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  return 0;
 }
 
 int syscall__probe_ret_write(struct pt_regs* ctx) {
@@ -799,7 +791,8 @@ int syscall__probe_ret_write(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  return 0;
 }
 
 int syscall__probe_ret_send(struct pt_regs* ctx) {
@@ -810,7 +803,8 @@ int syscall__probe_ret_send(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_read_recv(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  probe_entry_read_recv(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  return 0;
 }
 
 int syscall__probe_ret_read(struct pt_regs* ctx) {
@@ -821,7 +815,8 @@ int syscall__probe_ret_read(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_read_recv(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  probe_entry_read_recv(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  return 0;
 }
 
 int syscall__probe_ret_recv(struct pt_regs* ctx) {
@@ -832,7 +827,8 @@ int syscall__probe_ret_recv(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  return probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  probe_entry_write_send(ctx, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+  return 0;
 }
 
 int syscall__probe_ret_sendto(struct pt_regs* ctx) {
@@ -843,11 +839,10 @@ int syscall__probe_ret_sendto(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int fd, const struct user_msghdr* msghdr) {
-  if (msghdr == NULL) {
-    return 0;
+  if (msghdr != NULL) {
+    probe_entry_write_send(ctx, fd, /*buf*/ NULL, /*count*/ 0, msghdr->msg_iov, msghdr->msg_iovlen);
   }
-  return probe_entry_write_send(ctx, fd, /*buf*/ NULL, /*count*/ 0, msghdr->msg_iov,
-                                msghdr->msg_iovlen);
+  return 0;
 }
 
 int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
@@ -858,11 +853,10 @@ int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int fd, struct user_msghdr* msghdr) {
-  if (msghdr == NULL) {
-    return 0;
+  if (msghdr != NULL) {
+    probe_entry_read_recv(ctx, fd, /*buf*/ NULL, /*count*/ 0, msghdr->msg_iov, msghdr->msg_iovlen);
   }
-  return probe_entry_read_recv(ctx, fd, /*buf*/ NULL, /*count*/ 0, msghdr->msg_iov,
-                               msghdr->msg_iovlen);
+  return 0;
 }
 
 int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
@@ -873,10 +867,10 @@ int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_writev(struct pt_regs* ctx, int fd, const struct iovec* iov, int iovlen) {
-  if (iov == NULL || iovlen <= 0) {
-    return 0;
+  if (iov != NULL && iovlen > 0) {
+    probe_entry_write_send(ctx, fd, /*buf*/ NULL, /*count*/ 0, iov, iovlen);
   }
-  return probe_entry_write_send(ctx, fd, /*buf*/ NULL, /*count*/ 0, iov, iovlen);
+  return 0;
 }
 
 int syscall__probe_ret_writev(struct pt_regs* ctx) {
@@ -887,10 +881,10 @@ int syscall__probe_ret_writev(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_readv(struct pt_regs* ctx, int fd, struct iovec* iov, int iovlen) {
-  if (iov == NULL || iovlen <= 0) {
-    return 0;
+  if (iov != NULL && iovlen > 0) {
+    probe_entry_read_recv(ctx, fd, /*buf*/ NULL, /*count*/ 0, iov, iovlen);
   }
-  return probe_entry_read_recv(ctx, fd, /*buf*/ NULL, /*count*/ 0, iov, iovlen);
+  return 0;
 }
 
 int syscall__probe_ret_readv(struct pt_regs* ctx) {
@@ -901,7 +895,8 @@ int syscall__probe_ret_readv(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_close(struct pt_regs* ctx, unsigned int fd) {
-  return probe_entry_close(ctx, fd);
+  probe_entry_close(ctx, fd);
+  return 0;
 }
 
 int syscall__probe_ret_close(struct pt_regs* ctx) {
