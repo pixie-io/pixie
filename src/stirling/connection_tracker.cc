@@ -27,9 +27,10 @@ void ConnectionTracker::InitState<mysql::Packet>() {
 
 void ConnectionTracker::AddConnOpenEvent(conn_info_t conn_info) {
   LOG_IF(ERROR, open_info_.timestamp_ns != 0) << "Clobbering existing ConnOpenEvent.";
-  LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ <= kDeathCountdownIters)
+  LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
-             "Did not expect to receive Open event after Close [PID=$0, FD=$1, generation=$2].",
+             "Did not expect to receive Open event more than 1 sampling iteration after Close "
+             "[pid=$0 fd=$1 gen=$2].",
              conn_info.conn_id.pid, conn_info.conn_id.fd, conn_info.conn_id.generation);
 
   UpdateTimestamps(conn_info.timestamp_ns);
@@ -60,9 +61,10 @@ void ConnectionTracker::AddConnCloseEvent(conn_info_t conn_info) {
 }
 
 void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
-  LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ <= kDeathCountdownIters)
+  LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
-             "Did not expect to receive Data event after Close [PID=$0, FD=$1, generation=$2].",
+             "Did not expect to receive Data event more than 1 sampling iteration after Close "
+             "[pid=$0 fd=$1 gen=$2].",
              event->attr.conn_id.pid, event->attr.conn_id.fd, event->attr.conn_id.generation);
 
   UpdateTimestamps(event->attr.timestamp_ns);

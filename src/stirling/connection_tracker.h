@@ -426,11 +426,22 @@ class ConnectionTracker {
   int64_t Stat(CountStats stat) { return stats_[static_cast<int>(stat)]; }
 
   /**
-   * @brief Number of TransferData() (i.e. PerfBuffer read) calls any ConnectionTracker persists
-   * after it has been marked for death. We keep ConnectionTrackers alive for debug purposes only,
-   * just to log spurious late events (which should not happen).
+   * @brief Number of TransferData() (i.e. PerfBuffer read) calls during which a ConnectionTracker
+   * persists after it has been marked for death. We keep ConnectionTrackers alive to catch
+   * late-arriving events, and for debug purposes.
+   *
+   * Note that an event may arrive appear to up to 1 iteration late.
+   * This is caused by the order we read the perf buffers.   *
+   * Example where event appears to arrive late:
+   *  T0 - read perf buffer of data events
+   *  T1 - DataEvent recorded
+   *  T2 - CloseEvent recorded
+   *  T3 - read perf buffer of close events <---- CloseEvent observed here
+   *  ...
+   *  T4 - read perf buffer of data events <---- DataEvent observed here
+   * In such cases, the timestamps still show the DataEvent as occurring first.
    */
-  static constexpr int64_t kDeathCountdownIters = 2;
+  static constexpr int64_t kDeathCountdownIters = 3;
 
   /**
    * Curretly, only MySQL needs to keep a state, so it has a specialized template of
