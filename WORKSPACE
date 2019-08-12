@@ -81,7 +81,7 @@ go_repository(
 
 go_repository(
     name = "org_golang_x_sync",
-    commit = "1d60e4601c6fd243af51cc01ddf169918a5407ca",
+    commit = "112230192c580c3556b8cee6403af37a4fc5f28c",
     importpath = "golang.org/x/sync",
 )
 
@@ -795,4 +795,40 @@ go_repository(
     name = "com_github_jmoiron_sqlx",
     commit = "d161d7a76b5661016ad0b085869f77fd410f3e6a",
     importpath = "github.com/jmoiron/sqlx",
+)
+
+go_repository(
+    name = "com_github_azure_go_autorest",
+    commit = "7166fb346dbf8978ad28211a1937b20fdabc08c8",
+    importpath = "github.com/Azure/go-autorest",
+)
+
+go_repository(
+    name = "com_github_census_instrumentation_opencensus_proto",
+    commit = "d89fa54de508111353cb0b06403c00569be780d8",
+    importpath = "github.com/census-instrumentation/opencensus-proto",
+)
+
+go_repository(
+    name = "com_github_gophercloud_gophercloud",
+    commit = "0398b0cd16bfffade0883973c745180adbbe8918",
+    importpath = "github.com/gophercloud/gophercloud",
+)
+
+go_repository(
+    name = "io_opencensus_go",
+    commit = "aab39bd6a98b853ab66c8a564f5d6cfcad59ce8a",
+    importpath = "go.opencensus.io",
+)
+
+go_repository(
+    name = "io_opencensus_go_contrib_exporter_ocagent",
+    commit = "060e6898ab87d943e2ff1090efb927fbc5181cea",
+    importpath = "contrib.go.opencensus.io/exporter/ocagent",
+)
+
+go_repository(
+    name = "org_golang_google_api",
+    commit = "02490b97dff7cfde1995bd77de808fd27053bc87",
+    importpath = "google.golang.org/api",
 )

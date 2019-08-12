@@ -464,6 +464,14 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:a0cefd27d12712af4b5018dc7046f245e1e3b5760e2e848c30b171b570708f9b"
+  name = "github.com/imdario/mergo"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "7c29201646fa3de8506f701213473dd407f19646"
+  version = "v0.3.7"
+
+[[projects]]
   digest = "1:870d441fe217b8e689d7949fef6e43efbc787e50f200cb1e70dbca9204a1d6be"
   name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
@@ -1249,7 +1257,7 @@
   revision = "6a84e37a896db9780c75367af8d2ed2bb944022e"
 
 [[projects]]
-  digest = "1:a99390d8bbf951f96c1ed911413b35102f17e884b1616d6ce9e3d0b37674afe9"
+  digest = "1:718bbf96c284b4859b296add160512cc92c4e54308eb6357864ae4ce34350c86"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1300,8 +1308,12 @@
     "rest",
     "rest/watch",
     "third_party/forked/golang/template",
+    "tools/auth",
     "tools/cache",
+    "tools/clientcmd",
     "tools/clientcmd/api",
+    "tools/clientcmd/api/latest",
+    "tools/clientcmd/api/v1",
     "tools/metrics",
     "tools/pager",
     "tools/reference",
@@ -1309,6 +1321,7 @@
     "util/cert",
     "util/connrotation",
     "util/flowcontrol",
+    "util/homedir",
     "util/jsonpath",
     "util/keyutil",
     "util/retry",
@@ -1422,10 +1435,12 @@
     "k8s.io/apimachinery/pkg/fields",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/types",
+    "k8s.io/apimachinery/pkg/util/validation",
     "k8s.io/client-go/kubernetes",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
     "k8s.io/client-go/rest",
     "k8s.io/client-go/tools/cache",
+    "k8s.io/client-go/tools/clientcmd",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
