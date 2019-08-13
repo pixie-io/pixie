@@ -42,7 +42,7 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf, std::deque<Pac
       break;
     }
 
-    mysql::Packet message;
+    Packet message;
     s = parser.Write(type, &message);
     if (s != ParseState::kSuccess) {
       break;

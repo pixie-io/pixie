@@ -42,7 +42,6 @@ struct MySQLParser {
  * @return ParseState To indicate the final state of the parsing. The second return value is the
  * bytes count of the parsed data.
  */
-
 ParseResult<size_t> Parse(MessageType type, std::string_view buf, std::deque<Packet>* messages);
 
 }  // namespace mysql

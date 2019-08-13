@@ -5,6 +5,7 @@
 #include <deque>
 #include <random>
 #include <utility>
+#include "src/stirling/mysql/test_data.h"
 #include "src/stirling/mysql/test_utils.h"
 #include "src/stirling/mysql_parse.h"
 
@@ -19,6 +20,7 @@ struct MySQLReqResp {
 };
 
 using ::testing::ElementsAre;
+using ::testing::ElementsAreArray;
 
 class MySQLParserTest : public ::testing::Test {
  protected:
@@ -115,7 +117,6 @@ TEST_F(MySQLParserTest, ParseComQuery) {
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
 }
-// TODO(chengruizhe): Add test cases for failure scenarios.
 
 TEST_F(MySQLParserTest, ParseResponse) {
   parser_.Append(kMySQLStmtPrepareMessage.response, 0);
@@ -138,6 +139,85 @@ TEST_F(MySQLParserTest, ParseResponse) {
   expected_eof.msg = std::string("\xfe\x00\x00\x02\x00", 5);
 
   EXPECT_THAT(parsed_messages, ElementsAre(expected_header, expected_col_def, expected_eof));
+}
+
+TEST_F(MySQLParserTest, ParseMultipleRawPackets) {
+  std::deque<Packet> prepare_resp_packets =
+      testutils::GenStmtPrepareOKResponse(testutils::kStmtPrepareResponse);
+  std::deque<Packet> execute_resp_packets =
+      testutils::GenResultset(testutils::kStmtExecuteResultset);
+
+  // Splitting packets from 2 responses into 3 different raw packet chunks.
+  std::vector<std::string> packets1;
+  for (size_t i = 0; i < 3; ++i) {
+    packets1.push_back(testutils::GenRawPacket(i, prepare_resp_packets[i].msg));
+  }
+
+  std::vector<std::string> packets2;
+  for (size_t i = 3; i < prepare_resp_packets.size(); ++i) {
+    packets2.push_back(testutils::GenRawPacket(i, prepare_resp_packets[i].msg));
+  }
+  for (size_t i = 0; i < 2; ++i) {
+    packets2.push_back(testutils::GenRawPacket(i, execute_resp_packets[i].msg));
+  }
+
+  std::vector<std::string> packets3;
+  for (size_t i = 2; i < execute_resp_packets.size(); ++i) {
+    packets3.push_back(testutils::GenRawPacket(i, execute_resp_packets[i].msg));
+  }
+
+  std::string chunk1 = absl::StrJoin(packets1, "");
+  std::string chunk2 = absl::StrJoin(packets2, "");
+  std::string chunk3 = absl::StrJoin(packets3, "");
+
+  parser_.Append(chunk1, 0);
+  parser_.Append(chunk2, 1);
+  parser_.Append(chunk3, 2);
+
+  std::deque<Packet> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
+
+  std::deque<Packet> expected_packets;
+  for (Packet p : prepare_resp_packets) {
+    expected_packets.push_back(p);
+  }
+  for (Packet p : execute_resp_packets) {
+    expected_packets.push_back(p);
+  }
+
+  EXPECT_EQ(expected_packets.size(), parsed_messages.size());
+  EXPECT_THAT(parsed_messages, ElementsAreArray(expected_packets));
+}
+
+TEST_F(MySQLParserTest, ParseIncompleteRequest) {
+  std::string msg1 = testutils::GenRequest(kStmtPreparePrefix, "SELECT name FROM users WHERE");
+  // Change the length of the request so that it isn't complete.
+  msg1[0] = '\x24';
+
+  parser_.Append(msg1, 0);
+  std::deque<Packet> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre());
+}
+
+TEST_F(MySQLParserTest, ParseInvalidInput) {
+  std::string msg1 = "hello world";
+
+  parser_.Append(msg1, 0);
+  std::deque<Packet> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
+  EXPECT_EQ(ParseState::kInvalid, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre());
+}
+
+TEST_F(MySQLParserTest, NoAppend) {
+  std::deque<Packet> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre());
 }
 
 }  // namespace mysql
