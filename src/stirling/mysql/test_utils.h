@@ -11,7 +11,7 @@ namespace stirling {
 namespace mysql {
 namespace testutils {
 
-std::string GenRawPacket(int packet_num, const std::string& msg);
+std::string GenRawPacket(uint8_t packet_num, const std::string& msg);
 
 std::string GenRequest(ConstStrView command, const std::string& msg);
 

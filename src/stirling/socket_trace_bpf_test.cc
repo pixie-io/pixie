@@ -10,6 +10,8 @@
 #include "src/shared/types/types.h"
 #include "src/stirling/bcc_bpf/socket_trace.h"
 #include "src/stirling/data_table.h"
+#include "src/stirling/mysql/test_data.h"
+#include "src/stirling/mysql/test_utils.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/testing/tcp_socket.h"
 
@@ -211,6 +213,71 @@ class SocketTraceBPFTest : public ::testing::Test {
     std::thread server_thread_;
   };
 
+  std::string kStmtPrepareReq;
+  std::vector<std::string> StmtPrepareResp;
+  std::string kStmtExecuteReq;
+  std::vector<std::string> StmtExecuteResp;
+  std::string kQueryReq;
+  std::vector<std::string> QueryResp;
+
+  SendRecvScript GetPrepareExecuteScript() {
+    SendRecvScript prepare_execute_script;
+
+    // Stmt Prepare
+    kStmtPrepareReq = mysql::testutils::GenRawPacket(
+        0, mysql::testutils::GenStringRequest(mysql::testutils::kStmtPrepareRequest,
+                                              mysql::MySQLEventType::kComStmtPrepare)
+               .msg);
+    prepare_execute_script.push_back({kStmtPrepareReq});
+    prepare_execute_script.push_back({});
+    std::deque<mysql::Packet> prepare_packets =
+        mysql::testutils::GenStmtPrepareOKResponse(mysql::testutils::kStmtPrepareResponse);
+    for (int i = 0; i < static_cast<int>(prepare_packets.size()); ++i) {
+      // i + 1 because packet_num 0 is the request, so response starts from 1.
+      StmtPrepareResp.push_back(mysql::testutils::GenRawPacket(i + 1, prepare_packets[i].msg));
+    }
+    for (size_t i = 0; i < StmtPrepareResp.size(); ++i) {
+      prepare_execute_script[1].push_back(StmtPrepareResp[i]);
+    }
+
+    // Stmt Execute
+    kStmtExecuteReq = mysql::testutils::GenRawPacket(
+        0, mysql::testutils::GenStmtExecuteRequest(mysql::testutils::kStmtExecuteRequest).msg);
+    prepare_execute_script.push_back({kStmtExecuteReq});
+    prepare_execute_script.push_back({});
+    std::deque<mysql::Packet> execute_packets =
+        mysql::testutils::GenResultset(mysql::testutils::kStmtExecuteResultset);
+    for (int i = 0; i < static_cast<int>(execute_packets.size()); ++i) {
+      // i + 1 because packet_num 0 is the request, so response starts from 1.
+      StmtExecuteResp.push_back(mysql::testutils::GenRawPacket(i + 1, execute_packets[i].msg));
+    }
+    for (size_t i = 0; i < StmtExecuteResp.size(); ++i) {
+      prepare_execute_script[3].push_back(StmtExecuteResp[i]);
+    }
+    return prepare_execute_script;
+  }
+
+  SendRecvScript GetQueryScript() {
+    SendRecvScript query_script;
+
+    kQueryReq = mysql::testutils::GenRawPacket(
+        0, mysql::testutils::GenStringRequest(mysql::testutils::kQueryRequest,
+                                              mysql::MySQLEventType::kComQuery)
+               .msg);
+    query_script.push_back({kQueryReq});
+    query_script.push_back({});
+    std::deque<mysql::Packet> query_packets =
+        mysql::testutils::GenResultset(mysql::testutils::kQueryResultset);
+    for (int i = 0; i < static_cast<int>(query_packets.size()); ++i) {
+      // i + 1 because packet_num 0 is the request, so response starts from 1.
+      QueryResp.push_back(mysql::testutils::GenRawPacket(i + 1, query_packets[i].msg));
+    }
+    for (size_t i = 0; i < QueryResp.size(); ++i) {
+      query_script[1].push_back(QueryResp[i]);
+    }
+    return query_script;
+  }
+
   void ConfigureCapture(TrafficProtocol protocol, uint64_t mask) {
     auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
     ASSERT_OK(socket_trace_connector->Configure(protocol, mask));
@@ -244,8 +311,6 @@ Content-Length: 0
 )";
 
   static constexpr std::string_view kNoProtocolMsg = R"(This is not an HTTP message)";
-
-  static constexpr std::string_view kMySQLMsg = "\x16SELECT column FROM table";
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
   static constexpr DataTableSchema kHTTPTable = SocketTraceConnector::kHTTPTable;
@@ -458,10 +523,10 @@ TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
   }
 }
 
-TEST_F(SocketTraceBPFTest, TestMySQLWriteCapture) {
+TEST_F(SocketTraceBPFTest, TestEnd2EndMySQLPrepareExecute) {
   ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleRequestor);
   ClientServerSystem system;
-  system.RunWriteRead({{kMySQLMsg, kMySQLMsg}});
+  system.RunWriteRead(GetPrepareExecuteScript());
 
   // Check that HTTP table did not capture any data.
   {
@@ -481,13 +546,48 @@ TEST_F(SocketTraceBPFTest, TestMySQLWriteCapture) {
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-      ASSERT_EQ(2, col->Size());
+      ASSERT_EQ(1, col->Size());
     }
 
-    EXPECT_EQ(std::string_view("\x16SELECT column FROM table"),
+    EXPECT_EQ(
+        "{\"Message\": \"SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM "
+        "sock "
+        "JOIN sock_tag ON "
+        "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=brown "
+        "GROUP "
+        "BY id ORDER BY id\"}",
+        record_batch[kMySQLBodyIdx]->Get<types::StringValue>(0));
+  }
+}
+
+TEST_F(SocketTraceBPFTest, TestEnd2EndMySQLQuery) {
+  ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleRequestor);
+  ClientServerSystem system;
+  system.RunWriteRead(GetQueryScript());
+
+  // Check that HTTP table did not capture any data.
+  {
+    DataTable data_table(kHTTPTable);
+    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
+      ASSERT_EQ(0, col->Size());
+    }
+  }
+
+  // Check that MySQL table did capture the appropriate data.
+  {
+    DataTable data_table(kMySQLTable);
+    source_->TransferData(/* ctx */ nullptr, kMySQLTableNum, &data_table);
+    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
+      ASSERT_EQ(1, col->Size());
+    }
+
+    EXPECT_EQ("{\"Message\": \"SELECT name FROM tag;\"}",
               record_batch[kMySQLBodyIdx]->Get<types::StringValue>(0));
-    EXPECT_EQ(std::string_view("\x16SELECT column FROM table"),
-              record_batch[kMySQLBodyIdx]->Get<types::StringValue>(1));
   }
 }
 
@@ -605,7 +705,7 @@ class SyscallPairBPFTest : public SocketTraceBPFTest,
 
 TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
   ConfigureCapture(kProtocolHTTP, kRoleRequestor | kRoleResponder);
-  ClientServerSystem system;
+  ClientServerSystem system({});
   const std::vector<std::vector<std::string_view>> data = {
       {"HTTP/1.1 200 OK\r\n", "Content-Type: json\r\n", "Content-Length: 1\r\n\r\na"},
       {"HTTP/1.1 404 Not Found\r\n", "Content-Type: json\r\n", "Content-Length: 2\r\n\r\nbc"}};

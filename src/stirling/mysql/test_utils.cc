@@ -20,10 +20,11 @@ namespace testutils {
 /**
  * Generates raw MySQL packets in the form of a string.
  */
-std::string GenRawPacket(int packet_num, const std::string& msg) {
-  char len_bytes[3];
-  utils::IntToLEBytes<3>(msg.size(), len_bytes);
-  return absl::StrCat(std::string(len_bytes, 3), packet_num, msg);
+std::string GenRawPacket(uint8_t packet_num, const std::string& msg) {
+  char header[4];
+  utils::IntToLEBytes<3>(msg.size(), header);
+  header[3] = packet_num;
+  return absl::StrCat(std::string_view(header, 4), msg);
 }
 
 /**
@@ -177,13 +178,13 @@ Packet GenStringRequest(const StringRequest& req, MySQLEventType type) {
   ConstStrView command = "";
   switch (type) {
     case MySQLEventType::kComStmtPrepare:
-      command = kComStmtPrepare;
+      command = kStmtPreparePrefix;
       break;
     case MySQLEventType::kComStmtExecute:
-      command = kComStmtExecute;
+      command = kStmtExecutePrefix;
       break;
     case MySQLEventType::kComQuery:
-      command = kComQuery;
+      command = kQueryPrefix;
       break;
     default:
       break;

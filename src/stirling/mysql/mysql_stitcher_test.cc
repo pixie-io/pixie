@@ -51,7 +51,7 @@ TEST_F(StitcherTest, TestStitchStmtPrepareErr) {
 
   Entry expected_err_entry{absl::StrCat("{\"Error\": \"This an error.\", \"Message\": \"",
                                         testutils::kStmtPrepareRequest.msg(), "\"}"),
-                           MySQLEntryStatus::kErr};
+                           MySQLEntryStatus::kErr, 0};
 
   EXPECT_EQ(expected_err_entry, err_entry);
 }
@@ -76,7 +76,7 @@ TEST_F(StitcherTest, TestStitchStmtExecute) {
       "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE tag.name=brown "
       "GROUP "
       "BY id ORDER BY id\"}",
-      MySQLEntryStatus::kOK};
+      MySQLEntryStatus::kOK, 0};
 
   EXPECT_EQ(expected_resultset_entry, resultset_entry);
 }
@@ -90,7 +90,8 @@ TEST_F(StitcherTest, TestStitchQuery) {
   EXPECT_TRUE(s1.ok());
   Entry resultset_entry = s1.ValueOrDie();
 
-  Entry expected_resultset_entry{"{\"Message\": \"SELECT name FROM tag;\"}", MySQLEntryStatus::kOK};
+  Entry expected_resultset_entry{"{\"Message\": \"SELECT name FROM tag;\"}", MySQLEntryStatus::kOK,
+                                 0};
 
   EXPECT_EQ(expected_resultset_entry, resultset_entry);
 }

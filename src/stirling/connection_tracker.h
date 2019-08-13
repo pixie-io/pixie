@@ -10,6 +10,8 @@
 
 #include "src/stirling/http2.h"
 #include "src/stirling/http_parse.h"
+#include "src/stirling/mysql/mysql.h"
+#include "src/stirling/mysql_parse.h"
 #include "src/stirling/socket_trace.h"
 
 namespace pl {
@@ -145,7 +147,7 @@ class DataStream {
   // the stream may start at an offset in the first raw data event.
   uint64_t offset_ = 0;
 
-  // Vector of parsed HTTP messages.
+  // Vector of parsed HTTP/MySQL messages.
   // Once parsed, the raw data events should be discarded.
   // std::variant adds 8 bytes of overhead (to 80->88 for deque)
   //
@@ -155,7 +157,9 @@ class DataStream {
   //
   // Additionally, ConnectionTracker must not switch type during runtime, which indicates serious
   // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
-  std::variant<std::monostate, std::deque<HTTPMessage>, std::deque<http2::Frame>> messages_;
+  std::variant<std::monostate, std::deque<HTTPMessage>, std::deque<http2::Frame>,
+               std::deque<mysql::Packet>>
+      messages_;
 
   // The following state keeps track of whether the raw events were touched or not since the last
   // call to ExtractMessages(). It enables ExtractMessages() to exit early if nothing has changed.
@@ -207,11 +211,10 @@ class ConnectionTracker {
 
   /**
    *
-   * @tparam TMessageType
-   * @param data_table
+   * @tparam TEntryType
    */
-  template <class TMessageType>
-  std::vector<ReqRespPair<TMessageType>> ProcessMessages();
+  template <class TEntryType>
+  std::vector<TEntryType> ProcessMessages();
 
   /**
    * @brief Returns reference to current set of unconsumed requests.
@@ -429,6 +432,22 @@ class ConnectionTracker {
    */
   static constexpr int64_t kDeathCountdownIters = 2;
 
+  /**
+   * Curretly, only MySQL needs to keep a state, so it has a specialized template of
+   * the InitState function, and the general template is empty.
+   */
+  template <class TMessageType>
+  void InitState() {}
+
+  /**
+   * state() gets the state of a connection tracker. This function is only expected to
+   * be called in a templated environment, such as in ProcessMessages<mysql::Packet>.
+   */
+  template <class TStateType>
+  TStateType* state() const {
+    return std::get<std::unique_ptr<TStateType>>(state_).get();
+  }
+
  private:
   void SetPID(struct conn_id_t conn_id);
   void SetTrafficClass(struct traffic_class_t traffic_class);
@@ -469,6 +488,14 @@ class ConnectionTracker {
   int32_t death_countdown_ = -1;
 
   std::vector<int64_t> stats_ = std::vector<int64_t>(static_cast<int>(CountStats::kNumCountStats));
+
+  /**
+   * Connection trackers need to keep a state because there can be information between
+   * needed from previous requests/responses needed to parse or render current request.
+   * E.g. MySQL keeps a map of previously occured stmt prepare events as the state such
+   * that future stmt execute events can match up with the correct one using stmt_id.
+   */
+  std::variant<std::monostate, std::unique_ptr<std::map<int, mysql::ReqRespEvent>>> state_;
 };
 
 }  // namespace stirling

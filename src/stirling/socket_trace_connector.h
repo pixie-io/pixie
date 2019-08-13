@@ -90,10 +90,10 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
           {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
           {"pid", types::DataType::INT64, types::PatternType::GENERAL},
           {"pid_start_time", types::DataType::INT64, types::PatternType::GENERAL},
-          {"fd", types::DataType::INT64, types::PatternType::GENERAL},
           {"remote_addr", types::DataType::STRING, types::PatternType::GENERAL},
           {"remote_port", types::DataType::INT64, types::PatternType::GENERAL},
           {"body", types::DataType::STRING, types::PatternType::STRUCTURED},
+          {"status", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
   };
   // clang-format on
   static constexpr auto kMySQLTable = DataTableSchema("mysql_events", kMySQLElements);
@@ -254,21 +254,19 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   static void AppendMessage(const ConnectionTracker& conn_tracker, ReqRespPair<TMessageType> record,
                             DataTable* data_table);
 
+  static void AppendMessage(const ConnectionTracker& conn_tracker, mysql::Entry entry,
+                            DataTable* data_table);
+
   // HTTP-specific helper function.
   static bool SelectMessage(const ReqRespPair<HTTPMessage>& record);
 
-  // Transfer of a MySQL Event to the MySQL Table.
   // TODO(oazizi/yzhao): Change to use std::unique_ptr.
-  void TransferMySQLEvent(SocketDataEvent event, DataTable* data_table);
 
   // Note that the inner map cannot be a vector, because there is no guaranteed order
   // in which events are read from perf buffers.
   // Inner map could be a priority_queue, but benchmarks showed better performance with a std::map.
   // Key is {PID, FD} for outer map (see GetStreamId()), and generation for inner map.
   std::unordered_map<uint64_t, std::map<uint64_t, ConnectionTracker> > connection_trackers_;
-
-  // For MySQL tracing only. Will go away when MySQL uses streams.
-  DataTable* data_table_ = nullptr;
 
   std::vector<uint64_t> config_mask_;
 
@@ -283,6 +281,8 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupOldGenerations);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInactiveDead);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive);
+  FRIEND_TEST(SocketTraceConnectorTest, MySQLPrepareExecute);
+  FRIEND_TEST(SocketTraceConnectorTest, MySQLQuery);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupNoProtocol);
 };
 

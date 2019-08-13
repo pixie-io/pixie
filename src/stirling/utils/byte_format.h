@@ -8,7 +8,6 @@ namespace stirling {
 namespace utils {
 
 // TODO(chengruizhe/oazizi): Move to common someday.
-int BEBytesToInt(const char arr[], size_t size);
 
 int LEStrToInt(const std::string_view str);
 

@@ -11,16 +11,10 @@ namespace pl {
 namespace stirling {
 namespace mysql {
 
-struct MySQLMessage {
-  uint64_t timestamp_ns;
-  std::string msg;
-  MySQLEventType type = MySQLEventType::kUnknown;
-};
-
 struct MySQLParser {
   ParseState Parse(MessageType type, std::string_view buf);
 
-  ParseState Write(MessageType type, MySQLMessage* result) {
+  ParseState Write(MessageType type, Packet* result) {
     switch (type) {
       case MessageType::kRequest:
         return WriteRequest(result);
@@ -30,8 +24,8 @@ struct MySQLParser {
         return ParseState::kUnknown;
     }
   }
-  ParseState WriteRequest(MySQLMessage* result);
-  ParseState WriteResponse(MySQLMessage* result);
+  ParseState WriteRequest(Packet* result);
+  ParseState WriteResponse(Packet* result);
 
   std::string_view unparsed_data;
 
@@ -48,8 +42,8 @@ struct MySQLParser {
  * @return ParseState To indicate the final state of the parsing. The second return value is the
  * bytes count of the parsed data.
  */
-ParseResult<size_t> Parse(MessageType type, std::string_view buf,
-                          std::deque<MySQLMessage>* messages);
+
+ParseResult<size_t> Parse(MessageType type, std::string_view buf, std::deque<Packet>* messages);
 
 }  // namespace mysql
 }  // namespace stirling

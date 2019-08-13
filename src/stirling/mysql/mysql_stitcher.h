@@ -17,7 +17,8 @@ namespace mysql {
  * @return A vector of entries to be appended to table store.
  */
 std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
-                                      std::deque<Packet>* resp_packets);
+                                      std::deque<Packet>* resp_packets,
+                                      std::map<int, ReqRespEvent>* prepare_events);
 
 // TODO(chengruizhe): Can potentially templatize these functions, especially when we have more
 // event types.

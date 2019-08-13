@@ -181,21 +181,29 @@ static __inline bool is_http_request(const char* buf, size_t count) {
 }
 
 static __inline bool is_mysql_protocol(const char* buf, size_t count) {
-  // Need at least 7 bytes for COM_STMT_PREPARE + SELECT.
-  // Plus there needs to be some substance to the query after that.
-  // Here, expect at least 8 bytes.
-  if (count < 8) {
+  // MySQL packets start with a 3-byte packet length and a 1-byte packet number.
+  // The 5th byte on a request contains a command that tells the type.
+  // 0x16: Statement Prepare, 0x17 Statement Execute, 0x03 Query.
+  // TODO(chengruizhe): Add more commands when more are supported.
+  if (count < 5) {
     return false;
   }
 
-  // MySQL queries start with byte 0x16 (COM_STMT_PREPARE in the MySQL protocol).
-  // For now, we also expect the word SELECT to avoid pollution.
-  // TODO(oazizi): Make this more robust.
-  if (buf[0] == 0x16 && buf[1] == 'S' && buf[2] == 'E' && buf[3] == 'L' && buf[4] == 'E' &&
-      buf[5] == 'C' && buf[6] == 'T') {
-    return true;
+  // The packet number of a request should always be 0.
+  if (buf[3] != 0) {
+    return false;
   }
 
+  // Assuming that the lengh of a request is less than 2^16 to avoid false
+  // positive flagging as MySQL, which statiscally happen for a single-byte
+  // check.
+  if (buf[2] != 0) {
+    return false;
+  }
+
+  if (buf[4] == '\x16' || buf[4] == '\x17' || buf[4] == '\x03') {
+    return true;
+  }
   return false;
 }
 

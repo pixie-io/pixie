@@ -8,10 +8,19 @@
 #include "src/stirling/connection_tracker.h"
 #include "src/stirling/http2.h"
 #include "src/stirling/mysql/mysql.h"
+#include "src/stirling/mysql/mysql_stitcher.h"
 
 namespace pl {
 namespace stirling {
 
+template <>
+void ConnectionTracker::InitState<mysql::Packet>() {
+  CHECK(std::holds_alternative<std::monostate>(state_) ||
+        (std::holds_alternative<std::unique_ptr<std::map<int, mysql::ReqRespEvent>>>(state_)));
+  if (std::holds_alternative<std::monostate>(state_)) {
+    state_ = std::make_unique<std::map<int, mysql::ReqRespEvent>>();
+  }
+}
 //--------------------------------------------------------------
 // ConnectionTracker
 //--------------------------------------------------------------
@@ -89,27 +98,27 @@ Status ConnectionTracker::ExtractMessages() {
   return Status::OK();
 }
 
-template <class TMessageType>
-std::vector<ReqRespPair<TMessageType>> ConnectionTracker::ProcessMessages() {
-  std::vector<ReqRespPair<TMessageType>> trace_records;
+template <>
+std::vector<ReqRespPair<HTTPMessage>> ConnectionTracker::ProcessMessages() {
+  std::vector<ReqRespPair<HTTPMessage>> trace_records;
 
-  Status s = ExtractMessages<TMessageType>();
+  Status s = ExtractMessages<HTTPMessage>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
     return trace_records;
   }
 
-  auto& req_messages = req_data()->Messages<TMessageType>();
-  auto& resp_messages = resp_data()->Messages<TMessageType>();
+  auto& req_messages = req_data()->Messages<HTTPMessage>();
+  auto& resp_messages = resp_data()->Messages<HTTPMessage>();
 
   // TODO(oazizi): If we stick with this approach, resp_data could be converted back to vector.
-  for (TMessageType& msg : resp_messages) {
+  for (HTTPMessage& msg : resp_messages) {
     if (!req_messages.empty()) {
-      ReqRespPair<TMessageType> record{std::move(req_messages.front()), std::move(msg)};
+      ReqRespPair<HTTPMessage> record{std::move(req_messages.front()), std::move(msg)};
       req_messages.pop_front();
       trace_records.push_back(std::move(record));
     } else {
-      ReqRespPair<TMessageType> record{HTTPMessage(), std::move(msg)};
+      ReqRespPair<HTTPMessage> record{HTTPMessage(), std::move(msg)};
       trace_records.push_back(std::move(record));
     }
   }
@@ -154,6 +163,25 @@ std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessages(
   http2::EraseConsumedFrames(&resp_messages);
 
   return trace_records;
+}
+
+template <>
+std::vector<mysql::Entry> ConnectionTracker::ProcessMessages() {
+  std::vector<mysql::Entry> entries;
+
+  Status s = ExtractMessages<mysql::Packet>();
+  if (!s.ok()) {
+    LOG(ERROR) << s.msg();
+    return entries;
+  }
+
+  InitState<mysql::Packet>();
+
+  auto& req_messages = req_data()->Messages<mysql::Packet>();
+  auto& resp_messages = resp_data()->Messages<mysql::Packet>();
+
+  auto state_ptr = state<std::map<int, mysql::ReqRespEvent>>();
+  return mysql::StitchMySQLPackets(&req_messages, &resp_messages, state_ptr);
 }
 
 bool ConnectionTracker::AllEventsReceived() const {
@@ -540,11 +568,9 @@ bool DataStream::AttemptSyncToMessageBoundary<mysql::Packet>() {
   return false;
 }
 
-// Explicit instantiation different message types.
-template std::vector<ReqRespPair<HTTPMessage>> ConnectionTracker::ProcessMessages();
-
 template bool DataStream::Empty<HTTPMessage>() const;
 template bool DataStream::Empty<http2::Frame>() const;
+template bool DataStream::Empty<mysql::Packet>() const;
 
 }  // namespace stirling
 }  // namespace pl

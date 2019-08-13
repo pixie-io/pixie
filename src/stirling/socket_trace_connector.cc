@@ -11,6 +11,7 @@
 #include "src/stirling/event_parser.h"
 #include "src/stirling/grpc.h"
 #include "src/stirling/http2.h"
+#include "src/stirling/mysql/mysql_stitcher.h"
 #include "src/stirling/mysql_parse.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/utils/linux_headers.h"
@@ -75,14 +76,12 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_
 
   // TODO(oazizi): Should this run more frequently than TransferDataImpl?
   // This drains the relevant perf buffer, and causes Handle() callback functions to get called.
-  data_table_ = data_table;
   ReadPerfBuffer(table_num);
-  data_table_ = nullptr;
 
   switch (table_num) {
     case kHTTPTableNum:
-      TransferStreams<HTTPMessage>(kProtocolHTTP, data_table);
-      TransferStreams<GRPCMessage>(kProtocolHTTP2, data_table);
+      TransferStreams<ReqRespPair<HTTPMessage>>(kProtocolHTTP, data_table);
+      TransferStreams<ReqRespPair<GRPCMessage>>(kProtocolHTTP2, data_table);
 
       // Also call transfer streams on kProtocolUnknown to clean up any closed connections.
       // Since there will be no InfoClassManager to call TransferData on unknown protocols,
@@ -92,8 +91,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_
       TransferStreams<std::nullptr_t>(kProtocolUnknown, nullptr);
       break;
     case kMySQLTableNum:
-      // TODO(oazizi): Convert MySQL protocol to use streams.
-      // TransferStreams<MySQLMessage>(kProtocolMySQL, data_table);
+      TransferStreams<mysql::Entry>(kProtocolMySQL, data_table);
       break;
     default:
       CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
@@ -161,8 +159,7 @@ void SocketTraceConnector::HandleHTTPProbeLoss(void* /*cb_cookie*/, uint64_t los
 void SocketTraceConnector::HandleMySQLProbeOutput(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";
   auto* connector = static_cast<SocketTraceConnector*>(cb_cookie);
-  // TODO(oazizi): Use AcceptDataEvent() to handle reorderings.
-  connector->TransferMySQLEvent(SocketDataEvent(data), connector->data_table_);
+  connector->AcceptDataEvent(std::make_unique<SocketDataEvent>(data));
 }
 
 void SocketTraceConnector::HandleMySQLProbeLoss(void* /*cb_cookie*/, uint64_t lost) {
@@ -213,6 +210,7 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
   switch (event->attr.traffic_class.protocol) {
     case kProtocolHTTP:
     case kProtocolHTTP2:
+    case kProtocolMySQL:
       break;
     default:
       LOG(WARNING) << absl::Substitute("AcceptDataEvent ignored due to unknown protocol: $0",
@@ -268,7 +266,7 @@ const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
 // Generic/Templatized TransferData Helpers
 //-----------------------------------------------------------------------------
 
-template <class TMessageType>
+template <class TEntryType>
 void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* data_table) {
   // TODO(oazizi): The single connection trackers model makes TransferStreams() inefficient,
   //               because it will get called multiple times, looping through all connection
@@ -284,7 +282,6 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* 
     auto generation_it = tracker_generations.begin();
     while (generation_it != tracker_generations.end()) {
       auto& tracker = generation_it->second;
-
       if (tracker.protocol() != protocol) {
         ++generation_it;
         continue;
@@ -296,8 +293,9 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* 
       // TODO(oazizi): Consider refactoring the connection tracker clean-up from transfer streams.
       // This will cause us to iterate through all connection trackers an extra time, but may be
       // worth it.
-      if constexpr (!std::is_same_v<TMessageType, std::nullptr_t>) {
-        auto messages = tracker.ProcessMessages<TMessageType>();
+      if constexpr (!std::is_same_v<TEntryType, std::nullptr_t>) {
+        auto messages = tracker.ProcessMessages<TEntryType>();
+
         for (auto& msg : messages) {
           AppendMessage(tracker, msg, data_table);
         }
@@ -460,24 +458,18 @@ void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
                                                req_message.timestamp_ns);
 }
 
-//-----------------------------------------------------------------------------
-// MySQL TransferData Helpers
-//-----------------------------------------------------------------------------
-
-void SocketTraceConnector::TransferMySQLEvent(SocketDataEvent event, DataTable* data_table) {
-  // TODO(chengruizhe/oazizi): Add connection info back, once MySQL uses a ConnectionTracker.
-  int fd = -1;
-  std::string ip = "-";
-  int port = -1;
+void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker, mysql::Entry entry,
+                                         DataTable* data_table) {
+  CHECK_EQ(kMySQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
   RecordBuilder<&kMySQLTable> r(data_table);
-  r.Append<r.ColIndex("time_")>(event.attr.timestamp_ns + ClockRealTimeOffset());
-  r.Append<r.ColIndex("pid")>(event.attr.conn_id.pid);
-  r.Append<r.ColIndex("pid_start_time")>(event.attr.conn_id.pid_start_time_ns);
-  r.Append<r.ColIndex("fd")>(fd);
-  r.Append<r.ColIndex("remote_addr")>(std::move(ip));
-  r.Append<r.ColIndex("remote_port")>(port);
-  r.Append<r.ColIndex("body")>(std::move(event.msg));
+  r.Append<r.ColIndex("time_")>(entry.req_timestamp_ns);
+  r.Append<r.ColIndex("pid")>(conn_tracker.pid());
+  r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
+  r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
+  r.Append<r.ColIndex("body")>(std::move(entry.msg));
+  r.Append<r.ColIndex("status")>(static_cast<uint64_t>(entry.status));
 }
 
 }  // namespace stirling

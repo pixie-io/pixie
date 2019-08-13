@@ -40,9 +40,10 @@ inline constexpr char kBlobPrefix = '\xfc';
 inline constexpr char kVarStringPrefix = '\xfd';
 inline constexpr char kStringPrefix = '\xfe';
 
-inline constexpr ConstStrView kComStmtPrepare = "\x16";
-inline constexpr ConstStrView kComStmtExecute = "\x17";
-inline constexpr ConstStrView kComQuery = "\x03";
+// TODO(chengruizhe): Switch prefix to char.
+inline constexpr ConstStrView kStmtPreparePrefix = "\x16";
+inline constexpr ConstStrView kStmtExecutePrefix = "\x17";
+inline constexpr ConstStrView kQueryPrefix = "\x03";
 
 inline constexpr char kLencIntPrefix2b = '\xfc';
 inline constexpr char kLencIntPrefix3b = '\xfd';
@@ -306,6 +307,7 @@ enum class MySQLEntryStatus { kUnknown, kOK, kErr };
 struct Entry {
   std::string msg;
   MySQLEntryStatus status;
+  uint64_t req_timestamp_ns;
 };
 
 /**
