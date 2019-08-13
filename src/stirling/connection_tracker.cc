@@ -330,6 +330,39 @@ std::deque<TMessageType>& DataStream::Messages() {
 }
 
 template <class TMessageType>
+size_t DataStream::AppendEvents(EventParser<TMessageType>* parser) const {
+  size_t append_count = 0;
+
+  // Prepare all recorded events for parsing.
+  size_t next_seq_num = next_seq_num_;
+  size_t next_offset = offset_;
+  for (const auto& [seq_num, event] : events_) {
+    // Not at expected seq_num. Stop submitting events to parser.
+    if (seq_num != next_seq_num) {
+      break;
+    }
+
+    // The main message to submit to parser.
+    std::string_view msg = event.msg;
+
+    // First message may have been partially processed by a previous call to this function.
+    // In such cases, the offset will be non-zero, and we need a sub-string of the first event.
+    if (next_offset != 0) {
+      CHECK(next_offset < event.msg.size());
+      msg = msg.substr(next_offset, event.msg.size() - next_offset);
+    }
+
+    parser->Append(msg, event.timestamp_ns);
+
+    next_offset = 0;
+    ++next_seq_num;
+    ++append_count;
+  }
+
+  return append_count;
+}
+
+template <class TMessageType>
 std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
   auto& typed_messages = Messages<TMessageType>();
 
@@ -347,30 +380,7 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
 
   const size_t orig_offset = offset_;
 
-  // Prepare all recorded events for parsing.
-  std::vector<std::string_view> msgs;
-  size_t next_seq_num = next_seq_num_;
-  for (const auto& [seq_num, event] : events_) {
-    // Not at expected seq_num. Stop submitting events to parser.
-    if (seq_num != next_seq_num) {
-      break;
-    }
-
-    // The main message to submit to parser.
-    std::string_view msg = event.msg;
-
-    // First message may have been partially processed by a previous call to this function.
-    // In such cases, the offset will be non-zero, and we need a sub-string of the first event.
-    if (offset_ != 0) {
-      CHECK(offset_ < event.msg.size());
-      msg = msg.substr(offset_, event.msg.size() - offset_);
-      offset_ = 0;
-    }
-
-    parser.Append(msg, event.timestamp_ns);
-    msgs.push_back(msg);
-    ++next_seq_num;
-  }
+  AppendEvents(&parser);
 
   // Now parse all the appended events.
   ParseResult<BufferPosition> parse_result = parser.ParseMessages(type, &typed_messages);

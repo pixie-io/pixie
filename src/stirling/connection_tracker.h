@@ -114,6 +114,11 @@ class DataStream {
   }
 
  private:
+  // Helper function that appends all contiguous events to the parser.
+  // Returns number of events appended.
+  template <class TMessageType>
+  size_t AppendEvents(EventParser<TMessageType>* parser) const;
+
   // Update the stuck state, based on whether messages were parsed or not.
   void UpdateState(bool parsed_messages);
 
