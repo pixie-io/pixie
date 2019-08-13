@@ -1146,6 +1146,54 @@ Status GRPCSourceIR::ToProto(planpb::Operator* op) const {
   op->set_allocated_grpc_source_op(pb);
   return Status::OK();
 }
+StatusOr<planpb::Plan> IR::ToProto() const {
+  auto plan = planpb::Plan();
+  // TODO(michelle) For M1.5 , we'll only handle plans with a single plan fragment. In the future
+  // we will need to update this to loop through all plan fragments.
+  auto plan_dag = plan.mutable_dag();
+  auto plan_dag_node = plan_dag->add_nodes();
+  plan_dag_node->set_id(1);
+
+  auto plan_fragment = plan.add_nodes();
+  plan_fragment->set_id(1);
+  auto plan_fragment_dag = plan_fragment->mutable_dag();
+
+  auto operators = dag().TopologicalSort();
+  for (const auto& node_id : operators) {
+    auto node = Get(node_id);
+    if (node->IsOperator()) {
+      PL_RETURN_IF_ERROR(
+          OutputProto(plan_fragment, plan_fragment_dag, static_cast<OperatorIR*>(node)));
+    }
+  }
+  return plan;
+}
+
+Status IR::OutputProto(planpb::PlanFragment* pf, planpb::DAG* pf_dag,
+                       const OperatorIR* op_node) const {
+  // Check to make sure that the relation is set for this op_node, otherwise it's not connected to
+  // a Sink.
+  if (!op_node->IsRelationInit()) {
+    return op_node->CreateIRNodeError("$0 doesn't have a relation.", op_node->DebugString());
+  }
+
+  // Add PlanNode.
+  auto plan_node = pf->add_nodes();
+  plan_node->set_id(op_node->id());
+  auto op_pb = plan_node->mutable_op();
+  PL_RETURN_IF_ERROR(op_node->ToProto(op_pb));
+
+  // Add DAGNode.
+  auto dag_node = pf_dag->add_nodes();
+  dag_node->set_id(op_node->id());
+  for (const auto& dep : dag().DependenciesOf(op_node->id())) {
+    // Only add dependencies for operator IR nodes.
+    if (Get(dep)->IsOperator()) {
+      dag_node->add_sorted_deps(dep);
+    }
+  }
+  return Status::OK();
+}
 
 Status GRPCSourceGroupIR::AddGRPCSink(GRPCSinkIR* sink_op) {
   if (sink_op->destination_id() != source_id_) {

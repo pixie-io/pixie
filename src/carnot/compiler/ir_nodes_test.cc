@@ -56,48 +56,7 @@ TEST(IRTest, check_connection) {
   EXPECT_EQ(select_list->children()[0], select_col);
   EXPECT_EQ(select_col->str(), "testCol");
   VerifyGraphConnections(ig.get());
-}  // namespace compiler
-
-TEST(IRWalker, basic_tests) {
-  // Construct example IR Graph.
-  auto graph = std::make_shared<IR>();
-
-  // Create nodes.
-  auto src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-  auto select_list = graph->MakeNode<ListIR>().ValueOrDie();
-  auto map = graph->MakeNode<MapIR>().ValueOrDie();
-  auto agg = graph->MakeNode<BlockingAggIR>().ValueOrDie();
-  auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
-
-  // Add dependencies.
-  EXPECT_OK(graph->AddEdge(src, select_list));
-  EXPECT_OK(graph->AddEdge(src, map));
-  EXPECT_OK(graph->AddEdge(map, agg));
-  EXPECT_OK(graph->AddEdge(agg, sink));
-
-  std::vector<int64_t> call_order;
-  auto s = IRWalker()
-               .OnMemorySink([&](auto& mem_sink) {
-                 call_order.push_back(mem_sink.id());
-                 return Status::OK();
-               })
-               .OnMemorySource([&](auto& mem_src) {
-                 call_order.push_back(mem_src.id());
-                 return Status::OK();
-               })
-               .OnMap([&](auto& map) {
-                 call_order.push_back(map.id());
-                 return Status::OK();
-               })
-               .OnBlockingAggregate([&](auto& agg) {
-                 call_order.push_back(agg.id());
-                 return Status::OK();
-               })
-               .Walk(*graph);
-  EXPECT_OK(s);
-  EXPECT_THAT(call_order, ElementsAre(0, 2, 3, 4));
 }
-
 const char* kExpectedMemSrcPb = R"(
   op_type: MEMORY_SOURCE_OPERATOR
   mem_source_op {
@@ -825,8 +784,6 @@ const char* kExpectedGRPCSourcePb = R"proto(
 )proto";
 
 TEST_F(ToProtoTests, grpc_source_ir) {
-  auto ast = MakeTestAstPtr();
-  auto graph = std::make_shared<IR>();
   std::string source_id = "grpc_source_name";
   auto grpc_src = MakeGRPCSource(source_id, MakeRelation());
   MakeMemSink(grpc_src, "sink");
@@ -834,7 +791,6 @@ TEST_F(ToProtoTests, grpc_source_ir) {
   planpb::Operator pb;
   ASSERT_OK(grpc_src->ToProto(&pb));
 
-  planpb::Operator expected_pb;
   EXPECT_THAT(pb, EqualsProto(absl::Substitute(kExpectedGRPCSourcePb, source_id)));
 }
 
@@ -847,8 +803,6 @@ const char* kExpectedGRPCSinkPb = R"proto(
 )proto";
 
 TEST_F(ToProtoTests, grpc_sink_ir) {
-  auto ast = MakeTestAstPtr();
-  auto graph = std::make_shared<IR>();
   int64_t destination_id = 123;
   std::string grpc_address = "1111";
   std::string physical_id = "agent-aa";
@@ -860,10 +814,83 @@ TEST_F(ToProtoTests, grpc_sink_ir) {
   planpb::Operator pb;
   ASSERT_OK(grpc_sink->ToProto(&pb));
 
-  planpb::Operator expected_pb;
   EXPECT_THAT(
       pb, EqualsProto(absl::Substitute(kExpectedGRPCSinkPb, grpc_address,
                                        absl::Substitute("$0:$1", physical_id, destination_id))));
+}
+
+const char* kIRProto = R"proto(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      sorted_deps: 5
+    }
+    nodes {
+      id: 5
+    }
+  }
+  nodes {
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        column_idxs: 0
+        column_idxs: 1
+        column_idxs: 2
+        column_idxs: 3
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+        column_types: INT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+      }
+    }
+  }
+  nodes {
+    id: 5
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "out"
+        column_types: INT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_names: "count"
+        column_names: "cpu0"
+        column_names: "cpu1"
+        column_names: "cpu2"
+      }
+    }
+  }
+}
+)proto";
+TEST_F(ToProtoTests, ir) {
+  auto mem_src = MakeMemSource();
+  EXPECT_OK(mem_src->SetRelation(MakeRelation()));
+  ColumnIR* col0 = MakeColumn("count", 0);
+  col0->ResolveColumn(0, types::INT64);
+  ColumnIR* col1 = MakeColumn("cpu0", 0);
+  col1->ResolveColumn(1, types::FLOAT64);
+  ColumnIR* col2 = MakeColumn("cpu1", 0);
+  col2->ResolveColumn(2, types::FLOAT64);
+  ColumnIR* col3 = MakeColumn("cpu2", 0);
+  col3->ResolveColumn(3, types::FLOAT64);
+  mem_src->SetColumns({col0, col1, col2, col3});
+  auto mem_sink = MakeMemSink(mem_src, "out");
+  EXPECT_OK(mem_sink->SetRelation(MakeRelation()));
+
+  planpb::Plan pb = graph->ToProto().ConsumeValueOrDie();
+
+  EXPECT_THAT(pb, EqualsProto(kIRProto));
 }
 
 }  // namespace compiler

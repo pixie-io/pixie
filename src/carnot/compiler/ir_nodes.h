@@ -176,6 +176,7 @@ class IRNode {
   pypa::AstPtr ast_node_;
 };
 
+class OperatorIR;
 /**
  * IR contains the intermediate representation of the query
  * before compiling into the logical plan.
@@ -240,7 +241,11 @@ class IR {
   }
   StatusOr<std::unique_ptr<IR>> Clone() const;
 
+  StatusOr<planpb::Plan> ToProto() const;
+
  private:
+  Status OutputProto(planpb::PlanFragment* pf, planpb::DAG* pf_dag,
+                     const OperatorIR* op_node) const;
   plan::DAG dag_;
   std::unordered_map<int64_t, IRNodePtr> id_node_map_;
   int64_t id_node_counter = 0;
@@ -290,9 +295,8 @@ class OperatorIR : public IRNode {
    * Does not need to be overridden in an Operator definition if an Operator has no default
    * arguments.
    *
-   * // TODO(philkuz)(PL_) make the mapping to an Lambda that takes in a graph_ptr and returns a new
-   * IRNode instead of
-   * // doing this.
+   * TODO(philkuz)(PL_804) make the mapping to an Lambda that takes in a graph_ptr and returns a new
+   * IRNode instead of doing this.
    * @return Stirng to IR mapping
    */
   virtual std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) {
@@ -1311,139 +1315,6 @@ class GRPCSourceGroupIR : public OperatorIR {
   std::string grpc_address_ = "";
 };
 
-/**
- * A walker for an IR Graph.
- *
- * The walker walks through the operators of the graph in a topologically sorted order.
- */
-class IRWalker {
- public:
-  template <typename TOp>
-  using NodeWalkFn = std::function<Status(const TOp&)>;
-
-  using MemorySourceWalkFn = NodeWalkFn<MemorySourceIR>;
-  using MapWalkFn = NodeWalkFn<MapIR>;
-  using AggWalkFn = NodeWalkFn<BlockingAggIR>;
-  using FilterWalkFn = NodeWalkFn<FilterIR>;
-  using LimitWalkFn = NodeWalkFn<LimitIR>;
-  using MemorySinkWalkFn = NodeWalkFn<MemorySinkIR>;
-
-  /**
-   * Register callback for when a memory source IR node is encountered.
-   * @param fn The function to call when a memory source IR node is encountered.
-   * @return self to allow chaining
-   */
-  IRWalker& OnMemorySource(const MemorySourceWalkFn fn) {
-    memory_source_walk_fn_ = fn;
-    return *this;
-  }
-
-  /**
-   * Register callback for when a map IR node is encountered.
-   * @param fn The function to call when a map IR node is encountered.
-   * @return self to allow chaining.
-   */
-  IRWalker& OnMap(const MapWalkFn& fn) {
-    map_walk_fn_ = fn;
-    return *this;
-  }
-  /**
-   * Register callback for when a filter IR node is encountered.
-   * @param fn The function to call when a filter IR node is encountered.
-   * @return self to allow chaining.
-   */
-  IRWalker& OnFilter(const FilterWalkFn& fn) {
-    filter_walk_fn_ = fn;
-    return *this;
-  }
-
-  /**
-   * Register callback for when a limit IR node is encountered.
-   * @param fn The function to call when a limit IR node is encountered.
-   * @return self to allow chaining.
-   */
-  IRWalker& OnLimit(const LimitWalkFn& fn) {
-    limit_walk_fn_ = fn;
-    return *this;
-  }
-
-  /**
-   * Register callback for when an agg IR node is encountered.
-   * @param fn The function to call when an agg IR node is encountered.
-   * @return self to allow chaining.
-   */
-  IRWalker& OnBlockingAggregate(const AggWalkFn& fn) {
-    agg_walk_fn_ = fn;
-    return *this;
-  }
-
-  /**
-   * Register callback for when a memory sink IR node is encountered.
-   * @param fn The function to call.
-   * @return self to allow chaining.
-   */
-  IRWalker& OnMemorySink(const MemorySinkWalkFn& fn) {
-    memory_sink_walk_fn_ = fn;
-    return *this;
-  }
-
-  /**
-   * Perform a walk of the operators in the IR graph in a topologically-sorted order.
-   * @param ir_graph The IR graph to walk.
-   */
-  Status Walk(const IR& ir_graph) {
-    auto operators = ir_graph.dag().TopologicalSort();
-    for (const auto& node_id : operators) {
-      auto node = ir_graph.Get(node_id);
-      if (node->IsOperator()) {
-        PL_RETURN_IF_ERROR(CallWalkFn(*node));
-      }
-    }
-    return Status::OK();
-  }
-
- private:
-  template <typename T, typename TWalkFunc>
-  Status CallAs(const TWalkFunc& fn, const IRNode& node) {
-    if (!fn) {
-      VLOG(google::WARNING) << "fn does not exist";
-    }
-    return fn(static_cast<const T&>(node));
-  }
-
-  Status CallWalkFn(const IRNode& node) {
-    const auto op_type = node.type();
-    switch (op_type) {
-      case IRNodeType::kMemorySource:
-        return CallAs<MemorySourceIR>(memory_source_walk_fn_, node);
-      case IRNodeType::kMap:
-        return CallAs<MapIR>(map_walk_fn_, node);
-      case IRNodeType::kBlockingAgg:
-        return CallAs<BlockingAggIR>(agg_walk_fn_, node);
-      case IRNodeType::kFilter:
-        return CallAs<FilterIR>(filter_walk_fn_, node);
-      case IRNodeType::kLimit:
-        return CallAs<LimitIR>(limit_walk_fn_, node);
-      case IRNodeType::kMemorySink:
-        return CallAs<MemorySinkIR>(memory_sink_walk_fn_, node);
-      case IRNodeType::kRange:
-        // Don't do anything with Range because we should have already combined Range with
-        // MemorySource
-        break;
-      default:
-        LOG(WARNING) << absl::Substitute("IRNode $0 does not exist for CallWalkFn",
-                                         node.type_string());
-    }
-    return Status::OK();
-  }
-
-  MemorySourceWalkFn memory_source_walk_fn_;
-  MapWalkFn map_walk_fn_;
-  AggWalkFn agg_walk_fn_;
-  FilterWalkFn filter_walk_fn_;
-  LimitWalkFn limit_walk_fn_;
-  MemorySinkWalkFn memory_sink_walk_fn_;
-};
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

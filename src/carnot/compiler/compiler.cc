@@ -23,7 +23,7 @@ StatusOr<planpb::Plan> Compiler::Compile(const std::string& query, CompilerState
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state));
   PL_RETURN_IF_ERROR(VerifyIRConnections(*ir));
   PL_RETURN_IF_ERROR(UpdateColumnsAndVerifyUDFs(ir.get(), compiler_state));
-  return IRToLogicalPlan(*ir);
+  return ir->ToProto();
 }
 Status Compiler::VerifyIRConnections(const IR& ir) {
   auto verifier = IRVerifier();
@@ -58,43 +58,6 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
   }
   PL_RETURN_IF_ERROR(result);
   return ir;
-}
-
-StatusOr<planpb::Plan> Compiler::IRToLogicalPlan(const IR& ir) {
-  // TODO(philkuz) incorporate this as a part of the IR graph.
-  auto plan = planpb::Plan();
-  // TODO(michelle) For M1.5 , we'll only handle plans with a single plan fragment. In the future
-  // we will need to update this to loop through all plan fragments.
-  auto plan_dag = plan.mutable_dag();
-  auto plan_dag_node = plan_dag->add_nodes();
-  plan_dag_node->set_id(1);
-
-  auto plan_fragment = plan.add_nodes();
-  plan_fragment->set_id(1);
-  auto plan_fragment_dag = plan_fragment->mutable_dag();
-
-  auto s = IRWalker()
-               .OnMemorySink([&](const auto& mem_sink) {
-                 return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, mem_sink);
-               })
-               .OnMemorySource([&](const auto& mem_src) {
-                 return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, mem_src);
-               })
-               .OnMap([&](const auto& map) {
-                 return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, map);
-               })
-               .OnBlockingAggregate([&](const auto& agg) {
-                 return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, agg);
-               })
-               .OnFilter([&](const auto& filter) {
-                 return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, filter);
-               })
-               .OnLimit([&](const auto& limit) {
-                 return IRNodeToPlanNode(plan_fragment, plan_fragment_dag, ir, limit);
-               })
-               .Walk(ir);
-  PL_RETURN_IF_ERROR(s);
-  return plan;
 }
 
 }  // namespace compiler
