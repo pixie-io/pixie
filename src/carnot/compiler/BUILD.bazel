@@ -21,6 +21,7 @@ pl_cc_library(
     hdrs = ["compiler.h"],
     deps = [
         "//src/carnot/compiler/compilerpb:compiler_status_pl_cc_proto",
+        "//src/carnot/compiler/compilerpb:physical_plan_pl_cc_proto",
         "//src/carnot/metadatapb:metadata_pl_cc_proto",
         "//src/carnot/plan:cc_library",
         "//src/carnot/planpb:plan_pl_cc_proto",
@@ -188,5 +189,14 @@ pl_cc_test(
     srcs = ["metadata_handler_test.cc"],
     deps = [
         ":cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "physical_planner_test",
+    srcs = ["physical_planner_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/udf_exporter:cc_library",
     ],
 )

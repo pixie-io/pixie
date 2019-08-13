@@ -61,6 +61,7 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
 }
 
 StatusOr<planpb::Plan> Compiler::IRToLogicalPlan(const IR& ir) {
+  // TODO(philkuz) incorporate this as a part of the IR graph.
   auto plan = planpb::Plan();
   // TODO(michelle) For M1.5 , we'll only handle plans with a single plan fragment. In the future
   // we will need to update this to loop through all plan fragments.

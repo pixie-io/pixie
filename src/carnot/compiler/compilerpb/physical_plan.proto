@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+import "src/carnot/planpb/plan.proto";
+
+package pl.carnot.compiler.compilerpb;
+
+option go_package = "compilerpb";
+
+// Info about the physical characteristics of a Carnot instance.
+message CarnotInfo {
+  // The unique address used by the query broker to contact this instance.
+  string query_broker_address = 1;
+  // Flag if the Carnot instance hosts a GRPC server.
+  bool has_grpc_server = 2;
+  // The address of the GRPC server hosted by the Carnot instance, it it has a GRPC server.
+  string grpc_address = 3;
+  // Flag if the carnot instance has an in-memory store of data.
+  // E.g. agents stores data, but some Kelvin instances might only be used for computation.
+  bool has_data_store = 4;
+  // Flag whether this Carnot instance can process data.
+  // E.g. the query broker only wants to accept data and pass it up to the UI.
+  bool processes_data = 5;
+  // Flag if this Carnot instance accepts remote sources.
+  // E.g. Kelvin instances accept remote sources - they are arbitrary workers, agents are not.
+  bool accepts_remote_sources = 6;
+  // TODO(philkuz) add table schemas that are available
+  // TODO(philkuz) pass information about the tablets that are available in the system.
+}
+
+// The physical state of the distributed Carnot instances.
+message PhysicalState {
+  // Info about all available Carnot instances in Vizier.
+  repeated CarnotInfo carnot_info = 1;
+}
+
+// The Physical Plan message that describes the graph of the plans
+// and which plans should execute on each Carnot instance.
+message PhysicalPlan {
+  // Map query broker address of Carnot instance to the Plan it will execute.
+  map<string, pl.carnot.planpb.Plan> qb_address_to_plan = 1;
+  // Map from query broker address to the id used in the dag.
+  map<string, uint64> qb_address_to_dag_id = 2;
+  // The DAG describing the connections between the physical nodes.
+  pl.carnot.planpb.DAG dag = 3;
+}
