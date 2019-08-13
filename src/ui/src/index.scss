@@ -12,6 +12,7 @@ $body-bg: #0F222D;
 
 $white:    #fff !default;
 $gray-100: #f8f9fa !default;
+$gray-150: #F5F7F9 !default;
 $gray-200: #e9ecef !default;
 $gray-300: #dee2e6 !default;
 $gray-350: #dddddd !default;
@@ -38,7 +39,7 @@ $navy:    #0f1c2d !default;
 $primary:       $gray-800 !default;
 $secondary:     #71EFCE !default;
 $success:       $green !default;
-$info:          $cyan !default;
+$info:          #5ABFA5 !default;
 $warning:       $yellow !default;
 $danger:        $red !default;
 $light:         #6C6D7A !default;
@@ -80,8 +81,26 @@ $btn-font-size : 14px !default;
 $btn-line-height: 18px !default;
 
 // Forms
-
 $input-disabled-bg:                     #ccc !default;
+$input-height-sm: 36px;
+$input-bg: $gray-150 !default;
+$input-group-addon-bg: $gray-150 !default;
+$input-group-addon-color: $gray-600 !default;
+$input-border-color: $gray-400 !default;
+.input-group > input:not(:last-child) {
+  border-right: 0;
+}
+.input-group > input:not(:last-child):focus {
+  background-color: $gray-150;
+  box-shadow: 0 0 0 0;
+  border-color: $input-border-color;
+}
+.input-group > .input-group-append:not(:first-child) {
+  border-left: 0;
+}
+.input-group .input-group-append .input-group-text {
+  font-weight: 500;
+}
 
 // Dropdowns
 

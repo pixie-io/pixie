@@ -1,0 +1,56 @@
+@import "../../index.scss";
+
+.login {
+  height: 100%;
+  width: 100%;
+  background-color: white;
+}
+
+.login-body {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+}
+
+.company-login-content {
+  display: flex;
+  justify-content: center;
+  height: 197px;
+  flex-direction: column;
+  align-items: center;
+}
+
+.company-login-content h3 {
+  margin-bottom: 20px;
+}
+
+.company-login-content label {
+  font-size: 14px;
+  color: $gray-600;
+  font-weight: 500;
+  margin-bottom: 0;
+}
+
+.company-login-content .input-group {
+  margin-bottom: 10px;
+}
+
+.company-login-content .btn {
+  border-radius: 2px;
+  color: white;
+  width: 100%;
+}
+
+.company-login-content--footer-text {
+  margin-top: 20px;
+}
+
+.company-login-content a {
+  color: $info;
+}
+
+.company-login-content a:hover {
+  color: $info;
+}

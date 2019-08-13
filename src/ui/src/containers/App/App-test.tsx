@@ -10,15 +10,6 @@ describe('<App/> test', () => {
       name='test message'
     />);
 
-    expect(app.find(Route)).toHaveLength(3);
+    expect(app.find(Route)).toHaveLength(4);
   });
-
-  it('should have sidebar', () => {
-    const app = shallow(<App
-      name='test message'
-    />);
-
-    expect(app.find(SidebarNav)).toHaveLength(1);
-  });
-
 });

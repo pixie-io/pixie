@@ -1,7 +1,8 @@
-import {SidebarNav} from 'components/sidebar-nav/sidebar-nav';
 import {Auth} from 'containers/Auth';
 import {Home} from 'containers/Home';
+import {Login} from 'containers/login';
 import {Vizier} from 'containers/vizier';
+
 import * as React from 'react';
 import { BrowserRouter as Router, Link, Route} from 'react-router-dom';
 import {fetch} from 'unfetch/polyfill';
@@ -11,15 +12,6 @@ import {ApolloClient} from 'apollo-client';
 import { setContext } from 'apollo-link-context';
 import {createHttpLink} from 'apollo-link-http';
 import { ApolloProvider } from 'react-apollo';
-
-// TODO(zasgar/michelle): we should figure out a good way to
-// package assets.
-// @ts-ignore : TS does not like image files.
-import * as infoImage from 'images/icons/agent.svg';
-// @ts-ignore : TS does not like image files.
-import * as codeImage from 'images/icons/query.svg';
-// @ts-ignore : TS does not like image files.
-import * as logoImage from 'images/logo.svg';
 
 import './App.scss';
 
@@ -61,15 +53,9 @@ export class App extends React.Component<AppProps, {}> {
       <Router>
         <ApolloProvider client={gqlClient}>
           <div className='main-page'>
-            <SidebarNav
-              logo = {logoImage}
-              items={[
-                { link: '/vizier/query', selectedImg: codeImage, unselectedImg: codeImage },
-                { link: '/vizier/agents', selectedImg: infoImage, unselectedImg: infoImage },
-              ]}
-            />
             <div className='content'>
-              <Route exact path='/' component={Home} />
+              <Route exact path='/' component={Login} />
+              <Route exact path='/create' component={Login} />
               <Route path='/login' component={Auth} />
               <Route path='/vizier' component={Vizier} />
             </div>
