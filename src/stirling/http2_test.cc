@@ -207,6 +207,59 @@ TEST(ParseProtobufsTest, GreeterServiceReqResp) {
   ASSERT_NE(nullptr, in_out.output);
 }
 
+struct NV {
+  std::string name;
+  std::string value;
+};
+
+// Use std::vector<NV> instead of std::map<NV> to preserve the order of the input.
+u8string Deflate(nghttp2_hd_deflater* deflater, const std::vector<NV>& nv_list) {
+  std::vector<nghttp2_nv> nvs;
+  nvs.reserve(nv_list.size());
+  for (const auto& nv : nv_list) {
+    nvs.push_back(nghttp2_nv{reinterpret_cast<uint8_t*>(const_cast<char*>(nv.name.data())),
+                             reinterpret_cast<uint8_t*>(const_cast<char*>(nv.value.data())),
+                             nv.name.size(), nv.value.size(), NGHTTP2_NV_FLAG_NONE});
+  }
+  size_t buflen = nghttp2_hd_deflate_bound(deflater, nvs.data(), nvs.size());
+  u8string buf(buflen, '\0');
+
+  ssize_t rv = nghttp2_hd_deflate_hd(deflater, buf.data(), buf.size(), nvs.data(), nvs.size());
+  buf.resize(rv < 0 ? 0 : rv);
+  return buf;
+}
+
+TEST(DeflateEnflateTest, DeflateInflateOutOfOrder) {
+  nghttp2_hd_deflater* deflater;
+  nghttp2_hd_inflater* inflater;
+
+  ASSERT_EQ(0, nghttp2_hd_deflate_new(&deflater, 4096));
+  ASSERT_EQ(0, nghttp2_hd_inflate_new(&inflater));
+
+  u8string deflate_nva1 = Deflate(deflater, {{"h1", "v1"}});
+  u8string deflate_nva2 = Deflate(deflater, {{"h2", "v2"}});
+  u8string deflate_nva3 = Deflate(deflater, {{"h1", "v1"}});
+  u8string deflate_nva4 = Deflate(deflater, {{"h2", "v2"}});
+
+  NVMap nv_map1, nv_map2, nv_map3, nv_map4;
+  // Note deflate_nva1 and deflate_nva2 are inflated in reverse order.
+  EXPECT_EQ(ParseState::kSuccess, InflateHeaderBlock(inflater, deflate_nva2, &nv_map2));
+  EXPECT_EQ(ParseState::kSuccess, InflateHeaderBlock(inflater, deflate_nva1, &nv_map1));
+  EXPECT_EQ(ParseState::kSuccess, InflateHeaderBlock(inflater, deflate_nva3, &nv_map3));
+  EXPECT_EQ(ParseState::kSuccess, InflateHeaderBlock(inflater, deflate_nva4, &nv_map4));
+
+  EXPECT_THAT(nv_map1, ElementsAre(Pair("h1", "v1")));
+  EXPECT_THAT(nv_map2, ElementsAre(Pair("h2", "v2")));
+  // The encoder would encoded h2 with the same value as the first name-value pair, i.e.,
+  // "h1":"v1". But when decoding, we first decode "h2":"v2", which causes it takes the code words
+  // for "h1":"v1". So nv_map3 becomes "h2":"v2", instead of "h1":"v1".
+  EXPECT_THAT(nv_map3, ElementsAre(Pair("h2", "v2")));
+  EXPECT_THAT(nv_map4, ElementsAre(Pair("h1", "v1")));
+
+  nghttp2_hd_inflate_del(inflater);
+  nghttp2_hd_deflate_del(deflater);
+}
+
 }  // namespace http2
 }  // namespace stirling
 }  // namespace pl

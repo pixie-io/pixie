@@ -86,22 +86,24 @@ void UnpackContinuation(const uint8_t* buf, Frame* frame) {
   frame->u8payload.assign(buf, frame->frame.hd.length);
 }
 
+}  // namespace
+
 /**
  * @brief Inflates a complete header block. If the input header block fragment, then the results are
  * undefined.
  *
  * This code follows: https://github.com/nghttp2/nghttp2/blob/master/examples/deflate.c.
  */
-ParseState InflateHeaderBlock(u8string_view buf, nghttp2_hd_inflater* inflater, NVMap* nv_map) {
+ParseState InflateHeaderBlock(nghttp2_hd_inflater* inflater, u8string_view buf, NVMap* nv_map) {
   // TODO(yzhao): Experiment continuous parsing of multiple header block fragments from different
   // HTTP2 streams.
-  constexpr bool in_final = true;
+  constexpr bool is_final = true;
   for (;;) {
     int inflate_flags = 0;
     nghttp2_nv nv = {};
 
     const int rv =
-        nghttp2_hd_inflate_hd2(inflater, &nv, &inflate_flags, buf.data(), buf.size(), in_final);
+        nghttp2_hd_inflate_hd2(inflater, &nv, &inflate_flags, buf.data(), buf.size(), is_final);
     if (rv < 0) {
       return ParseState::kInvalid;
     }
@@ -122,8 +124,6 @@ ParseState InflateHeaderBlock(u8string_view buf, nghttp2_hd_inflater* inflater, 
   }
   return ParseState::kSuccess;
 }
-
-}  // namespace
 
 std::string_view FrameTypeName(uint8_t type) {
   switch (type) {
@@ -284,7 +284,7 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
       msg.frames.insert(msg.frames.end(), header_block_frames.begin(), header_block_frames.end());
       header_block_frames.clear();
       header_block_size = 0;
-      msg.parse_state = InflateHeaderBlock(u8buf, inflater, &msg.headers);
+      msg.parse_state = InflateHeaderBlock(inflater, u8buf, &msg.headers);
       LOG_IF(DFATAL, msg.parse_state != ParseState::kSuccess) << "Header parsing failed.";
     }
   };

@@ -53,6 +53,11 @@ class Inflater {
 std::string_view FrameTypeName(uint8_t type);
 
 /**
+ * @brief Inflates a complete header block in the input buf, writes the header field to nv_map.
+ */
+ParseState InflateHeaderBlock(nghttp2_hd_inflater* inflater, u8string_view buf, NVMap* nv_map);
+
+/**
  * @brief A wrapper around  nghttp2_frame. nghttp2_frame misses some fields, for example, it has no
  * data body field in nghttp2_data. The payload is a name meant to be generic enough so that it can
  * be used to store such fields for different message types.
