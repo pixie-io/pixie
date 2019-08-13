@@ -275,17 +275,17 @@ static __inline struct conn_info_t* get_conn_info(u32 tgid, u32 fd) {
   struct conn_info_t new_conn_info;
   memset(&new_conn_info, 0, sizeof(struct conn_info_t));
   struct conn_info_t* conn_info = conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
-  // Use timestamp being zero to detect that a new conn_info was initialized.
-  if (conn_info->timestamp_ns == 0) {
+  // Use TGID zero to detect that a new conn_info was initialized.
+  if (conn_info->conn_id.tgid == 0) {
     // If lookup_or_init initialized a new conn_info, we need to set some fields.
     conn_info->conn_id.tgid = tgid;
     conn_info->conn_id.tgid_start_time_ns = get_tgid_start_time();
     conn_info->conn_id.fd = fd;
+    // Note that many calls to this function are not for socket descriptors,
+    // so we are acutally "wasting" generations numbers.
+    // But this is still the most straightforward thing to do, and
+    // using one generation number per second should still provide 136 years of coverage.
     conn_info->conn_id.generation = get_tgid_fd_generation(tgid_fd);
-
-    // Unknown accept()/connect(), so no known timestamp either.
-    // But have to change timestamp, so set to 1ns.
-    conn_info->timestamp_ns = 1;
   }
   return conn_info;
 }
@@ -739,7 +739,13 @@ static __inline void probe_ret_close(struct pt_regs* ctx, u64 id) {
   // Update timestamp to reflect the close event.
   conn_info->timestamp_ns = bpf_ktime_get_ns();
 
-  socket_close_conns.perf_submit(ctx, conn_info, sizeof(struct conn_info_t));
+  // Only submit event to user-space if there was a corresponding open or data event reported.
+  // This is to avoid polluting the perf buffer.
+  if (conn_info->addr.sin6_family != 0 || conn_info->wr_seq_num != 0 ||
+      conn_info->rd_seq_num != 0) {
+    socket_close_conns.perf_submit(ctx, conn_info, sizeof(struct conn_info_t));
+  }
+
   conn_info_map.delete(&tgid_fd);
 }
 
