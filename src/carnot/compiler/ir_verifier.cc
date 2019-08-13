@@ -81,7 +81,7 @@ Status IRVerifier::VerifyBlockingAgg(BlockingAggIR*) { return Status::OK(); }
 
 Status IRVerifier::VerifyNodeConnections(IRNode* node) {
   // Should only look at ops.
-  if (!node->IsOp()) {
+  if (!node->IsOperator()) {
     return Status::OK();
   }
   switch (node->type()) {
@@ -115,7 +115,7 @@ Status IRVerifier::VerifyNodeConnections(IRNode* node) {
 Status IRVerifier::VerifyLineCol(IRNode* node) {
   if (!node->line_col_set()) {
     std::string err_msg = "Line and column not set for $0 with id $1. DBG string: $2";
-    return error::InvalidArgument(err_msg, node->type_string(), node->id(), node->DebugString(0));
+    return error::InvalidArgument(err_msg, node->type_string(), node->id(), node->DebugString());
   }
   return Status::OK();
 }

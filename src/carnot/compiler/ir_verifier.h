@@ -32,7 +32,7 @@ class IRVerifier {
   Status VerifyGraphConnections(const IR& ir_graph);
 
  private:
-  bool TypeIsOp(IRNodeType type);
+  bool TypeIsOperator(IRNodeType type);
 
   Status ExpectType(IRNodeType exp_type, const IRNode* test_node,
                     const std::string& err_msg_prefix);

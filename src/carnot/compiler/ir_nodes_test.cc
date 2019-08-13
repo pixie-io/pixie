@@ -127,11 +127,11 @@ TEST(ToProto, memory_source_ir) {
   EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
 
   auto col_1 = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col_1->Init("cpu0", mem_src, ast));
+  EXPECT_OK(col_1->Init("cpu0", /*parent_op_idx*/ 0, ast));
   col_1->ResolveColumn(0, types::DataType::INT64);
 
   auto col_2 = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col_2->Init("cpu1", mem_src, ast));
+  EXPECT_OK(col_2->Init("cpu1", /*parent_op_idx*/ 0, ast));
   col_2->ResolveColumn(2, types::DataType::FLOAT64);
 
   mem_src->SetColumns(std::vector<ColumnIR*>({col_1, col_2}));
@@ -213,7 +213,7 @@ TEST(ToProto, map_ir) {
   auto constant = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(constant->Init(10, ast));
   auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col->Init("col_name", mem_src, ast));
+  EXPECT_OK(col->Init("col_name", /*parent_op_idx*/ 0, ast));
   col->ResolveColumn(4, types::INT64);
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   auto lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
@@ -269,7 +269,7 @@ TEST(ToProto, agg_ir) {
   auto constant = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(constant->Init(10, ast));
   auto col = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col->Init("column", mem_src, ast));
+  EXPECT_OK(col->Init("column", /*parent_op_idx*/ 0, ast));
   col->ResolveColumn(4, types::INT64);
 
   auto agg_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
@@ -281,7 +281,7 @@ TEST(ToProto, agg_ir) {
 
   auto by_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
   auto group1 = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(group1->Init("group1", mem_src, ast));
+  EXPECT_OK(group1->Init("group1", /*parent_op_idx*/ 0, ast));
   group1->ResolveColumn(1, types::INT64);
   EXPECT_OK(by_func_lambda->Init({"group1"}, group1, ast));
   ArgMap amap({{"by", by_func_lambda}, {"fn", agg_func_lambda}});
@@ -297,47 +297,6 @@ TEST(ToProto, agg_ir) {
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedAggPb, &expected_pb));
   EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_pb, pb));
   EXPECT_THAT(pb, EqualsProto(kExpectedAggPb));
-}
-
-class DebugStringFunctionality : public ::testing::Test {
- public:
-  void SetUp() override {
-    auto ast = MakeTestAstPtr();
-    graph_ = std::make_shared<IR>();
-    mem_src_ = graph_->MakeNode<MemorySourceIR>().ValueOrDie();
-    time_node_ = graph_->MakeNode<TimeIR>().ValueOrDie();
-    EXPECT_OK(time_node_->Init(12345, ast));
-
-    col_node_ = graph_->MakeNode<ColumnIR>().ValueOrDie();
-    EXPECT_OK(col_node_->Init("test_col", mem_src_, ast));
-
-    func_node_ = graph_->MakeNode<FuncIR>().ValueOrDie();
-    EXPECT_OK(func_node_->Init({FuncIR::Opcode::non_op, "", "test_fn"},
-                               ASTWalker::kRunTimeFuncPrefix, {time_node_, col_node_},
-                               false /* compile_time */, ast));
-
-    lambda_node_ = graph_->MakeNode<LambdaIR>().ValueOrDie();
-    EXPECT_OK(lambda_node_->Init({"test_col"}, {{"time", func_node_}}, ast));
-  }
-  std::shared_ptr<IR> graph_;
-  TimeIR* time_node_;
-  MemorySourceIR* mem_src_;
-  ColumnIR* col_node_;
-  FuncIR* func_node_;
-  LambdaIR* lambda_node_;
-};
-
-TEST_F(DebugStringFunctionality, debug_string_time_test) {
-  ASSERT_EXIT((time_node_->DebugString(0), exit(0)), ::testing::ExitedWithCode(0), ".*");
-}
-TEST_F(DebugStringFunctionality, debug_string_column_test) {
-  ASSERT_EXIT((col_node_->DebugString(0), exit(0)), ::testing::ExitedWithCode(0), ".*");
-}
-TEST_F(DebugStringFunctionality, debug_string_func_test) {
-  ASSERT_EXIT((func_node_->DebugString(0), exit(0)), ::testing::ExitedWithCode(0), ".*");
-}
-TEST_F(DebugStringFunctionality, debug_string_lambda_test) {
-  ASSERT_EXIT((lambda_node_->DebugString(0), exit(0)), ::testing::ExitedWithCode(0), ".*");
 }
 
 class MetadataTests : public ::testing::Test {
@@ -367,7 +326,7 @@ TEST_F(MetadataTests, metadata_resolver) {
 TEST_F(MetadataTests, metadata_ir) {
   MetadataResolverIR* metadata_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
   MetadataIR* metadata_ir = graph->MakeNode<MetadataIR>().ValueOrDie();
-  EXPECT_OK(metadata_ir->Init("pod_name", metadata_resolver, ast));
+  EXPECT_OK(metadata_ir->Init("pod_name", /*parent_op_idx*/ 0, ast));
   EXPECT_TRUE(metadata_ir->IsColumn());
   EXPECT_FALSE(metadata_ir->HasMetadataResolver());
   EXPECT_EQ(metadata_ir->name(), "pod_name");
@@ -376,6 +335,66 @@ TEST_F(MetadataTests, metadata_ir) {
       MetadataType::POD_NAME, std::vector<MetadataType>({MetadataType::POD_ID}));
   EXPECT_OK(metadata_ir->ResolveMetadataColumn(metadata_resolver, property.get()));
   EXPECT_TRUE(metadata_ir->HasMetadataResolver());
+}
+
+class OperatorTests : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    ast = MakeTestAstPtr();
+    graph = std::make_shared<IR>();
+  }
+  MemorySourceIR* MakeMemSource() { return graph->MakeNode<MemorySourceIR>().ValueOrDie(); }
+  MapIR* MakeMap(OperatorIR* parent, const ColExpressionVector& col_map) {
+    MapIR* map = graph->MakeNode<MapIR>().ConsumeValueOrDie();
+    LambdaIR* lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
+    PL_CHECK_OK(lambda->Init({}, col_map, ast));
+    PL_CHECK_OK(map->Init(parent, {{"fn", lambda}}, ast));
+    return map;
+  }
+  ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx) {
+    ColumnIR* column = graph->MakeNode<ColumnIR>().ValueOrDie();
+    PL_CHECK_OK(column->Init(name, parent_op_idx, ast));
+    return column;
+  }
+  IntIR* MakeInt(int64_t val) {
+    auto int_ir = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(int_ir->Init(val, ast));
+    return int_ir;
+  }
+  FuncIR* MakeAddFunc(ExpressionIR* left, ExpressionIR* right) {
+    FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
+    PL_CHECK_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
+                           std::vector<ExpressionIR*>({left, right}), false /* compile_time */,
+                           ast));
+    return func;
+  }
+  pypa::AstPtr ast;
+  std::shared_ptr<IR> graph;
+};
+
+// Swapping a parent should make sure that all columns are passed over correclt.
+TEST_F(OperatorTests, swap_parent) {
+  MemorySourceIR* mem_source = MakeMemSource();
+  ColumnIR* col1 = MakeColumn("test1", /*parent_op_idx*/ 0);
+  ColumnIR* col2 = MakeColumn("test2", /*parent_op_idx*/ 0);
+  ColumnIR* col3 = MakeColumn("test3", /*parent_op_idx*/ 0);
+  FuncIR* add_func = MakeAddFunc(col3, MakeInt(3));
+  MapIR* child_map = MakeMap(mem_source, {{"out11", col1}, {"out2", col2}, {"out3", add_func}});
+  EXPECT_EQ(col1->ReferenceID().ConsumeValueOrDie(), mem_source->id());
+  EXPECT_EQ(col2->ReferenceID().ConsumeValueOrDie(), mem_source->id());
+  EXPECT_EQ(col3->ReferenceID().ConsumeValueOrDie(), mem_source->id());
+
+  // Insert a map as if we are copying from the parent. These columns are distinact from col1-3.
+  MapIR* parent_map = MakeMap(mem_source, {{"test1", MakeColumn("test1", /*parent_op_idx*/ 0)},
+                                           {"test2", MakeColumn("test2", /*parent_op_idx*/ 0)},
+                                           {"test3", MakeColumn("test3", /*parent_op_idx*/ 0)}});
+
+  EXPECT_NE(parent_map->id(), child_map->id());  // Sanity check.
+  // Now swap the parent, and expect the children to point to the new parent.
+  EXPECT_OK(child_map->ReplaceParent(mem_source, parent_map));
+  EXPECT_EQ(col1->ReferenceID().ConsumeValueOrDie(), parent_map->id());
+  EXPECT_EQ(col2->ReferenceID().ConsumeValueOrDie(), parent_map->id());
+  EXPECT_EQ(col3->ReferenceID().ConsumeValueOrDie(), parent_map->id());
 }
 
 }  // namespace compiler

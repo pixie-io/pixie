@@ -54,9 +54,8 @@ TEST_F(PatternMatchTest, arbitrary_bin_op_test) {
 TEST_F(PatternMatchTest, expression_data_type_resolution) {
   auto int1 = graph->MakeNode<IntIR>().ValueOrDie();
   EXPECT_OK(int1->Init(10, ast));
-  auto dumb_operator = graph->MakeNode<MemorySourceIR>().ValueOrDie();
   auto col1 = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col1->Init("col1", dumb_operator, ast));
+  EXPECT_OK(col1->Init("col1", /* parent_op_idx */ 0, ast));
   auto func = graph->MakeNode<FuncIR>().ValueOrDie();
   EXPECT_OK(func->Init({FuncIR::Opcode::non_op, "", "op"}, ASTWalker::kRunTimeFuncPrefix,
                        std::vector<ExpressionIR*>({int1, col1}), false /* compile_time */, ast));

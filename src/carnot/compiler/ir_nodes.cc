@@ -34,7 +34,7 @@ Status IR::DeleteNode(int64_t node) {
 std::string IR::DebugString() {
   std::string debug_string = dag().DebugString() + "\n";
   for (auto const& a : id_node_map_) {
-    debug_string += a.second->DebugString(0) + "\n";
+    debug_string += a.second->DebugString() + "\n";
   }
   return debug_string;
 }
@@ -67,6 +67,31 @@ Status OperatorIR::RemoveParent(OperatorIR* parent) {
   return graph_ptr()->DeleteEdge(parent->id(), id());
 }
 
+Status OperatorIR::ReplaceParent(OperatorIR* old_parent, OperatorIR* new_parent) {
+  DCHECK(graph_ptr()->dag().HasEdge(old_parent->id(), id()))
+      << absl::Substitute("Edge between parent op $0 and child op $1 does not exist.",
+                          old_parent->DebugString(), DebugString());
+  for (size_t i = 0; i < parents_.size(); ++i) {
+    if (parents_[i] == old_parent) {
+      parents_[i] = new_parent;
+      PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(new_parent->id(), id()));
+      PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(old_parent->id(), id()));
+      return Status::OK();
+    }
+  }
+
+  return CreateIRNodeError("Couldn't find specified parent $0 for $1. Found [$2].",
+                           old_parent->DebugString(), DebugString(), ParentsDebugString());
+}
+std::string IRNode::DebugString() const {
+  return absl::Substitute("$0(id=$1)", type_string(), id());
+}
+std::string OperatorIR::ParentsDebugString() {
+  return absl::StrJoin(parents(), ",", [](std::string* out, IRNode* in) {
+    absl::StrAppend(out, in->DebugString());
+  });
+}
+
 Status OperatorIR::ArgMapContainsKeys(const ArgMap& args) {
   std::vector<std::string> missing_keys;
   for (const auto& arg : ArgKeys()) {
@@ -86,12 +111,8 @@ Status OperatorIR::Init(OperatorIR* parent, const ArgMap& args, const pypa::AstP
   if (parent != nullptr) {
     PL_RETURN_IF_ERROR(AddParent(parent));
   }
-  return InitImpl(args);
-}
-void OperatorIR::UpdateColumnReferences(OperatorIR* new_parent) {
-  for (int64_t i : graph_ptr()->dag().DependenciesOf(id())) {
-    ColumnIR::UpdateReferencedOperatorColumns(graph_ptr()->Get(i), new_parent);
-  }
+  PL_RETURN_IF_ERROR(InitImpl(args));
+  return Status::OK();
 }
 
 bool MemorySourceIR::HasLogicalRepr() const { return true; }
@@ -136,14 +157,6 @@ std::string DebugStringFmt(int64_t depth, std::string name,
     property_strings.push_back(prop_str);
   }
   return absl::StrJoin(property_strings, "\n");
-}
-std::string MemorySourceIR::DebugString(int64_t depth) const {
-  std::map<std::string, std::string> property_map = {{"From", table_name_}};
-  if (!select_all()) {
-    CHECK(select_ != nullptr);
-    property_map["Select"] = select_->DebugString(depth + 1);
-  }
-  return DebugStringFmt(depth, absl::Substitute("$0:MemorySourceIR", id()), property_map);
 }
 
 bool MemorySinkIR::HasLogicalRepr() const { return true; }
@@ -192,11 +205,6 @@ Status RangeIR::InitImpl(const ArgMap& args) {
   return Status::OK();
 }
 
-std::string MemorySinkIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(depth, absl::Substitute("$0:MemorySinkIR", id()),
-                        {{"Parent", parents()[0]->DebugString(depth + 1)}});
-}
-
 Status MemorySinkIR::ToProto(planpb::Operator* op) const {
   auto pb = new planpb::MemorySinkOperator();
   pb->set_name(name_);
@@ -204,7 +212,7 @@ Status MemorySinkIR::ToProto(planpb::Operator* op) const {
   auto types = relation().col_types();
   auto names = relation().col_names();
 
-  for (size_t i = 0; i < relation().NumColumns(); i++) {
+  for (size_t i = 0; i < relation().NumColumns(); ++i) {
     pb->add_column_types(types[i]);
     pb->add_column_names(names[i]);
   }
@@ -239,13 +247,6 @@ Status RangeIR::SetStartStop(IRNode* start_repr, IRNode* stop_repr) {
 
 bool RangeIR::HasLogicalRepr() const { return false; }
 
-std::string RangeIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(depth, absl::Substitute("$0:RangeIR", id()),
-                        {{"Parent", parents()[0]->DebugString(depth + 1)},
-                         {"Start", start_repr_->DebugString(depth + 1)},
-                         {"Stop", stop_repr_->DebugString(depth + 1)}});
-}
-
 Status RangeIR::ToProto(planpb::Operator*) const {
   return error::InvalidArgument("RangeIR has no protobuf representation.");
 }
@@ -275,25 +276,14 @@ Status MapIR::SetupMapExpressions(LambdaIR* map_func) {
 
 bool MapIR::HasLogicalRepr() const { return true; }
 
-std::string MapIR::DebugString(int64_t depth) const {
-  std::map<std::string, std::string> property_map = {
-      {"Parent", parents()[0]->DebugString(depth + 1)}};
-  std::vector<std::string> map_fn_debug_strings;
-  for (const ColumnExpression& col_expr : col_exprs_) {
-    map_fn_debug_strings.push_back(
-        absl::Substitute("$0 : '$1'", col_expr.name, col_expr.node->DebugString(depth + 1)));
-  }
-  property_map["MapFn"] = absl::StrJoin(map_fn_debug_strings, ",");
-  return DebugStringFmt(depth, absl::Substitute("$0:MapIR", id()), property_map);
-}
-
 Status OperatorIR::EvaluateExpression(planpb::ScalarExpression* expr, const IRNode& ir_node) const {
   switch (ir_node.type()) {
     case IRNodeType::kMetadata:
     case IRNodeType::kColumn: {
       const ColumnIR& col_ir = static_cast<const ColumnIR&>(ir_node);
       auto col = expr->mutable_column();
-      col->set_node(col_ir.ReferenceID());
+      PL_ASSIGN_OR_RETURN(int64_t ref_op_id, col_ir.ReferenceID());
+      col->set_node(ref_op_id);
       col->set_index(col_ir.col_idx());
       break;
     }
@@ -398,17 +388,11 @@ Status FilterIR::InitImpl(const ArgMap& args) {
 
 bool FilterIR::HasLogicalRepr() const { return true; }
 
-std::string FilterIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(depth, absl::Substitute("$0:FilterIR", id()),
-                        {{"Parent", parents()[0]->DebugString(depth + 1)},
-                         {"Filter", filter_expr_->DebugString(depth + 1)}});
-}
-
 Status FilterIR::ToProto(planpb::Operator* op) const {
   auto pb = new planpb::FilterOperator();
   DCHECK_EQ(parents().size(), 1UL);
 
-  for (size_t i = 0; i < relation().NumColumns(); i++) {
+  for (size_t i = 0; i < relation().NumColumns(); ++i) {
     planpb::Column* col_pb = pb->add_columns();
     col_pb->set_node(parents()[0]->id());
     col_pb->set_index(i);
@@ -436,17 +420,11 @@ Status LimitIR::InitImpl(const ArgMap& args) {
 
 bool LimitIR::HasLogicalRepr() const { return true; }
 
-std::string LimitIR::DebugString(int64_t depth) const {
-  return DebugStringFmt(depth, absl::Substitute("$0:LimitIR", id()),
-                        {{"Parent", parents()[0]->DebugString(depth + 1)},
-                         {"Limit", absl::Substitute("$0", limit_value_)}});
-}
-
 Status LimitIR::ToProto(planpb::Operator* op) const {
   auto pb = new planpb::LimitOperator();
   DCHECK_EQ(parents().size(), 1UL);
 
-  for (size_t i = 0; i < relation().NumColumns(); i++) {
+  for (size_t i = 0; i < relation().NumColumns(); ++i) {
     planpb::Column* col_pb = pb->add_columns();
     col_pb->set_node(parents()[0]->id());
     col_pb->set_index(i);
@@ -561,24 +539,6 @@ Status BlockingAggIR::SetupAggFunctions(LambdaIR* agg_func) {
 
 bool BlockingAggIR::HasLogicalRepr() const { return true; }
 
-std::string BlockingAggIR::DebugString(int64_t depth) const {
-  std::map<std::string, std::string> property_map = {
-      {"Parent", parents()[0]->DebugString(depth + 1)}};
-  std::vector<std::string> column_debug_strings;
-  for (ColumnIR* group_column : groups_) {
-    column_debug_strings.push_back(group_column->DebugString(depth + 1));
-  }
-  property_map["GroupBy"] = absl::StrJoin(column_debug_strings, ",");
-
-  std::vector<std::string> agg_fn_debug_strings;
-  for (const ColumnExpression& col_expr : aggregate_expressions_) {
-    agg_fn_debug_strings.push_back(
-        absl::Substitute("$0 : '$1'", col_expr.name, col_expr.node->DebugString(depth + 1)));
-  }
-  property_map["AggFn"] = absl::StrJoin(agg_fn_debug_strings, ",");
-  return DebugStringFmt(depth, absl::Substitute("$0:BlockingAggIR", id()), property_map);
-}
-
 Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* expr,
                                                   const IRNode& ir_node) const {
   DCHECK(ir_node.type() == IRNodeType::kFunc);
@@ -595,7 +555,8 @@ Status BlockingAggIR::EvaluateAggregateExpression(planpb::AggregateExpression* e
       case IRNodeType::kColumn: {
         ColumnIR* col_ir = static_cast<ColumnIR*>(ir_arg);
         auto col = arg_pb->mutable_column();
-        col->set_node(col_ir->ReferenceID());
+        PL_ASSIGN_OR_RETURN(int64_t ref_op_id, col_ir->ReferenceID());
+        col->set_node(ref_op_id);
         col->set_index(col_ir->col_idx());
         break;
       }
@@ -654,7 +615,8 @@ Status BlockingAggIR::ToProto(planpb::Operator* op) const {
 
   for (ColumnIR* group : groups_) {
     auto group_pb = pb->add_groups();
-    group_pb->set_node(group->ReferenceID());
+    PL_ASSIGN_OR_RETURN(int64_t ref_op_id, group->ReferenceID());
+    group_pb->set_node(ref_op_id);
     group_pb->set_index(group->col_idx());
     pb->add_group_names(group->col_name());
   }
@@ -668,36 +630,28 @@ Status BlockingAggIR::ToProto(planpb::Operator* op) const {
 }
 
 bool ColumnIR::HasLogicalRepr() const { return false; }
-Status ColumnIR::Init(const std::string& col_name, OperatorIR* parent,
+Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx,
                       const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
-  SetReferencedOperator(parent);
-  col_name_ = col_name;
+  SetColumnName(col_name);
+  SetContainingOperatoreratorParentIdx(parent_idx);
   return Status::OK();
 }
 
-std::string ColumnIR::DebugString(int64_t depth) const {
-  return absl::Substitute("$0$1:$2\t-\t$3", std::string(depth, '\t'), id(), "Column", col_name());
+std::string ColumnIR::DebugString() const {
+  return absl::Substitute("$0(id=$1, name=$2)", type_string(), id(), col_name());
 }
 
-void ColumnIR::UpdateReferencedOperatorColumns(IRNode* parent_ir_node,
-                                               OperatorIR* new_referenced_operator) {
-  // Don't operate on ops, as this will not do the correct operation.
-  if (parent_ir_node->IsOp()) {
-    return;
-  }
+void ColumnIR::SetContainingOperatoreratorParentIdx(int64_t container_op_parent_idx) {
+  DCHECK_GE(container_op_parent_idx, 0);
+  container_op_parent_idx_ = container_op_parent_idx;
+  container_op_parent_idx_set_ = true;
+}
 
-  if (parent_ir_node->IsExpression() && static_cast<ExpressionIR*>(parent_ir_node)->IsColumn()) {
-    // Update column referenced operator. Don't iterate further as Columns don't have children.
-    static_cast<ColumnIR*>(parent_ir_node)->SetReferencedOperator(new_referenced_operator);
-    return;
-  }
-
-  IR* graph = parent_ir_node->graph_ptr();
-  // Recurse to the children of the expression, given that it's not a Column or an Operator.
-  for (int64_t i : graph->dag().DependenciesOf(parent_ir_node->id())) {
-    UpdateReferencedOperatorColumns(graph->Get(i), new_referenced_operator);
-  }
+StatusOr<OperatorIR*> ColumnIR::ReferencedOperator() const {
+  DCHECK(container_op_parent_idx_set_);
+  PL_ASSIGN_OR_RETURN(OperatorIR * containing_op, ContainingOperator());
+  return containing_op->parents()[container_op_parent_idx_];
 }
 
 bool StringIR::HasLogicalRepr() const { return false; }
@@ -705,10 +659,6 @@ Status StringIR::Init(std::string str, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   str_ = str;
   return Status::OK();
-}
-
-std::string StringIR::DebugString(int64_t depth) const {
-  return absl::Substitute("$0$1:$2\t-\t$3", std::string(depth, '\t'), id(), "Str", str());
 }
 
 bool ListIR::HasLogicalRepr() const { return false; }
@@ -722,14 +672,6 @@ Status ListIR::Init(const pypa::AstPtr& ast_node, std::vector<ExpressionIR*> chi
   }
   children_ = children;
   return Status::OK();
-}
-
-std::string ListIR::DebugString(int64_t depth) const {
-  std::map<std::string, std::string> childMap;
-  for (size_t i = 0; i < children_.size(); i++) {
-    childMap[absl::Substitute("child$0", i)] = children_[i]->DebugString(depth + 1);
-  }
-  return DebugStringFmt(depth, absl::Substitute("$0:ListIR", id()), childMap);
 }
 
 bool LambdaIR::HasLogicalRepr() const { return false; }
@@ -772,16 +714,6 @@ StatusOr<ExpressionIR*> LambdaIR::GetDefaultExpr() {
       "vector.");
 }
 
-std::string LambdaIR::DebugString(int64_t depth) const {
-  std::map<std::string, std::string> childMap;
-  childMap["ExpectedRelation"] =
-      absl::Substitute("[$0]", absl::StrJoin(expected_column_names_, ","));
-  for (auto const& x : col_exprs_) {
-    childMap[absl::Substitute("ExprMap[\"$0\"]", x.name)] = x.node->DebugString(depth + 1);
-  }
-  return DebugStringFmt(depth, absl::Substitute("$0:LambdaIR", id()), childMap);
-}
-
 std::unordered_map<std::string, FuncIR::Op> FuncIR::op_map{
     {"*", {FuncIR::Opcode::mult, "*", "multiply"}},
     {"+", {FuncIR::Opcode::add, "+", "add"}},
@@ -813,14 +745,6 @@ Status FuncIR::Init(Op op, std::string func_prefix, const std::vector<Expression
   return Status::OK();
 }
 
-std::string FuncIR::DebugString(int64_t depth) const {
-  std::map<std::string, std::string> childMap;
-  for (size_t i = 0; i < args_.size(); i++) {
-    childMap.emplace(absl::Substitute("arg$0", i), args_[i]->DebugString(depth + 1));
-  }
-  return DebugStringFmt(depth, absl::Substitute("$0:FuncIR", id()), childMap);
-}
-
 /* Float IR */
 bool FloatIR::HasLogicalRepr() const { return false; }
 Status FloatIR::Init(double val, const pypa::AstPtr& ast_node) {
@@ -828,10 +752,6 @@ Status FloatIR::Init(double val, const pypa::AstPtr& ast_node) {
   val_ = val;
   return Status::OK();
 }
-std::string FloatIR::DebugString(int64_t depth) const {
-  return absl::Substitute("$0$1:$2\t-\t$3", std::string(depth, '\t'), id(), "Float", val());
-}
-
 /* Int IR */
 bool IntIR::HasLogicalRepr() const { return false; }
 Status IntIR::Init(int64_t val, const pypa::AstPtr& ast_node) {
@@ -839,10 +759,6 @@ Status IntIR::Init(int64_t val, const pypa::AstPtr& ast_node) {
   val_ = val;
   return Status::OK();
 }
-std::string IntIR::DebugString(int64_t depth) const {
-  return absl::Substitute("$0$1:$2\t-\t$3", std::string(depth, '\t'), id(), "Int", val());
-}
-
 /* Bool IR */
 bool BoolIR::HasLogicalRepr() const { return false; }
 Status BoolIR::Init(bool val, const pypa::AstPtr& ast_node) {
@@ -850,9 +766,7 @@ Status BoolIR::Init(bool val, const pypa::AstPtr& ast_node) {
   val_ = val;
   return Status::OK();
 }
-std::string BoolIR::DebugString(int64_t depth) const {
-  return absl::Substitute("$0$1:$2\t-\t$3", std::string(depth, '\t'), id(), "Bool", val());
-}
+
 /* Time IR */
 bool TimeIR::HasLogicalRepr() const { return false; }
 Status TimeIR::Init(int64_t val, const pypa::AstPtr& ast_node) {
@@ -860,30 +774,23 @@ Status TimeIR::Init(int64_t val, const pypa::AstPtr& ast_node) {
   val_ = val;
   return Status::OK();
 }
-std::string TimeIR::DebugString(int64_t depth) const {
-  return absl::Substitute("$0$1:$2\t-\t$3", std::string(depth, '\t'), id(), "Time", val());
-}
 
 /* Metadata IR */
-Status MetadataIR::Init(const std::string& metadata_str, OperatorIR* parent_op,
+Status MetadataIR::Init(const std::string& metadata_str, int64_t parent_op_idx,
                         const pypa::AstPtr& ast_node) {
-  SetLineCol(ast_node);
-  SetReferencedOperator(parent_op);
+  // Note, metadata_str is a temporary name. It is updated in ResolveMetadataColumn.
+  PL_RETURN_IF_ERROR(ColumnIR::Init(metadata_str, parent_op_idx, ast_node));
   metadata_name_ = metadata_str;
   return Status::OK();
 }
 
 Status MetadataIR::ResolveMetadataColumn(MetadataResolverIR* resolver_op,
                                          MetadataProperty* property) {
-  PL_RETURN_IF_ERROR(ColumnIR::Init(property->GetColumnRepr(), referenced_op(), ast_node()));
+  SetColumnName(property->GetColumnRepr());
   resolver_ = resolver_op;
   property_ = property;
   has_metadata_resolver_ = true;
   return Status::OK();
-}
-
-std::string MetadataIR::DebugString(int64_t depth) const {
-  return absl::StrFormat("%s%d:%s\t-\t%s", std::string(depth, '\t'), id(), "Metadata", name());
 }
 
 /* MetadataLiteral IR */
@@ -893,20 +800,6 @@ Status MetadataLiteralIR::Init(DataIR* literal, const pypa::AstPtr& ast_node) {
   literal_ = literal;
   literal_type_ = literal->type();
   return Status::OK();
-}
-
-std::string MetadataLiteralIR::DebugString(int64_t depth) const {
-  return absl::StrFormat("%s%d:%s\t-\t%s", std::string(depth, '\t'), id(), "MetadataLiteral",
-                         literal_->DebugString(0));
-}
-
-std::string MetadataResolverIR::DebugString(int64_t depth) const {
-  std::vector<std::string> cols;
-  for (const auto& c : metadata_columns()) {
-    cols.push_back(c.first);
-  }
-  return absl::StrFormat("%s%d:%s\t-\tColumns:[%s]", std::string(depth, '\t'), id(),
-                         "MetadataResolver", absl::StrJoin(cols, ","));
 }
 
 bool MetadataResolverIR::HasMetadataColumn(const std::string& col_name) {

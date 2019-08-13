@@ -21,7 +21,7 @@ namespace carnot {
 namespace compiler {
 
 using VarTable = std::unordered_map<std::string, IRNode*>;
-using LambdaOperatorMap = std::unordered_map<std::string, OperatorIR*>;
+using LambdaOperatorMap = std::unordered_map<std::string, int64_t>;
 
 #define PYPA_PTR_CAST(TYPE, VAL) \
   std::static_pointer_cast<typename pypa::AstTypeByID<pypa::AstType::TYPE>::Type>(VAL)
@@ -506,12 +506,12 @@ class ASTWalker {
    *
    * @param column_name: the column name string.
    * @param column_ast_node: the referring ast_node of the column.
-   * @param parent_op: the parent operator for which to set the column.
+   * @param parent_op_idx: the index of the parent of the operator that this column refers to.
    * @return StatusOr<LambdaExprReturn>: container of the expression.
    */
   StatusOr<LambdaExprReturn> ProcessRecordColumn(const std::string& column_name,
                                                  const pypa::AstPtr& column_ast_node,
-                                                 OperatorIR* parent_op);
+                                                 int64_t parent_op_idx);
   /**
    * @brief Processes a metadata attribute.
    *

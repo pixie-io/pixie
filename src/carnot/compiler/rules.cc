@@ -51,7 +51,7 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(FuncIR* func) const {
     DCHECK(t != types::DataType::DATA_TYPE_UNKNOWN);
     children_data_types.push_back(t);
   }
-  PL_ASSIGN_OR_RETURN(IRNode * containing_op, func->ContainingOp());
+  PL_ASSIGN_OR_RETURN(IRNode * containing_op, func->ContainingOperator());
   IRNodeType containing_op_type = containing_op->type();
   if (containing_op_type != IRNodeType::kBlockingAgg) {
     // Attempt to resolve UDF function for non-Aggregate nodes.
@@ -73,7 +73,7 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(FuncIR* func) const {
 }
 
 StatusOr<bool> DataTypeRule::EvaluateColumn(ColumnIR* column) const {
-  OperatorIR* parent_op = column->referenced_op();
+  PL_ASSIGN_OR_RETURN(OperatorIR * parent_op, column->ReferencedOperator());
   if (!parent_op->IsRelationInit()) {
     // Missing a relation in parent op is not a failure, it means the parent op still has to
     // propogate results.
@@ -161,7 +161,7 @@ StatusOr<std::vector<ColumnIR*>> SourceRelationRule::GetColumnsFromRelation(
   for (const auto& col_name : col_names) {
     int64_t i = relation.GetColumnIndex(col_name);
     PL_ASSIGN_OR_RETURN(auto col_node, graph->MakeNode<ColumnIR>());
-    PL_RETURN_IF_ERROR(col_node->Init(col_name, node, node->ast_node()));
+    PL_RETURN_IF_ERROR(col_node->Init(col_name, /*parent_op_idx*/ 0, node->ast_node()));
     col_node->ResolveColumn(i, relation.GetColumnType(i));
     result.push_back(col_node);
   }
@@ -357,10 +357,10 @@ StatusOr<MetadataResolverIR*> ResolveMetadataRule::InsertMetadataResolver(
       << "Parent arg should be the actual parent of the container_op.";
   IR* graph = container_op->graph_ptr();
   PL_ASSIGN_OR_RETURN(auto md_resolver, graph->MakeNode<MetadataResolverIR>());
+  // Metadata Resolver is now child of Parent.
   PL_RETURN_IF_ERROR(md_resolver->Init(parent_op, {{}}, container_op->ast_node()));
-  PL_RETURN_IF_ERROR(container_op->RemoveParent(parent_op));
-  PL_RETURN_IF_ERROR(container_op->AddParent(md_resolver));
-  container_op->UpdateColumnReferences(md_resolver);
+  // Previous operator is now child of Metadata Resolver.
+  PL_RETURN_IF_ERROR(container_op->ReplaceParent(parent_op, md_resolver));
 
   return md_resolver;
 }
@@ -372,7 +372,7 @@ StatusOr<bool> ResolveMetadataRule::HandleMetadata(MetadataIR* metadata) const {
                                        metadata->name());
   }
   // Get containing operator.
-  PL_ASSIGN_OR_RETURN(OperatorIR * container_op, metadata->ContainingOp());
+  PL_ASSIGN_OR_RETURN(OperatorIR * container_op, metadata->ContainingOperator());
   if (!container_op->HasParents()) {
     return metadata->CreateIRNodeError(
         "No parent for operator $1(id=$2). Can't resolve column '$0'.", metadata->col_name(),
@@ -390,7 +390,8 @@ StatusOr<bool> ResolveMetadataRule::HandleMetadata(MetadataIR* metadata) const {
   }
   if (!metadata_resolver_op_found) {
     // If the parent is not a metadata resolver, add a parent metadata resolver node.
-    PL_ASSIGN_OR_RETURN(parent_op, InsertMetadataResolver(container_op, metadata->referenced_op()));
+    PL_ASSIGN_OR_RETURN(OperatorIR * referenced_op, metadata->ReferencedOperator());
+    PL_ASSIGN_OR_RETURN(parent_op, InsertMetadataResolver(container_op, referenced_op));
   }
   auto md_resolver_op = static_cast<MetadataResolverIR*>(parent_op);
   PL_ASSIGN_OR_RETURN(MetadataProperty * md_property, md_handler_->GetProperty(metadata->name()));
@@ -510,15 +511,12 @@ Status MetadataResolverConversionRule::RemoveMetadataResolver(
   DCHECK_EQ(dependent_nodes.size(), 1UL);
   int64_t child_op = dependent_nodes[0];
   IRNode* node = graph->Get(child_op);
-  DCHECK(node->IsOp()) << "Expected node to be operator.";
+  DCHECK(node->IsOperator()) << "Expected node to be operator.";
   OperatorIR* op = static_cast<OperatorIR*>(node);
 
   // Set the parent of the child_op to the md_resolver parent.
   DCHECK(op->IsChildOf(md_resolver));
-  PL_RETURN_IF_ERROR(op->RemoveParent(md_resolver));
-  PL_RETURN_IF_ERROR(op->AddParent(parent));
-  // Update the children columns to point to the parent.
-  op->UpdateColumnReferences(parent);
+  PL_RETURN_IF_ERROR(op->ReplaceParent(md_resolver, parent));
 
   // delete metadata_resolver
   PL_RETURN_IF_ERROR(graph->DeleteNode(md_resolver->id()));
@@ -577,12 +575,14 @@ StatusOr<bool> MetadataResolverConversionRule::ReplaceMetadataResolver(
 Status MetadataResolverConversionRule::CopyParentColumns(IR* graph, OperatorIR* parent_op,
                                                          ColExpressionVector* col_exprs,
                                                          pypa::AstPtr ast_node) const {
+  DCHECK(parent_op->IsRelationInit());
   Relation parent_relation = parent_op->relation();
   for (size_t i = 0; i < parent_relation.NumColumns(); ++i) {
     // Make Column
     PL_ASSIGN_OR_RETURN(ColumnIR * column_ir, graph->MakeNode<ColumnIR>());
     std::string column_name = parent_relation.GetColumnName(i);
-    PL_RETURN_IF_ERROR(column_ir->Init(column_name, parent_op, ast_node));
+    // Parent operator index is 1 because there is only 1 parent.
+    PL_RETURN_IF_ERROR(column_ir->Init(column_name, /*parent_op_idx*/ 0, ast_node));
     column_ir->ResolveColumn(i, parent_relation.GetColumnType(i));
     col_exprs->emplace_back(column_name, column_ir);
   }
@@ -604,7 +604,8 @@ Status MetadataResolverConversionRule::AddMetadataConversionFns(
                         FindKeyColumn(parent_relation, md_property, md_resolver));
 
     PL_ASSIGN_OR_RETURN(ColumnIR * column_ir, graph->MakeNode<ColumnIR>());
-    PL_RETURN_IF_ERROR(column_ir->Init(key_column, parent_op, md_resolver->ast_node()));
+    // Parent op index is 0 because there is only one parent.
+    PL_RETURN_IF_ERROR(column_ir->Init(key_column, /*parent_op_idx*/ 0, md_resolver->ast_node()));
     int64_t parent_relation_idx = parent_relation.GetColumnIndex(key_column);
     PL_ASSIGN_OR_RETURN(std::string func_name, md_property->UDFName(key_column));
     column_ir->ResolveColumn(parent_relation_idx, md_property->column_type());
@@ -674,20 +675,14 @@ Status MetadataResolverConversionRule::SwapInMap(MetadataResolverIR* md_resolver
   DCHECK_EQ(dependent_nodes.size(), 1UL);
 
   IRNode* node = graph->Get(dependent_nodes[0]);
-  DCHECK(node->IsOp()) << "Expected node to be operator.";
+  DCHECK(node->IsOperator()) << "Expected node to be operator.";
   OperatorIR* op = static_cast<OperatorIR*>(node);
 
   DCHECK(op->IsChildOf(md_resolver));
   DCHECK(md_resolver->IsRelationInit());
 
-  PL_RETURN_IF_ERROR(op->RemoveParent(md_resolver));
-  PL_RETURN_IF_ERROR(op->AddParent(map));
+  PL_RETURN_IF_ERROR(op->ReplaceParent(md_resolver, map));
   PL_RETURN_IF_ERROR(map->SetRelation(md_resolver->relation()));
-
-  // transfer ownership of columns.
-  for (ColumnIR* col : md_resolver->referencing_columns()) {
-    col->SetReferencedOperator(map);
-  }
 
   // delete metadata_resolver
   PL_RETURN_IF_ERROR(graph->DeleteNode(md_resolver->id()));
@@ -722,14 +717,13 @@ StatusOr<bool> MergeRangeOperatorRule::MergeRange(RangeIR* range_ir) {
   // Update all of range's dependencies to point to src.
   for (const auto& dep_id : ir_graph->dag().DependenciesOf(range_ir->id())) {
     auto dep = ir_graph->Get(dep_id);
-    if (!dep->IsOp()) {
+    if (!dep->IsOperator()) {
       PL_RETURN_IF_ERROR(ir_graph->DeleteEdge(range_ir->id(), dep_id));
       PL_RETURN_IF_ERROR(ir_graph->AddEdge(src_ir->id(), dep_id));
       continue;
     }
     auto casted_node = static_cast<OperatorIR*>(dep);
-    PL_RETURN_IF_ERROR(casted_node->RemoveParent(range_ir));
-    PL_RETURN_IF_ERROR(casted_node->AddParent(src_ir));
+    PL_RETURN_IF_ERROR(casted_node->ReplaceParent(range_ir, src_ir));
   }
   PL_RETURN_IF_ERROR(range_ir->RemoveParent(src_ir));
   DeferNodeDeletion(range_ir->id());

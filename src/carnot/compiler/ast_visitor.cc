@@ -187,7 +187,7 @@ StatusOr<OperatorIR*> ASTWalker::LookupName(const pypa::AstNamePtr& name_node) {
     return CreateAstError(name_node, "Can't find variable '$0'.", name_node->id);
   }
   IRNode* node = find_name->second;
-  if (!node->IsOp()) {
+  if (!node->IsOperator()) {
     return node->CreateIRNodeError(
         "Can only have operators saved as variables for now. Can't handle $0.",
         node->type_string());
@@ -308,7 +308,8 @@ StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node)
       false /*compile_time */, node));
 
   PL_ASSIGN_OR_RETURN(ColumnIR * by_col_copy, ir_graph_->MakeNode<ColumnIR>());
-  PL_RETURN_IF_ERROR(by_col_copy->Init(by_col->col_name(), parent_op, by_col->ast_node()));
+  PL_RETURN_IF_ERROR(
+      by_col_copy->Init(by_col->col_name(), /* parent_op_idx */ 0, by_col->ast_node()));
   // pl.subtract(by_col, pl.mod(by_col, size)).
   PL_ASSIGN_OR_RETURN(FuncIR * sub_ir_node, ir_graph_->MakeNode<FuncIR>());
   PL_ASSIGN_OR_RETURN(FuncIR::Op sub_op, GetOp("-", node));
@@ -322,7 +323,7 @@ StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node)
   ColExpressionVector map_exprs = ColExpressionVector({ColumnExpression{"group", sub_ir_node}});
   for (const auto& name : static_cast<LambdaIR*>(args["fn"])->expected_column_names()) {
     PL_ASSIGN_OR_RETURN(ColumnIR * col_node, ir_graph_->MakeNode<ColumnIR>());
-    PL_RETURN_IF_ERROR(col_node->Init(name, parent_op, node));
+    PL_RETURN_IF_ERROR(col_node->Init(name, /* parent_op_idx */ 0, node));
     map_exprs.push_back(ColumnExpression{name, col_node});
   }
   PL_RETURN_IF_ERROR(map_lambda_ir_node->Init(std::unordered_set<std::string>({by_col->col_name()}),
@@ -335,15 +336,13 @@ StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node)
 
   // by = lambda r: r.group.
   PL_ASSIGN_OR_RETURN(ColumnIR * agg_col_ir_node, ir_graph_->MakeNode<ColumnIR>());
-  PL_RETURN_IF_ERROR(agg_col_ir_node->Init("group", map_ir_node, node));
+  PL_RETURN_IF_ERROR(agg_col_ir_node->Init("group", /* parent_op_idx*/ 0, node));
   PL_ASSIGN_OR_RETURN(LambdaIR * agg_by_ir_node, ir_graph_->MakeNode<LambdaIR>());
   PL_RETURN_IF_ERROR(
       agg_by_ir_node->Init(std::unordered_set<std::string>({"group"}), agg_col_ir_node, node));
 
   // Agg(fn = fn, by = lambda r: r.group).
   IRNode* fn_node = args["fn"];
-  ColumnIR::UpdateReferencedOperatorColumns(fn_node, map_ir_node);
-
   ArgMap agg_args{{"by", agg_by_ir_node}, {"fn", fn_node}};
   PL_RETURN_IF_ERROR(agg_ir_node->Init(map_ir_node, agg_args, node));
   return agg_ir_node;
@@ -418,8 +417,8 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessMetadataAttribute(
                           value);
   }
   PL_ASSIGN_OR_RETURN(MetadataIR * md_node, ir_graph_->MakeNode<MetadataIR>());
-  OperatorIR* parent_op = arg_op_iter->second;
-  PL_RETURN_IF_ERROR(md_node->Init(attribute_value, parent_op, val_attr->attribute));
+  int64_t parent_op_idx = arg_op_iter->second;
+  PL_RETURN_IF_ERROR(md_node->Init(attribute_value, parent_op_idx, val_attr->attribute));
   return LambdaExprReturn(md_node, {attribute_value});
 }
 
@@ -455,19 +454,19 @@ StatusOr<LambdaExprReturn> ASTWalker::ProcessLambdaAttribute(const LambdaOperato
     return CreateAstError(node, "'$0' not supported in lambda functions.", kCompileTimeFuncPrefix);
   } else if (arg_op_map.find(parent) != arg_op_map.end()) {
     // If the value is equal to the arg_op_map, then the attribute is a column.
-    OperatorIR* parent_op = arg_op_map.find(parent)->second;
-    return ProcessRecordColumn(GetNameID(node->attribute), node, parent_op);
+    int64_t parent_op_idx = arg_op_map.find(parent)->second;
+    return ProcessRecordColumn(GetNameID(node->attribute), node, parent_op_idx);
   }
   return CreateAstError(node, "Name '$0' is not defined.", parent);
 }
 
 StatusOr<LambdaExprReturn> ASTWalker::ProcessRecordColumn(const std::string& column_name,
                                                           const pypa::AstPtr& column_ast_node,
-                                                          OperatorIR* parent_op) {
+                                                          int64_t parent_op_idx) {
   std::unordered_set<std::string> column_names;
   column_names.insert(column_name);
   PL_ASSIGN_OR_RETURN(ColumnIR * column, ir_graph_->MakeNode<ColumnIR>());
-  PL_RETURN_IF_ERROR(column->Init(column_name, parent_op, column_ast_node));
+  PL_RETURN_IF_ERROR(column->Init(column_name, parent_op_idx, column_ast_node));
   return LambdaExprReturn(column, column_names);
 }
 
@@ -683,10 +682,12 @@ StatusOr<LambdaOperatorMap> ASTWalker::ProcessLambdaArgs(const pypa::AstLambdaPt
     if (out_map.find(arg_str) != out_map.end()) {
       return CreateAstError(node, "Duplicate argument '$0' in lambda definition.", arg_str);
     }
-    out_map.emplace(arg_str, parent_ops[i]);
+
+    out_map.emplace(arg_str, /* parent_op_idx */ i);
   }
   return out_map;
 }
+
 StatusOr<LambdaBodyReturn> ASTWalker::ProcessLambdaDict(const LambdaOperatorMap& arg_op_map,
                                                         const pypa::AstDictPtr& body_dict) {
   auto return_val = LambdaBodyReturn();

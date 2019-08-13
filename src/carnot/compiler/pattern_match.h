@@ -434,7 +434,7 @@ template <bool ResolvedRelation = false, bool ParentOpResolved = false>
 struct AnyRelationResolvedOpMatch : public ParentMatch {
   AnyRelationResolvedOpMatch() : ParentMatch(IRNodeType::kAny) {}
   bool Match(IRNode* node) const override {
-    if (node->IsOp()) {
+    if (node->IsOperator()) {
       OperatorIR* op_ir = static_cast<OperatorIR*>(node);
       if (op_ir->HasParents() && op_ir->IsRelationInit() == ResolvedRelation) {
         for (OperatorIR* parent : op_ir->parents()) {
@@ -502,7 +502,7 @@ struct MatchAnyOp : public ParentMatch {
   // The LHS is always matched first.
   MatchAnyOp() : ParentMatch(IRNodeType::kAny) {}
 
-  bool Match(IRNode* node) const override { return node->IsOp(); }
+  bool Match(IRNode* node) const override { return node->IsOperator(); }
 };
 
 inline MatchAnyOp Operator() { return MatchAnyOp(); }

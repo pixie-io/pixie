@@ -45,7 +45,7 @@ class RuleExecutorTest : public ::testing::Test {
     int_constant2 = graph->MakeNode<IntIR>().ValueOrDie();
     PL_CHECK_OK(int_constant2->Init(12, ast));
     col = graph->MakeNode<ColumnIR>().ValueOrDie();
-    PL_CHECK_OK(col->Init("count", mem_src, ast));
+    PL_CHECK_OK(col->Init("count", /* parent_op_idx */ 0, ast));
     func = graph->MakeNode<FuncIR>().ValueOrDie();
     func2 = graph->MakeNode<FuncIR>().ValueOrDie();
     lambda = graph->MakeNode<LambdaIR>().ValueOrDie();

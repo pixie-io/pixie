@@ -54,7 +54,7 @@ class Compiler {
     dag_node->set_id(ir_node.id());
     for (const auto& dep : ir_graph.dag().DependenciesOf(ir_node.id())) {
       // Only add dependencies for operator IR nodes.
-      if (ir_graph.Get(dep)->IsOp()) {
+      if (ir_graph.Get(dep)->IsOperator()) {
         dag_node->add_sorted_deps(dep);
       }
     }

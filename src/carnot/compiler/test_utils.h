@@ -62,7 +62,6 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
     return error::InvalidArgument("Parsing was unsuccessful, likely because of broken argument.");
   }
 
-  VLOG(2) << ir->DebugString() << std::endl;
   return ir;
 }
 
