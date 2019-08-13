@@ -264,6 +264,16 @@ StatusOr<std::unique_ptr<StmtExecuteRequest>> HandleStmtExecuteRequest(
   return std::make_unique<StmtExecuteRequest>(StmtExecuteRequest(stmt_id, std::move(params)));
 }
 
+Status HandleStmtCloseRequest(const Packet& req_packet, std::map<int, ReqRespEvent>* prepare_map) {
+  int stmt_id = utils::LEStrToInt(req_packet.msg.substr(kStmtIDStartOffset, kStmtIDBytes));
+  auto iter = prepare_map->find(stmt_id);
+  if (iter == prepare_map->end()) {
+    return error::Cancelled("Can not find Stmt Prepare Event to close.");
+  }
+  prepare_map->erase(iter);
+  return Status::OK();
+}
+
 }  // namespace mysql
 }  // namespace stirling
 }  // namespace pl

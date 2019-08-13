@@ -183,7 +183,8 @@ static __inline bool is_http_request(const char* buf, size_t count) {
 static __inline bool is_mysql_protocol(const char* buf, size_t count) {
   // MySQL packets start with a 3-byte packet length and a 1-byte packet number.
   // The 5th byte on a request contains a command that tells the type.
-  // 0x16: Statement Prepare, 0x17 Statement Execute, 0x03 Query.
+  // 0x16: Statement Prepare, 0x17 Statement Execute, 0x19 Statement Close,
+  // 0x03 Query.
   // TODO(chengruizhe): Add more commands when more are supported.
   if (count < 5) {
     return false;
@@ -201,7 +202,8 @@ static __inline bool is_mysql_protocol(const char* buf, size_t count) {
     return false;
   }
 
-  if (buf[4] == '\x16' || buf[4] == '\x17' || buf[4] == '\x03') {
+  if (buf[4] == kStmtPreparePrefix || buf[4] == kStmtExecutePrefix || buf[4] == kStmtClosePrefix ||
+      buf[4] == kQueryPrefix) {
     return true;
   }
   return false;

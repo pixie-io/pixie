@@ -281,7 +281,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupOldGenerations);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInactiveDead);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive);
-  FRIEND_TEST(SocketTraceConnectorTest, MySQLPrepareExecute);
+  FRIEND_TEST(SocketTraceConnectorTest, MySQLPrepareExecuteClose);
   FRIEND_TEST(SocketTraceConnectorTest, MySQLQuery);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupNoProtocol);
 };

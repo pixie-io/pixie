@@ -24,6 +24,11 @@ const uint64_t kSocketTraceNothing = 0;
 const char kTargetTGIDArrayName[] = "test_only_target_tgid";
 const int64_t kTraceAllTGIDs = -1;
 
+const char kStmtPreparePrefix = '\x16';
+const char kStmtExecutePrefix = '\x17';
+const char kStmtClosePrefix = '\x19';
+const char kQueryPrefix = '\x03';
+
 // TODO(yzhao): Investigate the performance cost of misaligned memory access (8 vs. 4 bytes).
 
 typedef enum {

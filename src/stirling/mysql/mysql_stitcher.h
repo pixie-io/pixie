@@ -35,6 +35,9 @@ StatusOr<Entry> StitchStmtPrepare(const Packet& req_packet, std::deque<Packet>* 
 StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* resp_packets,
                                   std::map<int, ReqRespEvent>* prepare_events);
 
+StatusOr<Entry> StitchStmtClose(const Packet& req_packet,
+                                std::map<int, ReqRespEvent>* prepare_events);
+
 StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets);
 
 }  // namespace mysql

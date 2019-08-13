@@ -67,7 +67,7 @@ const std::vector<ParamPacket> kStmtExecuteParams = {
     {StmtExecuteParamType::kString, "\x62\x72\x6f\x77\x6e"},
     {StmtExecuteParamType::kString, "\x69\x64"}};
 
-StmtExecuteRequest kStmtExecuteRequest(2 /*stmt_id*/, kStmtExecuteParams /*params*/);
+const StmtExecuteRequest kStmtExecuteRequest(2 /*stmt_id*/, kStmtExecuteParams /*params*/);
 
 const std::vector<ColDefinition> kStmtExecuteColDefs = {
     ColDefinition{
@@ -92,6 +92,11 @@ ReqRespEvent InitStmtExecute() {
   std::unique_ptr<Response> resp_ptr(new Resultset(kStmtExecuteResultset));
   return ReqRespEvent(MySQLEventType::kComStmtExecute, std::move(req_ptr), std::move(resp_ptr));
 }
+
+/**
+ * Statement Close Event
+ */
+const StmtCloseRequest kStmtCloseRequest(2 /*stmt_id*/);
 
 /**
  * Query Event with 1 column and 3 resultset rows.

@@ -5,6 +5,7 @@
 #include <deque>
 #include <random>
 #include <utility>
+
 #include "src/stirling/mysql/test_data.h"
 #include "src/stirling/mysql/test_utils.h"
 #include "src/stirling/mysql_parse.h"
@@ -94,6 +95,19 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
 
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message1));
+}
+
+TEST_F(MySQLParserTest, ParseComStmtClose) {
+  Packet expected_packet = testutils::GenStmtCloseRequest(testutils::kStmtCloseRequest);
+  std::string msg = testutils::GenRawPacket(0, expected_packet.msg);
+
+  parser_.Append(msg, 0);
+
+  std::deque<Packet> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_packet));
 }
 
 TEST_F(MySQLParserTest, ParseComQuery) {

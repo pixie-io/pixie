@@ -169,6 +169,9 @@ class SocketTraceConnectorTest : public ::testing::Test {
   std::vector<std::string> mySQLStmtPrepareResp;
   std::string mySQLStmtExecuteReq;
   std::vector<std::string> mySQLStmtExecuteResp;
+  std::string mySQLStmtCloseReq;
+  std::string mySQLErrResp;
+
   std::string mySQLQueryReq;
   std::vector<std::string> mySQLQueryResp;
 
@@ -194,6 +197,12 @@ class SocketTraceConnectorTest : public ::testing::Test {
       // i + 1 because packet_num 0 is the request, so response starts from 1.
       mySQLStmtExecuteResp.push_back(mysql::testutils::GenRawPacket(i + 1, execute_packets[i].msg));
     }
+
+    mySQLErrResp = mysql::testutils::GenRawPacket(
+        1, mysql::testutils::GenErr(mysql::ErrResponse(1096, "This an error.")).msg);
+
+    mySQLStmtCloseReq = mysql::testutils::GenRawPacket(
+        0, mysql::testutils::GenStmtCloseRequest(mysql::testutils::kStmtCloseRequest).msg);
 
     mySQLQueryReq = mysql::testutils::GenRawPacket(
         0, mysql::testutils::GenStringRequest(mysql::testutils::kQueryRequest,
@@ -704,7 +713,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   EXPECT_TRUE(tracker->send_data().Empty<HTTPMessage>());
 }
 
-TEST_F(SocketTraceConnectorTest, MySQLPrepareExecute) {
+TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   conn_info_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
   std::unique_ptr<SocketDataEvent> prepare_req_event = InitSendEvent(mySQLStmtPrepareReq);
   std::vector<std::unique_ptr<SocketDataEvent>> prepare_resp_events;
@@ -744,6 +753,19 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecute) {
       "BY id ORDER BY id\"}";
 
   EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]), ElementsAre(expected_entry));
+
+  // Test execute fail after close
+  std::unique_ptr<SocketDataEvent> close_req_event = InitSendEvent(mySQLStmtCloseReq);
+  std::unique_ptr<SocketDataEvent> execute_req_event2 = InitSendEvent(mySQLStmtExecuteReq);
+  std::unique_ptr<SocketDataEvent> execute_resp_event2 = InitSendEvent(mySQLErrResp);
+
+  source_->AcceptDataEvent(std::move(close_req_event));
+  source_->AcceptDataEvent(std::move(execute_req_event2));
+  source_->AcceptDataEvent(std::move(execute_resp_event2));
+  source_->TransferData(nullptr, kMySQLTableNum, &data_table);
+  for (const auto& column : record_batch) {
+    EXPECT_EQ(1, column->Size());
+  }
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLQuery) {

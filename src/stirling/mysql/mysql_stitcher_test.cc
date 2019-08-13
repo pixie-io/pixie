@@ -81,6 +81,19 @@ TEST_F(StitcherTest, TestStitchStmtExecute) {
   EXPECT_EQ(expected_resultset_entry, resultset_entry);
 }
 
+TEST_F(StitcherTest, TestStitchStmtClose) {
+  Packet req = testutils::GenStmtCloseRequest(testutils::kStmtCloseRequest);
+
+  int stmt_id = testutils::kStmtCloseRequest.stmt_id();
+
+  std::map<int, ReqRespEvent> prepare_events;
+  prepare_events.emplace(stmt_id, testutils::InitStmtPrepare());
+
+  auto s1 = StitchStmtClose(req, &prepare_events);
+  EXPECT_TRUE(s1.ok());
+  EXPECT_EQ(0, prepare_events.size());
+}
+
 TEST_F(StitcherTest, TestStitchQuery) {
   Packet req = testutils::GenStringRequest(testutils::kQueryRequest, MySQLEventType::kComQuery);
 

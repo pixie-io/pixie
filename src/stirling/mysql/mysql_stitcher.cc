@@ -72,6 +72,9 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
       case MySQLEventType::kComStmtExecute:
         e = StitchStmtExecute(req_packet, resp_packets, prepare_events);
         break;
+      case MySQLEventType::kComStmtClose:
+        e = StitchStmtClose(req_packet, prepare_events);
+        break;
       case MySQLEventType::kComQuery:
         e = StitchQuery(req_packet, resp_packets);
         break;
@@ -145,6 +148,12 @@ StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* 
     return Entry{CreateErrorJSON(filled_msg, error_message), MySQLEntryStatus::kErr,
                  req_packet.timestamp_ns};
   }
+}
+
+StatusOr<Entry> StitchStmtClose(const Packet& req_packet,
+                                std::map<int, ReqRespEvent>* prepare_events) {
+  PL_RETURN_IF_ERROR(HandleStmtCloseRequest(req_packet, prepare_events));
+  return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
 }
 
 StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets) {

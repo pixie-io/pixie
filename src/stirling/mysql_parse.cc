@@ -20,6 +20,8 @@ MySQLEventType infer_mysql_event_type(std::string_view buf) {
     return MySQLEventType::kComStmtPrepare;
   } else if (command == kStmtExecutePrefix) {
     return MySQLEventType::kComStmtExecute;
+  } else if (command == kStmtClosePrefix) {
+    return MySQLEventType::kComStmtClose;
   } else if (command == kQueryPrefix) {
     return MySQLEventType::kComQuery;
   } else {

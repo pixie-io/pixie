@@ -143,8 +143,8 @@ std::deque<Packet> GenStmtPrepareOKResponse(const StmtPrepareOKResponse& resp) {
 Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
   char statement_id[4];
   utils::IntToLEBytes<4>(req.stmt_id(), statement_id);
-  std::string msg =
-      absl::StrCat("\x17", std::string(statement_id, 4), ConstStrView("\x00\x01\x00\x00\x00"));
+  std::string msg = absl::StrCat(kStmtExecutePrefix, std::string(statement_id, 4),
+                                 ConstStrView("\x00\x01\x00\x00\x00"));
   int num_params = req.params().size();
   if (num_params > 0) {
     for (int i = 0; i < (num_params + 7) / 8; i++) {
@@ -168,6 +168,13 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
     msg += param.value;
   }
   return Packet{0, std::move(msg), MySQLEventType::kComStmtExecute};
+}
+
+Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
+  char statement_id[4];
+  utils::IntToLEBytes<4>(req.stmt_id(), statement_id);
+  std::string msg = absl::StrCat(kStmtClosePrefix, std::string(statement_id, 4));
+  return Packet{0, std::move(msg), MySQLEventType::kComStmtClose};
 }
 
 /**

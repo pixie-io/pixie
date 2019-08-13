@@ -43,13 +43,14 @@ inline constexpr char kStringPrefix = '\xfe';
 // TODO(chengruizhe): Switch prefix to char.
 inline constexpr ConstStrView kStmtPreparePrefix = "\x16";
 inline constexpr ConstStrView kStmtExecutePrefix = "\x17";
+inline constexpr ConstStrView kStmtClosePrefix = "\x19";
 inline constexpr ConstStrView kQueryPrefix = "\x03";
 
 inline constexpr char kLencIntPrefix2b = '\xfc';
 inline constexpr char kLencIntPrefix3b = '\xfd';
 inline constexpr char kLencIntPrefix8b = '\xfe';
 
-enum class MySQLEventType { kUnknown, kComStmtPrepare, kComStmtExecute, kComQuery };
+enum class MySQLEventType { kUnknown, kComStmtPrepare, kComStmtExecute, kComStmtClose, kComQuery };
 
 /**
  * Raw MySQLPacket from MySQL Parser
@@ -118,7 +119,7 @@ struct ParamPacket {
 // Message Level Structs
 //-----------------------------------------------------------------------------
 
-enum class RequestType { kUnknown = 0, kStringRequest, kStmtExecuteRequest };
+enum class RequestType { kUnknown = 0, kStringRequest, kStmtExecuteRequest, kStmtCloseRequest };
 
 enum class ResponseType {
   kUnknown = 0,
@@ -267,6 +268,18 @@ class StmtExecuteRequest : public Request {
  private:
   int stmt_id_;
   std::vector<ParamPacket> params_;
+};
+
+class StmtCloseRequest : public Request {
+ public:
+  StmtCloseRequest() = default;
+  explicit StmtCloseRequest(int stmt_id)
+      : Request(RequestType::kStmtCloseRequest), stmt_id_(stmt_id) {}
+
+  int stmt_id() const { return stmt_id_; }
+
+ private:
+  int stmt_id_;
 };
 
 //-----------------------------------------------------------------------------

@@ -32,6 +32,12 @@ StatusOr<std::unique_ptr<StmtExecuteRequest>> HandleStmtExecuteRequest(
     const Packet& req_packet, std::map<int, ReqRespEvent>* prepare_map);
 
 /**
+ * StmtClose request contains the stmt_id of the prepare stmt to close. It simply deletes
+ * the prepare stmt from the map (state of ConnectionTracker).
+ */
+Status HandleStmtCloseRequest(const Packet& req_packet, std::map<int, ReqRespEvent>* prepare_map);
+
+/**
  * Other than StmtExecute request, all other requests are string requests.
  */
 StatusOr<std::unique_ptr<StringRequest>> HandleStringRequest(const Packet& req_packet);
