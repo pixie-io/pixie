@@ -314,12 +314,12 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   source_->AcceptDataEvent(std::move(event0));
   source_->AcceptDataEvent(std::move(event2));
   source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
-  EXPECT_EQ(1, record_batch[0]->Size());
+  EXPECT_EQ(2, record_batch[0]->Size());
 
   source_->AcceptDataEvent(std::move(event1));
   source_->AcceptCloseConnEvent(close_conn);
   source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
-  EXPECT_EQ(3, record_batch[0]->Size()) << "Expect 3 events after getting the missing one.";
+  EXPECT_EQ(2, record_batch[0]->Size()) << "Late events won't get processed.";
 }
 
 TEST_F(SocketTraceConnectorTest, NoEvents) {
@@ -401,12 +401,6 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   PL_UNUSED(resp_event1);  // Missing event.
   source_->AcceptDataEvent(std::move(resp_event2));
 
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
-  EXPECT_EQ(1, source_->NumActiveConnections());
-  EXPECT_EQ(1, record_batch[0]->Size());
-
-  // This call should cause stream recovery to trigger,
-  // skipping resp_event1 and releasing event resp_event2.
   source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
   EXPECT_EQ(2, record_batch[0]->Size());

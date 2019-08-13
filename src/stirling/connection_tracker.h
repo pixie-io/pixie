@@ -119,22 +119,6 @@ class DataStream {
   template <class TMessageType>
   size_t AppendEvents(EventParser<TMessageType>* parser) const;
 
-  // Update the stuck state, based on whether messages were parsed or not.
-  void UpdateState(bool parsed_messages);
-
-  // Check a stream for stuck-ness. If it appears stuck, attempt to unblock it.
-  // The recovery algorithm is case and protocol specific.
-  template <class TMessageType>
-  void CheckAndAttemptRecovery();
-
-  // Attempt to recover a stream with a missing event at the head.
-  template <class TMessageType>
-  void AttemptMissingEventRecovery();
-
-  // Attempt to recover a stream with an unparseable series of events at the head.
-  template <class TMessageType>
-  void AttemptParseFailureRecovery();
-
   // Assuming a stream with an event at the head, attempt to find the next message boundary.
   // Updates seq_num_ and offset_ to the next boundary position.
   template <class TMessageType>
@@ -171,7 +155,7 @@ class DataStream {
   bool has_new_events_ = false;
 
   // Number of consecutive calls to ExtractMessages(), where there are a non-zero number of events,
-  // but either no parsed messages are produced, or parsing stopped due to a gap in events.
+  // but no parsed messages are produced.
   int64_t stuck_count_ = 0;
 
   // Only meaningful for HTTP2. See also Inflater().

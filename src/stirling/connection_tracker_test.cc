@@ -140,14 +140,9 @@ TEST_F(ConnectionTrackerTest, lost_event_test) {
   EXPECT_EQ(requests.size(), 1ULL);
   EXPECT_FALSE(stream.Stuck());
 
-  // Now add some lost events.
+  // Now add some lost events - should get skipped over.
   PL_UNUSED(req1);  // Lost event.
   stream.AddEvent(std::move(req2));
-  requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
-  EXPECT_EQ(requests.size(), 1ULL);
-  EXPECT_TRUE(stream.Stuck());
-
-  // One more iteration should cause it to unblock.
   requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
   EXPECT_EQ(requests.size(), 2ULL);
   EXPECT_FALSE(stream.Stuck());
@@ -161,11 +156,6 @@ TEST_F(ConnectionTrackerTest, lost_event_test) {
 
   // Now the lost event should be detected.
   stream.AddEvent(std::move(req5));
-  requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
-  EXPECT_EQ(requests.size(), 3ULL);
-  EXPECT_TRUE(stream.Stuck());
-
-  // One more iteration should unblock the request stream again.
   requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
   EXPECT_EQ(requests.size(), 4ULL);
   EXPECT_FALSE(stream.Stuck());

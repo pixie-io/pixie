@@ -299,15 +299,9 @@ void DataStream::AddEvent(std::unique_ptr<SocketDataEvent> event) {
 
   if (seq_num < next_seq_num_) {
     LOG(WARNING) << absl::Substitute(
-        "Ignoring event has already been skipped [event seq_num=$0, current seq_num=$1].", seq_num,
-        next_seq_num_);
+        "Ignoring event that has already been skipped [event seq_num=$0, current seq_num=$1].",
+        seq_num, next_seq_num_);
     return;
-  }
-
-  if (seq_num == next_seq_num_) {
-    // If stream was stuck waiting for the next event,
-    // it should no longer be stuck.
-    stuck_count_ = 0;
   }
 
   auto res = events_.emplace(seq_num, TimestampedData(std::move(event)));
@@ -366,43 +360,60 @@ template <class TMessageType>
 std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
   auto& typed_messages = Messages<TMessageType>();
 
-  // If stream is in a good state, this should do nothing.
-  // Otherwise it will attempt to put the stream into a good state.
-  CheckAndAttemptRecovery<TMessageType>();
-
-  // If no new raw data, then nothing extra to extract. Exit early.
-  if (!has_new_events_) {
-    UpdateState(/* parsed_messages */ false);
-    return typed_messages;
-  }
-
-  EventParser<TMessageType> parser;
-
   const size_t orig_offset = offset_;
+  const size_t orig_seq_num = next_seq_num_;
 
-  AppendEvents(&parser);
-
-  // Now parse all the appended events.
-  ParseResult<BufferPosition> parse_result = parser.ParseMessages(type, &typed_messages);
-
-  // If we weren't able to process anything new, then the offset should be the same as last time.
-  if (offset_ != 0 && parse_result.end_position.seq_num == 0) {
-    CHECK_EQ(parse_result.end_position.offset, orig_offset);
+  // Check for and attempt to fix an unparseable sequence of events blocking the head.
+  if (stuck_count_ > 1) {
+    // TODO(oazizi): Enable this when ready.
+    // AttemptSyncToMessageBoundary<TMessageType>();
   }
 
-  // Find and erase events that have been fully processed.
-  // Note that parse_result seq_nums are based on events added to parser,
-  // not seq_nums from BPF.
-  auto erase_iter = events_.begin();
-  std::advance(erase_iter, parse_result.end_position.seq_num);
-  events_.erase(events_.begin(), erase_iter);
-  next_seq_num_ += parse_result.end_position.seq_num;
-  offset_ = parse_result.end_position.offset;
+  while (has_new_events_) {
+    EventParser<TMessageType> parser;
 
-  bool parsed_messages = !parse_result.start_positions.empty();
-  UpdateState(parsed_messages);
+    // Set-up events in parser.
+    size_t num_events_appended = AppendEvents(&parser);
 
-  has_new_events_ = false;
+    // Now parse all the appended events.
+    ParseResult<BufferPosition> parse_result = parser.ParseMessages(type, &typed_messages);
+
+    if (num_events_appended != events_.size()) {
+      // We weren't able to append all events, which means we ran into a missing event.
+      // We don't expect missing events to arrive in the future, so just cut our losses.
+      // Drop all events up to this point, and then try to resume.
+      auto erase_iter = events_.begin();
+      std::advance(erase_iter, num_events_appended);
+      events_.erase(events_.begin(), erase_iter);
+      CHECK(!events_.empty());
+      next_seq_num_ = events_.begin()->first;
+      offset_ = 0;
+      has_new_events_ = true;
+
+      // TODO(oazizi): Enable this when ready.
+      // AttemptSyncToMessageBoundary<TMessageType>();
+    } else {
+      // We appended all events, which means we had a contiguous stream, with no missing events.
+      // Find and erase events that have been fully processed.
+      // Note that ParseResult seq_nums are based on events added to parser, not seq_nums from BPF.
+      size_t num_events_consumed = parse_result.end_position.seq_num;
+      auto erase_iter = events_.begin();
+      std::advance(erase_iter, num_events_consumed);
+      events_.erase(events_.begin(), erase_iter);
+      next_seq_num_ += num_events_consumed;
+      offset_ = parse_result.end_position.offset;
+      has_new_events_ = false;
+    }
+  }
+
+  // Check to see if we are blocked on parsing.
+  // Note that missing events is handled separately (not considered stuck).
+  bool events_but_no_progress =
+      !events_.empty() && (next_seq_num_ == orig_seq_num) && (offset_ == orig_offset);
+  stuck_count_ = (events_but_no_progress) ? stuck_count_ + 1 : 0;
+
+  // has_new_events_ should be false for the next transfer cycle.
+  CHECK_EQ(false, has_new_events_);
 
   return typed_messages;
 }
@@ -419,90 +430,6 @@ template <class TMessageType>
 bool DataStream::Empty() const {
   return events_.empty() && (std::holds_alternative<std::monostate>(messages_) ||
                              std::get<std::deque<TMessageType>>(messages_).empty());
-}
-
-void DataStream::UpdateState(bool parsed_messages) {
-  if (parsed_messages) {
-    stuck_count_ = 0;
-  }
-
-  if (events_.empty()) {
-    CHECK_EQ(stuck_count_, 0);
-    return;
-  }
-
-  ++stuck_count_;
-}
-
-template <class TMessageType>
-void DataStream::CheckAndAttemptRecovery() {
-  // An empty stream is a clean stream.
-  if (events_.empty()) {
-    return;
-  }
-
-  // Two possible faults with the stream, but we handle one at a time.
-  // It is possible that there is a missing event that is preventing any parsing,
-  // and that skipping over it would then result in a parse failure because we have
-  // a partial message, but we let the algorithm handle these separately.
-  // In other words, we discard the missing event, and then let partial messages
-  // get discovered in a different iteration.
-  // TODO(oazizi): Potential optimization to handle both simultaneously.
-
-  // Case 1: A missing event at the head which is blocking progress.
-  size_t head_seq_num = events_.begin()->first;
-  if (next_seq_num_ != head_seq_num) {
-    AttemptMissingEventRecovery<TMessageType>();
-    return;
-  }
-
-  // Case 2: No missing events, but we appear unable to parse the head.
-  if (stuck_count_ != 0) {
-    AttemptParseFailureRecovery<TMessageType>();
-    return;
-  }
-}
-
-template <class TMessageType>
-void DataStream::AttemptMissingEventRecovery() {
-  // Scenario: There is a missing event at the head that is blocking progress.
-
-  // Want to give a chance for the event to arrive,
-  // so don't recover any stream until it's been stuck for at least one iteration.
-  if (stuck_count_ == 0) {
-    return;
-  }
-
-  // First, skip to the next available sequence number.
-  size_t head_seq_num = events_.begin()->first;
-  CHECK_LT(next_seq_num_, head_seq_num);
-  next_seq_num_ = head_seq_num;
-  offset_ = 0;
-
-  // Reset stuck state to give the stream a chance.
-  // Note that it may get stuck again if recovery wasn't done properly.
-  stuck_count_ = 0;
-  has_new_events_ = true;
-}
-
-template <class TMessageType>
-void DataStream::AttemptParseFailureRecovery() {
-  // Scenario: There is an event at the head, but we haven't been able to parse the stream.
-
-  // Head event is missing, but want to give a chance for the event to arrive,
-  // so don't recover any streams until it's been stuck for at least one iteration.
-  if (stuck_count_ <= 1) {
-    return;
-  }
-
-  bool recovered = AttemptSyncToMessageBoundary<TMessageType>();
-
-  if (recovered) {
-    // Reset stuck state to give the stream a chance.
-    // Note that it may get stuck again if recovery wasn't done properly.
-    stuck_count_ = 0;
-    has_new_events_ = true;
-  }
 }
 
 template <>
