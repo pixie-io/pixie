@@ -90,7 +90,9 @@ if __name__ == "__main__":
     if args.verbose:
         print("Source files:")
     for bazel_rule in all_rules:
-        # bazel_rule = "//src/carnot/planpb:plan_pl_go_proto"
+        bazel_build_cmd = ['bazel', 'build', bazel_rule]
+        call_cmd(bazel_build_cmd)
+
         res = copy_go_proto_bazel_rule(bazel_workspace, bazel_rule, args.verbose)
         if res is not None:
             failed_rules.append(res)
