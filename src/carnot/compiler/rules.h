@@ -81,8 +81,6 @@ class SourceRelationRule : public Rule {
 
  private:
   StatusOr<bool> GetSourceRelation(OperatorIR* source_op) const;
-  StatusOr<std::vector<std::string>> GetColumnNames(
-      std::vector<ExpressionIR*> select_children) const;
   StatusOr<std::vector<ColumnIR*>> GetColumnsFromRelation(OperatorIR* node,
                                                           std::vector<std::string> col_names,
                                                           const Relation& relation) const;

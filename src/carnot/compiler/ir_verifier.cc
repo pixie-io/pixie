@@ -35,21 +35,7 @@ std::string IRVerifier::ExpString(const std::string& node_name, const int64_t id
                                   const std::string& property_name) {
   return absl::Substitute("$0(id=$1) '$2'", node_name, id, property_name);
 }
-Status IRVerifier::VerifyMemorySource(MemorySourceIR* mem_node) {
-  ListIR* select_node = mem_node->select();
-  if (mem_node->select_all()) {
-    return Status::OK();
-  }
-  if (select_node == nullptr) {
-    return mem_node->CreateIRNodeError(
-        "Select value is not set, but the compiler thinks that it is.");
-  }
-  for (auto& c : select_node->children()) {
-    PL_RETURN_IF_ERROR(ExpectType(IRNodeType::kString, c,
-                                  ExpString("MemorySourceIR select", select_node->id(), "child")));
-  }
-  return Status::OK();
-}
+Status IRVerifier::VerifyMemorySource(MemorySourceIR*) { return Status::OK(); }
 
 Status IRVerifier::VerifyRange(RangeIR* range_node) {
   PL_RETURN_IF_ERROR(ExpectType({IRNodeType::kInt, IRNodeType::kFunc, IRNodeType::kString},

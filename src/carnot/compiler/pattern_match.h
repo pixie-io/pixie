@@ -103,6 +103,17 @@ inline ClassMatch<IRNodeType::kString> String() { return ClassMatch<IRNodeType::
 // Match an arbitrary Metadata value.
 inline ClassMatch<IRNodeType::kMetadata> Metadata() { return ClassMatch<IRNodeType::kMetadata>(); }
 
+// Match an arbitrary Metadata value.
+inline ClassMatch<IRNodeType::kFunc> Func() { return ClassMatch<IRNodeType::kFunc>(); }
+
+inline ClassMatch<IRNodeType::kMemorySource> MemorySource() {
+  return ClassMatch<IRNodeType::kMemorySource>();
+}
+inline ClassMatch<IRNodeType::kMemorySink> MemorySink() {
+  return ClassMatch<IRNodeType::kMemorySink>();
+}
+inline ClassMatch<IRNodeType::kLimit> Limit() { return ClassMatch<IRNodeType::kLimit>(); }
+
 // Match an arbitrary MetadataLiteral value.
 inline ClassMatch<IRNodeType::kMetadataLiteral> MetadataLiteral() {
   return ClassMatch<IRNodeType::kMetadataLiteral>();
@@ -596,6 +607,25 @@ inline FuncMatch<false> RunTimeFunc() { return FuncMatch<false>(); }
  * @brief Match Filter operator.
  */
 inline ClassMatch<IRNodeType::kFilter> Filter() { return ClassMatch<IRNodeType::kFilter>(); }
+
+struct ColumnMatch : public ParentMatch {
+  ColumnMatch() : ParentMatch(IRNodeType::kAny) {}
+  bool Match(IRNode* node) const override {
+    return node->IsExpression() && static_cast<ExpressionIR*>(node)->IsColumn();
+  }
+};
+
+inline ColumnMatch ColumnNode() { return ColumnMatch(); }
+
+struct DataMatch : public ParentMatch {
+  DataMatch() : ParentMatch(IRNodeType::kAny) {}
+  bool Match(IRNode* node) const override {
+    return node->IsExpression() && static_cast<ExpressionIR*>(node)->IsData();
+  }
+};
+
+inline DataMatch DataNode() { return DataMatch(); }
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

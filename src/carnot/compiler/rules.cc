@@ -108,7 +108,6 @@ StatusOr<bool> SourceRelationRule::GetSourceRelation(OperatorIR* source_op) cons
         source_op->type_string(), source_op->id());
   }
   MemorySourceIR* mem_node = static_cast<MemorySourceIR*>(source_op);
-  ListIR* select = mem_node->select();
   std::string table_str = mem_node->table_name();
   // get the table_str from the relation map
   auto relation_map_it = compiler_state_->relation_map()->find(table_str);
@@ -120,8 +119,8 @@ StatusOr<bool> SourceRelationRule::GetSourceRelation(OperatorIR* source_op) cons
   std::vector<std::string> columns;
   Relation select_relation;
   if (!mem_node->select_all()) {
-    PL_ASSIGN_OR_RETURN(columns, GetColumnNames(select->children()));
-    PL_ASSIGN_OR_RETURN(select_relation, GetSelectRelation(select, table_relation, columns));
+    columns = mem_node->column_names();
+    PL_ASSIGN_OR_RETURN(select_relation, GetSelectRelation(mem_node, table_relation, columns));
   } else {
     columns = table_relation.col_names();
     select_relation = table_relation;
@@ -166,21 +165,6 @@ StatusOr<std::vector<ColumnIR*>> SourceRelationRule::GetColumnsFromRelation(
     result.push_back(col_node);
   }
   return result;
-}
-
-StatusOr<std::vector<std::string>> SourceRelationRule::GetColumnNames(
-    std::vector<ExpressionIR*> select_children) const {
-  std::vector<std::string> columns;
-  for (size_t idx = 0; idx < select_children.size(); idx++) {
-    IRNode* col_string_node = select_children[idx];
-    if (col_string_node->type() != IRNodeType::kString) {
-      return col_string_node->CreateIRNodeError(
-          "The elements of the select list must be of type `str`. Found a '$0' for idx $1.",
-          col_string_node->type_string(), idx);
-    }
-    columns.push_back(static_cast<StringIR*>(col_string_node)->str());
-  }
-  return columns;
 }
 
 StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) {

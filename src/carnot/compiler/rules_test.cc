@@ -19,6 +19,7 @@ namespace carnot {
 namespace compiler {
 
 using testing::_;
+using testing::ElementsAre;
 
 const char* kExtraScalarUDFs = R"proto(
 scalar_udfs {
@@ -1731,7 +1732,7 @@ TEST_F(RulesTest, simple_remove_range) {
   amap["name"] = sink_name;
   EXPECT_OK(sink->Init(range, amap, ast));
   EXPECT_FALSE(mem_src->IsTimeSet());
-  EXPECT_EQ(std::vector<int64_t>({0, 1, 2, 3, 4, 5}), graph->dag().TopologicalSort());
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1, 2, 3, 4));
 
   // Apply the rule.
   MergeRangeOperatorRule rule(compiler_state_.get());
@@ -1740,7 +1741,7 @@ TEST_F(RulesTest, simple_remove_range) {
   EXPECT_TRUE(status.ValueOrDie());
 
   // checks to make sure that all the edges related to range are removed.
-  EXPECT_EQ(std::vector<int64_t>({0, 4, 5}), graph->dag().TopologicalSort());
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 4));
   EXPECT_TRUE(mem_src->IsTimeSet());
   EXPECT_EQ(stop_time_ns - start_time_ns, mem_src->time_stop_ns() - mem_src->time_start_ns());
   EXPECT_EQ(stop_time_ns, mem_src->time_stop_ns());
@@ -1779,8 +1780,7 @@ TEST_F(RulesTest, references_transfer) {
   EXPECT_OK(sink->Init(map, sink_arg_map, ast));
   EXPECT_FALSE(mem_src->IsTimeSet());
   EXPECT_EQ(column->ReferenceID().ConsumeValueOrDie(), range->id());
-  EXPECT_EQ(std::vector<int64_t>({0, 1, 2, 3, 4, 6, 7, 8}), graph->dag().TopologicalSort());
-
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 1, 2, 3, 4, 6, 7));
   // Apply the rule.
   MergeRangeOperatorRule rule(compiler_state_.get());
   auto status = rule.Execute(graph.get());
@@ -1789,7 +1789,7 @@ TEST_F(RulesTest, references_transfer) {
 
   EXPECT_EQ(column->ReferenceID().ConsumeValueOrDie(), mem_src->id());
   // checks to make sure that all the edges related to range are removed.
-  EXPECT_EQ(std::vector<int64_t>({0, 4, 6, 7, 8}), graph->dag().TopologicalSort());
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(0, 4, 6, 7));
 
   // Expect that the colum
 }

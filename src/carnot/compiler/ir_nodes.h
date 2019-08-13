@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
@@ -106,12 +107,29 @@ class IRNode {
     return Status(statuspb::INVALID_ARGUMENT, "",
                   std::make_unique<compilerpb::CompilerErrorGroup>(context));
   }
+  /**
+   * @brief DeepClone this node into a new graph. All children classes need to implement
+   * DeepCloneIntoImpl. If a child class is itself a parent of other classes, then it must override
+   * this class and call this method, followed by whatever operations that all of it's child
+   * classes must do during a DeepClone.
+   *
+   * @param graph
+   * @return StatusOr<IRNode*>
+   */
+  virtual StatusOr<IRNode*> DeepCloneInto(IR* graph) const;
 
  protected:
   explicit IRNode(int64_t id, IRNodeType type, bool is_source)
       : id_(id), type_(type), is_source_(is_source) {}
   void SetLineCol(int64_t line, int64_t col);
   void SetLineCol(const pypa::AstPtr& ast_node);
+  /**
+   * @brief The implementation of DeepCloneInto to be overridden by children of this class.
+   *
+   * @param graph
+   * @return StatusOr<IRNode*>
+   */
+  virtual StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const = 0;
 
  private:
   int64_t id_;
@@ -144,7 +162,11 @@ class IR {
    */
   template <typename TOperator>
   StatusOr<TOperator*> MakeNode() {
-    auto id = id_node_map_.size();
+    return MakeNode<TOperator>(id_node_counter);
+  }
+  template <typename TOperator>
+  StatusOr<TOperator*> MakeNode(int64_t id) {
+    id_node_counter = std::max(id + 1, id_node_counter);
     auto node = std::make_unique<TOperator>(id);
     dag_.AddNode(node->id());
     node->SetGraphPtr(this);
@@ -154,9 +176,12 @@ class IR {
   }
 
   Status AddEdge(int64_t from_node, int64_t to_node);
+  bool HasNode(int64_t node_id) { return dag().HasNode(node_id); }
+
   Status AddEdge(IRNode* from_node, IRNode* to_node);
   Status DeleteEdge(int64_t from_node, int64_t to_node);
   Status DeleteNode(int64_t node);
+  Status DeleteNodeAndChildren(int64_t node);
   plan::DAG& dag() { return dag_; }
   const plan::DAG& dag() const { return dag_; }
   std::string DebugString();
@@ -181,10 +206,12 @@ class IR {
     }
     return nodes;
   }
+  StatusOr<std::unique_ptr<IR>> Clone() const;
 
  private:
   plan::DAG dag_;
   std::unordered_map<int64_t, IRNodePtr> id_node_map_;
+  int64_t id_node_counter = 0;
 };
 
 class ColumnIR;
@@ -234,6 +261,15 @@ class OperatorIR : public IRNode {
   Status EvaluateExpression(planpb::ScalarExpression* expr, const IRNode& ir_node) const;
 
   std::string ParentsDebugString();
+  Status CopyParents(OperatorIR* og_op) const;
+
+  /**
+   * @brief Override of DeepCloneInto that adds special handling for Operators.
+   *
+   * @param graph: the graph which to clone into. Should not be the same graph.
+   * @return StatusOr<IRNode*>: The copied node into the new graph.
+   */
+  StatusOr<IRNode*> DeepCloneInto(IR* graph) const override;
 
  protected:
   explicit OperatorIR(int64_t id, IRNodeType type, bool has_parents, bool is_source)
@@ -255,6 +291,7 @@ class ExpressionIR : public IRNode {
   virtual types::DataType EvaluatedDataType() const = 0;
   virtual bool IsDataTypeEvaluated() const = 0;
   virtual bool IsColumn() const { return false; }
+  virtual bool IsData() const { return false; }
   StatusOr<OperatorIR*> ContainingOperator() const {
     IR* graph = graph_ptr();
     int64_t cur_id = id();
@@ -291,7 +328,7 @@ class MetadataProperty : public NotCopyable {
   virtual ~MetadataProperty() = default;
 
   /**
-   * @brief Returns a bool that notifies whether an expression fits the expected format for this
+    @brief Returns a bool that notifies whether an expression fits the expected format for this
    * property when comparing.  This is used to make sure comparison operations (==, >, <, !=) are
    * pre-checked during compilation, preventing unnecssary operations during execution and exposing
    * query errors to the user.
@@ -412,6 +449,7 @@ class DataIR : public ExpressionIR {
  public:
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
   bool IsDataTypeEvaluated() const override { return true; }
+  bool IsData() const override { return true; }
 
  protected:
   DataIR(int64_t id, IRNodeType type, types::DataType data_type)
@@ -430,19 +468,20 @@ class DataIR : public ExpressionIR {
  * 1. A column is contained by an Operator.
  * 2. A column has an Operator that it references.
  *
- * The first relationship applies to Operators that utilize expressions (ie Map, Agg). Any ColumnIR
- * that is a progeny of an expression in an Operator means the Operator contains that ColumnIR.
+ * The first relationship applies to Operators that utilize expressions (ie Map, Agg). Any
+ * ColumnIR that is a progeny of an expression in an Operator means the Operator contains that
+ * ColumnIR.
  *
  * The second relationship is between the ColumnIR and the parent of the Containing Operator (in
  * relationship #1) that the ColumnIR refers to. A ColumnIR that references an operator means it's
- * value is determined by the Operator and subsequently the Operator's output relation must contain
- * the column name used by this column.
+ * value is determined by the Operator and subsequently the Operator's output relation must
+ * contain the column name used by this column.
  *
- * Because we are constantly shuffling parents of each Operator, ColumnIR's calling
+ * Because we are constantly shuffling parents of each Operator, ColumnIR's
  * methods are meant to be decoupled from the Operator that it references. Instead, ColumnIR
- * guarantees that it points to the index of the Containing operator's parent that is the reference
- * operator. This is under the assumption that once we initialize an operator, the number of parents
- * it has never changes.
+ * finds the referenced operator by first getting the containing operator, then grabbing the
+ * saved index of that containing operator to point to a parent of that operator. This is under the
+ * assumption that once we initialize an operator, the number of parents it has never changes.
  *
  * To get the Referenced Operator for a column, the Column accesses its saved index of the
  * Containing Operator's parents vector.
@@ -479,7 +518,9 @@ class ColumnIR : public ExpressionIR {
    */
   StatusOr<OperatorIR*> ReferencedOperator() const;
 
-  std::string DebugString() const override;
+  // TODO(philkuz) (PL-826): redo DebugString to have a DebugStringImpl instead of override.
+  // NOLINTNEXTLINE(readability/inheritance)
+  virtual std::string DebugString() const override;
   StatusOr<int64_t> ReferenceID() const {
     PL_ASSIGN_OR_RETURN(OperatorIR * referenced_op, ReferencedOperator());
     return referenced_op->id();
@@ -491,7 +532,16 @@ class ColumnIR : public ExpressionIR {
   int64_t container_op_parent_idx() const { return container_op_parent_idx_; }
   bool container_op_parent_idx_set() const { return container_op_parent_idx_set_; }
 
+  /**
+   * @brief Override DeepCloneInto to make sure all Column classes save the column attributes.
+   *
+   * @param graph
+   * @return StatusOr<IRNode*>
+   */
+  StatusOr<IRNode*> DeepCloneInto(IR* graph) const override;
+
  protected:
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   /**
    * @brief Optional protected constructor for children types.
    */
@@ -534,6 +584,8 @@ class StringIR : public DataIR {
   bool HasLogicalRepr() const override;
   std::string str() const { return str_; }
 
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+
  private:
   std::string str_;
 };
@@ -551,8 +603,10 @@ class ListIR : public DataIR {
   bool HasLogicalRepr() const override;
   Status Init(const pypa::AstPtr& ast_node, std::vector<ExpressionIR*> children);
 
-  std::vector<ExpressionIR*> children() { return children_; }
+  std::vector<ExpressionIR*> children() const { return children_; }
   bool IsOperator() const override { return false; }
+
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 
  private:
   std::vector<ExpressionIR*> children_;
@@ -579,14 +633,14 @@ class LambdaIR : public IRNode {
   Status Init(std::unordered_set<std::string> column_names, const ColExpressionVector& col_exprs,
               const pypa::AstPtr& ast_node);
   /**
-   * @brief Init for the Lambda called elsewhere. Uses a default value for the key to the expression
-   * map.
+   * @brief Init for the Lambda called elsewhere. Uses a default value for the key to the
+   * expression map.
    */
   Status Init(std::unordered_set<std::string> expected_column_names, ExpressionIR* node,
               const pypa::AstPtr& ast_node);
   /**
-   * @brief Returns the one_expr_ if it has only one expr in the col_expr_map, otherwise returns an
-   * error.
+   * @brief Returns the one_expr_ if it has only one expr in the col_expr_map, otherwise returns
+   * an error.
    *
    * @return StatusOr<IRNode*>
    */
@@ -598,6 +652,8 @@ class LambdaIR : public IRNode {
   bool IsExpression() const override { return false; }
   std::unordered_set<std::string> expected_column_names() const { return expected_column_names_; }
   ColExpressionVector col_exprs() const { return col_exprs_; }
+
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 
  private:
   static constexpr const char* default_key = "_default";
@@ -670,6 +726,8 @@ class FuncIR : public ExpressionIR {
 
   bool is_compile_time() const { return is_compile_time_; }
 
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+
  private:
   std::string func_prefix_;
   Op op_;
@@ -694,6 +752,8 @@ class FloatIR : public DataIR {
 
   double val() const { return val_; }
 
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+
  private:
   double val_;
 };
@@ -706,6 +766,8 @@ class IntIR : public DataIR {
   bool HasLogicalRepr() const override;
 
   int64_t val() const { return val_; }
+
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 
  private:
   int64_t val_;
@@ -720,6 +782,8 @@ class BoolIR : public DataIR {
 
   bool val() const { return val_; }
 
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+
  private:
   bool val_;
 };
@@ -732,6 +796,8 @@ class TimeIR : public DataIR {
   bool HasLogicalRepr() const override;
 
   bool val() const { return val_ != 0; }
+
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 
  private:
   int64_t val_;
@@ -752,6 +818,9 @@ class MetadataIR : public ColumnIR {
   Status ResolveMetadataColumn(MetadataResolverIR* resolver_op, MetadataProperty* property);
   MetadataResolverIR* resolver() const { return resolver_; }
   MetadataProperty* property() const { return property_; }
+
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  std::string DebugString() const override;
 
  private:
   std::string metadata_name_;
@@ -776,6 +845,8 @@ class MetadataLiteralIR : public ExpressionIR {
   bool IsDataTypeEvaluated() const override { return literal_->IsDataTypeEvaluated(); }
   types::DataType EvaluatedDataType() const override { return literal_->EvaluatedDataType(); }
 
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+
  private:
   DataIR* literal_;
   IRNodeType literal_type_;
@@ -787,12 +858,12 @@ class MetadataLiteralIR : public ExpressionIR {
  */
 class MemorySourceIR : public OperatorIR {
  public:
+  using OperatorIR::Init;
   MemorySourceIR() = delete;
   explicit MemorySourceIR(int64_t id) : OperatorIR(id, IRNodeType::kMemorySource, false, true) {}
   bool HasLogicalRepr() const override;
 
   std::string table_name() { return table_name_; }
-  ListIR* select() { return select_; }
   void SetTime(int64_t time_start_ns, int64_t time_stop_ns) {
     time_start_ns_ = time_start_ns;
     time_stop_ns_ = time_stop_ns;
@@ -806,6 +877,7 @@ class MemorySourceIR : public OperatorIR {
     columns_set_ = true;
     columns_ = columns;
   }
+
   Status ToProto(planpb::Operator*) const override;
   std::vector<std::string> ArgKeys() override { return {"table", "select"}; }
 
@@ -813,17 +885,21 @@ class MemorySourceIR : public OperatorIR {
     return std::unordered_map<std::string, IRNode*>{{"select", nullptr}};
   }
   Status InitImpl(const ArgMap& args) override;
-  bool select_all() const { return select_ == nullptr; }
+  bool select_all() const { return column_names_.size() == 0; }
+
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  const std::vector<std::string>& column_names() const { return column_names_; }
+  StatusOr<std::vector<std::string>> ParseStringListIR(const ListIR& list_ir);
 
  private:
   std::string table_name_;
-  ListIR* select_;
 
   bool time_set_ = false;
   int64_t time_start_ns_;
   int64_t time_stop_ns_;
   // in conjunction with the relation, we can get the idx, names, and types of this column.
   std::vector<ColumnIR*> columns_;
+  std::vector<std::string> column_names_;
   bool columns_set_ = false;
 };
 
@@ -846,6 +922,7 @@ class MemorySinkIR : public OperatorIR {
   std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
     return std::unordered_map<std::string, IRNode*>();
   }
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 
  private:
   std::string name_;
@@ -880,6 +957,7 @@ class RangeIR : public OperatorIR {
   }
   // TODO(philkuz) implement
   Status InitImpl(const ArgMap& args) override;
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 
  private:
   // Start and Stop eventually evaluate to integers, but might be expressions.
@@ -914,6 +992,8 @@ class MetadataResolverIR : public OperatorIR {
   bool HasMetadataColumn(const std::string& type);
   std::map<std::string, MetadataProperty*> metadata_columns() const { return metadata_columns_; }
 
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+
  private:
   std::map<std::string, MetadataProperty*> metadata_columns_;
 };
@@ -937,6 +1017,8 @@ class MapIR : public OperatorIR {
 
   const ColExpressionVector& col_exprs() const { return col_exprs_; }
   Status ToProto(planpb::Operator*) const override;
+
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 
  private:
   Status SetupMapExpressions(LambdaIR* map_func);
@@ -968,6 +1050,8 @@ class BlockingAggIR : public OperatorIR {
   }
   Status InitImpl(const ArgMap& args) override;
 
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+
  private:
   Status SetupGroupBy(LambdaIR* by_lambda);
   Status SetupAggFunctions(LambdaIR* agg_lambda);
@@ -994,8 +1078,10 @@ class FilterIR : public OperatorIR {
   }
   Status InitImpl(const ArgMap& args) override;
 
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+
  private:
-  ExpressionIR* filter_expr_;
+  ExpressionIR* filter_expr_ = nullptr;
 };
 
 class LimitIR : public OperatorIR {
@@ -1018,6 +1104,8 @@ class LimitIR : public OperatorIR {
     return std::unordered_map<std::string, IRNode*>();
   }
   Status InitImpl(const ArgMap& args) override;
+
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
 
  private:
   int64_t limit_value_;

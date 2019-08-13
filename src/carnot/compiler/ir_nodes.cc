@@ -1,4 +1,5 @@
 #include "src/carnot/compiler/ir_nodes.h"
+#include "src/carnot/compiler/pattern_match.h"
 
 namespace pl {
 namespace carnot {
@@ -31,12 +32,37 @@ Status IR::DeleteNode(int64_t node) {
   return Status::OK();
 }
 
+Status IR::DeleteNodeAndChildren(int64_t node) {
+  if (dag_.ParentsOf(node).size() != 0) {
+    // TODO(philkuz) if this errors out unexpectedly, it's because you used a non-tree dag.
+    return Get(node)->CreateIRNodeError("$0 still is a child of $1.", Get(node)->DebugString(),
+                                        absl::StrJoin(dag_.ParentsOf(node), ","));
+  }
+  for (int64_t child_node : dag_.DependenciesOf(node)) {
+    PL_RETURN_IF_ERROR(DeleteEdge(node, child_node));
+    PL_RETURN_IF_ERROR(DeleteNodeAndChildren(child_node));
+  }
+  return DeleteNode(node);
+}
+
 std::string IR::DebugString() {
   std::string debug_string = dag().DebugString() + "\n";
   for (auto const& a : id_node_map_) {
     debug_string += a.second->DebugString() + "\n";
   }
   return debug_string;
+}
+
+StatusOr<IRNode*> IRNode::DeepCloneInto(IR* graph) const {
+  DCHECK(!graph->HasNode(id())) << absl::Substitute(
+      "Cannot clone $0. Target graph already has index $1.", DebugString(), id());
+  PL_ASSIGN_OR_RETURN(IRNode * other, DeepCloneIntoImpl(graph));
+  other->line_ = line_;
+  other->col_ = col_;
+  other->line_col_set_ = line_col_set_;
+  other->is_source_ = is_source_;
+  other->ast_node_ = ast_node_;
+  return other;
 }
 
 void IRNode::SetLineCol(int64_t line, int64_t col) {
@@ -168,9 +194,8 @@ Status MemorySinkIR::InitImpl(const ArgMap& args) {
     return name_node->CreateIRNodeError("Expected string. Got $0", name_node->type_string());
   }
   name_ = static_cast<StringIR*>(name_node)->str();
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, name_node));
   name_set_ = true;
-  return Status::OK();
+  return graph_ptr()->DeleteNode(name_node->id());
 }
 
 Status MemorySourceIR::InitImpl(const ArgMap& args) {
@@ -178,25 +203,38 @@ Status MemorySourceIR::InitImpl(const ArgMap& args) {
   DCHECK(args.find("select") != args.end());
 
   IRNode* table_node = args.find("table")->second;
+  IRNode* select_node = args.find("select")->second;
   if (table_node->type() != IRNodeType::kString) {
     return CreateIRNodeError("Expected table argument to be a string, not a $0",
                              table_node->type_string());
   }
   table_name_ = static_cast<StringIR*>(table_node)->str();
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, table_node));
+  PL_RETURN_IF_ERROR(graph_ptr()->DeleteNode(table_node->id()));
 
-  IRNode* select_node = args.find("select")->second;
   if (select_node == nullptr) {
-    select_ = nullptr;
     return Status::OK();
   }
   if (select_node->type() != IRNodeType::kList) {
     return CreateIRNodeError("Expected select argument to be a list, not a $0",
                              table_node->type_string());
   }
-  select_ = static_cast<ListIR*>(select_node);
+  PL_RETURN_IF_ERROR(graph_ptr()->DeleteNodeAndChildren(select_node->id()));
+  PL_ASSIGN_OR_RETURN(column_names_, ParseStringListIR(*static_cast<ListIR*>(select_node)));
+  return Status::OK();
+}
 
-  return graph_ptr()->AddEdge(this, select_);
+StatusOr<std::vector<std::string>> MemorySourceIR::ParseStringListIR(const ListIR& list_ir) {
+  std::vector<std::string> out_vector;
+  for (size_t idx = 0; idx < list_ir.children().size(); ++idx) {
+    IRNode* string_node = list_ir.children()[idx];
+    if (string_node->type() != IRNodeType::kString) {
+      return string_node->CreateIRNodeError(
+          "The elements of the select list must be Strings. Found a '$0'.",
+          string_node->type_string());
+    }
+    out_vector.push_back(static_cast<StringIR*>(string_node)->str());
+  }
+  return out_vector;
 }
 
 // TODO(philkuz) impl
@@ -232,6 +270,7 @@ Status RangeIR::Init(OperatorIR* parent_node, IRNode* start_repr, IRNode* stop_r
   PL_RETURN_IF_ERROR(AddParent(parent_node));
   return SetStartStop(start_repr, stop_repr);
 }
+
 Status RangeIR::SetStartStop(IRNode* start_repr, IRNode* stop_repr) {
   if (start_repr_ != nullptr) {
     PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(id(), start_repr_->id()));
@@ -415,7 +454,7 @@ Status LimitIR::InitImpl(const ArgMap& args) {
   }
 
   SetLimitValue(static_cast<IntIR*>(limit_node)->val());
-  return graph_ptr()->AddEdge(this, limit_node);
+  return graph_ptr()->DeleteNode(limit_node->id());
 }
 
 bool LimitIR::HasLogicalRepr() const { return true; }
@@ -502,7 +541,7 @@ Status BlockingAggIR::SetupGroupBy(LambdaIR* by_lambda) {
   for (ColumnIR* g : groups_) {
     PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(id(), g->id()));
   }
-  return Status::OK();
+  return graph_ptr()->DeleteNode(by_lambda->id());
 }
 
 Status BlockingAggIR::SetupAggFunctions(LambdaIR* agg_func) {
@@ -641,6 +680,9 @@ Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx,
 std::string ColumnIR::DebugString() const {
   return absl::Substitute("$0(id=$1, name=$2)", type_string(), id(), col_name());
 }
+std::string MetadataIR::DebugString() const {
+  return absl::Substitute("$0(id=$1, name=$2)", type_string(), id(), name());
+}
 
 void ColumnIR::SetContainingOperatoreratorParentIdx(int64_t container_op_parent_idx) {
   DCHECK_GE(container_op_parent_idx, 0);
@@ -655,6 +697,7 @@ StatusOr<OperatorIR*> ColumnIR::ReferencedOperator() const {
 }
 
 bool StringIR::HasLogicalRepr() const { return false; }
+
 Status StringIR::Init(std::string str, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   str_ = str;
@@ -662,6 +705,7 @@ Status StringIR::Init(std::string str, const pypa::AstPtr& ast_node) {
 }
 
 bool ListIR::HasLogicalRepr() const { return false; }
+
 Status ListIR::Init(const pypa::AstPtr& ast_node, std::vector<ExpressionIR*> children) {
   if (!children_.empty()) {
     return error::AlreadyExists("ListIR already has children and likely has been created already.");
@@ -729,6 +773,7 @@ std::unordered_map<std::string, FuncIR::Op> FuncIR::op_map{
     {"and", {FuncIR::Opcode::logand, "and", "logicalAnd"}},
     {"or", {FuncIR::Opcode::logor, "or", "logicalOr"}}};
 bool FuncIR::HasLogicalRepr() const { return false; }
+
 Status FuncIR::Init(Op op, std::string func_prefix, const std::vector<ExpressionIR*>& args,
                     bool compile_time, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
@@ -747,6 +792,7 @@ Status FuncIR::Init(Op op, std::string func_prefix, const std::vector<Expression
 
 /* Float IR */
 bool FloatIR::HasLogicalRepr() const { return false; }
+
 Status FloatIR::Init(double val, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   val_ = val;
@@ -754,6 +800,7 @@ Status FloatIR::Init(double val, const pypa::AstPtr& ast_node) {
 }
 /* Int IR */
 bool IntIR::HasLogicalRepr() const { return false; }
+
 Status IntIR::Init(int64_t val, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   val_ = val;
@@ -761,6 +808,7 @@ Status IntIR::Init(int64_t val, const pypa::AstPtr& ast_node) {
 }
 /* Bool IR */
 bool BoolIR::HasLogicalRepr() const { return false; }
+
 Status BoolIR::Init(bool val, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   val_ = val;
@@ -769,6 +817,7 @@ Status BoolIR::Init(bool val, const pypa::AstPtr& ast_node) {
 
 /* Time IR */
 bool TimeIR::HasLogicalRepr() const { return false; }
+
 Status TimeIR::Init(int64_t val, const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   val_ = val;
@@ -820,6 +869,216 @@ Status MetadataResolverIR::AddMetadata(MetadataProperty* md_property) {
 }
 
 Status MetadataResolverIR::InitImpl(const ArgMap&) { return Status::OK(); }
+
+// Clone Functions
+StatusOr<std::unique_ptr<IR>> IR::Clone() const {
+  auto new_ir = std::make_unique<IR>();
+  // Iterate through the children.
+  for (int64_t i : dag().TopologicalSort()) {
+    IRNode* node = Get(i);
+    if (new_ir->HasNode(i) && new_ir->Get(i)->type() == node->type()) {
+      continue;
+    }
+    PL_RETURN_IF_ERROR(node->DeepCloneInto(new_ir.get()));
+  }
+  // TODO(philkuz) check to make sure these are the same.
+  new_ir->dag_ = dag_;
+  return std::move(new_ir);
+}
+
+Status OperatorIR::CopyParents(OperatorIR* new_op) const {
+  DCHECK_EQ(new_op->parents_.size(), 0UL);
+  for (const auto& parent : parents()) {
+    IRNode* new_parent = new_op->graph_ptr()->Get(parent->id());
+    DCHECK(Match(new_parent, Operator()));
+    PL_RETURN_IF_ERROR(new_op->AddParent(static_cast<OperatorIR*>(new_parent)));
+  }
+  return Status::OK();
+}
+
+StatusOr<IRNode*> ColumnIR::DeepCloneInto(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(IRNode * node, IRNode::DeepCloneInto(graph));
+  DCHECK(Match(node, ColumnNode()));
+  ColumnIR* column = static_cast<ColumnIR*>(node);
+  column->col_name_ = col_name_;
+  column->col_name_set_ = col_name_set_;
+  column->col_idx_ = col_idx_;
+  column->evaluated_data_type_ = evaluated_data_type_;
+  column->is_data_type_evaluated_ = is_data_type_evaluated_;
+  column->container_op_parent_idx_ = container_op_parent_idx_;
+  column->container_op_parent_idx_set_ = container_op_parent_idx_set_;
+  return column;
+}
+
+StatusOr<IRNode*> ColumnIR::DeepCloneIntoImpl(IR* graph) const {
+  return graph->MakeNode<ColumnIR>(id());
+}
+
+StatusOr<IRNode*> StringIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(StringIR * string_ir, graph->MakeNode<StringIR>(id()));
+  string_ir->str_ = str_;
+  return string_ir;
+}
+
+StatusOr<IRNode*> ListIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(ListIR * list, graph->MakeNode<ListIR>(id()));
+  for (ExpressionIR* child : list->children()) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_child, child->DeepCloneInto(graph));
+    DCHECK(Match(new_child, Expression()));
+    list->children_.push_back(static_cast<ExpressionIR*>(new_child));
+  }
+  return list;
+}
+
+StatusOr<IRNode*> LambdaIR::DeepCloneIntoImpl(IR* graph) const {
+  CHECK(false) << "Lambda is a temporary node, how the hell are you copying it.";
+  PL_ASSIGN_OR_RETURN(LambdaIR * lambda, graph->MakeNode<LambdaIR>(id()));
+  return lambda;
+}
+
+StatusOr<IRNode*> FuncIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(FuncIR * func, graph->MakeNode<FuncIR>(id()));
+  func->func_prefix_ = func_prefix_;
+  func->op_ = op_;
+  func->func_name_ = func_name_;
+  func->args_types_ = args_types_;
+  func->func_id_ = func_id_;
+  func->evaluated_data_type_ = evaluated_data_type_;
+  func->is_data_type_evaluated_ = is_data_type_evaluated_;
+  func->is_compile_time_ = is_compile_time_;
+
+  for (ExpressionIR* arg : args_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_arg, arg->DeepCloneInto(graph));
+    DCHECK(Match(new_arg, Expression()));
+    func->args_.push_back(static_cast<ExpressionIR*>(new_arg));
+  }
+  return func;
+}
+
+StatusOr<IRNode*> FloatIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(FloatIR * float_ir, graph->MakeNode<FloatIR>(id()));
+  float_ir->val_ = val_;
+  return float_ir;
+}
+
+StatusOr<IRNode*> IntIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(IntIR * int_ir, graph->MakeNode<IntIR>(id()));
+  int_ir->val_ = val_;
+  return int_ir;
+}
+
+StatusOr<IRNode*> BoolIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(BoolIR * bool_ir, graph->MakeNode<BoolIR>(id()));
+  bool_ir->val_ = val_;
+  return bool_ir;
+}
+
+StatusOr<IRNode*> TimeIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(TimeIR * time_ir, graph->MakeNode<TimeIR>(id()));
+  time_ir->val_ = val_;
+  return time_ir;
+}
+
+StatusOr<IRNode*> MetadataIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(MetadataIR * metadata, graph->MakeNode<MetadataIR>(id()));
+  metadata->metadata_name_ = metadata_name_;
+  return metadata;
+}
+
+StatusOr<IRNode*> MetadataLiteralIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(MetadataLiteralIR * metadata, graph->MakeNode<MetadataLiteralIR>(id()));
+  PL_ASSIGN_OR_RETURN(IRNode * new_literal, literal_->DeepCloneInto(graph));
+  DCHECK(Match(new_literal, DataNode())) << new_literal->DebugString();
+  metadata->literal_ = static_cast<DataIR*>(new_literal);
+  metadata->literal_type_ = literal_type_;
+  return metadata;
+}
+
+StatusOr<IRNode*> MemorySourceIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(MemorySourceIR * mem, graph->MakeNode<MemorySourceIR>(id()));
+  mem->table_name_ = table_name_;
+  mem->time_start_ns_ = time_start_ns_;
+  mem->time_stop_ns_ = time_stop_ns_;
+  mem->column_names_ = column_names_;
+  mem->columns_set_ = columns_set_;
+
+  for (const auto& column : columns_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_column, column->DeepCloneInto(graph));
+    DCHECK(Match(new_column, ColumnNode()));
+    mem->columns_.push_back(static_cast<ColumnIR*>(new_column));
+  }
+  return mem;
+}
+
+StatusOr<IRNode*> MemorySinkIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(MemorySinkIR * mem, graph->MakeNode<MemorySinkIR>(id()));
+  mem->name_ = name_;
+  mem->name_set_ = name_set_;
+  return mem;
+}
+
+StatusOr<IRNode*> RangeIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(RangeIR * range, graph->MakeNode<RangeIR>(id()));
+  PL_ASSIGN_OR_RETURN(range->start_repr_, start_repr_->DeepCloneInto(graph));
+  PL_ASSIGN_OR_RETURN(range->stop_repr_, stop_repr_->DeepCloneInto(graph));
+  return range;
+}
+
+StatusOr<IRNode*> MetadataResolverIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(MetadataResolverIR * metadata_resolver,
+                      graph->MakeNode<MetadataResolverIR>(id()));
+  metadata_resolver->metadata_columns_ = metadata_columns_;
+  return metadata_resolver;
+}
+
+StatusOr<IRNode*> OperatorIR::DeepCloneInto(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(IRNode * node, IRNode::DeepCloneInto(graph));
+  DCHECK(node->IsOperator());
+  OperatorIR* new_op = static_cast<OperatorIR*>(node);
+  PL_RETURN_IF_ERROR(CopyParents(new_op));
+  return new_op;
+}
+
+StatusOr<IRNode*> MapIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(MapIR * map, graph->MakeNode<MapIR>(id()));
+  for (const ColumnExpression& col_expr : col_exprs_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr.node->DeepCloneInto(graph));
+    DCHECK(Match(new_node, Expression()));
+    map->col_exprs_.push_back({col_expr.name, static_cast<ExpressionIR*>(new_node)});
+  }
+  return map;
+}
+
+StatusOr<IRNode*> BlockingAggIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(BlockingAggIR * blocking_agg, graph->MakeNode<BlockingAggIR>(id()));
+  for (const ColumnExpression& col_expr : aggregate_expressions_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr.node->DeepCloneInto(graph));
+    DCHECK(Match(new_node, Expression()));
+    blocking_agg->aggregate_expressions_.push_back(
+        {col_expr.name, static_cast<ExpressionIR*>(new_node)});
+  }
+  for (const ColumnIR* column : groups_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_column, column->DeepCloneInto(graph));
+    DCHECK(Match(new_column, ColumnNode()));
+    blocking_agg->groups_.push_back(static_cast<ColumnIR*>(new_column));
+  }
+  return blocking_agg;
+}
+
+StatusOr<IRNode*> FilterIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(FilterIR * filter, graph->MakeNode<FilterIR>(id()));
+  PL_ASSIGN_OR_RETURN(IRNode * new_node, filter_expr_->DeepCloneInto(graph));
+  DCHECK(Match(new_node, Expression()));
+  filter->filter_expr_ = static_cast<ExpressionIR*>(new_node);
+  return filter;
+}
+
+StatusOr<IRNode*> LimitIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(LimitIR * limit, graph->MakeNode<LimitIR>(id()));
+  limit->limit_value_ = limit_value_;
+  limit->limit_value_set_ = limit_value_set_;
+  return limit;
+}
 
 }  // namespace compiler
 }  // namespace carnot
