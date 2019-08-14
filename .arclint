@@ -130,6 +130,7 @@
         "(BUILD.bazel)",
         "(chef/.*\\.json$)",
         "(demos/applications/sockshop/monitoring_manifests/grafana/.*\\.json$)",
+        "(Gopkg\\.lock)",
         "(yarn\\.lock)",
         "(__snapshots__/.*)",
         "(Makefile)",
