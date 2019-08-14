@@ -1048,6 +1048,8 @@ StatusOr<IRNode*> OperatorIR::DeepCloneInto(IR* graph) const {
   DCHECK(node->IsOperator());
   OperatorIR* new_op = static_cast<OperatorIR*>(node);
   PL_RETURN_IF_ERROR(CopyParents(new_op));
+  new_op->relation_ = relation_;
+  new_op->relation_init_ = relation_init_;
   return new_op;
 }
 

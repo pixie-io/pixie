@@ -523,6 +523,18 @@ class CloneTests : public OperatorTests {
       EXPECT_TRUE(false) << absl::Substitute("Couldn't check operator cloning for $0. $1",
                                              new_ir->type_string(), err_string);
     }
+
+    // Check relation status.
+    EXPECT_EQ(new_ir->IsRelationInit(), old_ir->IsRelationInit());
+    EXPECT_EQ(new_ir->relation().col_names(), old_ir->relation().col_names());
+    EXPECT_EQ(new_ir->relation().col_types(), old_ir->relation().col_types());
+
+    // Check parents.
+    ASSERT_EQ(new_ir->parents().size(), old_ir->parents().size());
+    for (size_t parent_idx = 0; parent_idx < new_ir->parents().size(); ++parent_idx) {
+      EXPECT_EQ(new_ir->parents()[parent_idx]->DebugString(),
+                old_ir->parents()[parent_idx]->DebugString());
+    }
   }
   void CompareClonedNodes(IRNode* new_ir, IRNode* old_ir, const std::string& err_string) {
     EXPECT_NE(old_ir, new_ir) << err_string;
