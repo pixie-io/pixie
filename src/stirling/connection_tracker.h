@@ -44,6 +44,12 @@ struct ReqRespPair {
   TMessageType resp_message;
 };
 
+struct IPEndpoint {
+  std::string ip;
+  int port;
+};
+StatusOr<IPEndpoint> ParseSockAddr(const conn_info_t& conn_info);
+
 /**
  * DataStream is an object that contains the captured data of either send or recv traffic
  * on a connection.
@@ -148,7 +154,7 @@ class DataStream {
   //
   // Additionally, ConnectionTracker must not switch type during runtime, which indicates serious
   // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
-  std::variant<std::monostate, std::deque<HTTPMessage>, std::deque<http2::Frame>,
+  std::variant<std::monostate, std::deque<http::HTTPMessage>, std::deque<http2::Frame>,
                std::deque<mysql::Packet>>
       messages_;
 

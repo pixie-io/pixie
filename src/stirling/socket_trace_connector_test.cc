@@ -693,8 +693,8 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   ASSERT_NE(nullptr, tracker);
 
   // We should find some raw events in send_data.
-  EXPECT_TRUE(tracker->recv_data().Empty<HTTPMessage>());
-  EXPECT_FALSE(tracker->send_data().Empty<HTTPMessage>());
+  EXPECT_TRUE(tracker->recv_data().Empty<http::HTTPMessage>());
+  EXPECT_FALSE(tracker->send_data().Empty<http::HTTPMessage>());
 
   sleep(2);
 
@@ -709,8 +709,8 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   EXPECT_EQ(0, record_batch[0]->Size());
 
   // Events should have been flushed.
-  EXPECT_TRUE(tracker->recv_data().Empty<HTTPMessage>());
-  EXPECT_TRUE(tracker->send_data().Empty<HTTPMessage>());
+  EXPECT_TRUE(tracker->recv_data().Empty<http::HTTPMessage>());
+  EXPECT_TRUE(tracker->send_data().Empty<http::HTTPMessage>());
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {

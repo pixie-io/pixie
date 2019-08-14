@@ -158,31 +158,31 @@ TEST_F(ConnectionTrackerTest, LostEvent) {
   std::unique_ptr<SocketDataEvent> req4 = InitSendEvent(kHTTPReq0);
   std::unique_ptr<SocketDataEvent> req5 = InitSendEvent(kHTTPReq0);
 
-  std::deque<HTTPMessage> requests;
+  std::deque<http::HTTPMessage> requests;
 
   // Start off with no lost events.
   stream.AddEvent(std::move(req0));
-  requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
+  requests = stream.ExtractMessages<http::HTTPMessage>(MessageType::kRequest);
   EXPECT_EQ(requests.size(), 1ULL);
   EXPECT_FALSE(stream.Stuck());
 
   // Now add some lost events - should get skipped over.
   PL_UNUSED(req1);  // Lost event.
   stream.AddEvent(std::move(req2));
-  requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
+  requests = stream.ExtractMessages<http::HTTPMessage>(MessageType::kRequest);
   EXPECT_EQ(requests.size(), 2ULL);
   EXPECT_FALSE(stream.Stuck());
 
   // Some more requests, and another lost request (this time undetectable).
   stream.AddEvent(std::move(req3));
   PL_UNUSED(req4);
-  requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
+  requests = stream.ExtractMessages<http::HTTPMessage>(MessageType::kRequest);
   EXPECT_EQ(requests.size(), 3ULL);
   EXPECT_FALSE(stream.Stuck());
 
   // Now the lost event should be detected.
   stream.AddEvent(std::move(req5));
-  requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
+  requests = stream.ExtractMessages<http::HTTPMessage>(MessageType::kRequest);
   EXPECT_EQ(requests.size(), 4ULL);
   EXPECT_FALSE(stream.Stuck());
 }
@@ -208,8 +208,8 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
   tracker.AddDataEvent(std::move(resp2));
   tracker.AddConnCloseEvent(close_conn);
 
-  std::vector<ReqRespPair<HTTPMessage>> req_resp_pairs;
-  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<HTTPMessage>>();
+  std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
+  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
 
   ASSERT_EQ(3, req_resp_pairs.size());
 
@@ -244,8 +244,8 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingPipelined) {
   tracker.AddDataEvent(std::move(resp2));
   tracker.AddConnCloseEvent(close_conn);
 
-  std::vector<ReqRespPair<HTTPMessage>> req_resp_pairs;
-  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<HTTPMessage>>();
+  std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
+  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
 
   ASSERT_EQ(3, req_resp_pairs.size());
 
@@ -280,8 +280,8 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
   tracker.AddDataEvent(std::move(resp2));
   tracker.AddConnCloseEvent(close_conn);
 
-  std::vector<ReqRespPair<HTTPMessage>> req_resp_pairs;
-  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<HTTPMessage>>();
+  std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
+  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
 
   ASSERT_EQ(3, req_resp_pairs.size());
 
@@ -316,9 +316,9 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
   tracker.AddDataEvent(std::move(resp2));
   tracker.AddConnCloseEvent(close_conn);
 
-  std::vector<ReqRespPair<HTTPMessage>> req_resp_pairs;
+  std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
 
-  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<HTTPMessage>>();
+  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
 
   ASSERT_EQ(2, req_resp_pairs.size());
 
@@ -347,7 +347,7 @@ TEST_F(ConnectionTrackerTest, stats_counter) {
 
 TEST(DataStreamTest, CannotSwitchType) {
   DataStream stream;
-  stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
+  stream.ExtractMessages<http::HTTPMessage>(MessageType::kRequest);
   EXPECT_DEATH(stream.ExtractMessages<http2::Frame>(MessageType::kRequest),
                "ConnectionTracker cannot change the type it holds during runtime");
 }

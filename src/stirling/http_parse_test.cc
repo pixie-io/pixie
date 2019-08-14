@@ -9,6 +9,7 @@
 
 namespace pl {
 namespace stirling {
+namespace http {
 
 using ::testing::Contains;
 using ::testing::ElementsAre;
@@ -19,7 +20,7 @@ using ::testing::Pair;
 
 TEST(PreProcessRecordTest, GzipCompressedContentIsDecompressed) {
   HTTPMessage message;
-  message.http_headers[http_headers::kContentEncoding] = "gzip";
+  message.http_headers[kContentEncoding] = "gzip";
   const uint8_t compressed_bytes[] = {0x1f, 0x8b, 0x08, 0x00, 0x37, 0xf0, 0xbf, 0x5c, 0x00,
                                       0x03, 0x0b, 0xc9, 0xc8, 0x2c, 0x56, 0x00, 0xa2, 0x44,
                                       0x85, 0x92, 0xd4, 0xe2, 0x12, 0x2e, 0x00, 0x8c, 0x2d,
@@ -35,7 +36,7 @@ TEST(PreProcessRecordTest, ContentHeaderIsNotAdded) {
   message.http_msg_body = "test";
   PreProcessMessage(&message);
   EXPECT_EQ("test", message.http_msg_body);
-  EXPECT_THAT(message.http_headers, Not(Contains(Key(http_headers::kContentEncoding))));
+  EXPECT_THAT(message.http_headers, Not(Contains(Key(kContentEncoding))));
 }
 
 TEST(ParseHTTPHeaderFiltersAndMatchTest, FiltersAreAsExpectedAndMatchesWork) {
@@ -707,5 +708,6 @@ INSTANTIATE_TEST_CASE_P(Stressor, HTTPParserStressTest,
                         ::testing::Values(TestParam{37337, 50}, TestParam{98237, 50}));
 // TODO(oazizi/yzhao): TestParam{37337, 100} fails, so there is a bug somewhere. Fix it.
 
+}  // namespace http
 }  // namespace stirling
 }  // namespace pl

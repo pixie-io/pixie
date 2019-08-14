@@ -17,7 +17,7 @@
 
 namespace pl {
 namespace stirling {
-namespace http_headers {
+namespace http {
 
 // TODO(yzhao): HTTP/{1.x,2} headers are case insensitive. Our code does not work that way.
 // We'll need to update all code paths to match that.
@@ -25,8 +25,6 @@ inline constexpr char kContentEncoding[] = "Content-Encoding";
 inline constexpr char kContentLength[] = "Content-Length";
 inline constexpr char kContentType[] = "Content-Type";
 inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
-
-}  // namespace http_headers
 
 // TODO(yzhao): The repetitions of information among HTTPMessage + ConnectionTraceRecord,
 // DataElementsIndexes, and kTables should be eliminated. It might make sense to use proto file
@@ -51,12 +49,6 @@ struct HTTPMessage {
 };
 
 void PreProcessMessage(HTTPMessage* message);
-
-struct IPEndpoint {
-  std::string ip;
-  int port;
-};
-StatusOr<IPEndpoint> ParseSockAddr(const conn_info_t& conn_info);
 
 // For each HTTP message, inclusions are applied first; then exclusions, which can overturn the
 // selection done by the former. An empty inclusions results into any HTTP message being selected,
@@ -134,6 +126,8 @@ struct PicoHTTPParserWrapper {
   std::string_view unparsed_data;
 };
 
+}  // namespace http
+
 /**
  * @brief Parses the input string as a sequence of HTTP responses, writes the messages in result.
  *
@@ -142,10 +136,11 @@ struct PicoHTTPParserWrapper {
  */
 template <>
 ParseResult<size_t> Parse(MessageType type, std::string_view buf,
-                          std::deque<HTTPMessage>* messages);
+                          std::deque<http::HTTPMessage>* messages);
 
 template <>
-size_t FindMessageBoundary<HTTPMessage>(MessageType type, std::string_view buf, size_t start_pos);
+size_t FindMessageBoundary<http::HTTPMessage>(MessageType type, std::string_view buf,
+                                              size_t start_pos);
 
 }  // namespace stirling
 }  // namespace pl

@@ -1,7 +1,5 @@
 #include "src/stirling/http_parse.h"
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <picohttpparser.h>
 
 #include <algorithm>
@@ -13,9 +11,10 @@
 
 namespace pl {
 namespace stirling {
+namespace http {
 
 void PreProcessMessage(HTTPMessage* message) {
-  auto content_encoding_iter = message->http_headers.find(http_headers::kContentEncoding);
+  auto content_encoding_iter = message->http_headers.find(kContentEncoding);
   // Replace body with decompressed version, if required.
   if (content_encoding_iter != message->http_headers.end() &&
       content_encoding_iter->second == "gzip") {
@@ -44,38 +43,6 @@ std::map<std::string, std::string> GetHttpHeadersMap(const phr_header* headers,
 }
 
 }  // namespace
-
-// Parses an IP:port pair from conn_info.
-// Returns an error if an unexpected sockaddr family is provided.
-// Currently this function understands IPV4 and IPV6 sockaddr families.
-StatusOr<IPEndpoint> ParseSockAddr(const conn_info_t& conn_info) {
-  const auto* sa = reinterpret_cast<const struct sockaddr*>(&conn_info.addr);
-
-  char addr[INET6_ADDRSTRLEN] = "";
-  int port;
-
-  switch (sa->sa_family) {
-    case AF_INET: {
-      const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
-      port = ntohs(sa_in->sin_port);
-      if (inet_ntop(AF_INET, &sa_in->sin_addr, addr, INET_ADDRSTRLEN) == nullptr) {
-        return error::InvalidArgument("Could not parse sockaddr (AF_INET)");
-      }
-    } break;
-    case AF_INET6: {
-      const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);
-      port = ntohs(sa_in6->sin6_port);
-      if (inet_ntop(AF_INET6, &sa_in6->sin6_addr, addr, INET6_ADDRSTRLEN) == nullptr) {
-        return error::InvalidArgument("Could not parse sockaddr (AF_INET6)");
-      }
-    } break;
-    default:
-      return error::InvalidArgument(
-          absl::StrCat("Ignoring unhandled sockaddr family: ", sa->sa_family));
-  }
-
-  return IPEndpoint{std::string(addr), port};
-}
 
 HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters) {
   HTTPHeaderFilter result;
@@ -236,7 +203,7 @@ ParseState PicoHTTPParserWrapper::WriteBody(HTTPMessage* result) {
   //  body.
 
   // Case 1: Content-Length
-  const auto content_length_iter = result->http_headers.find(http_headers::kContentLength);
+  const auto content_length_iter = result->http_headers.find(kContentLength);
   if (content_length_iter != result->http_headers.end()) {
     const int len = std::stoi(content_length_iter->second);
     if (len < 0) {
@@ -258,7 +225,7 @@ ParseState PicoHTTPParserWrapper::WriteBody(HTTPMessage* result) {
   }
 
   // Case 2: Chunked transfer.
-  const auto transfer_encoding_iter = result->http_headers.find(http_headers::kTransferEncoding);
+  const auto transfer_encoding_iter = result->http_headers.find(kTransferEncoding);
   if (transfer_encoding_iter != result->http_headers.end() &&
       transfer_encoding_iter->second == "chunked") {
     // TODO(yzhao): Change to set default value in appending record batch instead of data for
@@ -300,10 +267,12 @@ ParseState PicoHTTPParserWrapper::WriteBody(HTTPMessage* result) {
   return ParseState::kInvalid;
 }
 
+}  // namespace http
+
 template <>
 ParseResult<size_t> Parse(MessageType type, std::string_view buf,
-                          std::deque<HTTPMessage>* messages) {
-  PicoHTTPParserWrapper pico;
+                          std::deque<http::HTTPMessage>* messages) {
+  http::PicoHTTPParserWrapper pico;
   std::vector<size_t> start_position;
   const size_t buf_size = buf.size();
   ParseState s = ParseState::kSuccess;
@@ -315,7 +284,7 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
       break;
     }
 
-    HTTPMessage message;
+    http::HTTPMessage message;
     s = pico.Write(type, &message);
     if (s != ParseState::kSuccess) {
       break;
@@ -332,8 +301,8 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
 }
 
 template <>
-size_t FindMessageBoundary<HTTPMessage>(MessageType /*type*/, std::string_view /*buf*/,
-                                        size_t /*start_pos*/) {
+size_t FindMessageBoundary<http::HTTPMessage>(MessageType /*type*/, std::string_view /*buf*/,
+                                              size_t /*start_pos*/) {
   return 0;
 }
 

@@ -149,7 +149,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   void TestOnlyConfigure(uint32_t protocol, uint64_t config_mask) {
     config_mask_[protocol] = config_mask;
   }
-  static void TestOnlySetHTTPResponseHeaderFilter(HTTPHeaderFilter filter) {
+  static void TestOnlySetHTTPResponseHeaderFilter(http::HTTPHeaderFilter filter) {
     http_response_header_filter_ = std::move(filter);
   }
 
@@ -221,7 +221,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   };
   static constexpr auto kPerfBufferSpecs = ConstVectorView<PerfBufferSpec>(kPerfBufferSpecsArray);
 
-  inline static HTTPHeaderFilter http_response_header_filter_;
+  inline static http::HTTPHeaderFilter http_response_header_filter_;
   // TODO(yzhao): We will remove this once finalized the mechanism of lazy protobuf parse.
   inline static ::pl::grpc::ServiceDescriptorDatabase grpc_desc_db_{
       demos::hipster_shop::GetFileDescriptorSet()};
@@ -234,7 +234,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
             kDefaultPushPeriod),
         BCCWrapper(kBCCScript) {
     // TODO(yzhao): Is there a better place/time to grab the flags?
-    http_response_header_filter_ = ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
+    http_response_header_filter_ = http::ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
     config_mask_.resize(kNumProtocols);
   }
 
@@ -258,7 +258,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
                             DataTable* data_table);
 
   // HTTP-specific helper function.
-  static bool SelectMessage(const ReqRespPair<HTTPMessage>& record);
+  static bool SelectMessage(const ReqRespPair<http::HTTPMessage>& record);
 
   // TODO(oazizi/yzhao): Change to use std::unique_ptr.
 

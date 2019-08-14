@@ -1,3 +1,8 @@
+#include "src/stirling/connection_tracker.h"
+
+#include <arpa/inet.h>
+#include <netinet/in.h>
+
 #include <experimental/filesystem>
 
 #include <algorithm>
@@ -5,7 +10,6 @@
 #include <vector>
 
 #include "src/common/system/system.h"
-#include "src/stirling/connection_tracker.h"
 #include "src/stirling/http2.h"
 #include "src/stirling/mysql/mysql.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
@@ -21,6 +25,43 @@ void ConnectionTracker::InitState<mysql::Packet>() {
     state_ = std::make_unique<std::map<int, mysql::ReqRespEvent>>();
   }
 }
+
+//--------------------------------------------------------------
+// Utility Functions
+//--------------------------------------------------------------
+
+// Parses an IP:port pair from conn_info.
+// Returns an error if an unexpected sockaddr family is provided.
+// Currently this function understands IPV4 and IPV6 sockaddr families.
+StatusOr<IPEndpoint> ParseSockAddr(const conn_info_t& conn_info) {
+  const auto* sa = reinterpret_cast<const struct sockaddr*>(&conn_info.addr);
+
+  char addr[INET6_ADDRSTRLEN] = "";
+  int port;
+
+  switch (sa->sa_family) {
+    case AF_INET: {
+      const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
+      port = ntohs(sa_in->sin_port);
+      if (inet_ntop(AF_INET, &sa_in->sin_addr, addr, INET_ADDRSTRLEN) == nullptr) {
+        return error::InvalidArgument("Could not parse sockaddr (AF_INET)");
+      }
+    } break;
+    case AF_INET6: {
+      const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);
+      port = ntohs(sa_in6->sin6_port);
+      if (inet_ntop(AF_INET6, &sa_in6->sin6_addr, addr, INET6_ADDRSTRLEN) == nullptr) {
+        return error::InvalidArgument("Could not parse sockaddr (AF_INET6)");
+      }
+    } break;
+    default:
+      return error::InvalidArgument(
+          absl::StrCat("Ignoring unhandled sockaddr family: ", sa->sa_family));
+  }
+
+  return IPEndpoint{std::string(addr), port};
+}
+
 //--------------------------------------------------------------
 // ConnectionTracker
 //--------------------------------------------------------------
@@ -101,29 +142,29 @@ Status ConnectionTracker::ExtractMessages() {
 }
 
 template <>
-std::vector<ReqRespPair<HTTPMessage>> ConnectionTracker::ProcessMessages() {
-  std::vector<ReqRespPair<HTTPMessage>> trace_records;
+std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessages() {
+  std::vector<ReqRespPair<http::HTTPMessage>> trace_records;
 
-  Status s = ExtractMessages<HTTPMessage>();
+  Status s = ExtractMessages<http::HTTPMessage>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
     return trace_records;
   }
 
-  auto& req_messages = req_data()->Messages<HTTPMessage>();
-  auto& resp_messages = resp_data()->Messages<HTTPMessage>();
+  auto& req_messages = req_data()->Messages<http::HTTPMessage>();
+  auto& resp_messages = resp_data()->Messages<http::HTTPMessage>();
 
   // Match request response pairs.
   for (auto req_iter = req_messages.begin(), resp_iter = resp_messages.begin();
        req_iter != req_messages.end() && resp_iter != resp_messages.end();) {
-    HTTPMessage& req = *req_iter;
-    HTTPMessage& resp = *resp_iter;
+    http::HTTPMessage& req = *req_iter;
+    http::HTTPMessage& resp = *resp_iter;
 
     if (resp.timestamp_ns < req.timestamp_ns) {
       // Oldest message is a response.
       // This means the corresponding request was not traced.
       // Push without request.
-      ReqRespPair<HTTPMessage> record{HTTPMessage(), std::move(resp)};
+      ReqRespPair<http::HTTPMessage> record{http::HTTPMessage(), std::move(resp)};
       resp_messages.pop_front();
       trace_records.push_back(std::move(record));
       ++resp_iter;
@@ -133,7 +174,7 @@ std::vector<ReqRespPair<HTTPMessage>> ConnectionTracker::ProcessMessages() {
       //  2) No missing messages.
       // With missing messages, there are no guarantees.
       // With no missing messages and pipelining, it's even more complicated.
-      ReqRespPair<HTTPMessage> record{std::move(req), std::move(resp)};
+      ReqRespPair<http::HTTPMessage> record{std::move(req), std::move(resp)};
       req_messages.pop_front();
       resp_messages.pop_front();
       trace_records.push_back(std::move(record));
@@ -144,8 +185,8 @@ std::vector<ReqRespPair<HTTPMessage>> ConnectionTracker::ProcessMessages() {
 
   // Any leftover responses must have lost their requests.
   for (auto resp_iter = resp_messages.begin(); resp_iter != resp_messages.end(); ++resp_iter) {
-    HTTPMessage& resp = *resp_iter;
-    ReqRespPair<HTTPMessage> record{HTTPMessage(), std::move(resp)};
+    http::HTTPMessage& resp = *resp_iter;
+    ReqRespPair<http::HTTPMessage> record{http::HTTPMessage(), std::move(resp)};
     trace_records.push_back(std::move(record));
   }
   resp_messages.clear();
@@ -462,7 +503,7 @@ bool DataStream::Empty() const {
 }
 
 template <>
-bool DataStream::AttemptSyncToMessageBoundary<HTTPMessage>() {
+bool DataStream::AttemptSyncToMessageBoundary<http::HTTPMessage>() {
   // Don't call this unless the stream is known to be stuck,
   // otherwise it may discard messages.
   CHECK_NE(stuck_count_, 0);
@@ -536,7 +577,7 @@ bool DataStream::AttemptSyncToMessageBoundary<mysql::Packet>() {
   return false;
 }
 
-template bool DataStream::Empty<HTTPMessage>() const;
+template bool DataStream::Empty<http::HTTPMessage>() const;
 template bool DataStream::Empty<http2::Frame>() const;
 template bool DataStream::Empty<mysql::Packet>() const;
 

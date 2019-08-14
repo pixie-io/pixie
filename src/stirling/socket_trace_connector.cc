@@ -80,7 +80,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_
 
   switch (table_num) {
     case kHTTPTableNum:
-      TransferStreams<ReqRespPair<HTTPMessage>>(kProtocolHTTP, data_table);
+      TransferStreams<ReqRespPair<http::HTTPMessage>>(kProtocolHTTP, data_table);
       TransferStreams<ReqRespPair<GRPCMessage>>(kProtocolHTTP2, data_table);
 
       // Also call transfer streams on kProtocolUnknown to clean up any closed connections.
@@ -328,8 +328,8 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* 
 
 namespace {
 
-HTTPContentType DetectContentType(const HTTPMessage& message) {
-  auto content_type_iter = message.http_headers.find(http_headers::kContentType);
+HTTPContentType DetectContentType(const http::HTTPMessage& message) {
+  auto content_type_iter = message.http_headers.find(http::kContentType);
   if (content_type_iter == message.http_headers.end()) {
     return HTTPContentType::kUnknown;
   }
@@ -341,11 +341,11 @@ HTTPContentType DetectContentType(const HTTPMessage& message) {
 
 }  // namespace
 
-bool SocketTraceConnector::SelectMessage(const ReqRespPair<HTTPMessage>& record) {
-  const HTTPMessage& message = record.resp_message;
+bool SocketTraceConnector::SelectMessage(const ReqRespPair<http::HTTPMessage>& record) {
+  const http::HTTPMessage& message = record.resp_message;
 
   // Rule: Exclude anything that doesn't specify its Content-Type.
-  auto content_type_iter = message.http_headers.find(http_headers::kContentType);
+  auto content_type_iter = message.http_headers.find(http::kContentType);
   if (content_type_iter == message.http_headers.end()) {
     return false;
   }
@@ -364,7 +364,8 @@ bool SocketTraceConnector::SelectMessage(const ReqRespPair<HTTPMessage>& record)
 
 template <>
 void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
-                                         ReqRespPair<HTTPMessage> record, DataTable* data_table) {
+                                         ReqRespPair<http::HTTPMessage> record,
+                                         DataTable* data_table) {
   // Only allow certain records to be transferred upstream.
   if (!SelectMessage(record)) {
     return;
@@ -376,8 +377,8 @@ void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
 
   CHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
-  HTTPMessage& req_message = record.req_message;
-  HTTPMessage& resp_message = record.resp_message;
+  http::HTTPMessage& req_message = record.req_message;
+  http::HTTPMessage& resp_message = record.resp_message;
 
   // Check for positive latencies.
   DCHECK_GE(resp_message.timestamp_ns, req_message.timestamp_ns);
