@@ -62,6 +62,38 @@ void DissectStringParam(const std::string_view msg, int* param_offset, ParamPack
   *param_offset += param_length;
 }
 
+void DissectIntParam(const std::string_view msg, const char prefix, int* param_offset,
+                     ParamPacket* packet) {
+  StmtExecuteParamType type;
+  size_t length;
+  switch (prefix) {
+    case kTinyPrefix:
+      type = StmtExecuteParamType::kTiny;
+      length = 1;
+      break;
+    case kShortPrefix:
+      type = StmtExecuteParamType::kShort;
+      length = 2;
+      break;
+    case kLongPrefix:
+      type = StmtExecuteParamType::kLong;
+      length = 4;
+      break;
+    case kLongLongPrefix:
+      type = StmtExecuteParamType::kLongLong;
+      length = 8;
+      break;
+    default:
+      LOG(WARNING) << "DissectIntParam: Unknown param type";
+      type = StmtExecuteParamType::kUnknown;
+      length = 1;
+      break;
+  }
+  packet->value = std::to_string(utils::LEStrToInt(msg.substr(*param_offset, length)));
+  packet->type = type;
+  *param_offset += length;
+}
+
 // TODO(chengruizhe): Currently dissecting unknown param as if it's a string. Make it more robust.
 void DissectUnknownParam(const std::string_view msg, int* param_offset, ParamPacket* packet) {
   DissectStringParam(msg, param_offset, packet);
@@ -252,6 +284,12 @@ StatusOr<std::unique_ptr<StmtExecuteRequest>> HandleStmtExecuteRequest(
         case kVarStringPrefix:
         case kStringPrefix:
           DissectStringParam(req_packet.msg, &param_offset, &param);
+          break;
+        case kTinyPrefix:
+        case kShortPrefix:
+        case kLongPrefix:
+        case kLongLongPrefix:
+          DissectIntParam(req_packet.msg, param_type, &param_offset, &param);
           break;
         default:
           DissectUnknownParam(req_packet.msg, &param_offset, &param);

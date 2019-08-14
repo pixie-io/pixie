@@ -35,6 +35,17 @@ inline constexpr int kStmtIDBytes = 4;
 inline constexpr int kFlagsBytes = 1;
 inline constexpr int kIterationCountBytes = 4;
 
+// Parameter Prefix
+// https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnType
+inline constexpr char kTinyPrefix = '\x01';
+inline constexpr char kShortPrefix = '\x02';
+inline constexpr char kLongPrefix = '\x03';
+inline constexpr char kFloatPrefix = '\x04';
+inline constexpr char kDoublePrefix = '\x05';
+inline constexpr char kTimeStampPrefix = '\x07';
+inline constexpr char kLongLongPrefix = '\x08';
+inline constexpr char kDatePrefix = '\x0a';
+inline constexpr char kDateTimePrefix = '\x0c';
 inline constexpr char kNewDecimalPrefix = '\xf6';
 inline constexpr char kBlobPrefix = '\xfc';
 inline constexpr char kVarStringPrefix = '\xfd';
@@ -100,7 +111,9 @@ enum class StmtExecuteParamType {
   kUnknown = 0,
   kString,
   kTiny,
+  kShort,
   kLong,
+  kLongLong,
   kFloat,
   kDouble,
   kNull,
