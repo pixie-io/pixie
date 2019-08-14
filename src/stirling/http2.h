@@ -121,11 +121,6 @@ void StitchGRPCStreamFrames(const std::deque<Frame>& frames, Inflater* inflater,
                             std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs);
 
 /**
- * @brief Required for fitting in the SocketTraceConnector::ConsumeMessage() template.
- */
-void PreProcessMessage(GRPCMessage* message);
-
-/**
  * @brief A convenience holder of gRPC req & resp.
  */
 // TODO(yzhao): Investigate converging with ReqRespPair in socket_trace_connector.h.
