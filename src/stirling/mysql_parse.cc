@@ -30,34 +30,6 @@ MySQLEventType infer_mysql_event_type(std::string_view buf) {
 }
 }  // namespace
 
-// TODO(chengruizhe): Could be templatized with HTTP Parser
-ParseResult<size_t> Parse(MessageType type, std::string_view buf, std::deque<Packet>* messages) {
-  MySQLParser parser;
-  std::vector<size_t> start_position;
-  const size_t buf_size = buf.size();
-  ParseState s = ParseState::kSuccess;
-  size_t bytes_prcocessed = 0;
-
-  while (!buf.empty()) {
-    s = parser.Parse(type, buf);
-    if (s != ParseState::kSuccess) {
-      break;
-    }
-
-    Packet message;
-    s = parser.Write(type, &message);
-    if (s != ParseState::kSuccess) {
-      break;
-    }
-    start_position.push_back(bytes_prcocessed);
-    messages->push_back(std::move(message));
-    buf = parser.unparsed_data;
-    bytes_prcocessed = (buf_size - buf.size());
-  }
-  ParseResult<size_t> result{std::move(start_position), bytes_prcocessed, s};
-  return result;
-}
-
 ParseState MySQLParser::Parse(MessageType type, std::string_view buf) {
   if (type != MessageType::kRequest && type != MessageType::kResponse) {
     return ParseState::kInvalid;
@@ -99,5 +71,43 @@ ParseState MySQLParser::WriteResponse(Packet* result) {
 }
 
 }  // namespace mysql
+
+// TODO(chengruizhe): Could be templatized with HTTP Parser
+template <>
+ParseResult<size_t> Parse(MessageType type, std::string_view buf,
+                          std::deque<mysql::Packet>* messages) {
+  mysql::MySQLParser parser;
+  std::vector<size_t> start_position;
+  const size_t buf_size = buf.size();
+  ParseState s = ParseState::kSuccess;
+  size_t bytes_prcocessed = 0;
+
+  while (!buf.empty()) {
+    s = parser.Parse(type, buf);
+    if (s != ParseState::kSuccess) {
+      break;
+    }
+
+    mysql::Packet message;
+    s = parser.Write(type, &message);
+    if (s != ParseState::kSuccess) {
+      break;
+    }
+
+    start_position.push_back(bytes_prcocessed);
+    messages->push_back(std::move(message));
+    buf = parser.unparsed_data;
+    bytes_prcocessed = (buf_size - buf.size());
+  }
+  ParseResult<size_t> result{std::move(start_position), bytes_prcocessed, s};
+  return result;
+}
+
+template <>
+size_t FindMessageBoundary<mysql::Packet>(MessageType /*type*/, std::string_view /*buf*/,
+                                          size_t /*start_pos*/) {
+  return 0;
+}
+
 }  // namespace stirling
 }  // namespace pl

@@ -199,43 +199,6 @@ ParseState UnpackFrame(std::string_view* buf, Frame* frame) {
   return ParseState::kSuccess;
 }
 
-ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
-                          std::deque<Frame>* frames) {
-  PL_UNUSED(unused_type);
-
-  std::vector<size_t> start_position;
-  const size_t buf_size = buf.size();
-  ParseState s = ParseState::kSuccess;
-
-  // Note that HTTP2 connection preface, or MAGIC as used in nghttp2, must be at the beginning of
-  // the stream. The following tries to detect complete or partial connection preface.
-  if (buf.size() < NGHTTP2_CLIENT_MAGIC_LEN &&
-      buf == std::string_view(NGHTTP2_CLIENT_MAGIC, buf.size())) {
-    return {{}, 0, ParseState::kNeedsMoreData};
-  }
-  if (absl::StartsWith(buf, NGHTTP2_CLIENT_MAGIC)) {
-    buf.remove_prefix(NGHTTP2_CLIENT_MAGIC_LEN);
-  }
-
-  while (!buf.empty()) {
-    const size_t frame_begin = buf_size - buf.size();
-    Frame frame;
-    s = UnpackFrame(&buf, &frame);
-    if (s == ParseState::kNeedsMoreData) {
-      break;
-    }
-    if (s == ParseState::kIgnored) {
-      // Even if the last frame is ignored, the parse is still successful.
-      s = ParseState::kSuccess;
-      continue;
-    }
-    DCHECK(s == ParseState::kSuccess);
-    start_position.push_back(frame_begin);
-    frames->push_back(std::move(frame));
-  }
-  return {std::move(start_position), buf_size - buf.size(), s};
-}
-
 namespace {
 
 ParseState CheckGRPCMessage(std::string_view buf) {
@@ -421,5 +384,50 @@ MethodInputOutput GetProtobufMessages(const GRPCMessage& req, ServiceDescriptorD
 }
 
 }  // namespace http2
+
+template <>
+ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
+                          std::deque<http2::Frame>* frames) {
+  PL_UNUSED(unused_type);
+
+  std::vector<size_t> start_position;
+  const size_t buf_size = buf.size();
+  ParseState s = ParseState::kSuccess;
+
+  // Note that HTTP2 connection preface, or MAGIC as used in nghttp2, must be at the beginning of
+  // the stream. The following tries to detect complete or partial connection preface.
+  if (buf.size() < NGHTTP2_CLIENT_MAGIC_LEN &&
+      buf == std::string_view(NGHTTP2_CLIENT_MAGIC, buf.size())) {
+    return {{}, 0, ParseState::kNeedsMoreData};
+  }
+  if (absl::StartsWith(buf, NGHTTP2_CLIENT_MAGIC)) {
+    buf.remove_prefix(NGHTTP2_CLIENT_MAGIC_LEN);
+  }
+
+  while (!buf.empty()) {
+    const size_t frame_begin = buf_size - buf.size();
+    http2::Frame frame;
+    s = UnpackFrame(&buf, &frame);
+    if (s == ParseState::kNeedsMoreData) {
+      break;
+    }
+    if (s == ParseState::kIgnored) {
+      // Even if the last frame is ignored, the parse is still successful.
+      s = ParseState::kSuccess;
+      continue;
+    }
+    DCHECK(s == ParseState::kSuccess);
+    start_position.push_back(frame_begin);
+    frames->push_back(std::move(frame));
+  }
+  return {std::move(start_position), buf_size - buf.size(), s};
+}
+
+template <>
+size_t FindMessageBoundary<http2::Frame>(MessageType /*type*/, std::string_view /*buf*/,
+                                         size_t /*start_pos*/) {
+  return 0;
+}
+
 }  // namespace stirling
 }  // namespace pl

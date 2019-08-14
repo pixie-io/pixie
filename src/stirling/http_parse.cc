@@ -300,6 +300,7 @@ ParseState PicoHTTPParserWrapper::WriteBody(HTTPMessage* result) {
   return ParseState::kInvalid;
 }
 
+template <>
 ParseResult<size_t> Parse(MessageType type, std::string_view buf,
                           std::deque<HTTPMessage>* messages) {
   PicoHTTPParserWrapper pico;
@@ -328,6 +329,12 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
 
   ParseResult<size_t> result{std::move(start_position), bytes_processed, s};
   return result;
+}
+
+template <>
+size_t FindMessageBoundary<HTTPMessage>(MessageType /*type*/, std::string_view /*buf*/,
+                                        size_t /*start_pos*/) {
+  return 0;
 }
 
 }  // namespace stirling

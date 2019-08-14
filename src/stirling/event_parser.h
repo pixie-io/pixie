@@ -54,6 +54,34 @@ struct ParseResult {
   ParseState state;
 };
 
+// NOTE: FindMessageBoundary() and Parse() must be implemented per protocol.
+
+/**
+ * Attempt to find the next message boundary.
+ *
+ * @tparam TMessageType Message type to search for.
+ * @param type request or response.
+ * @param buf the buffer in which to search for a message boundary.
+ * @param start_pos A start position from which to search.
+ * @return Either the position of a message start, if found (must be > start_pos),
+ * or std::string::npos if no such message start was found.
+ */
+template <class TMessageType>
+size_t FindMessageBoundary(MessageType type, std::string_view buf, size_t start_pos);
+
+/**
+ * Parses the input string as a sequence of TMessageType, and write the messages to messages.
+ *
+ * @tparam TMessageType Message type to parse.
+ * @param type selects whether to parse for request or response.
+ * @param buf the buffer of data to parse as messages.
+ * @param messages the parsed messages
+ * @return result of the parse, including positions in the source buffer where messages were found.
+ */
+template <class TMessageType>
+ParseResult<size_t> Parse(MessageType type, std::string_view buf,
+                          std::deque<TMessageType>* messages);
+
 /**
  * @brief Parses a stream of events traced from write/send/read/recv syscalls,
  * and emits as many complete parsed messages as it can.

@@ -36,14 +36,20 @@ struct MySQLParser {
   MySQLEventType curr_type_;
 };
 
+}  // namespace mysql
+
 /**
  * @brief Parses the input string as a sequence of MySQL responses, writes the messages in result.
  *
  * @return ParseState To indicate the final state of the parsing. The second return value is the
  * bytes count of the parsed data.
  */
-ParseResult<size_t> Parse(MessageType type, std::string_view buf, std::deque<Packet>* messages);
+template <>
+ParseResult<size_t> Parse(MessageType type, std::string_view buf,
+                          std::deque<mysql::Packet>* messages);
 
-}  // namespace mysql
+template <>
+size_t FindMessageBoundary<mysql::Packet>(MessageType type, std::string_view buf, size_t start_pos);
+
 }  // namespace stirling
 }  // namespace pl

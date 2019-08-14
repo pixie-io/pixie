@@ -140,8 +140,12 @@ struct PicoHTTPParserWrapper {
  * @return ParseState To indicate the final state of the parsing. The second return value is the
  * bytes count of the parsed data.
  */
+template <>
 ParseResult<size_t> Parse(MessageType type, std::string_view buf,
                           std::deque<HTTPMessage>* messages);
+
+template <>
+size_t FindMessageBoundary<HTTPMessage>(MessageType type, std::string_view buf, size_t start_pos);
 
 }  // namespace stirling
 }  // namespace pl
