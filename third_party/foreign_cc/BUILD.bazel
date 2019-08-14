@@ -86,6 +86,8 @@ cmake_external(
         # Since some of our services use both GRPC and nats, this lets
         # us have a single SSL library.
         "CMAKE_SYSTEM_PREFIX_PATH": "$EXT_BUILD_DEPS",
+        # For debugging, uncomment the following line to enable debug print of nghttp2.
+        # "DEBUGBUILD": "ON",
     },
     generate_crosstool_file = True,
     lib_name = "libnghttp2",
