@@ -127,7 +127,7 @@ StatusOr<bool> SourceRelationRule::GetSourceRelation(OperatorIR* source_op) cons
   }
   PL_ASSIGN_OR_RETURN(std::vector<ColumnIR*> cols,
                       GetColumnsFromRelation(mem_node, columns, table_relation));
-  mem_node->SetColumns(cols);
+  PL_RETURN_IF_ERROR(mem_node->SetColumns(cols));
   PL_RETURN_IF_ERROR(mem_node->SetRelation(select_relation));
   return true;
 }

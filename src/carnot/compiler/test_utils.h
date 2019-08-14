@@ -147,7 +147,7 @@ class OperatorTests : public ::testing::Test {
       col->ResolveColumn(i, relation.col_types()[i]);
       columns.push_back(col);
     }
-    mem_source->SetColumns(columns);
+    PL_CHECK_OK(mem_source->SetColumns(columns));
     return mem_source;
   }
   MapIR* MakeMap(OperatorIR* parent, const ColExpressionVector& col_map) {

@@ -95,7 +95,7 @@ TEST(ToProto, memory_source_ir) {
   EXPECT_OK(col_2->Init("cpu1", /*parent_op_idx*/ 0, ast));
   col_2->ResolveColumn(2, types::DataType::FLOAT64);
 
-  mem_src->SetColumns(std::vector<ColumnIR*>({col_1, col_2}));
+  EXPECT_OK(mem_src->SetColumns(std::vector<ColumnIR*>({col_1, col_2})));
   mem_src->SetTime(10, 20);
 
   planpb::Operator pb;

@@ -930,9 +930,13 @@ class MemorySourceIR : public OperatorIR {
   int64_t time_stop_ns() const { return time_stop_ns_; }
   bool IsTimeSet() const { return time_set_; }
   bool columns_set() const { return columns_set_; }
-  void SetColumns(std::vector<ColumnIR*> columns) {
+  Status SetColumns(std::vector<ColumnIR*> columns) {
     columns_set_ = true;
     columns_ = columns;
+    for (auto col : columns) {
+      PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(id(), col->id()));
+    }
+    return Status::OK();
   }
 
   Status ToProto(planpb::Operator*) const override;
