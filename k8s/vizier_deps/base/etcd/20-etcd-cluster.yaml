@@ -9,6 +9,10 @@ metadata:
 spec:
   size: 3
   version: "3.2.13"
+  pod:
+    etcdEnv:
+    - name: ETCD_AUTO_COMPACTION_RETENTION
+      value: "10"
   TLS:
     static:
       member:
