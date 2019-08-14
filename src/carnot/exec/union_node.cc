@@ -98,8 +98,8 @@ bool UnionNode::ReadyToMerge() {
 types::Time64NSValue UnionNode::GetTimeAtParentCursor(size_t parent_index) const {
   DCHECK(!parent_eoses_[parent_index]);
   DCHECK(time_columns_[parent_index] != nullptr);
-  return types::Time64NSValue(types::GetValueFromArrowArray<types::INT64>(
-      time_columns_[parent_index], row_cursors_[parent_index]));
+  return types::GetValueFromArrowArray<types::TIME64NS>(time_columns_[parent_index],
+                                                        row_cursors_[parent_index]);
 }
 
 Status UnionNode::AppendRow(size_t parent) {
