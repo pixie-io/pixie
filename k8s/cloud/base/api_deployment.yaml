@@ -32,7 +32,7 @@ spec:
                 name: pl-app-secrets
                 key: session-key
           - name: PL_AUTH_SERVICE
-            value: auth-service.plc.svc.cluster.local:50101
+            value: auth-service.plc.svc.cluster.local:50100
           - name: PL_SERVER_TLS_CERT
             value: /certs/server.crt
           - name: PL_SERVER_TLS_KEY
