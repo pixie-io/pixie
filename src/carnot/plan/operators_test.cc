@@ -200,6 +200,24 @@ TEST_F(OperatorTest, from_proto_join_with_time) {
   EXPECT_EQ(0, join_op->time_column().column_index());
 }
 
+TEST_F(OperatorTest, from_proto_join_full_outer_time_ordered_error) {
+  auto join_pb = planpb::testutils::CreateTestErrorJoin1PB();
+  auto join_op = std::make_unique<JoinOperator>(1);
+  auto s = join_op->Init(join_pb.join_op());
+  EXPECT_FALSE(s.ok());
+  EXPECT_EQ(s.msg(), "For time ordered joins, full outer join is not supported.");
+}
+
+TEST_F(OperatorTest, from_proto_join_left_outer_time_ordered_error) {
+  auto join_pb = planpb::testutils::CreateTestErrorJoin2PB();
+  auto join_op = std::make_unique<JoinOperator>(1);
+  auto s = join_op->Init(join_pb.join_op());
+  EXPECT_FALSE(s.ok());
+  EXPECT_EQ(
+      s.msg(),
+      "For time ordered joins, left join is only supported when time_ comes from the left table.");
+}
+
 TEST_F(OperatorTest, from_proto_join_no_time) {
   auto join_pb = planpb::testutils::CreateTestJoinNoTimePB();
   auto join_op = std::make_unique<JoinOperator>(1);

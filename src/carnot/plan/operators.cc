@@ -497,6 +497,19 @@ Status JoinOperator::Init(const planpb::JoinOperator& pb) {
     equality_conditions_.emplace_back(pb_.equality_conditions(i));
   }
 
+  if (order_by_time()) {
+    // Only support inner joins and left joins where the time_ column comes from the left table.
+    // We need a time_ value for every output row in the ordered case to preserve time ordering.
+    if (type() == planpb::JoinOperator::FULL_OUTER) {
+      return error::InvalidArgument("For time ordered joins, full outer join is not supported.");
+    }
+    if (type() == planpb::JoinOperator::LEFT_OUTER && time_column().parent_index() != 0) {
+      return error::InvalidArgument(
+          "For time ordered joins, left join is only supported when time_ comes from the left "
+          "table.");
+    }
+  }
+
   return Status::OK();
 }
 
