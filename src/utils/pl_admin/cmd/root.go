@@ -8,9 +8,16 @@ import (
 )
 
 func init() {
+	// Flags for install-certs.
 	pflag.String("cert_path", "", "Directory to save certs in")
 	pflag.String("ca_cert", "", "Path to CA cert (optional)")
 	pflag.String("ca_key", "", "Path to CA key (optional)")
+
+	// Flags for deploy.
+	pflag.String("extract_yaml", "", "Directory to extract the Pixie yamls to")
+	pflag.String("use_version", "", "Pixie version to deploy")
+	pflag.Bool("check", false, "Check whether the cluster can run Pixie")
+	pflag.String("registration_key", "", "The registration key to use for this cluster")
 
 	pflag.Parse()
 
@@ -30,6 +37,16 @@ func init() {
 	installCertsCmd.Flags().StringP("ca_key", "k", "", "Path to CA key (optional)")
 	viper.BindPFlag("ca_key", installCertsCmd.Flags().Lookup("ca_key"))
 
+	deployCmd := NewCmdDeploy()
+	RootCmd.AddCommand(deployCmd)
+	deployCmd.Flags().StringP("extract_yaml", "e", "", "Directory to extract the Pixie yamls to")
+	viper.BindPFlag("extract_yaml", deployCmd.Flags().Lookup("extract_yaml"))
+	deployCmd.Flags().StringP("use_version", "v", "", "Pixie version to deploy")
+	viper.BindPFlag("use_version", deployCmd.Flags().Lookup("use_version"))
+	deployCmd.Flags().BoolP("check", "c", false, "Check whether the cluster can run Pixie")
+	viper.BindPFlag("check", deployCmd.Flags().Lookup("check"))
+	deployCmd.Flags().StringP("registration_key", "k", "", "The registration key to use for this cluster")
+	viper.BindPFlag("registration_key", deployCmd.Flags().Lookup("registration_key"))
 }
 
 // RootCmd is the base command for Cobra.

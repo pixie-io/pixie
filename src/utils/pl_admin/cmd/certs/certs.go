@@ -158,7 +158,8 @@ func InstallCerts(certPath string, caCertPath string, caKeyPath string) {
 	clientCert := path.Join(certPath, "client.crt")
 
 	// Authenticate with k8s cluster.
-	clientset := k8s.GetClientset()
+	config := k8s.GetConfig()
+	clientset := k8s.GetClientset(config)
 
 	// Delete secrets in k8s.
 	k8s.DeleteSecret(clientset, "pl", "proxy-tls-certs")
