@@ -77,18 +77,44 @@ class ConnectionTrackerTest : public ::testing::Test {
   uint64_t recv_seq_num_ = 0;
   uint64_t current_ts_ns_ = 0;
 
-  const std::string kHTTPReq =
+  const std::string kHTTPReq0 =
       "GET /index.html HTTP/1.1\r\n"
       "Host: www.pixielabs.ai\r\n"
       "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
       "\r\n";
 
-  const std::string kHTTPResp =
+  const std::string kHTTPResp0 =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: application/json; charset=utf-8\r\n"
+      "Content-Length: 5\r\n"
+      "\r\n"
+      "pixie";
+
+  const std::string kHTTPReq1 =
+      "GET /foo.html HTTP/1.1\r\n"
+      "Host: www.pixielabs.ai\r\n"
+      "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+      "\r\n";
+
+  const std::string kHTTPResp1 =
       "HTTP/1.1 200 OK\r\n"
       "Content-Type: application/json; charset=utf-8\r\n"
       "Content-Length: 3\r\n"
       "\r\n"
       "foo";
+
+  const std::string kHTTPReq2 =
+      "GET /bar.html HTTP/1.1\r\n"
+      "Host: www.pixielabs.ai\r\n"
+      "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+      "\r\n";
+
+  const std::string kHTTPResp2 =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: application/json; charset=utf-8\r\n"
+      "Content-Length: 3\r\n"
+      "\r\n"
+      "bar";
 };
 
 TEST_F(ConnectionTrackerTest, timestamp_test) {
@@ -122,15 +148,15 @@ TEST_F(ConnectionTrackerTest, timestamp_test) {
   EXPECT_EQ(8, tracker.last_bpf_timestamp_ns());
 }
 
-TEST_F(ConnectionTrackerTest, lost_event_test) {
+TEST_F(ConnectionTrackerTest, LostEvent) {
   DataStream stream;
 
-  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq);
-  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq);
-  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq);
-  std::unique_ptr<SocketDataEvent> req3 = InitSendEvent(kHTTPReq);
-  std::unique_ptr<SocketDataEvent> req4 = InitSendEvent(kHTTPReq);
-  std::unique_ptr<SocketDataEvent> req5 = InitSendEvent(kHTTPReq);
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req3 = InitSendEvent(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req4 = InitSendEvent(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req5 = InitSendEvent(kHTTPReq0);
 
   std::deque<HTTPMessage> requests;
 
@@ -159,6 +185,152 @@ TEST_F(ConnectionTrackerTest, lost_event_test) {
   requests = stream.ExtractMessages<HTTPMessage>(MessageType::kRequest);
   EXPECT_EQ(requests.size(), 4ULL);
   EXPECT_FALSE(stream.Stuck());
+}
+
+TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
+  ConnectionTracker tracker;
+
+  conn_info_t conn = InitConn();
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPResp1);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq2);
+  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp2);
+  conn_info_t close_conn = InitClose();
+
+  tracker.AddConnOpenEvent(conn);
+  tracker.AddDataEvent(std::move(req0));
+  tracker.AddDataEvent(std::move(resp0));
+  tracker.AddDataEvent(std::move(req1));
+  tracker.AddDataEvent(std::move(resp1));
+  tracker.AddDataEvent(std::move(req2));
+  tracker.AddDataEvent(std::move(resp2));
+  tracker.AddConnCloseEvent(close_conn);
+
+  std::vector<ReqRespPair<HTTPMessage>> req_resp_pairs;
+  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<HTTPMessage>>();
+
+  ASSERT_EQ(3, req_resp_pairs.size());
+
+  EXPECT_EQ(req_resp_pairs[0].req_message.http_req_path, "/index.html");
+  EXPECT_EQ(req_resp_pairs[0].resp_message.http_msg_body, "pixie");
+
+  EXPECT_EQ(req_resp_pairs[1].req_message.http_req_path, "/foo.html");
+  EXPECT_EQ(req_resp_pairs[1].resp_message.http_msg_body, "foo");
+
+  EXPECT_EQ(req_resp_pairs[2].req_message.http_req_path, "/bar.html");
+  EXPECT_EQ(req_resp_pairs[2].resp_message.http_msg_body, "bar");
+}
+
+TEST_F(ConnectionTrackerTest, ReqRespMatchingPipelined) {
+  ConnectionTracker tracker;
+
+  conn_info_t conn = InitConn();
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq2);
+  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPResp1);
+  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp2);
+  conn_info_t close_conn = InitClose();
+
+  tracker.AddConnOpenEvent(conn);
+  tracker.AddDataEvent(std::move(req0));
+  tracker.AddDataEvent(std::move(req1));
+  tracker.AddDataEvent(std::move(req2));
+  tracker.AddDataEvent(std::move(resp0));
+  tracker.AddDataEvent(std::move(resp1));
+  tracker.AddDataEvent(std::move(resp2));
+  tracker.AddConnCloseEvent(close_conn);
+
+  std::vector<ReqRespPair<HTTPMessage>> req_resp_pairs;
+  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<HTTPMessage>>();
+
+  ASSERT_EQ(3, req_resp_pairs.size());
+
+  EXPECT_EQ(req_resp_pairs[0].req_message.http_req_path, "/index.html");
+  EXPECT_EQ(req_resp_pairs[0].resp_message.http_msg_body, "pixie");
+
+  EXPECT_EQ(req_resp_pairs[1].req_message.http_req_path, "/foo.html");
+  EXPECT_EQ(req_resp_pairs[1].resp_message.http_msg_body, "foo");
+
+  EXPECT_EQ(req_resp_pairs[2].req_message.http_req_path, "/bar.html");
+  EXPECT_EQ(req_resp_pairs[2].resp_message.http_msg_body, "bar");
+}
+
+TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
+  ConnectionTracker tracker;
+
+  conn_info_t conn = InitConn();
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPResp1);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq2);
+  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp2);
+  conn_info_t close_conn = InitClose();
+
+  tracker.AddConnOpenEvent(conn);
+  tracker.AddDataEvent(std::move(req0));
+  tracker.AddDataEvent(std::move(resp0));
+  PL_UNUSED(req1);  // Missing event.
+  tracker.AddDataEvent(std::move(resp1));
+  tracker.AddDataEvent(std::move(req2));
+  tracker.AddDataEvent(std::move(resp2));
+  tracker.AddConnCloseEvent(close_conn);
+
+  std::vector<ReqRespPair<HTTPMessage>> req_resp_pairs;
+  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<HTTPMessage>>();
+
+  ASSERT_EQ(3, req_resp_pairs.size());
+
+  EXPECT_EQ(req_resp_pairs[0].req_message.http_req_path, "/index.html");
+  EXPECT_EQ(req_resp_pairs[0].resp_message.http_msg_body, "pixie");
+
+  EXPECT_EQ(req_resp_pairs[1].req_message.http_req_path, "-");
+  EXPECT_EQ(req_resp_pairs[1].resp_message.http_msg_body, "foo");
+
+  EXPECT_EQ(req_resp_pairs[2].req_message.http_req_path, "/bar.html");
+  EXPECT_EQ(req_resp_pairs[2].resp_message.http_msg_body, "bar");
+}
+
+TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
+  ConnectionTracker tracker;
+
+  conn_info_t conn = InitConn();
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPResp1);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq2);
+  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp2);
+  conn_info_t close_conn = InitClose();
+
+  tracker.AddConnOpenEvent(conn);
+  tracker.AddDataEvent(std::move(req0));
+  tracker.AddDataEvent(std::move(resp0));
+  tracker.AddDataEvent(std::move(req1));
+  PL_UNUSED(req2);  // Missing event.
+  tracker.AddDataEvent(std::move(req2));
+  tracker.AddDataEvent(std::move(resp2));
+  tracker.AddConnCloseEvent(close_conn);
+
+  std::vector<ReqRespPair<HTTPMessage>> req_resp_pairs;
+
+  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<HTTPMessage>>();
+
+  ASSERT_EQ(2, req_resp_pairs.size());
+
+  EXPECT_EQ(req_resp_pairs[0].req_message.http_req_path, "/index.html");
+  EXPECT_EQ(req_resp_pairs[0].resp_message.http_msg_body, "pixie");
+
+  // Oops - expecting a mismatch? Yes! What else can we do?
+  EXPECT_EQ(req_resp_pairs[1].req_message.http_req_path, "/foo.html");
+  EXPECT_EQ(req_resp_pairs[1].resp_message.http_msg_body, "bar");
+
+  // Final request sticks around waiting for a partner - who will never come!
+  // TODO(oazizi): The close should be an indicator that the partner will never come.
 }
 
 TEST_F(ConnectionTrackerTest, stats_counter) {

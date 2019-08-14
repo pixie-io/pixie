@@ -113,18 +113,47 @@ std::vector<ReqRespPair<HTTPMessage>> ConnectionTracker::ProcessMessages() {
   auto& req_messages = req_data()->Messages<HTTPMessage>();
   auto& resp_messages = resp_data()->Messages<HTTPMessage>();
 
-  // TODO(oazizi): If we stick with this approach, resp_data could be converted back to vector.
-  for (HTTPMessage& msg : resp_messages) {
-    if (!req_messages.empty()) {
-      ReqRespPair<HTTPMessage> record{std::move(req_messages.front()), std::move(msg)};
-      req_messages.pop_front();
+  // Match request response pairs.
+  for (auto req_iter = req_messages.begin(), resp_iter = resp_messages.begin();
+       req_iter != req_messages.end() && resp_iter != resp_messages.end();) {
+    HTTPMessage& req = *req_iter;
+    HTTPMessage& resp = *resp_iter;
+
+    if (resp.timestamp_ns < req.timestamp_ns) {
+      // Oldest message is a response.
+      // This means the corresponding request was not traced.
+      // Push without request.
+      ReqRespPair<HTTPMessage> record{HTTPMessage(), std::move(resp)};
+      resp_messages.pop_front();
       trace_records.push_back(std::move(record));
+      ++resp_iter;
     } else {
-      ReqRespPair<HTTPMessage> record{HTTPMessage(), std::move(msg)};
+      // Found a response. It must be the match assuming:
+      //  1) In-order messages (which is true for HTTP1).
+      //  2) No missing messages.
+      // With missing messages, there are no guarantees.
+      // With no missing messages and pipelining, it's even more complicated.
+      ReqRespPair<HTTPMessage> record{std::move(req), std::move(resp)};
+      req_messages.pop_front();
+      resp_messages.pop_front();
       trace_records.push_back(std::move(record));
+      ++resp_iter;
+      ++req_iter;
     }
   }
+
+  // Any leftover responses must have lost their requests.
+  for (auto resp_iter = resp_messages.begin(); resp_iter != resp_messages.end(); ++resp_iter) {
+    HTTPMessage& resp = *resp_iter;
+    ReqRespPair<HTTPMessage> record{HTTPMessage(), std::move(resp)};
+    trace_records.push_back(std::move(record));
+  }
   resp_messages.clear();
+
+  // Any leftover requests are left around for the next iteration,
+  // since the response may not have been traced yet.
+  // TODO(oazizi): If we have seen the close event, then can assume the response is lost.
+  //               We should push the event out in such cases.
 
   return trace_records;
 }
