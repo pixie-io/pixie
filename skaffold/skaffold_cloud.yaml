@@ -16,6 +16,12 @@ build:
     context: .
     bazel:
       target: //src/services/proxy:proxy_prod_server_image.tar
+
+  - image: gcr.io/pl-dev-infra/cloud/site_manager_server_image
+    context: .
+    bazel:
+      target: //src/services/site_manager:site_manager_server_image.tar
+
   local:
     push: true
 deploy:
