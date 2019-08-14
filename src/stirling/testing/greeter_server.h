@@ -29,14 +29,28 @@ class GreeterService final : public Greeter::Service {
   }
 };
 
+class Greeter2Service final : public Greeter2::Service {
+ public:
+  ::grpc::Status SayHi(::grpc::ServerContext* /*context*/, const HelloRequest* request,
+                       HelloReply* response) override {
+    response->set_message(absl::StrCat("Hi ", request->name(), "!"));
+    return ::grpc::Status::OK;
+  }
+  ::grpc::Status SayHiAgain(::grpc::ServerContext* /*context*/, const HelloRequest* request,
+                            HelloReply* response) override {
+    response->set_message(absl::StrCat("Hi ", request->name(), "!"));
+    return ::grpc::Status::OK;
+  }
+};
+
 class ServiceRunner {
  public:
-  template <typename GRPCServiceType>
-  std::unique_ptr<::grpc::Server> RunService(GRPCServiceType* service) {
+  std::unique_ptr<::grpc::Server> Run() {
     server_builder_.AddListeningPort("localhost:0", ::grpc::InsecureServerCredentials(), &port_);
-    server_builder_.RegisterService(service);
     return server_builder_.BuildAndStart();
   }
+
+  void RegisterService(::grpc::Service* service) { server_builder_.RegisterService(service); }
 
   int port() const { return port_; }
 

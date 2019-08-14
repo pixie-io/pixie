@@ -11,12 +11,21 @@ namespace pl {
 namespace stirling {
 namespace testing {
 
+inline std::shared_ptr<::grpc::Channel> CreateInsecureGRPCChannel(const std::string& endpoint) {
+  return ::grpc::CreateChannel(endpoint, ::grpc::InsecureChannelCredentials());
+}
+
 template <typename GRPCServiceType>
 class GRPCStub {
  public:
   explicit GRPCStub(const std::string& endpoint) {
     stub_ = GRPCServiceType::NewStub(
         ::grpc::CreateChannel(endpoint, ::grpc::InsecureChannelCredentials()));
+    CHECK(stub_ != nullptr) << "Failed to create gRPC service stub.";
+  }
+
+  explicit GRPCStub(std::shared_ptr<::grpc::Channel> grpc_channel) {
+    stub_ = GRPCServiceType::NewStub(grpc_channel);
     CHECK(stub_ != nullptr) << "Failed to create gRPC service stub.";
   }
 

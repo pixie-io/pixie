@@ -20,3 +20,8 @@ message HelloRequest {
 message HelloReply {
   string message = 1;
 }
+
+service Greeter2 {
+  rpc SayHi (HelloRequest) returns (HelloReply) {}
+  rpc SayHiAgain (HelloRequest) returns (HelloReply) {}
+}

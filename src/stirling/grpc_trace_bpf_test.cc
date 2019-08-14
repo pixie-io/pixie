@@ -24,7 +24,11 @@ namespace pl {
 namespace stirling {
 namespace grpc {
 
+using ::grpc::Channel;
+using ::pl::stirling::testing::CreateInsecureGRPCChannel;
 using ::pl::stirling::testing::Greeter;
+using ::pl::stirling::testing::Greeter2;
+using ::pl::stirling::testing::Greeter2Service;
 using ::pl::stirling::testing::GreeterService;
 using ::pl::stirling::testing::GRPCStub;
 using ::pl::stirling::testing::HelloReply;
@@ -32,6 +36,7 @@ using ::pl::stirling::testing::HelloRequest;
 using ::pl::stirling::testing::ServiceRunner;
 using ::pl::testing::proto::EqualsProto;
 using ::pl::types::ColumnWrapperRecordBatch;
+using ::testing::AnyOf;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::MatchesRegex;
@@ -62,7 +67,9 @@ std::vector<size_t> FindRecordIdxMatchesPid(const ColumnWrapperRecordBatch& http
 HelloReply GetHelloReply(const ColumnWrapperRecordBatch& record_batch, const size_t idx) {
   HelloReply received_reply;
   std::string msg = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
-  CHECK(received_reply.ParseFromString(msg.substr(kGRPCMessageHeaderSizeInBytes)));
+  if (!msg.empty()) {
+    CHECK(received_reply.ParseFromString(msg.substr(kGRPCMessageHeaderSizeInBytes)));
+  }
   return received_reply;
 }
 
@@ -147,6 +154,7 @@ class GRPCCppTest : public ::testing::Test {
     // Force disable protobuf parsing to output the binary protobuf in record batch.
     // Also ensure test remain passing when the default changes.
     FLAGS_enable_parsing_protobufs = false;
+
     source_ = SocketTraceConnector::Create("bcc_grpc_trace");
     ASSERT_OK(source_->Init());
 
@@ -154,12 +162,18 @@ class GRPCCppTest : public ::testing::Test {
     ASSERT_NE(nullptr, socket_trace_connector);
     EXPECT_OK(socket_trace_connector->TestOnlySetTargetPID(getpid()));
 
-    server_ = runner_.RunService(&service_);
+    data_table_ = std::make_unique<DataTable>(SocketTraceConnector::kHTTPTable);
+
+    runner_.RegisterService(&greeter_service_);
+    runner_.RegisterService(&greeter2_service_);
+    server_ = runner_.Run();
+
     auto* server_ptr = server_.get();
     server_thread_ = std::thread([server_ptr]() { server_ptr->Wait(); });
-    stub_ = std::make_unique<GRPCStub<Greeter>>(absl::StrCat("127.0.0.1:", runner_.port()));
 
-    data_table_ = std::make_unique<DataTable>(SocketTraceConnector::kHTTPTable);
+    client_channel_ = CreateInsecureGRPCChannel(absl::StrCat("127.0.0.1:", runner_.port()));
+    greeter_stub_ = std::make_unique<GRPCStub<Greeter>>(client_channel_);
+    greeter2_stub_ = std::make_unique<GRPCStub<Greeter2>>(client_channel_);
   }
 
   void TearDown() override {
@@ -171,45 +185,52 @@ class GRPCCppTest : public ::testing::Test {
   }
 
   template <typename StubType, typename RPCMethodType>
-  std::vector<size_t> CallRPC(StubType* stub, RPCMethodType method,
-                              const std::vector<std::string>& names) {
+  void CallRPC(StubType* stub, RPCMethodType method, const std::vector<std::string>& names) {
     HelloRequest req;
     HelloReply resp;
     for (const auto& n : names) {
       req.set_name(n);
       ::grpc::Status st = stub->CallRPC(method, req, &resp);
-      CHECK(st.ok()) << st.error_message();
+      LOG_IF(ERROR, !st.ok()) << st.error_message();
     }
-
+    // Deplete the perf buffers to avoid overflow.
     source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
-    types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-    const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPid(record_batch, getpid());
-    return target_record_indices;
   }
 
   std::unique_ptr<SourceConnector> source_;
-  GreeterService service_;
+  std::unique_ptr<DataTable> data_table_;
+
+  GreeterService greeter_service_;
+  Greeter2Service greeter2_service_;
+
   ServiceRunner runner_;
   std::unique_ptr<::grpc::Server> server_;
   std::thread server_thread_;
-  std::unique_ptr<GRPCStub<Greeter>> stub_;
 
-  std::unique_ptr<DataTable> data_table_;
+  std::shared_ptr<Channel> client_channel_;
+  std::unique_ptr<GRPCStub<Greeter>> greeter_stub_;
+  std::unique_ptr<GRPCStub<Greeter2>> greeter2_stub_;
 };
 
-TEST_F(GRPCCppTest, BasicTracing) {
-  CallRPC(stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"});
-  std::vector<size_t> indices =
-      CallRPC(stub_.get(), &Greeter::Stub::SayHelloAgain, {"pixielabs", "pixielabs", "pixielabs"});
-  EXPECT_THAT(indices, SizeIs(6));
+TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
+  // TODO(yzhao): Put CallRPC() calls inside multiple threads. That would cause header parsing
+  // failures, debug and fix the root cause.
+  CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"});
+  CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHelloAgain,
+          {"pixielabs", "pixielabs", "pixielabs"});
+  CallRPC(greeter2_stub_.get(), &Greeter2::Stub::SayHi, {"pixielabs", "pixielabs", "pixielabs"});
+  CallRPC(greeter2_stub_.get(), &Greeter2::Stub::SayHiAgain,
+          {"pixielabs", "pixielabs", "pixielabs"});
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
+  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  EXPECT_THAT(indices, SizeIs(12));
+
   for (size_t idx : indices) {
     EXPECT_THAT(std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(idx)),
                 MatchesRegex(":authority: 127.0.0.1:[0-9]+\n"
                              ":method: POST\n"
-                             ":path: /pl.stirling.testing.Greeter/SayHello(|Again)\n"
+                             ":path: /pl.stirling.testing.Greeter(|2)/Say(Hi|Hello)(|Again)\n"
                              ":scheme: http\n"
                              "accept-encoding: identity,gzip\n"
                              "content-type: application/grpc\n"
@@ -229,7 +250,8 @@ TEST_F(GRPCCppTest, BasicTracing) {
     EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
               record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(idx).val);
     EXPECT_THAT(GetHelloReply(record_batch, idx),
-                EqualsProto(R"proto(message: "Hello pixielabs!")proto"));
+                AnyOf(EqualsProto(R"proto(message: "Hello pixielabs!")proto"),
+                      EqualsProto(R"proto(message: "Hi pixielabs!")proto")));
   }
 }
 
