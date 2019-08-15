@@ -633,6 +633,15 @@ struct DataMatch : public ParentMatch {
 
 inline DataMatch DataNode() { return DataMatch(); }
 
+struct BlockingOperatorMatch : public ParentMatch {
+  BlockingOperatorMatch() : ParentMatch(IRNodeType::kAny) {}
+  bool Match(IRNode* node) const override {
+    return node->IsOperator() && static_cast<OperatorIR*>(node)->IsBlocking();
+  }
+};
+
+inline BlockingOperatorMatch BlockingOperator() { return BlockingOperatorMatch(); }
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

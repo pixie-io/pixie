@@ -296,136 +296,6 @@ TEST_F(MetadataTests, metadata_ir) {
   EXPECT_TRUE(metadata_ir->HasMetadataResolver());
 }
 
-class OperatorTests : public ::testing::Test {
- protected:
-  void SetUp() override {
-    ast = MakeTestAstPtr();
-    graph = std::make_shared<IR>();
-  }
-  MemorySourceIR* MakeMemSource() { return graph->MakeNode<MemorySourceIR>().ValueOrDie(); }
-  MapIR* MakeMap(OperatorIR* parent, const ColExpressionVector& col_map) {
-    MapIR* map = graph->MakeNode<MapIR>().ConsumeValueOrDie();
-    LambdaIR* lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
-    PL_CHECK_OK(lambda->Init({}, col_map, ast));
-    PL_CHECK_OK(map->Init(parent, {{"fn", lambda}}, ast));
-    return map;
-  }
-  MemorySinkIR* MakeMemSink(OperatorIR* parent, std::string name) {
-    auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
-    PL_CHECK_OK(sink->Init(parent, {{"name", MakeString(name)}}, ast));
-    return sink;
-  }
-  FilterIR* MakeFilter(OperatorIR* parent, ExpressionIR* filter_expr) {
-    auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
-    EXPECT_OK(filter_func_lambda->Init({}, filter_expr, ast));
-
-    FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
-    ArgMap amap({{"fn", filter_func_lambda}});
-    EXPECT_OK(filter->Init(parent, amap, ast));
-    return filter;
-  }
-  LimitIR* MakeLimit(OperatorIR* parent, int64_t limit_value) {
-    LimitIR* limit = graph->MakeNode<LimitIR>().ValueOrDie();
-    ArgMap amap({{"rows", MakeInt(limit_value)}});
-    EXPECT_OK(limit->Init(parent, amap, ast));
-    return limit;
-  }
-  BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, const std::vector<ColumnIR*>& columns,
-                                 const ColExpressionVector& col_agg) {
-    BlockingAggIR* agg = graph->MakeNode<BlockingAggIR>().ConsumeValueOrDie();
-    LambdaIR* fn_lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
-    PL_CHECK_OK(fn_lambda->Init({}, col_agg, ast));
-    ListIR* list_ir = graph->MakeNode<ListIR>().ConsumeValueOrDie();
-    std::vector<ExpressionIR*> exprs;
-    for (auto c : columns) {
-      exprs.push_back(c);
-    }
-    PL_CHECK_OK(list_ir->Init(ast, exprs));
-    LambdaIR* by_lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
-    PL_CHECK_OK(by_lambda->Init({}, list_ir, ast));
-    PL_CHECK_OK(agg->Init(parent, {{"by", by_lambda}, {"fn", fn_lambda}}, ast));
-    return agg;
-  }
-
-  ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx) {
-    ColumnIR* column = graph->MakeNode<ColumnIR>().ValueOrDie();
-    PL_CHECK_OK(column->Init(name, parent_op_idx, ast));
-    return column;
-  }
-  StringIR* MakeString(std::string val) {
-    auto str_ir = graph->MakeNode<StringIR>().ValueOrDie();
-    EXPECT_OK(str_ir->Init(val, ast));
-    return str_ir;
-  }
-  IntIR* MakeInt(int64_t val) {
-    auto int_ir = graph->MakeNode<IntIR>().ValueOrDie();
-    EXPECT_OK(int_ir->Init(val, ast));
-    return int_ir;
-  }
-  FuncIR* MakeAddFunc(ExpressionIR* left, ExpressionIR* right) {
-    FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
-    PL_CHECK_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({left, right}), false /* compile_time */,
-                           ast));
-    return func;
-  }
-  FuncIR* MakeEqualsFunc(ExpressionIR* left, ExpressionIR* right) {
-    FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
-    PL_CHECK_OK(func->Init({FuncIR::Opcode::eq, "==", "equals"}, ASTWalker::kRunTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({left, right}), false /* compile_time */,
-                           ast));
-    return func;
-  }
-  MetadataIR* MakeMetadataIR(const std::string& name, int64_t parent_op_idx) {
-    MetadataIR* metadata = graph->MakeNode<MetadataIR>().ValueOrDie();
-    PL_CHECK_OK(metadata->Init(name, parent_op_idx, ast));
-    return metadata;
-  }
-  MetadataLiteralIR* MakeMetadataLiteral(DataIR* data_ir) {
-    MetadataLiteralIR* metadata_literal = graph->MakeNode<MetadataLiteralIR>().ValueOrDie();
-    PL_CHECK_OK(metadata_literal->Init(data_ir, ast));
-    return metadata_literal;
-  }
-  FuncIR* MakeMeanFunc(ExpressionIR* value) {
-    FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
-    PL_CHECK_OK(func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({value}), false /* compile_time */, ast));
-    return func;
-  }
-  std::shared_ptr<IR> SwapGraphBeingBuilt(std::shared_ptr<IR> new_graph) {
-    std::shared_ptr<IR> old_graph = graph;
-    graph = new_graph;
-    return old_graph;
-  }
-
-  GRPCSourceGroupIR* MakeGRPCSourceGroup(int64_t source_id, const Relation& relation) {
-    GRPCSourceGroupIR* grpc_src_group = graph->MakeNode<GRPCSourceGroupIR>().ValueOrDie();
-    EXPECT_OK(grpc_src_group->Init(source_id, relation, ast));
-    return grpc_src_group;
-  }
-
-  GRPCSinkIR* MakeGRPCSink(OperatorIR* parent, int64_t source_id) {
-    GRPCSinkIR* grpc_sink = graph->MakeNode<GRPCSinkIR>().ValueOrDie();
-    EXPECT_OK(grpc_sink->Init(parent, source_id, ast));
-    return grpc_sink;
-  }
-  GRPCSourceIR* MakeGRPCSource(const std::string& source_id, const Relation& relation) {
-    GRPCSourceIR* grpc_src_group = graph->MakeNode<GRPCSourceIR>().ValueOrDie();
-    EXPECT_OK(grpc_src_group->Init(source_id, relation, ast));
-    return grpc_src_group;
-  }
-  // Use this if you need a relation but don't care about the contents.
-  Relation MakeRelation() {
-    return table_store::schema::Relation(
-        std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
-                                      types::DataType::FLOAT64, types::DataType::FLOAT64}),
-        std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
-  }
-
-  pypa::AstPtr ast;
-  std::shared_ptr<IR> graph;
-};
-
 // Swapping a parent should make sure that all columns are passed over correclt.
 TEST_F(OperatorTests, swap_parent) {
   MemorySourceIR* mem_source = MakeMemSource();
@@ -829,16 +699,17 @@ nodes {
   id: 1
   dag {
     nodes {
-      sorted_deps: 5
+      sorted_deps: 6
     }
     nodes {
-      id: 5
+      id: 6
     }
   }
   nodes {
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
+        name: "table"
         column_idxs: 0
         column_idxs: 1
         column_idxs: 2
@@ -855,7 +726,7 @@ nodes {
     }
   }
   nodes {
-    id: 5
+    id: 6
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -874,23 +745,34 @@ nodes {
 }
 )proto";
 TEST_F(ToProtoTests, ir) {
-  auto mem_src = MakeMemSource();
-  EXPECT_OK(mem_src->SetRelation(MakeRelation()));
-  ColumnIR* col0 = MakeColumn("count", 0);
-  col0->ResolveColumn(0, types::INT64);
-  ColumnIR* col1 = MakeColumn("cpu0", 0);
-  col1->ResolveColumn(1, types::FLOAT64);
-  ColumnIR* col2 = MakeColumn("cpu1", 0);
-  col2->ResolveColumn(2, types::FLOAT64);
-  ColumnIR* col3 = MakeColumn("cpu2", 0);
-  col3->ResolveColumn(3, types::FLOAT64);
-  mem_src->SetColumns({col0, col1, col2, col3});
+  auto mem_src = MakeMemSource(MakeRelation());
   auto mem_sink = MakeMemSink(mem_src, "out");
   EXPECT_OK(mem_sink->SetRelation(MakeRelation()));
 
   planpb::Plan pb = graph->ToProto().ConsumeValueOrDie();
 
   EXPECT_THAT(pb, EqualsProto(kIRProto));
+}
+
+TEST_F(OperatorTests, op_children) {
+  auto mem_source = MakeMemSource();
+  ColumnIR* col1 = MakeColumn("test1", 0);
+  ColumnIR* col2 = MakeColumn("test2", 0);
+  ColumnIR* col3 = MakeColumn("test3", 0);
+  FuncIR* add_func = MakeAddFunc(col3, MakeInt(3));
+  MapIR* map = MakeMap(mem_source, {{"out1", col1}, {"out2", col2}, {"out3", add_func}});
+  auto mem_sink = MakeMemSink(map, "out");
+
+  auto mem_source_children = mem_source->Children();
+  ASSERT_EQ(mem_source_children.size(), 1UL);
+  EXPECT_EQ(mem_source_children[0], map);
+
+  auto map_children = map->Children();
+  ASSERT_EQ(map_children.size(), 1);
+  EXPECT_EQ(map_children[0], mem_sink);
+
+  auto mem_sink_children = mem_sink->Children();
+  EXPECT_EQ(mem_sink_children.size(), 0UL);
 }
 
 }  // namespace compiler

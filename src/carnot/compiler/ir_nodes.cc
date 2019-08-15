@@ -896,6 +896,18 @@ Status OperatorIR::CopyParents(OperatorIR* new_op) const {
   return Status::OK();
 }
 
+std::vector<OperatorIR*> OperatorIR::Children() const {
+  plan::DAG dag = graph_ptr()->dag();
+  std::vector<OperatorIR*> op_children;
+  for (int64_t d : dag.DependenciesOf(id())) {
+    auto ir_node = graph_ptr()->Get(d);
+    if (ir_node->IsOperator()) {
+      op_children.push_back(static_cast<OperatorIR*>(ir_node));
+    }
+  }
+  return op_children;
+}
+
 StatusOr<IRNode*> ColumnIR::DeepCloneInto(IR* graph) const {
   PL_ASSIGN_OR_RETURN(IRNode * node, IRNode::DeepCloneInto(graph));
   DCHECK(Match(node, ColumnNode()));

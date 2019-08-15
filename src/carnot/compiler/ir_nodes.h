@@ -319,6 +319,15 @@ class OperatorIR : public IRNode {
    */
   StatusOr<IRNode*> DeepCloneInto(IR* graph) const override;
 
+  virtual bool IsBlocking() const { return false; }
+
+  /**
+   * @brief Returns the Operator children of this node.
+   *
+   * @return std::vector<OperatorIR*>: the vector of operator children of this node.
+   */
+  std::vector<OperatorIR*> Children() const;
+
  protected:
   explicit OperatorIR(int64_t id, IRNodeType type, bool has_parents, bool is_source)
       : IRNode(id, type, is_source), can_have_parents_(has_parents) {}
@@ -971,6 +980,7 @@ class MemorySinkIR : public OperatorIR {
     return std::unordered_map<std::string, IRNode*>();
   }
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  bool IsBlocking() const override { return true; }
 
  private:
   std::string name_;
@@ -1099,6 +1109,7 @@ class BlockingAggIR : public OperatorIR {
   Status InitImpl(const ArgMap& args) override;
 
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  inline bool IsBlocking() const override { return true; }
 
  private:
   Status SetupGroupBy(LambdaIR* by_lambda);
@@ -1212,6 +1223,7 @@ class GRPCSinkIR : public OperatorIR {
 
   const std::string& destination_address() const { return destination_address_; }
   bool DestinationAddressSet() const { return destination_address_ != ""; }
+  inline bool IsBlocking() const override { return true; }
 
  protected:
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;

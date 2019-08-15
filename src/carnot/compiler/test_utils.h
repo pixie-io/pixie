@@ -124,6 +124,155 @@ inline ::testing::PolymorphicMatcher<CompilerErrorMatcher> HasCompilerError(
       CompilerErrorMatcher(std::move(absl::Substitute(substitute_args...))));
 }
 
+class OperatorTests : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    ast = MakeTestAstPtr();
+    graph = std::make_shared<IR>();
+    SetUpImpl();
+  }
+  virtual void SetUpImpl() {}
+  MemorySourceIR* MakeMemSource() {
+    MemorySourceIR* mem_source = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+    PL_CHECK_OK(
+        mem_source->Init(nullptr, {{"table", MakeString("table")}, {"select", nullptr}}, ast));
+    return mem_source;
+  }
+  MemorySourceIR* MakeMemSource(const Relation& relation) {
+    MemorySourceIR* mem_source = MakeMemSource();
+    EXPECT_OK(mem_source->SetRelation(relation));
+    std::vector<ColumnIR*> columns;
+    for (size_t i = 0; i < relation.NumColumns(); ++i) {
+      ColumnIR* col = MakeColumn(relation.col_names()[i], 0);
+      col->ResolveColumn(i, relation.col_types()[i]);
+      columns.push_back(col);
+    }
+    mem_source->SetColumns(columns);
+    return mem_source;
+  }
+  MapIR* MakeMap(OperatorIR* parent, const ColExpressionVector& col_map) {
+    MapIR* map = graph->MakeNode<MapIR>().ConsumeValueOrDie();
+    LambdaIR* lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
+    PL_CHECK_OK(lambda->Init({}, col_map, ast));
+    PL_CHECK_OK(map->Init(parent, {{"fn", lambda}}, ast));
+    return map;
+  }
+  MemorySinkIR* MakeMemSink(OperatorIR* parent, std::string name) {
+    auto sink = graph->MakeNode<MemorySinkIR>().ValueOrDie();
+    PL_CHECK_OK(sink->Init(parent, {{"name", MakeString(name)}}, ast));
+    return sink;
+  }
+  FilterIR* MakeFilter(OperatorIR* parent, ExpressionIR* filter_expr) {
+    auto filter_func_lambda = graph->MakeNode<LambdaIR>().ValueOrDie();
+    EXPECT_OK(filter_func_lambda->Init({}, filter_expr, ast));
+
+    FilterIR* filter = graph->MakeNode<FilterIR>().ValueOrDie();
+    ArgMap amap({{"fn", filter_func_lambda}});
+    EXPECT_OK(filter->Init(parent, amap, ast));
+    return filter;
+  }
+  LimitIR* MakeLimit(OperatorIR* parent, int64_t limit_value) {
+    LimitIR* limit = graph->MakeNode<LimitIR>().ValueOrDie();
+    ArgMap amap({{"rows", MakeInt(limit_value)}});
+    EXPECT_OK(limit->Init(parent, amap, ast));
+    return limit;
+  }
+  BlockingAggIR* MakeBlockingAgg(OperatorIR* parent, const std::vector<ColumnIR*>& columns,
+                                 const ColExpressionVector& col_agg) {
+    BlockingAggIR* agg = graph->MakeNode<BlockingAggIR>().ConsumeValueOrDie();
+    LambdaIR* fn_lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
+    PL_CHECK_OK(fn_lambda->Init({}, col_agg, ast));
+    ListIR* list_ir = graph->MakeNode<ListIR>().ConsumeValueOrDie();
+    std::vector<ExpressionIR*> exprs;
+    for (auto c : columns) {
+      exprs.push_back(c);
+    }
+    PL_CHECK_OK(list_ir->Init(ast, exprs));
+    LambdaIR* by_lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
+    PL_CHECK_OK(by_lambda->Init({}, list_ir, ast));
+    PL_CHECK_OK(agg->Init(parent, {{"by", by_lambda}, {"fn", fn_lambda}}, ast));
+    return agg;
+  }
+
+  ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx) {
+    ColumnIR* column = graph->MakeNode<ColumnIR>().ValueOrDie();
+    PL_CHECK_OK(column->Init(name, parent_op_idx, ast));
+    return column;
+  }
+  StringIR* MakeString(std::string val) {
+    auto str_ir = graph->MakeNode<StringIR>().ValueOrDie();
+    EXPECT_OK(str_ir->Init(val, ast));
+    return str_ir;
+  }
+  IntIR* MakeInt(int64_t val) {
+    auto int_ir = graph->MakeNode<IntIR>().ValueOrDie();
+    EXPECT_OK(int_ir->Init(val, ast));
+    return int_ir;
+  }
+  FuncIR* MakeAddFunc(ExpressionIR* left, ExpressionIR* right) {
+    FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
+    PL_CHECK_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
+                           std::vector<ExpressionIR*>({left, right}), false /* compile_time */,
+                           ast));
+    return func;
+  }
+  FuncIR* MakeEqualsFunc(ExpressionIR* left, ExpressionIR* right) {
+    FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
+    PL_CHECK_OK(func->Init({FuncIR::Opcode::eq, "==", "equals"}, ASTWalker::kRunTimeFuncPrefix,
+                           std::vector<ExpressionIR*>({left, right}), false /* compile_time */,
+                           ast));
+    return func;
+  }
+  MetadataIR* MakeMetadataIR(const std::string& name, int64_t parent_op_idx) {
+    MetadataIR* metadata = graph->MakeNode<MetadataIR>().ValueOrDie();
+    PL_CHECK_OK(metadata->Init(name, parent_op_idx, ast));
+    return metadata;
+  }
+  MetadataLiteralIR* MakeMetadataLiteral(DataIR* data_ir) {
+    MetadataLiteralIR* metadata_literal = graph->MakeNode<MetadataLiteralIR>().ValueOrDie();
+    PL_CHECK_OK(metadata_literal->Init(data_ir, ast));
+    return metadata_literal;
+  }
+  FuncIR* MakeMeanFunc(ExpressionIR* value) {
+    FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
+    PL_CHECK_OK(func->Init({FuncIR::Opcode::non_op, "", "mean"}, ASTWalker::kRunTimeFuncPrefix,
+                           std::vector<ExpressionIR*>({value}), false /* compile_time */, ast));
+    return func;
+  }
+  std::shared_ptr<IR> SwapGraphBeingBuilt(std::shared_ptr<IR> new_graph) {
+    std::shared_ptr<IR> old_graph = graph;
+    graph = new_graph;
+    return old_graph;
+  }
+
+  GRPCSourceGroupIR* MakeGRPCSourceGroup(int64_t source_id, const Relation& relation) {
+    GRPCSourceGroupIR* grpc_src_group = graph->MakeNode<GRPCSourceGroupIR>().ValueOrDie();
+    EXPECT_OK(grpc_src_group->Init(source_id, relation, ast));
+    return grpc_src_group;
+  }
+
+  GRPCSinkIR* MakeGRPCSink(OperatorIR* parent, int64_t source_id) {
+    GRPCSinkIR* grpc_sink = graph->MakeNode<GRPCSinkIR>().ValueOrDie();
+    EXPECT_OK(grpc_sink->Init(parent, source_id, ast));
+    return grpc_sink;
+  }
+  GRPCSourceIR* MakeGRPCSource(const std::string& source_id, const Relation& relation) {
+    GRPCSourceIR* grpc_src_group = graph->MakeNode<GRPCSourceIR>().ValueOrDie();
+    EXPECT_OK(grpc_src_group->Init(source_id, relation, ast));
+    return grpc_src_group;
+  }
+  // Use this if you need a relation but don't care about the contents.
+  Relation MakeRelation() {
+    return table_store::schema::Relation(
+        std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
+                                      types::DataType::FLOAT64, types::DataType::FLOAT64}),
+        std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
+  }
+
+  pypa::AstPtr ast;
+  std::shared_ptr<IR> graph;
+};
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
