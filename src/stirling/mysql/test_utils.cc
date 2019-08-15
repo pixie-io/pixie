@@ -103,18 +103,24 @@ Packet GenStmtPrepareRespHeader(const StmtPrepareRespHeader& header) {
 /**
  * Generates a deque of packets. Contains a col counter packet and n resultset rows.
  */
-std::deque<Packet> GenResultset(const Resultset& resultset) {
+std::deque<Packet> GenResultset(const Resultset& resultset, bool client_eof_deprecate) {
   std::deque<Packet> result;
   auto resp_header = GenCountPacket(resultset.num_col());
   result.emplace_back(std::move(resp_header));
   for (ColDefinition col_def : resultset.col_defs()) {
     result.emplace_back(GenColDefinition(col_def));
   }
-  result.emplace_back(GenEOF());
+  if (!client_eof_deprecate) {
+    result.emplace_back(GenEOF());
+  }
   for (ResultsetRow row : resultset.results()) {
     result.emplace_back(GenResultsetRow(row));
   }
-  result.emplace_back(GenEOF());
+  if (client_eof_deprecate) {
+    result.emplace_back(GenOK());
+  } else {
+    result.emplace_back(GenEOF());
+  }
   return result;
 }
 

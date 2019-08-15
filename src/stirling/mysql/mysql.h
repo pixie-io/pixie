@@ -1,5 +1,6 @@
 #pragma once
 #include <deque>
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -334,6 +335,18 @@ struct Entry {
   std::string msg;
   MySQLEntryStatus status;
   uint64_t req_timestamp_ns;
+};
+
+enum class FlagStatus { kUnknown = 0, kSet, kNotSet };
+
+/**
+ * State stores a map of stmt_id to active StmtPrepare event. It's used to be looked up
+ * for the Stmtprepare event when a StmtExecute is received. cllient_deprecate_eof indicates
+ * whether the ClientDeprecateEOF Flag is set.
+ */
+struct State {
+  std::map<int, mysql::ReqRespEvent> prepare_events;
+  FlagStatus client_deprecate_eof;
 };
 
 /**

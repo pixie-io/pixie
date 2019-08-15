@@ -17,8 +17,7 @@ namespace mysql {
  * @return A vector of entries to be appended to table store.
  */
 std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
-                                      std::deque<Packet>* resp_packets,
-                                      std::map<int, ReqRespEvent>* prepare_events);
+                                      std::deque<Packet>* resp_packets, mysql::State* state);
 
 // TODO(chengruizhe): Can potentially templatize these functions, especially when we have more
 // event types.
@@ -30,15 +29,15 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
  * @return A entry in the table store.
  */
 StatusOr<Entry> StitchStmtPrepare(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                  std::map<int, ReqRespEvent>* prepare_events);
+                                  mysql::State* state);
 
 StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                  std::map<int, ReqRespEvent>* prepare_events);
+                                  mysql::State* state);
 
-StatusOr<Entry> StitchStmtClose(const Packet& req_packet,
-                                std::map<int, ReqRespEvent>* prepare_events);
+StatusOr<Entry> StitchStmtClose(const Packet& req_packet, mysql::State* state);
 
-StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets);
+StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                            mysql::State* state);
 
 }  // namespace mysql
 }  // namespace stirling

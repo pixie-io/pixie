@@ -82,8 +82,8 @@ const std::vector<ColDefinition> kStmtExecuteColDefs = {
                      "\x00"))}};
 
 const std::vector<ResultsetRow> kStmtExecuteResultsetRows = {
-    ResultsetRow{std::string(ConstStrView("\x00\x00\x24\x33\x33\x39id1"))},
-    ResultsetRow{std::string(ConstStrView("\x00\x00\x24\x38\x33\x37id2"))}};
+    ResultsetRow{std::string(ConstStrView("\x03id1"))},
+    ResultsetRow{std::string(ConstStrView("\x03id2"))}};
 
 const Resultset kStmtExecuteResultset(2, kStmtExecuteColDefs, kStmtExecuteResultsetRows);
 

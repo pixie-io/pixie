@@ -53,8 +53,7 @@ std::string CreateErrorJSON(std::string_view body, std::string_view error) {
 }  // namespace
 
 std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
-                                      std::deque<Packet>* resp_packets,
-                                      std::map<int, ReqRespEvent>* prepare_events) {
+                                      std::deque<Packet>* resp_packets, mysql::State* state) {
   std::vector<Entry> entries;
   while (!req_packets->empty()) {
     if (resp_packets->empty()) {
@@ -67,16 +66,16 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
     // TODO(chengruizhe): Remove type from Packet and infer type here.
     switch (req_packet.type) {
       case MySQLEventType::kComStmtPrepare:
-        e = StitchStmtPrepare(req_packet, resp_packets, prepare_events);
+        e = StitchStmtPrepare(req_packet, resp_packets, state);
         break;
       case MySQLEventType::kComStmtExecute:
-        e = StitchStmtExecute(req_packet, resp_packets, prepare_events);
+        e = StitchStmtExecute(req_packet, resp_packets, state);
         break;
       case MySQLEventType::kComStmtClose:
-        e = StitchStmtClose(req_packet, prepare_events);
+        e = StitchStmtClose(req_packet, state);
         break;
       case MySQLEventType::kComQuery:
-        e = StitchQuery(req_packet, resp_packets);
+        e = StitchQuery(req_packet, resp_packets, state);
         break;
       case MySQLEventType::kUnknown:
         // TODO(chengruizhe): Here we assume that if the request type is unknown, the response will
@@ -103,7 +102,7 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
 }
 
 StatusOr<Entry> StitchStmtPrepare(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                  std::map<int, ReqRespEvent>* prepare_events) {
+                                  mysql::State* state) {
   PL_ASSIGN_OR_RETURN(auto req, HandleStringRequest(req_packet));
 
   Packet header_packet = resp_packets->front();
@@ -115,15 +114,15 @@ StatusOr<Entry> StitchStmtPrepare(const Packet& req_packet, std::deque<Packet>* 
   } else {
     PL_ASSIGN_OR_RETURN(auto resp, HandleStmtPrepareOKResponse(resp_packets));
     int stmt_id = resp->resp_header().stmt_id;
-    prepare_events->emplace(
+    state->prepare_events.emplace(
         stmt_id, ReqRespEvent(MySQLEventType::kComStmtPrepare, std::move(req), std::move(resp)));
     return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
   }
 }
 
 StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* resp_packets,
-                                  std::map<int, ReqRespEvent>* prepare_events) {
-  PL_ASSIGN_OR_RETURN(auto req, HandleStmtExecuteRequest(req_packet, prepare_events));
+                                  mysql::State* state) {
+  PL_ASSIGN_OR_RETURN(auto req, HandleStmtExecuteRequest(req_packet, &state->prepare_events));
 
   Packet first_packet = resp_packets->front();
 
@@ -151,11 +150,11 @@ StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* 
     error_message = resp->error_message();
 
   } else {
-    PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets));
+    PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets, state));
   }
 
   // TODO(chengruizhe): Write result set to entry.
-  std::string filled_msg = CombinePrepareExecute(req.get(), prepare_events);
+  std::string filled_msg = CombinePrepareExecute(req.get(), &state->prepare_events);
   if (error_message == "") {
     return Entry{CreateErrorJSON(filled_msg, error_message), MySQLEntryStatus::kOK,
                  req_packet.timestamp_ns};
@@ -165,13 +164,13 @@ StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* 
   }
 }
 
-StatusOr<Entry> StitchStmtClose(const Packet& req_packet,
-                                std::map<int, ReqRespEvent>* prepare_events) {
-  PL_RETURN_IF_ERROR(HandleStmtCloseRequest(req_packet, prepare_events));
+StatusOr<Entry> StitchStmtClose(const Packet& req_packet, State* state) {
+  PL_RETURN_IF_ERROR(HandleStmtCloseRequest(req_packet, &state->prepare_events));
   return Entry{"", MySQLEntryStatus::kUnknown, req_packet.timestamp_ns};
 }
 
-StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets) {
+StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_packets,
+                            mysql::State* state) {
   PL_ASSIGN_OR_RETURN(auto req, HandleStringRequest(req_packet));
 
   Packet first_packet = resp_packets->front();
@@ -185,7 +184,7 @@ StatusOr<Entry> StitchQuery(const Packet& req_packet, std::deque<Packet>* resp_p
 
   } else {
     // TODO(chengruizhe): Write result set to entry.
-    PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets));
+    PL_ASSIGN_OR_RETURN(auto resp, HandleResultset(resp_packets, state));
   }
 
   return Entry{CreateErrorJSON(req->msg(), ""), MySQLEntryStatus::kOK, req_packet.timestamp_ns};

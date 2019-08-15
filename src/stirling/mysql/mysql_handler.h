@@ -19,7 +19,8 @@ StatusOr<std::unique_ptr<ErrResponse>> HandleErrMessage(std::deque<Packet>* resp
 
 StatusOr<std::unique_ptr<OKResponse>> HandleOKMessage(std::deque<Packet>* resp_packets);
 
-StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_packets);
+StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_packets,
+                                                     State* state);
 
 StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
     std::deque<Packet>* resp_packets);

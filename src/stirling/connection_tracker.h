@@ -503,7 +503,7 @@ class ConnectionTracker {
    * E.g. MySQL keeps a map of previously occured stmt prepare events as the state such
    * that future stmt execute events can match up with the correct one using stmt_id.
    */
-  std::variant<std::monostate, std::unique_ptr<std::map<int, mysql::ReqRespEvent>>> state_;
+  std::variant<std::monostate, std::unique_ptr<mysql::State>> state_;
 };
 
 }  // namespace stirling

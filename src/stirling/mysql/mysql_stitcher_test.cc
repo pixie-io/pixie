@@ -26,11 +26,11 @@ TEST_F(StitcherTest, TestStitchStmtPrepareOK) {
   std::deque<Packet> ok_resp_packets =
       testutils::GenStmtPrepareOKResponse(testutils::kStmtPrepareResponse);
 
-  std::map<int, ReqRespEvent> prepare_events;
-  auto s1 = StitchStmtPrepare(req, &ok_resp_packets, &prepare_events);
+  State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
+  auto s1 = StitchStmtPrepare(req, &ok_resp_packets, &state);
   EXPECT_TRUE(s1.ok());
-  auto iter1 = prepare_events.find(stmt_id);
-  EXPECT_TRUE(iter1 != prepare_events.end());
+  auto iter1 = state.prepare_events.find(stmt_id);
+  EXPECT_TRUE(iter1 != state.prepare_events.end());
 }
 
 TEST_F(StitcherTest, TestStitchStmtPrepareErr) {
@@ -42,11 +42,11 @@ TEST_F(StitcherTest, TestStitchStmtPrepareErr) {
   ErrResponse expected_response(1096, "This an error.");
   err_resp_packets.emplace_back(testutils::GenErr(expected_response));
 
-  std::map<int, ReqRespEvent> prepare_events;
-  auto s2 = StitchStmtPrepare(req, &err_resp_packets, &prepare_events);
+  State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
+  auto s2 = StitchStmtPrepare(req, &err_resp_packets, &state);
   EXPECT_TRUE(s2.ok());
-  auto iter2 = prepare_events.find(stmt_id);
-  EXPECT_EQ(iter2, prepare_events.end());
+  auto iter2 = state.prepare_events.find(stmt_id);
+  EXPECT_EQ(iter2, state.prepare_events.end());
   Entry err_entry = s2.ValueOrDie();
 
   Entry expected_err_entry{absl::StrCat("{\"Error\": \"This an error.\", \"Message\": \"",
@@ -63,10 +63,10 @@ TEST_F(StitcherTest, TestStitchStmtExecute) {
 
   std::deque<Packet> resultset = testutils::GenResultset(testutils::kStmtExecuteResultset);
 
-  std::map<int, ReqRespEvent> prepare_events;
-  prepare_events.emplace(stmt_id, testutils::InitStmtPrepare());
+  State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
+  state.prepare_events.emplace(stmt_id, testutils::InitStmtPrepare());
 
-  auto s1 = StitchStmtExecute(req, &resultset, &prepare_events);
+  auto s1 = StitchStmtExecute(req, &resultset, &state);
   EXPECT_TRUE(s1.ok());
   Entry resultset_entry = s1.ValueOrDie();
 
@@ -86,12 +86,12 @@ TEST_F(StitcherTest, TestStitchStmtClose) {
 
   int stmt_id = testutils::kStmtCloseRequest.stmt_id();
 
-  std::map<int, ReqRespEvent> prepare_events;
-  prepare_events.emplace(stmt_id, testutils::InitStmtPrepare());
+  State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
+  state.prepare_events.emplace(stmt_id, testutils::InitStmtPrepare());
 
-  auto s1 = StitchStmtClose(req, &prepare_events);
+  auto s1 = StitchStmtClose(req, &state);
   EXPECT_TRUE(s1.ok());
-  EXPECT_EQ(0, prepare_events.size());
+  EXPECT_EQ(0, state.prepare_events.size());
 }
 
 TEST_F(StitcherTest, TestStitchQuery) {
@@ -99,7 +99,8 @@ TEST_F(StitcherTest, TestStitchQuery) {
 
   std::deque<Packet> resultset = testutils::GenResultset(testutils::kQueryResultset);
 
-  auto s1 = StitchQuery(req, &resultset);
+  State state{std::map<int, ReqRespEvent>(), FlagStatus::kUnknown};
+  auto s1 = StitchQuery(req, &resultset, &state);
   EXPECT_TRUE(s1.ok());
   Entry resultset_entry = s1.ValueOrDie();
 

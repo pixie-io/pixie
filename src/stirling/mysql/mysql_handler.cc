@@ -99,6 +99,61 @@ void DissectUnknownParam(const std::string_view msg, int* param_offset, ParamPac
   DissectStringParam(msg, param_offset, packet);
 }
 
+/**
+ * @param num_col number of columns expected (parsed from header packet)
+ * @param resp_packets deque of response packets to be checked
+ * @param client_deprecate_eof_status whether client_deprecate_eof flag is set
+ * This functions checks if the resultset is complete.
+ */
+Status CheckResultsetComplete(int num_col, std::deque<Packet>* resp_packets,
+                              const FlagStatus& client_deprecate_eof_status) {
+  bool client_deprecate_eof = client_deprecate_eof_status == FlagStatus::kSet;
+  size_t expected_length = 1 + num_col + (client_deprecate_eof ? 0 : 1);
+  if (resp_packets->size() < expected_length) {
+    return error::Cancelled(
+        "Handle Resultset: Not enough column definitions. Incomplete resultset.");
+  }
+
+  bool is_complete = false;
+
+  // If it errors, an Err packet follows one or more resultset row packets.
+  // If it doesn't error, in order to check if resultset is complete, we check that an EOF
+  // packet exists after these packets. If client_deprecate_eof is set then an Ok is present.
+  for (Packet p : *resp_packets) {
+    bool ok_or_eof = client_deprecate_eof ? IsOKPacket(p) : IsEOFPacket(p);
+    if (ok_or_eof || IsErrPacket(p)) {
+      is_complete = true;
+      break;
+    }
+  }
+  if (!is_complete) {
+    return error::Cancelled(
+        "Handle Resultset: missing EOF after resultset rows. Incomplete resultset.");
+  }
+  return Status::OK();
+}
+
+/**
+ * @param num_col number of columns expected (parsed from header packet)
+ * @param resp_packets deque of response packets to be checked
+ * @param state
+ */
+Status InferClientDeprecateEOF(int num_col, std::deque<Packet>* resp_packets,
+                               FlagStatus* client_deprecate_eof_status) {
+  size_t expected_length = 2 + num_col;
+  if (resp_packets->size() < expected_length) {
+    return error::Cancelled(
+        "Handle Resultset: Not enough column definitions. Incomplete resultset.");
+  }
+
+  if (IsEOFPacket((*resp_packets)[num_col + 1])) {
+    *client_deprecate_eof_status = FlagStatus::kNotSet;
+  } else {
+    *client_deprecate_eof_status = FlagStatus::kSet;
+  }
+  return Status::OK();
+}
+
 }  // namespace
 
 //-----------------------------------------------------------------------------
@@ -122,40 +177,23 @@ StatusOr<std::unique_ptr<OKResponse>> HandleOKMessage(std::deque<Packet>* resp_p
   return std::make_unique<OKResponse>(OKResponse());
 }
 
-StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_packets) {
+StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_packets,
+                                                     State* state) {
   Packet packet = resp_packets->front();
 
   int param_offset = 0;
   int num_col = ProcessLengthEncodedInt(packet.msg, &param_offset);
-
-  // TODO(chengruizhe): Add a cache so that don't need to iterate through to check if complete.
-  // header + col * n + eof(if n != 0 && !CLIENT_DEPRECATE_EOF) + result_set_row * m + eof(if
-  // !CLIENT_DEPRECATE_EOF else ok)
-  // TODO(chengruizhe): Assuming that CLIENT_DEPRECATE_EOF is not set below. Make it robust.
-  if (static_cast<int>(resp_packets->size()) < 2 + num_col) {  // Checks first EOF
-    return error::Cancelled(
-        "Handle Resultset: missing EOF after column definitions. Incomplete resultset.");
-  }
-
-  bool is_complete = false;
-
   if (num_col == 0) {
     return error::Cancelled("Handle Resultset: num of column is 0.");
   }
 
-  // header[1] + col_def[num_col] + eof[1]. In order to check if
-  // resultset is complete, we check that an EOF packet exists after these packets.
-  for (size_t i = 2 + num_col; i < resp_packets->size(); ++i) {
-    if (IsEOFPacket(resp_packets->at(i))) {
-      is_complete = true;
-      break;
-    }
+  if (state->client_deprecate_eof == FlagStatus::kUnknown) {
+    PL_RETURN_IF_ERROR(
+        InferClientDeprecateEOF(num_col, resp_packets, &state->client_deprecate_eof));
   }
-
-  if (!is_complete) {
-    return error::Cancelled(
-        "Handle Resultset: missing EOF after resultset rows. Incomplete resultset.");
-  }
+  // header + col * n + eof(if n != 0 && !CLIENT_DEPRECATE_EOF) + result_set_row * m + eof(if
+  // !CLIENT_DEPRECATE_EOF else ok)
+  PL_RETURN_IF_ERROR(CheckResultsetComplete(num_col, resp_packets, state->client_deprecate_eof));
 
   // Pops header packet
   resp_packets->pop_front();
@@ -171,18 +209,27 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_pa
     resp_packets->pop_front();
   }
 
-  CHECK(IsEOFPacket(resp_packets->front()));
   ProcessEOFPacket(resp_packets);
 
   std::vector<ResultsetRow> results;
-  while (!IsEOFPacket(resp_packets->front())) {
+  auto isLastPacket = [state, resp_packets](const Packet& p) {
+    if (IsErrPacket(p)) {
+      return true;
+    }
+    return state->client_deprecate_eof == FlagStatus::kSet ? IsOKPacket(resp_packets->front())
+                                                           : IsEOFPacket(resp_packets->front());
+  };
+
+  while (!isLastPacket(resp_packets->front())) {
     Packet row_packet = resp_packets->front();
     ResultsetRow row{row_packet.msg};
     results.emplace_back(std::move(row));
     resp_packets->pop_front();
   }
-  ProcessEOFPacket(resp_packets);
 
+  // TODO(chengruizhe): If it ends with err packet, handle the error and propagate up error_message.
+
+  resp_packets->pop_front();
   return std::make_unique<Resultset>(Resultset(num_col, std::move(col_defs), std::move(results)));
 }
 

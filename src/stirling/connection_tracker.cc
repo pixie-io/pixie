@@ -20,9 +20,10 @@ namespace stirling {
 template <>
 void ConnectionTracker::InitState<mysql::Packet>() {
   CHECK(std::holds_alternative<std::monostate>(state_) ||
-        (std::holds_alternative<std::unique_ptr<std::map<int, mysql::ReqRespEvent>>>(state_)));
+        (std::holds_alternative<std::unique_ptr<mysql::State>>(state_)));
   if (std::holds_alternative<std::monostate>(state_)) {
-    state_ = std::make_unique<std::map<int, mysql::ReqRespEvent>>();
+    mysql::State s{std::map<int, mysql::ReqRespEvent>(), mysql::FlagStatus::kUnknown};
+    state_ = std::make_unique<mysql::State>(std::move(s));
   }
 }
 
@@ -252,7 +253,7 @@ std::vector<mysql::Entry> ConnectionTracker::ProcessMessages() {
   auto& req_messages = req_data()->Messages<mysql::Packet>();
   auto& resp_messages = resp_data()->Messages<mysql::Packet>();
 
-  auto state_ptr = state<std::map<int, mysql::ReqRespEvent>>();
+  auto state_ptr = state<mysql::State>();
   return mysql::StitchMySQLPackets(&req_messages, &resp_messages, state_ptr);
 }
 
