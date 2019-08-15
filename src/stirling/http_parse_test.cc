@@ -86,9 +86,160 @@ TEST(ParseHTTPHeaderFiltersAndMatchTest, FiltersAreAsExpectedAndMatchesWork) {
   }
 }
 
-class HTTPParserTest : public ::testing::Test {
+//=============================================================================
+// HTTP Parsing Tests
+//=============================================================================
+
+// Parameter used for stress/fuzz test.
+struct TestParam {
+  uint32_t seed;
+  uint32_t iters;
+};
+
+class HTTPParserTest : public ::testing::TestWithParam<TestParam> {
  protected:
   EventParser<HTTPMessage> parser_;
+
+  const std::string kHTTPGetReq0 =
+      "GET /index.html HTTP/1.1\r\n"
+      "Host: www.pixielabs.ai\r\n"
+      "Accept: image/gif, image/jpeg, */*\r\n"
+      "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+      "\r\n";
+
+  HTTPMessage HTTPGetReq0ExpectedMessage() {
+    HTTPMessage expected_message;
+    expected_message.type = HTTPEventType::kHTTPRequest;
+    expected_message.http_minor_version = 1;
+    expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
+                                     {"Accept", "image/gif, image/jpeg, */*"},
+                                     {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
+    expected_message.http_req_method = "GET";
+    expected_message.http_req_path = "/index.html";
+    expected_message.http_msg_body = "-";
+    return expected_message;
+  }
+
+  const std::string kHTTPGetReq1 =
+      "GET /foo.html HTTP/1.1\r\n"
+      "Host: www.pixielabs.ai\r\n"
+      "Accept: image/gif, image/jpeg, */*\r\n"
+      "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+      "\r\n";
+
+  HTTPMessage HTTPGetReq1ExpectedMessage() {
+    HTTPMessage expected_message;
+    expected_message.type = HTTPEventType::kHTTPRequest;
+    expected_message.http_minor_version = 1;
+    expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
+                                     {"Accept", "image/gif, image/jpeg, */*"},
+                                     {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
+    expected_message.http_req_method = "GET";
+    expected_message.http_req_path = "/foo.html";
+    expected_message.http_msg_body = "-";
+    return expected_message;
+  }
+
+  const std::string kHTTPPostReq0 =
+      "POST /test HTTP/1.1\r\n"
+      "Host: pixielabs.ai\r\n"
+      "Content-Type: application/x-www-form-urlencoded\r\n"
+      "Content-Length: 27\r\n"
+      "\r\n"
+      "field1=value1&field2=value2";
+
+  HTTPMessage HTTPPostReq0ExpectedMessage() {
+    HTTPMessage expected_message;
+    expected_message.type = HTTPEventType::kHTTPRequest;
+    expected_message.http_minor_version = 1;
+    expected_message.http_headers = {{"Host", "pixielabs.ai"},
+                                     {"Content-Type", "application/x-www-form-urlencoded"},
+                                     {"Content-Length", "27"}};
+    expected_message.http_req_method = "POST";
+    expected_message.http_req_path = "/test";
+    expected_message.http_msg_body = "field1=value1&field2=value2";
+    return expected_message;
+  }
+
+  std::string kHTTPResp0 =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: foo\r\n"
+      "Content-Length: 9\r\n"
+      "\r\n"
+      "pixielabs";
+
+  HTTPMessage HTTPResp0ExpectedMessage() {
+    HTTPMessage expected_message;
+    expected_message.type = HTTPEventType::kHTTPResponse;
+    expected_message.http_minor_version = 1;
+    expected_message.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
+    expected_message.http_resp_status = 200;
+    expected_message.http_resp_message = "OK";
+    expected_message.http_msg_body = "pixielabs";
+    return expected_message;
+  }
+
+  std::string kHTTPResp1 =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: bar\r\n"
+      "Content-Length: 21\r\n"
+      "\r\n"
+      "pixielabs is awesome!";
+
+  HTTPMessage HTTPResp1ExpectedMessage() {
+    HTTPMessage expected_message;
+    expected_message.type = HTTPEventType::kHTTPResponse;
+    expected_message.http_minor_version = 1;
+    expected_message.http_headers = {{"Content-Type", "bar"}, {"Content-Length", "21"}};
+    expected_message.http_resp_status = 200;
+    expected_message.http_resp_message = "OK";
+    expected_message.http_msg_body = "pixielabs is awesome!";
+    return expected_message;
+  }
+
+  std::string kHTTPResp2 =
+      "HTTP/1.1 200 OK\r\n"
+      "Transfer-Encoding: chunked\r\n"
+      "\r\n"
+      "9\r\n"
+      "pixielabs\r\n"
+      "C\r\n"
+      " is awesome!\r\n"
+      "0\r\n"
+      "\r\n";
+
+  HTTPMessage HTTPResp2ExpectedMessage() {
+    HTTPMessage expected_message;
+    expected_message.type = HTTPEventType::kHTTPResponse;
+    expected_message.http_minor_version = 1;
+    expected_message.http_headers = {{"Transfer-Encoding", "chunked"}};
+    expected_message.http_resp_status = 200;
+    expected_message.http_resp_message = "OK";
+    expected_message.http_msg_body = "pixielabs is awesome!";
+    return expected_message;
+  }
+
+  // Utility function that takes a string view of a buffer, and a set of N split points,
+  // and returns a set of N+1 split string_views of the buffer.
+  std::vector<std::string_view> MessageSplit(std::string_view msg,
+                                             std::vector<size_t> split_points) {
+    std::vector<std::string_view> splits;
+
+    split_points.push_back(msg.length());
+    std::sort(split_points.begin(), split_points.end());
+
+    // Check for bad split_points.
+    CHECK_EQ(msg.length(), split_points.back());
+
+    uint32_t curr_pos = 0;
+    for (auto split_point : split_points) {
+      auto split = std::string_view(msg).substr(curr_pos, split_point - curr_pos);
+      splits.push_back(split);
+      curr_pos = split_point;
+    }
+
+    return splits;
+  }
 };
 
 bool operator==(const HTTPMessage& lhs, const HTTPMessage& rhs) {
@@ -409,136 +560,7 @@ TEST(ParseTest, PartialMessages) {
 // HTTP Request Parsing Tests
 //=============================================================================
 
-// Parameter used for stress/fuzz test.
-struct TestParam {
-  uint32_t seed;
-  uint32_t iters;
-};
-
-class HTTPParserStressTest : public ::testing::TestWithParam<TestParam> {
- protected:
-  EventParser<HTTPMessage> parser_;
-
-  const std::string kHTTPGetReq0 = R"(GET /index.html HTTP/1.1
-Host: www.pixielabs.ai
-Accept: image/gif, image/jpeg, */*
-User-Agent: Mozilla/5.0 (X11; Linux x86_64)
-
-)";
-
-  HTTPMessage HTTPGetReq0ExpectedMessage() {
-    HTTPMessage expected_message;
-    expected_message.type = HTTPEventType::kHTTPRequest;
-    expected_message.http_minor_version = 1;
-    expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
-                                     {"Accept", "image/gif, image/jpeg, */*"},
-                                     {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
-    expected_message.http_req_method = "GET";
-    expected_message.http_req_path = "/index.html";
-    expected_message.http_msg_body = "-";
-    return expected_message;
-  }
-
-  const std::string kHTTPPostReq0 = R"(POST /test HTTP/1.1
-Host: pixielabs.ai
-Content-Type: application/x-www-form-urlencoded
-Content-Length: 27
-
-field1=value1&field2=value2)";
-
-  HTTPMessage HTTPPostReq0ExpectedMessage() {
-    HTTPMessage expected_message;
-    expected_message.type = HTTPEventType::kHTTPRequest;
-    expected_message.http_minor_version = 1;
-    expected_message.http_headers = {{"Host", "pixielabs.ai"},
-                                     {"Content-Type", "application/x-www-form-urlencoded"},
-                                     {"Content-Length", "27"}};
-    expected_message.http_req_method = "POST";
-    expected_message.http_req_path = "/test";
-    expected_message.http_msg_body = "field1=value1&field2=value2";
-    return expected_message;
-  }
-
-  std::string kHTTPResp0 = R"(HTTP/1.1 200 OK
-Content-Type: foo
-Content-Length: 9
-
-pixielabs)";
-
-  HTTPMessage HTTPResp0ExpectedMessage() {
-    HTTPMessage expected_message;
-    expected_message.type = HTTPEventType::kHTTPResponse;
-    expected_message.http_minor_version = 1;
-    expected_message.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
-    expected_message.http_resp_status = 200;
-    expected_message.http_resp_message = "OK";
-    expected_message.http_msg_body = "pixielabs";
-    return expected_message;
-  }
-
-  std::string kHTTPResp1 = R"(HTTP/1.1 200 OK
-Content-Type: bar
-Content-Length: 21
-
-pixielabs is awesome!)";
-
-  HTTPMessage HTTPResp1ExpectedMessage() {
-    HTTPMessage expected_message;
-    expected_message.type = HTTPEventType::kHTTPResponse;
-    expected_message.http_minor_version = 1;
-    expected_message.http_headers = {{"Content-Type", "bar"}, {"Content-Length", "21"}};
-    expected_message.http_resp_status = 200;
-    expected_message.http_resp_message = "OK";
-    expected_message.http_msg_body = "pixielabs is awesome!";
-    return expected_message;
-  }
-
-  std::string kHTTPResp2 = R"(HTTP/1.1 200 OK
-Transfer-Encoding: chunked
-
-9
-pixielabs
-C
- is awesome!
-0
-
-)";
-
-  HTTPMessage HTTPResp2ExpectedMessage() {
-    HTTPMessage expected_message;
-    expected_message.type = HTTPEventType::kHTTPResponse;
-    expected_message.http_minor_version = 1;
-    expected_message.http_headers = {{"Transfer-Encoding", "chunked"}};
-    expected_message.http_resp_status = 200;
-    expected_message.http_resp_message = "OK";
-    expected_message.http_msg_body = "pixielabs is awesome!";
-    return expected_message;
-  }
-
-  // Utility function that takes a string view of a buffer, and a set of N split points,
-  // and returns a set of N+1 split string_views of the buffer.
-  std::vector<std::string_view> MessageSplit(std::string_view msg,
-                                             std::vector<size_t> split_points) {
-    std::vector<std::string_view> splits;
-
-    split_points.push_back(msg.length());
-    std::sort(split_points.begin(), split_points.end());
-
-    // Check for bad split_points.
-    CHECK_EQ(msg.length(), split_points.back());
-
-    uint32_t curr_pos = 0;
-    for (auto split_point : split_points) {
-      auto split = std::string_view(msg).substr(curr_pos, split_point - curr_pos);
-      splits.push_back(split);
-      curr_pos = split_point;
-    }
-
-    return splits;
-  }
-};
-
-TEST_F(HTTPParserStressTest, ParseHTTPRequestSingle) {
+TEST_F(HTTPParserTest, ParseHTTPRequestSingle) {
   parser_.Append(kHTTPGetReq0, 0);
 
   std::deque<HTTPMessage> parsed_messages;
@@ -548,7 +570,7 @@ TEST_F(HTTPParserStressTest, ParseHTTPRequestSingle) {
   EXPECT_THAT(parsed_messages, ElementsAre(HTTPGetReq0ExpectedMessage()));
 }
 
-TEST_F(HTTPParserStressTest, ParseHTTPRequestMultiple) {
+TEST_F(HTTPParserTest, ParseHTTPRequestMultiple) {
   parser_.Append(kHTTPGetReq0, 0);
   parser_.Append(kHTTPPostReq0, 1);
   std::deque<HTTPMessage> parsed_messages;
@@ -559,7 +581,7 @@ TEST_F(HTTPParserStressTest, ParseHTTPRequestMultiple) {
               ElementsAre(HTTPGetReq0ExpectedMessage(), HTTPPostReq0ExpectedMessage()));
 }
 
-TEST_P(HTTPParserStressTest, ParseHTTPRequestsRepeatedly) {
+TEST_P(HTTPParserTest, ParseHTTPRequestsRepeatedly) {
   std::string msg = kHTTPGetReq0 + kHTTPPostReq0;
 
   std::default_random_engine rng;
@@ -589,7 +611,7 @@ TEST_P(HTTPParserStressTest, ParseHTTPRequestsRepeatedly) {
   }
 }
 
-TEST_P(HTTPParserStressTest, ParseHTTPResponsesRepeatedly) {
+TEST_P(HTTPParserTest, ParseHTTPResponsesRepeatedly) {
   std::string msg = kHTTPResp0 + kHTTPResp1 + kHTTPResp2;
 
   std::default_random_engine rng;
@@ -623,7 +645,7 @@ TEST_P(HTTPParserStressTest, ParseHTTPResponsesRepeatedly) {
 // that needs to be processed after more data is added to the buffer.
 // ParseHTTPResponseWithLeftoverRepeatedly expands on this by repeating this process many times.
 // Keeping this test as a basic filter (easier for debug).
-TEST_F(HTTPParserStressTest, ParseHTTPResponsesWithLeftover) {
+TEST_F(HTTPParserTest, ParseHTTPResponsesWithLeftover) {
   std::string msg = kHTTPResp0 + kHTTPResp1 + kHTTPResp2;
 
   std::vector<size_t> split_points;
@@ -663,7 +685,7 @@ TEST_F(HTTPParserStressTest, ParseHTTPResponsesWithLeftover) {
 
 // Like ParseHTTPResponsesWithLeftover, but repeats test many times,
 // each time with different random split points to stress the functionality.
-TEST_P(HTTPParserStressTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
+TEST_P(HTTPParserTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
   std::string msg = kHTTPResp0 + kHTTPResp1 + kHTTPResp2 + kHTTPResp1;
 
   std::default_random_engine rng;
@@ -703,7 +725,7 @@ TEST_P(HTTPParserStressTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
   }
 }
 
-INSTANTIATE_TEST_CASE_P(Stressor, HTTPParserStressTest,
+INSTANTIATE_TEST_CASE_P(Stressor, HTTPParserTest,
                         ::testing::Values(TestParam{37337, 50}, TestParam{98237, 50}));
 // TODO(oazizi/yzhao): TestParam{37337, 100} fails, so there is a bug somewhere. Fix it.
 
