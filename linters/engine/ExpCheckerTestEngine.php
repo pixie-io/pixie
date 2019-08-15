@@ -11,18 +11,20 @@ final class ExpCheckerTest {
 
     private function checkFile($file, $res) {
         $buildRes = new ArcanistUnitTestResult();
-        $buildRes->setName($file . ' contains only non-experimental PL versions of build rules');
+        $buildRes->setName($file . ' contains only experimental build rules');
 
         // Read the file to check for pl_go and pl_cc.
         $readFile = fopen($file,"r");
         $failed = false;
+        $failed_line = "";
         while(!feof($readFile))
           {
             $line = fgets($readFile);
-            if (strpos($line, "load(//") == 0) {
+            if (strpos($line, "load(//") === 0) {
                 // If the line begins with 'load("//', check to see if it contains any pl_cc/pl_go rules.
                 if (strpos($line, "pl_go") !== false || strpos($line, "pl_cc") !== false) {
                     $failed = true;
+                    $failed_line = $line;
                     break;
                 }
 
@@ -32,7 +34,8 @@ final class ExpCheckerTest {
 
         if ($failed) {
           $buildRes->setResult(ArcanistUnitTestResult::RESULT_FAIL);
-                    $buildRes->setUserData($file . ' should use pl_exp_cc_* and pl_exp_go_*.');
+          $buildRes->setUserData($file . ' should only load experimental build rules like pl_exp_cc_* ' .
+                                 'and pl_exp_go_*. Offending line: ' . $failed_line);
         } else {
             $buildRes->setResult(ArcanistUnitTestResult::RESULT_PASS);
         }
