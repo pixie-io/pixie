@@ -4,8 +4,8 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
-	"pixielabs.ai/pixielabs/src/services/common"
 	"pixielabs.ai/pixielabs/src/services/site_manager/sitemanagerpb"
+	"pixielabs.ai/pixielabs/src/shared/services"
 )
 
 func init() {
@@ -14,7 +14,7 @@ func init() {
 
 // NewSiteManagerServiceClient creates a new auth RPC client stub.
 func NewSiteManagerServiceClient() (sitemanagerpb.SiteManagerServiceClient, error) {
-	dialOpts, err := common.GetGRPCClientDialOpts()
+	dialOpts, err := services.GetGRPCClientDialOpts()
 	if err != nil {
 		return nil, err
 	}

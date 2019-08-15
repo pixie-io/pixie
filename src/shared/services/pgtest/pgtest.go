@@ -1,0 +1,75 @@
+package pgtest
+
+import (
+	"testing"
+
+	"pixielabs.ai/pixielabs/src/shared/services/pg"
+
+	"github.com/golang-migrate/migrate"
+	"github.com/golang-migrate/migrate/database/postgres"
+	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+	"github.com/jmoiron/sqlx"
+	"github.com/ory/dockertest"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
+	"pixielabs.ai/pixielabs/src/services/site_manager/schema"
+)
+
+// SetupTestDB sets up a test database instance and applies migrations.
+func SetupTestDB(t *testing.T) (*sqlx.DB, func()) {
+	// TODO(zasgar): refactor into a helper utility.
+	var db *sqlx.DB
+
+	pool, err := dockertest.NewPool("")
+	if err != nil {
+		t.Fatalf("Could not connect to docker: %s", err)
+	}
+
+	const dbName = "testdb"
+	resource, err := pool.Run("postgres", "11.1", []string{"POSTGRES_PASSWORD=secret", "POSTGRES_DB=" + dbName})
+	require.Nil(t, err)
+
+	viper.Set("postgres_port", resource.GetPort("5432/tcp"))
+	viper.Set("postgres_hostname", "localhost")
+	viper.Set("postgres_db", dbName)
+	viper.Set("postgres_username", "postgres")
+	viper.Set("postgres_password", "secret")
+
+	if err = pool.Retry(func() error {
+		log.Info("trying to connect")
+		db = pg.MustCreateDefaultPostgresDB()
+		return db.Ping()
+	}); err != nil {
+		t.Fatalf("Could not connect to docker: %s", err)
+	}
+
+	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
+	require.Nil(t, err)
+
+	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
+		return schema.Asset(name)
+	})
+
+	d, err := bindata.WithInstance(s)
+	require.Nil(t, err)
+
+	mg, err := migrate.NewWithInstance(
+		"go-bindata",
+		d, "postgres", driver)
+	require.Nil(t, err)
+
+	if err = mg.Up(); err != nil {
+		t.Fatalf("migrations failed: %s", err)
+	}
+
+	return db, func() {
+		if db != nil {
+			db.Close()
+		}
+
+		if err := pool.Purge(resource); err != nil {
+			t.Fatalf("Could not purge resource: %s", err)
+		}
+	}
+}

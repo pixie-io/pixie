@@ -3,7 +3,7 @@ syntax = "proto3";
 package pl.services;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
-import "src/services/common/proto/jwt.proto";
+import "src/shared/services/proto/jwt.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/services/auth/proto;auth";
 

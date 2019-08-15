@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	authpb "pixielabs.ai/pixielabs/src/services/auth/proto"
-	"pixielabs.ai/pixielabs/src/services/common"
+	"pixielabs.ai/pixielabs/src/shared/services"
 )
 
 func init() {
@@ -14,7 +14,7 @@ func init() {
 
 // NewAuthClient creates a new auth RPC client stub.
 func NewAuthClient() (authpb.AuthServiceClient, error) {
-	dialOpts, err := common.GetGRPCClientDialOpts()
+	dialOpts, err := services.GetGRPCClientDialOpts()
 	if err != nil {
 		return nil, err
 	}

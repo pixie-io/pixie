@@ -5,12 +5,12 @@ import (
 	"time"
 
 	"github.com/spf13/viper"
-	"pixielabs.ai/pixielabs/src/services/common"
+	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
 func main() {
-	common.PostFlagSetupAndParse()
+	services.PostFlagSetupAndParse()
 	token := testingutils.GenerateTestJWTTokenWithDuration(nil, viper.GetString("jwt_signing_key"), time.Hour*24*30)
 	fmt.Printf("%s\n", token)
 }

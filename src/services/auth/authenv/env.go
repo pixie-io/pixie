@@ -1,7 +1,7 @@
 package authenv
 
 import (
-	"pixielabs.ai/pixielabs/src/services/common/env"
+	"pixielabs.ai/pixielabs/src/shared/services/env"
 )
 
 // AuthEnv is the authenv use for the Authentication service.

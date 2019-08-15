@@ -13,10 +13,10 @@ import (
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/services/api/apienv"
 	authpb "pixielabs.ai/pixielabs/src/services/auth/proto"
-	commonenv "pixielabs.ai/pixielabs/src/services/common/env"
-	"pixielabs.ai/pixielabs/src/services/common/handler"
-	pbjwt "pixielabs.ai/pixielabs/src/services/common/proto"
-	"pixielabs.ai/pixielabs/src/services/common/utils"
+	commonenv "pixielabs.ai/pixielabs/src/shared/services/env"
+	"pixielabs.ai/pixielabs/src/shared/services/handler"
+	pbjwt "pixielabs.ai/pixielabs/src/shared/services/proto"
+	"pixielabs.ai/pixielabs/src/shared/services/utils"
 )
 
 // GetServiceCredentials returns JWT credentials for inter-service requests.

@@ -16,7 +16,7 @@ go_test(
     srcs = ["datastore_test.go"],
     embed = [":go_default_library"],
     deps = [
-        "//src/services/common/pgtest:go_default_library",
+        "//src/shared/services/pgtest:go_default_library",
         "@com_github_golang_migrate_migrate//source/go_bindata:go_default_library",
         "@com_github_jackc_pgx//stdlib:go_default_library",
         "@com_github_jmoiron_sqlx//:go_default_library",

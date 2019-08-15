@@ -6,20 +6,20 @@ import (
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/services/api/apienv"
 	"pixielabs.ai/pixielabs/src/services/api/controller"
-	"pixielabs.ai/pixielabs/src/services/common"
-	"pixielabs.ai/pixielabs/src/services/common/handler"
-	"pixielabs.ai/pixielabs/src/services/common/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services"
+	"pixielabs.ai/pixielabs/src/shared/services/handler"
+	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 )
 
 func main() {
 	log.WithField("service", "api-service(cloud)").Info("Starting service")
 
-	common.SetupService("api-service", 51200)
-	common.SetupSSLClientFlags()
-	common.PostFlagSetupAndParse()
-	common.CheckServiceFlags()
-	common.CheckSSLClientFlags()
-	common.SetupServiceLogging()
+	services.SetupService("api-service", 51200)
+	services.SetupSSLClientFlags()
+	services.PostFlagSetupAndParse()
+	services.CheckServiceFlags()
+	services.CheckSSLClientFlags()
+	services.SetupServiceLogging()
 
 	ac, err := controller.NewAuthClient()
 	if err != nil {
@@ -49,7 +49,7 @@ func main() {
 			controller.NewGraphQLHandler(env)))
 
 	healthz.RegisterDefaultChecks(mux)
-	s := common.NewPLServer(env, mux)
+	s := services.NewPLServer(env, mux)
 	s.Start()
 	s.StopOnInterrupt()
 }

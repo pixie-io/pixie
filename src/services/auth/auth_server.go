@@ -6,18 +6,18 @@ import (
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/services/auth/authenv"
 	"pixielabs.ai/pixielabs/src/services/auth/controllers"
-	"pixielabs.ai/pixielabs/src/services/auth/proto"
-	"pixielabs.ai/pixielabs/src/services/common"
-	"pixielabs.ai/pixielabs/src/services/common/healthz"
+	auth "pixielabs.ai/pixielabs/src/services/auth/proto"
+	"pixielabs.ai/pixielabs/src/shared/services"
+	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 )
 
 func main() {
 	log.WithField("service", "auth-service").Info("Starting service")
 
-	common.SetupService("auth-service", 50100)
-	common.PostFlagSetupAndParse()
-	common.CheckServiceFlags()
-	common.SetupServiceLogging()
+	services.SetupService("auth-service", 50100)
+	services.PostFlagSetupAndParse()
+	services.CheckServiceFlags()
+	services.SetupServiceLogging()
 
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
@@ -38,7 +38,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}
 
-	s := common.NewPLServer(env, mux)
+	s := services.NewPLServer(env, mux)
 	auth.RegisterAuthServiceServer(s.GRPCServer(), server)
 	s.Start()
 	s.StopOnInterrupt()

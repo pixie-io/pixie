@@ -19,7 +19,7 @@ import (
 	"pixielabs.ai/pixielabs/src/services/api/controller"
 	"pixielabs.ai/pixielabs/src/services/api/controller/testutils"
 	authpb "pixielabs.ai/pixielabs/src/services/auth/proto"
-	"pixielabs.ai/pixielabs/src/services/common/handler"
+	"pixielabs.ai/pixielabs/src/shared/services/handler"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 

@@ -6,7 +6,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/utils/gen_test_key",
     visibility = ["//visibility:private"],
     deps = [
-        "//src/services/common:go_default_library",
+        "//src/shared/services:go_default_library",
         "//src/utils/testingutils:go_default_library",
         "@com_github_spf13_viper//:go_default_library",
     ],

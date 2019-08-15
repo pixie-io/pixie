@@ -13,7 +13,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	qrpb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	"pixielabs.ai/pixielabs/src/services/common/authcontext"
+	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/api/apienv"

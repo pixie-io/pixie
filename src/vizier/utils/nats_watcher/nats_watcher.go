@@ -10,7 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/services/common"
+	"pixielabs.ai/pixielabs/src/shared/services"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 )
 
@@ -57,10 +57,10 @@ func handleNATSMessage(m *nats.Msg) {
 }
 
 func main() {
-	common.SetupCommonFlags()
-	common.SetupSSLClientFlags()
-	common.PostFlagSetupAndParse()
-	common.CheckSSLClientFlags()
+	services.SetupCommonFlags()
+	services.SetupSSLClientFlags()
+	services.PostFlagSetupAndParse()
+	services.CheckSSLClientFlags()
 
 	log.Info("Starting NATS watcher")
 

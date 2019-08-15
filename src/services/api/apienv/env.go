@@ -7,8 +7,8 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	authpb "pixielabs.ai/pixielabs/src/services/auth/proto"
-	"pixielabs.ai/pixielabs/src/services/common/env"
 	"pixielabs.ai/pixielabs/src/services/site_manager/sitemanagerpb"
+	"pixielabs.ai/pixielabs/src/shared/services/env"
 )
 
 func init() {

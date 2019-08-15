@@ -9,9 +9,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	pb "pixielabs.ai/pixielabs/src/services/auth/proto"
-	"pixielabs.ai/pixielabs/src/services/common/authcontext"
-	jwtpb "pixielabs.ai/pixielabs/src/services/common/proto"
-	"pixielabs.ai/pixielabs/src/services/common/utils"
+	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
+	jwtpb "pixielabs.ai/pixielabs/src/shared/services/proto"
+	"pixielabs.ai/pixielabs/src/shared/services/utils"
 )
 
 const (

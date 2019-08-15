@@ -7,23 +7,23 @@ import (
 	"github.com/golang-migrate/migrate/database/postgres"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	log "github.com/sirupsen/logrus"
-	"pixielabs.ai/pixielabs/src/services/common"
-	"pixielabs.ai/pixielabs/src/services/common/healthz"
-	"pixielabs.ai/pixielabs/src/services/common/pg"
 	controllers "pixielabs.ai/pixielabs/src/services/site_manager/controller"
 	"pixielabs.ai/pixielabs/src/services/site_manager/datastore"
 	"pixielabs.ai/pixielabs/src/services/site_manager/schema"
 	"pixielabs.ai/pixielabs/src/services/site_manager/sitemanagerenv"
 	"pixielabs.ai/pixielabs/src/services/site_manager/sitemanagerpb"
+	"pixielabs.ai/pixielabs/src/shared/services"
+	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/pg"
 )
 
 func main() {
 	log.WithField("service", "site-manager-service").Info("Starting service")
 
-	common.SetupService("site-manager-service", 50300)
-	common.PostFlagSetupAndParse()
-	common.CheckServiceFlags()
-	common.SetupServiceLogging()
+	services.SetupService("site-manager-service", 50300)
+	services.PostFlagSetupAndParse()
+	services.CheckServiceFlags()
+	services.SetupServiceLogging()
 
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
@@ -62,7 +62,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}
 
-	s := common.NewPLServer(env, mux)
+	s := services.NewPLServer(env, mux)
 	sitemanagerpb.RegisterSiteManagerServiceServer(s.GRPCServer(), server)
 
 	s.Start()

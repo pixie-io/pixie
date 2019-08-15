@@ -5,5 +5,5 @@ go_library(
     srcs = ["env.go"],
     importpath = "pixielabs.ai/pixielabs/src/services/auth/authenv",
     visibility = ["//visibility:public"],
-    deps = ["//src/services/common/env:go_default_library"],
+    deps = ["//src/shared/services/env:go_default_library"],
 )

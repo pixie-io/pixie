@@ -19,6 +19,8 @@ gazelle(
 
 # TODO(zasgar): We should keep an eye on fixes to gazelle that make this automatic
 # Make gazelle resolve the proto paths correctly.
+# gazelle:resolve go pixielabs.ai/pixielabs/src/shared/services/proto //src/shared/services/proto:jwt_go_proto
+# gazelle:resolve go pixielabs.ai/pixielabs/src/shared/services/testproto //src/shared/services/testproto:ping_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb //src/carnot/compiler:compiler_status_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/planpb //src/carnot/planpb:plan_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/queryresultspb //src/carnot/queryresultspb:query_results_pl_go_proto

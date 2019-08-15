@@ -9,8 +9,8 @@ import (
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/services/api/apienv"
 	authpb "pixielabs.ai/pixielabs/src/services/auth/proto"
-	"pixielabs.ai/pixielabs/src/services/common/authcontext"
-	"pixielabs.ai/pixielabs/src/services/common/httpmiddleware"
+	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
+	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
 )
 
 // GetTokenFromSession gets a token from the session store using cookies.

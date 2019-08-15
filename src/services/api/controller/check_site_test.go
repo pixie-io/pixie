@@ -24,7 +24,7 @@ import (
 	"pixielabs.ai/pixielabs/src/services/site_manager/sitemanagerpb"
 )
 
-// TODO(zasgar): Refactor into common utils.
+// TODO(zasgar): Refactor into services utils.
 // JSONBytesEqual compares the JSON in two byte slices.
 func JSONBytesEqual(t *testing.T, a, b []byte) {
 	var j, j2 interface{}

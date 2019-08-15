@@ -4,8 +4,8 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
-	"pixielabs.ai/pixielabs/src/services/common"
-	"pixielabs.ai/pixielabs/src/services/common/env"
+	"pixielabs.ai/pixielabs/src/shared/services"
+	"pixielabs.ai/pixielabs/src/shared/services/env"
 	qbpb "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
 
@@ -30,7 +30,7 @@ type Impl struct {
 
 // New creates a new api env.
 func New() (*Impl, error) {
-	dialOpts, err := common.GetGRPCClientDialOpts()
+	dialOpts, err := services.GetGRPCClientDialOpts()
 	if err != nil {
 		return nil, err
 	}

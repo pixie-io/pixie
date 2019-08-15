@@ -2,7 +2,7 @@ package controller
 
 import (
 	"github.com/graph-gophers/graphql-go"
-	"pixielabs.ai/pixielabs/src/services/common/authcontext"
+	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 )
 
 // UserInfoResolver resolves user information.

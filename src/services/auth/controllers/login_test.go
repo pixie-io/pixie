@@ -16,7 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/services/auth/controllers"
 	mock_controllers "pixielabs.ai/pixielabs/src/services/auth/controllers/mock"
 	pb "pixielabs.ai/pixielabs/src/services/auth/proto"
-	"pixielabs.ai/pixielabs/src/services/common/authcontext"
+	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 

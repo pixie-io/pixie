@@ -4,9 +4,9 @@ import (
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
-	"pixielabs.ai/pixielabs/src/services/common"
-	"pixielabs.ai/pixielabs/src/services/common/healthz"
-	"pixielabs.ai/pixielabs/src/services/common/httpmiddleware"
+	"pixielabs.ai/pixielabs/src/shared/services"
+	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
 	"pixielabs.ai/pixielabs/src/vizier/services/api/apienv"
 	"pixielabs.ai/pixielabs/src/vizier/services/api/controller"
 )
@@ -14,12 +14,12 @@ import (
 func main() {
 	log.WithField("service", "api-service").Info("Starting service")
 
-	common.SetupService("api-service", 50200)
-	common.SetupSSLClientFlags()
-	common.PostFlagSetupAndParse()
-	common.CheckServiceFlags()
-	common.CheckSSLClientFlags()
-	common.SetupServiceLogging()
+	services.SetupService("api-service", 50200)
+	services.SetupSSLClientFlags()
+	services.PostFlagSetupAndParse()
+	services.CheckServiceFlags()
+	services.CheckSSLClientFlags()
+	services.SetupServiceLogging()
 
 	env, err := apienv.New()
 	if err != nil {
@@ -31,7 +31,7 @@ func main() {
 
 	healthz.RegisterDefaultChecks(mux)
 
-	s := common.NewPLServer(env,
+	s := services.NewPLServer(env,
 		httpmiddleware.WithBearerAuthMiddleware(env, mux))
 	s.Start()
 	s.StopOnInterrupt()

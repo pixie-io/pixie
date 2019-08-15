@@ -1,7 +1,7 @@
 package sitemanagerenv
 
 import (
-	"pixielabs.ai/pixielabs/src/services/common/env"
+	"pixielabs.ai/pixielabs/src/shared/services/env"
 )
 
 // SiteManagerEnv is the authenv use for the Authentication service.

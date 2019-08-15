@@ -9,9 +9,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
-	"pixielabs.ai/pixielabs/src/services/common"
-	"pixielabs.ai/pixielabs/src/services/common/healthz"
-	"pixielabs.ai/pixielabs/src/services/common/httpmiddleware"
+	"pixielabs.ai/pixielabs/src/shared/services"
+	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
@@ -23,12 +23,12 @@ const plMDSAddr = "vizier-metadata.pl.svc.cluster.local:50400"
 func main() {
 	log.WithField("service", "query-broker").Info("Starting service")
 
-	common.SetupService("query-broker", 50300)
-	common.SetupSSLClientFlags()
-	common.PostFlagSetupAndParse()
-	common.CheckServiceFlags()
-	common.CheckSSLClientFlags()
-	common.SetupServiceLogging()
+	services.SetupService("query-broker", 50300)
+	services.SetupSSLClientFlags()
+	services.PostFlagSetupAndParse()
+	services.CheckServiceFlags()
+	services.CheckSSLClientFlags()
+	services.SetupServiceLogging()
 
 	env, err := querybrokerenv.New()
 	if err != nil {
@@ -38,7 +38,7 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	// Connect to metadata service.
-	dialOpts, err := common.GetGRPCClientDialOpts()
+	dialOpts, err := services.GetGRPCClientDialOpts()
 	if err != nil {
 		log.WithError(err).Fatal("Could not get dial opts.")
 	}
@@ -70,7 +70,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}
 
-	s := common.NewPLServer(env,
+	s := services.NewPLServer(env,
 		httpmiddleware.WithBearerAuthMiddleware(env, mux))
 	querybrokerpb.RegisterQueryBrokerServiceServer(s.GRPCServer(), server)
 	s.Start()

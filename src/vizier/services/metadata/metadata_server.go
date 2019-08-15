@@ -10,9 +10,9 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.etcd.io/etcd/pkg/transport"
-	"pixielabs.ai/pixielabs/src/services/common"
-	"pixielabs.ai/pixielabs/src/services/common/healthz"
-	"pixielabs.ai/pixielabs/src/services/common/httpmiddleware"
+	"pixielabs.ai/pixielabs/src/shared/services"
+	"pixielabs.ai/pixielabs/src/shared/services/healthz"
+	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
 	"pixielabs.ai/pixielabs/src/shared/version"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
@@ -37,12 +37,12 @@ func main() {
 	log.WithField("service", "metadata").Info("Starting service")
 
 	pflag.String("md_etcd_server", "https://pl-etcd-client.pl.svc.cluster.local:2379", "The address to metadata etcd server.")
-	common.SetupService("metadata", 50400)
-	common.SetupSSLClientFlags()
-	common.PostFlagSetupAndParse()
-	common.CheckServiceFlags()
-	common.CheckSSLClientFlags()
-	common.SetupServiceLogging()
+	services.SetupService("metadata", 50400)
+	services.SetupSSLClientFlags()
+	services.PostFlagSetupAndParse()
+	services.CheckServiceFlags()
+	services.CheckSSLClientFlags()
+	services.SetupServiceLogging()
 
 	var tlsConfig *tls.Config
 	if !viper.GetBool("disable_ssl") {
@@ -111,7 +111,7 @@ func main() {
 
 	log.Info("Metadata Server: " + version.GetVersion().ToString())
 
-	s := common.NewPLServer(env,
+	s := services.NewPLServer(env,
 		httpmiddleware.WithBearerAuthMiddleware(env, mux))
 	metadatapb.RegisterMetadataServiceServer(s.GRPCServer(), server)
 	s.Start()

@@ -9,8 +9,8 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"pixielabs.ai/pixielabs/src/services/common/pgtest"
 	"pixielabs.ai/pixielabs/src/services/site_manager/datastore"
+	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
 )
 
 func loadTestData(t *testing.T, db *sqlx.DB) {

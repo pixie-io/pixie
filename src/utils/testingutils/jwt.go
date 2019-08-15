@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	pb "pixielabs.ai/pixielabs/src/services/common/proto"
-	"pixielabs.ai/pixielabs/src/services/common/utils"
+	pb "pixielabs.ai/pixielabs/src/shared/services/proto"
+	"pixielabs.ai/pixielabs/src/shared/services/utils"
 )
 
 // GenerateTestClaimsWithDuration generates valid test user claims for a specified duration.
