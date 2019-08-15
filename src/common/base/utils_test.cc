@@ -9,9 +9,11 @@ namespace pl {
 
 using ::testing::StrEq;
 
-TEST(ToHexStringTest, ResultsAreAsExpected) {
-  EXPECT_THAT(ToHexString("test\b"), StrEq(R"(test\x08)"));
-  EXPECT_THAT(ToHexString("test\xab"), StrEq(R"(test\xAB)"));
+TEST(ReprTest, ResultsAreAsExpected) {
+  EXPECT_THAT(Repr("test\b"), StrEq(R"(test\x08)"));
+  EXPECT_THAT(Repr("test\xab"), StrEq(R"(test\xAB)"));
+  EXPECT_THAT(Repr("test\b", Radix::kBin, PrintConvPolicy::kToDigit),
+              StrEq(R"(\b01110100\b01100101\b01110011\b01110100\b00001000)"));
 }
 
 TEST(Enumerate, LoopsThroughVectorWithIndex) {

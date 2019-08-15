@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 
+#include <bitset>
 #include <cstring>
 #include <string>
 #include <tuple>
@@ -48,13 +49,33 @@ constexpr auto Enumerate(T&& iterable) {
   return iterable_wrapper{std::forward<T>(iterable)};
 }
 
-inline std::string ToHexString(std::string_view buf) {
+enum class Radix {
+  kBin,
+  kHex,
+};
+
+// Policy for converting a printable char.
+enum class PrintConvPolicy {
+  kKeep,
+  kToDigit,
+};
+
+inline std::string Repr(std::string_view buf, Radix radix = Radix::kHex,
+                        PrintConvPolicy policy = PrintConvPolicy::kKeep) {
   std::string res;
   for (char c : buf) {
-    if (std::isprint(c)) {
+    if (std::isprint(c) && policy == PrintConvPolicy::kKeep) {
       res.append(1, c);
     } else {
-      res.append(absl::StrFormat("\\x%02X", c));
+      switch (radix) {
+        case Radix::kBin:
+          res.append("\\b");
+          res.append(std::bitset<8>(c).to_string());
+          break;
+        case Radix::kHex:
+          res.append(absl::StrFormat("\\x%02X", c));
+          break;
+      }
     }
   }
   return res;
