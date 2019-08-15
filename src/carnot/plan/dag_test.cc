@@ -1,10 +1,13 @@
 #include "src/carnot/plan/dag.h"
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <unordered_set>
 
 namespace pl {
 namespace carnot {
 namespace plan {
+
+using ::testing::UnorderedElementsAre;
 
 class DAGTest : public ::testing::Test {
  protected:
@@ -73,6 +76,53 @@ TEST_F(DAGDeathTest, check_failure_on_cycle) {
   dag_.AddEdge(6, 5);
   EXPECT_DEATH(dag_.TopologicalSort(), ".*Cycle.*");
   EXPECT_DEATH(dag_.TransitiveDepsFrom(5), ".*Cycle.*");
+}
+
+/**
+ * @brief Creates three separate graphs within the DAG.
+ */
+class DAGTestMultipleSubGraphs : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    dag_.AddNode(1);
+    dag_.AddNode(2);
+    dag_.AddNode(3);
+    dag_.AddNode(4);
+    dag_.AddNode(5);
+    dag_.AddNode(6);
+    dag_.AddNode(7);
+    dag_.AddNode(8);
+    dag_.AddNode(9);
+    dag_.AddNode(10);
+    dag_.AddNode(11);
+    dag_.AddNode(12);
+    dag_.AddNode(13);
+
+    // #1 has two sources and 1 sink.
+    dag_.AddEdge(1, 2);
+    dag_.AddEdge(4, 5);
+    dag_.AddEdge(5, 2);
+    dag_.AddEdge(2, 3);
+
+    // #2 has 1 source and 1 sink, is linear.
+    dag_.AddEdge(6, 7);
+    dag_.AddEdge(7, 8);
+
+    // #3 has 1 source and 2 sinks.
+    dag_.AddEdge(9, 10);
+    dag_.AddEdge(10, 11);
+    dag_.AddEdge(10, 12);
+    dag_.AddEdge(12, 13);
+  }
+  DAG dag_;
+};
+
+TEST_F(DAGTestMultipleSubGraphs, test_independent_graphs) {
+  auto independent_graphs = dag_.IndependentGraphs();
+
+  EXPECT_THAT(independent_graphs, UnorderedElementsAre(UnorderedElementsAre(1, 2, 3, 4, 5),
+                                                       UnorderedElementsAre(6, 7, 8),
+                                                       UnorderedElementsAre(9, 10, 11, 12, 13)));
 }
 
 }  // namespace plan

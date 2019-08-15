@@ -50,6 +50,13 @@ class DAG {
 
   const std::unordered_set<int64_t>& nodes() { return nodes_; }
 
+  /**
+   * @brief Returns the sets that compose the independent graphs.
+   *
+   * @return const std::vector<const std::unordered_set<int64_t>&>&
+   */
+  std::vector<std::unordered_set<int64_t>> IndependentGraphs() const;
+
  private:
   // Store all the integer id's as nodes.
   std::unordered_set<int64_t> nodes_;
