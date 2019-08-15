@@ -1,4 +1,4 @@
-package postgres
+package pg
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const retryAttemps = 5
+const retryAttempts = 5
 const retryDelay = 1 * time.Second
 
 func init() {
@@ -26,9 +26,8 @@ func init() {
 
 }
 
-// MustCreateDefaultPostgresDB tries to connect to default postgres database as defined by the environment
-// variables/flags.
-func MustCreateDefaultPostgresDB() *sqlx.DB {
+// DefaultDBURI returns the URI string for the default postgres instance based on flags/env vars.
+func DefaultDBURI() string {
 	dbPort := viper.GetInt32("postgres_port")
 	dbHostname := viper.GetString("postgres_hostname")
 	dbName := viper.Get("postgres_db")
@@ -41,16 +40,27 @@ func MustCreateDefaultPostgresDB() *sqlx.DB {
 	}
 
 	dbURI := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", dbUsername, dbPassword, dbHostname, dbPort, dbName, sslMode)
+	return dbURI
+}
 
-	log.WithField("dbURI", dbURI).Info("Connecting to database")
+// MustCreateDefaultPostgresDB creates a postgres DB instance.
+func MustCreateDefaultPostgresDB() *sqlx.DB {
+	dbURI := DefaultDBURI()
+	log.WithField("dbURI", dbURI).Info("Setting up database")
 
 	db, err := sqlx.Open("pgx", dbURI)
 	if err != nil {
-		log.WithError(err).Fatalf("failed to set database connection")
+		log.WithError(err).Fatalf("failed to setup database connection")
 	}
+	return db
+}
 
-	err = nil
-	for i := retryAttemps; i >= 0; i-- {
+// MustConnectDefaultPostgresDB tries to connect to default postgres database as defined by the environment
+// variables/flags.
+func MustConnectDefaultPostgresDB() *sqlx.DB {
+	db := MustCreateDefaultPostgresDB()
+	var err error
+	for i := retryAttempts; i >= 0; i-- {
 		err = db.Ping()
 		if err == nil {
 			break

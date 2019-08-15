@@ -832,3 +832,15 @@ go_repository(
     commit = "02490b97dff7cfde1995bd77de808fd27053bc87",
     importpath = "google.golang.org/api",
 )
+
+go_repository(
+    name = "com_github_golang_migrate_migrate",
+    commit = "4937cd088f7c7193ee59b319c1c2caa7482aae8e",
+    importpath = "github.com/golang-migrate/migrate",
+)
+
+go_repository(
+    name = "com_github_lib_pq",
+    commit = "3427c32cb71afc948325f299f040e53c1dd78979",
+    importpath = "github.com/lib/pq",
+)

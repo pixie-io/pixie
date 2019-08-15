@@ -256,7 +256,9 @@ def dockerStep(String dockerConfig = '', String dockerImage = devDockerImageWith
     // This allows us to create sibling docker containers which we need to
     // run tests that need to launch docker containers (for example DB tests).
     dockerSock = ' -v /var/run/docker.sock:/var/run/docker.sock'
-    docker.image(dockerImage).inside(dockerConfig + cacheString + dockerSock) {
+    // TODO(zasgar): We should be able to run this in isolated networks. We need --net=host
+    // because dockertest needs to be able to access sibling containers.
+    docker.image(dockerImage).inside(dockerConfig + cacheString + dockerSock + ' --net=host') {
       body()
     }
   }
