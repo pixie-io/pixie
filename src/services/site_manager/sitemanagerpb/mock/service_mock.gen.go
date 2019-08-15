@@ -53,6 +53,24 @@ func (mr *MockSiteManagerServiceClientMockRecorder) IsSiteAvailable(ctx, in inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsSiteAvailable", reflect.TypeOf((*MockSiteManagerServiceClient)(nil).IsSiteAvailable), varargs...)
 }
 
+// RegisterSite mocks base method
+func (m *MockSiteManagerServiceClient) RegisterSite(ctx context.Context, in *sitemanagerpb.RegisterSiteRequest, opts ...grpc.CallOption) (*sitemanagerpb.RegisterSiteResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RegisterSite", varargs...)
+	ret0, _ := ret[0].(*sitemanagerpb.RegisterSiteResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RegisterSite indicates an expected call of RegisterSite
+func (mr *MockSiteManagerServiceClientMockRecorder) RegisterSite(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterSite", reflect.TypeOf((*MockSiteManagerServiceClient)(nil).RegisterSite), varargs...)
+}
+
 // MockSiteManagerServiceServer is a mock of SiteManagerServiceServer interface
 type MockSiteManagerServiceServer struct {
 	ctrl     *gomock.Controller
@@ -87,4 +105,17 @@ func (m *MockSiteManagerServiceServer) IsSiteAvailable(arg0 context.Context, arg
 // IsSiteAvailable indicates an expected call of IsSiteAvailable
 func (mr *MockSiteManagerServiceServerMockRecorder) IsSiteAvailable(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsSiteAvailable", reflect.TypeOf((*MockSiteManagerServiceServer)(nil).IsSiteAvailable), arg0, arg1)
+}
+
+// RegisterSite mocks base method
+func (m *MockSiteManagerServiceServer) RegisterSite(arg0 context.Context, arg1 *sitemanagerpb.RegisterSiteRequest) (*sitemanagerpb.RegisterSiteResponse, error) {
+	ret := m.ctrl.Call(m, "RegisterSite", arg0, arg1)
+	ret0, _ := ret[0].(*sitemanagerpb.RegisterSiteResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RegisterSite indicates an expected call of RegisterSite
+func (mr *MockSiteManagerServiceServerMockRecorder) RegisterSite(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterSite", reflect.TypeOf((*MockSiteManagerServiceServer)(nil).RegisterSite), arg0, arg1)
 }

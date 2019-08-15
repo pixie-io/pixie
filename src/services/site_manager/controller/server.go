@@ -25,3 +25,8 @@ func NewServer(env sitemanagerenv.SiteManagerEnv) (*Server, error) {
 func (s *Server) IsSiteAvailable(ctx context.Context, req *sitemanagerpb.IsSiteAvailableRequest) (*sitemanagerpb.IsSiteAvailableResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "not implemented yet")
 }
+
+// RegisterSite registers a new site and claims ownership for the passed in org.
+func (s *Server) RegisterSite(ctx context.Context, req *sitemanagerpb.RegisterSiteRequest) (*sitemanagerpb.RegisterSiteResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "not implemented yet")
+}

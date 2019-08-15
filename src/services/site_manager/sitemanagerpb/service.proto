@@ -3,6 +3,7 @@ syntax = "proto3";
 package pl.services;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/common/uuid/proto/uuid.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/services/site_manager/sitemanagerpb;sitemanagerpb";
 
@@ -10,6 +11,10 @@ option go_package = "pixielabs.ai/pixielabs/src/services/site_manager/sitemanage
 service SiteManagerService {
   // Checks to see a particular subdomain is available for registration.
   rpc IsSiteAvailable(IsSiteAvailableRequest) returns (IsSiteAvailableResponse) {}
+
+  // Registers a site for an organization.
+  rpc RegisterSite(RegisterSiteRequest) returns (RegisterSiteResponse) {}
+
 }
 
 message IsSiteAvailableRequest {
@@ -20,4 +25,17 @@ message IsSiteAvailableRequest {
 
 message IsSiteAvailableResponse {
   bool available = 1;
+}
+
+message RegisterSiteRequest {
+  // The domain name to register.
+  string domain_name = 1;
+
+  // The UUID of the org name.
+  pl.uuidpb.UUID org_id = 2;
+}
+
+message RegisterSiteResponse {
+  // TODO(zasgar/michelle): This should actually be our Status proto type.
+  bool site_registered = 1;
 }
