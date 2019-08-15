@@ -9,6 +9,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"os"
 	"path"
@@ -126,6 +127,25 @@ func generateCerts(certPath string, caCertPath string, caKeyPath string) {
 
 // InstallCerts generates the necessary certs and installs them in kubernetes.
 func InstallCerts(certPath string, caCertPath string, caKeyPath string) {
+	var err error
+
+	deleteCerts := false
+	if certPath == "" {
+		certPath, err = ioutil.TempDir("", "certs")
+		if err != nil {
+			log.WithError(err).Fatal("Could not create temp directory")
+		}
+		deleteCerts = true
+	}
+
+	// Delete generated certs.
+	defer func() {
+		if deleteCerts {
+			log.Info("Deleting generated certs")
+			os.RemoveAll(certPath)
+		}
+	}()
+
 	generateCerts(certPath, caCertPath, caKeyPath)
 
 	serverKey := path.Join(certPath, "server.key")
