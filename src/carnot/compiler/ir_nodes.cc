@@ -287,7 +287,7 @@ Status RangeIR::SetStartStop(IRNode* start_repr, IRNode* stop_repr) {
 bool RangeIR::HasLogicalRepr() const { return false; }
 
 Status RangeIR::ToProto(planpb::Operator*) const {
-  return error::InvalidArgument("RangeIR has no protobuf representation.");
+  return error::Unimplemented("$0 does not have a protobuf.", type_string());
 }
 
 Status MapIR::InitImpl(const ArgMap& args) {
@@ -1078,6 +1078,91 @@ StatusOr<IRNode*> LimitIR::DeepCloneIntoImpl(IR* graph) const {
   limit->limit_value_ = limit_value_;
   limit->limit_value_set_ = limit_value_set_;
   return limit;
+}
+
+StatusOr<IRNode*> GRPCSinkIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, graph->MakeNode<GRPCSinkIR>(id()));
+  grpc_sink->destination_id_ = destination_id_;
+  grpc_sink->physical_id_ = physical_id_;
+  grpc_sink->destination_address_ = destination_address_;
+  return grpc_sink;
+}
+
+StatusOr<IRNode*> GRPCSourceGroupIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
+                      graph->MakeNode<GRPCSourceGroupIR>(id()));
+  grpc_source_group->source_id_ = source_id_;
+  grpc_source_group->remote_string_ids_ = remote_string_ids_;
+  grpc_source_group->grpc_address_ = grpc_address_;
+  return grpc_source_group;
+}
+
+StatusOr<IRNode*> GRPCSourceIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(GRPCSourceIR * grpc_source, graph->MakeNode<GRPCSourceIR>(id()));
+  grpc_source->remote_source_id_ = remote_source_id_;
+  return grpc_source;
+}
+
+Status GRPCSourceGroupIR::ToProto(planpb::Operator* op) const {
+  // Note this is more for testing.
+  auto pb = new planpb::GrpcSourceOperator();
+
+  pb->set_source_id(absl::StrCat(source_id_));
+  auto types = relation().col_types();
+  auto names = relation().col_names();
+
+  for (size_t i = 0; i < relation().NumColumns(); i++) {
+    pb->add_column_types(types[i]);
+    pb->add_column_names(names[i]);
+  }
+
+  op->set_op_type(planpb::GRPC_SOURCE_OPERATOR);
+  op->set_allocated_grpc_source_op(pb);
+  return Status::OK();
+}
+
+Status GRPCSinkIR::ToProto(planpb::Operator* op) const {
+  auto pb = new planpb::GrpcSinkOperator();
+  pb->set_address(destination_address());
+  pb->set_destination_id(PhysicalDestinationID());
+
+  op->set_op_type(planpb::GRPC_SINK_OPERATOR);
+  op->set_allocated_grpc_sink_op(pb);
+  return Status::OK();
+}
+
+Status GRPCSourceIR::ToProto(planpb::Operator* op) const {
+  auto pb = new planpb::GrpcSourceOperator();
+  pb->set_source_id(remote_source_id_);
+  auto types = relation().col_types();
+  auto names = relation().col_names();
+
+  for (size_t i = 0; i < relation().NumColumns(); i++) {
+    pb->add_column_types(types[i]);
+    pb->add_column_names(names[i]);
+  }
+
+  op->set_op_type(planpb::GRPC_SOURCE_OPERATOR);
+  op->set_allocated_grpc_source_op(pb);
+  return Status::OK();
+}
+
+Status GRPCSourceGroupIR::AddGRPCSink(GRPCSinkIR* sink_op) {
+  if (sink_op->destination_id() != source_id_) {
+    return DExitOrIRNodeError("Source id $0 and destination id $1 aren't equal.",
+                              sink_op->destination_id(), source_id_);
+  }
+  if (!GRPCAddressSet()) {
+    return DExitOrIRNodeError("$0 doesn't have a physical agent associated with it.",
+                              DebugString());
+  }
+  if (!sink_op->PhysicalIDSet()) {
+    return DExitOrIRNodeError("$0 doesn't have a physical agent associated with it.",
+                              sink_op->DebugString());
+  }
+  remote_string_ids_.push_back(sink_op->PhysicalDestinationID());
+  sink_op->SetDestinationAddress(grpc_address_);
+  return Status::OK();
 }
 
 }  // namespace compiler

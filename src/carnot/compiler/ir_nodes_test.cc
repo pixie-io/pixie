@@ -296,8 +296,6 @@ TEST(ToProto, agg_ir) {
   ASSERT_OK(agg->ToProto(&pb));
 
   planpb::Operator expected_pb;
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedAggPb, &expected_pb));
-  EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_pb, pb));
   EXPECT_THAT(pb, EqualsProto(kExpectedAggPb));
 }
 
@@ -435,6 +433,35 @@ class OperatorTests : public ::testing::Test {
                            std::vector<ExpressionIR*>({value}), false /* compile_time */, ast));
     return func;
   }
+  std::shared_ptr<IR> SwapGraphBeingBuilt(std::shared_ptr<IR> new_graph) {
+    std::shared_ptr<IR> old_graph = graph;
+    graph = new_graph;
+    return old_graph;
+  }
+
+  GRPCSourceGroupIR* MakeGRPCSourceGroup(int64_t source_id, const Relation& relation) {
+    GRPCSourceGroupIR* grpc_src_group = graph->MakeNode<GRPCSourceGroupIR>().ValueOrDie();
+    EXPECT_OK(grpc_src_group->Init(source_id, relation, ast));
+    return grpc_src_group;
+  }
+
+  GRPCSinkIR* MakeGRPCSink(OperatorIR* parent, int64_t source_id) {
+    GRPCSinkIR* grpc_sink = graph->MakeNode<GRPCSinkIR>().ValueOrDie();
+    EXPECT_OK(grpc_sink->Init(parent, source_id, ast));
+    return grpc_sink;
+  }
+  GRPCSourceIR* MakeGRPCSource(const std::string& source_id, const Relation& relation) {
+    GRPCSourceIR* grpc_src_group = graph->MakeNode<GRPCSourceIR>().ValueOrDie();
+    EXPECT_OK(grpc_src_group->Init(source_id, relation, ast));
+    return grpc_src_group;
+  }
+  // Use this if you need a relation but don't care about the contents.
+  Relation MakeRelation() {
+    return table_store::schema::Relation(
+        std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
+                                      types::DataType::FLOAT64, types::DataType::FLOAT64}),
+        std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
+  }
 
   pypa::AstPtr ast;
   std::shared_ptr<IR> graph;
@@ -463,6 +490,31 @@ TEST_F(OperatorTests, swap_parent) {
   EXPECT_EQ(col1->ReferenceID().ConsumeValueOrDie(), parent_map->id());
   EXPECT_EQ(col2->ReferenceID().ConsumeValueOrDie(), parent_map->id());
   EXPECT_EQ(col3->ReferenceID().ConsumeValueOrDie(), parent_map->id());
+}
+
+TEST_F(OperatorTests, grpc_ops) {
+  int64_t grpc_id = 123;
+  std::string source_grpc_address = "1111";
+  std::string sink_physical_id = "agent-xyz";
+  std::string expected_physical_dest_id = absl::Substitute("$0:$1", sink_physical_id, grpc_id);
+
+  MemorySourceIR* mem_src = MakeMemSource();
+  GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_src, grpc_id);
+
+  std::shared_ptr<IR> new_graph = std::make_shared<IR>();
+
+  // swaps the graph being built and returns the old_graph
+  std::shared_ptr<IR> old_graph = SwapGraphBeingBuilt(new_graph);
+
+  GRPCSourceGroupIR* grpc_src_group = MakeGRPCSourceGroup(grpc_id, MakeRelation());
+  MakeMemSink(grpc_src_group, "out");
+
+  grpc_src_group->SetGRPCAddress(source_grpc_address);
+  grpc_sink->SetPhysicalID(sink_physical_id);
+  EXPECT_EQ(grpc_sink->PhysicalDestinationID(), expected_physical_dest_id);
+  EXPECT_OK(grpc_src_group->AddGRPCSink(grpc_sink));
+  EXPECT_EQ(grpc_src_group->remote_string_ids(),
+            std::vector<std::string>({expected_physical_dest_id}));
 }
 class CloneTests : public OperatorTests {
  protected:
@@ -566,6 +618,28 @@ class CloneTests : public OperatorTests {
     }
   }
 
+  void CompareClonedGRPCSourceGroup(GRPCSourceGroupIR* new_ir, GRPCSourceGroupIR* old_ir,
+                                    const std::string& err_string) {
+    EXPECT_EQ(new_ir->source_id(), old_ir->source_id()) << err_string;
+    EXPECT_EQ(new_ir->remote_string_ids(), old_ir->remote_string_ids()) << err_string;
+    EXPECT_EQ(new_ir->grpc_address(), old_ir->grpc_address()) << err_string;
+    EXPECT_EQ(new_ir->GRPCAddressSet(), old_ir->GRPCAddressSet()) << err_string;
+  }
+
+  void CompareClonedGRPCSink(GRPCSinkIR* new_ir, GRPCSinkIR* old_ir,
+                             const std::string& err_string) {
+    EXPECT_EQ(new_ir->destination_id(), old_ir->destination_id()) << err_string;
+    EXPECT_EQ(new_ir->PhysicalDestinationID(), old_ir->PhysicalDestinationID()) << err_string;
+    EXPECT_EQ(new_ir->PhysicalIDSet(), old_ir->PhysicalIDSet()) << err_string;
+    EXPECT_EQ(new_ir->destination_address(), old_ir->destination_address()) << err_string;
+    EXPECT_EQ(new_ir->DestinationAddressSet(), old_ir->DestinationAddressSet()) << err_string;
+  }
+
+  void CompareClonedGRPCSource(GRPCSourceIR* new_ir, GRPCSourceIR* old_ir,
+                               const std::string& err_string) {
+    EXPECT_EQ(new_ir->remote_source_id(), old_ir->remote_source_id()) << err_string;
+  }
+
   void CompareClonedExpression(ExpressionIR* new_ir, ExpressionIR* old_ir,
                                const std::string& err_string) {
     ASSERT_NE(new_ir, nullptr);
@@ -606,6 +680,19 @@ class CloneTests : public OperatorTests {
     } else if (Match(new_ir, BlockingAgg())) {
       CompareClonedBlockingAgg(static_cast<BlockingAggIR*>(new_ir),
                                static_cast<BlockingAggIR*>(old_ir), new_err_string);
+
+    } else if (Match(new_ir, GRPCSink())) {
+      CompareClonedGRPCSink(static_cast<GRPCSinkIR*>(new_ir), static_cast<GRPCSinkIR*>(old_ir),
+                            new_err_string);
+    } else if (Match(new_ir, GRPCSourceGroup())) {
+      CompareClonedGRPCSourceGroup(static_cast<GRPCSourceGroupIR*>(new_ir),
+                                   static_cast<GRPCSourceGroupIR*>(old_ir), new_err_string);
+    } else if (Match(new_ir, GRPCSource())) {
+      CompareClonedGRPCSource(static_cast<GRPCSourceIR*>(new_ir),
+                              static_cast<GRPCSourceIR*>(old_ir), new_err_string);
+    } else {
+      EXPECT_TRUE(false) << absl::Substitute("Couldn't check operator cloning for $0. $1",
+                                             new_ir->type_string(), err_string);
     }
   }
   void CompareClonedNodes(IRNode* new_ir, IRNode* old_ir, const std::string& err_string) {
@@ -664,6 +751,119 @@ TEST_F(CloneTests, all_op_clone) {
   for (int64_t i : cloned_ir->dag().TopologicalSort()) {
     CompareClonedNodes(cloned_ir->Get(i), graph->Get(i), absl::Substitute("For index $0", i));
   }
+}
+
+TEST_F(CloneTests, clone_grpc_source_group_and_sink) {
+  // Build graph 1.
+  auto grpc_source = MakeGRPCSourceGroup(123, MakeRelation());
+  MakeMemSink(grpc_source, "sup");
+  grpc_source->SetGRPCAddress("1111");
+
+  auto graph2 = std::make_shared<IR>();
+  auto graph1 = SwapGraphBeingBuilt(graph2);
+
+  // Build graph 2.
+  auto mem_source = MakeMemSource();
+  GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_source, 123);
+  grpc_sink->SetPhysicalID("agent-aa");
+  grpc_sink->SetDestinationAddress("1111");
+
+  EXPECT_OK(grpc_source->AddGRPCSink(grpc_sink));
+
+  auto out = graph1->Clone();
+  EXPECT_OK(out.status());
+  std::unique_ptr<IR> cloned_ir1 = out.ConsumeValueOrDie();
+
+  ASSERT_EQ(graph1->dag().TopologicalSort(), cloned_ir1->dag().TopologicalSort());
+
+  // Make sure that all of the columns are now part of the new graph.
+  for (int64_t i : cloned_ir1->dag().TopologicalSort()) {
+    CompareClonedNodes(cloned_ir1->Get(i), graph1->Get(i), absl::Substitute("For index $0", i));
+  }
+
+  out = graph2->Clone();
+  EXPECT_OK(out.status());
+  std::unique_ptr<IR> cloned_ir2 = out.ConsumeValueOrDie();
+
+  ASSERT_EQ(graph2->dag().TopologicalSort(), cloned_ir2->dag().TopologicalSort());
+
+  // Make sure that all of the columns are now part of the new graph.
+  for (int64_t i : cloned_ir2->dag().TopologicalSort()) {
+    CompareClonedNodes(cloned_ir2->Get(i), graph2->Get(i), absl::Substitute("For index $0", i));
+  }
+}
+
+TEST_F(CloneTests, grpc_source) {
+  auto grpc_source = MakeGRPCSource("source_id/0", MakeRelation());
+  MakeMemSink(grpc_source, "sup");
+  auto out = graph->Clone();
+  EXPECT_OK(out.status());
+  std::unique_ptr<IR> cloned_ir = out.ConsumeValueOrDie();
+
+  ASSERT_EQ(graph->dag().TopologicalSort(), cloned_ir->dag().TopologicalSort());
+
+  // Make sure that all of the columns are now part of the new graph.
+  for (int64_t i : cloned_ir->dag().TopologicalSort()) {
+    CompareClonedNodes(cloned_ir->Get(i), graph->Get(i), absl::Substitute("For index $0", i));
+  }
+}
+
+class ToProtoTests : public OperatorTests {};
+const char* kExpectedGRPCSourcePb = R"proto(
+  op_type: GRPC_SOURCE_OPERATOR
+  grpc_source_op {
+    source_id: "$0"
+    column_types: INT64
+    column_types: FLOAT64
+    column_types: FLOAT64
+    column_types: FLOAT64
+    column_names: "count"
+    column_names: "cpu0"
+    column_names: "cpu1"
+    column_names: "cpu2"
+  }
+)proto";
+
+TEST_F(ToProtoTests, grpc_source_ir) {
+  auto ast = MakeTestAstPtr();
+  auto graph = std::make_shared<IR>();
+  std::string source_id = "grpc_source_name";
+  auto grpc_src = MakeGRPCSource(source_id, MakeRelation());
+  MakeMemSink(grpc_src, "sink");
+
+  planpb::Operator pb;
+  ASSERT_OK(grpc_src->ToProto(&pb));
+
+  planpb::Operator expected_pb;
+  EXPECT_THAT(pb, EqualsProto(absl::Substitute(kExpectedGRPCSourcePb, source_id)));
+}
+
+const char* kExpectedGRPCSinkPb = R"proto(
+  op_type: GRPC_SINK_OPERATOR
+  grpc_sink_op {
+    address: "$0"
+    destination_id: "$1"
+  }
+)proto";
+
+TEST_F(ToProtoTests, grpc_sink_ir) {
+  auto ast = MakeTestAstPtr();
+  auto graph = std::make_shared<IR>();
+  int64_t destination_id = 123;
+  std::string grpc_address = "1111";
+  std::string physical_id = "agent-aa";
+  auto mem_src = MakeMemSource();
+  auto grpc_sink = MakeGRPCSink(mem_src, destination_id);
+  grpc_sink->SetPhysicalID(physical_id);
+  grpc_sink->SetDestinationAddress(grpc_address);
+
+  planpb::Operator pb;
+  ASSERT_OK(grpc_sink->ToProto(&pb));
+
+  planpb::Operator expected_pb;
+  EXPECT_THAT(
+      pb, EqualsProto(absl::Substitute(kExpectedGRPCSinkPb, grpc_address,
+                                       absl::Substitute("$0:$1", physical_id, destination_id))));
 }
 
 }  // namespace compiler

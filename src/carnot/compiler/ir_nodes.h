@@ -26,6 +26,7 @@ class IR;
 class IRNode;
 using IRNodePtr = std::unique_ptr<IRNode>;
 using ArgMap = std::unordered_map<std::string, IRNode*>;
+using table_store::schema::Relation;
 
 enum class IRNodeType {
   kAny = -1,
@@ -48,14 +49,34 @@ enum class IRNodeType {
   kMetadata,
   kMetadataResolver,
   kMetadataLiteral,
+  kGRPCSourceGroup,
+  kGRPCSource,
+  kGRPCSink,
   number_of_types  // This is not a real type, but is used to verify strings are inline
                    // with enums.
 };
-static constexpr const char* kIRNodeStrings[] = {
-    "MemorySource",   "MemorySink", "Range",  "Map",  "BlockingAgg", "Filter",
-    "Limit",          "String",     "Float",  "Int",  "Bool",        "Func",
-    "List",           "Lambda",     "Column", "Time", "Metadata",    "MetadataResolver",
-    "MetadataLiteral"};
+static constexpr const char* kIRNodeStrings[] = {"MemorySource",
+                                                 "MemorySink",
+                                                 "Range",
+                                                 "Map",
+                                                 "BlockingAgg",
+                                                 "Filter",
+                                                 "Limit",
+                                                 "String",
+                                                 "Float",
+                                                 "Int",
+                                                 "Bool",
+                                                 "Func",
+                                                 "List",
+                                                 "Lambda",
+                                                 "Column",
+                                                 "Time",
+                                                 "Metadata",
+                                                 "MetadataResolver",
+                                                 "MetadataLiteral",
+                                                 "GRPCSourceGroup",
+                                                 "GRPCSource",
+                                                 "GRPCSink"};
 
 /**
  * @brief Node class for the IR.
@@ -97,8 +118,8 @@ class IRNode {
   /**
    * @brief Create an error that incorporates line, column of ir node into the error message.
    *
-   * @param err_msg
-   * @return Status
+   * @param args: the arguments to the substitute that is called.
+   * @return Status: Status with CompilerError context.
    */
   template <typename... Args>
   Status CreateIRNodeError(Args... args) const {
@@ -108,6 +129,17 @@ class IRNode {
                   std::make_unique<compilerpb::CompilerErrorGroup>(context));
   }
   /**
+   * @brief Errors out if in debug mode, otherwise floats up an error.
+   *
+   * @return Status: status if not in debug mode.
+   */
+  template <typename... Args>
+  Status DExitOrIRNodeError(Args... args) const {
+    DCHECK(false) << absl::Substitute(args...);
+    return CreateIRNodeError(args...);
+  }
+
+  /*
    * @brief DeepClone this node into a new graph. All children classes need to implement
    * DeepCloneIntoImpl. If a child class is itself a parent of other classes, then it must override
    * this class and call this method, followed by whatever operations that all of it's child
@@ -252,8 +284,20 @@ class OperatorIR : public IRNode {
   Status Init(OperatorIR* parent, const ArgMap& args, const pypa::AstPtr& ast_node);
   virtual Status InitImpl(const ArgMap& args) = 0;
   virtual std::vector<std::string> ArgKeys() = 0;
-  virtual std::unordered_map<std::string, IRNode*> DefaultArgValues(
-      const pypa::AstPtr& ast_node) = 0;
+
+  /**
+   * @brief Returns the default argument values for any argument passed in.
+   * Does not need to be overridden in an Operator definition if an Operator has no default
+   * arguments.
+   *
+   * // TODO(philkuz)(PL_) make the mapping to an Lambda that takes in a graph_ptr and returns a new
+   * IRNode instead of
+   * // doing this.
+   * @return Stirng to IR mapping
+   */
+  virtual std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) {
+    return std::unordered_map<std::string, IRNode*>();
+  }
   virtual Status ToProto(planpb::Operator*) const = 0;
   // Checks whether the passed in arg maps contains the expected keys in this init function.
   Status ArgMapContainsKeys(const ArgMap& args);
@@ -1110,6 +1154,161 @@ class LimitIR : public OperatorIR {
  private:
   int64_t limit_value_;
   bool limit_value_set_ = false;
+};
+
+/**
+ * @brief IR for the network sink operator that passes batches over GRPC to the destination.
+ *
+ * Setting up the Sink Operator requires three steps.
+ * 0. Init(int destination_id): Set the destination id.
+ * 1. SetPhysicalID(string): Set the name of the node same as the query broker.
+ * 2. SetDestinationAddress(string): the GRPC address where batches should be sent.
+ */
+class GRPCSinkIR : public OperatorIR {
+ public:
+  explicit GRPCSinkIR(int64_t id)
+      : OperatorIR(id, IRNodeType::kGRPCSink, /* has_parents */ true,
+                   /* is_source */ false) {}
+  bool HasLogicalRepr() const override { return true; }
+  std::vector<std::string> ArgKeys() override { return {}; }
+  Status InitImpl(const ArgMap&) override { return Status::OK(); }
+  Status Init(OperatorIR* parent, int64_t destination_id, pypa::AstPtr ast_node) {
+    destination_id_ = destination_id;
+    return OperatorIR::Init(parent, {{}}, ast_node);
+  }
+  Status ToProto(planpb::Operator* op_pb) const override;
+
+  /**
+   * @brief The id used for initial mapping. This associates a GRPCSink with a subsequent
+   * GRPCSourceGroup.
+   *
+   * Once the Physical Plan is established, you should use PhysicalDestinationID().
+   */
+  int64_t destination_id() const { return destination_id_; }
+
+  /**
+   * @brief Set the Physical ID of this node. This should be the same
+   * string used to map mesage
+   *
+   * @param physical_source_id
+   */
+  void SetPhysicalID(const std::string& physical_id) { physical_id_ = physical_id; }
+
+  bool PhysicalIDSet() const { return physical_id_ != ""; }
+
+  /**
+   * @brief An id that is used to map the batches from this sink when received at a source.
+   *
+   * @return std::string
+   */
+  std::string PhysicalDestinationID() const {
+    return absl::Substitute("$0:$1", physical_id_, destination_id_);
+  }
+  void SetDestinationAddress(const std::string& address) { destination_address_ = address; }
+
+  const std::string& destination_address() const { return destination_address_; }
+  bool DestinationAddressSet() const { return destination_address_ != ""; }
+
+ protected:
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+
+ private:
+  int64_t destination_id_ = -1;
+  std::string physical_id_ = "";
+  std::string destination_address_ = "";
+};
+
+/**
+ * @brief This is the GRPC Source group that is what will appear in the physical plan.
+ * Each GRPCSourceGroupIR will end up being converted into a set of GRPCSourceIR for the
+ * corresponding remote_source_ids.
+ */
+class GRPCSourceIR : public OperatorIR {
+ public:
+  explicit GRPCSourceIR(int64_t id)
+      : OperatorIR(id, IRNodeType::kGRPCSource, /* has_parents */ false,
+                   /* is_source */ true) {}
+  bool HasLogicalRepr() const override { return true; }
+  std::vector<std::string> ArgKeys() override { return {}; }
+  Status ToProto(planpb::Operator* op_pb) const override;
+  Status InitImpl(const ArgMap&) override { return Status::OK(); }
+
+  /**
+   * @brief Special Init that skips around the Operator init function.
+   *
+   * @param source_id
+   * @param ast_node
+   * @return Status
+   */
+  Status Init(const std::string& remote_source_id, const Relation& relation,
+              pypa::AstPtr ast_node) {
+    remote_source_id_ = remote_source_id;
+    PL_RETURN_IF_ERROR(SetRelation(relation));
+    return OperatorIR::Init(nullptr, {{}}, ast_node);
+  }
+
+  const std::string& remote_source_id() const { return remote_source_id_; }
+
+ protected:
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+
+ private:
+  // The id to map any incoming batches to this node.
+  std::string remote_source_id_;
+};
+
+/**
+ * @brief This is an IR only node that is used to mark where a GRPC source should go.
+ * For the actual plan, this operator is replaced with a series of GRPCSourceOperators that are
+ * Unioned together.
+ */
+class GRPCSourceGroupIR : public OperatorIR {
+ public:
+  explicit GRPCSourceGroupIR(int64_t id)
+      : OperatorIR(id, IRNodeType::kGRPCSourceGroup, /* has_parents */ false,
+                   /* is_source */ true) {}
+  bool HasLogicalRepr() const override { return false; }
+  std::vector<std::string> ArgKeys() override { return {}; }
+  Status ToProto(planpb::Operator* op_pb) const override;
+
+  Status InitImpl(const ArgMap&) override { return Status::OK(); }
+
+  /**
+   * @brief Special Init that skips around the Operator init function.
+   *
+   * @param source_id
+   * @param ast_node
+   * @return Status
+   */
+  Status Init(int64_t source_id, const Relation& relation, pypa::AstPtr ast_node) {
+    source_id_ = source_id;
+    PL_RETURN_IF_ERROR(SetRelation(relation));
+    return OperatorIR::Init(nullptr, {{}}, ast_node);
+  }
+
+  void SetGRPCAddress(const std::string& grpc_address) { grpc_address_ = grpc_address; }
+
+  /**
+   * @brief Associate the passed in GRPCSinkOperator with this Source Group. The sink_op passed in
+   * will most likely exist outside of the graph this contains, so instead of holding a pointer, we
+   * hold the information that will be used during execution in Vizier.
+   *
+   * @param sink_op: the sink operator that should be connected with this source operator.
+   * @return Status: error if this->source_id and sink_op->destination_id don't line up.
+   */
+  Status AddGRPCSink(GRPCSinkIR* sink_op);
+  const std::vector<std::string>& remote_string_ids() const { return remote_string_ids_; }
+  bool GRPCAddressSet() const { return grpc_address_ != ""; }
+  const std::string& grpc_address() const { return grpc_address_; }
+  int64_t source_id() const { return source_id_; }
+
+ protected:
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+
+ private:
+  int64_t source_id_ = -1;
+  std::vector<std::string> remote_string_ids_;
+  std::string grpc_address_ = "";
 };
 
 /**

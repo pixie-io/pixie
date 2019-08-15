@@ -123,6 +123,13 @@ inline ClassMatch<IRNodeType::kMetadataLiteral> MetadataLiteral() {
 inline ClassMatch<IRNodeType::kMetadataResolver> MetadataResolver() {
   return ClassMatch<IRNodeType::kMetadataResolver>();
 }
+inline ClassMatch<IRNodeType::kGRPCSource> GRPCSource() {
+  return ClassMatch<IRNodeType::kGRPCSource>();
+}
+inline ClassMatch<IRNodeType::kGRPCSourceGroup> GRPCSourceGroup() {
+  return ClassMatch<IRNodeType::kGRPCSourceGroup>();
+}
+inline ClassMatch<IRNodeType::kGRPCSink> GRPCSink() { return ClassMatch<IRNodeType::kGRPCSink>(); }
 
 /**
  * @brief Match a specific integer value.
