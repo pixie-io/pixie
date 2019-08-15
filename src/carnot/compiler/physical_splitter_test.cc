@@ -374,6 +374,102 @@ TEST_F(BlockingOperatorGRPCBridgeRuleTest, DISABLED_agg_join_children) {
   // EXPECT_EQ(join_parent->source_id(), grpc_sink->destination_id());
 }
 
+class SplitterTest : public OperatorTests {
+ protected:
+  void SetUpImpl() override {
+    auto rel_map = std::make_unique<RelationMap>();
+    cpu_relation = table_store::schema::Relation(
+        std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
+                                      types::DataType::FLOAT64, types::DataType::FLOAT64}),
+        std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
+    rel_map->emplace("cpu", cpu_relation);
+
+    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
+  }
+  void HasGRPCSinkChild(int64_t id, IR* test_graph, const std::string& err_string) {
+    IRNode* maybe_op_node = test_graph->Get(id);
+    ASSERT_TRUE(Match(maybe_op_node, Operator())) << err_string;
+    OperatorIR* op = static_cast<OperatorIR*>(maybe_op_node);
+    ASSERT_EQ(op->Children().size(), 1) << err_string;
+    OperatorIR* map_child = op->Children()[0];
+    EXPECT_EQ(map_child->type(), IRNodeType::kGRPCSink) << err_string;
+  }
+  void HasGRPCSourceGroupParent(int64_t id, IR* test_graph, const std::string& err_string) {
+    IRNode* maybe_op_node = test_graph->Get(id);
+    ASSERT_TRUE(Match(maybe_op_node, Operator())) << err_string;
+    OperatorIR* op = static_cast<OperatorIR*>(maybe_op_node);
+    // TODO(philkuz) with multiple parents support check to see whether we can get
+    // check whether either has a parent. Maybe we just pass in an index?
+    ASSERT_EQ(op->parents().size(), 1);
+    OperatorIR* sink_parent = op->parents()[0];
+    EXPECT_EQ(sink_parent->type(), IRNodeType::kGRPCSourceGroup);
+  }
+  std::unique_ptr<CompilerState> compiler_state_;
+  std::unique_ptr<RegistryInfo> info_;
+  int64_t time_now = 1552607213931245000;
+  table_store::schema::Relation cpu_relation;
+};
+
+TEST_F(SplitterTest, simple_split_test) {
+  auto mem_src = MakeMemSource(MakeRelation());
+  auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
+  EXPECT_OK(map1->SetRelation(MakeRelation()));
+  auto mem_sink = MakeMemSink(map1, "out");
+
+  PhysicalSplitter splitter(compiler_state_.get());
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter.SplitAtBlockingNode(graph.get()).ConsumeValueOrDie();
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
+  for (auto id : before_blocking->dag().TopologicalSort()) {
+    IRNode* node = before_blocking->Get(id);
+    EXPECT_FALSE(Match(node, BlockingOperator()) && !Match(node, GRPCSink()))
+        << node->DebugString();
+  }
+  HasGRPCSinkChild(map1->id(), before_blocking, "");
+
+  for (auto id : after_blocking->dag().TopologicalSort()) {
+    EXPECT_FALSE(Match(after_blocking->Get(id), MemorySource()))
+        << before_blocking->Get(id)->DebugString();
+  }
+  HasGRPCSourceGroupParent(mem_sink->id(), after_blocking, "");
+}
+
+TEST_F(SplitterTest, two_paths) {
+  auto mem_src1 = MakeMemSource(MakeRelation());
+  auto map1 = MakeMap(mem_src1, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
+  EXPECT_OK(map1->SetRelation(MakeRelation()));
+  auto mem_sink1 = MakeMemSink(map1, "out");
+
+  auto mem_src2 = MakeMemSource(MakeRelation());
+  auto map2 = MakeMap(mem_src2, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
+  EXPECT_OK(map2->SetRelation(MakeRelation()));
+  auto mem_sink2 = MakeMemSink(map2, "out");
+
+  PhysicalSplitter splitter(compiler_state_.get());
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter.SplitAtBlockingNode(graph.get()).ConsumeValueOrDie();
+
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
+  for (auto id : before_blocking->dag().TopologicalSort()) {
+    IRNode* node = before_blocking->Get(id);
+    EXPECT_FALSE(Match(node, BlockingOperator()) && !Match(node, GRPCSink()))
+        << node->DebugString();
+  }
+
+  HasGRPCSinkChild(map1->id(), before_blocking, "Branch 1");
+  HasGRPCSinkChild(map2->id(), before_blocking, "Branch 2");
+
+  for (auto id : after_blocking->dag().TopologicalSort()) {
+    EXPECT_FALSE(Match(after_blocking->Get(id), MemorySource()))
+        << before_blocking->Get(id)->DebugString();
+  }
+
+  HasGRPCSourceGroupParent(mem_sink1->id(), after_blocking, "Branch1");
+  HasGRPCSourceGroupParent(mem_sink2->id(), after_blocking, "Branch2");
+}
+
 }  // namespace physical
 }  // namespace compiler
 }  // namespace carnot

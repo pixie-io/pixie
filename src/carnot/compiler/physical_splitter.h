@@ -2,6 +2,7 @@
 #include <memory>
 #include <queue>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
@@ -90,6 +91,55 @@ class BlockingOperatorGRPCBridgeRule : public Rule {
    */
   Status AddNewGRPCNodes(OperatorIR* parent_op, OperatorIR* child_op);
   int64_t grpc_id_counter_ = 0;
+};
+
+/**
+ * @brief A plan that is split around blocking nodes.
+ * before_blocking: plan should have no blocking nodes and should end with nodes that feed into
+ * GRPCSinks. No blocking nodes means there also should not be MemorySinks.
+ *
+ * after_blocking: plan should have no memory sources, feed data in from GRPCSources and sink data
+ * into MemorySinks.
+ *
+ */
+struct BlockingSplitPlan {
+  // The plan that occcurs before blocking nodes.
+  std::unique_ptr<IR> before_blocking;
+  // The plan that occcurs after blocking nodes.
+  std::unique_ptr<IR> after_blocking;
+};
+
+/**
+ * @brief Two sets of nodes that correspond to the nodes of the original plan for those
+ * that occure before blocking nodes and those that occur after. Used as a return value for
+ * PhysicalSplitter::GetBlockingSplitGroupsFromIR.
+ *
+ */
+struct BlockingSplitNodeIDGroups {
+  std::unordered_set<int64_t> before_blocking_nodes;
+  std::unordered_set<int64_t> after_blocking_nodes;
+};
+
+/**
+ * @brief The PhysicalSplitter splits apart the graph along Blocking Node lines. The result is two
+ * new IR graphs -> one that is run on Carnot instances that pull up data from Stirling and the
+ * other that is run on Carnot instances which accumulate data and run blocking operations.
+ */
+class PhysicalSplitter : public NotCopyable {
+ public:
+  explicit PhysicalSplitter(CompilerState* compiler_state) : compiler_state_(compiler_state) {}
+  /**
+   * @brief The logical plan is split into two different pieces along blocking nodes lines.
+   *
+   * @param logical_plan: the input logical_plan
+   * @return StatusOr<std::unique_ptr<BlockingSplitPLan>>: the plan split along blocking lines.
+   */
+  StatusOr<std::unique_ptr<BlockingSplitPlan>> SplitAtBlockingNode(const IR* logical_plan);
+
+ private:
+  StatusOr<std::unique_ptr<IR>> ApplyGRPCBridgeRule(const IR* logical_plan);
+  BlockingSplitNodeIDGroups GetBlockingSplitGroupsFromIR(const IR* graph);
+  CompilerState* compiler_state_;
 };
 }  // namespace physical
 }  // namespace compiler
