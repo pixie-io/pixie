@@ -5,9 +5,12 @@
 #include <variant>
 #include <vector>
 
+#include <libcuckoo/cuckoohash_map.hh>
+
 #include "src/common/base/base.h"
 #include "src/common/base/hash_utils.h"
 #include "src/farmhash.h"
+#include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/hash_utils.h"
 #include "src/shared/types/type_utils.h"
 #include "src/shared/types/types.h"
@@ -205,6 +208,17 @@ struct RowTuplePtrHasher {
 struct RowTuplePtrEq {
   bool operator()(const RowTuple* k1, const RowTuple* k2) const { return *k1 == *k2; }
 };
+
+template <class T>
+using RowTupleHashMap = cuckoohash_map<RowTuple*, T, RowTuplePtrHasher, RowTuplePtrEq>;
+
+template <types::DataType DT>
+void ExtractIntoRowTuple(RowTuple* rt, arrow::Array* col, int rt_col_idx, int rt_row_idx) {
+  using UDFValueType = typename types::DataTypeTraits<DT>::value_type;
+  using ArrowArrayType = typename types::DataTypeTraits<DT>::arrow_array_type;
+  rt->SetValue<UDFValueType>(rt_col_idx,
+                             types::GetValue(static_cast<ArrowArrayType*>(col), rt_row_idx));
+}
 
 }  // namespace exec
 }  // namespace carnot

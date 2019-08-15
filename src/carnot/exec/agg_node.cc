@@ -22,12 +22,9 @@ using table_store::schema::RowDescriptor;
 namespace {
 template <types::DataType DT>
 void ExtractIntoGroupArgs(std::vector<GroupArgs>* group_args, arrow::Array* col, int rt_col_idx) {
-  using ArrowArrayType = typename types::DataTypeTraits<DT>::arrow_array_type;
-  using UDFValueType = typename types::DataTypeTraits<DT>::value_type;
   auto num_rows = col->length();
   for (auto row_idx = 0; row_idx < num_rows; ++row_idx) {
-    (*group_args)[row_idx].rt->SetValue<UDFValueType>(
-        rt_col_idx, types::GetValue(static_cast<ArrowArrayType*>(col), row_idx));
+    ExtractIntoRowTuple<DT>((*group_args)[row_idx].rt, col, rt_col_idx, row_idx);
   }
 }
 
@@ -51,8 +48,7 @@ void ExtractToColumnWrapper(const std::vector<GroupArgs>& group_args,
     DCHECK(group_args[row_idx].av != nullptr);
     auto col_wrapper = group_args[row_idx].av->agg_cols[col_idx].get();
     auto arr = rb.ColumnAt(rb_col_idx).get();
-    static_cast<typename types::ColumnWrapperType<DT>::type*>(col_wrapper)
-        ->Append(types::GetValueFromArrowArray<DT>(arr, row_idx));
+    types::ExtractValueToColumnWrapper<DT>(col_wrapper, arr, row_idx);
   }
 }
 

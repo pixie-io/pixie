@@ -299,5 +299,11 @@ struct ColumnWrapperType<DataType::STRING> {
   using type = StringValueColumnWrapper;
 };
 
+template <types::DataType DT>
+void ExtractValueToColumnWrapper(ColumnWrapper* wrapper, arrow::Array* arr, int64_t row_idx) {
+  static_cast<typename ColumnWrapperType<DT>::type*>(wrapper)->Append(
+      types::GetValueFromArrowArray<DT>(arr, row_idx));
+}
+
 }  // namespace types
 }  // namespace pl

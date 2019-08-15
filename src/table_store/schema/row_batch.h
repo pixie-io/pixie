@@ -37,6 +37,10 @@ class RowBatch {
   static StatusOr<std::unique_ptr<RowBatch>> FromProto(
       const table_store::schemapb::RowBatchData& row_batch_proto);
 
+  static StatusOr<std::unique_ptr<RowBatch>> FromColumnBuilders(
+      const RowDescriptor& desc, bool eow, bool eos,
+      std::vector<std::unique_ptr<arrow::ArrayBuilder>>* builders);
+
   /**
    * Adds the given column to the row batch, given that it correctly fits the schema.
    * param col ptr to the arrow array that should be added to the row batch.
@@ -104,6 +108,25 @@ Status CopyValue(arrow::ArrayBuilder* output_col_builder,
   }
 
   typed_col_builder->UnsafeAppend(value);
+  return Status::OK();
+}
+
+template <types::DataType T>
+Status CopyValueRepeated(arrow::ArrayBuilder* output_col_builder,
+                         const typename pl::types::DataTypeTraits<T>::native_type& value,
+                         size_t num_times) {
+  auto* typed_col_builder =
+      static_cast<typename types::DataTypeTraits<T>::arrow_builder_type*>(output_col_builder);
+
+  if constexpr (T == types::DataType::STRING) {
+    int64_t new_size = num_times * value.size() + typed_col_builder->value_data_length();
+    if (new_size >= typed_col_builder->value_data_capacity()) {
+      PL_RETURN_IF_ERROR(typed_col_builder->ReserveData(std::lrint(1.5 * new_size)));
+    }
+  }
+  for (size_t i = 0; i < num_times; ++i) {
+    typed_col_builder->UnsafeAppend(value);
+  }
   return Status::OK();
 }
 

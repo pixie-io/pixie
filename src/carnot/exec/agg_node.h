@@ -5,8 +5,6 @@
 #include <utility>
 #include <vector>
 
-#include <libcuckoo/cuckoohash_map.hh>
-
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/exec/expression_evaluator.h"
@@ -39,7 +37,7 @@ struct GroupArgs {
 };
 
 class AggNode : public ProcessingNode {
-  using AggHashMap = cuckoohash_map<RowTuple*, AggHashValue*, RowTuplePtrHasher, RowTuplePtrEq>;
+  using AggHashMap = RowTupleHashMap<AggHashValue*>;
 
  public:
   AggNode() = default;

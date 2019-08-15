@@ -205,6 +205,25 @@ StatusOr<std::unique_ptr<RowBatch>> RowBatch::FromProto(
   return output_rb;
 }
 
+StatusOr<std::unique_ptr<RowBatch>> RowBatch::FromColumnBuilders(
+    const RowDescriptor& desc, bool eow, bool eos,
+    std::vector<std::unique_ptr<arrow::ArrayBuilder>>* builders) {
+  DCHECK(builders->size());
+  int64_t output_rows = builders->at(0)->length();
+
+  auto output_rb = std::make_unique<RowBatch>(desc, output_rows);
+  output_rb->set_eow(eow);
+  output_rb->set_eos(eos);
+
+  for (auto& column_builder : *builders) {
+    std::shared_ptr<arrow::Array> output_array;
+    PL_RETURN_IF_ERROR(column_builder->Finish(&output_array));
+    PL_RETURN_IF_ERROR(output_rb->AddColumn(output_array));
+  }
+
+  return output_rb;
+}
+
 }  // namespace schema
 }  // namespace table_store
 }  // namespace pl

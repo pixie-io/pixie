@@ -121,19 +121,10 @@ Status UnionNode::FlushRowBatch(ExecState* exec_state) {
   if (output_rows < static_cast<int64_t>(output_rows_per_batch_) && !eos) {
     return Status::OK();
   }
-
-  RowBatch output_rb(*output_descriptor_, output_rows);
-  output_rb.set_eow(eos);
-  output_rb.set_eos(eos);
-
-  for (auto& column_builder : column_builders_) {
-    std::shared_ptr<arrow::Array> output_array;
-    PL_RETURN_IF_ERROR(column_builder->Finish(&output_array));
-    PL_RETURN_IF_ERROR(output_rb.AddColumn(output_array));
-  }
-
+  PL_ASSIGN_OR_RETURN(auto rb, RowBatch::FromColumnBuilders(*output_descriptor_, /*eow*/ eos,
+                                                            /*eos*/ eos, &column_builders_));
   PL_RETURN_IF_ERROR(InitializeColumnBuilders());
-  return SendRowBatchToChildren(exec_state, output_rb);
+  return SendRowBatchToChildren(exec_state, *rb);
 }
 
 Status UnionNode::MergeData(ExecState* exec_state) {

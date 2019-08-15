@@ -14,6 +14,7 @@ namespace carnot {
 namespace exec {
 
 // PL_CARNOT_UPDATE_FOR_NEW_TYPES
+using table_store::schema::CopyValueRepeated;
 using table_store::schema::RowBatch;
 using types::ArrowToDataType;
 using types::BaseValueType;
@@ -44,30 +45,13 @@ std::unique_ptr<ScalarExpressionEvaluator> ScalarExpressionEvaluator::Create(
 namespace {
 
 // Evaluate a scalar value to an arrow::Array.
-template <typename TBuilder, typename TArray, typename T>
-std::shared_ptr<arrow::Array> EvalScalarFixedImpl(arrow::MemoryPool* mem_pool, T val,
-                                                  size_t count) {
-  TBuilder builder(mem_pool);
+template <types::DataType T>
+std::shared_ptr<arrow::Array> EvalScalar(
+    arrow::MemoryPool* mem_pool, const typename pl::types::DataTypeTraits<T>::native_type& val,
+    size_t count) {
+  typename types::DataTypeTraits<T>::arrow_builder_type builder(mem_pool);
   PL_CHECK_OK(builder.Reserve(count));
-  for (size_t i = 0; i < count; ++i) {
-    builder.UnsafeAppend(val);
-  }
-  std::shared_ptr<arrow::Array> arr;
-  PL_CHECK_OK(builder.Finish(&arr));
-  return arr;
-}
-
-// Specialization for binary types.
-template <typename TBuilder, typename TArray, typename T>
-std::shared_ptr<arrow::Array> EvalScalarBinaryImpl(arrow::MemoryPool* mem_pool, T val,
-                                                   size_t count) {
-  TBuilder builder(mem_pool);
-  PL_CHECK_OK(builder.Reserve(count));
-  PL_CHECK_OK(builder.ReserveData(count * val.size()));
-
-  for (size_t i = 0; i < count; ++i) {
-    builder.UnsafeAppend(val);
-  }
+  PL_CHECK_OK(CopyValueRepeated<T>(&builder, val, count));
   std::shared_ptr<arrow::Array> arr;
   PL_CHECK_OK(builder.Finish(&arr));
   return arr;
@@ -82,20 +66,15 @@ std::shared_ptr<arrow::Array> EvalScalarToArrow(ExecState* exec_state, const pla
   auto mem_pool = exec_state->exec_mem_pool();
   switch (val.DataType()) {
     case types::BOOLEAN:
-      return EvalScalarFixedImpl<arrow::BooleanBuilder, arrow::BooleanArray>(
-          mem_pool, val.BoolValue(), count);
+      return EvalScalar<DataType::BOOLEAN>(mem_pool, val.BoolValue(), count);
     case types::INT64:
-      return EvalScalarFixedImpl<arrow::Int64Builder, arrow::Int64Array>(mem_pool, val.Int64Value(),
-                                                                         count);
+      return EvalScalar<DataType::INT64>(mem_pool, val.Int64Value(), count);
     case types::FLOAT64:
-      return EvalScalarFixedImpl<arrow::DoubleBuilder, arrow::DoubleArray>(
-          mem_pool, val.Float64Value(), count);
+      return EvalScalar<DataType::FLOAT64>(mem_pool, val.Float64Value(), count);
     case types::STRING:
-      return EvalScalarBinaryImpl<arrow::StringBuilder, arrow::StringArray>(
-          mem_pool, val.StringValue(), count);
+      return EvalScalar<DataType::STRING>(mem_pool, val.StringValue(), count);
     case types::TIME64NS:
-      return EvalScalarFixedImpl<arrow::Int64Builder, arrow::Int64Array>(
-          mem_pool, val.Time64NSValue(), count);
+      return EvalScalar<DataType::TIME64NS>(mem_pool, val.Time64NSValue(), count);
     default:
       CHECK(0) << "Unknown data type";
   }
