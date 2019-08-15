@@ -48,7 +48,7 @@ class DAG {
     return {};
   }
 
-  const std::unordered_set<int64_t>& nodes() { return nodes_; }
+  const std::unordered_set<int64_t>& nodes() const { return nodes_; }
 
   /**
    * @brief Returns the sets that compose the independent graphs.

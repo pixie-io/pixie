@@ -1209,6 +1209,19 @@ Status IR::OutputProto(planpb::PlanFragment* pf, planpb::DAG* pf_dag,
   return Status::OK();
 }
 
+Status IR::Prune(const std::unordered_set<int64_t>& ids_to_prune) {
+  for (auto node : ids_to_prune) {
+    for (auto child : dag_.DependenciesOf(node)) {
+      PL_RETURN_IF_ERROR(DeleteEdge(node, child));
+    }
+    for (auto parent : dag_.ParentsOf(node)) {
+      PL_RETURN_IF_ERROR(DeleteEdge(parent, node));
+    }
+    PL_RETURN_IF_ERROR(DeleteNode(node));
+  }
+  return Status::OK();
+}
+
 Status GRPCSourceGroupIR::AddGRPCSink(GRPCSinkIR* sink_op) {
   if (sink_op->destination_id() != source_id_) {
     return DExitOrIRNodeError("Source id $0 and destination id $1 aren't equal.",

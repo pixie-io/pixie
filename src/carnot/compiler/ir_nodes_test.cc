@@ -16,6 +16,9 @@ namespace carnot {
 namespace compiler {
 using ::pl::testing::proto::EqualsProto;
 using ::testing::ElementsAre;
+using ::testing::IsEmpty;
+using ::testing::IsSupersetOf;
+using ::testing::UnorderedElementsAre;
 
 TEST(IRTypes, types_enum_test) {
   // Quick test to make sure the enums test is inline with the type strings.
@@ -785,6 +788,26 @@ TEST_F(OperatorTests, op_children) {
 
   auto mem_sink_children = mem_sink->Children();
   EXPECT_EQ(mem_sink_children.size(), 0UL);
+}
+
+using IRPruneTests = OperatorTests;
+TEST_F(IRPruneTests, prune_test) {
+  auto mem_source = MakeMemSource();
+  ColumnIR* col1 = MakeColumn("test1", 0);
+  ColumnIR* col2 = MakeColumn("test2", 0);
+  ColumnIR* col3 = MakeColumn("test3", 0);
+  FuncIR* add_func = MakeAddFunc(col3, MakeInt(3));
+  MapIR* map = MakeMap(mem_source, {{"out1", col1}, {"out2", col2}, {"out3", add_func}});
+  auto mem_sink = MakeMemSink(map, "out");
+
+  EXPECT_THAT(graph->dag().nodes(), UnorderedElementsAre(0, 2, 3, 4, 5, 6, 7, 9));
+  EXPECT_THAT(graph->dag().DependenciesOf(mem_source->id()), IsSupersetOf({map->id()}));
+  EXPECT_THAT(graph->dag().ParentsOf(add_func->id()), IsSupersetOf({map->id()}));
+
+  EXPECT_OK(graph->Prune({mem_sink->id(), map->id()}));
+  EXPECT_THAT(graph->dag().nodes(), UnorderedElementsAre(0, 2, 3, 4, 5, 6));
+  EXPECT_THAT(graph->dag().DependenciesOf(mem_source->id()), IsEmpty());
+  EXPECT_THAT(graph->dag().ParentsOf(add_func->id()), IsEmpty());
 }
 
 }  // namespace compiler

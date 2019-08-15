@@ -243,6 +243,14 @@ class IR {
 
   StatusOr<planpb::Plan> ToProto() const;
 
+  /**
+   * @brief Removes the nodes and edges listed in the following set.
+   *
+   * @param ids_to_prune: the ids which to prune from the graph.
+   * @return Status: error if something not found or missing.
+   */
+  Status Prune(const std::unordered_set<int64_t>& ids_to_prune);
+
  private:
   Status OutputProto(planpb::PlanFragment* pf, planpb::DAG* pf_dag,
                      const OperatorIR* op_node) const;
