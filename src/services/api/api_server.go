@@ -26,14 +26,24 @@ func main() {
 		log.WithError(err).Fatal("Failed to init auth client")
 	}
 
-	env, err := apienv.New(ac)
+	sc, err := apienv.NewSiteManagerServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to init site manager client")
+	}
+
+	env, err := apienv.New(ac, sc)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}
 
+	csh := controller.NewCheckSiteHandler(env)
 	mux := http.NewServeMux()
 	mux.Handle("/api/auth/login", handler.New(env, controller.AuthLoginHandler))
 	mux.Handle("/api/auth/logout", handler.New(env, controller.AuthLogoutHandler))
+	// This is an unauthenticated path that will check and validate if a particular domain
+	// is available for registration. This need to be unauthenticated because we need to check this before
+	// the user registers.
+	mux.Handle("/api/site/check", http.HandlerFunc(csh.HandlerFunc))
 	mux.Handle("/api/graphql",
 		controller.WithAugmentedAuthMiddleware(env,
 			controller.NewGraphQLHandler(env)))
