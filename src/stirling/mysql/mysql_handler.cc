@@ -254,7 +254,11 @@ StatusOr<std::unique_ptr<StmtExecuteRequest>> HandleStmtExecuteRequest(
 
   auto iter = prepare_map->find(stmt_id);
   if (iter == prepare_map->end()) {
-    return error::Cancelled("Can not find Stmt Prepare Event in tracker.");
+    // There can be 2 possibilities in this case:
+    // 1. The stitcher is confused/messed up and accidentally deleted wrong prepare event.
+    // 2. Client sent a Stmt Exec for a deleted Stmt Prepare
+    // We return -1 as stmt_id to indicate error and defer decision to the caller.
+    return std::make_unique<StmtExecuteRequest>(StmtExecuteRequest(-1, {}));
   }
 
   auto prepare_resp = static_cast<StmtPrepareOKResponse*>(iter->second.response());

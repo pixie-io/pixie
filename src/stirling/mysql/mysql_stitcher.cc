@@ -126,6 +126,21 @@ StatusOr<Entry> StitchStmtExecute(const Packet& req_packet, std::deque<Packet>* 
   PL_ASSIGN_OR_RETURN(auto req, HandleStmtExecuteRequest(req_packet, prepare_events));
 
   Packet first_packet = resp_packets->front();
+
+  // Assuming that if corresponding StmtPrepare is not found, and the first response packet is
+  // an error, client made a mistake, so we pop off the error response.
+  if (req->stmt_id() == -1) {
+    if (IsErrPacket(first_packet)) {
+      PL_ASSIGN_OR_RETURN(auto resp, HandleErrMessage(resp_packets));
+      std::string error_msg = absl::Substitute(R"({"Error": "$0"})", resp->error_message());
+      return Entry{error_msg, MySQLEntryStatus::kErr, req_packet.timestamp_ns};
+    } else {
+      // TODO(chengruizhe): If the response packet is a resultset, it's likely that we missed
+      // the StmtPrepare. Identify this case, and pop off the resultset to avoid confusion.
+      return error::Cancelled("StitchStmtExecute: StmtExecute received on deleted StmtPrepare.");
+    }
+  }
+
   std::string error_message = "";
   if (IsOKPacket(first_packet)) {
     PL_ASSIGN_OR_RETURN(auto resp, HandleOKMessage(resp_packets));

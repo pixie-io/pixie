@@ -752,20 +752,22 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
       "GROUP "
       "BY id ORDER BY id\"}";
 
-  EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]), ElementsAre(expected_entry));
-
-  // Test execute fail after close
+  // Test execute fail after close. It should create an entry with the Error.
   std::unique_ptr<SocketDataEvent> close_req_event = InitSendEvent(mySQLStmtCloseReq);
   std::unique_ptr<SocketDataEvent> execute_req_event2 = InitSendEvent(mySQLStmtExecuteReq);
-  std::unique_ptr<SocketDataEvent> execute_resp_event2 = InitSendEvent(mySQLErrResp);
+  std::unique_ptr<SocketDataEvent> execute_resp_event2 = InitRecvEvent(mySQLErrResp);
 
   source_->AcceptDataEvent(std::move(close_req_event));
   source_->AcceptDataEvent(std::move(execute_req_event2));
   source_->AcceptDataEvent(std::move(execute_resp_event2));
   source_->TransferData(nullptr, kMySQLTableNum, &data_table);
   for (const auto& column : record_batch) {
-    EXPECT_EQ(1, column->Size());
+    EXPECT_EQ(2, column->Size());
   }
+
+  std::string expected_err = "{\"Error\": \"This an error.\"}";
+  EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]),
+              ElementsAre(expected_entry, expected_err));
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLQuery) {
