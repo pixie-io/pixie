@@ -13,7 +13,7 @@ namespace testutils {
 
 std::string GenRawPacket(uint8_t packet_num, const std::string& msg);
 
-std::string GenRequest(ConstStrView command, const std::string& msg);
+std::string GenRequest(char command, const std::string& msg);
 
 Packet GenCountPacket(int num_col);
 

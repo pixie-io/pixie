@@ -30,8 +30,8 @@ std::string GenRawPacket(uint8_t packet_num, const std::string& msg) {
 /**
  * Generates a raw packet with a string request.
  */
-std::string GenRequest(ConstStrView command, const std::string& msg) {
-  return GenRawPacket(0, absl::StrCat(command, msg));
+std::string GenRequest(char command, const std::string& msg) {
+  return GenRawPacket(0, absl::StrCat(std::string(1, command), msg));
 }
 
 /**
@@ -149,7 +149,7 @@ std::deque<Packet> GenStmtPrepareOKResponse(const StmtPrepareOKResponse& resp) {
 Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
   char statement_id[4];
   utils::IntToLEBytes<4>(req.stmt_id(), statement_id);
-  std::string msg = absl::StrCat(kStmtExecutePrefix, std::string(statement_id, 4),
+  std::string msg = absl::StrCat(std::string(1, kStmtExecutePrefix), std::string(statement_id, 4),
                                  ConstStrView("\x00\x01\x00\x00\x00"));
   int num_params = req.params().size();
   if (num_params > 0) {
@@ -179,7 +179,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
 Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
   char statement_id[4];
   utils::IntToLEBytes<4>(req.stmt_id(), statement_id);
-  std::string msg = absl::StrCat(kStmtClosePrefix, std::string(statement_id, 4));
+  std::string msg = absl::StrCat(std::string(1, kStmtClosePrefix), std::string(statement_id, 4));
   return Packet{0, std::move(msg), MySQLEventType::kComStmtClose};
 }
 
@@ -188,7 +188,7 @@ Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
  * TODO(chengruizhe): Remove MySQLEventType once type is inferred in stitcher.
  */
 Packet GenStringRequest(const StringRequest& req, MySQLEventType type) {
-  ConstStrView command = "";
+  char command;
   switch (type) {
     case MySQLEventType::kComStmtPrepare:
       command = kStmtPreparePrefix;
@@ -200,9 +200,10 @@ Packet GenStringRequest(const StringRequest& req, MySQLEventType type) {
       command = kQueryPrefix;
       break;
     default:
+      LOG(FATAL) << "Unknown type for string request.";
       break;
   }
-  return Packet{0, absl::StrCat(command, req.msg()), type};
+  return Packet{0, absl::StrCat(std::string(1, command), req.msg()), type};
 }
 
 /**

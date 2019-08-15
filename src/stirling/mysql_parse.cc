@@ -15,18 +15,50 @@ namespace mysql {
 
 namespace {
 MySQLEventType infer_mysql_event_type(std::string_view buf) {
-  std::string_view command = buf.substr(0, 1);
-  if (command == kStmtPreparePrefix) {
-    return MySQLEventType::kComStmtPrepare;
-  } else if (command == kStmtExecutePrefix) {
-    return MySQLEventType::kComStmtExecute;
-  } else if (command == kStmtClosePrefix) {
-    return MySQLEventType::kComStmtClose;
-  } else if (command == kQueryPrefix) {
-    return MySQLEventType::kComQuery;
-  } else {
-    return MySQLEventType::kUnknown;
+  char command = buf[0];
+  switch (command) {
+    case kStmtPreparePrefix:
+      return MySQLEventType::kComStmtPrepare;
+    case kStmtExecutePrefix:
+      return MySQLEventType::kComStmtExecute;
+    case kStmtClosePrefix:
+      return MySQLEventType::kComStmtClose;
+    case kQueryPrefix:
+      return MySQLEventType::kComQuery;
+    case kSleepPrefix:
+      return MySQLEventType::kSleep;
+    case kQuitPrefix:
+      return MySQLEventType::kQuit;
+    case kInitDBPrefix:
+      return MySQLEventType::kInitDB;
+    case kCreateDBPrefix:
+      return MySQLEventType::kCreateDB;
+    case kDropDBPrefix:
+      return MySQLEventType::kDropDB;
+    case kRefreshPrefix:
+      return MySQLEventType::kRefresh;
+    case kShutdownPrefix:
+      return MySQLEventType::kShutdown;
+    case kStatisticsPrefix:
+      return MySQLEventType::kStatistics;
+    case kConnectPrefix:
+      return MySQLEventType::kConnect;
+    case kProcessKillPrefix:
+      return MySQLEventType::kProcessKill;
+    case kDebugPrefix:
+      return MySQLEventType::kDebug;
+    case kPingPrefix:
+      return MySQLEventType::kPing;
+    case kTimePrefix:
+      return MySQLEventType::kTime;
+    case kDelayedInsertPrefix:
+      return MySQLEventType::kDelayedInsert;
+    case kComResetConnectionPrefix:
+      return MySQLEventType::kComResetConnection;
+    case kDaemonPrefix:
+      return MySQLEventType::kDaemon;
   }
+  return MySQLEventType::kUnknown;
 }
 }  // namespace
 

@@ -52,17 +52,59 @@ inline constexpr char kBlobPrefix = '\xfc';
 inline constexpr char kVarStringPrefix = '\xfd';
 inline constexpr char kStringPrefix = '\xfe';
 
-// TODO(chengruizhe): Switch prefix to char.
-inline constexpr ConstStrView kStmtPreparePrefix = "\x16";
-inline constexpr ConstStrView kStmtExecutePrefix = "\x17";
-inline constexpr ConstStrView kStmtClosePrefix = "\x19";
-inline constexpr ConstStrView kQueryPrefix = "\x03";
+// Command Prefix
+// TODO(chengruizhe): we could define a type for MySQLCommand, which just equates to char or
+// uint8_t.
+inline constexpr char kStmtPreparePrefix = '\x16';
+inline constexpr char kStmtExecutePrefix = '\x17';
+inline constexpr char kStmtClosePrefix = '\x19';
+inline constexpr char kQueryPrefix = '\x03';
+// commands below are single req, resp pairs
+// TODO(chengruizhe): Handle the following commands.
+inline constexpr char kSleepPrefix = '\x00';
+inline constexpr char kQuitPrefix = '\x01';
+inline constexpr char kInitDBPrefix = '\x02';
+inline constexpr char kCreateDBPrefix = '\x05';
+inline constexpr char kDropDBPrefix = '\x06';
+inline constexpr char kRefreshPrefix = '\x07';
+inline constexpr char kShutdownPrefix = '\x08';
+inline constexpr char kStatisticsPrefix = '\x09';
+inline constexpr char kConnectPrefix = '\x0b';
+inline constexpr char kProcessKillPrefix = '\x0c';
+inline constexpr char kDebugPrefix = '\x0d';
+inline constexpr char kPingPrefix = '\x0e';
+inline constexpr char kTimePrefix = '\x0f';
+inline constexpr char kDelayedInsertPrefix = '\x10';
+inline constexpr char kComResetConnectionPrefix = '\x1f';
+inline constexpr char kDaemonPrefix = '\x1d';
 
 inline constexpr char kLencIntPrefix2b = '\xfc';
 inline constexpr char kLencIntPrefix3b = '\xfd';
 inline constexpr char kLencIntPrefix8b = '\xfe';
 
-enum class MySQLEventType { kUnknown, kComStmtPrepare, kComStmtExecute, kComStmtClose, kComQuery };
+enum class MySQLEventType {
+  kUnknown,
+  kComStmtPrepare,
+  kComStmtExecute,
+  kComStmtClose,
+  kComQuery,
+  kSleep,
+  kQuit,
+  kInitDB,
+  kCreateDB,
+  kDropDB,
+  kRefresh,
+  kShutdown,
+  kStatistics,
+  kConnect,
+  kProcessKill,
+  kDebug,
+  kPing,
+  kTime,
+  kDelayedInsert,
+  kComResetConnection,
+  kDaemon
+};
 
 /**
  * Raw MySQLPacket from MySQL Parser

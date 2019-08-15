@@ -61,11 +61,13 @@ TEST_F(MySQLParserTest, ParseComStmtPrepare) {
 
   Packet expected_message1;
   expected_message1.type = MySQLEventType::kComStmtPrepare;
-  expected_message1.msg = absl::StrCat(kStmtPreparePrefix, "SELECT name FROM users WHERE id = ?");
+  expected_message1.msg =
+      absl::StrCat(std::string(1, kStmtPreparePrefix), "SELECT name FROM users WHERE id = ?");
 
   Packet expected_message2;
   expected_message2.type = MySQLEventType::kComStmtPrepare;
-  expected_message2.msg = absl::StrCat(kStmtPreparePrefix, "SELECT age FROM users WHERE id = ?");
+  expected_message2.msg =
+      absl::StrCat(std::string(1, kStmtPreparePrefix), "SELECT age FROM users WHERE id = ?");
 
   parser_.Append(msg1, 0);
   parser_.Append(msg2, 1);
@@ -86,7 +88,7 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
 
   Packet expected_message1;
   expected_message1.type = MySQLEventType::kComStmtExecute;
-  expected_message1.msg = absl::StrCat(kStmtExecutePrefix, body);
+  expected_message1.msg = absl::StrCat(std::string(1, kStmtExecutePrefix), body);
 
   parser_.Append(msg1, 0);
 
@@ -116,11 +118,11 @@ TEST_F(MySQLParserTest, ParseComQuery) {
 
   Packet expected_message1;
   expected_message1.type = MySQLEventType::kComQuery;
-  expected_message1.msg = absl::StrCat(kQueryPrefix, "SELECT name FROM users");
+  expected_message1.msg = absl::StrCat(std::string(1, kQueryPrefix), "SELECT name FROM users");
 
   Packet expected_message2;
   expected_message2.type = MySQLEventType::kComQuery;
-  expected_message2.msg = absl::StrCat(kQueryPrefix, "SELECT age FROM users");
+  expected_message2.msg = absl::StrCat(std::string(1, kQueryPrefix), "SELECT age FROM users");
 
   parser_.Append(msg1, 0);
   parser_.Append(msg2, 1);

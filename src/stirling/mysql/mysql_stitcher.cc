@@ -77,6 +77,24 @@ std::vector<Entry> StitchMySQLPackets(std::deque<Packet>* req_packets,
       case MySQLEventType::kComQuery:
         e = StitchQuery(req_packet, resp_packets, state);
         break;
+      case MySQLEventType::kSleep:
+      case MySQLEventType::kQuit:
+      case MySQLEventType::kInitDB:
+      case MySQLEventType::kCreateDB:
+      case MySQLEventType::kDropDB:
+      case MySQLEventType::kRefresh:
+      case MySQLEventType::kShutdown:
+      case MySQLEventType::kStatistics:
+      case MySQLEventType::kConnect:
+      case MySQLEventType::kProcessKill:
+      case MySQLEventType::kDebug:
+      case MySQLEventType::kPing:
+      case MySQLEventType::kTime:
+      case MySQLEventType::kDelayedInsert:
+      case MySQLEventType::kComResetConnection:
+      case MySQLEventType::kDaemon:
+        resp_packets->pop_front();
+        continue;
       case MySQLEventType::kUnknown:
         // TODO(chengruizhe): Here we assume that if the request type is unknown, the response will
         // be just one packet. Make it more robust.
