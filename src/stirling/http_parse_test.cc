@@ -504,9 +504,7 @@ Content-Type: text/plain)";
   EXPECT_THAT(parsed_messages, ElementsAre());
 }
 
-MATCHER_P(HasBody, body, "") {
-  return arg.http_msg_body == body;
-}
+MATCHER_P(HasBody, body, "") { return arg.http_msg_body == body; }
 
 TEST_F(HTTPParserTest, PartialMessageInTheMiddleOfStream) {
   std::string msg0 = HTTPRespWithSizedBody("foobar") + "HTTP/1.1 200 OK\r\n";
