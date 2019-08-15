@@ -27,7 +27,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to initialize env")
 	}
 
-	server, err := controllers.NewServer(env)
+	server, err := controllers.NewServer(env, nil)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}
