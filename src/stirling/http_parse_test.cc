@@ -354,7 +354,6 @@ Content-Type: text/plain)";
 }
 
 MATCHER_P(HasBody, body, "") {
-  LOG(INFO) << "Got: " << arg.http_msg_body;
   return arg.http_msg_body == body;
 }
 
