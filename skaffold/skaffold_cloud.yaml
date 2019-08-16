@@ -5,22 +5,22 @@ build:
   - image: gcr.io/pl-dev-infra/cloud/api_server_image
     context: .
     bazel:
-      target: //src/services/api:api_server_image.tar
+      target: //src/cloud/api:api_server_image.tar
 
   - image: gcr.io/pl-dev-infra/cloud/auth_server_image
     context: .
     bazel:
-      target: //src/services/auth:auth_server_image.tar
+      target: //src/cloud/auth:auth_server_image.tar
 
   - image: gcr.io/pl-dev-infra/cloud/proxy_server_image
     context: .
     bazel:
-      target: //src/services/proxy:proxy_prod_server_image.tar
+      target: //src/cloud/proxy:proxy_prod_server_image.tar
 
   - image: gcr.io/pl-dev-infra/cloud/site_manager_server_image
     context: .
     bazel:
-      target: //src/services/site_manager:site_manager_server_image.tar
+      target: //src/cloud/site_manager:site_manager_server_image.tar
 
   local:
     push: true

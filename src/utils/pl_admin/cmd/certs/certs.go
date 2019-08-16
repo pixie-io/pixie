@@ -74,7 +74,7 @@ func generateCertificate(certPath string, certName string, caCert *x509.Certific
 		NotAfter:    time.Now().AddDate(1, 0, 0),
 		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth, x509.ExtKeyUsageServerAuth},
 		KeyUsage:    x509.KeyUsageDigitalSignature,
-		DNSNames:    []string{"*.local", "*.pl.svc.cluster.local", "localhost", "pl-nats", "pl-etcd", "*.pl-etcd.pl.svc", "*.pl-etcd.pl.svc.cluster.local"},
+		DNSNames:    []string{"*.local", "*.plc.svc.cluster.local", "*.pl.svc.cluster.local", "localhost", "pl-nats", "pl-etcd", "*.pl-etcd.pl.svc", "*.pl-etcd.pl.svc.cluster.local"},
 	}
 	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
