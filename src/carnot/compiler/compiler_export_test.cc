@@ -39,7 +39,7 @@ class CompilerExportTest : public ::testing::Test {
   key: "perf_and_http"
   value {
     columns {
-      column_name: "_time"
+      column_name: "time_"
       column_type: TIME64NS
     }
     columns {
@@ -98,7 +98,7 @@ TEST_F(CompilerExportTest, query_test) {
             column_idxs: 1
             column_idxs: 2
             column_idxs: 3
-            column_names: "_time"
+            column_names: "time_"
             column_names: "cpu_cycles"
             column_names: "tlb_misses"
             column_names: "http"
@@ -160,7 +160,7 @@ TEST_F(CompilerExportTest, query_test) {
 
   int result_len;
   std::vector<std::string> query_lines{
-      "queryDF = From(table='perf_and_http', select=['_time', 'cpu_cycles', 'tlb_misses', 'http'])",
+      "queryDF = From(table='perf_and_http', select=['time_', 'cpu_cycles', 'tlb_misses', 'http'])",
       "mapDF = queryDF.Map(fn=lambda r : {'http_code' : r.http, 'cpu_tlb_ratio' : "
       "r.cpu_cycles/r.tlb_misses})",
       "mapDF.Result(name='out')",
@@ -183,7 +183,7 @@ TEST_F(CompilerExportTest, bad_queries) {
   int result_len;
   // Bad table name query.
   std::vector<std::string> bad_table_query{
-      "queryDF = From(table='bad_table_name', select=['_time', 'cpu_cycles', 'tlb_misses', "
+      "queryDF = From(table='bad_table_name', select=['time_', 'cpu_cycles', 'tlb_misses', "
       "'http'])",
       "mapDF = queryDF.Map(fn=lambda r : {'http_code' : r.http, 'cpu_tlb_ratio' : "
       "r.cpu_cycles/r.tlb_misses})",

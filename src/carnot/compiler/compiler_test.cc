@@ -87,7 +87,7 @@ class CompilerTest : public ::testing::Test {
                                           types::DataType::FLOAT64,
                                           types::DataType::FLOAT64,
                                       }),
-                                      std::vector<std::string>({"_time", "xmod10", "PIx"})));
+                                      std::vector<std::string>({"time_", "xmod10", "PIx"})));
 
     rel_map->emplace(
         "cpu", table_store::schema::Relation(
@@ -346,7 +346,7 @@ nodes {
         name: "sequences"
         column_idxs: 0
         column_idxs: 1
-        column_names: "_time"
+        column_names: "time_"
         column_names: "xmod10"
         column_types: TIME64NS
         column_types: FLOAT64
@@ -366,7 +366,7 @@ nodes {
         name: "range_table"
         column_types: TIME64NS
         column_types: FLOAT64
-        column_names: "_time"
+        column_names: "time_"
         column_names: "xmod10"
       }
     }
@@ -378,7 +378,7 @@ nodes {
 TEST_F(CompilerTest, range_now_test) {
   auto query = absl::StrJoin(
       {
-          "queryDF = From(table='sequences', select=['_time', 'xmod10']).Range(start=0, "
+          "queryDF = From(table='sequences', select=['time_', 'xmod10']).Range(start=0, "
           "stop=plc.now())",
           "queryDF.Result(name='range_table')",
       },
@@ -405,7 +405,7 @@ nodes {
         name: "sequences"
         column_idxs: 0
         column_idxs: 1
-        column_names: "_time"
+        column_names: "time_"
         column_names: "xmod10"
         column_types: TIME64NS
         column_types: FLOAT64
@@ -425,7 +425,7 @@ nodes {
         name: "$2"
         column_types: TIME64NS
         column_types: FLOAT64
-        column_names: "_time"
+        column_names: "time_"
         column_names: "xmod10"
       }
     }
@@ -442,7 +442,7 @@ class CompilerTimeFnTest
     // TODO(philkuz) use Combine with the tuple to get out a set of different values for each of the
     // values.
     std::tie(time_function, chrono_ns) = GetParam();
-    query = absl::StrJoin({"queryDF = From(table='sequences', select=['_time', "
+    query = absl::StrJoin({"queryDF = From(table='sequences', select=['time_', "
                            "'xmod10']).Range(start=plc.now() - $1,stop=plc.now())",
                            "queryDF.Result(name='$0')"},
                           "\n");
@@ -749,7 +749,7 @@ TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
 }
 TEST_F(CompilerTest, rename_then_group_by_test) {
   auto query =
-      absl::StrJoin({"queryDF = From(table='sequences', select=['_time', 'xmod10', 'PIx'])",
+      absl::StrJoin({"queryDF = From(table='sequences', select=['time_', 'xmod10', 'PIx'])",
                      "map_out = queryDF.Map(fn=lambda r : {'res': r.PIx, 'c1': r.xmod10})",
                      "agg_out = map_out.Agg(by=lambda r: [r.res, r.c1], fn=lambda r: {'count': "
                      "pl.count(r.c1)})",
@@ -764,7 +764,7 @@ TEST_F(CompilerTest, rename_then_group_by_test) {
 // Test to see whether comparisons work.
 TEST_F(CompilerTest, comparison_test) {
   auto query =
-      absl::StrJoin({"queryDF = From(table='sequences', select=['_time', 'xmod10', 'PIx'])",
+      absl::StrJoin({"queryDF = From(table='sequences', select=['time_', 'xmod10', 'PIx'])",
                      "map_out = queryDF.Map(fn=lambda r : {'res': r.PIx, "
                      "'c1': r.xmod10, 'gt' : r.xmod10 > 10.0,'lt' : r.xmod10 < 10.0,",
                      "'gte' : r.PIx >= 1.0, 'lte' : r.PIx <= 1.0,", "'eq' : r.PIx == 1.0})",
@@ -793,7 +793,7 @@ TEST_F(CompilerTest, DISABLED_no_arg_pl_count_test) {
 }
 
 TEST_F(CompilerTest, implied_stop_params) {
-  std::string query = absl::StrJoin({"queryDF = From(table='sequences', select=['_time', "
+  std::string query = absl::StrJoin({"queryDF = From(table='sequences', select=['time_', "
                                      "'xmod10']).Range(start=plc.now() - plc.minutes(2))",
                                      "queryDF.Result(name='$0')"},
                                     "\n");
@@ -814,7 +814,7 @@ TEST_F(CompilerTest, implied_stop_params) {
 }
 
 TEST_F(CompilerTest, string_start_param) {
-  std::string query = absl::StrJoin({"queryDF = From(table='sequences', select=['_time', "
+  std::string query = absl::StrJoin({"queryDF = From(table='sequences', select=['time_', "
                                      "'xmod10']).Range(start='-2m')",
                                      "queryDF.Result(name='$0')"},
                                     "\n");
@@ -835,7 +835,7 @@ TEST_F(CompilerTest, string_start_param) {
 }
 
 TEST_F(CompilerTest, string_start_stop_param) {
-  std::string query = absl::StrJoin({"queryDF = From(table='sequences', select=['_time', "
+  std::string query = absl::StrJoin({"queryDF = From(table='sequences', select=['time_', "
                                      "'xmod10']).Range(start='-5m', stop='-1m')",
                                      "queryDF.Result(name='$0')"},
                                     "\n");

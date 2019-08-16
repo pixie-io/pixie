@@ -20,7 +20,7 @@ var relProto = `relation_map {
 		key: "perf_and_http"
 		value {
 			columns {
-				column_name: "_time"
+				column_name: "time_"
 				column_type: TIME64NS
 			}
 			columns {
@@ -69,7 +69,7 @@ func TestCompiler_Simple(t *testing.T) {
 					column_idxs: 1
 					column_idxs: 2
 					column_idxs: 3
-					column_names: "_time"
+					column_names: "time_"
 					column_names: "cpu_cycles"
 					column_names: "tlb_misses"
 					column_names: "http"
@@ -137,7 +137,7 @@ func TestCompiler_Simple(t *testing.T) {
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
 	queryLines := []string{
-		"queryDF = From(table='perf_and_http', select=['_time', 'cpu_cycles', 'tlb_misses', 'http'])",
+		"queryDF = From(table='perf_and_http', select=['time_', 'cpu_cycles', 'tlb_misses', 'http'])",
 		"mapDF = queryDF.Map(fn=lambda r : {'http_code' : r.http, 'cpu_tlb_ratio' : r.cpu_cycles/r.tlb_misses})",
 		"mapDF.Result(name='out')",
 	}
@@ -162,7 +162,7 @@ func TestCompiler_MissingTable(t *testing.T) {
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
 	queryLines := []string{
-		"queryDF = From(table='not_perf_and_http', select=['_time', 'cpu_cycles', 'tlb_misses', 'http'])",
+		"queryDF = From(table='not_perf_and_http', select=['time_', 'cpu_cycles', 'tlb_misses', 'http'])",
 		"mapDF = queryDF.Map(fn=lambda r : {'http_code' : r.http, 'cpu_tlb_ratio' : r.cpu_cycles/r.tlb_misses})",
 		"mapDF.Result(name='out')",
 	}
