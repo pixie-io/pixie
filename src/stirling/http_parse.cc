@@ -301,9 +301,77 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
 }
 
 template <>
-size_t FindMessageBoundary<http::HTTPMessage>(MessageType /*type*/, std::string_view /*buf*/,
-                                              size_t /*start_pos*/) {
-  return 0;
+size_t FindMessageBoundary<http::HTTPMessage>(MessageType type, std::string_view buf,
+                                              size_t start_pos) {
+  // List of all HTTP request methods. All HTTP requests start with one of these.
+  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
+  static constexpr ConstStrView kHTTPReqStartPatternArray[] = {
+      "GET ", "HEAD ", "POST ", "PUT ", "DELETE ", "CONNECT ", "OPTIONS ", "TRACE ", "PATCH ",
+  };
+
+  // List of supported HTTP protocol versions. HTTP responses typically start with one of these.
+  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Messages
+  static constexpr ConstStrView kHTTPRespStartPatternArray[] = {"HTTP/1.1 ", "HTTP/1.0 "};
+
+  static constexpr ConstVectorView<ConstStrView> kHTTPReqStartPatterns =
+      ConstVectorView<ConstStrView>(kHTTPReqStartPatternArray);
+  static constexpr ConstVectorView<ConstStrView> kHTTPRespStartPatterns =
+      ConstVectorView<ConstStrView>(kHTTPRespStartPatternArray);
+
+  static constexpr std::string_view kBoundaryMarker = "\r\n\r\n";
+
+  // Choose the right set of patterns for request vs response.
+  const ConstVectorView<ConstStrView>* start_patterns = nullptr;
+  switch (type) {
+    case MessageType::kRequest:
+      start_patterns = &kHTTPReqStartPatterns;
+      break;
+    case MessageType::kResponse:
+      start_patterns = &kHTTPRespStartPatterns;
+      break;
+    case MessageType::kUnknown:
+      return std::string::npos;
+  }
+
+  // Search for a boundary marker, preceded with a message start.
+  // Example, using HTTP Response:
+  //   leftover body (from previous message)
+  //   HTTP/1.1 ...
+  //   headers
+  //   \r\n\r\n
+  //   body
+  // We first search forwards for \r\n\r\n, then we search backwards from there for HTTP/1.1.
+  //
+  // Note that we don't search forwards for HTTP/1.1 directly, because it could result in matches
+  // inside the request/response body.
+  while (true) {
+    size_t marker_pos = buf.find(kBoundaryMarker, start_pos);
+
+    if (marker_pos == std::string::npos) {
+      return std::string::npos;
+    }
+
+    std::string_view buf_substr = buf.substr(start_pos, marker_pos - start_pos);
+
+    size_t substr_pos = std::string::npos;
+    for (auto& start_pattern : *start_patterns) {
+      size_t current_substr_pos = buf_substr.rfind(start_pattern);
+      if (current_substr_pos != std::string::npos) {
+        // Found a match. Check if it is closer to the marker than our previous match.
+        // We want to return the match that is closest to the marker, so we aren't
+        // matching to something in a previous message's body.
+        substr_pos = (substr_pos == std::string::npos) ? current_substr_pos
+                                                       : std::max(substr_pos, current_substr_pos);
+      }
+    }
+
+    if (substr_pos != std::string::npos) {
+      return start_pos + substr_pos;
+    }
+
+    // Couldn't find a start position. Move to the marker, and search for another marker.
+    start_pos = marker_pos + kBoundaryMarker.size();
+  }
 }
 
 }  // namespace stirling

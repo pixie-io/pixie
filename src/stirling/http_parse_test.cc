@@ -727,6 +727,109 @@ INSTANTIATE_TEST_CASE_P(Stressor, HTTPParserTest,
                         ::testing::Values(TestParam{37337, 50}, TestParam{98237, 50}));
 // TODO(oazizi/yzhao): TestParam{37337, 100} fails, so there is a bug somewhere. Fix it.
 
+//=============================================================================
+// HTTP Boundary Sync Tests
+//=============================================================================
+
+TEST_F(HTTPParserTest, FindReqBoundaryAligned) {
+  const std::string buf = absl::StrCat(kHTTPGetReq0, kHTTPPostReq0, kHTTPGetReq1);
+
+  size_t pos = FindMessageBoundary<http::HTTPMessage>(MessageType::kRequest, buf, 0);
+  ASSERT_NE(pos, std::string::npos);
+  EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPGetReq0, kHTTPPostReq0, kHTTPGetReq1));
+}
+
+TEST_F(HTTPParserTest, FindRespBoundaryAligned) {
+  const std::string buf = absl::StrCat(kHTTPResp0, kHTTPResp1, kHTTPResp2);
+
+  size_t pos = FindMessageBoundary<http::HTTPMessage>(MessageType::kResponse, buf, 0);
+  ASSERT_NE(pos, std::string::npos);
+  EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPResp0, kHTTPResp1, kHTTPResp2));
+}
+
+TEST_F(HTTPParserTest, FindReqBoundaryUnaligned) {
+  {
+    const std::string buf =
+        absl::StrCat("some garbage leftover text with a GET inside", kHTTPPostReq0, kHTTPGetReq1);
+
+    // FindMessageBoundary() should cut out the garbage text and shouldn't match on the GET inside
+    // the garbage text.
+    size_t pos = FindMessageBoundary<http::HTTPMessage>(MessageType::kRequest, buf, 0);
+    ASSERT_NE(pos, std::string::npos);
+    EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPPostReq0, kHTTPGetReq1));
+  }
+
+  {
+    const std::string buf =
+        absl::StrCat("some garbage leftover text with a POST inside", kHTTPPostReq0, kHTTPGetReq1);
+
+    // FindMessageBoundary() should cut out the garbage text and shouldn't match on the POST inside
+    // the garbage text.
+    size_t pos = FindMessageBoundary<http::HTTPMessage>(MessageType::kRequest, buf, 0);
+    ASSERT_NE(pos, std::string::npos);
+    EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPPostReq0, kHTTPGetReq1));
+  }
+}
+
+TEST_F(HTTPParserTest, FindReqBoundaryWithStartPos) {
+  const std::string buf = absl::StrCat(kHTTPGetReq0, kHTTPPostReq0, kHTTPGetReq1);
+
+  {
+    size_t pos = FindMessageBoundary<http::HTTPMessage>(MessageType::kRequest, buf, 1);
+    ASSERT_NE(pos, std::string::npos);
+    EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPPostReq0, kHTTPGetReq1));
+  }
+
+  {
+    size_t pos = FindMessageBoundary<http::HTTPMessage>(MessageType::kRequest, buf,
+                                                        kHTTPGetReq0.length() + 1);
+    ASSERT_NE(pos, std::string::npos);
+    EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPGetReq1));
+  }
+}
+
+TEST_F(HTTPParserTest, FindRespBoundaryUnaligned) {
+  std::string buf =
+      absl::StrCat("some garbage leftover text with a HTTP/1.1 inside", kHTTPResp1, kHTTPResp2);
+
+  // FindMessageBoundary() should cut out the garbage text and shouldn't match on the HTTP/1.1
+  // inside the garbage text.
+  size_t pos = FindMessageBoundary<http::HTTPMessage>(MessageType::kResponse, buf, 1);
+  ASSERT_NE(pos, std::string::npos);
+  EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPResp1, kHTTPResp2));
+}
+
+TEST_F(HTTPParserTest, FindRespBoundaryWithStartPos) {
+  const std::string buf = absl::StrCat(kHTTPResp0, kHTTPResp1, kHTTPResp2);
+
+  {
+    size_t pos = FindMessageBoundary<http::HTTPMessage>(MessageType::kResponse, buf, 1);
+    ASSERT_NE(pos, std::string::npos);
+    EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPResp1, kHTTPResp2));
+  }
+
+  {
+    size_t pos = FindMessageBoundary<http::HTTPMessage>(MessageType::kResponse, buf,
+                                                        kHTTPResp0.length() + 1);
+    ASSERT_NE(pos, std::string::npos);
+    EXPECT_EQ(buf.substr(pos), absl::StrCat(kHTTPResp2));
+  }
+}
+
+TEST_F(HTTPParserTest, FindNoBoundary) {
+  const std::string buf = "This is a bogus string in which there are no HTTP boundaries.";
+
+  {
+    size_t pos = FindMessageBoundary<http::HTTPMessage>(MessageType::kRequest, buf, 0);
+    EXPECT_EQ(pos, std::string::npos);
+  }
+
+  {
+    size_t pos = FindMessageBoundary<http::HTTPMessage>(MessageType::kResponse, buf, 0);
+    EXPECT_EQ(pos, std::string::npos);
+  }
+}
+
 }  // namespace http
 }  // namespace stirling
 }  // namespace pl
