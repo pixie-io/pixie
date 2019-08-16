@@ -82,6 +82,17 @@ template <class TMessageType>
 ParseResult<size_t> Parse(MessageType type, std::string_view buf,
                           std::deque<TMessageType>* messages);
 
+enum class ParseSyncType {
+  // Do not perform a message boundary sync.
+  None,
+  // Perform a message boundary sync, where head might already be aligned.
+  // Sync result of staying in the same spot is okay.
+  Basic,
+  // Perform a message boundary sync, where we want to force movement,
+  // so disallow syncing to back to the existing position, unless no other boundary is discovered.
+  Aggressive,
+};
+
 /**
  * @brief Parses a stream of events traced from write/send/read/recv syscalls,
  * and emits as many complete parsed messages as it can.
@@ -112,14 +123,29 @@ class EventParser {
    *
    * @return ParseResult with locations where parseable messages were found in the source buffer.
    */
-  ParseResult<BufferPosition> ParseMessages(MessageType type, std::deque<TMessageType>* messages) {
+  ParseResult<BufferPosition> ParseMessages(MessageType type, std::deque<TMessageType>* messages,
+                                            ParseSyncType sync_type = ParseSyncType::None) {
     std::string buf = Combine();
+
+    size_t start_pos = 0;
+    if (sync_type != ParseSyncType::None) {
+      bool force_movement = sync_type == ParseSyncType::Aggressive;
+      start_pos = FindMessageBoundary<TMessageType>(type, buf, force_movement);
+
+      // Couldn't find a boundary, so stay where we are.
+      // Chances are we won't be able to parse, but we have no other option.
+      if (start_pos == std::string::npos) {
+        start_pos = 0;
+      }
+    }
 
     // Grab size before we start, so we know where the new parsed messages are.
     size_t prev_size = messages->size();
 
     // Parse and append new messages to the messages vector.
-    ParseResult<size_t> result = Parse(type, buf, messages);
+    std::string_view buf_view(buf);
+    buf_view.remove_prefix(start_pos);
+    ParseResult<size_t> result = Parse(type, buf_view, messages);
     DCHECK(messages->size() >= prev_size);
 
     std::vector<BufferPosition> positions;
@@ -129,7 +155,7 @@ class EventParser {
       auto& msg = (*messages)[prev_size + i];
       // TODO(oazizi): ConvertPosition is inefficient, because it starts searching from scratch
       // everytime. Could do better if ConvertPosition took a starting seq and size.
-      BufferPosition position = ConvertPosition(msgs_, result.start_positions[i]);
+      BufferPosition position = ConvertPosition(msgs_, start_pos + result.start_positions[i]);
       positions.push_back(position);
       DCHECK(position.seq_num < msgs_.size()) << absl::Substitute(
           "The sequence number must be in valid range of [0, $0)", msgs_.size());
@@ -138,6 +164,7 @@ class EventParser {
 
     BufferPosition end_position = ConvertPosition(msgs_, result.end_position);
 
+    // Reset all state. Call to ParseMessages() is destructive of Append() state.
     msgs_.clear();
     ts_nses_.clear();
     msgs_size_ = 0;
@@ -174,10 +201,11 @@ class EventParser {
     return {curr_seq, 0};
   }
 
-  // The total size of all strings in msgs_. Used for reserve memory space for concatenation.
-  size_t msgs_size_ = 0;
   std::vector<uint64_t> ts_nses_;
   std::vector<std::string_view> msgs_;
+
+  // The total size of all strings in msgs_. Used to reserve memory space for concatenation.
+  size_t msgs_size_ = 0;
 };
 
 }  // namespace stirling

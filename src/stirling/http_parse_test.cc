@@ -725,10 +725,9 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
 
 INSTANTIATE_TEST_CASE_P(Stressor, HTTPParserTest,
                         ::testing::Values(TestParam{37337, 50}, TestParam{98237, 50}));
-// TODO(oazizi/yzhao): TestParam{37337, 100} fails, so there is a bug somewhere. Fix it.
 
 //=============================================================================
-// HTTP Boundary Sync Tests
+// HTTP FindMessageBoundary Tests
 //=============================================================================
 
 TEST_F(HTTPParserTest, FindReqBoundaryAligned) {
@@ -828,6 +827,115 @@ TEST_F(HTTPParserTest, FindNoBoundary) {
     size_t pos = FindMessageBoundary<http::HTTPMessage>(MessageType::kResponse, buf, 0);
     EXPECT_EQ(pos, std::string::npos);
   }
+}
+
+//=============================================================================
+// HTTP Automatic Recovery to Message Boundary Tests
+//=============================================================================
+
+TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessage) {
+  // Test iterates through different offsets into the first message to stress the functionality.
+  for (uint32_t offset = 1; offset < kHTTPGetReq0.length(); ++offset) {
+    size_t t = 0;
+
+    std::string partial_http_get_req0 = kHTTPGetReq0.substr(offset, kHTTPGetReq0.length());
+    parser_.Append(partial_http_get_req0, ++t);
+    parser_.Append(kHTTPPostReq0, ++t);
+    parser_.Append(kHTTPGetReq1, ++t);
+
+    std::deque<HTTPMessage> parsed_messages;
+    ParseResult result =
+        parser_.ParseMessages(MessageType::kRequest, &parsed_messages, ParseSyncType::Basic);
+
+    EXPECT_EQ(ParseState::kSuccess, result.state);
+    EXPECT_THAT(parsed_messages,
+                ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq0ExpectedMessage()));
+  }
+}
+
+TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessage) {
+  // Test iterates through different offsets into the first message to stress the functionality.
+  for (uint32_t offset = 1; offset < kHTTPResp0.length(); ++offset) {
+    size_t t = 0;
+
+    std::string partial_http_resp0 = kHTTPResp0.substr(offset, kHTTPResp0.length());
+    parser_.Append(partial_http_resp0, ++t);
+    parser_.Append(kHTTPResp1, ++t);
+    parser_.Append(kHTTPResp2, ++t);
+
+    std::deque<HTTPMessage> parsed_messages;
+    ParseResult result =
+        parser_.ParseMessages(MessageType::kResponse, &parsed_messages, ParseSyncType::Basic);
+
+    EXPECT_EQ(ParseState::kSuccess, result.state);
+    EXPECT_THAT(parsed_messages,
+                ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));
+  }
+}
+
+TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageNoSync) {
+  size_t t = 0;
+  size_t offset = 1;
+
+  std::string partial_http_get_req0 = kHTTPGetReq0.substr(offset, kHTTPGetReq0.length());
+  parser_.Append(partial_http_get_req0, ++t);
+  parser_.Append(kHTTPPostReq0, ++t);
+  parser_.Append(kHTTPGetReq1, ++t);
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result =
+      parser_.ParseMessages(MessageType::kRequest, &parsed_messages, ParseSyncType::None);
+
+  EXPECT_EQ(ParseState::kInvalid, result.state);
+  EXPECT_TRUE(parsed_messages.empty());
+}
+
+TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageNoSync) {
+  size_t t = 0;
+  size_t offset = 1;
+
+  std::string partial_http_resp0 = kHTTPResp0.substr(offset, kHTTPResp0.length());
+  parser_.Append(partial_http_resp0, ++t);
+  parser_.Append(kHTTPResp1, ++t);
+  parser_.Append(kHTTPResp2, ++t);
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result =
+      parser_.ParseMessages(MessageType::kResponse, &parsed_messages, ParseSyncType::None);
+
+  EXPECT_EQ(ParseState::kInvalid, result.state);
+  EXPECT_TRUE(parsed_messages.empty());
+}
+
+TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageAggressiveSync) {
+  size_t t = 0;
+
+  parser_.Append(kHTTPGetReq0, ++t);
+  parser_.Append(kHTTPPostReq0, ++t);
+  parser_.Append(kHTTPGetReq1, ++t);
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result =
+      parser_.ParseMessages(MessageType::kRequest, &parsed_messages, ParseSyncType::Aggressive);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages,
+              ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq0ExpectedMessage()));
+}
+
+TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageAggressiveSync) {
+  size_t t = 0;
+
+  parser_.Append(kHTTPResp0, ++t);
+  parser_.Append(kHTTPResp1, ++t);
+  parser_.Append(kHTTPResp2, ++t);
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result =
+      parser_.ParseMessages(MessageType::kResponse, &parsed_messages, ParseSyncType::Aggressive);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));
 }
 
 }  // namespace http
