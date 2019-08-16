@@ -13,7 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	"pixielabs.ai/pixielabs/src/services/site_manager/schema"
+	"pixielabs.ai/pixielabs/src/cloud/site_manager/schema"
 )
 
 // SetupTestDB sets up a test database instance and applies migrations.

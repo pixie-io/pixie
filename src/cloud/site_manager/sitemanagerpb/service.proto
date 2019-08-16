@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package pl.services;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/common/uuid/proto/uuid.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerpb;sitemanagerpb";
+
+
+service SiteManagerService {
+  // Checks to see a particular subdomain is available for registration.
+  rpc IsSiteAvailable(IsSiteAvailableRequest) returns (IsSiteAvailableResponse) {}
+
+  // Registers a site for an organization.
+  rpc RegisterSite(RegisterSiteRequest) returns (RegisterSiteResponse) {}
+
+}
+
+message IsSiteAvailableRequest {
+  // The domain name to check. For example, if we want to check that walmart.pixie.ai is available we will check
+  // the domain name walmart.
+  string domain_name = 1;
+}
+
+message IsSiteAvailableResponse {
+  bool available = 1;
+}
+
+message RegisterSiteRequest {
+  // The domain name to register.
+  string domain_name = 1;
+
+  // The UUID of the org name.
+  pl.uuidpb.UUID org_id = 2;
+}
+
+message RegisterSiteResponse {
+  // TODO(zasgar/michelle): This should actually be our Status proto type.
+  bool site_registered = 1;
+}
