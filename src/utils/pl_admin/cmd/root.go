@@ -12,6 +12,7 @@ func init() {
 	pflag.String("cert_path", "", "Directory to save certs in")
 	pflag.String("ca_cert", "", "Path to CA cert (optional)")
 	pflag.String("ca_key", "", "Path to CA key (optional)")
+	pflag.String("namespace", "pl", "The namespace to install certs to")
 
 	// Flags for deploy.
 	pflag.String("extract_yaml", "", "Directory to extract the Pixie yamls to")
@@ -36,6 +37,8 @@ func init() {
 	viper.BindPFlag("ca_cert", installCertsCmd.Flags().Lookup("ca_cert"))
 	installCertsCmd.Flags().StringP("ca_key", "k", "", "Path to CA key (optional)")
 	viper.BindPFlag("ca_key", installCertsCmd.Flags().Lookup("ca_key"))
+	installCertsCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install certs to")
+	viper.BindPFlag("namespace", installCertsCmd.Flags().Lookup("namespace"))
 
 	deployCmd := NewCmdDeploy()
 	RootCmd.AddCommand(deployCmd)

@@ -126,7 +126,7 @@ func generateCerts(certPath string, caCertPath string, caKeyPath string) {
 }
 
 // InstallCerts generates the necessary certs and installs them in kubernetes.
-func InstallCerts(certPath string, caCertPath string, caKeyPath string) {
+func InstallCerts(certPath string, caCertPath string, caKeyPath string, namespace string) {
 	var err error
 
 	deleteCerts := false
@@ -162,16 +162,16 @@ func InstallCerts(certPath string, caCertPath string, caKeyPath string) {
 	clientset := k8s.GetClientset(config)
 
 	// Delete secrets in k8s.
-	k8s.DeleteSecret(clientset, "pl", "proxy-tls-certs")
-	k8s.DeleteSecret(clientset, "pl", "service-tls-certs")
-	k8s.DeleteSecret(clientset, "pl", "etcd-peer-tls-certs")
-	k8s.DeleteSecret(clientset, "pl", "etcd-client-tls-certs")
-	k8s.DeleteSecret(clientset, "pl", "etcd-server-tls-certs")
+	k8s.DeleteSecret(clientset, namespace, "proxy-tls-certs")
+	k8s.DeleteSecret(clientset, namespace, "service-tls-certs")
+	k8s.DeleteSecret(clientset, namespace, "etcd-peer-tls-certs")
+	k8s.DeleteSecret(clientset, namespace, "etcd-client-tls-certs")
+	k8s.DeleteSecret(clientset, namespace, "etcd-server-tls-certs")
 
 	// Create secrets in k8s.
-	k8s.CreateTLSSecret(clientset, "pl", "proxy-tls-certs", serverKey, serverCert)
+	k8s.CreateTLSSecret(clientset, namespace, "proxy-tls-certs", serverKey, serverCert)
 
-	k8s.CreateGenericSecret(clientset, "pl", "service-tls-certs", map[string]string{
+	k8s.CreateGenericSecret(clientset, namespace, "service-tls-certs", map[string]string{
 		"server.key": serverKey,
 		"server.crt": serverCert,
 		"ca.crt":     caCert,
@@ -179,19 +179,19 @@ func InstallCerts(certPath string, caCertPath string, caKeyPath string) {
 		"client.crt": clientCert,
 	})
 
-	k8s.CreateGenericSecret(clientset, "pl", "etcd-peer-tls-certs", map[string]string{
+	k8s.CreateGenericSecret(clientset, namespace, "etcd-peer-tls-certs", map[string]string{
 		"peer.key":    serverKey,
 		"peer.crt":    serverCert,
 		"peer-ca.crt": caCert,
 	})
 
-	k8s.CreateGenericSecret(clientset, "pl", "etcd-client-tls-certs", map[string]string{
+	k8s.CreateGenericSecret(clientset, namespace, "etcd-client-tls-certs", map[string]string{
 		"etcd-client.key":    clientKey,
 		"etcd-client.crt":    clientCert,
 		"etcd-client-ca.crt": caCert,
 	})
 
-	k8s.CreateGenericSecret(clientset, "pl", "etcd-server-tls-certs", map[string]string{
+	k8s.CreateGenericSecret(clientset, namespace, "etcd-server-tls-certs", map[string]string{
 		"server.key":    serverKey,
 		"server.crt":    serverCert,
 		"server-ca.crt": caCert,

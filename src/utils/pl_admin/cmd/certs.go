@@ -15,7 +15,8 @@ func NewCmdInstallCerts() *cobra.Command {
 			certPath, _ := cmd.Flags().GetString("cert_path")
 			caCert, _ := cmd.Flags().GetString("ca_cert")
 			caKey, _ := cmd.Flags().GetString("ca_key")
-			certs.InstallCerts(certPath, caCert, caKey)
+			namespace, _ := cmd.Flags().GetString("namespace")
+			certs.InstallCerts(certPath, caCert, caKey, namespace)
 		},
 	}
 }

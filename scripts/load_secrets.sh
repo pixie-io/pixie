@@ -10,7 +10,7 @@ workspace=$(bazel info workspace 2> /dev/null)
 
 load_certs() {
     cd ${workspace}/src/utils/pl_admin/
-    bazel run :pl_deploy -- install-certs
+    bazel run :pl_deploy -- install-certs --namespace=${namespace}
 }
 
 #Loads the secrets used by the dev environment.
