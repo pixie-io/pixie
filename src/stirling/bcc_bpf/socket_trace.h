@@ -29,6 +29,8 @@ const char kStmtExecutePrefix = '\x17';
 const char kStmtClosePrefix = '\x19';
 const char kQueryPrefix = '\x03';
 
+const size_t kHTTP2FrameHeaderSizeInBytes = 9;
+
 // TODO(yzhao): Investigate the performance cost of misaligned memory access (8 vs. 4 bytes).
 
 typedef enum {
@@ -90,12 +92,21 @@ struct conn_info_t {
   // The protocol and message type of traffic on the connection (HTTP/Req, HTTP/Resp, MySQL/Req,
   // etc.).
   struct traffic_class_t traffic_class;
+
+  // TODO(yzhao): Following fields are only internal tracking only, and is not needed when
+  // submitting a new connection. Consider separate these data with the above data that is pushed to
+  // perf buffer.
+
   // A 0-based number for the next write event on this connection.
   // This number is incremented each time a new write event is recorded.
   uint64_t wr_seq_num;
   // A 0-based number for the next read event on this connection.
   // This number is incremented each time a new read event is recorded.
   uint64_t rd_seq_num;
+
+  // The offset to start read the first frame of the upcoming bytes buffer.
+  uint64_t wr_next_http2_frame_offset;
+  uint64_t rd_next_http2_frame_offset;
 };
 
 // Data buffer message size. BPF can submit at most this amount of data to a perf buffer.
@@ -119,6 +130,9 @@ struct conn_info_t {
 struct socket_data_event_t {
   // We split attributes into a separate struct, because BPF gets upset if you do lots of
   // size arithmetic. This makes it so that it's attributes followed by message.
+  //
+  // TODO(yzhao): When adding http2_frame_offset, use a union, so that it allows adding similar data
+  // for other protocols.
   struct attr_t {
     // The time stamp as this is captured by BPF program.
     uint64_t timestamp_ns;

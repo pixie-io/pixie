@@ -5,6 +5,8 @@ load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test
 load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
+#TODO(yzhao): Add a BUILD.bazel file under bcc_bpf.
+
 pl_cc_library(
     name = "cc_library",
     srcs = glob(
@@ -71,9 +73,10 @@ pl_bpf_cc_resource(
     hdrs = [
         ["bcc_bpf/pidruntime.h"],
         [
-            "bcc_bpf/socket_trace.h",
+            "bcc_bpf/http2.h",
             "bcc_bpf/log_event.h",
             "bcc_bpf/logging.h",
+            "bcc_bpf/socket_trace.h",
         ],
     ],
 )
@@ -221,6 +224,15 @@ pl_cc_test(
         "//src/stirling/testing:cc_library",
         "//src/stirling/testing/proto:greet_pl_cc_proto",
     ],
+)
+
+pl_cc_test(
+    name = "bcc_bpf_http2_test",
+    srcs = ["bcc_bpf/http2_test.cc"],
+    # This test always fails in Jenkins build because of unable to unroll loop.
+    # TODO(yzhao): Fix and remove this 'manual' tag.
+    tags = ["manual"],
+    deps = [":cc_library"],
 )
 
 pl_cc_test(
