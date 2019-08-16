@@ -90,3 +90,34 @@ func TestCheckSiteHandler_HandlerFunc(t *testing.T) {
 		assert.Equal(t, rr.Code, http.StatusInternalServerError)
 	})
 }
+
+func TestCheckSiteHandler_HandlerFunc_BadInput(t *testing.T) {
+	// We need this to create env.
+	viper.Set("session_key", "abcd")
+
+	ctrl := gomock.NewController(t)
+	sc := mock_sitemanagerpb.NewMockSiteManagerServiceClient(ctrl)
+	env, err := apienv.New(nil, sc)
+	require.Nil(t, err)
+	cs := controller.NewCheckSiteHandler(env)
+
+	t.Run("missing domain name", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "/check-site", nil)
+		require.Nil(t, err)
+
+		rr := httptest.NewRecorder()
+		cs.HandlerFunc(rr, req)
+
+		assert.Equal(t, rr.Code, http.StatusBadRequest)
+	})
+
+	t.Run("short domain name", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "/check-site?domain_name=t", nil)
+		require.Nil(t, err)
+
+		rr := httptest.NewRecorder()
+		cs.HandlerFunc(rr, req)
+
+		assert.Equal(t, rr.Code, http.StatusBadRequest)
+	})
+}
