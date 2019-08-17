@@ -11,15 +11,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-class PatternMatchTest : public ::testing::Test {
- protected:
-  void SetUp() override {
-    ast = MakeTestAstPtr();
-    graph = std::make_shared<IR>();
-  }
-  pypa::AstPtr ast;
-  std::shared_ptr<IR> graph;
-};
+class PatternMatchTest : public OperatorTests {};
 
 TEST_F(PatternMatchTest, equals_test) {
   auto c1 = graph->MakeNode<IntIR>().ValueOrDie();
@@ -109,6 +101,7 @@ TEST_F(PatternMatchTest, relation_status_operator_match) {
   EXPECT_OK(map->AddParent(mem_src));
   auto filter = graph->MakeNode<FilterIR>().ValueOrDie();
   EXPECT_OK(filter->AddParent(mem_src));
+
   // Unresolved blocking aggregate with unresolved parent.
   EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyBlockingAgg()));
   EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyMap()));
@@ -153,6 +146,24 @@ TEST_F(PatternMatchTest, relation_status_operator_match) {
   EXPECT_FALSE(Match(filter, UnresolvedReadyBlockingAgg()));
   EXPECT_FALSE(Match(filter, UnresolvedReadyMap()));
   EXPECT_FALSE(Match(filter, UnresolvedReadyOp()));
+}
+
+TEST_F(PatternMatchTest, relation_status_union_test) {
+  MemorySourceIR* mem_src1 = MakeMemSource();
+  MemorySourceIR* mem_src2 = MakeMemSource();
+
+  UnionIR* union_op = MakeUnion({mem_src1, mem_src2});
+
+  EXPECT_FALSE(Match(union_op, UnresolvedReadyUnion()));
+
+  EXPECT_OK(mem_src1->SetRelation(MakeRelation()));
+
+  // Check to make sure that one parent doesn't set it off.
+  EXPECT_FALSE(Match(union_op, UnresolvedReadyUnion()));
+
+  EXPECT_OK(mem_src2->SetRelation(MakeRelation()));
+  // Check to make sure that setting both parents does set it off.
+  EXPECT_TRUE(Match(union_op, UnresolvedReadyUnion()));
 }
 
 }  // namespace compiler

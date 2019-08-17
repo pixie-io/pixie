@@ -509,6 +509,13 @@ UnresolvedReadyMetadataResolver() {
 }
 
 /**
+ * @brief Match a Union node that doesn't have a relation but it's parents do.
+ */
+inline RelationResolvedOpMatch<IRNodeType::kUnion, false, true> UnresolvedReadyUnion() {
+  return RelationResolvedOpMatch<IRNodeType::kUnion, false, true>();
+}
+
+/**
  * @brief Match Any operator that doesn't have a relation but the parent does.
  */
 inline AnyRelationResolvedOpMatch<false, true> UnresolvedReadyOp() {
