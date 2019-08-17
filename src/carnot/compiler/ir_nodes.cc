@@ -132,10 +132,19 @@ Status OperatorIR::ArgMapContainsKeys(const ArgMap& args) {
 }
 
 Status OperatorIR::Init(OperatorIR* parent, const ArgMap& args, const pypa::AstPtr& ast_node) {
+  if (parent) {
+    return Init(std::vector<OperatorIR*>({parent}), args, ast_node);
+  }
+  return Init(std::vector<OperatorIR*>({}), args, ast_node);
+}
+
+Status OperatorIR::Init(std::vector<OperatorIR*> parents, const ArgMap& args,
+                        const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   PL_RETURN_IF_ERROR(ArgMapContainsKeys(args));
-  if (parent != nullptr) {
-    PL_RETURN_IF_ERROR(AddParent(parent));
+  CHECK_EQ(parents.size() > 0, can_have_parents_);
+  for (auto p : parents) {
+    PL_RETURN_IF_ERROR(AddParent(p));
   }
   PL_RETURN_IF_ERROR(InitImpl(args));
   return Status::OK();

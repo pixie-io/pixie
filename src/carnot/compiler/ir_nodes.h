@@ -294,7 +294,26 @@ class OperatorIR : public IRNode {
    * @return Status: Error if old_parent not an actualy parent.
    */
   Status ReplaceParent(OperatorIR* old_parent, OperatorIR* new_parent);
+
+  /**
+   * @brief Initializes the Operator with a single parent.
+   *
+   * @param parent: parent operator, or a nullptr if no parent for this operator.
+   * @param args: the map of string to IRNode that represents
+   * @param ast_node: the node in the ast parser to initialize this.
+   * @return Status: error if anything fails during this call.
+   */
   Status Init(OperatorIR* parent, const ArgMap& args, const pypa::AstPtr& ast_node);
+
+  /**
+   * @brief Initializes the Operator with multiple parents.
+   *
+   * @param parents: parent operators, or an empty vector.
+   * @param args: the map of string to IRNode that represents
+   * @param ast_node: the node in the ast parser to initialize this.
+   * @return Status: error if anything fails during this call.
+   */
+  Status Init(std::vector<OperatorIR*> parents, const ArgMap& args, const pypa::AstPtr& ast_node);
   virtual Status InitImpl(const ArgMap& args) = 0;
   virtual std::vector<std::string> ArgKeys() = 0;
 
@@ -925,7 +944,8 @@ class MemorySourceIR : public OperatorIR {
  public:
   using OperatorIR::Init;
   MemorySourceIR() = delete;
-  explicit MemorySourceIR(int64_t id) : OperatorIR(id, IRNodeType::kMemorySource, false, true) {}
+  explicit MemorySourceIR(int64_t id)
+      : OperatorIR(id, IRNodeType::kMemorySource, /* has_parents */ false, /* is_source */ true) {}
   bool HasLogicalRepr() const override;
 
   std::string table_name() { return table_name_; }
@@ -978,7 +998,8 @@ class MemorySourceIR : public OperatorIR {
 class MemorySinkIR : public OperatorIR {
  public:
   MemorySinkIR() = delete;
-  explicit MemorySinkIR(int64_t id) : OperatorIR(id, IRNodeType::kMemorySink, true, false) {}
+  explicit MemorySinkIR(int64_t id)
+      : OperatorIR(id, IRNodeType::kMemorySink, /* has_parents */ true, /* is_source */ false) {}
   bool HasLogicalRepr() const override;
 
   bool name_set() const { return name_set_; }
