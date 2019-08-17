@@ -30,6 +30,51 @@ const KelvinStubGenerator MockKelvinStubGenerator =
   return std::make_unique<carnotpb::MockKelvinServiceStub>();
 };
 
+table_store::schema::RowBatch ConcatRowBatches(
+    const std::vector<table_store::schema::RowBatch>& batches) {
+  CHECK(batches.size());
+  bool eos = false;
+  bool eow = false;
+  int64_t num_rows = 0;
+
+  for (size_t i = 0; i < batches.size(); ++i) {
+    if (i == batches.size() - 1) {
+      eow = batches[i].eow();
+      eos = batches[i].eos();
+    } else {
+      CHECK(!batches[i].eow());
+      CHECK(!batches[i].eos());
+      CHECK(batches[i].desc() == batches[batches.size() - 1].desc());
+    }
+    num_rows += batches[i].num_rows();
+  }
+
+  std::vector<std::unique_ptr<arrow::ArrayBuilder>> column_builders(batches[0].num_columns());
+  for (size_t i = 0; i < batches[0].desc().size(); ++i) {
+    column_builders[i] = MakeArrowBuilder(batches[0].desc().type(i), arrow::default_memory_pool());
+    PL_CHECK_OK(column_builders[i]->Reserve(num_rows));
+  }
+
+  for (auto rb : batches) {
+    for (auto col_idx = 0; col_idx < rb.num_columns(); ++col_idx) {
+      auto input_col = rb.ColumnAt(col_idx).get();
+      auto dt = rb.desc().type(col_idx);
+      auto builder = column_builders[col_idx].get();
+      for (auto row_idx = 0; row_idx < rb.num_rows(); ++row_idx) {
+#define TYPE_CASE(_dt_)                             \
+  PL_CHECK_OK(table_store::schema::CopyValue<_dt_>( \
+      builder, types::GetValueFromArrowArray<_dt_>(input_col, row_idx)))
+        PL_SWITCH_FOREACH_DATATYPE(dt, TYPE_CASE);
+#undef TYPE_CASE
+      }
+    }
+  }
+
+  auto rb_ptr = table_store::schema::RowBatch::FromColumnBuilders(batches[0].desc(), eow, eos,
+                                                                  &column_builders);
+  return *(rb_ptr.ConsumeValueOrDie());
+}
+
 class CarnotTestUtils {
  public:
   CarnotTestUtils() = default;
@@ -175,9 +220,12 @@ class ExecNodeTester {
       exec_node_->AddChild(&mock_child_, 0);
     }
 
-    EXPECT_OK(exec_node_->Init(*plan_node_, output_descriptor_, input_descriptors_));
-    EXPECT_OK(exec_node_->Prepare(exec_state_));
-    EXPECT_OK(exec_node_->Open(exec_state_));
+    auto s = exec_node_->Init(*plan_node_, output_descriptor_, input_descriptors_);
+    EXPECT_OK(s) << s.msg();
+    s = exec_node_->Prepare(exec_state_);
+    EXPECT_OK(s) << s.msg();
+    s = exec_node_->Open(exec_state_);
+    EXPECT_OK(s) << s.msg();
   }
 
   /**
@@ -252,7 +300,8 @@ class ExecNodeTester {
           .WillRepeatedly(
               testing::DoAll(testing::Invoke(check_result_batch), testing::Return(Status::OK())));
     }
-    EXPECT_OK(exec_node_->ConsumeNext(exec_state_, rb, parent_id));
+    auto s = exec_node_->ConsumeNext(exec_state_, rb, parent_id);
+    EXPECT_OK(s) << s.msg();
 
     return *this;
   }
@@ -264,15 +313,39 @@ class ExecNodeTester {
    * @return the ExecNodeTester, to allow for chaining.
    */
   ExecNodeTester& ExpectRowBatch(const table_store::schema::RowBatch& expected_rb,
-                                 bool ordered = true) {
-    LOG(ERROR) << "Exepcted row batch: " << expected_rb.DebugString();
-    LOG(ERROR) << "Actual row batch: " << current_row_batches_.front()->DebugString();
+                                 bool ordered = true, int64_t time_column_idx = -1) {
     if (ordered) {
       ValidateRowBatch(expected_rb, *current_row_batches_.front().get());
-      current_row_batches_.pop();
     } else {
       ValidateUnorderedRowBatch(expected_rb, *current_row_batches_.front().get());
+    }
+    if (time_column_idx > -1) {
+      ValidateTimeOrder(*current_row_batches_.front().get(), time_column_idx);
+    }
+    current_row_batches_.pop();
+
+    return *this;
+  }
+
+  /**
+   * Checks that the row batch matches the last rowbatch output by ConsumeNext/GenerateNext.
+   * @param expected_rb Row batch that should match the last rowbatch output by
+   * ConsumeNext/GenerateNext.
+   * @return the ExecNodeTester, to allow for chaining.
+   */
+  ExecNodeTester& ExpectRowBatchesData(const table_store::schema::RowBatch& expected_rb,
+                                       int64_t num_batches, int64_t time_column_idx = -1) {
+    std::vector<table_store::schema::RowBatch> batches;
+    for (auto i = 0; i < num_batches; ++i) {
+      batches.push_back(*current_row_batches_.front().get());
       current_row_batches_.pop();
+    }
+    auto actual_rb = ConcatRowBatches(batches);
+
+    ValidateUnorderedRowBatch(expected_rb, actual_rb);
+
+    if (time_column_idx > -1) {
+      ValidateTimeOrder(actual_rb, time_column_idx);
     }
 
     return *this;
@@ -344,6 +417,20 @@ class ExecNodeTester {
     std::sort(actual_hashes.begin(), actual_hashes.end());
 
     EXPECT_THAT(expected_hashes, actual_hashes);
+  }
+
+  void ValidateTimeOrder(const table_store::schema::RowBatch& rb, size_t time_column_idx) {
+    types::Time64NSValue prev_val;
+    types::Time64NSValue cur_val;
+    auto time_col = rb.ColumnAt(time_column_idx).get();
+    for (auto row_idx = 0; row_idx < rb.num_rows(); ++row_idx) {
+      prev_val = cur_val;
+      cur_val = types::GetValueFromArrowArray<types::TIME64NS>(time_col, row_idx);
+      if (row_idx == 0) {
+        continue;
+      }
+      EXPECT_GE(cur_val, prev_val);
+    }
   }
 
   MockExecNode mock_child_;
