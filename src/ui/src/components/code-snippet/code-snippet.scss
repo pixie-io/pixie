@@ -1,0 +1,25 @@
+@import "../../index.scss";
+
+.code-snippet {
+  padding: 9px 10px 9px 10px;
+  background-color: $gray-150;
+  border: 1px solid $gray-350;
+  border-radius: 2px;
+  display: flex;
+}
+
+.code-snippet pre {
+  color: $black;
+}
+
+.code-snippet--copy-button {
+  opacity: .8;
+  cursor: pointer;
+  margin-top: -5px;
+  margin-left: 5px;
+}
+
+.code-snippet--content {
+  flex: 1;
+  overflow-x: scroll;
+}

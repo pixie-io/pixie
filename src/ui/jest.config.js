@@ -20,7 +20,7 @@ module.exports = {
   ],
   moduleNameMapper: {
     '^.+\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/file-mock.js',
-    '(\\.css|scss$)|(normalize.css/normalize)|(^exports-loader)': 'identity-obj-proxy',
+    '(\\.css|\\.scss$)|(normalize.css/normalize)|(^exports-loader)': 'identity-obj-proxy',
   },
   resolver: null,
   transform: {
