@@ -16,6 +16,7 @@ service ProfileService {
     // Creates the initial organization with the specified user as the owner.
     rpc CreateOrgAndUser(CreateOrgAndUserRequest) returns (CreateOrgAndUserResponse) {}
     rpc GetOrg(pl.uuidpb.UUID) returns (OrgInfo) {}
+    rpc GetOrgByDomain(GetOrgByDomainRequest) returns(OrgInfo) {}
 }
 
 
@@ -82,4 +83,8 @@ message CreateOrgAndUserResponse {
     pl.uuidpb.UUID user_id = 2 [
                               (gogoproto.customname) = "UserID"
                               ];
+}
+
+message GetOrgByDomainRequest {
+    string domain_name = 1;
 }
