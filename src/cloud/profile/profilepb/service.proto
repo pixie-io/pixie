@@ -78,7 +78,7 @@ message CreateOrgAndUserRequest {
 
 message CreateOrgAndUserResponse {
     pl.uuidpb.UUID org_id = 1 [
-                              (gogoproto.customname) = "UserID"
+                              (gogoproto.customname) = "OrgID"
                               ];
     pl.uuidpb.UUID user_id = 2 [
                               (gogoproto.customname) = "UserID"
