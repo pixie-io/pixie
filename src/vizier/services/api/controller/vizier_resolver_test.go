@@ -181,7 +181,7 @@ func TestVizierExecuteQuery(t *testing.T) {
 
 	resp := service.VizierQueryResponse{}
 	u, _ := uuid.FromString("65294d6a-6ceb-48a7-96b0-9a1eb7d467cb")
-	upb, _ := utils.ProtoFromUUID(&u)
+	upb := utils.ProtoFromUUID(&u)
 
 	resp.Responses = append(resp.Responses, &service.VizierQueryResponse_ResponseByAgent{
 		Response: &service.AgentQueryResponse{

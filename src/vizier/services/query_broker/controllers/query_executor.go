@@ -49,10 +49,7 @@ func (e *QueryExecutor) GetQueryID() uuid.UUID {
 
 // ExecuteQuery executes a query by sending query fragments to relevant agents.
 func (e *QueryExecutor) ExecuteQuery(query string) error {
-	queryIDPB, err := utils.ProtoFromUUID(&e.queryID)
-	if err != nil {
-		return err
-	}
+	queryIDPB := utils.ProtoFromUUID(&e.queryID)
 
 	// Create NATS message containing the query string.
 	msg := messages.VizierMessage{

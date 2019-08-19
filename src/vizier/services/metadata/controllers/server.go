@@ -55,7 +55,7 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequ
 	// Populate AgentInfoResponse.
 	agentResponses := make([]*metadatapb.AgentStatus, 0)
 	for _, agent := range agents {
-		uuidPb, err := utils.ProtoFromUUID(&agent.AgentID)
+		uuidPb := utils.ProtoFromUUID(&agent.AgentID)
 		if err != nil {
 			log.WithError(err).Error("Could not parse proto from UUID")
 			continue

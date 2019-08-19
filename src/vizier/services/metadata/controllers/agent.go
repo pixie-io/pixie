@@ -227,7 +227,7 @@ func (m *AgentManagerImpl) RegisterAgent(info *AgentInfo) (asid uint32, err erro
 		m.deleteAgent(ctx, string(resp.Kvs[0].Value), info.Hostname)
 	}
 
-	idPb, err := utils.ProtoFromUUID(&info.AgentID)
+	idPb := utils.ProtoFromUUID(&info.AgentID)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to convert UUID to pb")
 	}
