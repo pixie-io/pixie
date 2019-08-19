@@ -837,3 +837,49 @@ func TestUpdateProcesses(t *testing.T) {
 	proto.Unmarshal(resp.Kvs[0].Value, p2Pb)
 	assert.Equal(t, "new name", p2Pb.Name)
 }
+
+func TestGetComputedSchemas(t *testing.T) {
+	etcdClient, cleanup := testingutils.SetupEtcd(t)
+	defer cleanup()
+
+	mds, err := controllers.NewEtcdMetadataStore(etcdClient)
+	if err != nil {
+		t.Fatal("Failed to create metadata store.")
+	}
+
+	// Create schemas.
+	c1 := &metadatapb.SchemaInfo{
+		Name:             "table1",
+		StartTimestampNS: 4,
+	}
+	c1Text, err := c1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal schema pb")
+	}
+
+	c2 := &metadatapb.SchemaInfo{
+		Name:             "table2",
+		StartTimestampNS: 5,
+	}
+	c2Text, err := c2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal schema pb")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/schema/computed/table1", string(c1Text))
+	if err != nil {
+		t.Fatal("Unable to add schema to etcd.")
+	}
+
+	_, err = etcdClient.Put(context.Background(), "/schema/computed/table2", string(c2Text))
+	if err != nil {
+		t.Fatal("Unable to add schema to etcd.")
+	}
+
+	schemas, err := mds.GetComputedSchemas()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(schemas))
+
+	assert.Equal(t, "table1", (*schemas[0]).Name)
+	assert.Equal(t, "table2", (*schemas[1]).Name)
+}

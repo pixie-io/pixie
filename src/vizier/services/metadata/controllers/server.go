@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
@@ -16,26 +17,53 @@ type Server struct {
 	env          metadataenv.MetadataEnv
 	agentManager AgentManager
 	clock        utils.Clock
+	mds          MetadataStore
 }
 
 // NewServerWithClock creates a new server with a clock.
-func NewServerWithClock(env metadataenv.MetadataEnv, agtMgr AgentManager, clock utils.Clock) (*Server, error) {
+func NewServerWithClock(env metadataenv.MetadataEnv, agtMgr AgentManager, mds MetadataStore, clock utils.Clock) (*Server, error) {
 	return &Server{
 		env:          env,
 		agentManager: agtMgr,
 		clock:        clock,
+		mds:          mds,
 	}, nil
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(env metadataenv.MetadataEnv, agtMgr AgentManager) (*Server, error) {
+func NewServer(env metadataenv.MetadataEnv, agtMgr AgentManager, mds MetadataStore) (*Server, error) {
 	clock := utils.SystemClock{}
-	return NewServerWithClock(env, agtMgr, clock)
+	return NewServerWithClock(env, agtMgr, mds, clock)
 }
 
 // GetSchemas returns the schemas in the system.
 func (s *Server) GetSchemas(ctx context.Context, req *metadatapb.SchemaRequest) (*metadatapb.SchemaResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "Not implemented yet")
+	schemas, err := s.mds.GetComputedSchemas()
+	if err != nil {
+		return nil, err
+	}
+	respSchemaPb := &schemapb.Schema{}
+	respSchemaPb.RelationMap = make(map[string]*schemapb.Relation)
+
+	for _, schema := range schemas {
+		columnPbs := make([]*schemapb.Relation_ColumnInfo, len(schema.Columns))
+		for j, column := range schema.Columns {
+			columnPbs[j] = &schemapb.Relation_ColumnInfo{
+				ColumnName: column.Name,
+				ColumnType: column.DataType,
+			}
+		}
+		schemaPb := &schemapb.Relation{
+			Columns: columnPbs,
+		}
+		respSchemaPb.RelationMap[schema.Name] = schemaPb
+	}
+
+	resp := &metadatapb.SchemaResponse{
+		Schema: respSchemaPb,
+	}
+
+	return resp, nil
 }
 
 // GetSchemaByAgent returns the schemas in the system.

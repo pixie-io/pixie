@@ -36,6 +36,7 @@ type MetadataStore interface {
 	GetContainers() ([]*metadatapb.ContainerInfo, error)
 	GetEndpoints() ([]*metadatapb.Endpoints, error)
 	GetServices() ([]*metadatapb.Service, error)
+	GetComputedSchemas() ([]*metadatapb.SchemaInfo, error)
 	GetASID() (uint32, error)
 	GetProcesses([]*types.UInt128) ([]*metadatapb.ProcessInfo, error)
 }

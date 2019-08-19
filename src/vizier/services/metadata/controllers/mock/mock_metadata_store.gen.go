@@ -111,6 +111,19 @@ func (mr *MockMetadataStoreMockRecorder) GetAgentsForHostnames(arg0 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentsForHostnames", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentsForHostnames), arg0)
 }
 
+// GetComputedSchemas mocks base method
+func (m *MockMetadataStore) GetComputedSchemas() ([]*metadatapb.SchemaInfo, error) {
+	ret := m.ctrl.Call(m, "GetComputedSchemas")
+	ret0, _ := ret[0].([]*metadatapb.SchemaInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetComputedSchemas indicates an expected call of GetComputedSchemas
+func (mr *MockMetadataStoreMockRecorder) GetComputedSchemas() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComputedSchemas", reflect.TypeOf((*MockMetadataStore)(nil).GetComputedSchemas))
+}
+
 // GetContainers mocks base method
 func (m *MockMetadataStore) GetContainers() ([]*metadatapb.ContainerInfo, error) {
 	ret := m.ctrl.Call(m, "GetContainers")

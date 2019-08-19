@@ -10,6 +10,8 @@ import (
 	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+	k8smetadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
@@ -22,6 +24,7 @@ func TestGetAgentInfo(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
 	agent1IDStr := "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
 	u1, err := uuid.FromString(agent1IDStr)
@@ -63,7 +66,7 @@ func TestGetAgentInfo(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, mockMds, clock)
 
 	req := metadatapb.AgentInfoRequest{}
 
@@ -89,6 +92,7 @@ func TestGetAgentInfoGetActiveAgentsFailed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
 	mockAgtMgr.
 		EXPECT().
@@ -103,7 +107,7 @@ func TestGetAgentInfoGetActiveAgentsFailed(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, mockMds, clock)
 
 	req := metadatapb.AgentInfoRequest{}
 
@@ -118,6 +122,46 @@ func TestGetSchemas(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	schemaInfos := make([]*k8smetadatapb.SchemaInfo, 2)
+
+	schema1Cols := make([]*k8smetadatapb.SchemaInfo_ColumnInfo, 3)
+	schema1Cols[0] = &k8smetadatapb.SchemaInfo_ColumnInfo{
+		Name:     "t1Col1",
+		DataType: 2,
+	}
+	schema1Cols[1] = &k8smetadatapb.SchemaInfo_ColumnInfo{
+		Name:     "t1Col2",
+		DataType: 1,
+	}
+	schema1Cols[2] = &k8smetadatapb.SchemaInfo_ColumnInfo{
+		Name:     "t1Col3",
+		DataType: 3,
+	}
+	schemaInfos[0] = &k8smetadatapb.SchemaInfo{
+		Name:    "table1",
+		Columns: schema1Cols,
+	}
+
+	schema2Cols := make([]*k8smetadatapb.SchemaInfo_ColumnInfo, 2)
+	schema2Cols[0] = &k8smetadatapb.SchemaInfo_ColumnInfo{
+		Name:     "t2Col1",
+		DataType: 1,
+	}
+	schema2Cols[1] = &k8smetadatapb.SchemaInfo_ColumnInfo{
+		Name:     "t2Col2",
+		DataType: 3,
+	}
+	schemaInfos[1] = &k8smetadatapb.SchemaInfo{
+		Name:    "table2",
+		Columns: schema2Cols,
+	}
+
+	mockMds.
+		EXPECT().
+		GetComputedSchemas().
+		Return(schemaInfos, nil)
 
 	// Set up server.
 	env, err := metadataenv.New()
@@ -127,14 +171,29 @@ func TestGetSchemas(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, mockMds, clock)
 
 	req := metadatapb.SchemaRequest{}
 
 	resp, err := s.GetSchemas(context.Background(), &req)
 
-	assert.Nil(t, resp)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+
+	assert.Equal(t, 2, len(resp.Schema.RelationMap))
+	assert.Equal(t, 3, len(resp.Schema.RelationMap["table1"].Columns))
+	assert.Equal(t, "t1Col1", resp.Schema.RelationMap["table1"].Columns[0].ColumnName)
+	assert.Equal(t, typespb.INT64, resp.Schema.RelationMap["table1"].Columns[0].ColumnType)
+	assert.Equal(t, "t1Col2", resp.Schema.RelationMap["table1"].Columns[1].ColumnName)
+	assert.Equal(t, typespb.BOOLEAN, resp.Schema.RelationMap["table1"].Columns[1].ColumnType)
+	assert.Equal(t, "t1Col3", resp.Schema.RelationMap["table1"].Columns[2].ColumnName)
+	assert.Equal(t, typespb.UINT128, resp.Schema.RelationMap["table1"].Columns[2].ColumnType)
+
+	assert.Equal(t, 2, len(resp.Schema.RelationMap["table2"].Columns))
+	assert.Equal(t, "t2Col1", resp.Schema.RelationMap["table2"].Columns[0].ColumnName)
+	assert.Equal(t, typespb.BOOLEAN, resp.Schema.RelationMap["table2"].Columns[0].ColumnType)
+	assert.Equal(t, "t2Col2", resp.Schema.RelationMap["table2"].Columns[1].ColumnName)
+	assert.Equal(t, typespb.UINT128, resp.Schema.RelationMap["table2"].Columns[1].ColumnType)
 }
 
 func TestGetSchemaByAgent(t *testing.T) {
@@ -142,6 +201,7 @@ func TestGetSchemaByAgent(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
 	// Set up server.
 	env, err := metadataenv.New()
@@ -151,7 +211,7 @@ func TestGetSchemaByAgent(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, mockMds, clock)
 
 	req := metadatapb.SchemaByAgentRequest{}
 

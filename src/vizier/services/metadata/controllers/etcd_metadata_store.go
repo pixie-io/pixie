@@ -82,7 +82,7 @@ func (mds *EtcdMetadataStore) UpdateEndpoints(e *metadatapb.Endpoints) error {
 func (mds *EtcdMetadataStore) GetEndpoints() ([]*metadatapb.Endpoints, error) {
 	resp, err := mds.client.Get(context.Background(), getEndpointsKey(), clientv3.WithPrefix())
 	if err != nil {
-		log.WithError(err).Fatal("Failed to execute etcd Get")
+		log.WithError(err).Error("Failed to execute etcd Get")
 		return nil, err
 	}
 
@@ -130,7 +130,7 @@ func (mds *EtcdMetadataStore) UpdatePod(p *metadatapb.Pod) error {
 func (mds *EtcdMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
 	resp, err := mds.client.Get(context.Background(), getPodsKey(), clientv3.WithPrefix())
 	if err != nil {
-		log.WithError(err).Fatal("Failed to execute etcd Get")
+		log.WithError(err).Error("Failed to execute etcd Get")
 		return nil, err
 	}
 
@@ -147,7 +147,7 @@ func (mds *EtcdMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
 func (mds *EtcdMetadataStore) GetContainers() ([]*metadatapb.ContainerInfo, error) {
 	resp, err := mds.client.Get(context.Background(), getContainersKey(), clientv3.WithPrefix())
 	if err != nil {
-		log.WithError(err).Fatal("Failed to execute etcd Get")
+		log.WithError(err).Error("Failed to execute etcd Get")
 		return nil, err
 	}
 
@@ -164,7 +164,7 @@ func (mds *EtcdMetadataStore) GetContainers() ([]*metadatapb.ContainerInfo, erro
 func (mds *EtcdMetadataStore) GetServices() ([]*metadatapb.Service, error) {
 	resp, err := mds.client.Get(context.Background(), getServicesKey(), clientv3.WithPrefix())
 	if err != nil {
-		log.WithError(err).Fatal("Failed to execute etcd Get")
+		log.WithError(err).Error("Failed to execute etcd Get")
 		return nil, err
 	}
 
@@ -309,8 +309,29 @@ func (mds *EtcdMetadataStore) UpdateSchemas(agentID uuid.UUID, schemas []*metada
 	return err
 }
 
+// GetComputedSchemas gets all computed schemas in the metadata store.
+func (mds *EtcdMetadataStore) GetComputedSchemas() ([]*metadatapb.SchemaInfo, error) {
+	resp, err := mds.client.Get(context.Background(), getComputedSchemasKey(), clientv3.WithPrefix())
+	if err != nil {
+		log.WithError(err).Error("Failed to execute etcd Get")
+		return nil, err
+	}
+
+	schemas := make([]*metadatapb.SchemaInfo, len(resp.Kvs))
+	for i, kv := range resp.Kvs {
+		pb := &metadatapb.SchemaInfo{}
+		proto.Unmarshal(kv.Value, pb)
+		schemas[i] = pb
+	}
+	return schemas, nil
+}
+
 func getComputedSchemaKey(schemaName string) string {
-	return path.Join("/", "schema", "computed", schemaName)
+	return path.Join(getComputedSchemasKey(), schemaName)
+}
+
+func getComputedSchemasKey() string {
+	return path.Join("/", "schema", "computed")
 }
 
 func getServicesKey() string {
@@ -473,7 +494,7 @@ func (mds *EtcdMetadataStore) GetAgents() (*[]datapb.AgentData, error) {
 	// Get all agents.
 	resp, err := mds.client.Get(context.Background(), GetAgentKey(""), clientv3.WithPrefix())
 	if err != nil {
-		log.WithError(err).Fatal("Failed to execute etcd Get")
+		log.WithError(err).Error("Failed to execute etcd Get")
 		return nil, err
 	}
 	for _, kv := range resp.Kvs {
