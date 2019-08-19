@@ -9,7 +9,7 @@ import (
 )
 
 func TestSetupTestDB(t *testing.T) {
-	db, teardown := pgtest.SetupTestDB(t)
+	db, teardown := pgtest.SetupTestDB(t, nil)
 
 	require.NotNil(t, db)
 	require.NotNil(t, teardown)

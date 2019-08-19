@@ -3,6 +3,8 @@ package datastore_test
 import (
 	"testing"
 
+	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+
 	_ "github.com/golang-migrate/migrate/source/go_bindata"
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
@@ -10,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"pixielabs.ai/pixielabs/src/cloud/site_manager/datastore"
+	"pixielabs.ai/pixielabs/src/cloud/site_manager/schema"
 	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
 )
 
@@ -20,7 +23,10 @@ func loadTestData(t *testing.T, db *sqlx.DB) {
 }
 
 func TestDatastore(t *testing.T) {
-	db, teardown := pgtest.SetupTestDB(t)
+	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
+		return schema.Asset(name)
+	})
+	db, teardown := pgtest.SetupTestDB(t, s)
 	defer teardown()
 
 	loadTestData(t, db)

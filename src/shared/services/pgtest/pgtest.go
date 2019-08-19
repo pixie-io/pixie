@@ -13,11 +13,10 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	"pixielabs.ai/pixielabs/src/cloud/site_manager/schema"
 )
 
 // SetupTestDB sets up a test database instance and applies migrations.
-func SetupTestDB(t *testing.T) (*sqlx.DB, func()) {
+func SetupTestDB(t *testing.T, schemaSource *bindata.AssetSource) (*sqlx.DB, func()) {
 	// TODO(zasgar): refactor into a helper utility.
 	var db *sqlx.DB
 
@@ -47,20 +46,17 @@ func SetupTestDB(t *testing.T) (*sqlx.DB, func()) {
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	require.Nil(t, err)
 
-	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
-		return schema.Asset(name)
-	})
+	if schemaSource != nil {
+		d, err := bindata.WithInstance(schemaSource)
+		require.Nil(t, err)
+		mg, err := migrate.NewWithInstance(
+			"go-bindata",
+			d, "postgres", driver)
+		require.Nil(t, err)
 
-	d, err := bindata.WithInstance(s)
-	require.Nil(t, err)
-
-	mg, err := migrate.NewWithInstance(
-		"go-bindata",
-		d, "postgres", driver)
-	require.Nil(t, err)
-
-	if err = mg.Up(); err != nil {
-		t.Fatalf("migrations failed: %s", err)
+		if err = mg.Up(); err != nil {
+			t.Fatalf("migrations failed: %s", err)
+		}
 	}
 
 	return db, func() {

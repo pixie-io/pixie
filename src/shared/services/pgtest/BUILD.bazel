@@ -6,7 +6,6 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/shared/services/pgtest",
     visibility = ["//visibility:public"],
     deps = [
-        "//src/cloud/site_manager/schema:go_default_library",
         "//src/shared/services/pg:go_default_library",
         "@com_github_golang_migrate_migrate//:go_default_library",
         "@com_github_golang_migrate_migrate//database/postgres:go_default_library",
