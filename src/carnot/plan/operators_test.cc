@@ -170,14 +170,6 @@ TEST_F(OperatorTest, from_proto_union_out_of_range_2) {
       "Inconsistent number of columns in UnionOperator, expected 2 but received 3 for input 0.");
 }
 
-TEST_F(OperatorTest, from_proto_union_mismatched) {
-  auto union_pb = planpb::testutils::CreateTestUnionMismatched();
-  auto union_op = std::make_unique<UnionOperator>(1);
-  auto s = union_op->Init(union_pb.union_op());
-  EXPECT_FALSE(s.ok());
-  EXPECT_EQ(s.msg(), "Time column index must be set for either all tables or no tables.");
-}
-
 TEST_F(OperatorTest, from_proto_limit) {
   auto limit_pb = planpb::testutils::CreateTestLimit1PB();
   auto limit_op = Operator::FromProto(limit_pb, 1);

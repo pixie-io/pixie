@@ -271,14 +271,10 @@ const char* kUnionOperatorOrdered = R"(
   column_names: "abc"
   column_names: "time_"
   column_mappings {
-    has_time_column: true
-    time_column_index: 1
     column_indexes: 0
     column_indexes: 1
   }
   column_mappings {
-    has_time_column: true
-    time_column_index: 0
     column_indexes: 1
     column_indexes: 0
   }
@@ -288,12 +284,10 @@ const char* kUnionOperatorUnordered = R"(
   column_names: "abc"
   column_names: "xyz"
   column_mappings {
-    has_time_column: false
     column_indexes: 0
     column_indexes: 1
   }
   column_mappings {
-    has_time_column: false
     column_indexes: 1
     column_indexes: 0
   }
@@ -304,13 +298,9 @@ const char* kUnionOperatorOutOfRange1 = R"(
   column_names: "abc"
   column_names: "time_"
   column_mappings {
-    has_time_column: true
-    time_column_index: 1
     column_indexes: 0
   }
   column_mappings {
-    has_time_column: true
-    time_column_index: 0
     column_indexes: 1
   }
 )";
@@ -319,34 +309,14 @@ const char* kUnionOperatorOutOfRange2 = R"(
   column_names: "abc"
   column_names: "time_"
   column_mappings {
-    has_time_column: true
-    time_column_index: 1
     column_indexes: 0
     column_indexes: 1
     column_indexes: 2
   }
   column_mappings {
-    has_time_column: true
-    time_column_index: 0
     column_indexes: 1
     column_indexes: 2
     column_indexes: 3
-  }
-)";
-
-const char* kUnionOperatorMismatched = R"(
-  column_names: "abc"
-  column_names: "xyz"
-  column_mappings {
-    has_time_column: false
-    column_indexes: 0
-    column_indexes: 1
-  }
-  column_mappings {
-    has_time_column: true
-    time_column_index: 1
-    column_indexes: 1
-    column_indexes: 2
   }
 )";
 
@@ -958,14 +928,6 @@ planpb::Operator CreateTestUnionOutOfRange2() {
   planpb::Operator op;
   auto op_proto =
       absl::Substitute(kOperatorProtoTmpl, "UNION_OPERATOR", "union_op", kUnionOperatorOutOfRange2);
-  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
-  return op;
-}
-
-planpb::Operator CreateTestUnionMismatched() {
-  planpb::Operator op;
-  auto op_proto =
-      absl::Substitute(kOperatorProtoTmpl, "UNION_OPERATOR", "union_op", kUnionOperatorMismatched);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

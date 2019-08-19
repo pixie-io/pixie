@@ -226,11 +226,8 @@ class UnionOperator : public Operator {
   std::string DebugString() const override;
 
   const std::vector<std::string>& column_names() const { return column_names_; }
-  bool order_by_time() const { return time_column_indexes_.size() > 0; }
-  const std::vector<int64_t>& time_column_indexes() const { return time_column_indexes_; }
-  int64_t time_column_index(int64_t parent_index) const {
-    return time_column_indexes_.at(parent_index);
-  }
+  bool order_by_time() const;
+  int64_t time_column_index(int64_t parent_index) const;
   const std::vector<std::vector<int64_t>>& column_mappings() const { return column_mappings_; }
   const std::vector<int64_t>& column_mapping(int64_t parent_index) const {
     return column_mappings_.at(parent_index);
@@ -239,7 +236,6 @@ class UnionOperator : public Operator {
 
  private:
   std::vector<std::string> column_names_;
-  std::vector<int64_t> time_column_indexes_;
   std::vector<std::vector<int64_t>> column_mappings_;
 
   planpb::UnionOperator pb_;

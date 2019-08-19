@@ -183,7 +183,7 @@ message LimitOperator {
 // It supports reordering of columns across the inputs.
 // Input relations [a:int, b:str],[b:str, a:int] would produce [a:int, b:str].
 // Columns with the same name must share the same type.
-// Union preserves the time_ order in the output if all of the inputs have a time_ column.
+// Union preserves the time_ order of the output column named time_.
 message UnionOperator {
   // Each ColumnMapping corresponds to a single input relation.
   // It tells the Union operator how to transform the relation to the expected result.
@@ -191,8 +191,6 @@ message UnionOperator {
     // The mapping instructions, one for each input stream.
     // column_indexes=[4] would signify that input column 4 becomes output column 0.
     repeated int64 column_indexes = 1;
-    bool has_time_column = 2;
-    int64 time_column_index = 3;
   }
   // Output column names
   repeated string column_names = 1;

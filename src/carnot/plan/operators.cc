@@ -356,9 +356,7 @@ StatusOr<table_store::schema::Relation> LimitOperator::OutputRelation(
  * Zip Operator Implementation.
  */
 std::string UnionOperator::DebugString() const {
-  return absl::Substitute("Op:Zip(columns=($0), time_columns=($1))",
-                          absl::StrJoin(column_names_, ","),
-                          absl::StrJoin(time_column_indexes_, ","));
+  return absl::Substitute("Op:Union(columns=($0)", absl::StrJoin(column_names_, ","));
 }
 
 Status UnionOperator::Init(const planpb::UnionOperator& pb) {
@@ -370,19 +368,8 @@ Status UnionOperator::Init(const planpb::UnionOperator& pb) {
   }
 
   column_mappings_.reserve(static_cast<size_t>(pb_.column_mappings_size()));
-  bool has_time_column = false;
 
   for (int i = 0; i < pb_.column_mappings_size(); ++i) {
-    if (i == 0) {
-      has_time_column = pb_.column_mappings(i).has_time_column();
-    }
-    if (has_time_column != pb_.column_mappings(i).has_time_column()) {
-      return error::InvalidArgument(
-          "Time column index must be set for either all tables or no tables.");
-    }
-    if (has_time_column) {
-      time_column_indexes_.emplace_back(pb_.column_mappings(i).time_column_index());
-    }
     if (pb_.column_mappings(i).column_indexes_size() != pb_.column_names_size()) {
       return error::InvalidArgument(
           "Inconsistent number of columns in UnionOperator, expected $0 but received $1 for input "
@@ -443,6 +430,26 @@ StatusOr<table_store::schema::Relation> UnionOperator::OutputRelation(
   }
 
   return r;
+}
+
+int64_t time_column_idx(const std::vector<std::string>& column_names) {
+  auto it = std::find(column_names.begin(), column_names.end(), "time_");
+  if (it == column_names.end()) {
+    return -1;
+  }
+  return std::distance(column_names.begin(), it);
+}
+
+bool has_time_column(const std::vector<std::string>& column_names) {
+  return time_column_idx(column_names) >= 0;
+}
+
+bool UnionOperator::order_by_time() const { return has_time_column(column_names()); }
+
+int64_t UnionOperator::time_column_index(int64_t parent_index) const {
+  auto output_idx = time_column_idx(column_names());
+  DCHECK_GE(output_idx, 0);
+  return column_mappings_.at(parent_index).at(output_idx);
 }
 
 /**
@@ -543,9 +550,7 @@ StatusOr<table_store::schema::Relation> JoinOperator::OutputRelation(
   return r;
 }
 
-bool JoinOperator::order_by_time() const {
-  return std::find(column_names().begin(), column_names().end(), "time_") != column_names().end();
-}
+bool JoinOperator::order_by_time() const { return has_time_column(column_names()); }
 
 planpb::JoinOperator::ParentColumn JoinOperator::time_column() const {
   DCHECK(order_by_time());
