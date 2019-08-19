@@ -20,6 +20,7 @@ func PBToMapClaims(pb *jwt2.JWTClaims) jwt.MapClaims {
 
 	// Custom claims.
 	claims["UserID"] = pb.UserID
+	claims["OrgID"] = pb.OrgID
 	claims["Email"] = pb.Email
 
 	return claims
@@ -40,6 +41,7 @@ func MapClaimsToPB(claims jwt.MapClaims) *jwt2.JWTClaims {
 
 	// Custom claims.
 	p.UserID = claims["UserID"].(string)
+	p.OrgID = claims["OrgID"].(string)
 	p.Email = claims["Email"].(string)
 
 	return p

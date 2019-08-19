@@ -3,6 +3,7 @@ syntax = "proto3";
 package pl.common;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/common/uuid/proto/uuid.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/shared/services/proto;jwt";
 
@@ -44,5 +45,10 @@ message JWTClaims {
           (gogoproto.customname) = "UserID",
           (gogoproto.jsontag) = "userID"
   ];
-  string email   = 9;
+  // The organization that this user belongs to.
+  string org_id = 9 [
+          (gogoproto.customname) = "OrgID",
+          (gogoproto.jsontag) = "orgID"
+  ];
+  string email   = 10;
 }
