@@ -12,6 +12,11 @@ build:
     bazel:
       target: //src/cloud/auth:auth_server_image.tar
 
+  - image: gcr.io/pl-dev-infra/cloud/profile_server_image
+    context: .
+    bazel:
+      target: //src/cloud/profile:profile_server_image.tar
+
   - image: gcr.io/pl-dev-infra/cloud/proxy_server_image
     context: .
     bazel:
