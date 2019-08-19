@@ -4,7 +4,22 @@ vm_driver=kvm2
 memory=8192
 cpus=8
 
+# Support for minikube profile - for shared machines
+has_minikube_profile=false
+if [ $# -ne 0 ]; then
+    profile=$1
+    has_minikube_profile=true
+fi
+
 workspace=$(bazel info workspace)
+
+profile_args_str=""
+if [ "${has_minikube_profile}" ]; then
+    profile_args_str="-p $profile"
+fi
+
+echo "$profile_args_str"
+
 
 # On Linux we need to start minikube if not running.
 # On Macos we need to make sure kubernetes docker(docker-desktop) is running.
@@ -21,9 +36,9 @@ if [ "$(uname)" == "Darwin" ]; then
     exit 1
   fi
 else
-  minikube status
+  minikube status ${profile_args_str}
   if [ $? -ne 0 ]; then
-    minikube start --cpus=${cpus} --memory=${memory} --vm-driver=${vm_driver}
+      minikube start --cpus=${cpus} --memory=${memory} --vm-driver=${vm_driver} ${profile_args_str}
   fi
 fi
 
