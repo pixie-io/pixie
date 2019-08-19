@@ -3,8 +3,13 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"path"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -30,13 +35,71 @@ func NewCmdDeploy() *cobra.Command {
 				return
 			}
 
-			// TODO(michelle): Use extract_yaml and use_version to deploy Pixie.
-			_, _ = cmd.Flags().GetString("extract_yaml")
+			path, _ := cmd.Flags().GetString("extract_yaml")
+			extractYamls(path)
+			deploy(path)
+
+			// TODO(michelle): Use_version to deploy Pixie.
 			_, _ = cmd.Flags().GetString("use_version")
 
 			// TODO(michelle): Handle registration key.
 			_, _ = cmd.Flags().GetString("registration_key")
 		},
+	}
+}
+
+func deploy(extractPath string) {
+	// NATS and etcd deploys depend on timing, so may sometimes fail. Include some retry behavior.
+	log.Info("Deploying NATS")
+	retryDeploy(path.Join(extractPath, "nats.yaml"))
+	log.Info("Deploying etcd")
+	retryDeploy(path.Join(extractPath, "etcd.yaml"))
+
+	log.Info("Deploying Vizier")
+	deployFile(path.Join(extractPath, "vizier.yaml"))
+}
+
+func deployFile(filePath string) error {
+	kcmd := exec.Command("kubectl", "apply", "-f", filePath)
+	return kcmd.Run()
+}
+
+func retryDeploy(filePath string) {
+	tries := 5
+	var err error
+	for tries > 0 {
+		err = deployFile(filePath)
+		if err == nil {
+			break
+		}
+		time.Sleep(time.Second)
+		tries--
+	}
+	if tries == 0 {
+		log.WithError(err).Fatal(fmt.Sprintf("Could not deploy %s", filePath))
+	}
+}
+
+// extractYamls extracts the yamls from the packaged bindata into the specified directory.
+func extractYamls(extractPath string) {
+	// Create directory for the yaml files.
+	if _, err := os.Stat(extractPath); os.IsNotExist(err) {
+		os.Mkdir(extractPath, 0777)
+	}
+
+	// Create a file for each asset, and write the asset's contents to the file.
+	for _, asset := range AssetNames() {
+		contents, err := Asset(asset)
+		if err != nil {
+			log.WithError(err).Fatal("Could not load asset")
+		}
+		fname := path.Join(extractPath, path.Base(asset))
+		f, err := os.Create(fname)
+		defer f.Close()
+		err = ioutil.WriteFile(fname, contents, 0644)
+		if err != nil {
+			log.WithError(err).Fatal("Could not write to file")
+		}
 	}
 }
 
