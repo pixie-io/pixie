@@ -72,4 +72,50 @@ func TestDatastore(t *testing.T) {
 		err = datastore.RegisterSite(uuid.UUID{}, "hulu")
 		assert.NotNil(t, err)
 	})
+
+	t.Run("Get site by domain for existing domain", func(t *testing.T) {
+		datastore, err := datastore.NewDatastore(db)
+		require.Nil(t, err)
+		siteInfo, err := datastore.GetSiteByDomain("hulu")
+		require.Nil(t, err)
+		require.NotNil(t, siteInfo)
+
+		assert.Equal(t, siteInfo.OrgID.String(), "123e4567-e89b-12d3-a456-426655440000")
+		assert.Equal(t, siteInfo.DomainName, "hulu")
+	})
+
+	t.Run("Get site by domain for missing domain", func(t *testing.T) {
+		datastore, err := datastore.NewDatastore(db)
+		require.Nil(t, err)
+		siteInfo, err := datastore.GetSiteByDomain("h")
+		assert.Nil(t, err)
+		assert.Nil(t, siteInfo)
+	})
+
+	t.Run("Get site by domain for empty domain", func(t *testing.T) {
+		datastore, err := datastore.NewDatastore(db)
+		require.Nil(t, err)
+		siteInfo, err := datastore.GetSiteByDomain("")
+		assert.Nil(t, err)
+		assert.Nil(t, siteInfo)
+	})
+
+	t.Run("Get site by org", func(t *testing.T) {
+		datastore, err := datastore.NewDatastore(db)
+		require.Nil(t, err)
+		siteInfo, err := datastore.GetSiteForOrg(uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"))
+		require.Nil(t, err)
+		require.NotNil(t, siteInfo)
+
+		assert.Equal(t, siteInfo.OrgID.String(), "123e4567-e89b-12d3-a456-426655440000")
+		assert.Equal(t, siteInfo.DomainName, "hulu")
+	})
+
+	t.Run("Get site by org for missing org", func(t *testing.T) {
+		datastore, err := datastore.NewDatastore(db)
+		require.Nil(t, err)
+		siteInfo, err := datastore.GetSiteForOrg(uuid.FromStringOrNil("bade4567-e89b-12d3-a456-426655440000"))
+		require.Nil(t, err)
+		require.Nil(t, siteInfo)
+	})
 }
