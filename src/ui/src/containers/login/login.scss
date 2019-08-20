@@ -33,14 +33,11 @@
   margin-bottom: 0;
 }
 
-.company-login-content .input-group {
-  margin-bottom: 10px;
-}
-
 .company-login-content .btn {
   border-radius: 2px;
   color: white;
   width: 100%;
+  margin-top: 10px;
 }
 
 .company-login-content--footer-text {
@@ -53,4 +50,8 @@
 
 .company-login-content a:hover {
   color: $info;
+}
+
+.company-login-content--error {
+  color: $red;
 }

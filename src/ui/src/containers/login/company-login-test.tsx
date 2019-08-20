@@ -1,3 +1,5 @@
+import Axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
 import {mount} from 'enzyme';
 import * as React from 'react';
 import {Button, InputGroup} from 'react-bootstrap';
@@ -15,6 +17,48 @@ describe('<CompanyCreate/> test', () => {
       '.company-login-content--footer-text').at(0).text())
       .toEqual('Already have a site? Click here to log in');
   });
+
+  it('should show available', (done) => {
+    const mock = new MockAdapter(Axios);
+
+    mock.onGet('/api/site/check').reply(200, {
+      available: true,
+    });
+    const app = mount(<Router><CompanyCreate/></Router>);
+
+    const button = app.find(Button);
+    expect(button.get(0).props.disabled).toBe(false);
+    button.at(0).simulate('click');
+
+    setImmediate( () => {
+      app.update();
+      expect(app.find('.company-login-content--error')
+        .at(0).text()).toEqual('');
+      expect(app.find(Button).get(0).props.disabled).toBe(false);
+      done();
+    });
+  });
+
+  it('should show error', (done) => {
+    const mock = new MockAdapter(Axios);
+
+    mock.onGet('/api/site/check').reply(200, {
+      available: false,
+    });
+    const app = mount(<Router><CompanyCreate/></Router>);
+
+    const button = app.find(Button);
+    expect(button.get(0).props.disabled).toBe(false);
+    button.at(0).simulate('click');
+
+    setImmediate( () => {
+      app.update();
+      expect(app.find('.company-login-content--error')
+        .at(0).text()).toEqual('Sorry, the site already exists. Try a different name.');
+      expect(app.find(Button).get(0).props.disabled).toBe(true);
+      done();
+    });
+  });
 });
 
 describe('<CompanyLogin/> test', () => {
@@ -27,5 +71,47 @@ describe('<CompanyLogin/> test', () => {
     expect(app.find(
       '.company-login-content--footer-text').at(0).text())
       .toEqual('Don\'t have a company site yet? Claim your site here');
+  });
+
+  it('should show error', (done) => {
+    const mock = new MockAdapter(Axios);
+
+    mock.onGet('/api/site/check').reply(200, {
+      available: true,
+    });
+    const app = mount(<Router><CompanyLogin/></Router>);
+
+    const button = app.find(Button);
+    expect(button.get(0).props.disabled).toBe(false);
+    button.at(0).simulate('click');
+
+    setImmediate( () => {
+      app.update();
+      expect(app.find('.company-login-content--error')
+        .at(0).text()).toEqual('The site doesn\'t exist. Please check the name and try again.');
+      expect(app.find(Button).get(0).props.disabled).toBe(true);
+      done();
+    });
+  });
+
+  it('should allow login', (done) => {
+    const mock = new MockAdapter(Axios);
+
+    mock.onGet('/api/site/check').reply(200, {
+      available: false,
+    });
+    const app = mount(<Router><CompanyLogin/></Router>);
+
+    const button = app.find(Button);
+    expect(button.get(0).props.disabled).toBe(false);
+    button.at(0).simulate('click');
+
+    setImmediate( () => {
+      app.update();
+      expect(app.find('.company-login-content--error')
+        .at(0).text()).toEqual('');
+      expect(app.find(Button).get(0).props.disabled).toBe(false);
+      done();
+    });
   });
 });
