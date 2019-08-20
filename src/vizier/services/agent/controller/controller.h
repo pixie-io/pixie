@@ -108,6 +108,7 @@ class Controller : public NotCopyable {
 
   Status HandleMDSUpdates(const messages::MetadataUpdateInfo& update_info);
   void ConsumeAgentPIDUpdates(messages::AgentUpdateInfo* update_info);
+  void AddSchemaInfo(messages::AgentUpdateInfo* update_info);
 
   static void ProcessPIDStartedEvent(const pl::md::PIDStartedEvent& ev,
                                      messages::AgentUpdateInfo* update_info);
