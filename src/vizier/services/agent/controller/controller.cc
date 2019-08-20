@@ -304,7 +304,13 @@ Status Controller::ExecuteQuery(
 
   {
     ScopedTimer query_timer("query timer");
-    auto result_or_s = carnot_->ExecuteQuery(req.query_str(), query_id, CurrentTimeNS());
+    StatusOr<carnot::CarnotQueryResult> result_or_s;
+    if (req.has_plan()) {
+      LOG(INFO) << "has plan";
+      result_or_s = carnot_->ExecutePlan(req.plan(), query_id);
+    } else {
+      result_or_s = carnot_->ExecuteQuery(req.query_str(), query_id, CurrentTimeNS());
+    }
     if (!result_or_s.ok()) {
       *resp->mutable_status() = result_or_s.status().ToProto();
       return result_or_s.status();

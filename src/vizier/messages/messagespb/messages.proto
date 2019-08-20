@@ -99,5 +99,5 @@ message ExecuteQueryRequest {
                                   ];
     // TODO(philkuz) DEPRECATION planned.
     string query_str = 2;
-    pl.carnot.planpb.Plan logical_plan = 3;
+    pl.carnot.planpb.Plan plan = 3;
 }
