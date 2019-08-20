@@ -20,6 +20,9 @@ func init() {
 	pflag.Bool("check", false, "Check whether the cluster can run Pixie")
 	pflag.String("registration_key", "", "The registration key to use for this cluster")
 
+	// Flags for delete.
+	pflag.Bool("clobber_namespace", false, "Whether to delete all dependencies in the cluster")
+
 	pflag.Parse()
 
 	// Must call after all flags are setup.
@@ -50,6 +53,11 @@ func init() {
 	viper.BindPFlag("check", deployCmd.Flags().Lookup("check"))
 	deployCmd.Flags().StringP("registration_key", "k", "", "The registration key to use for this cluster")
 	viper.BindPFlag("registration_key", deployCmd.Flags().Lookup("registration_key"))
+
+	deleteCmd := NewCmdDeletePixie()
+	RootCmd.AddCommand(deleteCmd)
+	deleteCmd.Flags().BoolP("clobber_namespace", "d", false, "Whether to delete all dependencies in the cluster")
+	viper.BindPFlag("clobber_namespace", deleteCmd.Flags().Lookup("clobber_namespace"))
 }
 
 // RootCmd is the base command for Cobra.

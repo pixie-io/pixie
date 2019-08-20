@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "bindata.gen.go",
         "certs.go",
+        "delete_pixie.go",
         "deploy.go",
         "deploy_yamls.go",
         "root.go",
