@@ -63,6 +63,7 @@ func MustConnectDefaultPostgresDB() *sqlx.DB {
 	for i := retryAttempts; i >= 0; i-- {
 		err = db.Ping()
 		if err == nil {
+			log.Info("Connected to Postgres")
 			break
 		}
 		if i > 0 {
