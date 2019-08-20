@@ -14,6 +14,7 @@ func GenerateTestClaimsWithDuration(t *testing.T, duration time.Duration) *pb.JW
 	claims := pb.JWTClaims{}
 	claims.Subject = "test"
 	claims.UserID = "test"
+	claims.OrgID = "test"
 	claims.Email = "test@test.com"
 	claims.Issuer = "PL"
 	claims.ExpiresAt = time.Now().Add(duration).Unix()
