@@ -37,6 +37,7 @@ var webpackConfig = {
   devtool: 'source-map',
   devServer: {
     contentBase: resolve(__dirname, 'dist'),
+    https: true,
     disableHostCheck: true,
     hot: true,
     publicPath: '/',
@@ -147,12 +148,11 @@ module.exports = (env) => {
         'http' + (sslDisabled ? '' : 's') + '://' + utils.findGatewayProxyPath();
   }
 
-  var proxyEntryAPI = {
+  webpackConfig.devServer.proxy.push({
     context: ['/api'],
     target: gatewayPath,
     secure: false,
-  };
+  });
 
-  webpackConfig.devServer.proxy.push(proxyEntryAPI);
   return webpackConfig;
 };
