@@ -73,6 +73,7 @@
     "identity-obj-proxy": "^3.0.0",
     "immutable-tuple": "^0.4.8",
     "jest-raw-loader": "^1.0.1",
+    "query-string": "^6.8.2",
     "react": "^16.8.6",
     "react-apollo": "^2.2.4",
     "react-bootstrap": "1.0.0-beta.6",

@@ -10,6 +10,6 @@ describe('<App/> test', () => {
       name='test message'
     />);
 
-    expect(app.find(Route)).toHaveLength(4);
+    expect(app.find(Route)).toHaveLength(5);
   });
 });

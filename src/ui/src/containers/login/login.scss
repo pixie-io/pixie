@@ -55,3 +55,22 @@
 .company-login-content--error {
   color: $red;
 }
+
+.login .auth0-lock-cred-pane {
+  border: 1px solid $gray-350;
+  border-radius: 4px;
+}
+
+.login .auth0-lock-blur-support {
+  display: none;
+}
+
+.login .auth0-lock.auth0-lock .auth0-lock-header {
+  background-color: $gray-100;
+  color: $gray-700;
+}
+
+.login .auth0-lock.auth0-lock .auth0-lock-terms {
+  background: $white;
+  color: $gray-700;
+}

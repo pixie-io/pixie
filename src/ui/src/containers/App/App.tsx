@@ -1,4 +1,3 @@
-import {Auth} from 'containers/Auth';
 import {Home} from 'containers/Home';
 import {Login} from 'containers/login';
 import {Vizier} from 'containers/vizier';
@@ -56,7 +55,8 @@ export class App extends React.Component<AppProps, {}> {
             <div className='content'>
               <Route exact path='/' component={Login} />
               <Route exact path='/create' component={Login} />
-              <Route path='/login' component={Auth} />
+              <Route path='/login' component={Login} />
+              <Route path='/create-site' component={Login} />
               <Route path='/vizier' component={Vizier} />
             </div>
           </div>
