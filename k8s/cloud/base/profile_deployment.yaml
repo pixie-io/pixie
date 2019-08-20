@@ -21,6 +21,16 @@ spec:
           - containerPort: 51501
             hostPort: 51501
         env:
+          - name: PL_POSTGRES_PORT
+            value: "5432"
+          - name: PL_POSTGRES_HOSTNAME
+            value: postgres.plc.svc.cluster.local
+          - name: PL_POSTGRES_DB
+            value: pl
+          - name: PL_POSTGRES_USERNAME
+            value: pl
+          - name: PL_POSTGRES_PASSWORD
+            value: pl
           - name: PL_JWT_SIGNING_KEY
             valueFrom:
               secretKeyRef:

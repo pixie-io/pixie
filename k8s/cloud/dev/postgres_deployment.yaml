@@ -6,7 +6,7 @@ spec:
   template:
     metadata:
       labels:
-        app: postgres
+        name: postgres
     spec:
       containers:
       - name: postgres
