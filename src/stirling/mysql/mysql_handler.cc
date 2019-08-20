@@ -38,7 +38,7 @@ int ProcessLengthEncodedInt(const std::string_view s, int* param_offset) {
       *param_offset += 3;
       break;
     case kLencIntPrefix8b:
-      CHECK_GE(static_cast<int>(s.size()), 8);
+      LOG_IF(DFATAL, s.size() >= 8) << "Input buffer size must be at least 8.";
       *param_offset += 1;
       result = utils::LEStrToInt(s.substr(*param_offset, 8));
       *param_offset += 8;
@@ -236,7 +236,8 @@ StatusOr<std::unique_ptr<Resultset>> HandleResultset(std::deque<Packet>* resp_pa
 StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
     std::deque<Packet>* resp_packets) {
   Packet packet = resp_packets->front();
-  CHECK_EQ(static_cast<int>(packet.msg.size()), 12);
+  LOG_IF(DFATAL, packet.msg.size() != 12)
+      << "StmtPrepareOK response package message size must be 12.";
   int stmt_id = utils::LEStrToInt(packet.msg.substr(1, 4));
   size_t num_col = utils::LEStrToInt(packet.msg.substr(5, 2));
   size_t num_param = utils::LEStrToInt(packet.msg.substr(7, 2));
@@ -266,7 +267,8 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
   }
 
   if (num_param != 0) {
-    CHECK(IsEOFPacket(resp_packets->front()));
+    LOG_IF(DFATAL, !IsEOFPacket(resp_packets->front()))
+        << "The first packet in response must be EOF.";
   }
   ProcessEOFPacket(resp_packets);
 
@@ -279,7 +281,8 @@ StatusOr<std::unique_ptr<StmtPrepareOKResponse>> HandleStmtPrepareOKResponse(
   }
 
   if (num_col != 0) {
-    CHECK(IsEOFPacket(resp_packets->front()));
+    LOG_IF(DFATAL, !IsEOFPacket(resp_packets->front()))
+        << "The first packet in response must be EOF.";
   }
   ProcessEOFPacket(resp_packets);
 
