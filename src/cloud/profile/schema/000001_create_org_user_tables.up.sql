@@ -1,5 +1,7 @@
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE orgs (
-  id UUID,
+  id UUID UNIQUE DEFAULT uuid_generate_v4(),
   org_name varchar(50) UNIQUE,
   domain_name varchar(50) UNIQUE,
 
@@ -7,7 +9,7 @@ CREATE TABLE orgs (
 );
 
 CREATE TABLE users (
-  id UUID UNIQUE,
+  id UUID UNIQUE DEFAULT uuid_generate_v4(),
   org_id UUID,
   username varchar(50),
   first_name varchar(50),
