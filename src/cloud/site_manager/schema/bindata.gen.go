@@ -84,7 +84,7 @@ func _000001_create_sites_tableDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_sites_table.down.sql", size: 28, mode: os.FileMode(436), modTime: time.Unix(1565305551, 0)}
+	info := bindataFileInfo{name: "000001_create_sites_table.down.sql", size: 28, mode: os.FileMode(436), modTime: time.Unix(1565916117, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -104,7 +104,7 @@ func _000001_create_sites_tableUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_sites_table.up.sql", size: 167, mode: os.FileMode(436), modTime: time.Unix(1565311997, 0)}
+	info := bindataFileInfo{name: "000001_create_sites_table.up.sql", size: 167, mode: os.FileMode(436), modTime: time.Unix(1565916117, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

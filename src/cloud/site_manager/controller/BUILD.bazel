@@ -6,10 +6,14 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/site_manager/controller",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/cloud/site_manager/datastore:go_default_library",
         "//src/cloud/site_manager/sitemanagerenv:go_default_library",
         "//src/cloud/site_manager/sitemanagerpb:service_go_proto",
+        "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/utils:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",
+        "@org_golang_google_grpc//codes:go_default_library",
+        "@org_golang_google_grpc//status:go_default_library",
     ],
 )
 
@@ -18,8 +22,13 @@ go_test(
     srcs = ["server_test.go"],
     embed = [":go_default_library"],
     deps = [
+        "//src/cloud/site_manager/datastore:go_default_library",
         "//src/cloud/site_manager/sitemanagerpb:service_go_proto",
+        "//src/utils:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
+        "@org_golang_google_grpc//codes:go_default_library",
+        "@org_golang_google_grpc//status:go_default_library",
     ],
 )

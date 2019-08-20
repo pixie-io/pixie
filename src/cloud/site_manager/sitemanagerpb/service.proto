@@ -15,6 +15,20 @@ service SiteManagerService {
   // Registers a site for an organization.
   rpc RegisterSite(RegisterSiteRequest) returns (RegisterSiteResponse) {}
 
+  rpc GetSiteForOrg(pl.uuidpb.UUID) returns (SiteInfo) {}
+  rpc GetSiteByDomain(GetSiteByDomainRequest) returns (SiteInfo) {}
+
+}
+
+message SiteInfo {
+  string domain_name = 1;
+  pl.uuidpb.UUID org_id = 2 [
+                            (gogoproto.customname) = "OrgID"
+                            ];
+}
+
+message GetSiteByDomainRequest {
+  string domain_name = 1;
 }
 
 message IsSiteAvailableRequest {
@@ -32,7 +46,9 @@ message RegisterSiteRequest {
   string domain_name = 1;
 
   // The UUID of the org name.
-  pl.uuidpb.UUID org_id = 2;
+  pl.uuidpb.UUID org_id = 2 [
+                            (gogoproto.customname) = "OrgID"
+                            ];
 }
 
 message RegisterSiteResponse {

@@ -6,11 +6,11 @@ package mock_sitemanagerpb
 
 import (
 	context "context"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 	sitemanagerpb "pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerpb"
+	proto "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	reflect "reflect"
 )
 
 // MockSiteManagerServiceClient is a mock of SiteManagerServiceClient interface
@@ -72,6 +72,42 @@ func (mr *MockSiteManagerServiceClientMockRecorder) RegisterSite(ctx, in interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterSite", reflect.TypeOf((*MockSiteManagerServiceClient)(nil).RegisterSite), varargs...)
 }
 
+// GetSiteForOrg mocks base method
+func (m *MockSiteManagerServiceClient) GetSiteForOrg(ctx context.Context, in *proto.UUID, opts ...grpc.CallOption) (*sitemanagerpb.SiteInfo, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetSiteForOrg", varargs...)
+	ret0, _ := ret[0].(*sitemanagerpb.SiteInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSiteForOrg indicates an expected call of GetSiteForOrg
+func (mr *MockSiteManagerServiceClientMockRecorder) GetSiteForOrg(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSiteForOrg", reflect.TypeOf((*MockSiteManagerServiceClient)(nil).GetSiteForOrg), varargs...)
+}
+
+// GetSiteByDomain mocks base method
+func (m *MockSiteManagerServiceClient) GetSiteByDomain(ctx context.Context, in *sitemanagerpb.GetSiteByDomainRequest, opts ...grpc.CallOption) (*sitemanagerpb.SiteInfo, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetSiteByDomain", varargs...)
+	ret0, _ := ret[0].(*sitemanagerpb.SiteInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSiteByDomain indicates an expected call of GetSiteByDomain
+func (mr *MockSiteManagerServiceClientMockRecorder) GetSiteByDomain(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSiteByDomain", reflect.TypeOf((*MockSiteManagerServiceClient)(nil).GetSiteByDomain), varargs...)
+}
+
 // MockSiteManagerServiceServer is a mock of SiteManagerServiceServer interface
 type MockSiteManagerServiceServer struct {
 	ctrl     *gomock.Controller
@@ -119,4 +155,30 @@ func (m *MockSiteManagerServiceServer) RegisterSite(arg0 context.Context, arg1 *
 // RegisterSite indicates an expected call of RegisterSite
 func (mr *MockSiteManagerServiceServerMockRecorder) RegisterSite(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterSite", reflect.TypeOf((*MockSiteManagerServiceServer)(nil).RegisterSite), arg0, arg1)
+}
+
+// GetSiteForOrg mocks base method
+func (m *MockSiteManagerServiceServer) GetSiteForOrg(arg0 context.Context, arg1 *proto.UUID) (*sitemanagerpb.SiteInfo, error) {
+	ret := m.ctrl.Call(m, "GetSiteForOrg", arg0, arg1)
+	ret0, _ := ret[0].(*sitemanagerpb.SiteInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSiteForOrg indicates an expected call of GetSiteForOrg
+func (mr *MockSiteManagerServiceServerMockRecorder) GetSiteForOrg(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSiteForOrg", reflect.TypeOf((*MockSiteManagerServiceServer)(nil).GetSiteForOrg), arg0, arg1)
+}
+
+// GetSiteByDomain mocks base method
+func (m *MockSiteManagerServiceServer) GetSiteByDomain(arg0 context.Context, arg1 *sitemanagerpb.GetSiteByDomainRequest) (*sitemanagerpb.SiteInfo, error) {
+	ret := m.ctrl.Call(m, "GetSiteByDomain", arg0, arg1)
+	ret0, _ := ret[0].(*sitemanagerpb.SiteInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSiteByDomain indicates an expected call of GetSiteByDomain
+func (mr *MockSiteManagerServiceServerMockRecorder) GetSiteByDomain(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSiteByDomain", reflect.TypeOf((*MockSiteManagerServiceServer)(nil).GetSiteByDomain), arg0, arg1)
 }
