@@ -8,6 +8,7 @@
 namespace pl {
 namespace grpc {
 
+using ::google::protobuf::Descriptor;
 using ::google::protobuf::DescriptorPool;
 using ::google::protobuf::FileDescriptorSet;
 using ::google::protobuf::Message;
@@ -41,6 +42,18 @@ MethodInputOutput ServiceDescriptorDatabase::GetMethodInputOutput(const std::str
     res.output.reset(output_prototype->New());
   }
   return res;
+}
+
+std::unique_ptr<Message> ServiceDescriptorDatabase::GetMessage(const std::string& message_path) {
+  const Descriptor* msg_desc = desc_pool_.FindMessageTypeByName(message_path);
+  if (msg_desc == nullptr) {
+    return nullptr;
+  }
+  const Message* msg_prototype = message_factory_.GetPrototype(msg_desc);
+  if (msg_prototype == nullptr) {
+    return nullptr;
+  }
+  return std::unique_ptr<Message>(msg_prototype->New());
 }
 
 }  // namespace grpc

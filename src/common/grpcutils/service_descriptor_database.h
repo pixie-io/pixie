@@ -5,9 +5,11 @@
 #include <google/protobuf/dynamic_message.h>
 #include <google/protobuf/message.h>
 
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace pl {
 namespace grpc {
@@ -31,6 +33,13 @@ class ServiceDescriptorDatabase {
    * @param method_path A dot-separated name including the service name.
    */
   MethodInputOutput GetMethodInputOutput(const std::string& method_path);
+
+  /**
+   * @brief Returns an empty instance of the message specified by the input path.
+   *
+   * @param message_path A dot-separated name.
+   */
+  std::unique_ptr<google::protobuf::Message> GetMessage(const std::string& message_path);
 
  private:
   google::protobuf::SimpleDescriptorDatabase desc_db_;

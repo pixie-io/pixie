@@ -45,6 +45,11 @@ final class FileCheckerTest {
     public function run() {
         $test_results = array();
 
+        // Filter out files in the experimental directory.
+        $this->files = array_filter($this->files, function($f) {
+            return strpos($this->project_root . '/' . $f, 'experimental/') == false;
+        });
+
         // Filter out deleted files.
         $this->files = array_filter($this->files, function($f) {
             return file_exists($this->project_root . '/' . $f);
