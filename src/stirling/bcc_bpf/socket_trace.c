@@ -225,49 +225,21 @@ static __inline bool is_http2_connection_preface(const char* buf, size_t count) 
 static __inline struct traffic_class_t infer_traffic(TrafficDirection direction, const char* buf,
                                                      size_t count) {
   struct traffic_class_t traffic_class;
+  traffic_class.protocol = kProtocolUnknown;
+  traffic_class.role = kRoleUnknown;
+
   if (is_http_response(buf, count)) {
     traffic_class.protocol = kProtocolHTTP;
-    switch (direction) {
-      case kEgress:
-        traffic_class.role = kRoleResponder;
-        break;
-      case kIngress:
-        traffic_class.role = kRoleRequestor;
-        break;
-    }
+    traffic_class.role = direction == kEgress ? kRoleResponder : kRoleRequestor;
   } else if (is_http_request(buf, count)) {
     traffic_class.protocol = kProtocolHTTP;
-    switch (direction) {
-      case kEgress:
-        traffic_class.role = kRoleRequestor;
-        break;
-      case kIngress:
-        traffic_class.role = kRoleResponder;
-        break;
-    }
+    traffic_class.role = direction == kEgress ? kRoleRequestor : kRoleResponder;
   } else if (is_mysql_protocol(buf, count)) {
     traffic_class.protocol = kProtocolMySQL;
-    switch (direction) {
-      case kEgress:
-        traffic_class.role = kRoleRequestor;
-        break;
-      case kIngress:
-        traffic_class.role = kRoleResponder;
-        break;
-    }
+    traffic_class.role = direction == kEgress ? kRoleRequestor : kRoleResponder;
   } else if (is_http2_connection_preface(buf, count)) {
     traffic_class.protocol = kProtocolHTTP2;
-    switch (direction) {
-      case kEgress:
-        traffic_class.role = kRoleRequestor;
-        break;
-      case kIngress:
-        traffic_class.role = kRoleResponder;
-        break;
-    }
-  } else {
-    traffic_class.protocol = kProtocolUnknown;
-    traffic_class.role = kRoleUnknown;
+    traffic_class.role = direction == kEgress ? kRoleRequestor : kRoleResponder;
   }
   return traffic_class;
 }
