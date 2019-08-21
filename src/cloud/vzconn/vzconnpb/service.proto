@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package pl.services;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/common/uuid/proto/uuid.proto";
+import "google/protobuf/any.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb;vzconnpb";
+
+service VZConnService {
+  rpc CloudConnect(stream CloudConnectRequest) returns (stream CloudConnectResponse) {}
+}
+
+// CloudConnectRequest is an envelope message that carries between Vizier and the cloud.
+message CloudConnectRequest {
+    // The topic that this message is publishing to.
+    string topic = 1;
+    // THe contents of the message.
+    google.protobuf.Any msg = 2;
+}
+
+// CloudConnectResponse is an envelope message that carries information between the cloud and Vizier.
+message CloudConnectResponse {
+    // The topic this message is in response to.
+    string topic = 1;
+    // The contents of the message.
+    google.protobuf.Any msg = 2;
+}
+
+// Message to register a new Vizier.
+message RegisterVizierRequest {
+    // The ID for this Vizier.
+    uuidpb.UUID vizier_id = 1 [
+                              (gogoproto.customname) = "VizierID"
+                              ];
+    // The key that this cluster is using.
+    string jwt_key = 2;
+}
+
+// Acknowledge the registration of a new Vizier.
+message RegisterVizierAck {
+    enum RegistrationStatus {
+        ST_UNKNOWN = 0;
+        ST_OK = 1;
+        // Failed because the cluster has not been registered into the cloud.
+        ST_FAILED_NOT_FOUND = 2;
+    }
+    RegistrationStatus status = 1;
+}
+
+message VizierHeartbeat {
+    // The current unix time in ns on the machine.
+    int64 time = 1;
+    // The sequence number of the HB.
+    int64 sequence_number = 2;
+}
+
+message VizierHeartbeatAck {
+    enum HeartbeatStatus {
+        HB_UNKNOWN = 0;
+        HB_OK = 1;
+        HB_ERROR = 2;
+    }
+    HeartbeatStatus status = 1;
+    // The current unix time in ns on the machine.
+    int64 time = 2;
+    // The sequence number of the incoming HB.
+    int64 sequence_number = 3;
+    // Error message only set if HeartbeatStatus is not OK.
+    string error_message = 4;
+}
