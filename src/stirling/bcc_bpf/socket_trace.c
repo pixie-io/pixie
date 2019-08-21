@@ -6,6 +6,8 @@
 #include <uapi/linux/in6.h>
 #include <uapi/linux/ptrace.h>
 
+#include "src/stirling/bcc_bpf/grpc.h"
+#include "src/stirling/bcc_bpf/http2.h"
 #include "src/stirling/bcc_bpf/log_event.h"
 #include "src/stirling/bcc_bpf/logging.h"
 
@@ -238,6 +240,11 @@ static __inline struct traffic_class_t infer_traffic(TrafficDirection direction,
     traffic_class.protocol = kProtocolMySQL;
     traffic_class.role = direction == kEgress ? kRoleRequestor : kRoleResponder;
   } else if (is_http2_connection_preface(buf, count)) {
+    traffic_class.protocol = kProtocolHTTP2;
+    traffic_class.role = direction == kEgress ? kRoleRequestor : kRoleResponder;
+  } else if (looks_like_grpc_req_http2_headers_frame(buf, count)) {
+    // Combining this with the above else if branch causes bpf loading failure.
+    // TODO(yzhao): Figure out why.
     traffic_class.protocol = kProtocolHTTP2;
     traffic_class.role = direction == kEgress ? kRoleRequestor : kRoleResponder;
   }

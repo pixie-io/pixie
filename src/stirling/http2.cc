@@ -248,7 +248,7 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
       header_block_frames.clear();
       header_block_size = 0;
       msg.parse_state = InflateHeaderBlock(inflater, u8buf, &msg.headers);
-      LOG_IF(DFATAL, msg.parse_state != ParseState::kSuccess) << "Header parsing failed.";
+      LOG_IF(WARNING, msg.parse_state != ParseState::kSuccess) << "Header parsing failed.";
     }
   };
 

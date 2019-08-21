@@ -6,6 +6,12 @@
 
 #define CLANG_SUPPRESS_WARNINGS_END() _Pragma("clang diagnostic pop")
 
+static __inline uint32_t bpf_ntohl_chars(const char* buf) {
+  uint32_t res = 0;
+  bpf_probe_read(&res, sizeof(uint32_t), buf);
+  return bpf_ntohl(res);
+}
+
 // Parses buf as length-prefixed frames, and updates bookkeeping parameters in conn_info.
 static __inline void update_http2_frame_offset(TrafficDirection direction, const char* buf,
                                                size_t buf_size, struct conn_info_t* conn_info) {
@@ -31,10 +37,12 @@ static __inline void update_http2_frame_offset(TrafficDirection direction, const
   CLANG_SUPPRESS_WARNINGS_END()
 #endif
   for (int i = 0; i < kLoopCount && buf_offset < buf_size; ++i) {
-    uint32_t frame_length = 0;
-    bpf_probe_read(&frame_length, sizeof(uint32_t), buf + buf_offset);
+    // See https://stackoverflow.com/a/7184905/11871800
+    // It states bit shift always assumes big-endian. Right-shift to remove the last unused byte for
+    // uint32_t.
+    uint32_t frame_length = bpf_ntohl_chars(buf + buf_offset) >> 8;
     buf_offset += kHTTP2FrameHeaderSizeInBytes;
-    buf_offset += bpf_ntohl(frame_length);
+    buf_offset += frame_length;
   }
   switch (direction) {
     case kEgress:

@@ -73,6 +73,7 @@ pl_bpf_cc_resource(
     hdrs = [
         ["bcc_bpf/pidruntime.h"],
         [
+            "bcc_bpf/grpc.h",
             "bcc_bpf/http2.h",
             "bcc_bpf/log_event.h",
             "bcc_bpf/logging.h",

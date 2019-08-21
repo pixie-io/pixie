@@ -151,6 +151,11 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
 class GRPCCppTest : public ::testing::Test {
  protected:
   void SetUp() override {
+    SetUpSocketTraceConnector();
+    SetUpGRPCServices();
+  }
+
+  void SetUpSocketTraceConnector() {
     // Force disable protobuf parsing to output the binary protobuf in record batch.
     // Also ensure test remain passing when the default changes.
     FLAGS_enable_parsing_protobufs = false;
@@ -160,10 +165,11 @@ class GRPCCppTest : public ::testing::Test {
 
     auto* socket_trace_connector = static_cast<SocketTraceConnector*>(source_.get());
     ASSERT_NE(nullptr, socket_trace_connector);
-    EXPECT_OK(socket_trace_connector->TestOnlySetTargetPID(getpid()));
 
     data_table_ = std::make_unique<DataTable>(SocketTraceConnector::kHTTPTable);
+  }
 
+  void SetUpGRPCServices() {
     runner_.RegisterService(&greeter_service_);
     runner_.RegisterService(&greeter2_service_);
     server_ = runner_.Run();
@@ -185,7 +191,8 @@ class GRPCCppTest : public ::testing::Test {
   }
 
   template <typename StubType, typename RPCMethodType>
-  void CallRPC(StubType* stub, RPCMethodType method, const std::vector<std::string>& names) {
+  void CallRPC(StubType* stub, RPCMethodType method, const std::vector<std::string>& names,
+               bool transfer_data = true) {
     HelloRequest req;
     HelloReply resp;
     for (const auto& n : names) {
@@ -193,8 +200,9 @@ class GRPCCppTest : public ::testing::Test {
       ::grpc::Status st = stub->CallRPC(method, req, &resp);
       LOG_IF(ERROR, !st.ok()) << st.error_message();
     }
-    // Deplete the perf buffers to avoid overflow.
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
+    if (transfer_data) {
+      source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
+    }
   }
 
   std::unique_ptr<SourceConnector> source_;
@@ -249,6 +257,33 @@ TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
     EXPECT_EQ(2, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(idx).val);
     EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kGRPC),
               record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(idx).val);
+    EXPECT_THAT(GetHelloReply(record_batch, idx),
+                AnyOf(EqualsProto(R"proto(message: "Hello pixielabs!")proto"),
+                      EqualsProto(R"proto(message: "Hi pixielabs!")proto")));
+  }
+}
+
+// Do not initialize socket tracer to simulate the socket tracer missing head of start of the HTTP2
+// connection.
+class GRPCCppMiddleInterceptTest : public GRPCCppTest {
+ protected:
+  void SetUp() { SetUpGRPCServices(); }
+};
+
+TEST_F(GRPCCppMiddleInterceptTest, InterceptMiddleOfTheConnection) {
+  CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"},
+          /*transfer_data*/ false);
+  // Attach the probes after connection started.
+  SetUpSocketTraceConnector();
+  CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"},
+          /*transfer_data*/ true);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
+  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  EXPECT_THAT(indices, SizeIs(3));
+  for (size_t idx : indices) {
+    // Header parsing would fail, because missing the head of start.
+    // TODO(yzhao): We should device some meaningful mechanism for capturing headers, if inflation
+    // failed.
     EXPECT_THAT(GetHelloReply(record_batch, idx),
                 AnyOf(EqualsProto(R"proto(message: "Hello pixielabs!")proto"),
                       EqualsProto(R"proto(message: "Hi pixielabs!")proto")));
