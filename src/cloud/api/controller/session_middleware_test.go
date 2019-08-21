@@ -87,7 +87,7 @@ func failedRequestCheckHelper(t *testing.T, env apienv.APIEnv, mockAuthClient *m
 }
 
 func TestWithAugmentedAuthMiddlewareWithSession(t *testing.T) {
-	env, mockAuthClient, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "/api/users", nil)
@@ -99,7 +99,7 @@ func TestWithAugmentedAuthMiddlewareWithSession(t *testing.T) {
 }
 
 func TestWithAugmentedAuthMiddlewareWithBearer(t *testing.T) {
-	env, mockAuthClient, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "/api/users", nil)
@@ -110,7 +110,7 @@ func TestWithAugmentedAuthMiddlewareWithBearer(t *testing.T) {
 }
 
 func TestWithAugmentedAuthMiddlewareMissingAuth(t *testing.T) {
-	env, mockAuthClient, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "/api/users", nil)
@@ -120,7 +120,7 @@ func TestWithAugmentedAuthMiddlewareMissingAuth(t *testing.T) {
 }
 
 func TestWithAugmentedAuthMiddlewareFailedAugmentation(t *testing.T) {
-	env, mockAuthClient, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	mockAuthClient.EXPECT().GetAugmentedToken(

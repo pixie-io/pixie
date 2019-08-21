@@ -1,12 +1,15 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/sessions"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -36,17 +39,12 @@ func GetServiceCredentials(signingKey string) (string, error) {
 // Request-type: application/json.
 // Params: accessToken (auth0 idtoken), state.
 func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request) error {
-	apiEnv, ok := env.(apienv.APIEnv)
-	if !ok {
-		return handler.NewStatusError(http.StatusInternalServerError, "failed to get environment")
-	}
 	if r.Method != http.MethodPost {
 		return handler.NewStatusError(http.StatusMethodNotAllowed, "not a post request")
 	}
 
-	session, err := GetDefaultSession(apiEnv, r)
+	session, err := getSessionFromEnv(env, r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return &handler.StatusError{http.StatusInternalServerError, err}
 	}
 
@@ -64,30 +62,28 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		}
 	}
 
+	ctxWithCreds, err := attachCredentialsToContext(env, r)
+	if err != nil {
+		return &handler.StatusError{http.StatusInternalServerError, err}
+	}
+
 	// Extract params from the body which consists of the Auth0 ID token.
 	var params struct {
 		AccessToken string
 		State       string
 	}
+
 	defer r.Body.Close()
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		return handler.NewStatusError(http.StatusBadRequest,
 			"failed to decode json request")
 	}
 
-	serviceAuthToken, err := GetServiceCredentials(env.JWTSigningKey())
-	if err != nil {
-		log.WithError(err).Error("Service authpb failure")
-		return handler.NewStatusError(http.StatusInternalServerError,
-			"failed to get service authpb")
-	}
-
 	rpcReq := &authpb.LoginRequest{
 		AccessToken: params.AccessToken,
 	}
-	ctxWithCreds := metadata.AppendToOutgoingContext(r.Context(), "authorization",
-		fmt.Sprintf("bearer %s", serviceAuthToken))
-	resp, err := apiEnv.AuthClient().Login(ctxWithCreds, rpcReq)
+
+	resp, err := env.(apienv.APIEnv).AuthClient().Login(ctxWithCreds, rpcReq)
 	if err != nil {
 		log.WithError(err).Errorf("RPC request to authpb service failed")
 		s, ok := status.FromError(err)
@@ -99,26 +95,11 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 		return handler.NewStatusError(http.StatusInternalServerError, "failed to login")
 	}
 
-	// Set session cookie.
-	session.Values["_at"] = resp.Token
-	session.Values["_expires_at"] = resp.ExpiresAt
-	session.Options.MaxAge = int(time.Unix(0, resp.ExpiresAt).Sub(time.Now()).Seconds())
-	session.Options.HttpOnly = true
-	session.Options.Secure = true
-	session.Options.SameSite = http.SameSiteStrictMode
+	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w)
 
-	session.Save(r, w)
-
-	var payload struct {
-		Token     string `json:"token"`
-		ExpiresAt int64  `json:"expiresAt"`
-	}
-	payload.Token = resp.Token
-	payload.ExpiresAt = resp.ExpiresAt
-
-	json.NewEncoder(w).Encode(payload)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+
 	return nil
 }
 
@@ -145,4 +126,54 @@ func AuthLogoutHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	session.Save(r, w)
 	w.WriteHeader(http.StatusOK)
 	return nil
+}
+
+func getSessionFromEnv(env commonenv.Env, r *http.Request) (*sessions.Session, error) {
+	apiEnv, ok := env.(apienv.APIEnv)
+	if !ok {
+		return nil, errors.New("failed to get environment")
+	}
+
+	session, err := GetDefaultSession(apiEnv, r)
+	if err != nil {
+		return nil, err
+	}
+
+	return session, nil
+}
+
+func attachCredentialsToContext(env commonenv.Env, r *http.Request) (context.Context, error) {
+	serviceAuthToken, err := GetServiceCredentials(env.JWTSigningKey())
+	if err != nil {
+		log.WithError(err).Error("Service authpb failure")
+		return nil, errors.New("failed to get service authpb")
+	}
+
+	ctxWithCreds := metadata.AppendToOutgoingContext(r.Context(), "authorization",
+		fmt.Sprintf("bearer %s", serviceAuthToken))
+
+	return ctxWithCreds, nil
+}
+
+func setSessionCookie(session *sessions.Session, token string, expiresAt int64, r *http.Request, w http.ResponseWriter) {
+	// Set session cookie.
+	session.Values["_at"] = token
+	session.Values["_expires_at"] = expiresAt
+	session.Options.MaxAge = int(time.Unix(expiresAt, 0).Sub(time.Now()).Seconds())
+	session.Options.HttpOnly = true
+	session.Options.Secure = true
+	session.Options.SameSite = http.SameSiteStrictMode
+	// TODO(zasgar): We should set this from flags/env. This allows the cookie to be shared across subdomain.
+	session.Options.Domain = "pixielabs.ai"
+
+	session.Save(r, w)
+
+	var payload struct {
+		Token     string `json:"token"`
+		ExpiresAt int64  `json:"expiresAt"`
+	}
+	payload.Token = token
+	payload.ExpiresAt = expiresAt
+
+	json.NewEncoder(w).Encode(payload)
 }

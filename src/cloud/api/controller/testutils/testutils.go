@@ -11,7 +11,7 @@ import (
 )
 
 // CreateTestAPIEnv creates a test environment and mock clients.
-func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *mock_auth.MockAuthServiceClient, func()) {
+func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *mock_auth.MockAuthServiceClient, *mock_sitemanagerpb.MockSiteManagerServiceClient, func()) {
 	ctrl := gomock.NewController(t)
 	viper.Set("session_key", "fake-session-key")
 	viper.Set("jwt_signing_key", "jwt-key")
@@ -26,5 +26,5 @@ func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *mock_auth.MockAuthServiceCl
 		ctrl.Finish()
 	}
 
-	return apiEnv, mockAuthClient, cleanup
+	return apiEnv, mockAuthClient, mockSiteManagerClient, cleanup
 }
