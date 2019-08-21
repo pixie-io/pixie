@@ -180,7 +180,7 @@ func TestAuth0ConnectorImpl_GetUserInfo_BadResponse(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestAuth0ConnectorImpl_SetPLUserID(t *testing.T) {
+func TestAuth0ConnectorImpl_SetPLMetadata(t *testing.T) {
 	callCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		callCount++
@@ -199,7 +199,7 @@ func TestAuth0ConnectorImpl_SetPLUserID(t *testing.T) {
 		defer r.Body.Close()
 
 		assert.JSONEq(t,
-			`{"app_metadata": {"pl_user_id": "test_pl_user_id"}}`, string(body))
+			`{"app_metadata": {"pl_user_id": "test_pl_user_id", "pl_org_id": "test_pl_org_id"}}`, string(body))
 		w.Write([]byte(`OK`))
 	}))
 	defer server.Close()
@@ -210,7 +210,7 @@ func TestAuth0ConnectorImpl_SetPLUserID(t *testing.T) {
 	cfg := controllers.NewAuth0Config()
 	c := controllers.NewAuth0Connector(cfg)
 
-	err := c.SetPLUserID("abcd", "test_pl_user_id")
+	err := c.SetPLMetadata("abcd", "test_pl_org_id", "test_pl_user_id")
 	assert.Equal(t, 2, callCount)
 	assert.Nil(t, err)
 }

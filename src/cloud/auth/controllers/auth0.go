@@ -24,11 +24,15 @@ func init() {
 // UserMetadata is a part of the Auth0 response.
 type UserMetadata struct {
 	PLUserID string `json:"pl_user_id,omitempty"`
+	PLOrgID  string `json:"pl_org_id,omitempty"`
 }
 
 // UserInfo tracks the returned auth0 info.
 type UserInfo struct {
 	Email       string        `json:",omitempty"`
+	FirstName   string        `json:"given_name,omitempty"`
+	LastName    string        `json:"family_name,omitempty"`
+	UserID      string        `json:"user_id,omitempty"`
 	Name        string        `json:",omitempty"`
 	Picture     string        `json:",omitempty"`
 	Sub         string        `json:"sub,omitempty"`
@@ -40,7 +44,7 @@ type Auth0Connector interface {
 	Init() error
 	GetUserIDFromToken(token string) (string, error)
 	GetUserInfo(userID string) (*UserInfo, error)
-	SetPLUserID(userID, plUserID string) error
+	SetPLMetadata(userID, plOrgID, plUserID string) error
 }
 
 // Auth0Config is the config data required for Auth0.
@@ -198,10 +202,11 @@ func (a *auth0ConnectorImpl) GetUserInfo(userID string) (*UserInfo, error) {
 	return userInfo, nil
 }
 
-func (a *auth0ConnectorImpl) SetPLUserID(userID, plUserID string) error {
+func (a *auth0ConnectorImpl) SetPLMetadata(userID, plOrgID, plUserID string) error {
 	userInfo := &UserInfo{
 		AppMetadata: &UserMetadata{
 			PLUserID: plUserID,
+			PLOrgID:  plOrgID,
 		},
 	}
 
