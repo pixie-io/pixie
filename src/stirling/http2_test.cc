@@ -260,6 +260,18 @@ TEST(DeflateEnflateTest, DeflateInflateOutOfOrder) {
   nghttp2_hd_deflate_del(deflater);
 }
 
+TEST(HeadersTest, GetHeaderValue) {
+  GRPCMessage req;
+  req.headers.emplace(":path", "/pl.stirling.testing.Greeter/SayHello");
+  req.headers.emplace("foo", "200");
+
+  EXPECT_EQ(req.HeaderValue(":path"), "/pl.stirling.testing.Greeter/SayHello");
+  EXPECT_EQ(req.HeaderValue("foo"), "200");
+  EXPECT_EQ(req.HeaderValue("foo", "-1"), "200");
+  EXPECT_EQ(req.HeaderValue("missing"), "");
+  EXPECT_EQ(req.HeaderValue("missing", "-1"), "-1");
+}
+
 }  // namespace http2
 }  // namespace stirling
 }  // namespace pl

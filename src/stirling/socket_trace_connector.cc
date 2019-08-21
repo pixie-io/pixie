@@ -418,6 +418,9 @@ void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
 
   DCHECK_GE(resp_message.timestamp_ns, req_message.timestamp_ns);
 
+  int64_t resp_status;
+  CHECK(absl::SimpleAtoi(resp_message.HeaderValue(":status", "-1"), &resp_status));
+
   RecordBuilder<&kHTTPTable> r(data_table);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("pid")>(conn_tracker.pid());
@@ -432,10 +435,10 @@ void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
   r.Append<r.ColIndex("http_resp_headers")>(
       absl::StrJoin(resp_message.headers, "\n", absl::PairFormatter(": ")));
-  // TODO(yzhao): Populate the following 4 fields from headers.
-  r.Append<r.ColIndex("http_req_method")>("GET");
-  r.Append<r.ColIndex("http_req_path")>("PATH");
-  r.Append<r.ColIndex("http_resp_status")>(200);
+  r.Append<r.ColIndex("http_req_method")>(req_message.HeaderValue(":method"));
+  r.Append<r.ColIndex("http_req_path")>(req_message.HeaderValue(":path"));
+  r.Append<r.ColIndex("http_resp_status")>(resp_status);
+  // TODO(yzhao): Populate the following field from headers.
   r.Append<r.ColIndex("http_resp_message")>("OK");
 
   if (FLAGS_enable_parsing_protobufs) {

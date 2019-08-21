@@ -100,6 +100,14 @@ struct GRPCMessage {
       f->consumed = true;
     }
   }
+
+  std::string HeaderValue(const std::string& key, const std::string& default_value = "") {
+    auto iter = headers.find(key);
+    if (iter != headers.end()) {
+      return iter->second;
+    }
+    return default_value;
+  }
 };
 
 /*
