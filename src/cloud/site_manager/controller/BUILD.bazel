@@ -7,7 +7,6 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/cloud/site_manager/datastore:go_default_library",
-        "//src/cloud/site_manager/sitemanagerenv:go_default_library",
         "//src/cloud/site_manager/sitemanagerpb:service_go_proto",
         "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/utils:go_default_library",

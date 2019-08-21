@@ -63,8 +63,7 @@ func (d *fakeDatastore) GetSiteByDomain(domainName string) (*datastore.SiteInfo,
 }
 
 func SetupServerTest(t *testing.T) *controllers.Server {
-	server, err := controllers.NewServer(nil, &fakeDatastore{})
-	assert.Nil(t, err)
+	server := controllers.NewServer(&fakeDatastore{})
 	assert.NotNil(t, server)
 	return server
 }

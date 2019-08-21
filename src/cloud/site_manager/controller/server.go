@@ -7,7 +7,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/cloud/site_manager/datastore"
-	"pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerenv"
 	"pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -23,16 +22,14 @@ type SiteDatastore interface {
 
 // Server defines an gRPC server type.
 type Server struct {
-	env       sitemanagerenv.SiteManagerEnv
 	datastore SiteDatastore
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(env sitemanagerenv.SiteManagerEnv, datastore SiteDatastore) (*Server, error) {
+func NewServer(datastore SiteDatastore) *Server {
 	return &Server{
-		env:       env,
 		datastore: datastore,
-	}, nil
+	}
 }
 
 // IsSiteAvailable checks to see if a site domain is available.

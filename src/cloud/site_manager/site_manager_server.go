@@ -3,6 +3,8 @@ package main
 import (
 	"net/http"
 
+	"pixielabs.ai/pixielabs/src/shared/services/env"
+
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
@@ -10,7 +12,6 @@ import (
 	controllers "pixielabs.ai/pixielabs/src/cloud/site_manager/controller"
 	"pixielabs.ai/pixielabs/src/cloud/site_manager/datastore"
 	"pixielabs.ai/pixielabs/src/cloud/site_manager/schema"
-	"pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerenv"
 	"pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
@@ -27,11 +28,6 @@ func main() {
 
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
-
-	env, err := sitemanagerenv.New()
-	if err != nil {
-		log.WithError(err).Fatal("Failed to initialize env")
-	}
 
 	db := pg.MustConnectDefaultPostgresDB()
 
@@ -57,12 +53,8 @@ func main() {
 		log.WithError(err).Fatalf("Failed to initialize datastore")
 	}
 
-	server, err := controllers.NewServer(env, datastore)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
-	}
-
-	s := services.NewPLServer(env, mux)
+	server := controllers.NewServer(datastore)
+	s := services.NewPLServer(env.New(), mux)
 	sitemanagerpb.RegisterSiteManagerServiceServer(s.GRPCServer(), server)
 
 	s.Start()
