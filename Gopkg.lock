@@ -56,6 +56,12 @@
   revision = "48f7b360b138d7152e418021864e7b574f02458c"
 
 [[projects]]
+  name = "github.com/badoux/checkmail"
+  packages = ["."]
+  revision = "9661bd69e9ad6fce1f7579022bdab0440807722a"
+  version = "v1.1"
+
+[[projects]]
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
   revision = "4b2b341e8d7715fae06375aa633dbb6e91b3fb46"
@@ -730,6 +736,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ffbbfa5536fb31e79f8fd69a4b24f916b7d94d2e99985e4c8f5cc04414306c78"
+  inputs-digest = "8a3bd498f89e87ac1f7a17ba63afee254385b316942ba7cedf819d1aaa98590f"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -844,3 +844,9 @@ go_repository(
     commit = "3427c32cb71afc948325f299f040e53c1dd78979",
     importpath = "github.com/lib/pq",
 )
+
+go_repository(
+    name = "com_github_badoux_checkmail",
+    commit = "9661bd69e9ad6fce1f7579022bdab0440807722a",
+    importpath = "github.com/badoux/checkmail",
+)
