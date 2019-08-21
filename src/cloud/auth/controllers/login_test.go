@@ -16,6 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/auth/controllers"
 	mock_controllers "pixielabs.ai/pixielabs/src/cloud/auth/controllers/mock"
 	pb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
+	mock_profile "pixielabs.ai/pixielabs/src/cloud/profile/profilepb/mock"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
@@ -47,8 +48,10 @@ func TestServer_Login(t *testing.T) {
 	}).Return(nil)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
 
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New()
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -71,8 +74,10 @@ func TestServer_Login_BadToken(t *testing.T) {
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("", errors.New("bad token"))
 
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New()
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -101,8 +106,10 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	}
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
 
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New()
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -123,8 +130,10 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New()
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -154,8 +163,10 @@ func TestServer_GetAugmentedTokenBadSigningKey(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New()
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
@@ -179,8 +190,10 @@ func TestServer_GetAugmentedTokenBadToken(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
 	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New()
+	env, err := authenv.New(mockProfile)
 	assert.Nil(t, err)
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)

@@ -28,7 +28,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to initialize Auth0")
 	}
 
-	env, err := authenv.New()
+	env, err := authenv.NewWithDefaults()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize auth env")
 	}
