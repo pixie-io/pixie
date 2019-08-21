@@ -6,11 +6,10 @@ package mock_auth
 
 import (
 	context "context"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 	proto "pixielabs.ai/pixielabs/src/cloud/auth/proto"
+	reflect "reflect"
 )
 
 // MockAuthServiceClient is a mock of AuthServiceClient interface
@@ -34,6 +33,24 @@ func NewMockAuthServiceClient(ctrl *gomock.Controller) *MockAuthServiceClient {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockAuthServiceClient) EXPECT() *MockAuthServiceClientMockRecorder {
 	return m.recorder
+}
+
+// CreateUserOrg mocks base method
+func (m *MockAuthServiceClient) CreateUserOrg(ctx context.Context, in *proto.CreateUserOrgRequest, opts ...grpc.CallOption) (*proto.CreateUserOrgResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CreateUserOrg", varargs...)
+	ret0, _ := ret[0].(*proto.CreateUserOrgResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateUserOrg indicates an expected call of CreateUserOrg
+func (mr *MockAuthServiceClientMockRecorder) CreateUserOrg(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserOrg", reflect.TypeOf((*MockAuthServiceClient)(nil).CreateUserOrg), varargs...)
 }
 
 // Login mocks base method
@@ -93,6 +110,19 @@ func NewMockAuthServiceServer(ctrl *gomock.Controller) *MockAuthServiceServer {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockAuthServiceServer) EXPECT() *MockAuthServiceServerMockRecorder {
 	return m.recorder
+}
+
+// CreateUserOrg mocks base method
+func (m *MockAuthServiceServer) CreateUserOrg(arg0 context.Context, arg1 *proto.CreateUserOrgRequest) (*proto.CreateUserOrgResponse, error) {
+	ret := m.ctrl.Call(m, "CreateUserOrg", arg0, arg1)
+	ret0, _ := ret[0].(*proto.CreateUserOrgResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateUserOrg indicates an expected call of CreateUserOrg
+func (mr *MockAuthServiceServerMockRecorder) CreateUserOrg(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserOrg", reflect.TypeOf((*MockAuthServiceServer)(nil).CreateUserOrg), arg0, arg1)
 }
 
 // Login mocks base method

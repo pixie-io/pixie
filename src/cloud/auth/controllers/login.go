@@ -44,6 +44,74 @@ func (s *Server) getUserInfoFromToken(accessToken string) (string, *UserInfo, er
 	return userID, userInfo, nil
 }
 
+// CreateUserOrg creates a new user and organization and authenticates the user.
+func (s *Server) CreateUserOrg(ctx context.Context, in *pb.CreateUserOrgRequest) (*pb.CreateUserOrgResponse, error) {
+	userID, userInfo, err := s.getUserInfoFromToken(in.AccessToken)
+	if err != nil {
+		return nil, err
+	}
+
+	if userInfo.Email != in.UserEmail {
+		return nil, status.Error(codes.InvalidArgument, "email addresses don't match")
+	}
+
+	if userInfo.AppMetadata != nil {
+		return nil, status.Error(codes.InvalidArgument, "user already registered")
+	}
+
+	md, _ := metadata.FromIncomingContext(ctx)
+	ctx = metadata.NewOutgoingContext(ctx, md)
+
+	rpcReq := &profilepb.CreateOrgAndUserRequest{
+		Org: &profilepb.CreateOrgAndUserRequest_Org{
+			OrgName:    in.OrgName,
+			DomainName: in.DomainName,
+		},
+		User: &profilepb.CreateOrgAndUserRequest_User{
+			Username:  userInfo.Email,
+			FirstName: userInfo.FirstName,
+			LastName:  userInfo.LastName,
+			Email:     userInfo.Email,
+		},
+	}
+
+	resp, err := s.env.ProfileClient().CreateOrgAndUser(ctx, rpcReq)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to create user/org")
+	}
+
+	userInfo, err = s.updateAuth0User(userID, pbutils.UUIDFromProtoOrNil(resp.OrgID).String(),
+		pbutils.UUIDFromProtoOrNil(resp.UserID).String())
+
+	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey())
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate token")
+	}
+
+	return &pb.CreateUserOrgResponse{
+		Token:     token,
+		ExpiresAt: expiresAt.Unix(),
+		UserID:    resp.UserID,
+		OrgID:     resp.OrgID,
+	}, nil
+}
+
+func (s *Server) updateAuth0User(auth0UserID string, orgID string, userID string) (*UserInfo, error) {
+	// Write user and org info to Auth0.
+	err := s.a.SetPLMetadata(auth0UserID, orgID, userID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to set user ID")
+	}
+
+	// Read updated user info.
+	userInfo, err := s.a.GetUserInfo(auth0UserID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to read updated user info")
+	}
+
+	return userInfo, nil
+}
+
 // Login uses auth0 to authenticate and login the user.
 func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply, error) {
 	userID, userInfo, err := s.getUserInfoFromToken(in.AccessToken)
@@ -104,16 +172,8 @@ func (s *Server) createUser(ctx context.Context, userID string, userInfo *UserIn
 		return nil, err
 	}
 
-	err = s.a.SetPLMetadata(userID, pbutils.UUIDFromProtoOrNil(orgInfo.ID).String(), pbutils.UUIDFromProtoOrNil(resp).String())
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to set user metadata")
-	}
-
-	// Read updated user info.
-	userInfo, err = s.a.GetUserInfo(userID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to read updated user info")
-	}
+	userInfo, err = s.updateAuth0User(userID, pbutils.UUIDFromProtoOrNil(orgInfo.ID).String(),
+		pbutils.UUIDFromProtoOrNil(resp).String())
 
 	return userInfo, nil
 }
