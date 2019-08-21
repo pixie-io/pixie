@@ -138,6 +138,7 @@ StatusOr<ArgMap> ASTWalker::ProcessArgs(const pypa::AstCallPtr& call_ast,
                                         bool kwargs_only) {
   return ProcessArgs(call_ast, op_context, expected_args, kwargs_only, {{}});
 }
+
 StatusOr<ArgMap> ASTWalker::ProcessArgs(
     const pypa::AstCallPtr& call_ast, const OperatorContext& op_context,
     const std::vector<std::string>& expected_args, bool kwargs_only,
@@ -230,6 +231,7 @@ StatusOr<TOpIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
   PL_RETURN_IF_ERROR(ir_node->Init(parent_op, args, node));
   return ir_node;
 }
+
 template <>
 StatusOr<RangeIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
   if (node->function->type != AstType::Attribute) {
@@ -250,6 +252,47 @@ StatusOr<RangeIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
   return ir_node;
 }
 
+template <>
+StatusOr<JoinIR*> ASTWalker::ProcessOp(const pypa::AstCallPtr& node) {
+  if (node->function->type != AstType::Attribute) {
+    return CreateAstError(node->function, "Expected Join to be an attribute, not a $0",
+                          GetAstTypeName(node->function->type));
+  }
+  PL_ASSIGN_OR_RETURN(JoinIR * ir_node, ir_graph_->MakeNode<JoinIR>());
+
+  OperatorIR* parent_op1 = nullptr;
+  if (node->function->type == AstType::Attribute) {
+    PL_ASSIGN_OR_RETURN(parent_op1, ProcessAttribute(PYPA_PTR_CAST(Attribute, node->function)));
+  }
+  auto arg_list = node->arglist;
+
+  std::string expected_first_arg_string =
+      "Expected first argument of Join operator to be a Name referencing a "
+      "parent";
+  if (arg_list.arguments.size() < 1) {
+    return CreateAstError(node, "$0. No argument specified.", expected_first_arg_string);
+  }
+
+  if (arg_list.arguments.size() > 1) {
+    return CreateAstError(node, "$0. Got more than one argument.", expected_first_arg_string);
+  }
+
+  auto parent_arg = arg_list.arguments[0];
+  if (parent_arg->type != AstType::Name) {
+    return CreateAstError(parent_arg, "$0. Got $1 instead.", expected_first_arg_string,
+                          GetAstTypeName(parent_arg->type));
+  }
+
+  PL_ASSIGN_OR_RETURN(OperatorIR * parent_op2, LookupName(PYPA_PTR_CAST(Name, parent_arg)));
+
+  PL_ASSIGN_OR_RETURN(ArgMap args,
+                      ProcessArgs(node, OperatorContext({parent_op1, parent_op2}, ir_node),
+                                  ir_node->ArgKeys(), true, ir_node->DefaultArgValues(node)));
+
+  PL_RETURN_IF_ERROR(ir_node->Init({parent_op1, parent_op2}, args, node));
+  return ir_node;
+}
+
 StatusOr<OperatorIR*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node) {
   PL_ASSIGN_OR_RETURN(std::string func_name, GetFuncName(node));
   OperatorIR* ir_node;
@@ -267,6 +310,8 @@ StatusOr<OperatorIR*> ASTWalker::ProcessOpCallNode(const pypa::AstCallPtr& node)
     PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<BlockingAggIR>(node));
   } else if (func_name == kSinkOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<MemorySinkIR>(node));
+  } else if (func_name == kJoinOpId) {
+    PL_ASSIGN_OR_RETURN(ir_node, ProcessOp<JoinIR>(node));
   } else if (func_name == kRangeAggOpId) {
     PL_ASSIGN_OR_RETURN(ir_node, ProcessRangeAggOp(node));
   } else {

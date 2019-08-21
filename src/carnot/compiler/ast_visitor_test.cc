@@ -6,12 +6,17 @@
 
 #include "src/carnot/compiler/compilerpb/compiler_status.pb.h"
 #include "src/carnot/compiler/ir_test_utils.h"
+#include "src/carnot/compiler/pattern_match.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/common/base/base.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
+
+using ::testing::Contains;
+using ::testing::ElementsAre;
+using ::testing::ElementsAreArray;
 
 // Checks whether we can actually compile into a graph.
 TEST(ASTVisitor, compilation_test) {
@@ -612,16 +617,23 @@ TEST(LambdaTest, test_wrong_number_of_arguments) {
               HasCompilerError("Got 2 lambda arguments, expected 1 for the Map Operator."));
 }
 
-// TODO(philkuz/nserrino) add this test when we add an operator with multiple parents.
-TEST(LambdaTest, DISABLED_duplicate_arguments) {
-  std::string add_combination = absl::StrJoin(
-      {
-          "queryDF = From(table='cpu', select=['cpu0', 'cpu1'])",
-          "queryDF.Map(fn=lambda r, r: {'cpu_plus_2' : r.cpu0+2}).Result(name='cpu2')",
-      },
-      "\n");
-  auto ir_graph_status = ParseQuery(add_combination);
-  VLOG(1) << ir_graph_status.ToString();
+const char* kJoinDuplicatedLambdaQuery = R"query(
+src1 = From(table='cpu', select=['upid', 'cpu0','cpu1'])
+src2 = From(table='network', select=['upid', 'bytes_in', 'bytes_out'])
+join = src1.Join(src2,  type='inner',
+                      cond=lambda r, r: r1.upid == r2.upid,
+                      cols=lambda r1, r2: {
+                        'upid': r1.upid,
+                        'bytes_in': r2.bytes_in,
+                        'bytes_out': r2.bytes_out,
+                        'cpu0': r1.cpu0,
+                        'cpu1': r1.cpu1,
+                      })
+join.Result(name='joined')
+)query";
+
+TEST(LambdaTest, duplicate_arguments) {
+  auto ir_graph_status = ParseQuery(kJoinDuplicatedLambdaQuery);
   EXPECT_NOT_OK(ir_graph_status);
   EXPECT_THAT(ir_graph_status.status(),
               HasCompilerError("Duplicate argument 'r' in lambda definition."));
@@ -640,6 +652,135 @@ TEST(RangeTest, test_parent_is_memory_source) {
   EXPECT_NOT_OK(ir_graph_status);
   EXPECT_THAT(ir_graph_status.status(),
               HasCompilerError("Expected parent of Range to be a Memory Source, not a Map."));
+}
+
+const char* kInnerJoinQuery = R"query(
+src1 = From(table='cpu', select=['upid', 'cpu0','cpu1'])
+src2 = From(table='network', select=['upid', 'bytes_in', 'bytes_out'])
+join = src1.Join(src2,  type='inner',
+                      cond=lambda r1, r2: r1.upid == r2.upid,
+                      cols=lambda r1, r2: {
+                        'upid': r1.upid,
+                        'bytes_in': r2.bytes_in,
+                        'bytes_out': r2.bytes_out,
+                        'cpu0': r1.cpu0,
+                        'cpu1': r1.cpu1,
+                      })
+join.Result(name='joined')
+)query";
+
+TEST(JoinTest, test_inner_join) {
+  auto ir_graph_status = ParseQuery(kInnerJoinQuery);
+  ASSERT_OK(ir_graph_status);
+  auto graph = ir_graph_status.ConsumeValueOrDie();
+  MemorySourceIR* mem_src1 = nullptr;
+  MemorySourceIR* mem_src2 = nullptr;
+  JoinIR* join = nullptr;
+  for (int64_t i : graph->dag().TopologicalSort()) {
+    IRNode* node = graph->Get(i);
+    if (Match(node, MemorySource())) {
+      auto src = static_cast<MemorySourceIR*>(node);
+      ASSERT_THAT(std::vector<std::string>({"cpu", "network"}), Contains(src->table_name()));
+      if (src->table_name() == "cpu") {
+        mem_src1 = src;
+      } else {
+        mem_src2 = src;
+      }
+    }
+
+    if (Match(node, Join())) {
+      join = static_cast<JoinIR*>(node);
+    }
+  }
+  ASSERT_NE(mem_src1, nullptr);
+  ASSERT_NE(mem_src2, nullptr);
+  ASSERT_NE(join, nullptr);
+  EXPECT_THAT(join->parents(), ElementsAre(mem_src1, mem_src2));
+
+  EXPECT_TRUE(Match(join->condition_expr(), Equals(ColumnNode(), ColumnNode())));
+
+  EXPECT_THAT(join->column_names(), ElementsAre("upid", "bytes_in", "bytes_out", "cpu0", "cpu1"));
+
+  std::vector<std::string> column_ir_names;
+  std::vector<int64_t> column_ir_parent_idx;
+
+  for (ColumnIR* col : join->output_columns()) {
+    column_ir_names.push_back(col->col_name());
+    column_ir_parent_idx.push_back(col->container_op_parent_idx());
+  }
+  EXPECT_THAT(column_ir_names, ElementsAre("upid", "bytes_in", "bytes_out", "cpu0", "cpu1"));
+  EXPECT_THAT(column_ir_parent_idx, ElementsAre(0, 1, 1, 0, 0));
+
+  EXPECT_EQ(join->join_type(), planpb::JoinOperator_JoinType_INNER);
+}
+
+const char* kJoinQueryTpl = R"query(
+src1 = From(table='cpu', select=['upid', 'cpu0','cpu1'])
+src2 = From(table='network', select=['upid', 'bytes_in', 'bytes_out'])
+join = src1.Join(src2,  type='$0',
+                      cond=lambda r1, r2: r1.upid == r2.upid,
+                      cols=lambda r1, r2: {
+                        'upid': r1.upid,
+                        'bytes_in': r2.bytes_in,
+                        'bytes_out': r2.bytes_out,
+                        'cpu0': r1.cpu0,
+                        'cpu1': r1.cpu1,
+                      })
+join.Result(name='joined')
+)query";
+
+TEST(JoinTest, test_right_join) {
+  auto ir_graph_status = ParseQuery(absl::Substitute(kJoinQueryTpl, "right"));
+  ASSERT_OK(ir_graph_status);
+  auto graph = ir_graph_status.ConsumeValueOrDie();
+  MemorySourceIR* mem_src1 = nullptr;
+  MemorySourceIR* mem_src2 = nullptr;
+  JoinIR* join = nullptr;
+  for (int64_t i : graph->dag().TopologicalSort()) {
+    IRNode* node = graph->Get(i);
+    if (Match(node, MemorySource())) {
+      auto src = static_cast<MemorySourceIR*>(node);
+      ASSERT_THAT(std::vector<std::string>({"cpu", "network"}), Contains(src->table_name()));
+      if (src->table_name() == "cpu") {
+        mem_src1 = src;
+      } else {
+        mem_src2 = src;
+      }
+    }
+
+    if (Match(node, Join())) {
+      join = static_cast<JoinIR*>(node);
+    }
+  }
+  ASSERT_NE(mem_src1, nullptr);
+  ASSERT_NE(mem_src2, nullptr);
+  ASSERT_NE(join, nullptr);
+  // Right is swapped.
+  EXPECT_THAT(join->parents(), ElementsAre(mem_src2, mem_src1));
+
+  EXPECT_TRUE(Match(join->condition_expr(), Equals(ColumnNode(), ColumnNode())));
+
+  EXPECT_THAT(join->column_names(), ElementsAre("upid", "bytes_in", "bytes_out", "cpu0", "cpu1"));
+
+  std::vector<std::string> column_ir_names;
+  std::vector<int64_t> column_ir_parent_idx;
+
+  for (ColumnIR* col : join->output_columns()) {
+    column_ir_names.push_back(col->col_name());
+    column_ir_parent_idx.push_back(col->container_op_parent_idx());
+  }
+  EXPECT_THAT(column_ir_names, ElementsAre("upid", "bytes_in", "bytes_out", "cpu0", "cpu1"));
+  EXPECT_THAT(column_ir_parent_idx, ElementsAre(1, 0, 0, 1, 1));
+
+  EXPECT_EQ(join->join_type(), planpb::JoinOperator_JoinType_LEFT_OUTER);
+}
+
+TEST(JoinTest, bad_join_type) {
+  auto ir_graph_status = ParseQuery(absl::Substitute(kJoinQueryTpl, "nothin"));
+  ASSERT_NOT_OK(ir_graph_status);
+  EXPECT_THAT(ir_graph_status.status(),
+              HasCompilerError("'nothin' join type not supported. Only {inner,left,right,outer} "
+                               "are available join types."));
 }
 
 }  // namespace compiler

@@ -137,6 +137,7 @@ class ASTWalker {
   inline static constexpr char kSinkOpId[] = "Result";
   inline static constexpr char kFilterOpId[] = "Filter";
   inline static constexpr char kLimitOpId[] = "Limit";
+  inline static constexpr char kJoinOpId[] = "Join";
 
   // Reserved column names.
   inline static constexpr char kTimeConstantColumnName[] = "time_";

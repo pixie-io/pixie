@@ -131,6 +131,8 @@ inline ClassMatch<IRNodeType::kGRPCSourceGroup> GRPCSourceGroup() {
 }
 inline ClassMatch<IRNodeType::kGRPCSink> GRPCSink() { return ClassMatch<IRNodeType::kGRPCSink>(); }
 
+inline ClassMatch<IRNodeType::kJoin> Join() { return ClassMatch<IRNodeType::kJoin>(); }
+
 /**
  * @brief Match a specific integer value.
  */
