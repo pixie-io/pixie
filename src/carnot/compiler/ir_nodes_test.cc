@@ -769,6 +769,80 @@ TEST_F(ToProtoTests, ir) {
   EXPECT_THAT(pb, EqualsProto(kIRProto));
 }
 
+const char* kExpectedUnionOpPb = R"proto(
+op_type: UNION_OPERATOR
+union_op {
+  column_names: "count"
+  column_names: "cpu0"
+  column_names: "cpu1"
+  column_names: "cpu2"
+  column_mappings {
+    column_indexes: 0
+    column_indexes: 1
+    column_indexes: 2
+    column_indexes: 3
+  }
+  column_mappings {
+    column_indexes: 3
+    column_indexes: 2
+    column_indexes: 1
+    column_indexes: 0
+  }
+}
+)proto";
+TEST_F(ToProtoTests, UnionNoTime) {
+  Relation relation = MakeRelation();
+  auto column_names = relation.col_names();
+  auto column_types = relation.col_types();
+  std::reverse(std::begin(column_names), std::end(column_names));
+  std::reverse(std::begin(column_types), std::end(column_types));
+  Relation relation2 = Relation(column_types, column_names);
+
+  auto mem_src1 = MakeMemSource(relation);
+  auto mem_src2 = MakeMemSource(relation2);
+  auto union_op = MakeUnion({mem_src1, mem_src2});
+  EXPECT_OK(union_op->SetRelation(relation));
+
+  EXPECT_OK(union_op->SetRelationFromParents());
+  planpb::Operator pb;
+  EXPECT_OK(union_op->ToProto(&pb));
+  EXPECT_THAT(pb, EqualsProto(kExpectedUnionOpPb));
+}
+
+const char* kExpectedUnionOpTimePb = R"proto(
+op_type: UNION_OPERATOR
+union_op {
+  column_names: "time_"
+  column_names: "col1"
+  column_mappings {
+    column_indexes: 0
+    column_indexes: 1
+  }
+  column_mappings {
+    column_indexes: 1
+    column_indexes: 0
+  }
+}
+)proto";
+
+TEST_F(ToProtoTests, UnionHasTime) {
+  std::vector<std::string> column_names = {"time_", "col1"};
+  std::vector<types::DataType> column_types = {types::DataType::TIME64NS, types::DataType::INT64};
+  Relation relation(column_types, column_names);
+  auto mem_src1 = MakeMemSource(relation);
+  std::reverse(std::begin(column_names), std::end(column_names));
+  std::reverse(std::begin(column_types), std::end(column_types));
+  relation = Relation(column_types, column_names);
+  auto mem_src2 = MakeMemSource(relation);
+  auto union_op = MakeUnion({mem_src1, mem_src2});
+  EXPECT_OK(union_op->SetRelation(mem_src1->relation()));
+
+  EXPECT_OK(union_op->SetRelationFromParents());
+  planpb::Operator pb;
+  EXPECT_OK(union_op->ToProto(&pb));
+  EXPECT_THAT(pb, EqualsProto(kExpectedUnionOpTimePb));
+}
+
 TEST_F(OperatorTests, op_children) {
   auto mem_source = MakeMemSource();
   ColumnIR* col1 = MakeColumn("test1", 0);

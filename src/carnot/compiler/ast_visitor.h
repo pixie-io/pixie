@@ -138,6 +138,9 @@ class ASTWalker {
   inline static constexpr char kFilterOpId[] = "Filter";
   inline static constexpr char kLimitOpId[] = "Limit";
 
+  // Reserved column names.
+  inline static constexpr char kTimeConstantColumnName[] = "time_";
+
  private:
   /**
    * @brief ProcessArgs traverses an arg_ast tree, confirms that the expected_args are found in that

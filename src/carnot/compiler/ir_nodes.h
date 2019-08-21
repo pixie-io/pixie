@@ -52,6 +52,7 @@ enum class IRNodeType {
   kGRPCSourceGroup,
   kGRPCSource,
   kGRPCSink,
+  kUnion,
   number_of_types  // This is not a real type, but is used to verify strings are inline
                    // with enums.
 };
@@ -76,7 +77,8 @@ static constexpr const char* kIRNodeStrings[] = {"MemorySource",
                                                  "MetadataLiteral",
                                                  "GRPCSourceGroup",
                                                  "GRPCSource",
-                                                 "GRPCSink"};
+                                                 "GRPCSink",
+                                                 "Union"};
 
 /**
  * @brief Node class for the IR.
@@ -1358,6 +1360,44 @@ class GRPCSourceGroupIR : public OperatorIR {
   int64_t source_id_ = -1;
   std::vector<std::string> remote_string_ids_;
   std::string grpc_address_ = "";
+};
+
+struct ColumnMapping {
+  std::vector<int64_t> input_column_map;
+};
+class UnionIR : public OperatorIR {
+ public:
+  UnionIR() = delete;
+  explicit UnionIR(int64_t id)
+      : OperatorIR(id, IRNodeType::kUnion, /* has_parents */ true, /* is_source */ false) {}
+  bool HasLogicalRepr() const override { return true; }
+
+  std::vector<std::string> ArgKeys() override { return {}; }
+
+  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
+    return std::unordered_map<std::string, IRNode*>();
+  }
+
+  bool IsBlocking() const override { return true; }
+
+  Status ToProto(planpb::Operator*) const override;
+  // TODO(philkuz) figure out whether we need to do anything special to init the union operator.
+  Status InitImpl(const ArgMap&) override { return Status::OK(); }
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+  Status SetRelationFromParents();
+  const std::vector<ColumnMapping>& column_mappings() const { return column_mappings_; }
+
+ private:
+  /**
+   * @brief Set a parent operator's column mapping.
+   *
+   * @param parent_idx: the parents() idx this mapping applies to.
+   * @param input_column_map: the mapping from 1 columns unions to another. [4] would indicate the
+   * index-4 column of the input parent relation maps to index 0 of this relation.
+   * @return Status
+   */
+  Status AddColumnMapping(const std::vector<int64_t>& input_column_map);
+  std::vector<ColumnMapping> column_mappings_;
 };
 
 }  // namespace compiler

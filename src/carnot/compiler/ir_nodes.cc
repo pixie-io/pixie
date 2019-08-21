@@ -1169,6 +1169,7 @@ Status GRPCSourceIR::ToProto(planpb::Operator* op) const {
   op->set_allocated_grpc_source_op(pb);
   return Status::OK();
 }
+
 StatusOr<planpb::Plan> IR::ToProto() const {
   auto plan = planpb::Plan();
   // TODO(michelle) For M1.5 , we'll only handle plans with a single plan fragment. In the future
@@ -1246,6 +1247,83 @@ Status GRPCSourceGroupIR::AddGRPCSink(GRPCSinkIR* sink_op) {
   }
   remote_string_ids_.push_back(sink_op->PhysicalDestinationID());
   sink_op->SetDestinationAddress(grpc_address_);
+  return Status::OK();
+}
+
+Status UnionIR::ToProto(planpb::Operator* op) const {
+  auto pb = new planpb::UnionOperator();
+  auto types = relation().col_types();
+  auto names = relation().col_names();
+  DCHECK_EQ(parents().size(), column_mappings_.size()) << "parents and column_mappings disagree.";
+
+  for (const auto& column_mapping : column_mappings_) {
+    auto* pb_column_mapping = pb->add_column_mappings();
+    for (const auto col_idx : column_mapping.input_column_map) {
+      pb_column_mapping->add_column_indexes(col_idx);
+    }
+  }
+
+  for (size_t i = 0; i < relation().NumColumns(); i++) {
+    pb->add_column_names(names[i]);
+  }
+
+  // NOTE: not setting value as this is set in the execution engine. Keeping this here in case it
+  // needs to be modified in the future.
+  // pb->set_rows_per_batch(1024);
+
+  op->set_op_type(planpb::UNION_OPERATOR);
+  op->set_allocated_union_op(pb);
+  return Status::OK();
+}
+
+StatusOr<IRNode*> UnionIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(UnionIR * union_node, graph->MakeNode<UnionIR>());
+  union_node->column_mappings_ = column_mappings_;
+  return union_node;
+}
+
+Status UnionIR::AddColumnMapping(const std::vector<int64_t>& column_mapping) {
+  DCHECK(IsRelationInit()) << "Relation must be initialized before running this.";
+  if (column_mapping.size() != relation().NumColumns()) {
+    return DExitOrIRNodeError("Expected colums mapping to match the relation size. $0 vs $1",
+                              column_mapping.size(), relation().NumColumns());
+  }
+  column_mappings_.push_back({column_mapping});
+  return Status::OK();
+}
+
+Status UnionIR::SetRelationFromParents() {
+  DCHECK_NE(parents().size(), 0UL);
+
+  std::vector<Relation> relations;
+  OperatorIR* base_parent = parents()[0];
+  Relation base_relation = base_parent->relation();
+  PL_RETURN_IF_ERROR(SetRelation(base_relation));
+
+  for (size_t i = 0; i < parents().size(); ++i) {
+    OperatorIR* cur_parent = parents()[i];
+    Relation cur_relation = cur_parent->relation();
+    std::string err_msg = absl::Substitute(
+        "Table schema disagreement between parent ops $0 and $1 of $2. $0: $3 vs $1: $4. $5",
+        base_parent->DebugString(), cur_parent->DebugString(), DebugString(),
+        base_relation.DebugString(), cur_relation.DebugString(), "$0");
+    if (cur_relation.NumColumns() != base_relation.NumColumns()) {
+      return CreateIRNodeError(err_msg, "Column count wrong.");
+    }
+    std::vector<int64_t> column_mapping;
+    for (int64_t col_idx = 0; col_idx < static_cast<int64_t>(base_relation.NumColumns());
+         ++col_idx) {
+      std::string base_relation_name = base_relation.GetColumnName(col_idx);
+      types::DataType base_relation_type = base_relation.GetColumnType(col_idx);
+      if (!cur_relation.HasColumn(base_relation_name) ||
+          cur_relation.GetColumnType(base_relation_name) != base_relation_type) {
+        return CreateIRNodeError(
+            err_msg, absl::Substitute("Missing or wrong type for $0.", base_relation_name));
+      }
+      column_mapping.push_back(cur_relation.GetColumnIndex(base_relation_name));
+    }
+    PL_RETURN_IF_ERROR(AddColumnMapping(column_mapping));
+  }
   return Status::OK();
 }
 
