@@ -27,6 +27,10 @@ class DAG {
 
   void AddEdge(int64_t from_node, int64_t to_node);
   void DeleteEdge(int64_t from_node, int64_t to_node);
+
+  void ReplaceChildEdge(int64_t parent_node, int64_t old_child_node, int64_t new_child_node);
+  void ReplaceParentEdge(int64_t child_node, int64_t old_parent_node, int64_t new_parent_node);
+
   std::string DebugString();
   void Debug();
 
@@ -58,6 +62,9 @@ class DAG {
   std::vector<std::unordered_set<int64_t>> IndependentGraphs() const;
 
  private:
+  void AddForwardEdge(int64_t from_node, int64_t to_node);
+  void AddReverseEdge(int64_t to_node, int64_t from_node);
+
   // Store all the integer id's as nodes.
   std::unordered_set<int64_t> nodes_;
 

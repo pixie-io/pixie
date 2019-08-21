@@ -100,8 +100,7 @@ Status OperatorIR::ReplaceParent(OperatorIR* old_parent, OperatorIR* new_parent)
   for (size_t i = 0; i < parents_.size(); ++i) {
     if (parents_[i] == old_parent) {
       parents_[i] = new_parent;
-      PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(new_parent->id(), id()));
-      PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(old_parent->id(), id()));
+      graph_ptr()->dag().ReplaceParentEdge(id(), old_parent->id(), new_parent->id());
       return Status::OK();
     }
   }

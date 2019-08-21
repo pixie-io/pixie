@@ -43,7 +43,15 @@ void DAG::AddEdge(int64_t from_node, int64_t to_node) {
   CHECK(HasNode(from_node)) << "from_node does not exist";
   CHECK(HasNode(to_node)) << "to_node does not exist";
 
+  AddForwardEdge(from_node, to_node);
+  AddReverseEdge(to_node, from_node);
+}
+
+void DAG::AddForwardEdge(int64_t from_node, int64_t to_node) {
   forward_edges_by_node_[from_node].push_back(to_node);
+}
+
+void DAG::AddReverseEdge(int64_t to_node, int64_t from_node) {
   reverse_edges_by_node_[to_node].push_back(from_node);
 }
 
@@ -60,6 +68,48 @@ void DAG::DeleteEdge(int64_t from_node, int64_t to_node) {
   if (reverse_node != end(reverse_edges)) {
     reverse_edges.erase(reverse_node);
   }
+}
+
+void DAG::ReplaceChildEdge(int64_t parent_node, int64_t old_child_node, int64_t new_child_node) {
+  // If there is a dependency we need to delete both the forward and backwards dependency.
+  CHECK(HasNode(parent_node)) << "from_node does not exist";
+  CHECK(HasNode(old_child_node)) << "old_child_node does not exist";
+  CHECK(HasNode(new_child_node)) << "new_child_node does not exist";
+  auto& forward_edges = forward_edges_by_node_[parent_node];
+
+  // Repalce the old_child_node with the new_child_node in the forward edge.
+  std::replace(forward_edges.begin(), forward_edges.end(), old_child_node, new_child_node);
+
+  // Remove the old reverse edge (old_child_node, parent_node)
+  auto& reverse_edges = reverse_edges_by_node_[old_child_node];
+  const auto& reverse_node = std::find(begin(reverse_edges), end(reverse_edges), parent_node);
+  if (reverse_node != end(reverse_edges)) {
+    reverse_edges.erase(reverse_node);
+  }
+
+  // Add the new reverse edge (new_child_node, from_node)
+  AddReverseEdge(new_child_node, parent_node);
+}
+
+void DAG::ReplaceParentEdge(int64_t child_node, int64_t old_parent_node, int64_t new_parent_node) {
+  // If there is a dependency we need to delete both the forward and backwards dependency.
+  CHECK(HasNode(child_node)) << "child_node does not exist";
+  CHECK(HasNode(old_parent_node)) << "old_parent_node does not exist";
+  CHECK(HasNode(new_parent_node)) << "new_parent_node does not exist";
+  auto& reverse_edges = reverse_edges_by_node_[child_node];
+
+  // Repalce the old_from_node with the new_from_node.
+  std::replace(reverse_edges.begin(), reverse_edges.end(), old_parent_node, new_parent_node);
+
+  // Remove the old forward edge (old_from_node, child_node)
+  auto& forward_edges = forward_edges_by_node_[old_parent_node];
+  const auto& forward_node = std::find(begin(forward_edges), end(forward_edges), child_node);
+  if (forward_node != end(forward_edges)) {
+    forward_edges.erase(forward_node);
+  }
+
+  // Add the new forward edge (new_from_node, child_node)
+  AddForwardEdge(new_parent_node, child_node);
 }
 
 bool DAG::HasEdge(int64_t from_node, int64_t to_node) {

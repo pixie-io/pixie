@@ -7,6 +7,7 @@ namespace pl {
 namespace carnot {
 namespace plan {
 
+using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAre;
 
 class DAGTest : public ::testing::Test {
@@ -123,6 +124,29 @@ TEST_F(DAGTestMultipleSubGraphs, test_independent_graphs) {
   EXPECT_THAT(independent_graphs, UnorderedElementsAre(UnorderedElementsAre(1, 2, 3, 4, 5),
                                                        UnorderedElementsAre(6, 7, 8),
                                                        UnorderedElementsAre(9, 10, 11, 12, 13)));
+}
+
+TEST_F(DAGTest, replace_child_node_edges_test) {
+  // replace edges should preserve the order of the original edges in the DAG.
+  EXPECT_THAT(dag_.DependenciesOf(5), ElementsAre(8, 3));
+  EXPECT_THAT(dag_.ParentsOf(6), ElementsAre(3));
+  EXPECT_THAT(dag_.ParentsOf(8), ElementsAre(5));
+  dag_.ReplaceChildEdge(/* parent_node */ 5, /* old_child_node */ 8, /* new_child_node */ 6);
+  EXPECT_THAT(dag_.DependenciesOf(5), ElementsAre(6, 3));
+  EXPECT_THAT(dag_.ParentsOf(6), ElementsAre(3, 5));
+  EXPECT_THAT(dag_.ParentsOf(8), ElementsAre());
+}
+
+TEST_F(DAGTest, replace_parent_node_edges_test) {
+  // Replace parent node should preserve the order of the edges.
+  EXPECT_THAT(dag_.ParentsOf(3), ElementsAre(5, 8));
+  EXPECT_THAT(dag_.DependenciesOf(20), ElementsAre());
+  EXPECT_THAT(dag_.DependenciesOf(5), ElementsAre(8, 3));
+
+  dag_.ReplaceParentEdge(/* child_node */ 3, /* old_parent_node */ 5, /* new_parent_node */ 20);
+  EXPECT_THAT(dag_.DependenciesOf(5), ElementsAre(8));
+  EXPECT_THAT(dag_.ParentsOf(3), ElementsAre(20, 8));
+  EXPECT_THAT(dag_.DependenciesOf(20), ElementsAre(3));
 }
 
 }  // namespace plan
