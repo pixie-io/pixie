@@ -427,6 +427,57 @@ size_t DataStream::AppendEvents(EventParser<TMessageType>* parser) const {
   return append_count;
 }
 
+namespace {
+
+ParseSyncType SelectSyncType(int64_t stuck_count) {
+  CHECK_GE(stuck_count, 0);
+
+  // Stuck counts where we switch the sync policy.
+  static constexpr int64_t kBasicSyncThreshold = 1;
+  static constexpr int64_t kAggressiveSyncThreshold = 2;
+
+  // Thresholds must be in increasing order.
+  static_assert(kBasicSyncThreshold > 0);
+  static_assert(kAggressiveSyncThreshold > kBasicSyncThreshold);
+
+  if (stuck_count == 0) {
+    // Not stuck, so no reason to search for a message boundary.
+    // Note that this is covered by the next if-statement, but left here to be explicit.
+    return ParseSyncType::None;
+  }
+  if (stuck_count <= kBasicSyncThreshold) {
+    // A low number of stuck cycles could mean we have partial data.
+    // The rest might be back in this iteration, so still don't try to search for a message
+    // boundary.
+    return ParseSyncType::None;
+  }
+  if (stuck_count <= kAggressiveSyncThreshold) {
+    // Multiple stuck cycles implies there is something unparseable at the head.
+    // Run ParseMessages() with a search for a message boundary;
+    return ParseSyncType::Basic;
+  }
+
+  // We're really having trouble now, so invoke ParseMessages() with a more aggressive search.
+  // For now, more aggressive just means a message discovered at pos 0 is ignored,
+  // because presumably it's the one that is giving us problems, and we want to skip over it.
+  return ParseSyncType::Aggressive;
+}
+
+}  // namespace
+
+// ExtractMessages() processes the events in the DataStream to extract parsed messages.
+//
+// It considers contiguous events from the head of the stream. Any missing events in the sequence
+// are treated as lost forever; it is not expected that these events arrive in a subsequent
+// iteration due to the way BPF capture works.
+//
+// If a gap (missing event) in the stream occurs, it is skipped over, and the next sequence
+// of contiguous events are processed. Note that the sequence of contiguous events are parsed
+// independently of each other.
+//
+// To be robust to lost events, which are not necessarily aligned to parseable entity boundaries,
+// ExtractMessages() will invoke a call to ParseMessages() with a stream recovery argument when
+// necessary.
 template <class TMessageType>
 std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
   auto& typed_messages = Messages<TMessageType>();
@@ -434,20 +485,40 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
   const size_t orig_offset = offset_;
   const size_t orig_seq_num = next_seq_num_;
 
-  // Check for and attempt to fix an unparseable sequence of events blocking the head.
-  if (stuck_count_ > 1) {
-    // TODO(oazizi): Enable this when ready.
-    // AttemptSyncToMessageBoundary<TMessageType>();
-  }
+  // A description of some key variables in this function:
+  //
+  // Member variables hold state across calls to ExtractMessages():
+  // - stuck_count_: Number of calls to ExtractMessages() where no progress has been made.
+  //                 indicates an unparseable event at the head that is blocking progress.
+  //
+  // - has_new_events_: An optimization to avoid the expensive call to ParseMessages() when
+  //                    nothing has changed in the DataStream. Note that we *do* want to call
+  //                    ParseMessages() even when there are no new events, if the stuck_count_
+  //                    is high enough and we want to attempt a stream recovery.
+  //
+  // Local variables are intermediate computations to help simplify the code:
+  // - keep_processing: Controls the loop iterations. If we hit a gap in the stream events,
+  //                    we use keep_processing to indicate that we should make one more iteration
+  //                    for the next sequence of contiguous events.
+  //
+  // - attempt_sync: Indicates that we should attempt to process the stream even if there are no
+  //                 new events, because we have hit the threshold to attempt a stream recovery.
+  //                 Used for the first iteration only.
 
-  while (has_new_events_) {
+  // We appear to be stuck with an an unparseable sequence of events blocking the head.
+  bool attempt_sync = SelectSyncType(stuck_count_) != ParseSyncType::None;
+
+  bool keep_processing = has_new_events_ || attempt_sync;
+
+  while (keep_processing) {
     EventParser<TMessageType> parser;
 
     // Set-up events in parser.
     size_t num_events_appended = AppendEvents(&parser);
 
     // Now parse all the appended events.
-    ParseResult<BufferPosition> parse_result = parser.ParseMessages(type, &typed_messages);
+    ParseResult<BufferPosition> parse_result =
+        parser.ParseMessages(type, &typed_messages, SelectSyncType(stuck_count_));
 
     if (num_events_appended != events_.size()) {
       // We weren't able to append all events, which means we ran into a missing event.
@@ -459,10 +530,11 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
       CHECK(!events_.empty());
       next_seq_num_ = events_.begin()->first;
       offset_ = 0;
-      has_new_events_ = true;
 
-      // TODO(oazizi): Enable this when ready.
-      // AttemptSyncToMessageBoundary<TMessageType>();
+      // Update stuck count so we use the correct sync type on the next iteration.
+      stuck_count_ = 0;
+
+      keep_processing = true;
     } else {
       // We appended all events, which means we had a contiguous stream, with no missing events.
       // Find and erase events that have been fully processed.
@@ -473,7 +545,8 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
       events_.erase(events_.begin(), erase_iter);
       next_seq_num_ += num_events_consumed;
       offset_ = parse_result.end_position.offset;
-      has_new_events_ = false;
+
+      keep_processing = false;
     }
   }
 
@@ -484,7 +557,7 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
   stuck_count_ = (events_but_no_progress) ? stuck_count_ + 1 : 0;
 
   // has_new_events_ should be false for the next transfer cycle.
-  CHECK_EQ(false, has_new_events_);
+  has_new_events_ = false;
 
   return typed_messages;
 }
@@ -501,81 +574,6 @@ template <class TMessageType>
 bool DataStream::Empty() const {
   return events_.empty() && (std::holds_alternative<std::monostate>(messages_) ||
                              std::get<std::deque<TMessageType>>(messages_).empty());
-}
-
-template <>
-bool DataStream::AttemptSyncToMessageBoundary<http::HTTPMessage>() {
-  // Don't call this unless the stream is known to be stuck,
-  // otherwise it may discard messages.
-  CHECK_NE(stuck_count_, 0);
-  CHECK(!events_.empty());
-  CHECK_EQ(events_.begin()->first, next_seq_num_);
-
-  // Look for \r\n\r\n
-  static const std::string kBoundaryMarker = "\r\n\r\n";
-
-  size_t next_seq_num = next_seq_num_;
-  for (auto iter = events_.begin(); iter != events_.end(); ++iter) {
-    auto& event_seq_num = iter->first;
-    auto& event = iter->second;
-
-    // Found a gap, stop searching.
-    if (event_seq_num != next_seq_num) {
-      break;
-    }
-
-    // TODO(oazizi): This won't find the marker if it spans two events.
-    size_t pos = event.msg.find(kBoundaryMarker, offset_);
-
-    // Found a message boundary!
-    // TODO(oazizi): This actually finds the header-body boundary too, so needs adjustment.
-    if (pos != std::string::npos) {
-      next_seq_num_ = event_seq_num;
-      offset_ = pos + kBoundaryMarker.size();
-
-      if (offset_ >= event.msg.size()) {
-        CHECK_EQ(offset_, event.msg.size());
-        ++iter;
-        ++next_seq_num_;
-        offset_ = 0;
-      }
-
-      events_.erase(events_.begin(), iter);
-      return true;
-    }
-
-    next_seq_num++;
-  }
-
-  return false;
-}
-
-template <>
-bool DataStream::AttemptSyncToMessageBoundary<http2::Frame>() {
-  // Assuming a stream with an event at the head, attempt to find the next message boundary.
-
-  // Don't call this unless the stream is known to be stuck,
-  // otherwise it may discard messages.
-  CHECK_NE(stuck_count_, 0);
-  CHECK(!events_.empty());
-  CHECK_EQ(events_.begin()->first, next_seq_num_);
-
-  // TODO(yzhao): Implement search algorithm for message boundary.
-  return false;
-}
-
-template <>
-bool DataStream::AttemptSyncToMessageBoundary<mysql::Packet>() {
-  // Assuming a stream with an event at the head, attempt to find the next message boundary.
-
-  // Don't call this unless the stream is known to be stuck,
-  // otherwise it may discard messages.
-  CHECK_NE(stuck_count_, 0);
-  CHECK(!events_.empty());
-  CHECK_EQ(events_.begin()->first, next_seq_num_);
-
-  // TODO(chengruizhe/oazizi): Implement search algorithm for message boundary.
-  return false;
 }
 
 template bool DataStream::Empty<http::HTTPMessage>() const;

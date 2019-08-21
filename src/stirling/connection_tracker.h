@@ -99,20 +99,11 @@ class DataStream {
 
   /**
    * @brief Checks if the DataStream is in a Stuck state, which means that it has
-   * raw events, but that it cannot parse any of them.
-   *
-   * There are two separate stuck cases:
-   * 1) Missing Events: a stream is considered stuck if there is any detectable gap in the received
-   * events sequence. Any successful parse resets the stuck state. Note, however, that the stream
-   * may immediately re-enter a stuck state if a different missing event is discovered after it
-   * unblocks.
-   *
-   * 2) Parse failure of the head: a stream is also considered stuck if the messages at the head
-   * cannot be consumed because they cannot be parsed.
+   * raw events with no missing events, but that it cannot parse anything.
    *
    * @return true if DataStream is stuck.
    */
-  bool Stuck() { return stuck_count_ != 0; }
+  bool IsStuck() const { return stuck_count_ != 0; }
 
   http2::Inflater* Inflater() {
     if (inflater_ == nullptr) {
@@ -126,11 +117,6 @@ class DataStream {
   // Returns number of events appended.
   template <class TMessageType>
   size_t AppendEvents(EventParser<TMessageType>* parser) const;
-
-  // Assuming a stream with an event at the head, attempt to find the next message boundary.
-  // Updates seq_num_ and offset_ to the next boundary position.
-  template <class TMessageType>
-  bool AttemptSyncToMessageBoundary();
 
   // Raw data events from BPF.
   // TODO(oazizi/yzhao): Convert this to vector or deque.
