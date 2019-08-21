@@ -12,7 +12,7 @@ using ::google::protobuf::Message;
 
 Status ParseProtobuf(std::string_view message, Message* pb_msg, std::string* json) {
   if (pb_msg == nullptr) {
-    return error::InvalidArgument("Missing the dynamic probouf Message for parsing.");
+    return error::InvalidArgument("Missing the dynamic protobuf Message for parsing.");
   }
   if (message.size() < kGRPCMessageHeaderSizeInBytes) {
     return error::InvalidArgument(
