@@ -208,6 +208,12 @@ class OperatorTests : public ::testing::Test {
     return column;
   }
 
+  ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx, const Relation& relation) {
+    ColumnIR* column = MakeColumn(name, parent_op_idx);
+    column->ResolveColumn(relation.GetColumnIndex(name), relation.GetColumnType(name));
+    return column;
+  }
+
   StringIR* MakeString(std::string val) {
     auto str_ir = graph->MakeNode<StringIR>().ValueOrDie();
     EXPECT_OK(str_ir->Init(val, ast));
@@ -231,6 +237,14 @@ class OperatorTests : public ::testing::Test {
   FuncIR* MakeEqualsFunc(ExpressionIR* left, ExpressionIR* right) {
     FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
     PL_CHECK_OK(func->Init({FuncIR::Opcode::eq, "==", "equals"}, ASTWalker::kRunTimeFuncPrefix,
+                           std::vector<ExpressionIR*>({left, right}), false /* compile_time */,
+                           ast));
+    return func;
+  }
+
+  FuncIR* MakeAndFunc(ExpressionIR* left, ExpressionIR* right) {
+    FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
+    PL_CHECK_OK(func->Init(FuncIR::op_map.find("and")->second, ASTWalker::kRunTimeFuncPrefix,
                            std::vector<ExpressionIR*>({left, right}), false /* compile_time */,
                            ast));
     return func;
@@ -283,6 +297,27 @@ class OperatorTests : public ::testing::Test {
     UnionIR* union_node = graph->MakeNode<UnionIR>().ValueOrDie();
     EXPECT_OK(union_node->Init(parents, {{}}, ast));
     return union_node;
+  }
+
+  JoinIR* MakeJoin(const std::vector<OperatorIR*>& parents, const std::string& join_type,
+                   ExpressionIR* equality_condition, const ColExpressionVector& output_columns) {
+    // t1.Join(type="inner", cond=lambda a,b: a.col1 == b.col2, cols = lambda a,b:{
+    // "col1", a.col1,
+    // "col2", b.col2})
+
+    JoinIR* join_node = graph->MakeNode<JoinIR>().ValueOrDie();
+    LambdaIR* equality_condition_lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
+    PL_CHECK_OK(equality_condition_lambda->Init({}, equality_condition, ast));
+
+    LambdaIR* output_columns_lambda = graph->MakeNode<LambdaIR>().ConsumeValueOrDie();
+    PL_CHECK_OK(output_columns_lambda->Init({}, output_columns, ast));
+
+    PL_CHECK_OK(join_node->Init(parents,
+                                {{"type", MakeString(join_type)},
+                                 {"cond", equality_condition_lambda},
+                                 {"cols", output_columns_lambda}},
+                                ast));
+    return join_node;
   }
 
   // Use this if you need a relation but don't care about the contents.

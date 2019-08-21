@@ -1,3 +1,5 @@
+#include <queue>
+
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/pattern_match.h"
 
@@ -57,6 +59,8 @@ StatusOr<IRNode*> IRNode::DeepCloneInto(IR* graph) const {
   DCHECK(!graph->HasNode(id())) << absl::Substitute(
       "Cannot clone $0. Target graph already has index $1.", DebugString(), id());
   PL_ASSIGN_OR_RETURN(IRNode * other, DeepCloneIntoImpl(graph));
+  DCHECK_EQ(other->id_, id_) << absl::Substitute(
+      "ids disagree for $0. Use MakeNode(int) instead of MakeNode()", other->type_string());
   other->line_ = line_;
   other->col_ = col_;
   other->line_col_set_ = line_col_set_;
@@ -681,7 +685,7 @@ Status ColumnIR::Init(const std::string& col_name, int64_t parent_idx,
                       const pypa::AstPtr& ast_node) {
   SetLineCol(ast_node);
   SetColumnName(col_name);
-  SetContainingOperatoreratorParentIdx(parent_idx);
+  SetContainingOperatorParentIdx(parent_idx);
   return Status::OK();
 }
 
@@ -692,7 +696,7 @@ std::string MetadataIR::DebugString() const {
   return absl::Substitute("$0(id=$1, name=$2)", type_string(), id(), name());
 }
 
-void ColumnIR::SetContainingOperatoreratorParentIdx(int64_t container_op_parent_idx) {
+void ColumnIR::SetContainingOperatorParentIdx(int64_t container_op_parent_idx) {
   DCHECK_GE(container_op_parent_idx, 0);
   container_op_parent_idx_ = container_op_parent_idx;
   container_op_parent_idx_set_ = true;
@@ -1276,7 +1280,7 @@ Status UnionIR::ToProto(planpb::Operator* op) const {
 }
 
 StatusOr<IRNode*> UnionIR::DeepCloneIntoImpl(IR* graph) const {
-  PL_ASSIGN_OR_RETURN(UnionIR * union_node, graph->MakeNode<UnionIR>());
+  PL_ASSIGN_OR_RETURN(UnionIR * union_node, graph->MakeNode<UnionIR>(id()));
   union_node->column_mappings_ = column_mappings_;
   return union_node;
 }
@@ -1323,6 +1327,184 @@ Status UnionIR::SetRelationFromParents() {
     }
     PL_RETURN_IF_ERROR(AddColumnMapping(column_mapping));
   }
+  return Status::OK();
+}
+
+Status JoinIR::ToProto(planpb::Operator* op) const {
+  auto pb = new planpb::JoinOperator();
+
+  pb->set_type(join_type_);
+  for (const auto& cond : equality_conditions()) {
+    auto eq_condition = pb->add_equality_conditions();
+    eq_condition->set_left_column_index(cond.left_column_idx);
+    eq_condition->set_right_column_index(cond.right_column_idx);
+  }
+
+  for (ColumnIR* col : output_columns_) {
+    auto* parent_col = pb->add_output_columns();
+    int64_t parent_idx = col->container_op_parent_idx();
+    DCHECK_LT(parent_idx, 2);
+    parent_col->set_parent_index(col->container_op_parent_idx());
+    DCHECK(col->IsDataTypeEvaluated()) << "Column not evaluated";
+    parent_col->set_column_index(col->col_idx());
+  }
+
+  for (const auto& col_name : column_names_) {
+    *(pb->add_column_names()) = col_name;
+  }
+  // NOTE: not setting value as this is set in the execution engine. Keeping this here in case it
+  // needs to be modified in the future.
+  // pb->set_rows_per_batch(1024);
+
+  op->set_op_type(planpb::JOIN_OPERATOR);
+  op->set_allocated_join_op(pb);
+  return Status::OK();
+}
+
+Status JoinIR::InitImpl(const ArgMap& args) {
+  IRNode* join_type = args.find("type")->second;
+  IRNode* cond = args.find("cond")->second;
+  IRNode* cols = args.find("cols")->second;
+  if (cond->type() != IRNodeType::kLambda) {
+    return join_type->CreateIRNodeError("Expected 'cond' argument of Join to be 'Lambda', got '$0'",
+                                        cond->type_string());
+  }
+
+  if (cols->type() != IRNodeType::kLambda) {
+    return cond->CreateIRNodeError("Expected 'cols' argument of Join to be 'Lambda', got '$0'",
+                                   cols->type_string());
+  }
+
+  if (join_type != nullptr && join_type->type() != IRNodeType::kString) {
+    return join_type->CreateIRNodeError(
+        "Expected 'type' argument of Join to be 'String', got '$0'");
+  }
+
+  PL_RETURN_IF_ERROR(SetupConditionFromLambda(static_cast<LambdaIR*>(cond)));
+  PL_RETURN_IF_ERROR(SetupOutputColumns(static_cast<LambdaIR*>(cols)));
+  PL_RETURN_IF_ERROR(SetupJoinType(static_cast<StringIR*>(join_type)));
+  return Status::OK();
+}
+
+Status JoinIR::SetupConditionFromLambda(LambdaIR* condition) {
+  if (condition->HasDictBody()) {
+    return condition->CreateIRNodeError("Expected 'cond' lambda to have a dictionary body.");
+  }
+
+  PL_ASSIGN_OR_RETURN(ExpressionIR * expr, condition->GetDefaultExpr());
+
+  // TODO(philkuz) (PL-858) in the future allow more complicated functions by removing the following
+  // checks.
+  if (expr->type() != IRNodeType::kFunc) {
+    return CreateIRNodeError(
+        "Expected the expression of Join condition to be an equality function, got a $0 instead.",
+        expr->type_string());
+  }
+
+  condition_expr_ = static_cast<FuncIR*>(expr);
+  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, condition_expr_));
+  PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(condition->id(), condition_expr_->id()));
+  return graph_ptr()->DeleteNode(condition->id());
+}
+
+Status JoinIR::SetupOutputColumns(LambdaIR* output_columns_lambda) {
+  if (!output_columns_lambda->HasDictBody()) {
+    return output_columns_lambda->CreateIRNodeError(
+        "Expected output columns lambda to have a dictionary body.");
+  }
+  for (const ColumnExpression& mapped_expression : output_columns_lambda->col_exprs()) {
+    ExpressionIR* expr = mapped_expression.node;
+    if (!expr->IsColumn()) {
+      return expr->CreateIRNodeError("Expected column, not $0.", expr->type_string());
+    }
+
+    output_columns_.push_back(static_cast<ColumnIR*>(expr));
+    column_names_.push_back(mapped_expression.name);
+
+    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(output_columns_lambda->id(), expr->id()));
+    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, expr));
+  }
+  return graph_ptr()->DeleteNode(output_columns_lambda->id());
+}
+
+Status JoinIR::SetupJoinType(StringIR* join_type) {
+  if (join_type == nullptr) {
+    join_type_ = planpb::JoinOperator_JoinType_INNER;
+    return Status::OK();
+  }
+  std::string join_type_str = join_type->str();
+  std::vector<std::string> valid_join_keys = {"inner", "left", "right", "outer"};
+  if (join_type_str == "inner") {
+    join_type_ = planpb::JoinOperator_JoinType_INNER;
+  } else if (join_type_str == "left") {
+    join_type_ = planpb::JoinOperator_JoinType_LEFT_OUTER;
+  } else if (join_type_str == "right") {
+    PL_RETURN_IF_ERROR(FlipParents());
+    join_type_ = planpb::JoinOperator_JoinType_LEFT_OUTER;
+  } else if (join_type_str == "outer") {
+    join_type_ = planpb::JoinOperator_JoinType_FULL_OUTER;
+  } else {
+    return CreateIRNodeError("'$0' join type not supported. Only {$1} are available join types.",
+                             join_type_str, absl::StrJoin(valid_join_keys, ","));
+  }
+  return Status::OK();
+}
+
+StatusOr<IRNode*> JoinIR::DeepCloneIntoImpl(IR* graph) const {
+  PL_ASSIGN_OR_RETURN(JoinIR * join_node, graph->MakeNode<JoinIR>(id()));
+  join_node->join_type_ = join_type_;
+  join_node->column_names_ = column_names_;
+
+  for (ColumnIR* col_expr : output_columns_) {
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, col_expr->DeepCloneInto(graph));
+    DCHECK(Match(new_node, ColumnNode()));
+    join_node->output_columns_.push_back(static_cast<ColumnIR*>(new_node));
+  }
+
+  join_node->equality_conditions_ = equality_conditions_;
+
+  PL_ASSIGN_OR_RETURN(IRNode * new_node, condition_expr_->DeepCloneInto(graph));
+  DCHECK(Match(new_node, Func()));
+  join_node->condition_expr_ = static_cast<FuncIR*>(new_node);
+
+  return join_node;
+}
+Status JoinIR::FlipParents() {
+  DCHECK_EQ(parents().size(), 2UL) << "There should be exactly two parents.";
+  DCHECK_EQ(equality_conditions_.size(), 0UL) << "This is only supported in INIT";
+
+  std::vector<OperatorIR*> old_parents = parents();
+  for (OperatorIR* parent : old_parents) {
+    PL_RETURN_IF_ERROR(RemoveParent(parent));
+  }
+
+  PL_RETURN_IF_ERROR(AddParent(old_parents[1]));
+  PL_RETURN_IF_ERROR(AddParent(old_parents[0]));
+
+  // Update the columns in the output_columns
+  for (ColumnIR* col : output_columns_) {
+    DCHECK_LT(col->container_op_parent_idx(), 2);
+    col->SetContainingOperatorParentIdx(1 - col->container_op_parent_idx());
+  }
+
+  // Update the columns in the expression.
+  std::vector<ColumnIR*> child_columns;
+  std::queue<int64_t> nodes_to_visit({condition_expr_->id()});
+  IR* graph = graph_ptr();
+  const plan::DAG& dag = graph_ptr()->dag();
+  while (!nodes_to_visit.empty()) {
+    int64_t cur_node = nodes_to_visit.front();
+    nodes_to_visit.pop();
+    if (Match(graph->Get(cur_node), ColumnNode())) {
+      ColumnIR* col = static_cast<ColumnIR*>(graph->Get(cur_node));
+      DCHECK_LT(col->container_op_parent_idx(), 2);
+      col->SetContainingOperatorParentIdx(1 - col->container_op_parent_idx());
+    }
+    for (int64_t dep : dag.DependenciesOf(cur_node)) {
+      nodes_to_visit.push(dep);
+    }
+  }
+
   return Status::OK();
 }
 

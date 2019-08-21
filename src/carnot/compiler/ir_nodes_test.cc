@@ -16,6 +16,7 @@ namespace carnot {
 namespace compiler {
 using ::pl::testing::proto::EqualsProto;
 using ::testing::ElementsAre;
+using ::testing::ElementsAreArray;
 using ::testing::IsEmpty;
 using ::testing::IsSupersetOf;
 using ::testing::UnorderedElementsAre;
@@ -472,6 +473,38 @@ class CloneTests : public OperatorTests {
     EXPECT_EQ(new_ir->remote_source_id(), old_ir->remote_source_id()) << err_string;
   }
 
+  void CompareClonedJoin(JoinIR* new_ir, JoinIR* old_ir, const std::string& err_string) {
+    ASSERT_EQ(new_ir->join_type(), old_ir->join_type());
+    EXPECT_THAT(new_ir->column_names(), ElementsAreArray(old_ir->column_names())) << err_string;
+    auto output_columns_new = new_ir->output_columns();
+    auto output_columns_old = old_ir->output_columns();
+    ASSERT_EQ(output_columns_new.size(), output_columns_old.size()) << err_string;
+
+    for (size_t i = 0; i < output_columns_new.size(); ++i) {
+      CompareClonedExpression(output_columns_new[i], output_columns_old[i],
+                              absl::Substitute("$0; in Join operator.", err_string));
+    }
+
+    auto old_equality_conditions = old_ir->equality_conditions();
+    auto new_equality_conditions = new_ir->equality_conditions();
+    ASSERT_EQ(old_equality_conditions.size(), new_equality_conditions.size()) << err_string;
+
+    for (size_t i = 0; i < old_equality_conditions.size(); ++i) {
+      EXPECT_EQ(old_equality_conditions[i].left_column_idx,
+                new_equality_conditions[i].left_column_idx);
+      EXPECT_EQ(old_equality_conditions[i].right_column_idx,
+                new_equality_conditions[i].right_column_idx);
+    }
+
+    auto old_column_names = old_ir->column_names();
+    auto new_column_names = new_ir->column_names();
+    ASSERT_EQ(old_column_names.size(), new_column_names.size()) << err_string;
+
+    for (size_t i = 0; i < old_column_names.size(); ++i) {
+      EXPECT_EQ(old_column_names[i], new_column_names[i]);
+    }
+  }
+
   void CompareClonedExpression(ExpressionIR* new_ir, ExpressionIR* old_ir,
                                const std::string& err_string) {
     ASSERT_NE(new_ir, nullptr);
@@ -650,6 +683,44 @@ TEST_F(CloneTests, grpc_source) {
   for (int64_t i : cloned_ir->dag().TopologicalSort()) {
     CompareClonedNodes(cloned_ir->Get(i), graph->Get(i), absl::Substitute("For index $0", i));
   }
+}
+
+TEST_F(CloneTests, join_clone) {
+  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"});
+  auto mem_src1 = MakeMemSource(relation0);
+
+  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64, types::DataType::INT64},
+                     {"right_only", "col1", "col2", "col3", "col4"});
+  auto mem_src2 = MakeMemSource(relation1);
+
+  auto join_op = MakeJoin(
+      {mem_src1, mem_src2}, "inner",
+      MakeAndFunc(
+          MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
+          MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
+      {{"left_only", MakeColumn("left_only", 0, relation0)},
+       {"col4", MakeColumn("col4", 1, relation1)},
+       {"col1", MakeColumn("col1", 0, relation0)},
+       {"right_only", MakeColumn("right_only", 1, relation1)}});
+
+  join_op->AddEqualityCondition(1, 2);
+  join_op->AddEqualityCondition(3, 4);
+
+  auto out = graph->Clone();
+
+  EXPECT_OK(out.status());
+  std::unique_ptr<IR> cloned_ir = out.ConsumeValueOrDie();
+  ASSERT_EQ(graph->dag().TopologicalSort(), cloned_ir->dag().TopologicalSort());
+
+  graph->Get(join_op->id());
+  IRNode* maybe_join_clone = cloned_ir->Get(join_op->id());
+  ASSERT_EQ(maybe_join_clone->type(), IRNodeType::kJoin);
+  JoinIR* join_clone = static_cast<JoinIR*>(maybe_join_clone);
+
+  CompareClonedJoin(join_clone, join_op, "");
 }
 
 class ToProtoTests : public OperatorTests {};
@@ -841,6 +912,268 @@ TEST_F(ToProtoTests, UnionHasTime) {
   planpb::Operator pb;
   EXPECT_OK(union_op->ToProto(&pb));
   EXPECT_THAT(pb, EqualsProto(kExpectedUnionOpTimePb));
+}
+
+const char* kExpectedInnerJoinOpPb = R"proto(
+op_type: JOIN_OPERATOR
+join_op {
+  type: INNER
+  equality_conditions {
+    left_column_index: 1
+    right_column_index: 2
+  }
+  equality_conditions {
+    left_column_index: 3
+    right_column_index: 4
+  }
+  output_columns {
+    parent_index: 0
+    column_index: 0
+  }
+  output_columns {
+    parent_index: 1
+    column_index: 4
+  }
+  output_columns {
+    parent_index: 0
+    column_index: 1
+  }
+  output_columns {
+    parent_index: 1
+    column_index: 0
+  }
+  column_names: "left_only"
+  column_names: "col4"
+  column_names: "col1"
+  column_names: "right_only"
+}
+)proto";
+
+TEST_F(ToProtoTests, inner_join) {
+  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"});
+  auto mem_src1 = MakeMemSource(relation0);
+
+  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64, types::DataType::INT64},
+                     {"right_only", "col1", "col2", "col3", "col4"});
+  auto mem_src2 = MakeMemSource(relation1);
+
+  auto join_op = MakeJoin(
+      {mem_src1, mem_src2}, "inner",
+      MakeAndFunc(
+          MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
+          MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
+      {{"left_only", MakeColumn("left_only", 0, relation0)},
+       {"col4", MakeColumn("col4", 1, relation1)},
+       {"col1", MakeColumn("col1", 0, relation0)},
+       {"right_only", MakeColumn("right_only", 1, relation1)}});
+
+  join_op->AddEqualityCondition(1, 2);
+  join_op->AddEqualityCondition(3, 4);
+
+  planpb::Operator pb;
+  EXPECT_OK(join_op->ToProto(&pb));
+
+  EXPECT_THAT(pb, EqualsProto(kExpectedInnerJoinOpPb));
+}
+const char* kExpectedLeftJoinOpPb = R"proto(
+op_type: JOIN_OPERATOR
+join_op {
+  type: LEFT_OUTER
+  equality_conditions {
+    left_column_index: 1
+    right_column_index: 2
+  }
+  equality_conditions {
+    left_column_index: 3
+    right_column_index: 4
+  }
+  output_columns {
+    parent_index: 0
+    column_index: 0
+  }
+  output_columns {
+    parent_index: 1
+    column_index: 4
+  }
+  output_columns {
+    parent_index: 0
+    column_index: 1
+  }
+  output_columns {
+    parent_index: 1
+    column_index: 0
+  }
+  column_names: "left_only"
+  column_names: "col4"
+  column_names: "col1"
+  column_names: "right_only"
+}
+)proto";
+
+TEST_F(ToProtoTests, left_join) {
+  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"});
+  auto mem_src1 = MakeMemSource(relation0);
+
+  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64, types::DataType::INT64},
+                     {"right_only", "col1", "col2", "col3", "col4"});
+  auto mem_src2 = MakeMemSource(relation1);
+
+  auto join_op = MakeJoin(
+      {mem_src1, mem_src2}, "left",
+      MakeAndFunc(
+          MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
+          MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
+      {{"left_only", MakeColumn("left_only", 0, relation0)},
+       {"col4", MakeColumn("col4", 1, relation1)},
+       {"col1", MakeColumn("col1", 0, relation0)},
+       {"right_only", MakeColumn("right_only", 1, relation1)}});
+
+  join_op->AddEqualityCondition(1, 2);
+  join_op->AddEqualityCondition(3, 4);
+
+  planpb::Operator pb;
+  EXPECT_OK(join_op->ToProto(&pb));
+
+  EXPECT_THAT(pb, EqualsProto(kExpectedLeftJoinOpPb));
+}
+
+const char* kExpectedRightJoinOpPb = R"proto(
+op_type: JOIN_OPERATOR
+join_op {
+  type: LEFT_OUTER
+  equality_conditions {
+    left_column_index: 2
+    right_column_index: 1
+  }
+  equality_conditions {
+    left_column_index: 4
+    right_column_index: 3
+  }
+  output_columns {
+    parent_index: 1
+    column_index: 0
+  }
+  output_columns {
+    parent_index: 0
+    column_index: 4
+  }
+  output_columns {
+    parent_index: 1
+    column_index: 1
+  }
+  output_columns {
+    parent_index: 0
+    column_index: 0
+  }
+  column_names: "left_only"
+  column_names: "col4"
+  column_names: "col1"
+  column_names: "right_only"
+}
+)proto";
+
+TEST_F(ToProtoTests, right_join) {
+  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"});
+  auto mem_src1 = MakeMemSource(relation0);
+
+  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64, types::DataType::INT64},
+                     {"right_only", "col1", "col2", "col3", "col4"});
+  auto mem_src2 = MakeMemSource(relation1);
+
+  auto join_op = MakeJoin(
+      {mem_src1, mem_src2}, "right",
+      MakeAndFunc(
+          MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
+          MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
+      {{"left_only", MakeColumn("left_only", 0, relation0)},
+       {"col4", MakeColumn("col4", 1, relation1)},
+       {"col1", MakeColumn("col1", 0, relation0)},
+       {"right_only", MakeColumn("right_only", 1, relation1)}});
+
+  join_op->AddEqualityCondition(2, 1);
+  join_op->AddEqualityCondition(4, 3);
+
+  planpb::Operator pb;
+  EXPECT_OK(join_op->ToProto(&pb));
+
+  EXPECT_EQ(join_op->parents()[0], mem_src2);
+  EXPECT_EQ(join_op->parents()[1], mem_src1);
+
+  EXPECT_THAT(pb, EqualsProto(kExpectedRightJoinOpPb));
+}
+
+const char* kExpectedOuterJoinOpPb = R"proto(
+op_type: JOIN_OPERATOR
+join_op {
+  type: FULL_OUTER
+  equality_conditions {
+    left_column_index: 1
+    right_column_index: 2
+  }
+  equality_conditions {
+    left_column_index: 3
+    right_column_index: 4
+  }
+  output_columns {
+    parent_index: 0
+    column_index: 0
+  }
+  output_columns {
+    parent_index: 1
+    column_index: 4
+  }
+  output_columns {
+    parent_index: 0
+    column_index: 1
+  }
+  output_columns {
+    parent_index: 1
+    column_index: 0
+  }
+  column_names: "left_only"
+  column_names: "col4"
+  column_names: "col1"
+  column_names: "right_only"
+}
+)proto";
+
+TEST_F(ToProtoTests, full_outer) {
+  Relation relation0({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64},
+                     {"left_only", "col1", "col2", "col3"});
+  auto mem_src1 = MakeMemSource(relation0);
+
+  Relation relation1({types::DataType::INT64, types::DataType::INT64, types::DataType::INT64,
+                      types::DataType::INT64, types::DataType::INT64},
+                     {"right_only", "col1", "col2", "col3", "col4"});
+  auto mem_src2 = MakeMemSource(relation1);
+
+  auto join_op = MakeJoin(
+      {mem_src1, mem_src2}, "outer",
+      MakeAndFunc(
+          MakeEqualsFunc(MakeColumn("col1", 0, relation0), MakeColumn("col2", 1, relation1)),
+          MakeEqualsFunc(MakeColumn("col3", 0, relation0), MakeColumn("col4", 1, relation1))),
+      {{"left_only", MakeColumn("left_only", 0, relation0)},
+       {"col4", MakeColumn("col4", 1, relation1)},
+       {"col1", MakeColumn("col1", 0, relation0)},
+       {"right_only", MakeColumn("right_only", 1, relation1)}});
+
+  join_op->AddEqualityCondition(1, 2);
+  join_op->AddEqualityCondition(3, 4);
+
+  planpb::Operator pb;
+  EXPECT_OK(join_op->ToProto(&pb));
+
+  EXPECT_THAT(pb, EqualsProto(kExpectedOuterJoinOpPb));
 }
 
 TEST_F(OperatorTests, op_children) {

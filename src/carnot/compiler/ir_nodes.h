@@ -53,6 +53,7 @@ enum class IRNodeType {
   kGRPCSource,
   kGRPCSink,
   kUnion,
+  kJoin,
   number_of_types  // This is not a real type, but is used to verify strings are inline
                    // with enums.
 };
@@ -78,7 +79,8 @@ static constexpr const char* kIRNodeStrings[] = {"MemorySource",
                                                  "GRPCSourceGroup",
                                                  "GRPCSource",
                                                  "GRPCSink",
-                                                 "Union"};
+                                                 "Union",
+                                                 "Join"};
 
 /**
  * @brief Node class for the IR.
@@ -626,6 +628,8 @@ class ColumnIR : public ExpressionIR {
    */
   StatusOr<IRNode*> DeepCloneInto(IR* graph) const override;
 
+  void SetContainingOperatorParentIdx(int64_t container_op_parent_idx);
+
  protected:
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   /**
@@ -638,7 +642,6 @@ class ColumnIR : public ExpressionIR {
    *
    * @param container_op_parent_idx: the index of the container_op.
    */
-  void SetContainingOperatoreratorParentIdx(int64_t container_op_parent_idx);
 
   void SetColumnName(const std::string& col_name) {
     col_name_ = col_name;
@@ -1398,6 +1401,66 @@ class UnionIR : public OperatorIR {
    */
   Status AddColumnMapping(const std::vector<int64_t>& input_column_map);
   std::vector<ColumnMapping> column_mappings_;
+};
+
+/**
+ * @brief The Join Operator plan node.
+ *
+ */
+class JoinIR : public OperatorIR {
+ public:
+  JoinIR() = delete;
+  explicit JoinIR(int64_t id)
+      : OperatorIR(id, IRNodeType::kJoin, /* has_parents */ true, /* is_source */ false) {}
+  bool HasLogicalRepr() const override { return true; }
+
+  std::vector<std::string> ArgKeys() override { return {"type", "cond", "cols"}; }
+
+  std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) override {
+    return std::unordered_map<std::string, IRNode*>{{"type", nullptr}};
+  }
+
+  bool IsBlocking() const override { return true; }
+
+  Status ToProto(planpb::Operator*) const override;
+  Status InitImpl(const ArgMap&) override;
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
+
+  struct EqualityCondition {
+    int64_t left_column_idx;
+    int64_t right_column_idx;
+  };
+
+  void AddEqualityCondition(int64_t left_idx, int64_t right_idx) {
+    equality_conditions_.push_back(EqualityCondition({left_idx, right_idx}));
+  }
+
+  const std::vector<EqualityCondition>& equality_conditions() const {
+    DCHECK_GT(equality_conditions_.size(), 0UL) << "Equality conditions must be created";
+    return equality_conditions_;
+  }
+
+  FuncIR* condition_expr() const { return condition_expr_; }
+  planpb::JoinOperator::JoinType join_type() const { return join_type_; }
+  const std::vector<ColumnIR*>& output_columns() const { return output_columns_; }
+  const std::vector<std::string>& column_names() const { return column_names_; }
+
+ private:
+  Status SetupConditionFromLambda(LambdaIR* condition);
+  Status SetupOutputColumns(LambdaIR* output_columns);
+  Status SetupJoinType(StringIR* join_type);
+  /**
+   * @brief Swaps the parents in the case. Used in the case this is a right join.
+   *
+   */
+  Status FlipParents();
+
+  planpb::JoinOperator::JoinType join_type_;
+  // The condition expression that is eventually translated into equality_conditions_.
+  FuncIR* condition_expr_;
+  std::vector<EqualityCondition> equality_conditions_;
+  std::vector<ColumnIR*> output_columns_;
+  std::vector<std::string> column_names_;
 };
 
 }  // namespace compiler
