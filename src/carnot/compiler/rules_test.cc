@@ -20,6 +20,7 @@ namespace compiler {
 
 using testing::_;
 using testing::ElementsAre;
+using testing::ElementsAreArray;
 
 const char* kExtraScalarUDFs = R"proto(
 scalar_udfs {
@@ -53,7 +54,7 @@ scalar_udfs {
   return_type: STRING
 }
 )proto";
-class RulesTest : public ::testing::Test {
+class RulesTest : public OperatorTests {
  protected:
   void SetUpRegistryInfo() {
     // TODO(philkuz) replace the following call info_
@@ -73,8 +74,7 @@ class RulesTest : public ::testing::Test {
     info_ = std::make_unique<compiler::RegistryInfo>();
     PL_CHECK_OK(info_->Init(udf_proto));
   }
-  void SetUp() override {
-    ::testing::Test::SetUp();
+  void SetUpImpl() override {
     SetUpRegistryInfo();
 
     auto rel_map = std::make_unique<RelationMap>();
@@ -85,48 +85,8 @@ class RulesTest : public ::testing::Test {
     rel_map->emplace("cpu", cpu_relation);
 
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
-    ast = MakeTestAstPtr();
-    graph = std::make_shared<IR>();
     md_handler = MetadataHandler::Create();
   }
-  ColumnIR* MakeColumn(const std::string& name, int64_t parent_op_idx) {
-    auto column = graph->MakeNode<ColumnIR>().ValueOrDie();
-    EXPECT_OK(column->Init(name, parent_op_idx, ast));
-    return column;
-  }
-  MetadataIR* MakeMetadataIR(const std::string& name, int64_t parent_op_idx) {
-    auto metadata = graph->MakeNode<MetadataIR>().ValueOrDie();
-    EXPECT_OK(metadata->Init(name, parent_op_idx, ast));
-    return metadata;
-  }
-  StringIR* MakeString(const std::string& name) {
-    auto string_ir = graph->MakeNode<StringIR>().ValueOrDie();
-    EXPECT_OK(string_ir->Init(name, ast));
-    return string_ir;
-  }
-
-  IntIR* MakeInt(int64_t val) {
-    auto int_ir = graph->MakeNode<IntIR>().ValueOrDie();
-    EXPECT_OK(int_ir->Init(val, ast));
-    return int_ir;
-  }
-
-  FuncIR* MakeEqualsFunc(ExpressionIR* left, ExpressionIR* right) {
-    FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
-    PL_CHECK_OK(func->Init({FuncIR::Opcode::eq, "==", "equals"}, ASTWalker::kRunTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({left, right}), false /* compile_time */,
-                           ast));
-    return func;
-  }
-
-  FuncIR* MakeAddFunc(ExpressionIR* left, ExpressionIR* right) {
-    FuncIR* func = graph->MakeNode<FuncIR>().ValueOrDie();
-    PL_CHECK_OK(func->Init({FuncIR::Opcode::add, "+", "add"}, ASTWalker::kRunTimeFuncPrefix,
-                           std::vector<ExpressionIR*>({left, right}), false /* compile_time */,
-                           ast));
-    return func;
-  }
-
   MetadataResolverIR* MakeMetadataResolver(OperatorIR* parent) {
     MetadataResolverIR* md_resolver = graph->MakeNode<MetadataResolverIR>().ValueOrDie();
     EXPECT_OK(md_resolver->Init(parent, {{}}, ast));
@@ -190,8 +150,6 @@ class RulesTest : public ::testing::Test {
     return agg;
   }
 
-  pypa::AstPtr ast;
-  std::shared_ptr<IR> graph;
   std::unique_ptr<CompilerState> compiler_state_;
   std::unique_ptr<RegistryInfo> info_;
   int64_t time_now = 1552607213931245000;
@@ -723,6 +681,83 @@ TEST_F(MetadataResolverRuleTest, make_sure_metadata_columns_show_up) {
   auto result_relation = md_resolver->relation();
   EXPECT_TRUE(result_relation.col_types() == expected_col_types);
   EXPECT_TRUE(result_relation.col_names() == expected_col_names);
+}
+
+using UnionRelationTest = RulesTest;
+TEST_F(UnionRelationTest, union_relation_setup) {
+  auto mem_src1 = MakeMemSource(MakeRelation());
+  auto mem_src2 = MakeMemSource(MakeRelation());
+  auto union_op = MakeUnion({mem_src1, mem_src2});
+  EXPECT_FALSE(union_op->IsRelationInit());
+
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  ASSERT_TRUE(union_op->IsRelationInit());
+
+  auto result_relation = union_op->relation();
+  table_store::schema::Relation expected_relation = MakeRelation();
+  EXPECT_THAT(result_relation.col_types(), ElementsAreArray(expected_relation.col_types()));
+  EXPECT_THAT(result_relation.col_names(), ElementsAreArray(expected_relation.col_names()));
+
+  EXPECT_EQ(union_op->column_mappings().size(), 2);
+  for (const auto& mapping : union_op->column_mappings()) {
+    EXPECT_THAT(mapping.input_column_map, ElementsAre(0, 1, 2, 3));
+  }
+}
+
+// Test whether the union disagreement fails with expected message.
+TEST_F(UnionRelationTest, union_relations_disagree) {
+  Relation relation1 = MakeRelation();
+  Relation relation2({types::DataType::INT64, types::DataType::FLOAT64}, {"count", "cpu0"});
+  auto mem_src1 = MakeMemSource(relation1);
+  auto mem_src2 = MakeMemSource(relation2);
+  auto union_op = MakeUnion({mem_src1, mem_src2});
+  EXPECT_FALSE(union_op->IsRelationInit());
+  EXPECT_TRUE(mem_src1->IsRelationInit());
+  EXPECT_TRUE(mem_src2->IsRelationInit());
+
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_NOT_OK(result);
+  EXPECT_THAT(
+      result.status(),
+      HasCompilerError(
+          "Table schema disagreement between parent ops MemorySource(id=0) and MemorySource(id=6) "
+          "of Union(id=10). MemorySource(id=0): [count:int64, cpu0:float64, cpu1:float64, "
+          "cpu2:float64] vs MemorySource(id=6): [count:int64, cpu0:float64]. Column count wrong."));
+}
+
+TEST_F(UnionRelationTest, union_relation_different_order) {
+  Relation relation1({types::DataType::TIME64NS, types::DataType::STRING, types::DataType::INT64},
+                     {"time_", "strCol", "count"});
+  Relation relation2({types::DataType::INT64, types::DataType::TIME64NS, types::DataType::STRING},
+                     {"count", "time_", "strCol"});
+  auto mem_src1 = MakeMemSource(relation1);
+  auto mem_src2 = MakeMemSource(relation2);
+  auto union_op = MakeUnion({mem_src1, mem_src2});
+  EXPECT_FALSE(union_op->IsRelationInit());
+  EXPECT_TRUE(mem_src1->IsRelationInit());
+  EXPECT_TRUE(mem_src2->IsRelationInit());
+
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  auto result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+
+  ASSERT_TRUE(union_op->IsRelationInit());
+  Relation result_relation = union_op->relation();
+  Relation expected_relation = relation1;
+  EXPECT_THAT(result_relation.col_types(), ElementsAreArray(expected_relation.col_types()));
+  EXPECT_THAT(result_relation.col_names(), ElementsAreArray(expected_relation.col_names()));
+
+  ASSERT_EQ(union_op->column_mappings().size(), 2);
+
+  auto mapping0 = union_op->column_mappings()[0];
+  auto mapping1 = union_op->column_mappings()[1];
+
+  EXPECT_THAT(mapping0.input_column_map, ElementsAre(0, 1, 2));
+  EXPECT_THAT(mapping1.input_column_map, ElementsAre(1, 2, 0));
 }
 
 class OperatorRelationTest : public RulesTest {

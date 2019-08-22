@@ -174,6 +174,8 @@ StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) {
     return SetMap(static_cast<MapIR*>(ir_node));
   } else if (Match(ir_node, UnresolvedReadyMetadataResolver())) {
     return SetMetadataResolver(static_cast<MetadataResolverIR*>(ir_node));
+  } else if (Match(ir_node, UnresolvedReadyUnion())) {
+    return SetUnion(static_cast<UnionIR*>(ir_node));
   } else if (Match(ir_node, UnresolvedReadyOp())) {
     return SetOther(static_cast<OperatorIR*>(ir_node));
   }
@@ -206,6 +208,7 @@ StatusOr<bool> OperatorRelationRule::SetBlockingAgg(BlockingAggIR* agg_ir) const
   PL_RETURN_IF_ERROR(agg_ir->SetRelation(agg_rel));
   return true;
 }
+
 StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
   Relation map_rel;
   // Make a new relation with each of the expression key, type pairs.
@@ -237,8 +240,13 @@ StatusOr<bool> OperatorRelationRule::SetMetadataResolver(MetadataResolverIR* md_
   return true;
 }
 
+StatusOr<bool> OperatorRelationRule::SetUnion(UnionIR* union_ir) const {
+  PL_RETURN_IF_ERROR(union_ir->SetRelationFromParents());
+  return true;
+}
+
 StatusOr<bool> OperatorRelationRule::SetOther(OperatorIR* operator_ir) const {
-  DCHECK_EQ(operator_ir->parents().size(), 1UL);
+  CHECK_EQ(operator_ir->parents().size(), 1UL);
   PL_RETURN_IF_ERROR(operator_ir->SetRelation(operator_ir->parents()[0]->relation()));
   return true;
 }

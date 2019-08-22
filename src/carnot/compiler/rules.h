@@ -102,6 +102,7 @@ class OperatorRelationRule : public Rule {
   StatusOr<bool> SetBlockingAgg(BlockingAggIR* agg_ir) const;
   StatusOr<bool> SetMap(MapIR* map_ir) const;
   StatusOr<bool> SetMetadataResolver(MetadataResolverIR* map_ir) const;
+  StatusOr<bool> SetUnion(UnionIR* union_ir) const;
   StatusOr<bool> SetOther(OperatorIR* op) const;
 };
 
