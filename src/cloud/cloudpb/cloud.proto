@@ -49,3 +49,18 @@ message VizierHeartbeatAck {
     // Error message only set if HeartbeatStatus is not OK.
     string error_message = 4;
 }
+
+message VizierInfo {
+  enum Status {
+    VZ_ST_UNKNOWN = 0;
+    VZ_ST_HEALTHY = 1;
+    VZ_ST_DISCONNECTED = 2;
+  }
+  // The ID for this Vizier.
+  uuidpb.UUID vizier_id = 1 [
+                             (gogoproto.customname) = "VizierID"
+                             ];
+  Status status = 2;
+  // Time in ns since the last heart beat. Negative number implies heartbeat never received.
+  int64 last_heartbeat_ns = 3;
+}
