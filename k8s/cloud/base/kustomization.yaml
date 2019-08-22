@@ -14,3 +14,7 @@ resources:
 - proxy_service.yaml
 - site_manager_deployment.yaml
 - site_manager_service.yaml
+- vzconn_deployment.yaml
+- vzconn_service.yaml
+- vzmgr_deployment.yaml
+- vzmgr_service.yaml

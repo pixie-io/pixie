@@ -1,0 +1,40 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vzmgr-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: vzmgr-server
+  template:
+    metadata:
+      labels:
+        name: vzmgr-server
+    spec:
+      containers:
+      - name: vzmgr-server
+        image: gcr.io/pl-dev-infra/cloud/vzmgr_server_image:latest
+        ports:
+          - containerPort: 51500
+            hostPort: 51500
+          - containerPort: 51501
+            hostPort: 51501
+        env:
+          - name: PL_SERVER_TLS_CERT
+            value: /certs/server.crt
+          - name: PL_SERVER_TLS_KEY
+            value: /certs/server.key
+          - name: PL_CLIENT_TLS_CERT
+            value: /certs/client.crt
+          - name: PL_CLIENT_TLS_KEY
+            value: /certs/client.key
+          - name: PL_TLS_CA_CERT
+            value: /certs/ca.crt
+        volumeMounts:
+            - name: certs
+              mountPath: /certs
+      volumes:
+        - name: certs
+          secret:
+            secretName: service-tls-certs

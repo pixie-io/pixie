@@ -1,0 +1,45 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: vizier-cloud-connector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: vizier-cloud-connector
+  template:
+    metadata:
+      labels:
+        name: vizier-cloud-connector
+    spec:
+      containers:
+      - name: vizier-cloud-connector-server
+        image: gcr.io/pl-dev-infra/vizier/cloud_connector_server_image:latest
+        ports:
+          - containerPort: 50800
+            hostPort: 50800
+          - containerPort: 50801
+            hostPort: 50801
+        env:
+          - name: PL_JWT_SIGNING_KEY
+            valueFrom:
+              secretKeyRef:
+                name: pl-app-secrets
+                key: jwt-signing-key
+          - name: PL_SERVER_TLS_CERT
+            value: /certs/server.crt
+          - name: PL_SERVER_TLS_KEY
+            value: /certs/server.key
+          - name: PL_CLIENT_TLS_CERT
+            value: /certs/client.crt
+          - name: PL_CLIENT_TLS_KEY
+            value: /certs/client.key
+          - name: PL_TLS_CA_CERT
+            value: /certs/ca.crt
+        volumeMounts:
+            - name: certs
+              mountPath: /certs
+      volumes:
+        - name: certs
+          secret:
+            secretName: service-tls-certs

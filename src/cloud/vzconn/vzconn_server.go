@@ -14,7 +14,7 @@ import (
 func main() {
 	log.WithField("service", "vzconn-service").Info("Starting service")
 
-	services.SetupService("vzconn-service", 51500)
+	services.SetupService("vzconn-service", 51600)
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()
 	services.SetupServiceLogging()

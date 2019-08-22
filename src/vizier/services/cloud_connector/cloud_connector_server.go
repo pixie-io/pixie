@@ -14,7 +14,7 @@ import (
 func main() {
 	log.WithField("service", "cloud-connector").Info("Starting service")
 
-	services.SetupService("cloud-connector", 50300)
+	services.SetupService("cloud-connector", 50800)
 	services.SetupSSLClientFlags()
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()

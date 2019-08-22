@@ -1,4 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
     name = "go_default_library",
@@ -15,7 +17,22 @@ go_library(
 )
 
 go_binary(
-    name = "vzconn",
+    name = "vzmgr_server",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+)
+
+go_image(
+    name = "vzmgr_server_image",
+    binary = ":vzmgr_server",
+    importpath = "pixielabs.ai/pixielabs",
+)
+
+container_push(
+    name = "push_vzmgr_server_image",
+    format = "Docker",
+    image = ":vzmgr_server_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/cloud/vzmgr_server_image",
+    tag = "{STABLE_BUILD_TAG}",
 )

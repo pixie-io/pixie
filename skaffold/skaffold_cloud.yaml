@@ -27,6 +27,16 @@ build:
     bazel:
       target: //src/cloud/site_manager:site_manager_server_image.tar
 
+  - image: gcr.io/pl-dev-infra/cloud/vzconn_server_image
+    context: .
+    bazel:
+      target: //src/cloud/vzconn:vzconn_server_image.tar
+
+  - image: gcr.io/pl-dev-infra/cloud/vzmgr_server_image
+    context: .
+    bazel:
+      target: //src/cloud/vzmgr:vzmgr_server_image.tar
+
   local:
     push: true
 deploy:

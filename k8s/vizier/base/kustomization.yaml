@@ -7,6 +7,7 @@ resources:
 - agent_daemonset.yaml
 - api_deployment.yaml
 - api_service.yaml
+- cloud_connector_deployment.yaml
 - metadata_deployment.yaml
 - metadata_service.yaml
 - proxy_deployment.yaml
