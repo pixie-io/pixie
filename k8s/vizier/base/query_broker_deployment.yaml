@@ -12,6 +12,8 @@ spec:
       labels:
         name: vizier-query-broker
     spec:
+      imagePullSecrets:
+      - name: pl-image-secret
       containers:
       - image: gcr.io/pl-dev-infra/vizier/query_broker_server_image:latest
         name: vizier-query-broker

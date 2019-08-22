@@ -12,13 +12,16 @@ func init() {
 	pflag.String("cert_path", "", "Directory to save certs in")
 	pflag.String("ca_cert", "", "Path to CA cert (optional)")
 	pflag.String("ca_key", "", "Path to CA key (optional)")
-	pflag.String("namespace", "pl", "The namespace to install certs to")
+	// --namespace is also a flag for deploy.
+	pflag.String("namespace", "pl", "The namespace to install certs or Pixie K8s secrets to")
 
 	// Flags for deploy.
 	pflag.String("extract_yaml", "", "Directory to extract the Pixie yamls to")
 	pflag.String("use_version", "", "Pixie version to deploy")
 	pflag.Bool("check", false, "Check whether the cluster can run Pixie")
 	pflag.String("registration_key", "", "The registration key to use for this cluster")
+	pflag.String("credentials_file", "", "Location of the Pixie credentials file")
+	pflag.String("secret_name", "pl-image-secret", "The name of the secret used to access the Pixie images")
 
 	// Flags for delete.
 	pflag.Bool("clobber_namespace", false, "Whether to delete all dependencies in the cluster")
@@ -53,6 +56,12 @@ func init() {
 	viper.BindPFlag("check", deployCmd.Flags().Lookup("check"))
 	deployCmd.Flags().StringP("registration_key", "k", "", "The registration key to use for this cluster")
 	viper.BindPFlag("registration_key", deployCmd.Flags().Lookup("registration_key"))
+	deployCmd.Flags().StringP("credentials_file", "f", "", "Location of the Pixie credentials file")
+	viper.BindPFlag("credentials_file", deployCmd.Flags().Lookup("credentials_file"))
+	deployCmd.Flags().StringP("secret_name", "s", "pl-image-secret", "The name of the secret used to access the Pixie images")
+	viper.BindPFlag("credentials_file", deployCmd.Flags().Lookup("credentials_file"))
+	deployCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
+	viper.BindPFlag("namespace", deployCmd.Flags().Lookup("namespace"))
 
 	deleteCmd := NewCmdDeletePixie()
 	RootCmd.AddCommand(deleteCmd)

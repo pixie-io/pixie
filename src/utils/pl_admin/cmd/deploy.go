@@ -35,8 +35,17 @@ func NewCmdDeploy() *cobra.Command {
 				return
 			}
 
+			credsFile, _ := cmd.Flags().GetString("credentials_file")
+			if credsFile != "" {
+				kubeConfig := k8s.GetConfig()
+				clientset := k8s.GetClientset(kubeConfig)
+				namespace, _ := cmd.Flags().GetString("namespace")
+				secretName, _ := cmd.Flags().GetString("secret_name")
+				k8s.CreateDockerConfigJSONSecret(clientset, namespace, secretName, credsFile)
+			}
+
 			path, _ := cmd.Flags().GetString("extract_yaml")
-			extractYamls(path)
+			extractYAMLs(path)
 			deploy(path)
 
 			// TODO(michelle): Use_version to deploy Pixie.
@@ -44,6 +53,7 @@ func NewCmdDeploy() *cobra.Command {
 
 			// TODO(michelle): Handle registration key.
 			_, _ = cmd.Flags().GetString("registration_key")
+
 		},
 	}
 }
@@ -80,8 +90,8 @@ func retryDeploy(filePath string) {
 	}
 }
 
-// extractYamls extracts the yamls from the packaged bindata into the specified directory.
-func extractYamls(extractPath string) {
+// extractYAMLs extracts the yamls from the packaged bindata into the specified directory.
+func extractYAMLs(extractPath string) {
 	// Create directory for the yaml files.
 	if _, err := os.Stat(extractPath); os.IsNotExist(err) {
 		os.Mkdir(extractPath, 0777)

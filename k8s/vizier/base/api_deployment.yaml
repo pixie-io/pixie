@@ -12,6 +12,8 @@ spec:
       labels:
         name: vizier-api
     spec:
+      imagePullSecrets:
+      - name: pl-image-secret
       containers:
       - name: vizier-api-server
         image: gcr.io/pl-dev-infra/vizier/api_server_image:latest

@@ -12,6 +12,8 @@ spec:
       labels:
         name: vizier-metadata
     spec:
+      imagePullSecrets:
+      - name: pl-image-secret
       containers:
       - image: gcr.io/pl-dev-infra/vizier/metadata_server_image:latest
         name: vizier-metadata

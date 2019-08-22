@@ -12,6 +12,8 @@ spec:
       labels:
         name: vizier-proxy
     spec:
+      imagePullSecrets:
+      - name: pl-image-secret
       containers:
       - name: vizier-proxy-server
         image: gcr.io/pl-dev-infra/vizier/proxy_server_image:latest

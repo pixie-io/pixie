@@ -14,6 +14,8 @@ spec:
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
+      imagePullSecrets:
+      - name: pl-image-secret
       containers:
       - name: agent
         image: gcr.io/pl-dev-infra/vizier/agent_image:latest
