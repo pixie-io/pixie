@@ -24,8 +24,13 @@ spec:
           - name: PL_JWT_SIGNING_KEY
             valueFrom:
               secretKeyRef:
-                name: pl-app-secrets
+                name: pl-cluster-secrets
                 key: jwt-signing-key
+          - name: PL_CLUSTER_ID
+            valueFrom:
+              secretKeyRef:
+                name: pl-cluster-secrets
+                key: cluster-id
           - name: PL_SERVER_TLS_CERT
             value: /certs/server.crt
           - name: PL_SERVER_TLS_KEY

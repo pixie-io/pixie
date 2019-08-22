@@ -22,6 +22,7 @@ func init() {
 	pflag.String("registration_key", "", "The registration key to use for this cluster")
 	pflag.String("credentials_file", "", "Location of the Pixie credentials file")
 	pflag.String("secret_name", "pl-image-secret", "The name of the secret used to access the Pixie images")
+	pflag.String("cluster_id", "", "The ID of the cluster")
 
 	// Flags for delete.
 	pflag.Bool("clobber_namespace", false, "Whether to delete all dependencies in the cluster")
@@ -62,6 +63,8 @@ func init() {
 	viper.BindPFlag("credentials_file", deployCmd.Flags().Lookup("credentials_file"))
 	deployCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
 	viper.BindPFlag("namespace", deployCmd.Flags().Lookup("namespace"))
+	deployCmd.Flags().StringP("cluster_id", "i", "", "The ID of the cluster")
+	viper.BindPFlag("cluster_id", deployCmd.Flags().Lookup("cluster_id"))
 
 	deleteCmd := NewCmdDeletePixie()
 	RootCmd.AddCommand(deleteCmd)

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -35,11 +36,12 @@ func NewCmdDeploy() *cobra.Command {
 				return
 			}
 
+			kubeConfig := k8s.GetConfig()
+			clientset := k8s.GetClientset(kubeConfig)
+			namespace, _ := cmd.Flags().GetString("namespace")
 			credsFile, _ := cmd.Flags().GetString("credentials_file")
+
 			if credsFile != "" {
-				kubeConfig := k8s.GetConfig()
-				clientset := k8s.GetClientset(kubeConfig)
-				namespace, _ := cmd.Flags().GetString("namespace")
 				secretName, _ := cmd.Flags().GetString("secret_name")
 				k8s.CreateDockerConfigJSONSecret(clientset, namespace, secretName, credsFile)
 			}
@@ -51,9 +53,22 @@ func NewCmdDeploy() *cobra.Command {
 			// TODO(michelle): Use_version to deploy Pixie.
 			_, _ = cmd.Flags().GetString("use_version")
 
-			// TODO(michelle): Handle registration key.
-			_, _ = cmd.Flags().GetString("registration_key")
+			clusterID, _ := cmd.Flags().GetString("cluster_id")
+			if clusterID == "" {
+				log.Fatal("cluster_id is required")
+			}
+			jwtSigningKey := make([]byte, 64)
+			_, err := rand.Read(jwtSigningKey)
+			if err != nil {
+				log.Fatal("Could not generate JWT signing key")
+			}
 
+			// Load clusterID and JWT signing key as a secret.
+			k8s.DeleteSecret(clientset, namespace, "pl-cluster-secrets")
+			k8s.CreateGenericSecretFromLiterals(clientset, namespace, "pl-cluster-secrets", map[string]string{
+				"cluster-id":      clusterID,
+				"jwt-signing-key": string(jwtSigningKey),
+			})
 		},
 	}
 }

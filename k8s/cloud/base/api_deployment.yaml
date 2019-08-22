@@ -24,7 +24,7 @@ spec:
           - name: PL_JWT_SIGNING_KEY
             valueFrom:
               secretKeyRef:
-                name: pl-app-secrets
+                name: pl-cluster-secrets
                 key: jwt-signing-key
           - name: PL_SESSION_KEY
             valueFrom:

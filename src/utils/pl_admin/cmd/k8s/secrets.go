@@ -19,7 +19,7 @@ import (
 func DeleteSecret(clientset *kubernetes.Clientset, namespace, name string) {
 	err := clientset.CoreV1().Secrets(namespace).Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
-		log.WithError(err).Error("could not delete secret")
+		log.WithError(err).Info("could not delete secret")
 	} else {
 		log.Info(fmt.Sprintf("Deleted secret: %s", name))
 	}
@@ -37,6 +37,25 @@ func CreateGenericSecret(clientset *kubernetes.Clientset, namespace, name string
 	secret.Data = map[string][]byte{}
 
 	handleFromFileSources(secret, fromFiles)
+
+	_, err := clientset.CoreV1().Secrets(namespace).Create(secret)
+	if err != nil {
+		log.WithError(err).Fatal("could not create generic secret")
+	}
+	log.Info(fmt.Sprintf("Created generic secret: %s", name))
+}
+
+// CreateGenericSecretFromLiterals creates a generic secret in kubernetes using literals.
+func CreateGenericSecretFromLiterals(clientset *kubernetes.Clientset, namespace, name string, fromLiterals map[string]string) {
+	secret := &v1.Secret{}
+	secret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+
+	secret.Name = name
+	secret.Data = map[string][]byte{}
+
+	for k, v := range fromLiterals {
+		secret.Data[k] = []byte(v)
+	}
 
 	_, err := clientset.CoreV1().Secrets(namespace).Create(secret)
 	if err != nil {
