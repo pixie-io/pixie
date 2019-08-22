@@ -3,6 +3,7 @@ import {SidebarNav} from 'components/sidebar-nav/sidebar-nav';
 import * as React from 'react';
 import {Route} from 'react-router-dom';
 import {AgentDisplay} from './agent-display';
+import {DeployInstructions} from './deploy-instructions';
 import {QueryManager} from './query-manager';
 
 import './vizier.scss';
@@ -36,6 +37,17 @@ export class Vizier extends React.Component<VizierProps, {}> {
 
   render() {
     const matchPath = this.props.match.path;
+
+    // TODO(michelle): Make an API call to check whether the customer's cluster has already been registered.
+    const deployed = true; // Whether or not the cluster has been deployed.
+    if (!deployed) {
+      return (
+        <DeployInstructions
+          sitename={window.location.hostname.split('.')[0]}
+        />
+      );
+    }
+
     return (
       <div className='vizier'>
         <SidebarNav

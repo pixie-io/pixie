@@ -6,6 +6,7 @@
   border: 1px solid $gray-350;
   border-radius: 2px;
   display: flex;
+  width: 100%;
 }
 
 .code-snippet pre {
@@ -21,5 +22,5 @@
 
 .code-snippet--content {
   flex: 1;
-  overflow-x: scroll;
+  overflow-x: auto;
 }

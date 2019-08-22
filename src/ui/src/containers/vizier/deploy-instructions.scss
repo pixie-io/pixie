@@ -1,0 +1,75 @@
+@import "../../index.scss";
+
+.deploy-instructions {
+    display: flex;
+    justify-content: center;
+    padding-top: 100px;
+}
+
+.deploy-instructions .deploy-instructions--content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.deploy-instructions .deploy-instructions--subheader {
+    color: $gray-600;
+}
+
+.deploy-instructions .deploy-instructions--footer {
+    border-top: 1px solid $gray-400;
+    padding-top: 20px;
+    margin-top: 80px;
+}
+
+.deploy-instructions .code-snippet {
+    height: 100px;
+}
+
+.deploy-instructions--instructions {
+    margin-top: 20px;
+}
+
+.deploy-instructions label {
+  font-size: 14px;
+  color: $gray-600;
+  font-weight: 500;
+  margin-bottom: 0;
+}
+
+.deploy-instructions .dropdown-toggle {
+    width: 100%;
+    text-align: left;
+    background-color: $gray-150;
+    border: 1px solid $gray-350;
+    border-radius: 2px;
+    color: $gray-500;
+    margin-bottom: 10px;
+}
+
+.deploy-instructions .dropdown-toggle:hover,
+.deploy-instructions .btn-primary:not(:disabled).dropdown-toggle:active,
+.deploy-instructions .show > .btn-primary:not(:disabled).dropdown-toggle {
+    background-color: $gray-150;
+    border: 1px solid $gray-350;
+    color: $gray-500;
+}
+
+.deploy-instructions .dropdown-menu {
+    background-color: $gray-150;
+    border: 1px solid $gray-350;
+    color: $gray-500;
+}
+
+.deploy-instructions--contact-info {
+    color: $gray-600;
+    margin-top: 20px;
+}
+
+.deploy-instructions .deploy-instructions--contact-info-line:not(:last-child) {
+    margin-bottom: 8px;
+}
+
+.deploy-instructions--contact-info-line img {
+    margin-right: 10px;
+}
