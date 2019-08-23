@@ -17,12 +17,23 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 
+using table_store::schema::Relation;
 using testing::_;
+
+using ::testing::Contains;
+using ::testing::ElementsAre;
+using ::testing::ElementsAreArray;
 
 const char* kExpectedUDFInfo = R"(
 scalar_udfs {
   name: "pl.divide"
   exec_arg_types: FLOAT64
+  exec_arg_types: FLOAT64
+  return_type:FLOAT64
+}
+scalar_udfs {
+  name: "pl.divide"
+  exec_arg_types: INT64
   exec_arg_types: FLOAT64
   return_type:FLOAT64
 }
@@ -33,9 +44,27 @@ scalar_udfs {
   return_type:  FLOAT64
 }
 scalar_udfs {
+  name: "pl.add"
+  exec_arg_types: INT64
+  exec_arg_types: INT64
+  return_type:  INT64
+}
+scalar_udfs {
   name: "pl.equal"
   exec_arg_types: STRING
   exec_arg_types: STRING
+  return_type: BOOLEAN
+}
+scalar_udfs {
+  name: "pl.equal"
+  exec_arg_types: UINT128
+  exec_arg_types: UINT128
+  return_type: BOOLEAN
+}
+scalar_udfs {
+  name: "pl.equal"
+  exec_arg_types: INT64
+  exec_arg_types: INT64
   return_type: BOOLEAN
 }
 scalar_udfs {
@@ -43,6 +72,12 @@ scalar_udfs {
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64
   return_type:  FLOAT64
+}
+scalar_udfs {
+  name: "pl.logicalAnd"
+  exec_arg_types: BOOLEAN
+  exec_arg_types: BOOLEAN
+  return_type:  BOOLEAN
 }
 scalar_udfs {
   name: "pl.subtract"
@@ -108,6 +143,7 @@ class AnalyzerTest : public ::testing::Test {
     cpu_relation.AddColumn(types::FLOAT64, "cpu1");
     cpu_relation.AddColumn(types::FLOAT64, "cpu2");
     cpu_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
+    cpu_relation.AddColumn(types::INT64, "agent_id");
     relation_map_->emplace("cpu", cpu_relation);
 
     table_store::schema::Relation non_float_relation;
@@ -116,6 +152,14 @@ class AnalyzerTest : public ::testing::Test {
     non_float_relation.AddColumn(types::STRING, "string_col");
     non_float_relation.AddColumn(types::BOOLEAN, "bool_col");
     relation_map_->emplace("non_float_table", non_float_relation);
+
+    Relation network_relation;
+    network_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
+    network_relation.AddColumn(types::INT64, "bytes_in");
+    network_relation.AddColumn(types::INT64, "bytes_out");
+    network_relation.AddColumn(types::INT64, "agent_id");
+    relation_map_->emplace("network", network_relation);
+
     compiler_state_ =
         std::make_unique<CompilerState>(std::move(relation_map_), registry_info_.get(), time_now);
   }
@@ -358,7 +402,7 @@ TEST_F(AnalyzerTest, test_relation_results) {
   // operators don't use generated columns, are just chained.
   std::string chain_operators = absl::StrJoin(
       {"queryDF = From(table='cpu', select=['upid', 'cpu0', 'cpu1', "
-       "'cpu2']).Range(start=0,stop=10)",
+       "'cpu2', 'agent_id']).Range(start=0,stop=10)",
        "mapDF = queryDF.Map(fn=lambda r : {'cpu0' : r.cpu0, 'cpu1' : r.cpu1, 'cpu_sum' : "
        "r.cpu0+r.cpu1})",
        "aggDF = mapDF.Agg(by=lambda r : r.cpu0, fn=lambda r : {'cpu_count' : "
@@ -785,7 +829,292 @@ TEST_F(AnalyzerTest, copy_metadata_key_and_og_column) {
   auto ir_graph_status = CompileGraph(valid_query);
   ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
-  EXPECT_OK(HandleRelation(ir_graph));
+  ASSERT_OK(HandleRelation(ir_graph));
+}
+
+const char* kInnerJoinQuery = R"query(
+src1 = From(table='cpu', select=['upid', 'cpu0','cpu1'])
+src2 = From(table='network', select=['bytes_in', 'upid', 'bytes_out'])
+join = src1.Join(src2,  type='inner',
+                      cond=lambda r1, r2: r1.upid == r2.upid,
+                      cols=lambda r1, r2: {
+                        'upid': r1.upid,
+                        'bytes_in': r2.bytes_in,
+                        'bytes_out': r2.bytes_out,
+                        'cpu0': r1.cpu0,
+                        'cpu1': r1.cpu1,
+                      })
+join.Result(name='joined')
+)query";
+
+TEST_F(AnalyzerTest, join_test) {
+  auto ir_graph_status = CompileGraph(kInnerJoinQuery);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  ASSERT_OK(HandleRelation(ir_graph));
+
+  JoinIR* join = nullptr;
+  for (int64_t i : ir_graph->dag().TopologicalSort()) {
+    IRNode* node = ir_graph->Get(i);
+    if (Match(node, Join())) {
+      join = static_cast<JoinIR*>(node);
+    }
+  }
+  ASSERT_NE(join, nullptr);
+
+  // check to make sure that equality conditions are properly processed.
+  ASSERT_EQ(join->equality_conditions().size(), 1UL);
+  EXPECT_EQ(join->equality_conditions()[0].left_column_idx, 0);
+  EXPECT_EQ(join->equality_conditions()[0].right_column_idx, 1);
+
+  EXPECT_THAT(join->relation().col_names(),
+              ElementsAre("upid", "bytes_in", "bytes_out", "cpu0", "cpu1"));
+
+  EXPECT_THAT(join->relation().col_types(), ElementsAre(types::UINT128, types::INT64, types::INT64,
+                                                        types::FLOAT64, types::FLOAT64));
+}
+
+const char* kInnerJoinFollowedByMapQuery = R"query(
+src1 = From(table='cpu', select=['upid', 'cpu0','cpu1'])
+src2 = From(table='network', select=['upid', 'bytes_in', 'bytes_out'])
+join = src1.Join(src2,  type='inner',
+                      cond=lambda r1, r2: r1.upid == r2.upid,
+                      cols=lambda r1, r2: {
+                        'upid': r1.upid,
+                        'bytes_in': r2.bytes_in,
+                        'bytes_out': r2.bytes_out,
+                        'cpu0': r1.cpu0,
+                        'cpu1': r1.cpu1,
+                      })
+map = join.Map(fn=lambda r: {"mb_in": r.bytes_in / 1E6})
+map.Result(name='joined')
+)query";
+
+TEST_F(AnalyzerTest, use_join_col_test) {
+  auto ir_graph_status = CompileGraph(kInnerJoinFollowedByMapQuery);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  ASSERT_OK(HandleRelation(ir_graph));
+}
+
+const char* kJoinWithMetadata = R"query(
+src1 = From(table='cpu', select=['upid', 'cpu0','cpu1'])
+src2 = From(table='network', select=['upid', 'bytes_in', 'bytes_out'])
+join = src1.Join(src2,  type='inner',
+                      cond=lambda r1, r2: r1.upid == r2.upid,
+                      cols=lambda r1, r2: {
+                        'upid': r1.upid,
+                        'bytes_in': r2.bytes_in,
+                        'bytes_out': r2.bytes_out,
+                        'cpu0': r1.cpu0,
+                        'cpu1': r1.cpu1,
+                        'service': r2.attr.service,
+                      })
+join.Result(name='joined')
+)query";
+
+TEST_F(AnalyzerTest, join_metadata_tests) {
+  auto ir_graph_status = CompileGraph(kJoinWithMetadata);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  ASSERT_OK(HandleRelation(ir_graph));
+
+  JoinIR* join = nullptr;
+  for (int64_t i : ir_graph->dag().TopologicalSort()) {
+    IRNode* node = ir_graph->Get(i);
+    if (Match(node, Join())) {
+      join = static_cast<JoinIR*>(node);
+    }
+  }
+  ASSERT_NE(join, nullptr);
+
+  EXPECT_TRUE(Match(join->parents()[0], MemorySource())) << absl::Substitute(
+      "Join parent idx 0 should be a MemorySource (after resolving metadata), not $0.",
+      join->parents()[0]->type_string());
+  // The parent should be the right one, as specified in the query.
+  EXPECT_TRUE(Match(join->parents()[1], Map()))
+      << absl::Substitute("Join parent idx 1 should be a Map (after resolving metadata), not $0.",
+                          join->parents()[1]->type_string());
+}
+
+const char* kJoinWithMetadataEqConditions = R"query(
+src1 = From(table='cpu', select=['upid', 'cpu0','cpu1'])
+src2 = From(table='network', select=['upid', 'bytes_in', 'bytes_out'])
+join = src1.Join(src2,  type='inner',
+                      cond=lambda r1, r2: r1.attr.service == r2.attr.service,
+                      cols=lambda r1, r2: {
+                        'upid': r1.upid,
+                        'bytes_in': r2.bytes_in,
+                        'bytes_out': r2.bytes_out,
+                        'cpu0': r1.cpu0,
+                        'cpu1': r1.cpu1,
+                        'service2': r2.attr.service,
+                      })
+join.Result(name='joined')
+)query";
+
+TEST_F(AnalyzerTest, join_metadata_equality_condition_tests) {
+  auto ir_graph_status = CompileGraph(kJoinWithMetadataEqConditions);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  ASSERT_OK(HandleRelation(ir_graph));
+
+  JoinIR* join = nullptr;
+  for (int64_t i : ir_graph->dag().TopologicalSort()) {
+    IRNode* node = ir_graph->Get(i);
+    if (Match(node, Join())) {
+      join = static_cast<JoinIR*>(node);
+    }
+  }
+  ASSERT_NE(join, nullptr);
+
+  ASSERT_EQ(join->equality_conditions().size(), 1UL);
+  EXPECT_EQ(join->equality_conditions()[0].left_column_idx, 3);
+  EXPECT_EQ(join->equality_conditions()[0].right_column_idx, 3);
+
+  // The parent should be the right one, as specified in the query.
+  EXPECT_TRUE(Match(join->parents()[0], Map()))
+      << absl::Substitute("Join parent idx 0 should be a Map (after resolving metadata), not $0.",
+                          join->parents()[0]->type_string());
+
+  ASSERT_TRUE(Match(join->parents()[1], Map()))
+      << absl::Substitute("Join parent idx 1 should be a Map (after resolving metadata), not $0.",
+                          join->parents()[1]->type_string());
+
+  // Make sure we don't have layered metadata mapping.
+  auto map2 = static_cast<MapIR*>(join->parents()[1]);
+  ASSERT_TRUE(Match(map2->parents()[0], MemorySource())) << absl::Substitute(
+      "Expected map resolver parent to be MemorySource, not $0", map2->parents()[0]->type_string());
+}
+
+const char* kJoinWithBothMetadataSides = R"query(
+src1 = From(table='cpu', select=['upid', 'cpu0','cpu1'])
+src2 = From(table='network', select=['upid', 'bytes_in', 'bytes_out'])
+join = src1.Join(src2,  type='inner',
+                      cond=lambda r1, r2: r1.upid == r2.upid,
+                      cols=lambda r1, r2: {
+                        'upid': r1.upid,
+                        'service': r1.attr.service,
+                        'service2': r2.attr.service,
+                      })
+join.Result(name='joined')
+)query";
+TEST_F(AnalyzerTest, join_metadata_both_parents) {
+  auto ir_graph_status = CompileGraph(kJoinWithBothMetadataSides);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  ASSERT_OK(HandleRelation(ir_graph));
+
+  JoinIR* join = nullptr;
+  for (int64_t i : ir_graph->dag().TopologicalSort()) {
+    IRNode* node = ir_graph->Get(i);
+    if (Match(node, Join())) {
+      join = static_cast<JoinIR*>(node);
+    }
+  }
+  ASSERT_NE(join, nullptr);
+
+  // The parent should be the right one, as specified in the query.
+  EXPECT_TRUE(Match(join->parents()[0], Map()))
+      << absl::Substitute("Join parent idx 0 should be a Map (after resolving metadata), not $0.",
+                          join->parents()[0]->type_string());
+
+  EXPECT_TRUE(Match(join->parents()[1], Map()))
+      << absl::Substitute("Join parent idx 1 should be a Map (after resolving metadata), not $0.",
+                          join->parents()[1]->type_string());
+  std::vector<IRNodeType> column_types;
+  for (const ColumnIR* col : join->output_columns()) {
+    column_types.push_back(col->type());
+  }
+
+  EXPECT_THAT(column_types,
+              ElementsAre(IRNodeType::kColumn, IRNodeType::kMetadata, IRNodeType::kMetadata));
+}
+
+const char* kJoinCondTpl = R"query(
+src1 = From(table='cpu', select=['upid', 'cpu0','cpu1', 'agent_id'])
+src2 = From(table='network', select=['upid', 'bytes_in', 'bytes_out', 'agent_id'])
+join = src1.Join(src2,  type='inner',
+                      cond=lambda r1, r2: $0,
+                      cols=lambda r1, r2: {
+                        'upid': r1.upid,
+                        'service': r1.attr.service,
+                        'service2': r2.attr.service,
+                      })
+join.Result(name='joined')
+)query";
+
+TEST_F(AnalyzerTest, join_nested_equality_condition) {
+  auto ir_graph_status = CompileGraph(
+      absl::Substitute(kJoinCondTpl, "r1.upid == r2.upid and r1.agent_id == r2.agent_id"));
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  ASSERT_OK(HandleRelation(ir_graph));
+
+  JoinIR* join = nullptr;
+  for (int64_t i : ir_graph->dag().TopologicalSort()) {
+    IRNode* node = ir_graph->Get(i);
+    if (Match(node, Join())) {
+      join = static_cast<JoinIR*>(node);
+    }
+  }
+  ASSERT_NE(join, nullptr);
+
+  ASSERT_EQ(join->equality_conditions().size(), 2UL);
+
+  EXPECT_EQ(join->equality_conditions()[0].left_column_idx, 0);
+  EXPECT_EQ(join->equality_conditions()[0].right_column_idx, 0);
+  EXPECT_EQ(join->equality_conditions()[1].left_column_idx, 3);
+  EXPECT_EQ(join->equality_conditions()[1].right_column_idx, 3);
+}
+
+TEST_F(AnalyzerTest, join_nested_equality_condition_parens) {
+  auto ir_graph_status = CompileGraph(
+      absl::Substitute(kJoinCondTpl, "r1.upid == r2.upid and (r1.agent_id == r2.agent_id)"));
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  ASSERT_OK(HandleRelation(ir_graph));
+
+  JoinIR* join = nullptr;
+  for (int64_t i : ir_graph->dag().TopologicalSort()) {
+    IRNode* node = ir_graph->Get(i);
+    if (Match(node, Join())) {
+      join = static_cast<JoinIR*>(node);
+    }
+  }
+  ASSERT_NE(join, nullptr);
+
+  ASSERT_EQ(join->equality_conditions().size(), 2UL);
+  EXPECT_EQ(join->equality_conditions()[0].left_column_idx, 0);
+  EXPECT_EQ(join->equality_conditions()[0].right_column_idx, 0);
+  EXPECT_EQ(join->equality_conditions()[1].left_column_idx, 3);
+  EXPECT_EQ(join->equality_conditions()[1].right_column_idx, 3);
+}
+
+TEST_F(AnalyzerTest, same_parent_equal_condition_fail) {
+  auto ir_graph_status = CompileGraph(absl::Substitute(kJoinCondTpl, "r1.upid == r1.upid"));
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto analyzer_status = HandleRelation(ir_graph);
+  ASSERT_NOT_OK(analyzer_status);
+  EXPECT_THAT(analyzer_status,
+              HasCompilerError("Both sides of an equality condition can't reference the same "
+                               "parent, you must reference the other parent."));
+}
+
+TEST_F(AnalyzerTest, join_equal_condition_expression) {
+  auto ir_graph_status =
+      CompileGraph(absl::Substitute(kJoinCondTpl, "r1.agent_id+ 1 == r1.agent_id"));
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto analyzer_status = HandleRelation(ir_graph);
+  ASSERT_NOT_OK(analyzer_status);
+  VLOG(1) << analyzer_status.ToString();
+  EXPECT_THAT(
+      analyzer_status,
+      HasCompilerError(
+          "Expression pl.equal(Func,Column) not supported as a condition in the Join. Only "
+          "equality of columns and the AND compositions of equality expressions are supported."));
 }
 
 }  // namespace compiler

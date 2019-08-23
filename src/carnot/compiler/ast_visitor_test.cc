@@ -712,6 +712,7 @@ TEST(JoinTest, test_inner_join) {
   EXPECT_THAT(column_ir_parent_idx, ElementsAre(0, 1, 1, 0, 0));
 
   EXPECT_EQ(join->join_type(), planpb::JoinOperator_JoinType_INNER);
+  EXPECT_THAT(graph->dag().ParentsOf(join->id()), ElementsAre(mem_src1->id(), mem_src2->id()));
 }
 
 const char* kJoinQueryTpl = R"query(
@@ -773,6 +774,9 @@ TEST(JoinTest, test_right_join) {
   EXPECT_THAT(column_ir_parent_idx, ElementsAre(1, 0, 0, 1, 1));
 
   EXPECT_EQ(join->join_type(), planpb::JoinOperator_JoinType_LEFT_OUTER);
+
+  // test to make sure the order of the dag is consistent.
+  EXPECT_THAT(graph->dag().ParentsOf(join->id()), ElementsAre(mem_src2->id(), mem_src1->id()));
 }
 
 TEST(JoinTest, bad_join_type) {

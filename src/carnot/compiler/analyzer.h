@@ -57,6 +57,11 @@ class Analyzer : public RuleExecutor {
     resolution_verification_batch->AddRule<VerifyFilterExpressionRule>(compiler_state_);
   }
 
+  void CreateJoinEqualityConditionBatch() {
+    RuleBatch* join_equality_condition_setting = CreateRuleBatch<FailOnMax>("post_resolution", 2);
+    join_equality_condition_setting->AddRule<JoinEqualityConditionRule>(compiler_state_);
+  }
+
   void CreateRemoveIROnlyNodesBatch() {
     RuleBatch* remove_ir_only_nodes_batch = CreateRuleBatch<FailOnMax>("RemoveIROnlyNodes", 2);
     remove_ir_only_nodes_batch->AddRule<MetadataResolverConversionRule>(compiler_state_);
@@ -69,6 +74,7 @@ class Analyzer : public RuleExecutor {
     CreateVerifyUserDefinedColumnsBatch();
     CreateDataTypeResolutionBatch();
     CreateResolutionVerificationBatch();
+    CreateJoinEqualityConditionBatch();
     CreateRemoveIROnlyNodesBatch();
     return Status::OK();
   }

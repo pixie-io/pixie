@@ -55,6 +55,12 @@ scalar_udfs {
   exec_arg_types: STRING
   return_type: STRING
 }
+scalar_udfs {
+  name: "pl.equal"
+  exec_arg_types: UINT128
+  exec_arg_types: UINT128
+  return_type: BOOLEAN
+}
 )proto";
 class CompilerTest : public ::testing::Test {
  protected:
@@ -105,10 +111,10 @@ class CompilerTest : public ::testing::Test {
     rel_map->emplace(
         "http_table",
         table_store::schema::Relation(
-            std::vector<types::DataType>({types::DataType::TIME64NS, types::DataType::INT64,
+            std::vector<types::DataType>({types::DataType::TIME64NS, types::DataType::UINT128,
                                           types::DataType::INT64, types::DataType::INT64}),
             std::vector<std::string>(
-                {"time_", "pid", "http_resp_status", "http_resp_latency_ns"})));
+                {"time_", "upid", "http_resp_status", "http_resp_latency_ns"})));
 
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
 
@@ -1079,7 +1085,7 @@ TEST_F(CompilerTest, limit_test) {
 TEST_F(CompilerTest, reused_result) {
   std::string query = absl::StrJoin(
       {
-          "queryDF = From(table='http_table', select=['time_', 'pid', 'http_resp_status', "
+          "queryDF = From(table='http_table', select=['time_', 'upid', 'http_resp_status', "
           "'http_resp_latency_ns'])",
           "range_out = queryDF.Range(start='-1m')",
           "x = range_out.Filter(fn=lambda r: r.http_resp_latency_ns < 1000000)",
@@ -1096,7 +1102,7 @@ TEST_F(CompilerTest, reused_result) {
 TEST_F(CompilerTest, multiple_result_sinks) {
   std::string query = absl::StrJoin(
       {
-          "queryDF = From(table='http_table', select=['time_', 'pid', 'http_resp_status', "
+          "queryDF = From(table='http_table', select=['time_', 'upid', 'http_resp_status', "
           "'http_resp_latency_ns'])",
           "range_out = queryDF.Range(start='-1m')",
           "x = range_out.Filter(fn=lambda r: r.http_resp_latency_ns < "
@@ -2204,9 +2210,288 @@ TEST_F(CompilerTest, cgroups_pod_id) {
                      "range_out.Result(name='out')"},
                     "\n");
   auto plan_status = compiler_.Compile(query, compiler_state_.get());
+  VLOG(2) << plan_status.ToString();
+  EXPECT_OK(plan_status);
+  VLOG(2) << plan_status.ValueOrDie().DebugString();
+}
+
+const char* kJoinInnerQueryPlan = R"proto(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      id: 6
+      sorted_children: 12
+    }
+    nodes {
+      id: 0
+      sorted_children: 12
+    }
+    nodes {
+      id: 12
+      sorted_children: 24
+      sorted_parents: 0
+      sorted_parents: 6
+    }
+    nodes {
+      id: 24
+      sorted_parents: 12
+    }
+  }
+  nodes {
+    id: 6
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "http_table"
+        column_idxs: 2
+        column_idxs: 1
+        column_idxs: 3
+        column_names: "http_resp_status"
+        column_names: "upid"
+        column_names: "http_resp_latency_ns"
+        column_types: INT64
+        column_types: UINT128
+        column_types: INT64
+      }
+    }
+  }
+  nodes {
+    id: 0
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 1
+        column_idxs: 4
+        column_idxs: 2
+        column_names: "cpu0"
+        column_names: "upid"
+        column_names: "cpu1"
+        column_types: FLOAT64
+        column_types: UINT128
+        column_types: FLOAT64
+      }
+    }
+  }
+  nodes {
+    id: 12
+    op {
+      op_type: JOIN_OPERATOR
+      join_op {
+        type: INNER
+        equality_conditions {
+          left_column_index: 1
+          right_column_index: 1
+        }
+        output_columns {
+          parent_index: 0
+          column_index: 1
+        }
+        output_columns {
+          parent_index: 1
+          column_index: 0
+        }
+        output_columns {
+          parent_index: 1
+          column_index: 2
+        }
+        output_columns {
+          parent_index: 0
+          column_index: 0
+        }
+        output_columns {
+          parent_index: 0
+          column_index: 2
+        }
+        column_names: "upid"
+        column_names: "http_resp_status"
+        column_names: "http_resp_latency_ns"
+        column_names: "cpu0"
+        column_names: "cpu1"
+      }
+    }
+  }
+  nodes {
+    id: 24
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "joined"
+        column_types: UINT128
+        column_types: INT64
+        column_types: INT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_names: "upid"
+        column_names: "http_resp_status"
+        column_names: "http_resp_latency_ns"
+        column_names: "cpu0"
+        column_names: "cpu1"
+      }
+    }
+  }
+}
+)proto";
+
+const char* kJoinQueryTypeTpl = R"query(
+src1 = From(table='cpu', select=['cpu0', 'upid', 'cpu1'])
+src2 = From(table='http_table', select=['http_resp_status', 'upid',  'http_resp_latency_ns'])
+join = src1.Join(src2,  type='$0',
+                      cond=lambda r1, r2: r1.upid == r2.upid,
+                      cols=lambda r1, r2: {
+                        'upid': r1.upid,
+                        'http_resp_status': r2.http_resp_status,
+                        'http_resp_latency_ns': r2.http_resp_latency_ns,
+                        'cpu0': r1.cpu0,
+                        'cpu1': r1.cpu1,
+                      })
+join.Result(name='joined')
+)query";
+
+TEST_F(CompilerTest, inner_join) {
+  auto plan_status =
+      compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "inner"), compiler_state_.get());
   VLOG(1) << plan_status.ToString();
   EXPECT_OK(plan_status);
   VLOG(1) << plan_status.ValueOrDie().DebugString();
+  EXPECT_THAT(plan_status.ConsumeValueOrDie(), EqualsProto(kJoinInnerQueryPlan));
+}
+const char* kJoinRightQueryPlan = R"proto(
+dag {
+  nodes {
+    id: 1
+  }
+}
+nodes {
+  id: 1
+  dag {
+    nodes {
+      id: 6
+      sorted_children: 12
+    }
+    nodes {
+      id: 0
+      sorted_children: 12
+    }
+    nodes {
+      id: 12
+      sorted_children: 24
+      sorted_parents: 6
+      sorted_parents: 0
+    }
+    nodes {
+      id: 24
+      sorted_parents: 12
+    }
+  }
+  nodes {
+    id: 6
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "http_table"
+        column_idxs: 2
+        column_idxs: 1
+        column_idxs: 3
+        column_names: "http_resp_status"
+        column_names: "upid"
+        column_names: "http_resp_latency_ns"
+        column_types: INT64
+        column_types: UINT128
+        column_types: INT64
+      }
+    }
+  }
+  nodes {
+    id: 0
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+        column_idxs: 1
+        column_idxs: 4
+        column_idxs: 2
+        column_names: "cpu0"
+        column_names: "upid"
+        column_names: "cpu1"
+        column_types: FLOAT64
+        column_types: UINT128
+        column_types: FLOAT64
+      }
+    }
+  }
+  nodes {
+    id: 12
+    op {
+      op_type: JOIN_OPERATOR
+      join_op {
+        type: LEFT_OUTER
+        equality_conditions {
+          left_column_index: 1
+          right_column_index: 1
+        }
+        output_columns {
+          parent_index: 1
+          column_index: 1
+        }
+        output_columns {
+          parent_index: 0
+          column_index: 0
+        }
+        output_columns {
+          parent_index: 0
+          column_index: 2
+        }
+        output_columns {
+          parent_index: 1
+          column_index: 0
+        }
+        output_columns {
+          parent_index: 1
+          column_index: 2
+        }
+        column_names: "upid"
+        column_names: "http_resp_status"
+        column_names: "http_resp_latency_ns"
+        column_names: "cpu0"
+        column_names: "cpu1"
+      }
+    }
+  }
+  nodes {
+    id: 24
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+        name: "joined"
+        column_types: UINT128
+        column_types: INT64
+        column_types: INT64
+        column_types: FLOAT64
+        column_types: FLOAT64
+        column_names: "upid"
+        column_names: "http_resp_status"
+        column_names: "http_resp_latency_ns"
+        column_names: "cpu0"
+        column_names: "cpu1"
+      }
+    }
+  }
+}
+)proto";
+TEST_F(CompilerTest, right_join) {
+  auto plan_status =
+      compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "right"), compiler_state_.get());
+  VLOG(1) << plan_status.ToString();
+  EXPECT_OK(plan_status);
+  VLOG(1) << plan_status.ValueOrDie().DebugString();
+  EXPECT_THAT(plan_status.ConsumeValueOrDie(), EqualsProto(kJoinRightQueryPlan));
 }
 
 }  // namespace compiler

@@ -92,6 +92,9 @@ Status IRVerifier::VerifyNodeConnections(IRNode* node) {
     case IRNodeType::kLimit: {
       return VerifyLimit(static_cast<LimitIR*>(node));
     }
+    case IRNodeType::kJoin: {
+      return Status::OK();
+    }
     default: {
       return node->CreateIRNodeError("Couldn't find verify node of type $0", node->type_string());
     }

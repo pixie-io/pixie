@@ -194,6 +194,19 @@ inline BinaryOpMatch<LHS, RHS, FuncIR::Opcode::eq, true> Equals(const LHS& L, co
 }
 
 /**
+ * @brief Match equals functions that match the left and right operators. It is commutative.
+ */
+template <typename LHS, typename RHS>
+inline BinaryOpMatch<LHS, RHS, FuncIR::Opcode::logand, true> LogicalAnd(const LHS& L,
+                                                                        const RHS& R) {
+  return BinaryOpMatch<LHS, RHS, FuncIR::Opcode::logand, true>(L, R);
+}
+
+inline BinaryOpMatch<AllMatch, AllMatch, FuncIR::Opcode::logand, true> LogicalAnd() {
+  return LogicalAnd(Value(), Value());
+}
+
+/**
  * @brief Match any binary function.
  */
 template <typename LHS_t, typename RHS_t, bool Commutable = false>
@@ -518,6 +531,12 @@ inline RelationResolvedOpMatch<IRNodeType::kUnion, false, true> UnresolvedReadyU
 }
 
 /**
+ * @brief Match a Join node that doesn't have a relation but it's parents do.
+ */
+inline RelationResolvedOpMatch<IRNodeType::kJoin, false, true> UnresolvedReadyJoin() {
+  return RelationResolvedOpMatch<IRNodeType::kJoin, false, true>();
+}
+/**
  * @brief Match Any operator that doesn't have a relation but the parent does.
  */
 inline AnyRelationResolvedOpMatch<false, true> UnresolvedReadyOp() {
@@ -650,6 +669,21 @@ struct BlockingOperatorMatch : public ParentMatch {
 };
 
 inline BlockingOperatorMatch BlockingOperator() { return BlockingOperatorMatch(); }
+
+template <bool ConditionSet = true>
+struct JoinOperatorConditionSetMatch : public ParentMatch {
+  JoinOperatorConditionSetMatch() : ParentMatch(IRNodeType::kJoin) {}
+  bool Match(IRNode* node) const override {
+    if (Join().Match(node)) {
+      return static_cast<JoinIR*>(node)->HasEqualityConditions() == ConditionSet;
+    }
+    return false;
+  }
+};
+
+inline JoinOperatorConditionSetMatch<false> JoinOperatorEqCondNotSet() {
+  return JoinOperatorConditionSetMatch<false>();
+}
 
 }  // namespace compiler
 }  // namespace carnot

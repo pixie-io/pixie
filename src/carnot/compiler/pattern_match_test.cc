@@ -166,6 +166,23 @@ TEST_F(PatternMatchTest, relation_status_union_test) {
   EXPECT_TRUE(Match(union_op, UnresolvedReadyUnion()));
 }
 
+TEST_F(PatternMatchTest, JoinOperatorConditionSetMatch) {
+  auto mem_src1 = MakeMemSource(MakeRelation());
+
+  auto mem_src2 = MakeMemSource(MakeRelation());
+
+  auto join_op = MakeJoin({mem_src1, mem_src2}, "outer",
+                          MakeEqualsFunc(MakeColumn("col1", 0), MakeColumn("col2", 1)),
+                          {
+                              {"col1", MakeColumn("col1", 0)},
+                              {"col2", MakeColumn("col2", 1)},
+                          });
+
+  EXPECT_TRUE(Match(join_op, JoinOperatorEqCondNotSet()));
+  join_op->AddEqualityCondition(1, 2);
+  EXPECT_FALSE(Match(join_op, JoinOperatorEqCondNotSet()));
+}
+
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

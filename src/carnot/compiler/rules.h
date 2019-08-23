@@ -103,6 +103,7 @@ class OperatorRelationRule : public Rule {
   StatusOr<bool> SetMap(MapIR* map_ir) const;
   StatusOr<bool> SetMetadataResolver(MetadataResolverIR* map_ir) const;
   StatusOr<bool> SetUnion(UnionIR* union_ir) const;
+  StatusOr<bool> SetJoin(JoinIR* join_op) const;
   StatusOr<bool> SetOther(OperatorIR* op) const;
 };
 
@@ -236,6 +237,23 @@ class MergeRangeOperatorRule : public Rule {
 
  private:
   StatusOr<bool> MergeRange(RangeIR* range_ir);
+};
+
+class JoinEqualityConditionRule : public Rule {
+  /**
+   * @brief Takes a Join node that has yet to initialize equality conditions and sets it up as
+   * appropriate. For now equality condition expressions are limited to simple equality and ANDs of
+   * equality. In the future we'll allow more complicated transactions.
+   */
+
+ public:
+  explicit JoinEqualityConditionRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+
+  StatusOr<bool> SetEqualityConditionJoin(JoinIR* join_node);
+  Status ProcessExpression(JoinIR* join_node, ExpressionIR* expr);
 };
 
 }  // namespace compiler

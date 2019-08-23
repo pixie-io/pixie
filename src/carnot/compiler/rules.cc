@@ -29,10 +29,6 @@ StatusOr<bool> DataTypeRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, UnresolvedRTFuncMatchAllArgs(ResolvedExpression()))) {
     // Match any function that has all args resolved.
     return EvaluateFunc(static_cast<FuncIR*>(ir_node));
-  } else if (Match(ir_node, UnresolvedFuncType())) {
-    // Matches any function that has some unresolved args.
-    VLOG(1) << absl::Substitute("$1(id=$0) has unresolved args.", ir_node->id(),
-                                ir_node->type_string());
   } else if (Match(ir_node, UnresolvedColumnType())) {
     // Evaluate any unresolved columns.
     return EvaluateColumn(static_cast<ColumnIR*>(ir_node));
@@ -77,8 +73,6 @@ StatusOr<bool> DataTypeRule::EvaluateColumn(ColumnIR* column) const {
   if (!parent_op->IsRelationInit()) {
     // Missing a relation in parent op is not a failure, it means the parent op still has to
     // propogate results.
-    VLOG(1) << absl::Substitute("Have yet to evaluate relation for operator $1(id=$0)",
-                                parent_op->id(), parent_op->type_string());
     return false;
   }
 
@@ -176,11 +170,41 @@ StatusOr<bool> OperatorRelationRule::Apply(IRNode* ir_node) {
     return SetMetadataResolver(static_cast<MetadataResolverIR*>(ir_node));
   } else if (Match(ir_node, UnresolvedReadyUnion())) {
     return SetUnion(static_cast<UnionIR*>(ir_node));
+  } else if (Match(ir_node, UnresolvedReadyJoin())) {
+    return SetJoin(static_cast<JoinIR*>(ir_node));
   } else if (Match(ir_node, UnresolvedReadyOp())) {
     return SetOther(static_cast<OperatorIR*>(ir_node));
   }
   return false;
 }
+
+StatusOr<bool> OperatorRelationRule::SetJoin(JoinIR* join_node) const {
+  DCHECK_EQ(join_node->parents().size(), 2UL);
+  OperatorIR* left = join_node->parents()[0];
+  OperatorIR* right = join_node->parents()[1];
+
+  Relation left_relation = left->relation();
+  Relation right_relation = right->relation();
+
+  Relation out_relation;
+
+  for (size_t col_idx = 0; col_idx < join_node->output_columns().size(); ++col_idx) {
+    const ColumnIR* col = join_node->output_columns()[col_idx];
+    const std::string& new_col_name = join_node->column_names()[col_idx];
+    Relation* col_relation;
+    if (col->container_op_parent_idx() == 0) {
+      col_relation = &left_relation;
+    } else {
+      col_relation = &right_relation;
+    }
+
+    out_relation.AddColumn(col_relation->GetColumnType(col->col_name()), new_col_name);
+  }
+
+  PL_RETURN_IF_ERROR(join_node->SetRelation(out_relation));
+  return true;
+}
+
 bool UpdateColumn(ColumnIR* col_expr, Relation* relation_ptr) {
   if (!col_expr->IsDataTypeEvaluated()) {
     return false;
@@ -363,6 +387,7 @@ StatusOr<bool> ResolveMetadataRule::HandleMetadata(MetadataIR* metadata) const {
     return metadata->CreateIRNodeError("Specified metadata value '$0' is not properly handled.",
                                        metadata->name());
   }
+
   // Get containing operator.
   PL_ASSIGN_OR_RETURN(OperatorIR * container_op, metadata->ContainingOperator());
   if (!container_op->HasParents()) {
@@ -370,22 +395,16 @@ StatusOr<bool> ResolveMetadataRule::HandleMetadata(MetadataIR* metadata) const {
         "No parent for operator $1(id=$2). Can't resolve column '$0'.", metadata->col_name(),
         container_op->type_string(), container_op->id());
   }
-  const std::vector<OperatorIR*>& container_op_parents = container_op->parents();
-  bool metadata_resolver_op_found = false;
-  OperatorIR* parent_op;
-  for (OperatorIR* parent : container_op_parents) {
-    if (parent->type() == IRNodeType::kMetadataResolver) {
-      parent_op = parent;
-      metadata_resolver_op_found = true;
-      break;
-    }
-  }
-  if (!metadata_resolver_op_found) {
+
+  MetadataResolverIR* md_resolver_op;
+  PL_ASSIGN_OR_RETURN(OperatorIR * referenced_op, metadata->ReferencedOperator());
+  if (referenced_op->type() == IRNodeType::kMetadataResolver) {
+    md_resolver_op = static_cast<MetadataResolverIR*>(referenced_op);
+  } else {
     // If the parent is not a metadata resolver, add a parent metadata resolver node.
-    PL_ASSIGN_OR_RETURN(OperatorIR * referenced_op, metadata->ReferencedOperator());
-    PL_ASSIGN_OR_RETURN(parent_op, InsertMetadataResolver(container_op, referenced_op));
+    PL_ASSIGN_OR_RETURN(md_resolver_op, InsertMetadataResolver(container_op, referenced_op));
   }
-  auto md_resolver_op = static_cast<MetadataResolverIR*>(parent_op);
+
   PL_ASSIGN_OR_RETURN(MetadataProperty * md_property, md_handler_->GetProperty(metadata->name()));
   PL_RETURN_IF_ERROR(metadata->ResolveMetadataColumn(md_resolver_op, md_property));
   PL_RETURN_IF_ERROR(md_resolver_op->AddMetadata(md_property));
@@ -395,6 +414,8 @@ StatusOr<bool> ResolveMetadataRule::HandleMetadata(MetadataIR* metadata) const {
 StatusOr<bool> MetadataFunctionFormatRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, Equals(Metadata(), MetadataLiteral()))) {
     // If the literal already matches, then no need to do any work.
+    return false;
+  } else if (Match(ir_node, Equals(Metadata(), Metadata()))) {
     return false;
   } else if (Match(ir_node, Equals(Metadata(), String()))) {
     FuncIR* func = static_cast<FuncIR*>(ir_node);
@@ -720,6 +741,60 @@ StatusOr<bool> MergeRangeOperatorRule::MergeRange(RangeIR* range_ir) {
   PL_RETURN_IF_ERROR(range_ir->RemoveParent(src_ir));
   DeferNodeDeletion(range_ir->id());
   return true;
+}
+
+StatusOr<bool> JoinEqualityConditionRule::Apply(IRNode* ir_node) {
+  if (Match(ir_node, JoinOperatorEqCondNotSet())) {
+    return SetEqualityConditionJoin(static_cast<JoinIR*>(ir_node));
+  }
+  return false;
+}
+
+StatusOr<bool> JoinEqualityConditionRule::SetEqualityConditionJoin(JoinIR* join_node) {
+  PL_RETURN_IF_ERROR(ProcessExpression(join_node, join_node->condition_expr()));
+  return true;
+}
+
+Status JoinEqualityConditionRule::ProcessExpression(JoinIR* join_node, ExpressionIR* expr) {
+  if (Match(expr, Equals(ColumnNode(), ColumnNode()))) {
+    FuncIR* eq_func = static_cast<FuncIR*>(expr);
+    DCHECK_EQ(eq_func->args().size(), 2UL);
+    ColumnIR* arg0 = static_cast<ColumnIR*>(eq_func->args()[0]);
+    ColumnIR* arg1 = static_cast<ColumnIR*>(eq_func->args()[1]);
+
+    int64_t arg0_parent_idx = arg0->container_op_parent_idx();
+    int64_t arg1_parent_idx = arg1->container_op_parent_idx();
+
+    if (arg0_parent_idx == arg1_parent_idx) {
+      return expr->CreateIRNodeError(
+          "Both sides of an equality condition can't reference the same parent, you must reference "
+          "the other parent.",
+          arg0_parent_idx);
+    }
+
+    int64_t arg0_idx = arg0->col_idx();
+    int64_t arg1_idx = arg1->col_idx();
+
+    if (arg0_parent_idx == 0 && arg1_parent_idx == 1) {
+      join_node->AddEqualityCondition(arg0_idx, arg1_idx);
+    } else if (arg0_parent_idx == 1 && arg1_parent_idx == 0) {
+      join_node->AddEqualityCondition(arg1_idx, arg0_idx);
+    } else {
+      return expr->CreateIRNodeError("Parents of columns in equality condition not set properly.");
+    }
+    return Status::OK();
+  } else if (Match(expr, LogicalAnd())) {
+    FuncIR* func = static_cast<FuncIR*>(expr);
+    DCHECK_EQ(func->args().size(), 2UL);
+    PL_RETURN_IF_ERROR(ProcessExpression(join_node, func->args()[0]));
+    PL_RETURN_IF_ERROR(ProcessExpression(join_node, func->args()[1]));
+    return Status::OK();
+  }
+
+  return expr->CreateIRNodeError(
+      "Expression $0 not supported as a condition in the Join. Only equality of columns and the "
+      "AND compositions of equality expressions are supported.",
+      expr->DebugString());
 }
 
 }  // namespace compiler

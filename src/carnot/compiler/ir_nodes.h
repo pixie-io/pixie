@@ -787,10 +787,17 @@ class FuncIR : public ExpressionIR {
               bool compile_time, const pypa::AstPtr& ast_node);
   bool HasLogicalRepr() const override;
 
+  // NOLINTNEXTLINE(readability/inheritance)
+  virtual std::string DebugString() const override {
+    return absl::Substitute("$0($1)", func_name(),
+                            absl::StrJoin(args_, ",", [](std::string* out, IRNode* in) {
+                              absl::StrAppend(out, in->type_string());
+                            }));
+  }
+
   std::string func_name() const {
     return absl::Substitute("$0.$1", func_prefix_, op_.carnot_op_name);
   }
-  std::string ParentsDebugString();
   int64_t func_id() const { return func_id_; }
   void set_func_id(int64_t func_id) { func_id_ = func_id; }
   const std::vector<ExpressionIR*>& args() { return args_; }
@@ -1438,6 +1445,8 @@ class JoinIR : public OperatorIR {
     DCHECK_GT(equality_conditions_.size(), 0UL) << "Equality conditions must be created";
     return equality_conditions_;
   }
+
+  bool HasEqualityConditions() const { return equality_conditions_.size() != 0; }
 
   FuncIR* condition_expr() const { return condition_expr_; }
   planpb::JoinOperator::JoinType join_type() const { return join_type_; }
