@@ -22,16 +22,7 @@ class PlanGraph {
   bool is_initialized() const { return is_initialized_; }
   Status Init(const TProto& pb) {
     // Add all of the nodes into the DAG.
-    for (const auto& node : pb.dag().nodes()) {
-      dag_.AddNode(node.id());
-    }
-
-    // Add all of the edges into the DAG.
-    for (const auto& node : pb.dag().nodes()) {
-      for (int64_t to_node : node.sorted_deps()) {
-        dag_.AddEdge(node.id(), to_node);
-      }
-    }
+    dag_.Init(pb.dag());
 
     for (const auto& node : pb.nodes()) {
       nodes_.emplace(node.id(), PlanGraph::ProtoToNode(node, node.id()));

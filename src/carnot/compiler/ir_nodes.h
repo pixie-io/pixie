@@ -256,8 +256,7 @@ class IR {
   Status Prune(const std::unordered_set<int64_t>& ids_to_prune);
 
  private:
-  Status OutputProto(planpb::PlanFragment* pf, planpb::DAG* pf_dag,
-                     const OperatorIR* op_node) const;
+  Status OutputProto(planpb::PlanFragment* pf, const OperatorIR* op_node) const;
   plan::DAG dag_;
   std::unordered_map<int64_t, IRNodePtr> id_node_map_;
   int64_t id_node_counter = 0;

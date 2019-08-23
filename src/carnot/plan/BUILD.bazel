@@ -19,7 +19,10 @@ pl_cc_library(
 pl_cc_test(
     name = "dag_test",
     srcs = ["dag_test.cc"],
-    deps = [":cc_library"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing:cc_library",
+    ],
 )
 
 pl_cc_test(

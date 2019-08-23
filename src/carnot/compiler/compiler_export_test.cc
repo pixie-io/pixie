@@ -79,14 +79,16 @@ TEST_F(CompilerExportTest, query_test) {
       id: 1
       dag {
         nodes {
-          sorted_deps: 7
+          sorted_children: 7
         }
         nodes {
           id: 7
-          sorted_deps: 13
+          sorted_children: 13
+          sorted_parents: 0
         }
         nodes {
           id: 13
+          sorted_parents: 7
         }
       }
       nodes {

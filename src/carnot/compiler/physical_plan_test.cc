@@ -60,10 +60,11 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          sorted_deps: 6
+          sorted_children: 6
         }
         nodes {
           id: 6
+          sorted_parents: 0
         }
       }
       nodes {
@@ -118,10 +119,11 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          sorted_deps: 6
+          sorted_children: 6
         }
         nodes {
           id: 6
+          sorted_parents: 0
         }
       }
       nodes {
@@ -174,10 +176,11 @@ qb_address_to_dag_id {
 }
 dag {
   nodes {
-    sorted_deps: 1
+    sorted_children: 1
   }
   nodes {
     id: 1
+    sorted_parents: 0
   }
 }
 )proto";

@@ -15,6 +15,61 @@ using std::begin;
 using std::end;
 using std::vector;
 
+void DAG::Init(const planpb::DAG& dag) {
+  for (const auto& node : dag.nodes()) {
+    AddNode(node.id());
+    for (int64_t child : node.sorted_children()) {
+      forward_edges_by_node_[node.id()].push_back(child);
+    }
+    for (int64_t parent : node.sorted_parents()) {
+      reverse_edges_by_node_[node.id()].push_back(parent);
+    }
+  }
+}
+
+void DAG::ToProto(planpb::DAG* dag) const {
+  for (int64_t i : TopologicalSort()) {
+    planpb::DAG_DAGNode* node = dag->add_nodes();
+    node->set_id(i);
+    auto reverse_it = reverse_edges_by_node_.find(i);
+    DCHECK(reverse_it != reverse_edges_by_node_.end());
+    for (int64_t parent : reverse_it->second) {
+      node->add_sorted_parents(parent);
+    }
+
+    auto forward_it = forward_edges_by_node_.find(i);
+    DCHECK(forward_it != forward_edges_by_node_.end());
+    for (int64_t child : forward_it->second) {
+      node->add_sorted_children(child);
+    }
+  }
+}
+
+void DAG::ToProto(planpb::DAG* dag, const absl::flat_hash_set<int64_t>& ignore_ids) const {
+  for (int64_t i : TopologicalSort()) {
+    if (ignore_ids.contains(i)) {
+      continue;
+    }
+    planpb::DAG_DAGNode* node = dag->add_nodes();
+    node->set_id(i);
+    auto reverse_it = reverse_edges_by_node_.find(i);
+    DCHECK(reverse_it != reverse_edges_by_node_.end());
+    for (int64_t parent : reverse_it->second) {
+      if (!ignore_ids.contains(parent)) {
+        node->add_sorted_parents(parent);
+      }
+    }
+
+    auto forward_it = forward_edges_by_node_.find(i);
+    DCHECK(forward_it != forward_edges_by_node_.end());
+    for (int64_t child : forward_it->second) {
+      if (!ignore_ids.contains(child)) {
+        node->add_sorted_children(child);
+      }
+    }
+  }
+}
+
 void DAG::AddNode(int64_t node) {
   DCHECK(!HasNode(node)) << absl::Substitute("Node: $0 already exists", node);
   nodes_.insert(node);

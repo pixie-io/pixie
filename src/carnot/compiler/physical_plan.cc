@@ -19,14 +19,8 @@ StatusOr<compilerpb::PhysicalPlan> PhysicalPlan::ToProto() const {
     PL_ASSIGN_OR_RETURN((*qb_address_to_plan_pb)[carnot->QueryBrokerAddress()],
                         carnot->PlanProto());
     (*qb_address_to_dag_id_pb)[carnot->QueryBrokerAddress()] = i;
-
-    // Handle the dag side.
-    auto dag_node = physical_plan_dag->add_nodes();
-    dag_node->set_id(i);
-    for (const auto& dep : dag_.DependenciesOf(i)) {
-      dag_node->add_sorted_deps(dep);
-    }
   }
+  dag_.ToProto(physical_plan_dag);
   return physical_plan_pb;
 }
 

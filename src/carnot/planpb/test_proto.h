@@ -563,19 +563,23 @@ const char* kPlanFragmentWithFourNodes = R"(
   dag {
     nodes {
       id: 1
-      sorted_deps: 2
-      sorted_deps: 3
+      sorted_children: 2
+      sorted_children: 3
     }
     nodes {
       id: 2
-      sorted_deps: 5
+      sorted_parents: 1
+      sorted_children: 5
     }
     nodes {
       id: 3
-      sorted_deps: 5
+      sorted_parents: 1
+      sorted_children: 5
     }
     nodes {
       id: 5
+      sorted_parents: 2
+      sorted_parents: 3
     }
   }
   nodes {
@@ -637,18 +641,21 @@ const char* kLinearPlanFragment = R"(
   dag {
     nodes {
       id: 1
-      sorted_deps: 2
+      sorted_children: 2
     }
     nodes {
       id: 2
-      sorted_deps: 3
+      sorted_children: 3
+      sorted_parents: 1
     }
     nodes {
       id: 3
-      sorted_deps: 4
+      sorted_children: 4
+      sorted_parents: 2
     }
     nodes {
       id: 4
+      sorted_parents: 3
     }
   }
   nodes {
@@ -744,23 +751,28 @@ const char* kPlanWithFiveNodes = R"(
   dag {
     nodes {
       id: 1
-      sorted_deps: 2
-      sorted_deps: 3
+      sorted_children: 2
+      sorted_children: 3
     }
     nodes {
       id: 2
-      sorted_deps: 4
+      sorted_children: 4
+      sorted_parents: 1
     }
     nodes {
       id: 3
-      sorted_deps: 4
+      sorted_children: 4
+      sorted_parents: 1
     }
     nodes {
       id: 4
-      sorted_deps: 5
+      sorted_children: 5
+      sorted_parents: 2
+      sorted_parents: 3
     }
     nodes {
       id: 5
+      sorted_parents: 4
     }
   }
   nodes {

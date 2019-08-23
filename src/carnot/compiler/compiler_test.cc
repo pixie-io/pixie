@@ -131,18 +131,21 @@ nodes {
   id: 1
   dag {
     nodes {
-      sorted_deps: 5
+      sorted_children: 5
     }
     nodes {
       id: 5
-      sorted_deps: 13
+      sorted_parents: 0
+      sorted_children: 13
     }
     nodes {
       id: 13
-      sorted_deps: 12
+      sorted_parents: 5
+      sorted_children: 12
     }
     nodes {
       id: 12
+      sorted_parents: 13
     }
   }
   nodes {
@@ -265,10 +268,7 @@ TEST_F(CompilerTest, test_general_compilation) {
   planpb::Plan logical_plan = plan_status.ValueOrDie();
   VLOG(2) << logical_plan.DebugString();
 
-  planpb::Plan expected_logical_plan;
-  ASSERT_TRUE(
-      google::protobuf::TextFormat::MergeFromString(kExpectedLogicalPlan, &expected_logical_plan));
-  EXPECT_TRUE(CompareLogicalPlans(expected_logical_plan, logical_plan, false /*ignore_ids*/));
+  EXPECT_THAT(logical_plan, EqualsProto(kExpectedLogicalPlan));
 }
 
 // Test for select order that is different than the schema.
@@ -281,10 +281,11 @@ nodes {
   dag {
     nodes {
       id: 1
-      sorted_deps: 0
+      sorted_children: 0
     }
     nodes {
       id: 0
+      sorted_parents: 1
     }
   }
   nodes {
@@ -331,10 +332,8 @@ TEST_F(CompilerTest, select_order_test) {
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
   EXPECT_OK(plan);
-  planpb::Plan plan_pb;
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kSelectOrderLogicalPlan, &plan_pb));
-  VLOG(2) << plan.ValueOrDie().DebugString();
-  EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), false /*ignore_ids*/));
+
+  EXPECT_THAT(plan.ConsumeValueOrDie(), EqualsProto(kSelectOrderLogicalPlan));
 }
 
 const char* kRangeNowPlan = R"(
@@ -490,9 +489,19 @@ dag {
 nodes {
   id: 1
   dag {
-    nodes { id: 0 sorted_deps: 6 }
-    nodes { id: 6 sorted_deps: 5 }
-    nodes { id: 5 }
+    nodes {
+      id: 0
+      sorted_children: 6
+    }
+    nodes {
+      id: 6
+      sorted_children: 5
+      sorted_parents: 0
+    }
+    nodes {
+      id: 5
+      sorted_parents: 6
+    }
   }
   nodes {
     id: 0
@@ -556,11 +565,7 @@ TEST_F(CompilerTest, group_by_all) {
   ASSERT_OK(plan_status);
   auto logical_plan = plan_status.ConsumeValueOrDie();
   VLOG(2) << logical_plan.DebugString();
-  planpb::Plan expected_logical_plan;
-  // google::protobuf::util::MessageDifferencer differ();
-  ASSERT_TRUE(
-      google::protobuf::TextFormat::MergeFromString(kGroupByAllPlan, &expected_logical_plan));
-  EXPECT_TRUE(CompareLogicalPlans(expected_logical_plan, logical_plan, false /*ignore_ids*/));
+  EXPECT_THAT(logical_plan, EqualsProto(kGroupByAllPlan));
 }
 
 TEST_F(CompilerTest, group_by_all_none_by_fails) {
@@ -588,18 +593,21 @@ nodes {
   id: 1
   dag {
     nodes {
-      sorted_deps: 13
+      sorted_children: 13
     }
     nodes {
       id: 13
-      sorted_deps: 19
+      sorted_children: 19
+      sorted_parents: 0
     }
     nodes {
       id: 19
-      sorted_deps: 6
+      sorted_children: 6
+      sorted_parents: 13
     }
     nodes {
       id: 6
+      sorted_parents: 19
     }
   }
   nodes {
@@ -716,10 +724,7 @@ TEST_F(CompilerTest, range_agg_test) {
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
   EXPECT_OK(plan);
-  planpb::Plan plan_pb;
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kRangeAggPlan, &plan_pb));
-  VLOG(2) << plan.ValueOrDie().DebugString();
-  EXPECT_TRUE(CompareLogicalPlans(plan_pb, plan.ConsumeValueOrDie(), false /*ignore_ids*/));
+  EXPECT_THAT(plan.ConsumeValueOrDie(), EqualsProto(kRangeAggPlan));
 }
 
 TEST_F(CompilerTest, multiple_group_by_agg_test) {
@@ -868,10 +873,10 @@ nodes {
   dag {
     nodes {
       id: 1
-      sorted_deps: 0
+      sorted_children: 0
     }
     nodes {
-      sorted_deps: 10
+      sorted_children: 10
     }
     nodes {
       id: 10
@@ -998,10 +1003,10 @@ nodes {
   dag {
     nodes {
       id: 1
-      sorted_deps: 0
+      sorted_children: 0
     }
     nodes {
-      sorted_deps: 7
+      sorted_children: 7
     }
     nodes {
       id: 7
@@ -1115,7 +1120,7 @@ nodes {
   dag {
     nodes {
       id: 1
-      sorted_deps: 0
+      sorted_children: 0
     }
     nodes {
     }
@@ -1183,15 +1188,15 @@ const char* kExpectedFilterMetadataPlan = R"proto(
 nodes {
   dag {
     nodes {
-      sorted_deps: 23
+      sorted_children: 23
     }
     nodes {
       id: 23
-      sorted_deps: 2
+      sorted_children: 2
     }
     nodes {
       id: 2
-      sorted_deps: 7
+      sorted_children: 7
     }
     nodes {
       id: 7
@@ -1348,15 +1353,15 @@ nodes {
   id: 1
   dag {
     nodes {
-      sorted_deps: 20
+      sorted_children: 20
     }
     nodes {
       id: 20
-      sorted_deps: 2
+      sorted_children: 2
     }
     nodes {
       id: 2
-      sorted_deps: 5
+      sorted_children: 5
     }
     nodes {
       id: 5
@@ -1473,15 +1478,15 @@ nodes {
   id: 1
   dag {
     nodes {
-      sorted_deps: 23
+      sorted_children: 23
     }
     nodes {
       id: 23
-      sorted_deps: 2
+      sorted_children: 2
     }
     nodes {
       id: 2
-      sorted_deps: 8
+      sorted_children: 8
     }
     nodes {
       id: 8
@@ -1608,15 +1613,15 @@ nodes {
   id: 1
   dag {
     nodes {
-      sorted_deps: 25
+      sorted_children: 25
     }
     nodes {
       id: 25
-      sorted_deps: 2
+      sorted_children: 2
     }
     nodes {
       id: 2
-      sorted_deps: 10
+      sorted_children: 10
     }
     nodes {
       id: 10
@@ -1746,19 +1751,19 @@ nodes {
   id: 1
   dag {
     nodes {
-      sorted_deps: 32
+      sorted_children: 32
     }
     nodes {
       id: 32
-      sorted_deps: 3
+      sorted_children: 3
     }
     nodes {
       id: 3
-      sorted_deps: 2
+      sorted_children: 2
     }
     nodes {
       id: 2
-      sorted_deps: 15
+      sorted_children: 15
     }
     nodes {
       id: 15
@@ -1818,19 +1823,19 @@ nodes {
   id: 1
   dag {
     nodes {
-      sorted_deps: 32
+      sorted_children: 32
     }
     nodes {
       id: 32
-      sorted_deps: 3
+      sorted_children: 3
     }
     nodes {
       id: 3
-      sorted_deps: 2
+      sorted_children: 2
     }
     nodes {
       id: 2
-      sorted_deps: 15
+      sorted_children: 15
     }
     nodes {
       id: 15
@@ -1926,23 +1931,23 @@ nodes {
   id: 1
   dag {
     nodes {
-      sorted_deps: 32
+      sorted_children: 32
     }
     nodes {
       id: 32
-      sorted_deps: 3
+      sorted_children: 3
     }
     nodes {
       id: 3
-      sorted_deps: 39
+      sorted_children: 39
     }
     nodes {
       id: 39
-      sorted_deps: 2
+      sorted_children: 2
     }
     nodes {
       id: 2
-      sorted_deps: 15
+      sorted_children: 15
     }
     nodes {
       id: 15

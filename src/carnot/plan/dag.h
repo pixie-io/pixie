@@ -9,8 +9,10 @@
 #include <unordered_set>
 #include <vector>
 
+#include "absl/container/flat_hash_set.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_format.h"
+#include "src/carnot/planpb/plan.pb.h"
 #include "src/common/base/base.h"
 
 namespace pl {
@@ -19,6 +21,18 @@ namespace plan {
 
 class DAG {
  public:
+  /**
+   * @brief Optional init from a dag protobuf representation.
+   */
+  void Init(const planpb::DAG& dag);
+
+  /**
+   * @brief writes the protobuf representation of this DAG.
+   */
+  void ToProto(planpb::DAG* dag) const;
+
+  void ToProto(planpb::DAG* dag, const absl::flat_hash_set<int64_t>& ignore_ids) const;
+
   void AddNode(int64_t node);
   void DeleteNode(int64_t node);
 

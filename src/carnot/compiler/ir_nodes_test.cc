@@ -785,10 +785,11 @@ nodes {
   id: 1
   dag {
     nodes {
-      sorted_deps: 6
+      sorted_children: 6
     }
     nodes {
       id: 6
+      sorted_parents: 0
     }
   }
   nodes {

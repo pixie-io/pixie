@@ -2,11 +2,13 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <unordered_set>
+#include "src/common/testing/protobuf.h"
 
 namespace pl {
 namespace carnot {
 namespace plan {
 
+using ::pl::testing::proto::EqualsProto;
 using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAre;
 
@@ -147,6 +149,82 @@ TEST_F(DAGTest, replace_parent_node_edges_test) {
   EXPECT_THAT(dag_.DependenciesOf(5), ElementsAre(8));
   EXPECT_THAT(dag_.ParentsOf(3), ElementsAre(20, 8));
   EXPECT_THAT(dag_.DependenciesOf(20), ElementsAre(3));
+}
+
+const char* kDAGProto = R"proto(
+nodes {
+  id: 20
+}
+nodes {
+  id: 5
+  sorted_children: 8
+  sorted_children: 3
+}
+nodes {
+  id: 8
+  sorted_parents: 5
+  sorted_children: 3
+}
+nodes {
+  id: 3
+  sorted_parents: 5
+  sorted_parents: 8
+  sorted_children: 6
+}
+nodes {
+  id: 6
+  sorted_parents: 3
+}
+
+)proto";
+
+TEST_F(DAGTest, to_proto) {
+  planpb::DAG pb;
+  dag_.ToProto(&pb);
+  EXPECT_THAT(pb, EqualsProto(kDAGProto));
+}
+
+const char* kDAGProtoIgnoreIds = R"proto(
+nodes {
+  id: 5
+  sorted_children: 8
+  sorted_children: 3
+}
+nodes {
+  id: 8
+  sorted_parents: 5
+  sorted_children: 3
+}
+nodes {
+  id: 3
+  sorted_parents: 5
+  sorted_parents: 8
+}
+
+)proto";
+TEST_F(DAGTest, to_proto_ignore_ids) {
+  planpb::DAG pb;
+  dag_.ToProto(&pb, {6, 20});
+  EXPECT_THAT(pb, EqualsProto(kDAGProtoIgnoreIds));
+}
+
+TEST_F(DAGTest, from_proto) {
+  DAG new_dag;
+  planpb::DAG pb;
+
+  ASSERT_TRUE(google::protobuf::TextFormat::ParseFromString(kDAGProto, &pb));
+  new_dag.Init(pb);
+  EXPECT_THAT(dag_.nodes(), UnorderedElementsAre(5, 8, 3, 6, 20));
+  // Children should be ordered.
+  EXPECT_THAT(dag_.DependenciesOf(5), ElementsAre(8, 3));
+  // Parents should be ordered.
+  EXPECT_THAT(dag_.ParentsOf(3), ElementsAre(5, 8));
+
+  EXPECT_TRUE(dag_.DependenciesOf(1).empty());
+
+  EXPECT_TRUE(dag_.HasNode(5));
+  EXPECT_FALSE(dag_.HasNode(36));
+  EXPECT_THAT(dag_.TopologicalSort(), ElementsAre(20, 5, 8, 3, 6));
 }
 
 }  // namespace plan

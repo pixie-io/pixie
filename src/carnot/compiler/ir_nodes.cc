@@ -1183,21 +1183,22 @@ StatusOr<planpb::Plan> IR::ToProto() const {
 
   auto plan_fragment = plan.add_nodes();
   plan_fragment->set_id(1);
-  auto plan_fragment_dag = plan_fragment->mutable_dag();
 
+  absl::flat_hash_set<int64_t> non_op_nodes;
   auto operators = dag().TopologicalSort();
   for (const auto& node_id : operators) {
     auto node = Get(node_id);
     if (node->IsOperator()) {
-      PL_RETURN_IF_ERROR(
-          OutputProto(plan_fragment, plan_fragment_dag, static_cast<OperatorIR*>(node)));
+      PL_RETURN_IF_ERROR(OutputProto(plan_fragment, static_cast<OperatorIR*>(node)));
+    } else {
+      non_op_nodes.emplace(node_id);
     }
   }
+  dag_.ToProto(plan_fragment->mutable_dag(), non_op_nodes);
   return plan;
 }
 
-Status IR::OutputProto(planpb::PlanFragment* pf, planpb::DAG* pf_dag,
-                       const OperatorIR* op_node) const {
+Status IR::OutputProto(planpb::PlanFragment* pf, const OperatorIR* op_node) const {
   // Check to make sure that the relation is set for this op_node, otherwise it's not connected to
   // a Sink.
   if (!op_node->IsRelationInit()) {
@@ -1210,15 +1211,6 @@ Status IR::OutputProto(planpb::PlanFragment* pf, planpb::DAG* pf_dag,
   auto op_pb = plan_node->mutable_op();
   PL_RETURN_IF_ERROR(op_node->ToProto(op_pb));
 
-  // Add DAGNode.
-  auto dag_node = pf_dag->add_nodes();
-  dag_node->set_id(op_node->id());
-  for (const auto& dep : dag().DependenciesOf(op_node->id())) {
-    // Only add dependencies for operator IR nodes.
-    if (Get(dep)->IsOperator()) {
-      dag_node->add_sorted_deps(dep);
-    }
-  }
   return Status::OK();
 }
 

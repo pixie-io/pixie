@@ -33,8 +33,10 @@ message DAG {
   message DAGNode {
     // The ID of the node. This is the same as the ID used for PlanNode or PlanFragment.
     uint64 id = 1;
-    // The dependencies of this DAG node stored as the PlanNode/PlanFragment IDs.
-    repeated uint64 sorted_deps = 2;
+    // The sorted parents of this DAG node.
+    repeated uint64 sorted_parents = 4;
+    // The sorted children of this DAG node.
+    repeated uint64 sorted_children = 3;
   }
   // List of dependencies.
   repeated DAGNode nodes = 1;
