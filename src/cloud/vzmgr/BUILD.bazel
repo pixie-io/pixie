@@ -8,6 +8,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/vzmgr",
     visibility = ["//visibility:private"],
     deps = [
+        "//src/cloud/vzmgr/controller:go_default_library",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
         "//src/shared/services:go_default_library",
         "//src/shared/services/env:go_default_library",

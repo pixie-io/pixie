@@ -29,7 +29,7 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type CreateVizierClusterRequest struct {
-	OrgId *proto1.UUID `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
+	OrgID *proto1.UUID `protobuf:"bytes,1,opt,name=org_id,json=orgId,proto3" json:"org_id,omitempty"`
 }
 
 func (m *CreateVizierClusterRequest) Reset()      { *m = CreateVizierClusterRequest{} }
@@ -64,15 +64,59 @@ func (m *CreateVizierClusterRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_CreateVizierClusterRequest proto.InternalMessageInfo
 
-func (m *CreateVizierClusterRequest) GetOrgId() *proto1.UUID {
+func (m *CreateVizierClusterRequest) GetOrgID() *proto1.UUID {
 	if m != nil {
-		return m.OrgId
+		return m.OrgID
+	}
+	return nil
+}
+
+type GetViziersByOrgResponse struct {
+	VizierIDs []*proto1.UUID `protobuf:"bytes,1,rep,name=vizier_ids,json=vizierIds,proto3" json:"vizier_ids,omitempty"`
+}
+
+func (m *GetViziersByOrgResponse) Reset()      { *m = GetViziersByOrgResponse{} }
+func (*GetViziersByOrgResponse) ProtoMessage() {}
+func (*GetViziersByOrgResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b112f5a7e47f58f, []int{1}
+}
+func (m *GetViziersByOrgResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetViziersByOrgResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetViziersByOrgResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalTo(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetViziersByOrgResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetViziersByOrgResponse.Merge(m, src)
+}
+func (m *GetViziersByOrgResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetViziersByOrgResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetViziersByOrgResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetViziersByOrgResponse proto.InternalMessageInfo
+
+func (m *GetViziersByOrgResponse) GetVizierIDs() []*proto1.UUID {
+	if m != nil {
+		return m.VizierIDs
 	}
 	return nil
 }
 
 func init() {
 	proto.RegisterType((*CreateVizierClusterRequest)(nil), "pl.services.CreateVizierClusterRequest")
+	proto.RegisterType((*GetViziersByOrgResponse)(nil), "pl.services.GetViziersByOrgResponse")
 }
 
 func init() {
@@ -80,32 +124,38 @@ func init() {
 }
 
 var fileDescriptor_7b112f5a7e47f58f = []byte{
-	// 396 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x92, 0xbd, 0xae, 0xd3, 0x30,
-	0x1c, 0xc5, 0x6d, 0x24, 0xee, 0xe0, 0x0b, 0x5c, 0xc9, 0x0c, 0xa0, 0x08, 0xcc, 0x55, 0x24, 0x3e,
-	0x16, 0x6c, 0xe9, 0x22, 0xb1, 0x74, 0x82, 0x56, 0x82, 0x0e, 0x0c, 0x2d, 0x6a, 0x91, 0xba, 0xa0,
-	0x38, 0x71, 0x8d, 0x45, 0x12, 0x07, 0xc7, 0xa9, 0x50, 0x27, 0x1e, 0x81, 0xc7, 0xe0, 0x51, 0x10,
-	0x53, 0xc7, 0x8e, 0x34, 0x5d, 0x18, 0xfb, 0x08, 0x28, 0x76, 0xa0, 0xb7, 0x55, 0xdb, 0xc5, 0xf6,
-	0x3f, 0xe7, 0x97, 0x73, 0x8e, 0x25, 0xa3, 0xc7, 0xa5, 0x89, 0x59, 0x9c, 0xea, 0x2a, 0x61, 0xb3,
-	0x79, 0x26, 0x8d, 0x5f, 0x0b, 0xce, 0x4a, 0x61, 0x66, 0x2a, 0x16, 0xb4, 0x30, 0xda, 0x6a, 0x7c,
-	0x5e, 0xa4, 0xb4, 0xfd, 0x52, 0x06, 0xcf, 0xa5, 0xb2, 0x9f, 0x2a, 0x4e, 0x63, 0x9d, 0x31, 0xa9,
-	0xa5, 0x66, 0x8e, 0xe1, 0xd5, 0xd4, 0x4d, 0x6e, 0x70, 0x27, 0xff, 0x6f, 0x70, 0xe9, 0x22, 0x74,
-	0x96, 0xe9, 0x9c, 0x55, 0x95, 0x4a, 0x3c, 0xee, 0x8e, 0x2d, 0xf1, 0x70, 0x5b, 0xc2, 0xad, 0x05,
-	0xf7, 0xbb, 0x97, 0xc3, 0x1e, 0x0a, 0xba, 0x46, 0x44, 0x56, 0x8c, 0xd5, 0x5c, 0x09, 0xd3, 0x4d,
-	0xab, 0xd2, 0x0a, 0x33, 0x14, 0x5f, 0x2a, 0x51, 0x5a, 0xfc, 0x04, 0x9d, 0x69, 0x23, 0x3f, 0xaa,
-	0xe4, 0x3e, 0xbc, 0x84, 0xcf, 0xce, 0xaf, 0x2e, 0x68, 0x91, 0xd2, 0xc6, 0xbc, 0xe0, 0x74, 0x34,
-	0xea, 0xf7, 0x86, 0x37, 0xb5, 0x91, 0xfd, 0xe4, 0xea, 0xd7, 0x0d, 0x74, 0x6b, 0x3c, 0x79, 0x27,
-	0xcd, 0x7b, 0x7f, 0x0f, 0x3c, 0x40, 0x77, 0x0f, 0xd8, 0xe2, 0xa7, 0xf4, 0xda, 0x5d, 0xe9, 0xf1,
-	0xe0, 0x60, 0x3f, 0x28, 0x04, 0xb8, 0x83, 0x6e, 0xbf, 0x11, 0xd6, 0xd3, 0xfd, 0x7c, 0xaa, 0xf1,
-	0x3e, 0x13, 0xdc, 0xdb, 0x71, 0xdf, 0x92, 0x21, 0xc0, 0x1f, 0xd0, 0x45, 0x9b, 0xa3, 0xf3, 0x5c,
-	0xc4, 0x56, 0x24, 0x38, 0xdc, 0xa1, 0x87, 0x42, 0xaa, 0xa6, 0x80, 0xa7, 0xfe, 0xd5, 0x20, 0x27,
-	0x98, 0x57, 0xf1, 0xe7, 0x10, 0xe0, 0x01, 0xba, 0xe3, 0xc7, 0xb7, 0x22, 0x32, 0x5c, 0x44, 0x16,
-	0x3f, 0x38, 0xd0, 0xa2, 0x11, 0x6d, 0xa3, 0x06, 0x8f, 0x4e, 0xa9, 0xce, 0xf2, 0x75, 0xba, 0x58,
-	0x11, 0xb0, 0x5c, 0x11, 0xb0, 0x59, 0x11, 0xf8, 0xad, 0x26, 0xf0, 0x47, 0x4d, 0xe0, 0xcf, 0x9a,
-	0xc0, 0x45, 0x4d, 0xe0, 0xef, 0x9a, 0xc0, 0x3f, 0x35, 0x01, 0x9b, 0x9a, 0xc0, 0xef, 0x6b, 0x02,
-	0x16, 0x6b, 0x02, 0x96, 0x6b, 0x02, 0x26, 0x2f, 0x0b, 0xf5, 0x55, 0x89, 0x34, 0xe2, 0x25, 0x8d,
-	0x14, 0xfb, 0x3f, 0xb0, 0x23, 0x6f, 0xb0, 0xd3, 0xee, 0xfc, 0xcc, 0xbd, 0x83, 0x17, 0x7f, 0x03,
-	0x00, 0x00, 0xff, 0xff, 0xce, 0x55, 0xa4, 0x31, 0xad, 0x02, 0x00, 0x00,
+	// 490 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x53, 0x4d, 0x6b, 0x14, 0x3f,
+	0x18, 0x4f, 0x28, 0x2d, 0x6c, 0xfa, 0x2f, 0x0b, 0xf9, 0x23, 0x2d, 0x83, 0x66, 0xd7, 0x41, 0xd1,
+	0x8b, 0x33, 0x58, 0xc1, 0x4b, 0xf1, 0xe0, 0xee, 0x82, 0x1d, 0x41, 0x16, 0x47, 0x5a, 0x4b, 0x2f,
+	0x65, 0x5e, 0xd2, 0x18, 0x9c, 0x9d, 0x8c, 0xc9, 0xcc, 0xa2, 0x3d, 0xf9, 0x11, 0xfc, 0x18, 0x7e,
+	0x14, 0x8f, 0x7b, 0xec, 0xa9, 0xb8, 0xd9, 0x8b, 0x27, 0xe9, 0x47, 0x90, 0x26, 0xeb, 0xb6, 0xb3,
+	0xce, 0xf6, 0x92, 0xe4, 0xc9, 0xef, 0x25, 0x4f, 0x7e, 0xf0, 0xa0, 0x87, 0x4a, 0x26, 0x7e, 0x92,
+	0x89, 0x2a, 0xf5, 0xc7, 0x67, 0x23, 0x26, 0xed, 0x5a, 0xc4, 0xbe, 0xa2, 0x72, 0xcc, 0x13, 0xea,
+	0x15, 0x52, 0x94, 0x02, 0x6f, 0x16, 0x99, 0x37, 0xbf, 0x51, 0xce, 0x13, 0xc6, 0xcb, 0x0f, 0x55,
+	0xec, 0x25, 0x62, 0xe4, 0x33, 0xc1, 0x84, 0x6f, 0x38, 0x71, 0x75, 0x6a, 0x2a, 0x53, 0x98, 0x93,
+	0xd5, 0x3a, 0x5d, 0xf3, 0x84, 0x18, 0x8d, 0x44, 0xee, 0x57, 0x15, 0x4f, 0x2d, 0xdd, 0x1c, 0xe7,
+	0x8c, 0x7b, 0xd7, 0x4d, 0x98, 0xb5, 0x88, 0xed, 0x6e, 0x61, 0x77, 0x88, 0x9c, 0xbe, 0xa4, 0x51,
+	0x49, 0x0f, 0xf9, 0x19, 0xa7, 0xb2, 0x9f, 0x55, 0xaa, 0xa4, 0x32, 0xa4, 0x9f, 0x2a, 0xaa, 0x4a,
+	0xfc, 0x14, 0x6d, 0x08, 0xc9, 0x4e, 0x78, 0xba, 0x03, 0xbb, 0xf0, 0xf1, 0xe6, 0x6e, 0xdb, 0x2b,
+	0x32, 0xef, 0xca, 0xbc, 0x88, 0xbd, 0x83, 0x83, 0x60, 0xd0, 0x6b, 0xe9, 0x8b, 0xce, 0xfa, 0x50,
+	0xb2, 0x60, 0x10, 0xae, 0x0b, 0xc9, 0x82, 0xd4, 0x3d, 0x42, 0xdb, 0xaf, 0x68, 0x69, 0xdd, 0x54,
+	0xef, 0xcb, 0x50, 0xb2, 0x90, 0xaa, 0x42, 0xe4, 0x8a, 0xe2, 0x17, 0x08, 0x8d, 0xcd, 0xfd, 0x09,
+	0x4f, 0xd5, 0x0e, 0xec, 0xae, 0x35, 0x39, 0x6e, 0xe9, 0x8b, 0x4e, 0xcb, 0xca, 0x83, 0x81, 0x0a,
+	0x5b, 0x56, 0x11, 0xa4, 0x6a, 0xf7, 0xf7, 0x1a, 0xfa, 0xef, 0xf0, 0xf8, 0x0d, 0x93, 0xef, 0x6c,
+	0x58, 0xf8, 0x2d, 0xfa, 0xbf, 0xa1, 0x77, 0xfc, 0xc8, 0xbb, 0x11, 0xa8, 0xb7, 0xfa, 0x77, 0xce,
+	0xf2, 0xdb, 0x2e, 0xc0, 0xaf, 0x51, 0x7b, 0xa9, 0x7b, 0xbc, 0xcc, 0x72, 0x1e, 0xd4, 0xfc, 0x57,
+	0x7c, 0xd6, 0x05, 0x78, 0x0f, 0x6d, 0x2d, 0xc0, 0x20, 0x3f, 0x15, 0xff, 0x3a, 0x6d, 0xd7, 0x9c,
+	0xae, 0x99, 0x2e, 0xc0, 0xc3, 0x1b, 0x31, 0xf6, 0x45, 0x9e, 0xd3, 0xa4, 0xe4, 0x22, 0x6f, 0xb6,
+	0xb9, 0xdf, 0x60, 0x53, 0xd7, 0xb8, 0x00, 0xbf, 0x47, 0xed, 0x1a, 0x42, 0x53, 0xec, 0xd6, 0x74,
+	0x21, 0x65, 0xfc, 0x2a, 0x1d, 0xcb, 0xfa, 0x9b, 0x11, 0xb9, 0x85, 0xf3, 0x32, 0xf9, 0xe8, 0x02,
+	0x7c, 0x84, 0xee, 0xec, 0x47, 0x79, 0x9a, 0xcd, 0x33, 0xde, 0xa7, 0x91, 0x2c, 0x63, 0x1a, 0x95,
+	0xf8, 0x6e, 0x43, 0x5b, 0x0b, 0xd4, 0xe9, 0xdc, 0x86, 0x1a, 0xe7, 0x5e, 0x36, 0x99, 0x12, 0x70,
+	0x3e, 0x25, 0xe0, 0x72, 0x4a, 0xe0, 0x57, 0x4d, 0xe0, 0x77, 0x4d, 0xe0, 0x0f, 0x4d, 0xe0, 0x44,
+	0x13, 0xf8, 0x53, 0x13, 0xf8, 0x4b, 0x13, 0x70, 0xa9, 0x09, 0xfc, 0x36, 0x23, 0x60, 0x32, 0x23,
+	0xe0, 0x7c, 0x46, 0xc0, 0xf1, 0xf3, 0x82, 0x7f, 0xe6, 0x34, 0x8b, 0x62, 0xe5, 0x45, 0xdc, 0x5f,
+	0x14, 0xfe, 0x8a, 0x61, 0xdc, 0x9b, 0xef, 0xf1, 0x86, 0x19, 0x88, 0x67, 0x7f, 0x02, 0x00, 0x00,
+	0xff, 0xff, 0x9d, 0x7b, 0xe5, 0xb3, 0xb6, 0x03, 0x00, 0x00,
 }
 
 func (this *CreateVizierClusterRequest) Equal(that interface{}) bool {
@@ -127,8 +177,37 @@ func (this *CreateVizierClusterRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.OrgId.Equal(that1.OrgId) {
+	if !this.OrgID.Equal(that1.OrgID) {
 		return false
+	}
+	return true
+}
+func (this *GetViziersByOrgResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetViziersByOrgResponse)
+	if !ok {
+		that2, ok := that.(GetViziersByOrgResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.VizierIDs) != len(that1.VizierIDs) {
+		return false
+	}
+	for i := range this.VizierIDs {
+		if !this.VizierIDs[i].Equal(that1.VizierIDs[i]) {
+			return false
+		}
 	}
 	return true
 }
@@ -138,8 +217,20 @@ func (this *CreateVizierClusterRequest) GoString() string {
 	}
 	s := make([]string, 0, 5)
 	s = append(s, "&vzmgrpb.CreateVizierClusterRequest{")
-	if this.OrgId != nil {
-		s = append(s, "OrgId: "+fmt.Sprintf("%#v", this.OrgId)+",\n")
+	if this.OrgID != nil {
+		s = append(s, "OrgID: "+fmt.Sprintf("%#v", this.OrgID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetViziersByOrgResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&vzmgrpb.GetViziersByOrgResponse{")
+	if this.VizierIDs != nil {
+		s = append(s, "VizierIDs: "+fmt.Sprintf("%#v", this.VizierIDs)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -166,9 +257,11 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type VZMgrServiceClient interface {
 	CreateVizierCluster(ctx context.Context, in *CreateVizierClusterRequest, opts ...grpc.CallOption) (*proto1.UUID, error)
+	GetViziersByOrg(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*GetViziersByOrgResponse, error)
 	GetVizierInfo(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*cloudpb.VizierInfo, error)
+	GetVizierConnectionInfo(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*cloudpb.VizierConnectionInfo, error)
 	VizierConnected(ctx context.Context, in *cloudpb.RegisterVizierRequest, opts ...grpc.CallOption) (*cloudpb.RegisterVizierAck, error)
-	VizierHearbeat(ctx context.Context, in *cloudpb.VizierHeartbeat, opts ...grpc.CallOption) (*cloudpb.VizierHeartbeatAck, error)
+	HandleVizierHeartbeat(ctx context.Context, in *cloudpb.VizierHeartbeat, opts ...grpc.CallOption) (*cloudpb.VizierHeartbeatAck, error)
 }
 
 type vZMgrServiceClient struct {
@@ -188,9 +281,27 @@ func (c *vZMgrServiceClient) CreateVizierCluster(ctx context.Context, in *Create
 	return out, nil
 }
 
+func (c *vZMgrServiceClient) GetViziersByOrg(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*GetViziersByOrgResponse, error) {
+	out := new(GetViziersByOrgResponse)
+	err := c.cc.Invoke(ctx, "/pl.services.VZMgrService/GetViziersByOrg", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *vZMgrServiceClient) GetVizierInfo(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*cloudpb.VizierInfo, error) {
 	out := new(cloudpb.VizierInfo)
 	err := c.cc.Invoke(ctx, "/pl.services.VZMgrService/GetVizierInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vZMgrServiceClient) GetVizierConnectionInfo(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*cloudpb.VizierConnectionInfo, error) {
+	out := new(cloudpb.VizierConnectionInfo)
+	err := c.cc.Invoke(ctx, "/pl.services.VZMgrService/GetVizierConnectionInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -206,9 +317,9 @@ func (c *vZMgrServiceClient) VizierConnected(ctx context.Context, in *cloudpb.Re
 	return out, nil
 }
 
-func (c *vZMgrServiceClient) VizierHearbeat(ctx context.Context, in *cloudpb.VizierHeartbeat, opts ...grpc.CallOption) (*cloudpb.VizierHeartbeatAck, error) {
+func (c *vZMgrServiceClient) HandleVizierHeartbeat(ctx context.Context, in *cloudpb.VizierHeartbeat, opts ...grpc.CallOption) (*cloudpb.VizierHeartbeatAck, error) {
 	out := new(cloudpb.VizierHeartbeatAck)
-	err := c.cc.Invoke(ctx, "/pl.services.VZMgrService/VizierHearbeat", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/pl.services.VZMgrService/HandleVizierHeartbeat", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -218,9 +329,11 @@ func (c *vZMgrServiceClient) VizierHearbeat(ctx context.Context, in *cloudpb.Viz
 // VZMgrServiceServer is the server API for VZMgrService service.
 type VZMgrServiceServer interface {
 	CreateVizierCluster(context.Context, *CreateVizierClusterRequest) (*proto1.UUID, error)
+	GetViziersByOrg(context.Context, *proto1.UUID) (*GetViziersByOrgResponse, error)
 	GetVizierInfo(context.Context, *proto1.UUID) (*cloudpb.VizierInfo, error)
+	GetVizierConnectionInfo(context.Context, *proto1.UUID) (*cloudpb.VizierConnectionInfo, error)
 	VizierConnected(context.Context, *cloudpb.RegisterVizierRequest) (*cloudpb.RegisterVizierAck, error)
-	VizierHearbeat(context.Context, *cloudpb.VizierHeartbeat) (*cloudpb.VizierHeartbeatAck, error)
+	HandleVizierHeartbeat(context.Context, *cloudpb.VizierHeartbeat) (*cloudpb.VizierHeartbeatAck, error)
 }
 
 func RegisterVZMgrServiceServer(s *grpc.Server, srv VZMgrServiceServer) {
@@ -245,6 +358,24 @@ func _VZMgrService_CreateVizierCluster_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _VZMgrService_GetViziersByOrg_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(proto1.UUID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VZMgrServiceServer).GetViziersByOrg(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.VZMgrService/GetViziersByOrg",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VZMgrServiceServer).GetViziersByOrg(ctx, req.(*proto1.UUID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _VZMgrService_GetVizierInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(proto1.UUID)
 	if err := dec(in); err != nil {
@@ -259,6 +390,24 @@ func _VZMgrService_GetVizierInfo_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(VZMgrServiceServer).GetVizierInfo(ctx, req.(*proto1.UUID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VZMgrService_GetVizierConnectionInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(proto1.UUID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VZMgrServiceServer).GetVizierConnectionInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.VZMgrService/GetVizierConnectionInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VZMgrServiceServer).GetVizierConnectionInfo(ctx, req.(*proto1.UUID))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -281,20 +430,20 @@ func _VZMgrService_VizierConnected_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _VZMgrService_VizierHearbeat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _VZMgrService_HandleVizierHeartbeat_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(cloudpb.VizierHeartbeat)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(VZMgrServiceServer).VizierHearbeat(ctx, in)
+		return srv.(VZMgrServiceServer).HandleVizierHeartbeat(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/pl.services.VZMgrService/VizierHearbeat",
+		FullMethod: "/pl.services.VZMgrService/HandleVizierHeartbeat",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(VZMgrServiceServer).VizierHearbeat(ctx, req.(*cloudpb.VizierHeartbeat))
+		return srv.(VZMgrServiceServer).HandleVizierHeartbeat(ctx, req.(*cloudpb.VizierHeartbeat))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -308,16 +457,24 @@ var _VZMgrService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _VZMgrService_CreateVizierCluster_Handler,
 		},
 		{
+			MethodName: "GetViziersByOrg",
+			Handler:    _VZMgrService_GetViziersByOrg_Handler,
+		},
+		{
 			MethodName: "GetVizierInfo",
 			Handler:    _VZMgrService_GetVizierInfo_Handler,
+		},
+		{
+			MethodName: "GetVizierConnectionInfo",
+			Handler:    _VZMgrService_GetVizierConnectionInfo_Handler,
 		},
 		{
 			MethodName: "VizierConnected",
 			Handler:    _VZMgrService_VizierConnected_Handler,
 		},
 		{
-			MethodName: "VizierHearbeat",
-			Handler:    _VZMgrService_VizierHearbeat_Handler,
+			MethodName: "HandleVizierHeartbeat",
+			Handler:    _VZMgrService_HandleVizierHeartbeat_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -339,15 +496,45 @@ func (m *CreateVizierClusterRequest) MarshalTo(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.OrgId != nil {
+	if m.OrgID != nil {
 		dAtA[i] = 0xa
 		i++
-		i = encodeVarintService(dAtA, i, uint64(m.OrgId.Size()))
-		n1, err := m.OrgId.MarshalTo(dAtA[i:])
+		i = encodeVarintService(dAtA, i, uint64(m.OrgID.Size()))
+		n1, err := m.OrgID.MarshalTo(dAtA[i:])
 		if err != nil {
 			return 0, err
 		}
 		i += n1
+	}
+	return i, nil
+}
+
+func (m *GetViziersByOrgResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalTo(dAtA)
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetViziersByOrgResponse) MarshalTo(dAtA []byte) (int, error) {
+	var i int
+	_ = i
+	var l int
+	_ = l
+	if len(m.VizierIDs) > 0 {
+		for _, msg := range m.VizierIDs {
+			dAtA[i] = 0xa
+			i++
+			i = encodeVarintService(dAtA, i, uint64(msg.Size()))
+			n, err := msg.MarshalTo(dAtA[i:])
+			if err != nil {
+				return 0, err
+			}
+			i += n
+		}
 	}
 	return i, nil
 }
@@ -367,9 +554,24 @@ func (m *CreateVizierClusterRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.OrgId != nil {
-		l = m.OrgId.Size()
+	if m.OrgID != nil {
+		l = m.OrgID.Size()
 		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *GetViziersByOrgResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.VizierIDs) > 0 {
+		for _, e := range m.VizierIDs {
+			l = e.Size()
+			n += 1 + l + sovService(uint64(l))
+		}
 	}
 	return n
 }
@@ -392,7 +594,17 @@ func (this *CreateVizierClusterRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&CreateVizierClusterRequest{`,
-		`OrgId:` + strings.Replace(fmt.Sprintf("%v", this.OrgId), "UUID", "proto1.UUID", 1) + `,`,
+		`OrgID:` + strings.Replace(fmt.Sprintf("%v", this.OrgID), "UUID", "proto1.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetViziersByOrgResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetViziersByOrgResponse{`,
+		`VizierIDs:` + strings.Replace(fmt.Sprintf("%v", this.VizierIDs), "UUID", "proto1.UUID", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -436,7 +648,7 @@ func (m *CreateVizierClusterRequest) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OrgId", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field OrgID", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -463,10 +675,97 @@ func (m *CreateVizierClusterRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.OrgId == nil {
-				m.OrgId = &proto1.UUID{}
+			if m.OrgID == nil {
+				m.OrgID = &proto1.UUID{}
 			}
-			if err := m.OrgId.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			if err := m.OrgID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetViziersByOrgResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetViziersByOrgResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetViziersByOrgResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VizierIDs", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VizierIDs = append(m.VizierIDs, &proto1.UUID{})
+			if err := m.VizierIDs[len(m.VizierIDs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

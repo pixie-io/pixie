@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 
 	"pixielabs.ai/pixielabs/src/shared/services/env"
@@ -24,7 +25,9 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	s := services.NewPLServer(env.New(), mux)
-	vzmgrpb.RegisterVZMgrServiceServer(s.GRPCServer(), nil)
+
+	c := controller.New(nil)
+	vzmgrpb.RegisterVZMgrServiceServer(s.GRPCServer(), c)
 
 	s.Start()
 	s.StopOnInterrupt()

@@ -10,12 +10,23 @@ option go_package = "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb;vzmgrpb";
 
 service VZMgrService {
   rpc CreateVizierCluster(CreateVizierClusterRequest) returns (uuidpb.UUID) {}
+  rpc GetViziersByOrg(uuidpb.UUID) returns (GetViziersByOrgResponse) {}
   rpc GetVizierInfo(uuidpb.UUID) returns (VizierInfo) {}
+  rpc GetVizierConnectionInfo(uuidpb.UUID) returns (VizierConnectionInfo) {}
   // Call to acknowledge connection of a vizier.
   rpc VizierConnected(RegisterVizierRequest) returns (RegisterVizierAck) {}
-  rpc VizierHearbeat(VizierHeartbeat) returns (VizierHeartbeatAck) {}
+  rpc HandleVizierHeartbeat(VizierHeartbeat) returns (VizierHeartbeatAck) {}
 }
 
 message CreateVizierClusterRequest {
-  uuidpb.UUID org_id = 1;
+  uuidpb.UUID org_id = 1 [
+                          (gogoproto.customname) = "OrgID"
+                         ];
+;
+}
+
+message GetViziersByOrgResponse {
+  repeated uuidpb.UUID vizier_ids = 1 [
+                                       (gogoproto.customname) = "VizierIDs"
+                                      ];
 }

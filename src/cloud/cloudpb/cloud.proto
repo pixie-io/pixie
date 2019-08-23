@@ -64,3 +64,9 @@ message VizierInfo {
   // Time in ns since the last heart beat. Negative number implies heartbeat never received.
   int64 last_heartbeat_ns = 3;
 }
+
+// Information require to connect to a vizier cluster.
+message VizierConnectionInfo {
+  string ip_address = 1;
+  string token = 2;
+}
