@@ -339,6 +339,18 @@ HTTPContentType DetectContentType(const http::HTTPMessage& message) {
   return HTTPContentType::kUnknown;
 }
 
+int64_t CalculateLatency(int64_t req_timestamp_ns, int64_t resp_timestamp_ns) {
+  int64_t latency_ns = 0;
+  if (req_timestamp_ns > 0) {
+    latency_ns = resp_timestamp_ns - req_timestamp_ns;
+    // TODO(oazizi): Change to DFATAL once req-resp matching algorithms are stable and tested.
+    LOG_IF(WARNING, latency_ns < 0)
+        << absl::Substitute("Negative latency implies req resp mismatch [t_req=$0, t_resp=$1].",
+                            req_timestamp_ns, resp_timestamp_ns);
+  }
+  return latency_ns;
+}
+
 }  // namespace
 
 bool SocketTraceConnector::SelectMessage(const ReqRespPair<http::HTTPMessage>& record) {
@@ -380,9 +392,6 @@ void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
   http::HTTPMessage& req_message = record.req_message;
   http::HTTPMessage& resp_message = record.resp_message;
 
-  // Check for positive latencies.
-  DCHECK_GE(resp_message.timestamp_ns, req_message.timestamp_ns);
-
   RecordBuilder<&kHTTPTable> r(data_table);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("pid")>(conn_tracker.pid());
@@ -404,8 +413,8 @@ void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
   r.Append<r.ColIndex("http_resp_status")>(resp_message.http_resp_status);
   r.Append<r.ColIndex("http_resp_message")>(std::move(resp_message.http_resp_message));
   r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.http_msg_body));
-  r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns -
-                                               req_message.timestamp_ns);
+  r.Append<r.ColIndex("http_resp_latency_ns")>(
+      CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 }
 
 template <>
@@ -415,8 +424,6 @@ void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
 
   GRPCMessage& req_message = record.req_message;
   GRPCMessage& resp_message = record.resp_message;
-
-  DCHECK_GE(resp_message.timestamp_ns, req_message.timestamp_ns);
 
   int64_t resp_status;
   CHECK(absl::SimpleAtoi(resp_message.HeaderValue(":status", "-1"), &resp_status));
@@ -458,8 +465,8 @@ void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
     r.Append<r.ColIndex("http_req_body")>(std::move(req_message.message));
     r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.message));
   }
-  r.Append<r.ColIndex("http_resp_latency_ns")>(resp_message.timestamp_ns -
-                                               req_message.timestamp_ns);
+  r.Append<r.ColIndex("http_resp_latency_ns")>(
+      CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 }
 
 void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker, mysql::Entry entry,

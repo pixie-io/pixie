@@ -35,14 +35,15 @@ class SocketTraceConnectorTest : public ::testing::Test {
     InitMySQLData();
   }
 
-  conn_info_t InitConn(TrafficProtocol protocol, uint64_t ts_ns = 0) {
+  conn_info_t InitConn(TrafficProtocol protocol) {
     ++generation_;
+    ++current_timestamp_;
     send_seq_num_ = 0;
     recv_seq_num_ = 0;
 
     conn_info_t conn_info{};
     conn_info.addr.sin6_family = AF_INET;
-    conn_info.timestamp_ns = ts_ns;
+    conn_info.timestamp_ns = current_timestamp_;
     conn_info.conn_id.pid = kPID;
     conn_info.conn_id.fd = kFD;
     conn_info.conn_id.generation = generation_;
@@ -53,27 +54,28 @@ class SocketTraceConnectorTest : public ::testing::Test {
     return conn_info;
   }
 
-  std::unique_ptr<SocketDataEvent> InitSendEvent(std::string_view msg, uint64_t ts_ns = 0) {
-    std::unique_ptr<SocketDataEvent> event = InitDataEvent(TrafficDirection::kEgress, msg, ts_ns);
+  std::unique_ptr<SocketDataEvent> InitSendEvent(std::string_view msg) {
+    std::unique_ptr<SocketDataEvent> event = InitDataEvent(TrafficDirection::kEgress, msg);
     event->attr.seq_num = send_seq_num_;
     send_seq_num_++;
     return event;
   }
 
-  std::unique_ptr<SocketDataEvent> InitRecvEvent(std::string_view msg, uint64_t ts_ns = 0) {
-    std::unique_ptr<SocketDataEvent> event = InitDataEvent(TrafficDirection::kIngress, msg, ts_ns);
+  std::unique_ptr<SocketDataEvent> InitRecvEvent(std::string_view msg) {
+    std::unique_ptr<SocketDataEvent> event = InitDataEvent(TrafficDirection::kIngress, msg);
     event->attr.seq_num = recv_seq_num_;
     recv_seq_num_++;
     return event;
   }
 
-  std::unique_ptr<SocketDataEvent> InitDataEvent(TrafficDirection direction, std::string_view msg,
-                                                 uint64_t ts_ns = 0) {
+  std::unique_ptr<SocketDataEvent> InitDataEvent(TrafficDirection direction, std::string_view msg) {
+    ++current_timestamp_;
+
     socket_data_event_t event = {};
     event.attr.direction = direction;
     event.attr.traffic_class.protocol = kProtocolHTTP;
     event.attr.traffic_class.role = kRoleRequestor;
-    event.attr.timestamp_ns = ts_ns;
+    event.attr.timestamp_ns = current_timestamp_;
     event.attr.conn_id.pid = kPID;
     event.attr.conn_id.fd = kFD;
     event.attr.conn_id.generation = generation_;
@@ -83,8 +85,10 @@ class SocketTraceConnectorTest : public ::testing::Test {
   }
 
   conn_info_t InitClose() {
+    ++current_timestamp_;
+
     conn_info_t conn_info{};
-    conn_info.timestamp_ns = 1;
+    conn_info.timestamp_ns = current_timestamp_;
     conn_info.conn_id.pid = kPID;
     conn_info.conn_id.fd = kFD;
     conn_info.conn_id.generation = generation_;
@@ -94,6 +98,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
   }
 
   uint32_t generation_ = 0;
+  uint64_t current_timestamp_ = 0;
   uint64_t send_seq_num_ = 0;
   uint64_t recv_seq_num_ = 0;
 
@@ -235,11 +240,11 @@ auto ToIntVector(const types::SharedColumnWrapper& col) {
 }
 
 TEST_F(SocketTraceConnectorTest, End2end) {
-  conn_info_t conn = InitConn(TrafficProtocol::kProtocolHTTP, 50);
-  std::unique_ptr<SocketDataEvent> event0_json = InitRecvEvent(kJSONResp, 100);
-  std::unique_ptr<SocketDataEvent> event1_text = InitRecvEvent(kTextResp, 200);
-  std::unique_ptr<SocketDataEvent> event2_text = InitRecvEvent(kTextResp, 200);
-  std::unique_ptr<SocketDataEvent> event3_json = InitRecvEvent(kJSONResp, 100);
+  conn_info_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
+  std::unique_ptr<SocketDataEvent> event0_json = InitRecvEvent(kJSONResp);
+  std::unique_ptr<SocketDataEvent> event1_text = InitRecvEvent(kTextResp);
+  std::unique_ptr<SocketDataEvent> event2_text = InitRecvEvent(kTextResp);
+  std::unique_ptr<SocketDataEvent> event3_json = InitRecvEvent(kJSONResp);
   conn_info_t close_conn = InitClose();
 
   DataTable data_table(SocketTraceConnector::kHTTPTable);
@@ -258,7 +263,7 @@ TEST_F(SocketTraceConnectorTest, End2end) {
   search_conn_id.generation = 1;
   const ConnectionTracker* tracker = source_->GetConnectionTracker(search_conn_id);
   ASSERT_NE(nullptr, tracker);
-  EXPECT_EQ(50 + source_->ClockRealTimeOffset(), tracker->conn().timestamp_ns);
+  EXPECT_EQ(1 + source_->ClockRealTimeOffset(), tracker->conn().timestamp_ns);
 
   // AcceptDataEvent(std::move() puts data into the internal buffer of SocketTraceConnector. And
   // th)en TransferData() polls perf buffer, which is no-op because we did not initialize probes,
@@ -302,10 +307,9 @@ TEST_F(SocketTraceConnectorTest, End2end) {
            "and event_json Content-Type matches, and is selected";
   }
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo", "bar", "foo"));
-  EXPECT_THAT(
-      ToIntVector<types::Time64NSValue>(record_batch[kTimeIdx]),
-      ElementsAre(100 + source_->ClockRealTimeOffset(), 200 + source_->ClockRealTimeOffset(),
-                  100 + source_->ClockRealTimeOffset()));
+  EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kTimeIdx]),
+              ElementsAre(2 + source_->ClockRealTimeOffset(), 4 + source_->ClockRealTimeOffset(),
+                          5 + source_->ClockRealTimeOffset()));
 }
 
 TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
