@@ -34,9 +34,12 @@ using ::pl::stirling::testing::GRPCStub;
 using ::pl::stirling::testing::HelloReply;
 using ::pl::stirling::testing::HelloRequest;
 using ::pl::stirling::testing::ServiceRunner;
+using ::pl::stirling::testing::StreamingGreeter;
+using ::pl::stirling::testing::StreamingGreeterService;
 using ::pl::testing::proto::EqualsProto;
 using ::pl::types::ColumnWrapperRecordBatch;
 using ::testing::AnyOf;
+using ::testing::ElementsAre;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::MatchesRegex;
@@ -52,6 +55,7 @@ constexpr uint32_t kHTTPRespHeadersIdx = kHTTPTable.ColIndex("http_resp_headers"
 constexpr uint32_t kHTTPPIDIdx = kHTTPTable.ColIndex("pid");
 constexpr uint32_t kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
 constexpr uint32_t kHTTPRemotePortIdx = kHTTPTable.ColIndex("remote_port");
+constexpr uint32_t kHTTPReqBodyIdx = kHTTPTable.ColIndex("http_req_body");
 constexpr uint32_t kHTTPRespBodyIdx = kHTTPTable.ColIndex("http_resp_body");
 
 std::vector<size_t> FindRecordIdxMatchesPid(const ColumnWrapperRecordBatch& http_record, int pid) {
@@ -68,7 +72,16 @@ HelloReply GetHelloReply(const ColumnWrapperRecordBatch& record_batch, const siz
   HelloReply received_reply;
   std::string msg = record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx);
   if (!msg.empty()) {
-    CHECK(received_reply.ParseFromString(msg.substr(kGRPCMessageHeaderSizeInBytes)));
+    received_reply.ParseFromString(msg.substr(kGRPCMessageHeaderSizeInBytes));
+  }
+  return received_reply;
+}
+
+HelloRequest GetHelloRequest(const ColumnWrapperRecordBatch& record_batch, const size_t idx) {
+  HelloRequest received_reply;
+  std::string msg = record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(idx);
+  if (!msg.empty()) {
+    received_reply.ParseFromString(msg.substr(kGRPCMessageHeaderSizeInBytes));
   }
   return received_reply;
 }
@@ -77,6 +90,9 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   // Force disable protobuf parsing to output the binary protobuf in record batch.
   // Also ensure test remain passing when the default changes.
   FLAGS_enable_parsing_protobufs = false;
+
+  // Bump perf buffer size to 1MiB to avoid perf buffer overflow.
+  FLAGS_stirling_bpf_perf_buffer_page_count = 256;
 
   constexpr char kBaseDir[] = "src/stirling/testing";
   std::string s_path =
@@ -127,7 +143,7 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
                    ":path: /pl.stirling.testing.Greeter/SayHello\n"
                    ":scheme: http\n"
                    "content-type: application/grpc\n"
-                   "grpc-timeout: [0-9]+u\n"
+                   "grpc-timeout: [0-9a-zA-Z]+u\n"
                    "te: trailers\n"
                    "user-agent: grpc-go/.+"));
   EXPECT_THAT(
@@ -172,6 +188,8 @@ class GRPCCppTest : public ::testing::Test {
   void SetUpGRPCServices() {
     runner_.RegisterService(&greeter_service_);
     runner_.RegisterService(&greeter2_service_);
+    runner_.RegisterService(&streaming_greeter_service_);
+
     server_ = runner_.Run();
 
     auto* server_ptr = server_.get();
@@ -180,6 +198,7 @@ class GRPCCppTest : public ::testing::Test {
     client_channel_ = CreateInsecureGRPCChannel(absl::StrCat("127.0.0.1:", runner_.port()));
     greeter_stub_ = std::make_unique<GRPCStub<Greeter>>(client_channel_);
     greeter2_stub_ = std::make_unique<GRPCStub<Greeter2>>(client_channel_);
+    streaming_greeter_stub_ = std::make_unique<GRPCStub<StreamingGreeter>>(client_channel_);
   }
 
   void TearDown() override {
@@ -191,17 +210,13 @@ class GRPCCppTest : public ::testing::Test {
   }
 
   template <typename StubType, typename RPCMethodType>
-  void CallRPC(StubType* stub, RPCMethodType method, const std::vector<std::string>& names,
-               bool transfer_data = true) {
+  void CallRPC(StubType* stub, RPCMethodType method, const std::vector<std::string>& names) {
     HelloRequest req;
     HelloReply resp;
     for (const auto& n : names) {
       req.set_name(n);
       ::grpc::Status st = stub->CallRPC(method, req, &resp);
       LOG_IF(ERROR, !st.ok()) << st.error_message();
-    }
-    if (transfer_data) {
-      source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
     }
   }
 
@@ -210,14 +225,17 @@ class GRPCCppTest : public ::testing::Test {
 
   GreeterService greeter_service_;
   Greeter2Service greeter2_service_;
+  StreamingGreeterService streaming_greeter_service_;
 
   ServiceRunner runner_;
   std::unique_ptr<::grpc::Server> server_;
   std::thread server_thread_;
 
   std::shared_ptr<Channel> client_channel_;
+
   std::unique_ptr<GRPCStub<Greeter>> greeter_stub_;
   std::unique_ptr<GRPCStub<Greeter2>> greeter2_stub_;
+  std::unique_ptr<GRPCStub<StreamingGreeter>> streaming_greeter_stub_;
 };
 
 TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
@@ -229,6 +247,7 @@ TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
   CallRPC(greeter2_stub_.get(), &Greeter2::Stub::SayHi, {"pixielabs", "pixielabs", "pixielabs"});
   CallRPC(greeter2_stub_.get(), &Greeter2::Stub::SayHiAgain,
           {"pixielabs", "pixielabs", "pixielabs"});
+  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
   std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
@@ -243,6 +262,7 @@ TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
                              "accept-encoding: identity,gzip\n"
                              "content-type: application/grpc\n"
                              "grpc-accept-encoding: identity,deflate,gzip\n"
+                             "grpc-timeout: [0-9a-zA-Z]+\n"
                              "te: trailers\n"
                              "user-agent: .*"));
     EXPECT_THAT(std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(idx)),
@@ -263,6 +283,82 @@ TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
   }
 }
 
+// Tests to show the captured results from a timed out RPC call.
+TEST_F(GRPCCppTest, RPCTimesOut) {
+  greeter_service_.set_enable_cond_wait(true);
+  CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs"});
+  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
+  // Wait for RPC call to timeout, and then unblock the server.
+  greeter_service_.Notify();
+  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
+
+  types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
+  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  // TODO(yzhao): ATM missing response, here because of response times out, renders requests being
+  // held in buffer and not exported. Change to export requests after a certain timeout.
+  EXPECT_THAT(indices, IsEmpty());
+}
+
+std::vector<HelloReply> ParseProtobufRecords(absl::string_view buf) {
+  std::vector<HelloReply> res;
+  while (!buf.empty()) {
+    const uint32_t len = nghttp2_get_uint32(reinterpret_cast<const uint8_t*>(buf.data()) + 1);
+    HelloReply reply;
+    reply.ParseFromArray(buf.data() + kGRPCMessageHeaderSizeInBytes, len);
+    res.push_back(std::move(reply));
+    buf.remove_prefix(kGRPCMessageHeaderSizeInBytes + len);
+  }
+  return res;
+}
+
+// Tests that a streaming RPC call will keep a HTTP2 stream open for the entirety of the RPC call.
+// Therefore if the server takes a long time to return the results, the trace record would not
+// be exported until then.
+// TODO(yzhao): We need some way to export streaming RPC trace record gradually.
+TEST_F(GRPCCppTest, ServerStreamingRPC) {
+  HelloRequest req;
+  req.set_name("pixielabs");
+  req.set_count(3);
+
+  std::vector<HelloReply> replies;
+
+  ::grpc::Status st = streaming_greeter_stub_->CallServerStreamingRPC(
+      &StreamingGreeter::Stub::SayHello, req, &replies);
+  EXPECT_TRUE(st.ok());
+  EXPECT_THAT(replies, SizeIs(3));
+
+  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
+
+  types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
+  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  EXPECT_THAT(indices, SizeIs(1));
+
+  for (size_t idx : indices) {
+    std::vector<std::string> header_fields =
+        absl::StrSplit(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(idx), "\n");
+    EXPECT_THAT(
+        header_fields,
+        ElementsAre(MatchesRegex(":authority: 127.0.0.1:[0-9]+"), ":method: POST",
+                    ":path: /pl.stirling.testing.StreamingGreeter/SayHello", ":scheme: http",
+                    "accept-encoding: identity,gzip", "content-type: application/grpc",
+                    "grpc-accept-encoding: identity,deflate,gzip",
+                    MatchesRegex("grpc-timeout: [0-9a-zA-Z]+"), "te: trailers",
+                    MatchesRegex("user-agent: .*")));
+    header_fields =
+        absl::StrSplit(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(idx), "\n");
+    EXPECT_THAT(header_fields,
+                ElementsAre(":status: 200", "accept-encoding: identity,gzip",
+                            "content-type: application/grpc",
+                            "grpc-accept-encoding: identity,deflate,gzip", "grpc-status: 0"));
+    EXPECT_THAT(GetHelloRequest(record_batch, idx),
+                EqualsProto(R"proto(name: "pixielabs" count: 3)proto"));
+    EXPECT_THAT(ParseProtobufRecords(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx)),
+                ElementsAre(EqualsProto("message: 'Hello pixielabs for no. 0!'"),
+                            EqualsProto("message: 'Hello pixielabs for no. 1!'"),
+                            EqualsProto("message: 'Hello pixielabs for no. 2!'")));
+  }
+}
+
 // Do not initialize socket tracer to simulate the socket tracer missing head of start of the HTTP2
 // connection.
 class GRPCCppMiddleInterceptTest : public GRPCCppTest {
@@ -271,12 +367,13 @@ class GRPCCppMiddleInterceptTest : public GRPCCppTest {
 };
 
 TEST_F(GRPCCppMiddleInterceptTest, InterceptMiddleOfTheConnection) {
-  CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"},
-          /*transfer_data*/ false);
+  CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"});
+
   // Attach the probes after connection started.
   SetUpSocketTraceConnector();
-  CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"},
-          /*transfer_data*/ true);
+  CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"});
+  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
+
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
   std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
   EXPECT_THAT(indices, SizeIs(3));
@@ -287,6 +384,51 @@ TEST_F(GRPCCppMiddleInterceptTest, InterceptMiddleOfTheConnection) {
     EXPECT_THAT(GetHelloReply(record_batch, idx),
                 AnyOf(EqualsProto(R"proto(message: "Hello pixielabs!")proto"),
                       EqualsProto(R"proto(message: "Hi pixielabs!")proto")));
+  }
+}
+
+class GRPCCppCallingNonRegisteredServiceTest : public GRPCCppTest {
+ protected:
+  void SetUp() {
+    SetUpSocketTraceConnector();
+
+    runner_.RegisterService(&greeter2_service_);
+    server_ = runner_.Run();
+
+    auto* server_ptr = server_.get();
+    server_thread_ = std::thread([server_ptr]() { server_ptr->Wait(); });
+
+    client_channel_ = CreateInsecureGRPCChannel(absl::StrCat("127.0.0.1:", runner_.port()));
+    greeter_stub_ = std::make_unique<GRPCStub<Greeter>>(client_channel_);
+  }
+};
+
+// Tests to show what is captured when calling a remote endpoint that does not implement the
+// requested method.
+TEST_F(GRPCCppCallingNonRegisteredServiceTest, ResultsAreAsExpected) {
+  CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"});
+  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
+  types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
+  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  EXPECT_THAT(indices, SizeIs(3));
+  for (size_t idx : indices) {
+    EXPECT_THAT(std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(idx)),
+                MatchesRegex(":authority: 127.0.0.1:[0-9]+\n"
+                             ":method: POST\n"
+                             ":path: /pl.stirling.testing.Greeter(|2)/Say(Hi|Hello)(|Again)\n"
+                             ":scheme: http\n"
+                             "accept-encoding: identity,gzip\n"
+                             "content-type: application/grpc\n"
+                             "grpc-accept-encoding: identity,deflate,gzip\n"
+                             "grpc-timeout: [0-9a-zA-Z]+\n"
+                             "te: trailers\n"
+                             "user-agent: .*"));
+    EXPECT_THAT(std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(idx)),
+                MatchesRegex(":status: 200\n"
+                             "content-type: application/grpc\n"
+                             "grpc-status: 12"));
+    EXPECT_THAT(GetHelloRequest(record_batch, idx), EqualsProto(R"proto(name: "pixielabs")proto"));
+    EXPECT_THAT(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx), IsEmpty());
   }
 }
 

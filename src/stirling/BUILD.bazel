@@ -192,6 +192,7 @@ pl_cc_test(
 
 pl_cc_test(
     name = "grpc_trace_bpf_test",
+    timeout = "moderate",
     srcs = ["grpc_trace_bpf_test.cc"],
     data = [
         "//src/stirling/testing:go_greeter_client",

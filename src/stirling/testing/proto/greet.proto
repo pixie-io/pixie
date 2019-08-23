@@ -14,6 +14,8 @@ service Greeter {
 // The request message containing the user's name.
 message HelloRequest {
   string name = 1;
+  // The number of greetings to return. Only used in streaming method.
+  int32 count = 2;
 }
 
 // The response message containing the greetings
@@ -24,4 +26,8 @@ message HelloReply {
 service Greeter2 {
   rpc SayHi (HelloRequest) returns (HelloReply) {}
   rpc SayHiAgain (HelloRequest) returns (HelloReply) {}
+}
+
+service StreamingGreeter {
+  rpc SayHello (HelloRequest) returns (stream HelloReply) {}
 }
