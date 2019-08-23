@@ -16,6 +16,7 @@ namespace pl {
 namespace stirling {
 namespace http2 {
 
+using ::pl::ConstStrView;
 using ::pl::grpc::MethodInputOutput;
 using ::pl::grpc::ServiceDescriptorDatabase;
 using ::pl::stirling::testing::GreetServiceFDSet;
@@ -271,6 +272,35 @@ TEST(HeadersTest, GetHeaderValue) {
   EXPECT_EQ(req.HeaderValue("missing"), "");
   EXPECT_EQ(req.HeaderValue("missing", "-1"), "-1");
 }
+
+struct BoundaryTestCase {
+  std::string_view input;
+  MessageType msg_type;
+  size_t exp_res;
+};
+
+using FindMessageBoundaryTest = ::testing::TestWithParam<BoundaryTestCase>;
+
+TEST_P(FindMessageBoundaryTest, CheckReturnValues) {
+  auto param = GetParam();
+  EXPECT_EQ(param.exp_res, FindMessageBoundary<Frame>(param.msg_type, param.input, 0));
+}
+
+INSTANTIATE_TEST_CASE_P(
+    FindMessageBoundarySuite, FindMessageBoundaryTest,
+    ::testing::Values(
+        BoundaryTestCase{ConstStrView("abcd\x00\x00\x04\x01\x04\x00\x00\x00\x0D\x86\x83\xC0\xBF"),
+                         MessageType::kRequest, 4},
+        BoundaryTestCase{ConstStrView("abcd\x00\x00\x04\x01\x04\x00\x00\x00\x0D\x86\x83"),
+                         MessageType::kRequest, std::string_view::npos},
+        BoundaryTestCase{ConstStrView("abcd"), MessageType::kRequest, std::string_view::npos},
+        BoundaryTestCase{ConstStrView("abcd\x00\x00\x04\x01\x04\x00\x00\x00\x0D\x88"),
+                         MessageType::kResponse, 4},
+        BoundaryTestCase{ConstStrView("abcd\x00\x00\x04\x01\x04\x00\x00\x00\x0D"),
+                         MessageType::kResponse, std::string_view::npos},
+        BoundaryTestCase{ConstStrView("abcd"), MessageType::kResponse, std::string_view::npos},
+        BoundaryTestCase{std::string_view(), MessageType::kRequest, std::string_view::npos},
+        BoundaryTestCase{std::string_view(), MessageType::kResponse, std::string_view::npos}));
 
 }  // namespace http2
 }  // namespace stirling

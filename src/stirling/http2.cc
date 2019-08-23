@@ -16,6 +16,7 @@ extern "C" {
 #include "src/common/base/error.h"
 #include "src/common/base/status.h"
 #include "src/common/grpcutils/utils.h"
+#include "src/stirling/bcc_bpf/grpc.h"
 #include "src/stirling/grpc.h"
 
 namespace pl {
@@ -383,6 +384,78 @@ MethodInputOutput GetProtobufMessages(const GRPCMessage& req, ServiceDescriptorD
   return db->GetMethodInputOutput(MethodPath(iter->second));
 }
 
+namespace {
+
+size_t FindFrameBoundaryForGRPCReq(std::string_view buf) {
+  if (buf.size() < kFrameHeaderSizeInBytes + kGRPCReqMinHeaderBlockSize) {
+    return std::string_view::npos;
+  }
+  for (size_t i = 0; i <= buf.size() - kFrameHeaderSizeInBytes - kGRPCReqMinHeaderBlockSize; ++i) {
+    if (looks_like_grpc_req_http2_headers_frame(buf.data() + i, buf.size() - i)) {
+      return i;
+    }
+  }
+  return std::string_view::npos;
+}
+
+// There is a HTTP2 frame header and at least 1 encoded header field.
+constexpr size_t kRespHeadersFrameMinSize = kFrameHeaderSizeInBytes + 1;
+
+// Assumes the input buf begins with a HTTP2 frame, and verify if that frame is the first HEADERS
+// frame of a gRPC response. Looks for 3 byte constant with specific format, and one byte with
+// 0 bit. The chance of a random byte sequence passes this function would be at most 1/2^25.
+//
+// TODO(yzhao): Consider move this into bcc_bpf/http2.h, that way this becomes symmetric with
+// looks_like_grpc_req_http2_headers_frame().
+bool LooksLikeHeadersFrameForGRPCResp(std::string_view buf) {
+  const char type = buf[3];
+  if (type != NGHTTP2_HEADERS) {
+    return false;
+  }
+  const char flag = buf[4];
+  if (!(flag & NGHTTP2_FLAG_END_HEADERS)) {
+    return false;
+  }
+  // The first header frame of a response cannot have END_STREAM flag. END_STREAM is reserved for
+  // the last header frame in the HEADERS DATA HEADERS sequence for a succeeded RPC response.
+  // TODO(yzhao): Figure out the pattern of a failed RPC call's response.
+  if (flag & NGHTTP2_FLAG_END_STREAM) {
+    return false;
+  }
+  size_t header_block_offset = 0;
+  if (flag & NGHTTP2_FLAG_PADDED) {
+    header_block_offset += 1;
+  }
+  if (flag & NGHTTP2_FLAG_PRIORITY) {
+    header_block_offset += 4;
+  }
+  if (buf.size() < kRespHeadersFrameMinSize + header_block_offset) {
+    return false;
+  }
+  // ":status OK" is almost the only HTTP2 status used in gRPC, because it, contrary to REST,
+  // does not encode RPC-layer status in HTTP2 status.
+  constexpr char kStatus200 = 0x88;
+  if (buf[kFrameHeaderSizeInBytes + header_block_offset] != kStatus200) {
+    return false;
+  }
+  return true;
+}
+
+// Performs a linear search over the input buf and returns the start position of the first sequence
+// that looks like a HEADERS frame. Returns npos if not found.
+size_t FindFrameBoundaryForGRPCResp(std::string_view buf) {
+  if (buf.size() < kRespHeadersFrameMinSize) {
+    return std::string_view::npos;
+  }
+  for (size_t i = 0; i <= buf.size() - kFrameHeaderSizeInBytes - 1; ++i) {
+    if (LooksLikeHeadersFrameForGRPCResp(buf.substr(i))) {
+      return i;
+    }
+  }
+  return std::string_view::npos;
+}
+
+}  // namespace
 }  // namespace http2
 
 template <>
@@ -424,9 +497,23 @@ ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
 }
 
 template <>
-size_t FindMessageBoundary<http2::Frame>(MessageType /*type*/, std::string_view /*buf*/,
-                                         size_t /*start_pos*/) {
-  return 0;
+size_t FindMessageBoundary<http2::Frame>(MessageType type, std::string_view buf, size_t start_pos) {
+  size_t res = std::string_view::npos;
+  switch (type) {
+    case MessageType::kRequest:
+      res = http2::FindFrameBoundaryForGRPCReq(buf.substr(start_pos));
+      break;
+    case MessageType::kResponse:
+      res = http2::FindFrameBoundaryForGRPCResp(buf.substr(start_pos));
+      break;
+    case MessageType::kUnknown:
+      DCHECK(false) << "The message type must be specified.";
+      break;
+  }
+  if (res == std::string_view::npos) {
+    return std::string_view::npos;
+  }
+  return start_pos + res;
 }
 
 }  // namespace stirling

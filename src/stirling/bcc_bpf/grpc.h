@@ -48,7 +48,9 @@ static __inline bool looks_like_grpc_req_http2_headers_frame(const char* buf, si
 
   // Search for known static coded header field.
   buf += (kFrameHeaderSize + header_block_offset);
+#if defined(__clang__)
 #pragma unroll
+#endif
   for (size_t i = 0; i < kGRPCReqMinHeaderBlockSize; ++i) {
     if (buf[i] == kMethodPostCode) {
       found_method_post = true;
