@@ -8,9 +8,11 @@ import {fetch} from 'unfetch/polyfill';
 
 import { InMemoryCache } from 'apollo-cache-inmemory';
 import {ApolloClient} from 'apollo-client';
+import { ApolloLink } from 'apollo-link';
 import { setContext } from 'apollo-link-context';
 import {createHttpLink} from 'apollo-link-http';
 import { ApolloProvider } from 'react-apollo';
+import {gqlClient} from './gql-client';
 
 import './App.scss';
 
@@ -18,33 +20,7 @@ export interface AppProps {
   name: string;
 }
 
-export const link = createHttpLink({
-  uri: '/graphql',
-  fetch,
-});
 
-// Pull auth from the local storage.
-const authLink = setContext((_, { headers }) => {
-  // get the authentication token from local storage if it exists
-  const auth: string = localStorage.getItem('auth');
-  let token: string = '';
-  if (auth != null) {
-    token = JSON.parse(auth).idToken;
-  }
-  // TOOD(zasgar/michelle): If auth is not valid or present, we should redirect
-  // to the login page.
-
-  // Return the headers to the context so httpLink can read them.
-  return {
-    headers: {
-      ...headers,
-      authorization: `Bearer ${token}`,
-    },
-  };
-});
-
-const gqlCache = new InMemoryCache();
-const gqlClient = new ApolloClient({cache: gqlCache, link: authLink.concat(link)});
 
 export class App extends React.Component<AppProps, {}> {
   render() {

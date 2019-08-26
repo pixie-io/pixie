@@ -66,7 +66,7 @@ const agentString = (agentCount: number) => {
 };
 
 export const AgentDisplay = ({onAgents}) => (
-    <Query query={GET_AGENTS} pollInterval={2500}>
+    <Query context={{clientName: 'vizier'}} query={GET_AGENTS} pollInterval={2500}>
     {({ loading, error, data }) => {
       if (loading) { return 'Loading...'; }
       if (error) { return `Error! ${error.message}`; }

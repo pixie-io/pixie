@@ -75,7 +75,7 @@ const PRESET_QUERIES = toml.parse(PresetQueries).queries;
 
 // This component displays the number of agents available to query.
 const AgentCountDisplay = () => (
-  <Query query={GET_AGENT_IDS} pollInterval={1000}>
+  <Query context={{clientName: 'vizier'}} query={GET_AGENT_IDS} pollInterval={1000}>
   {({ loading, error, data }) => {
     if (loading) { return 'Loading...'; }
     if (error) { return `Error! ${error.message}`; }
@@ -203,7 +203,7 @@ export class QueryManager extends React.Component<{}, QueryManagerState> {
       }
     };
     return (
-      <Mutation mutation={EXECUTE_QUERY}>
+      <Mutation context={{clientName: 'vizier'}} mutation={EXECUTE_QUERY}>
         {(executeQuery, { loading, error, data }) => (
           <HotKeys
             className='hotkey-container'
