@@ -114,7 +114,7 @@ gcloud beta container --project "pl-dev-infra" clusters create ${CLUSTER_NAME} \
  --no-enable-ip-alias \
  --network "projects/pl-dev-infra/global/networks/dev" \
  --subnetwork "projects/pl-dev-infra/regions/us-west1/subnetworks/us-west1-0" \
- --addons HorizontalPodAutoscaling,KubernetesDashboard \
+ --addons HorizontalPodAutoscaling,KubernetesDashboard,HttpLoadBalancing \
  --no-enable-autoupgrade \
  --no-enable-autorepair \
  --labels k8s-dev-cluster=
