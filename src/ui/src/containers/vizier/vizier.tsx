@@ -1,6 +1,8 @@
 import {Header} from 'components/header/header';
 import {SidebarNav} from 'components/sidebar-nav/sidebar-nav';
+import gql from 'graphql-tag';
 import * as React from 'react';
+import {Query} from 'react-apollo';
 import {Route} from 'react-router-dom';
 import {AgentDisplay} from './agent-display';
 import {DeployInstructions} from './deploy-instructions';
@@ -16,6 +18,15 @@ import * as infoImage from 'images/icons/agent.svg';
 import * as codeImage from 'images/icons/query.svg';
 // @ts-ignore : TS does not like image files.
 import * as logoImage from 'images/logo.svg';
+
+export const GET_CLUSTER = gql`
+{
+  cluster {
+    id
+    status
+    lastHeartbeatMs
+  }
+}`;
 
 const PATH_TO_HEADER_TITLE = {
   '/vizier/agents': 'Agents',
@@ -38,34 +49,42 @@ export class Vizier extends React.Component<VizierProps, {}> {
   render() {
     const matchPath = this.props.match.path;
 
-    // TODO(michelle): Make an API call to check whether the customer's cluster has already been registered.
-    const deployed = true; // Whether or not the cluster has been deployed.
-    if (!deployed) {
-      return (
-        <DeployInstructions
-          sitename={window.location.hostname.split('.')[0]}
-        />
-      );
-    }
-
     return (
-      <div className='vizier'>
-        <SidebarNav
-          logo = {logoImage}
-          items={[
-            { link: '/vizier/query', selectedImg: codeImage, unselectedImg: codeImage },
-            { link: '/vizier/agents', selectedImg: infoImage, unselectedImg: infoImage },
-          ]}
-        />
-        <div className='vizier-body'>
-          <Header
-             primaryHeading='Pixie Console'
-             secondaryHeading={PATH_TO_HEADER_TITLE[this.props.location.pathname]}
-          />
-          <Route path={`${matchPath}/agents`} component={AgentDisplay} />
-          <Route path={`${matchPath}/query`} component={QueryManager} />
-        </div>
-      </div>
+      <Query query={GET_CLUSTER}>
+      {
+        ({loading, error, data}) => {
+          if (loading) { return 'Loading...'; }
+          if (error) { return `Error! ${error.message}`; }
+          if (data.cluster.status === 'VZ_ST_HEALTHY') {
+            return (
+              <div className='vizier'>
+                <SidebarNav
+                  logo = {logoImage}
+                  items={[
+                    { link: '/vizier/query', selectedImg: codeImage, unselectedImg: codeImage },
+                    { link: '/vizier/agents', selectedImg: infoImage, unselectedImg: infoImage },
+                  ]}
+                />
+                <div className='vizier-body'>
+                  <Header
+                     primaryHeading='Pixie Console'
+                     secondaryHeading={PATH_TO_HEADER_TITLE[this.props.location.pathname]}
+                  />
+                  <Route path={`${matchPath}/agents`} component={AgentDisplay} />
+                  <Route path={`${matchPath}/query`} component={QueryManager} />
+                </div>
+              </div>
+            );
+          } else {
+            return (
+              <DeployInstructions
+                sitename={window.location.hostname.split('.')[0]}
+              />
+            );
+          }
+        }
+      }
+      </Query>
     );
   }
 }
