@@ -1,7 +1,9 @@
 import Auth0Lock from 'auth0-lock';
 import Axios from 'axios';
+import gql from 'graphql-tag';
 import * as QueryString from 'query-string';
 import * as React from 'react';
+import { ApolloConsumer } from 'react-apollo';
 
 const AUTH0_DOMAIN = 'pixie-labs.auth0.com';
 const AUTH0_CLIENT_ID = 'qaAfEHQT7mRt6W0gMd9mcQwNANz9kRup';
@@ -12,6 +14,14 @@ import * as logoImage from 'images/dark-logo.svg';
 export interface RouterInfo {
   search: string;
 }
+
+const CREATE_CLUSTER = gql`
+  mutation CreateCluster($domainName: String) {
+    CreateCluster(domainName: $domainName) {
+      id
+    }
+  }
+`;
 
 interface Auth0LoginProps {
   containerID?: string;
@@ -56,8 +66,18 @@ function onCreateAuthenticated(authResult) {
         idToken: response.data.Token,
         expiresAt: response.data.ExpiresAt,
       });
-      window.location.href = window.location.protocol + '//'
-        + window.location.host.replace('id.', this.domain + '.');
+    }).then(() => {
+      // Create a cluster for the org.
+      return this.props.client.mutate({
+          mutation: CREATE_CLUSTER,
+          variables:
+              { domainName: this.domain },
+      });
+    }).then((results) => {
+        window.location.href = window.location.protocol + '//'
+          + window.location.host.replace('id.', this.domain + '.');
+    }).catch((gqlErr) => {
+        return gqlErr;
     });
 });
 }
@@ -74,14 +94,17 @@ export const UserLogin = (props) => {
 };
 
 export const UserCreate = (props) => {
-  return (<Auth0Login
-      redirectPath='create-site'
-      onAuthenticated={onCreateAuthenticated}
-      allowLogin={false}
-      allowSignUp={true}
-      {...props}
-    />
-  );
+  return (<ApolloConsumer>{(client) => {
+    return (<Auth0Login
+        client={client}
+        redirectPath='create-site'
+        onAuthenticated={onCreateAuthenticated}
+        allowLogin={false}
+        allowSignUp={true}
+        {...props}
+      />
+    );
+  }}</ApolloConsumer>);
 };
 
 class Auth0Login extends React.Component<Auth0LoginProps, {}>  {
