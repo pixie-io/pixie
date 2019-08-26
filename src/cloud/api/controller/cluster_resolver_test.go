@@ -161,7 +161,7 @@ func TestClusterConnectionInfo(t *testing.T) {
 		Return(vzrResp, nil)
 
 	vzrInfoResp := &cloudpb.VizierConnectionInfo{
-		IpAddress: "127.0.0.1",
+		IPAddress: "127.0.0.1",
 		Token:     "this-is-a-token",
 	}
 	mockVzMgr.EXPECT().GetVizierConnectionInfo(gomock.Any(), &uuidpb.UUID{Data: []byte(clusterID)}).

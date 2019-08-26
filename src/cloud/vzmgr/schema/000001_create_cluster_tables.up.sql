@@ -15,7 +15,7 @@ CREATE TABLE vizier_cluster (
 );
 
 
-CREATE TYPE vizier_status AS ENUM ('UNKNOWN', 'OK', 'UNHEALTHY', 'DISCONNECTED');
+CREATE TYPE vizier_status AS ENUM ('UNKNOWN', 'HEALTHY', 'UNHEALTHY', 'DISCONNECTED');
 
 CREATE TABLE vizier_cluster_info (
   -- The ID to use for this cluster.
@@ -29,6 +29,6 @@ CREATE TABLE vizier_cluster_info (
 
   status vizier_status,
 
-  PRIMARY KEY(vizier_cluster_id),
+  PRIMARY KEY(vizier_cluster_id)
   FOREIGN KEY (vizier_cluster_id) REFERENCES vizier_cluster(id)
 );

@@ -131,7 +131,7 @@ func (q *QueryResolver) ClusterConnection(ctx context.Context) (*ClusterConnecti
 	}
 
 	return &ClusterConnectionInfoResolver{
-		info.IpAddress,
+		info.IPAddress,
 		info.Token,
 	}, nil
 }

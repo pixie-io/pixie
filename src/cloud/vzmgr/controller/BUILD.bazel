@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
@@ -9,5 +9,32 @@ go_library(
         "//src/cloud/cloudpb:cloud_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
         "//src/common/uuid/proto:uuid_pl_go_proto",
+        "//src/utils:go_default_library",
+        "@com_github_dgrijalva_jwt_go//:go_default_library",
+        "@com_github_jmoiron_sqlx//:go_default_library",
+        "@com_github_satori_go_uuid//:go_default_library",
+        "@org_golang_google_grpc//codes:go_default_library",
+        "@org_golang_google_grpc//status:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["server_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//src/cloud/cloudpb:cloud_pl_go_proto",
+        "//src/cloud/vzmgr/schema:go_default_library",
+        "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
+        "//src/common/uuid/proto:uuid_pl_go_proto",
+        "//src/shared/services/pgtest:go_default_library",
+        "//src/utils:go_default_library",
+        "@com_github_golang_migrate_migrate//source/go_bindata:go_default_library",
+        "@com_github_jmoiron_sqlx//:go_default_library",
+        "@com_github_satori_go_uuid//:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//require:go_default_library",
+        "@org_golang_google_grpc//codes:go_default_library",
+        "@org_golang_google_grpc//status:go_default_library",
     ],
 )

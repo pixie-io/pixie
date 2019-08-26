@@ -12,6 +12,9 @@ func UUIDFromProto(pb *pb.UUID) (uuid.UUID, error) {
 
 // UUIDFromProtoOrNil converts a proto message to uuid if error sets to nil uuid.
 func UUIDFromProtoOrNil(pb *pb.UUID) uuid.UUID {
+	if pb == nil {
+		return uuid.Nil
+	}
 	return uuid.FromStringOrNil(string(pb.Data))
 }
 

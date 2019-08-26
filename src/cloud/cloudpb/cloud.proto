@@ -29,10 +29,14 @@ message RegisterVizierAck {
 }
 
 message VizierHeartbeat {
-    // The current unix time in ns on the machine.
-    int64 time = 1;
-    // The sequence number of the HB.
-    int64 sequence_number = 2;
+  // The ID for this Vizier.
+  uuidpb.UUID vizier_id = 1 [
+                            (gogoproto.customname) = "VizierID"
+                            ];
+  // The current unix time in ns on the machine.
+  int64 time = 2;
+  // The sequence number of the HB.
+  int64 sequence_number = 3;
 }
 
 message VizierHeartbeatAck {
@@ -54,19 +58,26 @@ message VizierInfo {
   enum Status {
     VZ_ST_UNKNOWN = 0;
     VZ_ST_HEALTHY = 1;
-    VZ_ST_DISCONNECTED = 2;
+    VZ_ST_UNHEALTHY = 2;
+    VZ_ST_DISCONNECTED = 3;
   }
   // The ID for this Vizier.
   uuidpb.UUID vizier_id = 1 [
-                             (gogoproto.customname) = "VizierID"
+                            (gogoproto.customname) = "VizierID",
+                            (gogoproto.moretags) = "db:vizier_id"
                              ];
   Status status = 2;
   // Time in ns since the last heart beat. Negative number implies heartbeat never received.
-  int64 last_heartbeat_ns = 3;
+  int64 last_heartbeat_ns = 3 [
+                              (gogoproto.moretags) = "db:last_heartbeat"
+                              ];
 }
 
 // Information require to connect to a vizier cluster.
 message VizierConnectionInfo {
-  string ip_address = 1;
+  string ip_address = 1 [
+                        (gogoproto.customname) = "IPAddress",
+                        (gogoproto.moretags) = "db:ip_address"
+                        ];
   string token = 2;
 }
