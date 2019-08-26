@@ -14,7 +14,6 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/schema"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	cloudpb "pixielabs.ai/pixielabs/src/cloud/cloudpb"
-	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
@@ -43,20 +42,9 @@ func TestCreateCluster(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	apiEnv, _, _, mockProfile, mockVzMgr, cleanup := testutils.CreateTestAPIEnv(t)
+	apiEnv, _, _, _, mockVzMgr, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
-
-	expectedOrgReq := &profilepb.GetOrgByDomainRequest{
-		DomainName: "test",
-	}
-	orgReply := &profilepb.OrgInfo{
-		ID:         &uuidpb.UUID{Data: []byte(orgID)},
-		OrgName:    "test.com",
-		DomainName: "test",
-	}
-	mockProfile.EXPECT().GetOrgByDomain(gomock.Any(), expectedOrgReq).
-		Return(orgReply, nil)
 
 	expectedVZMgrReq := &vzmgrpb.CreateVizierClusterRequest{
 		OrgID: &uuidpb.UUID{Data: []byte(orgID)},
@@ -71,7 +59,7 @@ func TestCreateCluster(t *testing.T) {
 			Context: ctx,
 			Query: `
 				mutation {
-					CreateCluster(domainName: "test") {
+					CreateCluster {
 						id
 					}
 				}

@@ -47,5 +47,5 @@ type ClusterConnectionInfo {
 }
 
 type Mutation {
-  CreateCluster(domainName: String): ClusterInfo
+  CreateCluster: ClusterInfo
 }

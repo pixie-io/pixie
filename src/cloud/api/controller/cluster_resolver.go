@@ -8,31 +8,22 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	cloudpb "pixielabs.ai/pixielabs/src/cloud/cloudpb"
-	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
-type createClusterArgs struct {
-	DomainName *string
-}
-
 // CreateCluster creates a new cluster.
-func (q *QueryResolver) CreateCluster(ctx context.Context, args *createClusterArgs) (*ClusterInfoResolver, error) {
+func (q *QueryResolver) CreateCluster(ctx context.Context) (*ClusterInfoResolver, error) {
 	apiEnv := q.Env
 
-	orgReq := &profilepb.GetOrgByDomainRequest{
-		DomainName: *args.DomainName,
-	}
+	sCtx, err := authcontext.FromContext(ctx)
+	orgIDstr := sCtx.Claims.OrgID
 
-	resp, err := apiEnv.ProfileClient().GetOrgByDomain(ctx, orgReq)
-	if err != nil {
-		return nil, err
-	}
+	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
 
 	clusterReq := &vzmgrpb.CreateVizierClusterRequest{
-		OrgID: resp.ID,
+		OrgID: orgID,
 	}
 
 	id, err := apiEnv.VZMgrClient().CreateVizierCluster(ctx, clusterReq)

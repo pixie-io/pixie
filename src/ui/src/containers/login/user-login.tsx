@@ -70,8 +70,6 @@ function onCreateAuthenticated(authResult) {
       // Create a cluster for the org.
       return this.props.client.mutate({
           mutation: CREATE_CLUSTER,
-          variables:
-              { domainName: this.domain },
       });
     }).then((results) => {
         window.location.href = window.location.protocol + '//'
