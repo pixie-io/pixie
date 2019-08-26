@@ -20,10 +20,24 @@ type UserInfo {
 
 type Query {
   user: UserInfo!
+  cluster: ClusterInfo!
+}
+
+enum ClusterStatus {
+  # The default state if nothing is known.
+  VZ_ST_UNKNOWN
+  # The state is healthy if heartbeats are received on regular intervals and the
+  # cluster is responding to requests.
+  VZ_ST_HEALTHY
+  # The state will go to disconnected if the GRPC connection breaks. The hope is that
+  # the cluster will come back online and resume in HEALTHY state.
+  VZ_ST_DISCONNECTED
 }
 
 type ClusterInfo {
   id: ID!
+  status: ClusterStatus!
+  lastHeartbeatMs: Float!
 }
 
 type Mutation {

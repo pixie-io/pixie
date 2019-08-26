@@ -13,6 +13,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/schema"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
+	cloudpb "pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
@@ -24,6 +25,7 @@ func CreateTestContext() context.Context {
 	sCtx.Claims = &jwt.JWTClaims{}
 	sCtx.Claims.Email = "test@test.com"
 	sCtx.Claims.UserID = "abcdef"
+	sCtx.Claims.OrgID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 	return authcontext.NewContext(context.Background(), sCtx)
 }
 
@@ -78,6 +80,60 @@ func TestCreateCluster(t *testing.T) {
 				{
 					"CreateCluster": {
 						"id":"7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+					}
+				}
+			`,
+		},
+	})
+}
+
+func TestClusterInfo(t *testing.T) {
+	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	clusterID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	apiEnv, _, _, _, mockVzMgr, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	vzrIDs := make([]*uuidpb.UUID, 1)
+	vzrIDs[0] = &uuidpb.UUID{Data: []byte(clusterID)}
+	vzrResp := &vzmgrpb.GetViziersByOrgResponse{
+		VizierIDs: vzrIDs,
+	}
+	mockVzMgr.EXPECT().GetViziersByOrg(gomock.Any(), &uuidpb.UUID{Data: []byte(orgID)}).
+		Return(vzrResp, nil)
+
+	vzrInfoResp := &cloudpb.VizierInfo{
+		VizierID:        &uuidpb.UUID{Data: []byte(clusterID)},
+		Status:          1,
+		LastHeartbeatNs: 4000000,
+	}
+	mockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), &uuidpb.UUID{Data: []byte(clusterID)}).
+		Return(vzrInfoResp, nil)
+
+	gqlSchema := LoadSchema(apiEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					cluster {
+						id
+						status
+						lastHeartbeatMs
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"cluster": {
+						"id":"7ba7b810-9dad-11d1-80b4-00c04fd430c8",
+						"status": "VZ_ST_HEALTHY",
+						"lastHeartbeatMs": 4
 					}
 				}
 			`,
