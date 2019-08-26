@@ -338,6 +338,14 @@ class OperatorTests : public ::testing::Test {
         std::vector<std::string>({"time_", "cpu0", "cpu1", "cpu2"}));
   }
 
+  TabletSourceGroupIR* MakeTabletSourceGroup(MemorySourceIR* mem_source,
+                                             const std::vector<TabletKeyType>& tablet_key_values,
+                                             const std::string& tablet_key) {
+    TabletSourceGroupIR* group = graph->MakeNode<TabletSourceGroupIR>().ConsumeValueOrDie();
+    PL_CHECK_OK(group->Init(mem_source, tablet_key_values, tablet_key));
+    return group;
+  }
+
   pypa::AstPtr ast;
   std::shared_ptr<IR> graph;
 };

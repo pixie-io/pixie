@@ -132,6 +132,9 @@ inline ClassMatch<IRNodeType::kGRPCSourceGroup> GRPCSourceGroup() {
 inline ClassMatch<IRNodeType::kGRPCSink> GRPCSink() { return ClassMatch<IRNodeType::kGRPCSink>(); }
 
 inline ClassMatch<IRNodeType::kJoin> Join() { return ClassMatch<IRNodeType::kJoin>(); }
+inline ClassMatch<IRNodeType::kTabletSourceGroup> TabletSourceGroup() {
+  return ClassMatch<IRNodeType::kTabletSourceGroup>();
+}
 
 /**
  * @brief Match a specific integer value.

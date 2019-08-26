@@ -33,6 +33,20 @@ class TabletSourceConversionRule : public Rule {
   const compilerpb::CarnotInfo& carnot_info_;
 };
 
+/**
+ * @brief Converts TabletSourceGroups into MemorySources with unions.
+ */
+class MemorySourceTabletRule : public Rule {
+ public:
+  MemorySourceTabletRule() : Rule(nullptr) {}
+
+ private:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+  StatusOr<bool> ReplaceTabletSourceGroup(TabletSourceGroupIR* tablet_source_group);
+  StatusOr<MemorySourceIR*> CreateMemorySource(const MemorySourceIR* original_memory_source,
+                                               const TabletKeyType& tablet_value);
+};
+
 }  // namespace physical
 }  // namespace compiler
 }  // namespace carnot
