@@ -21,6 +21,7 @@ type UserInfo {
 type Query {
   user: UserInfo!
   cluster: ClusterInfo!
+  clusterConnection: ClusterConnectionInfo!
 }
 
 enum ClusterStatus {
@@ -38,6 +39,11 @@ type ClusterInfo {
   id: ID!
   status: ClusterStatus!
   lastHeartbeatMs: Float!
+}
+
+type ClusterConnectionInfo {
+  ipAddress: String!
+  token: String!
 }
 
 type Mutation {

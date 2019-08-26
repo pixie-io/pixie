@@ -140,3 +140,54 @@ func TestClusterInfo(t *testing.T) {
 		},
 	})
 }
+
+func TestClusterConnectionInfo(t *testing.T) {
+	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	clusterID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	apiEnv, _, _, _, mockVzMgr, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	vzrIDs := make([]*uuidpb.UUID, 1)
+	vzrIDs[0] = &uuidpb.UUID{Data: []byte(clusterID)}
+	vzrResp := &vzmgrpb.GetViziersByOrgResponse{
+		VizierIDs: vzrIDs,
+	}
+	mockVzMgr.EXPECT().GetViziersByOrg(gomock.Any(), &uuidpb.UUID{Data: []byte(orgID)}).
+		Return(vzrResp, nil)
+
+	vzrInfoResp := &cloudpb.VizierConnectionInfo{
+		IpAddress: "127.0.0.1",
+		Token:     "this-is-a-token",
+	}
+	mockVzMgr.EXPECT().GetVizierConnectionInfo(gomock.Any(), &uuidpb.UUID{Data: []byte(clusterID)}).
+		Return(vzrInfoResp, nil)
+
+	gqlSchema := LoadSchema(apiEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					clusterConnection {
+						ipAddress
+						token
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"clusterConnection": {
+						"ipAddress": "127.0.0.1",
+						"token": "this-is-a-token"
+					}
+				}
+			`,
+		},
+	})
+}

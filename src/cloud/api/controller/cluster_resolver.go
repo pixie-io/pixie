@@ -105,3 +105,49 @@ func (c *ClusterInfoResolver) Status() string {
 func (c *ClusterInfoResolver) LastHeartbeatMs() float64 {
 	return float64(c.lastHeartbeatNs / 1E6)
 }
+
+// ClusterConnection resolves cluster connection information.
+func (q *QueryResolver) ClusterConnection(ctx context.Context) (*ClusterConnectionInfoResolver, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	orgIDstr := sCtx.Claims.OrgID
+
+	orgID, err := uuid.FromString(orgIDstr)
+	if err != nil {
+		return nil, err
+	}
+
+	viziers, err := q.Env.VZMgrClient().GetViziersByOrg(ctx, utils.ProtoFromUUID(&orgID))
+	if err != nil {
+		return nil, err
+	}
+
+	if len(viziers.VizierIDs) == 0 {
+		return nil, errors.New("org has no clusters")
+	}
+	// Take first ID for now.
+	info, err := q.Env.VZMgrClient().GetVizierConnectionInfo(ctx, viziers.VizierIDs[0])
+	if err != nil {
+		return nil, err
+	}
+
+	return &ClusterConnectionInfoResolver{
+		info.IpAddress,
+		info.Token,
+	}, nil
+}
+
+// ClusterConnectionInfoResolver is the resolver responsible for cluster connection info.
+type ClusterConnectionInfoResolver struct {
+	ipAddress string
+	token     string
+}
+
+// IPAddress returns the connection's IP.
+func (c *ClusterConnectionInfoResolver) IPAddress() string {
+	return c.ipAddress
+}
+
+// Token returns the connection's token.
+func (c *ClusterConnectionInfoResolver) Token() string {
+	return c.token
+}
