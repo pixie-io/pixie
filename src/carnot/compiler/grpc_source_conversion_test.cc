@@ -61,6 +61,7 @@ TEST_F(GRPCSourceConversionTest, construction_test) {
   std::vector<std::string> actual_physical_ids;
   UnionIR* union_op = static_cast<UnionIR*>(mem_sink_parent);
   EXPECT_TRUE(union_op->IsRelationInit());
+  EXPECT_TRUE(union_op->HasColumnMappings());
   for (auto* union_op_parent : union_op->parents()) {
     ASSERT_EQ(union_op_parent->type(), IRNodeType::kGRPCSource) << union_op_parent->type_string();
     auto grpc_source = static_cast<GRPCSourceIR*>(union_op_parent);

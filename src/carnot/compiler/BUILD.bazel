@@ -246,3 +246,11 @@ go_test(
         "@com_github_stretchr_testify//assert:go_default_library",
     ],
 )
+
+pl_cc_test(
+    name = "tablet_rules_test",
+    srcs = ["tablet_rules_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
