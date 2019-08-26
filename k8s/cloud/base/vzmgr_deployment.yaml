@@ -21,6 +21,11 @@ spec:
           - containerPort: 51501
             hostPort: 51501
         env:
+          - name: PL_JWT_SIGNING_KEY
+            valueFrom:
+              secretKeyRef:
+                name: pl-app-secrets
+                key: jwt-signing-key
           - name: PL_SERVER_TLS_CERT
             value: /certs/server.crt
           - name: PL_SERVER_TLS_KEY
