@@ -26,12 +26,24 @@ func main() {
 		log.WithError(err).Fatal("Failed to init auth client")
 	}
 
+	// TODO(michelle): Move these to the controller server so that we can
+	// deprecate the environment.
 	sc, err := apienv.NewSiteManagerServiceClient()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to init site manager client")
 	}
 
-	env, err := apienv.New(ac, sc)
+	pc, err := apienv.NewProfileServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to init profile client")
+	}
+
+	vc, err := apienv.NewVZMgrServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to init vzmgr client")
+	}
+
+	env, err := apienv.New(ac, sc, pc, vc)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}

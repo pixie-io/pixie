@@ -25,7 +25,7 @@ func TestCreateSiteHandler(t *testing.T) {
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
-	env, mockAuthClient, mockSiteManagerClient, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, mockSiteManagerClient, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/create-site",
@@ -83,7 +83,7 @@ func TestCreateSiteHandler(t *testing.T) {
 }
 
 func TestCreateSiteHandler_BadMethod(t *testing.T) {
-	env, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("GET", "/api/create-site", nil)
 	assert.Nil(t, err)
@@ -96,7 +96,7 @@ func TestCreateSiteHandler_BadMethod(t *testing.T) {
 }
 
 func TestCreateSiteHandler_InvalidEmail(t *testing.T) {
-	env, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/api/create-site",
 		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"abcdef.com\", \"domainName\": \"def\"}"))
@@ -110,7 +110,7 @@ func TestCreateSiteHandler_InvalidEmail(t *testing.T) {
 }
 
 func TestCreateSiteHandler_UserCreationError(t *testing.T) {
-	env, mockAuthClient, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/create-site",
@@ -139,7 +139,7 @@ func TestCreateSiteHandler_SiteCreationError(t *testing.T) {
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
-	env, mockAuthClient, mockSiteManagerClient, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, mockSiteManagerClient, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/create-site",
@@ -181,7 +181,7 @@ func TestCreateSiteHandler_SiteCreationFailed(t *testing.T) {
 	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
-	env, mockAuthClient, mockSiteManagerClient, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, mockSiteManagerClient, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/create-site",

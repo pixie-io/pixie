@@ -38,7 +38,7 @@ func TestGetServiceCredentials(t *testing.T) {
 }
 
 func TestAuthLoginHandler(t *testing.T) {
-	env, mockAuthClient, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/users",
@@ -82,7 +82,7 @@ func TestAuthLoginHandler(t *testing.T) {
 }
 
 func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
-	env, mockAuthClient, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/api/users",
 		strings.NewReader("{\"accessToken\": \"the-token\"}"))
@@ -104,7 +104,7 @@ func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 }
 
 func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
-	env, mockAuthClient, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/api/users",
 		strings.NewReader("{\"accessToken\": \"the-token\"}"))
@@ -126,7 +126,7 @@ func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 }
 
 func TestAuthLoginHandler_BadMethod(t *testing.T) {
-	env, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("GET", "/api/users", nil)
 	assert.Nil(t, err)
@@ -139,7 +139,7 @@ func TestAuthLoginHandler_BadMethod(t *testing.T) {
 }
 
 func TestAuthLogoutHandler(t *testing.T) {
-	env, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/api/users", nil)
@@ -161,7 +161,7 @@ func TestAuthLogoutHandler(t *testing.T) {
 }
 
 func TestAuthLogoutHandler_BadMethod(t *testing.T) {
-	env, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "/api/users", nil)

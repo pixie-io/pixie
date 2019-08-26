@@ -4,13 +4,17 @@ go_library(
     name = "go_default_library",
     srcs = [
         "env.go",
+        "profile_client.go",
         "site_manager_client.go",
+        "vzmgr_client.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/cloud/api/apienv",
     visibility = ["//visibility:public"],
     deps = [
         "//src/cloud/auth/proto:auth_go_proto",
+        "//src/cloud/profile/profilepb:service_go_proto",
         "//src/cloud/site_manager/sitemanagerpb:service_go_proto",
+        "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
         "//src/shared/services:go_default_library",
         "//src/shared/services/env:go_default_library",
         "@com_github_gorilla_sessions//:go_default_library",

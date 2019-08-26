@@ -8,6 +8,7 @@
 
 schema {
   query: Query
+  mutation: Mutation
 }
 
 type UserInfo {
@@ -19,4 +20,12 @@ type UserInfo {
 
 type Query {
   user: UserInfo!
+}
+
+type ClusterInfo {
+  id: ID!
+}
+
+type Mutation {
+  CreateCluster(domainName: String): ClusterInfo
 }
