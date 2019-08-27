@@ -5,13 +5,13 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 51500
+    - port: 51800
       protocol: TCP
-      targetPort: 51500
+      targetPort: 51800
       name: tcp-grpc
-    - port: 51501
+    - port: 51801
       protocol: TCP
-      targetPort: 51501
+      targetPort: 51801
       name: tcp-rest
   selector:
     name: vzmgr-server

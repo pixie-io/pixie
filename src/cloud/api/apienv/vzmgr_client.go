@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	pflag.String("vzmgr_service", "profile-service.plc.svc.cluster.local:51500", "The profile service url (load balancer/list is ok)")
+	pflag.String("vzmgr_service", "vzmgr-service.plc.svc.cluster.local:51800", "The vzmgr service url (load balancer/list is ok)")
 }
 
 // NewVZMgrServiceClient creates a new profile RPC client stub.
