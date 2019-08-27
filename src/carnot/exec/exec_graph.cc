@@ -3,6 +3,7 @@
 #include <unordered_map>
 
 #include "src/carnot/exec/agg_node.h"
+#include "src/carnot/exec/equijoin_node.h"
 #include "src/carnot/exec/exec_graph.h"
 #include "src/carnot/exec/exec_node.h"
 #include "src/carnot/exec/filter_node.h"
@@ -54,6 +55,9 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
       })
       .OnUnion([&](auto& node) {
         return OnOperatorImpl<plan::UnionOperator, UnionNode>(node, &descriptors);
+      })
+      .OnJoin([&](auto& node) {
+        return OnOperatorImpl<plan::JoinOperator, EquijoinNode>(node, &descriptors);
       })
       .Walk(pf_);
   return Status::OK();

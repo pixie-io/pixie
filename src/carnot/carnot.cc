@@ -145,6 +145,7 @@ Status CarnotImpl::RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan:
       .OnMemorySink([&](const auto&) {})
       .OnMemorySource([&](const auto&) {})
       .OnUnion([&](const auto&) {})
+      .OnJoin([&](const auto&) {})
       .Walk(pf);
   return Status::OK();
 }
@@ -198,6 +199,7 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
   // Here we intercept the logical plan and remove all references to user specified table names.
   // TODO(philkuz) in the future when we remove the name argumetn from Results, rework this name.
   PL_RETURN_IF_ERROR(plan.Init(InterceptSinksInPlan(logical_plan, query_id)));
+
   // For each of the plan fragments in the plan, execute the query.
   std::vector<std::string> output_table_strs;
   auto exec_state = engine_state_->CreateExecState(query_id);

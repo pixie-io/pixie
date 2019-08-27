@@ -48,6 +48,9 @@ void PlanFragmentWalker::CallWalkFn(const Operator& op) {
     case planpb::OperatorType::LIMIT_OPERATOR:
       CallAs<LimitOperator>(on_limit_walk_fn_, op);
       break;
+    case planpb::OperatorType::JOIN_OPERATOR:
+      CallAs<JoinOperator>(on_join_walk_fn_, op);
+      break;
     default:
       LOG(WARNING) << absl::StrCat("Operator does not exist.");
   }

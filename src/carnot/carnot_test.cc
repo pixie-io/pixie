@@ -32,6 +32,7 @@ class CarnotTest : public ::testing::Test {
     table_store_->AddTable("big_test_table", big_table_);
   }
 
+  // TODO(nserrino/philkuz): Move this logic somewhere more reusable.
   std::string GetTableName(const sole::uuid& uuid, int64_t idx) const {
     return absl::Substitute("$0_$1", uuid.str(), idx);
   }
