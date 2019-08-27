@@ -47,10 +47,12 @@ pl_cc_test(
 
 pl_cc_binary(
     name = "wrapper_benchmark",
+    testonly = 1,
     srcs = ["wrapper_benchmark.cc"],
     deps = [
         ":cc_library",
         "//src/common/benchmark:cc_library",
+        "//src/common/datagen:cc_library",
         "@com_google_benchmark//:benchmark_main",
     ],
 )

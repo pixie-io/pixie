@@ -9,6 +9,7 @@
 #include "src/carnot/planpb/test_proto.h"
 #include "src/common/base/base.h"
 #include "src/common/benchmark/benchmark.h"
+#include "src/common/datagen/datagen.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/types.h"
 #include "src/table_store/table/table_store.h"
@@ -56,8 +57,8 @@ void BM_ScalarExpressionTwoCols(benchmark::State& state,
   auto exec_state = std::make_unique<ExecState>(udf_registry.get(), uda_registry.get(), table_store,
                                                 MockKelvinStubGenerator, sole::uuid4());
 
-  auto in1 = pl::bmutils::CreateLargeData<Int64Value>(data_size);
-  auto in2 = pl::bmutils::CreateLargeData<Int64Value>(data_size);
+  auto in1 = pl::datagen::CreateLargeData<Int64Value>(data_size);
+  auto in2 = pl::datagen::CreateLargeData<Int64Value>(data_size);
 
   RowDescriptor rd({DataType::INT64, DataType::INT64});
   auto input_rb = std::make_unique<RowBatch>(rd, in1.size());

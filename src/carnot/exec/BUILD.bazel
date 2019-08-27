@@ -65,6 +65,7 @@ pl_cc_binary(
         ":test_utils",
         "//src/carnot/planpb:plan_testutils",
         "//src/common/benchmark:cc_library",
+        "//src/common/datagen:cc_library",
         "//third_party:arrow",
         "@com_google_benchmark//:benchmark_main",
     ],

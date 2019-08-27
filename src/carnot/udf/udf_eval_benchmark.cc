@@ -7,6 +7,7 @@
 #include "src/carnot/udf/udf_wrapper.h"
 #include "src/common/base/base.h"
 #include "src/common/benchmark/benchmark.h"
+#include "src/common/datagen/datagen.h"
 #include "src/shared/types/arrow_adapter.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
@@ -23,8 +24,8 @@ using pl::types::StringValue;
 using pl::types::StringValueColumnWrapper;
 using pl::types::ToArrow;
 
-using pl::bmutils::CreateLargeData;
-using pl::bmutils::RandomString;
+using pl::datagen::CreateLargeData;
+using pl::datagen::RandomString;
 
 std::vector<StringValue> GenerateStringValueVector(int size, int string_width) {
   std::vector<StringValue> data(size);

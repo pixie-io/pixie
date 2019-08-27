@@ -53,10 +53,12 @@ pl_cc_test(
 
 pl_cc_binary(
     name = "udf_eval_benchmark",
+    testonly = 1,
     srcs = ["udf_eval_benchmark.cc"],
     deps = [
         ":cc_library",
         "//src/common/benchmark:cc_library",
+        "//src/common/datagen:cc_library",
         "//third_party:arrow",
         "@com_google_benchmark//:benchmark_main",
     ],

@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test_library")
 
 pl_cc_library(
     name = "cc_library",
@@ -8,11 +8,23 @@ pl_cc_library(
         ["*.cc"],
         exclude = ["**/*_test.cc"],
     ),
-    hdrs = glob(["*.h"]),
+    hdrs = glob(
+        ["*.h"],
+        exclude = ["**/test_utils.h"],
+    ),
     deps = [
         "//src/shared/types:cc_library",
         "//src/table_store/schema:cc_library",
         "//src/table_store/table:cc_library",
         "//third_party:arrow",
+    ],
+)
+
+pl_cc_test_library(
+    name = "test_utils",
+    hdrs = glob(["**/test_utils.h"]),
+    deps = [
+        ":cc_library",
+        "//src/common/datagen:cc_library",
     ],
 )

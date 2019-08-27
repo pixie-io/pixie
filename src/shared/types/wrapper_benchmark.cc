@@ -3,6 +3,7 @@
 #include <random>
 #include <vector>
 #include "src/common/benchmark/benchmark.h"
+#include "src/common/datagen/datagen.h"
 #include "src/shared/types/types.h"
 
 using pl::types::Int64Value;
@@ -34,8 +35,8 @@ std::vector<Int64Value> Compute(const std::vector<Int64Value>& vec1,
 
 template <typename T>
 static void BM_Int64Vector(benchmark::State& state) {  // NOLINT
-  auto vec1 = pl::bmutils::CreateLargeData<T>(state.range(0), 1, 52);
-  auto vec2 = pl::bmutils::CreateLargeData<T>(state.range(0), 1, 52);
+  auto vec1 = pl::datagen::CreateLargeData<T>(state.range(0), 1, 52);
+  auto vec2 = pl::datagen::CreateLargeData<T>(state.range(0), 1, 52);
 
   for (auto _ : state) {
     auto res = Compute(vec1, vec2);

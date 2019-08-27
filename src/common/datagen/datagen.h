@@ -14,7 +14,7 @@
 #include "src/shared/types/types.h"
 
 namespace pl {
-namespace bmutils {
+namespace datagen {
 
 template <typename T>
 std::vector<T> CreateLargeData(int size, int64_t min_val = 0, int64_t max_val = 100) {
@@ -243,5 +243,5 @@ StatusOr<std::vector<types::StringValue>> CreateLargeStringData(
   return data;
 }
 
-}  // namespace bmutils
+}  // namespace datagen
 }  // namespace pl
