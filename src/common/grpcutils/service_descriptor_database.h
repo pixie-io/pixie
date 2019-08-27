@@ -11,6 +11,8 @@
 #include <utility>
 #include <vector>
 
+#include "src/common/base/base.h"
+
 namespace pl {
 namespace grpc {
 
@@ -40,6 +42,28 @@ class ServiceDescriptorDatabase {
    * @param message_path A dot-separated name.
    */
   std::unique_ptr<google::protobuf::Message> GetMessage(const std::string& message_path);
+
+  /**
+   * @brief Returns all services in the descriptor database.
+   *
+   * Note that this function was added for message type inference, when the message type
+   * of a message is not known. This function should not be necessary in code that
+   * knows the message type of a message.
+   *
+   * @return vector of service descriptor protos.
+   */
+  std::vector<google::protobuf::ServiceDescriptorProto> AllServices();
+
+  /**
+   * @brief Attempts to parse an instance of a protobuf message as the provided message type.
+   *
+   * @param message_type_name protobuf message type (e.g. hipstershop.GetCartRequest).
+   * @param message a protobuf message in the wire format.
+   * @return A unique_ptr to the decoded message if it was parseable, nullptr otherwise.
+   *         An error is returned if the message_type_name is unknown.
+   */
+  StatusOr<std::unique_ptr<google::protobuf::Message>> ParseAs(const std::string& message_type_name,
+                                                               const std::string& message);
 
  private:
   google::protobuf::SimpleDescriptorDatabase desc_db_;

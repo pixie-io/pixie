@@ -10,6 +10,7 @@ namespace grpc {
 
 using ::google::protobuf::Descriptor;
 using ::google::protobuf::DescriptorPool;
+using ::google::protobuf::FileDescriptorProto;
 using ::google::protobuf::FileDescriptorSet;
 using ::google::protobuf::Message;
 using ::google::protobuf::MethodDescriptor;
@@ -54,6 +55,34 @@ std::unique_ptr<Message> ServiceDescriptorDatabase::GetMessage(const std::string
     return nullptr;
   }
   return std::unique_ptr<Message>(msg_prototype->New());
+}
+
+std::vector<::google::protobuf::ServiceDescriptorProto> ServiceDescriptorDatabase::AllServices() {
+  std::vector<google::protobuf::ServiceDescriptorProto> services;
+
+  std::vector<std::string> filenames;
+  desc_db_.FindAllFileNames(&filenames);
+  for (auto& filename : filenames) {
+    FileDescriptorProto desc_proto;
+    desc_db_.FindFileByName(filename, &desc_proto);
+    for (const auto& service : desc_proto.service()) {
+      services.push_back(service);
+    }
+  }
+  return services;
+}
+
+StatusOr<std::unique_ptr<Message>> ServiceDescriptorDatabase::ParseAs(
+    const std::string& message_type_name, const std::string& message) {
+  std::unique_ptr<Message> message_type = GetMessage(message_type_name);
+  if (message_type == nullptr) {
+    return error::NotFound("Could not find message type with name $0", message_type_name);
+  }
+  bool success = message_type->ParseFromString(message);
+  if (!success) {
+    return std::unique_ptr<Message>(nullptr);
+  }
+  return message_type;
 }
 
 }  // namespace grpc
