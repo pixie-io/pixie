@@ -3,25 +3,25 @@
 #include <string>
 #include <vector>
 
+#include "src/carnot/compiler/distributed_stitcher.h"
 #include "src/carnot/compiler/grpc_source_conversion.h"
-#include "src/carnot/compiler/physical_stitcher.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 
 StatusOr<std::unique_ptr<Stitcher>> Stitcher::Create(CompilerState* compiler_state) {
   return std::unique_ptr<Stitcher>(new Stitcher(compiler_state));
 }
 
-Status Stitcher::Stitch(PhysicalPlan* plan) {
-  PL_RETURN_IF_ERROR(PreparePhysicalPlan(plan));
+Status Stitcher::Stitch(DistributedPlan* plan) {
+  PL_RETURN_IF_ERROR(PrepareDistributedPlan(plan));
   PL_RETURN_IF_ERROR(AssociateEdges(plan));
   return FinalizePlan(plan);
 }
 
-Status Stitcher::PreparePhysicalPlan(PhysicalPlan* plan) {
+Status Stitcher::PrepareDistributedPlan(DistributedPlan* plan) {
   for (int64_t node : plan->dag().TopologicalSort()) {
     auto carnot = plan->Get(node);
     PL_RETURN_IF_ERROR(SetSourceGroupGRPCAddress(carnot));
@@ -29,7 +29,7 @@ Status Stitcher::PreparePhysicalPlan(PhysicalPlan* plan) {
   return Status::OK();
 }
 
-Status Stitcher::AssociateEdges(PhysicalPlan* plan) {
+Status Stitcher::AssociateEdges(DistributedPlan* plan) {
   for (int64_t from : plan->dag().TopologicalSort()) {
     for (int64_t to : plan->dag().DependenciesOf(from)) {
       auto from_carnot = plan->Get(from);
@@ -40,7 +40,7 @@ Status Stitcher::AssociateEdges(PhysicalPlan* plan) {
   return Status::OK();
 }
 
-Status Stitcher::FinalizePlan(PhysicalPlan* plan) {
+Status Stitcher::FinalizePlan(DistributedPlan* plan) {
   for (int64_t node : plan->dag().TopologicalSort()) {
     auto carnot = plan->Get(node);
     PL_RETURN_IF_ERROR(FinalizeGraph(carnot->plan()));
@@ -107,12 +107,12 @@ StatusOr<bool> SetSourceGroupGRPCAddressRule::Apply(IRNode* ir_node) {
     static_cast<GRPCSourceGroupIR*>(ir_node)->SetGRPCAddress(grpc_address_);
     return true;
   } else if (Match(ir_node, GRPCSink())) {
-    static_cast<GRPCSinkIR*>(ir_node)->SetPhysicalID(query_broker_address_);
+    static_cast<GRPCSinkIR*>(ir_node)->SetDistributedID(query_broker_address_);
   }
 
   return false;
 }
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

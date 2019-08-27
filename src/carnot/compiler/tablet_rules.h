@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
-#include "src/carnot/compiler/compilerpb/physical_plan.pb.h"
+#include "src/carnot/compiler/compilerpb/distributed_plan.pb.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/pattern_match.h"
 #include "src/carnot/compiler/rules.h"
@@ -14,7 +14,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 
 /**
  * @brief Expands memory sources to use tablets if they have tabletization keys
@@ -57,7 +57,7 @@ class MemorySourceTabletRule : public Rule {
   absl::flat_hash_set<TabletKeyType> GetAndTabletValues(FuncIR* func);
 };
 
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

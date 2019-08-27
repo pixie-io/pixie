@@ -7,10 +7,10 @@
 
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/compiler/distributed_planner.h"
+#include "src/carnot/compiler/distributed_splitter.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
-#include "src/carnot/compiler/physical_planner.h"
-#include "src/carnot/compiler/physical_splitter.h"
 #include "src/carnot/compiler/rule_mock.h"
 #include "src/carnot/compiler/rules.h"
 #include "src/carnot/compiler/test_utils.h"
@@ -19,7 +19,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 
@@ -416,7 +416,7 @@ TEST_F(SplitterTest, simple_split_test) {
   EXPECT_OK(map1->SetRelation(MakeRelation()));
   auto mem_sink = MakeMemSink(map1, "out");
 
-  PhysicalSplitter splitter(compiler_state_.get());
+  DistributedSplitter splitter(compiler_state_.get());
   std::unique_ptr<BlockingSplitPlan> split_plan =
       splitter.SplitAtBlockingNode(graph.get()).ConsumeValueOrDie();
   auto before_blocking = split_plan->before_blocking.get();
@@ -446,7 +446,7 @@ TEST_F(SplitterTest, two_paths) {
   EXPECT_OK(map2->SetRelation(MakeRelation()));
   auto mem_sink2 = MakeMemSink(map2, "out");
 
-  PhysicalSplitter splitter(compiler_state_.get());
+  DistributedSplitter splitter(compiler_state_.get());
   std::unique_ptr<BlockingSplitPlan> split_plan =
       splitter.SplitAtBlockingNode(graph.get()).ConsumeValueOrDie();
 
@@ -470,7 +470,7 @@ TEST_F(SplitterTest, two_paths) {
   HasGRPCSourceGroupParent(mem_sink2->id(), after_blocking, "Branch2");
 }
 
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

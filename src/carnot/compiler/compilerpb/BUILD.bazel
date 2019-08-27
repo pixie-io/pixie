@@ -35,8 +35,8 @@ pl_go_proto_library(
 )
 
 pl_proto_library(
-    name = "physical_plan_pl_proto",
-    srcs = ["physical_plan.proto"],
+    name = "distributed_plan_pl_proto",
+    srcs = ["distributed_plan.proto"],
     visibility = ["//visibility:public"],
     deps = [
         "//src/carnot/planpb:plan_pl_proto",
@@ -47,8 +47,8 @@ pl_proto_library(
 )
 
 pl_cc_proto_library(
-    name = "physical_plan_pl_cc_proto",
-    proto = ":physical_plan_pl_proto",
+    name = "distributed_plan_pl_cc_proto",
+    proto = ":distributed_plan_pl_proto",
     visibility = ["//visibility:public"],
     deps = [
         "//src/carnot/planpb:plan_pl_cc_proto",
@@ -59,9 +59,9 @@ pl_cc_proto_library(
 )
 
 pl_go_proto_library(
-    name = "physical_plan_pl_go_proto",
+    name = "distributed_plan_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb",
-    proto = ":physical_plan_pl_proto",
+    proto = ":distributed_plan_pl_proto",
     visibility = ["//visibility:public"],
     deps = [
         "//src/carnot/planpb:plan_pl_go_proto",

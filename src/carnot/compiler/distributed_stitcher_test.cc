@@ -7,12 +7,12 @@
 
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/compiler/distributed_coordinator.h"
+#include "src/carnot/compiler/distributed_plan.h"
+#include "src/carnot/compiler/distributed_planner.h"
+#include "src/carnot/compiler/distributed_stitcher.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
-#include "src/carnot/compiler/physical_coordinator.h"
-#include "src/carnot/compiler/physical_plan.h"
-#include "src/carnot/compiler/physical_planner.h"
-#include "src/carnot/compiler/physical_stitcher.h"
 #include "src/carnot/compiler/rule_mock.h"
 #include "src/carnot/compiler/rules.h"
 #include "src/carnot/compiler/test_utils.h"
@@ -21,14 +21,14 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 
-const char* kOneAgentOneKelvinPhysicalState = R"proto(
+const char* kOneAgentOneKelvinDistributedState = R"proto(
 carnot_info {
   query_broker_address: "agent"
   has_grpc_server: false
@@ -59,8 +59,8 @@ class StitcherTest : public OperatorTests {
     info_ = std::make_unique<compiler::RegistryInfo>();
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
   }
-  compilerpb::PhysicalState LoadPhysicalStatePb(const std::string& physical_state_txt) {
-    compilerpb::PhysicalState physical_state_pb;
+  compilerpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
+    compilerpb::DistributedState physical_state_pb;
     CHECK(google::protobuf::TextFormat::MergeFromString(physical_state_txt, &physical_state_pb));
     return physical_state_pb;
   }
@@ -71,7 +71,7 @@ class StitcherTest : public OperatorTests {
     PL_CHECK_OK(mem_sink->SetRelation(MakeRelation()));
   }
 
-  std::unique_ptr<PhysicalPlan> MakePhysicalPlan(const compilerpb::PhysicalState& ps) {
+  std::unique_ptr<DistributedPlan> MakeDistributedPlan(const compilerpb::DistributedState& ps) {
     auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
 
     MakeSourceSinkGraph();
@@ -86,8 +86,8 @@ class StitcherTest : public OperatorTests {
 };
 
 TEST_F(StitcherTest, one_agent_one_kelvin) {
-  auto ps = LoadPhysicalStatePb(kOneAgentOneKelvinPhysicalState);
-  auto physical_plan = MakePhysicalPlan(ps);
+  auto ps = LoadDistributedStatePb(kOneAgentOneKelvinDistributedState);
+  auto physical_plan = MakeDistributedPlan(ps);
 
   EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(1, 0));
   CarnotInstance* kelvin = physical_plan->Get(0);
@@ -104,7 +104,7 @@ TEST_F(StitcherTest, one_agent_one_kelvin) {
     IRNode* ir_node = agent_plan->Get(node_i);
     if (Match(ir_node, GRPCSink())) {
       auto grpc_sink = static_cast<GRPCSinkIR*>(ir_node);
-      EXPECT_FALSE(grpc_sink->PhysicalIDSet());
+      EXPECT_FALSE(grpc_sink->DistributedIDSet());
       EXPECT_FALSE(grpc_sink->DestinationAddressSet());
     }
   }
@@ -142,13 +142,13 @@ TEST_F(StitcherTest, one_agent_one_kelvin) {
       // Test GRPCSinks for expected GRPC destination address, as well as the proper physical id
       // being set, as well as being set to the correct value.
       EXPECT_TRUE(sink->DestinationAddressSet());
-      EXPECT_TRUE(sink->PhysicalIDSet());
-      EXPECT_EQ(sink->PhysicalDestinationID(), agent_physical_id);
+      EXPECT_TRUE(sink->DistributedIDSet());
+      EXPECT_EQ(sink->DistributedDestinationID(), agent_physical_id);
     }
   }
 }
 
-const char* kThreeAgentsOneKelvinPhysicalState = R"proto(
+const char* kThreeAgentsOneKelvinDistributedState = R"proto(
 carnot_info {
   query_broker_address: "agent1"
   has_grpc_server: false
@@ -181,8 +181,8 @@ carnot_info {
 )proto";
 
 TEST_F(StitcherTest, three_agents_one_kelvin) {
-  auto ps = LoadPhysicalStatePb(kThreeAgentsOneKelvinPhysicalState);
-  auto physical_plan = MakePhysicalPlan(ps);
+  auto ps = LoadDistributedStatePb(kThreeAgentsOneKelvinDistributedState);
+  auto physical_plan = MakeDistributedPlan(ps);
 
   EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(3, 2, 1, 0));
 
@@ -210,7 +210,7 @@ TEST_F(StitcherTest, three_agents_one_kelvin) {
       IRNode* ir_node = agent_plan->Get(node_i);
       if (Match(ir_node, GRPCSink())) {
         auto grpc_sink = static_cast<GRPCSinkIR*>(ir_node);
-        EXPECT_FALSE(grpc_sink->PhysicalIDSet());
+        EXPECT_FALSE(grpc_sink->DistributedIDSet());
         EXPECT_FALSE(grpc_sink->DestinationAddressSet());
       }
     }
@@ -253,14 +253,14 @@ TEST_F(StitcherTest, three_agents_one_kelvin) {
         // Test GRPCSinks for expected GRPC destination address, as well as the proper physical id
         // being set, as well as being set to the correct value.
         EXPECT_TRUE(sink->DestinationAddressSet());
-        EXPECT_TRUE(sink->PhysicalIDSet());
-        EXPECT_THAT(agent_physical_ids, Contains(sink->PhysicalDestinationID()));
+        EXPECT_TRUE(sink->DistributedIDSet());
+        EXPECT_THAT(agent_physical_ids, Contains(sink->DistributedDestinationID()));
       }
     }
   }
 }
 
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

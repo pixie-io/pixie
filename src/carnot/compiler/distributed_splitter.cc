@@ -4,11 +4,11 @@
 #include <utility>
 #include <vector>
 
-#include "src/carnot/compiler/physical_splitter.h"
+#include "src/carnot/compiler/distributed_splitter.h"
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 
 StatusOr<bool> BlockingOperatorGRPCBridgeRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, MemorySource())) {
@@ -51,7 +51,7 @@ Status BlockingOperatorGRPCBridgeRule::AddNewGRPCNodes(OperatorIR* parent_op,
   return Status::OK();
 }
 
-StatusOr<std::unique_ptr<IR>> PhysicalSplitter::ApplyGRPCBridgeRule(const IR* logical_plan) {
+StatusOr<std::unique_ptr<IR>> DistributedSplitter::ApplyGRPCBridgeRule(const IR* logical_plan) {
   BlockingOperatorGRPCBridgeRule grpc_bridge_rule(compiler_state_);
   PL_ASSIGN_OR_RETURN(auto grpc_bridge_plan, logical_plan->Clone());
   PL_ASSIGN_OR_RETURN(bool execute_result, grpc_bridge_rule.Execute(grpc_bridge_plan.get()));
@@ -61,7 +61,7 @@ StatusOr<std::unique_ptr<IR>> PhysicalSplitter::ApplyGRPCBridgeRule(const IR* lo
   return grpc_bridge_plan;
 }
 
-BlockingSplitNodeIDGroups PhysicalSplitter::GetBlockingSplitGroupsFromIR(const IR* graph) {
+BlockingSplitNodeIDGroups DistributedSplitter::GetBlockingSplitGroupsFromIR(const IR* graph) {
   BlockingSplitNodeIDGroups node_groups;
   auto independent_node_ids = graph->dag().IndependentGraphs();
   for (auto& node_set : independent_node_ids) {
@@ -84,7 +84,7 @@ BlockingSplitNodeIDGroups PhysicalSplitter::GetBlockingSplitGroupsFromIR(const I
   return node_groups;
 }
 
-StatusOr<std::unique_ptr<BlockingSplitPlan>> PhysicalSplitter::SplitAtBlockingNode(
+StatusOr<std::unique_ptr<BlockingSplitPlan>> DistributedSplitter::SplitAtBlockingNode(
     const IR* logical_plan) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> grpc_bridge_plan, ApplyGRPCBridgeRule(logical_plan));
 
@@ -102,7 +102,7 @@ StatusOr<std::unique_ptr<BlockingSplitPlan>> PhysicalSplitter::SplitAtBlockingNo
   split_plan->before_blocking = std::move(before_blocking_plan);
   return split_plan;
 }
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

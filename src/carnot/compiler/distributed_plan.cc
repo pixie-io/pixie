@@ -1,11 +1,11 @@
-#include "src/carnot/compiler/physical_plan.h"
+#include "src/carnot/compiler/distributed_plan.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
-StatusOr<compilerpb::PhysicalPlan> PhysicalPlan::ToProto() const {
-  compilerpb::PhysicalPlan physical_plan_pb;
+namespace distributed {
+StatusOr<compilerpb::DistributedPlan> DistributedPlan::ToProto() const {
+  compilerpb::DistributedPlan physical_plan_pb;
   auto physical_plan_dag = physical_plan_pb.mutable_dag();
   auto qb_address_to_plan_pb = physical_plan_pb.mutable_qb_address_to_plan();
   auto qb_address_to_dag_id_pb = physical_plan_pb.mutable_qb_address_to_dag_id();
@@ -24,7 +24,7 @@ StatusOr<compilerpb::PhysicalPlan> PhysicalPlan::ToProto() const {
   return physical_plan_pb;
 }
 
-int64_t PhysicalPlan::AddCarnot(const compilerpb::CarnotInfo& carnot_info) {
+int64_t DistributedPlan::AddCarnot(const compilerpb::CarnotInfo& carnot_info) {
   int64_t carnot_id = id_counter_;
   ++id_counter_;
   auto instance = std::make_unique<CarnotInstance>(carnot_id, carnot_info);
@@ -32,7 +32,7 @@ int64_t PhysicalPlan::AddCarnot(const compilerpb::CarnotInfo& carnot_info) {
   dag_.AddNode(carnot_id);
   return carnot_id;
 }
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

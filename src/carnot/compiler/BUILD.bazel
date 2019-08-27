@@ -20,7 +20,7 @@ pl_cc_library(
     hdrs = ["compiler.h"],
     deps = [
         "//src/carnot/compiler/compilerpb:compiler_status_pl_cc_proto",
-        "//src/carnot/compiler/compilerpb:physical_plan_pl_cc_proto",
+        "//src/carnot/compiler/compilerpb:distributed_plan_pl_cc_proto",
         "//src/carnot/metadatapb:metadata_pl_cc_proto",
         "//src/carnot/plan:cc_library",
         "//src/carnot/planpb:plan_pl_cc_proto",
@@ -157,8 +157,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "physical_planner_test",
-    srcs = ["physical_planner_test.cc"],
+    name = "distributed_planner_test",
+    srcs = ["distributed_planner_test.cc"],
     deps = [
         ":cc_library",
         "//src/carnot/udf_exporter:cc_library",
@@ -167,8 +167,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "physical_plan_test",
-    srcs = ["physical_plan_test.cc"],
+    name = "distributed_plan_test",
+    srcs = ["distributed_plan_test.cc"],
     deps = [
         ":cc_library",
         "//src/common/testing:cc_library",
@@ -176,8 +176,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "physical_splitter_test",
-    srcs = ["physical_splitter_test.cc"],
+    name = "distributed_splitter_test",
+    srcs = ["distributed_splitter_test.cc"],
     deps = [
         ":cc_library",
         "//src/carnot/udf_exporter:cc_library",
@@ -194,8 +194,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "physical_coordinator_test",
-    srcs = ["physical_coordinator_test.cc"],
+    name = "distributed_coordinator_test",
+    srcs = ["distributed_coordinator_test.cc"],
     deps = [
         ":cc_library",
         "//src/carnot/udf_exporter:cc_library",
@@ -204,8 +204,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "physical_stitcher_test",
-    srcs = ["physical_stitcher_test.cc"],
+    name = "distributed_stitcher_test",
+    srcs = ["distributed_stitcher_test.cc"],
     deps = [
         ":cc_library",
         "//src/carnot/udf_exporter:cc_library",

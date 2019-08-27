@@ -7,11 +7,11 @@
 
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/compiler/distributed_coordinator.h"
+#include "src/carnot/compiler/distributed_planner.h"
+#include "src/carnot/compiler/distributed_splitter.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
-#include "src/carnot/compiler/physical_coordinator.h"
-#include "src/carnot/compiler/physical_planner.h"
-#include "src/carnot/compiler/physical_splitter.h"
 #include "src/carnot/compiler/rule_mock.h"
 #include "src/carnot/compiler/rules.h"
 #include "src/carnot/compiler/test_utils.h"
@@ -22,15 +22,15 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 using ::testing::ElementsAre;
 using testing::proto::EqualsProto;
 using testing::proto::Partially;
 
 class CoordinatorTest : public OperatorTests {
  protected:
-  compilerpb::PhysicalState LoadPhysicalStatePb(const std::string& physical_state_txt) {
-    compilerpb::PhysicalState physical_state_pb;
+  compilerpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
+    compilerpb::DistributedState physical_state_pb;
     CHECK(google::protobuf::TextFormat::MergeFromString(physical_state_txt, &physical_state_pb));
     return physical_state_pb;
   }
@@ -42,7 +42,7 @@ class CoordinatorTest : public OperatorTests {
   }
 };
 
-const char* kOneAgentPhysicalState = R"proto(
+const char* kOneAgentDistributedState = R"proto(
 carnot_info {
   query_broker_address: "agent"
   has_grpc_server: false
@@ -60,7 +60,7 @@ carnot_info {
 }
 )proto";
 
-const char* kOneAgentOneKelvinPhysicalPlan = R"proto(
+const char* kOneAgentOneKelvinDistributedPlan = R"proto(
 qb_address_to_plan {
   key: "agent"
   value {
@@ -190,7 +190,7 @@ dag {
 )proto";
 
 TEST_F(CoordinatorTest, one_agent_one_kelvin) {
-  auto ps = LoadPhysicalStatePb(kOneAgentPhysicalState);
+  auto ps = LoadDistributedStatePb(kOneAgentDistributedState);
   auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
 
   MakeGraph();
@@ -199,10 +199,10 @@ TEST_F(CoordinatorTest, one_agent_one_kelvin) {
   EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(1, 0));
 
   auto physical_plan_proto = physical_plan->ToProto().ConsumeValueOrDie();
-  EXPECT_THAT(physical_plan_proto, EqualsProto(kOneAgentOneKelvinPhysicalPlan));
+  EXPECT_THAT(physical_plan_proto, EqualsProto(kOneAgentOneKelvinDistributedPlan));
 }
 
-const char* kThreeAgentsOneKelvinPhysicalState = R"proto(
+const char* kThreeAgentsOneKelvinDistributedState = R"proto(
 carnot_info {
   query_broker_address: "agent1"
   has_grpc_server: false
@@ -234,7 +234,7 @@ carnot_info {
 }
 )proto";
 
-const char* kThreeAgentsOneKelvinPhysicalPlan = R"proto(
+const char* kThreeAgentsOneKelvinDistributedPlan = R"proto(
   qb_address_to_plan {
   key: "agent1"
   value {
@@ -409,7 +409,7 @@ dag {
 )proto";
 
 TEST_F(CoordinatorTest, three_agents_one_kelvin) {
-  auto ps = LoadPhysicalStatePb(kThreeAgentsOneKelvinPhysicalState);
+  auto ps = LoadDistributedStatePb(kThreeAgentsOneKelvinDistributedState);
   auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
 
   MakeGraph();
@@ -418,10 +418,10 @@ TEST_F(CoordinatorTest, three_agents_one_kelvin) {
   EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(3, 2, 1, 0));
 
   auto physical_plan_proto = physical_plan->ToProto().ConsumeValueOrDie();
-  EXPECT_THAT(physical_plan_proto, Partially(EqualsProto(kThreeAgentsOneKelvinPhysicalPlan)));
+  EXPECT_THAT(physical_plan_proto, Partially(EqualsProto(kThreeAgentsOneKelvinDistributedPlan)));
 }
 
-const char* kOneAgentThreeKelvinsPhysicalState = R"proto(
+const char* kOneAgentThreeKelvinsDistributedState = R"proto(
 carnot_info {
   query_broker_address: "agent"
   has_grpc_server: false
@@ -455,7 +455,7 @@ carnot_info {
 }
 )proto";
 
-const char* kOneAgentThreeKelvinsPhysicalPlan = R"proto(
+const char* kOneAgentThreeKelvinsDistributedPlan = R"proto(
 qb_address_to_plan {
   key: "agent"
   value {
@@ -544,7 +544,7 @@ dag {
 )proto";
 
 TEST_F(CoordinatorTest, one_agent_three_kelvin) {
-  auto ps = LoadPhysicalStatePb(kOneAgentThreeKelvinsPhysicalState);
+  auto ps = LoadDistributedStatePb(kOneAgentThreeKelvinsDistributedState);
   auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
 
   MakeGraph();
@@ -554,7 +554,7 @@ TEST_F(CoordinatorTest, one_agent_three_kelvin) {
   EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(1, 0));
 
   auto physical_plan_proto = physical_plan->ToProto().ConsumeValueOrDie();
-  EXPECT_THAT(physical_plan_proto, Partially(EqualsProto(kOneAgentThreeKelvinsPhysicalPlan)));
+  EXPECT_THAT(physical_plan_proto, Partially(EqualsProto(kOneAgentThreeKelvinsDistributedPlan)));
 }
 
 const char* kBadAgentSpecificationState = R"proto(
@@ -576,12 +576,12 @@ carnot_info {
 )proto";
 
 TEST_F(CoordinatorTest, bad_agent_spec) {
-  auto ps = LoadPhysicalStatePb(kBadAgentSpecificationState);
+  auto ps = LoadDistributedStatePb(kBadAgentSpecificationState);
   auto coordinator_status = Coordinator::Create(ps);
 
   ASSERT_NOT_OK(coordinator_status);
   EXPECT_EQ(coordinator_status.status().msg(),
-            "Physical state does not have a Carnot instance that satisifies the condition "
+            "Distributed state does not have a Carnot instance that satisifies the condition "
             "`has_data_store() && processes_data()`.");
 }
 
@@ -604,16 +604,16 @@ carnot_info {
 )proto";
 
 TEST_F(CoordinatorTest, bad_kelvin_spec) {
-  auto ps = LoadPhysicalStatePb(kBadKelvinSpecificationState);
+  auto ps = LoadDistributedStatePb(kBadKelvinSpecificationState);
   auto coordinator_status = Coordinator::Create(ps);
 
   ASSERT_NOT_OK(coordinator_status);
   EXPECT_EQ(coordinator_status.status().msg(),
-            "Physical state does not have a Carnot instance that satisifies the condition "
+            "Distributed state does not have a Carnot instance that satisifies the condition "
             "`processes_data() && accepts_remote_sources()`.");
 }
 
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -5,17 +5,17 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "src/carnot/compiler/distributed_coordinator.h"
+#include "src/carnot/compiler/distributed_plan.h"
+#include "src/carnot/compiler/distributed_splitter.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/pattern_match.h"
-#include "src/carnot/compiler/physical_coordinator.h"
-#include "src/carnot/compiler/physical_plan.h"
-#include "src/carnot/compiler/physical_splitter.h"
 #include "src/carnot/compiler/rules.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 
 using compilerpb::CarnotInfo;
 
@@ -34,18 +34,18 @@ class Stitcher : public NotCopyable {
    * @param physical_plan: assembled plan, but not yet stitched.
    * @return Status any errors that occur during the stiching.
    */
-  Status Stitch(PhysicalPlan* physical_plan);
+  Status Stitch(DistributedPlan* physical_plan);
 
  private:
   explicit Stitcher(CompilerState* compiler_state) : compiler_state_(compiler_state) {}
 
   /**
-   * @brief Associates the nodes on each edge of the PhysicalPlan with one another.
+   * @brief Associates the nodes on each edge of the DistributedPlan with one another.
    *
    * @param plan
    * @return Status
    */
-  Status AssociateEdges(PhysicalPlan* plan);
+  Status AssociateEdges(DistributedPlan* plan);
 
   /**
    * @brief Prepare physical plan before associating edges.
@@ -53,7 +53,7 @@ class Stitcher : public NotCopyable {
    * @param plan
    * @return Status
    */
-  Status PreparePhysicalPlan(PhysicalPlan* plan);
+  Status PrepareDistributedPlan(DistributedPlan* plan);
 
   /**
    * @brief Sets the GRPC address for the GRPC Source Group on a graph.
@@ -84,7 +84,7 @@ class Stitcher : public NotCopyable {
    */
   Status FinalizeGraph(IR* graph);
 
-  Status FinalizePlan(PhysicalPlan* plan);
+  Status FinalizePlan(DistributedPlan* plan);
 
   CompilerState* compiler_state_;
 };
@@ -101,7 +101,7 @@ class SetSourceGroupGRPCAddressRule : public Rule {
   std::string query_broker_address_;
 };
 
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

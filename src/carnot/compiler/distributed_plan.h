@@ -7,7 +7,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "src/carnot/compiler/compiler_state.h"
-#include "src/carnot/compiler/compilerpb/physical_plan.pb.h"
+#include "src/carnot/compiler/compilerpb/distributed_plan.pb.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/pattern_match.h"
@@ -17,7 +17,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 
 /**
  * @brief Object that represents a physical entity that uses the Carnot stream engine.
@@ -55,7 +55,7 @@ class CarnotInstance {
   std::unique_ptr<IR> plan_;
 };
 
-class PhysicalPlan {
+class DistributedPlan {
  public:
   /**
    * @brief Adds a Carnot instance into the graph, and assigns a new id.
@@ -80,7 +80,7 @@ class PhysicalPlan {
   void AddEdge(CarnotInstance* from, CarnotInstance* to) { dag_.AddEdge(from->id(), to->id()); }
   void AddEdge(int64_t from, int64_t to) { dag_.AddEdge(from, to); }
 
-  StatusOr<compilerpb::PhysicalPlan> ToProto() const;
+  StatusOr<compilerpb::DistributedPlan> ToProto() const;
 
   const plan::DAG& dag() const { return dag_; }
 
@@ -90,7 +90,7 @@ class PhysicalPlan {
   int64_t id_counter_ = 0;
 };
 
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

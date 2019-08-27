@@ -5,14 +5,14 @@
 #include <vector>
 
 #include "absl/container/flat_hash_map.h"
+#include "src/carnot/compiler/distributed_plan.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/pattern_match.h"
-#include "src/carnot/compiler/physical_plan.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 
 using compilerpb::CarnotInfo;
 
@@ -29,21 +29,21 @@ class Coordinator : public NotCopyable {
  public:
   virtual ~Coordinator() = default;
   static StatusOr<std::unique_ptr<Coordinator>> Create(
-      const compilerpb::PhysicalState& physical_state);
+      const compilerpb::DistributedState& physical_state);
 
   /**
-   * @brief Using the physical state and the current plan, assembles a proto Physical Plan. This
+   * @brief Using the physical state and the current plan, assembles a proto Distributed Plan. This
    * plan is not ready to be sent out yet, but can be processed to work.
    * @param plan: the plan, pre-split along the expected lines.
-   * @return StatusOr<std::unique_ptr<PhysicalPlan>>
+   * @return StatusOr<std::unique_ptr<DistributedPlan>>
    */
-  StatusOr<std::unique_ptr<PhysicalPlan>> Coordinate(const IR* logical_plan);
+  StatusOr<std::unique_ptr<DistributedPlan>> Coordinate(const IR* logical_plan);
 
  protected:
-  Status Init(const compilerpb::PhysicalState& physical_state);
+  Status Init(const compilerpb::DistributedState& physical_state);
   Status ProcessConfig(const CarnotInfo& carnot_info);
 
-  virtual Status InitImpl(const compilerpb::PhysicalState& physical_state) = 0;
+  virtual Status InitImpl(const compilerpb::DistributedState& physical_state) = 0;
 
   /**
    * @brief Implementation of the Coordinate function. Using the phyiscal state and the plan, should
@@ -51,7 +51,7 @@ class Coordinator : public NotCopyable {
    *
    * @return StatusOr<CarnotGraph>
    */
-  virtual StatusOr<std::unique_ptr<PhysicalPlan>> CoordinateImpl(const IR* logical_plan) = 0;
+  virtual StatusOr<std::unique_ptr<DistributedPlan>> CoordinateImpl(const IR* logical_plan) = 0;
 
   virtual Status ProcessConfigImpl(const CarnotInfo& carnot_info) = 0;
 };
@@ -63,8 +63,8 @@ class Coordinator : public NotCopyable {
  */
 class OneRemoteCoordinator : public Coordinator {
  protected:
-  StatusOr<std::unique_ptr<PhysicalPlan>> CoordinateImpl(const IR* logical_plan) override;
-  Status InitImpl(const compilerpb::PhysicalState& physical_state) override;
+  StatusOr<std::unique_ptr<DistributedPlan>> CoordinateImpl(const IR* logical_plan) override;
+  Status InitImpl(const compilerpb::DistributedState& physical_state) override;
   Status ProcessConfigImpl(const CarnotInfo& carnot_info) override;
 
  private:
@@ -73,7 +73,7 @@ class OneRemoteCoordinator : public Coordinator {
   // Nodes that remotely prcoess data.
   std::vector<CarnotInfo> remote_processor_nodes_;
 };
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

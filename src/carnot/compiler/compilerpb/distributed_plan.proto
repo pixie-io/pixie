@@ -7,7 +7,7 @@ package pl.carnot.compiler.compilerpb;
 
 option go_package = "compilerpb";
 
-// Info about the physical characteristics of a Carnot instance.
+// Info about the Distributed characteristics of a Carnot instance.
 message CarnotInfo {
   // The unique address used by the query broker to contact this instance.
   string query_broker_address = 1;
@@ -40,19 +40,19 @@ message TableInfo {
   repeated string tablets = 4;
 }
 
-// The physical state of the distributed Carnot instances.
-message PhysicalState {
+// The Distributed state of the distributed Carnot instances.
+message DistributedState {
   // Info about all available Carnot instances in Vizier.
   repeated CarnotInfo carnot_info = 1;
 }
 
-// The Physical Plan message that describes the graph of the plans
+// The Distributed Plan message that describes the graph of the plans
 // and which plans should execute on each Carnot instance.
-message PhysicalPlan {
+message DistributedPlan {
   // Map query broker address of Carnot instance to the Plan it will execute.
   map<string, pl.carnot.planpb.Plan> qb_address_to_plan = 1;
   // Map from query broker address to the id used in the dag.
   map<string, uint64> qb_address_to_dag_id = 2;
-  // The DAG describing the connections between the physical nodes.
+  // The DAG describing the connections between the Distributed nodes.
   pl.carnot.planpb.DAG dag = 3;
 }

@@ -7,10 +7,10 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "src/carnot/compiler/compiler_state.h"
+#include "src/carnot/compiler/distributed_plan.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/pattern_match.h"
-#include "src/carnot/compiler/physical_plan.h"
 #include "src/carnot/compiler/registry_info.h"
 #include "src/carnot/compiler/rule_executor.h"
 #include "src/carnot/compiler/rules.h"
@@ -18,7 +18,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 
 /**
  * @brief This rule inserts a GRPCBridge in front of blocking operators in a graph.
@@ -112,7 +112,7 @@ struct BlockingSplitPlan {
 /**
  * @brief Two sets of nodes that correspond to the nodes of the original plan for those
  * that occure before blocking nodes and those that occur after. Used as a return value for
- * PhysicalSplitter::GetBlockingSplitGroupsFromIR.
+ * DistributedSplitter::GetBlockingSplitGroupsFromIR.
  *
  */
 struct BlockingSplitNodeIDGroups {
@@ -121,13 +121,13 @@ struct BlockingSplitNodeIDGroups {
 };
 
 /**
- * @brief The PhysicalSplitter splits apart the graph along Blocking Node lines. The result is two
- * new IR graphs -> one that is run on Carnot instances that pull up data from Stirling and the
+ * @brief The DistributedSplitter splits apart the graph along Blocking Node lines. The result is
+ * two new IR graphs -> one that is run on Carnot instances that pull up data from Stirling and the
  * other that is run on Carnot instances which accumulate data and run blocking operations.
  */
-class PhysicalSplitter : public NotCopyable {
+class DistributedSplitter : public NotCopyable {
  public:
-  explicit PhysicalSplitter(CompilerState* compiler_state) : compiler_state_(compiler_state) {}
+  explicit DistributedSplitter(CompilerState* compiler_state) : compiler_state_(compiler_state) {}
   /**
    * @brief The logical plan is split into two different pieces along blocking nodes lines.
    *
@@ -141,7 +141,7 @@ class PhysicalSplitter : public NotCopyable {
   BlockingSplitNodeIDGroups GetBlockingSplitGroupsFromIR(const IR* graph);
   CompilerState* compiler_state_;
 };
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

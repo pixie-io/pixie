@@ -7,9 +7,9 @@
 
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/compiler/distributed_planner.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
-#include "src/carnot/compiler/physical_planner.h"
 #include "src/carnot/compiler/rule_mock.h"
 #include "src/carnot/compiler/rules.h"
 #include "src/carnot/compiler/test_utils.h"
@@ -19,10 +19,10 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 using pl::testing::proto::EqualsProto;
 
-const char* kOneAgentOneKelvinPhysicalState = R"proto(
+const char* kOneAgentOneKelvinDistributedState = R"proto(
 carnot_info {
   query_broker_address: "agent"
   has_grpc_server: false
@@ -40,11 +40,11 @@ carnot_info {
 }
 )proto";
 
-class PhysicalPlannerTest : public OperatorTests {
+class DistributedPlannerTest : public OperatorTests {
  protected:
   void SetUpImpl() override { compiler_state_ = nullptr; }
-  compilerpb::PhysicalState LoadPhysicalStatePb(const std::string& physical_state_txt) {
-    compilerpb::PhysicalState physical_state_pb;
+  compilerpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
+    compilerpb::DistributedState physical_state_pb;
     CHECK(google::protobuf::TextFormat::MergeFromString(physical_state_txt, &physical_state_pb));
     return physical_state_pb;
   }
@@ -52,7 +52,7 @@ class PhysicalPlannerTest : public OperatorTests {
   std::unique_ptr<CompilerState> compiler_state_;
 };
 
-const char* kOneAgentOneKelvinPhysicalPlan = R"proto(
+const char* kOneAgentOneKelvinDistributedPlan = R"proto(
 qb_address_to_plan {
   key: "agent"
   value {
@@ -182,21 +182,22 @@ dag {
 }
 )proto";
 
-TEST_F(PhysicalPlannerTest, one_agent_one_kelvin) {
+TEST_F(DistributedPlannerTest, one_agent_one_kelvin) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto mem_sink = MakeMemSink(mem_src, "out");
   PL_CHECK_OK(mem_sink->SetRelation(MakeRelation()));
 
-  compilerpb::PhysicalState ps_pb = LoadPhysicalStatePb(kOneAgentOneKelvinPhysicalState);
-  std::unique_ptr<PhysicalPlanner> physical_planner = PhysicalPlanner::Create().ConsumeValueOrDie();
+  compilerpb::DistributedState ps_pb = LoadDistributedStatePb(kOneAgentOneKelvinDistributedState);
+  std::unique_ptr<DistributedPlanner> physical_planner =
+      DistributedPlanner::Create().ConsumeValueOrDie();
   // TODO(philkuz) fix nullptr for compiler_state.
-  std::unique_ptr<PhysicalPlan> physical_plan =
+  std::unique_ptr<DistributedPlan> physical_plan =
       physical_planner->Plan(ps_pb, compiler_state_.get(), graph.get()).ConsumeValueOrDie();
   EXPECT_THAT(physical_plan->ToProto().ConsumeValueOrDie(),
-              EqualsProto(kOneAgentOneKelvinPhysicalPlan));
+              EqualsProto(kOneAgentOneKelvinDistributedPlan));
 }
 
-const char* kThreeAgentsOneKelvinPhysicalState = R"proto(
+const char* kThreeAgentsOneKelvinDistributedState = R"proto(
 carnot_info {
   query_broker_address: "agent1"
   has_grpc_server: false
@@ -228,7 +229,7 @@ carnot_info {
 }
 )proto";
 
-const char* kThreeAgentsOneKelvinPhysicalPlan = R"proto(
+const char* kThreeAgentsOneKelvinDistributedPlan = R"proto(
 qb_address_to_plan {
   key: "agent1"
   value {
@@ -558,20 +559,22 @@ dag {
 }
 )proto";
 
-TEST_F(PhysicalPlannerTest, three_agent_one_kelvin) {
+TEST_F(DistributedPlannerTest, three_agent_one_kelvin) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto mem_sink = MakeMemSink(mem_src, "out");
   PL_CHECK_OK(mem_sink->SetRelation(MakeRelation()));
 
-  compilerpb::PhysicalState ps_pb = LoadPhysicalStatePb(kThreeAgentsOneKelvinPhysicalState);
-  std::unique_ptr<PhysicalPlanner> physical_planner = PhysicalPlanner::Create().ConsumeValueOrDie();
-  std::unique_ptr<PhysicalPlan> physical_plan =
+  compilerpb::DistributedState ps_pb =
+      LoadDistributedStatePb(kThreeAgentsOneKelvinDistributedState);
+  std::unique_ptr<DistributedPlanner> physical_planner =
+      DistributedPlanner::Create().ConsumeValueOrDie();
+  std::unique_ptr<DistributedPlan> physical_plan =
       physical_planner->Plan(ps_pb, compiler_state_.get(), graph.get()).ConsumeValueOrDie();
   EXPECT_THAT(physical_plan->ToProto().ConsumeValueOrDie(),
-              EqualsProto(kThreeAgentsOneKelvinPhysicalPlan));
+              EqualsProto(kThreeAgentsOneKelvinDistributedPlan));
 }
 
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

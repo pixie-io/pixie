@@ -4,22 +4,22 @@
 #include <utility>
 #include <vector>
 
-#include "src/carnot/compiler/physical_coordinator.h"
-#include "src/carnot/compiler/physical_splitter.h"
+#include "src/carnot/compiler/distributed_coordinator.h"
+#include "src/carnot/compiler/distributed_splitter.h"
 #include "src/carnot/compiler/rules.h"
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 
 StatusOr<std::unique_ptr<Coordinator>> Coordinator::Create(
-    const compilerpb::PhysicalState& physical_state) {
+    const compilerpb::DistributedState& physical_state) {
   std::unique_ptr<Coordinator> planner(new OneRemoteCoordinator());
   PL_RETURN_IF_ERROR(planner->Init(physical_state));
   return planner;
 }
 
-Status Coordinator::Init(const compilerpb::PhysicalState& physical_state) {
+Status Coordinator::Init(const compilerpb::DistributedState& physical_state) {
   return InitImpl(physical_state);
 }
 
@@ -27,22 +27,22 @@ Status Coordinator::ProcessConfig(const CarnotInfo& carnot_info) {
   return ProcessConfigImpl(carnot_info);
 }
 
-StatusOr<std::unique_ptr<PhysicalPlan>> Coordinator::Coordinate(const IR* logical_plan) {
+StatusOr<std::unique_ptr<DistributedPlan>> Coordinator::Coordinate(const IR* logical_plan) {
   return CoordinateImpl(logical_plan);
 }
 
-Status OneRemoteCoordinator::InitImpl(const compilerpb::PhysicalState& physical_state) {
+Status OneRemoteCoordinator::InitImpl(const compilerpb::DistributedState& physical_state) {
   for (int64_t i = 0; i < physical_state.carnot_info_size(); ++i) {
     PL_RETURN_IF_ERROR(ProcessConfig(physical_state.carnot_info()[i]));
   }
   if (data_store_nodes_.size() == 0) {
     return error::InvalidArgument(
-        "Physical state does not have a Carnot instance that satisifies the condition "
+        "Distributed state does not have a Carnot instance that satisifies the condition "
         "`has_data_store() && processes_data()`.");
   }
   if (remote_processor_nodes_.size() == 0) {
     return error::InvalidArgument(
-        "Physical state does not have a Carnot instance that satisifies the condition "
+        "Distributed state does not have a Carnot instance that satisifies the condition "
         "`processes_data() && accepts_remote_sources()`.");
   }
   return Status::OK();
@@ -58,13 +58,13 @@ Status OneRemoteCoordinator::ProcessConfigImpl(const CarnotInfo& carnot_info) {
   return Status::OK();
 }
 
-StatusOr<std::unique_ptr<PhysicalPlan>> OneRemoteCoordinator::CoordinateImpl(
+StatusOr<std::unique_ptr<DistributedPlan>> OneRemoteCoordinator::CoordinateImpl(
     const IR* logical_plan) {
   // TODO(philkuz) (PL-861) remove the reliance on compiler_state for rules, or at least physical
   // splitter.
   PL_ASSIGN_OR_RETURN(std::unique_ptr<BlockingSplitPlan> split_plan,
-                      PhysicalSplitter(nullptr).SplitAtBlockingNode(logical_plan));
-  auto physical_plan = std::make_unique<PhysicalPlan>();
+                      DistributedSplitter(nullptr).SplitAtBlockingNode(logical_plan));
+  auto physical_plan = std::make_unique<DistributedPlan>();
   DCHECK_GT(remote_processor_nodes_.size(), 0UL);
   int64_t remote_node_id = physical_plan->AddCarnot(remote_processor_nodes_[0]);
 
@@ -81,7 +81,7 @@ StatusOr<std::unique_ptr<PhysicalPlan>> OneRemoteCoordinator::CoordinateImpl(
   return physical_plan;
 }
 
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

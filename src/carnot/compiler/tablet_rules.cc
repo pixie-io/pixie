@@ -3,7 +3,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 
 StatusOr<bool> TabletSourceConversionRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, MemorySource())) {
@@ -219,7 +219,7 @@ StatusOr<MemorySourceIR*> MemorySourceTabletRule::CreateMemorySource(
   return mem_source_ir;
 }
 
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

@@ -1232,7 +1232,7 @@ class LimitIR : public OperatorIR {
  *
  * Setting up the Sink Operator requires three steps.
  * 0. Init(int destination_id): Set the destination id.
- * 1. SetPhysicalID(string): Set the name of the node same as the query broker.
+ * 1. SetDistributedID(string): Set the name of the node same as the query broker.
  * 2. SetDestinationAddress(string): the GRPC address where batches should be sent.
  */
 class GRPCSinkIR : public OperatorIR {
@@ -1253,26 +1253,26 @@ class GRPCSinkIR : public OperatorIR {
    * @brief The id used for initial mapping. This associates a GRPCSink with a subsequent
    * GRPCSourceGroup.
    *
-   * Once the Physical Plan is established, you should use PhysicalDestinationID().
+   * Once the Distributed Plan is established, you should use DistributedDestinationID().
    */
   int64_t destination_id() const { return destination_id_; }
 
   /**
-   * @brief Set the Physical ID of this node. This should be the same
+   * @brief Set the Distributed ID of this node. This should be the same
    * string used to map mesage
    *
    * @param physical_source_id
    */
-  void SetPhysicalID(const std::string& physical_id) { physical_id_ = physical_id; }
+  void SetDistributedID(const std::string& physical_id) { physical_id_ = physical_id; }
 
-  bool PhysicalIDSet() const { return physical_id_ != ""; }
+  bool DistributedIDSet() const { return physical_id_ != ""; }
 
   /**
    * @brief An id that is used to map the batches from this sink when received at a source.
    *
    * @return std::string
    */
-  std::string PhysicalDestinationID() const {
+  std::string DistributedDestinationID() const {
     return absl::Substitute("$0:$1", physical_id_, destination_id_);
   }
   void SetDestinationAddress(const std::string& address) { destination_address_ = address; }

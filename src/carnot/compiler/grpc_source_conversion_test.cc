@@ -13,7 +13,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 
 using testing::_;
 using testing::ElementsAreArray;
@@ -30,17 +30,17 @@ TEST_F(GRPCSourceConversionTest, construction_test) {
 
   auto mem_src1 = MakeMemSource(MakeTimeRelation());
   auto grpc_sink1 = MakeGRPCSink(mem_src1, grpc_bridge_id);
-  grpc_sink1->SetPhysicalID("agent-1");
+  grpc_sink1->SetDistributedID("agent-1");
 
   auto mem_src2 = MakeMemSource(MakeTimeRelation());
   auto grpc_sink2 = MakeGRPCSink(mem_src2, grpc_bridge_id);
-  grpc_sink2->SetPhysicalID("agent-2");
+  grpc_sink2->SetDistributedID("agent-2");
 
   EXPECT_OK(grpc_source_group->AddGRPCSink(grpc_sink1));
   EXPECT_OK(grpc_source_group->AddGRPCSink(grpc_sink2));
 
-  std::vector<std::string> expected_physical_ids = {grpc_sink1->PhysicalDestinationID(),
-                                                    grpc_sink2->PhysicalDestinationID()};
+  std::vector<std::string> expected_physical_ids = {grpc_sink1->DistributedDestinationID(),
+                                                    grpc_sink2->DistributedDestinationID()};
 
   // run the conversion rule.
   GRPCSourceGroupConversionRule rule;
@@ -83,7 +83,7 @@ TEST_F(GRPCSourceConversionTest, construction_test_single_source) {
 
   auto mem_src1 = MakeMemSource(MakeTimeRelation());
   auto grpc_sink1 = MakeGRPCSink(mem_src1, grpc_bridge_id);
-  grpc_sink1->SetPhysicalID("agent-1");
+  grpc_sink1->SetDistributedID("agent-1");
 
   EXPECT_OK(grpc_source_group->AddGRPCSink(grpc_sink1));
 
@@ -104,7 +104,7 @@ TEST_F(GRPCSourceConversionTest, construction_test_single_source) {
   ASSERT_EQ(mem_sink1_parent->type(), IRNodeType::kGRPCSource) << mem_sink1_parent->type_string();
 
   auto grpc_source1 = static_cast<GRPCSourceIR*>(mem_sink1_parent);
-  EXPECT_EQ(grpc_source1->remote_source_id(), grpc_sink1->PhysicalDestinationID());
+  EXPECT_EQ(grpc_source1->remote_source_id(), grpc_sink1->DistributedDestinationID());
 }
 
 TEST_F(GRPCSourceConversionTest, no_sinks_affiliated) {
@@ -138,17 +138,17 @@ TEST_F(GRPCSourceConversionTest, multiple_grpc_source_groups) {
 
   auto mem_src1 = MakeMemSource(MakeTimeRelation());
   auto grpc_sink1 = MakeGRPCSink(mem_src1, grpc_bridge_id1);
-  grpc_sink1->SetPhysicalID("agent-1");
+  grpc_sink1->SetDistributedID("agent-1");
 
   auto mem_src2 = MakeMemSource(MakeTimeRelation());
   auto grpc_sink2 = MakeGRPCSink(mem_src2, grpc_bridge_id2);
-  grpc_sink2->SetPhysicalID("agent-2");
+  grpc_sink2->SetDistributedID("agent-2");
 
   EXPECT_OK(grpc_source_group1->AddGRPCSink(grpc_sink1));
   EXPECT_OK(grpc_source_group2->AddGRPCSink(grpc_sink2));
 
-  std::vector<std::string> expected_physical_ids = {grpc_sink1->PhysicalDestinationID(),
-                                                    grpc_sink2->PhysicalDestinationID()};
+  std::vector<std::string> expected_physical_ids = {grpc_sink1->DistributedDestinationID(),
+                                                    grpc_sink2->DistributedDestinationID()};
 
   // run the conversion rule.
   GRPCSourceGroupConversionRule rule;
@@ -167,7 +167,7 @@ TEST_F(GRPCSourceConversionTest, multiple_grpc_source_groups) {
   ASSERT_EQ(mem_sink1_parent->type(), IRNodeType::kGRPCSource) << mem_sink1_parent->type_string();
 
   auto grpc_source1 = static_cast<GRPCSourceIR*>(mem_sink1_parent);
-  EXPECT_EQ(grpc_source1->remote_source_id(), grpc_sink1->PhysicalDestinationID());
+  EXPECT_EQ(grpc_source1->remote_source_id(), grpc_sink1->DistributedDestinationID());
 
   // Check to see that mem_sink2 has a new parent that is a union.
   ASSERT_EQ(mem_sink2->parents().size(), 1UL);
@@ -175,10 +175,10 @@ TEST_F(GRPCSourceConversionTest, multiple_grpc_source_groups) {
   ASSERT_EQ(mem_sink2_parent->type(), IRNodeType::kGRPCSource) << mem_sink2_parent->type_string();
 
   auto grpc_source2 = static_cast<GRPCSourceIR*>(mem_sink2_parent);
-  EXPECT_EQ(grpc_source2->remote_source_id(), grpc_sink2->PhysicalDestinationID());
+  EXPECT_EQ(grpc_source2->remote_source_id(), grpc_sink2->DistributedDestinationID());
 }
 
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

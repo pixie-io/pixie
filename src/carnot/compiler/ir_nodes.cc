@@ -1151,7 +1151,7 @@ Status GRPCSourceGroupIR::ToProto(planpb::Operator* op) const {
 Status GRPCSinkIR::ToProto(planpb::Operator* op) const {
   auto pb = new planpb::GrpcSinkOperator();
   pb->set_address(destination_address());
-  pb->set_destination_id(PhysicalDestinationID());
+  pb->set_destination_id(DistributedDestinationID());
 
   op->set_op_type(planpb::GRPC_SINK_OPERATOR);
   op->set_allocated_grpc_sink_op(pb);
@@ -1237,11 +1237,11 @@ Status GRPCSourceGroupIR::AddGRPCSink(GRPCSinkIR* sink_op) {
     return DExitOrIRNodeError("$0 doesn't have a physical agent associated with it.",
                               DebugString());
   }
-  if (!sink_op->PhysicalIDSet()) {
+  if (!sink_op->DistributedIDSet()) {
     return DExitOrIRNodeError("$0 doesn't have a physical agent associated with it.",
                               sink_op->DebugString());
   }
-  remote_string_ids_.push_back(sink_op->PhysicalDestinationID());
+  remote_string_ids_.push_back(sink_op->DistributedDestinationID());
   sink_op->SetDestinationAddress(grpc_address_);
   return Status::OK();
 }

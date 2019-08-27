@@ -10,7 +10,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 using table_store::schema::Relation;
 
 class GRPCSourceGroupConversionRule : public Rule {
@@ -47,7 +47,7 @@ class GRPCSourceGroupConversionRule : public Rule {
   Status RemoveGRPCSourceGroup(GRPCSourceGroupIR* grpc_source_group) const;
 };
 
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

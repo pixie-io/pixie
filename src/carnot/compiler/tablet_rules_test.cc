@@ -12,7 +12,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::UnorderedElementsAre;
@@ -423,7 +423,7 @@ TEST_F(TabletRulesIntegrationTest, combined_tests) {
   }
 }
 
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

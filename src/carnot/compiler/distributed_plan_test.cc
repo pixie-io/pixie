@@ -7,20 +7,20 @@
 
 #include <pypa/parser/parser.hh>
 
+#include "src/carnot/compiler/distributed_plan.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
-#include "src/carnot/compiler/physical_plan.h"
 #include "src/carnot/compiler/test_utils.h"
 #include "src/common/testing/protobuf.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 using testing::proto::EqualsProto;
 using testing::proto::Partially;
 
-const char* kOneAgentPhysicalState = R"proto(
+const char* kOneAgentDistributedState = R"proto(
 carnot_info {
   query_broker_address: "agent"
   has_grpc_server: false
@@ -38,10 +38,10 @@ carnot_info {
 }
 )proto";
 
-class PhysicalPlanTest : public OperatorTests {
+class DistributedPlanTest : public OperatorTests {
  protected:
-  compilerpb::PhysicalState LoadPhysicalStatePb(const std::string& physical_state_txt) {
-    compilerpb::PhysicalState physical_state_pb;
+  compilerpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
+    compilerpb::DistributedState physical_state_pb;
     CHECK(google::protobuf::TextFormat::MergeFromString(physical_state_txt, &physical_state_pb));
     return physical_state_pb;
   }
@@ -185,9 +185,9 @@ dag {
 }
 )proto";
 
-TEST_F(PhysicalPlanTest, construction_test) {
-  auto physical_plan = std::make_unique<PhysicalPlan>();
-  compilerpb::PhysicalState physical_state = LoadPhysicalStatePb(kOneAgentPhysicalState);
+TEST_F(DistributedPlanTest, construction_test) {
+  auto physical_plan = std::make_unique<DistributedPlan>();
+  compilerpb::DistributedState physical_state = LoadDistributedStatePb(kOneAgentDistributedState);
   std::unordered_map<int64_t, compilerpb::CarnotInfo> carnot_id_to_carnot_info_map;
   for (int64_t i = 0; i < physical_state.carnot_info_size(); ++i) {
     compilerpb::CarnotInfo carnot_info = physical_state.carnot_info()[i];
@@ -214,7 +214,7 @@ TEST_F(PhysicalPlanTest, construction_test) {
   EXPECT_THAT(physical_plan_proto, EqualsProto(kIRProto));
 }
 
-}  // namespace physical
+}  // namespace distributed
 
 }  // namespace compiler
 }  // namespace carnot

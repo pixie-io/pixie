@@ -9,7 +9,7 @@
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 
 StatusOr<bool> GRPCSourceGroupConversionRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, GRPCSourceGroup())) {
@@ -69,7 +69,7 @@ Status GRPCSourceGroupConversionRule::RemoveGRPCSourceGroup(
   return Status::OK();
 }
 
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

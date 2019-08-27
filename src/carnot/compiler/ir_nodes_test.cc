@@ -382,8 +382,8 @@ TEST_F(OperatorTests, grpc_ops) {
   MakeMemSink(grpc_src_group, "out");
 
   grpc_src_group->SetGRPCAddress(source_grpc_address);
-  grpc_sink->SetPhysicalID(sink_physical_id);
-  EXPECT_EQ(grpc_sink->PhysicalDestinationID(), expected_physical_dest_id);
+  grpc_sink->SetDistributedID(sink_physical_id);
+  EXPECT_EQ(grpc_sink->DistributedDestinationID(), expected_physical_dest_id);
   EXPECT_OK(grpc_src_group->AddGRPCSink(grpc_sink));
   EXPECT_EQ(grpc_src_group->remote_string_ids(),
             std::vector<std::string>({expected_physical_dest_id}));
@@ -501,8 +501,8 @@ class CloneTests : public OperatorTests {
   void CompareClonedGRPCSink(GRPCSinkIR* new_ir, GRPCSinkIR* old_ir,
                              const std::string& err_string) {
     EXPECT_EQ(new_ir->destination_id(), old_ir->destination_id()) << err_string;
-    EXPECT_EQ(new_ir->PhysicalDestinationID(), old_ir->PhysicalDestinationID()) << err_string;
-    EXPECT_EQ(new_ir->PhysicalIDSet(), old_ir->PhysicalIDSet()) << err_string;
+    EXPECT_EQ(new_ir->DistributedDestinationID(), old_ir->DistributedDestinationID()) << err_string;
+    EXPECT_EQ(new_ir->DistributedIDSet(), old_ir->DistributedIDSet()) << err_string;
     EXPECT_EQ(new_ir->destination_address(), old_ir->destination_address()) << err_string;
     EXPECT_EQ(new_ir->DestinationAddressSet(), old_ir->DestinationAddressSet()) << err_string;
   }
@@ -681,7 +681,7 @@ TEST_F(CloneTests, clone_grpc_source_group_and_sink) {
   // Build graph 2.
   auto mem_source = MakeMemSource();
   GRPCSinkIR* grpc_sink = MakeGRPCSink(mem_source, 123);
-  grpc_sink->SetPhysicalID("agent-aa");
+  grpc_sink->SetDistributedID("agent-aa");
   grpc_sink->SetDestinationAddress("1111");
 
   EXPECT_OK(grpc_source->AddGRPCSink(grpc_sink));
@@ -803,7 +803,7 @@ TEST_F(ToProtoTests, grpc_sink_ir) {
   std::string physical_id = "agent-aa";
   auto mem_src = MakeMemSource();
   auto grpc_sink = MakeGRPCSink(mem_src, destination_id);
-  grpc_sink->SetPhysicalID(physical_id);
+  grpc_sink->SetDistributedID(physical_id);
   grpc_sink->SetDestinationAddress(grpc_address);
 
   planpb::Operator pb;

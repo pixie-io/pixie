@@ -6,17 +6,17 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "src/carnot/compiler/compiler_state.h"
+#include "src/carnot/compiler/distributed_plan.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/pattern_match.h"
-#include "src/carnot/compiler/physical_plan.h"
 #include "src/carnot/compiler/registry_info.h"
 #include "src/carnot/compiler/rule_executor.h"
 
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 
 using compilerpb::CarnotInfo;
 /**
@@ -25,8 +25,8 @@ using compilerpb::CarnotInfo;
  *
  * The physical plan maps identifiers of nodes to the Plan that corresponds to that node.
  *
- * Physical planning occurs through the following steps:
- * 0. Planner initialized with the PhysicalState
+ * Distributed planning occurs through the following steps:
+ * 0. Planner initialized with the DistributedState
  * 1. Planner receives the logical plan.
  * 2. Split the logical plan into the Agent and Kelvin components.
  * 3. Layout the physical plan (create the physical plan dag).
@@ -34,14 +34,14 @@ using compilerpb::CarnotInfo;
  * 5. Return the mapping from physical_node_id to the physical plan for that node.
  *
  */
-class PhysicalPlanner : public NotCopyable {
+class DistributedPlanner : public NotCopyable {
  public:
   /**
    * @brief The Creation function for the planner.
    *
-   * @return StatusOr<std::unique_ptr<PhysicalPlanner>>: the physical planner object or an error.
+   * @return StatusOr<std::unique_ptr<DistributedPlanner>>: the physical planner object or an error.
    */
-  static StatusOr<std::unique_ptr<PhysicalPlanner>> Create();
+  static StatusOr<std::unique_ptr<DistributedPlanner>> Create();
 
   /**
    * @brief Takes in a logical plan and outputs the physical plan.
@@ -49,18 +49,18 @@ class PhysicalPlanner : public NotCopyable {
    * @param physical_state: the physical layout of the vizier instance.
    * @param compiler_state: informastion passed to the compiler.
    * @param logical_plan
-   * @return StatusOr<std::unique_ptr<PhysicalPlan>>
+   * @return StatusOr<std::unique_ptr<DistributedPlan>>
    */
-  StatusOr<std::unique_ptr<PhysicalPlan>> Plan(const compilerpb::PhysicalState& physical_state,
-                                               CompilerState* compiler_state,
-                                               const IR* logical_plan);
+  StatusOr<std::unique_ptr<DistributedPlan>> Plan(
+      const compilerpb::DistributedState& physical_state, CompilerState* compiler_state,
+      const IR* logical_plan);
 
  private:
-  PhysicalPlanner() {}
+  DistributedPlanner() {}
 
   Status Init();
 };
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl

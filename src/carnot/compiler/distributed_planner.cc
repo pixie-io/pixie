@@ -4,38 +4,38 @@
 #include <vector>
 
 #include "src/carnot/compiler/ast_visitor.h"
-#include "src/carnot/compiler/physical_coordinator.h"
-#include "src/carnot/compiler/physical_planner.h"
-#include "src/carnot/compiler/physical_stitcher.h"
+#include "src/carnot/compiler/distributed_coordinator.h"
+#include "src/carnot/compiler/distributed_planner.h"
+#include "src/carnot/compiler/distributed_stitcher.h"
 #include "src/carnot/compiler/rules.h"
 namespace pl {
 namespace carnot {
 namespace compiler {
-namespace physical {
+namespace distributed {
 
-StatusOr<std::unique_ptr<PhysicalPlanner>> PhysicalPlanner::Create() {
-  std::unique_ptr<PhysicalPlanner> planner(new PhysicalPlanner());
+StatusOr<std::unique_ptr<DistributedPlanner>> DistributedPlanner::Create() {
+  std::unique_ptr<DistributedPlanner> planner(new DistributedPlanner());
   PL_RETURN_IF_ERROR(planner->Init());
   return planner;
 }
 
-Status PhysicalPlanner::Init() { return Status::OK(); }
+Status DistributedPlanner::Init() { return Status::OK(); }
 
-StatusOr<std::unique_ptr<PhysicalPlan>> PhysicalPlanner::Plan(
-    const compilerpb::PhysicalState& physical_state, CompilerState* compiler_state,
+StatusOr<std::unique_ptr<DistributedPlan>> DistributedPlanner::Plan(
+    const compilerpb::DistributedState& physical_state, CompilerState* compiler_state,
     const IR* logical_plan) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<Coordinator> coordinator,
                       Coordinator::Create(physical_state));
   PL_ASSIGN_OR_RETURN(std::unique_ptr<Stitcher> stitcher, Stitcher::Create(compiler_state));
 
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<PhysicalPlan> physical_plan,
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<DistributedPlan> physical_plan,
                       coordinator->Coordinate(logical_plan));
   PL_RETURN_IF_ERROR(stitcher->Stitch(physical_plan.get()));
 
   return physical_plan;
 }
 
-}  // namespace physical
+}  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
 }  // namespace pl
