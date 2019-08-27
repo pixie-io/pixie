@@ -19,11 +19,11 @@ export const GET_CLUSTER_CONN = gql`
 
 interface FetchResponse {
   ok: boolean;
-  json: any;
+  text: any;
 }
 
 const cloudLink = createHttpLink({
-  uri: 'api/graphql',
+  uri: '/api/graphql',
   fetch: fetchPolyfill,
 });
 
@@ -40,26 +40,26 @@ const vizierFetch = (uri, options) => {
   // Attempt to execute an initial fetch.
   const auth: string = localStorage.getItem('vizierAuth');
   let token: string = '';
-  let ip: string = '';
+  let address: string = '';
   if (auth != null) {
     const parsedAuth = JSON.parse(auth);
-    ip = parsedAuth.ip;
+    address = parsedAuth.address;
     token = parsedAuth.token;
   }
   options.headers.authorization = `Bearer ${token}`;
 
-  const initialRequest = fetchPolyfill(ip + uri, options);
+  const initialRequest = fetchPolyfill(address + uri, options);
 
   this.refreshingToken = null;
 
   return initialRequest.then((response) => {
-    return response.json();
-  }).then((respJSON) => {
+    return response.text();
+  }).then((respText) => {
     // If no errors, repackage response into expected return format.
     const result = {} as FetchResponse;
     result.ok = true;
-    result.json = () => new Promise((resolve, reject) => {
-      resolve(respJSON);
+    result.text = () => new Promise((resolve, reject) => {
+      resolve(respText);
     });
     return result;
   }).catch((err) => {
@@ -71,15 +71,15 @@ const vizierFetch = (uri, options) => {
     return this.refreshingToken.then(({loading, error, data}) => {
       this.refreshingToken = null;
 
-      const newToken = data.token;
-      const newIp = data.ipAddress;
+      const newToken = data.clusterConnection.token;
+      const newAddress = 'https://' + data.clusterConnection.ipAddress;
       localStorage.setItem('vizierAuth', JSON.stringify({
         token: newToken,
-        ip: newIp,
+        address: newAddress,
       }));
 
       options.headers.authorization = `Bearer ${newToken}`;
-      return fetchPolyfill(newIp + uri, options);
+      return fetchPolyfill(newAddress + uri, options);
     }).catch((error) => {
       this.refreshingToken = null;
       const errResult = {} as FetchResponse;

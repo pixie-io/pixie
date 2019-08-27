@@ -16,8 +16,8 @@ export interface RouterInfo {
 }
 
 const CREATE_CLUSTER = gql`
-  mutation CreateCluster($domainName: String) {
-    CreateCluster(domainName: $domainName) {
+  mutation CreateCluster {
+    CreateCluster {
       id
     }
   }
@@ -46,7 +46,7 @@ function onLoginAuthenticated(authResult) {
       expiresAt: response.data.ExpiresAt,
     });
     window.location.href = window.location.protocol + '//'
-      + window.location.host.replace('id.', this.domain + '.');
+      + window.location.host.replace('id.', this.domain + '.') + "/vizier/query";
   });
 }
 
@@ -73,7 +73,7 @@ function onCreateAuthenticated(authResult) {
       });
     }).then((results) => {
         window.location.href = window.location.protocol + '//'
-          + window.location.host.replace('id.', this.domain + '.');
+          + window.location.host.replace('id.', this.domain + '.') + "/vizier/query";
     }).catch((gqlErr) => {
         return gqlErr;
     });
