@@ -57,48 +57,144 @@ const compilerpb::TableInfo& TabletSourceConversionRule::GetTableInfo(
 }
 
 StatusOr<bool> MemorySourceTabletRule::Apply(IRNode* ir_node) {
-  // TODO(philkuz) create a rule to match a filter group.
-  // if (Match(ir_node, OperationChain(TabletSourceGroup(), Filter()))) {
-  // } else
-  if (Match(ir_node, TabletSourceGroup())) {
+  if (Match(ir_node, OperatorChain(TabletSourceGroup(), Filter()))) {
+    return ReplaceTabletSourceGroupWithFilterChild(static_cast<TabletSourceGroupIR*>(ir_node));
+  } else if (Match(ir_node, TabletSourceGroup())) {
     return ReplaceTabletSourceGroup(static_cast<TabletSourceGroupIR*>(ir_node));
   }
   return false;
 }
 
-StatusOr<OperatorIR*> MakeNewSources(const std::vector<OperatorIR*>& operators,
-                                     TabletSourceGroupIR* tablet_source_group) {
-  DCHECK_GE(operators.size(), 1UL);
+StatusOr<OperatorIR*> MemorySourceTabletRule::MakeNewSources(
+    const std::vector<std::string>& tablets, TabletSourceGroupIR* tablet_source_group) {
+  std::vector<OperatorIR*> sources;
+  for (const auto& tablet : tablets) {
+    PL_ASSIGN_OR_RETURN(MemorySourceIR * tablet_src,
+                        CreateMemorySource(tablet_source_group->ReplacedMemorySource(), tablet));
+    sources.push_back(tablet_src);
+  }
 
+  if (sources.size() == 0) {
+    return tablet_source_group->CreateIRNodeError("No tablets matched for this query.");
+  }
   // If there's only one operator, then just return that operator instead.
-  if (operators.size() == 1) {
-    return operators[0];
+  if (sources.size() == 1) {
+    return sources[0];
   }
 
   IR* graph = tablet_source_group->graph_ptr();
   PL_ASSIGN_OR_RETURN(UnionIR * union_op, graph->MakeNode<UnionIR>());
-  PL_RETURN_IF_ERROR(union_op->Init(operators, {{}}, tablet_source_group->ast_node()));
+  PL_RETURN_IF_ERROR(union_op->Init(sources, {{}}, tablet_source_group->ast_node()));
   PL_RETURN_IF_ERROR(union_op->SetRelationFromParents());
   return union_op;
 }
 
 StatusOr<bool> MemorySourceTabletRule::ReplaceTabletSourceGroup(
     TabletSourceGroupIR* tablet_source_group) {
-  std::vector<OperatorIR*> sources;
-  for (const auto& tablet : tablet_source_group->tablets()) {
-    PL_ASSIGN_OR_RETURN(MemorySourceIR * tablet_src,
-                        CreateMemorySource(tablet_source_group->ReplacedMemorySource(), tablet));
-    sources.push_back(tablet_src);
-  }
-
-  PL_ASSIGN_OR_RETURN(OperatorIR * parent_op, MakeNewSources(sources, tablet_source_group));
+  PL_ASSIGN_OR_RETURN(OperatorIR * parent_op,
+                      MakeNewSources(tablet_source_group->tablets(), tablet_source_group));
 
   for (OperatorIR* child : tablet_source_group->Children()) {
     PL_RETURN_IF_ERROR(child->ReplaceParent(tablet_source_group, parent_op));
   }
-  DeferNodeDeletion(tablet_source_group->ReplacedMemorySource()->id());
-  DeferNodeDeletion(tablet_source_group->id());
+  DeleteNodeAndNonOperatorChildren(tablet_source_group->ReplacedMemorySource());
+  DeleteNodeAndNonOperatorChildren(tablet_source_group);
   return true;
+}
+
+void MemorySourceTabletRule::DeleteNodeAndNonOperatorChildren(OperatorIR* op) {
+  IR* graph = op->graph_ptr();
+  const plan::DAG& dag = graph->dag();
+  int64_t cur_node = op->id();
+  std::queue<int64_t> q({cur_node});
+  absl::flat_hash_set<int64_t> visited({cur_node});
+  while (!q.empty()) {
+    int64_t cur_val = q.front();
+    q.pop();
+    for (int64_t i : dag.DependenciesOf(cur_val)) {
+      if (!graph->Get(i)->IsOperator() && !visited.contains(i)) {
+        visited.insert(i);
+        q.push(i);
+      }
+    }
+    DeferNodeDeletion(cur_val);
+  }
+}
+
+StatusOr<bool> MemorySourceTabletRule::ReplaceTabletSourceGroupAndFilter(
+    TabletSourceGroupIR* tablet_source_group, FilterIR* filter_op,
+    const absl::flat_hash_set<TabletKeyType>& match_set) {
+  DCHECK_EQ(tablet_source_group->Children().size(), 1UL);
+  DCHECK_EQ(tablet_source_group->Children()[0]->DebugString(), filter_op->DebugString());
+  std::vector<std::string> matching_tablets;
+  for (const auto& tablet : tablet_source_group->tablets()) {
+    if (!match_set.empty() && !match_set.contains(tablet)) {
+      continue;
+    }
+    matching_tablets.push_back(tablet);
+  }
+  if (matching_tablets.size() == 0) {
+    return tablet_source_group->CreateIRNodeError(
+        "Number of matching tablets must be greater than 0.");
+  }
+
+  PL_ASSIGN_OR_RETURN(OperatorIR * parent_op,
+                      MakeNewSources(matching_tablets, tablet_source_group));
+
+  for (OperatorIR* child : filter_op->Children()) {
+    PL_RETURN_IF_ERROR(child->ReplaceParent(filter_op, parent_op));
+  }
+  DeleteNodeAndNonOperatorChildren(tablet_source_group->ReplacedMemorySource());
+  DeleteNodeAndNonOperatorChildren(tablet_source_group);
+  DeleteNodeAndNonOperatorChildren(filter_op);
+  return true;
+}
+
+absl::flat_hash_set<TabletKeyType> MemorySourceTabletRule::GetEqualityTabletValues(FuncIR* func) {
+  std::string value;
+  DCHECK_EQ(func->args().size(), 2UL);
+  if (Match(func->args()[1], ColumnNode())) {
+    value = static_cast<StringIR*>(func->args()[0])->str();
+  } else {
+    value = static_cast<StringIR*>(func->args()[1])->str();
+  }
+  return {value};
+}
+
+absl::flat_hash_set<TabletKeyType> MemorySourceTabletRule::GetAndTabletValues(FuncIR* func) {
+  DCHECK(Match(func, AndFnMatchAll(Equals(ColumnNode(), String()))));
+  absl::flat_hash_set<TabletKeyType> tablet_values;
+  for (ExpressionIR* expr : func->args()) {
+    DCHECK(Match(expr, Func()));
+    tablet_values.merge(GetEqualityTabletValues(static_cast<FuncIR*>(expr)));
+  }
+  return tablet_values;
+}
+
+StatusOr<bool> MemorySourceTabletRule::ReplaceTabletSourceGroupWithFilterChild(
+    TabletSourceGroupIR* tablet_source_group) {
+  DCHECK_EQ(tablet_source_group->Children().size(), 1UL);
+  OperatorIR* child_op = tablet_source_group->Children()[0];
+
+  DCHECK(Match(child_op, Filter()));
+  FilterIR* filter = static_cast<FilterIR*>(child_op);
+  ExpressionIR* expr = filter->filter_expr();
+
+  DCHECK_EQ(expr->EvaluatedDataType(), types::BOOLEAN);
+  std::string tablet_key = tablet_source_group->tablet_key();
+
+  if (Match(expr, Equals(ColumnNode(tablet_key), String()))) {
+    absl::flat_hash_set<TabletKeyType> tablet_values =
+        GetEqualityTabletValues(static_cast<FuncIR*>(expr));
+    return ReplaceTabletSourceGroupAndFilter(tablet_source_group, filter, tablet_values);
+  } else if (Match(expr, AndFnMatchAll(Equals(ColumnNode(tablet_key), String())))) {
+    absl::flat_hash_set<TabletKeyType> tablet_values =
+        GetAndTabletValues(static_cast<FuncIR*>(expr));
+    return ReplaceTabletSourceGroupAndFilter(tablet_source_group, filter, tablet_values);
+  }
+
+  // Otherwise, if the expression doesn't match then we should go through the originalpath
+  return ReplaceTabletSourceGroup(tablet_source_group);
 }
 
 StatusOr<MemorySourceIR*> MemorySourceTabletRule::CreateMemorySource(

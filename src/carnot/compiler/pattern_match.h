@@ -38,6 +38,8 @@
  * rather you can use an existing struct to fit your use-case.
  */
 #pragma once
+#include <string>
+
 #include "src/carnot/compiler/ir_nodes.h"
 namespace pl {
 namespace carnot {
@@ -428,6 +430,42 @@ inline AnyFuncAnyArgsMatch<Arg_t, false> FuncAnyArg(const Arg_t& argMatcher) {
 }
 
 /**
+ * @brief Match a function with opcode op whose arguments satisfy the arg_matcher.
+ *
+ * @tparam Arg_t
+ * @tparam false
+ * @tparam false
+ */
+template <typename ArgMatcherType, FuncIR::Opcode op>
+struct FuncAllArgsMatch : public ParentMatch {
+  explicit FuncAllArgsMatch(const ArgMatcherType& arg_matcher)
+      : ParentMatch(IRNodeType::kFunc), arg_matcher_(arg_matcher) {}
+
+  bool Match(IRNode* node) const override {
+    if (node->type() == type) {
+      auto* func = static_cast<FuncIR*>(node);
+      if (func->opcode() == op) {
+        for (const auto a : func->args()) {
+          if (!arg_matcher_.Match(a)) {
+            return false;
+          }
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
+  ArgMatcherType arg_matcher_;
+};
+
+template <typename ArgMatcherType>
+inline FuncAllArgsMatch<ArgMatcherType, FuncIR::Opcode::logand> AndFnMatchAll(
+    const ArgMatcherType& arg_matcher) {
+  return FuncAllArgsMatch<ArgMatcherType, FuncIR::Opcode::logand>(arg_matcher);
+}
+
+/**
  * @brief Match any node that is an expression.
  */
 struct AnyExpressionMatch : public ParentMatch {
@@ -655,6 +693,17 @@ struct ColumnMatch : public ParentMatch {
 
 inline ColumnMatch ColumnNode() { return ColumnMatch(); }
 
+struct ColumnNameMatch : public ParentMatch {
+  explicit ColumnNameMatch(const std::string& name)
+      : ParentMatch(IRNodeType::kColumn), name_(name) {}
+  bool Match(IRNode* node) const override {
+    return ColumnNode().Match(node) && static_cast<ColumnIR*>(node)->col_name() == name_;
+  }
+  const std::string& name_;
+};
+
+inline ColumnNameMatch ColumnNode(const std::string& name) { return ColumnNameMatch(name); }
+
 struct DataMatch : public ParentMatch {
   DataMatch() : ParentMatch(IRNodeType::kAny) {}
   bool Match(IRNode* node) const override {
@@ -686,6 +735,35 @@ struct JoinOperatorConditionSetMatch : public ParentMatch {
 
 inline JoinOperatorConditionSetMatch<false> JoinOperatorEqCondNotSet() {
   return JoinOperatorConditionSetMatch<false>();
+}
+
+/**
+ * @brief Matches two operators in sequence.
+ *
+ */
+template <typename ParentType, typename ChildType>
+struct OperatorChainMatch : public ParentMatch {
+  OperatorChainMatch(ParentType parent, ChildType child)
+      : ParentMatch(IRNodeType::kAny), parent_(parent), child_(child) {}
+  bool Match(IRNode* node) const override {
+    if (!node->IsOperator()) {
+      return false;
+    }
+    OperatorIR* op_node = static_cast<OperatorIR*>(node);
+    if (op_node->Children().size() != 1 || !parent_.Match(op_node)) {
+      return false;
+    }
+    return child_.Match(op_node->Children()[0]);
+  }
+
+ private:
+  ParentType parent_;
+  ChildType child_;
+};
+
+template <typename ParentType, typename ChildType>
+inline OperatorChainMatch<ParentType, ChildType> OperatorChain(ParentType parent, ChildType child) {
+  return OperatorChainMatch(parent, child);
 }
 
 }  // namespace compiler

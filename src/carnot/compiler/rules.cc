@@ -717,6 +717,7 @@ StatusOr<bool> MergeRangeOperatorRule::Apply(IRNode* ir_node) {
   }
   return false;
 }
+
 StatusOr<bool> MergeRangeOperatorRule::MergeRange(RangeIR* range_ir) {
   IR* ir_graph = range_ir->graph_ptr();
   DCHECK_EQ(range_ir->parents().size(), 1UL);

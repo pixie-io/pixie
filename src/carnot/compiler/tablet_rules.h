@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
 #include "src/carnot/compiler/compilerpb/physical_plan.pb.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/pattern_match.h"
@@ -43,8 +43,18 @@ class MemorySourceTabletRule : public Rule {
  private:
   StatusOr<bool> Apply(IRNode* ir_node) override;
   StatusOr<bool> ReplaceTabletSourceGroup(TabletSourceGroupIR* tablet_source_group);
+  StatusOr<bool> ReplaceTabletSourceGroupAndFilter(
+      TabletSourceGroupIR* tablet_source_group, FilterIR* filter_op,
+      const absl::flat_hash_set<TabletKeyType>& match_tablets);
   StatusOr<MemorySourceIR*> CreateMemorySource(const MemorySourceIR* original_memory_source,
                                                const TabletKeyType& tablet_value);
+
+  StatusOr<bool> ReplaceTabletSourceGroupWithFilterChild(TabletSourceGroupIR* tablet_source_group);
+  void DeleteNodeAndNonOperatorChildren(OperatorIR* op);
+  StatusOr<OperatorIR*> MakeNewSources(const std::vector<std::string>& tablets,
+                                       TabletSourceGroupIR* tablet_source_group);
+  absl::flat_hash_set<TabletKeyType> GetEqualityTabletValues(FuncIR* func);
+  absl::flat_hash_set<TabletKeyType> GetAndTabletValues(FuncIR* func);
 };
 
 }  // namespace physical

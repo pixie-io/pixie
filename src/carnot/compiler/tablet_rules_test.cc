@@ -180,22 +180,29 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_no_union) {
 }
 
 // TODO(philkuz) enable when we have support for filters.
-TEST_F(MemorySourceTabletRuleTest, DISABLED_tablet_source_group_union_tabletization_key_filter) {
+TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_filter) {
   Relation relation({types::UINT128, types::INT64, types::STRING}, {"upid", "cpu0", "name"});
   auto mem_src = MakeMemSource("table", relation);
   TabletSourceGroupIR* tablet_source_group =
       MakeTabletSourceGroup(mem_src, {"tablet1", "tablet2"}, "upid");
-  FilterIR* filter =
-      MakeFilter(tablet_source_group, MakeEqualsFunc(MakeColumn("upid", 0), MakeString("tablet2")));
+  auto column = MakeColumn("upid", 0);
+  auto string = MakeString("tablet2");
+  FuncIR* filter_expr = MakeEqualsFunc(column, string);
+  filter_expr->SetOutputDataType(types::BOOLEAN);
+  FilterIR* filter = MakeFilter(tablet_source_group, filter_expr);
   MemorySinkIR* mem_sink = MakeMemSink(filter, "out");
 
   int64_t tablet_source_group_id = tablet_source_group->id();
   int64_t filter_id = filter->id();
 
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(2, 0, 7, 5, 8, 3, 4));
+
   MemorySourceTabletRule rule;
   auto result = rule.Execute(graph.get());
   EXPECT_OK(result);
   EXPECT_TRUE(result.ConsumeValueOrDie());
+
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(10, 8));
 
   // Check to see that the group is no longer available
   EXPECT_FALSE(graph->HasNode(tablet_source_group_id));
@@ -211,24 +218,43 @@ TEST_F(MemorySourceTabletRuleTest, DISABLED_tablet_source_group_union_tabletizat
   ASSERT_TRUE(new_mem_src->HasTablet());
   std::string tablet_value = new_mem_src->tablet_value();
   EXPECT_TRUE(new_mem_src->IsRelationInit());
-  EXPECT_EQ(tablet_value, "tablet");
+  EXPECT_EQ(tablet_value, "tablet2");
 }
 
 // TODO(philkuz) enable when we have support for filters.
-TEST_F(MemorySourceTabletRuleTest,
-       DISABLED_tablet_source_group_union_tabletization_key_filter_and) {
+TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_filter_and) {
   Relation relation({types::UINT128, types::INT64, types::STRING}, {"upid", "cpu0", "name"});
   auto mem_src = MakeMemSource("table", relation);
   TabletSourceGroupIR* tablet_source_group =
       MakeTabletSourceGroup(mem_src, {"tablet1", "tablet2", "tablet3"}, "upid");
-  FilterIR* filter =
-      MakeFilter(tablet_source_group,
-                 MakeAndFunc(MakeEqualsFunc(MakeColumn("upid", 0), MakeString("tablet2")),
-                             MakeEqualsFunc(MakeColumn("upid", 0), MakeString("tablet3"))));
+  auto column1 = MakeColumn("upid", 0);
+  auto string1 = MakeString("tablet2");
+  auto column2 = MakeColumn("upid", 0);
+  auto string2 = MakeString("tablet3");
+  auto equals1 = MakeEqualsFunc(column1, string1);
+  auto equals2 = MakeEqualsFunc(column2, string2);
+  auto filter_expr = MakeAndFunc(equals1, equals2);
+  filter_expr->SetOutputDataType(types::BOOLEAN);
+  FilterIR* filter = MakeFilter(tablet_source_group, filter_expr);
+
   MemorySinkIR* mem_sink = MakeMemSink(filter, "out");
 
   int64_t tablet_source_group_id = tablet_source_group->id();
   int64_t filter_id = filter->id();
+
+  IR* graph_raw = graph.get();
+  auto str =
+      absl::StrJoin(graph->dag().TopologicalSort(), ",", [graph_raw](std::string* out, int64_t in) {
+        IRNode* node = graph_raw->Get(in);
+        if (Match(node, Func())) {
+          absl::StrAppend(out, absl::Substitute("$0:$1", node->DebugString(),
+                                                static_cast<FuncIR*>(node)->op().python_op));
+        } else {
+          absl::StrAppend(out, node->DebugString());
+        }
+      });
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(2, 0, 11, 9, 12, 7, 8, 3, 4, 5, 6))
+      << str;
 
   MemorySourceTabletRule rule;
   auto result = rule.Execute(graph.get());
@@ -239,7 +265,8 @@ TEST_F(MemorySourceTabletRuleTest,
   EXPECT_FALSE(graph->HasNode(tablet_source_group_id));
   EXPECT_FALSE(graph->HasNode(filter_id));
 
-  // Check to see that mem_sink1 has a new parent that is a union.
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(16, 14, 18, 12));
+
   // Check to see that mem_sink1 has a new parent that is a union.
   ASSERT_EQ(mem_sink->parents().size(), 1UL);
   OperatorIR* mem_sink_parent = mem_sink->parents()[0];
@@ -264,17 +291,22 @@ TEST_F(MemorySourceTabletRuleTest,
 }
 
 // TODO(philkuz) enable when we have support for filters.
-TEST_F(MemorySourceTabletRuleTest, DISABLED_tablet_source_group_filter_does_nothing) {
+TEST_F(MemorySourceTabletRuleTest, tablet_source_group_filter_does_nothing) {
   Relation relation({types::UINT128, types::INT64, types::STRING}, {"upid", "cpu0", "name"});
   auto mem_src = MakeMemSource("table", relation);
   TabletSourceGroupIR* tablet_source_group =
       MakeTabletSourceGroup(mem_src, {"tablet1", "tablet2", "tablet3"}, "upid");
-  FilterIR* filter =
-      MakeFilter(tablet_source_group, MakeEqualsFunc(MakeColumn("name", 0), MakeString("blah")));
+  auto column = MakeColumn("name", 0);
+  auto string = MakeString("blah");
+  auto filter_expr = MakeEqualsFunc(column, string);
+  filter_expr->SetOutputDataType(types::BOOLEAN);
+  FilterIR* filter = MakeFilter(tablet_source_group, filter_expr);
   MemorySinkIR* mem_sink = MakeMemSink(filter, "out");
 
   int64_t tablet_source_group_id = tablet_source_group->id();
   int64_t filter_id = filter->id();
+
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(2, 0, 7, 5, 8, 3, 4));
 
   MemorySourceTabletRule rule;
   auto result = rule.Execute(graph.get());
@@ -284,6 +316,7 @@ TEST_F(MemorySourceTabletRuleTest, DISABLED_tablet_source_group_filter_does_noth
   // Check to see that the group is no longer available
   EXPECT_FALSE(graph->HasNode(tablet_source_group_id));
   EXPECT_TRUE(graph->HasNode(filter_id));
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(14, 12, 10, 16, 7, 5, 8, 3, 4));
 
   // Check to see that mem_sink1 has a new parent that is a union.
   ASSERT_EQ(mem_sink->parents().size(), 1UL);
@@ -309,6 +342,24 @@ TEST_F(MemorySourceTabletRuleTest, DISABLED_tablet_source_group_filter_does_noth
   }
 
   EXPECT_THAT(tablet_values, ElementsAre("tablet1", "tablet2", "tablet3"));
+}
+
+TEST_F(MemorySourceTabletRuleTest, tablet_source_no_match) {
+  Relation relation({types::UINT128, types::INT64, types::STRING}, {"upid", "cpu0", "name"});
+  auto mem_src = MakeMemSource("table", relation);
+  TabletSourceGroupIR* tablet_source_group =
+      MakeTabletSourceGroup(mem_src, {"tablet1", "tablet2"}, "upid");
+  // should not match any of the tablets above.
+  FuncIR* filter_expr = MakeEqualsFunc(MakeColumn("upid", 0), MakeString("tablet3"));
+  filter_expr->SetOutputDataType(types::BOOLEAN);
+  FilterIR* filter = MakeFilter(tablet_source_group, filter_expr);
+  MakeMemSink(filter, "out");
+
+  MemorySourceTabletRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_NOT_OK(result);
+  EXPECT_THAT(result.status(),
+              HasCompilerError("Number of matching tablets must be greater than 0."));
 }
 
 using TabletRulesIntegrationTest = OperatorTests;
