@@ -18,6 +18,7 @@ namespace carnot {
 namespace compiler {
 namespace physical {
 
+using compilerpb::CarnotInfo;
 /**
  * @brief The planner takes in a logical plan and knowledge about the Machines available for
  * exeuction to create a plan that is close to what is actually executed on the nodes.
@@ -35,22 +36,29 @@ namespace physical {
  */
 class PhysicalPlanner : public NotCopyable {
  public:
-  static StatusOr<std::unique_ptr<PhysicalPlanner>> Create(
-      const compilerpb::PhysicalState& physical_state) {
-    std::unique_ptr<PhysicalPlanner> planner(new PhysicalPlanner(physical_state));
-    PL_RETURN_IF_ERROR(planner->Init());
-    return planner;
-  }
-  StatusOr<std::unique_ptr<PhysicalPlan>> Plan(const IR* logical_plan);
+  /**
+   * @brief The Creation function for the planner.
+   *
+   * @return StatusOr<std::unique_ptr<PhysicalPlanner>>: the physical planner object or an error.
+   */
+  static StatusOr<std::unique_ptr<PhysicalPlanner>> Create();
+
+  /**
+   * @brief Takes in a logical plan and outputs the physical plan.
+   *
+   * @param physical_state: the physical layout of the vizier instance.
+   * @param compiler_state: informastion passed to the compiler.
+   * @param logical_plan
+   * @return StatusOr<std::unique_ptr<PhysicalPlan>>
+   */
+  StatusOr<std::unique_ptr<PhysicalPlan>> Plan(const compilerpb::PhysicalState& physical_state,
+                                               CompilerState* compiler_state,
+                                               const IR* logical_plan);
 
  private:
-  explicit PhysicalPlanner(const compilerpb::PhysicalState& physical_state)
-      : physical_state_(physical_state) {}
+  PhysicalPlanner() {}
 
-  // TODO(philkuz) decide whether to keept his around.
-  Status Init() { return Status::OK(); }
-
-  compilerpb::PhysicalState physical_state_;
+  Status Init();
 };
 }  // namespace physical
 }  // namespace compiler
