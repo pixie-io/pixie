@@ -109,9 +109,9 @@ gcloud beta container --project "pl-dev-infra" clusters create ${CLUSTER_NAME} \
 "https://www.googleapis.com/auth/service.management",\
 "https://www.googleapis.com/auth/servicecontrol" \
  --num-nodes ${NUM_NODES} \
+ --enable-ip-alias \
  --enable-cloud-logging \
  --enable-cloud-monitoring \
- --no-enable-ip-alias \
  --network "projects/pl-dev-infra/global/networks/dev" \
  --subnetwork "projects/pl-dev-infra/regions/us-west1/subnetworks/us-west1-0" \
  --addons HorizontalPodAutoscaling,KubernetesDashboard,HttpLoadBalancing \
