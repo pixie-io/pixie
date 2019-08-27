@@ -327,6 +327,13 @@ class OperatorTests : public ::testing::Test {
                                       types::DataType::FLOAT64, types::DataType::FLOAT64}),
         std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
   }
+  // Same as MakeRelation, but has a time column.
+  Relation MakeTimeRelation() {
+    return table_store::schema::Relation(
+        std::vector<types::DataType>({types::DataType::TIME64NS, types::DataType::FLOAT64,
+                                      types::DataType::FLOAT64, types::DataType::FLOAT64}),
+        std::vector<std::string>({"time_", "cpu0", "cpu1", "cpu2"}));
+  }
 
   pypa::AstPtr ast;
   std::shared_ptr<IR> graph;

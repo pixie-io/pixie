@@ -220,6 +220,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "grpc_source_conversion_test",
+    srcs = ["grpc_source_conversion_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "physical_coordinator_test",
     srcs = ["physical_coordinator_test.cc"],
     deps = [
