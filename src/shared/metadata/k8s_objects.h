@@ -195,5 +195,39 @@ class ContainerInfo {
   int64_t stop_time_ns_ = 0;
 };
 
+/**
+ * PodInfo contains information about K8s pods.
+ */
+class ServiceInfo : public K8sMetadataObject {
+ public:
+  ServiceInfo(UID uid, std::string_view ns, std::string_view name)
+      : K8sMetadataObject(K8sObjectType::kService, std::move(uid), std::move(ns), std::move(name)) {
+  }
+  virtual ~ServiceInfo() = default;
+
+  void AddPod(UIDView uid) { pods_.emplace(uid); }
+  void RmPod(UIDView uid) { pods_.erase(uid); }
+
+  const absl::flat_hash_set<std::string>& pods() const { return pods_; }
+
+  std::unique_ptr<K8sMetadataObject> Clone() const override {
+    return std::unique_ptr<ServiceInfo>(new ServiceInfo(*this));
+  }
+
+  std::string DebugString(int indent = 0) const override;
+
+ protected:
+  ServiceInfo(const ServiceInfo& other) = default;
+  ServiceInfo& operator=(const ServiceInfo& other) = delete;
+
+ private:
+  /**
+   * Set of pods that are running on this pod.
+   *
+   * The PodInfo is located in pods in the K8s state.
+   */
+  absl::flat_hash_set<UID> pods_;
+};
+
 }  // namespace md
 }  // namespace pl

@@ -132,5 +132,63 @@ TEST(ContainerInfo, clone) {
   EXPECT_EQ(cloned->stop_time_ns(), orig.stop_time_ns());
 }
 
+TEST(ServiceInfo, basic_accessors) {
+  ServiceInfo service_info("123", "pl", "service1");
+  service_info.set_start_time_ns(123);
+  service_info.set_stop_time_ns(256);
+
+  EXPECT_EQ("123", service_info.uid());
+  EXPECT_EQ("pl", service_info.ns());
+  EXPECT_EQ("service1", service_info.name());
+
+  EXPECT_EQ(123, service_info.start_time_ns());
+  EXPECT_EQ(256, service_info.stop_time_ns());
+
+  EXPECT_EQ(K8sObjectType::kService, service_info.type());
+}
+
+TEST(ServiceInfo, debug_string) {
+  ServiceInfo service_info("123", "pl", "service1");
+  for (int i = 0; i < 5; ++i) {
+    EXPECT_EQ(absl::Substitute("$0<Service:ns=pl:name=service1:uid=123:state=R>", Indent(i)),
+              service_info.DebugString(i));
+  }
+
+  service_info.set_stop_time_ns(1000);
+  EXPECT_EQ("<Service:ns=pl:name=service1:uid=123:state=S>", service_info.DebugString());
+}
+
+TEST(ServiceInfo, add_delete_containers) {
+  ServiceInfo service_info("123", "pl", "service1");
+  service_info.AddPod("ABCD");
+  service_info.AddPod("ABCD2");
+  service_info.AddPod("ABCD3");
+  service_info.RmPod("ABCD");
+
+  EXPECT_THAT(service_info.pods(), testing::UnorderedElementsAre("ABCD2", "ABCD3"));
+
+  service_info.RmPod("ABCD3");
+  EXPECT_THAT(service_info.pods(), testing::UnorderedElementsAre("ABCD2"));
+}
+
+TEST(ServiceInfo, clone) {
+  ServiceInfo service_info("123", "pl", "service1");
+  service_info.set_start_time_ns(123);
+  service_info.set_stop_time_ns(256);
+  service_info.AddPod("ABCD");
+  service_info.AddPod("ABCD2");
+
+  std::unique_ptr<ServiceInfo> cloned(static_cast<ServiceInfo*>(service_info.Clone().release()));
+  EXPECT_EQ(cloned->uid(), service_info.uid());
+  EXPECT_EQ(cloned->name(), service_info.name());
+  EXPECT_EQ(cloned->ns(), service_info.ns());
+
+  EXPECT_EQ(cloned->start_time_ns(), service_info.start_time_ns());
+  EXPECT_EQ(cloned->stop_time_ns(), service_info.stop_time_ns());
+
+  EXPECT_EQ(cloned->type(), service_info.type());
+  EXPECT_EQ(cloned->pods(), service_info.pods());
+}
+
 }  // namespace md
 }  // namespace pl

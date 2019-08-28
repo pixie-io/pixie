@@ -18,5 +18,11 @@ std::string ContainerInfo::DebugString(int indent) const {
                           pod_id(), state);
 }
 
+std::string ServiceInfo::DebugString(int indent) const {
+  std::string state = stop_time_ns() != 0 ? "S" : "R";
+  return absl::Substitute("$0<Service:ns=$1:name=$2:uid=$3:state=$4>", Indent(indent), ns(), name(),
+                          uid(), state);
+}
+
 }  // namespace md
 }  // namespace pl
