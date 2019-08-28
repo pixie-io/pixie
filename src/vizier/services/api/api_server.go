@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/gorilla/handlers"
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
@@ -32,7 +33,8 @@ func main() {
 	healthz.RegisterDefaultChecks(mux)
 
 	s := services.NewPLServer(env,
-		httpmiddleware.WithBearerAuthMiddleware(env, mux))
+		handlers.CORS(services.DefaultCORSConfig()...)(
+			httpmiddleware.WithBearerAuthMiddleware(env, mux)))
 	s.Start()
 	s.StopOnInterrupt()
 }

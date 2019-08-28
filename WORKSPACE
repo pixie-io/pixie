@@ -850,3 +850,9 @@ go_repository(
     commit = "9661bd69e9ad6fce1f7579022bdab0440807722a",
     importpath = "github.com/badoux/checkmail",
 )
+
+go_repository(
+    name = "com_github_gorilla_handlers",
+    commit = "8a3748addc242fc560bd6d4ff28b0374c010b1b4",
+    importpath = "github.com/gorilla/handlers",
+)
