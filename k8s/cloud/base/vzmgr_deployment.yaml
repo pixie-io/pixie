@@ -26,6 +26,16 @@ spec:
               secretKeyRef:
                 name: pl-app-secrets
                 key: jwt-signing-key
+          - name: PL_POSTGRES_PORT
+            value: "5432"
+          - name: PL_POSTGRES_HOSTNAME
+            value: postgres.plc.svc.cluster.local
+          - name: PL_POSTGRES_DB
+            value: pl
+          - name: PL_POSTGRES_USERNAME
+            value: pl
+          - name: PL_POSTGRES_PASSWORD
+            value: pl
           - name: PL_SERVER_TLS_CERT
             value: /certs/server.crt
           - name: PL_SERVER_TLS_KEY

@@ -22,6 +22,8 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
+type vizierStatus cloudpb.VizierInfo_Status
+
 func setupTestDB(t *testing.T) (*sqlx.DB, func()) {
 	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
 		return schema.Asset(name)
@@ -40,11 +42,11 @@ func loadTestData(t *testing.T, db *sqlx.DB) {
 	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440000", "123e4567-e89b-12d3-a456-426655440002")
 	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440000", "123e4567-e89b-12d3-a456-426655440003")
 
-	insertVizierClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key) VALUES($1, $2, $3, $4)`
-	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN", "addr0", "key0")
-	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY", "addr1", "key1")
-	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "addr2", "key2")
-	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440003", "DISCONNECTED", "addr3", "key3")
+	insertVizierClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat) VALUES($1, $2, $3, $4, $5)`
+	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN", "addr0", "key0", "2011-05-16 15:36:38")
+	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY", "addr1", "key1", "2011-05-17 15:36:38")
+	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "addr2", "key2", "2011-05-18 15:36:38")
+	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440003", "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38")
 }
 
 func TestServer_CreateVizierCluster(t *testing.T) {
@@ -103,6 +105,15 @@ func TestServer_CreateVizierCluster(t *testing.T) {
 				require.Nil(t, err)
 				assert.Equal(t, info.OrgID, utils.UUIDFromProtoOrNil(tc.org))
 				assert.Equal(t, info.ID, utils.UUIDFromProtoOrNil(resp))
+
+				// Check to make sure DB insert for ClusterInfo is correct.
+				connQuery := `SELECT vizier_cluster_id, status from vizier_cluster_info WHERE vizier_cluster_id=$1`
+				var connInfo struct {
+					ID     uuid.UUID    `db:"vizier_cluster_id"`
+					Status vizierStatus `db:"status"`
+				}
+				err = db.Get(&connInfo, connQuery, utils.UUIDFromProtoOrNil(resp))
+				assert.Equal(t, connInfo.ID, utils.UUIDFromProtoOrNil(resp))
 			}
 		})
 	}

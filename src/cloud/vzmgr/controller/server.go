@@ -97,7 +97,11 @@ func (s *Server) CreateVizierCluster(ctx context.Context, req *vzmgrpb.CreateViz
 	}
 	defer tx.Rollback()
 
-	query := `INSERT INTO vizier_cluster (org_id) VALUES($1) RETURNING id`
+	query := `
+    	WITH ins AS (
+      		INSERT INTO vizier_cluster (org_id) VALUES($1) RETURNING id
+		)
+		INSERT INTO vizier_cluster_info(vizier_cluster_id, status) SELECT id, 'DISCONNECTED'  FROM ins RETURNING vizier_cluster_id`
 	row, err := s.db.Queryx(query, orgID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
@@ -148,7 +152,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cloudpb.
 	var val struct {
 		ID            uuid.UUID    `db:"vizier_cluster_id"`
 		Status        vizierStatus `db:"status"`
-		LastHeartbeat *int64       `db:"last_heartbeat"`
+		LastHeartbeat *time.Time   `db:"last_heartbeat"`
 	}
 	clusterID, err := utils.UUIDFromProto(req)
 	if err != nil {
@@ -168,7 +172,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cloudpb.
 		}
 		lastHearbeat := int64(0)
 		if val.LastHeartbeat != nil {
-			lastHearbeat = *val.LastHeartbeat
+			lastHearbeat = val.LastHeartbeat.UnixNano()
 		}
 		return &cloudpb.VizierInfo{
 			VizierID:        utils.ProtoFromUUID(&val.ID),
@@ -207,6 +211,7 @@ func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) 
 		ExpiresAt: time.Now().Add(time.Hour).Unix(),
 		Id:        "vizier_cluster",
 		IssuedAt:  time.Now().Unix(),
+		NotBefore: time.Now().Add(-2 * time.Minute).Unix(),
 		Issuer:    "pixielabs.ai",
 		Subject:   "pixielabs.ai/vizier",
 	})

@@ -27,8 +27,8 @@ CREATE TABLE vizier_cluster_info (
   -- The signing key of the cluster.
   jwt_signing_key varchar(1000),
 
-  status vizier_status,
+  status vizier_status DEFAULT 'DISCONNECTED',
 
-  PRIMARY KEY(vizier_cluster_id)
-  FOREIGN KEY (vizier_cluster_id) REFERENCES vizier_cluster(id)
+  PRIMARY KEY(vizier_cluster_id),
+  FOREIGN KEY(vizier_cluster_id) REFERENCES vizier_cluster(id)
 );

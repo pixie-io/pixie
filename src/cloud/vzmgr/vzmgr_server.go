@@ -3,8 +3,13 @@ package main
 import (
 	"net/http"
 
+	"github.com/golang-migrate/migrate"
+	"github.com/golang-migrate/migrate/database/postgres"
+	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
+	"pixielabs.ai/pixielabs/src/shared/services/pg"
 
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 
@@ -26,7 +31,28 @@ func main() {
 
 	s := services.NewPLServer(env.New(), mux)
 
-	c := controller.New(nil)
+	db := pg.MustConnectDefaultPostgresDB()
+
+	// TODO(zasgar): Pull out this migration code into a util. Just leaving it here for now for testing.
+	driver, err := postgres.WithInstance(db.DB, &postgres.Config{
+		MigrationsTable: "vzmgr_service_migrations",
+	})
+
+	sc := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
+		return schema.Asset(name)
+	})
+
+	d, err := bindata.WithInstance(sc)
+
+	mg, err := migrate.NewWithInstance(
+		"go-bindata",
+		d, "postgres", driver)
+
+	if err = mg.Up(); err != nil {
+		log.WithError(err).Info("migrations failed: %s", err)
+	}
+
+	c := controller.New(db)
 	vzmgrpb.RegisterVZMgrServiceServer(s.GRPCServer(), c)
 
 	s.Start()
