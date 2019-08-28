@@ -210,14 +210,16 @@ class GRPCCppTest : public ::testing::Test {
   }
 
   template <typename StubType, typename RPCMethodType>
-  void CallRPC(StubType* stub, RPCMethodType method, const std::vector<std::string>& names) {
+  std::vector<::grpc::Status> CallRPC(StubType* stub, RPCMethodType method,
+                                      const std::vector<std::string>& names) {
+    std::vector<::grpc::Status> res;
     HelloRequest req;
     HelloReply resp;
     for (const auto& n : names) {
       req.set_name(n);
-      ::grpc::Status st = stub->CallRPC(method, req, &resp);
-      LOG_IF(ERROR, !st.ok()) << st.error_message();
+      res.push_back(stub->CallRPC(method, req, &resp));
     }
+    return res;
   }
 
   std::unique_ptr<SourceConnector> source_;
@@ -286,10 +288,10 @@ TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
 // Tests to show the captured results from a timed out RPC call.
 TEST_F(GRPCCppTest, RPCTimesOut) {
   greeter_service_.set_enable_cond_wait(true);
-  CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs"});
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
-  // Wait for RPC call to timeout, and then unblock the server.
-  greeter_service_.Notify();
+  auto statuses = CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs"});
+  ASSERT_THAT(statuses, SizeIs(1));
+  EXPECT_EQ(::grpc::StatusCode::DEADLINE_EXCEEDED, statuses[0].error_code());
+
   source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
@@ -297,6 +299,9 @@ TEST_F(GRPCCppTest, RPCTimesOut) {
   // TODO(yzhao): ATM missing response, here because of response times out, renders requests being
   // held in buffer and not exported. Change to export requests after a certain timeout.
   EXPECT_THAT(indices, IsEmpty());
+
+  // Wait for RPC call to timeout, and then unblock the server.
+  greeter_service_.Notify();
 }
 
 std::vector<HelloReply> ParseProtobufRecords(absl::string_view buf) {
