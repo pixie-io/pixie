@@ -15,6 +15,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/controller"
+	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/controller/mock"
 )
 
 func TestServer_Register(t *testing.T) {
@@ -54,8 +55,10 @@ func TestServer_Register(t *testing.T) {
 	}
 	mockStream.EXPECT().Recv().Return(wrappedResp, nil)
 
+	mockVzInfo := mock_controller.NewMockVizierInfo(ctrl)
+
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	server := controllers.NewServerWithClock(vizierUUID, "test-jwt", mockVZConn, clock)
+	server := controllers.NewServerWithClock(vizierUUID, "test-jwt", mockVZConn, mockVzInfo, clock)
 	err = server.RegisterVizier(mockStream)
 	assert.Nil(t, err)
 }
@@ -77,6 +80,7 @@ func TestServer_HandleHeartbeat(t *testing.T) {
 		VizierID:       utils.ProtoFromUUID(&vizierUUID),
 		Time:           10,
 		SequenceNumber: 0,
+		Address:        "https://127.0.0.1",
 	}
 	anyMsg, err := types.MarshalAny(hbReq)
 	assert.Nil(t, err)
@@ -98,7 +102,10 @@ func TestServer_HandleHeartbeat(t *testing.T) {
 	}
 	mockStream.EXPECT().Recv().Return(wrappedResp, nil)
 
+	mockVzInfo := mock_controller.NewMockVizierInfo(ctrl)
+	mockVzInfo.EXPECT().GetAddress().Return("https://127.0.0.1", nil)
+
 	clock := testingutils.NewTestClock(time.Unix(10, 0))
-	server := controllers.NewServerWithClock(vizierUUID, "test-jwt", mockVZConn, clock)
+	server := controllers.NewServerWithClock(vizierUUID, "test-jwt", mockVZConn, mockVzInfo, clock)
 	server.HandleHeartbeat(mockStream)
 }

@@ -44,7 +44,12 @@ func main() {
 		log.WithError(err).Fatal("Could not parse cluster_id")
 	}
 
-	server := controllers.NewServer(vizierID, viper.GetString("jwt_signing_key"), vzClient)
+	vzInfo, err := controllers.NewK8sVizierInfo()
+	if err != nil {
+		log.WithError(err).Fatal("Could not get k8s info")
+	}
+
+	server := controllers.NewServer(vizierID, viper.GetString("jwt_signing_key"), vzClient, vzInfo)
 	server.StartStream()
 	defer server.Stop()
 

@@ -37,6 +37,8 @@ message VizierHeartbeat {
   int64 time = 2;
   // The sequence number of the HB.
   int64 sequence_number = 3;
+  // Address of the proxy service.
+  string address = 4;
 }
 
 message VizierHeartbeatAck {

@@ -17,6 +17,11 @@ import (
 const heartbeatIntervalS = 30 * time.Second
 const heartbeatWaitS = 5 * time.Second
 
+// VizierInfo fetches information about Vizier.
+type VizierInfo interface {
+	GetAddress() (string, error)
+}
+
 // Server defines an gRPC server type.
 type Server struct {
 	vzConnClient  vzconnpb.VZConnServiceClient
@@ -25,16 +30,17 @@ type Server struct {
 	hbSeqNum      int64
 	clock         utils.Clock
 	quitCh        chan bool
+	vzInfo        VizierInfo
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(vizierID uuid.UUID, jwtSigningKey string, vzConnClient vzconnpb.VZConnServiceClient) *Server {
+func NewServer(vizierID uuid.UUID, jwtSigningKey string, vzConnClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo) *Server {
 	clock := utils.SystemClock{}
-	return NewServerWithClock(vizierID, jwtSigningKey, vzConnClient, clock)
+	return NewServerWithClock(vizierID, jwtSigningKey, vzConnClient, vzInfo, clock)
 }
 
 // NewServerWithClock creates a new server with the given clock.
-func NewServerWithClock(vizierID uuid.UUID, jwtSigningKey string, vzConnClient vzconnpb.VZConnServiceClient, clock utils.Clock) *Server {
+func NewServerWithClock(vizierID uuid.UUID, jwtSigningKey string, vzConnClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, clock utils.Clock) *Server {
 	return &Server{
 		vizierID:      vizierID,
 		jwtSigningKey: jwtSigningKey,
@@ -42,6 +48,7 @@ func NewServerWithClock(vizierID uuid.UUID, jwtSigningKey string, vzConnClient v
 		hbSeqNum:      0,
 		clock:         clock,
 		quitCh:        make(chan bool),
+		vzInfo:        vzInfo,
 	}
 }
 
@@ -148,10 +155,16 @@ func (s *Server) doHeartbeats(stream vzconnpb.VZConnService_CloudConnectClient) 
 
 // HandleHeartbeat sends a heartbeat to the VZConn and waits for a response.
 func (s *Server) HandleHeartbeat(stream vzconnpb.VZConnService_CloudConnectClient) {
+	addr, err := s.vzInfo.GetAddress()
+	if err != nil {
+		log.WithError(err).Fatal("Could not get address")
+	}
+
 	hbMsg := cloudpb.VizierHeartbeat{
 		VizierID:       utils.ProtoFromUUID(&s.vizierID),
 		Time:           s.clock.Now().Unix(),
 		SequenceNumber: s.hbSeqNum,
+		Address:        addr,
 	}
 
 	hbMsgAny, err := types.MarshalAny(&hbMsg)
