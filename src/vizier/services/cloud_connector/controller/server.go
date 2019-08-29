@@ -97,10 +97,16 @@ func wrapRequest(p *types.Any, topic string) *vzconnpb.CloudConnectRequest {
 
 // RegisterVizier registers the cluster with VZConn.
 func (s *Server) RegisterVizier(stream vzconnpb.VZConnService_CloudConnectClient) error {
+	addr, err := s.vzInfo.GetAddress()
+	if err != nil {
+		return err
+	}
+
 	// Send over a registration request and wait for ACK.
 	regReq := &cloudpb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUID(&s.vizierID),
 		JwtKey:   s.jwtSigningKey,
+		Address:  addr,
 	}
 
 	anyMsg, err := types.MarshalAny(regReq)

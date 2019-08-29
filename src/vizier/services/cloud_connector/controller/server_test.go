@@ -15,7 +15,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/controller"
-	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/controller/mock"
+	mock_controller "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/controller/mock"
 )
 
 func TestServer_Register(t *testing.T) {
@@ -34,6 +34,7 @@ func TestServer_Register(t *testing.T) {
 	regReq := &cloudpb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUID(&vizierUUID),
 		JwtKey:   "test-jwt",
+		Address:  "https://127.0.0.1",
 	}
 	anyMsg, err := types.MarshalAny(regReq)
 	assert.Nil(t, err)
@@ -56,6 +57,7 @@ func TestServer_Register(t *testing.T) {
 	mockStream.EXPECT().Recv().Return(wrappedResp, nil)
 
 	mockVzInfo := mock_controller.NewMockVizierInfo(ctrl)
+	mockVzInfo.EXPECT().GetAddress().Return("https://127.0.0.1", nil)
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
 	server := controllers.NewServerWithClock(vizierUUID, "test-jwt", mockVZConn, mockVzInfo, clock)

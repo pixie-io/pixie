@@ -235,7 +235,7 @@ func (s *Server) VizierConnected(ctx context.Context, req *cloudpb.RegisterVizie
     SET last_heartbeat = NOW(), address = $2, jwt_signing_key = $3, status = 'HEALTHY'
     WHERE vizier_cluster_id = $1`
 
-	res, err := s.db.Exec(query, vizierID, "address should be here", req.JwtKey)
+	res, err := s.db.Exec(query, vizierID, req.Address, req.JwtKey)
 	if err != nil {
 		return nil, err
 	}

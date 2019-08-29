@@ -15,6 +15,9 @@ message RegisterVizierRequest {
                               ];
     // The key that this cluster is using.
     string jwt_key = 2;
+    // Address of the proxy service. Format should be fully specified address including protocol,port.
+    // ex: https://123.123.123.123:4040
+    string address = 3;
 }
 
 // Acknowledge the registration of a new Vizier.
