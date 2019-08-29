@@ -2,10 +2,6 @@
 
 #ifdef __linux__
 
-extern "C" {
-#include "src/stirling/bcc_bpf/log_event.h"
-}
-
 #include <bcc/BPF.h>
 #include <linux/perf_event.h>
 
@@ -14,6 +10,10 @@ extern "C" {
 #include <string>
 #include <utility>
 #include <vector>
+
+extern "C" {
+#include "src/stirling/bcc_bpf/log_event.h"
+}
 
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_bpf/pidruntime.h"

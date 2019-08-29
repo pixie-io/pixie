@@ -1,8 +1,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <memory>
-#include <sole.hpp>
 #include <vector>
+
+#include <sole.hpp>
 
 #include "src/common/base/base.h"
 

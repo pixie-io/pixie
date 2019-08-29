@@ -2,9 +2,9 @@
 #include <algorithm>
 #include <fstream>
 
-#include "src/vizier/services/agent/controller/controller.h"
-
 #include <sole.hpp>
+
+#include "src/vizier/services/agent/controller/controller.h"
 
 #include "absl/strings/str_format.h"
 #include "src/common/base/base.h"

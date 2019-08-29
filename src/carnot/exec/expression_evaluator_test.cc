@@ -3,8 +3,9 @@
 #include <google/protobuf/text_format.h>
 #include <iostream>
 #include <memory>
-#include <sole.hpp>
 #include <string>
+
+#include <sole.hpp>
 
 #include "src/carnot/planpb/plan.pb.h"
 

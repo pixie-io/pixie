@@ -271,7 +271,7 @@ void Controller::RunHeartbeat() {
 
     // Grab the PID updates and put it into the heartbeat message.
     ConsumeAgentPIDUpdates(update_info);
-    // TODO(philkuz)(PL-852) change this to only send schema updates when there's actually a schema
+    // TODO(philkuz) (PL-852) change this to only send schema updates when there's actually a schema
     // change.
     AddSchemaInfo(update_info);
 

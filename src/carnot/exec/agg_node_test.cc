@@ -1,8 +1,9 @@
 #include <gtest/gtest.h>
-#include <sole.hpp>
 
 #include <algorithm>
 #include <unordered_map>
+
+#include <sole.hpp>
 
 #include "src/carnot/exec/agg_node.h"
 #include "src/carnot/exec/exec_node_mock.h"

@@ -1,9 +1,9 @@
 #include <fstream>
 #include <iostream>
-#include <sole.hpp>
 #include <string>
 
 #include <parser.hpp>
+#include <sole.hpp>
 
 #include "src/carnot/carnot.h"
 #include "src/carnot/exec/exec_state.h"

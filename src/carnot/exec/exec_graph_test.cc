@@ -2,9 +2,10 @@
 #include <google/protobuf/text_format.h>
 #include <gtest/gtest.h>
 #include <memory>
-#include <sole.hpp>
 #include <string>
 #include <vector>
+
+#include <sole.hpp>
 
 #include "src/carnot/exec/exec_graph.h"
 #include "src/carnot/exec/test_utils.h"

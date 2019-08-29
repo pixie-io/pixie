@@ -1,10 +1,11 @@
 #include <benchmark/benchmark.h>
 #include <google/protobuf/text_format.h>
-#include <sole.hpp>
 
 #include <algorithm>
 #include <random>
 #include <vector>
+
+#include <sole.hpp>
 
 #include "src/carnot/carnot.h"
 #include "src/carnot/exec/test_utils.h"

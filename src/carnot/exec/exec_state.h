@@ -1,13 +1,14 @@
 #pragma once
 
 #include <arrow/memory_pool.h>
-#include <sole.hpp>
 
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <sole.hpp>
 
 #include "src/carnot/udf/registry.h"
 #include "src/carnotpb/carnot.pb.h"
