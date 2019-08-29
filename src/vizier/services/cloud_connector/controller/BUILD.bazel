@@ -31,6 +31,7 @@ go_test(
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
         "//src/cloud/vzconn/vzconnpb/mock:go_default_library",
         "//src/utils:go_default_library",
+        "//src/utils/testingutils:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_golang_mock//gomock:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",

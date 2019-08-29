@@ -46,6 +46,7 @@ func main() {
 
 	server := controllers.NewServer(vizierID, viper.GetString("jwt_signing_key"), vzClient)
 	server.StartStream()
+	defer server.Stop()
 
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
