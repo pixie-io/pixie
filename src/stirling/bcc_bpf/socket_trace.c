@@ -182,6 +182,8 @@ static __inline bool is_http_request(const char* buf, size_t count) {
   return false;
 }
 
+// TODO(oazizi/yzhao): This function only check two bytes, buf[3] == 0 and buf[4], which is too
+// error-prone.  Add stronger protocol detection.
 static __inline bool is_mysql_protocol(const char* buf, size_t count) {
   // MySQL packets start with a 3-byte packet length and a 1-byte packet number.
   // The 5th byte on a request contains a command that tells the type.
@@ -284,6 +286,11 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info, Traffic
   if (conn_info != NULL && conn_info->traffic_class.protocol == kProtocolUnknown) {
     // TODO(oazizi): Look for only certain protocols on write/send()?
     struct traffic_class_t traffic_class = infer_traffic(direction, buf, count);
+    if (conn_info->traffic_class.protocol == traffic_class.protocol) {
+      ++conn_info->protocol_observed_count;
+    } else {
+      conn_info->protocol_observed_count = 1;
+    }
     conn_info->traffic_class = traffic_class;
   }
 }

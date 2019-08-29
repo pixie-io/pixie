@@ -89,9 +89,11 @@ struct conn_info_t {
   struct conn_id_t conn_id;
   // IP address of the remote endpoint.
   struct sockaddr_in6 addr;
+
   // The protocol and message type of traffic on the connection (HTTP/Req, HTTP/Resp, MySQL/Req,
   // etc.).
   struct traffic_class_t traffic_class;
+  int protocol_observed_count;
 
   // TODO(yzhao): Following fields are only internal tracking only, and is not needed when
   // submitting a new connection. Consider separate these data with the above data that is pushed to
