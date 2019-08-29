@@ -41,6 +41,8 @@ spec:
             value: /certs/client.key
           - name: PL_TLS_CA_CERT
             value: /certs/ca.crt
+          - name: PL_CLOUD_ADDR
+            value: vzconn-service.plc.svc.cluster.local:51600
         volumeMounts:
             - name: certs
               mountPath: /certs
