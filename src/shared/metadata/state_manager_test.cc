@@ -36,16 +36,29 @@ constexpr char kUpdate1_1Pbtxt[] = R"(
   }
 )";
 
+// TODO(philkuz) how do we associate pods or upids with each service.
+constexpr char kUpdate1_2Pbtxt[] = R"(
+  service_update {
+    name: "service1"
+    namespace: "pl"
+    uid: "service_id1"
+    start_timestamp_ns: 1000
+  }
+)";
+
 TEST(ApplyK8sUpdate, initialize_md_state) {
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
   AgentMetadataState metadata_state(123 /*asid*/);
 
   auto update1_0 = std::make_unique<ResourceUpdate>();
   auto update1_1 = std::make_unique<ResourceUpdate>();
+  auto update1_2 = std::make_unique<ResourceUpdate>();
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUpdate1_0Pbtxt, update1_0.get()));
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUpdate1_1Pbtxt, update1_1.get()));
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUpdate1_2Pbtxt, update1_2.get()));
   updates.enqueue(std::move(update1_0));
   updates.enqueue(std::move(update1_1));
+  updates.enqueue(std::move(update1_2));
 
   EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state, &updates));
   EXPECT_EQ(0, updates.size_approx());
@@ -69,6 +82,17 @@ TEST(ApplyK8sUpdate, initialize_md_state) {
   ASSERT_NE(nullptr, container_info);
   EXPECT_EQ("container_id1", container_info->cid());
   EXPECT_EQ("pod_id1", container_info->pod_id());
+
+  EXPECT_THAT(state->services_by_name(),
+              UnorderedElementsAre(Pair(Pair("pl", "service1"), "service_id1")));
+  EXPECT_EQ("service_id1", state->ServiceIDByName({"pl", "service1"}));
+
+  auto* service_info = state->ServiceInfoByID("service_id1");
+  ASSERT_NE(nullptr, service_info);
+  EXPECT_EQ(1000, service_info->start_time_ns());
+  EXPECT_EQ("service_id1", service_info->uid());
+  EXPECT_EQ("service1", service_info->name());
+  EXPECT_EQ("pl", service_info->ns());
 }
 
 class FakePIDData : public MockCGroupMetadataReader {

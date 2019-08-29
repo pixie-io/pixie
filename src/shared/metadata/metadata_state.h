@@ -27,6 +27,7 @@ class K8sMetadataState : NotCopyable {
  public:
   using PodUpdate = pl::shared::k8s::metadatapb::PodUpdate;
   using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
+  using ServiceUpdate = pl::shared::k8s::metadatapb::ServiceUpdate;
 
   // K8s names consist of both a namespace and name : <ns, name>.
   using K8sNameIdent = std::pair<std::string, std::string>;
@@ -71,6 +72,8 @@ class K8sMetadataState : NotCopyable {
   using PodsByNameMap =
       absl::flat_hash_map<K8sNameIdent, UID, K8sIdentHashEq::Hash, K8sIdentHashEq::Eq>;
 
+  using ServicesByNameMap = PodsByNameMap;
+
   const PodsByNameMap& pods_by_name() const { return pods_by_name_; }
 
   /**
@@ -95,10 +98,28 @@ class K8sMetadataState : NotCopyable {
    */
   const ContainerInfo* ContainerInfoByID(CIDView id) const;
 
+  const ServicesByNameMap& services_by_name() const { return services_by_name_; }
+
+  /**
+   * ServiceInfoByID gets an unowned pointer to the Service. This pointer will remain active
+   * for the lifetime of this metadata state instance.
+   * @param service_id the id of the Service.
+   * @return Pointer to the ServiceInfo.
+   */
+  const ServiceInfo* ServiceInfoByID(UIDView service_id) const;
+
+  /**
+   * ServiceIDByName returns the ServiceID for the service of the given name.
+   * @param service_name the service name
+   * @return the service id or empty string if the service does not exist.
+   */
+  UID ServiceIDByName(K8sNameIdentView service_name) const;
+
   std::unique_ptr<K8sMetadataState> Clone() const;
 
   Status HandlePodUpdate(const PodUpdate& update);
   Status HandleContainerUpdate(const ContainerUpdate& update);
+  Status HandleServiceUpdate(const ServiceUpdate& update);
 
   absl::flat_hash_map<CID, ContainerInfoUPtr>& containers_by_id() { return containers_by_id_; }
   std::string DebugString(int indent_level = 0) const;
@@ -112,6 +133,11 @@ class K8sMetadataState : NotCopyable {
    * Mapping of pods by name.
    */
   PodsByNameMap pods_by_name_;
+
+  /**
+   * Mapping of services by name.
+   */
+  ServicesByNameMap services_by_name_;
 
   /**
    * Mapping of containers by ID.

@@ -106,6 +106,9 @@ Status AgentMetadataStateManager::ApplyK8sUpdates(
       case ResourceUpdate::kContainerUpdate:
         PL_RETURN_IF_ERROR(HandleContainerUpdate(update->container_update(), state));
         break;
+      case ResourceUpdate::kServiceUpdate:
+        PL_RETURN_IF_ERROR(HandleServiceUpdate(update->service_update(), state));
+        break;
       default:
         LOG(ERROR) << "Unhandled Update Type: " << update->update_case() << " (ignoring)";
     }
@@ -213,6 +216,12 @@ Status AgentMetadataStateManager::HandlePodUpdate(const PodUpdate& update,
                                                   AgentMetadataState* state) {
   VLOG(2) << "Pod Update: " << update.DebugString();
   return state->k8s_metadata_state()->HandlePodUpdate(update);
+}
+
+Status AgentMetadataStateManager::HandleServiceUpdate(const ServiceUpdate& update,
+                                                      AgentMetadataState* state) {
+  VLOG(2) << "Service Update: " << update.DebugString();
+  return state->k8s_metadata_state()->HandleServiceUpdate(update);
 }
 
 Status AgentMetadataStateManager::HandleContainerUpdate(const ContainerUpdate& update,

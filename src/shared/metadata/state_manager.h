@@ -34,6 +34,7 @@ class AgentMetadataStateManager {
   using ResourceUpdate = pl::shared::k8s::metadatapb::ResourceUpdate;
   using PodUpdate = pl::shared::k8s::metadatapb::PodUpdate;
   using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
+  using ServiceUpdate = pl::shared::k8s::metadatapb::ServiceUpdate;
 
   explicit AgentMetadataStateManager(uint32_t asid, const pl::system::Config& config)
       : asid_(asid) {
@@ -102,6 +103,7 @@ class AgentMetadataStateManager {
 
   static Status HandlePodUpdate(const PodUpdate& update, AgentMetadataState* state);
   static Status HandleContainerUpdate(const ContainerUpdate& update, AgentMetadataState* state);
+  static Status HandleServiceUpdate(const ServiceUpdate& update, AgentMetadataState* state);
 };
 
 }  // namespace md

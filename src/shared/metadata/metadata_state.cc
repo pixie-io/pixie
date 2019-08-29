@@ -21,9 +21,26 @@ const PodInfo* K8sMetadataState::PodInfoByID(UIDView pod_id) const {
                                                      : static_cast<PodInfo*>(it->second.get());
 }
 
+const ServiceInfo* K8sMetadataState::ServiceInfoByID(UIDView service_id) const {
+  auto it = k8s_objects_.find(service_id);
+
+  if (it == k8s_objects_.end()) {
+    return nullptr;
+  }
+
+  return (it->second->type() != K8sObjectType::kService)
+             ? nullptr
+             : static_cast<ServiceInfo*>(it->second.get());
+}
+
 UID K8sMetadataState::PodIDByName(K8sNameIdentView pod_name) const {
   auto it = pods_by_name_.find(pod_name);
   return (it == pods_by_name_.end()) ? "" : it->second;
+}
+
+UID K8sMetadataState::ServiceIDByName(K8sNameIdentView service_name) const {
+  auto it = services_by_name_.find(service_name);
+  return (it == services_by_name_.end()) ? "" : it->second;
 }
 
 const ContainerInfo* K8sMetadataState::ContainerInfoByID(CIDView id) const {
@@ -47,6 +64,11 @@ std::unique_ptr<K8sMetadataState> K8sMetadataState::Clone() const {
   other->containers_by_id_.reserve(containers_by_id_.size());
   for (const auto& [k, v] : containers_by_id_) {
     other->containers_by_id_[k] = v->Clone();
+  }
+
+  other->services_by_name_.reserve(services_by_name_.size());
+  for (const auto& [k, v] : services_by_name_) {
+    other->services_by_name_[k] = v;
   }
   return other;
 }
@@ -129,6 +151,37 @@ Status K8sMetadataState::HandleContainerUpdate(const ContainerUpdate& update) {
   auto* container_info = it->second.get();
   container_info->set_stop_time_ns(update.stop_timestamp_ns());
 
+  return Status::OK();
+}
+
+Status K8sMetadataState::HandleServiceUpdate(const ServiceUpdate& update) {
+  const auto& service_uid = update.uid();
+  const std::string& name = update.name();
+  const std::string& ns = update.namespace_();
+
+  auto it = k8s_objects_.find(service_uid);
+  if (it == k8s_objects_.end()) {
+    auto service = std::make_unique<ServiceInfo>(service_uid, ns, name);
+    VLOG(1) << "Adding Service: " << service->DebugString();
+    it = k8s_objects_.try_emplace(service_uid, std::move(service)).first;
+  }
+
+  auto service_info = static_cast<ServiceInfo*>(it->second.get());
+  for (const auto& uid : update.pod_ids()) {
+    service_info->AddPod(uid);
+
+    // Check assumption that MDS does not send dangling reference.
+    DCHECK(k8s_objects_.find(uid) != k8s_objects_.end());
+    DCHECK(k8s_objects_[uid]->type() == K8sObjectType::kPod);
+
+    // We add the service uid to the pod. Lifetime of service still handled by the service object.
+    PodInfo* pod_info = static_cast<PodInfo*>(k8s_objects_[uid].get());
+    pod_info->AddService(service_uid);
+  }
+  service_info->set_start_time_ns(update.start_timestamp_ns());
+  service_info->set_stop_time_ns(update.stop_timestamp_ns());
+
+  services_by_name_[{ns, name}] = service_uid;
   return Status::OK();
 }
 

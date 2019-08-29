@@ -96,9 +96,13 @@ class PodInfo : public K8sMetadataObject {
 
   void AddContainer(CIDView cid) { containers_.emplace(cid); }
   void RmContainer(CIDView cid) { containers_.erase(cid); }
+
+  void AddService(UIDView uid) { services_.emplace(uid); }
+  void RmService(UIDView uid) { services_.erase(uid); }
   PodQOSClass qos_class() const { return qos_class_; }
 
   const absl::flat_hash_set<std::string>& containers() const { return containers_; }
+  const absl::flat_hash_set<std::string>& services() const { return services_; }
 
   std::unique_ptr<K8sMetadataObject> Clone() const override {
     return std::unique_ptr<PodInfo>(new PodInfo(*this));
@@ -118,6 +122,13 @@ class PodInfo : public K8sMetadataObject {
    * The ContainerInformation is located in containers in the K8s state.
    */
   absl::flat_hash_set<CID> containers_;
+  /**
+   * The set of services that associate with this pod. K8s allows
+   * multiple services from exposing the same pod.
+   *
+   * Should point to ServiceInfo via the data structure containing this pod.
+   */
+  absl::flat_hash_set<UID> services_;
 };
 
 /**
