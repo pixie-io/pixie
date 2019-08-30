@@ -159,14 +159,15 @@ Status MemorySourceIR::ToProto(planpb::Operator* op) const {
   auto pb = new planpb::MemorySourceOperator();
   pb->set_name(table_name_);
 
-  if (!columns_set()) {
+  if (!column_index_map_set()) {
     return error::InvalidArgument("MemorySource columns are not set.");
   }
 
-  for (const auto& col : columns_) {
-    pb->add_column_idxs(col->col_idx());
-    pb->add_column_names(col->col_name());
-    pb->add_column_types(col->EvaluatedDataType());
+  DCHECK_EQ(column_index_map_.size(), relation().NumColumns());
+  for (size_t i = 0; i < relation().NumColumns(); ++i) {
+    pb->add_column_idxs(column_index_map_[i]);
+    pb->add_column_names(relation().col_names()[i]);
+    pb->add_column_types(relation().col_types()[i]);
   }
 
   if (IsTimeSet()) {
@@ -1024,13 +1025,9 @@ StatusOr<IRNode*> MemorySourceIR::DeepCloneIntoImpl(IR* graph) const {
   mem->time_start_ns_ = time_start_ns_;
   mem->time_stop_ns_ = time_stop_ns_;
   mem->column_names_ = column_names_;
-  mem->columns_set_ = columns_set_;
+  mem->column_index_map_set_ = column_index_map_set_;
+  mem->column_index_map_ = column_index_map_;
 
-  for (const auto& column : columns_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_column, column->DeepCloneInto(graph));
-    DCHECK(Match(new_column, ColumnNode()));
-    mem->columns_.push_back(static_cast<ColumnIR*>(new_column));
-  }
   return mem;
 }
 

@@ -968,14 +968,10 @@ class MemorySourceIR : public OperatorIR {
   int64_t time_start_ns() const { return time_start_ns_; }
   int64_t time_stop_ns() const { return time_stop_ns_; }
   bool IsTimeSet() const { return time_set_; }
-  bool columns_set() const { return columns_set_; }
-  Status SetColumns(std::vector<ColumnIR*> columns) {
-    columns_set_ = true;
-    columns_ = columns;
-    for (auto col : columns) {
-      PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(id(), col->id()));
-    }
-    return Status::OK();
+  bool column_index_map_set() const { return column_index_map_set_; }
+  void SetColumnIndexMap(const std::vector<int64_t>& column_index_map) {
+    column_index_map_set_ = true;
+    column_index_map_ = column_index_map;
   }
 
   Status ToProto(planpb::Operator*) const override;
@@ -997,10 +993,13 @@ class MemorySourceIR : public OperatorIR {
   bool time_set_ = false;
   int64_t time_start_ns_;
   int64_t time_stop_ns_;
-  // in conjunction with the relation, we can get the idx, names, and types of this column.
-  std::vector<ColumnIR*> columns_;
+
+  // Hold of columns in the order that they are selected.
   std::vector<std::string> column_names_;
-  bool columns_set_ = false;
+
+  // The mapping of the source's column indices to the current columns, as given by column_names_.
+  std::vector<int64_t> column_index_map_;
+  bool column_index_map_set_ = false;
 };
 
 /**

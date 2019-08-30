@@ -134,23 +134,26 @@ class OperatorTests : public ::testing::Test {
 
   virtual void SetUpImpl() {}
 
-  MemorySourceIR* MakeMemSource() {
+  MemorySourceIR* MakeMemSource() { return MakeMemSource("table"); }
+
+  MemorySourceIR* MakeMemSource(const std::string& name) {
     MemorySourceIR* mem_source = graph->MakeNode<MemorySourceIR>().ValueOrDie();
-    PL_CHECK_OK(
-        mem_source->Init(nullptr, {{"table", MakeString("table")}, {"select", nullptr}}, ast));
+    PL_CHECK_OK(mem_source->Init(nullptr, {{"table", MakeString(name)}, {"select", nullptr}}, ast));
     return mem_source;
   }
 
   MemorySourceIR* MakeMemSource(const Relation& relation) {
-    MemorySourceIR* mem_source = MakeMemSource();
+    return MakeMemSource("table", relation);
+  }
+
+  MemorySourceIR* MakeMemSource(const std::string& table_name, const Relation& relation) {
+    MemorySourceIR* mem_source = MakeMemSource(table_name);
     EXPECT_OK(mem_source->SetRelation(relation));
-    std::vector<ColumnIR*> columns;
+    std::vector<int64_t> column_index_map;
     for (size_t i = 0; i < relation.NumColumns(); ++i) {
-      ColumnIR* col = MakeColumn(relation.col_names()[i], 0);
-      col->ResolveColumn(i, relation.col_types()[i]);
-      columns.push_back(col);
+      column_index_map.push_back(i);
     }
-    PL_CHECK_OK(mem_source->SetColumns(columns));
+    mem_source->SetColumnIndexMap(column_index_map);
     return mem_source;
   }
 

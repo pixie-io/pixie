@@ -95,6 +95,16 @@ StatusOr<bool> SourceRelationRule::Apply(IRNode* ir_node) {
   return false;
 }
 
+std::vector<int64_t> SourceRelationRule::GetColumnIndexMap(
+    const std::vector<std::string>& col_names, const Relation& relation) const {
+  auto result = std::vector<int64_t>();
+  // Finds the index of each column and pushes to the out vector.
+  for (const auto& col_name : col_names) {
+    result.push_back(relation.GetColumnIndex(col_name));
+  }
+  return result;
+}
+
 StatusOr<bool> SourceRelationRule::GetSourceRelation(OperatorIR* source_op) const {
   if (source_op->type() != IRNodeType::kMemorySource) {
     return source_op->CreateIRNodeError(
@@ -109,7 +119,8 @@ StatusOr<bool> SourceRelationRule::GetSourceRelation(OperatorIR* source_op) cons
     return mem_node->CreateIRNodeError("Table '$0' not found.", table_str);
   }
   Relation table_relation = relation_map_it->second;
-  // get the children.
+
+  // Get the children.
   std::vector<std::string> columns;
   Relation select_relation;
   if (!mem_node->select_all()) {
@@ -119,9 +130,7 @@ StatusOr<bool> SourceRelationRule::GetSourceRelation(OperatorIR* source_op) cons
     columns = table_relation.col_names();
     select_relation = table_relation;
   }
-  PL_ASSIGN_OR_RETURN(std::vector<ColumnIR*> cols,
-                      GetColumnsFromRelation(mem_node, columns, table_relation));
-  PL_RETURN_IF_ERROR(mem_node->SetColumns(cols));
+  mem_node->SetColumnIndexMap(GetColumnIndexMap(columns, table_relation));
   PL_RETURN_IF_ERROR(mem_node->SetRelation(select_relation));
   return true;
 }

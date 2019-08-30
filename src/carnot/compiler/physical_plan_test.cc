@@ -60,10 +60,10 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          sorted_children: 6
+          sorted_children: 2
         }
         nodes {
-          id: 6
+          id: 2
           sorted_parents: 0
         }
       }
@@ -88,7 +88,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 6
+        id: 2
         op {
           op_type: MEMORY_SINK_OPERATOR
           mem_sink_op {
@@ -119,10 +119,10 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          sorted_children: 6
+          sorted_children: 2
         }
         nodes {
-          id: 6
+          id: 2
           sorted_parents: 0
         }
       }
@@ -147,7 +147,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 6
+        id: 2
         op {
           op_type: MEMORY_SINK_OPERATOR
           mem_sink_op {

@@ -91,23 +91,16 @@ TEST(ToProto, memory_source_ir) {
   ArgMap memsrc_argmap({{"table", table_node}, {"select", select_list}});
   EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
 
-  auto col_1 = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col_1->Init("cpu0", /*parent_op_idx*/ 0, ast));
-  col_1->ResolveColumn(0, types::DataType::INT64);
+  EXPECT_OK(mem_src->SetRelation(
+      Relation({types::DataType::INT64, types::DataType::FLOAT64}, {"cpu0", "cpu1"})));
 
-  auto col_2 = graph->MakeNode<ColumnIR>().ValueOrDie();
-  EXPECT_OK(col_2->Init("cpu1", /*parent_op_idx*/ 0, ast));
-  col_2->ResolveColumn(2, types::DataType::FLOAT64);
-
-  EXPECT_OK(mem_src->SetColumns(std::vector<ColumnIR*>({col_1, col_2})));
+  mem_src->SetColumnIndexMap({0, 2});
   mem_src->SetTime(10, 20);
 
   planpb::Operator pb;
   EXPECT_OK(mem_src->ToProto(&pb));
 
-  planpb::Operator expected_pb;
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedMemSrcPb, &expected_pb));
-  EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_pb, pb));
+  EXPECT_THAT(pb, EqualsProto(kExpectedMemSrcPb));
 }
 
 const char* kExpectedMemSinkPb = R"(
@@ -419,7 +412,7 @@ class CloneTests : public OperatorTests {
     EXPECT_EQ(new_ir->time_start_ns(), old_ir->time_start_ns()) << err_string;
     EXPECT_EQ(new_ir->time_stop_ns(), old_ir->time_stop_ns()) << err_string;
     EXPECT_EQ(new_ir->column_names(), old_ir->column_names()) << err_string;
-    EXPECT_EQ(new_ir->columns_set(), old_ir->columns_set()) << err_string;
+    EXPECT_EQ(new_ir->column_index_map_set(), old_ir->column_index_map_set()) << err_string;
   }
   void CompareClonedMemorySink(MemorySinkIR* new_ir, MemorySinkIR* old_ir,
                                const std::string& err_string) {
@@ -785,10 +778,10 @@ nodes {
   id: 1
   dag {
     nodes {
-      sorted_children: 6
+      sorted_children: 2
     }
     nodes {
-      id: 6
+      id: 2
       sorted_parents: 0
     }
   }
@@ -813,7 +806,7 @@ nodes {
     }
   }
   nodes {
-    id: 6
+    id: 2
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {

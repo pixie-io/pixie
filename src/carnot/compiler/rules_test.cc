@@ -724,9 +724,11 @@ TEST_F(UnionRelationTest, union_relations_disagree) {
   EXPECT_THAT(
       result.status(),
       HasCompilerError(
-          "Table schema disagreement between parent ops MemorySource(id=0) and MemorySource(id=6) "
-          "of Union(id=10). MemorySource(id=0): [count:int64, cpu0:float64, cpu1:float64, "
-          "cpu2:float64] vs MemorySource(id=6): [count:int64, cpu0:float64]. Column count wrong."));
+          "Table schema disagreement between parent ops MemorySource(id=$0) and "
+          "MemorySource(id=$1) "
+          "of Union(id=$2). MemorySource(id=$0): [count:int64, cpu0:float64, cpu1:float64, "
+          "cpu2:float64] vs MemorySource(id=$1): [count:int64, cpu0:float64]. Column count wrong.",
+          mem_src1->id(), mem_src2->id(), union_op->id()));
 }
 
 TEST_F(UnionRelationTest, union_relation_different_order) {

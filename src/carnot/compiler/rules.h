@@ -84,6 +84,8 @@ class SourceRelationRule : public Rule {
   StatusOr<std::vector<ColumnIR*>> GetColumnsFromRelation(OperatorIR* node,
                                                           std::vector<std::string> col_names,
                                                           const Relation& relation) const;
+  std::vector<int64_t> GetColumnIndexMap(const std::vector<std::string>& col_names,
+                                         const Relation& relation) const;
   StatusOr<Relation> GetSelectRelation(IRNode* node, const Relation& relation,
                                        const std::vector<std::string>& columns) const;
 };

@@ -66,10 +66,10 @@ qb_address_to_plan {
       dag {
         nodes {
           id: 0
-          sorted_children: 8
+          sorted_children: 4
         }
         nodes {
-          id: 8
+          id: 4
           sorted_parents: 0
         }
       }
@@ -94,7 +94,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 8
+        id: 4
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
@@ -118,16 +118,16 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 8
-          sorted_children: 6
+          id: 4
+          sorted_children: 2
         }
         nodes {
-          id: 6
-          sorted_parents: 8
+          id: 2
+          sorted_parents: 4
         }
       }
       nodes {
-        id: 8
+        id: 4
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
@@ -144,7 +144,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 6
+        id: 2
         op {
           op_type: MEMORY_SINK_OPERATOR
           mem_sink_op {
@@ -241,10 +241,10 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          sorted_children: 8
+          sorted_children: 4
         }
         nodes {
-          id: 8
+          id: 4
           sorted_parents: 0
         }
       }
@@ -269,7 +269,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 8
+        id: 4
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
@@ -293,10 +293,10 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          sorted_children: 8
+          sorted_children: 4
         }
         nodes {
-          id: 8
+          id: 4
           sorted_parents: 0
         }
       }
@@ -321,7 +321,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 8
+        id: 4
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
@@ -345,10 +345,10 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          sorted_children: 8
+          sorted_children: 4
         }
         nodes {
-          id: 8
+          id: 4
           sorted_parents: 0
         }
       }
@@ -373,7 +373,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 8
+        id: 4
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
@@ -397,31 +397,31 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 10
-          sorted_children: 11
-        }
-        nodes {
-          id: 9
-          sorted_children: 11
-        }
-        nodes {
-          id: 8
-          sorted_children: 11
-        }
-        nodes {
-          id: 11
-          sorted_children: 6
-          sorted_parents: 8
-          sorted_parents: 9
-          sorted_parents: 10
-        }
-        nodes {
           id: 6
-          sorted_parents: 11
+          sorted_children: 7
+        }
+        nodes {
+          id: 5
+          sorted_children: 7
+        }
+        nodes {
+          id: 4
+          sorted_children: 7
+        }
+        nodes {
+          id: 7
+          sorted_children: 2
+          sorted_parents: 4
+          sorted_parents: 5
+          sorted_parents: 6
+        }
+        nodes {
+          id: 2
+          sorted_parents: 7
         }
       }
       nodes {
-        id: 10
+        id: 6
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
@@ -438,7 +438,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 9
+        id: 5
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
@@ -455,7 +455,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 8
+        id: 4
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
@@ -472,7 +472,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 11
+        id: 7
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -502,7 +502,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 6
+        id: 2
         op {
           op_type: MEMORY_SINK_OPERATOR
           mem_sink_op {
