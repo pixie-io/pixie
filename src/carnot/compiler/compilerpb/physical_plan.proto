@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "src/carnot/planpb/plan.proto";
+import "src/table_store/proto/schema.proto";
 
 package pl.carnot.compiler.compilerpb;
 
@@ -23,8 +24,20 @@ message CarnotInfo {
   // Flag if this Carnot instance accepts remote sources.
   // E.g. Kelvin instances accept remote sources - they are arbitrary workers, agents are not.
   bool accepts_remote_sources = 6;
-  // TODO(philkuz) add table schemas that are available
-  // TODO(philkuz) pass information about the tablets that are available in the system.
+  // Info about the tables for the Carnot instance.
+  repeated TableInfo table_info = 7;
+}
+
+// Information about the table structure as well as the tablet keys.
+message TableInfo {
+  // The table that is associated with the tablets.
+  string table = 1;
+  // The relation of this Table.
+  pl.table_store.schemapb.Relation relation = 2;
+  // The tabletization key of the table.
+  string tabletization_key = 3;
+  // The tablet values to use.
+  repeated string tablets = 4;
 }
 
 // The physical state of the distributed Carnot instances.

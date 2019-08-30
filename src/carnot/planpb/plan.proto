@@ -90,7 +90,8 @@ message Operator {
     GrpcSourceOperator grpc_source_op = 9;
     // Operator that stores data to a remote node via grpc.
     GrpcSinkOperator grpc_sink_op = 10;
-    // Operator that performs a join based on column equality and/or time_ columns within a certain range of each other.
+    // Operator that performs a join based on column equality and/or time_ columns within a certain
+    // range of each other.
     JoinOperator join_op = 11;
   }
 }
@@ -109,6 +110,8 @@ message MemorySourceOperator {
   google.protobuf.Int64Value start_time = 5;
   // The stop time (can be omitted if not time series).
   google.protobuf.Int64Value stop_time = 6;
+  // Optional tabletization value that is passed in if the source is tabletized.
+  string tablet = 7;
 }
 
 // Writes to in-memory storage.
