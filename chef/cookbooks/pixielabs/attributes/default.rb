@@ -14,6 +14,7 @@ default['gperftools']['version'] = "2.7-pl2"
 
 
 default['skaffold']                  = {}
+default['kubectl']                   = {}
 default['bazel']                     = {}
 default['golang']                    = {}
 
@@ -33,6 +34,10 @@ if node[:platform] == 'ubuntu'
     'https://storage.googleapis.com/skaffold/releases/v0.34.0/skaffold-linux-amd64'
   default['skaffold']['sha256']        =
     '5867f2e92c3694da3d7ef2d9240416d693557af5caf56b13bfc1533c7940b341'
+
+  default['kubectl']['download_path'] =
+    'https://storage.googleapis.com/kubernetes-release/release/v1.14.6/bin/linux/amd64/kubectl'
+  default['kubectl']['sha256']        = '5f8e8d8de929f64b8f779d0428854285e1a1c53a02cc2ad6b1ce5d32eefad25c'
 
   default['minikube']['download_path'] =
     'https://storage.googleapis.com/minikube/releases/v1.0.0/minikube-linux-amd64'
@@ -63,6 +68,10 @@ elsif node[:platform] == 'mac_os_x'
   default['skaffold']['download_path'] =
     'https://storage.googleapis.com/skaffold/releases/v0.34.0/skaffold-darwin-amd64'
   default['skaffold']['sha256']        = '71cf275a40c0c2763b66e0c975ac781d65202b1e355f3447b839439dfd01b27b'
+
+  default['kubectl']['download_path'] =
+    'https://storage.googleapis.com/kubernetes-release/release/v1.14.6/bin/darwin/amd64/kubectl'
+  default['kubectl']['sha256']        = 'de42dd22f67c135b749c75f389c70084c3fe840e3d89a03804edd255ac6ee829'
 
   default['minikube']['download_path'] =
     'https://storage.googleapis.com/minikube/releases/v1.0.0/minikube-darwin-amd64'

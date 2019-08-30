@@ -34,9 +34,10 @@ execute 'install gcloud' do
   action :run
 end
 
-execute 'install gcloud::kubectl' do
-  command 'gcloud components install kubectl'
-  action :run
+remote_file '/usr/local/bin/kubectl' do
+  source node['kubectl']['download_path']
+  mode 0755
+  checksum node['kubectl']['sha256']
 end
 
 execute 'install gcloud::beta' do
