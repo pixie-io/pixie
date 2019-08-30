@@ -50,12 +50,12 @@ export class Vizier extends React.Component<VizierProps, {}> {
     const matchPath = this.props.match.path;
 
     return (
-      <Query query={GET_CLUSTER}>
+      <Query query={GET_CLUSTER} pollInterval={2500}>
       {
         ({loading, error, data}) => {
           if (loading) { return 'Loading...'; }
           if (error) { return `Error! ${error.message}`; }
-          if (data.cluster.status === 'VZ_ST_HEALTHY') {
+          if (data.cluster.status !== 'VZ_ST_DISCONNECTED') {
             return (
               <div className='vizier'>
                 <SidebarNav

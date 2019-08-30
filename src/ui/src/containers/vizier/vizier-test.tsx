@@ -54,7 +54,7 @@ describe('<Vizier/> test', () => {
         result: {
           data: {
             cluster: {
-                status: 'VZ_ST_UNKNOWN',
+                status: 'VZ_ST_DISCONNECTED',
                 lastHeartbeatMs: -1,
                 id: 'test',
             },
