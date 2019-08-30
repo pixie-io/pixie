@@ -1,5 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
 load("@io_bazel_rules_docker//go:image.bzl", "go_image")
+load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
@@ -8,6 +9,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/query_broker",
     visibility = ["//visibility:private"],
     deps = [
+        "//src/carnot/compiler:go_default_library",
         "//src/shared/services:go_default_library",
         "//src/shared/services/healthz:go_default_library",
         "//src/shared/services/httpmiddleware:go_default_library",
@@ -28,8 +30,9 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
-go_image(
+cc_image(
     name = "query_broker_server_image",
+    base = "//:pl_cc_base_image",
     binary = ":query_broker",
     visibility = ["//visibility:public"],
 )

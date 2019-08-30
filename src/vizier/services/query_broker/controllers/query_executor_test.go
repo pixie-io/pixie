@@ -9,6 +9,8 @@ import (
 	"github.com/nats-io/go-nats"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+	"pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
+	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
@@ -95,25 +97,41 @@ func TestExecuteQuery(t *testing.T) {
 		t.Fatal("Could not subscribe to NATS.")
 	}
 
+	// Plan 1 is a valid, populated plan
+	compilerResultPB := &compilerpb.CompilerResult{}
+	if err := proto.UnmarshalText(expectedCompilerResult, compilerResultPB); err != nil {
+		t.Fatal("Could not unmarshal protobuf")
+	}
+
+	planPB1 := compilerResultPB.LogicalPlan
+	// Plan 2 is an empty plan.
+	planPB2 := &planpb.Plan{}
+
+	planMap := make(map[uuid.UUID]*planpb.Plan)
+	planMap[agentUUIDs[0]] = planPB1
+	planMap[agentUUIDs[1]] = planPB2
+
 	// Execute a query.
-	e.ExecuteQuery("abcd")
+	err = e.ExecuteQuery(planMap)
+	if !assert.NoError(t, err) {
+		t.Fatal("Query couldn't execute properly.")
+	}
 
 	// Check that each agent received the correct message.
 	queryUUIDPb := utils.ProtoFromUUID(&queryUUID)
 	if err != nil {
 		t.Fatal("Could not convert UUID to proto.")
 	}
-
 	m1, err := sub1.NextMsg(time.Second)
 	pb := &messages.VizierMessage{}
 	proto.Unmarshal(m1.Data, pb)
-	assert.Equal(t, "abcd", pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.QueryStr)
+	assert.Equal(t, planPB1, pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.Plan)
 	assert.Equal(t, queryUUIDPb, pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.QueryID)
 
 	m2, err := sub2.NextMsg(time.Second)
 	pb = &messages.VizierMessage{}
 	proto.Unmarshal(m2.Data, pb)
-	assert.Equal(t, "abcd", pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.QueryStr)
+	assert.Equal(t, planPB2, pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.Plan)
 	assert.Equal(t, queryUUIDPb, pb.Msg.(*messages.VizierMessage_ExecuteQueryRequest).ExecuteQueryRequest.QueryID)
 }
 

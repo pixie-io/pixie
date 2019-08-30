@@ -7,6 +7,7 @@ package mock_controllers
 import (
 	gomock "github.com/golang/mock/gomock"
 	go_uuid "github.com/satori/go.uuid"
+	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	querybrokerpb "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 	reflect "reflect"
 )
@@ -45,7 +46,7 @@ func (mr *MockExecutorMockRecorder) AddResult(arg0 interface{}) *gomock.Call {
 }
 
 // ExecuteQuery mocks base method
-func (m *MockExecutor) ExecuteQuery(arg0 string) error {
+func (m *MockExecutor) ExecuteQuery(arg0 map[go_uuid.UUID]*planpb.Plan) error {
 	ret := m.ctrl.Call(m, "ExecuteQuery", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0

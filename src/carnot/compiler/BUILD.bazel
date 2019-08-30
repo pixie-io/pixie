@@ -1,8 +1,7 @@
-# gazelle:ignore
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_go_library")
-load("@io_bazel_rules_go//go:def.bzl", "go_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_go_library", "pl_linkopts")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -40,41 +39,6 @@ pl_cc_library(
         "//src/carnot/compiler:cc_library",
         "//src/carnot/compiler/compilerpb:compiler_status_pl_cc_proto",
         "//src/carnot/udf_exporter:cc_library",
-    ],
-)
-
-pl_go_library(
-    name = "go_compiler_library",
-    srcs = [
-        "compiler.go",
-        "compiler_error_context.go",
-    ],
-    cdeps = [":cc_compiler_export"],
-    cgo = True,
-    importpath = "pixielabs.ai/pixielabs/src/carnot/compiler",
-    visibility = ["//visibility:public"],
-    deps = [
-        "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
-        "//src/carnot/planpb:plan_pl_go_proto",
-        "//src/common/base/proto:status_pl_go_proto",
-        "//src/shared/types/proto:types_pl_go_proto",
-        "//src/table_store/proto:schema_pl_go_proto",
-        "@com_github_gogo_protobuf//proto:go_default_library",
-        "@com_github_gogo_protobuf//types:go_default_library",
-    ],
-)
-
-go_test(
-    name = "go_compiler_test",
-    srcs = ["compiler_test.go"],
-    deps = [
-        ":go_compiler_library",
-        "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
-        "//src/carnot/planpb:plan_pl_go_proto",
-        "//src/common/base/proto:status_pl_go_proto",
-        "//src/table_store/proto:schema_pl_go_proto",
-        "@com_github_gogo_protobuf//proto:go_default_library",
-        "@com_github_stretchr_testify//assert:go_default_library",
     ],
 )
 
@@ -245,5 +209,40 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+# keep
+go_library(
+    name = "go_default_library",
+    srcs = glob(
+        include = ["*.go"],
+        exclude = ["*_test.go"],
+    ),
+    cdeps = [":cc_compiler_export"],
+    cgo = True,
+    clinkopts = pl_linkopts(),
+    importpath = "pixielabs.ai/pixielabs/src/carnot/compiler",
+    toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
+    deps = [
+        "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
+        "//src/common/base/proto:status_pl_go_proto",
+        "//src/table_store/proto:schema_pl_go_proto",
+        "@com_github_gogo_protobuf//proto:go_default_library",
+        "@com_github_gogo_protobuf//types:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["compiler_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
+        "//src/carnot/planpb:plan_pl_go_proto",
+        "//src/common/base/proto:status_pl_go_proto",
+        "//src/table_store/proto:schema_pl_go_proto",
+        "@com_github_gogo_protobuf//proto:go_default_library",
+        "@com_github_stretchr_testify//assert:go_default_library",
     ],
 )

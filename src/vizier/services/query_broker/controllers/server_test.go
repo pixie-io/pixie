@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
@@ -9,6 +10,8 @@ import (
 	"github.com/nats-io/go-nats"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+	compilerpb "pixielabs.ai/pixielabs/src/carnot/compiler/compilerpb"
+	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	mock_metadatapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb/mock"
@@ -28,6 +31,19 @@ info {
 		}
 	}
 	state: 1
+}
+`
+
+const getSchemaResponse = `
+schema {
+	relation_map {
+		key: "perf_and_http"
+		value {
+			columns {
+				column_name: "_time"
+			}
+		}
+	}
 }
 `
 
@@ -70,6 +86,78 @@ response {
 }
 `
 
+const testQuery = `
+queryDF = From(table='perf_and_http', select=['_time']).Result(name='out')
+`
+
+const badQuery = `
+queryDF = From(table='', select=['_time']).Result(name='out')
+`
+
+const expectedCompilerResult = `
+status{
+}
+logical_plan{
+	dag: {
+		nodes: {
+			id: 1
+		}
+	}
+	nodes: {
+		id: 1
+		dag: {
+			nodes: {
+			}
+		}
+		nodes: {
+			op: {
+				op_type: MEMORY_SOURCE_OPERATOR
+				mem_source_op: {
+				}
+			}
+		}
+	}
+}`
+
+const failedCompilerResult = `
+status{
+	err_code: INVALID_ARGUMENT
+	context {
+		[type.googleapis.com/pl.carnot.compiler.compilerpb.CompilerErrorGroup] {
+			errors {
+				line_col_error {
+					line: 1
+					column: 2
+					message: "Error ova here."
+				}
+			}
+			errors {
+				line_col_error {
+					line: 20
+					column: 19
+					message: "Error ova there."
+				}
+			}
+		}
+	}
+}`
+
+const compilerErrorGroupTxt = `
+errors {
+	line_col_error {
+		line: 1
+		column: 2
+		message: "Error ova here."
+	}
+}
+errors {
+	line_col_error {
+		line: 20
+		column: 19
+		message: "Error ova there."
+	}
+}`
+
 func TestServerExecuteQuery(t *testing.T) {
 	// Start NATS.
 	port, cleanup := testingutils.StartNATS(t)
@@ -96,11 +184,31 @@ func TestServerExecuteQuery(t *testing.T) {
 		GetAgentInfo(context.Background(), &metadatapb.AgentInfoRequest{}).
 		Return(getAgentsPB, nil)
 
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, _ *[]uuid.UUID) Executor {
+	getSchemaPB := new(metadatapb.SchemaResponse)
+	if err := proto.UnmarshalText(getSchemaResponse, getSchemaPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	mds.
+		EXPECT().
+		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
+		Return(getSchemaPB, nil)
+
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
+		expectedMap := make(map[uuid.UUID]*planpb.Plan)
+		compilerResultPB := new(compilerpb.CompilerResult)
+
+		if err := proto.UnmarshalText(expectedCompilerResult, compilerResultPB); err != nil {
+			t.Fatal("Cannot Unmarshal protobuf.")
+		}
+
+		for _, agentID := range *agentList {
+			expectedMap[agentID] = compilerResultPB.LogicalPlan
+		}
 		mc.
 			EXPECT().
-			ExecuteQuery("abcd")
+			ExecuteQuery(expectedMap)
 
 		mc.
 			EXPECT().
@@ -128,10 +236,18 @@ func TestServerExecuteQuery(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := newServer(env, mds, nc, createExecutorMock)
+	compilerResultPB := new(compilerpb.CompilerResult)
+	if err := proto.UnmarshalText(expectedCompilerResult, compilerResultPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	compiler := mock_controllers.NewMockCompiler(ctrl)
+	compiler.EXPECT().
+		Compile(getSchemaPB.Schema, testQuery).
+		Return(compilerResultPB, nil)
 
+	s, err := newServer(env, mds, nc, createExecutorMock, compiler)
 	results, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
-		QueryStr: "abcd",
+		QueryStr: testQuery,
 	})
 	assert.Equal(t, 1, len(results.Responses))
 }
@@ -162,17 +278,39 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 		GetAgentInfo(context.Background(), &metadatapb.AgentInfoRequest{}).
 		Return(getAgentsPB, nil)
 
+	getSchemaPB := new(metadatapb.SchemaResponse)
+	if err := proto.UnmarshalText(getSchemaResponse, getSchemaPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	mds.
+		EXPECT().
+		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
+		Return(getSchemaPB, nil)
+
 		// Set up server.
 	env, err := querybrokerenv.New()
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := NewServer(env, mds, nc)
+	compilerResultPB := new(compilerpb.CompilerResult)
+	if err := proto.UnmarshalText(expectedCompilerResult, compilerResultPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	compiler := mock_controllers.NewMockCompiler(ctrl)
+	compiler.EXPECT().
+		Compile(getSchemaPB.Schema, testQuery).
+		Return(compilerResultPB, nil)
+
+	s, err := NewServer(env, mds, nc, compiler)
 
 	results, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
-		QueryStr: "abcd",
+		QueryStr: testQuery,
 	})
+	if err != nil {
+		t.Fatal("Failed to return results from ExecuteQuery.")
+	}
 	assert.Equal(t, 0, len(results.Responses))
 }
 
@@ -208,7 +346,9 @@ func TestReceiveAgentQueryResult(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := NewServer(env, mds, nc)
+	compiler := mock_controllers.NewMockCompiler(ctrl)
+
+	s, err := NewServer(env, mds, nc, compiler)
 	if err != nil {
 		t.Fatal("Creating server failed.")
 	}
@@ -264,7 +404,10 @@ func TestGetAgentInfo(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := NewServer(env, mds, nc)
+	compiler := mock_controllers.NewMockCompiler(ctrl)
+
+	s, err := NewServer(env, mds, nc, compiler)
+
 	if err != nil {
 		t.Fatal("Creating server failed.")
 	}
@@ -314,8 +457,10 @@ func TestGetMultipleAgentInfo(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
 	}
+	compiler := mock_controllers.NewMockCompiler(ctrl)
 
-	s, err := NewServer(env, mds, nc)
+	s, err := NewServer(env, mds, nc, compiler)
+
 	if err != nil {
 		t.Fatal("Creating server failed.")
 	}
@@ -327,4 +472,80 @@ func TestGetMultipleAgentInfo(t *testing.T) {
 
 	resp, err := s.GetAgentInfo(context.Background(), &querybrokerpb.AgentInfoRequest{})
 	assert.Equal(t, getAgentsRespPB, resp)
+}
+
+// TestCompilerErrorResult makes sure that compiler error handling is done well.
+func TestCompilerErrorResult(t *testing.T) {
+	// Start NATS.
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	// Set up mocks.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
+
+	getAgentsPB := new(metadatapb.AgentInfoResponse)
+	if err := proto.UnmarshalText(getAgentsResponse, getAgentsPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	mds.
+		EXPECT().
+		GetAgentInfo(context.Background(), &metadatapb.AgentInfoRequest{}).
+		Return(getAgentsPB, nil)
+
+	getSchemaPB := new(metadatapb.SchemaResponse)
+	if err := proto.UnmarshalText(getSchemaResponse, getSchemaPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	mds.
+		EXPECT().
+		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
+		Return(getSchemaPB, nil)
+
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
+		mc := mock_controllers.NewMockExecutor(ctrl)
+		return mc
+	}
+
+	// Set up server.
+	env, err := querybrokerenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	badCompilerResultPB := new(compilerpb.CompilerResult)
+	if err := proto.UnmarshalText(failedCompilerResult, badCompilerResultPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	compilerErrorGroupPB := new(compilerpb.CompilerErrorGroup)
+	if err := proto.UnmarshalText(compilerErrorGroupTxt, compilerErrorGroupPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	compiler := mock_controllers.NewMockCompiler(ctrl)
+	compiler.EXPECT().
+		Compile(getSchemaPB.Schema, badQuery).
+		Return(badCompilerResultPB, nil)
+
+	s, err := newServer(env, mds, nc, createExecutorMock, compiler)
+	result, err := s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
+		QueryStr: badQuery,
+	})
+
+	agentRespPB := new(querybrokerpb.VizierQueryResponse)
+	if err := proto.UnmarshalText(failedCompilerResult, agentRespPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	assert.Equal(t, errors.New(proto.MarshalTextString(compilerErrorGroupPB)), err)
+	assert.Equal(t, agentRespPB, result)
 }

@@ -2,24 +2,18 @@ package controllers
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/nats-io/go-nats"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/utils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
-
-// Executor is the interface for a query executor.
-type Executor interface {
-	ExecuteQuery(query string) error
-	WaitForCompletion() ([]*querybrokerpb.VizierQueryResponse_ResponseByAgent, error)
-	AddResult(res *querybrokerpb.AgentQueryResultRequest)
-	GetQueryID() uuid.UUID
-}
 
 // QueryExecutor is responsible for handling a query's execution, from sending requests to agents, to
 // tracking the responses.
@@ -48,46 +42,65 @@ func (e *QueryExecutor) GetQueryID() uuid.UUID {
 }
 
 // ExecuteQuery executes a query by sending query fragments to relevant agents.
-func (e *QueryExecutor) ExecuteQuery(query string) error {
+func (e *QueryExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan) error {
 	queryIDPB := utils.ProtoFromUUID(&e.queryID)
-
-	// Create NATS message containing the query string.
-	msg := messages.VizierMessage{
-		Msg: &messages.VizierMessage_ExecuteQueryRequest{
-			ExecuteQueryRequest: &messages.ExecuteQueryRequest{
-				QueryID:  queryIDPB,
-				QueryStr: query,
-			},
-		},
-	}
-
-	msgAsBytes, err := msg.Marshal()
-	if err != nil {
-		return err
-	}
-
 	// Accumulate failures.
-	var pubErr error
+	errs := make(chan error)
 	// Broadcast query to all the agents in parallel.
 	var wg sync.WaitGroup
 	wg.Add(len(*e.agentList))
 
-	broadcastToAgent := func(agentID uuid.UUID) {
+	broadcastToAgent := func(agentID uuid.UUID, logicalPlan *planpb.Plan) {
 		defer wg.Done()
+		// Create NATS message containing the query string.
+		msg := messages.VizierMessage{
+			Msg: &messages.VizierMessage_ExecuteQueryRequest{
+				ExecuteQueryRequest: &messages.ExecuteQueryRequest{
+					QueryID: queryIDPB,
+					Plan:    logicalPlan,
+				},
+			},
+		}
 		agentTopic := fmt.Sprintf("/agent/%s", agentID.String())
-		err := e.conn.Publish(agentTopic, msgAsBytes)
+
+		msgAsBytes, err := msg.Marshal()
 		if err != nil {
-			pubErr = err
+			errs <- err
+			return
+		}
+
+		err = e.conn.Publish(agentTopic, msgAsBytes)
+		if err != nil {
+			errs <- err
+			return
 		}
 	}
 
 	for _, agentID := range *e.agentList {
-		go broadcastToAgent(agentID)
+		logicalPlan, present := planMap[agentID]
+		if !present {
+			return fmt.Errorf("Couldn't find logicalPlan for agent %s", agentID)
+		}
+
+		go broadcastToAgent(agentID, logicalPlan)
 	}
 
 	wg.Wait()
+	errsList := make([]string, 0)
+errLoop:
+	for {
+		select {
+		case err := <-errs:
+			errsList = append(errsList, err.Error())
+		default:
+			break errLoop
+		}
+	}
+	if len(errsList) > 0 {
+		return fmt.Errorf(strings.Join(errsList, "\n"))
+	}
 
-	return err
+	return nil
 }
 
 // WaitForCompletion waits until each agent has returned a result.
