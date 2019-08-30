@@ -91,7 +91,8 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_
       TransferStreams<std::nullptr_t>(kProtocolUnknown, nullptr);
       break;
     case kMySQLTableNum:
-      TransferStreams<mysql::Entry>(kProtocolMySQL, data_table);
+      // TODO(oazizi): Re-enable this after more stress-testing.
+      // TransferStreams<mysql::Entry>(kProtocolMySQL, data_table);
       break;
     default:
       CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);

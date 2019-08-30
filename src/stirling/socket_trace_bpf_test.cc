@@ -565,7 +565,8 @@ TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
   }
 }
 
-TEST_F(SocketTraceBPFTest, TestEnd2EndMySQLPrepareExecute) {
+// TODO(oazizi): Re-enable MySQL tests.
+TEST_F(SocketTraceBPFTest, DISABLED_TestEnd2EndMySQLPrepareExecute) {
   ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleRequestor);
   ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(GetPrepareExecuteScript());
@@ -602,7 +603,8 @@ TEST_F(SocketTraceBPFTest, TestEnd2EndMySQLPrepareExecute) {
   }
 }
 
-TEST_F(SocketTraceBPFTest, TestEnd2EndMySQLQuery) {
+// TODO(oazizi): Re-enable MySQL tests.
+TEST_F(SocketTraceBPFTest, DISABLED_TestEnd2EndMySQLQuery) {
   ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleRequestor);
   ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(GetQueryScript());

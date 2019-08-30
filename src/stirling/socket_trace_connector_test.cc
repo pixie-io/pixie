@@ -717,7 +717,8 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   EXPECT_TRUE(tracker->send_data().Empty<http::HTTPMessage>());
 }
 
-TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
+// TODO(oazizi): Re-enable MySQL tests.
+TEST_F(SocketTraceConnectorTest, DISABLED_MySQLPrepareExecuteClose) {
   conn_info_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
   std::unique_ptr<SocketDataEvent> prepare_req_event = InitSendEvent(mySQLStmtPrepareReq);
   std::vector<std::unique_ptr<SocketDataEvent>> prepare_resp_events;
@@ -774,7 +775,8 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
               ElementsAre(expected_entry, expected_err));
 }
 
-TEST_F(SocketTraceConnectorTest, MySQLQuery) {
+// TODO(oazizi): Re-enable MySQL tests.
+TEST_F(SocketTraceConnectorTest, DISABLED_MySQLQuery) {
   conn_info_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
   std::unique_ptr<SocketDataEvent> query_req_event = InitSendEvent(mySQLQueryReq);
   std::vector<std::unique_ptr<SocketDataEvent>> query_resp_events;
