@@ -10,6 +10,7 @@ extern "C" {
 #include <algorithm>
 #include <map>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "absl/strings/str_cat.h"
@@ -455,6 +456,159 @@ size_t FindFrameBoundaryForGRPCResp(std::string_view buf) {
 }
 
 }  // namespace
+
+ParseState DecodeInteger(u8string_view* buf, size_t prefix, uint32_t* res) {
+  // Mandates that the input buffer includes all bytes of the encode integer. That means a few
+  // cases handled by nghttp2_hd_decode_length() are not needed.
+
+  // 'shift' is used to indicate how many bits are already decoded in the previous calls of
+  // nghttp2_hd_decode_length.
+  size_t shift = 0;
+  // 'finished' is used to indicate the completion of the decoding.
+  int finished = 0;
+  // 'initial' is the decoded partial value of the previous calls. Note this cannot replace 'shift'
+  // as the leading 0's will confuse the shift size.
+  const size_t initial = 0;
+  ssize_t rv = nghttp2_hd_decode_length(res, &shift, &finished, initial, shift,
+                                        const_cast<uint8_t*>(buf->data()),
+                                        const_cast<uint8_t*>(buf->data()) + buf->size(), prefix);
+  if (rv == -1) {
+    return ParseState::kInvalid;
+  }
+  if (finished != 1) {
+    return ParseState::kNeedsMoreData;
+  }
+  buf->remove_prefix(rv);
+  return ParseState::kSuccess;
+}
+
+constexpr uint8_t kMaskTableSizeUpdate = 0xE0;
+constexpr uint8_t kBitsTableSizeUpdate = 0x20;
+constexpr size_t kPrefixTableSizeUpdate = 5;
+
+constexpr uint8_t kMaskIndexed = 0x80;
+constexpr uint8_t kBitsIndexed = 0x80;
+constexpr size_t kPrefixIndexed = 7;
+
+constexpr uint8_t kMaskLiteralIndexing = 0xC0;
+constexpr uint8_t kBitsLiteralIndexing = 0x40;
+constexpr size_t kPrefixLiteralIndexing = 6;
+
+// NoIndexing subsumes "without indexing" and "never indexing" as referred in HPACK spec.
+// Where they do share the same bit pattern as the following names suggest,
+// except kBitsLiteralNeverIndexing.
+constexpr uint8_t kMaskLiteralNoIndexing = 0xF0;
+constexpr uint8_t kBitsLiteralNoIndexing = 0x00;
+constexpr uint8_t kBitsLiteralNeverIndexing = 0x10;
+constexpr size_t kPrefixLiteralNoIndexing = 4;
+
+// Prefix of a length field.
+constexpr size_t kPrefixLength = 7;
+
+// Decode length and get the rest of the field as data.
+ParseState DecodeLengthPrefixedData(u8string_view* buf, u8string_view* res) {
+  uint32_t len = 0;
+  const ParseState state = DecodeInteger(buf, kPrefixLength, &len);
+  if (state != ParseState::kSuccess) {
+    return state;
+  }
+
+  if (buf->size() < len) {
+    return ParseState::kNeedsMoreData;
+  }
+  *res = buf->substr(0, len);
+  buf->remove_prefix(len);
+  return ParseState::kSuccess;
+}
+
+inline bool IsHuffEncoded(uint8_t first_byte) {
+  // The huffman encoded bit is the leftest bit.
+  return (first_byte & (1 << 7)) != 0;
+}
+
+template <typename NameValueType>
+ParseState DecodeLengthPrefixedNameValue(u8string_view* buf, bool new_name,
+                                         size_t name_index_prefix, NameValueType* res) {
+  std::variant<uint32_t, u8string_view> name_variant;
+  if (new_name) {
+    // All 0 in the lower 6 bits indicate a new name, instead of an indexed one.
+    buf->remove_prefix(1);
+    if (buf->empty()) {
+      return ParseState::kNeedsMoreData;
+    }
+    res->is_name_huff_encoded = IsHuffEncoded(buf->front());
+    u8string_view name;
+    const ParseState state = DecodeLengthPrefixedData(buf, &name);
+    if (state != ParseState::kSuccess) {
+      return state;
+    }
+    name_variant = name;
+  } else {
+    uint32_t name_index = 0;
+    const ParseState state = DecodeInteger(buf, name_index_prefix, &name_index);
+    if (state != ParseState::kSuccess) {
+      return state;
+    }
+    name_variant = name_index;
+  }
+  res->is_value_huff_encoded = IsHuffEncoded(buf->front());
+  u8string_view value;
+  const ParseState state = DecodeLengthPrefixedData(buf, &value);
+  if (state != ParseState::kSuccess) {
+    return state;
+  }
+  res->name = name_variant;
+  res->value = value;
+  return ParseState::kSuccess;
+}
+
+// An alternative approach is to patch nghttp2 so that it can output encoded header fields without
+// early termination. We prefer this, as the understanding of the protocol details is required for
+// the protobuf inference.
+//
+// See https://http2.github.io/http2-spec/compression.html#detailed.format for more details on
+// HPACK header field format.
+ParseState ParseHeaderBlock(u8string_view* buf, std::vector<HeaderField>* res) {
+  while (!buf->empty()) {
+    if ((buf->front() & kMaskTableSizeUpdate) == kBitsTableSizeUpdate) {
+      uint32_t v = 0;
+      const ParseState state = DecodeInteger(buf, kPrefixTableSizeUpdate, &v);
+      if (state != ParseState::kSuccess) {
+        return state;
+      }
+      res->emplace_back(TableSizeUpdate{v});
+    } else if ((buf->front() & kMaskIndexed) == kBitsIndexed) {
+      uint32_t v = 0;
+      const ParseState state = DecodeInteger(buf, kPrefixIndexed, &v);
+      if (state != ParseState::kSuccess) {
+        return state;
+      }
+      res->emplace_back(IndexedHeaderField{v});
+    } else if ((buf->front() & kMaskLiteralIndexing) == kBitsLiteralIndexing) {
+      LiteralHeaderField field;
+      field.update_dynamic_table = true;
+      ParseState state = DecodeLengthPrefixedNameValue(buf, buf->front() == kBitsLiteralIndexing,
+                                                       kPrefixLiteralIndexing, &field);
+      if (state != ParseState::kSuccess) {
+        return state;
+      }
+      res->emplace_back(field);
+    } else if ((buf->front() & kMaskLiteralNoIndexing) == kBitsLiteralNoIndexing ||
+               (buf->front() & kMaskLiteralNoIndexing) == kBitsLiteralNeverIndexing) {
+      LiteralHeaderField field;
+      field.update_dynamic_table = false;
+      ParseState state = DecodeLengthPrefixedNameValue(
+          buf, buf->front() == kBitsLiteralNoIndexing || buf->front() == kBitsLiteralNeverIndexing,
+          kPrefixLiteralNoIndexing, &field);
+      if (state != ParseState::kSuccess) {
+        return state;
+      }
+      res->emplace_back(field);
+    }
+  }
+  return ParseState::kSuccess;
+}
+
 }  // namespace http2
 
 template <>

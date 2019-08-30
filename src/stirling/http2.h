@@ -13,6 +13,7 @@ extern "C" {
 #include <string>
 #include <string_view>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "src/common/base/mixins.h"
@@ -150,6 +151,52 @@ inline void EraseConsumedFrames(std::deque<Frame>* frames) {
 
 // TODO(yzhao): gRPC has a feature called bidirectional streaming:
 // https://grpc.io/docs/guides/concepts/. Investigate how to parse that off HTTP2 frames.
+
+/**
+ * @brief Decode a variable length integer used in HPACK. If succeeded, the consumed bytes are
+ * removed from the input buf, and the value is written to res.
+ */
+ParseState DecodeInteger(u8string_view* buf, size_t prefix, uint32_t* res);
+
+struct TableSizeUpdate {
+  uint32_t size;
+};
+
+struct IndexedHeaderField {
+  uint32_t index;
+};
+
+// Will update the dynamic table.
+struct LiteralHeaderField {
+  // If true, this field should be inserted into the dynamic table.
+  bool update_dynamic_table = false;
+  // Only meaningful if the name is a string value.
+  bool is_name_huff_encoded = false;
+  // uint32_t is for the indexed name, u8string_view is for a potentially-huffman-encoded string.
+  std::variant<uint32_t, u8string_view> name;
+  // TODO(yzhao): Consider create a struct to hold a string value to represent a potentially
+  // huffman-encoded string literal.
+  bool is_value_huff_encoded = false;
+  u8string_view value;
+};
+
+using HeaderField = std::variant<TableSizeUpdate, IndexedHeaderField, LiteralHeaderField>;
+
+inline bool ShouldUpdateDynamicTable(const HeaderField& field) {
+  return std::holds_alternative<LiteralHeaderField>(field) &&
+         std::get<LiteralHeaderField>(field).update_dynamic_table;
+}
+
+inline bool IsInStaticTable(const IndexedHeaderField& field) {
+  static constexpr size_t kMaxStaticTableIndex = 61;
+  return field.index <= kMaxStaticTableIndex;
+}
+
+/**
+ * @brief Parses a complete header block, writes the encoded header fields to res, and removes any
+ * parsed data from buf.
+ */
+ParseState ParseHeaderBlock(u8string_view* buf, std::vector<HeaderField>* res);
 
 }  // namespace http2
 

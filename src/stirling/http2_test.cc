@@ -261,6 +261,94 @@ TEST(DeflateEnflateTest, DeflateInflateOutOfOrder) {
   nghttp2_hd_deflate_del(deflater);
 }
 
+std::ostream& operator<<(std::ostream& os, u8string_view buf) {
+  os << std::string_view(reinterpret_cast<const char*>(buf.data()), buf.size());
+  return os;
+}
+
+#define BUILD_FIELD(var, field) var.field
+#define COMPARE(lhs, rhs, field)                                                               \
+  if (BUILD_FIELD(lhs, field) != BUILD_FIELD(rhs, field)) {                                    \
+    LOG(INFO) << #field ": " << BUILD_FIELD(lhs, field) << " vs. " << BUILD_FIELD(rhs, field); \
+    return false;                                                                              \
+  }
+
+template <typename LiteralFieldType>
+bool Comp(const LiteralFieldType& lhs, const LiteralFieldType& rhs) {
+  COMPARE(lhs, rhs, update_dynamic_table);
+  if (lhs.name != rhs.name) {
+    if (lhs.name.index() == lhs.name.index()) {
+      if (std::holds_alternative<uint32_t>(lhs.name)) {
+        LOG(INFO) << "name index: " << std::get<uint32_t>(lhs.name) << " vs. "
+                  << std::get<uint32_t>(rhs.name);
+      }
+      if (std::holds_alternative<u8string_view>(lhs.name)) {
+        LOG(INFO) << "name index: " << std::get<u8string_view>(lhs.name) << " vs. "
+                  << std::get<u8string_view>(rhs.name);
+      }
+    } else {
+      LOG(INFO) << "name.index(): " << lhs.name.index() << " vs. " << rhs.name.index();
+    }
+    return false;
+  }
+  COMPARE(lhs, rhs, is_name_huff_encoded);
+  COMPARE(lhs, rhs, is_value_huff_encoded);
+  COMPARE(lhs, rhs, value);
+  return true;
+}
+
+bool operator==(const LiteralHeaderField& lhs, const LiteralHeaderField& rhs) {
+  return Comp(lhs, rhs);
+}
+bool operator==(const IndexedHeaderField& lhs, const IndexedHeaderField& rhs) {
+  COMPARE(lhs, rhs, index);
+  return true;
+}
+bool operator==(const TableSizeUpdate& lhs, const TableSizeUpdate& rhs) {
+  COMPARE(lhs, rhs, size);
+  return true;
+}
+
+template <size_t N>
+u8string_view U8StringView(const char (&arr)[N]) {
+  return u8string_view(reinterpret_cast<const uint8_t*>(arr), N - 1);
+}
+
+TEST(DeflateEnflateTest, RandomGeneratedHeaderFields) {
+  nghttp2_hd_deflater* deflater;
+
+  // 128 is less than the default, which will result into a table size update field in the encoded
+  // header block.
+  ASSERT_EQ(0, nghttp2_hd_deflate_new(&deflater, /*table_size*/ 128));
+
+  // Use very simple strings to not trigger huffman encoding. Nghttp2 automatically use huffman
+  // encoding if the encoded bytes is less than the original texts; and there is no interface to
+  // disable that, which makes testing difficult.
+  std::vector<NV> nvs = {{"n1", "v1"}, {"n2", "v2"}, {"n3", "v3"},
+                         {"n1", "v1"}, {"n2", "v2"}, {"n3", "v3"}};
+
+  u8string header_block = Deflate(deflater, nvs);
+  u8string_view buf = header_block;
+  std::vector<HeaderField> fields;
+  EXPECT_EQ(ParseState::kSuccess, ParseHeaderBlock(&buf, &fields));
+
+  HeaderField field0(TableSizeUpdate{128});
+  HeaderField field1(
+      LiteralHeaderField{true, false, U8StringView("n1"), false, U8StringView("v1")});
+  HeaderField field2(
+      LiteralHeaderField{true, false, U8StringView("n2"), false, U8StringView("v2")});
+  HeaderField field3(
+      LiteralHeaderField{true, false, U8StringView("n3"), false, U8StringView("v3")});
+  // The indexed entry takes higher index if appears earlier. So n1:v1 would start with 62, but
+  // eventually bumped to 64 after 2 new indexed entires.
+  HeaderField field4(IndexedHeaderField{64});
+  HeaderField field5(IndexedHeaderField{63});
+  HeaderField field6(IndexedHeaderField{62});
+  EXPECT_THAT(fields, ElementsAre(field0, field1, field2, field3, field4, field5, field6));
+
+  nghttp2_hd_deflate_del(deflater);
+}
+
 TEST(HeadersTest, GetHeaderValue) {
   GRPCMessage req;
   req.headers.emplace(":path", "/pl.stirling.testing.Greeter/SayHello");
@@ -301,6 +389,37 @@ INSTANTIATE_TEST_CASE_P(
         BoundaryTestCase{ConstStrView("abcd"), MessageType::kResponse, std::string_view::npos},
         BoundaryTestCase{std::string_view(), MessageType::kRequest, std::string_view::npos},
         BoundaryTestCase{std::string_view(), MessageType::kResponse, std::string_view::npos}));
+
+TEST(DecodeIntegerTest, AllCases) {
+  {
+    // TODO(yzhao): Consider change ConstStrView() for uint8_t.
+    constexpr uint8_t kBuf[] = "\xC5";
+    u8string_view buf(kBuf, sizeof(kBuf) - 1);
+    uint32_t res = 0;
+    EXPECT_EQ(ParseState::kSuccess, DecodeInteger(&buf, /*prefix*/ 7, &res));
+    EXPECT_EQ(69, res);
+    EXPECT_THAT(buf, IsEmpty());
+  }
+  {
+    // \xFF indicates there is trailing bytes. \x01 terminates the sequence. The final value is
+    // 1+127==128.
+    constexpr uint8_t kBuf[] = "\xFF\x01";
+    u8string_view buf(kBuf, sizeof(kBuf) - 1);
+    uint32_t res = 0;
+    EXPECT_EQ(ParseState::kSuccess, DecodeInteger(&buf, /*prefix*/ 7, &res));
+    EXPECT_EQ(128, res);
+    EXPECT_THAT(buf, IsEmpty());
+  }
+  {
+    // \xFF indicates there is trailing bytes. Because there is no additional bytes, kNeedsMoreData
+    // is returned.
+    constexpr uint8_t kBuf[] = "\xFF";
+    u8string_view buf(kBuf, sizeof(kBuf) - 1);
+    uint32_t res = 0;
+    EXPECT_EQ(ParseState::kNeedsMoreData, DecodeInteger(&buf, /*prefix*/ 7, &res));
+    EXPECT_EQ(u8string_view(kBuf, sizeof(kBuf) - 1), buf);
+  }
+}
 
 }  // namespace http2
 }  // namespace stirling
