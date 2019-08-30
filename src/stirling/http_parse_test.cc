@@ -109,7 +109,7 @@ class HTTPParserTest : public ::testing::TestWithParam<TestParam> {
 
   HTTPMessage HTTPGetReq0ExpectedMessage() {
     HTTPMessage expected_message;
-    expected_message.type = HTTPEventType::kHTTPRequest;
+    expected_message.type = MessageType::kRequest;
     expected_message.http_minor_version = 1;
     expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
                                      {"Accept", "image/gif, image/jpeg, */*"},
@@ -129,7 +129,7 @@ class HTTPParserTest : public ::testing::TestWithParam<TestParam> {
 
   HTTPMessage HTTPGetReq1ExpectedMessage() {
     HTTPMessage expected_message;
-    expected_message.type = HTTPEventType::kHTTPRequest;
+    expected_message.type = MessageType::kRequest;
     expected_message.http_minor_version = 1;
     expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
                                      {"Accept", "image/gif, image/jpeg, */*"},
@@ -150,7 +150,7 @@ class HTTPParserTest : public ::testing::TestWithParam<TestParam> {
 
   HTTPMessage HTTPPostReq0ExpectedMessage() {
     HTTPMessage expected_message;
-    expected_message.type = HTTPEventType::kHTTPRequest;
+    expected_message.type = MessageType::kRequest;
     expected_message.http_minor_version = 1;
     expected_message.http_headers = {{"Host", "pixielabs.ai"},
                                      {"Content-Type", "application/x-www-form-urlencoded"},
@@ -170,7 +170,7 @@ class HTTPParserTest : public ::testing::TestWithParam<TestParam> {
 
   HTTPMessage HTTPResp0ExpectedMessage() {
     HTTPMessage expected_message;
-    expected_message.type = HTTPEventType::kHTTPResponse;
+    expected_message.type = MessageType::kResponse;
     expected_message.http_minor_version = 1;
     expected_message.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
     expected_message.http_resp_status = 200;
@@ -188,7 +188,7 @@ class HTTPParserTest : public ::testing::TestWithParam<TestParam> {
 
   HTTPMessage HTTPResp1ExpectedMessage() {
     HTTPMessage expected_message;
-    expected_message.type = HTTPEventType::kHTTPResponse;
+    expected_message.type = MessageType::kResponse;
     expected_message.http_minor_version = 1;
     expected_message.http_headers = {{"Content-Type", "bar"}, {"Content-Length", "21"}};
     expected_message.http_resp_status = 200;
@@ -210,7 +210,7 @@ class HTTPParserTest : public ::testing::TestWithParam<TestParam> {
 
   HTTPMessage HTTPResp2ExpectedMessage() {
     HTTPMessage expected_message;
-    expected_message.type = HTTPEventType::kHTTPResponse;
+    expected_message.type = MessageType::kResponse;
     expected_message.http_minor_version = 1;
     expected_message.http_headers = {{"Transfer-Encoding", "chunked"}};
     expected_message.http_resp_status = 200;
@@ -287,7 +287,7 @@ Content-Length: 10
 pixielabs!)";
 
   HTTPMessage expected_message1;
-  expected_message1.type = HTTPEventType::kHTTPResponse;
+  expected_message1.type = MessageType::kResponse;
   expected_message1.http_minor_version = 1;
   expected_message1.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
   expected_message1.http_resp_status = 200;
@@ -295,7 +295,7 @@ pixielabs!)";
   expected_message1.http_msg_body = "pixielabs";
 
   HTTPMessage expected_message2;
-  expected_message2.type = HTTPEventType::kHTTPResponse;
+  expected_message2.type = MessageType::kResponse;
   expected_message2.http_minor_version = 1;
   expected_message2.http_headers = {{"Content-Type", "bar"}, {"Content-Length", "10"}};
   expected_message2.http_resp_status = 200;
@@ -322,7 +322,7 @@ pixielabs)";
   const std::string_view msg3 = "!";
 
   HTTPMessage expected_message1;
-  expected_message1.type = HTTPEventType::kHTTPResponse;
+  expected_message1.type = MessageType::kResponse;
   expected_message1.http_minor_version = 1;
   expected_message1.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "21"}};
   expected_message1.http_resp_status = 200;
@@ -363,7 +363,7 @@ TEST_F(HTTPParserTest, NoAppend) {
 // Leave http_msg_body set by caller.
 HTTPMessage ExpectMessage() {
   HTTPMessage result;
-  result.type = HTTPEventType::kHTTPResponse;
+  result.type = MessageType::kResponse;
   result.http_minor_version = 1;
   result.http_headers = {{"Transfer-Encoding", "chunked"}};
   result.http_resp_status = 200;

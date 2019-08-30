@@ -363,7 +363,7 @@ bool SocketTraceConnector::SelectMessage(const ReqRespPair<http::HTTPMessage>& r
   }
 
   // Rule: Exclude anything that doesn't match the filter, if filter is active.
-  if (message.type == HTTPEventType::kHTTPResponse &&
+  if (message.type == MessageType::kResponse &&
       (!http_response_header_filter_.inclusions.empty() ||
        !http_response_header_filter_.exclusions.empty())) {
     if (!MatchesHTTPTHeaders(message.http_headers, http_response_header_filter_)) {

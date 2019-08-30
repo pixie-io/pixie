@@ -13,7 +13,6 @@
 #include "src/common/base/base.h"
 #include "src/stirling/bcc_bpf/socket_trace.h"
 #include "src/stirling/event_parser.h"
-#include "src/stirling/socket_trace_event_type.h"
 
 namespace pl {
 namespace stirling {
@@ -32,7 +31,7 @@ inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
 
 struct HTTPMessage {
   uint64_t timestamp_ns;
-  HTTPEventType type = HTTPEventType::kUnknown;
+  MessageType type = MessageType::kUnknown;
 
   int http_minor_version = -1;
   std::map<std::string, std::string> http_headers = {};
