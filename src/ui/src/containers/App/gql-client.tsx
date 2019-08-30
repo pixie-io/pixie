@@ -9,6 +9,8 @@ import {createHttpLink} from 'apollo-link-http';
 import gql from 'graphql-tag';
 import { ApolloProvider } from 'react-apollo';
 
+const TIMEOUT_MS = 5000; // Timeout after 5 seconds.
+
 export const GET_CLUSTER_CONN = gql`
 {
   clusterConnection {
@@ -40,7 +42,7 @@ const vizierFetch = (uri, options) => {
   // Attempt to execute an initial fetch.
   const auth: string = localStorage.getItem('vizierAuth');
   let token: string = '';
-  let address: string = '';
+  let address: string = 'http://vizier-cluster';
   if (auth != null) {
     const parsedAuth = JSON.parse(auth);
     address = parsedAuth.address;
@@ -48,11 +50,23 @@ const vizierFetch = (uri, options) => {
   }
   options.headers.authorization = `Bearer ${token}`;
 
+  // Add timeout, in case the initial request hangs.
+  const timeout = new Promise((resolve, reject) => {
+    const id = setTimeout(() => {
+      clearTimeout(id);
+      resolve(null);
+    }, TIMEOUT_MS);
+  });
+
   const initialRequest = fetchPolyfill(address + uri, options);
 
   this.refreshingToken = null;
 
-  return initialRequest.then((response) => {
+  return Promise.race([initialRequest, timeout]).then((response) => {
+    if (!response || response.status !== 200) {
+      throw new Error('failed initial request');
+    }
+
     return response.text();
   }).then((respText) => {
     // If no errors, repackage response into expected return format.
@@ -72,7 +86,7 @@ const vizierFetch = (uri, options) => {
       this.refreshingToken = null;
 
       const newToken = data.clusterConnection.token;
-      const newAddress = 'https://' + data.clusterConnection.ipAddress;
+      const newAddress = data.clusterConnection.ipAddress;
       localStorage.setItem('vizierAuth', JSON.stringify({
         token: newToken,
         address: newAddress,
