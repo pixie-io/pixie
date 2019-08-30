@@ -48,17 +48,25 @@ func NewCmdDeploy() *cobra.Command {
 
 			path, _ := cmd.Flags().GetString("extract_yaml")
 			extractYAMLs(path)
-			deploy(path)
 
-			// TODO(michelle): Use_version to deploy Pixie.
-			_, _ = cmd.Flags().GetString("use_version")
+			versionString, err := cmd.Flags().GetString("use_version")
+			if err != nil || len(versionString) == 0 {
+				log.Fatal("Version string is invalid")
+			}
+
+			err = updateYAMLsImageTag(path, versionString)
+			if err != nil {
+				log.WithError(err).Fatal("Failed to update image tags for YAML files.")
+			}
+
+			deploy(path)
 
 			clusterID, _ := cmd.Flags().GetString("cluster_id")
 			if clusterID == "" {
 				log.Fatal("cluster_id is required")
 			}
 			jwtSigningKey := make([]byte, 64)
-			_, err := rand.Read(jwtSigningKey)
+			_, err = rand.Read(jwtSigningKey)
 			if err != nil {
 				log.Fatal("Could not generate JWT signing key")
 			}
@@ -67,7 +75,7 @@ func NewCmdDeploy() *cobra.Command {
 			k8s.DeleteSecret(clientset, namespace, "pl-cluster-secrets")
 			k8s.CreateGenericSecretFromLiterals(clientset, namespace, "pl-cluster-secrets", map[string]string{
 				"cluster-id":      clusterID,
-				"jwt-signing-key": string(jwtSigningKey),
+				"jwt-signing-key": fmt.Sprintf("%x", jwtSigningKey),
 			})
 		},
 	}
@@ -126,6 +134,13 @@ func extractYAMLs(extractPath string) {
 			log.WithError(err).Fatal("Could not write to file")
 		}
 	}
+}
+
+func updateYAMLsImageTag(extractPath, versionString string) error {
+	vizierYAMLPath := path.Join(extractPath, "vizier.yaml")
+	c := exec.Command("sed", "-i", fmt.Sprintf(`s/\(image\:.*\:\)latest/\1%s/`, versionString),
+		vizierYAMLPath)
+	return c.Run()
 }
 
 // VersionCompatible checks whether a version is compatible, given a minimum version.
