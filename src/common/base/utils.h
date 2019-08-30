@@ -7,8 +7,11 @@
 #include <string>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 #include "absl/strings/str_format.h"
+#include "src/common/base/error.h"
+#include "src/common/base/statusor.h"
 
 namespace pl {
 
@@ -79,6 +82,49 @@ inline std::string Repr(std::string_view buf, Radix radix = Radix::kHex,
     }
   }
   return res;
+}
+
+/**
+ * Converts an input hex sequence in ASCII to bytes.
+ *
+ * Input type must be well-formed hex representation, without optional separator.
+ *
+ * Examples:
+ *  "0a2435383161353534662d"
+ *  "0a 24 35 38 31 61 35 35 34 66 2d"
+ *  "0a_24_35_38_31_61_35_35_34_66_2d"
+ *  "0a:24:35:38:31:61:35:35:34:66:2d"
+ *  "0a24353831 61353534"
+ *
+ * @tparam T Output container. Officially supported types are std::string and std::vector<uint8_t>.
+ *           Presumably u8string will work too when we move to C++20.
+ * @param hex Input string as ascii_hex.
+ * @return Error or input string converted to sequence of bytes.
+ */
+template <class T>
+inline StatusOr<T> AsciiHexToBytes(std::string s, const std::vector<char>& separators = {}) {
+  for (auto& separator : separators) {
+    s.erase(std::remove(std::begin(s), std::end(s), separator), std::end(s));
+  }
+
+  T bytes;
+
+  for (unsigned int i = 0; i < s.length(); i += 2) {
+    std::string byte_string = s.substr(i, 2);
+
+    errno = 0;
+    char* end_ptr;
+    const char* byte_string_ptr = byte_string.c_str();
+    uint8_t byte = static_cast<uint8_t>(strtol(byte_string_ptr, &end_ptr, 16));
+
+    // Make sure we processed two ASCII characters, and there were no errors.
+    if (end_ptr != byte_string_ptr + 2 || errno != 0) {
+      return error::Internal("Could not parse value");
+    }
+    bytes.push_back(byte);
+  }
+
+  return bytes;
 }
 
 }  // namespace pl
