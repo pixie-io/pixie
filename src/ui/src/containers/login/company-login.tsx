@@ -134,4 +134,4 @@ class CompanyDialog extends React.Component<CompanyDialogProps, CompanyDialogSta
     </DialogBox>
     );
   }
-};
+}

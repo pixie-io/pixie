@@ -46,7 +46,7 @@ function onLoginAuthenticated(authResult) {
       expiresAt: response.data.ExpiresAt,
     });
     window.location.href = window.location.protocol + '//'
-      + window.location.host.replace('id.', this.domain + '.') + "/vizier/query";
+      + window.location.host.replace('id.', this.domain + '.') + '/vizier/query';
   });
 }
 
@@ -73,7 +73,7 @@ function onCreateAuthenticated(authResult) {
       });
     }).then((results) => {
         window.location.href = window.location.protocol + '//'
-          + window.location.host.replace('id.', this.domain + '.') + "/vizier/query";
+          + window.location.host.replace('id.', this.domain + '.') + '/vizier/query';
     }).catch((gqlErr) => {
         return gqlErr;
     });

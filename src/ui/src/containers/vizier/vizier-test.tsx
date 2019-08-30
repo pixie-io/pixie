@@ -8,7 +8,6 @@ import {GET_CLUSTER, Vizier} from './vizier';
 
 const wait = (ms) => new Promise((res) => setTimeout(res, ms));
 
-
 describe('<Vizier/> test', () => {
   it('should have sidebar if Vizier is healthy', async () => {
     const mocks = [
