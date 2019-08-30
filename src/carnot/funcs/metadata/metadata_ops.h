@@ -1,5 +1,7 @@
 #pragma once
 
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 #include <string>
 #include <utility>
 #include <vector>
@@ -116,6 +118,125 @@ class UPIDToPodNameUDF : public ScalarUDF {
       return "";
     }
     return absl::Substitute("$0/$1", pod_info->ns(), pod_info->name());
+  }
+};
+
+class ServiceIDToServiceNameUDF : public ScalarUDF {
+ public:
+  types::StringValue Exec(FunctionContext* ctx, types::StringValue service_id) {
+    auto md = GetMetadataState(ctx);
+
+    const auto* service_info = md->k8s_metadata_state().ServiceInfoByID(service_id);
+    if (service_info != nullptr) {
+      return absl::Substitute("$0/$1", service_info->ns(), service_info->name());
+    }
+
+    return "";
+  }
+};
+
+class ServiceNameToServiceIDUDF : public ScalarUDF {
+ public:
+  types::StringValue Exec(FunctionContext* ctx, types::StringValue service_name) {
+    auto md = GetMetadataState(ctx);
+    // This UDF expects the service name to be in the format of "<ns>/<service-name>".
+    std::vector<std::string_view> name_parts = absl::StrSplit(service_name, "/");
+    if (name_parts.size() != 2) {
+      return "";
+    }
+
+    auto service_name_view = std::make_pair(name_parts[0], name_parts[1]);
+    auto service_id = md->k8s_metadata_state().ServiceIDByName(service_name_view);
+
+    return service_id;
+  }
+};
+
+// TODO(zasgar) if this looks good, I'll update the pod classes to use this as well.
+class UPIDToK8S {
+ public:
+  static const pl::md::PodInfo* UPIDtoPod(const pl::md::AgentMetadataState* md,
+                                          types::UInt128Value upid_value) {
+    auto upid_uint128 = absl::MakeUint128(upid_value.High64(), upid_value.Low64());
+    auto upid = md::UPID(upid_uint128);
+    auto pid = md->GetPIDByUPID(upid);
+    if (pid == nullptr) {
+      return nullptr;
+    }
+    auto container_info = md->k8s_metadata_state().ContainerInfoByID(pid->cid());
+    if (container_info == nullptr) {
+      return nullptr;
+    }
+    auto pod_info = md->k8s_metadata_state().PodInfoByID(container_info->pod_id());
+    return pod_info;
+  }
+  static types::StringValue StringifyVector(const std::vector<std::string>& vec) {
+    if (vec.size() == 1) {
+      return std::string(vec[0]);
+    } else if (vec.size() > 1) {
+      rapidjson::StringBuffer s;
+      rapidjson::Writer<rapidjson::StringBuffer> writer(s);
+
+      writer.StartArray();
+      for (const auto& str : vec) {
+        writer.String(str.c_str());
+      }
+      writer.EndArray();
+      return s.GetString();
+    }
+    return "";
+  }
+};
+
+/**
+ * @brief Returns the service ids for services that are currently running.
+ */
+class UPIDToServiceIDUDF : public ScalarUDF {
+ public:
+  types::StringValue Exec(FunctionContext* ctx, types::UInt128Value upid_value) {
+    auto md = GetMetadataState(ctx);
+    auto pod_info = UPIDToK8S::UPIDtoPod(md, upid_value);
+    if (pod_info == nullptr || pod_info->services().size() == 0) {
+      return "";
+    }
+    std::vector<std::string> running_service_ids;
+    for (const auto& service_id : pod_info->services()) {
+      auto service_info = md->k8s_metadata_state().ServiceInfoByID(service_id);
+      if (service_info == nullptr) {
+        continue;
+      }
+      if (service_info->stop_time_ns() == 0) {
+        running_service_ids.push_back(service_id);
+      }
+    }
+
+    return UPIDToK8S::StringifyVector(running_service_ids);
+  }
+};
+
+/**
+ * @brief Returns the service names for services that are currently running.
+ */
+class UPIDToServiceNameUDF : public ScalarUDF {
+ public:
+  types::StringValue Exec(FunctionContext* ctx, types::UInt128Value upid_value) {
+    auto md = GetMetadataState(ctx);
+    auto pod_info = UPIDToK8S::UPIDtoPod(md, upid_value);
+    if (pod_info == nullptr || pod_info->services().size() == 0) {
+      return "";
+    }
+    std::vector<std::string> running_service_names;
+    for (const auto& service_id : pod_info->services()) {
+      auto service_info = md->k8s_metadata_state().ServiceInfoByID(service_id);
+      if (service_info == nullptr) {
+        continue;
+      }
+      if (service_info->stop_time_ns() == 0) {
+        running_service_names.push_back(
+            absl::Substitute("$0/$1", service_info->ns(), service_info->name()));
+      }
+    }
+    return UPIDToK8S::StringifyVector(running_service_names);
   }
 };
 

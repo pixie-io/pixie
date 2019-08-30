@@ -77,6 +77,43 @@ start_timestamp_ns: 7
 stop_timestamp_ns: 14
 )";
 
+/*
+ *  Templates for service updates.
+ */
+const char* kRunningServiceUpdatePbTxt = R"(
+uid: "3_uid"
+name: "running_service"
+namespace: "pl"
+start_timestamp_ns: 7
+pod_ids: "1_uid"
+)";
+
+const char* kToBeTerminatedServiceUpdatePbTxt = R"(
+uid: "4_uid"
+name: "terminating_service"
+namespace: "pl"
+start_timestamp_ns: 7
+pod_ids: "2_uid"
+)";
+
+const char* kTerminatedServiceUpdatePbTxt = R"(
+uid: "4_uid"
+name: "terminating_service"
+namespace: "pl"
+start_timestamp_ns: 7
+stop_timestamp_ns: 20
+pod_ids: "2_uid"
+)";
+
+// Represents a separate service that points
+const char* kServiceWithDuplicatePodUpdatePbTxt = R"(
+uid: "5_uid"
+name: "other_service_with_pod"
+namespace: "pl"
+start_timestamp_ns: 7
+pod_ids: "1_uid"
+)";
+
 std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateRunningPodUpdatePB() {
   auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto = absl::Substitute(kResourceUpdateTmpl, "pod_update", kRunningPodUpdatePbTxt);
@@ -125,6 +162,42 @@ std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedCon
   auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
   auto update_proto =
       absl::Substitute(kResourceUpdateTmpl, "container_update", kTerminatedContainerUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateRunningServiceUpdatePB() {
+  auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto =
+      absl::Substitute(kResourceUpdateTmpl, "service_update", kRunningServiceUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatingServiceUpdatePB() {
+  auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto =
+      absl::Substitute(kResourceUpdateTmpl, "service_update", kToBeTerminatedServiceUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateTerminatedServiceUpdatePB() {
+  auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto =
+      absl::Substitute(kResourceUpdateTmpl, "service_update", kTerminatedServiceUpdatePbTxt);
+  CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
+      << "Failed to parse proto";
+  return update;
+}
+
+std::unique_ptr<pl::shared::k8s::metadatapb::ResourceUpdate> CreateServiceWithSamePodUpdatePB() {
+  auto update = std::make_unique<pl::shared::k8s::metadatapb::ResourceUpdate>();
+  auto update_proto =
+      absl::Substitute(kResourceUpdateTmpl, "service_update", kServiceWithDuplicatePodUpdatePbTxt);
   CHECK(google::protobuf::TextFormat::MergeFromString(update_proto, update.get()))
       << "Failed to parse proto";
   return update;
