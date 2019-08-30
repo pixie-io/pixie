@@ -2,7 +2,12 @@ import Axios from 'axios';
 import {DialogBox} from 'components/dialog-box/dialog-box';
 import * as React from 'react';
 import {Button, Form, FormControl, InputGroup} from 'react-bootstrap';
+import { HotKeys } from 'react-hotkeys';
 import { Link } from 'react-router-dom';
+
+const HOT_KEY_MAP = {
+  CLICK_CONTINUE: ['enter'],
+};
 
 interface CompanyDialogProps {
   title: string;
@@ -105,32 +110,43 @@ class CompanyDialog extends React.Component<CompanyDialogProps, CompanyDialogSta
   render() {
     return (
       <DialogBox width={480}>
-        <div className='company-login-content'>
-        <h3>{this.props.title}</h3>
-        <div style={{width: '100%'}}>
-          <label htmlFor='company'>Site Name</label>
-          <InputGroup size='sm'>
-            <FormControl
-              ref={this.inputRef}
-              placeholder='yourcompanyname'
-              onChange={this.inputOnChange}
-            />
-            <InputGroup.Append>
-              <InputGroup.Text id='company'>.pixielabs.ai</InputGroup.Text>
-            </InputGroup.Append>
-          </InputGroup>
-          <div className='company-login-content--error'>
-            {this.state.error}
-          </div>
-          <Button onClick={this.props.onClick.bind(this)} variant='info' disabled={this.state.error !== ''}>
-            Continue
-          </Button>
-          <div className='company-login-content--footer-text'>
-            {this.props.footerText + ' '}
-            <Link to={this.props.footerLink}>{this.props.footerLinkText}</Link>
+          <div className='company-login-content'>
+          <h3>{this.props.title}</h3>
+          <div style={{width: '100%'}}>
+            <label htmlFor='company'>Site Name</label>
+            <HotKeys
+              className='hotkey-container'
+              focused={true}
+              keyMap={HOT_KEY_MAP}
+              handlers={{ CLICK_CONTINUE: () => {
+                if (this.state.error === '') {
+                  this.props.onClick.bind(this)();
+                }
+              } }}
+            >
+              <InputGroup size='sm'>
+                <FormControl
+                  ref={this.inputRef}
+                  placeholder='yourcompanyname'
+                  onChange={this.inputOnChange}
+                />
+                <InputGroup.Append>
+                  <InputGroup.Text id='company'>.pixielabs.ai</InputGroup.Text>
+                </InputGroup.Append>
+              </InputGroup>
+            </HotKeys>
+            <div className='company-login-content--error'>
+              {this.state.error}
+            </div>
+            <Button onClick={this.props.onClick.bind(this)} variant='info' disabled={this.state.error !== ''}>
+              Continue
+            </Button>
+            <div className='company-login-content--footer-text'>
+              {this.props.footerText + ' '}
+              <Link to={this.props.footerLink}>{this.props.footerLinkText}</Link>
+            </div>
           </div>
         </div>
-      </div>
     </DialogBox>
     );
   }
