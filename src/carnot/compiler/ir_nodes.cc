@@ -179,6 +179,10 @@ Status MemorySourceIR::ToProto(planpb::Operator* op) const {
     pb->set_allocated_stop_time(stop_time);
   }
 
+  if (HasTablet()) {
+    pb->set_tablet(tablet_value());
+  }
+
   op->set_op_type(planpb::MEMORY_SOURCE_OPERATOR);
   op->set_allocated_mem_source_op(pb);
   return Status::OK();

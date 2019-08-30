@@ -103,6 +103,52 @@ TEST(ToProto, memory_source_ir) {
   EXPECT_THAT(pb, EqualsProto(kExpectedMemSrcPb));
 }
 
+const char* kExpectedMemSrcWithTabletPb = R"(
+  op_type: MEMORY_SOURCE_OPERATOR
+  mem_source_op {
+    name: "test_table"
+    column_idxs: 0
+    column_idxs: 2
+    column_names: "cpu0"
+    column_names: "cpu1"
+    column_types: INT64
+    column_types: FLOAT64
+    start_time: {
+      value: 10
+    }
+    stop_time: {
+      value: 20
+    }
+
+    tablet: "abcd"
+  }
+)";
+
+TEST(ToProto, memory_source_ir_with_tablet) {
+  auto ast = MakeTestAstPtr();
+  auto graph = std::make_shared<IR>();
+
+  auto mem_src = graph->MakeNode<MemorySourceIR>().ValueOrDie();
+  auto select_list = graph->MakeNode<ListIR>().ValueOrDie();
+  auto table_node = graph->MakeNode<StringIR>().ValueOrDie();
+  EXPECT_OK(table_node->Init("test_table", ast));
+  ArgMap memsrc_argmap({{"table", table_node}, {"select", select_list}});
+  EXPECT_OK(mem_src->Init(nullptr, memsrc_argmap, ast));
+
+  EXPECT_OK(mem_src->SetRelation(
+      Relation({types::DataType::INT64, types::DataType::FLOAT64}, {"cpu0", "cpu1"})));
+
+  mem_src->SetColumnIndexMap({0, 2});
+  mem_src->SetTime(10, 20);
+
+  mem_src->SetTablet("abcd");
+
+  planpb::Operator pb;
+  EXPECT_OK(mem_src->ToProto(&pb));
+
+  EXPECT_THAT(pb, EqualsProto(kExpectedMemSrcWithTabletPb));
+}
+
 const char* kExpectedMemSinkPb = R"(
   op_type: MEMORY_SINK_OPERATOR
   mem_sink_op {
@@ -1209,6 +1255,15 @@ TEST_F(IRPruneTests, prune_test) {
   EXPECT_THAT(graph->dag().nodes(), UnorderedElementsAre(0, 2, 3, 4, 5, 6));
   EXPECT_THAT(graph->dag().DependenciesOf(mem_source->id()), IsEmpty());
   EXPECT_THAT(graph->dag().ParentsOf(add_func->id()), IsEmpty());
+}
+
+TEST_F(OperatorTests, tablet_source_group) {
+  auto mem_source = MakeMemSource("table", MakeRelation());
+  auto tablet_source = graph->MakeNode<TabletSourceGroupIR>().ConsumeValueOrDie();
+  EXPECT_OK(tablet_source->Init(mem_source, {"tablet1", "tablet2"}, "cpu0"));
+
+  EXPECT_THAT(tablet_source->tablets(), ElementsAre("tablet1", "tablet2"));
+  EXPECT_EQ(tablet_source->ReplacedMemorySource(), mem_source);
 }
 
 }  // namespace compiler

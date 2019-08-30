@@ -27,6 +27,7 @@ class IRNode;
 using IRNodePtr = std::unique_ptr<IRNode>;
 using ArgMap = std::unordered_map<std::string, IRNode*>;
 using table_store::schema::Relation;
+using TabletKeyType = std::string;
 
 enum class IRNodeType {
   kAny = -1,
@@ -54,6 +55,7 @@ enum class IRNodeType {
   kGRPCSink,
   kUnion,
   kJoin,
+  kTabletSourceGroup,
   number_of_types  // This is not a real type, but is used to verify strings are inline
                    // with enums.
 };
@@ -80,7 +82,8 @@ static constexpr const char* kIRNodeStrings[] = {"MemorySource",
                                                  "GRPCSource",
                                                  "GRPCSink",
                                                  "Union",
-                                                 "Join"};
+                                                 "Join",
+                                                 "TabletSourceGroup"};
 
 /**
  * @brief Node class for the IR.
@@ -959,7 +962,7 @@ class MemorySourceIR : public OperatorIR {
       : OperatorIR(id, IRNodeType::kMemorySource, /* has_parents */ false, /* is_source */ true) {}
   bool HasLogicalRepr() const override;
 
-  std::string table_name() { return table_name_; }
+  std::string table_name() const { return table_name_; }
   void SetTime(int64_t time_start_ns, int64_t time_stop_ns) {
     time_start_ns_ = time_start_ns;
     time_stop_ns_ = time_stop_ns;
@@ -968,6 +971,7 @@ class MemorySourceIR : public OperatorIR {
   int64_t time_start_ns() const { return time_start_ns_; }
   int64_t time_stop_ns() const { return time_stop_ns_; }
   bool IsTimeSet() const { return time_set_; }
+  const std::vector<int64_t>& column_index_map() const { return column_index_map_; }
   bool column_index_map_set() const { return column_index_map_set_; }
   void SetColumnIndexMap(const std::vector<int64_t>& column_index_map) {
     column_index_map_set_ = true;
@@ -986,6 +990,13 @@ class MemorySourceIR : public OperatorIR {
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   const std::vector<std::string>& column_names() const { return column_names_; }
   StatusOr<std::vector<std::string>> ParseStringListIR(const ListIR& list_ir);
+  void SetTablet(const TabletKeyType& tablet_value) { tablet_value_ = tablet_value; }
+  bool HasTablet() const { return !tablet_value_.empty(); }
+
+  TabletKeyType tablet_value() const {
+    DCHECK(HasTablet());
+    return tablet_value_;
+  }
 
  private:
   std::string table_name_;
@@ -1000,6 +1011,8 @@ class MemorySourceIR : public OperatorIR {
   // The mapping of the source's column indices to the current columns, as given by column_names_.
   std::vector<int64_t> column_index_map_;
   bool column_index_map_set_ = false;
+
+  TabletKeyType tablet_value_ = "";
 };
 
 /**
@@ -1373,6 +1386,7 @@ class GRPCSourceGroupIR : public OperatorIR {
 struct ColumnMapping {
   std::vector<int64_t> input_column_map;
 };
+
 class UnionIR : public OperatorIR {
  public:
   UnionIR() = delete;
@@ -1393,6 +1407,7 @@ class UnionIR : public OperatorIR {
   Status InitImpl(const ArgMap&) override { return Status::OK(); }
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   Status SetRelationFromParents();
+  bool HasColumnMappings() const { return column_mappings_.size() == parents().size(); }
   const std::vector<ColumnMapping>& column_mappings() const { return column_mappings_; }
 
  private:
@@ -1468,6 +1483,64 @@ class JoinIR : public OperatorIR {
   std::vector<EqualityCondition> equality_conditions_;
   std::vector<ColumnIR*> output_columns_;
   std::vector<std::string> column_names_;
+};
+
+/*
+ * @brief TabletSourceGroup should is the container for Tablets in the system.
+ * It is a temporary representation that can then be used to convert a previous Memory
+ * Source into a Union of sources with tablet key values.
+ *
+ */
+class TabletSourceGroupIR : public OperatorIR {
+ public:
+  TabletSourceGroupIR() = delete;
+
+  Status Init(MemorySourceIR* memory_source_ir, const std::vector<TabletKeyType>& tablets,
+              const std::string& tablet_key) {
+    tablets_ = tablets;
+    memory_source_ir_ = memory_source_ir;
+    DCHECK(memory_source_ir->IsRelationInit());
+    PL_RETURN_IF_ERROR(SetRelation(memory_source_ir->relation()));
+    DCHECK(relation().HasColumn(tablet_key));
+    tablet_key_ = tablet_key;
+    return OperatorIR::Init(nullptr, {{}}, memory_source_ir->ast_node());
+  }
+
+  explicit TabletSourceGroupIR(int64_t id)
+      : OperatorIR(id, IRNodeType::kTabletSourceGroup, /* has_parents */ false,
+                   /* is_source */ true) {}
+
+  bool HasLogicalRepr() const override { return false; }
+  bool IsBlocking() const override { return false; }
+
+  std::vector<std::string> ArgKeys() override { return {}; }
+
+  Status ToProto(planpb::Operator*) const override {
+    return error::Unimplemented("$0::ToProto not implemented because no use found for it yet.",
+                                DebugString());
+  }
+  Status InitImpl(const ArgMap&) override { return Status::OK(); }
+  StatusOr<IRNode*> DeepCloneIntoImpl(IR*) const override {
+    return error::Unimplemented(
+        "$0::DeepCloneInto not implemented because no use found for it yet.", DebugString());
+  }
+
+  const std::vector<TabletKeyType>& tablets() const { return tablets_; }
+  /**
+   * @brief Returns the Memory source that was replaced by this node.
+   * @return MemorySourceIR*
+   */
+  MemorySourceIR* ReplacedMemorySource() const { return memory_source_ir_; }
+
+  const std::string tablet_key() const { return tablet_key_; }
+
+ private:
+  // The key in the relation that is used as a tablet_key.
+  std::string tablet_key_;
+  // The tablets that are associated with this node.
+  std::vector<TabletKeyType> tablets_;
+  // The memory source that this node replaces. Deleted from the graph when this node is deleted.
+  MemorySourceIR* memory_source_ir_;
 };
 
 }  // namespace compiler
