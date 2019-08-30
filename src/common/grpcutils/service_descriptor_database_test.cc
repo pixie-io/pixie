@@ -102,33 +102,100 @@ TEST_F(ServiceDescriptorDatabaseTest, AllServices) {
 }
 
 TEST_F(ServiceDescriptorDatabaseTest, ParseAs) {
-  // Message with the string '581a554f-33' in protobuf wire format
+  // Message with the string '581a554f-33' in protobuf wire format.
   const std::string kValidMessage = "\x0a\x0b\x35\x38\x31\x61\x35\x35\x34\x66\x2d\x33\x33";
 
   // Message with incorrect protobuf length (not parseable).
   const std::string kMessageWrongLength = "\x0a\x06\x35\x38\x31\x61\x35\x35\x34\x66\x2d\x33\x33";
 
-  // Message with incorrect wire_type (not parseable).
-  const std::string kMessageWrongWireType = "\x01\x0b\x35\x38\x31\x61\x35\x35\x34\x66\x2d\x33\x33";
+  // Message with incorrect wire_type (1 as a varint).
+  const std::string kMessageWrongWireType = "\x08\x01";
+
+  // Message with extra field.
+  const std::string kMessageWithExtraField =
+      "\x0a\x0b\x35\x38\x31\x61\x35\x35\x34\x66\x2d\x33\x33\x10\x01";
+
+  // Message with repeated field number (field number 1 specified twice, once as string, once as
+  // varint).
+  const std::string kMessageWithDuplicateFieldNum =
+      "\x0a\x0b\x35\x38\x31\x61\x35\x35\x34\x66\x2d\x33\x33\x08\x01";
+
+  // Message with repeated field number (like above, but with order flipped).
+  const std::string kMessageWithDuplicateFieldNum2 =
+      "\x08\x01\x0a\x0b\x35\x38\x31\x61\x35\x35\x34\x66\x2d\x33\x33";
 
   StatusOr<std::unique_ptr<google::protobuf::Message>> message;
 
-  message = db_->ParseAs("hipstershop.PlaceOrderRequest", kValidMessage);
+  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kValidMessage);
   ASSERT_TRUE(message.ok());
   EXPECT_NE(nullptr, message.ConsumeValueOrDie());
 
-  message = db_->ParseAs("hipstershop.FakeRequest", kValidMessage);
+  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kValidMessage,
+                    /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message.ok());
+  EXPECT_NE(nullptr, message.ConsumeValueOrDie());
+
+  message = ParseAs(db_.get(), "hipstershop.FakeRequest", kValidMessage);
   EXPECT_FALSE(message.ok());
 
-  message = db_->ParseAs("hipstershop.PlaceOrderRequest", kMessageWrongLength);
+  message =
+      ParseAs(db_.get(), "hipstershop.FakeRequest", kValidMessage, /* allow_unknown_fields */ true);
+  EXPECT_FALSE(message.ok());
+
+  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongLength);
   ASSERT_TRUE(message.ok());
   EXPECT_EQ(nullptr, message.ConsumeValueOrDie());
 
-  message = db_->ParseAs("hipstershop.PlaceOrderRequest", kMessageWrongWireType);
+  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongLength,
+                    /* allow_unknown_fields */ true);
   ASSERT_TRUE(message.ok());
   EXPECT_EQ(nullptr, message.ConsumeValueOrDie());
 
-  message = db_->ParseAs("hipstershop.PlaceOrderRequest", "");
+  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongWireType);
+  ASSERT_TRUE(message.ok());
+  EXPECT_EQ(nullptr, message.ConsumeValueOrDie());
+
+  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongWireType,
+                    /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message.ok());
+  EXPECT_NE(nullptr, message.ConsumeValueOrDie());
+
+  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithExtraField);
+  ASSERT_TRUE(message.ok());
+  EXPECT_EQ(nullptr, message.ConsumeValueOrDie());
+
+  // Note that this is a different kind of unknown field than the rest.
+  // Technically, this one is a valid message, while duplicate field number and wrong wire type are
+  // not.
+  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithExtraField,
+                    /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message.ok());
+  EXPECT_NE(nullptr, message.ConsumeValueOrDie());
+
+  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithDuplicateFieldNum);
+  ASSERT_TRUE(message.ok());
+  EXPECT_EQ(nullptr, message.ConsumeValueOrDie());
+
+  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithDuplicateFieldNum,
+                    /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message.ok());
+  EXPECT_NE(nullptr, message.ConsumeValueOrDie());
+
+  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithDuplicateFieldNum2);
+  ASSERT_TRUE(message.ok());
+  EXPECT_EQ(nullptr, message.ConsumeValueOrDie());
+
+  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithDuplicateFieldNum2,
+                    /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message.ok());
+  EXPECT_NE(nullptr, message.ConsumeValueOrDie());
+
+  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", "");
+  ASSERT_TRUE(message.ok());
+  EXPECT_NE(nullptr, message.ConsumeValueOrDie());
+
+  message =
+      ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", "", /* allow_unknown_fields */ true);
   ASSERT_TRUE(message.ok());
   EXPECT_NE(nullptr, message.ConsumeValueOrDie());
 }
