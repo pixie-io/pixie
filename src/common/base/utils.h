@@ -87,7 +87,9 @@ inline std::string Repr(std::string_view buf, Radix radix = Radix::kHex,
 /**
  * Converts an input hex sequence in ASCII to bytes.
  *
- * Input type must be well-formed hex representation, without optional separator.
+ * Input type must be well-formed hex representation, with optional separator.
+ *
+ * Note that this function is not optimized, and is not meant for use performance critical code.
  *
  * Examples:
  *  "0a2435383161353534662d"
