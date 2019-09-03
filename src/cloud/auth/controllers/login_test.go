@@ -93,7 +93,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	maxExpiryTime := time.Now().Add(7 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata.PLUserID, resp.ExpiresAt, "jwtkey")
+	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata.PLUserID, fakeUserInfoSecondRequest.AppMetadata.PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_LoginNewUser_InvalidEmail(t *testing.T) {
@@ -244,6 +244,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	fakeUserInfo1 := &controllers.UserInfo{
 		AppMetadata: &controllers.UserMetadata{
 			PLUserID: "pluserid",
+			PLOrgID:  "plorgid",
 		},
 	}
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
@@ -265,7 +266,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	maxExpiryTime := time.Now().Add(7 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 
-	verifyToken(t, resp.Token, "pluserid", resp.ExpiresAt, "jwtkey")
+	verifyToken(t, resp.Token, "pluserid", "plorgid", resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_GetAugmentedToken(t *testing.T) {
@@ -298,7 +299,7 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 	assert.True(t, resp.ExpiresAt > 0)
 
-	verifyToken(t, resp.Token, "test", resp.ExpiresAt, "jwtkey")
+	verifyToken(t, resp.Token, "test", "test", resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_GetAugmentedTokenBadSigningKey(t *testing.T) {
@@ -422,7 +423,7 @@ func TestServer_CreateUserOrg(t *testing.T) {
 	maxExpiryTime := time.Now().Add(7 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata.PLUserID, resp.ExpiresAt, "jwtkey")
+	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata.PLUserID, fakeUserInfoSecondRequest.AppMetadata.PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_CreateUserOrg_NonMatchingEmails(t *testing.T) {
@@ -532,13 +533,14 @@ func TestServer_CreateUserOrg_CreateFailed(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func verifyToken(t *testing.T, token, expectedUserID string, expectedExpiry int64, key string) {
+func verifyToken(t *testing.T, token, expectedUserID string, expectedOrgID string, expectedExpiry int64, key string) {
 	claims := jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(key), nil
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, expectedUserID, claims["UserID"])
+	assert.Equal(t, expectedOrgID, claims["OrgID"])
 	assert.Equal(t, expectedExpiry, int64(claims["exp"].(float64)))
 }
 

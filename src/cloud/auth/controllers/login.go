@@ -216,6 +216,7 @@ func generateJWTClaimsForUser(userInfo *UserInfo, expiresAt time.Time) *jwtpb.JW
 	claims := jwtpb.JWTClaims{
 		Subject: userInfo.AppMetadata.PLUserID,
 		UserID:  userInfo.AppMetadata.PLUserID,
+		OrgID:   userInfo.AppMetadata.PLOrgID,
 		Email:   userInfo.Email,
 		// Standard claims.
 		ExpiresAt: expiresAt.Unix(),
