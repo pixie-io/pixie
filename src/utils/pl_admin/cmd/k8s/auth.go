@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	// Blank import necessary for kubeConfig to work.
-	"k8s.io/client-go/discovery"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"

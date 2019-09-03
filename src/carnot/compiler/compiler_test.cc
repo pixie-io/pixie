@@ -2371,11 +2371,11 @@ dag {
 }
 nodes {
   id: 1
-  dag {    
+  dag {
     nodes {
       id: 0
       sorted_children: 12
-    } 
+    }
     nodes {
       id: 6
       sorted_children: 12
@@ -2408,7 +2408,7 @@ nodes {
         column_types: FLOAT64
       }
     }
-  }  
+  }
   nodes {
     id: 6
     op {
