@@ -12,12 +12,14 @@ import './deploy-instructions.scss';
 
 interface DeployInstructionsProps {
   sitename: string;
+  clusterID: string;
 }
 
 // TODO(michelle): Fill this out with the correct deploy methods.
 const DEPLOY_METHODS = ['a', 'b'];
 
 export const DeployInstructions = (props: DeployInstructionsProps) => {
+  // TODO(michelle): Pull --use_version tag from backend.
   return (
     <div className='deploy-instructions'>
       <DialogBox width={760}>
@@ -42,7 +44,7 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
               }
             </DropdownButton>
             <CodeSnippet showCopy={true} language='bash'>
-              Some text goes in here.
+              {'./pl_deploy deploy --cluster_id ' + props.clusterID + ' --use_version d84e3625-dirty'}
             </CodeSnippet>
           </div>
           <div className='deploy-instructions--footer' style={{width: '100%'}}>

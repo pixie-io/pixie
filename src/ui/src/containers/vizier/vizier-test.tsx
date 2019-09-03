@@ -75,5 +75,6 @@ describe('<Vizier/> test', () => {
     await wait(0);
     app.update();
     expect(app.find(DeployInstructions)).toHaveLength(1);
+    expect(app.find(DeployInstructions).get(0).props.clusterID).toBe('test');
   });
 });

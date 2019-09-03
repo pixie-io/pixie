@@ -79,6 +79,7 @@ export class Vizier extends React.Component<VizierProps, {}> {
             return (
               <DeployInstructions
                 sitename={window.location.hostname.split('.')[0]}
+                clusterID={data.cluster.id}
               />
             );
           }
