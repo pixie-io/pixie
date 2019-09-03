@@ -76,7 +76,9 @@ func WithAugmentedAuthMiddleware(env apienv.APIEnv, next http.Handler) http.Hand
 		}
 
 		newCtx := authcontext.NewContext(r.Context(), aCtx)
-		next.ServeHTTP(w, r.WithContext(newCtx))
+		ctxWithAugmentedAuth := metadata.AppendToOutgoingContext(newCtx, "authorization",
+			fmt.Sprintf("bearer %s", resp.Token))
+		next.ServeHTTP(w, r.WithContext(ctxWithAugmentedAuth))
 	}
 	return http.HandlerFunc(f)
 }

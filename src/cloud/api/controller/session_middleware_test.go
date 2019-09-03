@@ -2,6 +2,7 @@ package controller_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
@@ -69,6 +71,11 @@ func validRequestCheckHelper(t *testing.T, env apienv.APIEnv, mockAuthClient *mo
 		assert.Equal(t, "test", aCtx.Claims.UserID)
 		assert.Equal(t, "test@test.com", aCtx.Claims.Email)
 		assert.Equal(t, testAugmentedToken, aCtx.AuthToken)
+
+		md, ok := metadata.FromOutgoingContext(r.Context())
+		assert.Equal(t, true, ok)
+		assert.Equal(t, 1, len(md["authorization"]))
+		assert.Equal(t, fmt.Sprintf("bearer %s", testAugmentedToken), md["authorization"][0])
 
 		callOKTestHandler(t).ServeHTTP(w, r)
 	}
