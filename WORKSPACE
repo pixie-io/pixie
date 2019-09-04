@@ -1,5 +1,16 @@
 workspace(name = "pl")
 
+# local_repository() has to be called before any load() statements.
+#
+# third_party/protobuf is a git submodule since we customize protobuf parsing for message type
+# inference. It's not used by rules_proto, or others.
+#
+# TODO(yzhao): Patch third_party/protobuf.
+local_repository(
+    name = "com_google_protobuf",
+    path = "third_party/protobuf",
+)
+
 load("//:workspace.bzl", "check_min_bazel_version")
 
 check_min_bazel_version("0.25.0")
@@ -8,6 +19,18 @@ load("//bazel:repositories.bzl", "pl_deps")
 
 # Install Pixie Labs Dependencies.
 pl_deps()
+
+# This has to be after pl_deps(), as the bazel_skylib declared inside protobuf_deps() is older than
+# what is needed in our repo. But bazel will pick this older version if protobuf_deps() is called
+# before pl_deps(). See https://github.com/bazelbuild/bazel/issues/6664.
+#
+# TODO(yzhao): As of 2019-09 nested WORKSPACE file is ignored by bazel.
+# https://github.com/bazelbuild/bazel/issues/5325 and
+# https://bazel.build/designs/2016/09/19/recursive-ws-parsing.html.
+# Once that's fixed, we should be able to remove this.
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
+protobuf_deps()
 
 # The go dependency does not work if loaded during our normal pl_workspace setup.
 # moving it here fixes the errors.
