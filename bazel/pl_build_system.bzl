@@ -233,15 +233,11 @@ def pl_cc_test_library(
 def pl_cc_mock(name, **kargs):
     pl_cc_test_library(name = name, **kargs)
 
-# Borrowed from Envoy:
-def pl_external_dep_path(dep):
-    return "//external:%s" % dep
-
 # Dependencies on tcmalloc_and_profiler should be wrapped with this function.
 def tcmalloc_external_dep(repository):
     return select({
         repository + "//bazel:disable_tcmalloc": None,
-        "//conditions:default": pl_external_dep_path("gperftools"),
+        "//conditions:default": "//third_party/foreign_cc:gperftools",
     })
 
 # As above, but wrapped in list form for adding to dep lists. This smell seems needed as
@@ -250,7 +246,7 @@ def tcmalloc_external_dep(repository):
 def tcmalloc_external_deps(repository):
     return select({
         repository + "//bazel:disable_tcmalloc": [],
-        "//conditions:default": [pl_external_dep_path("gperftools")],
+        "//conditions:default": ["//third_party/foreign_cc:gperftools"],
     })
 
 def pl_go_library(**kwargs):

@@ -113,11 +113,6 @@ def _com_github_gperftools_gperftools():
         **location
     )
 
-    native.bind(
-        name = "gperftools",
-        actual = "//third_party/foreign_cc:gperftools",
-    )
-
 def _com_github_nats_io_natsc():
     location = REPOSITORY_LOCATIONS["com_github_nats_io_natsc"]
     http_archive(
