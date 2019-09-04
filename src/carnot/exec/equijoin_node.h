@@ -50,7 +50,22 @@ class EquijoinNode : public ProcessingNode {
  private:
   Status InitializeColumnBuilders();
   bool IsProbeTable(size_t parent_index);
+  Status FlushChunkedRows(ExecState* exec_state);
+  Status ExtractJoinKeysForBatch(const table_store::schema::RowBatch& rb, bool is_probe);
+  Status HashRowBatch(const table_store::schema::RowBatch& rb);
 
+  Status DoProbe(ExecState* exec_state, const table_store::schema::RowBatch& rb);
+  Status MatchBuildValuesAndFlush(ExecState* exec_state,
+                                  std::vector<types::SharedColumnWrapper>* wrapper,
+                                  std::shared_ptr<table_store::schema::RowBatch> probe_rb,
+                                  int64_t probe_rb_row);
+  Status EmitUnmatchedBuildRows(ExecState* exec_state);
+  Status NextOutputBatch(ExecState* exec_state);
+  Status ConsumeBuildBatch(ExecState* exec_state, const table_store::schema::RowBatch& rb);
+  Status ConsumeProbeBatch(ExecState* exec_state, const table_store::schema::RowBatch& rb);
+
+  bool build_eos_ = false;
+  bool probe_eos_ = false;
   // Note whether the left or the right table is the probe table.
   JoinInputTable probe_table_;
   // output_rows_per_batch is only used in the ordered case, because in the unordered case,
@@ -63,8 +78,21 @@ class EquijoinNode : public ProcessingNode {
 
   std::vector<types::DataType> key_data_types_;
 
+  // Memory/column building members
+  // If the build stage isn't complete, we need to buffer the probe batches.
+  std::queue<table_store::schema::RowBatch> probe_batches_;
   // Column builders will flush a batch once they hit output_rows_per_batch_ rows.
   std::vector<std::unique_ptr<arrow::ArrayBuilder>> column_builders_;
+  // Manages the RowTuples containing the keys for the join.
+  ObjectPool key_values_pool_;
+  ObjectPool column_values_pool_;
+  std::vector<RowTuple*> join_keys_chunk_;
+  std::vector<std::vector<types::SharedColumnWrapper>*> build_wrappers_chunk_;
+
+  AbslRowTupleHashMap<std::vector<types::SharedColumnWrapper>*> build_buffer_;
+
+  // Handle on the most recent RowBatch (in case it's the final one).
+  std::unique_ptr<table_store::schema::RowBatch> pending_output_batch_;
 
   std::unique_ptr<plan::JoinOperator> plan_node_;
   std::unique_ptr<table_store::schema::RowDescriptor> output_descriptor_;
