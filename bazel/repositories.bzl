@@ -123,11 +123,6 @@ def _com_github_nats_io_natsc():
         **location
     )
 
-    native.bind(
-        name = "natsc",
-        actual = "//third_party/foreign_cc:natsc",
-    )
-
 def _com_github_nghttp2_nghttp2():
     location = REPOSITORY_LOCATIONS["com_github_nghttp2_nghttp2"]
     http_archive(
