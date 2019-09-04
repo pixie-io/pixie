@@ -15,6 +15,9 @@
 #include "src/shared/types/type_utils.h"
 #include "src/shared/types/types.h"
 
+#include "absl/container/flat_hash_map.h"
+#include "absl/container/flat_hash_set.h"
+
 namespace pl {
 namespace carnot {
 namespace exec {
@@ -211,6 +214,11 @@ struct RowTuplePtrEq {
 
 template <class T>
 using RowTupleHashMap = cuckoohash_map<RowTuple*, T, RowTuplePtrHasher, RowTuplePtrEq>;
+
+template <class T>
+using AbslRowTupleHashMap = absl::flat_hash_map<RowTuple*, T, RowTuplePtrHasher, RowTuplePtrEq>;
+
+using AbslRowTupleHashSet = absl::flat_hash_set<RowTuple*, RowTuplePtrHasher, RowTuplePtrEq>;
 
 template <types::DataType DT>
 void ExtractIntoRowTuple(RowTuple* rt, arrow::Array* col, int rt_col_idx, int rt_row_idx) {
