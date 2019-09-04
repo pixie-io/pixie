@@ -129,6 +129,14 @@ inline StatusOr<T> AsciiHexToBytes(std::string s, const std::vector<char>& separ
   return bytes;
 }
 
+/**
+ * @brief Returns a string_view for a different character type from the input C-style string.
+ */
+template <typename CharType, size_t N>
+std::basic_string_view<CharType> ConvertToStringView(const char (&arr)[N]) {
+  return std::basic_string_view<CharType>(reinterpret_cast<const CharType*>(arr), N - 1);
+}
+
 }  // namespace pl
 
 // Provides a string view into a char array included in the binary via objcopy.

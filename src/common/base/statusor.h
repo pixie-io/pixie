@@ -176,4 +176,14 @@ inline Status StatusAdapter(const StatusOr<T>& s) noexcept {
   return s.status();
 }
 
+// This enables GMock to print readable description of the tested value.
+template <typename T>
+std::ostream& operator<<(std::ostream& os, const StatusOr<T>& status_or) {
+  os << status_or.ToString();
+  if (status_or.ok()) {
+    os << " and holds: " << status_or.ValueOrDie();
+  }
+  return os;
+}
+
 }  // namespace pl

@@ -187,9 +187,29 @@ inline bool ShouldUpdateDynamicTable(const HeaderField& field) {
          std::get<LiteralHeaderField>(field).update_dynamic_table;
 }
 
-inline bool IsInStaticTable(const IndexedHeaderField& field) {
-  static constexpr size_t kMaxStaticTableIndex = 61;
-  return field.index <= kMaxStaticTableIndex;
+inline uint32_t GetIndex(const HeaderField& field) {
+  return std::get<IndexedHeaderField>(field).index;
+}
+
+constexpr size_t kStaticTableSize = 61;
+
+inline bool IsInStaticTable(const HeaderField& field) {
+  return std::holds_alternative<IndexedHeaderField>(field) && GetIndex(field) <= kStaticTableSize;
+}
+
+inline bool IsInDynamicTable(const HeaderField& field) {
+  return std::holds_alternative<IndexedHeaderField>(field) && GetIndex(field) > kStaticTableSize;
+}
+
+inline bool HoldsPlainTextName(const HeaderField& field) {
+  return std::holds_alternative<LiteralHeaderField>(field) &&
+         std::holds_alternative<u8string_view>(std::get<LiteralHeaderField>(field).name) &&
+         !std::get<LiteralHeaderField>(field).is_name_huff_encoded;
+}
+
+inline std::string_view GetLiteralNameAsStringView(const HeaderField& field) {
+  u8string_view res = std::get<u8string_view>(std::get<LiteralHeaderField>(field).name);
+  return {reinterpret_cast<const char*>(res.data()), res.size()};
 }
 
 /**
