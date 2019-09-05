@@ -128,4 +128,3 @@ cc_autoconf = repository_rule(
 
 def cc_configure():
     cc_autoconf(name = "local_config_cc")
-    native.bind(name = "cc_toolchain", actual = "@local_config_cc//:toolchain")
