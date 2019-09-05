@@ -67,6 +67,14 @@ class Relation {
    */
   Status FromProto(const table_store::schemapb::Relation* relation_pb);
 
+  bool operator==(const Relation& relation) const {
+    return col_types() == relation.col_types() && col_names() == relation.col_names();
+  }
+
+  friend std::ostream& operator<<(std::ostream& out, const Relation& relation) {
+    return out << relation.DebugString();
+  }
+
  private:
   ColTypeArray col_types_;
   ColNameArray col_names_;

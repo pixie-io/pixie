@@ -46,19 +46,9 @@ TEST(RelationTest, basic_from_proto_tests) {
   schemapb::Relation rel_pb;
   google::protobuf::TextFormat::MergeFromString(rel_proto_str, &rel_pb);
   ASSERT_OK(r.FromProto(&rel_pb));
-  EXPECT_EQ(2, r.NumColumns());
-  EXPECT_EQ("[abc:int64, def:string]", r.DebugString());
-  EXPECT_EQ(ColTypeArray({types::INT64, types::STRING}), r.col_types());
-  EXPECT_TRUE(r.HasColumn(0));
-  EXPECT_TRUE(r.HasColumn(1));
-  EXPECT_FALSE(r.HasColumn(2));
-  EXPECT_EQ(0, r.GetColumnIndex("abc"));
-  EXPECT_EQ(1, r.GetColumnIndex("def"));
-  EXPECT_TRUE(r.HasColumn("abc"));
-  EXPECT_TRUE(r.HasColumn("def"));
-  EXPECT_FALSE(r.HasColumn("abcde"));
-  EXPECT_EQ(r.GetColumnType("abc"), types::INT64);
-  EXPECT_EQ(r.GetColumnType("def"), types::STRING);
+  // Quick test for the equality operator
+  Relation r_comparison({types::INT64, types::STRING}, {"abc", "def"});
+  EXPECT_EQ(r_comparison, r);
 }
 
 TEST(RelationTest, from_proto_failure) {
