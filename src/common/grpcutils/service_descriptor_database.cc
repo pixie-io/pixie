@@ -72,7 +72,7 @@ std::vector<::google::protobuf::ServiceDescriptorProto> ServiceDescriptorDatabas
   return services;
 }
 
-// TODO(oazizi): Consider moving this out of this file, perhaps to MessageMatcher.
+// TODO(oazizi): Consider moving this out of this file, perhaps to MessageGroupTypeClassifier.
 StatusOr<std::unique_ptr<Message>> ParseAs(ServiceDescriptorDatabase* desc_db,
                                            const std::string& message_type_name,
                                            const std::string& message, bool allow_unknown_fields) {
