@@ -84,6 +84,9 @@ static constexpr const char* kIRNodeStrings[] = {"MemorySource",
                                                  "Union",
                                                  "Join",
                                                  "TabletSourceGroup"};
+inline std::ostream& operator<<(std::ostream& out, IRNodeType node_type) {
+  return out << kIRNodeStrings[static_cast<int64_t>(node_type)];
+}
 
 /**
  * @brief Node class for the IR.
