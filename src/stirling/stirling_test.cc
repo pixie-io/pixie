@@ -72,8 +72,7 @@ class TableTabletColHashFn {
   size_t operator()(const TableTabletCol& val) const {
     size_t hash = 0;
     hash = pl::HashCombine(hash, val.table);
-    hash = pl::HashCombine(hash, absl::Uint128Low64(val.tablet));
-    hash = pl::HashCombine(hash, absl::Uint128High64(val.tablet));
+    hash = pl::HashCombine(hash, std::hash<TabletID>{}(val.tablet));
     hash = pl::HashCombine(hash, val.col);
     return hash;
   }
@@ -157,17 +156,17 @@ class StirlingTest : public ::testing::Test {
         schemas_.emplace(id, SeqGenConnector::kSeq0Table);
 
         uint32_t col_idx = 1;  // Start at 1, because column 0 is time.
-        int_seq_checker_.emplace(TableTabletCol{id, 0, col_idx++},
+        int_seq_checker_.emplace(TableTabletCol{id, "", col_idx++},
                                  std::make_unique<pl::stirling::LinearSequence<int64_t>>(1, 1));
-        int_seq_checker_.emplace(TableTabletCol{id, 0, col_idx++},
+        int_seq_checker_.emplace(TableTabletCol{id, "", col_idx++},
                                  std::make_unique<pl::stirling::ModuloSequence<int64_t>>(10));
         int_seq_checker_.emplace(
-            TableTabletCol{id, 0, col_idx++},
+            TableTabletCol{id, "", col_idx++},
             std::make_unique<pl::stirling::QuadraticSequence<int64_t>>(1, 0, 0));
-        int_seq_checker_.emplace(TableTabletCol{id, 0, col_idx++},
+        int_seq_checker_.emplace(TableTabletCol{id, "", col_idx++},
                                  std::make_unique<pl::stirling::FibonacciSequence<int64_t>>());
         double_seq_checker_.emplace(
-            TableTabletCol{id, 0, col_idx++},
+            TableTabletCol{id, "", col_idx++},
             std::make_unique<pl::stirling::LinearSequence<double>>(3.14159, 0));
 
         num_processed_per_table_.emplace(id, 0);
@@ -181,14 +180,15 @@ class StirlingTest : public ::testing::Test {
         // Spread seq_gen's second table into tablets, based on its modulo column (mod 8).
         static const uint32_t kModulo = 8;
         for (uint32_t t = 0; t < kModulo; ++t) {
+          std::string t_str = std::to_string(t);
           uint32_t col_idx = 1;  // Start at 1, because column 0 is time.
           int_seq_checker_.emplace(
-              TableTabletCol{id, t, col_idx++},
+              TableTabletCol{id, t_str, col_idx++},
               std::make_unique<pl::stirling::LinearSequence<int64_t>>(2 * kModulo, 2 + (2 * t)));
 
           // The modulo is the tablet id, so after tabletization, it will appear as a constant.
           // So use a Linear Sequence with slope 0 to specify a constant expectation.
-          int_seq_checker_.emplace(TableTabletCol{id, t, col_idx++},
+          int_seq_checker_.emplace(TableTabletCol{id, t_str, col_idx++},
                                    std::make_unique<pl::stirling::LinearSequence<int64_t>>(0, t));
         }
 

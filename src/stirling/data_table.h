@@ -43,7 +43,7 @@ class DataTable {
    *
    * @return Pointer to active record batch.
    */
-  types::ColumnWrapperRecordBatch* ActiveRecordBatch(types::TabletID tablet_id = 0);
+  types::ColumnWrapperRecordBatch* ActiveRecordBatch(types::TabletIDView tablet_id = "");
 
   /**
    * @brief Return current occupancy of the Data Table.

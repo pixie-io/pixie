@@ -183,7 +183,7 @@ class SourceConnector : public NotCopyable {
   template <const DataTableSchema* schema>
   class RecordBuilder {
    public:
-    explicit RecordBuilder(DataTable* data_table, types::TabletID tablet_id)
+    explicit RecordBuilder(DataTable* data_table, types::TabletIDView tablet_id)
         : RecordBuilder(data_table->ActiveRecordBatch(tablet_id)) {
       static_assert(schema->tabletized());
       tablet_id_ = tablet_id;
@@ -201,7 +201,8 @@ class SourceConnector : public NotCopyable {
     inline void Append(
         typename types::DataTypeTraits<schema->elements()[index].type()>::value_type val) {
       if constexpr (index == schema->tabletization_key()) {
-        CHECK(val == static_cast<int64_t>(tablet_id_));
+        // TODO(oazizi): This will probably break if val is ever StringValue.
+        CHECK(std::to_string(val.val) == tablet_id_);
       }
 
       record_batch_[index]->Append(std::move(val));
@@ -222,7 +223,7 @@ class SourceConnector : public NotCopyable {
 
     types::ColumnWrapperRecordBatch& record_batch_;
     std::bitset<schema->elements().size()> signature_;
-    types::TabletID tablet_id_ = 0;
+    types::TabletIDView tablet_id_ = "";
   };
 
  protected:

@@ -5,6 +5,7 @@
 #include <arrow/builder.h>
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "src/shared/types/arrow_adapter.h"
@@ -18,9 +19,9 @@ class ColumnWrapper;
 using SharedColumnWrapper = std::shared_ptr<ColumnWrapper>;
 using ColumnWrapperRecordBatch = std::vector<types::SharedColumnWrapper>;
 
-// TODO(oazizi): This should change to std::string/std::string_view.
 // TODO(oazizi): Find a better place for this.
-using TabletID = size_t;
+using TabletID = std::string;
+using TabletIDView = std::string_view;
 
 template <typename T>
 class ColumnWrapperTmpl;
