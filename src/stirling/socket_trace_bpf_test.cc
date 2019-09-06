@@ -355,16 +355,6 @@ Content-Length: 0
   static constexpr std::string_view kNoProtocolMsg = R"(This is not an HTTP message)";
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
-  static constexpr DataTableSchema kHTTPTable = SocketTraceConnector::kHTTPTable;
-  static constexpr uint32_t kHTTPMajorVersionIdx = kHTTPTable.ColIndex("http_major_version");
-  static constexpr uint32_t kHTTPContentTypeIdx = kHTTPTable.ColIndex("http_content_type");
-  static constexpr uint32_t kHTTPRespStatusIdx = kHTTPTable.ColIndex("http_resp_status");
-  static constexpr uint32_t kHTTPRespBodyIdx = kHTTPTable.ColIndex("http_resp_body");
-  static constexpr uint32_t kHTTPRespMessageIdx = kHTTPTable.ColIndex("http_resp_message");
-  static constexpr uint32_t kHTTPRespHeadersIdx = kHTTPTable.ColIndex("http_resp_headers");
-  static constexpr uint32_t kHTTPPIDIdx = kHTTPTable.ColIndex("pid");
-  static constexpr uint32_t kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
-  static constexpr uint32_t kHTTPStartTimeIdx = kHTTPTable.ColIndex("pid_start_time");
 
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
   static constexpr DataTableSchema kMySQLTable = SocketTraceConnector::kMySQLTable;
@@ -724,15 +714,15 @@ TEST_F(SocketTraceBPFTest, TestStartTime) {
 
   EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(0).val);
   EXPECT_LT(time_window_start.time_since_epoch().count(),
-            record_batch[kHTTPStartTimeIdx]->Get<types::Int64Value>(0).val);
+            record_batch[kHTTPPIDStartTimeIdx]->Get<types::Int64Value>(0).val);
   EXPECT_GT(time_window_end.time_since_epoch().count(),
-            record_batch[kHTTPStartTimeIdx]->Get<types::Int64Value>(0).val);
+            record_batch[kHTTPPIDStartTimeIdx]->Get<types::Int64Value>(0).val);
 
   EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(1).val);
   EXPECT_LT(time_window_start.time_since_epoch().count(),
-            record_batch[kHTTPStartTimeIdx]->Get<types::Int64Value>(1).val);
+            record_batch[kHTTPPIDStartTimeIdx]->Get<types::Int64Value>(1).val);
   EXPECT_GT(time_window_end.time_since_epoch().count(),
-            record_batch[kHTTPStartTimeIdx]->Get<types::Int64Value>(1).val);
+            record_batch[kHTTPPIDStartTimeIdx]->Get<types::Int64Value>(1).val);
 }
 
 // TODO(yzhao): Apply this pattern to other syscall pairs. An issue is that other syscalls do not

@@ -103,11 +103,6 @@ class SocketTraceConnectorTest : public ::testing::Test {
   uint64_t recv_seq_num_ = 0;
 
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
-  static constexpr DataTableSchema kHTTPTable = SocketTraceConnector::kHTTPTable;
-  static constexpr int kHTTPRespBodyIdx = kHTTPTable.ColIndex("http_resp_body");
-  static constexpr int kHTTPReqMethodIdx = kHTTPTable.ColIndex("http_req_method");
-  static constexpr int kHTTPReqPathIdx = kHTTPTable.ColIndex("http_req_path");
-  static constexpr int kTimeIdx = kHTTPTable.ColIndex("time_");
 
   std::unique_ptr<SourceConnector> connector_;
   SocketTraceConnector* source_ = nullptr;
@@ -247,7 +242,7 @@ TEST_F(SocketTraceConnectorTest, End2end) {
   std::unique_ptr<SocketDataEvent> event3_json = InitRecvEvent(kJSONResp);
   conn_info_t close_conn = InitClose();
 
-  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  DataTable data_table(kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   EXPECT_NE(0, source_->ClockRealTimeOffset());
@@ -307,7 +302,7 @@ TEST_F(SocketTraceConnectorTest, End2end) {
            "and event_json Content-Type matches, and is selected";
   }
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo", "bar", "foo"));
-  EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kTimeIdx]),
+  EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kHTTPTimeIdx]),
               ElementsAre(2 + source_->ClockRealTimeOffset(), 4 + source_->ClockRealTimeOffset(),
                           5 + source_->ClockRealTimeOffset()));
 }
@@ -320,7 +315,7 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   std::unique_ptr<SocketDataEvent> event2 = InitRecvEvent(kResp2);
   conn_info_t close_conn = InitClose();
 
-  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  DataTable data_table(kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   source_->AcceptOpenConnEvent(conn);
@@ -340,7 +335,7 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
   std::unique_ptr<SocketDataEvent> event0 = InitRecvEvent(kResp0);
   conn_info_t close_conn = InitClose();
 
-  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  DataTable data_table(kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   source_->AcceptOpenConnEvent(conn);
@@ -371,7 +366,7 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
   std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent(kResp2);
   conn_info_t close_conn = InitClose();
 
-  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  DataTable data_table(kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   source_->AcceptOpenConnEvent(conn);
@@ -403,7 +398,7 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   std::unique_ptr<SocketDataEvent> resp_event3 = InitRecvEvent(kResp0);
   // No Close event (connection still active).
 
-  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  DataTable data_table(kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   source_->AcceptOpenConnEvent(conn);
@@ -438,7 +433,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
   std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent(kResp2);
   conn_info_t close_conn = InitClose();
 
-  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  DataTable data_table(kHTTPTable);
 
   EXPECT_EQ(0, source_->NumActiveConnections());
 
@@ -483,7 +478,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
   std::unique_ptr<SocketDataEvent> resp_event2 = InitRecvEvent(kResp2);
   conn_info_t close_conn = InitClose();
 
-  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  DataTable data_table(kHTTPTable);
 
   source_->AcceptDataEvent(std::move(req_event1));
   source_->AcceptOpenConnEvent(conn);
@@ -522,7 +517,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
   std::unique_ptr<SocketDataEvent> resp_event3 = InitRecvEvent(kResp2);
   conn_info_t close_conn = InitClose();
 
-  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  DataTable data_table(kHTTPTable);
 
   source_->AcceptOpenConnEvent(conn);
   source_->AcceptDataEvent(std::move(req_event0));
@@ -561,7 +556,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
   std::unique_ptr<SocketDataEvent> conn2_resp_event = InitRecvEvent(kResp2);
   conn_info_t conn2_close = InitClose();
 
-  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  DataTable data_table(kHTTPTable);
 
   // Simulating scrambled order due to perf buffer, with a couple missing events.
   source_->AcceptDataEvent(std::move(conn0_req_event));
@@ -599,7 +594,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupNoProtocol) {
   conn0.traffic_class.protocol = kProtocolUnknown;
   conn0_close.traffic_class.protocol = kProtocolUnknown;
 
-  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  DataTable data_table(kHTTPTable);
 
   source_->AcceptOpenConnEvent(conn0);
   source_->AcceptCloseConnEvent(conn0_close);
@@ -636,7 +631,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   conn_info_t conn0_close = InitClose();
   conn0_close.conn_id.pid = impossible_pid;
 
-  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  DataTable data_table(kHTTPTable);
 
   // Simulating events being emitted from BPF perf buffer.
   source_->AcceptOpenConnEvent(conn0);
@@ -677,7 +672,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   conn0_req_event->attr.conn_id.pid = real_pid;
   conn0_req_event->attr.conn_id.fd = real_fd;
 
-  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  DataTable data_table(kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   // Simulating events being emitted from BPF perf buffer.

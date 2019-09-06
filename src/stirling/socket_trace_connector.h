@@ -28,6 +28,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/common/grpcutils/service_descriptor_database.h"
 #include "src/stirling/bcc_wrapper.h"
 #include "src/stirling/connection_tracker.h"
+#include "src/stirling/http_table.h"
 #include "src/stirling/socket_trace.h"
 
 DECLARE_string(http_response_header_filters);
@@ -49,32 +50,6 @@ enum class HTTPContentType {
 class SocketTraceConnector : public SourceConnector, public BCCWrapper {
  public:
   inline static const std::string_view kBCCScript = http_trace_bcc_script;
-
-  // clang-format off
-  static constexpr DataElement kHTTPElements[] = {
-          {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
-          {"pid", types::DataType::INT64, types::PatternType::GENERAL},
-          // TODO(oazizi): Merge with pid, and use INT128, when available.
-          {"pid_start_time", types::DataType::INT64, types::PatternType::GENERAL},
-          // TODO(PL-519): Eventually, use uint128 to represent IP addresses, as will be resolved in
-          // the Jira issue.
-          {"remote_addr", types::DataType::STRING, types::PatternType::GENERAL},
-          {"remote_port", types::DataType::INT64, types::PatternType::GENERAL},
-          {"http_major_version", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
-          {"http_minor_version", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
-          {"http_content_type", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
-          {"http_req_headers", types::DataType::STRING, types::PatternType::STRUCTURED},
-          {"http_req_method", types::DataType::STRING, types::PatternType::GENERAL_ENUM},
-          {"http_req_path", types::DataType::STRING, types::PatternType::STRUCTURED},
-          {"http_req_body", types::DataType::STRING, types::PatternType::STRUCTURED},
-          {"http_resp_headers", types::DataType::STRING, types::PatternType::STRUCTURED},
-          {"http_resp_status", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
-          {"http_resp_message", types::DataType::STRING, types::PatternType::STRUCTURED},
-          {"http_resp_body", types::DataType::STRING, types::PatternType::STRUCTURED},
-          {"http_resp_latency_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE}
-  };
-  // clang-format on
-  static constexpr auto kHTTPTable = DataTableSchema("http_events", kHTTPElements);
 
   static constexpr std::string_view kHTTPPerfBufferNames[] = {
       "socket_open_conns",

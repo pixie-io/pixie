@@ -34,6 +34,7 @@ using pl::stirling::SocketTraceConnector;
 using pl::stirling::SystemStatsConnector;
 
 using pl::stirling::DataElement;
+using pl::stirling::kHTTPTable;
 
 using pl::ConstVectorView;
 
@@ -96,9 +97,8 @@ void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   } else if (name == PIDRuntimeConnector::kTable.name().data()) {
     PrintRecordBatch("PIDStat-BCC", PIDRuntimeConnector::kTable.elements(), num_records,
                      *record_batch);
-  } else if (name == SocketTraceConnector::kHTTPTable.name().data()) {
-    PrintRecordBatch("HTTPTrace", SocketTraceConnector::kHTTPTable.elements(), num_records,
-                     *record_batch);
+  } else if (name == kHTTPTable.name().data()) {
+    PrintRecordBatch("HTTPTrace", kHTTPTable.elements(), num_records, *record_batch);
   } else if (name == SystemStatsConnector::kProcessStatsTable.name().data()) {
     PrintRecordBatch("ProcessStats", SystemStatsConnector::kProcessStatsTable.elements(),
                      num_records, *record_batch);

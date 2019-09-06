@@ -47,16 +47,6 @@ using ::testing::SizeIs;
 using ::testing::StrEq;
 
 constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
-constexpr DataTableSchema kHTTPTable = SocketTraceConnector::kHTTPTable;
-constexpr uint32_t kHTTPMajorVersionIdx = kHTTPTable.ColIndex("http_major_version");
-constexpr uint32_t kHTTPContentTypeIdx = kHTTPTable.ColIndex("http_content_type");
-constexpr uint32_t kHTTPReqHeadersIdx = kHTTPTable.ColIndex("http_req_headers");
-constexpr uint32_t kHTTPRespHeadersIdx = kHTTPTable.ColIndex("http_resp_headers");
-constexpr uint32_t kHTTPPIDIdx = kHTTPTable.ColIndex("pid");
-constexpr uint32_t kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
-constexpr uint32_t kHTTPRemotePortIdx = kHTTPTable.ColIndex("remote_port");
-constexpr uint32_t kHTTPReqBodyIdx = kHTTPTable.ColIndex("http_req_body");
-constexpr uint32_t kHTTPRespBodyIdx = kHTTPTable.ColIndex("http_resp_body");
 
 std::vector<size_t> FindRecordIdxMatchesPid(const ColumnWrapperRecordBatch& http_record, int pid) {
   std::vector<size_t> res;
@@ -122,7 +112,7 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   s.Kill();
   EXPECT_EQ(9, s.Wait()) << "Server should have been killed.";
 
-  DataTable data_table(SocketTraceConnector::kHTTPTable);
+  DataTable data_table(kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   connector->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
@@ -182,7 +172,7 @@ class GRPCCppTest : public ::testing::Test {
     auto* socket_trace_connector = static_cast<SocketTraceConnector*>(source_.get());
     ASSERT_NE(nullptr, socket_trace_connector);
 
-    data_table_ = std::make_unique<DataTable>(SocketTraceConnector::kHTTPTable);
+    data_table_ = std::make_unique<DataTable>(kHTTPTable);
   }
 
   void SetUpGRPCServices() {
