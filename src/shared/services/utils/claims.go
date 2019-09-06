@@ -40,9 +40,15 @@ func MapClaimsToPB(claims jwt.MapClaims) *jwt2.JWTClaims {
 	p.Subject = claims["sub"].(string)
 
 	// Custom claims.
-	p.UserID = claims["UserID"].(string)
-	p.OrgID = claims["OrgID"].(string)
-	p.Email = claims["Email"].(string)
+	if val, ok := claims["UserID"]; ok {
+		p.UserID = val.(string)
+	}
+	if val, ok := claims["OrgID"]; ok {
+		p.OrgID = val.(string)
+	}
+	if val, ok := claims["Email"]; ok {
+		p.Email = val.(string)
+	}
 
 	return p
 }
