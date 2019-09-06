@@ -448,9 +448,7 @@ class ConnectionTracker {
   void UpdateTimestamps(uint64_t bpf_timestamp);
   void HandleInactivity();
 
-  struct conn_id_t conn_id_ {
-    {0}, {0}, 0, 0
-  };
+  struct conn_id_t conn_id_ = {};
   traffic_class_t traffic_class_{kProtocolUnknown, kRoleUnknown};
 
   SocketOpen open_info_;
