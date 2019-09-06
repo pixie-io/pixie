@@ -140,5 +140,47 @@ TEST(ColumnWrapperTest, AppendTypeMismatches) {
                R"(\(1 vs\. 5\) Expect bool got string)");
 }
 
+TEST(ColumnWrapperTest, FromVectorInt64) {
+  auto wrapper = ColumnWrapper::Make(DataType::INT64, 4);
+  std::vector<types::Int64Value> int_vector({4, 2, 3, 1});
+  wrapper->Clear();
+  wrapper->AppendFromVector(int_vector);
+  auto actual_arr = wrapper->ConvertToArrow(arrow::default_memory_pool());
+  EXPECT_EQ(DataTypeTraits<DataType::INT64>::arrow_type_id, actual_arr->type_id());
+
+  // build the comparison list.
+  arrow::Int64Builder builder;
+  PL_CHECK_OK(builder.Append(4));
+  PL_CHECK_OK(builder.Append(2));
+  PL_CHECK_OK(builder.Append(3));
+  PL_CHECK_OK(builder.Append(1));
+
+  std::shared_ptr<arrow::Array> expected_arr;
+  PL_CHECK_OK(builder.Finish(&expected_arr));
+
+  EXPECT_TRUE(actual_arr->Equals(expected_arr));
+}
+
+TEST(ColumnWrapperTest, FromVectorString) {
+  auto wrapper = ColumnWrapper::Make(DataType::STRING, 4);
+  std::vector<types::StringValue> string_vector({"abc", "def", "ghi", "jkl"});
+  wrapper->Clear();
+  wrapper->AppendFromVector(string_vector);
+  auto actual_arr = wrapper->ConvertToArrow(arrow::default_memory_pool());
+  EXPECT_EQ(DataTypeTraits<DataType::STRING>::arrow_type_id, actual_arr->type_id());
+
+  // build the comparison list.
+  arrow::StringBuilder builder;
+  PL_CHECK_OK(builder.Append("abc"));
+  PL_CHECK_OK(builder.Append("def"));
+  PL_CHECK_OK(builder.Append("ghi"));
+  PL_CHECK_OK(builder.Append("jkl"));
+
+  std::shared_ptr<arrow::Array> expected_arr;
+  PL_CHECK_OK(builder.Finish(&expected_arr));
+
+  EXPECT_TRUE(actual_arr->Equals(expected_arr));
+}
+
 }  // namespace types
 }  // namespace pl

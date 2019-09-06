@@ -66,6 +66,9 @@ class ColumnWrapper {
 
   template <class TValueType>
   TValueType GetNoTypeCheck(size_t idx) const;
+
+  template <class TValueType>
+  void AppendFromVector(const std::vector<TValueType>& value_vector);
 };
 
 /**
@@ -106,6 +109,12 @@ class ColumnWrapperTmpl : public ColumnWrapper {
   void Clear() override { data_.clear(); }
 
   int64_t Bytes() const override;
+
+  void AppendFromVector(const std::vector<T>& value_vector) {
+    for (const auto& value : value_vector) {
+      Append(value);
+    }
+  }
 
  private:
   std::vector<T> data_;
@@ -265,6 +274,14 @@ template <class TValueType>
 inline TValueType ColumnWrapper::GetNoTypeCheck(size_t idx) const {
   DCHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
   return static_cast<ColumnWrapperTmpl<TValueType>*>(this)->operator[](idx);
+}
+
+template <class TValueType>
+inline void ColumnWrapper::AppendFromVector(const std::vector<TValueType>& val) {
+  CHECK_EQ(data_type(), ValueTypeTraits<TValueType>::data_type)
+      << "Expect " << ToString(data_type()) << " got "
+      << ToString(ValueTypeTraits<TValueType>::data_type);
+  static_cast<ColumnWrapperTmpl<TValueType>*>(this)->AppendFromVector(val);
 }
 
 template <DataType DT>
