@@ -66,7 +66,7 @@ struct ParseResult {
  * @return Either the position of a message start, if found (must be > start_pos),
  * or std::string::npos if no such message start was found.
  */
-template <class TMessageType>
+template <typename TMessageType>
 size_t FindMessageBoundary(MessageType type, std::string_view buf, size_t start_pos);
 
 /**
@@ -78,7 +78,7 @@ size_t FindMessageBoundary(MessageType type, std::string_view buf, size_t start_
  * @param messages the parsed messages
  * @return result of the parse, including positions in the source buffer where messages were found.
  */
-template <class TMessageType>
+template <typename TMessageType>
 ParseResult<size_t> Parse(MessageType type, std::string_view buf,
                           std::deque<TMessageType>* messages);
 
@@ -97,7 +97,7 @@ enum class ParseSyncType {
  * @brief Parses a stream of events traced from write/send/read/recv syscalls,
  * and emits as many complete parsed messages as it can.
  */
-template <class TMessageType>
+template <typename TMessageType>
 class EventParser {
  public:
   /**
@@ -129,7 +129,7 @@ class EventParser {
 
     size_t start_pos = 0;
     if (sync_type != ParseSyncType::None) {
-      bool force_movement = sync_type == ParseSyncType::Aggressive;
+      const bool force_movement = sync_type == ParseSyncType::Aggressive;
       start_pos = FindMessageBoundary<TMessageType>(type, buf, force_movement);
 
       // Couldn't find a boundary, so stay where we are.
@@ -140,7 +140,7 @@ class EventParser {
     }
 
     // Grab size before we start, so we know where the new parsed messages are.
-    size_t prev_size = messages->size();
+    const size_t prev_size = messages->size();
 
     // Parse and append new messages to the messages vector.
     std::string_view buf_view(buf);
@@ -152,13 +152,14 @@ class EventParser {
 
     // Match timestamps with the parsed messages.
     for (size_t i = 0; i < result.start_positions.size(); ++i) {
-      auto& msg = (*messages)[prev_size + i];
       // TODO(oazizi): ConvertPosition is inefficient, because it starts searching from scratch
       // everytime. Could do better if ConvertPosition took a starting seq and size.
       BufferPosition position = ConvertPosition(msgs_, start_pos + result.start_positions[i]);
-      positions.push_back(position);
       DCHECK(position.seq_num < msgs_.size()) << absl::Substitute(
           "The sequence number must be in valid range of [0, $0)", msgs_.size());
+      positions.push_back(position);
+
+      auto& msg = (*messages)[prev_size + i];
       msg.timestamp_ns = ts_nses_[position.seq_num];
     }
 
@@ -182,13 +183,15 @@ class EventParser {
     return result;
   }
 
-  /** Utility to convert positions from a position within a set of combined buffers,
+  /**
+   * @brief Utility to convert positions from a position within a set of combined buffers,
    * to the position within a set of matching content in disjoint buffers.
+   *
    * @param msgs The original set of disjoint buffers.
    * @param pos The position within the combined buffer.
    * @return Position within disjoint buffers, as buffer number and offset within the buffer.
    */
-  BufferPosition ConvertPosition(std::vector<std::string_view> msgs, size_t pos) {
+  BufferPosition ConvertPosition(const std::vector<std::string_view>& msgs, size_t pos) {
     size_t curr_seq = 0;
     size_t size = 0;
     for (auto msg : msgs) {
@@ -201,6 +204,7 @@ class EventParser {
     return {curr_seq, 0};
   }
 
+  // ts_nses_ is the time stamp in nanosecond for the message in msgs_ with the same indexes.
   std::vector<uint64_t> ts_nses_;
   std::vector<std::string_view> msgs_;
 
