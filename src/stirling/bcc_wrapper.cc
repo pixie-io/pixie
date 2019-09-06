@@ -14,7 +14,14 @@
 #include "src/stirling/bcc_wrapper.h"
 
 // TODO(yzhao): Do we need make this flag able to specify size for individual perf buffers?
-DEFINE_uint32(stirling_bpf_perf_buffer_page_count, 8,
+// At least, we should have different values for ones used for transferring data, and metadata.
+//
+// Assume a moderate network bandwidth peak of 10MiB/s for any socket connection,
+// and a sampling cycle of 10ms, that translate to 25.6 4KiB pages.
+// And our current sampling cycle is 100ms, and requires 10*25.6==256 pages.
+// Then the perf buffer consumes 1MiB each, and we have 4 of them, which is 4MiB in total,
+// that should be OK for our current beta customers.
+DEFINE_uint32(stirling_bpf_perf_buffer_page_count, 256,
               "The size of the perf buffers, in number of memory pages.");
 
 DEFINE_bool(stirling_bpf_enable_logging, false, "If true, BPF logging facilities are enabled.");
