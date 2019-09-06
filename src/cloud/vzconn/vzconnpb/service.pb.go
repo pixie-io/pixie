@@ -6,15 +6,16 @@ package vzconnpb
 import (
 	context "context"
 	fmt "fmt"
+	io "io"
+	math "math"
+	reflect "reflect"
+	strings "strings"
+
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	grpc "google.golang.org/grpc"
-	io "io"
-	math "math"
 	_ "pixielabs.ai/pixielabs/src/common/uuid/proto"
-	reflect "reflect"
-	strings "strings"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -226,7 +227,7 @@ func (this *CloudConnectRequest) GoString() string {
 	s = append(s, "&vzconnpb.CloudConnectRequest{")
 	s = append(s, "Topic: "+fmt.Sprintf("%#v", this.Topic)+",\n")
 	if this.Msg != nil {
-		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
+		s = append(s, "msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -239,7 +240,7 @@ func (this *CloudConnectResponse) GoString() string {
 	s = append(s, "&vzconnpb.CloudConnectResponse{")
 	s = append(s, "Topic: "+fmt.Sprintf("%#v", this.Topic)+",\n")
 	if this.Msg != nil {
-		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
+		s = append(s, "msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -487,7 +488,7 @@ func (this *CloudConnectRequest) String() string {
 	}
 	s := strings.Join([]string{`&CloudConnectRequest{`,
 		`Topic:` + fmt.Sprintf("%v", this.Topic) + `,`,
-		`Msg:` + strings.Replace(fmt.Sprintf("%v", this.Msg), "Any", "types.Any", 1) + `,`,
+		`msg:` + strings.Replace(fmt.Sprintf("%v", this.Msg), "Any", "types.Any", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -498,7 +499,7 @@ func (this *CloudConnectResponse) String() string {
 	}
 	s := strings.Join([]string{`&CloudConnectResponse{`,
 		`Topic:` + fmt.Sprintf("%v", this.Topic) + `,`,
-		`Msg:` + strings.Replace(fmt.Sprintf("%v", this.Msg), "Any", "types.Any", 1) + `,`,
+		`msg:` + strings.Replace(fmt.Sprintf("%v", this.Msg), "Any", "types.Any", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -574,7 +575,7 @@ func (m *CloudConnectRequest) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Msg", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field msg", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -695,7 +696,7 @@ func (m *CloudConnectResponse) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Msg", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field msg", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {

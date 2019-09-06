@@ -5,15 +5,16 @@ package messages
 
 import (
 	fmt "fmt"
-	_ "github.com/gogo/protobuf/gogoproto"
-	proto "github.com/gogo/protobuf/proto"
 	io "io"
 	math "math"
+	reflect "reflect"
+	strings "strings"
+
+	_ "github.com/gogo/protobuf/gogoproto"
+	proto "github.com/gogo/protobuf/proto"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
-	reflect "reflect"
-	strings "strings"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -28,7 +29,7 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
 
 type VizierMessage struct {
-	// Types that are valid to be assigned to Msg:
+	// Types that are valid to be assigned to msg:
 	//	*VizierMessage_RegisterAgentRequest
 	//	*VizierMessage_RegisterAgentResponse
 	//	*VizierMessage_UpdateAgentRequest
@@ -236,7 +237,7 @@ func _VizierMessage_OneofMarshaler(msg proto.Message, b *proto.Buffer) error {
 		}
 	case nil:
 	default:
-		return fmt.Errorf("VizierMessage.Msg has unexpected type %T", x)
+		return fmt.Errorf("VizierMessage.msg has unexpected type %T", x)
 	}
 	return nil
 }
@@ -1627,7 +1628,7 @@ func (this *VizierMessage) GoString() string {
 	s := make([]string, 0, 12)
 	s = append(s, "&messages.VizierMessage{")
 	if this.Msg != nil {
-		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
+		s = append(s, "msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -2767,7 +2768,7 @@ func (this *VizierMessage) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&VizierMessage{`,
-		`Msg:` + fmt.Sprintf("%v", this.Msg) + `,`,
+		`msg:` + fmt.Sprintf("%v", this.Msg) + `,`,
 		`}`,
 	}, "")
 	return s

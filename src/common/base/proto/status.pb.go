@@ -186,7 +186,7 @@ func (this *Status) GoString() string {
 	s := make([]string, 0, 7)
 	s = append(s, "&statuspb.Status{")
 	s = append(s, "ErrCode: "+fmt.Sprintf("%#v", this.ErrCode)+",\n")
-	s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
+	s = append(s, "msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
 	if this.Context != nil {
 		s = append(s, "Context: "+fmt.Sprintf("%#v", this.Context)+",\n")
 	}
@@ -288,7 +288,7 @@ func (this *Status) String() string {
 	}
 	s := strings.Join([]string{`&Status{`,
 		`ErrCode:` + fmt.Sprintf("%v", this.ErrCode) + `,`,
-		`Msg:` + fmt.Sprintf("%v", this.Msg) + `,`,
+		`msg:` + fmt.Sprintf("%v", this.Msg) + `,`,
 		`Context:` + strings.Replace(fmt.Sprintf("%v", this.Context), "Any", "types.Any", 1) + `,`,
 		`}`,
 	}, "")
@@ -352,7 +352,7 @@ func (m *Status) Unmarshal(dAtA []byte) error {
 			}
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Msg", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field msg", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {

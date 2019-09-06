@@ -32,7 +32,7 @@ type FakeAPIEnv struct {
 	client *mock_proto.MockQueryBrokerServiceClient
 }
 
-// New creates a new api env.
+// NewServer creates a new api env.
 func NewFakeAPIEnv(c *gomock.Controller) *FakeAPIEnv {
 	return &FakeAPIEnv{
 		client: mock_proto.NewMockQueryBrokerServiceClient(c),
