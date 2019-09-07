@@ -7,6 +7,7 @@
 #include "absl/container/flat_hash_map.h"
 
 #include "src/common/base/base.h"
+#include "src/common/base/mixins.h"
 #include "src/stirling/info_class_manager.h"
 #include "src/stirling/types.h"
 
@@ -21,11 +22,10 @@ struct TaggedRecordBatch {
   std::unique_ptr<types::ColumnWrapperRecordBatch> records_uptr;
 };
 
-class DataTable {
+class DataTable : public NotCopyable {
  public:
-  DataTable() = delete;
-  virtual ~DataTable() = default;
   explicit DataTable(const DataTableSchema& schema);
+  virtual ~DataTable() = default;
 
   /**
    * @brief Get the data collected so far and relinquish ownership.
@@ -68,6 +68,9 @@ class DataTable {
   double OccupancyPct() const { return 1.0 * Occupancy() / kTargetCapacity; }
 
  protected:
+  // ColumnWrapper specific members
+  static constexpr size_t kTargetCapacity = 1024;
+
   // Initialize a new Active record batch.
   void InitBuffers(types::ColumnWrapperRecordBatch* record_batch_ptr);
 
@@ -83,9 +86,6 @@ class DataTable {
 
   // Sealed record batches that have been collected, but need to be pushed upstream.
   std::vector<TaggedRecordBatch> sealed_batches_;
-
-  // ColumnWrapper specific members
-  static constexpr size_t kTargetCapacity = 1024;
 };
 
 }  // namespace stirling
