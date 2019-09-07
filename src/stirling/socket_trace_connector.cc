@@ -111,8 +111,6 @@ Status SocketTraceConnector::Configure(TrafficProtocol protocol, uint64_t config
     return error::Internal(
         absl::StrCat("Failed to update control map, error message: ", update_res.msg()));
   }
-  config_mask_[protocol] = config_mask;
-
   return Status::OK();
 }
 

@@ -31,7 +31,6 @@ class SocketTraceConnectorTest : public ::testing::Test {
     connector_ = SocketTraceConnector::Create("socket_trace_connector");
     source_ = dynamic_cast<SocketTraceConnector*>(connector_.get());
     ASSERT_NE(nullptr, source_);
-    source_->TestOnlyConfigure(kProtocolHTTP, kRoleRequestor);
 
     auto agent_metadata_state = std::make_shared<md::AgentMetadataState>(kASID);
     ctx_ = std::make_unique<ConnectorContext>(agent_metadata_state);

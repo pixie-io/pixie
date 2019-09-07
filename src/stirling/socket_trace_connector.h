@@ -121,9 +121,6 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
    */
   const ConnectionTracker* GetConnectionTracker(struct conn_id_t connid) const;
 
-  void TestOnlyConfigure(uint32_t protocol, uint64_t config_mask) {
-    config_mask_[protocol] = config_mask;
-  }
   static void TestOnlySetHTTPResponseHeaderFilter(http::HTTPHeaderFilter filter) {
     http_response_header_filter_ = std::move(filter);
   }
@@ -210,7 +207,6 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
         BCCWrapper(kBCCScript) {
     // TODO(yzhao): Is there a better place/time to grab the flags?
     http_response_header_filter_ = http::ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
-    config_mask_.resize(kNumProtocols);
   }
 
   // Events from BPF.
@@ -242,8 +238,6 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   // Inner map could be a priority_queue, but benchmarks showed better performance with a std::map.
   // Key is {PID, FD} for outer map (see GetStreamId()), and generation for inner map.
   std::unordered_map<uint64_t, std::map<uint64_t, ConnectionTracker> > connection_trackers_;
-
-  std::vector<uint64_t> config_mask_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
