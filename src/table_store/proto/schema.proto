@@ -35,7 +35,7 @@ message Time64NSColumn {
 
 // String data column.
 message StringColumn {
-  repeated string data = 1;
+  repeated bytes data = 1;
 }
 
 // A single column of data.
