@@ -111,13 +111,6 @@ class BCCWrapper {
   Status InitBPFCode() { return InitBPFCode(std::vector<std::string>()); }
 
   /**
-   * @ brief Attaches a single kernel probe (kprobe).
-   * @param probe Specifications
-   * @return Error if probe failed to attach.
-   */
-  Status AttachProbe(const ProbeSpec& probe);
-
-  /**
    * @brief Convenience function that attaches multiple probes.
    * @param probes Vector of probes.
    * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
@@ -129,14 +122,6 @@ class BCCWrapper {
    * If any probe fails to detach, an error is logged, and the function continues.
    */
   void DetachProbes();
-
-  /**
-   * @brief Opens a perf buffer.
-   * @param perf_buffer Descriptor of the perf buffer to open.
-   * @param cb_cookie Raw pointer returned on callback, typically used for tracking context.
-   * @return Error if perf buffer open fails.
-   */
-  Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie);
 
   /**
    * @brief Convenience function that opens multiple perf buffers.
@@ -151,13 +136,6 @@ class BCCWrapper {
    * If any perf buffer fails to close, an error is logged, and the function continues.
    */
   void ClosePerfBuffers();
-
-  /**
-   * @brief Attaches a single perf event.
-   * @param perf_event Descriptor of the perf event.
-   * @return Error if perf event fails to attach.
-   */
-  Status AttachPerfEvent(const PerfEventSpec& perf_event);
 
   /**
    * @brief Convenience function that opens multiple perf events.
@@ -201,8 +179,11 @@ class BCCWrapper {
 
  private:
   Status InitLogging();
+  Status AttachProbe(const ProbeSpec& probe);
   Status DetachProbe(const ProbeSpec& probe);
+  Status OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_cookie);
   Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer);
+  Status AttachPerfEvent(const PerfEventSpec& perf_event);
   Status DetachPerfEvent(const PerfEventSpec& perf_event);
 
   std::string_view bpf_program_;
