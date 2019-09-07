@@ -101,103 +101,156 @@ TEST_F(ServiceDescriptorDatabaseTest, AllServices) {
   EXPECT_EQ("CheckoutAgainService", services[1].name());
 }
 
-TEST_F(ServiceDescriptorDatabaseTest, ParseAs) {
+//-----------------------------------------------------------------------------
+
+class ParseAsTest : public ::testing::Test {
+ protected:
+  void SetUp() {
+    FileDescriptorSet fd_set;
+    ASSERT_TRUE(TextFormat::ParseFromString(kTestProtoBuf, fd_set.add_file()));
+    db_ = std::make_unique<ServiceDescriptorDatabase>(fd_set);
+  }
+
+  std::unique_ptr<ServiceDescriptorDatabase> db_;
+  StatusOr<std::unique_ptr<google::protobuf::Message>> message_;
+};
+
+TEST_F(ParseAsTest, ValidMessage) {
   // Message with the string '581a554f-33' in protobuf wire format.
   const std::string kValidMessage = "\x0a\x0b\x35\x38\x31\x61\x35\x35\x34\x66\x2d\x33\x33";
 
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kValidMessage);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
+
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kValidMessage,
+                     /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
+}
+
+TEST_F(ParseAsTest, EmptyMessage) {
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", "");
+  ASSERT_TRUE(message_.ok());
+  EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
+
+  message_ =
+      ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", "", /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
+}
+
+TEST_F(ParseAsTest, InvalidMessageType) {
+  // Message with the string '581a554f-33' in protobuf wire format.
+  const std::string kValidMessage = "\x0a\x0b\x35\x38\x31\x61\x35\x35\x34\x66\x2d\x33\x33";
+
+  StatusOr<std::unique_ptr<google::protobuf::Message>> message_;
+
+  message_ = ParseAs(db_.get(), "hipstershop.FakeRequest", kValidMessage);
+  EXPECT_FALSE(message_.ok());
+
+  message_ =
+      ParseAs(db_.get(), "hipstershop.FakeRequest", kValidMessage, /* allow_unknown_fields */ true);
+  EXPECT_FALSE(message_.ok());
+}
+
+TEST_F(ParseAsTest, WrongMessageLength) {
   // Message with incorrect protobuf length (not parseable).
   const std::string kMessageWrongLength = "\x0a\x06\x35\x38\x31\x61\x35\x35\x34\x66\x2d\x33\x33";
 
-  // Message with incorrect wire_type (1 as a varint).
+  StatusOr<std::unique_ptr<google::protobuf::Message>> message_;
+
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongLength);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
+
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongLength,
+                     /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
+}
+
+TEST_F(ParseAsTest, WrongWireType) {
+  // Message with incorrect wire_type (field 1 as a varint instead of string).
   const std::string kMessageWrongWireType = "\x08\x01";
 
-  // Message with extra field.
-  const std::string kMessageWithExtraField =
-      "\x0a\x0b\x35\x38\x31\x61\x35\x35\x34\x66\x2d\x33\x33\x10\x01";
+  StatusOr<std::unique_ptr<google::protobuf::Message>> message_;
 
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongWireType);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
+
+  // NOTE: This might be unexpected, because allowing unknown fields
+  //       actually allows a message with wrong wire type to be parsed.
+  // TODO(oazizi): Can we fix/change this behavior?
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongWireType,
+                     /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
+}
+
+TEST_F(ParseAsTest, MessageWithExtraField) {
+  // Valid message with extra field number 2.
+  const std::string kMessageWithExtraField =
+      absl::StrCat("\x0a\x0b\x35\x38\x31\x61\x35\x35\x34\x66\x2d\x33\x33", "\x10\x01");
+
+  StatusOr<std::unique_ptr<google::protobuf::Message>> message_;
+
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithExtraField);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
+
+  // Note that this is a different kind of unknown field than the rest.
+  // Technically, this one is a valid message_, while duplicate field number and wrong wire type are
+  // not.
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithExtraField,
+                     /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
+}
+
+TEST_F(ParseAsTest, MessageWithConflictingFieldNum) {
   // Message with repeated field number (field number 1 specified twice, once as string, once as
   // varint).
-  const std::string kMessageWithDuplicateFieldNum =
+  const std::string kMessageWithConflictingFieldNum1 =
       "\x0a\x0b\x35\x38\x31\x61\x35\x35\x34\x66\x2d\x33\x33\x08\x01";
 
   // Message with repeated field number (like above, but with order flipped).
-  const std::string kMessageWithDuplicateFieldNum2 =
+  const std::string kMessageWithConflictingFieldNum2 =
       "\x08\x01\x0a\x0b\x35\x38\x31\x61\x35\x35\x34\x66\x2d\x33\x33";
 
-  StatusOr<std::unique_ptr<google::protobuf::Message>> message;
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithConflictingFieldNum1);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
 
-  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kValidMessage);
-  ASSERT_TRUE(message.ok());
-  EXPECT_NE(nullptr, message.ConsumeValueOrDie());
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithConflictingFieldNum1,
+                     /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
 
-  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kValidMessage,
-                    /* allow_unknown_fields */ true);
-  ASSERT_TRUE(message.ok());
-  EXPECT_NE(nullptr, message.ConsumeValueOrDie());
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithConflictingFieldNum2);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
 
-  message = ParseAs(db_.get(), "hipstershop.FakeRequest", kValidMessage);
-  EXPECT_FALSE(message.ok());
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithConflictingFieldNum2,
+                     /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
+}
 
-  message =
-      ParseAs(db_.get(), "hipstershop.FakeRequest", kValidMessage, /* allow_unknown_fields */ true);
-  EXPECT_FALSE(message.ok());
+TEST_F(ParseAsTest, MessageWithDuplicateFieldNum) {
+  // Message with the string '581a' in protobuf wire format.
+  const std::string kValidMessage = "\x0a\x04\x35\x38\x31\x61";
+  const std::string kMessageWithDuplicateFieldNum = absl::StrCat(kValidMessage, kValidMessage);
 
-  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongLength);
-  ASSERT_TRUE(message.ok());
-  EXPECT_EQ(nullptr, message.ConsumeValueOrDie());
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithDuplicateFieldNum);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
 
-  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongLength,
-                    /* allow_unknown_fields */ true);
-  ASSERT_TRUE(message.ok());
-  EXPECT_EQ(nullptr, message.ConsumeValueOrDie());
-
-  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongWireType);
-  ASSERT_TRUE(message.ok());
-  EXPECT_EQ(nullptr, message.ConsumeValueOrDie());
-
-  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongWireType,
-                    /* allow_unknown_fields */ true);
-  ASSERT_TRUE(message.ok());
-  EXPECT_NE(nullptr, message.ConsumeValueOrDie());
-
-  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithExtraField);
-  ASSERT_TRUE(message.ok());
-  EXPECT_EQ(nullptr, message.ConsumeValueOrDie());
-
-  // Note that this is a different kind of unknown field than the rest.
-  // Technically, this one is a valid message, while duplicate field number and wrong wire type are
-  // not.
-  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithExtraField,
-                    /* allow_unknown_fields */ true);
-  ASSERT_TRUE(message.ok());
-  EXPECT_NE(nullptr, message.ConsumeValueOrDie());
-
-  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithDuplicateFieldNum);
-  ASSERT_TRUE(message.ok());
-  EXPECT_EQ(nullptr, message.ConsumeValueOrDie());
-
-  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithDuplicateFieldNum,
-                    /* allow_unknown_fields */ true);
-  ASSERT_TRUE(message.ok());
-  EXPECT_NE(nullptr, message.ConsumeValueOrDie());
-
-  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithDuplicateFieldNum2);
-  ASSERT_TRUE(message.ok());
-  EXPECT_EQ(nullptr, message.ConsumeValueOrDie());
-
-  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithDuplicateFieldNum2,
-                    /* allow_unknown_fields */ true);
-  ASSERT_TRUE(message.ok());
-  EXPECT_NE(nullptr, message.ConsumeValueOrDie());
-
-  message = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", "");
-  ASSERT_TRUE(message.ok());
-  EXPECT_NE(nullptr, message.ConsumeValueOrDie());
-
-  message =
-      ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", "", /* allow_unknown_fields */ true);
-  ASSERT_TRUE(message.ok());
-  EXPECT_NE(nullptr, message.ConsumeValueOrDie());
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithDuplicateFieldNum,
+                     /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
 }
 
 }  // namespace grpc
