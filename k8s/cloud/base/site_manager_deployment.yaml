@@ -20,6 +20,11 @@ spec:
             hostPort: 50300
           - containerPort: 50301
             hostPort: 50301
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 50300
         env:
           - name: PL_POSTGRES_PORT
             value: "5432"

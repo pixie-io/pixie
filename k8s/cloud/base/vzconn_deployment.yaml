@@ -20,6 +20,11 @@ spec:
             hostPort: 51600
           - containerPort: 51601
             hostPort: 51601
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 51600
         env:
           - name: PL_JWT_SIGNING_KEY
             valueFrom:
