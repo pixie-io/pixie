@@ -127,6 +127,11 @@ TEST_F(ParseAsTest, ValidMessage) {
                      /* allow_unknown_fields */ true);
   ASSERT_TRUE(message_.ok());
   EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
+
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kValidMessage,
+                     /* allow_unknown_fields */ false, /* allow_repeated_opt_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
 }
 
 TEST_F(ParseAsTest, EmptyMessage) {
@@ -136,6 +141,11 @@ TEST_F(ParseAsTest, EmptyMessage) {
 
   message_ =
       ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", "", /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
+
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", "",
+                     /* allow_unknown_fields */ false, /* allow_repeated_opt_fields */ true);
   ASSERT_TRUE(message_.ok());
   EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
 }
@@ -152,6 +162,10 @@ TEST_F(ParseAsTest, InvalidMessageType) {
   message_ =
       ParseAs(db_.get(), "hipstershop.FakeRequest", kValidMessage, /* allow_unknown_fields */ true);
   EXPECT_FALSE(message_.ok());
+
+  message_ = ParseAs(db_.get(), "hipstershop.FakeRequest", kValidMessage,
+                     /* allow_unknown_fields */ false, /* allow_repeated_opt_fields */ true);
+  EXPECT_FALSE(message_.ok());
 }
 
 TEST_F(ParseAsTest, WrongMessageLength) {
@@ -166,6 +180,11 @@ TEST_F(ParseAsTest, WrongMessageLength) {
 
   message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongLength,
                      /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
+
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongLength,
+                     /* allow_unknown_fields */ false, /* allow_repeated_opt_fields */ true);
   ASSERT_TRUE(message_.ok());
   EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
 }
@@ -187,6 +206,11 @@ TEST_F(ParseAsTest, WrongWireType) {
                      /* allow_unknown_fields */ true);
   ASSERT_TRUE(message_.ok());
   EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
+
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWrongWireType,
+                     /* allow_unknown_fields */ false, /* allow_repeated_opt_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
 }
 
 TEST_F(ParseAsTest, MessageWithExtraField) {
@@ -207,6 +231,11 @@ TEST_F(ParseAsTest, MessageWithExtraField) {
                      /* allow_unknown_fields */ true);
   ASSERT_TRUE(message_.ok());
   EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
+
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithExtraField,
+                     /* allow_unknown_fields */ false, /* allow_repeated_opt_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
 }
 
 TEST_F(ParseAsTest, MessageWithConflictingFieldNum) {
@@ -228,6 +257,11 @@ TEST_F(ParseAsTest, MessageWithConflictingFieldNum) {
   ASSERT_TRUE(message_.ok());
   EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
 
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithConflictingFieldNum1,
+                     /* allow_unknown_fields */ false, /* allow_repeated_opt_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
+
   message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithConflictingFieldNum2);
   ASSERT_TRUE(message_.ok());
   EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
@@ -236,6 +270,11 @@ TEST_F(ParseAsTest, MessageWithConflictingFieldNum) {
                      /* allow_unknown_fields */ true);
   ASSERT_TRUE(message_.ok());
   EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
+
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithConflictingFieldNum2,
+                     /* allow_unknown_fields */ false, /* allow_repeated_opt_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
 }
 
 TEST_F(ParseAsTest, MessageWithDuplicateFieldNum) {
@@ -245,10 +284,15 @@ TEST_F(ParseAsTest, MessageWithDuplicateFieldNum) {
 
   message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithDuplicateFieldNum);
   ASSERT_TRUE(message_.ok());
-  EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
+  EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
 
   message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithDuplicateFieldNum,
                      /* allow_unknown_fields */ true);
+  ASSERT_TRUE(message_.ok());
+  EXPECT_EQ(nullptr, message_.ConsumeValueOrDie());
+
+  message_ = ParseAs(db_.get(), "hipstershop.PlaceOrderRequest", kMessageWithDuplicateFieldNum,
+                     /* allow_unknown_fields */ false, /* allow_repeated_opt_fields */ true);
   ASSERT_TRUE(message_.ok());
   EXPECT_NE(nullptr, message_.ConsumeValueOrDie());
 }

@@ -68,10 +68,10 @@ class ServiceDescriptorDatabase {
  * @return A unique_ptr to the decoded message if it was parseable, nullptr otherwise.
  *         An error is returned if the message_type_name is unknown.
  */
-StatusOr<std::unique_ptr<google::protobuf::Message>> ParseAs(ServiceDescriptorDatabase* desc_db,
-                                                             const std::string& message_type_name,
-                                                             const std::string& message,
-                                                             bool allow_unknown_fields = false);
+StatusOr<std::unique_ptr<google::protobuf::Message>> ParseAs(
+    ServiceDescriptorDatabase* desc_db, const std::string& message_type_name,
+    const std::string& message, bool allow_unknown_fields = false,
+    bool allow_repeated_opt_fields = false);
 
 // TODO(yzhao): Benchmark dynamic message parsing.
 
