@@ -60,6 +60,17 @@ class ServiceDescriptorDatabase {
   google::protobuf::DynamicMessageFactory message_factory_;
 };
 
+struct ParseAsOpts {
+  // Whether an unknown field is considered a parse failure.
+  bool allow_unknown_fields;
+
+  // Whether a duplicate value for a non-repeated field is considered a parse failure.
+  bool allow_repeated_opt_fields;
+};
+
+constexpr ParseAsOpts kDefaultParseAsOpts = {.allow_unknown_fields = false,
+                                             .allow_repeated_opt_fields = false};
+
 /**
  * @brief Attempts to parse an instance of a protobuf message as the provided message type.
  *
@@ -70,8 +81,7 @@ class ServiceDescriptorDatabase {
  */
 StatusOr<std::unique_ptr<google::protobuf::Message>> ParseAs(
     ServiceDescriptorDatabase* desc_db, const std::string& message_type_name,
-    const std::string& message, bool allow_unknown_fields = false,
-    bool allow_repeated_opt_fields = false);
+    const std::string& message, ParseAsOpts opts = kDefaultParseAsOpts);
 
 // TODO(yzhao): Benchmark dynamic message parsing.
 

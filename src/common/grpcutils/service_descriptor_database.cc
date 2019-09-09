@@ -75,19 +75,18 @@ std::vector<::google::protobuf::ServiceDescriptorProto> ServiceDescriptorDatabas
 // TODO(oazizi): Consider moving this out of this file, perhaps to MessageGroupTypeClassifier.
 StatusOr<std::unique_ptr<Message>> ParseAs(ServiceDescriptorDatabase* desc_db,
                                            const std::string& message_type_name,
-                                           const std::string& message, bool allow_unknown_fields,
-                                           bool allow_repeated_opt_fields) {
+                                           const std::string& message, ParseAsOpts opts) {
   std::unique_ptr<Message> message_obj = desc_db->GetMessage(message_type_name);
   if (message_obj == nullptr) {
     return error::NotFound("Could not find message type with name $0", message_type_name);
   }
-  message_obj->pl_allow_repeated_opt_fields_ = allow_repeated_opt_fields;
+  message_obj->pl_allow_repeated_opt_fields_ = opts.allow_repeated_opt_fields;
   bool success = message_obj->ParseFromString(message);
   if (!success) {
     return std::unique_ptr<Message>(nullptr);
   }
 
-  if (!allow_unknown_fields) {
+  if (!opts.allow_unknown_fields) {
     // Unknown fields are very broad in definition, including:
     //  - Field with wrong wire_type.
     //  - Duplicate field numbers.
