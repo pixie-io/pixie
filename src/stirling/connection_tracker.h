@@ -376,13 +376,7 @@ class ConnectionTracker {
   static void SetInactivityDuration(std::chrono::seconds duration) {
     inactivity_duration_ = duration;
   }
-
-  /**
-   * @brief Resets the inactivity duration to the default value.
-   *
-   * NOTE: This function is static because it is meant to be used for testing purposes only.
-   */
-  static void SetDefaultInactivityDuration() { SetInactivityDuration(kDefaultInactivityDuration); }
+  static constexpr std::chrono::seconds kDefaultInactivityDuration{300};
 
   /**
    * @brief Return the currently configured duration, after which a connection is deemed to be
@@ -473,7 +467,6 @@ class ConnectionTracker {
   uint32_t num_send_events_ = 0;
   uint32_t num_recv_events_ = 0;
 
-  static constexpr std::chrono::seconds kDefaultInactivityDuration{300};
   inline static std::chrono::seconds inactivity_duration_ = kDefaultInactivityDuration;
 
   // Iterations before the tracker can be killed.

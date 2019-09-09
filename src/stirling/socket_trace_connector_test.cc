@@ -31,7 +31,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     source_->TestOnlyConfigure(kProtocolHTTP, kRoleRequestor);
 
     // Because some tests change the inactivity duration, make sure to reset it here for each test.
-    ConnectionTracker::SetDefaultInactivityDuration();
+    ConnectionTracker::SetInactivityDuration(ConnectionTracker::kDefaultInactivityDuration);
     InitMySQLData();
   }
 
