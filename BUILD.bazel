@@ -42,6 +42,9 @@ gazelle(
 # gazelle:resolve go pixielabs.ai/pixielabs/src/shared/k8s/metadatapb //src/shared/k8s/metadatapb:metadata_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/src/stirling/testing/proto //src/stirling/testing/proto:greet_pl_go_proto
 # gazelle:resolve go pixielabs.ai/pixielabs/demos/applications/hipster_shop/proto //demos/applications/hipster_shop/proto:demo_pl_go_proto
+#
+# Make gazelle resolve CGO libraries correctly.
+# gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/compiler //src/carnot/compiler:go_default_library
 
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 

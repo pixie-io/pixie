@@ -1,7 +1,8 @@
+# gazelle:ignore
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_go_library", "pl_linkopts")
-load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_cgo_library", "pl_linkopts")
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -213,7 +214,7 @@ pl_cc_test(
 )
 
 # keep
-go_library(
+pl_cgo_library(
     name = "go_default_library",
     srcs = glob(
         include = ["*.go"],
@@ -221,9 +222,7 @@ go_library(
     ),
     cdeps = [":cc_compiler_export"],
     cgo = True,
-    clinkopts = pl_linkopts(),
     importpath = "pixielabs.ai/pixielabs/src/carnot/compiler",
-    toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
     deps = [
         "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
@@ -236,8 +235,8 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = ["compiler_test.go"],
-    embed = [":go_default_library"],
     deps = [
+        ":go_default_library",
         "//src/carnot/compiler/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/planpb:plan_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
