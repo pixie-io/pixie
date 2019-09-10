@@ -87,15 +87,17 @@ func (e *QueryExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan) error {
 
 	wg.Wait()
 	errsList := make([]string, 0)
-errLoop:
-	for {
+
+	hasErrs := true
+	for ok := true; ok; ok = hasErrs {
 		select {
 		case err := <-errs:
 			errsList = append(errsList, err.Error())
 		default:
-			break errLoop
+			hasErrs = false
 		}
 	}
+
 	if len(errsList) > 0 {
 		return fmt.Errorf(strings.Join(errsList, "\n"))
 	}
