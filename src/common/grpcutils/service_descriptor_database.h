@@ -60,29 +60,6 @@ class ServiceDescriptorDatabase {
   google::protobuf::DynamicMessageFactory message_factory_;
 };
 
-struct ParseAsOpts {
-  // Whether an unknown field is considered a parse failure.
-  bool allow_unknown_fields;
-
-  // Whether a duplicate value for a non-repeated field is considered a parse failure.
-  bool allow_repeated_opt_fields;
-};
-
-constexpr ParseAsOpts kDefaultParseAsOpts = {.allow_unknown_fields = false,
-                                             .allow_repeated_opt_fields = false};
-
-/**
- * @brief Attempts to parse an instance of a protobuf message as the provided message type.
- *
- * @param message_type_name protobuf message type (e.g. hipstershop.GetCartRequest).
- * @param message a protobuf message in the wire format.
- * @return A unique_ptr to the decoded message if it was parseable, nullptr otherwise.
- *         An error is returned if the message_type_name is unknown.
- */
-StatusOr<std::unique_ptr<google::protobuf::Message>> ParseAs(
-    ServiceDescriptorDatabase* desc_db, const std::string& message_type_name,
-    const std::string& message, ParseAsOpts opts = kDefaultParseAsOpts);
-
 // TODO(yzhao): Benchmark dynamic message parsing.
 
 }  // namespace grpc
