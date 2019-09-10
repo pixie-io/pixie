@@ -71,7 +71,7 @@ export class Vizier extends React.Component<VizierProps, {}> {
                      secondaryHeading={PATH_TO_HEADER_TITLE[this.props.location.pathname]}
                   />
                   <Route path={`${matchPath}/agents`} component={AgentDisplay} />
-                  <Route path={`${matchPath}/query`} component={QueryManager} />
+                  <Route path={`${matchPath}/`} component={QueryManager} />
                 </div>
               </div>
             );

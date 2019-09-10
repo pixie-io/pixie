@@ -14,21 +14,22 @@ import {createHttpLink} from 'apollo-link-http';
 import { ApolloProvider } from 'react-apollo';
 import {gqlClient} from './gql-client';
 
-import './App.scss';
+import './subdomain-app.scss';
 
-export interface AppProps {
+export interface SubdomainAppProps {
   name: string;
 }
 
-export class App extends React.Component<AppProps, {}> {
+export class SubdomainApp extends React.Component<SubdomainAppProps, {}> {
   render() {
     return (
       <Router>
         <ApolloProvider client={gqlClient}>
           <div className='main-page'>
             <div className='content'>
-              <Route exact path='/' component={Login} />
-              <Route exact path='/create' component={Login} />
+              <Route path='/login' component={Login} />
+              <Route path='/create-site' component={Login} />
+              <Route path='/' component={Vizier} />
             </div>
           </div>
         </ApolloProvider>
@@ -37,4 +38,4 @@ export class App extends React.Component<AppProps, {}> {
   }
 }
 
-export default App;
+export default SubdomainApp;

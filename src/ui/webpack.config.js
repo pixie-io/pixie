@@ -19,6 +19,13 @@ let plugins = [
     alwaysWriteToDisk: true,
     chunks: ['main', 'manifest', 'commons', 'vendor'],
     template: 'index.html',
+    filename: 'index.html',
+  }),
+  new HtmlWebpackPlugin({
+    alwaysWriteToDisk: true,
+    chunks: ['main', 'manifest', 'commons', 'vendor'],
+    template: 'subdomain-index.html',
+    filename: 'subdomain-index.html',
   }),
   new HtmlWebpackHarddiskPlugin(),
 ];
@@ -41,7 +48,14 @@ var webpackConfig = {
     disableHostCheck: true,
     hot: true,
     publicPath: '/',
-    historyApiFallback: true,
+    historyApiFallback: {
+      rewrites: [
+        {from: /login/, to: '/subdomain-index.html'},
+        {from: /create-site/, to: '/subdomain-index.html'},
+        {from: /vizier/, to: '/subdomain-index.html'},
+        {from: /(.*)/, to: '/index.html'},
+      ],
+    },
     proxy: [],
   },
   entry: [require.resolve('react-dev-utils/webpackHotDevClient'), 'index.tsx'],
