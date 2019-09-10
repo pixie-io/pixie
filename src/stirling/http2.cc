@@ -352,10 +352,10 @@ std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, std::vector<GRPCMes
 
     std::vector<GRPCMessage>& stream_reqs = req_iter->second;
     std::vector<GRPCMessage>& stream_resps = resp_iter->second;
-    LOG_IF(DFATAL, stream_reqs.size() != 1)
+    LOG_IF(ERROR, stream_reqs.size() != 1)
         << "Each stream should have exactly one request, stream ID: " << req_stream_id
         << " got: " << stream_reqs.size();
-    LOG_IF(DFATAL, stream_resps.size() != 1)
+    LOG_IF(ERROR, stream_resps.size() != 1)
         << "Each stream should have exactly one response, stream ID: " << resp_stream_id
         << " got: " << stream_resps.size();
     if (req_stream_id == resp_stream_id) {
