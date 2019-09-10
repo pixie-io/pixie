@@ -1,0 +1,37 @@
+# gazelle:ignore
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test", "pl_cc_test_library", "pl_cgo_library", "pl_linkopts")
+load("@io_bazel_rules_go//go:def.bzl", "go_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.cc",
+            "*.h",
+        ],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_test_utils.h",
+            "cgo_export.*",
+        ],
+    ),
+    hdrs = ["logical_planner.h"],
+    deps = [
+        "//src/carnot/compiler:cc_library",
+        "//src/carnot/compiler/distributedpb:distributed_plan_pl_cc_proto",
+        "//src/carnot/udf_exporter:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "logical_planner_test",
+    srcs = ["logical_planner_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/compiler/distributedpb:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
+        "//src/common/testing:cc_library",
+    ],
+)
