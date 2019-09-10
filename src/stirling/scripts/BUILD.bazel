@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-sh_binary(
+sh_library(
     name = "kprobe_leak_test",
     srcs = ["kprobe_leak_test.sh"],
 )
