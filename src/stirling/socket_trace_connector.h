@@ -223,11 +223,11 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   // Transfer of messages to the data table.
   template <class TMessageType>
-  void TransferStreams(TrafficProtocol protocol, DataTable* data_table);
+  void TransferStreams(ConnectorContext* ctx, TrafficProtocol protocol, DataTable* data_table);
 
   template <class TMessageType>
-  static void AppendMessage(const ConnectionTracker& conn_tracker, ReqRespPair<TMessageType> record,
-                            DataTable* data_table);
+  static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
+                            ReqRespPair<TMessageType> record, DataTable* data_table);
 
   static void AppendMessage(const ConnectionTracker& conn_tracker, mysql::Entry entry,
                             DataTable* data_table);
@@ -247,7 +247,8 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
-  FRIEND_TEST(SocketTraceConnectorTest, End2end);
+  FRIEND_TEST(SocketTraceConnectorTest, End2End);
+  FRIEND_TEST(SocketTraceConnectorTest, UPIDCheck);
   FRIEND_TEST(SocketTraceConnectorTest, RequestResponseMatching);
   FRIEND_TEST(SocketTraceConnectorTest, MissingEventInStream);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInOrder);

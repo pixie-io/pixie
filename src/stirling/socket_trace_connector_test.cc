@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <memory>
 
+#include "src/shared/metadata/metadata.h"
 #include "src/stirling/bcc_bpf/socket_trace.h"
 
 #include "src/stirling/data_table.h"
@@ -20,7 +21,9 @@ using RecordBatch = types::ColumnWrapperRecordBatch;
 
 class SocketTraceConnectorTest : public ::testing::Test {
  protected:
+  static constexpr uint32_t kASID = 1;
   static constexpr uint32_t kPID = 12345;
+  static constexpr uint64_t kPIDStartTimeNS = 112358;
   static constexpr uint32_t kFD = 3;
 
   void SetUp() override {
@@ -29,6 +32,9 @@ class SocketTraceConnectorTest : public ::testing::Test {
     source_ = dynamic_cast<SocketTraceConnector*>(connector_.get());
     ASSERT_NE(nullptr, source_);
     source_->TestOnlyConfigure(kProtocolHTTP, kRoleRequestor);
+
+    auto agent_metadata_state = std::make_shared<md::AgentMetadataState>(kASID);
+    ctx_ = std::make_unique<ConnectorContext>(agent_metadata_state);
 
     // Because some tests change the inactivity duration, make sure to reset it here for each test.
     ConnectionTracker::SetInactivityDuration(ConnectionTracker::kDefaultInactivityDuration);
@@ -45,6 +51,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     conn_info.addr.sin6_family = AF_INET;
     conn_info.timestamp_ns = current_timestamp_;
     conn_info.conn_id.pid = kPID;
+    conn_info.conn_id.pid_start_time_ns = kPIDStartTimeNS;
     conn_info.conn_id.fd = kFD;
     conn_info.conn_id.generation = generation_;
     conn_info.traffic_class.protocol = protocol;
@@ -77,6 +84,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     event.attr.traffic_class.role = kRoleRequestor;
     event.attr.timestamp_ns = current_timestamp_;
     event.attr.conn_id.pid = kPID;
+    event.attr.conn_id.pid_start_time_ns = kPIDStartTimeNS;
     event.attr.conn_id.fd = kFD;
     event.attr.conn_id.generation = generation_;
     event.attr.msg_size = msg.size();
@@ -90,6 +98,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     conn_info_t conn_info{};
     conn_info.timestamp_ns = current_timestamp_;
     conn_info.conn_id.pid = kPID;
+    conn_info.conn_id.pid_start_time_ns = kPIDStartTimeNS;
     conn_info.conn_id.fd = kFD;
     conn_info.conn_id.generation = generation_;
     conn_info.rd_seq_num = recv_seq_num_;
@@ -106,6 +115,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
 
   std::unique_ptr<SourceConnector> connector_;
   SocketTraceConnector* source_ = nullptr;
+  std::unique_ptr<ConnectorContext> ctx_;
 
   const std::string kReq0 =
       "GET /index.html HTTP/1.1\r\n"
@@ -234,7 +244,7 @@ auto ToIntVector(const types::SharedColumnWrapper& col) {
   return result;
 }
 
-TEST_F(SocketTraceConnectorTest, End2end) {
+TEST_F(SocketTraceConnectorTest, End2End) {
   conn_info_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
   std::unique_ptr<SocketDataEvent> event0_json = InitRecvEvent(kJSONResp);
   std::unique_ptr<SocketDataEvent> event1_text = InitRecvEvent(kTextResp);
@@ -247,13 +257,14 @@ TEST_F(SocketTraceConnectorTest, End2end) {
 
   EXPECT_NE(0, source_->ClockRealTimeOffset());
 
-  // Registers a new connection
+  // Registers a new connection.
   source_->AcceptOpenConnEvent(conn);
 
   ASSERT_THAT(source_->NumActiveConnections(), 1);
 
   conn_id_t search_conn_id;
   search_conn_id.pid = kPID;
+  search_conn_id.pid_start_time_ns = kPIDStartTimeNS;
   search_conn_id.fd = kFD;
   search_conn_id.generation = 1;
   const ConnectionTracker* tracker = source_->GetConnectionTracker(search_conn_id);
@@ -264,14 +275,14 @@ TEST_F(SocketTraceConnectorTest, End2end) {
   // th)en TransferData() polls perf buffer, which is no-op because we did not initialize probes,
   // and the data in the internal buffer is being processed and filtered.
   source_->AcceptDataEvent(std::move(event0_json));
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size())
         << "event_json Content-Type does have 'json', and will be selected by the default filter";
   }
 
   source_->AcceptDataEvent(std::move(event1_text));
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size())
         << "event_text Content-Type has no 'json', and won't be selected by the default filter";
@@ -282,7 +293,7 @@ TEST_F(SocketTraceConnectorTest, End2end) {
       {{"Content-Encoding", "gzip"}},
   });
   source_->AcceptDataEvent(std::move(event2_text));
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   for (const auto& column : record_batch) {
     EXPECT_EQ(2, column->Size())
         << "The filter is changed to require 'text/plain' in Content-Type header, "
@@ -295,7 +306,7 @@ TEST_F(SocketTraceConnectorTest, End2end) {
   });
   source_->AcceptDataEvent(std::move(event3_json));
   source_->AcceptCloseConnEvent(close_conn);
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   for (const auto& column : record_batch) {
     EXPECT_EQ(3, column->Size())
         << "The filter is changed to require 'application/json' in Content-Type header, "
@@ -305,6 +316,37 @@ TEST_F(SocketTraceConnectorTest, End2end) {
   EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kHTTPTimeIdx]),
               ElementsAre(2 + source_->ClockRealTimeOffset(), 4 + source_->ClockRealTimeOffset(),
                           5 + source_->ClockRealTimeOffset()));
+}
+
+TEST_F(SocketTraceConnectorTest, UPIDCheck) {
+  conn_info_t conn = InitConn(TrafficProtocol::kProtocolHTTP);
+  std::unique_ptr<SocketDataEvent> event0_json = InitRecvEvent(kJSONResp);
+  std::unique_ptr<SocketDataEvent> event1_json = InitRecvEvent(kJSONResp);
+  conn_info_t close_conn = InitClose();
+
+  DataTable data_table(kHTTPTable);
+  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+  // Registers a new connection.
+  source_->AcceptOpenConnEvent(conn);
+  source_->AcceptDataEvent(std::move(std::move(event0_json)));
+  source_->AcceptDataEvent(std::move(std::move(event1_json)));
+  source_->AcceptCloseConnEvent(close_conn);
+
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+
+  for (const auto& column : record_batch) {
+    ASSERT_EQ(2, column->Size());
+  }
+
+  for (int i = 0; i < 2; ++i) {
+    auto val = record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(i);
+    md::UPID upid(val.val);
+
+    EXPECT_EQ(upid.pid(), kPID);
+    EXPECT_EQ(upid.start_ts(), kPIDStartTimeNS);
+    EXPECT_EQ(upid.asid(), kASID);
+  }
 }
 
 TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
@@ -321,12 +363,12 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   source_->AcceptOpenConnEvent(conn);
   source_->AcceptDataEvent(std::move(event0));
   source_->AcceptDataEvent(std::move(event2));
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(2, record_batch[0]->Size());
 
   source_->AcceptDataEvent(std::move(event1));
   source_->AcceptCloseConnEvent(close_conn);
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(2, record_batch[0]->Size()) << "Late events won't get processed.";
 }
 
@@ -341,19 +383,19 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
   source_->AcceptOpenConnEvent(conn);
 
   // Check empty transfer.
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(0, record_batch[0]->Size());
 
   // Check empty transfer following a successful transfer.
   source_->AcceptDataEvent(std::move(event0));
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(1, record_batch[0]->Size());
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(1, record_batch[0]->Size());
 
   EXPECT_EQ(1, source_->NumActiveConnections());
   source_->AcceptCloseConnEvent(close_conn);
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 }
 
 TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
@@ -377,7 +419,7 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
   source_->AcceptDataEvent(std::move(resp_event1));
   source_->AcceptDataEvent(std::move(resp_event2));
   source_->AcceptCloseConnEvent(close_conn);
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(3, record_batch[0]->Size());
 
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo", "bar", "doe"));
@@ -409,7 +451,7 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   PL_UNUSED(resp_event1);  // Missing event.
   source_->AcceptDataEvent(std::move(resp_event2));
 
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
   EXPECT_EQ(2, record_batch[0]->Size());
 
@@ -418,7 +460,7 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
 
   // Processing of resp_event3 will result in one more record.
   // TODO(oazizi): Update this when req-resp matching algorithm is updated.
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
   EXPECT_EQ(3, record_batch[0]->Size());
 }
@@ -440,7 +482,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
   source_->AcceptOpenConnEvent(conn);
 
   EXPECT_EQ(1, source_->NumActiveConnections());
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   source_->AcceptDataEvent(std::move(req_event0));
@@ -451,7 +493,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
   source_->AcceptDataEvent(std::move(resp_event2));
 
   EXPECT_EQ(1, source_->NumActiveConnections());
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   source_->AcceptCloseConnEvent(close_conn);
@@ -460,11 +502,11 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
   // Death countdown period: keep calling Transfer Data to increment iterations.
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
     EXPECT_EQ(1, source_->NumActiveConnections());
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   }
 
   EXPECT_EQ(1, source_->NumActiveConnections());
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
@@ -486,7 +528,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
   source_->AcceptDataEvent(std::move(resp_event2));
   source_->AcceptDataEvent(std::move(resp_event0));
 
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   source_->AcceptCloseConnEvent(close_conn);
@@ -497,11 +539,11 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOutOfOrder) {
 
   // Death countdown period: keep calling Transfer Data to increment iterations.
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
@@ -532,11 +574,11 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupMissingDataEvent) {
 
   // Death countdown period: keep calling Transfer Data to increment iterations.
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
@@ -572,18 +614,18 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupOldGenerations) {
   PL_UNUSED(conn0_close);  // Missing close event.
   PL_UNUSED(conn1_close);  // Missing close event.
 
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   // TransferData results in countdown = kDeathCountdownIters for old generations.
 
   // Death countdown period: keep calling Transfer Data to increment iterations.
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
@@ -603,11 +645,11 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupNoProtocol) {
 
   // Death countdown period: keep calling Transfer Data to increment iterations.
   for (int32_t i = 0; i < ConnectionTracker::kDeathCountdownIters - 1; ++i) {
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
@@ -640,7 +682,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   PL_UNUSED(conn0_close);  // Missing close event.
 
   for (int i = 0; i < 100; ++i) {
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
@@ -649,7 +691,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveDead) {
   // Connection should be timed out by now, and should be killed by one more TransferData() call.
 
   EXPECT_EQ(1, source_->NumActiveConnections());
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(0, source_->NumActiveConnections());
 }
 
@@ -680,7 +722,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   source_->AcceptDataEvent(std::move(conn0_req_event));
 
   for (int i = 0; i < 100; ++i) {
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     EXPECT_EQ(1, source_->NumActiveConnections());
   }
 
@@ -701,7 +743,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   // which should also cause events to be flushed.
 
   EXPECT_EQ(1, source_->NumActiveConnections());
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   // Should not have transferred any data.

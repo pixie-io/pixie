@@ -6,6 +6,7 @@
 #include <string_view>
 #include <thread>
 
+#include "src/shared/metadata/metadata.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
 #include "src/stirling/bcc_bpf/socket_trace.h"
@@ -31,6 +32,12 @@ class SocketTraceBPFTest : public ::testing::Test {
   void SetUp() override {
     source_ = SocketTraceConnector::Create("socket_trace_connector");
     ASSERT_OK(source_->Init());
+
+    // Create a context to pass into each TransferData() in the test, using a dummy ASID.
+    static constexpr uint32_t kASID = 1;
+    auto agent_metadata_state = std::make_shared<md::AgentMetadataState>(kASID);
+    ctx_ = std::make_unique<ConnectorContext>(std::move(agent_metadata_state));
+
     TestOnlySetTargetPID(getpid());
   }
 
@@ -361,6 +368,7 @@ Content-Length: 0
   static constexpr uint32_t kMySQLBodyIdx = kMySQLTable.ColIndex("body");
 
   std::unique_ptr<SourceConnector> source_;
+  std::unique_ptr<ConnectorContext> ctx_;
 };
 
 TEST_F(SocketTraceBPFTest, TestFramework) {
@@ -376,7 +384,7 @@ TEST_F(SocketTraceBPFTest, TestFramework) {
   system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
 
   DataTable data_table(kHTTPTable);
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -394,7 +402,7 @@ TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
 
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -405,11 +413,13 @@ TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
     // and the host machine are identical. See
     // https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
 
-    EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(getpid(),
+              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val).pid());
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
               record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0));
 
-    EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(getpid(),
+              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val).pid());
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
               record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1));
 
@@ -426,7 +436,7 @@ TEST_F(SocketTraceBPFTest, TestWriteRespCapture) {
   // Check that MySQL table did not capture any data.
   {
     DataTable data_table(kMySQLTable);
-    source_->TransferData(/* ctx */ nullptr, kMySQLTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -443,7 +453,7 @@ TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
 
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -454,11 +464,13 @@ TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
     // host machine are identical.
     // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
 
-    EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(getpid(),
+              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val).pid());
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
               record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0));
 
-    EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(getpid(),
+              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val).pid());
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
               record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1));
   }
@@ -466,7 +478,7 @@ TEST_F(SocketTraceBPFTest, TestSendRespCapture) {
   // Check that MySQL table did not capture any data.
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -483,7 +495,7 @@ TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
 
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -494,11 +506,13 @@ TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
     // host machine are identical.
     // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
 
-    EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(getpid(),
+              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val).pid());
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
               record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0));
 
-    EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(getpid(),
+              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val).pid());
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
               record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1));
   }
@@ -506,7 +520,7 @@ TEST_F(SocketTraceBPFTest, TestReadRespCapture) {
   // Check that MySQL table did not capture any data.
   {
     DataTable data_table(kMySQLTable);
-    source_->TransferData(/* ctx */ nullptr, kMySQLTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -523,7 +537,7 @@ TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
 
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -534,11 +548,13 @@ TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
     // host machine are identical.
     // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
 
-    EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(getpid(),
+              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val).pid());
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg1"),
               record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0));
 
-    EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(getpid(),
+              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val).pid());
     EXPECT_EQ(std::string_view("Content-Length: 0\nContent-Type: application/json; msg2"),
               record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1));
   }
@@ -546,7 +562,7 @@ TEST_F(SocketTraceBPFTest, TestRecvRespCapture) {
   // Check that MySQL table did not capture any data.
   {
     DataTable data_table(kMySQLTable);
-    source_->TransferData(/* ctx */ nullptr, kMySQLTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -564,7 +580,7 @@ TEST_F(SocketTraceBPFTest, DISABLED_TestEnd2EndMySQLPrepareExecute) {
   // Check that HTTP table did not capture any data.
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -575,7 +591,7 @@ TEST_F(SocketTraceBPFTest, DISABLED_TestEnd2EndMySQLPrepareExecute) {
   // Check that MySQL table did capture the appropriate data.
   {
     DataTable data_table(kMySQLTable);
-    source_->TransferData(/* ctx */ nullptr, kMySQLTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -602,7 +618,7 @@ TEST_F(SocketTraceBPFTest, DISABLED_TestEnd2EndMySQLQuery) {
   // Check that HTTP table did not capture any data.
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -613,7 +629,7 @@ TEST_F(SocketTraceBPFTest, DISABLED_TestEnd2EndMySQLQuery) {
   // Check that MySQL table did capture the appropriate data.
   {
     DataTable data_table(kMySQLTable);
-    source_->TransferData(/* ctx */ nullptr, kMySQLTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -636,7 +652,7 @@ TEST_F(SocketTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   // Check that HTTP table did not capture any data.
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     // Should not have captured anything.
@@ -648,7 +664,7 @@ TEST_F(SocketTraceBPFTest, TestNoProtocolWritesNotCaptured) {
   // Check that MySQL table did not capture any data.
   {
     DataTable data_table(kMySQLTable);
-    source_->TransferData(/* ctx */ nullptr, kMySQLTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     // Should not have captured anything.
@@ -670,7 +686,7 @@ TEST_F(SocketTraceBPFTest, TestMultipleConnections) {
 
   {
     DataTable data_table(kHTTPTable);
-    source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
@@ -679,9 +695,9 @@ TEST_F(SocketTraceBPFTest, TestMultipleConnections) {
 
     std::vector<std::tuple<int64_t, std::string>> results;
     for (int i = 0; i < 2; ++i) {
-      results.emplace_back(
-          std::make_tuple(record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(i).val,
-                          record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(i)));
+      results.emplace_back(std::make_tuple(
+          md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(i).val).pid(),
+          record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(i)));
     }
 
     EXPECT_THAT(
@@ -707,22 +723,20 @@ TEST_F(SocketTraceBPFTest, TestStartTime) {
   auto time_window_end = now + std::chrono::minutes(5);
 
   DataTable data_table(kHTTPTable);
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   ASSERT_EQ(2, record_batch[0]->Size());
 
-  EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(0).val);
-  EXPECT_LT(time_window_start.time_since_epoch().count(),
-            record_batch[kHTTPPIDStartTimeIdx]->Get<types::Int64Value>(0).val);
-  EXPECT_GT(time_window_end.time_since_epoch().count(),
-            record_batch[kHTTPPIDStartTimeIdx]->Get<types::Int64Value>(0).val);
+  md::UPID upid0(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val);
+  EXPECT_EQ(getpid(), upid0.pid());
+  EXPECT_LT(time_window_start.time_since_epoch().count(), upid0.start_ts());
+  EXPECT_GT(time_window_end.time_since_epoch().count(), upid0.start_ts());
 
-  EXPECT_EQ(getpid(), record_batch[kHTTPPIDIdx]->Get<types::Int64Value>(1).val);
-  EXPECT_LT(time_window_start.time_since_epoch().count(),
-            record_batch[kHTTPPIDStartTimeIdx]->Get<types::Int64Value>(1).val);
-  EXPECT_GT(time_window_end.time_since_epoch().count(),
-            record_batch[kHTTPPIDStartTimeIdx]->Get<types::Int64Value>(1).val);
+  md::UPID upid1(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val);
+  EXPECT_EQ(getpid(), upid1.pid());
+  EXPECT_LT(time_window_start.time_since_epoch().count(), upid1.start_ts());
+  EXPECT_GT(time_window_end.time_since_epoch().count(), upid1.start_ts());
 }
 
 // TODO(yzhao): Apply this pattern to other syscall pairs. An issue is that other syscalls do not
@@ -754,7 +768,7 @@ TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
   }
 
   DataTable data_table(kHTTPTable);
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {

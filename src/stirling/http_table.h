@@ -6,9 +6,7 @@ namespace stirling {
 // clang-format off
 constexpr DataElement kHTTPElements[] = {
         {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
-        {"pid", types::DataType::INT64, types::PatternType::GENERAL},
-        // TODO(oazizi): Merge with pid, and use INT128, when available.
-        {"pid_start_time", types::DataType::INT64, types::PatternType::GENERAL},
+        {"upid", types::DataType::UINT128, types::PatternType::GENERAL},
         // TODO(PL-519): Eventually, use uint128 to represent IP addresses, as will be resolved in
         // the Jira issue.
         {"remote_addr", types::DataType::STRING, types::PatternType::GENERAL},
@@ -31,8 +29,7 @@ constexpr DataElement kHTTPElements[] = {
 constexpr auto kHTTPTable = DataTableSchema("http_events", kHTTPElements);
 
 constexpr int kHTTPTimeIdx = kHTTPTable.ColIndex("time_");
-constexpr int kHTTPPIDIdx = kHTTPTable.ColIndex("pid");
-constexpr int kHTTPPIDStartTimeIdx = kHTTPTable.ColIndex("pid_start_time");
+constexpr int kHTTPUPIDIdx = kHTTPTable.ColIndex("upid");
 constexpr int kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
 constexpr int kHTTPRemotePortIdx = kHTTPTable.ColIndex("remote_port");
 constexpr int kHTTPMajorVersionIdx = kHTTPTable.ColIndex("http_major_version");

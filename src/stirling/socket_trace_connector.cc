@@ -7,6 +7,7 @@
 #include "absl/strings/match.h"
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"
+#include "src/shared/metadata/metadata.h"
 #include "src/stirling/bcc_bpf/socket_trace.h"
 #include "src/stirling/event_parser.h"
 #include "src/stirling/grpc.h"
@@ -68,7 +69,7 @@ Status SocketTraceConnector::StopImpl() {
   return Status::OK();
 }
 
-void SocketTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
+void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                             DataTable* data_table) {
   CHECK_LT(table_num, kTables.size())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
@@ -80,19 +81,19 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_
 
   switch (table_num) {
     case kHTTPTableNum:
-      TransferStreams<ReqRespPair<http::HTTPMessage>>(kProtocolHTTP, data_table);
-      TransferStreams<ReqRespPair<GRPCMessage>>(kProtocolHTTP2, data_table);
+      TransferStreams<ReqRespPair<http::HTTPMessage>>(ctx, kProtocolHTTP, data_table);
+      TransferStreams<ReqRespPair<GRPCMessage>>(ctx, kProtocolHTTP2, data_table);
 
       // Also call transfer streams on kProtocolUnknown to clean up any closed connections.
       // Since there will be no InfoClassManager to call TransferData on unknown protocols,
       // we are sneaking this in with HTTP table transfers.
       // TODO(oazizi): If we disable the HTTP table dynamically, this code won't run, which will
       // cause memory leaks.
-      TransferStreams<std::nullptr_t>(kProtocolUnknown, nullptr);
+      TransferStreams<std::nullptr_t>(ctx, kProtocolUnknown, nullptr);
       break;
     case kMySQLTableNum:
       // TODO(oazizi): Re-enable this after more stress-testing.
-      // TransferStreams<mysql::Entry>(kProtocolMySQL, data_table);
+      // TransferStreams<mysql::Entry>(ctx, kProtocolMySQL, data_table);
       break;
     default:
       CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
@@ -268,7 +269,8 @@ const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
 //-----------------------------------------------------------------------------
 
 template <class TEntryType>
-void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* data_table) {
+void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, TrafficProtocol protocol,
+                                           DataTable* data_table) {
   // TODO(oazizi): The single connection trackers model makes TransferStreams() inefficient,
   //               because it will get called multiple times, looping through all connection
   //               trackers, but selecting a mutually exclusive subset each time.
@@ -298,10 +300,11 @@ void SocketTraceConnector::TransferStreams(TrafficProtocol protocol, DataTable* 
         auto messages = tracker.ProcessMessages<TEntryType>();
 
         for (auto& msg : messages) {
-          AppendMessage(tracker, msg, data_table);
+          AppendMessage(ctx, tracker, msg, data_table);
         }
       } else {
         // Needed to keep GCC happy.
+        PL_UNUSED(ctx);
         PL_UNUSED(data_table);
       }
 
@@ -376,7 +379,8 @@ bool SocketTraceConnector::SelectMessage(const ReqRespPair<http::HTTPMessage>& r
 }
 
 template <>
-void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
+                                         const ConnectionTracker& conn_tracker,
                                          ReqRespPair<http::HTTPMessage> record,
                                          DataTable* data_table) {
   // Only allow certain records to be transferred upstream.
@@ -393,10 +397,12 @@ void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
   http::HTTPMessage& req_message = record.req_message;
   http::HTTPMessage& resp_message = record.resp_message;
 
+  md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
+                conn_tracker.pid_start_time());
+
   RecordBuilder<&kHTTPTable> r(data_table);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
-  r.Append<r.ColIndex("pid")>(conn_tracker.pid());
-  r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
+  r.Append<r.ColIndex("upid")>(upid.value());
   // Note that there is a string copy here,
   // But std::move is not allowed because we re-use conn object.
   r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
@@ -419,7 +425,8 @@ void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
 }
 
 template <>
-void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
+                                         const ConnectionTracker& conn_tracker,
                                          ReqRespPair<GRPCMessage> record, DataTable* data_table) {
   CHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
@@ -429,10 +436,12 @@ void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker,
   int64_t resp_status;
   CHECK(absl::SimpleAtoi(resp_message.HeaderValue(":status", "-1"), &resp_status));
 
+  md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
+                conn_tracker.pid_start_time());
+
   RecordBuilder<&kHTTPTable> r(data_table);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
-  r.Append<r.ColIndex("pid")>(conn_tracker.pid());
-  r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
+  r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
   r.Append<r.ColIndex("http_major_version")>(2);

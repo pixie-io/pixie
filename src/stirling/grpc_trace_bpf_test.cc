@@ -13,6 +13,7 @@ extern "C" {
 
 #include "src/common/subprocess/subprocess.h"
 #include "src/common/testing/testing.h"
+#include "src/shared/metadata/metadata.h"
 #include "src/stirling/data_table.h"
 #include "src/stirling/grpc.h"
 #include "src/stirling/socket_trace_connector.h"
@@ -50,8 +51,9 @@ constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
 
 std::vector<size_t> FindRecordIdxMatchesPid(const ColumnWrapperRecordBatch& http_record, int pid) {
   std::vector<size_t> res;
-  for (size_t i = 0; i < http_record[kHTTPPIDIdx]->Size(); ++i) {
-    if (http_record[kHTTPPIDIdx]->Get<types::Int64Value>(i).val == pid) {
+  for (size_t i = 0; i < http_record[kHTTPUPIDIdx]->Size(); ++i) {
+    md::UPID upid(http_record[kHTTPUPIDIdx]->Get<types::UInt128Value>(i).val);
+    if (upid.pid() == static_cast<uint64_t>(pid)) {
       res.push_back(i);
     }
   }
@@ -101,6 +103,11 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   ASSERT_NE(nullptr, socket_trace_connector);
   ASSERT_OK(connector->Init());
 
+  // Create a context to pass into each TransferData() in the test, using a dummy ASID.
+  static constexpr uint32_t kASID = 1;
+  auto agent_metadata_state = std::make_shared<md::AgentMetadataState>(kASID);
+  auto ctx = std::make_unique<ConnectorContext>(std::move(agent_metadata_state));
+
   // TODO(yzhao): Add a --count flag to greeter client so we can test the case of multiple RPC calls
   // (multiple HTTP2 streams).
   SubProcess c({c_path, "-name=PixieLabs", "-once"});
@@ -115,7 +122,7 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   DataTable data_table(kHTTPTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-  connector->TransferData(/* ctx */ nullptr, kHTTPTableNum, &data_table);
+  connector->TransferData(ctx.get(), kHTTPTableNum, &data_table);
   for (const auto& col : record_batch) {
     // Sometimes connect() returns 0, so we might have data from requester and responder.
     ASSERT_GE(col->Size(), 1);
@@ -173,6 +180,11 @@ class GRPCCppTest : public ::testing::Test {
     ASSERT_NE(nullptr, socket_trace_connector);
 
     data_table_ = std::make_unique<DataTable>(kHTTPTable);
+
+    // Create a context to pass into each TransferData() in the test, using a dummy ASID.
+    static constexpr uint32_t kASID = 1;
+    auto agent_metadata_state = std::make_shared<md::AgentMetadataState>(kASID);
+    ctx_ = std::make_unique<ConnectorContext>(std::move(agent_metadata_state));
   }
 
   void SetUpGRPCServices() {
@@ -213,6 +225,7 @@ class GRPCCppTest : public ::testing::Test {
   }
 
   std::unique_ptr<SourceConnector> source_;
+  std::unique_ptr<ConnectorContext> ctx_;
   std::unique_ptr<DataTable> data_table_;
 
   GreeterService greeter_service_;
@@ -239,7 +252,7 @@ TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
   CallRPC(greeter2_stub_.get(), &Greeter2::Stub::SayHi, {"pixielabs", "pixielabs", "pixielabs"});
   CallRPC(greeter2_stub_.get(), &Greeter2::Stub::SayHiAgain,
           {"pixielabs", "pixielabs", "pixielabs"});
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
+  source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
   std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
@@ -284,7 +297,7 @@ TEST_F(GRPCCppTest, DISABLED_RPCTimesOut) {
   ASSERT_THAT(statuses, SizeIs(1));
   EXPECT_EQ(::grpc::StatusCode::DEADLINE_EXCEEDED, statuses[0].error_code());
 
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
+  source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
   std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
@@ -324,7 +337,7 @@ TEST_F(GRPCCppTest, ServerStreamingRPC) {
   EXPECT_TRUE(st.ok());
   EXPECT_THAT(replies, SizeIs(3));
 
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
+  source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
   std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
@@ -369,7 +382,7 @@ TEST_F(GRPCCppMiddleInterceptTest, InterceptMiddleOfTheConnection) {
   // Attach the probes after connection started.
   SetUpSocketTraceConnector();
   CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"});
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
+  source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
   std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
@@ -404,7 +417,7 @@ class GRPCCppCallingNonRegisteredServiceTest : public GRPCCppTest {
 // requested method.
 TEST_F(GRPCCppCallingNonRegisteredServiceTest, ResultsAreAsExpected) {
   CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"});
-  source_->TransferData(/* ctx */ nullptr, kHTTPTableNum, data_table_.get());
+  source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
   std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
   EXPECT_THAT(indices, SizeIs(3));
