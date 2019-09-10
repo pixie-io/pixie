@@ -20,7 +20,7 @@ namespace distributed {
 using compilerpb::CarnotInfo;
 
 /**
- * @brief The stitcher takes in a carnot graph and a split_plan, creates the physical plan and
+ * @brief The stitcher takes in a carnot graph and a split_plan, creates the distributed plan and
  * handles all the appropritate connections.
  *
  */
@@ -28,13 +28,13 @@ class Stitcher : public NotCopyable {
  public:
   static StatusOr<std::unique_ptr<Stitcher>> Create(CompilerState* compiler_state);
   /**
-   * @brief Takes in a physical_plan that has been assembled, stitches the internal plans together
-   * (ie associate GRPCSinks to Sources), and finalizes the plans for execution.
+   * @brief Takes in a distributed_plan that has been assembled, stitches the internal plans
+   * together (ie associate GRPCSinks to Sources), and finalizes the plans for execution.
    *
-   * @param physical_plan: assembled plan, but not yet stitched.
+   * @param distributed_plan: assembled plan, but not yet stitched.
    * @return Status any errors that occur during the stiching.
    */
-  Status Stitch(DistributedPlan* physical_plan);
+  Status Stitch(DistributedPlan* distributed_plan);
 
  private:
   explicit Stitcher(CompilerState* compiler_state) : compiler_state_(compiler_state) {}
@@ -48,7 +48,7 @@ class Stitcher : public NotCopyable {
   Status AssociateEdges(DistributedPlan* plan);
 
   /**
-   * @brief Prepare physical plan before associating edges.
+   * @brief Prepare distributed plan before associating edges.
    *
    * @param plan
    * @return Status
@@ -76,7 +76,7 @@ class Stitcher : public NotCopyable {
   /**
    * @brief Finalize the passed in graph for execution by doing the following:
    * 1. Converts GRPCSourceGroups to GRPCSource and Unions
-   * 2. Checks to make sure that only physical nodes are leftover.
+   * 2. Checks to make sure that only distributed nodes are leftover.
    * 3. Prune any extra nodes in the plan (ie due to Filters).
    *
    * @param graph

@@ -23,15 +23,15 @@ using compilerpb::CarnotInfo;
  * @brief The planner takes in a logical plan and knowledge about the Machines available for
  * exeuction to create a plan that is close to what is actually executed on the nodes.
  *
- * The physical plan maps identifiers of nodes to the Plan that corresponds to that node.
+ * The distributed plan maps identifiers of nodes to the Plan that corresponds to that node.
  *
  * Distributed planning occurs through the following steps:
  * 0. Planner initialized with the DistributedState
  * 1. Planner receives the logical plan.
  * 2. Split the logical plan into the Agent and Kelvin components.
- * 3. Layout the physical plan (create the physical plan dag).
+ * 3. Layout the distributed plan (create the distributed plan dag).
  * 4. Prune extraneous edges.
- * 5. Return the mapping from physical_node_id to the physical plan for that node.
+ * 5. Return the mapping from distributed_node_id to the distributed plan for that node.
  *
  */
 class DistributedPlanner : public NotCopyable {
@@ -39,20 +39,21 @@ class DistributedPlanner : public NotCopyable {
   /**
    * @brief The Creation function for the planner.
    *
-   * @return StatusOr<std::unique_ptr<DistributedPlanner>>: the physical planner object or an error.
+   * @return StatusOr<std::unique_ptr<DistributedPlanner>>: the distributed planner object or an
+   * error.
    */
   static StatusOr<std::unique_ptr<DistributedPlanner>> Create();
 
   /**
-   * @brief Takes in a logical plan and outputs the physical plan.
+   * @brief Takes in a logical plan and outputs the distributed plan.
    *
-   * @param physical_state: the physical layout of the vizier instance.
+   * @param distributed_state: the distributed layout of the vizier instance.
    * @param compiler_state: informastion passed to the compiler.
    * @param logical_plan
    * @return StatusOr<std::unique_ptr<DistributedPlan>>
    */
   StatusOr<std::unique_ptr<DistributedPlan>> Plan(
-      const compilerpb::DistributedState& physical_state, CompilerState* compiler_state,
+      const compilerpb::DistributedState& distributed_state, CompilerState* compiler_state,
       const IR* logical_plan);
 
  private:
