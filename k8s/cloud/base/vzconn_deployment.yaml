@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   name: vzconn-server
 spec:
-  replicas: 1
   selector:
     matchLabels:
       name: vzconn-server
@@ -17,9 +16,7 @@ spec:
         image: gcr.io/pl-dev-infra/cloud/vzconn_server_image:latest
         ports:
           - containerPort: 51600
-            hostPort: 51600
           - containerPort: 51601
-            hostPort: 51601
         readinessProbe:
           httpGet:
             scheme: HTTPS

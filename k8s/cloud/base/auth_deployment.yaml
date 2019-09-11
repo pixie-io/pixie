@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   name: auth-server
 spec:
-  replicas: 1
   selector:
     matchLabels:
       name: auth-server
@@ -17,9 +16,7 @@ spec:
         image: gcr.io/pl-dev-infra/cloud/auth_server_image:latest
         ports:
           - containerPort: 50100
-            hostPort: 50100
           - containerPort: 50101
-            hostPort: 50101
         readinessProbe:
           httpGet:
             scheme: HTTPS

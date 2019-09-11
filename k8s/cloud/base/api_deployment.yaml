@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   name: api-server
 spec:
-  replicas: 1
   selector:
     matchLabels:
       name: api-server
@@ -17,9 +16,7 @@ spec:
         image: gcr.io/pl-dev-infra/cloud/api_server_image:latest
         ports:
           - containerPort: 51200
-            hostPort: 51200
           - containerPort: 51201
-            hostPort: 51201
         readinessProbe:
           httpGet:
             scheme: HTTPS

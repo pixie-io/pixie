@@ -3,6 +3,19 @@ kind: Kustomization
 commonLabels:
   app: pl-cloud
 namespace: plc
+replicas:
+- name: api-server
+  count: 1
+- name: auth-server
+  count: 1
+- name: profile-server
+  count: 1
+- name: cloud-proxy
+  count: 1
+- name: site-manager-server
+  count: 1
+- name: vzmgr-server
+  count: 1
 resources:
 - ../base
 - postgres_deployment.yaml

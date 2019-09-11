@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   name: profile-server
 spec:
-  replicas: 1
   selector:
     matchLabels:
       name: profile-server
@@ -17,9 +16,7 @@ spec:
         image: gcr.io/pl-dev-infra/cloud/profile_server_image:latest
         ports:
           - containerPort: 51500
-            hostPort: 51500
           - containerPort: 51501
-            hostPort: 51501
         readinessProbe:
           httpGet:
             scheme: HTTPS

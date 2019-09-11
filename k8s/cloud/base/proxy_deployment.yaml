@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   name: cloud-proxy
 spec:
-  replicas: 1
   selector:
     matchLabels:
       name: cloud-proxy-server

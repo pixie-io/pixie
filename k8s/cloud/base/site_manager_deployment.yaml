@@ -3,7 +3,6 @@ kind: Deployment
 metadata:
   name: site-manager-server
 spec:
-  replicas: 1
   selector:
     matchLabels:
       name: site-manager-server
@@ -17,9 +16,7 @@ spec:
         image: gcr.io/pl-dev-infra/cloud/site_manager_server_image:latest
         ports:
           - containerPort: 50300
-            hostPort: 50300
           - containerPort: 50301
-            hostPort: 50301
         readinessProbe:
           httpGet:
             scheme: HTTPS
