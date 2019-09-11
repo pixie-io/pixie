@@ -7,10 +7,10 @@ namespace pl {
 namespace md {
 
 TEST(UPID, check_upid_components) {
-  auto upid = UPID(123, 456, 78910);
+  auto upid = UPID(123, 456, 3420030816657ULL);
   EXPECT_EQ(123, upid.asid());
   EXPECT_EQ(456, upid.pid());
-  EXPECT_EQ(78910ULL, upid.start_ts());
+  EXPECT_EQ(3420030816657ULL, upid.start_ts());
 }
 
 TEST(UPID, check_upid_eq) {

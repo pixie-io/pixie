@@ -52,7 +52,7 @@ class UPID {
 
   uint32_t asid() const { return static_cast<uint32_t>(absl::Uint128High64(value_) >> 32U); }
 
-  int64_t start_ts() const { return static_cast<uint32_t>(Uint128Low64(value_)); }
+  int64_t start_ts() const { return static_cast<int64_t>(Uint128Low64(value_)); }
 
   absl::uint128 value() const { return value_; }
 
