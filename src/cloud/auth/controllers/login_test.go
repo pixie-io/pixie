@@ -250,6 +250,9 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("pluserid")}).
+		Return(nil, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
@@ -267,6 +270,82 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 
 	verifyToken(t, resp.Token, "pluserid", "plorgid", resp.ExpiresAt, "jwtkey")
+}
+
+func TestServer_Login_HasOldPLUserID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+
+	fakeUserInfo1 := &controllers.UserInfo{
+		AppMetadata: &controllers.UserMetadata{
+			PLUserID: "pluserid",
+			PLOrgID:  "plorgid",
+		},
+		Email:     "abc@defg.com",
+		FirstName: "first",
+		LastName:  "last",
+	}
+	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
+
+	fakeUserInfoSecondRequest := &controllers.UserInfo{
+		AppMetadata: &controllers.UserMetadata{},
+		Email:       "abc@defg.com",
+		FirstName:   "first",
+		LastName:    "last",
+	}
+
+	a.EXPECT().SetPLMetadata("userid", gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
+		fakeUserInfoSecondRequest.AppMetadata.PLUserID = plid
+		fakeUserInfoSecondRequest.AppMetadata.PLOrgID = plorgid
+	}).Return(nil)
+	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("pluserid")}).
+		Return(nil, errors.New("Could not find user"))
+
+	fakeOrgInfo := &profilepb.OrgInfo{
+		ID: &uuidpb.UUID{Data: []byte(orgID)},
+	}
+
+	mockProfile.EXPECT().
+		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "defg.com"}).
+		Return(fakeOrgInfo, nil)
+
+	mockProfile.EXPECT().
+		CreateUser(gomock.Any(), &profilepb.CreateUserRequest{
+			OrgID:     &uuidpb.UUID{Data: []byte(orgID)},
+			Username:  "abc@defg.com",
+			FirstName: "first",
+			LastName:  "last",
+			Email:     "abc@defg.com",
+		}).
+		Return(&uuidpb.UUID{Data: []byte(userID)}, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	resp, err := doLoginRequest(getTestContext(), t, s)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+
+	// Make sure expiry time is in the future.
+	currentTime := time.Now().Unix()
+	maxExpiryTime := time.Now().Add(7 * 24 * time.Hour).Unix()
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+
+	verifyToken(t, resp.Token, userID, orgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_GetAugmentedToken(t *testing.T) {

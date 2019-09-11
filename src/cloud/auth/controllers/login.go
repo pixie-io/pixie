@@ -12,6 +12,7 @@ import (
 
 	pb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
+	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	jwtpb "pixielabs.ai/pixielabs/src/shared/services/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
@@ -119,8 +120,19 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		return nil, err
 	}
 
-	// If user does not exist, then create a new user.
-	if userInfo.AppMetadata == nil || userInfo.AppMetadata.PLUserID == "" {
+	// If user does not exist in Auth0, then create a new user.
+	newUser := userInfo.AppMetadata == nil || userInfo.AppMetadata.PLUserID == ""
+
+	// If user exists in Auth0, but not in the profile service, create a new user.
+	if userInfo.AppMetadata != nil && userInfo.AppMetadata.PLUserID != "" {
+		pc := s.env.ProfileClient()
+		_, err := pc.GetUser(ctx, &uuidpb.UUID{Data: []byte(userInfo.AppMetadata.PLUserID)})
+		if err != nil {
+			newUser = true
+		}
+	}
+
+	if newUser {
 		userInfo, err = s.createUser(ctx, userID, userInfo)
 		if err != nil {
 			return nil, status.Error(codes.Internal, "failed to create new user")
