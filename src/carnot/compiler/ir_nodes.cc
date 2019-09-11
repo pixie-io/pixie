@@ -1026,6 +1026,7 @@ StatusOr<IRNode*> MetadataLiteralIR::DeepCloneIntoImpl(IR* graph) const {
 StatusOr<IRNode*> MemorySourceIR::DeepCloneIntoImpl(IR* graph) const {
   PL_ASSIGN_OR_RETURN(MemorySourceIR * mem, graph->MakeNode<MemorySourceIR>(id()));
   mem->table_name_ = table_name_;
+  mem->time_set_ = time_set_;
   mem->time_start_ns_ = time_start_ns_;
   mem->time_stop_ns_ = time_stop_ns_;
   mem->column_names_ = column_names_;

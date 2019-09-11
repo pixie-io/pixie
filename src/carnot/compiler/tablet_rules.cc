@@ -210,8 +210,10 @@ StatusOr<MemorySourceIR*> MemorySourceTabletRule::CreateMemorySource(
   PL_RETURN_IF_ERROR(mem_source_ir->Init(nullptr, {{"table", table_node}, {"select", nullptr}},
                                          original_memory_source->ast_node()));
   PL_RETURN_IF_ERROR(mem_source_ir->SetRelation(original_memory_source->relation()));
-  mem_source_ir->SetTime(original_memory_source->time_start_ns(),
-                         original_memory_source->time_stop_ns());
+  if (mem_source_ir->IsTimeSet()) {
+    mem_source_ir->SetTime(original_memory_source->time_start_ns(),
+                           original_memory_source->time_stop_ns());
+  }
   mem_source_ir->SetColumnIndexMap(original_memory_source->column_index_map());
 
   // Set the tablet value.

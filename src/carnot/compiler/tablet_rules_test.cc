@@ -143,6 +143,7 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_unions) {
     ASSERT_TRUE(mem_source->HasTablet()) << union_op_parent->type_string();
     tablet_values.push_back(mem_source->tablet_value());
     EXPECT_TRUE(mem_source->IsRelationInit());
+    EXPECT_FALSE(mem_source->IsTimeSet());
   }
 
   EXPECT_THAT(tablet_values, ElementsAre("tablet1", "tablet2"));
@@ -176,10 +177,10 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_no_union) {
   ASSERT_TRUE(new_mem_src->HasTablet());
   std::string tablet_value = new_mem_src->tablet_value();
   EXPECT_TRUE(new_mem_src->IsRelationInit());
+  EXPECT_FALSE(new_mem_src->IsTimeSet());
   EXPECT_EQ(tablet_value, "tablet1");
 }
 
-// TODO(philkuz) enable when we have support for filters.
 TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_filter) {
   Relation relation({types::UINT128, types::INT64, types::STRING}, {"upid", "cpu0", "name"});
   auto mem_src = MakeMemSource("table", relation);
@@ -218,6 +219,7 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_f
   ASSERT_TRUE(new_mem_src->HasTablet());
   std::string tablet_value = new_mem_src->tablet_value();
   EXPECT_TRUE(new_mem_src->IsRelationInit());
+  EXPECT_FALSE(new_mem_src->IsTimeSet());
   EXPECT_EQ(tablet_value, "tablet2");
 }
 
@@ -285,12 +287,12 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_f
     ASSERT_TRUE(mem_source->HasTablet()) << union_op_parent->type_string();
     tablet_values.push_back(mem_source->tablet_value());
     EXPECT_TRUE(mem_source->IsRelationInit());
+    EXPECT_FALSE(mem_source->IsTimeSet());
   }
 
   EXPECT_THAT(tablet_values, ElementsAre("tablet2", "tablet3"));
 }
 
-// TODO(philkuz) enable when we have support for filters.
 TEST_F(MemorySourceTabletRuleTest, tablet_source_group_filter_does_nothing) {
   Relation relation({types::UINT128, types::INT64, types::STRING}, {"upid", "cpu0", "name"});
   auto mem_src = MakeMemSource("table", relation);
@@ -339,6 +341,7 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_filter_does_nothing) {
     ASSERT_TRUE(mem_source->HasTablet()) << union_op_parent->type_string();
     tablet_values.push_back(mem_source->tablet_value());
     EXPECT_TRUE(mem_source->IsRelationInit());
+    EXPECT_FALSE(mem_source->IsTimeSet());
   }
 
   EXPECT_THAT(tablet_values, ElementsAre("tablet1", "tablet2", "tablet3"));
@@ -412,6 +415,7 @@ TEST_F(TabletRulesIntegrationTest, combined_tests) {
     ASSERT_TRUE(mem_source->HasTablet()) << union_op_parent->type_string();
     actual_tablet_values.push_back(mem_source->tablet_value());
     EXPECT_TRUE(mem_source->IsRelationInit());
+    EXPECT_FALSE(mem_source->IsTimeSet());
   }
 
   EXPECT_THAT(actual_tablet_values, ElementsAreArray(expected_tablet_values));
