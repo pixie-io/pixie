@@ -144,3 +144,19 @@ func GetGRPCClientDialOpts() ([]grpc.DialOption, error) {
 
 	return dialOpts, nil
 }
+
+// GetGRPCClientDialOptsServerSideTLS gets default dial options for GRPC clients accessing a server with server-side TLS.
+func GetGRPCClientDialOptsServerSideTLS(isInternal bool) ([]grpc.DialOption, error) {
+	dialOpts := make([]grpc.DialOption, 0)
+
+	if viper.GetBool("disable_ssl") {
+		dialOpts = append(dialOpts, grpc.WithInsecure())
+		return dialOpts, nil
+	}
+
+	tlsConfig := &tls.Config{InsecureSkipVerify: isInternal}
+	creds := credentials.NewTLS(tlsConfig)
+
+	dialOpts = append(dialOpts, grpc.WithTransportCredentials(creds))
+	return dialOpts, nil
+}

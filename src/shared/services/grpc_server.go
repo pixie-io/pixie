@@ -51,12 +51,21 @@ func createGRPCAuthFunc(env env.Env) func(context.Context) (context.Context, err
 // CreateGRPCServer creates a GRPC server with default middleware for our services.
 func CreateGRPCServer(env env.Env) *grpc.Server {
 	var tlsOpts grpc.ServerOption
-	if !viper.GetBool("disable_ssl") {
+	if !viper.GetBool("disable_ssl") && !viper.GetBool("server_side_tls") {
 		tlsConfig, err := DefaultServerTLSConfig()
 		if err != nil {
 			log.WithError(err).Fatal("Failed to load default server TLS config")
 		}
 		creds := credentials.NewTLS(tlsConfig)
+		tlsOpts = grpc.Creds(creds)
+	} else if !viper.GetBool("disable_ssl") && viper.GetBool("server_side_tls") {
+		tlsCert := viper.GetString("server_tls_cert")
+		tlsKey := viper.GetString("server_tls_key")
+
+		creds, err := credentials.NewServerTLSFromFile(tlsCert, tlsKey)
+		if err != nil {
+			log.WithError(err).Fatal("could not create server-side TLS credentials")
+		}
 		tlsOpts = grpc.Creds(creds)
 	}
 

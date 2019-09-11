@@ -32,19 +32,26 @@ spec:
                 name: pl-app-secrets
                 key: jwt-signing-key
           - name: PL_SERVER_TLS_CERT
-            value: /certs/server.crt
+            value: /proxycerts/tls.crt
           - name: PL_SERVER_TLS_KEY
-            value: /certs/server.key
+            value: /proxycerts/tls.key
           - name: PL_CLIENT_TLS_CERT
             value: /certs/client.crt
           - name: PL_CLIENT_TLS_KEY
             value: /certs/client.key
           - name: PL_TLS_CA_CERT
             value: /certs/ca.crt
+          - name: PL_SERVER_SIDE_TLS
+            value: "true"
         volumeMounts:
             - name: certs
               mountPath: /certs
+            - name: proxycerts
+              mountPath: /proxycerts
       volumes:
         - name: certs
           secret:
             secretName: service-tls-certs
+        - name: proxycerts
+          secret:
+            secretName: proxy-tls-certs

@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"strings"
+
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -14,12 +16,15 @@ func init() {
 
 // NewVZConnClient creates a new vzconn RPC client stub.
 func NewVZConnClient() (vzconnpb.VZConnServiceClient, error) {
-	dialOpts, err := services.GetGRPCClientDialOpts()
+	cloudAddr := viper.GetString("cloud_addr")
+	isInternal := strings.ContainsAny(cloudAddr, "cluster.local")
+
+	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
 	if err != nil {
 		return nil, err
 	}
 
-	ccChannel, err := grpc.Dial(viper.GetString("cloud_addr"), dialOpts...)
+	ccChannel, err := grpc.Dial(cloudAddr, dialOpts...)
 	if err != nil {
 		return nil, err
 	}
