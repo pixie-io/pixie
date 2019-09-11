@@ -126,7 +126,7 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 }
 
 template <class TMessageType>
-Status ConnectionTracker::ExtractMessages() {
+Status ConnectionTracker::ExtractReqResp() {
   DataStream* resp_data_ptr = resp_data();
   if (resp_data_ptr == nullptr) {
     return error::Internal("Unexpected nullptr for resp_data");
@@ -146,7 +146,7 @@ template <>
 std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessages() {
   std::vector<ReqRespPair<http::HTTPMessage>> trace_records;
 
-  Status s = ExtractMessages<http::HTTPMessage>();
+  Status s = ExtractReqResp<http::HTTPMessage>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
     return trace_records;
@@ -204,7 +204,7 @@ template <>
 std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessages() {
   std::vector<ReqRespPair<http2::GRPCMessage>> trace_records;
 
-  Status s = ExtractMessages<http2::Frame>();
+  Status s = ExtractReqResp<http2::Frame>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
     return trace_records;
@@ -242,7 +242,7 @@ template <>
 std::vector<mysql::Entry> ConnectionTracker::ProcessMessages() {
   std::vector<mysql::Entry> entries;
 
-  Status s = ExtractMessages<mysql::Packet>();
+  Status s = ExtractReqResp<mysql::Packet>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
     return entries;

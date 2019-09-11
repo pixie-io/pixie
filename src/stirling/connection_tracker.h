@@ -187,12 +187,6 @@ class ConnectionTracker {
   void AddDataEvent(std::unique_ptr<SocketDataEvent> event);
 
   /**
-   * @brief Parses raw events in both request and response data streams into messages.
-   */
-  template <class TMessageType>
-  Status ExtractMessages();
-
-  /**
    *
    * @tparam TEntryType
    */
@@ -201,7 +195,7 @@ class ConnectionTracker {
 
   /**
    * @brief Returns reference to current set of unconsumed requests.
-   * Note: A call to ExtractMessages() is required to parse new requests.
+   * Note: A call to ProcessMessages() is required to parse new requests.
    */
   template <class TMessageType>
   std::deque<TMessageType>& req_messages() {
@@ -210,7 +204,7 @@ class ConnectionTracker {
 
   /**
    * @brief Returns reference to current set of unconsumed responses.
-   * Note: A call to ExtractMessages() is required to parse new responses.
+   * Note: A call to ProcessMessages() is required to parse new responses.
    */
   template <class TMessageType>
   std::deque<TMessageType>& resp_messages() {
@@ -437,6 +431,8 @@ class ConnectionTracker {
   }
 
  private:
+  template <class TMessageType>
+  Status ExtractReqResp();
   void SetPID(struct conn_id_t conn_id);
   void SetTrafficClass(struct traffic_class_t traffic_class);
   void UpdateTimestamps(uint64_t bpf_timestamp);
