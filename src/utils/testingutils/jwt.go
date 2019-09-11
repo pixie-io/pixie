@@ -11,15 +11,9 @@ import (
 
 // GenerateTestClaimsWithDuration generates valid test user claims for a specified duration.
 func GenerateTestClaimsWithDuration(t *testing.T, duration time.Duration) *pb.JWTClaims {
-	claims := pb.JWTClaims{}
-	claims.Subject = "test"
-	claims.UserID = "test"
-	claims.OrgID = "test"
-	claims.Email = "test@test.com"
-	claims.Issuer = "PL"
-	claims.ExpiresAt = time.Now().Add(duration).Unix()
+	claims := utils.GenerateJWTForUser("test", "test", "test@test.com", time.Now().Add(duration))
 
-	return &claims
+	return claims
 }
 
 // GenerateTestClaims generates valid test user claims valid for 60 minutes

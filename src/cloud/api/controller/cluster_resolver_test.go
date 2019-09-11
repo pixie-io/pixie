@@ -3,11 +3,11 @@ package controller_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
-	jwt "pixielabs.ai/pixielabs/src/shared/services/proto"
 
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
@@ -17,14 +17,12 @@ import (
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
+	"pixielabs.ai/pixielabs/src/shared/services/utils"
 )
 
 func CreateTestContext() context.Context {
 	sCtx := authcontext.New()
-	sCtx.Claims = &jwt.JWTClaims{}
-	sCtx.Claims.Email = "test@test.com"
-	sCtx.Claims.UserID = "abcdef"
-	sCtx.Claims.OrgID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	sCtx.Claims = utils.GenerateJWTForUser("abcdef", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "test@test.com", time.Now())
 	return authcontext.NewContext(context.Background(), sCtx)
 }
 

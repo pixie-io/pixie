@@ -22,7 +22,7 @@ func TestWithBearerAuthMiddleware(t *testing.T) {
 		sCtx, err := authcontext.FromContext(r.Context())
 		assert.Nil(t, err)
 		assert.NotNil(t, sCtx)
-		assert.Equal(t, "test", sCtx.Claims.UserID)
+		assert.Equal(t, "test", sCtx.Claims.GetUserClaims().UserID)
 		w.WriteHeader(http.StatusOK)
 	}
 	testToken := testingutils.GenerateTestJWTToken(t, "jwt-key")

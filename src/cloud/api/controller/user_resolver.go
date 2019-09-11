@@ -12,7 +12,7 @@ type UserInfoResolver struct {
 
 // ID returns the user id.
 func (u *UserInfoResolver) ID() graphql.ID {
-	return graphql.ID(u.SessionCtx.Claims.UserID)
+	return graphql.ID(u.SessionCtx.Claims.GetUserClaims().UserID)
 }
 
 // Name returns the user name.
@@ -22,7 +22,7 @@ func (u *UserInfoResolver) Name() string {
 
 // Email returns the user email.
 func (u *UserInfoResolver) Email() string {
-	return u.SessionCtx.Claims.Email
+	return u.SessionCtx.Claims.GetUserClaims().Email
 }
 
 // Picture returns the users picture/avatar.

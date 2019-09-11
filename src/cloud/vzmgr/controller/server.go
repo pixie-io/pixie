@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/jmoiron/sqlx"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/codes"
@@ -16,6 +15,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/cloudpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	jwtutils "pixielabs.ai/pixielabs/src/shared/services/utils"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
@@ -205,18 +205,8 @@ func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) 
 	}
 
 	// Generate a signed token for this cluster.
-	// TODO(zasgar/michelle): Refactor this into utils and make sure clams are correct.
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-		Audience:  "pixielabs.ai",
-		ExpiresAt: time.Now().Add(time.Hour).Unix(),
-		Id:        "vizier_cluster",
-		IssuedAt:  time.Now().Unix(),
-		NotBefore: time.Now().Add(-2 * time.Minute).Unix(),
-		Issuer:    "pixielabs.ai",
-		Subject:   "pixielabs.ai/vizier",
-	})
-
-	tokenString, err := token.SignedString([]byte(info.JWTSigningKey))
+	claims := jwtutils.GenerateJWTForCluster("vizier_cluster")
+	tokenString, err := jwtutils.SignJWTClaims(claims, info.JWTSigningKey)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to sign token: %s", err.Error())
 	}

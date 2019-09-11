@@ -18,7 +18,7 @@ func (q *QueryResolver) CreateCluster(ctx context.Context) (*ClusterInfoResolver
 	apiEnv := q.Env
 
 	sCtx, err := authcontext.FromContext(ctx)
-	orgIDstr := sCtx.Claims.OrgID
+	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 
 	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
 
@@ -47,7 +47,7 @@ type ClusterResolver struct {
 // Cluster resolves cluster information.
 func (q *QueryResolver) Cluster(ctx context.Context) (*ClusterInfoResolver, error) {
 	sCtx, err := authcontext.FromContext(ctx)
-	orgIDstr := sCtx.Claims.OrgID
+	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 
 	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
 
@@ -100,7 +100,7 @@ func (c *ClusterInfoResolver) LastHeartbeatMs() float64 {
 // ClusterConnection resolves cluster connection information.
 func (q *QueryResolver) ClusterConnection(ctx context.Context) (*ClusterConnectionInfoResolver, error) {
 	sCtx, err := authcontext.FromContext(ctx)
-	orgIDstr := sCtx.Claims.OrgID
+	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 
 	orgID, err := uuid.FromString(orgIDstr)
 	if err != nil {

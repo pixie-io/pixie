@@ -3,6 +3,7 @@ package controller_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go"
@@ -15,7 +16,7 @@ import (
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
-	jwt "pixielabs.ai/pixielabs/src/shared/services/proto"
+	jwtutils "pixielabs.ai/pixielabs/src/shared/services/utils"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -45,9 +46,8 @@ func (c *FakeAPIEnv) QueryBrokerClient() service.QueryBrokerServiceClient {
 
 func CreateTestContext() context.Context {
 	sCtx := authcontext.New()
-	sCtx.Claims = &jwt.JWTClaims{}
-	sCtx.Claims.Email = "test@test.com"
-	sCtx.Claims.UserID = "abcdef"
+	sCtx.Claims = jwtutils.GenerateJWTForUser("test", "6test", "test@test.com", time.Now())
+
 	return authcontext.NewContext(context.Background(), sCtx)
 }
 

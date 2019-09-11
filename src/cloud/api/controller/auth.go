@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/sessions"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -18,21 +17,13 @@ import (
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	commonenv "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
-	pbjwt "pixielabs.ai/pixielabs/src/shared/services/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
 )
 
 // GetServiceCredentials returns JWT credentials for inter-service requests.
 func GetServiceCredentials(signingKey string) (string, error) {
-	pbClaims := pbjwt.JWTClaims{
-		Subject:   "AuthService",
-		Issuer:    "PL",
-		ExpiresAt: time.Now().Add(time.Minute * 10).Unix(),
-	}
-	claims := utils.PBToMapClaims(&pbClaims)
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(signingKey))
-
+	claims := utils.GenerateJWTForService("AuthService")
+	return utils.SignJWTClaims(claims, signingKey)
 }
 
 // AuthLoginHandler make requests to the authpb service and sets session cookies.

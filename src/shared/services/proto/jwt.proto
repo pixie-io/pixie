@@ -40,29 +40,16 @@ message JWTClaims {
                           (gogoproto.jsontag) = "sub"
                           ];
 
-  // Custom claims.
-  // TODO(michelle): Remove userID, orgID, and email below when
-  // the services are updated to use the new custom claims.
-  string user_id = 8 [
-          (gogoproto.customname) = "UserID",
-          (gogoproto.jsontag) = "userID"
-  ];
-  // The organization that this user belongs to.
-  string org_id = 9 [
-          (gogoproto.customname) = "OrgID",
-          (gogoproto.jsontag) = "orgID"
-  ];
-  string email   = 10;
 
   // The permitted scopes for the jwt. For now, these scopes will just be
   // "user", "cluster", or "service", but may be more fine-grained in the future
   // like "read:user_profile", etc.
-  repeated string scopes = 11;
+  repeated string scopes = 8;
 
   oneof custom_claims {
-    UserJWTClaims user_claims = 12;
-    ServiceJWTClaims service_claims = 13;
-    ClusterJWTClaims cluster_claims = 14;
+    UserJWTClaims user_claims = 9;
+    ServiceJWTClaims service_claims = 10;
+    ClusterJWTClaims cluster_claims = 11;
   }
 }
 

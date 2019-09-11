@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -14,7 +13,6 @@ import (
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	jwtpb "pixielabs.ai/pixielabs/src/shared/services/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
 )
@@ -211,7 +209,7 @@ func (s *Server) GetAugmentedToken(
 	claims.IssuedAt = time.Now().Unix()
 	claims.ExpiresAt = time.Now().Add(AugmentedTokenValidDuration).Unix()
 
-	augmentedToken, err := signJWTClaims(&claims, s.env.JWTSigningKey())
+	augmentedToken, err := utils.SignJWTClaims(&claims, s.env.JWTSigningKey())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate auth token")
 	}
@@ -224,29 +222,10 @@ func (s *Server) GetAugmentedToken(
 	return resp, nil
 }
 
-func generateJWTClaimsForUser(userInfo *UserInfo, expiresAt time.Time) *jwtpb.JWTClaims {
-	claims := jwtpb.JWTClaims{
-		Subject: userInfo.AppMetadata.PLUserID,
-		UserID:  userInfo.AppMetadata.PLUserID,
-		OrgID:   userInfo.AppMetadata.PLOrgID,
-		Email:   userInfo.Email,
-		// Standard claims.
-		ExpiresAt: expiresAt.Unix(),
-		IssuedAt:  time.Now().Unix(),
-		Issuer:    "PL",
-	}
-	return &claims
-}
-
-func signJWTClaims(claims *jwtpb.JWTClaims, signingKey string) (string, error) {
-	mc := utils.PBToMapClaims(claims)
-	return jwt.NewWithClaims(jwt.SigningMethodHS256, mc).SignedString([]byte(signingKey))
-}
-
 func generateJWTTokenForUser(userInfo *UserInfo, signingKey string) (string, time.Time, error) {
 	expiresAt := time.Now().Add(RefreshTokenValidDuration)
-	claims := generateJWTClaimsForUser(userInfo, expiresAt)
-	token, err := signJWTClaims(claims, signingKey)
+	claims := utils.GenerateJWTForUser(userInfo.AppMetadata.PLUserID, userInfo.AppMetadata.PLOrgID, userInfo.Email, expiresAt)
+	token, err := utils.SignJWTClaims(claims, signingKey)
 
 	return token, expiresAt, err
 }

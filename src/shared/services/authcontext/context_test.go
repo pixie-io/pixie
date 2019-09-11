@@ -24,7 +24,7 @@ func TestSessionCtx_UseJWTAuth(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, "test", ctx.Claims.Subject)
-	assert.Equal(t, "test@test.com", ctx.Claims.Email)
+	assert.Equal(t, "test@test.com", ctx.Claims.GetUserClaims().Email)
 }
 
 func TestSessionCtx_ValidUser(t *testing.T) {

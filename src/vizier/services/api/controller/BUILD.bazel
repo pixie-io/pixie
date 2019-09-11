@@ -33,7 +33,7 @@ go_test(
         "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/services/authcontext:go_default_library",
         "//src/shared/services/env:go_default_library",
-        "//src/shared/services/proto:jwt_go_proto",
+        "//src/shared/services/utils:go_default_library",
         "//src/shared/types/proto:types_pl_go_proto",
         "//src/table_store/proto:schema_pl_go_proto",
         "//src/utils:go_default_library",
