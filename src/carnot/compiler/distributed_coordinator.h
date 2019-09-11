@@ -39,8 +39,9 @@ class Coordinator : public NotCopyable {
    */
   StatusOr<std::unique_ptr<DistributedPlan>> Coordinate(const IR* logical_plan);
 
- protected:
   Status Init(const compilerpb::DistributedState& physical_state);
+
+ protected:
   Status ProcessConfig(const CarnotInfo& carnot_info);
 
   virtual Status InitImpl(const compilerpb::DistributedState& physical_state) = 0;
@@ -72,6 +73,25 @@ class OneRemoteCoordinator : public Coordinator {
   std::vector<CarnotInfo> data_store_nodes_;
   // Nodes that remotely prcoess data.
   std::vector<CarnotInfo> remote_processor_nodes_;
+};
+
+/**
+ * @brief This corodinator createsa a plan laytout with no remote processors and N data sources.
+ *
+ */
+class NoRemoteCoordinator : public Coordinator {
+ public:
+  static StatusOr<std::unique_ptr<NoRemoteCoordinator>> Create(
+      const compilerpb::DistributedState& physical_state);
+
+ protected:
+  StatusOr<std::unique_ptr<DistributedPlan>> CoordinateImpl(const IR* logical_plan) override;
+  Status InitImpl(const compilerpb::DistributedState& physical_state) override;
+  Status ProcessConfigImpl(const CarnotInfo& carnot_info) override;
+
+ private:
+  // Nodes that have a source of data.
+  std::vector<CarnotInfo> data_store_nodes_;
 };
 }  // namespace distributed
 }  // namespace compiler

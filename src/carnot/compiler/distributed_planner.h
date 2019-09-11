@@ -61,6 +61,32 @@ class DistributedPlanner : public NotCopyable {
 
   Status Init();
 };
+
+class NoKelvinPlanner : public NotCopyable {
+ public:
+  /**
+   * @brief The Creation function for the planner.
+   *
+   * @return StatusOr<std::unique_ptr<DistributedPlanner>>: the distributed planner object or an
+   * error.
+   */
+  static StatusOr<std::unique_ptr<NoKelvinPlanner>> Create();
+
+  /**
+   * @brief Takes in a logical plan and outputs the distributed plan.
+   *
+   * @param distributed_state: the distributed layout of the vizier instance.
+   * @param compiler_state: informastion passed to the compiler.
+   * @param logical_plan
+   * @return StatusOr<std::unique_ptr<DistributedPlan>>
+   */
+  StatusOr<std::unique_ptr<DistributedPlan>> Plan(
+      const compilerpb::DistributedState& distributed_state, CompilerState* compiler_state,
+      const IR* logical_plan);
+
+ private:
+  NoKelvinPlanner() {}
+};
 }  // namespace distributed
 }  // namespace compiler
 }  // namespace carnot
