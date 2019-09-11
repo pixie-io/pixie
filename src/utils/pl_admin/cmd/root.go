@@ -12,6 +12,7 @@ func init() {
 	pflag.String("cert_path", "", "Directory to save certs in")
 	pflag.String("ca_cert", "", "Path to CA cert (optional)")
 	pflag.String("ca_key", "", "Path to CA key (optional)")
+	pflag.Int("bit_size", 4096, "Size in bits of the generated key (optional)")
 	// --namespace is also a flag for deploy.
 	pflag.String("namespace", "pl", "The namespace to install certs or Pixie K8s secrets to")
 
@@ -44,6 +45,8 @@ func init() {
 	viper.BindPFlag("ca_cert", installCertsCmd.Flags().Lookup("ca_cert"))
 	installCertsCmd.Flags().StringP("ca_key", "k", "", "Path to CA key (optional)")
 	viper.BindPFlag("ca_key", installCertsCmd.Flags().Lookup("ca_key"))
+	installCertsCmd.Flags().IntP("bit_size", "b", 4096, "Size in bits of the generated key")
+	viper.BindPFlag("bit_size", installCertsCmd.Flags().Lookup("bit_size"))
 	installCertsCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install certs to")
 	viper.BindPFlag("namespace", installCertsCmd.Flags().Lookup("namespace"))
 

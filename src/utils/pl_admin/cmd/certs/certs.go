@@ -20,7 +20,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pl_admin/cmd/k8s"
 )
 
-func generateCA(certPath string) (*x509.Certificate, crypto.PrivateKey) {
+func generateCA(certPath string, bitsize int) (*x509.Certificate, crypto.PrivateKey) {
 	ca := &x509.Certificate{
 		SerialNumber: big.NewInt(1653),
 		Subject: pkix.Name{
@@ -37,7 +37,7 @@ func generateCA(certPath string) (*x509.Certificate, crypto.PrivateKey) {
 		BasicConstraintsValid: true,
 	}
 
-	caKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	caKey, err := rsa.GenerateKey(rand.Reader, bitsize)
 	if err != nil {
 		log.WithError(err).Fatal("Could not generate key for certificate")
 	}
@@ -60,7 +60,7 @@ func loadCA(caCert string, caKey string) (*x509.Certificate, crypto.PrivateKey) 
 	return ca, caPair.PrivateKey
 }
 
-func generateCertificate(certPath string, certName string, caCert *x509.Certificate, caKey crypto.PrivateKey) {
+func generateCertificate(certPath string, certName string, caCert *x509.Certificate, caKey crypto.PrivateKey, bitsize int) {
 	// Prepare certificate.
 	cert := &x509.Certificate{
 		SerialNumber: big.NewInt(1658),
@@ -77,7 +77,7 @@ func generateCertificate(certPath string, certName string, caCert *x509.Certific
 		BasicConstraintsValid: true,
 		DNSNames:              []string{"*.local", "*.plc.svc.cluster.local", "*.pl.svc.cluster.local", "localhost", "pl-nats", "pl-etcd", "*.pl-etcd.pl.svc", "*.pl-etcd.pl.svc.cluster.local"},
 	}
-	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	privateKey, err := rsa.GenerateKey(rand.Reader, bitsize)
 	if err != nil {
 		log.WithError(err).Fatal("Could not generate key for certificate")
 	}
@@ -107,27 +107,27 @@ func signCertificate(certPath string, certName string, cert *x509.Certificate, c
 	log.Info(fmt.Sprintf("Created %s.key", certName))
 }
 
-func generateCerts(certPath string, caCertPath string, caKeyPath string) {
+func generateCerts(certPath string, caCertPath string, caKeyPath string, bitsize int) {
 	var ca *x509.Certificate
 	var caKey crypto.PrivateKey
 
 	if caCertPath == "" {
 		log.Info("Generating new CA.")
-		ca, caKey = generateCA(certPath)
+		ca, caKey = generateCA(certPath, bitsize)
 	} else {
 		log.Info("Using existing CA.")
 		ca, caKey = loadCA(caCertPath, caKeyPath)
 	}
 
 	// Generate server certificate.
-	generateCertificate(certPath, "server", ca, caKey)
+	generateCertificate(certPath, "server", ca, caKey, bitsize)
 
 	// Generate client certificate.
-	generateCertificate(certPath, "client", ca, caKey)
+	generateCertificate(certPath, "client", ca, caKey, bitsize)
 }
 
 // InstallCerts generates the necessary certs and installs them in kubernetes.
-func InstallCerts(certPath string, caCertPath string, caKeyPath string, namespace string) {
+func InstallCerts(certPath string, caCertPath string, caKeyPath string, namespace string, bitsize int) {
 	var err error
 
 	deleteCerts := false
@@ -147,7 +147,7 @@ func InstallCerts(certPath string, caCertPath string, caKeyPath string, namespac
 		}
 	}()
 
-	generateCerts(certPath, caCertPath, caKeyPath)
+	generateCerts(certPath, caCertPath, caKeyPath, bitsize)
 
 	serverKey := path.Join(certPath, "server.key")
 	serverCert := path.Join(certPath, "server.crt")
