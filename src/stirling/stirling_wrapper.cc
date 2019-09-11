@@ -48,27 +48,28 @@ std::unordered_map<uint64_t, std::string> table_id_to_name_map;
 void PrintRecordBatch(std::string_view prefix, const ConstVectorView<DataElement>& schema,
                       size_t num_records, const ColumnWrapperRecordBatch& record_batch) {
   for (size_t i = 0; i < num_records; ++i) {
-    std::cout << "[" << prefix << "] ";
+    std::cout << "[" << prefix << "]";
 
     uint32_t j = 0;
     for (const auto& col : record_batch) {
+      std::cout << " " << schema[j].name() << ":";
       switch (schema[j].type()) {
         case DataType::TIME64NS: {
           const auto val = col->Get<Time64NSValue>(i).val;
           std::time_t time = val / 1000000000UL;
-          std::cout << std::put_time(std::localtime(&time), "%Y-%m-%d %X") << " | ";
+          std::cout << "[" << std::put_time(std::localtime(&time), "%Y-%m-%d %X") << "]";
         } break;
         case DataType::INT64: {
           const auto val = col->Get<Int64Value>(i).val;
-          std::cout << val << " ";
+          std::cout << "[" << val << "]";
         } break;
         case DataType::FLOAT64: {
           const auto val = col->Get<Float64Value>(i).val;
-          std::cout << val << " ";
+          std::cout << "[" << val << "]";
         } break;
         case DataType::STRING: {
           const auto& val = col->Get<StringValue>(i);
-          std::cout << val << " ";
+          std::cout << "[" << val << "]";
         } break;
         case DataType::UINT128: {
           const auto& val = col->Get<UInt128Value>(i);
@@ -77,7 +78,6 @@ void PrintRecordBatch(std::string_view prefix, const ConstVectorView<DataElement
         default:
           CHECK(false) << absl::Substitute("Unrecognized type: $0", ToString(schema[j].type()));
       }
-
       j++;
     }
     std::cout << std::endl;
