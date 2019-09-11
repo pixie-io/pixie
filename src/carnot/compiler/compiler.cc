@@ -20,10 +20,16 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 StatusOr<planpb::Plan> Compiler::Compile(const std::string& query, CompilerState* compiler_state) {
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, CompileToIR(query, compiler_state));
+  return ir->ToProto();
+}
+
+StatusOr<std::shared_ptr<IR>> Compiler::CompileToIR(const std::string& query,
+                                                    CompilerState* compiler_state) {
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state));
   PL_RETURN_IF_ERROR(VerifyIRConnections(*ir));
   PL_RETURN_IF_ERROR(UpdateColumnsAndVerifyUDFs(ir.get(), compiler_state));
-  return ir->ToProto();
+  return ir;
 }
 Status Compiler::VerifyIRConnections(const IR& ir) {
   auto verifier = IRVerifier();

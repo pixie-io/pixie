@@ -25,6 +25,8 @@ class Compiler {
    * @return the logical plan in the form of a plan protobuf message.
    */
   StatusOr<planpb::Plan> Compile(const std::string& query, CompilerState* compiler_state);
+  StatusOr<std::shared_ptr<IR>> CompileToIR(const std::string& query,
+                                            CompilerState* compiler_state);
 
  private:
   StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query, CompilerState* compiler_state);
