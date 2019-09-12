@@ -121,7 +121,7 @@ inline StatusOr<T> AsciiHexToBytes(std::string s, const std::vector<char>& separ
 
     // Make sure we processed two ASCII characters, and there were no errors.
     if (end_ptr != byte_string_ptr + 2 || errno != 0) {
-      return error::Internal("Could not parse value");
+      return error::Internal("Could not parse value [position = $0]", i);
     }
     bytes.push_back(byte);
   }

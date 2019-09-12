@@ -21,6 +21,7 @@ pl_cc_library(
 pl_cc_test(
     name = "trial_parser_test",
     srcs = ["trial_parser_test.cc"],
+    data = glob(["testdata/*"]),
     deps = [
         ":cc_library",
         "//src/common/testing:cc_library",
