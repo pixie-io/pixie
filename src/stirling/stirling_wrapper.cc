@@ -27,6 +27,7 @@ using pl::types::SharedColumnWrapper;
 using pl::types::StringValue;
 using pl::types::TabletID;
 using pl::types::Time64NSValue;
+using pl::types::UInt128Value;
 
 using pl::stirling::PIDRuntimeConnector;
 using pl::stirling::SeqGenConnector;
@@ -39,6 +40,8 @@ using pl::stirling::kHTTPTable;
 using pl::ConstVectorView;
 
 DEFINE_string(source_name, "*", "The name of the source to report.");
+DEFINE_bool(all_sources, false,
+            "If true, turns on all sources. Default turns on only prod sources.");
 
 std::unordered_map<uint64_t, std::string> table_id_to_name_map;
 
@@ -66,6 +69,10 @@ void PrintRecordBatch(std::string_view prefix, const ConstVectorView<DataElement
         case DataType::STRING: {
           const auto& val = col->Get<StringValue>(i);
           std::cout << val << " ";
+        } break;
+        case DataType::UINT128: {
+          const auto& val = col->Get<UInt128Value>(i);
+          std::cout << absl::Substitute("{$0,$1}", val.High64(), val.Low64()) << " ";
         } break;
         default:
           CHECK(false) << absl::Substitute("Unrecognized type: $0", ToString(schema[j].type()));
@@ -143,7 +150,9 @@ int main(int argc, char** argv) {
   LOG(INFO) << "Stirling Wrapper PID: " << getpid() << " TID: " << std::this_thread::get_id();
 
   // Make Stirling.
-  std::unique_ptr<SourceRegistry> registry = pl::stirling::CreateAllSourceRegistry();
+  std::unique_ptr<SourceRegistry> registry = FLAGS_all_sources
+                                                 ? pl::stirling::CreateAllSourceRegistry()
+                                                 : pl::stirling::CreateProdSourceRegistry();
   std::unique_ptr<Stirling> stirling = Stirling::Create(std::move(registry));
   g_stirling = stirling.get();
 

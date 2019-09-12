@@ -121,9 +121,9 @@ struct UInt128Value : public FixedSizedValueType<absl::uint128> {
 
   UInt128Value(uint64_t high, uint64_t low) { val = absl::MakeUint128(high, low); }
 
-  uint64_t High64() { return absl::Uint128High64(val); }
+  uint64_t High64() const { return absl::Uint128High64(val); }
 
-  uint64_t Low64() { return absl::Uint128Low64(val); }
+  uint64_t Low64() const { return absl::Uint128Low64(val); }
 
   bool operator==(const absl::uint128 other) const { return other == val; }
 
