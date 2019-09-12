@@ -274,8 +274,9 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
     const uint8_t type = f->frame.hd.type;
     switch (type) {
       case NGHTTP2_DATA:
-        LOG_IF(DFATAL, progress == Progress::kInHeadersBlock)
-            << "DATA frame must not follow a unended HEADERS frame.";
+        LOG_IF(ERROR, progress == Progress::kInHeadersBlock)
+            << "TODO(PL-874): DATA frame must not follow a unended HEADERS frame. "
+               "Investigate and fix.";
         if (progress == Progress::kUnknown) {
           // This is the first data frame. We must receive a payload with certain size.
           progress = Progress::kInDataBlock;
@@ -291,8 +292,9 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
         }
         break;
       case NGHTTP2_HEADERS:
-        LOG_IF(DFATAL, progress == Progress::kInHeadersBlock)
-            << "HEADERS frame must not follow another unended HEADERS frame.";
+        LOG_IF(ERROR, progress == Progress::kInHeadersBlock)
+            << "TODO(PL-874): HEADERS frame must not follow another unended HEADERS frame. "
+               "Investigate and fix.";
         progress = Progress::kInHeadersBlock;
         handle_headers_or_continuation(f);
         // gRPC response EOS (end-of-stream) is indicated by END_STREAM flag on the last HEADERS
