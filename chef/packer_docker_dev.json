@@ -24,7 +24,7 @@
     {
       "type": "shell",
       "inline": [
-        "apt-get -y update; apt-get install -y curl"
+        "apt-get -y update; DEBIAN_FRONTEND=noninteractive apt-get install -y curl"
       ]
     },
     {

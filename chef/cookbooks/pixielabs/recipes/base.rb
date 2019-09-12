@@ -59,3 +59,9 @@ remote_file '/opt/pixielabs/bin/kustomize' do
   mode 0755
   checksum node['kustomize']['sha256']
 end
+
+remote_file '/opt/pixielabs/bin/sops' do
+  source node['sops']['download_path']
+  mode 0755
+  checksum node['sops']['sha256']
+end

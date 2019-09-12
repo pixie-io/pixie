@@ -17,6 +17,7 @@ default['skaffold']                  = {}
 default['kubectl']                   = {}
 default['bazel']                     = {}
 default['golang']                    = {}
+default['sops']                      = {}
 
 if node[:platform] == 'ubuntu'
   default['bazel']['deb']        =
@@ -54,6 +55,11 @@ if node[:platform] == 'ubuntu'
     'https://github.com/kubernetes-sigs/kustomize/releases/download/v3.0.0/kustomize_3.0.0_linux_amd64'
   default['kustomize']['sha256']        =
     'ef0dbeca85c419891ad0e12f1f9df649b02ceb01517fa9aea0297ef14e400c7a'
+
+  default['sops']['download_path'] =
+    'https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.linux'
+  default['sops']['sha256']        =
+    '6eacdd01b68fd140eb71bbca233bea897cccb75dbf9e00a02e648b2f9a8a6939'
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     'https://github.com/bazelbuild/bazel/releases/download/0.28.1/bazel-0.28.1-darwin-x86_64'
@@ -87,4 +93,9 @@ elsif node[:platform] == 'mac_os_x'
     'https://github.com/kubernetes-sigs/kustomize/releases/download/v3.0.0/kustomize_3.0.0_darwin_amd64'
   default['kustomize']['sha256']        =
     '58bf0cf1fe6839a1463120ced1eae385423efa6437539eb491650db5089c60b9'
+
+  default['sops']['download_path'] =
+    'https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.darwin'
+  default['sops']['sha256']        =
+    '09bb5920ae609bdf041b74843e2d8211a7059847b21729fadfbd3c3e33e67d26'
 end
