@@ -187,8 +187,11 @@ class ConnectionTracker {
   void AddDataEvent(std::unique_ptr<SocketDataEvent> event);
 
   /**
+   * @brief Processes the connection tracker, parsing raw events into messages,
+   * and messages into entries.
    *
-   * @tparam TEntryType
+   * @tparam TEntryType the type of the entries to be parsed.
+   * @return Vector of processed entries.
    */
   template <class TEntryType>
   std::vector<TEntryType> ProcessMessages();
@@ -315,6 +318,21 @@ class ConnectionTracker {
   std::chrono::time_point<std::chrono::steady_clock> last_update_timestamp() {
     return last_update_timestamp_;
   }
+
+  /**
+   * @brief Disables the connection tracker. The tracker will drop all its existing data,
+   * and also not accept any future data (future data events will be ignored).
+   *
+   * The tracker will still wait for a Close event to get destroyed.
+   */
+  void Disable();
+
+  /**
+   * @brief The tracker is disabled and will not produce any new results.
+   *
+   * @return true if tracker is disabled.
+   */
+  bool disabled() { return disabled_; }
 
   /**
    * @brief Check if all events have been received on this stream.
@@ -462,6 +480,10 @@ class ConnectionTracker {
 
   uint32_t num_send_events_ = 0;
   uint32_t num_recv_events_ = 0;
+
+  // When disabled, the tracker will silently drop existing data and silently drop any new data.
+  // It will, however, still track open and close events.
+  bool disabled_ = false;
 
   inline static std::chrono::seconds inactivity_duration_ = kDefaultInactivityDuration;
 

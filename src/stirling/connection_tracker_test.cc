@@ -521,6 +521,54 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
   // TODO(oazizi): The close should be an indicator that the partner will never come.
 }
 
+TEST_F(ConnectionTrackerTest, TrackerDisable) {
+  ConnectionTracker tracker;
+  std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
+
+  conn_info_t conn = InitConn();
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPResp1);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent("hello");
+  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent("hello to you too");
+  std::unique_ptr<SocketDataEvent> req3 = InitSendEvent("good-bye");
+  std::unique_ptr<SocketDataEvent> resp3 = InitRecvEvent("good-bye to you too");
+  conn_info_t close_conn = InitClose();
+
+  tracker.AddConnOpenEvent(conn);
+  tracker.AddDataEvent(std::move(req0));
+  tracker.AddDataEvent(std::move(resp0));
+  tracker.AddDataEvent(std::move(req1));
+  tracker.AddDataEvent(std::move(resp1));
+
+  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+
+  ASSERT_EQ(2, req_resp_pairs.size());
+  ASSERT_FALSE(tracker.IsZombie());
+
+  // Say this connection is not interesting to follow anymore.
+  tracker.Disable();
+
+  // More events arrive.
+  tracker.AddDataEvent(std::move(req2));
+  tracker.AddDataEvent(std::move(resp2));
+
+  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+
+  ASSERT_EQ(0, req_resp_pairs.size());
+  ASSERT_FALSE(tracker.IsZombie());
+
+  tracker.AddDataEvent(std::move(req3));
+  tracker.AddDataEvent(std::move(resp3));
+  tracker.AddConnCloseEvent(close_conn);
+
+  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+
+  ASSERT_EQ(0, req_resp_pairs.size());
+  ASSERT_TRUE(tracker.IsZombie());
+}
+
 TEST_F(ConnectionTrackerTest, stats_counter) {
   ConnectionTracker tracker;
 

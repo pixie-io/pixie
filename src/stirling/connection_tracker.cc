@@ -103,6 +103,11 @@ void ConnectionTracker::AddConnCloseEvent(conn_info_t conn_info) {
 }
 
 void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
+  // A disabled tracker doesn't collect data events.
+  if (disabled_) {
+    return;
+  }
+
   LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
       << absl::Substitute(
              "Did not expect to receive Data event more than 1 sampling iteration after Close "
@@ -255,6 +260,13 @@ std::vector<mysql::Entry> ConnectionTracker::ProcessMessages() {
 
   auto state_ptr = state<mysql::State>();
   return mysql::StitchMySQLPackets(&req_messages, &resp_messages, state_ptr);
+}
+
+// TODO(oazizi): Consider providing a reason field with the disable.
+void ConnectionTracker::Disable() {
+  disabled_ = true;
+  send_data_.Reset();
+  recv_data_.Reset();
 }
 
 bool ConnectionTracker::AllEventsReceived() const {
