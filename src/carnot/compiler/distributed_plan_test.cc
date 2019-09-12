@@ -40,8 +40,8 @@ carnot_info {
 
 class DistributedPlanTest : public OperatorTests {
  protected:
-  compilerpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
-    compilerpb::DistributedState physical_state_pb;
+  distributedpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
+    distributedpb::DistributedState physical_state_pb;
     CHECK(google::protobuf::TextFormat::MergeFromString(physical_state_txt, &physical_state_pb));
     return physical_state_pb;
   }
@@ -187,10 +187,11 @@ dag {
 
 TEST_F(DistributedPlanTest, construction_test) {
   auto physical_plan = std::make_unique<DistributedPlan>();
-  compilerpb::DistributedState physical_state = LoadDistributedStatePb(kOneAgentDistributedState);
-  std::unordered_map<int64_t, compilerpb::CarnotInfo> carnot_id_to_carnot_info_map;
+  distributedpb::DistributedState physical_state =
+      LoadDistributedStatePb(kOneAgentDistributedState);
+  std::unordered_map<int64_t, distributedpb::CarnotInfo> carnot_id_to_carnot_info_map;
   for (int64_t i = 0; i < physical_state.carnot_info_size(); ++i) {
-    compilerpb::CarnotInfo carnot_info = physical_state.carnot_info()[i];
+    distributedpb::CarnotInfo carnot_info = physical_state.carnot_info()[i];
     carnot_id_to_carnot_info_map.emplace(physical_plan->AddCarnot(carnot_info), carnot_info);
   }
 

@@ -61,7 +61,7 @@ table_info {
 )proto";
 
 TEST_F(TabletSourceConversionRuleTest, simple_test) {
-  compilerpb::CarnotInfo carnot_info;
+  distributedpb::CarnotInfo carnot_info;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kCarnotInfo, &carnot_info));
 
   Relation relation0;
@@ -367,7 +367,7 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_no_match) {
 
 using TabletRulesIntegrationTest = OperatorTests;
 TEST_F(TabletRulesIntegrationTest, combined_tests) {
-  compilerpb::CarnotInfo carnot_info;
+  distributedpb::CarnotInfo carnot_info;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kCarnotInfo, &carnot_info));
 
   Relation relation0;

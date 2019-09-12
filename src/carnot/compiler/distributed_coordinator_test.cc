@@ -29,8 +29,8 @@ using testing::proto::Partially;
 
 class CoordinatorTest : public OperatorTests {
  protected:
-  compilerpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
-    compilerpb::DistributedState physical_state_pb;
+  distributedpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
+    distributedpb::DistributedState physical_state_pb;
     CHECK(google::protobuf::TextFormat::MergeFromString(physical_state_txt, &physical_state_pb));
     return physical_state_pb;
   }

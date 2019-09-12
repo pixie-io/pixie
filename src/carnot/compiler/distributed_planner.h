@@ -18,7 +18,7 @@ namespace carnot {
 namespace compiler {
 namespace distributed {
 
-using compilerpb::CarnotInfo;
+using distributedpb::CarnotInfo;
 /**
  * @brief The planner takes in a logical plan and knowledge about the Machines available for
  * exeuction to create a plan that is close to what is actually executed on the nodes.
@@ -53,7 +53,7 @@ class DistributedPlanner : public NotCopyable {
    * @return StatusOr<std::unique_ptr<DistributedPlan>>
    */
   StatusOr<std::unique_ptr<DistributedPlan>> Plan(
-      const compilerpb::DistributedState& distributed_state, CompilerState* compiler_state,
+      const distributedpb::DistributedState& distributed_state, CompilerState* compiler_state,
       const IR* logical_plan);
 
  private:
@@ -81,7 +81,7 @@ class NoKelvinPlanner : public NotCopyable {
    * @return StatusOr<std::unique_ptr<DistributedPlan>>
    */
   StatusOr<std::unique_ptr<DistributedPlan>> Plan(
-      const compilerpb::DistributedState& distributed_state, CompilerState* compiler_state,
+      const distributedpb::DistributedState& distributed_state, CompilerState* compiler_state,
       const IR* logical_plan);
 
  private:

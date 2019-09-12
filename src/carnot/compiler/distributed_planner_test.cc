@@ -43,8 +43,8 @@ carnot_info {
 class DistributedPlannerTest : public OperatorTests {
  protected:
   void SetUpImpl() override { compiler_state_ = nullptr; }
-  compilerpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
-    compilerpb::DistributedState physical_state_pb;
+  distributedpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
+    distributedpb::DistributedState physical_state_pb;
     CHECK(google::protobuf::TextFormat::MergeFromString(physical_state_txt, &physical_state_pb));
     return physical_state_pb;
   }
@@ -187,7 +187,8 @@ TEST_F(DistributedPlannerTest, one_agent_one_kelvin) {
   auto mem_sink = MakeMemSink(mem_src, "out");
   PL_CHECK_OK(mem_sink->SetRelation(MakeRelation()));
 
-  compilerpb::DistributedState ps_pb = LoadDistributedStatePb(kOneAgentOneKelvinDistributedState);
+  distributedpb::DistributedState ps_pb =
+      LoadDistributedStatePb(kOneAgentOneKelvinDistributedState);
   std::unique_ptr<DistributedPlanner> physical_planner =
       DistributedPlanner::Create().ConsumeValueOrDie();
   // TODO(philkuz) fix nullptr for compiler_state.
@@ -564,7 +565,7 @@ TEST_F(DistributedPlannerTest, three_agent_one_kelvin) {
   auto mem_sink = MakeMemSink(mem_src, "out");
   PL_CHECK_OK(mem_sink->SetRelation(MakeRelation()));
 
-  compilerpb::DistributedState ps_pb =
+  distributedpb::DistributedState ps_pb =
       LoadDistributedStatePb(kThreeAgentsOneKelvinDistributedState);
   std::unique_ptr<DistributedPlanner> physical_planner =
       DistributedPlanner::Create().ConsumeValueOrDie();

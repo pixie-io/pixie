@@ -59,8 +59,8 @@ class StitcherTest : public OperatorTests {
     info_ = std::make_unique<compiler::RegistryInfo>();
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
   }
-  compilerpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
-    compilerpb::DistributedState physical_state_pb;
+  distributedpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
+    distributedpb::DistributedState physical_state_pb;
     CHECK(google::protobuf::TextFormat::MergeFromString(physical_state_txt, &physical_state_pb));
     return physical_state_pb;
   }
@@ -71,7 +71,7 @@ class StitcherTest : public OperatorTests {
     PL_CHECK_OK(mem_sink->SetRelation(MakeRelation()));
   }
 
-  std::unique_ptr<DistributedPlan> MakeDistributedPlan(const compilerpb::DistributedState& ps) {
+  std::unique_ptr<DistributedPlan> MakeDistributedPlan(const distributedpb::DistributedState& ps) {
     auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
 
     MakeSourceSinkGraph();

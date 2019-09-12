@@ -17,7 +17,7 @@ namespace carnot {
 namespace compiler {
 namespace distributed {
 
-using compilerpb::CarnotInfo;
+using distributedpb::CarnotInfo;
 
 /**
  * @brief The stitcher takes in a carnot graph and a split_plan, creates the distributed plan and

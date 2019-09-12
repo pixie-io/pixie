@@ -14,11 +14,11 @@ namespace carnot {
 namespace compiler {
 namespace distributed {
 
-using compilerpb::CarnotInfo;
+using distributedpb::CarnotInfo;
 
 struct CarnotGraph {
   plan::DAG dag;
-  absl::flat_hash_map<int64_t, compilerpb::CarnotInfo> id_to_carnot_info;
+  absl::flat_hash_map<int64_t, distributedpb::CarnotInfo> id_to_carnot_info;
 };
 
 /**
@@ -29,7 +29,7 @@ class Coordinator : public NotCopyable {
  public:
   virtual ~Coordinator() = default;
   static StatusOr<std::unique_ptr<Coordinator>> Create(
-      const compilerpb::DistributedState& physical_state);
+      const distributedpb::DistributedState& physical_state);
 
   /**
    * @brief Using the physical state and the current plan, assembles a proto Distributed Plan. This
@@ -39,12 +39,12 @@ class Coordinator : public NotCopyable {
    */
   StatusOr<std::unique_ptr<DistributedPlan>> Coordinate(const IR* logical_plan);
 
-  Status Init(const compilerpb::DistributedState& physical_state);
+  Status Init(const distributedpb::DistributedState& physical_state);
 
  protected:
   Status ProcessConfig(const CarnotInfo& carnot_info);
 
-  virtual Status InitImpl(const compilerpb::DistributedState& physical_state) = 0;
+  virtual Status InitImpl(const distributedpb::DistributedState& physical_state) = 0;
 
   /**
    * @brief Implementation of the Coordinate function. Using the phyiscal state and the plan, should
@@ -65,7 +65,7 @@ class Coordinator : public NotCopyable {
 class OneRemoteCoordinator : public Coordinator {
  protected:
   StatusOr<std::unique_ptr<DistributedPlan>> CoordinateImpl(const IR* logical_plan) override;
-  Status InitImpl(const compilerpb::DistributedState& physical_state) override;
+  Status InitImpl(const distributedpb::DistributedState& physical_state) override;
   Status ProcessConfigImpl(const CarnotInfo& carnot_info) override;
 
  private:
@@ -82,11 +82,11 @@ class OneRemoteCoordinator : public Coordinator {
 class NoRemoteCoordinator : public Coordinator {
  public:
   static StatusOr<std::unique_ptr<NoRemoteCoordinator>> Create(
-      const compilerpb::DistributedState& physical_state);
+      const distributedpb::DistributedState& physical_state);
 
  protected:
   StatusOr<std::unique_ptr<DistributedPlan>> CoordinateImpl(const IR* logical_plan) override;
-  Status InitImpl(const compilerpb::DistributedState& physical_state) override;
+  Status InitImpl(const distributedpb::DistributedState& physical_state) override;
   Status ProcessConfigImpl(const CarnotInfo& carnot_info) override;
 
  private:

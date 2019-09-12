@@ -13,13 +13,13 @@ namespace compiler {
 namespace distributed {
 
 StatusOr<std::unique_ptr<Coordinator>> Coordinator::Create(
-    const compilerpb::DistributedState& physical_state) {
+    const distributedpb::DistributedState& physical_state) {
   std::unique_ptr<Coordinator> planner(new OneRemoteCoordinator());
   PL_RETURN_IF_ERROR(planner->Init(physical_state));
   return planner;
 }
 
-Status Coordinator::Init(const compilerpb::DistributedState& physical_state) {
+Status Coordinator::Init(const distributedpb::DistributedState& physical_state) {
   return InitImpl(physical_state);
 }
 
@@ -31,7 +31,7 @@ StatusOr<std::unique_ptr<DistributedPlan>> Coordinator::Coordinate(const IR* log
   return CoordinateImpl(logical_plan);
 }
 
-Status OneRemoteCoordinator::InitImpl(const compilerpb::DistributedState& physical_state) {
+Status OneRemoteCoordinator::InitImpl(const distributedpb::DistributedState& physical_state) {
   for (int64_t i = 0; i < physical_state.carnot_info_size(); ++i) {
     PL_RETURN_IF_ERROR(ProcessConfig(physical_state.carnot_info()[i]));
   }
@@ -82,13 +82,13 @@ StatusOr<std::unique_ptr<DistributedPlan>> OneRemoteCoordinator::CoordinateImpl(
 }
 
 StatusOr<std::unique_ptr<NoRemoteCoordinator>> NoRemoteCoordinator::Create(
-    const compilerpb::DistributedState& physical_state) {
+    const distributedpb::DistributedState& physical_state) {
   std::unique_ptr<NoRemoteCoordinator> coordinator(new NoRemoteCoordinator());
   PL_RETURN_IF_ERROR(coordinator->Init(physical_state));
   return coordinator;
 }
 
-Status NoRemoteCoordinator::InitImpl(const compilerpb::DistributedState& physical_state) {
+Status NoRemoteCoordinator::InitImpl(const distributedpb::DistributedState& physical_state) {
   for (int64_t i = 0; i < physical_state.carnot_info_size(); ++i) {
     PL_RETURN_IF_ERROR(ProcessConfig(physical_state.carnot_info()[i]));
   }

@@ -15,7 +15,7 @@ StatusOr<bool> TabletSourceConversionRule::Apply(IRNode* ir_node) {
 StatusOr<bool> TabletSourceConversionRule::ReplaceMemorySourceWithTabletSourceGroup(
     MemorySourceIR* mem_source_ir) {
   const std::string& table_name = mem_source_ir->table_name();
-  const compilerpb::TableInfo& table_info = GetTableInfo(table_name);
+  const distributedpb::TableInfo& table_info = GetTableInfo(table_name);
   const std::string& tablet_key = table_info.tabletization_key();
   if (tablet_key.empty()) {
     return false;
@@ -43,7 +43,7 @@ StatusOr<bool> TabletSourceConversionRule::ReplaceMemorySourceWithTabletSourceGr
   return true;
 }
 
-const compilerpb::TableInfo& TabletSourceConversionRule::GetTableInfo(
+const distributedpb::TableInfo& TabletSourceConversionRule::GetTableInfo(
     const std::string& table_name) {
   DCHECK_GT(carnot_info_.table_info_size(), 0);
   for (int64_t i = 0; i < carnot_info_.table_info_size(); ++i) {

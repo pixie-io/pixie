@@ -7,7 +7,7 @@
 
 #include "absl/container/flat_hash_map.h"
 #include "src/carnot/compiler/compiler_state.h"
-#include "src/carnot/compiler/compilerpb/distributed_plan.pb.h"
+#include "src/carnot/compiler/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/metadata_handler.h"
 #include "src/carnot/compiler/pattern_match.h"
@@ -26,7 +26,7 @@ namespace distributed {
  */
 class CarnotInstance {
  public:
-  CarnotInstance(int64_t id, const compilerpb::CarnotInfo& carnot_info)
+  CarnotInstance(int64_t id, const distributedpb::CarnotInfo& carnot_info)
       : id_(id), carnot_info_(carnot_info) {}
   bool IsAgent() const {
     // return carnot_info_.
@@ -39,7 +39,7 @@ class CarnotInstance {
 
   StatusOr<planpb::Plan> PlanProto() const { return plan_->ToProto(); }
 
-  compilerpb::CarnotInfo carnot_info() const { return carnot_info_; }
+  distributedpb::CarnotInfo carnot_info() const { return carnot_info_; }
 
   IR* plan() const { return plan_.get(); }
 
@@ -51,7 +51,7 @@ class CarnotInstance {
   // The id used by the physical plan to define the DAG.
   int64_t id_;
   // The specification of this carnot instance.
-  compilerpb::CarnotInfo carnot_info_;
+  distributedpb::CarnotInfo carnot_info_;
   std::unique_ptr<IR> plan_;
 };
 
@@ -63,7 +63,7 @@ class DistributedPlan {
    * @param carnot_instance the proto representation of the Carnot instance.
    * @return the id of the added carnot instance.
    */
-  int64_t AddCarnot(const compilerpb::CarnotInfo& carnot_instance);
+  int64_t AddCarnot(const distributedpb::CarnotInfo& carnot_instance);
 
   /**
    * @brief Gets the carnot instance at the index i.
@@ -80,7 +80,7 @@ class DistributedPlan {
   void AddEdge(CarnotInstance* from, CarnotInstance* to) { dag_.AddEdge(from->id(), to->id()); }
   void AddEdge(int64_t from, int64_t to) { dag_.AddEdge(from, to); }
 
-  StatusOr<compilerpb::DistributedPlan> ToProto() const;
+  StatusOr<distributedpb::DistributedPlan> ToProto() const;
 
   const plan::DAG& dag() const { return dag_; }
 

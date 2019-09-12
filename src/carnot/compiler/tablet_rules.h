@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "absl/container/flat_hash_set.h"
-#include "src/carnot/compiler/compilerpb/distributed_plan.pb.h"
+#include "src/carnot/compiler/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/compiler/ir_nodes.h"
 #include "src/carnot/compiler/pattern_match.h"
 #include "src/carnot/compiler/rules.h"
@@ -22,15 +22,15 @@ namespace distributed {
  */
 class TabletSourceConversionRule : public Rule {
  public:
-  explicit TabletSourceConversionRule(const compilerpb::CarnotInfo& carnot_info)
+  explicit TabletSourceConversionRule(const distributedpb::CarnotInfo& carnot_info)
       : Rule(nullptr), carnot_info_(carnot_info) {}
 
  private:
   StatusOr<bool> Apply(IRNode* ir_node) override;
   StatusOr<bool> ReplaceMemorySourceWithTabletSourceGroup(MemorySourceIR* mem_source_ir);
-  const compilerpb::TableInfo& GetTableInfo(const std::string& table_name);
+  const distributedpb::TableInfo& GetTableInfo(const std::string& table_name);
 
-  const compilerpb::CarnotInfo& carnot_info_;
+  const distributedpb::CarnotInfo& carnot_info_;
 };
 
 /**

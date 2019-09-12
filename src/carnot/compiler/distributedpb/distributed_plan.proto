@@ -1,11 +1,12 @@
 syntax = "proto3";
 
 import "src/carnot/planpb/plan.proto";
+import "src/common/base/proto/status.proto";
 import "src/table_store/proto/schema.proto";
 
-package pl.carnot.compiler.compilerpb;
+package pl.carnot.compiler.distributedpb;
 
-option go_package = "compilerpb";
+option go_package = "distributedpb";
 
 // Info about the Distributed characteristics of a Carnot instance.
 message CarnotInfo {
@@ -13,7 +14,7 @@ message CarnotInfo {
   string query_broker_address = 1;
   // Flag if the Carnot instance hosts a GRPC server.
   bool has_grpc_server = 2;
-  // The address of the GRPC server hosted by the Carnot instance, it it has a GRPC server.
+  // The address of the GRPC server hosted by the Carnot instance, it has a GRPC server.
   string grpc_address = 3;
   // Flag if the carnot instance has an in-memory store of data.
   // E.g. agents stores data, but some Kelvin instances might only be used for computation.
@@ -55,4 +56,19 @@ message DistributedPlan {
   map<string, uint64> qb_address_to_dag_id = 2;
   // The DAG describing the connections between the Distributed nodes.
   pl.carnot.planpb.DAG dag = 3;
+}
+
+// LogicalPlannerState contains the information necessary to create the Logical Plan.
+// This message is used by the query broker to send to the logical planner.
+message LogicalPlannerState {
+  // The schema of the tables, assumed to be consistent across the system.
+  pl.table_store.schemapb.Schema schema = 1;
+  // The distributed state of all Carnot instances in the system.
+  DistributedState distributed_state = 2;
+}
+
+// The result for the planner. Contains a status to track any errors
+message LogicalPlannerResult {
+  pl.statuspb.Status status = 1;
+  DistributedPlan plan = 2;
 }
