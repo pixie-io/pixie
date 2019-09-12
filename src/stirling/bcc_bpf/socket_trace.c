@@ -511,21 +511,21 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirecti
   //
   // Useful link: https://www.mail-archive.com/netdev@vger.kernel.org/msg199918.html
 
-  size_t msg_size = 0;
+  size_t msg_submit_size = 0;
   if (buf_size >= sizeof(event->msg)) {
-    msg_size = sizeof(event->msg);
-    bpf_probe_read(&event->msg, msg_size, buf);
+    msg_submit_size = sizeof(event->msg);
+    bpf_probe_read(&event->msg, msg_submit_size, buf);
   } else if (buf_size > 0) {
-    msg_size = buf_size;
+    msg_submit_size = buf_size;
     // Read one extra byte, because older kernels (4.14) don't accept 0 as the second argument,
     // And their verifier can't prove that it won't be zero (despite the obvious if-statement).
-    bpf_probe_read(&event->msg, msg_size + 1, buf);
+    bpf_probe_read(&event->msg, msg_submit_size + 1, buf);
   }
 
-  event->attr.msg_size = msg_size;
+  event->attr.msg_size = buf_size;
 
   // Write snooped arguments to perf ring buffer.
-  const size_t size_to_submit = sizeof(event->attr) + msg_size;
+  const size_t size_to_submit = sizeof(event->attr) + msg_submit_size;
   switch (event->attr.traffic_class.protocol) {
     case kProtocolHTTP:
     case kProtocolHTTP2:
@@ -537,7 +537,7 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirecti
     default:
       break;
   }
-  return msg_size;
+  return msg_submit_size;
 }
 
 static __inline void perf_submit_iovecs(struct pt_regs* ctx, const TrafficDirection direction,
@@ -567,9 +567,9 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const TrafficDirect
     const size_t bytes_remain = total_size - bytes_copied;
     const size_t iov_size = iov_cpy.iov_len < bytes_remain ? iov_cpy.iov_len : bytes_remain;
 
-    const size_t msg_size =
+    const size_t submit_size =
         perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, conn_info, event);
-    bytes_copied += msg_size;
+    bytes_copied += submit_size;
   }
 }
 
