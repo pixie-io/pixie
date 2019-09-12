@@ -73,7 +73,7 @@ void PrintRecordBatch(std::string_view prefix, const ConstVectorView<DataElement
         } break;
         case DataType::UINT128: {
           const auto& val = col->Get<UInt128Value>(i);
-          std::cout << absl::Substitute("{$0,$1}", val.High64(), val.Low64()) << " ";
+          std::cout << "[" << absl::Substitute("{$0,$1}", val.High64(), val.Low64()) << "]";
         } break;
         default:
           CHECK(false) << absl::Substitute("Unrecognized type: $0", ToString(schema[j].type()));
