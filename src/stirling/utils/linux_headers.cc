@@ -28,9 +28,9 @@ StatusOr<uint32_t> ParseUname(const std::string& linux_release) {
   }
 
   // SimpleAtoi should always succeed, due to regex match.
-  CHECK(absl::SimpleAtoi(match[1].str(), &kernel_version));
-  CHECK(absl::SimpleAtoi(match[2].str(), &major_rev));
-  CHECK(absl::SimpleAtoi(match[3].str(), &minor_rev));
+  ECHECK(absl::SimpleAtoi(match[1].str(), &kernel_version));
+  ECHECK(absl::SimpleAtoi(match[2].str(), &major_rev));
+  ECHECK(absl::SimpleAtoi(match[3].str(), &minor_rev));
 
   uint32_t version_code = (kernel_version << 16) | (major_rev << 8) | (minor_rev);
   return version_code;

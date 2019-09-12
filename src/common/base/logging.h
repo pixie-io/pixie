@@ -31,7 +31,7 @@
   if (google::CheckOpString _result =                                                              \
           google::Check##name##Impl(google::GetReferenceableValue(val1),                           \
                                     google::GetReferenceableValue(val2), #val1 " " #op " " #val2)) \
-  LOG(DFATAL) << *_result.str_
+  LOG(DFATAL) << "Check failed: " << (*_result.str_) << " "
 
 #define ECHECK_OP(name, op, val1, val2) ECHECK_OP_LOG(name, op, val1, val2)
 

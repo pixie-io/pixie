@@ -71,9 +71,9 @@ Status SocketTraceConnector::StopImpl() {
 
 void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                             DataTable* data_table) {
-  CHECK_LT(table_num, kTables.size())
+  DCHECK_LT(table_num, kTables.size())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
-  CHECK(data_table != nullptr);
+  DCHECK(data_table != nullptr);
 
   // TODO(oazizi): Should this run more frequently than TransferDataImpl?
   // This drains the relevant perf buffer, and causes Handle() callback functions to get called.
@@ -96,7 +96,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
       // TransferStreams<mysql::Entry>(ctx, kProtocolMySQL, data_table);
       break;
     default:
-      CHECK(false) << absl::StrFormat("Unknown table number: %d", table_num);
+      LOG(ERROR) << absl::StrFormat("Unknown table number: %d", table_num);
   }
 
   DumpBPFLog();
@@ -392,7 +392,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
   PreProcessMessage(&record.resp_message);
 
-  CHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
+  DCHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
   http::HTTPMessage& req_message = record.req_message;
   http::HTTPMessage& resp_message = record.resp_message;
@@ -434,7 +434,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   GRPCMessage& resp_message = record.resp_message;
 
   int64_t resp_status;
-  CHECK(absl::SimpleAtoi(resp_message.HeaderValue(":status", "-1"), &resp_status));
+  ECHECK(absl::SimpleAtoi(resp_message.HeaderValue(":status", "-1"), &resp_status));
 
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
                 conn_tracker.pid_start_time());
@@ -481,7 +481,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 
 void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker, mysql::Entry entry,
                                          DataTable* data_table) {
-  CHECK_EQ(kMySQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
+  DCHECK_EQ(kMySQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
   RecordBuilder<&kMySQLTable> r(data_table);
   r.Append<r.ColIndex("time_")>(entry.req_timestamp_ns);

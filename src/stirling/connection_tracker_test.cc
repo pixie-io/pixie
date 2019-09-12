@@ -584,8 +584,13 @@ TEST_F(ConnectionTrackerTest, stats_counter) {
 TEST(DataStreamTest, CannotSwitchType) {
   DataStream stream;
   stream.ExtractMessages<http::HTTPMessage>(MessageType::kRequest);
+
+#if DCHECK_IS_ON()
   EXPECT_DEATH(stream.ExtractMessages<http2::Frame>(MessageType::kRequest),
                "ConnectionTracker cannot change the type it holds during runtime");
+#else
+  EXPECT_THROW(stream.ExtractMessages<http2::Frame>(MessageType::kRequest), std::exception);
+#endif
 }
 
 }  // namespace stirling

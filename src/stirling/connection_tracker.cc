@@ -19,8 +19,8 @@ namespace stirling {
 
 template <>
 void ConnectionTracker::InitState<mysql::Packet>() {
-  CHECK(std::holds_alternative<std::monostate>(state_) ||
-        (std::holds_alternative<std::unique_ptr<mysql::State>>(state_)));
+  DCHECK(std::holds_alternative<std::monostate>(state_) ||
+         (std::holds_alternative<std::unique_ptr<mysql::State>>(state_)));
   if (std::holds_alternative<std::monostate>(state_)) {
     mysql::State s{std::map<int, mysql::ReqRespEvent>(), mysql::FlagStatus::kUnknown};
     state_ = std::make_unique<mysql::State>(std::move(s));
@@ -394,8 +394,8 @@ void DataStream::AddEvent(std::unique_ptr<SocketDataEvent> event) {
 
 template <class TMessageType>
 std::deque<TMessageType>& DataStream::Messages() {
-  CHECK(std::holds_alternative<std::monostate>(messages_) ||
-        std::holds_alternative<std::deque<TMessageType>>(messages_))
+  DCHECK(std::holds_alternative<std::monostate>(messages_) ||
+         std::holds_alternative<std::deque<TMessageType>>(messages_))
       << "Must hold the default std::monostate, or the same type as requested. "
          "I.e., ConnectionTracker cannot change the type it holds during runtime.";
   if (std::holds_alternative<std::monostate>(messages_)) {
@@ -425,7 +425,7 @@ size_t DataStream::AppendEvents(EventParser<TMessageType>* parser) const {
     // First message may have been partially processed by a previous call to this function.
     // In such cases, the offset will be non-zero, and we need a sub-string of the first event.
     if (next_offset != 0) {
-      CHECK(next_offset < event.msg.size());
+      ECHECK_LT(next_offset, event.msg.size());
       msg = msg.substr(next_offset, event.msg.size() - next_offset);
     }
 
@@ -442,7 +442,7 @@ size_t DataStream::AppendEvents(EventParser<TMessageType>* parser) const {
 namespace {
 
 ParseSyncType SelectSyncType(int64_t stuck_count) {
-  CHECK_GE(stuck_count, 0);
+  ECHECK_GE(stuck_count, 0);
 
   // Stuck counts where we switch the sync policy.
   static constexpr int64_t kBasicSyncThreshold = 1;
@@ -539,7 +539,7 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
       auto erase_iter = events_.begin();
       std::advance(erase_iter, num_events_appended);
       events_.erase(events_.begin(), erase_iter);
-      CHECK(!events_.empty());
+      ECHECK(!events_.empty());
       next_seq_num_ = events_.begin()->first;
       offset_ = 0;
 
