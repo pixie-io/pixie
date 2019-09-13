@@ -38,7 +38,6 @@ export interface RouterInfo {
 }
 
 interface VizierProps {
-  match: any;
   location: RouterInfo;
 }
 export class Vizier extends React.Component<VizierProps, {}> {
@@ -47,8 +46,6 @@ export class Vizier extends React.Component<VizierProps, {}> {
   }
 
   render() {
-    const matchPath = this.props.match.path;
-
     return (
       <Query query={GET_CLUSTER} pollInterval={2500}>
       {
@@ -70,8 +67,8 @@ export class Vizier extends React.Component<VizierProps, {}> {
                      primaryHeading='Pixie Console'
                      secondaryHeading={PATH_TO_HEADER_TITLE[this.props.location.pathname]}
                   />
-                  <Route path={`${matchPath}/agents`} component={AgentDisplay} />
-                  <Route path={`${matchPath}/`} component={QueryManager} />
+                  <Route path={`/agents`} component={AgentDisplay} />
+                  <Route path={`/`} component={QueryManager} />
                 </div>
               </div>
             );

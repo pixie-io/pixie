@@ -6,6 +6,9 @@ import { BrowserRouter as Router, Route } from 'react-router-dom';
 import {DeployInstructions} from './deploy-instructions';
 import {GET_CLUSTER, Vizier} from './vizier';
 
+// Mock CodeMirror component because it does not mount properly in Jest.
+jest.mock('react-codemirror', () => () => <div id='mock-codemirror'></div>);
+
 const wait = (ms) => new Promise((res) => setTimeout(res, ms));
 
 describe('<Vizier/> test', () => {
@@ -32,7 +35,6 @@ describe('<Vizier/> test', () => {
         <Router>
             <MockedProvider mocks={mocks} addTypename={false}>
               <Vizier
-                match=''
                 location={ { pathname: 'query' } }
               />
             </MockedProvider>
@@ -66,7 +68,6 @@ describe('<Vizier/> test', () => {
         <Router>
             <MockedProvider mocks={mocks} addTypename={false}>
               <Vizier
-                match=''
                 location={ { pathname: 'query' } }
               />
             </MockedProvider>
