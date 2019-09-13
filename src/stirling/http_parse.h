@@ -77,27 +77,12 @@ HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters);
 bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
                          const HTTPHeaderFilter& filter);
 
+// TODO(oazizi): Clean-up this struct (restructure to pull out functions).
 struct PicoHTTPParserWrapper {
-  ParseState Parse(MessageType type, std::string_view buf) {
-    switch (type) {
-      case MessageType::kRequest:
-        return ParseRequest(buf);
-      case MessageType::kResponse:
-        return ParseResponse(buf);
-      default:
-        return ParseState::kInvalid;
-    }
-  }
-  ParseState Write(MessageType type, HTTPMessage* result) {
-    switch (type) {
-      case MessageType::kRequest:
-        return WriteRequest(result);
-      case MessageType::kResponse:
-        return WriteResponse(result);
-      default:
-        return ParseState::kUnknown;
-    }
-  }
+ public:
+  ParseState Parse(MessageType type, std::string_view buf, HTTPMessage* result);
+
+ private:
   ParseState ParseRequest(std::string_view buf);
   ParseState WriteRequest(HTTPMessage* result);
   ParseState ParseResponse(std::string_view buf);
@@ -121,6 +106,8 @@ struct PicoHTTPParserWrapper {
   struct phr_header headers[kMaxNumHeaders];
 
   std::map<std::string, std::string> header_map;
+
+ public:
   std::string_view unparsed_data;
 };
 

@@ -101,6 +101,30 @@ bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
   return true;
 }
 
+ParseState PicoHTTPParserWrapper::Parse(MessageType type, std::string_view buf,
+                                        HTTPMessage* result) {
+  ParseState parse_res;
+
+  switch (type) {
+    case MessageType::kRequest:
+      parse_res = ParseRequest(buf);
+      if (parse_res == ParseState::kSuccess) {
+        parse_res = WriteRequest(result);
+      }
+      return parse_res;
+
+    case MessageType::kResponse:
+      parse_res = ParseResponse(buf);
+      if (parse_res == ParseState::kSuccess) {
+        parse_res = WriteResponse(result);
+      }
+      return parse_res;
+
+    default:
+      return ParseState::kInvalid;
+  }
+}
+
 ParseState PicoHTTPParserWrapper::ParseRequest(std::string_view buf) {
   // Set header number to maximum we can accept.
   // Pico will change it to the number of headers parsed for us.
@@ -298,13 +322,9 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
   size_t bytes_processed = 0;
 
   while (!buf.empty() && s != ParseState::kEOS) {
-    s = pico.Parse(type, buf);
-    if (s != ParseState::kSuccess) {
-      break;
-    }
-
     http::HTTPMessage message;
-    s = pico.Write(type, &message);
+
+    s = pico.Parse(type, buf, &message);
     if (s != ParseState::kSuccess && s != ParseState::kEOS) {
       break;
     }
