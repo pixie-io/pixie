@@ -19,12 +19,22 @@ enum class MessageType { kUnknown, kRequest, kResponse };
 
 enum class ParseState {
   kUnknown,
-  // The data is invalid.
+  // The parse failed: data is invalid.
+  // Input buffer consumed is not consumed and no parsed element is produced.
   kInvalid,
-  // The data appears to be an incomplete message - more data is needed.
+  // The parse failed: data appears to be an incomplete message - needs more data.
+  // Input buffer is not consumed and no parsed element is produced.
   kNeedsMoreData,
-  // The data is valid but ignored.
+  // The parse succeeded, but the data is ignored.
+  // Input buffer is consumed, but no parsed element is produced.
   kIgnored,
+  // The parse succeeded, but indicated the end-of-stream.
+  // Input buffer is consumed, and a parsed element may be produced.
+  // Caller should stop parsing any future data on this stream, even if more data exists.
+  // Use cases include messages that indicate a change in protocol (see HTTP status 101).
+  kEOS,
+  // The parse succeeded and a parsed element is valid.
+  // Input buffer is consumed, and a parsed element is produced.
   kSuccess,
 };
 
@@ -51,7 +61,7 @@ struct ParseResult {
   // When PositionType is bytes, this is total bytes successfully consumed.
   PositionType end_position;
   // State of the last attempted message parse.
-  ParseState state;
+  ParseState state = ParseState::kInvalid;
 };
 
 // NOTE: FindMessageBoundary() and Parse() must be implemented per protocol.

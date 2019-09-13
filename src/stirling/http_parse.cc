@@ -235,17 +235,38 @@ ParseState PicoHTTPParserWrapper::WriteBody(HTTPMessage* result) {
   }
 
   // Case 3: Request with no body.
-  // An HTTP GET with no Content-Length and no Transfer-Encoding should not have a body
-  // when no Content-Length or Transfer-Encoding is set:
-  // "A user agent SHOULD NOT send a Content-Length header field when the request
-  // message does not contain a payload body and the method semantics do not anticipate such a
-  // body."
+  // An HTTP GET with no Content-Length and no Transfer-Encoding should not have a body when no
+  // Content-Length or Transfer-Encoding is set:
+  // "A user agent SHOULD NOT send a Content-Length header field when the request message does
+  // not contain a payload body and the method semantics do not anticipate such a body."
   if (result->http_req_method == "GET") {
     result->http_msg_body = "";
     return ParseState::kSuccess;
   }
 
-  // Case 4: Message has content, but no length or chunking provided, so wait for close().
+  // Case 4: Response indicating a protocol switch.
+  if (result->http_resp_status == 101) {
+    result->http_msg_body = "";
+
+    const auto upgrade_iter = result->http_headers.find(kUpgrade);
+    if (upgrade_iter == result->http_headers.end()) {
+      LOG(WARNING) << "Expected an Upgrade header with HTTP status 101";
+      return ParseState::kEOS;
+    }
+
+    // Header 'Upgrade: h2c' indicates protocol switch is to HTTP/2.
+    // See: https://http2.github.io/http2-spec/#discover-http
+    if (upgrade_iter->second == "h2c") {
+      LOG(WARNING) << "HTTP upgrades to HTTP2 are not yet supported";
+      // TODO(oazizi/yzhao): Support upgrades to HTTP/2.
+    }
+
+    return ParseState::kEOS;
+  }
+
+  // TODO(oazizi): Add other special responses that don't have a body.
+
+  // Case 5: Message has content, but no length or chunking provided, so wait for close().
   // For messages that do not have Content-Length and chunked Transfer-Encoding. According to
   // HTTP/1.1 standard: https://www.w3.org/Protocols/HTTP/1.0/draft-ietf-http-spec.html#BodyLength
   // such messages is terminated by the close of the connection.
@@ -278,7 +299,7 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
   ParseState s = ParseState::kSuccess;
   size_t bytes_processed = 0;
 
-  while (!buf.empty()) {
+  while (!buf.empty() && s != ParseState::kEOS) {
     s = pico.Parse(type, buf);
     if (s != ParseState::kSuccess) {
       break;
@@ -286,7 +307,7 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
 
     http::HTTPMessage message;
     s = pico.Write(type, &message);
-    if (s != ParseState::kSuccess) {
+    if (s != ParseState::kSuccess && s != ParseState::kEOS) {
       break;
     }
 

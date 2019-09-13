@@ -532,7 +532,7 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
     ParseResult<BufferPosition> parse_result =
         parser.ParseMessages(type, &typed_messages, SelectSyncType(stuck_count_));
 
-    if (num_events_appended != events_.size()) {
+    if (parse_result.state != ParseState::kEOS && num_events_appended != events_.size()) {
       // We weren't able to append all events, which means we ran into a missing event.
       // We don't expect missing events to arrive in the future, so just cut our losses.
       // Drop all events up to this point, and then try to resume.

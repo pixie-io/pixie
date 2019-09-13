@@ -24,6 +24,7 @@ inline constexpr char kContentEncoding[] = "Content-Encoding";
 inline constexpr char kContentLength[] = "Content-Length";
 inline constexpr char kContentType[] = "Content-Type";
 inline constexpr char kTransferEncoding[] = "Transfer-Encoding";
+inline constexpr char kUpgrade[] = "Upgrade";
 
 // TODO(yzhao): The repetitions of information among HTTPMessage + ConnectionTraceRecord,
 // DataElementsIndexes, and kTables should be eliminated. It might make sense to use proto file

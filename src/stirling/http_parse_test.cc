@@ -544,7 +544,7 @@ TEST(ParseTest, CompleteMessages) {
 TEST(ParseTest, PartialMessages) {
   std::string msg =
       "HTTP/1.1 200 OK\r\n"
-      "Content-Length: $0\r\n";
+      "Content-Length: 40\r\n";
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result = Parse(MessageType::kResponse, msg, &parsed_messages);
@@ -554,8 +554,26 @@ TEST(ParseTest, PartialMessages) {
   EXPECT_THAT(parsed_messages, IsEmpty());
 }
 
+TEST(ParseTest, Status101) {
+  std::string switch_protocol_msg =
+      "HTTP/1.1 101 Switching Protocols\r\n"
+      "Upgrade: websocket\r\n"
+      "Connection: Upgrade\r\n"
+      "\r\n";
+  std::string new_protocol_data = "NEW PROTOCOL DATA";
+
+  std::string data = absl::StrCat(switch_protocol_msg, new_protocol_data);
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result = Parse(MessageType::kResponse, data, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kEOS, result.state);
+  EXPECT_EQ(switch_protocol_msg.size(), result.end_position);
+  EXPECT_THAT(parsed_messages, ElementsAre(HasBody("")));
+}
+
 //=============================================================================
-// HTTP Request Parsing Tests
+// HTTP Request/Response Parsing Tests
 //=============================================================================
 
 TEST_F(HTTPParserTest, ParseHTTPRequestSingle) {
