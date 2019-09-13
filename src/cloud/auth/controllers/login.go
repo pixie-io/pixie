@@ -54,10 +54,6 @@ func (s *Server) CreateUserOrg(ctx context.Context, in *pb.CreateUserOrgRequest)
 		return nil, status.Error(codes.InvalidArgument, "email addresses don't match")
 	}
 
-	if userInfo.AppMetadata != nil {
-		return nil, status.Error(codes.InvalidArgument, "user already registered")
-	}
-
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
