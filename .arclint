@@ -22,15 +22,13 @@
     "build-linter": {
       "type": "script-and-regex",
       "include": [
+        "(^third_party/.*\\.bzl$)",
+        "(^third_party/BUILD$)",
+        "(^third_party/BUILD\\.bazel$)",
         "(WORKSPACE$)",
         "(BUILD$)",
-        "(BUILD.bazel$)",
+        "(BUILD\\.bazel$)",
         "(\\.bzl$)"
-      ],
-      "exclude": [
-        "(third_party\/bcc\\.BUILD)",
-        "(third_party\/llvm\\.BUILD)",
-        "(third_party\/protobuf\\.BUILD)"
       ],
       "script-and-regex.script": "./linters/buildifier.sh",
       "script-and-regex.regex": "/^(?P<filename>.*) # (?P<autofix>reformat) (?P<message>.*)$/m"
