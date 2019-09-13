@@ -87,160 +87,168 @@ TEST(ParseHTTPHeaderFiltersAndMatchTest, FiltersAreAsExpectedAndMatchesWork) {
 }
 
 //=============================================================================
-// HTTP Parsing Tests
+// Test Utilities
 //=============================================================================
 
-// Parameter used for stress/fuzz test.
-struct TestParam {
-  uint32_t seed;
-  uint32_t iters;
-};
+const std::string_view kHTTPGetReq0 =
+    "GET /index.html HTTP/1.1\r\n"
+    "Host: www.pixielabs.ai\r\n"
+    "Accept: image/gif, image/jpeg, */*\r\n"
+    "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+    "\r\n";
 
-class HTTPParserTest : public ::testing::TestWithParam<TestParam> {
- protected:
-  EventParser<HTTPMessage> parser_;
+HTTPMessage HTTPGetReq0ExpectedMessage() {
+  HTTPMessage expected_message;
+  expected_message.type = MessageType::kRequest;
+  expected_message.http_minor_version = 1;
+  expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
+                                   {"Accept", "image/gif, image/jpeg, */*"},
+                                   {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
+  expected_message.http_req_method = "GET";
+  expected_message.http_req_path = "/index.html";
+  expected_message.http_msg_body = "-";
+  return expected_message;
+}
 
-  const std::string kHTTPGetReq0 =
-      "GET /index.html HTTP/1.1\r\n"
-      "Host: www.pixielabs.ai\r\n"
-      "Accept: image/gif, image/jpeg, */*\r\n"
-      "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
-      "\r\n";
+const std::string_view kHTTPGetReq1 =
+    "GET /foo.html HTTP/1.1\r\n"
+    "Host: www.pixielabs.ai\r\n"
+    "Accept: image/gif, image/jpeg, */*\r\n"
+    "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+    "\r\n";
 
-  HTTPMessage HTTPGetReq0ExpectedMessage() {
-    HTTPMessage expected_message;
-    expected_message.type = MessageType::kRequest;
-    expected_message.http_minor_version = 1;
-    expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
-                                     {"Accept", "image/gif, image/jpeg, */*"},
-                                     {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
-    expected_message.http_req_method = "GET";
-    expected_message.http_req_path = "/index.html";
-    expected_message.http_msg_body = "-";
-    return expected_message;
-  }
+HTTPMessage HTTPGetReq1ExpectedMessage() {
+  HTTPMessage expected_message;
+  expected_message.type = MessageType::kRequest;
+  expected_message.http_minor_version = 1;
+  expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
+                                   {"Accept", "image/gif, image/jpeg, */*"},
+                                   {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
+  expected_message.http_req_method = "GET";
+  expected_message.http_req_path = "/foo.html";
+  expected_message.http_msg_body = "-";
+  return expected_message;
+}
 
-  const std::string kHTTPGetReq1 =
-      "GET /foo.html HTTP/1.1\r\n"
-      "Host: www.pixielabs.ai\r\n"
-      "Accept: image/gif, image/jpeg, */*\r\n"
-      "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
-      "\r\n";
+const std::string_view kHTTPPostReq0 =
+    "POST /test HTTP/1.1\r\n"
+    "Host: pixielabs.ai\r\n"
+    "Content-Type: application/x-www-form-urlencoded\r\n"
+    "Content-Length: 27\r\n"
+    "\r\n"
+    "field1=value1&field2=value2";
 
-  HTTPMessage HTTPGetReq1ExpectedMessage() {
-    HTTPMessage expected_message;
-    expected_message.type = MessageType::kRequest;
-    expected_message.http_minor_version = 1;
-    expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
-                                     {"Accept", "image/gif, image/jpeg, */*"},
-                                     {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
-    expected_message.http_req_method = "GET";
-    expected_message.http_req_path = "/foo.html";
-    expected_message.http_msg_body = "-";
-    return expected_message;
-  }
+HTTPMessage HTTPPostReq0ExpectedMessage() {
+  HTTPMessage expected_message;
+  expected_message.type = MessageType::kRequest;
+  expected_message.http_minor_version = 1;
+  expected_message.http_headers = {{"Host", "pixielabs.ai"},
+                                   {"Content-Type", "application/x-www-form-urlencoded"},
+                                   {"Content-Length", "27"}};
+  expected_message.http_req_method = "POST";
+  expected_message.http_req_path = "/test";
+  expected_message.http_msg_body = "field1=value1&field2=value2";
+  return expected_message;
+}
 
-  const std::string kHTTPPostReq0 =
-      "POST /test HTTP/1.1\r\n"
-      "Host: pixielabs.ai\r\n"
-      "Content-Type: application/x-www-form-urlencoded\r\n"
-      "Content-Length: 27\r\n"
-      "\r\n"
-      "field1=value1&field2=value2";
+const std::string_view kHTTPResp0 =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: foo\r\n"
+    "Content-Length: 9\r\n"
+    "\r\n"
+    "pixielabs";
 
-  HTTPMessage HTTPPostReq0ExpectedMessage() {
-    HTTPMessage expected_message;
-    expected_message.type = MessageType::kRequest;
-    expected_message.http_minor_version = 1;
-    expected_message.http_headers = {{"Host", "pixielabs.ai"},
-                                     {"Content-Type", "application/x-www-form-urlencoded"},
-                                     {"Content-Length", "27"}};
-    expected_message.http_req_method = "POST";
-    expected_message.http_req_path = "/test";
-    expected_message.http_msg_body = "field1=value1&field2=value2";
-    return expected_message;
-  }
+HTTPMessage HTTPResp0ExpectedMessage() {
+  HTTPMessage expected_message;
+  expected_message.type = MessageType::kResponse;
+  expected_message.http_minor_version = 1;
+  expected_message.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
+  expected_message.http_resp_status = 200;
+  expected_message.http_resp_message = "OK";
+  expected_message.http_msg_body = "pixielabs";
+  return expected_message;
+}
 
-  std::string kHTTPResp0 =
+const std::string_view kHTTPResp1 =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: bar\r\n"
+    "Content-Length: 21\r\n"
+    "\r\n"
+    "pixielabs is awesome!";
+
+HTTPMessage HTTPResp1ExpectedMessage() {
+  HTTPMessage expected_message;
+  expected_message.type = MessageType::kResponse;
+  expected_message.http_minor_version = 1;
+  expected_message.http_headers = {{"Content-Type", "bar"}, {"Content-Length", "21"}};
+  expected_message.http_resp_status = 200;
+  expected_message.http_resp_message = "OK";
+  expected_message.http_msg_body = "pixielabs is awesome!";
+  return expected_message;
+}
+
+const std::string_view kHTTPResp2 =
+    "HTTP/1.1 200 OK\r\n"
+    "Transfer-Encoding: chunked\r\n"
+    "\r\n"
+    "9\r\n"
+    "pixielabs\r\n"
+    "C\r\n"
+    " is awesome!\r\n"
+    "0\r\n"
+    "\r\n";
+
+HTTPMessage HTTPResp2ExpectedMessage() {
+  HTTPMessage expected_message;
+  expected_message.type = MessageType::kResponse;
+  expected_message.http_minor_version = 1;
+  expected_message.http_headers = {{"Transfer-Encoding", "chunked"}};
+  expected_message.http_resp_status = 200;
+  expected_message.http_resp_message = "OK";
+  expected_message.http_msg_body = "pixielabs is awesome!";
+  return expected_message;
+}
+
+// Leave http_msg_body set by caller.
+HTTPMessage EmptyChunkedHTTPResp() {
+  HTTPMessage result;
+  result.type = MessageType::kResponse;
+  result.http_minor_version = 1;
+  result.http_headers = {{"Transfer-Encoding", "chunked"}};
+  result.http_resp_status = 200;
+  result.http_resp_message = "OK";
+  return result;
+}
+
+MATCHER_P(HasBody, body, "") { return arg.http_msg_body == body; }
+
+std::string HTTPRespWithSizedBody(std::string_view body) {
+  return absl::Substitute(
       "HTTP/1.1 200 OK\r\n"
-      "Content-Type: foo\r\n"
-      "Content-Length: 9\r\n"
+      "Content-Length: $0\r\n"
       "\r\n"
-      "pixielabs";
+      "$1",
+      body.size(), body);
+}
 
-  HTTPMessage HTTPResp0ExpectedMessage() {
-    HTTPMessage expected_message;
-    expected_message.type = MessageType::kResponse;
-    expected_message.http_minor_version = 1;
-    expected_message.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
-    expected_message.http_resp_status = 200;
-    expected_message.http_resp_message = "OK";
-    expected_message.http_msg_body = "pixielabs";
-    return expected_message;
-  }
+std::string HTTPChunk(std::string_view chunk_body) {
+  const char size = chunk_body.size() < 10 ? '0' + chunk_body.size() : 'A' + chunk_body.size() - 10;
+  std::string s(1, size);
+  return absl::StrCat(s, "\r\n", chunk_body, "\r\n");
+}
 
-  std::string kHTTPResp1 =
-      "HTTP/1.1 200 OK\r\n"
-      "Content-Type: bar\r\n"
-      "Content-Length: 21\r\n"
-      "\r\n"
-      "pixielabs is awesome!";
-
-  HTTPMessage HTTPResp1ExpectedMessage() {
-    HTTPMessage expected_message;
-    expected_message.type = MessageType::kResponse;
-    expected_message.http_minor_version = 1;
-    expected_message.http_headers = {{"Content-Type", "bar"}, {"Content-Length", "21"}};
-    expected_message.http_resp_status = 200;
-    expected_message.http_resp_message = "OK";
-    expected_message.http_msg_body = "pixielabs is awesome!";
-    return expected_message;
-  }
-
-  std::string kHTTPResp2 =
+std::string HTTPRespWithChunkedBody(std::vector<std::string_view> chunk_bodies) {
+  std::string result =
       "HTTP/1.1 200 OK\r\n"
       "Transfer-Encoding: chunked\r\n"
-      "\r\n"
-      "9\r\n"
-      "pixielabs\r\n"
-      "C\r\n"
-      " is awesome!\r\n"
-      "0\r\n"
       "\r\n";
-
-  HTTPMessage HTTPResp2ExpectedMessage() {
-    HTTPMessage expected_message;
-    expected_message.type = MessageType::kResponse;
-    expected_message.http_minor_version = 1;
-    expected_message.http_headers = {{"Transfer-Encoding", "chunked"}};
-    expected_message.http_resp_status = 200;
-    expected_message.http_resp_message = "OK";
-    expected_message.http_msg_body = "pixielabs is awesome!";
-    return expected_message;
+  for (auto c : chunk_bodies) {
+    absl::StrAppend(&result, HTTPChunk(c));
   }
-
-  // Utility function that takes a string view of a buffer, and a set of N split points,
-  // and returns a set of N+1 split string_views of the buffer.
-  std::vector<std::string_view> MessageSplit(std::string_view msg,
-                                             std::vector<size_t> split_points) {
-    std::vector<std::string_view> splits;
-
-    split_points.push_back(msg.length());
-    std::sort(split_points.begin(), split_points.end());
-
-    // Check for bad split_points.
-    CHECK_EQ(msg.length(), split_points.back());
-
-    uint32_t curr_pos = 0;
-    for (auto split_point : split_points) {
-      auto split = std::string_view(msg).substr(curr_pos, split_point - curr_pos);
-      splits.push_back(split);
-      curr_pos = split_point;
-    }
-
-    return splits;
-  }
-};
+  // Lastly, append a 0-length chunk.
+  absl::StrAppend(&result, HTTPChunk(""));
+  return result;
+}
 
 bool operator==(const HTTPMessage& lhs, const HTTPMessage& rhs) {
 #define CMP(field)                                                 \
@@ -265,266 +273,30 @@ bool operator==(const HTTPMessage& lhs, const HTTPMessage& rhs) {
   return true;
 }
 
-socket_data_event_t Event(uint64_t seq_num, std::string_view msg) {
-  socket_data_event_t event{};
-  event.attr.seq_num = seq_num;
-  event.attr.msg_size = msg.size();
-  msg.copy(event.msg, msg.size());
-  return event;
-}
+// Utility function that takes a string view of a buffer, and a set of N split points,
+// and returns a set of N+1 split string_views of the buffer.
+std::vector<std::string_view> MessageSplit(std::string_view msg, std::vector<size_t> split_points) {
+  std::vector<std::string_view> splits;
 
-TEST_F(HTTPParserTest, ParseCompleteHTTPResponseWithContentLengthHeader) {
-  std::string_view msg1 = R"(HTTP/1.1 200 OK
-Content-Type: foo
-Content-Length: 9
+  split_points.push_back(msg.length());
+  std::sort(split_points.begin(), split_points.end());
 
-pixielabs)";
+  // Check for bad split_points.
+  CHECK_EQ(msg.length(), split_points.back());
 
-  std::string_view msg2 = R"(HTTP/1.1 200 OK
-Content-Type: bar
-Content-Length: 10
-
-pixielabs!)";
-
-  HTTPMessage expected_message1;
-  expected_message1.type = MessageType::kResponse;
-  expected_message1.http_minor_version = 1;
-  expected_message1.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
-  expected_message1.http_resp_status = 200;
-  expected_message1.http_resp_message = "OK";
-  expected_message1.http_msg_body = "pixielabs";
-
-  HTTPMessage expected_message2;
-  expected_message2.type = MessageType::kResponse;
-  expected_message2.http_minor_version = 1;
-  expected_message2.http_headers = {{"Content-Type", "bar"}, {"Content-Length", "10"}};
-  expected_message2.http_resp_status = 200;
-  expected_message2.http_resp_message = "OK";
-  expected_message2.http_msg_body = "pixielabs!";
-
-  parser_.Append(msg1, 0);
-  parser_.Append(msg2, 1);
-
-  std::deque<HTTPMessage> parsed_messages;
-  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
-
-  EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
-}
-
-TEST_F(HTTPParserTest, ParseIncompleteHTTPResponseWithContentLengthHeader) {
-  const std::string_view msg1 = R"(HTTP/1.1 200 OK
-Content-Type: foo
-Content-Length: 21
-
-pixielabs)";
-  const std::string_view msg2 = " is awesome";
-  const std::string_view msg3 = "!";
-
-  HTTPMessage expected_message1;
-  expected_message1.type = MessageType::kResponse;
-  expected_message1.http_minor_version = 1;
-  expected_message1.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "21"}};
-  expected_message1.http_resp_status = 200;
-  expected_message1.http_resp_message = "OK";
-  expected_message1.http_msg_body = "pixielabs is awesome!";
-
-  parser_.Append(msg1, 0);
-  parser_.Append(msg2, 1);
-  parser_.Append(msg3, 2);
-
-  std::deque<HTTPMessage> parsed_messages;
-  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
-
-  EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_message1));
-}
-
-TEST_F(HTTPParserTest, InvalidInput) {
-  const std::string_view msg = " is awesome";
-
-  parser_.Append(msg, 0);
-
-  std::deque<HTTPMessage> parsed_messages;
-  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
-
-  EXPECT_EQ(ParseState::kInvalid, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre());
-}
-
-TEST_F(HTTPParserTest, NoAppend) {
-  std::deque<HTTPMessage> parsed_messages;
-  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
-
-  EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre());
-}
-
-// Leave http_msg_body set by caller.
-HTTPMessage ExpectMessage() {
-  HTTPMessage result;
-  result.type = MessageType::kResponse;
-  result.http_minor_version = 1;
-  result.http_headers = {{"Transfer-Encoding", "chunked"}};
-  result.http_resp_status = 200;
-  result.http_resp_message = "OK";
-  return result;
-}
-
-TEST_F(HTTPParserTest, ParseCompleteChunkEncodedMessage) {
-  std::string msg = R"(HTTP/1.1 200 OK
-Transfer-Encoding: chunked
-
-9
-pixielabs
-C
- is awesome!
-0
-
-)";
-  HTTPMessage expected_message = ExpectMessage();
-  expected_message.http_msg_body = "pixielabs is awesome!";
-
-  parser_.Append(msg, 0);
-
-  std::deque<HTTPMessage> parsed_messages;
-  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
-
-  EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
-}
-
-TEST_F(HTTPParserTest, ParseMultipleChunks) {
-  std::string msg1 = R"(HTTP/1.1 200 OK
-Transfer-Encoding: chunked
-
-9
-pixielabs
-)";
-  std::string msg2 = "C\r\n is awesome!\r\n";
-  std::string msg3 = "0\r\n\r\n";
-
-  HTTPMessage expected_message = ExpectMessage();
-  expected_message.http_msg_body = "pixielabs is awesome!";
-
-  parser_.Append(msg1, 0);
-  parser_.Append(msg2, 1);
-  parser_.Append(msg3, 2);
-
-  std::deque<HTTPMessage> parsed_messages;
-  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
-
-  EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
-}
-
-TEST_F(HTTPParserTest, ParseIncompleteChunks) {
-  std::string msg1 = R"(HTTP/1.1 200 OK
-Transfer-Encoding: chunked
-
-9
-pixie)";
-  std::string msg2 = "labs\r\n";
-  std::string msg3 = "0\r\n\r\n";
-
-  HTTPMessage expected_message = ExpectMessage();
-  expected_message.http_msg_body = "pixielabs";
-
-  parser_.Append(msg1, 0);
-  parser_.Append(msg2, 1);
-  parser_.Append(msg3, 2);
-
-  std::deque<HTTPMessage> parsed_messages;
-  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
-
-  EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
-}
-
-TEST_F(HTTPParserTest, DISABLED_ParseMessagesWithoutLengthOrChunking) {
-  std::string msg1 = R"(HTTP/1.1 200 OK
-
-pixielabs )";
-  std::string msg2 = "is ";
-  std::string msg3 = "awesome!";
-
-  HTTPMessage expected_message = ExpectMessage();
-  expected_message.http_headers.clear();
-  expected_message.http_msg_body = "pixielabs is awesome!";
-
-  parser_.Append(msg1, 0);
-  parser_.Append(msg2, 1);
-  parser_.Append(msg3, 2);
-
-  std::deque<HTTPMessage> parsed_messages;
-  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
-
-  EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
-}
-
-std::string HTTPRespWithSizedBody(std::string_view body) {
-  return absl::Substitute(
-      "HTTP/1.1 200 OK\r\n"
-      "Content-Length: $0\r\n"
-      "\r\n"
-      "$1",
-      body.size(), body);
-}
-
-std::string HTTPChunk(std::string_view chunk_body) {
-  const char size = chunk_body.size() < 10 ? '0' + chunk_body.size() : 'A' + chunk_body.size() - 10;
-  std::string s(1, size);
-  return absl::StrCat(s, "\r\n", chunk_body, "\r\n");
-}
-
-std::string HTTPRespWithChunkedBody(std::vector<std::string_view> chunk_bodys) {
-  std::string result =
-      "HTTP/1.1 200 OK\r\n"
-      "Transfer-Encoding: chunked\r\n"
-      "\r\n";
-  for (auto c : chunk_bodys) {
-    absl::StrAppend(&result, HTTPChunk(c));
+  uint32_t curr_pos = 0;
+  for (auto split_point : split_points) {
+    auto split = std::string_view(msg).substr(curr_pos, split_point - curr_pos);
+    splits.push_back(split);
+    curr_pos = split_point;
   }
-  // Lastly, append a 0-length chunk.
-  absl::StrAppend(&result, HTTPChunk(""));
-  return result;
+
+  return splits;
 }
 
-TEST_F(HTTPParserTest, MessagePartialHeaders) {
-  std::string msg1 = R"(HTTP/1.1 200 OK
-Content-Type: text/plain)";
-
-  parser_.Append(msg1, 0);
-
-  std::deque<HTTPMessage> parsed_messages;
-  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
-
-  EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre());
-}
-
-MATCHER_P(HasBody, body, "") { return arg.http_msg_body == body; }
-
-TEST_F(HTTPParserTest, PartialMessageInTheMiddleOfStream) {
-  std::string msg0 = HTTPRespWithSizedBody("foobar") + "HTTP/1.1 200 OK\r\n";
-  std::string msg1 = "Transfer-Encoding: chunked\r\n\r\n";
-  std::string msg2 = HTTPChunk("pixielabs ");
-  std::string msg3 = HTTPChunk("rocks!");
-  std::string msg4 = HTTPChunk("");
-
-  parser_.Append(msg0, 0);
-  parser_.Append(msg1, 1);
-  parser_.Append(msg2, 2);
-  parser_.Append(msg3, 3);
-  parser_.Append(msg4, 4);
-
-  std::deque<HTTPMessage> parsed_messages;
-  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
-
-  EXPECT_EQ(ParseState::kSuccess, result.state);
-  EXPECT_THAT(parsed_messages, ElementsAre(HasBody("foobar"), HasBody("pixielabs rocks!")));
-}
+//=============================================================================
+// HTTP Parse() Tests
+//=============================================================================
 
 TEST(ParseTest, CompleteMessages) {
   std::string msg_a = HTTPRespWithSizedBody("a");
@@ -573,7 +345,239 @@ TEST(ParseTest, Status101) {
 }
 
 //=============================================================================
-// HTTP Request/Response Parsing Tests
+// HTTP Parsing Tests
+//=============================================================================
+
+// Parameter used for stress/fuzz test.
+struct TestParam {
+  uint32_t seed;
+  uint32_t iters;
+};
+
+class HTTPParserTest : public ::testing::TestWithParam<TestParam> {
+ protected:
+  EventParser<HTTPMessage> parser_;
+};
+
+TEST_F(HTTPParserTest, ParseCompleteHTTPResponseWithContentLengthHeader) {
+  std::string_view msg1 =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: foo\r\n"
+      "Content-Length: 9\r\n"
+      "\r\n"
+      "pixielabs";
+
+  std::string_view msg2 =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: bar\r\n"
+      "Content-Length: 10\r\n"
+      "\r\n"
+      "pixielabs!";
+
+  HTTPMessage expected_message1;
+  expected_message1.type = MessageType::kResponse;
+  expected_message1.http_minor_version = 1;
+  expected_message1.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
+  expected_message1.http_resp_status = 200;
+  expected_message1.http_resp_message = "OK";
+  expected_message1.http_msg_body = "pixielabs";
+
+  HTTPMessage expected_message2;
+  expected_message2.type = MessageType::kResponse;
+  expected_message2.http_minor_version = 1;
+  expected_message2.http_headers = {{"Content-Type", "bar"}, {"Content-Length", "10"}};
+  expected_message2.http_resp_status = 200;
+  expected_message2.http_resp_message = "OK";
+  expected_message2.http_msg_body = "pixielabs!";
+
+  parser_.Append(msg1, 0);
+  parser_.Append(msg2, 1);
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message1, expected_message2));
+}
+
+TEST_F(HTTPParserTest, ParseIncompleteHTTPResponseWithContentLengthHeader) {
+  const std::string_view msg1 =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: foo\r\n"
+      "Content-Length: 21\r\n"
+      "\r\n"
+      "pixielabs";
+  const std::string_view msg2 = " is awesome";
+  const std::string_view msg3 = "!";
+
+  HTTPMessage expected_message1;
+  expected_message1.type = MessageType::kResponse;
+  expected_message1.http_minor_version = 1;
+  expected_message1.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "21"}};
+  expected_message1.http_resp_status = 200;
+  expected_message1.http_resp_message = "OK";
+  expected_message1.http_msg_body = "pixielabs is awesome!";
+
+  parser_.Append(msg1, 0);
+  parser_.Append(msg2, 1);
+  parser_.Append(msg3, 2);
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message1));
+}
+
+TEST_F(HTTPParserTest, InvalidInput) {
+  const std::string_view msg = " is awesome";
+
+  parser_.Append(msg, 0);
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kInvalid, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre());
+}
+
+TEST_F(HTTPParserTest, NoAppend) {
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre());
+}
+
+TEST_F(HTTPParserTest, ParseCompleteChunkEncodedMessage) {
+  std::string msg =
+      "HTTP/1.1 200 OK\r\n"
+      "Transfer-Encoding: chunked\r\n"
+      "\r\n"
+      "9\r\n"
+      "pixielabs\r\n"
+      "C\r\n"
+      " is awesome!\r\n"
+      "0\r\n";
+  HTTPMessage expected_message = EmptyChunkedHTTPResp();
+  expected_message.http_msg_body = "pixielabs is awesome!";
+
+  parser_.Append(msg, 0);
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
+}
+
+TEST_F(HTTPParserTest, ParseMultipleChunks) {
+  std::string msg1 =
+      "HTTP/1.1 200 OK\r\n"
+      "Transfer-Encoding: chunked\r\n"
+      "\r\n"
+      "9\r\n"
+      "pixielabs\r\n";
+  std::string msg2 = "C\r\n is awesome!\r\n";
+  std::string msg3 = "0\r\n\r\n";
+
+  HTTPMessage expected_message = EmptyChunkedHTTPResp();
+  expected_message.http_msg_body = "pixielabs is awesome!";
+
+  parser_.Append(msg1, 0);
+  parser_.Append(msg2, 1);
+  parser_.Append(msg3, 2);
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
+}
+
+TEST_F(HTTPParserTest, ParseIncompleteChunks) {
+  std::string msg1 =
+      "HTTP/1.1 200 OK\r\n"
+      "Transfer-Encoding: chunked\r\n"
+      "\r\n"
+      "9\r\n"
+      "pixie";
+  std::string msg2 = "labs\r\n";
+  std::string msg3 = "0\r\n\r\n";
+
+  HTTPMessage expected_message = EmptyChunkedHTTPResp();
+  expected_message.http_msg_body = "pixielabs";
+
+  parser_.Append(msg1, 0);
+  parser_.Append(msg2, 1);
+  parser_.Append(msg3, 2);
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
+}
+
+TEST_F(HTTPParserTest, DISABLED_ParseMessagesWithoutLengthOrChunking) {
+  std::string msg1 =
+      "HTTP/1.1 200 OK\r\n"
+      "\r\n"
+      "pixielabs ";
+  std::string msg2 = "is ";
+  std::string msg3 = "awesome!";
+
+  HTTPMessage expected_message = EmptyChunkedHTTPResp();
+  expected_message.http_headers.clear();
+  expected_message.http_msg_body = "pixielabs is awesome!";
+
+  parser_.Append(msg1, 0);
+  parser_.Append(msg2, 1);
+  parser_.Append(msg3, 2);
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
+}
+
+TEST_F(HTTPParserTest, MessagePartialHeaders) {
+  std::string msg1 =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: text/plain";
+
+  parser_.Append(msg1, 0);
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre());
+}
+
+TEST_F(HTTPParserTest, PartialMessageInTheMiddleOfStream) {
+  std::string msg0 = HTTPRespWithSizedBody("foobar") + "HTTP/1.1 200 OK\r\n";
+  std::string msg1 = "Transfer-Encoding: chunked\r\n\r\n";
+  std::string msg2 = HTTPChunk("pixielabs ");
+  std::string msg3 = HTTPChunk("rocks!");
+  std::string msg4 = HTTPChunk("");
+
+  parser_.Append(msg0, 0);
+  parser_.Append(msg1, 1);
+  parser_.Append(msg2, 2);
+  parser_.Append(msg3, 3);
+  parser_.Append(msg4, 4);
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(HasBody("foobar"), HasBody("pixielabs rocks!")));
+}
+
+//=============================================================================
+// HTTP Parsing Stress Tests
 //=============================================================================
 
 TEST_F(HTTPParserTest, ParseHTTPRequestSingle) {
@@ -598,7 +602,7 @@ TEST_F(HTTPParserTest, ParseHTTPRequestMultiple) {
 }
 
 TEST_P(HTTPParserTest, ParseHTTPRequestsRepeatedly) {
-  std::string msg = kHTTPGetReq0 + kHTTPPostReq0;
+  std::string msg = absl::StrCat(kHTTPGetReq0, kHTTPPostReq0);
 
   std::default_random_engine rng;
   rng.seed(GetParam().seed);
@@ -628,7 +632,7 @@ TEST_P(HTTPParserTest, ParseHTTPRequestsRepeatedly) {
 }
 
 TEST_P(HTTPParserTest, ParseHTTPResponsesRepeatedly) {
-  std::string msg = kHTTPResp0 + kHTTPResp1 + kHTTPResp2;
+  std::string msg = absl::StrCat(kHTTPResp0, kHTTPResp1, kHTTPResp2);
 
   std::default_random_engine rng;
   rng.seed(GetParam().seed);
@@ -662,7 +666,7 @@ TEST_P(HTTPParserTest, ParseHTTPResponsesRepeatedly) {
 // ParseHTTPResponseWithLeftoverRepeatedly expands on this by repeating this process many times.
 // Keeping this test as a basic filter (easier for debug).
 TEST_F(HTTPParserTest, ParseHTTPResponsesWithLeftover) {
-  std::string msg = kHTTPResp0 + kHTTPResp1 + kHTTPResp2;
+  std::string msg = absl::StrCat(kHTTPResp0, kHTTPResp1, kHTTPResp2);
 
   std::vector<size_t> split_points;
   split_points.push_back(kHTTPResp0.length() - 5);
@@ -702,7 +706,7 @@ TEST_F(HTTPParserTest, ParseHTTPResponsesWithLeftover) {
 // Like ParseHTTPResponsesWithLeftover, but repeats test many times,
 // each time with different random split points to stress the functionality.
 TEST_P(HTTPParserTest, ParseHTTPResponsesWithLeftoverRepeatedly) {
-  std::string msg = kHTTPResp0 + kHTTPResp1 + kHTTPResp2 + kHTTPResp1;
+  std::string msg = absl::StrCat(kHTTPResp0, kHTTPResp1, kHTTPResp2, kHTTPResp1);
 
   std::default_random_engine rng;
   rng.seed(GetParam().seed);
@@ -856,7 +860,7 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessage) {
   for (uint32_t offset = 1; offset < kHTTPGetReq0.length(); ++offset) {
     size_t t = 0;
 
-    std::string partial_http_get_req0 = kHTTPGetReq0.substr(offset, kHTTPGetReq0.length());
+    std::string partial_http_get_req0(kHTTPGetReq0.substr(offset, kHTTPGetReq0.length()));
     parser_.Append(partial_http_get_req0, ++t);
     parser_.Append(kHTTPPostReq0, ++t);
     parser_.Append(kHTTPGetReq1, ++t);
@@ -876,7 +880,7 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessage) {
   for (uint32_t offset = 1; offset < kHTTPResp0.length(); ++offset) {
     size_t t = 0;
 
-    std::string partial_http_resp0 = kHTTPResp0.substr(offset, kHTTPResp0.length());
+    std::string partial_http_resp0(kHTTPResp0.substr(offset, kHTTPResp0.length()));
     parser_.Append(partial_http_resp0, ++t);
     parser_.Append(kHTTPResp1, ++t);
     parser_.Append(kHTTPResp2, ++t);
@@ -895,7 +899,7 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageNoSync) {
   size_t t = 0;
   size_t offset = 1;
 
-  std::string partial_http_get_req0 = kHTTPGetReq0.substr(offset, kHTTPGetReq0.length());
+  std::string partial_http_get_req0(kHTTPGetReq0.substr(offset, kHTTPGetReq0.length()));
   parser_.Append(partial_http_get_req0, ++t);
   parser_.Append(kHTTPPostReq0, ++t);
   parser_.Append(kHTTPGetReq1, ++t);
@@ -912,7 +916,7 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageNoSync) {
   size_t t = 0;
   size_t offset = 1;
 
-  std::string partial_http_resp0 = kHTTPResp0.substr(offset, kHTTPResp0.length());
+  std::string partial_http_resp0(kHTTPResp0.substr(offset, kHTTPResp0.length()));
   parser_.Append(partial_http_resp0, ++t);
   parser_.Append(kHTTPResp1, ++t);
   parser_.Append(kHTTPResp2, ++t);
