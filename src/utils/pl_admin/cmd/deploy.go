@@ -14,7 +14,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 
 	"pixielabs.ai/pixielabs/src/utils/pl_admin/cmd/k8s"
 )
@@ -40,6 +42,8 @@ func NewCmdDeploy() *cobra.Command {
 			clientset := k8s.GetClientset(kubeConfig)
 			namespace, _ := cmd.Flags().GetString("namespace")
 			credsFile, _ := cmd.Flags().GetString("credentials_file")
+
+			optionallyCreateNamespace(clientset, namespace)
 
 			if credsFile != "" {
 				secretName, _ := cmd.Flags().GetString("secret_name")
@@ -79,6 +83,18 @@ func NewCmdDeploy() *cobra.Command {
 			})
 		},
 	}
+}
+
+func optionallyCreateNamespace(clientset *kubernetes.Clientset, namespace string) {
+	_, err := clientset.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	if err == nil {
+		return
+	}
+	_, err = clientset.CoreV1().Namespaces().Create(&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
+	if err != nil {
+		log.WithError(err).Fatalf("Error creating namespace %s", namespace)
+	}
+	log.Infof("Created namespace %s", namespace)
 }
 
 func deploy(extractPath string) {
