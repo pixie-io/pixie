@@ -105,6 +105,17 @@ class DataStream {
    */
   bool IsStuck() const { return stuck_count_ != 0; }
 
+  /**
+   * @brief Checks if the DataStream is at end-of-stream (EOS), which means that we
+   * should stop processing the data on the stream, even if more exists.
+   *
+   * One use case is for HTTP connection upgrades. We want to stop monitoring the
+   * connection after the upgrade, since we don't understand the new protocol.
+   *
+   * @return true if DataStream parsing is at EOS.
+   */
+  bool IsEOS() const { return last_parse_state_ == ParseState::kEOS; }
+
   http2::Inflater* Inflater() {
     if (inflater_ == nullptr) {
       inflater_ = std::make_unique<http2::Inflater>();
@@ -151,6 +162,9 @@ class DataStream {
   // Number of consecutive calls to ExtractMessages(), where there are a non-zero number of events,
   // but no parsed messages are produced.
   int64_t stuck_count_ = 0;
+
+  // A copy of the parse state from the last call to ExtractMessages().
+  ParseState last_parse_state_ = ParseState::kInvalid;
 
   // Only meaningful for HTTP2. See also Inflater().
   // TODO(yzhao): We can put this into a std::variant.
@@ -449,6 +463,8 @@ class ConnectionTracker {
   }
 
  private:
+  template <class TEntryType>
+  std::vector<TEntryType> ProcessMessagesImpl();
   template <class TMessageType>
   Status ExtractReqResp();
   void SetPID(struct conn_id_t conn_id);

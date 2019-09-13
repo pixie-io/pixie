@@ -115,6 +115,19 @@ class ConnectionTrackerTest : public ::testing::Test {
       "Content-Length: 3\r\n"
       "\r\n"
       "bar";
+
+  const std::string kHTTPUpgradeReq =
+      "GET /index.html HTTP/1.1\r\n"
+      "Host: www.pixielabs.ai\r\n"
+      "Connection: Upgrade\r\n"
+      "Upgrade: websocket\r\n"
+      "\r\n";
+
+  const std::string kHTTPUpgradeResp =
+      "HTTP/1.1 101 Switching Protocols\r\n"
+      "Upgrade: websocket\r\n"
+      "Connection: Upgrade\r\n"
+      "\r\n";
 };
 
 TEST_F(ConnectionTrackerTest, timestamp_test) {
@@ -564,6 +577,59 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
   tracker.AddConnCloseEvent(close_conn);
 
   req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+
+  ASSERT_EQ(0, req_resp_pairs.size());
+  ASSERT_TRUE(tracker.IsZombie());
+}
+
+TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
+  ConnectionTracker tracker;
+  std::vector<ReqRespPair<http::HTTPMessage>> req_resp_pairs;
+
+  conn_info_t conn = InitConn();
+  std::unique_ptr<SocketDataEvent> req0 = InitSendEvent(kHTTPReq0);
+  std::unique_ptr<SocketDataEvent> resp0 = InitRecvEvent(kHTTPResp0);
+  std::unique_ptr<SocketDataEvent> req1 = InitSendEvent(kHTTPUpgradeReq);
+  std::unique_ptr<SocketDataEvent> resp1 = InitRecvEvent(kHTTPUpgradeResp);
+  std::unique_ptr<SocketDataEvent> req2 = InitSendEvent(kHTTPReq1);
+  std::unique_ptr<SocketDataEvent> resp2 = InitRecvEvent(kHTTPResp1);
+  std::unique_ptr<SocketDataEvent> req3 = InitSendEvent("good-bye");
+  std::unique_ptr<SocketDataEvent> resp3 = InitRecvEvent("good-bye to you too");
+  conn_info_t close_conn = InitClose();
+
+  tracker.AddConnOpenEvent(conn);
+  tracker.AddDataEvent(std::move(req0));
+  tracker.AddDataEvent(std::move(resp0));
+  tracker.AddDataEvent(std::move(req1));
+  tracker.AddDataEvent(std::move(resp1));
+
+  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  tracker.IterationTick();
+
+  ASSERT_EQ(2, req_resp_pairs.size());
+  ASSERT_FALSE(tracker.IsZombie());
+
+  // More events arrive after the connection Upgrade.
+  tracker.AddDataEvent(std::move(req2));
+  tracker.AddDataEvent(std::move(resp2));
+
+  // Since we previously received connection Upgrade, this tracker should be disabled.
+  // All future calls to ProcessMessages() should produce no results.
+
+  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  tracker.IterationTick();
+
+  ASSERT_EQ(0, req_resp_pairs.size());
+  ASSERT_FALSE(tracker.IsZombie());
+
+  tracker.AddDataEvent(std::move(req3));
+  tracker.AddDataEvent(std::move(resp3));
+  tracker.AddConnCloseEvent(close_conn);
+
+  // The tracker should, however, still process the close event.
+
+  req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http::HTTPMessage>>();
+  tracker.IterationTick();
 
   ASSERT_EQ(0, req_resp_pairs.size());
   ASSERT_TRUE(tracker.IsZombie());

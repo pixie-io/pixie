@@ -147,8 +147,16 @@ Status ConnectionTracker::ExtractReqResp() {
   return Status::OK();
 }
 
+template <class TMessageType>
+std::vector<TMessageType> ConnectionTracker::ProcessMessages() {
+  if (disabled()) {
+    return {};
+  }
+  return ProcessMessagesImpl<TMessageType>();
+}
+
 template <>
-std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessages() {
+std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessagesImpl() {
   std::vector<ReqRespPair<http::HTTPMessage>> trace_records;
 
   Status s = ExtractReqResp<http::HTTPMessage>();
@@ -206,7 +214,7 @@ std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessages()
 }
 
 template <>
-std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessages() {
+std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessagesImpl() {
   std::vector<ReqRespPair<http2::GRPCMessage>> trace_records;
 
   Status s = ExtractReqResp<http2::Frame>();
@@ -244,7 +252,7 @@ std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessages(
 }
 
 template <>
-std::vector<mysql::Entry> ConnectionTracker::ProcessMessages() {
+std::vector<mysql::Entry> ConnectionTracker::ProcessMessagesImpl() {
   std::vector<mysql::Entry> entries;
 
   Status s = ExtractReqResp<mysql::Packet>();
@@ -354,6 +362,10 @@ void ConnectionTracker::IterationTick() {
 
   if (std::chrono::steady_clock::now() > last_update_timestamp_ + InactivityDuration()) {
     HandleInactivity();
+  }
+
+  if (send_data().IsEOS() || recv_data().IsEOS()) {
+    Disable();
   }
 }
 
@@ -494,6 +506,9 @@ template <class TMessageType>
 std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
   auto& typed_messages = Messages<TMessageType>();
 
+  // TODO(oazizi): Convert to ECHECK once we have more confidence.
+  LOG_IF(WARNING, IsEOS()) << "Calling ExtractMessages on stream that is at EOS.";
+
   const size_t orig_offset = offset_;
   const size_t orig_seq_num = next_seq_num_;
 
@@ -522,6 +537,8 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
 
   bool keep_processing = has_new_events_ || attempt_sync;
 
+  ParseResult<BufferPosition> parse_result;
+
   while (keep_processing) {
     EventParser<TMessageType> parser;
 
@@ -529,8 +546,7 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
     size_t num_events_appended = AppendEvents(&parser);
 
     // Now parse all the appended events.
-    ParseResult<BufferPosition> parse_result =
-        parser.ParseMessages(type, &typed_messages, SelectSyncType(stuck_count_));
+    parse_result = parser.ParseMessages(type, &typed_messages, SelectSyncType(stuck_count_));
 
     if (parse_result.state != ParseState::kEOS && num_events_appended != events_.size()) {
       // We weren't able to append all events, which means we ran into a missing event.
@@ -568,6 +584,11 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
       !events_.empty() && (next_seq_num_ == orig_seq_num) && (offset_ == orig_offset);
   stuck_count_ = (events_but_no_progress) ? stuck_count_ + 1 : 0;
 
+  if (parse_result.state == ParseState::kEOS) {
+    ECHECK(!events_but_no_progress);
+  }
+  last_parse_state_ = parse_result.state;
+
   // has_new_events_ should be false for the next transfer cycle.
   has_new_events_ = false;
 
@@ -587,6 +608,10 @@ bool DataStream::Empty() const {
   return events_.empty() && (std::holds_alternative<std::monostate>(messages_) ||
                              std::get<std::deque<TMessageType>>(messages_).empty());
 }
+
+template std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessages();
+template std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessages();
+template std::vector<mysql::Entry> ConnectionTracker::ProcessMessages();
 
 template bool DataStream::Empty<http::HTTPMessage>() const;
 template bool DataStream::Empty<http2::Frame>() const;
