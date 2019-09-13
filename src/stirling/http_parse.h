@@ -36,8 +36,6 @@ struct HTTPMessage {
 
   int http_minor_version = -1;
   std::map<std::string, std::string> http_headers = {};
-  // -1 indicates this message does not have 'Content-Length' header.
-  int content_length = -1;
 
   std::string http_req_method = "-";
   std::string http_req_path = "-";

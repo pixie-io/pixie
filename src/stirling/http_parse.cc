@@ -213,8 +213,6 @@ ParseState PicoHTTPParserWrapper::WriteBody(HTTPMessage* result) {
 
     if (unparsed_data.size() < static_cast<size_t>(len)) {
       // TODO(oazizi): Returning false, so why set fields?
-      result->http_msg_body.reserve(len);
-      result->content_length = len;
       result->http_msg_body = unparsed_data;
       return ParseState::kNeedsMoreData;
     }
