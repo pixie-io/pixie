@@ -15,7 +15,8 @@
     "(\\.sublime-project$)",
     "(\\.gitmodules$)",
     "(.*/testdata/.*)",
-    "(c_cpp_properties.json$)"
+    "(c_cpp_properties.json$)",
+    "(^credentials\/.*\\.yaml)"
   ],
   "linters": {
     "build-linter": {
