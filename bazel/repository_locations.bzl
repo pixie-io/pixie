@@ -28,11 +28,11 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.10.1.tar.gz"],
     ),
     io_bazel_toolchains = dict(
-        sha256 = "e76afea244b1767e19fb38e1f1be448ebdf48d52ade0b3687c5794d8a1362fe8",
-        strip_prefix = "bazel-toolchains-0.26.3",
+        sha256 = "ab0d8aaeaeeef413ddb03922dbdb99bbae9e1b2c157a87c77d70d45a830be5b0",
+        strip_prefix = "bazel-toolchains-0.29.1",
         urls = [
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/0.26.3.tar.gz",
-            "https://github.com/bazelbuild/bazel-toolchains/archive/0.26.3.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/0.29.1.tar.gz",
+            "https://github.com/bazelbuild/bazel-toolchains/archive/0.29.1.tar.gz",
         ],
     ),
     com_google_googletest = dict(
