@@ -9,34 +9,6 @@
 
 namespace pl {
 namespace stirling {
-namespace mysql {
-
-struct MySQLParser {
-  ParseState Parse(MessageType type, std::string_view buf);
-
-  ParseState Write(MessageType type, Packet* result) {
-    switch (type) {
-      case MessageType::kRequest:
-        return WriteRequest(result);
-      case MessageType::kResponse:
-        return WriteResponse(result);
-      default:
-        return ParseState::kUnknown;
-    }
-  }
-  ParseState WriteRequest(Packet* result);
-  ParseState WriteResponse(Packet* result);
-
-  std::string_view unparsed_data;
-
-  inline static constexpr int kPacketHeaderLength = 4;
-
- private:
-  std::string_view curr_msg_;
-  MySQLEventType curr_type_;
-};
-
-}  // namespace mysql
 
 /**
  * @brief Parses the input string as a sequence of MySQL responses, writes the messages in result.

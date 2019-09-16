@@ -14,9 +14,8 @@ namespace stirling {
 namespace mysql {
 
 namespace {
-MySQLEventType infer_mysql_event_type(std::string_view buf) {
-  char command = buf[0];
-  switch (command) {
+MySQLEventType decode_event_type(char command_byte) {
+  switch (command_byte) {
     case kStmtPreparePrefix:
       return MySQLEventType::kComStmtPrepare;
     case kStmtExecutePrefix:
@@ -57,48 +56,41 @@ MySQLEventType infer_mysql_event_type(std::string_view buf) {
       return MySQLEventType::kComResetConnection;
     case kDaemonPrefix:
       return MySQLEventType::kDaemon;
+    default:
+      return MySQLEventType::kUnknown;
   }
-  return MySQLEventType::kUnknown;
 }
 }  // namespace
 
-ParseState MySQLParser::Parse(MessageType type, std::string_view buf) {
+ParseState Parse(MessageType type, std::string_view* buf, Packet* result) {
+  static constexpr int kPacketHeaderLength = 4;
+
   if (type != MessageType::kRequest && type != MessageType::kResponse) {
     return ParseState::kInvalid;
   }
 
-  if (buf.size() <= kPacketHeaderLength) {
+  if (buf->size() <= kPacketHeaderLength) {
     return ParseState::kInvalid;
   }
+
   if (type == MessageType::kRequest) {
-    MySQLEventType event_type = infer_mysql_event_type(buf.substr(4));
-    if (event_type == MySQLEventType::kUnknown) {
+    result->type = decode_event_type((*buf)[4]);
+    if (result->type == MySQLEventType::kUnknown) {
       return ParseState::kInvalid;
     }
-    curr_type_ = event_type;
   }
 
-  int packet_length = utils::LEStrToInt(buf.substr(0, 3));
-  int buffer_length = buf.length();
+  int packet_length = utils::LEStrToInt(buf->substr(0, 3));
+  int buffer_length = buf->length();
 
   // 3 bytes of packet length and 1 byte of packet number.
   if (buffer_length < kPacketHeaderLength + packet_length) {
     return ParseState::kNeedsMoreData;
   }
 
-  curr_msg_ = buf.substr(kPacketHeaderLength, packet_length);
-  unparsed_data = buf.substr(kPacketHeaderLength + packet_length);
-  return ParseState::kSuccess;
-}
+  result->msg = buf->substr(kPacketHeaderLength, packet_length);
+  buf->remove_prefix(kPacketHeaderLength + packet_length);
 
-ParseState MySQLParser::WriteRequest(Packet* result) {
-  result->type = curr_type_;
-  result->msg = curr_msg_;
-  return ParseState::kSuccess;
-}
-
-ParseState MySQLParser::WriteResponse(Packet* result) {
-  result->msg = curr_msg_;
   return ParseState::kSuccess;
 }
 
@@ -108,30 +100,24 @@ ParseState MySQLParser::WriteResponse(Packet* result) {
 template <>
 ParseResult<size_t> Parse(MessageType type, std::string_view buf,
                           std::deque<mysql::Packet>* messages) {
-  mysql::MySQLParser parser;
-  std::vector<size_t> start_position;
+  std::vector<size_t> start_positions;
   const size_t buf_size = buf.size();
   ParseState s = ParseState::kSuccess;
   size_t bytes_prcocessed = 0;
 
   while (!buf.empty()) {
-    s = parser.Parse(type, buf);
-    if (s != ParseState::kSuccess) {
-      break;
-    }
-
     mysql::Packet message;
-    s = parser.Write(type, &message);
+
+    s = mysql::Parse(type, &buf, &message);
     if (s != ParseState::kSuccess) {
       break;
     }
 
-    start_position.push_back(bytes_prcocessed);
+    start_positions.push_back(bytes_prcocessed);
     messages->push_back(std::move(message));
-    buf = parser.unparsed_data;
     bytes_prcocessed = (buf_size - buf.size());
   }
-  ParseResult<size_t> result{std::move(start_position), bytes_prcocessed, s};
+  ParseResult<size_t> result{std::move(start_positions), bytes_prcocessed, s};
   return result;
 }
 
