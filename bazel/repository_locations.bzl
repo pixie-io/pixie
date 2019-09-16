@@ -18,9 +18,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/benchmark/archive/v1.5.0.tar.gz"],
     ),
     io_bazel_rules_skylib = dict(
-        sha256 = "2ea8a5ed2b448baf4a6855d3ce049c4c452a6470b1efd1504fdb7c1c134d220a",
-        strip_prefix = "bazel-skylib-0.8.0",
-        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.8.0.tar.gz"],
+        sha256 = "9245b0549e88e356cd6a25bf79f97aa19332083890b7ac6481a2affb6ada9752",
+        strip_prefix = "bazel-skylib-0.9.0",
+        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.9.0.tar.gz"],
     ),
     io_bazel_rules_docker = dict(
         sha256 = "9ff889216e28c918811b77999257d4ac001c26c1f7c7fb17a79bc28abf74182e",
@@ -115,11 +115,11 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/AriaFallah/csv-parser/archive/e3c1207f4de50603a4946dc5daa0633ce31a9257.tar.gz"],
     ),
     rules_foreign_cc = dict(
-        sha256 = "55d490b062adc37ca70cabe8daae6324da7760a6c894d7953e6c0ef35379a769",
-        strip_prefix = "rules_foreign_cc-6b2f454a41dc1d59607718224438d66ad4f4ddbc",
-        # 2019-06-03
+        sha256 = "c1a94915026bcecaaaf3cda49a174395e08b8ba7f8f65409b86da5e3a545d0b4",
+        strip_prefix = "rules_foreign_cc-6ad84f7739e47110eb4c48f7cdebbfd34e2f4f5f",
+        # 2019-09-08
         urls = ["https://github.com/bazelbuild/rules_foreign_cc/" +
-                "archive/6b2f454a41dc1d59607718224438d66ad4f4ddbc.tar.gz"],
+                "archive/6ad84f7739e47110eb4c48f7cdebbfd34e2f4f5f.tar.gz"],
     ),
     com_github_gperftools_gperftools = dict(
         sha256 = "18574813a062eee487bc1b761e8024a346075a7cb93da19607af362dc09565ef",
@@ -132,10 +132,10 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/h2o/picohttpparser/archive/1d2b8a184e7ebe6651c30dcede37ba1d89691351.tar.gz"],
     ),
     distroless = dict(
-        sha256 = "af1dd62ace9925f8aec73d303397c29f54611b6beef9901229dceecdbd3622ed",
-        strip_prefix = "distroless-b4dfb5c3076302a873be8e413c120771c4cc2e1b",
+        sha256 = "54273175a54eedc558b8188ca810b184b0784815d3af17cc5fd9c296be4c150e",
+        strip_prefix = "distroless-18b2d2c5ebfa58fe3e0e4ee3ffe0e2651ec0f7f6",
         urls = ["https://github.com/GoogleContainerTools/distroless/" +
-                "archive/b4dfb5c3076302a873be8e413c120771c4cc2e1b.tar.gz"],
+                "archive/18b2d2c5ebfa58fe3e0e4ee3ffe0e2651ec0f7f6.tar.gz"],
     ),
     com_github_nats_io_natsc = dict(
         sha256 = "14e50dd3cf30c9839aedf7c8929f3d433c0a69af38f13f7baf5491d9ed2ac43b",
