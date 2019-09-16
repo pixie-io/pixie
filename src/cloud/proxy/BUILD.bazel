@@ -4,8 +4,8 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 container_layer(
     name = "conf",
-    directory = "/etc/nginx/conf.d",
-    files = ["default.conf"],
+    directory = "/usr/local/openresty/nginx/conf",
+    files = ["nginx.conf"],
 )
 
 container_layer(
@@ -16,7 +16,7 @@ container_layer(
 
 container_image(
     name = "proxy_prod_server_image",
-    base = "@nginx_base//image",
+    base = "@openresty//image",
     layers = [
         ":conf",
         ":ui_assets",
@@ -26,7 +26,7 @@ container_image(
 
 container_image(
     name = "proxy_dev_server_image",
-    base = "@nginx_base//image",
+    base = "@openresty//image",
     layers = [
         ":conf",
     ],

@@ -56,6 +56,16 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 
 gogo_grpc_proto(name = "gogo_grpc_proto")
 
+load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
+
+container_pull(
+    name = "openresty",
+    # Stretch image.
+    digest = "sha256:034c52fcefbec7f3e9aaf51b4933ed3842c317022aec184cb6453cf2f07a9c41",
+    registry = "index.docker.io",
+    repository = "openresty/openresty",
+)
+
 # gazelle:repo bazel_gazelle
 ##########################################################
 # Auto-generated GO dependencies (DO NOT EDIT).

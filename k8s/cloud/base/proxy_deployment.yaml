@@ -31,6 +31,10 @@ spec:
             value: /certs/tls.crt
           - name: PL_TLS_KEY
             value: /certs/tls.key
+          - name: PL_AUTH0_DOMAIN
+            value: pixie-labs.auth0.com
+          - name: PL_AUTH0_CLIENT_ID
+            value: qaAfEHQT7mRt6W0gMd9mcQwNANz9kRup
         volumeMounts:
             - name: certs
               mountPath: /certs
