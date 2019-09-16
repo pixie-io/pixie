@@ -7,6 +7,7 @@ const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
 const HtmlWebpackHarddiskPlugin = require('html-webpack-harddisk-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const utils = require('./webpack-utils');
+const ReplacePlugin = require('webpack-plugin-replace');
 
 const isDevServer = process.argv.find(v => v.includes('webpack-dev-server'));
 
@@ -167,6 +168,20 @@ module.exports = (env) => {
     target: gatewayPath,
     secure: false,
   });
+
+  // Normally, these values are replaced by Nginx. However, since we do not
+  // use nginx for the dev server, we need to replace them here.
+  webpackConfig.plugins.push(
+    new ReplacePlugin({
+      include: [
+        'containers/constants.tsx',
+      ],
+      values: {
+        __CONFIG_AUTH0_DOMAIN__: 'pixie-labs.auth0.com',
+        __CONFIG_AUTH0_CLIENT_ID__: 'qaAfEHQT7mRt6W0gMd9mcQwNANz9kRup',
+        __CONFIG_DOMAIN_NAME__: 'dev.withpixie.dev',
+      },
+    }));
 
   return webpackConfig;
 };

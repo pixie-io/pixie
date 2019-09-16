@@ -1,0 +1,3 @@
+export const AUTH0_DOMAIN = '__CONFIG_AUTH0_DOMAIN__';
+export const AUTH0_CLIENT_ID = '__CONFIG_AUTH0_CLIENT_ID__';
+export const DOMAIN_NAME = '__CONFIG_DOMAIN_NAME__';

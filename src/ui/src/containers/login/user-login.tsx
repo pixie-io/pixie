@@ -1,12 +1,10 @@
 import Auth0Lock from 'auth0-lock';
 import Axios from 'axios';
+import {AUTH0_CLIENT_ID, AUTH0_DOMAIN} from 'containers/constants';
 import gql from 'graphql-tag';
 import * as QueryString from 'query-string';
 import * as React from 'react';
 import { ApolloConsumer } from 'react-apollo';
-
-const AUTH0_DOMAIN = 'pixie-labs.auth0.com';
-const AUTH0_CLIENT_ID = 'qaAfEHQT7mRt6W0gMd9mcQwNANz9kRup';
 
 // @ts-ignore : TS does not like image files.
 import * as logoImage from 'images/dark-logo.svg';
