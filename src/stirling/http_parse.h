@@ -18,8 +18,6 @@ namespace pl {
 namespace stirling {
 namespace http {
 
-// TODO(yzhao): HTTP/{1.x,2} headers are case insensitive. Our code does not work that way.
-// We'll need to update all code paths to match that.
 inline constexpr char kContentEncoding[] = "Content-Encoding";
 inline constexpr char kContentLength[] = "Content-Length";
 inline constexpr char kContentType[] = "Content-Type";
@@ -30,12 +28,14 @@ inline constexpr char kUpgrade[] = "Upgrade";
 // DataElementsIndexes, and kTables should be eliminated. It might make sense to use proto file
 // to define data schema and generate kTables array during runtime, based on proto schema.
 
+using HTTPHeadersMap = std::map<std::string, std::string, CaseInsensitiveLess>;
+
 struct HTTPMessage {
   uint64_t timestamp_ns;
   MessageType type = MessageType::kUnknown;
 
   int http_minor_version = -1;
-  std::map<std::string, std::string> http_headers = {};
+  HTTPHeadersMap http_headers = {};
 
   std::string http_req_method = "-";
   std::string http_req_path = "-";
@@ -74,8 +74,7 @@ HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters);
  * @param filters The filter on HTTP headers. The key is the header names, and the value is a
  * substring that the header value should contain.
  */
-bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
-                         const HTTPHeaderFilter& filter);
+bool MatchesHTTPTHeaders(const HTTPHeadersMap& http_headers, const HTTPHeaderFilter& filter);
 
 }  // namespace http
 

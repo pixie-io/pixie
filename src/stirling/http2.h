@@ -28,6 +28,7 @@ namespace http2 {
 
 using u8string = std::basic_string<uint8_t>;
 using u8string_view = std::basic_string_view<uint8_t>;
+// TODO(oazizi/yzhao): HTTP headers are case insensitive. Add support.
 using NVMap = std::multimap<std::string, std::string>;
 
 /**

@@ -31,9 +31,8 @@ void PreProcessMessage(HTTPMessage* message) {
 
 namespace {
 
-std::map<std::string, std::string> GetHttpHeadersMap(const phr_header* headers,
-                                                     size_t num_headers) {
-  std::map<std::string, std::string> result;
+HTTPHeadersMap GetHTTPHeadersMap(const phr_header* headers, size_t num_headers) {
+  HTTPHeadersMap result;
   for (size_t i = 0; i < num_headers; i++) {
     std::string name(headers[i].name, headers[i].name_len);
     std::string value(headers[i].value, headers[i].value_len);
@@ -59,8 +58,7 @@ HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters) {
   return result;
 }
 
-bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
-                         const HTTPHeaderFilter& filter) {
+bool MatchesHTTPTHeaders(const HTTPHeadersMap& http_headers, const HTTPHeaderFilter& filter) {
   if (!filter.inclusions.empty()) {
     bool included = false;
     // cpplint lags behind C++17, and only consider '[]' as an operator, therefore insists that no
@@ -257,7 +255,7 @@ ParseState ParseRequest(std::string_view* buf, HTTPMessage* result) {
 
     result->type = MessageType::kRequest;
     result->http_minor_version = minor_version;
-    result->http_headers = GetHttpHeadersMap(headers, num_headers);
+    result->http_headers = GetHTTPHeadersMap(headers, num_headers);
     result->http_req_method = std::string(method, method_len);
     result->http_req_path = std::string(path, path_len);
 
@@ -288,7 +286,7 @@ ParseState ParseResponse(std::string_view* buf, HTTPMessage* result) {
 
     result->type = MessageType::kResponse;
     result->http_minor_version = minor_version;
-    result->http_headers = GetHttpHeadersMap(headers, num_headers);
+    result->http_headers = GetHTTPHeadersMap(headers, num_headers);
     result->http_resp_status = status;
     result->http_resp_message = std::string(msg, msg_len);
 

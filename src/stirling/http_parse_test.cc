@@ -52,7 +52,7 @@ TEST(ParseHTTPHeaderFiltersAndMatchTest, FiltersAreAsExpectedAndMatchesWork) {
   EXPECT_THAT(filter.exclusions,
               ElementsAre(Pair("Content-Encoding", "gzip"), Pair("Content-Encoding", "binary")));
   {
-    std::map<std::string, std::string> http_headers = {
+    HTTPHeadersMap http_headers = {
         {"Content-Type", "application/json; charset=utf-8"},
     };
     EXPECT_TRUE(MatchesHTTPTHeaders(http_headers, filter));
@@ -60,7 +60,7 @@ TEST(ParseHTTPHeaderFiltersAndMatchTest, FiltersAreAsExpectedAndMatchesWork) {
     EXPECT_FALSE(MatchesHTTPTHeaders(http_headers, filter)) << "gzip should be filtered out";
   }
   {
-    std::map<std::string, std::string> http_headers = {
+    HTTPHeadersMap http_headers = {
         {"Transfer-Encoding", "chunked"},
     };
     EXPECT_TRUE(MatchesHTTPTHeaders(http_headers, filter));
@@ -68,7 +68,7 @@ TEST(ParseHTTPHeaderFiltersAndMatchTest, FiltersAreAsExpectedAndMatchesWork) {
     EXPECT_FALSE(MatchesHTTPTHeaders(http_headers, filter)) << "binary should be filtered out";
   }
   {
-    std::map<std::string, std::string> http_headers;
+    HTTPHeadersMap http_headers;
     EXPECT_FALSE(MatchesHTTPTHeaders(http_headers, filter));
 
     const HTTPHeaderFilter empty_filter;
@@ -79,10 +79,30 @@ TEST(ParseHTTPHeaderFiltersAndMatchTest, FiltersAreAsExpectedAndMatchesWork) {
         << "Empty filter matches any HTTP headers";
   }
   {
-    const std::map<std::string, std::string> http_headers = {
+    const HTTPHeadersMap http_headers = {
         {"Content-Type", "non-matching-type"},
     };
     EXPECT_FALSE(MatchesHTTPTHeaders(http_headers, filter));
+  }
+}
+
+TEST(HTTPHeadersMap, CaseInsensitivity) {
+  const HTTPHeadersMap kHTTPHeaders = {
+      {"Content-Type", "application/json"},
+      {"Transfer-Encoding", "chunked"},
+  };
+
+  // Check that we can access the key regardless of the case of the key (content-type).
+  {
+    auto http_headers_iter = kHTTPHeaders.find("content-type");
+    ASSERT_NE(http_headers_iter, kHTTPHeaders.end());
+    EXPECT_EQ(http_headers_iter->second, "application/json");
+  }
+
+  {
+    auto http_headers_iter = kHTTPHeaders.find("Content-Type");
+    ASSERT_NE(http_headers_iter, kHTTPHeaders.end());
+    EXPECT_EQ(http_headers_iter->second, "application/json");
   }
 }
 
@@ -132,9 +152,9 @@ HTTPMessage HTTPGetReq1ExpectedMessage() {
 
 const std::string_view kHTTPPostReq0 =
     "POST /test HTTP/1.1\r\n"
-    "Host: pixielabs.ai\r\n"
-    "Content-Type: application/x-www-form-urlencoded\r\n"
-    "Content-Length: 27\r\n"
+    "host: pixielabs.ai\r\n"
+    "content-type: application/x-www-form-urlencoded\r\n"
+    "content-length: 27\r\n"
     "\r\n"
     "field1=value1&field2=value2";
 
@@ -142,9 +162,9 @@ HTTPMessage HTTPPostReq0ExpectedMessage() {
   HTTPMessage expected_message;
   expected_message.type = MessageType::kRequest;
   expected_message.http_minor_version = 1;
-  expected_message.http_headers = {{"Host", "pixielabs.ai"},
-                                   {"Content-Type", "application/x-www-form-urlencoded"},
-                                   {"Content-Length", "27"}};
+  expected_message.http_headers = {{"host", "pixielabs.ai"},
+                                   {"content-type", "application/x-www-form-urlencoded"},
+                                   {"content-length", "27"}};
   expected_message.http_req_method = "POST";
   expected_message.http_req_path = "/test";
   expected_message.http_msg_body = "field1=value1&field2=value2";
