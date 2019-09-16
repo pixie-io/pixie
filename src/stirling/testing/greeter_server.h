@@ -66,12 +66,27 @@ class Greeter2Service final : public Greeter2::Service {
 
 class StreamingGreeterService final : public StreamingGreeter::Service {
  public:
-  ::grpc::Status SayHello(::grpc::ServerContext* /*context*/, const HelloRequest* request,
-                          ::grpc::ServerWriter<HelloReply>* writer) override {
+  ::grpc::Status SayHelloServerStreaming(::grpc::ServerContext* /*context*/,
+                                         const HelloRequest* request,
+                                         ::grpc::ServerWriter<HelloReply>* writer) override {
     HelloReply reply;
     for (int i = 0; i < request->count(); ++i) {
       reply.set_message(absl::Substitute("Hello $0 for no. $1!", request->name(), i));
       writer->Write(reply);
+    }
+    return ::grpc::Status::OK;
+  }
+
+  ::grpc::Status SayHelloBidirStreaming(
+      ::grpc::ServerContext* /*context*/,
+      ::grpc::ServerReaderWriter<HelloReply, HelloRequest>* stream) override {
+    HelloReply reply;
+    HelloRequest request;
+    while (stream->Read(&request)) {
+      for (int i = 0; i < request.count(); ++i) {
+        reply.set_message(absl::Substitute("Hello $0 for no. $1!", request.name(), i));
+        stream->Write(reply);
+      }
     }
     return ::grpc::Status::OK;
   }

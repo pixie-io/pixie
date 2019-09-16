@@ -309,11 +309,12 @@ TEST_F(GRPCCppTest, DISABLED_RPCTimesOut) {
   greeter_service_.Notify();
 }
 
-std::vector<HelloReply> ParseProtobufRecords(absl::string_view buf) {
-  std::vector<HelloReply> res;
+template <typename ProtoType>
+std::vector<ProtoType> ParseProtobufRecords(absl::string_view buf) {
+  std::vector<ProtoType> res;
   while (!buf.empty()) {
     const uint32_t len = nghttp2_get_uint32(reinterpret_cast<const uint8_t*>(buf.data()) + 1);
-    HelloReply reply;
+    ProtoType reply;
     reply.ParseFromArray(buf.data() + kGRPCMessageHeaderSizeInBytes, len);
     res.push_back(std::move(reply));
     buf.remove_prefix(kGRPCMessageHeaderSizeInBytes + len);
@@ -333,7 +334,7 @@ TEST_F(GRPCCppTest, ServerStreamingRPC) {
   std::vector<HelloReply> replies;
 
   ::grpc::Status st = streaming_greeter_stub_->CallServerStreamingRPC(
-      &StreamingGreeter::Stub::SayHello, req, &replies);
+      &StreamingGreeter::Stub::SayHelloServerStreaming, req, &replies);
   EXPECT_TRUE(st.ok());
   EXPECT_THAT(replies, SizeIs(3));
 
@@ -349,9 +350,9 @@ TEST_F(GRPCCppTest, ServerStreamingRPC) {
     EXPECT_THAT(
         header_fields,
         ElementsAre(MatchesRegex(":authority: 127.0.0.1:[0-9]+"), ":method: POST",
-                    ":path: /pl.stirling.testing.StreamingGreeter/SayHello", ":scheme: http",
-                    "accept-encoding: identity,gzip", "content-type: application/grpc",
-                    "grpc-accept-encoding: identity,deflate,gzip",
+                    ":path: /pl.stirling.testing.StreamingGreeter/SayHelloServerStreaming",
+                    ":scheme: http", "accept-encoding: identity,gzip",
+                    "content-type: application/grpc", "grpc-accept-encoding: identity,deflate,gzip",
                     MatchesRegex("grpc-timeout: [0-9a-zA-Z]+"), "te: trailers",
                     MatchesRegex("user-agent: .*")));
     header_fields =
@@ -362,10 +363,61 @@ TEST_F(GRPCCppTest, ServerStreamingRPC) {
                             "grpc-accept-encoding: identity,deflate,gzip", "grpc-status: 0"));
     EXPECT_THAT(GetHelloRequest(record_batch, idx),
                 EqualsProto(R"proto(name: "pixielabs" count: 3)proto"));
-    EXPECT_THAT(ParseProtobufRecords(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx)),
+    EXPECT_THAT(ParseProtobufRecords<HelloReply>(
+                    record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx)),
                 ElementsAre(EqualsProto("message: 'Hello pixielabs for no. 0!'"),
                             EqualsProto("message: 'Hello pixielabs for no. 1!'"),
                             EqualsProto("message: 'Hello pixielabs for no. 2!'")));
+  }
+}
+
+TEST_F(GRPCCppTest, BidirStreamingRPC) {
+  HelloRequest req1;
+  req1.set_name("foo");
+  req1.set_count(1);
+
+  HelloRequest req2;
+  req2.set_name("bar");
+  req2.set_count(1);
+
+  std::vector<HelloReply> replies;
+
+  ::grpc::Status st = streaming_greeter_stub_->CallBidirStreamingRPC(
+      &StreamingGreeter::Stub::SayHelloBidirStreaming, {req1, req2}, &replies);
+  EXPECT_TRUE(st.ok());
+  EXPECT_THAT(replies, SizeIs(2));
+
+  source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
+
+  types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
+  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  EXPECT_THAT(indices, SizeIs(1));
+
+  for (size_t idx : indices) {
+    std::vector<std::string> header_fields =
+        absl::StrSplit(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(idx), "\n");
+    EXPECT_THAT(
+        header_fields,
+        ElementsAre(MatchesRegex(":authority: 127.0.0.1:[0-9]+"), ":method: POST",
+                    ":path: /pl.stirling.testing.StreamingGreeter/SayHelloBidirStreaming",
+                    ":scheme: http", "accept-encoding: identity,gzip",
+                    "content-type: application/grpc", "grpc-accept-encoding: identity,deflate,gzip",
+                    MatchesRegex("grpc-timeout: [0-9a-zA-Z]+"), "te: trailers",
+                    MatchesRegex("user-agent: .*")));
+    header_fields =
+        absl::StrSplit(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(idx), "\n");
+    EXPECT_THAT(header_fields,
+                ElementsAre(":status: 200", "accept-encoding: identity,gzip",
+                            "content-type: application/grpc",
+                            "grpc-accept-encoding: identity,deflate,gzip", "grpc-status: 0"));
+    EXPECT_THAT(ParseProtobufRecords<HelloRequest>(
+                    record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(idx)),
+                ElementsAre(EqualsProto(R"proto(name: "foo" count: 1)proto"),
+                            EqualsProto(R"proto(name: "bar" count: 1)proto")));
+    EXPECT_THAT(ParseProtobufRecords<HelloReply>(
+                    record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(idx)),
+                ElementsAre(EqualsProto("message: 'Hello foo for no. 0!'"),
+                            EqualsProto("message: 'Hello bar for no. 0!'")));
   }
 }
 

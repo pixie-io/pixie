@@ -53,17 +53,43 @@ class GRPCStub {
   ::grpc::Status CallServerStreamingRPC(std::unique_ptr<::grpc::ClientReader<GRPCRespType>> (
                                             GRPCServiceType::Stub::*fn)(::grpc::ClientContext*,
                                                                         const GRPCReqType&),
-                                        const GRPCReqType& req, std::vector<GRPCRespType>* resp) {
+                                        const GRPCReqType& req, std::vector<GRPCRespType>* resps) {
     ::grpc::ClientContext ctx;
     SetDeadline(&ctx, std::chrono::seconds(1));
 
     std::unique_ptr<::grpc::ClientReader<GRPCRespType>> reader(((*stub_).*fn)(&ctx, req));
 
-    GRPCRespType feature;
-    while (reader->Read(&feature)) {
-      resp->push_back(std::move(feature));
+    GRPCRespType resp;
+    while (reader->Read(&resp)) {
+      resps->push_back(std::move(resp));
     }
     return reader->Finish();
+  }
+
+  template <typename GRPCReqType, typename GRPCRespType>
+  ::grpc::Status CallBidirStreamingRPC(
+      std::unique_ptr<::grpc::ClientReaderWriter<GRPCReqType, GRPCRespType>> (
+          GRPCServiceType::Stub::*fn)(::grpc::ClientContext*),
+      const std::vector<GRPCReqType>& reqs, std::vector<GRPCRespType>* resps) {
+    ::grpc::ClientContext ctx;
+    SetDeadline(&ctx, std::chrono::seconds(1));
+
+    std::shared_ptr<::grpc::ClientReaderWriter<GRPCReqType, GRPCRespType>> stream(
+        ((*stub_).*fn)(&ctx));
+
+    std::thread writer([stream, reqs]() {
+      for (const GRPCReqType& req : reqs) {
+        stream->Write(req);
+      }
+      stream->WritesDone();
+    });
+
+    GRPCRespType resp;
+    while (stream->Read(&resp)) {
+      resps->push_back(std::move(resp));
+    }
+    writer.join();
+    return stream->Finish();
   }
 
  private:
