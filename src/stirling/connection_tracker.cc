@@ -157,18 +157,17 @@ std::vector<TMessageType> ConnectionTracker::ProcessMessages() {
 
 template <>
 std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessagesImpl() {
-  std::vector<ReqRespPair<http::HTTPMessage>> trace_records;
-
   Status s = ExtractReqResp<http::HTTPMessage>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
-    return trace_records;
+    return {};
   }
 
   auto& req_messages = req_data()->Messages<http::HTTPMessage>();
   auto& resp_messages = resp_data()->Messages<http::HTTPMessage>();
 
   // Match request response pairs.
+  std::vector<ReqRespPair<http::HTTPMessage>> trace_records;
   for (auto req_iter = req_messages.begin(), resp_iter = resp_messages.begin();
        req_iter != req_messages.end() && resp_iter != resp_messages.end();) {
     http::HTTPMessage& req = *req_iter;
@@ -215,12 +214,10 @@ std::vector<ReqRespPair<http::HTTPMessage>> ConnectionTracker::ProcessMessagesIm
 
 template <>
 std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessagesImpl() {
-  std::vector<ReqRespPair<http2::GRPCMessage>> trace_records;
-
   Status s = ExtractReqResp<http2::Frame>();
   if (!s.ok()) {
     LOG(ERROR) << s.msg();
-    return trace_records;
+    return {};
   }
 
   std::map<uint32_t, std::vector<http2::GRPCMessage>> reqs;
@@ -238,6 +235,7 @@ std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessagesI
 
   std::vector<http2::GRPCReqResp> records = MatchGRPCReqResp(std::move(reqs), std::move(resps));
 
+  std::vector<ReqRespPair<http2::GRPCMessage>> trace_records;
   for (auto& r : records) {
     r.req.MarkFramesConsumed();
     r.resp.MarkFramesConsumed();
