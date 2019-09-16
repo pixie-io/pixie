@@ -77,40 +77,6 @@ HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters);
 bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
                          const HTTPHeaderFilter& filter);
 
-// TODO(oazizi): Clean-up this struct (restructure to pull out functions).
-struct PicoHTTPParserWrapper {
- public:
-  ParseState Parse(MessageType type, std::string_view buf, HTTPMessage* result);
-
- private:
-  ParseState ParseRequest(std::string_view buf);
-  ParseState WriteRequest(HTTPMessage* result);
-  ParseState ParseResponse(std::string_view buf);
-  ParseState WriteResponse(HTTPMessage* result);
-  ParseState WriteBody(HTTPMessage* result);
-
-  // For parsing HTTP requests.
-  const char* method = nullptr;
-  size_t method_len;
-  const char* path = nullptr;
-  size_t path_len;
-
-  // For parsing HTTP responses.
-  const char* msg = nullptr;
-  size_t msg_len = 0;
-  int status = 0;
-
-  // For parsing HTTP requests/response (common).
-  int minor_version = 0;
-  static constexpr size_t kMaxNumHeaders = 50;
-  struct phr_header headers[kMaxNumHeaders];
-
-  std::map<std::string, std::string> header_map;
-
- public:
-  std::string_view unparsed_data;
-};
-
 }  // namespace http
 
 /**
