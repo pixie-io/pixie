@@ -65,4 +65,48 @@ TEST(ConvertSubscribeProtoToRelationInfo, empty_subscribe_should_return_empty) {
   ASSERT_EQ(0, relation_info.size());
 }
 
+TEST(ConvertSubscribeProtoToRelationInfo, test_for_tablets_subscription) {
+  // Setup a test subscribe message.
+  Subscribe subscribe_pb;
+  // First info class with two columns.
+  auto* info_class = subscribe_pb.add_subscribed_info_classes();
+  info_class->set_name("rel1");
+  info_class->set_id(0);
+  info_class->set_subscribed(false);
+
+  auto* elem0 = info_class->mutable_schema()->add_elements();
+  elem0->set_type(types::INT64);
+  elem0->set_name("col1");
+
+  auto* elem1 = info_class->mutable_schema()->add_elements();
+  elem1->set_type(types::STRING);
+  elem1->set_name("col2");
+
+  info_class->mutable_schema()->set_tabletization_key(1);
+  info_class->mutable_schema()->set_tabletized(true);
+
+  // Second relation with one column.
+  info_class = subscribe_pb.add_subscribed_info_classes();
+  info_class->set_name("rel2");
+  info_class->set_id(1);
+  info_class->set_subscribed(false);
+  elem0 = info_class->mutable_schema()->add_elements();
+  elem0->set_type(types::INT64);
+  elem0->set_name("col1_2");
+
+  // Do the conversion.
+  const auto relation_info = ConvertSubscribePBToRelationInfo(subscribe_pb);
+
+  // Test the results.
+  ASSERT_EQ(2, relation_info.size());
+
+  EXPECT_EQ(2, relation_info[0].relation.NumColumns());
+  EXPECT_EQ(1, relation_info[1].relation.NumColumns());
+
+  EXPECT_TRUE(relation_info[0].tabletized);
+  EXPECT_FALSE(relation_info[1].tabletized);
+
+  EXPECT_EQ(relation_info[0].tabletization_key_idx, 1);
+}
+
 }  // namespace pl

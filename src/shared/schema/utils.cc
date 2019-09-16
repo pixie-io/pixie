@@ -18,6 +18,11 @@ table_store::schema::Relation InfoClassProtoToRelation(
 
 RelationInfo ConvertInfoClassPBToRelationInfo(
     const stirling::stirlingpb::InfoClass& info_class_pb) {
+  if (info_class_pb.schema().tabletized()) {
+    return RelationInfo(info_class_pb.name(), info_class_pb.id(),
+                        info_class_pb.schema().tabletization_key(),
+                        InfoClassProtoToRelation(info_class_pb));
+  }
   return RelationInfo(info_class_pb.name(), info_class_pb.id(),
                       InfoClassProtoToRelation(info_class_pb));
 }

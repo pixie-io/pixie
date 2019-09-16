@@ -51,7 +51,8 @@ types::DataType Relation::GetColumnType(const std::string& col_name) const {
   return GetColumnType(GetColumnIndex(col_name));
 }
 std::string Relation::GetColumnName(size_t idx) const {
-  CHECK(HasColumn(idx)) << "Column does not exist";
+  CHECK(HasColumn(idx)) << absl::Substitute("Column $0 does not exist. Only $1 columns available.",
+                                            idx, NumColumns());
   return col_names_[idx];
 }
 

@@ -440,6 +440,10 @@ message SchemaInfo {
   }
   // The column info of the schema.
   repeated ColumnInfo columns = 4;
+  // Whether the table referenced by this schema is tabletized.
+  bool tabletized = 5;
+  // The tabletization key of this schema.
+  string tabletization_key = 6;
 }
 
 

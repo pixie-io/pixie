@@ -24,3 +24,12 @@ pl_cc_library(
         "@com_github_rlyeh_sole//:sole",
     ],
 )
+
+pl_cc_test(
+    name = "relation_info_mgr_test",
+    srcs = ["relation_info_mgr_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing:cc_library",
+    ],
+)

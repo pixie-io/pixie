@@ -95,6 +95,7 @@ Status Controller::Init() {
 
   mds_manager_ =
       std::make_unique<pl::md::AgentMetadataStateManager>(asid_, pl::system::Config::GetInstance());
+  relation_info_mgr_ = std::make_unique<RelationInfoMgr>();
 
   if (stirling_) {
     // Register the Stirling Callback.
@@ -213,20 +214,6 @@ void Controller::ConsumeAgentPIDUpdates(messages::AgentUpdateInfo* update_info) 
     }
   }
 }
-void Controller::AddSchemaInfo(messages::AgentUpdateInfo* update_info) {
-  auto relation_map = table_store_->GetRelationMap();
-  for (const auto& [table_name, relation] : *relation_map) {
-    auto* schema = update_info->add_schema();
-    schema->set_name(table_name);
-    for (size_t i = 0; i < relation.NumColumns(); ++i) {
-      auto* column = schema->add_columns();
-      column->set_name(relation.GetColumnName(i));
-      column->set_data_type(relation.GetColumnType(i));
-      // TODO(philkuz) (PL-850) add pattern_type to the relation somehow.
-      // column->set_pattern_type(relation.GetColumnPatternType(i));
-    }
-  }
-}
 
 Status Controller::HandleMDSUpdates(const messages::MetadataUpdateInfo& update_info) {
   for (const auto& update : update_info.updates()) {
@@ -271,9 +258,9 @@ void Controller::RunHeartbeat() {
 
     // Grab the PID updates and put it into the heartbeat message.
     ConsumeAgentPIDUpdates(update_info);
-    // TODO(philkuz) (PL-852) change this to only send schema updates when there's actually a schema
-    // change.
-    AddSchemaInfo(update_info);
+
+    // Grab current schema available.
+    relation_info_mgr_->AddSchemaUpdateInfo(update_info);
 
     VLOG(2) << "Sending heartbeat message: " << req.DebugString();
     auto s = nats_connector_->Publish(req);
@@ -390,6 +377,7 @@ Status Controller::InitThrowaway() {
 
   // This should eventually be done by subscribe requests.
   auto relation_info_vec = ConvertSubscribePBToRelationInfo(subscribe_pb);
+  PL_RETURN_IF_ERROR(relation_info_mgr_->UpdateRelationInfo(relation_info_vec));
   for (const auto& relation_info : relation_info_vec) {
     PL_RETURN_IF_ERROR(
         table_store_->AddTable(relation_info.id, relation_info.name,

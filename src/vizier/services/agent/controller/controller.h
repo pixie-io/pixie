@@ -13,6 +13,7 @@
 #include "src/carnot/carnot.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/stirling.h"
+#include "src/vizier/services/agent/controller/relation_info_mgr.h"
 
 #include "src/common/base/base.h"
 #include "src/common/nats/nats.h"
@@ -108,7 +109,6 @@ class Controller : public NotCopyable {
 
   Status HandleMDSUpdates(const messages::MetadataUpdateInfo& update_info);
   void ConsumeAgentPIDUpdates(messages::AgentUpdateInfo* update_info);
-  void AddSchemaInfo(messages::AgentUpdateInfo* update_info);
 
   static void ProcessPIDStartedEvent(const pl::md::PIDStartedEvent& ev,
                                      messages::AgentUpdateInfo* update_info);
@@ -139,6 +139,8 @@ class Controller : public NotCopyable {
 
   std::unique_ptr<pl::md::AgentMetadataStateManager> mds_manager_;
   std::unique_ptr<std::thread> mds_thread_;
+
+  std::unique_ptr<RelationInfoMgr> relation_info_mgr_;
 };
 
 }  // namespace agent

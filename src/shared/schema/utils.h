@@ -13,9 +13,19 @@ namespace pl {
  */
 struct RelationInfo {
   RelationInfo(std::string name, uint64_t id, table_store::schema::Relation relation)
-      : name(std::move(name)), id(id), relation(std::move(relation)) {}
+      : name(std::move(name)), id(id), tabletized(false), relation(std::move(relation)) {}
+
+  RelationInfo(std::string name, uint64_t id, uint64_t tabletization_key_idx,
+               table_store::schema::Relation relation)
+      : name(std::move(name)),
+        id(id),
+        tabletized(true),
+        tabletization_key_idx(tabletization_key_idx),
+        relation(std::move(relation)) {}
   std::string name;
   uint64_t id;
+  bool tabletized;
+  uint64_t tabletization_key_idx;
   table_store::schema::Relation relation;
 };
 
