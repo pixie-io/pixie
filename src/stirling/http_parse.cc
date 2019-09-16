@@ -102,111 +102,10 @@ bool MatchesHTTPTHeaders(const std::map<std::string, std::string>& http_headers,
 }
 
 //=============================================================================
-// PicoHTTPParserWrapper
+// Pico Wrapper
 //=============================================================================
 
-// TODO(oazizi): Restructure is in progress. Complete it:
-//  - Eliminate this class. Pull out functions as stand-alone.
-//  - Member variables only required inside ParseRequest()/ParseResponse(),
-//    and each only requires its own subset.
-class PicoHTTPParserWrapper {
- public:
-  /**
-   * @brief Parses a raw input buffer for HTTP messages.
-   * HTTP headers are parsed by pico. Body is extracted separately.
-   *
-   * @param type: request or response
-   * @param buf: The source buffer to parse. The prefix of this buffer will be consumed to indicate
-   * the point until which the parse has progressed.
-   * @param result: A parsed HTTP message, if parse was successful (must consider return value).
-   * @return parse state indicating how the parse progressed.
-   */
-  ParseState Parse(MessageType type, std::string_view* buf, HTTPMessage* result);
-
- private:
-  ParseState ParseRequest(std::string_view* buf, HTTPMessage* result);
-  ParseState ParseResponse(std::string_view* buf, HTTPMessage* result);
-  ParseState ParseBody(std::string_view* buf, HTTPMessage* result);
-
-  // For parsing HTTP requests.
-  const char* method = nullptr;
-  size_t method_len;
-  const char* path = nullptr;
-  size_t path_len;
-
-  // For parsing HTTP responses.
-  const char* msg = nullptr;
-  size_t msg_len = 0;
-  int status = 0;
-
-  // For parsing HTTP requests/response (common).
-  int minor_version = 0;
-  static constexpr size_t kMaxNumHeaders = 50;
-  struct phr_header headers[kMaxNumHeaders];
-
-  std::map<std::string, std::string> header_map;
-};
-
-ParseState PicoHTTPParserWrapper::Parse(MessageType type, std::string_view* buf,
-                                        HTTPMessage* result) {
-  switch (type) {
-    case MessageType::kRequest:
-      return ParseRequest(buf, result);
-    case MessageType::kResponse:
-      return ParseResponse(buf, result);
-    default:
-      return ParseState::kInvalid;
-  }
-}
-
-ParseState PicoHTTPParserWrapper::ParseRequest(std::string_view* buf, HTTPMessage* result) {
-  // Set header number to maximum we can accept.
-  // Pico will change it to the number of headers parsed for us.
-  size_t num_headers = kMaxNumHeaders;
-  const int retval =
-      phr_parse_request(buf->data(), buf->size(), &method, &method_len, &path, &path_len,
-                        &minor_version, headers, &num_headers, /*last_len*/ 0);
-  if (retval >= 0) {
-    buf->remove_prefix(retval);
-    header_map = GetHttpHeadersMap(headers, num_headers);
-
-    result->type = MessageType::kRequest;
-    result->http_minor_version = minor_version;
-    result->http_headers = std::move(header_map);
-    result->http_req_method = std::string(method, method_len);
-    result->http_req_path = std::string(path, path_len);
-
-    return ParseBody(buf, result);
-  }
-  if (retval == -2) {
-    return ParseState::kNeedsMoreData;
-  }
-  return ParseState::kInvalid;
-}
-
-ParseState PicoHTTPParserWrapper::ParseResponse(std::string_view* buf, HTTPMessage* result) {
-  // Set header number to maximum we can accept.
-  // Pico will change it to the number of headers parsed for us.
-  size_t num_headers = kMaxNumHeaders;
-  const int retval = phr_parse_response(buf->data(), buf->size(), &minor_version, &status, &msg,
-                                        &msg_len, headers, &num_headers, /*last_len*/ 0);
-  if (retval >= 0) {
-    buf->remove_prefix(retval);
-    header_map = GetHttpHeadersMap(headers, num_headers);
-
-    result->type = MessageType::kResponse;
-    result->http_minor_version = minor_version;
-    result->http_headers = std::move(header_map);
-    result->http_resp_status = status;
-    result->http_resp_message = std::string(msg, msg_len);
-
-    return ParseBody(buf, result);
-  }
-  if (retval == -2) {
-    return ParseState::kNeedsMoreData;
-  }
-  return ParseState::kInvalid;
-}
+namespace pico_wrapper {
 
 namespace {
 
@@ -238,7 +137,7 @@ ParseState ParseChunk(std::string_view* data, HTTPMessage* result) {
 
 }  // namespace
 
-ParseState PicoHTTPParserWrapper::ParseBody(std::string_view* buf, HTTPMessage* result) {
+ParseState ParseBody(std::string_view* buf, HTTPMessage* result) {
   // Try to find boundary of message by looking at Content-Length and Transfer-Encoding.
 
   // From https://tools.ietf.org/html/rfc7230:
@@ -336,12 +235,99 @@ ParseState PicoHTTPParserWrapper::ParseBody(std::string_view* buf, HTTPMessage* 
   return ParseState::kInvalid;
 }
 
+ParseState ParseRequest(std::string_view* buf, HTTPMessage* result) {
+  // Fields populated by phr_parse_response.
+  const char* method = nullptr;
+  size_t method_len;
+  const char* path = nullptr;
+  size_t path_len;
+  int minor_version = 0;
+  static constexpr size_t kMaxNumHeaders = 50;
+  struct phr_header headers[kMaxNumHeaders];
+
+  // Set header number to maximum we can accept.
+  // Pico will change it to the number of headers parsed for us.
+  size_t num_headers = kMaxNumHeaders;
+
+  const int retval =
+      phr_parse_request(buf->data(), buf->size(), &method, &method_len, &path, &path_len,
+                        &minor_version, headers, &num_headers, /*last_len*/ 0);
+  if (retval >= 0) {
+    buf->remove_prefix(retval);
+
+    result->type = MessageType::kRequest;
+    result->http_minor_version = minor_version;
+    result->http_headers = GetHttpHeadersMap(headers, num_headers);
+    result->http_req_method = std::string(method, method_len);
+    result->http_req_path = std::string(path, path_len);
+
+    return ParseBody(buf, result);
+  }
+  if (retval == -2) {
+    return ParseState::kNeedsMoreData;
+  }
+  return ParseState::kInvalid;
+}
+
+ParseState ParseResponse(std::string_view* buf, HTTPMessage* result) {
+  // Fields populated by phr_parse_response.
+  const char* msg = nullptr;
+  size_t msg_len = 0;
+  int status = 0;
+  int minor_version = 0;
+  static constexpr size_t kMaxNumHeaders = 50;
+  struct phr_header headers[kMaxNumHeaders];
+
+  // Set header number to maximum we can accept.
+  // Pico will change it to the number of headers parsed for us.
+  size_t num_headers = kMaxNumHeaders;
+  const int retval = phr_parse_response(buf->data(), buf->size(), &minor_version, &status, &msg,
+                                        &msg_len, headers, &num_headers, /*last_len*/ 0);
+  if (retval >= 0) {
+    buf->remove_prefix(retval);
+
+    result->type = MessageType::kResponse;
+    result->http_minor_version = minor_version;
+    result->http_headers = GetHttpHeadersMap(headers, num_headers);
+    result->http_resp_status = status;
+    result->http_resp_message = std::string(msg, msg_len);
+
+    return ParseBody(buf, result);
+  }
+  if (retval == -2) {
+    return ParseState::kNeedsMoreData;
+  }
+  return ParseState::kInvalid;
+}
+
+/**
+ * @brief Parses a raw input buffer for HTTP messages.
+ * HTTP headers are parsed by pico. Body is extracted separately.
+ *
+ * @param type: request or response
+ * @param buf: The source buffer to parse. The prefix of this buffer will be consumed to indicate
+ * the point until which the parse has progressed.
+ * @param result: A parsed HTTP message, if parse was successful (must consider return value).
+ * @return parse state indicating how the parse progressed.
+ */
+ParseState Parse(MessageType type, std::string_view* buf, HTTPMessage* result) {
+  switch (type) {
+    case MessageType::kRequest:
+      return ParseRequest(buf, result);
+    case MessageType::kResponse:
+      return ParseResponse(buf, result);
+    default:
+      return ParseState::kInvalid;
+  }
+}
+
+}  // namespace pico_wrapper
+
 }  // namespace http
 
 template <>
 ParseResult<size_t> Parse(MessageType type, std::string_view buf,
                           std::deque<http::HTTPMessage>* messages) {
-  http::PicoHTTPParserWrapper pico;
   std::vector<size_t> start_position;
   const size_t buf_size = buf.size();
   ParseState s = ParseState::kSuccess;
@@ -350,7 +336,7 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
   while (!buf.empty() && s != ParseState::kEOS) {
     http::HTTPMessage message;
 
-    s = pico.Parse(type, &buf, &message);
+    s = http::pico_wrapper::Parse(type, &buf, &message);
     if (s != ParseState::kSuccess && s != ParseState::kEOS) {
       break;
     }
