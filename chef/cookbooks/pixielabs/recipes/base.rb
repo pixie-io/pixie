@@ -54,6 +54,12 @@ template '/opt/pixielabs/bin/tot' do
   action :create
 end
 
+remote_file '/opt/pixielabs/bin/bazel' do
+  source node['bazel']['download_path']
+  mode 0555
+  checksum node['bazel']['sha256']
+end
+
 remote_file '/opt/pixielabs/bin/kustomize' do
   source node['kustomize']['download_path']
   mode 0755

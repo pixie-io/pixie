@@ -17,9 +17,3 @@ execute "install pip" do
   creates "/usr/local/bin/pip"
   not_if { ::File.exist?("/usr/local/bin/pip") }
 end
-
-remote_file '/usr/local/bin/bazel' do
-  source node['bazel']['download_path']
-  mode 0555
-  checksum node['bazel']['sha256']
-end
