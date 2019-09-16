@@ -137,6 +137,23 @@ std::basic_string_view<CharType> ConvertToStringView(const char (&arr)[N]) {
   return std::basic_string_view<CharType>(reinterpret_cast<const CharType*>(arr), N - 1);
 }
 
+/**
+ * @brief Case-insensitive string comparison.
+ */
+struct CaseInsensitiveLess {
+  struct NoCaseCompare {
+    bool operator()(const unsigned char c1, const unsigned char c2) const {
+      return std::tolower(c1) < std::tolower(c2);
+    }
+  };
+
+  template <typename TStringType>
+  bool operator()(const TStringType& s1, const TStringType& s2) const {
+    return std::lexicographical_compare(s1.begin(), s1.end(), s2.begin(), s2.end(),
+                                        NoCaseCompare());
+  }
+};
+
 }  // namespace pl
 
 // Provides a string view into a char array included in the binary via objcopy.

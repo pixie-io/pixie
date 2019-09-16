@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <map>
 #include <vector>
 
 #include "src/common/base/utils.h"
@@ -92,6 +93,59 @@ TEST(Enumerate, LoopsThroughVectorWithIndex) {
   for (const auto& [idx, val] : Enumerate(vals)) {
     EXPECT_EQ(idx * 2, val);
   }
+}
+
+TEST(CaseInsensitiveCompare, BasicsWithString) {
+  CaseInsensitiveLess str_compare;
+
+  EXPECT_FALSE(str_compare(std::string("foo"), std::string("foo")));
+  EXPECT_FALSE(str_compare(std::string("Foo"), std::string("foo")));
+  EXPECT_FALSE(str_compare(std::string("foo"), std::string("Foo")));
+  EXPECT_FALSE(str_compare(std::string("Foo"), std::string("Foo")));
+
+  EXPECT_FALSE(str_compare(std::string("foo"), std::string("bar")));
+  EXPECT_FALSE(str_compare(std::string("Foo"), std::string("bar")));
+  EXPECT_FALSE(str_compare(std::string("foo"), std::string("Bar")));
+  EXPECT_FALSE(str_compare(std::string("Foo"), std::string("Bar")));
+
+  EXPECT_TRUE(str_compare(std::string("bar"), std::string("foo")));
+  EXPECT_TRUE(str_compare(std::string("bar"), std::string("Foo")));
+  EXPECT_TRUE(str_compare(std::string("Bar"), std::string("foo")));
+  EXPECT_TRUE(str_compare(std::string("Bar"), std::string("Foo")));
+}
+
+TEST(CaseInsensitiveCompare, BasicsWithStringView) {
+  CaseInsensitiveLess str_compare;
+
+  EXPECT_FALSE(str_compare(std::string_view("foo"), std::string_view("foo")));
+  EXPECT_FALSE(str_compare(std::string_view("Foo"), std::string_view("foo")));
+  EXPECT_FALSE(str_compare(std::string_view("foo"), std::string_view("Foo")));
+  EXPECT_FALSE(str_compare(std::string_view("Foo"), std::string_view("Foo")));
+
+  EXPECT_FALSE(str_compare(std::string_view("foo"), std::string_view("bar")));
+  EXPECT_FALSE(str_compare(std::string_view("Foo"), std::string_view("bar")));
+  EXPECT_FALSE(str_compare(std::string_view("foo"), std::string_view("Bar")));
+  EXPECT_FALSE(str_compare(std::string_view("Foo"), std::string_view("Bar")));
+
+  EXPECT_TRUE(str_compare(std::string_view("bar"), std::string_view("foo")));
+  EXPECT_TRUE(str_compare(std::string_view("bar"), std::string_view("Foo")));
+  EXPECT_TRUE(str_compare(std::string_view("Bar"), std::string_view("foo")));
+  EXPECT_TRUE(str_compare(std::string_view("Bar"), std::string_view("Foo")));
+}
+
+TEST(CaseInsensitiveCompare, MapKey) {
+  std::map<std::string, int, CaseInsensitiveLess> str_key_map;
+
+  str_key_map["foo"] = 1;
+  EXPECT_EQ(str_key_map["foo"], 1);
+  EXPECT_EQ(str_key_map["Foo"], 1);
+  EXPECT_EQ(str_key_map["fOo"], 1);
+
+  // Re-write key using a different case.
+  str_key_map["Foo"] = 2;
+  EXPECT_EQ(str_key_map["foo"], 2);
+  EXPECT_EQ(str_key_map["Foo"], 2);
+  EXPECT_EQ(str_key_map["fOo"], 2);
 }
 
 }  // namespace pl
