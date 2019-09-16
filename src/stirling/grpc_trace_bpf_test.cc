@@ -81,7 +81,7 @@ HelloRequest GetHelloRequest(const ColumnWrapperRecordBatch& record_batch, const
 TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
   // Force disable protobuf parsing to output the binary protobuf in record batch.
   // Also ensure test remain passing when the default changes.
-  FLAGS_enable_parsing_protobufs = false;
+  FLAGS_stirling_enable_parsing_protobufs = false;
 
   // Bump perf buffer size to 1MiB to avoid perf buffer overflow.
   FLAGS_stirling_bpf_perf_buffer_page_count = 256;
@@ -171,7 +171,7 @@ class GRPCCppTest : public ::testing::Test {
   void SetUpSocketTraceConnector() {
     // Force disable protobuf parsing to output the binary protobuf in record batch.
     // Also ensure test remain passing when the default changes.
-    FLAGS_enable_parsing_protobufs = false;
+    FLAGS_stirling_enable_parsing_protobufs = false;
 
     source_ = SocketTraceConnector::Create("bcc_grpc_trace");
     ASSERT_OK(source_->Init());
@@ -242,6 +242,19 @@ class GRPCCppTest : public ::testing::Test {
   std::unique_ptr<GRPCStub<Greeter2>> greeter2_stub_;
   std::unique_ptr<GRPCStub<StreamingGreeter>> streaming_greeter_stub_;
 };
+
+TEST_F(GRPCCppTest, ParseTextProtoSimpleUnaryRPCCall) {
+  FLAGS_stirling_enable_parsing_protobufs = true;
+  CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs"});
+  source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
+
+  types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
+  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, getpid());
+  ASSERT_THAT(indices, SizeIs(1));
+  // Was parsed as an Empty message, all fields shown as unknown fields.
+  EXPECT_EQ(std::string("1: \"Hello pixielabs!\"\n"),
+            std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(indices[0])));
+}
 
 TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
   // TODO(yzhao): Put CallRPC() calls inside multiple threads. That would cause header parsing

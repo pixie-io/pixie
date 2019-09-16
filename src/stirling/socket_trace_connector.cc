@@ -1,5 +1,6 @@
 #ifdef __linux__
 
+#include <google/protobuf/empty.pb.h>
 #include <google/protobuf/util/json_util.h>
 #include <deque>
 #include <utility>
@@ -25,7 +26,7 @@ DEFINE_string(http_response_header_filters, "Content-Type:json",
               "therefore the headers can be duplicate. For example, "
               "'Content-Type:json,Content-Type:text' will select a HTTP response "
               "with a Content-Type header whose value contains 'json' *or* 'text'.");
-DEFINE_bool(enable_parsing_protobufs, false,
+DEFINE_bool(stirling_enable_parsing_protobufs, false,
             "If true, parses binary protobufs captured in gRPC messages. "
             "As of 2019-07, the parser can only handle protobufs defined in Hipster Shop.");
 DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs, "The process to trace.");
@@ -37,9 +38,11 @@ DEFINE_uint32(stirling_socket_trace_sampling_period_millis, 100,
 namespace pl {
 namespace stirling {
 
+using ::google::protobuf::Empty;
 using ::google::protobuf::Message;
 using ::pl::grpc::MethodInputOutput;
-using ::pl::stirling::grpc::ParseProtobuf;
+using ::pl::stirling::grpc::PBTextFormat;
+using ::pl::stirling::grpc::PBWireToText;
 using ::pl::stirling::http2::Frame;
 using ::pl::stirling::http2::GRPCMessage;
 using ::pl::stirling::http2::GRPCReqResp;
@@ -456,16 +459,17 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   // TODO(yzhao): Populate the following field from headers.
   r.Append<r.ColIndex("http_resp_message")>("OK");
 
-  if (FLAGS_enable_parsing_protobufs) {
+  if (FLAGS_stirling_enable_parsing_protobufs) {
     MethodInputOutput in_out = GetProtobufMessages(req_message, &grpc_desc_db_);
     auto parse_pb = [](std::string_view str, Message* pb) -> std::string {
-      std::string json;
-      Status s = ParseProtobuf(str, pb, &json);
-      if (s.ok()) {
-        return json;
-      } else {
-        return s.ToString();
+      std::string text;
+      Status s;
+      Empty empty;
+      if (pb == nullptr) {
+        pb = &empty;
       }
+      s = PBWireToText(str, PBTextFormat::kText, pb, &text);
+      return s.ok() ? text : s.ToString();
     };
     r.Append<r.ColIndex("http_req_body")>(parse_pb(req_message.message, in_out.input.get()));
     r.Append<r.ColIndex("http_resp_body")>(parse_pb(resp_message.message, in_out.output.get()));

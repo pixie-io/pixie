@@ -32,7 +32,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/stirling/socket_trace.h"
 
 DECLARE_string(http_response_header_filters);
-DECLARE_bool(enable_parsing_protobufs);
+DECLARE_bool(stirling_enable_parsing_protobufs);
 DECLARE_uint32(stirling_socket_trace_sampling_period_millis);
 
 OBJ_STRVIEW(http_trace_bcc_script, _binary_bcc_bpf_socket_trace_c_preprocessed);

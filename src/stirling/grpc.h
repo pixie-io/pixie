@@ -13,12 +13,18 @@ namespace grpc {
 
 constexpr size_t kGRPCMessageHeaderSizeInBytes = 5;
 
+enum class PBTextFormat {
+  // Corresponding to protobuf's native text format.
+  kText,
+  kJSON,
+};
+
 /**
  * @brief Parses the input message with the input dynamic protobuf message, and export it in JSON
  * format.
  */
-Status ParseProtobuf(std::string_view message, google::protobuf::Message* pb_msg,
-                     std::string* json);
+Status PBWireToText(std::string_view message, PBTextFormat fmt, google::protobuf::Message* pb,
+                    std::string* text);
 
 }  // namespace grpc
 }  // namespace stirling
