@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/shared/types/proto/types.proto";
 
 package pl.table_store.schemapb;
@@ -35,7 +36,7 @@ message Time64NSColumn {
 
 // String data column.
 message StringColumn {
-  repeated bytes data = 1;
+  repeated bytes data = 1 [(gogoproto.customtype) = "pixielabs.ai/pixielabs/src/table_store/proto/types.StringData"];
 }
 
 // A single column of data.

@@ -36,6 +36,7 @@ go_test(
         "//src/shared/services/utils:go_default_library",
         "//src/shared/types/proto:types_pl_go_proto",
         "//src/table_store/proto:schema_pl_go_proto",
+        "//src/table_store/proto/types:go_default_library",
         "//src/utils:go_default_library",
         "//src/vizier/services/api/apienv:go_default_library",
         "//src/vizier/services/api/controller/schema:go_default_library",

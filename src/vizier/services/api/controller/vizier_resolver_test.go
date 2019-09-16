@@ -19,6 +19,7 @@ import (
 	jwtutils "pixielabs.ai/pixielabs/src/shared/services/utils"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
+	schemapb_types "pixielabs.ai/pixielabs/src/table_store/proto/types"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/services/api/apienv"
 	"pixielabs.ai/pixielabs/src/vizier/services/api/controller"
@@ -198,13 +199,24 @@ func TestVizierExecuteQuery(t *testing.T) {
 								},
 								{
 									ColumnName: "scolI",
-									ColumnType: typespb.INT64,
+									ColumnType: typespb.STRING,
 								},
 							},
 						},
 						RowBatches: []*schemapb.RowBatchData{
 							{
-								Cols: []*schemapb.Column{},
+								Cols: []*schemapb.Column{
+									{
+										ColData: &schemapb.Column_StringData{
+											StringData: &schemapb.StringColumn{
+												Data: []schemapb_types.StringData{
+													[]byte("hello"),
+													[]byte("test"),
+												},
+											},
+										},
+									},
+								},
 							},
 						},
 					},
@@ -240,7 +252,7 @@ func TestVizierExecuteQuery(t *testing.T) {
 				   "ExecuteQuery":{
 					  "id":"65294d6a-6ceb-48a7-96b0-9a1eb7d467cb",
 					  "table":{
-						 "data":"{\"relation\":{\"columns\":[{\"columnName\":\"scolE\",\"columnType\":\"BOOLEAN\"},{\"columnName\":\"scolI\",\"columnType\":\"INT64\"}]},\"rowBatches\":[{\"cols\":[]}]}",
+						 "data":"{\"relation\":{\"columns\":[{\"columnName\":\"scolE\",\"columnType\":\"BOOLEAN\"},{\"columnName\":\"scolI\",\"columnType\":\"STRING\"}]},\"rowBatches\":[{\"cols\":[{\"stringData\":{\"data\":[\"hello\",\"test\"]}}]}]}",
 						 "relation":{
 							"colNames":[
 							   "scolE",
@@ -248,7 +260,7 @@ func TestVizierExecuteQuery(t *testing.T) {
 							],
 							"colTypes":[
 							   "BOOLEAN",
-							   "INT64"
+							   "STRING"
 							]
 						 }
 					  }
