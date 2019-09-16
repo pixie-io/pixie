@@ -35,8 +35,8 @@ genrule(
       # Run the unit tests.
       jest
 
-      # Build the dev bundle.
-      yarn build_dev;
+      # Build the prod bundle.
+      yarn build_prod;
 
       # Build the storybook bundle.
       yarn storybook_static
