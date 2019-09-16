@@ -1,6 +1,9 @@
 #pragma once
 
+#include <map>
 #include <set>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "src/common/base/base.h"
@@ -81,7 +84,7 @@ class MessageGroupTypeClassifier {
    *
    * @return vector of candidate set sizes.
    */
-  const std::vector<size_t>& num_candidates_history() const { return num_candidates_history_; };
+  const std::vector<size_t>& num_candidates_history() const { return num_candidates_history_; }
 
   /**
    * Return the number of messages that have been added to this MessageMatcher via AddMessage().

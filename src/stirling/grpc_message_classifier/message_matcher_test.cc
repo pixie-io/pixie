@@ -1,6 +1,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <string>
+
 #include "demos/applications/hipster_shop/reflection.h"
 #include "src/common/base/base.h"
 #include "src/common/base/utils.h"

@@ -1,5 +1,7 @@
 #include "src/stirling/grpc_message_classifier/message_matcher.h"
 
+#include <memory>
+
 namespace google {
 namespace protobuf {
 
@@ -276,7 +278,7 @@ size_t GRPCMessageFlow::AddMessageWithKey(std::pair<uint32_t, uint32_t> key) {
 
 void GRPCMessageFlow::IncrementIndexes(int count) {
   std::map<std::pair<uint32_t, uint32_t>, size_t> copy;
-  for (const auto [k, v] : message_flows_) {
+  for (const auto& [k, v] : message_flows_) {
     auto k_copy = k;
     // TODO(yzhao): This would fail if the incremented value got discarded, if the inserted
     // entries into dynamic table causes the pointed cache entry being evicted. In that case,
