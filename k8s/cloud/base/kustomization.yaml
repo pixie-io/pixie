@@ -6,6 +6,8 @@ namespace: plc
 resources:
 - db_config.yaml
 - tls_config.yaml
+- auth0_config.yaml
+- domain_config.yaml
 - auth_deployment.yaml
 - auth_service.yaml
 - api_deployment.yaml
