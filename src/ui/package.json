@@ -87,7 +87,8 @@
     "toml": "^3.0.0",
     "unfetch": "^4.0.1",
     "webpack-plugin-replace": "^1.2.0",
-    "whatwg-fetch": "^3.0.0"
+    "whatwg-fetch": "^3.0.0",
+    "yaml": "^1.6.0"
   },
   "scripts": {
     "build_dev": "./node_modules/.bin/webpack",

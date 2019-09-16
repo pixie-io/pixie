@@ -1,4 +1,5 @@
 const { resolve, join } = require('path');
+const { execSync } = require('child_process');
 
 const webpack = require('webpack');
 const { CheckerPlugin } = require('awesome-typescript-loader');
@@ -8,6 +9,7 @@ const HtmlWebpackHarddiskPlugin = require('html-webpack-harddisk-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const utils = require('./webpack-utils');
 const ReplacePlugin = require('webpack-plugin-replace');
+const YAML = require('yaml');
 
 const isDevServer = process.argv.find(v => v.includes('webpack-dev-server'));
 
@@ -182,6 +184,13 @@ module.exports = (env) => {
         __CONFIG_DOMAIN_NAME__: 'dev.withpixie.dev',
       },
     }));
+
+  results = execSync('sops --decrypt ..\/..\/credentials\/k8s\/dev\/cloud_proxy_tls_certs.yaml');
+  credsYAML = YAML.parse(results.toString());
+  webpackConfig.devServer.https = {
+    key: credsYAML.stringData['tls.key'],
+    cert: credsYAML.stringData['tls.crt'],
+  };
 
   return webpackConfig;
 };
