@@ -78,6 +78,26 @@ class EquijoinNode : public ProcessingNode {
 
   std::vector<types::DataType> key_data_types_;
 
+  // Example of the above specs:
+  // For input table A (build) which has [key_A_1, output_col_0, key_A_0/output_col_2]
+  // and input table B (probe) which has [key_B_0, output_col_3, key_B_1/output_col_1]
+  // build_spec_: {key_indices: [2, 0], input_col_indices: [1, 2], output_col_indices: [0, 2]}
+  // probe_spec_: {key_indices: [0, 2], input_col_indices: [1, 2], output_col_indices: [3, 1]}
+  // produces table [output_col_0, output_col_1(key_B_1), output_col_2(key_A_0), output_col_3]
+
+  // This struct represents a chunk of output rows that are queued to be written
+  // to the column builders.
+  struct OutputChunk {
+    std::shared_ptr<table_store::schema::RowBatch> rb;
+    std::vector<types::SharedColumnWrapper>* wrappers_ptr;
+    int64_t num_rows;
+    int64_t bb_row_idx;
+    int64_t probe_row_idx;
+  };
+
+  int64_t queued_rows_ = 0;
+  std::vector<OutputChunk> chunks_;
+
   // Memory/column building members
   // If the build stage isn't complete, we need to buffer the probe batches.
   std::queue<table_store::schema::RowBatch> probe_batches_;
@@ -88,8 +108,12 @@ class EquijoinNode : public ProcessingNode {
   ObjectPool column_values_pool_;
   std::vector<RowTuple*> join_keys_chunk_;
   std::vector<std::vector<types::SharedColumnWrapper>*> build_wrappers_chunk_;
+  std::vector<std::vector<types::SharedColumnWrapper>*> probe_wrappers_chunk_;
 
   AbslRowTupleHashMap<std::vector<types::SharedColumnWrapper>*> build_buffer_;
+  // For joins where the build_buffer_ needs to emit any non-probed rows at the end of the join,
+  // keep track of which ones they were.
+  AbslRowTupleHashSet probed_keys_;
 
   // Handle on the most recent RowBatch (in case it's the final one).
   std::unique_ptr<table_store::schema::RowBatch> pending_output_batch_;
