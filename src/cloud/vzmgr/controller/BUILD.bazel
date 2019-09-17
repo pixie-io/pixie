@@ -29,6 +29,7 @@ go_test(
         "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/services/pgtest:go_default_library",
         "//src/utils:go_default_library",
+        "@com_github_dgrijalva_jwt_go//:go_default_library",
         "@com_github_golang_migrate_migrate//source/go_bindata:go_default_library",
         "@com_github_jmoiron_sqlx//:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",

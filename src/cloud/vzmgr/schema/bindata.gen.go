@@ -2,6 +2,8 @@
 // sources:
 // 000001_create_cluster_tables.down.sql
 // 000001_create_cluster_tables.up.sql
+// 000002_create_pgcrypto_extension.down.sql
+// 000002_create_pgcrypto_extension.up.sql
 // DO NOT EDIT!
 
 package schema
@@ -104,7 +106,47 @@ func _000001_create_cluster_tablesUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_cluster_tables.up.sql", size: 1024, mode: os.FileMode(436), modTime: time.Unix(1566939205, 0)}
+	info := bindataFileInfo{name: "000001_create_cluster_tables.up.sql", size: 1024, mode: os.FileMode(436), modTime: time.Unix(1567184701, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000002_create_pgcrypto_extensionDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\x70\x8d\x08\x71\xf5\x0b\xf6\xf4\xf7\x53\xf0\x74\x53\x70\x8d\xf0\x0c\x0e\x09\x56\x50\x2a\x48\x4f\x2e\xaa\x2c\x28\xc9\x57\xb2\x06\x04\x00\x00\xff\xff\x90\x80\x10\xde\x24\x00\x00\x00")
+
+func _000002_create_pgcrypto_extensionDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000002_create_pgcrypto_extensionDownSql,
+		"000002_create_pgcrypto_extension.down.sql",
+	)
+}
+
+func _000002_create_pgcrypto_extensionDownSql() (*asset, error) {
+	bytes, err := _000002_create_pgcrypto_extensionDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.down.sql", size: 36, mode: os.FileMode(436), modTime: time.Unix(1568751349, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000002_create_pgcrypto_extensionUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x0e\x72\x75\x0c\x71\x55\x70\x8d\x08\x71\xf5\x0b\xf6\xf4\xf7\x53\xf0\x74\x53\xf0\xf3\x0f\x51\x70\x8d\xf0\x0c\x0e\x09\x56\x50\x2a\x48\x4f\x2e\xaa\x2c\x28\xc9\x57\xb2\x06\x04\x00\x00\xff\xff\x99\x5a\x72\xd2\x2a\x00\x00\x00")
+
+func _000002_create_pgcrypto_extensionUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000002_create_pgcrypto_extensionUpSql,
+		"000002_create_pgcrypto_extension.up.sql",
+	)
+}
+
+func _000002_create_pgcrypto_extensionUpSql() (*asset, error) {
+	bytes, err := _000002_create_pgcrypto_extensionUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.up.sql", size: 42, mode: os.FileMode(436), modTime: time.Unix(1568751309, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -163,6 +205,8 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	"000001_create_cluster_tables.down.sql": _000001_create_cluster_tablesDownSql,
 	"000001_create_cluster_tables.up.sql": _000001_create_cluster_tablesUpSql,
+	"000002_create_pgcrypto_extension.down.sql": _000002_create_pgcrypto_extensionDownSql,
+	"000002_create_pgcrypto_extension.up.sql": _000002_create_pgcrypto_extensionUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -207,6 +251,8 @@ type bintree struct {
 var _bintree = &bintree{nil, map[string]*bintree{
 	"000001_create_cluster_tables.down.sql": &bintree{_000001_create_cluster_tablesDownSql, map[string]*bintree{}},
 	"000001_create_cluster_tables.up.sql": &bintree{_000001_create_cluster_tablesUpSql, map[string]*bintree{}},
+	"000002_create_pgcrypto_extension.down.sql": &bintree{_000002_create_pgcrypto_extensionDownSql, map[string]*bintree{}},
+	"000002_create_pgcrypto_extension.up.sql": &bintree{_000002_create_pgcrypto_extensionUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

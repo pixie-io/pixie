@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"database/sql/driver"
 	"errors"
@@ -19,14 +20,18 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
+// SaltLength is the length of the salt used when encrypting the jwt signing key.
+const SaltLength int = 10
+
 // Server is a controller implementation of vzmgr.
 type Server struct {
-	db *sqlx.DB
+	db    *sqlx.DB
+	dbKey string
 }
 
 // New creates a new server.
-func New(db *sqlx.DB) *Server {
-	return &Server{db}
+func New(db *sqlx.DB, dbKey string) *Server {
+	return &Server{db, dbKey}
 }
 
 type vizierStatus cloudpb.VizierInfo_Status
@@ -190,13 +195,13 @@ func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) 
 		return nil, status.Error(codes.InvalidArgument, "failed to parse cluster id")
 	}
 
-	query := `SELECT address, jwt_signing_key from vizier_cluster_info WHERE vizier_cluster_id=$1`
+	query := `SELECT address, PGP_SYM_DECRYPT(jwt_signing_key::bytea, $2) as jwt_signing_key from vizier_cluster_info WHERE vizier_cluster_id=$1`
 	var info struct {
 		Address       string `db:"address"`
 		JWTSigningKey string `db:"jwt_signing_key"`
 	}
 
-	err := s.db.Get(&info, query, clusterID)
+	err := s.db.Get(&info, query, clusterID, s.dbKey)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, status.Error(codes.NotFound, "no such cluster")
@@ -205,8 +210,9 @@ func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) 
 	}
 
 	// Generate a signed token for this cluster.
+	jwtKey := info.JWTSigningKey[SaltLength:]
 	claims := jwtutils.GenerateJWTForCluster("vizier_cluster")
-	tokenString, err := jwtutils.SignJWTClaims(claims, info.JWTSigningKey)
+	tokenString, err := jwtutils.SignJWTClaims(claims, jwtKey)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to sign token: %s", err.Error())
 	}
@@ -219,13 +225,22 @@ func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) 
 
 // VizierConnected is an the request made to the mgr to handle new Vizier connections.
 func (s *Server) VizierConnected(ctx context.Context, req *cloudpb.RegisterVizierRequest) (*cloudpb.RegisterVizierAck, error) {
+	// Add a salt to the signing key.
+	salt := make([]byte, SaltLength/2)
+	_, err := rand.Read(salt)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "could not create salt")
+	}
+	signingKey := fmt.Sprintf("%x", salt) + req.JwtKey
+
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 	query := `
     UPDATE vizier_cluster_info
-    SET last_heartbeat = NOW(), address = $2, jwt_signing_key = $3, status = 'HEALTHY'
+    SET (last_heartbeat, address, jwt_signing_key, status)  = (
+    	NOW(), $2, PGP_SYM_ENCRYPT($3, $4), 'HEALTHY')
     WHERE vizier_cluster_id = $1`
 
-	res, err := s.db.Exec(query, vizierID, req.Address, req.JwtKey)
+	res, err := s.db.Exec(query, vizierID, req.Address, signingKey, s.dbKey)
 	if err != nil {
 		return nil, err
 	}

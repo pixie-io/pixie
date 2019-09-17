@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/jmoiron/sqlx"
 	uuid "github.com/satori/go.uuid"
@@ -44,7 +45,7 @@ func loadTestData(t *testing.T, db *sqlx.DB) {
 
 	insertVizierClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat) VALUES($1, $2, $3, $4, $5)`
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN", "addr0", "key0", "2011-05-16 15:36:38")
-	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY", "addr1", "key1", "2011-05-17 15:36:38")
+	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY", "addr1", "\\xc30d04070302c5374a5098262b6d7bd23f01822f741dbebaa680b922b55fd16eb985aeb09505f8fc4a36f0e11ebb8e18f01f684146c761e2234a81e50c21bca2907ea37736f2d9a5834997f4dd9e288c", "2011-05-17 15:36:38")
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "addr2", "key2", "2011-05-18 15:36:38")
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440003", "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38")
 }
@@ -54,7 +55,7 @@ func TestServer_CreateVizierCluster(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
-	s := controller.New(db)
+	s := controller.New(db, "test")
 	orgID := uuid.NewV4()
 
 	tests := []struct {
@@ -124,7 +125,7 @@ func TestServer_GetViziersByOrg(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
-	s := controller.New(db)
+	s := controller.New(db, "test")
 
 	t.Run("valid", func(t *testing.T) {
 		// Fetch the test data that was inserted earlier.
@@ -177,7 +178,7 @@ func TestServer_GetVizierInfo(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
-	s := controller.New(db)
+	s := controller.New(db, "test")
 	resp, err := s.GetVizierInfo(context.Background(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	require.Nil(t, err)
 	require.NotNil(t, resp)
@@ -190,13 +191,19 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
-	s := controller.New(db)
+	s := controller.New(db, "test")
 	resp, err := s.GetVizierConnectionInfo(context.Background(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 
 	assert.Equal(t, resp.IPAddress, "addr1")
 	assert.NotNil(t, resp.Token)
+	claims := jwt.MapClaims{}
+	_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte("key0"), nil
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, "cluster", claims["Scopes"].(string))
 
 	// TODO(zasgar): write more tests here.
 }
@@ -206,7 +213,7 @@ func TestServer_VizierConnected(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
-	s := controller.New(db)
+	s := controller.New(db, "test")
 	req := &cloudpb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		JwtKey:   "the-token",
@@ -218,6 +225,18 @@ func TestServer_VizierConnected(t *testing.T) {
 
 	assert.Equal(t, resp.Status, cloudpb.ST_OK)
 
+	// Check to make sure DB insert for JWT signing key is correct.
+	clusterQuery := `SELECT PGP_SYM_DECRYPT(jwt_signing_key::bytea, 'test') as jwt_signing_key from vizier_cluster_info WHERE vizier_cluster_id=$1`
+
+	var clusterInfo struct {
+		JWTSigningKey string `db:"jwt_signing_key"`
+	}
+	clusterID, err := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
+	assert.Nil(t, err)
+	err = db.Get(&clusterInfo, clusterQuery, clusterID)
+	assert.Nil(t, err)
+	assert.Equal(t, "the-token", clusterInfo.JWTSigningKey[controller.SaltLength:])
+
 	// TODO(zasgar): write more tests here.
 }
 
@@ -226,7 +245,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 	defer teardown()
 	loadTestData(t, db)
 
-	s := controller.New(db)
+	s := controller.New(db, "test")
 
 	t.Run("valid Vizier", func(t *testing.T) {
 		req := &cloudpb.VizierHeartbeat{

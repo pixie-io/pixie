@@ -6,6 +6,8 @@ import (
 	"github.com/golang-migrate/migrate"
 	"github.com/golang-migrate/migrate/database/postgres"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
@@ -17,6 +19,10 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 )
+
+func init() {
+	pflag.String("database_key", "", "The encryption key to use for the database")
+}
 
 func main() {
 	log.WithField("service", "vzmgr-service").Info("Starting service")
@@ -52,7 +58,12 @@ func main() {
 		log.WithError(err).Info("migrations failed: %s", err)
 	}
 
-	c := controller.New(db)
+	dbKey := viper.GetString("database_key")
+	if dbKey == "" {
+		log.Fatal("Database encryption key is required")
+	}
+
+	c := controller.New(db, dbKey)
 	vzmgrpb.RegisterVZMgrServiceServer(s.GRPCServer(), c)
 
 	s.Start()
