@@ -144,7 +144,7 @@ struct socket_data_event_t {
     struct traffic_class_t traffic_class;
     // The type of the actual data that the msg field encodes, which is used by the caller
     // to determine how to interpret the data.
-    uint32_t direction;
+    TrafficDirection direction;
     // A 0-based sequence number for this event on the connection.
     // Note that write/send have separate sequences than read/recv.
     uint64_t seq_num;
