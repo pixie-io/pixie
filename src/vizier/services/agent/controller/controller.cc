@@ -275,7 +275,7 @@ void Controller::RunHeartbeat() {
     // change.
     AddSchemaInfo(update_info);
 
-    LOG(INFO) << "Sending heartbeat message: " << req.DebugString();
+    VLOG(2) << "Sending heartbeat message: " << req.DebugString();
     auto s = nats_connector_->Publish(req);
     if (!s.ok()) {
       LOG(ERROR) << absl::StrFormat("Failed to publish heartbeat (will retry): %s", s.msg());
