@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-tls-config
+data:
+  # TLS certs require the correct volume to be mounted.
+  PL_SERVER_TLS_CERT: /certs/server.crt
+  PL_SERVER_TLS_KEY: /certs/server.key
+  PL_CLIENT_TLS_CERT: /certs/client.crt
+  PL_CLIENT_TLS_KEY: /certs/client.key
+  PL_TLS_CA_CERT: /certs/ca.crt
+
+  PL_SERVER_SIDE_TLS: "true"

@@ -22,27 +22,12 @@ spec:
             scheme: HTTPS
             path: /healthz
             port: 50300
+        envFrom:
+          - configMapRef:
+              name: pl-db-config
+          - configMapRef:
+              name: pl-tls-config
         env:
-          - name: PL_POSTGRES_PORT
-            value: "5432"
-          - name: PL_POSTGRES_HOSTNAME
-            value: postgres.plc.svc.cluster.local
-          - name: PL_POSTGRES_DB
-            value: pl
-          - name: PL_POSTGRES_USERNAME
-            value: pl
-          - name: PL_POSTGRES_PASSWORD
-            value: pl
-          - name: PL_SERVER_TLS_CERT
-            value: /certs/server.crt
-          - name: PL_SERVER_TLS_KEY
-            value: /certs/server.key
-          - name: PL_CLIENT_TLS_CERT
-            value: /certs/client.crt
-          - name: PL_CLIENT_TLS_KEY
-            value: /certs/client.key
-          - name: PL_TLS_CA_CERT
-            value: /certs/ca.crt
           - name: PL_JWT_SIGNING_KEY
             valueFrom:
               secretKeyRef:

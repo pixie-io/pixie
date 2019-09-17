@@ -22,24 +22,21 @@ spec:
             scheme: HTTPS
             path: /healthz
             port: 51600
+        envFrom:
+          - configMapRef:
+              name: pl-db-config
+          - configMapRef:
+              name: pl-tls-config
         env:
+          - name: PL_SERVER_TLS_CERT
+            value: /proxycerts/tls.crt
+          - name: PL_SERVER_TLS_KEY
+            value: /proxycerts/tls.key
           - name: PL_JWT_SIGNING_KEY
             valueFrom:
               secretKeyRef:
                 name: pl-app-secrets
                 key: jwt-signing-key
-          - name: PL_SERVER_TLS_CERT
-            value: /proxycerts/tls.crt
-          - name: PL_SERVER_TLS_KEY
-            value: /proxycerts/tls.key
-          - name: PL_CLIENT_TLS_CERT
-            value: /certs/client.crt
-          - name: PL_CLIENT_TLS_KEY
-            value: /certs/client.key
-          - name: PL_TLS_CA_CERT
-            value: /certs/ca.crt
-          - name: PL_SERVER_SIDE_TLS
-            value: "true"
         volumeMounts:
             - name: certs
               mountPath: /certs
