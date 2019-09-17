@@ -352,7 +352,7 @@ TEST(ParseTest, Status101) {
       "Upgrade: websocket\r\n"
       "Connection: Upgrade\r\n"
       "\r\n";
-  std::string new_protocol_data = "NEW PROTOCOL DATA";
+  std::string new_protocol_data = "New protocol data";
 
   std::string data = absl::StrCat(switch_protocol_msg, new_protocol_data);
 
@@ -361,6 +361,18 @@ TEST(ParseTest, Status101) {
 
   EXPECT_EQ(ParseState::kEOS, result.state);
   EXPECT_EQ(switch_protocol_msg.size(), result.end_position);
+  EXPECT_THAT(parsed_messages, ElementsAre(HasBody("")));
+}
+
+TEST(ParseTest, Status204) {
+  std::string msg =
+      "HTTP/1.1 204 No Content\r\n"
+      "\r\n";
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result = Parse(MessageType::kResponse, msg, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(HasBody("")));
 }
 

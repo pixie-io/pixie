@@ -179,42 +179,54 @@ ParseState ParseBody(std::string_view* buf, HTTPMessage* result) {
     return ParseChunk(buf, result);
   }
 
-  // Case 3: Request with no body.
+  // Case 3: Message has content, but no Content-Length or Transfer-Encoding.
+
+  // Case 3A: Requests where we can assume no body.
   // An HTTP GET with no Content-Length and no Transfer-Encoding should not have a body when no
   // Content-Length or Transfer-Encoding is set:
   // "A user agent SHOULD NOT send a Content-Length header field when the request message does
   // not contain a payload body and the method semantics do not anticipate such a body."
+  // TODO(oazizi): Are there more requests where we can assume no body?
   if (result->http_req_method == "GET") {
     result->http_msg_body = "";
     return ParseState::kSuccess;
   }
 
-  // Case 4: Response indicating a protocol switch.
-  if (result->http_resp_status == 101) {
+  // Case 3B: Responses where we can assume no body.
+  // The status codes below MUST not have a body, according to the spec,
+  // so if no Content-Length or Transfer-Encoding are present,
+  // assume they don't have a body.
+  // See: https://tools.ietf.org/html/rfc2616#section-4.4
+  // TODO(oazizi): Are there more responses where we can assume no body?
+  if ((result->http_resp_status >= 100 && result->http_resp_status < 200) ||
+      result->http_resp_status == 204 || result->http_resp_status == 304) {
     result->http_msg_body = "";
 
-    const auto upgrade_iter = result->http_headers.find(kUpgrade);
-    if (upgrade_iter == result->http_headers.end()) {
-      LOG(WARNING) << "Expected an Upgrade header with HTTP status 101";
+    // Status 101 is an even more special case.
+    if (result->http_resp_status == 101) {
+      const auto upgrade_iter = result->http_headers.find(kUpgrade);
+      if (upgrade_iter == result->http_headers.end()) {
+        LOG(WARNING) << "Expected an Upgrade header with HTTP status 101";
+        return ParseState::kEOS;
+      }
+
+      // Header 'Upgrade: h2c' indicates protocol switch is to HTTP/2.
+      // See: https://http2.github.io/http2-spec/#discover-http
+      if (upgrade_iter->second == "h2c") {
+        LOG(WARNING) << "HTTP upgrades to HTTP2 are not yet supported";
+        // TODO(oazizi/yzhao): Support upgrades to HTTP/2.
+      }
+
       return ParseState::kEOS;
     }
 
-    // Header 'Upgrade: h2c' indicates protocol switch is to HTTP/2.
-    // See: https://http2.github.io/http2-spec/#discover-http
-    if (upgrade_iter->second == "h2c") {
-      LOG(WARNING) << "HTTP upgrades to HTTP2 are not yet supported";
-      // TODO(oazizi/yzhao): Support upgrades to HTTP/2.
-    }
-
-    return ParseState::kEOS;
+    return ParseState::kSuccess;
   }
 
-  // TODO(oazizi): Add other special responses that don't have a body.
-
-  // Case 5: Message has content, but no length or chunking provided, so wait for close().
-  // For messages that do not have Content-Length and chunked Transfer-Encoding. According to
-  // HTTP/1.1 standard: https://www.w3.org/Protocols/HTTP/1.0/draft-ietf-http-spec.html#BodyLength
-  // such messages is terminated by the close of the connection.
+  // Case 3C: Message has content, but no Content-Length or Transfer-Encoding, but there might be a
+  // body, so should wait for close(). According to HTTP/1.1 standard:
+  // https://www.w3.org/Protocols/HTTP/1.0/draft-ietf-http-spec.html#BodyLength
+  // such messages are terminated by the close of the connection.
   // TODO(yzhao): For now we just accumulate messages, let probe_close() submit a message to
   // perf buffer, so that we can terminate such messages.
   if (!buf->empty()) {
