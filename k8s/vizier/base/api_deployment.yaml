@@ -22,6 +22,10 @@ spec:
             secretKeyRef:
               key: jwt-signing-key
               name: pl-cluster-secrets
+        - name: PL_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         envFrom:
         - configMapRef:
             name: pl-tls-config

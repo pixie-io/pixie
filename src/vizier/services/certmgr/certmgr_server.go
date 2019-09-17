@@ -16,6 +16,7 @@ import (
 
 func main() {
 	pflag.String("namespace", "pl", "The namespace of Vizier")
+	pflag.String("cloud_connector_addr", "vizier-cloud-connector.pl.svc:50800", "The address to the cloud connector")
 
 	log.WithField("service", "certmgr-service").Info("Starting service")
 

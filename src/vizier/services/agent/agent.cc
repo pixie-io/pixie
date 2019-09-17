@@ -22,6 +22,11 @@ DEFINE_string(query_broker_addr,
               gflags::StringFromEnv("PL_QUERY_BROKER_ADDR", "vizier-query-broker.pl.svc:50300"),
               "The host address of Query Broker");
 
+DEFINE_string(cloud_connector_addr,
+              gflags::StringFromEnv("PL_CLOUD_CONNECTOR_ADDR",
+                                    "vizier-cloud-connector.pl.svc:50800"),
+              "The host address of the Cloud Connector");
+
 DEFINE_string(client_tls_cert,
               gflags::StringFromEnv("PL_CLIENT_TLS_CERT", "../../services/certs/client.crt"),
               "The GRPC client TLS cert");

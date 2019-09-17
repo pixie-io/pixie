@@ -37,6 +37,8 @@ func main() {
 	log.WithField("service", "metadata").Info("Starting service")
 
 	pflag.String("md_etcd_server", "https://pl-etcd-client.pl.svc:2379", "The address to metadata etcd server.")
+	pflag.String("cloud_connector_addr", "vizier-cloud-connector.pl.svc:50800", "The address to the cloud connector")
+
 	services.SetupService("metadata", 50400)
 	services.SetupSSLClientFlags()
 	services.PostFlagSetupAndParse()

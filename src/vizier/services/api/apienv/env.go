@@ -13,6 +13,10 @@ func init() {
 	pflag.String("query_broker_grpc_addr",
 		"vizier-query-broker.pl.svc:50300",
 		"The address to the query broker grpc server")
+
+	pflag.String("cloud_connector_addr",
+		"vizier-cloud-connector.pl.svc:50800",
+		"The address to the cloud connector")
 }
 
 // APIEnv is the interface for the API service environment.

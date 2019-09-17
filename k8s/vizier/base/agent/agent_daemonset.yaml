@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -31,6 +32,10 @@ spec:
           value: "false"
         - name: PL_PROC_PATH
           value: "/host/proc"
+        - name: PL_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         resources:
           limits:
             memory: 256Mi
@@ -40,8 +45,8 @@ spec:
         securityContext:
           capabilities:
             add:
-              - SYS_PTRACE
-              - SYS_ADMIN
+            - SYS_PTRACE
+            - SYS_ADMIN
           privileged: true
         volumeMounts:
         - name: host-root
@@ -57,9 +62,9 @@ spec:
       volumes:
       - name: host-root
         hostPath:
-            path: /
-            type: Directory
+          path: /
+          type: Directory
       - name: sys
         hostPath:
-            path: /sys
-            type: Directory
+          path: /sys
+          type: Directory
