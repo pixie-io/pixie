@@ -4,20 +4,11 @@ metaTitle: "Getting Started | Pixie"
 metaDescription: "Pixie is ..."
 ---
 
-## Learning Center
+#### Slack 
+Pixie support teams will create site specific Slack groups with each Beta customer team for 24X7 support
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+#### Bug Report & Feature Requests
+You can file bug and features requests via Slack, email or in-person conversations with Pixie engineers. 
 
-## Slack Community Group
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-
-
-## Bug Report & Feature Requests
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
-
-
-## Email 
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+#### Email 
+You can reach out to cs@pixielabs.ai with product related questions and suggestions.
