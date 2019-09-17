@@ -6,6 +6,8 @@ import {Button, InputGroup} from 'react-bootstrap';
 import { BrowserRouter as Router, Route } from 'react-router-dom';
 import {CompanyCreate, CompanyLogin} from './company-login';
 
+jest.mock('containers/constants', () => ({ DOMAIN_NAME: 'dev.withpixie.dev' }));
+
 describe('<CompanyCreate/> test', () => {
   it('should have correct content', () => {
     const app = mount(<Router><CompanyCreate/></Router>);
@@ -16,6 +18,8 @@ describe('<CompanyCreate/> test', () => {
     expect(app.find(
       '.company-login-content--footer-text').at(0).text())
       .toEqual('Already have a site? Click here to log in');
+
+    expect(app.find(InputGroup.Text).at(0).text()).toEqual('.dev.withpixie.dev');
   });
 
   it('should show available', (done) => {
@@ -71,6 +75,7 @@ describe('<CompanyLogin/> test', () => {
     expect(app.find(
       '.company-login-content--footer-text').at(0).text())
       .toEqual('Don\'t have a company site yet? Claim your site here');
+    expect(app.find(InputGroup.Text).at(0).text()).toEqual('.dev.withpixie.dev');
   });
 
   it('should show error', (done) => {

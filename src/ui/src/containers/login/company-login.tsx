@@ -1,5 +1,6 @@
 import Axios from 'axios';
 import {DialogBox} from 'components/dialog-box/dialog-box';
+import {DOMAIN_NAME} from 'containers/constants';
 import * as React from 'react';
 import {Button, Form, FormControl, InputGroup} from 'react-bootstrap';
 import { HotKeys } from 'react-hotkeys';
@@ -32,7 +33,7 @@ function companyLoginOnClick(e) {
       });
     } else {
       window.location.href = window.location.protocol +
-        '//id.' + window.location.host + '/login?domain_name=' + domainName;
+        '//id.' + DOMAIN_NAME + '/login?domain_name=' + domainName;
     }
   }).catch((error) => {
     this.setState({
@@ -56,7 +57,7 @@ function companyCreateOnClick(e) {
       });
     } else {
       window.location.href = window.location.protocol + '//id.' +
-        window.location.host + '/create-site?domain_name=' + domainName;
+        DOMAIN_NAME + '/create-site?domain_name=' + domainName;
     }
   }).catch((error) => {
     this.setState({
@@ -131,7 +132,7 @@ class CompanyDialog extends React.Component<CompanyDialogProps, CompanyDialogSta
                   onChange={this.inputOnChange}
                 />
                 <InputGroup.Append>
-                  <InputGroup.Text id='company'>.pixielabs.ai</InputGroup.Text>
+                  <InputGroup.Text id='company'>{'.' + DOMAIN_NAME}</InputGroup.Text>
                 </InputGroup.Append>
               </InputGroup>
             </HotKeys>

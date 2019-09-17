@@ -1,6 +1,6 @@
 import Auth0Lock from 'auth0-lock';
 import Axios from 'axios';
-import {AUTH0_CLIENT_ID, AUTH0_DOMAIN} from 'containers/constants';
+import {AUTH0_CLIENT_ID, AUTH0_DOMAIN, DOMAIN_NAME} from 'containers/constants';
 import gql from 'graphql-tag';
 import * as QueryString from 'query-string';
 import * as React from 'react';
@@ -43,8 +43,8 @@ function onLoginAuthenticated(authResult) {
       idToken: response.data.Token,
       expiresAt: response.data.ExpiresAt,
     });
-    window.location.href = window.location.protocol + '//'
-      + window.location.host.replace('id.', this.domain + '.') + '/vizier/query';
+    window.location.href = window.location.protocol + '//' + this.domain + '.' +
+      DOMAIN_NAME + '/vizier/query';
   });
 }
 
@@ -70,8 +70,8 @@ function onCreateAuthenticated(authResult) {
           mutation: CREATE_CLUSTER,
       });
     }).then((results) => {
-        window.location.href = window.location.protocol + '//'
-          + window.location.host.replace('id.', this.domain + '.') + '/vizier/query';
+        window.location.href = window.location.protocol + '//' + this.domain + '.' +
+          DOMAIN_NAME + '/vizier/query';
     }).catch((gqlErr) => {
         return gqlErr;
     });
