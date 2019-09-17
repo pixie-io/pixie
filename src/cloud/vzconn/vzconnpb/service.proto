@@ -27,3 +27,13 @@ message CloudConnectResponse {
     // The contents of the message.
     google.protobuf.Any msg = 2;
 }
+
+message LogMessage {
+    string pod = 1;
+    string svc = 2;
+    string log = 3;
+}
+
+message TransferLogRequest {
+    repeated LogMessage batched_logs = 1;
+}

@@ -132,6 +132,13 @@ func (m *MessageProcessor) handleVizierHeartbeat(msg *cloudpb.VizierHeartbeat) e
 	return nil
 }
 
+func (m *MessageProcessor) handleLogMessage(msg *vzconnpb.TransferLogRequest) error {
+	for _, logMsg := range msg.GetBatchedLogs() {
+		m.streamLog.WithField("pod", logMsg.GetPod()).WithField("service", logMsg.GetSvc()).Info(logMsg.GetLog())
+	}
+	return nil
+}
+
 func (m *MessageProcessor) handleMessage(msg *vzconnpb.CloudConnectRequest) error {
 	dynamicMsg := types.DynamicAny{}
 	err := types.UnmarshalAny(msg.Msg, &dynamicMsg)
@@ -153,6 +160,9 @@ func (m *MessageProcessor) handleMessage(msg *vzconnpb.CloudConnectRequest) erro
 	case *cloudpb.VizierHeartbeat:
 		// TODO(zasgar/michelle): move this to a channel.
 		err = m.handleVizierHeartbeat(msg)
+	case *vzconnpb.TransferLogRequest:
+		// TODO(zasgar/michelle): move this to a channel.
+		err = m.handleLogMessage(msg)
 	default:
 		m.streamLog.
 			WithField("msg", msg.String()).

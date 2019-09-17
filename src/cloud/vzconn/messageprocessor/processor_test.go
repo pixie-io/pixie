@@ -78,6 +78,16 @@ func TestMessageProcessor(t *testing.T) {
 		SequenceNumber: 1,
 	}
 
+	logMessage := &vzconnpb.TransferLogRequest{
+		BatchedLogs: []*vzconnpb.LogMessage{
+			&vzconnpb.LogMessage{
+				Pod: "bar",
+				Svc: "xyz",
+				Log: "log msg",
+			},
+		},
+	}
+
 	tests := []struct {
 		name         string
 		ins          []*vzconnpb.CloudConnectRequest
@@ -146,6 +156,16 @@ func TestMessageProcessor(t *testing.T) {
 					HandleVizierHeartbeat(gomock.Any(), heartbeatReq).
 					Return(heartbeatOKAck, nil)
 			},
+		},
+		{
+			name: "Log message",
+			ins: []*vzconnpb.CloudConnectRequest{
+				mustEnvelopeReq(logMessage, "log"),
+			},
+			expectInErrs:     []error{nil},
+			expectedOuts:     []*vzconnpb.CloudConnectResponse{},
+			expectOutErrs:    []error{},
+			mockExpectations: func(*mock_vzmgrpb.MockVZMgrServiceClient) {},
 		},
 	}
 
