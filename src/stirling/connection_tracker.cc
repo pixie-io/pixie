@@ -548,7 +548,7 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
     // Now parse all the appended events.
     parse_result = parser.ParseMessages(type, &typed_messages, SelectSyncType(stuck_count_));
 
-    if (parse_result.state != ParseState::kEOS && num_events_appended != events_.size()) {
+    if (num_events_appended != events_.size()) {
       // We weren't able to append all events, which means we ran into a missing event.
       // We don't expect missing events to arrive in the future, so just cut our losses.
       // Drop all events up to this point, and then try to resume.
@@ -562,7 +562,7 @@ std::deque<TMessageType>& DataStream::ExtractMessages(MessageType type) {
       // Update stuck count so we use the correct sync type on the next iteration.
       stuck_count_ = 0;
 
-      keep_processing = true;
+      keep_processing = (parse_result.state != ParseState::kEOS);
     } else {
       // We appended all events, which means we had a contiguous stream, with no missing events.
       // Find and erase events that have been fully processed.

@@ -333,10 +333,28 @@ TEST(ParseTest, CompleteMessages) {
   EXPECT_THAT(result.start_positions, ElementsAre(0, msg_a.size(), msg_a.size() + msg_b.size()));
 }
 
-TEST(ParseTest, PartialMessages) {
+TEST(ParseTest, PartialHeader) {
+  // Partial header: Content-type value is missing, and no final \r\n.
   std::string msg =
       "HTTP/1.1 200 OK\r\n"
-      "Content-Length: 40\r\n";
+      "Content-Length: 40\r\n"
+      "Content-Type:";
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result = Parse(MessageType::kResponse, msg, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
+  EXPECT_EQ(0, result.end_position);
+  EXPECT_THAT(parsed_messages, IsEmpty());
+}
+
+TEST(ParseTest, PartialBody) {
+  // Headers are complete but body is not 40 bytes, indicating a partial body.
+  std::string msg =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Length: 40\r\n"
+      "\r\n"
+      "Foo";
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result = Parse(MessageType::kResponse, msg, &parsed_messages);
@@ -929,7 +947,7 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessage) {
 
 TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageNoSync) {
   size_t t = 0;
-  size_t offset = 1;
+  size_t offset = 4;
 
   std::string partial_http_get_req0(kHTTPGetReq0.substr(offset, kHTTPGetReq0.length()));
   parser_.Append(partial_http_get_req0, ++t);

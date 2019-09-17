@@ -230,15 +230,19 @@ ParseState ParseBody(std::string_view* buf, HTTPMessage* result) {
   // TODO(yzhao): For now we just accumulate messages, let probe_close() submit a message to
   // perf buffer, so that we can terminate such messages.
   if (!buf->empty()) {
+    // Currently, we output the parsed message with a potentially partial body.
+    // Only the body that is present at the time is emitted, since we don't
+    // know if the data is actually complete or not without a length.
+
     // TODO(yzhao): This assignment overwrites the default value "-". We should move the setting of
     // default value outside of HTTP message parsing and into appending HTTP messages to record
     // batch.
     result->http_msg_body = *buf;
     buf->remove_prefix(buf->size());
-    LOG(WARNING)
-        << "HTTP message with no Content-Length or Transfer-Encoding is not fully supported.";
+    LOG(WARNING) << "HTTP message with no Content-Length or Transfer-Encoding may produce "
+                    "incomplete message bodies.";
     // TODO(yzhao/oazizi): Revisit the implementation of this case.
-    return ParseState::kInvalid;
+    return ParseState::kSuccess;
   }
 
   LOG(WARNING) << "Could not figure out how to extract body" << std::endl;
