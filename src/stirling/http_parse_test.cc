@@ -229,14 +229,19 @@ HTTPMessage HTTPResp2ExpectedMessage() {
   return expected_message;
 }
 
-// Leave http_msg_body set by caller.
-HTTPMessage EmptyChunkedHTTPResp() {
+HTTPMessage EmptyHTTPResp() {
   HTTPMessage result;
   result.type = MessageType::kResponse;
   result.http_minor_version = 1;
-  result.http_headers = {{"Transfer-Encoding", "chunked"}};
   result.http_resp_status = 200;
   result.http_resp_message = "OK";
+  return result;
+}
+
+// Leave http_msg_body set by caller.
+HTTPMessage EmptyChunkedHTTPResp() {
+  HTTPMessage result = EmptyHTTPResp();
+  result.http_headers = {{"Transfer-Encoding", "chunked"}};
   return result;
 }
 
@@ -569,21 +574,48 @@ TEST_F(HTTPParserTest, ParseIncompleteChunks) {
   EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
 }
 
-TEST_F(HTTPParserTest, DISABLED_ParseMessagesWithoutLengthOrChunking) {
+// Note that many other tests already use requests with no content-length,
+// but keeping this explicitly here in case the other tests change.
+TEST_F(HTTPParserTest, ParseRequestWithoutLengthOrChunking) {
+  std::string msg1 =
+      "HEAD /foo.html HTTP/1.1\r\n"
+      "Host: www.pixielabs.ai\r\n"
+      "Accept: image/gif, image/jpeg, */*\r\n"
+      "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+      "\r\n";
+
+  parser_.Append(msg1, 0);
+
+  HTTPMessage expected_message;
+  expected_message.type = MessageType::kRequest;
+  expected_message.http_minor_version = 1;
+  expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
+                                   {"Accept", "image/gif, image/jpeg, */*"},
+                                   {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
+  expected_message.http_req_method = "GET";
+  expected_message.http_req_path = "/index.html";
+  expected_message.http_msg_body = "-";
+
+  std::deque<HTTPMessage> parsed_messages;
+  ParseResult result = parser_.ParseMessages(MessageType::kRequest, &parsed_messages);
+
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(expected_message));
+}
+
+// When a response has no content-length or transfer-encoding,
+// and it is not one of a set of known status codes with known bodies,
+// then we capture as much data as is available at the time.
+TEST_F(HTTPParserTest, ParseResponseWithoutLengthOrChunking) {
   std::string msg1 =
       "HTTP/1.1 200 OK\r\n"
       "\r\n"
-      "pixielabs ";
-  std::string msg2 = "is ";
-  std::string msg3 = "awesome!";
+      "pixielabs is aweso";
 
-  HTTPMessage expected_message = EmptyChunkedHTTPResp();
-  expected_message.http_headers.clear();
-  expected_message.http_msg_body = "pixielabs is awesome!";
+  HTTPMessage expected_message = EmptyHTTPResp();
+  expected_message.http_msg_body = "pixielabs is aweso";
 
   parser_.Append(msg1, 0);
-  parser_.Append(msg2, 1);
-  parser_.Append(msg3, 2);
 
   std::deque<HTTPMessage> parsed_messages;
   ParseResult result = parser_.ParseMessages(MessageType::kResponse, &parsed_messages);

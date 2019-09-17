@@ -182,12 +182,14 @@ ParseState ParseBody(std::string_view* buf, HTTPMessage* result) {
   // Case 3: Message has content, but no Content-Length or Transfer-Encoding.
 
   // Case 3A: Requests where we can assume no body.
-  // An HTTP GET with no Content-Length and no Transfer-Encoding should not have a body when no
-  // Content-Length or Transfer-Encoding is set:
+  // An HTTP request with no Content-Length and no Transfer-Encoding should not have a body when
+  // no Content-Length or Transfer-Encoding is set:
   // "A user agent SHOULD NOT send a Content-Length header field when the request message does
   // not contain a payload body and the method semantics do not anticipate such a body."
-  // TODO(oazizi): Are there more requests where we can assume no body?
-  if (result->http_req_method == "GET") {
+  //
+  // We apply this to all methods, since we have no better strategy in other cases.
+  // TODO(oazizi): Revisit this strategy if we see problems.
+  if (result->type == MessageType::kRequest) {
     result->http_msg_body = "";
     return ParseState::kSuccess;
   }
@@ -223,8 +225,9 @@ ParseState ParseBody(std::string_view* buf, HTTPMessage* result) {
     return ParseState::kSuccess;
   }
 
-  // Case 3C: Message has content, but no Content-Length or Transfer-Encoding, but there might be a
-  // body, so should wait for close(). According to HTTP/1.1 standard:
+  // Case 3C: Response where we can't assume no body, but where  no Content-Length or
+  // Transfer-Encoding is provided. In these cases we should wait for close().
+  // According to HTTP/1.1 standard:
   // https://www.w3.org/Protocols/HTTP/1.0/draft-ietf-http-spec.html#BodyLength
   // such messages are terminated by the close of the connection.
   // TODO(yzhao): For now we just accumulate messages, let probe_close() submit a message to
