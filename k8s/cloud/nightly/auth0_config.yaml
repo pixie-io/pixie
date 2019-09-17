@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-auth0-config
+data:
+  PL_AUTH0_CLIENT_ID: muOnA4Js2norhw57nl9PwfoSazGV7O3X
