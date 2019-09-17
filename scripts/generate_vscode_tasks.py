@@ -177,7 +177,8 @@ def main():
         'command': 'python',
         'args': [
             '${workspaceFolder}/scripts/generate_vscode_tasks.py',
-            '--lldb'
+            '--lldb',
+            '--all_output',
         ],
         'group': 'build'
     }]

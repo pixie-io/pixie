@@ -392,7 +392,7 @@ Status Controller::InitThrowaway() {
   auto relation_info_vec = ConvertSubscribePBToRelationInfo(subscribe_pb);
   for (const auto& relation_info : relation_info_vec) {
     PL_RETURN_IF_ERROR(
-        table_store_->AddTable(relation_info.name, relation_info.id,
+        table_store_->AddTable(relation_info.id, relation_info.name,
                                std::make_shared<table_store::Table>(relation_info.relation)));
   }
   return Status::OK();
