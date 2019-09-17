@@ -1,5 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+replicas:
 - name: api-server
   count: 3
 - name: auth-server
@@ -14,3 +15,5 @@ kind: Kustomization
   count: 3
 resources:
 - ../base
+patchesStrategicMerge:
+- domain_config.yaml
