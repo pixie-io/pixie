@@ -28,7 +28,12 @@ namespace http2 {
 
 using u8string = std::basic_string<uint8_t>;
 using u8string_view = std::basic_string_view<uint8_t>;
-// TODO(oazizi/yzhao): HTTP headers are case insensitive. Add support.
+
+// Note that NVMap keys (HTTP2 header field names) are assumed to be lowercase to match spec:
+//
+// From https://http2.github.io/http2-spec/#HttpHeaders:
+// ... header field names MUST be converted to lowercase prior to their encoding in HTTP/2.
+// A request or response containing uppercase header field names MUST be treated as malformed.
 using NVMap = std::multimap<std::string, std::string>;
 
 /**
