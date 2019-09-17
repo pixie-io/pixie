@@ -240,6 +240,134 @@ class UPIDToServiceNameUDF : public ScalarUDF {
   }
 };
 
+/**
+ * @brief Returns the service names for the given pod ID.
+ */
+class PodIDToServiceNameUDF : public ScalarUDF {
+ public:
+  types::StringValue Exec(FunctionContext* ctx, types::StringValue pod_id) {
+    auto md = GetMetadataState(ctx);
+
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+
+    std::vector<std::string> running_service_names;
+    for (const auto& service_id : pod_info->services()) {
+      auto service_info = md->k8s_metadata_state().ServiceInfoByID(service_id);
+      if (service_info == nullptr) {
+        continue;
+      }
+      if (service_info->stop_time_ns() == 0) {
+        running_service_names.push_back(
+            absl::Substitute("$0/$1", service_info->ns(), service_info->name()));
+      }
+    }
+    return UPIDToK8S::StringifyVector(running_service_names);
+  }
+};
+
+/**
+ * @brief Returns the service ids for the given pod ID.
+ */
+class PodIDToServiceIDUDF : public ScalarUDF {
+ public:
+  types::StringValue Exec(FunctionContext* ctx, types::StringValue pod_id) {
+    auto md = GetMetadataState(ctx);
+
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+
+    std::vector<std::string> running_service_ids;
+    for (const auto& service_id : pod_info->services()) {
+      auto service_info = md->k8s_metadata_state().ServiceInfoByID(service_id);
+      if (service_info == nullptr) {
+        continue;
+      }
+      if (service_info->stop_time_ns() == 0) {
+        running_service_ids.push_back(service_id);
+      }
+    }
+    return UPIDToK8S::StringifyVector(running_service_ids);
+  }
+};
+
+/**
+ * @brief Returns the service names for the given pod name.
+ */
+class PodNameToServiceNameUDF : public ScalarUDF {
+ public:
+  types::StringValue Exec(FunctionContext* ctx, types::StringValue pod_name) {
+    auto md = GetMetadataState(ctx);
+
+    // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
+    std::vector<std::string_view> name_parts = absl::StrSplit(pod_name, "/");
+    if (name_parts.size() != 2) {
+      return "";
+    }
+
+    auto pod_name_view = std::make_pair(name_parts[0], name_parts[1]);
+    auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
+
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+
+    std::vector<std::string> running_service_names;
+    for (const auto& service_id : pod_info->services()) {
+      auto service_info = md->k8s_metadata_state().ServiceInfoByID(service_id);
+      if (service_info == nullptr) {
+        continue;
+      }
+      if (service_info->stop_time_ns() == 0) {
+        running_service_names.push_back(
+            absl::Substitute("$0/$1", service_info->ns(), service_info->name()));
+      }
+    }
+    return UPIDToK8S::StringifyVector(running_service_names);
+  }
+};
+
+/**
+ * @brief Returns the service ids for the given pod name.
+ */
+class PodNameToServiceIDUDF : public ScalarUDF {
+ public:
+  types::StringValue Exec(FunctionContext* ctx, types::StringValue pod_name) {
+    auto md = GetMetadataState(ctx);
+
+    // This UDF expects the pod name to be in the format of "<ns>/<pod-name>".
+    std::vector<std::string_view> name_parts = absl::StrSplit(pod_name, "/");
+    if (name_parts.size() != 2) {
+      return "";
+    }
+
+    auto pod_name_view = std::make_pair(name_parts[0], name_parts[1]);
+    auto pod_id = md->k8s_metadata_state().PodIDByName(pod_name_view);
+
+    const auto* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+
+    std::vector<std::string> running_service_ids;
+    for (const auto& service_id : pod_info->services()) {
+      auto service_info = md->k8s_metadata_state().ServiceInfoByID(service_id);
+      if (service_info == nullptr) {
+        continue;
+      }
+      if (service_info->stop_time_ns() == 0) {
+        running_service_ids.push_back(service_id);
+      }
+    }
+    return UPIDToK8S::StringifyVector(running_service_ids);
+  }
+};
+
 void RegisterMetadataOpsOrDie(pl::carnot::udf::ScalarUDFRegistry* registry);
 
 }  // namespace metadata

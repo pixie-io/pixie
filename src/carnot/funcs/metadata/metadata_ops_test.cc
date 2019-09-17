@@ -174,6 +174,7 @@ TEST_F(MetadataOpsTest, upid_to_service_id_test_multiple_services) {
   EXPECT_THAT(udf.Exec(function_ctx.get(), upid1),
               AnyOf("[\"3_uid\",\"5_uid\"]", "[\"5_uid\",\"3_uid\"]"));
 }
+
 TEST_F(MetadataOpsTest, upid_to_service_name_test_multiple_services) {
   updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
@@ -184,6 +185,48 @@ TEST_F(MetadataOpsTest, upid_to_service_name_test_multiple_services) {
   EXPECT_THAT(udf.Exec(function_ctx.get(), upid1),
               AnyOf("[\"pl/running_service\",\"pl/other_service_with_pod\"]",
                     "[\"pl/other_service_with_pod\",\"pl/running_service\"]"));
+}
+
+TEST_F(MetadataOpsTest, pod_id_to_service_name_test_multiple_services) {
+  updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
+  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
+                                                               updates_.get()));
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  PodIDToServiceNameUDF udf;
+  EXPECT_THAT(udf.Exec(function_ctx.get(), "1_uid"),
+              AnyOf("[\"pl/running_service\",\"pl/other_service_with_pod\"]",
+                    "[\"pl/other_service_with_pod\",\"pl/running_service\"]"));
+}
+
+TEST_F(MetadataOpsTest, pod_id_to_service_id_test_multiple_services) {
+  updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
+  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
+                                                               updates_.get()));
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  PodIDToServiceIDUDF udf;
+  EXPECT_THAT(udf.Exec(function_ctx.get(), "1_uid"),
+              AnyOf("[\"3_uid\",\"5_uid\"]", "[\"5_uid\",\"3_uid\"]"));
+}
+
+TEST_F(MetadataOpsTest, pod_name_to_service_name_test_multiple_services) {
+  updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
+  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
+                                                               updates_.get()));
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  PodNameToServiceNameUDF udf;
+  EXPECT_THAT(udf.Exec(function_ctx.get(), "pl/running_pod"),
+              AnyOf("[\"pl/running_service\",\"pl/other_service_with_pod\"]",
+                    "[\"pl/other_service_with_pod\",\"pl/running_service\"]"));
+}
+
+TEST_F(MetadataOpsTest, pod_name_to_service_id_test_multiple_services) {
+  updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
+  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
+                                                               updates_.get()));
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  PodNameToServiceIDUDF udf;
+  EXPECT_THAT(udf.Exec(function_ctx.get(), "pl/running_pod"),
+              AnyOf("[\"3_uid\",\"5_uid\"]", "[\"5_uid\",\"3_uid\"]"));
 }
 
 }  // namespace metadata
