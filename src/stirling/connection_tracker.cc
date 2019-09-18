@@ -220,8 +220,8 @@ std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessagesI
     return {};
   }
 
-  std::map<uint32_t, std::vector<http2::GRPCMessage>> reqs;
-  std::map<uint32_t, std::vector<http2::GRPCMessage>> resps;
+  std::map<uint32_t, http2::GRPCMessage> reqs;
+  std::map<uint32_t, http2::GRPCMessage> resps;
 
   DataStream* req_stream = req_data();
   DataStream* resp_stream = resp_data();
@@ -230,8 +230,10 @@ std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessagesI
   auto& resp_messages = resp_stream->Messages<http2::Frame>();
 
   // First stitch all frames to form gRPC messages.
-  StitchGRPCStreamFrames(req_messages, req_stream->Inflater(), &reqs);
-  StitchGRPCStreamFrames(resp_messages, resp_stream->Inflater(), &resps);
+  ParseState req_stitch_state =
+      StitchFramesToGRPCMessages(req_messages, req_stream->Inflater(), &reqs);
+  ParseState resp_stitch_state =
+      StitchFramesToGRPCMessages(resp_messages, resp_stream->Inflater(), &resps);
 
   std::vector<http2::GRPCReqResp> records = MatchGRPCReqResp(std::move(reqs), std::move(resps));
 
@@ -245,6 +247,24 @@ std::vector<ReqRespPair<http2::GRPCMessage>> ConnectionTracker::ProcessMessagesI
 
   http2::EraseConsumedFrames(&req_messages);
   http2::EraseConsumedFrames(&resp_messages);
+
+  // Reset streams, if necessary, after erasing the consumed frames. Otherwise, frames will be
+  // deleted twice.
+  if (req_stitch_state != ParseState::kSuccess) {
+    LOG(ERROR) << "Failed to stitch frames to gRPC messages, indicating fatal errors, "
+                  "resetting the request stream ...";
+    // TODO(PL-916): We observed that if messages are truncated, some repeating bytes sequence
+    // in the http2 traffic is wrongly recognized as frame headers. We need to recognize truncated
+    // events and try to recover from it, instead of relying stream recovery.
+    // TODO(yzhao): Add an e2e test of the stream resetting behavior on SocketTraceConnector without
+    // using the gRPC test fixtures, i.e., prepare raw events and feed into SocketTraceConnector.
+    req_stream->Reset();
+  }
+  if (resp_stitch_state != ParseState::kSuccess) {
+    LOG(ERROR) << "Failed to stitch frames to gRPC messages, indicating fatal errors, "
+                  "resetting the response stream ...";
+    resp_stream->Reset();
+  }
 
   return trace_records;
 }

@@ -1,10 +1,15 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sys/socket.h>
 
+#include "src/common/base/const_types.h"
 #include "src/stirling/connection_tracker.h"
 
 namespace pl {
 namespace stirling {
+
+using ::testing::IsEmpty;
+using ::testing::SizeIs;
 
 class ConnectionTrackerTest : public ::testing::Test {
  protected:
@@ -35,28 +40,37 @@ class ConnectionTrackerTest : public ::testing::Test {
   }
 
   std::unique_ptr<SocketDataEvent> InitSendEvent(std::string_view msg) {
-    std::unique_ptr<SocketDataEvent> event = InitDataEvent(TrafficDirection::kEgress, msg);
-    event->attr.seq_num = send_seq_num_;
-    send_seq_num_++;
-    return event;
+    return InitDataEvent(TrafficDirection::kEgress, TrafficProtocol::kProtocolHTTP, send_seq_num_++,
+                         msg);
   }
 
   std::unique_ptr<SocketDataEvent> InitRecvEvent(std::string_view msg) {
-    std::unique_ptr<SocketDataEvent> event = InitDataEvent(TrafficDirection::kIngress, msg);
-    event->attr.seq_num = recv_seq_num_;
-    recv_seq_num_++;
-    return event;
+    return InitDataEvent(TrafficDirection::kIngress, TrafficProtocol::kProtocolHTTP,
+                         recv_seq_num_++, msg);
   }
 
-  std::unique_ptr<SocketDataEvent> InitDataEvent(TrafficDirection direction, std::string_view msg) {
+  std::unique_ptr<SocketDataEvent> InitHTTP2SendEvent(std::string_view msg) {
+    return InitDataEvent(TrafficDirection::kEgress, TrafficProtocol::kProtocolHTTP2,
+                         send_seq_num_++, msg);
+  }
+
+  std::unique_ptr<SocketDataEvent> InitHTTP2RecvEvent(std::string_view msg) {
+    return InitDataEvent(TrafficDirection::kIngress, TrafficProtocol::kProtocolHTTP2,
+                         recv_seq_num_++, msg);
+  }
+
+  std::unique_ptr<SocketDataEvent> InitDataEvent(TrafficDirection direction,
+                                                 TrafficProtocol protocol, uint64_t seq_num,
+                                                 std::string_view msg) {
     socket_data_event_t event = {};
     event.attr.direction = direction;
-    event.attr.traffic_class.protocol = kProtocolHTTP;
+    event.attr.traffic_class.protocol = protocol;
     event.attr.traffic_class.role = kRoleRequestor;
     event.attr.timestamp_ns = ++current_ts_ns_;
     event.attr.conn_id.pid = kPID;
     event.attr.conn_id.fd = kFD;
     event.attr.conn_id.generation = kPIDFDGeneration;
+    event.attr.seq_num = seq_num;
     event.attr.msg_size = msg.size();
     msg.copy(event.msg, msg.size());
     return std::make_unique<SocketDataEvent>(&event);
@@ -128,6 +142,9 @@ class ConnectionTrackerTest : public ::testing::Test {
       "Upgrade: websocket\r\n"
       "Connection: Upgrade\r\n"
       "\r\n";
+
+  ConstStrView kHTTP2EndStreamHeadersFrame = "\x0\x0\x0\x1\x5\x0\x0\x0\x1";
+  ConstStrView kHTTP2EndStreamDataFrame = "\x0\x0\x0\x0\x1\x0\x0\x0\x1";
 };
 
 TEST_F(ConnectionTrackerTest, timestamp_test) {
@@ -645,6 +662,45 @@ TEST_F(ConnectionTrackerTest, stats_counter) {
 
   tracker.IncrementStat(ConnectionTracker::CountStats::kDataEvent);
   EXPECT_EQ(2, tracker.Stat(ConnectionTracker::CountStats::kDataEvent));
+}
+
+TEST_F(ConnectionTrackerTest, HTTP2ResetAfterStitchFailure) {
+  ConnectionTracker tracker;
+
+  auto frame0 = InitHTTP2RecvEvent(kHTTP2EndStreamHeadersFrame);
+  auto frame1 = InitHTTP2RecvEvent(kHTTP2EndStreamHeadersFrame);
+
+  auto frame2 = InitHTTP2SendEvent(kHTTP2EndStreamDataFrame);
+  auto frame3 = InitHTTP2SendEvent(kHTTP2EndStreamDataFrame);
+
+  auto frame4 = InitHTTP2RecvEvent(kHTTP2EndStreamHeadersFrame);
+  auto frame5 = InitHTTP2SendEvent(kHTTP2EndStreamDataFrame);
+
+  tracker.AddDataEvent(std::move(frame0));
+  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  EXPECT_THAT(tracker.resp_messages<http2::Frame>(), SizeIs(1));
+
+  tracker.AddDataEvent(std::move(frame1));
+  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  // Now we see two END_STREAM headers frame on stream ID 1, then that translate to 2 gRPC
+  // response messages. That failure will cause stream being reset.
+  EXPECT_THAT(tracker.resp_messages<http2::Frame>(), IsEmpty());
+
+  tracker.AddDataEvent(std::move(frame2));
+  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  EXPECT_THAT(tracker.req_messages<http2::Frame>(), SizeIs(1));
+
+  tracker.AddDataEvent(std::move(frame3));
+  tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  // Ditto.
+  EXPECT_THAT(tracker.req_messages<http2::Frame>(), IsEmpty());
+
+  // Add a call to make sure things do not go haywire after resetting stream.
+  tracker.AddDataEvent(std::move(frame4));
+  tracker.AddDataEvent(std::move(frame5));
+  auto req_resp_pairs = tracker.ProcessMessages<ReqRespPair<http2::GRPCMessage>>();
+  // These 2 messages forms a matching req & resp.
+  EXPECT_THAT(req_resp_pairs, SizeIs(1));
 }
 
 TEST(DataStreamTest, CannotSwitchType) {

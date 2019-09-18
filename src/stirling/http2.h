@@ -118,14 +118,15 @@ struct GRPCMessage {
 };
 
 /*
- * @brief Stitches frames as either request or response. Also removes consumed frames.
+ * @brief Stitches frames as either request or response. Also marks the consumed frames.
+ * You must then erase the consumed frames afterwards.
  *
  * @param frames The frames for gRPC request or response messages.
  * @param stream_msgs The gRPC messages for each stream, keyed by stream ID. Note this is HTTP2
  * stream ID, not our internal stream ID for TCP connections.
  */
-void StitchGRPCStreamFrames(const std::deque<Frame>& frames, Inflater* inflater,
-                            std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs);
+ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames, Inflater* inflater,
+                                      std::map<uint32_t, GRPCMessage>* stream_msgs);
 
 /**
  * @brief A convenience holder of gRPC req & resp.
@@ -140,8 +141,8 @@ struct GRPCReqResp {
  * @brief Matchs req & resp GRPCMessage of the same streams. The input arguments are moved to the
  * returned result.
  */
-std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, std::vector<GRPCMessage>> reqs,
-                                          std::map<uint32_t, std::vector<GRPCMessage>> resps);
+std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, GRPCMessage> reqs,
+                                          std::map<uint32_t, GRPCMessage> resps);
 
 inline void EraseConsumedFrames(std::deque<Frame>* frames) {
   frames->erase(

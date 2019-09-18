@@ -106,23 +106,21 @@ TEST(UnpackFramesTest, ResultsAreAsExpected) {
 }
 
 // Returns a vector of single GRPCMessage constructed from the input.
-std::vector<GRPCMessage> GRPCMsgs(MessageType type, std::string_view msg, NVMap headers) {
+GRPCMessage GRPCMsg(MessageType type, std::string_view msg, NVMap headers) {
   GRPCMessage res;
   res.type = type;
   res.message = msg;
   res.headers = std::move(headers);
-  return {std::move(res)};
+  return res;
 }
 
 MATCHER_P2(HasMsgAndHdrs, msg, hdrs, "") { return arg.message == msg && arg.headers == hdrs; }
 
 TEST(MatchGRPCReqRespTest, InputsAreMoved) {
-  std::map<uint32_t, std::vector<GRPCMessage>> reqs{
-      {1u, GRPCMsgs(MessageType::kRequest, "a", {{"h1", "v1"}})},
-      {2u, GRPCMsgs(MessageType::kRequest, "b", {{"h2", "v2"}})}};
-  std::map<uint32_t, std::vector<GRPCMessage>> resps{
-      {0u, GRPCMsgs(MessageType::kResponse, "c", {{"h3", "v3"}})},
-      {1u, GRPCMsgs(MessageType::kResponse, "d", {{"h4", "v4"}})}};
+  std::map<uint32_t, GRPCMessage> reqs{{1u, GRPCMsg(MessageType::kRequest, "a", {{"h1", "v1"}})},
+                                       {2u, GRPCMsg(MessageType::kRequest, "b", {{"h2", "v2"}})}};
+  std::map<uint32_t, GRPCMessage> resps{{0u, GRPCMsg(MessageType::kResponse, "c", {{"h3", "v3"}})},
+                                        {1u, GRPCMsg(MessageType::kResponse, "d", {{"h4", "v4"}})}};
 
   std::vector<GRPCReqResp> matched_msgs = MatchGRPCReqResp(std::move(reqs), std::move(resps));
   ASSERT_THAT(matched_msgs, SizeIs(1));
@@ -157,44 +155,44 @@ std::string PackDataFrame(std::string_view msg, uint8_t flags, uint32_t stream_i
   return res;
 }
 
-TEST(StitchGRPCStreamFramesTest, StitchReqsRespsOfDifferentStreams) {
+TEST(StitchFramesToGRPCMessagesTest, StitchReqsRespsOfDifferentStreams) {
   Inflater inflater;
   std::string input =
       absl::StrCat(PackEmptyHeadersFrame(NGHTTP2_FLAG_END_HEADERS, 1),
                    PackEmptyHeadersFrame(NGHTTP2_FLAG_END_HEADERS, 2), PackDataFrame("abcd", 0, 1),
                    PackDataFrame("abcd", NGHTTP2_FLAG_END_STREAM, 2),
                    PackEmptyHeadersFrame(NGHTTP2_FLAG_END_HEADERS | NGHTTP2_FLAG_END_STREAM, 1));
-  std::map<uint32_t, std::vector<GRPCMessage>> stream_msgs;
+  std::map<uint32_t, GRPCMessage> stream_msgs;
   std::deque<Frame> frames;
   ParseResult<size_t> res = Parse(MessageType::kUnknown, input, &frames);
   EXPECT_EQ(ParseState::kSuccess, res.state);
   ASSERT_THAT(frames, SizeIs(5));
 
-  StitchGRPCStreamFrames(frames, &inflater, &stream_msgs);
+  StitchFramesToGRPCMessages(frames, &inflater, &stream_msgs);
   // There should be one gRPC request and response.
-  ASSERT_THAT(stream_msgs, ElementsAre(Pair(1, SizeIs(1)), Pair(2, SizeIs(1))));
+  ASSERT_THAT(stream_msgs, ElementsAre(Pair(1, _), Pair(2, _)));
 
-  const GRPCMessage& req_msg = stream_msgs[2][0];
+  const GRPCMessage& req_msg = stream_msgs[2];
   EXPECT_EQ(MessageType::kRequest, req_msg.type);
   EXPECT_EQ("abcd", req_msg.message);
   EXPECT_THAT(req_msg.frames, ElementsAre(&frames[1], &frames[3]));
 
-  const GRPCMessage& resp_msg = stream_msgs[1][0];
+  const GRPCMessage& resp_msg = stream_msgs[1];
   EXPECT_EQ(MessageType::kResponse, resp_msg.type);
   EXPECT_EQ("abcd", resp_msg.message);
   // Note we put the HEADERS frames first, and then DATA frames.
   EXPECT_THAT(resp_msg.frames, ElementsAre(&frames[0], &frames[4], &frames[2]));
 }
 
-TEST(StitchGRPCStreamFramesTest, InCompleteMessage) {
+TEST(StitchFramesToGRPCMessagesTest, InCompleteMessage) {
   Inflater inflater;
   std::string input =
       absl::StrCat(PackEmptyHeadersFrame(NGHTTP2_FLAG_END_HEADERS, 1), PackDataFrame("abcd", 0, 2));
   std::deque<Frame> frames;
   ParseResult<size_t> res = Parse(MessageType::kUnknown, input, &frames);
   EXPECT_EQ(ParseState::kSuccess, res.state);
-  std::map<uint32_t, std::vector<GRPCMessage>> stream_msgs;
-  StitchGRPCStreamFrames(frames, &inflater, &stream_msgs);
+  std::map<uint32_t, GRPCMessage> stream_msgs;
+  StitchFramesToGRPCMessages(frames, &inflater, &stream_msgs);
   EXPECT_THAT(stream_msgs, IsEmpty()) << "There is no END_STREAM in frames, so there is no data";
 }
 

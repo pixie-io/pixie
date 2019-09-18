@@ -174,6 +174,12 @@ ParseState UnpackFrame(std::string_view* buf, Frame* frame) {
 
   const uint8_t* u8_buf = reinterpret_cast<const uint8_t*>(buf->data());
   nghttp2_frame_unpack_frame_hd(&frame->frame.hd, u8_buf);
+  // HTTP2 spec specifies a maximal frame size. Any frames that is larger than that should be
+  // considered a parse failure, which usually is caused by losing track of the frame boundary.
+  constexpr int kMaxFrameSize = (1 << 24) - 1;
+  if (frame->frame.hd.length > kMaxFrameSize) {
+    return ParseState::kInvalid;
+  }
 
   if (buf->size() < kFrameHeaderSizeInBytes + frame->frame.hd.length) {
     return ParseState::kNeedsMoreData;
@@ -321,8 +327,8 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
 
 }  // namespace
 
-void StitchGRPCStreamFrames(const std::deque<Frame>& frames, Inflater* inflater,
-                            std::map<uint32_t, std::vector<GRPCMessage>>* stream_msgs) {
+ParseState StitchFramesToGRPCMessages(const std::deque<Frame>& frames, Inflater* inflater,
+                                      std::map<uint32_t, GRPCMessage>* stream_msgs) {
   std::map<uint32_t, std::vector<const Frame*>> stream_frames;
 
   // Collect frames for each stream.
@@ -335,12 +341,16 @@ void StitchGRPCStreamFrames(const std::deque<Frame>& frames, Inflater* inflater,
     if (msgs.empty()) {
       continue;
     }
-    stream_msgs->emplace(stream_id, std::move(msgs));
+    if (msgs.size() > 1) {
+      return ParseState::kInvalid;
+    }
+    stream_msgs->emplace(stream_id, std::move(msgs[0]));
   }
+  return ParseState::kSuccess;
 }
 
-std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, std::vector<GRPCMessage>> reqs,
-                                          std::map<uint32_t, std::vector<GRPCMessage>> resps) {
+std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, GRPCMessage> reqs,
+                                          std::map<uint32_t, GRPCMessage> resps) {
   std::vector<GRPCReqResp> res;
 
   // Treat 2 maps as 2 lists ordered according to stream ID, then merge on common stream IDs.
@@ -350,19 +360,13 @@ std::vector<GRPCReqResp> MatchGRPCReqResp(std::map<uint32_t, std::vector<GRPCMes
     const uint32_t req_stream_id = req_iter->first;
     const uint32_t resp_stream_id = resp_iter->first;
 
-    std::vector<GRPCMessage>& stream_reqs = req_iter->second;
-    std::vector<GRPCMessage>& stream_resps = resp_iter->second;
-    LOG_IF(ERROR, stream_reqs.size() != 1)
-        << "Each stream should have exactly one request, stream ID: " << req_stream_id
-        << " got: " << stream_reqs.size();
-    LOG_IF(ERROR, stream_resps.size() != 1)
-        << "Each stream should have exactly one response, stream ID: " << resp_stream_id
-        << " got: " << stream_resps.size();
+    GRPCMessage& stream_req = req_iter->second;
+    GRPCMessage& stream_resp = resp_iter->second;
     if (req_stream_id == resp_stream_id) {
-      LOG_IF(DFATAL, stream_reqs.front().type == stream_resps.front().type)
+      LOG_IF(DFATAL, stream_req.type == stream_resp.type)
           << "gRPC messages from two streams should be different, got the same type: "
-          << static_cast<int>(stream_reqs.front().type);
-      res.push_back(GRPCReqResp{std::move(stream_reqs.front()), std::move(stream_resps.front())});
+          << static_cast<int>(stream_req.type);
+      res.push_back(GRPCReqResp{std::move(stream_req), std::move(stream_resp)});
       ++req_iter;
       ++resp_iter;
     } else if (req_stream_id < resp_stream_id) {
@@ -616,16 +620,17 @@ ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
                           std::deque<http2::Frame>* frames) {
   PL_UNUSED(unused_type);
 
-  std::vector<size_t> start_position;
-  const size_t buf_size = buf.size();
-  ParseState s = ParseState::kSuccess;
-
   // Note that HTTP2 connection preface, or MAGIC as used in nghttp2, must be at the beginning of
   // the stream. The following tries to detect complete or partial connection preface.
   if (buf.size() < NGHTTP2_CLIENT_MAGIC_LEN &&
       buf == std::string_view(NGHTTP2_CLIENT_MAGIC, buf.size())) {
     return {{}, 0, ParseState::kNeedsMoreData};
   }
+
+  std::vector<size_t> start_position;
+  const size_t buf_size = buf.size();
+  ParseState s = ParseState::kSuccess;
+
   if (absl::StartsWith(buf, NGHTTP2_CLIENT_MAGIC)) {
     buf.remove_prefix(NGHTTP2_CLIENT_MAGIC_LEN);
   }
@@ -634,13 +639,14 @@ ParseResult<size_t> Parse(MessageType unused_type, std::string_view buf,
     const size_t frame_begin = buf_size - buf.size();
     http2::Frame frame;
     s = UnpackFrame(&buf, &frame);
-    if (s == ParseState::kNeedsMoreData) {
-      break;
-    }
     if (s == ParseState::kIgnored) {
       // Even if the last frame is ignored, the parse is still successful.
       s = ParseState::kSuccess;
       continue;
+    }
+    if (s != ParseState::kSuccess) {
+      // For any other non-success states, stop and exit.
+      break;
     }
     DCHECK(s == ParseState::kSuccess);
     start_position.push_back(frame_begin);

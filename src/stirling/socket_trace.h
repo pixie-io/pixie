@@ -25,6 +25,7 @@ namespace stirling {
  * BPF. That's a minor difference to the ordinary struct hack.
  */
 struct SocketDataEvent {
+  SocketDataEvent() : attr{}, msg{} {}
   explicit SocketDataEvent(const void* data) {
     // Work around the memory alignment issue by using memcopy, instead of structure assignment.
     //
