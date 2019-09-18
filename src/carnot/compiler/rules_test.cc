@@ -22,58 +22,9 @@ using testing::_;
 using testing::ElementsAre;
 using testing::ElementsAreArray;
 
-const char* kExtraScalarUDFs = R"proto(
-scalar_udfs {
-  name: "pl.upid_to_service_id"
-  exec_arg_types: UINT128
-  return_type: STRING
-}
-scalar_udfs {
-  name: "pl.upid_to_service_name"
-  exec_arg_types: UINT128
-  return_type: STRING
-}
-scalar_udfs {
-  name: "pl.service_id_to_service_name"
-  exec_arg_types: STRING
-  return_type: STRING
-}
-scalar_udfs {
-  name: "pl.upid_to_pod_id"
-  exec_arg_types: UINT128
-  return_type: STRING
-}
-scalar_udfs {
-  name: "pl.upid_to_pod_name"
-  exec_arg_types: UINT128
-  return_type: STRING
-}
-scalar_udfs {
-  name: "pl.pod_id_to_pod_name"
-  exec_arg_types: STRING
-  return_type: STRING
-}
-)proto";
 class RulesTest : public OperatorTests {
  protected:
-  void SetUpRegistryInfo() {
-    // TODO(philkuz) replace the following call info_
-    // info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie();
-    auto scalar_udf_registry = std::make_unique<udf::ScalarUDFRegistry>("udf_registry");
-    auto uda_registry = std::make_unique<udf::UDARegistry>("uda_registry");
-    builtins::RegisterBuiltinsOrDie(scalar_udf_registry.get());
-    builtins::RegisterBuiltinsOrDie(uda_registry.get());
-    auto udf_proto = udf::RegistryInfoExporter()
-                         .Registry(*uda_registry)
-                         .Registry(*scalar_udf_registry)
-                         .ToProto();
-
-    std::string new_udf_info = absl::Substitute("$0$1", udf_proto.DebugString(), kExtraScalarUDFs);
-    google::protobuf::TextFormat::MergeFromString(new_udf_info, &udf_proto);
-
-    info_ = std::make_unique<compiler::RegistryInfo>();
-    PL_CHECK_OK(info_->Init(udf_proto));
-  }
+  void SetUpRegistryInfo() { info_ = udfexporter::ExportUDFInfo().ConsumeValueOrDie(); }
   void SetUpImpl() override {
     SetUpRegistryInfo();
 

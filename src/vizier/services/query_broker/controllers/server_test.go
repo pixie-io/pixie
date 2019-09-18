@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
@@ -140,6 +141,12 @@ status{
 			}
 		}
 	}
+}`
+
+const failedCompilerResultFromStatus = `
+status{
+	msg: "failure failure failure"
+	err_code: INVALID_ARGUMENT
 }`
 
 const compilerErrorGroupTxt = `
@@ -548,4 +555,69 @@ func TestCompilerErrorResult(t *testing.T) {
 	}
 	assert.Equal(t, errors.New(proto.MarshalTextString(compilerErrorGroupPB)), err)
 	assert.Equal(t, agentRespPB, result)
+}
+
+func TestErrorInStatusResult(t *testing.T) {
+	// Start NATS.
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	// Set up mocks.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
+
+	getAgentsPB := new(metadatapb.AgentInfoResponse)
+	if err := proto.UnmarshalText(getAgentsResponse, getAgentsPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	mds.
+		EXPECT().
+		GetAgentInfo(context.Background(), &metadatapb.AgentInfoRequest{}).
+		Return(getAgentsPB, nil)
+
+	getSchemaPB := new(metadatapb.SchemaResponse)
+	if err := proto.UnmarshalText(getSchemaResponse, getSchemaPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	mds.
+		EXPECT().
+		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
+		Return(getSchemaPB, nil)
+
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
+		mc := mock_controllers.NewMockExecutor(ctrl)
+		return mc
+	}
+
+	// Set up server.
+	env, err := querybrokerenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	badCompilerResultPB := new(compilerpb.CompilerResult)
+	if err := proto.UnmarshalText(failedCompilerResultFromStatus, badCompilerResultPB); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+
+	compiler := mock_controllers.NewMockCompiler(ctrl)
+	compiler.EXPECT().
+		Compile(getSchemaPB.Schema, badQuery).
+		Return(badCompilerResultPB, nil)
+
+	s, err := newServer(env, mds, nc, createExecutorMock, compiler)
+	_, err = s.ExecuteQuery(context.Background(), &querybrokerpb.QueryRequest{
+		QueryStr: badQuery,
+	})
+
+	assert.Equal(t, fmt.Errorf("Error occurred without line and column: '%s'", badCompilerResultPB.Status.Msg), err)
 }

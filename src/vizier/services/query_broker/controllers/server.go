@@ -143,7 +143,8 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 	if compilerResultPB.Status.ErrCode != statuspb.OK {
 		errorStr, err := formatCompilerError(compilerResultPB.Status)
 		if err != nil {
-			return nil, err
+			log.WithError(err).Errorf("Couldn't get the compiler status for message: %s", proto.MarshalTextString(compilerResultPB.Status))
+			return nil, fmt.Errorf("Error occurred without line and column: '%s'", compilerResultPB.Status.Msg)
 		}
 		return failedStatusQueryResponse(compilerResultPB.Status), fmt.Errorf(errorStr)
 	}

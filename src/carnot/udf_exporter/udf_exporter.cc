@@ -1,4 +1,5 @@
 #include "src/carnot/udf_exporter/udf_exporter.h"
+#include "src/carnot/funcs/metadata/metadata_ops.h"
 namespace pl {
 namespace carnot {
 namespace udfexporter {
@@ -7,6 +8,7 @@ StatusOr<std::unique_ptr<compiler::RegistryInfo>> ExportUDFInfo() {
   auto uda_registry = std::make_unique<udf::UDARegistry>("uda_registry");
   builtins::RegisterBuiltinsOrDie(scalar_udf_registry.get());
   builtins::RegisterBuiltinsOrDie(uda_registry.get());
+  funcs::metadata::RegisterMetadataOpsOrDie(scalar_udf_registry.get());
   auto udf_proto =
       udf::RegistryInfoExporter().Registry(*uda_registry).Registry(*scalar_udf_registry).ToProto();
   auto registry_info = std::make_unique<compiler::RegistryInfo>();

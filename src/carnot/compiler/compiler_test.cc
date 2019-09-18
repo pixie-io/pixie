@@ -11,6 +11,7 @@
 
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/compiler_state.h"
+#include "src/carnot/funcs/metadata/metadata_ops.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
@@ -25,36 +26,6 @@ using planpb::testutils::CompareLogicalPlans;
 using ::testing::_;
 
 const char* kExtraScalarUDFs = R"proto(
-scalar_udfs {
-  name: "pl.upid_to_service_id"
-  exec_arg_types: UINT128
-  return_type: STRING
-}
-scalar_udfs {
-  name: "pl.upid_to_service_name"
-  exec_arg_types: UINT128
-  return_type: STRING
-}
-scalar_udfs {
-  name: "pl.service_id_to_service_name"
-  exec_arg_types: STRING
-  return_type: STRING
-}
-scalar_udfs {
-  name: "pl.upid_to_pod_id"
-  exec_arg_types: UINT128
-  return_type: STRING
-}
-scalar_udfs {
-  name: "pl.upid_to_pod_name"
-  exec_arg_types: UINT128
-  return_type: STRING
-}
-scalar_udfs {
-  name: "pl.pod_id_to_pod_name"
-  exec_arg_types: STRING
-  return_type: STRING
-}
 scalar_udfs {
   name: "pl.equal"
   exec_arg_types: UINT128
@@ -71,6 +42,7 @@ class CompilerTest : public ::testing::Test {
     auto uda_registry = std::make_unique<udf::UDARegistry>("uda_registry");
     builtins::RegisterBuiltinsOrDie(scalar_udf_registry.get());
     builtins::RegisterBuiltinsOrDie(uda_registry.get());
+    funcs::metadata::RegisterMetadataOpsOrDie(scalar_udf_registry.get());
     auto udf_proto = udf::RegistryInfoExporter()
                          .Registry(*uda_registry)
                          .Registry(*scalar_udf_registry)
