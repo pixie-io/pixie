@@ -25,6 +25,16 @@ func DeleteSecret(clientset *kubernetes.Clientset, namespace, name string) {
 	}
 }
 
+// GetSecret gets the secret in kubernetes.
+func GetSecret(clientset *kubernetes.Clientset, namespace, name string) *v1.Secret {
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		log.WithError(err).Info("could not get secret")
+	}
+
+	return secret
+}
+
 // Contents below are copied and modified from
 // https://github.com/kubernetes/kubectl/blob/3874cf79897cfe1e070e592391792658c44b78d4/pkg/generate/versioned/secret.go.
 

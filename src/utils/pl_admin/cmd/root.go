@@ -13,7 +13,7 @@ func init() {
 	pflag.String("ca_cert", "", "Path to CA cert (optional)")
 	pflag.String("ca_key", "", "Path to CA key (optional)")
 	pflag.Int("bit_size", 4096, "Size in bits of the generated key (optional)")
-	// --namespace is also a flag for deploy.
+	// --namespace is also a flag for deploy and download-ca.
 	pflag.String("namespace", "pl", "The namespace to install certs or Pixie K8s secrets to")
 
 	// Flags for deploy.
@@ -27,6 +27,9 @@ func init() {
 
 	// Flags for delete.
 	pflag.Bool("clobber_namespace", false, "Whether to delete all dependencies in the cluster")
+
+	// Flags for download-ca.
+	pflag.String("ca_path", "", "Directory to save the CA in")
 
 	pflag.Parse()
 
@@ -73,6 +76,13 @@ func init() {
 	RootCmd.AddCommand(deleteCmd)
 	deleteCmd.Flags().BoolP("clobber_namespace", "d", false, "Whether to delete all dependencies in the cluster")
 	viper.BindPFlag("clobber_namespace", deleteCmd.Flags().Lookup("clobber_namespace"))
+
+	downloadCACmd := NewCmdDownloadCA()
+	RootCmd.AddCommand(downloadCACmd)
+	downloadCACmd.Flags().StringP("ca_path", "a", "", "The path to download the CA to")
+	viper.BindPFlag("ca_path", downloadCACmd.Flags().Lookup("ca_path"))
+	downloadCACmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
+	viper.BindPFlag("namespace", downloadCACmd.Flags().Lookup("namespace"))
 }
 
 // RootCmd is the base command for Cobra.
