@@ -38,6 +38,7 @@ pl_cc_library(
         "//demos/applications/hipster_shop:cc_library",
         "//src/stirling/mysql:cc_library",
         "//src/shared/metadata:cc_library",
+        "//src/stirling/proto:sock_event_pl_cc_proto",
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": [
             ":bt_files",

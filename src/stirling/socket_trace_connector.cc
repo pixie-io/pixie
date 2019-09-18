@@ -1,6 +1,7 @@
 #ifdef __linux__
 
 #include <google/protobuf/empty.pb.h>
+#include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
 #include <deque>
 #include <utility>
@@ -15,6 +16,7 @@
 #include "src/stirling/http2.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
 #include "src/stirling/mysql_parse.h"
+#include "src/stirling/proto/sock_event.pb.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/utils/linux_headers.h"
 
@@ -34,12 +36,16 @@ DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs, "The process to 
 DEFINE_uint32(stirling_socket_trace_sampling_period_millis, 100,
               "The sampling period, in milliseconds, at which Stirling reads the BPF perf buffers "
               "for events.");
+DEFINE_string(perf_buffer_events_output_path, "",
+              "If not empty, specifies the path to a directory that the socket tracer should "
+              "write the events to Record IO formatted files named after the perf buffer name.");
 
 namespace pl {
 namespace stirling {
 
 using ::google::protobuf::Empty;
 using ::google::protobuf::Message;
+using ::google::protobuf::TextFormat;
 using ::pl::grpc::MethodInputOutput;
 using ::pl::stirling::grpc::PBTextFormat;
 using ::pl::stirling::grpc::PBWireToText;
@@ -63,6 +69,10 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kRoleRequestor));
   PL_RETURN_IF_ERROR(TestOnlySetTargetPID(FLAGS_test_only_socket_trace_target_pid));
 
+  if (!FLAGS_perf_buffer_events_output_path.empty()) {
+    perf_buffer_events_output_stream_ =
+        std::make_unique<std::ofstream>(FLAGS_perf_buffer_events_output_path);
+  }
   return Status::OK();
 }
 
@@ -201,9 +211,33 @@ uint64_t GetConnMapKey(struct conn_id_t conn_id) {
   return (static_cast<uint64_t>(conn_id.pid) << 32) | conn_id.fd;
 }
 
+void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEvent* pb) {
+  pb->mutable_attr()->set_timestamp_ns(event.attr.timestamp_ns);
+  pb->mutable_attr()->mutable_conn_id()->set_pid(event.attr.conn_id.pid);
+  pb->mutable_attr()->mutable_conn_id()->set_start_time_ns(event.attr.conn_id.pid_start_time_ns);
+  pb->mutable_attr()->mutable_conn_id()->set_fd(event.attr.conn_id.fd);
+  pb->mutable_attr()->mutable_conn_id()->set_generation(event.attr.conn_id.generation);
+  pb->mutable_attr()->mutable_traffic_class()->set_protocol(event.attr.traffic_class.protocol);
+  pb->mutable_attr()->mutable_traffic_class()->set_role(event.attr.traffic_class.role);
+  pb->mutable_attr()->set_direction(event.attr.direction);
+  pb->mutable_attr()->set_seq_num(event.attr.seq_num);
+  pb->mutable_attr()->set_msg_size(event.attr.msg_size);
+  pb->set_msg(event.msg);
+}
+
 }  // namespace
 
 void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> event) {
+  if (perf_buffer_events_output_stream_ != nullptr) {
+    sockeventpb::SocketDataEvent pb;
+    SocketDataEventToPB(*event, &pb);
+    std::string text;
+    // TextFormat::Print() can print to a stream. That complicates things a bit, and we opt not to
+    // do that as this is for debugging.
+    TextFormat::PrintToString(pb, &text);
+    // TextFormat already output a \n, so no need to do it here.
+    *perf_buffer_events_output_stream_ << text;
+  }
   LOG_IF(ERROR, event->attr.msg_size > event->msg.size())
       << "Message truncated, original size: " << event->attr.msg_size
       << " accepted size: " << event->msg.size();

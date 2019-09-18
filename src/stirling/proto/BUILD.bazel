@@ -29,3 +29,22 @@ pl_go_proto_library(
         "//src/shared/types/proto:types_pl_go_proto",
     ],
 )
+
+pl_proto_library(
+    name = "sock_event_pl_proto",
+    srcs = ["sock_event.proto"],
+    visibility = ["//src/stirling:__pkg__"],
+)
+
+pl_cc_proto_library(
+    name = "sock_event_pl_cc_proto",
+    proto = ":sock_event_pl_proto",
+    visibility = ["//src/stirling:__pkg__"],
+)
+
+pl_go_proto_library(
+    name = "sock_event_pl_go_proto",
+    importpath = "pixielabs.ai/pixielabs/src/sock_event/proto",
+    proto = ":sock_event_pl_proto",
+    visibility = ["//src/stirling:__pkg__"],
+)

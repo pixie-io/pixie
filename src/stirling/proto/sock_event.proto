@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package pl.stirling.sockeventpb;
+
+option go_package = "sockeventpb";
+
+// We do not use enum, instead use integer value to avoid tedious type conversions between C++ and protobuf.
+
+message TrafficClass {
+  uint32 protocol = 1;
+  uint32 role = 2;
+};
+
+message ConnID {
+  // User land PID, equivalent to TGID in the BPF and kernel land.
+  uint32 pid = 1;
+  uint64 start_time_ns = 2;
+  uint32 fd = 3;
+  uint32 generation = 4;
+};
+
+message SocketDataEvent {
+  message Attribute {
+    uint64 timestamp_ns = 1;
+    ConnID  conn_id = 2;
+    TrafficClass traffic_class = 3;
+    uint32 direction = 4;
+    uint64 seq_num = 5;
+    // The original size of the msg, could be larger than the size of msg.
+    uint32 msg_size = 6;
+  }
+  Attribute attr = 1;
+  bytes msg = 2;
+};

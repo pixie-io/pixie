@@ -17,6 +17,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include <bcc/BPF.h>
 
 #include <deque>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <string>
@@ -34,6 +35,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 DECLARE_string(http_response_header_filters);
 DECLARE_bool(stirling_enable_parsing_protobufs);
 DECLARE_uint32(stirling_socket_trace_sampling_period_millis);
+DECLARE_string(perf_buffer_events_output_path);
 
 OBJ_STRVIEW(http_trace_bcc_script, _binary_bcc_bpf_socket_trace_c_preprocessed);
 
@@ -238,6 +240,9 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   // Inner map could be a priority_queue, but benchmarks showed better performance with a std::map.
   // Key is {PID, FD} for outer map (see GetStreamId()), and generation for inner map.
   std::unordered_map<uint64_t, std::map<uint64_t, ConnectionTracker> > connection_trackers_;
+
+  // If not a nullptr, writes the events received from perf buffers to this stream.
+  std::unique_ptr<std::ofstream> perf_buffer_events_output_stream_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
