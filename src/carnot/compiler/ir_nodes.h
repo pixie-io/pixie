@@ -27,7 +27,6 @@ class IRNode;
 using IRNodePtr = std::unique_ptr<IRNode>;
 using ArgMap = std::unordered_map<std::string, IRNode*>;
 using table_store::schema::Relation;
-using TabletKeyType = std::string;
 
 enum class IRNodeType {
   kAny = -1,
@@ -331,8 +330,8 @@ class OperatorIR : public IRNode {
    * Does not need to be overridden in an Operator definition if an Operator has no default
    * arguments.
    *
-   * TODO(philkuz)(PL_804) make the mapping to an Lambda that takes in a graph_ptr and returns a new
-   * IRNode instead of doing this.
+   * TODO(philkuz) (PL_804) make the mapping to an Lambda that takes in a graph_ptr and returns a
+   * new IRNode instead of doing this.
    * @return Stirng to IR mapping
    */
   virtual std::unordered_map<std::string, IRNode*> DefaultArgValues(const pypa::AstPtr&) {
@@ -993,10 +992,13 @@ class MemorySourceIR : public OperatorIR {
   StatusOr<IRNode*> DeepCloneIntoImpl(IR* graph) const override;
   const std::vector<std::string>& column_names() const { return column_names_; }
   StatusOr<std::vector<std::string>> ParseStringListIR(const ListIR& list_ir);
-  void SetTablet(const TabletKeyType& tablet_value) { tablet_value_ = tablet_value; }
-  bool HasTablet() const { return !tablet_value_.empty(); }
+  void SetTabletValue(const types::TabletID& tablet_value) {
+    tablet_value_ = tablet_value;
+    has_tablet_value_ = true;
+  }
+  bool HasTablet() const { return has_tablet_value_; }
 
-  TabletKeyType tablet_value() const {
+  const types::TabletID& tablet_value() const {
     DCHECK(HasTablet());
     return tablet_value_;
   }
@@ -1015,7 +1017,8 @@ class MemorySourceIR : public OperatorIR {
   std::vector<int64_t> column_index_map_;
   bool column_index_map_set_ = false;
 
-  TabletKeyType tablet_value_ = "";
+  types::TabletID tablet_value_;
+  bool has_tablet_value_ = false;
 };
 
 /**
@@ -1498,7 +1501,7 @@ class TabletSourceGroupIR : public OperatorIR {
  public:
   TabletSourceGroupIR() = delete;
 
-  Status Init(MemorySourceIR* memory_source_ir, const std::vector<TabletKeyType>& tablets,
+  Status Init(MemorySourceIR* memory_source_ir, const std::vector<types::TabletID>& tablets,
               const std::string& tablet_key) {
     tablets_ = tablets;
     memory_source_ir_ = memory_source_ir;
@@ -1528,7 +1531,7 @@ class TabletSourceGroupIR : public OperatorIR {
         "$0::DeepCloneInto not implemented because no use found for it yet.", DebugString());
   }
 
-  const std::vector<TabletKeyType>& tablets() const { return tablets_; }
+  const std::vector<types::TabletID>& tablets() const { return tablets_; }
   /**
    * @brief Returns the Memory source that was replaced by this node.
    * @return MemorySourceIR*
@@ -1541,7 +1544,7 @@ class TabletSourceGroupIR : public OperatorIR {
   // The key in the relation that is used as a tablet_key.
   std::string tablet_key_;
   // The tablets that are associated with this node.
-  std::vector<TabletKeyType> tablets_;
+  std::vector<types::TabletID> tablets_;
   // The memory source that this node replaces. Deleted from the graph when this node is deleted.
   MemorySourceIR* memory_source_ir_;
 };

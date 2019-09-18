@@ -13,6 +13,7 @@ namespace pl {
 namespace carnot {
 namespace compiler {
 namespace distributed {
+using ::testing::Contains;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::UnorderedElementsAre;
@@ -92,6 +93,7 @@ TEST_F(TabletSourceConversionRuleTest, simple_test) {
       static_cast<TabletSourceGroupIR*>(mem_sink0->parents()[0]);
 
   EXPECT_THAT(tablet_source_group->tablets(), ElementsAre("1", "2"));
+
   EXPECT_EQ(tablet_source_group->ReplacedMemorySource(), mem_src0);
   EXPECT_THAT(tablet_source_group->Children(), ElementsAre(mem_sink0));
 
@@ -109,8 +111,10 @@ using MemorySourceTabletRuleTest = OperatorTests;
 TEST_F(MemorySourceTabletRuleTest, tablet_source_group_unions) {
   Relation relation({types::UINT128, types::INT64, types::STRING}, {"upid", "cpu0", "name"});
   auto mem_src = MakeMemSource("table", relation);
+  std::vector<types::TabletID> in_tablet_values = {"tablet1", "tablet2"};
+
   TabletSourceGroupIR* tablet_source_group =
-      MakeTabletSourceGroup(mem_src, {"tablet1", "tablet2"}, "upid");
+      MakeTabletSourceGroup(mem_src, in_tablet_values, "upid");
   MemorySinkIR* mem_sink = MakeMemSink(tablet_source_group, "out");
 
   int64_t tablet_source_group_id = tablet_source_group->id();
@@ -131,7 +135,7 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_unions) {
   ASSERT_EQ(mem_sink_parent->type(), IRNodeType::kUnion) << mem_sink_parent->type_string();
 
   // Check to see that the union's parents are memory_sources.
-  std::vector<TabletKeyType> tablet_values;
+  std::vector<types::TabletID> tablet_values;
   UnionIR* union_op = static_cast<UnionIR*>(mem_sink_parent);
 
   EXPECT_TRUE(union_op->HasColumnMappings());
@@ -146,13 +150,15 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_unions) {
     EXPECT_FALSE(mem_source->IsTimeSet());
   }
 
-  EXPECT_THAT(tablet_values, ElementsAre("tablet1", "tablet2"));
+  EXPECT_THAT(tablet_values, ElementsAreArray(in_tablet_values));
 }
 
 TEST_F(MemorySourceTabletRuleTest, tablet_source_group_no_union) {
   Relation relation({types::UINT128, types::INT64, types::STRING}, {"upid", "cpu0", "name"});
   auto mem_src = MakeMemSource("table", relation);
-  TabletSourceGroupIR* tablet_source_group = MakeTabletSourceGroup(mem_src, {"tablet1"}, "upid");
+  std::vector<types::TabletID> tablet_values = {"tablet1"};
+
+  TabletSourceGroupIR* tablet_source_group = MakeTabletSourceGroup(mem_src, tablet_values, "upid");
   MemorySinkIR* mem_sink = MakeMemSink(tablet_source_group, "out");
 
   int64_t tablet_source_group_id = tablet_source_group->id();
@@ -175,20 +181,21 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_no_union) {
   // Check to see that the union's parents are memory_sources.
   MemorySourceIR* new_mem_src = static_cast<MemorySourceIR*>(mem_sink_parent);
   ASSERT_TRUE(new_mem_src->HasTablet());
-  std::string tablet_value = new_mem_src->tablet_value();
   EXPECT_TRUE(new_mem_src->IsRelationInit());
   EXPECT_FALSE(new_mem_src->IsTimeSet());
-  EXPECT_EQ(tablet_value, "tablet1");
+  EXPECT_THAT(tablet_values, Contains(new_mem_src->tablet_value()));
 }
 
 TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_filter) {
   Relation relation({types::UINT128, types::INT64, types::STRING}, {"upid", "cpu0", "name"});
   auto mem_src = MakeMemSource("table", relation);
-  TabletSourceGroupIR* tablet_source_group =
-      MakeTabletSourceGroup(mem_src, {"tablet1", "tablet2"}, "upid");
+  std::vector<types::TabletID> tablet_values = {"tablet1", "tablet2"};
+
+  TabletSourceGroupIR* tablet_source_group = MakeTabletSourceGroup(mem_src, tablet_values, "upid");
   auto column = MakeColumn("upid", 0);
-  auto string = MakeString("tablet2");
-  FuncIR* filter_expr = MakeEqualsFunc(column, string);
+  auto tablet = MakeString("tablet2");
+
+  FuncIR* filter_expr = MakeEqualsFunc(column, tablet);
   filter_expr->SetOutputDataType(types::BOOLEAN);
   FilterIR* filter = MakeFilter(tablet_source_group, filter_expr);
   MemorySinkIR* mem_sink = MakeMemSink(filter, "out");
@@ -217,24 +224,26 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_f
   // Check to see that the union's parents are memory_sourcesj
   MemorySourceIR* new_mem_src = static_cast<MemorySourceIR*>(mem_sink_parent);
   ASSERT_TRUE(new_mem_src->HasTablet());
-  std::string tablet_value = new_mem_src->tablet_value();
   EXPECT_TRUE(new_mem_src->IsRelationInit());
   EXPECT_FALSE(new_mem_src->IsTimeSet());
-  EXPECT_EQ(tablet_value, "tablet2");
+  EXPECT_EQ(new_mem_src->tablet_value(), "tablet2");
 }
 
-// TODO(philkuz) enable when we have support for filters.
 TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_filter_and) {
   Relation relation({types::UINT128, types::INT64, types::STRING}, {"upid", "cpu0", "name"});
   auto mem_src = MakeMemSource("table", relation);
+
+  std::vector<types::TabletID> in_tablet_values = {"tablet1", "tablet2", "tablet3"};
+
   TabletSourceGroupIR* tablet_source_group =
-      MakeTabletSourceGroup(mem_src, {"tablet1", "tablet2", "tablet3"}, "upid");
+      MakeTabletSourceGroup(mem_src, in_tablet_values, "upid");
+  auto tablet1 = MakeString("tablet2");
+  auto tablet2 = MakeString("tablet3");
+
   auto column1 = MakeColumn("upid", 0);
-  auto string1 = MakeString("tablet2");
   auto column2 = MakeColumn("upid", 0);
-  auto string2 = MakeString("tablet3");
-  auto equals1 = MakeEqualsFunc(column1, string1);
-  auto equals2 = MakeEqualsFunc(column2, string2);
+  auto equals1 = MakeEqualsFunc(column1, tablet1);
+  auto equals2 = MakeEqualsFunc(column2, tablet2);
   auto filter_expr = MakeAndFunc(equals1, equals2);
   filter_expr->SetOutputDataType(types::BOOLEAN);
   FilterIR* filter = MakeFilter(tablet_source_group, filter_expr);
@@ -255,7 +264,7 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_f
           absl::StrAppend(out, node->DebugString());
         }
       });
-  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(2, 0, 11, 9, 12, 7, 8, 3, 4, 5, 6))
+  EXPECT_THAT(graph->dag().TopologicalSort(), ElementsAre(2, 0, 11, 9, 12, 7, 8, 5, 3, 6, 4))
       << str;
 
   MemorySourceTabletRule rule;
@@ -275,7 +284,7 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_f
   ASSERT_EQ(mem_sink_parent->type(), IRNodeType::kUnion) << mem_sink_parent->type_string();
 
   // Check to see that the union's parents are memory_sources.
-  std::vector<TabletKeyType> tablet_values;
+  std::vector<types::TabletID> tablet_values;
   UnionIR* union_op = static_cast<UnionIR*>(mem_sink_parent);
 
   EXPECT_TRUE(union_op->HasColumnMappings());
@@ -296,11 +305,14 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_union_tabletization_key_f
 TEST_F(MemorySourceTabletRuleTest, tablet_source_group_filter_does_nothing) {
   Relation relation({types::UINT128, types::INT64, types::STRING}, {"upid", "cpu0", "name"});
   auto mem_src = MakeMemSource("table", relation);
+  std::vector<types::TabletID> in_tablet_values = {"tablet1", "tablet2", "tablet3"};
+
   TabletSourceGroupIR* tablet_source_group =
-      MakeTabletSourceGroup(mem_src, {"tablet1", "tablet2", "tablet3"}, "upid");
+      MakeTabletSourceGroup(mem_src, in_tablet_values, "upid");
   auto column = MakeColumn("name", 0);
-  auto string = MakeString("blah");
-  auto filter_expr = MakeEqualsFunc(column, string);
+  auto tablet_value = MakeString("blah");
+
+  auto filter_expr = MakeEqualsFunc(column, tablet_value);
   filter_expr->SetOutputDataType(types::BOOLEAN);
   FilterIR* filter = MakeFilter(tablet_source_group, filter_expr);
   MemorySinkIR* mem_sink = MakeMemSink(filter, "out");
@@ -329,7 +341,7 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_filter_does_nothing) {
   ASSERT_EQ(filter_parent->type(), IRNodeType::kUnion) << mem_sink_parent->type_string();
 
   // Check to see that the union's parents are memory_sources.
-  std::vector<TabletKeyType> tablet_values;
+  std::vector<types::TabletID> tablet_values;
   UnionIR* union_op = static_cast<UnionIR*>(filter_parent);
 
   EXPECT_TRUE(union_op->HasColumnMappings());
@@ -344,16 +356,19 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_group_filter_does_nothing) {
     EXPECT_FALSE(mem_source->IsTimeSet());
   }
 
-  EXPECT_THAT(tablet_values, ElementsAre("tablet1", "tablet2", "tablet3"));
+  EXPECT_THAT(tablet_values, ElementsAreArray(in_tablet_values));
 }
 
 TEST_F(MemorySourceTabletRuleTest, tablet_source_no_match) {
   Relation relation({types::UINT128, types::INT64, types::STRING}, {"upid", "cpu0", "name"});
   auto mem_src = MakeMemSource("table", relation);
-  TabletSourceGroupIR* tablet_source_group =
-      MakeTabletSourceGroup(mem_src, {"tablet1", "tablet2"}, "upid");
+  std::vector<types::TabletID> tablet_values = {"tablet1", "tablet2"};
+
+  TabletSourceGroupIR* tablet_source_group = MakeTabletSourceGroup(mem_src, tablet_values, "upid");
   // should not match any of the tablets above.
+
   FuncIR* filter_expr = MakeEqualsFunc(MakeColumn("upid", 0), MakeString("tablet3"));
+
   filter_expr->SetOutputDataType(types::BOOLEAN);
   FilterIR* filter = MakeFilter(tablet_source_group, filter_expr);
   MakeMemSink(filter, "out");
@@ -373,7 +388,7 @@ TEST_F(TabletRulesIntegrationTest, combined_tests) {
   Relation relation0;
   EXPECT_OK(relation0.FromProto(&(carnot_info.table_info()[0].relation())));
 
-  std::vector<std::string> expected_tablet_values;
+  std::vector<types::TabletID> expected_tablet_values;
   ASSERT_EQ(carnot_info.table_info()[0].tablets_size(), 2);
   expected_tablet_values.push_back(carnot_info.table_info()[0].tablets(0));
   expected_tablet_values.push_back(carnot_info.table_info()[0].tablets(1));
@@ -403,7 +418,7 @@ TEST_F(TabletRulesIntegrationTest, combined_tests) {
   ASSERT_EQ(mem_sink_parent->type(), IRNodeType::kUnion) << mem_sink_parent->type_string();
 
   // Check to see that the union's parents are memory_sourcesj
-  std::vector<TabletKeyType> actual_tablet_values;
+  std::vector<types::TabletID> actual_tablet_values;
   UnionIR* union_op = static_cast<UnionIR*>(mem_sink_parent);
 
   EXPECT_TRUE(union_op->HasColumnMappings());

@@ -129,8 +129,8 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 		agentList = append(agentList, agentID)
 	}
 
-	// TODO(philkuz)(PL-851) Pass physical state to Compile()
-	// TODO(philkuz)(PL-851) Make compile return a physical plan instead.
+	// TODO(philkuz) (PL-851) Pass physical state to Compile()
+	// TODO(philkuz) (PL-851) Make compile return a physical plan instead.
 	// Compile Logical Plan
 	compilerResultPB, err := s.compiler.Compile(schema, req.QueryStr)
 	if err != nil {
@@ -151,7 +151,7 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *querybrokerpb.QueryReque
 	// Temporary "query fragment resolver"
 	planMap := make(map[uuid.UUID]*planpb.Plan)
 
-	// TODO(philkuz)(PL-851) rewrite this loop when we have a physical plan returned instead.
+	// TODO(philkuz) (PL-851) rewrite this loop when we have a physical plan returned instead.
 	for _, agentID := range agentList {
 		planMap[agentID] = compilerResultPB.LogicalPlan
 	}

@@ -339,7 +339,7 @@ class OperatorTests : public ::testing::Test {
   }
 
   TabletSourceGroupIR* MakeTabletSourceGroup(MemorySourceIR* mem_source,
-                                             const std::vector<TabletKeyType>& tablet_key_values,
+                                             const std::vector<types::TabletID>& tablet_key_values,
                                              const std::string& tablet_key) {
     TabletSourceGroupIR* group = graph->MakeNode<TabletSourceGroupIR>().ConsumeValueOrDie();
     PL_CHECK_OK(group->Init(mem_source, tablet_key_values, tablet_key));

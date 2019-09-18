@@ -120,7 +120,7 @@ const char* kExpectedMemSrcWithTabletPb = R"(
       value: 20
     }
 
-    tablet: "abcd"
+    tablet: $0
   }
 )";
 
@@ -141,12 +141,15 @@ TEST(ToProto, memory_source_ir_with_tablet) {
   mem_src->SetColumnIndexMap({0, 2});
   mem_src->SetTime(10, 20);
 
-  mem_src->SetTablet("abcd");
+  types::TabletID tablet_value = "abcd";
+
+  mem_src->SetTabletValue(tablet_value);
 
   planpb::Operator pb;
   EXPECT_OK(mem_src->ToProto(&pb));
 
-  EXPECT_THAT(pb, EqualsProto(kExpectedMemSrcWithTabletPb));
+  EXPECT_THAT(pb, EqualsProto(absl::Substitute(kExpectedMemSrcWithTabletPb,
+                                               absl::Substitute("\"$0\"", tablet_value))));
 }
 
 const char* kExpectedMemSinkPb = R"(
@@ -1260,9 +1263,11 @@ TEST_F(IRPruneTests, prune_test) {
 TEST_F(OperatorTests, tablet_source_group) {
   auto mem_source = MakeMemSource("table", MakeRelation());
   auto tablet_source = graph->MakeNode<TabletSourceGroupIR>().ConsumeValueOrDie();
-  EXPECT_OK(tablet_source->Init(mem_source, {"tablet1", "tablet2"}, "cpu0"));
+  std::vector<types::TabletID> tablet_values = {"tablet1", "tablet2"};
 
-  EXPECT_THAT(tablet_source->tablets(), ElementsAre("tablet1", "tablet2"));
+  EXPECT_OK(tablet_source->Init(mem_source, tablet_values, "cpu0"));
+
+  EXPECT_THAT(tablet_source->tablets(), ElementsAreArray(tablet_values));
   EXPECT_EQ(tablet_source->ReplacedMemorySource(), mem_source);
 }
 

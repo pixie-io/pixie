@@ -45,16 +45,33 @@ class MemorySourceTabletRule : public Rule {
   StatusOr<bool> ReplaceTabletSourceGroup(TabletSourceGroupIR* tablet_source_group);
   StatusOr<bool> ReplaceTabletSourceGroupAndFilter(
       TabletSourceGroupIR* tablet_source_group, FilterIR* filter_op,
-      const absl::flat_hash_set<TabletKeyType>& match_tablets);
+      const absl::flat_hash_set<types::TabletID>& match_tablets);
   StatusOr<MemorySourceIR*> CreateMemorySource(const MemorySourceIR* original_memory_source,
-                                               const TabletKeyType& tablet_value);
+                                               const types::TabletID& tablet_value);
 
   StatusOr<bool> ReplaceTabletSourceGroupWithFilterChild(TabletSourceGroupIR* tablet_source_group);
   void DeleteNodeAndNonOperatorChildren(OperatorIR* op);
-  StatusOr<OperatorIR*> MakeNewSources(const std::vector<std::string>& tablets,
+  StatusOr<OperatorIR*> MakeNewSources(const std::vector<types::TabletID>& tablets,
                                        TabletSourceGroupIR* tablet_source_group);
-  absl::flat_hash_set<TabletKeyType> GetEqualityTabletValues(FuncIR* func);
-  absl::flat_hash_set<TabletKeyType> GetAndTabletValues(FuncIR* func);
+  /**
+   * @brief Get the tablet keys that match an equality condition.
+   *
+   * @param func: the ir for a function that contains an equality condition where one argument is a
+   * tablet value.
+   * @return absl::flat_hash_set<types::TabletID>: the set of tablet values that appear in this
+   * function.
+   */
+  absl::flat_hash_set<types::TabletID> GetEqualityTabletValues(FuncIR* func);
+
+  /**
+   * @brief Get the tablet values that match a series of equality conditions combined with AND
+   * TODO(philkuz) this should be OR not And.
+   *
+   * @param func: the
+   * @return absl::flat_hash_set<TabletKeyType>: the set of tablet values that appear in this
+   * function.
+   */
+  absl::flat_hash_set<types::TabletID> GetAndTabletValues(FuncIR* func);
 };
 
 }  // namespace distributed

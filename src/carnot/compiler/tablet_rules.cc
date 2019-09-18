@@ -22,7 +22,7 @@ StatusOr<bool> TabletSourceConversionRule::ReplaceMemorySourceWithTabletSourceGr
   }
 
   // Get the tablet values out.
-  std::vector<TabletKeyType> tablets;
+  std::vector<types::TabletID> tablets;
   for (int64_t i = 0; i < table_info.tablets_size(); ++i) {
     tablets.push_back(table_info.tablets()[i]);
   }
@@ -66,7 +66,7 @@ StatusOr<bool> MemorySourceTabletRule::Apply(IRNode* ir_node) {
 }
 
 StatusOr<OperatorIR*> MemorySourceTabletRule::MakeNewSources(
-    const std::vector<std::string>& tablets, TabletSourceGroupIR* tablet_source_group) {
+    const std::vector<types::TabletID>& tablets, TabletSourceGroupIR* tablet_source_group) {
   std::vector<OperatorIR*> sources;
   for (const auto& tablet : tablets) {
     PL_ASSIGN_OR_RETURN(MemorySourceIR * tablet_src,
@@ -123,10 +123,10 @@ void MemorySourceTabletRule::DeleteNodeAndNonOperatorChildren(OperatorIR* op) {
 
 StatusOr<bool> MemorySourceTabletRule::ReplaceTabletSourceGroupAndFilter(
     TabletSourceGroupIR* tablet_source_group, FilterIR* filter_op,
-    const absl::flat_hash_set<TabletKeyType>& match_set) {
+    const absl::flat_hash_set<types::TabletID>& match_set) {
   DCHECK_EQ(tablet_source_group->Children().size(), 1UL);
   DCHECK_EQ(tablet_source_group->Children()[0]->DebugString(), filter_op->DebugString());
-  std::vector<std::string> matching_tablets;
+  std::vector<types::TabletID> matching_tablets;
   for (const auto& tablet : tablet_source_group->tablets()) {
     if (!match_set.empty() && !match_set.contains(tablet)) {
       continue;
@@ -150,8 +150,8 @@ StatusOr<bool> MemorySourceTabletRule::ReplaceTabletSourceGroupAndFilter(
   return true;
 }
 
-absl::flat_hash_set<TabletKeyType> MemorySourceTabletRule::GetEqualityTabletValues(FuncIR* func) {
-  std::string value;
+absl::flat_hash_set<types::TabletID> MemorySourceTabletRule::GetEqualityTabletValues(FuncIR* func) {
+  types::TabletID value;
   DCHECK_EQ(func->args().size(), 2UL);
   if (Match(func->args()[1], ColumnNode())) {
     value = static_cast<StringIR*>(func->args()[0])->str();
@@ -161,9 +161,10 @@ absl::flat_hash_set<TabletKeyType> MemorySourceTabletRule::GetEqualityTabletValu
   return {value};
 }
 
-absl::flat_hash_set<TabletKeyType> MemorySourceTabletRule::GetAndTabletValues(FuncIR* func) {
-  DCHECK(Match(func, AndFnMatchAll(Equals(ColumnNode(), String()))));
-  absl::flat_hash_set<TabletKeyType> tablet_values;
+absl::flat_hash_set<types::TabletID> MemorySourceTabletRule::GetAndTabletValues(FuncIR* func) {
+  absl::flat_hash_set<types::TabletID> tablet_values;
+  DCHECK(Match(func, AndFnMatchAll(Equals(ColumnNode(), TabletValue()))));
+
   for (ExpressionIR* expr : func->args()) {
     DCHECK(Match(expr, Func()));
     tablet_values.merge(GetEqualityTabletValues(static_cast<FuncIR*>(expr)));
@@ -183,12 +184,12 @@ StatusOr<bool> MemorySourceTabletRule::ReplaceTabletSourceGroupWithFilterChild(
   DCHECK_EQ(expr->EvaluatedDataType(), types::BOOLEAN);
   std::string tablet_key = tablet_source_group->tablet_key();
 
-  if (Match(expr, Equals(ColumnNode(tablet_key), String()))) {
-    absl::flat_hash_set<TabletKeyType> tablet_values =
+  if (Match(expr, Equals(ColumnNode(tablet_key), TabletValue()))) {
+    absl::flat_hash_set<types::TabletID> tablet_values =
         GetEqualityTabletValues(static_cast<FuncIR*>(expr));
     return ReplaceTabletSourceGroupAndFilter(tablet_source_group, filter, tablet_values);
-  } else if (Match(expr, AndFnMatchAll(Equals(ColumnNode(tablet_key), String())))) {
-    absl::flat_hash_set<TabletKeyType> tablet_values =
+  } else if (Match(expr, AndFnMatchAll(Equals(ColumnNode(tablet_key), TabletValue())))) {
+    absl::flat_hash_set<types::TabletID> tablet_values =
         GetAndTabletValues(static_cast<FuncIR*>(expr));
     return ReplaceTabletSourceGroupAndFilter(tablet_source_group, filter, tablet_values);
   }
@@ -198,7 +199,7 @@ StatusOr<bool> MemorySourceTabletRule::ReplaceTabletSourceGroupWithFilterChild(
 }
 
 StatusOr<MemorySourceIR*> MemorySourceTabletRule::CreateMemorySource(
-    const MemorySourceIR* original_memory_source, const TabletKeyType& tablet_value) {
+    const MemorySourceIR* original_memory_source, const types::TabletID& tablet_value) {
   DCHECK(original_memory_source->IsRelationInit());
   DCHECK(original_memory_source->column_index_map_set());
   IR* graph = original_memory_source->graph_ptr();
@@ -217,7 +218,7 @@ StatusOr<MemorySourceIR*> MemorySourceTabletRule::CreateMemorySource(
   mem_source_ir->SetColumnIndexMap(original_memory_source->column_index_map());
 
   // Set the tablet value.
-  mem_source_ir->SetTablet(tablet_value);
+  mem_source_ir->SetTabletValue(tablet_value);
   return mem_source_ir;
 }
 

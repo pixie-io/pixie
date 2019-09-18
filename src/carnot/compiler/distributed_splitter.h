@@ -30,7 +30,7 @@ namespace distributed {
  * 1. Where all sources are MemorySources and all sinks are GRPCSinks
  * 2. Where all sources are GRPCSourceGroups and all sinks are MemorySinks
  *
- * TODO(philkuz)(PL-846) support an optimization to remove extraneous GRPCBridge insertions, or
+ * TODO(philkuz) (PL-846) support an optimization to remove extraneous GRPCBridge insertions, or
  * pruning them somehow, as described below:
  *
  * Table1

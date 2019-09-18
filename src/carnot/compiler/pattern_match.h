@@ -161,6 +161,11 @@ struct IntMatch : public ParentMatch {
 inline IntMatch Int(const int64_t val) { return IntMatch(val); }
 
 /**
+ * @brief Match a tablet ID type.
+ */
+inline ClassMatch<IRNodeType::kString> TabletValue() { return String(); }
+
+/**
  * @brief Match specific binary functions.
  *
  * @tparam LHS_t: the left hand type.
