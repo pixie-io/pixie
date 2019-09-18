@@ -749,7 +749,6 @@ func TestGetContainerResourceUpdatesFromPod(t *testing.T) {
 	assert.NotNil(t, cUpdate)
 	assert.Equal(t, "container1", cUpdate.Name)
 	assert.Equal(t, "test", cUpdate.CID)
-
 }
 
 func TestSyncPodData(t *testing.T) {
@@ -797,7 +796,8 @@ func TestSyncPodData(t *testing.T) {
 		Items: pods,
 	}
 
-	etcdPods := make([](*metadatapb.Pod), 3)
+	// Test case 1: A pod that is active, and known to be active by etcd.
+	etcdPods := make([](*metadatapb.Pod), 4)
 	activePodPb := &metadatapb.Pod{}
 	if err := proto.UnmarshalText(podPbWithContainers, activePodPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
@@ -806,18 +806,23 @@ func TestSyncPodData(t *testing.T) {
 	activePodPb.Metadata.DeletionTimestampNS = 0
 	etcdPods[0] = activePodPb
 
+	// Test case 2: A pod that is dead, and known to be dead by etcd.
 	deadPodPb := &metadatapb.Pod{}
 	if err := proto.UnmarshalText(podPbWithContainers, deadPodPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
+	deadPodPb.Metadata.DeletionTimestampNS = 10
+	deadPodPb.Status.ContainerStatuses[0].StopTimestampNS = 6
 	etcdPods[1] = deadPodPb
 
+	// Test case 3: A pod that is dead, but which etcd does not know to be dead.
 	undeadPodPb := &metadatapb.Pod{}
 	if err := proto.UnmarshalText(podPbWithContainers, undeadPodPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	undeadPodPb.Metadata.UID = "undead_pod"
 	undeadPodPb.Metadata.DeletionTimestampNS = 0
+	undeadPodPb.Status.ContainerStatuses[0].StopTimestampNS = 0
 	etcdPods[2] = undeadPodPb
 
 	deletedUndeadPodPb := &metadatapb.Pod{}
@@ -826,8 +831,32 @@ func TestSyncPodData(t *testing.T) {
 	}
 	deletedUndeadPodPb.Metadata.UID = "undead_pod"
 	deletedUndeadPodPb.Metadata.DeletionTimestampNS = 10
+	deletedUndeadPodPb.Status.ContainerStatuses[0].StopTimestampNS = 10
 
-	etcdContainers := make([](*metadatapb.ContainerInfo), 3)
+	// Test case 4: A pod that is dead, and known to be dead by etcd,
+	// but for which etcd thinks the inner container is alive.
+	anotherUndeadPodPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(podPbWithContainers, anotherUndeadPodPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	anotherUndeadPodPb.Metadata.UID = "another_undead_pod"
+	anotherUndeadPodPb.Metadata.DeletionTimestampNS = 10
+	anotherUndeadPodPb.Status.ContainerStatuses[0].StopTimestampNS = 0
+	anotherUndeadPodPb.Status.ContainerStatuses[0].Name = "another_undead_container_name"
+	anotherUndeadPodPb.Status.ContainerStatuses[0].ContainerID = "another_undead_container"
+	etcdPods[3] = anotherUndeadPodPb
+
+	anotherDeletedUndeadPodPb := &metadatapb.Pod{}
+	if err := proto.UnmarshalText(podPbWithContainers, anotherDeletedUndeadPodPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	anotherDeletedUndeadPodPb.Metadata.UID = "another_undead_pod"
+	anotherDeletedUndeadPodPb.Metadata.DeletionTimestampNS = 10
+	anotherDeletedUndeadPodPb.Status.ContainerStatuses[0].StopTimestampNS = 10
+	anotherDeletedUndeadPodPb.Status.ContainerStatuses[0].Name = "another_undead_container_name"
+	anotherDeletedUndeadPodPb.Status.ContainerStatuses[0].ContainerID = "another_undead_container"
+
+	etcdContainers := make([](*metadatapb.ContainerInfo), 4)
 	activeContainerPb := &metadatapb.ContainerInfo{
 		Name:             "active_container_name",
 		UID:              "active_container",
@@ -855,6 +884,20 @@ func TestSyncPodData(t *testing.T) {
 		StopTimestampNS:  10,
 	}
 
+	anotherDeletedContainerPb := &metadatapb.ContainerInfo{
+		Name:             "another_deleted_container_name",
+		UID:              "another_deleted_container",
+		StartTimestampNS: 4,
+	}
+	etcdContainers[3] = anotherDeletedContainerPb
+
+	anotherDeletedUndeadContainerPb := &metadatapb.ContainerInfo{
+		Name:             "another_deleted_container_name",
+		UID:              "another_deleted_container",
+		StartTimestampNS: 4,
+		StopTimestampNS:  10,
+	}
+
 	mockMds.
 		EXPECT().
 		GetPods().
@@ -867,12 +910,22 @@ func TestSyncPodData(t *testing.T) {
 
 	mockMds.
 		EXPECT().
+		UpdatePod(anotherDeletedUndeadPodPb).
+		Return(nil)
+
+	mockMds.
+		EXPECT().
 		GetContainers().
 		Return(etcdContainers, nil)
 
 	mockMds.
 		EXPECT().
 		UpdateContainer(deletedUndeadContainerPb).
+		Return(nil)
+
+	mockMds.
+		EXPECT().
+		UpdateContainer(anotherDeletedUndeadContainerPb).
 		Return(nil)
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))

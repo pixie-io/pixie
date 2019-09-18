@@ -359,11 +359,25 @@ func (mh *MetadataHandler) SyncPodData(podList *v1.PodList) {
 	for _, pod := range pods {
 		_, exists := activePods[pod.Metadata.UID]
 		// If there a pod in etcd that is not active, and is not marked as dead, mark it as dead.
-		if !exists && pod.Metadata.DeletionTimestampNS == 0 {
-			pod.Metadata.DeletionTimestampNS = currentTime
-			err := mh.mds.UpdatePod(pod)
-			if err != nil {
-				log.WithError(err).Error("Could not update pod during sync.")
+		if !exists {
+			touched := false
+			if pod.Metadata.DeletionTimestampNS == 0 {
+				log.Info("Mark pod as dead: " + string(pod.Metadata.UID))
+				pod.Metadata.DeletionTimestampNS = currentTime
+				touched = true
+			}
+			for _, s := range pod.Status.ContainerStatuses {
+				if s.StopTimestampNS == 0 {
+					log.Info("Mark pod's container as dead: " + string(formatContainerID(s.ContainerID)))
+					s.StopTimestampNS = currentTime
+					touched = true
+				}
+			}
+			if touched {
+				err := mh.mds.UpdatePod(pod)
+				if err != nil {
+					log.WithError(err).Error("Could not update pod during sync.")
+				}
 			}
 		}
 	}
@@ -377,6 +391,7 @@ func (mh *MetadataHandler) SyncPodData(podList *v1.PodList) {
 		_, exists := activeContainers[container.UID]
 		// If there a container in etcd that is not active, and is not marked as dead, mark it as dead.
 		if !exists && container.StopTimestampNS == 0 {
+			log.Info("Mark container as dead: " + string(container.UID))
 			container.StopTimestampNS = currentTime
 			err := mh.mds.UpdateContainer(container)
 			if err != nil {
