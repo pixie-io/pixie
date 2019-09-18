@@ -51,9 +51,9 @@ if node[:platform] == 'ubuntu'
   default['packer']['sha256']        = '5e51808299135fee7a2e664b09f401b5712b5ef18bd4bad5bc50f4dcd8b149a1'
 
   default['kustomize']['download_path'] =
-    'https://github.com/kubernetes-sigs/kustomize/releases/download/v3.0.0/kustomize_3.0.0_linux_amd64'
+    'https://github.com/kubernetes-sigs/kustomize/releases/download/v3.2.0/kustomize_3.2.0_linux_amd64'
   default['kustomize']['sha256']        =
-    'ef0dbeca85c419891ad0e12f1f9df649b02ceb01517fa9aea0297ef14e400c7a'
+    '7db89e32575d81393d5d84f0dc6cbe444457e61ce71af06c6e6b7b6718299c22'
 
   default['sops']['download_path'] =
     'https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.linux'
@@ -89,9 +89,9 @@ elsif node[:platform] == 'mac_os_x'
   default['packer']['sha256']        = '1c2433239d801b017def8e66bbff4be3e7700b70248261b0abff2cd9c980bf5b'
 
   default['kustomize']['download_path'] =
-    'https://github.com/kubernetes-sigs/kustomize/releases/download/v3.0.0/kustomize_3.0.0_darwin_amd64'
+    'https://github.com/kubernetes-sigs/kustomize/releases/download/v3.2.0/kustomize_3.2.0_darwin_amd64'
   default['kustomize']['sha256']        =
-    '58bf0cf1fe6839a1463120ced1eae385423efa6437539eb491650db5089c60b9'
+    'c7991a79470a52a95f1fac33f588b76f64e597ac64b54106e452f3a8f642c62e'
 
   default['sops']['download_path'] =
     'https://github.com/mozilla/sops/releases/download/3.3.1/sops-3.3.1.darwin'
