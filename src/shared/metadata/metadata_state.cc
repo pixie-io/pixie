@@ -89,32 +89,15 @@ std::string K8sMetadataState::DebugString(int indent_level) const {
   return str;
 }
 
-namespace {
-PodQOSClass ConvertToPodQOsClass(pl::shared::k8s::metadatapb::PodQOSClass pb_enum) {
-  using qos_pb = pl::shared::k8s::metadatapb::PodQOSClass;
-  switch (pb_enum) {
-    case qos_pb::QOS_CLASS_BURSTABLE:
-      return PodQOSClass::kBurstable;
-    case qos_pb::QOS_CLASS_BEST_EFFORT:
-      return PodQOSClass::kBestEffort;
-    case qos_pb::QOS_CLASS_GUARANTEED:
-      return PodQOSClass::kGuaranteed;
-    default:
-      return PodQOSClass::kUnknown;
-  }
-}
-}  // namespace
-
 Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
   const auto& object_uid = update.uid();
   const std::string& name = update.name();
   const std::string& ns = update.namespace_();
-  PodQOSClass qos_class = ConvertToPodQOsClass(update.qos_class());
 
   auto it = k8s_objects_.find(object_uid);
   if (it == k8s_objects_.end()) {
-    auto pod = std::make_unique<PodInfo>(object_uid, ns, name, qos_class);
-    VLOG(1) << "Adding POD: " << pod->DebugString();
+    auto pod = std::make_unique<PodInfo>(update);
+    VLOG(1) << "Adding Pod: " << pod->DebugString();
     it = k8s_objects_.try_emplace(object_uid, std::move(pod)).first;
   }
 
@@ -144,7 +127,8 @@ Status K8sMetadataState::HandleContainerUpdate(const ContainerUpdate& update) {
 
   auto it = containers_by_id_.find(cid);
   if (it == containers_by_id_.end()) {
-    auto container = std::make_unique<ContainerInfo>(cid, update.start_timestamp_ns());
+    auto container = std::make_unique<ContainerInfo>(update);
+    VLOG(1) << "Adding Container: " << container->DebugString();
     it = containers_by_id_.try_emplace(cid, std::move(container)).first;
   }
 

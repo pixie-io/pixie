@@ -13,7 +13,7 @@ namespace pl {
 namespace md {
 
 /**
- * CGroupMetadataReader is responsible for reading metsdata such as process info from
+ * CGroupMetadataReader is responsible for reading metadata such as process info from
  * sys/fs and proc.
  *
  * TODO(zasgar/michelle): We need to reconcile this with the exising CGroupManager code as

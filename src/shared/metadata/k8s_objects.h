@@ -7,6 +7,7 @@
 #include "absl/container/flat_hash_map.h"
 #include "absl/container/flat_hash_set.h"
 #include "src/common/base/base.h"
+#include "src/shared/k8s/metadatapb/metadata.pb.h"
 #include "src/shared/metadata/base_types.h"
 
 namespace pl {
@@ -25,8 +26,14 @@ class K8sMetadataObject {
   K8sMetadataObject() = delete;
   virtual ~K8sMetadataObject() = default;
 
-  K8sMetadataObject(K8sObjectType type, UID uid, std::string_view ns, std::string_view name)
-      : type_(type), uid_(std::move(uid)), ns_(ns), name_(name) {}
+  K8sMetadataObject(K8sObjectType type, UID uid, std::string_view ns, std::string_view name,
+                    int64_t start_time_ns = 0, int64_t stop_time_ns = 0)
+      : type_(type),
+        uid_(std::move(uid)),
+        ns_(ns),
+        name_(name),
+        start_time_ns_(start_time_ns),
+        stop_time_ns_(stop_time_ns) {}
 
   K8sObjectType type() { return type_; }
 
@@ -84,14 +91,34 @@ class K8sMetadataObject {
 
 enum class PodQOSClass : uint8_t { kUnknown = 0, kGuaranteed, kBestEffort, kBurstable };
 
+inline PodQOSClass ConvertToPodQOsClass(pl::shared::k8s::metadatapb::PodQOSClass pb_enum) {
+  using qos_pb = pl::shared::k8s::metadatapb::PodQOSClass;
+  switch (pb_enum) {
+    case qos_pb::QOS_CLASS_BURSTABLE:
+      return PodQOSClass::kBurstable;
+    case qos_pb::QOS_CLASS_BEST_EFFORT:
+      return PodQOSClass::kBestEffort;
+    case qos_pb::QOS_CLASS_GUARANTEED:
+      return PodQOSClass::kGuaranteed;
+    default:
+      return PodQOSClass::kUnknown;
+  }
+}
+
 /**
  * PodInfo contains information about K8s pods.
  */
 class PodInfo : public K8sMetadataObject {
  public:
   PodInfo(UID uid, std::string_view ns, std::string_view name, PodQOSClass qos_class)
-      : K8sMetadataObject(K8sObjectType::kPod, std::move(uid), std::move(ns), std::move(name)),
-        qos_class_(qos_class) {}
+      : K8sMetadataObject(K8sObjectType::kPod, std::move(uid), ns, name), qos_class_(qos_class) {}
+
+  explicit PodInfo(const pl::shared::k8s::metadatapb::PodUpdate& pod_update_info)
+      : K8sMetadataObject(K8sObjectType::kPod, pod_update_info.uid(), pod_update_info.namespace_(),
+                          pod_update_info.name(), pod_update_info.start_timestamp_ns(),
+                          pod_update_info.stop_timestamp_ns()),
+        qos_class_(ConvertToPodQOsClass(pod_update_info.qos_class())) {}
+
   virtual ~PodInfo() = default;
 
   void AddContainer(CIDView cid) { containers_.emplace(cid); }
@@ -140,8 +167,13 @@ class PodInfo : public K8sMetadataObject {
 class ContainerInfo {
  public:
   ContainerInfo() = delete;
-  explicit ContainerInfo(CID cid, int64_t start_time_ns)
+  ContainerInfo(CID cid, int64_t start_time_ns)
       : cid_(std::move(cid)), start_time_ns_(start_time_ns), stop_time_ns_(0) {}
+
+  explicit ContainerInfo(const pl::shared::k8s::metadatapb::ContainerUpdate& container_update_info)
+      : cid_(container_update_info.cid()),
+        start_time_ns_(container_update_info.start_timestamp_ns()),
+        stop_time_ns_(container_update_info.stop_timestamp_ns()) {}
 
   const CID& cid() const { return cid_; }
 

@@ -190,7 +190,7 @@ class AgentMetadataState : NotCopyable {
 
   /**
    * A monotonically increasing number that tracks the epoch of this K8s state.
-   * The epoch is incremented everytime a new MetadataState is create. MetadataState objects after
+   * The epoch is incremented everytime a new MetadataState is created. MetadataState objects after
    * creation should be immutable to allow concurrent read access without locks.
    */
   uint64_t epoch_id_ = 0;

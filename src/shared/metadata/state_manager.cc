@@ -128,7 +128,6 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
   //    4. For each new PID create metadata object and attach to container.
   //    5. For each old pid deactivate it and set time of death.
   absl::flat_hash_set<uint32_t> cgroups_active_pids;
-  std::vector<uint32_t> dead_pids;
   absl::flat_hash_set<UPID> cgroups_active_upids;
 
   const auto& md_state = md->k8s_metadata_state();
@@ -140,12 +139,11 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
       // Ignore dead containers.
       // TODO(zasgar): Come up with a cleaner way of doing this. Probably by using active/inactive
       // containers.
-      LOG(INFO) << "Ignore dead container: " << cinfo->DebugString();
+      VLOG(1) << "Ignore dead container: " << cinfo->DebugString();
       continue;
     }
 
     cgroups_active_pids.clear();
-    dead_pids.clear();
     cgroups_active_upids.clear();
 
     auto pod_id = cinfo->pod_id();
@@ -157,11 +155,19 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
     auto pod_info = md_state->PodInfoByID(pod_id);
     auto pod_qos_class = pod_info->qos_class();
 
+    if (pod_info->stop_time_ns() != 0) {
+      LOG(WARNING) << absl::Substitute(
+          "Found a running container in a deleted pod [cid=$0, pod_id=$1]", cid, pod_id);
+      cinfo->set_stop_time_ns(pod_info->stop_time_ns());
+      continue;
+    }
+
     Status s = md_reader->ReadPIDs(pod_qos_class, pod_id, cid, &cgroups_active_pids);
     if (!s.ok()) {
       // Container probably died, we will eventually get a message from MDS and everything in that
       // container will be marked dead.
-      VLOG(1) << absl::Substitute("Failed to read PID info for pod=$0, cid=$1", pod_id, cid);
+      VLOG(1) << absl::Substitute("Failed to read PID info for pod=$0, cid=$1 [msg=$2]", pod_id,
+                                  cid, s.msg());
       continue;
     }
 
