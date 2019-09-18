@@ -24,3 +24,11 @@ retry() {
   # Recurse
   retry $cmd $((try-1)) $sleep_time
 }
+
+ensure_namespace() {
+  ns=$1
+  kubectl get namespaces ${ns} 2> /dev/null
+  if [ $? -ne 0 ]; then
+    kubectl create namespace ${ns}
+  fi
+}
