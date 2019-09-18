@@ -133,7 +133,7 @@ void SystemStatsConnector::TransferNetworkStatsTable(ConnectorContext* ctx, Data
 
 void SystemStatsConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                             DataTable* data_table) {
-  CHECK_LT(table_num, num_tables())
+  DCHECK_LT(table_num, num_tables())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
 
   switch (table_num) {
@@ -152,7 +152,7 @@ Status SystemStatsConnector::GetNetworkStatsForPod(const system::ProcParser& pro
                                                    const md::PodInfo& pod_info,
                                                    const md::K8sMetadataState& k8s_metadata_state,
                                                    system::ProcParser::NetworkStats* stats) {
-  CHECK_NOTNULL(stats);
+  DCHECK(stats != nullptr);
   // Since all the containers running in a K8s pod use the same network
   // namespace, we only need to pull stats from a single PID. The stats
   // themselves are the same for each PID since Linux only tracks networks

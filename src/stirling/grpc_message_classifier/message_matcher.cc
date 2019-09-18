@@ -67,7 +67,7 @@ void MessageGroupTypeClassifier::AddMessage(const std::string& message, MessageD
       ++resp_message_count;
       break;
     default:
-      CHECK(false) << "Unexpected direction";
+      LOG(DFATAL) << "Unexpected direction";
   }
 
   labels_.insert(std::move(label));
@@ -89,8 +89,8 @@ std::set<std::string> MessageGroupTypeClassifier::MatchingMessageTypes(
       }
       break;
     default:
-      CHECK(false) << absl::Substitute("Unexpected message direction $0",
-                                       static_cast<int>(direction));
+      LOG(DFATAL) << absl::Substitute("Unexpected message direction $0",
+                                      static_cast<int>(direction));
   }
 
   return matching_message_types;

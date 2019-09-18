@@ -76,7 +76,7 @@ void PrintRecordBatch(std::string_view prefix, const ConstVectorView<DataElement
           std::cout << "[" << absl::Substitute("{$0,$1}", val.High64(), val.Low64()) << "]";
         } break;
         default:
-          CHECK(false) << absl::Substitute("Unrecognized type: $0", ToString(schema[j].type()));
+          LOG(DFATAL) << absl::Substitute("Unrecognized type: $0", ToString(schema[j].type()));
       }
       j++;
     }

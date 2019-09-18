@@ -202,18 +202,18 @@ class SourceConnector : public NotCopyable {
         typename types::DataTypeTraits<schema->elements()[index].type()>::value_type val) {
       if constexpr (index == schema->tabletization_key()) {
         // TODO(oazizi): This will probably break if val is ever StringValue.
-        CHECK(std::to_string(val.val) == tablet_id_);
+        DCHECK(std::to_string(val.val) == tablet_id_);
       }
 
       record_batch_[index]->Append(std::move(val));
-      CHECK(!signature_[index]) << absl::Substitute(
+      DCHECK(!signature_[index]) << absl::Substitute(
           "Attempt to Append() to column $0 (name=$1) multiple times", index,
           schema->elements()[index].name().data());
       signature_.set(index);
     }
 
     ~RecordBuilder() {
-      CHECK(signature_.all()) << absl::Substitute(
+      DCHECK(signature_.all()) << absl::Substitute(
           "Must call Append() on all columns. Column bitset = $0", signature_.to_string());
     }
 

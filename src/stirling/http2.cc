@@ -312,10 +312,8 @@ void StitchFrames(const std::vector<const Frame*>& frames, nghttp2_hd_inflater* 
         // No need to handle END_STREAM as CONTINUATION frame does not define END_STREAM flag.
         break;
       default:
-        constexpr char kErr[] =
-            "This function does not accept any frame types other than "
-            "DATA, HEADERS, and CONTINUATION";
-        CHECK(false) << kErr;
+        LOG(DFATAL) << "This function does not accept any frame types other than "
+                       "DATA, HEADERS, and CONTINUATION";
         break;
     }
   }

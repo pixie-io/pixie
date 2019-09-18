@@ -88,11 +88,11 @@ Status ProcStatConnector::GetProcStat(const std::vector<std::string>& parsed_str
 
 void ProcStatConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
                                          DataTable* data_table) {
-  CHECK_LT(table_num, num_tables())
+  DCHECK_LT(table_num, num_tables())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
 
   auto parsed_str = GetProcParams();
-  PL_CHECK_OK(GetProcStat(parsed_str));
+  ECHECK(GetProcStat(parsed_str).ok());
 
   RecordBuilder<&kTable> r(data_table);
   r.Append<r.ColIndex("time_")>(cpu_usage_.timestamp);

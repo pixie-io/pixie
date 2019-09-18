@@ -338,7 +338,7 @@ void StirlingImpl::WaitForThreadJoin() {
 }
 
 void StirlingImpl::WaitForStop() {
-  CHECK(!run_enable_) << "Should only be called from Stop().";
+  ECHECK(!run_enable_) << "Should only be called from Stop().";
 
   // If Stirling is managing the thread, this should be sufficient.
   WaitForThreadJoin();

@@ -12,7 +12,7 @@ using stirlingpb::Subscribe;
 
 void PubSubManager::GeneratePublishProto(Publish* publish_pb,
                                          const InfoClassManagerVec& info_class_mgrs) {
-  CHECK(publish_pb != nullptr);
+  ECHECK(publish_pb != nullptr);
   // For each InfoClassManager get its proto and update publish_message.
   for (auto& schema : info_class_mgrs) {
     InfoClass* info_class_proto = publish_pb->add_published_info_classes();

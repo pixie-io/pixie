@@ -21,7 +21,7 @@ Status PIDRuntimeConnector::StopImpl() {
 
 void PIDRuntimeConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
                                            DataTable* data_table) {
-  CHECK_LT(table_num, kTables.size())
+  DCHECK_LT(table_num, kTables.size())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
 
   // TODO(kgandhi): PL-452 There is an extra copy when calling get_table_offline. We should extract
