@@ -19,7 +19,7 @@ import (
 func DeleteSecret(clientset *kubernetes.Clientset, namespace, name string) {
 	err := clientset.CoreV1().Secrets(namespace).Delete(name, &metav1.DeleteOptions{})
 	if err != nil {
-		log.WithError(err).Info("could not delete secret")
+		log.WithError(err).Debug("could not delete secret")
 	} else {
 		log.Info(fmt.Sprintf("Deleted secret: %s", name))
 	}
@@ -29,7 +29,7 @@ func DeleteSecret(clientset *kubernetes.Clientset, namespace, name string) {
 func GetSecret(clientset *kubernetes.Clientset, namespace, name string) *v1.Secret {
 	secret, err := clientset.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-		log.WithError(err).Info("could not get secret")
+		log.WithError(err).Debug("could not get secret")
 	}
 
 	return secret
