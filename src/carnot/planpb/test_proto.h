@@ -105,6 +105,14 @@ column_types: FLOAT64
 column_names: "usage"
 )";
 
+const char* kMemSourceOperatorWithTablet1 = R"(
+name: "cpu"
+column_idxs: 1
+column_types: FLOAT64
+column_names: "usage"
+tablet: $0
+)";
+
 const char* kMemSourceOperatorRange = R"(
 name: "cpu"
 start_time: {
@@ -828,6 +836,15 @@ planpb::Operator CreateTestSource1PB() {
   planpb::Operator op;
   auto op_proto = absl::Substitute(kOperatorProtoTmpl, "MEMORY_SOURCE_OPERATOR", "mem_source_op",
                                    kMemSourceOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestSourceWithTablets1PB(const types::TabletID& tablet_value) {
+  planpb::Operator op;
+  auto mem_proto = absl::Substitute(kMemSourceOperatorWithTablet1, tablet_value);
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "MEMORY_SOURCE_OPERATOR", "mem_source_op", mem_proto);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

@@ -69,6 +69,7 @@ class MemorySourceOperator : public Operator {
   int64_t start_time() const { return pb_.start_time().value(); }
   int64_t stop_time() const { return pb_.stop_time().value(); }
   std::vector<int64_t> Columns() const { return column_idxs_; }
+  const types::TabletID& Tablet() const { return pb_.tablet(); }
 
  private:
   planpb::MemorySourceOperator pb_;
