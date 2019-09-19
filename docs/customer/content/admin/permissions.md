@@ -4,4 +4,4 @@ metaTitle: "Administration | Pixie"
 metaDescription: "How to Install ..."
 ---
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Current Pixie releases are intended for Admin users only and do not include support for role-based access control (RBAC).

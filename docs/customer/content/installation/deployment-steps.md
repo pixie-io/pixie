@@ -4,16 +4,18 @@ metaTitle: "Installation | Pixie"
 metaDescription: "Pixie is ..."
 ---
 
-## Step 1
+Administrators can setup Pixie in seven simple steps: 
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+> **Step 1:** Visit the [sign-up page](https://withpixie.ai/create).
 
+> **Step 2:** Claim your Pixie site.
 
-## Step 2
+> **Step 3:** Sign-up with your non-personal google account.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+> **Step 4:** Copy the Pixie CLI deployment curl command.
 
+> **Step 5:** Run the command in your Kubernetes cluster.
 
-## Step 3
+> **Step 6:** Manually self-verify web-certifactes.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+> **Step 7:** The UI will auto-refresh to log you into the Pixie console!

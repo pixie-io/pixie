@@ -20,8 +20,8 @@ const config = {
              '/getting-started/system-overview',
              '/getting-started/compatibility-requirements',
              '/getting-started/support',
-             '/installation',
              '/admin',
+             '/installation',
              '/user-guides',
         ],
         links: [
