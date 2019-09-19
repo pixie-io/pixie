@@ -380,8 +380,8 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_no_match) {
               HasCompilerError("Number of matching tablets must be greater than 0."));
 }
 
-using TabletRulesIntegrationTest = OperatorTests;
-TEST_F(TabletRulesIntegrationTest, combined_tests) {
+using TabletizerTest = OperatorTests;
+TEST_F(TabletizerTest, combined_tests) {
   distributedpb::CarnotInfo carnot_info;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kCarnotInfo, &carnot_info));
 
@@ -399,13 +399,7 @@ TEST_F(TabletRulesIntegrationTest, combined_tests) {
 
   int64_t mem_src_id = mem_src->id();
 
-  TabletSourceConversionRule tabletization_rule(carnot_info);
-  auto result = tabletization_rule.Execute(graph.get());
-  EXPECT_OK(result);
-  EXPECT_TRUE(result.ConsumeValueOrDie());
-
-  MemorySourceTabletRule rule;
-  result = rule.Execute(graph.get());
+  auto result = Tabletizer::Execute(carnot_info, graph.get());
   EXPECT_OK(result);
   EXPECT_TRUE(result.ConsumeValueOrDie());
 
@@ -440,6 +434,34 @@ TEST_F(TabletRulesIntegrationTest, combined_tests) {
     EXPECT_FALSE(Match(node, TabletSourceGroup()))
         << "Tablet source group should not exist at this point.";
   }
+}
+
+TEST_F(TabletizerTest, no_table_info_for_memory_source) {
+  distributedpb::CarnotInfo carnot_info;
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kCarnotInfo, &carnot_info));
+
+  Relation relation0;
+  EXPECT_OK(relation0.FromProto(&(carnot_info.table_info()[0].relation())));
+
+  // This table doesn't have tablet keys so the rule should not do anything.
+  auto mem_src = MakeMemSource("other_table", relation0);
+  auto mem_sink = MakeMemSink(mem_src, "out");
+
+  int64_t mem_src_id = mem_src->id();
+
+  auto result = Tabletizer::Execute(carnot_info, graph.get());
+  EXPECT_OK(result);
+  EXPECT_FALSE(result.ConsumeValueOrDie());
+
+  // Check to see that the group is no longer available
+  EXPECT_TRUE(graph->HasNode(mem_src_id));
+
+  // Check to see that mem_sink1 has a new parent that is a union.
+  ASSERT_EQ(mem_sink->parents().size(), 1UL);
+  OperatorIR* mem_sink_parent = mem_sink->parents()[0];
+  ASSERT_EQ(mem_sink_parent->type(), IRNodeType::kMemorySource);
+  auto mem_source = static_cast<MemorySourceIR*>(mem_sink_parent);
+  EXPECT_FALSE(mem_source->HasTablet());
 }
 
 }  // namespace distributed

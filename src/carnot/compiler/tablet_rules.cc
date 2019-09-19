@@ -15,16 +15,21 @@ StatusOr<bool> TabletSourceConversionRule::Apply(IRNode* ir_node) {
 StatusOr<bool> TabletSourceConversionRule::ReplaceMemorySourceWithTabletSourceGroup(
     MemorySourceIR* mem_source_ir) {
   const std::string& table_name = mem_source_ir->table_name();
-  const distributedpb::TableInfo& table_info = GetTableInfo(table_name);
-  const std::string& tablet_key = table_info.tabletization_key();
+
+  // If a table doesn't have table info then don't do anything.
+  const distributedpb::TableInfo* table_info = GetTableInfo(table_name);
+  if (table_info == nullptr) {
+    return false;
+  }
+  const std::string& tablet_key = table_info->tabletization_key();
   if (tablet_key.empty()) {
     return false;
   }
 
   // Get the tablet values out.
   std::vector<types::TabletID> tablets;
-  for (int64_t i = 0; i < table_info.tablets_size(); ++i) {
-    tablets.push_back(table_info.tablets()[i]);
+  for (int64_t i = 0; i < table_info->tablets_size(); ++i) {
+    tablets.push_back(table_info->tablets()[i]);
   }
 
   // Make the tablet source groups
@@ -43,17 +48,15 @@ StatusOr<bool> TabletSourceConversionRule::ReplaceMemorySourceWithTabletSourceGr
   return true;
 }
 
-const distributedpb::TableInfo& TabletSourceConversionRule::GetTableInfo(
+const distributedpb::TableInfo* TabletSourceConversionRule::GetTableInfo(
     const std::string& table_name) {
   DCHECK_GT(carnot_info_.table_info_size(), 0);
   for (int64_t i = 0; i < carnot_info_.table_info_size(); ++i) {
     if (carnot_info_.table_info()[i].table() == table_name) {
-      return carnot_info_.table_info()[i];
+      return &(carnot_info_.table_info()[i]);
     }
   }
-  CHECK(false) << "Couldn't find table: " << table_name;
-  // for(int64_t)
-  return carnot_info_.table_info()[0];
+  return nullptr;
 }
 
 StatusOr<bool> MemorySourceTabletRule::Apply(IRNode* ir_node) {
@@ -220,6 +223,14 @@ StatusOr<MemorySourceIR*> MemorySourceTabletRule::CreateMemorySource(
   // Set the tablet value.
   mem_source_ir->SetTabletValue(tablet_value);
   return mem_source_ir;
+}
+
+StatusOr<bool> Tabletizer::Execute(const distributedpb::CarnotInfo& carnot_info, IR* ir_plan) {
+  TabletSourceConversionRule rule1(carnot_info);
+  MemorySourceTabletRule rule2;
+  PL_ASSIGN_OR_RETURN(bool rule1_changed, rule1.Execute(ir_plan));
+  PL_ASSIGN_OR_RETURN(bool rule2_changed, rule2.Execute(ir_plan));
+  return rule1_changed || rule2_changed;
 }
 
 }  // namespace distributed

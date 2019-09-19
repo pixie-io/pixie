@@ -28,7 +28,7 @@ class TabletSourceConversionRule : public Rule {
  private:
   StatusOr<bool> Apply(IRNode* ir_node) override;
   StatusOr<bool> ReplaceMemorySourceWithTabletSourceGroup(MemorySourceIR* mem_source_ir);
-  const distributedpb::TableInfo& GetTableInfo(const std::string& table_name);
+  const distributedpb::TableInfo* GetTableInfo(const std::string& table_name);
 
   const distributedpb::CarnotInfo& carnot_info_;
 };
@@ -72,6 +72,11 @@ class MemorySourceTabletRule : public Rule {
    * function.
    */
   absl::flat_hash_set<types::TabletID> GetAndTabletValues(FuncIR* func);
+};
+
+class Tabletizer {
+ public:
+  static StatusOr<bool> Execute(const distributedpb::CarnotInfo& carnot_info, IR* ir_plan);
 };
 
 }  // namespace distributed
