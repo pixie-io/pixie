@@ -28,7 +28,7 @@ final class ArcanistGoVetLinter extends ArcanistExternalLinter {
     if (Filesystem::binaryExists($binary)) {
       // Vet is only accessible through 'go vet' or 'go tool vet'
       // Let's manually try to find out if it's installed.
-      list($err, $stdout, $stderr) = exec_manual('go tool vet');
+      list($err, $stdout, $stderr) = exec_manual('go vet');
       if ($err === 3) {
         throw new ArcanistMissingLinterException(
           sprintf(
@@ -59,7 +59,7 @@ final class ArcanistGoVetLinter extends ArcanistExternalLinter {
   }
 
   protected function getMandatoryFlags() {
-    return ['tool', 'vet'];
+    return ['vet'];
   }
 
   protected function getDefaultMessageSeverity($code) {
@@ -76,12 +76,12 @@ final class ArcanistGoVetLinter extends ArcanistExternalLinter {
       if (count($matches) === 6) {
         $message = new ArcanistLintMessage();
         $message->setPath($path);
-        $message->setLine($matches[3]);
-        $message->setChar($matches[4]);
+        $message->setLine($matches[2]);
+        $message->setChar($matches[3]);
         $code = "E00";
         $message->setCode($code);
         $message->setName($this->getLinterName());
-        $message->setDescription(ucfirst(trim($matches[5])));
+        $message->setDescription(ucfirst(trim($matches[4])));
         $severity = $this->getLintMessageSeverity($code);
         $message->setSeverity($severity);
 
