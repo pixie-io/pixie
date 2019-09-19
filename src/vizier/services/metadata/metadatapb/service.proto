@@ -5,6 +5,7 @@ package pl.vizier.services.metadata;
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/common/uuid/proto/uuid.proto";
 import "src/table_store/proto/schema.proto";
+import "src/carnot/compiler/distributedpb/distributed_plan.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb;metadatapb";
 
@@ -73,6 +74,8 @@ message AgentStatus {
     AgentState state = 3;
     // Time in nanoseconds of when the agent was created.
     int64 create_time_ns = 4;
+    // Info that describes the carnot instance for the agent.
+    pl.carnot.compiler.distributedpb.CarnotInfo carnot_info = 5;
 }
 
 // AgentInfo contains information about host and agent running on a given machine.
