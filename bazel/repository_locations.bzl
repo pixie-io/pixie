@@ -1,16 +1,20 @@
 REPOSITORY_LOCATIONS = dict(
     bazel_gazelle = dict(
-        sha256 = "3c681998538231a2d24d0c07ed5a7658cb72bfb5fd4bf9911157c0e9ac6a2687",
-        urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/0.17.0/bazel-gazelle-0.17.0.tar.gz"],
+        sha256 = "7fc87f4170011201b1690326e8c16c5d802836e3a0d617d8f75c3af2b23180c4",
+        urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/0.18.2/bazel-gazelle-0.18.2.tar.gz"],
     ),
     io_bazel_rules_go = dict(
-        sha256 = "a82a352bffae6bee4e95f68a8d80a70e87f42c4741e6a448bec11998fcc82329",
-        urls = ["https://github.com/bazelbuild/rules_go/releases/download/0.18.5/rules_go-0.18.5.tar.gz"],
+        sha256 = "ae8c36ff6e565f674c7a3692d6a9ea1096e4c1ade497272c2108a810fb39acd2",
+        urls = [
+            "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/rules_go" +
+            "/releases/download/0.19.4/rules_go-0.19.4.tar.gz",
+            "https://github.com/bazelbuild/rules_go/releases/download/0.19.4/rules_go-0.19.4.tar.gz",
+        ],
     ),
     com_github_bazelbuild_buildtools = dict(
-        sha256 = "9da0e2911d78554be7d926d6e7a360d62856951da052108ee0772258b2b5c800",
-        strip_prefix = "buildtools-db073457c5a56d810e46efc18bb93a4fd7aa7b5e",
-        urls = ["https://github.com/bazelbuild/buildtools/archive/db073457c5a56d810e46efc18bb93a4fd7aa7b5e.tar.gz"],
+        sha256 = "f3ef44916e6be705ae862c0520bac6834dd2ff1d4ac7e5abc61fe9f12ce7a865",
+        strip_prefix = "buildtools-0.29.0",
+        urls = ["https://github.com/bazelbuild/buildtools/archive/0.29.0.tar.gz"],
     ),
     com_google_benchmark = dict(
         sha256 = "3c6a165b6ecc948967a1ead710d4a181d7b0fbcaa183ef7ea84604994966221a",
@@ -18,9 +22,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/benchmark/archive/v1.5.0.tar.gz"],
     ),
     io_bazel_rules_skylib = dict(
-        sha256 = "9245b0549e88e356cd6a25bf79f97aa19332083890b7ac6481a2affb6ada9752",
-        strip_prefix = "bazel-skylib-0.9.0",
-        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.9.0.tar.gz"],
+        sha256 = "2ea8a5ed2b448baf4a6855d3ce049c4c452a6470b1efd1504fdb7c1c134d220a",
+        strip_prefix = "bazel-skylib-0.8.0",
+        urls = ["https://github.com/bazelbuild/bazel-skylib/archive/0.8.0.tar.gz"],
     ),
     io_bazel_rules_docker = dict(
         sha256 = "9ff889216e28c918811b77999257d4ac001c26c1f7c7fb17a79bc28abf74182e",

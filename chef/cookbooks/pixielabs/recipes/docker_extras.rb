@@ -8,10 +8,6 @@ directory '/pl' do
   action :create
 end
 
-execute 'Install gazelle' do
-  command 'go get -u github.com/bazelbuild/bazel-gazelle/cmd/gazelle'
-end
-
 execute 'Install golint' do
-  command 'go get -u github.com/golang/lint/golint'
+  command 'go get -u golang.org/x/lint/golint'
 end
