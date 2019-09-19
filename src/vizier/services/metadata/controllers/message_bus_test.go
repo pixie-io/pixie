@@ -21,6 +21,7 @@ import (
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 )
 
 var testOptions = server.Options{
@@ -137,7 +138,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 	}
 
 	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(registerAgentRequestPB, req); err != nil {
+	if err := proto.UnmarshalText(testutils.RegisterAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()
@@ -230,7 +231,7 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	}
 
 	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(registerAgentRequestPB, req); err != nil {
+	if err := proto.UnmarshalText(testutils.RegisterAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()
@@ -274,7 +275,7 @@ func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 	}
 
 	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(invalidRegisterAgentRequestPB, req); err != nil {
+	if err := proto.UnmarshalText(testutils.InvalidRegisterAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()
@@ -318,7 +319,7 @@ func TestAgentCreateFailed(t *testing.T) {
 	}
 
 	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(registerAgentRequestPB, req); err != nil {
+	if err := proto.UnmarshalText(testutils.RegisterAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()
@@ -369,7 +370,7 @@ func TestAgentUpdateRequest(t *testing.T) {
 	respPb, err := resp.Marshal()
 
 	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(updateAgentRequestPB, req); err != nil {
+	if err := proto.UnmarshalText(testutils.UpdateAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()
@@ -404,7 +405,7 @@ func TestAgentUpdateRequestInvalidUUID(t *testing.T) {
 	}
 
 	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(invalidUpdateAgentRequestPB, req); err != nil {
+	if err := proto.UnmarshalText(testutils.InvalidUpdateAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()
@@ -495,13 +496,13 @@ func TestAgentHeartbeat(t *testing.T) {
 	}
 
 	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(heartbeatPB, req); err != nil {
+	if err := proto.UnmarshalText(testutils.HeartbeatPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()
 
 	resp := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(heartbeatAckPB, resp); err != nil {
+	if err := proto.UnmarshalText(testutils.HeartbeatAckPB, resp); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	respPb, err := resp.Marshal()
@@ -552,7 +553,7 @@ func TestAgentHeartbeatInvalidUUID(t *testing.T) {
 	}
 
 	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(invalidHeartbeatPB, req); err != nil {
+	if err := proto.UnmarshalText(testutils.InvalidHeartbeatPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()
@@ -626,7 +627,7 @@ func TestUpdateHeartbeatFailed(t *testing.T) {
 	}
 
 	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(heartbeatPB, req); err != nil {
+	if err := proto.UnmarshalText(testutils.HeartbeatPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()
@@ -687,7 +688,7 @@ func TestUnhandledMessage(t *testing.T) {
 	}
 
 	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(heartbeatAckPB, req); err != nil {
+	if err := proto.UnmarshalText(testutils.HeartbeatAckPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()
@@ -716,7 +717,7 @@ func TestClose(t *testing.T) {
 	}
 
 	req := new(messages.VizierMessage)
-	if err := proto.UnmarshalText(registerAgentRequestPB, req); err != nil {
+	if err := proto.UnmarshalText(testutils.RegisterAgentRequestPB, req); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	reqPb, err := req.Marshal()

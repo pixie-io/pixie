@@ -1,19 +1,26 @@
-package controllers_test
+package testutils
 
 import ()
 
 // This file contains the protobufs used in vizier/services/metadata/controllers tests.
 
 // AgentInfo
-const clockNowNS = 1e9 * 70                  // 70s in NS. This is slightly greater than the expiration time for the unhealthy agent.
-const healthyAgentLastHeartbeatNS = 1e9 * 65 // 65 seconds in NS. This is slightly less than the current time.
+// ClockNowNS is the now time to use for the test clocks.
+const ClockNowNS = 1e9 * 70 // 70s in NS. This is slightly greater than the expiration time for the unhealthy agent.
+// HealthyAgentLastHeartbeatNS is the last heartbeat of the healthy agent.
+const HealthyAgentLastHeartbeatNS = 1e9 * 65 // 65 seconds in NS. This is slightly less than the current time.
 
-var newAgentUUID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-var existingAgentUUID = "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
-var unhealthyAgentUUID = "8ba7b810-9dad-11d1-80b4-00c04fd430c8"
+// NewAgentUUID is the UUID of the agent that doesn't yet exist.
+var NewAgentUUID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
-// LastHeartBeatNS is 65 seconds, in NS.
-var existingAgentInfo = `
+// ExistingAgentUUID is the UUID of an agent that already exists and is healthy.
+var ExistingAgentUUID = "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
+// UnhealthyAgentUUID is the UUID of an agent that exists but is unhealthy.
+var UnhealthyAgentUUID = "8ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
+// ExistingAgentInfo is the agent info for the healthy agent that already exists.
+var ExistingAgentInfo = `
 agent_id {
   data: "7ba7b8109dad11d180b400c04fd430c8"
 }
@@ -24,7 +31,8 @@ create_time_ns: 0
 last_heartbeat_ns: 65000000000
 `
 
-var unhealthyAgentInfo = `
+// UnhealthyAgentInfo is the agent info for the unhealthy agent.
+var UnhealthyAgentInfo = `
 agent_id {
   data: "8ba7b8109dad11d180b400c04fd430c8"
 }
@@ -36,8 +44,8 @@ last_heartbeat_ns: 0
 `
 
 // AgentStatus
-
-const agent1StatusPB = `
+// Agent1StatusPB is a protobuf for an agent status.
+const Agent1StatusPB = `
 info {
   agent_id {
     data: "11285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
@@ -51,7 +59,8 @@ create_time_ns: 5
 state: 1
 `
 
-const agent2StatusPB = `
+// Agent2StatusPB is the protobuf for another agent status.
+const Agent2StatusPB = `
 info {
   agent_id {
     data: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
@@ -67,7 +76,8 @@ state: 1
 
 // Processes
 
-var processCreated1PB = `
+// ProcessCreated1PB is the protobuf for a created process.
+var ProcessCreated1PB = `
 upid {
   low: 89101
   high: 528280977975
@@ -78,7 +88,8 @@ cmdline: "./bin/bash"
 cid: "container_1"
 `
 
-var processInfo1PB = `
+// ProcessInfo1PB is the process info for the first created process.
+var ProcessInfo1PB = `
 upid {
   low: 89101
   high: 528280977975
@@ -89,7 +100,8 @@ process_args: "./bin/bash"
 cid: "container_1"
 `
 
-var processCreated2PB = `
+// ProcessCreated2PB is the protobuf for another created process.
+var ProcessCreated2PB = `
 upid {
   low: 468
   high: 528280977975
@@ -100,7 +112,8 @@ cmdline: "test"
 cid: "container_2"
 `
 
-var processInfo2PB = `
+// ProcessInfo2PB is the process info for the second created process.
+var ProcessInfo2PB = `
 upid {
   low: 468
   high: 528280977975
@@ -111,7 +124,8 @@ process_args: "test"
 cid: "container_2"
 `
 
-var processTerminated1PB = `
+// ProcessTerminated1PB is the protobuf for a terminated process.
+var ProcessTerminated1PB = `
 upid {
   low: 89101
   high: 528280977975
@@ -119,7 +133,8 @@ upid {
 stop_timestamp_ns: 6
 `
 
-var processTerminated2PB = `
+// ProcessTerminated2PB is a protobuf for another terminated process.
+var ProcessTerminated2PB = `
 upid {
   low:  468
   high: 528280977975
@@ -127,7 +142,8 @@ upid {
 stop_timestamp_ns: 10
 `
 
-var process1PB = `
+// Process1PB is the protobuf for a process.
+var Process1PB = `
 name: 'p1'
 upid {
   low: 89101
@@ -136,7 +152,8 @@ upid {
 cid: "container_1"
 `
 
-var process2PB = `
+// Process2PB is the protobuf for another process.
+var Process2PB = `
 name: 'p2'
 upid {
   low: 246
@@ -147,7 +164,8 @@ cid: "container_2"
 
 // Containers
 
-var containerInfoPB = `
+// ContainerInfoPB is the protobuf for a container info.
+var ContainerInfoPB = `
 name: "container_1"
 uid: "container1"
 pod_uid: "ijkl"
@@ -156,7 +174,8 @@ namespace: "ns"
 
 // Schema
 
-var schemaInfoPB = `
+// SchemaInfoPB is the protobuf for a schema info.
+var SchemaInfoPB = `
 name: "a_table"
 start_timestamp_ns: 2
 columns {
@@ -171,7 +190,8 @@ columns {
 
 // RegisterAgentRequest
 
-var registerAgentRequestPB = `
+// RegisterAgentRequestPB is the protobuf for a register agent request.
+var RegisterAgentRequestPB = `
 register_agent_request {
   info {
     agent_id {
@@ -184,7 +204,8 @@ register_agent_request {
 }
 `
 
-var invalidRegisterAgentRequestPB = `
+// InvalidRegisterAgentRequestPB is an invalid protobuf of a register agent request.
+var InvalidRegisterAgentRequestPB = `
 register_agent_request {
   info {
     agent_id {
@@ -199,7 +220,8 @@ register_agent_request {
 
 // UpdateAgentRequest
 
-var updateAgentRequestPB = `
+// UpdateAgentRequestPB is the protobuf for an update agent request.
+var UpdateAgentRequestPB = `
 update_agent_request {
   info {
     agent_id {
@@ -212,7 +234,8 @@ update_agent_request {
 }
 `
 
-var invalidUpdateAgentRequestPB = `
+// InvalidUpdateAgentRequestPB is an invalid protobuf for an update agent request.
+var InvalidUpdateAgentRequestPB = `
 update_agent_request {
   info {
     agent_id {
@@ -227,7 +250,8 @@ update_agent_request {
 
 // HeartbeatAck
 
-var heartbeatAckPB = `
+// HeartbeatAckPB is a protobuf for a heartbeat ack.
+var HeartbeatAckPB = `
 heartbeat_ack {
   time: 10
   update_info {
@@ -249,7 +273,8 @@ heartbeat_ack {
 
 // Heartbeat
 
-var heartbeatPB = `
+// HeartbeatPB is the protobuf for a heartbeat.
+var HeartbeatPB = `
 heartbeat {
   time: 1,
   agent_id: {
@@ -263,7 +288,8 @@ heartbeat {
 }
 `
 
-var invalidHeartbeatPB = `
+// InvalidHeartbeatPB is an invalid protobuf for a heartbeat.
+var InvalidHeartbeatPB = `
 heartbeat {
   time: 1,
   agent_id: {
@@ -274,7 +300,8 @@ heartbeat {
 
 // Endpoint
 
-const endpointsPb = `
+// EndpointsPb is the protobuf for an endpoints object.
+const EndpointsPb = `
 subsets {
   addresses {
     ip: "127.0.0.1"
@@ -324,7 +351,8 @@ metadata {
 
 // Service
 
-const servicePb = `
+// ServicePb is the protobuf for a service object.
+const ServicePb = `
 metadata {
   name: "object_md"
   namespace: "a_namespace"
@@ -364,7 +392,8 @@ spec {
 
 // Pod
 
-const podPb = `
+// PodPb is the protobuf for a pod object.
+const PodPb = `
 metadata {
   name: "object_md"
   uid: "ijkl"
@@ -390,7 +419,8 @@ spec {
 }
 `
 
-const podPbWithContainers = `
+// PodPbWithContainers is a protobuf for a pod object that has containers.
+const PodPbWithContainers = `
 metadata {
   name: "object_md"
   uid: "ijkl"

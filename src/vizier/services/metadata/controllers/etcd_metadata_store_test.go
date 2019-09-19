@@ -16,6 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	data "pixielabs.ai/pixielabs/src/vizier/services/metadata/datapb"
 )
 
@@ -41,7 +42,7 @@ func CreateAgent(t *testing.T, agentID string, client *clientv3.Client, agentPb 
 
 	// Add schema info.
 	schema := new(metadatapb.SchemaInfo)
-	if err := proto.UnmarshalText(schemaInfoPB, schema); err != nil {
+	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	s, err := schema.Marshal()
@@ -65,7 +66,7 @@ func TestUpdateEndpoints(t *testing.T) {
 	}
 
 	expectedPb := &metadatapb.Endpoints{}
-	if err := proto.UnmarshalText(endpointsPb, expectedPb); err != nil {
+	if err := proto.UnmarshalText(testutils.EndpointsPb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -101,7 +102,7 @@ func TestUpdatePod(t *testing.T) {
 	}
 
 	expectedPb := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPb, expectedPb); err != nil {
+	if err := proto.UnmarshalText(testutils.PodPb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -132,7 +133,7 @@ func TestUpdateService(t *testing.T) {
 	}
 
 	expectedPb := &metadatapb.Service{}
-	if err := proto.UnmarshalText(servicePb, expectedPb); err != nil {
+	if err := proto.UnmarshalText(testutils.ServicePb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -163,7 +164,7 @@ func TestUpdateContainer(t *testing.T) {
 	}
 
 	expectedPb := &metadatapb.ContainerInfo{}
-	if err := proto.UnmarshalText(containerInfoPB, expectedPb); err != nil {
+	if err := proto.UnmarshalText(testutils.ContainerInfoPB, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -194,7 +195,7 @@ func TestUpdateContainersFromPod(t *testing.T) {
 	}
 
 	podInfo := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPbWithContainers, podInfo); err != nil {
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, podInfo); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -223,7 +224,7 @@ func TestUpdateSchemas(t *testing.T) {
 		t.Fatal("Failed to create metadata store.")
 	}
 
-	u, err := uuid.FromString(newAgentUUID)
+	u, err := uuid.FromString(testutils.NewAgentUUID)
 	if err != nil {
 		t.Fatal("Could not parse UUID from string.")
 	}
@@ -231,7 +232,7 @@ func TestUpdateSchemas(t *testing.T) {
 	schemas := make([]*metadatapb.SchemaInfo, 1)
 
 	schema1 := new(metadatapb.SchemaInfo)
-	if err := proto.UnmarshalText(schemaInfoPB, schema1); err != nil {
+	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	schemas[0] = schema1
@@ -239,7 +240,7 @@ func TestUpdateSchemas(t *testing.T) {
 	err = mds.UpdateSchemas(u, schemas)
 	assert.Nil(t, err)
 
-	schemaResp, err := etcdClient.Get(context.Background(), "/agents/"+newAgentUUID+"/schema/a_table")
+	schemaResp, err := etcdClient.Get(context.Background(), "/agents/"+testutils.NewAgentUUID+"/schema/a_table")
 	if err != nil {
 		t.Fatal("Unable to get container from etcd")
 	}
@@ -472,8 +473,8 @@ func TestGetAgents(t *testing.T) {
 		t.Fatal("Failed to create metadata store.")
 	}
 
-	CreateAgent(t, existingAgentUUID, etcdClient, existingAgentInfo)
-	CreateAgent(t, unhealthyAgentUUID, etcdClient, unhealthyAgentInfo)
+	CreateAgent(t, testutils.ExistingAgentUUID, etcdClient, testutils.ExistingAgentInfo)
+	CreateAgent(t, testutils.UnhealthyAgentUUID, etcdClient, testutils.UnhealthyAgentInfo)
 
 	// Add agent lock key to etcd to make sure GetAgents filters it out.
 	_, err = etcdClient.Put(context.Background(),
@@ -490,13 +491,13 @@ func TestGetAgents(t *testing.T) {
 	if err != nil {
 		t.Fatal("Could not convert UUID to proto")
 	}
-	assert.Equal(t, existingAgentUUID, uid.String())
+	assert.Equal(t, testutils.ExistingAgentUUID, uid.String())
 
 	uid, err = utils.UUIDFromProto((*agents)[1].AgentID)
 	if err != nil {
 		t.Fatal("Could not convert UUID to proto")
 	}
-	assert.Equal(t, unhealthyAgentUUID, uid.String())
+	assert.Equal(t, testutils.UnhealthyAgentUUID, uid.String())
 }
 
 func TestGetPods(t *testing.T) {
@@ -789,13 +790,13 @@ func TestUpdateProcesses(t *testing.T) {
 	processes := make([]*metadatapb.ProcessInfo, 2)
 
 	p1 := new(metadatapb.ProcessInfo)
-	if err := proto.UnmarshalText(process1PB, p1); err != nil {
+	if err := proto.UnmarshalText(testutils.Process1PB, p1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	processes[0] = p1
 
 	p2 := new(metadatapb.ProcessInfo)
-	if err := proto.UnmarshalText(process2PB, p2); err != nil {
+	if err := proto.UnmarshalText(testutils.Process2PB, p2); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	processes[1] = p2

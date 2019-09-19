@@ -16,6 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 )
 
 func TestObjectToEndpointsProto(t *testing.T) {
@@ -25,7 +26,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
 	expectedPb := &metadatapb.Endpoints{}
-	if err := proto.UnmarshalText(endpointsPb, expectedPb); err != nil {
+	if err := proto.UnmarshalText(testutils.EndpointsPb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -167,7 +168,7 @@ func TestNoHostnameResolvedProto(t *testing.T) {
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
 	expectedPb := &metadatapb.Endpoints{}
-	if err := proto.UnmarshalText(endpointsPb, expectedPb); err != nil {
+	if err := proto.UnmarshalText(testutils.EndpointsPb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -281,7 +282,7 @@ func TestAddToAgentUpdateQueueFailed(t *testing.T) {
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
 	expectedPb := &metadatapb.Endpoints{}
-	if err := proto.UnmarshalText(endpointsPb, expectedPb); err != nil {
+	if err := proto.UnmarshalText(testutils.EndpointsPb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -445,7 +446,7 @@ func TestKubernetesEndpointHandler(t *testing.T) {
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
 	expectedPb := &metadatapb.Endpoints{}
-	if err := proto.UnmarshalText(endpointsPb, expectedPb); err != nil {
+	if err := proto.UnmarshalText(testutils.EndpointsPb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -511,7 +512,7 @@ func TestObjectToServiceProto(t *testing.T) {
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
 	expectedPb := &metadatapb.Service{}
-	if err := proto.UnmarshalText(servicePb, expectedPb); err != nil {
+	if err := proto.UnmarshalText(testutils.ServicePb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -594,7 +595,7 @@ func TestObjectToPodProto(t *testing.T) {
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
 
 	expectedPb := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPbWithContainers, expectedPb); err != nil {
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -704,7 +705,7 @@ func TestObjectToPodProto(t *testing.T) {
 
 func TestGetResourceUpdateFromPod(t *testing.T) {
 	pod := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPbWithContainers, pod); err != nil {
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, pod); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -722,7 +723,7 @@ func TestGetResourceUpdateFromPod(t *testing.T) {
 
 func TestGetResourceUpdateFromEndpoints(t *testing.T) {
 	ep := &metadatapb.Endpoints{}
-	if err := proto.UnmarshalText(endpointsPb, ep); err != nil {
+	if err := proto.UnmarshalText(testutils.EndpointsPb, ep); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -739,7 +740,7 @@ func TestGetResourceUpdateFromEndpoints(t *testing.T) {
 
 func TestGetContainerResourceUpdatesFromPod(t *testing.T) {
 	pod := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPbWithContainers, pod); err != nil {
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, pod); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
@@ -799,7 +800,7 @@ func TestSyncPodData(t *testing.T) {
 	// Test case 1: A pod that is active, and known to be active by etcd.
 	etcdPods := make([](*metadatapb.Pod), 4)
 	activePodPb := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPbWithContainers, activePodPb); err != nil {
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, activePodPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	activePodPb.Metadata.UID = "active_pod"
@@ -808,7 +809,7 @@ func TestSyncPodData(t *testing.T) {
 
 	// Test case 2: A pod that is dead, and known to be dead by etcd.
 	deadPodPb := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPbWithContainers, deadPodPb); err != nil {
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, deadPodPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	deadPodPb.Metadata.DeletionTimestampNS = 10
@@ -817,7 +818,7 @@ func TestSyncPodData(t *testing.T) {
 
 	// Test case 3: A pod that is dead, but which etcd does not know to be dead.
 	undeadPodPb := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPbWithContainers, undeadPodPb); err != nil {
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, undeadPodPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	undeadPodPb.Metadata.UID = "undead_pod"
@@ -826,7 +827,7 @@ func TestSyncPodData(t *testing.T) {
 	etcdPods[2] = undeadPodPb
 
 	deletedUndeadPodPb := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPbWithContainers, deletedUndeadPodPb); err != nil {
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, deletedUndeadPodPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	deletedUndeadPodPb.Metadata.UID = "undead_pod"
@@ -836,7 +837,7 @@ func TestSyncPodData(t *testing.T) {
 	// Test case 4: A pod that is dead, and known to be dead by etcd,
 	// but for which etcd thinks the inner container is alive.
 	anotherUndeadPodPb := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPbWithContainers, anotherUndeadPodPb); err != nil {
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, anotherUndeadPodPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	anotherUndeadPodPb.Metadata.UID = "another_undead_pod"
@@ -847,7 +848,7 @@ func TestSyncPodData(t *testing.T) {
 	etcdPods[3] = anotherUndeadPodPb
 
 	anotherDeletedUndeadPodPb := &metadatapb.Pod{}
-	if err := proto.UnmarshalText(podPbWithContainers, anotherDeletedUndeadPodPb); err != nil {
+	if err := proto.UnmarshalText(testutils.PodPbWithContainers, anotherDeletedUndeadPodPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	anotherDeletedUndeadPodPb.Metadata.UID = "another_undead_pod"
@@ -963,7 +964,7 @@ func TestSyncEndpointsData(t *testing.T) {
 
 	etcdEps := make([](*metadatapb.Endpoints), 3)
 	activeEpPb := &metadatapb.Endpoints{}
-	if err := proto.UnmarshalText(endpointsPb, activeEpPb); err != nil {
+	if err := proto.UnmarshalText(testutils.EndpointsPb, activeEpPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	activeEpPb.Metadata.UID = "active_ep"
@@ -971,7 +972,7 @@ func TestSyncEndpointsData(t *testing.T) {
 	etcdEps[0] = activeEpPb
 
 	deadEpPb := &metadatapb.Endpoints{}
-	if err := proto.UnmarshalText(endpointsPb, deadEpPb); err != nil {
+	if err := proto.UnmarshalText(testutils.EndpointsPb, deadEpPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	deadEpPb.Metadata.UID = "dead_ep"
@@ -979,7 +980,7 @@ func TestSyncEndpointsData(t *testing.T) {
 	etcdEps[1] = deadEpPb
 
 	undeadEpPb := &metadatapb.Endpoints{}
-	if err := proto.UnmarshalText(endpointsPb, undeadEpPb); err != nil {
+	if err := proto.UnmarshalText(testutils.EndpointsPb, undeadEpPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	undeadEpPb.Metadata.UID = "undead_ep"
@@ -987,7 +988,7 @@ func TestSyncEndpointsData(t *testing.T) {
 	etcdEps[2] = undeadEpPb
 
 	deletedUndeadEpPb := &metadatapb.Endpoints{}
-	if err := proto.UnmarshalText(endpointsPb, deletedUndeadEpPb); err != nil {
+	if err := proto.UnmarshalText(testutils.EndpointsPb, deletedUndeadEpPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	deletedUndeadEpPb.Metadata.UID = "undead_ep"
@@ -1038,7 +1039,7 @@ func TestSyncServicesData(t *testing.T) {
 
 	etcdServices := make([](*metadatapb.Service), 3)
 	activeServicePb := &metadatapb.Service{}
-	if err := proto.UnmarshalText(servicePb, activeServicePb); err != nil {
+	if err := proto.UnmarshalText(testutils.ServicePb, activeServicePb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	activeServicePb.Metadata.UID = "active_service"
@@ -1046,7 +1047,7 @@ func TestSyncServicesData(t *testing.T) {
 	etcdServices[0] = activeServicePb
 
 	deadServicePb := &metadatapb.Service{}
-	if err := proto.UnmarshalText(servicePb, deadServicePb); err != nil {
+	if err := proto.UnmarshalText(testutils.ServicePb, deadServicePb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	deadServicePb.Metadata.UID = "dead_service"
@@ -1054,7 +1055,7 @@ func TestSyncServicesData(t *testing.T) {
 	etcdServices[1] = deadServicePb
 
 	undeadServicePb := &metadatapb.Service{}
-	if err := proto.UnmarshalText(servicePb, undeadServicePb); err != nil {
+	if err := proto.UnmarshalText(testutils.ServicePb, undeadServicePb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	undeadServicePb.Metadata.UID = "undead_service"
@@ -1062,7 +1063,7 @@ func TestSyncServicesData(t *testing.T) {
 	etcdServices[2] = undeadServicePb
 
 	deletedUndeadServicePb := &metadatapb.Service{}
-	if err := proto.UnmarshalText(servicePb, deletedUndeadServicePb); err != nil {
+	if err := proto.UnmarshalText(testutils.ServicePb, deletedUndeadServicePb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	deletedUndeadServicePb.Metadata.UID = "undead_service"

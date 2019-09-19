@@ -15,6 +15,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
+	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 )
@@ -75,13 +76,13 @@ func TestGetAgentInfo(t *testing.T) {
 	assert.Equal(t, 2, len(resp.Info))
 
 	agentResp := new(metadatapb.AgentStatus)
-	if err := proto.UnmarshalText(agent1StatusPB, agentResp); err != nil {
+	if err := proto.UnmarshalText(testutils.Agent1StatusPB, agentResp); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	assert.Equal(t, agentResp, resp.Info[0])
 
 	agentResp = new(metadatapb.AgentStatus)
-	if err = proto.UnmarshalText(agent2StatusPB, agentResp); err != nil {
+	if err = proto.UnmarshalText(testutils.Agent2StatusPB, agentResp); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	assert.Equal(t, agentResp, resp.Info[1])
