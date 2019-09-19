@@ -58,12 +58,14 @@ func NewCmdDeploy() *cobra.Command {
 				log.Fatal("Version string is invalid")
 			}
 
+			depsOnly, _ := cmd.Flags().GetBool("deps_only")
+
 			err = updateYAMLsImageTag(path, versionString)
 			if err != nil {
 				log.WithError(err).Fatal("Failed to update image tags for YAML files.")
 			}
 
-			deploy(path)
+			deploy(path, depsOnly)
 
 			clusterID, _ := cmd.Flags().GetString("cluster_id")
 			if clusterID == "" {
@@ -97,12 +99,16 @@ func optionallyCreateNamespace(clientset *kubernetes.Clientset, namespace string
 	log.Infof("Created namespace %s", namespace)
 }
 
-func deploy(extractPath string) {
+func deploy(extractPath string, depsOnly bool) {
 	// NATS and etcd deploys depend on timing, so may sometimes fail. Include some retry behavior.
 	log.Info("Deploying NATS")
 	retryDeploy(path.Join(extractPath, "nats.yaml"))
 	log.Info("Deploying etcd")
 	retryDeploy(path.Join(extractPath, "etcd.yaml"))
+
+	if depsOnly {
+		return
+	}
 
 	log.Info("Deploying Vizier")
 	deployFile(path.Join(extractPath, "vizier.yaml"))
