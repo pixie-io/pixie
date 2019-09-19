@@ -84,6 +84,14 @@ inline std::string Repr(std::string_view buf, Radix radix = Radix::kHex,
   return res;
 }
 
+inline std::string BytesToAsciiHex(std::string_view buf) {
+  return Repr(buf, Radix::kHex, PrintConvPolicy::kToDigit);
+}
+
+inline std::string BytesToAsciiBin(std::string_view buf) {
+  return Repr(buf, Radix::kBin, PrintConvPolicy::kToDigit);
+}
+
 /**
  * Converts an input hex sequence in ASCII to bytes.
  *
