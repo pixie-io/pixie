@@ -44,7 +44,7 @@ export const DeployInstructions = (props: DeployInstructionsProps) => {
               }
             </DropdownButton>
             <CodeSnippet showCopy={true} language='bash'>
-              {'./pl_deploy deploy --cluster_id ' + props.clusterID + ' --use_version d84e3625-dirty'}
+              {'./pixie deploy --cluster_id ' + props.clusterID + ' --use_version d84e3625-dirty'}
             </CodeSnippet>
           </div>
           <div className='deploy-instructions--footer' style={{width: '100%'}}>
