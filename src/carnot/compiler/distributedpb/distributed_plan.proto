@@ -33,12 +33,10 @@ message CarnotInfo {
 message TableInfo {
   // The table that is associated with the tablets.
   string table = 1;
-  // The relation of this Table.
-  pl.table_store.schemapb.Relation relation = 2;
   // The tabletization key of the table.
-  string tabletization_key = 3;
+  string tabletization_key = 2;
   // The tablet values to use.
-  repeated string tablets = 4;
+  repeated string tablets = 3;
 }
 
 // The Distributed state of the distributed Carnot instances.

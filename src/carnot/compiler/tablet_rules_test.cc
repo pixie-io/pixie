@@ -19,7 +19,17 @@ using ::testing::ElementsAreArray;
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 
-using TabletSourceConversionRuleTest = OperatorTests;
+class TabletSourceConversionRuleTest : public OperatorTests {
+ protected:
+  void SetUpImpl() override {
+    relation0_ =
+        Relation({types::TIME64NS, types::UINT128, types::INT64}, {"time_", "upid", "cycles"});
+    relation1_ = Relation({types::TIME64NS, types::INT64}, {"time_", "read_bytes"});
+  }
+
+  Relation relation0_;
+  Relation relation1_;
+};
 
 const char* kCarnotInfo = R"proto(
 query_broker_address: "carnot"
@@ -28,55 +38,24 @@ processes_data: true
 accepts_remote_sources: false
 table_info {
   table: "cpu_table"
-  relation{
-    columns {
-      column_name: "time_"
-      column_type: TIME64NS
-    }
-    columns {
-      column_name: "upid"
-      column_type: UINT128
-    }
-    columns {
-      column_name: "cycles"
-      column_type: INT64
-    }
-  }
   tabletization_key: "upid"
   tablets: "1"
   tablets: "2"
 }
 table_info {
   table: "network"
-  relation {
-    columns {
-      column_name: "time_"
-      column_type: TIME64NS
-    }
-    columns {
-      column_name: "read_bytes"
-      column_type: INT64
-    }
-  }
 }
 )proto";
 
 TEST_F(TabletSourceConversionRuleTest, simple_test) {
   distributedpb::CarnotInfo carnot_info;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kCarnotInfo, &carnot_info));
-
-  Relation relation0;
-  EXPECT_OK(relation0.FromProto(&(carnot_info.table_info()[0].relation())));
-
-  Relation relation1;
-  EXPECT_OK(relation1.FromProto(&(carnot_info.table_info()[1].relation())));
-
   // This table has tablet keys so it should be transformed as appropriate.
-  auto mem_src0 = MakeMemSource("cpu_table", relation0);
+  auto mem_src0 = MakeMemSource("cpu_table", relation0_);
   auto mem_sink0 = MakeMemSink(mem_src0, "out");
 
   // This table does not have tablet keys so ti should not be transformed.
-  auto mem_src1 = MakeMemSource("network", relation0);
+  auto mem_src1 = MakeMemSource("network", relation1_);
   auto mem_sink1 = MakeMemSink(mem_src1, "out");
 
   TabletSourceConversionRule tabletization_rule(carnot_info);
@@ -107,7 +86,7 @@ TEST_F(TabletSourceConversionRuleTest, simple_test) {
   EXPECT_EQ(mem_sink1->parents()[0], mem_src1);
 }
 
-using MemorySourceTabletRuleTest = OperatorTests;
+using MemorySourceTabletRuleTest = TabletSourceConversionRuleTest;
 TEST_F(MemorySourceTabletRuleTest, tablet_source_group_unions) {
   Relation relation({types::UINT128, types::INT64, types::STRING}, {"upid", "cpu0", "name"});
   auto mem_src = MakeMemSource("table", relation);
@@ -380,13 +359,10 @@ TEST_F(MemorySourceTabletRuleTest, tablet_source_no_match) {
               HasCompilerError("Number of matching tablets must be greater than 0."));
 }
 
-using TabletizerTest = OperatorTests;
+using TabletizerTest = TabletSourceConversionRuleTest;
 TEST_F(TabletizerTest, combined_tests) {
   distributedpb::CarnotInfo carnot_info;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kCarnotInfo, &carnot_info));
-
-  Relation relation0;
-  EXPECT_OK(relation0.FromProto(&(carnot_info.table_info()[0].relation())));
 
   std::vector<types::TabletID> expected_tablet_values;
   ASSERT_EQ(carnot_info.table_info()[0].tablets_size(), 2);
@@ -394,7 +370,7 @@ TEST_F(TabletizerTest, combined_tests) {
   expected_tablet_values.push_back(carnot_info.table_info()[0].tablets(1));
 
   // This table has tablet keys so it should be transformed as appropriate.
-  auto mem_src = MakeMemSource("cpu_table", relation0);
+  auto mem_src = MakeMemSource("cpu_table", relation0_);
   auto mem_sink = MakeMemSink(mem_src, "out");
 
   int64_t mem_src_id = mem_src->id();
@@ -440,11 +416,8 @@ TEST_F(TabletizerTest, no_table_info_for_memory_source) {
   distributedpb::CarnotInfo carnot_info;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kCarnotInfo, &carnot_info));
 
-  Relation relation0;
-  EXPECT_OK(relation0.FromProto(&(carnot_info.table_info()[0].relation())));
-
   // This table doesn't have tablet keys so the rule should not do anything.
-  auto mem_src = MakeMemSource("other_table", relation0);
+  auto mem_src = MakeMemSource("other_table", relation0_);
   auto mem_sink = MakeMemSink(mem_src, "out");
 
   int64_t mem_src_id = mem_src->id();
