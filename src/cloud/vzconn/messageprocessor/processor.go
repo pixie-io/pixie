@@ -4,10 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
-	"github.com/dgrijalva/jwt-go"
-	jwtpb "pixielabs.ai/pixielabs/src/shared/services/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
 
 	"github.com/gogo/protobuf/types"
@@ -32,14 +29,8 @@ var ErrorRequestChannelClosed = errors.New("request channel already closed")
 // TODO(zasgar/michelle): Remove this, we need to make this into cluster credentials.
 // getServiceCredentials returns JWT credentials for inter-service requests.
 func getServiceCredentials(signingKey string) (string, error) {
-	pbClaims := jwtpb.JWTClaims{
-		Subject:   "Vzconn Service",
-		Issuer:    "PL",
-		ExpiresAt: time.Now().Add(time.Minute * 10).Unix(),
-	}
-	claims := utils.PBToMapClaims(&pbClaims)
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(signingKey))
+	claims := utils.GenerateJWTForService("Vzconn Service")
+	return utils.SignJWTClaims(claims, signingKey)
 }
 
 type requestMessage struct {
