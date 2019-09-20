@@ -18,6 +18,8 @@ import (
 func loadTestData(t *testing.T, db *sqlx.DB) {
 	insertOrgQuery := `INSERT INTO orgs (id, org_name, domain_name) VALUES ($1, $2, $3)`
 	db.MustExec(insertOrgQuery, "123e4567-e89b-12d3-a456-426655440000", "hulu", "hulu.com")
+	insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email) VALUES ($1, $2, $3, $4, $5, $6)`
+	db.MustExec(insertUserQuery, "123e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440000", "person@hulu.com", "first", "last", "person@hulu.com")
 }
 
 func TestDatastore(t *testing.T) {
@@ -52,6 +54,20 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, userInfo.FirstName, userInfoFetched.FirstName)
 		assert.Equal(t, userInfo.LastName, userInfoFetched.LastName)
 		assert.Equal(t, userInfo.Email, userInfoFetched.Email)
+	})
+
+	t.Run("inserting existing user should fail", func(t *testing.T) {
+		d := datastore.NewDatastore(db)
+		userInfo := datastore.UserInfo{
+			OrgID:     uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440000"),
+			Username:  "person@hulu.com",
+			FirstName: "first",
+			LastName:  "last",
+			Email:     "person@hulu.com",
+		}
+		userID, err := d.CreateUser(&userInfo)
+		assert.NotNil(t, err)
+		assert.Equal(t, userID, uuid.Nil)
 	})
 
 	t.Run("insert user with bad org should fail", func(t *testing.T) {
@@ -131,6 +147,25 @@ func TestDatastore(t *testing.T) {
 			FirstName: "john",
 			LastName:  "doe",
 			Email:     "john@hulu.com",
+		}
+
+		orgID, userID, err := d.CreateUserAndOrg(&orgInfo, &userInfo)
+		require.NotNil(t, err)
+		assert.Equal(t, orgID, uuid.Nil)
+		assert.Equal(t, userID, uuid.Nil)
+	})
+
+	t.Run("create org and user should fail for existing user", func(t *testing.T) {
+		d := datastore.NewDatastore(db)
+		orgInfo := datastore.OrgInfo{
+			OrgName:    "pg",
+			DomainName: "pg.com",
+		}
+		userInfo := datastore.UserInfo{
+			Username:  "person@hulu.com",
+			FirstName: "first",
+			LastName:  "last",
+			Email:     "person@hulu.com",
 		}
 
 		orgID, userID, err := d.CreateUserAndOrg(&orgInfo, &userInfo)

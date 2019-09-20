@@ -2,6 +2,8 @@
 // sources:
 // 000001_create_org_user_tables.down.sql
 // 000001_create_org_user_tables.up.sql
+// 000002_add_unique_constraint_email.down.sql
+// 000002_add_unique_constraint_email.up.sql
 // DO NOT EDIT!
 
 package schema
@@ -84,7 +86,7 @@ func _000001_create_org_user_tablesDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_org_user_tables.down.sql", size: 55, mode: os.FileMode(436), modTime: time.Unix(1565981121, 0)}
+	info := bindataFileInfo{name: "000001_create_org_user_tables.down.sql", size: 55, mode: os.FileMode(436), modTime: time.Unix(1566246369, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -104,7 +106,47 @@ func _000001_create_org_user_tablesUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_org_user_tables.up.sql", size: 442, mode: os.FileMode(436), modTime: time.Unix(1566260661, 0)}
+	info := bindataFileInfo{name: "000001_create_org_user_tables.up.sql", size: 442, mode: os.FileMode(436), modTime: time.Unix(1566499465, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000002_add_unique_constraint_emailDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2d\x4e\x2d\x2a\x56\xe0\x72\x09\xf2\x0f\x50\x70\xf6\xf7\x0b\x0e\x09\x72\xf4\xf4\x0b\x51\x48\xcd\x4d\xcc\xcc\x89\x2f\xcd\xcb\x2c\x2c\x4d\xb5\x06\x04\x00\x00\xff\xff\x71\xc4\xdb\x02\x30\x00\x00\x00")
+
+func _000002_add_unique_constraint_emailDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000002_add_unique_constraint_emailDownSql,
+		"000002_add_unique_constraint_email.down.sql",
+	)
+}
+
+func _000002_add_unique_constraint_emailDownSql() (*asset, error) {
+	bytes, err := _000002_add_unique_constraint_emailDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000002_add_unique_constraint_email.down.sql", size: 48, mode: os.FileMode(436), modTime: time.Unix(1569020806, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000002_add_unique_constraint_emailUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2d\x4e\x2d\x2a\x56\xe0\x72\x74\x71\x51\x70\xf6\xf7\x0b\x0e\x09\x72\xf4\xf4\x0b\x51\x48\xcd\x4d\xcc\xcc\x89\x2f\xcd\xcb\x2c\x2c\x4d\x55\x08\xf5\xf3\x0c\x0c\x75\x55\xd0\x00\x0b\x6a\x5a\x03\x02\x00\x00\xff\xff\x73\xbc\xcb\xff\x3e\x00\x00\x00")
+
+func _000002_add_unique_constraint_emailUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000002_add_unique_constraint_emailUpSql,
+		"000002_add_unique_constraint_email.up.sql",
+	)
+}
+
+func _000002_add_unique_constraint_emailUpSql() (*asset, error) {
+	bytes, err := _000002_add_unique_constraint_emailUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000002_add_unique_constraint_email.up.sql", size: 62, mode: os.FileMode(436), modTime: time.Unix(1569020785, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -163,6 +205,8 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	"000001_create_org_user_tables.down.sql": _000001_create_org_user_tablesDownSql,
 	"000001_create_org_user_tables.up.sql": _000001_create_org_user_tablesUpSql,
+	"000002_add_unique_constraint_email.down.sql": _000002_add_unique_constraint_emailDownSql,
+	"000002_add_unique_constraint_email.up.sql": _000002_add_unique_constraint_emailUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -207,6 +251,8 @@ type bintree struct {
 var _bintree = &bintree{nil, map[string]*bintree{
 	"000001_create_org_user_tables.down.sql": &bintree{_000001_create_org_user_tablesDownSql, map[string]*bintree{}},
 	"000001_create_org_user_tables.up.sql": &bintree{_000001_create_org_user_tablesUpSql, map[string]*bintree{}},
+	"000002_add_unique_constraint_email.down.sql": &bintree{_000002_add_unique_constraint_emailDownSql, map[string]*bintree{}},
+	"000002_add_unique_constraint_email.up.sql": &bintree{_000002_add_unique_constraint_emailUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
