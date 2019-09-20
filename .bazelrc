@@ -86,6 +86,7 @@ build --cxxopt -std=c++17
 coverage --cxxopt -fprofile-arcs
 coverage --cxxopt -ftest-coverage
 coverage --instrument_test_targets
+coverage --define PL_COVERAGE=true
 
 # Use stable GIT build tag by default.
 build --define BUNDLE_VERSION={STABLE_BUILD_TAG}

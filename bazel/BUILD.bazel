@@ -9,3 +9,11 @@ config_setting(
     name = "debug_tcmalloc",
     values = {"define": "tcmalloc=debug"},
 )
+
+config_setting(
+    name = "coverage_enabled",
+    values = {
+        "define": "PL_COVERAGE=true",
+    },
+    visibility = ["//visibility:public"],
+)
