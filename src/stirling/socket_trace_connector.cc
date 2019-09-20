@@ -39,6 +39,9 @@ DEFINE_uint32(stirling_socket_trace_sampling_period_millis, 100,
 DEFINE_string(perf_buffer_events_output_path, "",
               "If not empty, specifies the path to a directory that the socket tracer should "
               "write the events to Record IO formatted files named after the perf buffer name.");
+// TODO(yzhao): Remove this once the gRPC tracing is no longer causing crash on nightly build.
+DEFINE_bool(stirling_enable_grpc_tracing, true,
+            "If true, stirling will trace and process syscalls called by gRPC RPCs.");
 
 namespace pl {
 namespace stirling {
@@ -66,7 +69,9 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kRoleRequestor));
   PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kRoleRequestor));
-  PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kRoleRequestor));
+  if (FLAGS_stirling_enable_grpc_tracing) {
+    PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kRoleRequestor));
+  }
   PL_RETURN_IF_ERROR(TestOnlySetTargetPID(FLAGS_test_only_socket_trace_target_pid));
 
   if (!FLAGS_perf_buffer_events_output_path.empty()) {
@@ -95,7 +100,10 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   switch (table_num) {
     case kHTTPTableNum:
       TransferStreams<ReqRespPair<http::HTTPMessage>>(ctx, kProtocolHTTP, data_table);
-      TransferStreams<ReqRespPair<GRPCMessage>>(ctx, kProtocolHTTP2, data_table);
+
+      if (FLAGS_stirling_enable_grpc_tracing) {
+        TransferStreams<ReqRespPair<GRPCMessage>>(ctx, kProtocolHTTP2, data_table);
+      }
 
       // Also call transfer streams on kProtocolUnknown to clean up any closed connections.
       // Since there will be no InfoClassManager to call TransferData on unknown protocols,

@@ -78,51 +78,63 @@ HelloRequest GetHelloRequest(const ColumnWrapperRecordBatch& record_batch, const
   return received_reply;
 }
 
-TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
-  // Force disable protobuf parsing to output the binary protobuf in record batch.
-  // Also ensure test remain passing when the default changes.
-  FLAGS_stirling_enable_parsing_protobufs = false;
+class GRPCTraceGoTest : public ::testing::Test {
+ protected:
+  GRPCTraceGoTest()
+      : data_table_(kHTTPTable),
+        s_({kServerPath}),
+        ctx_(std::make_unique<ConnectorContext>(std::make_shared<md::AgentMetadataState>(kASID))) {}
 
-  // Bump perf buffer size to 1MiB to avoid perf buffer overflow.
-  FLAGS_stirling_bpf_perf_buffer_page_count = 256;
+  void SetUp() override {
+    CHECK(s_.Start().ok());
 
-  constexpr char kBaseDir[] = "src/stirling/testing";
-  std::string s_path =
+    // Force disable protobuf parsing to output the binary protobuf in record batch.
+    // Also ensure test remain passing when the default changes.
+    FLAGS_stirling_enable_parsing_protobufs = false;
+
+    // TODO(yzhao): We have to install probes after starting server. Otherwise we will run into
+    // failures when detaching them. This might be relevant to probes are inherited by child process
+    // when fork() and execvp().
+    connector_ = SocketTraceConnector::Create("socket_trace_connector");
+    socket_trace_connector_ = static_cast<SocketTraceConnector*>(connector_.get());
+    CHECK(socket_trace_connector_ != nullptr);
+    CHECK(connector_->Init().ok());
+  }
+
+  void TearDown() override {
+    s_.Kill();
+    EXPECT_EQ(9, s_.Wait()) << "Server should have been killed.";
+  }
+
+  static constexpr char kBaseDir[] = "src/stirling/testing";
+  inline static const std::string kServerPath =
       TestEnvironment::PathToTestDataFile(absl::StrCat(kBaseDir, "/go_greeter_server"));
-  std::string c_path =
+  inline static const std::string kClientPath =
       TestEnvironment::PathToTestDataFile(absl::StrCat(kBaseDir, "/go_greeter_client"));
-  SubProcess s({s_path});
-  EXPECT_OK(s.Start());
-
-  // TODO(yzhao): We have to install probes after starting server. Otherwise we will run into
-  // failures when detaching them. This might be relevant to probes are inherited by child process
-  // when fork() and execvp().
-  std::unique_ptr<SourceConnector> connector =
-      SocketTraceConnector::Create("socket_trace_connector");
-  auto* socket_trace_connector = static_cast<SocketTraceConnector*>(connector.get());
-  ASSERT_NE(nullptr, socket_trace_connector);
-  ASSERT_OK(connector->Init());
 
   // Create a context to pass into each TransferData() in the test, using a dummy ASID.
   static constexpr uint32_t kASID = 1;
-  auto agent_metadata_state = std::make_shared<md::AgentMetadataState>(kASID);
-  auto ctx = std::make_unique<ConnectorContext>(std::move(agent_metadata_state));
 
+  DataTable data_table_;
+  SubProcess s_;
+  std::unique_ptr<ConnectorContext> ctx_;
+  std::unique_ptr<SourceConnector> connector_;
+  SocketTraceConnector* socket_trace_connector_;
+};
+
+TEST_F(GRPCTraceGoTest, TestGolangGrpcService) {
   // TODO(yzhao): Add a --count flag to greeter client so we can test the case of multiple RPC calls
   // (multiple HTTP2 streams).
-  SubProcess c({c_path, "-name=PixieLabs", "-once"});
+  SubProcess c({kClientPath, "-name=PixieLabs", "-once"});
   EXPECT_OK(c.Start());
 
-  EXPECT_OK(socket_trace_connector->TestOnlySetTargetPID(c.child_pid()));
+  EXPECT_OK(socket_trace_connector_->TestOnlySetTargetPID(c.child_pid()));
 
   EXPECT_EQ(0, c.Wait()) << "Client should exit normally.";
-  s.Kill();
-  EXPECT_EQ(9, s.Wait()) << "Server should have been killed.";
 
-  DataTable data_table(kHTTPTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
 
-  connector->TransferData(ctx.get(), kHTTPTableNum, &data_table);
+  connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
   for (const auto& col : record_batch) {
     // Sometimes connect() returns 0, so we might have data from requester and responder.
     ASSERT_GE(col->Size(), 1);
@@ -161,6 +173,31 @@ TEST(GRPCTraceBPFTest, TestGolangGrpcService) {
               EqualsProto(R"proto(message: "Hello PixieLabs")proto"));
 }
 
+class GRPCTraceGoDisabledThroughFlagTest : public GRPCTraceGoTest {
+ protected:
+  void SetUp() override {
+    FLAGS_stirling_enable_grpc_tracing = false;
+    GRPCTraceGoTest::SetUp();
+  }
+};
+
+TEST_F(GRPCTraceGoDisabledThroughFlagTest, NoDataCaptured) {
+  SubProcess c({kClientPath, "-name=PixieLabs", "-once"});
+  EXPECT_OK(c.Start());
+
+  // Avoid the noise from HTTP traffic.
+  EXPECT_OK(socket_trace_connector_->TestOnlySetTargetPID(c.child_pid()));
+
+  EXPECT_EQ(0, c.Wait()) << "Client should exit normally.";
+
+  connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
+
+  for (const auto& col : *data_table_.ActiveRecordBatch()) {
+    // Sometimes connect() returns 0, so we might have data from requester and responder.
+    EXPECT_EQ(0, col->Size());
+  }
+}
+
 class GRPCCppTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -172,6 +209,7 @@ class GRPCCppTest : public ::testing::Test {
     // Force disable protobuf parsing to output the binary protobuf in record batch.
     // Also ensure test remain passing when the default changes.
     FLAGS_stirling_enable_parsing_protobufs = false;
+    FLAGS_stirling_enable_grpc_tracing = true;
 
     source_ = SocketTraceConnector::Create("bcc_grpc_trace");
     ASSERT_OK(source_->Init());
