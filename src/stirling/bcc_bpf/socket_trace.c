@@ -542,6 +542,45 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const TrafficDirecti
   return msg_submit_size;
 }
 
+static __inline void perf_submit_wrapper(struct pt_regs* ctx, const TrafficDirection direction,
+                                         const char* buf, const size_t buf_size,
+                                         struct conn_info_t* conn_info,
+                                         struct socket_data_event_t* event) {
+  int bytes_remaining = buf_size;
+  unsigned int i;
+
+#pragma unroll
+  for (i = 0; i < CHUNK_LIMIT; ++i) {
+    if (bytes_remaining >= MAX_MSG_SIZE) {
+      perf_submit_buf(ctx, direction, buf + i * MAX_MSG_SIZE, MAX_MSG_SIZE, conn_info, event);
+      bytes_remaining = bytes_remaining - MAX_MSG_SIZE;
+    } else if (bytes_remaining > 0) {
+      // The modulo is essentially a NOP, but informs the BPF verifier about the safety bounds of
+      // bytes_remaining. Note that this only works if MAX_MSG_SIZE is a power-of-2. Otherwise clang
+      // will produce different code that will not keep the verifier happy.
+      size_t bytes_to_submit = bytes_remaining % MAX_MSG_SIZE;
+      perf_submit_buf(ctx, direction, buf + i * MAX_MSG_SIZE, bytes_to_submit, conn_info, event);
+      bytes_remaining = bytes_remaining - bytes_to_submit;
+    }
+  }
+
+  // If the message is too long, then we can't transmit it all.
+  // To indicate to user-space that there is a gap in data transmitted,
+  // we increment the appropriate sequence numbers.
+  // This will appear as missing data in the socket_trace_connector,
+  // which is exactly what we want it to believe.
+  if (bytes_remaining > 0) {
+    switch (direction) {
+      case kEgress:
+        ++conn_info->wr_seq_num;
+        break;
+      case kIngress:
+        ++conn_info->rd_seq_num;
+        break;
+    }
+  }
+}
+
 static __inline void perf_submit_iovecs(struct pt_regs* ctx, const TrafficDirection direction,
                                         const struct iovec* iov, const size_t iovlen,
                                         const size_t total_size, struct conn_info_t* conn_info,
@@ -569,6 +608,7 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const TrafficDirect
     const size_t bytes_remain = total_size - bytes_copied;
     const size_t iov_size = iov_cpy.iov_len < bytes_remain ? iov_cpy.iov_len : bytes_remain;
 
+    // TODO(oazizi/yzhao): Should switch this to go through perf_submit_wrapper.
     const size_t submit_size =
         perf_submit_buf(ctx, direction, iov_cpy.iov_base, iov_size, conn_info, event);
     bytes_copied += submit_size;
@@ -600,7 +640,7 @@ static __inline void probe_ret_write_send(struct pt_regs* ctx, u64 id) {
 
   // TODO(yzhao): Same TODO for split the interface.
   if (write_info->buf != NULL) {
-    perf_submit_buf(ctx, kEgress, write_info->buf, bytes_written, conn_info, event);
+    perf_submit_wrapper(ctx, kEgress, write_info->buf, bytes_written, conn_info, event);
   } else if (write_info->iov != NULL && write_info->iovlen > 0) {
     perf_submit_iovecs(ctx, kEgress, write_info->iov, write_info->iovlen, bytes_written, conn_info,
                        event);
@@ -673,7 +713,7 @@ static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
 
   // TODO(yzhao): Same TODO for split the interface.
   if (read_info->buf != NULL) {
-    perf_submit_buf(ctx, kIngress, read_info->buf, bytes_read, conn_info, event);
+    perf_submit_wrapper(ctx, kIngress, read_info->buf, bytes_read, conn_info, event);
   } else if (read_info->iov != NULL && read_info->iovlen > 0) {
     // TODO(yzhao): iov[0] is copied twice, once in calling update_traffic_class(), and here.
     // This happens to the write probes as well, but the calls are placed in the entry and return

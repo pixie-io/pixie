@@ -99,6 +99,9 @@ struct conn_info_t {
   // submitting a new connection. Consider separate these data with the above data that is pushed to
   // perf buffer.
 
+  // TODO(oazizi/yzhao/PL-935): Convert these seq_num to byte positions. This will help in recovery
+  // when there is a lost event.
+
   // A 0-based number for the next write event on this connection.
   // This number is incremented each time a new write event is recorded.
   uint64_t wr_seq_num;
@@ -127,7 +130,12 @@ struct conn_info_t {
 // FileDescriptorProto [1], which often become large. That's the only data point we have right now.
 //
 // [1] https://github.com/grpc/grpc-go/blob/master/reflection/serverreflection.go
-#define MAX_MSG_SIZE 24576  // 24KiB
+#define MAX_MSG_SIZE 16384  // 16KiB
+
+// This defines how many chunks a perf_submit can support.
+// This applies to messages that are over MAX_MSG_SIZE,
+// and effecitvely makes the maximum message size to be CHUNK_LIMIT*MAX_MSG_SIZE.
+#define CHUNK_LIMIT 4
 
 struct socket_data_event_t {
   // We split attributes into a separate struct, because BPF gets upset if you do lots of
