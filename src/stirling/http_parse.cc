@@ -109,6 +109,7 @@ namespace {
 
 // Mutates the input data.
 ParseState ParseChunk(std::string_view* data, HTTPMessage* result) {
+  result->http_msg_body.clear();
   phr_chunked_decoder chunk_decoder = {};
   auto buf = const_cast<char*>(data->data());
   size_t buf_size = data->size();
@@ -119,6 +120,9 @@ ParseState ParseChunk(std::string_view* data, HTTPMessage* result) {
   } else if (retval >= 0) {
     // Complete message.
     result->http_msg_body.append(buf, buf_size);
+    // phr_decode_chunked rewrites the buffer in place, removing chunked-encoding headers.
+    // So we cannot simply remove the prefix, but rather have to shorten the buffer too.
+    // This is done via retval, which specifies how many unprocessed bytes are left.
     *data = std::string_view(buf + buf_size, retval);
     // Pico claims that the last \r\n are unparsed, manually remove them.
     while (!data->empty() && (data->front() == '\r' || data->front() == '\n')) {
@@ -127,9 +131,9 @@ ParseState ParseChunk(std::string_view* data, HTTPMessage* result) {
     return ParseState::kSuccess;
   } else if (retval == -2) {
     // Incomplete message.
-    result->http_msg_body.append(buf, buf_size);
     return ParseState::kNeedsMoreData;
   }
+  LOG(DFATAL) << "Unexpected retval from phr_decode_chunked()";
   return ParseState::kUnknown;
 }
 
@@ -175,7 +179,6 @@ ParseState ParseBody(std::string_view* buf, HTTPMessage* result) {
       transfer_encoding_iter->second == "chunked") {
     // TODO(yzhao): Change to set default value in appending record batch instead of data for
     // parsing.
-    result->http_msg_body.clear();
     return ParseChunk(buf, result);
   }
 
@@ -345,7 +348,7 @@ ParseState Parse(MessageType type, std::string_view* buf, HTTPMessage* result) {
 template <>
 ParseResult<size_t> Parse(MessageType type, std::string_view buf,
                           std::deque<http::HTTPMessage>* messages) {
-  std::vector<size_t> start_position;
+  std::vector<size_t> start_positions;
   const size_t buf_size = buf.size();
   ParseState s = ParseState::kSuccess;
   size_t bytes_processed = 0;
@@ -358,12 +361,12 @@ ParseResult<size_t> Parse(MessageType type, std::string_view buf,
       break;
     }
 
-    start_position.push_back(bytes_processed);
+    start_positions.push_back(bytes_processed);
     messages->push_back(std::move(message));
     bytes_processed = (buf_size - buf.size());
   }
 
-  ParseResult<size_t> result{std::move(start_position), bytes_processed, s};
+  ParseResult<size_t> result{std::move(start_positions), bytes_processed, s};
   return result;
 }
 
