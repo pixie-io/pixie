@@ -753,8 +753,9 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   EXPECT_TRUE(tracker->send_data().Empty<http::HTTPMessage>());
 }
 
-// TODO(oazizi): Re-enable MySQL tests.
-TEST_F(SocketTraceConnectorTest, DISABLED_MySQLPrepareExecuteClose) {
+TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
+  FLAGS_stirling_enable_mysql_tracing = true;
+
   conn_info_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
   std::unique_ptr<SocketDataEvent> prepare_req_event = InitSendEvent(mySQLStmtPrepareReq);
   std::vector<std::unique_ptr<SocketDataEvent>> prepare_resp_events;
@@ -781,7 +782,7 @@ TEST_F(SocketTraceConnectorTest, DISABLED_MySQLPrepareExecuteClose) {
 
   DataTable data_table(SocketTraceConnector::kMySQLTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-  source_->TransferData(nullptr, kMySQLTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size());
   }
@@ -801,7 +802,7 @@ TEST_F(SocketTraceConnectorTest, DISABLED_MySQLPrepareExecuteClose) {
   source_->AcceptDataEvent(std::move(close_req_event));
   source_->AcceptDataEvent(std::move(execute_req_event2));
   source_->AcceptDataEvent(std::move(execute_resp_event2));
-  source_->TransferData(nullptr, kMySQLTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
   for (const auto& column : record_batch) {
     EXPECT_EQ(2, column->Size());
   }
@@ -811,8 +812,9 @@ TEST_F(SocketTraceConnectorTest, DISABLED_MySQLPrepareExecuteClose) {
               ElementsAre(expected_entry, expected_err));
 }
 
-// TODO(oazizi): Re-enable MySQL tests.
-TEST_F(SocketTraceConnectorTest, DISABLED_MySQLQuery) {
+TEST_F(SocketTraceConnectorTest, MySQLQuery) {
+  FLAGS_stirling_enable_mysql_tracing = true;
+
   conn_info_t conn = InitConn(TrafficProtocol::kProtocolMySQL);
   std::unique_ptr<SocketDataEvent> query_req_event = InitSendEvent(mySQLQueryReq);
   std::vector<std::unique_ptr<SocketDataEvent>> query_resp_events;
@@ -829,7 +831,7 @@ TEST_F(SocketTraceConnectorTest, DISABLED_MySQLQuery) {
   DataTable data_table(SocketTraceConnector::kMySQLTable);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-  source_->TransferData(nullptr, kMySQLTableNum, &data_table);
+  source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
   for (const auto& column : record_batch) {
     EXPECT_EQ(1, column->Size());
   }

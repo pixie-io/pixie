@@ -37,6 +37,7 @@ DECLARE_bool(stirling_enable_parsing_protobufs);
 DECLARE_uint32(stirling_socket_trace_sampling_period_millis);
 DECLARE_string(perf_buffer_events_output_path);
 DECLARE_bool(stirling_enable_grpc_tracing);
+DECLARE_bool(stirling_enable_mysql_tracing);
 
 OBJ_STRVIEW(http_trace_bcc_script, _binary_bcc_bpf_socket_trace_c_preprocessed);
 
@@ -66,7 +67,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   // clang-format off
   static constexpr DataElement kMySQLElements[] = {
           {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER},
-          {"pid", types::DataType::INT64, types::PatternType::GENERAL},
+          {"upid", types::DataType::UINT128, types::PatternType::GENERAL},
           {"pid_start_time", types::DataType::INT64, types::PatternType::GENERAL},
           {"remote_addr", types::DataType::STRING, types::PatternType::GENERAL},
           {"remote_port", types::DataType::INT64, types::PatternType::GENERAL},
@@ -227,8 +228,8 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
                             ReqRespPair<TMessageType> record, DataTable* data_table);
 
-  static void AppendMessage(const ConnectionTracker& conn_tracker, mysql::Entry entry,
-                            DataTable* data_table);
+  static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
+                            mysql::Entry entry, DataTable* data_table);
 
   // HTTP-specific helper function.
   static bool SelectMessage(const ReqRespPair<http::HTTPMessage>& record);
@@ -256,9 +257,9 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupOldGenerations);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInactiveDead);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive);
-  FRIEND_TEST(SocketTraceConnectorTest, DISABLED_MySQLPrepareExecuteClose);
-  FRIEND_TEST(SocketTraceConnectorTest, DISABLED_MySQLQuery);
   FRIEND_TEST(SocketTraceConnectorTest, ConnectionCleanupNoProtocol);
+  FRIEND_TEST(SocketTraceConnectorTest, MySQLPrepareExecuteClose);
+  FRIEND_TEST(SocketTraceConnectorTest, MySQLQuery);
 };
 
 }  // namespace stirling

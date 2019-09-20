@@ -42,6 +42,10 @@ DEFINE_string(perf_buffer_events_output_path, "",
 // TODO(yzhao): Remove this once the gRPC tracing is no longer causing crash on nightly build.
 DEFINE_bool(stirling_enable_grpc_tracing, true,
             "If true, stirling will trace and process syscalls called by gRPC RPCs.");
+// TODO(oazizi/yzhao): Remove this once the MySQL tracing is no longer causing crash on nightly
+// build.
+DEFINE_bool(stirling_enable_mysql_tracing, false,
+            "If true, stirling will trace and process syscalls called by MySQL RPCs.");
 
 namespace pl {
 namespace stirling {
@@ -68,9 +72,11 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(AttachProbes(kProbeSpecs));
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   PL_RETURN_IF_ERROR(Configure(kProtocolHTTP, kRoleRequestor));
-  PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kRoleRequestor));
   if (FLAGS_stirling_enable_grpc_tracing) {
     PL_RETURN_IF_ERROR(Configure(kProtocolHTTP2, kRoleRequestor));
+  }
+  if (FLAGS_stirling_enable_mysql_tracing) {
+    PL_RETURN_IF_ERROR(Configure(kProtocolMySQL, kRoleRequestor));
   }
   PL_RETURN_IF_ERROR(TestOnlySetTargetPID(FLAGS_test_only_socket_trace_target_pid));
 
@@ -114,7 +120,9 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
       break;
     case kMySQLTableNum:
       // TODO(oazizi): Re-enable this after more stress-testing.
-      // TransferStreams<mysql::Entry>(ctx, kProtocolMySQL, data_table);
+      if (FLAGS_stirling_enable_mysql_tracing) {
+        TransferStreams<mysql::Entry>(ctx, kProtocolMySQL, data_table);
+      }
       break;
     default:
       LOG(ERROR) << absl::StrFormat("Unknown table number: %d", table_num);
@@ -471,7 +479,7 @@ template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          const ConnectionTracker& conn_tracker,
                                          ReqRespPair<GRPCMessage> record, DataTable* data_table) {
-  CHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
+  DCHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
   GRPCMessage& req_message = record.req_message;
   GRPCMessage& resp_message = record.resp_message;
@@ -523,13 +531,17 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 }
 
-void SocketTraceConnector::AppendMessage(const ConnectionTracker& conn_tracker, mysql::Entry entry,
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
+                                         const ConnectionTracker& conn_tracker, mysql::Entry entry,
                                          DataTable* data_table) {
   DCHECK_EQ(kMySQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
+  md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
+                conn_tracker.pid_start_time());
+
   RecordBuilder<&kMySQLTable> r(data_table);
   r.Append<r.ColIndex("time_")>(entry.req_timestamp_ns);
-  r.Append<r.ColIndex("pid")>(conn_tracker.pid());
+  r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("pid_start_time")>(conn_tracker.pid_start_time());
   r.Append<r.ColIndex("remote_addr")>(std::string(conn_tracker.remote_addr()));
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_port());
