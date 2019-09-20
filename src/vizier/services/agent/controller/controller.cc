@@ -120,7 +120,7 @@ Status Controller::StartHelperThreads() {
 
   mds_thread_ = std::make_unique<std::thread>([this]() {
     while (keep_alive_) {
-      LOG(INFO) << "State Update";
+      VLOG(1) << "State Update";
       CHECK(mds_manager_->PerformMetadataStateUpdate().ok());
       std::this_thread::sleep_for(std::chrono::seconds(5));
     }
@@ -301,8 +301,7 @@ Status Controller::ExecuteQuery(
     const messages::ExecuteQueryRequest& req,
     pl::vizier::services::query_broker::querybrokerpb::AgentQueryResponse* resp) {
   auto query_id = ParseUUID(req.query_id()).ConsumeValueOrDie();
-  VLOG(1) << "Executing query: "
-          << absl::StrFormat("id=%s, query=%s", query_id.str(), req.query_str());
+  LOG(INFO) << absl::StrFormat("Executing query: id=%s, query=%s", query_id.str(), req.query_str());
   CHECK(resp != nullptr);
   *resp->mutable_query_id() = req.query_id();
 
@@ -310,7 +309,6 @@ Status Controller::ExecuteQuery(
     ScopedTimer query_timer("query timer");
     StatusOr<carnot::CarnotQueryResult> result_or_s;
     if (req.has_plan()) {
-      LOG(INFO) << "has plan";
       result_or_s = carnot_->ExecutePlan(req.plan(), query_id);
     } else {
       result_or_s = carnot_->ExecuteQuery(req.query_str(), query_id, CurrentTimeNS());

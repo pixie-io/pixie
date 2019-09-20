@@ -52,15 +52,15 @@ void SystemStatsConnector::TransferProcessStatsTable(ConnectorContext* ctx, Data
     // PID.
     auto s1 = proc_parser_->ParseProcPIDStat(pid, &stats);
     if (!s1.ok()) {
-      LOG(ERROR) << absl::Substitute("Failed to fetch info for PID ($0). Error=\"$1\" skipping.",
-                                     pid, s1.msg());
+      LOG(ERROR) << absl::Substitute(
+          "Failed to fetch cpu stat info for PID ($0). Error=\"$1\" skipping.", pid, s1.msg());
       continue;
     }
 
     auto s2 = proc_parser_->ParseProcPIDStatIO(pid, &stats);
     if (!s2.ok()) {
-      LOG(ERROR) << absl::Substitute("Failed to fetch info for PID ($0). Error=\"$1\" skipping.",
-                                     pid, s2.msg());
+      LOG(ERROR) << absl::Substitute(
+          "Failed to fetch IO stat info for PID ($0). Error=\"$1\" skipping.", pid, s2.msg());
       continue;
     }
 
