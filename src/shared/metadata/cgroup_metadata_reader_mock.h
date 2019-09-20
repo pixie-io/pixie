@@ -20,6 +20,7 @@ class MockCGroupMetadataReader : public CGroupMetadataReader {
                             std::string_view container_id, absl::flat_hash_set<uint32_t>* pid_set));
   MOCK_CONST_METHOD1(ReadPIDStartTime, int64_t(uint32_t pid));
   MOCK_CONST_METHOD1(ReadPIDCmdline, std::string(uint32_t pid));
+  MOCK_CONST_METHOD1(PodDirExists, bool(const PodInfo& pod_info));
 };
 
 }  // namespace md

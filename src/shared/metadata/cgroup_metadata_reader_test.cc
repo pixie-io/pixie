@@ -76,5 +76,10 @@ TEST_F(CGroupMetadataReaderTest, cgroup_proc_file_path) {
                                                      "c123"));
 }
 
+TEST_F(CGroupMetadataReaderTest, cgroup_pod_exists) {
+  PodInfo pod_info("abcd", "namespace", "pod-name", PodQOSClass::kBestEffort);
+  EXPECT_TRUE(md_reader_->PodDirExists(pod_info));
+}
+
 }  // namespace md
 }  // namespace pl

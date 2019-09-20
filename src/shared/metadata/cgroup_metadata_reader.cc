@@ -1,3 +1,5 @@
+#include <sys/stat.h>
+
 #include <algorithm>
 #include <fstream>
 #include <memory>
@@ -24,22 +26,27 @@ constexpr int kProcStatStartTimeField = 21;
 constexpr char kSysfsCpuAcctPatch[] = "cgroup/cpu,cpuacct/kubepods";
 constexpr std::string_view kPidFile = "cgroup.procs";
 
-std::string CGroupMetadataReader::CGroupProcFilePath(std::string_view sysfs_prefix,
-                                                     PodQOSClass qos_class, std::string_view pod_id,
-                                                     std::string_view container_id) {
+std::string CGroupMetadataReader::CGroupPodDirPath(std::string_view sysfs_prefix,
+                                                   PodQOSClass qos_class, std::string_view pod_id) {
   switch (qos_class) {
     case PodQOSClass::kGuaranteed:
-      return absl::Substitute("$0/$1/pod$2/$3/$4", sysfs_prefix, kSysfsCpuAcctPatch, pod_id,
-                              container_id, kPidFile);
+      return absl::Substitute("$0/$1/pod$2", sysfs_prefix, kSysfsCpuAcctPatch, pod_id);
     case PodQOSClass::kBestEffort:
-      return absl::Substitute("$0/$1/besteffort/pod$2/$3/$4", sysfs_prefix, kSysfsCpuAcctPatch,
-                              pod_id, container_id, kPidFile);
+      return absl::Substitute("$0/$1/besteffort/pod$2", sysfs_prefix, kSysfsCpuAcctPatch, pod_id);
     case PodQOSClass::kBurstable:
-      return absl::Substitute("$0/$1/burstable/pod$2/$3/$4", sysfs_prefix, kSysfsCpuAcctPatch,
-                              pod_id, container_id, kPidFile);
+      return absl::Substitute("$0/$1/burstable/pod$2", sysfs_prefix, kSysfsCpuAcctPatch, pod_id);
     default:
       CHECK(0) << "Unknown QOS class";
   }
+}
+
+std::string CGroupMetadataReader::CGroupProcFilePath(std::string_view sysfs_prefix,
+                                                     PodQOSClass qos_class, std::string_view pod_id,
+                                                     std::string_view container_id) {
+  // TODO(oazizi): It might be better to copy code from CGroupPodDirPath for performance reasons
+  // (avoid string copies).
+  return absl::StrCat(CGroupPodDirPath(sysfs_prefix, qos_class, pod_id),
+                      absl::Substitute("/$0/$1", container_id, kPidFile));
 }
 
 // TODO(zasgar/michelle): Reconcile this code with cgroup manager. We should delete the cgroup
@@ -128,6 +135,14 @@ int64_t CGroupMetadataReader::ReadPIDStartTime(uint32_t pid) const {
   start_time_ns *= ns_per_kernel_tick_;
   start_time_ns += clock_realtime_offset_;
   return start_time_ns;
+}
+
+bool CGroupMetadataReader::PodDirExists(const PodInfo& pod_info) const {
+  auto pod_path = CGroupPodDirPath(sysfs_path_, pod_info.qos_class(), pod_info.uid());
+
+  // This appears to be the fastest way to check for file existence.
+  struct stat buffer;
+  return stat(pod_path.c_str(), &buffer) == 0;
 }
 
 }  // namespace md

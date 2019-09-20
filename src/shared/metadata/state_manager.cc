@@ -67,6 +67,12 @@ Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
   int64_t ts = CurrentTimeNS();
   PL_RETURN_IF_ERROR(ApplyK8sUpdates(ts, shadow_state.get(), &incoming_k8s_updates_));
 
+  // Look for dead pods. Normally, we would count on the K8s updates to take care of this,
+  // but the initial set of pods that are received from the MDS includes pods that
+  // belong to other nodes, so we have to do this. Also adds a layer of robustness.
+  // TODO(oazizi): Consider removing this once MDS only sends pods belonging to this node/agent.
+  RemoveDeadPods(ts, shadow_state.get(), md_reader_.get());
+
   // Update PID information.
   PL_RETURN_IF_ERROR(ProcessPIDUpdates(ts, shadow_state.get(), md_reader_.get(), &pid_updates_));
 
@@ -115,6 +121,38 @@ Status AgentMetadataStateManager::ApplyK8sUpdates(
   }
 
   return Status::OK();
+}
+
+// TODO(oazizi): This function should go away once the MDS only sends pods to the agents
+// that they belong to.
+void AgentMetadataStateManager::RemoveDeadPods(int64_t ts, AgentMetadataState* md,
+                                               CGroupMetadataReader* md_reader) {
+  const auto& md_state = md->k8s_metadata_state();
+  for (const auto& [name, uid] : md_state->pods_by_name()) {
+    PL_UNUSED(name);
+
+    // NOTE: Using const_cast is really bad practice the way it is done here.
+    // But removing the const-ness is safe here, since RemoveDeadPods() is in the state update loop.
+    // Only doing it this way here because this is a temporary function.
+    PodInfo* pod_info = const_cast<PodInfo*>(md_state->PodInfoByID(uid));
+
+    if (pod_info->stop_time_ns() == 0 && !md_reader->PodDirExists(*pod_info)) {
+      LOG(WARNING) << absl::Substitute(
+          "Marking pod and its containers as dead. Likely didn't belong to this node to begin "
+          "with. [pod_id=$0]",
+          pod_info->uid());
+      pod_info->set_stop_time_ns(ts);
+
+      // Mark the Pod's containers as dead too.
+      for (auto& cid : pod_info->containers()) {
+        // See note above about const_cast.
+        ContainerInfo* cinfo = const_cast<ContainerInfo*>(md_state->ContainerInfoByID(cid));
+        if (cinfo->stop_time_ns() == 0) {
+          cinfo->set_stop_time_ns(ts);
+        }
+      }
+    }
+  }
 }
 
 Status AgentMetadataStateManager::ProcessPIDUpdates(

@@ -46,54 +46,24 @@ constexpr char kUpdate1_2Pbtxt[] = R"(
   }
 )";
 
-TEST(ApplyK8sUpdate, initialize_md_state) {
-  moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
-  AgentMetadataState metadata_state(123 /*asid*/);
+constexpr char kUpdate2_0Pbtxt[] = R"(
+  container_update {
+    name: "container_name2"
+    cid: "container_id2"
+    start_timestamp_ns: 1201
+  }
+)";
 
-  auto update1_0 = std::make_unique<ResourceUpdate>();
-  auto update1_1 = std::make_unique<ResourceUpdate>();
-  auto update1_2 = std::make_unique<ResourceUpdate>();
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUpdate1_0Pbtxt, update1_0.get()));
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUpdate1_1Pbtxt, update1_1.get()));
-  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUpdate1_2Pbtxt, update1_2.get()));
-  updates.enqueue(std::move(update1_0));
-  updates.enqueue(std::move(update1_1));
-  updates.enqueue(std::move(update1_2));
-
-  EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state, &updates));
-  EXPECT_EQ(0, updates.size_approx());
-
-  EXPECT_EQ(123, metadata_state.asid());
-
-  K8sMetadataState* state = metadata_state.k8s_metadata_state();
-  EXPECT_THAT(state->pods_by_name(), UnorderedElementsAre(Pair(Pair("pl", "pod1"), "pod_id1")));
-  EXPECT_EQ("pod_id1", state->PodIDByName({"pl", "pod1"}));
-
-  auto* pod_info = state->PodInfoByID("pod_id1");
-  ASSERT_NE(nullptr, pod_info);
-  EXPECT_EQ(1000, pod_info->start_time_ns());
-  EXPECT_EQ("pod_id1", pod_info->uid());
-  EXPECT_EQ("pod1", pod_info->name());
-  EXPECT_EQ("pl", pod_info->ns());
-  EXPECT_EQ(PodQOSClass::kBurstable, pod_info->qos_class());
-  EXPECT_THAT(pod_info->containers(), UnorderedElementsAre("container_id1"));
-
-  auto* container_info = state->ContainerInfoByID("container_id1");
-  ASSERT_NE(nullptr, container_info);
-  EXPECT_EQ("container_id1", container_info->cid());
-  EXPECT_EQ("pod_id1", container_info->pod_id());
-
-  EXPECT_THAT(state->services_by_name(),
-              UnorderedElementsAre(Pair(Pair("pl", "service1"), "service_id1")));
-  EXPECT_EQ("service_id1", state->ServiceIDByName({"pl", "service1"}));
-
-  auto* service_info = state->ServiceInfoByID("service_id1");
-  ASSERT_NE(nullptr, service_info);
-  EXPECT_EQ(1000, service_info->start_time_ns());
-  EXPECT_EQ("service_id1", service_info->uid());
-  EXPECT_EQ("service1", service_info->name());
-  EXPECT_EQ("pl", service_info->ns());
-}
+constexpr char kUpdate2_1Pbtxt[] = R"(
+  pod_update {
+    name: "pod2"
+    namespace: "pl"
+    uid: "pod_id2"
+    start_timestamp_ns: 1200
+    container_ids: "container_id2"
+    qos_class: QOS_CLASS_BURSTABLE
+  }
+)";
 
 class FakePIDData : public MockCGroupMetadataReader {
  public:
@@ -130,31 +100,140 @@ class FakePIDData : public MockCGroupMetadataReader {
 
     return "";
   }
+
+  bool PodDirExists(const PodInfo& pod_info) const override {
+    if (pod_info.uid() == "pod_id1") {
+      return true;
+    }
+
+    return false;
+  }
 };
 
-class ProcessPIDUpdatesTest : public ::testing::Test {
- public:
-  ProcessPIDUpdatesTest() : metadata_state_(123 /* asid */) {}
+// Generates some test updates for entry into the AgentMetadataState.
+// This set include a pod, its container and a corresponding service.
+void GenerateTestUpdateEvents(
+    moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>* updates) {
+  auto update1_0 = std::make_unique<ResourceUpdate>();
+  CHECK(google::protobuf::TextFormat::MergeFromString(kUpdate1_0Pbtxt, update1_0.get()));
+  updates->enqueue(std::move(update1_0));
 
+  auto update1_1 = std::make_unique<ResourceUpdate>();
+  CHECK(google::protobuf::TextFormat::MergeFromString(kUpdate1_1Pbtxt, update1_1.get()));
+  updates->enqueue(std::move(update1_1));
+
+  auto update1_2 = std::make_unique<ResourceUpdate>();
+  CHECK(google::protobuf::TextFormat::MergeFromString(kUpdate1_2Pbtxt, update1_2.get()));
+  updates->enqueue(std::move(update1_2));
+}
+
+// Generates some test updates for entry into the AgentMetadataState.
+// This set include a pod and a container which don't belong to the node in question.
+void GenerateTestUpdateEventsForNonExistentPod(
+    moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>* updates) {
+  auto update2_0 = std::make_unique<ResourceUpdate>();
+  CHECK(google::protobuf::TextFormat::MergeFromString(kUpdate2_0Pbtxt, update2_0.get()));
+  updates->enqueue(std::move(update2_0));
+
+  auto update2_1 = std::make_unique<ResourceUpdate>();
+  CHECK(google::protobuf::TextFormat::MergeFromString(kUpdate2_1Pbtxt, update2_1.get()));
+  updates->enqueue(std::move(update2_1));
+}
+
+class AgentMetadataStateTest : public ::testing::Test {
  protected:
-  virtual void SetUp() {
-    moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
+  static constexpr int kASID = 123;
 
-    // Create a POD and container.
-    auto update1_0 = std::make_unique<ResourceUpdate>();
-    auto update1_1 = std::make_unique<ResourceUpdate>();
-    ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUpdate1_0Pbtxt, update1_0.get()));
-    ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kUpdate1_1Pbtxt, update1_1.get()));
-    updates.enqueue(std::move(update1_0));
-    updates.enqueue(std::move(update1_1));
-
-    EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &updates));
-  }
+  AgentMetadataStateTest() : metadata_state_(kASID) {}
 
   AgentMetadataState metadata_state_;
 };
 
-TEST_F(ProcessPIDUpdatesTest, pid_created) {
+TEST_F(AgentMetadataStateTest, initialize_md_state) {
+  moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
+  GenerateTestUpdateEvents(&updates);
+
+  EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &updates));
+  EXPECT_EQ(0, updates.size_approx());
+
+  EXPECT_EQ(123, metadata_state_.asid());
+
+  K8sMetadataState* state = metadata_state_.k8s_metadata_state();
+  EXPECT_THAT(state->pods_by_name(), UnorderedElementsAre(Pair(Pair("pl", "pod1"), "pod_id1")));
+  EXPECT_EQ("pod_id1", state->PodIDByName({"pl", "pod1"}));
+
+  auto* pod_info = state->PodInfoByID("pod_id1");
+  ASSERT_NE(nullptr, pod_info);
+  EXPECT_EQ(1000, pod_info->start_time_ns());
+  EXPECT_EQ("pod_id1", pod_info->uid());
+  EXPECT_EQ("pod1", pod_info->name());
+  EXPECT_EQ("pl", pod_info->ns());
+  EXPECT_EQ(PodQOSClass::kBurstable, pod_info->qos_class());
+  EXPECT_THAT(pod_info->containers(), UnorderedElementsAre("container_id1"));
+
+  auto* container_info = state->ContainerInfoByID("container_id1");
+  ASSERT_NE(nullptr, container_info);
+  EXPECT_EQ("container_id1", container_info->cid());
+  EXPECT_EQ("pod_id1", container_info->pod_id());
+
+  EXPECT_THAT(state->services_by_name(),
+              UnorderedElementsAre(Pair(Pair("pl", "service1"), "service_id1")));
+  EXPECT_EQ("service_id1", state->ServiceIDByName({"pl", "service1"}));
+
+  auto* service_info = state->ServiceInfoByID("service_id1");
+  ASSERT_NE(nullptr, service_info);
+  EXPECT_EQ(1000, service_info->start_time_ns());
+  EXPECT_EQ("service_id1", service_info->uid());
+  EXPECT_EQ("service1", service_info->name());
+  EXPECT_EQ("pl", service_info->ns());
+}
+
+TEST_F(AgentMetadataStateTest, remove_dead_pods) {
+  moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
+  GenerateTestUpdateEvents(&updates);
+  GenerateTestUpdateEventsForNonExistentPod(&updates);
+
+  ASSERT_OK(AgentMetadataStateManager::ApplyK8sUpdates(/*ts*/ 2000, &metadata_state_, &updates));
+  ASSERT_EQ(0, updates.size_approx());
+
+  FakePIDData md_reader;
+  K8sMetadataState* state = metadata_state_.k8s_metadata_state();
+
+  const PodInfo* pod_info;
+
+  // Check state before call to RemoveDeadPods().
+  EXPECT_EQ(state->pods_by_name().size(), 2);
+
+  pod_info = state->PodInfoByID("pod_id1");
+  ASSERT_NE(nullptr, pod_info);
+  EXPECT_EQ(0, pod_info->stop_time_ns());
+
+  pod_info = state->PodInfoByID("pod_id2");
+  ASSERT_NE(nullptr, pod_info);
+  EXPECT_EQ(0, pod_info->stop_time_ns());
+
+  AgentMetadataStateManager::RemoveDeadPods(/*ts*/ 100, &metadata_state_, &md_reader);
+
+  // Expected state after call to RemoveDeadPods().
+  EXPECT_EQ(state->pods_by_name().size(), 2);
+
+  // This pod should still be alive, as indicated by stop_time_ns == 0.
+  pod_info = state->PodInfoByID("pod_id1");
+  ASSERT_NE(nullptr, pod_info);
+  EXPECT_EQ(0, pod_info->stop_time_ns());
+
+  // This pod should still be marked as dead, as indicated by stop_time_ns != 0.
+  pod_info = state->PodInfoByID("pod_id2");
+  ASSERT_NE(nullptr, pod_info);
+  EXPECT_NE(0, pod_info->stop_time_ns());
+}
+
+TEST_F(AgentMetadataStateTest, pid_created) {
+  moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
+  GenerateTestUpdateEvents(&updates);
+
+  EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &updates));
+
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>> events;
   FakePIDData md_reader;
   LOG(INFO) << metadata_state_.DebugString();
@@ -172,8 +251,8 @@ TEST_F(ProcessPIDUpdatesTest, pid_created) {
     }
   }
 
-  PIDInfo pid1(UPID(123 /*asid*/, 100 /*pid*/, 1000 /*ts*/), "cmdline100", "container_id1");
-  PIDInfo pid2(UPID(123 /*asid*/, 200 /*pid*/, 2000 /*ts*/), "cmdline200", "container_id1");
+  PIDInfo pid1(UPID(kASID, 100 /*pid*/, 1000 /*ts*/), "cmdline100", "container_id1");
+  PIDInfo pid2(UPID(kASID /*asid*/, 200 /*pid*/, 2000 /*ts*/), "cmdline200", "container_id1");
 
   EXPECT_EQ(2, pids_started.size());
   EXPECT_THAT(pids_started,

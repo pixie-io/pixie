@@ -84,6 +84,9 @@ class AgentMetadataStateManager {
   static Status ApplyK8sUpdates(
       int64_t ts, AgentMetadataState* state,
       moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>* updates);
+
+  static void RemoveDeadPods(int64_t ts, AgentMetadataState* md, CGroupMetadataReader* md_reader);
+
   static Status ProcessPIDUpdates(
       int64_t ts, AgentMetadataState*, CGroupMetadataReader*,
       moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>>* pid_updates);

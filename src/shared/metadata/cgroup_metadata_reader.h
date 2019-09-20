@@ -60,7 +60,12 @@ class CGroupMetadataReader : public NotCopyable {
    */
   virtual std::string ReadPIDCmdline(uint32_t pid) const;
 
+  virtual bool PodDirExists(const PodInfo& pod_info) const;
+
  private:
+  static std::string CGroupPodDirPath(std::string_view sysfs_prefix, PodQOSClass qos_class,
+                                      std::string_view pod_id);
+
   static std::string CGroupProcFilePath(std::string_view sysfs_prefix, PodQOSClass qos_class,
                                         std::string_view pod_id, std::string_view container_id);
 
