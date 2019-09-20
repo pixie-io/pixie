@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -19,5 +19,14 @@ pl_cc_library(
         "//src/carnot/funcs/builtins:cc_library",
         "//src/carnot/funcs/metadata:cc_library",
         "//src/carnot/udf:cc_library",
+        "//src/shared/types/proto:types_pl_cc_proto",
+    ],
+)
+
+pl_cc_test(
+    name = "udf_exporter_test",
+    srcs = ["udf_exporter_test.cc"],
+    deps = [
+        ":cc_library",
     ],
 )
