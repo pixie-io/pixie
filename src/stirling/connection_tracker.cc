@@ -410,6 +410,11 @@ void ConnectionTracker::HandleInactivity() {
 void DataStream::AddEvent(std::unique_ptr<SocketDataEvent> event) {
   uint64_t seq_num = event->attr.seq_num;
 
+  // TODO(oazizi): Should reset the stream after this truncated message is processed.
+  LOG_IF(ERROR, event->attr.msg_size > event->msg.size())
+      << absl::Substitute("Message truncated, original size: $0, accepted size: $1",
+                          event->attr.msg_size, event->msg.size());
+
   if (seq_num < next_seq_num_) {
     LOG(WARNING) << absl::Substitute(
         "Ignoring event that has already been skipped [event seq_num=$0, current seq_num=$1].",

@@ -127,7 +127,7 @@ struct conn_info_t {
 // FileDescriptorProto [1], which often become large. That's the only data point we have right now.
 //
 // [1] https://github.com/grpc/grpc-go/blob/master/reflection/serverreflection.go
-#define MAX_MSG_SIZE 16384  // 16KiB
+#define MAX_MSG_SIZE 24576  // 24KiB
 
 struct socket_data_event_t {
   // We split attributes into a separate struct, because BPF gets upset if you do lots of

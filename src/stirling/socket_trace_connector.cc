@@ -238,9 +238,6 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
     // TextFormat already output a \n, so no need to do it here.
     *perf_buffer_events_output_stream_ << text;
   }
-  LOG_IF(ERROR, event->attr.msg_size > event->msg.size())
-      << "Message truncated, original size: " << event->attr.msg_size
-      << " accepted size: " << event->msg.size();
   const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
 
