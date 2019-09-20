@@ -3,7 +3,7 @@ import {SidebarNav} from 'components/sidebar-nav/sidebar-nav';
 import gql from 'graphql-tag';
 import * as React from 'react';
 import {Query} from 'react-apollo';
-import {Route} from 'react-router-dom';
+import {Route, Switch} from 'react-router-dom';
 import {AgentDisplay} from './agent-display';
 import {DeployInstructions} from './deploy-instructions';
 import {QueryManager} from './query-manager';
@@ -67,8 +67,10 @@ export class Vizier extends React.Component<VizierProps, {}> {
                      primaryHeading='Pixie Console'
                      secondaryHeading={PATH_TO_HEADER_TITLE[this.props.location.pathname]}
                   />
-                  <Route path={`/agents`} component={AgentDisplay} />
-                  <Route path={`/`} component={QueryManager} />
+                  <Switch>
+                    <Route path={`/agents`} component={AgentDisplay} />
+                    <Route path={`/`} component={QueryManager} />
+                  </Switch>
                 </div>
               </div>
             );

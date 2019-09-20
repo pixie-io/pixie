@@ -3,7 +3,7 @@ import {Login} from 'containers/login';
 import {Vizier} from 'containers/vizier';
 
 import * as React from 'react';
-import { BrowserRouter as Router, Link, Route} from 'react-router-dom';
+import { BrowserRouter as Router, Link, Route, Switch } from 'react-router-dom';
 import {fetch} from 'unfetch/polyfill';
 
 import { InMemoryCache } from 'apollo-cache-inmemory';
@@ -27,8 +27,10 @@ export class App extends React.Component<AppProps, {}> {
         <ApolloProvider client={gqlClient}>
           <div className='main-page'>
             <div className='content'>
-              <Route exact path='/' component={Login} />
-              <Route exact path='/create' component={Login} />
+              <Switch>
+                <Route exact path='/create' component={Login} />
+                <Route component={Login} />
+              </Switch>
             </div>
           </div>
         </ApolloProvider>
