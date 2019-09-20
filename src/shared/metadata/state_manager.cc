@@ -166,8 +166,18 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
     if (!s.ok()) {
       // Container probably died, we will eventually get a message from MDS and everything in that
       // container will be marked dead.
-      VLOG(1) << absl::Substitute("Failed to read PID info for pod=$0, cid=$1 [msg=$2]", pod_id,
-                                  cid, s.msg());
+      LOG(WARNING) << absl::Substitute("Failed to read PID info for pod=$0, cid=$1 [msg=$2]",
+                                       pod_id, cid, s.msg());
+
+      // Don't wait for MDS to send the container death information; set the stop time right away.
+      // This is so we stop trying to read stats for this non-existent container.
+      // NOTE: Currently, MDS sends pods that do no belong to this Agent, so this is actually
+      // required to avoid repeatedly printing out the warning message above.
+      // TODO(oazizi): Can potentially remove this once MDS is fixed to only send active pods on
+      // the agent. Although this code is arguably still useful for robustness.
+      if (s.code() == statuspb::Code::NOT_FOUND) {
+        cinfo->set_stop_time_ns(ts);
+      }
       continue;
     }
 
