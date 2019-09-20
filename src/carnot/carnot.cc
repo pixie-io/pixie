@@ -72,6 +72,16 @@ class CarnotImpl final : public Carnot {
     return agent_md_callback_();
   }
 
+  /**
+   * @brief This rewrites the logical plan's sinks to be related to the query id, removing a bug
+   * that we encountered when you write a table with the same output name but different relation.
+   *
+   * @param logical_plan: the original logical_plan
+   * @param query_id: the query id to use as some form of the sink name.
+   * @return planpb::Plan: the modified plan.
+   */
+  planpb::Plan InterceptSinksInPlan(const planpb::Plan& logical_plan, const sole::uuid& query_id);
+
   AgentMetadataCallbackFunc agent_md_callback_;
   compiler::Compiler compiler_;
   std::unique_ptr<EngineState> engine_state_;
@@ -161,11 +171,33 @@ Status CarnotImpl::WalkExpression(exec::ExecState* exec_state, const plan::Scala
   return Status::OK();
 }
 
+planpb::Plan CarnotImpl::InterceptSinksInPlan(const planpb::Plan& logical_plan,
+                                              const sole::uuid& query_id) {
+  planpb::Plan modified_logical_plan = logical_plan;
+  int64_t sink_counter = 0;
+  for (int64_t i = 0; i < modified_logical_plan.nodes_size(); ++i) {
+    auto plan_fragment = modified_logical_plan.mutable_nodes(i);
+    for (int64_t frag_i = 0; frag_i < plan_fragment->nodes_size(); ++frag_i) {
+      auto plan_op = plan_fragment->mutable_nodes(frag_i);
+      if (plan_op->op().op_type() == planpb::MEMORY_SINK_OPERATOR) {
+        auto mem_sink = plan_op->mutable_op()->mutable_mem_sink_op();
+        *(mem_sink->mutable_name()) = absl::Substitute("$0_$1", query_id.str(), sink_counter);
+        sink_counter += 1;
+      }
+    }
+  }
+
+  return modified_logical_plan;
+}
+
 StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan,
                                                     const sole::uuid& query_id) {
   auto timer = ElapsedTimer();
   plan::Plan plan;
-  PL_RETURN_IF_ERROR(plan.Init(logical_plan));
+
+  // Here we intercept the logical plan and remove all references to user specified table names.
+  // TODO(philkuz) in the future when we remove the name argumetn from Results, rework this name.
+  PL_RETURN_IF_ERROR(plan.Init(InterceptSinksInPlan(logical_plan, query_id)));
   // For each of the plan fragments in the plan, execute the query.
   std::vector<std::string> output_table_strs;
   auto exec_state = engine_state_->CreateExecState(query_id);
