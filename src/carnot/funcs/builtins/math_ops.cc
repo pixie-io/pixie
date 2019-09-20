@@ -127,6 +127,7 @@ void RegisterMathOpsOrDie(udf::UDARegistry* registry) {
   // Mean
   registry->RegisterOrDie<MeanUDA<types::Float64Value>>("pl.mean");
   registry->RegisterOrDie<MeanUDA<types::Int64Value>>("pl.mean");
+  registry->RegisterOrDie<MeanUDA<types::BoolValue>>("pl.mean");
   // Sum
   registry->RegisterOrDie<SumUDA<types::Float64Value>>("pl.sum");
   registry->RegisterOrDie<SumUDA<types::Int64Value>>("pl.sum");

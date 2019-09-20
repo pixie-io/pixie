@@ -358,6 +358,24 @@ TEST(MathOps, basic_float64_mean_uda_test) {
       expected_mean);
 }
 
+TEST(MathOps, basic_bool_mean_uda_test) {
+  auto inputs = std::vector<bool>({true, true, false, false, false, false});
+  uint64_t size = inputs.size();
+  double expected_mean =
+      std::accumulate(std::begin(inputs), std::end(inputs), 0.0,
+                      [&](double memo, double val) { return memo + (val / size); });
+
+  auto uda_tester = udf::UDATester<MeanUDA<types::BoolValue>>();
+  uda_tester.ForInput(true)
+      .ForInput(true)
+      .ForInput(false)
+      .ForInput(false)
+      .ForInput(false)
+      .ForInput(false)
+      .Expect(expected_mean);
+  LOG(INFO) << expected_mean;
+}
+
 TEST(MathOps, basic_int64_mean_uda_test) {
   auto inputs = std::vector<uint64_t>({3, 6, 10, 5, 2});
   uint64_t size = inputs.size();
