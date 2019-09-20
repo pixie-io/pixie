@@ -13,14 +13,6 @@ export interface RouterInfo {
   search: string;
 }
 
-const CREATE_CLUSTER = gql`
-  mutation CreateCluster {
-    CreateCluster {
-      id
-    }
-  }
-`;
-
 interface Auth0LoginProps {
   containerID?: string;
   location: RouterInfo;
@@ -63,11 +55,6 @@ function onCreateAuthenticated(authResult) {
       this.setSession({
         idToken: response.data.Token,
         expiresAt: response.data.ExpiresAt,
-      });
-    }).then(() => {
-      // Create a cluster for the org.
-      return this.props.client.mutate({
-          mutation: CREATE_CLUSTER,
       });
     }).then((results) => {
         window.location.href = window.location.protocol + '//' + this.domain + '.' +

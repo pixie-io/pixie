@@ -78,4 +78,33 @@ describe('<Vizier/> test', () => {
     expect(app.find(DeployInstructions)).toHaveLength(1);
     expect(app.find(DeployInstructions).get(0).props.clusterID).toBe('test');
   });
+
+  it('should try to create cluster if does not exist', async () => {
+    const mocks = [
+      {
+        request: {
+          query: GET_CLUSTER,
+          variables: {},
+        },
+        error: {
+            name: 'error',
+            message: 'org has no clusters',
+        },
+      },
+    ];
+
+    const app = mount(
+        <Router>
+            <MockedProvider mocks={mocks} addTypename={false}>
+              <Vizier
+                location={ { pathname: 'query' } }
+              />
+            </MockedProvider>
+        </Router>);
+
+    await wait(0);
+    app.update();
+
+    expect(app.find('.create-cluster-instructions')).toHaveLength(1);
+  });
 });
