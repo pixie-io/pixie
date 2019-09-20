@@ -1,6 +1,7 @@
 #include "src/carnot/compiler/ast_visitor.h"
 
 #include "src/carnot/compiler/compiler_error_context.h"
+#include "src/carnot/compiler/pattern_match.h"
 
 namespace pl {
 namespace carnot {
@@ -342,7 +343,32 @@ StatusOr<OperatorIR*> ASTWalker::ProcessRangeAggOp(const pypa::AstCallPtr& node)
     return by_lambda->CreateIRNodeError(
         "Too many arguments for by argument of RangeAgg, only 1 is supported. ");
   }
-  ColumnIR* by_col = static_cast<ColumnIR*>(by_lambda->col_exprs()[0].node);
+
+  IRNode* by_expr = by_lambda->col_exprs()[0].node;
+  if (Match(by_expr, List())) {
+    ListIR* by_list = static_cast<ListIR*>(by_expr);
+    if (by_list->children().size() != 1) {
+      return by_list->CreateIRNodeError(
+          "$0 supports a single group by column, please update the query.", kRangeAggOpId);
+    }
+
+    by_expr = by_list->children()[0];
+    IR* ir = by_expr->graph_ptr();
+    ir->dag().DeleteEdge(by_lambda->id(), by_list->id());
+    ir->dag().DeleteEdge(by_list->id(), by_expr->id());
+    ir->dag().DeleteNode(by_list->id());
+    PL_RETURN_IF_ERROR(ir->AddEdge(by_lambda, by_expr));
+    LOG(INFO) << by_lambda->DebugString();
+    LOG(INFO) << by_expr->DebugString();
+  }
+
+  if (!Match(by_expr, ColumnNode())) {
+    return by_expr->CreateIRNodeError("Group-by argument must be a Column, not a %0",
+                                      by_expr->type_string());
+  }
+
+  ColumnIR* by_col = static_cast<ColumnIR*>(by_expr);
+
   PL_RETURN_IF_ERROR(ir_graph_->DeleteEdge(by_lambda->id(), by_col->id()));
   PL_ASSIGN_OR_RETURN(FuncIR * mod_ir_node, ir_graph_->MakeNode<FuncIR>());
   PL_ASSIGN_OR_RETURN(FuncIR::Op mod_op, GetOp("%", node));

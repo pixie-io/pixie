@@ -11,6 +11,7 @@
 
 #include "src/carnot/compiler/compiler.h"
 #include "src/carnot/compiler/compiler_state.h"
+#include "src/carnot/compiler/test_utils.h"
 #include "src/carnot/funcs/metadata/metadata_ops.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
@@ -691,6 +692,7 @@ nodes {
   }
 }
 )";
+
 TEST_F(CompilerTest, range_agg_test) {
   auto query = absl::StrJoin(
       {
@@ -702,7 +704,127 @@ TEST_F(CompilerTest, range_agg_test) {
 
   auto plan = compiler_.Compile(query, compiler_state_.get());
   EXPECT_OK(plan);
-  EXPECT_THAT(plan.ConsumeValueOrDie(), EqualsProto(kRangeAggPlan));
+  EXPECT_THAT(plan.ConsumeValueOrDie(), Partially(EqualsProto(kRangeAggPlan)));
+}
+
+TEST_F(CompilerTest, range_agg_multiple_args_fail) {
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu2', 'count', 'cpu1'])",
+          "queryDF.RangeAgg(by=lambda r: [r.count, r.cpu2], size=2, fn= lambda r: { 'mean': "
+          "pl.mean(r.cpu1)}).Result(name='cpu_out')",
+      },
+      "\n");
+
+  auto plan = compiler_.Compile(query, compiler_state_.get());
+  EXPECT_NOT_OK(plan);
+  EXPECT_THAT(
+      plan.status(),
+      HasCompilerError("RangeAgg supports a single group by column, please update the query."));
+}
+
+const char* kRangeAggPlanPartial = R"(
+nodes {
+  nodes {
+    op {
+      op_type: MEMORY_SOURCE_OPERATOR
+      mem_source_op {
+        name: "cpu"
+      }
+    }
+  }
+  nodes {
+    id: 14
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          func {
+            name: "pl.subtract"
+            id: 1
+            args {
+              column {
+                index: 1
+              }
+            }
+            args {
+              func {
+                name: "pl.modulo"
+                id: 0
+                args {
+                  column {
+                    index: 1
+                  }
+                }
+                args {
+                  constant {
+                    data_type: INT64
+                    int64_value: 2
+                  }
+                }
+                args_data_types: INT64
+                args_data_types: INT64
+              }
+            }
+            args_data_types: INT64
+            args_data_types: INT64
+          }
+        }
+        expressions {
+          column {
+            index: 2
+          }
+        }
+        column_names: "group"
+        column_names: "cpu1"
+      }
+    }
+  }
+  nodes {
+    op {
+      op_type: AGGREGATE_OPERATOR
+      agg_op {
+        windowed: false
+        values {
+          name: "pl.mean"
+          args {
+            column {
+              node: 14
+              index: 1
+            }
+          }
+          args_data_types: FLOAT64
+        }
+        groups {
+          node: 14
+        }
+        group_names: "group"
+        value_names: "mean"
+      }
+    }
+  }
+  nodes {
+    op {
+      op_type: MEMORY_SINK_OPERATOR
+      mem_sink_op {
+      }
+    }
+  }
+}
+)";
+
+TEST_F(CompilerTest, range_agg_op_list_group_by_one_entry) {
+  auto query = absl::StrJoin(
+      {
+          "queryDF = From(table='cpu', select=['cpu2', 'count', 'cpu1'])",
+          "queryDF.RangeAgg(by=lambda r: [r.count], size=2, fn= lambda r: { 'mean': "
+          "pl.mean(r.cpu1)}).Result(name='cpu_out')",
+      },
+      "\n");
+
+  auto plan = compiler_.Compile(query, compiler_state_.get());
+  EXPECT_OK(plan);
+  EXPECT_THAT(plan.ConsumeValueOrDie(), Partially(EqualsProto(kRangeAggPlanPartial)));
 }
 
 TEST_F(CompilerTest, multiple_group_by_agg_test) {

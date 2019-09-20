@@ -138,6 +138,8 @@ inline ClassMatch<IRNodeType::kTabletSourceGroup> TabletSourceGroup() {
   return ClassMatch<IRNodeType::kTabletSourceGroup>();
 }
 
+inline ClassMatch<IRNodeType::kList> List() { return ClassMatch<IRNodeType::kList>(); }
+
 /**
  * @brief Match a specific integer value.
  */
