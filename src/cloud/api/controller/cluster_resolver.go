@@ -94,7 +94,7 @@ func (c *ClusterInfoResolver) Status() string {
 
 // LastHeartbeatMs returns the heartbeat.
 func (c *ClusterInfoResolver) LastHeartbeatMs() float64 {
-	return float64(c.lastHeartbeatNs / 1E6)
+	return float64(c.lastHeartbeatNs / 1e6)
 }
 
 // ClusterConnection resolves cluster connection information.

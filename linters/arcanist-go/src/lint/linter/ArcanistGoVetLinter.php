@@ -1,6 +1,6 @@
 <?php
 
-final class ArcanistGoVetLinter extends ArcanistExternalLinter {
+final class ArcanistGoVetLinter extends ArcanistLinter {
 
   public function getInfoName() {
     return 'Go vet';
@@ -66,6 +66,22 @@ final class ArcanistGoVetLinter extends ArcanistExternalLinter {
     return ArcanistLintSeverity::SEVERITY_WARNING;
   }
 
+  public function lintPath($path) {
+    // Get the package path from the file path.
+    $fPath = $this->getProjectRoot() . '/' . $path;
+    $splitPkgPath = explode('/', $fPath);
+
+    $pkgPath = join("/", array_slice($splitPkgPath, 0, sizeof($splitPkgPath) - 1)) . '/...';
+
+    // Run go vet on the package path.
+    $future = new ExecFuture('go vet %s', $pkgPath);
+
+    list($err, $stdout, $stderr) = $future->resolve();
+
+    // Parse the output and raise lint errors as necessary.
+    $messages = $this->parseLinterOutput($pkgPath, $err, $stdout, $stderr);
+  }
+
   protected function parseLinterOutput($path, $err, $stdout, $stderr) {
     $lines = phutil_split_lines($stderr, false);
 
@@ -74,32 +90,23 @@ final class ArcanistGoVetLinter extends ArcanistExternalLinter {
       $matches = explode(':', $line, 6);
 
       if (count($matches) === 6) {
-        $message = new ArcanistLintMessage();
-        $message->setPath($path);
-        $message->setLine($matches[2]);
-        $message->setChar($matches[3]);
-        $code = "E00";
-        $message->setCode($code);
-        $message->setName($this->getLinterName());
-        $message->setDescription(ucfirst(trim($matches[4])));
-        $severity = $this->getLintMessageSeverity($code);
-        $message->setSeverity($severity);
 
-        $messages[] = $message;
+        $line = $matches[2];
+        $char = $matches[3];
+        $code = "E00";
+        $desc = ucfirst(trim($matches[4]));
+
+        $this->raiseLintAtLine(
+          $line, $char, $code, $desc
+        );
       }
 
       if (count($matches) === 3) {
-        $message = new ArcanistLintMessage();
-        $message->setPath($path);
-        $message->setLine($matches[1]);
         $code = "E01";
-        $message->setCode($code);
-        $message->setName($this->getLinterName());
-        $message->setDescription(ucfirst(trim($matches[2])));
-        $severity = $this->getLintMessageSeverity($code);
-        $message->setSeverity($severity);
-
-        $messages[] = $message;
+        $desc = $matches[0] . ': ' . ucfirst(trim($matches[2]));
+        $this->raiseLintAtPath(
+          $code, $desc
+        );
       }
     }
 

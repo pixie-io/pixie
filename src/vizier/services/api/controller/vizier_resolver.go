@@ -107,7 +107,7 @@ type AgentStatusResolver struct {
 // LastHeartBeatMs returns the time since last heartbeat.
 func (a *AgentStatusResolver) LastHeartBeatMs() float64 {
 	hb := a.Status.LastHeartbeatNs
-	return float64(hb / 1E6)
+	return float64(hb / 1e6)
 }
 
 // UptimeS returns the time in seconds that the agent has been alive.
@@ -115,7 +115,7 @@ func (a *AgentStatusResolver) UptimeS() float64 {
 	// TOOD(zasgar): Consider having the metadata service return relative time.
 	// Remove negatives.
 	hb := math.Max(float64(time.Now().UnixNano()-a.Status.CreateTimeNs), 0.0)
-	return hb / 1.0E9
+	return hb / 1.0e9
 }
 
 // State returns the state of the given agent.

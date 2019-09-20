@@ -5,8 +5,8 @@ import ()
 // This file contains the protobufs used in vizier/services/metadata/controllers tests.
 
 // AgentInfo
-const clockNowNS = 1E9 * 70                  // 70s in NS. This is slightly greater than the expiration time for the unhealthy agent.
-const healthyAgentLastHeartbeatNS = 1E9 * 65 // 65 seconds in NS. This is slightly less than the current time.
+const clockNowNS = 1e9 * 70                  // 70s in NS. This is slightly greater than the expiration time for the unhealthy agent.
+const healthyAgentLastHeartbeatNS = 1e9 * 65 // 65 seconds in NS. This is slightly less than the current time.
 
 var newAgentUUID = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 var existingAgentUUID = "7ba7b810-9dad-11d1-80b4-00c04fd430c8"

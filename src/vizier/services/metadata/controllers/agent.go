@@ -20,7 +20,7 @@ import (
 
 // AgentExpirationTimeout is the amount of time that we should wait to receive a heartbeat
 // from an agent before marking it as unhealthy.
-const AgentExpirationTimeout int64 = 1E9 * 60 // 60 seconds in nano-seconds.
+const AgentExpirationTimeout int64 = 1e9 * 60 // 60 seconds in nano-seconds.
 
 // AgentInfo describes information about an agent.
 type AgentInfo struct {

@@ -110,8 +110,8 @@ func (c *Controller) ExecuteQuery(in string) error {
 		for _, table := range queryResult.Tables {
 			c.renderer.RenderTable(table)
 		}
-		fmt.Printf("Compilation Time: %.2f ms\n", float64(timingStats.CompilationTimeNs)/1.0E6)
-		fmt.Printf("Execution Time: %.2f ms\n", execTimeNS/1.0E6)
+		fmt.Printf("Compilation Time: %.2f ms\n", float64(timingStats.CompilationTimeNs)/1.0e6)
+		fmt.Printf("Execution Time: %.2f ms\n", execTimeNS/1.0e6)
 		fmt.Printf("Bytes processed: %.2f KB\n", bytesProcessed/1024)
 	}
 	return nil
