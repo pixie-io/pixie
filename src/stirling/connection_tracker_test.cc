@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <sys/socket.h>
 
-#include "src/common/base/const_types.h"
+#include "src/common/base/types.h"
 #include "src/stirling/connection_tracker.h"
 
 namespace pl {
@@ -143,8 +143,8 @@ class ConnectionTrackerTest : public ::testing::Test {
       "Connection: Upgrade\r\n"
       "\r\n";
 
-  ConstStrView kHTTP2EndStreamHeadersFrame = "\x0\x0\x0\x1\x5\x0\x0\x0\x1";
-  ConstStrView kHTTP2EndStreamDataFrame = "\x0\x0\x0\x0\x1\x0\x0\x0\x1";
+  std::string_view kHTTP2EndStreamHeadersFrame = ConstStringView("\x0\x0\x0\x1\x5\x0\x0\x0\x1");
+  std::string_view kHTTP2EndStreamDataFrame = ConstStringView("\x0\x0\x0\x0\x1\x0\x0\x0\x1");
 };
 
 TEST_F(ConnectionTrackerTest, timestamp_test) {

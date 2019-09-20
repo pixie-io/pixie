@@ -71,7 +71,7 @@ class DataTableSchema {
   constexpr std::string_view name() const { return name_; }
   constexpr bool tabletized() const { return tabletized_; }
   constexpr size_t tabletization_key() const { return tabletization_key_; }
-  constexpr ConstVectorView<DataElement> elements() const { return elements_; }
+  constexpr ArrayView<DataElement> elements() const { return elements_; }
 
   // Warning: use at compile-time only!
   constexpr uint32_t ColIndex(std::string_view key) const {
@@ -118,7 +118,7 @@ class DataTableSchema {
   }
 
   const std::string_view name_;
-  const ConstVectorView<DataElement> elements_;
+  const ArrayView<DataElement> elements_;
   const bool tabletized_ = false;
   size_t tabletization_key_ = std::numeric_limits<size_t>::max();
 };

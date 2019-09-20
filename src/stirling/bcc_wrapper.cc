@@ -68,7 +68,7 @@ Status BCCWrapper::AttachProbe(const ProbeSpec& probe) {
   return Status::OK();
 }
 
-Status BCCWrapper::AttachProbes(const ConstVectorView<ProbeSpec>& probes) {
+Status BCCWrapper::AttachProbes(const ArrayView<ProbeSpec>& probes) {
   // TODO(yzhao): We need to clean the already attached probes after encountering a failure.
   for (const ProbeSpec& p : probes) {
     PL_RETURN_IF_ERROR(AttachProbe(p));
@@ -109,8 +109,7 @@ Status BCCWrapper::OpenPerfBuffer(const PerfBufferSpec& perf_buffer, void* cb_co
   return Status::OK();
 }
 
-Status BCCWrapper::OpenPerfBuffers(const ConstVectorView<PerfBufferSpec>& perf_buffers,
-                                   void* cb_cookie) {
+Status BCCWrapper::OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers, void* cb_cookie) {
   for (const PerfBufferSpec& p : perf_buffers) {
     PL_RETURN_IF_ERROR(OpenPerfBuffer(p, cb_cookie));
   }
@@ -147,7 +146,7 @@ Status BCCWrapper::AttachPerfEvent(const PerfEventSpec& perf_event) {
   return Status::OK();
 }
 
-Status BCCWrapper::AttachPerfEvents(const ConstVectorView<PerfEventSpec>& perf_events) {
+Status BCCWrapper::AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events) {
   for (const PerfEventSpec& p : perf_events) {
     PL_RETURN_IF_ERROR(AttachPerfEvent(p));
   }

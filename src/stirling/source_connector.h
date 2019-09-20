@@ -35,7 +35,7 @@ class InfoClassManager;
   class NAME : public SourceConnector {                                     \
    public:                                                                  \
     static constexpr bool kAvailable = false;                               \
-    static constexpr auto kTables = ConstVectorView<DataTableSchema>();     \
+    static constexpr auto kTables = ArrayView<DataTableSchema>();           \
     static std::unique_ptr<SourceConnector> Create(std::string_view name) { \
       PL_UNUSED(name);                                                      \
       return nullptr;                                                       \
@@ -124,7 +124,7 @@ class SourceConnector : public NotCopyable {
     return table_schemas_[table_num];
   }
 
-  static constexpr uint32_t TableNum(ConstVectorView<DataTableSchema> tables,
+  static constexpr uint32_t TableNum(ArrayView<DataTableSchema> tables,
                                      const DataTableSchema& key) {
     uint32_t i = 0;
     for (i = 0; i < tables.size(); i++) {
@@ -151,7 +151,7 @@ class SourceConnector : public NotCopyable {
 
  protected:
   explicit SourceConnector(std::string_view source_name,
-                           const ConstVectorView<DataTableSchema>& table_schemas,
+                           const ArrayView<DataTableSchema>& table_schemas,
                            std::chrono::milliseconds default_sampling_period,
                            std::chrono::milliseconds default_push_period)
       : source_name_(source_name),
@@ -255,7 +255,7 @@ class SourceConnector : public NotCopyable {
   State state_ = State::kUninitialized;
 
   const std::string source_name_;
-  const ConstVectorView<DataTableSchema> table_schemas_;
+  const ArrayView<DataTableSchema> table_schemas_;
   const std::chrono::milliseconds default_sampling_period_;
   const std::chrono::milliseconds default_push_period_;
 };

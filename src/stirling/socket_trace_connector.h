@@ -60,7 +60,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
   };
 
   // Used in ReadPerfBuffer to drain the relevant perf buffers.
-  static constexpr auto kHTTPPerfBuffers = ConstVectorView<std::string_view>(kHTTPPerfBufferNames);
+  static constexpr auto kHTTPPerfBuffers = ArrayView<std::string_view>(kHTTPPerfBufferNames);
 
   // clang-format off
   static constexpr DataElement kMySQLElements[] = {
@@ -81,21 +81,20 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
       "socket_close_conns",
   };
 
-  static constexpr auto kMySQLPerfBuffers =
-      ConstVectorView<std::string_view>(kMySQLPerfBufferNames);
+  static constexpr auto kMySQLPerfBuffers = ArrayView<std::string_view>(kMySQLPerfBufferNames);
 
   static constexpr DataTableSchema kTablesArray[] = {kHTTPTable, kMySQLTable};
-  static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
+  static constexpr auto kTables = ArrayView<DataTableSchema>(kTablesArray);
   static constexpr uint32_t kHTTPTableNum = SourceConnector::TableNum(kTables, kHTTPTable);
   static constexpr uint32_t kMySQLTableNum = SourceConnector::TableNum(kTables, kMySQLTable);
 
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   // Dim 0: DataTables; dim 1: perfBuffer Names
-  static constexpr ConstVectorView<std::string_view> perfBufferNames[] = {kHTTPPerfBuffers,
-                                                                          kMySQLPerfBuffers};
+  static constexpr ArrayView<std::string_view> perfBufferNames[] = {kHTTPPerfBuffers,
+                                                                    kMySQLPerfBuffers};
   static constexpr auto kTablePerfBufferMap =
-      ConstVectorView<ConstVectorView<std::string_view> >(perfBufferNames);
+      ArrayView<ArrayView<std::string_view> >(perfBufferNames);
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SocketTraceConnector(name));
@@ -173,7 +172,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
       {"close", "syscall__probe_entry_close", bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"close", "syscall__probe_ret_close", bpf_probe_attach_type::BPF_PROBE_RETURN},
   };
-  static constexpr auto kProbeSpecs = ConstVectorView<ProbeSpec>(kProbeSpecsArray);
+  static constexpr auto kProbeSpecs = ArrayView<ProbeSpec>(kProbeSpecsArray);
 
   // TODO(oazizi): Remove send and recv probes once we are confident that they don't trace anything.
   //               Note that send/recv are not in the syscall table
@@ -193,7 +192,7 @@ class SocketTraceConnector : public SourceConnector, public BCCWrapper {
       {"socket_close_conns", &SocketTraceConnector::HandleCloseProbeOutput,
        &SocketTraceConnector::HandleCloseProbeLoss},
   };
-  static constexpr auto kPerfBufferSpecs = ConstVectorView<PerfBufferSpec>(kPerfBufferSpecsArray);
+  static constexpr auto kPerfBufferSpecs = ArrayView<PerfBufferSpec>(kPerfBufferSpecsArray);
 
   inline static http::HTTPHeaderFilter http_response_header_filter_;
   // TODO(yzhao): We will remove this once finalized the mechanism of lazy protobuf parse.

@@ -26,13 +26,13 @@ class SourceRegistry : public NotCopyable {
   virtual ~SourceRegistry() = default;
 
   struct RegistryElement {
-    RegistryElement() : create_source_fn(nullptr), schema(ConstVectorView<DataTableSchema>()) {}
+    RegistryElement() : create_source_fn(nullptr), schema(ArrayView<DataTableSchema>()) {}
     explicit RegistryElement(
         std::function<std::unique_ptr<SourceConnector>(std::string_view)> create_source_fn,
-        const ConstVectorView<DataTableSchema>& schema)
+        const ArrayView<DataTableSchema>& schema)
         : create_source_fn(std::move(create_source_fn)), schema(schema) {}
     std::function<std::unique_ptr<SourceConnector>(std::string_view)> create_source_fn;
-    ConstVectorView<DataTableSchema> schema;
+    ArrayView<DataTableSchema> schema;
   };
 
   const auto& sources() { return sources_map_; }

@@ -16,7 +16,6 @@ namespace pl {
 namespace stirling {
 namespace http2 {
 
-using ::pl::ConstStrView;
 using ::pl::grpc::MethodInputOutput;
 using ::pl::grpc::ServiceDescriptorDatabase;
 using ::pl::stirling::testing::GreetServiceFDSet;
@@ -375,22 +374,23 @@ TEST_P(FindMessageBoundaryTest, CheckReturnValues) {
 INSTANTIATE_TEST_CASE_P(
     FindMessageBoundarySuite, FindMessageBoundaryTest,
     ::testing::Values(
-        BoundaryTestCase{ConstStrView("abcd\x00\x00\x04\x01\x04\x00\x00\x00\x0D\x86\x83\xC0\xBF"),
-                         MessageType::kRequest, 4},
-        BoundaryTestCase{ConstStrView("abcd\x00\x00\x04\x01\x04\x00\x00\x00\x0D\x86\x83"),
+        BoundaryTestCase{
+            ConstStringView("abcd\x00\x00\x04\x01\x04\x00\x00\x00\x0D\x86\x83\xC0\xBF"),
+            MessageType::kRequest, 4},
+        BoundaryTestCase{ConstStringView("abcd\x00\x00\x04\x01\x04\x00\x00\x00\x0D\x86\x83"),
                          MessageType::kRequest, std::string_view::npos},
-        BoundaryTestCase{ConstStrView("abcd"), MessageType::kRequest, std::string_view::npos},
-        BoundaryTestCase{ConstStrView("abcd\x00\x00\x04\x01\x04\x00\x00\x00\x0D\x88"),
+        BoundaryTestCase{ConstStringView("abcd"), MessageType::kRequest, std::string_view::npos},
+        BoundaryTestCase{ConstStringView("abcd\x00\x00\x04\x01\x04\x00\x00\x00\x0D\x88"),
                          MessageType::kResponse, 4},
-        BoundaryTestCase{ConstStrView("abcd\x00\x00\x04\x01\x04\x00\x00\x00\x0D"),
+        BoundaryTestCase{ConstStringView("abcd\x00\x00\x04\x01\x04\x00\x00\x00\x0D"),
                          MessageType::kResponse, std::string_view::npos},
-        BoundaryTestCase{ConstStrView("abcd"), MessageType::kResponse, std::string_view::npos},
+        BoundaryTestCase{ConstStringView("abcd"), MessageType::kResponse, std::string_view::npos},
         BoundaryTestCase{std::string_view(), MessageType::kRequest, std::string_view::npos},
         BoundaryTestCase{std::string_view(), MessageType::kResponse, std::string_view::npos}));
 
 TEST(DecodeIntegerTest, AllCases) {
   {
-    // TODO(yzhao): Consider change ConstStrView() for uint8_t.
+    // TODO(yzhao): Consider change StringView() for uint8_t.
     constexpr uint8_t kBuf[] = "\xC5";
     u8string_view buf(kBuf, sizeof(kBuf) - 1);
     uint32_t res = 0;

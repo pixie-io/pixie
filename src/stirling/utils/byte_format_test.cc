@@ -1,7 +1,7 @@
 #include "src/stirling/utils/byte_format.h"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include "src/common/base/const_types.h"
+#include "src/common/base/types.h"
 
 namespace pl {
 namespace stirling {
@@ -39,10 +39,10 @@ TEST_F(UtilsTest, TestEndianSwap) {
 }
 
 TEST_F(UtilsTest, TestLEStrToInt) {
-  EXPECT_EQ(LEStrToInt(std::string(ConstStrView("\x78\x56\x34\x12"))), 305419896);
+  EXPECT_EQ(LEStrToInt(std::string(ConstStringView("\x78\x56\x34\x12"))), 305419896);
 
   // Testing for unsigned correctness.
-  EXPECT_EQ(LEStrToInt(std::string(ConstStrView("\xc6\x00\x00"))), 198);
+  EXPECT_EQ(LEStrToInt(std::string(ConstStringView("\xc6\x00\x00"))), 198);
 }
 
 }  // namespace utils

@@ -35,7 +35,7 @@ using pl::types::StringValue;
 using pl::types::TabletID;
 using pl::types::Time64NSValue;
 
-using pl::ConstVectorView;
+using pl::ArrayView;
 
 // Test arguments, from the command line
 DEFINE_uint64(kRNGSeed, 377, "Random Seed");

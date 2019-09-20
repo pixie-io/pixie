@@ -20,7 +20,7 @@ using pl::stirling::Stirling;
 using pl::types::ColumnWrapperRecordBatch;
 using pl::types::TabletID;
 
-using pl::ConstVectorView;
+using pl::ArrayView;
 
 class StirlingBPFTest : public ::testing::Test {
  protected:

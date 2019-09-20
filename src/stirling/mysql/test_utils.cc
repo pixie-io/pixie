@@ -93,9 +93,9 @@ Packet GenStmtPrepareRespHeader(const StmtPrepareRespHeader& header) {
   utils::IntToLEBytes<2>(header.num_columns, num_columns);
   utils::IntToLEBytes<2>(header.num_params, num_params);
   utils::IntToLEBytes<2>(header.warning_count, warning_count);
-  std::string msg =
-      absl::StrCat(ConstStrView("\x00"), std::string(statement_id, 4), std::string(num_columns, 2),
-                   std::string(num_params, 2), ConstStrView("\x00"), std::string(warning_count, 2));
+  std::string msg = absl::StrCat(ConstStringView("\x00"), std::string(statement_id, 4),
+                                 std::string(num_columns, 2), std::string(num_params, 2),
+                                 ConstStringView("\x00"), std::string(warning_count, 2));
 
   return Packet{0, std::move(msg), MySQLEventType::kUnknown};
 }
@@ -150,7 +150,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
   char statement_id[4];
   utils::IntToLEBytes<4>(req.stmt_id(), statement_id);
   std::string msg = absl::StrCat(std::string(1, kStmtExecutePrefix), std::string(statement_id, 4),
-                                 ConstStrView("\x00\x01\x00\x00\x00"));
+                                 ConstStringView("\x00\x01\x00\x00\x00"));
   int num_params = req.params().size();
   if (num_params > 0) {
     for (int i = 0; i < (num_params + 7) / 8; i++) {
@@ -221,7 +221,7 @@ Packet GenErr(const ErrResponse& err) {
  * Generates a OK packet. Content is fixed.
  */
 Packet GenOK() {
-  std::string msg = std::string(ConstStrView("\x00\x00\x00\x02\x00\x00\x00"));
+  std::string msg = std::string(ConstStringView("\x00\x00\x00\x02\x00\x00\x00"));
   return Packet{0, std::move(msg), MySQLEventType::kUnknown};
 }
 
@@ -229,7 +229,7 @@ Packet GenOK() {
  * Generates a EOF packet. Content is fixed.
  */
 Packet GenEOF() {
-  std::string msg = std::string(ConstStrView("\xfe\x00\x00\x22\x00"));
+  std::string msg = std::string(ConstStringView("\xfe\x00\x00\x22\x00"));
   return Packet{0, std::move(msg), MySQLEventType::kUnknown};
 }
 

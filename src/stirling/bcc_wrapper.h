@@ -115,7 +115,7 @@ class BCCWrapper {
    * @param probes Vector of probes.
    * @return Error of first probe to fail to attach (remaining probe attachments are not attempted).
    */
-  Status AttachProbes(const ConstVectorView<ProbeSpec>& probes);
+  Status AttachProbes(const ArrayView<ProbeSpec>& probes);
 
   /**
    * @brief Detaches all probes that were attached by the wrapper.
@@ -129,7 +129,7 @@ class BCCWrapper {
    * @param cb_cookie Raw pointer returned on callback, typically used for tracking context.
    * @return Error of first failure (remaining perf buffer opens are not attempted).
    */
-  Status OpenPerfBuffers(const ConstVectorView<PerfBufferSpec>& perf_buffers, void* cb_cookie);
+  Status OpenPerfBuffers(const ArrayView<PerfBufferSpec>& perf_buffers, void* cb_cookie);
 
   /**
    * @brief Detaches all perf buffers that were opened by the wrapper.
@@ -142,7 +142,7 @@ class BCCWrapper {
    * @param probes Vector of perf event descriptors.
    * @return Error of first failure (remaining perf event attaches are not attempted).
    */
-  Status AttachPerfEvents(const ConstVectorView<PerfEventSpec>& perf_events);
+  Status AttachPerfEvents(const ArrayView<PerfEventSpec>& perf_events);
 
   /**
    * @brief Detaches all perf buffers that were opened by the wrapper.

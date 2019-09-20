@@ -44,7 +44,7 @@ class PIDRuntimeConnector : public SourceConnector, public BCCWrapper {
   static constexpr auto kTable = DataTableSchema("bcc_pid_cpu_usage", kElements);
 
   static constexpr DataTableSchema kTablesArray[] = {kTable};
-  static constexpr auto kTables = ConstVectorView<DataTableSchema>(kTablesArray);
+  static constexpr auto kTables = ArrayView<DataTableSchema>(kTablesArray);
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
@@ -70,7 +70,7 @@ class PIDRuntimeConnector : public SourceConnector, public BCCWrapper {
 
   static constexpr PerfEventSpec kPerfEventsArray[] = {
       {kEventType, kEventConfig, kFunctionName, 0, kSamplingFreq}};
-  static constexpr auto kPerfEvents = ConstVectorView<PerfEventSpec>(kPerfEventsArray);
+  static constexpr auto kPerfEvents = ArrayView<PerfEventSpec>(kPerfEventsArray);
 
   std::map<uint16_t, uint64_t> prev_run_time_map_;
   std::vector<std::pair<uint16_t, pidruntime_val_t> > table_;

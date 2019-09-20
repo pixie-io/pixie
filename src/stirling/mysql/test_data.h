@@ -31,20 +31,20 @@ const StmtPrepareRespHeader kStmtPrepareRespHeader{2 /*stmt_id*/, 2 /*num_cols*/
 // The following columns definitions and resultset rows are from real packet capture, but the
 // contents don't really matter to the functionality of the test.
 const std::vector<ColDefinition> kStmtPrepareParamDefs{
-    ColDefinition{std::string(ConstStrView(
+    ColDefinition{std::string(ConstStringView(
         "\x03\x64\x65\x66\x00\x00\x00\x01\x3f\x00\x0c\x3f\x00\x00\x00\x00\x00\xfd\x80\x00"
         "\x00\x00\x00"))},
-    ColDefinition{std::string(ConstStrView(
+    ColDefinition{std::string(ConstStringView(
         "\x03\x64\x65\x66\x00\x00\x00\x01\x3f\x00\x0c\x3f\x00\x00\x00\x00\x00\xfd\x80\x00"
         "\x00\x00\x00"))}};
 
 const std::vector<ColDefinition> kStmtPrepareColDefs{
-    ColDefinition{std::string(ConstStrView(
+    ColDefinition{std::string(ConstStringView(
         "\x03\x64\x65\x66\x07\x73\x6f\x63\x6b\x73\x64\x62\x04\x73\x6f\x63\x6b\x04\x73\x6f"
         "\x63\x6b\x02"
         "\x69\x64\x07\x73\x6f\x63\x6b\x5f\x69\x64\x0c\x21\x00\x78\x00\x00\x00\xfd\x03\x50"
         "\x00\x00\x00"))},
-    ColDefinition{std::string(ConstStrView(
+    ColDefinition{std::string(ConstStringView(
         "\x03\x64\x65\x66\x07\x73\x6f\x63\x6b\x73\x64\x62\x04\x73\x6f\x63\x6b\x04\x73\x6f\x63"
         "\x6b"
         "\x04"
@@ -70,20 +70,20 @@ const std::vector<ParamPacket> kStmtExecuteParams = {
 const StmtExecuteRequest kStmtExecuteRequest(2 /*stmt_id*/, kStmtExecuteParams /*params*/);
 
 const std::vector<ColDefinition> kStmtExecuteColDefs = {
-    ColDefinition{
-        std::string(ConstStrView("\x03\x64\x65\x66\x07\x73\x6f\x63\x6b\x73\x64\x62"
-                                 "\x04\x73\x6f\x63\x6b\x04\x73\x6f\x63\x6b\x02\x69\x64\x07\x73\x6f"
-                                 "\x63\x6b\x5f\x69\x64\x0c\x21\x00\x78\x00\x00\x00\xfd\x01\x10\x00"
-                                 "\x00\x00"))},
     ColDefinition{std::string(
-        ConstStrView("\x03\x64\x65\x66\x07\x73\x6f\x63\x6b\x73\x64\x62\n"
-                     "\x04\x73\x6f\x63\x6b\x04\x73\x6f\x63\x6b\x04\x6e\x61\x6d\x65\x04\n"
-                     "\x6e\x61\x6d\x65\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\n"
-                     "\x00"))}};
+        ConstStringView("\x03\x64\x65\x66\x07\x73\x6f\x63\x6b\x73\x64\x62"
+                        "\x04\x73\x6f\x63\x6b\x04\x73\x6f\x63\x6b\x02\x69\x64\x07\x73\x6f"
+                        "\x63\x6b\x5f\x69\x64\x0c\x21\x00\x78\x00\x00\x00\xfd\x01\x10\x00"
+                        "\x00\x00"))},
+    ColDefinition{std::string(
+        ConstStringView("\x03\x64\x65\x66\x07\x73\x6f\x63\x6b\x73\x64\x62\n"
+                        "\x04\x73\x6f\x63\x6b\x04\x73\x6f\x63\x6b\x04\x6e\x61\x6d\x65\x04\n"
+                        "\x6e\x61\x6d\x65\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\n"
+                        "\x00"))}};
 
 const std::vector<ResultsetRow> kStmtExecuteResultsetRows = {
-    ResultsetRow{std::string(ConstStrView("\x03id1"))},
-    ResultsetRow{std::string(ConstStrView("\x03id2"))}};
+    ResultsetRow{std::string(ConstStringView("\x03id1"))},
+    ResultsetRow{std::string(ConstStringView("\x03id2"))}};
 
 const Resultset kStmtExecuteResultset(2, kStmtExecuteColDefs, kStmtExecuteResultsetRows);
 
@@ -104,14 +104,14 @@ const StmtCloseRequest kStmtCloseRequest(2 /*stmt_id*/);
 const StringRequest kQueryRequest("SELECT name FROM tag;");
 
 const std::vector<ColDefinition> kQueryColDefs = {ColDefinition{
-    std::string(ConstStrView("\x2b\x00\x00\x02\x03\x64\x65\x66\x07\x73\x6f\x63\x6b\x73\x64\x62"
-                             "\x03\x74\x61\x67\x03\x74\x61\x67\x04\x6e\x61\x6d\x65\x04\x6e\x61"
-                             "\x6d\x65\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\x00"))}};
+    std::string(ConstStringView("\x2b\x00\x00\x02\x03\x64\x65\x66\x07\x73\x6f\x63\x6b\x73\x64\x62"
+                                "\x03\x74\x61\x67\x03\x74\x61\x67\x04\x6e\x61\x6d\x65\x04\x6e\x61"
+                                "\x6d\x65\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\x00"))}};
 
 const std::vector<ResultsetRow> kQueryResultsetRows = {
-    ResultsetRow{std::string(ConstStrView("\x05brown"))},
-    ResultsetRow{std::string(ConstStrView("\x04geek"))},
-    ResultsetRow{std::string(ConstStrView("\x06formal"))},
+    ResultsetRow{std::string(ConstStringView("\x05brown"))},
+    ResultsetRow{std::string(ConstStringView("\x04geek"))},
+    ResultsetRow{std::string(ConstStringView("\x06formal"))},
 };
 
 const Resultset kQueryResultset(1, kQueryColDefs, kQueryResultsetRows);

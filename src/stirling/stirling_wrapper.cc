@@ -37,7 +37,7 @@ using pl::stirling::SystemStatsConnector;
 using pl::stirling::DataElement;
 using pl::stirling::kHTTPTable;
 
-using pl::ConstVectorView;
+using pl::ArrayView;
 
 DEFINE_string(source_name, "*", "The name of the source to report.");
 DEFINE_bool(all_sources, false,
@@ -45,7 +45,7 @@ DEFINE_bool(all_sources, false,
 
 std::unordered_map<uint64_t, std::string> table_id_to_name_map;
 
-void PrintRecordBatch(std::string_view prefix, const ConstVectorView<DataElement>& schema,
+void PrintRecordBatch(std::string_view prefix, const ArrayView<DataElement>& schema,
                       size_t num_records, const ColumnWrapperRecordBatch& record_batch) {
   for (size_t i = 0; i < num_records; ++i) {
     std::cout << "[" << prefix << "]";

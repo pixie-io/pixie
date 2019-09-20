@@ -372,23 +372,23 @@ size_t FindMessageBoundary<http::HTTPMessage>(MessageType type, std::string_view
                                               size_t start_pos) {
   // List of all HTTP request methods. All HTTP requests start with one of these.
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
-  static constexpr ConstStrView kHTTPReqStartPatternArray[] = {
+  static constexpr std::string_view kHTTPReqStartPatternArray[] = {
       "GET ", "HEAD ", "POST ", "PUT ", "DELETE ", "CONNECT ", "OPTIONS ", "TRACE ", "PATCH ",
   };
 
   // List of supported HTTP protocol versions. HTTP responses typically start with one of these.
   // https://developer.mozilla.org/en-US/docs/Web/HTTP/Messages
-  static constexpr ConstStrView kHTTPRespStartPatternArray[] = {"HTTP/1.1 ", "HTTP/1.0 "};
+  static constexpr std::string_view kHTTPRespStartPatternArray[] = {"HTTP/1.1 ", "HTTP/1.0 "};
 
-  static constexpr ConstVectorView<ConstStrView> kHTTPReqStartPatterns =
-      ConstVectorView<ConstStrView>(kHTTPReqStartPatternArray);
-  static constexpr ConstVectorView<ConstStrView> kHTTPRespStartPatterns =
-      ConstVectorView<ConstStrView>(kHTTPRespStartPatternArray);
+  static constexpr ArrayView<std::string_view> kHTTPReqStartPatterns =
+      ArrayView<std::string_view>(kHTTPReqStartPatternArray);
+  static constexpr ArrayView<std::string_view> kHTTPRespStartPatterns =
+      ArrayView<std::string_view>(kHTTPRespStartPatternArray);
 
   static constexpr std::string_view kBoundaryMarker = "\r\n\r\n";
 
   // Choose the right set of patterns for request vs response.
-  const ConstVectorView<ConstStrView>* start_patterns = nullptr;
+  const ArrayView<std::string_view>* start_patterns = nullptr;
   switch (type) {
     case MessageType::kRequest:
       start_patterns = &kHTTPReqStartPatterns;
