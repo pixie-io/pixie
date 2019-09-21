@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sc
+spec:
+  template:
+    spec:
+      containers:
+        - name: cloudsql-proxy
+          image: gcr.io/cloudsql-docker/gce-proxy:1.14
+          command: ["/cloud_sql_proxy",
+                    "-instances=pl-dev-infra:us-west1:pixie-cloud-dev-db=tcp:5432",
+                    "-ip_address_types=PRIVATE",
+                    "-credential_file=/secrets/cloudsql/db_service_account.json"]
+          # [START cloudsql_security_context]
+          securityContext:
+            runAsUser: 2  # non-root user
+            allowPrivilegeEscalation: false
+          # [END cloudsql_security_context]
+          volumeMounts:
+            - name: cloud-db-secrets
+              mountPath: /secrets/cloudsql
+              readOnly: true
+        # [END proxy_container]
+      volumes:
+        - name: cloud-db-secrets
+          secret:
+            secretName: cloud-db-secrets

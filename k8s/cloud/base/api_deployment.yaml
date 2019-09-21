@@ -29,15 +29,33 @@ spec:
           - name: PL_JWT_SIGNING_KEY
             valueFrom:
               secretKeyRef:
-                name: pl-app-secrets
+                name: cloud-auth-secrets
                 key: jwt-signing-key
           - name: PL_SESSION_KEY
             valueFrom:
               secretKeyRef:
-                name: pl-app-secrets
+                name: cloud-session-secrets
                 key: session-key
+          - name: PL_VZMGR_SERVICE
+            valueFrom:
+              configMapKeyRef:
+                name: pl-service-config
+                key: PL_VZMGR_SERVICE
           - name: PL_AUTH_SERVICE
-            value: auth-service.plc.svc.cluster.local:50100
+            valueFrom:
+              configMapKeyRef:
+                name: pl-service-config
+                key: PL_AUTH_SERVICE
+          - name: PL_SITE_MANAGER_SERVICE
+            valueFrom:
+              configMapKeyRef:
+                name: pl-service-config
+                key: PL_SITE_MANAGER_SERVICE
+          - name: PL_PROFILE_SERVICE
+            valueFrom:
+              configMapKeyRef:
+                name: pl-service-config
+                key: PL_PROFILE_SERVICE
         volumeMounts:
             - name: certs
               mountPath: /certs

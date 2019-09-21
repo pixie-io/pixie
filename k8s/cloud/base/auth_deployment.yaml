@@ -29,18 +29,23 @@ spec:
           - name: PL_JWT_SIGNING_KEY
             valueFrom:
               secretKeyRef:
-                name: pl-app-secrets
+                name: cloud-auth-secrets
                 key: jwt-signing-key
           - name: PL_AUTH0_CLIENT_ID
             valueFrom:
               secretKeyRef:
-                name: pl-app-secrets
+                name: cloud-auth0-secrets
                 key: auth0-client-id
           - name: PL_AUTH0_CLIENT_SECRET
             valueFrom:
               secretKeyRef:
-                name: pl-app-secrets
+                name: cloud-auth0-secrets
                 key: auth0-client-secret
+          - name: PL_PROFILE_SERVICE
+            valueFrom:
+              configMapKeyRef:
+                name: pl-service-config
+                key: PL_PROFILE_SERVICE
         volumeMounts:
             - name: certs
               mountPath: /certs

@@ -2,6 +2,8 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: profile-server
+  labels:
+    db: pgsql
 spec:
   selector:
     matchLabels:
@@ -31,7 +33,7 @@ spec:
           - name: PL_JWT_SIGNING_KEY
             valueFrom:
               secretKeyRef:
-                name: pl-app-secrets
+                name: cloud-auth-secrets
                 key: jwt-signing-key
 
         volumeMounts:

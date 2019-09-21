@@ -1,0 +1,11 @@
+# Lists of referenceable services.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-service-config
+data:
+  PL_AUTH_SERVICE: auth-service.plc-testing.svc.cluster.local:50100
+  PL_API_SERVICE_HTTP: api-service.plc-testing.svc.cluster.local:51201
+  PL_PROFILE_SERVICE: profile-service.plc-testing.svc.cluster.local:51500
+  PL_SITE_MANAGER_SERVICE: site-manager-service.plc-testing.svc.cluster.local:50300
+  PL_VZMGR_SERVICE: vzmgr-service.plc-testing.svc.cluster.local:51800

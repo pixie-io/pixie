@@ -35,8 +35,13 @@ spec:
           - name: PL_JWT_SIGNING_KEY
             valueFrom:
               secretKeyRef:
-                name: pl-app-secrets
+                name: cloud-auth-secrets
                 key: jwt-signing-key
+          - name: PL_VZMGR_SERVICE
+            valueFrom:
+              configMapKeyRef:
+                name: pl-service-config
+                key: PL_VZMGR_SERVICE
         volumeMounts:
             - name: certs
               mountPath: /certs
@@ -48,4 +53,4 @@ spec:
             secretName: service-tls-certs
         - name: proxycerts
           secret:
-            secretName: proxy-tls-certs
+            secretName: cloud-proxy-tls-certs
