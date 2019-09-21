@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/shared/services"
@@ -11,6 +12,9 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 )
 
+func init() {
+	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
+}
 func main() {
 	log.WithField("service", "api-service(cloud)").Info("Starting service")
 

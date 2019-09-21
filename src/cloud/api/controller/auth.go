@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/sessions"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -154,8 +155,7 @@ func setSessionCookie(session *sessions.Session, token string, expiresAt int64, 
 	session.Options.HttpOnly = true
 	session.Options.Secure = true
 	session.Options.SameSite = http.SameSiteStrictMode
-	// TODO(zasgar): We should set this from flags/env. This allows the cookie to be shared across subdomain.
-	session.Options.Domain = "pixielabs.ai"
+	session.Options.Domain = viper.GetString("domain_name")
 
 	session.Save(r, w)
 
