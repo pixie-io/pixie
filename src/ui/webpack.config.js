@@ -16,8 +16,6 @@ const isDevServer = process.argv.find(v => v.includes('webpack-dev-server'));
 let plugins = [
   new CheckerPlugin(),
   new CaseSensitivePathsPlugin(),
-  new webpack.HotModuleReplacementPlugin(), // enable HMR globally
-  new webpack.NamedModulesPlugin(), // prints more readable module names in the browser console on HMR updates
   new HtmlWebpackPlugin({
     alwaysWriteToDisk: true,
     chunks: ['main', 'manifest', 'commons', 'vendor'],
@@ -33,13 +31,24 @@ let plugins = [
   new HtmlWebpackHarddiskPlugin(),
 ];
 
-// Archive plugin has problems with dev server.
-if (!isDevServer) {
+let entryFiles = [];
+
+if (isDevServer) {
+  // enable HMR globally
+  plugins.push(new webpack.HotModuleReplacementPlugin());
+  // prints more readable module names in the browser console on HMR updates
+  plugins.push(new webpack.NamedModulesPlugin());
+
+  entryFiles = [require.resolve('react-dev-utils/webpackHotDevClient'), 'index.tsx'];
+} else {
+    // Archive plugin has problems with dev server.
   plugins.push(
     new ArchivePlugin({
       output: join(resolve(__dirname, 'dist'), 'bundle'),
       format: ['tar'],
     }));
+
+  entryFiles = ['index.tsx'];
 }
 
 var webpackConfig = {
@@ -61,7 +70,7 @@ var webpackConfig = {
     },
     proxy: [],
   },
-  entry: [require.resolve('react-dev-utils/webpackHotDevClient'), 'index.tsx'],
+  entry: entryFiles,
   mode: isDevServer ? 'development' : 'production',
   module: {
     rules: [
