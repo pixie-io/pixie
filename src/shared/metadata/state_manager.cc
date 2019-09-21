@@ -149,6 +149,13 @@ void AgentMetadataStateManager::RemoveDeadPods(int64_t ts, AgentMetadataState* m
         ContainerInfo* cinfo = const_cast<ContainerInfo*>(md_state->ContainerInfoByID(cid));
         if (cinfo->stop_time_ns() == 0) {
           cinfo->set_stop_time_ns(ts);
+
+          // Mark the containers PIDs as stopped too.
+          const auto& active_upids = cinfo->active_upids();
+          for (const auto& upid : active_upids) {
+            cinfo->DeactivateUPID(upid);
+            md->MarkUPIDAsStopped(upid, ts);
+          }
         }
       }
     }
@@ -215,6 +222,11 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
       // the agent. Although this code is arguably still useful for robustness.
       if (s.code() == statuspb::Code::NOT_FOUND) {
         cinfo->set_stop_time_ns(ts);
+        const auto& active_upids = cinfo->active_upids();
+        for (const auto& upid : active_upids) {
+          cinfo->DeactivateUPID(upid);
+          md->MarkUPIDAsStopped(upid, ts);
+        }
       }
       continue;
     }
@@ -234,10 +246,7 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
         // It does not exist in the new set, but does in the old. Which means that the PID has died.
         // We mark the time of death as current and mark the PID as inactive.
         cinfo->DeactivateUPID(upid);
-        auto* pid_info = md->GetPIDByUPID(upid);
-        if (pid_info != nullptr) {
-          pid_info->set_stop_time_ns(ts);
-        }
+        md->MarkUPIDAsStopped(upid, ts);
 
         // Push deletion events to the queue.
         auto pid_status_event = std::make_unique<PIDTerminatedEvent>(upid, ts);

@@ -177,6 +177,13 @@ class AgentMetadataState : NotCopyable {
     pids_by_upid_[upid] = std::move(pid_info);
   }
 
+  void MarkUPIDAsStopped(UPID upid, int64_t ts) {
+    auto* pid_info = GetPIDByUPID(upid);
+    if (pid_info != nullptr) {
+      pid_info->set_stop_time_ns(ts);
+    }
+  }
+
   const absl::flat_hash_map<UPID, PIDInfoUPtr>& pids_by_upid() const { return pids_by_upid_; }
 
   std::string DebugString(int indent_level = 0) const;
