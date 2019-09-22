@@ -114,6 +114,29 @@ func TestAuth0ConnectorImpl_GetUserIDFromToken_BadResponse(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestAuth0ConnectorImpl_GetUserInfoUnauthorizedToken(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		// Return valid management token.
+		if r.URL.String() == "/oauth/token" {
+			w.Write([]byte(`{"error": "access_denied", "error_description": "Unauthorized"}`))
+			return
+		}
+	}))
+	defer server.Close()
+
+	cleanup := SetupViperEnvironment(t, server.URL)
+	defer cleanup()
+
+	cfg := controllers.NewAuth0Config()
+	c := controllers.NewAuth0Connector(cfg)
+
+	userInfo, err := c.GetUserInfo("abcd")
+	assert.NotNil(t, err)
+	assert.Nil(t, userInfo)
+}
+
 func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
 	callCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

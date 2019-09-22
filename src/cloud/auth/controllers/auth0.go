@@ -159,6 +159,20 @@ func (a *auth0ConnectorImpl) getManagementToken() (string, error) {
 		return "", err
 	}
 
+	type TokenError struct {
+		Error            string `json:"error"`
+		ErrorDescription string `json:"error_description"`
+	}
+
+	var tokenError TokenError
+	err = json.Unmarshal(body, &tokenError)
+	if err = json.Unmarshal(body, &tokenError); err != nil {
+		return "", err
+	}
+	if tokenError.Error != "" {
+		return "", fmt.Errorf("Error when getting management token: %s", tokenError.ErrorDescription)
+	}
+
 	type TokenInfo struct {
 		AccessToken string `json:"access_token"`
 	}
