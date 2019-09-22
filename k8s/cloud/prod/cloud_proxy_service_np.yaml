@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud-proxy-service
+  annotations:
+    cloud.google.com/app-protocols: '{"tcp-https":"HTTPS"}'
+    cloud.google.com/load-balancer-type: external
+spec:
+  type: NodePort
+  ports:
+    - port: 443
+      protocol: TCP
+      targetPort: 56000
+      name: tcp-https
+  selector:
+    name: cloud-proxy-server

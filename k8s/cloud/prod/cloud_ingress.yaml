@@ -1,0 +1,14 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: cloud-ingress
+spec:
+  tls:
+  - secretName: cloud-proxy-tls-certs
+  rules:
+  - http:
+      paths:
+      - path: /*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 443
