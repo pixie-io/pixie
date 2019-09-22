@@ -23,7 +23,7 @@ spec:
           httpGet:
             scheme: HTTPS
             path: /healthz
-            port: 51800
+            port: 51801
         envFrom:
           - configMapRef:
               name: pl-db-config
