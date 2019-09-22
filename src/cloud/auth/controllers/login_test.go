@@ -50,16 +50,22 @@ func TestServer_LoginNewUser(t *testing.T) {
 	}
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
+	a.EXPECT().GetClientID().Return("foo")
+
 	// Add PL UserID to the response of the second call.
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
-		AppMetadata: &controllers.UserMetadata{},
+		AppMetadata: &controllers.ClientMetadata{},
 		Email:       "abc@defg.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
 	a.EXPECT().SetPLMetadata("userid", gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
-		fakeUserInfoSecondRequest.AppMetadata.PLUserID = plid
-		fakeUserInfoSecondRequest.AppMetadata.PLOrgID = plorgid
+		clientMap := make(map[string]*controllers.UserMetadata)
+		clientMap["foo"] = &controllers.UserMetadata{
+			PLUserID: plid,
+			PLOrgID:  plorgid,
+		}
+		fakeUserInfoSecondRequest.AppMetadata.Clients = clientMap
 	}).Return(nil)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
 
@@ -93,7 +99,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	maxExpiryTime := time.Now().Add(7 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata.PLUserID, fakeUserInfoSecondRequest.AppMetadata.PLOrgID, resp.ExpiresAt, "jwtkey")
+	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata.Clients["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata.Clients["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_LoginNewUser_InvalidEmail(t *testing.T) {
@@ -241,12 +247,19 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
+	clientMap := make(map[string]*controllers.UserMetadata)
+	clientMap["foo"] = &controllers.UserMetadata{
+		PLUserID: "pluserid",
+		PLOrgID:  "plorgid",
+	}
+
 	fakeUserInfo1 := &controllers.UserInfo{
-		AppMetadata: &controllers.UserMetadata{
-			PLUserID: "pluserid",
-			PLOrgID:  "plorgid",
+		AppMetadata: &controllers.ClientMetadata{
+			Clients: clientMap,
 		},
 	}
+
+	a.EXPECT().GetClientID().Return("foo").MinTimes(1)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
 
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
@@ -283,27 +296,38 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
+	clientMap := make(map[string]*controllers.UserMetadata)
+	clientMap["foo"] = &controllers.UserMetadata{
+		PLUserID: "pluserid",
+		PLOrgID:  "plorgid",
+	}
+
 	fakeUserInfo1 := &controllers.UserInfo{
-		AppMetadata: &controllers.UserMetadata{
-			PLUserID: "pluserid",
-			PLOrgID:  "plorgid",
+		AppMetadata: &controllers.ClientMetadata{
+			Clients: clientMap,
 		},
 		Email:     "abc@defg.com",
 		FirstName: "first",
 		LastName:  "last",
 	}
+
+	a.EXPECT().GetClientID().Return("foo").MinTimes(1)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo1, nil)
 
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
-		AppMetadata: &controllers.UserMetadata{},
+		AppMetadata: &controllers.ClientMetadata{},
 		Email:       "abc@defg.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
 
 	a.EXPECT().SetPLMetadata("userid", gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
-		fakeUserInfoSecondRequest.AppMetadata.PLUserID = plid
-		fakeUserInfoSecondRequest.AppMetadata.PLOrgID = plorgid
+		clientMap := make(map[string]*controllers.UserMetadata)
+		clientMap["foo"] = &controllers.UserMetadata{
+			PLUserID: plid,
+			PLOrgID:  plorgid,
+		}
+		fakeUserInfoSecondRequest.AppMetadata.Clients = clientMap
 	}).Return(nil)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
 
@@ -456,15 +480,21 @@ func TestServer_CreateUserOrg(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	// Add PL UserID to the response of the second call.
+	a.EXPECT().GetClientID().Return("foo")
+
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
-		AppMetadata: &controllers.UserMetadata{},
+		AppMetadata: &controllers.ClientMetadata{},
 		Email:       "abc@defg.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
 	a.EXPECT().SetPLMetadata("userid", gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
-		fakeUserInfoSecondRequest.AppMetadata.PLUserID = plid
-		fakeUserInfoSecondRequest.AppMetadata.PLOrgID = plorgid
+		clientMap := make(map[string]*controllers.UserMetadata)
+		clientMap["foo"] = &controllers.UserMetadata{
+			PLUserID: plid,
+			PLOrgID:  plorgid,
+		}
+		fakeUserInfoSecondRequest.AppMetadata.Clients = clientMap
 	}).Return(nil)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
 
@@ -502,7 +532,7 @@ func TestServer_CreateUserOrg(t *testing.T) {
 	maxExpiryTime := time.Now().Add(7 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata.PLUserID, fakeUserInfoSecondRequest.AppMetadata.PLOrgID, resp.ExpiresAt, "jwtkey")
+	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata.Clients["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata.Clients["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_CreateUserOrg_NonMatchingEmails(t *testing.T) {
@@ -546,9 +576,14 @@ func TestServer_CreateUserOrg_AccountExists(t *testing.T) {
 	a := mock_controllers.NewMockAuth0Connector(ctrl)
 	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
 
+	clientMap := make(map[string]*controllers.UserMetadata)
+	clientMap["foo"] = &controllers.UserMetadata{
+		PLUserID: "pluserid",
+	}
+
 	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: &controllers.UserMetadata{
-			PLUserID: "pluserid",
+		AppMetadata: &controllers.ClientMetadata{
+			Clients: clientMap,
 		},
 		Email:     "abc@defg.com",
 		FirstName: "first",
@@ -558,15 +593,21 @@ func TestServer_CreateUserOrg_AccountExists(t *testing.T) {
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
 
 	// Add PL UserID to the response of the second call.
+	a.EXPECT().GetClientID().Return("foo")
+
 	fakeUserInfoSecondRequest := &controllers.UserInfo{
-		AppMetadata: &controllers.UserMetadata{},
+		AppMetadata: &controllers.ClientMetadata{},
 		Email:       "abc@defg.com",
 		FirstName:   "first",
 		LastName:    "last",
 	}
 	a.EXPECT().SetPLMetadata("userid", gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
-		fakeUserInfoSecondRequest.AppMetadata.PLUserID = plid
-		fakeUserInfoSecondRequest.AppMetadata.PLOrgID = plorgid
+		clientMap := make(map[string]*controllers.UserMetadata)
+		clientMap["foo"] = &controllers.UserMetadata{
+			PLUserID: plid,
+			PLOrgID:  plorgid,
+		}
+		fakeUserInfoSecondRequest.AppMetadata.Clients = clientMap
 	}).Return(nil)
 	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfoSecondRequest, nil)
 
@@ -604,7 +645,7 @@ func TestServer_CreateUserOrg_AccountExists(t *testing.T) {
 	maxExpiryTime := time.Now().Add(7 * 24 * time.Hour).Unix()
 	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
 
-	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata.PLUserID, fakeUserInfoSecondRequest.AppMetadata.PLOrgID, resp.ExpiresAt, "jwtkey")
+	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata.Clients["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata.Clients["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_CreateUserOrg_CreateFailed(t *testing.T) {

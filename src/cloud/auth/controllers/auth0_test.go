@@ -133,7 +133,11 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
               "picture": "picture.jpg",
               "sub": "test_sub",
               "app_metadata": {
-                  "pl_user_id": "test_pl_user_id"
+              		"clients": {
+              			"foo": {
+              				"pl_user_id": "test_pl_user_id"
+              			}
+              		}
               }
          }
         `))
@@ -153,7 +157,7 @@ func TestAuth0ConnectorImpl_GetUserInfo(t *testing.T) {
 	assert.Equal(t, "Test User", userInfo.Name)
 	assert.Equal(t, "picture.jpg", userInfo.Picture)
 	assert.Equal(t, "test_sub", userInfo.Sub)
-	assert.Equal(t, "test_pl_user_id", userInfo.AppMetadata.PLUserID)
+	assert.Equal(t, "test_pl_user_id", userInfo.AppMetadata.Clients["foo"].PLUserID)
 }
 
 func TestAuth0ConnectorImpl_GetUserInfo_BadResponse(t *testing.T) {
@@ -199,7 +203,7 @@ func TestAuth0ConnectorImpl_SetPLMetadata(t *testing.T) {
 		defer r.Body.Close()
 
 		assert.JSONEq(t,
-			`{"app_metadata": {"pl_user_id": "test_pl_user_id", "pl_org_id": "test_pl_org_id"}}`, string(body))
+			`{"app_metadata":{"clients":{"foo":{"pl_org_id":"test_pl_org_id", "pl_user_id":"test_pl_user_id"}}}}`, string(body))
 		w.Write([]byte(`OK`))
 	}))
 	defer server.Close()

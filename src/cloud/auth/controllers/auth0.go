@@ -27,16 +27,21 @@ type UserMetadata struct {
 	PLOrgID  string `json:"pl_org_id,omitempty"`
 }
 
+// ClientMetadata is a part of the Auth0 response.
+type ClientMetadata struct {
+	Clients map[string]*UserMetadata `json:"clients,omitempty"`
+}
+
 // UserInfo tracks the returned auth0 info.
 type UserInfo struct {
-	Email       string        `json:",omitempty"`
-	FirstName   string        `json:"given_name,omitempty"`
-	LastName    string        `json:"family_name,omitempty"`
-	UserID      string        `json:"user_id,omitempty"`
-	Name        string        `json:",omitempty"`
-	Picture     string        `json:",omitempty"`
-	Sub         string        `json:"sub,omitempty"`
-	AppMetadata *UserMetadata `json:"app_metadata,omitempty"`
+	Email       string          `json:",omitempty"`
+	FirstName   string          `json:"given_name,omitempty"`
+	LastName    string          `json:"family_name,omitempty"`
+	UserID      string          `json:"user_id,omitempty"`
+	Name        string          `json:",omitempty"`
+	Picture     string          `json:",omitempty"`
+	Sub         string          `json:"sub,omitempty"`
+	AppMetadata *ClientMetadata `json:"app_metadata,omitempty"`
 }
 
 // Auth0Connector defines an interface we use to access information from Auth0.
@@ -45,6 +50,7 @@ type Auth0Connector interface {
 	GetUserIDFromToken(token string) (string, error)
 	GetUserInfo(userID string) (*UserInfo, error)
 	SetPLMetadata(userID, plOrgID, plUserID string) error
+	GetClientID() string
 }
 
 // Auth0Config is the config data required for Auth0.
@@ -202,11 +208,20 @@ func (a *auth0ConnectorImpl) GetUserInfo(userID string) (*UserInfo, error) {
 	return userInfo, nil
 }
 
+func (a *auth0ConnectorImpl) GetClientID() string {
+	return a.cfg.Auth0ClientID
+}
+
 func (a *auth0ConnectorImpl) SetPLMetadata(userID, plOrgID, plUserID string) error {
+	clientMap := make(map[string]*UserMetadata)
+	clientMap[a.cfg.Auth0ClientID] = &UserMetadata{
+		PLUserID: plUserID,
+		PLOrgID:  plOrgID,
+	}
+
 	userInfo := &UserInfo{
-		AppMetadata: &UserMetadata{
-			PLUserID: plUserID,
-			PLOrgID:  plOrgID,
+		AppMetadata: &ClientMetadata{
+			Clients: clientMap,
 		},
 	}
 

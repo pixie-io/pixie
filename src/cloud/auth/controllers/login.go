@@ -78,7 +78,7 @@ func (s *Server) CreateUserOrg(ctx context.Context, in *pb.CreateUserOrgRequest)
 	userInfo, err = s.updateAuth0User(userID, pbutils.UUIDFromProtoOrNil(resp.OrgID).String(),
 		pbutils.UUIDFromProtoOrNil(resp.UserID).String())
 
-	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey())
+	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey(), s.a.GetClientID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
@@ -115,12 +115,12 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	}
 
 	// If user does not exist in Auth0, then create a new user.
-	newUser := userInfo.AppMetadata == nil || userInfo.AppMetadata.PLUserID == ""
+	newUser := userInfo.AppMetadata == nil || userInfo.AppMetadata.Clients[s.a.GetClientID()] == nil || userInfo.AppMetadata.Clients[s.a.GetClientID()].PLUserID == ""
 
 	// If user exists in Auth0, but not in the profile service, create a new user.
-	if userInfo.AppMetadata != nil && userInfo.AppMetadata.PLUserID != "" {
+	if !newUser {
 		pc := s.env.ProfileClient()
-		_, err := pc.GetUser(ctx, &uuidpb.UUID{Data: []byte(userInfo.AppMetadata.PLUserID)})
+		_, err := pc.GetUser(ctx, &uuidpb.UUID{Data: []byte(userInfo.AppMetadata.Clients[s.a.GetClientID()].PLUserID)})
 		if err != nil {
 			newUser = true
 		}
@@ -133,7 +133,7 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		}
 	}
 
-	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey())
+	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey(), s.a.GetClientID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")
 	}
@@ -218,9 +218,10 @@ func (s *Server) GetAugmentedToken(
 	return resp, nil
 }
 
-func generateJWTTokenForUser(userInfo *UserInfo, signingKey string) (string, time.Time, error) {
+func generateJWTTokenForUser(userInfo *UserInfo, signingKey string, clientID string) (string, time.Time, error) {
 	expiresAt := time.Now().Add(RefreshTokenValidDuration)
-	claims := utils.GenerateJWTForUser(userInfo.AppMetadata.PLUserID, userInfo.AppMetadata.PLOrgID, userInfo.Email, expiresAt)
+	clientMetadata := userInfo.AppMetadata.Clients[clientID]
+	claims := utils.GenerateJWTForUser(clientMetadata.PLUserID, clientMetadata.PLOrgID, userInfo.Email, expiresAt)
 	token, err := utils.SignJWTClaims(claims, signingKey)
 
 	return token, expiresAt, err
