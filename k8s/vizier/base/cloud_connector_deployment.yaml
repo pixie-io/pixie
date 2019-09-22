@@ -20,6 +20,9 @@ spec:
             hostPort: 50800
           - containerPort: 50801
             hostPort: 50801
+        envFrom:
+          - configMapRef:
+              name: pl-cloud-config
         env:
           - name: PL_JWT_SIGNING_KEY
             valueFrom:
@@ -41,8 +44,6 @@ spec:
             value: /certs/client.key
           - name: PL_TLS_CA_CERT
             value: /certs/ca.crt
-          - name: PL_CLOUD_ADDR
-            value: vzconn-service.plc.svc.cluster.local:51600
         volumeMounts:
             - name: certs
               mountPath: /certs
