@@ -16,7 +16,9 @@
     "(\\.gitmodules$)",
     "(.*/testdata/.*)",
     "(c_cpp_properties.json$)",
-    "(^credentials\/.*\\.yaml)"
+    "(^credentials\/.*\\.yaml)",
+    "(go\\.mod$)",
+    "(go\\.sum$)"
   ],
   "linters": {
     "build-linter": {

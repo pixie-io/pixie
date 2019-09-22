@@ -59,17 +59,17 @@ test-asan: ## Run all the tests (except UI), with address sanitizer.
 test-tsan: ## Run all the tests (except UI),  with thread sanitizer.
 	$(BAZEL) test --config=tsan //... ${BAZEL_TEST_EXTRA_ARGS}
 
-.PHONY: dep-ensure
-dep-ensure: ## Ensure that go dependencies exist.
-	$(DEP) ensure
+.PHONY: go-mod-ensure
+go-mod-ensure: ## Ensure that go dependencies exist.
+	go mod download
 
-gazelle-repos: Gopkg.lock
-	$(BAZEL) run //:gazelle -- update-repos -from_file=Gopkg.lock
+gazelle-repos: go.mod
+	$(BAZEL) run //:gazelle -- update-repos -from_file=go.mod
 
 gazelle: gazelle-repos ## Run gazelle to update go build rules.
 	$(BAZEL) run //:gazelle
 
-go-setup: dep-ensure gazelle
+go-setup: go-mod-ensure gazelle
 
 dev-env-start: ## Start K8s dev environment.
 	$(WORKSPACE)/scripts/setup_dev_k8s.sh
